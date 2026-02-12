@@ -63,12 +63,12 @@ export default function AboutPage() {
   const fb = language === "vi" ? vi : en;
 
   const tx = {
-    heroTitle: t?.about?.hero?.title ?? fb.heroTitle,
-    heroSubtitle: t?.about?.hero?.subtitle ?? fb.heroSubtitle,
+    heroTitle: t?.about?.title ?? fb.heroTitle,
+    heroSubtitle: t?.about?.subtitle ?? fb.heroSubtitle,
     storyTitle: t?.about?.storyTitle ?? fb.storyTitle,
-    storyParagraphs: t?.about?.storyParagraphs ?? fb.storyParagraphs,
-    valuesTitle: t?.about?.values?.title ?? fb.valuesTitle,
-    values: t?.about?.values?.items ?? fb.values,
+    storyParagraphs: t?.about?.storyParagraphs ?? t?.about?.description ?? fb.storyParagraphs,
+    valuesTitle: t?.about?.values?.title ?? t?.about?.valuesTitle ?? fb.valuesTitle,
+    values: t?.about?.values?.items ?? t?.about?.values ?? fb.values,
     stats: {
       years: t?.about?.stats?.years ?? fb.stats.years,
       pilots: t?.about?.stats?.pilots ?? fb.stats.pilots,
