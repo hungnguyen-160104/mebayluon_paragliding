@@ -144,7 +144,6 @@ export default function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, theme, loadScript]);
 
   return <div ref={containerRef} className="flex justify-center my-3" />;

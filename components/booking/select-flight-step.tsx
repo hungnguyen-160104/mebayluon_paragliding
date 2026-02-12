@@ -11,7 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 
-const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
+// AddonKey[] used: ["pickup", "flycam", "camera360"]
 
 export default function SelectFlightStep() {
   const t = useBookingText();

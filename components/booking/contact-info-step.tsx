@@ -6,7 +6,6 @@ import { LOCATIONS } from "@/lib/booking/calculate-price";
 import type { LocationKey } from "@/lib/booking/calculate-price";
 import {
   useBookingText,
-  useLangCode,
   BIGC_THANG_LONG_MAP,
 } from "@/lib/booking/translations-booking";
 
@@ -29,7 +28,6 @@ function TimeOptions() {
 
 export default function ContactInfoStep() {
   const t = useBookingText();
-  const lang = useLangCode();
   const data = useBookingStore((s) => s.data);
   const update = useBookingStore((s) => s.update);
   const back = useBookingStore((s) => s.back);

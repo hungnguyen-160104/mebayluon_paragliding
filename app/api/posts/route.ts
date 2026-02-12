@@ -195,7 +195,6 @@ export async function POST(req: Request) {
     if (!body.slug && body.title) {
       const base = slugifyVN(String(body.title)).slice(0, 80) || `post-${Date.now().toString(36)}`;
       let slug = base; let i = 1;
-      // eslint-disable-next-line no-await-in-loop
       while (await Post.exists({ slug })) slug = `${base}-${i++}`;
       body.slug = slug;
     }

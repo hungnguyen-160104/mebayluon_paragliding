@@ -129,7 +129,7 @@ function normalizeAddonsForGuestsCount(
   return { addons: nextAddons, addonsQty: nextQty };
 }
 
-export const useBookingStore = create<StoreState>()((set, get) => ({
+export const useBookingStore = create<StoreState>()((set, _get) => ({
   step: 1,
   data: defaultData,
   bookingResult: undefined,

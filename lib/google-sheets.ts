@@ -33,7 +33,7 @@ export async function submitBookingToGoogleSheets(bookingState: BookingState): P
       total: bookingState.total,
     }
 
-    const response = await fetch(SCRIPT_URL, {
+    await fetch(SCRIPT_URL, {
       method: "POST",
       mode: "no-cors",
       headers: {

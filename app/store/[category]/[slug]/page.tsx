@@ -6,14 +6,6 @@ import { headers } from "next/headers";
 import { getProductBySlug } from "@/lib/product-api";
 
 /** ===== Types ===== */
-type Product = {
-  slug: string;
-  title: string;
-  content?: string;
-  coverImage?: string;
-  createdAt?: string;
-};
-
 type PostLite = {
   _id?: string;
   id?: string;

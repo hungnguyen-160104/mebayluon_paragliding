@@ -490,6 +490,30 @@ items: {
             "Children over 3 years old are counted as 1 separate passenger with pilot (cannot fly with parents/relatives as there is only 1 seat)",
           ],
         },
+        cancellation: {
+          title: "Flight Cancellation",
+          byCompany: {
+            title: "Cancellation by Mebayluon Paragliding",
+            items: [
+              "In case of unfavorable weather conditions and the flight must be cancelled",
+              "Customers do not have to pay any costs",
+              "Tickets are refunded 100%, no additional fees",
+            ],
+          },
+          byCustomer: {
+            title: "Cancellation by customer",
+            items: [
+              "Cancellation must be notified via email/hotline/Zalo/WhatsApp",
+              "Cancellation policy: 1 day before: Free",
+            ],
+          },
+          reschedule: {
+            title: "Rescheduling by customer",
+            items: [
+              "Free flight rescheduling",
+            ],
+          },
+        },
       },
     },
     contact: {
@@ -803,6 +827,30 @@ items: {
             "Chaque vol : Un passager vole avec un pilote professionnel. Le pilote contrôle entièrement le vol ; il vous suffit de vous détendre, d’admirer le paysage et de poser pour de magnifiques photos et vidéos dans le ciel",
             "Les enfants de plus de 3 ans comptent pour 1 passager séparé avec pilote (ne peuvent pas voler avec les parents/relatives car il n'y a qu'1 siège)",
           ],
+        },
+        cancellation: {
+          title: "Annulation de vol",
+          byCompany: {
+            title: "Annulation par Mebayluon Paragliding",
+            items: [
+              "En cas de conditions météorologiques défavorables et le vol doit être annulé",
+              "Les clients n'ont pas à payer de frais",
+              "Les billets sont remboursés à 100%, sans frais supplémentaires",
+            ],
+          },
+          byCustomer: {
+            title: "Annulation par le client",
+            items: [
+              "L'annulation doit être notifiée par email/hotline/Zalo/WhatsApp",
+              "Politique d'annulation : 1 jour avant : Gratuit",
+            ],
+          },
+          reschedule: {
+            title: "Report de vol par le client",
+            items: [
+              "Report de vol gratuit",
+            ],
+          },
         },
       },
     },
@@ -1120,6 +1168,30 @@ items: {
             "Каждый полёт: Один пассажир летит с профессиональным пилотом. Полётом полностью управляет пилот, вам остаётся только расслабиться, наслаждаться видами и сделать красивые фото и видео в небе",
             "Дети старше 3 лет считаются 1 отдельным пассажиром с пилотом (не могут летать с родителями/родственниками, так как есть только 1 место)",
           ],
+        },
+        cancellation: {
+          title: "Отмена полёта",
+          byCompany: {
+            title: "Отмена со стороны Mebayluon Paragliding",
+            items: [
+              "В случае неблагоприятных погодных условий и необходимости отмены полёта",
+              "Клиенты не несут никаких расходов",
+              "Билеты возвращаются на 100%, без дополнительных сборов",
+            ],
+          },
+          byCustomer: {
+            title: "Отмена клиентом",
+            items: [
+              "Об отмене необходимо уведомить по email/горячей линии/Zalo/WhatsApp",
+              "Политика отмены: За 1 день: Бесплатно",
+            ],
+          },
+          reschedule: {
+            title: "Перенос полёта клиентом",
+            items: [
+              "Бесплатный перенос полёта",
+            ],
+          },
         },
       },
     },

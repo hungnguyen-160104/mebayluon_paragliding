@@ -27,7 +27,7 @@ export async function seedFixedPosts() {
 export async function isFixedPost(idOrSlug: string): Promise<boolean> {
   const byId = Types.ObjectId.isValid(idOrSlug);
   const cond = byId ? { _id: idOrSlug } : { slug: idOrSlug };
-  const doc = await Post.findOne(cond).select("isFixed").lean();
+  const doc = await Post.findOne(cond).select("isFixed").lean() as { isFixed?: boolean } | null;
   return !!doc?.isFixed;
 }
 

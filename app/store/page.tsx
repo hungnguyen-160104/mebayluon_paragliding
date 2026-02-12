@@ -126,7 +126,6 @@ export default function StoreHomePage() {
 
   useEffect(() => {
     fetchProducts("all");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

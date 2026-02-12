@@ -13,11 +13,14 @@ export default function AdminPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/admin/login");
-      return;
-    }
-    setReady(true);
+    const checkAuth = async () => {
+      if (!getToken()) {
+        router.replace("/admin/login");
+        return;
+      }
+      setReady(true);
+    };
+    checkAuth();
   }, [router]);
 
   if (!ready) {

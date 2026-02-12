@@ -160,7 +160,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       <div className="space-y-3">
                         {pilotData.funFacts[lang].map((fact, idx) => (
                           <p key={idx} className="italic text-lg text-white/90">
-                            "{fact}"
+                            &ldquo;{fact}&rdquo;
                           </p>
                         ))}
                       </div>

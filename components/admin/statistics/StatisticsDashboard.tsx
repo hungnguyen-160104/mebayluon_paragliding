@@ -100,15 +100,20 @@ export function StatisticsDashboard({ initialRange, initialData }: Props) {
       didMountRef.current = true;
       return;
     }
-    setLoading(true);
-    setError(null);
-    fetchStats(filters)
-      .then((next) => setData(next))
-      .catch((err) => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await fetchStats(filters);
+        setData(next);
+      } catch (err) {
         console.error(err);
         setError("Không thể tải dữ liệu thống kê");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [filters, fetchStats]);
 
   const bookingSeriesData = useMemo(

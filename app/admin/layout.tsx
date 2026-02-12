@@ -13,14 +13,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Guard tất cả route admin trừ /admin/login
   useEffect(() => {
-    if (pathname?.startsWith("/admin") && pathname !== "/admin/login") {
-      const token = getToken();
-      if (!token) {
-        router.replace("/admin/login");
-        return;
+    const checkAuth = async () => {
+      if (pathname?.startsWith("/admin") && pathname !== "/admin/login") {
+        const token = getToken();
+        if (!token) {
+          router.replace("/admin/login");
+          return;
+        }
       }
-    }
-    setReady(true);
+      setReady(true);
+    };
+    checkAuth();
   }, [pathname, router]);
 
   if (!ready) return <div className="p-6">Đang kiểm tra phiên đăng nhập…</div>;

@@ -40,7 +40,7 @@ const UI_I18N: Record<
   },
 };
 
-const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
+// AddonKey[] used: ["pickup", "flycam", "camera360"]
 
 export default function ReviewConfirmStep() {
   const t = useBookingText();

@@ -14,7 +14,6 @@ type Cached = {
   promise: Promise<typeof mongoose> | null;
 };
 
-// eslint-disable-next-line no-var
 declare global {
   var __mongoose: Cached | undefined;
 }

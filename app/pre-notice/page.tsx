@@ -3,7 +3,7 @@
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, XCircle, AlertTriangle, Shirt, PackageCheck, Ban, Calendar, Ticket } from "lucide-react"
+import { CheckCircle2, Shirt, PackageCheck, Ban, Calendar, Ticket } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
 import Image from "next/image" // Import Image để tối ưu
