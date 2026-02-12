@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/middlewares/requireAuth";
 import { connectDB } from "@/lib/mongodb";
 import { Booking } from "@/models/Booking.model";
-import { Customer } from "@/models/Customer.model";
+//import { Customer } from "@/models/Customer.model";
 
 export const runtime = "nodejs";
 
