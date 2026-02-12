@@ -10,21 +10,18 @@ const TITLE_MAP: Record<StoreCategory, string> = {
   "khoa-hoc-du-luon": "Khóa học dù lượn",
 };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { category: StoreCategory };
-}) {
-  const title = TITLE_MAP[params.category] || "Danh mục";
+type Props = {
+  params: Promise<{ category: StoreCategory }>;
+};
+
+export async function generateMetadata({ params }: Props) {
+  const { category } = await params;
+  const title = TITLE_MAP[category] || "Danh mục";
   return { title: `${title} | Cửa hàng Mebayluon` };
 }
 
-export default async function StoreCategoryPage({
-  params,
-}: {
-  params: { category: StoreCategory };
-}) {
-  const category = params.category;
+export default async function StoreCategoryPage({ params }: Props) {
+  const { category } = await params;
   const { items } = await listProductsByCategory({ category, limit: 30 });
 
   return (
