@@ -263,8 +263,9 @@ export function generateStaticParams() {
   return Object.keys(SPOTS).map((slug) => ({ slug }));
 }
 
-export default function SpotDetailPage({ params }: { params: { slug: string } }) {
-  const spot = SPOTS[params.slug];
+export default async function SpotDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const spot = SPOTS[slug];
 
   if (!spot) {
     return (
@@ -280,8 +281,8 @@ export default function SpotDetailPage({ params }: { params: { slug: string } })
   }
 
   // Nhận diện 2 trang cần hiện badge nổi cố định
-  const isSapa = params.slug === "muong-hoa-sapa" || params.slug === "sapa" || /sapa/.test(params.slug);
-  const isKhauPha = params.slug === "khau-pha" || /khau-pha/.test(params.slug);
+  const isSapa = slug === "muong-hoa-sapa" || slug === "sapa" || /sapa/.test(slug);
+  const isKhauPha = slug === "khau-pha" || /khau-pha/.test(slug);
 
   return (
     <div className="min-h-screen">
