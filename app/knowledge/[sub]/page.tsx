@@ -40,9 +40,10 @@ async function getData(sub: KnowledgeSub): Promise<Item[]> {
 export default async function KnowledgeSubPage({
   params,
 }: {
-  params: { sub: string };
+  params: Promise<{ sub: string }>;
 }) {
-  const key = params.sub as KnowledgeSub;
+  const { sub } = await params;
+  const key = sub as KnowledgeSub;
   if (!(key in SUB_MAP)) notFound();
 
   const items = await getData(key);

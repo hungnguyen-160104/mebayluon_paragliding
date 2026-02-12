@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import KnowledgeTabs from '../KnowledgeTabs';
+import { KnowledgeTabs } from '../KnowledgeTabs';
 import { getPosts } from '@/lib/posts-data';
 
 export const revalidate = 0;
@@ -29,7 +29,7 @@ export default async function KnowledgeAllPage() {
       <main className="relative z-10 container mx-auto px-4 py-14 text-white">
         <h1 className="text-5xl md:text-6xl font-extrabold text-center drop-shadow mb-8">Kiến thức dù lượn</h1>
 
-        <KnowledgeTabs />
+        <KnowledgeTabs current="all" />
 
         {data.items?.length ? (
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
