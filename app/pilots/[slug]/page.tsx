@@ -18,14 +18,15 @@ export async function generateStaticParams() {
 
 // Props cho trang động
 interface PilotDetailPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 // Đây là Server Component, nó chạy ở server
-export default function PilotDetailPage({ params }: PilotDetailPageProps) {
-  const pilotData = getPilotBySlug(params.slug)
+export default async function PilotDetailPage({ params }: PilotDetailPageProps) {
+  const { slug } = await params;
+  const pilotData = getPilotBySlug(slug)
 
   // Nếu không tìm thấy phi công, hiển thị trang 404
   if (!pilotData) {

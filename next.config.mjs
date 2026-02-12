@@ -21,9 +21,9 @@ const nextConfig = {
     tsconfigPath: './tsconfig.json',
   },
   
-  // Enable ESLint during build
+  // Disable ESLint during build (run separately via `pnpm lint`)
   eslint: {
-    dirs: ['app', 'components', 'lib', 'utils', 'services', 'controllers'],
+    ignoreDuringBuilds: true,
   },
   
   // Environment variables
