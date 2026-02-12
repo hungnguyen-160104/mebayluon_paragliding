@@ -90,7 +90,7 @@ export default function ContactInfoStep() {
                 update({ dateISO: val });
                 setDateError(val && val < tomorrowISO ? t.messages.errors.dateInPast : null);
               }}
-              className={`${inputStyle} [color-scheme:dark]`}
+              className={`${inputStyle} scheme-dark`}
               required
             />
             {dateError && <p className="mt-1 text-xs text-red-300">{dateError}</p>}

@@ -1,7 +1,7 @@
 "use client"
 
 import { Footer } from "@/components/footer"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import { motion } from "framer-motion"
@@ -104,7 +104,7 @@ export default function ContactPage() {
                       />
                     </div>
                     <h3 className="text-xl font-bold">{social.name}</h3>
-                    <p className="text-sm text-slate-200 min-h-[60px] flex items-center justify-center px-2">
+                    <p className="text-sm text-slate-200 min-h-15 flex items-center justify-center px-2">
                       {social.description}
                     </p>
                     <Button
@@ -137,7 +137,7 @@ export default function ContactPage() {
                 <Card className="h-full bg-white/20 backdrop-blur-md border border-white/30 text-white">
                   <CardContent className="pt-8 pb-6">
                     <div className="flex flex-col items-center text-center gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/25 flex items-center justify-center">
+                      <div className="shrink-0 w-12 h-12 rounded-full bg-white/25 flex items-center justify-center">
                         <info.icon className="text-white" size={24} />
                       </div>
                       <div>
@@ -164,7 +164,7 @@ export default function ContactPage() {
             viewport={{ once: true }}
             className="text-center mb-8"
           >
-            <h2 className="text-3xl font-bold font-serif">{t.contact.locationTitle}</h2>
+            <h2 className="text-3xl font-bold font-serif">{t.contact.connectTitle}</h2>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

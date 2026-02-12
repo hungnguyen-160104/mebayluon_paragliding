@@ -26,7 +26,7 @@ export function Footer() {
             
             {/* CỘT 1: THƯƠNG HIỆU */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent">
                 Mebayluon Paragliding
               </h2>
               <p className="text-sm text-slate-300">

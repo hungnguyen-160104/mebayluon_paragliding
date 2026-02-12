@@ -4,6 +4,8 @@ import type { LocationKey } from "@/lib/booking/calculate-price";
 import { LOCATIONS, formatVND } from "@/lib/booking/calculate-price";
 import { getFlightByLocationKey } from "@/lib/booking/booking-data";
 import { isWeekend } from "@/lib/booking/date-utils";
+import { useLanguage } from "@/contexts/language-context";
+import type { LangCode } from "@/lib/booking/translations-booking";
 
 type Props = {
   location: LocationKey;
@@ -13,6 +15,8 @@ type Props = {
 };
 
 export default function FlightCard({ location, selected, onSelect, dateISO }: Props) {
+  const { language } = useLanguage();
+  const lang = language as LangCode;
   const opt = getFlightByLocationKey(location);
   const cfg = LOCATIONS[location];
 
@@ -34,7 +38,7 @@ export default function FlightCard({ location, selected, onSelect, dateISO }: Pr
         selected ? "border-blue-600 ring-2 ring-blue-200" : "border-neutral-200"
       }`}
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-video w-full overflow-hidden bg-neutral-100">
         <img
           src={opt.image}
           alt={opt.name}
@@ -47,9 +51,9 @@ export default function FlightCard({ location, selected, onSelect, dateISO }: Pr
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-lg font-semibold">{opt.name}</div>
-            {cfg.included?.length ? (
+            {cfg.included?.[lang]?.length ? (
               <ul className="text-sm text-neutral-600 list-disc ml-5 mt-2">
-                {cfg.included.slice(0, 3).map((it, i) => <li key={i}>{it}</li>)}
+                {cfg.included[lang].slice(0, 3).map((it: string, i: number) => <li key={i}>{it}</li>)}
               </ul>
             ) : null}
           </div>

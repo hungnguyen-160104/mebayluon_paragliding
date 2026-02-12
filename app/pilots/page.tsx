@@ -185,7 +185,7 @@ export default function PilotsPage() {
                       </div>
 
                       {/* Khối nội dung với bố cục mới */}
-                      <div className="p-6 flex flex-col flex-grow justify-between">
+                      <div className="p-6 flex flex-col grow justify-between">
                         
                         {/* Tên và Chức vụ */}
                         <div>

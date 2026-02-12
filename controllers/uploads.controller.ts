@@ -3,20 +3,21 @@ import { v2 as cloudinary } from "cloudinary";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-export async function uploadImage(req: Request, res: Response) {
+export async function uploadImage(req: Request, res: Response): Promise<void> {
   const cfg = cloudinary.config() as any;
   if (!cfg?.cloud_name) {
-    return res.status(503).json({ message: "Upload disabled: Cloudinary not configured" });
+    res.status(503).json({ message: "Upload disabled: Cloudinary not configured" });
+    return;
   }
 
-  const file = (req as any).file as Express.Multer.File | undefined;
-  if (!file) return res.status(400).json({ message: "Missing file" });
+  const file = (req as any).file as { mimetype?: string; size: number; buffer: Buffer } | undefined;
+  if (!file) { res.status(400).json({ message: "Missing file" }); return; }
 
   if (!file.mimetype?.startsWith("image/")) {
-    return res.status(400).json({ message: "Unsupported file type" });
+    res.status(400).json({ message: "Unsupported file type" }); return;
   }
   if (file.size > MAX_SIZE) {
-    return res.status(400).json({ message: "File too large" });
+    res.status(400).json({ message: "File too large" }); return;
   }
 
   const folder = "mbl-posts";
@@ -45,9 +46,11 @@ export async function uploadImage(req: Request, res: Response) {
     );
 
     stream.end(file.buffer);
+    return;
   } catch (err: any) {
     console.error("Cloudinary upload error:", err);
-    return res.status(500).json({ message: "Upload failed", error: err?.message || err });
+    res.status(500).json({ message: "Upload failed", error: err?.message || err });
+    return;
   }
 }
 

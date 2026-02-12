@@ -34,7 +34,7 @@ export default function ProductCard({ product }: { product: Post }) {
             className="object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
       </div>
 
       <CardHeader className="pb-2">

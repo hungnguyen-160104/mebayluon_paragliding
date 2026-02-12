@@ -43,7 +43,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
 
       <main className="relative z-10">
         {/* Section 1: Hero */}
-        <section className="relative w-full h-screen min-h-[700px] flex items-center pt-16">
+        <section className="relative w-full h-screen min-h-175 flex items-center pt-16">
           <div className="relative z-10 container mx-auto px-4 h-full">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full items-center">
               {/* Left */}
@@ -76,7 +76,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
 
               {/* Right collage */}
               <motion.div
-                className="relative h-[400px] md:h-[550px] group"
+                className="relative h-100 md:h-137.5 group"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.7, delay: 0.3 }}
@@ -187,7 +187,9 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
         </section>
       </main>
 
-      <Footer className="relative z-10 bg-white/10 backdrop-blur-xl border-t border-white/20" />
+      <div className="relative z-10 bg-white/10 backdrop-blur-xl border-t border-white/20">
+        <Footer />
+      </div>
     </div>
   )
 }

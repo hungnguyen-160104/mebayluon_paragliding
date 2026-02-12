@@ -186,7 +186,7 @@ const navItems: NavItem[] = [
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-lg md:hidden"
+            className="fixed inset-0 z-100 bg-black/60 backdrop-blur-lg md:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/20">

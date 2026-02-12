@@ -100,7 +100,7 @@ export default function GuestInfoStep() {
                       type="date"
                       value={g.dob || ""}
                       onChange={(e) => setGuest(idx, { dob: e.target.value })}
-                      className={`${inputStyle} [color-scheme:dark]`}
+                      className={`${inputStyle} scheme-dark`}
                       required
                     />
                     {v.errs.dobFutureErr && (

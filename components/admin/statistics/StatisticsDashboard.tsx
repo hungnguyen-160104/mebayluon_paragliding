@@ -323,7 +323,7 @@ type KpiProps = {
 
 function KpiCard({ icon: Icon, label, value, loading, highlight }: KpiProps) {
   return (
-    <Card className={`backdrop-blur-xl border border-white/60 shadow-xl ${highlight ? "bg-gradient-to-br from-emerald-500/80 via-emerald-400/70 to-emerald-600/80 text-white" : "bg-white/40"}`}>
+    <Card className={`backdrop-blur-xl border border-white/60 shadow-xl ${highlight ? "bg-linear-to-br from-emerald-500/80 via-emerald-400/70 to-emerald-600/80 text-white" : "bg-white/40"}`}>
       <CardContent className="flex items-start gap-4 p-6">
         <div className={`rounded-2xl p-3 ${highlight ? "bg-white/20" : "bg-emerald-50 text-emerald-600"}`}>
           <Icon className="h-6 w-6" />

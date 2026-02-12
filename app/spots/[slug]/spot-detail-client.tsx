@@ -1453,7 +1453,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   whileHover={{ x: 5 }}
                   className="flex items-center gap-4 transition-transform duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                  <div className="shrink-0 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
                     <Mountain className="text-accent" size={24} />
                   </div>
                   <div>
@@ -1466,7 +1466,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   whileHover={{ x: 5 }}
                   className="flex items-center gap-4 transition-transform duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <div className="shrink-0 w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                     <Clock className="text-green-400" size={24} />
                   </div>
                   <div>
@@ -1480,7 +1480,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   whileHover={{ x: 5 }}
                   className="flex items-center gap-4 transition-transform duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center">
+                  <div className="shrink-0 w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center">
                     <Feather className="text-sky-400" size={24} />
                   </div>
                   <div>
@@ -1515,7 +1515,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="group relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-xl border border-white/20"
+                  className="group relative aspect-4/3 w-full rounded-2xl overflow-hidden shadow-xl border border-white/20"
                 >
                   <Image
                     src={src}
@@ -1569,11 +1569,11 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   </div>
 
                   {/* Content */}
-                  <CardContent className="pt-6 pb-6 space-y-4 flex flex-col flex-grow">
+                  <CardContent className="pt-6 pb-6 space-y-4 flex flex-col grow">
                     <h3 className="text-xl font-bold font-serif group-hover:text-accent transition-colors">
                       {story.title}
                     </h3>
-                    <p className="text-sm text-slate-300 line-clamp-4 flex-grow">
+                    <p className="text-sm text-slate-300 line-clamp-4 grow">
                       {story.content}
                     </p>
                     <div className="mt-auto flex justify-between items-center text-xs text-slate-400 border-t border-white/10 pt-3">

@@ -54,9 +54,9 @@ export async function getPostById(req: Request, res: Response) {
   try {
     const doc = await Post.findById(req.params.id);
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json(doc);
+    return res.json(doc);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -67,9 +67,9 @@ export async function getPostBySlug(req: Request, res: Response) {
   try {
     const doc = await Post.findOne({ slug: req.params.slug });
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json(doc);
+    return res.json(doc);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -83,9 +83,9 @@ export async function createPostCtrl(req: Request, res: Response) {
       return res.status(400).json({ message: "Missing title or content" });
     }
     const doc = await createPost(req.body);
-    res.status(201).json(doc);
+    return res.status(201).json(doc);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -105,9 +105,9 @@ export async function updatePost(req: Request, res: Response) {
 
     const doc = await Post.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json(doc);
+    return res.json(doc);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -118,9 +118,9 @@ export async function deletePost(req: Request, res: Response) {
   try {
     const doc = await Post.findByIdAndDelete(req.params.id);
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json({ message: "Deleted", id: doc.id });
+    return res.json({ message: "Deleted", id: doc.id });
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -136,9 +136,9 @@ export async function publishPost(req: Request, res: Response) {
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json(doc);
+    return res.json(doc);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }
 
@@ -154,8 +154,8 @@ export async function addView(req: Request, res: Response) {
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: "Not found" });
-    res.json({ slug: doc.slug, views: doc.views });
+    return res.json({ slug: doc.slug, views: doc.views });
   } catch (err: any) {
-    res.status(500).json({ message: err?.message || "Internal Server Error" });
+    return res.status(500).json({ message: err?.message || "Internal Server Error" });
   }
 }

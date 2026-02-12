@@ -32,7 +32,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             {/* BRAND */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent">
                 Mebayluon Paragliding
               </h2>
               <p className="text-sm text-slate-300">

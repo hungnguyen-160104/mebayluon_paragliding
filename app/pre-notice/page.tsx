@@ -135,7 +135,7 @@ export default function PreNoticePage() {
                   <ul className="space-y-3">
                     {content.preparation.clothing.items.map((item: string, index: number) => (
                       <li key={index} className="flex items-start gap-3">
-                        <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={20} />
+                        <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={20} />
                         <span className="text-slate-200">{item}</span>
                       </li>
                     ))}
@@ -162,7 +162,7 @@ export default function PreNoticePage() {
                   <ul className="space-y-3">
                     {content.preparation.items.list.map((item: string, index: number) => (
                       <li key={index} className="flex items-start gap-3">
-                        <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={20} />
+                        <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={20} />
                         <span className="text-slate-200">{item}</span>
                       </li>
                     ))}
@@ -243,7 +243,7 @@ export default function PreNoticePage() {
                     <ul className="space-y-3">
                       {content.requirements.eligible.items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={18} />
+                          <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={18} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -264,7 +264,7 @@ export default function PreNoticePage() {
                     <ul className="space-y-3">
                       {content.requirements.notEligible.items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-blue-400 mt-1 flex-shrink-0" size={18} />
+                          <CheckCircle2 className="text-blue-400 mt-1 shrink-0" size={18} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -292,7 +292,7 @@ export default function PreNoticePage() {
                     <ul className="space-y-2 ml-7">
                       {content.requirements.cancellation.byCompany.items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={16} />
+                          <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={16} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -307,7 +307,7 @@ export default function PreNoticePage() {
                     <ul className="space-y-2 ml-7">
                       {content.requirements.cancellation.byCustomer.items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-blue-400 mt-1 flex-shrink-0" size={16} />
+                          <CheckCircle2 className="text-blue-400 mt-1 shrink-0" size={16} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -322,7 +322,7 @@ export default function PreNoticePage() {
                     <ul className="space-y-2 ml-7">
                       {content.requirements.cancellation.reschedule.items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-purple-400 mt-1 flex-shrink-0" size={16} />
+                          <CheckCircle2 className="text-purple-400 mt-1 shrink-0" size={16} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}

@@ -15,12 +15,9 @@ import {
   Mail,
   Clock,
   CheckCircle2,
-  XCircle,
-  AlertTriangle,
   Shirt,
   PackageCheck,
   Ban,
-  Calendar,
   Ticket
 } from "lucide-react";
 
@@ -191,14 +188,17 @@ export default function HomePage() {
         title: t?.preNotice?.requirements?.notEligible?.title ?? "Đặt vé",
         items: t?.preNotice?.requirements?.notEligible?.items ?? [],
       },
-      special: {
-        title: t?.preNotice?.requirements?.cancellation?.title ?? "Huỷ bay",
-        items: [
-          ...(t?.preNotice?.requirements?.cancellation?.byCompany?.items ?? []),
-          ...(t?.preNotice?.requirements?.cancellation?.byCustomer?.items ?? []),
-          ...(t?.preNotice?.requirements?.cancellation?.reschedule?.items ?? []),
-        ],
-      },
+      special: (() => {
+        const cancel = (t?.preNotice as any)?.requirements?.cancellation;
+        return {
+          title: cancel?.title ?? "Huỷ bay",
+          items: [
+            ...(cancel?.byCompany?.items ?? []),
+            ...(cancel?.byCustomer?.items ?? []),
+            ...(cancel?.reschedule?.items ?? []),
+          ],
+        };
+      })(),
     },
   };
 
@@ -213,17 +213,17 @@ export default function HomePage() {
       {/* ================= HERO ================= */}
       <section
         id="hero"
-        className="relative min-h-[100svh] pt-24 md:pt-28 flex items-center justify-center z-10 overflow-visible"
+        className="relative min-h-svh pt-24 md:pt-28 flex items-center justify-center z-10 overflow-visible"
       >
         <motion.div
-          className="container mx-auto px-5 text-center text-white max-w-[1100px]"
+          className="container mx-auto px-5 text-center text-white max-w-275"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
         >
           <h1
             className="
-              font-serif font-extrabold mb-5 leading-[0.92] tracking-tight break-words
+              font-serif font-extrabold mb-5 leading-[0.92] tracking-tight wrap-break-word
               text-[clamp(2.4rem,10vw,5.2rem)] md:text-[clamp(3.5rem,8vw,7rem)]
             "
           >
@@ -317,7 +317,7 @@ export default function HomePage() {
   whileInView={{ opacity: 1, x: 0 }}
   viewport={{ once: true }}
 >
-  <div className="relative w-full lg:w-[110%] lg:ml-[-5%] aspect-[16/10] md:aspect-[16/9] rounded-[28px] overflow-hidden shadow-2xl ring-1 ring-white/30">
+  <div className="relative w-full lg:w-[110%] lg:ml-[-5%] aspect-16/10 md:aspect-video rounded-[28px] overflow-hidden shadow-2xl ring-1 ring-white/30">
     <video
       className="absolute inset-0 h-full w-full object-cover"
       src="/about-us-video1.mp4"
@@ -339,7 +339,7 @@ export default function HomePage() {
       </section>
 
       {/* ================= LATEST POSTS (NEW) ================= */}
-      <RecentPosts limit={3} title="BÀI VIẾT MỚI NHẤT" />
+      <RecentPosts />
 
       {/* ================= SPOTS ================= */}
       <section id="spots" className="relative z-10 py-24">
@@ -391,7 +391,7 @@ export default function HomePage() {
                           backgroundPosition: "center",
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
                       <div className="absolute top-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
                         <MapPin size={16} className="text-accent" />
                         <span className="text-sm font-semibold text-foreground">{spotData.location}</span>
@@ -449,7 +449,7 @@ export default function HomePage() {
                   <ul className="space-y-3">
                     {preNotice.preparation.clothing.items.map((item: string, i: number) => (
                       <li key={i} className="flex items-start gap-3">
-                        <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={20} />
+                        <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={20} />
                         <span className="text-slate-200">{item}</span>
                       </li>
                     ))}
@@ -470,7 +470,7 @@ export default function HomePage() {
                   <ul className="space-y-3">
                     {preNotice.preparation.items.list.map((item: string, i: number) => (
                       <li key={i} className="flex items-start gap-3">
-                        <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={20} />
+                        <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={20} />
                         <span className="text-slate-200">{item}</span>
                       </li>
                     ))}
@@ -503,7 +503,7 @@ export default function HomePage() {
                     <ul className="space-y-3">
                       {preNotice.requirements.eligible.items.map((item: string, i: number) => (
                         <li key={i} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-green-400 mt-1 flex-shrink-0" size={18} />
+                          <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={18} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -526,7 +526,7 @@ export default function HomePage() {
                     <ul className="space-y-3">
                       {preNotice.requirements.notEligible.items.map((item: string, i: number) => (
                         <li key={i} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-yellow-400 mt-1 flex-shrink-0" size={18} />
+                          <CheckCircle2 className="text-yellow-400 mt-1 shrink-0" size={18} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -547,7 +547,7 @@ export default function HomePage() {
                     <ul className="space-y-3">
                       {preNotice.requirements.special.items.map((item: string, i: number) => (
                         <li key={i} className="flex items-start gap-3">
-                          <Ban className="text-red-400 mt-1 flex-shrink-0" size={18} />
+                          <Ban className="text-red-400 mt-1 shrink-0" size={18} />
                           <span className="text-slate-200">{item}</span>
                         </li>
                       ))}
@@ -593,7 +593,7 @@ export default function HomePage() {
                       <Image src={social.iconSrc} alt={social.name} fill className="object-cover" />
                     </div>
                     <h3 className="text-xl font-bold">{social.name}</h3>
-                    <p className="text-sm text-slate-200 min-h-[60px] flex items-center justify-center px-2">
+                    <p className="text-sm text-slate-200 min-h-15 flex items-center justify-center px-2">
                       {social.description}
                     </p>
                     <Button
@@ -638,7 +638,7 @@ export default function HomePage() {
                 <Card className="h-full bg-white/20 backdrop-blur-md border border-white/30 text-white">
                   <CardContent className="pt-8 pb-6">
                     <div className="flex flex-col items-center text-center gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/25 flex items-center justify-center">
+                      <div className="shrink-0 w-12 h-12 rounded-full bg-white/25 flex items-center justify-center">
                         <info.icon className="text-white" size={24} />
                       </div>
                       <div>

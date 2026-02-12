@@ -42,14 +42,14 @@ function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="relative inline-block align-middle" aria-hidden>
       {/* hàng sao rỗng */}
-      <div className="flex gap-[2px]">
+      <div className="flex gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star key={`e-${i}`} width={size} height={size} className="text-neutral-300" strokeWidth={1.5} />
         ))}
       </div>
       {/* lớp sao vàng bị cắt theo phần trăm điểm */}
       <div className="absolute left-0 top-0 overflow-hidden" style={{ width }}>
-        <div className="flex gap-[2px]">
+        <div className="flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
               key={`f-${i}`}

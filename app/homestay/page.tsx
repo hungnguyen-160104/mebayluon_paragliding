@@ -89,7 +89,7 @@ function GoogleReviewBadge() {
   return (
     <div
       className="
-        fixed z-[9999]
+        fixed z-9999
         bottom-4 left-1/2 -translate-x-1/2
         md:bottom-6 md:right-6 md:left-auto md:translate-x-0
         print:hidden
@@ -252,7 +252,7 @@ export default function HomestayPage() {
                     />
                   </div>
 
-                  <CardContent className="p-6 flex flex-col flex-grow">
+                  <CardContent className="p-6 flex flex-col grow">
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                       {t.homestay.rooms[room.nameKey].name}
                     </h3>
@@ -266,7 +266,7 @@ export default function HomestayPage() {
                       </span>
                     </div>
 
-                    <p className="text-sm text-white/85 mb-4 flex-grow leading-relaxed">
+                    <p className="text-sm text-white/85 mb-4 grow leading-relaxed">
                       {t.homestay.rooms[room.nameKey].description}
                     </p>
 
@@ -411,7 +411,7 @@ export default function HomestayPage() {
 
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <MapPin className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
+                      <MapPin className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
                         <p className="font-semibold text-white/95">{locText.addressLabel}</p>
                         <p className="text-sm text-white/80">{locationInfo.address}</p>
@@ -419,7 +419,7 @@ export default function HomestayPage() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <Car className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
+                      <Car className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
                         <p className="font-semibold text-white/95">{locText.fromHanoi}</p>
                         <p className="text-sm text-white/80">
@@ -429,7 +429,7 @@ export default function HomestayPage() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <Mountain className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
+                      <Mountain className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
                         <p className="font-semibold mb-2 text-white/95">{locText.nearby}</p>
                         <ul className="space-y-1 text-white/85">

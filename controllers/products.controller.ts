@@ -39,7 +39,7 @@ export async function getProductBySlug(req: Request, res: Response) {
   const { slug } = req.params;
   const doc = await Post.findOne({ type: "product", slug });
   if (!doc) return res.status(404).json({ message: "Not found" });
-  res.json(doc);
+  return res.json(doc);
 }
 
 // POST /api/products
@@ -62,7 +62,7 @@ export async function createProductCtrl(req: Request, res: Response) {
     price: priceNum,
   });
 
-  res.status(201).json(doc);
+  return res.status(201).json(doc);
 }
 
 // PATCH /api/products/:id
@@ -90,14 +90,14 @@ export async function updateProduct(req: Request, res: Response) {
     { new: true }
   );
   if (!doc) return res.status(404).json({ message: "Not found" });
-  res.json(doc);
+  return res.json(doc);
 }
 
 // DELETE /api/products/:id
 export async function deleteProduct(req: Request, res: Response) {
   const doc = await Post.findByIdAndDelete(req.params.id);
   if (!doc) return res.status(404).json({ message: "Not found" });
-  res.json({ message: "Deleted", id: doc.id });
+  return res.json({ message: "Deleted", id: doc.id });
 }
 
 // PATCH /api/products/:id/publish
@@ -109,5 +109,5 @@ export async function publishProduct(req: Request, res: Response) {
     { new: true }
   );
   if (!doc) return res.status(404).json({ message: "Not found" });
-  res.json(doc);
+  return res.json(doc);
 }

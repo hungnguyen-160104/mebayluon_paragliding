@@ -219,7 +219,7 @@ export default function SelectFlightStep() {
                           −
                         </button>
 
-                        <span className="min-w-[24px] text-center font-semibold">{qty}</span>
+                        <span className="min-w-6 text-center font-semibold">{qty}</span>
 
                         <button
                           type="button"

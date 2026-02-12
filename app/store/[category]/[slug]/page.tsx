@@ -166,7 +166,7 @@ export default async function ProductDetailPage({
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
                       </div>
 
                       <div className="p-5 text-white">

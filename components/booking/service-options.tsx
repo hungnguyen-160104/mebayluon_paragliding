@@ -2,11 +2,13 @@
 import React from "react";
 import { useBookingStore } from "@/store/booking-store";
 import { LOCATIONS } from "@/lib/booking/calculate-price";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function ServiceOptions() {
   const data = useBookingStore((s) => s.data);
   const update = useBookingStore((s) => s.update);
   const cfg = LOCATIONS[data.location];
+  const { language } = useLanguage();
 
   const toggle = (key: "pickup"|"flycam"|"camera360") => {
     update({ addons: { ...data.addons, [key]: !(data.addons as any)[key] } })
@@ -29,7 +31,7 @@ export default function ServiceOptions() {
                 className="mt-1 h-4 w-4"
               />
               <div>
-                <div className="font-medium">{conf.label}</div>
+                <div className="font-medium">{conf.label[language]}</div>
                 {conf.pricePerPersonVND !== null && (
                   <div className="text-sm text-neutral-600">{conf.pricePerPersonVND.toLocaleString("vi-VN")}₫ / khách</div>
                 )}

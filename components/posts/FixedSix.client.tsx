@@ -58,7 +58,7 @@ export default function FixedSixClient() {
           >
             <div className="relative h-40">
               <Image src={img} alt={p.title} fill className="object-cover group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
             </div>
             <div className="p-4 text-white">
               <h3 className="font-semibold line-clamp-2">{p.title}</h3>

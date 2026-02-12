@@ -70,7 +70,7 @@ export default async function BlogPage() {
                             fill
                             className="object-cover group-hover:scale-110 transition-transform duration-300"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                         </div>
                         <div className="p-6">
                           <h3 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-accent transition-colors">
