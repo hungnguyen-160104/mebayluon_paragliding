@@ -1,0 +1,102 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+/dist
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ⚠️ SECURITY: Never commit environment files with secrets
+.env
+.env.local
+.env.*.local
+.env.production.local
+# Keep .env.example for reference (no secrets here)
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+/coverage
+.nyc_output
+__tests__/
+jest.config.js
+jest.setup.js
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+*.pem
+.cache
+
+# Docker - không cần cho Vercel
+Dockerfile
+docker-compose.yml
+.dockerignore
+.docker
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.tmp
+
+# Build artifacts
+dist/
+build/
+
+# IDE workspace
+*.code-workspace
+
+# Documentation - không cần cho deploy
+ADMIN-LOGIN-FIX.md
+AWS-DEPLOYMENT-GUIDE.md
+DEVELOPMENT.md
+IMPROVEMENTS.md
+PERFORMANCE-GUIDE.md
+SENIOR-ENGINEER-REPORT.md
+
+# Scripts - không cần cho runtime
+scripts/
+
+# GitHub workflows (Vercel có CI/CD riêng)
+.github/
+
+# SWC cache
+.swc/
+
+# ESLint config cũ
+.eslintrc.json
+
+# pnpm workspace (Vercel tự xử lý)
+pnpm-workspace.yaml

@@ -1,0 +1,4 @@
+/* ví dụ nhỏ nếu cần tăng z-index */
+.chatbot-z {
+  z-index: 60;
+}

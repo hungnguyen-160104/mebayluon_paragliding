@@ -1,0 +1,44 @@
+// prisma/schema.prisma
+// Adjust the datasource provider from postgresql to mysql if necessary.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+}
+
+model Booking {
+  id          String         @id @default(cuid())
+  customer    Customer       @relation(fields: [customerId], references: [id])
+  customerId  String
+  bookingDate DateTime       @default(now())
+  flightDate  DateTime
+  location    String
+  price       Decimal        @db.Decimal(12, 2)
+  status      BookingStatus  @default(PENDING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+  @@index([flightDate])
+  @@index([createdAt])
+}
