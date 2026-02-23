@@ -3,6 +3,7 @@ import spots from "@/data/spots.json";
 import { connectDB } from "@/lib/mongodb";
 import { Customer } from "@/models/Customer.model";
 import { Booking } from "@/models/Booking.model";
+import { postNotifyGmail } from "@/services/gmail.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -418,6 +419,16 @@ export async function POST(req: NextRequest) {
     if (failed.length) {
       console.warn("[BookingCreate] Telegram failed:", failed);
     }
+
+    try {
+  await postNotifyGmail({
+    ...normalized,
+    bookingId: booking._id.toString(),
+    serviceName: normalized.locationName,
+  });
+} catch (e: any) {
+  console.warn("[BookingCreate] Gmail failed:", e?.message);
+}
 
     return NextResponse.json(
       {

@@ -13,7 +13,7 @@ import { Footer } from "@/components/footer";
 /* =========================
    Types
 ========================= */
-type Lang = "vi" | "en" | "fr" | "ru";
+type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 type SpotPackage = {
   name: string;
@@ -45,6 +45,8 @@ type Story = {
   content: string;
   image: string;
 };
+
+type StoryBase = Omit<Story, "image">;
 
 /* =========================
    Helpers
@@ -79,8 +81,14 @@ const resolveSpotKey = (spotName: string): SpotKey => {
   return "generic";
 };
 
+function toSafeLang(language: unknown): Lang {
+  const l = String(language ?? "vi").toLowerCase();
+  const code = l.slice(0, 2) as Lang;
+  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(code) ? code : "vi";
+}
+
 /* =========================
-   UI Labels i18n (không phụ thuộc context)
+   UI Labels i18n
 ========================= */
 const uiI18n: Record<
   Lang,
@@ -170,15 +178,46 @@ const uiI18n: Record<
     viewAllSpots: "Все лётные точки",
     galleryAltPrefix: "Изображение галереи",
   },
+  zh: {
+    aboutTitle: "关于这个飞行点",
+    galleryTitle: "精彩瞬间",
+    storyTitle: "故事与体验",
+    storySubtitle: "听听游客留下的难忘分享",
+    quickFacts: "快速信息",
+    altitude: "起飞高度",
+    flightTime: "飞行时长",
+    windDependent: "视风况而定",
+    feeling: "感受",
+    smoothAir: "平稳顺滑",
+    landscapeIntro: "主要景观：",
+    exploreMore: "探索更多飞行点",
+    exploreMoreDescription: "我们在越南还有很多绝美飞行点等你解锁",
+    viewAllSpots: "查看所有飞行点",
+    galleryAltPrefix: "画廊图片",
+  },
+  hi: {
+    aboutTitle: "इस उड़ान स्थल के बारे में",
+    galleryTitle: "यहाँ के पल",
+    storyTitle: "कहानियाँ और अनुभव",
+    storySubtitle: "यात्रियों की यादगार बातें सुनें",
+    quickFacts: "त्वरित जानकारी",
+    altitude: "टेकऑफ ऊँचाई",
+    flightTime: "उड़ान समय",
+    windDependent: "हवा की स्थिति पर निर्भर",
+    feeling: "अनुभूति",
+    smoothAir: "स्मूद और स्थिर",
+    landscapeIntro: "मुख्य दृश्य:",
+    exploreMore: "अन्य उड़ान स्थल देखें",
+    exploreMoreDescription: "वियतनाम में हमारे पास और भी कई खूबसूरत उड़ान स्थल हैं",
+    viewAllSpots: "सभी उड़ान स्थल देखें",
+    galleryAltPrefix: "गैलरी इमेज",
+  },
 };
 
 /* =========================
-   Copy Spot i18n (name/title/altitude/description/landscape/duration)
+   Spot Copy i18n
 ========================= */
-type SpotCopy = Pick<
-  SpotData,
-  "name" | "title" | "altitude" | "description" | "landscape" | "duration"
->;
+type SpotCopy = Pick<SpotData, "name" | "title" | "altitude" | "description" | "landscape" | "duration">;
 
 const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
   "muong-hoa-sapa": {
@@ -218,7 +257,26 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Облачные потоки – рисовые террасы – Фансипан",
       duration: "8–15 минут",
     },
+    zh: {
+      name: "芒华谷（沙坝）",
+      title: "飞越芒华山谷",
+      altitude: "1,500–2,000 米",
+      description:
+        "在梦幻般的芒华山谷上空翱翔，俯瞰层层梯田与穿云而出的黄连山脉。",
+      landscape: "云海穿行 – 梯田 – 番西邦",
+      duration: "8–15 分钟",
+    },
+    hi: {
+      name: "मुओंग होआ (सा पा)",
+      title: "मुओंग होआ घाटी के ऊपर उड़ान",
+      altitude: "1,500–2,000 मी",
+      description:
+        "मुओंग होआ की जादुई घाटी के ऊपर तैरें—सीढ़ीदार खेत और बादलों के बीच उभरती होआंग लियेन पर्वतमाला देखें।",
+      landscape: "बादल – सीढ़ीदार खेत – फ़ैनसिपान",
+      duration: "8–15 मिनट",
+    },
   },
+
   "son-tra": {
     vi: {
       name: "Sơn Trà",
@@ -256,7 +314,26 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Полуостров – океан – бухта Дананга",
       duration: "8–15 минут",
     },
+    zh: {
+      name: "山茶半岛",
+      title: "滑翔于山茶半岛上空",
+      altitude: "600–800 米",
+      description:
+        "迎着稳定的海风俯瞰岘港湾，城市与海岸线全景尽收眼底。",
+      landscape: "半岛 – 海洋 – 岘港湾",
+      duration: "8–15 分钟",
+    },
+    hi: {
+      name: "सोन त्रà",
+      title: "सोन त्रà प्रायद्वीप के ऊपर ग्लाइड",
+      altitude: "600–800 मी",
+      description:
+        "स्थिर समुद्री हवा के साथ दा नांग बे की ओर—शहर और तटरेखा का पैनोरमिक नज़ारा।",
+      landscape: "प्रायद्वीप – महासागर – दा नांग बे",
+      duration: "8–15 मिनट",
+    },
   },
+
   "khau-pha": {
     vi: {
       name: "Đèo Khau Phạ",
@@ -294,7 +371,26 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Высокий перевал – долина – золотой сезон",
       duration: "8–15 минут",
     },
+    zh: {
+      name: "考帕山口",
+      title: "飞越传奇山口",
+      altitude: "1,200–1,500 米",
+      description:
+        "越南最壮丽的山口之一，稻谷金黄时节尤为震撼。",
+      landscape: "高山口 – 山谷 – 金色季节",
+      duration: "8–15 分钟",
+    },
+    hi: {
+      name: "खाउ फ़ा दर्रा",
+      title: "दिग्गज दर्रे के ऊपर उड़ान",
+      altitude: "1,200–1,500 मी",
+      description:
+        "वियतनाम के सबसे शानदार दर्रों में से एक—खासतौर पर सुनहरी फसल के मौसम में बेहद खूबसूरत।",
+      landscape: "ऊँचा दर्रा – घाटी – सुनहरा मौसम",
+      duration: "8–15 मिनट",
+    },
   },
+
   "tram-tau": {
     vi: {
       name: "Trạm Tấu",
@@ -332,14 +428,32 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Облака – леса – долины",
       duration: "8–15 минут",
     },
+    zh: {
+      name: "沾陶",
+      title: "在连绵群山间追云",
+      altitude: "1,000–1,500 米",
+      description:
+        "空气清新、群山壮阔，非常适合“追云”飞行。",
+      landscape: "追云 – 山林 – 山谷",
+      duration: "8–15 分钟",
+    },
+    hi: {
+      name: "त्राम ताउ",
+      title: "लहराते पहाड़ों पर बादलों का पीछा",
+      altitude: "1,000–1,500 मी",
+      description:
+        "ताज़ी हवा और भव्य पहाड़—क्लाउड-हंटिंग उड़ानों के लिए शानदार।",
+      landscape: "बादल – जंगल – घाटियाँ",
+      duration: "8–15 मिनट",
+    },
   },
+
   "vien-nam": {
     vi: {
       name: "Viên Nam",
       title: "Điểm Bay Gần Hà Nội",
       altitude: "600 – 1000 m",
-      description:
-        "Phù hợp luyện tập, di chuyển thuận tiện từ trung tâm Hà Nội.",
+      description: "Phù hợp luyện tập, di chuyển thuận tiện từ trung tâm Hà Nội.",
       landscape: "Đồi núi – gần Hà Nội",
       duration: "10 – 20 phút",
     },
@@ -347,8 +461,7 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Vien Nam",
       title: "Closest Flying Spot to Hanoi",
       altitude: "600–1000 m",
-      description:
-        "Great for practice with convenient access from central Hanoi.",
+      description: "Great for practice with convenient access from central Hanoi.",
       landscape: "Hills – near Hanoi",
       duration: "10–20 minutes",
     },
@@ -356,8 +469,7 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Viên Nam",
       title: "Site de vol proche de Hanoï",
       altitude: "600–1000 m",
-      description:
-        "Idéal pour s’entraîner, accès pratique depuis le centre de Hanoï.",
+      description: "Idéal pour s’entraîner, accès pratique depuis le centre de Hanoï.",
       landscape: "Collines – proche de Hanoï",
       duration: "10–20 minutes",
     },
@@ -365,19 +477,34 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Вьен Нам",
       title: "Площадка рядом с Ханоем",
       altitude: "600–1000 м",
-      description:
-        "Подходит для тренировок, удобно добираться из центра Ханоя.",
+      description: "Подходит для тренировок, удобно добираться из центра Ханоя.",
       landscape: "Холмы – рядом с Ханоем",
       duration: "10–20 минут",
     },
+    zh: {
+      name: "维恩南",
+      title: "离河内最近的飞行点",
+      altitude: "600–1000 米",
+      description: "适合练习与体验，从河内市中心出发非常方便。",
+      landscape: "丘陵 – 近河内",
+      duration: "10–20 分钟",
+    },
+    hi: {
+      name: "विएन नाम",
+      title: "हनोई के सबसे पास उड़ान स्थल",
+      altitude: "600–1000 मी",
+      description: "प्रैक्टिस के लिए बढ़िया और हनोई केंद्र से पहुँचना आसान।",
+      landscape: "पहाड़ियाँ – हनोई के पास",
+      duration: "10–20 मिनट",
+    },
   },
+
   "doi-bu": {
     vi: {
       name: "Đồi Bù",
       title: "Điểm Bay Phổ Biến Cuối Tuần",
       altitude: "600 – 900 m",
-      description:
-        "Gần Hà Nội, dễ tiếp cận, phù hợp cho người mới trải nghiệm.",
+      description: "Gần Hà Nội, dễ tiếp cận, phù hợp cho người mới trải nghiệm.",
       landscape: "Đồi núi – thuận tiện – dễ tiếp cận",
       duration: "10 – 20 phút",
     },
@@ -385,8 +512,7 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Doi Bu",
       title: "Popular Weekend Flying Spot",
       altitude: "600–900 m",
-      description:
-        "Close to Hanoi and easy to access — perfect for first-timers.",
+      description: "Close to Hanoi and easy to access — perfect for first-timers.",
       landscape: "Hills – convenient – accessible",
       duration: "10–20 minutes",
     },
@@ -394,8 +520,7 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Đồi Bù",
       title: "Site de vol prisé le week-end",
       altitude: "600–900 m",
-      description:
-        "Proche de Hanoï et facile d’accès — idéal pour une première expérience.",
+      description: "Proche de Hanoï et facile d’accès — idéal pour une première expérience.",
       landscape: "Collines – pratique – accessible",
       duration: "10–20 minutes",
     },
@@ -403,12 +528,28 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       name: "Дой Бу",
       title: "Популярная точка на выходных",
       altitude: "600–900 м",
-      description:
-        "Близко к Ханою и удобно добираться — отлично для новичков.",
+      description: "Близко к Ханою и удобно добираться — отлично для новичков.",
       landscape: "Холмы – удобно – доступно",
       duration: "10–20 минут",
     },
+    zh: {
+      name: "多伊布",
+      title: "周末热门飞行点",
+      altitude: "600–900 米",
+      description: "靠近河内、交通便利，非常适合首次体验者。",
+      landscape: "丘陵 – 方便 – 易抵达",
+      duration: "10–20 分钟",
+    },
+    hi: {
+      name: "दोई बू",
+      title: "वीकेंड पर लोकप्रिय उड़ान स्थल",
+      altitude: "600–900 मी",
+      description: "हनोई के पास और पहुँचना आसान—पहली बार के लिए बिल्कुल सही।",
+      landscape: "पहाड़ियाँ – सुविधाजनक – आसान पहुँच",
+      duration: "10–20 मिनट",
+    },
   },
+
   dalat: {
     vi: {
       name: "Đà Lạt",
@@ -446,7 +587,26 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Долина Та Нунг – сосновые леса – туман",
       duration: "10–20 минут",
     },
+    zh: {
+      name: "大叻",
+      title: "触碰梦幻天空",
+      altitude: "1,400 米",
+      description:
+        "在清凉山风中飞越花之城。塔农山谷、松林与薄雾勾勒出浪漫画面。",
+      landscape: "塔农山谷 – 松林 – 薄雾",
+      duration: "10–20 分钟",
+    },
+    hi: {
+      name: "दा लात",
+      title: "स्वप्निल आसमान को छूएँ",
+      altitude: "1,400 मी",
+      description:
+        "ठंडी पहाड़ी हवा में फूलों के शहर के ऊपर उड़ें। ता नुंग घाटी, पाइन जंगल और धुंध एक रोमांटिक दृश्य बनाते हैं।",
+      landscape: "ता नुंग घाटी – पाइन जंगल – धुंध",
+      duration: "10–20 मिनट",
+    },
   },
+
   generic: {
     vi: {
       name: "Điểm bay",
@@ -480,18 +640,33 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
       landscape: "Горы – долины – небо",
       duration: "—",
     },
+    zh: {
+      name: "飞行点",
+      title: "精彩的飞行体验",
+      altitude: "—",
+      description: "一次从高空俯瞰风景的灵感之旅。",
+      landscape: "山峦 – 山谷 – 天空",
+      duration: "—",
+    },
+    hi: {
+      name: "उड़ान स्थल",
+      title: "एक शानदार उड़ान अनुभव",
+      altitude: "—",
+      description: "ऊपर से नज़ारे देखने की प्रेरणादायक यात्रा।",
+      landscape: "पहाड़ – घाटियाँ – आसमान",
+      duration: "—",
+    },
   },
 };
 
 const getSpotCopy = (spot: SpotData, lang: Lang): SpotCopy => {
   const key = resolveSpotKey(spot.name);
-  return spotCopyI18n[key][lang];
+  return spotCopyI18n[key]?.[lang] ?? spotCopyI18n[key].vi;
 };
 
 /* =========================
-   Stories i18n
+   Stories i18n (FULL vi/en/fr/ru/zh/hi)
 ========================= */
-type StoryBase = Omit<Story, "image">;
 const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
   "muong-hoa-sapa": {
     vi: [
@@ -598,7 +773,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Приземлились среди молодых рисовых полей; дети подбежали, машут руками — незабываемо.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "飞越芒华山谷",
+        author: "Mebayluon 团队",
+        date: "2025-03-20",
+        content:
+          "航线沿着芒华山谷展开，层层梯田与远处的番西邦尽收眼底。升高后掠过一层薄云——这就是沙坝的味道。",
+      },
+      {
+        id: 2,
+        title: "霜与阳光",
+        author: "Mebayluon 团队",
+        date: "2024-12-12",
+        content:
+          "清晨寒意十足但气流平稳。太阳升起后霜雾散去，村落与梯田在光里闪闪发亮。",
+      },
+      {
+        id: 3,
+        title: "在芒华轻松着陆",
+        author: "Mebayluon 团队",
+        date: "2025-04-25",
+        content:
+          "在嫩绿稻田旁降落，孩子们跑来挥手——那一刻真的很难忘。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "मुओंग होआ घाटी के ऊपर उड़ान",
+        author: "Mebayluon टीम",
+        date: "2025-03-20",
+        content:
+          "उड़ान मार्ग मुओंग होआ घाटी के ऊपर से गुजरता है—सीढ़ीदार खेत और दूर फ़ैनसिपान अद्भुत दिखते हैं। ऊपर जाकर पतली बादलों की परत को छूना—एकदम सा पा वाला एहसास।",
+      },
+      {
+        id: 2,
+        title: "पाला और धूप",
+        author: "Mebayluon टीम",
+        date: "2024-12-12",
+        content:
+          "सुबह ठंड तीखी थी, लेकिन हवा स्मूद रही। सूरज निकलते ही पाला पिघला और गांव व खेत चमक उठे।",
+      },
+      {
+        id: 3,
+        title: "मुओंग होआ में सॉफ्ट लैंडिंग",
+        author: "Mebayluon टीम",
+        date: "2025-04-25",
+        content:
+          "हरी-भरी धान की फसलों के बीच लैंडिंग हुई और बच्चे हाथ हिलाते हुए दौड़े आए—सच में यादगार पल।",
+      },
+    ],
   },
+
   "son-tra": {
     vi: [
       {
@@ -704,7 +932,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "В идеальный ветер я попробовал лёгкие движения строп — селфи-видео с нефритовым морем получилось бомбическим.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "一边森林，一边大海",
+        author: "Mebayluon 团队",
+        date: "2025-06-05",
+        content:
+          "从山茶半岛起飞：左侧是森林，右侧是蔚蓝海面。落地就在细软沙滩边，太舒服了。",
+      },
+      {
+        id: 2,
+        title: "从高空看岘港",
+        author: "Mebayluon 团队",
+        date: "2025-07-12",
+        content:
+          "龙桥与美溪海滩的弧线一览无余。海风稳定，让飞行既平稳又更持久。",
+      },
+      {
+        id: 3,
+        title: "稳定海风带来的丝滑体验",
+        author: "Mebayluon 团队",
+        date: "2025-06-28",
+        content:
+          "风况完美时，轻轻控制转向就能拍到超赞自拍——背景是翡翠般的海色。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "एक तरफ जंगल, दूसरी तरफ समुद्र",
+        author: "Mebayluon टीम",
+        date: "2025-06-05",
+        content:
+          "सोन त्रà से लॉन्च करते ही—बाईं ओर जंगल, दाईं ओर फ़िरोज़ी समुद्र। लैंडिंग मुलायम रेत वाले बीच के पास, कमाल!",
+      },
+      {
+        id: 2,
+        title: "ऊपर से दा नांग",
+        author: "Mebayluon टीम",
+        date: "2025-07-12",
+        content:
+          "ड्रैगन ब्रिज और माय खे बीच का कर्व साफ़ दिखा। स्थिर समुद्री हवा से उड़ान लंबी और स्मूद रही।",
+      },
+      {
+        id: 3,
+        title: "स्थिर समुद्री हवा",
+        author: "Mebayluon टीम",
+        date: "2025-06-28",
+        content:
+          "बेहतरीन हवा में हल्का-सा कंट्रोल ट्राई किया—जेड-ग्रीन समुद्र की बैकग्राउंड के साथ सेल्फी वीडियो एकदम शानदार।",
+      },
+    ],
   },
+
   "khau-pha": {
     vi: [
       {
@@ -810,7 +1091,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Чистая площадка и правильный ветер; наземная команда — профи. Взлетели моментально.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "雄伟的考帕山口",
+        author: "Mebayluon 团队",
+        date: "2025-09-10",
+        content:
+          "高差大、升力强。脚下的木江界山谷金黄耀眼——刺激感拉满。",
+      },
+      {
+        id: 2,
+        title: "金黄稻谷季",
+        author: "Mebayluon 团队",
+        date: "2025-10-01",
+        content:
+          "整片山谷像巨大的金色地毯。落地后只想再来一趟。",
+      },
+      {
+        id: 3,
+        title: "从山口俯瞰山谷",
+        author: "Mebayluon 团队",
+        date: "2025-10-18",
+        content:
+          "起飞点开阔、风况干净；地面团队专业到位，准备好就能起飞。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "भव्य खाउ फ़ा दर्रा",
+        author: "Mebayluon टीम",
+        date: "2025-09-10",
+        content:
+          "ऊँचाई का अंतर बड़ा और लिफ्ट शानदार। नीचे मù कांग चाई की घाटी सुनहरी चमक रही थी—रोमांच चरम पर।",
+      },
+      {
+        id: 2,
+        title: "सुनहरी फसल का मौसम",
+        author: "Mebayluon टीम",
+        date: "2025-10-01",
+        content:
+          "पूरी घाटी विशाल सुनहरी कालीन जैसी लग रही थी। लैंडिंग के बाद बस फिर उड़ने का मन हुआ।",
+      },
+      {
+        id: 3,
+        title: "दर्रे से घाटी तक नज़ारा",
+        author: "Mebayluon टीम",
+        date: "2025-10-18",
+        content:
+          "टेकऑफ पॉइंट खुला और हवा साफ़; ग्राउंड क्रू प्रो—तुरंत तैयार होकर उड़ान भर ली।",
+      },
+    ],
   },
+
   "tram-tau": {
     vi: [
       {
@@ -916,7 +1250,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Широкая площадка и ровный ветер — посадка как по маслу. Фото/видео-команда очень помогла.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "宁静的沾陶",
+        author: "Mebayluon 团队",
+        date: "2025-10-15",
+        content:
+          "微风轻拂、空域开阔。掠过田野与温泉，周末放松感拉满。",
+      },
+      {
+        id: 2,
+        title: "云朵慢慢飘过",
+        author: "Mebayluon 团队",
+        date: "2025-04-22",
+        content:
+          "高度舒适、很适合新手。有时贴着山脊掠过薄云，景色惊喜又温柔。",
+      },
+      {
+        id: 3,
+        title: "丝滑般的着陆",
+        author: "Mebayluon 团队",
+        date: "2025-05-03",
+        content:
+          "降落场宽阔、风况稳定，触地特别顺。拍摄团队也很给力。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "शांत ट्राम ताउ",
+        author: "Mebayluon टीम",
+        date: "2025-10-15",
+        content:
+          "हल्की हवा और खुला आसमान। खेतों और हॉट स्प्रिंग्स के ऊपर ग्लाइड—वीकेंड के लिए परफेक्ट रिलैक्स।",
+      },
+      {
+        id: 2,
+        title: "धीमे-धीमे बहते बादल",
+        author: "Mebayluon टीम",
+        date: "2025-04-22",
+        content:
+          "आरामदायक ऊँचाई, शुरुआती लोगों के लिए बढ़िया। कभी-कभी रिज के साथ पतली बादल परत छूते—बहुत सुंदर।",
+      },
+      {
+        id: 3,
+        title: "मखमली-सी लैंडिंग",
+        author: "Mebayluon टीम",
+        date: "2025-05-03",
+        content:
+          "चौड़ा लैंडिंग ज़ोन और स्थिर हवा से टचडाउन बेहद स्मूद हुआ। फोटो/वीडियो टीम भी शानदार थी।",
+      },
+    ],
   },
+
   "vien-nam": {
     vi: [
       {
@@ -1022,7 +1409,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "При южном ветре подъём ровный; парили на склоне долго — отличная тренировка ощущений для новичков.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "维恩南山谷",
+        author: "Mebayluon 团队",
+        date: "2025-06-09",
+        content:
+          "从起飞点俯瞰翠绿山谷与连绵山脊。当天风况干净稳定，飞行体验非常舒服。",
+      },
+      {
+        id: 2,
+        title: "离河内很近",
+        author: "Mebayluon 团队",
+        date: "2025-06-21",
+        content:
+          "早上从河内出发，1–1.5 小时就到。飞完还能赶回去吃午饭——超方便！",
+      },
+      {
+        id: 3,
+        title: "松林丘陵与顺滑气流",
+        author: "Mebayluon 团队",
+        date: "2025-07-02",
+        content:
+          "南风时升力持续，沿山脊滑翔很久——特别适合新手找感觉。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "विएन नाम घाटी",
+        author: "Mebayluon टीम",
+        date: "2025-06-09",
+        content:
+          "लॉन्च से हरी-भरी घाटी और दूर तक फैली रिड्ज़ दिखती हैं। हमारे दिन हवा साफ़ और स्थिर रही।",
+      },
+      {
+        id: 2,
+        title: "हनोई के बेहद पास",
+        author: "Mebayluon टीम",
+        date: "2025-06-21",
+        content:
+          "सुबह हनोई से निकले—1–1.5 घंटे में पहुँच गए। उड़ान के बाद लंच के लिए वापस भी समय मिल गया—बहुत सुविधाजनक!",
+      },
+      {
+        id: 3,
+        title: "पाइन पहाड़ियाँ और लैमिनार हवा",
+        author: "Mebayluon टीम",
+        date: "2025-07-02",
+        content:
+          "दक्षिणी हवा में लिफ्ट लगातार रही; हम लंबे समय तक रिज-सोअर कर पाए—शुरुआती लोगों के लिए बढ़िया फील ट्रेनिंग।",
+      },
+    ],
   },
+
   "doi-bu": {
     vi: [
       {
@@ -1128,7 +1568,60 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Чуть больше часа от центра. Близко к Ханою, но виды на холмы открытые — после полёта успели на кофе у озера.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "人生第一次飞行",
+        author: "Mebayluon 团队",
+        date: "2025-05-15",
+        content:
+          "多伊布非常适合“入门”：路好走、降落场宽、队伍也很强。第一次起飞的感觉真的难忘。",
+      },
+      {
+        id: 2,
+        title: "城郊的落日",
+        author: "Mebayluon 团队",
+        date: "2025-06-30",
+        content:
+          "傍晚凉风与橙色天空，俯瞰湖泊与田野，美得像电影镜头。",
+      },
+      {
+        id: 3,
+        title: "近却很惊艳",
+        author: "Mebayluon 团队",
+        date: "2025-09-01",
+        content:
+          "从市区开一个多小时就到。离河内近但视野很开阔，飞完还来得及湖边咖啡。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "ज़िंदगी की पहली उड़ान",
+        author: "Mebayluon टीम",
+        date: "2025-05-15",
+        content:
+          "दोई बू शुरुआती के लिए बेहतरीन है—आसान पहुँच, बड़ा लैंडिंग ज़ोन और बड़ी टीम। पहली टेकऑफ की फीलिंग अविस्मरणीय रही।",
+      },
+      {
+        id: 2,
+        title: "शहर के बाहर का सूर्यास्त",
+        author: "Mebayluon टीम",
+        date: "2025-06-30",
+        content:
+          "ठंडी शाम की हवा और नारंगी आसमान। झीलों और खेतों के ऊपर मंडराना जादुई लगा।",
+      },
+      {
+        id: 3,
+        title: "पास भी, शानदार भी",
+        author: "Mebayluon टीम",
+        date: "2025-09-01",
+        content:
+          "डाउनटाउन से बस थोड़ा सा एक घंटे में पहुँच गए। हनोई के पास होते हुए भी खुले हिल व्यू—उड़ान के बाद लेकसाइड कॉफी का भी टाइम मिला।",
+      },
+    ],
   },
+
   dalat: {
     vi: [
       {
@@ -1234,13 +1727,66 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Полосы облаков переливаются через хребет, крыло плывёт как шёлк. Далат действительно вдохновляет.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "大叻的清晨",
+        author: "Mebayluon 团队",
+        date: "2025-04-04",
+        content:
+          "雾气仍笼着湖面，山风清爽。掠过松林闻到树脂香，看城市慢慢苏醒。",
+      },
+      {
+        id: 2,
+        title: "梦幻塔农",
+        author: "Mebayluon 团队",
+        date: "2025-07-10",
+        content:
+          "塔农山谷像一幅画：云缓缓漂，阳光洒在茶山上金光点点。",
+      },
+      {
+        id: 3,
+        title: "触碰朗边的云",
+        author: "Mebayluon 团队",
+        date: "2025-08-19",
+        content:
+          "云带从山脊滑过，伞翼像丝绸般平顺。大叻真的让人充满灵感。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "दा लात की सुबह",
+        author: "Mebayluon टीम",
+        date: "2025-04-04",
+        content:
+          "झील पर धुंध थी और पहाड़ी हवा ठंडी व ताज़ा। पाइन जंगलों के ऊपर से ग्लाइड करते हुए शहर को जागते देखना शानदार था।",
+      },
+      {
+        id: 2,
+        title: "स्वप्निल ता नुंग",
+        author: "Mebayluon टीम",
+        date: "2025-07-10",
+        content:
+          "ता नुंग घाटी किसी पेंटिंग जैसी—धीरे बहते बादल और चाय की पहाड़ियों पर बिखरी धूप।",
+      },
+      {
+        id: 3,
+        title: "लैंगबियांग के बादलों को छूना",
+        author: "Mebayluon टीम",
+        date: "2025-08-19",
+        content:
+          "रिज के ऊपर बादलों की पट्टियाँ बह रहीं थीं और विंग रेशम जैसा स्मूद था। दा लात सच में इंस्पिरेशन देता है।",
+      },
+    ],
   },
+
   generic: {
     vi: [
       {
         id: 1,
         title: "Khoảnh khắc đáng nhớ",
-        author: "Lê Thị Ánh Tuyết",
+        author: "Mebayluon Team",
         date: "—",
         content:
           "Một vài khoảnh khắc đẹp từ chuyến bay gần đây. Tận hưởng gió và cảnh quan tuyệt vời từ trên cao!",
@@ -1248,7 +1794,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
       {
         id: 2,
         title: "Gió đẹp, bay mượt",
-        author: "Lê Thị Linh Đan",
+        author: "Mebayluon Team",
         date: "—",
         content:
           "Điều kiện gió ổn định giúp chuyến bay êm ái và an toàn — thích hợp cả cho người mới.",
@@ -1256,7 +1802,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
       {
         id: 3,
         title: "Hạ cánh an toàn",
-        author: "Đặng Đình Minh",
+        author: "Mebayluon Team",
         date: "—",
         content:
           "Kết thúc hành trình bằng một cú touchdown mượt mà, lưu lại kỷ niệm bằng ảnh và video.",
@@ -1340,13 +1886,66 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
           "Завершаем путешествие мягким касанием и сохраняем воспоминания на фото и видео.",
       },
     ],
+    zh: [
+      {
+        id: 1,
+        title: "难忘的瞬间",
+        author: "Mebayluon 团队",
+        date: "—",
+        content:
+          "一些近期飞行的美好片段。一起享受高空的风与震撼风景！",
+      },
+      {
+        id: 2,
+        title: "风好，飞行更顺滑",
+        author: "Mebayluon 团队",
+        date: "—",
+        content:
+          "稳定的风况让飞行更平稳、更安全——新手也很适合。",
+      },
+      {
+        id: 3,
+        title: "安全着陆",
+        author: "Mebayluon 团队",
+        date: "—",
+        content:
+          "以一次平稳触地结束旅程，并用照片与视频把回忆带走。",
+      },
+    ],
+    hi: [
+      {
+        id: 1,
+        title: "यादगार पल",
+        author: "Mebayluon टीम",
+        date: "—",
+        content:
+          "हाल की उड़ानों के कुछ खूबसूरत पल। ऊपर से हवा और नज़ारों का आनंद लें!",
+      },
+      {
+        id: 2,
+        title: "अच्छी हवा, स्मूद उड़ान",
+        author: "Mebayluon टीम",
+        date: "—",
+        content:
+          "स्थिर हवा उड़ान को स्मूद और सुरक्षित बनाती है—पहली बार वालों के लिए भी बढ़िया।",
+      },
+      {
+        id: 3,
+        title: "सुरक्षित लैंडिंग",
+        author: "Mebayluon टीम",
+        date: "—",
+        content:
+          "यात्रा का अंत एक स्मूद टचडाउन के साथ करें और तस्वीर/वीडियो में यादें कैद करें।",
+      },
+    ],
   },
 };
 
 const getStories = (spot: SpotData, lang: Lang): Story[] => {
   const key = resolveSpotKey(spot.name);
-  const baseList = storiesI18n[key][lang] ?? storiesI18n["generic"][lang];
-  const img = (i: number, fallback: string) => spot.galleryImages[i] ?? fallback;
+  const baseList = storiesI18n[key]?.[lang] ?? storiesI18n["generic"][lang];
+
+  const img = (i: number, fallback: string) => spot.galleryImages?.[i] ?? fallback;
 
   return baseList.map((s, i) => {
     const fallbackByKey =
@@ -1362,6 +1961,8 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
         ? `/placeholder-vien-nam-${i + 1}.jpg`
         : key === "doi-bu"
         ? `/placeholder-doi-bu-${i + 1}.jpg`
+        : key === "dalat"
+        ? `/placeholder-dalat-${i + 1}.jpg`
         : `/placeholder-generic-${i + 1}.jpg`;
 
     return {
@@ -1376,7 +1977,7 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
 ========================= */
 export function SpotDetailClient({ spot }: { spot: SpotData }) {
   const { language } = useLanguage();
-  const lang: Lang = (language as Lang) ?? "vi";
+  const lang: Lang = toSafeLang(language);
   const ui = uiI18n[lang];
 
   const copy = getSpotCopy(spot, lang);
@@ -1401,12 +2002,8 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
           <Badge className="mb-4 text-base px-4 py-1.5 bg-accent/80 backdrop-blur-sm border border-white/20">
             {copy.name}
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 font-serif">
-            {copy.title}
-          </h1>
-          <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto text-slate-200">
-            {copy.landscape}
-          </p>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 font-serif">{copy.title}</h1>
+          <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto text-slate-200">{copy.landscape}</p>
           <div className="flex items-center justify-center gap-6 text-lg text-slate-100">
             <div className="flex items-center gap-2">
               <Mountain size={20} />
@@ -1432,28 +2029,18 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
             <div className="grid lg:grid-cols-3 gap-10">
               {/* Col 1-2 */}
               <div className="lg:col-span-2 space-y-6 border-b lg:border-b-0 lg:border-r border-white/20 lg:pr-10 pb-8 lg:pb-0">
-                <h2 className="text-4xl font-bold font-serif text-white">
-                  {ui.aboutTitle}
-                </h2>
-                <p className="text-lg text-slate-200 leading-relaxed">
-                  {copy.description}
-                </p>
+                <h2 className="text-4xl font-bold font-serif text-white">{ui.aboutTitle}</h2>
+                <p className="text-lg text-slate-200 leading-relaxed">{copy.description}</p>
                 <p className="text-md text-slate-300 italic">
-                  {ui.landscapeIntro}{" "}
-                  <span className="font-semibold">{copy.landscape}</span>
+                  {ui.landscapeIntro} <span className="font-semibold">{copy.landscape}</span>
                 </p>
               </div>
 
               {/* Col 3 - Quick facts */}
               <div className="lg:col-span-1 space-y-6 pt-6 lg:pt-0">
-                <h3 className="text-2xl font-semibold mb-4 border-b border-white/20 pb-2">
-                  {ui.quickFacts}
-                </h3>
+                <h3 className="text-2xl font-semibold mb-4 border-b border-white/20 pb-2">{ui.quickFacts}</h3>
 
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  className="flex items-center gap-4 transition-transform duration-300"
-                >
+                <motion.div whileHover={{ x: 5 }} className="flex items-center gap-4 transition-transform duration-300">
                   <div className="shrink-0 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
                     <Mountain className="text-accent" size={24} />
                   </div>
@@ -1463,10 +2050,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   </div>
                 </motion.div>
 
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  className="flex items-center gap-4 transition-transform duration-300"
-                >
+                <motion.div whileHover={{ x: 5 }} className="flex items-center gap-4 transition-transform duration-300">
                   <div className="shrink-0 w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                     <Clock className="text-green-400" size={24} />
                   </div>
@@ -1477,10 +2061,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   </div>
                 </motion.div>
 
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  className="flex items-center gap-4 transition-transform duration-300"
-                >
+                <motion.div whileHover={{ x: 5 }} className="flex items-center gap-4 transition-transform duration-300">
                   <div className="shrink-0 w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center">
                     <Feather className="text-sky-400" size={24} />
                   </div>
@@ -1507,6 +2088,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
             >
               {ui.galleryTitle}
             </motion.h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {spot.galleryImages.map((src, index) => (
                 <motion.div
@@ -1518,12 +2100,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                   viewport={{ once: true }}
                   className="group relative aspect-4/3 w-full rounded-2xl overflow-hidden shadow-xl border border-white/20"
                 >
-                  <Image
-                    src={src}
-                    alt={`${ui.galleryAltPrefix} ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={src} alt={`${ui.galleryAltPrefix} ${index + 1}`} fill className="object-cover" />
                 </motion.div>
               ))}
             </div>
@@ -1540,9 +2117,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl font-bold mb-4 font-serif text-white">
-              {ui.storyTitle}
-            </h2>
+            <h2 className="text-4xl font-bold mb-4 font-serif text-white">{ui.storyTitle}</h2>
             <p className="text-lg text-slate-200">{ui.storySubtitle}</p>
           </motion.div>
 
@@ -1558,25 +2133,16 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                 className="group relative h-full bg-black/20 backdrop-blur-lg border border-white/20 text-white rounded-2xl shadow-lg overflow-hidden"
               >
                 <div className="flex flex-col h-full">
-                  {/* Image */}
                   <div className="relative h-56 w-full overflow-hidden">
-                    <Image
-                      src={story.image}
-                      alt={story.title}
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={story.image} alt={story.title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/20" />
                   </div>
 
-                  {/* Content */}
                   <CardContent className="pt-6 pb-6 space-y-4 flex flex-col grow">
                     <h3 className="text-xl font-bold font-serif group-hover:text-accent transition-colors">
                       {story.title}
                     </h3>
-                    <p className="text-sm text-slate-300 line-clamp-4 grow">
-                      {story.content}
-                    </p>
+                    <p className="text-sm text-slate-300 line-clamp-4 grow">{story.content}</p>
                     <div className="mt-auto flex justify-between items-center text-xs text-slate-400 border-t border-white/10 pt-3">
                       <span className="font-semibold">{story.author}</span>
                       <span className="font-light">{story.date}</span>
@@ -1597,18 +2163,10 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
           viewport={{ once: true }}
           className="container mx-auto px-4 text-center p-12 bg-black/20 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg max-w-4xl"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif text-white">
-            {ui.exploreMore}
-          </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto text-slate-200">
-            {ui.exploreMoreDescription}
-          </p>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif text-white">{ui.exploreMore}</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto text-slate-200">{ui.exploreMoreDescription}</p>
 
-          <Button
-            asChild
-            size="lg"
-            className="bg-accent text-white hover:bg-accent/90 h-14 px-8"
-          >
+          <Button asChild size="lg" className="bg-accent text-white hover:bg-accent/90 h-14 px-8">
             <Link href="/#flying-spots">
               <span>{ui.viewAllSpots}</span>
             </Link>

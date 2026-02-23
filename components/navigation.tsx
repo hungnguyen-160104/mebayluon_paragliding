@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -62,6 +62,7 @@ export function Navigation() {
 
   const handleHashClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+      // ✅ Nếu đang ở trang chủ: scroll mượt + update hash
       if (pathname === "/") {
         e.preventDefault();
         setIsOpen(false);
@@ -69,38 +70,41 @@ export function Navigation() {
         history.replaceState(null, "", `#${id}`);
         setCurrentHash(`#${id}`);
       }
+      // ✅ Nếu đang ở trang khác: để Link điều hướng về "/#id"
+      // (không preventDefault)
     },
     [pathname, scrollToId]
   );
 
   useEffect(() => {
+    // Khi vào "/" và có hash, scroll tới section
     if (pathname === "/" && window.location.hash) {
       const id = window.location.hash.replace("#", "");
       setTimeout(() => scrollToId(id), 0);
     }
   }, [pathname, scrollToId]);
 
-  // ✨ Cấu hình menu mới:
-  // - Bỏ: Về chúng tôi / Điểm bay nổi bật / Chuẩn bị trước khi bay / Liên hệ
-  // - Đổi "Blog" -> "Tin tức" (giữ đường dẫn /blog)
-  // - Thêm: "Kiến thức dù lượn - Học bay" (/kien-thuc)
-const navItems: NavItem[] = [
-  { type: "hash", href: "/#hero", hashId: "hero", label: t?.nav?.home ?? "Trang chủ" },
-  { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },
-  { type: "path", href: "/homestay", label: t?.nav?.homestay ?? "Homestay & Cà phê" },
-  { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
-  { type: "path", href: "/store", label: t?.nav?.store ?? "Cửa hàng" },
-  { type: "path", href: "/blog", label: t?.nav?.blog ?? "Tin tức" },
-  { type: "path", href: "/knowledge", label: t?.nav?.knowledge ?? "Kiến thức dù lượn – Học bay" },
-];
-
+  // ✅ HASH item: href nên là "/#id" để điều hướng đúng từ mọi trang
+  const navItems: NavItem[] = [
+    { type: "hash", href: "/#hero", hashId: "hero", label: t?.nav?.home ?? "Trang chủ" },
+    { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },
+    { type: "path", href: "/homestay", label: t?.nav?.homestay ?? "Homestay & Cà phê" },
+    { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
+    { type: "path", href: "/store", label: t?.nav?.store ?? "Cửa hàng" },
+    { type: "path", href: "/blog", label: t?.nav?.blog ?? "Tin tức" },
+    { type: "path", href: "/knowledge", label: t?.nav?.knowledge ?? "Kiến thức dù lượn – Học bay" },
+  ];
 
   const strongShadow = "0 2px 8px rgba(0,0,0,.7)";
   const subtleShadow = "0 1px 4px rgba(0,0,0,.5)";
 
   const navClasses = `
     fixed top-0 left-0 right-0 z-50 transition-all duration-300
-    ${isScrolled ? "bg-white/60 backdrop-blur-lg shadow-md border-b border-gray-200/80" : "bg-transparent border-b border-transparent"}
+    ${
+      isScrolled
+        ? "bg-white/60 backdrop-blur-lg shadow-md border-b border-gray-200/80"
+        : "bg-transparent border-b border-transparent"
+    }
   `;
 
   const isItemActive = (item: NavItem) => {
@@ -117,7 +121,13 @@ const navItems: NavItem[] = [
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
               <div style={{ filter: isScrolled ? "none" : "drop-shadow(0 2px 5px rgb(0 0 0 / .6))" }}>
-                <Image src="/logo.png" alt="Mebayluon Paragliding" width={50} height={50} className="object-contain rounded-full" />
+                <Image
+                  src="/logo.png"
+                  alt="Mebayluon Paragliding"
+                  width={50}
+                  height={50}
+                  className="object-contain rounded-full"
+                />
               </div>
               <div className="flex flex-col" style={{ textShadow: isScrolled ? "none" : strongShadow }}>
                 <span className={`text-xl font-bold tracking-wide transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}>
@@ -133,14 +143,15 @@ const navItems: NavItem[] = [
             <div className="hidden md:flex items-center gap-2">
               {navItems.map((item) => {
                 const active = isItemActive(item);
-                const base =
-                  isScrolled
-                    ? `text-gray-700 hover:bg-gray-100 ${active ? "bg-primary/10 text-primary font-semibold" : ""}`
-                    : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${active ? "bg-white/20 border-white font-semibold" : ""}`;
+                const base = isScrolled
+                  ? `text-gray-700 hover:bg-gray-100 ${active ? "bg-primary/10 text-primary font-semibold" : ""}`
+                  : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${
+                      active ? "bg-white/20 border-white font-semibold" : ""
+                    }`;
 
                 return (
                   <Link
-                    key={item.href}
+                    key={`${item.type}-${item.href}`}
                     href={item.href}
                     onClick={item.type === "hash" ? (e) => handleHashClick(e, item.hashId) : undefined}
                     className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
@@ -206,9 +217,12 @@ const navItems: NavItem[] = [
             <nav className="mt-8 flex flex-col p-4">
               {navItems.map((item) => (
                 <Link
-                  key={item.href}
+                  key={`${item.type}-${item.href}`}
                   href={item.href}
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    if (item.type === "hash") handleHashClick(e, item.hashId);
+                    setIsOpen(false);
+                  }}
                   className={`text-2xl py-4 transition-colors font-medium ${
                     (item.type === "path" && pathname === item.href) ||
                     (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
@@ -223,7 +237,11 @@ const navItems: NavItem[] = [
 
             {/* Login button */}
             <div className="absolute bottom-6 left-4 right-4">
-              <Button asChild className="w-full bg-red-600 hover:bg-red-700 h-14 text-lg" onClick={() => setIsOpen(false)}>
+              <Button
+                asChild
+                className="w-full bg-red-600 hover:bg-red-700 h-14 text-lg"
+                onClick={() => setIsOpen(false)}
+              >
                 <Link href="/admin/login">Đăng nhập</Link>
               </Button>
             </div>

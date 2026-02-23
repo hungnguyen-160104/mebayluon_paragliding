@@ -1,0 +1,1 @@
+export type SpotLanguage = "vi" | "en" | "fr" | "ru" | "zh" | "hi";

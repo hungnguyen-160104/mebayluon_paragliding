@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
-import { computePriceByLang, LOCATIONS, type AddonKey } from "@/lib/booking/calculate-price";
-import { useBookingText, useLangCode, BIGC_THANG_LONG_MAP } from "@/lib/booking/translations-booking";
+import {
+  computePriceByLang,
+  LOCATIONS,
+  type AddonKey,
+} from "@/lib/booking/calculate-price";
+import {
+  useBookingText,
+  useLangCode,
+  BIGC_THANG_LONG_MAP,
+} from "@/lib/booking/translations-booking";
 import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
@@ -40,7 +48,33 @@ const UI_I18N: Record<
   },
 };
 
+type PriceLine = {
+  label: string;
+  detail?: string;
+  amountText: string;
+  type?: "normal" | "discount";
+};
+
 // AddonKey[] used: ["pickup", "flycam", "camera360"]
+
+function Row({
+  label,
+  value,
+  enabled,
+}: {
+  label: string;
+  value: React.ReactNode;
+  enabled: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-center gap-3">
+      <span className="text-white/70">{label}</span>
+      <span className={`font-semibold ${enabled ? "text-green-300" : "text-white/40"}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export default function ReviewConfirmStep() {
   const t = useBookingText();
@@ -55,6 +89,7 @@ export default function ReviewConfirmStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPassengers, setShowPassengers] = useState(false);
 
   // ── Turnstile anti-bot ──
   const [turnstileToken, setTurnstileToken] = useState<string>("");
@@ -63,7 +98,7 @@ export default function ReviewConfirmStep() {
   const ui = UI_I18N[lang] ?? UI_I18N.vi;
 
   // Lấy nội dung terms theo ngôn ngữ
-  const termsContent = TERMS_HTML[(lang as LangCode)] || TERMS_HTML.vi;
+  const termsContent = TERMS_HTML[lang as LangCode] || TERMS_HTML.vi;
 
   // Khóa cuộn nền khi mở modal
   useEffect(() => {
@@ -82,12 +117,24 @@ export default function ReviewConfirmStep() {
       location: data.location,
       guestsCount: data.guestsCount,
       dateISO: data.dateISO,
-      addons: data.addons,        // backward compat
-      addonsQty: data.addonsQty,  // NEW
+      addons: data.addons, // backward compat
+      addonsQty: data.addonsQty, // NEW
     },
     lang
   );
 
+  const formatVND = (n: number) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(n || 0));
+
+  const formatDate = (iso?: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  };
+
+  const pax = data.guestsCount || 1;
+
+  // Giữ logic cũ của bạn: qty add-on = min(qty, pax); fallback backward compat
   const getAddonQty = (k: AddonKey) => {
     const q = (data.addonsQty?.[k] ?? 0) || (data.addons?.[k] ? data.guestsCount : 0);
     return Math.max(0, Math.min(data.guestsCount || 1, Number(q) || 0));
@@ -96,13 +143,88 @@ export default function ReviewConfirmStep() {
   const pickupQty = getAddonQty("pickup");
   const isHaNoi = data.location === "ha_noi";
 
+  // Lấy contact theo style code cũ (tránh lỗi TS do ContactInfo không có fullName)
+  const contactAny = (data as any)?.contact;
+  const contactName = (contactAny?.fullName ?? contactAny?.contactName ?? "").toString();
+  const contactPhone = (contactAny?.phone ?? "").toString();
+  const contactEmail = (contactAny?.email ?? "").toString();
+  const pickupLocation = (contactAny?.pickupLocation ?? "").toString();
+  const specialRequest = (contactAny?.specialRequest ?? "").toString();
+
+  const firstGuestName = (data as any)?.guests?.[0]?.fullName ?? "";
+
+  // Trang điều khoản (thay cho PDF)
+  const termsUrl = `/terms?lang=${lang}`;
+
+  // ===== Price breakdown lines: unit × qty = subtotal (không đổi logic giá cũ) =====
+  const { priceLines, totalText } = useMemo(() => {
+    const lines: PriceLine[] = [];
+
+    const flightUnit = Number(billInLang.basePricePerPerson || 0);
+    const flightSub = flightUnit * pax;
+
+    lines.push({
+      label: (t as any)?.labels?.flightCost ?? "Flight",
+      detail: `${formatVND(flightUnit)} × ${pax}`,
+      amountText: formatVND(flightSub),
+      type: "normal",
+    });
+
+    const addonLabel: Record<string, string> = {
+      pickup: (t as any)?.labels?.pickupCost ?? "Hotel transfer",
+      camera360: (t as any)?.labels?.camera360Cost ?? "Camera 360",
+      flycam: (t as any)?.labels?.droneCost ?? "Drone/Flycam",
+    };
+
+    (["pickup", "camera360", "flycam"] as AddonKey[]).forEach((k) => {
+      const qty = Number((billInLang as any)?.addonsQty?.[k] || 0);
+      if (!qty) return;
+
+      const unit = Number((billInLang as any)?.addonsUnitPrice?.[k] || 0);
+      const sub = Number((billInLang as any)?.addonsTotal?.[k] || 0) || unit * qty;
+
+      lines.push({
+        label: addonLabel[k] ?? String(k),
+        detail: `${formatVND(unit)} × ${qty}`,
+        amountText: formatVND(sub),
+        type: "normal",
+      });
+    });
+
+    const discountPerPerson = Number(billInLang.discountPerPerson || 0);
+    if (discountPerPerson > 0) {
+      const discountTotal = discountPerPerson * pax;
+      lines.push({
+        label: (t as any)?.labels?.groupDiscount ?? "Group discount",
+        detail: `-${formatVND(discountPerPerson)} × ${pax}`,
+        amountText: `-${formatVND(discountTotal)}`,
+        type: "discount",
+      });
+    }
+
+    const total = Number(billInLang.totalAfterDiscount || 0);
+    return { priceLines: lines, totalText: formatVND(total) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    billInLang.basePricePerPerson,
+    billInLang.discountPerPerson,
+    billInLang.totalAfterDiscount,
+    (billInLang as any)?.addonsQty,
+    (billInLang as any)?.addonsUnitPrice,
+    (billInLang as any)?.addonsTotal,
+    pax,
+    lang,
+  ]);
+
   const handleConfirm = async () => {
     setSubmitting(true);
     setError(undefined);
 
     try {
+      // giữ y nguyên logic cũ của bạn
       const primaryName =
         (data as any)?.contact?.fullName?.trim?.() ||
+        (data as any)?.contact?.contactName?.trim?.() ||
         data?.guests?.[0]?.fullName?.trim?.() ||
         "";
       const primaryPhone = (data as any)?.contact?.phone?.trim?.() || "";
@@ -130,9 +252,9 @@ export default function ReviewConfirmStep() {
           perPerson: billInLang.totalPerPerson,
           basePerPerson: billInLang.basePricePerPerson,
           discountPerPerson: billInLang.discountPerPerson,
-          addonsQty: billInLang.addonsQty,
-          addonsUnitPrice: billInLang.addonsUnitPrice,
-          addonsTotal: billInLang.addonsTotal,
+          addonsQty: (billInLang as any).addonsQty,
+          addonsUnitPrice: (billInLang as any).addonsUnitPrice,
+          addonsTotal: (billInLang as any).addonsTotal,
           total: billInLang.totalAfterDiscount,
         },
 
@@ -159,10 +281,7 @@ export default function ReviewConfirmStep() {
     } catch (e: any) {
       console.error("❌ Lỗi khi xác nhận:", e);
 
-      // fetchJson throw Error với .status và .data khi response không ok
-      const isTurnstileError =
-        e?.status === 403 ||
-        e?.data?.error === "TURNSTILE_FAILED";
+      const isTurnstileError = e?.status === 403 || e?.data?.error === "TURNSTILE_FAILED";
 
       if (isTurnstileError) {
         setError(e?.data?.message || "Xác thực Turnstile thất bại. Vui lòng thử lại.");
@@ -180,108 +299,248 @@ export default function ReviewConfirmStep() {
 
   const glassWrapperClass =
     "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
-  const innerBlockClass = "rounded-2xl border border-white/40 p-4 text-sm text-white/90";
 
-  // Trang điều khoản (thay cho PDF)
-  const termsUrl = `/terms?lang=${lang}`;
+  // label fallback helper (không ảnh hưởng logic)
+  const L = (key: string, fallback: string) => ((t as any)?.labels?.[key] as string) || fallback;
 
   return (
     <div className="space-y-6 text-white">
       <div className={glassWrapperClass}>
         <h3 className="text-lg font-semibold text-white">{ui.reviewTitle}</h3>
 
-        <div className={innerBlockClass}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <span className="font-medium">{t.labels.date}: </span>
-              {data.dateISO}
+        {/* ===== Summary cards giống step4 ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Service Details */}
+          <div className="p-4 rounded-2xl border border-white/30 bg-gradient-to-br from-red-500/20 to-orange-500/10">
+            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+              {L("serviceDetails", "Service details")}
+            </h4>
+
+            <div className="grid grid-cols-2 gap-3 text-sm text-white/90">
+              <div>
+                <p className="text-white/60 text-xs">{L("service", "Service")}</p>
+                <p className="font-semibold">{(cfg as any)?.name?.[lang] ?? (cfg as any)?.name?.vi ?? L("flight", "Flight")}</p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("numGuests", "Passengers")}</p>
+                <p className="font-semibold">{data.guestsCount}</p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("date", "Date")}</p>
+                <p className="font-semibold">{formatDate(data.dateISO)}</p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("timeSlot", "Time")}</p>
+                <p className="font-semibold">{data.timeSlot || L("flexibleTime", "Flexible")}</p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("pickupLocation", "Pickup location")}</p>
+                <p className="font-semibold">
+                  {pickupQty > 0
+                    ? isHaNoi
+                      ? L("pickupFixed", "BigC Thăng Long")
+                      : pickupLocation || L("launchSite", "Launch site")
+                    : L("launchSite", "Launch site")}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("pickupTime", "Pickup time")}</p>
+                <p className="font-semibold">{L("pickupTimeDefault", "Before departure")}</p>
+              </div>
             </div>
-            <div>
-              <span className="font-medium">{t.labels.timeSlot}: </span>
-              {data.timeSlot}
-            </div>
-            <div>
-              <span className="font-medium">{t.labels.location}: </span>
-              {cfg?.name?.[lang] ?? cfg?.name?.vi ?? data.location}
-            </div>
-            <div>
-              <span className="font-medium">{t.labels.numGuests}: </span>
-              {data.guestsCount}
+          </div>
+
+          {/* Contact Information */}
+          <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
+            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+              {L("contactInfo", "Contact information")}
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-white/60">{L("name", "Name")}</span>
+                <span className="font-semibold text-white text-right">
+                  {contactName || firstGuestName || ""}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-white/60">{L("email", "Email")}</span>
+                <span className="font-semibold text-white truncate max-w-[220px] text-right">
+                  {contactEmail || ""}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-white/60">{L("phone", "Phone")}</span>
+                <span className="font-semibold text-white text-right">
+                  {contactPhone || ""}
+                </span>
+              </div>
+
+              {/* pickup note + map (giữ đúng logic cũ) */}
+              {pickupQty > 0 && isHaNoi && (
+                <div className="pt-2 text-sm text-white/80">
+                  <span className="font-medium">{L("pickup", "Pickup")}: </span>
+                  {L("pickupFixed", "BigC Thăng Long")}{" "}
+                  <a className="text-blue-400 underline" href={BIGC_THANG_LONG_MAP} target="_blank" rel="noreferrer">
+                    {t.buttons.viewMap}
+                  </a>
+                </div>
+              )}
+
+              {pickupQty > 0 && !isHaNoi && pickupLocation && (
+                <div className="pt-2 text-sm text-white/80">
+                  <span className="font-medium">{L("pickup", "Pickup")}: </span>
+                  {pickupLocation}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        <div className={innerBlockClass}>
-          <h4 className="font-semibold text-white">{t.labels.contactInfo}</h4>
-          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <span className="font-medium">{t.labels.phone}: </span>
-              {data.contact?.phone}
+        {/* ===== Passenger section collapsible giống step4 ===== */}
+        <div className="rounded-2xl border border-white/30 bg-white/10 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowPassengers((v) => !v)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition"
+          >
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold uppercase tracking-wide text-white">
+                {L("passengerList", "Passenger information")}
+              </h4>
+              <span className="bg-red-600 text-white text-xs px-2 py-0.5 font-semibold rounded-full">
+                {(data.guests ?? []).length}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">{t.labels.email}: </span>
-              {data.contact?.email}
+            <span className={`transition-transform ${showPassengers ? "rotate-180" : ""}`}>▾</span>
+          </button>
+
+          {showPassengers && (
+            <div className="border-t border-white/20 max-h-64 overflow-y-auto">
+              {(data.guests ?? []).map((g: any, i: number) => (
+                <div key={i} className="px-4 py-4 border-b border-white/10 last:border-b-0 hover:bg-white/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-sm">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white text-sm mb-2">{g.fullName}</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
+                        <div>
+                          <span className="font-medium">{L("dob", "DOB")}:</span>{" "}
+                          <span className="ml-1">{g.dob}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">{L("gender", "Gender")}:</span>{" "}
+                          <span className="ml-1">{g.gender}</span>
+                        </div>
+                        {g.idNumber && (
+                          <div>
+                            <span className="font-medium">{L("idNumber", "ID")}:</span>{" "}
+                            <span className="ml-1">{g.idNumber}</span>
+                          </div>
+                        )}
+                        {g.nationality && (
+                          <div>
+                            <span className="font-medium">{L("nationality", "Nationality")}:</span>{" "}
+                            <span className="ml-1">{g.nationality}</span>
+                          </div>
+                        )}
+                        {g.weightKg && (
+                          <div>
+                            <span className="font-medium">{L("weightKg", "Weight")}:</span>{" "}
+                            <span className="ml-1">{g.weightKg}kg</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
+        </div>
 
-            {/* pickup selected if qty>0 */}
-            {pickupQty > 0 && isHaNoi && (
-              <div className="md:col-span-2">
-                <span className="font-medium">{t.labels.pickup}: </span>
-                {t.labels.pickupFixed}{" "}
-                <a className="text-blue-400 underline" href={BIGC_THANG_LONG_MAP} target="_blank" rel="noreferrer">
-                  {t.buttons.viewMap}
-                </a>
-              </div>
-            )}
-            {pickupQty > 0 && !isHaNoi && data.contact?.pickupLocation && (
-              <div className="md:col-span-2">
-                <span className="font-medium">{t.labels.pickup}: </span>
-                {data.contact?.pickupLocation}
-              </div>
-            )}
+        {/* ===== Special request box giống step4 ===== */}
+        {!!specialRequest && (
+          <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4">
+            <p className="text-xs text-yellow-200 font-semibold mb-1">
+              {L("specialRequest", "Special requests")}
+            </p>
+            <p className="text-sm text-yellow-100">{specialRequest}</p>
+          </div>
+        )}
 
-            {data.contact?.specialRequest && (
-              <div className="md:col-span-2">
-                <span className="font-medium">{t.labels.specialRequest}: </span>
-                {data.contact?.specialRequest}
-              </div>
-            )}
+        {/* ===== Additional services giống step4 ===== */}
+        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
+          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+            {L("additionalServices", "Additional services")}
+          </h4>
+
+          <div className="space-y-3 text-sm">
+            <Row label={L("hotelTransfer", "Hotel transfer")} value={pickupQty > 0 ? L("yes", "Yes") : L("no", "No")} enabled={pickupQty > 0} />
+            <Row label={L("camera360", "Camera 360")} value={getAddonQty("camera360") ? `${getAddonQty("camera360")} pax` : L("no", "No")} enabled={!!getAddonQty("camera360")} />
+            <Row label={L("drone", "Drone/Flycam")} value={getAddonQty("flycam") ? `${getAddonQty("flycam")} pax` : L("no", "No")} enabled={!!getAddonQty("flycam")} />
+
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">{L("gopro", "GoPro")}</span>
+              <span className="text-blue-300 font-semibold">{L("free", "Free")}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">{L("drinks", "Drinks")}</span>
+              <span className="text-blue-300 font-semibold">{L("free", "Free")}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">{L("certificate", "Certificate")}</span>
+              <span className="text-blue-300 font-semibold">{L("included", "Included")}</span>
+            </div>
           </div>
         </div>
 
-        <div className={innerBlockClass}>
-          <h4 className="font-semibold text-white">{t.labels.passengerList}</h4>
-          <div className="mt-2 space-y-2">
-            {(data.guests ?? []).map((g: any, i: number) => (
-              <div key={i} className="rounded-lg border border-white/40 p-3 text-white/80">
-                <div>
-                  <span className="font-medium">Khách {i + 1}:</span> {g.fullName}
+        {/* ===== Price breakdown giống step4 (unit × qty = subtotal) ===== */}
+        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
+          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+            {L("priceBreakdown", "Price breakdown")}
+          </h4>
+
+          <div className="space-y-2 text-sm">
+            {priceLines.map((line, idx) => (
+              <div key={idx} className={`flex justify-between gap-3 ${line.type === "discount" ? "text-red-300" : "text-white/90"}`}>
+                <div className="min-w-0">
+                  <p className="text-white/70 break-words">{line.label}</p>
+                  {line.detail && <p className="text-xs text-white/50 break-words">{line.detail}</p>}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <div>
-                    {t.labels.dob}: {g.dob}
-                  </div>
-                  <div>
-                    {t.labels.gender}: {g.gender}
-                  </div>
-                  {g.idNumber && (
-                    <div>
-                      {t.labels.idNumber}: {g.idNumber}
-                    </div>
-                  )}
-                  {g.weightKg && (
-                    <div>
-                      {t.labels.weightKg}: {g.weightKg} kg
-                    </div>
-                  )}
-                  {g.nationality && (
-                    <div>
-                      {t.labels.nationality}: {g.nationality}
-                    </div>
-                  )}
-                </div>
+                <span className="font-semibold whitespace-nowrap">{line.amountText}</span>
               </div>
             ))}
+
+            <hr className="my-2 border-white/20" />
+
+            <div className="flex justify-between font-bold text-lg">
+              <span>{L("totalCost", "Total")}</span>
+              <span>{totalText}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Payment method giống step4 (chỉ hiển thị) ===== */}
+        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
+          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+            {L("paymentMethod", "Payment method")}
+          </h4>
+
+          <div className="space-y-2 text-sm text-white/80">
+            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("cashPayment", "Cash payment")}</span></div>
+            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("bankTransfer", "Bank transfer")}</span></div>
+            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("paypalPayment", "PayPal")}</span></div>
+            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("creditCard", "Credit card")}</span></div>
           </div>
         </div>
 
@@ -306,9 +565,9 @@ export default function ReviewConfirmStep() {
             className="mt-1 h-4 w-4 accent-green-500"
           />
           <span className="text-sm text-white">
-            {t.labels.termsText}{" "}
+            {(t as any)?.labels?.termsText ?? "I agree to the terms"}{" "}
             <button type="button" onClick={() => setShowTerms(true)} className="text-blue-400 underline">
-              {t.labels.viewTerms}
+              {(t as any)?.labels?.viewTerms ?? "View terms"}
             </button>
           </span>
         </label>
@@ -356,7 +615,7 @@ export default function ReviewConfirmStep() {
               </div>
             </div>
 
-            <div 
+            <div
               className="flex-1 overflow-y-auto p-6 text-white/90 prose prose-invert prose-sm max-w-none
                 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-white
                 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-white

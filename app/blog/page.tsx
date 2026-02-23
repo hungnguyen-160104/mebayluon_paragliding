@@ -1,14 +1,112 @@
 // /app/blog/page.tsx
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
+
+type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
+
+function getSafeLang(v: unknown): Lang {
+  const l = String(v ?? "vi") as Lang;
+  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(l) ? l : "vi";
+}
 
 function stripHtml(html: string) {
   return (html || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 }
 
+const LOCALE_BY_LANG: Record<Lang, string> = {
+  vi: "vi-VN",
+  en: "en-US",
+  fr: "fr-FR",
+  ru: "ru-RU",
+  zh: "zh-CN",
+  hi: "hi-IN",
+};
+
+const UI: Record<
+  Lang,
+  {
+    pageTitle: string;
+    fixedTitle: string;
+    latestTitle: string;
+    unknownDate: string;
+    views: (n: number) => string;
+    emptyTitle: string;
+    createFirstPost: string;
+  }
+> = {
+  vi: {
+    pageTitle: "Tin tức & Blog",
+    fixedTitle: "Bài viết về các điểm bay cập nhật mới nhất",
+    latestTitle: "Các bài viết mới nhất",
+    unknownDate: "Không rõ ngày đăng",
+    views: (n) => `${n} lượt xem`,
+    emptyTitle: "Chưa có bài viết nào được xuất bản",
+    createFirstPost: "Tạo bài viết đầu tiên",
+  },
+  en: {
+    pageTitle: "News & Blog",
+    fixedTitle: "Latest updates about flying spots",
+    latestTitle: "Latest posts",
+    unknownDate: "Date unknown",
+    views: (n) => `${n} views`,
+    emptyTitle: "No posts have been published yet",
+    createFirstPost: "Create the first post",
+  },
+  fr: {
+    pageTitle: "Actualités & Blog",
+    fixedTitle: "Dernières mises à jour sur les sites de vol",
+    latestTitle: "Articles les plus récents",
+    unknownDate: "Date inconnue",
+    views: (n) => `${n} vues`,
+    emptyTitle: "Aucun article n’a encore été publié",
+    createFirstPost: "Créer le premier article",
+  },
+  ru: {
+    pageTitle: "Новости и блог",
+    fixedTitle: "Свежие обновления о местах полётов",
+    latestTitle: "Самые новые статьи",
+    unknownDate: "Дата неизвестна",
+    views: (n) => `${n} просмотров`,
+    emptyTitle: "Пока нет опубликованных статей",
+    createFirstPost: "Создать первую статью",
+  },
+  zh: {
+    pageTitle: "资讯与博客",
+    fixedTitle: "最新飞行点更新文章",
+    latestTitle: "最新文章",
+    unknownDate: "发布日期未知",
+    views: (n) => `${n} 次浏览`,
+    emptyTitle: "目前还没有已发布的文章",
+    createFirstPost: "创建第一篇文章",
+  },
+  hi: {
+    pageTitle: "समाचार और ब्लॉग",
+    fixedTitle: "फ्लाइंग स्पॉट्स पर नवीनतम अपडेट",
+    latestTitle: "नवीनतम पोस्ट",
+    unknownDate: "तारीख अज्ञात",
+    views: (n) => `${n} व्यूज़`,
+    emptyTitle: "अभी तक कोई पोस्ट प्रकाशित नहीं हुई है",
+    createFirstPost: "पहली पोस्ट बनाएं",
+  },
+};
+
 export default async function BlogPage() {
-  // Gọi trực tiếp database thay vì fetch qua HTTP
+  const cookieStore = await cookies();
+
+  // ✅ đọc nhiều key để khớp implementation của bạn
+  const raw =
+    cookieStore.get("language")?.value ??
+    cookieStore.get("Language")?.value ??
+    cookieStore.get("lang")?.value;
+
+  const lang = getSafeLang(raw);
+  const ui = UI[lang];
+  const locale = LOCALE_BY_LANG[lang];
+
   const [fixedData, latestData] = await Promise.all([
     getPosts({
       category: "news",
@@ -31,12 +129,12 @@ export default async function BlogPage() {
 
   const formatDate = (s?: string) =>
     s
-      ? new Date(s).toLocaleDateString("vi-VN", {
+      ? new Date(s).toLocaleDateString(locale, {
           year: "numeric",
           month: "long",
           day: "numeric",
         })
-      : "Không rõ ngày đăng";
+      : ui.unknownDate;
 
   return (
     <div
@@ -46,19 +144,18 @@ export default async function BlogPage() {
       <div className="absolute inset-0 bg-black/40 z-0" />
       <main className="container mx-auto px-4 py-16 relative z-10 text-white">
         <h1 className="text-5xl md:text-6xl font-extrabold mb-10 text-center drop-shadow-lg font-serif">
-          Tin tức & Blog
+          {ui.pageTitle}
         </h1>
 
-        {/* ===== Khối 1: Bài viết cố định theo điểm bay ===== */}
         {fixedItems.length > 0 && (
           <section className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Bài viết về các điểm bay cập nhật mới nhất
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">{ui.fixedTitle}</h2>
             <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {fixedItems.map((p: any) => {
                 const cover = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
                 const date = p.publishedAt || p.createdAt;
+                const views = Number(p.views || 0);
+
                 return (
                   <li key={p._id || p.slug}>
                     <Link href={`/blog/${p.slug}`} className="group">
@@ -78,7 +175,7 @@ export default async function BlogPage() {
                           </h3>
                           <div className="flex items-center gap-4 text-sm text-white/70 mb-2">
                             <span>{formatDate(date)}</span>
-                            <span>{p.views || 0} lượt xem</span>
+                            <span>{ui.views(views)}</span>
                           </div>
                           <p className="text-white/85 text-sm line-clamp-3">
                             {p.excerpt || stripHtml(p.content || "").slice(0, 120) + "…"}
@@ -93,14 +190,16 @@ export default async function BlogPage() {
           </section>
         )}
 
-        {/* ===== Khối 2: Các bài mới khác ===== */}
         <section>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Các bài viết mới nhất</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">{ui.latestTitle}</h2>
+
           {latestItems.length ? (
             <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {latestItems.map((p: any) => {
                 const cover = p.coverImage || p.thumbnail || "/images/mebayluon.jpg";
                 const date = p.publishedAt || p.createdAt;
+                const views = Number(p.views || 0);
+
                 return (
                   <li key={p._id || p.slug}>
                     <Link href={`/blog/${p.slug}`} className="group">
@@ -119,7 +218,7 @@ export default async function BlogPage() {
                           </h3>
                           <div className="flex items-center gap-4 text-sm text-white/70 mb-3">
                             <span>{formatDate(date)}</span>
-                            <span>{p.views || 0} lượt xem</span>
+                            <span>{ui.views(views)}</span>
                           </div>
                           <p className="text-white/80 text-sm line-clamp-3">
                             {stripHtml(p.content || "").slice(0, 120)}…
@@ -133,14 +232,12 @@ export default async function BlogPage() {
             </ul>
           ) : (
             <div className="text-center py-16">
-              <p className="text-xl text-white/70 mb-8">
-                Chưa có bài viết nào được xuất bản
-              </p>
+              <p className="text-xl text-white/70 mb-8">{ui.emptyTitle}</p>
               <Link
                 href="/admin/posts/new"
                 className="inline-block bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/80 transition-colors"
               >
-                Tạo bài viết đầu tiên
+                {ui.createFirstPost}
               </Link>
             </div>
           )}

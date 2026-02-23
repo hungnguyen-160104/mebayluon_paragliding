@@ -5,17 +5,30 @@ import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Pilot } from "@/lib/pilots-data"
-import { useLanguage } from "@/contexts/language-context"
-
+import { useLanguage, type Language } from "@/contexts/language-context"
 
 interface PilotDetailClientPageProps {
   pilotData: Pilot
 }
 
+function getSafeLang(language: unknown): Language {
+  const l = String(language ?? "vi") as Language
+  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(l) ? l : "vi"
+}
+
 export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPageProps) {
-  const { language: lang, setLanguage } = useLanguage() // 🔹 dùng context
+  const { language, setLanguage } = useLanguage()
+  const lang = getSafeLang(language)
+
   const heroCollage = pilotData.gallery.slice(0, 5)
   const contentImages = pilotData.gallery.slice(5, 8)
+
+  // ✅ pick theo ngôn ngữ + fallback về vi
+  const nickname = pilotData.nickname[lang] ?? pilotData.nickname.vi
+  const role = pilotData.role[lang] ?? pilotData.role.vi
+  const bio = pilotData.bio[lang] ?? pilotData.bio.vi
+  const achievements = pilotData.achievements[lang] ?? pilotData.achievements.vi
+  const funFacts = pilotData.funFacts[lang] ?? pilotData.funFacts.vi
 
   return (
     <div
@@ -59,18 +72,18 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                 >
                   {pilotData.name}
                 </h1>
+
                 <p
                   className="text-3xl md:text-4xl font-medium"
                   style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
                 >
-                  {pilotData.role}
+                  {role}
                 </p>
+
                 <div className="h-4 md:h-8" />
+
                 <h2 className="text-lg md:text-xl font-medium">
-                  {pilotData.nickname[lang] &&
-                    (lang === "vi"
-                      ? `Biệt danh: "${pilotData.nickname[lang]}"`
-                      : `Nickname: "${pilotData.nickname[lang]}"`)}
+                  {lang === "vi" ? `Biệt danh: "${nickname}"` : `Nickname: "${nickname}"`}
                 </h2>
               </motion.div>
 
@@ -121,25 +134,22 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       <h2 className="text-lg font-bold text-white/80">
                         {lang === "vi" ? "TÔI LÀ AI" : "WHO I AM"}
                       </h2>
+
                       <p className="text-2xl font-bold mt-1 text-white">
-                        {lang === "vi"
-                          ? `BIỆT DANH: "${pilotData.nickname[lang]}"`
-                          : `NICKNAME: "${pilotData.nickname[lang]}"`}
+                        {lang === "vi" ? `BIỆT DANH: "${nickname}"` : `NICKNAME: "${nickname}"`}
                       </p>
-                      <p className="mt-4 text-xl text-white/90">
-                        {pilotData.bio[lang]}
-                      </p>
+
+                      <p className="mt-4 text-xl text-white/90">{bio}</p>
                     </div>
 
                     {/* Achievements */}
                     <div>
                       <h3 className="text-2xl md:text-3xl font-bold text-cyan-400 mb-4">
-                        {lang === "vi"
-                          ? "KINH NGHIỆM & THÀNH TÍCH"
-                          : "EXPERIENCE & ACHIEVEMENTS"}
+                        {lang === "vi" ? "KINH NGHIỆM & THÀNH TÍCH" : "EXPERIENCE & ACHIEVEMENTS"}
                       </h3>
+
                       <ul className="list-disc list-outside ml-5 space-y-2 text-lg text-white/90">
-                        {pilotData.achievements[lang].map((item, idx) => (
+                        {achievements.map((item, idx) => (
                           <li key={idx}>{item}</li>
                         ))}
                       </ul>
@@ -157,8 +167,9 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
                         {lang === "vi" ? "CÁ TÍNH" : "PERSONALITY"}
                       </h3>
+
                       <div className="space-y-3">
-                        {pilotData.funFacts[lang].map((fact, idx) => (
+                        {funFacts.map((fact, idx) => (
                           <p key={idx} className="italic text-lg text-white/90">
                             &ldquo;{fact}&rdquo;
                           </p>

@@ -1,13 +1,15 @@
 // lib/store-texts.ts
 import type { StoreCategory } from "@/types/frontend/post";
 
-export type StoreLang = "vi" | "en" | "fr" | "ru";
+export type StoreLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 export type MultiLangText = {
   vi: string;
   en: string;
   fr: string;
   ru: string;
+  zh: string;
+  hi: string;
 };
 
 export type StoreCategoryConfig = {
@@ -20,6 +22,8 @@ export const STORE_TITLE: MultiLangText = {
   en: "STORE",
   fr: "BOUTIQUE",
   ru: "МАГАЗИН",
+  zh: "商店",
+  hi: "स्टोर",
 };
 
 export const EMPTY_CATEGORY_TEXT: MultiLangText = {
@@ -27,6 +31,8 @@ export const EMPTY_CATEGORY_TEXT: MultiLangText = {
   en: "There are no products in this category.",
   fr: "Il n'y a aucun produit dans cette catégorie.",
   ru: "В этой категории нет товаров.",
+  zh: "此分类暂无商品。",
+  hi: "इस श्रेणी में कोई उत्पाद नहीं है।",
 };
 
 const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
@@ -37,6 +43,8 @@ const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
       en: "All",
       fr: "Tous",
       ru: "Все",
+      zh: "全部",
+      hi: "सभी",
     },
   },
   {
@@ -46,6 +54,8 @@ const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
       en: "Flying equipment",
       fr: "Équipement de vol",
       ru: "Оборудование для полётов",
+      zh: "飞行装备",
+      hi: "फ्लाइंग उपकरण",
     },
   },
   {
@@ -55,6 +65,8 @@ const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
       en: "Accessories",
       fr: "Accessoires",
       ru: "Аксессуары",
+      zh: "配件",
+      hi: "एक्सेसरीज़",
     },
   },
   {
@@ -64,6 +76,8 @@ const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
       en: "Paragliding books",
       fr: "Livres de parapente",
       ru: "Книги о парапланеризме",
+      zh: "滑翔伞书籍",
+      hi: "पैराग्लाइडिंग पुस्तकें",
     },
   },
   {
@@ -73,15 +87,17 @@ const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
       en: "Paragliding courses",
       fr: "Cours de parapente",
       ru: "Курсы по парапланеризму",
+      zh: "滑翔伞课程",
+      hi: "पैराग्लाइडिंग कोर्स",
     },
   },
 ];
 
 // Key danh mục (bỏ "all") để gọi API khi chọn "Tất cả"
 export const STORE_CATEGORY_KEYS_EXCEPT_ALL: StoreCategory[] =
-  STORE_CATEGORY_CONFIG
-    .map((c) => c.key)
-    .filter((key): key is StoreCategory => key !== "all");
+  STORE_CATEGORY_CONFIG.map((c) => c.key).filter(
+    (key): key is StoreCategory => key !== "all"
+  );
 
 export type StoreUiTexts = {
   title: string;
