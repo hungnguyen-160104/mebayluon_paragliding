@@ -1,6 +1,9 @@
+"use client";
+
 // /components/footer/Footer.tsx
 import Link from "next/link";
-import { Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react";
+import { Facebook, Youtube, Phone, Mail, MapPin, Lock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 export type FixedKey =
   | "hoa-binh"
@@ -11,15 +14,50 @@ export type FixedKey =
   | "sapa";
 
 export const FIXED_SPOTS: { key: FixedKey; name: string }[] = [
-  { key: "hoa-binh",     name: "Viên Nam - Hòa Bình" },
-  { key: "ha-noi",       name: "Đồi Bù - Chương Mỹ - Hà Nội" },
+  { key: "hoa-binh", name: "Viên Nam - Hòa Bình" },
+  { key: "ha-noi", name: "Đồi Bù - Chương Mỹ - Hà Nội" },
   { key: "mu-cang-chai", name: "Khau phạ - Tú Lệ - Lào Cai" },
-  { key: "yen-bai",      name: "Trạm Tấu - Lào Cai" },
-  { key: "da-nang",      name: "Sơn Trà - Đà Nẵng" },
-  { key: "sapa",         name: "Sapa - Lào Cai" },
+  { key: "yen-bai", name: "Trạm Tấu - Lào Cai" },
+  { key: "da-nang", name: "Sơn Trà - Đà Nẵng" },
+  { key: "sapa", name: "Sapa - Lào Cai" },
 ];
 
 export default function Footer() {
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  // mobile long-press timer
+  const holdTimerRef = useRef<number | null>(null);
+
+  // desktop "rê chuột để click" => delay hide
+  const hideTimerRef = useRef<number | null>(null);
+
+  const clearHideTimer = () => {
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = null;
+  };
+
+  const scheduleHide = (ms = 500) => {
+    clearHideTimer();
+    hideTimerRef.current = window.setTimeout(() => setShowAdmin(false), ms);
+  };
+
+  // long-press vào © để hiện
+  const startHold = () => {
+    holdTimerRef.current = window.setTimeout(() => setShowAdmin(true), 700);
+  };
+
+  const cancelHold = () => {
+    if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = null;
+  };
+
+  // auto-hide sau 10s khi đã hiện (nhất là trên mobile)
+  useEffect(() => {
+    if (!showAdmin) return;
+    const t = window.setTimeout(() => setShowAdmin(false), 10_000);
+    return () => window.clearTimeout(t);
+  }, [showAdmin]);
+
   return (
     <div className="w-full px-4 pb-4">
       <footer
@@ -61,7 +99,7 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* CONTACT + ĐIỂM BAY (LINK tới /fixed/[key]) */}
+            {/* CONTACT + ĐIỂM BAY */}
             <div>
               <h3 className="font-semibold text-white mb-4">Contact</h3>
               <ul className="space-y-2 text-sm text-slate-300">
@@ -116,15 +154,52 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* COPYRIGHT: ✅ chỉ tương tác ở đây */}
           <div className="mt-12 pt-6 border-t border-white/15 text-center text-sm text-slate-400">
-            <p>
-              &copy; {new Date().getFullYear()}{" "}
-              <span className="font-medium text-slate-200">
-                Mebayluon Paragliding
+            <p className="inline-flex items-center gap-2 select-none">
+              {/* ✅ hover/long-press đúng vào cụm © */}
+              <span
+                className="inline-flex items-center gap-2"
+                onMouseEnter={() => {
+                  clearHideTimer();
+                  setShowAdmin(true);
+                }}
+                onMouseLeave={() => scheduleHide(400)}
+                onTouchStart={startHold}
+                onTouchEnd={cancelHold}
+                onTouchCancel={cancelHold}
+                title="(Admin) Hold"
+              >
+                &copy; {new Date().getFullYear()}{" "}
+                <span className="font-medium text-slate-200">Mebayluon Paragliding</span>. All rights
+                reserved.
               </span>
-              . All rights reserved.
             </p>
           </div>
+
+          {/* ADMIN BUTTON: fixed bottom-left */}
+          {showAdmin && (
+            <div
+              className="fixed left-4 bottom-4 z-[9999]"
+              onMouseEnter={() => clearHideTimer()}
+              onMouseLeave={() => scheduleHide(400)}
+            >
+              <Link
+                href="/admin/login"
+                className="
+                  inline-flex items-center gap-2
+                  rounded-full px-3 py-2
+                  bg-black/60 backdrop-blur-md border border-white/20
+                  text-white/90 hover:text-white
+                  shadow-lg
+                "
+                aria-label="Admin login"
+              >
+                <Lock className="h-4 w-4" />
+                <span className="text-sm font-medium">Admin</span>
+              </Link>
+            </div>
+          )}
         </div>
       </footer>
     </div>

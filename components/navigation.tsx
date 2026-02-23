@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState, useCallback } from "react";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/contexts/language-context";
 import { AnimatePresence, motion } from "framer-motion";
@@ -44,6 +43,7 @@ export function Navigation() {
     };
   }, [isOpen]);
 
+  // ✅ Tránh hydration mismatch: chỉ đọc hash sau khi mount
   useEffect(() => {
     const applyHash = () => setCurrentHash(window.location.hash || "");
     applyHash();
@@ -62,7 +62,6 @@ export function Navigation() {
 
   const handleHashClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-      // ✅ Nếu đang ở trang chủ: scroll mượt + update hash
       if (pathname === "/") {
         e.preventDefault();
         setIsOpen(false);
@@ -70,21 +69,17 @@ export function Navigation() {
         history.replaceState(null, "", `#${id}`);
         setCurrentHash(`#${id}`);
       }
-      // ✅ Nếu đang ở trang khác: để Link điều hướng về "/#id"
-      // (không preventDefault)
     },
     [pathname, scrollToId]
   );
 
   useEffect(() => {
-    // Khi vào "/" và có hash, scroll tới section
     if (pathname === "/" && window.location.hash) {
       const id = window.location.hash.replace("#", "");
       setTimeout(() => scrollToId(id), 0);
     }
   }, [pathname, scrollToId]);
 
-  // ✅ HASH item: href nên là "/#id" để điều hướng đúng từ mọi trang
   const navItems: NavItem[] = [
     { type: "hash", href: "/#hero", hashId: "hero", label: t?.nav?.home ?? "Trang chủ" },
     { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },
@@ -130,10 +125,18 @@ export function Navigation() {
                 />
               </div>
               <div className="flex flex-col" style={{ textShadow: isScrolled ? "none" : strongShadow }}>
-                <span className={`text-xl font-bold tracking-wide transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}>
+                <span
+                  className={`text-xl font-bold tracking-wide transition-colors ${
+                    isScrolled ? "text-gray-800" : "text-white"
+                  }`}
+                >
                   MEBAYLUON
                 </span>
-                <span className={`text-xs hidden sm:block transition-colors tracking-wider ${isScrolled ? "text-gray-500" : "text-white"}`}>
+                <span
+                  className={`text-xs hidden sm:block transition-colors tracking-wider ${
+                    isScrolled ? "text-gray-500" : "text-white"
+                  }`}
+                >
                   Mebayluon paragliding
                 </span>
               </div>
@@ -141,34 +144,49 @@ export function Navigation() {
 
             {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-2">
-              {navItems.map((item) => {
-                const active = isItemActive(item);
-                const base = isScrolled
-                  ? `text-gray-700 hover:bg-gray-100 ${active ? "bg-primary/10 text-primary font-semibold" : ""}`
-                  : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${
-                      active ? "bg-white/20 border-white font-semibold" : ""
-                    }`;
+              {navItems
+                .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
+                .map((item) => {
+                  const active = isItemActive(item);
+                  const base = isScrolled
+                    ? `text-gray-700 hover:bg-gray-100 ${active ? "bg-primary/10 text-primary font-semibold" : ""}`
+                    : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${
+                        active ? "bg-white/20 border-white font-semibold" : ""
+                      }`;
 
-                return (
-                  <Link
-                    key={`${item.type}-${item.href}`}
-                    href={item.href}
-                    onClick={item.type === "hash" ? (e) => handleHashClick(e, item.hashId) : undefined}
-                    className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
-                    style={{ textShadow: isScrolled ? "none" : subtleShadow }}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+                  if (item.type === "hash") {
+                    const href = `/#${item.hashId}`;
+                    return (
+                      <Link
+                        key={`hash-${item.hashId}`}
+                        href={href}
+                        onClick={(e) => handleHashClick(e, item.hashId)}
+                        className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                        style={{ textShadow: isScrolled ? "none" : subtleShadow }}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
 
-              <div className={`${isScrolled ? "text-gray-800" : "text-white"}`} style={{ textShadow: isScrolled ? "none" : subtleShadow }}>
+                  return (
+                    <Link
+                      key={`path-${item.href}`}
+                      href={item.href}
+                      className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                      style={{ textShadow: isScrolled ? "none" : subtleShadow }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+
+              <div
+                className={`${isScrolled ? "text-gray-800" : "text-white"}`}
+                style={{ textShadow: isScrolled ? "none" : subtleShadow }}
+              >
                 <LanguageSwitcher />
               </div>
-
-              <Button asChild className="ml-2 hover:scale-105 transition-transform duration-300">
-                <Link href="/admin/login">Đăng nhập</Link>
-              </Button>
             </div>
 
             {/* Mobile toggles */}
@@ -215,36 +233,31 @@ export function Navigation() {
 
             {/* Links */}
             <nav className="mt-8 flex flex-col p-4">
-              {navItems.map((item) => (
-                <Link
-                  key={`${item.type}-${item.href}`}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.type === "hash") handleHashClick(e, item.hashId);
-                    setIsOpen(false);
-                  }}
-                  className={`text-2xl py-4 transition-colors font-medium ${
-                    (item.type === "path" && pathname === item.href) ||
-                    (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
-                      ? "text-red-400"
-                      : "text-slate-100 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+              {navItems
+                .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
+                .map((item) => {
+                  const href = item.type === "hash" ? `/#${item.hashId}` : item.href;
 
-            {/* Login button */}
-            <div className="absolute bottom-6 left-4 right-4">
-              <Button
-                asChild
-                className="w-full bg-red-600 hover:bg-red-700 h-14 text-lg"
-                onClick={() => setIsOpen(false)}
-              >
-                <Link href="/admin/login">Đăng nhập</Link>
-              </Button>
-            </div>
+                  return (
+                    <Link
+                      key={`${item.type}-${item.type === "hash" ? item.hashId : item.href}`}
+                      href={href}
+                      onClick={(e) => {
+                        if (item.type === "hash") handleHashClick(e, item.hashId);
+                        setIsOpen(false);
+                      }}
+                      className={`text-2xl py-4 transition-colors font-medium ${
+                        (item.type === "path" && pathname === item.href) ||
+                        (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
+                          ? "text-red-400"
+                          : "text-slate-100 hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>

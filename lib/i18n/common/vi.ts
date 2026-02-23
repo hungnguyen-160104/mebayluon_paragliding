@@ -1,3 +1,4 @@
+export type { CommonTranslation } from "./schema";
 import type { CommonTranslation } from "./schema";
 
 export const vi: CommonTranslation = {
@@ -154,7 +155,6 @@ export const vi: CommonTranslation = {
         ],
       },
 
-      // ✅ BỔ SUNG để khớp schema + khớp file cũ (EN/FR/RU có)
       special: {
         title: "Lưu ý đặc biệt",
         items: [
