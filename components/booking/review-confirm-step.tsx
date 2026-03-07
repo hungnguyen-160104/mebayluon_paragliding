@@ -2,49 +2,140 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
-import {
-  computePriceByLang,
-  LOCATIONS,
-  type AddonKey,
-} from "@/lib/booking/calculate-price";
-import {
-  useBookingText,
-  useLangCode,
-  BIGC_THANG_LONG_MAP,
-} from "@/lib/booking/translations-booking";
+import { computePriceByLang, LOCATIONS, type AddonKey } from "@/lib/booking/calculate-price";
+import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
 
-/** UI i18n (đã bỏ Download PDF) */
+/** UI i18n */
 const UI_I18N: Record<
   string,
-  { reviewTitle: string; termsTitle: string; openInNewTab: string; close: string }
+  {
+    reviewTitle: string;
+    termsTitle: string;
+    openInNewTab: string;
+    close: string;
+    packageLabel: string;
+    flightTypeLabel: string;
+    pickupDetails: string;
+    noPickupSelected: string;
+    pickupAddressMissing: string;
+    paragliding: string;
+    paramotor: string;
+    notSelected: string;
+    weekday: string;
+    weekend: string;
+    holiday: string;
+  }
 > = {
   vi: {
     reviewTitle: "Vui lòng kiểm tra lại thông tin đặt bay",
     termsTitle: "Điều khoản & điều kiện",
     openInNewTab: "Mở trong tab mới",
     close: "Đóng",
+    packageLabel: "Gói bay",
+    flightTypeLabel: "Loại bay",
+    pickupDetails: "Thông tin đón/trả",
+    noPickupSelected:
+      "Chuyến bay không bao gồm xe trung chuyển đến điểm bay. Khách cần có mặt trước 15 phút để check-in.",
+    pickupAddressMissing: "Vui lòng nhập đầy đủ địa chỉ đón cho dịch vụ đã chọn.",
+    paragliding: "Bay dù không động cơ",
+    paramotor: "Bay dù gắn động cơ",
+    notSelected: "Chưa chọn",
+    weekday: "Ngày thường",
+    weekend: "Cuối tuần",
+    holiday: "Ngày lễ",
   },
   en: {
     reviewTitle: "Please review your booking details",
     termsTitle: "Terms & Conditions",
     openInNewTab: "Open in new tab",
     close: "Close",
+    packageLabel: "Flight package",
+    flightTypeLabel: "Flight type",
+    pickupDetails: "Pickup details",
+    noPickupSelected:
+      "This flight does not include transfer to the takeoff point. Please arrive 15 minutes early for check-in.",
+    pickupAddressMissing: "Please provide the pickup address for the selected service.",
+    paragliding: "Paragliding",
+    paramotor: "Paramotor",
+    notSelected: "Not selected",
+    weekday: "Weekday",
+    weekend: "Weekend",
+    holiday: "Holiday",
   },
   fr: {
     reviewTitle: "Veuillez vérifier les informations de votre réservation",
     termsTitle: "Conditions générales",
     openInNewTab: "Ouvrir dans un nouvel onglet",
     close: "Fermer",
+    packageLabel: "Forfait de vol",
+    flightTypeLabel: "Type de vol",
+    pickupDetails: "Informations de prise en charge",
+    noPickupSelected:
+      "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 minutes à l’avance pour l’enregistrement.",
+    pickupAddressMissing: "Veuillez renseigner l’adresse de prise en charge pour le service sélectionné.",
+    paragliding: "Parapente",
+    paramotor: "Paramoteur",
+    notSelected: "Non sélectionné",
+    weekday: "Jour ouvré",
+    weekend: "Week-end",
+    holiday: "Jour férié",
   },
   ru: {
     reviewTitle: "Пожалуйста, проверьте данные бронирования",
     termsTitle: "Правила и условия",
     openInNewTab: "Открыть в новой вкладке",
     close: "Закрыть",
+    packageLabel: "Пакет полёта",
+    flightTypeLabel: "Тип полёта",
+    pickupDetails: "Информация о трансфере",
+    noPickupSelected:
+      "Этот полёт не включает трансфер до точки старта. Пожалуйста, прибудьте за 15 минут до регистрации.",
+    pickupAddressMissing: "Пожалуйста, укажите адрес трансфера для выбранной услуги.",
+    paragliding: "Параплан",
+    paramotor: "Парамотор",
+    notSelected: "Не выбрано",
+    weekday: "Будний день",
+    weekend: "Выходной",
+    holiday: "Праздничный день",
+  },
+  hi: {
+    reviewTitle: "कृपया अपनी बुकिंग जानकारी जाँच लें",
+    termsTitle: "नियम और शर्तें",
+    openInNewTab: "नए टैब में खोलें",
+    close: "बंद करें",
+    packageLabel: "फ्लाइट पैकेज",
+    flightTypeLabel: "फ्लाइट प्रकार",
+    pickupDetails: "पिकअप जानकारी",
+    noPickupSelected:
+      "इस फ्लाइट में टेकऑफ पॉइंट तक ट्रांसफर शामिल नहीं है। कृपया चेक-इन के लिए 15 मिनट पहले पहुँचें।",
+    pickupAddressMissing: "कृपया चुनी गई सेवा के लिए पिकअप पता भरें।",
+    paragliding: "पैराग्लाइडिंग",
+    paramotor: "पैरामोटर",
+    notSelected: "चयन नहीं किया गया",
+    weekday: "कार्यदिवस",
+    weekend: "सप्ताहांत",
+    holiday: "छुट्टी",
+  },
+  zh: {
+    reviewTitle: "请检查您的预订信息",
+    termsTitle: "条款和条件",
+    openInNewTab: "在新标签页中打开",
+    close: "关闭",
+    packageLabel: "飞行套餐",
+    flightTypeLabel: "飞行类型",
+    pickupDetails: "接送信息",
+    noPickupSelected: "该飞行不包含前往起飞点的接送服务。请提前 15 分钟到达办理登记。",
+    pickupAddressMissing: "请选择接送服务后填写接送地址。",
+    paragliding: "无动力滑翔伞",
+    paramotor: "动力伞",
+    notSelected: "未选择",
+    weekday: "工作日",
+    weekend: "周末",
+    holiday: "节假日",
   },
 };
 
@@ -54,8 +145,6 @@ type PriceLine = {
   amountText: string;
   type?: "normal" | "discount";
 };
-
-// AddonKey[] used: ["pickup", "flycam", "camera360"]
 
 function Row({
   label,
@@ -69,11 +158,23 @@ function Row({
   return (
     <div className="flex justify-between items-center gap-3">
       <span className="text-white/70">{label}</span>
-      <span className={`font-semibold ${enabled ? "text-green-300" : "text-white/40"}`}>
-        {value}
-      </span>
+      <span className={`font-semibold ${enabled ? "text-green-300" : "text-white/40"}`}>{value}</span>
     </div>
   );
+}
+
+function getFlightTypeLabel(lang: string, key?: string) {
+  const ui = UI_I18N[lang] ?? UI_I18N.vi;
+  if (key === "paramotor") return ui.paramotor;
+  if (key === "paragliding") return ui.paragliding;
+  return ui.notSelected;
+}
+
+function getHolidayTypeLabel(lang: string, holidayType?: "weekday" | "weekend" | "holiday") {
+  const ui = UI_I18N[lang] ?? UI_I18N.vi;
+  if (holidayType === "holiday") return ui.holiday;
+  if (holidayType === "weekend") return ui.weekend;
+  return ui.weekday;
 }
 
 export default function ReviewConfirmStep() {
@@ -91,16 +192,12 @@ export default function ReviewConfirmStep() {
   const [showTerms, setShowTerms] = useState(false);
   const [showPassengers, setShowPassengers] = useState(false);
 
-  // ── Turnstile anti-bot ──
   const [turnstileToken, setTurnstileToken] = useState<string>("");
-  const [turnstileKey, setTurnstileKey] = useState(0); // bump to force re-render widget
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const ui = UI_I18N[lang] ?? UI_I18N.vi;
-
-  // Lấy nội dung terms theo ngôn ngữ
   const termsContent = TERMS_HTML[lang as LangCode] || TERMS_HTML.vi;
 
-  // Khóa cuộn nền khi mở modal
   useEffect(() => {
     if (!showTerms) return;
     const prev = document.body.style.overflow;
@@ -117,14 +214,19 @@ export default function ReviewConfirmStep() {
       location: data.location,
       guestsCount: data.guestsCount,
       dateISO: data.dateISO,
-      addons: data.addons, // backward compat
-      addonsQty: data.addonsQty, // NEW
+      packageKey: data.packageKey,
+      flightTypeKey: data.flightTypeKey,
+      addons: data.addons,
+      addonsQty: data.addonsQty,
     },
     lang
   );
 
-  const formatVND = (n: number) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(n || 0));
+  const formatMoney = (n: number) => {
+    return lang === "vi"
+      ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(n || 0))
+      : `${Number(n || 0).toLocaleString("en-US")} USD`;
+  };
 
   const formatDate = (iso?: string) => {
     if (!iso) return "";
@@ -134,29 +236,49 @@ export default function ReviewConfirmStep() {
 
   const pax = data.guestsCount || 1;
 
-  // Giữ logic cũ của bạn: qty add-on = min(qty, pax); fallback backward compat
   const getAddonQty = (k: AddonKey) => {
     const q = (data.addonsQty?.[k] ?? 0) || (data.addons?.[k] ? data.guestsCount : 0);
     return Math.max(0, Math.min(data.guestsCount || 1, Number(q) || 0));
   };
 
-  const pickupQty = getAddonQty("pickup");
-  const isHaNoi = data.location === "ha_noi";
-
-  // Lấy contact theo style code cũ (tránh lỗi TS do ContactInfo không có fullName)
   const contactAny = (data as any)?.contact;
   const contactName = (contactAny?.fullName ?? contactAny?.contactName ?? "").toString();
   const contactPhone = (contactAny?.phone ?? "").toString();
   const contactEmail = (contactAny?.email ?? "").toString();
-  const pickupLocation = (contactAny?.pickupLocation ?? "").toString();
   const specialRequest = (contactAny?.specialRequest ?? "").toString();
-
   const firstGuestName = (data as any)?.guests?.[0]?.fullName ?? "";
 
-  // Trang điều khoản (thay cho PDF)
+  const visibleSelectedServices = (cfg?.services || []).filter((svc) => {
+    if (svc.visibleForPackages?.length) {
+      if (!data.packageKey) return false;
+      if (!svc.visibleForPackages.includes(data.packageKey as any)) return false;
+    }
+    return !!data.services?.[svc.key]?.selected;
+  });
+
+  const selectedPickupServices = visibleSelectedServices.filter(
+    (svc) => svc.requiresPickupInput || svc.fixedMapUrl
+  );
+
+  const missingPickupAddress = selectedPickupServices.some((svc) => {
+    if (svc.fixedMapUrl) return false;
+    if (!svc.requiresPickupInput) return false;
+    return !(data.services?.[svc.key]?.inputText || "").trim();
+  });
+
+  const packageLabel =
+    cfg?.packages?.find((p) => p.key === data.packageKey)?.label?.[lang] ??
+    cfg?.packages?.find((p) => p.key === data.packageKey)?.label?.vi ??
+    ui.notSelected;
+
+  const serviceLines = visibleSelectedServices.map((svc) => {
+    const label = svc.label[lang] ?? svc.label.vi;
+    const inputText = data.services?.[svc.key]?.inputText || "";
+    return { key: svc.key, label, inputText, fixedMapUrl: svc.fixedMapUrl };
+  });
+
   const termsUrl = `/terms?lang=${lang}`;
 
-  // ===== Price breakdown lines: unit × qty = subtotal (không đổi logic giá cũ) =====
   const { priceLines, totalText } = useMemo(() => {
     const lines: PriceLine[] = [];
 
@@ -165,13 +287,13 @@ export default function ReviewConfirmStep() {
 
     lines.push({
       label: (t as any)?.labels?.flightCost ?? "Flight",
-      detail: `${formatVND(flightUnit)} × ${pax}`,
-      amountText: formatVND(flightSub),
+      detail: `${formatMoney(flightUnit)} × ${pax}`,
+      amountText: formatMoney(flightSub),
       type: "normal",
     });
 
     const addonLabel: Record<string, string> = {
-      pickup: (t as any)?.labels?.pickupCost ?? "Hotel transfer",
+      pickup: (t as any)?.labels?.pickupCost ?? "Pickup",
       camera360: (t as any)?.labels?.camera360Cost ?? "Camera 360",
       flycam: (t as any)?.labels?.droneCost ?? "Drone/Flycam",
     };
@@ -185,8 +307,8 @@ export default function ReviewConfirmStep() {
 
       lines.push({
         label: addonLabel[k] ?? String(k),
-        detail: `${formatVND(unit)} × ${qty}`,
-        amountText: formatVND(sub),
+        detail: `${formatMoney(unit)} × ${qty}`,
+        amountText: formatMoney(sub),
         type: "normal",
       });
     });
@@ -196,15 +318,18 @@ export default function ReviewConfirmStep() {
       const discountTotal = discountPerPerson * pax;
       lines.push({
         label: (t as any)?.labels?.groupDiscount ?? "Group discount",
-        detail: `-${formatVND(discountPerPerson)} × ${pax}`,
-        amountText: `-${formatVND(discountTotal)}`,
+        detail: `-${formatMoney(discountPerPerson)} × ${pax}`,
+        amountText: `-${formatMoney(discountTotal)}`,
         type: "discount",
       });
     }
 
-    const total = Number(billInLang.totalAfterDiscount || 0);
-    return { priceLines: lines, totalText: formatVND(total) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const total =
+      lang === "vi"
+        ? Number(billInLang.totalAfterDiscount || 0)
+        : Number(billInLang.totalAfterDiscount || 0);
+
+    return { priceLines: lines, totalText: formatMoney(total) };
   }, [
     billInLang.basePricePerPerson,
     billInLang.discountPerPerson,
@@ -214,6 +339,7 @@ export default function ReviewConfirmStep() {
     (billInLang as any)?.addonsTotal,
     pax,
     lang,
+    t,
   ]);
 
   const handleConfirm = async () => {
@@ -221,7 +347,6 @@ export default function ReviewConfirmStep() {
     setError(undefined);
 
     try {
-      // giữ y nguyên logic cũ của bạn
       const primaryName =
         (data as any)?.contact?.fullName?.trim?.() ||
         (data as any)?.contact?.contactName?.trim?.() ||
@@ -230,12 +355,15 @@ export default function ReviewConfirmStep() {
       const primaryPhone = (data as any)?.contact?.phone?.trim?.() || "";
 
       const missing: string[] = [];
-      if (!primaryName) missing.push("tên liên hệ");
-      if (!primaryPhone) missing.push("số điện thoại");
-      if (!data?.dateISO) missing.push("ngày bay");
-      if (!data?.location) missing.push("điểm bay");
+      if (!primaryName) missing.push("contact name");
+      if (!primaryPhone) missing.push("phone");
+      if (!data?.dateISO) missing.push("date");
+      if (!data?.location) missing.push("location");
+      if (data.location === "khau_pha" && !data.packageKey) missing.push("package");
+      if (data.location === "khau_pha" && !data.flightTypeKey) missing.push("flight type");
+      if (missingPickupAddress) throw new Error(ui.pickupAddressMissing);
       if (missing.length) {
-        throw new Error(`Thiếu ${missing.join(", ")}. Vui lòng bổ sung trước khi xác nhận.`);
+        throw new Error(`Missing ${missing.join(", ")}.`);
       }
 
       const payload = {
@@ -245,8 +373,9 @@ export default function ReviewConfirmStep() {
         date: data.dateISO,
         location: data.location,
         locationName: cfg?.name?.[lang] ?? cfg?.name?.vi ?? data.location,
+        packageLabel,
+        flightTypeLabel: getFlightTypeLabel(lang, data.flightTypeKey),
 
-        // NEW: gửi breakdown để Telegram/backend hiển thị đúng qty
         price: {
           currency: billInLang.currency,
           perPerson: billInLang.totalPerPerson,
@@ -258,38 +387,38 @@ export default function ReviewConfirmStep() {
           total: billInLang.totalAfterDiscount,
         },
 
+        selectedServices: serviceLines,
+        holidayType: billInLang.holidayType,
         createdAt: new Date().toISOString(),
       };
 
       const createResp: any = await createBooking(payload, turnstileToken);
       if (!createResp?.ok) {
-        const serverMsg = createResp?.message || "Tạo booking thất bại";
+        const serverMsg = createResp?.message || "Create booking failed";
         const serverErrs = createResp?.errors ? `\n${JSON.stringify(createResp.errors)}` : "";
         throw new Error(`${serverMsg}${serverErrs}`);
       }
 
-      // NEW: lưu kết quả để step Success in vé PDF
       setBookingResult(createResp.booking || payload);
 
       try {
         await notifyTelegram(createResp.booking || payload);
       } catch (tgErr: any) {
-        console.warn("⚠️ Gửi Telegram thất bại (không chặn flow):", tgErr?.message || tgErr);
+        console.warn("Telegram failed:", tgErr?.message || tgErr);
       }
 
       next();
     } catch (e: any) {
-      console.error("❌ Lỗi khi xác nhận:", e);
+      console.error("Booking confirmation failed:", e);
 
       const isTurnstileError = e?.status === 403 || e?.data?.error === "TURNSTILE_FAILED";
 
       if (isTurnstileError) {
-        setError(e?.data?.message || "Xác thực Turnstile thất bại. Vui lòng thử lại.");
+        setError(e?.data?.message || "Turnstile validation failed. Please try again.");
       } else {
-        setError(e?.message || "Không gửi được yêu cầu. Vui lòng thử lại.");
+        setError(e?.message || "Unable to submit. Please try again.");
       }
 
-      // Reset Turnstile token (token đã bị dùng hoặc hết hạn)
       setTurnstileToken("");
       setTurnstileKey((k) => k + 1);
     } finally {
@@ -300,17 +429,20 @@ export default function ReviewConfirmStep() {
   const glassWrapperClass =
     "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
 
-  // label fallback helper (không ảnh hưởng logic)
   const L = (key: string, fallback: string) => ((t as any)?.labels?.[key] as string) || fallback;
+
+  const noKhauPhaPkg2Pickup =
+    data.location === "khau_pha" &&
+    data.packageKey === "khau_pha_pkg_2" &&
+    !data.services?.["khau_pha_pkg_2_tu_le_pickup"]?.selected &&
+    !data.services?.["khau_pha_pkg_2_garrya_pickup"]?.selected;
 
   return (
     <div className="space-y-6 text-white">
       <div className={glassWrapperClass}>
         <h3 className="text-lg font-semibold text-white">{ui.reviewTitle}</h3>
 
-        {/* ===== Summary cards giống step4 ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Service Details */}
           <div className="p-4 rounded-2xl border border-white/30 bg-gradient-to-br from-red-500/20 to-orange-500/10">
             <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
               {L("serviceDetails", "Service details")}
@@ -319,7 +451,7 @@ export default function ReviewConfirmStep() {
             <div className="grid grid-cols-2 gap-3 text-sm text-white/90">
               <div>
                 <p className="text-white/60 text-xs">{L("service", "Service")}</p>
-                <p className="font-semibold">{(cfg as any)?.name?.[lang] ?? (cfg as any)?.name?.vi ?? L("flight", "Flight")}</p>
+                <p className="font-semibold">{cfg?.name?.[lang] ?? cfg?.name?.vi ?? L("flight", "Flight")}</p>
               </div>
 
               <div>
@@ -338,24 +470,35 @@ export default function ReviewConfirmStep() {
               </div>
 
               <div>
-                <p className="text-white/60 text-xs">{L("pickupLocation", "Pickup location")}</p>
+                <p className="text-white/60 text-xs">{ui.packageLabel}</p>
                 <p className="font-semibold">
-                  {pickupQty > 0
-                    ? isHaNoi
-                      ? L("pickupFixed", "BigC Thăng Long")
-                      : pickupLocation || L("launchSite", "Launch site")
-                    : L("launchSite", "Launch site")}
+                  {data.location === "khau_pha" ? packageLabel : ui.notSelected}
                 </p>
               </div>
 
               <div>
-                <p className="text-white/60 text-xs">{L("pickupTime", "Pickup time")}</p>
-                <p className="font-semibold">{L("pickupTimeDefault", "Before departure")}</p>
+                <p className="text-white/60 text-xs">{ui.flightTypeLabel}</p>
+                <p className="font-semibold">
+                  {data.location === "khau_pha"
+                    ? getFlightTypeLabel(lang, data.flightTypeKey)
+                    : getFlightTypeLabel(lang, "paragliding")}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{L("dayType", "Day type")}</p>
+                <p className="font-semibold">{getHolidayTypeLabel(lang, billInLang.holidayType)}</p>
+              </div>
+
+              <div>
+                <p className="text-white/60 text-xs">{ui.pickupDetails}</p>
+                <p className="font-semibold">
+                  {selectedPickupServices.length ? `${selectedPickupServices.length}` : ui.notSelected}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Contact Information */}
           <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
             <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
               {L("contactInfo", "Contact information")}
@@ -364,47 +507,60 @@ export default function ReviewConfirmStep() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <span className="text-white/60">{L("name", "Name")}</span>
-                <span className="font-semibold text-white text-right">
-                  {contactName || firstGuestName || ""}
-                </span>
+                <span className="font-semibold text-white text-right">{contactName || firstGuestName || ""}</span>
               </div>
 
               <div className="flex justify-between gap-3">
                 <span className="text-white/60">{L("email", "Email")}</span>
-                <span className="font-semibold text-white truncate max-w-[220px] text-right">
-                  {contactEmail || ""}
-                </span>
+                <span className="font-semibold text-white truncate max-w-[220px] text-right">{contactEmail || ""}</span>
               </div>
 
               <div className="flex justify-between gap-3">
                 <span className="text-white/60">{L("phone", "Phone")}</span>
-                <span className="font-semibold text-white text-right">
-                  {contactPhone || ""}
-                </span>
+                <span className="font-semibold text-white text-right">{contactPhone || ""}</span>
               </div>
-
-              {/* pickup note + map (giữ đúng logic cũ) */}
-              {pickupQty > 0 && isHaNoi && (
-                <div className="pt-2 text-sm text-white/80">
-                  <span className="font-medium">{L("pickup", "Pickup")}: </span>
-                  {L("pickupFixed", "BigC Thăng Long")}{" "}
-                  <a className="text-blue-400 underline" href={BIGC_THANG_LONG_MAP} target="_blank" rel="noreferrer">
-                    {t.buttons.viewMap}
-                  </a>
-                </div>
-              )}
-
-              {pickupQty > 0 && !isHaNoi && pickupLocation && (
-                <div className="pt-2 text-sm text-white/80">
-                  <span className="font-medium">{L("pickup", "Pickup")}: </span>
-                  {pickupLocation}
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* ===== Passenger section collapsible giống step4 ===== */}
+        {selectedPickupServices.length > 0 && (
+          <div className="rounded-2xl border border-white/30 bg-white/10 p-4">
+            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
+              {ui.pickupDetails}
+            </h4>
+
+            <div className="space-y-3 text-sm">
+              {serviceLines
+                .filter((x) => x.fixedMapUrl || x.inputText)
+                .map((x) => (
+                  <div key={x.key} className="flex flex-col gap-1">
+                    <span className="text-white/60">{x.label}</span>
+                    {x.fixedMapUrl ? (
+                      <a
+                        href={x.fixedMapUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-300 underline font-semibold"
+                      >
+                        {L("viewMap", "View map")}
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-white">{x.inputText}</span>
+                    )}
+                  </div>
+                ))}
+            </div>
+
+            {missingPickupAddress && <p className="mt-3 text-sm text-red-300">{ui.pickupAddressMissing}</p>}
+          </div>
+        )}
+
+        {noKhauPhaPkg2Pickup && (
+          <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
+            <p className="text-sm text-amber-100">{ui.noPickupSelected}</p>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-white/30 bg-white/10 overflow-hidden">
           <button
             type="button"
@@ -434,8 +590,7 @@ export default function ReviewConfirmStep() {
                       <p className="font-semibold text-white text-sm mb-2">{g.fullName}</p>
                       <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
                         <div>
-                          <span className="font-medium">{L("dob", "DOB")}:</span>{" "}
-                          <span className="ml-1">{g.dob}</span>
+                          <span className="font-medium">{L("dob", "DOB")}:</span> <span className="ml-1">{g.dob}</span>
                         </div>
                         <div>
                           <span className="font-medium">{L("gender", "Gender")}:</span>{" "}
@@ -468,26 +623,34 @@ export default function ReviewConfirmStep() {
           )}
         </div>
 
-        {/* ===== Special request box giống step4 ===== */}
         {!!specialRequest && (
           <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4">
-            <p className="text-xs text-yellow-200 font-semibold mb-1">
-              {L("specialRequest", "Special requests")}
-            </p>
+            <p className="text-xs text-yellow-200 font-semibold mb-1">{L("specialRequest", "Special requests")}</p>
             <p className="text-sm text-yellow-100">{specialRequest}</p>
           </div>
         )}
 
-        {/* ===== Additional services giống step4 ===== */}
         <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
           <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
             {L("additionalServices", "Additional services")}
           </h4>
 
           <div className="space-y-3 text-sm">
-            <Row label={L("hotelTransfer", "Hotel transfer")} value={pickupQty > 0 ? L("yes", "Yes") : L("no", "No")} enabled={pickupQty > 0} />
-            <Row label={L("camera360", "Camera 360")} value={getAddonQty("camera360") ? `${getAddonQty("camera360")} pax` : L("no", "No")} enabled={!!getAddonQty("camera360")} />
-            <Row label={L("drone", "Drone/Flycam")} value={getAddonQty("flycam") ? `${getAddonQty("flycam")} pax` : L("no", "No")} enabled={!!getAddonQty("flycam")} />
+            <Row
+              label={L("hotelTransfer", "Pickup / transfer")}
+              value={selectedPickupServices.length ? `${selectedPickupServices.length}` : L("no", "No")}
+              enabled={!!selectedPickupServices.length}
+            />
+            <Row
+              label={L("camera360", "Camera 360")}
+              value={getAddonQty("camera360") ? `${getAddonQty("camera360")} pax` : L("no", "No")}
+              enabled={!!getAddonQty("camera360")}
+            />
+            <Row
+              label={L("drone", "Drone/Flycam")}
+              value={getAddonQty("flycam") ? `${getAddonQty("flycam")} pax` : L("no", "No")}
+              enabled={!!getAddonQty("flycam")}
+            />
 
             <div className="flex justify-between items-center">
               <span className="text-white/70">{L("gopro", "GoPro")}</span>
@@ -504,7 +667,6 @@ export default function ReviewConfirmStep() {
           </div>
         </div>
 
-        {/* ===== Price breakdown giống step4 (unit × qty = subtotal) ===== */}
         <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
           <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
             {L("priceBreakdown", "Price breakdown")}
@@ -530,7 +692,6 @@ export default function ReviewConfirmStep() {
           </div>
         </div>
 
-        {/* ===== Payment method giống step4 (chỉ hiển thị) ===== */}
         <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
           <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
             {L("paymentMethod", "Payment method")}
@@ -544,7 +705,6 @@ export default function ReviewConfirmStep() {
           </div>
         </div>
 
-        {/* ── Turnstile CAPTCHA widget ── */}
         <div className="rounded-2xl border border-white/40 p-4">
           <TurnstileWidget
             key={turnstileKey}
@@ -556,7 +716,6 @@ export default function ReviewConfirmStep() {
           />
         </div>
 
-        {/* Terms checkbox + mở modal */}
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -587,7 +746,7 @@ export default function ReviewConfirmStep() {
           {t.buttons.back}
         </button>
         <button
-          disabled={!data.acceptedTerms || !turnstileToken || submitting}
+          disabled={!data.acceptedTerms || !turnstileToken || submitting || missingPickupAddress}
           onClick={handleConfirm}
           className="px-5 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 transition"
         >
@@ -595,7 +754,6 @@ export default function ReviewConfirmStep() {
         </button>
       </div>
 
-      {/* Modal: hiển thị nội dung terms trực tiếp */}
       {showTerms && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowTerms(false)} />

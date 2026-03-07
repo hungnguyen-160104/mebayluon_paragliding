@@ -2,8 +2,11 @@
 
 import type { LangCode } from "./translations-booking";
 
-export type LocationKey = "sapa" | "khau_pha" | "da_nang" | "ha_noi";
+export type LocationKey = "sapa" | "khau_pha" | "da_nang" | "ha_noi" | "quan_ba";
 export type AddonKey = "pickup" | "flycam" | "camera360";
+export type FlightTypeKey = "paragliding" | "paramotor";
+export type PackageKey = "khau_pha_pkg_1" | "khau_pha_pkg_2";
+export type HolidayType = "weekday" | "weekend" | "holiday";
 
 type AddonConfig = {
   label: Record<LangCode, string>;
@@ -12,12 +15,44 @@ type AddonConfig = {
   pricePerPersonUSD: number | null;
 };
 
+type DynamicServiceConfig = {
+  key: string;
+  label: Record<LangCode, string>;
+  description?: Partial<Record<LangCode, string>>;
+  note?: Partial<Record<LangCode, string>>;
+  controlType?: "checkbox" | "radio" | "counter";
+  defaultSelected?: boolean;
+  priceVND?: number | null;
+  priceUSD?: number | null;
+  requiresPickupInput?: boolean;
+  fixedMapUrl?: string;
+  exclusiveGroup?: string;
+  visibleForPackages?: PackageKey[];
+};
+
+type FlightTypePriceConfig = {
+  key: FlightTypeKey;
+  label: Record<LangCode, string>;
+  weekday?: number;
+  weekend?: number;
+  holiday?: number;
+  fixed?: number;
+};
+
+type PackageConfig = {
+  key: PackageKey;
+  label: Record<LangCode, string>;
+  flightTypes: FlightTypePriceConfig[];
+};
+
 type LocationConfig = {
   key: LocationKey;
   name: Record<LangCode, string>;
+
   /** Giá cơ bản theo ngày (có thể đổi cuối tuần / lễ) */
   basePriceVND: (dateISO?: string) => number;
   basePriceUSD: (dateISO?: string) => number;
+
   addons: Record<AddonKey, AddonConfig>;
   included: Record<LangCode, string[]>;
   excluded?: Record<LangCode, string[]>;
@@ -26,18 +61,108 @@ type LocationConfig = {
     landing?: string;
     pickup?: string;
   };
+
+  /**
+   * NEW:
+   * Dùng cho rule mới, nhưng không phá flow cũ.
+   */
+  packages?: PackageConfig[];
+  services?: DynamicServiceConfig[];
 };
 
 const USD_FALLBACK_RATE = 25_000; // dùng khi không có số USD chính thức
+const BIGC_THANG_LONG_MAP = "https://maps.app.goo.gl/3vB2qYuThwBASQZj8";
 
 function toUSDfromVND(vnd: number): number {
   return Math.round(vnd / USD_FALLBACK_RATE);
 }
-function isWeekend(dateISO?: string): boolean {
+export function isWeekend(dateISO?: string): boolean {
   if (!dateISO) return false;
   const d = new Date(dateISO);
+  if (Number.isNaN(d.getTime())) return false;
   const wd = d.getDay();
   return wd === 0 || wd === 6;
+}
+
+function toYMD(dateISO?: string): string {
+  if (!dateISO) return "";
+  const d = new Date(dateISO);
+  if (Number.isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function isVietnamMajorHoliday(dateISO?: string): boolean {
+  const ymd = toYMD(dateISO);
+  if (!ymd) return false;
+
+  const mmdd = ymd.slice(5);
+
+  // Các ngày nghỉ lớn phổ biến ở VN
+  if (mmdd === "01-01") return true; // Tết dương lịch
+  if (mmdd === "04-30") return true; // 30/4
+  if (mmdd === "05-01") return true; // 1/5
+  if (mmdd === "09-02") return true; // Quốc khánh
+
+  // Một số ngày lễ âm lịch quy đổi theo năm, có thể bổ sung thêm nếu cần
+  const mappedByYear = new Set<string>([
+    "2026-04-27", // Giỗ Tổ Hùng Vương 2026
+  ]);
+
+  return mappedByYear.has(ymd);
+}
+
+export function getHolidayType(dateISO?: string): HolidayType {
+  if (isVietnamMajorHoliday(dateISO)) return "holiday";
+  if (isWeekend(dateISO)) return "weekend";
+  return "weekday";
+}
+
+function getKhauPhaPackageBasePriceVND(
+  packageKey?: string,
+  flightTypeKey?: string,
+  dateISO?: string
+): number {
+  const holidayType = getHolidayType(dateISO);
+
+  if (packageKey === "khau_pha_pkg_1") {
+    /**
+     * Theo rule bạn đã chốt:
+     * - package 1 có giá theo thời điểm bay
+     * - chọn loại bay nào thì lấy giá theo loại đó
+     *
+     * Vì PDF là tài liệu bổ sung/sửa đổi, nhưng bạn chưa gửi file nào khác
+     * chứa bảng giá tách riêng paragliding/paramotor theo package,
+     * nên ở đây giữ mức giá cũ đang có + tách sẵn cấu trúc để bước sau
+     * có thể thay đúng số nếu cần.
+     */
+    if (flightTypeKey === "paramotor") {
+      if (holidayType === "holiday" || holidayType === "weekend") return 2_520_000;
+      return 2_120_000;
+    }
+
+    // paragliding / mặc định
+    if (holidayType === "holiday" || holidayType === "weekend") return 2_520_000;
+    return 2_120_000;
+  }
+
+  if (packageKey === "khau_pha_pkg_2") {
+    if (flightTypeKey === "paramotor") return 2_390_000;
+    return 2_390_000;
+  }
+
+  // fallback cũ nếu chưa chọn package
+  return holidayType === "holiday" || holidayType === "weekend" ? 2_520_000 : 2_120_000;
+}
+
+function getKhauPhaPackageBasePriceUSD(
+  packageKey?: string,
+  flightTypeKey?: string,
+  dateISO?: string
+): number {
+  return toUSDfromVND(getKhauPhaPackageBasePriceVND(packageKey, flightTypeKey, dateISO));
 }
 
 export const LOCATIONS: Record<LocationKey, LocationConfig> = {
@@ -152,8 +277,152 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "安沛（考帕山口 – 木仓寨）",
       hi: "येन बाई (खाउ फ़ा दर्रा – मु कांग चाई)",
     },
-    basePriceVND: (dateISO) => (isWeekend(dateISO) ? 2_590_000 : 2_190_000),
-    basePriceUSD: (dateISO) => (isWeekend(dateISO) ? 100 : 85),
+    basePriceVND: (dateISO) => (getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000),
+    basePriceUSD: (dateISO) => toUSDfromVND(getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000),
+    packages: [
+      {
+        key: "khau_pha_pkg_1",
+        label: {
+          vi: "Khau Phạ - Gói 1",
+          en: "Khau Pha - Package 1",
+          fr: "Khau Pha - Forfait 1",
+          ru: "Khau Pha - Пакет 1",
+          zh: "Khau Pha - 套餐 1",
+          hi: "Khau Pha - पैकेज 1",
+        },
+        flightTypes: [
+          {
+            key: "paragliding",
+            label: {
+              vi: "Bay dù không động cơ",
+              en: "Paragliding",
+              fr: "Parapente",
+              ru: "Параплан",
+              zh: "无动力滑翔伞",
+              hi: "पैराग्लाइडिंग",
+            },
+            weekday: 2_120_000,
+            weekend: 2_520_000,
+            holiday: 2_520_000,
+          },
+          {
+            key: "paramotor",
+            label: {
+              vi: "Bay dù gắn động cơ",
+              en: "Paramotor",
+              fr: "Paramoteur",
+              ru: "Парамотор",
+              zh: "动力伞",
+              hi: "पैरामोटर",
+            },
+            weekday: 2_120_000,
+            weekend: 2_520_000,
+            holiday: 2_520_000,
+          },
+        ],
+      },
+      {
+        key: "khau_pha_pkg_2",
+        label: {
+          vi: "Khau Phạ - Gói 2",
+          en: "Khau Pha - Package 2",
+          fr: "Khau Pha - Forfait 2",
+          ru: "Khau Pha - Пакет 2",
+          zh: "Khau Pha - 套餐 2",
+          hi: "Khau Pha - पैकेज 2",
+        },
+        flightTypes: [
+          {
+            key: "paragliding",
+            label: {
+              vi: "Bay dù không động cơ",
+              en: "Paragliding",
+              fr: "Parapente",
+              ru: "Параплан",
+              zh: "无动力滑翔伞",
+              hi: "पैराग्लाइडिंग",
+            },
+            fixed: 2_390_000,
+          },
+          {
+            key: "paramotor",
+            label: {
+              vi: "Bay dù gắn động cơ",
+              en: "Paramotor",
+              fr: "Paramoteur",
+              ru: "Парамотор",
+              zh: "动力伞",
+              hi: "पैरामोटर",
+            },
+            fixed: 2_390_000,
+          },
+        ],
+      },
+    ],
+    services: [
+      {
+        key: "khau_pha_pkg_1_shuttle",
+        label: {
+          vi: "Xe trung chuyển lên/xuống núi",
+          en: "Mountain shuttle",
+          fr: "Navette montagne",
+          ru: "Горный трансфер",
+          zh: "上下山接驳车",
+          hi: "माउंटेन शटल",
+        },
+        controlType: "checkbox",
+        defaultSelected: true,
+        priceVND: 70_000,
+        priceUSD: 3,
+        visibleForPackages: ["khau_pha_pkg_1"],
+      },
+      {
+        key: "khau_pha_pkg_1_garrya_pickup",
+        label: {
+          vi: "Xe đón Garrya / Mù Cang Chải",
+          en: "Pickup from Garrya / Mu Cang Chai",
+          fr: "Transfert Garrya / Mu Cang Chai",
+          ru: "Трансфер Garrya / Mu Cang Chai",
+          zh: "Garrya / 木仓寨接送",
+          hi: "Garrya / Mu Cang Chai पिकअप",
+        },
+        controlType: "checkbox",
+        requiresPickupInput: true,
+        visibleForPackages: ["khau_pha_pkg_1"],
+      },
+      {
+        key: "khau_pha_pkg_2_tu_le_pickup",
+        label: {
+          vi: "Đón trả trong khu vực Tú Lệ",
+          en: "Pickup in Tu Le area",
+          fr: "Prise en charge zone Tu Le",
+          ru: "Трансфер в районе Tu Le",
+          zh: "Tú Lệ 区域接送",
+          hi: "Tu Le क्षेत्र पिकअप",
+        },
+        controlType: "checkbox",
+        priceVND: 70_000,
+        priceUSD: 3,
+        requiresPickupInput: true,
+        exclusiveGroup: "khau_pha_pkg_2_pickup",
+        visibleForPackages: ["khau_pha_pkg_2"],
+      },
+      {
+        key: "khau_pha_pkg_2_garrya_pickup",
+        label: {
+          vi: "Đón Garrya / Mù Cang Chải",
+          en: "Pickup from Garrya / Mu Cang Chai",
+          fr: "Transfert Garrya / Mu Cang Chai",
+          ru: "Трансфер Garrya / Mu Cang Chai",
+          zh: "Garrya / 木仓寨接送",
+          hi: "Garryya / Mu Cang Chai पिकअप",
+        },
+        controlType: "checkbox",
+        requiresPickupInput: true,
+        exclusiveGroup: "khau_pha_pkg_2_pickup",
+        visibleForPackages: ["khau_pha_pkg_2"],
+      },
+    ],
     addons: {
       flycam: {
         label: {
@@ -265,8 +534,40 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "岘港（山茶半岛）",
       hi: "दा नांग (सोन त्रà प्रायद्वीप)",
     },
-    basePriceVND: () => 1_790_000,
-    basePriceUSD: () => 70,
+    basePriceVND: () => 1_690_000,
+    basePriceUSD: () => 65,
+    services: [
+      {
+        key: "da_nang_mountain_shuttle",
+        label: {
+          vi: "Xe di chuyển lên điểm cất cánh",
+          en: "Shuttle to takeoff point",
+          fr: "Navette vers le décollage",
+          ru: "Трансфер до точки старта",
+          zh: "前往起飞点接驳车",
+          hi: "टेकऑफ पॉइंट शटल",
+        },
+        controlType: "checkbox",
+        defaultSelected: true,
+        priceVND: 100_000,
+        priceUSD: 4,
+      },
+      {
+        key: "da_nang_hotel_pickup",
+        label: {
+          vi: "Đón trả 2 chiều từ khách sạn",
+          en: "Round-trip hotel pickup",
+          fr: "Transfert A/R depuis l’hôtel",
+          ru: "Трансфер туда-обратно от отеля",
+          zh: "酒店往返接送",
+          hi: "राउंड-ट्रिप होटल पिकअप",
+        },
+        controlType: "checkbox",
+        priceVND: 200_000,
+        priceUSD: 8,
+        requiresPickupInput: true,
+      },
+    ],
     addons: {
       flycam: {
         label: {
@@ -294,15 +595,15 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       pickup: {
         label: {
-          vi: "Đưa đón trung tâm TP (không bao gồm)",
-          en: "City center pickup (not included)",
-          fr: "Transfert centre-ville (non inclus)",
-          ru: "Трансфер из центра (не включён)",
-          zh: "市中心接送（不包含）",
-          hi: "सिटी सेंटर पिकअप (शामिल नहीं)",
+          vi: "Đưa đón trung tâm TP",
+          en: "City center pickup",
+          fr: "Transfert centre-ville",
+          ru: "Трансфер из центра",
+          zh: "市中心接送",
+          hi: "सिटी सेंटर पिकअप",
         },
-        pricePerPersonVND: null,
-        pricePerPersonUSD: null,
+        pricePerPersonVND: 200_000,
+        pricePerPersonUSD: 8,
       },
     },
     included: {
@@ -356,12 +657,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       ],
     },
     excluded: {
-      vi: ["Bữa ăn", "Đưa đón từ trung tâm thành phố"],
-      en: ["Meals", "City center pickup"],
-      fr: ["Repas", "Transfert depuis le centre-ville"],
-      ru: ["Питание", "Трансфер из центра города"],
-      zh: ["餐食", "市中心接送"],
-      hi: ["भोजन", "सिटी सेंटर पिकअप"],
+      vi: ["Bữa ăn"],
+      en: ["Meals"],
+      fr: ["Repas"],
+      ru: ["Питание"],
+      zh: ["餐食"],
+      hi: ["भोजन"],
     },
     coordinates: {
       takeoff: "https://maps.app.goo.gl/6NDgTSg8PZb5BtGX8",
@@ -379,8 +680,69 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "河内（Đồi Bù / Viên Nam）",
       hi: "हनोई (दोई बू / विएन नाम)",
     },
-    basePriceVND: () => 1_850_000,
-    basePriceUSD: () => 75,
+    basePriceVND: () => 1_690_000,
+    basePriceUSD: () => 65,
+    services: [
+      {
+        key: "ha_noi_fixed_pickup",
+        label: {
+          vi: "Xe đón/trả từ BigC Thăng Long",
+          en: "Round-trip pickup from BigC Thang Long",
+          fr: "Transfert A/R depuis BigC Thang Long",
+          ru: "Трансфер туда-обратно от BigC Thang Long",
+          zh: "BigC Thăng Long 往返接送",
+          hi: "BigC Thang Long से राउंड-ट्रिप पिकअप",
+        },
+        controlType: "checkbox",
+        priceVND: 200_000,
+        priceUSD: 8,
+        fixedMapUrl: BIGC_THANG_LONG_MAP,
+        exclusiveGroup: "ha_noi_pickup_group",
+      },
+      {
+        key: "ha_noi_private_hotel_pickup",
+        label: {
+          vi: "Xe riêng đón/trả từ khách sạn",
+          en: "Private hotel pickup",
+          fr: "Transfert privé depuis l’hôtel",
+          ru: "Индивидуальный трансфер от отеля",
+          zh: "酒店专车接送",
+          hi: "प्राइवेट होटल पिकअप",
+        },
+        controlType: "checkbox",
+        requiresPickupInput: true,
+        exclusiveGroup: "ha_noi_pickup_group",
+      },
+      {
+        key: "ha_noi_mountain_shuttle",
+        label: {
+          vi: "Xe chuyên dụng lên núi",
+          en: "Special mountain vehicle",
+          fr: "Véhicule spécialisé montagne",
+          ru: "Специальный горный транспорт",
+          zh: "专用上山车辆",
+          hi: "स्पेशल माउंटेन वाहन",
+        },
+        controlType: "checkbox",
+        defaultSelected: true,
+        priceVND: 130_000,
+        priceUSD: 5,
+      },
+      {
+        key: "ha_noi_sunset",
+        label: {
+          vi: "Hoàng hôn trên đỉnh núi",
+          en: "Sunset on the mountain top",
+          fr: "Coucher du soleil au sommet",
+          ru: "Закат на вершине",
+          zh: "山顶日落",
+          hi: "पर्वत शिखर पर सूर्यास्त",
+        },
+        controlType: "checkbox",
+        priceVND: 700_000,
+        priceUSD: 28,
+      },
+    ],
     addons: {
       pickup: {
         label: {
@@ -408,15 +770,15 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       flycam: {
         label: {
-          vi: "Flycam (không có dịch vụ)",
-          en: "Flycam (not available)",
-          fr: "Flycam (indisponible)",
-          ru: "Flycam (нет услуги)",
-          zh: "航拍（暂无服务）",
-          hi: "फ्लाईकैम (उपलब्ध नहीं)",
+          vi: "Flycam",
+          en: "Flycam",
+          fr: "Flycam",
+          ru: "Flycam",
+          zh: "航拍",
+          hi: "फ्लाईकैम",
         },
-        pricePerPersonVND: null,
-        pricePerPersonUSD: null,
+        pricePerPersonVND: 350_000,
+        pricePerPersonUSD: 14,
       },
     },
     included: {
@@ -470,17 +832,126 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       ],
     },
     excluded: {
-      vi: ["Flycam (drone camera)", "Bữa ăn"],
-      en: ["Flycam (drone camera)", "Meals"],
-      fr: ["Flycam (drone)", "Repas"],
-      ru: ["Flycam (дрон)", "Питание"],
-      zh: ["航拍（无人机）", "餐食"],
-      hi: ["फ्लाईकैम (ड्रोन कैमरा)", "भोजन"],
+      vi: ["Bữa ăn"],
+      en: ["Meals"],
+      fr: ["Repas"],
+      ru: ["Питание"],
+      zh: ["餐食"],
+      hi: ["भोजन"],
     },
     coordinates: {
       takeoff: "https://maps.app.goo.gl/RxfRus3UfSz2m4nP6",
-      pickup: "https://maps.app.goo.gl/3vB2qYuThwBASQZj8",
+      pickup: BIGC_THANG_LONG_MAP,
     },
+  },
+
+  quan_ba: {
+    key: "quan_ba",
+    name: {
+      vi: "Hà Giang (Quản Bạ)",
+      en: "Ha Giang (Quan Ba)",
+      fr: "Ha Giang (Quan Ba)",
+      ru: "Хазянг (Куан Ба)",
+      zh: "河江（管坝）",
+      hi: "हा जियांग (क्वान बा)",
+    },
+    basePriceVND: () => 2_090_000,
+    basePriceUSD: () => 80,
+    services: [
+      {
+        key: "quan_ba_pickup",
+        label: {
+          vi: "Xe đón trả 2 chiều trong khu vực Quản Bạ",
+          en: "Round-trip pickup in Quan Ba area",
+          fr: "Transfert A/R dans la zone de Quan Ba",
+          ru: "Трансфер туда-обратно в районе Quan Ba",
+          zh: "管坝区域往返接送",
+          hi: "Quan Ba क्षेत्र राउंड-ट्रिप पिकअप",
+        },
+        controlType: "checkbox",
+        priceVND: 150_000,
+        priceUSD: 6,
+        requiresPickupInput: true,
+      },
+    ],
+    addons: {
+      pickup: {
+        label: {
+          vi: "Xe đón trả 2 chiều trong khu vực Quản Bạ",
+          en: "Round-trip pickup in Quan Ba area",
+          fr: "Transfert A/R dans la zone de Quan Ba",
+          ru: "Трансфер туда-обратно в районе Quan Ba",
+          zh: "管坝区域往返接送",
+          hi: "Quan Ba क्षेत्र राउंड-ट्रिप पिकअप",
+        },
+        pricePerPersonVND: 150_000,
+        pricePerPersonUSD: 6,
+      },
+      flycam: {
+        label: {
+          vi: "Flycam (Drone camera)",
+          en: "Flycam (Drone camera)",
+          fr: "Flycam (drone)",
+          ru: "Flycam (дрон)",
+          zh: "航拍（无人机）",
+          hi: "फ्लाईकैम (ड्रोन कैमरा)",
+        },
+        pricePerPersonVND: 350_000,
+        pricePerPersonUSD: 14,
+      },
+      camera360: {
+        label: {
+          vi: "Camera toàn cảnh 360",
+          en: "360° camera",
+          fr: "Caméra 360°",
+          ru: "Камера 360°",
+          zh: "360°全景相机",
+          hi: "360° कैमरा",
+        },
+        pricePerPersonVND: 500_000,
+        pricePerPersonUSD: 20,
+      },
+    },
+    included: {
+      vi: [
+        "01 chuyến bay dù lượn",
+        "Quay phim & chụp hình GoPro",
+        "Bảo hiểm dù lượn",
+        "Giấy chứng nhận",
+      ],
+      en: [
+        "One paragliding flight",
+        "GoPro photos & videos",
+        "Paragliding insurance",
+        "Certificate",
+      ],
+      fr: [
+        "1 vol en parapente",
+        "Photos & vidéos GoPro",
+        "Assurance parapente",
+        "Certificat",
+      ],
+      ru: [
+        "1 полёт на параплане",
+        "Фото и видео на GoPro",
+        "Страховка",
+        "Сертификат",
+      ],
+      zh: [
+        "1次滑翔伞飞行",
+        "GoPro 拍摄照片与视频",
+        "滑翔伞保险",
+        "证书",
+      ],
+      hi: [
+        "1 पैराग्लाइडिंग फ़्लाइट",
+        "GoPro फ़ोटो और वीडियो",
+        "पैराग्लाइडिंग बीमा",
+        "प्रमाणपत्र",
+      ],
+    },
+    excluded: { vi: [], en: [], fr: [], ru: [], zh: [], hi: [] },
+    coordinates: {},
   },
 };
 
@@ -511,6 +982,9 @@ type ComputeParams = {
   guestsCount: number;
   dateISO?: string;
 
+  packageKey?: string;
+  flightTypeKey?: string;
+
   /** backward compat */
   addons?: Partial<Record<AddonKey, boolean>>;
 
@@ -521,6 +995,7 @@ type ComputeParams = {
 export type ComputeResult = {
   currency: "VND" | "USD";
   guestsCount: number;
+  holidayType: HolidayType;
 
   basePricePerPerson: number;
   baseTotal: number;
@@ -528,7 +1003,7 @@ export type ComputeResult = {
   /** backward compat: đơn giá addon (chỉ set >0 nếu qty>0) */
   addonsPerPerson: Record<AddonKey, number>;
 
-  /** NEW: breakdown theo qty */
+  /** breakdown theo qty */
   addonsUnitPrice: Record<AddonKey, number>;
   addonsQty: Record<AddonKey, number>;
   addonsTotal: Record<AddonKey, number>;
@@ -537,7 +1012,7 @@ export type ComputeResult = {
   discountPerPerson: number;
   discountTotal: number;
 
-  /** Trung bình/khách (đã tính addons theo qty -> chia đều) */
+  /** trung bình/khách */
   totalPerPerson: number;
 
   totalAfterDiscount: number;
@@ -558,6 +1033,26 @@ function clampInt(v: unknown, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
 
+function getBasePriceVND(p: ComputeParams): number {
+  const { location, dateISO, packageKey, flightTypeKey } = p;
+
+  if (location === "khau_pha") {
+    return getKhauPhaPackageBasePriceVND(packageKey, flightTypeKey, dateISO);
+  }
+
+  return LOCATIONS[location].basePriceVND(dateISO);
+}
+
+function getBasePriceUSD(p: ComputeParams): number {
+  const { location, dateISO, packageKey, flightTypeKey } = p;
+
+  if (location === "khau_pha") {
+    return getKhauPhaPackageBasePriceUSD(packageKey, flightTypeKey, dateISO);
+  }
+
+  return LOCATIONS[location].basePriceUSD(dateISO);
+}
+
 function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): ComputeResult {
   const {
     location,
@@ -570,7 +1065,7 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
   const guestsCount = Math.max(1, clampInt(rawGuests ?? 1, 1, 100));
   const cfg = LOCATIONS[location];
 
-  const base = currency === "VND" ? cfg.basePriceVND(dateISO) : cfg.basePriceUSD(dateISO);
+  const base = currency === "VND" ? getBasePriceVND(p) : getBasePriceUSD(p);
 
   const addonsPerPerson: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
   const addonsUnitPrice: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
@@ -580,7 +1075,6 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
   (["pickup", "flycam", "camera360"] as AddonKey[]).forEach((key) => {
     const a = cfg.addons[key];
 
-    // unit price
     let unit = currency === "VND" ? a.pricePerPersonVND : a.pricePerPersonUSD;
     if (unit == null) {
       if (currency === "USD" && a.pricePerPersonVND != null) {
@@ -591,25 +1085,20 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
     }
     addonsUnitPrice[key] = unit ?? 0;
 
-    // qty (NEW) ưu tiên addonsQty; fallback boolean -> guestsCount
     let qty = addonsQty?.[key];
     if (qty == null) qty = addons?.[key] ? guestsCount : 0;
 
     qty = clampInt(qty ?? 0, 0, guestsCount);
 
-    // nếu addon không available (unit=0 vì null) thì ép qty=0
     if (!addonsUnitPrice[key]) qty = 0;
 
     addonsQtyNorm[key] = qty;
     addonsTotal[key] = addonsUnitPrice[key] * qty;
-
-    // backward compat
     addonsPerPerson[key] = qty > 0 ? addonsUnitPrice[key] : 0;
   });
 
   const addonsGrandTotal = Object.values(addonsTotal).reduce((s, x) => s + x, 0);
 
-  // giảm theo nhóm
   let discount = 0;
   for (const tier of GROUP_DISCOUNT) {
     if (guestsCount >= tier.min) {
@@ -620,15 +1109,13 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
 
   const baseTotal = base * guestsCount;
   const discountTotal = discount * guestsCount;
-
   const totalAfterDiscount = baseTotal + addonsGrandTotal - discountTotal;
-
-  // trung bình/khách (làm tròn để tránh số lẻ khó nhìn)
   const totalPerPerson = Math.round(totalAfterDiscount / guestsCount);
 
   return {
     currency,
     guestsCount,
+    holidayType: getHolidayType(dateISO),
 
     basePricePerPerson: base,
     baseTotal,

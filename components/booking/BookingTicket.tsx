@@ -20,7 +20,6 @@ type Props = {
   bookingResult?: any;
 };
 
-/* ── helpers ── */
 function digitsOnly(s: string) {
   return (s || "").replace(/\D+/g, "");
 }
@@ -49,23 +48,18 @@ function buildBookingRef(dateISO?: string, phone?: string) {
   return `MBL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-/* ── Export-safe palette (HEX only — no oklch) ── */
 const C = {
   text: "#0f172a",
   textSecondary: "#334155",
   muted: "#64748b",
   border: "#e2e8f0",
-  borderLight: "#f1f5f9",
   bg: "#ffffff",
   dark: "#0b1220",
   soft: "#f8fafc",
-  accent: "#0ea5e9",
   accentDark: "#0369a1",
   white: "#ffffff",
-  danger: "#ef4444",
 };
 
-/* ── i18n ticket labels (fallback safe) ── */
 function useTicketLabels(lang: LangCode) {
   const L = lang as unknown as string;
   const t = (bookingTranslations as any)[L] ?? bookingTranslations.en;
@@ -115,17 +109,6 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("创建时间", "建立時間")
               : "Created",
-    ref: isVI
-      ? "Mã đặt chỗ"
-      : isFR
-        ? "Réf. réservation"
-        : isRU
-          ? "Код бронирования"
-          : isHI
-            ? "बुकिंग संदर्भ"
-            : isZH || isZHTW
-              ? zh("预订编号", "預訂編號")
-              : "Booking Ref",
     confirmed: isVI
       ? "Đã xác nhận"
       : isFR
@@ -137,56 +120,76 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("已确认", "已確認")
               : "Confirmed",
-    serviceDetails: isVI ? "Thông tin dịch vụ" : "Service details",
+    serviceDetails: isVI ? "Thông tin dịch vụ" : isFR ? "Détails du service" : isRU ? "Детали услуги" : isHI ? "सेवा विवरण" : isZH || isZHTW ? zh("服务信息", "服務資訊") : "Service details",
     contactInfo: (t as any)?.labels?.contactInfo ?? "Contact information",
-    passengerInfo: isVI ? "Thông tin hành khách" : "Passenger information",
-    passengersList: isVI ? "Danh sách hành khách" : "Passengers list",
-    additionalServices: isVI ? "Dịch vụ thêm" : "Additional services",
-    priceBreakdown: isVI ? "Chi tiết giá" : "Price breakdown",
-    total: isVI ? "Tổng cộng" : "Total",
-    service: isVI ? "Dịch vụ" : "Service",
+    passengersList: isVI ? "Danh sách hành khách" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers list",
+    additionalServices: isVI ? "Dịch vụ thêm" : isFR ? "Services supplémentaires" : isRU ? "Дополнительные услуги" : isHI ? "अतिरिक्त सेवाएँ" : isZH || isZHTW ? zh("附加服务", "附加服務") : "Additional services",
+    total: isVI ? "Tổng cộng" : isFR ? "Total" : isRU ? "Итого" : isHI ? "कुल" : isZH || isZHTW ? zh("总计", "總計") : "Total",
+    service: isVI ? "Dịch vụ" : isFR ? "Service" : isRU ? "Услуга" : isHI ? "सेवा" : isZH || isZHTW ? zh("服务", "服務") : "Service",
     date: (t as any)?.labels?.date ?? "Date",
     time: (t as any)?.labels?.timeSlot ?? "Time",
     location: (t as any)?.labels?.location ?? "Location",
     guests: (t as any)?.labels?.numGuests ?? "Passengers",
+    packageLabel: isVI ? "Gói bay" : isFR ? "Forfait" : isRU ? "Пакет" : isHI ? "पैकेज" : isZH || isZHTW ? zh("套餐", "套餐") : "Package",
+    flightTypeLabel: isVI ? "Loại bay" : isFR ? "Type de vol" : isRU ? "Тип полёта" : isHI ? "फ्लाइट प्रकार" : isZH || isZHTW ? zh("飞行类型", "飛行類型") : "Flight type",
+    dayTypeLabel: isVI ? "Loại ngày" : isFR ? "Type de jour" : isRU ? "Тип дня" : isHI ? "दिन का प्रकार" : isZH || isZHTW ? zh("日期类型", "日期類型") : "Day type",
     name: isVI ? "Tên" : "Name",
     phone: (t as any)?.labels?.phone ?? "Phone",
     email: "Email",
-    pickupLocation: isVI ? "Điểm đón" : "Pickup location",
-    pickupTime: isVI ? "Giờ đón" : "Pickup time",
-    pickupTimeDefault: isVI ? "30 phút trước giờ bay" : "30 minutes before departure",
-    flexible: isVI ? "Linh hoạt" : "Flexible",
-    launchSite: isVI ? "Điểm bay" : "Launch site",
-    yes: isVI ? "Có" : "Yes",
-    no: isVI ? "Không" : "No",
-    free: isVI ? "Miễn phí" : "Free",
-    included: isVI ? "Bao gồm" : "Included",
-    groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Discount"),
-    notProvided: isVI ? "Chưa cung cấp" : "Not provided",
-    specialRequests: isVI ? "Yêu cầu đặc biệt" : "Special requests",
-    flightCost: isVI ? "Giá bay" : "Flight cost",
-    transferCost: isVI ? "Xe đưa đón" : "Hotel transfer",
+    pickupLocation: isVI ? "Điểm đón" : isFR ? "Lieu de prise en charge" : isRU ? "Место трансфера" : isHI ? "पिकअप स्थान" : isZH || isZHTW ? zh("接送地点", "接送地點") : "Pickup location",
+    specialRequests: isVI ? "Yêu cầu đặc biệt" : isFR ? "Demandes spéciales" : isRU ? "Особые запросы" : isHI ? "विशेष अनुरोध" : isZH || isZHTW ? zh("特殊要求", "特殊要求") : "Special requests",
+    flightCost: isVI ? "Giá bay" : isFR ? "Prix du vol" : isRU ? "Стоимость полёта" : isHI ? "फ्लाइट शुल्क" : isZH || isZHTW ? zh("飞行费用", "飛行費用") : "Flight cost",
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
     droneCost: isVI ? "Flycam/Drone" : "Drone/Flycam",
+    groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Group discount"),
+    free: isVI ? "Miễn phí" : "Free",
+    included: isVI ? "Bao gồm" : "Included",
+    yes: isVI ? "Có" : "Yes",
+    no: isVI ? "Không" : "No",
     arrive: isVI
       ? "Vui lòng có mặt trước 15 phút để briefing an toàn."
-      : "Please arrive 15 minutes early for safety briefing.",
+      : isFR
+        ? "Veuillez arriver 15 minutes à l’avance pour le briefing de sécurité."
+        : isRU
+          ? "Пожалуйста, прибудьте за 15 минут до инструктажа по безопасности."
+          : isHI
+            ? "कृपया सुरक्षा ब्रीफिंग के लिए 15 मिनट पहले पहुँचें।"
+            : isZH || isZHTW
+              ? zh("请提前15分钟到达参加安全简报。", "請提前15分鐘到達參加安全簡報。")
+              : "Please arrive 15 minutes early for safety briefing.",
+    notProvided: isVI ? "Chưa cung cấp" : isFR ? "Non fourni" : isRU ? "Не указано" : isHI ? "प्रदान नहीं किया गया" : isZH || isZHTW ? zh("未提供", "未提供") : "Not provided",
     pax: isVI ? "khách" : isFR ? "pers" : isRU ? "чел" : isHI ? "यात्री" : (isZH || isZHTW) ? zh("人", "人") : "pax",
+    weekday: isVI ? "Ngày thường" : isFR ? "Jour ouvré" : isRU ? "Будний день" : isHI ? "कार्यदिवस" : (isZH || isZHTW) ? zh("工作日", "工作日") : "Weekday",
+    weekend: isVI ? "Cuối tuần" : isFR ? "Week-end" : isRU ? "Выходной" : isHI ? "सप्ताहांत" : (isZH || isZHTW) ? zh("周末", "週末") : "Weekend",
+    holiday: isVI ? "Ngày lễ" : isFR ? "Jour férié" : isRU ? "Праздничный день" : isHI ? "छुट्टी" : (isZH || isZHTW) ? zh("节假日", "節假日") : "Holiday",
+    paragliding: isVI ? "Bay dù không động cơ" : isFR ? "Parapente" : isRU ? "Параплан" : isHI ? "पैराग्लाइडिंग" : (isZH || isZHTW) ? zh("无动力滑翔伞", "無動力滑翔傘") : "Paragliding",
+    paramotor: isVI ? "Bay dù gắn động cơ" : isFR ? "Paramoteur" : isRU ? "Парамотор" : isHI ? "पैरामोटर" : (isZH || isZHTW) ? zh("动力伞", "動力傘") : "Paramotor",
+    notSelected: isVI ? "Chưa chọn" : isFR ? "Non sélectionné" : isRU ? "Не выбрано" : isHI ? "चयन नहीं किया गया" : (isZH || isZHTW) ? zh("未选择", "未選擇") : "Not selected",
   };
 }
 
 type PriceLine = { label: string; detail?: string; amountText: string; type?: "normal" | "discount" };
 
+function getFlightTypeLabel(labels: ReturnType<typeof useTicketLabels>, key?: string) {
+  if (key === "paramotor") return labels.paramotor;
+  if (key === "paragliding") return labels.paragliding;
+  return labels.notSelected;
+}
+
+function getHolidayTypeLabel(labels: ReturnType<typeof useTicketLabels>, holidayType?: "weekday" | "weekend" | "holiday") {
+  if (holidayType === "holiday") return labels.holiday;
+  if (holidayType === "weekend") return labels.weekend;
+  return labels.weekday;
+}
+
 export default function BookingTicket({ booking, totals, lang, bookingResult }: Props) {
   const cfg = LOCATIONS[booking.location];
   const labels = useTicketLabels(lang);
 
-  // giữ theo “code cũ”: contact có thể thiếu field trong type
   const contact: any = (booking as any)?.contact;
   const contactName = (contact?.fullName ?? contact?.contactName ?? "").toString();
   const contactPhone = (contact?.phone ?? "").toString();
   const contactEmail = (contact?.email ?? "").toString();
-  const pickupLocation = (contact?.pickupLocation ?? bookingResult?.pickupLocation ?? "").toString();
   const specialRequest = (contact?.specialRequest ?? bookingResult?.specialRequest ?? "").toString();
 
   const locationName =
@@ -198,18 +201,36 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
     new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
   const bookingRef = buildBookingRef(booking.dateISO, contactPhone);
-
   const guestsCount = Math.max(1, booking.guestsCount || 1);
 
-  // Service name (Step4 có) — nếu cfg có serviceName thì lấy, không có thì fallback
-  const serviceName =
-    (cfg as any)?.serviceName?.[lang] ??
-    (cfg as any)?.serviceName?.vi ??
-    (cfg as any)?.name?.[lang] ??
-    (cfg as any)?.name?.vi ??
-    "—";
+  const packageLabel =
+    cfg?.packages?.find((p: any) => p.key === booking.packageKey)?.label?.[lang] ??
+    cfg?.packages?.find((p: any) => p.key === booking.packageKey)?.label?.vi ??
+    labels.notSelected;
 
-  // Addons list (đang có logic cũ)
+  const flightTypeLabel =
+    booking.location === "khau_pha"
+      ? getFlightTypeLabel(labels, booking.flightTypeKey)
+      : getFlightTypeLabel(labels, "paragliding");
+
+  const selectedServices = useMemo(() => {
+    const services = cfg?.services || [];
+    return services
+      .filter((svc: any) => {
+        if (svc.visibleForPackages?.length) {
+          if (!booking.packageKey) return false;
+          if (!svc.visibleForPackages.includes(booking.packageKey)) return false;
+        }
+        return !!booking.services?.[svc.key]?.selected;
+      })
+      .map((svc: any) => ({
+        key: svc.key,
+        label: svc.label?.[lang] ?? svc.label?.vi ?? svc.key,
+        inputText: booking.services?.[svc.key]?.inputText || "",
+        fixedMapUrl: svc.fixedMapUrl || "",
+      }));
+  }, [cfg?.services, booking.packageKey, booking.services, lang]);
+
   const addons = useMemo(() => {
     return ADDON_KEYS.map((k) => {
       const qty = totals.addonsQty?.[k] || 0;
@@ -223,13 +244,11 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
     }).filter((a) => a.qty > 0);
   }, [cfg?.addons, lang, totals.addonsQty, totals.addonsUnitPrice, totals.addonsTotal]);
 
-  // Step4-style price breakdown: unit × qty = subtotal
   const priceLines: PriceLine[] = useMemo(() => {
     const lines: PriceLine[] = [];
-
-    // base flight
     const flightUnit = guestsCount > 0 ? Math.round((totals.baseTotal || 0) / guestsCount) : 0;
     const flightSubtotal = flightUnit * guestsCount;
+
     lines.push({
       label: labels.flightCost,
       detail: `${formatByLang(lang, flightUnit, flightUnit)} × ${guestsCount}`,
@@ -237,7 +256,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
       type: "normal",
     });
 
-    // addons by qty/unit
     addons.forEach((a) => {
       lines.push({
         label: a.label,
@@ -247,7 +265,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
       });
     });
 
-    // discount
     if ((totals.discountTotal || 0) > 0) {
       const perPax = guestsCount > 0 ? Math.round((totals.discountTotal || 0) / guestsCount) : totals.discountTotal || 0;
       lines.push({
@@ -261,9 +278,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
     return lines;
   }, [addons, guestsCount, labels.flightCost, labels.groupDiscount, lang, totals.baseTotal, totals.discountTotal]);
 
-  const hasPickup = (totals.addonsQty?.pickup || 0) > 0;
-
-  // passenger list (Step4 có)
   const passengers: any[] = (booking as any)?.guests ?? [];
 
   return (
@@ -279,7 +293,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* Header */}
       <div
         style={{
           background: "linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)",
@@ -359,31 +372,19 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
         </div>
       </div>
 
-      {/* Body */}
       <div style={{ padding: 16 }}>
-        {/* Summary cards (Service + Contact) */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {/* Service details */}
           <Card title={labels.serviceDetails} icon="✈">
-            <KV label={labels.service} value={serviceName} />
+            <KV label={labels.service} value={locationName} />
             <KV label={labels.location} value={locationName} />
             <KV label={labels.date} value={booking.dateISO || "—"} />
-            <KV label={labels.time} value={booking.timeSlot || labels.flexible} />
+            <KV label={labels.time} value={booking.timeSlot || "—"} />
             <KV label={labels.guests} value={String(booking.guestsCount ?? "—")} />
-            <KV
-              label={labels.pickupLocation}
-              value={
-                hasPickup
-                  ? (pickupLocation || labels.notProvided)
-                  : labels.launchSite
-              }
-            />
-            {hasPickup && (
-              <KV label={labels.pickupTime} value={labels.pickupTimeDefault} />
-            )}
+            <KV label={labels.packageLabel} value={booking.location === "khau_pha" ? packageLabel : labels.notSelected} />
+            <KV label={labels.flightTypeLabel} value={flightTypeLabel} />
+            <KV label={labels.dayTypeLabel} value={getHolidayTypeLabel(labels, totals.holidayType)} />
           </Card>
 
-          {/* Contact */}
           <Card title={labels.contactInfo} icon="👤">
             <KV label={labels.name} value={contactName || passengers?.[0]?.fullName || "—"} />
             <KV label={labels.phone} value={contactPhone || "—"} />
@@ -391,7 +392,23 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </Card>
         </div>
 
-        {/* Passenger list */}
+        {selectedServices.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <Card title={labels.pickupLocation} icon="🚐">
+              {selectedServices.map((svc) => (
+                <div key={svc.key} style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 8, marginBottom: 8 }}>
+                  <KV label={svc.label} value={svc.fixedMapUrl ? "Google Map" : (svc.inputText || labels.notProvided)} />
+                  {svc.fixedMapUrl ? (
+                    <div style={{ fontSize: 12, color: C.accentDark, textAlign: "right" }}>
+                      {svc.fixedMapUrl}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
         {passengers.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -419,11 +436,11 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12, color: C.textSecondary, paddingLeft: 32 }}>
-                    <Info label="DOB" value={p.dob || p.dateOfBirth || "—"} />
+                    <Info label="DOB" value={p.dob || "—"} />
                     <Info label="Gender" value={p.gender || "—"} />
-                    <Info label="ID" value={p.idNumber || p.passportOrId || "—"} />
+                    <Info label="ID" value={p.idNumber || "—"} />
                     <Info label="Nationality" value={p.nationality || "—"} />
-                    <Info label="Weight" value={p.weightKg ? `${p.weightKg}kg` : (p.weight ? `${p.weight}kg` : "—")} />
+                    <Info label="Weight" value={p.weightKg ? `${p.weightKg}kg` : "—"} />
                   </div>
                 </div>
               ))}
@@ -431,7 +448,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </div>
         )}
 
-        {/* Special request */}
         {!!specialRequest && (
           <div style={{ marginTop: 12, background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 12, padding: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1, color: "#92400e" }}>
@@ -443,10 +459,9 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </div>
         )}
 
-        {/* Additional services */}
         <div style={{ marginTop: 12 }}>
           <Card title={labels.additionalServices} icon="🎒">
-            <KV label={labels.transferCost} value={hasPickup ? labels.yes : labels.no} />
+            <KV label={labels.pickupLocation} value={selectedServices.length ? labels.yes : labels.no} />
             <KV label={labels.camera360Cost} value={(totals.addonsQty?.camera360 || 0) ? `${totals.addonsQty?.camera360} ${labels.pax}` : labels.no} />
             <KV label={labels.droneCost} value={(totals.addonsQty?.flycam || 0) ? `${totals.addonsQty?.flycam} ${labels.pax}` : labels.no} />
             <KV label="GoPro" value={labels.free} />
@@ -455,7 +470,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </Card>
         </div>
 
-        {/* Price breakdown (Step4 style) */}
         <div style={{ marginTop: 12 }}>
           <div style={{ background: C.dark, color: C.white, borderRadius: 14, padding: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
@@ -493,7 +507,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </div>
         </div>
 
-        {/* Footer */}
         <div style={{ marginTop: 12, textAlign: "center", fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
           Hotline: 0964.073.555 — 097.970.2812 (Zalo / WhatsApp / Telegram)
           <br />
@@ -504,7 +517,6 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
   );
 }
 
-/* ── UI sub components ── */
 function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
     <div style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 14, padding: 12 }}>
@@ -525,7 +537,7 @@ function KV({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 900, color: C.text, textAlign: "right" }}>{value}</div>
+      <div style={{ fontSize: 13, fontWeight: 900, color: C.text, textAlign: "right", maxWidth: "60%" }}>{value}</div>
     </div>
   );
 }

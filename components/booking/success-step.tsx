@@ -6,9 +6,45 @@ import { computePriceByLang } from "@/lib/booking/calculate-price";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import BookingTicket from "@/components/booking/BookingTicket";
 
+type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+
+const UI_TEXT: Record<
+  LangUI,
+  {
+    ticketTitle: string;
+    imageFail: string;
+  }
+> = {
+  vi: {
+    ticketTitle: "Vé đặt bay",
+    imageFail: "Không tạo được ảnh. Vui lòng thử lại hoặc chụp màn hình.",
+  },
+  en: {
+    ticketTitle: "Booking ticket",
+    imageFail: "Failed to generate image. Please try again or take a screenshot.",
+  },
+  fr: {
+    ticketTitle: "Billet de réservation",
+    imageFail: "Impossible de générer l'image. Veuillez réessayer.",
+  },
+  ru: {
+    ticketTitle: "Билет на полёт",
+    imageFail: "Не удалось создать изображение. Попробуйте ещё раз.",
+  },
+  hi: {
+    ticketTitle: "बुकिंग टिकट",
+    imageFail: "इमेज बनाई नहीं जा सकी। कृपया फिर से प्रयास करें।",
+  },
+  zh: {
+    ticketTitle: "预订票",
+    imageFail: "无法生成图片。请重试或直接截图。",
+  },
+};
+
 export default function SuccessStep() {
   const t = useBookingText();
-  const lang = useLangCode();
+  const lang = useLangCode() as LangUI;
+  const ui = UI_TEXT[lang] ?? UI_TEXT.vi;
 
   const data = useBookingStore((s) => s.data);
   const bookingResult = useBookingStore((s) => s.bookingResult);
@@ -19,6 +55,8 @@ export default function SuccessStep() {
       location: data.location,
       guestsCount: data.guestsCount,
       dateISO: data.dateISO,
+      packageKey: data.packageKey,
+      flightTypeKey: data.flightTypeKey,
       addons: data.addons,
       addonsQty: data.addonsQty,
     },
@@ -30,9 +68,11 @@ export default function SuccessStep() {
 
   const baseFileName = useMemo(() => {
     const loc = data.location || "booking";
+    const pkg = data.packageKey || "default";
+    const flight = data.flightTypeKey || "flight";
     const date = (data.dateISO || "date").replaceAll("/", "-");
-    return `ticket-${loc}-${date}`;
-  }, [data.location, data.dateISO]);
+    return `ticket-${loc}-${pkg}-${flight}-${date}`;
+  }, [data.location, data.packageKey, data.flightTypeKey, data.dateISO]);
 
   const downloadImage = async () => {
     if (!ticketRef.current) return;
@@ -41,19 +81,13 @@ export default function SuccessStep() {
     try {
       const { default: html2canvas } = await import("html2canvas");
 
-      // html2canvas v1 không hỗ trợ oklch() (Tailwind v4).
-      // Vé BookingTicket đã dùng 100% inline styles → xoá toàn bộ
-      // <style> và <link rel=stylesheet> trong cloned DOM để html2canvas
-      // không parse oklch, nhưng ticket vẫn render đúng nhờ inline.
       const canvas = await html2canvas(ticketRef.current, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         onclone: (doc) => {
-          // Xoá TẤT CẢ external & embedded stylesheets (chứa oklch)
           doc.querySelectorAll('style, link[rel="stylesheet"]').forEach((el) => el.remove());
 
-          // Inject 1 style tối thiểu (reset box-shadow / filter)
           const safeStyle = doc.createElement("style");
           safeStyle.textContent = `
             *, *::before, *::after {
@@ -93,15 +127,7 @@ export default function SuccessStep() {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Download image failed:", e);
-      alert(
-        lang === "vi"
-          ? "Không tạo được ảnh. Vui lòng thử lại hoặc chụp màn hình."
-          : lang === "fr"
-          ? "Impossible de générer l'image. Veuillez réessayer."
-          : lang === "ru"
-          ? "Не удалось создать изображение. Попробуйте ещё раз."
-          : "Failed to generate image. Please try again or take a screenshot."
-      );
+      alert(ui.imageFail);
     } finally {
       setDownloadingIMG(false);
     }
@@ -112,31 +138,19 @@ export default function SuccessStep() {
 
   return (
     <div className="space-y-6 text-white">
-      {/* Ticket + download button */}
       <div className={glassWrapperClass}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-lg font-semibold text-white">
-            {lang === "vi"
-              ? "Vé đặt bay"
-              : lang === "fr"
-              ? "Billet de réservation"
-              : lang === "ru"
-              ? "Билет на полёт"
-              : "Booking ticket"}
-          </h3>
+          <h3 className="text-lg font-semibold text-white">{ui.ticketTitle}</h3>
 
           <button
             onClick={downloadImage}
             disabled={downloadingIMG}
             className="px-4 py-2 rounded-xl bg-white/20 border border-white/30 hover:bg-white/30 disabled:opacity-60 transition"
           >
-            {downloadingIMG
-              ? t.buttons.generatingImage
-              : t.buttons.downloadImage}
+            {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
           </button>
         </div>
 
-        {/* Capture exactly the visible ticket */}
         <div className="mt-4">
           <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 24 }}>
             <BookingTicket
@@ -149,7 +163,6 @@ export default function SuccessStep() {
         </div>
       </div>
 
-      {/* Start over button */}
       <div className="flex justify-end">
         <button
           onClick={reset}

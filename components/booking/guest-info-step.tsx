@@ -1,12 +1,87 @@
 "use client";
+
 import React, { useMemo } from "react";
 import { useBookingStore } from "@/store/booking-store";
-import { useBookingText } from "@/lib/booking/translations-booking";
+import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 
-const genders = ["Nam", "Nữ", "Khác"] as const;
+type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+type GenderValue = "Nam" | "Nữ" | "Khác";
+
+const GENDER_OPTIONS: Record<
+  LangUI,
+  Array<{ value: GenderValue; label: string }>
+> = {
+  vi: [
+    { value: "Nam", label: "Nam" },
+    { value: "Nữ", label: "Nữ" },
+    { value: "Khác", label: "Khác" },
+  ],
+  en: [
+    { value: "Nam", label: "Male" },
+    { value: "Nữ", label: "Female" },
+    { value: "Khác", label: "Other" },
+  ],
+  fr: [
+    { value: "Nam", label: "Homme" },
+    { value: "Nữ", label: "Femme" },
+    { value: "Khác", label: "Autre" },
+  ],
+  ru: [
+    { value: "Nam", label: "Мужской" },
+    { value: "Nữ", label: "Женский" },
+    { value: "Khác", label: "Другое" },
+  ],
+  hi: [
+    { value: "Nam", label: "पुरुष" },
+    { value: "Nữ", label: "महिला" },
+    { value: "Khác", label: "अन्य" },
+  ],
+  zh: [
+    { value: "Nam", label: "男" },
+    { value: "Nữ", label: "女" },
+    { value: "Khác", label: "其他" },
+  ],
+};
+
+const UI_TEXT: Record<
+  LangUI,
+  {
+    intro: string;
+    passengerPrefix: string;
+  }
+> = {
+  vi: {
+    intro: "Vui lòng điền đầy đủ & chính xác thông tin cho từng hành khách.",
+    passengerPrefix: "Hành khách",
+  },
+  en: {
+    intro: "Please fill in complete and accurate information for each passenger.",
+    passengerPrefix: "Passenger",
+  },
+  fr: {
+    intro: "Veuillez renseigner des informations complètes et exactes pour chaque passager.",
+    passengerPrefix: "Passager",
+  },
+  ru: {
+    intro: "Пожалуйста, заполните полную и точную информацию для каждого пассажира.",
+    passengerPrefix: "Пассажир",
+  },
+  hi: {
+    intro: "कृपया प्रत्येक यात्री की पूरी और सही जानकारी भरें।",
+    passengerPrefix: "यात्री",
+  },
+  zh: {
+    intro: "请为每位乘客填写完整且准确的信息。",
+    passengerPrefix: "乘客",
+  },
+};
 
 export default function GuestInfoStep() {
   const t = useBookingText();
+  const lang = (useLangCode() || "vi") as LangUI;
+  const ui = UI_TEXT[lang] ?? UI_TEXT.vi;
+  const genderOptions = GENDER_OPTIONS[lang] ?? GENDER_OPTIONS.vi;
+
   const data = useBookingStore((s) => s.data);
   const setGuest = useBookingStore((s) => s.setGuest);
   const back = useBookingStore((s) => s.back);
@@ -44,14 +119,15 @@ export default function GuestInfoStep() {
       else if (d.getFullYear() === currentYear) dobTooYoungErr = true;
       else dobOk = true;
     }
+
     return {
       ok: fullNameOk && idOk && weightOk && dobOk && !dobFutureErr && !dobTooYoungErr,
       errs: { fullNameOk, idOk, weightOk, dobOk, dobFutureErr, dobTooYoungErr },
     };
   }
 
-  const guestsValidation = Array.from({ length: data.guestsCount }).map(
-    (_, idx) => validateGuest(data.guests[idx] || {})
+  const guestsValidation = Array.from({ length: data.guestsCount }).map((_, idx) =>
+    validateGuest(data.guests[idx] || {})
   );
   const allValid = guestsValidation.every((v) => v.ok);
 
@@ -64,9 +140,7 @@ export default function GuestInfoStep() {
       }}
     >
       <div className={glassWrapperClass}>
-        <p className="text-sm text-white">
-          Vui lòng điền đầy đủ & chính xác thông tin cho từng hành khách.
-        </p>
+        <p className="text-sm text-white">{ui.intro}</p>
 
         <div className="space-y-5">
           {Array.from({ length: data.guestsCount }).map((_, idx) => {
@@ -76,7 +150,7 @@ export default function GuestInfoStep() {
             return (
               <fieldset key={idx} className="rounded-2xl border border-white/40 p-4">
                 <legend className="font-semibold text-white px-2">
-                  {t.labels.passengerList} #{idx + 1}
+                  {ui.passengerPrefix} #{idx + 1}
                 </legend>
 
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -90,7 +164,9 @@ export default function GuestInfoStep() {
                       required
                     />
                     {!v.errs.fullNameOk && (
-                      <p className="mt-1 text-xs text-red-300">{t.messages.errors.requiredField}</p>
+                      <p className="mt-1 text-xs text-red-300">
+                        {t.messages.errors.requiredField}
+                      </p>
                     )}
                   </div>
 
@@ -104,10 +180,14 @@ export default function GuestInfoStep() {
                       required
                     />
                     {v.errs.dobFutureErr && (
-                      <p className="mt-1 text-xs text-red-300">{t.messages.errors.dobInFuture}</p>
+                      <p className="mt-1 text-xs text-red-300">
+                        {t.messages.errors.dobInFuture}
+                      </p>
                     )}
                     {!v.errs.dobFutureErr && !v.errs.dobOk && (
-                      <p className="mt-1 text-xs text-red-300">{t.messages.errors.dobTooYoung}</p>
+                      <p className="mt-1 text-xs text-red-300">
+                        {t.messages.errors.dobTooYoung}
+                      </p>
                     )}
                   </div>
 
@@ -115,12 +195,12 @@ export default function GuestInfoStep() {
                     <label className={labelStyle}>{t.labels.gender}</label>
                     <select
                       className={inputStyle}
-                      value={(g.gender as any) || "Nam"}
-                      onChange={(e) => setGuest(idx, { gender: e.target.value as any })}
+                      value={(g.gender as GenderValue) || "Nam"}
+                      onChange={(e) => setGuest(idx, { gender: e.target.value as GenderValue })}
                     >
-                      {genders.map((x) => (
-                        <option key={x} value={x} className="bg-neutral-800 text-white">
-                          {x}
+                      {genderOptions.map((x) => (
+                        <option key={x.value} value={x.value} className="bg-neutral-800 text-white">
+                          {x.label}
                         </option>
                       ))}
                     </select>
@@ -136,7 +216,9 @@ export default function GuestInfoStep() {
                       required
                     />
                     {!v.errs.idOk && (
-                      <p className="mt-1 text-xs text-red-300">{t.messages.errors.requiredField}</p>
+                      <p className="mt-1 text-xs text-red-300">
+                        {t.messages.errors.requiredField}
+                      </p>
                     )}
                   </div>
 
@@ -150,14 +232,16 @@ export default function GuestInfoStep() {
                         const val = e.target.value;
                         if (val === "" || /^[0-9]*\.?[0-9]*$/.test(val)) {
                           const parsed = parseFloat(val);
-                          setGuest(idx, { weightKg: isNaN(parsed) ? undefined : parsed });
+                          setGuest(idx, { weightKg: Number.isNaN(parsed) ? undefined : parsed });
                         }
                       }}
                       className={inputStyle}
                       required
                     />
                     {!v.errs.weightOk && (
-                      <p className="mt-1 text-xs text-red-300">{t.messages.errors.weightInvalid}</p>
+                      <p className="mt-1 text-xs text-red-300">
+                        {t.messages.errors.weightInvalid}
+                      </p>
                     )}
                   </div>
 

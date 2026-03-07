@@ -13,7 +13,7 @@ export interface FlightOption {
     unit: string;
   };
   included: string[];
-  excluded?: string[]; // đã cho phép tùy chọn để tránh lỗi TS2741
+  excluded?: string[]; 
   options?: {
     name: string;
     price: number;
