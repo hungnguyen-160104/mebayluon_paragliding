@@ -46,33 +46,53 @@ const GENDER_OPTIONS: Record<
 const UI_TEXT: Record<
   LangUI,
   {
-    intro: string;
+    title: string;
+    subtitle: string;
     passengerPrefix: string;
+    quickNote: string;
   }
 > = {
   vi: {
-    intro: "Vui lòng điền đầy đủ & chính xác thông tin cho từng hành khách.",
+    title: "Thông tin hành khách",
+    subtitle:
+      "Vui lòng điền đầy đủ và chính xác thông tin cho từng hành khách để phục vụ công tác đăng ký bay và an toàn.",
     passengerPrefix: "Hành khách",
+    quickNote: "Ngày sinh không được ở tương lai và không thể là năm hiện tại.",
   },
   en: {
-    intro: "Please fill in complete and accurate information for each passenger.",
+    title: "Passenger information",
+    subtitle:
+      "Please provide complete and accurate information for each passenger for flight registration and safety purposes.",
     passengerPrefix: "Passenger",
+    quickNote: "Date of birth cannot be in the future or in the current year.",
   },
   fr: {
-    intro: "Veuillez renseigner des informations complètes et exactes pour chaque passager.",
+    title: "Informations passagers",
+    subtitle:
+      "Veuillez renseigner des informations complètes et exactes pour chaque passager, pour l’enregistrement du vol et la sécurité.",
     passengerPrefix: "Passager",
+    quickNote: "La date de naissance ne peut pas être future ni appartenir à l’année en cours.",
   },
   ru: {
-    intro: "Пожалуйста, заполните полную и точную информацию для каждого пассажира.",
+    title: "Данные пассажиров",
+    subtitle:
+      "Пожалуйста, заполните точную информацию для каждого пассажира для регистрации полёта и обеспечения безопасности.",
     passengerPrefix: "Пассажир",
+    quickNote: "Дата рождения не может быть в будущем или в текущем году.",
   },
   hi: {
-    intro: "कृपया प्रत्येक यात्री की पूरी और सही जानकारी भरें।",
+    title: "यात्री जानकारी",
+    subtitle:
+      "फ्लाइट रजिस्ट्रेशन और सुरक्षा के लिए प्रत्येक यात्री की सही और पूरी जानकारी भरें।",
     passengerPrefix: "यात्री",
+    quickNote: "जन्मतिथि भविष्य की या वर्तमान वर्ष की नहीं हो सकती।",
   },
   zh: {
-    intro: "请为每位乘客填写完整且准确的信息。",
+    title: "乘客信息",
+    subtitle:
+      "请为每位乘客填写完整且准确的信息，以便飞行登记和安全安排。",
     passengerPrefix: "乘客",
+    quickNote: "出生日期不能是未来日期，也不能是当前年份。",
   },
 };
 
@@ -86,12 +106,6 @@ export default function GuestInfoStep() {
   const setGuest = useBookingStore((s) => s.setGuest);
   const back = useBookingStore((s) => s.back);
   const next = useBookingStore((s) => s.next);
-
-  const glassWrapperClass =
-    "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
-  const inputStyle =
-    "mt-2 w-full rounded-lg border border-white/40 bg-black/30 px-3 py-2 text-white placeholder:text-white/70 backdrop-blur-sm";
-  const labelStyle = "block text-base font-medium text-white";
 
   const today = useMemo(() => {
     const d = new Date();
@@ -112,6 +126,7 @@ export default function GuestInfoStep() {
     let dobOk = false;
     let dobFutureErr = false;
     let dobTooYoungErr = false;
+
     if (g.dob) {
       const d = new Date(g.dob);
       d.setHours(0, 0, 0, 0);
@@ -133,150 +148,208 @@ export default function GuestInfoStep() {
 
   return (
     <form
-      className="space-y-6 text-white"
+      className="space-y-5 text-white"
       onSubmit={(e) => {
         e.preventDefault();
         if (allValid) next();
       }}
     >
-      <div className={glassWrapperClass}>
-        <p className="text-sm text-white">{ui.intro}</p>
+      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
+        <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
+          <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
+          <p className="mt-1 text-sm text-white/80 max-w-3xl">{ui.subtitle}</p>
+        </div>
 
-        <div className="space-y-5">
-          {Array.from({ length: data.guestsCount }).map((_, idx) => {
-            const g = data.guests[idx] || {};
-            const v = guestsValidation[idx];
+        <div className="p-4 md:p-6 space-y-5">
+          <div className="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-sm text-white/75">
+            {ui.quickNote}
+          </div>
 
-            return (
-              <fieldset key={idx} className="rounded-2xl border border-white/40 p-4">
-                <legend className="font-semibold text-white px-2">
-                  {ui.passengerPrefix} #{idx + 1}
-                </legend>
+          <div className="grid grid-cols-1 gap-4">
+            {Array.from({ length: data.guestsCount }).map((_, idx) => {
+              const g = data.guests[idx] || {};
+              const v = guestsValidation[idx];
 
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelStyle}>{t.labels.fullName}</label>
-                    <input
-                      type="text"
+              return (
+                <section
+                  key={idx}
+                  className="rounded-[24px] border border-white/15 bg-black/20 p-4 md:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-200">
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {ui.passengerPrefix} #{idx + 1}
+                      </div>
+                      <div className="text-xs text-white/55">
+                        {g.fullName?.trim() || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <Field
+                      label={t.labels.fullName}
+                      required
                       value={g.fullName || ""}
-                      onChange={(e) => setGuest(idx, { fullName: e.target.value })}
-                      className={inputStyle}
-                      required
+                      onChange={(value) => setGuest(idx, { fullName: value })}
+                      error={!v.errs.fullNameOk ? t.messages.errors.requiredField : undefined}
                     />
-                    {!v.errs.fullNameOk && (
-                      <p className="mt-1 text-xs text-red-300">
-                        {t.messages.errors.requiredField}
-                      </p>
-                    )}
-                  </div>
 
-                  <div>
-                    <label className={labelStyle}>{t.labels.dob}</label>
-                    <input
-                      type="date"
+                    <DateField
+                      label={t.labels.dob}
+                      required
                       value={g.dob || ""}
-                      onChange={(e) => setGuest(idx, { dob: e.target.value })}
-                      className={`${inputStyle} scheme-dark`}
-                      required
+                      onChange={(value) => setGuest(idx, { dob: value })}
+                      error={
+                        v.errs.dobFutureErr
+                          ? t.messages.errors.dobInFuture
+                          : !v.errs.dobFutureErr && !v.errs.dobOk
+                            ? t.messages.errors.dobTooYoung
+                            : undefined
+                      }
                     />
-                    {v.errs.dobFutureErr && (
-                      <p className="mt-1 text-xs text-red-300">
-                        {t.messages.errors.dobInFuture}
-                      </p>
-                    )}
-                    {!v.errs.dobFutureErr && !v.errs.dobOk && (
-                      <p className="mt-1 text-xs text-red-300">
-                        {t.messages.errors.dobTooYoung}
-                      </p>
-                    )}
-                  </div>
 
-                  <div>
-                    <label className={labelStyle}>{t.labels.gender}</label>
-                    <select
-                      className={inputStyle}
-                      value={(g.gender as GenderValue) || "Nam"}
-                      onChange={(e) => setGuest(idx, { gender: e.target.value as GenderValue })}
-                    >
-                      {genderOptions.map((x) => (
-                        <option key={x.value} value={x.value} className="bg-neutral-800 text-white">
-                          {x.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/90">
+                        {t.labels.gender}
+                      </label>
+                      <select
+                        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
+                        value={(g.gender as GenderValue) || "Nam"}
+                        onChange={(e) =>
+                          setGuest(idx, { gender: e.target.value as GenderValue })
+                        }
+                      >
+                        {genderOptions.map((x) => (
+                          <option key={x.value} value={x.value}>
+                            {x.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className={labelStyle}>{t.labels.idNumber}</label>
-                    <input
-                      type="text"
+                    <Field
+                      label={t.labels.idNumber}
+                      required
                       value={g.idNumber || ""}
-                      onChange={(e) => setGuest(idx, { idNumber: e.target.value })}
-                      className={inputStyle}
-                      required
+                      onChange={(value) => setGuest(idx, { idNumber: value })}
+                      error={!v.errs.idOk ? t.messages.errors.requiredField : undefined}
                     />
-                    {!v.errs.idOk && (
-                      <p className="mt-1 text-xs text-red-300">
-                        {t.messages.errors.requiredField}
-                      </p>
-                    )}
-                  </div>
 
-                  <div>
-                    <label className={labelStyle}>{t.labels.weightKg}</label>
-                    <input
-                      type="text"
+                    <Field
+                      label={t.labels.weightKg}
+                      required
                       inputMode="decimal"
                       value={g.weightKg ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === "" || /^[0-9]*\.?[0-9]*$/.test(val)) {
-                          const parsed = parseFloat(val);
-                          setGuest(idx, { weightKg: Number.isNaN(parsed) ? undefined : parsed });
+                      onChange={(value) => {
+                        if (value === "" || /^[0-9]*\.?[0-9]*$/.test(String(value))) {
+                          const parsed = parseFloat(String(value));
+                          setGuest(idx, {
+                            weightKg: Number.isNaN(parsed) ? undefined : parsed,
+                          });
                         }
                       }}
-                      className={inputStyle}
-                      required
+                      error={!v.errs.weightOk ? t.messages.errors.weightInvalid : undefined}
                     />
-                    {!v.errs.weightOk && (
-                      <p className="mt-1 text-xs text-red-300">
-                        {t.messages.errors.weightInvalid}
-                      </p>
-                    )}
-                  </div>
 
-                  <div>
-                    <label className={labelStyle}>{t.labels.nationality}</label>
-                    <input
-                      type="text"
+                    <Field
+                      label={t.labels.nationality}
                       value={g.nationality || ""}
-                      onChange={(e) => setGuest(idx, { nationality: e.target.value })}
-                      className={inputStyle}
+                      onChange={(value) => setGuest(idx, { nationality: value })}
                     />
                   </div>
-                </div>
-              </fieldset>
-            );
-          })}
+                </section>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={back}
-          className="px-4 py-2 rounded-xl border border-white/40 bg-black/30 text-white hover:bg-black/50 transition backdrop-blur-sm"
+          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
         >
           {t.buttons.back}
         </button>
+
         <button
           type="submit"
           disabled={!allValid}
-          className="px-5 py-2 rounded-xl bg-accent text-white font-semibold hover:bg-accent/90 transition disabled:opacity-50"
+          className="h-12 rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(56,189,248,0.35)] transition hover:brightness-105 disabled:opacity-50"
         >
           {t.buttons.next}
         </button>
       </div>
     </form>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  error,
+  required,
+  inputMode,
+}: {
+  label: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  error?: string;
+  required?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-white/90">
+        {label}
+        {required ? <span className="ml-1 text-red-300">*</span> : null}
+      </label>
+      <input
+        type="text"
+        inputMode={inputMode}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
+        required={required}
+      />
+      {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+  error,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-white/90">
+        {label}
+        {required ? <span className="ml-1 text-red-300">*</span> : null}
+      </label>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
+        required={required}
+      />
+      {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
+    </div>
   );
 }

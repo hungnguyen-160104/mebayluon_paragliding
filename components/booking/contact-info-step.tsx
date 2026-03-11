@@ -14,89 +14,124 @@ type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 const UI_TEXT: Record<
   LangUI,
   {
+    title: string;
+    subtitle: string;
     chooseLocationFirst: string;
+    flightInfo: string;
+    contactInfo: string;
+    pickupInfo: string;
     packageLabel: string;
     flightTypeLabel: string;
-    pickupDetails: string;
     pickupRequired: string;
     fixedPickupPoint: string;
     viewMap: string;
     notSelected: string;
     paragliding: string;
     paramotor: string;
+    note: string;
   }
 > = {
   vi: {
+    title: "Thông tin liên hệ",
+    subtitle: "Điền thông tin để đội ngũ xác nhận lịch bay và hỗ trợ đón / trả nếu có.",
     chooseLocationFirst: "Vui lòng chọn điểm bay trước khi nhập thông tin liên hệ.",
+    flightInfo: "Thông tin chuyến bay",
+    contactInfo: "Thông tin khách đặt",
+    pickupInfo: "Thông tin đón / trả",
     packageLabel: "Gói bay",
     flightTypeLabel: "Loại bay",
-    pickupDetails: "Thông tin đón/trả",
     pickupRequired: "Vui lòng nhập địa chỉ đón cho dịch vụ đã chọn.",
     fixedPickupPoint: "Điểm đón cố định",
     viewMap: "Xem bản đồ",
     notSelected: "Chưa chọn",
     paragliding: "Bay dù không động cơ",
     paramotor: "Bay dù gắn động cơ",
+    note: "Vui lòng nhập đúng số điện thoại và email để nhận xác nhận đặt bay.",
   },
   en: {
+    title: "Contact information",
+    subtitle: "Fill in your details so our team can confirm your flight schedule and pickup support if needed.",
     chooseLocationFirst: "Please choose a flight location before entering contact details.",
+    flightInfo: "Flight details",
+    contactInfo: "Booker information",
+    pickupInfo: "Pickup details",
     packageLabel: "Flight package",
     flightTypeLabel: "Flight type",
-    pickupDetails: "Pickup details",
     pickupRequired: "Please enter the pickup address for the selected service.",
     fixedPickupPoint: "Fixed pickup point",
     viewMap: "View map",
     notSelected: "Not selected",
     paragliding: "Paragliding",
     paramotor: "Paramotor",
+    note: "Please enter the correct phone number and email to receive your booking confirmation.",
   },
   fr: {
+    title: "Informations de contact",
+    subtitle: "Renseignez vos coordonnées afin que notre équipe puisse confirmer votre vol et l’éventuelle prise en charge.",
     chooseLocationFirst: "Veuillez choisir un site de vol avant de saisir les coordonnées.",
+    flightInfo: "Détails du vol",
+    contactInfo: "Informations du client",
+    pickupInfo: "Informations de prise en charge",
     packageLabel: "Forfait de vol",
     flightTypeLabel: "Type de vol",
-    pickupDetails: "Informations de prise en charge",
     pickupRequired: "Veuillez saisir l’adresse de prise en charge pour le service sélectionné.",
     fixedPickupPoint: "Point de prise en charge fixe",
     viewMap: "Voir la carte",
     notSelected: "Non sélectionné",
     paragliding: "Parapente",
     paramotor: "Paramoteur",
+    note: "Veuillez renseigner un numéro de téléphone et un email valides pour recevoir la confirmation.",
   },
   ru: {
+    title: "Контактная информация",
+    subtitle: "Заполните данные, чтобы команда могла подтвердить полёт и при необходимости организовать трансфер.",
     chooseLocationFirst: "Пожалуйста, сначала выберите место полёта, прежде чем вводить контактные данные.",
+    flightInfo: "Детали полёта",
+    contactInfo: "Данные клиента",
+    pickupInfo: "Информация о трансфере",
     packageLabel: "Пакет полёта",
     flightTypeLabel: "Тип полёта",
-    pickupDetails: "Информация о трансфере",
     pickupRequired: "Пожалуйста, укажите адрес трансфера для выбранной услуги.",
     fixedPickupPoint: "Фиксированная точка посадки",
     viewMap: "Открыть карту",
     notSelected: "Не выбрано",
     paragliding: "Параплан",
     paramotor: "Парамотор",
+    note: "Укажите корректный телефон и email, чтобы получить подтверждение бронирования.",
   },
   hi: {
+    title: "संपर्क जानकारी",
+    subtitle: "अपनी जानकारी भरें ताकि हमारी टीम आपकी फ्लाइट और पिकअप सहायता की पुष्टि कर सके।",
     chooseLocationFirst: "कृपया संपर्क जानकारी भरने से पहले फ्लाइट लोकेशन चुनें।",
+    flightInfo: "फ्लाइट विवरण",
+    contactInfo: "बुकिंग ग्राहक की जानकारी",
+    pickupInfo: "पिकअप जानकारी",
     packageLabel: "फ्लाइट पैकेज",
     flightTypeLabel: "फ्लाइट प्रकार",
-    pickupDetails: "पिकअप जानकारी",
     pickupRequired: "कृपया चुनी गई सेवा के लिए पिकअप पता दर्ज करें।",
     fixedPickupPoint: "फिक्स्ड पिकअप पॉइंट",
     viewMap: "मैप देखें",
     notSelected: "चयन नहीं किया गया",
     paragliding: "पैराग्लाइडिंग",
     paramotor: "पैरामोटर",
+    note: "कृपया सही फोन नंबर और ईमेल भरें ताकि बुकिंग पुष्टि मिल सके।",
   },
   zh: {
+    title: "联系信息",
+    subtitle: "请填写您的信息，方便团队确认飞行时间及接送安排。",
     chooseLocationFirst: "请输入联系信息前，请先选择飞行地点。",
+    flightInfo: "飞行信息",
+    contactInfo: "预订人信息",
+    pickupInfo: "接送信息",
     packageLabel: "飞行套餐",
     flightTypeLabel: "飞行类型",
-    pickupDetails: "接送信息",
     pickupRequired: "请选择接送服务后填写接送地址。",
     fixedPickupPoint: "固定接送点",
     viewMap: "查看地图",
     notSelected: "未选择",
     paragliding: "无动力滑翔伞",
     paramotor: "动力伞",
+    note: "请填写正确的电话号码和邮箱，以便接收预订确认信息。",
   },
 };
 
@@ -109,7 +144,7 @@ function TimeOptions() {
   return (
     <>
       {slots.map((s) => (
-        <option key={s} value={s} className="bg-neutral-800 text-white">
+        <option key={s} value={s}>
           {s}
         </option>
       ))}
@@ -148,12 +183,6 @@ export default function ContactInfoStep() {
   const [dateError, setDateError] = useState<string | null>(null);
   const [pickupError, setPickupError] = useState<string | null>(null);
 
-  const inputStyle =
-    "mt-2 w-full rounded-lg border border-white/40 bg-black/30 px-3 py-2 text-white placeholder:text-white/70 backdrop-blur-sm";
-  const labelStyle = "block text-base font-medium text-white";
-  const glassWrapperClass =
-    "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
-
   const selectedServices = useMemo(() => {
     if (!cfg?.services?.length) return [];
 
@@ -190,187 +219,216 @@ export default function ContactInfoStep() {
 
   return (
     <form
-      className="space-y-6 text-white"
+      className="space-y-5 text-white"
       onSubmit={(e) => {
         e.preventDefault();
         const pickupValid = validatePickupServices();
         if (!dateError && pickupValid) next();
       }}
     >
-      <div className={glassWrapperClass}>
-        {!cfg && (
-          <p className="rounded-lg border border-amber-300/50 bg-amber-500/10 px-3 py-2 text-sm text-white backdrop-blur-sm">
-            {ui.chooseLocationFirst}
-          </p>
-        )}
-
-        {cfg && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelStyle}>{t.labels.location}</label>
-              <div className="mt-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-white">
-                {cfg.name[lang] ?? cfg.name.vi}
-              </div>
-            </div>
-
-            <div>
-              <label className={labelStyle}>{ui.packageLabel}</label>
-              <div className="mt-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-white">
-                {cfg.key === "khau_pha" ? packageLabel : ui.notSelected}
-              </div>
-            </div>
-
-            <div>
-              <label className={labelStyle}>{ui.flightTypeLabel}</label>
-              <div className="mt-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-white">
-                {cfg.key === "khau_pha"
-                  ? getFlightTypeLabel(lang, data.flightTypeKey)
-                  : getFlightTypeLabel(lang, "paragliding")}
-              </div>
-            </div>
-
-            <div>
-              <label className={labelStyle}>{t.labels.numGuests}</label>
-              <div className="mt-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-white">
-                {data.guestsCount || 1}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelStyle}>{t.labels.date}</label>
-            <input
-              type="date"
-              value={data.dateISO || ""}
-              min={tomorrowISO}
-              onChange={(e) => {
-                const val = e.target.value;
-                update({ dateISO: val });
-                setDateError(val && val < tomorrowISO ? t.messages.errors.dateInPast : null);
-              }}
-              className={`${inputStyle} scheme-dark`}
-              required
-            />
-            {dateError && <p className="mt-1 text-xs text-red-300">{dateError}</p>}
-          </div>
-
-          <div>
-            <label className={labelStyle}>{t.labels.timeSlot}</label>
-            <select
-              value={data.timeSlot || ""}
-              onChange={(e) => update({ timeSlot: e.target.value })}
-              className={inputStyle}
-              required
-            >
-              <option value="" disabled className="bg-neutral-800 text-gray-400">
-                {t.placeholders.timeSlotPlaceholder}
-              </option>
-              <TimeOptions />
-            </select>
-          </div>
+      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
+        <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
+          <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
+          <p className="mt-1 text-sm text-white/80 max-w-3xl">{ui.subtitle}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelStyle}>{t.labels.phone}</label>
-            <input
-              type="tel"
-              placeholder={t.placeholders.phone}
-              value={data.contact?.phone || ""}
-              onChange={(e) => setContact({ phone: e.target.value })}
-              className={inputStyle}
-              required
-            />
-          </div>
+        <div className="p-4 md:p-6 space-y-5">
+          {!cfg && (
+            <div className="rounded-2xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm text-white">
+              {ui.chooseLocationFirst}
+            </div>
+          )}
 
-          <div>
-            <label className={labelStyle}>{t.labels.email}</label>
-            <input
-              type="email"
-              placeholder={t.placeholders.email}
-              value={data.contact?.email || ""}
-              onChange={(e) => setContact({ email: e.target.value })}
-              className={inputStyle}
-              required
-            />
-          </div>
-        </div>
-
-        {pickupServices.length > 0 && (
-          <div className="space-y-4">
-            <div className="text-base font-semibold text-white">{ui.pickupDetails}</div>
-
-            {pickupServices.map((svc) => {
-              const label = svc.label[lang] ?? svc.label.vi;
-
-              if (svc.fixedMapUrl) {
-                return (
-                  <div
-                    key={svc.key}
-                    className="rounded-lg border border-white/30 bg-white/10 p-4 text-sm text-white"
-                  >
-                    <div className="font-medium">{label}</div>
-                    <div className="mt-2">
-                      {ui.fixedPickupPoint}:{" "}
-                      <a
-                        href={svc.fixedMapUrl || BIGC_THANG_LONG_MAP}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-300 underline font-medium"
-                      >
-                        {ui.viewMap}
-                      </a>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={svc.key}>
-                  <label className={labelStyle}>{label}</label>
-                  <input
-                    type="text"
-                    placeholder={t.placeholders.pickup}
-                    value={data.services?.[svc.key]?.inputText || ""}
-                    onChange={(e) => {
-                      setServiceInput(svc.key, e.target.value);
-
-                      if (data.contact?.pickupLocation !== e.target.value) {
-                        setContact({ pickupLocation: e.target.value });
-                      }
-
-                      if (pickupError) setPickupError(null);
-                    }}
-                    className={inputStyle}
-                    required
-                  />
+          {cfg && (
+            <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-5">
+              <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                  {ui.flightInfo}
                 </div>
-              );
-            })}
 
-            {pickupError && <p className="text-xs text-red-300">{pickupError}</p>}
-          </div>
-        )}
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <InfoBox label={t.labels.location} value={cfg.name[lang] ?? cfg.name.vi} />
+                  <InfoBox
+                    label={ui.packageLabel}
+                    value={cfg.key === "khau_pha" ? packageLabel : ui.notSelected}
+                  />
+                  <InfoBox
+                    label={ui.flightTypeLabel}
+                    value={
+                      cfg.key === "khau_pha"
+                        ? getFlightTypeLabel(lang, data.flightTypeKey)
+                        : getFlightTypeLabel(lang, "paragliding")
+                    }
+                  />
+                  <InfoBox label={t.labels.numGuests} value={String(data.guestsCount || 1)} />
+                </div>
 
-        <div>
-          <label className={labelStyle}>{t.labels.specialRequest}</label>
-          <textarea
-            rows={3}
-            placeholder={t.placeholders.specialRequest}
-            value={data.contact?.specialRequest || ""}
-            onChange={(e) => setContact({ specialRequest: e.target.value })}
-            className={inputStyle}
-          />
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-white/90">
+                      {t.labels.date}
+                    </label>
+                    <input
+                      type="date"
+                      value={data.dateISO || ""}
+                      min={tomorrowISO}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        update({ dateISO: val });
+                        setDateError(val && val < tomorrowISO ? t.messages.errors.dateInPast : null);
+                      }}
+                      className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
+                      required
+                    />
+                    {dateError && <p className="mt-2 text-xs text-red-300">{dateError}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90">
+                      {t.labels.timeSlot}
+                    </label>
+                    <select
+                      value={data.timeSlot || ""}
+                      onChange={(e) => update({ timeSlot: e.target.value })}
+                      className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
+                      required
+                    >
+                      <option value="" disabled>
+                        {t.placeholders.timeSlotPlaceholder}
+                      </option>
+                      <TimeOptions />
+                    </select>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                  {ui.contactInfo}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Field
+                    label={t.labels.fullName}
+                    required
+                    value={data.contact?.fullName || data.contact?.contactName || ""}
+                    onChange={(value) =>
+                      setContact({ fullName: value, contactName: value })
+                    }
+                    placeholder={t.placeholders.fullName || ""}
+                  />
+
+                  <Field
+                    label={t.labels.phone}
+                    required
+                    type="tel"
+                    value={data.contact?.phone || ""}
+                    onChange={(value) => setContact({ phone: value })}
+                    placeholder={t.placeholders.phone}
+                  />
+
+                  <Field
+                    label={t.labels.email}
+                    required
+                    type="email"
+                    value={data.contact?.email || ""}
+                    onChange={(value) => setContact({ email: value })}
+                    placeholder={t.placeholders.email}
+                  />
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-white/90">
+                      {t.labels.specialRequest}
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder={t.placeholders.specialRequest}
+                      value={data.contact?.specialRequest || ""}
+                      onChange={(e) => setContact({ specialRequest: e.target.value })}
+                      className="mt-2 w-full rounded-2xl border border-white/20 bg-white/12 px-4 py-3 text-white outline-none placeholder:text-white/45 focus:border-sky-300 resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white/75">
+                  {ui.note}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {pickupServices.length > 0 && (
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {ui.pickupInfo}
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {pickupServices.map((svc) => {
+                  const label = svc.label[lang] ?? svc.label.vi;
+
+                  if (svc.fixedMapUrl) {
+                    return (
+                      <div
+                        key={svc.key}
+                        className="rounded-2xl border border-white/15 bg-white/8 p-4"
+                      >
+                        <div className="text-sm font-semibold text-white">{label}</div>
+                        <div className="mt-2 text-sm text-white/75">
+                          {ui.fixedPickupPoint}
+                        </div>
+                        <a
+                          href={svc.fixedMapUrl || BIGC_THANG_LONG_MAP}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex h-10 items-center rounded-full border border-sky-300/40 bg-sky-400/10 px-4 text-sm font-medium text-sky-200 hover:bg-sky-400/20"
+                        >
+                          {ui.viewMap}
+                        </a>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={svc.key}
+                      className="rounded-2xl border border-white/15 bg-white/8 p-4"
+                    >
+                      <label className="block text-sm font-medium text-white/90">
+                        {label}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={t.placeholders.pickup}
+                        value={data.services?.[svc.key]?.inputText || ""}
+                        onChange={(e) => {
+                          setServiceInput(svc.key, e.target.value);
+
+                          if (data.contact?.pickupLocation !== e.target.value) {
+                            setContact({ pickupLocation: e.target.value });
+                          }
+
+                          if (pickupError) setPickupError(null);
+                        }}
+                        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none placeholder:text-white/45 focus:border-sky-300"
+                        required
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {pickupError && <p className="mt-3 text-xs text-red-300">{pickupError}</p>}
+            </section>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={back}
-          className="px-4 py-2 rounded-xl border border-white/40 bg-black/30 text-white hover:bg-black/50 transition backdrop-blur-sm"
+          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
         >
           {t.buttons.back}
         </button>
@@ -378,11 +436,53 @@ export default function ContactInfoStep() {
         <button
           type="submit"
           disabled={!cfg || Boolean(dateError)}
-          className="px-5 py-2 rounded-xl bg-accent text-white font-semibold hover:bg-accent/90 transition disabled:opacity-60"
+          className="h-12 rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(56,189,248,0.35)] transition hover:brightness-105 disabled:opacity-60"
         >
           {t.buttons.next}
         </button>
       </div>
     </form>
+  );
+}
+
+function InfoBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-white/55">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white break-words">{value}</div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  type?: React.HTMLInputTypeAttribute;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-white/90">
+        {label}
+        {required ? <span className="ml-1 text-red-300">*</span> : null}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none placeholder:text-white/45 focus:border-sky-300"
+      />
+    </div>
   );
 }

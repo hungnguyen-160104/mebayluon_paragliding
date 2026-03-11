@@ -1,14 +1,18 @@
 "use client";
 
 import { create } from "zustand";
-import type { LocationKey, AddonKey } from "@/lib/booking/calculate-price";
+import type {
+  LocationKey,
+  AddonKey,
+  PackageKey,
+  FlightTypeKey,
+} from "@/lib/booking/calculate-price";
 
 export type Gender = "Nam" | "Nữ" | "Khác";
-export type FlightTypeKey = "paragliding" | "paramotor";
 
 export interface Guest {
   fullName: string;
-  dob: string; // yyyy-mm-dd
+  dob: string;
   gender: Gender;
   idNumber?: string;
   weightKg?: number;
@@ -18,14 +22,7 @@ export interface Guest {
 export interface ContactInfo {
   phone: string;
   email: string;
-
-  /**
-   * Backward-compat:
-   * web cũ đang đọc field này ở nhiều step.
-   * Web mới sẽ ưu tiên services[key].inputText cho từng dịch vụ đón cụ thể.
-   */
   pickupLocation?: string;
-
   specialRequest?: string;
   fullName?: string;
   contactName?: string;
@@ -43,35 +40,16 @@ export interface ServiceSelection {
 export interface BookingData {
   location: LocationKey;
   guestsCount: number;
-
-  /**
-   * NEW:
-   * - 1 điểm bay có thể có nhiều package
-   * - package có thể có nhiều loại bay
-   */
-  packageKey?: string;
+  packageKey?: PackageKey;
   flightTypeKey?: FlightTypeKey;
 
-  /**
-   * Backward-compat: vẫn giữ flag boolean để các file cũ chạy bình thường.
-   * Flag này sẽ tự động = true nếu addonsQty[key] > 0.
-   */
   addons: AddonsBool;
-
-  /** số lượt chọn dịch vụ kiểu cũ (0..guestsCount) */
   addonsQty: AddonsQty;
 
-  /**
-   * NEW:
-   * cấu trúc động cho web mới:
-   * - checkbox/radio/counter theo từng service
-   * - hỗ trợ inputText riêng (ví dụ địa chỉ đón)
-   * - hỗ trợ nhiều dịch vụ đón khác nhau trong cùng 1 điểm bay
-   */
   services: Record<string, ServiceSelection>;
 
   dateISO?: string;
-  timeSlot?: string; // "07:00" .. "18:00"
+  timeSlot?: string;
   contact?: ContactInfo;
   guests: Guest[];
   acceptedTerms: boolean;
@@ -82,11 +60,11 @@ type Step = 1 | 2 | 3 | 4 | 5;
 interface StoreState {
   step: Step;
   data: BookingData;
-
   bookingResult?: any;
 
   next: () => void;
   back: () => void;
+  goToStep: (step: Step) => void;
   reset: () => void;
 
   update: (partial: Partial<BookingData>) => void;
@@ -94,17 +72,11 @@ interface StoreState {
   setGuest: (idx: number, guest: Partial<Guest>) => void;
   setContact: (partial: Partial<ContactInfo>) => void;
 
-  /**
-   * Backward-compat: addon kiểu cũ
-   */
   setAddonQty: (key: AddonKey, qty: number) => void;
   setAddonSelected: (key: AddonKey, selected: boolean) => void;
 
-  /**
-   * NEW: selection theo service động
-   */
   setLocation: (location: LocationKey) => void;
-  setPackageKey: (packageKey?: string) => void;
+  setPackageKey: (packageKey?: PackageKey) => void;
   setFlightTypeKey: (flightTypeKey?: FlightTypeKey) => void;
 
   setServiceSelected: (key: string, selected: boolean) => void;
@@ -152,7 +124,11 @@ const defaultData: BookingData = {
   acceptedTerms: false,
 };
 
-const clampStep = (n: number): Step => (n < 1 ? 1 : n > 5 ? 5 : (n as Step));
+const clampStep = (n: number): Step => {
+  if (n < 1) return 1;
+  if (n > 5) return 5;
+  return n as Step;
+};
 
 function clampInt(v: unknown, min: number, max: number): number {
   const n = typeof v === "number" ? v : Number(v);
@@ -183,8 +159,6 @@ function normalizeAddonsForGuestsCount(
   for (const k of ADDON_KEYS) {
     let qty = nextQty[k];
 
-    // backward-compat:
-    // nếu trước đây chỉ có boolean checked mà chưa có qty
     if ((qty == null || qty === 0) && nextAddons[k]) {
       qty = guestsCount;
     }
@@ -217,8 +191,6 @@ function normalizeServicesForGuestsCount(
     if (typeof item.qty === "number") {
       item.qty = clampInt(item.qty, 0, guestsCount);
       if (item.qty <= 0 && item.selected) {
-        // giữ selected cho checkbox/radio không có qty
-        // còn nếu service kiểu counter giảm về 0 thì vẫn giữ selected=false hợp lý hơn
         item.selected = false;
       }
     }
@@ -231,26 +203,59 @@ function normalizeServicesForGuestsCount(
   return next;
 }
 
+function applyLocationDefaults(
+  location: LocationKey,
+  guestsCount: number
+): Pick<BookingData, "addons" | "addonsQty" | "services" | "packageKey" | "flightTypeKey"> {
+  const services: Record<string, ServiceSelection> = {};
+
+  if (location === "ha_noi") {
+    services["ha_noi_mountain_shuttle"] = { selected: true };
+  }
+
+  if (location === "khau_pha") {
+    services["khau_pha_pkg_1_shuttle"] = { selected: true };
+  }
+
+  if (location === "da_nang") {
+    services["da_nang_mountain_shuttle"] = { selected: true };
+  }
+
+  return {
+    addons: {},
+    addonsQty: {},
+    services: normalizeServicesForGuestsCount(guestsCount, services),
+    packageKey: undefined,
+    flightTypeKey: undefined,
+  };
+}
+
 export const useBookingStore = create<StoreState>()((set) => ({
   step: 1,
-  data: { ...defaultData },
+  data: {
+    ...defaultData,
+    ...applyLocationDefaults(defaultData.location, defaultData.guestsCount),
+  },
   bookingResult: undefined,
 
   next: () => set((s) => ({ step: clampStep(s.step + 1) })),
   back: () => set((s) => ({ step: clampStep(s.step - 1) })),
+  goToStep: (step) => set({ step: clampStep(step) }),
 
   reset: () =>
-    set({
-      step: 1,
-      data: {
+    set(() => {
+      const nextData = {
         ...defaultData,
         contact: { ...emptyContact },
         guests: [emptyGuest()],
-        services: {},
-        addons: {},
-        addonsQty: {},
-      },
-      bookingResult: undefined,
+        ...applyLocationDefaults(defaultData.location, defaultData.guestsCount),
+      };
+
+      return {
+        step: 1,
+        data: nextData,
+        bookingResult: undefined,
+      };
     }),
 
   update: (partial) =>
@@ -290,7 +295,6 @@ export const useBookingStore = create<StoreState>()((set) => ({
   setGuestsCount: (n) =>
     set((s) => {
       const count = clampInt(n || 1, 1, 100);
-
       const guests = ensureGuestsLength(s.data.guests, count);
 
       const { addons, addonsQty } = normalizeAddonsForGuestsCount(
@@ -299,7 +303,10 @@ export const useBookingStore = create<StoreState>()((set) => ({
         s.data.addonsQty
       );
 
-      const services = normalizeServicesForGuestsCount(count, s.data.services || {});
+      const services = normalizeServicesForGuestsCount(
+        count,
+        s.data.services || {}
+      );
 
       return {
         data: {
@@ -325,7 +332,10 @@ export const useBookingStore = create<StoreState>()((set) => ({
     set((s) => ({
       data: {
         ...s.data,
-        contact: { ...(s.data.contact ?? emptyContact), ...partial },
+        contact: {
+          ...(s.data.contact ?? emptyContact),
+          ...partial,
+        },
       },
     })),
 
@@ -378,31 +388,50 @@ export const useBookingStore = create<StoreState>()((set) => ({
     }),
 
   setLocation: (location) =>
-    set((s) => ({
-      data: {
-        ...s.data,
-        location,
-        packageKey: undefined,
-        flightTypeKey: undefined,
-        addons: {},
-        addonsQty: {},
-        services: {},
-        contact: {
-          ...(s.data.contact ?? emptyContact),
-          pickupLocation: "",
+    set((s) => {
+      const defaults = applyLocationDefaults(location, s.data.guestsCount || 1);
+
+      return {
+        data: {
+          ...s.data,
+          location,
+          ...defaults,
+          contact: {
+            ...(s.data.contact ?? emptyContact),
+            pickupLocation: "",
+          },
         },
-      },
-    })),
+      };
+    }),
 
   setPackageKey: (packageKey) =>
-    set((s) => ({
-      data: {
-        ...s.data,
-        packageKey,
-        flightTypeKey: undefined,
-        services: {},
-      },
-    })),
+    set((s) => {
+      const nextServices = { ...(s.data.services || {}) };
+
+      if (s.data.location === "khau_pha") {
+        delete nextServices["khau_pha_pkg_1_shuttle"];
+        delete nextServices["khau_pha_pkg_1_garrya_pickup"];
+        delete nextServices["khau_pha_pkg_1_flag"];
+        delete nextServices["khau_pha_pkg_2_tu_le_pickup"];
+        delete nextServices["khau_pha_pkg_2_garrya_pickup"];
+
+        if (packageKey === "khau_pha_pkg_1") {
+          nextServices["khau_pha_pkg_1_shuttle"] = { selected: true };
+        }
+      }
+
+      return {
+        data: {
+          ...s.data,
+          packageKey,
+          flightTypeKey: undefined,
+          services: normalizeServicesForGuestsCount(
+            s.data.guestsCount || 1,
+            nextServices
+          ),
+        },
+      };
+    }),
 
   setFlightTypeKey: (flightTypeKey) =>
     set((s) => ({
@@ -473,13 +502,7 @@ export const useBookingStore = create<StoreState>()((set) => ({
       const nextServices = { ...(s.data.services || {}) };
 
       if (q <= 0) {
-        if (current.inputText) {
-          nextServices[key] = {
-            ...current,
-            selected: false,
-            qty: 0,
-          };
-        } else if (current.selected) {
+        if (current.inputText || current.selected) {
           nextServices[key] = {
             ...current,
             selected: false,

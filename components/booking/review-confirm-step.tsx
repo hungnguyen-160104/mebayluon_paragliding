@@ -2,18 +2,22 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
-import { computePriceByLang, LOCATIONS, type AddonKey } from "@/lib/booking/calculate-price";
+import {
+  computePriceByLang,
+  LOCATIONS,
+  type AddonKey,
+} from "@/lib/booking/calculate-price";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
 
-/** UI i18n */
 const UI_I18N: Record<
   string,
   {
-    reviewTitle: string;
+    title: string;
+    subtitle: string;
     termsTitle: string;
     openInNewTab: string;
     close: string;
@@ -28,16 +32,22 @@ const UI_I18N: Record<
     weekday: string;
     weekend: string;
     holiday: string;
+    selectedCount: string;
+    passengerList: string;
+    paymentTitle: string;
+    supportNote: string;
   }
 > = {
   vi: {
-    reviewTitle: "Vui lòng kiểm tra lại thông tin đặt bay",
+    title: "Xác nhận thông tin đặt bay",
+    subtitle:
+      "Vui lòng kiểm tra thật kỹ thông tin chuyến bay, hành khách và dịch vụ đã chọn trước khi xác nhận.",
     termsTitle: "Điều khoản & điều kiện",
     openInNewTab: "Mở trong tab mới",
     close: "Đóng",
     packageLabel: "Gói bay",
     flightTypeLabel: "Loại bay",
-    pickupDetails: "Thông tin đón/trả",
+    pickupDetails: "Thông tin đón / trả",
     noPickupSelected:
       "Chuyến bay không bao gồm xe trung chuyển đến điểm bay. Khách cần có mặt trước 15 phút để check-in.",
     pickupAddressMissing: "Vui lòng nhập đầy đủ địa chỉ đón cho dịch vụ đã chọn.",
@@ -47,9 +57,16 @@ const UI_I18N: Record<
     weekday: "Ngày thường",
     weekend: "Cuối tuần",
     holiday: "Ngày lễ",
+    selectedCount: "đã chọn",
+    passengerList: "Danh sách hành khách",
+    paymentTitle: "Phương thức thanh toán",
+    supportNote:
+      "Sau khi gửi booking, đội ngũ sẽ liên hệ xác nhận lịch bay, dịch vụ và các điều kiện thời tiết.",
   },
   en: {
-    reviewTitle: "Please review your booking details",
+    title: "Review and confirm",
+    subtitle:
+      "Please review your flight details, passengers, and selected services carefully before confirming.",
     termsTitle: "Terms & Conditions",
     openInNewTab: "Open in new tab",
     close: "Close",
@@ -65,9 +82,16 @@ const UI_I18N: Record<
     weekday: "Weekday",
     weekend: "Weekend",
     holiday: "Holiday",
+    selectedCount: "selected",
+    passengerList: "Passenger list",
+    paymentTitle: "Payment methods",
+    supportNote:
+      "After you submit the booking, our team will contact you to confirm schedule, services, and weather conditions.",
   },
   fr: {
-    reviewTitle: "Veuillez vérifier les informations de votre réservation",
+    title: "Vérification et confirmation",
+    subtitle:
+      "Veuillez vérifier soigneusement les détails du vol, les passagers et les services sélectionnés avant de confirmer.",
     termsTitle: "Conditions générales",
     openInNewTab: "Ouvrir dans un nouvel onglet",
     close: "Fermer",
@@ -76,16 +100,24 @@ const UI_I18N: Record<
     pickupDetails: "Informations de prise en charge",
     noPickupSelected:
       "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 minutes à l’avance pour l’enregistrement.",
-    pickupAddressMissing: "Veuillez renseigner l’adresse de prise en charge pour le service sélectionné.",
+    pickupAddressMissing:
+      "Veuillez renseigner l’adresse de prise en charge pour le service sélectionné.",
     paragliding: "Parapente",
     paramotor: "Paramoteur",
     notSelected: "Non sélectionné",
     weekday: "Jour ouvré",
     weekend: "Week-end",
     holiday: "Jour férié",
+    selectedCount: "sélectionné",
+    passengerList: "Liste des passagers",
+    paymentTitle: "Modes de paiement",
+    supportNote:
+      "Après l’envoi de la réservation, notre équipe vous contactera pour confirmer l’horaire, les services et la météo.",
   },
   ru: {
-    reviewTitle: "Пожалуйста, проверьте данные бронирования",
+    title: "Проверка и подтверждение",
+    subtitle:
+      "Пожалуйста, внимательно проверьте детали полёта, пассажиров и выбранные услуги перед подтверждением.",
     termsTitle: "Правила и условия",
     openInNewTab: "Открыть в новой вкладке",
     close: "Закрыть",
@@ -101,9 +133,16 @@ const UI_I18N: Record<
     weekday: "Будний день",
     weekend: "Выходной",
     holiday: "Праздничный день",
+    selectedCount: "выбрано",
+    passengerList: "Список пассажиров",
+    paymentTitle: "Способы оплаты",
+    supportNote:
+      "После отправки бронирования команда свяжется с вами для подтверждения времени, услуг и погодных условий.",
   },
   hi: {
-    reviewTitle: "कृपया अपनी बुकिंग जानकारी जाँच लें",
+    title: "जाँचें और पुष्टि करें",
+    subtitle:
+      "कृपया पुष्टि करने से पहले फ्लाइट विवरण, यात्रियों और चुनी गई सेवाओं की अच्छी तरह जाँच करें।",
     termsTitle: "नियम और शर्तें",
     openInNewTab: "नए टैब में खोलें",
     close: "बंद करें",
@@ -119,16 +158,24 @@ const UI_I18N: Record<
     weekday: "कार्यदिवस",
     weekend: "सप्ताहांत",
     holiday: "छुट्टी",
+    selectedCount: "चयनित",
+    passengerList: "यात्री सूची",
+    paymentTitle: "भुगतान के तरीके",
+    supportNote:
+      "बुकिंग भेजने के बाद हमारी टीम समय, सेवाओं और मौसम की स्थिति की पुष्टि के लिए आपसे संपर्क करेगी।",
   },
   zh: {
-    reviewTitle: "请检查您的预订信息",
+    title: "确认预订信息",
+    subtitle:
+      "请在确认前仔细检查飞行信息、乘客信息以及已选择的服务。",
     termsTitle: "条款和条件",
     openInNewTab: "在新标签页中打开",
     close: "关闭",
     packageLabel: "飞行套餐",
     flightTypeLabel: "飞行类型",
     pickupDetails: "接送信息",
-    noPickupSelected: "该飞行不包含前往起飞点的接送服务。请提前 15 分钟到达办理登记。",
+    noPickupSelected:
+      "该飞行不包含前往起飞点的接送服务。请提前 15 分钟到达办理登记。",
     pickupAddressMissing: "请选择接送服务后填写接送地址。",
     paragliding: "无动力滑翔伞",
     paramotor: "动力伞",
@@ -136,6 +183,11 @@ const UI_I18N: Record<
     weekday: "工作日",
     weekend: "周末",
     holiday: "节假日",
+    selectedCount: "已选择",
+    passengerList: "乘客名单",
+    paymentTitle: "支付方式",
+    supportNote:
+      "提交预订后，团队将联系您确认飞行时间、服务内容和天气条件。",
   },
 };
 
@@ -156,9 +208,15 @@ function Row({
   enabled: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center gap-3">
-      <span className="text-white/70">{label}</span>
-      <span className={`font-semibold ${enabled ? "text-green-300" : "text-white/40"}`}>{value}</span>
+    <div className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
+      <span className="text-sm text-white/70">{label}</span>
+      <span
+        className={`text-sm font-semibold text-right ${
+          enabled ? "text-white" : "text-white/45"
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -170,7 +228,10 @@ function getFlightTypeLabel(lang: string, key?: string) {
   return ui.notSelected;
 }
 
-function getHolidayTypeLabel(lang: string, holidayType?: "weekday" | "weekend" | "holiday") {
+function getHolidayTypeLabel(
+  lang: string,
+  holidayType?: "weekday" | "weekend" | "holiday"
+) {
   const ui = UI_I18N[lang] ?? UI_I18N.vi;
   if (holidayType === "holiday") return ui.holiday;
   if (holidayType === "weekend") return ui.weekend;
@@ -224,25 +285,37 @@ export default function ReviewConfirmStep() {
 
   const formatMoney = (n: number) => {
     return lang === "vi"
-      ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(n || 0))
+      ? new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(Number(n || 0))
       : `${Number(n || 0).toLocaleString("en-US")} USD`;
   };
 
   const formatDate = (iso?: string) => {
     if (!iso) return "";
     const d = new Date(iso);
-    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const pax = data.guestsCount || 1;
 
   const getAddonQty = (k: AddonKey) => {
-    const q = (data.addonsQty?.[k] ?? 0) || (data.addons?.[k] ? data.guestsCount : 0);
+    const q =
+      (data.addonsQty?.[k] ?? 0) || (data.addons?.[k] ? data.guestsCount : 0);
     return Math.max(0, Math.min(data.guestsCount || 1, Number(q) || 0));
   };
 
   const contactAny = (data as any)?.contact;
-  const contactName = (contactAny?.fullName ?? contactAny?.contactName ?? "").toString();
+  const contactName = (
+    contactAny?.fullName ??
+    contactAny?.contactName ??
+    ""
+  ).toString();
   const contactPhone = (contactAny?.phone ?? "").toString();
   const contactEmail = (contactAny?.email ?? "").toString();
   const specialRequest = (contactAny?.specialRequest ?? "").toString();
@@ -303,7 +376,8 @@ export default function ReviewConfirmStep() {
       if (!qty) return;
 
       const unit = Number((billInLang as any)?.addonsUnitPrice?.[k] || 0);
-      const sub = Number((billInLang as any)?.addonsTotal?.[k] || 0) || unit * qty;
+      const sub =
+        Number((billInLang as any)?.addonsTotal?.[k] || 0) || unit * qty;
 
       lines.push({
         label: addonLabel[k] ?? String(k),
@@ -324,12 +398,10 @@ export default function ReviewConfirmStep() {
       });
     }
 
-    const total =
-      lang === "vi"
-        ? Number(billInLang.totalAfterDiscount || 0)
-        : Number(billInLang.totalAfterDiscount || 0);
-
-    return { priceLines: lines, totalText: formatMoney(total) };
+    return {
+      priceLines: lines,
+      totalText: formatMoney(Number(billInLang.totalAfterDiscount || 0)),
+    };
   }, [
     billInLang.basePricePerPerson,
     billInLang.discountPerPerson,
@@ -395,7 +467,9 @@ export default function ReviewConfirmStep() {
       const createResp: any = await createBooking(payload, turnstileToken);
       if (!createResp?.ok) {
         const serverMsg = createResp?.message || "Create booking failed";
-        const serverErrs = createResp?.errors ? `\n${JSON.stringify(createResp.errors)}` : "";
+        const serverErrs = createResp?.errors
+          ? `\n${JSON.stringify(createResp.errors)}`
+          : "";
         throw new Error(`${serverMsg}${serverErrs}`);
       }
 
@@ -411,10 +485,13 @@ export default function ReviewConfirmStep() {
     } catch (e: any) {
       console.error("Booking confirmation failed:", e);
 
-      const isTurnstileError = e?.status === 403 || e?.data?.error === "TURNSTILE_FAILED";
+      const isTurnstileError =
+        e?.status === 403 || e?.data?.error === "TURNSTILE_FAILED";
 
       if (isTurnstileError) {
-        setError(e?.data?.message || "Turnstile validation failed. Please try again.");
+        setError(
+          e?.data?.message || "Turnstile validation failed. Please try again."
+        );
       } else {
         setError(e?.message || "Unable to submit. Please try again.");
       }
@@ -426,10 +503,8 @@ export default function ReviewConfirmStep() {
     }
   };
 
-  const glassWrapperClass =
-    "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
-
-  const L = (key: string, fallback: string) => ((t as any)?.labels?.[key] as string) || fallback;
+  const L = (key: string, fallback: string) =>
+    ((t as any)?.labels?.[key] as string) || fallback;
 
   const noKhauPhaPkg2Pickup =
     data.location === "khau_pha" &&
@@ -438,317 +513,346 @@ export default function ReviewConfirmStep() {
     !data.services?.["khau_pha_pkg_2_garrya_pickup"]?.selected;
 
   return (
-    <div className="space-y-6 text-white">
-      <div className={glassWrapperClass}>
-        <h3 className="text-lg font-semibold text-white">{ui.reviewTitle}</h3>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="p-4 rounded-2xl border border-white/30 bg-gradient-to-br from-red-500/20 to-orange-500/10">
-            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-              {L("serviceDetails", "Service details")}
-            </h4>
-
-            <div className="grid grid-cols-2 gap-3 text-sm text-white/90">
-              <div>
-                <p className="text-white/60 text-xs">{L("service", "Service")}</p>
-                <p className="font-semibold">{cfg?.name?.[lang] ?? cfg?.name?.vi ?? L("flight", "Flight")}</p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{L("numGuests", "Passengers")}</p>
-                <p className="font-semibold">{data.guestsCount}</p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{L("date", "Date")}</p>
-                <p className="font-semibold">{formatDate(data.dateISO)}</p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{L("timeSlot", "Time")}</p>
-                <p className="font-semibold">{data.timeSlot || L("flexibleTime", "Flexible")}</p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{ui.packageLabel}</p>
-                <p className="font-semibold">
-                  {data.location === "khau_pha" ? packageLabel : ui.notSelected}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{ui.flightTypeLabel}</p>
-                <p className="font-semibold">
-                  {data.location === "khau_pha"
-                    ? getFlightTypeLabel(lang, data.flightTypeKey)
-                    : getFlightTypeLabel(lang, "paragliding")}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{L("dayType", "Day type")}</p>
-                <p className="font-semibold">{getHolidayTypeLabel(lang, billInLang.holidayType)}</p>
-              </div>
-
-              <div>
-                <p className="text-white/60 text-xs">{ui.pickupDetails}</p>
-                <p className="font-semibold">
-                  {selectedPickupServices.length ? `${selectedPickupServices.length}` : ui.notSelected}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
-            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-              {L("contactInfo", "Contact information")}
-            </h4>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3">
-                <span className="text-white/60">{L("name", "Name")}</span>
-                <span className="font-semibold text-white text-right">{contactName || firstGuestName || ""}</span>
-              </div>
-
-              <div className="flex justify-between gap-3">
-                <span className="text-white/60">{L("email", "Email")}</span>
-                <span className="font-semibold text-white truncate max-w-[220px] text-right">{contactEmail || ""}</span>
-              </div>
-
-              <div className="flex justify-between gap-3">
-                <span className="text-white/60">{L("phone", "Phone")}</span>
-                <span className="font-semibold text-white text-right">{contactPhone || ""}</span>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-5 text-white">
+      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
+        <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
+          <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
+          <p className="mt-1 text-sm text-white/80 max-w-3xl">{ui.subtitle}</p>
         </div>
 
-        {selectedPickupServices.length > 0 && (
-          <div className="rounded-2xl border border-white/30 bg-white/10 p-4">
-            <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-              {ui.pickupDetails}
-            </h4>
+        <div className="p-4 md:p-6 space-y-5">
+          <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.95fr] gap-5">
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {L("serviceDetails", "Service details")}
+              </div>
 
-            <div className="space-y-3 text-sm">
-              {serviceLines
-                .filter((x) => x.fixedMapUrl || x.inputText)
-                .map((x) => (
-                  <div key={x.key} className="flex flex-col gap-1">
-                    <span className="text-white/60">{x.label}</span>
-                    {x.fixedMapUrl ? (
-                      <a
-                        href={x.fixedMapUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-300 underline font-semibold"
-                      >
-                        {L("viewMap", "View map")}
-                      </a>
-                    ) : (
-                      <span className="font-semibold text-white">{x.inputText}</span>
-                    )}
-                  </div>
-                ))}
-            </div>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                <InfoBox
+                  label={L("service", "Service")}
+                  value={cfg?.name?.[lang] ?? cfg?.name?.vi ?? L("flight", "Flight")}
+                />
+                <InfoBox label={L("numGuests", "Passengers")} value={String(data.guestsCount)} />
+                <InfoBox label={L("date", "Date")} value={formatDate(data.dateISO)} />
+                <InfoBox
+                  label={L("timeSlot", "Time")}
+                  value={data.timeSlot || L("flexibleTime", "Flexible")}
+                />
+                <InfoBox
+                  label={ui.packageLabel}
+                  value={data.location === "khau_pha" ? packageLabel : ui.notSelected}
+                />
+                <InfoBox
+                  label={ui.flightTypeLabel}
+                  value={
+                    data.location === "khau_pha"
+                      ? getFlightTypeLabel(lang, data.flightTypeKey)
+                      : getFlightTypeLabel(lang, "paragliding")
+                  }
+                />
+                <InfoBox
+                  label={L("dayType", "Day type")}
+                  value={getHolidayTypeLabel(lang, billInLang.holidayType)}
+                />
+                <InfoBox
+                  label={ui.pickupDetails}
+                  value={
+                    selectedPickupServices.length
+                      ? `${selectedPickupServices.length} ${ui.selectedCount}`
+                      : ui.notSelected
+                  }
+                />
+              </div>
+            </section>
 
-            {missingPickupAddress && <p className="mt-3 text-sm text-red-300">{ui.pickupAddressMissing}</p>}
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {L("contactInfo", "Contact information")}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <InfoLine
+                  label={L("name", "Name")}
+                  value={contactName || firstGuestName || ""}
+                />
+                <InfoLine
+                  label={L("email", "Email")}
+                  value={contactEmail || ""}
+                />
+                <InfoLine
+                  label={L("phone", "Phone")}
+                  value={contactPhone || ""}
+                />
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white/75">
+                {ui.supportNote}
+              </div>
+            </section>
           </div>
-        )}
 
-        {noKhauPhaPkg2Pickup && (
-          <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
-            <p className="text-sm text-amber-100">{ui.noPickupSelected}</p>
-          </div>
-        )}
+          {selectedPickupServices.length > 0 && (
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {ui.pickupDetails}
+              </div>
 
-        <div className="rounded-2xl border border-white/30 bg-white/10 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowPassengers((v) => !v)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition"
-          >
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold uppercase tracking-wide text-white">
-                {L("passengerList", "Passenger information")}
-              </h4>
-              <span className="bg-red-600 text-white text-xs px-2 py-0.5 font-semibold rounded-full">
-                {(data.guests ?? []).length}
-              </span>
-            </div>
-            <span className={`transition-transform ${showPassengers ? "rotate-180" : ""}`}>▾</span>
-          </button>
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {serviceLines
+                  .filter((x) => x.fixedMapUrl || x.inputText)
+                  .map((x) => (
+                    <div
+                      key={x.key}
+                      className="rounded-2xl border border-white/12 bg-white/8 p-4"
+                    >
+                      <div className="text-sm font-semibold text-white">{x.label}</div>
 
-          {showPassengers && (
-            <div className="border-t border-white/20 max-h-64 overflow-y-auto">
-              {(data.guests ?? []).map((g: any, i: number) => (
-                <div key={i} className="px-4 py-4 border-b border-white/10 last:border-b-0 hover:bg-white/5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-sm">
-                      {i + 1}
+                      {x.fixedMapUrl ? (
+                        <a
+                          href={x.fixedMapUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex h-10 items-center rounded-full border border-sky-300/40 bg-sky-400/10 px-4 text-sm font-medium text-sky-200 hover:bg-sky-400/20"
+                        >
+                          {L("viewMap", "View map")}
+                        </a>
+                      ) : (
+                        <div className="mt-2 text-sm text-white/80 break-words">
+                          {x.inputText}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white text-sm mb-2">{g.fullName}</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
-                        <div>
-                          <span className="font-medium">{L("dob", "DOB")}:</span> <span className="ml-1">{g.dob}</span>
+                  ))}
+              </div>
+
+              {missingPickupAddress ? (
+                <p className="mt-3 text-sm text-red-300">{ui.pickupAddressMissing}</p>
+              ) : null}
+            </section>
+          )}
+
+          {noKhauPhaPkg2Pickup && (
+            <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
+              <p className="text-sm text-amber-100">{ui.noPickupSelected}</p>
+            </div>
+          )}
+
+          <section className="rounded-2xl border border-white/15 bg-black/20 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowPassengers((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left hover:bg-white/5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                  {ui.passengerList}
+                </div>
+                <span className="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-semibold text-red-100">
+                  {(data.guests ?? []).length}
+                </span>
+              </div>
+
+              <span className={`transition-transform ${showPassengers ? "rotate-180" : ""}`}>
+                ▾
+              </span>
+            </button>
+
+            {showPassengers && (
+              <div className="border-t border-white/10 p-4 space-y-3">
+                {(data.guests ?? []).map((g: any, i: number) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/12 bg-white/8 p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-100">
+                        {i + 1}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white">{g.fullName}</p>
+
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white/70">
+                          <MiniInfo label={L("dob", "DOB")} value={g.dob} />
+                          <MiniInfo label={L("gender", "Gender")} value={g.gender} />
+                          {g.idNumber ? (
+                            <MiniInfo label={L("idNumber", "ID")} value={g.idNumber} />
+                          ) : null}
+                          {g.nationality ? (
+                            <MiniInfo
+                              label={L("nationality", "Nationality")}
+                              value={g.nationality}
+                            />
+                          ) : null}
+                          {g.weightKg ? (
+                            <MiniInfo
+                              label={L("weightKg", "Weight")}
+                              value={`${g.weightKg}kg`}
+                            />
+                          ) : null}
                         </div>
-                        <div>
-                          <span className="font-medium">{L("gender", "Gender")}:</span>{" "}
-                          <span className="ml-1">{g.gender}</span>
-                        </div>
-                        {g.idNumber && (
-                          <div>
-                            <span className="font-medium">{L("idNumber", "ID")}:</span>{" "}
-                            <span className="ml-1">{g.idNumber}</span>
-                          </div>
-                        )}
-                        {g.nationality && (
-                          <div>
-                            <span className="font-medium">{L("nationality", "Nationality")}:</span>{" "}
-                            <span className="ml-1">{g.nationality}</span>
-                          </div>
-                        )}
-                        {g.weightKg && (
-                          <div>
-                            <span className="font-medium">{L("weightKg", "Weight")}:</span>{" "}
-                            <span className="ml-1">{g.weightKg}kg</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </section>
+
+          {!!specialRequest && (
+            <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4">
+              <p className="text-xs font-semibold text-yellow-200 mb-1">
+                {L("specialRequest", "Special requests")}
+              </p>
+              <p className="text-sm text-yellow-100 break-words">{specialRequest}</p>
             </div>
           )}
-        </div>
 
-        {!!specialRequest && (
-          <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4">
-            <p className="text-xs text-yellow-200 font-semibold mb-1">{L("specialRequest", "Special requests")}</p>
-            <p className="text-sm text-yellow-100">{specialRequest}</p>
-          </div>
-        )}
-
-        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
-          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-            {L("additionalServices", "Additional services")}
-          </h4>
-
-          <div className="space-y-3 text-sm">
-            <Row
-              label={L("hotelTransfer", "Pickup / transfer")}
-              value={selectedPickupServices.length ? `${selectedPickupServices.length}` : L("no", "No")}
-              enabled={!!selectedPickupServices.length}
-            />
-            <Row
-              label={L("camera360", "Camera 360")}
-              value={getAddonQty("camera360") ? `${getAddonQty("camera360")} pax` : L("no", "No")}
-              enabled={!!getAddonQty("camera360")}
-            />
-            <Row
-              label={L("drone", "Drone/Flycam")}
-              value={getAddonQty("flycam") ? `${getAddonQty("flycam")} pax` : L("no", "No")}
-              enabled={!!getAddonQty("flycam")}
-            />
-
-            <div className="flex justify-between items-center">
-              <span className="text-white/70">{L("gopro", "GoPro")}</span>
-              <span className="text-blue-300 font-semibold">{L("free", "Free")}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-white/70">{L("drinks", "Drinks")}</span>
-              <span className="text-blue-300 font-semibold">{L("free", "Free")}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-white/70">{L("certificate", "Certificate")}</span>
-              <span className="text-blue-300 font-semibold">{L("included", "Included")}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
-          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-            {L("priceBreakdown", "Price breakdown")}
-          </h4>
-
-          <div className="space-y-2 text-sm">
-            {priceLines.map((line, idx) => (
-              <div key={idx} className={`flex justify-between gap-3 ${line.type === "discount" ? "text-red-300" : "text-white/90"}`}>
-                <div className="min-w-0">
-                  <p className="text-white/70 break-words">{line.label}</p>
-                  {line.detail && <p className="text-xs text-white/50 break-words">{line.detail}</p>}
-                </div>
-                <span className="font-semibold whitespace-nowrap">{line.amountText}</span>
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-5">
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {L("additionalServices", "Additional services")}
               </div>
-            ))}
 
-            <hr className="my-2 border-white/20" />
+              <div className="mt-4 space-y-3">
+                <Row
+                  label={L("hotelTransfer", "Pickup / transfer")}
+                  value={
+                    selectedPickupServices.length
+                      ? `${selectedPickupServices.length}`
+                      : L("no", "No")
+                  }
+                  enabled={!!selectedPickupServices.length}
+                />
+                <Row
+                  label={L("camera360", "Camera 360")}
+                  value={
+                    getAddonQty("camera360")
+                      ? `${getAddonQty("camera360")} pax`
+                      : L("no", "No")
+                  }
+                  enabled={!!getAddonQty("camera360")}
+                />
+                <Row
+                  label={L("drone", "Drone/Flycam")}
+                  value={
+                    getAddonQty("flycam")
+                      ? `${getAddonQty("flycam")} pax`
+                      : L("no", "No")
+                  }
+                  enabled={!!getAddonQty("flycam")}
+                />
 
-            <div className="flex justify-between font-bold text-lg">
-              <span>{L("totalCost", "Total")}</span>
-              <span>{totalText}</span>
+                <SimpleInfo label={L("gopro", "GoPro")} value={L("free", "Free")} />
+                <SimpleInfo label={L("drinks", "Drinks")} value={L("free", "Free")} />
+                <SimpleInfo
+                  label={L("certificate", "Certificate")}
+                  value={L("included", "Included")}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                {L("priceBreakdown", "Price breakdown")}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {priceLines.map((line, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-start justify-between gap-3 ${
+                      line.type === "discount" ? "text-red-300" : "text-white/90"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-white/70 break-words">{line.label}</p>
+                      {line.detail ? (
+                        <p className="mt-1 text-xs text-white/45 break-words">
+                          {line.detail}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <span className="whitespace-nowrap text-sm font-semibold">
+                      {line.amountText}
+                    </span>
+                  </div>
+                ))}
+
+                <div className="h-px bg-white/10" />
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-lg font-bold">{L("totalCost", "Total")}</span>
+                  <span className="text-xl font-bold">{totalText}</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+              {ui.paymentTitle}
             </div>
-          </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-white/80">
+              <PaymentItem text={L("cashPayment", "Cash payment")} />
+              <PaymentItem text={L("bankTransfer", "Bank transfer")} />
+              <PaymentItem text={L("paypalPayment", "PayPal")} />
+              <PaymentItem text={L("creditCard", "Credit card")} />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+            <TurnstileWidget
+              key={turnstileKey}
+              onVerify={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken("")}
+              onError={() => setTurnstileToken("")}
+              lang={lang}
+              theme="dark"
+            />
+          </section>
+
+          <label className="flex items-start gap-3 rounded-2xl border border-white/12 bg-black/15 p-4">
+            <input
+              type="checkbox"
+              checked={!!data.acceptedTerms}
+              onChange={(e) => update({ acceptedTerms: e.target.checked })}
+              className="mt-1 h-4 w-4 accent-green-500"
+            />
+            <span className="text-sm text-white">
+              {(t as any)?.labels?.termsText ?? "I agree to the terms"}{" "}
+              <button
+                type="button"
+                onClick={() => setShowTerms(true)}
+                className="text-sky-300 underline"
+              >
+                {(t as any)?.labels?.viewTerms ?? "View terms"}
+              </button>
+            </span>
+          </label>
         </div>
-
-        <div className="p-4 rounded-2xl border border-white/30 bg-white/10">
-          <h4 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
-            {L("paymentMethod", "Payment method")}
-          </h4>
-
-          <div className="space-y-2 text-sm text-white/80">
-            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("cashPayment", "Cash payment")}</span></div>
-            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("bankTransfer", "Bank transfer")}</span></div>
-            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("paypalPayment", "PayPal")}</span></div>
-            <div className="flex items-center gap-2"><span className="text-green-300">✔</span><span>{L("creditCard", "Credit card")}</span></div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/40 p-4">
-          <TurnstileWidget
-            key={turnstileKey}
-            onVerify={(token) => setTurnstileToken(token)}
-            onExpire={() => setTurnstileToken("")}
-            onError={() => setTurnstileToken("")}
-            lang={lang}
-            theme="dark"
-          />
-        </div>
-
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={!!data.acceptedTerms}
-            onChange={(e) => update({ acceptedTerms: e.target.checked })}
-            className="mt-1 h-4 w-4 accent-green-500"
-          />
-          <span className="text-sm text-white">
-            {(t as any)?.labels?.termsText ?? "I agree to the terms"}{" "}
-            <button type="button" onClick={() => setShowTerms(true)} className="text-blue-400 underline">
-              {(t as any)?.labels?.viewTerms ?? "View terms"}
-            </button>
-          </span>
-        </label>
       </div>
 
       {error && (
-        <div className="text-sm text-white bg-red-900/40 border border-red-500/60 rounded-lg p-3 backdrop-blur-sm">
+        <div className="rounded-2xl border border-red-500/50 bg-red-900/35 p-4 text-sm text-white">
           {error}
         </div>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between gap-3">
         <button
           onClick={back}
-          className="px-4 py-2 rounded-xl border border-white/40 bg-black/30 text-white hover:bg-black/50 transition backdrop-blur-sm"
+          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
         >
           {t.buttons.back}
         </button>
+
         <button
           disabled={!data.acceptedTerms || !turnstileToken || submitting || missingPickupAddress}
           onClick={handleConfirm}
-          className="px-5 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 transition"
+          className="h-12 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(45,212,191,0.32)] transition hover:brightness-105 disabled:opacity-50"
         >
           {submitting ? t.buttons.processing : t.buttons.confirm}
         </button>
@@ -756,17 +860,26 @@ export default function ReviewConfirmStep() {
 
       {showTerms && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowTerms(false)} />
-          <div className="relative mx-auto my-8 w-[min(96vw,1000px)] h-[min(90vh,800px)] bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-white/20 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 bg-white/10 shrink-0">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowTerms(false)}
+          />
+          <div className="relative mx-auto my-6 flex h-[min(92vh,860px)] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-[28px] border border-white/15 bg-slate-950 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/6 px-4 py-3">
               <span className="text-sm font-medium text-white">{ui.termsTitle}</span>
+
               <div className="flex items-center gap-3">
-                <a href={termsUrl} target="_blank" rel="noreferrer" className="underline text-sm text-white hover:text-blue-300">
+                <a
+                  href={termsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-sky-300 underline"
+                >
                   {ui.openInNewTab}
                 </a>
                 <button
                   onClick={() => setShowTerms(false)}
-                  className="px-2 py-1 rounded-md border border-white/30 hover:bg-white/10 text-white"
+                  className="rounded-full border border-white/20 px-3 py-1.5 text-sm text-white hover:bg-white/8"
                 >
                   {ui.close}
                 </button>
@@ -786,6 +899,53 @@ export default function ReviewConfirmStep() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function InfoBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-white/55">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white break-words">{value}</div>
+    </div>
+  );
+}
+
+function InfoLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
+      <span className="text-sm text-white/65">{label}</span>
+      <span className="text-sm font-semibold text-white text-right break-words">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MiniInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+      <span className="font-medium text-white/60">{label}:</span>{" "}
+      <span className="text-white">{value}</span>
+    </div>
+  );
+}
+
+function SimpleInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
+      <span className="text-sm text-white/70">{label}</span>
+      <span className="text-sm font-semibold text-sky-200">{value}</span>
+    </div>
+  );
+}
+
+function PaymentItem({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
+      <span className="text-emerald-300">✔</span>
+      <span>{text}</span>
     </div>
   );
 }

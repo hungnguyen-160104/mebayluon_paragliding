@@ -8,14 +8,14 @@ export type FlightTypeKey = "paragliding" | "paramotor";
 export type PackageKey = "khau_pha_pkg_1" | "khau_pha_pkg_2";
 export type HolidayType = "weekday" | "weekend" | "holiday";
 
-type AddonConfig = {
+export type AddonConfig = {
   label: Record<LangCode, string>;
   pricePerPersonVND: number | null;
   /** Nếu có số USD chính thức thì điền; nếu null sẽ fallback quy đổi từ VND */
   pricePerPersonUSD: number | null;
 };
 
-type DynamicServiceConfig = {
+export type DynamicServiceConfig = {
   key: string;
   label: Record<LangCode, string>;
   description?: Partial<Record<LangCode, string>>;
@@ -30,7 +30,7 @@ type DynamicServiceConfig = {
   visibleForPackages?: PackageKey[];
 };
 
-type FlightTypePriceConfig = {
+export type FlightTypePriceConfig = {
   key: FlightTypeKey;
   label: Record<LangCode, string>;
   weekday?: number;
@@ -39,13 +39,13 @@ type FlightTypePriceConfig = {
   fixed?: number;
 };
 
-type PackageConfig = {
+export type PackageConfig = {
   key: PackageKey;
   label: Record<LangCode, string>;
   flightTypes: FlightTypePriceConfig[];
 };
 
-type LocationConfig = {
+export type LocationConfig = {
   key: LocationKey;
   name: Record<LangCode, string>;
 
@@ -70,12 +70,14 @@ type LocationConfig = {
   services?: DynamicServiceConfig[];
 };
 
-const USD_FALLBACK_RATE = 25_000; // dùng khi không có số USD chính thức
-const BIGC_THANG_LONG_MAP = "https://maps.app.goo.gl/3vB2qYuThwBASQZj8";
+const USD_FALLBACK_RATE = 25_000;
+export const BIGC_THANG_LONG_MAP = "https://maps.app.goo.gl/3vB2qYuThwBASQZj8";
 
 function toUSDfromVND(vnd: number): number {
   return Math.round(vnd / USD_FALLBACK_RATE);
 }
+export const vndToUsd = toUSDfromVND;
+
 export function isWeekend(dateISO?: string): boolean {
   if (!dateISO) return false;
   const d = new Date(dateISO);
@@ -100,15 +102,13 @@ function isVietnamMajorHoliday(dateISO?: string): boolean {
 
   const mmdd = ymd.slice(5);
 
-  // Các ngày nghỉ lớn phổ biến ở VN
-  if (mmdd === "01-01") return true; // Tết dương lịch
-  if (mmdd === "04-30") return true; // 30/4
-  if (mmdd === "05-01") return true; // 1/5
-  if (mmdd === "09-02") return true; // Quốc khánh
+  if (mmdd === "01-01") return true;
+  if (mmdd === "04-30") return true;
+  if (mmdd === "05-01") return true;
+  if (mmdd === "09-02") return true;
 
-  // Một số ngày lễ âm lịch quy đổi theo năm, có thể bổ sung thêm nếu cần
   const mappedByYear = new Set<string>([
-    "2026-04-27", // Giỗ Tổ Hùng Vương 2026
+    "2026-04-27",
   ]);
 
   return mappedByYear.has(ymd);
@@ -128,22 +128,11 @@ function getKhauPhaPackageBasePriceVND(
   const holidayType = getHolidayType(dateISO);
 
   if (packageKey === "khau_pha_pkg_1") {
-    /**
-     * Theo rule bạn đã chốt:
-     * - package 1 có giá theo thời điểm bay
-     * - chọn loại bay nào thì lấy giá theo loại đó
-     *
-     * Vì PDF là tài liệu bổ sung/sửa đổi, nhưng bạn chưa gửi file nào khác
-     * chứa bảng giá tách riêng paragliding/paramotor theo package,
-     * nên ở đây giữ mức giá cũ đang có + tách sẵn cấu trúc để bước sau
-     * có thể thay đúng số nếu cần.
-     */
     if (flightTypeKey === "paramotor") {
       if (holidayType === "holiday" || holidayType === "weekend") return 2_520_000;
       return 2_120_000;
     }
 
-    // paragliding / mặc định
     if (holidayType === "holiday" || holidayType === "weekend") return 2_520_000;
     return 2_120_000;
   }
@@ -153,7 +142,6 @@ function getKhauPhaPackageBasePriceVND(
     return 2_390_000;
   }
 
-  // fallback cũ nếu chưa chọn package
   return holidayType === "holiday" || holidayType === "weekend" ? 2_520_000 : 2_120_000;
 }
 
@@ -169,24 +157,24 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   sapa: {
     key: "sapa",
     name: {
-      vi: "Lào Cai (Sapa)",
-      en: "Lao Cai (Sapa)",
-      fr: "Lao Cai (Sapa)",
-      ru: "Лаокай (Сапа)",
-      zh: "老街（沙坝）",
-      hi: "लाओ काई (सापा)",
+vi: "SAPA",
+en: "SAPA",
+fr: "SAPA",
+ru: "SAPA",
+zh: "SAPA",
+hi: "SAPA",
     },
     basePriceVND: () => 2_190_000,
     basePriceUSD: () => 85,
     addons: {
       pickup: {
         label: {
-          vi: "Xe đón trả khách sạn",
-          en: "Hotel pickup (Sapa area)",
-          fr: "Prise en charge à l’hôtel (Sapa)",
-          ru: "Трансфер от/до отеля (Сапа)",
-          zh: "酒店接送（沙坝区域）",
-          hi: "होटल पिकअप (सापा क्षेत्र)",
+            vi: "Xe đón trả tại khách sạn (Trung tâm Sapa, bản Lao Chải, bản Tả Van)",
+  en: "Hotel pickup and drop-off (Sapa Center, Lao Chai Village, Ta Van Village)",
+  fr: "Prise en charge et retour à l’hôtel (centre de Sapa, village de Lao Chai, village de Ta Van)",
+  ru: "Трансфер от/до отеля (центр Сапы, деревни Лао Чай и Та Ван)",
+  zh: "酒店接送（沙坝中心、老柴村、塔万村）",
+  hi: "होटल पिकअप और ड्रॉप-ऑफ (सापा केंद्र, लाओ चाई गाँव, ता वान गाँव)",
         },
         pricePerPersonVND: 100_000,
         pricePerPersonUSD: 5,
@@ -270,15 +258,19 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   khau_pha: {
     key: "khau_pha",
     name: {
-      vi: "Yên Bái (Đèo Khau Phạ – Mù Cang Chải)",
-      en: "Yen Bai (Khau Pha Pass – Mu Cang Chai)",
-      fr: "Yen Bai (Col de Khau Pha – Mu Cang Chai)",
-      ru: "Йенбай (пер. Хаупха – Му Канг Чай)",
-      zh: "安沛（考帕山口 – 木仓寨）",
-      hi: "येन बाई (खाउ फ़ा दर्रा – मु कांग चाई)",
+      vi: "Đèo Khau Phạ (Tú Lê - Mù Cang Chải)",
+      en: "Khau Pha Pass (Tu Le - Mu Cang Chai)",
+      fr: "Col de Khau Pha (Tu Le - Mu Cang Chai)",
+      ru: "Перевал Кхау Фа (Ту Ле - Му Канг Чай)",
+      zh: "考帕山口（图勒－木江界）",
+      hi: "खाउ फ़ा दर्रा (टू ले - मु कांग चाई)",
     },
-    basePriceVND: (dateISO) => (getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000),
-    basePriceUSD: (dateISO) => toUSDfromVND(getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000),
+    basePriceVND: (dateISO) =>
+      getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000,
+    basePriceUSD: (dateISO) =>
+      toUSDfromVND(
+        getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000
+      ),
     packages: [
       {
         key: "khau_pha_pkg_1",
@@ -387,6 +379,14 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "Garrya / Mu Cang Chai पिकअप",
         },
         controlType: "checkbox",
+        note: {
+          vi: "Tính theo block 4 khách: 700.000đ/xe/1 chiều.",
+          en: "Charged by blocks of 4 guests: 700,000 VND/car/one way.",
+          fr: "Facturé par bloc de 4 passagers : 700 000 VND/voiture/aller simple.",
+          ru: "Стоимость по блокам по 4 гостя: 700 000 VND/машина/в одну сторону.",
+          zh: "按每 4 位客人为一个区块计费：700,000 VND/车/单程。",
+          hi: "4 यात्रियों के ब्लॉक के अनुसार शुल्क: 700,000 VND/कार/एक तरफ।",
+        },
         requiresPickupInput: true,
         visibleForPackages: ["khau_pha_pkg_1"],
       },
@@ -418,6 +418,14 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "Garryya / Mu Cang Chai पिकअप",
         },
         controlType: "checkbox",
+        note: {
+          vi: "Tính theo block 4 khách: 700.000đ/xe/1 chiều.",
+          en: "Charged by blocks of 4 guests: 700,000 VND/car/one way.",
+          fr: "Facturé par bloc de 4 passagers : 700 000 VND/voiture/aller simple.",
+          ru: "Стоимость по блокам по 4 гостя: 700 000 VND/машина/в одну сторону.",
+          zh: "按每 4 位客人为一个区块计费：700,000 VND/车/单程。",
+          hi: "4 यात्रियों के ब्लॉक के अनुसार शुल्क: 700,000 VND/कार/एक तरफ।",
+        },
         requiresPickupInput: true,
         exclusiveGroup: "khau_pha_pkg_2_pickup",
         visibleForPackages: ["khau_pha_pkg_2"],
@@ -527,12 +535,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   da_nang: {
     key: "da_nang",
     name: {
-      vi: "Đà Nẵng (Bán đảo Sơn Trà)",
-      en: "Da Nang (Son Tra Peninsula)",
-      fr: "Da Nang (Péninsule de Son Tra)",
-      ru: "Дананг (полуостров Сонча)",
-      zh: "岘港（山茶半岛）",
-      hi: "दा नांग (सोन त्रà प्रायद्वीप)",
+      vi: "Đà Nẵng ",
+      en: "Da Nang ",
+      fr: "Da Nang ",
+      ru: "Дананг ",
+      zh: "岘港 ",
+      hi: "दा नांग ",
     },
     basePriceVND: () => 1_690_000,
     basePriceUSD: () => 65,
@@ -595,7 +603,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       pickup: {
         label: {
-          vi: "Đưa đón trung tâm TP",
+          vi: "Đưa đón trung tâm thành phố",
           en: "City center pickup",
           fr: "Transfert centre-ville",
           ru: "Трансфер из центра",
@@ -673,12 +681,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   ha_noi: {
     key: "ha_noi",
     name: {
-      vi: "Hà Nội (Đồi Bù / Viên Nam)",
-      en: "Hanoi (Doi Bu / Vien Nam)",
-      fr: "Hanoï (Doi Bu / Vien Nam)",
-      ru: "Ханой (Дойбу / Вьен Нам)",
-      zh: "河内（Đồi Bù / Viên Nam）",
-      hi: "हनोई (दोई बू / विएन नाम)",
+        vi: "Hà Nội (Đồi Bù - Viên Nam)",
+        en: "Hanoi (Doi Bu - Vien Nam)",
+        fr: "Hanoï (Doi Bu - Vien Nam)",
+        ru: "Ханой (Дой Бу - Вьен Нам)",
+        zh: "河内（布丘－边南）",
+        hi: "हनोई (दोई बू - वियन नाम)",
     },
     basePriceVND: () => 1_690_000,
     basePriceUSD: () => 65,
@@ -710,6 +718,14 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "प्राइवेट होटल पिकअप",
         },
         controlType: "checkbox",
+        note: {
+          vi: "1–3 khách: 1.500.000đ/xe. Từ khách thứ 4 trở đi cộng thêm 350.000đ/người.",
+          en: "1–3 guests: 1,500,000 VND/car. From the 4th guest onward, add 350,000 VND/person.",
+          fr: "1–3 passagers : 1 500 000 VND/voiture. À partir du 4e passager, ajouter 350 000 VND/personne.",
+          ru: "1–3 гостя: 1 500 000 VND/машина. Начиная с 4-го гостя, добавляется 350 000 VND/чел.",
+          zh: "1–3 位客人：1,500,000 VND/车。第 4 位起每人加收 350,000 VND。",
+          hi: "1–3 यात्री: 1,500,000 VND/कार। चौथे यात्री से आगे 350,000 VND/व्यक्ति अतिरिक्त।",
+        },
         requiresPickupInput: true,
         exclusiveGroup: "ha_noi_pickup_group",
       },
@@ -955,7 +971,6 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   },
 };
 
-/** Định dạng tiền theo ngôn ngữ */
 export function formatVND(n: number): string {
   return `${(n ?? 0).toLocaleString("vi-VN")}₫`;
 }
@@ -969,7 +984,6 @@ export function currencyOf(lang: LangCode): "VND" | "USD" {
   return lang === "vi" ? "VND" : "USD";
 }
 
-/** Tầng giảm giá theo số lượng (áp dụng chung) */
 const GROUP_DISCOUNT = [
   { min: 6, vnd: 150_000, usd: 6 },
   { min: 4, vnd: 100_000, usd: 4 },
@@ -985,10 +999,7 @@ type ComputeParams = {
   packageKey?: string;
   flightTypeKey?: string;
 
-  /** backward compat */
   addons?: Partial<Record<AddonKey, boolean>>;
-
-  /** NEW */
   addonsQty?: Partial<Record<AddonKey, number>>;
 };
 
@@ -1000,10 +1011,8 @@ export type ComputeResult = {
   basePricePerPerson: number;
   baseTotal: number;
 
-  /** backward compat: đơn giá addon (chỉ set >0 nếu qty>0) */
   addonsPerPerson: Record<AddonKey, number>;
 
-  /** breakdown theo qty */
   addonsUnitPrice: Record<AddonKey, number>;
   addonsQty: Record<AddonKey, number>;
   addonsTotal: Record<AddonKey, number>;
@@ -1012,13 +1021,10 @@ export type ComputeResult = {
   discountPerPerson: number;
   discountTotal: number;
 
-  /** trung bình/khách */
   totalPerPerson: number;
-
   totalAfterDiscount: number;
 };
 
-/** Backward-compat: trả VND */
 export function computePrice(p: ComputeParams): ComputeResult {
   return computePriceByCurrency(p, "VND");
 }
@@ -1053,7 +1059,10 @@ function getBasePriceUSD(p: ComputeParams): number {
   return LOCATIONS[location].basePriceUSD(dateISO);
 }
 
-function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): ComputeResult {
+function computePriceByCurrency(
+  p: ComputeParams,
+  currency: "VND" | "USD"
+): ComputeResult {
   const {
     location,
     guestsCount: rawGuests,
@@ -1067,15 +1076,33 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
 
   const base = currency === "VND" ? getBasePriceVND(p) : getBasePriceUSD(p);
 
-  const addonsPerPerson: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
-  const addonsUnitPrice: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
-  const addonsQtyNorm: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
-  const addonsTotal: Record<AddonKey, number> = { pickup: 0, flycam: 0, camera360: 0 };
+  const addonsPerPerson: Record<AddonKey, number> = {
+    pickup: 0,
+    flycam: 0,
+    camera360: 0,
+  };
+  const addonsUnitPrice: Record<AddonKey, number> = {
+    pickup: 0,
+    flycam: 0,
+    camera360: 0,
+  };
+  const addonsQtyNorm: Record<AddonKey, number> = {
+    pickup: 0,
+    flycam: 0,
+    camera360: 0,
+  };
+  const addonsTotal: Record<AddonKey, number> = {
+    pickup: 0,
+    flycam: 0,
+    camera360: 0,
+  };
 
   (["pickup", "flycam", "camera360"] as AddonKey[]).forEach((key) => {
     const a = cfg.addons[key];
 
-    let unit = currency === "VND" ? a.pricePerPersonVND : a.pricePerPersonUSD;
+    let unit =
+      currency === "VND" ? a.pricePerPersonVND : a.pricePerPersonUSD;
+
     if (unit == null) {
       if (currency === "USD" && a.pricePerPersonVND != null) {
         unit = toUSDfromVND(a.pricePerPersonVND);
@@ -1083,6 +1110,7 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
         unit = 0;
       }
     }
+
     addonsUnitPrice[key] = unit ?? 0;
 
     let qty = addonsQty?.[key];
@@ -1134,11 +1162,14 @@ function computePriceByCurrency(p: ComputeParams, currency: "VND" | "USD"): Comp
   };
 }
 
-/** Helpers để lấy tên địa điểm / label addon theo ngôn ngữ */
 export function getLocationName(loc: LocationConfig, lang: LangCode): string {
   return loc.name[lang] ?? loc.name.vi;
 }
-export function getAddonLabel(cfg: LocationConfig, key: AddonKey, lang: LangCode): string {
+export function getAddonLabel(
+  cfg: LocationConfig,
+  key: AddonKey,
+  lang: LangCode
+): string {
   const a = cfg.addons[key];
   return a?.label?.[lang] ?? a?.label?.vi ?? key;
 }

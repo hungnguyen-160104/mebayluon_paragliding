@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+
+import React, { useMemo } from "react";
 import type { LocationKey } from "@/lib/booking/calculate-price";
 import { LOCATIONS, formatVND } from "@/lib/booking/calculate-price";
 import { getFlightByLocationKey } from "@/lib/booking/booking-data";
@@ -17,65 +18,84 @@ type Props = {
 const UI_TEXT: Record<
   "vi" | "en" | "fr" | "ru" | "hi" | "zh",
   {
-    basePrice: string;
     selectLocation: string;
     selected: string;
-    packageHint: string;
+    featured: string;
+    basePrice: string;
+    fromPrice: string;
     weekdayFrom: string;
     weekendFrom: string;
+    packageHint: string;
   }
 > = {
   vi: {
-    basePrice: "/ khách (giá cơ bản)",
     selectLocation: "Chọn điểm bay",
     selected: "Đã chọn",
-    packageHint: "Có nhiều gói bay",
-    weekdayFrom: "Ngày thường từ",
-    weekendFrom: "Cuối tuần/lễ từ",
+    featured: "Nổi bật",
+    basePrice: "Giá cơ bản",
+    fromPrice: "Từ",
+    weekdayFrom: "Ngày thường",
+    weekendFrom: "Cuối tuần/lễ",
+    packageHint: "Nhiều gói bay",
   },
   en: {
-    basePrice: "/ pax (base price)",
     selectLocation: "Choose location",
     selected: "Selected",
-    packageHint: "Multiple packages available",
-    weekdayFrom: "Weekday from",
-    weekendFrom: "Weekend/holiday from",
+    featured: "Featured",
+    basePrice: "Base price",
+    fromPrice: "From",
+    weekdayFrom: "Weekday",
+    weekendFrom: "Weekend/holiday",
+    packageHint: "Multiple packages",
   },
   fr: {
-    basePrice: "/ pers (prix de base)",
     selectLocation: "Choisir le site",
     selected: "Sélectionné",
-    packageHint: "Plusieurs forfaits disponibles",
-    weekdayFrom: "Jour ouvré à partir de",
-    weekendFrom: "Week-end/férié à partir de",
+    featured: "En vedette",
+    basePrice: "Prix de base",
+    fromPrice: "De",
+    weekdayFrom: "Semaine",
+    weekendFrom: "Week-end/Férié",
+    packageHint: "Plusieurs forfaits",
   },
   ru: {
-    basePrice: "/ чел (базовая цена)",
-    selectLocation: "Выбрать локацию",
+    selectLocation: "Выбрать",
     selected: "Выбрано",
-    packageHint: "Доступно несколько пакетов",
-    weekdayFrom: "Будни от",
-    weekendFrom: "Выходные/праздники от",
+    featured: "Рекомендуем",
+    basePrice: "Базовая цена",
+    fromPrice: "От",
+    weekdayFrom: "Будни",
+    weekendFrom: "Выходные",
+    packageHint: "Несколько пакетов",
   },
   hi: {
-    basePrice: "/ यात्री (बेस प्राइस)",
-    selectLocation: "लोकेशन चुनें",
+    selectLocation: "चुनें",
     selected: "चयनित",
-    packageHint: "एक से अधिक पैकेज उपलब्ध",
-    weekdayFrom: "कार्यदिवस से",
-    weekendFrom: "सप्ताहांत/छुट्टी से",
+    featured: "हाइलाइट",
+    basePrice: "बेस प्राइस",
+    fromPrice: "से",
+    weekdayFrom: "कार्यदिवस",
+    weekendFrom: "सप्ताहांत",
+    packageHint: "कई पैकेज",
   },
   zh: {
-    basePrice: "/ 人（基础价格）",
-    selectLocation: "选择飞行地点",
+    selectLocation: "选择地点",
     selected: "已选择",
-    packageHint: "提供多个套餐",
-    weekdayFrom: "工作日起",
-    weekendFrom: "周末/节假日起",
+    featured: "推荐",
+    basePrice: "基础价格",
+    fromPrice: "起",
+    weekdayFrom: "工作日",
+    weekendFrom: "节假日",
+    packageHint: "多个套餐",
   },
 };
 
-export default function FlightCard({ location, selected, onSelect, dateISO }: Props) {
+export default function FlightCard({
+  location,
+  selected,
+  onSelect,
+  dateISO,
+}: Props) {
   const { language } = useLanguage();
   const lang = (language as LangCode) || "vi";
   const ui = UI_TEXT[(lang as keyof typeof UI_TEXT) || "vi"] ?? UI_TEXT.vi;
@@ -83,91 +103,84 @@ export default function FlightCard({ location, selected, onSelect, dateISO }: Pr
   const opt = getFlightByLocationKey(location);
   const cfg = LOCATIONS[location];
 
-  const priceFromLegacy = (() => {
+  const effectiveBasePrice = useMemo(() => {
     const weekend = isWeekend(dateISO);
-    if (weekend && opt.price.weekend) return opt.price.weekend;
-    return opt.price.weekday ?? opt.price.weekend ?? 0;
-  })();
+    const legacy =
+      weekend && opt.price.weekend
+        ? opt.price.weekend
+        : opt.price.weekday ?? opt.price.weekend ?? 0;
 
-  const basePrice = priceFromLegacy || cfg.basePriceVND(dateISO);
+    return legacy || cfg.basePriceVND(dateISO);
+  }, [cfg, dateISO, opt.price.weekday, opt.price.weekend]);
 
-  const weekdayBase = cfg.basePriceVND("2026-03-09");
+  const weekdayBase = cfg.basePriceVND("2026-03-10");
   const weekendBase = cfg.basePriceVND("2026-03-08");
   const hasDynamicWeekendPrice = weekdayBase !== weekendBase;
   const hasPackages = !!cfg.packages?.length;
 
   return (
-    <div
-      role="button"
+    <button
+      type="button"
       onClick={() => onSelect?.(location)}
-      className={`group overflow-hidden rounded-2xl border transition hover:shadow-md cursor-pointer ${
-        selected ? "border-blue-600 ring-2 ring-blue-200" : "border-neutral-200"
+      className={`group relative flex w-full flex-col justify-between overflow-hidden rounded-[24px] border p-4 text-left transition-all duration-300 min-h-[180px] ${
+        selected
+          ? "border-sky-300 bg-sky-500/20 shadow-[0_8px_30px_rgba(56,189,248,0.25)]"
+          : "border-white/15 bg-white/10 hover:bg-white/15 hover:border-white/30"
       }`}
     >
-      <div className="relative aspect-video w-full overflow-hidden bg-neutral-100">
-        <img
-          src={opt.image}
-          alt={opt.name}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-        />
-
-        {hasPackages ? (
-          <div className="absolute left-3 top-3 rounded-full bg-black/65 px-3 py-1 text-xs font-medium text-white">
-            {ui.packageHint}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-lg font-semibold">{cfg.name[lang] ?? cfg.name.vi}</div>
-
-            {cfg.included?.[lang]?.length ? (
-              <ul className="text-sm text-neutral-600 list-disc ml-5 mt-2">
-                {(cfg.included[lang] ?? cfg.included.vi).slice(0, 3).map((it: string, i: number) => (
-                  <li key={i}>{it}</li>
-                ))}
-              </ul>
+      {/* Nửa trên: Huy hiệu & Tên địa điểm */}
+      <div className="flex w-full flex-col items-start gap-3">
+        <div className="flex w-full items-start justify-between gap-1">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+              {ui.featured}
+            </span>
+            {hasPackages ? (
+              <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80">
+                {ui.packageHint}
+              </span>
             ) : null}
           </div>
 
-          <div className="text-right">
-            <div className="text-2xl font-bold">{formatVND(basePrice)}</div>
-            <div className="text-xs text-neutral-500">{ui.basePrice}</div>
-          </div>
+          {selected ? (
+            <span className="shrink-0 rounded-full bg-sky-400 px-2 py-0.5 text-[10px] font-bold text-slate-900 shadow-sm">
+              ✓ {ui.selected}
+            </span>
+          ) : null}
         </div>
 
-        {hasDynamicWeekendPrice ? (
-          <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-neutral-600">
-            <div className="rounded-md bg-neutral-100 px-2 py-1">
-              {ui.weekdayFrom}: <span className="font-semibold">{formatVND(weekdayBase)}</span>
-            </div>
-            <div className="rounded-md bg-neutral-100 px-2 py-1">
-              {ui.weekendFrom}: <span className="font-semibold">{formatVND(weekendBase)}</span>
-            </div>
-          </div>
-        ) : opt.options?.length ? (
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-neutral-600">
-            {opt.options.slice(0, 2).map((o, i) => (
-              <div key={i} className="rounded-md bg-neutral-100 px-2 py-1">
-                {o.name} (+{o.price.toLocaleString("vi-VN")}₫)
-              </div>
-            ))}
-          </div>
-        ) : null}
+        <h3 className="text-lg font-bold leading-tight text-white drop-shadow-md lg:text-xl">
+          {cfg.name[lang] ?? cfg.name.vi}
+        </h3>
+      </div>
 
-        <div className="mt-4 flex justify-end">
-          <span
-            className={`rounded-xl px-3 py-1 text-sm font-medium ${
-              selected ? "bg-blue-600 text-white" : "bg-neutral-100 text-neutral-700"
-            }`}
-          >
-            {selected ? ui.selected : ui.selectLocation}
+      {/* Nửa dưới: Khu vực Giá */}
+      <div className="mt-4 flex w-full flex-col">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[11px] uppercase text-white/70">{ui.fromPrice}</span>
+          <span className="text-xl font-bold text-white drop-shadow-sm 2xl:text-2xl">
+            {formatVND(effectiveBasePrice)}
           </span>
         </div>
+
+        {/* Giá chi tiết ngày thường / cuối tuần dạng list */}
+        {hasDynamicWeekendPrice && (
+          <div className="mt-3 flex flex-col gap-1 border-t border-white/10 pt-3">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-white/60">{ui.weekdayFrom}:</span>
+              <span className="font-semibold text-white/90">
+                {formatVND(weekdayBase)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-white/60">{ui.weekendFrom}:</span>
+              <span className="font-semibold text-white/90">
+                {formatVND(weekendBase)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </button>
   );
 }

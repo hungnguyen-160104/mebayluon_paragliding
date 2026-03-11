@@ -58,6 +58,7 @@ type Dict = {
     provisionalTotal: string;
   };
   placeholders: {
+    fullName: string;
     phone: string;
     email: string;
     pickup: string;
@@ -88,8 +89,15 @@ type Dict = {
 export const bookingTranslations: Record<LangCode, Dict> = {
   vi: {
     pageTitle: "Đặt bay",
-    pageSubtitle: "Điều hướng 5 bước • Lưu ý: thông tin & giá có thể thay đổi theo thời gian.",
-    stepNames: ["Chọn dịch vụ", "Ngày & liên hệ", "Khách bay", "Xác nhận", "Hoàn tất"],
+    pageSubtitle:
+      "Điều hướng 5 bước • Lưu ý: thông tin & giá có thể thay đổi theo thời gian.",
+    stepNames: [
+      "Chọn dịch vụ",
+      "Ngày & liên hệ",
+      "Khách bay",
+      "Xác nhận",
+      "Hoàn tất",
+    ],
     buttons: {
       next: "Tiếp tục",
       back: "Quay lại",
@@ -105,7 +113,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "Số lượng người bay",
       addonsTitle: "Dịch vụ tuỳ chọn",
-      addonsPromptSelectLocation: "Vui lòng chọn điểm bay để xem các dịch vụ khả dụng.",
+      addonsPromptSelectLocation:
+        "Vui lòng chọn điểm bay để xem các dịch vụ khả dụng.",
       notAvailableHere: "Không khả dụng tại điểm bay này",
       notIncluded: "Không bao gồm:",
 
@@ -114,7 +123,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Số điện thoại liên hệ",
       email: "Email liên hệ",
       pickup: "Điểm đón",
-      pickupFixed: "Điểm đón cố định: BigC Thăng Long (Khung giờ đón: 8h – 9h sáng)",
+      pickupFixed:
+        "Điểm đón cố định: BigC Thăng Long (Khung giờ đón: 8h – 9h sáng)",
       specialRequest: "Yêu cầu đặc biệt",
 
       fullName: "Họ và tên (passport)",
@@ -126,7 +136,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       contactInfo: "Thông tin liên hệ",
       passengerList: "Danh sách khách",
-      termsText: "Tôi đã đọc và đồng ý với mọi điều khoản dịch vụ. Tôi xác nhận thông tin đặt bay.",
+      termsText:
+        "Tôi đã đọc và đồng ý với mọi điều khoản dịch vụ. Tôi xác nhận thông tin đặt bay.",
       viewTerms: "Xem điều khoản",
 
       priceSummary: "Tóm tắt chi phí",
@@ -138,16 +149,20 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "Tổng tạm tính",
     },
     placeholders: {
+      fullName: "Nhập họ và tên đầy đủ",
       phone: "Ví dụ: 0912345678",
       email: "ten@gmail.com",
       pickup: "Nhập địa chỉ khách sạn / điểm đón",
-      specialRequest: "Ví dụ: yêu cầu hỗ trợ quay phim, cân nặng, dị ứng...",
+      specialRequest:
+        "Ví dụ: yêu cầu hỗ trợ quay phim, cân nặng, dị ứng...",
       timeSlotPlaceholder: "Chọn khung giờ",
     },
     messages: {
-      selectLocationToSeeDetail: "Vui lòng chọn điểm bay để xem mô tả chi tiết",
+      selectLocationToSeeDetail:
+        "Vui lòng chọn điểm bay để xem mô tả chi tiết",
       groupPromoAuto: "Khuyến mãi nhóm áp dụng tự động theo số lượng khách",
-      pickupNoteSapa: "Xe đón trả tại khách sạn (Trung tâm Sapa, Lao Chải, Tả Van)",
+      pickupNoteSapa:
+        "Xe đón trả tại khách sạn (Trung tâm Sapa, Lao Chải, Tả Van)",
       pickupNoteHN: "Xe đón trả 2 chiều từ BigC Thăng Long (Hà Nội)",
       successTitle: "HOÀN TẤT",
       successBody:
@@ -159,9 +174,11 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Toạ độ điểm bay:",
       ],
       errors: {
-        dateInPast: "Ngày bay không được ở quá khứ. Vui lòng chọn từ ngày mai trở đi.",
+        dateInPast:
+          "Ngày bay không được ở quá khứ. Vui lòng chọn từ ngày mai trở đi.",
         dobInFuture: "Ngày sinh không được ở tương lai.",
-        dobTooYoung: "Ngày sinh không hợp lệ (không được trong năm hiện tại).",
+        dobTooYoung:
+          "Ngày sinh không hợp lệ (không được trong năm hiện tại).",
         requiredField: "Trường này là bắt buộc.",
         weightInvalid: "Cân nặng không hợp lệ.",
       },
@@ -170,7 +187,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   en: {
     pageTitle: "Book your flight",
-    pageSubtitle: "5-step flow • Note: information & prices may change over time.",
+    pageSubtitle:
+      "5-step flow • Note: information & prices may change over time.",
     stepNames: ["Select", "Date & Contact", "Passengers", "Review", "Done"],
     buttons: {
       next: "Next",
@@ -187,7 +205,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "Number of passengers",
       addonsTitle: "Optional services",
-      addonsPromptSelectLocation: "Please select a location to see available services.",
+      addonsPromptSelectLocation:
+        "Please select a location to see available services.",
       notAvailableHere: "Not available at this location",
       notIncluded: "Not included:",
 
@@ -208,7 +227,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       contactInfo: "Contact information",
       passengerList: "Passenger list",
-      termsText: "I have read and agree to the terms of service. I confirm the booking details.",
+      termsText:
+        "I have read and agree to the terms of service. I confirm the booking details.",
       viewTerms: "View terms",
 
       priceSummary: "Price summary",
@@ -220,6 +240,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "Provisional total",
     },
     placeholders: {
+      fullName: "Enter full name",
       phone: "e.g. +84 912345678",
       email: "name@gmail.com",
       pickup: "Enter hotel address / pickup point",
@@ -227,12 +248,15 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       timeSlotPlaceholder: "Select a time slot",
     },
     messages: {
-      selectLocationToSeeDetail: "Please select a flight location to see details.",
-      groupPromoAuto: "Group discount is automatically applied based on passenger count.",
+      selectLocationToSeeDetail:
+        "Please select a flight location to see details.",
+      groupPromoAuto:
+        "Group discount is automatically applied based on passenger count.",
       pickupNoteSapa: "Hotel pickup in Sapa center, Lao Chải, Tả Van.",
       pickupNoteHN: "Round-trip pickup from BigC Thăng Long (Hanoi).",
       successTitle: "COMPLETED",
-      successBody: "Thank you for your booking! We will contact you to confirm the flight details.",
+      successBody:
+        "Thank you for your booking! We will contact you to confirm the flight details.",
       preflightTitle: "Pre-flight notes",
       preflightNotes: [
         "Arrive at the launch site 30 minutes early for check-in.",
@@ -240,9 +264,11 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Coordinates:",
       ],
       errors: {
-        dateInPast: "Flight date cannot be in the past. Please pick from tomorrow onwards.",
+        dateInPast:
+          "Flight date cannot be in the past. Please pick from tomorrow onwards.",
         dobInFuture: "Date of birth cannot be in the future.",
-        dobTooYoung: "Invalid date of birth (cannot be in the current year).",
+        dobTooYoung:
+          "Invalid date of birth (cannot be in the current year).",
         requiredField: "This field is required.",
         weightInvalid: "Invalid weight.",
       },
@@ -251,7 +277,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   fr: {
     pageTitle: "Réserver votre vol",
-    pageSubtitle: "Processus en 5 étapes • Remarque : informations et prix susceptibles d’évoluer.",
+    pageSubtitle:
+      "Processus en 5 étapes • Remarque : informations et prix susceptibles d’évoluer.",
     stepNames: ["Sélection", "Date & contact", "Passagers", "Validation", "Terminé"],
     buttons: {
       next: "Continuer",
@@ -268,7 +295,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "Nombre de passagers",
       addonsTitle: "Services optionnels",
-      addonsPromptSelectLocation: "Veuillez choisir un site pour voir les services disponibles.",
+      addonsPromptSelectLocation:
+        "Veuillez choisir un site pour voir les services disponibles.",
       notAvailableHere: "Non disponible sur ce site",
       notIncluded: "Non inclus :",
 
@@ -302,6 +330,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "Total provisoire",
     },
     placeholders: {
+      fullName: "Entrez le nom complet",
       phone: "ex. +84 912345678",
       email: "nom@gmail.com",
       pickup: "Adresse de l’hôtel / point de prise en charge",
@@ -309,13 +338,17 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       timeSlotPlaceholder: "Choisir un créneau",
     },
     messages: {
-      selectLocationToSeeDetail: "Veuillez choisir un site de vol pour voir les détails.",
+      selectLocationToSeeDetail:
+        "Veuillez choisir un site de vol pour voir les détails.",
       groupPromoAuto:
         "La remise de groupe est appliquée automatiquement selon le nombre de passagers.",
-      pickupNoteSapa: "Prise en charge à l’hôtel (centre de Sapa, Lao Chải, Tả Van).",
-      pickupNoteHN: "Prise en charge aller-retour depuis BigC Thăng Long (Hanoï).",
+      pickupNoteSapa:
+        "Prise en charge à l’hôtel (centre de Sapa, Lao Chải, Tả Van).",
+      pickupNoteHN:
+        "Prise en charge aller-retour depuis BigC Thăng Long (Hanoï).",
       successTitle: "TERMINÉ",
-      successBody: "Merci pour votre réservation ! Nous vous contacterons pour confirmer les détails du vol.",
+      successBody:
+        "Merci pour votre réservation ! Nous vous contacterons pour confirmer les détails du vol.",
       preflightTitle: "Notes avant le vol",
       preflightNotes: [
         "Arrivez 30 minutes en avance pour l’enregistrement.",
@@ -323,9 +356,12 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Coordonnées :",
       ],
       errors: {
-        dateInPast: "La date de vol ne peut pas être dans le passé. Choisissez à partir de demain.",
-        dobInFuture: "La date de naissance ne peut pas être dans le futur.",
-        dobTooYoung: "Date de naissance invalide (pas dans l’année en cours).",
+        dateInPast:
+          "La date de vol ne peut pas être dans le passé. Choisissez à partir de demain.",
+        dobInFuture:
+          "La date de naissance ne peut pas être dans le futur.",
+        dobTooYoung:
+          "Date de naissance invalide (pas dans l’année en cours).",
         requiredField: "Champ requis.",
         weightInvalid: "Poids invalide.",
       },
@@ -351,7 +387,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "Количество пассажиров",
       addonsTitle: "Доп. услуги",
-      addonsPromptSelectLocation: "Выберите локацию, чтобы увидеть доступные услуги.",
+      addonsPromptSelectLocation:
+        "Выберите локацию, чтобы увидеть доступные услуги.",
       notAvailableHere: "Недоступно для этой локации",
       notIncluded: "Не включено:",
 
@@ -372,7 +409,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       contactInfo: "Контактная информация",
       passengerList: "Список пассажиров",
-      termsText: "Я прочитал(а) и согласен(на) с условиями. Подтверждаю детали бронирования.",
+      termsText:
+        "Я прочитал(а) и согласен(на) с условиями. Подтверждаю детали бронирования.",
       viewTerms: "Условия",
 
       priceSummary: "Итоговая стоимость",
@@ -384,6 +422,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "Предварительный итог",
     },
     placeholders: {
+      fullName: "Введите полное имя",
       phone: "напр. +84 912345678",
       email: "name@gmail.com",
       pickup: "Адрес отеля / место посадки",
@@ -391,12 +430,17 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       timeSlotPlaceholder: "Выберите время",
     },
     messages: {
-      selectLocationToSeeDetail: "Выберите место полёта, чтобы увидеть подробности.",
-      groupPromoAuto: "Групповая скидка применяется автоматически по числу пассажиров.",
-      pickupNoteSapa: "Трансфер от отеля (центр Сапы, Лао Чай, Та Ван).",
-      pickupNoteHN: "Трансфер туда-обратно от BigC Thăng Long (Ханой).",
+      selectLocationToSeeDetail:
+        "Выберите место полёта, чтобы увидеть подробности.",
+      groupPromoAuto:
+        "Групповая скидка применяется автоматически по числу пассажиров.",
+      pickupNoteSapa:
+        "Трансфер от отеля (центр Сапы, Лао Чай, Та Ван).",
+      pickupNoteHN:
+        "Трансфер туда-обратно от BigC Thăng Long (Ханой).",
       successTitle: "ГОТОВО",
-      successBody: "Спасибо за бронирование! Мы свяжемся с вами для подтверждения.",
+      successBody:
+        "Спасибо за бронирование! Мы свяжемся с вами для подтверждения.",
       preflightTitle: "Памятка перед полётом",
       preflightNotes: [
         "Прибудьте на стартовую площадку за 30 минут до вылета.",
@@ -404,16 +448,18 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Координаты:",
       ],
       errors: {
-        dateInPast: "Дата полёта не может быть в прошлом. Выберите завтрашний день или позже.",
-        dobInFuture: "Дата рождения не может быть в будущем.",
-        dobTooYoung: "Неверная дата рождения (не в текущем году).",
+        dateInPast:
+          "Дата полёта не может быть в прошлом. Выберите завтрашний день или позже.",
+        dobInFuture:
+          "Дата рождения не может быть в будущем.",
+        dobTooYoung:
+          "Неверная дата рождения (не в текущем году).",
         requiredField: "Обязательное поле.",
         weightInvalid: "Недопустимый вес.",
       },
     },
   },
 
-  // ✅ NEW: 中文
   zh: {
     pageTitle: "预订飞行",
     pageSubtitle: "5 步流程 • 提示：信息与价格可能会随时间调整。",
@@ -433,7 +479,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "乘客人数",
       addonsTitle: "可选服务",
-      addonsPromptSelectLocation: "请选择飞行点以查看可用服务。",
+      addonsPromptSelectLocation:
+        "请选择飞行点以查看可用服务。",
       notAvailableHere: "此飞行点不可用",
       notIncluded: "不包含：",
 
@@ -454,7 +501,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       contactInfo: "联系信息",
       passengerList: "乘客名单",
-      termsText: "我已阅读并同意服务条款，并确认预订信息无误。",
+      termsText:
+        "我已阅读并同意服务条款，并确认预订信息无误。",
       viewTerms: "查看条款",
 
       priceSummary: "费用汇总",
@@ -466,6 +514,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "预估总计",
     },
     placeholders: {
+      fullName: "请输入完整姓名",
       phone: "例如：+84 912345678",
       email: "name@gmail.com",
       pickup: "填写酒店地址 / 接送地点",
@@ -473,12 +522,17 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       timeSlotPlaceholder: "选择时间段",
     },
     messages: {
-      selectLocationToSeeDetail: "请选择飞行点以查看详细说明。",
-      groupPromoAuto: "团体优惠将根据人数自动计算。",
-      pickupNoteSapa: "沙坝市区、Lao Chải、Tả Van 酒店接送。",
-      pickupNoteHN: "河内 BigC Thăng Long 往返接送。",
+      selectLocationToSeeDetail:
+        "请选择飞行点以查看详细说明。",
+      groupPromoAuto:
+        "团体优惠将根据人数自动计算。",
+      pickupNoteSapa:
+        "沙坝市区、Lao Chải、Tả Van 酒店接送。",
+      pickupNoteHN:
+        "河内 BigC Thăng Long 往返接送。",
       successTitle: "完成",
-      successBody: "感谢你的预订！我们将联系你确认飞行信息。",
+      successBody:
+        "感谢你的预订！我们将联系你确认飞行信息。",
       preflightTitle: "飞行前提示",
       preflightNotes: [
         "请提前 30 分钟到达起飞点办理签到。",
@@ -486,19 +540,21 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "坐标：",
       ],
       errors: {
-        dateInPast: "飞行日期不能选择过去时间，请从明天开始选择。",
+        dateInPast:
+          "飞行日期不能选择过去时间，请从明天开始选择。",
         dobInFuture: "出生日期不能在未来。",
-        dobTooYoung: "出生日期无效（不能是今年）。",
+        dobTooYoung:
+          "出生日期无效（不能是今年）。",
         requiredField: "此项为必填。",
         weightInvalid: "体重无效。",
       },
     },
   },
 
-  // ✅ NEW: हिन्दी
   hi: {
     pageTitle: "फ्लाइट बुक करें",
-    pageSubtitle: "5-स्टेप प्रक्रिया • नोट: जानकारी और कीमतें समय के साथ बदल सकती हैं।",
+    pageSubtitle:
+      "5-स्टेप प्रक्रिया • नोट: जानकारी और कीमतें समय के साथ बदल सकती हैं।",
     stepNames: ["सेवा चुनें", "तारीख व संपर्क", "यात्री", "पुष्टि", "पूर्ण"],
     buttons: {
       next: "आगे",
@@ -515,7 +571,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     labels: {
       guestsCount: "यात्रियों की संख्या",
       addonsTitle: "वैकल्पिक सेवाएँ",
-      addonsPromptSelectLocation: "उपलब्ध सेवाएँ देखने के लिए कृपया लोकेशन चुनें।",
+      addonsPromptSelectLocation:
+        "उपलब्ध सेवाएँ देखने के लिए कृपया लोकेशन चुनें।",
       notAvailableHere: "इस लोकेशन पर उपलब्ध नहीं",
       notIncluded: "शामिल नहीं:",
 
@@ -536,7 +593,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       contactInfo: "संपर्क जानकारी",
       passengerList: "यात्री सूची",
-      termsText: "मैंने सेवा शर्तें पढ़ ली हैं और उनसे सहमत हूँ। मैं बुकिंग विवरण की पुष्टि करता/करती हूँ।",
+      termsText:
+        "मैंने सेवा शर्तें पढ़ ली हैं और उनसे सहमत हूँ। मैं बुकिंग विवरण की पुष्टि करता/करती हूँ।",
       viewTerms: "शर्तें देखें",
 
       priceSummary: "कीमत सारांश",
@@ -548,6 +606,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       provisionalTotal: "अनुमानित कुल",
     },
     placeholders: {
+      fullName: "पूरा नाम दर्ज करें",
       phone: "उदा. +84 912345678",
       email: "name@gmail.com",
       pickup: "होटल पता / पिकअप पॉइंट दर्ज करें",
@@ -555,12 +614,17 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       timeSlotPlaceholder: "समय स्लॉट चुनें",
     },
     messages: {
-      selectLocationToSeeDetail: "विवरण देखने के लिए कृपया फ्लाइट लोकेशन चुनें।",
-      groupPromoAuto: "ग्रुप डिस्काउंट यात्रियों की संख्या के आधार पर अपने आप लागू होगा।",
-      pickupNoteSapa: "सापा सेंटर, Lao Chải, Tả Van में होटल पिकअप।",
-      pickupNoteHN: "BigC Thăng Long (हनोई) से राउंड-ट्रिप पिकअप।",
+      selectLocationToSeeDetail:
+        "विवरण देखने के लिए कृपया फ्लाइट लोकेशन चुनें।",
+      groupPromoAuto:
+        "ग्रुप डिस्काउंट यात्रियों की संख्या के आधार पर अपने आप लागू होगा।",
+      pickupNoteSapa:
+        "सापा सेंटर, Lao Chải, Tả Van में होटल पिकअप।",
+      pickupNoteHN:
+        "BigC Thăng Long (हनोई) से राउंड-ट्रिप पिकअप।",
       successTitle: "पूर्ण",
-      successBody: "आपकी बुकिंग के लिए धन्यवाद! हम पुष्टि के लिए आपसे संपर्क करेंगे।",
+      successBody:
+        "आपकी बुकिंग के लिए धन्यवाद! हम पुष्टि के लिए आपसे संपर्क करेंगे।",
       preflightTitle: "उड़ान से पहले नोट्स",
       preflightNotes: [
         "चेक-इन के लिए लॉन्च साइट पर 30 मिनट पहले पहुँचें।",
@@ -568,9 +632,12 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "कोऑर्डिनेट्स:",
       ],
       errors: {
-        dateInPast: "फ्लाइट की तारीख अतीत में नहीं हो सकती। कृपया कल से आगे चुनें।",
-        dobInFuture: "जन्मतिथि भविष्य में नहीं हो सकती।",
-        dobTooYoung: "अमान्य जन्मतिथि (वर्तमान वर्ष नहीं हो सकता)।",
+        dateInPast:
+          "फ्लाइट की तारीख अतीत में नहीं हो सकती। कृपया कल से आगे चुनें।",
+        dobInFuture:
+          "जन्मतिथि भविष्य में नहीं हो सकती।",
+        dobTooYoung:
+          "अमान्य जन्मतिथि (वर्तमान वर्ष नहीं हो सकता)।",
         requiredField: "यह फ़ील्ड आवश्यक है।",
         weightInvalid: "अमान्य वजन।",
       },

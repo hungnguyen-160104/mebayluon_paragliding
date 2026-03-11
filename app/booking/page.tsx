@@ -16,7 +16,7 @@ export default function BookingPage() {
   const t = useBookingText();
 
   const backgroundStyle = {
-    backgroundImage: "url('/dat_bay.jpeg')",
+    backgroundImage: "url('/hinh-nen.jpg')",
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
@@ -27,7 +27,8 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen" style={backgroundStyle}>
-      <div className="mx-auto max-w-5xl px-4 pt-28 pb-8 text-white">
+      {/* Đã sửa: max-w-5xl -> max-w-[1440px] để bung rộng toàn bộ layout ra 2 bên */}
+      <div className="mx-auto w-full max-w-[1440px] px-4 md:px-6 pt-28 pb-8 text-white">
         <h1
           className="text-3xl font-bold tracking-tight text-center"
           style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
@@ -46,8 +47,9 @@ export default function BookingPage() {
           <StepIndicator />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
-          <div>
+        {/* Đã sửa: lg:grid-cols-[1fr_380px] -> xl:grid-cols-[1fr_380px] và tăng gap */}
+        <div className="mt-6 grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 lg:gap-8">
+          <div className="min-w-0"> {/* Thêm min-w-0 để tránh lỗi tràn flex/grid bên trong */}
             {step === 1 && <SelectFlightStep />}
             {step === 2 && <ContactInfoStep />}
             {step === 3 && <GuestInfoStep />}

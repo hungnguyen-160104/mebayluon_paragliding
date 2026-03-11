@@ -20,6 +20,34 @@ type Props = {
   bookingResult?: any;
 };
 
+type PriceLine = {
+  label: string;
+  detail?: string;
+  amountText: string;
+  type?: "normal" | "discount";
+};
+
+const C = {
+  bg: "#ffffff",
+  card: "#f8fafc",
+  text: "#0f172a",
+  subtext: "#475569",
+  muted: "#64748b",
+  border: "#e2e8f0",
+  line: "#cbd5e1",
+  accent: "#0ea5e9",
+  accentDark: "#0369a1",
+  accentSoft: "#e0f2fe",
+  success: "#16a34a",
+  warningBg: "#fff7ed",
+  warningBorder: "#fdba74",
+  warningText: "#9a3412",
+  totalBg: "#0b1220",
+  white: "#ffffff",
+  redSoft: "#fee2e2",
+  redText: "#b91c1c",
+};
+
 function digitsOnly(s: string) {
   return (s || "").replace(/\D+/g, "");
 }
@@ -47,18 +75,6 @@ function buildBookingRef(dateISO?: string, phone?: string) {
   if (ymd && last4) return `${ymd}-${last4}`;
   return `MBL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
-
-const C = {
-  text: "#0f172a",
-  textSecondary: "#334155",
-  muted: "#64748b",
-  border: "#e2e8f0",
-  bg: "#ffffff",
-  dark: "#0b1220",
-  soft: "#f8fafc",
-  accentDark: "#0369a1",
-  white: "#ffffff",
-};
 
 function useTicketLabels(lang: LangCode) {
   const L = lang as unknown as string;
@@ -91,13 +107,12 @@ function useTicketLabels(lang: LangCode) {
       : isFR
         ? "Confirmation des détails"
         : isRU
-          ? "Подтверждение данных"
+          ? "Подтверждение dữ liệu"
           : isHI
             ? "बुकिंग विवरण पुष्टि"
             : isZH || isZHTW
               ? zh("请确认预订信息", "請確認預訂資訊")
-              : "Please review details",
-    brandName: "MEBAYLUON PARAGLIDING",
+              : "Booking details confirmed",
     created: isVI
       ? "Tạo lúc"
       : isFR
@@ -120,12 +135,14 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("已确认", "已確認")
               : "Confirmed",
-    serviceDetails: isVI ? "Thông tin dịch vụ" : isFR ? "Détails du service" : isRU ? "Детали услуги" : isHI ? "सेवा विवरण" : isZH || isZHTW ? zh("服务信息", "服務資訊") : "Service details",
+    brandName: "MEBAYLUON PARAGLIDING",
+    serviceDetails: isVI ? "Thông tin chuyến bay" : isFR ? "Détails du vol" : isRU ? "Детали полёта" : isHI ? "फ्लाइट विवरण" : isZH || isZHTW ? zh("飞行信息", "飛行資訊") : "Flight details",
     contactInfo: (t as any)?.labels?.contactInfo ?? "Contact information",
-    passengersList: isVI ? "Danh sách hành khách" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers list",
-    additionalServices: isVI ? "Dịch vụ thêm" : isFR ? "Services supplémentaires" : isRU ? "Дополнительные услуги" : isHI ? "अतिरिक्त सेवाएँ" : isZH || isZHTW ? zh("附加服务", "附加服務") : "Additional services",
+    passengersList: isVI ? "Danh sách hành khách" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers",
+    additionalServices: isVI ? "Dịch vụ đã chọn" : isFR ? "Services sélectionnés" : isRU ? "Выбранные услуги" : isHI ? "चयनित सेवाएँ" : isZH || isZHTW ? zh("已选服务", "已選服務") : "Selected services",
+    priceBreakdown: isVI ? "Chi tiết giá" : isFR ? "Détail des prix" : isRU ? "Детализация цены" : isHI ? "मूल्य विवरण" : isZH || isZHTW ? zh("价格明细", "價格明細") : "Price breakdown",
     total: isVI ? "Tổng cộng" : isFR ? "Total" : isRU ? "Итого" : isHI ? "कुल" : isZH || isZHTW ? zh("总计", "總計") : "Total",
-    service: isVI ? "Dịch vụ" : isFR ? "Service" : isRU ? "Услуга" : isHI ? "सेवा" : isZH || isZHTW ? zh("服务", "服務") : "Service",
+    service: isVI ? "Điểm bay" : isFR ? "Site" : isRU ? "Локация" : isHI ? "स्थान" : isZH || isZHTW ? zh("飞行点", "飛行點") : "Location",
     date: (t as any)?.labels?.date ?? "Date",
     time: (t as any)?.labels?.timeSlot ?? "Time",
     location: (t as any)?.labels?.location ?? "Location",
@@ -136,17 +153,25 @@ function useTicketLabels(lang: LangCode) {
     name: isVI ? "Tên" : "Name",
     phone: (t as any)?.labels?.phone ?? "Phone",
     email: "Email",
-    pickupLocation: isVI ? "Điểm đón" : isFR ? "Lieu de prise en charge" : isRU ? "Место трансфера" : isHI ? "पिकअप स्थान" : isZH || isZHTW ? zh("接送地点", "接送地點") : "Pickup location",
+    pickupLocation: isVI ? "Đón / trả" : isFR ? "Prise en charge" : isRU ? "Трансфер" : isHI ? "पिकअप" : isZH || isZHTW ? zh("接送", "接送") : "Pickup",
     specialRequests: isVI ? "Yêu cầu đặc biệt" : isFR ? "Demandes spéciales" : isRU ? "Особые запросы" : isHI ? "विशेष अनुरोध" : isZH || isZHTW ? zh("特殊要求", "特殊要求") : "Special requests",
     flightCost: isVI ? "Giá bay" : isFR ? "Prix du vol" : isRU ? "Стоимость полёта" : isHI ? "फ्लाइट शुल्क" : isZH || isZHTW ? zh("飞行费用", "飛行費用") : "Flight cost",
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
-    droneCost: isVI ? "Flycam/Drone" : "Drone/Flycam",
+    droneCost: isVI ? "Flycam / Drone" : "Drone / Flycam",
     groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Group discount"),
     free: isVI ? "Miễn phí" : "Free",
     included: isVI ? "Bao gồm" : "Included",
     yes: isVI ? "Có" : "Yes",
     no: isVI ? "Không" : "No",
-    arrive: isVI
+    notProvided: isVI ? "Chưa cung cấp" : isFR ? "Non fourni" : isRU ? "Не указано" : isHI ? "प्रदान नहीं" : isZH || isZHTW ? zh("未提供", "未提供") : "Not provided",
+    pax: isVI ? "khách" : isFR ? "pers" : isRU ? "чел" : isHI ? "यात्री" : isZH || isZHTW ? zh("人", "人") : "pax",
+    weekday: isVI ? "Ngày thường" : isFR ? "Jour ouvré" : isRU ? "Будний день" : isHI ? "कार्यदिवस" : isZH || isZHTW ? zh("工作日", "工作日") : "Weekday",
+    weekend: isVI ? "Cuối tuần" : isFR ? "Week-end" : isRU ? "Выходной" : isHI ? "सप्ताहांत" : isZH || isZHTW ? zh("周末", "週末") : "Weekend",
+    holiday: isVI ? "Ngày lễ" : isFR ? "Jour férié" : isRU ? "Праздничный день" : isHI ? "छुट्टी" : isZH || isZHTW ? zh("节假日", "節假日") : "Holiday",
+    paragliding: isVI ? "Bay dù không động cơ" : isFR ? "Parapente" : isRU ? "Параплан" : isHI ? "पैराग्लाइडिंग" : isZH || isZHTW ? zh("无动力滑翔伞", "無動力滑翔傘") : "Paragliding",
+    paramotor: isVI ? "Bay dù gắn động cơ" : isFR ? "Paramoteur" : isRU ? "Парамотор" : isHI ? "पैरामोटर" : isZH || isZHTW ? zh("动力伞", "動力傘") : "Paramotor",
+    notSelected: isVI ? "Chưa chọn" : isFR ? "Non sélectionné" : isRU ? "Не выбрано" : isHI ? "चयन नहीं" : isZH || isZHTW ? zh("未选择", "未選擇") : "Not selected",
+    safetyNote: isVI
       ? "Vui lòng có mặt trước 15 phút để briefing an toàn."
       : isFR
         ? "Veuillez arriver 15 minutes à l’avance pour le briefing de sécurité."
@@ -157,50 +182,63 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("请提前15分钟到达参加安全简报。", "請提前15分鐘到達參加安全簡報。")
               : "Please arrive 15 minutes early for safety briefing.",
-    notProvided: isVI ? "Chưa cung cấp" : isFR ? "Non fourni" : isRU ? "Не указано" : isHI ? "प्रदान नहीं किया गया" : isZH || isZHTW ? zh("未提供", "未提供") : "Not provided",
-    pax: isVI ? "khách" : isFR ? "pers" : isRU ? "чел" : isHI ? "यात्री" : (isZH || isZHTW) ? zh("人", "人") : "pax",
-    weekday: isVI ? "Ngày thường" : isFR ? "Jour ouvré" : isRU ? "Будний день" : isHI ? "कार्यदिवस" : (isZH || isZHTW) ? zh("工作日", "工作日") : "Weekday",
-    weekend: isVI ? "Cuối tuần" : isFR ? "Week-end" : isRU ? "Выходной" : isHI ? "सप्ताहांत" : (isZH || isZHTW) ? zh("周末", "週末") : "Weekend",
-    holiday: isVI ? "Ngày lễ" : isFR ? "Jour férié" : isRU ? "Праздничный день" : isHI ? "छुट्टी" : (isZH || isZHTW) ? zh("节假日", "節假日") : "Holiday",
-    paragliding: isVI ? "Bay dù không động cơ" : isFR ? "Parapente" : isRU ? "Параплан" : isHI ? "पैराग्लाइडिंग" : (isZH || isZHTW) ? zh("无动力滑翔伞", "無動力滑翔傘") : "Paragliding",
-    paramotor: isVI ? "Bay dù gắn động cơ" : isFR ? "Paramoteur" : isRU ? "Парамотор" : isHI ? "पैरामोटर" : (isZH || isZHTW) ? zh("动力伞", "動力傘") : "Paramotor",
-    notSelected: isVI ? "Chưa chọn" : isFR ? "Non sélectionné" : isRU ? "Не выбрано" : isHI ? "चयन नहीं किया गया" : (isZH || isZHTW) ? zh("未选择", "未選擇") : "Not selected",
   };
 }
 
-type PriceLine = { label: string; detail?: string; amountText: string; type?: "normal" | "discount" };
-
-function getFlightTypeLabel(labels: ReturnType<typeof useTicketLabels>, key?: string) {
+function getFlightTypeLabel(
+  labels: ReturnType<typeof useTicketLabels>,
+  key?: string
+) {
   if (key === "paramotor") return labels.paramotor;
   if (key === "paragliding") return labels.paragliding;
   return labels.notSelected;
 }
 
-function getHolidayTypeLabel(labels: ReturnType<typeof useTicketLabels>, holidayType?: "weekday" | "weekend" | "holiday") {
+function getHolidayTypeLabel(
+  labels: ReturnType<typeof useTicketLabels>,
+  holidayType?: "weekday" | "weekend" | "holiday"
+) {
   if (holidayType === "holiday") return labels.holiday;
   if (holidayType === "weekend") return labels.weekend;
   return labels.weekday;
 }
 
-export default function BookingTicket({ booking, totals, lang, bookingResult }: Props) {
+export default function BookingTicket({
+  booking,
+  totals,
+  lang,
+  bookingResult,
+}: Props) {
   const cfg = LOCATIONS[booking.location];
   const labels = useTicketLabels(lang);
 
-  const contact: any = (booking as any)?.contact;
-  const contactName = (contact?.fullName ?? contact?.contactName ?? "").toString();
+  const contact: any = booking?.contact || {};
+  const contactName = (
+    contact?.fullName ??
+    contact?.contactName ??
+    ""
+  ).toString();
   const contactPhone = (contact?.phone ?? "").toString();
   const contactEmail = (contact?.email ?? "").toString();
-  const specialRequest = (contact?.specialRequest ?? bookingResult?.specialRequest ?? "").toString();
-
-  const locationName =
-    bookingResult?.locationName || cfg?.name?.[lang] || cfg?.name?.vi || "—";
+  const specialRequest = (
+    contact?.specialRequest ??
+    bookingResult?.specialRequest ??
+    ""
+  ).toString();
 
   const createdAt =
     bookingResult?.createdAt ||
     bookingResult?.createdAtISO ||
     new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
+  const locationName =
+    bookingResult?.locationName ||
+    cfg?.name?.[lang] ||
+    cfg?.name?.vi ||
+    "—";
+
   const bookingRef = buildBookingRef(booking.dateISO, contactPhone);
+  const passengers: any[] = (booking as any)?.guests ?? [];
   const guestsCount = Math.max(1, booking.guestsCount || 1);
 
   const packageLabel =
@@ -229,9 +267,9 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
         inputText: booking.services?.[svc.key]?.inputText || "",
         fixedMapUrl: svc.fixedMapUrl || "",
       }));
-  }, [cfg?.services, booking.packageKey, booking.services, lang]);
+  }, [booking.packageKey, booking.services, cfg?.services, lang]);
 
-  const addons = useMemo(() => {
+  const addonRows = useMemo(() => {
     return ADDON_KEYS.map((k) => {
       const qty = totals.addonsQty?.[k] || 0;
       const unit = totals.addonsUnitPrice?.[k] || 0;
@@ -240,34 +278,37 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
         cfg?.addons?.[k]?.label?.[lang] ??
         cfg?.addons?.[k]?.label?.vi ??
         String(k);
-      return { k, qty, unit, total, label };
-    }).filter((a) => a.qty > 0);
-  }, [cfg?.addons, lang, totals.addonsQty, totals.addonsUnitPrice, totals.addonsTotal]);
+      return { key: k, qty, unit, total, label };
+    }).filter((x) => x.qty > 0);
+  }, [cfg?.addons, lang, totals.addonsQty, totals.addonsTotal, totals.addonsUnitPrice]);
 
   const priceLines: PriceLine[] = useMemo(() => {
-    const lines: PriceLine[] = [];
-    const flightUnit = guestsCount > 0 ? Math.round((totals.baseTotal || 0) / guestsCount) : 0;
-    const flightSubtotal = flightUnit * guestsCount;
+    const rows: PriceLine[] = [];
+    const flightUnit =
+      guestsCount > 0 ? Math.round((totals.baseTotal || 0) / guestsCount) : 0;
+    const flightSub = flightUnit * guestsCount;
 
-    lines.push({
+    rows.push({
       label: labels.flightCost,
       detail: `${formatByLang(lang, flightUnit, flightUnit)} × ${guestsCount}`,
-      amountText: formatByLang(lang, flightSubtotal, flightSubtotal),
-      type: "normal",
+      amountText: formatByLang(lang, flightSub, flightSub),
     });
 
-    addons.forEach((a) => {
-      lines.push({
+    addonRows.forEach((a) => {
+      rows.push({
         label: a.label,
         detail: `${formatByLang(lang, a.unit, a.unit)} × ${a.qty}`,
         amountText: formatByLang(lang, a.total, a.total),
-        type: "normal",
       });
     });
 
     if ((totals.discountTotal || 0) > 0) {
-      const perPax = guestsCount > 0 ? Math.round((totals.discountTotal || 0) / guestsCount) : totals.discountTotal || 0;
-      lines.push({
+      const perPax =
+        guestsCount > 0
+          ? Math.round((totals.discountTotal || 0) / guestsCount)
+          : totals.discountTotal || 0;
+
+      rows.push({
         label: labels.groupDiscount,
         detail: `-${formatByLang(lang, perPax, perPax)} × ${guestsCount}`,
         amountText: `-${formatByLang(lang, totals.discountTotal, totals.discountTotal)}`,
@@ -275,10 +316,16 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
       });
     }
 
-    return lines;
-  }, [addons, guestsCount, labels.flightCost, labels.groupDiscount, lang, totals.baseTotal, totals.discountTotal]);
-
-  const passengers: any[] = (booking as any)?.guests ?? [];
+    return rows;
+  }, [
+    addonRows,
+    guestsCount,
+    labels.flightCost,
+    labels.groupDiscount,
+    lang,
+    totals.baseTotal,
+    totals.discountTotal,
+  ]);
 
   return (
     <div
@@ -286,27 +333,37 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
       style={{
         background: C.bg,
         color: C.text,
-        borderRadius: 18,
+        borderRadius: 22,
         overflow: "hidden",
         border: `1px solid ${C.border}`,
-        boxShadow: "0 6px 28px rgba(15,23,42,0.10)",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)",
-          padding: "18px 18px 14px",
+          background:
+            "linear-gradient(135deg, rgba(14,165,233,1) 0%, rgba(3,105,161,1) 100%)",
           color: C.white,
+          padding: 18,
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 14,
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
             <div
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
+                width: 48,
+                height: 48,
+                borderRadius: 14,
                 background: "rgba(255,255,255,0.18)",
                 display: "flex",
                 alignItems: "center",
@@ -321,29 +378,51 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
                 style={{ width: 30, height: 30, objectFit: "contain" }}
               />
             </div>
-            <div>
-              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.9, textTransform: "uppercase", fontWeight: 700 }}>
+
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: 1.6,
+                  textTransform: "uppercase",
+                  opacity: 0.95,
+                }}
+              >
                 {labels.brandName}
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.15, marginTop: 2 }}>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 900,
+                  lineHeight: 1.1,
+                  marginTop: 4,
+                }}
+              >
                 {labels.title}
               </div>
-              <div style={{ fontSize: 12, opacity: 0.92, marginTop: 2 }}>
+              <div style={{ fontSize: 12, opacity: 0.92, marginTop: 4 }}>
                 {labels.subtitle}
               </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              alignItems: "flex-end",
+              maxWidth: "100%",
+            }}
+          >
             <div
               style={{
                 background: "rgba(255,255,255,0.18)",
-                borderRadius: 12,
+                borderRadius: 999,
                 padding: "6px 12px",
                 fontSize: 12,
                 fontWeight: 800,
-                letterSpacing: 1,
-                textTransform: "uppercase",
                 whiteSpace: "nowrap",
               }}
             >
@@ -352,14 +431,14 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
 
             <div
               style={{
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                fontWeight: 900,
-                fontSize: 15,
                 background: "rgba(255,255,255,0.18)",
-                borderRadius: 10,
-                padding: "6px 14px",
+                borderRadius: 12,
+                padding: "8px 12px",
+                fontSize: 14,
+                fontWeight: 900,
                 letterSpacing: 1,
-                whiteSpace: "nowrap",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               }}
             >
               {bookingRef}
@@ -367,186 +446,513 @@ export default function BookingTicket({ booking, totals, lang, bookingResult }: 
           </div>
         </div>
 
-        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.9 }}>
+        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.94 }}>
           {labels.created}: {createdAt}
         </div>
       </div>
 
       <div style={{ padding: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Card title={labels.serviceDetails} icon="✈">
-            <KV label={labels.service} value={locationName} />
-            <KV label={labels.location} value={locationName} />
-            <KV label={labels.date} value={booking.dateISO || "—"} />
-            <KV label={labels.time} value={booking.timeSlot || "—"} />
-            <KV label={labels.guests} value={String(booking.guestsCount ?? "—")} />
-            <KV label={labels.packageLabel} value={booking.location === "khau_pha" ? packageLabel : labels.notSelected} />
-            <KV label={labels.flightTypeLabel} value={flightTypeLabel} />
-            <KV label={labels.dayTypeLabel} value={getHolidayTypeLabel(labels, totals.holidayType)} />
-          </Card>
+        <SectionCard title={labels.serviceDetails}>
+          <PillRow
+            items={[
+              { label: labels.service, value: locationName },
+              { label: labels.date, value: booking.dateISO || "—" },
+              { label: labels.time, value: booking.timeSlot || "—" },
+              { label: labels.guests, value: String(booking.guestsCount ?? "—") },
+              {
+                label: labels.packageLabel,
+                value: booking.location === "khau_pha" ? packageLabel : labels.notSelected,
+              },
+              {
+                label: labels.flightTypeLabel,
+                value: flightTypeLabel,
+              },
+              {
+                label: labels.dayTypeLabel,
+                value: getHolidayTypeLabel(labels, totals.holidayType),
+              },
+            ]}
+          />
+        </SectionCard>
 
-          <Card title={labels.contactInfo} icon="👤">
-            <KV label={labels.name} value={contactName || passengers?.[0]?.fullName || "—"} />
-            <KV label={labels.phone} value={contactPhone || "—"} />
-            <KV label={labels.email} value={contactEmail || "—"} />
-          </Card>
-        </div>
+        <SectionSpacer />
+
+        <SectionCard title={labels.contactInfo}>
+          <StackInfo
+            rows={[
+              { label: labels.name, value: contactName || passengers?.[0]?.fullName || "—" },
+              { label: labels.phone, value: contactPhone || "—" },
+              { label: labels.email, value: contactEmail || "—" },
+            ]}
+          />
+        </SectionCard>
 
         {selectedServices.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <Card title={labels.pickupLocation} icon="🚐">
-              {selectedServices.map((svc) => (
-                <div key={svc.key} style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 8, marginBottom: 8 }}>
-                  <KV label={svc.label} value={svc.fixedMapUrl ? "Google Map" : (svc.inputText || labels.notProvided)} />
-                  {svc.fixedMapUrl ? (
-                    <div style={{ fontSize: 12, color: C.accentDark, textAlign: "right" }}>
-                      {svc.fixedMapUrl}
+          <>
+            <SectionSpacer />
+            <SectionCard title={labels.pickupLocation}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {selectedServices.map((svc) => (
+                  <div
+                    key={svc.key}
+                    style={{
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 14,
+                      padding: 12,
+                      background: C.bg,
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>
+                      {svc.label}
                     </div>
-                  ) : null}
-                </div>
-              ))}
-            </Card>
-          </div>
+
+                    <div style={{ marginTop: 6, fontSize: 13, color: C.subtext }}>
+                      {svc.fixedMapUrl
+                        ? "Google Map"
+                        : svc.inputText || labels.notProvided}
+                    </div>
+
+                    {svc.fixedMapUrl ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 12,
+                          color: C.accentDark,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {svc.fixedMapUrl}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          </>
         )}
 
         {passengers.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1, color: C.textSecondary }}>
-                {labels.passengersList}
-              </div>
-              <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 900 }}>
-                {passengers.length}
-              </div>
-            </div>
+          <>
+            <SectionSpacer />
+            <SectionCard
+              title={labels.passengersList}
+              rightBadge={String(passengers.length)}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {passengers.map((p, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      background: C.bg,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 16,
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 999,
+                          background: C.redSoft,
+                          color: C.redText,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 900,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {passengers.map((p, idx) => (
-                <div key={idx} style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 12, padding: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <div style={{
-                      width: 22, height: 22, borderRadius: 999,
-                      background: "#dc2626", color: "white",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 900
-                    }}>
-                      {idx + 1}
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 900,
+                          color: C.text,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {p.fullName || "—"}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 900 }}>{p.fullName || "—"}</div>
-                  </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12, color: C.textSecondary, paddingLeft: 32 }}>
-                    <Info label="DOB" value={p.dob || "—"} />
-                    <Info label="Gender" value={p.gender || "—"} />
-                    <Info label="ID" value={p.idNumber || "—"} />
-                    <Info label="Nationality" value={p.nationality || "—"} />
-                    <Info label="Weight" value={p.weightKg ? `${p.weightKg}kg` : "—"} />
+                    <PillRow
+                      items={[
+                        { label: "DOB", value: p.dob || "—" },
+                        { label: "Gender", value: p.gender || "—" },
+                        { label: "ID", value: p.idNumber || "—" },
+                        { label: "Nationality", value: p.nationality || "—" },
+                        {
+                          label: "Weight",
+                          value: p.weightKg ? `${p.weightKg}kg` : "—",
+                        },
+                      ]}
+                      soft
+                    />
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </SectionCard>
+          </>
         )}
 
         {!!specialRequest && (
-          <div style={{ marginTop: 12, background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 12, padding: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 1, color: "#92400e" }}>
-              {labels.specialRequests}
+          <>
+            <SectionSpacer />
+            <div
+              style={{
+                background: C.warningBg,
+                border: `1px solid ${C.warningBorder}`,
+                borderRadius: 16,
+                padding: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  color: C.warningText,
+                }}
+              >
+                {labels.specialRequests}
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: C.warningText,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  wordBreak: "break-word",
+                }}
+              >
+                {specialRequest}
+              </div>
             </div>
-            <div style={{ marginTop: 4, color: "#78350f", fontSize: 13, fontWeight: 700 }}>
-              {specialRequest}
-            </div>
-          </div>
+          </>
         )}
 
-        <div style={{ marginTop: 12 }}>
-          <Card title={labels.additionalServices} icon="🎒">
-            <KV label={labels.pickupLocation} value={selectedServices.length ? labels.yes : labels.no} />
-            <KV label={labels.camera360Cost} value={(totals.addonsQty?.camera360 || 0) ? `${totals.addonsQty?.camera360} ${labels.pax}` : labels.no} />
-            <KV label={labels.droneCost} value={(totals.addonsQty?.flycam || 0) ? `${totals.addonsQty?.flycam} ${labels.pax}` : labels.no} />
-            <KV label="GoPro" value={labels.free} />
-            <KV label="Drinks" value={labels.free} />
-            <KV label="Certificate" value={labels.included} />
-          </Card>
-        </div>
+        <SectionSpacer />
 
-        <div style={{ marginTop: 12 }}>
-          <div style={{ background: C.dark, color: C.white, borderRadius: 14, padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", opacity: 0.85 }}>
+        <SectionCard title={labels.additionalServices}>
+          <StackInfo
+            rows={[
+              {
+                label: labels.pickupLocation,
+                value: selectedServices.length ? labels.yes : labels.no,
+              },
+              {
+                label: labels.camera360Cost,
+                value: totals.addonsQty?.camera360
+                  ? `${totals.addonsQty.camera360} ${labels.pax}`
+                  : labels.no,
+              },
+              {
+                label: labels.droneCost,
+                value: totals.addonsQty?.flycam
+                  ? `${totals.addonsQty.flycam} ${labels.pax}`
+                  : labels.no,
+              },
+              { label: "GoPro", value: labels.free },
+              { label: "Drinks", value: labels.free },
+              { label: "Certificate", value: labels.included },
+            ]}
+          />
+        </SectionCard>
+
+        <SectionSpacer />
+
+        <div
+          style={{
+            background: C.totalBg,
+            color: C.white,
+            borderRadius: 18,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  opacity: 0.75,
+                }}
+              >
+                {labels.priceBreakdown}
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900, marginTop: 4 }}>
                 {labels.total}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 900 }}>
-                {formatByLang(lang, totals.totalAfterDiscount, totals.totalAfterDiscount)}
-              </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
-              {priceLines.map((line, idx) => (
-                <div key={idx} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: line.type === "discount" ? "#fca5a5" : "#e5e7eb", fontWeight: 700 }}>
-                      {line.label}
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 900,
+                color: C.white,
+              }}
+            >
+              {formatByLang(lang, totals.totalAfterDiscount, totals.totalAfterDiscount)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            {priceLines.map((line, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: line.type === "discount" ? "#fca5a5" : "#e5e7eb",
+                    }}
+                  >
+                    {line.label}
+                  </div>
+                  {line.detail ? (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#94a3b8",
+                        marginTop: 3,
+                      }}
+                    >
+                      {line.detail}
                     </div>
-                    {line.detail && (
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                        {line.detail}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ fontWeight: 900, whiteSpace: "nowrap", color: line.type === "discount" ? "#fca5a5" : "#ffffff" }}>
-                    {line.amountText}
-                  </div>
+                  ) : null}
                 </div>
-              ))}
-            </div>
 
-            <div style={{ marginTop: 10, fontSize: 11, opacity: 0.9 }}>
-              {labels.arrive}
-            </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 900,
+                    whiteSpace: "nowrap",
+                    color: line.type === "discount" ? "#fca5a5" : C.white,
+                  }}
+                >
+                  {line.amountText}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              paddingTop: 12,
+              borderTop: "1px solid rgba(255,255,255,0.12)",
+              fontSize: 11,
+              color: "#cbd5e1",
+              lineHeight: 1.5,
+            }}
+          >
+            {labels.safetyNote}
           </div>
         </div>
 
-        <div style={{ marginTop: 12, textAlign: "center", fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
-          Hotline: 0964.073.555 — 097.970.2812 (Zalo / WhatsApp / Telegram)
+        <div
+          style={{
+            marginTop: 14,
+            textAlign: "center",
+            fontSize: 11,
+            color: C.muted,
+            lineHeight: 1.6,
+          }}
+        >
+          Hotline: 0964.073.555 — 097.970.2812
           <br />
-          mebayluon.com
+          Zalo / WhatsApp / Telegram — mebayluon.com
         </div>
       </div>
     </div>
   );
 }
 
-function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  children,
+  rightBadge,
+}: {
+  title: string;
+  children: React.ReactNode;
+  rightBadge?: string;
+}) {
   return (
-    <div style={{ background: C.soft, border: `1px solid ${C.border}`, borderRadius: 14, padding: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1, textTransform: "uppercase", color: C.accentDark }}>
+    <div
+      style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: 18,
+        padding: 14,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 900,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            color: C.accentDark,
+          }}
+        >
           {title}
         </div>
+
+        {rightBadge ? (
+          <div
+            style={{
+              background: C.redSoft,
+              color: C.redText,
+              borderRadius: 999,
+              padding: "2px 8px",
+              fontSize: 11,
+              fontWeight: 900,
+            }}
+          >
+            {rightBadge}
+          </div>
+        ) : null}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {children}
-      </div>
+
+      {children}
     </div>
   );
 }
 
-function KV({ label, value }: { label: string; value: string }) {
+function PillRow({
+  items,
+  soft = false,
+}: {
+  items: Array<{ label: string; value: string }>;
+  soft?: boolean;
+}) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 900, color: C.text, textAlign: "right", maxWidth: "60%" }}>{value}</div>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {items.map((item, idx) => (
+        <div
+          key={`${item.label}-${idx}`}
+          style={{
+            minWidth: 120,
+            flex: "1 1 180px",
+            background: soft ? C.accentSoft : C.bg,
+            border: `1px solid ${soft ? "#bae6fd" : C.border}`,
+            borderRadius: 14,
+            padding: "10px 12px",
+          }}
+        >
+          <div style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>
+            {item.label}
+          </div>
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 13,
+              color: C.text,
+              fontWeight: 900,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function StackInfo({
+  rows,
+}: {
+  rows: Array<{ label: string; value: string }>;
+}) {
   return (
-    <div>
-      <span style={{ fontWeight: 800 }}>{label}:</span>{" "}
-      <span style={{ color: C.text }}>{value}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {rows.map((row, idx) => (
+        <div
+          key={`${row.label}-${idx}`}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+            paddingBottom: 10,
+            borderBottom:
+              idx === rows.length - 1 ? "none" : `1px dashed ${C.line}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: C.muted,
+              flexShrink: 0,
+            }}
+          >
+            {row.label}
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 900,
+              color: C.text,
+              textAlign: "right",
+              wordBreak: "break-word",
+            }}
+          >
+            {row.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
+}
+
+function SectionSpacer() {
+  return <div style={{ height: 12 }} />;
 }

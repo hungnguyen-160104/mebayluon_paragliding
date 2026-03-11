@@ -11,33 +11,53 @@ type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 const UI_TEXT: Record<
   LangUI,
   {
-    ticketTitle: string;
+    title: string;
+    subtitle: string;
     imageFail: string;
+    note: string;
   }
 > = {
   vi: {
-    ticketTitle: "Vé đặt bay",
+    title: "Booking đã được ghi nhận",
+    subtitle:
+      "Bạn có thể tải vé đặt bay ngay bên dưới hoặc bắt đầu một booking mới.",
     imageFail: "Không tạo được ảnh. Vui lòng thử lại hoặc chụp màn hình.",
+    note: "Đội ngũ sẽ liên hệ xác nhận lịch bay, thời tiết và các dịch vụ đi kèm trong thời gian sớm nhất.",
   },
   en: {
-    ticketTitle: "Booking ticket",
+    title: "Booking received",
+    subtitle:
+      "You can download your booking ticket below or start a new booking.",
     imageFail: "Failed to generate image. Please try again or take a screenshot.",
+    note: "Our team will contact you soon to confirm schedule, weather, and selected services.",
   },
   fr: {
-    ticketTitle: "Billet de réservation",
+    title: "Réservation enregistrée",
+    subtitle:
+      "Vous pouvez télécharger votre billet ci-dessous ou commencer une nouvelle réservation.",
     imageFail: "Impossible de générer l'image. Veuillez réessayer.",
+    note: "Notre équipe vous contactera rapidement pour confirmer l’horaire, la météo et les services choisis.",
   },
   ru: {
-    ticketTitle: "Билет на полёт",
+    title: "Бронирование получено",
+    subtitle:
+      "Ниже вы можете скачать билет или начать новое бронирование.",
     imageFail: "Не удалось создать изображение. Попробуйте ещё раз.",
+    note: "Наша команда скоро свяжется с вами для подтверждения времени, погоды и выбранных услуг.",
   },
   hi: {
-    ticketTitle: "बुकिंग टिकट",
+    title: "बुकिंग प्राप्त हो गई",
+    subtitle:
+      "आप नीचे अपना बुकिंग टिकट डाउनलोड कर सकते हैं या नई बुकिंग शुरू कर सकते हैं।",
     imageFail: "इमेज बनाई नहीं जा सकी। कृपया फिर से प्रयास करें।",
+    note: "हमारी टीम जल्द ही समय, मौसम और चुनी गई सेवाओं की पुष्टि के लिए आपसे संपर्क करेगी।",
   },
   zh: {
-    ticketTitle: "预订票",
+    title: "预订已收到",
+    subtitle:
+      "您可以在下方下载预订票，或重新开始新的预订。",
     imageFail: "无法生成图片。请重试或直接截图。",
+    note: "团队会尽快联系您确认飞行时间、天气和已选服务。",
   },
 };
 
@@ -133,32 +153,52 @@ export default function SuccessStep() {
     }
   };
 
-  const glassWrapperClass =
-    "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5 space-y-6";
-
   return (
-    <div className="space-y-6 text-white">
-      <div className={glassWrapperClass}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-lg font-semibold text-white">{ui.ticketTitle}</h3>
+    <div className="space-y-5 text-white">
+      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
+        <div className="border-b border-white/10 bg-gradient-to-r from-emerald-400/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
+              <p className="mt-1 text-sm text-white/80 max-w-3xl">
+                {ui.subtitle}
+              </p>
+            </div>
 
-          <button
-            onClick={downloadImage}
-            disabled={downloadingIMG}
-            className="px-4 py-2 rounded-xl bg-white/20 border border-white/30 hover:bg-white/30 disabled:opacity-60 transition"
-          >
-            {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
-          </button>
+            <div className="rounded-full border border-emerald-300/30 bg-emerald-400/15 px-4 py-2 text-sm font-semibold text-emerald-100">
+              ✓ Confirmed
+            </div>
+          </div>
         </div>
 
-        <div className="mt-4">
-          <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 24 }}>
-            <BookingTicket
-              booking={data}
-              bookingResult={bookingResult}
-              totals={totals}
-              lang={lang}
-            />
+        <div className="p-4 md:p-6 space-y-5">
+          <div className="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-sm text-white/75">
+            {ui.note}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="text-sm font-medium text-white/85">
+              {t.buttons.downloadImage}
+            </div>
+
+            <button
+              onClick={downloadImage}
+              disabled={downloadingIMG}
+              className="h-12 rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(56,189,248,0.35)] transition hover:brightness-105 disabled:opacity-60"
+            >
+              {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
+            </button>
+          </div>
+
+          <div className="rounded-[24px] border border-white/12 bg-white/6 p-2 md:p-3">
+            <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 24 }}>
+              <BookingTicket
+                booking={data}
+                bookingResult={bookingResult}
+                totals={totals}
+                lang={lang}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -166,7 +206,7 @@ export default function SuccessStep() {
       <div className="flex justify-end">
         <button
           onClick={reset}
-          className="px-5 py-2 rounded-xl border border-white/40 bg-black/30 text-white hover:bg-black/50 transition backdrop-blur-sm"
+          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
         >
           {t.buttons.startOver}
         </button>
