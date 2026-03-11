@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+
 import { useBookingStore } from "@/store/booking-store";
 import {
   LOCATIONS,
@@ -475,7 +475,6 @@ export default function SelectFlightStep() {
   const next = useBookingStore((s) => s.next);
 
   const setLocation = useBookingStore((s) => s.setLocation);
-  const setPackageKey = useBookingStore((s) => s.setPackageKey);
   const setFlightTypeKey = useBookingStore((s) => s.setFlightTypeKey);
   const setServiceSelected = useBookingStore((s) => s.setServiceSelected);
   const setServiceInput = useBookingStore((s) => s.setServiceInput);
