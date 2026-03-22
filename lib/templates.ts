@@ -1,6 +1,5 @@
 // lib/templates.ts
 
-// ===== Types (theo mẫu Telegram bạn gửi) =====
 type Addons = { pickup?: boolean; flycam?: boolean; camera360?: boolean };
 type Contact = { phone?: string; email?: string; pickupLocation?: string; specialRequest?: string };
 type Guest = {
@@ -24,11 +23,10 @@ export type TelegramBookingPayload = {
   addons?: Addons;
   price?: Price;
   createdAt?: string;
-  bookingId?: string; // nếu bạn có
-  serviceName?: string; // nếu bạn có
+  bookingId?: string;
+  serviceName?: string;
 };
 
-// ===== Helpers =====
 const escapeHtml = (s?: string) =>
   (s || "")
     .replace(/&/g, "&amp;")
@@ -46,11 +44,6 @@ function createdAtFallback() {
   return new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 }
 
-/**
- * Render “tin nhắn Telegram” thành HTML email:
- * - Dùng <div style="white-space:pre-wrap"> để giữ xuống dòng
- * - Cho phép <b> ... </b> như telegram HTML
- */
 function telegramLikeHtmlWrapper(title: string, telegramHtmlText: string) {
   return `<!doctype html>
 <html>
@@ -70,7 +63,7 @@ function telegramLikeHtmlWrapper(title: string, telegramHtmlText: string) {
 </html>`;
 }
 
-// Build sections giống controller Telegram của bạn
+// ===== ADMIN: giữ nguyên tiếng Việt =====
 function buildTelegramSections(body: TelegramBookingPayload) {
   const c = body.contact || {};
 
@@ -106,7 +99,6 @@ function buildTelegramSections(body: TelegramBookingPayload) {
   const perPerson = formatVND(body.price?.perPerson);
   const total = formatVND(body.price?.total);
 
-  // có bookingId/serviceName thì thêm dòng (tuỳ bạn)
   const extraTop: string[] = [];
   if (body.bookingId) extraTop.push(`🆔 <b>BookingId:</b> ${escapeHtml(body.bookingId)}`);
   if (body.serviceName) extraTop.push(`🧾 <b>Dịch vụ:</b> ${escapeHtml(body.serviceName)}`);
@@ -137,14 +129,80 @@ function buildTelegramSections(body: TelegramBookingPayload) {
   return sections.join("\n");
 }
 
+// ===== CUSTOMER: tiếng Anh =====
+function buildCustomerSectionsEn(body: TelegramBookingPayload) {
+  const c = body.contact || {};
+
+  const guestsCount =
+    Number.isFinite(body.guestsCount) && Number(body.guestsCount) > 0
+      ? Number(body.guestsCount)
+      : (body.guests?.length || 1);
+
+  const guestLines =
+    (body.guests || [])
+      .map((g, i) => {
+        const attrs: string[] = [];
+        if (g.dob) attrs.push(`DOB: ${escapeHtml(g.dob)}`);
+        if (g.gender) attrs.push(escapeHtml(g.gender));
+        if (g.idNumber) attrs.push(`ID: ${escapeHtml(g.idNumber)}`);
+        if (typeof g.weightKg === "number") attrs.push(`Weight: ${g.weightKg}kg`);
+        if (g.nationality) attrs.push(`Nationality: ${escapeHtml(g.nationality)}`);
+        const details = attrs.length ? ` (${attrs.join(" · ")})` : "";
+        return `${i + 1}. ${escapeHtml(g.fullName || "")}${details}`;
+      })
+      .join("\n") || "—";
+
+  const addonLines: string[] = [];
+  if (body.addons?.flycam) addonLines.push("• Flycam");
+  if (body.addons?.camera360) addonLines.push("• 360 Camera");
+  if (body.addons?.pickup) addonLines.push("• Pickup service");
+
+  const createdAt = body.createdAt || createdAtFallback();
+
+  const locationKey = escapeHtml((body.location || "").trim());
+  const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
+
+  const perPerson = formatVND(body.price?.perPerson);
+  const total = formatVND(body.price?.total);
+
+  const sections = [
+    `🛒 <b>BOOKING CONFIRMATION</b>`,
+    body.bookingId ? `🆔 <b>Booking ID:</b> ${escapeHtml(body.bookingId)}` : "",
+    body.serviceName ? `🧾 <b>Service:</b> ${escapeHtml(body.serviceName)}` : "",
+    `📍 <b>Location:</b> ${locationName}${locationKey ? ` (${locationKey})` : ""}`,
+    `📅 <b>Date & Time:</b> ${escapeHtml(body.dateISO || "")} ${escapeHtml(body.timeSlot || "")}`,
+    `👥 <b>Number of Guests:</b> ${guestsCount}`,
+    ``,
+    `<b>Contact Information</b>`,
+    `• 📞 ${escapeHtml(c.phone || "")} · ✉️ ${escapeHtml(c.email || "")}`,
+    c.pickupLocation ? `• 🚗 Pickup Location: ${escapeHtml(c.pickupLocation)}` : "",
+    c.specialRequest ? `• 📝 Special Request: ${escapeHtml(c.specialRequest)}` : "",
+    ``,
+    `<b>Pricing</b>`,
+    `• Price per guest: ${perPerson}`,
+    addonLines.length ? `• Additional services:\n${addonLines.map((l) => "   " + l).join("\n")}` : "",
+    `• <b>Estimated Total:</b> ${total}`,
+    ``,
+    `<b>Guest List</b>`,
+    guestLines,
+    ``,
+    `⏱️ ${escapeHtml(createdAt)}`,
+    ``,
+    `Thank you for your booking.`,
+    `We will contact you shortly to confirm your reservation.`,
+  ].filter(Boolean);
+
+  return sections.join("\n");
+}
+
 export function formatCustomerEmailHtml(payload: TelegramBookingPayload) {
-  const telegramText = buildTelegramSections(payload);
+  const customerText = buildCustomerSectionsEn(payload);
   const subjectId = payload.bookingId || payload.locationName || payload.location || "Booking";
-  return telegramLikeHtmlWrapper(`Xác nhận đặt bay - ${subjectId}`, telegramText);
+  return telegramLikeHtmlWrapper(`Booking Confirmation - ${subjectId}`, customerText);
 }
 
 export function formatAdminEmailHtml(payload: TelegramBookingPayload) {
-  const telegramText = buildTelegramSections(payload);
+  const adminText = buildTelegramSections(payload);
   const subjectId = payload.bookingId || payload.locationName || payload.location || "Booking";
-  return telegramLikeHtmlWrapper(`NEW BOOKING - ${subjectId}`, telegramText);
+  return telegramLikeHtmlWrapper(`Đơn đặt bay mới - ${subjectId}`, adminText);
 }

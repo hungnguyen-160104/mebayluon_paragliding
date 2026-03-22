@@ -18,77 +18,93 @@ type Props = {
 const UI_TEXT: Record<
   "vi" | "en" | "fr" | "ru" | "hi" | "zh",
   {
-    selectLocation: string;
     selected: string;
     featured: string;
-    basePrice: string;
-    fromPrice: string;
-    weekdayFrom: string;
-    weekendFrom: string;
     packageHint: string;
+    fromPrice: string;
+    pax: string;
   }
 > = {
   vi: {
-    selectLocation: "Chọn điểm bay",
     selected: "Đã chọn",
     featured: "Nổi bật",
-    basePrice: "Giá cơ bản",
-    fromPrice: "Từ",
-    weekdayFrom: "Ngày thường",
-    weekendFrom: "Cuối tuần/lễ",
     packageHint: "Nhiều gói bay",
+    fromPrice: "từ",
+    pax: "pax",
   },
   en: {
-    selectLocation: "Choose location",
     selected: "Selected",
     featured: "Featured",
-    basePrice: "Base price",
-    fromPrice: "From",
-    weekdayFrom: "Weekday",
-    weekendFrom: "Weekend/holiday",
     packageHint: "Multiple packages",
+    fromPrice: "from",
+    pax: "pax",
   },
   fr: {
-    selectLocation: "Choisir le site",
     selected: "Sélectionné",
     featured: "En vedette",
-    basePrice: "Prix de base",
-    fromPrice: "De",
-    weekdayFrom: "Semaine",
-    weekendFrom: "Week-end/Férié",
     packageHint: "Plusieurs forfaits",
+    fromPrice: "de",
+    pax: "pers",
   },
   ru: {
-    selectLocation: "Выбрать",
     selected: "Выбрано",
     featured: "Рекомендуем",
-    basePrice: "Базовая цена",
-    fromPrice: "От",
-    weekdayFrom: "Будни",
-    weekendFrom: "Выходные",
     packageHint: "Несколько пакетов",
+    fromPrice: "от",
+    pax: "чел",
   },
   hi: {
-    selectLocation: "चुनें",
     selected: "चयनित",
     featured: "हाइलाइट",
-    basePrice: "बेस प्राइस",
-    fromPrice: "से",
-    weekdayFrom: "कार्यदिवस",
-    weekendFrom: "सप्ताहांत",
     packageHint: "कई पैकेज",
+    fromPrice: "से",
+    pax: "यात्री",
   },
   zh: {
-    selectLocation: "选择地点",
     selected: "已选择",
     featured: "推荐",
-    basePrice: "基础价格",
-    fromPrice: "起",
-    weekdayFrom: "工作日",
-    weekendFrom: "节假日",
     packageHint: "多个套餐",
+    fromPrice: "起",
+    pax: "人",
   },
 };
+
+function splitLocationName(raw: string) {
+  const trimmed = (raw || "").trim();
+
+  const parenMatch = trimmed.match(/^(.+?)\s*\((.+)\)$/);
+  if (parenMatch) {
+    return {
+      main: parenMatch[1].trim(),
+      sub: parenMatch[2].trim(),
+    };
+  }
+
+  const dashIndex = trimmed.indexOf(" - ");
+  if (dashIndex > 0) {
+    return {
+      main: trimmed.slice(0, dashIndex).trim(),
+      sub: trimmed.slice(dashIndex + 3).trim(),
+    };
+  }
+
+  const lineParts = trimmed
+    .split("\n")
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  if (lineParts.length >= 2) {
+    return {
+      main: lineParts[0],
+      sub: lineParts.slice(1).join(" "),
+    };
+  }
+
+  return {
+    main: trimmed,
+    sub: "",
+  };
+}
 
 export default function FlightCard({
   location,
@@ -113,73 +129,61 @@ export default function FlightCard({
     return legacy || cfg.basePriceVND(dateISO);
   }, [cfg, dateISO, opt.price.weekday, opt.price.weekend]);
 
-  const weekdayBase = cfg.basePriceVND("2026-03-10");
-  const weekendBase = cfg.basePriceVND("2026-03-08");
-  const hasDynamicWeekendPrice = weekdayBase !== weekendBase;
   const hasPackages = !!cfg.packages?.length;
+  const displayName = cfg.name[lang] ?? cfg.name.vi;
+  const { main, sub } = splitLocationName(displayName);
 
   return (
     <button
       type="button"
       onClick={() => onSelect?.(location)}
-      className={`group relative flex w-full flex-col justify-between overflow-hidden rounded-[24px] border p-4 text-left transition-all duration-300 min-h-[180px] ${
+      className={[
+        "group relative flex min-h-[168px] w-full flex-col overflow-hidden rounded-[20px] border text-left transition-all duration-300",
+        "backdrop-blur-xl",
         selected
-          ? "border-sky-300 bg-sky-500/20 shadow-[0_8px_30px_rgba(56,189,248,0.25)]"
-          : "border-white/15 bg-white/10 hover:bg-white/15 hover:border-white/30"
-      }`}
+          ? "border-yellow-200/70 bg-[linear-gradient(180deg,rgba(255,193,7,0.92),rgba(245,166,35,0.86))] shadow-[0_12px_30px_rgba(245,158,11,0.28)]"
+          : "border-white/20 bg-[linear-gradient(180deg,rgba(255,190,11,0.82),rgba(245,158,11,0.76))] shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:border-white/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.18)]",
+      ].join(" ")}
     >
-      {/* Nửa trên: Huy hiệu & Tên địa điểm */}
-      <div className="flex w-full flex-col items-start gap-3">
-        <div className="flex w-full items-start justify-between gap-1">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_34%)]" />
+
+      <div className="relative flex h-full flex-col p-3 md:p-4">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+            <span className="rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/95">
               {ui.featured}
             </span>
             {hasPackages ? (
-              <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80">
+              <span className="rounded-full border border-white/20 bg-white/8 px-2 py-0.5 text-[10px] font-medium text-white/85">
                 {ui.packageHint}
               </span>
             ) : null}
           </div>
 
           {selected ? (
-            <span className="shrink-0 rounded-full bg-sky-400 px-2 py-0.5 text-[10px] font-bold text-slate-900 shadow-sm">
+            <span className="shrink-0 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
               ✓ {ui.selected}
             </span>
           ) : null}
         </div>
 
-        <h3 className="text-lg font-bold leading-tight text-white drop-shadow-md lg:text-xl">
-          {cfg.name[lang] ?? cfg.name.vi}
-        </h3>
-      </div>
+        <div className="mt-4 flex-1">
+          <h3 className="text-[19px] font-extrabold uppercase tracking-[0.02em] text-red-600 drop-shadow-[0_1px_0_rgba(255,255,255,0.15)] md:text-[20px]">
+            {main}
+          </h3>
 
-      {/* Nửa dưới: Khu vực Giá */}
-      <div className="mt-4 flex w-full flex-col">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-[11px] uppercase text-white/70">{ui.fromPrice}</span>
-          <span className="text-xl font-bold text-white drop-shadow-sm 2xl:text-2xl">
-            {formatVND(effectiveBasePrice)}
-          </span>
+          {sub ? (
+            <div className="mt-3 text-[14px] font-semibold italic leading-5 text-yellow-50/95 md:text-[15px]">
+              {sub}
+            </div>
+          ) : null}
         </div>
 
-        {/* Giá chi tiết ngày thường / cuối tuần dạng list */}
-        {hasDynamicWeekendPrice && (
-          <div className="mt-3 flex flex-col gap-1 border-t border-white/10 pt-3">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-white/60">{ui.weekdayFrom}:</span>
-              <span className="font-semibold text-white/90">
-                {formatVND(weekdayBase)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-white/60">{ui.weekendFrom}:</span>
-              <span className="font-semibold text-white/90">
-                {formatVND(weekendBase)}
-              </span>
-            </div>
+        <div className="mt-5">
+          <div className="text-[14px] font-semibold italic text-red-600 md:text-[15px]">
+            {ui.fromPrice} {formatVND(effectiveBasePrice)}/{ui.pax}
           </div>
-        )}
+        </div>
       </div>
     </button>
   );

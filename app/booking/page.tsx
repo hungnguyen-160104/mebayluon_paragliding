@@ -8,61 +8,70 @@ import GuestInfoStep from "@/components/booking/guest-info-step";
 import ReviewConfirmStep from "@/components/booking/review-confirm-step";
 import SuccessStep from "@/components/booking/success-step";
 import StepIndicator from "@/components/booking/step-indicator";
-import PriceSummary from "@/components/booking/price-summary";
 import { useBookingText } from "@/lib/booking/translations-booking";
 
 export default function BookingPage() {
   const step = useBookingStore((s) => s.step);
   const t = useBookingText();
 
-  const backgroundStyle = {
-    backgroundImage: "url('/hinh-nen.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundAttachment: "fixed",
+  const currentStepContent = () => {
+    switch (step) {
+      case 1:
+        return <SelectFlightStep />;
+      case 2:
+        return <ContactInfoStep />;
+      case 3:
+        return <GuestInfoStep />;
+      case 4:
+        return <ReviewConfirmStep />;
+      case 5:
+        return <SuccessStep />;
+      default:
+        return <SelectFlightStep />;
+    }
   };
 
-  const glassWrapperClass =
-    "bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-5";
-
   return (
-    <main className="min-h-screen" style={backgroundStyle}>
-      {/* Đã sửa: max-w-5xl -> max-w-[1440px] để bung rộng toàn bộ layout ra 2 bên */}
-      <div className="mx-auto w-full max-w-[1440px] px-4 md:px-6 pt-28 pb-8 text-white">
-        <h1
-          className="text-3xl font-bold tracking-tight text-center"
-          style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-        >
-          {t.pageTitle}
-        </h1>
+    <main className="relative min-h-screen overflow-hidden">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-fixed"
+        style={{ backgroundImage: "url('/dat_bay.jpeg')" }}
+      />
 
-        <p
-          className="mt-1 text-center"
-          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
-        >
-          {t.pageSubtitle}
-        </p>
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/45" />
 
-        <div className={`mt-6 ${glassWrapperClass} text-white`}>
+      {/* Optional soft gradient overlay for better readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
+
+      {/* Content */}
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-3 pt-20 pb-4 md:px-4 md:pt-24 lg:px-5">
+        <header className="shrink-0 text-center text-white">
+          <h1
+            className="text-2xl font-bold tracking-tight md:text-3xl"
+            style={{ textShadow: "0 2px 10px rgba(0,0,0,0.55)" }}
+          >
+            {t.pageTitle}
+          </h1>
+
+          <p
+            className="mt-1 text-sm text-white/90 md:text-base"
+            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}
+          >
+            {t.pageSubtitle}
+          </p>
+        </header>
+
+        <section className="mt-4 shrink-0 rounded-2xl border border-white/15 bg-white/10 p-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-md md:p-4">
           <StepIndicator />
-        </div>
+        </section>
 
-        {/* Đã sửa: lg:grid-cols-[1fr_380px] -> xl:grid-cols-[1fr_380px] và tăng gap */}
-        <div className="mt-6 grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 lg:gap-8">
-          <div className="min-w-0"> {/* Thêm min-w-0 để tránh lỗi tràn flex/grid bên trong */}
-            {step === 1 && <SelectFlightStep />}
-            {step === 2 && <ContactInfoStep />}
-            {step === 3 && <GuestInfoStep />}
-            {step === 4 && <ReviewConfirmStep />}
-            {step === 5 && <SuccessStep />}
+        <section className="mt-4 min-h-0 flex-1">
+          <div className="h-full min-w-0 overflow-auto rounded-2xl border border-white/10 bg-black/20 p-2 shadow-[0_10px_30px_rgba(0,0,0,0.2)] backdrop-blur-sm md:p-3">
+            {currentStepContent()}
           </div>
-
-          <aside className="h-fit sticky top-6">
-            <div className={`${glassWrapperClass} text-white`}>
-              <PriceSummary />
-            </div>
-          </aside>
-        </div>
+        </section>
       </div>
     </main>
   );

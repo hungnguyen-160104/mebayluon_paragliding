@@ -90,7 +90,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   vi: {
     pageTitle: "Đặt bay",
     pageSubtitle:
-      "Điều hướng 5 bước • Lưu ý: thông tin & giá có thể thay đổi theo thời gian.",
+      "Lịch bay linh động, hoàn hủy miễn phí.",
     stepNames: [
       "Chọn dịch vụ",
       "Ngày & liên hệ",
@@ -123,8 +123,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Số điện thoại liên hệ",
       email: "Email liên hệ",
       pickup: "Điểm đón",
-      pickupFixed:
-        "Điểm đón cố định: BigC Thăng Long (Khung giờ đón: 8h – 9h sáng)",
+      pickupFixed: "Điểm đón cố định: TTTM GO! Thăng Long, Hà Nội (Khung giờ đón: 8h – 9h sáng)",
       specialRequest: "Yêu cầu đặc biệt",
 
       fullName: "Họ và tên (passport)",
@@ -163,7 +162,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       groupPromoAuto: "Khuyến mãi nhóm áp dụng tự động theo số lượng khách",
       pickupNoteSapa:
         "Xe đón trả tại khách sạn (Trung tâm Sapa, Lao Chải, Tả Van)",
-      pickupNoteHN: "Xe đón trả 2 chiều từ BigC Thăng Long (Hà Nội)",
+      pickupNoteHN: "Xe đón trả 2 chiều từ TTTM GO! Thăng Long, Hà Nội",
       successTitle: "HOÀN TẤT",
       successBody:
         "Cảm ơn đặt chỗ của bạn! Chúng tôi sẽ liên hệ trực tiếp để xác nhận thông tin đặt bay, vui lòng để ý điện thoại. Nếu cần gấp, vui lòng chủ động liên hệ hotline 0964.073.555 - 097.970.2812 (Zalo, WhatsApp, Telegram).",
@@ -188,7 +187,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   en: {
     pageTitle: "Book your flight",
     pageSubtitle:
-      "5-step flow • Note: information & prices may change over time.",
+      "Flexible flight schedule, free cancellation and changes.",
     stepNames: ["Select", "Date & Contact", "Passengers", "Review", "Done"],
     buttons: {
       next: "Next",
@@ -215,7 +214,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Phone",
       email: "Email",
       pickup: "Pickup point",
-      pickupFixed: "Fixed pickup: BigC Thăng Long (8–9 AM)",
+      pickupFixed: "Fixed pickup: GO! Thang Long Mall, Hanoi (8–9 AM)",
       specialRequest: "Special requests",
 
       fullName: "Full name (passport)",
@@ -253,7 +252,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       groupPromoAuto:
         "Group discount is automatically applied based on passenger count.",
       pickupNoteSapa: "Hotel pickup in Sapa center, Lao Chải, Tả Van.",
-      pickupNoteHN: "Round-trip pickup from BigC Thăng Long (Hanoi).",
+      pickupNoteHN: "Round-trip pickup from GO! Thang Long Mall, Hanoi.",
       successTitle: "COMPLETED",
       successBody:
         "Thank you for your booking! We will contact you to confirm the flight details.",
@@ -278,7 +277,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   fr: {
     pageTitle: "Réserver votre vol",
     pageSubtitle:
-      "Processus en 5 étapes • Remarque : informations et prix susceptibles d’évoluer.",
+      "Horaires de vol flexibles, annulation et modification gratuites.",
     stepNames: ["Sélection", "Date & contact", "Passagers", "Validation", "Terminé"],
     buttons: {
       next: "Continuer",
@@ -305,7 +304,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Téléphone",
       email: "E-mail",
       pickup: "Point de prise en charge",
-      pickupFixed: "Ramassage fixe : BigC Thăng Long (8h–9h)",
+      pickupFixed: "Ramassage fixe : GO! Thang Long, Hanoï (8h–9h)",
       specialRequest: "Demandes particulières",
 
       fullName: "Nom complet (passeport)",
@@ -345,7 +344,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteSapa:
         "Prise en charge à l’hôtel (centre de Sapa, Lao Chải, Tả Van).",
       pickupNoteHN:
-        "Prise en charge aller-retour depuis BigC Thăng Long (Hanoï).",
+        "Prise en charge aller-retour depuis GO! Thang Long (Hanoï).",
       successTitle: "TERMINÉ",
       successBody:
         "Merci pour votre réservation ! Nous vous contacterons pour confirmer les détails du vol.",
@@ -370,7 +369,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   ru: {
     pageTitle: "Бронирование полёта",
-    pageSubtitle: "5 шагов • Внимание: информация и цены могут меняться.",
+    pageSubtitle: "Гибкое расписание рейсов, бесплатная отмена и изменение.",
     stepNames: ["Выбор", "Дата и контакт", "Пассажиры", "Подтверждение", "Готово"],
     buttons: {
       next: "Далее",
@@ -397,7 +396,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Телефон",
       email: "E-mail",
       pickup: "Место посадки",
-      pickupFixed: "Фиксированная посадка: BigC Thăng Long (8:00–9:00)",
+      pickupFixed: "Фиксированная посадка: GO! Thang Long, Ханой (8:00–9:00)",
       specialRequest: "Особые пожелания",
 
       fullName: "ФИО (по паспорту)",
@@ -437,7 +436,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteSapa:
         "Трансфер от отеля (центр Сапы, Лао Чай, Та Ван).",
       pickupNoteHN:
-        "Трансфер туда-обратно от BigC Thăng Long (Ханой).",
+        "Трансфер туда-обратно от GO! Thang Long (Ханой).",
       successTitle: "ГОТОВО",
       successBody:
         "Спасибо за бронирование! Мы свяжемся с вами для подтверждения.",
@@ -462,7 +461,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   zh: {
     pageTitle: "预订飞行",
-    pageSubtitle: "5 步流程 • 提示：信息与价格可能会随时间调整。",
+    pageSubtitle: "灵活的航班时刻，可免费取消和改签。",
     stepNames: ["选择服务", "日期与联系", "乘客信息", "确认", "完成"],
     buttons: {
       next: "下一步",
@@ -489,7 +488,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "联系电话",
       email: "联系邮箱",
       pickup: "接送地点",
-      pickupFixed: "固定接送点：BigC Thăng Long（上午 8–9 点）",
+      pickupFixed: "固定接送点：GO! Thang Long 购物中心（上午 8–9 点）",
       specialRequest: "特殊需求",
 
       fullName: "姓名（护照）",
@@ -529,7 +528,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteSapa:
         "沙坝市区、Lao Chải、Tả Van 酒店接送。",
       pickupNoteHN:
-        "河内 BigC Thăng Long 往返接送。",
+        "河内 GO! Thang Long 往返接送。",
       successTitle: "完成",
       successBody:
         "感谢你的预订！我们将联系你确认飞行信息。",
@@ -554,7 +553,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   hi: {
     pageTitle: "फ्लाइट बुक करें",
     pageSubtitle:
-      "5-स्टेप प्रक्रिया • नोट: जानकारी और कीमतें समय के साथ बदल सकती हैं।",
+      "लचीला उड़ान शेड्यूल, मुफ्त रद्दीकरण और बदलाव.",
     stepNames: ["सेवा चुनें", "तारीख व संपर्क", "यात्री", "पुष्टि", "पूर्ण"],
     buttons: {
       next: "आगे",
@@ -581,7 +580,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "फ़ोन",
       email: "ईमेल",
       pickup: "पिकअप पॉइंट",
-      pickupFixed: "फिक्स्ड पिकअप: BigC Thăng Long (सुबह 8–9 बजे)",
+      pickupFixed: "फिक्स्ड पिकअप: GO! थैंग लॉन्ग (सुबह 8–9 बजे)",
       specialRequest: "विशेष अनुरोध",
 
       fullName: "पूरा नाम (पासपोर्ट)",
@@ -621,7 +620,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteSapa:
         "सापा सेंटर, Lao Chải, Tả Van में होटल पिकअप।",
       pickupNoteHN:
-        "BigC Thăng Long (हनोई) से राउंड-ट्रिप पिकअप।",
+        "GO! थैंग लॉन्ग (हनोई) से राउंड-ट्रिप पिकअप।",
       successTitle: "पूर्ण",
       successBody:
         "आपकी बुकिंग के लिए धन्यवाद! हम पुष्टि के लिए आपसे संपर्क करेंगे।",

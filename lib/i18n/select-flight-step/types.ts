@@ -1,0 +1,83 @@
+import type { LocationKey } from "@/lib/booking/calculate-price";
+
+export type BookingLang = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+
+export type SelectFlightStepUiText = {
+  title: string;
+  locationsTitle: string;
+  selectedLocationTitle: string;
+  serviceSectionTitle: string;
+  selectFlightType: string;
+  chooseLocationPrompt: string;
+  chooseFlightTypePrompt: string;
+  choosePackagePrompt: string;
+  noVisibleServices: string;
+  guestsLabel: string;
+  flightPrice: string;
+  optionalPrice: string;
+  totalPrice: string;
+  pax: string;
+  continue: string;
+  pickupLocationLabel: string;
+  pickupPointLabel: string;
+  pickupPlaceholder: string;
+  includedLabel: string;
+  groupDiscountTitle: string;
+  freeGopro: string;
+  optionalServiceTitle: string;
+  fromLabel: string;
+  paraglidingTitle: string;
+  paramotorTitle: string;
+  weekdayFlightTitle: string;
+  weekendFlightTitle: string;
+  khauPhaPromoTitle: string;
+  khauPhaPromoSub: string;
+  paramotorDiscountBefore: string;
+  paramotorDiscountAfter: string;
+  paraglidingDescription: string[];
+  paramotorDescription: string[];
+  locationDescription: Partial<Record<LocationKey, string[]>>;
+  hanoiMountainWarning: string;
+  daNangMountainWarning: string;
+  paraglidingNoPickupWarning: string;
+  paramotorNoPickupWarning: string;
+  quanBaPickupWarning: string;
+  selectedFlightLabel: string;
+  selectedOptionsLabel: string;
+  noOptionalSelected: string;
+  noMapInfo: string;
+  flycamDescription: string;
+  camera360Description: string;
+  optionalServicesFlightLocation: string;
+  optionalServicesFixedPickupLocation: string;
+  optionalServicesFixedPickupDeparture: string;
+  optionalServicesPrivatePickupNote1: string;
+  optionalServicesPrivatePickupNote2: string;
+  optionalServicesPrivatePickupNote3: string;
+  optionalServicesMountainShuttleDesc: string;
+  optionalServicesSunsetDesc: string;
+  optionalServicesFlycamNotice: string;
+  groupGuestsSuffix: string;
+  perPersonWord: string;
+  carUnit: string;
+  mapDoiBuLabel: string;
+  mapVienNamLabel: string;
+  mapGoThangLongLabel: string;
+  mapKhauPhaTakeoffLabel: string;
+  mapKhauPhaLandingLabel: string;
+  mapKhauPhaClubhouseLabel: string;
+  mapDaNangTakeoffLabel: string;
+  mapDaNangLandingLabel: string;
+  mapSapaTakeoffLabel: string;
+  mapSapaLandingLabel: string;
+};
+
+export type LocationCardCopy = {
+  title: string;
+  subtitle: string;
+};
+
+export type SelectFlightStepLocale = {
+  ui: SelectFlightStepUiText;
+  locationCards: Record<LocationKey, LocationCardCopy>;
+};

@@ -71,7 +71,8 @@ const UI_TEXT: Record<
     subtitle:
       "Veuillez renseigner des informations complètes et exactes pour chaque passager, pour l’enregistrement du vol et la sécurité.",
     passengerPrefix: "Passager",
-    quickNote: "La date de naissance ne peut pas être future ni appartenir à l’année en cours.",
+    quickNote:
+      "La date de naissance ne peut pas être future ni appartenir à l’année en cours.",
   },
   ru: {
     title: "Данные пассажиров",
@@ -89,8 +90,7 @@ const UI_TEXT: Record<
   },
   zh: {
     title: "乘客信息",
-    subtitle:
-      "请为每位乘客填写完整且准确的信息，以便飞行登记和安全安排。",
+    subtitle: "请为每位乘客填写完整且准确的信息，以便飞行登记和安全安排。",
     passengerPrefix: "乘客",
     quickNote: "出生日期不能是未来日期，也不能是当前年份。",
   },
@@ -130,19 +130,26 @@ export default function GuestInfoStep() {
     if (g.dob) {
       const d = new Date(g.dob);
       d.setHours(0, 0, 0, 0);
+
       if (d > today) dobFutureErr = true;
       else if (d.getFullYear() === currentYear) dobTooYoungErr = true;
       else dobOk = true;
     }
 
     return {
-      ok: fullNameOk && idOk && weightOk && dobOk && !dobFutureErr && !dobTooYoungErr,
+      ok:
+        fullNameOk &&
+        idOk &&
+        weightOk &&
+        dobOk &&
+        !dobFutureErr &&
+        !dobTooYoungErr,
       errs: { fullNameOk, idOk, weightOk, dobOk, dobFutureErr, dobTooYoungErr },
     };
   }
 
   const guestsValidation = Array.from({ length: data.guestsCount }).map((_, idx) =>
-    validateGuest(data.guests[idx] || {})
+    validateGuest(data.guests[idx] || {}),
   );
   const allValid = guestsValidation.every((v) => v.ok);
 
@@ -154,13 +161,13 @@ export default function GuestInfoStep() {
         if (allValid) next();
       }}
     >
-      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
+      <div className="overflow-hidden rounded-[28px] border border-white/20 bg-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
-          <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
-          <p className="mt-1 text-sm text-white/80 max-w-3xl">{ui.subtitle}</p>
+          <h3 className="text-lg font-semibold md:text-xl">{ui.title}</h3>
+          <p className="mt-1 max-w-3xl text-sm text-white/80">{ui.subtitle}</p>
         </div>
 
-        <div className="p-4 md:p-6 space-y-5">
+        <div className="space-y-5 p-4 md:p-6">
           <div className="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-sm text-white/75">
             {ui.quickNote}
           </div>
@@ -168,7 +175,6 @@ export default function GuestInfoStep() {
           <div className="grid grid-cols-1 gap-4">
             {Array.from({ length: data.guestsCount }).map((_, idx) => {
               const g = data.guests[idx] || {};
-              const v = guestsValidation[idx];
 
               return (
                 <section
@@ -189,13 +195,12 @@ export default function GuestInfoStep() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Field
                       label={t.labels.fullName}
                       required
                       value={g.fullName || ""}
                       onChange={(value) => setGuest(idx, { fullName: value })}
-                      error={!v.errs.fullNameOk ? t.messages.errors.requiredField : undefined}
                     />
 
                     <DateField
@@ -203,32 +208,50 @@ export default function GuestInfoStep() {
                       required
                       value={g.dob || ""}
                       onChange={(value) => setGuest(idx, { dob: value })}
-                      error={
-                        v.errs.dobFutureErr
-                          ? t.messages.errors.dobInFuture
-                          : !v.errs.dobFutureErr && !v.errs.dobOk
-                            ? t.messages.errors.dobTooYoung
-                            : undefined
-                      }
                     />
 
                     <div>
                       <label className="block text-sm font-medium text-white/90">
                         {t.labels.gender}
                       </label>
-                      <select
-                        className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
-                        value={(g.gender as GenderValue) || "Nam"}
-                        onChange={(e) =>
-                          setGuest(idx, { gender: e.target.value as GenderValue })
-                        }
-                      >
-                        {genderOptions.map((x) => (
-                          <option key={x.value} value={x.value}>
-                            {x.label}
-                          </option>
-                        ))}
-                      </select>
+
+                      <div className="relative mt-2">
+                        <select
+                          value={(g.gender as GenderValue) || "Nam"}
+                          onChange={(e) =>
+                            setGuest(idx, {
+                              gender: e.target.value as GenderValue,
+                            })
+                          }
+                          className="h-12 w-full appearance-none rounded-2xl border border-sky-300/70 bg-[#5b5447] px-4 pr-10 text-white outline-none focus:border-sky-300"
+                        >
+                          {genderOptions.map((x) => (
+                            <option
+                              key={x.value}
+                              value={x.value}
+                              style={{ backgroundColor: "#5b5447", color: "#ffffff" }}
+                            >
+                              {x.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-white/80">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </span>
+                      </div>
                     </div>
 
                     <Field
@@ -236,7 +259,6 @@ export default function GuestInfoStep() {
                       required
                       value={g.idNumber || ""}
                       onChange={(value) => setGuest(idx, { idNumber: value })}
-                      error={!v.errs.idOk ? t.messages.errors.requiredField : undefined}
                     />
 
                     <Field
@@ -252,7 +274,6 @@ export default function GuestInfoStep() {
                           });
                         }
                       }}
-                      error={!v.errs.weightOk ? t.messages.errors.weightInvalid : undefined}
                     />
 
                     <Field
@@ -293,14 +314,12 @@ function Field({
   label,
   value,
   onChange,
-  error,
   required,
   inputMode,
 }: {
   label: string;
   value: string | number;
   onChange: (value: string) => void;
-  error?: string;
   required?: boolean;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
@@ -318,7 +337,6 @@ function Field({
         className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
         required={required}
       />
-      {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
     </div>
   );
 }
@@ -327,13 +345,11 @@ function DateField({
   label,
   value,
   onChange,
-  error,
   required,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  error?: string;
   required?: boolean;
 }) {
   return (
@@ -349,7 +365,6 @@ function DateField({
         className="mt-2 h-12 w-full rounded-2xl border border-white/20 bg-white/12 px-4 text-white outline-none focus:border-sky-300"
         required={required}
       />
-      {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
     </div>
   );
 }
