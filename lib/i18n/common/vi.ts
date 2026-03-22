@@ -281,7 +281,7 @@ export const vi: CommonTranslation = {
         description: "Toàn bộ phần sàn công đồng, bao gồm các phòng áp mái. Ở tối đa 25 khách/sàn",
       },
       wholeHomeLarge: {
-        name: "Nguyên Căn",
+        name: "Nguyên Nhà Sàn",
         description: "Toàn bộ phần sàn công đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 35 khách",
       },
     },

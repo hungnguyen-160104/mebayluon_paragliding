@@ -100,7 +100,7 @@ export const roomTypes: RoomType[] = [
   {
     id: "whole-home-small",
     nameKey: "wholeHomeSmall",
-    price: 2000000,
+    price: 2500000,
     priceType: "whole-home",
     capacity: { adults: 25 },
     image: "/homestay/nguyen-san.png",
