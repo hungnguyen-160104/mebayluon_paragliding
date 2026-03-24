@@ -30,10 +30,10 @@ export default function ChatbotWidget({
   return (
     <div
       className="fixed bottom-24 right-4 z-[60] w-[320px] max-w-[85vw]
-                 rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+                 rounded-2xl border border-[#DCE7F3] bg-white shadow-2xl"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 rounded-t-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white">
+      <div className="flex items-center justify-between px-3 py-2 rounded-t-2xl bg-gradient-to-r from-[#0194F3] to-[#0B83D9] text-white">
         <div className="text-sm font-semibold">Hỗ trợ Mebayluon</div>
         <button
           onClick={onClose}
@@ -52,11 +52,11 @@ export default function ChatbotWidget({
           >
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed
-                ${m.side === "user" ? "bg-sky-100 text-sky-900" : "bg-neutral-100 text-neutral-900"}`}
+                ${m.side === "user" ? "bg-[#EAF4FE] text-[#1C2930]" : "bg-[#F5F7FA] text-[#1C2930]"}`}
             >
               {m.text}
               {m.matchedQuestion && (
-                <div className="mt-1 text-[11px] text-neutral-500">
+                <div className="mt-1 text-[11px] text-[#5B6B7A]">
                   (Khớp: {m.matchedQuestion}{typeof m.score === "number" ? ` • score ${m.score.toFixed(2)}` : ""})
                 </div>
               )}
@@ -64,13 +64,13 @@ export default function ChatbotWidget({
           </div>
         ))}
         {loading && (
-          <div className="text-xs text-neutral-500 animate-pulse">Đang soạn trả lời…</div>
+          <div className="text-xs text-[#5B6B7A] animate-pulse">Đang soạn trả lời…</div>
         )}
       </div>
 
       {/* Input */}
       <form
-        className="flex items-center gap-2 px-3 py-2 border-t border-neutral-200"
+        className="flex items-center gap-2 px-3 py-2 border-t border-[#DCE7F3]"
         onSubmit={(e) => {
           e.preventDefault();
           const text = input.trim();
@@ -83,13 +83,13 @@ export default function ChatbotWidget({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Nhập câu hỏi…"
-          className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm
-                     outline-none focus:ring-2 focus:ring-sky-500"
+          className="flex-1 rounded-lg border border-[#DCE7F3] px-3 py-2 text-sm
+                     outline-none focus:ring-2 focus:ring-[#0194F3] focus:border-[#0194F3]"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-lg bg-[#0194F3] px-3 py-2 text-sm font-medium text-white hover:bg-[#0B83D9] disabled:opacity-60"
         >
           Gửi
         </button>

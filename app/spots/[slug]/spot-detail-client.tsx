@@ -34,6 +34,7 @@ type SpotData = {
   basePrice: number;
   image: string;
   galleryImages: string[];
+  storyImages?: string[];
   packages: SpotPackage[];
 };
 
@@ -1945,7 +1946,8 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
   const key = resolveSpotKey(spot.name);
   const baseList = storiesI18n[key]?.[lang] ?? storiesI18n["generic"][lang];
 
-  const img = (i: number, fallback: string) => spot.galleryImages?.[i] ?? fallback;
+  const img = (i: number, fallback: string) =>
+    spot.storyImages?.[i] ?? spot.galleryImages?.[i] ?? fallback;
 
   return baseList.map((s, i) => {
     const fallbackByKey =
@@ -2027,7 +2029,6 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
             className="max-w-6xl mx-auto p-8 md:p-12 bg-black/20 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg"
           >
             <div className="grid lg:grid-cols-3 gap-10">
-              {/* Col 1-2 */}
               <div className="lg:col-span-2 space-y-6 border-b lg:border-b-0 lg:border-r border-white/20 lg:pr-10 pb-8 lg:pb-0">
                 <h2 className="text-4xl font-bold font-serif text-white">{ui.aboutTitle}</h2>
                 <p className="text-lg text-slate-200 leading-relaxed">{copy.description}</p>
@@ -2036,7 +2037,6 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                 </p>
               </div>
 
-              {/* Col 3 - Quick facts */}
               <div className="lg:col-span-1 space-y-6 pt-6 lg:pt-0">
                 <h3 className="text-2xl font-semibold mb-4 border-b border-white/20 pb-2">{ui.quickFacts}</h3>
 

@@ -138,49 +138,49 @@ export default function FlightCard({
       type="button"
       onClick={() => onSelect?.(location)}
       className={[
-        "group relative flex min-h-[168px] w-full flex-col overflow-hidden rounded-[20px] border text-left transition-all duration-300",
-        "backdrop-blur-xl",
+        "group relative flex min-h-[168px] w-full flex-col overflow-hidden rounded-xl border-2 text-left transition-all duration-300",
         selected
-          ? "border-yellow-200/70 bg-[linear-gradient(180deg,rgba(255,193,7,0.92),rgba(245,166,35,0.86))] shadow-[0_12px_30px_rgba(245,158,11,0.28)]"
-          : "border-white/20 bg-[linear-gradient(180deg,rgba(255,190,11,0.82),rgba(245,158,11,0.76))] shadow-[0_8px_24px_rgba(15,23,42,0.14)] hover:border-white/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.18)]",
+          ? "border-[#0194F3] bg-[#EAF4FE] shadow-lg ring-2 ring-[#B9DDFB]"
+          : "border-[#DCE7F3] bg-white shadow-sm hover:border-[#B9DDFB] hover:shadow-md hover:-translate-y-0.5",
       ].join(" ")}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_34%)]" />
-
-      <div className="relative flex h-full flex-col p-3 md:p-4">
+      <div className="relative flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/95">
+            <span className="rounded-full border border-[#B9DDFB] bg-[#EAF4FE] px-2.5 py-1 text-[10px] font-semibold text-[#0194F3]">
               {ui.featured}
             </span>
             {hasPackages ? (
-              <span className="rounded-full border border-white/20 bg-white/8 px-2 py-0.5 text-[10px] font-medium text-white/85">
+              <span className="rounded-full border border-[#DCE7F3] bg-[#F5F7FA] px-2.5 py-1 text-[10px] font-medium text-[#5B6B7A]">
                 {ui.packageHint}
               </span>
             ) : null}
           </div>
 
           {selected ? (
-            <span className="shrink-0 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            <span className="shrink-0 rounded-full border border-[#16A34A] bg-[#F0FDF4] px-2.5 py-1 text-[10px] font-bold text-[#16A34A]">
               ✓ {ui.selected}
             </span>
           ) : null}
         </div>
 
         <div className="mt-4 flex-1">
-          <h3 className="text-[19px] font-extrabold uppercase tracking-[0.02em] text-red-600 drop-shadow-[0_1px_0_rgba(255,255,255,0.15)] md:text-[20px]">
+          <h3 className={[
+            "text-[19px] font-bold uppercase tracking-[0.02em] md:text-[20px]",
+            selected ? "text-[#0194F3]" : "text-[#1C2930]"
+          ].join(" ")}>
             {main}
           </h3>
 
           {sub ? (
-            <div className="mt-3 text-[14px] font-semibold italic leading-5 text-yellow-50/95 md:text-[15px]">
+            <div className="mt-2 text-[14px] font-medium leading-5 text-[#5B6B7A] md:text-[15px]">
               {sub}
             </div>
           ) : null}
         </div>
 
-        <div className="mt-5">
-          <div className="text-[14px] font-semibold italic text-red-600 md:text-[15px]">
+        <div className="mt-4">
+          <div className="text-[15px] font-bold text-[#FF5E1F] md:text-[16px]">
             {ui.fromPrice} {formatVND(effectiveBasePrice)}/{ui.pax}
           </div>
         </div>

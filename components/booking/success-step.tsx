@@ -36,7 +36,7 @@ const UI_TEXT: Record<
     subtitle:
       "Vous pouvez télécharger votre billet ci-dessous ou commencer une nouvelle réservation.",
     imageFail: "Impossible de générer l'image. Veuillez réessayer.",
-    note: "Notre équipe vous contactera rapidement pour confirmer l’horaire, la météo et les services choisis.",
+    note: "Notre équipe vous contactera rapidement pour confirmer l'horaire, la météo et les services choisis.",
   },
   ru: {
     title: "Бронирование получено",
@@ -154,44 +154,44 @@ export default function SuccessStep() {
   };
 
   return (
-    <div className="space-y-5 text-white">
-      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
-        <div className="border-b border-white/10 bg-gradient-to-r from-emerald-400/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
+        <div className="border-b border-[#DCE7F3] bg-[#16A34A] px-4 py-4 md:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
-              <p className="mt-1 text-sm text-white/80 max-w-3xl">
+              <h3 className="text-lg font-bold text-white md:text-xl">{ui.title}</h3>
+              <p className="mt-1 max-w-3xl text-sm text-white/90">
                 {ui.subtitle}
               </p>
             </div>
 
-            <div className="rounded-full border border-emerald-300/30 bg-emerald-400/15 px-4 py-2 text-sm font-semibold text-emerald-100">
+            <div className="rounded-full border border-white/30 bg-white/20 px-4 py-2 text-sm font-semibold text-white">
               ✓ Confirmed
             </div>
           </div>
         </div>
 
-        <div className="p-4 md:p-6 space-y-5">
-          <div className="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-sm text-white/75">
+        <div className="space-y-5 bg-[#F5F7FA] p-4 md:p-6">
+          <div className="rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-sm text-[#355166]">
             {ui.note}
           </div>
 
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="text-sm font-medium text-white/85">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm font-medium text-[#5B6B7A]">
               {t.buttons.downloadImage}
             </div>
 
             <button
               onClick={downloadImage}
               disabled={downloadingIMG}
-              className="h-12 rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(56,189,248,0.35)] transition hover:brightness-105 disabled:opacity-60"
+              className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
             >
               {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
             </button>
           </div>
 
-          <div className="rounded-[24px] border border-white/12 bg-white/6 p-2 md:p-3">
-            <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 24 }}>
+          <div className="rounded-xl border border-[#DCE7F3] bg-white p-2 md:p-3">
+            <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 12 }}>
               <BookingTicket
                 booking={data}
                 bookingResult={bookingResult}
@@ -206,7 +206,7 @@ export default function SuccessStep() {
       <div className="flex justify-end">
         <button
           onClick={reset}
-          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
+          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {t.buttons.startOver}
         </button>

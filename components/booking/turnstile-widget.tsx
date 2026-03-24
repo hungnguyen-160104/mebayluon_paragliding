@@ -39,7 +39,7 @@ export default function TurnstileWidget({
   onExpire,
   onError,
   lang = "auto",
-  theme = "dark",
+  theme = "light",
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -176,7 +176,7 @@ export default function TurnstileWidget({
     <div className="flex justify-center">
       <div
         ref={containerRef}
-        className="min-h-[68px] rounded-2xl border border-white/10 bg-white/6 px-3 py-3"
+        className="min-h-[68px] rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-3"
       />
     </div>
   );

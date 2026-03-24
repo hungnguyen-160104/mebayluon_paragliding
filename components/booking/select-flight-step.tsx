@@ -340,14 +340,14 @@ function ToggleIndicator({
       className={[
         "mt-0.5 inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center border-[3px] bg-white",
         rounded,
-        checked ? "border-[#3137c9]" : "border-[#413fb8]",
+        checked ? "border-[#0194F3]" : "border-[#B9DDFB]",
       ].join(" ")}
     >
       {checked ? (
         variant === "radio" ? (
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ff3b1d]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#FF5E1F]" />
         ) : (
-          <span className="text-[18px] leading-none text-[#ff3b1d]">✔</span>
+          <span className="text-[18px] leading-none text-[#FF5E1F]">✔</span>
         )
       ) : null}
     </span>
@@ -368,7 +368,7 @@ function QtyButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-8 w-8 items-center justify-center rounded-md text-[20px] font-bold text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-8 w-8 items-center justify-center rounded-md text-[20px] font-bold text-[#5B6B7A] transition hover:bg-[#EAF4FE] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -389,11 +389,11 @@ function QuantityBox({
   disablePlus?: boolean;
 }) {
   return (
-    <div className="flex h-10 items-center rounded-[10px] border border-slate-300 bg-white px-2 shadow-sm">
+    <div className="flex h-10 items-center rounded-lg border border-[#DCE7F3] bg-white px-2 shadow-sm">
       <QtyButton onClick={onMinus} disabled={disableMinus}>
         −
       </QtyButton>
-      <span className="min-w-[20px] text-center text-[18px] font-bold text-[#d92727]">
+      <span className="min-w-[20px] text-center text-[18px] font-bold text-[#0194F3]">
         {value}
       </span>
       <QtyButton onClick={onPlus} disabled={disablePlus}>
@@ -405,8 +405,8 @@ function QuantityBox({
 
 function SectionBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#0d78b8] px-3 py-2.5 text-[16px] font-bold text-white md:px-4 md:text-[19px]">
-      * {children}:
+    <div className="rounded-lg bg-[#0194F3] px-4 py-3 text-[16px] font-bold text-white md:px-5 md:text-[18px]">
+      {children}:
     </div>
   );
 }
@@ -423,14 +423,14 @@ function InlineAddressInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="mt-3 border-[3px] border-[#f03a17] bg-white px-3 py-2 text-[15px] font-bold text-black sm:ml-11 sm:border-4 sm:text-[16px]">
+    <div className="mt-3 rounded-lg border-2 border-[#0194F3] bg-white px-4 py-3 text-[15px] font-medium text-[#1C2930] sm:ml-11 sm:text-[16px]">
       <label className="flex flex-wrap items-center gap-2">
-        <span>{label}:</span>
+        <span className="font-semibold">{label}:</span>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 border-none bg-transparent p-0 text-[15px] font-bold text-slate-800 outline-none placeholder:text-slate-400 sm:min-w-56 sm:text-[16px]"
+          className="min-w-0 flex-1 border-none bg-transparent p-0 text-[15px] font-medium text-[#1C2930] outline-none placeholder:text-[#94A3B8] focus:ring-0 sm:min-w-56 sm:text-[16px]"
           placeholder={placeholder}
         />
       </label>
@@ -454,19 +454,19 @@ function PackageDayCard({
       type="button"
       onClick={onClick}
       className={[
-        "w-full border px-3 py-2 text-left sm:min-w-[240px] sm:flex-1",
+        "w-full rounded-xl border-2 px-4 py-3 text-left transition-all sm:min-w-[240px] sm:flex-1",
         active
-          ? "border-[#87db3c] bg-[#94f243]"
-          : "border-[#87db3c] bg-[#a4f567]",
+          ? "border-[#0194F3] bg-[#EAF4FE] shadow-md"
+          : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB] hover:shadow-sm",
       ].join(" ")}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         <ToggleIndicator checked={active} variant="radio" />
         <div>
-          <div className="text-[14px] font-bold leading-5 text-black">
+          <div className="text-[14px] font-bold leading-5 text-[#1C2930] sm:text-[15px]">
             {title}
           </div>
-          <div className="text-[13px] font-bold text-[#e53935]">{price}</div>
+          <div className="mt-1 text-[13px] font-semibold text-[#FF5E1F] sm:text-[14px]">{price}</div>
         </div>
       </div>
     </button>
@@ -474,10 +474,10 @@ function PackageDayCard({
 }
 
 function toneClass(tone?: TextLine["tone"]) {
-  if (tone === "red") return "text-[#ef2f1e]";
-  if (tone === "green") return "text-[#188f25]";
-  if (tone === "dark") return "text-[#0b3a61]";
-  return "text-white";
+  if (tone === "red") return "text-[#FF5E1F]";
+  if (tone === "green") return "text-[#16A34A]";
+  if (tone === "dark") return "text-[#1C2930]";
+  return "text-[#355166]";
 }
 
 function getServiceMeta(
@@ -499,7 +499,7 @@ function getServiceMeta(
       inputLabel: ui.pickupLocationLabel,
       showQty: true,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       lineTotalVND: (base, _guests, qty) => base * qty,
       lineTotalUSD: (base, _guests, qty) => base * qty,
       summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
@@ -515,12 +515,12 @@ function getServiceMeta(
       activeNoteLines: [
         {
           text: ui.optionalServicesFixedPickupLocation,
-          tone: "white",
+          tone: "dark",
           href: "https://maps.app.goo.gl/3vB2qYuThwBASQZj8",
         },
         {
           text: ui.optionalServicesFixedPickupDeparture,
-          tone: "white",
+          tone: "dark",
         }
       ],
       lineTotalVND: (base, guests) => base * guests,
@@ -538,9 +538,9 @@ function getServiceMeta(
       priceText: "1.500.000 đ / xe 4 chỗ",
       lines: [],
       activeNoteLines: [
-        { text: ui.optionalServicesPrivatePickupNote1, tone: "white" },
-        { text: ui.optionalServicesPrivatePickupNote2, tone: "white" },
-        { text: ui.optionalServicesPrivatePickupNote3, tone: "white" },
+        { text: ui.optionalServicesPrivatePickupNote1, tone: "dark" },
+        { text: ui.optionalServicesPrivatePickupNote2, tone: "dark" },
+        { text: ui.optionalServicesPrivatePickupNote3, tone: "dark" },
       ],
       lineTotalVND: (_base, guests) =>
         1_500_000 + Math.max(0, guests - 3) * 350_000,
@@ -557,7 +557,7 @@ function getServiceMeta(
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
       lines: [],
       activeNoteLines: [
-        { text: ui.optionalServicesMountainShuttleDesc, tone: "white" }
+        { text: ui.optionalServicesMountainShuttleDesc, tone: "dark" }
       ],
       warningWhenUnchecked: ui.hanoiMountainWarning,
       lineTotalVND: (base, guests) => base * guests,
@@ -584,7 +584,7 @@ function getServiceMeta(
       exclusiveGroup: "khau_pha_paragliding_pickup",
       defaultSelected: true,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
       summaryText: (name) => name,
@@ -600,7 +600,7 @@ function getServiceMeta(
       showQty: true,
       readonlyQty: true,
       priceText: "700.000 đ/xe 4 chỗ/1 chiều",
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       activeNoteLines: noteLines.map((text) => ({
         text: `• ${text}`,
         tone: "red",
@@ -619,7 +619,7 @@ function getServiceMeta(
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
       summaryText: (name) => name,
@@ -635,7 +635,7 @@ function getServiceMeta(
       showQty: true,
       readonlyQty: true,
       priceText: "700.000 đ/xe 4 chỗ/1 chiều",
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       activeNoteLines: noteLines.map((text) => ({
         text: `• ${text}`,
         tone: "red",
@@ -651,7 +651,7 @@ function getServiceMeta(
       id: "da_nang_mountain_shuttle",
       defaultSelected: true,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       warningWhenUnchecked: ui.daNangMountainWarning,
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
@@ -665,7 +665,7 @@ function getServiceMeta(
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
       summaryText: (name) => name,
@@ -679,7 +679,7 @@ function getServiceMeta(
       inputLabel: ui.pickupPointLabel,
       showQty: true,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       warningWhenUnchecked: ui.quanBaPickupWarning,
       lineTotalVND: (base, _guests, qty) => base * qty,
       lineTotalUSD: (base, _guests, qty) => base * qty,
@@ -692,7 +692,7 @@ function getServiceMeta(
       id: "sunset",
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
       lines: [],
-      activeNoteLines: [{ text: ui.optionalServicesSunsetDesc, tone: "white" }],
+      activeNoteLines: [{ text: ui.optionalServicesSunsetDesc, tone: "dark" }],
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
       summaryText: (name) => name,
@@ -708,7 +708,7 @@ function getServiceMeta(
     showQty: svc.controlType === "counter",
     readonlyQty: false,
     priceText: priceVND ? `${formatVND(priceVND)}/${ui.pax}` : "",
-    lines: descriptionLines.map((text) => ({ text, tone: "white" })),
+    lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
     activeNoteLines: noteLines.map((text) => ({ text, tone: "red" })),
     lineTotalVND: (base, guests, qty) =>
       svc.controlType === "counter" ? base * qty : base * guests,
@@ -1215,8 +1215,9 @@ export default function SelectFlightStep() {
   };
 
   return (
-    <div className="border border-slate-800 bg-[#efefef] text-slate-900">
+    <div className="border border-[#DCE7F3] bg-[#F5F7FA] text-[#1C2930]">
       <div className="space-y-4 px-3 py-4 sm:p-4 md:p-6">
+        {/* Location Cards */}
         <section className="space-y-3">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {orderedLocations.map((locKey) => {
@@ -1230,25 +1231,26 @@ export default function SelectFlightStep() {
                   type="button"
                   onClick={() => handleSelectLocation(locKey)}
                   className={[
-                    "group relative flex min-h-[100px] flex-col justify-center rounded-2xl border px-2 py-2 text-center transition-all sm:min-h-[130px] sm:px-3 sm:py-3",
+                    "group relative flex min-h-[100px] flex-col justify-center rounded-xl border-2 px-3 py-3 text-center transition-all sm:min-h-[130px] sm:px-4 sm:py-4",
                     active
-                      ? "scale-[1.02] border-sky-300 bg-[#efaf05] opacity-100 shadow-[0_12px_30px_rgba(0,0,0,0.22)] ring-2 ring-white/70"
-                      : "border-[#d98a00] bg-[#f4b200] opacity-80 hover:opacity-100",
+                      ? "border-[#0194F3] bg-[#EAF4FE] shadow-lg ring-2 ring-[#B9DDFB]"
+                      : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB] hover:shadow-md hover:-translate-y-0.5",
                   ].join(" ")}
                 >
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 via-transparent to-transparent" />
-
                   <div className="relative">
-                    <div className="text-[17px] font-black uppercase leading-tight tracking-[0.02em] text-[#ef2f1e] sm:text-[21px] sm:leading-6">
+                    <div className={[
+                      "text-[17px] font-bold uppercase leading-tight tracking-[0.02em] sm:text-[20px] sm:leading-6",
+                      active ? "text-[#0194F3]" : "text-[#1C2930]"
+                    ].join(" ")}>
                       {cardCopy.title}
                     </div>
                   </div>
 
-                  <div className="relative mt-1 text-[14px] font-semibold italic leading-snug text-white sm:mt-2 sm:text-[16px]">
+                  <div className="relative mt-1 text-[13px] font-medium leading-snug text-[#5B6B7A] sm:mt-2 sm:text-[15px]">
                     {cardCopy.subtitle}
                   </div>
 
-                  <div className="relative mt-2 text-[15px] font-bold italic text-[#ef2f1e] sm:mt-3 sm:text-[17px]">
+                  <div className="relative mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[16px]">
                     {ui.fromLabel} {formatCardFromPrice(fromPrice)}
                   </div>
                 </button>
@@ -1258,21 +1260,22 @@ export default function SelectFlightStep() {
         </section>
 
         {!selectedCfg ? (
-          <div className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-[14px] italic text-slate-600">
+          <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
             {ui.chooseLocationPrompt}
           </div>
         ) : (
           <>
+            {/* Selected Location Info */}
             <section className="space-y-2">
-              <div className="text-[20px] font-bold text-[#0d5a8d] sm:text-[22px]">
+              <div className="text-[20px] font-bold text-[#1C2930] sm:text-[22px]">
                 {ui.selectedLocationTitle}:{" "}
-                <span className="text-[#ef2f1e]">
+                <span className="text-[#0194F3]">
                   {getText(selectedCfg.name, lang, selected)}
                 </span>
               </div>
 
               {locationIntroLines.length > 0 ? (
-                <div className="space-y-1 text-[15px] italic leading-7 text-[#ef3a2b] sm:text-[18px] sm:leading-8">
+                <div className="space-y-1 text-[15px] italic leading-7 text-[#5B6B7A] sm:text-[17px] sm:leading-8">
                   {locationIntroLines.map((line, idx) => (
                     <p key={idx}>{line}</p>
                   ))}
@@ -1280,11 +1283,12 @@ export default function SelectFlightStep() {
               ) : null}
             </section>
 
+            {/* Khau Pha Flight Type Selection */}
             {isKhauPha ? (
               <section className="space-y-3">
                 <SectionBar>{ui.selectFlightType}</SectionBar>
 
-                <div className="space-y-[2px]">
+                <div className="space-y-2 rounded-xl border border-[#DCE7F3] bg-white p-2">
                   {[
                     {
                       key: "paragliding" as FlightTypeKey,
@@ -1315,12 +1319,20 @@ export default function SelectFlightStep() {
                             addonsQty: {},
                           })
                         }
-                        className="block w-full bg-[#57b6eb] px-3 py-3 text-left"
+                        className={[
+                          "block w-full rounded-lg border-2 px-4 py-3 text-left transition-all",
+                          active
+                            ? "border-[#0194F3] bg-[#EAF4FE]"
+                            : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
+                        ].join(" ")}
                       >
                         <div className="flex items-start gap-3">
                           <ToggleIndicator checked={active} variant="radio" />
                           <div className="min-w-0 flex-1">
-                            <div className="text-[16px] font-semibold text-black sm:text-[18px]">
+                            <div className={[
+                              "text-[16px] font-semibold sm:text-[18px]",
+                              active ? "text-[#0194F3]" : "text-[#1C2930]"
+                            ].join(" ")}>
                               {item.title}
                             </div>
 
@@ -1329,7 +1341,7 @@ export default function SelectFlightStep() {
                                 {item.lines.map((line: string, idx: number) => (
                                   <p
                                     key={idx}
-                                    className="text-[13px] italic leading-6 text-[#ef2f1e] sm:text-[15px]"
+                                    className="text-[13px] italic leading-6 text-[#5B6B7A] sm:text-[15px]"
                                   >
                                     {line}
                                   </p>
@@ -1344,32 +1356,33 @@ export default function SelectFlightStep() {
                 </div>
 
                 {!data.flightTypeKey ? (
-                  <div className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-[14px] italic text-slate-600">
+                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
                     {ui.chooseFlightTypePrompt}
                   </div>
                 ) : null}
 
                 <a
                   href={HOMESTAY_URL}
-                  className="mx-auto block max-w-[680px] border-[4px] border-[#f33b1b] bg-[#fff160] px-4 py-3 text-center shadow-sm transition hover:brightness-[1.03]"
+                  className="mx-auto block max-w-[680px] rounded-xl border-2 border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-center shadow-sm transition hover:shadow-md"
                 >
-                  <div className="text-[15px] font-bold uppercase text-[#ef2f1e] sm:text-[16px]">
+                  <div className="text-[15px] font-bold uppercase text-[#FF5E1F] sm:text-[16px]">
                     ✩ {ui.khauPhaPromoTitle}
                   </div>
-                  <div className="text-[13px] font-semibold italic text-[#074a95] sm:text-[14px]">
+                  <div className="text-[13px] font-semibold italic text-[#0194F3] sm:text-[14px]">
                     {ui.khauPhaPromoSub}
                   </div>
                 </a>
               </section>
             ) : null}
 
+            {/* Service Section */}
             <section className="space-y-4">
               <SectionBar>{ui.serviceSectionTitle}</SectionBar>
 
-              <div className="flex flex-col gap-4 px-1 sm:px-3">
+              <div className="flex flex-col gap-4 rounded-xl border border-[#DCE7F3] bg-white p-4">
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-3 text-[16px] text-slate-700">
-                    <span className="text-[#e53a35]">👥</span>
+                  <div className="flex items-center gap-3 text-[16px] text-[#1C2930]">
+                    <span className="text-[#0194F3]">👥</span>
                     <span className="font-semibold">{ui.guestsLabel}</span>
 
                     <QuantityBox
@@ -1421,9 +1434,9 @@ export default function SelectFlightStep() {
                   ) : null}
 
                   {isKhauPha && isParamotor ? (
-                    <div className="border-[4px] border-[#f33b1b] bg-[#fff160] px-4 py-2 text-[16px] font-bold text-[#111] sm:text-[18px]">
+                    <div className="rounded-xl border-2 border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-[16px] font-bold text-[#1C2930] sm:text-[18px]">
                       <span>{ui.paramotorDiscountBefore}</span>
-                      <span className="text-[#ef2f1e] line-through">
+                      <span className="text-[#5B6B7A] line-through">
                         2.690.000 đ
                       </span>
                       <span>{ui.paramotorDiscountAfter}</span>
@@ -1449,62 +1462,63 @@ export default function SelectFlightStep() {
               </div>
 
               {needsPackage ? (
-                <div className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-[14px] italic text-slate-600">
+                <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
                   {ui.choosePackagePrompt}
                 </div>
               ) : null}
 
-              <div className="rounded-[14px] border border-[#f0b8b8] bg-[#fff8f6]">
+              {/* Price Summary Box */}
+              <div className="rounded-xl border border-[#D6EAFB] bg-white shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-3">
                   <div className="px-4 py-4">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.flightPrice}
                     </div>
-                    <div className="mt-2 inline-block bg-[#ececec] px-3 py-2 text-[18px] font-bold text-black md:text-[20px]">
+                    <div className="mt-2 inline-block rounded-lg bg-[#EAF4FE] px-3 py-2 text-[18px] font-bold text-[#1C2930] md:text-[20px]">
                       {formatVND(Number(totalsVND.basePricePerPerson || 0))}
                     </div>
                   </div>
 
                   <div className="px-4 py-4">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.optionalPrice}
                     </div>
-                    <div className="mt-2 text-[20px] font-bold text-[#374151]">
+                    <div className="mt-2 text-[20px] font-bold text-[#355166]">
                       +{formatVND(optionalTotalVND)}
                     </div>
                   </div>
 
-                  <div className="px-4 py-4 text-center">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                  <div className="px-4 py-4 text-center md:text-right">
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.totalPrice}:
                     </div>
-                    <div className="mt-2 text-[26px] font-bold text-[#e5362a]">
+                    <div className="mt-2 text-[26px] font-bold text-[#FF5E1F]">
                       {formatVND(grandTotalVND)}
                     </div>
-                    <div className="text-[14px] font-semibold text-slate-500">
+                    <div className="text-[14px] font-semibold text-[#5B6B7A]">
                       {formatUsdTotal(grandTotalUSD)}
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-[#f0b8b8] px-4 py-4">
+                <div className="border-t border-[#D6EAFB] px-4 py-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                         {ui.selectedFlightLabel}
                       </div>
-                      <div className="mt-2 text-[15px] font-semibold text-slate-800">
+                      <div className="mt-2 text-[15px] font-semibold text-[#1C2930]">
                         {selectedFlightSummary || "-"}
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                         {ui.selectedOptionsLabel}
                       </div>
 
                       {!selectedOptionRows.length ? (
-                        <div className="mt-2 text-[14px] italic text-slate-500">
+                        <div className="mt-2 text-[14px] italic text-[#5B6B7A]">
                           {ui.noOptionalSelected}
                         </div>
                       ) : null}
@@ -1513,18 +1527,18 @@ export default function SelectFlightStep() {
                         {selectedOptionRows.map((row, idx) => (
                           <li
                             key={`${row.label}-${idx}`}
-                            className="flex items-start justify-between gap-4 text-[14px] text-slate-700"
+                            className="flex items-start justify-between gap-4 text-[14px] text-[#5B6B7A]"
                           >
                             <span>{row.label}</span>
-                            <span className="whitespace-nowrap font-semibold text-slate-900">
+                            <span className="whitespace-nowrap font-semibold text-[#1C2930]">
                               +{formatVND(row.amount || 0)}
                             </span>
                           </li>
                         ))}
 
-                        <li className="flex items-start justify-between gap-4 text-[14px] text-slate-700">
+                        <li className="flex items-start justify-between gap-4 text-[14px] text-[#5B6B7A]">
                           <span>{ui.freeGopro}</span>
-                          <span className="whitespace-nowrap font-semibold text-slate-900">
+                          <span className="whitespace-nowrap font-semibold text-[#16A34A]">
                             FREE
                           </span>
                         </li>
@@ -1534,27 +1548,36 @@ export default function SelectFlightStep() {
                 </div>
               </div>
 
+              {/* Optional Services */}
               <div>
-                <div className="mb-2 text-[18px] font-bold text-black sm:text-[20px]">
-                  <span className="mr-2 text-[#e53935]">✚</span>
+                <div className="mb-3 text-[18px] font-bold text-[#1C2930] sm:text-[20px]">
+                  <span className="mr-2 text-[#0194F3]">✚</span>
                   {ui.optionalServiceTitle}:
                 </div>
 
                 {servicesWithMeta.length === 0 &&
                 ADDON_KEYS.every((key) => !selectedCfg?.addons?.[key]) ? (
-                  <div className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-[14px] italic text-slate-600">
+                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
                     {ui.noVisibleServices}
                   </div>
                 ) : null}
 
-                <div className="space-y-[3px]">
+                <div className="space-y-2">
                   {servicesWithMeta.map(({ svc, meta, label }) => {
                     const state = getServiceState(data, svc.key);
                     const active = !!state.selected;
                     const qty = getServiceQty(svc, meta);
 
                     return (
-                      <div key={svc.key} className="bg-[#57b6eb] px-3 py-3 sm:px-4">
+                      <div
+                        key={svc.key}
+                        className={[
+                          "rounded-xl border-2 px-4 py-3 transition-all",
+                          active
+                            ? "border-[#0194F3] bg-[#EAF4FE]"
+                            : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
+                        ].join(" ")}
+                      >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                           <button
                             type="button"
@@ -1566,13 +1589,13 @@ export default function SelectFlightStep() {
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[16px] font-semibold leading-6 text-black sm:text-[18px]">
+                                  <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
                                     {label}:
                                   </div>
                                   {renderServiceDescription(svc, meta)}
                                 </div>
 
-                                <div className="shrink-0 whitespace-nowrap text-[14px] font-semibold text-[#ef2f1e] sm:text-[16px]">
+                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[16px]">
                                   {meta.priceText}
                                 </div>
                               </div>
@@ -1646,7 +1669,7 @@ export default function SelectFlightStep() {
                         ) : null}
 
                         {meta.warningWhenUnchecked && !active ? (
-                          <div className="mt-2 text-[13px] italic leading-6 text-[#ef2f1e] sm:ml-11 sm:text-[14px]">
+                          <div className="mt-2 text-[13px] italic leading-6 text-[#FF5E1F] sm:ml-11 sm:text-[14px]">
                             {meta.warningWhenUnchecked}
                           </div>
                         ) : null}
@@ -1655,7 +1678,7 @@ export default function SelectFlightStep() {
                   })}
 
                   {activePickupWarning ? (
-                    <div className="bg-white px-4 py-3 text-[14px] italic leading-6 text-[#ef2f1e]">
+                    <div className="rounded-xl border border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-[14px] italic leading-6 text-[#FF5E1F]">
                       {activePickupWarning}
                     </div>
                   ) : null}
@@ -1673,7 +1696,15 @@ export default function SelectFlightStep() {
                     const is360 = key === "camera360";
 
                     return (
-                      <div key={key} className="bg-[#57b6eb] px-3 py-3 sm:px-4">
+                      <div
+                        key={key}
+                        className={[
+                          "rounded-xl border-2 px-4 py-3 transition-all",
+                          active
+                            ? "border-[#0194F3] bg-[#EAF4FE]"
+                            : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
+                        ].join(" ")}
+                      >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                           <button
                             type="button"
@@ -1685,12 +1716,12 @@ export default function SelectFlightStep() {
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[16px] font-semibold leading-6 text-black sm:text-[18px]">
+                                  <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
                                     {title}:
                                   </div>
                                 </div>
 
-                                <div className="shrink-0 whitespace-nowrap text-[14px] font-semibold text-[#ef2f1e] sm:text-[16px]">
+                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[16px]">
                                   {priceText}
                                 </div>
                               </div>
@@ -1724,11 +1755,11 @@ export default function SelectFlightStep() {
                           <div className="mt-2 space-y-2 sm:ml-11">
                             {isFlycam ? (
                               <>
-                                <p className="text-[13px] italic leading-5 text-white sm:text-[14px]">
+                                <p className="text-[13px] italic leading-5 text-[#355166] sm:text-[14px]">
                                   {ui.flycamDescription}
                                 </p>
                                 {selected === "ha_noi" ? (
-                                  <p className="text-[13px] italic leading-5 text-[#ffc107] sm:text-[14px]">
+                                  <p className="text-[13px] italic leading-5 text-[#FF5E1F] sm:text-[14px]">
                                     {ui.optionalServicesFlycamNotice}
                                   </p>
                                 ) : null}
@@ -1736,7 +1767,7 @@ export default function SelectFlightStep() {
                             ) : null}
 
                             {is360 ? (
-                              <p className="text-[13px] italic leading-5 text-white sm:text-[14px]">
+                              <p className="text-[13px] italic leading-5 text-[#355166] sm:text-[14px]">
                                 {ui.camera360Description}
                               </p>
                             ) : null}
@@ -1746,25 +1777,27 @@ export default function SelectFlightStep() {
                     );
                   })}
 
-                  <div className="bg-[#57b6eb] px-3 py-3 sm:px-4">
+                  {/* Free GoPro */}
+                  <div className="rounded-xl border-2 border-[#16A34A] bg-[#F0FDF4] px-4 py-3">
                     <div className="flex items-start gap-3">
                       <ToggleIndicator checked />
-                      <div className="text-[16px] font-semibold leading-6 text-black sm:text-[18px]">
-                        {ui.freeGopro}: FREE
+                      <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
+                        {ui.freeGopro}: <span className="text-[#16A34A]">FREE</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Details Accordions */}
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <details className="rounded-[14px] border border-slate-300 bg-white">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-slate-800 sm:text-[18px] [&::-webkit-details-marker]:hidden">
+                <details className="rounded-xl border border-[#DCE7F3] bg-white">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-[#1C2930] sm:text-[18px] [&::-webkit-details-marker]:hidden">
                     <span>✅ {ui.includedLabel}:</span>
-                    <span>▾</span>
+                    <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-slate-200 px-4 py-3">
+                  <div className="border-t border-[#DCE7F3] px-4 py-3">
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {(
                         selectedCfg.included?.[lang as LangCode] ??
@@ -1774,7 +1807,7 @@ export default function SelectFlightStep() {
                       ).map((item: string, idx: number) => (
                         <div
                           key={idx}
-                          className="rounded-full bg-[#4c8d39] px-4 py-2 text-[13px] font-medium text-white sm:text-[14px]"
+                          className="rounded-full border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-2 text-[13px] font-medium text-[#0F5FA8] sm:text-[14px]"
                         >
                           {item}
                         </div>
@@ -1783,13 +1816,13 @@ export default function SelectFlightStep() {
                   </div>
                 </details>
 
-                <details className="rounded-[14px] border border-slate-300 bg-white">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-slate-800 sm:text-[18px] [&::-webkit-details-marker]:hidden">
-                    <span>🟧 {ui.groupDiscountTitle}</span>
-                    <span>▾</span>
+                <details className="rounded-xl border border-[#DCE7F3] bg-white">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-[#1C2930] sm:text-[18px] [&::-webkit-details-marker]:hidden">
+                    <span>🎁 {ui.groupDiscountTitle}</span>
+                    <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-slate-200 px-4 py-3 text-[14px] text-slate-700">
+                  <div className="border-t border-[#DCE7F3] px-4 py-3 text-[14px] text-[#5B6B7A]">
                     <div className="space-y-2">
                       {[
                         { min: 2, vnd: 50_000 },
@@ -1799,12 +1832,12 @@ export default function SelectFlightStep() {
                       ].map((tier) => (
                         <div
                           key={tier.min}
-                          className="flex items-center justify-between gap-4 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                          className="flex items-center justify-between gap-4 border-b border-[#DCE7F3] pb-2 last:border-b-0 last:pb-0"
                         >
-                          <span>
+                          <span className="text-[#1C2930]">
                             {tier.min}+ {ui.groupGuestsSuffix}
                           </span>
-                          <span className="font-semibold text-[#e53935]">
+                          <span className="font-semibold text-[#FF5E1F]">
                             -{formatVND(tier.vnd)}/{ui.perPersonWord}
                           </span>
                         </div>
@@ -1814,7 +1847,8 @@ export default function SelectFlightStep() {
                 </details>
               </div>
 
-              <div className="space-y-2">
+              {/* Footer Links & CTA */}
+              <div className="space-y-3">
                 {footerConfig.inlineLinks.length > 0 ? (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[13px] sm:px-2 sm:text-[14px]">
                     {footerConfig.inlineLinks.map((item) => (
@@ -1824,10 +1858,10 @@ export default function SelectFlightStep() {
                         target="_blank"
                         rel="noreferrer"
                         className={[
-                          "underline underline-offset-2",
+                          "underline underline-offset-2 transition hover:opacity-80",
                           item.tone === "red"
-                            ? "text-[#ef2f1e]"
-                            : "text-[#2a62ff]",
+                            ? "text-[#FF5E1F]"
+                            : "text-[#0194F3]",
                         ].join(" ")}
                       >
                         {item.label}
@@ -1837,7 +1871,7 @@ export default function SelectFlightStep() {
                 ) : null}
 
                 {footerConfig.note ? (
-                  <div className="px-1 text-[13px] italic text-[#ef2f1e] sm:px-2 sm:text-[14px]">
+                  <div className="px-1 text-[13px] italic text-[#5B6B7A] sm:px-2 sm:text-[14px]">
                     {footerConfig.note}
                   </div>
                 ) : null}
@@ -1847,11 +1881,7 @@ export default function SelectFlightStep() {
                     type="button"
                     onClick={next}
                     disabled={!canGoNext}
-                    className="inline-flex min-h-[56px] min-w-[170px] items-center justify-center bg-[#ea2424] px-6 text-[16px] font-bold uppercase text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[62px] sm:min-w-[190px] sm:px-8 sm:text-[18px]"
-                    style={{
-                      clipPath:
-                        "polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 0 0)",
-                    }}
+                    className="inline-flex min-h-[52px] min-w-[170px] items-center justify-center rounded-xl bg-[#0194F3] px-6 text-[16px] font-bold uppercase text-white shadow-md transition hover:bg-[#0B83D9] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-[#B9DDFB] disabled:shadow-none sm:min-h-[58px] sm:min-w-[200px] sm:px-8 sm:text-[18px]"
                   >
                     {buttons.next || ui.continue} →
                   </button>

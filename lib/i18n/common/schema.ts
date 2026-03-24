@@ -33,12 +33,12 @@ export type CommonTranslation = {
     subtitle: string;
     viewDetails: string;
     locations: {
-      muongHoaSapa: { name: string; location: string; description: string; highlight: string };
-      sonTra: { name: string; location: string; description: string; highlight: string };
-      khauPha: { name: string; location: string; description: string; highlight: string };
-      tramTau: { name: string; location: string; description: string; highlight: string };
-      vienNam: { name: string; location: string; description: string; highlight: string };
-      doiBu: { name: string; location: string; description: string; highlight: string };
+      muongHoaSapa: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      sonTra: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      khauPha: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      tramTau: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      vienNam: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      doiBu: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
     };
   };
 

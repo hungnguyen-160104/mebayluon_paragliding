@@ -1,4 +1,3 @@
-// app/spots/[slug]/page.tsx
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -23,8 +22,9 @@ type SpotData = {
   duration: string;
   landingPoint: string;
   basePrice: number;
-  image: string;           // Ảnh Hero
-  galleryImages: string[]; // Mảng ảnh Gallery
+  image: string; // Ảnh Hero
+  galleryImages: string[]; // Ảnh Gallery
+  storyImages?: string[]; // Ảnh riêng cho phần Stories
   packages: SpotPackage[];
   googleReviewUrl?: string; // Link đánh giá Google (nếu có)
 };
@@ -62,6 +62,11 @@ const BASE_SPOTS: Record<string, SpotData> = {
       "/spots/muong-hoa-sapa/gallery-5.jpg",
       "/spots/muong-hoa-sapa/gallery-6.jpg",
     ],
+    storyImages: [
+      "/spots/muong-hoa-sapa/so1.jpg",
+      "/spots/muong-hoa-sapa/gallery-2.jpg",
+      "/spots/muong-hoa-sapa/so3.jpeg",
+    ],
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
@@ -93,6 +98,11 @@ const BASE_SPOTS: Record<string, SpotData> = {
       "/spots/son-tra/gallery-5.jpg",
       "/spots/son-tra/gallery-6.jpg",
     ],
+    storyImages: [
+      "/spots/son-tra/so1.jpg",
+      "/spots/son-tra/so2.jpg",
+      "/spots/son-tra/so3.jpg",
+    ],
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
@@ -121,6 +131,11 @@ const BASE_SPOTS: Record<string, SpotData> = {
       "/spots/khau-pha/gallery-4.jpg",
       "/spots/khau-pha/gallery-5.jpg",
       "/spots/khau-pha/gallery-6.jpg",
+    ],
+    storyImages: [
+      "/spots/khau-pha/so1.jpg",
+      "/spots/khau-pha/so2.jpg",
+      "/spots/khau-pha/so3.jpg",
     ],
     packages: filterPackages([
       {
@@ -247,7 +262,12 @@ const ALIAS_SPOTS: Record<string, SpotData> = {
         name: "Gói cơ bản",
         price: 2290000,
         description: "Chỉ bay",
-        features: ["10–20 phút", "Phi công chuyên nghiệp", "Bảo hiểm", "Brief an toàn"],
+        features: [
+          "10–20 phút",
+          "Phi công chuyên nghiệp",
+          "Bảo hiểm",
+          "Brief an toàn",
+        ],
       },
     ]),
   },
@@ -263,7 +283,11 @@ export function generateStaticParams() {
   return Object.keys(SPOTS).map((slug) => ({ slug }));
 }
 
-export default async function SpotDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function SpotDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   const spot = SPOTS[slug];
 
@@ -291,7 +315,9 @@ export default async function SpotDetailPage({ params }: { params: Promise<{ slu
 
       {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}
       {isSapa && <SpotGoogleReview spot="sapa" variant="floating" position="br" />}
-      {isKhauPha && <SpotGoogleReview spot="khau-pha" variant="floating" position="br" />}
+      {isKhauPha && (
+        <SpotGoogleReview spot="khau-pha" variant="floating" position="br" />
+      )}
 
       {/* KHÔNG RENDER FOOTER Ở ĐÂY */}
     </div>

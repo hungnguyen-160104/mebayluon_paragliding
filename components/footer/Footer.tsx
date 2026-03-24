@@ -274,7 +274,7 @@ export default function Footer() {
                 {t.slogan}
               </p>
 
-              <p className="max-w-[32rem] text-[15px] leading-8 text-slate-200">
+              <p className="max-w-[30rem] text-[15px] leading-8 text-slate-300">
                 {t.license}
               </p>
             </div>

@@ -29,23 +29,25 @@ type PriceLine = {
 
 const C = {
   bg: "#ffffff",
-  card: "#f8fafc",
-  text: "#0f172a",
-  subtext: "#475569",
-  muted: "#64748b",
-  border: "#e2e8f0",
-  line: "#cbd5e1",
-  accent: "#0ea5e9",
-  accentDark: "#0369a1",
-  accentSoft: "#e0f2fe",
-  success: "#16a34a",
-  warningBg: "#fff7ed",
-  warningBorder: "#fdba74",
+  card: "#F5F7FA",
+  text: "#1C2930",
+  subtext: "#5B6B7A",
+  muted: "#5B6B7A",
+  border: "#DCE7F3",
+  line: "#DCE7F3",
+  accent: "#0194F3",
+  accentDark: "#0B83D9",
+  accentSoft: "#EAF4FE",
+  success: "#16A34A",
+  warningBg: "#FFF4ED",
+  warningBorder: "#FF5E1F",
   warningText: "#9a3412",
-  totalBg: "#0b1220",
+  totalBg: "#0194F3",
   white: "#ffffff",
-  redSoft: "#fee2e2",
-  redText: "#b91c1c",
+  badgeBg: "#EAF4FE",
+  badgeText: "#0194F3",
+  orange: "#FF5E1F",
+  orangeSoft: "#FFF4ED",
 };
 
 function digitsOnly(s: string) {
@@ -174,7 +176,7 @@ function useTicketLabels(lang: LangCode) {
     safetyNote: isVI
       ? "Vui lòng có mặt trước 15 phút để briefing an toàn."
       : isFR
-        ? "Veuillez arriver 15 minutes à l’avance pour le briefing de sécurité."
+        ? "Veuillez arriver 15 minutes à l'avance pour le briefing de sécurité."
         : isRU
           ? "Пожалуйста, прибудьте за 15 минут до инструктажа по безопасности."
           : isHI
@@ -336,7 +338,7 @@ export default function BookingTicket({
         borderRadius: 22,
         overflow: "hidden",
         border: `1px solid ${C.border}`,
-        boxShadow: "0 18px 48px rgba(15,23,42,0.10)",
+        boxShadow: "0 18px 48px rgba(28,41,48,0.08)",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
@@ -344,7 +346,7 @@ export default function BookingTicket({
       <div
         style={{
           background:
-            "linear-gradient(135deg, rgba(14,165,233,1) 0%, rgba(3,105,161,1) 100%)",
+            "linear-gradient(135deg, #0194F3 0%, #0B83D9 100%)",
           color: C.white,
           padding: 18,
         }}
@@ -562,8 +564,8 @@ export default function BookingTicket({
                           width: 26,
                           height: 26,
                           borderRadius: 999,
-                          background: C.redSoft,
-                          color: C.redText,
+                          background: C.accentSoft,
+                          color: C.accent,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -612,8 +614,8 @@ export default function BookingTicket({
             <SectionSpacer />
             <div
               style={{
-                background: C.warningBg,
-                border: `1px solid ${C.warningBorder}`,
+                background: C.orangeSoft,
+                border: `1px solid ${C.orange}`,
                 borderRadius: 16,
                 padding: 14,
               }}
@@ -697,7 +699,7 @@ export default function BookingTicket({
                   fontSize: 11,
                   letterSpacing: 1,
                   textTransform: "uppercase",
-                  opacity: 0.75,
+                  opacity: 0.85,
                 }}
               >
                 {labels.priceBreakdown}
@@ -741,7 +743,7 @@ export default function BookingTicket({
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      color: line.type === "discount" ? "#fca5a5" : "#e5e7eb",
+                      color: line.type === "discount" ? "#fca5a5" : "rgba(255,255,255,0.95)",
                     }}
                   >
                     {line.label}
@@ -750,7 +752,7 @@ export default function BookingTicket({
                     <div
                       style={{
                         fontSize: 11,
-                        color: "#94a3b8",
+                        color: "rgba(255,255,255,0.7)",
                         marginTop: 3,
                       }}
                     >
@@ -777,9 +779,9 @@ export default function BookingTicket({
             style={{
               marginTop: 14,
               paddingTop: 12,
-              borderTop: "1px solid rgba(255,255,255,0.12)",
+              borderTop: "1px solid rgba(255,255,255,0.15)",
               fontSize: 11,
-              color: "#cbd5e1",
+              color: "rgba(255,255,255,0.8)",
               lineHeight: 1.5,
             }}
           >
@@ -847,8 +849,8 @@ function SectionCard({
         {rightBadge ? (
           <div
             style={{
-              background: C.redSoft,
-              color: C.redText,
+              background: C.accentSoft,
+              color: C.accent,
               borderRadius: 999,
               padding: "2px 8px",
               fontSize: 11,
@@ -881,7 +883,7 @@ function PillRow({
             minWidth: 120,
             flex: "1 1 180px",
             background: soft ? C.accentSoft : C.bg,
-            border: `1px solid ${soft ? "#bae6fd" : C.border}`,
+            border: `1px solid ${soft ? "#B9DDFB" : C.border}`,
             borderRadius: 14,
             padding: "10px 12px",
           }}

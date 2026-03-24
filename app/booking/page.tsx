@@ -32,43 +32,25 @@ export default function BookingPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: "url('/dat_bay.jpeg')" }}
-      />
-
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/45" />
-
-      {/* Optional soft gradient overlay for better readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
-
-      {/* Content */}
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-3 pt-20 pb-4 md:px-4 md:pt-24 lg:px-5">
-        <header className="shrink-0 text-center text-white">
-          <h1
-            className="text-2xl font-bold tracking-tight md:text-3xl"
-            style={{ textShadow: "0 2px 10px rgba(0,0,0,0.55)" }}
-          >
-            {t.pageTitle}
-          </h1>
-
-          <p
-            className="mt-1 text-sm text-white/90 md:text-base"
-            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}
-          >
-            {t.pageSubtitle}
-          </p>
+    <main className="min-h-screen bg-[#F5F7FA]">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-3 pb-6 pt-20 md:px-4 md:pt-24 lg:px-5">
+        <header className="shrink-0 overflow-hidden rounded-[24px] border border-[#DCE7F3] bg-white shadow-[0_8px_24px_rgba(1,148,243,0.08)]">
+          <div className="bg-gradient-to-r from-[#0194F3] to-[#0B83D9] px-4 py-5 text-center md:px-6 md:py-6">
+            <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
+              {t.pageTitle}
+            </h1>
+            <p className="mt-2 text-sm text-white/90 md:text-base">
+              {t.pageSubtitle}
+            </p>
+          </div>
         </header>
 
-        <section className="mt-4 shrink-0 rounded-2xl border border-white/15 bg-white/10 p-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-md md:p-4">
+        <section className="mt-4 shrink-0 rounded-2xl border border-[#DCE7F3] bg-white p-3 shadow-[0_4px_16px_rgba(28,41,48,0.04)] md:p-4">
           <StepIndicator />
         </section>
 
         <section className="mt-4 min-h-0 flex-1">
-          <div className="h-full min-w-0 overflow-auto rounded-2xl border border-white/10 bg-black/20 p-2 shadow-[0_10px_30px_rgba(0,0,0,0.2)] backdrop-blur-sm md:p-3">
+          <div className="h-full min-w-0 overflow-auto rounded-2xl border border-[#DCE7F3] bg-white p-2 shadow-[0_4px_16px_rgba(28,41,48,0.04)] md:p-3">
             {currentStepContent()}
           </div>
         </section>

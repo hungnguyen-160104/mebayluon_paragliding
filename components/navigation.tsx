@@ -97,7 +97,7 @@ export function Navigation() {
     fixed top-0 left-0 right-0 z-50 transition-all duration-300
     ${
       isScrolled
-        ? "bg-white/60 backdrop-blur-lg shadow-md border-b border-gray-200/80"
+        ? "bg-white/80 backdrop-blur-lg shadow-md border-b border-[#DCE7F3]"
         : "bg-transparent border-b border-transparent"
     }
   `;
@@ -127,14 +127,14 @@ export function Navigation() {
               <div className="flex flex-col" style={{ textShadow: isScrolled ? "none" : strongShadow }}>
                 <span
                   className={`text-xl font-bold tracking-wide transition-colors ${
-                    isScrolled ? "text-gray-800" : "text-white"
+                    isScrolled ? "text-[#1C2930]" : "text-white"
                   }`}
                 >
                   MEBAYLUON
                 </span>
                 <span
                   className={`text-xs hidden sm:block transition-colors tracking-wider ${
-                    isScrolled ? "text-gray-500" : "text-white"
+                    isScrolled ? "text-[#5B6B7A]" : "text-white"
                   }`}
                 >
                   Mebayluon paragliding
@@ -149,7 +149,7 @@ export function Navigation() {
                 .map((item) => {
                   const active = isItemActive(item);
                   const base = isScrolled
-                    ? `text-gray-700 hover:bg-gray-100 ${active ? "bg-primary/10 text-primary font-semibold" : ""}`
+                    ? `text-[#1C2930] hover:bg-[#EAF4FE] ${active ? "bg-[#EAF4FE] text-[#0194F3] font-semibold" : ""}`
                     : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${
                         active ? "bg-white/20 border-white font-semibold" : ""
                       }`;
@@ -182,7 +182,7 @@ export function Navigation() {
                 })}
 
               <div
-                className={`${isScrolled ? "text-gray-800" : "text-white"}`}
+                className={`${isScrolled ? "text-[#1C2930]" : "text-white"}`}
                 style={{ textShadow: isScrolled ? "none" : subtleShadow }}
               >
                 <LanguageSwitcher />
@@ -191,13 +191,13 @@ export function Navigation() {
 
             {/* Mobile toggles */}
             <div className="flex items-center gap-2 md:hidden">
-              <div className={`${isScrolled ? "text-gray-800" : "text-white"}`}>
+              <div className={`${isScrolled ? "text-[#1C2930]" : "text-white"}`}>
                 <LanguageSwitcher />
               </div>
               <button
                 onClick={() => setIsOpen((s) => !s)}
                 aria-label="Toggle menu"
-                className={`p-2 ${isScrolled ? "text-gray-800" : "text-white"}`}
+                className={`p-2 ${isScrolled ? "text-[#1C2930]" : "text-white"}`}
                 style={{ filter: isScrolled ? "none" : "drop-shadow(0 1px 2px rgb(0 0 0 / .6))" }}
               >
                 <Menu size={24} />
@@ -249,7 +249,7 @@ export function Navigation() {
                       className={`text-2xl py-4 transition-colors font-medium ${
                         (item.type === "path" && pathname === item.href) ||
                         (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
-                          ? "text-red-400"
+                          ? "text-[#0194F3]"
                           : "text-slate-100 hover:text-white"
                       }`}
                     >

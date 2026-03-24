@@ -8,11 +8,11 @@ export const vi: CommonTranslation = {
     pilots: "Phi công",
     homestay: "Homestay & Café",
     booking: "Đặt bay",
-    preNotice: "Chuẩn Bị Trước Khi Bay",
+    preNotice: "Chuẩn bị trước khi bay",
     contact: "Liên hệ",
     bookNow: "Đặt ngay",
     login: "Đăng nhập",
-    blog: "Tin tức",
+    blog: "Blog",
     store: "Cửa hàng",
     knowledge: "Học bay dù lượn",
   },
@@ -30,7 +30,7 @@ export const vi: CommonTranslation = {
     subtitle: "Mebayluon Paragliding – nơi những giấc mơ bay cao",
     description: [
       "Tự hào là đơn vị bay dù lượn chuyên nghiệp đầu tiên tại Việt Nam với đội ngũ phi công có nhiều giờ bay nhất Việt Nam.",
-      " Chúng tôi đồng hành cùng bạn trong những chuyến bay đầy cảm xúc. ",
+      "Chúng tôi đồng hành cùng bạn trong những chuyến bay đầy cảm xúc.",
       "Cam kết mọi trang thiết bị bay đều đạt tiêu chuẩn quốc tế và luôn mang đến trải nghiệm bay tự do và đáng nhớ nhất cho bạn.",
     ],
   },
@@ -41,41 +41,52 @@ export const vi: CommonTranslation = {
     viewDetails: "Xem Chi Tiết",
     locations: {
       muongHoaSapa: {
-        name: "Mường Hoa - Sapa",
-        location: "Sa Pa, Lào Cai",
-        description: "Bay trên thung lũng Mường Hoa tuyệt đẹp",
+        name: "Sapa",
+        location: "Lào Cai",
+        area: "Lao Chải, Tả Van",
+        description: "Bay trên thung lũng Mường Hoa và ngắm nhìn ruộng bậc thang",
         highlight: "Ngắm nhìn ruộng bậc thang và đỉnh Fansipan",
+        duration: "90 phút",
       },
       sonTra: {
-        name: "Sơn Trà",
+        name: "Đà Nẵng",
         location: "Đà Nẵng",
-        description: "Bay trên bán đảo Sơn Trà",
+        area: "Bán đảo Sơn Trà",
+        description: "Ngắm nhìn toàn cảnh biển Đà Nẵng",
         highlight: "Tầm nhìn toàn cảnh biển Đà Nẵng",
+        duration: "60 phút",
       },
       khauPha: {
-        name: "Khau Phạ",
-        location: "Yên Bái",
-        description: "Bay trên đèo Khau Phạ hùng vĩ",
-        highlight:
-          "Một trong tứ đại đỉnh đèo Tây Bắc, ngắm nhìn danh thắng ruộng bậc thang",
+        name: "Mù Cang Chải, Tú Lệ",
+        location: "Lào Cai",
+        area: "Đèo Khau Phạ",
+        description: "Bay trên đèo Khau Phạ hùng vĩ, một trong tứ đại đỉnh đèo Tây Bắc",
+        highlight: "Một trong tứ đại đỉnh đèo Tây Bắc",
+        duration: "60 phút",
       },
       tramTau: {
         name: "Trạm Tấu",
-        location: "Yên Bái",
+        location: "Yên Bái, Lào Cai",
+        area: "Cánh đồng Mường Lò",
         description: "Bay trên cánh đồng Mường Lò",
         highlight: "Vùng đất mây trắng bồng bềnh",
+        duration: "90 phút",
       },
       vienNam: {
-        name: "Viên Nam",
-        location: "Hòa Bình",
-        description: "Bay trên Sông Đà",
-        highlight: "Điểm bay cao 1,050m gần Hà Nội ngắm nhìn Sông Đà và núi Ba Vì",
+        name: "Hà Giang",
+        location: "Hà Giang",
+        area: "Quản Bạ",
+        description: "Ngắm nhìn cao nguyên đá Tây Bắc nguyên sơ",
+        highlight: "Cao nguyên đá nguyên sơ",
+        duration: "90 phút",
       },
       doiBu: {
-        name: "Đồi Bù",
-        location: "Hoà Bình",
-        description: "Bay gần Hà Nội",
+        name: "Đồi Bù - Viên Nam",
+        location: "Hà Nội",
+        area: "Đồi Bù - Viên Nam",
+        description: "Điểm bay gần thủ đô Hà Nội",
         highlight: "Điểm bay gần thủ đô",
+        duration: "180 phút",
       },
     },
   },
@@ -107,19 +118,22 @@ export const vi: CommonTranslation = {
   },
 
   preNotice: {
-    title: "Chuẩn Bị Trước Khi Bay",
+    title: "Chuẩn bị trước khi bay",
     subtitle: "Đọc kỹ thông tin quan trọng để có chuyến bay thú vị và trọn vẹn",
+
     preparation: {
-      title: "CHUẨN BỊ TRƯỚC KHI BAY",
+      title: "Chuẩn bị trước khi bay",
+
       clothing: {
         title: "Trang phục",
         items: [
           "Trang phục: Trang phục thoải mái, thể thao (áo tay dài, quần dài); không mặc váy",
           "Giày: Không mang giày cao gót; ưu tiên giày thể thao hoặc giày leo núi. Có hỗ trợ mượn giày miễn phí khi cần",
-          "Kính mắt: Kính râm để chống tia UV và gió mạnh (30–40 km/h khi bay). Có thể mang theo kính cận.",
+          "Kính mát: Kính râm để chống tia UV và gió mạnh (30–40 km/h khi bay). Có thể mang theo kính cận.",
           "Phụ kiện: Có thể mang theo 1 túi nhỏ (1–2kg) đựng đồ cá nhân như điện thoại, chìa khóa, giấy tờ tùy thân",
         ],
       },
+
       items: {
         title: "Quy trình bay",
         list: [
@@ -131,13 +145,24 @@ export const vi: CommonTranslation = {
           "Hạ cánh nhẹ nhàng, có thể đứng hoặc ngồi tùy điều kiện",
         ],
       },
+
+      transport: {
+        title: "Xe đưa đón",
+        items: [
+          "Có dịch vụ đón và trả khách từ khách sạn theo thông tin đặt vé.",
+          "Đối với người đi cùng (không bay), vui lòng thông báo số lượng để sắp xếp và báo phí phù hợp.",
+        ],
+      },
     },
+
     posters: {
-      title: "ĐIỀU KIỆN QUY ĐỊNH ĐỐI VỚI HÀNH KHÁCH",
+      title: "Điều kiện quy định đối với hành khách",
       subtitle: "",
     },
+
     requirements: {
-      title: "ĐIỀU KIỆN QUY ĐỊNH ĐỐI VỚI HÀNH KHÁCH",
+      title: "Điều kiện quy định đối với hành khách",
+
       eligible: {
         title: "Điều kiện tham gia bay",
         items: [
@@ -146,6 +171,7 @@ export const vi: CommonTranslation = {
           "Độ tuổi: Từ 2 tuổi trở lên",
         ],
       },
+
       notEligible: {
         title: "Đặt vé",
         items: [
@@ -186,7 +212,7 @@ export const vi: CommonTranslation = {
         },
       },
     },
-  },
+  } as any,
 
   contact: {
     title: "LIÊN HỆ VỚI CHÚNG TÔI",

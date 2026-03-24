@@ -1,4 +1,3 @@
-// app/knowledge/KnowledgeTabs.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,73 +5,75 @@ import { useMemo } from "react";
 import { useLanguage } from "@/contexts/language-context";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
-
-type TabKey = "all" | "can-ban" | "nang-cao" | "thermal" | "xc" | "khi-tuong";
+type TabKey = "all" | "can-ban" | "nang-cao" | "xc" | "thermal" | "khi-tuong";
 
 const TABS: { key: TabKey }[] = [
   { key: "all" },
   { key: "can-ban" },
   { key: "nang-cao" },
-  { key: "thermal" },
   { key: "xc" },
+  { key: "thermal" },
   { key: "khi-tuong" },
 ];
 
 const TAB_LABELS: Record<Lang, Record<TabKey, string>> = {
   vi: {
     all: "Tất cả",
-    "can-ban": "Dù lượn căn bản",
-    "nang-cao": "Dù lượn nâng cao",
-    thermal: "Bay thermal",
+    "can-ban": "Khoá học cơ bản",
+    "nang-cao": "Khoá học nâng cao",
     xc: "Dù lượn gắn động cơ",
+    thermal: "Bay thermal",
     "khi-tuong": "Khí tượng bay",
   },
   en: {
     all: "All",
-    "can-ban": "Paragliding basics",
-    "nang-cao": "Advanced paragliding",
-    thermal: "Thermal flying",
+    "can-ban": "Basic course",
+    "nang-cao": "Advanced course",
     xc: "Powered paragliding",
+    thermal: "Thermal flying",
     "khi-tuong": "Aviation weather",
   },
   fr: {
     all: "Tous",
-    "can-ban": "Parapente débutant",
-    "nang-cao": "Parapente avancé",
-    thermal: "Vol en thermique",
+    "can-ban": "Cours de base",
+    "nang-cao": "Cours avancé",
     xc: "Parapente motorisé",
+    thermal: "Vol en thermique",
     "khi-tuong": "Météo de vol",
   },
   ru: {
     all: "Все",
-    "can-ban": "Параплан: основы",
-    "nang-cao": "Параплан: продвинутый уровень",
-    thermal: "Полёт в термиках",
+    "can-ban": "Базовый курс",
+    "nang-cao": "Продвинутый курс",
     xc: "Моторный параплан",
+    thermal: "Полёт в термиках",
     "khi-tuong": "Погодные условия",
   },
   zh: {
     all: "全部",
-    "can-ban": "滑翔伞入门",
-    "nang-cao": "高级滑翔伞",
-    thermal: "热气流飞行",
+    "can-ban": "基础课程",
+    "nang-cao": "进阶课程",
     xc: "动力滑翔伞",
+    thermal: "热气流飞行",
     "khi-tuong": "飞行气象",
   },
   hi: {
     all: "सभी",
-    "can-ban": "पैराग्लाइडिंग बेसिक्स",
-    "nang-cao": "एडवांस्ड पैराग्लाइडिंग",
-    thermal: "थर्मल फ्लाइंग",
+    "can-ban": "बेसिक कोर्स",
+    "nang-cao": "एडवांस्ड कोर्स",
     xc: "पावर्ड पैराग्लाइडिंग",
-    "khi-tuong": "उड़ान मौसम (मौसम-विज्ञान)",
+    thermal: "थर्मल फ्लाइंग",
+    "khi-tuong": "उड़ान मौसम",
   },
 };
 
 function toLang(v: unknown): Lang {
   const s = String(v ?? "vi").toLowerCase();
   const code = s.slice(0, 2) as Lang;
-  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(code) ? code : "vi";
+
+  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(code)
+    ? code
+    : "vi";
 }
 
 export function KnowledgeTabs({ current = "all" }: { current?: string }) {
@@ -83,32 +84,34 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
   const cur = (current || "all").toLowerCase();
 
   return (
-    <nav className="w-full flex justify-center">
+    <nav className="flex w-full justify-center">
       <ul
         className="
           inline-flex flex-wrap items-center justify-center gap-2
-          rounded-full border border-white/20 bg-white/10 backdrop-blur-md
-          px-2 py-2 shadow-lg
+          rounded-full border border-white/20 bg-white/10 px-2 py-2
+          shadow-lg backdrop-blur-md
         "
       >
-        {TABS.map((t) => {
+        {TABS.map((tab) => {
           const href =
-            t.key === "all" ? "/knowledge" : `/knowledge?sub=${encodeURIComponent(t.key)}`;
-          const active = cur === t.key;
+            tab.key === "all"
+              ? "/knowledge"
+              : `/knowledge?sub=${encodeURIComponent(tab.key)}`;
+
+          const active = cur === tab.key;
 
           return (
-            <li key={t.key}>
+            <li key={tab.key}>
               <Link
                 href={href}
                 className={[
-                  "rounded-full text-sm transition-colors",
-                  "px-3 py-1.5",
+                  "rounded-full px-3 py-1.5 text-sm transition-colors",
                   active
                     ? "bg-white/30 text-white"
-                    : "text-white/80 hover:text-white hover:bg-white/20",
+                    : "text-white/80 hover:bg-white/20 hover:text-white",
                 ].join(" ")}
               >
-                {labels[t.key]}
+                {labels[tab.key]}
               </Link>
             </li>
           );

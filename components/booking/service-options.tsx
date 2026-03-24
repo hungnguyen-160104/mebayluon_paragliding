@@ -80,10 +80,10 @@ export default function ServiceOptions() {
   const maxQty = Math.max(1, data.guestsCount || 1);
 
   return (
-    <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
-      <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-5">
-        <h4 className="text-lg font-semibold text-white">{ui.title}</h4>
-        <p className="mt-1 text-sm text-white/75">{ui.subtitle}</p>
+    <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
+      <div className="border-b border-[#DCE7F3] bg-[#F5F7FA] px-4 py-4 md:px-5">
+        <h4 className="text-lg font-bold text-[#1C2930]">{ui.title}</h4>
+        <p className="mt-1 text-sm text-[#5B6B7A]">{ui.subtitle}</p>
       </div>
 
       <div className="p-4 md:p-5">
@@ -98,26 +98,26 @@ export default function ServiceOptions() {
             return (
               <div
                 key={k}
-                className={`rounded-2xl border p-4 transition ${
+                className={`rounded-xl border-2 p-4 transition ${
                   disabled
-                    ? "opacity-50 border-white/10 bg-white/5"
+                    ? "opacity-50 border-[#DCE7F3] bg-[#F5F7FA]"
                     : active
-                      ? "border-sky-300/60 bg-sky-400/12 shadow-[0_10px_25px_rgba(56,189,248,0.16)]"
-                      : "border-white/12 bg-white/8"
+                      ? "border-[#0194F3] bg-[#EAF4FE] shadow-md"
+                      : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-sm font-semibold text-[#1C2930]">
                       {conf.label[language as LangCode] ?? conf.label.vi}
                     </div>
 
                     {conf.pricePerPersonVND !== null ? (
-                      <div className="mt-1 text-sm text-white/70">
+                      <div className="mt-1 text-sm font-bold text-[#FF5E1F]">
                         {conf.pricePerPersonVND.toLocaleString("vi-VN")}₫ / {ui.pax}
                       </div>
                     ) : (
-                      <div className="mt-1 text-sm text-white/55">
+                      <div className="mt-1 text-sm text-[#5B6B7A]">
                         {ui.notAvailable}
                       </div>
                     )}
@@ -130,10 +130,10 @@ export default function ServiceOptions() {
                         if (!active) setAddonQty(k, 1);
                         else setAddonQty(k, 0);
                       }}
-                      className={`inline-flex min-h-9 items-center rounded-full px-4 text-xs font-semibold transition ${
+                      className={`inline-flex min-h-9 items-center rounded-lg px-4 text-xs font-semibold transition ${
                         active
-                          ? "bg-sky-300 text-slate-950"
-                          : "border border-white/20 bg-white/8 text-white"
+                          ? "bg-[#0194F3] text-white"
+                          : "border border-[#DCE7F3] bg-white text-[#5B6B7A] hover:border-[#0194F3] hover:text-[#0194F3]"
                       }`}
                     >
                       {active ? ui.active : "+"}
@@ -142,20 +142,20 @@ export default function ServiceOptions() {
                 </div>
 
                 {!disabled && active ? (
-                  <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/12 bg-black/18 px-4 py-3">
-                    <span className="text-sm text-white/80">{ui.quantity}</span>
+                  <div className="mt-4 flex items-center justify-between rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+                    <span className="text-sm text-[#5B6B7A]">{ui.quantity}</span>
 
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => setAddonQty(k, Math.max(0, qty - 1))}
                         disabled={qty <= 0}
-                        className="h-8 w-8 rounded-full border border-white/20 bg-white/8 text-white disabled:opacity-40"
+                        className="h-8 w-8 rounded-lg border border-[#DCE7F3] bg-white text-[#5B6B7A] transition hover:bg-[#EAF4FE] disabled:opacity-40"
                       >
                         −
                       </button>
 
-                      <span className="min-w-6 text-center font-semibold text-white">
+                      <span className="min-w-6 text-center font-bold text-[#0194F3]">
                         {qty}
                       </span>
 
@@ -163,7 +163,7 @@ export default function ServiceOptions() {
                         type="button"
                         onClick={() => setAddonQty(k, Math.min(maxQty, qty + 1))}
                         disabled={qty >= maxQty}
-                        className="h-8 w-8 rounded-full border border-white/20 bg-white/8 text-white disabled:opacity-40"
+                        className="h-8 w-8 rounded-lg border border-[#DCE7F3] bg-white text-[#5B6B7A] transition hover:bg-[#EAF4FE] disabled:opacity-40"
                       >
                         +
                       </button>

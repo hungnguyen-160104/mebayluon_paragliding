@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import {
   computePriceByLang,
@@ -12,6 +12,27 @@ import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
+
+type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+
+type LocalizedValue =
+  | string
+  | Partial<Record<LangUI | "vi" | "en", string>>
+  | undefined;
+
+type PackageLike = {
+  key?: string;
+  label?: LocalizedValue;
+  name?: LocalizedValue;
+  title?: LocalizedValue;
+};
+
+type PriceLine = {
+  label: string;
+  detail?: string;
+  amountText: string;
+  type?: "normal" | "discount";
+};
 
 const UI_I18N: Record<
   string,
@@ -99,9 +120,9 @@ const UI_I18N: Record<
     flightTypeLabel: "Type de vol",
     pickupDetails: "Informations de prise en charge",
     noPickupSelected:
-      "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 minutes à l’avance pour l’enregistrement.",
+      "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 minutes à l'avance pour l'enregistrement.",
     pickupAddressMissing:
-      "Veuillez renseigner l’adresse de prise en charge pour le service sélectionné.",
+      "Veuillez renseigner l'adresse de prise en charge pour le service sélectionné.",
     paragliding: "Parapente",
     paramotor: "Paramoteur",
     notSelected: "Non sélectionné",
@@ -112,7 +133,7 @@ const UI_I18N: Record<
     passengerList: "Liste des passagers",
     paymentTitle: "Modes de paiement",
     supportNote:
-      "Après l’envoi de la réservation, notre équipe vous contactera pour confirmer l’horaire, les services et la météo.",
+      "Après l'envoi de la réservation, notre équipe vous contactera pour confirmer l'horaire, les services et la météo.",
   },
   ru: {
     title: "Проверка и подтверждение",
@@ -191,34 +212,28 @@ const UI_I18N: Record<
   },
 };
 
-type PriceLine = {
-  label: string;
-  detail?: string;
-  amountText: string;
-  type?: "normal" | "discount";
-};
+function getLocalizedText(value: unknown, lang: string, fallback = "") {
+  if (!value) return fallback;
+  if (typeof value === "string") return value;
 
-function Row({
-  label,
-  value,
-  enabled,
-}: {
-  label: string;
-  value: React.ReactNode;
-  enabled: boolean;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-      <span className="text-sm text-white/70">{label}</span>
-      <span
-        className={`text-sm font-semibold text-right ${
-          enabled ? "text-white" : "text-white/45"
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
+  if (typeof value === "object") {
+    const obj = value as Record<string, string | undefined>;
+    return obj[lang] || obj.en || obj.vi || fallback;
+  }
+
+  return fallback;
+}
+
+function extractPackages(rawPackages: unknown): PackageLike[] {
+  if (Array.isArray(rawPackages)) {
+    return rawPackages as PackageLike[];
+  }
+
+  if (rawPackages && typeof rawPackages === "object") {
+    return Object.values(rawPackages as Record<string, unknown>) as PackageLike[];
+  }
+
+  return [];
 }
 
 function getFlightTypeLabel(lang: string, key?: string) {
@@ -230,12 +245,55 @@ function getFlightTypeLabel(lang: string, key?: string) {
 
 function getHolidayTypeLabel(
   lang: string,
-  holidayType?: "weekday" | "weekend" | "holiday"
+  holidayType?: "weekday" | "weekend" | "holiday",
 ) {
   const ui = UI_I18N[lang] ?? UI_I18N.vi;
   if (holidayType === "holiday") return ui.holiday;
   if (holidayType === "weekend") return ui.weekend;
   return ui.weekday;
+}
+
+function resolveFlightTypeKey(cfg: any, selected?: string) {
+  if (selected === "paramotor" || selected === "paragliding") {
+    return selected;
+  }
+
+  const candidates = [
+    cfg?.defaultFlightTypeKey,
+    cfg?.defaultFlightType,
+    cfg?.flightTypeKey,
+    cfg?.flightType,
+    cfg?.type,
+  ];
+
+  const found = candidates.find(
+    (value) => value === "paramotor" || value === "paragliding",
+  );
+
+  return (found as string | undefined) || "paragliding";
+}
+
+function Row({
+  label,
+  value,
+  enabled,
+}: {
+  label: string;
+  value: React.ReactNode;
+  enabled: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+      <span className="text-sm text-[#5B6B7A]">{label}</span>
+      <span
+        className={`text-right text-sm font-semibold ${
+          enabled ? "text-[#1C2930]" : "text-[#94A3B8]"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
 }
 
 export default function ReviewConfirmStep() {
@@ -261,14 +319,86 @@ export default function ReviewConfirmStep() {
 
   useEffect(() => {
     if (!showTerms) return;
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
       document.body.style.overflow = prev;
     };
   }, [showTerms]);
 
-  const cfg = LOCATIONS[data.location];
+  const cfg = data.location ? LOCATIONS[data.location] : undefined;
+
+  const packages = useMemo(() => extractPackages(cfg?.packages), [cfg?.packages]);
+
+  const selectedPackage = useMemo(() => {
+    return packages.find((pkg) => pkg?.key === data.packageKey);
+  }, [packages, data.packageKey]);
+
+  const packageLabel = useMemo(() => {
+    if (!selectedPackage) return ui.notSelected;
+
+    return getLocalizedText(
+      selectedPackage.label || selectedPackage.name || selectedPackage.title,
+      lang,
+      ui.notSelected,
+    );
+  }, [selectedPackage, lang, ui.notSelected]);
+
+  const resolvedFlightTypeKey = useMemo(() => {
+    return resolveFlightTypeKey(cfg, data.flightTypeKey);
+  }, [cfg, data.flightTypeKey]);
+
+  const locationName = useMemo(() => {
+    return getLocalizedText(
+      cfg?.name,
+      lang,
+      data.location || ((t as any)?.labels?.flight as string) || "Flight",
+    );
+  }, [cfg?.name, data.location, lang, t]);
+
+  const visibleSelectedServices = useMemo(() => {
+    if (!cfg?.services?.length) return [];
+
+    return cfg.services.filter((svc: any) => {
+      if (svc.visibleForPackages?.length) {
+        if (!data.packageKey) return false;
+        if (!svc.visibleForPackages.includes(data.packageKey as any)) return false;
+      }
+
+      return !!data.services?.[svc.key]?.selected;
+    });
+  }, [cfg?.services, data.packageKey, data.services]);
+
+  const selectedPickupServices = useMemo(() => {
+    return visibleSelectedServices.filter(
+      (svc: any) => svc.requiresPickupInput || svc.fixedMapUrl,
+    );
+  }, [visibleSelectedServices]);
+
+  const missingPickupAddress = useMemo(() => {
+    return selectedPickupServices.some((svc: any) => {
+      if (svc.fixedMapUrl) return false;
+      if (!svc.requiresPickupInput) return false;
+
+      return !(data.services?.[svc.key]?.inputText || "").trim();
+    });
+  }, [selectedPickupServices, data.services]);
+
+  const serviceLines = useMemo(() => {
+    return visibleSelectedServices.map((svc: any) => {
+      const label = getLocalizedText(svc.label, lang, String(svc.key));
+      const inputText = data.services?.[svc.key]?.inputText || "";
+
+      return {
+        key: svc.key,
+        label,
+        inputText,
+        fixedMapUrl: svc.fixedMapUrl,
+      };
+    });
+  }, [visibleSelectedServices, data.services, lang]);
 
   const billInLang = computePriceByLang(
     {
@@ -280,8 +410,66 @@ export default function ReviewConfirmStep() {
       addons: data.addons,
       addonsQty: data.addonsQty,
     },
-    lang
+    lang,
   );
+
+  const guestsCount = Math.max(1, data.guestsCount || 1);
+
+  const getServiceLineTotal = useCallback(
+    (svc: any): number => {
+      const serviceState = data.services?.[svc.key];
+      if (!serviceState?.selected) return 0;
+
+      const qty = Math.max(1, serviceState.qty || 1);
+      const unitPrice = lang === "vi"
+        ? Number(svc.priceVND || 0)
+        : Number(svc.priceUSD || 0);
+
+      const key = String(svc.key || "");
+
+      if (
+        key === "khau_pha_paragliding_garrya_pickup" ||
+        key === "khau_pha_paramotor_garrya_pickup"
+      ) {
+        const carCount = Math.ceil(guestsCount / 4);
+        return lang === "vi" ? carCount * 700_000 : carCount * 28;
+      }
+
+      if (key === "ha_noi_private_hotel_pickup") {
+        return lang === "vi"
+          ? 1_500_000 + Math.max(0, guestsCount - 3) * 350_000
+          : 60 + Math.max(0, guestsCount - 3) * 14;
+      }
+
+      if (svc.controlType === "counter") {
+        return unitPrice * qty;
+      }
+
+      return unitPrice * guestsCount;
+    },
+    [data.services, guestsCount, lang],
+  );
+
+  const selectedServicesTotal = useMemo(() => {
+    if (!cfg?.services?.length) return 0;
+
+    return cfg.services.reduce((sum: number, svc: any) => {
+      if (svc.visibleForPackages?.length) {
+        if (!data.packageKey) return sum;
+        if (!svc.visibleForPackages.includes(data.packageKey)) return sum;
+      }
+
+      if (svc.visibleForFlightTypes?.length) {
+        if (!data.flightTypeKey) return sum;
+        if (!svc.visibleForFlightTypes.includes(data.flightTypeKey)) return sum;
+      }
+
+      const serviceState = data.services?.[svc.key];
+      if (!serviceState?.selected) return sum;
+
+      return sum + getServiceLineTotal(svc);
+    }, 0);
+  }, [cfg?.services, data.packageKey, data.flightTypeKey, data.services, getServiceLineTotal]);
 
   const formatMoney = (n: number) => {
     return lang === "vi"
@@ -293,21 +481,33 @@ export default function ReviewConfirmStep() {
   };
 
   const formatDate = (iso?: string) => {
-    if (!iso) return "";
+    if (!iso) return ui.notSelected;
+
     const d = new Date(iso);
-    return d.toLocaleDateString("en-US", {
+
+    const localeMap: Record<string, string> = {
+      vi: "vi-VN",
+      en: "en-US",
+      fr: "fr-FR",
+      ru: "ru-RU",
+      hi: "hi-IN",
+      zh: "zh-CN",
+    };
+
+    return new Intl.DateTimeFormat(localeMap[lang] || "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    });
+    }).format(d);
   };
 
   const pax = data.guestsCount || 1;
 
   const getAddonQty = (k: AddonKey) => {
-    const q =
+    const qty =
       (data.addonsQty?.[k] ?? 0) || (data.addons?.[k] ? data.guestsCount : 0);
-    return Math.max(0, Math.min(data.guestsCount || 1, Number(q) || 0));
+
+    return Math.max(0, Math.min(data.guestsCount || 1, Number(qty) || 0));
   };
 
   const contactAny = (data as any)?.contact;
@@ -319,36 +519,7 @@ export default function ReviewConfirmStep() {
   const contactPhone = (contactAny?.phone ?? "").toString();
   const contactEmail = (contactAny?.email ?? "").toString();
   const specialRequest = (contactAny?.specialRequest ?? "").toString();
-  const firstGuestName = (data as any)?.guests?.[0]?.fullName ?? "";
-
-  const visibleSelectedServices = (cfg?.services || []).filter((svc) => {
-    if (svc.visibleForPackages?.length) {
-      if (!data.packageKey) return false;
-      if (!svc.visibleForPackages.includes(data.packageKey as any)) return false;
-    }
-    return !!data.services?.[svc.key]?.selected;
-  });
-
-  const selectedPickupServices = visibleSelectedServices.filter(
-    (svc) => svc.requiresPickupInput || svc.fixedMapUrl
-  );
-
-  const missingPickupAddress = selectedPickupServices.some((svc) => {
-    if (svc.fixedMapUrl) return false;
-    if (!svc.requiresPickupInput) return false;
-    return !(data.services?.[svc.key]?.inputText || "").trim();
-  });
-
-  const packageLabel =
-    cfg?.packages?.find((p) => p.key === data.packageKey)?.label?.[lang] ??
-    cfg?.packages?.find((p) => p.key === data.packageKey)?.label?.vi ??
-    ui.notSelected;
-
-  const serviceLines = visibleSelectedServices.map((svc) => {
-    const label = svc.label[lang] ?? svc.label.vi;
-    const inputText = data.services?.[svc.key]?.inputText || "";
-    return { key: svc.key, label, inputText, fixedMapUrl: svc.fixedMapUrl };
-  });
+  const firstGuestName = ((data as any)?.guests?.[0]?.fullName ?? "").toString();
 
   const termsUrl = `/terms?lang=${lang}`;
 
@@ -365,22 +536,74 @@ export default function ReviewConfirmStep() {
       type: "normal",
     });
 
+    if (cfg?.services?.length) {
+      cfg.services.forEach((svc: any) => {
+        if (svc.visibleForPackages?.length) {
+          if (!data.packageKey) return;
+          if (!svc.visibleForPackages.includes(data.packageKey)) return;
+        }
+
+        if (svc.visibleForFlightTypes?.length) {
+          if (!data.flightTypeKey) return;
+          if (!svc.visibleForFlightTypes.includes(data.flightTypeKey)) return;
+        }
+
+        const serviceState = data.services?.[svc.key];
+        if (!serviceState?.selected) return;
+
+        const qty = Math.max(1, serviceState.qty || 1);
+        const lineTotal = getServiceLineTotal(svc);
+
+        if (lineTotal <= 0) return;
+
+        const label = getLocalizedText(svc.label, lang, String(svc.key));
+        const unitPrice = lang === "vi"
+          ? Number(svc.priceVND || 0)
+          : Number(svc.priceUSD || 0);
+
+        const key = String(svc.key || "");
+        let detailText = "";
+
+        if (
+          key === "khau_pha_paragliding_garrya_pickup" ||
+          key === "khau_pha_paramotor_garrya_pickup"
+        ) {
+          const carCount = Math.ceil(guestsCount / 4);
+          const carPrice = lang === "vi" ? 700_000 : 28;
+          detailText = `${formatMoney(carPrice)} × ${carCount} xe`;
+        } else if (key === "ha_noi_private_hotel_pickup") {
+          detailText = "";
+        } else if (svc.controlType === "counter") {
+          detailText = `${formatMoney(unitPrice)} × ${qty}`;
+        } else {
+          detailText = `${formatMoney(unitPrice)} × ${guestsCount}`;
+        }
+
+        lines.push({
+          label,
+          detail: detailText,
+          amountText: formatMoney(lineTotal),
+          type: "normal",
+        });
+      });
+    }
+
     const addonLabel: Record<string, string> = {
       pickup: (t as any)?.labels?.pickupCost ?? "Pickup",
       camera360: (t as any)?.labels?.camera360Cost ?? "Camera 360",
       flycam: (t as any)?.labels?.droneCost ?? "Drone/Flycam",
     };
 
-    (["pickup", "camera360", "flycam"] as AddonKey[]).forEach((k) => {
-      const qty = Number((billInLang as any)?.addonsQty?.[k] || 0);
+    (["pickup", "camera360", "flycam"] as AddonKey[]).forEach((key) => {
+      const qty = Number((billInLang as any)?.addonsQty?.[key] || 0);
       if (!qty) return;
 
-      const unit = Number((billInLang as any)?.addonsUnitPrice?.[k] || 0);
+      const unit = Number((billInLang as any)?.addonsUnitPrice?.[key] || 0);
       const sub =
-        Number((billInLang as any)?.addonsTotal?.[k] || 0) || unit * qty;
+        Number((billInLang as any)?.addonsTotal?.[key] || 0) || unit * qty;
 
       lines.push({
-        label: addonLabel[k] ?? String(k),
+        label: addonLabel[key] ?? String(key),
         detail: `${formatMoney(unit)} × ${qty}`,
         amountText: formatMoney(sub),
         type: "normal",
@@ -390,6 +613,7 @@ export default function ReviewConfirmStep() {
     const discountPerPerson = Number(billInLang.discountPerPerson || 0);
     if (discountPerPerson > 0) {
       const discountTotal = discountPerPerson * pax;
+
       lines.push({
         label: (t as any)?.labels?.groupDiscount ?? "Group discount",
         detail: `-${formatMoney(discountPerPerson)} × ${pax}`,
@@ -398,20 +622,24 @@ export default function ReviewConfirmStep() {
       });
     }
 
+    const grandTotal = Number(billInLang.totalAfterDiscount || 0) + selectedServicesTotal;
+
     return {
       priceLines: lines,
-      totalText: formatMoney(Number(billInLang.totalAfterDiscount || 0)),
+      totalText: formatMoney(grandTotal),
     };
   }, [
-    billInLang.basePricePerPerson,
-    billInLang.discountPerPerson,
-    billInLang.totalAfterDiscount,
-    (billInLang as any)?.addonsQty,
-    (billInLang as any)?.addonsUnitPrice,
-    (billInLang as any)?.addonsTotal,
+    billInLang,
+    cfg?.services,
+    data.packageKey,
+    data.flightTypeKey,
+    data.services,
+    guestsCount,
     pax,
     lang,
     t,
+    getServiceLineTotal,
+    selectedServicesTotal,
   ]);
 
   const handleConfirm = async () => {
@@ -424,6 +652,7 @@ export default function ReviewConfirmStep() {
         (data as any)?.contact?.contactName?.trim?.() ||
         data?.guests?.[0]?.fullName?.trim?.() ||
         "";
+
       const primaryPhone = (data as any)?.contact?.phone?.trim?.() || "";
 
       const missing: string[] = [];
@@ -431,9 +660,8 @@ export default function ReviewConfirmStep() {
       if (!primaryPhone) missing.push("phone");
       if (!data?.dateISO) missing.push("date");
       if (!data?.location) missing.push("location");
-      if (data.location === "khau_pha" && !data.packageKey) missing.push("package");
-      if (data.location === "khau_pha" && !data.flightTypeKey) missing.push("flight type");
       if (missingPickupAddress) throw new Error(ui.pickupAddressMissing);
+
       if (missing.length) {
         throw new Error(`Missing ${missing.join(", ")}.`);
       }
@@ -444,9 +672,9 @@ export default function ReviewConfirmStep() {
         phone: primaryPhone,
         date: data.dateISO,
         location: data.location,
-        locationName: cfg?.name?.[lang] ?? cfg?.name?.vi ?? data.location,
+        locationName,
         packageLabel,
-        flightTypeLabel: getFlightTypeLabel(lang, data.flightTypeKey),
+        flightTypeLabel: getFlightTypeLabel(lang, resolvedFlightTypeKey),
 
         price: {
           currency: billInLang.currency,
@@ -456,7 +684,8 @@ export default function ReviewConfirmStep() {
           addonsQty: (billInLang as any).addonsQty,
           addonsUnitPrice: (billInLang as any).addonsUnitPrice,
           addonsTotal: (billInLang as any).addonsTotal,
-          total: billInLang.totalAfterDiscount,
+          servicesTotal: selectedServicesTotal,
+          total: Number(billInLang.totalAfterDiscount || 0) + selectedServicesTotal,
         },
 
         selectedServices: serviceLines,
@@ -465,11 +694,13 @@ export default function ReviewConfirmStep() {
       };
 
       const createResp: any = await createBooking(payload, turnstileToken);
+
       if (!createResp?.ok) {
         const serverMsg = createResp?.message || "Create booking failed";
         const serverErrs = createResp?.errors
           ? `\n${JSON.stringify(createResp.errors)}`
           : "";
+
         throw new Error(`${serverMsg}${serverErrs}`);
       }
 
@@ -490,7 +721,7 @@ export default function ReviewConfirmStep() {
 
       if (isTurnstileError) {
         setError(
-          e?.data?.message || "Turnstile validation failed. Please try again."
+          e?.data?.message || "Turnstile validation failed. Please try again.",
         );
       } else {
         setError(e?.message || "Unable to submit. Please try again.");
@@ -506,67 +737,92 @@ export default function ReviewConfirmStep() {
   const L = (key: string, fallback: string) =>
     ((t as any)?.labels?.[key] as string) || fallback;
 
-  const noKhauPhaPkg2Pickup =
-    data.location === "khau_pha" &&
-    data.packageKey === "khau_pha_pkg_2" &&
-    !data.services?.["khau_pha_pkg_2_tu_le_pickup"]?.selected &&
-    !data.services?.["khau_pha_pkg_2_garrya_pickup"]?.selected;
+  const pickupAddonQty = getAddonQty("pickup");
+  const camera360Qty = getAddonQty("camera360");
+  const flycamQty = getAddonQty("flycam");
+
+  const selectedServicesCount = visibleSelectedServices.length;
+
+  const noPickupSelected =
+    selectedPickupServices.length === 0 &&
+    pickupAddonQty === 0 &&
+    visibleSelectedServices.some(
+      (svc: any) => svc.key?.toString().toLowerCase().includes("pickup"),
+    );
+
+  const hasPackages = cfg?.packages && cfg.packages.length > 0;
+  const showPackageRow = hasPackages || data.location === "khau_pha";
+
+  const serviceDetails = [
+    {
+      label: L("service", "Service"),
+      value: locationName,
+    },
+    {
+      label: L("numGuests", "Passengers"),
+      value: String(data.guestsCount || 1),
+    },
+    {
+      label: L("date", "Date"),
+      value: formatDate(data.dateISO),
+    },
+    {
+      label: L("timeSlot", "Time"),
+      value: data.timeSlot || ui.notSelected,
+    },
+    ...(showPackageRow
+      ? [
+          {
+            label: ui.packageLabel,
+            value: packageLabel,
+          },
+        ]
+      : []),
+    {
+      label: ui.flightTypeLabel,
+      value: getFlightTypeLabel(lang, resolvedFlightTypeKey),
+    },
+    {
+      label: L("dayType", "Day type"),
+      value: getHolidayTypeLabel(lang, billInLang.holidayType),
+    },
+    {
+      label: L("selectedServices", "Selected services"),
+      value:
+        selectedServicesCount > 0
+          ? `${selectedServicesCount} ${ui.selectedCount}`
+          : ui.notSelected,
+    },
+  ];
 
   return (
-    <div className="space-y-5 text-white">
-      <div className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.18)] overflow-hidden">
-        <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-400/10 to-transparent px-4 py-4 md:px-6">
-          <h3 className="text-lg md:text-xl font-semibold">{ui.title}</h3>
-          <p className="mt-1 text-sm text-white/80 max-w-3xl">{ui.subtitle}</p>
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
+        <div className="border-b border-[#DCE7F3] bg-[#0194F3] px-4 py-4 md:px-6">
+          <h3 className="text-lg font-bold text-white md:text-xl">{ui.title}</h3>
+          <p className="mt-1 max-w-3xl text-sm text-white/90">{ui.subtitle}</p>
         </div>
 
-        <div className="p-4 md:p-6 space-y-5">
-          <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.95fr] gap-5">
-            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+        <div className="space-y-5 bg-[#F5F7FA] p-4 md:p-6">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.95fr]">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("serviceDetails", "Service details")}
               </div>
 
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                <InfoBox
-                  label={L("service", "Service")}
-                  value={cfg?.name?.[lang] ?? cfg?.name?.vi ?? L("flight", "Flight")}
-                />
-                <InfoBox label={L("numGuests", "Passengers")} value={String(data.guestsCount)} />
-                <InfoBox label={L("date", "Date")} value={formatDate(data.dateISO)} />
-                <InfoBox
-                  label={L("timeSlot", "Time")}
-                  value={data.timeSlot || L("flexibleTime", "Flexible")}
-                />
-                <InfoBox
-                  label={ui.packageLabel}
-                  value={data.location === "khau_pha" ? packageLabel : ui.notSelected}
-                />
-                <InfoBox
-                  label={ui.flightTypeLabel}
-                  value={
-                    data.location === "khau_pha"
-                      ? getFlightTypeLabel(lang, data.flightTypeKey)
-                      : getFlightTypeLabel(lang, "paragliding")
-                  }
-                />
-                <InfoBox
-                  label={L("dayType", "Day type")}
-                  value={getHolidayTypeLabel(lang, billInLang.holidayType)}
-                />
-                <InfoBox
-                  label={ui.pickupDetails}
-                  value={
-                    selectedPickupServices.length
-                      ? `${selectedPickupServices.length} ${ui.selectedCount}`
-                      : ui.notSelected
-                  }
-                />
+              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+                {serviceDetails.map((item) => (
+                  <InfoBox
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                  />
+                ))}
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("contactInfo", "Contact information")}
               </div>
 
@@ -585,40 +841,42 @@ export default function ReviewConfirmStep() {
                 />
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white/75">
+              <div className="mt-4 rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-sm text-[#355166]">
                 {ui.supportNote}
               </div>
             </section>
           </div>
 
           {selectedPickupServices.length > 0 && (
-            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {ui.pickupDetails}
               </div>
 
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {serviceLines
-                  .filter((x) => x.fixedMapUrl || x.inputText)
-                  .map((x) => (
+                  .filter((item) => item.fixedMapUrl || item.inputText)
+                  .map((item) => (
                     <div
-                      key={x.key}
-                      className="rounded-2xl border border-white/12 bg-white/8 p-4"
+                      key={item.key}
+                      className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-4"
                     >
-                      <div className="text-sm font-semibold text-white">{x.label}</div>
+                      <div className="text-sm font-semibold text-[#1C2930]">
+                        {item.label}
+                      </div>
 
-                      {x.fixedMapUrl ? (
+                      {item.fixedMapUrl ? (
                         <a
-                          href={x.fixedMapUrl}
+                          href={item.fixedMapUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-3 inline-flex h-10 items-center rounded-full border border-sky-300/40 bg-sky-400/10 px-4 text-sm font-medium text-sky-200 hover:bg-sky-400/20"
+                          className="mt-3 inline-flex h-10 items-center rounded-lg border border-[#0194F3] bg-[#EAF4FE] px-4 text-sm font-medium text-[#0194F3] transition hover:bg-[#0194F3] hover:text-white"
                         >
                           {L("viewMap", "View map")}
                         </a>
                       ) : (
-                        <div className="mt-2 text-sm text-white/80 break-words">
-                          {x.inputText}
+                        <div className="mt-2 break-words text-sm text-[#5B6B7A]">
+                          {item.inputText}
                         </div>
                       )}
                     </div>
@@ -626,70 +884,80 @@ export default function ReviewConfirmStep() {
               </div>
 
               {missingPickupAddress ? (
-                <p className="mt-3 text-sm text-red-300">{ui.pickupAddressMissing}</p>
+                <p className="mt-3 text-sm text-[#DC2626]">{ui.pickupAddressMissing}</p>
               ) : null}
             </section>
           )}
 
-          {noKhauPhaPkg2Pickup && (
-            <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4">
-              <p className="text-sm text-amber-100">{ui.noPickupSelected}</p>
+          {noPickupSelected && (
+            <div className="rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] p-4">
+              <p className="text-sm text-[#FF5E1F]">{ui.noPickupSelected}</p>
             </div>
           )}
 
-          <section className="rounded-2xl border border-white/15 bg-black/20 overflow-hidden">
+          <section className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white">
             <button
               type="button"
               onClick={() => setShowPassengers((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left hover:bg-white/5"
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-[#F5F7FA]"
             >
               <div className="flex items-center gap-3">
-                <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                   {ui.passengerList}
                 </div>
-                <span className="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-semibold text-red-100">
+                <span className="rounded-full bg-[#EAF4FE] px-2.5 py-1 text-xs font-semibold text-[#0194F3]">
                   {(data.guests ?? []).length}
                 </span>
               </div>
 
-              <span className={`transition-transform ${showPassengers ? "rotate-180" : ""}`}>
+              <span
+                className={`text-[#5B6B7A] transition-transform ${
+                  showPassengers ? "rotate-180" : ""
+                }`}
+              >
                 ▾
               </span>
             </button>
 
             {showPassengers && (
-              <div className="border-t border-white/10 p-4 space-y-3">
-                {(data.guests ?? []).map((g: any, i: number) => (
+              <div className="space-y-3 border-t border-[#DCE7F3] p-4">
+                {(data.guests ?? []).map((guest: any, index: number) => (
                   <div
-                    key={i}
-                    className="rounded-2xl border border-white/12 bg-white/8 p-4"
+                    key={index}
+                    className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-4"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-sm font-bold text-red-100">
-                        {i + 1}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF4FE] text-sm font-bold text-[#0194F3]">
+                        {index + 1}
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white">{g.fullName}</p>
+                        <p className="text-sm font-semibold text-[#1C2930]">
+                          {guest.fullName}
+                        </p>
 
-                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white/70">
-                          <MiniInfo label={L("dob", "DOB")} value={g.dob} />
-                          <MiniInfo label={L("gender", "Gender")} value={g.gender} />
-                          {g.idNumber ? (
-                            <MiniInfo label={L("idNumber", "ID")} value={g.idNumber} />
-                          ) : null}
-                          {g.nationality ? (
-                            <MiniInfo
-                              label={L("nationality", "Nationality")}
-                              value={g.nationality}
-                            />
-                          ) : null}
-                          {g.weightKg ? (
-                            <MiniInfo
-                              label={L("weightKg", "Weight")}
-                              value={`${g.weightKg}kg`}
-                            />
-                          ) : null}
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#5B6B7A] md:grid-cols-3">
+                          <MiniInfo label={L("dob", "DOB")} value={guest.dob || ui.notSelected} />
+                          <MiniInfo
+                            label={L("gender", "Gender")}
+                            value={guest.gender || ui.notSelected}
+                          />
+                          <MiniInfo
+                            label={L("idNumber", "ID")}
+                            value={guest.idNumber || ui.notSelected}
+                          />
+                          <MiniInfo
+                            label={L("nationality", "Nationality")}
+                            value={guest.nationality || ui.notSelected}
+                          />
+                          <MiniInfo
+                            label={L("weightKg", "Weight")}
+                            value={
+                              guest.weightKg
+                                ? `${guest.weightKg}kg`
+                                : ui.notSelected
+                            }
+                          />
                         </div>
                       </div>
                     </div>
@@ -700,17 +968,17 @@ export default function ReviewConfirmStep() {
           </section>
 
           {!!specialRequest && (
-            <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4">
-              <p className="text-xs font-semibold text-yellow-200 mb-1">
+            <div className="rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] p-4">
+              <p className="mb-1 text-xs font-semibold text-[#FF5E1F]">
                 {L("specialRequest", "Special requests")}
               </p>
-              <p className="text-sm text-yellow-100 break-words">{specialRequest}</p>
+              <p className="break-words text-sm text-[#1C2930]">{specialRequest}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-5">
-            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1fr]">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("additionalServices", "Additional services")}
               </div>
 
@@ -720,27 +988,21 @@ export default function ReviewConfirmStep() {
                   value={
                     selectedPickupServices.length
                       ? `${selectedPickupServices.length}`
-                      : L("no", "No")
+                      : pickupAddonQty
+                        ? `${pickupAddonQty} pax`
+                        : L("no", "No")
                   }
-                  enabled={!!selectedPickupServices.length}
+                  enabled={!!selectedPickupServices.length || !!pickupAddonQty}
                 />
                 <Row
                   label={L("camera360", "Camera 360")}
-                  value={
-                    getAddonQty("camera360")
-                      ? `${getAddonQty("camera360")} pax`
-                      : L("no", "No")
-                  }
-                  enabled={!!getAddonQty("camera360")}
+                  value={camera360Qty ? `${camera360Qty} pax` : L("no", "No")}
+                  enabled={!!camera360Qty}
                 />
                 <Row
                   label={L("drone", "Drone/Flycam")}
-                  value={
-                    getAddonQty("flycam")
-                      ? `${getAddonQty("flycam")} pax`
-                      : L("no", "No")
-                  }
-                  enabled={!!getAddonQty("flycam")}
+                  value={flycamQty ? `${flycamQty} pax` : L("no", "No")}
+                  enabled={!!flycamQty}
                 />
 
                 <SimpleInfo label={L("gopro", "GoPro")} value={L("free", "Free")} />
@@ -752,23 +1014,25 @@ export default function ReviewConfirmStep() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+            <section className="rounded-xl border border-[#D6EAFB] bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("priceBreakdown", "Price breakdown")}
               </div>
 
               <div className="mt-4 space-y-3">
-                {priceLines.map((line, idx) => (
+                {priceLines.map((line, index) => (
                   <div
-                    key={idx}
+                    key={index}
                     className={`flex items-start justify-between gap-3 ${
-                      line.type === "discount" ? "text-red-300" : "text-white/90"
+                      line.type === "discount" ? "text-[#16A34A]" : "text-[#1C2930]"
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm text-white/70 break-words">{line.label}</p>
+                      <p className="break-words text-sm text-[#5B6B7A]">
+                        {line.label}
+                      </p>
                       {line.detail ? (
-                        <p className="mt-1 text-xs text-white/45 break-words">
+                        <p className="mt-1 break-words text-xs text-[#94A3B8]">
                           {line.detail}
                         </p>
                       ) : null}
@@ -780,22 +1044,26 @@ export default function ReviewConfirmStep() {
                   </div>
                 ))}
 
-                <div className="h-px bg-white/10" />
+                <div className="h-px bg-[#DCE7F3]" />
 
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-lg font-bold">{L("totalCost", "Total")}</span>
-                  <span className="text-xl font-bold">{totalText}</span>
+                  <span className="text-lg font-bold text-[#1C2930]">
+                    {L("totalCost", "Total")}
+                  </span>
+                  <span className="text-xl font-bold text-[#FF5E1F]">
+                    {totalText}
+                  </span>
                 </div>
               </div>
             </section>
           </div>
 
-          <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
-            <div className="text-xs uppercase tracking-[0.18em] text-sky-200/90 font-semibold">
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
               {ui.paymentTitle}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-white/80">
+            <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-[#5B6B7A] md:grid-cols-2">
               <PaymentItem text={L("cashPayment", "Cash payment")} />
               <PaymentItem text={L("bankTransfer", "Bank transfer")} />
               <PaymentItem text={L("paypalPayment", "PayPal")} />
@@ -803,30 +1071,30 @@ export default function ReviewConfirmStep() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/15 bg-black/20 p-4">
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
             <TurnstileWidget
               key={turnstileKey}
               onVerify={(token) => setTurnstileToken(token)}
               onExpire={() => setTurnstileToken("")}
               onError={() => setTurnstileToken("")}
               lang={lang}
-              theme="dark"
+              theme="light"
             />
           </section>
 
-          <label className="flex items-start gap-3 rounded-2xl border border-white/12 bg-black/15 p-4">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-4 transition hover:border-[#B9DDFB]">
             <input
               type="checkbox"
               checked={!!data.acceptedTerms}
               onChange={(e) => update({ acceptedTerms: e.target.checked })}
-              className="mt-1 h-4 w-4 accent-green-500"
+              className="mt-1 h-4 w-4 rounded border-[#DCE7F3] text-[#0194F3] focus:ring-[#0194F3]"
             />
-            <span className="text-sm text-white">
+            <span className="text-sm text-[#1C2930]">
               {(t as any)?.labels?.termsText ?? "I agree to the terms"}{" "}
               <button
                 type="button"
                 onClick={() => setShowTerms(true)}
-                className="text-sky-300 underline"
+                className="text-[#0194F3] underline"
               >
                 {(t as any)?.labels?.viewTerms ?? "View terms"}
               </button>
@@ -836,23 +1104,30 @@ export default function ReviewConfirmStep() {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-red-500/50 bg-red-900/35 p-4 text-sm text-white">
+        <div className="rounded-xl border border-[#DC2626] bg-red-50 p-4 text-sm text-[#DC2626]">
           {error}
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3">
         <button
+          type="button"
           onClick={back}
-          className="h-12 rounded-full border border-white/25 bg-black/25 px-5 text-sm font-medium text-white hover:bg-black/35"
+          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {t.buttons.back}
         </button>
 
         <button
-          disabled={!data.acceptedTerms || !turnstileToken || submitting || missingPickupAddress}
+          type="button"
+          disabled={
+            !data.acceptedTerms ||
+            !turnstileToken ||
+            submitting ||
+            missingPickupAddress
+          }
           onClick={handleConfirm}
-          className="h-12 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(45,212,191,0.32)] transition hover:brightness-105 disabled:opacity-50"
+          className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {submitting ? t.buttons.processing : t.buttons.confirm}
         </button>
@@ -861,25 +1136,28 @@ export default function ReviewConfirmStep() {
       {showTerms && (
         <div className="fixed inset-0 z-50">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowTerms(false)}
           />
-          <div className="relative mx-auto my-6 flex h-[min(92vh,860px)] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-[28px] border border-white/15 bg-slate-950 shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/6 px-4 py-3">
-              <span className="text-sm font-medium text-white">{ui.termsTitle}</span>
+          <div className="relative mx-auto my-6 flex h-[min(92vh,860px)] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+              <span className="text-sm font-semibold text-[#1C2930]">
+                {ui.termsTitle}
+              </span>
 
               <div className="flex items-center gap-3">
                 <a
                   href={termsUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm text-sky-300 underline"
+                  className="text-sm text-[#0194F3] underline"
                 >
                   {ui.openInNewTab}
                 </a>
                 <button
+                  type="button"
                   onClick={() => setShowTerms(false)}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-sm text-white hover:bg-white/8"
+                  className="rounded-lg border border-[#DCE7F3] px-3 py-1.5 text-sm text-[#5B6B7A] transition hover:bg-[#EAF4FE]"
                 >
                   {ui.close}
                 </button>
@@ -887,12 +1165,12 @@ export default function ReviewConfirmStep() {
             </div>
 
             <div
-              className="flex-1 overflow-y-auto p-6 text-white/90 prose prose-invert prose-sm max-w-none
-                [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-white
-                [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-white
-                [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-white
+              className="prose prose-sm max-w-none flex-1 overflow-y-auto p-6 text-[#1C2930]
+                [&_h1]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#1C2930]
+                [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#1C2930]
+                [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[#1C2930]
                 [&_p]:mb-3 [&_p]:leading-relaxed
-                [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3
+                [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5
                 [&_li]:mb-1"
               dangerouslySetInnerHTML={{ __html: termsContent }}
             />
@@ -905,18 +1183,22 @@ export default function ReviewConfirmStep() {
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-white/55">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-white break-words">{value}</div>
+    <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-[#5B6B7A]">
+        {label}
+      </div>
+      <div className="mt-1 break-words text-sm font-semibold text-[#1C2930]">
+        {value}
+      </div>
     </div>
   );
 }
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-      <span className="text-sm text-white/65">{label}</span>
-      <span className="text-sm font-semibold text-white text-right break-words">
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+      <span className="text-sm text-[#5B6B7A]">{label}</span>
+      <span className="break-words text-right text-sm font-semibold text-[#1C2930]">
         {value}
       </span>
     </div>
@@ -925,27 +1207,27 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
-      <span className="font-medium text-white/60">{label}:</span>{" "}
-      <span className="text-white">{value}</span>
+    <div className="rounded-md border border-[#DCE7F3] bg-white px-3 py-2">
+      <span className="font-medium text-[#5B6B7A]">{label}:</span>{" "}
+      <span className="text-[#1C2930]">{value}</span>
     </div>
   );
 }
 
 function SimpleInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-      <span className="text-sm text-white/70">{label}</span>
-      <span className="text-sm font-semibold text-sky-200">{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+      <span className="text-sm text-[#5B6B7A]">{label}</span>
+      <span className="text-sm font-semibold text-[#16A34A]">{value}</span>
     </div>
   );
 }
 
 function PaymentItem({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
-      <span className="text-emerald-300">✔</span>
-      <span>{text}</span>
+    <div className="flex items-center gap-2 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+      <span className="text-[#16A34A]">✔</span>
+      <span className="text-[#1C2930]">{text}</span>
     </div>
   );
 }

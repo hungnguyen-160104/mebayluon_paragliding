@@ -19,8 +19,8 @@ export default function ChatbotButton({
       title={title}
       onClick={onClick}
       className={`relative flex h-12 w-12 items-center justify-center rounded-full
-                  border border-white/60 bg-white shadow-lg hover:scale-105
-                  transition focus:outline-none focus:ring-2 focus:ring-sky-500 ${className ?? ""}`}
+                  border border-[#DCE7F3] bg-white shadow-lg hover:scale-105
+                  transition focus:outline-none focus:ring-2 focus:ring-[#0194F3] ${className ?? ""}`}
     >
       <Image
         src="/chatbot/launcher.jpg"
