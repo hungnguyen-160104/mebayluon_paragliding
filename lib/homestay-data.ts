@@ -1,4 +1,5 @@
 // ===== Types shared with page.tsx =====
+
 export type RoomKey =
   | "singleRoom"
   | "coupleAttic"
@@ -33,17 +34,18 @@ export type AmenityKey =
   | "swimming-pool"
   | "camping-area"
   | "team-building-space"
-  | "trekking-tours"
   | "paragliding"
   | "flycam-service";
 
 export type CategoryKey = "drinks" | "alcohol" | "food";
 
+export type PriceType = "per-guest" | "per-room" | "whole-home";
+
 export interface RoomType {
   id: string;
   nameKey: RoomKey;
   price: number;
-  priceType: "per-guest" | "per-room" | "whole-home";
+  priceType: PriceType;
   capacity: {
     adults: number;
     children?: number;
@@ -63,7 +65,7 @@ export const roomTypes: RoomType[] = [
     image: "/homestay/phong-don.jpg",
     features: ["breakfast", "wifi", "view", "handmade-tea"],
     description:
-      "Có 2 phòng, tối đa 1 người lớn và 1 trẻ em dưới 5 tuổi, gồm 1 đệm đơn",
+      "Có 2 phòng, phù hợp tối đa 1 người lớn và 1 trẻ em dưới 5 tuổi, gồm 1 đệm đơn.",
   },
   {
     id: "couple-attic",
@@ -74,18 +76,18 @@ export const roomTypes: RoomType[] = [
     image: "/homestay/ap-mai.jpg",
     features: ["breakfast", "wifi", "attic-view", "handmade-tea"],
     description:
-      "1 phòng áp mái lớn duy nhất, tối đa 2 người lớn và 2 trẻ em dưới 5 tuổi",
+      "1 phòng áp mái lớn duy nhất, phù hợp tối đa 2 người lớn và 2 trẻ em dưới 5 tuổi.",
   },
   {
     id: "double-room",
     nameKey: "doubleRoom",
     price: 650000,
     priceType: "per-room",
-    capacity: { adults: 4, children: 2 },
+    capacity: { adults: 2, children: 2 },
     image: "/homestay/phong-doi.jpg",
     features: ["breakfast", "wifi", "mountain-view", "family-friendly"],
     description:
-      "2 Phòng lớn, tối đa 1 gia đình nhỏ (2 người lớn và 2 trẻ em dưới 5 tuổi) 1 đệm đôi lớn, view suối",
+      "Có 2 phòng lớn, phù hợp cho 1 gia đình nhỏ gồm 2 người lớn và 2 trẻ em dưới 5 tuổi, 1 đệm đôi lớn, view suối.",
   },
   {
     id: "dormitory",
@@ -95,7 +97,7 @@ export const roomTypes: RoomType[] = [
     capacity: { adults: 20 },
     image: "/homestay/phong-cong-dong.jpg",
     features: ["breakfast", "wifi", "shared-space", "budget-friendly"],
-    description: "1 phòng lớn - ở tối đa 20 đệm đơn/sàn",
+    description: "1 phòng cộng đồng lớn, tối đa 20 khách với đệm đơn/sàn.",
   },
   {
     id: "whole-home-small",
@@ -103,10 +105,10 @@ export const roomTypes: RoomType[] = [
     price: 2500000,
     priceType: "whole-home",
     capacity: { adults: 25 },
-    image: "/homestay/nguyen-san.png",
-    features: ["exclusive-use", "all-facilities", "group-friendly", "breakfast"],
+    image: "/homestay/phong-gia-dinh.jpg",
+    features: ["exclusive-use", "all-facilities", "breakfast", "group-friendly"],
     description:
-      "Khách được sử dụng toàn bộ phần sàn công đồng, bao gồm các phòng áp mái. Ở tối đa 25 khách/sàn. Miễn phí trẻ em dưới 5 tuổi.",
+      "Khách được sử dụng toàn bộ phần sàn cộng đồng, bao gồm các phòng áp mái. Ở tối đa 25 khách/sàn. Miễn phí trẻ em dưới 5 tuổi.",
   },
   {
     id: "whole-home-large",
@@ -117,17 +119,19 @@ export const roomTypes: RoomType[] = [
     image: "/homestay/nguyen-can.jpg",
     features: ["exclusive-use", "all-facilities", "large-group", "breakfast"],
     description:
-      "Khách được sử dụng toàn bộ phần sàn công đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 35 khách. Miễn phí trẻ em dưới 5 tuổi.",
+      "Khách được sử dụng toàn bộ phần sàn cộng đồng, phòng đôi, phòng đơn và các phòng áp mái. Ở tối đa 35 khách. Miễn phí trẻ em dưới 5 tuổi.",
   },
 ];
 
+export interface MenuItemEntry {
+  name: string;
+  price: number;
+  unit?: string;
+}
+
 export interface MenuItem {
   category: CategoryKey;
-  items: {
-    name: string;
-    price: number;
-    unit?: string;
-  }[];
+  items: MenuItemEntry[];
 }
 
 export const menuItems: MenuItem[] = [
@@ -145,19 +149,19 @@ export const menuItems: MenuItem[] = [
   {
     category: "alcohol",
     items: [
-      { name: "Rượu cắm", price: 100000, unit: "/lít" },
-      { name: "Cẩm tú lệ", price: 80000, unit: "/lít" },
-      { name: "Rượu mơ", price: 120000, unit: "/lít" },
+      { name: "Rượu cắm", price: 100000, unit: "lít" },
+      { name: "Cẩm tú lệ", price: 80000, unit: "lít" },
+      { name: "Rượu mơ", price: 120000, unit: "lít" },
     ],
   },
   {
     category: "food",
     items: [
-      { name: "Cơm/mì tôm", price: 0 },
-      { name: "Bò/gà/lợn", price: 0 },
+      { name: "Cơm / mì tôm", price: 0 },
+      { name: "Bò / gà / lợn", price: 0 },
       { name: "Cá hồi tươi sống", price: 0 },
       { name: "Cá tầm tươi sống", price: 0 },
-      { name: "Các món lẩu/BBQ", price: 0 },
+      { name: "Các món lẩu / BBQ", price: 0 },
     ],
   },
 ];
@@ -173,29 +177,28 @@ export const amenities: AmenityKey[] = [
   "swimming-pool",
   "camping-area",
   "team-building-space",
-  "trekking-tours",
   "paragliding",
   "flycam-service",
 ];
 
 export const locationInfo = {
-  address: "Bản Lim Mông, Xã Cao Phạ, Huyện Mù Cang Chải, Tỉnh Yên Bái",
+  address: "Bản Lim Mông, xã Cao Phạ, huyện Mù Cang Chải, tỉnh Yên Bái",
   distanceFromHanoi: "250km",
   travelTime: "5 giờ",
-  phone: "+84964073555", // ✅ thêm để dùng cho nút gọi
+  phone: "+84964073555",
   nearbyAttractions: [
     { name: "Đèo Khau Phạ", distance: "40km" },
     { name: "Suối khoáng nóng", distance: "7 phút đi xe" },
     { name: "Ruộng bậc thang Mù Cang Chải", distance: "Ngay tại chỗ" },
   ],
-};
+} as const;
 
-// ===== i18n cho phần Location (đổi theo language) =====
+// ===== i18n cho phần Location =====
 export const locationTranslations = {
   vi: {
     title: "Vị trí & Trải nghiệm",
     description:
-      "Ngay tại điểm hạ cánh dù lượn – trung tâm hoạt động của các phi công chuyên nghiệp. Du khách có thể tương tác cùng cộng đồng bay, ngắm nhìn những cánh dù rực rỡ trên bầu trời.",
+      "Ngay tại điểm hạ cánh dù lượn – trung tâm hoạt động của các phi công chuyên nghiệp. Du khách có thể tương tác cùng cộng đồng bay và ngắm nhìn những cánh dù rực rỡ trên bầu trời.",
     addressLabel: "Địa chỉ",
     fromHanoi: "Từ Hà Nội",
     nearby: "Các điểm gần đó",
@@ -221,7 +224,7 @@ export const locationTranslations = {
   fr: {
     title: "Emplacement & Expérience",
     description:
-      "Au lieu d'atterrissage du parapente – le centre des activités des pilotes professionnels. Les visiteurs peuvent interagir avec la communauté aérienne et admirer les parapentes colorés dans le ciel.",
+      "Situé directement sur la zone d’atterrissage du parapente, au cœur des activités des pilotes professionnels. Les visiteurs peuvent rencontrer la communauté aérienne et admirer les parapentes colorés dans le ciel.",
     addressLabel: "Adresse",
     fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
@@ -232,44 +235,42 @@ export const locationTranslations = {
     ],
   },
   ru: {
-    title: "Местоположение и опыт",
+    title: "Местоположение и впечатления",
     description:
-      "Прямо на месте посадки парапланов — центр активности профессиональных пилотов. Гости могут взаимодействовать с лётным сообществом и любоваться яркими парапланами в небе.",
+      "Прямо у зоны приземления парапланов — в центре активности профессиональных пилотов. Гости могут пообщаться с лётным сообществом и любоваться яркими парапланами в небе.",
     addressLabel: "Адрес",
     fromHanoi: "Из Ханоя",
-    nearby: "Близлежащие достопримечательности",
+    nearby: "Ближайшие места",
     nearbyList: [
       "Перевал Кхау Фа — 40 км",
-      "Термальный источник — 7 минут на машине",
+      "Горячий источник — 7 минут на машине",
       "Рисовые террасы Му Канг Чай — На месте",
     ],
   },
-  // ✅ thêm mới
   zh: {
     title: "位置与体验",
     description:
-      "就在滑翔伞降落场——专业飞行员活动中心。游客可以与飞行社群互动，欣赏天空中绚丽的伞翼。",
+      "这里正位于滑翔伞降落点，是专业飞行员活动的中心。游客可以与飞行社群互动，并欣赏天空中绚丽多彩的滑翔伞。",
     addressLabel: "地址",
     fromHanoi: "从河内出发",
     nearby: "附近景点",
     nearbyList: [
       "考帕山口 — 40km",
-      "温泉 — 车程约 7 分钟",
-      "木仓寨梯田 — 就在这里",
+      "温泉 — 约 7 分钟车程",
+      "木仓寨梯田 — 就在此地",
     ],
   },
-
   hi: {
     title: "स्थान और अनुभव",
     description:
-      "पैराग्लाइडिंग लैंडिंग साइट पर—प्रोफेशनल पायलट गतिविधियों का केंद्र। मेहमान उड़ान समुदाय से जुड़ सकते हैं और आसमान में रंग-बिरंगे पैराग्लाइडर्स देख सकते हैं।",
+      "यह ठीक पैराग्लाइडिंग लैंडिंग स्थल पर स्थित है — पेशेवर पायलट गतिविधियों का केंद्र। मेहमान उड़ान समुदाय से जुड़ सकते हैं और आसमान में रंग-बिरंगे पैराग्लाइडर देख सकते हैं।",
     addressLabel: "पता",
     fromHanoi: "हनोई से",
-    nearby: "नज़दीकी जगहें",
+    nearby: "नज़दीकी स्थान",
     nearbyList: [
       "खाउ फ़ा पास — 40km",
-      "हॉट स्प्रिंग — कार से 7 मिनट",
-      "मु कांग चाई की सीढ़ीदार खेत — यहीं",
+      "हॉट स्प्रिंग — कार से लगभग 7 मिनट",
+      "मु कांग चाई की सीढ़ीनुमा धान की खेती — यहीं",
     ],
   },
 } as const;

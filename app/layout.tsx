@@ -35,8 +35,8 @@ export const metadata: Metadata = {
 
   // ✅ thêm đoạn này
   icons: {
-    icon: "/logo1.png",   // favicon trên tab
-    apple: "/logo1.png",  // icon iOS (tuỳ)
+    icon: "/logo.png",   // favicon trên tab
+    apple: "/logo.png",  // icon iOS (tuỳ)
   },
   applicationName: "Mebayluon",
   appleWebApp: {

@@ -10,12 +10,10 @@ export const dynamic = "force-dynamic";
 type PostLeanBase = {
   _id: Types.ObjectId;
   slug?: string;
-  isFixed?: boolean;
-  fixedKey?: string | null;
   publishedAt?: Date | null;
 };
 
-/** ObjectId “chuẩn” (không mơ hồ) */
+/** ObjectId "chuẩn" (không mơ hồ) */
 function isObjectIdStrict(v: string): boolean {
   return Types.ObjectId.isValid(v) && String(new Types.ObjectId(v)) === v;
 }
@@ -38,8 +36,6 @@ async function ensureUniqueSlug(base: string, excludeId?: string) {
   const root = slugifyVN(base) || `post-${Date.now().toString(36)}`;
   let candidate = root;
   let i = 1;
-  // nếu đã tồn tại, nối đuôi -1, -2, ...
-  // excludeId để không tự “đụng” chính mình
   while (
     await Post.exists(
       excludeId ? { slug: candidate, _id: { $ne: excludeId } } : { slug: candidate }
@@ -81,7 +77,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 /* =================================================================== */
-/* PUT /api/posts/[id] — cập nhật; chặn đổi slug/fixedKey nếu isFixed */
+/* PUT /api/posts/[id] — cập nhật bài viết                             */
 /* =================================================================== */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -91,9 +87,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const idOrSlug = id;
     const cond = isObjectIdStrict(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
 
-    // chỉ lấy các trường cần cho logic bảo vệ
     const current = await Post.findOne(cond)
-      .select("_id slug isFixed publishedAt fixedKey")
+      .select("_id slug publishedAt")
       .lean<PostLeanBase>();
     if (!current) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -105,11 +100,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (b !== undefined) patch.isPublished = b;
     }
 
-    // Nếu là bài cố định: không cho đổi slug và fixedKey
-    if (current.isFixed) {
-      delete patch.slug;
-      delete patch.fixedKey;
-    }
+    // Remove any fixed post fields if sent
+    delete patch.isFixed;
+    delete patch.fixedKey;
 
     // Xử lý publishedAt theo isPublished
     if (typeof patch.isPublished === "boolean") {
@@ -120,8 +113,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
-    // Nếu có yêu cầu đổi slug (và bài KHÔNG phải fixed)
-    if (patch.slug && !current.isFixed && patch.slug !== current.slug) {
+    // Nếu có yêu cầu đổi slug
+    if (patch.slug && patch.slug !== current.slug) {
       patch.slug = await ensureUniqueSlug(String(patch.slug), String(current._id));
     }
 
@@ -130,10 +123,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (!updated) return NextResponse.json({ message: "Not found" }, { status: 404 });
       return NextResponse.json(updated, { status: 200 });
     } catch (err: any) {
-      // lỗi unique fixedKey (đã có bài cố định khác dùng cùng fixedKey)
-      if (err?.code === 11000 && err?.keyPattern?.fixedKey) {
+      if (err?.code === 11000 && err?.keyPattern?.slug) {
         return NextResponse.json(
-          { message: "fixedKey đã được dùng cho một bài cố định khác." },
+          { message: "Slug đã tồn tại." },
           { status: 409 }
         );
       }
@@ -146,7 +138,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 /* =================================================================== */
-/* DELETE /api/posts/[id] — chặn xoá nếu là bài cố định               */
+/* DELETE /api/posts/[id] — xoá bài viết                               */
 /* =================================================================== */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -156,15 +148,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const idOrSlug = id;
     const cond = isObjectIdStrict(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
 
-    const doc = await Post.findOne(cond).select("_id isFixed").lean<PostLeanBase>();
+    const doc = await Post.findOne(cond).select("_id").lean<PostLeanBase>();
     if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
-
-    if (doc.isFixed) {
-      return NextResponse.json(
-        { message: "Không thể xoá bài viết cố định." },
-        { status: 403 }
-      );
-    }
 
     await Post.findByIdAndDelete(doc._id);
     return NextResponse.json({ ok: true, id: String(doc._id) }, { status: 200 });

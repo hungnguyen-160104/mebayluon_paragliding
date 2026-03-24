@@ -314,11 +314,11 @@ function DashboardHeader({ onRefresh }: { onRefresh: () => void }) {
           Làm mới
         </button>
         <Link
-          href="/admin/posts/new"
-          className="px-5 py-2 rounded-xl bg-blue-500 border border-blue-300 text-white 
+          href="/admin/posts"
+          className="px-5 py-2 rounded-xl bg-blue-500 border border-blue-300 text-white
                      hover:bg-blue-600 transition-colors duration-300 shadow-md font-medium" // Đổi sang nút màu xanh dương
         >
-          + Tạo bài mới
+          Quản lý bài viết
         </Link>
       </div>
     </div>
@@ -336,8 +336,8 @@ function EmptyState() {
       <h3 className="text-xl font-medium drop-shadow-sm">Chưa có bài viết nào</h3>
       <div className="mt-5">
         <Link
-          href="/admin/posts/new"
-          className="px-6 py-2 rounded-xl bg-blue-500 border border-blue-300 text-white 
+          href="/admin/posts"
+          className="px-6 py-2 rounded-xl bg-blue-500 border border-blue-300 text-white
                      hover:bg-blue-600 transition-colors duration-300 shadow-md font-medium" // Đổi sang nút màu xanh dương
         >
           Tạo bài viết đầu tiên

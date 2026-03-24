@@ -8,7 +8,7 @@ import api from "@/lib/api";
 import { authHeader, getToken } from "@/lib/auth";
 import type { PostPayload, StoreCategory } from "@/types/frontend/post";
 
-// ====== Tiểu mục dùng chung cho "Kiến thức" và "Khóa học dù lượn"
+// Tiểu mục dùng cho "Kiến thức" và "Khóa học dù lượn"
 type KnowledgeSubCategory = "can-ban" | "nang-cao" | "thermal" | "xc" | "khi-tuong";
 const KNOWLEDGE_SUB_OPTIONS: { value: KnowledgeSubCategory; label: string }[] = [
   { value: "can-ban", label: "Dù lượn căn bản" },
@@ -18,18 +18,7 @@ const KNOWLEDGE_SUB_OPTIONS: { value: KnowledgeSubCategory; label: string }[] = 
   { value: "khi-tuong", label: "Khí tượng bay" },
 ];
 
-// ====== 6 điểm bay cố định (submenu của Tin tức)
-type FixedKey = "hoa-binh" | "ha-noi" | "mu-cang-chai" | "yen-bai" | "da-nang" | "sapa";
-const FIXED_NEWS_OPTIONS: { value: FixedKey; label: string }[] = [
-  { value: "hoa-binh", label: "Viên Nam – Hòa Bình" },
-  { value: "ha-noi", label: "Đồi Bù – Chương Mỹ – Hà Nội" },
-  { value: "mu-cang-chai", label: "Khau Phạ – Mù Cang Chải – Yên Bái" },
-  { value: "yen-bai", label: "Trạm Tấu – Yên Bái" },
-  { value: "da-nang", label: "Sơn Trà – Đà Nẵng" },
-  { value: "sapa", label: "Sapa – Lào Cai" },
-];
-
-// ====== Kiểu dữ liệu form
+// Kiểu dữ liệu form
 interface NewPostForm {
   title: string;
   coverImage: string;
@@ -41,16 +30,13 @@ interface NewPostForm {
   /** Danh mục chính: news | knowledge | store */
   category: "" | "news" | "knowledge" | "store";
 
-  /** Submenu của "Tin tức": để "" = Bài viết mới; chọn 1 trong 6 = Bài cố định */
-  newsFixedKey?: "" | FixedKey;
-
   /** Chỉ dùng khi category = store */
   storeCategory?: StoreCategory;
   price?: number;
 
   /** Tiểu mục cho Kiến thức & Khóa học (nếu applicable) */
-  knowledgeSubCategory?: KnowledgeSubCategory; // khi category = "knowledge"
-  courseSubCategory?: KnowledgeSubCategory;    // khi category="store" & storeCategory="khoa-hoc-du-luon"
+  knowledgeSubCategory?: KnowledgeSubCategory;
+  courseSubCategory?: KnowledgeSubCategory;
 }
 
 export default function NewPostPage() {
@@ -64,7 +50,6 @@ export default function NewPostPage() {
     language: "vi",
     isPublished: true,
     category: "",
-    newsFixedKey: "",
     storeCategory: undefined,
     price: undefined,
     knowledgeSubCategory: undefined,
@@ -78,7 +63,7 @@ export default function NewPostPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
-  // 🧭 auth
+  // auth
   useEffect(() => {
     if (!getToken()) router.replace("/admin/login");
   }, [router]);
@@ -86,19 +71,18 @@ export default function NewPostPage() {
   const isStore = form.category === "store";
   const isKnowledge = form.category === "knowledge";
   const isCourseInStore = isStore && form.storeCategory === "khoa-hoc-du-luon";
-  const isNews = form.category === "news";
 
-  // ====== Upload ảnh từ file -> Cloudinary ======
+  // Upload ảnh từ file -> Cloudinary
   async function handlePickFile(file: File) {
     setUploading(true);
     setUploadErr(null);
     try {
       const fd = new FormData();
-      fd.append("file", file); // field name phải trùng với backend .single("file")
+      fd.append("file", file);
 
       const resp = await api<{ url: string; publicId?: string }>("/api/uploads/image", {
         method: "POST",
-        headers: { ...authHeader() }, // KHÔNG set Content-Type
+        headers: { ...authHeader() },
         body: fd,
       });
       setForm((f) => ({ ...f, coverImage: resp.url }));
@@ -109,7 +93,7 @@ export default function NewPostPage() {
     }
   }
 
-  // ====== Submit bài viết ======
+  // Submit bài viết
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -120,7 +104,6 @@ export default function NewPostPage() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      // Payload cơ bản (blog hoặc product)
       const base: PostPayload = {
         title: form.title,
         content: form.content,
@@ -134,7 +117,6 @@ export default function NewPostPage() {
         price: isStore ? Number(form.price || 0) : undefined,
       };
 
-      // Thêm subCategory theo quy tắc đã thống nhất
       const payload: any = {
         ...base,
         subCategory: isKnowledge
@@ -142,10 +124,6 @@ export default function NewPostPage() {
           : isCourseInStore
           ? form.courseSubCategory
           : undefined,
-
-        // NEWS submenu → nếu chọn 1 trong 6 key => bài cố định của điểm bay
-        isFixed: isNews && !!form.newsFixedKey,
-        fixedKey: isNews && form.newsFixedKey ? form.newsFixedKey : undefined,
       };
 
       const path = isStore ? "/api/products" : "/api/posts";
@@ -165,8 +143,8 @@ export default function NewPostPage() {
   }
 
   const glassInputStyle = `
-    w-full rounded-lg px-3 py-2 bg-white/30 border border-white/40 shadow-sm 
-    text-gray-900 placeholder-gray-600 
+    w-full rounded-lg px-3 py-2 bg-white/30 border border-white/40 shadow-sm
+    text-gray-900 placeholder-gray-600
     focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
     transition-colors duration-200
   `;
@@ -178,7 +156,7 @@ export default function NewPostPage() {
     >
       <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
 
-      <div className="relative z-10 w-full max-w-4xl p-6 md:p-8 rounded-2xl 
+      <div className="relative z-10 w-full max-w-4xl p-6 md:p-8 rounded-2xl
                    bg-white/15 backdrop-blur-xl border border-white/20 shadow-lg text-gray-800"
       >
         <h2 className="text-3xl font-bold mb-6 text-gray-900 drop-shadow-lg">
@@ -209,7 +187,7 @@ export default function NewPostPage() {
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) handlePickFile(f);
-                e.currentTarget.value = ""; // cho phép chọn lại cùng 1 file vẫn trigger
+                e.currentTarget.value = "";
               }}
             />
 
@@ -242,8 +220,6 @@ export default function NewPostPage() {
                 setForm({
                   ...form,
                   category: v,
-                  // reset các field phụ khi đổi danh mục
-                  newsFixedKey: v === "news" ? form.newsFixedKey : "",
                   storeCategory: v === "store" ? form.storeCategory : undefined,
                   price: v === "store" ? form.price : undefined,
                   knowledgeSubCategory: v === "knowledge" ? form.knowledgeSubCategory : undefined,
@@ -258,35 +234,6 @@ export default function NewPostPage() {
               <option value="store">Cửa hàng</option>
             </select>
           </div>
-
-          {/* Submenu (Tin tức) */}
-          {isNews && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-gray-800">
-                Nhóm (Tin tức)
-              </label>
-              <select
-                className={glassInputStyle}
-                value={form.newsFixedKey || ""}
-                onChange={(e) =>
-                  setForm({ ...form, newsFixedKey: (e.target.value as FixedKey) || "" })
-                }
-              >
-                <option value="">
-                  Bài viết mới (không cố định)
-                </option>
-                {FIXED_NEWS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-700 mt-1">
-                Chọn một địa điểm để đánh dấu <b>bài cố định</b> cho điểm bay đó.
-                Mỗi điểm chỉ có <b>01 bài</b>; nếu trùng sẽ báo lỗi.
-              </p>
-            </div>
-          )}
 
           {/* Tiểu mục cho KIẾN THỨC */}
           {isKnowledge && (
@@ -327,7 +274,6 @@ export default function NewPostPage() {
                     setForm({
                       ...form,
                       storeCategory: sc || undefined,
-                      // nếu chọn "Khóa học dù lượn" thì hiển thị tiểu mục giống Kiến thức
                       courseSubCategory:
                         sc === "khoa-hoc-du-luon" ? form.courseSubCategory : undefined,
                     });
@@ -442,8 +388,8 @@ export default function NewPostPage() {
           {/* Actions */}
           <div className="flex items-center gap-4 pt-4">
             <button
-              className="rounded-xl bg-blue-500 border border-blue-300 text-white px-6 py-2.5 font-medium shadow-md 
-                         hover:bg-blue-600 transition-colors duration-300 
+              className="rounded-xl bg-blue-500 border border-blue-300 text-white px-6 py-2.5 font-medium shadow-md
+                         hover:bg-blue-600 transition-colors duration-300
                          disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -451,7 +397,7 @@ export default function NewPostPage() {
             </button>
             <Link
               href="/admin/dashboard"
-              className="rounded-xl bg-white/40 border border-white/50 text-gray-900 px-6 py-2.5 font-medium shadow-md 
+              className="rounded-xl bg-white/40 border border-white/50 text-gray-900 px-6 py-2.5 font-medium shadow-md
                          hover:bg-white/60 transition-colors duration-300"
             >
               Huỷ

@@ -6,15 +6,6 @@ import type { SortOrder } from "mongoose";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const FIXED_KEYS = new Set([
-  "hoa-binh",
-  "ha-noi",
-  "mu-cang-chai",
-  "yen-bai",
-  "da-nang",
-  "sapa",
-]);
-
 /* ---------- helpers ---------- */
 function toBool(v: unknown): boolean | undefined {
   if (typeof v !== "string") return undefined;
@@ -48,28 +39,15 @@ function normalizeSubcategory(v?: string | null): string | undefined {
   const s = String(v).trim().toLowerCase();
 
   const map: Record<string, string> = {
-    // tất cả
     "all": "all", "tat-ca": "all", "tất cả": "all", "tat ca": "all",
-
-    // căn bản
     "can-ban": "can-ban", "căn bản": "can-ban", "can ban": "can-ban", "cb": "can-ban",
-
-    // nâng cao
     "nang-cao": "nang-cao", "nâng cao": "nang-cao", "nang cao": "nang-cao",
-
-    // thermal
     "thermal": "thermal", "bay thermal": "thermal",
-
-    // xc
     "xc": "xc", "bay xc": "xc",
-
-    // khí tượng
     "khi-tuong": "khi-tuong", "khí tượng": "khi-tuong", "khi tuong": "khi-tuong", "meteo": "khi-tuong",
   };
 
   if (map[s]) return map[s];
-
-  // Nếu user gửi sẵn key hợp lệ
   const allow = new Set(["can-ban", "nang-cao", "thermal", "xc", "khi-tuong", "all"]);
   return allow.has(s) ? s : undefined;
 }
@@ -93,14 +71,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const category = searchParams.get("category")?.trim() || undefined;
-    const fixedParam = searchParams.get("fixed");
-    const fixedKey = searchParams.get("fixedKey")?.trim() || undefined;
-
-    // Thêm: lọc theo subCategory (cho Kiến thức)
     const subRaw = searchParams.get("subCategory") ?? searchParams.get("sub") ?? undefined;
     const sub = normalizeSubcategory(subRaw);
 
-    // isPublished / published / status
     const p = toBool(
       searchParams.get("published") ??
       searchParams.get("isPublished") ??
@@ -115,23 +88,12 @@ export async function GET(req: Request) {
     const skip = (page - 1) * limit;
     const sort = buildSort(searchParams.get("sort") ?? "-publishedAt,-createdAt");
 
-    // ----- filter ----- 
     const filter: Record<string, any> = {};
 
     if (category) filter.category = new RegExp(`^${category}$`, "i");
-
-    // subCategory chỉ áp dụng khi có (và khác "all")
     if (sub && sub !== "all") {
       filter.subCategory = new RegExp(`^${sub}$`, "i");
     }
-
-    const fixed = toBool(fixedParam ?? "");
-    if (fixed === true) {
-      filter.isFixed = true;
-    } else if (fixed === false) {
-      filter.$or = [{ isFixed: { $ne: true } }, { isFixed: { $exists: false } }];
-    }
-    if (fixedKey) filter.fixedKey = fixedKey;
 
     if (wantPublished === true) {
       filter.$and = (filter.$and || []).concat({
@@ -179,18 +141,9 @@ export async function POST(req: Request) {
       if (b !== undefined) body.isPublished = b;
     }
 
-    if (body.isFixed === true) {
-      body.category = "news";
-      if (!body.fixedKey || !FIXED_KEYS.has(String(body.fixedKey))) {
-        return NextResponse.json(
-          { message: "Bài viết cố định cần 'fixedKey' hợp lệ (hoa-binh/ha-noi/mu-cang-chai/yen-bai/da-nang/sapa)." },
-          { status: 400 }
-        );
-      }
-    } else {
-      delete body.fixedKey;
-      body.isFixed = false;
-    }
+    // Remove any fixed post fields if sent
+    delete body.isFixed;
+    delete body.fixedKey;
 
     if (!body.slug && body.title) {
       const base = slugifyVN(String(body.title)).slice(0, 80) || `post-${Date.now().toString(36)}`;
@@ -205,17 +158,12 @@ export async function POST(req: Request) {
     try {
       const created = await Post.create({
         ...body,
+        isFixed: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
       return NextResponse.json(created, { status: 201 });
     } catch (err: any) {
-      if (err?.code === 11000 && err?.keyPattern?.fixedKey) {
-        return NextResponse.json(
-          { message: "fixedKey này đã được dùng cho một bài cố định khác." },
-          { status: 409 }
-        );
-      }
       if (err?.code === 11000 && err?.keyPattern?.slug) {
         return NextResponse.json(
           { message: "Slug đã tồn tại, hãy đổi tiêu đề hoặc slug." },

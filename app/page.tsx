@@ -338,9 +338,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================= LATEST POSTS (NEW) ================= */}
-      <RecentPosts />
-
       {/* ================= SPOTS ================= */}
       <section id="spots" className="relative z-10 py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -657,6 +654,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      {/* ================= LATEST POSTS (NEW) ================= */}
+      <RecentPosts />
 
       {/* ================= FOOTER ================= */}
       <div className="relative z-10 pt-12 pb-6">

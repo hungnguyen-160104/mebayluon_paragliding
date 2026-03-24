@@ -6,19 +6,8 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { authHeader, getToken } from "@/lib/auth";
 
-// dùng any để tương thích các field mở rộng (isFixed, fixedKey)
+// dùng any để tương thích các field mở rộng
 type AnyPost = any;
-
-// 6 điểm bay cố định (submenu Tin tức)
-type FixedKey = "hoa-binh" | "ha-noi" | "mu-cang-chai" | "yen-bai" | "da-nang" | "sapa";
-const FIXED_NEWS_OPTIONS: { value: FixedKey; label: string }[] = [
-  { value: "hoa-binh", label: "Viên Nam – Hòa Bình" },
-  { value: "ha-noi", label: "Đồi Bù – Chương Mỹ – Hà Nội" },
-  { value: "mu-cang-chai", label: "Khau Phạ – Mù Cang Chải – Yên Bái" },
-  { value: "yen-bai", label: "Trạm Tấu – Yên Bái" },
-  { value: "da-nang", label: "Sơn Trà – Đà Nẵng" },
-  { value: "sapa", label: "Sapa – Lào Cai" },
-];
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -31,7 +20,7 @@ export default function EditPostPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
-  // 🧭 Kiểm tra token + tải bài viết
+  // Kiểm tra token + tải bài viết
   useEffect(() => {
     if (!getToken()) {
       router.replace("/admin/login");
@@ -51,18 +40,18 @@ export default function EditPostPage() {
     })();
   }, [id, router]);
 
-  // ====== Upload ảnh từ file -> Cloudinary (qua backend) ======
+  // Upload ảnh từ file -> Cloudinary (qua backend)
   async function handlePickFile(file: File) {
     if (!file) return;
     setUploading(true);
     setUploadErr(null);
     try {
       const fd = new FormData();
-      fd.append("file", file); // trùng với .single("file") phía server
+      fd.append("file", file);
 
       const resp = await api<{ url: string; publicId?: string }>("/api/uploads/image", {
         method: "POST",
-        headers: { ...authHeader() }, // KHÔNG set Content-Type cho FormData
+        headers: { ...authHeader() },
         body: fd,
       });
 
@@ -80,10 +69,13 @@ export default function EditPostPage() {
     setLoading(true);
     setErr(null);
     try {
+      // Remove fixed post fields before sending
+      const { isFixed, fixedKey, ...payload } = form;
+
       await api(`/api/posts/${id}`, {
         method: "PUT",
         headers: { ...authHeader() },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       router.replace("/admin/dashboard");
     } catch (e: any) {
@@ -97,11 +89,9 @@ export default function EditPostPage() {
   if (err && !form) return <CenteredMessage message={err} type="error" />;
   if (!form) return <CenteredMessage message="Không tìm thấy bài viết." type="error" />;
 
-  const isNews = (form.category || "") === "news";
-
   const glassInputStyle = `
-    w-full rounded-lg px-3 py-2 bg-white/30 border border-white/40 shadow-sm 
-    text-gray-900 placeholder-gray-600 
+    w-full rounded-lg px-3 py-2 bg-white/30 border border-white/40 shadow-sm
+    text-gray-900 placeholder-gray-600
     focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
     transition-colors duration-200
   `;
@@ -114,7 +104,7 @@ export default function EditPostPage() {
       <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
 
       <div
-        className="relative z-10 w-full max-w-4xl p-6 md:p-8 rounded-2xl 
+        className="relative z-10 w-full max-w-4xl p-6 md:p-8 rounded-2xl
                    bg-white/15 backdrop-blur-xl border border-white/20 shadow-lg text-gray-800"
       >
         <h2 className="text-3xl font-bold mb-6 text-gray-900 drop-shadow-lg">Sửa bài viết</h2>
@@ -135,7 +125,7 @@ export default function EditPostPage() {
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-800">Ảnh cover</label>
 
-            {/* Nhập URL thủ công (giữ như cũ) */}
+            {/* Nhập URL thủ công */}
             <input
               className={glassInputStyle}
               value={form.coverImage || ""}
@@ -153,10 +143,10 @@ export default function EditPostPage() {
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) handlePickFile(f);
-                    e.currentTarget.value = ""; // cho phép chọn lại cùng 1 file vẫn trigger
+                    e.currentTarget.value = "";
                   }}
                 />
-                <span>📤 Tải ảnh lên Cloudinary</span>
+                <span>Tải ảnh lên Cloudinary</span>
               </label>
 
               {uploading && <span className="text-sm text-gray-800">Đang tải ảnh…</span>}
@@ -190,36 +180,6 @@ export default function EditPostPage() {
               <option value="store">Cửa hàng</option>
             </select>
           </div>
-
-          {/* Nhóm (Tin tức): "" = Bài viết mới, còn lại = bài cố định theo điểm bay */}
-          {isNews && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-gray-800">Nhóm (Tin tức)</label>
-              <select
-                className={glassInputStyle}
-                value={form.fixedKey || ""}
-                onChange={(e) => {
-                  const val = e.target.value as "" | FixedKey;
-                  setForm({
-                    ...form,
-                    isPublished: form.isPublished, // giữ nguyên
-                    isFixed: !!val,
-                    fixedKey: val || undefined,
-                  });
-                }}
-              >
-                <option value="">Bài viết mới (không cố định)</option>
-                {FIXED_NEWS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-700 mt-1">
-                Mỗi điểm có tối đa 01 bài cố định. Nếu chọn trùng điểm đã có bài, lưu sẽ báo lỗi.
-              </p>
-            </div>
-          )}
 
           {/* Tags */}
           <div>
@@ -287,8 +247,8 @@ export default function EditPostPage() {
           {/* Actions */}
           <div className="flex items-center gap-4 pt-4">
             <button
-              className="rounded-xl bg-blue-500 border border-blue-300 text-white px-6 py-2.5 font-medium shadow-md 
-                         hover:bg-blue-600 transition-colors duration-300 
+              className="rounded-xl bg-blue-500 border border-blue-300 text-white px-6 py-2.5 font-medium shadow-md
+                         hover:bg-blue-600 transition-colors duration-300
                          disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -296,7 +256,7 @@ export default function EditPostPage() {
             </button>
             <Link
               href="/admin/dashboard"
-              className="rounded-xl bg-white/40 border border-white/50 text-gray-900 px-6 py-2.5 font-medium shadow-md 
+              className="rounded-xl bg-white/40 border border-white/50 text-gray-900 px-6 py-2.5 font-medium shadow-md
                          hover:bg-white/60 transition-colors duration-300"
             >
               Huỷ
@@ -324,7 +284,7 @@ function CenteredMessage({
     >
       <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
       <div
-        className="relative z-10 p-8 rounded-2xl bg-white/30 backdrop-blur-xl 
+        className="relative z-10 p-8 rounded-2xl bg-white/30 backdrop-blur-xl
                    border border-white/40 shadow-lg"
       >
         <p className={`text-lg font-medium ${textColor}`}>{message}</p>

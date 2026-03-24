@@ -15,8 +15,9 @@ import {
   Music,
   Flame,
   Waves,
-  Mountain,
   Star,
+  Mountain,
+  Camera,
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/language-context";
@@ -38,19 +39,23 @@ import {
 /* ================= Helpers ================= */
 const getAmenityIcon = (amenity: AmenityKey) => {
   const icons: Partial<Record<AmenityKey, React.ElementType>> = {
-    "free-wifi": Wifi,
+    "free-handmade-tea": Home,
     "free-parking": Car,
+    "free-wifi": Wifi,
+    "shared-bathroom": Home,
     "bbq-area": Utensils,
-    karaoke: Music,
     campfire: Flame,
+    karaoke: Music,
     "swimming-pool": Waves,
+    "camping-area": Home,
     "team-building-space": Users,
-    "trekking-tours": Mountain,
+    paragliding: Mountain,
+    "flycam-service": Camera,
   };
+
   return icons[amenity] ?? Home;
 };
 
-// Intro card keys are limited -> TS knows exactly what we index
 type IntroTitleKey = "location" | "traditional" | "cafe";
 type IntroDescKey = "traditionalDesc" | "cafeDesc";
 
@@ -62,34 +67,44 @@ type Lang = "vi" | "en" | "fr" | "ru";
 
 function formatRating(rating: number, langKey: Lang) {
   const locale =
-    langKey === "vi" ? "vi-VN" : langKey === "fr" ? "fr-FR" : langKey === "ru" ? "ru-RU" : "en-US";
-  return new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-    rating
-  );
+    langKey === "vi"
+      ? "vi-VN"
+      : langKey === "fr"
+      ? "fr-FR"
+      : langKey === "ru"
+      ? "ru-RU"
+      : "en-US";
+
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(rating);
 }
 
 function GoogleReviewBadge() {
   const { language } = useLanguage();
-  const langKey = ((language ?? "vi").toString().slice(0, 2).toLowerCase() as Lang);
+  const langKey = (
+    (language ?? "vi").toString().slice(0, 2).toLowerCase() as Lang
+  );
 
-  // Số liệu thực tế bạn cung cấp
   const rating = 4.6;
   const reviewsCount = 93;
 
-  const i18n: Record<Lang, { reviews: string; open: string; onGoogle: string }> = {
-    vi: { reviews: "đánh giá", open: "Xem", onGoogle: "trên Google" },
-    en: { reviews: "reviews", open: "Open", onGoogle: "on Google" },
-    fr: { reviews: "avis", open: "Voir", onGoogle: "sur Google" },
-    ru: { reviews: "отзывов", open: "Открыть", onGoogle: "в Google" },
-  };
-  const text = i18n[langKey] ?? i18n.vi;
+  const i18n: Record<Lang, { reviews: string; open: string; onGoogle: string }> =
+    {
+      vi: { reviews: "đánh giá", open: "Xem", onGoogle: "trên Google" },
+      en: { reviews: "reviews", open: "Open", onGoogle: "on Google" },
+      fr: { reviews: "avis", open: "Voir", onGoogle: "sur Google" },
+      ru: { reviews: "отзывов", open: "Открыть", onGoogle: "в Google" },
+    };
 
+  const text = i18n[langKey] ?? i18n.vi;
   const ratingPercent = `${(Math.max(0, Math.min(5, rating)) / 5) * 100}%`;
 
   return (
     <div
       className="
-        fixed z-9999
+        fixed z-[9999]
         bottom-4 left-1/2 -translate-x-1/2
         md:bottom-6 md:right-6 md:left-auto md:translate-x-0
         print:hidden
@@ -111,23 +126,24 @@ function GoogleReviewBadge() {
           transition-all
         "
       >
-        {/* Logo Google */}
         <span className="relative inline-flex items-center justify-center w-6 h-6 rounded-sm overflow-hidden">
           <Image src="/logo_gg.png" alt="Google" width={24} height={24} />
         </span>
 
-        {/* Rating + stars (with partial fill) */}
         <div className="flex items-center gap-1">
           <span className="font-semibold">{formatRating(rating, langKey)}</span>
 
           <div className="relative h-4">
-            {/* Empty row */}
             <div className="flex">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={`e-${i}`} className="w-4 h-4 text-neutral-300" strokeWidth={1.5} />
+                <Star
+                  key={`e-${i}`}
+                  className="w-4 h-4 text-neutral-300"
+                  strokeWidth={1.5}
+                />
               ))}
             </div>
-            {/* Filled row clipped by rating */}
+
             <div
               className="absolute left-0 top-0 h-4 overflow-hidden"
               style={{ width: ratingPercent }}
@@ -145,14 +161,12 @@ function GoogleReviewBadge() {
           </div>
         </div>
 
-        {/* Count */}
         <div className="flex items-center gap-1 text-sm text-neutral-700">
           <span className="mx-1 w-px h-4 bg-neutral-300" />
           <span className="font-medium">{reviewsCount}</span>
           <span className="font-semibold">{text.reviews}</span>
         </div>
 
-        {/* CTA nhỏ */}
         <span className="ml-2 text-xs md:text-sm text-blue-600 underline decoration-from-font">
           {text.open} {text.onGoogle}
         </span>
@@ -165,8 +179,12 @@ function GoogleReviewBadge() {
 export default function HomestayPage() {
   const { t, language } = useLanguage();
   const currentLocale = language === "en" ? "en-US" : "vi-VN";
+
   const priceFormatter = useMemo(
-    () => new Intl.NumberFormat(currentLocale, { style: "decimal" }),
+    () =>
+      new Intl.NumberFormat(currentLocale, {
+        style: "decimal",
+      }),
     [currentLocale]
   );
 
@@ -195,28 +213,30 @@ export default function HomestayPage() {
         <section className="py-16 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] invisible">
                 {t.homestay.intro.title}
               </h2>
-              <p className="text-base md:text-lg text-white/90 leading-relaxed md:leading-8 mb-8 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
-                {t.homestay.intro.description}
+
+              <p className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-8 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mt-8">
+                {t.homestay.intro.title}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {introCards.map((card) => {
                   const Icon = card.icon;
+
                   return (
-                    <Card
-                      key={card.titleKey}
-                      className="rounded-2xl bg-black/20 backdrop-blur-lg border border-white/10 text-white shadow-xl hover:shadow-2xl transition-shadow"
-                    >
+                    <Card key={card.titleKey} className="invisible">
                       <CardContent className="pt-6 pb-6 text-center space-y-2">
                         <Icon className="h-12 w-12 mx-auto mb-2 text-accent" />
                         <h3 className="font-semibold text-white/95 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                           {t.homestay.intro[card.titleKey]}
                         </h3>
                         <p className="text-sm text-white/80">
-                          {card.desc ?? (card.descKey ? t.homestay.intro[card.descKey] : "")}
+                          {card.desc ??
+                            (card.descKey
+                              ? t.homestay.intro[card.descKey]
+                              : "")}
                         </p>
                       </CardContent>
                     </Card>
@@ -228,7 +248,10 @@ export default function HomestayPage() {
         </section>
 
         {/* ===== Room Types ===== */}
-        <section id="rooms" className="py-16 bg-transparent border-y border-white/10">
+        <section
+          id="rooms"
+          className="py-16 bg-transparent border-y border-white/10"
+        >
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
@@ -273,7 +296,8 @@ export default function HomestayPage() {
                     <div className="flex items-center gap-2 mb-4">
                       <Users className="h-4 w-4 text-white/70" />
                       <span className="text-sm text-white/90">
-                        {t.homestay.rooms.capacity}: {room.capacity.adults} {t.homestay.rooms.adults}
+                        {t.homestay.rooms.capacity}: {room.capacity.adults}{" "}
+                        {t.homestay.rooms.adults}
                         {typeof room.capacity.children === "number" &&
                           room.capacity.children > 0 &&
                           ` + ${room.capacity.children} ${t.homestay.rooms.children}`}
@@ -282,14 +306,23 @@ export default function HomestayPage() {
 
                     <div className="flex flex-wrap gap-2 mb-4">
                       {room.features.map((feature: RoomFeatureKey) => (
-                        <Badge key={feature} variant="secondary" className="bg-white/15 text-white border-none">
+                        <Badge
+                          key={feature}
+                          variant="secondary"
+                          className="bg-white/15 text-white border-none"
+                        >
                           {t.homestay.features[feature]}
                         </Badge>
                       ))}
                     </div>
 
-                    <Button className="w-full mt-auto bg-accent hover:bg-accent/90" asChild>
-                      <a href={`tel:${locationInfo.phone}`}>{t.homestay.rooms.bookNow}</a>
+                    <Button
+                      className="w-full mt-auto bg-accent hover:bg-accent/90"
+                      asChild
+                    >
+                      <a href={`tel:${locationInfo.phone}`}>
+                        {t.homestay.rooms.bookNow}
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
@@ -324,7 +357,8 @@ export default function HomestayPage() {
                   {menuItems.map((category) => (
                     <div key={category.category}>
                       <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                        <Coffee className="h-6 w-6 text-accent" /> {t.homestay.cafe.categories[category.category]}
+                        <Coffee className="h-6 w-6 text-accent" />
+                        {t.homestay.cafe.categories[category.category]}
                       </h3>
 
                       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -333,10 +367,13 @@ export default function HomestayPage() {
                             key={item.name}
                             className="flex justify-between items-center p-3 rounded-lg bg-black/20 backdrop-blur-lg border border-white/10"
                           >
-                            <span className="font-medium text-white/95">{item.name}</span>
+                            <span className="font-medium text-white/95">
+                              {item.name}
+                            </span>
                             {item.price > 0 && (
                               <span className="text-accent font-semibold">
-                                {priceFormatter.format(item.price)}₫{item.unit && `/${item.unit}`}
+                                {priceFormatter.format(item.price)}₫
+                                {item.unit && `/${item.unit}`}
                               </span>
                             )}
                           </li>
@@ -350,7 +387,9 @@ export default function HomestayPage() {
                   <p className="text-lg font-semibold mb-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                     {t.homestay.cafe.specialNote}
                   </p>
-                  <p className="text-white/90">{t.homestay.cafe.specialNoteDesc}</p>
+                  <p className="text-white/90">
+                    {t.homestay.cafe.specialNoteDesc}
+                  </p>
                 </div>
               </div>
             </div>
@@ -360,30 +399,37 @@ export default function HomestayPage() {
         {/* ===== Amenities ===== */}
         <section className="py-16 bg-transparent border-y border-white/10">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                 {t.homestay.amenities.title}
               </h2>
               <p className="text-white/85">{t.homestay.amenities.subtitle}</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-              {amenities.map((amenityKey) => {
-                const Icon = getAmenityIcon(amenityKey);
-                return (
-                  <Card
-                    key={amenityKey}
-                    className="text-center rounded-2xl bg-black/30 backdrop-blur-lg border border-white/10 text-white shadow-xl"
-                  >
-                    <CardContent className="pt-6 pb-6">
-                      <Icon className="h-10 w-10 mx-auto mb-3 text-accent" />
-                      <p className="font-medium text-sm text-white/90">
-                        {t.homestay.amenities.list[amenityKey]}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="max-w-[1500px] mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-5">
+                {amenities.map((amenityKey) => {
+                  const Icon = getAmenityIcon(amenityKey);
+
+                  return (
+                    <Card
+                      key={amenityKey}
+                      className="
+                        text-center rounded-[28px]
+                        bg-black/30 backdrop-blur-lg border border-white/10 text-white shadow-xl
+                        min-h-[150px] sm:min-h-[165px] xl:min-h-[175px]
+                      "
+                    >
+                      <CardContent className="h-full px-4 py-5 sm:px-5 sm:py-6 flex flex-col items-center justify-center">
+                        <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-3 text-accent" />
+                        <p className="font-medium text-sm sm:text-base leading-snug text-white/90 max-w-[190px] mx-auto">
+                          {t.homestay.amenities.list[amenityKey]}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
@@ -407,34 +453,47 @@ export default function HomestayPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                     {locText.title}
                   </h2>
-                  <p className="text-white/90 mb-6 leading-relaxed">{locText.description}</p>
+                  <p className="text-white/90 mb-6 leading-relaxed">
+                    {locText.description}
+                  </p>
 
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <MapPin className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold text-white/95">{locText.addressLabel}</p>
-                        <p className="text-sm text-white/80">{locationInfo.address}</p>
+                        <p className="font-semibold text-white/95">
+                          {locText.addressLabel}
+                        </p>
+                        <p className="text-sm text-white/80">
+                          {locationInfo.address}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
                       <Car className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold text-white/95">{locText.fromHanoi}</p>
+                        <p className="font-semibold text-white/95">
+                          {locText.fromHanoi}
+                        </p>
                         <p className="text-sm text-white/80">
-                          {locationInfo.distanceFromHanoi} - {locationInfo.travelTime}
+                          {locationInfo.distanceFromHanoi} -{" "}
+                          {locationInfo.travelTime}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <Mountain className="h-6 w-6 text-accent shrink-0 mt-1" />
+                      <Home className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold mb-2 text-white/95">{locText.nearby}</p>
+                        <p className="font-semibold mb-2 text-white/95">
+                          {locText.nearby}
+                        </p>
                         <ul className="space-y-1 text-white/85">
                           {locText.nearbyList.map((line: string, i: number) => (
-                            <li key={i} className="text-sm">• {line}</li>
+                            <li key={i} className="text-sm">
+                              • {line}
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -452,14 +511,20 @@ export default function HomestayPage() {
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
               {t.homestay.cta.title}
             </h2>
+
             <p className="text-xl mb-8 max-w-2xl mx-auto text-white/90 leading-relaxed drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
               {t.homestay.cta.subtitle}
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-white" asChild>
+              <Button
+                size="lg"
+                className="bg-accent hover:bg-accent/90 text-white"
+                asChild
+              >
                 <a href={`tel:${locationInfo.phone}`}>
-                  <Phone className="mr-2 h-5 w-5" /> {t.homestay.callNow}
+                  <Phone className="mr-2 h-5 w-5" />
+                  {t.homestay.callNow}
                 </a>
               </Button>
 
@@ -476,7 +541,6 @@ export default function HomestayPage() {
         </section>
       </div>
 
-      {/* ===== Google Review Badge (always visible) ===== */}
       <GoogleReviewBadge />
     </div>
   );
