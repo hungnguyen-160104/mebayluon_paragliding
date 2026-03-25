@@ -90,6 +90,8 @@ export default function ServiceOptions() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(["pickup", "flycam", "camera360"] as const).map((k) => {
             const conf = cfg.addons[k];
+            if (!conf) return null;
+
             const disabled =
               conf.pricePerPersonVND === null && conf.pricePerPersonUSD === null;
             const qty = data.addonsQty?.[k] ?? 0;
