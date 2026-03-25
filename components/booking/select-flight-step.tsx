@@ -1406,7 +1406,7 @@ export default function SelectFlightStep() {
                           active={data.packageKey === khauPhaPackages.weekday.key}
                           title={ui.weekdayFlightTitle}
                           price={`${ui.fromLabel} ${formatVND(
-                            khauPhaPackages.weekday.priceVND ?? 2_120_000,
+                            khauPhaPackages.weekday.priceVND ?? 2_190_000,
                           )}`}
                           onClick={() =>
                             update({
@@ -1771,11 +1771,6 @@ export default function SelectFlightStep() {
                                 <p className="text-[13px] italic leading-5 text-[#355166] sm:text-[14px]">
                                   {ui.flycamDescription}
                                 </p>
-                                {selected === "ha_noi" ? (
-                                  <p className="text-[13px] italic leading-5 text-[#FF5E1F] sm:text-[14px]">
-                                    {ui.optionalServicesFlycamNotice}
-                                  </p>
-                                ) : null}
                               </>
                             ) : null}
 

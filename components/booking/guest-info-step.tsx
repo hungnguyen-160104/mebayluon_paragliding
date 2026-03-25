@@ -73,9 +73,9 @@ const UI_TEXT: Record<
   }
 > = {
   vi: {
-    title: "Thông Tin Hành Khách",
-    subtitle: "Thông tin hành khách",
-    passengerPrefix: "Hành khách",
+    title: "THÔNG TIN KHÁCH BAY",
+    subtitle: "Thông tin khách bay",
+    passengerPrefix: "Khách bay",
     warning:
       "Vui lòng điền đúng thông tin cá nhân theo giấy tờ tùy thân. Nếu sai, bảo hiểm sẽ không có hiệu lực.",
 
@@ -302,7 +302,6 @@ export default function GuestInfoStep() {
       <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-[#F5F7FA] shadow-sm">
         <div className="border-b border-[#DCE7F3] bg-white px-4 py-4 md:px-6">
           <h3 className="text-lg font-bold text-[#1C2930] md:text-xl">{ui.title}</h3>
-          <p className="mt-1 max-w-3xl text-sm text-[#5B6B7A]">{ui.subtitle}</p>
         </div>
 
         <div className="space-y-5 p-4 md:p-6">
@@ -326,7 +325,7 @@ export default function GuestInfoStep() {
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F8FAFC] px-4 py-4 md:px-5">
                     <div className="text-lg font-bold text-[#1C2930]">
-                      {ui.passengerPrefix} {idx + 1}
+                      {ui.passengerPrefix} #{idx + 1}
                     </div>
 
                     <button

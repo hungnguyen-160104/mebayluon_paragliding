@@ -60,9 +60,9 @@ const UI_I18N: Record<
   }
 > = {
   vi: {
-    title: "Xác nhận thông tin đặt bay",
+    title: "Xác nhận đặt bay",
     subtitle:
-      "Vui lòng kiểm tra thật kỹ thông tin chuyến bay, hành khách và dịch vụ đã chọn trước khi xác nhận.",
+      "Vui lòng kiểm tra thật kỹ thông tin chuyến bay, hành khách và dịch vụ đã chọn trước khi xác nhận",
     termsTitle: "Điều khoản & điều kiện",
     openInNewTab: "Mở trong tab mới",
     close: "Đóng",
@@ -749,7 +749,7 @@ export default function ReviewConfirmStep() {
 
   const serviceDetails = [
     {
-      label: L("service", "Service"),
+      label: L("location", "Flight location"),
       value: locationName,
     },
     {
@@ -779,13 +779,6 @@ export default function ReviewConfirmStep() {
     {
       label: L("dayType", "Day type"),
       value: getHolidayTypeLabel(lang, billInLang.holidayType),
-    },
-    {
-      label: L("selectedServices", "Selected services"),
-      value:
-        selectedServicesCount > 0
-          ? `${selectedServicesCount} ${ui.selectedCount}`
-          : ui.notSelected,
     },
   ];
 

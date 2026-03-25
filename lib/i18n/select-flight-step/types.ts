@@ -57,7 +57,6 @@ export type SelectFlightStepUiText = {
   optionalServicesPrivatePickupNote3: string;
   optionalServicesMountainShuttleDesc: string;
   optionalServicesSunsetDesc: string;
-  optionalServicesFlycamNotice: string;
   groupGuestsSuffix: string;
   perPersonWord: string;
   carUnit: string;

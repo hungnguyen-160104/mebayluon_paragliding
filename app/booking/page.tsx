@@ -39,7 +39,7 @@ export default function BookingPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
               {t.pageTitle}
             </h1>
-            <p className="mt-2 text-sm text-white/90 md:text-base">
+            <p className="mt-2 text-sm font-bold italic text-white md:text-base">
               {t.pageSubtitle}
             </p>
           </div>

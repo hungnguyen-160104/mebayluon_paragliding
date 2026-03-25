@@ -56,7 +56,7 @@ export const flightOptions: FlightOption[] = [
           "Phi công sử dụng camera 360 quay toàn bộ chuyến bay và edit dữ liệu cho bạn.",
       },
       {
-        name: "Flycam",
+        name: "Flycam (Drone camera)",
         price: 350000,
         description:
           "Dịch vụ flycam có thể không luôn sẵn có. Nếu không có sẽ hoàn lại 100% phí flycam.",

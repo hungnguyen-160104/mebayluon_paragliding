@@ -48,11 +48,31 @@ const BASE_SPOTS: Record<string, SpotData> = {
     title: "Bay Trên Thung Lũng Mường Hoa",
     altitude: "1.500 – 2.000 m",
     description:
-      "Bay trên thung lũng Mường Hoa huyền ảo, ngắm ruộng bậc thang và dãy Hoàng Liên trong biển mây.",
+      `Khám phá Sapa từ một góc nhìn mới với Trải nghiệm dù lượn trên Thung lũng Mường Hoa. Chuyến bay đôi ly kỳ nhưng an toàn này hoàn hảo cho những người mới bắt đầu và những người tìm kiếm phiêu lưu. Cất cánh từ bản Hàng Đá, một trong những điểm cất cánh dù lượn cao nhất ở Việt Nam và lướt qua những thửa ruộng bậc thang mang tính biểu tượng của Thung lũng Mường Hoa, những ngôi làng mờ sương và phong cảnh núi non ngoạn mục. Chuyến bay kết thúc tại Làng Lao Chải, nơi bạn có thể khám phá văn hóa và ẩm thực H'mong địa phương.
+
+📦 GÓI DỊCH VỤ BAO GỒM:
+✅ Xe đưa đón khứ hồi (thị trấn Sapa, Lao Chải, Tả Van) - theo tuỳ chọn trên booking
+✅ Chứng nhận tham gia
+✅ Nước uống
+✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
+✅ Bảo hiểm
+✅ Phi công chuyên nghiệp & trang thiết bị an toàn
+
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+
+📌 THÔNG TIN THÊM:
+🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+⏳ Tổng hành trình từ lúc đón đến lúc trả khách: khoảng 90 phút
+🔄 Miễn phí đổi/hủy lịch do thời tiết
+💳 Thanh toán tiền mặt hoặc thẻ tín dụng (tại điểm bay)
+
+⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
+
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Mây luồn – ruộng bậc thang – Fansipan",
-    duration: "10 – 20 phút",
+    duration: "10 – 15 phút",
     landingPoint: "Thung lũng Mường Hoa",
-    basePrice: 2190000,
+    basePrice: 2090000,
     image: "/spots/muong-hoa-sapa/hero.jpg",
     galleryImages: [
       "/spots/muong-hoa-sapa/gallery-1.jpg",
@@ -70,7 +90,7 @@ const BASE_SPOTS: Record<string, SpotData> = {
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 2190000,
+        price: 2090000,
         description: "Trải nghiệm cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
@@ -88,7 +108,7 @@ const BASE_SPOTS: Record<string, SpotData> = {
     landscape: "Bán đảo – đại dương – vịnh Đà Nẵng",
     duration: "8 – 15 phút",
     landingPoint: "Khu ven biển Sơn Trà",
-    basePrice: 1790000,
+    basePrice: 1690000,
     image: "/spots/son-tra/hero.jpg",
     galleryImages: [
       "/spots/son-tra/gallery-1.jpg",
@@ -106,7 +126,7 @@ const BASE_SPOTS: Record<string, SpotData> = {
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 1790000,
+        price: 1690000,
         description: "Trọn gói cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
@@ -118,9 +138,33 @@ const BASE_SPOTS: Record<string, SpotData> = {
     title: "Bay Trên Tứ Đại Đỉnh Đèo",
     altitude: "1.200 – 1.500 m",
     description:
-      "Một trong những cung đèo đẹp nhất Việt Nam, đặc biệt rực rỡ mùa lúa chín.",
+      `Trải nghiệm bay dù lượn tại đèo Khau Phạ – một trong tứ đại đỉnh đèo hùng vĩ bậc nhất Việt Nam.
+Mùa nước đổ (tháng 4–5): ruộng bậc thang óng ánh như những tấm gương trời
+Mùa lúa xanh (tháng 6–7): sắc xanh mướt trải dài, đầy sức sống
+Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng rực rỡ, đẹp mê hoặc
+
+📦 GÓI DỊCH VỤ BAO GỒM:
+✅ Xe lên xuống núi (theo tuỳ chọn booking)
+✅ Chứng nhận tham gia
+✅ Nước uống, quà lưu niệm
+✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
+✅ Bảo hiểm
+✅ Phi công chuyên nghiệp & trang thiết bị an toàn
+✅ Miễn phí lưu trú không bao gồm tháng cao điểm và ngày lễ
+
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+
+📌 THÔNG TIN THÊM:
+🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+⏳ Tổng hành trình khoảng 40~60 phút
+🔄 Miễn phí đổi/hủy lịch do thời tiết
+💳 Thanh toán tiền mặt (tại điểm bay)
+
+⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
+
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Đèo cao – thung lũng – mùa vàng",
-    duration: "10 – 20 phút",
+    duration: "10 – 15 phút",
     landingPoint: "Thung lũng dưới chân đèo",
     basePrice: 2190000,
     image: "/spots/khau-pha/hero.jpg",
@@ -154,9 +198,29 @@ const BASE_SPOTS: Record<string, SpotData> = {
     title: "Săn Mây Trên Đồi Núi Trùng Điệp",
     altitude: "1.000 – 1.500 m",
     description:
-      "Không khí trong lành, cảnh quan núi non hùng vĩ, rất hợp săn mây.",
+      `Nằm ở xã Phình Hồ, huyện Trạm Tấu, tỉnh Yên Bái, cách trung tâm thành phố Yên Bái 80 km - thích hợp cho 1 chuyến đi dài cần dần chân nghỉ ngơi và tận hưởng bay dù lượn.
+
+📦 GÓI DỊCH VỤ BAO GỒM:
+✅ Xe lên núi
+✅ Chứng nhận tham gia
+✅ Nước uống, quà lưu niệm
+✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
+✅ Bảo hiểm
+✅ Phi công chuyên nghiệp & trang thiết bị an toàn
+
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+
+📌 THÔNG TIN THÊM:
+🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+⏳ Tổng hành trình khoảng 60~90 phút
+🔄 Miễn phí đổi/hủy lịch do thời tiết
+💳 Thanh toán tiền mặt (tại điểm bay)
+
+⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
+
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Săn mây – núi rừng – thung lũng",
-    duration: "8 – 15 phút",
+    duration: "10 – 15 phút",
     landingPoint: "Bãi hạ cánh Trạm Tấu",
     basePrice: 2000000,
     image: "/spots/tram-tau/hero.jpg",
@@ -178,14 +242,62 @@ const BASE_SPOTS: Record<string, SpotData> = {
     ]),
   },
 
+  "ha-giang": {
+    name: "Hà Giang",
+    title: "Bay Trên Cao Nguyên Đá Hà Giang",
+    altitude: "1.000 – 1.200 m",
+    description: "Ngắm nhìn cao nguyên đá Đồng Văn hùng vĩ từ trên cao. Trải nghiệm bay đôi cùng phi công chuyên nghiệp tại Quản Bạ, Hà Giang.",
+    landscape: "Cao nguyên đá – núi non hùng vĩ",
+    duration: "10 – 15 phút",
+    landingPoint: "Thung lũng Quản Bạ",
+    basePrice: 2190000,
+    image: "/ha-giang.JPG",
+    galleryImages: ["/ha-giang.JPG"],
+    packages: filterPackages([
+      {
+        name: "Tiêu chuẩn",
+        price: 2190000,
+        description: "Trải nghiệm cơ bản",
+        features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
+      },
+    ]),
+  },
+
   "vien-nam": {
     name: "Viên Nam",
     title: "Điểm Bay Gần Hà Nội",
     altitude: "400 – 700 m",
     description:
-      "Phù hợp luyện tập, di chuyển thuận tiện từ trung tâm Hà Nội.",
+      `Rời xa phố thị chật chội, tìm về vùng ngoại ô xanh mướt cỏ cây và sự yên bình hiếm có. Điểm bay gần Hà Nội sở hữu độ cao lý tưởng cùng điều kiện thời tiết ổn định, là lựa chọn hấp dẫn, thu hút đông đảo phi công trong và ngoài nước đến khám phá và chinh phục bầu trời.
+
+📦 GÓI DỊCH VỤ BAO GỒM:
+✅ Xe lên núi, Xe di chuyển từ Hà Nội tới điểm bay (Hành khách cũng có thể tự di chuyển tới điểm bay theo tuỳ chọn trên booking)
+✅ Chứng nhận tham gia
+✅ Nước uống, quà lưu niệm
+✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
+✅ Bảo hiểm
+✅ Phi công chuyên nghiệp & trang thiết bị an toàn
+
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+
+📌 THÔNG TIN THÊM:
+🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+⏳ Tổng hành trình khoảng 3~5 tiếng từ khi đón tới lúc quay về trung tâm Hà Nội
+🔄 Miễn phí đổi/hủy lịch do thời tiết
+💳 Thanh toán tiền mặt (tại điểm bay)
+
+⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
+
+📅 LỊCH TRÌNH:
+08:00 – 08:30 | Đón khách tại khách sạn hoặc điểm hẹn
+08:30 – 09:30 | Di chuyển đến điểm bay (núi Đồi Bù hoặc Viên Nam)
+09:30 – 10:00 | Di chuyển lên đỉnh núi bằng xe van - Nhận trang thiết bị an toàn & hướng dẫn bay
+10:00 – 12:00 | Bay lượn trên bầu trời tuyệt đẹp trong 10–20 phút cùng phi công
+14:00 – 15:00 | Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
+
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Đồi núi – gần Hà Nội",
-    duration: "7 – 12 phút",
+    duration: "10 – 15 phút",
     landingPoint: "Chân đồi Viên Nam",
     basePrice: 1690000,
     image: "/spots/vien-nam/hero.jpg",

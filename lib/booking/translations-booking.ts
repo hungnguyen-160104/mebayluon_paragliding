@@ -92,7 +92,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     pageSubtitle:
       "Lịch bay linh động, hoàn hủy miễn phí.",
     stepNames: [
-      "Chọn dịch vụ",
+      "Chọn điểm bay",
       "Ngày & liên hệ",
       "Khách bay",
       "Xác nhận",
@@ -120,8 +120,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
       date: "Ngày bay",
       timeSlot: "Khung giờ",
-      phone: "Số điện thoại liên hệ",
-      email: "Email liên hệ",
+      phone: "Số điện thoại",
+      email: "Email",
       pickup: "Điểm đón",
       pickupFixed: "Điểm đón cố định: TTTM GO! Thăng Long, Hà Nội (Khung giờ đón: 8h – 9h sáng)",
       specialRequest: "Yêu cầu đặc biệt",
