@@ -617,7 +617,7 @@ function getServiceMeta(
     return {
       id: "khau_pha_shuttle",
       exclusiveGroup: "khau_pha_pickup",
-      defaultSelected: true,
+      defaultSelected: false,
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
