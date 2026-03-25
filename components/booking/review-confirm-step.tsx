@@ -735,8 +735,6 @@ export default function ReviewConfirmStep() {
   const camera360Qty = getAddonQty("camera360");
   const flycamQty = getAddonQty("flycam");
 
-  const selectedServicesCount = visibleSelectedServices.length;
-
   const noPickupSelected =
     selectedPickupServices.length === 0 &&
     pickupAddonQty === 0 &&
