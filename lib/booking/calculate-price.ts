@@ -454,6 +454,26 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
+        key: "khau_pha_paramotor_2000m",
+        label: {
+          vi: "BAY SĂN MÂY, BAY HOÀNG HÔN, BAY BÌNH MINH (độ cao 2.000m)",
+          en: "Cloud Hunting / Sunset / Sunrise Flight (2,000m altitude)",
+          fr: "Vol chasse aux nuages / coucher de soleil / lever de soleil (2 000 m)",
+          ru: "Полет за облаками / закат / рассвет (высота 2000 м)",
+          zh: "云海/日落/日出飞行（2000 米高度）",
+          hi: "क्लाउड हंटिंग / सनसेट / सनराइज फ्लाइट (2,000 मीटर ऊंचाई)",
+        },
+        description: {
+          vi: "Bay lên độ cao 2 nghìn mét để ngắm biển mây hoặc đón bình minh/hoàng hôn. Một trải nghiệm độc nhất!",
+          en: "Ascend to 2,000m to admire the cloud sea or catch sunrise/sunset. A truly unique experience!",
+        },
+        controlType: "checkbox",
+        priceVND: 700_000,
+        priceUSD: 28,
+        visibleForPackages: ["khau_pha_paramotor"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
         key: "khau_pha_shuttle",
         label: {
           vi: "Xe trung chuyển xã Tú Lệ (Đón/Trả)",

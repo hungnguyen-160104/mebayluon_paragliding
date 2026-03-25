@@ -81,9 +81,9 @@ export const vi: CommonTranslation = {
         duration: "90 phút",
       },
       doiBu: {
-        name: "Đồi Bù - Viên Nam",
+        name: "Hà Nội",
         location: "Hà Nội",
-        area: "Hà Nội",
+        area: "Đồi Bù - Viên Nam",
         description: "Điểm bay gần thủ đô Hà Nội",
         highlight: "Điểm bay gần thủ đô",
         duration: "180 phút",
