@@ -850,7 +850,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       flycam: {
         label: {
-          vi: "Flycam",
+          vi: "Flycam (Drone Camera)",
           en: "Flycam",
           fr: "Flycam",
           ru: "Flycam",
