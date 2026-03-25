@@ -190,7 +190,7 @@ export default function SuccessStep() {
             </button>
           </div>
 
-          <div className="rounded-xl border border-[#DCE7F3] bg-white p-2 md:p-3">
+          <div className="rounded-xl border border-[#DCE7F3] bg-white p-2 md:p-3 mx-auto" style={{ maxWidth: "560px" }}>
             <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 12 }}>
               <BookingTicket
                 booking={data}
