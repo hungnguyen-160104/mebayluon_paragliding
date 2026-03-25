@@ -20,7 +20,7 @@ export const vi: CommonTranslation = {
   hero: {
     title: "MEBAYLUON PARAGLIDING",
     subtitle: "Fly Above Vietnam",
-    description: "Trải nghiệm cảm giác bay tự do giữa mây trời Việt Nam",
+    description: "Trải nghiệm bay tự do giữa mây trời Việt Nam",
     bookNow: "Đặt Lịch Bay Ngay",
     learnMore: "Tìm hiểu thêm",
   },

@@ -90,7 +90,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   vi: {
     pageTitle: "Đặt bay",
     pageSubtitle:
-      "Lịch bay linh động, hoàn hủy miễn phí.",
+      "Lịch bay linh động, hoàn hủy miễn phí",
     stepNames: [
       "Chọn điểm bay",
       "Ngày & liên hệ",
@@ -187,7 +187,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   en: {
     pageTitle: "Book your flight",
     pageSubtitle:
-      "Flexible flight schedule, free cancellation and changes.",
+      "Flexible flight schedule, free cancellation and changes",
     stepNames: ["Select", "Date & Contact", "Passengers", "Review", "Done"],
     buttons: {
       next: "Next",
@@ -277,7 +277,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   fr: {
     pageTitle: "Réserver votre vol",
     pageSubtitle:
-      "Horaires de vol flexibles, annulation et modification gratuites.",
+      "Horaires de vol flexibles, annulation et modification gratuites",
     stepNames: ["Sélection", "Date & contact", "Passagers", "Validation", "Terminé"],
     buttons: {
       next: "Continuer",
@@ -369,7 +369,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   ru: {
     pageTitle: "Бронирование полёта",
-    pageSubtitle: "Гибкое расписание рейсов, бесплатная отмена и изменение.",
+    pageSubtitle: "Гибкое расписание рейсов, бесплатная отмена и изменение",
     stepNames: ["Выбор", "Дата и контакт", "Пассажиры", "Подтверждение", "Готово"],
     buttons: {
       next: "Далее",
@@ -461,7 +461,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
 
   zh: {
     pageTitle: "预订飞行",
-    pageSubtitle: "灵活的航班时刻，可免费取消和改签。",
+    pageSubtitle: "灵活的航班时刻，可免费取消和改签",
     stepNames: ["选择服务", "日期与联系", "乘客信息", "确认", "完成"],
     buttons: {
       next: "下一步",
@@ -553,7 +553,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   hi: {
     pageTitle: "फ्लाइट बुक करें",
     pageSubtitle:
-      "लचीला उड़ान शेड्यूल, मुफ्त रद्दीकरण और बदलाव.",
+      "लचीला उड़ान शेड्यूल, मुफ्त रद्दीकरण और बदलाव",
     stepNames: ["सेवा चुनें", "तारीख व संपर्क", "यात्री", "पुष्टि", "पूर्ण"],
     buttons: {
       next: "आगे",

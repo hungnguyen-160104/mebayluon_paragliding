@@ -331,7 +331,7 @@ export default function HomePage() {
 
           <p className="mx-auto mb-8 max-w-3xl text-[clamp(0.95rem,3.2vw,1.25rem)] opacity-90">
             {t?.hero?.description ??
-              "Trải nghiệm cảm giác bay tự do giữa mây trời Việt Nam"}
+              "Trải nghiệm bay tự do giữa mây trời Việt Nam"}
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">

@@ -33,7 +33,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     weekendFlightTitle: "Ngày bay Thứ 7 - CN & Lễ",
     khauPhaPromoTitle:
       "NHẬN NGAY ƯU ĐÃI MIỄN PHÍ LƯU TRÚ TẠI CLUBHOUSE MEBAYLUON",
-    khauPhaPromoSub: "(không áp dụng trong mùa cao điểm và các ngày lễ)",
+    khauPhaPromoSub: "(không áp dụng trong mùa cao điểm và ngày lễ)",
     paramotorDiscountBefore: "Giá bay ",
     paramotorDiscountAfter: " giảm còn 2.390.000 đ",
     paraglidingDescription: [
