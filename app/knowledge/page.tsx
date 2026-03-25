@@ -44,9 +44,9 @@ const I18N: Record<
     unknownDate: "Không rõ ngày",
     dateLocale: "vi-VN",
     features: [
-      "Bảo hiểm suốt khoá học",
-      "Trang thiết bị đầy đủ",
       "Huấn luyện viên chuyên nghiệp",
+      "Trang thiết bị đầy đủ",
+      "Bảo hiểm suốt khoá học",
       "Hỗ trợ học viên tối đa",
     ],
   },

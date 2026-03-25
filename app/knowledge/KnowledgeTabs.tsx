@@ -87,9 +87,9 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
     <nav className="flex w-full justify-center">
       <ul
         className="
-          flex flex-wrap items-center justify-center gap-2
-          rounded-2xl border border-white/10 bg-black/40 px-3 py-3
-          shadow-lg backdrop-blur-md
+          flex flex-wrap items-center justify-center gap-3 sm:gap-4
+          rounded-3xl border border-white/45 bg-black/45 px-3 py-3 sm:px-4 sm:py-4
+          shadow-[0_18px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl ring-1 ring-white/25
         "
       >
         {TABS.map((tab) => {
@@ -106,11 +106,12 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
                 href={href}
                 scroll={false}
                 className={`
-                  block rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200
+                  flex min-h-12 items-center whitespace-nowrap rounded-2xl border px-5 py-3 text-base font-semibold leading-none transition-all duration-200 sm:px-6 sm:py-3.5 sm:text-[1.05rem]
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
                   ${
                     isActive
-                      ? "bg-white text-black shadow-md scale-105 font-bold"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                      ? "bg-yellow-400 text-black border-yellow-200 shadow-[0_8px_20px_rgba(250,204,21,0.35)] scale-105 font-extrabold"
+                      : "bg-white/95 text-black border-white/70 hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
                   }
                 `}
               >

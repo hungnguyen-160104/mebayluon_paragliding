@@ -380,13 +380,13 @@ function PilotImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="relative h-80 overflow-hidden bg-white/10">
+    <div className="relative h-80 md:h-88 overflow-hidden bg-white/10">
       {!failed ? (
         <Image
           src={src}
           alt={alt}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
           onError={() => setFailed(true)}
           priority={false}
