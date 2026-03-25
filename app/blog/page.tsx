@@ -139,7 +139,7 @@ export default async function BlogPage() {
   return (
     <div
       className="min-h-screen relative bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: "url('/hinh-nen.jpg')" }}
+      style={{ backgroundImage: "url('/tin-tuc-2.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/40 z-0" />
       <main className="container mx-auto px-4 py-16 relative z-10 text-white">

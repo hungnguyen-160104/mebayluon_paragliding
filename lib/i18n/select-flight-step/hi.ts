@@ -25,6 +25,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupLocationLabel: "पिकअप स्थान",
     pickupPointLabel: "पिकअप पॉइंट",
     includedLabel: "शामिल",
+    excludedLabel: "शामिल नहीं",
     groupDiscountTitle: "ग्रुप रजिस्ट्रेशन पर सीधी छूट",
     freeGopro: "मानक Gopro उड़ान रिकॉर्डिंग",
     optionalServiceTitle: "वैकल्पिक सेवाएँ",
@@ -49,8 +50,8 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "हनोई का एक अलग रूप आसमान से देखें — पहाड़, खेत और शहर के बाहर के गाँव।",
-        "उड़ान स्थल हनोई शहर के केंद्र से केवल 50 किमी पश्चिम में है।",
+        "हनोई का एक अलग रूप आसमान से देखें — पहाड़, खेत और शहर के बाहर के गाँव। उड़ान स्थल हनोई शहर के केंद्र से केवल 50 किमी पश्चिम में है।",
+        "टूर का कुल समय: 3-5 घंटे (दिन की यात्रा)",
       ],
       khau_pha: [],
       sapa: [

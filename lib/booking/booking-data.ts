@@ -73,7 +73,7 @@ export const flightOptions: FlightOption[] = [
   {
     id: "yen-bai",
     name: "Yên Bái (Đèo Khau Phạ – Mù Cang Chải)",
-    price: { weekday: 2120000, weekend: 2520000, unit: "VND" },
+    price: { weekday: 2190000, weekend: 2590000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
       "Quay phim & chụp hình từ GoPro",
@@ -111,7 +111,7 @@ export const flightOptions: FlightOption[] = [
   {
     id: "lao-cai",
     name: "Lào Cai (Sapa)",
-    price: { weekday: 2190000, unit: "VND" },
+    price: { weekday: 2090000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
       "Quay phim & chụp hình từ GoPro",
@@ -190,7 +190,7 @@ export const flightOptions: FlightOption[] = [
   {
     id: "quan-ba",
     name: "Hà Giang (Quản Bạ)",
-    price: { weekday: 2090000, unit: "VND" },
+    price: { weekday: 2190000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn",
       "Quay phim & chụp hình từ GoPro",

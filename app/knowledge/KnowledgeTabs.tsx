@@ -87,8 +87,8 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
     <nav className="flex w-full justify-center">
       <ul
         className="
-          inline-flex flex-wrap items-center justify-center gap-2
-          rounded-full border border-white/20 bg-white/10 px-2 py-2
+          flex flex-wrap items-center justify-center gap-2
+          rounded-2xl border border-white/10 bg-black/40 px-3 py-3
           shadow-lg backdrop-blur-md
         "
       >
@@ -98,18 +98,21 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
               ? "/knowledge"
               : `/knowledge?sub=${encodeURIComponent(tab.key)}`;
 
-          const active = cur === tab.key;
+          const isActive = tab.key === "all" ? cur === "all" : cur === tab.key;
 
           return (
             <li key={tab.key}>
               <Link
                 href={href}
-                className={[
-                  "rounded-full px-3 py-1.5 text-sm transition-colors",
-                  active
-                    ? "bg-white/30 text-white"
-                    : "text-white/80 hover:bg-white/20 hover:text-white",
-                ].join(" ")}
+                scroll={false}
+                className={`
+                  block rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200
+                  ${
+                    isActive
+                      ? "bg-white text-black shadow-md scale-105 font-bold"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }
+                `}
               >
                 {labels[tab.key]}
               </Link>

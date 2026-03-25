@@ -317,6 +317,7 @@ export const zh: CommonTranslation = {
       },
     },
     features: {
+      "en-suite": "独立卫浴",
       breakfast: "含早餐",
       wifi: "免费 Wi-Fi",
       view: "景观优美",

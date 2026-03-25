@@ -22,6 +22,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupLocationLabel: "接送地点",
     pickupPointLabel: "接送点",
     includedLabel: "已包含",
+    excludedLabel: "不包含",
     groupDiscountTitle: "团体报名立减",
     freeGopro: "标准 Gopro 飞行录像",
     optionalServiceTitle: "可选服务",
@@ -45,8 +46,8 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "从空中体验不一样的河内，俯瞰群山、田野与城市郊外村庄。",
-        "飞行点距离河内市中心仅 50 公里。",
+        "从空中体验不一样的河内，俯瞰群山、田野与城市郊外村庄。飞行点距离河内市中心仅 50 公里。",
+        "游览总时间：3-5 小时（当日往返）",
       ],
       khau_pha: [],
       sapa: [

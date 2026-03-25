@@ -63,7 +63,7 @@ export default function StoreHomePage() {
   return (
     <main
       className="min-h-screen relative bg-cover bg-center"
-      style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
+      style={{ backgroundImage: "url(/cua-hang.jpg)" }}
     >
       <div className="absolute inset-0 bg-black/20" />
       <section className="relative z-10 py-24">

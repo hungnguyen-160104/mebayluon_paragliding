@@ -24,6 +24,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupPointLabel: "Pickup point",
     pickupPlaceholder: "................................",
     includedLabel: "Included",
+    excludedLabel: "Not included",
     groupDiscountTitle: "Direct discount for group registration",
     freeGopro: "Standard Gopro flight recording",
     optionalServiceTitle: "Optional services",
@@ -46,8 +47,8 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "Discover a different side of Hanoi with a paragliding experience from above, overlooking layered mountains, fields, and countryside villages on the city outskirts.",
-        "The flying site is only 50km west of Hanoi city center.",
+        "Discover a different side of Hanoi with a paragliding experience from above, overlooking layered mountains, fields, and countryside villages on the city outskirts. The flying site is only 50km west of Hanoi city center.",
+        "Total tour time: 3-5 hours (day trip)",
       ],
       khau_pha: [],
       sapa: [
@@ -75,7 +76,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     selectedFlightLabel: "Selected flight",
     selectedOptionsLabel: "Selected services",
     noOptionalSelected: "No optional service selected.",
-    noMapInfo: "Ha Giang does not display take-off/landing coordinates here.",
+    noMapInfo: "",
     flycamDescription:
       "Full valley and flight journey recording. Raw video will be sent right after the flight.",
     camera360Description:

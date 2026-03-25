@@ -93,7 +93,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "Nhập số Passport hoặc CCCD",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "Điền thông tin người đặt",
+    fillBookerInfo: "Điền thông tin người bay",
     back: "Quay lại",
     next: "Tiếp theo",
     dobInvalid: "Ngày sinh không hợp lệ.",
@@ -120,7 +120,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "Enter Passport or ID number",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "Fill booker info",
+    fillBookerInfo: "Fill in flyer information",
     back: "Back",
     next: "Next",
     dobInvalid: "Invalid date of birth.",
@@ -147,7 +147,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "Saisir le numéro du passeport ou de la CIN",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "Remplir avec les infos du client",
+    fillBookerInfo: "Remplir avec les informations du passager",
     back: "Retour",
     next: "Suivant",
     dobInvalid: "Date de naissance invalide.",
@@ -174,7 +174,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "Введите номер паспорта или ID",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "Заполнить данными заказчика",
+    fillBookerInfo: "Заполнить данные пассажира",
     back: "Назад",
     next: "Далее",
     dobInvalid: "Неверная дата рождения.",
@@ -201,7 +201,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "पासपोर्ट या आईडी नंबर दर्ज करें",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "बुकर की जानकारी भरें",
+    fillBookerInfo: "यात्री की जानकारी भरें",
     back: "वापस",
     next: "अगला",
     dobInvalid: "जन्म तिथि अमान्य है।",
@@ -228,7 +228,7 @@ const UI_TEXT: Record<
     idNumberPlaceholder: "输入护照或身份证号码",
     weightPlaceholder: "0",
 
-    fillBookerInfo: "填写预订人信息",
+    fillBookerInfo: "填写飞行者信息",
     back: "返回",
     next: "下一步",
     dobInvalid: "出生日期无效。",

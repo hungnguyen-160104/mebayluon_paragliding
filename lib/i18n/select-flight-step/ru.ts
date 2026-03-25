@@ -26,6 +26,7 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupLocationLabel: "Место встречи",
     pickupPointLabel: "Точка встречи",
     includedLabel: "Включено",
+    excludedLabel: "Не включено",
     groupDiscountTitle: "Прямая скидка при групповой регистрации",
     freeGopro: "Стандартная запись полёта на Gopro",
     optionalServiceTitle: "Дополнительные услуги",
@@ -50,8 +51,8 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "Откройте для себя другой Ханой с высоты: горы, поля и загородные деревни на окраине города.",
-        "Локация находится всего в 50 км к западу от центра Ханоя.",
+        "Откройте для себя другой Ханой с высоты: горы, поля и загородные деревни на окраине города. Локация находится всего в 50 км к западу от центра Ханоя.",
+        "Общее время тура: 3-5 часов (поездка одним днем)",
       ],
       khau_pha: [],
       sapa: [

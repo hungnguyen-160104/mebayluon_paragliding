@@ -26,6 +26,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupLocationLabel: "Lieu de prise en charge",
     pickupPointLabel: "Point de prise en charge",
     includedLabel: "Inclus",
+    excludedLabel: "Non inclus",
     groupDiscountTitle: "Réduction directe pour inscription en groupe",
     freeGopro: "Enregistrement standard du vol avec Gopro",
     optionalServiceTitle: "Services optionnels",
@@ -50,8 +51,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "Découvrez un autre visage de Hanoï grâce à une expérience de parapente au-dessus des montagnes, des champs et des villages périphériques.",
-        "Le site de vol se situe à seulement 50 km à l’ouest du centre-ville de Hanoï.",
+        "Découvrez un autre visage de Hanoï grâce à une expérience de parapente au-dessus des montagnes, des champs et des villages périphériques. Le site de vol se situe à seulement 50 km à l’ouest du centre-ville de Hanoï.",
+        "Durée totale de la visite : 3-5 heures (excursion d'une journée)",
       ],
       khau_pha: [],
       sapa: [

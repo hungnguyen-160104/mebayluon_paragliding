@@ -316,6 +316,7 @@ export const en: CommonTranslation = {
       },
     },
     features: {
+      "en-suite": "En-suite Bathroom",
       breakfast: "Breakfast Included",
       wifi: "Free WiFi",
       view: "Beautiful View",

@@ -427,12 +427,9 @@ export default function ReviewConfirmStep() {
 
       const key = String(svc.key || "");
 
-      if (
-        key === "khau_pha_paragliding_garrya_pickup" ||
-        key === "khau_pha_paramotor_garrya_pickup"
-      ) {
+      if (key === "khau_pha_garrya_pickup") {
         const carCount = Math.ceil(guestsCount / 4);
-        return lang === "vi" ? carCount * 700_000 : carCount * 28;
+        return lang === "vi" ? carCount * 600_000 : carCount * 24;
       }
 
       if (key === "ha_noi_private_hotel_pickup") {
@@ -564,12 +561,9 @@ export default function ReviewConfirmStep() {
         const key = String(svc.key || "");
         let detailText = "";
 
-        if (
-          key === "khau_pha_paragliding_garrya_pickup" ||
-          key === "khau_pha_paramotor_garrya_pickup"
-        ) {
+        if (key === "khau_pha_garrya_pickup") {
           const carCount = Math.ceil(guestsCount / 4);
-          const carPrice = lang === "vi" ? 700_000 : 28;
+          const carPrice = lang === "vi" ? 600_000 : 24;
           detailText = `${formatMoney(carPrice)} × ${carCount} xe`;
         } else if (key === "ha_noi_private_hotel_pickup") {
           detailText = "";

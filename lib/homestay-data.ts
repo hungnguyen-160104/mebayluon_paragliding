@@ -21,7 +21,8 @@ export type RoomFeatureKey =
   | "exclusive-use"
   | "all-facilities"
   | "group-friendly"
-  | "large-group";
+  | "large-group"
+  | "en-suite";
 
 export type AmenityKey =
   | "free-handmade-tea"
@@ -102,13 +103,13 @@ export const roomTypes: RoomType[] = [
   {
     id: "whole-home-small",
     nameKey: "wholeHomeSmall",
-    price: 2500000,
-    priceType: "whole-home",
-    capacity: { adults: 25 },
+    price: 800000,
+    priceType: "per-room",
+    capacity: { adults: 5 },
     image: "/homestay/phong-gia-dinh.jpg",
-    features: ["exclusive-use", "all-facilities", "breakfast", "group-friendly"],
+    features: ["en-suite", "family-friendly", "breakfast"],
     description:
-      "Khách được sử dụng toàn bộ phần sàn cộng đồng, bao gồm các phòng áp mái. Ở tối đa 25 khách/sàn. Miễn phí trẻ em dưới 5 tuổi.",
+      "1 phòng lớn - ở tối đa 5 người/phòng. Vệ sinh khép kín, phù hợp gia đình.",
   },
   {
     id: "whole-home-large",

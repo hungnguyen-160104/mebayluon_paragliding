@@ -35,6 +35,7 @@ export type DynamicServiceConfig = {
   priceUSD?: number | null;
   requiresPickupInput?: boolean;
   fixedMapUrl?: string;
+  warningWhenUnchecked?: string;
   exclusiveGroup?: string;
   visibleForPackages?: PackageKey[];
   visibleForFlightTypes?: FlightTypeKey[];
@@ -56,6 +57,8 @@ export type PackageConfig = {
   priceVND?: number;
   priceUSD?: number;
   flightTypes: FlightTypePriceConfig[];
+  included?: Record<LangCode, string[]>;
+  excluded?: Record<LangCode, string[]>;
 };
 
 export type LocationConfig = {
@@ -65,7 +68,7 @@ export type LocationConfig = {
   basePriceVND: (dateISO?: string) => number;
   basePriceUSD: (dateISO?: string) => number;
 
-  addons: Record<AddonKey, AddonConfig>;
+  addons: Partial<Record<AddonKey, AddonConfig>>;
   included: Record<LangCode, string[]>;
   excluded?: Record<LangCode, string[]>;
   coordinates?: {
@@ -138,14 +141,14 @@ function getKhauPhaPackageBasePriceVND(
   }
 
   if (packageKey === "khau_pha_pkg_1") {
-    return 2_120_000;
+    return 2_190_000;
   }
 
   if (packageKey === "khau_pha_pkg_2") {
-    return 2_520_000;
+    return 2_590_000;
   }
 
-  return holidayType === "weekday" ? 2_120_000 : 2_520_000;
+  return holidayType === "weekday" ? 2_190_000 : 2_590_000;
 }
 
 function getKhauPhaPackageBasePriceUSD(
@@ -245,42 +248,42 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       vi: [
         "01 chuyến bay dù lượn 8–15 phút (tuỳ gió)",
         "Quay phim & chụp hình từ GoPro",
-        "Miễn phí cà phê & trà tại điểm bay",
+        "Nước uống tại điểm bay",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
       ],
       en: [
         "One paragliding flight 8–15 minutes (weather-dependent)",
         "GoPro photos & videos",
-        "Free coffee & tea at the site",
+        "Drinking water at flight site",
         "Paragliding insurance",
         "Certificate",
       ],
       fr: [
         "Un vol en parapente de 8 à 15 minutes (selon le vent)",
         "Photos et vidéos GoPro",
-        "Café et thé gratuits sur le site",
+        "Eau potable sur le site de vol",
         "Assurance parapente",
         "Certificat",
       ],
       ru: [
         "Один полёт на параплане 8–15 минут (в зависимости от ветра)",
         "Фото и видео GoPro",
-        "Бесплатные кофе и чай на площадке",
+        "Питьевая вода на месте полёта",
         "Страховка",
         "Сертификат",
       ],
       zh: [
         "一次滑翔伞飞行 8–15 分钟（视风况而定）",
         "GoPro 照片和视频",
-        "现场免费咖啡和茶",
+        "飞行点饮用水",
         "滑翔伞保险",
         "证书",
       ],
       hi: [
         "एक पैराग्लाइडिंग उड़ान 8–15 मिनट (हवा पर निर्भर)",
         "GoPro फोटो और वीडियो",
-        "साइट पर मुफ्त कॉफी और चाय",
+        "उड़ान स्थल पर पीने का पानी",
         "पैराग्लाइडिंग बीमा",
         "प्रमाणपत्र",
       ],
@@ -295,15 +298,15 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   khau_pha: {
     key: "khau_pha",
     name: {
-      vi: "Đèo Khau Phạ (Tú Lê - Mù Cang Chải)",
-      en: "Khau Pha Pass (Tu Le - Mu Cang Chai)",
-      fr: "Col de Khau Pha (Tu Le - Mu Cang Chai)",
-      ru: "Перевал Кхау Фа (Ту Ле - Му Канг Чай)",
-      zh: "考帕山口（图勒－木江界）",
-      hi: "खाउ फ़ा दर्रा (टू ले - मु कांग चाई)",
+      vi: "ĐÈO KHAU PHẠ",
+      en: "KHAU PHA PASS",
+      fr: "COL DE KHAU PHA",
+      ru: "ПЕРЕВАЛ КХАУ ФА",
+      zh: "考帕山口",
+      hi: "खाउ फ़ा दर्रा",
     },
     basePriceVND: (dateISO) =>
-      getHolidayType(dateISO) === "weekday" ? 2_120_000 : 2_520_000,
+      getHolidayType(dateISO) === "weekday" ? 2_190_000 : 2_590_000,
     basePriceUSD: (dateISO) =>
       getHolidayType(dateISO) === "weekday" ? 82 : 97,
     packages: [
@@ -317,7 +320,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "周一至周五飞行",
           hi: "सोमवार से शुक्रवार उड़ान",
         },
-        priceVND: 2_120_000,
+        priceVND: 2_190_000,
         priceUSD: 82,
         flightTypes: [
           {
@@ -330,7 +333,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
               zh: "无动力滑翔伞",
               hi: "पैराग्लाइडिंग",
             },
-            fixed: 2_120_000,
+            fixed: 2_190_000,
           },
         ],
       },
@@ -344,7 +347,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "周六、周日及节假日飞行",
           hi: "शनिवार, रविवार और अवकाश उड़ान",
         },
-        priceVND: 2_520_000,
+        priceVND: 2_590_000,
         priceUSD: 97,
         flightTypes: [
           {
@@ -357,7 +360,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
               zh: "无动力滑翔伞",
               hi: "पैराग्लाइडिंग",
             },
-            fixed: 2_520_000,
+            fixed: 2_590_000,
           },
         ],
       },
@@ -373,6 +376,50 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         priceVND: 2_390_000,
         priceUSD: 93,
+        included: {
+          vi: [
+            "01 chuyến bay từ 10–20 phút (tuỳ chọn)",
+            "Quay phim & chụp hình GoPro",
+            "Miễn phí cà phê & trà tại điểm bay",
+            "Bảo hiểm dù lượn",
+            "Giấy chứng nhận",
+          ],
+          en: [
+            "One flight 10–20 minutes (option)",
+            "GoPro filming & photography",
+            "Free coffee & tea at flight site",
+            "Paragliding insurance",
+            "Certificate",
+          ],
+          fr: [
+            "Un vol de 10 à 20 minutes (au choix)",
+            "Vidéos et photos GoPro",
+            "Café et thé gratuits sur le lieu du vol",
+            "Assurance parapente",
+            "Certificat",
+          ],
+          ru: [
+            "Один полет от 10 до 20 минут (по выбору)",
+            "Съемка на GoPro",
+            "Бесплатный кофе и чай на месте старта",
+            "Страховка парапланериста",
+            "Сертификат",
+          ],
+          zh: [
+            "1 次飞行 10-20 分钟（可选）",
+            "GoPro 拍摄及摄影",
+            "飞行点免费提供咖啡和茶",
+            "滑翔伞保险",
+            "证书",
+          ],
+          hi: [
+            "10-20 मिनट से 01 उड़ान (वैकल्पिक)",
+            "GoPro फिल्मिंग और फोटोग्राफी",
+            "उड़ान स्थल पर मुफ्त कॉफी और चाय",
+            "पैराग्लाइडिंग बीमा",
+            "प्रमाणपत्र",
+          ],
+        },
         flightTypes: [
           {
             key: "paramotor",
@@ -394,73 +441,27 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         key: "khau_pha_flag",
         label: {
           vi: "Bay dù cờ đỏ sao vàng – biểu tượng Tổ quốc Việt Nam",
-          en: "Vietnamese national flag flight option",
-          fr: "Option de vol avec drapeau national vietnamien",
-          ru: "Опция полёта с национальным флагом Вьетнама",
-          zh: "越南国旗飞行选项",
-          hi: "वियतनामी राष्ट्रीय ध्वज उड़ान विकल्प",
+          en: "Flight with National Flag – Symbol of Vietnam",
+          fr: "Vol avec drapeau national – Symbole du Vietnam",
+          ru: "Полет с национальным флагом – Символ Вьетнама",
+          zh: "国旗飞行 – 越南的象征",
+          hi: "राष्ट्रीय ध्वज के साथ उड़ान – वियतनाम का प्रतीक",
         },
-        controlType: "counter",
+        controlType: "checkbox",
         priceVND: 100_000,
         priceUSD: 4,
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
-        visibleForFlightTypes: ["paragliding"],
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
-        key: "khau_pha_paragliding_shuttle",
+        key: "khau_pha_shuttle",
         label: {
-          vi: "Xe trung chuyển lên/xuống núi",
-          en: "Mountain shuttle up/down",
-          fr: "Navette montée/descente montagne",
-          ru: "Трансфер вверх/вниз по горе",
-          zh: "上下山接驳车",
-          hi: "पहाड़ ऊपर/नीचे शटल",
-        },
-        description: {
-          vi: "Xe trung chuyển đón trả khách trong khu vực bay (Thung lũng Lìm Mông).\nLưu ý: Điểm cất cánh cách điểm hạ cánh 12km.",
-          en: "Shuttle service for guests within the flying area (Lim Mong Valley).\nNote: The take-off point is 12km from the landing point.",
-        },
-        controlType: "checkbox",
-        defaultSelected: true,
-        priceVND: 70_000,
-        priceUSD: 3,
-        exclusiveGroup: "khau_pha_paragliding_pickup",
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
-        visibleForFlightTypes: ["paragliding"],
-      },
-      {
-        key: "khau_pha_paragliding_garrya_pickup",
-        label: {
-          vi: "Xe đón từ khu vực Garrya hoặc thị trấn Mù Cang Chải",
-          en: "Pickup from Garrya or Mu Cang Chai town",
-          fr: "Transfert depuis Garrya ou la ville de Mu Cang Chai",
-          ru: "Трансфер из Garrya или города Му Канг Чай",
-          zh: "从 Garrya 或木江界镇接送",
-          hi: "Garrya या Mu Cang Chai town से पिकअप",
-        },
-        description: {
-          vi: "Chi phí đón có thể thay đổi tùy vị trí cụ thể và số lượng khách.\nKhách có thể chọn đi xe ôm với giá khoảng 300.000 - 500.000 đ/pax/2 chiều (tùy vị trí đón).",
-          en: "Pickup cost may vary depending on the exact location and number of guests.\nGuests may also choose motorbike transfer at around 300,000 - 500,000 VND/pax/round trip, depending on the pickup point.",
-        },
-        note: {
-          vi: "Từ 1-4 khách thì tính giá 700k, từ 5-8 khách thì 1tr4 (2 xe), cứ mỗi 4 khách cộng thêm 700k.",
-          en: "For 1–4 guests: 700,000 VND. For 5–8 guests: 1,400,000 VND (2 cars). Every additional 4 guests adds 700,000 VND.",
-        },
-        controlType: "checkbox",
-        requiresPickupInput: true,
-        exclusiveGroup: "khau_pha_paragliding_pickup",
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
-        visibleForFlightTypes: ["paragliding"],
-      },
-      {
-        key: "khau_pha_paramotor_tu_le_pickup",
-        label: {
-          vi: "Đón trả 2 chiều trong khu vực xã Tú Lệ",
-          en: "Round-trip pickup in Tu Le area",
-          fr: "Transfert aller-retour dans la zone de Tu Le",
-          ru: "Трансфер туда-обратно в районе Tú Lệ",
-          zh: "Tú Lệ 区域往返接送",
-          hi: "Tu Le क्षेत्र राउंड-ट्रिप पिकअप",
+          vi: "Xe trung chuyển xã Tú Lệ (Đón/Trả)",
+          en: "Tu Le Commune Shuttle (Pickup/Drop-off)",
+          fr: "Navette de la commune de Tu Le (Prise en charge/Dépose)",
+          ru: "Трансфер коммуны Ту Ле (Посадка/Высадка)",
+          zh: "Tú Lệ 社穿梭巴士（接送）",
+          hi: "तू ले कम्यून शटल (पिकअप/ड्रॉप-ऑफ)",
         },
         description: {
           vi: "Xe trung chuyển đón trả khách 2 chiều trong khu vực xã Tú Lệ.",
@@ -468,15 +469,15 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         controlType: "checkbox",
         defaultSelected: true,
+        requiresPickupInput: true,
         priceVND: 70_000,
         priceUSD: 3,
-        requiresPickupInput: true,
-        exclusiveGroup: "khau_pha_paramotor_pickup",
-        visibleForPackages: ["khau_pha_paramotor"],
-        visibleForFlightTypes: ["paramotor"],
+        exclusiveGroup: "khau_pha_pickup",
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
-        key: "khau_pha_paramotor_garrya_pickup",
+        key: "khau_pha_garrya_pickup",
         label: {
           vi: "Đón từ khu vực Garrya hoặc thị trấn Mù Cang Chải",
           en: "Pickup from Garrya or Mu Cang Chai town",
@@ -489,55 +490,55 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           vi: "Chi phí đón có thể thay đổi tùy vị trí cụ thể và số lượng khách.\nKhách có thể chọn đi xe ôm với giá khoảng 300.000 - 500.000 đ/pax/2 chiều (tùy vị trí đón).",
           en: "Pickup cost may vary depending on the exact location and number of guests.\nGuests may also choose motorbike transfer at around 300,000 - 500,000 VND/pax/round trip, depending on the pickup point.",
         },
-        note: {
-          vi: "Từ 1-4 khách thì tính giá 700k, từ 5-8 khách thì 1tr4 (2 xe), cứ mỗi 4 khách cộng thêm 700k.",
-          en: "For 1–4 guests: 700,000 VND. For 5–8 guests: 1,400,000 VND (2 cars). Every additional 4 guests adds 700,000 VND.",
-        },
         controlType: "checkbox",
         requiresPickupInput: true,
-        exclusiveGroup: "khau_pha_paramotor_pickup",
-        visibleForPackages: ["khau_pha_paramotor"],
-        visibleForFlightTypes: ["paramotor"],
+        exclusiveGroup: "khau_pha_pickup",
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
-    ],
-    addons: {
-      flycam: {
+      {
+        key: "khau_pha_flycam",
         label: {
-          vi: "Flycam (Drone camera)",
-          en: "Flycam (Drone camera)",
+          vi: "Flycam (drone camera)",
+          en: "Flycam (drone camera)",
           fr: "Flycam (drone)",
           ru: "Flycam (дрон)",
           zh: "航拍（无人机）",
           hi: "फ्लाईकैम (ड्रोन कैमरा)",
         },
-        pricePerPersonVND: 300_000,
-        pricePerPersonUSD: 12,
-      },
-      camera360: {
-        label: {
-          vi: "Camera toàn cảnh 360",
-          en: "360° camera",
-          fr: "Caméra 360°",
-          ru: "Камера 360°",
-          zh: "360°全景相机",
-          hi: "360° कैमरा",
+        description: {
+          vi: "Quay toàn cảnh thung lũng và hành trình bay, video gốc sẽ được gửi ngay sau chuyến bay",
+          en: "Panoramic view of the valley and flight journey, original video sent immediately after flight",
         },
-        pricePerPersonVND: 500_000,
-        pricePerPersonUSD: 20,
+        controlType: "counter",
+        priceVND: 300_000,
+        priceUSD: 12,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
-      pickup: {
+      {
+        key: "khau_pha_camera360",
         label: {
-          vi: "Xe đón trả (nếu có)",
-          en: "Pickup (if available)",
-          fr: "Transfert (si disponible)",
-          ru: "Трансфер (если доступен)",
-          zh: "接送（如提供）",
-          hi: "पिकअप (यदि उपलब्ध हो)",
+          vi: "360 camera",
+          en: "360 camera",
+          fr: "Caméra 360",
+          ru: "Камера 360",
+          zh: "360相机",
+          hi: "360 कैमरा",
         },
-        pricePerPersonVND: null,
-        pricePerPersonUSD: null,
+        description: {
+          vi: "Quay toàn cảnh chuyến bay ấn tượng, video được edit và sẽ gửi trong vòng 24h",
+          en: "Impressive panoramic flight video, edited and sent within 24h",
+        },
+        controlType: "counter",
+        priceVND: 500_000,
+        priceUSD: 20,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
-    },
+
+    ],
+    addons: {} as Record<string, any>,
     included: {
       vi: [
         "01 chuyến bay dù lượn 8–15 phút (tuỳ gió)",
@@ -545,47 +546,47 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         "Miễn phí cà phê & trà tại điểm bay",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
-        "Quà lưu niệm",
+        "Xe lên/xuống núi",
       ],
       en: [
-        "One paragliding flight 8–15 minutes (weather-dependent)",
-        "GoPro photos & videos",
-        "Free coffee & tea at the site",
+        "One paragliding flight 8–15 minutes (weather dependent)",
+        "GoPro filming & photography",
+        "Free coffee & tea at flight site",
         "Paragliding insurance",
         "Certificate",
-        "Souvenir",
+        "Mountain shuttle up/down",
       ],
       fr: [
         "Un vol en parapente de 8 à 15 minutes (selon le vent)",
-        "Photos et vidéos GoPro",
-        "Café et thé gratuits sur le site",
+        "Vidéos et photos GoPro",
+        "Café et thé gratuits sur le lieu du vol",
         "Assurance parapente",
         "Certificat",
-        "Souvenir",
+        "Navette montée/descente",
       ],
       ru: [
-        "Один полёт на параплане 8–15 минут (в зависимости от ветра)",
-        "Фото и видео GoPro",
-        "Бесплатные кофе и чай на площадке",
-        "Страховка",
+        "Один полет на параплане 8–15 минут (по погоде)",
+        "Съемка на GoPro",
+        "Бесплатный кофе и чай на месте старта",
+        "Страховка парапланериста",
         "Сертификат",
-        "Сувенир",
+        "Трансфер вверх/вниз по горе",
       ],
       zh: [
-        "一次滑翔伞飞行 8–15 分钟（视风况而定）",
-        "GoPro 照片和视频",
-        "现场免费咖啡和茶",
+        "一次滑翔伞飞行 8 - 15 分钟（视风况而定）",
+        "GoPro 拍摄及摄影",
+        "飞行点免费提供咖啡和茶",
         "滑翔伞保险",
         "证书",
-        "纪念品",
+        "上下山接送车",
       ],
       hi: [
-        "एक पैराग्लाइडिंग उड़ान 8–15 मिनट (हवा पर निर्भर)",
-        "GoPro फोटो और वीडियो",
-        "साइट पर मुफ्त कॉफी और चाय",
+        "1 पैराग्लाइडिंग उड़ान 8-15 मिनट (मौसम पर निर्भर)",
+        "GoPro फिल्मिंग और फोटोग्राफी",
+        "उड़ान स्थल पर मुफ्त कॉफी और चाय",
         "पैराग्लाइडिंग बीमा",
         "प्रमाणपत्र",
-        "स्मृति-चिह्न",
+        "पहाड़ ऊपर/नीचे शटल",
       ],
     },
     excluded: { vi: [], en: [], fr: [], ru: [], zh: [], hi: [] },
@@ -598,10 +599,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   da_nang: {
     key: "da_nang",
     name: {
-      vi: "Đà Nẵng",
-      en: "Da Nang",
-      fr: "Da Nang",
-      ru: "Дананг",
+      vi: "ĐÀ NẴNG",
+      en: "DA NANG",
+      fr: "DA NANG",
+      ru: "ДАНАНГ",
       zh: "岘港",
       hi: "दा नांग",
     },
@@ -611,27 +612,44 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "da_nang_mountain_shuttle",
         label: {
-          vi: "Xe di chuyển lên điểm cất cánh",
-          en: "Shuttle to takeoff point",
-          fr: "Navette vers le point de décollage",
-          ru: "Трансфер к точке старта",
-          zh: "前往起飞点接驳车",
-          hi: "टेकऑफ़ पॉइंट शटल",
+          vi: "Xe di chuyển lên đỉnh Sơn Trà",
+          en: "Transfer to Son Tra Peak",
+          fr: "Transfert au sommet de Son Tra",
+          ru: "Трансфер на вершину Шонча",
+          zh: "前往山茶山顶接送",
+          hi: "Son Tra पीक के लिए ट्रांसफर",
+        },
+        description: {
+          vi: "Xe trung chuyển lên núi đón từ bãi hạ cánh tại bờ biển lên bãi cất cánh đỉnh núi Sơn Trà",
+          en: "Shuttle bus from the landing zone at the beach to the takeoff point at Son Tra Peak",
+          fr: "Navette depuis la zone d'atterrissage sur la plage jusqu'au point de décollage au sommet de Son Tra",
+          ru: "Трансфер от зоны посадки на пляже до точки взлета на вершине Шонча",
+          zh: "从海滩降落区前往山茶山顶起飞点的接驳车",
+          hi: "समुद्र तट पर लैंडिंग क्षेत्र से Son Tra पीक पर टेकऑफ पॉइंट तक शटल बस",
         },
         controlType: "checkbox",
         defaultSelected: true,
         priceVND: 100_000,
         priceUSD: 4,
+        warningWhenUnchecked: "_USE_LOCALE_WARNING_",
       },
       {
         key: "da_nang_hotel_pickup",
         label: {
-          vi: "Đón trả 2 chiều từ khách sạn",
+          vi: "Xe đón/trả 2 chiều từ khách sạn",
           en: "Round-trip hotel pickup",
           fr: "Prise en charge aller-retour à l’hôtel",
           ru: "Трансфер туда-обратно от отеля",
           zh: "酒店往返接送",
           hi: "राउंड-ट्रिप होटल पिकअप",
+        },
+        description: {
+          vi: "Chi phí đón có thể thay đổi tùy vị trí khách sạn và số lượng khách",
+          en: "Pickup cost may vary depending on hotel location and number of guests",
+          fr: "Le coût de prise en charge peut varier selon l'emplacement de l'hôtel et le nombre de clients",
+          ru: "Стоимость трансфера может варьироваться в зависимости от расположения отеля и количества гостей",
+          zh: "接送费用可能会因酒店位置和客人数量而异",
+          hi: "होटल के स्थान और मेहमानों की संख्या के आधार पर पिकअप लागत भिन्न हो सकती है",
         },
         controlType: "checkbox",
         priceVND: 200_000,
@@ -684,57 +702,44 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         "Nước uống",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
-        "Xe lên/xuống núi",
       ],
       en: [
-        "One paragliding flight 8–15 minutes (weather-dependent)",
-        "GoPro photos & videos",
+        "One paragliding flight 8–15 minutes (weather dependent)",
+        "GoPro filming & photography",
         "Drinking water",
         "Paragliding insurance",
         "Certificate",
-        "Mountain shuttle up & down",
       ],
       fr: [
         "Un vol en parapente de 8 à 15 minutes (selon le vent)",
-        "Photos et vidéos GoPro",
+        "Vidéos et photos GoPro",
         "Eau potable",
         "Assurance parapente",
         "Certificat",
-        "Navette montée/descente",
       ],
       ru: [
-        "Один полёт на параплане 8–15 минут (в зависимости от ветра)",
-        "Фото и видео GoPro",
+        "Один полет на параплане 8–15 минут (по погоде)",
+        "Съемка на GoPro",
         "Питьевая вода",
-        "Страховка",
+        "Страховка парапланериста",
         "Сертификат",
-        "Трансфер вверх/вниз по горе",
       ],
       zh: [
         "一次滑翔伞飞行 8–15 分钟（视风况而定）",
-        "GoPro 照片和视频",
+        "GoPro 拍摄及摄影",
         "饮用水",
         "滑翔伞保险",
         "证书",
-        "上下山接驳车",
       ],
       hi: [
         "एक पैराग्लाइडिंग उड़ान 8–15 मिनट (हवा पर निर्भर)",
-        "GoPro फोटो और वीडियो",
-        "पीने का पानी",
+        "GoPro फिल्मिंग और फोटोग्राफी",
+        "पिने का पानी",
         "पैराग्लाइडिंग बीमा",
         "प्रमाणपत्र",
-        "पहाड़ ऊपर/नीचे शटल",
       ],
     },
-    excluded: {
-      vi: ["Bữa ăn"],
-      en: ["Meals"],
-      fr: ["Repas"],
-      ru: ["Питание"],
-      zh: ["餐食"],
-      hi: ["भोजन"],
-    },
+    excluded: { vi: [], en: [], fr: [], ru: [], zh: [], hi: [] },
     coordinates: {
       takeoff: "https://maps.app.goo.gl/6NDgTSg8PZb5BtGX8",
       landing: "https://maps.app.goo.gl/ETF9PiL4ijd5hYKQ6",
@@ -744,12 +749,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   ha_noi: {
     key: "ha_noi",
     name: {
-      vi: "Hà Nội (Đồi Bù - Viên Nam)",
-      en: "Hanoi (Doi Bu - Vien Nam)",
-      fr: "Hanoï (Doi Bu - Vien Nam)",
-      ru: "Ханой (Дой Бу - Вьен Нам)",
-      zh: "河内（布丘－边南）",
-      hi: "हनोई (दोई बू - वियन नाम)",
+      vi: "HÀ NỘI",
+      en: "HA NOI",
+      fr: "HANOÏ",
+      ru: "ХАНОЙ",
+      zh: "河内",
+      hi: "हनोई",
     },
     basePriceVND: () => 1_690_000,
     basePriceUSD: () => 65,
@@ -806,7 +811,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "ha_noi_sunset",
         label: {
-          vi: "Hoàng hôn trên đỉnh núi",
+          vi: "Bay ngắm hoàng hôn",
           en: "Sunset on the mountain top",
           fr: "Coucher de soleil au sommet de la montagne",
           ru: "Закат на вершине горы",
@@ -858,52 +863,46 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     },
     included: {
       vi: [
-        "01 chuyến bay dù lượn 8–20 phút (tuỳ gió)",
+        "01 chuyến bay dù lượn từ 8–20 phút (tuỳ gió)",
         "Quay phim & chụp hình GoPro",
         "Nước uống",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
-        "Xe lên/xuống núi",
       ],
       en: [
-        "One paragliding flight 8–20 minutes (weather-dependent)",
-        "GoPro photos & videos",
+        "One paragliding flight 8–20 minutes (weather dependent)",
+        "GoPro filming & photography",
         "Drinking water",
         "Paragliding insurance",
         "Certificate",
-        "Mountain shuttle up & down",
       ],
       fr: [
         "Un vol en parapente de 8 à 20 minutes (selon le vent)",
-        "Photos et vidéos GoPro",
+        "Vidéos et photos GoPro",
         "Eau potable",
         "Assurance parapente",
         "Certificat",
-        "Navette montée/descente",
       ],
       ru: [
-        "Один полёт на параплане 8–20 минут (в зависимости от ветра)",
-        "Фото и видео GoPro",
+        "Один полет на параплане 8–20 минут (по погоде)",
+        "Съемка на GoPro",
         "Питьевая вода",
-        "Страховка",
+        "Страховка парапланериста",
         "Сертификат",
-        "Трансфер вверх/вниз по горе",
       ],
       zh: [
-        "一次滑翔伞飞行 8–20 分钟（视风况而定）",
-        "GoPro 照片和视频",
+        "一次滑翔伞飞行 8 - 20 分钟（视风况而定）",
+        "GoPro 拍摄及摄影",
         "饮用水",
         "滑翔伞保险",
         "证书",
-        "上下山接驳车",
       ],
       hi: [
-        "एक पैराग्लाइडिंग उड़ान 8–20 मिनट (हवा पर निर्भर)",
-        "GoPro फोटो और वीडियो",
-        "पीने का पानी",
+        "8–20 मिनट की एक पैराग्लाइडिंग उड़ान (मौसम पर निर्भर)",
+        "GoPro फिल्मिंग और फोटोग्राफी",
+        "पिने का पानी",
         "पैराग्लाइडिंग बीमा",
         "प्रमाणपत्र",
-        "पहाड़ ऊपर/नीचे शटल",
       ],
     },
     excluded: {
@@ -923,14 +922,14 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   quan_ba: {
     key: "quan_ba",
     name: {
-      vi: "Hà Giang (Quản Bạ)",
-      en: "Ha Giang (Quan Ba)",
-      fr: "Ha Giang (Quan Ba)",
-      ru: "Хазянг (Куан Ба)",
-      zh: "河江（管坝）",
-      hi: "हा जियांग (क्वान बा)",
+      vi: "HÀ GIANG",
+      en: "HA GIANG",
+      fr: "HA GIANG",
+      ru: "ХАЗЯНГ",
+      zh: "河江",
+      hi: "हा जियांग",
     },
-    basePriceVND: () => 2_090_000,
+    basePriceVND: () => 2_190_000,
     basePriceUSD: () => 80,
     services: [
       {
@@ -975,8 +974,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "航拍（无人机）",
           hi: "फ्लाईकैम (ड्रोन कैमरा)",
         },
-        pricePerPersonVND: 350_000,
-        pricePerPersonUSD: 14,
+        pricePerPersonVND: 400_000,
+        pricePerPersonUSD: 16,
       },
       camera360: {
         label: {
@@ -993,39 +992,51 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     },
     included: {
       vi: [
-        "01 chuyến bay dù lượn",
+        "01 chuyến bay dù lượn 8-15 phút (tuỳ gió)",
         "Quay phim & chụp hình GoPro",
+        "Nước uống tại điểm bay",
         "Bảo hiểm dù lượn",
+        "Xe lên/xuống núi",
         "Giấy chứng nhận",
       ],
       en: [
-        "One paragliding flight",
-        "GoPro photos & videos",
+        "One paragliding flight 8-15 minutes (weather dependent)",
+        "GoPro filming & photography",
+        "Drinking water at flight site",
         "Paragliding insurance",
+        "Mountain shuttle up/down",
         "Certificate",
       ],
       fr: [
-        "Un vol en parapente",
-        "Photos et vidéos GoPro",
+        "Un vol en parapente de 8 à 15 minutes (selon le vent)",
+        "Vidéos et photos GoPro",
+        "Eau potable sur le site de vol",
         "Assurance parapente",
+        "Navette montée/descente",
         "Certificat",
       ],
       ru: [
-        "Один полёт на параплане",
-        "Фото и видео GoPro",
-        "Страховка",
+        "Один полет на параплане 8-15 минут (по погоде)",
+        "Съемка на GoPro",
+        "Питьевая вода на месте старта",
+        "Страховка парапланериста",
+        "Трансфер вверх/вниз по горе",
         "Сертификат",
       ],
       zh: [
-        "一次滑翔伞飞行",
-        "GoPro 照片和视频",
+        "一次滑翔伞飞行 8-15 分钟（视风况而定）",
+        "GoPro 拍摄及摄影",
+        "飞行点饮用水",
         "滑翔伞保险",
+        "上下山接送车",
         "证书",
       ],
       hi: [
-        "एक पैराग्लाइडिंग उड़ान",
-        "GoPro फोटो और वीडियो",
+        "एक पैराग्लाइडिंग उड़ान 8-15 मिनट (हवा पर निर्भर)",
+        "GoPro फिल्मिंग और फोटोग्राफी",
+        "उड़ान स्थल पर पीने का पानी",
         "पैराग्लाइडिंग बीमा",
+        "पहाड़ ऊपर/नीचे शटल",
         "प्रमाणपत्र",
       ],
     },
@@ -1168,7 +1179,8 @@ function computePriceByCurrency(
   };
 
   (["pickup", "flycam", "camera360"] as AddonKey[]).forEach((key) => {
-    const a = cfg.addons[key];
+    const a = cfg.addons?.[key];
+    if (!a) return;
 
     let unit =
       currency === "VND" ? a.pricePerPersonVND : a.pricePerPersonUSD;

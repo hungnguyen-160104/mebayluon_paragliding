@@ -316,8 +316,7 @@ export const hi: CommonTranslation = {
           "कॉमन एरिया, डबल रूम, सिंगल रूम और एटिक रूम सहित। अधिकतम 35 मेहमानों की क्षमता",
       },
     },
-    features: {
-      breakfast: "नाश्ता शामिल है",
+    features: {      "en-suite": "संलग्न बाथरूम",      breakfast: "नाश्ता शामिल है",
       wifi: "मुफ़्त Wi-Fi",
       view: "सुंदर दृश्य",
       "handmade-tea": "हैंडमेड चाय",

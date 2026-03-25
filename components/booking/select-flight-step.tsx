@@ -48,10 +48,11 @@ type ServiceMeta = {
     | "hanoi_private_pickup"
     | "hanoi_mountain_shuttle"
     | "khau_pha_flag"
-    | "khau_pha_paragliding_shuttle"
-    | "khau_pha_paragliding_garrya_pickup"
-    | "khau_pha_paramotor_tu_le_pickup"
-    | "khau_pha_paramotor_garrya_pickup"
+    | "khau_pha_flycam"
+    | "khau_pha_camera360"
+    | "khau_pha_gopro"
+    | "khau_pha_shuttle"
+    | "khau_pha_garrya_pickup"
     | "da_nang_mountain_shuttle"
     | "da_nang_hotel_pickup"
     | "quan_ba_pickup"
@@ -104,9 +105,9 @@ const ADDON_KEYS: AddonKey[] = ["flycam", "camera360"];
 
 const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   ha_noi: 1_690_000,
-  khau_pha: 2_120_000,
+  khau_pha: 2_190_000,
   sapa: 2_090_000,
-  quan_ba: 2_090_000,
+  quan_ba: 2_190_000,
   da_nang: 1_690_000,
 };
 
@@ -315,7 +316,7 @@ function getFooterConfig(
   if (location === "quan_ba") {
     return {
       inlineLinks: [],
-      note: ui.noMapInfo,
+      note: "",
     };
   }
 
@@ -516,7 +517,7 @@ function getServiceMeta(
         {
           text: ui.optionalServicesFixedPickupLocation,
           tone: "dark",
-          href: "https://maps.app.goo.gl/3vB2qYuThwBASQZj8",
+          href: "https://www.google.com/maps/place/Highlands+Coffee+BigC,+BigC,+222+%C4%90.+Tr%E1%BA%A7n+Duy+H%C6%B0ng,+Trung+Ho%C3%A0,+C%E1%BA%A7u+Gi%E1%BA%A5y,+H%C3%A0+N%E1%BB%99i+100000/data=!4m2!3m1!1s0x3135ade3b3f8cc73:0xe5dc4fb635ecfc01?utm_source=mstt_1&entry=gps&g_ep=CAESBzExLjUzLjQYACD___________8BKgA%3D",
         },
         {
           text: ui.optionalServicesFixedPickupDeparture,
@@ -539,8 +540,6 @@ function getServiceMeta(
       lines: [],
       activeNoteLines: [
         { text: ui.optionalServicesPrivatePickupNote1, tone: "dark" },
-        { text: ui.optionalServicesPrivatePickupNote2, tone: "dark" },
-        { text: ui.optionalServicesPrivatePickupNote3, tone: "dark" },
       ],
       lineTotalVND: (_base, guests) =>
         1_500_000 + Math.max(0, guests - 3) * 350_000,
@@ -578,11 +577,49 @@ function getServiceMeta(
     };
   }
 
-  if (key === "khau_pha_paragliding_shuttle") {
+  if (key === "khau_pha_flycam") {
     return {
-      id: "khau_pha_paragliding_shuttle",
-      exclusiveGroup: "khau_pha_paragliding_pickup",
+      id: "khau_pha_flycam",
+      showQty: true,
+      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
+      lineTotalVND: (base, _guests, qty) => base * qty,
+      lineTotalUSD: (base, _guests, qty) => base * qty,
+      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
+    };
+  }
+
+  if (key === "khau_pha_camera360") {
+    return {
+      id: "khau_pha_camera360",
+      showQty: true,
+      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
+      lineTotalVND: (base, _guests, qty) => base * qty,
+      lineTotalUSD: (base, _guests, qty) => base * qty,
+      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
+    };
+  }
+
+  if (key === "khau_pha_gopro") {
+    return {
+      id: "khau_pha_gopro",
       defaultSelected: true,
+      priceText: "FREE",
+      lines: [],
+      lineTotalVND: () => 0,
+      lineTotalUSD: () => 0,
+      summaryText: (name) => name,
+    };
+  }
+
+  if (key === "khau_pha_shuttle") {
+    return {
+      id: "khau_pha_shuttle",
+      exclusiveGroup: "khau_pha_pickup",
+      defaultSelected: true,
+      requiresInput: true,
+      inputLabel: ui.pickupLocationLabel,
       priceText: `${formatVND(priceVND)}/${ui.pax}`,
       lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       lineTotalVND: (base, guests) => base * guests,
@@ -591,57 +628,22 @@ function getServiceMeta(
     };
   }
 
-  if (key === "khau_pha_paragliding_garrya_pickup") {
+  if (key === "khau_pha_garrya_pickup") {
     return {
-      id: "khau_pha_paragliding_garrya_pickup",
-      exclusiveGroup: "khau_pha_paragliding_pickup",
+      id: "khau_pha_garrya_pickup",
+      exclusiveGroup: "khau_pha_pickup",
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
       showQty: true,
       readonlyQty: true,
-      priceText: "700.000 đ/xe 4 chỗ/1 chiều",
+      priceText: "600.000 đ/xe 4 chỗ/1 chiều",
       lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       activeNoteLines: noteLines.map((text) => ({
         text: `• ${text}`,
         tone: "red",
       })),
-      lineTotalVND: (_base, guests) => Math.ceil(guests / 4) * 700_000,
-      lineTotalUSD: (_base, guests) => Math.ceil(guests / 4) * 28,
-      summaryText: (name, qty) => `${name} (${qty} ${ui.carUnit})`,
-    };
-  }
-
-  if (key === "khau_pha_paramotor_tu_le_pickup") {
-    return {
-      id: "khau_pha_paramotor_tu_le_pickup",
-      exclusiveGroup: "khau_pha_paramotor_pickup",
-      defaultSelected: true,
-      requiresInput: true,
-      inputLabel: ui.pickupLocationLabel,
-      priceText: `${formatVND(priceVND)}/${ui.pax}`,
-      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
-      lineTotalVND: (base, guests) => base * guests,
-      lineTotalUSD: (base, guests) => base * guests,
-      summaryText: (name) => name,
-    };
-  }
-
-  if (key === "khau_pha_paramotor_garrya_pickup") {
-    return {
-      id: "khau_pha_paramotor_garrya_pickup",
-      exclusiveGroup: "khau_pha_paramotor_pickup",
-      requiresInput: true,
-      inputLabel: ui.pickupLocationLabel,
-      showQty: true,
-      readonlyQty: true,
-      priceText: "700.000 đ/xe 4 chỗ/1 chiều",
-      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
-      activeNoteLines: noteLines.map((text) => ({
-        text: `• ${text}`,
-        tone: "red",
-      })),
-      lineTotalVND: (_base, guests) => Math.ceil(guests / 4) * 700_000,
-      lineTotalUSD: (_base, guests) => Math.ceil(guests / 4) * 28,
+      lineTotalVND: (_base, guests) => Math.ceil(guests / 4) * 600_000,
+      lineTotalUSD: (_base, guests) => Math.ceil(guests / 4) * 24,
       summaryText: (name, qty) => `${name} (${qty} ${ui.carUnit})`,
     };
   }
@@ -1652,7 +1654,7 @@ export default function SelectFlightStep() {
                           />
                         ) : null}
 
-                        {active && meta.activeNoteLines?.length ? (
+                        {meta.activeNoteLines?.length ? (
                           <div className="mt-2 space-y-1 sm:ml-11">
                             {meta.activeNoteLines.map((line, idx) => (
                               <p
@@ -1662,7 +1664,18 @@ export default function SelectFlightStep() {
                                   toneClass(line.tone),
                                 ].join(" ")}
                               >
-                                {line.text}
+                                {(line as any).href ? (
+                                  <a
+                                    href={(line as any).href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline hover:text-blue-600"
+                                  >
+                                    {line.text}
+                                  </a>
+                                ) : (
+                                  line.text
+                                )}
                               </p>
                             ))}
                           </div>
@@ -1751,7 +1764,7 @@ export default function SelectFlightStep() {
                           </div>
                         </div>
 
-                        {active && (isFlycam || is360) ? (
+                        {isFlycam || is360 ? (
                           <div className="mt-2 space-y-2 sm:ml-11">
                             {isFlycam ? (
                               <>
@@ -1797,21 +1810,59 @@ export default function SelectFlightStep() {
                     <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-[#DCE7F3] px-4 py-3">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                      {(
-                        selectedCfg.included?.[lang as LangCode] ??
-                        selectedCfg.included?.en ??
-                        selectedCfg.included?.vi ??
-                        []
-                      ).map((item: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="rounded-full border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-2 text-[13px] font-medium text-[#0F5FA8] sm:text-[14px]"
-                        >
-                          {item}
-                        </div>
-                      ))}
+                  <div className="border-t border-[#DCE7F3] px-4 py-4">
+                    <div className="flex flex-col gap-3">
+                      {(() => {
+                        const pkgCfg = selectedCfg?.packages?.find(
+                          (p) => p.key === data.packageKey,
+                        );
+                        const list =
+                          pkgCfg?.included?.[lang as LangCode] ??
+                          pkgCfg?.included?.en ??
+                          pkgCfg?.included?.vi ??
+                          selectedCfg.included?.[lang as LangCode] ??
+                          selectedCfg.included?.en ??
+                          selectedCfg.included?.vi ??
+                          [];
+
+                        const excludedList =
+                          pkgCfg?.excluded?.[lang as LangCode] ??
+                          pkgCfg?.excluded?.en ??
+                          pkgCfg?.excluded?.vi ??
+                          selectedCfg.excluded?.[lang as LangCode] ??
+                          selectedCfg.excluded?.en ??
+                          selectedCfg.excluded?.vi ??
+                          [];
+
+                        return (
+                          <>
+                            {list.map((item: string, idx: number) => (
+                              <div key={idx} className="flex items-start gap-3">
+                                <span className="mt-0.5 text-[18px] leading-none text-[#16A34A]">
+                                  ✓
+                                </span>
+                                <span className="text-[15px] leading-6 text-[#1C2930] sm:text-[16px]">
+                                  {item}
+                                </span>
+                              </div>
+                            ))}
+                            {excludedList.length > 0 &&
+                              excludedList.map((item: string, idx: number) => (
+                                <div
+                                  key={`ex-${idx}`}
+                                  className="flex items-start gap-3"
+                                >
+                                  <span className="mt-0.5 text-[18px] leading-none text-red-500">
+                                    ✕
+                                  </span>
+                                  <span className="text-[15px] font-medium leading-6 text-red-500 sm:text-[16px]">
+                                    {ui.excludedLabel}: {item}
+                                  </span>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </details>

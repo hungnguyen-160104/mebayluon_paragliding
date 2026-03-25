@@ -316,6 +316,7 @@ export const fr: CommonTranslation = {
       },
     },
     features: {
+      "en-suite": "Salle de bain privée",
       breakfast: "Petit-déjeuner inclus",
       wifi: "WiFi gratuit",
       view: "Belle vue",

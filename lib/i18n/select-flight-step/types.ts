@@ -22,6 +22,7 @@ export type SelectFlightStepUiText = {
   pickupPointLabel: string;
   pickupPlaceholder: string;
   includedLabel: string;
+  excludedLabel: string;
   groupDiscountTitle: string;
   freeGopro: string;
   optionalServiceTitle: string;

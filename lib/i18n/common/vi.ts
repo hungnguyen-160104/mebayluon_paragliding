@@ -57,9 +57,9 @@ export const vi: CommonTranslation = {
         duration: "60 phút",
       },
       khauPha: {
-        name: "Mù Cang Chải, Tú Lệ",
+        name: "Đèo Khau Phạ",
         location: "Lào Cai",
-        area: "Đèo Khau Phạ",
+        area: "Mù Cang Chải, Tú Lệ",
         description: "Bay trên đèo Khau Phạ hùng vĩ, một trong tứ đại đỉnh đèo Tây Bắc",
         highlight: "Một trong tứ đại đỉnh đèo Tây Bắc",
         duration: "60 phút",
@@ -83,7 +83,7 @@ export const vi: CommonTranslation = {
       doiBu: {
         name: "Đồi Bù - Viên Nam",
         location: "Hà Nội",
-        area: "Đồi Bù - Viên Nam",
+        area: "Hà Nội",
         description: "Điểm bay gần thủ đô Hà Nội",
         highlight: "Điểm bay gần thủ đô",
         duration: "180 phút",
@@ -304,7 +304,7 @@ export const vi: CommonTranslation = {
       },
       wholeHomeSmall: {
         name: "Phòng Gia Đình",
-        description: "Một phòng lớn ở tối đa 5 người/phòng",
+        description: "1 phòng lớn - ở tối đa 5 người/phòng",
       },
       wholeHomeLarge: {
         name: "Nguyên Nhà Sàn",
@@ -312,6 +312,7 @@ export const vi: CommonTranslation = {
       },
     },
     features: {
+      "en-suite": "Vệ sinh khép kín",
       breakfast: "Bao gồm ăn sáng",
       wifi: "WiFi miễn phí",
       view: "View đẹp",

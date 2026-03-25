@@ -22,7 +22,8 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pickupLocationLabel: "Vị trí đón",
     pickupPointLabel: "Điểm đón",
     includedLabel: "Đã bao gồm",
-    groupDiscountTitle: "Giảm giá trực tiếp khi đăng ký theo nhóm",
+    excludedLabel: "Không bao gồm",
+    groupDiscountTitle: "Giảm giá theo nhóm",
     freeGopro: "Quay chuyến bay bằng Gopro tiêu chuẩn",
     optionalServiceTitle: "Dịch vụ tùy chọn",
     fromLabel: "Từ",
@@ -45,8 +46,8 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "Khám phá một thành phố Hà Nội rất khác với trải nghiệm bay dù lượn từ trên cao, ngắm những ngọn núi trùng điệp và những làng quê ngoại ô thành phố.",
-        "Điểm bay chỉ cách trung tâm Hà Nội 50km về phía Tây.",
+        "Khám phá một thành phố Hà Nội rất khác với trải nghiệm bay dù lượn từ trên cao, ngắm những ngọn núi trùng điệp và những làng quê ngoại ô thành phố. Điểm bay chỉ cách trung tâm Hà Nội 50km về phía Tây.",
+        "Tổng thời gian tour: 3-5 tiếng (đi về trong ngày)",
       ],
       khau_pha: [],
       sapa: [
@@ -54,7 +55,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       ],
       da_nang: [
         "Cất cánh từ Đỉnh Bàn Cờ - núi Sơn Trà ở độ cao 600m.",
-        "Trải nghiệm ngắm trọn TP Đà Nẵng với mặt biển bên dưới và phía trước là toàn cảnh thành phố cùng dòng sông Hàn uốn lượn.",
+        "Trải nghiệm ngắm trọn TP Đà Nẵng với mặt biển bên dưới và phía trước là toàn cảnh thành phố cùng dòng sông Hàn uốn lượn. Đà Nẵng được đánh giá là điểm bay biển đẹp nhất Việt Nam.",
       ],
       quan_ba: [
         "Trải nghiệm cảm giác bay tự do độc đáo và ngắm toàn cảnh Cao Nguyên Đá Hà Giang từ độ cao hàng nghìn mét.",
@@ -64,7 +65,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     hanoiMountainWarning:
       "Hành khách nên sử dụng dịch vụ xe chuyên dụng lên núi. Chúng tôi dùng xe SUV offroad để đảm bảo an toàn khi di chuyển.\nCảnh báo: Đường lên núi khó đi, không khuyến khích sử dụng xe cá nhân tự lái.",
     daNangMountainWarning:
-      "Quý khách nên sử dụng dịch vụ xe di chuyển lên núi để được sắp xếp nhanh chóng và linh hoạt nhất. Nếu tự di chuyển, không nên sử dụng xe máy tay ga vì lý do an toàn.",
+      "!!!! Quý khách nên sử dụng dịch vụ xe di chuyển lên núi để được sắp xếp nhanh chóng và linh hoạt nhất. Nếu tự di chuyển, không nên sử dụng xe máy tay ga vì lý do an toàn. Điểm cất cánh cách điểm hạ cánh 12km, đường đèo dốc vì vậy cần xe trung chuyển trước chuyến.",
     paraglidingNoPickupWarning:
       "LƯU Ý: Chuyến bay không bao gồm xe trung chuyển lên/xuống núi, quý khách vui lòng có mặt tại bãi cất cánh 15 phút trước giờ bay để làm thủ tục checkin.",
     paramotorNoPickupWarning:
@@ -74,7 +75,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     selectedFlightLabel: "Loại bay đã chọn",
     selectedOptionsLabel: "Dịch vụ đã chọn",
     noOptionalSelected: "Chưa chọn dịch vụ tùy chọn nào.",
-    noMapInfo: "Hà Giang không đưa tọa độ cất cánh hạ cánh vào.",
+    noMapInfo: "",
     flycamDescription:
       "Quay toàn cảnh thung lũng và hành trình bay, video gốc sẽ được gửi ngay sau chuyến bay.",
     camera360Description:
