@@ -10,7 +10,16 @@ type Guest = {
   weightKg?: number;
   nationality?: string;
 };
-type Price = { currency?: string; perPerson?: number; total?: number };
+type Price = {
+  currency?: string;
+  perPerson?: number;
+  basePerPerson?: number;
+  discountPerPerson?: number;
+  addonsUnitPrice?: Record<string, number>;
+  addonsQty?: Record<string, number>;
+  addonsTotal?: Record<string, number>;
+  total?: number;
+};
 
 export type TelegramBookingPayload = {
   location?: string;
@@ -92,9 +101,8 @@ function buildTelegramSections(body: TelegramBookingPayload) {
 
   // Build addon details with pricing
   const addonLines: string[] = [];
-  const priceAddons = body.price?.addonsUnitPrice || {};
-  const addonQty = body.price?.addonsQty || body.addons || {};
-  const addonTotal = body.price?.addonsTotal || {};
+  const priceAddons = (body.price?.addonsUnitPrice ?? {}) as Record<string, number>;
+  const addonTotal = (body.price?.addonsTotal ?? {}) as Record<string, number>;
 
   if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
     const qty = body.price?.addonsQty?.pickup || 1;
@@ -180,9 +188,8 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
 
   // Build addon details with pricing
   const addonLines: string[] = [];
-  const priceAddons = body.price?.addonsUnitPrice || {};
-  const addonQty = body.price?.addonsQty || body.addons || {};
-  const addonTotal = body.price?.addonsTotal || {};
+  const priceAddons = (body.price?.addonsUnitPrice ?? {}) as Record<string, number>;
+  const addonTotal = (body.price?.addonsTotal ?? {}) as Record<string, number>;
 
   if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
     const qty = body.price?.addonsQty?.pickup || 1;
