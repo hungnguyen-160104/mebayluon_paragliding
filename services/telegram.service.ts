@@ -2,7 +2,7 @@
 type SendResult = { chat_id: string; ok: boolean; status?: number; error?: string };
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || "")
+const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || "")
   .split(",")
   .map(s => s.trim())
   .filter(Boolean);
@@ -42,7 +42,7 @@ export async function sendTelegramToAll(text: string, html = true): Promise<Send
   return results;
 }
 
-/** Tạo message đẹp cho đơn đặt bay (khớp payload bạn đang dùng) */
+/** Tạo message đẹp cho đơn đặt bay - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT GIÁ VÀ DỊCH VỤ */
 export function buildBookingMessage(payload: any): string {
   const esc = (s?: string) =>
     (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -61,41 +61,79 @@ export function buildBookingMessage(payload: any): string {
         if (g?.dob) attrs.push(`DOB: ${esc(g.dob)}`);
         if (g?.gender) attrs.push(esc(g.gender));
         if (g?.idNumber) attrs.push(`ID: ${esc(g.idNumber)}`);
-        if (typeof g?.weightKg === "number") attrs.push(`Wt: ${g.weightKg}kg`);
-        if (g?.nationality) attrs.push(`QT: ${esc(g.nationality)}`);
-        return `${i + 1}. ${esc(g?.fullName || "")}${attrs.length ? " (" + attrs.join(" · ") + ")" : ""}`;
+        if (typeof g?.weightKg === "number") attrs.push(`${g.weightKg}kg`);
+        if (g?.nationality) attrs.push(esc(g.nationality));
+        return `${i + 1}. ${esc(g?.fullName || "")} | ${attrs.join(" · ")}`;
       })
       .join("\n") || "—";
-
-  const addons: string[] = [];
-  if (payload?.addons?.flycam) addons.push("• Flycam");
-  if (payload?.addons?.camera360) addons.push("• Camera 360");
-  if (payload?.addons?.pickup) addons.push("• Đón trả");
 
   const createdAt =
     payload?.createdAt ||
     new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
+  const locationName = esc(payload?.locationName || payload?.location || "—");
+
+  // Handle both old format (perPerson) and new format (basePerPerson)
+  const basePerPerson = payload?.price?.basePerPerson || payload?.price?.perPerson;
+  const baseTotal = basePerPerson ? basePerPerson * guestsCount : 0;
+
+  const total = fmtVND(payload?.price?.total);
+
+  // Build addon lines with actual pricing
+  const addonLines: string[] = [];
+  const priceAddons = payload?.price?.addonsUnitPrice || {};
+  const addonTotal = payload?.price?.addonsTotal || {};
+
+  if (payload?.addons?.pickup || (payload?.price?.addonsQty?.pickup ?? 0) > 0) {
+    const qty = payload?.price?.addonsQty?.pickup || 1;
+    const unit = priceAddons?.pickup || 100_000;
+    const tot = addonTotal?.pickup || unit * qty;
+    addonLines.push(`• Đưa đón: ${fmtVND(unit)} × ${qty} = ${fmtVND(tot)}`);
+  }
+
+  if (payload?.addons?.flycam || (payload?.price?.addonsQty?.flycam ?? 0) > 0) {
+    const qty = payload?.price?.addonsQty?.flycam || 1;
+    const unit = priceAddons?.flycam || 300_000;
+    const tot = addonTotal?.flycam || unit * qty;
+    addonLines.push(`• Flycam / Drone: ${fmtVND(unit)} × ${qty} = ${fmtVND(tot)}`);
+  }
+
+  if (payload?.addons?.camera360 || (payload?.price?.addonsQty?.camera360 ?? 0) > 0) {
+    const qty = payload?.price?.addonsQty?.camera360 || 1;
+    const unit = priceAddons?.camera360 || 500_000;
+    const tot = addonTotal?.camera360 || unit * qty;
+    addonLines.push(`• Camera 360°: ${fmtVND(unit)} × ${qty} = ${fmtVND(tot)}`);
+  }
+
   const lines = [
-    `🛒 <b>ĐƠN ĐẶT BAY MỚI</b>`,
-    `📍 <b>Điểm:</b> ${esc(payload?.locationName || payload?.location || "—")}`,
-    `📅 <b>Thời gian:</b> ${esc(payload?.dateISO || "")} ${esc(payload?.timeSlot || "")}`,
-    `👥 <b>Số khách:</b> ${guestsCount}`,
+    `🔔 ĐƠN ĐẶT BAY MỚI: ${payload?.bookingId || "—"}`,
     ``,
-    `<b>Liên hệ</b>`,
-    `• 📞 ${esc(c.phone || "")} · ✉️ ${esc(c.email || "")}`,
-    c.pickupLocation ? `• 🚗 Điểm đón: ${esc(c.pickupLocation)}` : "",
-    c.specialRequest ? `• 📝 Y/c đặc biệt: ${esc(c.specialRequest)}` : "",
+    `🆔 DỊCH VỤ & NGÀY GIỜ`,
+    `${esc(payload?.serviceName || "Dù lượn")} | ${esc(payload?.dateISO || "—")} ${payload?.timeSlot ? `@ ${payload?.timeSlot}` : ""}`,
     ``,
-    `<b>Chi phí</b>`,
-    `• Giá/khách (sau giảm): ${fmtVND(payload?.price?.perPerson)}`,
-    addons.length ? `• Phụ thu:\n${addons.map(l => "   " + l).join("\n")}` : "",
-    `• <b>Tổng tạm tính:</b> ${fmtVND(payload?.price?.total)}`,
+    `📍 ĐỊA ĐIỂM & SỐ LƯỢNG`,
+    `Điểm bay: ${locationName}`,
+    `Số khách: ${guestsCount} người`,
     ``,
-    `<b>Danh sách khách</b>`,
+    `👤 THÔNG TIN LIÊN HỆ`,
+    `Điện thoại: ${esc(c.phone || "—")}`,
+    `Email: ${esc(c.email || "—")}`,
+    c.pickupLocation ? `Địa điểm đón: ${esc(c.pickupLocation)}` : "",
+    ``,
+    `👥 THÔNG TIN KHÁCH HÀNG`,
     guestLines,
     ``,
-    `⏱️ ${createdAt}`,
+    `💰 CHI TIẾT GIÁ`,
+    `Giá bay cơ bản: ${fmtVND(basePerPerson)}/người × ${guestsCount} = ${fmtVND(baseTotal)}`,
+    ...addonLines,
+    payload?.price?.discountPerPerson ? `Giảm giá nhóm: -${fmtVND(payload.price.discountPerPerson)}/người × ${guestsCount} = -${fmtVND(payload.price.discountPerPerson * guestsCount)}` : "",
+    ``,
+    `📌 GHI CHÚ/YÊU CẦU ĐẶC BIỆT`,
+    `${esc(c.specialRequest || "Không có")}`,
+    ``,
+    `═══════════════════════════════`,
+    `TỔNG CỘNG: ${total}`,
+    `═══════════════════════════════`,
   ].filter(Boolean);
 
   return lines.join("\n");

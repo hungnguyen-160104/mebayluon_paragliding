@@ -174,7 +174,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "Ngày bay không được ở quá khứ. Vui lòng chọn từ ngày mai trở đi.",
+          "Ngày bay không được ở quá khứ. Vui lòng chọn từ hôm nay trở đi.",
         dobInFuture: "Ngày sinh không được ở tương lai.",
         dobTooYoung:
           "Ngày sinh không hợp lệ (không được trong năm hiện tại).",
@@ -264,7 +264,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "Flight date cannot be in the past. Please pick from tomorrow onwards.",
+          "Flight date cannot be in the past. Please pick from today onwards.",
         dobInFuture: "Date of birth cannot be in the future.",
         dobTooYoung:
           "Invalid date of birth (cannot be in the current year).",
@@ -356,7 +356,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "La date de vol ne peut pas être dans le passé. Choisissez à partir de demain.",
+          "La date de vol ne peut pas être dans le passé. Choisissez à partir d'aujourd'hui.",
         dobInFuture:
           "La date de naissance ne peut pas être dans le futur.",
         dobTooYoung:
@@ -448,7 +448,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "Дата полёта не может быть в прошлом. Выберите завтрашний день или позже.",
+          "Дата полёта не может быть в прошлом. Выберите сегодняшний день или позже.",
         dobInFuture:
           "Дата рождения не может быть в будущем.",
         dobTooYoung:
@@ -540,7 +540,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "飞行日期不能选择过去时间，请从明天开始选择。",
+          "飞行日期不能选择过去时间，请从今天开始选择。",
         dobInFuture: "出生日期不能在未来。",
         dobTooYoung:
           "出生日期无效（不能是今年）。",
@@ -632,7 +632,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       ],
       errors: {
         dateInPast:
-          "फ्लाइट की तारीख अतीत में नहीं हो सकती। कृपया कल से आगे चुनें।",
+          "फ्लाइट की तारीख अतीत में नहीं हो सकती। कृपया आज से आगे चुनें।",
         dobInFuture:
           "जन्मतिथि भविष्य में नहीं हो सकती।",
         dobTooYoung:

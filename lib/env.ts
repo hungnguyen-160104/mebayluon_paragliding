@@ -10,7 +10,7 @@ function required(name: string) {
 export const ENV = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 4000),
-  MONGO_URI: required("MONGO_URI"),
+  MONGO_URI: required("MONGODB_URI"),
   JWT_SECRET: required("JWT_SECRET"),
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? "*",
 
@@ -21,7 +21,7 @@ export const ENV = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? "",
   // Single account (bắt buộc)
   SINGLE_USER: required("SINGLE_USER"),
-  SINGLE_PASSWORD_HASH: required("SINGLE_PASSWORD_HASH"),
+  SINGLE_PASSWORD_HASH: process.env.SINGLE_PASSWORD_HASH ?? "",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "7d",
 
   // Legacy (không còn dùng, giữ cho an toàn nếu nơi khác còn đọc)

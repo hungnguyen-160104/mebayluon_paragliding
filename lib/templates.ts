@@ -10,7 +10,16 @@ type Guest = {
   weightKg?: number;
   nationality?: string;
 };
-type Price = { currency?: string; perPerson?: number; total?: number };
+type Price = {
+  currency?: string;
+  perPerson?: number;
+  basePerPerson?: number;
+  discountPerPerson?: number;
+  addonsUnitPrice?: Record<string, number>;
+  addonsQty?: Record<string, number>;
+  addonsTotal?: Record<string, number>;
+  total?: number;
+};
 
 export type TelegramBookingPayload = {
   location?: string;
@@ -63,7 +72,7 @@ function telegramLikeHtmlWrapper(title: string, telegramHtmlText: string) {
 </html>`;
 }
 
-// ===== ADMIN: giữ nguyên tiếng Việt =====
+// ===== ADMIN: giữ nguyên tiếng Việt - FORMAT ĐẦY ĐỦ =====
 function buildTelegramSections(body: TelegramBookingPayload) {
   const c = body.contact || {};
 
@@ -79,57 +88,79 @@ function buildTelegramSections(body: TelegramBookingPayload) {
         if (g.dob) attrs.push(`DOB: ${escapeHtml(g.dob)}`);
         if (g.gender) attrs.push(escapeHtml(g.gender));
         if (g.idNumber) attrs.push(`ID: ${escapeHtml(g.idNumber)}`);
-        if (typeof g.weightKg === "number") attrs.push(`Wt: ${g.weightKg}kg`);
-        if (g.nationality) attrs.push(`QT: ${escapeHtml(g.nationality)}`);
-        const details = attrs.length ? ` (${attrs.join(" · ")})` : "";
-        return `${i + 1}. ${escapeHtml(g.fullName || "")}${details}`;
+        if (typeof g.weightKg === "number") attrs.push(`${g.weightKg}kg`);
+        if (g.nationality) attrs.push(escapeHtml(g.nationality));
+        return `${i + 1}. ${escapeHtml(g.fullName || "")} | ${attrs.join(" · ")}`;
       })
       .join("\n") || "—";
 
-  const addonLines: string[] = [];
-  if (body.addons?.flycam) addonLines.push("• Flycam");
-  if (body.addons?.camera360) addonLines.push("• Camera 360");
-  if (body.addons?.pickup) addonLines.push("• Đón trả");
-
   const createdAt = body.createdAt || createdAtFallback();
-
-  const locationKey = escapeHtml((body.location || "").trim());
   const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
-
-  const perPerson = formatVND(body.price?.perPerson);
+  const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
 
-  const extraTop: string[] = [];
-  if (body.bookingId) extraTop.push(`🆔 <b>BookingId:</b> ${escapeHtml(body.bookingId)}`);
-  if (body.serviceName) extraTop.push(`🧾 <b>Dịch vụ:</b> ${escapeHtml(body.serviceName)}`);
+  // Build addon details with pricing
+  const addonLines: string[] = [];
+  const priceAddons = (body.price?.addonsUnitPrice ?? {}) as Record<string, number>;
+  const addonTotal = (body.price?.addonsTotal ?? {}) as Record<string, number>;
+
+  if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.pickup || 1;
+    const unit = priceAddons?.pickup || 100_000;
+    const tot = addonTotal?.pickup || unit * qty;
+    addonLines.push(`• Đưa đón: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
+
+  if (body.addons?.flycam || (body.price?.addonsQty?.flycam ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.flycam || 1;
+    const unit = priceAddons?.flycam || 300_000;
+    const tot = addonTotal?.flycam || unit * qty;
+    addonLines.push(`• Flycam (Drone): ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
+
+  if (body.addons?.camera360 || (body.price?.addonsQty?.camera360 ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.camera360 || 1;
+    const unit = priceAddons?.camera360 || 500_000;
+    const tot = addonTotal?.camera360 || unit * qty;
+    addonLines.push(`• Camera 360: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
 
   const sections = [
-    `🛒 <b>ĐƠN ĐẶT BAY MỚI</b>`,
-    ...extraTop,
-    `📍 <b>Điểm:</b> ${locationName}${locationKey ? ` (${locationKey})` : ""}`,
-    `📅 <b>Thời gian:</b> ${escapeHtml(body.dateISO || "")} ${escapeHtml(body.timeSlot || "")}`,
-    `👥 <b>Số khách:</b> ${guestsCount}`,
+    `🔔 ĐƠN ĐẶT BAY MỚI: ${body.bookingId || "—"}`,
+    `⏰ Thời gian đặt: ${createdAt}`,
     ``,
-    `<b>Liên hệ</b>`,
-    `• 📞 ${escapeHtml(c.phone || "")} · ✉️ ${escapeHtml(c.email || "")}`,
-    c.pickupLocation ? `• 🚗 Điểm đón: ${escapeHtml(c.pickupLocation)}` : "",
-    c.specialRequest ? `• 📝 Y/c đặc biệt: ${escapeHtml(c.specialRequest)}` : "",
+    `🆔 DỊCH VỤ & NGÀY GIỜ`,
+    `${escapeHtml(body.serviceName || "Dù lượn")} | ${escapeHtml(body.dateISO || "—")} ${body.timeSlot ? `@ ${body.timeSlot}` : ""}`,
     ``,
-    `<b>Chi phí</b>`,
-    `• Giá/khách (sau giảm): ${perPerson}`,
-    addonLines.length ? `• Phụ thu:\n${addonLines.map((l) => "   " + l).join("\n")}` : "",
-    `• <b>Tổng tạm tính:</b> ${total}`,
+    `📍 ĐỊA ĐIỂM & SỐ LƯỢNG`,
+    `Điểm bay: ${locationName}`,
+    `Số khách: ${guestsCount} người`,
     ``,
-    `<b>Danh sách khách</b>`,
+    `👤 THÔNG TIN LIÊN HỆ`,
+    `Điện thoại: ${escapeHtml(c.phone || "—")}`,
+    `Email: ${escapeHtml(c.email || "—")}`,
+    c.pickupLocation ? `Địa điểm đón: ${escapeHtml(c.pickupLocation)}` : "",
+    ``,
+    `👥 THÔNG TIN KHÁCH HÀNG`,
     guestLines,
     ``,
-    `⏱️ ${escapeHtml(createdAt)}`,
+    `💰 CHI TIẾT GIÁ`,
+    `Giá bay cơ bản: ${basePerPerson}/người × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
+    ...addonLines,
+    body.price?.discountPerPerson ? `Giảm giá nhóm: -${formatVND(body.price.discountPerPerson)}/người × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
+    ``,
+    `📌 GHI CHÚ/YÊU CẦU ĐẶC BIỆT`,
+    `${escapeHtml(c.specialRequest || "Không có")}`,
+    ``,
+    `═══════════════════`,
+    `TỔNG CỘNG: ${total}`,
+    `═══════════════════`,
   ].filter(Boolean);
 
   return sections.join("\n");
 }
 
-// ===== CUSTOMER: tiếng Anh =====
+// ===== CUSTOMER: tiếng Anh - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT DỊCH VỤ =====
 function buildCustomerSectionsEn(body: TelegramBookingPayload) {
   const c = body.contact || {};
 
@@ -145,51 +176,104 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
         if (g.dob) attrs.push(`DOB: ${escapeHtml(g.dob)}`);
         if (g.gender) attrs.push(escapeHtml(g.gender));
         if (g.idNumber) attrs.push(`ID: ${escapeHtml(g.idNumber)}`);
-        if (typeof g.weightKg === "number") attrs.push(`Weight: ${g.weightKg}kg`);
-        if (g.nationality) attrs.push(`Nationality: ${escapeHtml(g.nationality)}`);
-        const details = attrs.length ? ` (${attrs.join(" · ")})` : "";
-        return `${i + 1}. ${escapeHtml(g.fullName || "")}${details}`;
+        if (typeof g.weightKg === "number") attrs.push(`${g.weightKg}kg`);
+        if (g.nationality) attrs.push(escapeHtml(g.nationality));
+        return `${i + 1}. ${escapeHtml(g.fullName || "")} | ${attrs.join(" · ")}`;
       })
       .join("\n") || "—";
 
-  const addonLines: string[] = [];
-  if (body.addons?.flycam) addonLines.push("• Flycam");
-  if (body.addons?.camera360) addonLines.push("• 360 Camera");
-  if (body.addons?.pickup) addonLines.push("• Pickup service");
-
   const createdAt = body.createdAt || createdAtFallback();
-
-  const locationKey = escapeHtml((body.location || "").trim());
   const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
-
-  const perPerson = formatVND(body.price?.perPerson);
+  const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
 
+  // Build addon details with pricing
+  const addonLines: string[] = [];
+  const priceAddons = (body.price?.addonsUnitPrice ?? {}) as Record<string, number>;
+  const addonTotal = (body.price?.addonsTotal ?? {}) as Record<string, number>;
+
+  if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.pickup || 1;
+    const unit = priceAddons?.pickup || 100_000;
+    const tot = addonTotal?.pickup || unit * qty;
+    addonLines.push(`  • Pickup Service: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
+
+  if (body.addons?.flycam || (body.price?.addonsQty?.flycam ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.flycam || 1;
+    const unit = priceAddons?.flycam || 300_000;
+    const tot = addonTotal?.flycam || unit * qty;
+    addonLines.push(`  • Flycam (Drone): ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
+
+  if (body.addons?.camera360 || (body.price?.addonsQty?.camera360 ?? 0) > 0) {
+    const qty = body.price?.addonsQty?.camera360 || 1;
+    const unit = priceAddons?.camera360 || 500_000;
+    const tot = addonTotal?.camera360 || unit * qty;
+    addonLines.push(`  • 360° Camera: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
+  }
+
   const sections = [
-    `🛒 <b>BOOKING CONFIRMATION</b>`,
-    body.bookingId ? `🆔 <b>Booking ID:</b> ${escapeHtml(body.bookingId)}` : "",
-    body.serviceName ? `🧾 <b>Service:</b> ${escapeHtml(body.serviceName)}` : "",
-    `📍 <b>Location:</b> ${locationName}${locationKey ? ` (${locationKey})` : ""}`,
-    `📅 <b>Date & Time:</b> ${escapeHtml(body.dateISO || "")} ${escapeHtml(body.timeSlot || "")}`,
-    `👥 <b>Number of Guests:</b> ${guestsCount}`,
+    `✈️ BOOKING CONFIRMATION`,
     ``,
-    `<b>Contact Information</b>`,
-    `• 📞 ${escapeHtml(c.phone || "")} · ✉️ ${escapeHtml(c.email || "")}`,
-    c.pickupLocation ? `• 🚗 Pickup Location: ${escapeHtml(c.pickupLocation)}` : "",
-    c.specialRequest ? `• 📝 Special Request: ${escapeHtml(c.specialRequest)}` : "",
+    body.bookingId ? `Booking ID: ${escapeHtml(body.bookingId)}` : "",
+    `Service: ${escapeHtml(body.serviceName || "Paragliding")}`,
+    `Booked on: ${createdAt}`,
     ``,
-    `<b>Pricing</b>`,
-    `• Price per guest: ${perPerson}`,
-    addonLines.length ? `• Additional services:\n${addonLines.map((l) => "   " + l).join("\n")}` : "",
-    `• <b>Estimated Total:</b> ${total}`,
+    `─────────────────────────────────`,
+    `BOOKING DETAILS`,
+    `─────────────────────────────────`,
+    `Location: ${locationName}`,
+    `Date: ${escapeHtml(body.dateISO || "—")}`,
+    `Time: ${escapeHtml(body.timeSlot || "—")}`,
+    `Number of Guests: ${guestsCount}`,
     ``,
-    `<b>Guest List</b>`,
+    `─────────────────────────────────`,
+    `CONTACT INFORMATION`,
+    `─────────────────────────────────`,
+    `Phone: ${escapeHtml(c.phone || "—")}`,
+    `Email: ${escapeHtml(c.email || "—")}`,
+    c.pickupLocation ? `Pickup Location: ${escapeHtml(c.pickupLocation)}` : "",
+    c.specialRequest ? `Special Requests: ${escapeHtml(c.specialRequest)}` : "",
+    ``,
+    `─────────────────────────────────`,
+    `PASSENGER LIST`,
+    `─────────────────────────────────`,
     guestLines,
     ``,
-    `⏱️ ${escapeHtml(createdAt)}`,
+    `─────────────────────────────────`,
+    `PRICE BREAKDOWN`,
+    `─────────────────────────────────`,
+    `Flight: ${basePerPerson}/person × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
+    ...addonLines,
+    body.price?.discountPerPerson ? `Group Discount: -${formatVND(body.price.discountPerPerson)}/person × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
     ``,
-    `Thank you for your booking.`,
-    `We will contact you shortly to confirm your reservation.`,
+    `TOTAL: ${total}`,
+    ``,
+    `─────────────────────────────────`,
+    `WHAT'S INCLUDED`,
+    `─────────────────────────────────`,
+    `• Flight time: 8-15 minutes (weather dependent)`,
+    `• GoPro photo & video`,
+    `• Welcome drink (coffee/tea)`,
+    `• Flight insurance`,
+    `• Certificate of flight`,
+    c.pickupLocation ? `• Pickup/Drop-off service` : "",
+    ``,
+    `─────────────────────────────────`,
+    `NEXT STEPS`,
+    `─────────────────────────────────`,
+    `1. We will confirm via phone/WhatsApp within 24 hours`,
+    `2. Arrive 15-20 minutes early for safety briefing`,
+    `3. Bring ID/Passport and the booking confirmation`,
+    `4. Free cancellation up to 48 hours before the flight`,
+    ``,
+    `CONTACT US:`,
+    `📞 +84 964.073.555 | +84 970.2812`,
+    `💬 WhatsApp | Zalo | Telegram`,
+    `🌐 mebayluon.com`,
+    ``,
+    `Safe flights! 🪂`,
   ].filter(Boolean);
 
   return sections.join("\n");
