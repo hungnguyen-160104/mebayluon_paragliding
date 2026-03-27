@@ -78,7 +78,7 @@ const UI_TEXT: Record<
 
     back: "Quay lại",
     next: "Tiếp theo",
-    dateInPast: "Ngày bay phải từ ngày mai trở đi.",
+    dateInPast: "Ngày bay phải từ hôm nay trở đi.",
   },
 
   en: {
@@ -110,7 +110,7 @@ const UI_TEXT: Record<
 
     back: "Back",
     next: "Next",
-    dateInPast: "Flight date must be from tomorrow onward.",
+    dateInPast: "Flight date must be from today onward.",
   },
 
   fr: {
@@ -142,7 +142,7 @@ const UI_TEXT: Record<
 
     back: "Retour",
     next: "Suivant",
-    dateInPast: "La date du vol doit être à partir de demain.",
+    dateInPast: "La date du vol doit être à partir d'aujourd'hui.",
   },
 
   ru: {
@@ -174,7 +174,7 @@ const UI_TEXT: Record<
 
     back: "Назад",
     next: "Далее",
-    dateInPast: "Дата полёта должна быть не раньше завтрашнего дня.",
+    dateInPast: "Дата полёта должна быть не раньше сегодняшнего дня.",
   },
 
   hi: {
@@ -206,7 +206,7 @@ const UI_TEXT: Record<
 
     back: "वापस",
     next: "अगला",
-    dateInPast: "फ्लाइट की तारीख कल या उसके बाद की होनी चाहिए।",
+    dateInPast: "फ्लाइट की तारीख आज या उसके बाद की होनी चाहिए।",
   },
 
   zh: {
@@ -236,7 +236,7 @@ const UI_TEXT: Record<
 
     back: "返回",
     next: "下一步",
-    dateInPast: "飞行日期必须从明天开始选择。",
+    dateInPast: "飞行日期必须从今天开始选择。",
   },
 };
 
@@ -299,10 +299,9 @@ export default function ContactInfoStep() {
   const hasLocation = Boolean(data.location);
   const [dateError, setDateError] = useState<string | null>(null);
 
-  const tomorrowISO = useMemo(() => {
+  const todayISO = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 1);
 
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -363,12 +362,12 @@ export default function ContactInfoStep() {
               <input
                 type="date"
                 value={data.dateISO || ""}
-                min={tomorrowISO}
+                min={todayISO}
                 onChange={(e) => {
                   const value = e.target.value;
                   update({ dateISO: value });
                   setDateError(
-                    value && value < tomorrowISO ? ui.dateInPast : null,
+                    value && value < todayISO ? ui.dateInPast : null,
                   );
                 }}
                 required

@@ -70,6 +70,17 @@ function normalizeDateToYYYYMMDD(dateISO?: string) {
   return "";
 }
 
+function formatDateDisplay(dateISO?: string) {
+  const raw = (dateISO || "").trim();
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function buildBookingRef(dateISO?: string, phone?: string) {
   const ymd = normalizeDateToYYYYMMDD(dateISO);
   const phoneDigits = digitsOnly(phone || "");
@@ -233,11 +244,8 @@ export default function BookingTicket({
     bookingResult?.createdAtISO ||
     new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
-  const locationName =
-    bookingResult?.locationName ||
-    cfg?.name?.[lang] ||
-    cfg?.name?.vi ||
-    "—";
+  const locationName = cfg?.name?.[lang] || cfg?.name?.vi || "—";
+  const hasPackages = !!(cfg?.packages && cfg.packages.length > 0);
 
   const bookingRef = buildBookingRef(booking.dateISO, contactPhone);
   const passengers: any[] = (booking as any)?.guests ?? [];
@@ -458,21 +466,25 @@ export default function BookingTicket({
           <PillRow
             items={[
               { label: labels.service, value: locationName },
-              { label: labels.date, value: booking.dateISO || "—" },
+              { label: labels.date, value: formatDateDisplay(booking.dateISO) },
               { label: labels.time, value: booking.timeSlot || "—" },
               { label: labels.guests, value: String(booking.guestsCount ?? "—") },
-              {
-                label: labels.packageLabel,
-                value: booking.location === "khau_pha" ? packageLabel : labels.notSelected,
-              },
-              {
-                label: labels.flightTypeLabel,
-                value: flightTypeLabel,
-              },
-              {
-                label: labels.dayTypeLabel,
-                value: getHolidayTypeLabel(labels, totals.holidayType),
-              },
+              ...(hasPackages
+                ? [
+                    {
+                      label: labels.packageLabel,
+                      value: packageLabel,
+                    },
+                    {
+                      label: labels.flightTypeLabel,
+                      value: flightTypeLabel,
+                    },
+                    {
+                      label: labels.dayTypeLabel,
+                      value: getHolidayTypeLabel(labels, totals.holidayType),
+                    },
+                  ]
+                : []),
             ]}
           />
         </SectionCard>
@@ -488,50 +500,6 @@ export default function BookingTicket({
             ]}
           />
         </SectionCard>
-
-        {selectedServices.length > 0 && (
-          <>
-            <SectionSpacer />
-            <SectionCard title={labels.pickupLocation}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {selectedServices.map((svc) => (
-                  <div
-                    key={svc.key}
-                    style={{
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 14,
-                      padding: 12,
-                      background: C.bg,
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>
-                      {svc.label}
-                    </div>
-
-                    <div style={{ marginTop: 6, fontSize: 13, color: C.subtext }}>
-                      {svc.fixedMapUrl
-                        ? "Google Map"
-                        : svc.inputText || labels.notProvided}
-                    </div>
-
-                    {svc.fixedMapUrl ? (
-                      <div
-                        style={{
-                          marginTop: 6,
-                          fontSize: 12,
-                          color: C.accentDark,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {svc.fixedMapUrl}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          </>
-        )}
 
         {passengers.length > 0 && (
           <>
@@ -591,7 +559,7 @@ export default function BookingTicket({
 
                     <PillRow
                       items={[
-                        { label: "DOB", value: p.dob || "—" },
+                        { label: "DOB", value: formatDateDisplay(p.dob) },
                         { label: "Gender", value: p.gender || "—" },
                         { label: "ID", value: p.idNumber || "—" },
                         { label: "Nationality", value: p.nationality || "—" },
@@ -648,12 +616,39 @@ export default function BookingTicket({
 
         <SectionSpacer />
 
+        {/* What's Included in the Flight */}
+        <SectionCard
+          title={lang === "vi" ? "Dịch vụ bao gồm" : lang === "en" ? "Services Included" : "Services Included"}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(cfg?.included?.[lang] || cfg?.included?.vi || []).map((item, idx) => (
+              <div key={idx} style={{ display: "flex", gap: 10, textAlign: lang === "vi" ? "left" : "left" }}>
+                <span style={{ color: C.success, fontWeight: 900, flexShrink: 0 }}>✓</span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: C.text,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {item}
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionSpacer />
+
         <SectionCard title={labels.additionalServices}>
           <StackInfo
             rows={[
               {
                 label: labels.pickupLocation,
-                value: selectedServices.length ? labels.yes : labels.no,
+                value: selectedServices.length
+                  ? selectedServices.map((s) => s.inputText || s.fixedMapUrl || labels.yes).join(", ")
+                  : labels.no,
               },
               {
                 label: labels.camera360Cost,
@@ -667,9 +662,6 @@ export default function BookingTicket({
                   ? `${totals.addonsQty.flycam} ${labels.pax}`
                   : labels.no,
               },
-              { label: "GoPro", value: labels.free },
-              { label: "Drinks", value: labels.free },
-              { label: "Certificate", value: labels.included },
             ]}
           />
         </SectionCard>

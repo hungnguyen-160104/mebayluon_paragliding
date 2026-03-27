@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { Customer } from "@/models/Customer.model";
 import { Booking } from "@/models/Booking.model";
 import { postNotifyGmail } from "@/services/gmail.service";
+import { buildBookingMessage } from "@/services/telegram.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -382,39 +383,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Sau khi lưu DB thành công, gửi Telegram
-    const basePerPerson = normalized.price?.basePerPerson;
-    const discountPerPerson = normalized.price?.discountPerPerson;
-    const total = normalized.price?.total;
+      const text = buildBookingMessage({
+        ...normalized,
+        bookingId: booking._id.toString(),
+      });
 
-    const text = [
-      `🛒 <b>ĐƠN ĐẶT BAY MỚI</b>`,
-      `📍 <b>Điểm:</b> ${escapeHtml(normalized.locationName || "")} (${escapeHtml(key)})`,
-      `📅 <b>Thời gian:</b> ${escapeHtml(normalized.dateISO || "")} ${escapeHtml(normalized.timeSlot || "")}`,
-      `👥 <b>Số khách:</b> ${normalized.guestsCount}`,
-      ``,
-      `<b>Liên hệ</b>`,
-      `• 📞 ${escapeHtml(c.phone || "")} · ✉️ ${escapeHtml(c.email || "")}`,
-      c.pickupLocation ? `• 🚗 Điểm đón: ${escapeHtml(c.pickupLocation)}` : "",
-      c.specialRequest ? `• 📝 Y/c đặc biệt: ${escapeHtml(c.specialRequest)}` : "",
-      ``,
-      `<b>Chi phí</b>`,
-      typeof basePerPerson === "number" ? `• Giá cơ bản/khách: ${fmtMoney(basePerPerson, currency)}` : "",
-      typeof discountPerPerson === "number" && discountPerPerson > 0
-        ? `• Giảm theo nhóm: -${fmtMoney(discountPerPerson, currency)}/khách`
-        : "",
-      addonLines.length ? `• Dịch vụ thêm:\n${addonLines.map((l) => "   " + l).join("\n")}` : "",
-      `• <b>Tổng tạm tính:</b> ${fmtMoney(total, currency)}`,
-      ``,
-      `<b>Danh sách khách</b>`,
-      guestLines,
-      ``,
-      `⏱️ ${escapeHtml(createdAt)}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    // Gửi Telegram (không fail booking nếu Telegram lỗi, chỉ log warning)
-    const results = await sendTelegramToAll(text, true);
+      // Gửi Telegram (không fail booking nếu Telegram lỗi, chỉ log warning)
+      const results = await sendTelegramToAll(text, true);
     const failed = results.filter((r) => r.ok === false);
     if (failed.length) {
       console.warn("[BookingCreate] Telegram failed:", failed);

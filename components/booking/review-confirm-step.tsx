@@ -57,6 +57,10 @@ const UI_I18N: Record<
     passengerList: string;
     paymentTitle: string;
     supportNote: string;
+    paymentInfoTitle: string;
+    paymentInfoDescription: string;
+    preFlightNotesTitle: string;
+    preFlightNotes: string[];
   }
 > = {
   vi: {
@@ -83,6 +87,18 @@ const UI_I18N: Record<
     paymentTitle: "Phương thức thanh toán",
     supportNote:
       "Sau khi gửi booking, đội ngũ sẽ liên hệ xác nhận lịch bay, dịch vụ và các điều kiện thời tiết.",
+    paymentInfoTitle: "Thông tin thanh toán",
+    paymentInfoDescription:
+      "Thanh toán sẽ được thực hiện trực tiếp tại điểm bay trước giờ cất cánh. Chúng tôi chấp nhận tiền mặt và các thẻ tín dụng/thẻ ghi nợ phổ biến. Sau khi đặt chỗ, chúng tôi sẽ liên hệ với bạn qua WhatsApp/Zalo hoặc email bạn cung cấp để xác nhận booking.",
+    preFlightNotesTitle: "Thông tin lưu ý trước khi bay",
+    preFlightNotes: [
+      "Vui lòng có mặt tại điểm bay trước giờ cất cánh ít nhất 15 phút để hoàn tất thủ tục check-in.",
+      "Mang theo giấy tờ tùy thân (CMND/CCCD hoặc Hộ chiếu) để xác minh thông tin.",
+      "Mặc trang phục thoải mái, đi giày thể thao hoặc giày bệt. Tránh mang dép lê, giày cao gót.",
+      "Không mang theo vật dụng sắc nhọn, dễ rơi hoặc có giá trị cao khi bay.",
+      "Nếu bạn có vấn đề về sức khỏe (tim mạch, huyết áp, động kinh, đang mang thai...), vui lòng thông báo trước cho phi công.",
+      "Chuyến bay có thể bị hoãn hoặc hủy do điều kiện thời tiết không đảm bảo an toàn. Trong trường hợp này, bạn sẽ được đổi lịch hoặc hoàn tiền.",
+    ],
   },
   en: {
     title: "Review and confirm",
@@ -108,6 +124,18 @@ const UI_I18N: Record<
     paymentTitle: "Payment methods",
     supportNote:
       "After you submit the booking, our team will contact you to confirm schedule, services, and weather conditions.",
+    paymentInfoTitle: "Payment information",
+    paymentInfoDescription:
+      "Payment is made directly at the flight site before takeoff. We accept cash and common credit/debit cards. After booking, we will contact you via WhatsApp/Zalo or the email you provided to confirm your reservation.",
+    preFlightNotesTitle: "Pre-flight information",
+    preFlightNotes: [
+      "Please arrive at the flight site at least 15 minutes before takeoff to complete check-in.",
+      "Bring valid ID (National ID or Passport) for verification.",
+      "Wear comfortable clothes and sneakers or flat shoes. Avoid flip-flops or high heels.",
+      "Do not bring sharp objects, items that may fall, or high-value items during the flight.",
+      "If you have any health issues (heart disease, blood pressure, epilepsy, pregnancy...), please inform the pilot in advance.",
+      "Flights may be postponed or cancelled due to unsafe weather conditions. In such cases, you can reschedule or get a refund.",
+    ],
   },
   fr: {
     title: "Vérification et confirmation",
@@ -134,6 +162,18 @@ const UI_I18N: Record<
     paymentTitle: "Modes de paiement",
     supportNote:
       "Après l'envoi de la réservation, notre équipe vous contactera pour confirmer l'horaire, les services et la météo.",
+    paymentInfoTitle: "Informations de paiement",
+    paymentInfoDescription:
+      "Le paiement s'effectue directement sur le site de vol avant le décollage. Nous acceptons les espèces et les cartes de crédit/débit courantes. Après la réservation, nous vous contacterons via WhatsApp/Zalo ou l'e-mail fourni pour confirmer votre réservation.",
+    preFlightNotesTitle: "Informations avant le vol",
+    preFlightNotes: [
+      "Veuillez arriver sur le site de vol au moins 15 minutes avant le décollage pour l'enregistrement.",
+      "Apportez une pièce d'identité valide (carte nationale ou passeport) pour vérification.",
+      "Portez des vêtements confortables et des chaussures de sport ou plates. Évitez les tongs ou talons hauts.",
+      "Ne transportez pas d'objets pointus, d'objets pouvant tomber ou d'objets de grande valeur pendant le vol.",
+      "Si vous avez des problèmes de santé (maladies cardiaques, tension artérielle, épilepsie, grossesse...), informez le pilote à l'avance.",
+      "Les vols peuvent être reportés ou annulés en raison de conditions météorologiques dangereuses. Dans ce cas, vous pouvez reprogrammer ou obtenir un remboursement.",
+    ],
   },
   ru: {
     title: "Проверка и подтверждение",
@@ -159,6 +199,18 @@ const UI_I18N: Record<
     paymentTitle: "Способы оплаты",
     supportNote:
       "После отправки бронирования команда свяжется с вами для подтверждения времени, услуг и погодных условий.",
+    paymentInfoTitle: "Информация об оплате",
+    paymentInfoDescription:
+      "Оплата производится непосредственно на месте полета до взлета. Мы принимаем наличные и распространенные кредитные/дебетовые карты. После бронирования мы свяжемся с вами через WhatsApp/Zalo или по указанной электронной почте для подтверждения брони.",
+    preFlightNotesTitle: "Информация перед полётом",
+    preFlightNotes: [
+      "Пожалуйста, прибудьте на место полёта минимум за 15 минут до взлёта для регистрации.",
+      "Возьмите с собой удостоверение личности (паспорт или ID-карту) для проверки.",
+      "Наденьте удобную одежду и кроссовки или плоскую обувь. Избегайте шлёпанцев или каблуков.",
+      "Не берите острые предметы, вещи, которые могут упасть, или ценные вещи на полёт.",
+      "Если у вас есть проблемы со здоровьем (сердечные заболевания, давление, эпилепсия, беременность...), сообщите пилоту заранее.",
+      "Полёты могут быть отложены или отменены из-за неблагоприятных погодных условий. В таком случае вы можете перенести полёт или получить возврат.",
+    ],
   },
   hi: {
     title: "जाँचें और पुष्टि करें",
@@ -184,6 +236,18 @@ const UI_I18N: Record<
     paymentTitle: "भुगतान के तरीके",
     supportNote:
       "बुकिंग भेजने के बाद हमारी टीम समय, सेवाओं और मौसम की स्थिति की पुष्टि के लिए आपसे संपर्क करेगी।",
+    paymentInfoTitle: "भुगतान जानकारी",
+    paymentInfoDescription:
+      "भुगतान उड़ान स्थल पर टेकऑफ से पहले सीधे किया जाएगा। हम नकद और सामान्य क्रेडिट/डेबिट कार्ड स्वीकार करते हैं। बुकिंग के बाद, आपकी बुकिंग की पुष्टि के लिए हम आपसे WhatsApp/Zalo या दिए गए ईमेल पर संपर्क करेंगे।",
+    preFlightNotesTitle: "उड़ान से पहले जानकारी",
+    preFlightNotes: [
+      "कृपया चेक-इन के लिए टेकऑफ से कम से कम 15 मिनट पहले उड़ान स्थल पर पहुँचें।",
+      "सत्यापन के लिए वैध पहचान पत्र (राष्ट्रीय आईडी या पासपोर्ट) साथ लाएं।",
+      "आरामदायक कपड़े और स्नीकर्स या फ्लैट जूते पहनें। फ्लिप-फ्लॉप या हाई हील्स से बचें।",
+      "उड़ान के दौरान तेज धार वाली वस्तुएं, गिरने वाली वस्तुएं या उच्च मूल्य की वस्तुएं न लाएं।",
+      "यदि आपको कोई स्वास्थ्य समस्या है (हृदय रोग, रक्तचाप, मिर्गी, गर्भावस्था...), तो कृपया पायलट को पहले से सूचित करें।",
+      "असुरक्षित मौसम के कारण उड़ानें स्थगित या रद्द हो सकती हैं। ऐसे मामलों में, आप पुनर्निर्धारण या रिफंड ले सकते हैं।",
+    ],
   },
   zh: {
     title: "确认预订信息",
@@ -209,6 +273,18 @@ const UI_I18N: Record<
     paymentTitle: "支付方式",
     supportNote:
       "提交预订后，团队将联系您确认飞行时间、服务内容和天气条件。",
+    paymentInfoTitle: "支付信息",
+    paymentInfoDescription:
+      "请在起飞前于飞行现场直接付款。我们接受现金及常见的信用卡/借记卡。预订后，我们将通过您提供的 WhatsApp/Zalo 或电子邮箱与您联系以确认订单。",
+    preFlightNotesTitle: "飞行前须知",
+    preFlightNotes: [
+      "请至少提前15分钟到达飞行现场完成登记手续。",
+      "请携带有效身份证件（身份证或护照）进行验证。",
+      "请穿着舒适的衣物和运动鞋或平底鞋。避免穿拖鞋或高跟鞋。",
+      "飞行时请勿携带尖锐物品、易掉落物品或贵重物品。",
+      "如有健康问题（心脏病、血压问题、癫痫、怀孕等），请提前告知飞行员。",
+      "因天气原因不安全时，飞行可能会延期或取消。届时您可以改期或获得退款。",
+    ],
   },
 };
 
@@ -481,21 +557,11 @@ export default function ReviewConfirmStep() {
     if (!iso) return ui.notSelected;
 
     const d = new Date(iso);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
 
-    const localeMap: Record<string, string> = {
-      vi: "vi-VN",
-      en: "en-US",
-      fr: "fr-FR",
-      ru: "ru-RU",
-      hi: "hi-IN",
-      zh: "zh-CN",
-    };
-
-    return new Intl.DateTimeFormat(localeMap[lang] || "en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(d);
+    return `${day}/${month}/${year}`;
   };
 
   const pax = data.guestsCount || 1;
@@ -768,16 +834,16 @@ export default function ReviewConfirmStep() {
             label: ui.packageLabel,
             value: packageLabel,
           },
+          {
+            label: ui.flightTypeLabel,
+            value: getFlightTypeLabel(lang, resolvedFlightTypeKey),
+          },
+          {
+            label: L("dayType", "Day type"),
+            value: getHolidayTypeLabel(lang, billInLang.holidayType),
+          },
         ]
       : []),
-    {
-      label: ui.flightTypeLabel,
-      value: getFlightTypeLabel(lang, resolvedFlightTypeKey),
-    },
-    {
-      label: L("dayType", "Day type"),
-      value: getHolidayTypeLabel(lang, billInLang.holidayType),
-    },
   ];
 
   return (
@@ -831,54 +897,6 @@ export default function ReviewConfirmStep() {
               </div>
             </section>
           </div>
-
-          {selectedPickupServices.length > 0 && (
-            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
-                {ui.pickupDetails}
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                {serviceLines
-                  .filter((item) => item.fixedMapUrl || item.inputText)
-                  .map((item) => (
-                    <div
-                      key={item.key}
-                      className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-4"
-                    >
-                      <div className="text-sm font-semibold text-[#1C2930]">
-                        {item.label}
-                      </div>
-
-                      {item.fixedMapUrl ? (
-                        <a
-                          href={item.fixedMapUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex h-10 items-center rounded-lg border border-[#0194F3] bg-[#EAF4FE] px-4 text-sm font-medium text-[#0194F3] transition hover:bg-[#0194F3] hover:text-white"
-                        >
-                          {L("viewMap", "View map")}
-                        </a>
-                      ) : (
-                        <div className="mt-2 break-words text-sm text-[#5B6B7A]">
-                          {item.inputText}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-
-              {missingPickupAddress ? (
-                <p className="mt-3 text-sm text-[#DC2626]">{ui.pickupAddressMissing}</p>
-              ) : null}
-            </section>
-          )}
-
-          {noPickupSelected && (
-            <div className="rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] p-4">
-              <p className="text-sm text-[#FF5E1F]">{ui.noPickupSelected}</p>
-            </div>
-          )}
 
           <section className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white">
             <button
@@ -968,17 +986,42 @@ export default function ReviewConfirmStep() {
               </div>
 
               <div className="mt-4 space-y-3">
-                <Row
-                  label={L("hotelTransfer", "Pickup / transfer")}
-                  value={
-                    selectedPickupServices.length
-                      ? `${selectedPickupServices.length}`
-                      : pickupAddonQty
-                        ? `${pickupAddonQty} pax`
-                        : L("no", "No")
+                {(() => {
+                  const pickupAddresses = serviceLines
+                    .filter((sl) => sl.inputText || sl.fixedMapUrl)
+                    .map((sl) => sl.inputText || L("viewMap", "Xem bản đồ"));
+
+                  if (pickupAddresses.length > 0 || pickupAddonQty > 0) {
+                    return (
+                      <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-sm text-[#5B6B7A]">
+                            {L("hotelTransfer", "Pickup / transfer")}
+                          </span>
+                          <span className="text-right text-sm font-semibold text-[#1C2930]">
+                            {L("yes", "Có")}
+                          </span>
+                        </div>
+                        {pickupAddresses.length > 0 && (
+                          <div className="mt-2 border-t border-[#DCE7F3] pt-2">
+                            {pickupAddresses.map((addr, idx) => (
+                              <p key={idx} className="text-sm text-[#5B6B7A]">
+                                {addr}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
                   }
-                  enabled={!!selectedPickupServices.length || !!pickupAddonQty}
-                />
+                  return (
+                    <Row
+                      label={L("hotelTransfer", "Pickup / transfer")}
+                      value={L("no", "No")}
+                      enabled={false}
+                    />
+                  );
+                })()}
                 <Row
                   label={L("camera360", "Camera 360")}
                   value={camera360Qty ? `${camera360Qty} pax` : L("no", "No")}
@@ -1065,6 +1108,15 @@ export default function ReviewConfirmStep() {
               lang={lang}
               theme="light"
             />
+          </section>
+
+          <section className="rounded-xl border border-[#F3E38F] bg-[#FFF9DB] p-4">
+            <p className="text-sm font-semibold text-[#7A5414]">
+              {ui.paymentInfoTitle}:
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-[#7A5414]">
+              {ui.paymentInfoDescription}
+            </p>
           </section>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-4 transition hover:border-[#B9DDFB]">
