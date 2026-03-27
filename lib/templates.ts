@@ -127,6 +127,7 @@ function buildTelegramSections(body: TelegramBookingPayload) {
 
   const sections = [
     `🔔 ĐƠN ĐẶT BAY MỚI: ${body.bookingId || "—"}`,
+    `⏰ Thời gian đặt: ${createdAt}`,
     ``,
     `🆔 DỊCH VỤ & NGÀY GIỜ`,
     `${escapeHtml(body.serviceName || "Dù lượn")} | ${escapeHtml(body.dateISO || "—")} ${body.timeSlot ? `@ ${body.timeSlot}` : ""}`,
@@ -159,7 +160,7 @@ function buildTelegramSections(body: TelegramBookingPayload) {
   return sections.join("\n");
 }
 
-// ===== CUSTOMER: tiếng Anh - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT DỰC VỤ =====
+// ===== CUSTOMER: tiếng Anh - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT DỊCH VỤ =====
 function buildCustomerSectionsEn(body: TelegramBookingPayload) {
   const c = body.contact || {};
 
@@ -217,6 +218,7 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
     ``,
     body.bookingId ? `Booking ID: ${escapeHtml(body.bookingId)}` : "",
     `Service: ${escapeHtml(body.serviceName || "Paragliding")}`,
+    `Booked on: ${createdAt}`,
     ``,
     `─────────────────────────────────`,
     `BOOKING DETAILS`,

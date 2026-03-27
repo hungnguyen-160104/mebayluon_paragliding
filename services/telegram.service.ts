@@ -2,7 +2,7 @@
 type SendResult = { chat_id: string; ok: boolean; status?: number; error?: string };
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || "")
+const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || "")
   .split(",")
   .map(s => s.trim())
   .filter(Boolean);
@@ -42,7 +42,7 @@ export async function sendTelegramToAll(text: string, html = true): Promise<Send
   return results;
 }
 
-/** Tạo message đẹp cho đơn đặt bay - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT GIÁ VÀ DỰC VỤ */
+/** Tạo message đẹp cho đơn đặt bay - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT GIÁ VÀ DỊCH VỤ */
 export function buildBookingMessage(payload: any): string {
   const esc = (s?: string) =>
     (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
