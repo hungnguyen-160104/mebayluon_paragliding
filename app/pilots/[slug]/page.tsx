@@ -4,14 +4,19 @@ import { pilots, Pilot } from "@/lib/pilots-data"
 import { notFound } from "next/navigation"
 import PilotDetailClientPage from "@/components/pilot-detail-page" // Bước 1: Import component client mới
 
+const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01"])
+
 // Helper function để lấy dữ liệu phi công bằng slug
 function getPilotBySlug(slug: string): Pilot | undefined {
-  return pilots.find((pilot) => pilot.slug === slug)
+  if (REMOVED_PILOT_SLUGS.has(slug)) return undefined
+  return pilots.find((pilot) => pilot.slug === slug && !REMOVED_PILOT_SLUGS.has(pilot.slug))
 }
 
 // generateStaticParams VẪN GIỮ Ở ĐÂY (file server)
 export async function generateStaticParams() {
-  return pilots.map((pilot) => ({
+  return pilots
+    .filter((pilot) => !REMOVED_PILOT_SLUGS.has(pilot.slug))
+    .map((pilot) => ({
     slug: pilot.slug,
   }))
 }

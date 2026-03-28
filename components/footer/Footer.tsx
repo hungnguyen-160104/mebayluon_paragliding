@@ -53,7 +53,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     license:
-      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham mưu, Bộ Quốc phòng Việt Nam.",
+      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
     rightsReserved: "Đã đăng ký bản quyền.",
   },
   en: {

@@ -190,27 +190,6 @@ const pilotsData: PilotCard[] = [
     },
   },
   {
-    name: "TUẤN NGUYỄN",
-    slug: "tuan-nguyen",
-    avatar: "/pilots/tuan-nguyen/tuan-nguyen.jpg",
-    nickname: {
-      vi: "Nhị ca",
-      en: "Second Brother",
-      fr: "Deuxième Frère",
-      ru: "Второй брат",
-      zh: "二哥",
-      hi: "दूसरे भाई",
-    },
-    role: {
-      vi: "Phi công đội bay, Phi công PPG",
-      en: "Team Pilot, PPG Pilot",
-      fr: "Pilote d'équipe, pilote PPG",
-      ru: "Пилот команды, пилот PPG",
-      zh: "团队飞行员，PPG 飞行员",
-      hi: "टीम पायलट, PPG पायलट",
-    },
-  },
-  {
     name: "ĐỊNH THẾ ANH",
     slug: "dinh-the-anh",
     avatar: "/pilots/dinh-the-anh/dinh-the-anh.jpg",
