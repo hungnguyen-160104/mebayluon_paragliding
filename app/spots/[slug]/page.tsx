@@ -73,19 +73,19 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "10 – 15 phút",
     landingPoint: "Thung lũng Mường Hoa",
     basePrice: 2090000,
-    image: "/spots/muong-hoa-sapa/hero.jpg",
+    image: "/spots/sapa/hero.jpg",
     galleryImages: [
-      "/spots/muong-hoa-sapa/gallery-1.jpg",
-      "/spots/muong-hoa-sapa/gallery-2.jpg",
-      "/spots/muong-hoa-sapa/gallery-3.jpg",
-      "/spots/muong-hoa-sapa/gallery-4.jpg",
-      "/spots/muong-hoa-sapa/gallery-5.jpg",
-      "/spots/muong-hoa-sapa/gallery-6.jpg",
+      "/spots/sapa/1.jpg",
+      "/spots/sapa/2.jpg",
+      "/spots/sapa/3.jpg",
+      "/spots/sapa/4.jpg",
+      "/spots/sapa/5.jpg",
+      "/spots/sapa/6.jpg",
     ],
     storyImages: [
-      "/spots/muong-hoa-sapa/so1.jpg",
-      "/spots/muong-hoa-sapa/gallery-2.jpg",
-      "/spots/muong-hoa-sapa/so3.jpeg",
+      "/spots/sapa/so1.jpg",
+      "/spots/sapa/so2.jpg",
+      "/spots/sapa/so3.jpeg",
     ],
     packages: filterPackages([
       {
@@ -109,19 +109,19 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "8 – 15 phút",
     landingPoint: "Khu ven biển Sơn Trà",
     basePrice: 1690000,
-    image: "/spots/son-tra/hero.jpg",
+    image: "/spots/da-nang/hero.jpg",
     galleryImages: [
-      "/spots/son-tra/gallery-1.jpg",
-      "/spots/son-tra/gallery-2.jpg",
-      "/spots/son-tra/gallery-3.jpg",
-      "/spots/son-tra/gallery-4.jpg",
-      "/spots/son-tra/gallery-5.jpg",
-      "/spots/son-tra/gallery-6.jpg",
+      "/spots/da-nang/1.jpg",
+      "/spots/da-nang/2.jpg",
+      "/spots/da-nang/3.jpg",
+      "/spots/da-nang/4.webp",
+      "/spots/da-nang/5.JPG",
+      "/spots/da-nang/6.jpeg",
     ],
     storyImages: [
-      "/spots/son-tra/so1.jpg",
-      "/spots/son-tra/so2.jpg",
-      "/spots/son-tra/so3.jpg",
+      "/spots/da-nang/so1.jpg",
+      "/spots/da-nang/so2.jpg",
+      "/spots/da-nang/so3.jpg",
     ],
     packages: filterPackages([
       {
@@ -169,12 +169,12 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     basePrice: 2190000,
     image: "/spots/khau-pha/hero.jpg",
     galleryImages: [
-      "/spots/khau-pha/gallery-1.jpg",
-      "/spots/khau-pha/gallery-2.jpg",
-      "/spots/khau-pha/gallery-3.jpg",
-      "/spots/khau-pha/gallery-4.jpg",
-      "/spots/khau-pha/gallery-5.jpg",
-      "/spots/khau-pha/gallery-6.jpg",
+      "/spots/khau-pha/1.jpg",
+      "/spots/khau-pha/2.jpg",
+      "/spots/khau-pha/3.jpg",
+      "/spots/khau-pha/4.jpg",
+      "/spots/khau-pha/5.JPG",
+      "/spots/khau-pha/6.jpg",
     ],
     storyImages: [
       "/spots/khau-pha/so1.jpg",
@@ -225,12 +225,17 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     basePrice: 2000000,
     image: "/spots/tram-tau/hero.jpg",
     galleryImages: [
-      "/spots/tram-tau/gallery-1.jpg",
-      "/spots/tram-tau/gallery-2.jpg",
-      "/spots/tram-tau/gallery-3.jpg",
-      "/spots/tram-tau/gallery-4.jpg",
-      "/spots/tram-tau/gallery-5.jpg",
-      "/spots/tram-tau/gallery-6.jpg",
+      "/spots/tram-tau/1.JPG",
+      "/spots/tram-tau/2.jpg",
+      "/spots/tram-tau/3.JPG",
+      "/spots/tram-tau/4.jpeg",
+      "/spots/tram-tau/5.jpg",
+      "/spots/tram-tau/6.jpg",
+    ],
+    storyImages: [
+      "/spots/tram-tau/so1.JPG",
+      "/spots/tram-tau/so2.jpeg",
+      "/spots/tram-tau/so3.jpeg",
     ],
     packages: filterPackages([
       {
@@ -251,8 +256,20 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "10 – 15 phút",
     landingPoint: "Thung lũng Quản Bạ",
     basePrice: 2190000,
-    image: "/ha-giang.JPG",
-    galleryImages: ["/ha-giang.JPG"],
+    image: "/spots/ha-giang/hero.jpeg",
+    galleryImages: [
+      "/spots/ha-giang/1.jpeg",
+      "/spots/ha-giang/2.jpeg",
+      "/spots/ha-giang/3.jpeg",
+      "/spots/ha-giang/4.jpg",
+      "/spots/ha-giang/5.jpg",
+      "/spots/ha-giang/6.jfif",
+    ],
+    storyImages: [
+      "/spots/ha-giang/so1.jpeg",
+      "/spots/ha-giang/so2.png",
+      "/spots/ha-giang/so3.JPG",
+    ],
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
@@ -300,14 +317,19 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "10 – 15 phút",
     landingPoint: "Chân đồi Viên Nam",
     basePrice: 1690000,
-    image: "/spots/vien-nam/hero.jpg",
+    image: "/spots/ha-noi/hero.jfif",
     galleryImages: [
-      "/spots/vien-nam/gallery-1.jpg",
-      "/spots/vien-nam/gallery-2.jpg",
-      "/spots/vien-nam/gallery-3.jpg",
-      "/spots/vien-nam/gallery-4.jpg",
-      "/spots/vien-nam/gallery-5.jpg",
-      "/spots/vien-nam/gallery-6.jpg",
+      "/spots/ha-noi/1.jpg",
+      "/spots/ha-noi/2.jpeg",
+      "/spots/ha-noi/3.jpg",
+      "/spots/ha-noi/4.jpg",
+      "/spots/ha-noi/5.jfif",
+      "/spots/ha-noi/6.jpeg",
+    ],
+    storyImages: [
+      "/spots/ha-noi/so1.jpeg",
+      "/spots/ha-noi/so2.jpeg",
+      "/spots/ha-noi/so3.jpg",
     ],
     packages: filterPackages([
       {
@@ -329,14 +351,19 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "7 – 12 phút",
     landingPoint: "Bãi hạ cánh Đồi Bù",
     basePrice: 1690000,
-    image: "/spots/doi-bu/hero.jpg",
+    image: "/spots/ha-noi/hero.jfif",
     galleryImages: [
-      "/spots/doi-bu/gallery-1.jpg",
-      "/spots/doi-bu/gallery-2.jpg",
-      "/spots/doi-bu/gallery-3.jpg",
-      "/spots/doi-bu/gallery-4.jpg",
-      "/spots/doi-bu/gallery-5.jpg",
-      "/spots/doi-bu/gallery-6.jpg",
+      "/spots/ha-noi/1.jpg",
+      "/spots/ha-noi/2.jpeg",
+      "/spots/ha-noi/3.jpg",
+      "/spots/ha-noi/4.jpg",
+      "/spots/ha-noi/5.jfif",
+      "/spots/ha-noi/6.jpeg",
+    ],
+    storyImages: [
+      "/spots/ha-noi/so1.jpeg",
+      "/spots/ha-noi/so2.jpeg",
+      "/spots/ha-noi/so3.jpg",
     ],
     packages: filterPackages([
       {
@@ -355,7 +382,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 const ALIAS_SPOTS: Record<string, SpotData> = {
   sapa: {
     ...BASE_SPOTS["muong-hoa-sapa"],
-    image: "/sapa-fansipan-mountains-clouds-aerial-view-vietnam.jpg",
   },
   dalat: {
     name: "Đà Lạt",
@@ -368,7 +394,7 @@ const ALIAS_SPOTS: Record<string, SpotData> = {
     landingPoint: "Đồi Robin / Langbiang",
     basePrice: 2290000,
     image: "/dalat-city-pine-forests-aerial-view-vietnam.jpg",
-    galleryImages: ["/spots/dalat/gallery-1.jpg", "/spots/dalat/gallery-2.jpg"],
+    galleryImages: [],
     packages: filterPackages([
       {
         name: "Gói cơ bản",

@@ -3316,7 +3316,7 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
   const baseList = storiesI18n[key]?.[lang] ?? storiesI18n["generic"][lang];
 
   const img = (i: number, fallback: string) =>
-    spot.storyImages?.[i] ?? spot.galleryImages?.[i] ?? fallback;
+    spot.storyImages?.[i] ?? fallback;
 
   return baseList.map((s, i) => {
     const fallbackByKey =
