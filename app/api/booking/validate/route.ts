@@ -17,7 +17,8 @@ const ACCEPTED_KEYS_ENV = (process.env.BOOKING_ACCEPTED_KEYS || "")
   .filter(Boolean);
 
 function acceptedKeys(): string[] {
-  return ACCEPTED_KEYS_ENV.length ? ACCEPTED_KEYS_ENV : Object.keys(spots as Record<string, string>);
+  const keys = Object.keys(spots as Record<string, string>);
+  return ACCEPTED_KEYS_ENV.length ? ACCEPTED_KEYS_ENV.filter((k) => keys.includes(k)) : keys;
 }
 const nameOf = (k?: string, fallback?: string) =>
   (k && (spots as Record<string, string>)[k]) || fallback || (k || "—");

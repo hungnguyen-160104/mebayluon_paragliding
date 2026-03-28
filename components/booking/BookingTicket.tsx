@@ -81,6 +81,13 @@ function formatDateDisplay(dateISO?: string) {
   return `${day}/${month}/${year}`;
 }
 
+function splitInputEntries(raw?: string) {
+  return String(raw || "")
+    .split(/\r?\n|[,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function buildBookingRef(dateISO?: string, phone?: string) {
   const ymd = normalizeDateToYYYYMMDD(dateISO);
   const phoneDigits = digitsOnly(phone || "");
@@ -167,6 +174,7 @@ function useTicketLabels(lang: LangCode) {
     phone: (t as any)?.labels?.phone ?? "Phone",
     email: "Email",
     pickupLocation: isVI ? "Đón / trả" : isFR ? "Prise en charge" : isRU ? "Трансфер" : isHI ? "पिकअप" : isZH || isZHTW ? zh("接送", "接送") : "Pickup",
+    selectedServicesList: isVI ? "Danh sách dịch vụ" : isFR ? "Liste des services" : isRU ? "Список услуг" : isHI ? "सेवा सूची" : isZH || isZHTW ? zh("服务列表", "服務列表") : "Service list",
     specialRequests: isVI ? "Yêu cầu đặc biệt" : isFR ? "Demandes spéciales" : isRU ? "Особые запросы" : isHI ? "विशेष अनुरोध" : isZH || isZHTW ? zh("特殊要求", "特殊要求") : "Special requests",
     flightCost: isVI ? "Giá bay" : isFR ? "Prix du vol" : isRU ? "Стоимость полёта" : isHI ? "फ्लाइट शुल्क" : isZH || isZHTW ? zh("飞行费用", "飛行費用") : "Flight cost",
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
@@ -275,9 +283,126 @@ export default function BookingTicket({
         key: svc.key,
         label: svc.label?.[lang] ?? svc.label?.vi ?? svc.key,
         inputText: booking.services?.[svc.key]?.inputText || "",
+        qty: Math.max(1, Number(booking.services?.[svc.key]?.qty || 1)),
+        controlType: svc.controlType,
+        priceVND: Number(svc.priceVND || 0),
+        priceUSD: Number(svc.priceUSD || 0),
+        requiresPickupInput: !!svc.requiresPickupInput,
         fixedMapUrl: svc.fixedMapUrl || "",
       }));
   }, [booking.packageKey, booking.services, cfg?.services, lang]);
+
+  const selectedServiceItems = useMemo(() => {
+    return selectedServices.map((svc) => {
+      const inputs = splitInputEntries(svc.inputText);
+      let detail: string | undefined;
+
+      if (inputs.length) {
+        detail = inputs.join(" | ");
+      } else if (svc.fixedMapUrl) {
+        detail = lang === "vi" ? "Xem bản đồ" : "View map";
+      } else {
+        detail = labels.yes;
+      }
+
+      return {
+        key: String(svc.key),
+        label: String(svc.label),
+        detail,
+      };
+    });
+  }, [selectedServices, lang, labels.yes]);
+
+  const selectedAddonItems = useMemo(() => {
+    const hasCameraService = selectedServices.some((svc) =>
+      String(svc.key || "").toLowerCase().includes("camera360"),
+    );
+    const hasFlycamService = selectedServices.some((svc) => {
+      const key = String(svc.key || "").toLowerCase();
+      return key.includes("flycam") || key.includes("drone");
+    });
+
+    return ADDON_KEYS.map((k) => {
+      const qty = Number(totals.addonsQty?.[k] || 0);
+      if (qty <= 0) return null;
+
+      if (k === "camera360" && hasCameraService) return null;
+      if (k === "flycam" && hasFlycamService) return null;
+
+      const label =
+        cfg?.addons?.[k]?.label?.[lang] ??
+        cfg?.addons?.[k]?.label?.vi ??
+        String(k);
+
+      return {
+        key: `addon-${k}`,
+        label: String(label),
+        detail: `${qty} ${labels.pax}`,
+      };
+    }).filter(Boolean) as Array<{ key: string; label: string; detail?: string }>;
+  }, [selectedServices, totals.addonsQty, cfg?.addons, lang, labels.pax]);
+
+  const additionalServiceItems = useMemo(() => {
+    return [...selectedServiceItems, ...selectedAddonItems];
+  }, [selectedServiceItems, selectedAddonItems]);
+
+  const selectedServicePriceRows = useMemo(() => {
+    return selectedServices
+      .map((svc) => {
+        const baseUnit = lang === "vi" ? Number(svc.priceVND || 0) : Number(svc.priceUSD || 0);
+        const qty = Math.max(1, Number(svc.qty || 1));
+
+        const serviceKey = String(svc.key || "");
+        let lineTotal =
+          svc.controlType === "counter" ? baseUnit * qty : baseUnit * guestsCount;
+        let detail =
+          svc.controlType === "counter"
+            ? `${formatByLang(lang, baseUnit, baseUnit)} × ${qty}`
+            : `${formatByLang(lang, baseUnit, baseUnit)} × ${guestsCount}`;
+
+        if (serviceKey === "khau_pha_garrya_pickup") {
+          const carCount = Math.ceil(guestsCount / 4);
+          const carPrice = lang === "vi" ? 600_000 : 24;
+          lineTotal = carCount * carPrice;
+          detail = `${formatByLang(lang, carPrice, carPrice)} × ${carCount} ${lang === "vi" ? "xe" : "car"}`;
+        }
+
+        if (serviceKey === "ha_noi_private_hotel_pickup") {
+          lineTotal = lang === "vi"
+            ? 1_500_000 + Math.max(0, guestsCount - 3) * 350_000
+            : 60 + Math.max(0, guestsCount - 3) * 14;
+          detail = undefined;
+        }
+
+        if (lineTotal <= 0) return null;
+
+        return {
+          label: String(svc.label),
+          detail,
+          lineTotal,
+        };
+      })
+      .filter(Boolean) as Array<{ label: string; detail?: string; lineTotal: number }>;
+  }, [selectedServices, lang, guestsCount]);
+
+  const bookingPrice = bookingResult?.price || {};
+  const servicesBreakdownFromResult = Array.isArray(bookingPrice?.servicesBreakdown)
+    ? bookingPrice.servicesBreakdown
+    : [];
+  const hasServicesBreakdownFromResult = servicesBreakdownFromResult.length > 0;
+  const servicesTotalFromResult = Number(bookingPrice?.servicesTotal);
+  const hasServicesTotalFromResult = Number.isFinite(servicesTotalFromResult) && servicesTotalFromResult > 0;
+  const totalFromResult = Number(bookingPrice?.total);
+  const hasTotalFromResult = Number.isFinite(totalFromResult) && totalFromResult > 0;
+
+  const selectedServicesTotal = useMemo(() => {
+    if (hasServicesTotalFromResult) return servicesTotalFromResult;
+    return selectedServicePriceRows.reduce((sum, row) => sum + Number(row.lineTotal || 0), 0);
+  }, [hasServicesTotalFromResult, servicesTotalFromResult, selectedServicePriceRows]);
+
+  const totalWithSelectedServices = hasTotalFromResult
+    ? totalFromResult
+    : Number(totals.totalAfterDiscount || 0) + selectedServicesTotal;
 
   const addonRows = useMemo(() => {
     return ADDON_KEYS.map((k) => {
@@ -303,6 +428,32 @@ export default function BookingTicket({
       detail: `${formatByLang(lang, flightUnit, flightUnit)} × ${guestsCount}`,
       amountText: formatByLang(lang, flightSub, flightSub),
     });
+
+    if (hasServicesBreakdownFromResult) {
+      servicesBreakdownFromResult.forEach((row: any) => {
+        const lineTotal = Number(row?.lineTotal || 0);
+        if (lineTotal <= 0) return;
+
+        rows.push({
+          label: String(row?.label || labels.additionalServices),
+          detail: row?.detail ? String(row.detail) : undefined,
+          amountText: formatByLang(lang, lineTotal, lineTotal),
+        });
+      });
+    } else if (hasServicesTotalFromResult) {
+      rows.push({
+        label: labels.additionalServices,
+        amountText: formatByLang(lang, servicesTotalFromResult, servicesTotalFromResult),
+      });
+    } else {
+      selectedServicePriceRows.forEach((row) => {
+        rows.push({
+          label: row.label,
+          detail: row.detail,
+          amountText: formatByLang(lang, row.lineTotal, row.lineTotal),
+        });
+      });
+    }
 
     addonRows.forEach((a) => {
       rows.push({
@@ -333,6 +484,12 @@ export default function BookingTicket({
     labels.flightCost,
     labels.groupDiscount,
     lang,
+    labels.additionalServices,
+    hasServicesBreakdownFromResult,
+    servicesBreakdownFromResult,
+    hasServicesTotalFromResult,
+    servicesTotalFromResult,
+    selectedServicePriceRows,
     totals.baseTotal,
     totals.discountTotal,
   ]);
@@ -642,28 +799,73 @@ export default function BookingTicket({
         <SectionSpacer />
 
         <SectionCard title={labels.additionalServices}>
-          <StackInfo
-            rows={[
-              {
-                label: labels.pickupLocation,
-                value: selectedServices.length
-                  ? selectedServices.map((s) => s.inputText || s.fixedMapUrl || labels.yes).join(", ")
-                  : labels.no,
-              },
-              {
-                label: labels.camera360Cost,
-                value: totals.addonsQty?.camera360
-                  ? `${totals.addonsQty.camera360} ${labels.pax}`
-                  : labels.no,
-              },
-              {
-                label: labels.droneCost,
-                value: totals.addonsQty?.flycam
-                  ? `${totals.addonsQty.flycam} ${labels.pax}`
-                  : labels.no,
-              },
-            ]}
-          />
+          {additionalServiceItems.length ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {additionalServiceItems.map((item) => (
+                <div
+                  key={item.key}
+                  style={{
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 900,
+                        color: C.text,
+                        wordBreak: "break-word",
+                        flex: 1,
+                      }}
+                    >
+                      {item.label}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: C.text,
+                        textAlign: "right",
+                        lineHeight: 1.45,
+                        wordBreak: "break-word",
+                        maxWidth: "55%",
+                      }}
+                    >
+                      {item.detail || labels.no}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 13,
+                color: C.muted,
+                fontWeight: 700,
+              }}
+            >
+              {labels.no}
+            </div>
+          )}
         </SectionCard>
 
         <SectionSpacer />
@@ -678,38 +880,13 @@ export default function BookingTicket({
         >
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
+              fontSize: 11,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              opacity: 0.85,
             }}
           >
-            <div>
-              <div
-                style={{
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
-                  opacity: 0.85,
-                }}
-              >
-                {labels.priceBreakdown}
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 900, marginTop: 4 }}>
-                {labels.total}
-              </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 900,
-                color: C.white,
-              }}
-            >
-              {formatByLang(lang, totals.totalAfterDiscount, totals.totalAfterDiscount)}
-            </div>
+            {labels.priceBreakdown}
           </div>
 
           <div
@@ -765,6 +942,32 @@ export default function BookingTicket({
                 </div>
               </div>
             ))}
+
+            <div
+              style={{
+                marginTop: 6,
+                paddingTop: 12,
+                borderTop: "1px solid rgba(255,255,255,0.25)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ fontSize: 20, fontWeight: 900 }}>
+                {labels.total}
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 900,
+                  color: C.white,
+                }}
+              >
+                {formatByLang(lang, totalWithSelectedServices, totalWithSelectedServices)}
+              </div>
+            </div>
           </div>
 
           <div
@@ -903,7 +1106,7 @@ function PillRow({
 function StackInfo({
   rows,
 }: {
-  rows: Array<{ label: string; value: string }>;
+  rows: Array<{ label: string; value: React.ReactNode }>;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

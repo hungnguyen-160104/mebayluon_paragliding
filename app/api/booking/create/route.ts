@@ -42,17 +42,44 @@ type Price = {
   addonsUnitPrice?: Partial<Record<AddonKey, number>>;
   addonsQty?: AddonsQty;
   addonsTotal?: Partial<Record<AddonKey, number>>;
+  servicesBreakdown?: Array<{
+    key?: string;
+    label?: string;
+    detail?: string;
+    lineTotal?: number;
+  }>;
+  servicesTotal?: number;
   total?: number;
+};
+
+type ServiceSelection = {
+  selected?: boolean;
+  qty?: number;
+  inputText?: string;
+};
+
+type SelectedServiceLine = {
+  key?: string;
+  label?: string;
+  inputText?: string;
+  fixedMapUrl?: string;
 };
 
 type Payload = {
   location?: string;        // key
   locationName?: string;    // tên hiển thị
+  packageKey?: string;
+  flightTypeKey?: string;
+  packageLabel?: string;
+  flightTypeLabel?: string;
+  holidayType?: string;
   guestsCount?: number;
   dateISO?: string;
   timeSlot?: string;
   contact?: Contact;
   guests?: Guest[];
+  services?: Record<string, ServiceSelection>;
+  selectedServices?: SelectedServiceLine[];
   addons?: AddonsBool;      // backward
   addonsQty?: AddonsQty;    // NEW
   price?: Price;
@@ -65,7 +92,10 @@ const ACCEPTED_KEYS_ENV = (process.env.BOOKING_ACCEPTED_KEYS || "")
   .filter(Boolean);
 
 function acceptedKeys(): string[] {
-  return ACCEPTED_KEYS_ENV.length ? ACCEPTED_KEYS_ENV : Object.keys(spots as Record<string, string>);
+  const keys = Object.keys(spots as Record<string, string>);
+  return ACCEPTED_KEYS_ENV.length
+    ? ACCEPTED_KEYS_ENV.filter((k) => keys.includes(k))
+    : keys;
 }
 const nameOf = (k?: string, fallback?: string) =>
   (k && (spots as Record<string, string>)[k]) || fallback || (k || "—");
@@ -358,6 +388,11 @@ export async function POST(req: NextRequest) {
         customerId: customer._id,
         location: normalized.location,
         locationName: normalized.locationName,
+        packageKey: normalized.packageKey,
+        flightTypeKey: normalized.flightTypeKey,
+        packageLabel: normalized.packageLabel,
+        flightTypeLabel: normalized.flightTypeLabel,
+        holidayType: normalized.holidayType,
         dateISO: normalized.dateISO,
         timeSlot: normalized.timeSlot,
         guestsCount: normalized.guestsCount,
@@ -369,6 +404,8 @@ export async function POST(req: NextRequest) {
           specialRequest: c.specialRequest,
         },
         guests: normalized.guests || [],
+        services: normalized.services || {},
+        selectedServices: normalized.selectedServices || [],
         addons: normalized.addons,
         addonsQty: normalized.addonsQty,
         price: normalized.price,
@@ -417,9 +454,21 @@ export async function POST(req: NextRequest) {
           customerId: customer._id.toString(),
           location: booking.location,
           locationName: booking.locationName,
+          packageKey: booking.packageKey,
+          flightTypeKey: booking.flightTypeKey,
+          packageLabel: booking.packageLabel,
+          flightTypeLabel: booking.flightTypeLabel,
+          holidayType: booking.holidayType,
           dateISO: booking.dateISO,
           timeSlot: booking.timeSlot,
           guestsCount: booking.guestsCount,
+          contact: booking.contact,
+          guests: booking.guests,
+          services: booking.services,
+          selectedServices: booking.selectedServices,
+          addons: booking.addons,
+          addonsQty: booking.addonsQty,
+          price: booking.price,
           status: booking.status,
           createdAt: booking.createdAt,
         },

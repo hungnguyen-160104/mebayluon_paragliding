@@ -10,7 +10,35 @@ type Guest = {
   weightKg?: number;
   nationality?: string;
 };
-type Price = { currency?: string; perPerson?: number; total?: number };
+type AddonsPriceMap = { pickup?: number; flycam?: number; camera360?: number };
+type AddonsQtyMap = { pickup?: number; flycam?: number; camera360?: number };
+type ServiceMap = Record<
+  string,
+  {
+    selected?: boolean;
+    qty?: number;
+    inputText?: string;
+  }
+>;
+type SelectedServiceLine = {
+  key?: string;
+  label?: string;
+  detail?: string;
+  amountText?: string;
+  lineTotal?: number;
+};
+type Price = {
+  currency?: string;
+  perPerson?: number;
+  basePerPerson?: number;
+  discountPerPerson?: number;
+  addonsUnitPrice?: AddonsPriceMap;
+  addonsQty?: AddonsQtyMap;
+  addonsTotal?: AddonsPriceMap;
+  servicesBreakdown?: SelectedServiceLine[];
+  servicesTotal?: number;
+  total?: number;
+};
 
 export type TelegramBookingPayload = {
   location?: string;
@@ -25,6 +53,8 @@ export type TelegramBookingPayload = {
   createdAt?: string;
   bookingId?: string;
   serviceName?: string;
+  services?: ServiceMap;
+  selectedServices?: SelectedServiceLine[];
 };
 
 const escapeHtml = (s?: string) =>
@@ -40,8 +70,72 @@ const formatVND = (n?: number) =>
     ? n.toLocaleString("vi-VN", { style: "currency", currency: "VND" })
     : "—";
 
-function createdAtFallback() {
-  return new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+function splitInputEntries(raw?: string) {
+  return String(raw || "")
+    .split(/\r?\n|[,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function resolveSelectedServiceLines(body: TelegramBookingPayload, lang: "vi" | "en"): string[] {
+  const fromSelected = Array.isArray(body.selectedServices) ? body.selectedServices : [];
+  if (fromSelected.length > 0) {
+    return fromSelected
+      .map((row) => {
+        const label = String(row?.label || row?.key || "").trim();
+        if (!label) return "";
+        const detail = String(row?.detail || "").trim();
+        const amountText = String(row?.amountText || "").trim();
+        const parts = [escapeHtml(label)];
+        if (detail) parts.push(escapeHtml(detail));
+        if (amountText) parts.push(escapeHtml(amountText));
+        return `• ${parts.join(" | ")}`;
+      })
+      .filter(Boolean);
+  }
+
+  const fromBreakdown = Array.isArray(body.price?.servicesBreakdown)
+    ? body.price?.servicesBreakdown || []
+    : [];
+
+  if (fromBreakdown.length > 0) {
+    return fromBreakdown
+      .map((row) => {
+        const label = String(row?.label || row?.key || "").trim();
+        if (!label) return "";
+        const detail = String(row?.detail || "").trim();
+        const lineTotal =
+          typeof row?.lineTotal === "number"
+            ? formatVND(row.lineTotal)
+            : String(row?.amountText || "").trim();
+        const parts = [escapeHtml(label)];
+        if (detail) parts.push(escapeHtml(detail));
+        if (lineTotal) parts.push(escapeHtml(lineTotal));
+        return `• ${parts.join(" | ")}`;
+      })
+      .filter(Boolean);
+  }
+
+  const services = body.services || {};
+  const lines = Object.entries(services)
+    .filter(([, value]) => !!value?.selected)
+    .map(([key, value]) => {
+      const qty = Number(value?.qty || 0);
+      const inputs = splitInputEntries(value?.inputText);
+      const parts: string[] = [escapeHtml(key)];
+
+      if (qty > 0) {
+        parts.push(lang === "vi" ? `SL ${qty}` : `Qty ${qty}`);
+      }
+      if (inputs.length > 0) {
+        parts.push(escapeHtml(inputs.join(" | ")));
+      }
+
+      return `• ${parts.join(" | ")}`;
+    })
+    .filter(Boolean);
+
+  return lines;
 }
 
 function telegramLikeHtmlWrapper(title: string, telegramHtmlText: string) {
@@ -85,15 +179,14 @@ function buildTelegramSections(body: TelegramBookingPayload) {
       })
       .join("\n") || "—";
 
-  const createdAt = body.createdAt || createdAtFallback();
   const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
   const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
+  const selectedServiceLines = resolveSelectedServiceLines(body, "vi");
 
   // Build addon details with pricing
   const addonLines: string[] = [];
   const priceAddons = body.price?.addonsUnitPrice || {};
-  const addonQty = body.price?.addonsQty || body.addons || {};
   const addonTotal = body.price?.addonsTotal || {};
 
   if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
@@ -135,6 +228,9 @@ function buildTelegramSections(body: TelegramBookingPayload) {
     `👥 THÔNG TIN KHÁCH HÀNG`,
     guestLines,
     ``,
+    `🧩 DỊCH VỤ ĐÃ CHỌN`,
+    ...(selectedServiceLines.length > 0 ? selectedServiceLines : ["• Không có"]),
+    ``,
     `💰 CHI TIẾT GIÁ`,
     `Giá bay cơ bản: ${basePerPerson}/người × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
     ...addonLines,
@@ -143,9 +239,7 @@ function buildTelegramSections(body: TelegramBookingPayload) {
     `📌 GHI CHÚ/YÊU CẦU ĐẶC BIỆT`,
     `${escapeHtml(c.specialRequest || "Không có")}`,
     ``,
-    `═══════════════════`,
     `TỔNG CỘNG: ${total}`,
-    `═══════════════════`,
   ].filter(Boolean);
 
   return sections.join("\n");
@@ -173,15 +267,14 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
       })
       .join("\n") || "—";
 
-  const createdAt = body.createdAt || createdAtFallback();
   const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
   const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
+  const selectedServiceLines = resolveSelectedServiceLines(body, "en");
 
   // Build addon details with pricing
   const addonLines: string[] = [];
   const priceAddons = body.price?.addonsUnitPrice || {};
-  const addonQty = body.price?.addonsQty || body.addons || {};
   const addonTotal = body.price?.addonsTotal || {};
 
   if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
@@ -211,39 +304,32 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
     body.bookingId ? `Booking ID: ${escapeHtml(body.bookingId)}` : "",
     `Service: ${escapeHtml(body.serviceName || "Paragliding")}`,
     ``,
-    `─────────────────────────────────`,
     `BOOKING DETAILS`,
-    `─────────────────────────────────`,
     `Location: ${locationName}`,
     `Date: ${escapeHtml(body.dateISO || "—")}`,
     `Time: ${escapeHtml(body.timeSlot || "—")}`,
     `Number of Guests: ${guestsCount}`,
     ``,
-    `─────────────────────────────────`,
     `CONTACT INFORMATION`,
-    `─────────────────────────────────`,
     `Phone: ${escapeHtml(c.phone || "—")}`,
     `Email: ${escapeHtml(c.email || "—")}`,
     c.pickupLocation ? `Pickup Location: ${escapeHtml(c.pickupLocation)}` : "",
     c.specialRequest ? `Special Requests: ${escapeHtml(c.specialRequest)}` : "",
     ``,
-    `─────────────────────────────────`,
     `PASSENGER LIST`,
-    `─────────────────────────────────`,
     guestLines,
     ``,
-    `─────────────────────────────────`,
+    `SELECTED SERVICES`,
+    ...(selectedServiceLines.length > 0 ? selectedServiceLines : ["• None"]),
+    ``,
     `PRICE BREAKDOWN`,
-    `─────────────────────────────────`,
     `Flight: ${basePerPerson}/person × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
     ...addonLines,
     body.price?.discountPerPerson ? `Group Discount: -${formatVND(body.price.discountPerPerson)}/person × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
     ``,
     `TOTAL: ${total}`,
     ``,
-    `─────────────────────────────────`,
     `WHAT'S INCLUDED`,
-    `─────────────────────────────────`,
     `• Flight time: 8-15 minutes (weather dependent)`,
     `• GoPro photo & video`,
     `• Welcome drink (coffee/tea)`,
@@ -251,9 +337,7 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
     `• Certificate of flight`,
     c.pickupLocation ? `• Pickup/Drop-off service` : "",
     ``,
-    `─────────────────────────────────`,
     `NEXT STEPS`,
-    `─────────────────────────────────`,
     `1. We will confirm via phone/WhatsApp within 24 hours`,
     `2. Arrive 15-20 minutes early for safety briefing`,
     `3. Bring ID/Passport and the booking confirmation`,

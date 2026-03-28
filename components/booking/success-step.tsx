@@ -126,15 +126,31 @@ export default function SuccessStep() {
   const bookingResult = useBookingStore((s) => s.bookingResult);
   const reset = useBookingStore((s) => s.reset);
 
+  const bookingData = useMemo(() => {
+    if (!bookingResult) return data;
+    return {
+      ...data,
+      ...bookingResult,
+      contact: {
+        ...(data.contact || {}),
+        ...(bookingResult.contact || {}),
+      },
+      guests: bookingResult.guests || data.guests,
+      services: bookingResult.services || data.services,
+      addons: bookingResult.addons || data.addons,
+      addonsQty: bookingResult.addonsQty || data.addonsQty,
+    };
+  }, [data, bookingResult]);
+
   const totals = computePriceByLang(
     {
-      location: data.location,
-      guestsCount: data.guestsCount,
-      dateISO: data.dateISO,
-      packageKey: data.packageKey,
-      flightTypeKey: data.flightTypeKey,
-      addons: data.addons,
-      addonsQty: data.addonsQty,
+      location: bookingData.location,
+      guestsCount: bookingData.guestsCount,
+      dateISO: bookingData.dateISO,
+      packageKey: bookingData.packageKey,
+      flightTypeKey: bookingData.flightTypeKey,
+      addons: bookingData.addons,
+      addonsQty: bookingData.addonsQty,
     },
     lang
   );
@@ -143,12 +159,12 @@ export default function SuccessStep() {
   const [downloadingIMG, setDownloadingIMG] = useState(false);
 
   const baseFileName = useMemo(() => {
-    const loc = data.location || "booking";
-    const pkg = data.packageKey || "default";
-    const flight = data.flightTypeKey || "flight";
-    const date = (data.dateISO || "date").replaceAll("/", "-");
+    const loc = bookingData.location || "booking";
+    const pkg = bookingData.packageKey || "default";
+    const flight = bookingData.flightTypeKey || "flight";
+    const date = (bookingData.dateISO || "date").replaceAll("/", "-");
     return `ticket-${loc}-${pkg}-${flight}-${date}`;
-  }, [data.location, data.packageKey, data.flightTypeKey, data.dateISO]);
+  }, [bookingData.location, bookingData.packageKey, bookingData.flightTypeKey, bookingData.dateISO]);
 
   const downloadImage = async () => {
     if (!ticketRef.current) return;
@@ -249,7 +265,7 @@ export default function SuccessStep() {
           <div className="rounded-xl border border-[#DCE7F3] bg-white p-2 md:p-3 mx-auto" style={{ maxWidth: "100%" }}>
             <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 12 }}>
               <BookingTicket
-                booking={data}
+                booking={bookingData}
                 bookingResult={bookingResult}
                 totals={totals}
                 lang={lang}

@@ -9,6 +9,11 @@ export interface IBooking {
   customerId: mongoose.Types.ObjectId; // reference Customer
   location: string; // key: "sapa", "da-nang", etc.
   locationName?: string; // display name
+  packageKey?: string;
+  flightTypeKey?: string;
+  packageLabel?: string;
+  flightTypeLabel?: string;
+  holidayType?: string;
   dateISO?: string; // "2024-01-15" format
   timeSlot?: string; // "07:00", "09:00", etc.
   guestsCount?: number;
@@ -34,6 +39,20 @@ export interface IBooking {
   // Add-ons
   addons?: AddonsBool; // backward compat
   addonsQty?: AddonsQty; // qty per addon
+  services?: Record<
+    string,
+    {
+      selected?: boolean;
+      qty?: number;
+      inputText?: string;
+    }
+  >;
+  selectedServices?: Array<{
+    key?: string;
+    label?: string;
+    inputText?: string;
+    fixedMapUrl?: string;
+  }>;
 
   // Pricing
   price?: {
@@ -68,6 +87,26 @@ const BookingSchema = new Schema<IBooking>(
       trim: true,
     },
     locationName: {
+      type: String,
+      trim: true,
+    },
+    packageKey: {
+      type: String,
+      trim: true,
+    },
+    flightTypeKey: {
+      type: String,
+      trim: true,
+    },
+    packageLabel: {
+      type: String,
+      trim: true,
+    },
+    flightTypeLabel: {
+      type: String,
+      trim: true,
+    },
+    holidayType: {
       type: String,
       trim: true,
     },
@@ -112,6 +151,25 @@ const BookingSchema = new Schema<IBooking>(
       type: Map,
       of: Number,
     },
+
+    services: {
+      type: Map,
+      of: {
+        selected: Boolean,
+        qty: Number,
+        inputText: String,
+      },
+      default: {},
+    },
+
+    selectedServices: [
+      {
+        key: { type: String, trim: true },
+        label: { type: String, trim: true },
+        inputText: { type: String, trim: true },
+        fixedMapUrl: { type: String, trim: true },
+      },
+    ],
 
     price: {
       currency: { type: String, default: "VND" },

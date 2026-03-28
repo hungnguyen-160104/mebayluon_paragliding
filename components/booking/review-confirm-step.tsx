@@ -372,6 +372,13 @@ function Row({
   );
 }
 
+function splitInputEntries(raw?: string) {
+  return String(raw || "")
+    .split(/\r?\n|[,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default function ReviewConfirmStep() {
   const t = useBookingText();
   const lang = useLangCode();
@@ -544,14 +551,78 @@ export default function ReviewConfirmStep() {
     }, 0);
   }, [cfg?.services, data.packageKey, data.flightTypeKey, data.services, getServiceLineTotal]);
 
-  const formatMoney = (n: number) => {
+  function formatMoney(n: number) {
     return lang === "vi"
       ? new Intl.NumberFormat("vi-VN", {
           style: "currency",
           currency: "VND",
         }).format(Number(n || 0))
       : `${Number(n || 0).toLocaleString("en-US")} USD`;
-  };
+  }
+
+  const selectedServicesBreakdown = useMemo(() => {
+    if (!cfg?.services?.length) {
+      return [] as Array<{ key: string; label: string; detail?: string; lineTotal: number }>;
+    }
+
+    const rows: Array<{ key: string; label: string; detail?: string; lineTotal: number }> = [];
+
+    cfg.services.forEach((svc: any) => {
+      if (svc.visibleForPackages?.length) {
+        if (!data.packageKey) return;
+        if (!svc.visibleForPackages.includes(data.packageKey)) return;
+      }
+
+      if (svc.visibleForFlightTypes?.length) {
+        if (!data.flightTypeKey) return;
+        if (!svc.visibleForFlightTypes.includes(data.flightTypeKey)) return;
+      }
+
+      const serviceState = data.services?.[svc.key];
+      if (!serviceState?.selected) return;
+
+      const qty = Math.max(1, serviceState.qty || 1);
+      const lineTotal = getServiceLineTotal(svc);
+      if (lineTotal <= 0) return;
+
+      const label = getLocalizedText(svc.label, lang, String(svc.key));
+      const unitPrice = lang === "vi"
+        ? Number(svc.priceVND || 0)
+        : Number(svc.priceUSD || 0);
+
+      const key = String(svc.key || "");
+      let detailText = "";
+
+      if (key === "khau_pha_garrya_pickup") {
+        const carCount = Math.ceil(guestsCount / 4);
+        const carPrice = lang === "vi" ? 600_000 : 24;
+        detailText = `${formatMoney(carPrice)} × ${carCount} xe`;
+      } else if (key === "ha_noi_private_hotel_pickup") {
+        detailText = "";
+      } else if (svc.controlType === "counter") {
+        detailText = `${formatMoney(unitPrice)} × ${qty}`;
+      } else {
+        detailText = `${formatMoney(unitPrice)} × ${guestsCount}`;
+      }
+
+      rows.push({
+        key,
+        label,
+        detail: detailText || undefined,
+        lineTotal,
+      });
+    });
+
+    return rows;
+  }, [
+    cfg?.services,
+    data.packageKey,
+    data.flightTypeKey,
+    data.services,
+    getServiceLineTotal,
+    lang,
+    guestsCount,
+  ]);
 
   const formatDate = (iso?: string) => {
     if (!iso) return ui.notSelected;
@@ -744,6 +815,7 @@ export default function ReviewConfirmStep() {
           addonsQty: (billInLang as any).addonsQty,
           addonsUnitPrice: (billInLang as any).addonsUnitPrice,
           addonsTotal: (billInLang as any).addonsTotal,
+          servicesBreakdown: selectedServicesBreakdown,
           servicesTotal: selectedServicesTotal,
           total: Number(billInLang.totalAfterDiscount || 0) + selectedServicesTotal,
         },
@@ -767,7 +839,14 @@ export default function ReviewConfirmStep() {
       setBookingResult(createResp.booking || payload);
 
       try {
-        await notifyTelegram(createResp.booking || payload);
+        await notifyTelegram({
+          ...payload,
+          ...(createResp.booking || {}),
+          bookingId:
+            createResp?.bookingId ||
+            createResp?.booking?._id ||
+            payload?.bookingId,
+        });
       } catch (tgErr: any) {
         console.warn("Telegram failed:", tgErr?.message || tgErr);
       }
@@ -810,6 +889,16 @@ export default function ReviewConfirmStep() {
 
   const hasPackages = cfg?.packages && cfg.packages.length > 0;
   const showPackageRow = hasPackages || data.location === "khau_pha";
+  const hasPickupServiceLine = serviceLines.some((sl) =>
+    String(sl.key || "").toLowerCase().includes("pickup"),
+  );
+  const hasCameraServiceLine = serviceLines.some((sl) =>
+    String(sl.key || "").toLowerCase().includes("camera360"),
+  );
+  const hasFlycamServiceLine = serviceLines.some((sl) => {
+    const key = String(sl.key || "").toLowerCase();
+    return key.includes("flycam") || key.includes("drone");
+  });
 
   const serviceDetails = [
     {
@@ -986,52 +1075,69 @@ export default function ReviewConfirmStep() {
               </div>
 
               <div className="mt-4 space-y-3">
-                {(() => {
-                  const pickupAddresses = serviceLines
-                    .filter((sl) => sl.inputText || sl.fixedMapUrl)
-                    .map((sl) => sl.inputText || L("viewMap", "Xem bản đồ"));
+                {serviceLines.length > 0 ? (
+                  <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-sm text-[#5B6B7A]">
+                        {L("selectedServices", "Selected services")}
+                      </span>
+                      <span className="text-right text-sm font-semibold text-[#1C2930]">
+                        {serviceLines.length} {ui.selectedCount}
+                      </span>
+                    </div>
 
-                  if (pickupAddresses.length > 0 || pickupAddonQty > 0) {
-                    return (
-                      <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <span className="text-sm text-[#5B6B7A]">
-                            {L("hotelTransfer", "Pickup / transfer")}
-                          </span>
-                          <span className="text-right text-sm font-semibold text-[#1C2930]">
-                            {L("yes", "Có")}
-                          </span>
-                        </div>
-                        {pickupAddresses.length > 0 && (
-                          <div className="mt-2 border-t border-[#DCE7F3] pt-2">
-                            {pickupAddresses.map((addr, idx) => (
-                              <p key={idx} className="text-sm text-[#5B6B7A]">
-                                {addr}
+                    <div className="mt-2 space-y-2 border-t border-[#DCE7F3] pt-2">
+                      {serviceLines.map((sl) => {
+                        const entries = splitInputEntries(sl.inputText);
+                        const detailLines =
+                          entries.length > 0
+                            ? entries
+                            : sl.fixedMapUrl
+                              ? [L("viewMap", "Xem bản đồ")]
+                              : [L("yes", "Có")];
+
+                        return (
+                          <div key={sl.key}>
+                            <p className="text-sm font-semibold text-[#1C2930]">{sl.label}</p>
+                            {detailLines.map((detail, idx) => (
+                              <p key={`${sl.key}-${idx}`} className="text-sm text-[#5B6B7A]">
+                                {detail}
                               </p>
                             ))}
                           </div>
-                        )}
-                      </div>
-                    );
-                  }
-                  return (
-                    <Row
-                      label={L("hotelTransfer", "Pickup / transfer")}
-                      value={L("no", "No")}
-                      enabled={false}
-                    />
-                  );
-                })()}
-                <Row
-                  label={L("camera360", "Camera 360")}
-                  value={camera360Qty ? `${camera360Qty} pax` : L("no", "No")}
-                  enabled={!!camera360Qty}
-                />
-                <Row
-                  label={L("drone", "Drone/Flycam")}
-                  value={flycamQty ? `${flycamQty} pax` : L("no", "No")}
-                  enabled={!!flycamQty}
-                />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <Row
+                    label={L("selectedServices", "Selected services")}
+                    value={L("no", "No")}
+                    enabled={false}
+                  />
+                )}
+
+                {!hasPickupServiceLine && (
+                  <Row
+                    label={L("hotelTransfer", "Pickup / transfer")}
+                    value={pickupAddonQty ? L("yes", "Có") : L("no", "No")}
+                    enabled={!!pickupAddonQty}
+                  />
+                )}
+                {!hasCameraServiceLine && (
+                  <Row
+                    label={L("camera360", "Camera 360")}
+                    value={camera360Qty ? `${camera360Qty} pax` : L("no", "No")}
+                    enabled={!!camera360Qty}
+                  />
+                )}
+                {!hasFlycamServiceLine && (
+                  <Row
+                    label={L("drone", "Drone/Flycam")}
+                    value={flycamQty ? `${flycamQty} pax` : L("no", "No")}
+                    enabled={!!flycamQty}
+                  />
+                )}
 
                 <SimpleInfo label={L("gopro", "GoPro")} value={L("free", "Free")} />
                 <SimpleInfo label={L("drinks", "Drinks")} value={L("free", "Free")} />

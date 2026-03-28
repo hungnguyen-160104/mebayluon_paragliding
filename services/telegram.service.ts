@@ -48,6 +48,70 @@ export function buildBookingMessage(payload: any): string {
     (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const fmtVND = (n?: number) =>
     typeof n === "number" ? n.toLocaleString("vi-VN", { style: "currency", currency: "VND" }) : "—";
+  const splitInputEntries = (raw?: string) =>
+    String(raw || "")
+      .split(/\r?\n|[,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const resolveSelectedServiceLines = (): string[] => {
+    const selectedServices = Array.isArray(payload?.selectedServices)
+      ? payload.selectedServices
+      : [];
+
+    if (selectedServices.length > 0) {
+      return selectedServices
+        .map((row: any) => {
+          const label = String(row?.label || row?.key || "").trim();
+          if (!label) return "";
+          const detail = String(row?.detail || "").trim();
+          const amountText = String(row?.amountText || "").trim();
+          const parts = [esc(label)];
+          if (detail) parts.push(esc(detail));
+          if (amountText) parts.push(esc(amountText));
+          return `• ${parts.join(" | ")}`;
+        })
+        .filter(Boolean);
+    }
+
+    const breakdown = Array.isArray(payload?.price?.servicesBreakdown)
+      ? payload.price.servicesBreakdown
+      : [];
+
+    if (breakdown.length > 0) {
+      return breakdown
+        .map((row: any) => {
+          const label = String(row?.label || row?.key || "").trim();
+          if (!label) return "";
+          const detail = String(row?.detail || "").trim();
+          const lineTotal =
+            typeof row?.lineTotal === "number"
+              ? fmtVND(row.lineTotal)
+              : String(row?.amountText || "").trim();
+          const parts = [esc(label)];
+          if (detail) parts.push(esc(detail));
+          if (lineTotal) parts.push(esc(lineTotal));
+          return `• ${parts.join(" | ")}`;
+        })
+        .filter(Boolean);
+    }
+
+    const services = payload?.services && typeof payload.services === "object"
+      ? payload.services
+      : {};
+
+    return Object.entries(services)
+      .filter(([, value]: any) => !!value?.selected)
+      .map(([key, value]: any) => {
+        const qty = Number(value?.qty || 0);
+        const inputs = splitInputEntries(value?.inputText);
+        const parts = [esc(String(key))];
+        if (qty > 0) parts.push(`SL ${qty}`);
+        if (inputs.length > 0) parts.push(esc(inputs.join(" | ")));
+        return `• ${parts.join(" | ")}`;
+      })
+      .filter(Boolean);
+  };
 
   const c = payload?.contact || {};
   const guests = Array.isArray(payload?.guests) ? payload.guests : [];
@@ -67,10 +131,6 @@ export function buildBookingMessage(payload: any): string {
       })
       .join("\n") || "—";
 
-  const createdAt =
-    payload?.createdAt ||
-    new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
-
   const locationName = esc(payload?.locationName || payload?.location || "—");
 
   // Handle both old format (perPerson) and new format (basePerPerson)
@@ -78,6 +138,7 @@ export function buildBookingMessage(payload: any): string {
   const baseTotal = basePerPerson ? basePerPerson * guestsCount : 0;
 
   const total = fmtVND(payload?.price?.total);
+  const selectedServiceLines = resolveSelectedServiceLines();
 
   // Build addon lines with actual pricing
   const addonLines: string[] = [];
@@ -123,6 +184,9 @@ export function buildBookingMessage(payload: any): string {
     `👥 THÔNG TIN KHÁCH HÀNG`,
     guestLines,
     ``,
+    `🧩 DỊCH VỤ ĐÃ CHỌN`,
+    ...(selectedServiceLines.length > 0 ? selectedServiceLines : ["• Không có"]),
+    ``,
     `💰 CHI TIẾT GIÁ`,
     `Giá bay cơ bản: ${fmtVND(basePerPerson)}/người × ${guestsCount} = ${fmtVND(baseTotal)}`,
     ...addonLines,
@@ -131,9 +195,7 @@ export function buildBookingMessage(payload: any): string {
     `📌 GHI CHÚ/YÊU CẦU ĐẶC BIỆT`,
     `${esc(c.specialRequest || "Không có")}`,
     ``,
-    `═══════════════════════════════`,
     `TỔNG CỘNG: ${total}`,
-    `═══════════════════════════════`,
   ].filter(Boolean);
 
   return lines.join("\n");
