@@ -45,11 +45,11 @@ type FooterDict = {
 
 const DICT: Record<Language, FooterDict> = {
   vi: {
-    slogan: "Trải nghiệm dù lượn tuyệt vời nhất tại Việt Nam",
+    slogan: "Trải nghiệm bay tự do khắp Việt Nam",
     quickLinks: "Liên kết nhanh",
     pilots: "Phi công",
     bookTour: "Đặt tour",
-    preNotice: "Thông báo trước",
+    preNotice: "Lưu ý trước khi bay",
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     license:
@@ -404,7 +404,7 @@ export default function Footer() {
                 <span className="font-medium text-slate-200">
                   Mebayluon Paragliding
                 </span>
-                <span>. {t.rightsReserved}</span>
+                <span>{t.rightsReserved}</span>
               </span>
             </p>
           </div>

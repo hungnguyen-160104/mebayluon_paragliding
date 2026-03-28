@@ -158,7 +158,8 @@ export type CommonTranslation = {
       };
 
       singleRoom: { name: string; description: string };
-      coupleAttic: { name: string; description: string };
+      coupleAtticSingle: { name: string; description: string };
+      coupleAtticDouble: { name: string; description: string };
       doubleRoom: { name: string; description: string };
       dormitory: { name: string; description: string };
       wholeHomeSmall: { name: string; description: string };

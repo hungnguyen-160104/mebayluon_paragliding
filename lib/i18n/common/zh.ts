@@ -288,17 +288,22 @@ export const zh: CommonTranslation = {
         "whole-home": "/晚",
       },
       singleRoom: {
-        name: "单人房",
+        name: "单人床房",
         description:
           "共2间，最多1名成人和1名5岁以下儿童，配1张单人床垫",
       },
-      coupleAttic: {
-        name: "阁楼房",
+      coupleAtticSingle: {
+        name: "单人阁楼房",
         description:
-          "仅1间大阁楼房，最多可住3名成人和2名5岁以下儿童",
+          "共3间单人阁楼房，每间房间最多容纳1名成人或1名成人和1名5岁以下儿童",
+      },
+      coupleAtticDouble: {
+        name: "双人阁楼房",
+        description:
+          "仅1间双人阁楼房，最多容纳2名成人或2名成人和1名5岁以下儿童",
       },
       doubleRoom: {
-        name: "双人房",
+        name: "双人床房",
         description:
           "共2间大房，适合1个小家庭（2名成人和2名5岁以下儿童），配1张大双人床垫，可观溪流景色",
       },

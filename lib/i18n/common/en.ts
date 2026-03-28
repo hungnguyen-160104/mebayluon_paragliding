@@ -287,17 +287,22 @@ export const en: CommonTranslation = {
         "whole-home": "/night",
       },
       singleRoom: {
-        name: "Single Room",
+        name: "Single Bed Room",
         description:
           "2 rooms available, maximum 1 adult and 1 child under 5 years old, including 1 single mattress",
       },
-      coupleAttic: {
-        name: "Attic Room",
+      coupleAtticSingle: {
+        name: "Single Attic Room",
         description:
-          "1 large attic room only, maximum 3 adults and 2 children under 5 years old",
+          "3 single attic rooms available, each room accommodates maximum 1 adult or 1 adult and 1 child under 5 years old",
+      },
+      coupleAtticDouble: {
+        name: "Double Attic Room",
+        description:
+          "1 double attic room only, maximum 2 adults or 2 adults and 1 child under 5 years old",
       },
       doubleRoom: {
-        name: "Double Room",
+        name: "Double Bed Room",
         description:
           "2 large rooms, suitable for 1 small family (2 adults and 2 children under 5 years old), 1 large double mattress, stream view",
       },

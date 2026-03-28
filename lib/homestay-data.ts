@@ -2,7 +2,8 @@
 
 export type RoomKey =
   | "singleRoom"
-  | "coupleAttic"
+  | "coupleAtticSingle"
+  | "coupleAtticDouble"
   | "doubleRoom"
   | "dormitory"
   | "wholeHomeSmall"
@@ -69,15 +70,26 @@ export const roomTypes: RoomType[] = [
       "Có 2 phòng, phù hợp tối đa 1 người lớn và 1 trẻ em dưới 5 tuổi, gồm 1 đệm đơn.",
   },
   {
-    id: "couple-attic",
-    nameKey: "coupleAttic",
+    id: "couple-attic-single",
+    nameKey: "coupleAtticSingle",
     price: 200000,
     priceType: "per-guest",
-    capacity: { adults: 2, children: 2 },
+    capacity: { adults: 1, children: 1 },
     image: "/homestay/ap-mai.jpg",
     features: ["breakfast", "wifi", "attic-view", "handmade-tea"],
     description:
-      "1 phòng áp mái lớn duy nhất, phù hợp tối đa 2 người lớn và 2 trẻ em dưới 5 tuổi.",
+      "Có 3 phòng áp mái đơn, mỗi phòng ở tối đa 1 người lớn hoặc 1 người lớn và 1 trẻ em dưới 5 tuổi.",
+  },
+  {
+    id: "couple-attic-double",
+    nameKey: "coupleAtticDouble",
+    price: 200000,
+    priceType: "per-guest",
+    capacity: { adults: 2, children: 1 },
+    image: "/homestay/phong-ap-mai-doi.jpg",
+    features: ["breakfast", "wifi", "attic-view", "handmade-tea"],
+    description:
+      "1 phòng áp mái đôi duy nhất, tối đa 2 người lớn hoặc 2 người lớn và 1 trẻ em dưới 5 tuổi.",
   },
   {
     id: "double-room",
@@ -188,9 +200,10 @@ export const locationInfo = {
   travelTime: "5 giờ",
   phone: "+84964073555",
   nearbyAttractions: [
-    { name: "Đèo Khau Phạ", distance: "40km" },
-    { name: "Suối khoáng nóng", distance: "7 phút đi xe" },
-    { name: "Ruộng bậc thang Mù Cang Chải", distance: "Ngay tại chỗ" },
+    { name: "Suối khoáng nóng Tú Lệ", distance: "4km" },
+    { name: "Le Charm resort", distance: "5km" },
+    { name: "Trại cá hồi", distance: "8km" },
+    { name: "Khau Phạ pass", distance: "on site" },
   ],
 } as const;
 

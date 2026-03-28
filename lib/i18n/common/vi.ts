@@ -286,17 +286,21 @@ export const vi: CommonTranslation = {
         "whole-home": "/đêm",
       },
       singleRoom: {
-        name: "Phòng Đơn",
+        name: "Phòng giường đơn",
         description: "Có 2 phòng, tối đa 1 người lớn và 1 trẻ em dưới 5 tuổi, gồm 1 đệm đơn",
       },
-      coupleAttic: {
-        name: "Phòng Áp Mái",
-        description: "1 phòng áp mái lớn duy nhất, tối đa 3 người lớn và 2 trẻ em dưới 5 tuổi",
+      coupleAtticSingle: {
+        name: "Phòng áp mái đơn",
+        description: "Có 3 phòng áp mái đơn, mỗi phòng ở tối đa 1 người lớn hoặc 1 người lớn và 1 trẻ em dưới 5 tuổi.",
+      },
+      coupleAtticDouble: {
+        name: "Phòng áp mái đôi",
+        description: "1 phòng áp mái đôi duy nhất, tối đa 2 người lớn hoặc 2 người lớn và 1 trẻ em dưới 5 tuổi.",
       },
       doubleRoom: {
-        name: "Phòng Đôi",
+        name: "Phòng giường đôi",
         description:
-          "2 Phòng lớn, tối đa 1 gia đình nhỏ (2 người lớn và 2 trẻ em dưới 5 tuổi) 1 đệm đôi lớn, view suối",
+          "Có 2 phòng lớn, phù hợp cho 1 gia đình nhỏ gồm 2 người lớn và 2 trẻ em dưới 5 tuổi, 1 đệm đôi lớn, view suối.",
       },
       dormitory: {
         name: "Phòng Cộng Đồng",

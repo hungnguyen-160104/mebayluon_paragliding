@@ -287,17 +287,22 @@ export const fr: CommonTranslation = {
         "whole-home": "/nuit",
       },
       singleRoom: {
-        name: "Chambre simple",
+        name: "Chambre lit simple",
         description:
           "2 chambres disponibles, maximum 1 adulte et 1 enfant de moins de 5 ans, avec 1 matelas simple",
       },
-      coupleAttic: {
-        name: "Chambre mansardée",
+      coupleAtticSingle: {
+        name: "Chambre mansardée simple",
         description:
-          "1 grande chambre mansardée unique, maximum 3 adultes et 2 enfants de moins de 5 ans",
+          "3 chambres mansardées simples disponibles, chaque chambre accueille au maximum 1 adulte ou 1 adulte et 1 enfant de moins de 5 ans",
+      },
+      coupleAtticDouble: {
+        name: "Chambre mansardée double",
+        description:
+          "1 chambre mansardée double unique, maximum 2 adultes ou 2 adultes et 1 enfant de moins de 5 ans",
       },
       doubleRoom: {
-        name: "Chambre double",
+        name: "Chambre lit double",
         description:
           "2 grandes chambres, adaptées à 1 petite famille (2 adultes et 2 enfants de moins de 5 ans), 1 grand matelas double, vue sur le ruisseau",
       },
