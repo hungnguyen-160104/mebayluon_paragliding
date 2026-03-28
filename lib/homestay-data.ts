@@ -217,9 +217,10 @@ export const locationTranslations = {
     fromHanoi: "Từ Hà Nội",
     nearby: "Các điểm gần đó",
     nearbyList: [
-      "Đèo Khau Phạ – 40km",
-      "Suối khoáng nóng – 7 phút đi xe",
-      "Ruộng bậc thang Mù Cang Chải – Ngay tại chỗ",
+      "Suối Tú Lệ – 4km",
+      "Le Charm resort – 5km",
+      "Trại cá hồi – 8km",
+      "Khau Phạ – Tại chỗ",
     ],
   },
   en: {
@@ -230,9 +231,10 @@ export const locationTranslations = {
     fromHanoi: "From Hanoi",
     nearby: "Nearby attractions",
     nearbyList: [
-      "Khau Pha Pass – 40km",
-      "Hot spring – 7 minutes by car",
-      "Mu Cang Chai Rice Terraces – On site",
+      "Tuley Hot Spring – 4km",
+      "Le Charm resort – 5km",
+      "Fish farm – 8km",
+      "Khau Pha Pass – On site",
     ],
   },
   fr: {
@@ -243,9 +245,10 @@ export const locationTranslations = {
     fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
     nearbyList: [
-      "Col de Khau Pha – 40 km",
-      "Source chaude – 7 minutes en voiture",
-      "Rizières en terrasses de Mu Cang Chai – Sur place",
+      "Source chaude Tuley – 4 km",
+      "Le Charm resort – 5 km",
+      "Ferme piscicole – 8 km",
+      "Col de Khau Pha – Sur place",
     ],
   },
   ru: {
@@ -256,9 +259,10 @@ export const locationTranslations = {
     fromHanoi: "Из Ханоя",
     nearby: "Ближайшие места",
     nearbyList: [
-      "Перевал Кхау Фа — 40 км",
-      "Горячий источник — 7 минут на машине",
-      "Рисовые террасы Му Канг Чай — На месте",
+      "Горячий источник Туле — 4 км",
+      "Курорт Le Charm — 5 км",
+      "Форель ферма — 8 км",
+      "Перевал Кхау Фа — На месте",
     ],
   },
   zh: {
@@ -269,9 +273,10 @@ export const locationTranslations = {
     fromHanoi: "从河内出发",
     nearby: "附近景点",
     nearbyList: [
-      "考帕山口 — 40km",
-      "温泉 — 约 7 分钟车程",
-      "木仓寨梯田 — 就在此地",
+      "图勒温泉 — 4km",
+      "Le Charm度假村 — 5km",
+      "鱼塘 — 8km",
+      "考帕山口 — 就在此地",
     ],
   },
   hi: {
@@ -282,9 +287,10 @@ export const locationTranslations = {
     fromHanoi: "हनोई से",
     nearby: "नज़दीकी स्थान",
     nearbyList: [
-      "खाउ फ़ा पास — 40km",
-      "हॉट स्प्रिंग — कार से लगभग 7 मिनट",
-      "मु कांग चाई की सीढ़ीनुमा धान की खेती — यहीं",
+      "तुले हॉट स्प्रिंग — 4km",
+      "Le Charm रिसॉर्ट — 5km",
+      "मछली पालन — 8km",
+      "खाउ फ़ा पास — यहीं",
     ],
   },
 } as const;
