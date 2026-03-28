@@ -355,7 +355,7 @@ export default function BookingTicket({
         const serviceKey = String(svc.key || "");
         let lineTotal =
           svc.controlType === "counter" ? baseUnit * qty : baseUnit * guestsCount;
-        let detail =
+        let detail: string | undefined =
           svc.controlType === "counter"
             ? `${formatByLang(lang, baseUnit, baseUnit)} × ${qty}`
             : `${formatByLang(lang, baseUnit, baseUnit)} × ${guestsCount}`;

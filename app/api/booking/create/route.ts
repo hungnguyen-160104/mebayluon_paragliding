@@ -100,9 +100,6 @@ function acceptedKeys(): string[] {
 const nameOf = (k?: string, fallback?: string) =>
   (k && (spots as Record<string, string>)[k]) || fallback || (k || "—");
 
-const escapeHtml = (s?: string) =>
-  (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
 function clampInt(v: unknown, min: number, max: number): number {
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n)) return min;
@@ -288,21 +285,6 @@ export async function POST(req: NextRequest) {
       addonsQty,
       addons,
     };
-
-    // Build guest lines
-    const guestLines =
-      (normalized.guests || [])
-        .map((g, i) => {
-          const attrs: string[] = [];
-          if (g.dob) attrs.push(`DOB: ${escapeHtml(g.dob)}`);
-          if (g.gender) attrs.push(escapeHtml(g.gender));
-          if (g.idNumber) attrs.push(`ID: ${escapeHtml(g.idNumber)}`);
-          if (typeof g.weightKg === "number") attrs.push(`Wt: ${g.weightKg}kg`);
-          if (g.nationality) attrs.push(`QT: ${escapeHtml(g.nationality)}`);
-          const details = attrs.length ? ` (${attrs.join(" · ")})` : "";
-          return `${i + 1}. ${escapeHtml(g.fullName || "")}${details}`;
-        })
-        .join("\n") || "—";
 
     const currency = (normalized.price?.currency || "VND").toUpperCase();
 

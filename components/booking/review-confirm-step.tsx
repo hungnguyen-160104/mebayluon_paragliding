@@ -844,8 +844,7 @@ export default function ReviewConfirmStep() {
           ...(createResp.booking || {}),
           bookingId:
             createResp?.bookingId ||
-            createResp?.booking?._id ||
-            payload?.bookingId,
+            createResp?.booking?._id,
         });
       } catch (tgErr: any) {
         console.warn("Telegram failed:", tgErr?.message || tgErr);
@@ -879,13 +878,6 @@ export default function ReviewConfirmStep() {
   const pickupAddonQty = getAddonQty("pickup");
   const camera360Qty = getAddonQty("camera360");
   const flycamQty = getAddonQty("flycam");
-
-  const noPickupSelected =
-    selectedPickupServices.length === 0 &&
-    pickupAddonQty === 0 &&
-    visibleSelectedServices.some(
-      (svc: any) => svc.key?.toString().toLowerCase().includes("pickup"),
-    );
 
   const hasPackages = cfg?.packages && cfg.packages.length > 0;
   const showPackageRow = hasPackages || data.location === "khau_pha";

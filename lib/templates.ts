@@ -138,6 +138,46 @@ function resolveSelectedServiceLines(body: TelegramBookingPayload, lang: "vi" | 
   return lines;
 }
 
+function resolveServicePriceBreakdownLines(body: TelegramBookingPayload): string[] {
+  const fromBreakdown = Array.isArray(body.price?.servicesBreakdown)
+    ? body.price?.servicesBreakdown || []
+    : [];
+
+  if (fromBreakdown.length > 0) {
+    return fromBreakdown
+      .map((row) => {
+        const label = String(row?.label || row?.key || "").trim();
+        if (!label) return "";
+
+        const detail = String(row?.detail || "").trim();
+        const amountText =
+          typeof row?.lineTotal === "number"
+            ? formatVND(row.lineTotal)
+            : String(row?.amountText || "").trim();
+
+        return detail
+          ? `• ${escapeHtml(label)}: ${escapeHtml(detail)} = ${escapeHtml(amountText || "—")}`
+          : `• ${escapeHtml(label)}: ${escapeHtml(amountText || "—")}`;
+      })
+      .filter(Boolean);
+  }
+
+  const fromSelected = Array.isArray(body.selectedServices) ? body.selectedServices : [];
+  return fromSelected
+    .map((row) => {
+      const label = String(row?.label || row?.key || "").trim();
+      if (!label) return "";
+      const detail = String(row?.detail || "").trim();
+      const amountText = String(row?.amountText || "").trim();
+      if (!amountText) return "";
+
+      return detail
+        ? `• ${escapeHtml(label)}: ${escapeHtml(detail)} = ${escapeHtml(amountText)}`
+        : `• ${escapeHtml(label)}: ${escapeHtml(amountText)}`;
+    })
+    .filter(Boolean);
+}
+
 function telegramLikeHtmlWrapper(title: string, telegramHtmlText: string) {
   return `<!doctype html>
 <html>
@@ -183,6 +223,7 @@ function buildTelegramSections(body: TelegramBookingPayload) {
   const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
   const selectedServiceLines = resolveSelectedServiceLines(body, "vi");
+  const servicePriceBreakdownLines = resolveServicePriceBreakdownLines(body);
 
   // Build addon details with pricing
   const addonLines: string[] = [];
@@ -233,6 +274,7 @@ function buildTelegramSections(body: TelegramBookingPayload) {
     ``,
     `💰 CHI TIẾT GIÁ`,
     `Giá bay cơ bản: ${basePerPerson}/người × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
+    ...servicePriceBreakdownLines,
     ...addonLines,
     body.price?.discountPerPerson ? `Giảm giá nhóm: -${formatVND(body.price.discountPerPerson)}/người × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
     ``,
@@ -271,6 +313,7 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
   const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
   const selectedServiceLines = resolveSelectedServiceLines(body, "en");
+  const servicePriceBreakdownLines = resolveServicePriceBreakdownLines(body);
 
   // Build addon details with pricing
   const addonLines: string[] = [];
@@ -324,6 +367,7 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
     ``,
     `PRICE BREAKDOWN`,
     `Flight: ${basePerPerson}/person × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
+    ...servicePriceBreakdownLines,
     ...addonLines,
     body.price?.discountPerPerson ? `Group Discount: -${formatVND(body.price.discountPerPerson)}/person × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
     ``,

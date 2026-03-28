@@ -113,6 +113,48 @@ export function buildBookingMessage(payload: any): string {
       .filter(Boolean);
   };
 
+  const resolveServicePriceBreakdownLines = (): string[] => {
+    const breakdown = Array.isArray(payload?.price?.servicesBreakdown)
+      ? payload.price.servicesBreakdown
+      : [];
+
+    if (breakdown.length > 0) {
+      return breakdown
+        .map((row: any) => {
+          const label = String(row?.label || row?.key || "").trim();
+          if (!label) return "";
+          const detail = String(row?.detail || "").trim();
+          const amountText =
+            typeof row?.lineTotal === "number"
+              ? fmtVND(row.lineTotal)
+              : String(row?.amountText || "").trim();
+
+          return detail
+            ? `• ${esc(label)}: ${esc(detail)} = ${esc(amountText || "—")}`
+            : `• ${esc(label)}: ${esc(amountText || "—")}`;
+        })
+        .filter(Boolean);
+    }
+
+    const selectedServices = Array.isArray(payload?.selectedServices)
+      ? payload.selectedServices
+      : [];
+
+    return selectedServices
+      .map((row: any) => {
+        const label = String(row?.label || row?.key || "").trim();
+        if (!label) return "";
+        const detail = String(row?.detail || "").trim();
+        const amountText = String(row?.amountText || "").trim();
+        if (!amountText) return "";
+
+        return detail
+          ? `• ${esc(label)}: ${esc(detail)} = ${esc(amountText)}`
+          : `• ${esc(label)}: ${esc(amountText)}`;
+      })
+      .filter(Boolean);
+  };
+
   const c = payload?.contact || {};
   const guests = Array.isArray(payload?.guests) ? payload.guests : [];
   const guestsCount =
@@ -139,6 +181,7 @@ export function buildBookingMessage(payload: any): string {
 
   const total = fmtVND(payload?.price?.total);
   const selectedServiceLines = resolveSelectedServiceLines();
+  const servicePriceBreakdownLines = resolveServicePriceBreakdownLines();
 
   // Build addon lines with actual pricing
   const addonLines: string[] = [];
@@ -189,6 +232,7 @@ export function buildBookingMessage(payload: any): string {
     ``,
     `💰 CHI TIẾT GIÁ`,
     `Giá bay cơ bản: ${fmtVND(basePerPerson)}/người × ${guestsCount} = ${fmtVND(baseTotal)}`,
+    ...servicePriceBreakdownLines,
     ...addonLines,
     payload?.price?.discountPerPerson ? `Giảm giá nhóm: -${fmtVND(payload.price.discountPerPerson)}/người × ${guestsCount} = -${fmtVND(payload.price.discountPerPerson * guestsCount)}` : "",
     ``,
