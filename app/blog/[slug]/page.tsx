@@ -22,8 +22,7 @@ type Post = {
 
 /** ===== Fetch post by slug ===== */
 async function fetchPostBySlug(slug: string): Promise<Post | null> {
-  // Gọi trực tiếp database thay vì fetch qua HTTP
-  return await getPostBySlug(slug) as Post | null;
+  return (await getPostBySlug(slug)) as Post | null;
 }
 
 /** ===== SEO: generateMetadata ===== */
@@ -32,14 +31,18 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params; // 👈 phải await
+  const { slug } = await params;
   const post = await fetchPostBySlug(slug).catch(() => null);
-  if (!post) return { title: "Bài viết không tồn tại" };
+
+  if (!post) {
+    return { title: "Bài viết không tồn tại" };
+  }
 
   const plain = String(post.content || "")
     .replace(/<[^>]+>/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
   const desc = plain.slice(0, 160);
 
   return {
@@ -54,75 +57,65 @@ export async function generateMetadata({
 }
 
 /**
- * ===== Page: Blog post detail (Styled with Glassmorphism & BG Image) =====
+ * ===== Page: Blog post detail =====
+ * Ảnh bìa hiển thị full chiều ngang, giữ nguyên tỉ lệ, không crop
  */
 export default async function BlogPostPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params; // 👈 phải await
+  const { slug } = await params;
   const post = await fetchPostBySlug(slug);
+
   if (!post) notFound();
 
   return (
-    // ====== NỀN TRANG (BACKGROUND) ======
     <main
       className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
       style={{
         backgroundImage: "url('/images/mebayluon.jpg')",
       }}
     >
-      {/* Lớp phủ mờ tối */}
-      <div className="absolute inset-0 bg-black/30 z-0" />
+      <div className="absolute inset-0 z-0 bg-black/30" />
 
-      {/* ====== CONTAINER CĂN GIỮA ====== */}
-      <div
-        className="container mx-auto px-4 relative z-10 pt-28 pb-16" 
-      >
-        
-        {/* ====== TẤM KÍNH MỜ (GLASS PANEL) ======
-          - ⚠️ [SỬA LỖI 1]: Thêm 'text-white' để ép chữ mặc định là màu trắng
-        */}
-        <div className="prose prose-invert text-white bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl p-6 md:p-10 max-w-none">
-          
-          {/* Tiêu đề */}
-          <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
+      <div className="container mx-auto relative z-10 px-4 pt-28 pb-16">
+        <div className="max-w-none rounded-2xl border border-white/10 bg-black/20 p-6 text-white shadow-xl backdrop-blur-lg md:p-10">
+          <h1 className="not-prose mb-4 text-3xl font-bold text-white md:text-4xl">
             {post.title}
           </h1>
 
-          {/* Metadata */}
-          <div className="not-prose text-sm text-gray-300 mb-6">
+          <div className="not-prose mb-6 text-sm text-gray-300">
             {new Date(post.publishedAt ?? post.createdAt).toLocaleDateString(
               "vi-VN"
             )}{" "}
             • {post.views ?? 0} lượt xem
           </div>
 
-          {/* Ảnh bìa */}
           {post.coverImage && (
-            <div className="not-prose relative w-full h-64 md:h-96 mb-6">
+            <div className="not-prose mb-6 w-full overflow-hidden rounded-lg bg-white/5">
               <Image
                 src={post.coverImage}
                 alt={post.title}
-                fill
-                className="object-cover rounded-lg"
+                width={1600}
+                height={900}
                 priority
+                className="h-auto w-full rounded-lg"
+                style={{
+                  objectFit: "contain",
+                  display: "block",
+                }}
               />
             </div>
           )}
 
-          {/* Nội dung bài viết */}
           <article
-            // ⚠️ [SỬA LỖI 2]: Xóa 'prose prose-invert'
-            className="" 
+            className="prose prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: String(post.content || "") }}
           />
 
-          {/* Dấu gạch ngang */}
           <hr className="my-8" />
 
-          {/* Bài viết liên quan */}
           <div className="not-prose text-white">
             <RelatedPosts
               idOrSlug={post._id || post.slug}
@@ -131,12 +124,8 @@ export default async function BlogPostPage({
               hrefBuilder={(s) => `/blog/${s}`}
             />
           </div>
-
         </div>
-        {/* ====== HẾT TẤM KÍNH MỜ ====== */}
       </div>
-      {/* ====== HẾT CONTAINER CĂN GIỮA ====== */}
     </main>
-    // ====== HẾT NỀN TRANG ======
   );
 }
