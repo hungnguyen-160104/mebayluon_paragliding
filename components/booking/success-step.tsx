@@ -248,15 +248,12 @@ export default function SuccessStep() {
             {ui.note}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium text-[#5B6B7A]">
-              {t.buttons.downloadImage}
-            </div>
-
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            
             <button
               onClick={downloadImage}
               disabled={downloadingIMG}
-              className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+              className="h-12 rounded-xl bg-red-600 px-6 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
             >
               {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
             </button>
