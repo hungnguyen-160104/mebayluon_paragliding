@@ -14,6 +14,7 @@ import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+type CurrencyCode = "VND" | "USD";
 
 type LocalizedValue =
   | string
@@ -32,6 +33,13 @@ type PriceLine = {
   detail?: string;
   amountText: string;
   type?: "normal" | "discount";
+};
+
+type ServiceBreakdownRow = {
+  key: string;
+  label: string;
+  detail?: string;
+  lineTotal: number;
 };
 
 const UI_I18N: Record<
@@ -349,6 +357,17 @@ function resolveFlightTypeKey(cfg: any, selected?: string) {
   return (found as string | undefined) || "paragliding";
 }
 
+function formatMoneyVND(n: number) {
+  return `${Math.round(Number(n || 0)).toLocaleString("vi-VN")} đ`;
+}
+
+function formatMoneyUSD(n: number) {
+  return `$${Number(n || 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 function Row({
   label,
   value,
@@ -483,40 +502,78 @@ export default function ReviewConfirmStep() {
     });
   }, [visibleSelectedServices, data.services, lang]);
 
-  const billInLang = computePriceByLang(
-    {
-      location: data.location,
-      guestsCount: data.guestsCount,
-      dateISO: data.dateISO,
-      packageKey: data.packageKey,
-      flightTypeKey: data.flightTypeKey,
-      addons: data.addons,
-      addonsQty: data.addonsQty,
-    },
-    lang,
+  const billVND = useMemo(
+    () =>
+      computePriceByLang(
+        {
+          location: data.location,
+          guestsCount: data.guestsCount,
+          dateISO: data.dateISO,
+          packageKey: data.packageKey,
+          flightTypeKey: data.flightTypeKey,
+          addons: data.addons,
+          addonsQty: data.addonsQty,
+        },
+        "vi",
+      ),
+    [
+      data.location,
+      data.guestsCount,
+      data.dateISO,
+      data.packageKey,
+      data.flightTypeKey,
+      data.addons,
+      data.addonsQty,
+    ],
+  );
+
+  const billUSD = useMemo(
+    () =>
+      computePriceByLang(
+        {
+          location: data.location,
+          guestsCount: data.guestsCount,
+          dateISO: data.dateISO,
+          packageKey: data.packageKey,
+          flightTypeKey: data.flightTypeKey,
+          addons: data.addons,
+          addonsQty: data.addonsQty,
+        },
+        "en",
+      ),
+    [
+      data.location,
+      data.guestsCount,
+      data.dateISO,
+      data.packageKey,
+      data.flightTypeKey,
+      data.addons,
+      data.addonsQty,
+    ],
   );
 
   const guestsCount = Math.max(1, data.guestsCount || 1);
 
-  const getServiceLineTotal = useCallback(
-    (svc: any): number => {
+  const getServiceLineTotalByCurrency = useCallback(
+    (svc: any, currency: CurrencyCode): number => {
       const serviceState = data.services?.[svc.key];
       if (!serviceState?.selected) return 0;
 
       const qty = Math.max(1, serviceState.qty || 1);
-      const unitPrice = lang === "vi"
-        ? Number(svc.priceVND || 0)
-        : Number(svc.priceUSD || 0);
+      const unitPrice =
+        currency === "VND"
+          ? Number(svc.priceVND || 0)
+          : Number(svc.priceUSD || 0);
 
       const key = String(svc.key || "");
 
       if (key === "khau_pha_garrya_pickup") {
         const carCount = Math.ceil(guestsCount / 4);
-        return lang === "vi" ? carCount * 600_000 : carCount * 24;
+        return currency === "VND" ? carCount * 600_000 : carCount * 24;
       }
 
       if (key === "ha_noi_private_hotel_pickup") {
-        return lang === "vi"
+        return currency === "VND"
           ? 1_500_000 + Math.max(0, guestsCount - 3) * 350_000
           : 60 + Math.max(0, guestsCount - 3) * 14;
       }
@@ -527,10 +584,10 @@ export default function ReviewConfirmStep() {
 
       return unitPrice * guestsCount;
     },
-    [data.services, guestsCount, lang],
+    [data.services, guestsCount],
   );
 
-  const selectedServicesTotal = useMemo(() => {
+  const selectedServicesTotalVND = useMemo(() => {
     if (!cfg?.services?.length) return 0;
 
     return cfg.services.reduce((sum: number, svc: any) => {
@@ -547,25 +604,49 @@ export default function ReviewConfirmStep() {
       const serviceState = data.services?.[svc.key];
       if (!serviceState?.selected) return sum;
 
-      return sum + getServiceLineTotal(svc);
+      return sum + getServiceLineTotalByCurrency(svc, "VND");
     }, 0);
-  }, [cfg?.services, data.packageKey, data.flightTypeKey, data.services, getServiceLineTotal]);
+  }, [
+    cfg?.services,
+    data.packageKey,
+    data.flightTypeKey,
+    data.services,
+    getServiceLineTotalByCurrency,
+  ]);
 
-  function formatMoney(n: number) {
-    return lang === "vi"
-      ? new Intl.NumberFormat("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        }).format(Number(n || 0))
-      : `${Number(n || 0).toLocaleString("en-US")} USD`;
-  }
+  const selectedServicesTotalUSD = useMemo(() => {
+    if (!cfg?.services?.length) return 0;
+
+    return cfg.services.reduce((sum: number, svc: any) => {
+      if (svc.visibleForPackages?.length) {
+        if (!data.packageKey) return sum;
+        if (!svc.visibleForPackages.includes(data.packageKey)) return sum;
+      }
+
+      if (svc.visibleForFlightTypes?.length) {
+        if (!data.flightTypeKey) return sum;
+        if (!svc.visibleForFlightTypes.includes(data.flightTypeKey)) return sum;
+      }
+
+      const serviceState = data.services?.[svc.key];
+      if (!serviceState?.selected) return sum;
+
+      return sum + getServiceLineTotalByCurrency(svc, "USD");
+    }, 0);
+  }, [
+    cfg?.services,
+    data.packageKey,
+    data.flightTypeKey,
+    data.services,
+    getServiceLineTotalByCurrency,
+  ]);
 
   const selectedServicesBreakdown = useMemo(() => {
     if (!cfg?.services?.length) {
-      return [] as Array<{ key: string; label: string; detail?: string; lineTotal: number }>;
+      return [] as ServiceBreakdownRow[];
     }
 
-    const rows: Array<{ key: string; label: string; detail?: string; lineTotal: number }> = [];
+    const rows: ServiceBreakdownRow[] = [];
 
     cfg.services.forEach((svc: any) => {
       if (svc.visibleForPackages?.length) {
@@ -582,27 +663,25 @@ export default function ReviewConfirmStep() {
       if (!serviceState?.selected) return;
 
       const qty = Math.max(1, serviceState.qty || 1);
-      const lineTotal = getServiceLineTotal(svc);
+      const lineTotal = getServiceLineTotalByCurrency(svc, "VND");
       if (lineTotal <= 0) return;
 
       const label = getLocalizedText(svc.label, lang, String(svc.key));
-      const unitPrice = lang === "vi"
-        ? Number(svc.priceVND || 0)
-        : Number(svc.priceUSD || 0);
+      const unitPrice = Number(svc.priceVND || 0);
 
       const key = String(svc.key || "");
       let detailText = "";
 
       if (key === "khau_pha_garrya_pickup") {
         const carCount = Math.ceil(guestsCount / 4);
-        const carPrice = lang === "vi" ? 600_000 : 24;
-        detailText = `${formatMoney(carPrice)} × ${carCount} xe`;
+        const carPrice = 600_000;
+        detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe`;
       } else if (key === "ha_noi_private_hotel_pickup") {
         detailText = "";
       } else if (svc.controlType === "counter") {
-        detailText = `${formatMoney(unitPrice)} × ${qty}`;
+        detailText = `${formatMoneyVND(unitPrice)} × ${qty}`;
       } else {
-        detailText = `${formatMoney(unitPrice)} × ${guestsCount}`;
+        detailText = `${formatMoneyVND(unitPrice)} × ${guestsCount}`;
       }
 
       rows.push({
@@ -619,7 +698,7 @@ export default function ReviewConfirmStep() {
     data.packageKey,
     data.flightTypeKey,
     data.services,
-    getServiceLineTotal,
+    getServiceLineTotalByCurrency,
     lang,
     guestsCount,
   ]);
@@ -657,16 +736,16 @@ export default function ReviewConfirmStep() {
 
   const termsUrl = `/terms?lang=${lang}`;
 
-  const { priceLines, totalText } = useMemo(() => {
+  const { priceLines, totalTextVND, totalTextUSD } = useMemo(() => {
     const lines: PriceLine[] = [];
 
-    const flightUnit = Number(billInLang.basePricePerPerson || 0);
+    const flightUnit = Number(billVND.basePricePerPerson || 0);
     const flightSub = flightUnit * pax;
 
     lines.push({
       label: (t as any)?.labels?.flightCost ?? "Flight",
-      detail: `${formatMoney(flightUnit)} × ${pax}`,
-      amountText: formatMoney(flightSub),
+      detail: `${formatMoneyVND(flightUnit)} × ${pax}`,
+      amountText: formatMoneyVND(flightSub),
       type: "normal",
     });
 
@@ -686,34 +765,31 @@ export default function ReviewConfirmStep() {
         if (!serviceState?.selected) return;
 
         const qty = Math.max(1, serviceState.qty || 1);
-        const lineTotal = getServiceLineTotal(svc);
-
+        const lineTotal = getServiceLineTotalByCurrency(svc, "VND");
         if (lineTotal <= 0) return;
 
         const label = getLocalizedText(svc.label, lang, String(svc.key));
-        const unitPrice = lang === "vi"
-          ? Number(svc.priceVND || 0)
-          : Number(svc.priceUSD || 0);
+        const unitPrice = Number(svc.priceVND || 0);
 
         const key = String(svc.key || "");
         let detailText = "";
 
         if (key === "khau_pha_garrya_pickup") {
           const carCount = Math.ceil(guestsCount / 4);
-          const carPrice = lang === "vi" ? 600_000 : 24;
-          detailText = `${formatMoney(carPrice)} × ${carCount} xe`;
+          const carPrice = 600_000;
+          detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe`;
         } else if (key === "ha_noi_private_hotel_pickup") {
           detailText = "";
         } else if (svc.controlType === "counter") {
-          detailText = `${formatMoney(unitPrice)} × ${qty}`;
+          detailText = `${formatMoneyVND(unitPrice)} × ${qty}`;
         } else {
-          detailText = `${formatMoney(unitPrice)} × ${guestsCount}`;
+          detailText = `${formatMoneyVND(unitPrice)} × ${guestsCount}`;
         }
 
         lines.push({
           label,
           detail: detailText,
-          amountText: formatMoney(lineTotal),
+          amountText: formatMoneyVND(lineTotal),
           type: "normal",
         });
       });
@@ -726,41 +802,46 @@ export default function ReviewConfirmStep() {
     };
 
     (["pickup", "camera360", "flycam"] as AddonKey[]).forEach((key) => {
-      const qty = Number((billInLang as any)?.addonsQty?.[key] || 0);
+      const qty = Number((billVND as any)?.addonsQty?.[key] || 0);
       if (!qty) return;
 
-      const unit = Number((billInLang as any)?.addonsUnitPrice?.[key] || 0);
+      const unit = Number((billVND as any)?.addonsUnitPrice?.[key] || 0);
       const sub =
-        Number((billInLang as any)?.addonsTotal?.[key] || 0) || unit * qty;
+        Number((billVND as any)?.addonsTotal?.[key] || 0) || unit * qty;
 
       lines.push({
         label: addonLabel[key] ?? String(key),
-        detail: `${formatMoney(unit)} × ${qty}`,
-        amountText: formatMoney(sub),
+        detail: `${formatMoneyVND(unit)} × ${qty}`,
+        amountText: formatMoneyVND(sub),
         type: "normal",
       });
     });
 
-    const discountPerPerson = Number(billInLang.discountPerPerson || 0);
+    const discountPerPerson = Number(billVND.discountPerPerson || 0);
     if (discountPerPerson > 0) {
       const discountTotal = discountPerPerson * pax;
 
       lines.push({
         label: (t as any)?.labels?.groupDiscount ?? "Group discount",
-        detail: `-${formatMoney(discountPerPerson)} × ${pax}`,
-        amountText: `-${formatMoney(discountTotal)}`,
+        detail: `-${formatMoneyVND(discountPerPerson)} × ${pax}`,
+        amountText: `-${formatMoneyVND(discountTotal)}`,
         type: "discount",
       });
     }
 
-    const grandTotal = Number(billInLang.totalAfterDiscount || 0) + selectedServicesTotal;
+    const grandTotalVND =
+      Number(billVND.totalAfterDiscount || 0) + selectedServicesTotalVND;
+    const grandTotalUSD =
+      Number(billUSD.totalAfterDiscount || 0) + selectedServicesTotalUSD;
 
     return {
       priceLines: lines,
-      totalText: formatMoney(grandTotal),
+      totalTextVND: formatMoneyVND(grandTotalVND),
+      totalTextUSD: formatMoneyUSD(grandTotalUSD),
     };
   }, [
-    billInLang,
+    billVND,
+    billUSD,
     cfg?.services,
     data.packageKey,
     data.flightTypeKey,
@@ -769,8 +850,9 @@ export default function ReviewConfirmStep() {
     pax,
     lang,
     t,
-    getServiceLineTotal,
-    selectedServicesTotal,
+    getServiceLineTotalByCurrency,
+    selectedServicesTotalVND,
+    selectedServicesTotalUSD,
   ]);
 
   const handleConfirm = async () => {
@@ -808,20 +890,23 @@ export default function ReviewConfirmStep() {
         flightTypeLabel: getFlightTypeLabel(lang, resolvedFlightTypeKey),
 
         price: {
-          currency: billInLang.currency,
-          perPerson: billInLang.totalPerPerson,
-          basePerPerson: billInLang.basePricePerPerson,
-          discountPerPerson: billInLang.discountPerPerson,
-          addonsQty: (billInLang as any).addonsQty,
-          addonsUnitPrice: (billInLang as any).addonsUnitPrice,
-          addonsTotal: (billInLang as any).addonsTotal,
+          currency: "VND",
+          perPerson: billVND.totalPerPerson,
+          basePerPerson: billVND.basePricePerPerson,
+          discountPerPerson: billVND.discountPerPerson,
+          addonsQty: (billVND as any).addonsQty,
+          addonsUnitPrice: (billVND as any).addonsUnitPrice,
+          addonsTotal: (billVND as any).addonsTotal,
           servicesBreakdown: selectedServicesBreakdown,
-          servicesTotal: selectedServicesTotal,
-          total: Number(billInLang.totalAfterDiscount || 0) + selectedServicesTotal,
+          servicesTotal: selectedServicesTotalVND,
+          total: Number(billVND.totalAfterDiscount || 0) + selectedServicesTotalVND,
+          usdTotal:
+            Number(billUSD.totalAfterDiscount || 0) + selectedServicesTotalUSD,
+          usdPerPerson: billUSD.totalPerPerson,
         },
 
         selectedServices: serviceLines,
-        holidayType: billInLang.holidayType,
+        holidayType: billVND.holidayType,
         createdAt: new Date().toISOString(),
       };
 
@@ -921,7 +1006,7 @@ export default function ReviewConfirmStep() {
           },
           {
             label: L("dayType", "Day type"),
-            value: getHolidayTypeLabel(lang, billInLang.holidayType),
+            value: getHolidayTypeLabel(lang, billVND.holidayType),
           },
         ]
       : []),
@@ -1172,13 +1257,19 @@ export default function ReviewConfirmStep() {
 
                 <div className="h-px bg-[#DCE7F3]" />
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <span className="text-lg font-bold text-[#1C2930]">
                     {L("totalCost", "Total")}
                   </span>
-                  <span className="text-xl font-bold text-[#FF5E1F]">
-                    {totalText}
-                  </span>
+
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-[#FF5E1F]">
+                      {totalTextVND}
+                    </div>
+                    <div className="text-sm font-semibold text-[#5B6B7A]">
+                      ({totalTextUSD})
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
