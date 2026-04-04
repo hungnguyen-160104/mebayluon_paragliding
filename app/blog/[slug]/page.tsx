@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getPostBySlug, getPosts } from "@/lib/posts-data";
-import type { Post, SupportedLocale } from "@/types/frontend/post";
+import type { ContentBlock, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
 
@@ -43,6 +43,100 @@ function pickContent(post: Post, isVietnamese: boolean) {
   return isVietnamese
     ? post.contentVi || post.content || ""
     : post.content || post.contentVi || "";
+}
+
+function pickBlocks(post: Post, isVietnamese: boolean): ContentBlock[] {
+  const blocks = isVietnamese
+    ? post.contentBlocksVi || post.contentBlocks || []
+    : post.contentBlocks || post.contentBlocksVi || [];
+
+  return Array.isArray(blocks) ? blocks : [];
+}
+
+function hasVisibleBlockData(blocks: ContentBlock[]): boolean {
+  return blocks.some((block) => {
+    const data = block?.data || {};
+    if (typeof data.text === "string" && data.text.trim()) return true;
+    if (typeof data.url === "string" && data.url.trim()) return true;
+    if (Array.isArray(data.items) && data.items.some((item) => String(item || "").trim())) {
+      return true;
+    }
+    if (typeof data.caption === "string" && data.caption.trim()) return true;
+    if (typeof data.author === "string" && data.author.trim()) return true;
+    if (typeof data.link === "string" && data.link.trim()) return true;
+    if (block?.type === "divider") return true;
+    return false;
+  });
+}
+
+function hasHtmlTag(content: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(String(content || ""));
+}
+
+function renderContentBlock(block: ContentBlock, index: number) {
+  const key = block.id || `block-${index}`;
+  const data = block.data || {};
+
+  switch (block.type) {
+    case "heading": {
+      const level = Math.min(4, Math.max(1, Number(data.level || 2)));
+      if (level === 1) return <h1 key={key}>{data.text || ""}</h1>;
+      if (level === 2) return <h2 key={key}>{data.text || ""}</h2>;
+      if (level === 3) return <h3 key={key}>{data.text || ""}</h3>;
+      return <h4 key={key}>{data.text || ""}</h4>;
+    }
+
+    case "paragraph":
+      return (
+        <p key={key} className="whitespace-pre-line">
+          {data.text || ""}
+        </p>
+      );
+
+    case "image":
+      return data.url ? (
+        <figure key={key}>
+          <img src={data.url} alt={data.alt || ""} className="w-full rounded-lg" />
+          {data.caption ? <figcaption>{data.caption}</figcaption> : null}
+        </figure>
+      ) : null;
+
+    case "quote":
+      return (
+        <blockquote key={key}>
+          <p>{data.text || ""}</p>
+          {data.author ? <cite>{data.author}</cite> : null}
+        </blockquote>
+      );
+
+    case "bulletList": {
+      const items = Array.isArray(data.items)
+        ? data.items.map((item) => String(item || "").trim()).filter(Boolean)
+        : [];
+      if (!items.length) return null;
+
+      return (
+        <ul key={key}>
+          {items.map((item, itemIndex) => (
+            <li key={`${key}-item-${itemIndex}`}>{item}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    case "divider":
+      return <hr key={key} />;
+
+    case "cta":
+      return data.text ? (
+        <p key={key}>
+          <a href={data.link || "#"}>{data.text}</a>
+        </p>
+      ) : null;
+
+    default:
+      return null;
+  }
 }
 
 const LOCALE_BY_LANG: Record<Lang, string> = {
@@ -182,6 +276,8 @@ export default async function BlogPostPage({
   const title = pickTitle(post, isVietnamese);
   const excerpt = pickExcerpt(post, isVietnamese);
   const content = pickContent(post, isVietnamese);
+  const blocks = pickBlocks(post, isVietnamese);
+  const canRenderBlocks = blocks.length > 0 && hasVisibleBlockData(blocks);
   const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
   const publishedLabel =
     post.publishedAt || post.createdAt
@@ -248,8 +344,14 @@ export default async function BlogPostPage({
           )}
 
           <article className="prose prose-invert max-w-none">
-            {content ? (
+            {canRenderBlocks ? (
+              <div className="space-y-5">{blocks.map(renderContentBlock)}</div>
+            ) : content ? (
+              hasHtmlTag(content) ? (
               <div dangerouslySetInnerHTML={{ __html: content }} />
+              ) : (
+                <div className="whitespace-pre-line">{content}</div>
+              )
             ) : (
               <p>{ui.noContent}</p>
             )}
