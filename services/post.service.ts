@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import { Post } from "@/models/Post.model";
 import { toSlug } from "@/utils/slug";
 import { estimateReadTime } from "@/utils/readTime";
-import type { ContentBlock } from "@/types/frontend/post";
+import type { ContentBlock, EmbedType } from "@/types/frontend/post";
 
 export type PostInput = {
   title: string;
@@ -39,15 +39,6 @@ export type PostInput = {
   isFixed?: boolean;
   fixedKey?: string | null;
 };
-
-const ALLOWED_FIXED_KEYS = new Set([
-  "hoa-binh",
-  "ha-noi",
-  "mu-cang-chai",
-  "yen-bai",
-  "da-nang",
-  "sapa",
-]);
 
 function stripHtml(html: string): string {
   return String(html || "")
@@ -98,6 +89,79 @@ function escapeHtml(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function detectEmbedType(url: string): EmbedType {
+  const value = String(url || "").trim();
+  if (!value) return "unknown";
+
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname.includes("youtube.com") ||
+      hostname.includes("youtu.be") ||
+      hostname.includes("youtube-nocookie.com")
+    ) {
+      return "youtube";
+    }
+
+    if (
+      hostname.includes("google.com") ||
+      hostname.includes("maps.google.") ||
+      hostname.includes("maps.app.goo.gl")
+    ) {
+      return "googleMaps";
+    }
+
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function getYouTubeEmbedUrl(rawUrl: string): string | null {
+  const value = String(rawUrl || "").trim();
+  if (!value) return null;
+
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+
+    let videoId = "";
+
+    if (hostname.includes("youtu.be")) {
+      videoId = parsed.pathname.replace(/^\/+/, "").split("/")[0] || "";
+    } else if (hostname.includes("youtube.com") || hostname.includes("youtube-nocookie.com")) {
+      if (parsed.pathname.startsWith("/watch")) {
+        videoId = parsed.searchParams.get("v") || "";
+      } else if (parsed.pathname.startsWith("/embed/")) {
+        videoId = parsed.pathname.split("/embed/")[1]?.split("/")[0] || "";
+      } else if (parsed.pathname.startsWith("/shorts/")) {
+        videoId = parsed.pathname.split("/shorts/")[1]?.split("/")[0] || "";
+      } else if (parsed.pathname.startsWith("/live/")) {
+        videoId = parsed.pathname.split("/live/")[1]?.split("/")[0] || "";
+      }
+    }
+
+    videoId = videoId.replace(/[^a-zA-Z0-9_-]/g, "");
+    if (!videoId) return null;
+
+    const start = parsed.searchParams.get("t") || parsed.searchParams.get("start");
+    const embed = new URL(`https://www.youtube.com/embed/${videoId}`);
+
+    if (start) {
+      const startSeconds = Number(String(start).replace(/[^\d]/g, ""));
+      if (!Number.isNaN(startSeconds) && startSeconds > 0) {
+        embed.searchParams.set("start", String(startSeconds));
+      }
+    }
+
+    return embed.toString();
+  } catch {
+    return null;
+  }
 }
 
 function normalizeBlocks(value: unknown): ContentBlock[] {
@@ -166,6 +230,51 @@ function blocksToHtml(blocks: ContentBlock[]): string {
         case "cta":
           return `<p><a href="${data.link || "#"}">${escapeHtml(data.text || "")}</a></p>`;
 
+        case "embed": {
+          const rawUrl = String(data.url || "").trim();
+          const embedType = data.embedType || detectEmbedType(rawUrl);
+
+          if (embedType === "youtube") {
+            const embedUrl = getYouTubeEmbedUrl(rawUrl);
+            if (!embedUrl) {
+              return rawUrl
+                ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                    data.caption || rawUrl
+                  )}</a></p>`
+                : "";
+            }
+
+            return `
+              <figure>
+                <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;">
+                  <iframe
+                    src="${embedUrl}"
+                    title="${escapeHtml(data.caption || "YouTube video")}"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                ${data.caption ? `<figcaption>${escapeHtml(data.caption)}</figcaption>` : ""}
+              </figure>
+            `;
+          }
+
+          if (embedType === "googleMaps") {
+            return rawUrl
+              ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                  data.caption || "Mở Google Maps"
+                )}</a></p>`
+              : "";
+          }
+
+          return rawUrl
+            ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                data.caption || rawUrl
+              )}</a></p>`
+            : "";
+        }
+
         default:
           return "";
       }
@@ -176,32 +285,6 @@ function blocksToHtml(blocks: ContentBlock[]): string {
 function computeReadTime(englishHtml?: string, vietnameseHtml?: string) {
   const merged = `${englishHtml || ""}\n${vietnameseHtml || ""}`.trim();
   return estimateReadTime(merged);
-}
-
-function normalizeFixedPayload(data: Partial<PostInput>) {
-  const fixed = Boolean(data.fixed ?? data.isFixed ?? false);
-
-  const rawFixedKey =
-    typeof data.fixedKey === "string" ? data.fixedKey.trim() : "";
-
-  const fixedKey = fixed && rawFixedKey ? rawFixedKey : undefined;
-
-  if (fixed && !fixedKey) {
-    const err: any = new Error("Missing fixedKey for fixed post");
-    err.status = 400;
-    throw err;
-  }
-
-  if (fixedKey && !ALLOWED_FIXED_KEYS.has(fixedKey)) {
-    const err: any = new Error("Invalid fixedKey");
-    err.status = 400;
-    throw err;
-  }
-
-  return {
-    fixed,
-    fixedKey,
-  };
 }
 
 export async function listPosts(query: any = {}) {
@@ -215,8 +298,6 @@ export async function listPosts(query: any = {}) {
     subCategory,
     type,
     storeCategory,
-    fixed,
-    fixedKey,
   } = query;
 
   const filter: any = {};
@@ -245,12 +326,6 @@ export async function listPosts(query: any = {}) {
   const publishedBool = normalizeBooleanLike(published);
   if (publishedBool === true) filter.isPublished = true;
   if (publishedBool === false) filter.isPublished = false;
-
-  const fixedBool = normalizeBooleanLike(fixed);
-  if (fixedBool === true) filter.fixed = true;
-  if (fixedBool === false) filter.fixed = false;
-
-  if (fixedKey) filter.fixedKey = String(fixedKey);
 
   if (andFilters.length > 0) {
     filter.$and = andFilters;
@@ -328,7 +403,6 @@ export async function createPost(data: PostInput, _auth?: any) {
       : await createUniqueSlug(normalizedTitle || normalizedTitleVi);
 
   const isPublished = data.isPublished ?? true;
-  const normalizedFixed = normalizeFixedPayload(data);
 
   const doc = await Post.create({
     title: normalizedTitle,
@@ -347,20 +421,15 @@ export async function createPost(data: PostInput, _auth?: any) {
     coverImage: data.coverImage || "",
     thumbnail: data.coverImage || "",
     author: data.author || "Admin",
-
     category: data.category || "news",
     subCategory: data.subCategory,
     tags: data.tags || [],
-
     language: "bilingual",
     readTime: computeReadTime(normalizedContent, normalizedContentVi),
 
     isPublished,
     publishedAt: isPublished ? new Date() : null,
     views: 0,
-
-    fixed: normalizedFixed.fixed,
-    fixedKey: normalizedFixed.fixedKey,
 
     type: data.type || (data.category === "store" ? "product" : "blog"),
     storeCategory: data.storeCategory,
@@ -369,6 +438,9 @@ export async function createPost(data: PostInput, _auth?: any) {
     mapUrl: data.mapUrl || "",
     lat: data.lat,
     lng: data.lng,
+
+    fixed: data.fixed ?? data.isFixed ?? false,
+    fixedKey: data.fixedKey ?? undefined,
   });
 
   return doc;
@@ -457,27 +529,14 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
     patch.publishedAt = null;
   }
 
-  const fixedPatchProvided =
-    patch.fixed !== undefined || patch.isFixed !== undefined || patch.fixedKey !== undefined;
-
-  if (fixedPatchProvided) {
-    const fixed = patch.fixed ?? patch.isFixed ?? current.fixed ?? false;
-    const fixedKey =
-      patch.fixedKey !== undefined ? patch.fixedKey : current.fixedKey;
-
-    const normalizedFixed = normalizeFixedPayload({
-      fixed,
-      fixedKey,
-    });
-
-    patch.fixed = normalizedFixed.fixed;
-    patch.fixedKey = normalizedFixed.fixedKey;
-  }
-
   if (patch.category === "store") {
     patch.type = "product";
   } else if (patch.category) {
     patch.type = "blog";
+  }
+
+  if (patch.fixed === undefined && patch.isFixed !== undefined) {
+    patch.fixed = patch.isFixed;
   }
 
   const updated = await Post.findByIdAndUpdate(id, patch, {

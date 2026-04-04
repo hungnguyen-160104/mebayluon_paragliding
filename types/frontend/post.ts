@@ -15,6 +15,8 @@ export type PostCategory = "news" | "knowledge" | "store";
 export type PostType = "blog" | "product";
 export type SupportedLocale = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
+export type EmbedType = "youtube" | "googleMaps" | "unknown";
+
 export type ContentBlockType =
   | "heading"
   | "paragraph"
@@ -22,7 +24,8 @@ export type ContentBlockType =
   | "quote"
   | "bulletList"
   | "divider"
-  | "cta";
+  | "cta"
+  | "embed";
 
 export type ContentBlock = {
   id: string;
@@ -36,6 +39,7 @@ export type ContentBlock = {
     author?: string;
     items?: string[];
     link?: string;
+    embedType?: EmbedType;
   };
 };
 
@@ -70,6 +74,7 @@ export type Post = {
 
   fixed?: boolean;
   isFixed?: boolean;
+  fixedKey?: string | null;
 
   type?: PostType;
   storeCategory?: StoreCategory;
@@ -112,6 +117,7 @@ export type PostPayload = {
   isPublished?: boolean;
   fixed?: boolean;
   isFixed?: boolean;
+  fixedKey?: string | null;
 
   category?: PostCategory | "";
   subCategory?: KnowledgeSubCategory;

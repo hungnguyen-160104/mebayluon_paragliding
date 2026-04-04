@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Eye,
   Image as ImageIcon,
@@ -17,12 +17,14 @@ import {
   List,
   Minus,
   MousePointerClick,
+  Link2,
 } from "lucide-react";
 import api from "@/lib/api";
 import { authHeader } from "@/lib/auth";
 import type {
   ContentBlock,
   ContentBlockType,
+  EmbedType,
   KnowledgeSubCategory,
   Post,
   PostCategory,
@@ -34,17 +36,13 @@ type EditorForm = {
   title: string;
   titleVi: string;
   slug: string;
-
   excerpt: string;
   excerptVi: string;
-
   coverImage: string;
-
   category: "" | PostCategory;
   subCategory: "" | KnowledgeSubCategory;
   storeCategory: "" | StoreCategory;
   price: string;
-
   tags: string;
 };
 
@@ -100,15 +98,6 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function createParallelBlock(type: ContentBlockType = "paragraph") {
-  const id = createId();
-  const base = getDefaultBlock(type);
-  return {
-    vi: { ...base, id },
-    en: { ...getDefaultBlock(type), id },
-  };
-}
-
 function slugify(input: string) {
   return String(input || "")
     .normalize("NFD")
@@ -126,6 +115,79 @@ function stripHtml(html: string) {
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function detectEmbedType(url: string): EmbedType {
+  const value = String(url || "").trim();
+  if (!value) return "unknown";
+
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname.includes("youtube.com") ||
+      hostname.includes("youtu.be") ||
+      hostname.includes("youtube-nocookie.com")
+    ) {
+      return "youtube";
+    }
+
+    if (
+      hostname.includes("google.com") ||
+      hostname.includes("maps.google.") ||
+      hostname.includes("maps.app.goo.gl")
+    ) {
+      return "googleMaps";
+    }
+
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function getYouTubeEmbedUrl(rawUrl: string): string | null {
+  const value = String(rawUrl || "").trim();
+  if (!value) return null;
+
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+
+    let videoId = "";
+
+    if (hostname.includes("youtu.be")) {
+      videoId = parsed.pathname.replace(/^\/+/, "").split("/")[0] || "";
+    } else if (hostname.includes("youtube.com") || hostname.includes("youtube-nocookie.com")) {
+      if (parsed.pathname.startsWith("/watch")) {
+        videoId = parsed.searchParams.get("v") || "";
+      } else if (parsed.pathname.startsWith("/embed/")) {
+        videoId = parsed.pathname.split("/embed/")[1]?.split("/")[0] || "";
+      } else if (parsed.pathname.startsWith("/shorts/")) {
+        videoId = parsed.pathname.split("/shorts/")[1]?.split("/")[0] || "";
+      } else if (parsed.pathname.startsWith("/live/")) {
+        videoId = parsed.pathname.split("/live/")[1]?.split("/")[0] || "";
+      }
+    }
+
+    videoId = videoId.replace(/[^a-zA-Z0-9_-]/g, "");
+    if (!videoId) return null;
+
+    const start = parsed.searchParams.get("t") || parsed.searchParams.get("start");
+    const embed = new URL(`https://www.youtube.com/embed/${videoId}`);
+
+    if (start) {
+      const startSeconds = Number(String(start).replace(/[^\d]/g, ""));
+      if (!Number.isNaN(startSeconds) && startSeconds > 0) {
+        embed.searchParams.set("start", String(startSeconds));
+      }
+    }
+
+    return embed.toString();
+  } catch {
+    return null;
+  }
 }
 
 function getDefaultBlock(type: ContentBlockType): ContentBlock {
@@ -172,6 +234,12 @@ function getDefaultBlock(type: ContentBlockType): ContentBlock {
         type,
         data: { text: "", link: "" },
       };
+    case "embed":
+      return {
+        id: createId(),
+        type,
+        data: { url: "", caption: "", embedType: "unknown" },
+      };
     default:
       return {
         id: createId(),
@@ -179,6 +247,13 @@ function getDefaultBlock(type: ContentBlockType): ContentBlock {
         data: { text: "" },
       };
   }
+}
+
+function createParallelBlock(type: ContentBlockType = "paragraph") {
+  const id = createId();
+  const vi = { ...getDefaultBlock(type), id };
+  const en = { ...getDefaultBlock(type), id };
+  return { vi, en };
 }
 
 function normalizeBlocks(value: ContentBlock[] | undefined, fallbackText = ""): ContentBlock[] {
@@ -293,6 +368,51 @@ function blocksToHtml(blocks: ContentBlock[]): string {
         case "cta":
           return `<p><a href="${data.link || "#"}">${escapeHtml(data.text || "")}</a></p>`;
 
+        case "embed": {
+          const rawUrl = String(data.url || "").trim();
+          const embedType = data.embedType || detectEmbedType(rawUrl);
+
+          if (embedType === "youtube") {
+            const embedUrl = getYouTubeEmbedUrl(rawUrl);
+            if (!embedUrl) {
+              return rawUrl
+                ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                    data.caption || rawUrl
+                  )}</a></p>`
+                : "";
+            }
+
+            return `
+              <figure>
+                <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;">
+                  <iframe
+                    src="${embedUrl}"
+                    title="${escapeHtml(data.caption || "YouTube video")}"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                ${data.caption ? `<figcaption>${escapeHtml(data.caption)}</figcaption>` : ""}
+              </figure>
+            `;
+          }
+
+          if (embedType === "googleMaps") {
+            return rawUrl
+              ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                  data.caption || "Mở Google Maps"
+                )}</a></p>`
+              : "";
+          }
+
+          return rawUrl
+            ? `<p><a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+                data.caption || rawUrl
+              )}</a></p>`
+            : "";
+        }
+
         default:
           return "";
       }
@@ -316,6 +436,8 @@ function getBlockLabel(type: ContentBlockType) {
       return "Phân cách";
     case "cta":
       return "Nút CTA";
+    case "embed":
+      return "Nhúng link";
     default:
       return "Block";
   }
@@ -324,7 +446,7 @@ function getBlockLabel(type: ContentBlockType) {
 const BLOCK_OPTIONS: {
   type: ContentBlockType;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }[] = [
   { type: "heading", label: "Tiêu đề", icon: <Type size={18} /> },
   { type: "paragraph", label: "Đoạn văn", icon: <Type size={18} /> },
@@ -333,6 +455,7 @@ const BLOCK_OPTIONS: {
   { type: "bulletList", label: "Danh sách", icon: <List size={18} /> },
   { type: "divider", label: "Phân cách", icon: <Minus size={18} /> },
   { type: "cta", label: "Nút CTA", icon: <MousePointerClick size={18} /> },
+  { type: "embed", label: "Nhúng link", icon: <Link2 size={18} /> },
 ];
 
 export default function PostEditor({
@@ -341,7 +464,7 @@ export default function PostEditor({
   onCancel,
   saving,
 }: PostEditorProps) {
-  const initialPair = createParallelBlock("paragraph");
+  const initialPair = useMemo(() => createParallelBlock("paragraph"), []);
 
   const [form, setForm] = useState<EditorForm>(EMPTY_FORM);
   const [blocksVi, setBlocksVi] = useState<ContentBlock[]>([initialPair.vi]);
@@ -434,7 +557,7 @@ export default function PostEditor({
         body: fd,
       });
 
-      updateSharedBlockField(blockId, "url", resp.url);
+      updateSharedEmbedAwareField(blockId, "url", resp.url);
     } catch (error) {
       console.error("Upload block image failed:", error);
     }
@@ -456,11 +579,7 @@ export default function PostEditor({
     }));
   }
 
-  function updateSharedBlockField(
-    blockId: string,
-    field: string,
-    value: any
-  ) {
+  function updateSharedBlockField(blockId: string, field: string, value: any) {
     setBlocksVi((prev) =>
       prev.map((block) =>
         block.id === blockId
@@ -473,6 +592,41 @@ export default function PostEditor({
       prev.map((block) =>
         block.id === blockId
           ? { ...block, data: { ...block.data, [field]: value } }
+          : block
+      )
+    );
+  }
+
+  function updateSharedEmbedAwareField(blockId: string, field: string, value: any) {
+    const nextType =
+      field === "url" && typeof value === "string" ? detectEmbedType(value) : undefined;
+
+    setBlocksVi((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              data: {
+                ...block.data,
+                [field]: value,
+                ...(nextType ? { embedType: nextType } : {}),
+              },
+            }
+          : block
+      )
+    );
+
+    setBlocksEn((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              data: {
+                ...block.data,
+                [field]: value,
+                ...(nextType ? { embedType: nextType } : {}),
+              },
+            }
           : block
       )
     );
@@ -630,7 +784,7 @@ export default function PostEditor({
 
   async function submit(publish: boolean) {
     const mode = publish ? "publish" : "draft";
-    if (!validate(mode)) return;
+    if (!validate(mode)) return false;
 
     const payload: PostPayload = {
       title: form.title.trim(),
@@ -649,9 +803,10 @@ export default function PostEditor({
       coverImage: form.coverImage.trim() || undefined,
 
       category: form.category,
-      subCategory: (isKnowledge || isCourseInStore) && form.subCategory
-        ? form.subCategory
-        : undefined,
+      subCategory:
+        (isKnowledge || isCourseInStore) && form.subCategory
+          ? form.subCategory
+          : undefined,
 
       type: isStore ? "product" : "blog",
       storeCategory: isStore && form.storeCategory ? form.storeCategory : undefined,
@@ -666,6 +821,14 @@ export default function PostEditor({
     };
 
     await onSave(payload, publish);
+    return true;
+  }
+
+  async function handlePreview() {
+    if (!previewSlug || saving) return;
+    const saved = await submit(false);
+    if (!saved) return;
+    window.open(`/blog/${previewSlug}?preview=1`, "_blank", "noopener,noreferrer");
   }
 
   const inputClass =
@@ -704,11 +867,8 @@ export default function PostEditor({
 
             <button
               type="button"
-              onClick={() => {
-                if (!previewSlug) return;
-                window.open(`/blog/${previewSlug}`, "_blank");
-              }}
-              disabled={!previewSlug}
+              onClick={handlePreview}
+              disabled={!previewSlug || saving}
               className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
             >
               <Eye size={16} />
@@ -966,7 +1126,7 @@ export default function PostEditor({
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Nội dung bài viết song ngữ</h3>
                 <p className="text-sm text-gray-500">
-                  Người dùng chỉ cần điền nội dung vào từng block
+                  Dán link YouTube hoặc Google Maps vào block “Nhúng link”
                 </p>
               </div>
             </div>
@@ -978,6 +1138,8 @@ export default function PostEditor({
                 const listItemsEn = Array.isArray(blockEn.data.items) ? blockEn.data.items : [""];
                 const sharedUrl = block.data.url || blockEn.data.url || "";
                 const sharedLink = block.data.link || blockEn.data.link || "";
+                const sharedEmbedType =
+                  block.data.embedType || blockEn.data.embedType || detectEmbedType(sharedUrl);
 
                 return (
                   <div key={block.id} className="rounded-xl border border-gray-200 bg-gray-50">
@@ -1025,7 +1187,7 @@ export default function PostEditor({
                                 className={inputClass}
                                 value={sharedUrl}
                                 onChange={(e) =>
-                                  updateSharedBlockField(block.id, "url", e.target.value)
+                                  updateSharedEmbedAwareField(block.id, "url", e.target.value)
                                 }
                                 placeholder="https://..."
                               />
@@ -1071,6 +1233,78 @@ export default function PostEditor({
                               />
                             </div>
                           </div>
+                        </div>
+                      ) : block.type === "embed" ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className={labelClass}>Link YouTube hoặc Google Maps</label>
+                            <input
+                              className={inputClass}
+                              value={sharedUrl}
+                              onChange={(e) =>
+                                updateSharedEmbedAwareField(block.id, "url", e.target.value)
+                              }
+                              placeholder="https://youtube.com/watch?v=... hoặc https://www.google.com/maps/..."
+                            />
+                            <p className="mt-2 text-xs text-gray-500">
+                              Loại nhận diện:{" "}
+                              <span className="font-medium text-gray-700">
+                                {sharedEmbedType === "youtube"
+                                  ? "YouTube"
+                                  : sharedEmbedType === "googleMaps"
+                                  ? "Google Maps"
+                                  : "Chưa nhận diện"}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                              <label className={labelClass}>Chú thích tiếng Việt</label>
+                              <input
+                                className={inputClass}
+                                value={block.data.caption || ""}
+                                onChange={(e) =>
+                                  updateLangBlockField("vi", block.id, "caption", e.target.value)
+                                }
+                                placeholder="Ví dụ: Video bay thử / Mở vị trí trên Google Maps"
+                              />
+                            </div>
+
+                            <div>
+                              <label className={labelClass}>Caption (English)</label>
+                              <input
+                                className={inputClass}
+                                value={blockEn.data.caption || ""}
+                                onChange={(e) =>
+                                  updateLangBlockField("en", block.id, "caption", e.target.value)
+                                }
+                                placeholder="Example: Flight video / Open location on Google Maps"
+                              />
+                            </div>
+                          </div>
+
+                          {sharedEmbedType === "youtube" && getYouTubeEmbedUrl(sharedUrl) && (
+                            <div className="overflow-hidden rounded-xl border border-gray-200 bg-black">
+                              <div className="aspect-video">
+                                <iframe
+                                  src={getYouTubeEmbedUrl(sharedUrl)!}
+                                  title={
+                                    block.data.caption || blockEn.data.caption || "YouTube preview"
+                                  }
+                                  className="h-full w-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  allowFullScreen
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {sharedEmbedType === "googleMaps" && sharedUrl && (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                              Google Maps sẽ mở ra ngoài website bằng nút bấm, không nhúng trực tiếp.
+                            </div>
+                          )}
                         </div>
                       ) : block.type === "bulletList" ? (
                         <div className="space-y-3">
