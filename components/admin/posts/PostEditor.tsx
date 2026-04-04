@@ -100,6 +100,15 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function createParallelBlock(type: ContentBlockType = "paragraph") {
+  const id = createId();
+  const base = getDefaultBlock(type);
+  return {
+    vi: { ...base, id },
+    en: { ...getDefaultBlock(type), id },
+  };
+}
+
 function slugify(input: string) {
   return String(input || "")
     .normalize("NFD")
@@ -183,7 +192,7 @@ function normalizeBlocks(value: ContentBlock[] | undefined, fallbackText = ""): 
 
   const fallback = stripHtml(fallbackText);
   if (!fallback) {
-    return [getDefaultBlock("paragraph")];
+    return [createParallelBlock("paragraph").vi];
   }
 
   return [
@@ -332,9 +341,11 @@ export default function PostEditor({
   onCancel,
   saving,
 }: PostEditorProps) {
+  const initialPair = createParallelBlock("paragraph");
+
   const [form, setForm] = useState<EditorForm>(EMPTY_FORM);
-  const [blocksVi, setBlocksVi] = useState<ContentBlock[]>([getDefaultBlock("paragraph")]);
-  const [blocksEn, setBlocksEn] = useState<ContentBlock[]>([getDefaultBlock("paragraph")]);
+  const [blocksVi, setBlocksVi] = useState<ContentBlock[]>([initialPair.vi]);
+  const [blocksEn, setBlocksEn] = useState<ContentBlock[]>([initialPair.en]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -374,9 +385,9 @@ export default function PostEditor({
     setForm(EMPTY_FORM);
     setSlugTouched(false);
     setErrors({});
-    const p = getDefaultBlock("paragraph");
-    setBlocksVi([{ ...p, id: createId() }]);
-    setBlocksEn([{ ...p, id: createId() }]);
+    const pair = createParallelBlock("paragraph");
+    setBlocksVi([pair.vi]);
+    setBlocksEn([pair.en]);
   }, [post]);
 
   const isKnowledge = form.category === "knowledge";
@@ -485,25 +496,25 @@ export default function PostEditor({
   }
 
   function addBlock(type: ContentBlockType) {
-    const vi = getDefaultBlock(type);
-    const en = getDefaultBlock(type);
-    const sharedId = createId();
-
-    setBlocksVi((prev) => [...prev, { ...vi, id: sharedId }]);
-    setBlocksEn((prev) => [...prev, { ...en, id: sharedId }]);
+    const pair = createParallelBlock(type);
+    setBlocksVi((prev) => [...prev, pair.vi]);
+    setBlocksEn((prev) => [...prev, pair.en]);
     setShowAddBlockModal(false);
   }
 
   function removeBlock(blockId: string) {
-    setBlocksVi((prev) => {
-      const next = prev.filter((block) => block.id !== blockId);
-      return next.length ? next : [getDefaultBlock("paragraph")];
-    });
+    const nextVi = blocksVi.filter((block) => block.id !== blockId);
+    const nextEn = blocksEn.filter((block) => block.id !== blockId);
 
-    setBlocksEn((prev) => {
-      const next = prev.filter((block) => block.id !== blockId);
-      return next.length ? next : [getDefaultBlock("paragraph")];
-    });
+    if (!nextVi.length || !nextEn.length) {
+      const pair = createParallelBlock("paragraph");
+      setBlocksVi([pair.vi]);
+      setBlocksEn([pair.en]);
+      return;
+    }
+
+    setBlocksVi(nextVi);
+    setBlocksEn(nextEn);
   }
 
   function moveBlock(blockId: string, direction: "up" | "down") {
@@ -670,9 +681,6 @@ export default function PostEditor({
             <h2 className="text-lg font-semibold text-gray-900">
               {post ? "Cập nhật bài viết" : "Tạo bài viết mới"}
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">
-              
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -954,22 +962,13 @@ export default function PostEditor({
           </section>
 
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="mb-4">
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Nội dung bài viết song ngữ</h3>
                 <p className="text-sm text-gray-500">
                   Người dùng chỉ cần điền nội dung vào từng block
                 </p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setShowAddBlockModal(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-red-600 transition-colors hover:bg-red-100"
-              >
-                <Plus size={16} />
-                <span>Thêm block mới</span>
-              </button>
             </div>
 
             <div className="space-y-4">
@@ -1276,6 +1275,17 @@ export default function PostEditor({
                   </div>
                 );
               })}
+            </div>
+
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowAddBlockModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-red-600 transition-colors hover:bg-red-100"
+              >
+                <Plus size={16} />
+                <span>Thêm block phía dưới</span>
+              </button>
             </div>
 
             {(errors.contentVi || errors.content) && (

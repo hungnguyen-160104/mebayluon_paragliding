@@ -62,7 +62,7 @@ export interface IPost {
   views?: number;
 
   fixed?: boolean;
-  isFixed?: boolean; // alias của fixed
+  isFixed?: boolean;
   fixedKey?: FixedKey | null;
 
   type?: PostType;
@@ -81,9 +81,23 @@ export interface IPost {
 
 const PostSchema = new Schema<IPost>(
   {
-    title: { type: String, required: true, trim: true },
-    titleVi: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, index: true, trim: true },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    titleVi: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+    },
 
     content: { type: String, default: "" },
     contentVi: { type: String, default: "" },
@@ -110,7 +124,11 @@ const PostSchema = new Schema<IPost>(
     },
     tags: [{ type: String }],
 
-    language: { type: String, default: "bilingual" },
+    language: {
+      type: String,
+      enum: ["bilingual", "vi", "en"],
+      default: "bilingual",
+    },
     readTime: { type: Number, default: 1 },
 
     isPublished: { type: Boolean, default: false },
@@ -121,10 +139,11 @@ const PostSchema = new Schema<IPost>(
       default: false,
       alias: "isFixed",
     },
+
     fixedKey: {
       type: String,
       enum: FIXED_KEYS,
-      default: null,
+      default: undefined,
     },
 
     type: { type: String, enum: ["blog", "product"], default: "blog" },
@@ -153,6 +172,18 @@ PostSchema.index({ category: 1, subCategory: 1, isPublished: 1, createdAt: -1 })
 PostSchema.index({ type: 1, storeCategory: 1, isPublished: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, publishedAt: -1, createdAt: -1 });
 PostSchema.index({ fixed: 1, fixedKey: 1, isPublished: 1, createdAt: -1 });
+
+PostSchema.index(
+  { fixedKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      fixed: true,
+      fixedKey: { $exists: true, $ne: null },
+    },
+    name: "fixedKey_unique_when_fixed",
+  }
+);
 
 export const Post =
   (mongoose.models.Post as mongoose.Model<IPost>) ||

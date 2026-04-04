@@ -34,7 +34,20 @@ export type PostInput = {
   lng?: number;
 
   language?: string;
+
+  fixed?: boolean;
+  isFixed?: boolean;
+  fixedKey?: string | null;
 };
+
+const ALLOWED_FIXED_KEYS = new Set([
+  "hoa-binh",
+  "ha-noi",
+  "mu-cang-chai",
+  "yen-bai",
+  "da-nang",
+  "sapa",
+]);
 
 function stripHtml(html: string): string {
   return String(html || "")
@@ -165,6 +178,32 @@ function computeReadTime(englishHtml?: string, vietnameseHtml?: string) {
   return estimateReadTime(merged);
 }
 
+function normalizeFixedPayload(data: Partial<PostInput>) {
+  const fixed = Boolean(data.fixed ?? data.isFixed ?? false);
+
+  const rawFixedKey =
+    typeof data.fixedKey === "string" ? data.fixedKey.trim() : "";
+
+  const fixedKey = fixed && rawFixedKey ? rawFixedKey : undefined;
+
+  if (fixed && !fixedKey) {
+    const err: any = new Error("Missing fixedKey for fixed post");
+    err.status = 400;
+    throw err;
+  }
+
+  if (fixedKey && !ALLOWED_FIXED_KEYS.has(fixedKey)) {
+    const err: any = new Error("Invalid fixedKey");
+    err.status = 400;
+    throw err;
+  }
+
+  return {
+    fixed,
+    fixedKey,
+  };
+}
+
 export async function listPosts(query: any = {}) {
   const {
     page = 1,
@@ -176,6 +215,8 @@ export async function listPosts(query: any = {}) {
     subCategory,
     type,
     storeCategory,
+    fixed,
+    fixedKey,
   } = query;
 
   const filter: any = {};
@@ -204,6 +245,12 @@ export async function listPosts(query: any = {}) {
   const publishedBool = normalizeBooleanLike(published);
   if (publishedBool === true) filter.isPublished = true;
   if (publishedBool === false) filter.isPublished = false;
+
+  const fixedBool = normalizeBooleanLike(fixed);
+  if (fixedBool === true) filter.fixed = true;
+  if (fixedBool === false) filter.fixed = false;
+
+  if (fixedKey) filter.fixedKey = String(fixedKey);
 
   if (andFilters.length > 0) {
     filter.$and = andFilters;
@@ -281,6 +328,7 @@ export async function createPost(data: PostInput, _auth?: any) {
       : await createUniqueSlug(normalizedTitle || normalizedTitleVi);
 
   const isPublished = data.isPublished ?? true;
+  const normalizedFixed = normalizeFixedPayload(data);
 
   const doc = await Post.create({
     title: normalizedTitle,
@@ -299,15 +347,20 @@ export async function createPost(data: PostInput, _auth?: any) {
     coverImage: data.coverImage || "",
     thumbnail: data.coverImage || "",
     author: data.author || "Admin",
+
     category: data.category || "news",
     subCategory: data.subCategory,
     tags: data.tags || [],
+
     language: "bilingual",
     readTime: computeReadTime(normalizedContent, normalizedContentVi),
 
     isPublished,
     publishedAt: isPublished ? new Date() : null,
     views: 0,
+
+    fixed: normalizedFixed.fixed,
+    fixedKey: normalizedFixed.fixedKey,
 
     type: data.type || (data.category === "store" ? "product" : "blog"),
     storeCategory: data.storeCategory,
@@ -404,13 +457,34 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
     patch.publishedAt = null;
   }
 
+  const fixedPatchProvided =
+    patch.fixed !== undefined || patch.isFixed !== undefined || patch.fixedKey !== undefined;
+
+  if (fixedPatchProvided) {
+    const fixed = patch.fixed ?? patch.isFixed ?? current.fixed ?? false;
+    const fixedKey =
+      patch.fixedKey !== undefined ? patch.fixedKey : current.fixedKey;
+
+    const normalizedFixed = normalizeFixedPayload({
+      fixed,
+      fixedKey,
+    });
+
+    patch.fixed = normalizedFixed.fixed;
+    patch.fixedKey = normalizedFixed.fixedKey;
+  }
+
   if (patch.category === "store") {
     patch.type = "product";
   } else if (patch.category) {
     patch.type = "blog";
   }
 
-  const updated = await Post.findByIdAndUpdate(id, patch, { new: true });
+  const updated = await Post.findByIdAndUpdate(id, patch, {
+    new: true,
+    runValidators: true,
+  });
+
   if (!updated) {
     const err: any = new Error("Post not found");
     err.status = 404;
