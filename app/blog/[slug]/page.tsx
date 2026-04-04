@@ -1,102 +1,240 @@
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
+import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import RelatedPosts from "@/components/posts/RelatedPosts";
-import { getPostBySlug } from "@/lib/posts-data";
+import { getPostBySlug, getPosts } from "@/lib/posts-data";
+import type { Post, SupportedLocale } from "@/types/frontend/post";
 
-/** ===== Types ===== */
-type Post = {
-  _id: string;
-  title: string;
-  content?: string;
-  coverImage?: string;
-  author?: string;
-  category?: string | string[];
-  tags?: string[];
-  language?: string;
-  slug: string;
-  isPublished?: boolean;
-  createdAt: string;
-  publishedAt?: string;
-  views?: number;
-};
+type Lang = SupportedLocale;
 
-/** ===== Fetch post by slug ===== */
-async function fetchPostBySlug(slug: string): Promise<Post | null> {
-  return (await getPostBySlug(slug)) as Post | null;
+function getSafeLang(v: unknown): Lang {
+  const l = String(v ?? "vi") as Lang;
+  return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(l) ? l : "vi";
 }
 
-/** ===== SEO: generateMetadata ===== */
+function stripHtml(html: string) {
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function pickTitle(post: Post, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: Post, isVietnamese: boolean) {
+  if (isVietnamese) {
+    if (post.excerptVi?.trim()) return post.excerptVi.trim();
+    const text = stripHtml(post.contentVi || post.content || "");
+    return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
+  }
+
+  if (post.excerpt?.trim()) return post.excerpt.trim();
+  const text = stripHtml(post.content || post.contentVi || "");
+  return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
+}
+
+function pickContent(post: Post, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.contentVi || post.content || ""
+    : post.content || post.contentVi || "";
+}
+
+const LOCALE_BY_LANG: Record<Lang, string> = {
+  vi: "vi-VN",
+  en: "en-US",
+  fr: "fr-FR",
+  ru: "ru-RU",
+  zh: "zh-CN",
+  hi: "hi-IN",
+};
+
+const UI: Record<
+  Lang,
+  {
+    back: string;
+    related: string;
+    unknownDate: string;
+    views: (n: number) => string;
+    noContent: string;
+  }
+> = {
+  vi: {
+    back: "Quay lại",
+    related: "Bài viết liên quan",
+    unknownDate: "Không rõ ngày đăng",
+    views: (n) => `${n} lượt xem`,
+    noContent: "Bài viết chưa có nội dung.",
+  },
+  en: {
+    back: "Back",
+    related: "Related posts",
+    unknownDate: "Date unknown",
+    views: (n) => `${n} views`,
+    noContent: "This article has no content yet.",
+  },
+  fr: {
+    back: "Retour",
+    related: "Articles associés",
+    unknownDate: "Date inconnue",
+    views: (n) => `${n} vues`,
+    noContent: "Cet article n’a pas encore de contenu.",
+  },
+  ru: {
+    back: "Назад",
+    related: "Похожие статьи",
+    unknownDate: "Дата неизвестна",
+    views: (n) => `${n} просмотров`,
+    noContent: "У этой статьи пока нет содержимого.",
+  },
+  zh: {
+    back: "返回",
+    related: "相关文章",
+    unknownDate: "日期未知",
+    views: (n) => `${n} 次浏览`,
+    noContent: "这篇文章还没有内容。",
+  },
+  hi: {
+    back: "वापस जाएँ",
+    related: "संबंधित पोस्ट",
+    unknownDate: "तारीख अज्ञात",
+    views: (n) => `${n} व्यूज़`,
+    noContent: "इस लेख में अभी सामग्री नहीं है।",
+  },
+};
+
+async function getCurrentLang() {
+  const cookieStore = await cookies();
+  const raw =
+    cookieStore.get("language")?.value ??
+    cookieStore.get("Language")?.value ??
+    cookieStore.get("lang")?.value;
+
+  return getSafeLang(raw);
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await fetchPostBySlug(slug).catch(() => null);
+  const lang = await getCurrentLang();
+  const isVietnamese = lang === "vi";
+
+  const post = (await getPostBySlug(slug, {
+    publishedOnly: true,
+  })) as Post | null;
 
   if (!post) {
-    return { title: "Bài viết không tồn tại" };
+    return {
+      title: "Article not found",
+    };
   }
 
-  const plain = String(post.content || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const desc = plain.slice(0, 160);
+  const title = pickTitle(post, isVietnamese);
+  const description = pickExcerpt(post, isVietnamese);
 
   return {
-    title: post.title,
-    description: desc,
+    title,
+    description,
     openGraph: {
-      title: post.title,
-      description: desc,
+      title,
+      description,
       images: post.coverImage ? [{ url: post.coverImage }] : undefined,
     },
   };
 }
 
-/**
- * ===== Page: Blog post detail =====
- * Ảnh bìa hiển thị full chiều ngang, giữ nguyên tỉ lệ, không crop
- */
 export default async function BlogPostPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await fetchPostBySlug(slug);
+  const lang = await getCurrentLang();
+  const isVietnamese = lang === "vi";
+  const ui = UI[lang];
+  const locale = LOCALE_BY_LANG[lang];
+
+  const post = (await getPostBySlug(slug, {
+    publishedOnly: true,
+  })) as Post | null;
 
   if (!post) notFound();
+
+  const relatedResp = await getPosts({
+    category: String(post.category || "news"),
+    type: "blog",
+    isPublished: true,
+    limit: 5,
+    sort: "-publishedAt,-createdAt",
+    excludeSlug: post.slug,
+  });
+
+  const relatedPosts = ((relatedResp.items ?? []) as Post[]).slice(0, 4);
+
+  const title = pickTitle(post, isVietnamese);
+  const excerpt = pickExcerpt(post, isVietnamese);
+  const content = pickContent(post, isVietnamese);
+  const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+  const publishedLabel =
+    post.publishedAt || post.createdAt
+      ? new Date(post.publishedAt || post.createdAt).toLocaleDateString(locale, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : ui.unknownDate;
 
   return (
     <main
       className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
-      style={{
-        backgroundImage: "url('/images/mebayluon.jpg')",
-      }}
+      style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
     >
       <div className="absolute inset-0 z-0 bg-black/30" />
 
-      <div className="container mx-auto relative z-10 px-4 pt-28 pb-16">
-        <div className="max-w-none rounded-2xl border border-white/10 bg-black/20 p-6 text-white shadow-xl backdrop-blur-lg md:p-10">
-          <h1 className="not-prose mb-4 text-3xl font-bold text-white md:text-4xl">
-            {post.title}
-          </h1>
+      <div className="container relative z-10 mx-auto px-4 pb-16 pt-28">
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-white shadow-xl backdrop-blur-lg md:p-10">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <Link
+              href="/blog"
+              className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            >
+              ← {ui.back}
+            </Link>
 
-          <div className="not-prose mb-6 text-sm text-gray-300">
-            {new Date(post.publishedAt ?? post.createdAt).toLocaleDateString(
-              "vi-VN"
-            )}{" "}
-            • {post.views ?? 0} lượt xem
+            {post.category && (
+              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
+                {String(post.category)}
+              </span>
+            )}
           </div>
 
-          {post.coverImage && (
-            <div className="not-prose mb-6 w-full overflow-hidden rounded-lg bg-white/5">
+          <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl">
+            {title}
+          </h1>
+
+          {excerpt && (
+            <p className="mb-6 max-w-3xl text-lg leading-relaxed text-white/85">
+              {excerpt}
+            </p>
+          )}
+
+          <div className="mb-6 text-sm text-gray-300">
+            {publishedLabel} • {ui.views(Number(post.views || 0))}
+          </div>
+
+          {cover && (
+            <div className="mb-8 w-full overflow-hidden rounded-lg bg-white/5">
               <Image
-                src={post.coverImage}
-                alt={post.title}
+                src={cover}
+                alt={title}
                 width={1600}
                 height={900}
                 priority
@@ -109,21 +247,71 @@ export default async function BlogPostPage({
             </div>
           )}
 
-          <article
-            className="prose prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: String(post.content || "") }}
-          />
+          <article className="prose prose-invert max-w-none">
+            {content ? (
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            ) : (
+              <p>{ui.noContent}</p>
+            )}
+          </article>
 
-          <hr className="my-8" />
+          {Array.isArray(post.tags) && post.tags.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-2">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/90"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
-          <div className="not-prose text-white">
-            <RelatedPosts
-              idOrSlug={post._id || post.slug}
-              title="Bài viết liên quan"
-              limit={4}
-              hrefBuilder={(s) => `/blog/${s}`}
-            />
-          </div>
+          {relatedPosts.length > 0 && (
+            <>
+              <hr className="my-10 border-white/15" />
+
+              <section>
+                <h2 className="mb-6 text-2xl font-bold text-white">{ui.related}</h2>
+
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                  {relatedPosts.map((item) => {
+                    const itemTitle = pickTitle(item, isVietnamese);
+                    const itemExcerpt = pickExcerpt(item, isVietnamese);
+                    const itemCover =
+                      item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
+
+                    return (
+                      <Link
+                        key={item._id || item.slug}
+                        href={`/blog/${item.slug}`}
+                        className="group overflow-hidden rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:bg-white/20 hover:shadow-xl"
+                      >
+                        <div className="relative h-44 w-full overflow-hidden">
+                          <Image
+                            src={itemCover}
+                            alt={itemTitle}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
+
+                        <div className="p-4">
+                          <h3 className="mb-2 line-clamp-2 text-base font-semibold text-white transition-colors group-hover:text-red-300">
+                            {itemTitle}
+                          </h3>
+                          <p className="line-clamp-3 text-sm text-white/75">
+                            {itemExcerpt}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </div>
     </main>

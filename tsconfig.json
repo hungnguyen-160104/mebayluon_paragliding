@@ -15,7 +15,6 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
@@ -27,7 +26,7 @@
         "./types/frontend/*"
       ]
     },
-    // Enhanced strict checking
+
     "noImplicitAny": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
@@ -41,7 +40,6 @@
       "node",
       "jest"
     ],
-    // ✅ thêm
     "incremental": true,
     "plugins": [
       {

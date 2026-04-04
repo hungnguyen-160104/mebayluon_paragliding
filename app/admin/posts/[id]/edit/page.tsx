@@ -3,291 +3,173 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import PostEditor from "@/components/admin/posts/PostEditor";
 import api from "@/lib/api";
 import { authHeader, getToken } from "@/lib/auth";
+import type { Post, PostPayload } from "@/types/frontend/post";
 
-// dùng any để tương thích các field mở rộng
-type AnyPost = any;
-
-export default function EditPostPage() {
+export default function AdminEditPostPage() {
   const router = useRouter();
-  const { id } = useParams();
-  const [form, setForm] = useState<AnyPost | null>(null);
+  const params = useParams<{ id: string }>();
+  const postId = String(params?.id || "");
+
+  const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Trạng thái upload ảnh
-  const [uploading, setUploading] = useState(false);
-  const [uploadErr, setUploadErr] = useState<string | null>(null);
-
-  // Kiểm tra token + tải bài viết
   useEffect(() => {
     if (!getToken()) {
       router.replace("/admin/login");
       return;
     }
-    (async () => {
+
+    if (!postId) {
+      router.replace("/admin/posts");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPost() {
+      setLoading(true);
       try {
-        const res = await api(`/api/posts/${id}`, {
+        const data = await api<Post>(`/api/posts/${postId}`, {
           headers: { ...authHeader() },
         });
-        setForm(res);
-      } catch (e: any) {
-        setErr(e?.message || "Không tải được bài viết");
+
+        if (!cancelled) {
+          setPost(data);
+        }
+      } catch (err: any) {
+        console.error("Load post failed:", err);
+        if (!cancelled) {
+          setToast({
+            type: "error",
+            message: err?.message || "Không thể tải bài viết",
+          });
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-    })();
-  }, [id, router]);
-
-  // Upload ảnh từ file -> Cloudinary (qua backend)
-  async function handlePickFile(file: File) {
-    if (!file) return;
-    setUploading(true);
-    setUploadErr(null);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-
-      const resp = await api<{ url: string; publicId?: string }>("/api/uploads/image", {
-        method: "POST",
-        headers: { ...authHeader() },
-        body: fd,
-      });
-
-      setForm((f: AnyPost) => ({ ...(f || {}), coverImage: resp.url }));
-    } catch (e: any) {
-      setUploadErr(e?.message || "Upload ảnh thất bại");
-    } finally {
-      setUploading(false);
     }
+
+    loadPost();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [postId, router]);
+
+  function showToast(type: "success" | "error", message: string) {
+    setToast({ type, message });
+    window.setTimeout(() => setToast(null), 3500);
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form) return;
-    setLoading(true);
-    setErr(null);
-    try {
-      // Remove fixed post fields before sending
-      const { isFixed, fixedKey, ...payload } = form;
+  async function handleSave(data: PostPayload, publish: boolean) {
+    if (!postId) return;
 
-      await api(`/api/posts/${id}`, {
+    setSaving(true);
+
+    try {
+      const payload = {
+        ...data,
+        isPublished: publish,
+      };
+
+      const updated = await api<Post>(`/api/posts/${postId}`, {
         method: "PUT",
-        headers: { ...authHeader() },
+        headers: {
+          ...authHeader(),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
-      router.replace("/admin/dashboard");
-    } catch (e: any) {
-      setErr(e?.message || "Không lưu được bài viết");
+
+      setPost(updated);
+
+      showToast(
+        "success",
+        publish ? "Đã cập nhật và xuất bản bài viết!" : "Đã lưu bản nháp!"
+      );
+    } catch (err: any) {
+      console.error("Update post failed:", err);
+      showToast("error", err?.message || "Không thể cập nhật bài viết");
+      throw err;
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
-  if (loading) return <CenteredMessage message="Đang tải bài viết..." />;
-  if (err && !form) return <CenteredMessage message={err} type="error" />;
-  if (!form) return <CenteredMessage message="Không tìm thấy bài viết." type="error" />;
-
-  const glassInputStyle = `
-    w-full rounded-lg px-3 py-2 bg-white/30 border border-white/40 shadow-sm
-    text-gray-900 placeholder-gray-600
-    focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
-    transition-colors duration-200
-  `;
+  function handleCancel() {
+    router.push("/admin/posts");
+  }
 
   return (
-    <div
-      className="fixed inset-0 flex flex-col items-center justify-start pt-24 pb-8 px-4 md:px-8 overflow-y-auto bg-cover bg-center"
-      style={{ backgroundImage: "url('/hinh-nen-3.jpg')" }}
-    >
-      <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
+    <div className="min-h-screen bg-gray-100">
+      <header className="border-b border-gray-200 bg-white px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center gap-4">
+          <Link
+            href="/admin/posts"
+            className="flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
+          >
+            <ArrowLeft size={20} />
+            <span>Quay lại quản lý bài viết</span>
+          </Link>
 
-      <div
-        className="relative z-10 w-full max-w-4xl p-6 md:p-8 rounded-2xl
-                   bg-white/15 backdrop-blur-xl border border-white/20 shadow-lg text-gray-800"
-      >
-        <h2 className="text-3xl font-bold mb-6 text-gray-900 drop-shadow-lg">Sửa bài viết</h2>
+          <div className="h-6 w-px bg-gray-200" />
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          {/* Title */}
           <div>
-            <label className="block text-sm font-medium mb-1.5 text-gray-800">Tiêu đề</label>
-            <input
-              className={glassInputStyle}
-              value={form.title || ""}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              required
-            />
-          </div>
-
-          {/* Cover: URL + Nút upload Cloudinary */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-800">Ảnh cover</label>
-
-            {/* Nhập URL thủ công */}
-            <input
-              className={glassInputStyle}
-              value={form.coverImage || ""}
-              onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
-              placeholder="Dán link ảnh (https://...) hoặc dùng nút tải ảnh lên bên dưới"
-            />
-
-            {/* Nút tải ảnh lên Cloudinary */}
-            <div className="flex items-center gap-3">
-              <label className="inline-flex items-center gap-2 rounded-lg bg-white/40 border border-white/50 px-4 py-2.5 text-gray-900 cursor-pointer hover:bg-white/60">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handlePickFile(f);
-                    e.currentTarget.value = "";
-                  }}
-                />
-                <span>Tải ảnh lên Cloudinary</span>
-              </label>
-
-              {uploading && <span className="text-sm text-gray-800">Đang tải ảnh…</span>}
-              {uploadErr && <span className="text-sm text-red-700">{uploadErr}</span>}
-            </div>
-
-            {/* Preview */}
-            {form.coverImage && (
-              <div className="rounded-lg border border-white/30 bg-white/20 p-3">
-                <img
-                  src={form.coverImage}
-                  alt="preview"
-                  className="max-h-48 rounded-lg shadow"
-                />
-                <p className="text-xs text-gray-700 mt-1 break-all">{form.coverImage}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Danh mục */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-gray-800">Danh mục</label>
-            <select
-              className={glassInputStyle}
-              value={form.category || ""}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-            >
-              <option value="">Chọn danh mục</option>
-              <option value="news">Tin tức</option>
-              <option value="knowledge">Kiến thức dù lượn - Học bay</option>
-              <option value="store">Cửa hàng</option>
-            </select>
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-gray-800">
-              Tags (phân cách bằng dấu phẩy)
-            </label>
-            <input
-              className={glassInputStyle}
-              value={(form.tags || []).join(", ")}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  tags: e.target.value
-                    .split(",")
-                    .map((s: string) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-              placeholder="ví dụ: dù lượn, sapa, kinh nghiệm"
-            />
-          </div>
-
-          {/* Content */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-gray-800">Nội dung (HTML)</label>
-            <textarea
-              className={`${glassInputStyle} min-h-[250px] md:min-h-[300px]`}
-              value={form.content || ""}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              required
-            />
-          </div>
-
-          {/* Options */}
-          <div className="flex flex-wrap items-center gap-4 pt-2">
-            <div>
-              <label className="text-sm font-medium text-gray-800 mr-2">Ngôn ngữ:</label>
-              <select
-                className="rounded-lg px-2 py-1 bg-white/30 border border-white/40 shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                value={form.language || "vi"}
-                onChange={(e) => setForm({ ...form, language: e.target.value })}
-              >
-                <option value="vi">vi</option>
-                <option value="en">en</option>
-              </select>
-            </div>
-            <label className="text-sm font-medium text-gray-800 flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded text-blue-500 border-white/40 focus:ring-blue-400"
-                checked={!!form.isPublished}
-                onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
-              />
-              Xuất bản
-            </label>
-          </div>
-
-          {/* Error */}
-          {err && (
-            <p className="text-red-700 font-medium text-sm p-3 bg-red-100/50 rounded-lg border border-red-300">
-              {err}
+            <h1 className="text-lg font-semibold text-gray-900">Chỉnh sửa bài viết</h1>
+            <p className="text-xs text-gray-500">
+              Cập nhật nội dung song ngữ Việt / Anh
             </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-4 pt-4">
-            <button
-              className="rounded-xl bg-blue-500 border border-blue-300 text-white px-6 py-2.5 font-medium shadow-md
-                         hover:bg-blue-600 transition-colors duration-300
-                         disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? "Đang lưu…" : "Lưu thay đổi"}
-            </button>
-            <Link
-              href="/admin/dashboard"
-              className="rounded-xl bg-white/40 border border-white/50 text-gray-900 px-6 py-2.5 font-medium shadow-md
-                         hover:bg-white/60 transition-colors duration-300"
-            >
-              Huỷ
-            </Link>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+        </div>
+      </header>
 
-/** Component hiển thị thông báo ở giữa màn hình */
-function CenteredMessage({
-  message,
-  type = "info",
-}: {
-  message: string;
-  type?: "info" | "error";
-}) {
-  const textColor = type === "error" ? "text-red-700" : "text-gray-900";
-  return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: "url('/hinh-nen.jpg')" }}
-    >
-      <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
-      <div
-        className="relative z-10 p-8 rounded-2xl bg-white/30 backdrop-blur-xl
-                   border border-white/40 shadow-lg"
-      >
-        <p className={`text-lg font-medium ${textColor}`}>{message}</p>
+      {toast && (
+        <div
+          className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-white shadow-lg ${
+            toast.type === "success" ? "bg-green-500" : "bg-red-500"
+          }`}
+        >
+          {toast.type === "error" && <AlertCircle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-7xl">
+        {loading ? (
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+              <p className="mt-3 text-sm text-gray-500">Đang tải bài viết...</p>
+            </div>
+          </div>
+        ) : post ? (
+          <PostEditor
+            post={post}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            saving={saving}
+          />
+        ) : (
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-500">Không tìm thấy bài viết</p>
+              <Link
+                href="/admin/posts"
+                className="mt-4 inline-block rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+              >
+                Quay lại
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

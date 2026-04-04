@@ -825,8 +825,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         controlType: "checkbox",
         defaultSelected: true,
-        priceVND: 130_000,
-        priceUSD: 5,
+        priceVND: 150_000,
+        priceUSD: 6,
       },
       {
         key: "ha_noi_sunset",

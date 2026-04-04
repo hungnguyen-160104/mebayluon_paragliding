@@ -21,6 +21,7 @@ type Contact = {
   pickupLocation?: string;
   specialRequest?: string;
 };
+
 type Guest = {
   fullName?: string;
   dob?: string;
@@ -66,8 +67,8 @@ type SelectedServiceLine = {
 };
 
 type Payload = {
-  location?: string;        // key
-  locationName?: string;    // tên hiển thị
+  location?: string; // key
+  locationName?: string; // tên hiển thị
   packageKey?: string;
   flightTypeKey?: string;
   packageLabel?: string;
@@ -80,8 +81,8 @@ type Payload = {
   guests?: Guest[];
   services?: Record<string, ServiceSelection>;
   selectedServices?: SelectedServiceLine[];
-  addons?: AddonsBool;      // backward
-  addonsQty?: AddonsQty;    // NEW
+  addons?: AddonsBool; // backward
+  addonsQty?: AddonsQty; // NEW
   price?: Price;
   createdAt?: string;
 };
@@ -97,8 +98,53 @@ function acceptedKeys(): string[] {
     ? ACCEPTED_KEYS_ENV.filter((k) => keys.includes(k))
     : keys;
 }
+
 const nameOf = (k?: string, fallback?: string) =>
   (k && (spots as Record<string, string>)[k]) || fallback || (k || "—");
+
+/** ============ Booking code helpers ============ */
+const BOOKING_CODE_PREFIX: Record<string, string> = {
+  "HÀ NỘI": "HN",
+  "ĐÈO KHAU PHẠ": "DKP",
+  "SAPA": "SAPA",
+  "HÀ GIANG": "HG",
+  "ĐÀ NẴNG": "DN",
+};
+
+function toBookingDatePart(dateISO?: string): string {
+  if (!dateISO) return "";
+
+  // YYYY-MM-DD -> DDMM
+  const m = String(dateISO).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const [, , mm, dd] = m;
+    return `${dd}${mm}`;
+  }
+
+  const d = new Date(dateISO);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}${mm}`;
+}
+
+function toPhoneDigits(phone?: string): string {
+  return String(phone || "").replace(/\D/g, "");
+}
+
+function buildBookingCode(input: {
+  locationName?: string;
+  dateISO?: string;
+  phone?: string;
+}) {
+  const locationName = String(input.locationName || "").trim().toUpperCase();
+  const prefix = BOOKING_CODE_PREFIX[locationName] || "BOOK";
+  const datePart = toBookingDatePart(input.dateISO);
+  const phonePart = toPhoneDigits(input.phone);
+
+  return `${prefix}${datePart}${phonePart}`;
+}
 
 function clampInt(v: unknown, min: number, max: number): number {
   const n = typeof v === "number" ? v : Number(v);
@@ -117,18 +163,28 @@ function fmtMoney(n?: number, currency?: string) {
 
 async function sendTelegramToAll(text: string, html = true) {
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
-  const ids = (process.env.TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const ids = (process.env.TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   if (!token || ids.length === 0) {
     return [{ ok: false, error: "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_IDS" }];
   }
+
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   const results = [];
+
   for (const chat_id of ids) {
     try {
       const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id, text, parse_mode: html ? "HTML" : undefined }),
+        body: JSON.stringify({
+          chat_id,
+          text,
+          parse_mode: html ? "HTML" : undefined,
+        }),
       });
       const j = await r.json();
       results.push({ ok: !!j.ok, chat_id, raw: j });
@@ -136,6 +192,7 @@ async function sendTelegramToAll(text: string, html = true) {
       results.push({ ok: false, chat_id, error: e?.message || String(e) });
     }
   }
+
   return results;
 }
 
@@ -174,7 +231,7 @@ async function verifyTurnstile(
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
     console.warn("[Turnstile] TURNSTILE_SECRET_KEY not set – skipping verification");
-    return { success: true }; // Cho qua nếu chưa cấu hình (dev mode)
+    return { success: true };
   }
 
   const formData = new URLSearchParams();
@@ -209,11 +266,20 @@ export async function POST(req: NextRequest) {
 
     // ─── Turnstile verification (anti-bot) ───
     const turnstileToken = body?.turnstileToken;
-    console.log("[BookingCreate] Turnstile token received:", turnstileToken ? `${turnstileToken.substring(0, 20)}... (len=${turnstileToken.length})` : "MISSING");
+    console.log(
+      "[BookingCreate] Turnstile token received:",
+      turnstileToken
+        ? `${turnstileToken.substring(0, 20)}... (len=${turnstileToken.length})`
+        : "MISSING"
+    );
 
     if (!turnstileToken || typeof turnstileToken !== "string") {
       return NextResponse.json(
-        { ok: false, error: "TURNSTILE_FAILED", message: "Thiếu xác thực Turnstile. Vui lòng thử lại." },
+        {
+          ok: false,
+          error: "TURNSTILE_FAILED",
+          message: "Thiếu xác thực Turnstile. Vui lòng thử lại.",
+        },
         { status: 403 }
       );
     }
@@ -248,6 +314,7 @@ export async function POST(req: NextRequest) {
       const found = keys.find((k) => nameOf(k) === byName);
       if (found) key = found;
     }
+
     if (!key || !keys.includes(key)) {
       return NextResponse.json(
         {
@@ -322,27 +389,39 @@ export async function POST(req: NextRequest) {
 
     // ============ Lưu Customer và Booking vào MongoDB ============
     try {
-      // Kết nối DB
       await connectDB();
 
       // Validate phone (bắt buộc)
       if (!c.phone || !c.phone.trim()) {
         return NextResponse.json(
-          { ok: false, error: "VALIDATION_ERROR", message: "Số điện thoại là bắt buộc" },
+          {
+            ok: false,
+            error: "VALIDATION_ERROR",
+            message: "Số điện thoại là bắt buộc",
+          },
           { status: 400 }
         );
       }
 
-      // Normalize phone (trim + lowercase)
+      // Normalize phone
       const normalizedPhone = c.phone.trim().toLowerCase();
+
+      // Tạo booking code theo format: prefix + DDMM + phone
+      const bookingCode = buildBookingCode({
+        locationName: normalized.locationName,
+        dateISO: normalized.dateISO,
+        phone: normalizedPhone,
+      });
 
       // Upsert Customer
       const customerUpdate: Record<string, any> = {
         lastBookingAt: new Date(),
       };
+
       if (c.email) {
         customerUpdate.email = c.email.trim().toLowerCase();
       }
+
       if (primaryGuestName) {
         customerUpdate.fullName = primaryGuestName;
       }
@@ -360,7 +439,11 @@ export async function POST(req: NextRequest) {
 
       if (!customer?._id) {
         return NextResponse.json(
-          { ok: false, error: "CUSTOMER_SAVE_FAILED", message: "Không thể lưu thông tin khách hàng" },
+          {
+            ok: false,
+            error: "CUSTOMER_SAVE_FAILED",
+            message: "Không thể lưu thông tin khách hàng",
+          },
           { status: 500 }
         );
       }
@@ -396,72 +479,87 @@ export async function POST(req: NextRequest) {
 
       if (!booking?._id) {
         return NextResponse.json(
-          { ok: false, error: "BOOKING_SAVE_FAILED", message: "Không thể lưu đơn đặt bay" },
+          {
+            ok: false,
+            error: "BOOKING_SAVE_FAILED",
+            message: "Không thể lưu đơn đặt bay",
+          },
           { status: 500 }
         );
       }
 
-      // Sau khi lưu DB thành công, gửi Telegram
-      const text = buildBookingMessage({
+      const bookingObjectId = booking._id.toString();
+
+      // Payload dùng cho Telegram/Gmail
+      const notifyPayload = {
         ...normalized,
-        bookingId: booking._id.toString(),
-      });
+        bookingId: bookingCode,
+        bookingObjectId,
+        serviceName: normalized.locationName,
+      };
+
+      // Sau khi lưu DB thành công, gửi Telegram
+      const text = buildBookingMessage(notifyPayload);
 
       // Gửi Telegram (không fail booking nếu Telegram lỗi, chỉ log warning)
       const results = await sendTelegramToAll(text, true);
-    const failed = results.filter((r) => r.ok === false);
-    if (failed.length) {
-      console.warn("[BookingCreate] Telegram failed:", failed);
-    }
+      const failed = results.filter((r) => r.ok === false);
+      if (failed.length) {
+        console.warn("[BookingCreate] Telegram failed:", failed);
+      }
 
-    try {
-  await postNotifyGmail({
-    ...normalized,
-    bookingId: booking._id.toString(),
-    serviceName: normalized.locationName,
-  });
-} catch (e: any) {
-  console.warn("[BookingCreate] Gmail failed:", e?.message);
-}
+      try {
+        await postNotifyGmail(notifyPayload);
+      } catch (e: any) {
+        console.warn("[BookingCreate] Gmail failed:", e?.message);
+      }
 
-    return NextResponse.json(
-      {
-        ok: true,
-        message: "Đã gửi yêu cầu đặt bay. Chúng tôi sẽ liên hệ sớm!",
-        bookingId: booking._id.toString(),
-        customerId: customer._id.toString(),
-        telegram: results.map((r) => ({ chat_id: (r as any).chat_id, ok: (r as any).ok })),
-        booking: {
-          _id: booking._id.toString(),
+      return NextResponse.json(
+        {
+          ok: true,
+          message: "Đã gửi yêu cầu đặt bay. Chúng tôi sẽ liên hệ sớm!",
+          bookingId: bookingCode,
+          bookingObjectId,
           customerId: customer._id.toString(),
-          location: booking.location,
-          locationName: booking.locationName,
-          packageKey: booking.packageKey,
-          flightTypeKey: booking.flightTypeKey,
-          packageLabel: booking.packageLabel,
-          flightTypeLabel: booking.flightTypeLabel,
-          holidayType: booking.holidayType,
-          dateISO: booking.dateISO,
-          timeSlot: booking.timeSlot,
-          guestsCount: booking.guestsCount,
-          contact: booking.contact,
-          guests: booking.guests,
-          services: booking.services,
-          selectedServices: booking.selectedServices,
-          addons: booking.addons,
-          addonsQty: booking.addonsQty,
-          price: booking.price,
-          status: booking.status,
-          createdAt: booking.createdAt,
+          telegram: results.map((r) => ({
+            chat_id: (r as any).chat_id,
+            ok: (r as any).ok,
+          })),
+          booking: {
+            bookingCode,
+            _id: bookingObjectId,
+            customerId: customer._id.toString(),
+            location: booking.location,
+            locationName: booking.locationName,
+            packageKey: booking.packageKey,
+            flightTypeKey: booking.flightTypeKey,
+            packageLabel: booking.packageLabel,
+            flightTypeLabel: booking.flightTypeLabel,
+            holidayType: booking.holidayType,
+            dateISO: booking.dateISO,
+            timeSlot: booking.timeSlot,
+            guestsCount: booking.guestsCount,
+            contact: booking.contact,
+            guests: booking.guests,
+            services: booking.services,
+            selectedServices: booking.selectedServices,
+            addons: booking.addons,
+            addonsQty: booking.addonsQty,
+            price: booking.price,
+            status: booking.status,
+            createdAt: booking.createdAt,
+          },
         },
-      },
-      { status: 201 }
-    );
+        { status: 201 }
+      );
     } catch (dbErr: any) {
-      // Lỗi lưu DB - không crash, trả 500
       console.error("[BookingCreate] DB Error:", dbErr?.message);
       return NextResponse.json(
-        { ok: false, error: "DB_SAVE_FAILED", message: "Lỗi lưu dữ liệu. Vui lòng thử lại." },
+        {
+          ok: false,
+          error: "DB_SAVE_FAILED",
+          message: "Lỗi lưu dữ liệu. Vui lòng thử lại.",
+        },
         { status: 500 }
       );
     }

@@ -1,12 +1,12 @@
-// /app/blog/page.tsx
 export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
+import type { Post, SupportedLocale } from "@/types/frontend/post";
 
-type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
+type Lang = SupportedLocale;
 
 function getSafeLang(v: unknown): Lang {
   const l = String(v ?? "vi") as Lang;
@@ -14,7 +14,28 @@ function getSafeLang(v: unknown): Lang {
 }
 
 function stripHtml(html: string) {
-  return (html || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function pickTitle(post: Post, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: Post, isVietnamese: boolean) {
+  if (isVietnamese) {
+    if (post.excerptVi?.trim()) return post.excerptVi.trim();
+    const text = stripHtml(post.contentVi || post.content || "");
+    return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
+  }
+
+  if (post.excerpt?.trim()) return post.excerpt.trim();
+  const text = stripHtml(post.content || post.contentVi || "");
+  return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
 }
 
 const LOCALE_BY_LANG: Record<Lang, string> = {
@@ -30,7 +51,6 @@ const UI: Record<
   Lang,
   {
     pageTitle: string;
-    fixedTitle: string;
     latestTitle: string;
     unknownDate: string;
     views: (n: number) => string;
@@ -40,8 +60,7 @@ const UI: Record<
 > = {
   vi: {
     pageTitle: "Tin tức & Blog",
-    fixedTitle: "Bài viết về các điểm bay cập nhật mới nhất",
-    latestTitle: "Các bài viết mới nhất",
+    latestTitle: "Tất cả bài viết",
     unknownDate: "Không rõ ngày đăng",
     views: (n) => `${n} lượt xem`,
     emptyTitle: "Chưa có bài viết nào được xuất bản",
@@ -49,26 +68,23 @@ const UI: Record<
   },
   en: {
     pageTitle: "News & Blog",
-    fixedTitle: "Latest updates about flying spots",
-    latestTitle: "Latest posts",
+    latestTitle: "All posts",
     unknownDate: "Date unknown",
     views: (n) => `${n} views`,
-    emptyTitle: "No posts have been published yet",
+    emptyTitle: "No published posts yet",
     createFirstPost: "Create the first post",
   },
   fr: {
     pageTitle: "Actualités & Blog",
-    fixedTitle: "Dernières mises à jour sur les sites de vol",
-    latestTitle: "Articles les plus récents",
+    latestTitle: "Tous les articles",
     unknownDate: "Date inconnue",
     views: (n) => `${n} vues`,
-    emptyTitle: "Aucun article n’a encore été publié",
+    emptyTitle: "Aucun article publié",
     createFirstPost: "Créer le premier article",
   },
   ru: {
     pageTitle: "Новости и блог",
-    fixedTitle: "Свежие обновления о местах полётов",
-    latestTitle: "Самые новые статьи",
+    latestTitle: "Все статьи",
     unknownDate: "Дата неизвестна",
     views: (n) => `${n} просмотров`,
     emptyTitle: "Пока нет опубликованных статей",
@@ -76,17 +92,15 @@ const UI: Record<
   },
   zh: {
     pageTitle: "资讯与博客",
-    fixedTitle: "最新飞行点更新文章",
-    latestTitle: "最新文章",
-    unknownDate: "发布日期未知",
+    latestTitle: "全部文章",
+    unknownDate: "日期未知",
     views: (n) => `${n} 次浏览`,
-    emptyTitle: "目前还没有已发布的文章",
+    emptyTitle: "暂无已发布文章",
     createFirstPost: "创建第一篇文章",
   },
   hi: {
     pageTitle: "समाचार और ब्लॉग",
-    fixedTitle: "फ्लाइंग स्पॉट्स पर नवीनतम अपडेट",
-    latestTitle: "नवीनतम पोस्ट",
+    latestTitle: "सभी पोस्ट",
     unknownDate: "तारीख अज्ञात",
     views: (n) => `${n} व्यूज़`,
     emptyTitle: "अभी तक कोई पोस्ट प्रकाशित नहीं हुई है",
@@ -97,37 +111,28 @@ const UI: Record<
 export default async function BlogPage() {
   const cookieStore = await cookies();
 
-  // ✅ đọc nhiều key để khớp implementation của bạn
   const raw =
     cookieStore.get("language")?.value ??
     cookieStore.get("Language")?.value ??
     cookieStore.get("lang")?.value;
 
   const lang = getSafeLang(raw);
+  const isVietnamese = lang === "vi";
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
-  const [fixedData, latestData] = await Promise.all([
-    getPosts({
-      category: "news",
-      isPublished: true,
-      fixed: true,
-      limit: 6,
-      sort: "-publishedAt,-createdAt",
-    }),
-    getPosts({
-      category: "news",
-      isPublished: true,
-      page: 1,
-      limit: 12,
-      sort: "-publishedAt,-createdAt",
-    }),
-  ]);
+  const latestData = await getPosts({
+    category: "news",
+    type: "blog",
+    isPublished: true,
+    page: 1,
+    limit: 24,
+    sort: "-publishedAt,-createdAt",
+  });
 
-  const fixedItems = fixedData?.items ?? [];
-  const latestItems = latestData?.items ?? [];
+  const latestItems = latestData.items;
 
-  const formatDate = (s?: string) =>
+  const formatDate = (s?: string | null) =>
     s
       ? new Date(s).toLocaleDateString(locale, {
           year: "numeric",
@@ -138,90 +143,51 @@ export default async function BlogPage() {
 
   return (
     <div
-      className="min-h-screen relative bg-cover bg-center bg-fixed"
+      className="relative min-h-screen bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/tin-tuc-2.jpg')" }}
     >
-      <div className="absolute inset-0 bg-black/40 z-0" />
-      <main className="container mx-auto px-4 py-16 relative z-10 text-white">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-10 text-center drop-shadow-lg font-serif">
+      <div className="absolute inset-0 z-0 bg-black/40" />
+
+      <main className="container relative z-10 mx-auto px-4 py-16 text-white">
+        <h1 className="mb-10 text-center text-5xl font-extrabold drop-shadow-lg md:text-6xl">
           {ui.pageTitle}
         </h1>
 
-        {fixedItems.length > 0 && (
-          <section className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">{ui.fixedTitle}</h2>
-            <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {fixedItems.map((p: any) => {
-                const cover = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
-                const date = p.publishedAt || p.createdAt;
-                const views = Number(p.views || 0);
-
-                return (
-                  <li key={p._id || p.slug}>
-                    <Link href={`/blog/${p.slug}`} className="group">
-                      <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
-                        <div className="relative h-52 w-full overflow-hidden">
-                          <Image
-                            src={cover}
-                            alt={p.title}
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
-                        </div>
-                        <div className="p-6">
-                          <h3 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-accent transition-colors">
-                            {p.title}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-white/70 mb-2">
-                            <span>{formatDate(date)}</span>
-                            <span>{ui.views(views)}</span>
-                          </div>
-                          <p className="text-white/85 text-sm line-clamp-3">
-                            {p.excerpt || stripHtml(p.content || "").slice(0, 120) + "…"}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
         <section>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">{ui.latestTitle}</h2>
+          <h2 className="mb-6 text-3xl font-bold md:text-4xl">{ui.latestTitle}</h2>
 
           {latestItems.length ? (
             <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {latestItems.map((p: any) => {
-                const cover = p.coverImage || p.thumbnail || "/images/mebayluon.jpg";
-                const date = p.publishedAt || p.createdAt;
-                const views = Number(p.views || 0);
+              {latestItems.map((post) => {
+                const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+                const date = post.publishedAt || post.createdAt;
+                const views = Number(post.views || 0);
 
                 return (
-                  <li key={p._id || p.slug}>
-                    <Link href={`/blog/${p.slug}`} className="group">
-                      <div className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                  <li key={post._id || post.slug}>
+                    <Link href={`/blog/${post.slug}`} className="group">
+                      <div className="overflow-hidden rounded-lg border border-white/20 bg-white/10 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white/20 hover:shadow-xl">
                         <div className="relative h-48 w-full overflow-hidden">
                           <Image
                             src={cover}
-                            alt={p.title}
+                            alt={pickTitle(post, isVietnamese)}
                             fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-300"
+                            className="object-cover transition-transform duration-300 group-hover:scale-110"
                           />
                         </div>
+
                         <div className="p-6">
-                          <h3 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-accent transition-colors">
-                            {p.title}
+                          <h3 className="mb-3 line-clamp-2 text-xl font-bold transition-colors group-hover:text-red-300">
+                            {pickTitle(post, isVietnamese)}
                           </h3>
-                          <div className="flex items-center gap-4 text-sm text-white/70 mb-3">
+
+                          <div className="mb-3 flex items-center gap-4 text-sm text-white/70">
                             <span>{formatDate(date)}</span>
                             <span>{ui.views(views)}</span>
                           </div>
-                          <p className="text-white/80 text-sm line-clamp-3">
-                            {stripHtml(p.content || "").slice(0, 120)}…
+
+                          <p className="line-clamp-3 text-sm text-white/80">
+                            {pickExcerpt(post, isVietnamese)}
                           </p>
                         </div>
                       </div>
@@ -231,11 +197,11 @@ export default async function BlogPage() {
               })}
             </ul>
           ) : (
-            <div className="text-center py-16">
-              <p className="text-xl text-white/70 mb-8">{ui.emptyTitle}</p>
+            <div className="py-16 text-center">
+              <p className="mb-8 text-xl text-white/70">{ui.emptyTitle}</p>
               <Link
-                href="/admin/posts/new"
-                className="inline-block bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/80 transition-colors"
+                href="/admin/posts"
+                className="inline-block rounded-lg bg-red-500 px-6 py-3 text-white transition-colors hover:bg-red-600"
               >
                 {ui.createFirstPost}
               </Link>

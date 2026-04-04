@@ -1,24 +1,37 @@
-// app/api/posts/[id]/publish/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { publishPost } from "@/services/post.service";
 import { requireAuth } from "@/middlewares/requireAuth";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+// PATCH /api/posts/:id/publish
+// body: { isPublished: boolean }
+export async function PATCH(req: Request, context: RouteContext) {
   const auth = requireAuth(req);
-  if (auth instanceof NextResponse) return auth; // 401
+  if (auth instanceof NextResponse) return auth;
 
   try {
     await connectDB();
-    const { id } = await params;
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch {}
-    const result = await publishPost(id, body, auth);
-    return NextResponse.json(result);
-  } catch (err) {
+
+    const { id } = await context.params;
+    const body = await req.json().catch(() => ({}));
+
+    const updated = await publishPost(
+      id,
+      { isPublished: body?.isPublished ?? true },
+      auth
+    );
+
+    return NextResponse.json(updated);
+  } catch (err: any) {
     console.error("PATCH /api/posts/[id]/publish error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+
+    const status = err?.status || 500;
+    const message = err?.message || "Internal Server Error";
+
+    return NextResponse.json({ message }, { status });
   }
 }

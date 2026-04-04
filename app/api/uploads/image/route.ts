@@ -1,15 +1,13 @@
-// app/api/uploads/image/route.ts
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/middlewares/requireAuth";
 import { cloudinary, initCloudinary } from "@/lib/cloudinary";
 
-export const runtime = "nodejs"; // cần Node runtime để dùng Cloudinary SDK
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const auth = requireAuth(req);
-  if (auth instanceof NextResponse) return auth; // 401 nếu thiếu/invalid token
+  if (auth instanceof NextResponse) return auth;
 
-  // Khởi tạo Cloudinary config
   const client = initCloudinary();
   if (!client) {
     return NextResponse.json(
@@ -27,8 +25,19 @@ export async function POST(req: Request) {
     }
 
     const blob = file as File;
+
+    if (!blob.type.startsWith("image/")) {
+      return NextResponse.json(
+        { message: "Only image files are allowed" },
+        { status: 400 }
+      );
+    }
+
     if (blob.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ message: "File too large (>10MB)" }, { status: 413 });
+      return NextResponse.json(
+        { message: "File too large (>10MB)" },
+        { status: 413 }
+      );
     }
 
     const arrayBuffer = await blob.arrayBuffer();
@@ -37,14 +46,14 @@ export async function POST(req: Request) {
     const dataUri = `data:${mime};base64,${buffer.toString("base64")}`;
 
     const upload = await cloudinary.uploader.upload(dataUri, {
-      folder: "uploads",
+      folder: "uploads/posts",
       resource_type: "image",
     });
 
     return NextResponse.json(
       {
         url: upload.secure_url,
-        public_id: upload.public_id,
+        publicId: upload.public_id,
         width: upload.width,
         height: upload.height,
         format: upload.format,
@@ -53,6 +62,9 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     console.error("POST /api/uploads/image error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

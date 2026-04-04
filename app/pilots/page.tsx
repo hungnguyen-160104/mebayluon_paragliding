@@ -19,7 +19,7 @@ type PilotCard = {
   role: Record<Lang, string>;
 };
 
-// ✅ Dữ liệu 14 phi công (giữ ảnh), thêm role/nickname theo ngôn ngữ
+// ✅ Dữ liệu 19 hồ sơ (giữ ảnh), thêm role/nickname theo ngôn ngữ
 const pilotsData: PilotCard[] = [
   {
     name: "ĐẶNG VĂN MỸ",
@@ -292,6 +292,112 @@ const pilotsData: PilotCard[] = [
       ru: "Акро-пилот",
       zh: "特技飞行员",
       hi: "एक्रो पायलट",
+    },
+  },
+
+  {
+    name: "A Xiêng",
+    slug: "a-xieng",
+    avatar: "/pilots/A-Xieng/A-Xieng.jpg",
+    nickname: {
+      vi: "Trai Bản Thái Láo Làng",
+      en: "Trai Bản Thái Láo Làng",
+      fr: "Trai Bản Thái Láo Làng",
+      ru: "Trai Bản Thái Láo Làng",
+      zh: "Trai Bản Thái Láo Làng",
+      hi: "Trai Bản Thái Láo Làng",
+    },
+    role: {
+      vi: "Phi công bản địa",
+      en: "Phi công bản địa",
+      fr: "Phi công bản địa",
+      ru: "Phi công bản địa",
+      zh: "Phi công bản địa",
+      hi: "Phi công bản địa",
+    },
+  },
+  {
+    name: "A Mặc",
+    slug: "a-mac",
+    avatar: "/pilots/A-Mac/A-mac.jpg",
+    nickname: {
+      vi: "Trai Bản việc gì cũng làm được",
+      en: "Trai Bản việc gì cũng làm được",
+      fr: "Trai Bản việc gì cũng làm được",
+      ru: "Trai Bản việc gì cũng làm được",
+      zh: "Trai Bản việc gì cũng làm được",
+      hi: "Trai Bản việc gì cũng làm được",
+    },
+    role: {
+      vi: "Phi công tập sự",
+      en: "Phi công tập sự",
+      fr: "Phi công tập sự",
+      ru: "Phi công tập sự",
+      zh: "Phi công tập sự",
+      hi: "Phi công tập sự",
+    },
+  },
+  {
+    name: "A Hùng",
+    slug: "a-hung",
+    avatar: "/pilots/A-Hung/A-hung.jpg",
+    nickname: {
+      vi: "Trai bản thổi sáo trên không",
+      en: "Trai bản thổi sáo trên không",
+      fr: "Trai bản thổi sáo trên không",
+      ru: "Trai bản thổi sáo trên không",
+      zh: "Trai bản thổi sáo trên không",
+      hi: "Trai bản thổi sáo trên không",
+    },
+    role: {
+      vi: "Phi công tập sự",
+      en: "Phi công tập sự",
+      fr: "Phi công tập sự",
+      ru: "Phi công tập sự",
+      zh: "Phi công tập sự",
+      hi: "Phi công tập sự",
+    },
+  },
+  {
+    name: "A Dũng",
+    slug: "a-dung",
+    avatar: "/pilots/A-Dung/A-Dung.jpeg",
+    nickname: {
+      vi: "Trai bản bay flycam, bay cả dù lượn",
+      en: "Trai bản bay flycam, bay cả dù lượn",
+      fr: "Trai bản bay flycam, bay cả dù lượn",
+      ru: "Trai bản bay flycam, bay cả dù lượn",
+      zh: "Trai bản bay flycam, bay cả dù lượn",
+      hi: "Trai bản bay flycam, bay cả dù lượn",
+    },
+    role: {
+      vi: "Phi công tập sự",
+      en: "Phi công tập sự",
+      fr: "Phi công tập sự",
+      ru: "Phi công tập sự",
+      zh: "Phi công tập sự",
+      hi: "Phi công tập sự",
+    },
+  },
+  {
+    name: "YuPi",
+    slug: "yupi",
+    avatar: "/pilots/yupi/yupi.JPG",
+    nickname: {
+      vi: "Tư vấn khách mọi lúc mọi nơi",
+      en: "Tư vấn khách mọi lúc mọi nơi",
+      fr: "Tư vấn khách mọi lúc mọi nơi",
+      ru: "Tư vấn khách mọi lúc mọi nơi",
+      zh: "Tư vấn khách mọi lúc mọi nơi",
+      hi: "Tư vấn khách mọi lúc mọi nơi",
+    },
+    role: {
+      vi: "Điều hành & chăm sóc khách hàng",
+      en: "Điều hành & chăm sóc khách hàng",
+      fr: "Điều hành & chăm sóc khách hàng",
+      ru: "Điều hành & chăm sóc khách hàng",
+      zh: "Điều hành & chăm sóc khách hàng",
+      hi: "Điều hành & chăm sóc khách hàng",
     },
   },
 ];

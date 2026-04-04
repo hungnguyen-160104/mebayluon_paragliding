@@ -1,160 +1,79 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { Post } from "@/models/Post.model";
-import { Types } from "mongoose";
+import {
+  getPostById,
+  updatePost,
+  deletePost,
+} from "@/services/post.service";
+import { requireAuth } from "@/middlewares/requireAuth";
 
-export const revalidate = 0;
-export const dynamic = "force-dynamic";
-
-/** Kiểu rút gọn cho những trường ta cần dùng khi lean() */
-type PostLeanBase = {
-  _id: Types.ObjectId;
-  slug?: string;
-  publishedAt?: Date | null;
+type RouteContext = {
+  params: Promise<{ id: string }>;
 };
 
-/** ObjectId "chuẩn" (không mơ hồ) */
-function isObjectIdStrict(v: string): boolean {
-  return Types.ObjectId.isValid(v) && String(new Types.ObjectId(v)) === v;
-}
-
-/** Chuyển chuỗi có dấu -> slug, đủ dùng */
-function slugifyVN(input: string): string {
-  return String(input || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-+/g, "-");
-}
-
-/** Tạo slug duy nhất khi cập nhật */
-async function ensureUniqueSlug(base: string, excludeId?: string) {
-  const root = slugifyVN(base) || `post-${Date.now().toString(36)}`;
-  let candidate = root;
-  let i = 1;
-  while (
-    await Post.exists(
-      excludeId ? { slug: candidate, _id: { $ne: excludeId } } : { slug: candidate }
-    )
-  ) {
-    candidate = `${root}-${i++}`;
-  }
-  return candidate;
-}
-
-/** Chuẩn hoá boolean từ string */
-function toBool(v: unknown): boolean | undefined {
-  if (typeof v !== "string") return undefined;
-  const s = v.trim().toLowerCase();
-  if (["true", "1", "yes", "y", "on", "published", "public"].includes(s)) return true;
-  if (["false", "0", "no", "n", "off", "draft"].includes(s)) return false;
-  return undefined;
-}
-
-/* =================================================================== */
-/* GET /api/posts/[id] — id có thể là ObjectId hoặc slug              */
-/* =================================================================== */
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/posts/:id
+export async function GET(_req: Request, context: RouteContext) {
   try {
     await connectDB();
 
-    const { id } = await params;
-    const idOrSlug = id;
-    const cond = isObjectIdStrict(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
+    const { id } = await context.params;
+    const post = await getPostById(id);
 
-    const doc = await Post.findOne(cond).lean<PostLeanBase & Record<string, any>>();
-    if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (!post) {
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
+    }
 
-    return NextResponse.json(doc, { status: 200 });
+    return NextResponse.json(post);
   } catch (err) {
     console.error("GET /api/posts/[id] error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-/* =================================================================== */
-/* PUT /api/posts/[id] — cập nhật bài viết                             */
-/* =================================================================== */
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+// PUT /api/posts/:id (admin only)
+export async function PUT(req: Request, context: RouteContext) {
+  const auth = requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await connectDB();
 
-    const { id } = await params;
-    const idOrSlug = id;
-    const cond = isObjectIdStrict(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
+    const { id } = await context.params;
+    const body = await req.json();
 
-    const current = await Post.findOne(cond)
-      .select("_id slug publishedAt")
-      .lean<PostLeanBase>();
-    if (!current) return NextResponse.json({ message: "Not found" }, { status: 404 });
-
-    const patch: Record<string, any> = await req.json().catch(() => ({}));
-
-    // isPublished có thể được gửi dạng string
-    if (typeof patch.isPublished === "string") {
-      const b = toBool(patch.isPublished);
-      if (b !== undefined) patch.isPublished = b;
-    }
-
-    // Remove any fixed post fields if sent
-    delete patch.isFixed;
-    delete patch.fixedKey;
-
-    // Xử lý publishedAt theo isPublished
-    if (typeof patch.isPublished === "boolean") {
-      if (patch.isPublished === false) {
-        patch.publishedAt = null;
-      } else if (!current.publishedAt && !patch.publishedAt) {
-        patch.publishedAt = new Date();
-      }
-    }
-
-    // Nếu có yêu cầu đổi slug
-    if (patch.slug && patch.slug !== current.slug) {
-      patch.slug = await ensureUniqueSlug(String(patch.slug), String(current._id));
-    }
-
-    try {
-      const updated = await Post.findByIdAndUpdate(current._id, patch, { new: true });
-      if (!updated) return NextResponse.json({ message: "Not found" }, { status: 404 });
-      return NextResponse.json(updated, { status: 200 });
-    } catch (err: any) {
-      if (err?.code === 11000 && err?.keyPattern?.slug) {
-        return NextResponse.json(
-          { message: "Slug đã tồn tại." },
-          { status: 409 }
-        );
-      }
-      throw err;
-    }
-  } catch (err) {
+    const updated = await updatePost(id, body, auth);
+    return NextResponse.json(updated);
+  } catch (err: any) {
     console.error("PUT /api/posts/[id] error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+
+    const status = err?.status || 500;
+    const message = err?.message || "Internal Server Error";
+
+    return NextResponse.json({ message }, { status });
   }
 }
 
-/* =================================================================== */
-/* DELETE /api/posts/[id] — xoá bài viết                               */
-/* =================================================================== */
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+// DELETE /api/posts/:id (admin only)
+export async function DELETE(req: Request, context: RouteContext) {
+  const auth = requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await connectDB();
 
-    const { id } = await params;
-    const idOrSlug = id;
-    const cond = isObjectIdStrict(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
+    const { id } = await context.params;
+    const result = await deletePost(id, auth);
 
-    const doc = await Post.findOne(cond).select("_id").lean<PostLeanBase>();
-    if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
-
-    await Post.findByIdAndDelete(doc._id);
-    return NextResponse.json({ ok: true, id: String(doc._id) }, { status: 200 });
-  } catch (err) {
+    return NextResponse.json(result);
+  } catch (err: any) {
     console.error("DELETE /api/posts/[id] error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+
+    const status = err?.status || 500;
+    const message = err?.message || "Internal Server Error";
+
+    return NextResponse.json({ message }, { status });
   }
 }

@@ -17,13 +17,12 @@ function getSafeLang(language: unknown): Language {
 }
 
 export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPageProps) {
-  const { language, setLanguage } = useLanguage()
+  const { language } = useLanguage()
   const lang = getSafeLang(language)
 
   const heroCollage = pilotData.gallery.slice(0, 5)
   const contentImages = pilotData.gallery.slice(5, 8)
 
-  // ✅ pick theo ngôn ngữ + fallback về vi
   const nickname = pilotData.nickname[lang] ?? pilotData.nickname.vi
   const role = pilotData.role[lang] ?? pilotData.role.vi
   const bio = pilotData.bio[lang] ?? pilotData.bio.vi
@@ -34,7 +33,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
     <div
       className="min-h-screen text-white relative"
       style={{
-        backgroundImage: `url(${pilotData.hero})`,
+        backgroundImage: "url(/pilots/hero.jpg)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
@@ -43,16 +42,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
       <div className="absolute inset-0 bg-black/30 z-0" />
 
       <Navigation />
-
-      {/* 🔹 Nút đổi ngôn ngữ từ context */}
-      <div className="absolute top-6 right-6 z-20">
-        <button
-          onClick={() => setLanguage(lang === "vi" ? "en" : "vi")}
-          className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl border border-white/30 text-sm font-semibold"
-        >
-          {lang === "vi" ? "English" : "Tiếng Việt"}
-        </button>
-      </div>
 
       <main className="relative z-10">
         {/* Section 1: Hero */}
@@ -142,7 +131,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       <p className="mt-4 text-xl text-white/90">{bio}</p>
                     </div>
 
-                    {/* Achievements */}
                     <div>
                       <h3 className="text-2xl md:text-3xl font-bold text-cyan-400 mb-4">
                         {lang === "vi" ? "KINH NGHIỆM & THÀNH TÍCH" : "EXPERIENCE & ACHIEVEMENTS"}
@@ -156,7 +144,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                     </div>
                   </div>
 
-                  {/* Fun facts */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     <img
                       src={contentImages[1]}
@@ -179,7 +166,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                   </div>
                 </div>
 
-                {/* Right column images */}
                 <div className="lg:col-span-2 space-y-8">
                   <img
                     src={contentImages[0]}

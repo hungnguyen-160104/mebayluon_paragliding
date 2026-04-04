@@ -1,6 +1,15 @@
-export function estimateReadTime(htmlOrText: string, wpm = 200) {
-  const text = htmlOrText.replace(/<[^>]+>/g, " "); // bỏ tag HTML
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  const minutes = Math.ceil(words.length / wpm);
-  return Math.max(1, minutes);
+function stripHtml(html: string): string {
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function estimateReadTime(input: string): number {
+  const plain = stripHtml(input);
+  if (!plain) return 1;
+
+  const words = plain.split(/\s+/).filter(Boolean).length;
+  const wordsPerMinute = 220;
+  return Math.max(1, Math.ceil(words / wordsPerMinute));
 }
