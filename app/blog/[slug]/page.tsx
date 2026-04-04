@@ -21,6 +21,10 @@ function stripHtml(html: string) {
     .trim();
 }
 
+function normalizeInlineText(text: string) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
 function pickTitle(post: Post, isVietnamese: boolean) {
   return isVietnamese
     ? post.titleVi || post.title || ""
@@ -29,12 +33,12 @@ function pickTitle(post: Post, isVietnamese: boolean) {
 
 function pickExcerpt(post: Post, isVietnamese: boolean) {
   if (isVietnamese) {
-    if (post.excerptVi?.trim()) return post.excerptVi.trim();
+    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
     const text = stripHtml(post.contentVi || post.content || "");
     return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
   }
 
-  if (post.excerpt?.trim()) return post.excerpt.trim();
+  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
   const text = stripHtml(post.content || post.contentVi || "");
   return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
 }
@@ -80,15 +84,42 @@ function renderContentBlock(block: ContentBlock, index: number) {
   switch (block.type) {
     case "heading": {
       const level = Math.min(4, Math.max(1, Number(data.level || 2)));
-      if (level === 1) return <h1 key={key}>{data.text || ""}</h1>;
-      if (level === 2) return <h2 key={key}>{data.text || ""}</h2>;
-      if (level === 3) return <h3 key={key}>{data.text || ""}</h3>;
-      return <h4 key={key}>{data.text || ""}</h4>;
+      const text = data.text || "";
+
+      if (level === 1) {
+        return (
+          <h1 key={key} className="text-4xl font-extrabold leading-tight text-white md:text-5xl">
+            {text}
+          </h1>
+        );
+      }
+
+      if (level === 2) {
+        return (
+          <h2 key={key} className="text-3xl font-bold leading-tight text-white md:text-4xl">
+            {text}
+          </h2>
+        );
+      }
+
+      if (level === 3) {
+        return (
+          <h3 key={key} className="text-2xl font-bold leading-snug text-white md:text-3xl">
+            {text}
+          </h3>
+        );
+      }
+
+      return (
+        <h4 key={key} className="text-xl font-semibold leading-snug text-white md:text-2xl">
+          {text}
+        </h4>
+      );
     }
 
     case "paragraph":
       return (
-        <p key={key} className="whitespace-pre-line">
+        <p key={key} className="whitespace-pre-line text-base font-normal leading-relaxed text-white/95">
           {data.text || ""}
         </p>
       );
@@ -317,7 +348,7 @@ export default async function BlogPostPage({
           </h1>
 
           {excerpt && (
-            <p className="mb-6 max-w-3xl text-lg leading-relaxed text-white/85">
+            <p className="mb-6 w-full text-lg leading-relaxed text-white/85">
               {excerpt}
             </p>
           )}

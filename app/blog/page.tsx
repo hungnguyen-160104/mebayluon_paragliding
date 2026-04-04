@@ -20,6 +20,10 @@ function stripHtml(html: string) {
     .trim();
 }
 
+function normalizeInlineText(text: string) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
 function pickTitle(post: Post, isVietnamese: boolean) {
   return isVietnamese
     ? post.titleVi || post.title || ""
@@ -28,12 +32,12 @@ function pickTitle(post: Post, isVietnamese: boolean) {
 
 function pickExcerpt(post: Post, isVietnamese: boolean) {
   if (isVietnamese) {
-    if (post.excerptVi?.trim()) return post.excerptVi.trim();
+    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
     const text = stripHtml(post.contentVi || post.content || "");
     return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
   }
 
-  if (post.excerpt?.trim()) return post.excerpt.trim();
+  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
   const text = stripHtml(post.content || post.contentVi || "");
   return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
 }
