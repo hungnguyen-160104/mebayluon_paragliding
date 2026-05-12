@@ -388,7 +388,7 @@ function buildCustomerSectionsEn(body: TelegramBookingPayload) {
     `4. Free cancellation up to 48 hours before the flight`,
     ``,
     `CONTACT US:`,
-    `📞 +84 964.073.555 | +84 970.2812`,
+    `📞 +84 964.073.555 | +84 979.702.812`,
     `💬 WhatsApp | Zalo | Telegram`,
     `🌐 mebayluon.com`,
     ``,

@@ -158,7 +158,7 @@ export default function HomePage() {
     },
     {
       name: "Zalo",
-      iconSrc: "/social_icons/zalo.jpg",
+      iconSrc: "/social_icons/zalo.png",
       url: "https://zalo.me/0964073555",
       color: "bg-[#0068FF]",
       description: t?.contact?.social?.zalo ?? "Chat Zalo 24/7",
