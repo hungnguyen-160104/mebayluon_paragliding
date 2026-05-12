@@ -3,32 +3,50 @@ import { Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react"
 
 export function Footer() {
   const LOCATIONS = [
-    "Viên Nam - Hòa Bình",
-    "Đồi Bù - Chương Mỹ - Hà Nội",
-    "Khau Phạ - Mù Cang Chải - Yên Bái",
-    "Trạm Tấu - Yên Bái",
-    "Sơn Trà - Đà Nẵng",
-    "Sapa, Lào Cai, Vietnam",
+    {
+      label: "Viên Nam (Hà Nội)",
+      slug: "Viennam",
+    },
+    {
+      label: "Đồi Bù (Hà Nội)",
+      slug: "Doibu",
+    },
+    {
+      label: "Đèo Khau Phạ (Mù Cang Chải)",
+      slug: "Mucangchai",
+    },
+    {
+      label: "Phình Hồ (Trạm Tấu)",
+      slug: "Tramtau",
+    },
+    {
+      label: "Sơn Trà (Đà Nẵng)",
+      slug: "Danang",
+    },
+    {
+      label: "Sa Pa (Lào Cai)",
+      slug: "Sapa",
+    },
   ]
 
   return (
-    // --- CONTAINER BÊN NGOÀI ĐỂ CĂN GIỮA VÀ TẠO KHOẢNG TRỐNG ---
     <div className="w-full px-4 pb-4">
-      {/* --- THAY ĐỔI: Thêm bo góc (rounded-3xl) và nền xám xanh hiện đại --- */}
-      <footer className="
-        w-full max-w-7xl mx-auto rounded-3xl  
-        bg-slate-800/50                      
-        backdrop-blur-xl                     
-        border border-white/20               
-      ">
+      <footer
+        className="
+          w-full max-w-7xl mx-auto rounded-3xl
+          bg-slate-800/50
+          backdrop-blur-xl
+          border border-white/20
+        "
+      >
         <div className="relative px-6 md:px-8 py-14">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-            
             {/* CỘT 1: THƯƠNG HIỆU */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent">
                 Mebayluon Paragliding
               </h2>
+
               <p className="text-sm text-slate-300">
                 Experience the best paragliding in Vietnam
               </p>
@@ -37,6 +55,7 @@ export function Footer() {
             {/* CỘT 2: QUICK LINKS */}
             <div>
               <h3 className="font-semibold text-white mb-4">Quick Links</h3>
+
               <ul className="space-y-2">
                 {[
                   { href: "/pilots", label: "Pilots" },
@@ -58,29 +77,43 @@ export function Footer() {
             {/* CỘT 3: CONTACT */}
             <div>
               <h3 className="font-semibold text-white mb-4">Contact</h3>
+
               <ul className="space-y-2 text-sm text-slate-300">
                 <li className="flex items-center gap-2">
                   <Phone size={16} />
                   <span>+84964 073 555</span>
                 </li>
+
                 <li className="flex items-center gap-2">
                   <Mail size={16} />
                   <span>mebayluon@gmail.com</span>
                 </li>
               </ul>
+
               <ul className="space-y-2 mt-3 text-sm text-slate-300">
-                {LOCATIONS.map((loc) => (
-                  <li key={loc} className="flex items-center gap-2">
-                    <MapPin size={16} />
-                    <span>{loc}</span>
-                  </li>
-                ))}
+                {LOCATIONS.map((loc) => {
+                  const href = `/blog/${loc.slug}`
+
+                  return (
+                    <li key={loc.slug} className="flex items-center gap-2">
+                      <MapPin size={16} />
+
+                      <Link
+                        href={href}
+                        className="hover:text-white hover:underline underline-offset-4 transition-colors"
+                      >
+                        {loc.label}
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
 
             {/* CỘT 4: SOCIAL */}
             <div>
               <h3 className="font-semibold text-white mb-4">Follow Us</h3>
+
               <div className="flex gap-5">
                 <a
                   href="https://www.facebook.com/mebayluon"
@@ -91,6 +124,7 @@ export function Footer() {
                 >
                   <Facebook size={22} />
                 </a>
+
                 <a
                   href="https://www.youtube.com/@dangvm"
                   target="_blank"
@@ -108,7 +142,10 @@ export function Footer() {
           <div className="mt-12 pt-6 border-t border-white/15 text-center text-sm text-slate-400">
             <p>
               &copy; {new Date().getFullYear()}{" "}
-              <span className="font-medium text-slate-200">Mebayluon Paragliding</span>. All rights reserved.
+              <span className="font-medium text-slate-200">
+                Mebayluon Paragliding
+              </span>
+              . All rights reserved.
             </p>
           </div>
         </div>

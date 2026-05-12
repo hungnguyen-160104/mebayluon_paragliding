@@ -14,21 +14,31 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage, type Language } from "@/contexts/language-context";
 
-export type FixedKey =
-  | "hoa-binh"
-  | "ha-noi"
-  | "mu-cang-chai"
-  | "yen-bai"
-  | "da-nang"
-  | "sapa";
-
-export const FIXED_SPOTS: { key: FixedKey; name: string }[] = [
-  { key: "hoa-binh", name: "Viên Nam - Hòa Bình" },
-  { key: "ha-noi", name: "Đồi Bù - Chương Mỹ - Hà Nội" },
-  { key: "mu-cang-chai", name: "Khau Phạ - Tú Lệ - Lào Cai" },
-  { key: "yen-bai", name: "Trạm Tấu - Lào Cai" },
-  { key: "da-nang", name: "Sơn Trà - Đà Nẵng" },
-  { key: "sapa", name: "Sapa - Lào Cai" },
+export const FOOTER_SPOTS = [
+  {
+    name: "Viên Nam (Hà Nội)",
+    href: "/blog/Viennam",
+  },
+  {
+    name: "Đồi Bù (Hà Nội)",
+    href: "/blog/Doibu",
+  },
+  {
+    name: "Đèo Khau Phạ (Mù Cang Chải)",
+    href: "/blog/Mucangchai",
+  },
+  {
+    name: "Phình Hồ (Trạm Tấu)",
+    href: "/blog/Tramtau",
+  },
+  {
+    name: "Sơn Trà (Đà Nẵng)",
+    href: "/blog/Danang",
+  },
+  {
+    name: "Sa Pa (Lào Cai)",
+    href: "/blog/Sapa",
+  },
 ];
 
 type FooterDict = {
@@ -53,7 +63,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     license:
-      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
+      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
     rightsReserved: "Đã đăng ký bản quyền.",
   },
   en: {
@@ -138,7 +148,7 @@ function WhatsAppIcon({ className = "h-5 w-5" }: { className?: string }) {
       aria-hidden="true"
       className={className}
     >
-      <path d="M20.52 3.48A11.82 11.82 0 0 0 12.09 0C5.5 0 .14 5.36.14 11.95c0 2.1.55 4.16 1.6 5.98L0 24l6.25-1.64a11.9 11.9 0 0 0 5.84 1.49h.01c6.59 0 11.95-5.36 11.95-11.95 0-3.19-1.24-6.18-3.53-8.42ZM12.1 21.83h-.01a9.86 9.86 0 0 1-5.02-1.37l-.36-.21-3.71.97.99-3.62-.24-.37a9.84 9.84 0 0 1-1.53-5.28c0-5.45 4.43-9.88 9.89-9.88 2.64 0 5.11 1.02 6.97 2.89a9.8 9.8 0 0 1 2.9 6.99c0 5.45-4.44 9.88-9.88 9.88Zm5.42-7.41c-.3-.15-1.78-.88-2.05-.98-.27-.1-.47-.15-.67.15-.2.3-.77.98-.94 1.18-.17.2-.35.23-.65.08-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.67-1.62-.92-2.22-.24-.58-.48-.5-.67-.5h-.57c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56 0 1.5 1.1 2.96 1.25 3.16.15.2 2.15 3.29 5.21 4.61.73.31 1.3.5 1.75.64.73.23 1.39.2 1.91.12.58-.09 1.78-.73 2.03-1.44.25-.71.25-1.32.17-1.44-.07-.12-.27-.2-.57-.35Z" />
+      <path d="M20.52 3.48A11.82 11.82 0 0 0 12.09 0C5.5 0 .14 5.36.14 11.95c0 2.1.55 4.16 1.6 5.98L0 24l6.25-1.64a11.9 11.9 0 0 0 5.84 1.49h.01c6.59 0 11.95-5.36 11.95-11.95 0-3.19-1.24-6.18-3.53-8.42ZM12.1 21.83h-.01a9.86 9.86 0 0 1-5.02-1.37l-.36-.21-3.71.97.99-3.62-.24-.37a9.84 9.84 0 0 1-1.53-5.28c0-5.45 4.43-9.88 9.89-9.88 2.64 0 5.11 1.02 6.97 2.89a9.8 9.8 0 0 1 2.9 6.99c0 5.45-4.44 9.88-9.88 9.88Zm5.42-7.41c-.3-.15-1.78-.88-2.05-.98-.27-.1-.47-.15-.67.15-.2.3-.77.98-.94 1.18-.17.2-.35.23-.65.08-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.18.20-.3.30-.5.10-.2.05-.38-.03-.53-.08-.15-.67-1.62-.92-2.22-.24-.58-.48-.5-.67-.5h-.57c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56 0 1.5 1.1 2.96 1.25 3.16.15.2 2.15 3.29 5.21 4.61.73.31 1.3.5 1.75.64.73.23 1.39.2 1.91.12.58-.09 1.78-.73 2.03-1.44.25-.71.25-1.32.17-1.44-.07-.12-.27-.2-.57-.35Z" />
     </svg>
   );
 }
@@ -163,12 +173,14 @@ function getLocaleFromPathname(pathname?: string | null): Language | null {
       .filter(Boolean)[0] || "";
 
   const value = firstSegment.toLowerCase();
+
   if (value === "vn" || value.startsWith("vi")) return "vi";
   if (value.startsWith("en")) return "en";
   if (value.startsWith("fr")) return "fr";
   if (value.startsWith("ru")) return "ru";
   if (value.startsWith("zh") || value.startsWith("cn")) return "zh";
   if (value.startsWith("hi")) return "hi";
+
   return null;
 }
 
@@ -177,6 +189,7 @@ function makeLocalizedHref(path: string, pathname?: string | null) {
   const pathLocale = getLocaleFromPathname(pathname);
 
   if (!pathLocale) return cleanPath;
+
   return `/${pathLocale}${cleanPath}`;
 }
 
@@ -223,27 +236,42 @@ export default function Footer() {
   );
 
   const clearHideTimer = () => {
-    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+    }
+
     hideTimerRef.current = null;
   };
 
   const scheduleHide = (ms = 500) => {
     clearHideTimer();
-    hideTimerRef.current = window.setTimeout(() => setShowAdmin(false), ms);
+
+    hideTimerRef.current = window.setTimeout(() => {
+      setShowAdmin(false);
+    }, ms);
   };
 
   const startHold = () => {
-    holdTimerRef.current = window.setTimeout(() => setShowAdmin(true), 700);
+    holdTimerRef.current = window.setTimeout(() => {
+      setShowAdmin(true);
+    }, 700);
   };
 
   const cancelHold = () => {
-    if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+    if (holdTimerRef.current) {
+      window.clearTimeout(holdTimerRef.current);
+    }
+
     holdTimerRef.current = null;
   };
 
   useEffect(() => {
     if (!showAdmin) return;
-    const timer = window.setTimeout(() => setShowAdmin(false), 10_000);
+
+    const timer = window.setTimeout(() => {
+      setShowAdmin(false);
+    }, 10_000);
+
     return () => window.clearTimeout(timer);
   }, [showAdmin]);
 
@@ -294,6 +322,7 @@ export default function Footer() {
                     {t.pilots}
                   </Link>
                 </li>
+
                 <li>
                   <Link
                     href={makeLocalizedHref("/booking", pathname)}
@@ -302,6 +331,7 @@ export default function Footer() {
                     {t.bookTour}
                   </Link>
                 </li>
+
                 <li>
                   <Link
                     href={makeLocalizedHref("/pre-notice", pathname)}
@@ -322,6 +352,7 @@ export default function Footer() {
               <ul className="space-y-3 text-[15px] text-slate-300">
                 <li className="flex items-center gap-3">
                   <Phone size={18} className="shrink-0" />
+
                   <a
                     href="tel:+84964073555"
                     className="transition-colors hover:text-white"
@@ -332,6 +363,7 @@ export default function Footer() {
 
                 <li className="flex items-center gap-3">
                   <Mail size={18} className="shrink-0" />
+
                   <a
                     href="mailto:mebayluon@gmail.com"
                     className="break-all transition-colors hover:text-white sm:break-normal"
@@ -342,11 +374,12 @@ export default function Footer() {
               </ul>
 
               <ul className="mt-5 space-y-3 text-[15px] text-slate-300">
-                {FIXED_SPOTS.map((spot) => (
-                  <li key={spot.key} className="flex items-start gap-3">
+                {FOOTER_SPOTS.map((spot) => (
+                  <li key={spot.href} className="flex items-start gap-3">
                     <MapPin size={18} className="mt-0.5 shrink-0" />
+
                     <Link
-                      href={makeLocalizedHref(`/fixed/${spot.key}`, pathname)}
+                      href={spot.href}
                       className="transition-colors hover:text-white hover:underline underline-offset-4"
                     >
                       {spot.name}
@@ -401,9 +434,11 @@ export default function Footer() {
                 title="(Admin) Hold"
               >
                 <span>&copy; {new Date().getFullYear()}</span>
+
                 <span className="font-medium text-slate-200">
                   Mebayluon Paragliding
                 </span>
+
                 <span>{t.rightsReserved}</span>
               </span>
             </p>
