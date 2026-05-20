@@ -110,8 +110,13 @@ const normalizeList = (value: unknown): string[] =>
     : [];
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  // Lấy thêm language từ context để phục vụ chuyển đổi ngôn ngữ cho RecentPosts
+  const { t, language } = useLanguage() as any; 
   const [hoveredSpot, setHoveredSpot] = useState<number | null>(null);
+
+  // Logic xác định tiêu đề Bài viết mới nhất
+  const currentLang = language || t?.locale || "vi"; // fallback về "vi" nếu không lấy được
+  const recentPostsTitle = currentLang === "vi" ? "BÀI VIẾT MỚI NHẤT" : "LATEST POSTS";
 
   const locations = ((t as any)?.spots?.locations ?? {}) as Record<string, any>;
 
@@ -276,7 +281,7 @@ export default function HomePage() {
       title: t?.contact?.phone ?? "Điện thoại",
       lines: [
         "+84 964 073 555 (Mr. My)",
-        "+84 979 702 812 (Ms. Yupi)",
+        "+84 385 907 789 (Ms Trang)",
         t?.contact?.support247 ?? "Hỗ trợ 24/7",
       ],
     },
@@ -289,10 +294,11 @@ export default function HomePage() {
       icon: MapPin,
       title: t?.contact?.address ?? "Địa chỉ",
       lines: [
-        "Chương Mỹ (Hà Nội)",
-        "Đèo Khau Phạ (Yên Bái)",
+        "GO! Thăng Long (Hà Nội)",
+        "Đèo Khau Phạ (Tú Lệ)",
+        "Xuân Mai (Hà Nội)",
         "Sapa (Lào Cai)",
-        "Sơn Trà (Đà Nẵng)",
+        "Đồng Văn (Hà Giang)",
       ],
     },
     {
@@ -688,6 +694,12 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ================= LATEST POSTS ================= */}
+      {/* Đã truyền thêm prop `title` xuống component RecentPosts. 
+        Bạn cần cập nhật file RecentPosts.tsx để nhận prop `title` này nhé! 
+      */}
+      <RecentPosts title={recentPostsTitle} />
+
       {/* ================= CONTACT ================= */}
       <section id="contact" className="relative z-10 py-24">
         <div className="container mx-auto px-4">
@@ -780,9 +792,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ================= LATEST POSTS ================= */}
-      <RecentPosts />
 
       {/* ================= FOOTER ================= */}
       <div className="relative z-10 pb-6 pt-12">

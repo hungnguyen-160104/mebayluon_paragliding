@@ -263,7 +263,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
       "/spots/ha-giang/3.jpeg",
       "/spots/ha-giang/4.jpg",
       "/spots/ha-giang/5.jpg",
-      "/spots/ha-giang/6.jfif",
+      "/spots/ha-giang/6.jpg",
     ],
     storyImages: [
       "/spots/ha-giang/so1.jpeg",
@@ -317,13 +317,13 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "10 – 15 phút",
     landingPoint: "Chân đồi Viên Nam",
     basePrice: 1690000,
-    image: "/spots/ha-noi/hero.jfif",
+    image: "/spots/ha-noi/hero.jpg",
     galleryImages: [
       "/spots/ha-noi/1.jpg",
       "/spots/ha-noi/2.jpeg",
       "/spots/ha-noi/3.jpg",
       "/spots/ha-noi/4.jpg",
-      "/spots/ha-noi/5.jfif",
+      "/spots/ha-noi/5.jpg",
       "/spots/ha-noi/6.jpeg",
     ],
     storyImages: [
@@ -351,13 +351,13 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     duration: "7 – 12 phút",
     landingPoint: "Bãi hạ cánh Đồi Bù",
     basePrice: 1690000,
-    image: "/spots/ha-noi/hero.jfif",
+    image: "/spots/ha-noi/hero.jpg",
     galleryImages: [
       "/spots/ha-noi/1.jpg",
       "/spots/ha-noi/2.jpeg",
       "/spots/ha-noi/3.jpg",
       "/spots/ha-noi/4.jpg",
-      "/spots/ha-noi/5.jfif",
+      "/spots/ha-noi/5.jpg",
       "/spots/ha-noi/6.jpeg",
     ],
     storyImages: [
