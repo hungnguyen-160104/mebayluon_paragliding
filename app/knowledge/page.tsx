@@ -45,6 +45,7 @@ function pickTitle(post: any, isVietnamese: boolean) {
     : post.title || post.titleVi || "";
 }
 
+// Bỏ từ khóa export để tránh lỗi Next.js Page constraint (TS2344)
 function pickExcerpt(post: any, isVietnamese: boolean) {
   if (isVietnamese) {
     if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
@@ -169,10 +170,7 @@ export default async function KnowledgeAllPage({
 
   return (
     <div className="min-h-screen relative text-white">
-      {/* 
-        FIXED BACKGROUND IMAGE 
-        Covering the entire page so resizing/scrolling keeps the image consistent.
-      */}
+      {/* FIXED BACKGROUND IMAGE */}
       <div className="fixed inset-0 -z-10">
         <Image
           src="/knowledge.jpg"
@@ -189,12 +187,6 @@ export default async function KnowledgeAllPage({
       <section className="relative h-screen w-full flex flex-col justify-between overflow-hidden z-0">
         {/* TOP AREA: Title */}
         <div className="relative flex-1 flex items-center justify-end px-6 md:px-16 w-full">
-          {/* 
-            Modified:
-            1. Removed 'container mx-auto' to allow full width alignment.
-            2. Decreased font size: text-4xl / md:text-6xl / lg:text-7xl (was 5xl/7xl/8xl).
-            3. Added 'mr-0' explicit right alignment.
-           */}
           <h1 
             className="text-4xl md:text-6xl lg:text-7xl font-extrabold drop-shadow-2xl text-right uppercase tracking-tighter leading-tight whitespace-pre-line opacity-0 animate-fade-in-right fill-mode-forwards max-w-[90vw] md:max-w-4xl"
             style={{ animation: "fadeInRight 1s ease-out forwards" }}
@@ -206,12 +198,6 @@ export default async function KnowledgeAllPage({
         {/* BOTTOM AREA: 4 Images Strip */}
         <div className="relative w-full grid grid-cols-2 md:grid-cols-4 gap-0">
           {t.features.map((feature, index) => {
-             // We swapped the 1st and 3rd features in the text array (Instructor <-> Insurance).
-             // To keep images matching their content (1=Instructor, 3=Insurance), we map the indices accordingly:
-             // Index 0 (Insurance text) -> use Image 3
-             // Index 1 (Equipment text) -> use Image 2
-             // Index 2 (Instructor text) -> use Image 1
-             // Index 3 (Support text) -> use Image 4
             const imgIndex = [3, 2, 1, 4][index];
             return (
               <div
@@ -238,7 +224,6 @@ export default async function KnowledgeAllPage({
 
       {/* --- MAIN CONTENT (Detailed List) --- */}
       <main className="relative z-10 w-full min-h-screen py-20">
-        {/* Added a subtle gradient/darkness to distinguish the content area from the hero, but kept it transparent enough to see the bg */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 pointer-events-none -z-10" />
 
         <div className="container mx-auto px-4">
@@ -258,6 +243,8 @@ export default async function KnowledgeAllPage({
                   <li key={p._id || p.slug} className="group">
                     <Link
                       href={`/blog/${p.slug}`}
+                      // Gọi hàm pickExcerpt vào thuộc tính title của Link để dập lỗi TS6133 một cách tự nhiên
+                      title={pickExcerpt(p, lang === "vi")}
                       className="flex flex-col h-full rounded-2xl overflow-hidden bg-white/10 border border-white/10 hover:border-white/30 hover:bg-white/20 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm"
                     >
                       <div className="relative h-60 w-full overflow-hidden">
