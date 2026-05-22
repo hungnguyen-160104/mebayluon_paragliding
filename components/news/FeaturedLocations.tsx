@@ -1,13 +1,15 @@
 // components/news/FeaturedLocations.tsx
 import Image from "next/image";
 import Link from "next/link";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 type FixedPost = {
   id?: string;
   slug: string;
-  title: string;
+  title?: string;
+  titleVi?: string;
   excerpt?: string;
+  excerptVi?: string;
   coverImage?: string | null;
   thumbnail?: string | null;
   fixedKey?: string | null;
@@ -25,7 +27,23 @@ async function getBase(): Promise<string> {
   return "http://localhost:8080";
 }
 
+function pickTitle(post: FixedPost, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: FixedPost, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.excerptVi || post.excerpt || ""
+    : post.excerpt || post.excerptVi || "";
+}
+
 export default async function FeaturedLocations() {
+  const c = await cookies();
+  const rawLang = c.get("language")?.value || c.get("lang")?.value || "vi";
+  const isVietnamese = String(rawLang).toLowerCase().startsWith("vi");
+
   const base = await getBase();
   const res = await fetch(`${base}/api/posts/featured-locations`, {
     cache: "no-store",
@@ -42,36 +60,41 @@ export default async function FeaturedLocations() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {posts.map((p) => (
-            <Link
-              key={p.id || p.slug}
-              href={`/blog/${p.slug}`}
-              className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-md shadow-xl border border-white/20 transition"
-            >
-              <div className="relative h-48">
-                <Image
-                  src={p.thumbnail || p.coverImage || "/images/mebayluon.jpg"}
-                  alt={p.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
-              </div>
-              <div className="p-5 text-white">
-                <h3 className="text-lg font-semibold line-clamp-2 mb-1">
-                  {p.title}
-                </h3>
-                {p.date && (
-                  <p className="text-xs text-white/80">
-                    {new Date(p.date).toLocaleDateString("vi-VN")}
-                  </p>
-                )}
-                {p.excerpt && (
-                  <p className="text-sm text-white/90 line-clamp-2 mt-2">{p.excerpt}</p>
-                )}
-              </div>
-            </Link>
-          ))}
+          {posts.map((p) => {
+            const currentTitle = pickTitle(p, isVietnamese);
+            const currentExcerpt = pickExcerpt(p, isVietnamese);
+
+            return (
+              <Link
+                key={p.id || p.slug}
+                href={`/blog/${p.slug}`}
+                className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-md shadow-xl border border-white/20 transition"
+              >
+                <div className="relative h-48">
+                  <Image
+                    src={p.thumbnail || p.coverImage || "/images/mebayluon.jpg"}
+                    alt={currentTitle}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
+                </div>
+                <div className="p-5 text-white">
+                  <h3 className="text-lg font-semibold line-clamp-2 mb-1">
+                    {currentTitle}
+                  </h3>
+                  {p.date && (
+                    <p className="text-xs text-white/80">
+                      {new Date(p.date).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
+                    </p>
+                  )}
+                  {currentExcerpt && (
+                    <p className="text-sm text-white/90 line-clamp-2 mt-2">{currentExcerpt}</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

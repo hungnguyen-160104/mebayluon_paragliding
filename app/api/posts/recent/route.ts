@@ -51,21 +51,23 @@ export async function GET(req: Request) {
     const items = await Post.find(q)
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limit)
-      .select("slug title excerpt content thumbnail coverImage createdAt publishedAt")
+      .select("slug title titleVi excerpt excerptVi content contentVi thumbnail coverImage createdAt publishedAt")
       .lean();
 
     const base = getBaseFromReq(req);
 
     const data = items.map((p: any) => {
       const rawThumb =
-        p.thumbnail || p.coverImage || firstImageFromContent(p.content);
+        p.thumbnail || p.coverImage || firstImageFromContent(p.contentVi) || firstImageFromContent(p.content);
       return {
         id: p._id?.toString?.(),
         slug: p.slug,
         title: p.title,
+        titleVi: p.titleVi,
         date: p.publishedAt ?? p.createdAt,
         thumbnail: absolutize(base, rawThumb), // luôn trả về URL tuyệt đối
         excerpt: buildExcerpt(p.excerpt, p.content),
+        excerptVi: buildExcerpt(p.excerptVi, p.contentVi),
       };
     });
 

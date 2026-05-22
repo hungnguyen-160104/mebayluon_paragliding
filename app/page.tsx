@@ -718,7 +718,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="mx-auto mb-16 grid max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-5">
+          <div className="mx-auto mb-16 grid max-w-7xl grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 md:gap-6">
             {socialLinks.map((social, index) => (
               <motion.div
                 key={social.name}
@@ -726,9 +726,10 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
+                className={index === socialLinks.length - 1 && socialLinks.length % 2 !== 0 ? "col-span-2 md:col-span-1" : ""}
               >
                 <Card className="h-full border border-white/30 bg-white/20 text-white backdrop-blur-md transition-all duration-300 hover:shadow-2xl">
-                  <CardContent className="flex flex-col items-center space-y-4 px-6 pb-6 pt-8 text-center">
+                  <CardContent className="flex flex-col items-center space-y-4 px-4 pb-6 pt-8 text-center sm:px-6">
                     <div
                       className={`relative mb-2 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full ${social.color}`}
                     >
@@ -740,14 +741,14 @@ export default function HomePage() {
                       />
                     </div>
 
-                    <h3 className="text-xl font-bold">{social.name}</h3>
+                    <h3 className="text-lg font-bold sm:text-xl">{social.name}</h3>
 
-                    <p className="flex min-h-15 items-center justify-center px-2 text-sm text-slate-200">
+                    <p className="flex min-h-12 items-center justify-center px-1 text-xs text-slate-200 sm:min-h-15 sm:px-2 sm:text-sm">
                       {social.description}
                     </p>
 
                     <Button
-                      className={`mt-auto w-full ${social.color} text-white hover:opacity-90`}
+                      className={`mt-auto w-full ${social.color} text-white hover:opacity-90 text-sm`}
                       onClick={() => window.open(social.url, "_blank")}
                     >
                       {t?.contact?.contactNow ?? "Liên hệ ngay"}

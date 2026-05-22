@@ -491,6 +491,7 @@ export default async function BlogPostPage({
   const blocks = pickBlocks(post, isVietnamese);
   const canRenderBlocks = blocks.length > 0 && hasVisibleBlockData(blocks);
   const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+  const backUrl = post.category === "knowledge" ? "/knowledge" : "/blog";
   const publishedLabel =
     post.publishedAt || post.createdAt
       ? new Date(post.publishedAt || post.createdAt).toLocaleDateString(locale, {
@@ -511,7 +512,7 @@ export default async function BlogPostPage({
         <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-white shadow-xl backdrop-blur-lg md:p-10">
           <div className="mb-6 flex items-center justify-between gap-4">
             <Link
-              href="/blog"
+              href={backUrl}
               className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
             >
               ← {ui.back}

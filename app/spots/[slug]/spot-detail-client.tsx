@@ -201,7 +201,7 @@ const uiI18n: Record<
   hi: {
     aboutTitle: "इस उड़ान स्थल के बारे में",
     galleryTitle: "यहाँ के पल",
-    storyTitle: "कहानियाँ और अनुभव",
+    storyTitle: "कहानियाँ và अनुभव",
     storySubtitle: "यात्रियों की यादगार बातें सुनें",
     quickFacts: "त्वरित जानकारी",
     altitude: "टेकऑफ ऊँचाई",
@@ -287,7 +287,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
       title: "Survol de la Vallée de Mường Hoa",
       altitude: "1 500–2 000 m",
       description:
-        `Découvrez Sapa sous un nouvel angle avec une expérience de parapente au-dessus de la vallée de Mường Hoa. Ce vol en tandem palpitant mais sécurisé est parfait pour les débutants et les amateurs d’aventure. Décollage depuis le village de Hàng Đá, l’un des sites de lancement de parapente les plus élevés du Vietnam, et survolez les rizières en terrasses emblématiques de la vallée de Mường Hoa, les villages brumeux et les paysages montagneux spectaculaires. Le vol se termine au village de Lao Chải, où vous pourrez découvrir la culture et la cuisine H’mong locales.
+        `Découvrez Sapa sous un nouvel angle avec une expérience de parapente au-dessus de la vallée de Mường Hoa. Ce vol en tandem palpitant mais sécurisé éest parfait pour les débutants et les amateurs d’aventure. Décollage depuis the village de Hàng Đá, l’un des sites de lancement de parapente les plus élevés du Vietnam, et survolez les rizières en terrasses emblématiques de la vallée de Mường Hoa, les villages brumeux et les paysages montagneux spectaculaires. Le vol se termine au village de Lao Chải, où vous pourrez découvrir la culture et la cuisine H’mong locales.
 
 📦 FORFAIT INCLUS :
 ✅ Navette aller-retour (ville de Sapa, Lao Chải, Tả Van) - selon l’option de réservation
@@ -350,7 +350,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📦 套餐包含：
 ✅ 往返接送（沙坝镇、老寨、塔范）- 根据预订选项
 ✅ 参与证书
-✅ 饮用水
+✅ 饮用水、纪念品
 ✅ 全程GoPro照片和视频（由我们提供）
 ✅ 保险
 ✅ 专业飞行员和安全装备
@@ -374,7 +374,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       title: "मुओंग होआ घाटी के ऊपर उड़ान",
       altitude: "1,500–2,000 मी",
       description:
-        `मुओंग होआ घाटी में पैराग्लाइडिंग अनुभव के साथ सापा को एक नए नज़रिये से खोजें। यह रोमांचकारी लेकिन सुरक्षित टैंडम फ्लाइट शुरुआती और एडवेंचर चाहने वालों के लिए एकदम सही है। वियतनाम के सबसे ऊंचे पैराग्लाइडिंग लॉन्च साइट्स में से एक, हांग डा गांव से टेक-ऑफ करें और मुओंग होआ घाटी की प्रतिष्ठित सीढ़ीदार खेतों, धुंधले गांवों और शानदार पहाड़ी दृश्यों के ऊपर उड़ान भरें। उड़ान लाओ चाई गांव में समाप्त होती है, जहां आप स्थानीय हमोंग संस्कृति और व्यंजनों का अनुभव कर सकते हैं।
+        `मुओंग होआ घाटी में पैराग्लाइडिंग अनुभव के साथ सापा को एक नए नज़रिये से खोजें। यह रोमांचकारी लेकिन सुरक्षित टैंडम फ्लाइट शुरुआती और एडवेंचर चाहने वालों के लिए एकदम सही है। वियतनाम के सबसे ऊंचे पैराग्लाइडिंग लॉन्च साइट्स में से एक, हांग डा गांव से टेक-ऑफ करें và मुओंग होआ घाटी की प्रतिष्ठित सीढ़ीदार खेतों, धुंधले गांवों và शानदार पहाड़ी दृश्यों के ऊपर उड़ान भरें। उड़ान लाо चाई गांव में समाप्त होती है, जहां आप स्थानीय हमोंग संस्कृति और व्यंजनों का अनुभव कर सकते हैं।
 
 📦 पैकेज में शामिल:
 ✅ राउंड-ट्रिप शटल (सापा टाउन, लाओ चाई, ता वान) - बुकिंग विकल्प के अनुसार
@@ -388,7 +388,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 📌 अतिरिक्त जानकारी:
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
-⏳ पिकअप से ड्रॉप-ऑफ तक कुल समय: लगभग 90 मिनट
+⏳ पिकअप से ड्रॉप-ऑफ तक कुल समय: लगभग 90 minute
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
 💳 नकद या क्रेडिट कार्ड भुगतान (फ्लाइंग साइट पर)
 
@@ -551,7 +551,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कामना रिकॉर्डिंग
 
 📌 अतिरिक्त जानकारी:
 🕒 उड़ान की अवधि: 10–15 मिनट (मौसम के अनुसार पायलट समय बढ़ा सकते हैं)
@@ -561,7 +561,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 ⏰ प्रतिदिन सुबह 7:00 बजे से शाम 6:00 बजे तक खुला`,
       landscape: "प्रायद्वीप – महासागर – दा नांग बे",
-      duration: "10–15 मिनट",
+      duration: "10–15 phút",
     },
   },
 
@@ -696,7 +696,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
       landscape: "Высокий перевал – долина – золотой сезон",
-      duration: "10–15 минут",
+      duration: "10–15 minutes",
     },
     zh: {
       name: "考帕山口",
@@ -732,11 +732,11 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       duration: "10–15 分钟",
     },
     hi: {
-      name: "खाउ फ़ा दर्रा",
+      name: "खाу फ़ा दर्रा",
       title: "दिग्गज दर्रे के ऊपर उड़ान",
       altitude: "1,200–1,500 मी",
       description:
-        `खाउ फ़ा दर्रे पर पैराग्लाइडिंग का अनुभव करें – वियतनाम के चार सबसे भव्य पर्वत दर्रों में से एक।
+        `खाу फ़ा दर्रे पर पैराग्लाइडिंग का अनुभव करें – वियतनाम के चार सबसे भव्य पर्वत दर्रों में से एक।
 पानी भरने का मौसम (अप्रैल–मई): सीढ़ीदार खेत आकाश के दर्पण की तरह चमकते हैं
 हरी धान का मौसम (जून–जुलाई): हरी-भरी हरियाली जीवन से भरपूर
 सुनहरी फसल का मौसम (अगस्त–सितंबर): खेत सुनहरे रंग में रंगे, मंत्रमुग्ध करने वाली सुंदरता
@@ -877,11 +877,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🔄 Бесплатный перенос/отмена из-за погоды
 💳 Оплата наличными (на месте старта)
 
-⏰ Работаем ежедневно с 7:00 до 18:00
-
-Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
+⏰ Работаем ежедневно с 7:00 до 18:00`,
       landscape: "Облака – леса – долины",
-      duration: "10–15 минут",
+      duration: "10–15 minutes",
     },
     zh: {
       name: "沾陶",
@@ -921,7 +919,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
 📦 पैकेज में शामिल:
 ✅ पहाड़ तक परिवहन
-✅ प्रतिभागिता प्रमाण पत्र
+✅ भागीदारी प्रमाण पत्र
 ✅ पीने का पानी, स्मारिका उपहार
 ✅ पूरी उड़ान की GoPro फोटो और वीडियो (हमारे द्वारा प्रदान)
 ✅ बीमा
@@ -1101,7 +1099,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
       landscape: "Холмы – рядом с Ханоем",
-      duration: "10–15 минут",
+      duration: "10–15 minutes",
     },
     zh: {
       name: "维恩南",
@@ -1126,8 +1124,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🔄 因天气原因可免费改期/取消
 💳 现金支付（在飞行点）
 
-⏰ 每日营业时间：7:00 – 18:00
-
 行程安排
 
 08:00 – 08:30 | 在酒店或集合点接客人
@@ -1136,7 +1132,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 09:30 – 10:00 | 乘坐面包车上山顶 - 领取安全装备和飞行简报
 
-10:00 – 12:00 | 与飞行员一起在美丽的天空中翱翔10–20分钟 - 着陆后立即发送照片和视频、飞行证书和免费饮料
+10:00 – 12:00 | 与飞行员一起在美丽天空中滑翔10–20分钟 - 着陆后立即发送照片和视频、飞行证书和免费饮料
 
 14:00 – 15:00 | 专车送客人返回酒店或最初的集合点
 
@@ -1145,7 +1141,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       duration: "10–15 分钟",
     },
     hi: {
-      name: "विएन नाम",
+      name: "विएн नाम",
       title: "हनोई के सबसे पास उड़ान स्थल",
       altitude: "600–1000 मी",
       description:
@@ -1173,7 +1169,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 08:00 – 08:30 | होटल या बैठक स्थल पर मेहमानों को पिकअप
 
-08:30 – 09:30 | उड़ान स्थल (दोई बु या विएन नाम पर्वत) पर स्थानांतरण। नोट: पिकअप बिंदु सेवा पैकेज पर निर्भर करता है। हम व्यवस्था करने और उड़ान की तारीख से एक रात पहले पुष्टि करने के लिए आपसे पहले संपर्क करेंगे क्योंकि यह मौसम पर निर्भर करता है।
+08:30 – 09:30 | उड़ान स्थल (दोई बु या विएन नाम पर्वत) पर स्थानांतरण। नोट: पिकअप बिंदु सेवा पैकेज पर निर्भर करता. हम व्यवस्था करने और उड़ान की तारीख से एक रात पहले पुष्टि करने के लिए आपसे पहले संपर्क करेंगे क्योंकि यह मौसम पर निर्भर करता है।
 
 09:30 – 10:00 | वैन द्वारा पहाड़ की चोटी पर स्थानांतरण - सुरक्षा उपकरण और उड़ान ब्रीफिंग प्राप्त करें
 
@@ -1335,7 +1331,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
       landscape: "Холмы – удобно – доступно",
-      duration: "10–20 минут",
+      duration: "10–20 minutes",
     },
     zh: {
       name: "多伊布 - 维恩南",
@@ -1360,8 +1356,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🔄 因天气原因可免费改期/取消
 💳 现金支付（在飞行点）
 
-⏰ 每日营业时间：7:00 – 18:00
-
 📅 行程安排：
 08:00 – 08:30 | 在酒店或约定地点接客
 08:30 – 09:30 | 前往飞行点（Đồi Bù山或Viên Nam山）
@@ -1382,13 +1376,13 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 📦 पैकेज में शामिल:
 ✅ पहाड़ तक परिवहन, हनोई से फ्लाइंग साइट तक शटल (बुकिंग विकल्प के अनुसार खुद भी आ सकते हैं)
-✅ प्रतिभागिता प्रमाण पत्र
+✅ भागीदारी प्रमाण पत्र
 ✅ पीने का पानी, स्मारिका उपहार
 ✅ पूरी उड़ान की GoPro फोटो और वीडियो (हमारे द्वारा प्रदान)
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज and 360° कैमरा रिकॉर्डिंग
 
 📌 अतिरिक्त जानकारी:
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
@@ -1579,11 +1573,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🔄 Бесплатный перенос/отмена из-за погоды
 💳 Оплата наличными (на месте старта)
 
-⏰ Работаем ежедневно с 7:00 до 18:00
-
-Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
+⏰ Работаем ежедневно с 7:00 до 18:00`,
       landscape: "Горный перевал – рисовые террасы – Каменное плато",
-      duration: "10–15 минут",
+      duration: "10–15 minutes",
     },
     zh: {
       name: "河江",
@@ -1623,7 +1615,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
 📦 पैकेज में शामिल:
 ✅ पहाड़ तक परिवहन
-✅ प्रतिभागिता प्रमाण पत्र
+✅ भागीदारी प्रमाण पत्र
 ✅ पीने का पानी, स्मारिका उपहार
 ✅ पूरी उड़ान की GoPro फोटो और वीडियो (हमारे द्वारा प्रदान)
 ✅ बीमा
@@ -1647,9 +1639,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
   generic: {
     vi: {
-      name: "Điểm bay",
+      name: "Đồi Bù - Viên Nam",
       title: "Trải nghiệm bay tuyệt vời",
-      altitude: "—",
+      altitude: "Đồi Bù: 650m | Viên Nam: 650m & 850m",
       description:
         `Rời xa phố thị chật chội, tìm về vùng ngoại ô xanh mướt cỏ cây và sự yên bình hiếm có. Điểm bay gần Hà Nội sở hữu độ cao lý tưởng cùng điều kiện thời tiết ổn định, là lựa chọn hấp dẫn, thu hút đông đảo phi công trong và ngoài nước đến khám phá và chinh phục bầu trời.
 
@@ -1669,8 +1661,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay)
 
-⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
-
 Lịch trình 
 
 08:00 – 08:30| Đón khách tại khách sạn hoặc điểm hẹn
@@ -1685,12 +1675,12 @@ Lịch trình
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
       landscape: "Núi đồi – thung lũng – mây trời",
-      duration: "—",
+      duration: "10 – 20 phút",
     },
     en: {
-      name: "Flying Spot Near Hanoi",
+      name: "Doi Bu - Vien Nam",
       title: "Flying Spot Near Hanoi - Peaceful Suburbs",
-      altitude: "600–1000 m",
+      altitude: "Doi Bu: 650m | Vien Nam: 650m & 850m",
       description:
         `Escape the crowded city and find your way to lush green suburbs with rare tranquility. This flying spot near Hanoi offers ideal altitude and stable weather conditions, attracting numerous pilots from Vietnam and abroad to explore and conquer the sky.
 
@@ -1717,9 +1707,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 08:30 – 09:30 | Transfer to flying site (Doi Bu or Vien Nam mountain)
 09:30 – 10:00 | Drive up to summit by van - Receive safety equipment & flight briefing
 10:00 – 12:00 | Glide through beautiful skies for 10–20 minutes with pilot
-14:00 – 15:00 | Return transfer to hotel or original pickup point
-
-Please book in advance so we can best arrange your paragliding experience!`,
+14:00 – 15:00 | Return transfer to hotel or original pickup point`,
       landscape: "Hills – convenient – accessible",
       duration: "10–20 minutes",
     },
@@ -1789,11 +1777,9 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 08:30 – 09:30 | Трансфер к месту полёта (гора Дой Бу или Вьен Нам)
 09:30 – 10:00 | Подъём на вершину на микроавтобусе - Получение снаряжения и инструктаж
 10:00 – 12:00 | Полёт 10–20 минут с пилотом
-14:00 – 15:00 | Возвращение в отель или к месту отправления
-
-Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
+14:00 – 15:00 | Возвращение в отель или к месту отправления`,
       landscape: "Холмы – удобно – доступно",
-      duration: "10–20 минут",
+      duration: "10–20 minutes",
     },
     zh: {
       name: "河内附近的飞行点",
@@ -1818,16 +1804,12 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🔄 因天气原因可免费改期/取消
 💳 现金支付（在飞行点）
 
-⏰ 每日营业时间：7:00 – 18:00
-
 📅 行程安排：
-08:00 – 08:30 | 在酒店或约定地点接客
+08:00 – 08:30 | 在酒店 or 约定地点接客
 08:30 – 09:30 | 前往飞行点（Đồi Bù山或Viên Nam山）
 09:30 – 10:00 | 乘车上山 - 领取安全装备和飞行说明
 10:00 – 12:00 | 与飞行员一起在美丽天空中滑翔10–20分钟
-14:00 – 15:00 | 送返酒店或原出发点
-
-请提前预订，让我们为您安排最佳的滑翔伞体验！`,
+14:00 – 15:00 | 送返酒店或原出发点`,
       landscape: "丘陵 – 方便 – 易抵达",
       duration: "10–20 分钟",
     },
@@ -1840,7 +1822,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 📦 पैकेज में शामिल:
 ✅ पहाड़ तक परिवहन, हनोई से फ्लाइंग साइट तक शटल (बुकिंग विकल्प के अनुसार खुद भी आ सकते हैं)
-✅ प्रतिभागिता प्रमाण पत्र
+✅ भागीदारी प्रमाण पत्र
 ✅ पीने का पानी, स्मारिका उपहार
 ✅ पूरी उड़ान की GoPro फोटो और वीडियो (हमारे द्वारा प्रदान)
 ✅ बीमा
@@ -1861,9 +1843,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 08:30 – 09:30 | फ्लाइंग साइट तक ट्रांसफर (डोई बू या विएन नाम पहाड़)
 09:30 – 10:00 | वैन से शिखर तक जाना - सुरक्षा उपकरण और ब्रीफिंग
 10:00 – 12:00 | पायलट के साथ 10–20 मिनट आसमान में ग्लाइड
-14:00 – 15:00 | होटल या मूल पिकअप पॉइंट तक वापसी
-
-कृपया पहले से बुक करें ताकि हम आपके पैराग्लाइडिंग अनुभव की बेहतरीन व्यवस्था कर सकें!`,
+14:00 – 15:00 | होटल या मूल पिकअप पॉइंट तक वापसी`,
       landscape: "पहाड़ियाँ – सुविधाजनक – आसान पहुँच",
       duration: "10–20 मिनट",
     },
@@ -2025,7 +2005,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon टीम",
         date: "2024-12-12",
         content:
-          "सुबह ठंड तीखी थी, लेकिन हवा स्मूद रही। सूरज निकलते ही पाला पिघला और गांव व खेत चमक उठे।",
+          "सुबह ठंड तीखी थी, लेकिन हवा स्मूद रही। सूरज निकलते ही पाला पिघला và गांव và खेत चमक उठे।",
       },
       {
         id: 3,
@@ -2192,7 +2172,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon टीम",
         date: "2025-06-28",
         content:
-          "बेहतरीन हवा में हल्का-सा कंट्रोल ट्राई किया—जेड-ग्रीन समुद्र की बैकग्राउंड के साथ सेल्फी वीडियो एकदम शानदार।",
+          "बेहतरीन हवा में हल्का-सा कंट्रोल ट्राई किया—जेд-ग्रीन समुद्र की बैकग्राउंड के साथ सेल्फी वीडियो एकदम शानदार।",
       },
     ],
   },
@@ -2280,7 +2260,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
       {
         id: 1,
         title: "Величественный перевал Кхау Фа",
-        author: "Нго Ван Фат",
+        author: "Нго ... Фат",
         date: "10.09.2025",
         content:
           "Большой перепад высот и уверенный подъём. Внизу сияет золотая долина Му Канг Чай — чистый восторг.",
@@ -3219,7 +3199,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Équipe Mebayluon",
         date: "—",
         content:
-          "Des conditions régulières pour un vol doux et sûr — idéal aussi pour une première.",
+          "Des conditions régulières pour un vol doux et sûr — idéal aussi cho une première.",
       },
       {
         id: 3,
@@ -3445,7 +3425,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                       <Mountain className="text-emerald-400" size={18} strokeWidth={1.5} />
                     </div>
                     <h4 className="text-[10px] md:text-xs uppercase tracking-wider text-stone-400 mb-1 font-medium">{ui.altitude}</h4>
-                    <p className="text-sm md:text-lg font-bold text-white tracking-tight">{copy.altitude}</p>
+                    <p className="text-xs md:text-sm font-bold text-white tracking-tight whitespace-pre-line">{copy.altitude}</p>
                   </div>
 
                   {/* Column 2: Flight Time */}

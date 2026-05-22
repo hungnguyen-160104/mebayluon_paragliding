@@ -87,6 +87,28 @@ function fmtDate(dateStr: string | undefined, locale: string, fallback: string) 
   return d.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
+function normalizeInlineText(text: string) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
+function pickTitle(post: any, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: any, isVietnamese: boolean) {
+  if (isVietnamese) {
+    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
+    const text = stripHtml(post.contentVi || post.content || "");
+    return text.length > 120 ? `${text.slice(0, 120).trim()}…` : text;
+  }
+
+  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
+  const text = stripHtml(post.content || post.contentVi || "");
+  return text.length > 120 ? `${text.slice(0, 120).trim()}…` : text;
+}
+
 async function fetchPosts() {
   const data = await getPosts({
     category: "knowledge",
@@ -119,18 +141,17 @@ export default async function KnowledgeAllPage() {
             {data.items.map((p: any) => {
               const cover = p.coverImage || p.thumbnail || "/images/mebayluon.jpg";
               const dateStr = p.publishedAt || p.createdAt;
-              const excerpt = stripHtml(p.content).slice(0, 120);
 
               return (
                 <li key={p._id || p.slug} className="group">
                   <Link href={`/blog/${p.slug}`}>
                     <div className="bg-white/12 border border-white/25 rounded-lg overflow-hidden backdrop-blur-md hover:bg-white/20 transition hover:scale-[1.01]">
                       <div className="relative h-48 w-full">
-                        <Image src={cover} alt={p.title} fill className="object-cover" />
+                        <Image src={cover} alt={pickTitle(p, lang === "vi")} fill className="object-cover" />
                       </div>
 
                       <div className="p-5">
-                        <h3 className="text-xl font-bold mb-2 line-clamp-2">{p.title}</h3>
+                        <h3 className="text-xl font-bold mb-2 line-clamp-2">{pickTitle(p, lang === "vi")}</h3>
 
                         <div className="text-sm text-white/75 flex items-center gap-4 mb-2">
                           <span>{fmtDate(dateStr, t.dateLocale, t.unknownDate)}</span>
@@ -139,7 +160,7 @@ export default async function KnowledgeAllPage() {
                           </span>
                         </div>
 
-                        <p className="text-white/85 text-sm line-clamp-3">{excerpt}…</p>
+                        <p className="text-white/85 text-sm line-clamp-3">{pickExcerpt(p, lang === "vi")}</p>
                       </div>
                     </div>
                   </Link>

@@ -82,7 +82,7 @@ export default function ContactPage() {
             <p className="text-lg text-slate-200 max-w-2xl mx-auto">{t.contact.connectSubtitle}</p>
           </motion.div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 max-w-7xl mx-auto mb-16">
             {socialLinks.map((social, index) => (
               <motion.div
                 key={social.name}
@@ -90,9 +90,10 @@ export default function ContactPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
+                className={index === socialLinks.length - 1 && socialLinks.length % 2 !== 0 ? "col-span-2 md:col-span-1" : ""}
               >
                 <Card className="h-full bg-white/20 backdrop-blur-md border border-white/30 hover:shadow-2xl transition-all duration-300 text-white">
-                  <CardContent className="pt-8 pb-6 text-center space-y-4 flex flex-col items-center">
+                  <CardContent className="pt-8 pb-6 px-4 sm:px-6 text-center space-y-4 flex flex-col items-center">
                     <div
                       className={`relative inline-flex items-center justify-center w-16 h-16 rounded-full ${social.color} mb-2 overflow-hidden`}
                     >
@@ -103,12 +104,12 @@ export default function ContactPage() {
                         className="object-cover"
                       />
                     </div>
-                    <h3 className="text-xl font-bold">{social.name}</h3>
-                    <p className="text-sm text-slate-200 min-h-15 flex items-center justify-center px-2">
+                    <h3 className="text-lg sm:text-xl font-bold">{social.name}</h3>
+                    <p className="text-xs sm:text-sm text-slate-200 min-h-12 sm:min-h-15 flex items-center justify-center px-1 sm:px-2">
                       {social.description}
                     </p>
                     <Button
-                      className={`w-full mt-auto ${social.color} hover:${social.color}/90 text-white`}
+                      className={`w-full mt-auto ${social.color} hover:${social.color}/90 text-white text-sm`}
                       onClick={() => window.open(social.url, "_blank")}
                     >
                       {t.contact.contactNow}

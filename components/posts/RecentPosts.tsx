@@ -3,23 +3,42 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/language-context";
 
 type RecentPost = {
   id: string;
   slug: string;
-  title: string;
+  title?: string;
+  titleVi?: string;
   date: string;
   thumbnail: string | null;
-  excerpt: string;
+  excerpt?: string;
+  excerptVi?: string;
 };
 
 type RecentPostsProps = {
   title?: string;
 };
 
+function pickTitle(post: RecentPost, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: RecentPost, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.excerptVi || post.excerpt || ""
+    : post.excerpt || post.excerptVi || "";
+}
+
 export default function RecentPosts({
-  title = "BÀI VIẾT MỚI NHẤT",
+  title,
 }: RecentPostsProps) {
+  const { language } = useLanguage();
+  const isVietnamese = language === "vi";
+  const displayTitle = title || (isVietnamese ? "BÀI VIẾT MỚI NHẤT" : "LATEST POSTS");
+
   const [posts, setPosts] = useState<RecentPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +88,7 @@ export default function RecentPosts({
     <section className="py-8">
       <div className="container mx-auto max-w-6xl px-4">
         <h2 className="mb-6 text-center text-3xl font-extrabold text-white drop-shadow md:text-4xl">
-          {title}
+          {displayTitle}
         </h2>
       </div>
 
@@ -77,6 +96,8 @@ export default function RecentPosts({
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => {
             const cover = post.thumbnail || "/images/mebayluon.jpg";
+            const currentTitle = pickTitle(post, isVietnamese);
+            const currentExcerpt = pickExcerpt(post, isVietnamese);
 
             return (
               <li key={post.id || post.slug}>
@@ -89,7 +110,7 @@ export default function RecentPosts({
                     <div className="relative h-44 w-full overflow-hidden md:h-48">
                       <Image
                         src={cover}
-                        alt={post.title}
+                        alt={currentTitle}
                         fill
                         sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -100,11 +121,11 @@ export default function RecentPosts({
 
                     <div className="p-5">
                       <h3 className="mb-2 line-clamp-2 text-lg font-bold text-white group-hover:text-white/90 md:text-xl">
-                        {post.title}
+                        {currentTitle}
                       </h3>
 
                       <p className="line-clamp-3 text-sm text-white/80">
-                        {post.excerpt}
+                        {currentExcerpt}
                       </p>
                     </div>
                   </div>

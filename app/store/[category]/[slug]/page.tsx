@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { getProductBySlug } from "@/lib/product-api";
 
 /** ===== Types ===== */
@@ -10,14 +10,28 @@ type PostLite = {
   _id?: string;
   id?: string;
   slug: string;
-  title: string;
+  title?: string;
+  titleVi?: string;
   excerpt?: string;
+  excerptVi?: string;
   coverImage?: string;
   thumbnail?: string;
   category?: string | string[];
   createdAt?: string;
   publishedAt?: string;
 };
+
+function pickTitle(post: any, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: any, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.excerptVi || post.excerpt || ""
+    : post.excerpt || post.excerptVi || "";
+}
 
 /** ===== Lấy base URL đúng ở mọi môi trường ===== */
 async function getBase(): Promise<string> {
@@ -84,11 +98,15 @@ export default async function ProductDetailPage({
   params: Promise<{ category: string; slug: string }>;
 }) {
   const { slug } = await params;
+  const c = await cookies();
+  const rawLang = c.get("language")?.value || c.get("lang")?.value || "vi";
+  const isVietnamese = String(rawLang).toLowerCase().startsWith("vi");
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   // Lấy lại bài viết liên quan trong mục "store" qua API (ổn định)
   const relatedPosts = await fetchRelatedPostsInStore(4);
+  const currentTitle = pickTitle(product, isVietnamese);
 
   return (
     // ⚠️ [THAY ĐỔI 1]: Thêm nền và overlay
@@ -106,7 +124,7 @@ export default async function ProductDetailPage({
           
           {/* ===== Tiêu đề sản phẩm ===== */}
           <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
-            {product.title}
+            {currentTitle}
           </h1>
 
           {/* ===== Ảnh sản phẩm ===== */}
@@ -114,7 +132,7 @@ export default async function ProductDetailPage({
             <div className="not-prose relative w-full h-64 md:h-96 mb-6">
               <Image
                 src={product.coverImage}
-                alt={product.title}
+                alt={currentTitle}
                 fill
                 priority
                 className="object-cover rounded-lg"
@@ -145,6 +163,9 @@ export default async function ProductDetailPage({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedPosts.map((p) => {
                   const date = (p as any).date || p.publishedAt || p.createdAt;
+                  const itemTitle = pickTitle(p, isVietnamese);
+                  const itemExcerpt = pickExcerpt(p, isVietnamese);
+                  
                   return (
                     <Link
                       key={p._id || p.id || p.slug}
@@ -154,7 +175,7 @@ export default async function ProductDetailPage({
                       <div className="relative h-44">
                         <Image
                           src={p.thumbnail || "/post-fallback.jpg"}
-                          alt={p.title}
+                          alt={itemTitle}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                         />
@@ -163,23 +184,23 @@ export default async function ProductDetailPage({
 
                       <div className="p-5 text-white">
                         <h3 className="text-lg font-semibold line-clamp-2 mb-1">
-                          {p.title}
+                          {itemTitle}
                         </h3>
 
                         {date && (
                           <p className="text-xs text-white/80 mb-2">
-                            {new Date(date).toLocaleDateString("vi-VN")}
+                            {new Date(date).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
                           </p>
                         )}
 
-                        {p.excerpt && (
+                        {itemExcerpt && (
                           <p className="text-sm text-white/90 line-clamp-2 mb-3">
-                            {p.excerpt}
+                            {itemExcerpt}
                           </p>
                         )}
 
                         <span className="inline-flex items-center gap-1 text-sm font-medium">
-                          Xem chi tiết →
+                          {isVietnamese ? "Xem chi tiết →" : "Read more →"}
                         </span>
                       </div>
                     </Link>

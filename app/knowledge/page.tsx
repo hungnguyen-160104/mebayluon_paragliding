@@ -28,6 +28,35 @@ async function getLangFromCookies(): Promise<Lang> {
   return toLang(v);
 }
 
+function stripHtml(html: string) {
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeInlineText(text: string) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
+function pickTitle(post: any, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: any, isVietnamese: boolean) {
+  if (isVietnamese) {
+    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
+    const text = stripHtml(post.contentVi || post.content || "");
+    return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
+  }
+
+  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
+  const text = stripHtml(post.content || post.contentVi || "");
+  return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
+}
+
 const I18N: Record<
   Lang,
   {
@@ -234,7 +263,7 @@ export default async function KnowledgeAllPage({
                       <div className="relative h-60 w-full overflow-hidden">
                         <Image
                           src={cover}
-                          alt={p.title}
+                          alt={pickTitle(p, lang === "vi")}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -242,7 +271,7 @@ export default async function KnowledgeAllPage({
                       </div>
                       <div className="p-6 flex flex-col flex-1">
                         <h3 className="text-xl font-bold mb-3 line-clamp-2 leading-snug text-white group-hover:text-sky-300 transition-colors">
-                          {p.title}
+                          {pickTitle(p, lang === "vi")}
                         </h3>
                         <div className="mt-auto text-sm text-white/70 flex items-center gap-2">
                           <svg

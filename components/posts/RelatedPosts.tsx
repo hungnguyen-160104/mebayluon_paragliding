@@ -9,7 +9,9 @@ type PostLite = {
   _id?: string;
   slug: string;
   title?: string;
+  titleVi?: string;
   excerpt?: string;
+  excerptVi?: string;
   thumbnail?: string | null;
   coverImage?: string | null;
   createdAt?: string;
@@ -96,6 +98,18 @@ function formatPrice(v?: number | null) {
   }
 }
 
+function pickTitle(post: PostLite, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.titleVi || post.title || ""
+    : post.title || post.titleVi || "";
+}
+
+function pickExcerpt(post: PostLite, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.excerptVi || post.excerpt || ""
+    : post.excerpt || post.excerptVi || "";
+}
+
 export default async function RelatedPosts({
   title = "Bài viết liên quan",
   idOrSlug,
@@ -113,6 +127,13 @@ export default async function RelatedPosts({
   excludeId?: string | string[];
   hrefBuilder?: (slug: string) => string;
 }) {
+  const { cookies } = await import("next/headers");
+  const c = await cookies();
+  const rawLang =
+    c.get("language")?.value || c.get("lang")?.value || "vi";
+  const lang = String(rawLang).toLowerCase();
+  const isVietnamese = lang.startsWith("vi");
+
   const posts =
     idOrSlug
       ? await fetchRelatedById(idOrSlug, limit)
@@ -132,7 +153,8 @@ export default async function RelatedPosts({
             const key = p.id || p._id || `${p.slug}-${idx}`;
             const date = p.publishedAt || p.createdAt;
             const img = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
-            const alt = p.title || "Bài viết";
+            const currentTitle = pickTitle(p, isVietnamese) || "Bài viết";
+            const currentExcerpt = pickExcerpt(p, isVietnamese);
             const priceText = formatPrice(p.price);
 
             return (
@@ -144,7 +166,7 @@ export default async function RelatedPosts({
                 <div className="relative h-44">
                   <Image
                     src={img}
-                    alt={alt}
+                    alt={currentTitle}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
@@ -153,7 +175,7 @@ export default async function RelatedPosts({
 
                 <div className="p-5">
                   <h4 className="text-lg font-semibold text-white line-clamp-2 mb-1">
-                    {p.title || "Bài viết"}
+                    {currentTitle}
                   </h4>
 
                   {/* ✅ Nếu có giá thì ưu tiên hiện ở đây */}
@@ -165,16 +187,16 @@ export default async function RelatedPosts({
 
                   {date && (
                     <p className="text-xs text-gray-300 mb-2">
-                      {new Date(date).toLocaleDateString("vi-VN")}
+                      {new Date(date).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
                     </p>
                   )}
 
-                  {p.excerpt && (
-                    <p className="text-sm text-gray-200 line-clamp-2 mb-3">{p.excerpt}</p>
+                  {currentExcerpt && (
+                    <p className="text-sm text-gray-200 line-clamp-2 mb-3">{currentExcerpt}</p>
                   )}
 
                   <span className="inline-flex items-center gap-1 text-sm font-medium text-white">
-                    Xem chi tiết →
+                    {isVietnamese ? "Xem chi tiết →" : "Read more →"}
                   </span>
                 </div>
               </Link>
