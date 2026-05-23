@@ -1,4 +1,4 @@
-// app/store/[category]/[slug]/page.tsx
+﻿// app/store/[category]/[slug]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -27,30 +27,36 @@ function pickTitle(post: any, isVietnamese: boolean) {
     : post.title || post.titleVi || "";
 }
 
+function pickContent(post: any, isVietnamese: boolean) {
+  return isVietnamese
+    ? post.contentVi || post.content || ""
+    : post.content || post.contentVi || "";
+}
+
 function pickExcerpt(post: any, isVietnamese: boolean) {
   return isVietnamese
     ? post.excerptVi || post.excerpt || ""
     : post.excerpt || post.excerptVi || "";
 }
 
-/** ===== Lấy base URL đúng ở mọi môi trường ===== */
+/** ===== Láº¥y base URL Ä‘Ãºng á»Ÿ má»i mÃ´i trÆ°á»ng ===== */
 async function getBase(): Promise<string> {
   const pub = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
   if (pub) return pub.replace(/\/$/, "");
-  const h = await headers(); // NOTE: dự án của bạn cần await
+  const h = await headers(); // NOTE: dá»± Ã¡n cá»§a báº¡n cáº§n await
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   return host ? `${proto}://${host}` : "http://localhost:8080";
 }
 
-/** ===== Fetch related posts qua API (an toàn) ===== */
+/** ===== Fetch related posts qua API (an toÃ n) ===== */
 async function fetchRelatedPostsInStore(limit = 4): Promise<PostLite[]> {
   const base = await getBase();
   const url = `${base}/api/posts/related?category=store&limit=${limit}`;
   const res = await fetch(url, { next: { revalidate: 60 } });
   if (!res.ok) return [];
   const data = (await res.json()) as any[];
-  // Chuẩn hoá + tránh trùng slug
+  // Chuáº©n hoÃ¡ + trÃ¡nh trÃ¹ng slug
   const seen = new Set<string>();
   const list: PostLite[] = [];
   for (const p of data) {
@@ -74,7 +80,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const p = await getProductBySlug(slug).catch(() => null);
   return {
-    title: p ? `${p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store",
+    title: p ? `${p.title} | Mebayluon Store` : "Sáº£n pháº©m | Mebayluon Store",
     description: p
       ? String(p.content || "")
           .replace(/<[^>]+>/g, "")
@@ -91,7 +97,7 @@ export async function generateMetadata({
   };
 }
 
-/** ===== PAGE: Chi tiết sản phẩm + Bài viết liên quan trong Cửa hàng ===== */
+/** ===== PAGE: Chi tiáº¿t sáº£n pháº©m + {isVietnamese ? "Bài viết liên quan" : "Related Products"} ===== */
 export default async function ProductDetailPage({
   params,
 }: {
@@ -104,30 +110,30 @@ export default async function ProductDetailPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  // Lấy lại bài viết liên quan trong mục "store" qua API (ổn định)
+  // Láº¥y láº¡i bÃ i viáº¿t liÃªn quan trong má»¥c "store" qua API (á»•n Ä‘á»‹nh)
   const relatedPosts = await fetchRelatedPostsInStore(4);
   const currentTitle = pickTitle(product, isVietnamese);
 
   return (
-    // ⚠️ [THAY ĐỔI 1]: Thêm nền và overlay
+    // âš ï¸ [THAY Äá»”I 1]: ThÃªm ná»n vÃ  overlay
     <main
       className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/30 z-0" />
 
-      {/* ⚠️ [THAY ĐỔI 2]: Thêm container căn lề và padding */}
+      {/* âš ï¸ [THAY Äá»”I 2]: ThÃªm container cÄƒn lá» vÃ  padding */}
       <div className="container mx-auto px-4 relative z-10 pt-28 pb-16">
         
-        {/* ⚠️ [THAY ĐỔI 3]: Bọc nội dung sản phẩm vào "tấm kính mờ" */}
+        {/* âš ï¸ [THAY Äá»”I 3]: Bá»c ná»™i dung sáº£n pháº©m vÃ o "táº¥m kÃ­nh má»" */}
         <div className="prose prose-invert text-white bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl p-6 md:p-10 max-w-none">
           
-          {/* ===== Tiêu đề sản phẩm ===== */}
+          {/* ===== TiÃªu Ä‘á» sáº£n pháº©m ===== */}
           <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
             {currentTitle}
           </h1>
 
-          {/* ===== Ảnh sản phẩm ===== */}
+          {/* ===== áº¢nh sáº£n pháº©m ===== */}
           {product.coverImage && (
             <div className="not-prose relative w-full h-64 md:h-96 mb-6">
               <Image
@@ -140,26 +146,26 @@ export default async function ProductDetailPage({
             </div>
           )}
 
-          {/* ===== Nội dung sản phẩm ===== */}
+          {/* ===== Ná»™i dung sáº£n pháº©m ===== */}
           <article
-            className="" // Kế thừa 'prose prose-invert' từ cha
-            dangerouslySetInnerHTML={{ __html: String(product.content || "") }}
+            className="" // Káº¿ thá»«a 'prose prose-invert' tá»« cha
+            dangerouslySetInnerHTML={{ __html: String(pickContent(product, isVietnamese) || "") }}
           />
         </div>
-        {/* Hết tấm kính mờ của sản phẩm */}
+        {/* Háº¿t táº¥m kÃ­nh má» cá»§a sáº£n pháº©m */}
 
 
-        {/* ===== Bài viết liên quan trong Cửa hàng (glassmorphism) ===== */}
+        {/* ===== {isVietnamese ? "Bài viết liên quan" : "Related Products"} (glassmorphism) ===== */}
         {relatedPosts.length > 0 && (
-          // ⚠️ [THAY ĐỔI 4]: Xóa 'container' và 'px-0' vì đã có container cha
+          // âš ï¸ [THAY Äá»”I 4]: XÃ³a 'container' vÃ  'px-0' vÃ¬ Ä‘Ã£ cÃ³ container cha
           <section className="relative z-10 py-12 md:py-16">
             <div>
-              {/* ⚠️ [THAY ĐỔI 5]: Đổi màu tiêu đề sang trắng */}
+              {/* âš ï¸ [THAY Äá»”I 5]: Äá»•i mÃ u tiÃªu Ä‘á» sang tráº¯ng */}
               <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">
-                Bài viết liên quan trong Cửa hàng
+                {isVietnamese ? "Bài viết liên quan" : "Related Products"}
               </h2>
 
-              {/* Các card này đã có sẵn style glassmorphism */}
+              {/* CÃ¡c card nÃ y Ä‘Ã£ cÃ³ sáºµn style glassmorphism */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedPosts.map((p) => {
                   const date = (p as any).date || p.publishedAt || p.createdAt;
@@ -200,7 +206,7 @@ export default async function ProductDetailPage({
                         )}
 
                         <span className="inline-flex items-center gap-1 text-sm font-medium">
-                          {isVietnamese ? "Xem chi tiết →" : "Read more →"}
+                          {isVietnamese ? "Xem chi tiáº¿t â†’" : "Read more â†’"}
                         </span>
                       </div>
                     </Link>
@@ -211,7 +217,13 @@ export default async function ProductDetailPage({
           </section>
         )}
       </div>
-      {/* Hết container căn lề */}
+      {/* Háº¿t container cÄƒn lá» */}
     </main>
   );
 }
+
+
+
+
+
+

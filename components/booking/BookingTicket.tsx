@@ -385,10 +385,14 @@ export default function BookingTicket({
       .filter(Boolean) as Array<{ label: string; detail?: string; lineTotal: number }>;
   }, [selectedServices, lang, guestsCount]);
 
-  const bookingPrice = bookingResult?.price || {};
-  const servicesBreakdownFromResult = Array.isArray(bookingPrice?.servicesBreakdown)
-    ? bookingPrice.servicesBreakdown
-    : [];
+  const bookingPrice = useMemo(() => bookingResult?.price || {}, [bookingResult?.price]);
+  
+  const servicesBreakdownFromResult = useMemo(() => {
+    return Array.isArray(bookingPrice?.servicesBreakdown)
+      ? bookingPrice.servicesBreakdown
+      : [];
+  }, [bookingPrice]);
+
   const hasServicesBreakdownFromResult = servicesBreakdownFromResult.length > 0;
   const servicesTotalFromResult = Number(bookingPrice?.servicesTotal);
   const hasServicesTotalFromResult = Number.isFinite(servicesTotalFromResult) && servicesTotalFromResult > 0;

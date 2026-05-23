@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { listProductsByCategory } from "@/lib/product-api";
@@ -9,7 +9,6 @@ import clsx from "clsx";
 
 import {
   getStoreTexts,
-  STORE_CATEGORY_KEYS_EXCEPT_ALL,
   type StoreLang,
 } from "@/lib/store-texts";
 
@@ -18,14 +17,12 @@ import { useLanguage } from "@/contexts/language-context";
 function toStoreLang(v: unknown): StoreLang {
   const s = String(v ?? "vi").toLowerCase();
   const code = s.slice(0, 2);
-  if (code === "vi" || code === "en" || code === "fr" || code === "ru" || code === "zh" || code === "hi") {
-    return code;
-  }
-  return "vi";
+  if (code === "vi") return "vi";
+  return "en";
 }
 
 export default function StoreHomePage() {
-  const { language } = useLanguage(); // ✅ lấy ngôn ngữ hiện tại từ context
+  const { language } = useLanguage(); // Lấy ngôn ngữ hiện tại từ context
   const lang = toStoreLang(language);
 
   const ui = useMemo(() => getStoreTexts(lang), [lang]);
@@ -37,17 +34,8 @@ export default function StoreHomePage() {
   async function fetchProducts(category: StoreCategory | "all") {
     setLoading(true);
     try {
-      if (category === "all") {
-        const results = await Promise.all(
-          STORE_CATEGORY_KEYS_EXCEPT_ALL.map((cat) =>
-            listProductsByCategory({ category: cat })
-          )
-        );
-        setProducts(results.flatMap((r) => r.items));
-      } else {
-        const res = await listProductsByCategory({ category });
-        setProducts(res.items);
-      }
+      const res = await listProductsByCategory({ category });
+      setProducts(res.items);
     } catch (err) {
       console.error("Error loading products:", err);
       setProducts([]);
@@ -94,7 +82,9 @@ export default function StoreHomePage() {
 
           {loading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-10 h-10 text-white animate-spin" />
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-10 h-10 text-white animate-spin" />
+              </div>
             </div>
           ) : products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

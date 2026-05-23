@@ -10,10 +10,34 @@ export async function POST(
   try {
     await connectDB();
     const { slug } = await params;
+
+    if (!slug || typeof slug !== "string") {
+      return NextResponse.json(
+        { message: "Invalid slug parameter" },
+        { status: 400 }
+      );
+    }
+
     const result = await addView(slug);
-    return NextResponse.json(result);
+
+    if (!result) {
+      return NextResponse.json(
+        { message: "Post not found", slug },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      slug: result.slug,
+      views: result.views || 0,
+      success: true,
+    });
   } catch (err) {
     console.error("POST /api/posts/slug/[slug]/view error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error", error: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    );
   }
 }
+

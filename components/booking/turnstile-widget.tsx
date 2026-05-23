@@ -153,12 +153,14 @@ export default function TurnstileWidget({
       }
     })();
 
+    const cleanupContainerNode = containerRef.current;
+
     return () => {
       cancelled = true;
       mountedRef.current = false;
 
-      if (containerRef.current) {
-        containerRef.current.removeAttribute("data-turnstile-widget-id");
+      if (cleanupContainerNode) {
+        cleanupContainerNode.removeAttribute("data-turnstile-widget-id");
       }
 
       if (widgetIdRef.current && window.turnstile) {

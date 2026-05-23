@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getPostBySlug, getPosts } from "@/lib/posts-data";
+import { ViewCounter } from "@/components/ViewCounter";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -502,10 +503,12 @@ export default async function BlogPostPage({
       : ui.unknownDate;
 
   return (
-    <main
-      className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
-    >
+    <>
+      <ViewCounter slug={slug} />
+      <main
+        className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
+        style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
+      >
       <div className="absolute inset-0 z-0 bg-black/30" />
 
       <div className="container relative z-10 mx-auto px-4 pb-16 pt-28">
@@ -637,6 +640,7 @@ export default async function BlogPostPage({
           )}
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

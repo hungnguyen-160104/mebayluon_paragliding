@@ -3,18 +3,22 @@ import api from "@/lib/api";
 import type { Paginated, Post, StoreCategory } from "@/types/frontend/post";
 
 export async function listProductsByCategory(opts: {
-  category: StoreCategory;
+  category?: StoreCategory | "all" | string;
   page?: number;
   limit?: number;
 }): Promise<Paginated<Post>> {
-  const { category, page = 1, limit = 12 } = opts;
+  const { category, page = 1, limit = 50 } = opts;
   try {
+    const isCategoryAll = !category || category === "all";
+    const categoryQuery = isCategoryAll ? "" : `&storeCategory=${category}`;
     return await api<Paginated<Post>>(
-      `/api/products?storeCategory=${category}&page=${page}&limit=${limit}`
+      `/api/products?published=true&page=${page}&limit=${limit}${categoryQuery}`
     );
   } catch {
+    const isCategoryAll = !category || category === "all";
+    const categoryQuery = isCategoryAll ? "" : `&storeCategory=${category}`;
     return await api<Paginated<Post>>(
-      `/api/posts?category=store&storeCategory=${category}&page=${page}&limit=${limit}`
+      `/api/posts?category=store&published=true&page=${page}&limit=${limit}${categoryQuery}`
     );
   }
 }

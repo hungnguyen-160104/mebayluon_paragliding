@@ -6,7 +6,7 @@ import { Plus, X } from "lucide-react";
 import {
   AlignLeft,
   Heading,
-  Image,
+  Image as ImageIcon,
   Images,
   Quote,
   List,
@@ -29,7 +29,7 @@ interface PostBlockBuilderProps {
 const iconMap: Record<string, React.ReactNode> = {
   AlignLeft: <AlignLeft size={18} />,
   Heading: <Heading size={18} />,
-  Image: <Image size={18} />,
+  Image: <ImageIcon size={18} />,
   Images: <Images size={18} />,
   Quote: <Quote size={18} />,
   List: <List size={18} />,
@@ -148,7 +148,7 @@ export default function PostBlockBuilder({ blocks, onChange }: PostBlockBuilderP
       {/* Empty state */}
       {blocks.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          <p className="text-sm">Chưa có nội dung. Nhấn "Thêm block" để bắt đầu.</p>
+          <p className="text-sm">Chưa có nội dung. Nhấn &quot;Thêm block&quot; để bắt đầu.</p>
         </div>
       )}
     </div>

@@ -1,12 +1,15 @@
-// mbl-paragliding/app/store/components/ProductCard.tsx
+﻿// mbl-paragliding/app/store/components/ProductCard.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Post } from "@/types/frontend/post";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function ProductCard({ product }: { product: Post }) {
-  // Nếu có storeCategory thì đi theo /store/[category]/[slug], nếu không fallback /store/[slug]
+  const { language } = useLanguage();
+  const isVi = String(language || "vi").toLowerCase().startsWith("vi");
+  // Náº¿u cÃ³ storeCategory thÃ¬ Ä‘i theo /store/[category]/[slug], náº¿u khÃ´ng fallback /store/[slug]
   const detailHref = product.storeCategory
     ? `/store/${product.storeCategory}/${product.slug}`
     : `/store/${product.slug}`;
@@ -16,20 +19,20 @@ export default function ProductCard({ product }: { product: Post }) {
 
   return (
     <Card className="overflow-hidden bg-white/20 backdrop-blur-md border-white/30 hover:shadow-2xl transition-all">
-      {/* Ảnh cover */}
+      {/* áº¢nh cover */}
       <div className="relative h-56">
         {isPixabay ? (
-          // Sử dụng regular img tag cho Pixabay (không optimize)
+          // Sá»­ dá»¥ng regular img tag cho Pixabay (khÃ´ng optimize)
           <img
             src={imageUrl}
-            alt={product.title}
+            alt={isVi ? (product.titleVi || product.title) : product.title}
             className="w-full h-full object-cover"
           />
         ) : (
-          // Sử dụng Next.js Image cho Cloudinary & internal images
+          // Sá»­ dá»¥ng Next.js Image cho Cloudinary & internal images
           <Image
             src={imageUrl}
-            alt={product.title}
+            alt={isVi ? (product.titleVi || product.title) : product.title}
             fill
             className="object-cover"
           />
@@ -38,13 +41,13 @@ export default function ProductCard({ product }: { product: Post }) {
       </div>
 
       <CardHeader className="pb-2">
-        <CardTitle className="text-white line-clamp-2">{product.title}</CardTitle>
+        <CardTitle className="text-white line-clamp-2">{isVi ? (product.titleVi || product.title) : product.title}</CardTitle>
       </CardHeader>
 
       <CardContent className="pt-0 text-slate-200">
         {typeof product.price === "number" && (
           <p className="text-lg font-semibold">
-            Giá{" "}
+            {isVi ? "Giá" : "Price"}{" "}
             {new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
@@ -53,17 +56,17 @@ export default function ProductCard({ product }: { product: Post }) {
         )}
 
         <div className="mt-4 flex flex-wrap gap-3">
-          {/* Xem chi tiết */}
+          {/* {isVi ? "Xem chi tiết" : "Details"} */}
           <Link href={detailHref} className="w-full sm:w-auto">
             <Button variant="secondary" className="w-full">
-              Xem chi tiết
+              {isVi ? "Xem chi tiết" : "Details"}
             </Button>
           </Link>
 
-          {/* Nút Liên hệ → scroll đến #contact ở Trang chủ */}
+          {/* NÃºt {isVi ? "Liên hệ" : "Contact"} â†’ scroll Ä‘áº¿n #contact á»Ÿ Trang chá»§ */}
           <Link href="/#contact" className="w-full sm:w-auto">
             <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
-              Liên hệ
+              {isVi ? "Liên hệ" : "Contact"}
             </Button>
           </Link>
         </div>
@@ -71,3 +74,6 @@ export default function ProductCard({ product }: { product: Post }) {
     </Card>
   );
 }
+
+
+
