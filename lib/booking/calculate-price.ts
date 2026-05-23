@@ -778,7 +778,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "河内",
       hi: "हनोई",
     },
-    basePriceVND: () => 1_690_000,
+    basePriceVND: () => 1_790_000,
     basePriceUSD: () => 65,
     packages: [
       {
@@ -795,7 +795,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           vi: "Cất cánh từ đỉnh Viên Nam, độ cao 850m – điểm cất cánh dù lượn cao nhất Hà Nội, độ chênh cao lớn nhất Việt Nam (hơn 800m). Thời lượng bay lâu, tầm nhìn rộng, ngắm trọn Sông Đà và núi Ba Vì ngay trước mắt.",
           en: "Take off from Vien Nam summit, 850m altitude – the highest paragliding launch in Hanoi and the greatest altitude difference in Vietnam (over 800m). Longer flights, panoramic views, with the Da River and Ba Vi mountain right in front of you.",
         },
-        priceVND: 1_690_000,
+        priceVND: 2_090_000,
         priceUSD: 65,
         flightTypes: [
           {
@@ -808,7 +808,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
               zh: "无动力滑翔伞",
               hi: "पैराग्लाइडिंग",
             },
-            fixed: 1_690_000,
+            fixed: 2_090_000,
           },
         ],
       },
@@ -822,7 +822,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "从650米起飞 – 标准套餐",
           hi: "650m से उड़ान – मानक पैकेज",
         },
-        priceVND: 1_690_000,
+        priceVND: 1_790_000,
         priceUSD: 65,
         flightTypes: [
           {
@@ -835,7 +835,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
               zh: "无动力滑翔伞",
               hi: "पैराग्लाइडिंग",
             },
-            fixed: 1_690_000,
+            fixed: 1_790_000,
           },
         ],
       },
@@ -1209,6 +1209,18 @@ function getBasePriceVND(p: ComputeParams): number {
     return getKhauPhaPackageBasePriceVND(packageKey, flightTypeKey, dateISO);
   }
 
+  if (packageKey) {
+    const locCfg = LOCATIONS[location] as any;
+    const pkg = locCfg.packages?.find((pk: any) => pk.key === packageKey);
+    if (pkg) {
+      if (flightTypeKey && pkg.flightTypes?.length) {
+        const ft = pkg.flightTypes.find((f: any) => f.key === flightTypeKey);
+        if (ft?.fixed != null) return ft.fixed;
+      }
+      if (pkg.priceVND != null) return pkg.priceVND;
+    }
+  }
+
   return LOCATIONS[location].basePriceVND(dateISO);
 }
 
@@ -1217,6 +1229,18 @@ function getBasePriceUSD(p: ComputeParams): number {
 
   if (location === "khau_pha") {
     return getKhauPhaPackageBasePriceUSD(packageKey, flightTypeKey, dateISO);
+  }
+
+  if (packageKey) {
+    const locCfg = LOCATIONS[location] as any;
+    const pkg = locCfg.packages?.find((pk: any) => pk.key === packageKey);
+    if (pkg) {
+      if (flightTypeKey && pkg.flightTypes?.length) {
+        const ft = pkg.flightTypes.find((f: any) => f.key === flightTypeKey);
+        if (ft?.fixedUSD != null) return ft.fixedUSD;
+      }
+      if (pkg.priceUSD != null) return pkg.priceUSD;
+    }
   }
 
   return LOCATIONS[location].basePriceUSD(dateISO);

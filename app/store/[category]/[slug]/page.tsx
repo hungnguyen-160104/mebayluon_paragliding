@@ -2,10 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers, cookies } from "next/headers";
-import { getProductBySlug } from "@/lib/product-api";
+import { cookies } from "next/headers";
+import { connectDB } from "@/lib/mongodb";
+import { getProductBySlug } from "@/services/product.service";
+import { Post as PostModel } from "@/models/Post.model";
 
-/** ===== Types ===== */
 type PostLite = {
   _id?: string;
   id?: string;
@@ -39,44 +40,26 @@ function pickExcerpt(post: any, isVietnamese: boolean) {
     : post.excerpt || post.excerptVi || "";
 }
 
-/** ===== Lấy base URL đúng ở mọi môi trường ===== */
-async function getBase(): Promise<string> {
-  const pub = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
-  if (pub) return pub.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return host ? `${proto}://${host}` : "http://localhost:8080";
+async function getRelatedPosts(limit = 4): Promise<PostLite[]> {
+  const posts = await PostModel.find({ category: "store", isPublished: { $ne: false } })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .select("slug title titleVi excerpt excerptVi thumbnail coverImage category createdAt publishedAt")
+    .lean();
+  return posts.map((p: any) => ({
+    ...p,
+    id: p._id?.toString?.(),
+    thumbnail: p.thumbnail ?? p.coverImage ?? null,
+  }));
 }
 
-/** ===== Fetch related posts qua API (an toàn) ===== */
-async function fetchRelatedPostsInStore(limit = 4): Promise<PostLite[]> {
-  const base = await getBase();
-  const url = `${base}/api/posts/related?category=store&limit=${limit}`;
-  const res = await fetch(url, { next: { revalidate: 60 } });
-  if (!res.ok) return [];
-  const data = (await res.json()) as any[];
-  const seen = new Set<string>();
-  const list: PostLite[] = [];
-  for (const p of data) {
-    const slug = String(p.slug);
-    if (seen.has(slug)) continue;
-    seen.add(slug);
-    list.push({
-      ...p,
-      thumbnail: p.thumbnail || p.coverImage || "/post-fallback.jpg",
-    });
-  }
-  return list;
-}
-
-/** ===== SEO ===== */
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ category: string; slug: string }>;
 }) {
   const { slug } = await params;
+  await connectDB();
   const p = await getProductBySlug(slug).catch(() => null);
   return {
     title: p ? `${p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store",
@@ -96,7 +79,6 @@ export async function generateMetadata({
   };
 }
 
-/** ===== PAGE: Chi tiết sản phẩm + Bài viết liên quan ===== */
 export default async function ProductDetailPage({
   params,
 }: {
@@ -106,10 +88,18 @@ export default async function ProductDetailPage({
   const c = await cookies();
   const rawLang = c.get("language")?.value || c.get("lang")?.value || "vi";
   const isVietnamese = String(rawLang).toLowerCase().startsWith("vi");
-  const product = await getProductBySlug(slug);
+
+  await connectDB();
+
+  let product: any;
+  try {
+    product = await getProductBySlug(slug);
+  } catch {
+    notFound();
+  }
   if (!product) notFound();
 
-  const relatedPosts = await fetchRelatedPostsInStore(4);
+  const relatedPosts = await getRelatedPosts(4);
   const currentTitle = pickTitle(product, isVietnamese);
 
   return (
@@ -123,12 +113,10 @@ export default async function ProductDetailPage({
 
         <div className="prose prose-invert text-white bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl p-6 md:p-10 max-w-none">
 
-          {/* ===== Tiêu đề sản phẩm ===== */}
           <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
             {currentTitle}
           </h1>
 
-          {/* ===== Ảnh sản phẩm ===== */}
           {product.coverImage && (
             <div className="not-prose relative w-full h-64 md:h-96 mb-6">
               <Image
@@ -141,14 +129,12 @@ export default async function ProductDetailPage({
             </div>
           )}
 
-          {/* ===== Nội dung sản phẩm ===== */}
           <article
             className=""
             dangerouslySetInnerHTML={{ __html: String(pickContent(product, isVietnamese) || "") }}
           />
         </div>
 
-        {/* ===== Bài viết liên quan ===== */}
         {relatedPosts.length > 0 && (
           <section className="relative z-10 py-12 md:py-16">
             <div>
@@ -158,19 +144,19 @@ export default async function ProductDetailPage({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedPosts.map((p) => {
-                  const date = (p as any).date || p.publishedAt || p.createdAt;
+                  const date = (p as any).publishedAt || (p as any).createdAt;
                   const itemTitle = pickTitle(p, isVietnamese);
                   const itemExcerpt = pickExcerpt(p, isVietnamese);
 
                   return (
                     <Link
                       key={p._id || p.id || p.slug}
-                      href={`/blog/${p.slug}`}
+                      href={`/store/${(p as any).storeCategory || "all"}/${p.slug}`}
                       className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-md shadow-xl border border-white/20 transition"
                     >
                       <div className="relative h-44">
                         <Image
-                          src={p.thumbnail || "/post-fallback.jpg"}
+                          src={p.thumbnail || p.coverImage || "/post-fallback.jpg"}
                           alt={itemTitle}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
@@ -196,7 +182,7 @@ export default async function ProductDetailPage({
                         )}
 
                         <span className="inline-flex items-center gap-1 text-sm font-medium">
-                          {isVietnamese ? "Xem chi tiết →" : "Read more →"}
+                          {isVietnamese ? "Xem chi tiết →" : "View details →"}
                         </span>
                       </div>
                     </Link>

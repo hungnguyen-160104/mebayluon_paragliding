@@ -104,7 +104,7 @@ const KHAU_PHA_PACKAGES = {
 const ADDON_KEYS: AddonKey[] = ["flycam", "camera360"];
 
 const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
-  ha_noi: 1_690_000,
+  ha_noi: 1_790_000,
   khau_pha: 2_190_000,
   sapa: 2_090_000,
   quan_ba: 2_190_000,
