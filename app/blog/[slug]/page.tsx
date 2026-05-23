@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getPostBySlug, getPosts } from "@/lib/posts-data";
 import { ViewCounter } from "@/components/ViewCounter";
+import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -416,6 +417,14 @@ async function getCurrentLang() {
   return getSafeLang(raw);
 }
 
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://mebayluon.com"
+).replace(/\/$/, "");
+
+const LANGS = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -429,26 +438,32 @@ export async function generateMetadata({
   const lang = await getCurrentLang();
   const isVietnamese = lang === "vi";
 
-  const post = (await getPostBySlug(slug, {
-    publishedOnly: !isPreview,
-  })) as Post | null;
+  const post = (await getPostBySlug(slug, { publishedOnly: !isPreview })) as Post | null;
 
-  if (!post) {
-    return {
-      title: "Article not found",
-    };
-  }
+  if (!post) return { title: "Bài viết không tồn tại" };
 
   const title = pickTitle(post, isVietnamese);
   const description = pickExcerpt(post, isVietnamese);
+  const pageUrl = `${SITE_URL}/blog/${slug}`;
+  const image = post.coverImage || post.thumbnail || undefined;
+
+  const languages: Record<string, string> = { "x-default": pageUrl };
+  for (const l of LANGS) languages[l] = pageUrl;
 
   return {
-    title,
-    description,
-    openGraph: {
+    ...buildMetadata({
       title,
       description,
-      images: post.coverImage ? [{ url: post.coverImage }] : undefined,
+      image,
+      url: pageUrl,
+      type: "article",
+      author: post.author || "Mebayluon Team",
+      publishedDate: post.publishedAt ? new Date(post.publishedAt) : undefined,
+      updatedDate: post.updatedAt ? new Date(post.updatedAt) : undefined,
+    }),
+    alternates: {
+      canonical: pageUrl,
+      languages,
     },
   };
 }
@@ -502,8 +517,22 @@ export default async function BlogPostPage({
         })
       : ui.unknownDate;
 
+  const articleSchema = generateArticleSchema({
+    title,
+    description: excerpt,
+    image: cover,
+    publishedDate: new Date(post.publishedAt || post.createdAt || Date.now()),
+    updatedDate: new Date(post.updatedAt || post.publishedAt || post.createdAt || Date.now()),
+    author: post.author || "Mebayluon Team",
+    url: `/blog/${slug}`,
+  });
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       <ViewCounter slug={slug} />
       <main
         className="relative min-h-screen w-full bg-cover bg-center bg-fixed"

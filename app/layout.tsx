@@ -16,6 +16,12 @@ const roboto = Roboto({
   display: "swap",
 });
 
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://mebayluon.com"
+).replace(/\/$/, "");
+
 export const metadata: Metadata = {
   ...buildMetadata({
     title: "Mebayluon Paragliding - Bay Dù Lượn Tự Do Tại Việt Nam",
@@ -27,16 +33,17 @@ export const metadata: Metadata = {
       "bay dù",
       "tour bay dù",
       "sapa paragliding",
-      "đà lạt paragliding"
+      "đà lạt paragliding",
+      "mebayluon",
+      "du lich mao hiem vietnam",
     ],
     author: "Mebayluon Team",
     type: "website",
   }),
 
-  // ✅ thêm đoạn này
   icons: {
-    icon: "/logo.png",   // favicon trên tab
-    apple: "/logo.png",  // icon iOS (tuỳ)
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   applicationName: "Mebayluon",
   appleWebApp: {
@@ -44,8 +51,20 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Mebayluon",
   },
-  formatDetection: {
-    telephone: false,
+  formatDetection: { telephone: false },
+
+  // hreflang — tất cả 6 ngôn ngữ trỏ về cùng URL vì web dùng cookie để chọn ngôn ngữ
+  alternates: {
+    canonical: SITE_URL,
+    languages: {
+      "vi":        SITE_URL,
+      "en":        SITE_URL,
+      "fr":        SITE_URL,
+      "ru":        SITE_URL,
+      "zh":        SITE_URL,
+      "hi":        SITE_URL,
+      "x-default": SITE_URL,
+    },
   },
 };
 

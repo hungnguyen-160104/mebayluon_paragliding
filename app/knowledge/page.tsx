@@ -1,9 +1,11 @@
 // app/knowledge/page.tsx (Server Component)
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
+import { buildMetadata } from "@/lib/metadata-builder";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -142,6 +144,59 @@ const I18N: Record<
   },
 };
 
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://mebayluon.com"
+).replace(/\/$/, "");
+
+const META: Record<Lang, { title: string; description: string }> = {
+  vi: {
+    title: "Khóa Học & Kiến Thức Dù Lượn | Mebayluon",
+    description: "Tìm hiểu kiến thức dù lượn từ cơ bản đến nâng cao — kỹ thuật bay, an toàn, thời tiết, trang thiết bị. Học từ các huấn luyện viên chuyên nghiệp tại Mebayluon.",
+  },
+  en: {
+    title: "Paragliding Courses & Knowledge | Mebayluon",
+    description: "Learn paragliding from beginner to advanced — flying techniques, safety, weather, gear. Guided by professional instructors at Mebayluon Vietnam.",
+  },
+  fr: {
+    title: "Cours & Connaissances Parapente | Mebayluon",
+    description: "Apprenez le parapente du niveau débutant à avancé — techniques de vol, sécurité, météo, équipement. Encadré par des instructeurs professionnels chez Mebayluon.",
+  },
+  ru: {
+    title: "Курсы и знания парапланеризма | Mebayluon",
+    description: "Изучайте парапланеризм от начального до продвинутого уровня — техника полёта, безопасность, погода, снаряжение. Профессиональные инструкторы Mebayluon Вьетнам.",
+  },
+  zh: {
+    title: "滑翔伞课程与知识 | Mebayluon",
+    description: "从初级到高级学习滑翔伞——飞行技巧、安全、天气、装备。由Mebayluon越南专业教练指导。",
+  },
+  hi: {
+    title: "पैराग्लाइडिंग पाठ्यक्रम और ज्ञान | Mebayluon",
+    description: "पैराग्लाइडिंग सीखें शुरुआत से उन्नत स्तर तक — उड़ान तकनीक, सुरक्षा, मौसम, उपकरण। Mebayluon वियतनाम के पेशेवर प्रशिक्षकों के साथ।",
+  },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const c = await cookies();
+  const raw = c.get("language")?.value || c.get("lang")?.value || "vi";
+  const lang = toLang(raw);
+  const m = META[lang];
+  const langs: Record<string, string> = { "x-default": `${SITE_URL}/knowledge` };
+  (["vi", "en", "fr", "ru", "zh", "hi"] as const).forEach((l) => {
+    langs[l] = `${SITE_URL}/knowledge`;
+  });
+  return {
+    ...buildMetadata({
+      title: m.title,
+      description: m.description,
+      url: `${SITE_URL}/knowledge`,
+      type: "website",
+    }),
+    alternates: { canonical: `${SITE_URL}/knowledge`, languages: langs },
+  };
+}
+
 async function getData(sub?: string) {
   const data = await getPosts({
     category: "knowledge",
@@ -202,7 +257,7 @@ export default async function KnowledgeAllPage({
             return (
               <div
                 key={index}
-                className="relative aspect-[4/3] md:aspect-[16/10] group overflow-hidden border-r border-white/20 last:border-0"
+                className="relative aspect-4/3 md:aspect-16/10 group overflow-hidden border-r border-white/20 last:border-0"
               >
                 <Image
                   src={`/knowledge/${imgIndex}.jpg`}
@@ -224,7 +279,7 @@ export default async function KnowledgeAllPage({
 
       {/* --- MAIN CONTENT (Detailed List) --- */}
       <main className="relative z-10 w-full min-h-screen py-20">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 pointer-events-none -z-10" />
+        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/40 to-black/60 pointer-events-none -z-10" />
 
         <div className="container mx-auto px-4">
           <div className="mb-12 flex justify-center">
