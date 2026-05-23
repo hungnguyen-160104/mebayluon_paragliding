@@ -1,18 +1,28 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
+import { Roboto, Merriweather } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
-import { LanguageProvider } from "@/contexts/language-context";
-import { Navigation } from "@/components/navigation"; 
+import { cookies } from "next/headers";
+import { LanguageProvider, type Language } from "@/contexts/language-context";
+import { Navigation } from "@/components/navigation";
 import { FloatingSocial } from "@/components/floating-social";
 import { buildMetadata, generateOrganizationSchema } from "@/lib/metadata-builder";
 import "./globals.css";
+
+const SUPPORTED_LANGS: Language[] = ["vi", "en", "fr", "ru", "zh", "hi"];
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
   subsets: ["latin", "vietnamese"],
   variable: "--font-roboto",
+  display: "swap",
+});
+
+const merriweather = Merriweather({
+  weight: ['300', '400', '700', '900'],
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-merriweather",
   display: "swap",
 });
 
@@ -68,9 +78,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const rawLang = cookieStore.get("language")?.value ?? "vi";
+  const lang: Language = SUPPORTED_LANGS.includes(rawLang.slice(0, 2) as Language)
+    ? (rawLang.slice(0, 2) as Language)
+    : "vi";
+
   return (
-    <html lang="vi">
+    <html lang={lang}>
       <head>
         {/* Organization Schema */}
         <script
@@ -81,13 +97,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body
-        className={roboto.className}
+        className={`${roboto.className} ${merriweather.variable}`}
         suppressHydrationWarning
       >
-        <LanguageProvider>
+        <LanguageProvider initialLang={lang}>
           <Suspense fallback={null}>
-            <Navigation /> 
-            <main>{children}</main> 
+            <Navigation />
+            <main>{children}</main>
             <FloatingSocial />
             <Analytics />
             {/* <Footer /> */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { translations, type Language } from "@/lib/translations";
 export type { Language };
@@ -57,9 +57,23 @@ function getInitialLanguage(): Language {
   return "vi";
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
+export function LanguageProvider({
+  children,
+  initialLang,
+}: {
+  children: ReactNode;
+  initialLang?: Language;
+}) {
   const router = useRouter();
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+  // initialLang đến từ server (đọc cookie), đảm bảo server/client khớp nhau khi hydrate
+  const [language, setLanguageState] = useState<Language>(initialLang ?? "vi");
+
+  // Sau khi mount, đồng bộ lại với cookie client (trường hợp cookie thay đổi phía client)
+  useEffect(() => {
+    const clientLang = getInitialLanguage();
+    if (clientLang !== language) setLanguageState(clientLang);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

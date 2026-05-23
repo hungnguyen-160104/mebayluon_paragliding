@@ -494,12 +494,12 @@ export default async function BlogPostPage({
     category: String(post.category || "news"),
     type: "blog",
     isPublished: true,
-    limit: 5,
+    limit: 7,
     sort: "-publishedAt,-createdAt",
     excludeSlug: post.slug,
   });
 
-  const relatedPosts = ((relatedResp.items ?? []) as Post[]).slice(0, 4);
+  const relatedPosts = ((relatedResp.items ?? []) as Post[]).slice(0, 6);
 
   const title = pickTitle(post, isVietnamese);
   const excerpt = pickExcerpt(post, isVietnamese);
@@ -538,137 +538,180 @@ export default async function BlogPostPage({
         className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
         style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
       >
-      <div className="absolute inset-0 z-0 bg-black/30" />
+        <div className="absolute inset-0 z-0 bg-black/65" />
 
-      <div className="container relative z-10 mx-auto px-4 pb-16 pt-28">
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-white shadow-xl backdrop-blur-lg md:p-10">
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <Link
-              href={backUrl}
-              className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
-            >
-              ← {ui.back}
-            </Link>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28">
 
-            <div className="flex items-center gap-2">
-              {isPreview && (
-                <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-yellow-200">
-                  {ui.previewLabel}
-                </span>
-              )}
+          {/* ── 2-cột desktop: article (trái) + sidebar (phải) ── */}
+          <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8 xl:grid-cols-[1fr_320px]">
 
-              {post.category && (
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
-                  {String(post.category)}
-                </span>
-              )}
-            </div>
-          </div>
+            {/* ── CỘT TRÁI: bài viết ── */}
+            <div className="rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
 
-          <div className="mb-4 text-xs text-white/60 text-center">
-            {publishedLabel} • {ui.views(Number(post.views || 0))}
-          </div>
-
-          <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl text-center">
-            {title}
-          </h1>
-
-          {excerpt && (
-            <p className="mb-6 w-full text-lg leading-relaxed text-white/85 text-center italic">
-              {excerpt}
-            </p>
-          )}
-
-          {cover && (
-            <div className="mb-8 w-full md:max-w-3xl md:mx-auto overflow-hidden rounded-lg bg-white/5">
-              <Image
-                src={cover}
-                alt={title}
-                width={1600}
-                height={900}
-                priority
-                className="h-auto w-full rounded-lg"
-                style={{
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </div>
-          )}
-
-          <article className="prose prose-invert max-w-none">
-            {canRenderBlocks ? (
-              <div className="space-y-5">{blocks.map(renderContentBlock)}</div>
-            ) : content ? (
-              hasHtmlTag(content) ? (
-                <div dangerouslySetInnerHTML={{ __html: content }} />
-              ) : (
-                <div className="whitespace-pre-line">{content}</div>
-              )
-            ) : (
-              <p>{ui.noContent}</p>
-            )}
-          </article>
-
-          {Array.isArray(post.tags) && post.tags.length > 0 && (
-            <div className="mt-8 flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/90"
+              {/* back + category */}
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <Link
+                  href={backUrl}
+                  className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
                 >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {relatedPosts.length > 0 && (
-            <>
-              <hr className="my-10 border-white/15" />
-
-              <section>
-                <h2 className="mb-6 text-2xl font-bold text-white">{ui.related}</h2>
-
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  {relatedPosts.map((item) => {
-                    const itemTitle = pickTitle(item, isVietnamese);
-                    const itemExcerpt = pickExcerpt(item, isVietnamese);
-                    const itemCover =
-                      item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
-
-                    return (
-                      <Link
-                        key={item._id || item.slug}
-                        href={`/blog/${item.slug}`}
-                        className="group overflow-hidden rounded-xl border border-white/15 bg-white/10 transition-all duration-300 hover:bg-white/20 hover:shadow-xl"
-                      >
-                        <div className="relative h-44 w-full overflow-hidden">
-                          <Image
-                            src={itemCover}
-                            alt={itemTitle}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        </div>
-
-                        <div className="p-4">
-                          <h3 className="mb-2 line-clamp-2 text-base font-semibold text-white transition-colors group-hover:text-red-300">
-                            {itemTitle}
-                          </h3>
-                          <p className="line-clamp-3 text-sm text-white/75">
-                            {itemExcerpt}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  ← {ui.back}
+                </Link>
+                <div className="flex items-center gap-2">
+                  {isPreview && (
+                    <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-yellow-200">
+                      {ui.previewLabel}
+                    </span>
+                  )}
+                  {post.category && (
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
+                      {String(post.category)}
+                    </span>
+                  )}
                 </div>
-              </section>
-            </>
-          )}
+              </div>
+
+              {/* ngày + lượt xem */}
+              <div className="mb-3 text-xs text-white/60">
+                {publishedLabel} • {ui.views(Number(post.views || 0))}
+              </div>
+
+              {/* tiêu đề */}
+              <h1 className="mb-4 text-2xl font-bold leading-snug text-white sm:text-3xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+                {title}
+              </h1>
+
+              {/* lead paragraph — cỡ chữ bằng body */}
+              {excerpt && (
+                <p className="mb-5 border-l-2 border-white/30 pl-4 text-base leading-relaxed text-white/80" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+                  {excerpt}
+                </p>
+              )}
+
+              {/* ảnh featured */}
+              {cover && (
+                <div className="mb-6 overflow-hidden rounded-xl bg-white/5">
+                  <Image
+                    src={cover}
+                    alt={title}
+                    width={1200}
+                    height={675}
+                    priority
+                    className="h-auto w-full rounded-xl"
+                    style={{ objectFit: "contain", display: "block" }}
+                  />
+                </div>
+              )}
+
+              {/* nội dung bài viết — prose-lg trên desktop cho chữ lớn hơn */}
+              <article
+                className="prose prose-invert max-w-none prose-base md:prose-lg
+                  prose-p:leading-[1.85] prose-p:text-white/90
+                  prose-headings:text-white prose-headings:font-bold
+                  prose-strong:text-white prose-a:text-sky-300
+                  prose-img:rounded-lg prose-img:mx-auto
+                  prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
+                style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+              >
+                {canRenderBlocks ? (
+                  <div className="space-y-5">{blocks.map(renderContentBlock)}</div>
+                ) : content ? (
+                  hasHtmlTag(content) ? (
+                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                  ) : (
+                    <div className="whitespace-pre-line">{content}</div>
+                  )
+                ) : (
+                  <p>{ui.noContent}</p>
+                )}
+              </article>
+
+              {/* tags */}
+              {Array.isArray(post.tags) && post.tags.length > 0 && (
+                <div className="mt-8 flex flex-wrap gap-2">
+                  {post.tags.map((tag, idx) => (
+                    <span
+                      key={`${tag}-${idx}`}
+                      className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/90"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* related posts — chỉ hiện trên MOBILE (lg ẩn, vì desktop có sidebar) */}
+              {relatedPosts.length > 0 && (
+                <section className="mt-10 lg:hidden">
+                  <h2 className="mb-4 text-xl font-bold text-white">{ui.related}</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {relatedPosts.map((item) => {
+                      const itemTitle = pickTitle(item, isVietnamese);
+                      const itemCover = item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
+                      return (
+                        <Link
+                          key={item._id || item.slug}
+                          href={`/blog/${item.slug}`}
+                          className="group flex gap-3 rounded-xl border border-white/15 bg-white/10 p-3 transition-all hover:bg-white/20"
+                        >
+                          <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
+                            <Image src={itemCover} alt={itemTitle} fill className="object-cover" />
+                          </div>
+                          <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
+                            {itemTitle}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            {/* ── CỘT PHẢI: sidebar (chỉ desktop) ── */}
+            {relatedPosts.length > 0 && (
+              <aside className="hidden lg:block">
+                <div className="sticky top-24 rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg">
+                  <h2 className="mb-4 border-b border-white/15 pb-3 text-sm font-bold uppercase tracking-widest text-white/70">
+                    {ui.related}
+                  </h2>
+                  <div className="flex flex-col gap-4">
+                    {relatedPosts.map((item) => {
+                      const itemTitle = pickTitle(item, isVietnamese);
+                      const itemCover = item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
+                      const itemDate = item.publishedAt || item.createdAt;
+                      return (
+                        <Link
+                          key={item._id || item.slug}
+                          href={`/blog/${item.slug}`}
+                          className="group flex gap-3"
+                        >
+                          <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
+                            <Image
+                              src={itemCover}
+                              alt={itemTitle}
+                              fill
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          </div>
+                          <div className="flex min-w-0 flex-col justify-center gap-1">
+                            <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
+                              {itemTitle}
+                            </p>
+                            {itemDate && (
+                              <span className="text-xs text-white/45">
+                                {new Date(itemDate).toLocaleDateString(locale)}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </aside>
+            )}
+          </div>
         </div>
-      </div>
       </main>
     </>
   );
