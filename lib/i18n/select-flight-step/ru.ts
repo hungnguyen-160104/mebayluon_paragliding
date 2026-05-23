@@ -106,6 +106,7 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Святилище Ngu Ong - Открыть карту",
     mapSapaTakeoffLabel: "Точка взлёта - Открыть карту",
     mapSapaLandingLabel: "Точка посадки - Открыть карту",
+    temporarilyClosed: "Временно закрыто",
   },
   locationCards: {
     ha_noi: { title: "ХАНОЙ", subtitle: "Doi Bu - Vien Nam" },

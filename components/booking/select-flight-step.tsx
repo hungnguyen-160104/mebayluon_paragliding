@@ -111,6 +111,8 @@ const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   da_nang: 1_690_000,
 };
 
+const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
+
 function clampInt(value: unknown, min: number, max: number) {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return min;
@@ -1224,6 +1226,7 @@ export default function SelectFlightStep() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {orderedLocations.map((locKey) => {
               const active = selected === locKey;
+              const isClosed = TEMPORARILY_CLOSED_LOCATIONS.has(locKey);
               const cardCopy = locationCards[locKey];
               const fromPrice = LOCATION_CARD_PRICE_META[locKey];
 
@@ -1231,29 +1234,38 @@ export default function SelectFlightStep() {
                 <button
                   key={locKey}
                   type="button"
-                  onClick={() => handleSelectLocation(locKey)}
+                  onClick={() => !isClosed && handleSelectLocation(locKey)}
+                  disabled={isClosed}
                   className={[
-                    "group relative flex min-h-[100px] flex-col justify-center rounded-xl border-2 px-3 py-3 text-center transition-all sm:min-h-[130px] sm:px-4 sm:py-4",
-                    active
+                    "group relative flex min-h-[100px] flex-col overflow-hidden rounded-xl border-2 text-center transition-all sm:min-h-[130px]",
+                    isClosed
+                      ? "cursor-not-allowed border-amber-300 bg-white"
+                      : active
                       ? "border-[#0194F3] bg-[#EAF4FE] shadow-lg ring-2 ring-[#B9DDFB]"
                       : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB] hover:shadow-md hover:-translate-y-0.5",
                   ].join(" ")}
                 >
-                  <div className="relative">
+                  {isClosed && (
+                    <div className="w-full bg-amber-500 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white sm:text-[11px]">
+                      {ui.temporarilyClosed}
+                    </div>
+                  )}
+
+                  <div className={["flex flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4", isClosed ? "opacity-50" : ""].join(" ")}>
                     <div className={[
                       "text-[17px] font-bold uppercase leading-tight tracking-[0.02em] sm:text-[20px] sm:leading-6",
-                      active ? "text-[#0194F3]" : "text-[#1C2930]"
+                      active && !isClosed ? "text-[#0194F3]" : "text-[#1C2930]"
                     ].join(" ")}>
                       {cardCopy.title}
                     </div>
-                  </div>
 
-                  <div className="relative mt-1 text-[13px] font-medium leading-snug text-[#5B6B7A] sm:mt-2 sm:text-[15px]">
-                    {cardCopy.subtitle}
-                  </div>
+                    <div className="mt-1 text-[13px] font-medium leading-snug text-[#5B6B7A] sm:mt-2 sm:text-[15px]">
+                      {cardCopy.subtitle}
+                    </div>
 
-                  <div className="relative mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[16px]">
-                    {ui.fromLabel} {formatCardFromPrice(fromPrice)}
+                    <div className="mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[16px]">
+                      {ui.fromLabel} {formatCardFromPrice(fromPrice)}
+                    </div>
                   </div>
                 </button>
               );

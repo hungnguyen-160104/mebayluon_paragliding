@@ -35,8 +35,8 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   
   // Webpack optimization
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer && !dev) {
       config.optimization = {
         ...config.optimization,
         splitChunks: {

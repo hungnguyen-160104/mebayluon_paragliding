@@ -152,55 +152,140 @@ export default async function BlogPage() {
     >
       <div className="absolute inset-0 z-0 bg-black/40" />
 
-      <main className="container relative z-10 mx-auto px-4 py-16 text-white">
-        <h1 className="mb-10 text-center text-5xl font-extrabold drop-shadow-lg md:text-6xl">
+      <main className="container relative z-10 mx-auto px-4 pt-28 pb-16 text-white">
+        <h1 className="mb-10 mt-8 text-center text-5xl font-extrabold drop-shadow-lg md:text-6xl">
           {ui.pageTitle}
         </h1>
 
         <section>
           <h2 className="mb-6 text-3xl font-bold md:text-4xl">{ui.latestTitle}</h2>
 
-          {latestItems.length ? (
-            <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {latestItems.map((post) => {
-                const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
-                const date = post.publishedAt || post.createdAt;
-                const views = Number(post.views || 0);
+          {latestItems.length ? (() => {
+            const featured   = latestItems[0];
+            const mobileTail = latestItems.slice(1);
 
-                return (
-                  <li key={post._id || post.slug}>
-                    <Link href={`/blog/${post.slug}`} className="group">
-                      <div className="overflow-hidden rounded-lg border border-white/20 bg-white/10 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white/20 hover:shadow-xl">
-                        <div className="relative h-48 w-full overflow-hidden">
-                          <Image
-                            src={cover}
-                            alt={pickTitle(post, isVietnamese)}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
-                          />
-                        </div>
+            const featuredCover = featured.coverImage || featured.thumbnail || "/images/mebayluon.jpg";
+            const featuredDate  = featured.publishedAt || featured.createdAt;
 
-                        <div className="p-6">
-                          <h3 className="mb-3 line-clamp-2 text-xl font-bold transition-colors group-hover:text-red-300">
-                            {pickTitle(post, isVietnamese)}
-                          </h3>
+            return (
+              <>
+                {/* ── DESKTOP (lg+): Layout kiểu Vietnamnet ── */}
+                <div className="hidden lg:block">
 
-                          <div className="mb-3 flex items-center gap-4 text-sm text-white/70">
-                            <span>{formatDate(date)}</span>
-                            <span>{ui.views(views)}</span>
+                  {/* Hàng đầu: Featured lớn (2/3) + Danh sách bên (1/3) */}
+                  <div className="grid grid-cols-[2fr_1fr] gap-6 mb-8">
+
+                    {/* Featured: ảnh lớn, text overlay */}
+                    <Link href={`/blog/${featured.slug}`} className="group relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
+                      <div className="relative h-90 overflow-hidden">
+                        <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-6">
+                          <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-red-300">
+                            {pickTitle(featured, isVietnamese)}
+                          </h2>
+                          <div className="mb-2 flex items-center gap-4 text-sm text-white/60">
+                            <span>{formatDate(featuredDate)}</span>
+                            <span>{ui.views(Number(featured.views || 0))}</span>
                           </div>
-
-                          <p className="line-clamp-3 text-sm text-white/80">
-                            {pickExcerpt(post, isVietnamese)}
+                          <p className="line-clamp-2 text-sm text-white/80">
+                            {pickExcerpt(featured, isVietnamese)}
                           </p>
                         </div>
                       </div>
                     </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
+
+                    {/* Sidebar phải: 4 bài nhỏ dạng ngang */}
+                    <div className="flex flex-col gap-3">
+                      {latestItems.slice(1, 5).map((post) => {
+                        const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+                        const date  = post.publishedAt || post.createdAt;
+                        return (
+                          <Link key={post._id || post.slug} href={`/blog/${post.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative h-19 w-28 shrink-0 overflow-hidden rounded-md">
+                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
+                            </div>
+                            <div className="flex min-w-0 flex-col justify-center gap-1">
+                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-red-300">
+                                {pickTitle(post, isVietnamese)}
+                              </p>
+                              <span className="text-xs text-white/55">{formatDate(date)}</span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Grid 4 cột: tất cả bài còn lại */}
+                  {latestItems.length > 5 && (
+                    <div className="grid grid-cols-4 gap-5">
+                      {latestItems.slice(5).map((post) => {
+                        const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+                        const date  = post.publishedAt || post.createdAt;
+                        return (
+                          <Link key={post._id || post.slug} href={`/blog/${post.slug}`} className="group overflow-hidden rounded-lg border border-white/15 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative aspect-video overflow-hidden">
+                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                            </div>
+                            <div className="p-3">
+                              <p className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug group-hover:text-red-300">
+                                {pickTitle(post, isVietnamese)}
+                              </p>
+                              <span className="text-xs text-white/55">{formatDate(date)}</span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── MOBILE / TABLET (< lg) ── */}
+                <div className="flex flex-col gap-4 lg:hidden">
+
+                  {/* Featured: large card */}
+                  <Link href={`/blog/${featured.slug}`} className="group overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
+                    <div className="relative h-52 w-full overflow-hidden sm:h-64">
+                      <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" priority />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="mb-2 line-clamp-3 text-xl font-bold leading-snug group-hover:text-red-300">
+                        {pickTitle(featured, isVietnamese)}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs text-white/60">
+                        <span>{formatDate(featuredDate)}</span>
+                        <span>{ui.views(Number(featured.views || 0))}</span>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Remaining: horizontal list items */}
+                  <ul className="flex flex-col gap-2">
+                    {mobileTail.map((post) => {
+                      const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+                      const date  = post.publishedAt || post.createdAt;
+                      return (
+                        <li key={post._id || post.slug}>
+                          <Link href={`/blog/${post.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md">
+                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
+                            </div>
+                            <div className="flex flex-col justify-center gap-1">
+                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-red-300">
+                                {pickTitle(post, isVietnamese)}
+                              </p>
+                              <span className="text-xs text-white/55">{formatDate(date)}</span>
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
+            );
+          })() : (
             <div className="py-16 text-center">
               <p className="mb-8 text-xl text-white/70">{ui.emptyTitle}</p>
               <Link

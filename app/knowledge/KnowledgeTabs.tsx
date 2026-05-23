@@ -19,10 +19,10 @@ const TABS: { key: TabKey }[] = [
 const TAB_LABELS: Record<Lang, Record<TabKey, string>> = {
   vi: {
     all: "Tất cả",
-    "can-ban": "Khoá học cơ bản",
-    "nang-cao": "Khoá học nâng cao",
-    xc: "Dù lượn gắn động cơ",
-    thermal: "Bay thermal",
+    "can-ban": "Dù lượn cơ bản",
+    "nang-cao": "Dù lượn nâng cao",
+    xc: "PPG/TRIKE",
+    thermal: "Bay Thermal & XC",
     "khi-tuong": "Khí tượng bay",
   },
   en: {
@@ -85,13 +85,7 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
 
   return (
     <nav className="flex w-full justify-center">
-      <ul
-        className="
-          flex flex-wrap items-center justify-center gap-3 sm:gap-4
-          rounded-3xl border border-white/45 bg-black/45 px-3 py-3 sm:px-4 sm:py-4
-          shadow-[0_18px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl ring-1 ring-white/25
-        "
-      >
+      <ul className="grid grid-cols-2 gap-2 w-full max-w-sm mx-auto">
         {TABS.map((tab) => {
           const href =
             tab.key === "all"
@@ -106,7 +100,7 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
                 href={href}
                 scroll={false}
                 className={`
-                  flex min-h-12 items-center whitespace-nowrap rounded-2xl border px-5 py-3 text-base font-semibold leading-none transition-all duration-200 sm:px-6 sm:py-3.5 sm:text-[1.05rem]
+                  flex w-full min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
                   ${
                     isActive

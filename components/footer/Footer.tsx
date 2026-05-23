@@ -17,27 +17,27 @@ import { useLanguage, type Language } from "@/contexts/language-context";
 export const FOOTER_SPOTS = [
   {
     name: "Viên Nam (Hà Nội)",
-    href: "/blog/Viennam",
+    href: "/blog/VienNam",
   },
   {
     name: "Đồi Bù (Hà Nội)",
-    href: "/blog/Doibu",
+    href: "/blog/DoiBu",
   },
   {
     name: "Đèo Khau Phạ (Mù Cang Chải)",
-    href: "/blog/Mucangchai",
+    href: "/blog/DeoKhauPha",
   },
   {
     name: "Phình Hồ (Trạm Tấu)",
-    href: "/blog/Tramtau",
+    href: "/blog/PhinhHo",
   },
   {
-    name: "Sơn Trà (Đà Nẵng)",
-    href: "/blog/Danang",
-  },
-  {
-    name: "Sa Pa (Lào Cai)",
+    name: "Sapa (Lào Cai)",
     href: "/blog/Sapa",
+  },
+  {
+    name: "Đồng Văn (Hà Giang)",
+    href: "/blog/DongVan",
   },
 ];
 

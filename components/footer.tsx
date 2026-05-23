@@ -4,28 +4,28 @@ import { Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react"
 export function Footer() {
   const LOCATIONS = [
     {
-      label: "Viên Nam (Hà Nội)",
-      slug: "Viennam",
+      label: "Viên Nam – Hà Nội",
+      slug: "VienNam",
     },
     {
-      label: "Đồi Bù (Hà Nội)",
-      slug: "Doibu",
+      label: "Đồi Bù – Hà Nội",
+      slug: "DoiBu",
     },
     {
-      label: "Đèo Khau Phạ (Mù Cang Chải)",
-      slug: "Mucangchai",
+      label: "Đèo Khau Phạ – Mù Cang Chải",
+      slug: "DeoKhauPha",
     },
     {
-      label: "Phình Hồ (Trạm Tấu)",
-      slug: "Tramtau",
+      label: "Phình Hồ – Trạm Tấu",
+      slug: "PhinhHo",
     },
     {
-      label: "Sơn Trà (Đà Nẵng)",
-      slug: "Danang",
-    },
-    {
-      label: "Sa Pa (Lào Cai)",
+      label: "Sapa – Lào Cai",
       slug: "Sapa",
+    },
+    {
+      label: "Đồng Văn – Hà Giang",
+      slug: "DongVan",
     },
   ]
 

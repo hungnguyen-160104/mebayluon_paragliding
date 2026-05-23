@@ -100,6 +100,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong 神庙 - 查看地图",
     mapSapaTakeoffLabel: "起飞点 - 查看地图",
     mapSapaLandingLabel: "降落点 - 查看地图",
+    temporarilyClosed: "暂时关闭",
   },
   locationCards: {
     ha_noi: { title: "河内", subtitle: "Đồi Bù - Viên Nam" },

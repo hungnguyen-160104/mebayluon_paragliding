@@ -70,6 +70,7 @@ export type SelectFlightStepUiText = {
   mapDaNangLandingLabel: string;
   mapSapaTakeoffLabel: string;
   mapSapaLandingLabel: string;
+  temporarilyClosed: string;
 };
 
 export type LocationCardCopy = {

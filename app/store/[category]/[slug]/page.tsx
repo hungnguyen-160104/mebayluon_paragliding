@@ -1,4 +1,4 @@
-﻿// app/store/[category]/[slug]/page.tsx
+// app/store/[category]/[slug]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -39,24 +39,23 @@ function pickExcerpt(post: any, isVietnamese: boolean) {
     : post.excerpt || post.excerptVi || "";
 }
 
-/** ===== Láº¥y base URL Ä‘Ãºng á»Ÿ má»i mÃ´i trÆ°á»ng ===== */
+/** ===== Lấy base URL đúng ở mọi môi trường ===== */
 async function getBase(): Promise<string> {
   const pub = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
   if (pub) return pub.replace(/\/$/, "");
-  const h = await headers(); // NOTE: dá»± Ã¡n cá»§a báº¡n cáº§n await
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   return host ? `${proto}://${host}` : "http://localhost:8080";
 }
 
-/** ===== Fetch related posts qua API (an toÃ n) ===== */
+/** ===== Fetch related posts qua API (an toàn) ===== */
 async function fetchRelatedPostsInStore(limit = 4): Promise<PostLite[]> {
   const base = await getBase();
   const url = `${base}/api/posts/related?category=store&limit=${limit}`;
   const res = await fetch(url, { next: { revalidate: 60 } });
   if (!res.ok) return [];
   const data = (await res.json()) as any[];
-  // Chuáº©n hoÃ¡ + trÃ¡nh trÃ¹ng slug
   const seen = new Set<string>();
   const list: PostLite[] = [];
   for (const p of data) {
@@ -80,7 +79,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const p = await getProductBySlug(slug).catch(() => null);
   return {
-    title: p ? `${p.title} | Mebayluon Store` : "Sáº£n pháº©m | Mebayluon Store",
+    title: p ? `${p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store",
     description: p
       ? String(p.content || "")
           .replace(/<[^>]+>/g, "")
@@ -97,7 +96,7 @@ export async function generateMetadata({
   };
 }
 
-/** ===== PAGE: Chi tiáº¿t sáº£n pháº©m + {isVietnamese ? "Bài viết liên quan" : "Related Products"} ===== */
+/** ===== PAGE: Chi tiết sản phẩm + Bài viết liên quan ===== */
 export default async function ProductDetailPage({
   params,
 }: {
@@ -110,30 +109,26 @@ export default async function ProductDetailPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  // Láº¥y láº¡i bÃ i viáº¿t liÃªn quan trong má»¥c "store" qua API (á»•n Ä‘á»‹nh)
   const relatedPosts = await fetchRelatedPostsInStore(4);
   const currentTitle = pickTitle(product, isVietnamese);
 
   return (
-    // âš ï¸ [THAY Äá»”I 1]: ThÃªm ná»n vÃ  overlay
     <main
       className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/30 z-0" />
 
-      {/* âš ï¸ [THAY Äá»”I 2]: ThÃªm container cÄƒn lá» vÃ  padding */}
       <div className="container mx-auto px-4 relative z-10 pt-28 pb-16">
-        
-        {/* âš ï¸ [THAY Äá»”I 3]: Bá»c ná»™i dung sáº£n pháº©m vÃ o "táº¥m kÃ­nh má»" */}
+
         <div className="prose prose-invert text-white bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl p-6 md:p-10 max-w-none">
-          
-          {/* ===== TiÃªu Ä‘á» sáº£n pháº©m ===== */}
+
+          {/* ===== Tiêu đề sản phẩm ===== */}
           <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
             {currentTitle}
           </h1>
 
-          {/* ===== áº¢nh sáº£n pháº©m ===== */}
+          {/* ===== Ảnh sản phẩm ===== */}
           {product.coverImage && (
             <div className="not-prose relative w-full h-64 md:h-96 mb-6">
               <Image
@@ -146,32 +141,27 @@ export default async function ProductDetailPage({
             </div>
           )}
 
-          {/* ===== Ná»™i dung sáº£n pháº©m ===== */}
+          {/* ===== Nội dung sản phẩm ===== */}
           <article
-            className="" // Káº¿ thá»«a 'prose prose-invert' tá»« cha
+            className=""
             dangerouslySetInnerHTML={{ __html: String(pickContent(product, isVietnamese) || "") }}
           />
         </div>
-        {/* Háº¿t táº¥m kÃ­nh má» cá»§a sáº£n pháº©m */}
 
-
-        {/* ===== {isVietnamese ? "Bài viết liên quan" : "Related Products"} (glassmorphism) ===== */}
+        {/* ===== Bài viết liên quan ===== */}
         {relatedPosts.length > 0 && (
-          // âš ï¸ [THAY Äá»”I 4]: XÃ³a 'container' vÃ  'px-0' vÃ¬ Ä‘Ã£ cÃ³ container cha
           <section className="relative z-10 py-12 md:py-16">
             <div>
-              {/* âš ï¸ [THAY Äá»”I 5]: Äá»•i mÃ u tiÃªu Ä‘á» sang tráº¯ng */}
               <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">
                 {isVietnamese ? "Bài viết liên quan" : "Related Products"}
               </h2>
 
-              {/* CÃ¡c card nÃ y Ä‘Ã£ cÃ³ sáºµn style glassmorphism */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedPosts.map((p) => {
                   const date = (p as any).date || p.publishedAt || p.createdAt;
                   const itemTitle = pickTitle(p, isVietnamese);
                   const itemExcerpt = pickExcerpt(p, isVietnamese);
-                  
+
                   return (
                     <Link
                       key={p._id || p.id || p.slug}
@@ -206,7 +196,7 @@ export default async function ProductDetailPage({
                         )}
 
                         <span className="inline-flex items-center gap-1 text-sm font-medium">
-                          {isVietnamese ? "Xem chi tiáº¿t â†’" : "Read more â†’"}
+                          {isVietnamese ? "Xem chi tiết →" : "Read more →"}
                         </span>
                       </div>
                     </Link>
@@ -217,13 +207,6 @@ export default async function ProductDetailPage({
           </section>
         )}
       </div>
-      {/* Háº¿t container cÄƒn lá» */}
     </main>
   );
 }
-
-
-
-
-
-

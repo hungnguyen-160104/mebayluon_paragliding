@@ -102,6 +102,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong shrine - View map",
     mapSapaTakeoffLabel: "Take-off point - View map",
     mapSapaLandingLabel: "Landing point - View map",
+    temporarilyClosed: "Temporarily closed",
   },
   locationCards: {
     ha_noi: {

@@ -14,7 +14,9 @@ export type FlightTypeKey = "paragliding" | "paramotor";
 export type PackageKey =
   | "khau_pha_pkg_1"
   | "khau_pha_pkg_2"
-  | "khau_pha_paramotor";
+  | "khau_pha_paramotor"
+  | "ha_noi_850m"
+  | "ha_noi_650m";
 
 export type HolidayType = "weekday" | "weekend" | "holiday";
 
@@ -778,6 +780,66 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     },
     basePriceVND: () => 1_690_000,
     basePriceUSD: () => 65,
+    packages: [
+      {
+        key: "ha_noi_850m" as PackageKey,
+        label: {
+          vi: "Cất cánh từ 850m – Điểm dù lượn cao nhất Hà Nội",
+          en: "Take off from 850m – Highest Paragliding point in Hanoi",
+          fr: "Décollage depuis 850m – Point de parapente le plus haut de Hanoï",
+          ru: "Взлёт с 850м – Высочайшая точка парапланеризма в Ханое",
+          zh: "从850米起飞 – 河内最高滑翔伞点",
+          hi: "850m से उड़ान – हनोई का सबसे ऊँचा पैराग्लाइडिंग बिंदु",
+        },
+        subtitle: {
+          vi: "Cất cánh từ đỉnh Viên Nam, độ cao 850m – điểm cất cánh dù lượn cao nhất Hà Nội, độ chênh cao lớn nhất Việt Nam (hơn 800m). Thời lượng bay lâu, tầm nhìn rộng, ngắm trọn Sông Đà và núi Ba Vì ngay trước mắt.",
+          en: "Take off from Vien Nam summit, 850m altitude – the highest paragliding launch in Hanoi and the greatest altitude difference in Vietnam (over 800m). Longer flights, panoramic views, with the Da River and Ba Vi mountain right in front of you.",
+        },
+        priceVND: 1_690_000,
+        priceUSD: 65,
+        flightTypes: [
+          {
+            key: "paragliding" as FlightTypeKey,
+            label: {
+              vi: "Bay dù không động cơ",
+              en: "Paragliding",
+              fr: "Parapente",
+              ru: "Параплан",
+              zh: "无动力滑翔伞",
+              hi: "पैराग्लाइडिंग",
+            },
+            fixed: 1_690_000,
+          },
+        ],
+      },
+      {
+        key: "ha_noi_650m" as PackageKey,
+        label: {
+          vi: "Cất cánh từ 650m – Gói tiêu chuẩn",
+          en: "Take off from 650m – Standard Package",
+          fr: "Décollage depuis 650m – Forfait standard",
+          ru: "Взлёт с 650м – Стандартный пакет",
+          zh: "从650米起飞 – 标准套餐",
+          hi: "650m से उड़ान – मानक पैकेज",
+        },
+        priceVND: 1_690_000,
+        priceUSD: 65,
+        flightTypes: [
+          {
+            key: "paragliding" as FlightTypeKey,
+            label: {
+              vi: "Bay dù không động cơ",
+              en: "Paragliding",
+              fr: "Parapente",
+              ru: "Параплан",
+              zh: "无动力滑翔伞",
+              hi: "पैराग्लाइडिंग",
+            },
+            fixed: 1_690_000,
+          },
+        ],
+      },
+    ],
     services: [
       {
         key: "ha_noi_fixed_pickup",

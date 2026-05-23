@@ -105,6 +105,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong shrine - मैप देखें",
     mapSapaTakeoffLabel: "टेकऑफ़ पॉइंट - मैप देखें",
     mapSapaLandingLabel: "लैंडिंग पॉइंट - मैप देखें",
+    temporarilyClosed: "अस्थायी रूप से बंद",
   },
   locationCards: {
     ha_noi: { title: "हनोई", subtitle: "Doi Bu - Vien Nam" },

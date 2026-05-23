@@ -211,9 +211,9 @@ function renderContentBlock(block: ContentBlock, index: number) {
     case "image":
       return data.url ? (
         <figure key={key} className="space-y-3">
-          <img src={data.url} alt={data.alt || ""} className="w-full rounded-lg" />
+          <img src={data.url} alt={data.alt || ""} className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
           {data.caption ? (
-            <figcaption className="text-sm text-white/70">{data.caption}</figcaption>
+            <figcaption className="text-sm text-white/80 text-center italic font-semibold mt-2">{data.caption}</figcaption>
           ) : null}
         </figure>
       ) : null;
@@ -536,22 +536,22 @@ export default async function BlogPostPage({
             </div>
           </div>
 
-          <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl">
+          <div className="mb-4 text-xs text-white/60 text-center">
+            {publishedLabel} • {ui.views(Number(post.views || 0))}
+          </div>
+
+          <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl text-center">
             {title}
           </h1>
 
           {excerpt && (
-            <p className="mb-6 w-full text-lg leading-relaxed text-white/85">
+            <p className="mb-6 w-full text-lg leading-relaxed text-white/85 text-center italic">
               {excerpt}
             </p>
           )}
 
-          <div className="mb-6 text-sm text-gray-300">
-            {publishedLabel} • {ui.views(Number(post.views || 0))}
-          </div>
-
           {cover && (
-            <div className="mb-8 w-full overflow-hidden rounded-lg bg-white/5">
+            <div className="mb-8 w-full md:max-w-3xl md:mx-auto overflow-hidden rounded-lg bg-white/5">
               <Image
                 src={cover}
                 alt={title}

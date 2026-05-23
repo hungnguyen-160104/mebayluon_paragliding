@@ -101,6 +101,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Điểm đón tiếp/Bãi hạ Miếu thờ Ngư Ông - Xem bản đồ",
     mapSapaTakeoffLabel: "Điểm cất cánh - Xem bản đồ",
     mapSapaLandingLabel: "Điểm hạ cánh - Xem bản đồ",
+    temporarilyClosed: "Tạm đóng cửa",
   },
   locationCards: {
     ha_noi: {

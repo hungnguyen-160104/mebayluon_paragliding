@@ -613,22 +613,22 @@ export default function HomePage() {
                   className="h-full transition-transform duration-300"
                 >
                   <Card className={glassCardClass}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-2xl">
+                    <CardHeader className="px-4 pb-3 pt-4">
+                      <CardTitle className="flex items-center gap-3 text-xl">
                         <Icon className={accentClassName} />
                         {title}
                       </CardTitle>
                     </CardHeader>
 
-                    <CardContent>
-                      <ul className="space-y-3">
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <ul className="space-y-2">
                         {items.map((item, i) => (
-                          <li key={i} className="flex items-start gap-3">
+                          <li key={i} className="flex items-start gap-2">
                             <BulletIcon
-                              className={`${accentClassName} mt-1 shrink-0`}
-                              size={20}
+                              className={`${accentClassName} mt-0.5 shrink-0`}
+                              size={18}
                             />
-                            <span className="text-slate-200">{item}</span>
+                            <span className="text-sm text-slate-200">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -729,9 +729,9 @@ export default function HomePage() {
                 className={index === socialLinks.length - 1 && socialLinks.length % 2 !== 0 ? "col-span-2 md:col-span-1" : ""}
               >
                 <Card className="h-full border border-white/30 bg-white/20 text-white backdrop-blur-md transition-all duration-300 hover:shadow-2xl">
-                  <CardContent className="flex flex-col items-center space-y-4 px-4 pb-6 pt-8 text-center sm:px-6">
+                  <CardContent className="flex flex-col items-center space-y-3 px-3 pb-4 pt-5 text-center sm:px-4">
                     <div
-                      className={`relative mb-2 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full ${social.color}`}
+                      className={`relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full ${social.color}`}
                     >
                       <Image
                         src={social.iconSrc}
@@ -741,14 +741,14 @@ export default function HomePage() {
                       />
                     </div>
 
-                    <h3 className="text-lg font-bold sm:text-xl">{social.name}</h3>
+                    <h3 className="text-base font-bold sm:text-lg">{social.name}</h3>
 
-                    <p className="flex min-h-12 items-center justify-center px-1 text-xs text-slate-200 sm:min-h-15 sm:px-2 sm:text-sm">
+                    <p className="px-1 text-xs text-slate-200 sm:px-2 sm:text-sm">
                       {social.description}
                     </p>
 
                     <Button
-                      className={`mt-auto w-full ${social.color} text-white hover:opacity-90 text-sm`}
+                      className={`w-full ${social.color} text-white hover:opacity-90 text-sm`}
                       onClick={() => window.open(social.url, "_blank")}
                     >
                       {t?.contact?.contactNow ?? "Liên hệ ngay"}
@@ -759,7 +759,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 md:gap-8 lg:grid-cols-4">
             {contactInfoCards.map((info, index) => (
               <motion.div
                 key={info.title as string}
@@ -769,18 +769,18 @@ export default function HomePage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card className="h-full border border-white/30 bg-white/20 text-white backdrop-blur-md">
-                  <CardContent className="px-6 pb-6 pt-8">
-                    <div className="flex flex-col items-center gap-4 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/25">
-                        <info.icon className="text-white" size={24} />
+                  <CardContent className="px-3 pb-4 pt-4 md:px-4 md:pb-5 md:pt-5">
+                    <div className="flex flex-col items-center gap-2 text-center md:gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25 md:h-10 md:w-10">
+                        <info.icon className="text-white" size={18} />
                       </div>
 
                       <div>
-                        <h3 className="mb-2 text-lg font-semibold">
+                        <h3 className="mb-1.5 text-sm font-semibold md:text-base">
                           {info.title}
                         </h3>
                         {info.lines.map((line, i) => (
-                          <p key={i} className="text-sm text-slate-200">
+                          <p key={i} className="text-xs text-slate-200">
                             {line}
                           </p>
                         ))}

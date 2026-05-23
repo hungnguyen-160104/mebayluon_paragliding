@@ -1,104 +1,33 @@
-﻿"use client";
+import { cookies } from "next/headers";
+import { connectDB } from "@/lib/mongodb";
+import { Post as PostModel } from "@/models/Post.model";
+import StoreHomeClient from "./components/StoreHomeClient";
+import type { Post } from "@/types/frontend/post";
+import type { StoreLang } from "@/lib/store-texts";
 
-import { useState, useEffect, useMemo } from "react";
-import { listProductsByCategory } from "@/lib/product-api";
-import ProductCard from "./components/ProductCard";
-import type { Post, StoreCategory } from "@/types/frontend/post";
-import { Loader2 } from "lucide-react";
-import clsx from "clsx";
+export const revalidate = 60;
 
-import {
-  getStoreTexts,
-  type StoreLang,
-} from "@/lib/store-texts";
-
-import { useLanguage } from "@/contexts/language-context";
-
-function toStoreLang(v: unknown): StoreLang {
-  const s = String(v ?? "vi").toLowerCase();
-  const code = s.slice(0, 2);
-  if (code === "vi") return "vi";
-  return "en";
+function toStoreLang(v: string | undefined): StoreLang {
+  const code = String(v ?? "vi").toLowerCase().slice(0, 2);
+  const supported: StoreLang[] = ["vi", "en", "fr", "ru", "zh", "hi"];
+  return supported.includes(code as StoreLang) ? (code as StoreLang) : "vi";
 }
 
-export default function StoreHomePage() {
-  const { language } = useLanguage(); // Lấy ngôn ngữ hiện tại từ context
-  const lang = toStoreLang(language);
+async function fetchAllProducts(): Promise<Post[]> {
+  await connectDB();
+  const docs = await PostModel.find({ type: "product", isPublished: true })
+    .sort("-createdAt")
+    .limit(100)
+    .lean();
+  return JSON.parse(JSON.stringify(docs)) as Post[];
+}
 
-  const ui = useMemo(() => getStoreTexts(lang), [lang]);
+export default async function StoreHomePage() {
+  const cookieStore = await cookies();
+  const rawLang = cookieStore.get("language")?.value ?? cookieStore.get("lang")?.value;
+  const lang = toStoreLang(rawLang);
 
-  const [active, setActive] = useState<StoreCategory | "all">("all");
-  const [products, setProducts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false);
+  const allProducts = await fetchAllProducts();
 
-  async function fetchProducts(category: StoreCategory | "all") {
-    setLoading(true);
-    try {
-      const res = await listProductsByCategory({ category });
-      setProducts(res.items);
-    } catch (err) {
-      console.error("Error loading products:", err);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchProducts("all");
-  }, []);
-
-  return (
-    <main
-      className="min-h-screen relative bg-cover bg-center"
-      style={{ backgroundImage: "url(/cua-hang.jpg)" }}
-    >
-      <div className="absolute inset-0 bg-black/20" />
-      <section className="relative z-10 py-24">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-10">
-            {ui.title}
-          </h1>
-
-          <div className="w-fit mx-auto flex flex-wrap justify-center gap-3 bg-white/10 backdrop-blur-md border border-white/30 shadow-lg rounded-2xl px-6 py-3 mb-12">
-            {ui.categories.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => {
-                  setActive(c.key as any);
-                  fetchProducts(c.key as any);
-                }}
-                className={clsx(
-                  "px-4 py-2 rounded-xl text-sm font-semibold transition-all",
-                  active === c.key
-                    ? "bg-white/70 text-black shadow-md"
-                    : "text-white hover:bg-white/10"
-                )}
-              >
-                {c.title}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="flex justify-center py-20">
-                <Loader2 className="w-10 h-10 text-white animate-spin" />
-              </div>
-            </div>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((p) => (
-                <ProductCard key={p.slug} product={p} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-white text-lg mt-10">
-              {ui.emptyCategory}
-            </p>
-          )}
-        </div>
-      </section>
-    </main>
-  );
+  return <StoreHomeClient allProducts={allProducts} lang={lang} />;
 }

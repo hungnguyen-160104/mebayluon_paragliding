@@ -106,6 +106,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Sanctuaire Ngu Ong - Voir la carte",
     mapSapaTakeoffLabel: "Point de décollage - Voir la carte",
     mapSapaLandingLabel: "Point d’atterrissage - Voir la carte",
+    temporarilyClosed: "Temporairement fermé",
   },
   locationCards: {
     ha_noi: { title: "HANOÏ", subtitle: "Doi Bu - Vien Nam" },

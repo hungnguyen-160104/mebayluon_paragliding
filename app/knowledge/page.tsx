@@ -211,7 +211,7 @@ export default async function KnowledgeAllPage({
                   className="object-cover transition-transform duration-700 group-hover:scale-110 ease-out"
                 />
                 {/* Overlay Text */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end justify-center pb-6 px-4 transition-colors duration-300">
+                <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent flex items-end justify-center pb-6 px-4 transition-colors duration-300">
                   <h3 className="text-[10px] md:text-xs lg:text-sm font-bold text-center text-white drop-shadow-md leading-tight uppercase tracking-wide whitespace-nowrap">
                     {feature}
                   </h3>
@@ -233,60 +233,138 @@ export default async function KnowledgeAllPage({
 
           {items.length === 0 ? (
             <p className="text-center text-white/80 py-16 text-xl">{t.empty}</p>
-          ) : (
-            <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((p: any) => {
-                const cover =
-                  p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
-                const date = p.publishedAt || p.createdAt;
-                return (
-                  <li key={p._id || p.slug} className="group">
-                    <Link
-                      href={`/blog/${p.slug}`}
-                      // Gọi hàm pickExcerpt vào thuộc tính title của Link để dập lỗi TS6133 một cách tự nhiên
-                      title={pickExcerpt(p, lang === "vi")}
-                      className="flex flex-col h-full rounded-2xl overflow-hidden bg-white/10 border border-white/10 hover:border-white/30 hover:bg-white/20 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm"
-                    >
-                      <div className="relative h-60 w-full overflow-hidden">
-                        <Image
-                          src={cover}
-                          alt={pickTitle(p, lang === "vi")}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                      </div>
-                      <div className="p-6 flex flex-col flex-1">
-                        <h3 className="text-xl font-bold mb-3 line-clamp-2 leading-snug text-white group-hover:text-sky-300 transition-colors">
-                          {pickTitle(p, lang === "vi")}
-                        </h3>
-                        <div className="mt-auto text-sm text-white/70 flex items-center gap-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <span>
-                            {date
-                              ? new Date(date).toLocaleDateString(t.dateLocale)
-                              : t.unknownDate}
-                          </span>
+          ) : (() => {
+            const isVi = lang === "vi";
+            const featured   = items[0];
+            const mobileTail = items.slice(1);
+
+            const featuredCover = featured.thumbnail || featured.coverImage || "/images/mebayluon.jpg";
+            const featuredDate  = featured.publishedAt || featured.createdAt;
+
+            return (
+              <>
+                {/* ── DESKTOP (lg+): Layout kiểu Vietnamnet ── */}
+                <div className="hidden lg:block">
+
+                  {/* Hàng đầu: Featured lớn (2/3) + Danh sách bên (1/3) */}
+                  <div className="grid grid-cols-[2fr_1fr] gap-6 mb-8">
+
+                    {/* Featured: ảnh lớn, text overlay */}
+                    <Link href={`/blog/${featured.slug}`} className="group relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
+                      <div className="relative h-90 overflow-hidden">
+                        <Image src={featuredCover} alt={pickTitle(featured, isVi)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-6">
+                          <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-sky-300">
+                            {pickTitle(featured, isVi)}
+                          </h2>
+                          <p className="mb-2 text-sm text-white/60">
+                            {featuredDate ? new Date(featuredDate).toLocaleDateString(t.dateLocale) : t.unknownDate}
+                          </p>
+                          <p className="line-clamp-2 text-sm text-white/80">
+                            {pickExcerpt(featured, isVi)}
+                          </p>
                         </div>
                       </div>
                     </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+
+                    {/* Sidebar phải: 4 bài nhỏ dạng ngang */}
+                    <div className="flex flex-col gap-3">
+                      {items.slice(1, 5).map((p: any) => {
+                        const cover = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
+                        const date  = p.publishedAt || p.createdAt;
+                        return (
+                          <Link key={p._id || p.slug} href={`/blog/${p.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative h-19 w-28 shrink-0 overflow-hidden rounded-md">
+                              <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
+                            </div>
+                            <div className="flex min-w-0 flex-col justify-center gap-1">
+                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                                {pickTitle(p, isVi)}
+                              </p>
+                              <span className="text-xs text-white/55">
+                                {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Grid 4 cột: tất cả bài còn lại */}
+                  {items.length > 5 && (
+                    <div className="grid grid-cols-4 gap-5">
+                      {items.slice(5).map((p: any) => {
+                        const cover = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
+                        const date  = p.publishedAt || p.createdAt;
+                        return (
+                          <Link key={p._id || p.slug} href={`/blog/${p.slug}`} className="group overflow-hidden rounded-lg border border-white/15 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative aspect-video overflow-hidden">
+                              <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                            </div>
+                            <div className="p-3">
+                              <p className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                                {pickTitle(p, isVi)}
+                              </p>
+                              <span className="text-xs text-white/55">
+                                {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── MOBILE / TABLET (< lg) ── */}
+                <div className="flex flex-col gap-4 lg:hidden">
+
+                  {/* Featured: large card */}
+                  <Link href={`/blog/${featured.slug}`} className="group overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
+                    <div className="relative h-52 w-full overflow-hidden sm:h-64">
+                      <Image src={featuredCover} alt={pickTitle(featured, isVi)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" priority />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="mb-2 line-clamp-3 text-xl font-bold leading-snug group-hover:text-sky-300">
+                        {pickTitle(featured, isVi)}
+                      </h3>
+                      <p className="text-xs text-white/60">
+                        {featuredDate ? new Date(featuredDate).toLocaleDateString(t.dateLocale) : t.unknownDate}
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Remaining: horizontal list */}
+                  <ul className="flex flex-col gap-2">
+                    {mobileTail.map((p: any) => {
+                      const cover = p.thumbnail || p.coverImage || "/images/mebayluon.jpg";
+                      const date  = p.publishedAt || p.createdAt;
+                      return (
+                        <li key={p._id || p.slug}>
+                          <Link href={`/blog/${p.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
+                            <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md">
+                              <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
+                            </div>
+                            <div className="flex flex-col justify-center gap-1">
+                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                                {pickTitle(p, isVi)}
+                              </p>
+                              <span className="text-xs text-white/55">
+                                {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
+                              </span>
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </main>
 
