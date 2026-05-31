@@ -50,11 +50,9 @@ export default function ContactPage() {
   ]
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: "url(/contact.jpg)" }}
-    >
-      <div className="absolute inset-0 bg-black/20 z-0" />
+    <main className="min-h-screen relative text-white">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/contact.jpg)" }} />
+      <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* Hero Section */}
       <section className="relative h-[50vh] flex items-center justify-center z-10">

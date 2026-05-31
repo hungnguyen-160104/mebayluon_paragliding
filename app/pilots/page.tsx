@@ -300,12 +300,12 @@ const pilotsData: PilotCard[] = [
     slug: "a-xieng",
     avatar: "/pilots/A-Xieng/A-Xieng.jpg",
     nickname: {
-      vi: "Trai Bản Thái Láo Làng",
-      en: "Trai Bản Thái Láo Làng",
-      fr: "Trai Bản Thái Láo Làng",
-      ru: "Trai Bản Thái Láo Làng",
-      zh: "Trai Bản Thái Láo Làng",
-      hi: "Trai Bản Thái Láo Làng",
+      vi: "Trai Bản Thái Lão Làng",
+      en: "Trai Bản Thái Lão Làng",
+      fr: "Trai Bản Thái Lão Làng",
+      ru: "Trai Bản Thái Lão Làng",
+      zh: "Trai Bản Thái Lão Làng",
+      hi: "Trai Bản Thái Lão Làng",
     },
     role: {
       vi: "Phi công bản địa",
@@ -329,16 +329,16 @@ const pilotsData: PilotCard[] = [
       hi: "Trai Bản việc gì cũng làm được",
     },
     role: {
-      vi: "Phi công tập sự",
-      en: "Phi công tập sự",
-      fr: "Phi công tập sự",
-      ru: "Phi công tập sự",
-      zh: "Phi công tập sự",
-      hi: "Phi công tập sự",
+      vi: "Phi công PG/PPG",
+      en: "Phi công PG/PPG",
+      fr: "Phi công PG/PPG",
+      ru: "Phi công PG/PPG",
+      zh: "Phi công PG/PPG",
+      hi: "Phi công PG/PPG",
     },
   },
   {
-    name: "A Hùng",
+    name: "A Hưng",
     slug: "a-hung",
     avatar: "/pilots/A-Hung/A-hung.jpg",
     nickname: {
@@ -359,7 +359,7 @@ const pilotsData: PilotCard[] = [
     },
   },
   {
-    name: "A Dũng",
+    name: "Khang Dũng",
     slug: "a-dung",
     avatar: "/pilots/A-Dung/A-Dung.jpeg",
     nickname: {
@@ -377,27 +377,6 @@ const pilotsData: PilotCard[] = [
       ru: "Phi công tập sự",
       zh: "Phi công tập sự",
       hi: "Phi công tập sự",
-    },
-  },
-  {
-    name: "YuPi",
-    slug: "yupi",
-    avatar: "/pilots/yupi/yupi.JPG",
-    nickname: {
-      vi: "Tư vấn khách mọi lúc mọi nơi",
-      en: "Tư vấn khách mọi lúc mọi nơi",
-      fr: "Tư vấn khách mọi lúc mọi nơi",
-      ru: "Tư vấn khách mọi lúc mọi nơi",
-      zh: "Tư vấn khách mọi lúc mọi nơi",
-      hi: "Tư vấn khách mọi lúc mọi nơi",
-    },
-    role: {
-      vi: "Điều hành & chăm sóc khách hàng",
-      en: "Điều hành & chăm sóc khách hàng",
-      fr: "Điều hành & chăm sóc khách hàng",
-      ru: "Điều hành & chăm sóc khách hàng",
-      zh: "Điều hành & chăm sóc khách hàng",
-      hi: "Điều hành & chăm sóc khách hàng",
     },
   },
 ];
@@ -521,11 +500,9 @@ export default function PilotsPage() {
       : "All our pilots are trained to international standards, hold IPPI certificates, and have years of experience.");
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center bg-fixed text-foreground"
-      style={{ backgroundImage: "url(/pilots/hero.jpg)" }}
-    >
-      <div className="absolute inset-0 bg-black/10 z-0" />
+    <main className="min-h-screen relative text-foreground">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/pilots/hero.jpg)" }} />
+      <div className="fixed inset-0 -z-10 bg-black/10" />
       <div className="relative z-10">
         <Navigation />
 
@@ -576,7 +553,7 @@ export default function PilotsPage() {
                               {nicknameLabel}: {nickname}
                             </p>
 
-                            <Button variant="secondary" className="px-4 py-2 text-sm shrink-0">
+                            <Button className="px-4 py-2 text-sm shrink-0 bg-black text-white border border-white/30 hover:bg-black/80">
                               {buttonText}
                             </Button>
                           </div>

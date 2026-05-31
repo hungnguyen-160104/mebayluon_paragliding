@@ -77,11 +77,9 @@ export default function PreNoticePage() {
   }
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: "url(/per-flight.jpg)" }}
-    >
-      <div className="absolute inset-0 bg-black/20 z-0" />
+    <main className="min-h-screen relative text-white">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/per-flight.jpg)" }} />
+      <div className="fixed inset-0 -z-10 bg-black/20" />
       <div className="relative z-20">
         <Navigation />
       </div>

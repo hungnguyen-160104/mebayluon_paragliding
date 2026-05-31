@@ -173,7 +173,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
 
       if (level === 1) {
         return (
-          <h1 key={key} className="text-4xl font-extrabold leading-tight text-white md:text-5xl">
+          <h1 key={key} className="text-2xl font-bold leading-tight text-white md:text-3xl">
             {text}
           </h1>
         );
@@ -181,7 +181,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
 
       if (level === 2) {
         return (
-          <h2 key={key} className="text-3xl font-bold leading-tight text-white md:text-4xl">
+          <h2 key={key} className="text-xl font-bold leading-tight text-white md:text-2xl">
             {text}
           </h2>
         );
@@ -189,14 +189,14 @@ function renderContentBlock(block: ContentBlock, index: number) {
 
       if (level === 3) {
         return (
-          <h3 key={key} className="text-2xl font-bold leading-snug text-white md:text-3xl">
+          <h3 key={key} className="text-lg font-semibold leading-snug text-white md:text-xl">
             {text}
           </h3>
         );
       }
 
       return (
-        <h4 key={key} className="text-xl font-semibold leading-snug text-white md:text-2xl">
+        <h4 key={key} className="text-base font-semibold leading-snug text-white md:text-lg">
           {text}
         </h4>
       );
@@ -204,7 +204,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
 
     case "paragraph":
       return (
-        <p key={key} className="whitespace-pre-line text-base font-normal leading-relaxed text-white/95">
+        <p key={key} className="whitespace-pre-line text-base font-normal leading-relaxed text-white/90">
           {data.text || ""}
         </p>
       );
@@ -534,11 +534,9 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       <ViewCounter slug={slug} />
-      <main
-        className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
-      >
-        <div className="absolute inset-0 z-0 bg-black/65" />
+      <main className="relative min-h-screen w-full">
+        <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/mebayluon.jpg')" }} />
+        <div className="fixed inset-0 -z-10 bg-[#071f0e]/80" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28">
 
@@ -546,7 +544,7 @@ export default async function BlogPostPage({
           <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8 xl:grid-cols-[1fr_320px]">
 
             {/* ── CỘT TRÁI: bài viết ── */}
-            <div className="rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
+            <div className="rounded-2xl border border-white/10 bg-[#071f0e]/75 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
 
               {/* back + category */}
               <div className="mb-5 flex items-center justify-between gap-4">
@@ -576,7 +574,7 @@ export default async function BlogPostPage({
               </div>
 
               {/* tiêu đề */}
-              <h1 className="mb-4 text-2xl font-bold leading-snug text-white sm:text-3xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+              <h1 className="mb-4 text-3xl font-bold leading-snug text-white sm:text-4xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
                 {title}
               </h1>
 
@@ -604,13 +602,15 @@ export default async function BlogPostPage({
 
               {/* nội dung bài viết — prose-lg trên desktop cho chữ lớn hơn */}
               <article
-                className="prose prose-invert max-w-none prose-base md:prose-lg
-                  prose-p:leading-[1.85] prose-p:text-white/90
-                  prose-headings:text-white prose-headings:font-bold
+                className="prose prose-invert max-w-none prose-sm md:prose-base
+                  prose-p:leading-[1.85] prose-p:text-white/90 prose-p:font-normal
+                  prose-headings:text-white prose-headings:font-semibold
+                  prose-h2:text-xl prose-h2:font-bold
+                  prose-h3:text-lg prose-h3:font-semibold
+                  prose-h4:text-base prose-h4:font-semibold
                   prose-strong:text-white prose-a:text-sky-300
                   prose-img:rounded-lg prose-img:mx-auto
                   prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
-                style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
               >
                 {canRenderBlocks ? (
                   <div className="space-y-5">{blocks.map(renderContentBlock)}</div>
@@ -670,7 +670,7 @@ export default async function BlogPostPage({
             {/* ── CỘT PHẢI: sidebar (chỉ desktop) ── */}
             {relatedPosts.length > 0 && (
               <aside className="hidden lg:block">
-                <div className="sticky top-24 rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg">
+                <div className="sticky top-24 rounded-2xl border border-white/10 bg-[#071f0e]/75 p-5 text-white shadow-xl backdrop-blur-lg">
                   <h2 className="mb-4 border-b border-white/15 pb-3 text-sm font-bold uppercase tracking-widest text-white/70">
                     {ui.related}
                   </h2>

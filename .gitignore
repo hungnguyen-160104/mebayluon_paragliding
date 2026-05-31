@@ -100,3 +100,15 @@ scripts/
 
 # pnpm workspace (Vercel tự xử lý)
 pnpm-workspace.yaml
+
+# ⚠️ Large media files - dùng Cloudinary/YouTube thay vì commit vào git
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wmv
+
+# Claude Code memory (local only)
+memory/
+MEMORY.md

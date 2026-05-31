@@ -146,11 +146,9 @@ export default async function BlogPage() {
       : ui.unknownDate;
 
   return (
-    <div
-      className="relative min-h-screen bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: "url('/tin-tuc-2.jpg')" }}
-    >
-      <div className="absolute inset-0 z-0 bg-black/40" />
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/tin-tuc-2.jpg')" }} />
+      <div className="fixed inset-0 -z-10 bg-black/40" />
 
       <main className="container relative z-10 mx-auto px-4 pt-28 pb-16 text-white">
         <h1 className="mb-10 mt-8 text-center text-5xl font-extrabold drop-shadow-lg md:text-6xl">

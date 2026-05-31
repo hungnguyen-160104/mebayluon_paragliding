@@ -309,11 +309,13 @@ export default function HomePage() {
   ];
 
   return (
-    <main
-      className="relative min-h-screen bg-cover bg-center bg-fixed text-foreground"
-      style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
-    >
-      <div className="absolute inset-0 z-0 bg-black/20" />
+    <div className="relative text-foreground">
+      {/* Fixed background - iOS Safari does not support background-attachment:fixed on non-body elements */}
+      <div
+        className="fixed inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
+      />
+      <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* ================= HERO ================= */}
       <section
@@ -800,6 +802,6 @@ export default function HomePage() {
           <Footer />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

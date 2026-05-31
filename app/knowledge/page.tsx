@@ -334,10 +334,10 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="line-clamp-3 text-base font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
-                              <span className="text-xs text-white/55">
+                              <span className="text-sm text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
                               </span>
                             </div>
@@ -359,10 +359,10 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
-                              <p className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="mb-1.5 line-clamp-2 text-base font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
-                              <span className="text-xs text-white/55">
+                              <span className="text-sm text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
                               </span>
                             </div>
@@ -404,10 +404,10 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
                             <div className="flex flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="line-clamp-3 text-base font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
-                              <span className="text-xs text-white/55">
+                              <span className="text-sm text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
                               </span>
                             </div>

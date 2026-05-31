@@ -59,10 +59,10 @@ export default function TermsPage() {
 
   return (
     <main
-      className="min-h-screen relative bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
+      className="min-h-screen relative text-white"
       aria-label="Terms & Conditions"
     >
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/hinh-nen.jpg)" }} />
       {/* Ẩn toàn bộ header/nav/footer & widget nổi; bỏ khoảng trắng mặc định */}
       <style jsx global>{`
         html, body, #__next { margin: 0 !important; padding: 0 !important; }

@@ -101,11 +101,11 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
                 scroll={false}
                 className={`
                   flex w-full min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
                   ${
                     isActive
-                      ? "bg-yellow-400 text-black border-yellow-200 shadow-[0_8px_20px_rgba(250,204,21,0.35)] scale-105 font-extrabold"
-                      : "bg-white/95 text-black border-white/70 hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
+                      ? "bg-black text-white border-white/40 shadow-lg scale-105 font-extrabold"
+                      : "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-md"
                   }
                 `}
               >

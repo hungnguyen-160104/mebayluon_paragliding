@@ -3335,11 +3335,9 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
   const stories = getStories(spot, lang);
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: `url(${spot.image})` }}
-    >
-      <div className="absolute inset-0 bg-black/40 z-0" />
+    <main className="min-h-screen relative text-white">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url(${spot.image})` }} />
+      <div className="fixed inset-0 -z-10 bg-black/40" />
 
       {/* Hero */}
       <section className="relative h-[70vh] flex items-center justify-center -mt-16 z-10">

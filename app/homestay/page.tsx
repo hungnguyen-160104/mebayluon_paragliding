@@ -202,11 +202,9 @@ export default function HomestayPage() {
   const locText = locationTranslations[language] || locationTranslations.vi;
 
   return (
-    <div
-      className="min-h-screen pt-20 relative bg-cover bg-center bg-fixed antialiased"
-      style={{ backgroundImage: "url(/contact.jpg)" }}
-    >
-      <div className="absolute inset-0 bg-black/30 z-0" />
+    <div className="min-h-screen pt-20 relative antialiased">
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/contact.jpg)" }} />
+      <div className="fixed inset-0 -z-10 bg-black/30" />
 
       <div className="relative z-10 text-white">
         {/* ===== Introduction ===== */}

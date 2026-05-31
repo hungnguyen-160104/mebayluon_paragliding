@@ -17,7 +17,7 @@ type PostLite = {
   excerptVi?: string;
   coverImage?: string;
   thumbnail?: string;
-  category?: string | string[];
+  storeCategory?: string;
   createdAt?: string;
   publishedAt?: string;
 };
@@ -40,11 +40,19 @@ function pickExcerpt(post: any, isVietnamese: boolean) {
     : post.excerpt || post.excerptVi || "";
 }
 
-async function getRelatedPosts(limit = 4): Promise<PostLite[]> {
-  const posts = await PostModel.find({ category: "store", isPublished: { $ne: false } })
+function hasHtmlTag(content: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(String(content || ""));
+}
+
+async function getRelatedProducts(excludeSlug: string, limit = 6): Promise<PostLite[]> {
+  const posts = await PostModel.find({
+    type: "product",
+    isPublished: { $ne: false },
+    slug: { $ne: excludeSlug },
+  })
     .sort({ publishedAt: -1, createdAt: -1 })
     .limit(limit)
-    .select("slug title titleVi excerpt excerptVi thumbnail coverImage category createdAt publishedAt")
+    .select("slug title titleVi excerpt excerptVi thumbnail coverImage storeCategory createdAt publishedAt")
     .lean();
   return posts.map((p: any) => ({
     ...p,
@@ -61,18 +69,20 @@ export async function generateMetadata({
   const { slug } = await params;
   await connectDB();
   const p = await getProductBySlug(slug).catch(() => null);
+  const title = p ? `${p.titleVi || p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store";
+  const description = p
+    ? String(p.contentVi || p.content || "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/\s+/g, " ")
+        .slice(0, 150)
+    : "";
   return {
-    title: p ? `${p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store",
-    description: p
-      ? String(p.content || "")
-          .replace(/<[^>]+>/g, "")
-          .replace(/\s+/g, " ")
-          .slice(0, 150)
-      : "",
+    title,
+    description,
     openGraph: p
       ? {
-          title: `${p.title} | Mebayluon Store`,
-          description: String(p.content || "").replace(/<[^>]+>/g, "").slice(0, 150),
+          title,
+          description,
           images: p.coverImage ? [{ url: p.coverImage }] : undefined,
         }
       : undefined,
@@ -84,7 +94,7 @@ export default async function ProductDetailPage({
 }: {
   params: Promise<{ category: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, category } = await params;
   const c = await cookies();
   const rawLang = c.get("language")?.value || c.get("lang")?.value || "vi";
   const isVietnamese = String(rawLang).toLowerCase().startsWith("vi");
@@ -99,100 +109,212 @@ export default async function ProductDetailPage({
   }
   if (!product) notFound();
 
-  const relatedPosts = await getRelatedPosts(4);
+  const relatedProducts = await getRelatedProducts(slug, 6);
   const currentTitle = pickTitle(product, isVietnamese);
+  const content = pickContent(product, isVietnamese);
+  const excerpt = pickExcerpt(product, isVietnamese);
+  const publishedDate = product.publishedAt || product.createdAt;
 
   return (
-    <main
-      className="relative min-h-screen w-full bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
-    >
-      <div className="absolute inset-0 bg-black/30 z-0" />
+    <div className="relative min-h-screen">
+      {/* Fixed background — iOS Safari does not support background-attachment:fixed on non-body elements */}
+      <div
+        className="fixed inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
+      />
+      <div className="fixed inset-0 -z-10 bg-black/55" />
 
-      <div className="container mx-auto px-4 relative z-10 pt-28 pb-16">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28">
 
-        <div className="prose prose-invert text-white bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl p-6 md:p-10 max-w-none">
+        {/* 2-column layout: article (left) + sidebar (right) */}
+        <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8 xl:grid-cols-[1fr_320px]">
 
-          <h1 className="not-prose text-3xl md:text-4xl font-bold mb-4 text-white">
-            {currentTitle}
-          </h1>
+          {/* LEFT: product detail */}
+          <div className="rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
 
-          {product.coverImage && (
-            <div className="not-prose relative w-full h-64 md:h-96 mb-6">
-              <Image
-                src={product.coverImage}
-                alt={currentTitle}
-                fill
-                priority
-                className="object-cover rounded-lg"
-              />
+            {/* back button */}
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <Link
+                href={`/store/${category}`}
+                className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+              >
+                ← {isVietnamese ? "Quay lại" : "Back"}
+              </Link>
+              {product.storeCategory && (
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
+                  {product.storeCategory}
+                </span>
+              )}
             </div>
-          )}
 
-          <article
-            className=""
-            dangerouslySetInnerHTML={{ __html: String(pickContent(product, isVietnamese) || "") }}
-          />
-        </div>
-
-        {relatedPosts.length > 0 && (
-          <section className="relative z-10 py-12 md:py-16">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">
-                {isVietnamese ? "Bài viết liên quan" : "Related Products"}
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {relatedPosts.map((p) => {
-                  const date = (p as any).publishedAt || (p as any).createdAt;
-                  const itemTitle = pickTitle(p, isVietnamese);
-                  const itemExcerpt = pickExcerpt(p, isVietnamese);
-
-                  return (
-                    <Link
-                      key={p._id || p.id || p.slug}
-                      href={`/store/${(p as any).storeCategory || "all"}/${p.slug}`}
-                      className="group relative overflow-hidden rounded-2xl bg-white/15 backdrop-blur-md shadow-xl border border-white/20 transition"
-                    >
-                      <div className="relative h-44">
-                        <Image
-                          src={p.thumbnail || p.coverImage || "/post-fallback.jpg"}
-                          alt={itemTitle}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                        />
-                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
-                      </div>
-
-                      <div className="p-5 text-white">
-                        <h3 className="text-lg font-semibold line-clamp-2 mb-1">
-                          {itemTitle}
-                        </h3>
-
-                        {date && (
-                          <p className="text-xs text-white/80 mb-2">
-                            {new Date(date).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
-                          </p>
-                        )}
-
-                        {itemExcerpt && (
-                          <p className="text-sm text-white/90 line-clamp-2 mb-3">
-                            {itemExcerpt}
-                          </p>
-                        )}
-
-                        <span className="inline-flex items-center gap-1 text-sm font-medium">
-                          {isVietnamese ? "Xem chi tiết →" : "View details →"}
-                        </span>
-                      </div>
-                    </Link>
-                  );
+            {/* date */}
+            {publishedDate && (
+              <div className="mb-3 text-xs text-white/60">
+                {new Date(publishedDate).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </div>
+            )}
+
+            {/* title */}
+            <h1
+              className="mb-4 text-2xl font-bold leading-snug text-white sm:text-3xl"
+              style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+            >
+              {currentTitle}
+            </h1>
+
+            {/* excerpt */}
+            {excerpt && (
+              <p
+                className="mb-5 border-l-2 border-white/30 pl-4 text-base leading-relaxed text-white/80"
+                style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+              >
+                {excerpt}
+              </p>
+            )}
+
+            {/* price */}
+            {typeof product.price === "number" && (
+              <p className="mb-5 text-lg font-semibold text-yellow-300">
+                {isVietnamese ? "Giá: " : "Price: "}
+                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
+              </p>
+            )}
+
+            {/* cover image */}
+            {product.coverImage && (
+              <div className="mb-6 overflow-hidden rounded-xl bg-white/5">
+                <Image
+                  src={product.coverImage}
+                  alt={currentTitle}
+                  width={1200}
+                  height={675}
+                  priority
+                  className="h-auto w-full rounded-xl"
+                  style={{ objectFit: "contain", display: "block" }}
+                />
+              </div>
+            )}
+
+            {/* content */}
+            <article
+              className="prose prose-invert max-w-none prose-base md:prose-lg
+                prose-p:leading-[1.85] prose-p:text-white/90
+                prose-headings:text-white prose-headings:font-bold
+                prose-strong:text-white prose-a:text-sky-300
+                prose-img:rounded-lg prose-img:mx-auto
+                prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
+              style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+            >
+              {content ? (
+                hasHtmlTag(content) ? (
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                ) : (
+                  <div className="whitespace-pre-line">{content}</div>
+                )
+              ) : (
+                <p className="text-white/60">
+                  {isVietnamese ? "Sản phẩm chưa có mô tả." : "No description available."}
+                </p>
+              )}
+            </article>
+
+            {/* contact CTA */}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/#contact"
+                className="inline-flex items-center rounded-full bg-red-600 px-6 py-3 font-semibold text-white transition hover:bg-red-700"
+              >
+                {isVietnamese ? "Liên hệ đặt mua" : "Contact to order"}
+              </Link>
+              <Link
+                href="/store"
+                className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
+              >
+                {isVietnamese ? "Xem thêm sản phẩm" : "More products"}
+              </Link>
             </div>
-          </section>
-        )}
+
+            {/* related products — mobile only */}
+            {relatedProducts.length > 0 && (
+              <section className="mt-10 lg:hidden">
+                <h2 className="mb-4 text-xl font-bold text-white">
+                  {isVietnamese ? "Sản phẩm liên quan" : "Related Products"}
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {relatedProducts.slice(0, 4).map((p) => {
+                    const itemTitle = pickTitle(p, isVietnamese);
+                    const itemCover = p.thumbnail || p.coverImage || "/post-fallback.jpg";
+                    const itemHref = `/store/${p.storeCategory || category}/${p.slug}`;
+                    return (
+                      <Link
+                        key={p._id || p.id || p.slug}
+                        href={itemHref}
+                        className="group flex gap-3 rounded-xl border border-white/15 bg-white/10 p-3 transition-all hover:bg-white/20"
+                      >
+                        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
+                          <Image src={itemCover} alt={itemTitle} fill className="object-cover" />
+                        </div>
+                        <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
+                          {itemTitle}
+                        </p>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* RIGHT: sidebar — desktop only */}
+          {relatedProducts.length > 0 && (
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg">
+                <h2 className="mb-4 border-b border-white/15 pb-3 text-sm font-bold uppercase tracking-widest text-white/70">
+                  {isVietnamese ? "Sản phẩm liên quan" : "Related Products"}
+                </h2>
+                <div className="flex flex-col gap-4">
+                  {relatedProducts.map((p) => {
+                    const itemTitle = pickTitle(p, isVietnamese);
+                    const itemCover = p.thumbnail || p.coverImage || "/post-fallback.jpg";
+                    const itemDate = p.publishedAt || p.createdAt;
+                    const itemHref = `/store/${p.storeCategory || category}/${p.slug}`;
+                    return (
+                      <Link
+                        key={p._id || p.id || p.slug}
+                        href={itemHref}
+                        className="group flex gap-3"
+                      >
+                        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
+                          <Image
+                            src={itemCover}
+                            alt={itemTitle}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
+                        <div className="flex min-w-0 flex-col justify-center gap-1">
+                          <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
+                            {itemTitle}
+                          </p>
+                          {itemDate && (
+                            <span className="text-xs text-white/45">
+                              {new Date(itemDate).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+          )}
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

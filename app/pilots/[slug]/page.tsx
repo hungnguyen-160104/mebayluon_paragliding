@@ -4,7 +4,7 @@ import { pilots, Pilot } from "@/lib/pilots-data"
 import { notFound } from "next/navigation"
 import PilotDetailClientPage from "@/components/pilot-detail-page" // Bước 1: Import component client mới
 
-const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01"])
+const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"])
 
 // Helper function để lấy dữ liệu phi công bằng slug
 function getPilotBySlug(slug: string): Pilot | undefined {
