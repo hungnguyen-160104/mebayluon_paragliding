@@ -202,11 +202,14 @@ export async function getPosts(options: GetPostsOptions = {}) {
           ? andFilters[0]
           : { $and: andFilters };
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * (limit || 0);
     const sortObj = buildSort(sort);
 
+    const query = PostModel.find(filter).sort(sortObj).skip(skip);
+    if (limit > 0) query.limit(limit);
+
     const [rawItems, total] = await Promise.all([
-      PostModel.find(filter).sort(sortObj).skip(skip).limit(limit).lean(),
+      query.lean(),
       PostModel.countDocuments(filter),
     ]);
 
@@ -217,7 +220,7 @@ export async function getPosts(options: GetPostsOptions = {}) {
       total,
       page,
       limit,
-      pages: Math.ceil(total / limit),
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
     };
   } catch (error) {
     console.error("Error in getPosts:", error);

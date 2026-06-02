@@ -307,7 +307,7 @@ export default async function KnowledgeAllPage({
                     {/* Featured: ảnh lớn, text overlay */}
                     <Link href={`/blog/${featured.slug}`} className="group relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
                       <div className="relative h-90 overflow-hidden">
-                        <Image src={featuredCover} alt={pickTitle(featured, isVi)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
+                        <Image src={featuredCover} alt={`${pickTitle(featured, isVi)} - Kiến thức dù lượn Mebayluon`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
                         <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-6">
                           <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-sky-300">

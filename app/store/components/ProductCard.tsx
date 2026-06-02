@@ -21,7 +21,7 @@ export default function ProductCard({ product }: { product: Post }) {
       {/* ảnh */}
       <div className="relative h-36 w-full">
         {isPixabay ? (
-          <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+          <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
         ) : (
           <Image src={imageUrl} alt={title} fill className="object-cover" />
         )}

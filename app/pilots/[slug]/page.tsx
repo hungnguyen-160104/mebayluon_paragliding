@@ -1,8 +1,10 @@
 // app/pilots/[slug]/page.tsx
 
+import type { Metadata } from "next";
 import { pilots, Pilot } from "@/lib/pilots-data"
 import { notFound } from "next/navigation"
-import PilotDetailClientPage from "@/components/pilot-detail-page" // Bước 1: Import component client mới
+import PilotDetailClientPage from "@/components/pilot-detail-page"
+import { buildMetadata, generateBreadcrumbSchema, generatePilotSchema } from "@/lib/metadata-builder"
 
 const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"])
 
@@ -10,6 +12,20 @@ const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"])
 function getPilotBySlug(slug: string): Pilot | undefined {
   if (REMOVED_PILOT_SLUGS.has(slug)) return undefined
   return pilots.find((pilot) => pilot.slug === slug && !REMOVED_PILOT_SLUGS.has(pilot.slug))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const pilot = getPilotBySlug(slug);
+  if (!pilot) return { title: "Phi công | Mebayluon" };
+
+  return buildMetadata({
+    title: `${pilot.name} - ${pilot.role.vi} | Mebayluon`,
+    description: `${pilot.bio.vi.slice(0, 155)}…`,
+    image: pilot.avatar,
+    url: `/pilots/${slug}`,
+    type: "website",
+  });
 }
 
 // generateStaticParams VẪN GIỮ Ở ĐÂY (file server)
@@ -38,6 +54,27 @@ export default async function PilotDetailPage({ params }: PilotDetailPageProps) 
     notFound()
   }
 
-  // Bước 2: Render Client Component và truyền data xuống
-  return <PilotDetailClientPage pilotData={pilotData} />
+  const personSchema = generatePilotSchema({
+    name: pilotData.name,
+    nickname: pilotData.nickname.vi,
+    role: pilotData.role.vi,
+    bio: pilotData.bio.vi,
+    image: pilotData.avatar,
+    url: `/pilots/${slug}`,
+    certificates: Array.isArray(pilotData.certificates?.vi) ? pilotData.certificates.vi : [],
+  });
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Trang chủ", url: "/" },
+    { name: "Phi công", url: "/pilots" },
+    { name: pilotData.name, url: `/pilots/${slug}` },
+  ]);
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <PilotDetailClientPage pilotData={pilotData} />
+    </>
+  );
 }

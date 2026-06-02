@@ -218,12 +218,162 @@ export function generateOrganizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL.replace(/\/$/, "")}/logo.png`,
     description: "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam",
-    sameAs: ["https://facebook.com/mebayluon", "https://instagram.com/mebayluon"],
+    sameAs: [
+      "https://facebook.com/mebayluon",
+      "https://www.youtube.com/@mebayluon",
+      "https://www.tiktok.com/@mebayluon",
+    ],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Service",
-      telephone: "+84-xxx-xxx-xxx",
-      email: "info@mebayluon.com",
+      telephone: "+84-964-073-555",
+      email: "mebayluon@gmail.com",
+      availableLanguage: ["Vietnamese", "English"],
     },
+  };
+}
+
+/**
+ * Generate LocalBusiness schema for Mebayluon
+ */
+export function generateLocalBusinessSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristInformationCenter",
+    name: "Mebayluon Paragliding",
+    image: `${SITE_URL.replace(/\/$/, "")}/og-image.jpg`,
+    url: SITE_URL,
+    telephone: "+84-964-073-555",
+    email: "mebayluon@gmail.com",
+    description: "Công ty bay dù lượn chuyên nghiệp tại Việt Nam. Trải nghiệm bay dù lượn tự do trên khắp Việt Nam.",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Mù Cang Chải",
+      addressLocality: "Yên Bái",
+      addressCountry: "VN",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 21.8167,
+      longitude: 104.1167,
+    },
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+      opens: "06:00",
+      closes: "19:00",
+    },
+    priceRange: "$$",
+    currenciesAccepted: "VND",
+    paymentAccepted: "Cash, Bank Transfer",
+    sameAs: [
+      "https://facebook.com/mebayluon",
+      "https://www.youtube.com/@mebayluon",
+    ],
+  };
+}
+
+/**
+ * Generate BreadcrumbList schema
+ */
+export function generateBreadcrumbSchema(items: { name: string; url: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: resolveUrl(item.url),
+    })),
+  };
+}
+
+/**
+ * Generate Person schema for pilot profiles
+ */
+export function generatePilotSchema(data: {
+  name: string;
+  nickname: string;
+  role: string;
+  bio: string;
+  image: string;
+  url: string;
+  experience?: string;
+  certificates?: string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: data.name,
+    alternateName: data.nickname,
+    jobTitle: data.role,
+    description: data.bio,
+    image: resolveImage(data.image),
+    url: resolveUrl(data.url),
+    worksFor: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    hasCredential: data.certificates?.map((cert) => ({
+      "@type": "EducationalOccupationalCredential",
+      name: cert,
+    })),
+  };
+}
+
+/**
+ * Generate TouristAttraction schema for flying spots
+ */
+export function generateSpotSchema(data: {
+  name: string;
+  description: string;
+  image: string;
+  url: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    name: data.name,
+    description: data.description,
+    image: resolveImage(data.image),
+    url: resolveUrl(data.url),
+    touristType: "Adventure sports, Paragliding",
+    ...(data.latitude && data.longitude ? {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: data.latitude,
+        longitude: data.longitude,
+      },
+    } : {}),
+    ...(data.address ? {
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: data.address,
+        addressCountry: "VN",
+      },
+    } : {}),
+  };
+}
+
+/**
+ * Generate FAQPage schema
+ */
+export function generateFAQSchema(faqs: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
   };
 }

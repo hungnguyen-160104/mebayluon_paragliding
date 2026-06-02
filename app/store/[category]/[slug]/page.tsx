@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { connectDB } from "@/lib/mongodb";
 import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
+import { generateProductSchema } from "@/lib/metadata-builder";
 
 type PostLite = {
   _id?: string;
@@ -115,7 +116,21 @@ export default async function ProductDetailPage({
   const excerpt = pickExcerpt(product, isVietnamese);
   const publishedDate = product.publishedAt || product.createdAt;
 
+  const productSchema = generateProductSchema({
+    name: currentTitle,
+    description: excerpt || String(content || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").slice(0, 200),
+    image: product.coverImage || "",
+    price: typeof product.price === "number" ? product.price : 0,
+    currency: "VND",
+    url: `/store/${category}/${slug}`,
+  });
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
     <div className="relative min-h-screen">
       {/* Fixed background — iOS Safari does not support background-attachment:fixed on non-body elements */}
       <div
@@ -316,5 +331,6 @@ export default async function ProductDetailPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

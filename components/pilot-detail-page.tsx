@@ -1,6 +1,7 @@
 // components/pilot-detail-page.tsx
 "use client"
 
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
@@ -30,16 +31,10 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
   const funFacts = pilotData.funFacts[lang] ?? pilotData.funFacts.vi
 
   return (
-    <div
-      className="min-h-screen text-white relative"
-      style={{
-        backgroundImage: "url(/pilots/hero.jpg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
-    >
-      <div className="absolute inset-0 bg-black/30 z-0" />
+    <div className="min-h-screen text-white relative">
+      {/* Fixed background — iOS Safari không hỗ trợ backgroundAttachment:fixed trên non-body */}
+      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/pilots/hero.jpg)" }} />
+      <div className="fixed inset-0 -z-10 bg-black/30" />
 
       <Navigation />
 
@@ -88,6 +83,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                     key={i}
                     src={img}
                     alt={`Collage ${i + 1}`}
+                    loading="lazy"
                     className={`absolute rounded-lg shadow-2xl border-4 border-white transition-all duration-300 group-hover:rotate-0 group-hover:scale-110 ${
                       i === 0
                         ? "top-[-5%] left-[-8%] w-[40%] -rotate-12 z-10"
@@ -145,10 +141,13 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    <img
+                    <Image
                       src={contentImages[1]}
                       alt={`Phi công ${pilotData.name}`}
+                      width={800}
+                      height={600}
                       className="w-full rounded-2xl shadow-xl"
+                      loading="lazy"
                     />
                     <div>
                       <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
@@ -167,15 +166,21 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                 </div>
 
                 <div className="lg:col-span-2 space-y-8">
-                  <img
+                  <Image
                     src={contentImages[0]}
                     alt={`Phi công ${pilotData.name} bay đôi`}
+                    width={800}
+                    height={600}
                     className="w-full rounded-2xl shadow-xl border-4 border-purple-400"
+                    loading="lazy"
                   />
-                  <img
+                  <Image
                     src={contentImages[2]}
                     alt={`Phi công ${pilotData.name} selfie`}
+                    width={800}
+                    height={600}
                     className="w-full rounded-2xl shadow-xl"
+                    loading="lazy"
                   />
                 </div>
               </div>

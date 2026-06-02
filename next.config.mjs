@@ -6,11 +6,16 @@ const nextConfig = {
     remotePatterns: [
       { hostname: '**.cloudinary.com' },
       { hostname: 'res.cloudinary.com' },
+      { hostname: 'cdn.pixabay.com' },
+      { hostname: 'pixabay.com' },
+      { hostname: 'images.unsplash.com' },
+      { hostname: 'lh3.googleusercontent.com' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000, // 1 year cache for images
     deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    dangerouslyAllowSVG: false,
   },
   
   // Enable compression for gzip/brotli
@@ -90,14 +95,28 @@ const nextConfig = {
   // Headers for caching
   async headers() {
     return [
+      // Static images — cache 1 năm
       {
         source: '/images/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/pilots/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/knowledge/:path*.(jpg|jpeg|png|webp|avif|gif|svg)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      // Fonts — cache 1 năm
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      // Background images
+      {
+        source: '/:file(hinh-nen|cua-hang|knowledge|per-flight|contact|tin-tuc-2|pilots/hero).(jpg|jpeg|png|webp)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
       },
       // Allow /terms to be embedded in iframes on same origin (for booking modal)
       {

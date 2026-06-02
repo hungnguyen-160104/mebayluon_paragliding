@@ -1,6 +1,20 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "Tin Tức & Blog Dù Lượn Việt Nam | Mebayluon",
+  description: "Tin tức mới nhất về dù lượn, kinh nghiệm bay, hướng dẫn kỹ thuật và câu chuyện từ cộng đồng dù lượn Việt Nam của Mebayluon.",
+  keywords: ["blog dù lượn", "tin tức paragliding", "kinh nghiệm bay dù lượn", "mebayluon blog"],
+  openGraph: {
+    title: "Tin Tức & Blog Dù Lượn | Mebayluon",
+    description: "Tin tức, kinh nghiệm và câu chuyện từ cộng đồng dù lượn Việt Nam.",
+    url: "https://mebayluon.com/blog",
+    images: [{ url: "/tin-tuc-2.jpg", width: 1200, height: 630, alt: "Blog dù lượn Mebayluon" }],
+  },
+  alternates: { canonical: "https://mebayluon.com/blog" },
+};
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
@@ -130,7 +144,7 @@ export default async function BlogPage() {
     type: "blog",
     isPublished: true,
     page: 1,
-    limit: 24,
+    limit: 0,
     sort: "-publishedAt,-createdAt",
   });
 

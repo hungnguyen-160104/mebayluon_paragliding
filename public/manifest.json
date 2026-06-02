@@ -1,0 +1,43 @@
+{
+  "name": "Mebayluon Paragliding",
+  "short_name": "Mebayluon",
+  "description": "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d2b1a",
+  "theme_color": "#0d2b1a",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["travel", "sports", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Đặt bay ngay",
+      "short_name": "Đặt bay",
+      "description": "Đặt lịch bay dù lượn",
+      "url": "/booking",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Liên hệ",
+      "short_name": "Liên hệ",
+      "description": "Liên hệ Mebayluon",
+      "url": "/contact",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}

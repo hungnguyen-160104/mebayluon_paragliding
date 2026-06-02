@@ -212,7 +212,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
     case "image":
       return data.url ? (
         <figure key={key} className="space-y-3">
-          <img src={data.url} alt={data.alt || ""} className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
+          <img src={data.url} alt={data.alt || ""} loading="lazy" className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
           {data.caption ? (
             <figcaption className="text-sm text-white/80 text-center italic font-semibold mt-2">{data.caption}</figcaption>
           ) : null}
