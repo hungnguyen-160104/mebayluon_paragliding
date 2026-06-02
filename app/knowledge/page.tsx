@@ -202,7 +202,7 @@ async function getData(sub?: string) {
     category: "knowledge",
     isPublished: true,
     subCategory: sub && sub !== "all" ? sub : undefined,
-    limit: 24,
+    limit: 0,
     sort: "-publishedAt,-createdAt",
   });
 
