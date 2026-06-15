@@ -3524,12 +3524,19 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
                                 {firstLine}
                               </h4>
                               <div className="grid gap-1">
-                                {lines.slice(1).map((line, lineIndex) => (
-                                  <div key={lineIndex} className="flex items-start gap-2 text-xs md:text-sm text-stone-300">
-                                    <span className="shrink-0">{line.match(/^[✅🕒⏳🔄💳]/)?.[0] || '•'}</span>
-                                    <span>{line.replace(/^[✅🕒⏳🔄💳]\s*/, '')}</span>
-                                  </div>
-                                ))}
+                                {lines.slice(1).map((line, lineIndex) => {
+                                  // Tách icon emoji ở đầu dòng một cách an toàn (cờ `u` để xử lý đúng emoji astral/surrogate),
+                                  // bắt mọi emoji + biến thể (U+FE0F) thay vì danh sách cứng 5 ký tự → tránh lỗi "• + emoji" và ô vuông.
+                                  const iconMatch = line.match(/^(\p{Extended_Pictographic}️?)\s*/u);
+                                  const icon = iconMatch ? iconMatch[1] : '•';
+                                  const text = iconMatch ? line.slice(iconMatch[0].length) : line;
+                                  return (
+                                    <div key={lineIndex} className="flex items-start gap-2 text-xs md:text-sm text-stone-300">
+                                      <span className="shrink-0">{icon}</span>
+                                      <span>{text}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );

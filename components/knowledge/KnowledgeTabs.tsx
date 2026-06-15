@@ -25,10 +25,10 @@ export default function KnowledgeTabs({ active }: { active?: KnowledgeSub | "all
       <Link
         href="/knowledge"
         className={clsx(
-          "rounded-full px-4 py-2 text-sm transition",
+          "flex min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
           active === "all"
-            ? "bg-white text-black"
-            : "bg-white/10 text-white hover:bg-white/20"
+            ? "bg-black text-white border-white/40 shadow-lg scale-105 font-extrabold"
+            : "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-md"
         )}
       >
         Tất cả
@@ -39,7 +39,7 @@ export default function KnowledgeTabs({ active }: { active?: KnowledgeSub | "all
           key={t.key}
           href={`/knowledge/${t.key}`}
           className={clsx(
-            "rounded-full px-4 py-2 text-sm transition",
+            "flex min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
             active === t.key
               ? "bg-white text-black"
               : "bg-white/10 text-white hover:bg-white/20"

@@ -1,6 +1,16 @@
 // mbl-paragliding/next.config.mjs
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Pin the workspace root to this project so Next.js doesn't pick up a stray
+  // pnpm-lock.yaml in a parent directory (e.g. C:\Users\Admin\). A wrong root
+  // breaks module resolution/caching and triggers webpack "reading 'call'" errors.
+  outputFileTracingRoot: __dirname,
+
   // Enable image optimization for better performance
   images: {
     remotePatterns: [

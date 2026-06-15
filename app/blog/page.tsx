@@ -165,7 +165,7 @@ export default async function BlogPage() {
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
       <main className="container relative z-10 mx-auto px-4 pt-28 pb-16 text-white">
-        <h1 className="mb-10 mt-8 text-center text-5xl font-extrabold drop-shadow-lg md:text-6xl">
+        <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 mb-10 mt-8 text-5xl font-extrabold text-white shadow-lg md:text-6xl">
           {ui.pageTitle}
         </h1>
 
@@ -218,7 +218,7 @@ export default async function BlogPage() {
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-red-300">
+                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
@@ -241,7 +241,7 @@ export default async function BlogPage() {
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
-                              <p className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug group-hover:text-red-300">
+                              <p className="mb-1.5 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
@@ -284,7 +284,7 @@ export default async function BlogPage() {
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
                             </div>
                             <div className="flex flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-sm font-semibold leading-snug group-hover:text-red-300">
+                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>

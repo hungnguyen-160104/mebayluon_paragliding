@@ -15,6 +15,9 @@ type PilotCard = {
   name: string;
   slug: string;
   avatar: string; // vẫn giữ file ảnh như bạn đang có
+  // Tailwind object-position cho ảnh thẻ (mặc định "object-top"). Dùng để kéo khung xuống
+  // với ảnh toàn thân nhiều khoảng trống phía trên → đầu phi công cao hơn trong thẻ.
+  imageObjectPosition?: string;
   nickname: Record<Lang, string>;
   role: Record<Lang, string>;
 };
@@ -320,6 +323,7 @@ const pilotsData: PilotCard[] = [
     name: "A Mặc",
     slug: "a-mac",
     avatar: "/pilots/A-Mac/A-mac.jpg",
+    imageObjectPosition: "object-[center_72%]",
     nickname: {
       vi: "Trai Bản việc gì cũng làm được",
       en: "Trai Bản việc gì cũng làm được",
@@ -341,6 +345,7 @@ const pilotsData: PilotCard[] = [
     name: "A Hưng",
     slug: "a-hung",
     avatar: "/pilots/A-Hung/A-hung.jpg",
+    imageObjectPosition: "object-[center_72%]",
     nickname: {
       vi: "Trai bản thổi sáo trên không",
       en: "Trai bản thổi sáo trên không",
@@ -440,7 +445,7 @@ function getSafeLang(language: unknown): Lang {
   return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(l) ? l : "vi";
 }
 
-function PilotImage({ src, alt }: { src: string; alt: string }) {
+function PilotImage({ src, alt, objectPosition }: { src: string; alt: string; objectPosition?: string }) {
   const [failed, setFailed] = useState(false);
 
   return (
@@ -450,7 +455,7 @@ function PilotImage({ src, alt }: { src: string; alt: string }) {
           src={src}
           alt={alt}
           fill
-          className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
+          className={`object-cover ${objectPosition ?? "object-top"} transition-transform duration-500 group-hover:scale-110`}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
           onError={() => setFailed(true)}
           priority={false}
@@ -510,7 +515,7 @@ export default function PilotsPage() {
         <section className="py-16 relative z-10 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center space-y-6">
-              <h2 className="text-3xl font-bold font-serif">{introTitle}</h2>
+              <h2 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl font-extrabold text-white shadow-lg">{introTitle}</h2>
               <p className="text-lg text-slate-200 leading-relaxed">{introDesc}</p>
             </div>
           </div>
@@ -540,7 +545,7 @@ export default function PilotsPage() {
                     >
                       <div className="group h-full flex flex-col rounded-2xl overflow-hidden bg-white/30 backdrop-blur-md border border-white/40 shadow-lg hover:shadow-2xl transition-all duration-300 text-white">
                         {/* ✅ ảnh dùng next/image để chắc chắn hiển thị + fallback */}
-                        <PilotImage src={pilot.avatar} alt={`${pilot.name} - ${role} tại Mebayluon Paragliding`} />
+                        <PilotImage src={pilot.avatar} alt={`${pilot.name} - ${role} tại Mebayluon Paragliding`} objectPosition={pilot.imageObjectPosition} />
 
                         <div className="p-6 flex flex-col grow justify-between">
                           <div>

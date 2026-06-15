@@ -38,7 +38,7 @@ export default function StoreHomeClient({
       <div className="absolute inset-0 bg-black/20" />
       <section className="relative z-10 py-24">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-10">
+          <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-5xl font-extrabold text-white shadow-lg mb-10">
             {ui.title}
           </h1>
 
@@ -48,10 +48,10 @@ export default function StoreHomeClient({
                 key={c.key}
                 onClick={() => setActive(c.key as StoreCategory | "all")}
                 className={clsx(
-                  "px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+                  "flex min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
                   active === c.key
-                    ? "bg-white/70 text-black shadow-md"
-                    : "text-white hover:bg-white/10"
+                    ? "bg-black text-white border-white/40 shadow-lg scale-105 font-extrabold"
+                    : "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-md"
                 )}
               >
                 {c.title}

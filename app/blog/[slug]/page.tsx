@@ -204,7 +204,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
 
     case "paragraph":
       return (
-        <p key={key} className="whitespace-pre-line text-base font-normal leading-relaxed text-white/90">
+        <p key={key} className="whitespace-pre-line text-base font-light leading-relaxed text-white/90">
           {data.text || ""}
         </p>
       );
@@ -536,7 +536,8 @@ export default async function BlogPostPage({
       <ViewCounter slug={slug} />
       <main className="relative min-h-screen w-full">
         <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/mebayluon.jpg')" }} />
-        <div className="fixed inset-0 -z-10 bg-[#071f0e]/80" />
+        {/* Nền xanh lá đậm (xanh như lá lúa) thay vì gần như đen — theo yêu cầu khách hàng */}
+        <div className="fixed inset-0 -z-10 bg-[#0b3a1c]/85" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28">
 
@@ -544,7 +545,7 @@ export default async function BlogPostPage({
           <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8 xl:grid-cols-[1fr_320px]">
 
             {/* ── CỘT TRÁI: bài viết ── */}
-            <div className="rounded-2xl border border-white/10 bg-[#071f0e]/75 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
+            <div className="rounded-2xl border border-white/10 bg-[#14532d]/85 p-5 text-white shadow-xl backdrop-blur-lg sm:p-7">
 
               {/* back + category */}
               <div className="mb-5 flex items-center justify-between gap-4">
@@ -574,13 +575,13 @@ export default async function BlogPostPage({
               </div>
 
               {/* tiêu đề */}
-              <h1 className="mb-4 text-3xl font-bold leading-snug text-white sm:text-4xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+              <h1 className="mb-4 text-4xl font-bold leading-tight text-white sm:text-5xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
                 {title}
               </h1>
 
-              {/* lead paragraph — cỡ chữ bằng body */}
+              {/* lead paragraph — dùng font body (Roboto), nhẹ hơn để không bị "béo/bôi đen" */}
               {excerpt && (
-                <p className="mb-5 border-l-2 border-white/30 pl-4 text-base leading-relaxed text-white/80" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+                <p className="mb-5 border-l-2 border-white/30 pl-4 text-base font-light leading-relaxed text-white/80">
                   {excerpt}
                 </p>
               )}
@@ -603,7 +604,7 @@ export default async function BlogPostPage({
               {/* nội dung bài viết — prose-lg trên desktop cho chữ lớn hơn */}
               <article
                 className="prose prose-invert max-w-none prose-sm md:prose-base
-                  prose-p:leading-[1.85] prose-p:text-white/90 prose-p:font-normal
+                  prose-p:leading-[1.85] prose-p:text-white/90 prose-p:font-light
                   prose-headings:text-white prose-headings:font-semibold
                   prose-h2:text-xl prose-h2:font-bold
                   prose-h3:text-lg prose-h3:font-semibold

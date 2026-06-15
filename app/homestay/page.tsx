@@ -215,7 +215,7 @@ export default function HomestayPage() {
                 {t.homestay.intro.title}
               </h2>
 
-              <p className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-8 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mt-8">
+              <p className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
                 {t.homestay.intro.title}
               </p>
 

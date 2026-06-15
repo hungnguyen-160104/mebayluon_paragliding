@@ -242,8 +242,8 @@ export default async function KnowledgeAllPage({
       <section className="relative h-screen w-full flex flex-col justify-between overflow-hidden z-0">
         {/* TOP AREA: Title */}
         <div className="relative flex-1 flex items-center justify-end px-6 md:px-16 w-full">
-          <h1 
-            className="text-4xl md:text-6xl lg:text-7xl font-extrabold drop-shadow-2xl text-right uppercase tracking-tighter leading-tight whitespace-pre-line opacity-0 animate-fade-in-right fill-mode-forwards max-w-[90vw] md:max-w-4xl"
+          <h1
+            className="w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white shadow-lg text-right leading-tight whitespace-pre-line opacity-0 animate-fade-in-right fill-mode-forwards max-w-[90vw] md:max-w-4xl"
             style={{ animation: "fadeInRight 1s ease-out forwards" }}
           >
             {t.pageTitle}
@@ -334,7 +334,7 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
                               <span className="text-sm text-white/55">
@@ -359,7 +359,7 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
-                              <p className="mb-1.5 line-clamp-2 text-base font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="mb-1.5 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
                               <span className="text-sm text-white/55">
@@ -404,7 +404,7 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
                             <div className="flex flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
                               <span className="text-sm text-white/55">
