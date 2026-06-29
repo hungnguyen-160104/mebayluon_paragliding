@@ -108,7 +108,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Bán đảo – đại dương – vịnh Đà Nẵng",
     duration: "8 – 15 phút",
     landingPoint: "Khu ven biển Sơn Trà",
-    basePrice: 1690000,
+    basePrice: 2590000,
     image: "/spots/da-nang/hero.jpg",
     galleryImages: [
       "/spots/da-nang/1.jpg",
@@ -126,7 +126,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 1690000,
+        price: 2590000,
         description: "Trọn gói cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },

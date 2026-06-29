@@ -149,7 +149,7 @@ export const flightOptions: FlightOption[] = [
   {
     id: "da-nang",
     name: "Đà Nẵng (Bán đảo Sơn Trà)",
-    price: { weekday: 1690000, unit: "VND" },
+    price: { weekday: 2590000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
       "Quay phim & chụp hình từ GoPro",

@@ -108,7 +108,7 @@ const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   khau_pha: 2_190_000,
   sapa: 2_090_000,
   quan_ba: 2_190_000,
-  da_nang: 1_690_000,
+  da_nang: 2_590_000,
 };
 
 const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
