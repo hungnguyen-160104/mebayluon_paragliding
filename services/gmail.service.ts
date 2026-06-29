@@ -15,7 +15,7 @@ export async function postNotifyGmail(payload: TelegramBookingPayload) {
   // payload telegram của bạn đang có contact.email, nên mình validate theo đó.
   const bookingId = String(payload?.bookingId ?? "").trim(); // nếu bạn có
   const contactEmail = String(payload?.contact?.email ?? "").trim();
-  const contactName = String((payload as any)?.contactName ?? payload?.contact?.email ?? "").trim(); 
+  const contactName = String((payload as any)?.contactName ?? payload?.contact?.email ?? "").trim();
   // ^ Nếu bạn có contactName riêng thì thay dòng này cho đúng.
 
   if (!payload || typeof payload !== "object") {
