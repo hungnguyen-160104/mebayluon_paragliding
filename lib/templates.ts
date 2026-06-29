@@ -290,124 +290,12 @@ function buildTelegramSections(body: TelegramBookingPayload) {
   return sections.join("\n");
 }
 
-// ===== CUSTOMER: tiếng Anh - FORMAT ĐẦY ĐỦ VỚI CHI TIẾT DỰC VỤ =====
-function buildCustomerSectionsEn(body: TelegramBookingPayload) {
-  const c = body.contact || {};
-
-  const guestsCount =
-    Number.isFinite(body.guestsCount) && Number(body.guestsCount) > 0
-      ? Number(body.guestsCount)
-      : (body.guests?.length || 1);
-
-  const guestLines =
-    (body.guests || [])
-      .map((g, i) => {
-        const attrs: string[] = [];
-        if (g.dob) attrs.push(`DOB: ${escapeHtml(g.dob)}`);
-        if (g.gender) attrs.push(escapeHtml(g.gender));
-        if (g.idNumber) attrs.push(`ID: ${escapeHtml(g.idNumber)}`);
-        if (typeof g.weightKg === "number") attrs.push(`${g.weightKg}kg`);
-        if (g.nationality) attrs.push(escapeHtml(g.nationality));
-        return `${i + 1}. ${escapeHtml(g.fullName || "")} | ${attrs.join(" · ")}`;
-      })
-      .join("\n") || "—";
-
-  const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
-  const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
-  const total = formatVND(body.price?.total);
-  const selectedServiceLines = resolveSelectedServiceLines(body, "en");
-  const servicePriceBreakdownLines = resolveServicePriceBreakdownLines(body);
-
-  // Build addon details with pricing
-  const addonLines: string[] = [];
-  const priceAddons = body.price?.addonsUnitPrice || {};
-  const addonTotal = body.price?.addonsTotal || {};
-
-  if (body.addons?.pickup || (body.price?.addonsQty?.pickup ?? 0) > 0) {
-    const qty = body.price?.addonsQty?.pickup || 1;
-    const unit = priceAddons?.pickup || 100_000;
-    const tot = addonTotal?.pickup || unit * qty;
-    addonLines.push(`  • Pickup Service: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
-  }
-
-  if (body.addons?.flycam || (body.price?.addonsQty?.flycam ?? 0) > 0) {
-    const qty = body.price?.addonsQty?.flycam || 1;
-    const unit = priceAddons?.flycam || 300_000;
-    const tot = addonTotal?.flycam || unit * qty;
-    addonLines.push(`  • Flycam (Drone): ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
-  }
-
-  if (body.addons?.camera360 || (body.price?.addonsQty?.camera360 ?? 0) > 0) {
-    const qty = body.price?.addonsQty?.camera360 || 1;
-    const unit = priceAddons?.camera360 || 500_000;
-    const tot = addonTotal?.camera360 || unit * qty;
-    addonLines.push(`  • 360° Camera: ${formatVND(unit)} × ${qty} = ${formatVND(tot)}`);
-  }
-
-  const sections = [
-    `✈️ BOOKING CONFIRMATION`,
-    ``,
-    body.bookingId ? `Booking ID: ${escapeHtml(body.bookingId)}` : "",
-    `Service: ${escapeHtml(body.serviceName || "Paragliding")}`,
-    ``,
-    `BOOKING DETAILS`,
-    `Location: ${locationName}`,
-    `Date: ${escapeHtml(body.dateISO || "—")}`,
-    `Time: ${escapeHtml(body.timeSlot || "—")}`,
-    `Number of Guests: ${guestsCount}`,
-    ``,
-    `CONTACT INFORMATION`,
-    `Phone: ${escapeHtml(c.phone || "—")}`,
-    `Email: ${escapeHtml(c.email || "—")}`,
-    c.pickupLocation ? `Pickup Location: ${escapeHtml(c.pickupLocation)}` : "",
-    c.specialRequest ? `Special Requests: ${escapeHtml(c.specialRequest)}` : "",
-    ``,
-    `PASSENGER LIST`,
-    guestLines,
-    ``,
-    `SELECTED SERVICES`,
-    ...(selectedServiceLines.length > 0 ? selectedServiceLines : ["• None"]),
-    ``,
-    `PRICE BREAKDOWN`,
-    `Flight: ${basePerPerson}/person × ${guestsCount} = ${formatVND((body.price?.basePerPerson || body.price?.perPerson || 0) * guestsCount)}`,
-    ...servicePriceBreakdownLines,
-    ...addonLines,
-    body.price?.discountPerPerson ? `Group Discount: -${formatVND(body.price.discountPerPerson)}/person × ${guestsCount} = -${formatVND(body.price.discountPerPerson * guestsCount)}` : "",
-    ``,
-    `TOTAL: ${total}`,
-    ``,
-    `WHAT'S INCLUDED`,
-    `• Flight time: 8-15 minutes (weather dependent)`,
-    `• GoPro photo & video`,
-    `• Welcome drink (coffee/tea)`,
-    `• Flight insurance`,
-    `• Certificate of flight`,
-    c.pickupLocation ? `• Pickup/Drop-off service` : "",
-    ``,
-    `NEXT STEPS`,
-    `1. We will confirm via phone/WhatsApp within 24 hours`,
-    `2. Arrive 15-20 minutes early for safety briefing`,
-    `3. Bring ID/Passport and the booking confirmation`,
-    `4. Free cancellation up to 48 hours before the flight`,
-    ``,
-    `CONTACT US:`,
-    `📞 +84 964.073.555 | +84 979.702.812`,
-    `💬 WhatsApp | Zalo | Telegram`,
-    `🌐 mebayluon.com`,
-    ``,
-    `Safe flights! 🪂`,
-  ].filter(Boolean);
-
-  return sections.join("\n");
-}
-
 function customerEmailHtmlWrapper(title: string, body: TelegramBookingPayload) {
   const c = body.contact || {};
   const guestsCount = Number.isFinite(body.guestsCount) && Number(body.guestsCount) > 0 ? Number(body.guestsCount) : (body.guests?.length || 1);
   const locationName = escapeHtml((body.locationName || "").trim() || body.location || "—");
   const basePerPerson = formatVND(body.price?.basePerPerson || body.price?.perPerson);
   const total = formatVND(body.price?.total);
-  const selectedServiceLines = resolveSelectedServiceLines(body, "en");
   const servicePriceBreakdownLines = resolveServicePriceBreakdownLines(body);
 
   // Build addon details
@@ -444,7 +332,6 @@ function customerEmailHtmlWrapper(title: string, body: TelegramBookingPayload) {
   }).join("");
 
   const breakdownLinesHtml = servicePriceBreakdownLines.map(line => `<li style="padding: 8px 0; border-bottom: 1px solid #eee; color: #555;">${line.replace('• ', '')}</li>`).join('');
-  const selectedLinesHtml = selectedServiceLines.map(line => `<li style="padding: 8px 0; border-bottom: 1px solid #eee; color: #555;">${line.replace('• ', '')}</li>`).join('');
 
   return `<!doctype html>
 <html lang="en">
@@ -464,7 +351,7 @@ function customerEmailHtmlWrapper(title: string, body: TelegramBookingPayload) {
     <div style="padding: 40px;">
       <!-- Intro -->
       <p style="margin: 0 0 20px; font-size: 16px; color: #333; line-height: 1.6;">
-        Dear <strong>${escapeHtml(c.fullName || "Customer")}</strong>,<br/>
+        Dear <strong>${escapeHtml((body.guests || [])[0]?.fullName || "Customer")}</strong>,<br/>
         Thank you for choosing Mebayluon Paragliding! Your booking is confirmed.
       </p>
 
@@ -558,9 +445,8 @@ function customerEmailHtmlWrapper(title: string, body: TelegramBookingPayload) {
 }
 
 export function formatCustomerEmailHtml(payload: TelegramBookingPayload) {
-  const customerText = buildCustomerSectionsEn(payload);
   const subjectId = payload.bookingId || payload.locationName || payload.location || "Booking";
-  return telegramLikeHtmlWrapper(`Booking Confirmation - ${subjectId}`, customerText);
+  return customerEmailHtmlWrapper(`Booking Confirmation - ${subjectId}`, payload);
 }
 
 export function formatAdminEmailHtml(payload: TelegramBookingPayload) {
