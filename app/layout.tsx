@@ -5,103 +5,199 @@ import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import Script from "next/script";
 import { cookies } from "next/headers";
-import { LanguageProvider, type Language } from "@/contexts/language-context";
+
+import {
+  LanguageProvider,
+  type Language,
+} from "@/contexts/language-context";
+
 import { Navigation } from "@/components/navigation";
 import { FloatingSocial } from "@/components/floating-social";
-import { buildMetadata, generateOrganizationSchema, generateLocalBusinessSchema, generateFAQSchema } from "@/lib/metadata-builder";
+
+import {
+  buildMetadata,
+  generateOrganizationSchema,
+  generateLocalBusinessSchema,
+} from "@/lib/metadata-builder";
+
 import "./globals.css";
 
-const SUPPORTED_LANGS: Language[] = ["vi", "en", "fr", "ru", "zh", "hi"];
+const SUPPORTED_LANGS: Language[] = [
+  "vi",
+  "en",
+  "fr",
+  "ru",
+  "zh",
+  "hi",
+];
 
+/**
+ * Font chính của website.
+ *
+ * Phần này đã bị thiếu trong đoạn code trước,
+ * khiến roboto và merriweather không được định nghĩa.
+ */
 const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
+  weight: ["300", "400", "500", "700"],
   subsets: ["latin", "vietnamese"],
   variable: "--font-roboto",
   display: "swap",
 });
 
 const merriweather = Merriweather({
-  weight: ['300', '400', '700', '900'],
+  weight: ["300", "400", "700", "900"],
   subsets: ["latin", "vietnamese"],
   variable: "--font-merriweather",
   display: "swap",
 });
 
+/**
+ * Tên miền chính của website.
+ *
+ * Không sử dụng NEXT_PUBLIC_API_BASE_URL làm canonical
+ * vì URL API có thể khác URL website.
+ */
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
   "https://mebayluon.com"
 ).replace(/\/$/, "");
 
+/**
+ * Chuẩn hóa mã ngôn ngữ từ cookie.
+ *
+ * Ví dụ:
+ * - vi-VN -> vi
+ * - en-US -> en
+ * - zh-CN -> zh
+ */
+function normalizeLanguage(value?: string): Language {
+  const languageCode = (value ?? "vi")
+    .trim()
+    .toLowerCase()
+    .slice(0, 2) as Language;
+
+  return SUPPORTED_LANGS.includes(languageCode)
+    ? languageCode
+    : "vi";
+}
+
+/**
+ * Chuyển JSON-LD thành chuỗi an toàn để nhúng vào HTML.
+ */
+function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export const metadata: Metadata = {
   ...buildMetadata({
-    title: "Mebayluon Paragliding - Bay Dù Lượn Tự Do Tại Việt Nam",
-    description: "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam - Sapa, Đà Lạt, Nha Trang, Mộc Châu, Tam Đảo, Hà Giang. Hướng dẫn chuyên nghiệp, tour trọn gói, chuẩn bị kỹ lưỡng.",
+    title: "Mebayluon | Đặt Tour Bay Dù Lượn Tại Việt Nam",
+
+    description:
+      "Đặt bay dù lượn cùng Mebayluon tại Hà Nội, Sapa, Mù Cang Chải và nhiều điểm bay tại Việt Nam. Phi công chuyên nghiệp, bảo hiểm và GoPro miễn phí.",
+
     keywords: [
       "bay dù lượn",
-      "paragliding vietnam",
-      "dù lượn",
-      "bay dù",
-      "tour bay dù",
-      "sapa paragliding",
-      "đà lạt paragliding",
-      "mebayluon",
-      "du lich mao hiem vietnam",
+      "đặt tour bay dù lượn",
+      "tour bay dù lượn",
+      "bay dù lượn Việt Nam",
+      "bay dù lượn Hà Nội",
+      "bay dù lượn Sapa",
+      "bay dù lượn Mù Cang Chải",
+      "dù lượn Khau Phạ",
+      "paragliding Vietnam",
+      "Mebayluon",
     ],
-    author: "Mebayluon Team",
+
+    author: "Mebayluon",
     type: "website",
   }),
 
+  metadataBase: new URL(SITE_URL),
+
+  applicationName: "Mebayluon",
+
   icons: {
     icon: "/logo.png",
+    shortcut: "/logo.png",
     apple: "/logo.png",
   },
+
   manifest: "/manifest.json",
-  applicationName: "Mebayluon",
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Mebayluon",
   },
-  formatDetection: { telephone: false },
 
-  // hreflang — tất cả 6 ngôn ngữ trỏ về cùng URL vì web dùng cookie để chọn ngôn ngữ
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+
+  /**
+   * Website đang đổi ngôn ngữ bằng cookie và dùng chung một URL.
+   * Vì vậy hiện chỉ khai báo canonical.
+   */
   alternates: {
     canonical: SITE_URL,
-    languages: {
-      "vi":        SITE_URL,
-      "en":        SITE_URL,
-      "fr":        SITE_URL,
-      "ru":        SITE_URL,
-      "zh":        SITE_URL,
-      "hi":        SITE_URL,
-      "x-default": SITE_URL,
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
     },
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   const cookieStore = await cookies();
-  const rawLang = cookieStore.get("language")?.value ?? "vi";
-  const lang: Language = SUPPORTED_LANGS.includes(rawLang.slice(0, 2) as Language)
-    ? (rawLang.slice(0, 2) as Language)
-    : "vi";
 
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const languageCookie = cookieStore.get("language")?.value;
+  const lang = normalizeLanguage(languageCookie);
+
+  /**
+   * Website sử dụng tiếng Trung giản thể.
+   */
+  const htmlLang = lang === "zh" ? "zh-CN" : lang;
+
+  const gaId = process.env.NEXT_PUBLIC_GA_ID?.trim();
+
+  const organizationSchema = generateOrganizationSchema();
+  const localBusinessSchema = generateLocalBusinessSchema();
 
   return (
-    <html lang={lang}>
+    <html lang={htmlLang}>
       <head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(generateOrganizationSchema()) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(generateLocalBusinessSchema()) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(generateFAQSchema([
-          { question: "Bay dù lượn có nguy hiểm không?", answer: "Bay dù lượn an toàn khi được hướng dẫn bởi phi công có chứng chỉ quốc tế. Tất cả phi công Mebayluon đều có chứng chỉ IPPI và nhiều năm kinh nghiệm." },
-          { question: "Bay dù lượn cần chuẩn bị gì?", answer: "Bạn chỉ cần mặc quần áo thoải mái, giày thể thao. Mebayluon cung cấp toàn bộ thiết bị bay, bảo hiểm và phi công chuyên nghiệp." },
-          { question: "Giá bay dù lượn tại Mebayluon là bao nhiêu?", answer: "Giá bay dù lượn đôi tại Mebayluon từ 1.500.000 VNĐ đến 2.500.000 VNĐ tuỳ địa điểm. Liên hệ 0964073555 để biết giá chi tiết." },
-          { question: "Độ tuổi nào có thể bay dù lượn?", answer: "Người từ 10 tuổi trở lên và dưới 70 tuổi, cân nặng từ 40kg đến 100kg có thể tham gia bay dù lượn đôi cùng phi công chuyên nghiệp." },
-          { question: "Địa điểm bay dù lượn nổi tiếng tại Việt Nam?", answer: "Mebayluon tổ chức bay dù lượn tại Mù Cang Chải, Sapa, Đà Lạt, Tam Đảo, Mộc Châu và nhiều địa điểm khác trên toàn Việt Nam." },
-        ])) }} />
+        <script
+          id="organization-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(organizationSchema),
+          }}
+        />
+
+        <script
+          id="local-business-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(localBusinessSchema),
+          }}
+        />
       </head>
+
       <body
         className={`${roboto.className} ${merriweather.variable}`}
         suppressHydrationWarning
@@ -109,28 +205,42 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LanguageProvider initialLang={lang}>
           <Suspense fallback={null}>
             <Navigation />
+
             <main>{children}</main>
+
             <FloatingSocial />
-            <Analytics />
-            {/* <Footer /> */}
           </Suspense>
-          {gaId && (
-            <>
-              <Script
-                src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-                strategy="afterInteractive"
-              />
-              <Script id="google-analytics" strategy="afterInteractive">
-                {`
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${gaId}');
-                `}
-              </Script>
-            </>
-          )}
         </LanguageProvider>
+
+        <Analytics />
+
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+
+            <Script
+              id="google-analytics"
+              strategy="afterInteractive"
+            >
+              {`
+                window.dataLayer = window.dataLayer || [];
+
+                function gtag() {
+                  window.dataLayer.push(arguments);
+                }
+
+                gtag("js", new Date());
+
+                gtag("config", "${gaId}", {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );
