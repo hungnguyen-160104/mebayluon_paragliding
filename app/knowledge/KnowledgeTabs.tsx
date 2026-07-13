@@ -84,37 +84,39 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
   const cur = (current || "all").toLowerCase();
 
   return (
-    <nav className="flex w-full justify-center">
-      <ul className="grid grid-cols-2 gap-2 w-full max-w-sm mx-auto">
-        {TABS.map((tab) => {
-          const href =
-            tab.key === "all"
-              ? "/knowledge"
-              : `/knowledge?sub=${encodeURIComponent(tab.key)}`;
+    <nav className="w-full flex justify-center px-4">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 max-w-full overflow-hidden shadow-lg">
+        <ul className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {TABS.map((tab) => {
+            const href =
+              tab.key === "all"
+                ? "/knowledge"
+                : `/knowledge?sub=${encodeURIComponent(tab.key)}`;
 
-          const isActive = tab.key === "all" ? cur === "all" : cur === tab.key;
+            const isActive = tab.key === "all" ? cur === "all" : cur === tab.key;
 
-          return (
-            <li key={tab.key}>
-              <Link
-                href={href}
-                scroll={false}
-                className={`
-                  flex w-full min-h-12 items-center justify-center rounded-2xl border px-4 py-3 text-base font-semibold text-center leading-snug transition-all duration-200
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
-                  ${
-                    isActive
-                      ? "bg-black text-white border-white/40 shadow-lg scale-105 font-extrabold"
-                      : "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-md"
-                  }
-                `}
-              >
-                {labels[tab.key]}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={tab.key} className="flex-shrink-0">
+                <Link
+                  href={href}
+                  scroll={false}
+                  className={`
+                    flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium whitespace-nowrap transition-all duration-200
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40
+                    ${
+                      isActive
+                        ? "bg-black text-white font-semibold border border-transparent shadow-sm"
+                        : "border border-white/20 text-white/90 bg-transparent hover:bg-white/20 hover:text-white"
+                    }
+                  `}
+                >
+                  {labels[tab.key]}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </nav>
   );
 }
