@@ -1,5 +1,7 @@
 ﻿import type { Metadata } from "next";
 
+import { absoluteUrl } from "@/lib/site-config";
+
 export const metadata: Metadata = {
   title: "Liên Hệ Đặt Bay Dù Lượn | Mebayluon",
   description: "Liên hệ Mebayluon để đặt lịch bay dù lượn. Hotline: 0964073555. Bay tại Mù Cang Chải, Sapa, Đà Lạt và khắp Việt Nam.",
@@ -7,9 +9,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Liên Hệ Đặt Bay Dù Lượn | Mebayluon",
     description: "Hotline: 0964073555 — Đặt lịch bay dù lượn tại Mù Cang Chải, Sapa và khắp Việt Nam.",
-    url: "https://mebayluon.com/contact",
+    url: absoluteUrl("/contact"),
   },
-  alternates: { canonical: "https://mebayluon.com/contact" },
+  alternates: { canonical: absoluteUrl("/contact") },
 };
 
 export { default } from "./ContactClient";

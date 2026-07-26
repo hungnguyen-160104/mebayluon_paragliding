@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
+import { buildMetadata } from "@/lib/metadata-builder";
+import { canonicalSpotSlug } from "@/lib/spots-slugs";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -419,6 +422,40 @@ const SPOTS: Record<string, SpotData> = Object.assign({}, BASE_SPOTS, ALIAS_SPOT
 /* ====== Pre-render ====== */
 export function generateStaticParams() {
   return Object.keys(SPOTS).map((slug) => ({ slug }));
+}
+
+/* ====== SEO ======
+ * Trước đây trang điểm bay không có metadata: thiếu title/description riêng
+ * và thiếu canonical — /spots/sapa trùng nội dung /spots/muong-hoa-sapa nên
+ * bị Google coi là duplicate. Canonical của alias trỏ về slug chuẩn để Google
+ * gộp tín hiệu về một URL duy nhất.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const spot = SPOTS[slug];
+
+  if (!spot) return { title: "Điểm bay | Mebayluon" };
+
+  const canonicalSlug = canonicalSpotSlug(slug);
+
+  return buildMetadata({
+    title: `Bay Dù Lượn ${spot.name} - ${spot.title} | Mebayluon`,
+    description: spot.description,
+    image: spot.image,
+    url: `/spots/${canonicalSlug}`,
+    type: "website",
+    keywords: [
+      `bay dù lượn ${spot.name}`,
+      `dù lượn ${spot.name}`,
+      `paragliding ${spot.name}`,
+      "bay dù lượn",
+      "Mebayluon",
+    ],
+  });
 }
 
 export default async function SpotDetailPage({

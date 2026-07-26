@@ -1,4 +1,3 @@
-#!/bin/bash
 # public/robots.txt
 
 User-agent: *
@@ -19,4 +18,4 @@ Disallow: /
 User-agent: DotBot
 Disallow: /
 
-Sitemap: https://mebayluon.com/sitemap.xml
+Sitemap: https://www.mebayluon.com/sitemap.xml

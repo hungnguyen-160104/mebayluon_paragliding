@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { SITE_URL } from "@/lib/site-config";
+
 export const runtime = "edge";
 export const alt = "Mebayluon Paragliding - Bay Dù Lượn Tự Do Tại Việt Nam";
 export const size = { width: 1200, height: 630 };
@@ -49,7 +51,7 @@ export default function OgImage() {
         <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "28px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://mebayluon.com/logo.png"
+            src={`${SITE_URL}/logo.png`}
             width={90}
             height={90}
             alt="logo"

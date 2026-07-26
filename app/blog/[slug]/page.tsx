@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
-import { getPostBySlug, getPosts } from "@/lib/posts-data";
+import { notFound, permanentRedirect } from "next/navigation";
+import { getPostBySlug, getPosts, findPostSlugInsensitive } from "@/lib/posts-data";
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
+import { SITE_URL } from "@/lib/site-config";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -162,7 +163,32 @@ function hasHtmlTag(content: string): boolean {
   return /<\/?[a-z][\s\S]*>/i.test(String(content || ""));
 }
 
-function renderContentBlock(block: ContentBlock, index: number) {
+/**
+ * Điền alt cho các thẻ <img> bị thiếu hoặc rỗng trong nội dung HTML cũ.
+ *
+ * Nhiều bài viết lưu HTML thô với <img> không có alt, khiến Google Images
+ * không index được ảnh. Ưu tiên giữ alt sẵn có; nếu thiếu thì dùng fallback
+ * (thường là tiêu đề bài viết).
+ */
+function fillMissingImgAlt(html: string, fallback: string): string {
+  const safeFallback = fallback
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return html.replace(/<img\b[^>]*>/gi, (tag) => {
+    const altMatch = tag.match(/\balt\s*=\s*("([^"]*)"|'([^']*)')/i);
+    const currentAlt = (altMatch?.[2] ?? altMatch?.[3] ?? "").trim();
+
+    if (currentAlt) return tag;
+
+    if (altMatch) return tag.replace(altMatch[0], `alt="${safeFallback}"`);
+    return tag.replace(/<img\b/i, `<img alt="${safeFallback}"`);
+  });
+}
+
+function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = "") {
   const key = block.id || `block-${index}`;
   const data = block.data || {};
 
@@ -212,7 +238,7 @@ function renderContentBlock(block: ContentBlock, index: number) {
     case "image":
       return data.url ? (
         <figure key={key} className="space-y-3">
-          <img src={data.url} alt={data.alt || ""} loading="lazy" className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
+          <img src={data.url} alt={data.alt || data.caption || fallbackAlt} loading="lazy" className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
           {data.caption ? (
             <figcaption className="text-sm text-white/80 text-center italic font-semibold mt-2">{data.caption}</figcaption>
           ) : null}
@@ -417,12 +443,6 @@ async function getCurrentLang() {
   return getSafeLang(raw);
 }
 
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://mebayluon.com"
-).replace(/\/$/, "");
-
 const LANGS = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
 
 export async function generateMetadata({
@@ -444,7 +464,8 @@ export async function generateMetadata({
 
   const title = pickTitle(post, isVietnamese);
   const description = pickExcerpt(post, isVietnamese);
-  const pageUrl = `${SITE_URL}/blog/${slug}`;
+  // Dùng slug thật trong DB (không phải slug trên URL) để canonical luôn chuẩn
+  const pageUrl = `${SITE_URL}/blog/${post.slug || slug}`;
   const image = post.coverImage || post.thumbnail || undefined;
 
   const languages: Record<string, string> = { "x-default": pageUrl };
@@ -488,7 +509,27 @@ export default async function BlogPostPage({
     publishedOnly: !isPreview,
   })) as Post | null;
 
-  if (!post) notFound();
+  if (!post) {
+    /**
+     * Link cũ có thể viết hoa (ví dụ /blog/DeoKhauPha từ footer cũ hoặc
+     * bài share Facebook) trong khi slug trong DB là chữ thường.
+     * Redirect 301 về URL chuẩn thay vì báo 404.
+     */
+    const actualSlug = await findPostSlugInsensitive(slug);
+    if (actualSlug && actualSlug !== slug) {
+      permanentRedirect(`/blog/${actualSlug}`);
+    }
+    notFound();
+  }
+
+  /**
+   * MongoDB có thể so slug không phân biệt hoa/thường (collation),
+   * khi đó /blog/DeoKhauPha vẫn tìm thấy bài "deokhaupha" và render 200
+   * ở URL sai → Google coi là nội dung trùng lặp. Ép về URL chuẩn.
+   */
+  if (post.slug && post.slug !== slug) {
+    permanentRedirect(`/blog/${post.slug}`);
+  }
 
   const relatedResp = await getPosts({
     category: String(post.category || "news"),
@@ -614,10 +655,12 @@ export default async function BlogPostPage({
                   prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
               >
                 {canRenderBlocks ? (
-                  <div className="space-y-5">{blocks.map(renderContentBlock)}</div>
+                  <div className="space-y-5">
+                    {blocks.map((block, index) => renderContentBlock(block, index, title))}
+                  </div>
                 ) : content ? (
                   hasHtmlTag(content) ? (
-                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                    <div dangerouslySetInnerHTML={{ __html: fillMissingImgAlt(content, title) }} />
                   ) : (
                     <div className="whitespace-pre-line">{content}</div>
                   )

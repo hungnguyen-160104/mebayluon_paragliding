@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
 import { buildMetadata } from "@/lib/metadata-builder";
+import { SITE_URL } from "@/lib/site-config";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -143,12 +144,6 @@ const I18N: Record<
     ],
   },
 };
-
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://mebayluon.com"
-).replace(/\/$/, "");
 
 const META: Record<Lang, { title: string; description: string }> = {
   vi: {

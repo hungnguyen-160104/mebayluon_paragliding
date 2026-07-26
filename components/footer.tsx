@@ -2,30 +2,35 @@ import Link from "next/link"
 import { Facebook, Youtube, Phone, Mail, MapPin } from "lucide-react"
 
 export function Footer() {
+  /**
+   * Slug bài viết luôn là chữ thường — href phải khớp slug thật trong DB
+   * (giống components/footer/Footer.tsx). Điểm chưa có bài viết riêng thì
+   * trỏ về trang điểm bay /spots/... tương ứng.
+   */
   const LOCATIONS = [
     {
       label: "Viên Nam – Hà Nội",
-      slug: "VienNam",
+      href: "/blog/du-luon-vien-nam",
     },
     {
       label: "Đồi Bù – Hà Nội",
-      slug: "DoiBu",
+      href: "/blog/diem-bay-du-luon-doi-bu",
     },
     {
       label: "Đèo Khau Phạ – Mù Cang Chải",
-      slug: "DeoKhauPha",
+      href: "/blog/deokhaupha",
     },
     {
       label: "Phình Hồ – Trạm Tấu",
-      slug: "PhinhHo",
+      href: "/spots/tram-tau",
     },
     {
       label: "Sapa – Lào Cai",
-      slug: "Sapa",
+      href: "/blog/bay-du-luon-sa-pa-muong-hoa",
     },
     {
       label: "Đồng Văn – Hà Giang",
-      slug: "DongVan",
+      href: "/spots/ha-giang",
     },
   ]
 
@@ -92,14 +97,12 @@ export function Footer() {
 
               <ul className="space-y-2 mt-3 text-sm text-slate-300">
                 {LOCATIONS.map((loc) => {
-                  const href = `/blog/${loc.slug}`
-
                   return (
-                    <li key={loc.slug} className="flex items-center gap-2">
+                    <li key={loc.href} className="flex items-center gap-2">
                       <MapPin size={16} />
 
                       <Link
-                        href={href}
+                        href={loc.href}
                         className="hover:text-white hover:underline underline-offset-4 transition-colors"
                       >
                         {loc.label}

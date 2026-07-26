@@ -344,7 +344,7 @@ function blocksToHtml(blocks: ContentBlock[]): string {
         case "image":
           return `
             <figure>
-              <img src="${data.url || ""}" alt="${escapeHtml(data.alt || "")}" />
+              <img src="${data.url || ""}" alt="${escapeHtml(data.alt || data.caption || "")}" />
               ${data.caption ? `<figcaption>${escapeHtml(data.caption)}</figcaption>` : ""}
             </figure>
           `;

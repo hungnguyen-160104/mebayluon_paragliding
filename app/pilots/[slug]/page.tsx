@@ -1,12 +1,10 @@
 // app/pilots/[slug]/page.tsx
 
 import type { Metadata } from "next";
-import { pilots, Pilot } from "@/lib/pilots-data"
+import { pilots, Pilot, REMOVED_PILOT_SLUGS } from "@/lib/pilots-data"
 import { notFound } from "next/navigation"
 import PilotDetailClientPage from "@/components/pilot-detail-page"
 import { buildMetadata, generateBreadcrumbSchema, generatePilotSchema } from "@/lib/metadata-builder"
-
-const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"])
 
 // Helper function để lấy dữ liệu phi công bằng slug
 function getPilotBySlug(slug: string): Pilot | undefined {

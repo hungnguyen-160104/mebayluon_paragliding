@@ -14,30 +14,37 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage, type Language } from "@/contexts/language-context";
 
+/**
+ * Link điểm bay ở footer.
+ *
+ * Lưu ý: slug bài viết luôn là chữ thường (hệ thống không cho tạo slug
+ * viết hoa), nên href phải khớp đúng slug thật trong DB. Hai điểm chưa
+ * có bài viết riêng thì trỏ về trang điểm bay /spots/... tương ứng.
+ */
 export const FOOTER_SPOTS = [
   {
     name: "Viên Nam (Hà Nội)",
-    href: "/blog/VienNam",
+    href: "/blog/du-luon-vien-nam",
   },
   {
     name: "Đồi Bù (Hà Nội)",
-    href: "/blog/DoiBu",
+    href: "/blog/diem-bay-du-luon-doi-bu",
   },
   {
     name: "Đèo Khau Phạ (Mù Cang Chải)",
-    href: "/blog/DeoKhauPha",
+    href: "/blog/deokhaupha",
   },
   {
     name: "Phình Hồ (Trạm Tấu)",
-    href: "/blog/PhinhHo",
+    href: "/spots/tram-tau",
   },
   {
     name: "Sapa (Lào Cai)",
-    href: "/blog/Sapa",
+    href: "/blog/bay-du-luon-sa-pa-muong-hoa",
   },
   {
     name: "Đồng Văn (Hà Giang)",
-    href: "/blog/DongVan",
+    href: "/spots/ha-giang",
   },
 ];
 

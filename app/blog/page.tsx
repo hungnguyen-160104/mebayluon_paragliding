@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Image from "next/image";
 
+import { absoluteUrl } from "@/lib/site-config";
+
 export const metadata: Metadata = {
   title: "Tin Tức & Blog Dù Lượn Việt Nam | Mebayluon",
   description: "Tin tức mới nhất về dù lượn, kinh nghiệm bay, hướng dẫn kỹ thuật và câu chuyện từ cộng đồng dù lượn Việt Nam của Mebayluon.",
@@ -10,10 +12,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Tin Tức & Blog Dù Lượn | Mebayluon",
     description: "Tin tức, kinh nghiệm và câu chuyện từ cộng đồng dù lượn Việt Nam.",
-    url: "https://mebayluon.com/blog",
+    url: absoluteUrl("/blog"),
     images: [{ url: "/tin-tuc-2.jpg", width: 1200, height: 630, alt: "Blog dù lượn Mebayluon" }],
   },
-  alternates: { canonical: "https://mebayluon.com/blog" },
+  alternates: { canonical: absoluteUrl("/blog") },
 };
 import Link from "next/link";
 import { cookies } from "next/headers";

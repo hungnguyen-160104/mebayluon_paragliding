@@ -1,14 +1,13 @@
 import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
+import { SITE_URL } from "@/lib/site-config";
+import { SPOT_SLUGS } from "@/lib/spots-slugs";
+import { getActivePilots } from "@/lib/pilots-data";
 
 export const revalidate = 3600; // regenerate every hour
 
-const BASE = (
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://mebayluon.com"
-).replace(/\/$/, "");
+const BASE = SITE_URL;
 
 const LANGS = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
 
@@ -69,7 +68,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
       alternates: alts(`${BASE}/contact`),
     },
+    {
+      url: `${BASE}/homestay`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+      alternates: alts(`${BASE}/homestay`),
+    },
   ];
+
+  /**
+   * Trang chi tiết điểm bay — các trang SEO quan trọng nhất
+   * ("bay dù lượn Sapa", "dù lượn Khau Phạ"...). Chỉ đưa slug chuẩn,
+   * không đưa alias (ví dụ /spots/sapa) để tránh URL trùng lặp.
+   */
+  const spotRoutes: MetadataRoute.Sitemap = SPOT_SLUGS.map((slug) => {
+    const url = `${BASE}/spots/${slug}`;
+    return {
+      url,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+      alternates: alts(url),
+    };
+  });
+
+  /** Trang chi tiết phi công đang hoạt động. */
+  const pilotRoutes: MetadataRoute.Sitemap = getActivePilots().map((pilot) => {
+    const url = `${BASE}/pilots/${pilot.slug}`;
+    return {
+      url,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+      alternates: alts(url),
+    };
+  });
 
   try {
     await connectDB();
@@ -130,9 +164,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-    return [...staticRoutes, ...blogRoutes, ...knowledgeRoutes, ...storeRoutes];
+    return [
+      ...staticRoutes,
+      ...spotRoutes,
+      ...pilotRoutes,
+      ...blogRoutes,
+      ...knowledgeRoutes,
+      ...storeRoutes,
+    ];
   } catch (err) {
     console.error("[sitemap] DB fetch failed, serving static only:", err);
-    return staticRoutes;
+    return [...staticRoutes, ...spotRoutes, ...pilotRoutes];
   }
 }

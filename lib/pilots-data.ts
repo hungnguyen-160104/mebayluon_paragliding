@@ -28,6 +28,17 @@ export interface Pilot {
   flyingStyle: Record<PilotLang, string>;
 }
 
+/**
+ * Phi công đã rời đội — giữ dữ liệu nhưng ẩn trang chi tiết.
+ * Sitemap và trang /pilots/[slug] cùng dùng danh sách này.
+ */
+export const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"]);
+
+/** Danh sách phi công đang hoạt động (có trang chi tiết công khai). */
+export function getActivePilots(): Pilot[] {
+  return pilots.filter((pilot) => !REMOVED_PILOT_SLUGS.has(pilot.slug));
+}
+
 export const pilots: Pilot[] = [
   {
     slug: "dinh-the-anh",

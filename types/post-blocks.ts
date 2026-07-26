@@ -178,7 +178,8 @@ export function blocksToHTML(blocks: ContentBlock[]): string {
         return `<${tag}>${block.content}</${tag}>`;
 
       case "image":
-        let img = `<figure><img src="${block.url}" alt="${block.alt || ""}" />`;
+        // Thiếu alt thì lấy mô tả ảnh (caption) — cần cho Google Images
+        let img = `<figure><img src="${block.url}" alt="${block.alt || block.caption || ""}" />`;
         if (block.caption) img += `<figcaption>${block.caption}</figcaption>`;
         img += `</figure>`;
         return img;
@@ -187,7 +188,7 @@ export function blocksToHTML(blocks: ContentBlock[]): string {
         const cols = block.columns || 3;
         let gallery = `<div class="gallery gallery-cols-${cols}">`;
         block.images.forEach(img => {
-          gallery += `<figure><img src="${img.url}" alt="${img.alt || ""}" />`;
+          gallery += `<figure><img src="${img.url}" alt="${img.alt || img.caption || ""}" />`;
           if (img.caption) gallery += `<figcaption>${img.caption}</figcaption>`;
           gallery += `</figure>`;
         });

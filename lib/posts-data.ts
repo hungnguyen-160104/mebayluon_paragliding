@@ -255,3 +255,34 @@ export async function getPostBySlug(
     return null;
   }
 }
+
+/**
+ * Tìm slug thật của bài viết khi URL sai hoa/thường.
+ *
+ * Slug trong DB luôn là chữ thường, nhưng các link cũ (footer, bài share
+ * Facebook...) có thể viết hoa kiểu /blog/DeoKhauPha. Hàm này tra
+ * không phân biệt hoa/thường và trả về slug đúng để trang blog redirect
+ * 301 về URL chuẩn, thay vì hiện trang trống.
+ */
+export async function findPostSlugInsensitive(
+  slug: string
+): Promise<string | null> {
+  try {
+    await connectDB();
+
+    // Escape ký tự đặc biệt của regex để slug lạ không phá câu truy vấn
+    const escaped = slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const rawPost = await PostModel.findOne({
+      slug: { $regex: `^${escaped}$`, $options: "i" },
+      isPublished: true,
+    })
+      .select("slug")
+      .lean<{ slug?: string }>();
+
+    return rawPost?.slug ?? null;
+  } catch (error) {
+    console.error("Error in findPostSlugInsensitive:", error);
+    return null;
+  }
+}

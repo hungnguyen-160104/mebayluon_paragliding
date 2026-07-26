@@ -20,6 +20,8 @@ import {
   generateLocalBusinessSchema,
 } from "@/lib/metadata-builder";
 
+import { SITE_URL, GOOGLE_SITE_VERIFICATION } from "@/lib/site-config";
+
 import "./globals.css";
 
 const SUPPORTED_LANGS: Language[] = [
@@ -50,17 +52,6 @@ const merriweather = Merriweather({
   variable: "--font-merriweather",
   display: "swap",
 });
-
-/**
- * Tên miền chính của website.
- *
- * Không sử dụng NEXT_PUBLIC_API_BASE_URL làm canonical
- * vì URL API có thể khác URL website.
- */
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://mebayluon.com"
-).replace(/\/$/, "");
 
 /**
  * Chuẩn hóa mã ngôn ngữ từ cookie.
@@ -143,6 +134,21 @@ export const metadata: Metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+
+  /**
+   * Xác minh quyền sở hữu với Google Search Console.
+   *
+   * Chỉ render thẻ meta khi biến môi trường có giá trị, tránh xuất ra
+   * thẻ rỗng làm Google báo xác minh thất bại. Phương thức dự phòng là
+   * file public/googlea7228a1dc33df7a0.html.
+   */
+  ...(GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 
   robots: {
     index: true,

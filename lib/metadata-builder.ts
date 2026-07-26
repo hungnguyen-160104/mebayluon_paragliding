@@ -6,6 +6,8 @@
 
 import type { Metadata } from "next";
 
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
+
 export interface SEOMetadata {
   title: string;
   description: string;
@@ -22,14 +24,14 @@ export interface SEOMetadata {
   type?: "article" | "product" | "website";
 }
 
-const SITE_NAME = "Mebayluon Paragliding";
-// Nên dùng SITE_URL riêng cho frontend, không phải API base url
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://mebayluon.com";
-
-const DEFAULT_IMAGE = `${SITE_URL.replace(/\/$/, "")}/og-image.jpg`;
+/**
+ * Ảnh chia sẻ mặc định.
+ *
+ * Dùng route /opengraph-image do app/opengraph-image.tsx sinh ra thay vì
+ * /og-image.jpg — file tĩnh đó không tồn tại trong public/ nên mọi khai báo
+ * cũ đều trả về 404 (lỗi trong JSON-LD và khi chia sẻ link).
+ */
+const DEFAULT_IMAGE = `${SITE_URL}/opengraph-image`;
 
 /**
  * Safely resolve a possibly-relative URL against SITE_URL
@@ -96,7 +98,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
           height: 630,
           alt: seo.title,
           // "type" here is OK (image mime type)
-          type: "image/jpeg",
+          type: "image/png",
         },
       ],
 
@@ -241,7 +243,7 @@ export function generateLocalBusinessSchema() {
     "@context": "https://schema.org",
     "@type": "TouristInformationCenter",
     name: "Mebayluon Paragliding",
-    image: `${SITE_URL.replace(/\/$/, "")}/og-image.jpg`,
+    image: DEFAULT_IMAGE,
     url: SITE_URL,
     telephone: "+84-964-073-555",
     email: "mebayluon@gmail.com",

@@ -5,6 +5,7 @@ import { Post as PostModel } from "@/models/Post.model";
 import StoreHomeClient from "./components/StoreHomeClient";
 import type { Post } from "@/types/frontend/post";
 import type { StoreLang } from "@/lib/store-texts";
+import { absoluteUrl } from "@/lib/site-config";
 
 export const revalidate = 60;
 
@@ -15,10 +16,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Cửa Hàng Dù Lượn | Mebayluon",
     description: "Thiết bị dù lượn, sách kỹ thuật, phụ kiện và khóa học chuyên nghiệp.",
-    url: "https://mebayluon.com/store",
+    url: absoluteUrl("/store"),
     images: [{ url: "/cua-hang.jpg", width: 1200, height: 630, alt: "Cửa hàng dù lượn Mebayluon" }],
   },
-  alternates: { canonical: "https://mebayluon.com/store" },
+  alternates: { canonical: absoluteUrl("/store") },
 };
 
 function toStoreLang(v: string | undefined): StoreLang {
