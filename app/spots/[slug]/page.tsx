@@ -6,6 +6,7 @@ import { SpotDetailClient } from "./spot-detail-client";
 import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
+import { getUrlLocale } from "@/lib/locale";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -441,6 +442,7 @@ export async function generateMetadata({
   if (!spot) return { title: "Điểm bay | Mebayluon" };
 
   const canonicalSlug = canonicalSpotSlug(slug);
+  const locale = await getUrlLocale();
 
   return buildMetadata({
     title: `Bay Dù Lượn ${spot.name} - ${spot.title} | Mebayluon`,
@@ -448,6 +450,7 @@ export async function generateMetadata({
     image: spot.image,
     url: `/spots/${canonicalSlug}`,
     type: "website",
+    locale,
     keywords: [
       `bay dù lượn ${spot.name}`,
       `dù lượn ${spot.name}`,

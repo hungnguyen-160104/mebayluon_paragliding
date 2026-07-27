@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, languageAlternates } from "@/lib/site-config";
 import { SPOT_SLUGS } from "@/lib/spots-slugs";
 import { getActivePilots } from "@/lib/pilots-data";
 
@@ -9,12 +9,14 @@ export const revalidate = 3600; // regenerate every hour
 
 const BASE = SITE_URL;
 
-const LANGS = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
-
+/**
+ * hreflang cho sitemap: mỗi ngôn ngữ trỏ về URL prefix riêng
+ * (/en/..., /ru/...) — trước đây cả 6 ngôn ngữ trỏ chung một URL nên
+ * Google chỉ index được bản tiếng Việt.
+ */
 function alts(url: string): { languages: Record<string, string> } {
-  const languages: Record<string, string> = { "x-default": url };
-  for (const lang of LANGS) languages[lang] = url;
-  return { languages };
+  const path = url.startsWith(BASE) ? url.slice(BASE.length) || "/" : url;
+  return { languages: languageAlternates(path) };
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -74,6 +76,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.6,
       alternates: alts(`${BASE}/homestay`),
+    },
+    {
+      url: `${BASE}/booking`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+      alternates: alts(`${BASE}/booking`),
     },
   ];
 

@@ -5,6 +5,7 @@ import { pilots, Pilot, REMOVED_PILOT_SLUGS } from "@/lib/pilots-data"
 import { notFound } from "next/navigation"
 import PilotDetailClientPage from "@/components/pilot-detail-page"
 import { buildMetadata, generateBreadcrumbSchema, generatePilotSchema } from "@/lib/metadata-builder"
+import { getUrlLocale } from "@/lib/locale"
 
 // Helper function để lấy dữ liệu phi công bằng slug
 function getPilotBySlug(slug: string): Pilot | undefined {
@@ -17,12 +18,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const pilot = getPilotBySlug(slug);
   if (!pilot) return { title: "Phi công | Mebayluon" };
 
+  const locale = await getUrlLocale();
+
   return buildMetadata({
     title: `${pilot.name} - ${pilot.role.vi} | Mebayluon`,
     description: `${pilot.bio.vi.slice(0, 155)}…`,
     image: pilot.avatar,
     url: `/pilots/${slug}`,
     type: "website",
+    locale,
   });
 }
 

@@ -81,6 +81,23 @@ export function LanguageProvider({
     // localStorage + cookie + refresh để server đọc cookie mới
     localStorage.setItem(STORAGE_KEY, lang);
     writeCookie(COOKIE_KEY, lang);
+
+    /**
+     * Nếu đang đứng trên URL có prefix ngôn ngữ (/en/..., /ru/...) thì
+     * prefix URL thắng cookie phía server — phải điều hướng sang URL
+     * của ngôn ngữ mới thì nội dung mới đổi. URL không prefix (tiếng
+     * Việt mặc định) thì chỉ cần refresh như cũ.
+     */
+    const prefixMatch = window.location.pathname.match(
+      /^\/(en|fr|ru|zh|hi)(\/.*)?$/
+    );
+    if (prefixMatch) {
+      const rest = prefixMatch[2] || "/";
+      const nextPath = lang === "vi" ? rest : `/${lang}${rest === "/" ? "" : rest}`;
+      router.push(nextPath || "/");
+      return;
+    }
+
     router.refresh();
   };
 

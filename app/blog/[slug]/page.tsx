@@ -2,12 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive } from "@/lib/posts-data";
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
-import { SITE_URL } from "@/lib/site-config";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -434,16 +433,9 @@ const UI: Record<
 };
 
 async function getCurrentLang() {
-  const cookieStore = await cookies();
-  const raw =
-    cookieStore.get("language")?.value ??
-    cookieStore.get("Language")?.value ??
-    cookieStore.get("lang")?.value;
-
-  return getSafeLang(raw);
+  // URL có prefix ngôn ngữ (/en/blog/...) thì URL thắng cookie
+  return getSafeLang(await getRequestLang());
 }
-
-const LANGS = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
 
 export async function generateMetadata({
   params,
@@ -465,28 +457,22 @@ export async function generateMetadata({
   const title = pickTitle(post, isVietnamese);
   const description = pickExcerpt(post, isVietnamese);
   // Dùng slug thật trong DB (không phải slug trên URL) để canonical luôn chuẩn
-  const pageUrl = `${SITE_URL}/blog/${post.slug || slug}`;
+  const basePath = `/blog/${post.slug || slug}`;
+  const urlLocale = await getUrlLocale();
   const image = post.coverImage || post.thumbnail || undefined;
 
-  const languages: Record<string, string> = { "x-default": pageUrl };
-  for (const l of LANGS) languages[l] = pageUrl;
-
-  return {
-    ...buildMetadata({
-      title,
-      description,
-      image,
-      url: pageUrl,
-      type: "article",
-      author: post.author || "Mebayluon Team",
-      publishedDate: post.publishedAt ? new Date(post.publishedAt) : undefined,
-      updatedDate: post.updatedAt ? new Date(post.updatedAt) : undefined,
-    }),
-    alternates: {
-      canonical: pageUrl,
-      languages,
-    },
-  };
+  // buildMetadata tự sinh canonical theo locale + hreflang đủ 6 bản
+  return buildMetadata({
+    title,
+    description,
+    image,
+    url: basePath,
+    type: "article",
+    author: post.author || "Mebayluon Team",
+    publishedDate: post.publishedAt ? new Date(post.publishedAt) : undefined,
+    updatedDate: post.updatedAt ? new Date(post.updatedAt) : undefined,
+    locale: urlLocale,
+  });
 }
 
 export default async function BlogPostPage({

@@ -6,7 +6,14 @@
 
 import type { Metadata } from "next";
 
-import { SITE_URL, SITE_NAME } from "@/lib/site-config";
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_LOCALE,
+  languageAlternates,
+  localizedUrl,
+  type Locale,
+} from "@/lib/site-config";
 
 export interface SEOMetadata {
   title: string;
@@ -22,6 +29,16 @@ export interface SEOMetadata {
 
   // Your internal page type (note: "product" is NOT supported by Next OpenGraph.type)
   type?: "article" | "product" | "website";
+
+  /**
+   * Ngôn ngữ theo URL (lấy từ getUrlLocale() trong lib/locale.ts).
+   *
+   * Khi truyền vào, canonical sẽ trỏ về đúng bản ngôn ngữ đang xem
+   * (/ru/spots canonical về chính nó, không phải bản tiếng Việt) và
+   * alternates.languages liệt kê đủ 6 bản hreflang — điều kiện để
+   * Google index từng ngôn ngữ như một trang riêng.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -63,7 +80,18 @@ function resolveImage(input?: string): string {
  * - We map "product" -> "website" for OpenGraph, and use JSON-LD for Product schema instead.
  */
 export function buildMetadata(seo: SEOMetadata): Metadata {
-  const canonicalUrl = resolveUrl(seo.url);
+  const locale = seo.locale ?? DEFAULT_LOCALE;
+
+  // Đường dẫn gốc (không prefix ngôn ngữ) của trang, ví dụ "/spots/khau-pha"
+  const basePath = (() => {
+    try {
+      return new URL(resolveUrl(seo.url)).pathname || "/";
+    } catch {
+      return "/";
+    }
+  })();
+
+  const canonicalUrl = localizedUrl(basePath, locale);
   const imageUrl = resolveImage(seo.image);
 
   // Map internal type -> Next OpenGraph supported type
@@ -82,6 +110,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
 
     alternates: {
       canonical: canonicalUrl,
+      languages: languageAlternates(basePath),
     },
 
     openGraph: {

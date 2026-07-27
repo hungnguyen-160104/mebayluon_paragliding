@@ -2,11 +2,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
 import { buildMetadata } from "@/lib/metadata-builder";
-import { SITE_URL } from "@/lib/site-config";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -20,15 +19,8 @@ function toLang(v: string | undefined | null): Lang {
 }
 
 async function getLangFromCookies(): Promise<Lang> {
-  const c = await cookies();
-  const v =
-    c.get("language")?.value ||
-    c.get("lang")?.value ||
-    c.get("NEXT_LOCALE")?.value ||
-    c.get("locale")?.value ||
-    c.get("i18nextLng")?.value ||
-    null;
-  return toLang(v);
+  // URL có prefix ngôn ngữ (/en/knowledge) thì URL thắng cookie
+  return toLang(await getRequestLang());
 }
 
 function stripHtml(html: string) {
@@ -173,23 +165,18 @@ const META: Record<Lang, { title: string; description: string }> = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const c = await cookies();
-  const raw = c.get("language")?.value || c.get("lang")?.value || "vi";
-  const lang = toLang(raw);
-  const m = META[lang];
-  const langs: Record<string, string> = { "x-default": `${SITE_URL}/knowledge` };
-  (["vi", "en", "fr", "ru", "zh", "hi"] as const).forEach((l) => {
-    langs[l] = `${SITE_URL}/knowledge`;
+  // Title/description dịch theo ngôn ngữ của URL; canonical + hreflang
+  // do buildMetadata tự sinh theo locale
+  const locale = await getUrlLocale();
+  const m = META[toLang(locale)];
+
+  return buildMetadata({
+    title: m.title,
+    description: m.description,
+    url: "/knowledge",
+    type: "website",
+    locale,
   });
-  return {
-    ...buildMetadata({
-      title: m.title,
-      description: m.description,
-      url: `${SITE_URL}/knowledge`,
-      type: "website",
-    }),
-    alternates: { canonical: `${SITE_URL}/knowledge`, languages: langs },
-  };
 }
 
 async function getData(sub?: string) {

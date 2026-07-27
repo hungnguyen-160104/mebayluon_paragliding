@@ -4,12 +4,13 @@ import { Roboto, Merriweather } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { cookies } from "next/headers";
 
 import {
   LanguageProvider,
   type Language,
 } from "@/contexts/language-context";
+
+import { getRequestLang } from "@/lib/locale";
 
 import { Navigation } from "@/components/navigation";
 import { FloatingSocial } from "@/components/floating-social";
@@ -23,15 +24,6 @@ import {
 import { SITE_URL, GOOGLE_SITE_VERIFICATION } from "@/lib/site-config";
 
 import "./globals.css";
-
-const SUPPORTED_LANGS: Language[] = [
-  "vi",
-  "en",
-  "fr",
-  "ru",
-  "zh",
-  "hi",
-];
 
 /**
  * Font chính của website.
@@ -52,25 +44,6 @@ const merriweather = Merriweather({
   variable: "--font-merriweather",
   display: "swap",
 });
-
-/**
- * Chuẩn hóa mã ngôn ngữ từ cookie.
- *
- * Ví dụ:
- * - vi-VN -> vi
- * - en-US -> en
- * - zh-CN -> zh
- */
-function normalizeLanguage(value?: string): Language {
-  const languageCode = (value ?? "vi")
-    .trim()
-    .toLowerCase()
-    .slice(0, 2) as Language;
-
-  return SUPPORTED_LANGS.includes(languageCode)
-    ? languageCode
-    : "vi";
-}
 
 /**
  * Chuyển JSON-LD thành chuỗi an toàn để nhúng vào HTML.
@@ -128,12 +101,13 @@ export const metadata: Metadata = {
   },
 
   /**
-   * Website đang đổi ngôn ngữ bằng cookie và dùng chung một URL.
-   * Vì vậy hiện chỉ khai báo canonical.
+   * TUYỆT ĐỐI KHÔNG khai báo alternates.canonical ở layout: mọi trang
+   * con không tự khai canonical sẽ thừa hưởng nó và tự trỏ về trang chủ
+   * (đã từng khiến /booking, /homestay bị Google bỏ qua). Canonical của
+   * trang chủ nằm trong app/page.tsx; mỗi trang tự khai của mình.
+   * Dòng dưới ghi đè alternates mà buildMetadata() sinh ra trong spread.
    */
-  alternates: {
-    canonical: SITE_URL,
-  },
+  alternates: {},
 
   /**
    * Xác minh quyền sở hữu với Google Search Console.
@@ -169,10 +143,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-
-  const languageCookie = cookieStore.get("language")?.value;
-  const lang = normalizeLanguage(languageCookie);
+  /**
+   * URL có prefix ngôn ngữ (/en, /ru...) thì URL thắng; không có thì
+   * theo cookie như cũ. Logic nằm trong lib/locale.ts.
+   */
+  const lang = (await getRequestLang()) as Language;
 
   /**
    * Website sử dụng tiếng Trung giản thể.

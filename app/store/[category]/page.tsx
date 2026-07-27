@@ -2,6 +2,8 @@
 import type { StoreCategory } from "@/types/frontend/post";
 import { listProductsByCategory } from "@/lib/product-api";
 import ProductCard from "@/app/store/components/ProductCard";
+import { buildMetadata } from "@/lib/metadata-builder";
+import { getUrlLocale } from "@/lib/locale";
 
 const TITLE_MAP: Record<StoreCategory, string> = {
   "thiet-bi-bay": "Thiết bị bay",
@@ -17,7 +19,14 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { category } = await params;
   const title = TITLE_MAP[category] || "Danh mục";
-  return { title: `${title} | Cửa hàng Mebayluon` };
+
+  return buildMetadata({
+    title: `${title} | Cửa hàng Mebayluon`,
+    description: `${title} dù lượn chính hãng tại cửa hàng Mebayluon — tư vấn bởi phi công chuyên nghiệp, giao hàng toàn quốc.`,
+    url: `/store/${category}`,
+    type: "website",
+    locale: await getUrlLocale(),
+  });
 }
 
 export default async function StoreCategoryPage({ params }: Props) {

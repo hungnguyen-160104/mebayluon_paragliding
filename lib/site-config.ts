@@ -47,3 +47,53 @@ export function absoluteUrl(path = "/"): string {
     return SITE_URL;
   }
 }
+
+/* ============================================================
+ * Đa ngôn ngữ theo URL
+ *
+ * Website dịch 6 thứ tiếng nhưng trước đây đổi ngôn ngữ hoàn toàn
+ * bằng cookie trên MỘT URL duy nhất — Google chỉ index được bản
+ * tiếng Việt, 5 bản dịch còn lại vô hình với tìm kiếm nước ngoài.
+ *
+ * Giải pháp: mỗi ngôn ngữ có prefix URL riêng (/en, /fr, /ru, /zh,
+ * /hi; tiếng Việt là mặc định không prefix). middleware.ts rewrite
+ * các URL prefix về trang gốc kèm header x-locale để server render
+ * đúng ngôn ngữ, còn canonical/hreflang khai báo qua các helper này.
+ * ============================================================ */
+
+export const LOCALES = ["vi", "en", "fr", "ru", "zh", "hi"] as const;
+export type Locale = (typeof LOCALES)[number];
+export const DEFAULT_LOCALE: Locale = "vi";
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
+}
+
+/**
+ * URL tuyệt đối của một trang theo từng ngôn ngữ.
+ *
+ * localizedUrl("/spots", "ru") -> "https://www.mebayluon.com/ru/spots"
+ * localizedUrl("/spots", "vi") -> "https://www.mebayluon.com/spots"
+ */
+export function localizedUrl(path: string, locale: Locale): string {
+  const clean = path === "/" ? "" : path.replace(/\/$/, "");
+  return locale === DEFAULT_LOCALE
+    ? absoluteUrl(clean || "/")
+    : absoluteUrl(`/${locale}${clean}`);
+}
+
+/**
+ * Bản đồ hreflang đầy đủ cho một trang — dùng cho
+ * metadata.alternates.languages và sitemap.
+ *
+ * x-default trỏ về bản tiếng Việt (bản gốc, không prefix).
+ */
+export function languageAlternates(path: string): Record<string, string> {
+  const map: Record<string, string> = {
+    "x-default": localizedUrl(path, DEFAULT_LOCALE),
+  };
+  for (const locale of LOCALES) {
+    map[locale] = localizedUrl(path, locale);
+  }
+  return map;
+}

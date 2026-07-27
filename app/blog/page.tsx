@@ -3,22 +3,22 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Image from "next/image";
 
-import { absoluteUrl } from "@/lib/site-config";
+import { buildMetadata } from "@/lib/metadata-builder";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
-export const metadata: Metadata = {
-  title: "Tin Tức & Blog Dù Lượn Việt Nam | Mebayluon",
-  description: "Tin tức mới nhất về dù lượn, kinh nghiệm bay, hướng dẫn kỹ thuật và câu chuyện từ cộng đồng dù lượn Việt Nam của Mebayluon.",
-  keywords: ["blog dù lượn", "tin tức paragliding", "kinh nghiệm bay dù lượn", "mebayluon blog"],
-  openGraph: {
-    title: "Tin Tức & Blog Dù Lượn | Mebayluon",
-    description: "Tin tức, kinh nghiệm và câu chuyện từ cộng đồng dù lượn Việt Nam.",
-    url: absoluteUrl("/blog"),
-    images: [{ url: "/tin-tuc-2.jpg", width: 1200, height: 630, alt: "Blog dù lượn Mebayluon" }],
-  },
-  alternates: { canonical: absoluteUrl("/blog") },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    title: "Tin Tức & Blog Dù Lượn Việt Nam | Mebayluon",
+    description:
+      "Tin tức mới nhất về dù lượn, kinh nghiệm bay, hướng dẫn kỹ thuật và câu chuyện từ cộng đồng dù lượn Việt Nam của Mebayluon.",
+    keywords: ["blog dù lượn", "tin tức paragliding", "kinh nghiệm bay dù lượn", "mebayluon blog"],
+    image: "/tin-tuc-2.jpg",
+    url: "/blog",
+    type: "website",
+    locale: await getUrlLocale(),
+  });
+}
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { getPosts } from "@/lib/posts-data";
 import type { Post, SupportedLocale } from "@/types/frontend/post";
 
@@ -129,14 +129,7 @@ const UI: Record<
 };
 
 export default async function BlogPage() {
-  const cookieStore = await cookies();
-
-  const raw =
-    cookieStore.get("language")?.value ??
-    cookieStore.get("Language")?.value ??
-    cookieStore.get("lang")?.value;
-
-  const lang = getSafeLang(raw);
+  const lang = getSafeLang(await getRequestLang());
   const isVietnamese = lang === "vi";
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];

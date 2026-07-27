@@ -1,9 +1,9 @@
 // app/knowledge/all/page.tsx
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { KnowledgeTabs } from "../KnowledgeTabs";
 import { getPosts } from "@/lib/posts-data";
+import { getRequestLang } from "@/lib/locale";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -17,15 +17,8 @@ function toLang(v: string | null | undefined): Lang {
 }
 
 async function getLangFromCookies(): Promise<Lang> {
-  const c = await cookies();
-  const v =
-    c.get("language")?.value ||
-    c.get("lang")?.value ||
-    c.get("NEXT_LOCALE")?.value ||
-    c.get("locale")?.value ||
-    c.get("i18nextLng")?.value ||
-    null;
-  return toLang(v);
+  // URL có prefix ngôn ngữ thì URL thắng cookie
+  return toLang(await getRequestLang());
 }
 
 const I18N: Record<

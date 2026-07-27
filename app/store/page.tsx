@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
 import StoreHomeClient from "./components/StoreHomeClient";
 import type { Post } from "@/types/frontend/post";
 import type { StoreLang } from "@/lib/store-texts";
-import { absoluteUrl } from "@/lib/site-config";
+import { buildMetadata } from "@/lib/metadata-builder";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Cửa Hàng Dù Lượn - Thiết Bị & Sách Bay | Mebayluon",
-  description: "Mua sắm thiết bị dù lượn, sách kỹ thuật bay, phụ kiện và đăng ký khóa học dù lượn chuyên nghiệp tại cửa hàng Mebayluon.",
-  keywords: ["cửa hàng dù lượn", "thiết bị paragliding", "sách dù lượn", "khóa học dù lượn", "mua dù lượn"],
-  openGraph: {
-    title: "Cửa Hàng Dù Lượn | Mebayluon",
-    description: "Thiết bị dù lượn, sách kỹ thuật, phụ kiện và khóa học chuyên nghiệp.",
-    url: absoluteUrl("/store"),
-    images: [{ url: "/cua-hang.jpg", width: 1200, height: 630, alt: "Cửa hàng dù lượn Mebayluon" }],
-  },
-  alternates: { canonical: absoluteUrl("/store") },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    title: "Cửa Hàng Dù Lượn - Thiết Bị & Sách Bay | Mebayluon",
+    description:
+      "Mua sắm thiết bị dù lượn, sách kỹ thuật bay, phụ kiện và đăng ký khóa học dù lượn chuyên nghiệp tại cửa hàng Mebayluon.",
+    keywords: ["cửa hàng dù lượn", "thiết bị paragliding", "sách dù lượn", "khóa học dù lượn", "mua dù lượn"],
+    image: "/cua-hang.jpg",
+    url: "/store",
+    type: "website",
+    locale: await getUrlLocale(),
+  });
+}
 
 function toStoreLang(v: string | undefined): StoreLang {
   const code = String(v ?? "vi").toLowerCase().slice(0, 2);
@@ -38,9 +38,7 @@ async function fetchAllProducts(): Promise<Post[]> {
 }
 
 export default async function StoreHomePage() {
-  const cookieStore = await cookies();
-  const rawLang = cookieStore.get("language")?.value ?? cookieStore.get("lang")?.value;
-  const lang = toStoreLang(rawLang);
+  const lang = toStoreLang(await getRequestLang());
 
   const allProducts = await fetchAllProducts();
 

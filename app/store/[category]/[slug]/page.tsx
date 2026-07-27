@@ -2,11 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import { connectDB } from "@/lib/mongodb";
 import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
-import { generateProductSchema } from "@/lib/metadata-builder";
+import { buildMetadata, generateProductSchema } from "@/lib/metadata-builder";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
 type PostLite = {
   _id?: string;
@@ -67,7 +67,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ category: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { category, slug } = await params;
   await connectDB();
   const p = await getProductBySlug(slug).catch(() => null);
   const title = p ? `${p.titleVi || p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store";
@@ -77,17 +77,15 @@ export async function generateMetadata({
         .replace(/\s+/g, " ")
         .slice(0, 150)
     : "";
-  return {
+
+  return buildMetadata({
     title,
     description,
-    openGraph: p
-      ? {
-          title,
-          description,
-          images: p.coverImage ? [{ url: p.coverImage }] : undefined,
-        }
-      : undefined,
-  };
+    image: p?.coverImage || undefined,
+    url: `/store/${p?.storeCategory || category}/${slug}`,
+    type: "website",
+    locale: await getUrlLocale(),
+  });
 }
 
 export default async function ProductDetailPage({
@@ -96,9 +94,7 @@ export default async function ProductDetailPage({
   params: Promise<{ category: string; slug: string }>;
 }) {
   const { slug, category } = await params;
-  const c = await cookies();
-  const rawLang = c.get("language")?.value || c.get("lang")?.value || "vi";
-  const isVietnamese = String(rawLang).toLowerCase().startsWith("vi");
+  const isVietnamese = (await getRequestLang()) === "vi";
 
   await connectDB();
 

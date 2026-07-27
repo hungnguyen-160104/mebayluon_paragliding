@@ -2,8 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import KnowledgeTabs, { KnowledgeSub } from "@/components/knowledge/KnowledgeTabs";
+import { getRequestLang } from "@/lib/locale";
 
 type Item = {
   _id: string;
@@ -30,16 +30,8 @@ const SUB_MAP: Record<KnowledgeSub, string> = {
 };
 
 async function getLangFromCookies(): Promise<string> {
-  const c = await cookies();
-  const v =
-    c.get("language")?.value ||
-    c.get("lang")?.value ||
-    c.get("NEXT_LOCALE")?.value ||
-    c.get("locale")?.value ||
-    c.get("i18nextLng")?.value ||
-    "vi";
-  const code = String(v).toLowerCase().slice(0, 2);
-  return ["vi", "en", "fr", "ru", "zh", "hi"].includes(code) ? code : "vi";
+  // URL có prefix ngôn ngữ thì URL thắng cookie
+  return getRequestLang();
 }
 
 function stripHtml(html: string) {
