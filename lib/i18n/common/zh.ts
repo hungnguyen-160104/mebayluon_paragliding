@@ -343,7 +343,7 @@ export const zh: CommonTranslation = {
         "一楼咖啡馆与餐厅空间，可欣赏溪流与梯田景色",
       categories: {
         drinks: "饮品",
-        alcohol: "当地特色酒",
+        alcohol: "Tú Lệ 特产",
         food: "美食",
       },
       specialNote: "可承接私人活动",

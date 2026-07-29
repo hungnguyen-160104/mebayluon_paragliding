@@ -342,7 +342,7 @@ export const ru: CommonTranslation = {
         "Кафе-ресторан на первом этаже с видом на ручей и террасные рисовые поля",
       categories: {
         drinks: "Напитки",
-        alcohol: "Местный алкоголь",
+        alcohol: "Деликатесы Ту Ле",
         food: "Еда",
       },
       specialNote: "Возможны частные мероприятия",

@@ -136,11 +136,35 @@ export const roomTypes: RoomType[] = [
   },
 ];
 
+/** Các ngôn ngữ của website — dùng cho tên món & đơn vị trong menu. */
+export type HomestayLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
+
 export interface MenuItemEntry {
-  name: string;
+  /** Tên món theo từng ngôn ngữ (vi là bản gốc). */
+  name: Record<HomestayLang, string>;
   price: number;
-  unit?: string;
+  /** Đơn vị tính theo từng ngôn ngữ (nếu có). */
+  unit?: Record<HomestayLang, string>;
 }
+
+/** Đơn vị dùng chung cho menu. */
+const UNIT_LITER: Record<HomestayLang, string> = {
+  vi: "lít",
+  en: "liter",
+  fr: "litre",
+  ru: "литр",
+  zh: "升",
+  hi: "लीटर",
+};
+
+const UNIT_KG: Record<HomestayLang, string> = {
+  vi: "kg",
+  en: "kg",
+  fr: "kg",
+  ru: "кг",
+  zh: "公斤",
+  hi: "किग्रा",
+};
 
 export interface MenuItem {
   category: CategoryKey;
@@ -151,30 +175,131 @@ export const menuItems: MenuItem[] = [
   {
     category: "drinks",
     items: [
-      { name: "Cà phê", price: 35000 },
-      { name: "Trà", price: 30000 },
-      { name: "Nước chanh", price: 25000 },
-      { name: "Sinh tố", price: 40000 },
-      { name: "Bia", price: 20000 },
-      { name: "Nước ngọt", price: 15000 },
+      {
+        name: { vi: "Cà phê", en: "Coffee", fr: "Café", ru: "Кофе", zh: "咖啡", hi: "कॉफ़ी" },
+        price: 35000,
+      },
+      {
+        name: { vi: "Trà", en: "Tea", fr: "Thé", ru: "Чай", zh: "茶", hi: "चाय" },
+        price: 30000,
+      },
+      {
+        name: { vi: "Nước chanh", en: "Lemonade", fr: "Citronnade", ru: "Лимонад", zh: "柠檬水", hi: "नींबू पानी" },
+        price: 25000,
+      },
+      {
+        name: { vi: "Sinh tố", en: "Smoothie", fr: "Smoothie", ru: "Смузи", zh: "果昔", hi: "स्मूदी" },
+        price: 40000,
+      },
+      {
+        name: { vi: "Bia", en: "Beer", fr: "Bière", ru: "Пиво", zh: "啤酒", hi: "बीयर" },
+        price: 20000,
+      },
+      {
+        name: { vi: "Nước ngọt", en: "Soft drink", fr: "Boisson gazeuse", ru: "Газированный напиток", zh: "汽水", hi: "सॉफ़्ट ड्रिंक" },
+        price: 15000,
+      },
     ],
   },
   {
     category: "alcohol",
     items: [
-      { name: "Rượu cắm", price: 100000, unit: "lít" },
-      { name: "Cẩm tú lệ", price: 80000, unit: "lít" },
-      { name: "Rượu mơ", price: 120000, unit: "lít" },
+      {
+        name: {
+          vi: "Rượu cốm",
+          en: "Young rice (cốm) wine",
+          fr: "Alcool de riz vert (cốm)",
+          ru: "Вино из молодого риса (ком)",
+          zh: "青扁米酒",
+          hi: "कोम (हरे चावल) वाइन",
+        },
+        price: 100000,
+        unit: UNIT_LITER,
+      },
+      {
+        name: {
+          vi: "Cốm tú lệ",
+          en: "Tú Lệ green young rice (cốm)",
+          fr: "Riz vert de Tú Lệ (cốm)",
+          ru: "Зелёный молодой рис Ту Ле (ком)",
+          zh: "Tú Lệ 青扁米",
+          hi: "तू ले का हरा चावल (कोम)",
+        },
+        price: 150000,
+        unit: UNIT_KG,
+      },
+      {
+        name: {
+          vi: "Rượu mơ",
+          en: "Apricot wine",
+          fr: "Alcool d'abricot",
+          ru: "Абрикосовое вино",
+          zh: "杏子酒",
+          hi: "खुबानी वाइन",
+        },
+        price: 120000,
+        unit: UNIT_LITER,
+      },
     ],
   },
   {
     category: "food",
     items: [
-      { name: "Cơm / mì tôm", price: 0 },
-      { name: "Bò / gà / lợn", price: 0 },
-      { name: "Cá hồi tươi sống", price: 0 },
-      { name: "Cá tầm tươi sống", price: 0 },
-      { name: "Các món lẩu / BBQ", price: 0 },
+      {
+        name: {
+          vi: "Cơm / mì tôm",
+          en: "Rice / instant noodles",
+          fr: "Riz / nouilles instantanées",
+          ru: "Рис / лапша быстрого приготовления",
+          zh: "米饭 / 方便面",
+          hi: "चावल / इंस्टेंट नूडल्स",
+        },
+        price: 0,
+      },
+      {
+        name: {
+          vi: "Bò / gà / lợn",
+          en: "Beef / chicken / pork",
+          fr: "Bœuf / poulet / porc",
+          ru: "Говядина / курица / свинина",
+          zh: "牛肉 / 鸡肉 / 猪肉",
+          hi: "बीफ़ / चिकन / पोर्क",
+        },
+        price: 0,
+      },
+      {
+        name: {
+          vi: "Cá hồi tươi sống",
+          en: "Fresh live salmon",
+          fr: "Saumon frais",
+          ru: "Свежий лосось",
+          zh: "新鲜三文鱼",
+          hi: "ताज़ा सैल्मन",
+        },
+        price: 0,
+      },
+      {
+        name: {
+          vi: "Cá tầm tươi sống",
+          en: "Fresh live sturgeon",
+          fr: "Esturgeon frais",
+          ru: "Свежий осётр",
+          zh: "新鲜鲟鱼",
+          hi: "ताज़ा स्टर्जन",
+        },
+        price: 0,
+      },
+      {
+        name: {
+          vi: "Các món lẩu / BBQ",
+          en: "Hotpot / BBQ dishes",
+          fr: "Fondue vietnamienne (lẩu) / BBQ",
+          ru: "Хот-пот / барбекю",
+          zh: "火锅 / 烧烤",
+          hi: "हॉटपॉट / बारबेक्यू",
+        },
+        price: 0,
+      },
     ],
   },
 ];
@@ -195,15 +320,17 @@ export const amenities: AmenityKey[] = [
 ];
 
 export const locationInfo = {
-  address: "Bản Lim Mông, xã Cao Phạ, huyện Mù Cang Chải, tỉnh Yên Bái",
+  address: "Thôn Lìm Thái, xã Tú Lệ, tỉnh Lào Cai",
   distanceFromHanoi: "250km",
   travelTime: "5 giờ",
   phone: "+84964073555",
   nearbyAttractions: [
     { name: "Suối khoáng nóng Tú Lệ", distance: "4km" },
     { name: "Le Charm resort", distance: "5km" },
-    { name: "Trại cá hồi", distance: "8km" },
-    { name: "Khau Phạ pass", distance: "on site" },
+    { name: "Khu trượt zipline Le Charm", distance: "5km" },
+    { name: "Trại cá hồi cá tầm", distance: "8km" },
+    { name: "Đèo Khau Phạ", distance: "on site" },
+    { name: "Bản Lìm Mông", distance: "1km" },
   ],
 } as const;
 
@@ -215,12 +342,14 @@ export const locationTranslations = {
       "Ngay tại điểm hạ cánh dù lượn – trung tâm hoạt động của các phi công chuyên nghiệp. Du khách có thể tương tác cùng cộng đồng bay và ngắm nhìn những cánh dù rực rỡ trên bầu trời.",
     addressLabel: "Địa chỉ",
     fromHanoi: "Từ Hà Nội",
-    nearby: "Các điểm gần đó",
+    nearby: "Các điểm xung quanh",
     nearbyList: [
-      "Suối Tú Lệ – 4km",
+      "Suối khoáng nóng Tú Lệ – 4km",
       "Le Charm resort – 5km",
-      "Trại cá hồi – 8km",
-      "Khau Phạ – Tại chỗ",
+      "Khu trượt zipline Le Charm – 5km",
+      "Trại cá hồi cá tầm – 8km",
+      "Đèo Khau Phạ – Tại chỗ",
+      "Bản Lìm Mông – 1km",
     ],
   },
   en: {
@@ -231,10 +360,12 @@ export const locationTranslations = {
     fromHanoi: "From Hanoi",
     nearby: "Nearby attractions",
     nearbyList: [
-      "Tuley Hot Spring – 4km",
+      "Tu Le Hot Springs – 4km",
       "Le Charm resort – 5km",
-      "Fish farm – 8km",
+      "Le Charm zipline – 5km",
+      "Salmon & sturgeon farm – 8km",
       "Khau Pha Pass – On site",
+      "Lim Mong Village – 1km",
     ],
   },
   fr: {
@@ -245,10 +376,12 @@ export const locationTranslations = {
     fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
     nearbyList: [
-      "Source chaude Tuley – 4 km",
+      "Source chaude de Tu Le – 4 km",
       "Le Charm resort – 5 km",
-      "Ferme piscicole – 8 km",
+      "Tyrolienne Le Charm – 5 km",
+      "Ferme de saumons et d’esturgeons – 8 km",
       "Col de Khau Pha – Sur place",
+      "Village de Lim Mong – 1 km",
     ],
   },
   ru: {
@@ -259,10 +392,12 @@ export const locationTranslations = {
     fromHanoi: "Из Ханоя",
     nearby: "Ближайшие места",
     nearbyList: [
-      "Горячий источник Туле — 4 км",
+      "Горячие источники Ту Ле — 4 км",
       "Курорт Le Charm — 5 км",
-      "Форель ферма — 8 км",
+      "Зиплайн Le Charm — 5 км",
+      "Ферма лосося и осетра — 8 км",
       "Перевал Кхау Фа — На месте",
+      "Деревня Лим Монг — 1 км",
     ],
   },
   zh: {
@@ -275,8 +410,10 @@ export const locationTranslations = {
     nearbyList: [
       "图勒温泉 — 4km",
       "Le Charm度假村 — 5km",
-      "鱼塘 — 8km",
+      "Le Charm滑索 — 5km",
+      "三文鱼鲟鱼养殖场 — 8km",
       "考帕山口 — 就在此地",
+      "Lim Mong 村 — 1km",
     ],
   },
   hi: {
@@ -287,10 +424,12 @@ export const locationTranslations = {
     fromHanoi: "हनोई से",
     nearby: "नज़दीकी स्थान",
     nearbyList: [
-      "तुले हॉट स्प्रिंग — 4km",
+      "तू ले हॉट स्प्रिंग — 4km",
       "Le Charm रिसॉर्ट — 5km",
-      "मछली पालन — 8km",
+      "Le Charm ज़िपलाइन — 5km",
+      "सैल्मन-स्टर्जन फ़ार्म — 8km",
       "खाउ फ़ा पास — यहीं",
+      "Lim Mong गाँव — 1km",
     ],
   },
 } as const;

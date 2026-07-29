@@ -342,7 +342,7 @@ export const fr: CommonTranslation = {
         "Espace café - restaurant au rez-de-chaussée avec vue sur le ruisseau et les rizières en terrasses",
       categories: {
         drinks: "Boissons",
-        alcohol: "Alcool local",
+        alcohol: "Spécialités de Tú Lệ",
         food: "Cuisine",
       },
       specialNote: "Événements privés possibles",

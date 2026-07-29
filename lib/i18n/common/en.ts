@@ -342,7 +342,7 @@ export const en: CommonTranslation = {
         "Café - Restaurant space on the ground floor with a stream and terraced field view",
       categories: {
         drinks: "Drinks",
-        alcohol: "Local Specialty Liquor",
+        alcohol: "Tú Lệ Specialties",
         food: "Food",
       },
       specialNote: "Private Events Available",

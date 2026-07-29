@@ -336,7 +336,7 @@ export const vi: CommonTranslation = {
       subtitle: "Không gian Cà phê - Nhà hàng ngay tầng trệt, view suối và ruộng bậc thang",
       categories: {
         drinks: "Đồ uống",
-        alcohol: "Rượu đặc sản",
+        alcohol: "Đặc sản Tú Lệ",
         food: "Món ăn",
       },
       specialNote: "Nhận đặt tiệc",

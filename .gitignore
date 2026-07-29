@@ -112,3 +112,5 @@ pnpm-workspace.yaml
 # Claude Code memory (local only)
 memory/
 MEMORY.md
+
+huongdan.md

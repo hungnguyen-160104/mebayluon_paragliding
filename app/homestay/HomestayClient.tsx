@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link"; // tạm ẩn cùng nút "Đặt phòng online"
 import { useMemo } from "react";
 import {
   Phone,
@@ -32,6 +32,7 @@ import {
   type RoomFeatureKey,
   type RoomType,
   menuItems,
+  type HomestayLang,
   locationInfo,
   locationTranslations,
 } from "@/lib/homestay-data";
@@ -179,6 +180,13 @@ function GoogleReviewBadge() {
 export default function HomestayPage() {
   const { t, language } = useLanguage();
   const currentLocale = language === "en" ? "en-US" : "vi-VN";
+
+  // Ngôn ngữ dùng cho tên món & đơn vị trong menu (fallback tiếng Việt)
+  const menuLang: HomestayLang = (
+    ["vi", "en", "fr", "ru", "zh", "hi"].includes(language ?? "")
+      ? language
+      : "vi"
+  ) as HomestayLang;
 
   const priceFormatter = useMemo(
     () =>
@@ -362,16 +370,16 @@ export default function HomestayPage() {
                       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {category.items.map((item) => (
                           <li
-                            key={item.name}
+                            key={item.name.vi}
                             className="flex justify-between items-center p-3 rounded-lg bg-black/20 backdrop-blur-lg border border-white/10"
                           >
                             <span className="font-medium text-white/95">
-                              {item.name}
+                              {item.name[menuLang] ?? item.name.vi}
                             </span>
                             {item.price > 0 && (
                               <span className="text-accent font-semibold">
                                 {priceFormatter.format(item.price)}₫
-                                {item.unit && `/${item.unit}`}
+                                {item.unit && `/${item.unit[menuLang] ?? item.unit.vi}`}
                               </span>
                             )}
                           </li>
@@ -526,6 +534,8 @@ export default function HomestayPage() {
                 </a>
               </Button>
 
+              {/* Nút "Đặt phòng online" tạm ẩn — chưa triển khai đặt phòng
+                  homestay online. Khi nào có tính năng thì mở lại:
               <Button
                 size="lg"
                 variant="outline"
@@ -534,6 +544,7 @@ export default function HomestayPage() {
               >
                 <Link href="/booking">{t.homestay.cta.bookOnline}</Link>
               </Button>
+              */}
             </div>
           </div>
         </section>

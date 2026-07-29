@@ -341,7 +341,7 @@ export const hi: CommonTranslation = {
         "भूतल पर कैफ़े-रेस्टोरेंट, जहाँ से झरने और सीढ़ीदार खेतों का दृश्य दिखाई देता है",
       categories: {
         drinks: "पेय",
-        alcohol: "स्थानीय शराब",
+        alcohol: "तू ले की ख़ास चीज़ें",
         food: "भोजन",
       },
       specialNote: "निजी कार्यक्रम उपलब्ध",

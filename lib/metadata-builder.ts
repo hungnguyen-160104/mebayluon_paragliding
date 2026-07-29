@@ -279,8 +279,8 @@ export function generateLocalBusinessSchema() {
     description: "Công ty bay dù lượn chuyên nghiệp tại Việt Nam. Trải nghiệm bay dù lượn tự do trên khắp Việt Nam.",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Mù Cang Chải",
-      addressLocality: "Yên Bái",
+      streetAddress: "Thôn Lìm Thái, Xã Tú Lệ",
+      addressLocality: "Lào Cai",
       addressCountry: "VN",
     },
     geo: {
