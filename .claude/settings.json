@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git status *)",
+      "Bash(git ls-remote *)",
+      "Bash(curl -s -o /dev/null --max-time 3 http://localhost:8080/)",
+      "Bash(curl -s http://localhost:8080/spots/khau-pha)",
+      "Bash(curl -s http://localhost:8080/sitemap.xml)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3179/spots/khau-pha)",
+      "Bash(curl -s http://localhost:3179/spots/khau-pha)",
+      "Bash(curl -s http://localhost:3179/sitemap.xml)",
+      "Bash(git commit -m 'SEO: bo /spots 404 khoi sitemap, gan lai JSON-LD gia tour cho trang diem bay *)",
+      "Bash(git push *)"
+    ]
+  }
+}
