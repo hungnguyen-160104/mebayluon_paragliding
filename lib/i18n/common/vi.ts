@@ -312,7 +312,7 @@ export const vi: CommonTranslation = {
       },
       wholeHomeLarge: {
         name: "Nguyên Nhà Sàn",
-        description: "Toàn bộ phần sàn công đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 35 khách",
+        description: "Toàn bộ phần sàn cộng đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 35 khách",
       },
     },
     features: {

@@ -2,11 +2,13 @@
 
 User-agent: *
 Allow: /
+Allow: /manifest.json
 Disallow: /admin/
 Disallow: /api/
 Disallow: /*.json$
-Disallow: /search
-Disallow: /?*=*
+
+# /booking va /pre-notice dung meta noindex (khong Disallow o day,
+# vi bi chan crawl thi Google se khong doc duoc the noindex)
 
 # Block bad bots
 User-agent: AhrefsBot

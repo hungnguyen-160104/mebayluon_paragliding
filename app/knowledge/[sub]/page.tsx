@@ -29,6 +29,28 @@ const SUB_MAP: Record<KnowledgeSub, string> = {
   weather: "Khí tượng bay",
 };
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ sub: string }>;
+}) {
+  const { sub } = await params;
+  const label = SUB_MAP[sub as KnowledgeSub];
+
+  if (!label) {
+    return {
+      title: "Không tìm thấy chuyên mục | Mebayluon",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return {
+    title: `${label} — Kiến Thức Dù Lượn | Mebayluon`,
+    description: `Tổng hợp bài viết về ${label.toLowerCase()}: kỹ thuật, an toàn và kinh nghiệm thực tế từ các huấn luyện viên dù lượn chuyên nghiệp của Mebayluon.`,
+    alternates: { canonical: `https://mebayluon.com/knowledge/${sub}` },
+  };
+}
+
 async function getLangFromCookies(): Promise<string> {
   // URL có prefix ngôn ngữ thì URL thắng cookie
   return getRequestLang();
