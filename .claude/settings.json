@@ -11,7 +11,14 @@
       "Bash(curl -s http://localhost:3179/spots/khau-pha)",
       "Bash(curl -s http://localhost:3179/sitemap.xml)",
       "Bash(git commit -m 'SEO: bo /spots 404 khoi sitemap, gan lai JSON-LD gia tour cho trang diem bay *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(cd /Users/dangvm/Desktop/mebayluon_paragliding *)",
+      "Bash(awk '/export async function generateMetadata/,/^\\\\}$/' \"app/spots/[slug]/page.tsx\")",
+      "Bash(grep -n \"Bay \\\\${spot.duration} tại\" \"app/spots/[slug]/page.tsx\")",
+      "Bash(git commit -m 'SEO: meta description gon cho trang diem bay, fix canh bao Mongoose duplicate index *)"
+    ],
+    "additionalDirectories": [
+      "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"
     ]
   }
 }
