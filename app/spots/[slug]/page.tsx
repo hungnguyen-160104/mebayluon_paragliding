@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
-import { buildMetadata } from "@/lib/metadata-builder";
+import {
+  buildMetadata,
+  generateSpotSchema,
+  generateProductSchema,
+  generateBreadcrumbSchema,
+} from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
 import { getUrlLocale } from "@/lib/locale";
 
@@ -486,8 +491,51 @@ export default async function SpotDetailPage({
   const isSapa = slug === "muong-hoa-sapa" || slug === "sapa" || /sapa/.test(slug);
   const isKhauPha = slug === "khau-pha" || /khau-pha/.test(slug);
 
+  /* ===== JSON-LD: TouristAttraction + Product (giá tour) + Breadcrumb =====
+   * Giúp Google hiển thị rich result (giá, breadcrumb) trên kết quả tìm kiếm.
+   * Alias (vd /spots/sapa) dùng URL chuẩn để gộp tín hiệu về một trang.
+   */
+  const spotUrl = `/spots/${canonicalSpotSlug(slug)}`;
+
+  const spotSchema = generateSpotSchema({
+    name: spot.name,
+    description: spot.landscape,
+    image: spot.image,
+    url: spotUrl,
+  });
+
+  const productSchema = generateProductSchema({
+    name: `Tour bay dù lượn đôi tại ${spot.name}`,
+    description: `Bay ${spot.duration} tại ${spot.name} — ${spot.landscape}. Phi công chuyên nghiệp, bảo hiểm & video GoPro miễn phí.`,
+    image: spot.image,
+    price: spot.basePrice,
+    currency: "VND",
+    url: spotUrl,
+  });
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Trang chủ", url: "/" },
+    { name: "Điểm bay", url: "/#flying-spots" },
+    { name: spot.name, url: spotUrl },
+  ]);
+
+  const serializeJsonLd = (data: unknown) =>
+    JSON.stringify(data).replace(/</g, "\\u003c");
+
   return (
     <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(spotSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
+      />
       <Navigation />
       <SpotDetailClient spot={spot as SpotData} />
 
