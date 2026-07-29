@@ -103,6 +103,28 @@ function extractAnswer(payload: unknown, depth = 0): string {
   return "";
 }
 
+/**
+ * Nhận diện response "vọng lại request" của n8n.
+ *
+ * Khi node Webhook để Respond = "Immediately" (mặc định) hoặc workflow không
+ * có node "Respond to Webhook", n8n trả về chính dữ liệu request:
+ *   { headers, params, query, body, webhookUrl, executionMode }
+ *
+ * Nếu không chặn, extractAnswer() sẽ đào vào body.message và bot nhại lại
+ * đúng câu khách vừa hỏi — tệ hơn cả việc không trả lời.
+ */
+function isEchoedRequest(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return false;
+  }
+
+  const keys = new Set(Object.keys(payload as Record<string, unknown>));
+  const hasWebhookMeta = keys.has("webhookUrl") || keys.has("executionMode");
+  const looksLikeRequest = keys.has("headers") && (keys.has("body") || keys.has("query"));
+
+  return hasWebhookMeta || looksLikeRequest;
+}
+
 async function readResponse(res: Response): Promise<unknown> {
   const contentType = res.headers.get("content-type") ?? "";
   const raw = await res.text();
@@ -175,6 +197,18 @@ export async function askN8n(input: N8nAskInput): Promise<string | null> {
     }
 
     const data = await readResponse(res);
+
+    if (isEchoedRequest(data)) {
+      logger.error(
+        "n8n vọng lại request thay vì trả câu trả lời — node Webhook cần đặt " +
+          "Respond = 'Using Respond to Webhook Node' và workflow phải có node " +
+          "'Respond to Webhook' xuất nội dung của AI",
+        undefined,
+        { sessionId: input.sessionId },
+      );
+      return null;
+    }
+
     const answer = extractAnswer(data);
 
     if (!answer) {
