@@ -42,7 +42,7 @@ const CustomerSchema = new Schema<ICustomer>(
       type: String,
       enum: ["pending", "contacted"],
       default: "pending",
-      index: true,
+      // index khai ở CustomerSchema.index({ contactStatus: 1 }) phía dưới
     },
     contactedAt: {
       type: Date,

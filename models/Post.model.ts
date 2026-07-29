@@ -94,8 +94,8 @@ const PostSchema = new Schema<IPost>(
     slug: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
+      // unique/index khai ở PostSchema.index({ slug: 1 }, { unique: true })
+      // phía dưới — khai cả hai nơi sẽ bị Mongoose cảnh báo duplicate index.
       trim: true,
     },
 

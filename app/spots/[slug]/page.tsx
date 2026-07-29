@@ -28,6 +28,8 @@ type SpotData = {
   altitude: string;
   description: string;
   landscape: string;
+  /** Cụm mô tả cảnh quan dùng riêng cho meta description (nếu khác landscape hiển thị trên trang). */
+  metaLandscape?: string;
   duration: string;
   landingPoint: string;
   basePrice: number;
@@ -173,6 +175,7 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Đèo cao – thung lũng – mùa vàng",
+    metaLandscape: "Hùng vĩ – ruộng bậc thang – mùa vàng",
     duration: "10 – 15 phút",
     landingPoint: "Thung lũng dưới chân đèo",
     basePrice: 2190000,
@@ -436,6 +439,18 @@ export function generateStaticParams() {
  * bị Google coi là duplicate. Canonical của alias trỏ về slug chuẩn để Google
  * gộp tín hiệu về một URL duy nhất.
  */
+/**
+ * Meta description gọn ~160 ký tự cho trang spot.
+ *
+ * KHÔNG dùng nguyên spot.description: đoạn đó dài hàng nghìn ký tự,
+ * chứa emoji và xuống dòng — Google sẽ tự cắt tùy tiện, snippet xấu
+ * và mất từ khóa quan trọng ở phần đầu.
+ */
+function spotMetaDescription(spot: SpotData): string {
+  const price = spot.basePrice.toLocaleString("vi-VN");
+  return `Đặt tour trải nghiệm bay dù lượn tại ${spot.name} — ${spot.metaLandscape ?? spot.landscape}. Bay ${spot.duration}, giá từ ${price}đ. Phi công chuyên nghiệp, bảo hiểm & video GoPro miễn phí.`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -451,7 +466,7 @@ export async function generateMetadata({
 
   return buildMetadata({
     title: `Bay Dù Lượn ${spot.name} - ${spot.title} | Mebayluon`,
-    description: spot.description,
+    description: spotMetaDescription(spot),
     image: spot.image,
     url: `/spots/${canonicalSlug}`,
     type: "website",
@@ -505,8 +520,8 @@ export default async function SpotDetailPage({
   });
 
   const productSchema = generateProductSchema({
-    name: `Tour bay dù lượn đôi tại ${spot.name}`,
-    description: `Bay ${spot.duration} tại ${spot.name} — ${spot.landscape}. Phi công chuyên nghiệp, bảo hiểm & video GoPro miễn phí.`,
+    name: `Tour trải nghiệm bay dù lượn tại ${spot.name}`,
+    description: spotMetaDescription(spot),
     image: spot.image,
     price: spot.basePrice,
     currency: "VND",
