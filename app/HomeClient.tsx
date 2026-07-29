@@ -211,12 +211,8 @@ export default function HomePage() {
       cancellation: (() => {
         const cancel = (t?.preNotice as any)?.requirements?.cancellation;
         return {
-          title: cancel?.title ?? "Huỷ bay",
-          items: [
-            ...(cancel?.byCompany?.items ?? []),
-            ...(cancel?.byCustomer?.items ?? []),
-            ...(cancel?.reschedule?.items ?? []),
-          ],
+          title: cancel?.title ?? "Chính sách huỷ & đổi lịch bay",
+          items: normalizeList(cancel?.items),
         };
       })(),
     },

@@ -3,7 +3,7 @@
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Shirt, PackageCheck, Ban, Calendar, Ticket } from "lucide-react"
+import { CheckCircle2, Shirt, PackageCheck, Ban, Ticket } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
 import Image from "next/image" // Import Image để tối ưu
@@ -59,19 +59,15 @@ export default function PreNoticePage() {
         ],
       },
       cancellation: {
-        title: t.preNotice?.requirements?.cancellation?.title ?? "Huỷ bay",
-        byCompany: {
-          title: t.preNotice?.requirements?.cancellation?.byCompany?.title ?? "Huỷ bay do Mebayluon Paragliding",
-          items: t.preNotice?.requirements?.cancellation?.byCompany?.items ?? ["Trường hợp thời tiết không thuận lợi và phải huỷ bay", "Khách hàng không phải thanh toán chi phí", "Vé được hoàn tiền 100%, không phát sinh bất kỳ khoản phí nào"],
-        },
-        byCustomer: {
-          title: t.preNotice?.requirements?.cancellation?.byCustomer?.title ?? "Huỷ bay do khách hàng",
-          items: t.preNotice?.requirements?.cancellation?.byCustomer?.items ?? ["Việc huỷ bay phải được thông báo qua email/hotline/Zalo/WhatsApp", "Chính sách phí huỷ: Trước 1 ngày: Miễn phí"],
-        },
-        reschedule: {
-          title: t.preNotice?.requirements?.cancellation?.reschedule?.title ?? "Đổi lịch bay do khách hàng",
-          items: t.preNotice?.requirements?.cancellation?.reschedule?.items ?? ["Miễn phí đổi lịch bay"],
-        },
+        title:
+          t.preNotice?.requirements?.cancellation?.title ??
+          "Chính sách huỷ & đổi lịch bay",
+        items: t.preNotice?.requirements?.cancellation?.items ?? [
+          "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
+          "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",
+          "Khách vui lòng báo đổi/huỷ lịch bay qua email/hotline/Zalo/WhatsApp",
+          "Khách vui lòng thanh toán một số phí phát sinh đã sử dụng nếu huỷ lịch bay trong ngày (nước đã uống, xe đã đón)",
+        ],
       }
     }
   }
@@ -280,52 +276,15 @@ export default function PreNoticePage() {
                     <Ban className="text-orange-400" /> {content.requirements.cancellation.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Huỷ do công ty */}
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <CheckCircle2 className="text-green-400" size={20} />
-                      {content.requirements.cancellation.byCompany.title}
-                    </h4>
-                    <ul className="space-y-2 ml-7">
-                      {content.requirements.cancellation.byCompany.items.map((item: string, index: number) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={16} />
-                          <span className="text-slate-200">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {/* Huỷ do khách */}
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <Ticket className="text-blue-400" size={20} />
-                      {content.requirements.cancellation.byCustomer.title}
-                    </h4>
-                    <ul className="space-y-2 ml-7">
-                      {content.requirements.cancellation.byCustomer.items.map((item: string, index: number) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-blue-400 mt-1 shrink-0" size={16} />
-                          <span className="text-slate-200">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {/* Đổi lịch */}
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <Calendar className="text-purple-400" size={20} />
-                      {content.requirements.cancellation.reschedule.title}
-                    </h4>
-                    <ul className="space-y-2 ml-7">
-                      {content.requirements.cancellation.reschedule.items.map((item: string, index: number) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="text-purple-400 mt-1 shrink-0" size={16} />
-                          <span className="text-slate-200">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {content.requirements.cancellation.items.map((item: string, index: number) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <CheckCircle2 className="text-green-400 mt-1 shrink-0" size={18} />
+                        <span className="text-slate-200">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             </motion.div>

@@ -190,26 +190,13 @@ export const vi: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Huỷ bay",
-        byCompany: {
-          title: "Huỷ bay do Mebayluon Paragliding",
-          items: [
-            "Trường hợp thời tiết không thuận lợi và phải huỷ bay",
-            "Khách hàng không phải thanh toán chi phí",
-            "Vé được hoàn tiền 100%, không phát sinh bất kỳ khoản phí nào",
-          ],
-        },
-        byCustomer: {
-          title: "Huỷ bay do khách hàng",
-          items: [
-            "Việc huỷ bay phải được thông báo qua email/hotline/Zalo/WhatsApp",
-            "Chính sách phí huỷ: Trước 1 ngày: Miễn phí",
-          ],
-        },
-        reschedule: {
-          title: "Đổi lịch bay do khách hàng",
-          items: ["Miễn phí đổi lịch bay"],
-        },
+        title: "Chính sách huỷ & đổi lịch bay",
+        items: [
+          "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
+          "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",
+          "Khách vui lòng báo đổi/huỷ lịch bay qua email/hotline/Zalo/WhatsApp",
+          "Khách vui lòng thanh toán một số phí phát sinh đã sử dụng nếu huỷ lịch bay trong ngày (nước đã uống, xe đã đón)",
+        ],
       },
     },
   } as any,

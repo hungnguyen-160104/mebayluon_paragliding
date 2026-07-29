@@ -79,11 +79,11 @@ export type CommonTranslation = {
       // ✅ có trong EN/FR/RU file cũ
       special: { title: string; items: string[] };
 
+      // Chính sách huỷ & đổi lịch bay — một danh sách phẳng, dùng chung
+      // cho trang chủ và /pre-notice để tránh hai bản chính sách lệch nhau.
       cancellation: {
         title: string;
-        byCompany: { title: string; items: string[] };
-        byCustomer: { title: string; items: string[] };
-        reschedule: { title: string; items: string[] };
+        items: string[];
       };
     };
   };

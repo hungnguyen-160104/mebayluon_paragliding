@@ -191,26 +191,13 @@ export const fr: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Annulation du vol",
-        byCompany: {
-          title: "Annulation par Mebayluon Paragliding",
-          items: [
-            "En cas de mauvaises conditions météorologiques nécessitant l’annulation du vol",
-            "Le client n’a aucun frais à payer",
-            "Le billet est remboursé à 100 %, sans frais supplémentaires",
-          ],
-        },
-        byCustomer: {
-          title: "Annulation par le client",
-          items: [
-            "Toute annulation doit être signalée par e-mail/hotline/Zalo/WhatsApp",
-            "Politique d’annulation : gratuite si l’annulation est faite au moins 1 jour à l’avance",
-          ],
-        },
-        reschedule: {
-          title: "Changement de date par le client",
-          items: ["Le changement de date est gratuit"],
-        },
+        title: "Politique d’annulation et de report",
+        items: [
+          "Horaires de vol flexibles — annulation, remboursement et report gratuits",
+          "Le vol est annulé si la météo est défavorable ou si vous ne vous sentez pas prêt",
+          "Merci de nous signaler tout report ou annulation par e-mail/hotline/Zalo/WhatsApp",
+          "En cas d’annulation le jour même, merci de régler les frais déjà engagés (boissons consommées, navette déjà assurée)",
+        ],
       },
     },
   } as any,

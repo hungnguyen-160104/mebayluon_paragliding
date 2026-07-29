@@ -191,26 +191,13 @@ export const zh: CommonTranslation = {
       },
 
       cancellation: {
-        title: "取消飞行",
-        byCompany: {
-          title: "由 Mebayluon Paragliding 取消",
-          items: [
-            "如因天气不佳必须取消飞行",
-            "客户无需支付任何费用",
-            "机票将100%退款，不收取任何额外费用",
-          ],
-        },
-        byCustomer: {
-          title: "由客户取消",
-          items: [
-            "取消飞行需通过电子邮件/hotline/Zalo/WhatsApp 通知我们",
-            "取消政策：至少提前1天取消可免费",
-          ],
-        },
-        reschedule: {
-          title: "客户改期",
-          items: ["改期免费"],
-        },
+        title: "取消与改期政策",
+        items: [
+          "飞行时间灵活 — 取消、退款与改期均免费",
+          "遇天气不佳或您尚未准备好时，可取消飞行",
+          "如需改期或取消，请通过电子邮件/hotline/Zalo/WhatsApp 告知我们",
+          "当天取消时，请支付已产生的费用（已饮用的饮品、已提供的接送）",
+        ],
       },
     },
   } as any,

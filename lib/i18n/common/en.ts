@@ -191,26 +191,13 @@ export const en: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Flight Cancellation",
-        byCompany: {
-          title: "Cancellation by Mebayluon Paragliding",
-          items: [
-            "In case of unfavorable weather conditions and the flight must be canceled",
-            "The customer does not need to pay any cost",
-            "The ticket will be refunded 100% with no additional fees",
-          ],
-        },
-        byCustomer: {
-          title: "Cancellation by Customer",
-          items: [
-            "Flight cancellation must be notified via email/hotline/Zalo/WhatsApp",
-            "Cancellation policy: Free of charge if canceled at least 1 day in advance",
-          ],
-        },
-        reschedule: {
-          title: "Rescheduling by Customer",
-          items: ["Flight rescheduling is free of charge"],
-        },
+        title: "Cancellation & Rescheduling Policy",
+        items: [
+          "Flexible flight schedule — free cancellation, refund and rescheduling",
+          "Flights are cancelled when the weather is unfavourable or when you do not feel ready",
+          "Please notify us of any rescheduling or cancellation via email/hotline/Zalo/WhatsApp",
+          "For same-day cancellations, please cover the costs already incurred (drinks consumed, transfer already provided)",
+        ],
       },
     },
   } as any,
