@@ -137,12 +137,12 @@ export const metadata: Metadata = {
   },
 
   /**
-   * Website đang đổi ngôn ngữ bằng cookie và dùng chung một URL.
-   * Vì vậy hiện chỉ khai báo canonical.
+   * KHÔNG khai báo canonical ở layout gốc!
+   * Metadata ở layout được kế thừa xuống mọi page — nếu đặt canonical = SITE_URL
+   * tại đây, mọi trang con không tự khai alternates sẽ bị Google coi là
+   * bản sao của trang chủ và loại khỏi index.
+   * Canonical được khai riêng tại từng page/generateMetadata.
    */
-  alternates: {
-    canonical: SITE_URL,
-  },
 
   robots: {
     index: true,

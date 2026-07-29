@@ -2,6 +2,14 @@
 
 A full-stack Next.js application for paragliding spot management, bookings, and knowledge sharing.
 
+pnpm run dev
+
+pnpm run build
+
+git add .
+git commit -m "comment"
+git push 
+
 ## 🚀 Quick Start
 
 ### Prerequisites

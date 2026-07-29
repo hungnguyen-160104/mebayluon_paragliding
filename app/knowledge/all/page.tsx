@@ -8,6 +8,13 @@ import { getPosts } from "@/lib/posts-data";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon",
+  description:
+    "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay.",
+  alternates: { canonical: "https://mebayluon.com/knowledge/all" },
+};
+
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 function toLang(v: string | null | undefined): Lang {

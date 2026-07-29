@@ -61,8 +61,15 @@ function resolveImage(input?: string): string {
  * - We map "product" -> "website" for OpenGraph, and use JSON-LD for Product schema instead.
  */
 export function buildMetadata(seo: SEOMetadata): Metadata {
-  const canonicalUrl = resolveUrl(seo.url);
-  const imageUrl = resolveImage(seo.image);
+  // Chỉ tạo canonical khi page truyền url thật.
+  // Nếu tự suy ra SITE_URL làm canonical, mọi page dùng chung sẽ bị Google
+  // coi là bản sao của trang chủ và loại khỏi index.
+  const canonicalUrl = seo.url ? resolveUrl(seo.url) : undefined;
+
+  // Chỉ khai openGraph.images khi page truyền ảnh thật.
+  // Nếu bỏ trống, Next.js tự dùng app/opengraph-image.tsx (ảnh OG động).
+  // Trước đây default là /og-image.jpg — file KHÔNG tồn tại → share FB/Zalo mất ảnh.
+  const imageUrl = seo.image ? resolveImage(seo.image) : undefined;
 
   // Map internal type -> Next OpenGraph supported type
   const ogType: "article" | "website" =
@@ -78,27 +85,33 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
 
     authors: seo.author ? [{ name: seo.author }] : undefined,
 
-    alternates: {
-      canonical: canonicalUrl,
-    },
+    ...(canonicalUrl
+      ? {
+          alternates: {
+            canonical: canonicalUrl,
+          },
+        }
+      : {}),
 
     openGraph: {
       title: seo.title,
       description: seo.description,
-      url: canonicalUrl,
+      ...(canonicalUrl ? { url: canonicalUrl } : {}),
       siteName: SITE_NAME,
       type: ogType,
 
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: seo.title,
-          // "type" here is OK (image mime type)
-          type: "image/jpeg",
-        },
-      ],
+      ...(imageUrl
+        ? {
+            images: [
+              {
+                url: imageUrl,
+                width: 1200,
+                height: 630,
+                alt: seo.title,
+              },
+            ],
+          }
+        : {}),
 
       // Only attach article times if it's an article page
       ...(ogType === "article" && seo.publishedDate
@@ -113,7 +126,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
       card: "summary_large_image",
       title: seo.title,
       description: seo.description,
-      images: [imageUrl],
+      ...(imageUrl ? { images: [imageUrl] } : {}),
       creator: "@mebayluon",
     },
 
@@ -241,7 +254,7 @@ export function generateLocalBusinessSchema() {
     "@context": "https://schema.org",
     "@type": "TouristInformationCenter",
     name: "Mebayluon Paragliding",
-    image: `${SITE_URL.replace(/\/$/, "")}/og-image.jpg`,
+    image: `${SITE_URL.replace(/\/$/, "")}/logo.png`,
     url: SITE_URL,
     telephone: "+84-964-073-555",
     email: "mebayluon@gmail.com",

@@ -1,8 +1,15 @@
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
+import {
+  buildMetadata,
+  generateSpotSchema,
+  generateProductSchema,
+  generateBreadcrumbSchema,
+} from "@/lib/metadata-builder";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -198,7 +205,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     title: "Săn Mây Trên Đồi Núi Trùng Điệp",
     altitude: "1.000 – 1.500 m",
     description:
-      `Nằm ở xã Phình Hồ, huyện Trạm Tấu, tỉnh Yên Bái, cách trung tâm thành phố Yên Bái 80 km - thích hợp cho 1 chuyến đi dài cần dần chân nghỉ ngơi và tận hưởng bay dù lượn.
+      `Nằm ở xã Phình Hồ, huyện Trạm Tấu, tỉnh Yên Bái, cách trung tâm thành phố Yên Bái 80 km - thích hợp cho 1 chuyến đi dài cần dừng chân nghỉ ngơi và tận hưởng bay dù lượn.
 
 📦 GÓI DỊCH VỤ BAO GỒM:
 ✅ Xe lên núi
@@ -421,6 +428,80 @@ export function generateStaticParams() {
   return Object.keys(SPOTS).map((slug) => ({ slug }));
 }
 
+/* ============================================================
+   SEO
+   ============================================================ */
+
+/**
+ * Khu vực/tỉnh của từng điểm bay — dùng cho title & description
+ * để bắt các từ khoá dạng "bay dù lượn + địa danh".
+ */
+const SPOT_LOCATION: Record<string, string> = {
+  "muong-hoa-sapa": "Sapa",
+  "son-tra": "Đà Nẵng",
+  "khau-pha": "Mù Cang Chải",
+  "tram-tau": "Trạm Tấu, Yên Bái",
+  "ha-giang": "Hà Giang",
+  "vien-nam": "Hà Nội",
+  "doi-bu": "Hà Nội",
+  sapa: "Sapa",
+  dalat: "Đà Lạt",
+};
+
+/**
+ * Alias trùng nội dung với bản gốc → canonical trỏ về bản gốc
+ * để tránh duplicate content.
+ */
+const ALIAS_CANONICAL: Record<string, string> = {
+  sapa: "muong-hoa-sapa",
+};
+
+function spotDescription(spot: SpotData, location: string): string {
+  const price = spot.basePrice.toLocaleString("vi-VN");
+  return `Đặt tour bay dù lượn đôi tại ${spot.name} (${location}) — ${spot.landscape}. Bay ${spot.duration}, giá từ ${price}đ. Phi công chuyên nghiệp, bảo hiểm & video GoPro miễn phí.`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const spot = SPOTS[slug];
+
+  if (!spot) {
+    return {
+      title: "Không tìm thấy điểm bay | Mebayluon",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const location = SPOT_LOCATION[slug] ?? "Việt Nam";
+  const canonicalSlug = ALIAS_CANONICAL[slug] ?? slug;
+
+  return buildMetadata({
+    title: `Bay Dù Lượn ${spot.name} — Giá & Đặt Tour | Mebayluon`,
+    description: spotDescription(spot, location),
+    keywords: [
+      `bay dù lượn ${location}`,
+      `dù lượn ${spot.name}`,
+      "tour bay dù lượn",
+      "bay dù lượn đôi",
+      "paragliding Vietnam",
+      "Mebayluon",
+    ],
+    url: `/spots/${canonicalSlug}`,
+    image: spot.image,
+    author: "Mebayluon",
+    type: "website",
+  });
+}
+
+/** Chuyển JSON-LD thành chuỗi an toàn để nhúng vào HTML. */
+function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export default async function SpotDetailPage({
   params,
 }: {
@@ -446,8 +527,48 @@ export default async function SpotDetailPage({
   const isSapa = slug === "muong-hoa-sapa" || slug === "sapa" || /sapa/.test(slug);
   const isKhauPha = slug === "khau-pha" || /khau-pha/.test(slug);
 
+  /* ===== JSON-LD: TouristAttraction + Product (giá tour) + Breadcrumb ===== */
+  const location = SPOT_LOCATION[slug] ?? "Việt Nam";
+  const canonicalSlug = ALIAS_CANONICAL[slug] ?? slug;
+  const spotUrl = `/spots/${canonicalSlug}`;
+
+  const spotSchema = generateSpotSchema({
+    name: spot.name,
+    description: spot.landscape,
+    image: spot.image,
+    url: spotUrl,
+    address: location,
+  });
+
+  const productSchema = generateProductSchema({
+    name: `Tour bay dù lượn đôi tại ${spot.name}`,
+    description: spotDescription(spot, location),
+    image: spot.image,
+    price: spot.basePrice,
+    currency: "VND",
+    url: spotUrl,
+  });
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Trang chủ", url: "/" },
+    { name: "Điểm bay", url: "/#flying-spots" },
+    { name: spot.name, url: spotUrl },
+  ]);
+
   return (
     <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(spotSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
+      />
       <Navigation />
       <SpotDetailClient spot={spot as SpotData} />
 

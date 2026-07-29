@@ -16,8 +16,22 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { category } = await params;
-  const title = TITLE_MAP[category] || "Danh mục";
-  return { title: `${title} | Cửa hàng Mebayluon` };
+  const title = TITLE_MAP[category];
+
+  if (!title) {
+    return {
+      title: "Danh mục | Cửa hàng Mebayluon",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return {
+    title: `${title} | Cửa hàng Mebayluon`,
+    description: `Mua ${title.toLowerCase()} chính hãng tại cửa hàng dù lượn Mebayluon — tư vấn bởi phi công chuyên nghiệp, giao hàng toàn quốc.`,
+    alternates: {
+      canonical: `https://mebayluon.com/store/${category}`,
+    },
+  };
 }
 
 export default async function StoreCategoryPage({ params }: Props) {

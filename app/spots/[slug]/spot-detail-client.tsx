@@ -772,7 +772,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       title: "Săn Mây Trên Đồi Núi Trùng Điệp",
       altitude: "1.000 – 1.500 m",
       description:
-        `Nằm ở xã Phình Hồ, huyện Trạm Tấu, tỉnh Yên Bái, cách trung tâm thành phố Yên Bái 80 km - thích hợp cho 1 chuyến đi dài cần dần chân nghỉ ngơi và tận hưởng bay dù lượn.
+        `Nằm ở xã Phình Hồ, huyện Trạm Tấu, tỉnh Yên Bái, cách trung tâm thành phố Yên Bái 80 km - thích hợp cho 1 chuyến đi dài cần dừng chân nghỉ ngơi và tận hưởng bay dù lượn.
 
 📦 GÓI DỊCH VỤ BAO GỒM:
 ✅ Xe lên núi

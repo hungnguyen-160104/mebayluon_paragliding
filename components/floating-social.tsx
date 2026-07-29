@@ -10,7 +10,8 @@ import { ChatbotButton, ChatbotWidget } from "@/components/ui/chatbot";
 
 export function FloatingSocial() {
   // Hook chatbot
-  const { open, setOpen, messages, sendMessage, loading } = useChatbot();
+  const { open, setOpen, messages, sendMessage, resetConversation, loading } =
+    useChatbot();
 
   // Các mạng xã hội sẵn có
   const socialLinks = [
@@ -105,6 +106,7 @@ export function FloatingSocial() {
         onClose={() => setOpen(false)}
         messages={messages}
         onSend={sendMessage}
+        onReset={resetConversation}
         loading={loading}
       />
     </>

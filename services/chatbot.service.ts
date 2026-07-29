@@ -1,15 +1,25 @@
 // services/chatbot.service.ts
-// ❌ Không dùng Ollama/embeddings nữa — chỉ dựa trên FAQ + fuzzy
+// Nguồn trả lời chính: bot n8n (cùng bot đang chạy Messenger fanpage).
+// FAQ + fuzzy giữ lại làm phương án dự phòng khi n8n chưa cấu hình hoặc lỗi.
 
 import faqRaw from "@/data/faq.json"; // cần "resolveJsonModule": true trong tsconfig
 import { normalizeTextVN } from "@/utils/text";
 import { fuzzyRatio } from "@/utils/fuzzy";
+import {
+  askN8n,
+  isN8nChatConfigured,
+  type ChatHistoryItem,
+} from "@/lib/chatbot/n8n-client";
+
+// Nguồn sinh ra câu trả lời — dùng để debug, không hiển thị cho khách.
+export type ChatSource = "n8n" | "faq" | "fallback";
 
 // Kiểu trả lời cho API /chatbot
 export type ChatAnswer = {
   answer: string;
   matchedQuestion: string | null;
   score: number | null;
+  source?: ChatSource;
 };
 
 // Kiểu phần tử trong FAQ
@@ -62,7 +72,7 @@ export async function answerFromFaq(userQuestion: string): Promise<ChatAnswer> {
       for (const a of qa.aliases) {
         const an = normalizeTextVN(a);
         if (an === normalized || an.includes(normalized) || normalized.includes(an)) {
-          return { answer: qa.answer, matchedQuestion: qa.question, score: 1 };
+          return { answer: qa.answer, matchedQuestion: qa.question, score: 1, source: "faq" };
         }
       }
     }
@@ -77,7 +87,12 @@ export async function answerFromFaq(userQuestion: string): Promise<ChatAnswer> {
 
   if (bestAliasIdx >= 0 && bestAliasScore >= DEFAULT_THRESHOLD) {
     const qa = faq[bestAliasIdx];
-    return { answer: qa.answer, matchedQuestion: qa.question, score: bestAliasScore };
+    return {
+      answer: qa.answer,
+      matchedQuestion: qa.question,
+      score: bestAliasScore,
+      source: "faq",
+    };
   }
 
   // 2) FUZZY fallback
@@ -93,7 +108,7 @@ export async function answerFromFaq(userQuestion: string): Promise<ChatAnswer> {
 
   if (bestF >= FUZZY_THRESHOLD) {
     const qa = faq[bestIdx];
-    return { answer: qa.answer, matchedQuestion: qa.question, score: bestF };
+    return { answer: qa.answer, matchedQuestion: qa.question, score: bestF, source: "faq" };
   }
 
   // 3) Fallback cuối
@@ -102,10 +117,54 @@ export async function answerFromFaq(userQuestion: string): Promise<ChatAnswer> {
       "Xin lỗi, tôi chưa có thông tin cho câu hỏi này. Vui lòng để lại số điện thoại/email, hoặc xem mục Liên hệ/FAQ để được hỗ trợ nhanh.",
     matchedQuestion: null,
     score: null,
+    source: "fallback",
   };
 }
 
-/** Wrapper dùng trong API route: nhận body và trả ChatAnswer */
+export type AskChatbotInput = {
+  question: string;
+  sessionId: string;
+  history?: ChatHistoryItem[];
+  locale?: string;
+};
+
+/**
+ * Luồng trả lời chính của widget trên website:
+ *
+ * 1. Ưu tiên hỏi bot n8n (có ngữ cảnh hội thoại theo sessionId).
+ * 2. n8n chưa cấu hình / lỗi / timeout / trả rỗng → rơi về FAQ tĩnh.
+ *
+ * Nhờ vậy khách luôn nhận được câu trả lời, kể cả khi workflow n8n chết.
+ */
+export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
+  const question = input.question.trim();
+
+  if (!question) {
+    return {
+      answer: "Vui lòng nhập câu hỏi.",
+      matchedQuestion: null,
+      score: null,
+      source: "fallback",
+    };
+  }
+
+  if (isN8nChatConfigured()) {
+    const answer = await askN8n({
+      question,
+      sessionId: input.sessionId,
+      history: input.history,
+      locale: input.locale,
+    });
+
+    if (answer) {
+      return { answer, matchedQuestion: null, score: null, source: "n8n" };
+    }
+  }
+
+  return answerFromFaq(question);
+}
+
+/** Wrapper cũ dùng trong Express controller: chỉ FAQ, không có ngữ cảnh. */
 export async function postAsk(body: any): Promise<ChatAnswer> {
   const question = (body?.question ?? body?.q ?? body?.message ?? "").toString().trim();
 
@@ -114,6 +173,7 @@ export async function postAsk(body: any): Promise<ChatAnswer> {
       answer: "Vui lòng cung cấp câu hỏi.",
       matchedQuestion: null,
       score: null,
+      source: "fallback",
     };
   }
 

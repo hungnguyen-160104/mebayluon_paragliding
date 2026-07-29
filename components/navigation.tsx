@@ -220,9 +220,10 @@ export function Navigation() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/20">
               <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
-                <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-full" />
+                <Image src="/logo.png" alt="Mebayluon - bay dù lượn Việt Nam" width={40} height={40} className="rounded-full" />
                 <div>
-                  <h1 className="font-bold text-white">MEBAYLUON</h1>
+                  {/* Không dùng h1 trong navigation — h1 thuộc về nội dung từng trang */}
+                  <span className="block font-bold text-white">MEBAYLUON</span>
                   <p className="text-xs text-slate-300">Mebayluon paragliding</p>
                 </div>
               </Link>

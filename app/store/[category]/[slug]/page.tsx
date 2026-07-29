@@ -67,7 +67,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ category: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, category } = await params;
   await connectDB();
   const p = await getProductBySlug(slug).catch(() => null);
   const title = p ? `${p.titleVi || p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store";
@@ -80,6 +80,13 @@ export async function generateMetadata({
   return {
     title,
     description,
+    ...(p
+      ? {
+          alternates: {
+            canonical: `https://mebayluon.com/store/${category}/${slug}`,
+          },
+        }
+      : { robots: { index: false, follow: false } }),
     openGraph: p
       ? {
           title,
