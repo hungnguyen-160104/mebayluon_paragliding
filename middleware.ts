@@ -19,6 +19,19 @@ import { NextRequest, NextResponse } from "next/server";
 
 const LOCALE_PREFIX = /^\/(en|fr|ru|zh|hi)(\/.*)?$/;
 
+/**
+ * Đường dẫn cha không có trang riêng (ví dụ /spots chỉ có /spots/[slug]).
+ *
+ * Bản không prefix đã được xử lý bằng redirects() trong next.config.mjs,
+ * nhưng bản có prefix (/en/spots) thì không: middleware chạy TRƯỚC
+ * redirects() và trả về rewrite, nên redirects() không còn cơ hội khớp.
+ * Vì vậy phải tự redirect ở đây.
+ */
+const PARENT_PATH_REDIRECTS: Record<string, string> = {
+  "/spots": "/#flying-spots",
+  "/fixed": "/blog",
+};
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -32,6 +45,16 @@ export function middleware(request: NextRequest) {
     if (rest.startsWith("/blog/") && /[A-Z]/.test(rest)) {
       const url = request.nextUrl.clone();
       url.pathname = `/${locale}${rest.toLowerCase()}`;
+      return NextResponse.redirect(url, 301);
+    }
+
+    // Đường dẫn cha 404 trong bản có prefix: 301 giữ nguyên ngôn ngữ
+    const parentTarget = PARENT_PATH_REDIRECTS[rest.replace(/\/$/, "")];
+    if (parentTarget) {
+      const [targetPath, hash] = parentTarget.split("#");
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}${targetPath === "/" ? "" : targetPath}`;
+      url.hash = hash ? `#${hash}` : "";
       return NextResponse.redirect(url, 301);
     }
 

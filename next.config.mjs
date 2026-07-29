@@ -220,6 +220,15 @@ const nextConfig = {
 
       /* ===== Route cũ của chính web Next (đã xoá) ===== */
       { source: '/about', destination: '/', permanent: true },
+
+      /* ===== Đường dẫn cha không có trang riêng =====
+       * /spots/khau-pha tồn tại nhưng /spots thì không. Người dùng hay cắt
+       * bớt URL, và Google cũng thử đường dẫn cha — để 404 là lãng phí.
+       * Đưa về mục danh sách điểm bay trên trang chủ.
+       * (Bản có prefix ngôn ngữ được middleware xử lý trước nên vẫn khớp.)
+       */
+      { source: '/spots', destination: '/#flying-spots', permanent: true },
+      { source: '/fixed', destination: '/blog', permanent: true },
     ];
   },
   
