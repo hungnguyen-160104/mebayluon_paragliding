@@ -167,9 +167,9 @@ export const en: CommonTranslation = {
       eligible: {
         title: "Flight Eligibility",
         items: [
-          "Weight: Under 120kg. If over 95kg, please inform us in advance so we can arrange a suitable pilot and equipment.",
+          "Weight: Under 120kg. If over 90kg or under 30kg, please inform us in advance so we can arrange a suitable pilot and equipment.",
           "Fitness: Basic physical condition is required, including the ability to run a short distance. Not suitable for passengers who are severely overweight or have serious mobility issues.",
-          "Age: From 2 years old and above",
+          "Age: From 3 years old and above",
         ],
       },
 

@@ -167,9 +167,9 @@ export const fr: CommonTranslation = {
       eligible: {
         title: "Conditions de participation",
         items: [
-          "Poids : inférieur à 120 kg. Au-delà de 95 kg, merci de nous prévenir à l’avance afin que nous puissions prévoir un pilote et un équipement adaptés.",
+          "Poids : inférieur à 120 kg. Au-delà de 90 kg ou en dessous de 30 kg, merci de nous prévenir à l’avance afin que nous puissions prévoir un pilote et un équipement adaptés.",
           "Condition physique : une condition physique de base est requise, avec la capacité de courir sur une courte distance. Ce vol ne convient pas aux personnes en fort surpoids ou présentant des problèmes de mobilité importants.",
-          "Âge : à partir de 2 ans",
+          "Âge : à partir de 3 ans",
         ],
       },
 

@@ -166,9 +166,9 @@ export const vi: CommonTranslation = {
       eligible: {
         title: "Điều kiện tham gia bay",
         items: [
-          "Cân nặng: Dưới 120kg. Trường hợp trên 95kg vui lòng thông báo trước để sắp xếp phi công và trang thiết bị phù hợp.",
+          "Cân nặng: Dưới 120kg. Trường hợp trên 90kg hoặc dưới 30kg vui lòng thông báo trước để sắp xếp phi công và trang thiết bị phù hợp.",
           "Thể lực: Mức độ thể lực cơ bản, có khả năng chạy ngắn. Không phù hợp với người thừa cân nhiều hoặc gặp vấn đề nghiêm trọng về vận động.",
-          "Độ tuổi: Từ 2 tuổi trở lên",
+          "Độ tuổi: Từ 3 tuổi trở lên",
         ],
       },
 
