@@ -167,8 +167,54 @@ const nextConfig = {
   },
   
   // Redirects for old URLs (SEO)
+  //
+  // Web cũ chạy WordPress với cấu trúc URL khác hẳn (/trip/..., /destinations/...,
+  // /YYYY/MM/DD/slug/). Google vẫn index các URL này (kiểm tra site:mebayluon.com
+  // ngày 30-7-2026) — không redirect thì backlink + thứ hạng cũ đổ vào trang 404.
+  // Nguyên tắc: URL cũ → trang MỚI cùng chủ đề (điểm bay, phi công); không có
+  // trang tương ứng thì về hub gần nhất (/blog, /pilots, /).
+  // Bài WP cũ KHÔNG được migrate cùng slug vào DB blog mới (đã kiểm tra),
+  // nên không thể redirect động /YYYY/MM/DD/:slug -> /blog/:slug.
   async redirects() {
-    return [];
+    return [
+      /* ===== /trip/* — trang điểm bay của web cũ ===== */
+      { source: '/trip/muong-hoa-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
+      { source: '/trip/mu-cang-chai', destination: '/spots/khau-pha', permanent: true },
+      { source: '/trip/ban-dao-son-tra', destination: '/spots/son-tra', permanent: true },
+      { source: '/trip/diem-bay-doi-bu', destination: '/spots/doi-bu', permanent: true },
+      { source: '/trip/trai-nghiem-bay-du-luon-lau-camping-phinh-ho', destination: '/spots/tram-tau', permanent: true },
+      { source: '/trip', destination: '/', permanent: true },
+      { source: '/trip/:path*', destination: '/', permanent: true },
+
+      /* ===== /destinations/* — trang tỉnh/thành của web cũ ===== */
+      { source: '/destinations/sa-pa', destination: '/spots/muong-hoa-sapa', permanent: true },
+      { source: '/destinations/yen-bai', destination: '/spots/khau-pha', permanent: true },
+      { source: '/destinations/:path*', destination: '/', permanent: true },
+
+      /* ===== Bài viết WordPress cũ (URL theo ngày) — map về trang cùng chủ đề ===== */
+      { source: '/2025/08/10/phi-cong-pilot-dinh-the-anh', destination: '/pilots/dinh-the-anh', permanent: true },
+      { source: '/2025/08/06/phi-cong-pilot-du-luon-dang-van-my', destination: '/pilots/dang-van-my', permanent: true },
+      { source: '/2025/02/06/du-lich-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
+      { source: '/2025/02/06/cach-di-chuyen-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
+      { source: '/2024/08/14/cach-di-chuyen-toi-tram-tau-yen-bai', destination: '/spots/tram-tau', permanent: true },
+      { source: '/2024/08/14/cach-di-chuyen-toi-doi-bu-chuong-my-ha-noi', destination: '/spots/doi-bu', permanent: true },
+      { source: '/2024/08/14/kham-pha-ban-dao-son-tra-vien-ngoc-quy-cua-du-lich-da-nang', destination: '/spots/son-tra', permanent: true },
+      { source: '/2024/08/14/bay-du-luon-thu-hut-dan-van-phong', destination: '/blog', permanent: true },
+      { source: '/2024/07/20/thong-tin-xe-khach-di-mu-cang-chai', destination: '/spots/khau-pha', permanent: true },
+      { source: '/2024/08/15/10-dia-diem-du-lich-o-mu-cang-chai-khong-nen-bo-qua', destination: '/spots/khau-pha', permanent: true },
+
+      /* ===== Catch-all cho mọi bài WP cũ khác chưa liệt kê ===== */
+      { source: '/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})/:slug*', destination: '/blog', permanent: true },
+
+      /* ===== Cấu trúc WordPress chuẩn ===== */
+      { source: '/tag/:path*', destination: '/blog', permanent: true },
+      { source: '/category/:path*', destination: '/blog', permanent: true },
+      { source: '/author/:path*', destination: '/pilots', permanent: true },
+      { source: '/feed', destination: '/blog', permanent: true },
+
+      /* ===== Route cũ của chính web Next (đã xoá) ===== */
+      { source: '/about', destination: '/', permanent: true },
+    ];
   },
   
   // Rewrites for internal routing
