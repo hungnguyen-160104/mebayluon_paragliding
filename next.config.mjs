@@ -191,17 +191,23 @@ const nextConfig = {
       { source: '/destinations/yen-bai', destination: '/spots/khau-pha', permanent: true },
       { source: '/destinations/:path*', destination: '/', permanent: true },
 
-      /* ===== Bài viết WordPress cũ (URL theo ngày) — map về trang cùng chủ đề ===== */
+      /* ===== Bài viết WordPress cũ (URL theo ngày) =====
+       * Ưu tiên trỏ vào BÀI BLOG MỚI cùng chủ đề (giữ được ý định tìm kiếm
+       * của người dùng và độ liên quan cho Google); chỉ khi không có bài
+       * tương ứng mới trỏ về trang điểm bay.
+       */
+      // Bài "xe khách đi Mù Cang Chải" là bài nhiều truy cập nhất của web cũ
+      // -> bài tổng hợp xe đi Mù Cang Chải trên web mới.
+      { source: '/2024/07/20/thong-tin-xe-khach-di-mu-cang-chai', destination: '/blog/xe-di-mu-cang-chai', permanent: true },
+      { source: '/2024/08/14/cach-di-chuyen-toi-tram-tau-yen-bai', destination: '/blog/di-chuyen-den-tram-tau', permanent: true },
+      { source: '/2024/08/15/10-dia-diem-du-lich-o-mu-cang-chai-khong-nen-bo-qua', destination: '/blog/cam-nang-du-lich-mu-cang-chai-lao-cai', permanent: true },
+      { source: '/2024/08/14/bay-du-luon-thu-hut-dan-van-phong', destination: '/blog/the-thao-ngoai-troi-ha-noi-du-luon', permanent: true },
+      { source: '/2024/08/14/cach-di-chuyen-toi-doi-bu-chuong-my-ha-noi', destination: '/blog/diem-bay-du-luon-doi-bu', permanent: true },
       { source: '/2025/08/10/phi-cong-pilot-dinh-the-anh', destination: '/pilots/dinh-the-anh', permanent: true },
       { source: '/2025/08/06/phi-cong-pilot-du-luon-dang-van-my', destination: '/pilots/dang-van-my', permanent: true },
       { source: '/2025/02/06/du-lich-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
       { source: '/2025/02/06/cach-di-chuyen-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
-      { source: '/2024/08/14/cach-di-chuyen-toi-tram-tau-yen-bai', destination: '/spots/tram-tau', permanent: true },
-      { source: '/2024/08/14/cach-di-chuyen-toi-doi-bu-chuong-my-ha-noi', destination: '/spots/doi-bu', permanent: true },
       { source: '/2024/08/14/kham-pha-ban-dao-son-tra-vien-ngoc-quy-cua-du-lich-da-nang', destination: '/spots/son-tra', permanent: true },
-      { source: '/2024/08/14/bay-du-luon-thu-hut-dan-van-phong', destination: '/blog', permanent: true },
-      { source: '/2024/07/20/thong-tin-xe-khach-di-mu-cang-chai', destination: '/spots/khau-pha', permanent: true },
-      { source: '/2024/08/15/10-dia-diem-du-lich-o-mu-cang-chai-khong-nen-bo-qua', destination: '/spots/khau-pha', permanent: true },
 
       /* ===== Catch-all cho mọi bài WP cũ khác chưa liệt kê ===== */
       { source: '/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})/:slug*', destination: '/blog', permanent: true },

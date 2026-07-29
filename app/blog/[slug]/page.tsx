@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive } from "@/lib/posts-data";
+import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
@@ -496,6 +497,15 @@ export default async function BlogPostPage({
   })) as Post | null;
 
   if (!post) {
+    /**
+     * Bài đã đổi slug: URL cũ vẫn còn trong Google và trên các link đã
+     * share. Redirect 301 sang slug mới để giữ thứ hạng, thay vì 404.
+     */
+    const newSlug = resolveLegacySlug(slug);
+    if (newSlug) {
+      permanentRedirect(`/blog/${newSlug}`);
+    }
+
     /**
      * Link cũ có thể viết hoa (ví dụ /blog/DeoKhauPha từ footer cũ hoặc
      * bài share Facebook) trong khi slug trong DB là chữ thường.
