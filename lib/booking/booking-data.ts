@@ -32,7 +32,7 @@ export const flightOptions: FlightOption[] = [
   {
     id: "ha-noi",
     name: "Hà Nội (Đồi Bù, Viên Nam)",
-    price: { weekday: 1690000, unit: "VND" },
+    price: { weekday: 1790000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–20 phút (tùy điều kiện gió)",
       "Quay phim & chụp hình từ GoPro",

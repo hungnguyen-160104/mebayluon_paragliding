@@ -69,7 +69,7 @@ const flyingSpots: FlyingSpot[] = [
     nameKey: "doiBu",
     slug: "doi-bu",
     locationKey: "haNoi",
-    price: 1690000,
+    price: 1790000,
     image: "/doi-bu-chuong-my.jpg",
   },
   {

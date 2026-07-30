@@ -328,7 +328,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Đồi núi – gần Hà Nội",
     duration: "10 – 15 phút",
     landingPoint: "Chân đồi Viên Nam",
-    basePrice: 1690000,
+    basePrice: 1790000,
     image: "/spots/ha-noi/hero.jpg",
     galleryImages: [
       "/spots/ha-noi/1.jpg",
@@ -346,7 +346,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 1690000,
+        price: 1790000,
         description: "Trải nghiệm cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
@@ -362,7 +362,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Đồi núi – thuận tiện – dễ tiếp cận",
     duration: "7 – 12 phút",
     landingPoint: "Bãi hạ cánh Đồi Bù",
-    basePrice: 1690000,
+    basePrice: 1790000,
     image: "/spots/ha-noi/hero.jpg",
     galleryImages: [
       "/spots/ha-noi/1.jpg",
@@ -380,7 +380,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 1690000,
+        price: 1790000,
         description: "Trải nghiệm cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
