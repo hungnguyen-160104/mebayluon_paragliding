@@ -106,15 +106,20 @@ export async function updateProduct(id: string, data: Partial<ProductInput>, _au
 
   const patch: any = { ...data };
 
-  // Nếu đổi title mà không truyền slug, tự cập nhật slug
-  if (patch.title && !patch.slug) {
-    const baseSlug = toSlug(patch.title);
+  /**
+   * Slug chỉ đổi khi người dùng CHỦ ĐỘNG truyền slug mới — KHÔNG tự sinh
+   * lại từ title khi cập nhật (URL đổi là Google mất trang).
+   */
+  if (typeof patch.slug === "string" && patch.slug.trim()) {
+    const baseSlug = toSlug(patch.slug);
     let next = baseSlug;
     let n = 1;
     while (await Post.exists({ slug: next, _id: { $ne: id } })) {
       next = `${baseSlug}-${n++}`;
     }
     patch.slug = next;
+  } else {
+    delete patch.slug;
   }
 
   if (typeof patch.content === "string") {

@@ -37,6 +37,8 @@ export interface IPost {
   title: string;
   titleVi: string;
   slug: string;
+  /** Slug cũ của bài — dùng để 301 URL cũ về bài khi slug đã đổi. */
+  previousSlugs?: string[];
 
   content: string;
   contentVi: string;
@@ -97,6 +99,15 @@ const PostSchema = new Schema<IPost>(
       // unique/index khai ở PostSchema.index({ slug: 1 }, { unique: true })
       // phía dưới — khai cả hai nơi sẽ bị Mongoose cảnh báo duplicate index.
       trim: true,
+    },
+
+    /**
+     * Các slug CŨ của bài (tự ghi lại mỗi khi người dùng chủ động đổi slug)
+     * — để URL cũ đã được Google index tự chuyển hướng về bài thay vì 404.
+     */
+    previousSlugs: {
+      type: [String],
+      default: [],
     },
 
     content: { type: String, default: "" },
@@ -168,6 +179,7 @@ const PostSchema = new Schema<IPost>(
 );
 
 PostSchema.index({ slug: 1 }, { unique: true });
+PostSchema.index({ previousSlugs: 1 });
 PostSchema.index({ category: 1, subCategory: 1, isPublished: 1, createdAt: -1 });
 PostSchema.index({ type: 1, storeCategory: 1, isPublished: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, publishedAt: -1, createdAt: -1 });

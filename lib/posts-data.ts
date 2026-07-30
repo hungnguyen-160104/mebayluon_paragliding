@@ -264,6 +264,28 @@ export async function getPostBySlug(
  * không phân biệt hoa/thường và trả về slug đúng để trang blog redirect
  * 301 về URL chuẩn, thay vì hiện trang trống.
  */
+/**
+ * Tìm slug HIỆN TẠI của bài từng dùng slug cũ (previousSlugs).
+ * Trả về null nếu không bài nào từng dùng slug này.
+ */
+export async function findPostByPreviousSlug(
+  slug: string
+): Promise<string | null> {
+  try {
+    await connectDB();
+    const rawPost = await PostModel.findOne({
+      previousSlugs: slug,
+      isPublished: true,
+    })
+      .select("slug")
+      .lean<{ slug?: string }>();
+    return rawPost?.slug ?? null;
+  } catch (error) {
+    console.error("Error in findPostByPreviousSlug:", error);
+    return null;
+  }
+}
+
 export async function findPostSlugInsensitive(
   slug: string
 ): Promise<string | null> {

@@ -469,13 +469,26 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
   patch.title = nextTitle || nextTitleVi || current.title;
   patch.titleVi = nextTitleVi || nextTitle || current.titleVi;
 
+  /**
+   * QUY TẮC SLUG (đừng nới lỏng!):
+   * - Slug chỉ tự sinh từ tiêu đề LÚC TẠO MỚI (createPost).
+   * - Khi CẬP NHẬT, slug chỉ đổi nếu người dùng CHỦ ĐỘNG truyền slug khác.
+   *
+   * Trước đây nhánh else-if tự sinh lại slug từ title mỗi lần lưu — mà
+   * patch.title luôn được điền ở trên, nên SỬA MỘT CHỮ trong bài cũng làm
+   * URL đổi và Google mất trang (đã xảy ra thật với 4 bài).
+   */
   if (typeof patch.slug === "string" && patch.slug.trim()) {
-    patch.slug = await createUniqueSlug(patch.slug.trim(), id);
-  } else if (
-    (typeof patch.title === "string" && patch.title.trim()) ||
-    (typeof patch.titleVi === "string" && patch.titleVi.trim())
-  ) {
-    patch.slug = await createUniqueSlug(patch.title || patch.titleVi, id);
+    const nextSlug = await createUniqueSlug(patch.slug.trim(), id);
+    if (nextSlug !== current.slug) {
+      patch.slug = nextSlug;
+      // Lưu vết slug cũ để URL cũ tự 301 về bài (xem app/blog/[slug])
+      patch.$addToSet = { ...(patch.$addToSet || {}), previousSlugs: current.slug };
+    } else {
+      delete patch.slug;
+    }
+  } else {
+    delete patch.slug;
   }
 
   const blocksEn = normalizeBlocks(

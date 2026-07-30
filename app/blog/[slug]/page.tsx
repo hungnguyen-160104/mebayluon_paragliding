@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
-import { getPostBySlug, getPosts, findPostSlugInsensitive } from "@/lib/posts-data";
+import { getPostBySlug, getPosts, findPostSlugInsensitive, findPostByPreviousSlug } from "@/lib/posts-data";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
 import {
   RelatedPostsGrid,
@@ -516,6 +516,15 @@ export default async function BlogPostPage({
     const newSlug = resolveLegacySlug(slug);
     if (newSlug) {
       permanentRedirect(`/blog/${newSlug}`);
+    }
+
+    /**
+     * Bài từng dùng slug này rồi đổi (previousSlugs được service ghi lại
+     * khi người dùng chủ động đổi slug) → chuyển về slug hiện tại.
+     */
+    const bySlugHistory = await findPostByPreviousSlug(slug);
+    if (bySlugHistory) {
+      permanentRedirect(`/blog/${bySlugHistory}`);
     }
 
     /**
