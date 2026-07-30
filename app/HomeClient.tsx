@@ -219,7 +219,7 @@ export default function HomePage() {
   };
 
   const sectionHeadingClass =
-    "text-4xl md:text-5xl font-bold font-serif text-white";
+    "text-hero-shadow text-4xl md:text-5xl font-bold font-serif text-white";
   const glassCardClass =
     "h-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md";
 
@@ -340,24 +340,15 @@ export default function HomePage() {
               nhưng vẫn mềm nhờ lớp bóng khuếch tán rộng phía sau */}
           <h1
             className="
-              wrap-break-word mb-5 font-serif font-extrabold leading-[0.92] tracking-tight
+              text-hero-shadow wrap-break-word mb-5 font-serif font-extrabold leading-[0.92] tracking-tight
               text-[clamp(2.4rem,10vw,5.2rem)] md:text-[clamp(3.5rem,8vw,7rem)]
             "
-            style={{
-              WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
-              textShadow:
-                "0 2px 4px rgba(0,0,0,0.9), 0 6px 18px rgba(0,0,0,0.75), 0 12px 40px rgba(1,148,243,0.55)",
-            }}
           >
             {t?.hero?.title ?? "MEBAYLUON PARAGLIDING"}
           </h1>
 
           <p
-            className="mx-auto mb-8 max-w-3xl text-[clamp(0.95rem,3.2vw,1.25rem)]"
-            style={{
-              textShadow:
-                "0 1px 3px rgba(0,0,0,0.95), 0 4px 12px rgba(0,0,0,0.7), 0 8px 26px rgba(1,148,243,0.45)",
-            }}
+            className="text-hero-shadow-soft mx-auto mb-8 max-w-3xl text-[clamp(0.95rem,3.2vw,1.25rem)]"
           >
             {t?.hero?.description ??
               "Trải nghiệm bay tự do giữa mây trời Việt Nam"}
@@ -463,10 +454,10 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="mb-16 text-center"
           >
-            <h2 className="mb-6 text-5xl font-bold text-white md:text-6xl">
+            <h2 className="text-hero-shadow mb-6 text-5xl font-bold text-white md:text-6xl">
               {t?.spots?.title ?? "Các điểm bay nổi bật"}
             </h2>
-            <p className="mx-auto max-w-2xl text-xl text-slate-100">
+            <p className="text-hero-shadow-soft mx-auto max-w-2xl text-xl text-slate-100">
               {t?.spots?.subtitle ??
                 "Những địa điểm nổi tiếng với cảnh quan hùng vĩ và điều kiện gió lý tưởng."}
             </p>
@@ -699,24 +690,24 @@ export default function HomePage() {
       <RecentPosts title={recentPostsTitle} />
 
       {/* ================= CONTACT ================= */}
-      <section id="contact" className="relative z-10 py-24">
+      <section id="contact" className="relative z-10 py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-12 text-center"
+            className="mb-8 text-center"
           >
-            <h2 className="mb-4 font-serif text-4xl font-bold text-white">
+            <h2 className="text-hero-shadow mb-3 font-serif text-4xl font-bold text-white">
               {t?.contact?.title ?? "Liên hệ"}
             </h2>
-            <p className="mx-auto max-w-3xl text-lg text-slate-200">
+            <p className="text-hero-shadow-soft mx-auto max-w-3xl text-lg text-slate-200">
               {t?.contact?.subtitle ??
                 "Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc!"}
             </p>
           </motion.div>
 
-          <div className="mx-auto mb-16 grid max-w-7xl grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 md:gap-6">
+          <div className="mx-auto mb-8 grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
             {socialLinks.map((social, index) => (
               <motion.div
                 key={social.name}
@@ -727,9 +718,9 @@ export default function HomePage() {
                 className={index === socialLinks.length - 1 && socialLinks.length % 2 !== 0 ? "col-span-2 md:col-span-1" : ""}
               >
                 <Card className="h-full border border-white/30 bg-white/20 text-white backdrop-blur-md transition-all duration-300 hover:shadow-2xl">
-                  <CardContent className="flex flex-col items-center space-y-3 px-3 pb-4 pt-5 text-center sm:px-4">
+                  <CardContent className="flex flex-col items-center space-y-2 px-2.5 pb-3 pt-3.5 text-center sm:px-3">
                     <div
-                      className={`relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full ${social.color}`}
+                      className={`relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ${social.color}`}
                     >
                       <Image
                         src={social.iconSrc}
@@ -739,14 +730,15 @@ export default function HomePage() {
                       />
                     </div>
 
-                    <h3 className="text-base font-bold sm:text-lg">{social.name}</h3>
+                    <h3 className="text-sm font-bold sm:text-base">{social.name}</h3>
 
-                    <p className="px-1 text-xs text-slate-200 sm:px-2 sm:text-sm">
+                    <p className="line-clamp-2 px-0.5 text-[11px] leading-snug text-slate-200 sm:px-1 sm:text-xs">
                       {social.description}
                     </p>
 
                     <Button
-                      className={`w-full ${social.color} text-white hover:opacity-90 text-sm`}
+                      size="sm"
+                      className={`h-8 w-full ${social.color} text-xs text-white hover:opacity-90`}
                       onClick={() => window.open(social.url, "_blank")}
                     >
                       {t?.contact?.contactNow ?? "Liên hệ ngay"}
@@ -757,7 +749,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 md:gap-8 lg:grid-cols-4">
+          <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
             {contactInfoCards.map((info, index) => (
               <motion.div
                 key={info.title as string}
@@ -767,23 +759,23 @@ export default function HomePage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card className="h-full border border-white/30 bg-white/20 text-white backdrop-blur-md">
-                  <CardContent className="px-3 pb-4 pt-4 md:px-4 md:pb-5 md:pt-5">
-                    <div className="flex flex-col items-center gap-2 text-center md:gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25 md:h-10 md:w-10">
-                        <info.icon className="text-white" size={18} />
+                  <CardContent className="px-2.5 pb-3 pt-3 md:px-3 md:pb-3.5 md:pt-3.5">
+                    <div className="flex flex-col items-center gap-1.5 text-center md:gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/25 md:h-9 md:w-9">
+                        <info.icon className="text-white" size={16} />
                       </div>
 
                       <div>
-                        <h3 className="mb-1.5 text-sm font-semibold md:text-base">
+                        <h3 className="mb-1 text-sm font-semibold md:text-base">
                           {info.title}
                         </h3>
                         {info.lines.map((line, i) =>
                           typeof line === "string" ? (
-                            <p key={i} className="text-xs text-slate-200">
+                            <p key={i} className="text-[11px] leading-snug text-slate-200">
                               {line}
                             </p>
                           ) : (
-                            <p key={i} className="text-xs text-slate-200">
+                            <p key={i} className="text-[11px] leading-snug text-slate-200">
                               <a
                                 href={line.href}
                                 className="underline-offset-2 transition-colors hover:text-white hover:underline"

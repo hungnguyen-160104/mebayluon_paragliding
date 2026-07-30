@@ -21,6 +21,8 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     pax: "pax",
     continue: "CONTINUE",
     pickupLocationLabel: "Pickup location",
+    car4Seats: "4-seat car",
+    car4SeatsOneWay: "4-seat car/one way",
     pickupPointLabel: "Pickup point",
     pickupPlaceholder: "................................",
     includedLabel: "Included",

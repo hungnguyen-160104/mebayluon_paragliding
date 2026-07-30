@@ -6,6 +6,7 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive, findPostByPreviousSlug } from "@/lib/posts-data";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+import { ShareButtons } from "@/components/share-buttons";
 import {
   RelatedPostsGrid,
   RelatedPostsSidebar,
@@ -488,6 +489,27 @@ export async function generateMetadata({
   });
 }
 
+/**
+ * Ngày đăng / cập nhật cho JSON-LD Article. Bài luôn có createdAt
+ * (Mongoose timestamps), nhánh dự phòng chỉ phòng dữ liệu cũ thiếu ngày.
+ * Tách ra khỏi thân component để không gọi Date lúc render
+ * (quy tắc react-hooks/purity).
+ */
+function articleSchemaDates(post: {
+  publishedAt?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}) {
+  const published = (post.publishedAt || post.createdAt) as string | undefined;
+  const updated = (post.updatedAt || published) as string | undefined;
+  const fallback = new Date();
+
+  return {
+    publishedDate: published ? new Date(published) : fallback,
+    updatedDate: updated ? new Date(updated) : fallback,
+  };
+}
+
 export default async function BlogPostPage({
   params,
   searchParams,
@@ -598,8 +620,7 @@ export default async function BlogPostPage({
     title,
     description: excerpt,
     image: cover,
-    publishedDate: new Date(post.publishedAt || post.createdAt || Date.now()),
-    updatedDate: new Date(post.updatedAt || post.publishedAt || post.createdAt || Date.now()),
+    ...articleSchemaDates(post),
     author: post.author || "Mebayluon Team",
     url: `/blog/${slug}`,
   });
@@ -646,15 +667,20 @@ export default async function BlogPostPage({
                 </div>
               </div>
 
+              {/* tiêu đề */}
+              <h1 className="mb-3 text-center text-4xl font-bold leading-tight text-white sm:text-5xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
+                {title}
+              </h1>
+
               {/* ngày + lượt xem */}
-              <div className="mb-3 text-xs text-white/60">
+              <div className="mb-3 text-center text-xs text-white/60">
                 {publishedLabel} • {ui.views(Number(post.views || 0))}
               </div>
 
-              {/* tiêu đề */}
-              <h1 className="mb-4 text-4xl font-bold leading-tight text-white sm:text-5xl" style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}>
-                {title}
-              </h1>
+              {/* thanh chia sẻ — ngay dưới tiêu đề để khách dễ thấy */}
+              <div className="mb-5 flex justify-center">
+                <ShareButtons lang={lang} variant="article" title={title} />
+              </div>
 
               {/* lead paragraph — dùng font body (Roboto), nhẹ hơn để không bị "béo/bôi đen" */}
               {excerpt && (

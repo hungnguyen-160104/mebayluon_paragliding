@@ -23,6 +23,8 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     totalPrice: "कुल",
     continue: "आगे बढ़ें",
     pickupLocationLabel: "पिकअप स्थान",
+    car4Seats: "4-सीटर कार",
+    car4SeatsOneWay: "4-सीटर कार/एक तरफ़ा",
     pickupPointLabel: "पिकअप पॉइंट",
     includedLabel: "शामिल",
     excludedLabel: "शामिल नहीं",

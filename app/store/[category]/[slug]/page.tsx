@@ -7,6 +7,7 @@ import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
 import { buildMetadata, generateProductSchema } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { ShareButtons } from "@/components/share-buttons";
 
 type PostLite = {
   _id?: string;
@@ -94,7 +95,8 @@ export default async function ProductDetailPage({
   params: Promise<{ category: string; slug: string }>;
 }) {
   const { slug, category } = await params;
-  const isVietnamese = (await getRequestLang()) === "vi";
+  const lang = await getRequestLang();
+  const isVietnamese = lang === "vi";
 
   await connectDB();
 
@@ -233,6 +235,9 @@ export default async function ProductDetailPage({
                 </p>
               )}
             </article>
+
+            {/* chia sẻ sản phẩm */}
+            <ShareButtons lang={lang} variant="product" title={currentTitle} className="mt-8" />
 
             {/* contact CTA */}
             <div className="mt-8 flex flex-wrap gap-3">

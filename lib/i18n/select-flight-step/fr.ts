@@ -24,6 +24,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     totalPrice: "Total",
     continue: "CONTINUER",
     pickupLocationLabel: "Lieu de prise en charge",
+    car4Seats: "voiture 4 places",
+    car4SeatsOneWay: "voiture 4 places/aller simple",
     pickupPointLabel: "Point de prise en charge",
     includedLabel: "Inclus",
     excludedLabel: "Non inclus",

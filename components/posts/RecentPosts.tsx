@@ -87,7 +87,7 @@ export default function RecentPosts({
   return (
     <section className="py-8">
       <div className="container mx-auto max-w-6xl px-4">
-        <h2 className="mb-6 text-center text-3xl font-extrabold text-white drop-shadow md:text-4xl">
+        <h2 className="text-hero-shadow mb-6 text-center text-3xl font-extrabold text-white md:text-4xl">
           {displayTitle}
         </h2>
       </div>

@@ -7,6 +7,7 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Pilot } from "@/lib/pilots-data"
 import Link from "next/link"
+import { ShareButtons } from "@/components/share-buttons"
 import { useLanguage, type Language } from "@/contexts/language-context"
 
 /** Nhãn nút "Đọc câu chuyện" theo ngôn ngữ. */
@@ -158,6 +159,13 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                           <span aria-hidden>→</span>
                         </Link>
                       ) : null}
+
+                      {/* chia sẻ trang phi công */}
+                      <ShareButtons
+                        lang={lang}
+                        title={pilotData.name}
+                        className="mt-6"
+                      />
                     </div>
                   </div>
 

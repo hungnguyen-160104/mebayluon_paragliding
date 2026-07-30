@@ -18,14 +18,14 @@ export default function ProductCard({ product }: { product: Post }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/20 bg-white/15 backdrop-blur-md transition-all hover:bg-white/25 hover:shadow-xl">
-      {/* ảnh */}
-      <div className="relative h-36 w-full">
+      {/* ảnh — cao 188px, object-contain để ảnh co vừa khung, không bị cắt
+          mất phần thân sản phẩm; nền tối lấp hai bên khi ảnh không cùng tỉ lệ */}
+      <div className="relative h-47 w-full bg-black/25 p-2">
         {isPixabay ? (
-          <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
+          <Image src={imageUrl} alt={title} fill className="object-contain" unoptimized />
         ) : (
-          <Image src={imageUrl} alt={title} fill className="object-cover" />
+          <Image src={imageUrl} alt={title} fill className="object-contain" />
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
       </div>
 
       {/* nội dung */}

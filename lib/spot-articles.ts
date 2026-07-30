@@ -54,6 +54,36 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
     ],
   },
 
+  // Mường Hoa (Sa Pa) — trang /spots/muong-hoa-sapa (alias /spots/sapa)
+  "muong-hoa-sapa": {
+    featured: {
+      slug: "bay-du-luon-sa-pa-muong-hoa",
+      title: "Bay dù lượn Sa Pa – ngắm thung lũng Mường Hoa từ trên cao",
+    },
+    articles: [
+      {
+        slug: "bay-du-luon-bien-may-sa-pa",
+        title: "Bay dù lượn trên biển mây Sa Pa – ngắm Fansipan từ trên cao",
+      },
+      {
+        slug: "cam-nang-du-lich-mu-cang-chai-lao-cai",
+        title: "Cẩm nang du lịch Mù Cang Chải - Lào Cai",
+      },
+      {
+        slug: "thoi-tiet-bay-du-luon",
+        title: "Thời tiết bay dù lượn: trời mưa có bay được không?",
+      },
+      {
+        slug: "cac-diem-bay-du-luon-mebayluon",
+        title: "Nên bay dù lượn ở đâu? So sánh 7 điểm bay của Mebayluon",
+      },
+      {
+        slug: "du-luon-co-an-toan-khong",
+        title: "Dù lượn có an toàn không? Sự thật trước chuyến bay đầu tiên",
+      },
+    ],
+  },
+
   // Thẻ "Hà Nội" (Đồi Bù | Viên Nam) — trang /spots/doi-bu
   "doi-bu": {
     featured: {

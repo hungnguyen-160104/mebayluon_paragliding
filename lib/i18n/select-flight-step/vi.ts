@@ -20,6 +20,8 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     totalPrice: "Tổng cộng",
     continue: "TIẾP TỤC",
     pickupLocationLabel: "Vị trí đón",
+    car4Seats: "xe 4 chỗ",
+    car4SeatsOneWay: "xe 4 chỗ/1 chiều",
     pickupPointLabel: "Điểm đón",
     includedLabel: "Đã bao gồm",
     excludedLabel: "Không bao gồm",

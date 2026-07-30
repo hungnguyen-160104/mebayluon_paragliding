@@ -24,6 +24,8 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     totalPrice: "Итого",
     continue: "ПРОДОЛЖИТЬ",
     pickupLocationLabel: "Место встречи",
+    car4Seats: "авто 4 места",
+    car4SeatsOneWay: "авто 4 места/в одну сторону",
     pickupPointLabel: "Точка встречи",
     includedLabel: "Включено",
     excludedLabel: "Не включено",

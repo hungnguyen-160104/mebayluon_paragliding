@@ -20,6 +20,8 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     totalPrice: "总计",
     continue: "继续",
     pickupLocationLabel: "接送地点",
+    car4Seats: "4座车",
+    car4SeatsOneWay: "4座车/单程",
     pickupPointLabel: "接送点",
     includedLabel: "已包含",
     excludedLabel: "不包含",

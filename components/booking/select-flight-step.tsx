@@ -589,7 +589,7 @@ function getServiceMeta(
       exclusiveGroup: "ha_noi_pickup_group",
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
-      priceText: "1.400.000 đ / xe 4 chỗ",
+      priceText: `${formatVND(1_400_000)} / ${ui.car4Seats}`,
       lines: [],
       activeNoteLines: [
         { text: ui.optionalServicesPrivatePickupNote1, tone: "dark" },
@@ -691,7 +691,7 @@ function getServiceMeta(
       // Khách đặt 2 chiều thì chọn "2" — vì vậy không khoá theo guestsCount.
       showQty: true,
       maxQty: 2,
-      priceText: "500.000 đ/xe 4 chỗ/1 chiều",
+      priceText: `${formatVND(500_000)}/${ui.car4SeatsOneWay}`,
       // Dòng đầu ("Nếu đặt 2 chiều vui lòng chọn 2") tô đỏ, in đậm
       lines: descriptionLines.map((text, idx) =>
         idx === 0

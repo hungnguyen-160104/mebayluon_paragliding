@@ -19,6 +19,9 @@ export type SelectFlightStepUiText = {
   pax: string;
   continue: string;
   pickupLocationLabel: string;
+  /** Đơn vị giá xe đưa đón: "xe 4 chỗ" / "xe 4 chỗ/1 chiều". */
+  car4Seats: string;
+  car4SeatsOneWay: string;
   pickupPointLabel: string;
   pickupPlaceholder: string;
   includedLabel: string;

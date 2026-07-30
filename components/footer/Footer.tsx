@@ -312,8 +312,8 @@ export default function Footer() {
           <div
             className="
               grid grid-cols-1 gap-5
-              lg:grid-cols-[minmax(340px,1.45fr)_minmax(150px,0.6fr)_minmax(210px,0.85fr)_minmax(280px,0.85fr)]
-              xl:grid-cols-[minmax(390px,1.5fr)_minmax(160px,0.6fr)_minmax(230px,0.85fr)_minmax(300px,0.85fr)]
+              lg:grid-cols-[minmax(340px,1.45fr)_minmax(120px,0.5fr)_minmax(250px,0.95fr)_minmax(265px,0.8fr)]
+              xl:grid-cols-[minmax(390px,1.5fr)_minmax(130px,0.5fr)_minmax(268px,0.95fr)_minmax(285px,0.8fr)]
               xl:gap-6
             "
           >
@@ -421,7 +421,7 @@ export default function Footer() {
 
                     <Link
                       href={spot.href}
-                      className="transition-colors hover:text-white hover:underline underline-offset-4"
+                      className="whitespace-nowrap transition-colors hover:text-white hover:underline underline-offset-4"
                     >
                       {spot.name}
                     </Link>
