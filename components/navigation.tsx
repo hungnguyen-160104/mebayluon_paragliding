@@ -133,12 +133,15 @@ export function Navigation() {
                 >
                   MEBAYLUON
                 </span>
+                {/* Bỏ lặp "Mebayluon" — chỉ còn "Paragliding" kiểu chữ
+                    serif nghiêng, to hơn, canh theo LỀ PHẢI của MEBAYLUON */}
                 <span
-                  className={`text-xs hidden sm:block transition-colors tracking-wider ${
+                  className={`hidden sm:block -mt-0.5 text-right text-sm italic tracking-wide transition-colors ${
                     isScrolled ? "text-[#5B6B7A]" : "text-white"
                   }`}
+                  style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
                 >
-                  Mebayluon paragliding
+                  Paragliding
                 </span>
               </div>
             </Link>
@@ -242,7 +245,12 @@ export function Navigation() {
                 <div>
                   {/* Không dùng h1 trong navigation — h1 thuộc về nội dung từng trang */}
                   <span className="block font-bold text-white">MEBAYLUON</span>
-                  <p className="text-xs text-slate-300">Mebayluon paragliding</p>
+                  <p
+                    className="-mt-0.5 text-right text-sm italic tracking-wide text-slate-300"
+                    style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+                  >
+                    Paragliding
+                  </p>
                 </div>
               </Link>
               <button onClick={() => setIsOpen(false)} className="p-2 text-white" aria-label="Close menu">

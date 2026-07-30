@@ -1229,7 +1229,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 🌅 LỊCH BAY SÁNG:
 🚐 08:00 – 08:30 - Đón khách tại khách sạn hoặc điểm hẹn đi bay
-🛣️ 09:30 – 10:00 - Di chuyển đến điểm bay (núi Đồi Bù hoặc Viên Nam)
+🛣️ 08:30 – 10:00 - Di chuyển đến điểm bay (núi Đồi Bù hoặc Viên Nam)
 🚙 10:00 – 10:30 - Di chuyển lên đỉnh núi bằng xe chuyên dụng - Nhận trang thiết bị an toàn & hướng dẫn bay
 🪂 10:30 – 12:00 - Khung thời gian hoạt động bay dù lượn và xem bay dù lượn trên bầu trời tuyệt đẹp, mỗi chuyến bay kéo dài 10–20 phút cùng phi công
 🏨 12:00 – 13:00 - Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
@@ -1279,7 +1279,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 
 🌅 MORNING FLIGHTS:
 🚐 08:00 – 08:30 - Pick up at your hotel or meeting point
-🛣️ 09:30 – 10:00 - Transfer to the flying site (Doi Bu or Vien Nam mountain)
+🛣️ 08:30 – 10:00 - Transfer to the flying site (Doi Bu or Vien Nam mountain)
 🚙 10:00 – 10:30 - Drive to the summit by dedicated vehicle - Receive safety equipment & flight briefing
 🪂 10:30 – 12:00 - Paragliding activity window — watch and fly in beautiful skies; each flight lasts 10–20 minutes with a pilot
 🏨 12:00 – 13:00 - Return transfer to your hotel or original meeting point
@@ -1329,7 +1329,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
 
 🌅 VOLS DU MATIN :
 🚐 08:00 – 08:30 - Prise en charge à votre hôtel ou au point de rendez-vous
-🛣️ 09:30 – 10:00 - Transfert vers le site de vol (mont Đồi Bù ou Viên Nam)
+🛣️ 08:30 – 10:00 - Transfert vers le site de vol (mont Đồi Bù ou Viên Nam)
 🚙 10:00 – 10:30 - Montée au sommet en véhicule dédié - Remise de l’équipement de sécurité & briefing
 🪂 10:30 – 12:00 - Créneau d’activité parapente — admirez et volez dans un ciel magnifique ; chaque vol dure 10–20 minutes avec un pilote
 🏨 12:00 – 13:00 - Retour à votre hôtel ou au point de départ
@@ -1379,7 +1379,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 🌅 УТРЕННИЕ ПОЛЁТЫ:
 🚐 08:00 – 08:30 - Трансфер из отеля или места встречи
-🛣️ 09:30 – 10:00 - Переезд к месту полётов (гора Дой Бу или Вьен Нам)
+🛣️ 08:30 – 10:00 - Переезд к месту полётов (гора Дой Бу или Вьен Нам)
 🚙 10:00 – 10:30 - Подъём на вершину на специальном транспорте - Выдача снаряжения и инструктаж
 🪂 10:30 – 12:00 - Время полётов — наблюдайте и летайте в прекрасном небе; каждый полёт длится 10–20 минут с пилотом
 🏨 12:00 – 13:00 - Возвращение в отель или к месту встречи
@@ -1427,7 +1427,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 🌅 上午飞行：
 🚐 08:00 – 08:30 - 在酒店或集合点接客人
-🛣️ 09:30 – 10:00 - 前往飞行点（Đồi Bù 山或 Viên Nam 山）
+🛣️ 08:30 – 10:00 - 前往飞行点（Đồi Bù 山或 Viên Nam 山）
 🚙 10:00 – 10:30 - 乘专用车辆上山顶 - 领取安全装备并听取飞行讲解
 🪂 10:30 – 12:00 - 滑翔伞飞行时段——在美丽的天空中观赏和飞行，每次飞行约10–20分钟，由飞行员陪同
 🏨 12:00 – 13:00 - 送客人返回酒店或最初集合点
@@ -1477,7 +1477,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 🌅 सुबह की उड़ानें:
 🚐 08:00 – 08:30 - होटल या मीटिंग पॉइंट से पिकअप
-🛣️ 09:30 – 10:00 - उड़ान स्थल तक स्थानांतरण (दोई बू या विएन नाम पर्वत)
+🛣️ 08:30 – 10:00 - उड़ान स्थल तक स्थानांतरण (दोई बू या विएन नाम पर्वत)
 🚙 10:00 – 10:30 - विशेष वाहन से चोटी तक — सुरक्षा उपकरण और उड़ान ब्रीफ़िंग
 🪂 10:30 – 12:00 - पैराग्लाइडिंग समय — सुंदर आसमान में उड़ान देखें और उड़ें; प्रत्येक उड़ान पायलट के साथ 10–20 मिनट की होती है
 🏨 12:00 – 13:00 - होटल या प्रारंभिक मीटिंग पॉइंट पर वापसी
