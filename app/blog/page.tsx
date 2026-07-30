@@ -19,7 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 import Link from "next/link";
-import { getPosts } from "@/lib/posts-data";
+import { getPosts, getPostBySlug } from "@/lib/posts-data";
+import { LazyPostCards } from "@/components/lazy-post-cards";
 import type { Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -76,6 +77,8 @@ const UI: Record<
     views: (n: number) => string;
     emptyTitle: string;
     createFirstPost: string;
+    seeMore: string;
+    loading: string;
   }
 > = {
   vi: {
@@ -85,6 +88,8 @@ const UI: Record<
     views: (n) => `${n} lượt xem`,
     emptyTitle: "Chưa có bài viết nào được xuất bản",
     createFirstPost: "Tạo bài viết đầu tiên",
+    seeMore: "Xem thêm",
+    loading: "Đang tải…",
   },
   en: {
     pageTitle: "News & Blog",
@@ -93,6 +98,8 @@ const UI: Record<
     views: (n) => `${n} views`,
     emptyTitle: "No published posts yet",
     createFirstPost: "Create the first post",
+    seeMore: "See more",
+    loading: "Loading…",
   },
   fr: {
     pageTitle: "Actualités & Blog",
@@ -101,6 +108,8 @@ const UI: Record<
     views: (n) => `${n} vues`,
     emptyTitle: "Aucun article publié",
     createFirstPost: "Créer le premier article",
+    seeMore: "Voir plus",
+    loading: "Chargement…",
   },
   ru: {
     pageTitle: "Новости и блог",
@@ -109,6 +118,8 @@ const UI: Record<
     views: (n) => `${n} просмотров`,
     emptyTitle: "Пока нет опубликованных статей",
     createFirstPost: "Создать первую статью",
+    seeMore: "Показать ещё",
+    loading: "Загрузка…",
   },
   zh: {
     pageTitle: "资讯与博客",
@@ -117,6 +128,8 @@ const UI: Record<
     views: (n) => `${n} 次浏览`,
     emptyTitle: "暂无已发布文章",
     createFirstPost: "创建第一篇文章",
+    seeMore: "查看更多",
+    loading: "加载中…",
   },
   hi: {
     pageTitle: "समाचार और ब्लॉग",
@@ -125,8 +138,48 @@ const UI: Record<
     views: (n) => `${n} व्यूज़`,
     emptyTitle: "अभी तक कोई पोस्ट प्रकाशित नहीं हुई है",
     createFirstPost: "पहली पोस्ट बनाएं",
+    seeMore: "और देखें",
+    loading: "लोड हो रहा है…",
   },
 };
+
+// Ghim "Lễ hội dù lượn Mùa Vàng 2026" lên đầu trang đến HẾT 31/10/2026
+// (giờ Việt Nam). Từ 00:00 ngày 01/11/2026, `pinActive` tự sai và bài
+// trở về đúng vị trí theo ngày đăng — không cần sửa code.
+const PINNED_SLUG = "le-hoi-du-luon-bay-tren-mua-vang-2026";
+const PIN_UNTIL = Date.parse("2026-11-01T00:00:00+07:00");
+
+// Server chỉ render 25 bài đầu cho nhẹ — phần còn lại tải lazy qua nút
+// "Xem thêm" (LazyPostCards, +15 bài/lần). Khi đang ghim: lấy bài ghim
+// riêng + 24 bài mới nhất (loại bài ghim để không trùng khi tải thêm).
+const INITIAL_COUNT = 25;
+
+// Tách khỏi thân component để không gọi Date.now() lúc render
+// (quy tắc react-hooks/purity) — trang force-dynamic nên vẫn chạy mỗi request.
+async function loadLatestPosts() {
+  const pinActive = Date.now() < PIN_UNTIL;
+
+  const latestData = await getPosts({
+    category: "news",
+    type: "blog",
+    isPublished: true,
+    excludeSlug: pinActive ? PINNED_SLUG : undefined,
+    limit: pinActive ? INITIAL_COUNT - 1 : INITIAL_COUNT,
+    sort: "-publishedAt,-createdAt",
+  });
+
+  // Số bài + tổng số KHÔNG tính bài ghim — để nút "Xem thêm" đếm đúng skip
+  const lazyInitialCount = latestData.items.length;
+  const lazyTotal = Number(latestData.total ?? 0);
+
+  let latestItems = latestData.items;
+  if (pinActive) {
+    const pinned = await getPostBySlug(PINNED_SLUG);
+    if (pinned) latestItems = [pinned, ...latestItems];
+  }
+
+  return { latestItems, lazyInitialCount, lazyTotal, pinActive };
+}
 
 export default async function BlogPage() {
   const lang = getSafeLang(await getRequestLang());
@@ -134,16 +187,8 @@ export default async function BlogPage() {
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
-  const latestData = await getPosts({
-    category: "news",
-    type: "blog",
-    isPublished: true,
-    page: 1,
-    limit: 0,
-    sort: "-publishedAt,-createdAt",
-  });
-
-  const latestItems = latestData.items;
+  const { latestItems, lazyInitialCount, lazyTotal, pinActive } =
+    await loadLatestPosts();
 
   const formatDate = (s?: string | null) =>
     s
@@ -213,8 +258,11 @@ export default async function BlogPage() {
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
+                              <p className="line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
+                              </p>
+                              <p className="line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>
@@ -236,8 +284,11 @@ export default async function BlogPage() {
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
-                              <p className="mb-1.5 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
+                              <p className="mb-1 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
+                              </p>
+                              <p className="mb-1.5 line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>
@@ -257,9 +308,12 @@ export default async function BlogPage() {
                       <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" priority />
                     </div>
                     <div className="p-4">
-                      <h3 className="mb-2 line-clamp-3 text-xl font-bold leading-snug group-hover:text-red-300">
+                      <h3 className="mb-1.5 line-clamp-3 text-xl font-bold leading-snug group-hover:text-red-300">
                         {pickTitle(featured, isVietnamese)}
                       </h3>
+                      <p className="mb-1.5 line-clamp-2 text-sm text-white/75">
+                        {pickExcerpt(featured, isVietnamese)}
+                      </p>
                       <div className="flex items-center gap-3 text-xs text-white/60">
                         <span>{formatDate(featuredDate)}</span>
                         <span>{ui.views(Number(featured.views || 0))}</span>
@@ -278,9 +332,12 @@ export default async function BlogPage() {
                             <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md">
                               <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
                             </div>
-                            <div className="flex flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
+                            <div className="flex min-w-0 flex-col justify-center gap-1">
+                              <p className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-red-300">
                                 {pickTitle(post, isVietnamese)}
+                              </p>
+                              <p className="line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(post, isVietnamese)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>
@@ -290,6 +347,21 @@ export default async function BlogPage() {
                     })}
                   </ul>
                 </div>
+
+                {/* "Xem thêm": tải lazy 15 bài/lần qua /api/post-cards */}
+                <LazyPostCards
+                  category="news"
+                  lang={lang}
+                  exclude={pinActive ? PINNED_SLUG : ""}
+                  initialCount={lazyInitialCount}
+                  total={lazyTotal}
+                  seeMoreLabel={ui.seeMore}
+                  loadingLabel={ui.loading}
+                  dateLocale={locale}
+                  longDate
+                  unknownDate={ui.unknownDate}
+                  accent="red"
+                />
               </>
             );
           })() : (

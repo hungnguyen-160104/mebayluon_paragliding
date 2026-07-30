@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getPosts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
+import { LazyPostCards } from "@/components/lazy-post-cards";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
@@ -60,6 +61,8 @@ const I18N: Record<
     empty: string;
     unknownDate: string;
     dateLocale: string;
+    seeMore: string;
+    loading: string;
     features: string[];
   }
 > = {
@@ -68,6 +71,8 @@ const I18N: Record<
     empty: "Chưa có bài viết phù hợp.",
     unknownDate: "Không rõ ngày",
     dateLocale: "vi-VN",
+    seeMore: "Xem thêm",
+    loading: "Đang tải…",
     features: [
       "Huấn luyện viên chuyên nghiệp",
       "Trang thiết bị đầy đủ",
@@ -80,6 +85,8 @@ const I18N: Record<
     empty: "No matching posts yet.",
     unknownDate: "Unknown date",
     dateLocale: "en-US",
+    seeMore: "See more",
+    loading: "Loading…",
     features: [
       "Course Insurance",
       "Full Equipment",
@@ -92,6 +99,8 @@ const I18N: Record<
     empty: "Aucun article correspondant pour le moment.",
     unknownDate: "Date inconnue",
     dateLocale: "fr-FR",
+    seeMore: "Voir plus",
+    loading: "Chargement…",
     features: [
       "Assurance de cours",
       "Équipement complet",
@@ -104,6 +113,8 @@ const I18N: Record<
     empty: "Подходящих статей пока нет.",
     unknownDate: "Дата неизвестна",
     dateLocale: "ru-RU",
+    seeMore: "Показать ещё",
+    loading: "Загрузка…",
     features: [
       "Страхование курса",
       "Полное оборудование",
@@ -116,6 +127,8 @@ const I18N: Record<
     empty: "暂时没有符合条件的文章。",
     unknownDate: "日期未知",
     dateLocale: "zh-CN",
+    seeMore: "查看更多",
+    loading: "加载中…",
     features: [
       "课程保险",
       "设备齐全",
@@ -128,6 +141,8 @@ const I18N: Record<
     empty: "फिलहाल कोई उपयुक्त लेख नहीं है।",
     unknownDate: "तारीख़ अज्ञात",
     dateLocale: "hi-IN",
+    seeMore: "और देखें",
+    loading: "लोड हो रहा है…",
     features: [
       "पाठ्यक्रम बीमा",
       "पूर्ण उपकरण",
@@ -179,16 +194,22 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+/** Số bài server render sẵn — phần còn lại tải lazy qua nút "Xem thêm". */
+const INITIAL_COUNT = 25;
+
 async function getData(sub?: string) {
   const data = await getPosts({
     category: "knowledge",
     isPublished: true,
     subCategory: sub && sub !== "all" ? sub : undefined,
-    limit: 0,
+    limit: INITIAL_COUNT,
     sort: "-publishedAt,-createdAt",
   });
 
-  return Array.isArray(data?.items) ? data.items : [];
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    total: Number(data?.total ?? 0),
+  };
 }
 
 export default async function KnowledgeAllPage({
@@ -202,7 +223,10 @@ export default async function KnowledgeAllPage({
     : (params?.sub as string | undefined);
   const sub = raw?.toString().toLowerCase() || "all";
 
-  const [items, lang] = await Promise.all([getData(sub), getLangFromCookies()]);
+  const [{ items, total }, lang] = await Promise.all([
+    getData(sub),
+    getLangFromCookies(),
+  ]);
   const t = I18N[lang] ?? I18N.vi;
 
   return (
@@ -316,10 +340,13 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
-                              <span className="text-sm text-white/55">
+                              <p className="line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(p, isVi)}
+                              </p>
+                              <span className="text-xs text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
                               </span>
                             </div>
@@ -341,8 +368,11 @@ export default async function KnowledgeAllPage({
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
-                              <p className="mb-1.5 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
+                              <p className="mb-1 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
+                              </p>
+                              <p className="mb-1.5 line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(p, isVi)}
                               </p>
                               <span className="text-sm text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
@@ -365,9 +395,12 @@ export default async function KnowledgeAllPage({
                       <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60" />
                     </div>
                     <div className="p-4">
-                      <h3 className="mb-2 line-clamp-3 text-xl font-bold leading-snug group-hover:text-sky-300">
+                      <h3 className="mb-1.5 line-clamp-3 text-xl font-bold leading-snug group-hover:text-sky-300">
                         {pickTitle(featured, isVi)}
                       </h3>
+                      <p className="mb-1.5 line-clamp-2 text-sm text-white/75">
+                        {pickExcerpt(featured, isVi)}
+                      </p>
                       <p className="text-xs text-white/60">
                         {featuredDate ? new Date(featuredDate).toLocaleDateString(t.dateLocale) : t.unknownDate}
                       </p>
@@ -385,11 +418,14 @@ export default async function KnowledgeAllPage({
                             <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md">
                               <Image src={cover} alt={pickTitle(p, isVi)} fill className="object-cover" />
                             </div>
-                            <div className="flex flex-col justify-center gap-1">
-                              <p className="line-clamp-3 text-base md:text-lg font-semibold leading-snug group-hover:text-sky-300">
+                            <div className="flex min-w-0 flex-col justify-center gap-1">
+                              <p className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-sky-300">
                                 {pickTitle(p, isVi)}
                               </p>
-                              <span className="text-sm text-white/55">
+                              <p className="line-clamp-2 text-xs text-white/70">
+                                {pickExcerpt(p, isVi)}
+                              </p>
+                              <span className="text-xs text-white/55">
                                 {date ? new Date(date).toLocaleDateString(t.dateLocale) : t.unknownDate}
                               </span>
                             </div>
@@ -399,6 +435,20 @@ export default async function KnowledgeAllPage({
                     })}
                   </ul>
                 </div>
+
+                {/* "Xem thêm": tải lazy 15 bài/lần qua /api/post-cards */}
+                <LazyPostCards
+                  category="knowledge"
+                  sub={sub}
+                  lang={lang}
+                  initialCount={items.length}
+                  total={total}
+                  seeMoreLabel={t.seeMore}
+                  loadingLabel={t.loading}
+                  dateLocale={t.dateLocale}
+                  unknownDate={t.unknownDate}
+                  accent="sky"
+                />
               </>
             );
           })()}

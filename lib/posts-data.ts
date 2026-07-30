@@ -10,6 +10,8 @@ export interface GetPostsOptions {
   type?: "blog" | "product";
   page?: number;
   limit?: number;
+  /** Số bài bỏ qua — ưu tiên hơn page. Dùng cho "Xem thêm" (25 + 15n). */
+  skip?: number;
   sort?: string;
   search?: string;
   excludeSlug?: string;
@@ -141,6 +143,7 @@ export async function getPosts(options: GetPostsOptions = {}) {
     type = "blog",
     page = 1,
     limit = 12,
+    skip: skipOption,
     sort = "-publishedAt,-createdAt",
     search,
     excludeSlug,
@@ -202,7 +205,10 @@ export async function getPosts(options: GetPostsOptions = {}) {
           ? andFilters[0]
           : { $and: andFilters };
 
-    const skip = (page - 1) * (limit || 0);
+    const skip =
+      typeof skipOption === "number" && skipOption >= 0
+        ? skipOption
+        : (page - 1) * (limit || 0);
     const sortObj = buildSort(sort);
 
     const query = PostModel.find(filter).sort(sortObj).skip(skip);
