@@ -18,7 +18,7 @@ export default function ChatbotButton({
       aria-label="Mở chatbot"
       title={title}
       onClick={onClick}
-      className={`relative flex h-12 w-12 items-center justify-center rounded-full
+      className={`relative flex h-10 w-10 items-center justify-center rounded-full
                   border border-[#DCE7F3] bg-white shadow-lg hover:scale-105
                   transition focus:outline-none focus:ring-2 focus:ring-[#0194F3] ${className ?? ""}`}
     >
@@ -26,7 +26,7 @@ export default function ChatbotButton({
         src="/chatbot/launcher.jpg"
         alt="Chatbot"
         fill
-        sizes="48px"
+        sizes="40px"
         className="object-contain p-1.5"
         priority
       />

@@ -225,7 +225,7 @@ export default async function KnowledgeAllPage({
         {/* TOP AREA: Title */}
         <div className="relative flex-1 flex items-center justify-end px-6 md:px-16 w-full">
           <h1
-            className="w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white shadow-lg text-right leading-tight whitespace-pre-line opacity-0 animate-fade-in-right fill-mode-forwards max-w-[90vw] md:max-w-4xl"
+            className="w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl md:text-5xl lg:text-6xl font-extrabold text-white shadow-lg text-right leading-tight whitespace-pre-line opacity-0 animate-fade-in-right fill-mode-forwards max-w-[90vw] md:max-w-4xl"
             style={{ animation: "fadeInRight 1s ease-out forwards" }}
           >
             {t.pageTitle}

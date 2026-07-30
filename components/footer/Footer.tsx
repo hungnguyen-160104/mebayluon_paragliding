@@ -373,7 +373,7 @@ export default function Footer() {
             </div>
 
             {/* QUICK LINKS */}
-            <div className="min-w-0">
+            <div className="min-w-0 lg:pl-10">
               <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.quickLinks}
               </h3>
@@ -409,7 +409,7 @@ export default function Footer() {
             </div>
 
             {/* THÔNG TIN ĐIỂM BAY */}
-            <div className="min-w-0">
+            <div className="min-w-0 lg:pl-10">
               <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.spotsInfo}
               </h3>
@@ -431,7 +431,7 @@ export default function Footer() {
             </div>
 
             {/* SOCIAL */}
-            <div className="min-w-0">
+            <div className="min-w-0 lg:pl-10">
               <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.followUs}
               </h3>
