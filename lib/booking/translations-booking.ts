@@ -165,7 +165,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteHN: "Xe đón trả 2 chiều từ TTTM GO! Thăng Long, Hà Nội",
       successTitle: "HOÀN TẤT",
       successBody:
-        "Cảm ơn đặt chỗ của bạn! Chúng tôi sẽ liên hệ trực tiếp để xác nhận thông tin đặt bay, vui lòng để ý điện thoại. Nếu cần gấp, vui lòng chủ động liên hệ hotline 0964.073.555 - 097.970.2812 (Zalo, WhatsApp, Telegram).",
+        "Cảm ơn đặt chỗ của bạn! Chúng tôi sẽ liên hệ trực tiếp để xác nhận thông tin đặt bay, vui lòng để ý điện thoại. Nếu cần gấp, vui lòng chủ động liên hệ hotline 0964.073.555 - 0385.907.789 (Zalo, WhatsApp, Telegram).",
       preflightTitle: "Lưu ý trước chuyến bay:",
       preflightNotes: [
         "Có mặt tại điểm bay trước 30 phút để làm thủ tục Check-in.",

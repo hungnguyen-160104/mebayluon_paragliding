@@ -997,7 +997,7 @@ export default function BookingTicket({
             lineHeight: 1.6,
           }}
         >
-          Hotline: 0964.073.555 — 097.970.2812
+          Hotline: 0964.073.555 — 0385.907.789
           <br />
           Zalo / WhatsApp / Telegram — mebayluon.com
         </div>

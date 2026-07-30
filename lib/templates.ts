@@ -429,7 +429,7 @@ function customerEmailHtmlWrapper(title: string, body: TelegramBookingPayload) {
       <!-- Contact Info -->
       <div style="text-align: center; font-size: 14px; color: #64748b; line-height: 1.6;">
         If you have any questions, feel free to contact us:<br/>
-        <strong>📞 +84 964.073.555 | +84 979.702.812</strong><br/>
+        <strong>📞 +84 964.073.555 | +84 385.907.789</strong><br/>
         <span style="display: inline-block; margin-top: 5px;">💬 WhatsApp | Zalo | Telegram</span>
       </div>
     </div>
