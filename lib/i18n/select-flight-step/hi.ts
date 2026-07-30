@@ -5,6 +5,8 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
   ...EN_SELECT_FLIGHT_LOCALE,
   ui: {
     ...EN_SELECT_FLIGHT_LOCALE.ui,
+    pax: "व्यक्ति",
+    freeLabel: "निःशुल्क",
     title: "अपनी उड़ान बुक करें",
     locationsTitle: "कृपया उड़ान स्थान चुनें",
     selectedLocationTitle: "चुना गया स्थान",

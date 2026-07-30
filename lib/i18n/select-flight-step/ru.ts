@@ -5,6 +5,8 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
   ...EN_SELECT_FLIGHT_LOCALE,
   ui: {
     ...EN_SELECT_FLIGHT_LOCALE.ui,
+    pax: "чел.",
+    freeLabel: "БЕСПЛАТНО",
     title: "Забронировать полёт",
     locationsTitle: "Выберите локацию для полёта",
     selectedLocationTitle: "Выбранная локация",

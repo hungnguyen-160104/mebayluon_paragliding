@@ -83,17 +83,60 @@ export function localizedUrl(path: string, locale: Locale): string {
 }
 
 /**
- * Bản đồ hreflang đầy đủ cho một trang — dùng cho
- * metadata.alternates.languages và sitemap.
+ * Bản đồ hreflang cho một trang — dùng cho metadata.alternates.languages
+ * và sitemap. x-default trỏ về bản tiếng Việt (bản gốc, không prefix).
  *
- * x-default trỏ về bản tiếng Việt (bản gốc, không prefix).
+ * `available` giới hạn danh sách ngôn ngữ được khai báo. CHỈ khai ngôn ngữ
+ * thật sự có nội dung riêng: khai một ngôn ngữ mà trang lại trả về nội dung
+ * của ngôn ngữ khác là gửi tín hiệu sai cho Google (Search Console báo lỗi
+ * hreflang, đồng thời các URL đó bị coi là nội dung trùng lặp).
+ *
+ * Giao diện web đã dịch đủ 6 thứ tiếng nên các trang tĩnh cứ để mặc định.
+ * Riêng trang bài viết / sản phẩm thì nội dung chỉ có tiếng Việt + tiếng Anh,
+ * nên phải truyền `available` để giới hạn lại.
  */
-export function languageAlternates(path: string): Record<string, string> {
+export function languageAlternates(
+  path: string,
+  available: readonly Locale[] = LOCALES,
+): Record<string, string> {
+  const langs = available.length > 0 ? available : LOCALES;
+
+  // x-default trỏ về bản tiếng Việt nếu có, không thì lấy bản đầu danh sách
+  const fallback = langs.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : langs[0];
+
   const map: Record<string, string> = {
-    "x-default": localizedUrl(path, DEFAULT_LOCALE),
+    "x-default": localizedUrl(path, fallback),
   };
-  for (const locale of LOCALES) {
+  for (const locale of langs) {
     map[locale] = localizedUrl(path, locale);
   }
   return map;
+}
+
+/**
+ * URL chuẩn (canonical) cho trang đang xem.
+ *
+ * Khi người dùng mở một ngôn ngữ CHƯA có bản dịch (ví dụ /fr/blog/abc mà bài
+ * mới chỉ có tiếng Việt + Anh), trang vẫn hiện nội dung tiếng Anh. Lúc đó
+ * canonical phải trỏ về bản tiếng Anh thay vì tự trỏ về chính nó — như vậy
+ * Google dồn toàn bộ tín hiệu xếp hạng về một URL duy nhất thay vì chia nhỏ
+ * cho 5 URL nội dung giống hệt nhau.
+ */
+export function canonicalUrlFor(
+  path: string,
+  locale: Locale,
+  available: readonly Locale[] = LOCALES,
+): string {
+  if (available.length === 0 || available.includes(locale)) {
+    return localizedUrl(path, locale);
+  }
+
+  // Ngôn ngữ này chưa có bản dịch → gộp về bản nội dung đang thực sự hiển thị
+  const target = available.includes("en")
+    ? "en"
+    : available.includes(DEFAULT_LOCALE)
+      ? DEFAULT_LOCALE
+      : available[0];
+
+  return localizedUrl(path, target);
 }

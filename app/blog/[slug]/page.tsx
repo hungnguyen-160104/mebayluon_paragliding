@@ -6,6 +6,7 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive, findPostByPreviousSlug } from "@/lib/posts-data";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+import { postLocales } from "@/lib/post-locales";
 import { ShareButtons } from "@/components/share-buttons";
 import {
   RelatedPostsGrid,
@@ -475,7 +476,9 @@ export async function generateMetadata({
   const urlLocale = await getUrlLocale();
   const image = post.coverImage || post.thumbnail || undefined;
 
-  // buildMetadata tự sinh canonical theo locale + hreflang đủ 6 bản
+  // Chỉ khai hreflang cho ngôn ngữ bài này THẬT SỰ có nội dung. Mở
+  // /fr/blog/... khi bài chưa dịch tiếng Pháp thì canonical trỏ về bản
+  // tiếng Anh, tránh 5 URL cùng nội dung bị tính là trùng lặp.
   return buildMetadata({
     title,
     description,
@@ -486,6 +489,7 @@ export async function generateMetadata({
     publishedDate: post.publishedAt ? new Date(post.publishedAt) : undefined,
     updatedDate: post.updatedAt ? new Date(post.updatedAt) : undefined,
     locale: urlLocale,
+    availableLocales: postLocales(post),
   });
 }
 

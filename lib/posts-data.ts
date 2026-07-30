@@ -88,6 +88,11 @@ function normalizePostRecord(raw: RawPostLike): Post {
     excerpt: String(raw?.excerpt ?? ""),
     excerptVi: String(raw?.excerptVi ?? raw?.excerpt ?? ""),
 
+    // Ngôn ngữ đã dịch tay (ngoài vi + en) — dùng cho hreflang/canonical
+    translatedLangs: Array.isArray(raw?.translatedLangs)
+      ? raw.translatedLangs.map((x: unknown) => String(x))
+      : [],
+
     coverImage: String(raw?.coverImage ?? ""),
     thumbnail: String(raw?.thumbnail ?? raw?.coverImage ?? ""),
 

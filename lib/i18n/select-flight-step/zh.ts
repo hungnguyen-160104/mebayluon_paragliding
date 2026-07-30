@@ -5,6 +5,8 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
   ...EN_SELECT_FLIGHT_LOCALE,
   ui: {
     ...EN_SELECT_FLIGHT_LOCALE.ui,
+    pax: "人",
+    freeLabel: "免费",
     title: "预订飞行",
     locationsTitle: "请选择飞行地点",
     selectedLocationTitle: "已选地点",

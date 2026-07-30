@@ -1,7 +1,8 @@
 import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
-import { SITE_URL, languageAlternates } from "@/lib/site-config";
+import { SITE_URL, languageAlternates, type Locale } from "@/lib/site-config";
+import { postLocales } from "@/lib/post-locales";
 import { SPOT_SLUGS } from "@/lib/spots-slugs";
 import { getActivePilots } from "@/lib/pilots-data";
 
@@ -14,9 +15,12 @@ const BASE = SITE_URL;
  * (/en/..., /ru/...) — trước đây cả 6 ngôn ngữ trỏ chung một URL nên
  * Google chỉ index được bản tiếng Việt.
  */
-function alts(url: string): { languages: Record<string, string> } {
+function alts(
+  url: string,
+  available?: readonly Locale[],
+): { languages: Record<string, string> } {
   const path = url.startsWith(BASE) ? url.slice(BASE.length) || "/" : url;
-  return { languages: languageAlternates(path) };
+  return { languages: languageAlternates(path, available) };
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -126,21 +130,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         category: { $ne: "knowledge" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
-        .select("slug publishedAt updatedAt createdAt")
+        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
         isPublished: true,
         category: "knowledge",
       })
-        .select("slug publishedAt updatedAt createdAt")
+        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
         isPublished: true,
         type: "product",
       })
-        .select("slug storeCategory publishedAt updatedAt createdAt")
+        .select("slug storeCategory title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
     ]);
 
@@ -151,7 +155,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.7,
-        alternates: alts(url),
+        alternates: alts(url, postLocales(p)),
       };
     });
 
@@ -162,7 +166,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.65,
-        alternates: alts(url),
+        alternates: alts(url, postLocales(p)),
       };
     });
 
@@ -173,7 +177,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.55,
-        alternates: alts(url),
+        alternates: alts(url, postLocales(p)),
       };
     });
 

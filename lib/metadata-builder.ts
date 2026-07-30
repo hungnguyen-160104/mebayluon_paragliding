@@ -11,7 +11,7 @@ import {
   SITE_NAME,
   DEFAULT_LOCALE,
   languageAlternates,
-  localizedUrl,
+  canonicalUrlFor,
   type Locale,
 } from "@/lib/site-config";
 
@@ -39,6 +39,19 @@ export interface SEOMetadata {
    * Google index từng ngôn ngữ như một trang riêng.
    */
   locale?: Locale;
+
+  /**
+   * Những ngôn ngữ trang này THẬT SỰ có nội dung riêng.
+   *
+   * Bỏ trống = đủ 6 ngôn ngữ (đúng với các trang tĩnh, vì giao diện đã dịch
+   * đủ). Trang bài viết / sản phẩm chỉ có tiếng Việt + tiếng Anh nên phải
+   * truyền ["vi", "en"] — khi đó /fr/... sẽ canonical về bản tiếng Anh và
+   * hreflang chỉ khai 2 ngôn ngữ, thay vì khai khống 6 bản như trước.
+   *
+   * Khi bạn dịch xong một bài sang tiếng Pháp, chỉ cần thêm "fr" vào danh
+   * sách này là hreflang và sitemap tự có thêm bản tiếng Pháp cho bài đó.
+   */
+  availableLocales?: readonly Locale[];
 }
 
 /**
@@ -91,7 +104,8 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
     }
   })();
 
-  const canonicalUrl = localizedUrl(basePath, locale);
+  const available = seo.availableLocales;
+  const canonicalUrl = canonicalUrlFor(basePath, locale, available);
   const imageUrl = resolveImage(seo.image);
 
   // Map internal type -> Next OpenGraph supported type
@@ -110,7 +124,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
 
     alternates: {
       canonical: canonicalUrl,
-      languages: languageAlternates(basePath),
+      languages: languageAlternates(basePath, available),
     },
 
     openGraph: {

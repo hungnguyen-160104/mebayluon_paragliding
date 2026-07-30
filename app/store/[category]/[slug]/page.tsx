@@ -7,6 +7,7 @@ import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
 import { buildMetadata, generateProductSchema } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { postLocales } from "@/lib/post-locales";
 import { ShareButtons } from "@/components/share-buttons";
 
 type PostLite = {
@@ -79,6 +80,7 @@ export async function generateMetadata({
         .slice(0, 150)
     : "";
 
+  // Chỉ khai hreflang cho ngôn ngữ sản phẩm này thật sự có nội dung
   return buildMetadata({
     title,
     description,
@@ -86,6 +88,7 @@ export async function generateMetadata({
     url: `/store/${p?.storeCategory || category}/${slug}`,
     type: "website",
     locale: await getUrlLocale(),
+    availableLocales: postLocales(p),
   });
 }
 

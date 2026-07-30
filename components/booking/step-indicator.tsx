@@ -18,7 +18,7 @@ export default function StepIndicator() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-[#5B6B7A]">
-              Booking progress
+              {t.bookingProgress}
             </div>
             <div className="mt-1 text-lg font-bold text-[#1C2930] md:text-xl">
               {currentLabel}

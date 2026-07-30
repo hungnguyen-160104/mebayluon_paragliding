@@ -19,6 +19,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalPrice: "Optional services",
     totalPrice: "Total",
     pax: "pax",
+    freeLabel: "FREE",
     continue: "CONTINUE",
     pickupLocationLabel: "Pickup location",
     car4Seats: "4-seat car",

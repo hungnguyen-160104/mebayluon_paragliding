@@ -17,6 +17,8 @@ export type SelectFlightStepUiText = {
   optionalPrice: string;
   totalPrice: string;
   pax: string;
+  /** Nhãn dịch vụ miễn phí (trước đây viết cứng "FREE"). */
+  freeLabel: string;
   continue: string;
   pickupLocationLabel: string;
   /** Đơn vị giá xe đưa đón: "xe 4 chỗ" / "xe 4 chỗ/1 chiều". */

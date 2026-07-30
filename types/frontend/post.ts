@@ -57,6 +57,8 @@ export type Post = {
 
   excerpt?: string;
   excerptVi?: string;
+  /** Ngôn ngữ đã dịch tay ngoài vi + en, ví dụ ["fr"]. */
+  translatedLangs?: string[];
 
   coverImage?: string;
   thumbnail?: string;
@@ -104,6 +106,8 @@ export type PostPayload = {
 
   excerpt?: string;
   excerptVi?: string;
+  /** Ngôn ngữ đã dịch tay ngoài vi + en, ví dụ ["fr"]. */
+  translatedLangs?: string[];
 
   content?: string;
   contentVi?: string;

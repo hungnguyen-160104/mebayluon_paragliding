@@ -209,9 +209,9 @@ function formatUsdTotal(value: number | null | undefined) {
   return `($${value.toFixed(2)})`;
 }
 
-function formatCardFromPrice(value: number) {
+function formatCardFromPrice(value: number, paxLabel: string) {
   const thousands = Math.round(value / 1000);
-  return `${thousands.toLocaleString("vi-VN")}k/pax`;
+  return `${thousands.toLocaleString("vi-VN")}k/${paxLabel}`;
 }
 
 function getServiceState(data: any, key: string): ServiceSelection {
@@ -658,7 +658,7 @@ function getServiceMeta(
     return {
       id: "khau_pha_gopro",
       defaultSelected: true,
-      priceText: "FREE",
+      priceText: ui.freeLabel,
       lines: [],
       lineTotalVND: () => 0,
       lineTotalUSD: () => 0,
@@ -1336,7 +1336,7 @@ export default function SelectFlightStep() {
                     </div>
 
                     <div className="mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[15px]">
-                      {ui.fromLabel} {formatCardFromPrice(fromPrice)}
+                      {ui.fromLabel} {formatCardFromPrice(fromPrice, ui.pax)}
                     </div>
                   </div>
                 </button>
@@ -1668,7 +1668,7 @@ export default function SelectFlightStep() {
                         <li className="flex items-start justify-between gap-3 text-[14px] text-[#5B6B7A]">
                           <span>{ui.freeGopro}</span>
                           <span className="whitespace-nowrap font-semibold text-[#16A34A]">
-                            FREE
+                            {ui.freeLabel}
                           </span>
                         </li>
                       </ul>
@@ -1918,7 +1918,7 @@ export default function SelectFlightStep() {
                     <div className="flex items-start gap-3">
                       <ToggleIndicator checked />
                       <div className="text-[15px] font-semibold leading-6 text-[#1C2930] sm:text-[15px]">
-                        {ui.freeGopro}: <span className="text-[#16A34A]">FREE</span>
+                        {ui.freeGopro}: <span className="text-[#16A34A]">{ui.freeLabel}</span>
                       </div>
                     </div>
                   </div>

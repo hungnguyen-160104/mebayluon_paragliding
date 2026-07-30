@@ -9,6 +9,8 @@ export const BIGC_THANG_LONG_MAP = "https://maps.app.goo.gl/3vB2qYuThwBASQZj8";
 type Dict = {
   pageTitle: string;
   pageSubtitle: string;
+  /** Nhãn nhỏ phía trên tên bước, ví dụ "Tiến trình đặt chỗ". */
+  bookingProgress: string;
   stepNames: string[];
   buttons: {
     next: string;
@@ -91,6 +93,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     pageTitle: "Đặt bay",
     pageSubtitle:
       "Lịch bay linh động, hoàn hủy miễn phí",
+    bookingProgress: "Tiến trình đặt chỗ",
     stepNames: [
       "Chọn điểm bay",
       "Ngày & liên hệ",
@@ -188,6 +191,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     pageTitle: "Book your flight",
     pageSubtitle:
       "Flexible flight schedule, free cancellation and changes",
+    bookingProgress: "Booking progress",
     stepNames: ["Select", "Date & Contact", "Passengers", "Review", "Done"],
     buttons: {
       next: "Next",
@@ -278,6 +282,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     pageTitle: "Réserver votre vol",
     pageSubtitle:
       "Horaires de vol flexibles, annulation et modification gratuites",
+    bookingProgress: "Progression de la réservation",
     stepNames: ["Sélection", "Date & contact", "Passagers", "Validation", "Terminé"],
     buttons: {
       next: "Continuer",
@@ -370,6 +375,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   ru: {
     pageTitle: "Бронирование полёта",
     pageSubtitle: "Гибкое расписание рейсов, бесплатная отмена и изменение",
+    bookingProgress: "Ход бронирования",
     stepNames: ["Выбор", "Дата и контакт", "Пассажиры", "Подтверждение", "Готово"],
     buttons: {
       next: "Далее",
@@ -462,6 +468,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   zh: {
     pageTitle: "预订飞行",
     pageSubtitle: "灵活的航班时刻，可免费取消和改签",
+    bookingProgress: "预订进度",
     stepNames: ["选择服务", "日期与联系", "乘客信息", "确认", "完成"],
     buttons: {
       next: "下一步",
@@ -554,6 +561,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
     pageTitle: "फ्लाइट बुक करें",
     pageSubtitle:
       "लचीला उड़ान शेड्यूल, मुफ्त रद्दीकरण और बदलाव",
+    bookingProgress: "बुकिंग प्रगति",
     stepNames: ["सेवा चुनें", "तारीख व संपर्क", "यात्री", "पुष्टि", "पूर्ण"],
     buttons: {
       next: "आगे",

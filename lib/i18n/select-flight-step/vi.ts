@@ -5,6 +5,8 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
   ...EN_SELECT_FLIGHT_LOCALE,
   ui: {
     ...EN_SELECT_FLIGHT_LOCALE.ui,
+    pax: "khách",
+    freeLabel: "MIỄN PHÍ",
     title: "Đặt chuyến bay",
     locationsTitle: "Vui lòng chọn điểm bay",
     selectedLocationTitle: "Điểm bay đã chọn",

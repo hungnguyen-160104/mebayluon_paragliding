@@ -49,6 +49,17 @@ export interface IPost {
   excerpt?: string;
   excerptVi?: string;
 
+  /**
+   * Những ngôn ngữ NGOÀI tiếng Việt + tiếng Anh mà bài này đã có bản dịch
+   * thật sự (ví dụ ["fr", "zh"]).
+   *
+   * Chỉ dùng cho SEO: hreflang và sitemap chỉ khai những ngôn ngữ có trong
+   * đây. Khai một ngôn ngữ chưa dịch sẽ khiến Google thấy nhiều URL cùng
+   * một nội dung — bị tính là trùng lặp. Mặc định rỗng, tức bài chỉ có
+   * tiếng Việt + tiếng Anh.
+   */
+  translatedLangs?: string[];
+
   coverImage?: string;
   thumbnail?: string;
 
@@ -118,6 +129,12 @@ const PostSchema = new Schema<IPost>(
 
     excerpt: { type: String, default: "" },
     excerptVi: { type: String, default: "" },
+
+    /** Ngôn ngữ đã dịch ngoài vi + en — xem chú thích ở IPost. */
+    translatedLangs: {
+      type: [String],
+      default: [],
+    },
 
     coverImage: { type: String, default: "" },
     thumbnail: { type: String, default: "" },
