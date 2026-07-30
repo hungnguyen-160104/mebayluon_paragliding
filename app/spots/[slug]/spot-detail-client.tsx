@@ -1756,18 +1756,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay)
 
-Lịch trình 
-
-08:00 – 08:30| Đón khách tại khách sạn hoặc điểm hẹn
-
-08:30 – 09:30| Di chuyển đến điểm bay (núi Đồi bù hoặc Viên Nam) Lưu ý: Điểm đón tùy theo gói dịch vụ. Chúng tôi sẽ liên hệ trước để sắp xếp và xác nhận lại vào tối hôm trước ngày bay do phụ thuộc thời tiết
-
- 09:30 – 10:00 | Di chuyển lên đỉnh núi bằng xe van - Nhận trang thiết bị an toàn & hướng dẫn bay
-
-10:00 – 12:00 | Bay lượn trên bầu trời tuyệt đẹp trong 10–20 phút cùng phi công, - Ảnh & video, giấy chứng nhận bay & đồ uống miễn phí được gửi ngay sau khi hạ cánh
-
-14:00 – 15:00 | Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
-
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
       landscape: "Núi đồi – thung lũng – mây trời",
       duration: "10 – 20 phút",
@@ -1795,14 +1783,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 🔄 Free reschedule/cancellation due to weather
 💳 Cash payment (at flying site)
 
-⏰ Open daily from 7:00 AM – 6:00 PM
-
-📅 ITINERARY:
-08:00 – 08:30 | Pick up guests at hotel or meeting point
-08:30 – 09:30 | Transfer to flying site (Doi Bu or Vien Nam mountain)
-09:30 – 10:00 | Drive up to summit by van - Receive safety equipment & flight briefing
-10:00 – 12:00 | Glide through beautiful skies for 10–20 minutes with pilot
-14:00 – 15:00 | Return transfer to hotel or original pickup point`,
+⏰ Open daily from 7:00 AM – 6:00 PM`,
       landscape: "Hills – convenient – accessible",
       duration: "10–20 minutes",
     },
@@ -1831,13 +1812,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 
 ⏰ Ouvert tous les jours de 7h00 à 18h00
 
-📅 PROGRAMME :
-08:00 – 08:30 | Prise en charge à l’hôtel ou au point de rendez-vous
-08:30 – 09:30 | Transfert vers le site de vol (montagne Đồi Bù ou Viên Nam)
-09:30 – 10:00 | Montée au sommet en van - Réception de l’équipement et briefing
-10:00 – 12:00 | Vol de 10–20 minutes avec le pilote
-14:00 – 15:00 | Retour à l’hôtel ou au point de départ
-
 Veuillez réserver à l’avance pour que nous puissions organiser au mieux votre expérience de parapente !`,
       landscape: "Collines – pratique – accessible",
       duration: "10–20 minutes",
@@ -1865,14 +1839,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🔄 Бесплатный перенос/отмена из-за погоды
 💳 Оплата наличными (на месте старта)
 
-⏰ Работаем ежедневно с 7:00 до 18:00
-
-📅 РАСПИСАНИЕ:
-08:00 – 08:30 | Встреча в отеле или в условленном месте
-08:30 – 09:30 | Трансфер к месту полёта (гора Дой Бу или Вьен Нам)
-09:30 – 10:00 | Подъём на вершину на микроавтобусе - Получение снаряжения и инструктаж
-10:00 – 12:00 | Полёт 10–20 минут с пилотом
-14:00 – 15:00 | Возвращение в отель или к месту отправления`,
+⏰ Работаем ежедневно с 7:00 до 18:00`,
       landscape: "Холмы – удобно – доступно",
       duration: "10–20 minutes",
     },
@@ -1897,14 +1864,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：从接客到返回河内市中心约3–5小时
 🔄 因天气原因可免费改期/取消
-💳 现金支付（在飞行点）
-
-📅 行程安排：
-08:00 – 08:30 | 在酒店 or 约定地点接客
-08:30 – 09:30 | 前往飞行点（Đồi Bù山或Viên Nam山）
-09:30 – 10:00 | 乘车上山 - 领取安全装备和飞行说明
-10:00 – 12:00 | 与飞行员一起在美丽天空中滑翔10–20分钟
-14:00 – 15:00 | 送返酒店或原出发点`,
+💳 现金支付（在飞行点）`,
       landscape: "丘陵 – 方便 – 易抵达",
       duration: "10–20 分钟",
     },
@@ -1931,14 +1891,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
 💳 नकद भुगतान (फ्लाइंग साइट पर)
 
-⏰ प्रतिदिन सुबह 7:00 बजे – शाम 6:00 बजे तक खुला
-
-📅 कार्यक्रम:
-08:00 – 08:30 | होटल या मीटिंग पॉइंट पर पिकअप
-08:30 – 09:30 | फ्लाइंग साइट तक ट्रांसफर (डोई बू या विएन नाम पहाड़)
-09:30 – 10:00 | वैन से शिखर तक जाना - सुरक्षा उपकरण और ब्रीफिंग
-10:00 – 12:00 | पायलट के साथ 10–20 मिनट आसमान में ग्लाइड
-14:00 – 15:00 | होटल या मूल पिकअप पॉइंट तक वापसी`,
+⏰ प्रतिदिन सुबह 7:00 बजे – शाम 6:00 बजे तक खुला`,
       landscape: "पहाड़ियाँ – सुविधाजनक – आसान पहुँच",
       duration: "10–20 मिनट",
     },
