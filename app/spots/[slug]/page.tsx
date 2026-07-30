@@ -147,7 +147,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
   "khau-pha": {
     name: "Đèo Khau Phạ",
     title: "Bay Trên Tứ Đại Đỉnh Đèo",
-    altitude: "1.200 – 1.500 m",
+    altitude: "1.268 – 1.500 m",
     description:
       `Trải nghiệm bay dù lượn tại đèo Khau Phạ – một trong tứ đại đỉnh đèo hùng vĩ bậc nhất Việt Nam.
 Mùa nước đổ (tháng 4–5): ruộng bậc thang óng ánh như những tấm gương trời

@@ -569,7 +569,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     vi: {
       name: "Đèo Khau Phạ",
       title: "Bay Trên Tứ Đại Đỉnh Đèo",
-      altitude: "1.200 – 1.500 m",
+      altitude: "1.268 – 1.500 m",
       description:
         `Trải nghiệm bay dù lượn tại đèo Khau Phạ – một trong tứ đại đỉnh đèo hùng vĩ bậc nhất Việt Nam.
 Mùa nước đổ (tháng 4–5): ruộng bậc thang óng ánh như những tấm gương trời
@@ -602,7 +602,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     en: {
       name: "Khau Pha Pass",
       title: "Fly Over the Legendary Pass",
-      altitude: "1,200–1,500 m",
+      altitude: "1,268–1,500 m",
       description:
         `Experience paragliding at Khau Pha Pass – one of Vietnam’s four most majestic mountain passes.
 Water-filling season (April–May): terraced fields shimmer like mirrors reflecting the sky
@@ -635,7 +635,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
     fr: {
       name: "Col de Khau Phạ",
       title: "Survol du col légendaire",
-      altitude: "1 200–1 500 m",
+      altitude: "1 268–1 500 m",
       description:
         `Vivez le parapente au col de Khau Phạ – l’un des quatre cols les plus majestueux du Vietnam.
 Saison des eaux (avril–mai) : les rizières en terrasses brillent comme des miroirs célestes
@@ -668,7 +668,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     ru: {
       name: "Перевал Кхау Фа",
       title: "Полёт над легендарным перевалом",
-      altitude: "1 200–1 500 м",
+      altitude: "1 268–1 500 м",
       description:
         `Испытайте полёт на параплане на перевале Кхау Фа – одном из четырёх самых величественных горных перевалов Вьетнама.
 Сезон заливки воды (апрель–май): террасы сверкают как небесные зеркала
@@ -701,7 +701,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     zh: {
       name: "考帕山口",
       title: "飞越传奇山口",
-      altitude: "1,200–1,500 米",
+      altitude: "1,268–1,500 米",
       description:
         `在考帕山口体验滑翔伞飞行——越南四大最壮丽山口之一。
 灌水季（4-5月）：梯田如天空之镜般闪闪发光
@@ -734,7 +734,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     hi: {
       name: "खाу फ़ा दर्रा",
       title: "दिग्गज दर्रे के ऊपर उड़ान",
-      altitude: "1,200–1,500 मी",
+      altitude: "1,268–1,500 मी",
       description:
         `खाу फ़ा दर्रे पर पैराग्लाइडिंग का अनुभव करें – वियतनाम के चार सबसे भव्य पर्वत दर्रों में से एक।
 पानी भरने का मौसम (अप्रैल–मई): सीढ़ीदार खेत आकाश के दर्पण की तरह चमकते हैं
