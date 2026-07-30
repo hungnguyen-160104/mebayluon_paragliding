@@ -158,7 +158,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       {pilotData.storySlug ? (
                         <Link
                           href={`/blog/${pilotData.storySlug}`}
-                          className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-cyan-400/70 bg-cyan-400/10 px-6 py-3 text-base font-semibold text-cyan-300 transition-all hover:bg-cyan-400/25 hover:text-white"
+                          className="cta-btn mt-6 gap-2 rounded-full border-2 border-cyan-400/70 bg-cyan-400/10 px-6 py-3 text-lg font-semibold text-cyan-300 transition-all hover:bg-cyan-400/25 hover:text-white"
                         >
                           📖 {STORY_LABEL[lang] ?? STORY_LABEL.vi}
                           <span aria-hidden>→</span>

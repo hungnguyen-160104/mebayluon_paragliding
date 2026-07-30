@@ -424,7 +424,7 @@ export default function GuestInfoStep() {
         <button
           type="button"
           onClick={back}
-          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="cta-btn h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {ui.back}
         </button>
@@ -432,7 +432,7 @@ export default function GuestInfoStep() {
         <button
           type="submit"
           disabled={!allValid}
-          className="h-12 rounded-xl bg-[#0194F3] px-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="cta-btn h-12 rounded-xl bg-[#0194F3] px-3 text-base font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {ui.next}
         </button>

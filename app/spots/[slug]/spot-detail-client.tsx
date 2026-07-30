@@ -3745,7 +3745,7 @@ export function SpotDetailClient({
           <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif text-white">{ui.exploreMore}</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto text-slate-200">{ui.exploreMoreDescription}</p>
 
-          <Button asChild size="lg" className="bg-accent text-white hover:bg-accent/90 h-14 px-8">
+          <Button asChild size="lg" className="cta-btn bg-accent text-white hover:bg-accent/90 h-14 px-8 text-xl">
             <Link href="/spots">
               <span>{ui.viewAllSpots}</span>
             </Link>

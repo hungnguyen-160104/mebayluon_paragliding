@@ -282,10 +282,10 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
     case "cta":
       return data.text ? (
-        <p key={key}>
+        <p key={key} className="not-prose">
           <a
             href={data.link || "#"}
-            className="inline-flex items-center rounded-full bg-red-500 px-5 py-3 font-semibold text-white transition hover:bg-red-600"
+            className="cta-btn rounded-full bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition hover:bg-red-700"
           >
             {data.text}
           </a>

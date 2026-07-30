@@ -160,3 +160,19 @@
     0 4px 12px rgba(0, 0, 0, 0.7),
     0 8px 26px rgba(1, 148, 243, 0.45);
 }
+
+/**
+ * Nút CTA dùng chung.
+ *
+ * - Căn giữa chữ theo cả hai chiều, kể cả khi nút xuống 2 dòng.
+ * - KHÔNG gạch chân: quan trọng nhất với các nút nằm trong bài viết, vì
+ *   plugin typography tự gạch chân mọi thẻ <a> bên trong .prose.
+ * Cỡ chữ vẫn đặt bằng class Tailwind ở từng nơi (text-sm/lg/xl...).
+ */
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration-line: none !important;
+}

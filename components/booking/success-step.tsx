@@ -237,7 +237,7 @@ export default function SuccessStep() {
               </p>
             </div>
 
-            <div className="rounded-full border border-white/30 bg-white/20 px-4 py-2 text-sm font-semibold text-white">
+            <div className="cta-btn rounded-full border border-white/30 bg-white/20 px-4 py-2 text-base font-semibold text-white">
               ✓ Confirmed
             </div>
           </div>
@@ -253,7 +253,7 @@ export default function SuccessStep() {
             <button
               onClick={downloadImage}
               disabled={downloadingIMG}
-              className="h-12 rounded-xl bg-red-600 px-6 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
+              className="cta-btn h-12 rounded-xl bg-red-600 px-6 text-base font-semibold text-orange-50 shadow-md transition hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
             >
               {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
             </button>
@@ -289,7 +289,7 @@ export default function SuccessStep() {
       <div className="flex justify-end">
         <button
           onClick={reset}
-          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="cta-btn h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {t.buttons.startOver}
         </button>

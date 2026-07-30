@@ -2055,7 +2055,7 @@ export default function SelectFlightStep() {
                     type="button"
                     onClick={next}
                     disabled={!canGoNext}
-                    className="inline-flex min-h-[52px] min-w-[170px] items-center justify-center rounded-xl bg-[#0194F3] px-3 text-[15px] font-bold uppercase text-white shadow-md transition hover:bg-[#0B83D9] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-[#B9DDFB] disabled:shadow-none sm:min-h-[58px] sm:min-w-[200px] sm:px-8 sm:text-[15px]"
+                    className="cta-btn min-h-[52px] min-w-[170px] rounded-xl bg-[#0194F3] px-3 text-[17px] font-bold uppercase text-white shadow-md transition hover:bg-[#0B83D9] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-[#B9DDFB] disabled:shadow-none sm:min-h-[58px] sm:min-w-[200px] sm:px-8 sm:text-[17px]"
                   >
                     {buttons.next || ui.continue} →
                   </button>

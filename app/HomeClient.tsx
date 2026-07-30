@@ -358,7 +358,7 @@ export default function HomePage() {
             <Button
               asChild
               size="lg"
-              className="h-14 bg-accent px-8 text-lg hover:bg-accent/90"
+              className="cta-btn h-14 bg-accent px-8 text-xl hover:bg-accent/90"
             >
               <Link href="/booking">
                 {t?.hero?.bookNow ?? "Đặt Lịch Bay Ngay"}

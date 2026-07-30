@@ -245,13 +245,13 @@ export default async function ProductDetailPage({
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/#contact"
-                className="inline-flex items-center rounded-full bg-red-600 px-6 py-3 font-semibold text-white transition hover:bg-red-700"
+                className="cta-btn rounded-full bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition hover:bg-red-700"
               >
                 {isVietnamese ? "Liên hệ đặt mua" : "Contact to order"}
               </Link>
               <Link
                 href="/store"
-                className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
+                className="cta-btn rounded-full border border-white/20 bg-white/10 px-6 py-3 text-lg font-semibold text-white transition hover:bg-white/20"
               >
                 {isVietnamese ? "Xem thêm sản phẩm" : "More products"}
               </Link>

@@ -369,7 +369,7 @@ export default async function BlogPage() {
               <p className="mb-8 text-xl text-white/70">{ui.emptyTitle}</p>
               <Link
                 href="/admin/posts"
-                className="inline-block rounded-lg bg-red-500 px-6 py-3 text-white transition-colors hover:bg-red-600"
+                className="cta-btn rounded-lg bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition-colors hover:bg-red-700"
               >
                 {ui.createFirstPost}
               </Link>
