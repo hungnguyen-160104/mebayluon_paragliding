@@ -110,7 +110,9 @@ const emptyContact: ContactInfo = {
 };
 
 const defaultData: BookingData = {
-  location: "sapa",
+  // Điểm bay chọn sẵn khi khách mở trang đặt bay. Đổi theo mùa cao điểm —
+  // hiện tập trung cho Mù Cang Chải (đèo Khau Phạ).
+  location: "khau_pha",
   guestsCount: 1,
   packageKey: undefined,
   flightTypeKey: undefined,
