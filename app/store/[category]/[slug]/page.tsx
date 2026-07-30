@@ -171,7 +171,7 @@ export default async function ProductDetailPage({
 
             {/* title */}
             <h1
-              className="mb-4 text-2xl font-bold leading-snug text-white sm:text-3xl"
+              className="mb-4 text-4xl font-bold leading-tight text-white sm:text-5xl"
               style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
             >
               {currentTitle}
@@ -179,10 +179,7 @@ export default async function ProductDetailPage({
 
             {/* excerpt */}
             {excerpt && (
-              <p
-                className="mb-5 border-l-2 border-white/30 pl-4 text-base leading-relaxed text-white/80"
-                style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
-              >
+              <p className="mb-5 border-l-2 border-white/30 pl-4 text-base font-light leading-relaxed text-white/80">
                 {excerpt}
               </p>
             )}
@@ -211,14 +208,18 @@ export default async function ProductDetailPage({
             )}
 
             {/* content */}
+            {/* Cùng chuẩn định dạng với bài blog (app/blog/[slug]) —
+                cả cỡ tiêu đề trong bài lẫn font body */}
             <article
-              className="prose prose-invert max-w-none prose-base md:prose-lg
-                prose-p:leading-[1.85] prose-p:text-white/90
-                prose-headings:text-white prose-headings:font-bold
+              className="prose prose-invert max-w-none prose-sm md:prose-base
+                prose-p:leading-[1.85] prose-p:text-white/90 prose-p:font-light
+                prose-headings:text-white prose-headings:font-semibold
+                prose-h2:text-xl prose-h2:font-bold
+                prose-h3:text-lg prose-h3:font-semibold
+                prose-h4:text-base prose-h4:font-semibold
                 prose-strong:text-white prose-a:text-sky-300
                 prose-img:rounded-lg prose-img:mx-auto
                 prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
-              style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
             >
               {content ? (
                 hasHtmlTag(content) ? (
