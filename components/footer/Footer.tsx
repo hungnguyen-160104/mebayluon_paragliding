@@ -2,7 +2,18 @@
 
 // /components/footer/Footer.tsx
 import Link from "next/link";
+import { Dancing_Script } from "next/font/google";
 import { usePathname } from "next/navigation";
+
+/**
+ * Font viết tay cho slogan — tự host qua next/font (không gọi CDN ngoài),
+ * có subset tiếng Việt nên đủ dấu.
+ */
+const dancingScript = Dancing_Script({
+  weight: ["600"],
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+});
 import {
   Facebook,
   Youtube,
@@ -301,13 +312,12 @@ export default function Footer() {
           >
             {/* BRAND */}
             <div className="min-w-0 space-y-2">
-              <h2 className="text-2xl font-bold leading-tight bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent sm:text-3xl">
+              <h2 className="whitespace-nowrap text-xl font-bold leading-tight bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent sm:text-2xl">
                 Mebayluon Paragliding
               </h2>
 
               <p
-                className="max-w-[30rem] font-serif text-[17px] font-semibold italic leading-6 text-sky-400 sm:text-[18px]"
-                style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+                className={`${dancingScript.className} whitespace-nowrap text-lg leading-6 text-[#0194F3] sm:text-xl`}
               >
                 {t.slogan}
               </p>
