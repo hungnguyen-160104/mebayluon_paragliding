@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
+import { getSpotReview } from "@/lib/google-reviews";
 import {
   buildMetadata,
   generateSpotSchema,
@@ -516,6 +517,13 @@ export default async function SpotDetailPage({
   // Bài viết CTA cho điểm bay này (nếu có) + tiêu đề theo ngôn ngữ URL
   const articleSet = SPOT_ARTICLES[canonicalSpotSlug(slug)];
   const spotLocale = await getUrlLocale();
+
+  // Điểm sao + số đánh giá lấy trực tiếp từ Google (cache 6 tiếng); nếu chưa
+  // khai GOOGLE_PLACES_API_KEY thì tự rơi về số dự phòng trong lib.
+  const [sapaReview, khauPhaReview] = await Promise.all([
+    isSapa ? getSpotReview("sapa") : Promise.resolve({ rating: 0, reviews: null, live: false }),
+    isKhauPha ? getSpotReview("khau-pha") : Promise.resolve({ rating: 0, reviews: null, live: false }),
+  ]);
   const heading =
     SPOT_ARTICLES_HEADING[spotLocale] ?? SPOT_ARTICLES_HEADING.vi;
 
@@ -636,9 +644,25 @@ export default async function SpotDetailPage({
 
 
       {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}
-      {isSapa && <SpotGoogleReview spot="sapa" variant="floating" position="br" />}
+      {isSapa && (
+        <SpotGoogleReview
+          spot="sapa"
+          rating={sapaReview.rating}
+          reviews={sapaReview.reviews}
+          lang={spotLocale}
+          variant="floating"
+          position="br"
+        />
+      )}
       {isKhauPha && (
-        <SpotGoogleReview spot="khau-pha" variant="floating" position="br" />
+        <SpotGoogleReview
+          spot="khau-pha"
+          rating={khauPhaReview.rating}
+          reviews={khauPhaReview.reviews}
+          lang={spotLocale}
+          variant="floating"
+          position="br"
+        />
       )}
 
       {/* KHÔNG RENDER FOOTER Ở ĐÂY */}
