@@ -1,7 +1,10 @@
 export type ChatSide = "user" | "bot";
 
-/** Nguồn sinh câu trả lời — chỉ dùng để debug, không hiển thị cho khách. */
-export type ChatAnswerSource = "n8n" | "faq" | "fallback";
+/**
+ * Nguồn sinh câu trả lời — chỉ dùng để debug, không hiển thị cho khách.
+ * "faq" đã bỏ cùng lúc với tầng FAQ tĩnh (data/faq.json).
+ */
+export type ChatAnswerSource = "n8n" | "fallback";
 
 export interface ChatMessage {
   id: string;

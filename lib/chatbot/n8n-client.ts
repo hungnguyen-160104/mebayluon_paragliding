@@ -17,13 +17,19 @@ export type ChatHistoryItem = {
 
 export type N8nAskInput = {
   question: string;
+  /**
+   * Định danh hội thoại. Được gửi sang n8n dưới dạng `sender.id` =
+   * "web-<sessionId>" — n8n dùng nó để nhớ ngữ cảnh, nên KHÔNG cần gửi
+   * kèm history: bản thân workflow đã lưu theo sender.
+   */
   sessionId: string;
+  /** Giữ lại cho tương thích với các nơi gọi cũ — hiện không gửi sang n8n. */
   history?: ChatHistoryItem[];
+  /** Giữ lại cho tương thích — hiện không gửi sang n8n. */
   locale?: string;
 };
 
 const DEFAULT_TIMEOUT_MS = 25_000;
-const MAX_HISTORY = 10;
 
 function getWebhookUrl(): string {
   return (process.env.N8N_CHAT_WEBHOOK_URL ?? "").trim();
@@ -157,22 +163,32 @@ export async function askN8n(input: N8nAskInput): Promise<string | null> {
   const url = getWebhookUrl();
   if (!url) return null;
 
-  const history = (input.history ?? []).slice(-MAX_HISTORY);
-
-  // Gửi kèm nhiều tên field để tương thích cả Webhook node lẫn Chat Trigger
-  // của n8n mà không phải sửa workflow đang chạy cho Messenger.
+  /**
+   * Payload theo ĐÚNG khuôn webhook Facebook Messenger.
+   *
+   * Node Code trong workflow n8n (chứa toàn bộ logic nghiệp vụ + cơ sở kiến
+   * thức) đọc dữ liệu tại `body.entry[0].messaging[0].message.text` và
+   * `.sender.id`. Nhánh Messenger của fanpage đang chạy tốt nên workflow giữ
+   * nguyên logic đó — website phải gửi đúng khuôn này thay vì bắt n8n đổi.
+   *
+   * Nếu gửi khuôn khác (chatInput/message/question), node Code không tìm được
+   * nội dung tin nhắn nên trả rỗng mà KHÔNG throw: execution vẫn báo success
+   * và webhook trả HTTP 200 với body 0 byte — rất khó lần ra nguyên nhân.
+   *
+   * `sender.id` = "web-<sessionId>" để n8n tách ngữ cảnh hội thoại của từng
+   * khách trên website, và không lẫn với người dùng Messenger thật.
+   */
   const payload = {
-    action: "sendMessage",
-    sessionId: input.sessionId,
-    chatInput: input.question,
-    message: input.question,
-    question: input.question,
-    locale: input.locale ?? "vi",
-    source: "website",
-    history: history.map((item) => ({
-      role: item.role === "user" ? "user" : "assistant",
-      content: item.text,
-    })),
+    entry: [
+      {
+        messaging: [
+          {
+            sender: { id: `web-${input.sessionId}` },
+            message: { text: input.question },
+          },
+        ],
+      },
+    ],
   };
 
   const controller = new AbortController();

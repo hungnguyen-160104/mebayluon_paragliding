@@ -1,124 +1,63 @@
 // services/chatbot.service.ts
-// Nguồn trả lời chính: bot n8n (cùng bot đang chạy Messenger fanpage).
-// FAQ + fuzzy giữ lại làm phương án dự phòng khi n8n chưa cấu hình hoặc lỗi.
+//
+// Nguồn trả lời DUY NHẤT: bot AI trên n8n (cùng bot đang trả lời Messenger
+// của fanpage). Khi n8n chưa cấu hình / lỗi / timeout / trả rỗng thì chỉ đưa
+// lời nhắn ngắn kèm hotline, KHÔNG cố tự trả lời.
+//
+// Trước đây có thêm một tầng FAQ tĩnh đọc từ data/faq.json (9MB, 5150 mục
+// nhưng chỉ 277 câu trả lời khác nhau, và dữ liệu tự xung đột: cùng một alias
+// trỏ tới hai câu trả lời khác nhau). Tầng này đã bỏ vì:
+//   - Toàn bộ tri thức nghiệp vụ giờ nằm trong workflow n8n.
+//   - 9MB JSON bị bundle vào serverless function, phình bundle và chậm cold
+//     start, đổi lại những câu trả lời chất lượng thấp.
+// Trả lời sai/cũ còn tệ hơn thừa nhận không biết rồi mời khách gọi hotline.
 
-import faqRaw from "@/data/faq.json"; // cần "resolveJsonModule": true trong tsconfig
-import { normalizeTextVN } from "@/utils/text";
-import { fuzzyRatio } from "@/utils/fuzzy";
-import {
-  askN8n,
-  isN8nChatConfigured,
-  type ChatHistoryItem,
-} from "@/lib/chatbot/n8n-client";
+import { askN8n, isN8nChatConfigured, type ChatHistoryItem } from "@/lib/chatbot/n8n-client";
 
-// Nguồn sinh ra câu trả lời — dùng để debug, không hiển thị cho khách.
-export type ChatSource = "n8n" | "faq" | "fallback";
+/** Nguồn sinh ra câu trả lời — dùng để debug, không hiển thị cho khách. */
+export type ChatSource = "n8n" | "fallback";
 
-// Kiểu trả lời cho API /chatbot
+/** Kiểu trả lời cho API /chatbot */
 export type ChatAnswer = {
   answer: string;
+  /** Giữ để tương thích với client cũ — luôn null từ khi bỏ FAQ. */
   matchedQuestion: string | null;
+  /** Giữ để tương thích với client cũ — luôn null từ khi bỏ FAQ. */
   score: number | null;
   source?: ChatSource;
 };
 
-// Kiểu phần tử trong FAQ
-type FaqItem = {
-  id?: string | number;
-  question: string;
-  answer: string;
-  aliases?: string[];
+const HOTLINE = "0964 073 555";
+
+/**
+ * Lời nhắn khi không gọi được bot, theo ngôn ngữ khách đang xem.
+ * Cố tình ngắn: mục đích duy nhất là đưa khách sang kênh có người thật.
+ */
+const UNAVAILABLE_MESSAGE: Record<string, string> = {
+  vi: `Xin lỗi, trợ lý đang tạm thời không phản hồi. Bạn vui lòng liên hệ hotline/Zalo/WhatsApp ${HOTLINE} để được hỗ trợ ngay nhé.`,
+  en: `Sorry, our assistant is temporarily unavailable. Please contact our hotline/Zalo/WhatsApp ${HOTLINE} for immediate help.`,
+  fr: `Désolé, notre assistant est momentanément indisponible. Merci de nous contacter par hotline/Zalo/WhatsApp ${HOTLINE} pour une aide immédiate.`,
+  ru: `Извините, наш ассистент временно недоступен. Пожалуйста, свяжитесь с нами по hotline/Zalo/WhatsApp ${HOTLINE}.`,
+  zh: `抱歉，智能助手暂时无法回复。请通过热线/Zalo/WhatsApp ${HOTLINE} 联系我们，我们会立即为您服务。`,
+  hi: `क्षमा करें, हमारा सहायक अस्थायी रूप से उपलब्ध नहीं है। तुरंत सहायता के लिए कृपया hotline/Zalo/WhatsApp ${HOTLINE} पर संपर्क करें।`,
 };
 
-// Ngưỡng match
-const DEFAULT_THRESHOLD = parseFloat(process.env.CHATBOT_MATCH_THRESHOLD ?? "0.45");
-const FUZZY_THRESHOLD = 0.5;
+const EMPTY_QUESTION_MESSAGE: Record<string, string> = {
+  vi: "Vui lòng nhập câu hỏi.",
+  en: "Please enter your question.",
+  fr: "Veuillez saisir votre question.",
+  ru: "Пожалуйста, введите ваш вопрос.",
+  zh: "请输入您的问题。",
+  hi: "कृपया अपना प्रश्न लिखें।",
+};
 
-function readFaq(): FaqItem[] {
-  // Có thể thêm tiền xử lý/caching nếu cần
-  return (faqRaw as FaqItem[]) || [];
+function pick(dict: Record<string, string>, locale?: string): string {
+  const code = (locale ?? "vi").slice(0, 2).toLowerCase();
+  return dict[code] ?? dict.vi;
 }
 
-function tokenize(s: string) {
-  return normalizeTextVN(s)
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .split(" ")
-    .filter(Boolean);
-}
-
-function keywordScore(qTokens: string[], candTokens: string[]) {
-  const qSet = new Set(qTokens);
-  const cSet = new Set(candTokens);
-  const inter = [...qSet].filter((w) => cSet.has(w)).length;
-  const uni = new Set([...qSet, ...cSet]).size;
-  return uni === 0 ? 0 : inter / uni;
-}
-
-/** Trả lời từ FAQ bằng 2 tầng: alias/keyword → fuzzy */
-export async function answerFromFaq(userQuestion: string): Promise<ChatAnswer> {
-  const normalized = normalizeTextVN(userQuestion);
-  const tokensQ = tokenize(normalized);
-  const faq = readFaq();
-
-  // 1) RULE-BASED: alias + keyword
-  let bestAliasIdx = -1;
-  let bestAliasScore = -1;
-
-  for (let i = 0; i < faq.length; i++) {
-    const qa = faq[i];
-
-    // alias: khớp tuyệt đối/bao hàm
-    if (qa.aliases && qa.aliases.length) {
-      for (const a of qa.aliases) {
-        const an = normalizeTextVN(a);
-        if (an === normalized || an.includes(normalized) || normalized.includes(an)) {
-          return { answer: qa.answer, matchedQuestion: qa.question, score: 1, source: "faq" };
-        }
-      }
-    }
-
-    // keyword: Jaccard
-    const scoreKW = keywordScore(tokensQ, tokenize(qa.question));
-    if (scoreKW > bestAliasScore) {
-      bestAliasScore = scoreKW;
-      bestAliasIdx = i;
-    }
-  }
-
-  if (bestAliasIdx >= 0 && bestAliasScore >= DEFAULT_THRESHOLD) {
-    const qa = faq[bestAliasIdx];
-    return {
-      answer: qa.answer,
-      matchedQuestion: qa.question,
-      score: bestAliasScore,
-      source: "faq",
-    };
-  }
-
-  // 2) FUZZY fallback
-  let bestF = -1;
-  let bestIdx = -1;
-  faq.forEach((qa, i) => {
-    const r = fuzzyRatio(normalized, qa.question);
-    if (r > bestF) {
-      bestF = r;
-      bestIdx = i;
-    }
-  });
-
-  if (bestF >= FUZZY_THRESHOLD) {
-    const qa = faq[bestIdx];
-    return { answer: qa.answer, matchedQuestion: qa.question, score: bestF, source: "faq" };
-  }
-
-  // 3) Fallback cuối
-  return {
-    answer:
-      "Xin lỗi, tôi chưa có thông tin cho câu hỏi này. Vui lòng để lại số điện thoại/email, hoặc xem mục Liên hệ/FAQ để được hỗ trợ nhanh.",
-    matchedQuestion: null,
-    score: null,
-    source: "fallback",
-  };
+function fallbackAnswer(message: string): ChatAnswer {
+  return { answer: message, matchedQuestion: null, score: null, source: "fallback" };
 }
 
 export type AskChatbotInput = {
@@ -129,23 +68,16 @@ export type AskChatbotInput = {
 };
 
 /**
- * Luồng trả lời chính của widget trên website:
+ * Luồng trả lời của widget chat trên website.
  *
- * 1. Ưu tiên hỏi bot n8n (có ngữ cảnh hội thoại theo sessionId).
- * 2. n8n chưa cấu hình / lỗi / timeout / trả rỗng → rơi về FAQ tĩnh.
- *
- * Nhờ vậy khách luôn nhận được câu trả lời, kể cả khi workflow n8n chết.
+ * Ngữ cảnh hội thoại do n8n tự giữ theo sessionId (được gửi sang dưới dạng
+ * sender.id), nên phía này không cần lưu gì.
  */
 export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
   const question = input.question.trim();
 
   if (!question) {
-    return {
-      answer: "Vui lòng nhập câu hỏi.",
-      matchedQuestion: null,
-      score: null,
-      source: "fallback",
-    };
+    return fallbackAnswer(pick(EMPTY_QUESTION_MESSAGE, input.locale));
   }
 
   if (isN8nChatConfigured()) {
@@ -161,21 +93,5 @@ export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
     }
   }
 
-  return answerFromFaq(question);
-}
-
-/** Wrapper cũ dùng trong Express controller: chỉ FAQ, không có ngữ cảnh. */
-export async function postAsk(body: any): Promise<ChatAnswer> {
-  const question = (body?.question ?? body?.q ?? body?.message ?? "").toString().trim();
-
-  if (!question) {
-    return {
-      answer: "Vui lòng cung cấp câu hỏi.",
-      matchedQuestion: null,
-      score: null,
-      source: "fallback",
-    };
-  }
-
-  return answerFromFaq(question);
+  return fallbackAnswer(pick(UNAVAILABLE_MESSAGE, input.locale));
 }
