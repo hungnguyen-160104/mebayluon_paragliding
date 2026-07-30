@@ -55,6 +55,10 @@ type StoryBase = Omit<Story, "image">;
 const normalize = (s: string) =>
   s
     .toLowerCase()
+    // "đ" (U+0111) không phân rã được bằng NFD nên nếu không đổi thủ công,
+    // "Đồi Bù" thành "oi bu" và không khớp khoá "doi bu" -> trang rơi về
+    // bản copy "generic" với nội dung cũ.
+    .replace(/đ/g, "d")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
@@ -1221,17 +1225,26 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 ⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
 
-Lịch trình 
+📅 LỊCH TRÌNH:
 
-08:00 – 08:30| Đón khách tại khách sạn hoặc điểm hẹn
+🌅 LỊCH BAY SÁNG:
+🚐 08:00 – 08:30 - Đón khách tại khách sạn hoặc điểm hẹn đi bay
+🛣️ 09:30 – 10:00 - Di chuyển đến điểm bay (núi Đồi Bù hoặc Viên Nam)
+🚙 10:00 – 10:30 - Di chuyển lên đỉnh núi bằng xe chuyên dụng - Nhận trang thiết bị an toàn & hướng dẫn bay
+🪂 10:30 – 12:00 - Khung thời gian hoạt động bay dù lượn và xem bay dù lượn trên bầu trời tuyệt đẹp, mỗi chuyến bay kéo dài 10–20 phút cùng phi công
+🏨 12:00 – 13:00 - Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
 
-08:30 – 09:30| Di chuyển đến điểm bay (núi Đồi bù hoặc Viên Nam) Lưu ý: Điểm đón tùy theo gói dịch vụ. Chúng tôi sẽ liên hệ trước để sắp xếp và xác nhận lại vào tối hôm trước ngày bay do phụ thuộc thời tiết
+🌇 LỊCH BAY CHIỀU:
+🚐 12:00 – 12:30 - Đón khách tại khách sạn hoặc điểm hẹn đi bay
+🛣️ 12:30 – 13:30 - Di chuyển đến điểm bay (núi Đồi Bù hoặc Viên Nam)
+🚙 13:30 – 14:00 - Di chuyển lên đỉnh núi bằng xe chuyên dụng - Nhận trang thiết bị an toàn & hướng dẫn bay
+🪂 14:30 – 16:30 - Khung thời gian hoạt động bay dù lượn và xem bay dù lượn trên bầu trời tuyệt đẹp, mỗi chuyến bay kéo dài 10–20 phút cùng phi công
+🏨 16:30 – 17:30 - Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
 
- 09:30 – 10:00 | Di chuyển lên đỉnh núi bằng xe van - Nhận trang thiết bị an toàn & hướng dẫn bay
-
-10:00 – 12:00 | Bay lượn trên bầu trời tuyệt đẹp trong 10–20 phút cùng phi công, - Ảnh & video, giấy chứng nhận bay & đồ uống miễn phí được gửi ngay sau khi hạ cánh
-
-14:00 – 15:00 | Xe đưa quý khách về khách sạn hoặc điểm tập trung ban đầu
+📌 LƯU Ý:
+🎁 Ảnh & video, giấy chứng nhận bay & đồ uống miễn phí được gửi ngay sau khi hạ cánh
+📍 Điểm đón tùy theo gói dịch vụ. Chúng tôi sẽ liên hệ trước để sắp xếp và xác nhận lại lịch đón vào tối hôm trước ngày bay do phụ thuộc thời tiết
+🌦️ Lịch trình có thể điều chỉnh tuỳ theo tình hình thời tiết
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
       landscape: "Đồi núi – thuận tiện – dễ tiếp cận",
@@ -1263,11 +1276,25 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ⏰ Open daily from 7:00 AM – 6:00 PM
 
 📅 ITINERARY:
-08:00 – 08:30 | Pick up guests at hotel or meeting point
-08:30 – 09:30 | Transfer to flying site (Doi Bu or Vien Nam mountain)
-09:30 – 10:00 | Drive up to summit by van - Receive safety equipment & flight briefing
-10:00 – 12:00 | Glide through beautiful skies for 10–20 minutes with pilot
-14:00 – 15:00 | Return transfer to hotel or original pickup point
+
+🌅 MORNING FLIGHTS:
+🚐 08:00 – 08:30 - Pick up at your hotel or meeting point
+🛣️ 09:30 – 10:00 - Transfer to the flying site (Doi Bu or Vien Nam mountain)
+🚙 10:00 – 10:30 - Drive to the summit by dedicated vehicle - Receive safety equipment & flight briefing
+🪂 10:30 – 12:00 - Paragliding activity window — watch and fly in beautiful skies; each flight lasts 10–20 minutes with a pilot
+🏨 12:00 – 13:00 - Return transfer to your hotel or original meeting point
+
+🌇 AFTERNOON FLIGHTS:
+🚐 12:00 – 12:30 - Pick up at your hotel or meeting point
+🛣️ 12:30 – 13:30 - Transfer to the flying site (Doi Bu or Vien Nam mountain)
+🚙 13:30 – 14:00 - Drive to the summit by dedicated vehicle - Receive safety equipment & flight briefing
+🪂 14:30 – 16:30 - Paragliding activity window — watch and fly in beautiful skies; each flight lasts 10–20 minutes with a pilot
+🏨 16:30 – 17:30 - Return transfer to your hotel or original meeting point
+
+📌 NOTES:
+🎁 Photos & videos, flight certificate & free drinks are provided right after landing
+📍 Pickup point depends on your package. We will contact you the evening before flight day to confirm the schedule, as it depends on the weather
+🌦️ The itinerary may be adjusted according to weather conditions
 
 Please book in advance so we can best arrange your paragliding experience!`,
       landscape: "Hills – convenient – accessible",
@@ -1299,11 +1326,25 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ⏰ Ouvert tous les jours de 7h00 à 18h00
 
 📅 PROGRAMME :
-08:00 – 08:30 | Prise en charge à l’hôtel ou au point de rendez-vous
-08:30 – 09:30 | Transfert vers le site de vol (montagne Đồi Bù ou Viên Nam)
-09:30 – 10:00 | Montée au sommet en van - Réception de l’équipement et briefing
-10:00 – 12:00 | Vol de 10–20 minutes avec le pilote
-14:00 – 15:00 | Retour à l’hôtel ou au point de départ
+
+🌅 VOLS DU MATIN :
+🚐 08:00 – 08:30 - Prise en charge à votre hôtel ou au point de rendez-vous
+🛣️ 09:30 – 10:00 - Transfert vers le site de vol (mont Đồi Bù ou Viên Nam)
+🚙 10:00 – 10:30 - Montée au sommet en véhicule dédié - Remise de l’équipement de sécurité & briefing
+🪂 10:30 – 12:00 - Créneau d’activité parapente — admirez et volez dans un ciel magnifique ; chaque vol dure 10–20 minutes avec un pilote
+🏨 12:00 – 13:00 - Retour à votre hôtel ou au point de départ
+
+🌇 VOLS DE L’APRÈS-MIDI :
+🚐 12:00 – 12:30 - Prise en charge à votre hôtel ou au point de rendez-vous
+🛣️ 12:30 – 13:30 - Transfert vers le site de vol (mont Đồi Bù ou Viên Nam)
+🚙 13:30 – 14:00 - Montée au sommet en véhicule dédié - Remise de l’équipement de sécurité & briefing
+🪂 14:30 – 16:30 - Créneau d’activité parapente — admirez et volez dans un ciel magnifique ; chaque vol dure 10–20 minutes avec un pilote
+🏨 16:30 – 17:30 - Retour à votre hôtel ou au point de départ
+
+📌 À NOTER :
+🎁 Photos & vidéos, certificat de vol & boissons offertes remis juste après l’atterrissage
+📍 Le point de prise en charge dépend de votre forfait. Nous vous contacterons la veille du vol pour confirmer l’horaire, celui-ci dépendant de la météo
+🌦️ L’itinéraire peut être ajusté selon les conditions météo
 
 Veuillez réserver à l’avance pour que nous puissions organiser au mieux votre expérience de parapente !`,
       landscape: "Collines – pratique – accessible",
@@ -1334,12 +1375,26 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 ⏰ Работаем ежедневно с 7:00 до 18:00
 
-📅 РАСПИСАНИЕ:
-08:00 – 08:30 | Встреча в отеле или в условленном месте
-08:30 – 09:30 | Трансфер к месту полёта (гора Дой Бу или Вьен Нам)
-09:30 – 10:00 | Подъём на вершину на микроавтобусе - Получение снаряжения и инструктаж
-10:00 – 12:00 | Полёт 10–20 минут с пилотом
-14:00 – 15:00 | Возвращение в отель или к месту отправления
+📅 ПРОГРАММА:
+
+🌅 УТРЕННИЕ ПОЛЁТЫ:
+🚐 08:00 – 08:30 - Трансфер из отеля или места встречи
+🛣️ 09:30 – 10:00 - Переезд к месту полётов (гора Дой Бу или Вьен Нам)
+🚙 10:00 – 10:30 - Подъём на вершину на специальном транспорте - Выдача снаряжения и инструктаж
+🪂 10:30 – 12:00 - Время полётов — наблюдайте и летайте в прекрасном небе; каждый полёт длится 10–20 минут с пилотом
+🏨 12:00 – 13:00 - Возвращение в отель или к месту встречи
+
+🌇 ДНЕВНЫЕ ПОЛЁТЫ:
+🚐 12:00 – 12:30 - Трансфер из отеля или места встречи
+🛣️ 12:30 – 13:30 - Переезд к месту полётов (гора Дой Бу или Вьен Нам)
+🚙 13:30 – 14:00 - Подъём на вершину на специальном транспорте - Выдача снаряжения и инструктаж
+🪂 14:30 – 16:30 - Время полётов — наблюдайте и летайте в прекрасном небе; каждый полёт длится 10–20 минут с пилотом
+🏨 16:30 – 17:30 - Возвращение в отель или к месту встречи
+
+📌 ПРИМЕЧАНИЯ:
+🎁 Фото и видео, сертификат о полёте и бесплатные напитки — сразу после посадки
+📍 Место трансфера зависит от пакета. Мы свяжемся с вами накануне вечером для подтверждения расписания, так как оно зависит от погоды
+🌦️ Программа может быть скорректирована в зависимости от погоды
 
 Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
       landscape: "Холмы – удобно – доступно",
@@ -1369,11 +1424,25 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 💳 现金支付（在飞行点）
 
 📅 行程安排：
-08:00 – 08:30 | 在酒店或约定地点接客
-08:30 – 09:30 | 前往飞行点（Đồi Bù山或Viên Nam山）
-09:30 – 10:00 | 乘车上山 - 领取安全装备和飞行说明
-10:00 – 12:00 | 与飞行员一起在美丽天空中滑翔10–20分钟
-14:00 – 15:00 | 送返酒店或原出发点
+
+🌅 上午飞行：
+🚐 08:00 – 08:30 - 在酒店或集合点接客人
+🛣️ 09:30 – 10:00 - 前往飞行点（Đồi Bù 山或 Viên Nam 山）
+🚙 10:00 – 10:30 - 乘专用车辆上山顶 - 领取安全装备并听取飞行讲解
+🪂 10:30 – 12:00 - 滑翔伞飞行时段——在美丽的天空中观赏和飞行，每次飞行约10–20分钟，由飞行员陪同
+🏨 12:00 – 13:00 - 送客人返回酒店或最初集合点
+
+🌇 下午飞行：
+🚐 12:00 – 12:30 - 在酒店或集合点接客人
+🛣️ 12:30 – 13:30 - 前往飞行点（Đồi Bù 山或 Viên Nam 山）
+🚙 13:30 – 14:00 - 乘专用车辆上山顶 - 领取安全装备并听取飞行讲解
+🪂 14:30 – 16:30 - 滑翔伞飞行时段——在美丽的天空中观赏和飞行，每次飞行约10–20分钟，由飞行员陪同
+🏨 16:30 – 17:30 - 送客人返回酒店或最初集合点
+
+📌 注意事项：
+🎁 照片和视频、飞行证书及免费饮品将在降落后立即提供
+📍 接送地点视套餐而定。因天气原因，我们将在飞行前一晚与您联系确认接送时间
+🌦️ 行程可能根据天气情况调整
 
 请提前预订，让我们为您安排最佳的滑翔伞体验！`,
       landscape: "丘陵 – 方便 – 易抵达",
@@ -1405,11 +1474,25 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ⏰ प्रतिदिन सुबह 7:00 बजे – शाम 6:00 बजे तक खुला
 
 📅 कार्यक्रम:
-08:00 – 08:30 | होटल या मीटिंग पॉइंट पर पिकअप
-08:30 – 09:30 | फ्लाइंग साइट तक ट्रांसफर (डोई बू या विएन नाम पहाड़)
-09:30 – 10:00 | वैन से शिखर तक जाना - सुरक्षा उपकरण और ब्रीफिंग
-10:00 – 12:00 | पायलट के साथ 10–20 मिनट आसमान में ग्लाइड
-14:00 – 15:00 | होटल या मूल पिकअप पॉइंट तक वापसी
+
+🌅 सुबह की उड़ानें:
+🚐 08:00 – 08:30 - होटल या मीटिंग पॉइंट से पिकअप
+🛣️ 09:30 – 10:00 - उड़ान स्थल तक स्थानांतरण (दोई बू या विएन नाम पर्वत)
+🚙 10:00 – 10:30 - विशेष वाहन से चोटी तक — सुरक्षा उपकरण और उड़ान ब्रीफ़िंग
+🪂 10:30 – 12:00 - पैराग्लाइडिंग समय — सुंदर आसमान में उड़ान देखें और उड़ें; प्रत्येक उड़ान पायलट के साथ 10–20 मिनट की होती है
+🏨 12:00 – 13:00 - होटल या प्रारंभिक मीटिंग पॉइंट पर वापसी
+
+🌇 दोपहर की उड़ानें:
+🚐 12:00 – 12:30 - होटल या मीटिंग पॉइंट से पिकअप
+🛣️ 12:30 – 13:30 - उड़ान स्थल तक स्थानांतरण (दोई बू या विएन नाम पर्वत)
+🚙 13:30 – 14:00 - विशेष वाहन से चोटी तक — सुरक्षा उपकरण और उड़ान ब्रीफ़िंग
+🪂 14:30 – 16:30 - पैराग्लाइडिंग समय — सुंदर आसमान में उड़ान देखें और उड़ें; प्रत्येक उड़ान पायलट के साथ 10–20 मिनट की होती है
+🏨 16:30 – 17:30 - होटल या प्रारंभिक मीटिंग पॉइंट पर वापसी
+
+📌 ध्यान दें:
+🎁 फ़ोटो और वीडियो, उड़ान प्रमाणपत्र और मुफ़्त पेय लैंडिंग के तुरंत बाद दिए जाते हैं
+📍 पिकअप स्थान पैकेज पर निर्भर करता है। मौसम पर निर्भर होने के कारण हम उड़ान से एक शाम पहले संपर्क कर समय की पुष्टि करेंगे
+🌦️ मौसम के अनुसार कार्यक्रम में बदलाव संभव है
 
 कृपया पहले से बुक करें ताकि हम आपके पैराग्लाइडिंग अनुभव की बेहतरीन व्यवस्था कर सकें!`,
       landscape: "पहाड़ियाँ – सुविधाजनक – आसान पहुँच",
@@ -3511,6 +3594,8 @@ export function SpotDetailClient({
                         const isPackageSection = firstLine.includes('📦') || firstLine.includes('GÓI') || firstLine.includes('PACKAGE') || firstLine.includes('FORFAIT') || firstLine.includes('СТОИМОСТЬ') || firstLine.includes('套餐') || firstLine.includes('पैकेज');
                         const isOptionalSection = firstLine.includes('📸') || firstLine.includes('TÙY CHỌN') || firstLine.includes('OPTIONAL') || firstLine.includes('OPTIONNELS') || firstLine.includes('ДОПОЛНИТЕЛЬНЫЕ') || firstLine.includes('可选') || firstLine.includes('वैकल्पिक');
                         const isInfoSection = firstLine.includes('📌') || firstLine.includes('THÔNG TIN') || firstLine.includes('ADDITIONAL') || firstLine.includes('INFOS') || firstLine.includes('ДОПОЛНИТЕЛЬНАЯ') || firstLine.includes('更多') || firstLine.includes('अतिरिक्त');
+                        // Khối lịch trình: 📅 tiêu đề chung, 🌅 sáng, 🌇 chiều
+                        const isScheduleSection = firstLine.includes('📅') || firstLine.includes('🌅') || firstLine.includes('🌇');
                         const isOpenHours = firstLine.includes('⏰');
                         const isBookingNote = firstLine.includes('Vui lòng') || firstLine.includes('Please book') || firstLine.includes('Veuillez') || firstLine.includes('Пожалуйста') || firstLine.includes('请提前') || firstLine.includes('कृपया');
 
@@ -3537,7 +3622,7 @@ export function SpotDetailClient({
                         }
 
                         // Section with header and list items
-                        if (isPackageSection || isOptionalSection || isInfoSection) {
+                        if (isPackageSection || isOptionalSection || isInfoSection || isScheduleSection) {
                           // Chỉ phần TRƯỚC dấu ':' là tiêu đề (in hoa); phần sau
                           // dấu ':' là nội dung thường — tránh cả dòng bị uppercase
                           // (vd "DỊCH VỤ TÙY CHỌN: Quay Flycam..." ).

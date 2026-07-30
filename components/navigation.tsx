@@ -149,12 +149,30 @@ export function Navigation() {
                 .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
                 .map((item) => {
                   const active = isItemActive(item);
-                  // Phím màu xanh thương hiệu (#0194F3) trên mọi trang/trạng
-                  // thái cuộn để menu luôn nổi bật; mục đang mở đậm màu hơn
-                  // kèm viền sáng.
+                  /**
+                   * Bảng màu riêng cho từng phím (chỉ desktop) — dải màu
+                   * thiên nhiên trời/biển/rừng/nắng cùng độ bão hoà để hài
+                   * hoà với nhau và với tông xanh + cam của thương hiệu.
+                   */
+                  const NAV_COLORS: Record<string, { normal: string; active: string }> = {
+                    "/#hero":    { normal: "bg-[#0EA5E9] hover:bg-[#0284C7]", active: "bg-[#0369A1]" }, // Trang chủ — xanh da trời
+                    "/booking":  { normal: "bg-[#FF5E1F] hover:bg-[#EA4E10]", active: "bg-[#C2410C]" }, // Đặt bay — cam thương hiệu (CTA)
+                    "/spots":    { normal: "bg-[#0D9488] hover:bg-[#0F766E]", active: "bg-[#115E59]" }, // Điểm bay — xanh ngọc
+                    "/pilots":   { normal: "bg-[#6366F1] hover:bg-[#4F46E5]", active: "bg-[#4338CA]" }, // Phi công — chàm
+                    "/homestay": { normal: "bg-[#16A34A] hover:bg-[#15803D]", active: "bg-[#166534]" }, // Homestay — xanh lá
+                    "/store":    { normal: "bg-[#D97706] hover:bg-[#B45309]", active: "bg-[#92400E]" }, // Cửa hàng — hổ phách
+                    "/blog":     { normal: "bg-[#0284C7] hover:bg-[#0369A1]", active: "bg-[#075985]" }, // Tin tức — xanh dương đậm
+                    "/knowledge":{ normal: "bg-[#8B5CF6] hover:bg-[#7C3AED]", active: "bg-[#6D28D9]" }, // Kiến thức — tím
+                  };
+                  const colorKey =
+                    item.type === "hash" ? `/#${item.hashId}` : item.href;
+                  const color = NAV_COLORS[colorKey] ?? {
+                    normal: "bg-[#0194F3] hover:bg-[#0177C8]",
+                    active: "bg-[#0166AE]",
+                  };
                   const base = active
-                    ? "bg-[#0166AE] text-white font-semibold shadow-md ring-2 ring-white/60"
-                    : "bg-[#0194F3] text-white shadow-md hover:bg-[#0177C8]";
+                    ? `${color.active} text-white font-semibold shadow-md ring-2 ring-white/60`
+                    : `${color.normal} text-white shadow-md`;
 
                   if (item.type === "hash") {
                     const href = `/#${item.hashId}`;
@@ -247,11 +265,11 @@ export function Navigation() {
                         if (item.type === "hash") handleHashClick(e, item.hashId);
                         setIsOpen(false);
                       }}
-                      className={`my-1.5 rounded-xl px-4 py-3.5 text-center text-xl font-semibold text-white shadow-md transition-colors ${
+                      className={`text-2xl py-4 transition-colors font-medium ${
                         (item.type === "path" && pathname === item.href) ||
                         (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
-                          ? "bg-[#0166AE] ring-2 ring-white/60"
-                          : "bg-[#0194F3] hover:bg-[#0177C8]"
+                          ? "text-[#0194F3]"
+                          : "text-slate-100 hover:text-white"
                       }`}
                     >
                       {item.label}
