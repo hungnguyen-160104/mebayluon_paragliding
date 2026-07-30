@@ -108,9 +108,9 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     temporarilyClosed: "暂时关闭",
   },
   locationCards: {
-    ha_noi: { title: "河内", subtitle: "Đồi Bù - Viên Nam" },
+    ha_noi: { title: "河内", subtitle: "布山 - 员南" },
     khau_pha: { title: "考帕山口", subtitle: "木江界 - 图勒" },
-    sapa: { title: "沙坝", subtitle: "Lao Chai - Ta Van" },
+    sapa: { title: "沙坝", subtitle: "老寨 - 塔凡" },
     quan_ba: { title: "河江", subtitle: "管坝" },
     da_nang: { title: "岘港", subtitle: "山茶半岛" },
   },

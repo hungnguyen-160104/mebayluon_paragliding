@@ -46,11 +46,11 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     discountToLabel: "घटकर",
     paramotorDiscountAfter: " घटाकर 2,390,000 VND",
     paraglidingDescription: [
-      "Khau Pha Pass की चोटी से 1,268 मीटर की ऊँचाई पर टेकऑफ़ और Lim Mong Valley की खूबसूरत सीढ़ीनुमा घाटी में लैंडिंग का अनुभव लें।",
+      "खाउ फ़ा दर्रे की चोटी से 1,268 मीटर की ऊँचाई पर टेकऑफ़ और लिम मोंग घाटी की खूबसूरत सीढ़ीनुमा घाटी में लैंडिंग का अनुभव लें।",
       "बिना इंजन वाली पैराग्लाइडिंग प्राकृतिक हवा पर आधारित होती है और वास्तविक मुक्त उड़ान का अनुभव देती है।",
     ],
     paramotorDescription: [
-      "Paramotor उड़ान Lim Mong Valley (Mebayluon Clubhouse) से शुरू होकर Khau Pha की ओर ऊपर जाती है और फिर शुरुआती बिंदु पर लौटती है। उड़ान लगभग 10–25 मिनट की होती है।",
+      "Paramotor उड़ान लिम मोंग घाटी (Mebayluon Clubhouse) से शुरू होकर खाउ फ़ा की ओर ऊपर जाती है और फिर शुरुआती बिंदु पर लौटती है। उड़ान लगभग 10–25 मिनट की होती है।",
       "मोटर होने के कारण यह उड़ान हवा पर कम निर्भर होती है और अधिक ऊँचाई पर जाकर अलग नज़ारे दिखाती है।",
     ],
     locationDescription: {
@@ -103,7 +103,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDoiBuLabel: "उड़ान स्थान: दोई बू, हनोई - मैप देखें",
     mapVienNamLabel: "Vien Nam - मैप देखें",
     mapGoThangLongLabel: "हनोई से निश्चित पिकअप स्थान: GO! थैंग लॉन्ग मॉल - मैप देखें",
-    mapKhauPhaTakeoffLabel: "Khau Pha शिखर - मैप देखें",
+    mapKhauPhaTakeoffLabel: "खाउ फ़ा शिखर - मैप देखें",
     mapKhauPhaLandingLabel: "Clubhouse लैंडिंग - मैप देखें",
     mapKhauPhaClubhouseLabel: "Clubhouse Mebayluon - मैप देखें",
     mapDaNangTakeoffLabel: "Son Tra शिखर - मैप देखें",
@@ -113,10 +113,10 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     temporarilyClosed: "अस्थायी रूप से बंद",
   },
   locationCards: {
-    ha_noi: { title: "हनोई", subtitle: "Doi Bu - Vien Nam" },
-    khau_pha: { title: "खाउ फ़ा", subtitle: "Mu Cang Chai - Tu Le" },
-    sapa: { title: "सापा", subtitle: "Lao Chai - Ta Van" },
-    quan_ba: { title: "हा जियांग", subtitle: "Quan Ba" },
-    da_nang: { title: "दा नांग", subtitle: "Son Tra" },
+    ha_noi: { title: "हनोई", subtitle: "डोई बू - विएन नाम" },
+    khau_pha: { title: "खाउ फ़ा", subtitle: "मु कांग चाई - तू ले" },
+    sapa: { title: "सापा", subtitle: "लाओ चाई - ता वान" },
+    quan_ba: { title: "हा जियांग", subtitle: "क्वान बा" },
+    da_nang: { title: "दा नांग", subtitle: "सोन ट्रा प्रायद्वीप" },
   },
 };
