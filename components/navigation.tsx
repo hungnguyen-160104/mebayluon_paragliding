@@ -136,8 +136,8 @@ export function Navigation() {
                 {/* Bỏ lặp "Mebayluon" — chỉ còn "Paragliding" kiểu chữ
                     serif nghiêng, to hơn, canh theo LỀ PHẢI của MEBAYLUON */}
                 <span
-                  className={`hidden sm:block -mt-0.5 text-right text-sm font-medium tracking-wide transition-colors ${
-                    isScrolled ? "text-[#5B6B7A]" : "text-white"
+                  className={`hidden sm:block -mt-0.5 text-right text-lg font-medium tracking-wide transition-colors ${
+                    isScrolled ? "text-[#1C2930]" : "text-white"
                   }`}
                 >
                   Paragliding
@@ -244,7 +244,7 @@ export function Navigation() {
                 <div>
                   {/* Không dùng h1 trong navigation — h1 thuộc về nội dung từng trang */}
                   <span className="block font-bold text-white">MEBAYLUON</span>
-                  <p className="-mt-0.5 text-right text-sm font-medium tracking-wide text-slate-300">
+                  <p className="-mt-0.5 text-right text-lg font-medium tracking-wide text-white">
                     Paragliding
                   </p>
                 </div>

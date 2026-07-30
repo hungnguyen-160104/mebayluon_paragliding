@@ -67,6 +67,7 @@ type FooterDict = {
   preNotice: string;
   contact: string;
   followUs: string;
+  spotsInfo: string;
   license: string;
   rightsReserved: string;
 };
@@ -80,6 +81,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Lưu ý trước khi bay",
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
+    spotsInfo: "Thông tin điểm bay",
     license:
       "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
     rightsReserved: "Đã đăng ký bản quyền.",
@@ -92,6 +94,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Pre-Notice",
     contact: "Contact",
     followUs: "Follow Us",
+    spotsInfo: "Flying Spots Info",
     license:
       "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
     rightsReserved: "All rights reserved.",
@@ -104,6 +107,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Préavis",
     contact: "Contact",
     followUs: "Suivez-nous",
+    spotsInfo: "Infos sites de vol",
     license:
       "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
     rightsReserved: "Tous droits réservés.",
@@ -116,6 +120,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Предуведомление",
     contact: "Контакты",
     followUs: "Подписывайтесь",
+    spotsInfo: "О местах полётов",
     license:
       "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
     rightsReserved: "Все права защищены.",
@@ -128,6 +133,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "预先通知",
     contact: "联系方式",
     followUs: "关注我们",
+    spotsInfo: "飞行点信息",
     license: "飞行运营已获越南国防部总参谋部作战局许可。",
     rightsReserved: "保留所有权利。",
   },
@@ -139,6 +145,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "पूर्व सूचना",
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
+    spotsInfo: "उड़ान स्थल जानकारी",
     license:
       "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
     rightsReserved: "सर्वाधिकार सुरक्षित।",
@@ -305,8 +312,8 @@ export default function Footer() {
           <div
             className="
               grid grid-cols-1 gap-5
-              lg:grid-cols-[minmax(260px,1.2fr)_minmax(170px,0.8fr)_minmax(300px,1.1fr)_minmax(320px,0.95fr)]
-              xl:grid-cols-[minmax(300px,1.25fr)_minmax(180px,0.8fr)_minmax(320px,1.1fr)_minmax(340px,1fr)]
+              lg:grid-cols-[minmax(340px,1.45fr)_minmax(150px,0.6fr)_minmax(210px,0.85fr)_minmax(280px,0.85fr)]
+              xl:grid-cols-[minmax(390px,1.5fr)_minmax(160px,0.6fr)_minmax(230px,0.85fr)_minmax(300px,0.85fr)]
               xl:gap-6
             "
           >
@@ -317,7 +324,7 @@ export default function Footer() {
               </h2>
 
               <p
-                className={`${dancingScript.className} whitespace-nowrap text-lg leading-6 text-[#0194F3] sm:text-xl`}
+                className={`${dancingScript.className} text-lg leading-6 text-[#0194F3] sm:text-xl`}
               >
                 {t.slogan}
               </p>
@@ -325,6 +332,44 @@ export default function Footer() {
               <p className="max-w-[30rem] text-[14px] leading-6 text-slate-300">
                 {t.license}
               </p>
+
+              {/* LIÊN HỆ — ghép vào cột thương hiệu */}
+              <h3 className="pt-1 text-lg font-semibold text-white">
+                {t.contact}
+              </h3>
+
+              <ul className="space-y-2 text-[14px] text-slate-300">
+                <li className="flex items-center gap-3">
+                  <Phone size={18} className="shrink-0" />
+
+                  <span className="flex flex-wrap items-center gap-x-1.5">
+                    <a
+                      href="tel:+84964073555"
+                      className="transition-colors hover:text-white"
+                    >
+                      +84 964 073 555
+                    </a>
+                    <span aria-hidden className="text-slate-500">|</span>
+                    <a
+                      href="tel:+84385907789"
+                      className="transition-colors hover:text-white"
+                    >
+                      +84 385 907 789
+                    </a>
+                  </span>
+                </li>
+
+                <li className="flex items-center gap-3">
+                  <Mail size={18} className="shrink-0" />
+
+                  <a
+                    href="mailto:mebayluon@gmail.com"
+                    className="break-all transition-colors hover:text-white sm:break-normal"
+                  >
+                    mebayluon@gmail.com
+                  </a>
+                </li>
+              </ul>
             </div>
 
             {/* QUICK LINKS */}
@@ -363,46 +408,13 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* CONTACT */}
+            {/* THÔNG TIN ĐIỂM BAY */}
             <div className="min-w-0">
               <h3 className="mb-3 text-lg font-semibold text-white">
-                {t.contact}
+                {t.spotsInfo}
               </h3>
 
               <ul className="space-y-2 text-[14px] text-slate-300">
-                <li className="flex items-center gap-3">
-                  <Phone size={18} className="shrink-0" />
-
-                  <span className="flex flex-wrap items-center gap-x-1.5">
-                    <a
-                      href="tel:+84964073555"
-                      className="transition-colors hover:text-white"
-                    >
-                      +84 964 073 555
-                    </a>
-                    <span aria-hidden className="text-slate-500">|</span>
-                    <a
-                      href="tel:+84385907789"
-                      className="transition-colors hover:text-white"
-                    >
-                      +84 385 907 789
-                    </a>
-                  </span>
-                </li>
-
-                <li className="flex items-center gap-3">
-                  <Mail size={18} className="shrink-0" />
-
-                  <a
-                    href="mailto:mebayluon@gmail.com"
-                    className="break-all transition-colors hover:text-white sm:break-normal"
-                  >
-                    mebayluon@gmail.com
-                  </a>
-                </li>
-              </ul>
-
-              <ul className="mt-3 space-y-2 text-[14px] text-slate-300">
                 {FOOTER_SPOTS.map((spot) => (
                   <li key={spot.href} className="flex items-start gap-3">
                     <MapPin size={18} className="mt-0.5 shrink-0" />

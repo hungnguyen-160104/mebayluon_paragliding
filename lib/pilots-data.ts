@@ -23,6 +23,8 @@ export interface Pilot {
   certificates: Record<PilotLang, string[]>;
 
   bio: Record<PilotLang, string>;
+  /** Slug bài blog kể câu chuyện của phi công (nếu có) — hiện CTA trên trang chi tiết. */
+  storySlug?: string;
   funFacts: Record<PilotLang, string[]>;
   achievements: Record<PilotLang, string[]>;
   flyingStyle: Record<PilotLang, string>;
@@ -1150,6 +1152,7 @@ export const pilots: Pilot[] = [
 
   {
     slug: "chien-thang",
+    storySlug: "phi-cong-vu-chien-thang",
     name: "CHIẾN THẮNG",
     nickname: {
       vi: "Thắng thần sét",
@@ -1814,6 +1817,7 @@ export const pilots: Pilot[] = [
 
   {
     slug: "bishal-skyboy",
+    storySlug: "phi-cong-bishal-jalari",
     name: "BISHAL SKYBOY",
     nickname: {
       vi: "Skyboy",
@@ -2086,6 +2090,7 @@ export const pilots: Pilot[] = [
 
   {
     slug: "dang-van-my",
+    storySlug: "phi-cong-dang-van-my",
     name: "Đặng Văn Mỹ",
     nickname: {
       vi: "Đội trưởng Mỹ",

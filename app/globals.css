@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Kích hoạt class `prose` (định dạng bài viết) — thiếu plugin này thì nội
+   dung bài sản phẩm/blog/điều khoản mất hết heading, khoảng cách, danh sách. */
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 

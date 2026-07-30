@@ -6,7 +6,18 @@ import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Pilot } from "@/lib/pilots-data"
+import Link from "next/link"
 import { useLanguage, type Language } from "@/contexts/language-context"
+
+/** Nhãn nút "Đọc câu chuyện" theo ngôn ngữ. */
+const STORY_LABEL: Record<Language, string> = {
+  vi: "Đọc câu chuyện của phi công",
+  en: "Read the pilot's story",
+  fr: "Lire l’histoire du pilote",
+  ru: "Читать историю пилота",
+  zh: "阅读飞行员的故事",
+  hi: "पायलट की कहानी पढ़ें",
+}
 
 interface PilotDetailClientPageProps {
   pilotData: Pilot
@@ -137,6 +148,16 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                           <li key={idx}>{item}</li>
                         ))}
                       </ul>
+
+                      {pilotData.storySlug ? (
+                        <Link
+                          href={`/blog/${pilotData.storySlug}`}
+                          className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-cyan-400/70 bg-cyan-400/10 px-6 py-3 text-base font-semibold text-cyan-300 transition-all hover:bg-cyan-400/25 hover:text-white"
+                        >
+                          📖 {STORY_LABEL[lang] ?? STORY_LABEL.vi}
+                          <span aria-hidden>→</span>
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
 

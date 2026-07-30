@@ -86,6 +86,7 @@
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.16.0",
     "@tailwindcss/postcss": "^4.1.9",
+    "@tailwindcss/typography": "^0.5.20",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@types/bcryptjs": "^3.0.0",

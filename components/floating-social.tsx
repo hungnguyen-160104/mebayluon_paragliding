@@ -84,7 +84,7 @@ export function FloatingSocial() {
           >
             <Button
               size="icon"
-              className={`w-12 h-12 rounded-full shadow-lg ${social.color} flex items-center justify-center`}
+              className={`w-10 h-10 rounded-full shadow-lg ${social.color} flex items-center justify-center`}
               onClick={() => window.open(social.url, "_blank")}
               title={social.name}
             >
