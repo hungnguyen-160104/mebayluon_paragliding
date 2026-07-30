@@ -46,8 +46,10 @@ function legacyBlogPath(rest: string): string | null {
  * Vì vậy phải tự redirect ở đây.
  */
 const PARENT_PATH_REDIRECTS: Record<string, string> = {
-  "/spots": "/#flying-spots",
+  // /spots đã có trang danh sách riêng — không redirect nữa
   "/fixed": "/blog",
+  // Viên Nam đã gộp vào thẻ Hà Nội (Đồi Bù – Viên Nam)
+  "/spots/vien-nam": "/spots/doi-bu",
 };
 
 export function middleware(request: NextRequest) {

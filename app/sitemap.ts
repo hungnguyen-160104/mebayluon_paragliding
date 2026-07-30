@@ -28,9 +28,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
       alternates: alts(BASE),
     },
-    // LƯU Ý: KHÔNG khai `${BASE}/spots` — route /spots (trang danh sách)
-    // không tồn tại, chỉ có /spots/[slug]. Khai vào đây là nộp URL 404
-    // cho Google. Nếu sau này tạo trang danh sách điểm bay thì thêm lại.
+    {
+      url: `${BASE}/spots`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+      alternates: alts(`${BASE}/spots`),
+    },
     {
       url: `${BASE}/blog`,
       lastModified: new Date(),

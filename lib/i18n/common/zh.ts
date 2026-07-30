@@ -5,6 +5,7 @@ export const zh: CommonTranslation = {
   nav: {
     home: "首页",
     about: "关于我们",
+    spots: "飞行点",
     pilots: "飞行员",
     homestay: "民宿与咖啡馆",
     booking: "预订飞行",

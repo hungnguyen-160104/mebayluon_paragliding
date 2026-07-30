@@ -5,6 +5,7 @@ export const vi: CommonTranslation = {
   nav: {
     home: "Trang chủ",
     about: "Về chúng tôi",
+    spots: "Điểm bay",
     pilots: "Phi công",
     homestay: "Homestay & Café",
     booking: "Đặt bay",

@@ -511,8 +511,8 @@ export default function PilotsPage() {
       <div className="relative z-10">
         <Navigation />
 
-        {/* Intro */}
-        <section className="py-16 relative z-10 text-white">
+        {/* Intro — pt lớn để không dính vào thanh menu cố định phía trên */}
+        <section className="pt-28 pb-16 md:pt-32 relative z-10 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center space-y-6">
               <h2 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl font-extrabold text-white shadow-lg">{introTitle}</h2>

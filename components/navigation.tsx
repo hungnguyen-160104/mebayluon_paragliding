@@ -82,9 +82,10 @@ export function Navigation() {
 
   const navItems: NavItem[] = [
     { type: "hash", href: "/#hero", hashId: "hero", label: t?.nav?.home ?? "Trang chủ" },
+    { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
+    { type: "path", href: "/spots", label: t?.nav?.spots ?? "Điểm bay" },
     { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },
     { type: "path", href: "/homestay", label: t?.nav?.homestay ?? "Homestay & Cà phê" },
-    { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
     { type: "path", href: "/store", label: t?.nav?.store ?? "Cửa hàng" },
     { type: "path", href: "/blog", label: t?.nav?.blog ?? "Tin tức" },
     { type: "path", href: "/knowledge", label: t?.nav?.knowledge ?? "Kiến thức dù lượn – Học bay" },

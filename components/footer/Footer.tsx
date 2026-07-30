@@ -290,37 +290,37 @@ export default function Footer() {
           border border-white/20 bg-slate-800/50 backdrop-blur-xl
         "
       >
-        <div className="relative px-5 py-12 md:px-8 lg:px-10 xl:px-12">
+        <div className="relative px-5 py-7 md:px-8 lg:px-10 xl:px-12">
           <div
             className="
-              grid grid-cols-1 gap-10
+              grid grid-cols-1 gap-6
               lg:grid-cols-[minmax(260px,1.2fr)_minmax(170px,0.8fr)_minmax(300px,1.1fr)_minmax(320px,0.95fr)]
               xl:grid-cols-[minmax(300px,1.25fr)_minmax(180px,0.8fr)_minmax(320px,1.1fr)_minmax(340px,1fr)]
-              xl:gap-12
+              xl:gap-8
             "
           >
             {/* BRAND */}
-            <div className="min-w-0 space-y-5">
-              <h2 className="text-3xl font-bold leading-tight bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent sm:text-4xl">
+            <div className="min-w-0 space-y-3">
+              <h2 className="text-2xl font-bold leading-tight bg-linear-to-r from-orange-400 via-red-400 to-orange-300 bg-clip-text text-transparent sm:text-3xl">
                 Mebayluon Paragliding
               </h2>
 
-              <p className="max-w-[30rem] text-[15px] leading-8 text-slate-300">
+              <p className="max-w-[30rem] text-[14px] leading-6 text-slate-300">
                 {t.slogan}
               </p>
 
-              <p className="max-w-[30rem] text-[15px] leading-8 text-slate-300">
+              <p className="max-w-[30rem] text-[14px] leading-6 text-slate-300">
                 {t.license}
               </p>
             </div>
 
             {/* QUICK LINKS */}
             <div className="min-w-0">
-              <h3 className="mb-5 text-2xl font-semibold text-white">
+              <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.quickLinks}
               </h3>
 
-              <ul className="space-y-5">
+              <ul className="space-y-2.5">
                 <li>
                   <Link
                     href={makeLocalizedHref("/pilots", pathname)}
@@ -352,20 +352,29 @@ export default function Footer() {
 
             {/* CONTACT */}
             <div className="min-w-0">
-              <h3 className="mb-5 text-2xl font-semibold text-white">
+              <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.contact}
               </h3>
 
-              <ul className="space-y-3 text-[15px] text-slate-300">
+              <ul className="space-y-2 text-[14px] text-slate-300">
                 <li className="flex items-center gap-3">
                   <Phone size={18} className="shrink-0" />
 
-                  <a
-                    href="tel:+84964073555"
-                    className="transition-colors hover:text-white"
-                  >
-                    +84 964 073 555
-                  </a>
+                  <span className="flex flex-wrap items-center gap-x-1.5">
+                    <a
+                      href="tel:+84964073555"
+                      className="transition-colors hover:text-white"
+                    >
+                      +84 964 073 555
+                    </a>
+                    <span aria-hidden className="text-slate-500">|</span>
+                    <a
+                      href="tel:+84385907789"
+                      className="transition-colors hover:text-white"
+                    >
+                      +84 385 907 789
+                    </a>
+                  </span>
                 </li>
 
                 <li className="flex items-center gap-3">
@@ -380,7 +389,7 @@ export default function Footer() {
                 </li>
               </ul>
 
-              <ul className="mt-5 space-y-3 text-[15px] text-slate-300">
+              <ul className="mt-3 space-y-2 text-[14px] text-slate-300">
                 {FOOTER_SPOTS.map((spot) => (
                   <li key={spot.href} className="flex items-start gap-3">
                     <MapPin size={18} className="mt-0.5 shrink-0" />
@@ -398,7 +407,7 @@ export default function Footer() {
 
             {/* SOCIAL */}
             <div className="min-w-0">
-              <h3 className="mb-5 text-2xl font-semibold text-white">
+              <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.followUs}
               </h3>
 
@@ -426,7 +435,7 @@ export default function Footer() {
           </div>
 
           {/* COPYRIGHT */}
-          <div className="mt-12 border-t border-white/15 pt-6 text-center text-sm text-slate-400">
+          <div className="mt-6 border-t border-white/15 pt-4 text-center text-[13px] text-slate-400">
             <p className="inline-flex flex-wrap items-center justify-center gap-2 select-none">
               <span
                 className="inline-flex flex-wrap items-center justify-center gap-2"

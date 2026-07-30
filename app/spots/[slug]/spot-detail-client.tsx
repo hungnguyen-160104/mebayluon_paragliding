@@ -588,7 +588,9 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
 
 📌 THÔNG TIN THÊM:
-🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+🕒 Thời gian bay trải nghiệm:
++ Dù lượn: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
++ Dù lượn gắn động cơ: 10–20 phút
 ⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay)
@@ -597,7 +599,7 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
       landscape: "Đèo cao – thung lũng – mùa vàng",
-      duration: "10 – 15 phút",
+      duration: "10 – 20 phút",
     },
     en: {
       name: "Khau Pha Pass",
@@ -621,7 +623,9 @@ Golden harvest season (August–September): terraces dyed in brilliant gold, enc
 📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
 
 📌 ADDITIONAL INFO:
-🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
+🕒 Flight duration:
++ Paragliding: 10–15 minutes (pilot may extend depending on weather)
++ Paramotor: 10–20 minutes
 ⏳ Total trip time: approximately 40–60 minutes
 🔄 Free reschedule/cancellation due to weather
 💳 Cash payment (at flying site)
@@ -630,7 +634,7 @@ Golden harvest season (August–September): terraces dyed in brilliant gold, enc
 
 Please book in advance so we can best arrange your paragliding experience!`,
       landscape: "High pass – valley – golden season",
-      duration: "10–15 minutes",
+      duration: "10–20 minutes",
     },
     fr: {
       name: "Col de Khau Phạ",
@@ -654,7 +658,9 @@ Saison dorée (août–septembre) : les terrasses se parent d’or éclatant, d�
 📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
 
 📌 INFOS SUPPLÉMENTAIRES :
-🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
+🕒 Durée du vol :
++ Parapente : 10–15 minutes (le pilote peut prolonger selon la météo)
++ Paramoteur : 10–20 minutes
 ⏳ Durée totale du trajet : environ 40–60 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
 💳 Paiement en espèces (sur le site de vol)
@@ -663,7 +669,7 @@ Saison dorée (août–septembre) : les terrasses se parent d’or éclatant, d�
 
 Veuillez réserver à l’avance pour que nous puissions organiser au mieux votre expérience de parapente !`,
       landscape: "Haut col – vallée – saison dorée",
-      duration: "10–15 minutes",
+      duration: "10–20 minutes",
     },
     ru: {
       name: "Перевал Кхау Фа",
@@ -687,7 +693,9 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
-🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
+🕒 Продолжительность полёта:
++ Параплан: 10–15 минут (пилот может продлить в зависимости от погоды)
++ Парамотор: 10–20 минут
 ⏳ Общее время поездки: около 40–60 минут
 🔄 Бесплатный перенос/отмена из-за погоды
 💳 Оплата наличными (на месте старта)
@@ -696,7 +704,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 Пожалуйста, бронируйте заранее, чтобы мы могли наилучшим образом организовать ваш полёт!`,
       landscape: "Высокий перевал – долина – золотой сезон",
-      duration: "10–15 minutes",
+      duration: "10–20 минут",
     },
     zh: {
       name: "考帕山口",
@@ -720,7 +728,9 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：航拍/无人机拍摄和360°摄像
 
 📌 更多信息：
-🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
+🕒 飞行时长：
++ 无动力滑翔伞：10–15分钟（飞行员可根据天气延长）
++ 动力伞：10–20分钟
 ⏳ 总行程时间：约40–60分钟
 🔄 因天气原因可免费改期/取消
 💳 现金支付（在飞行点）
@@ -729,7 +739,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 请提前预订，让我们为您安排最佳的滑翔伞体验！`,
       landscape: "高山口 – 山谷 – 金色季节",
-      duration: "10–15 分钟",
+      duration: "10–20 分钟",
     },
     hi: {
       name: "खाу फ़ा दर्रा",
@@ -753,7 +763,9 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 
 📌 अतिरिक्त जानकारी:
-🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
+🕒 उड़ान अवधि:
++ पैराग्लाइडिंग: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
++ पैरामोटर: 10–20 मिनट
 ⏳ कुल यात्रा समय: लगभग 40–60 मिनट
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
 💳 नकद भुगतान (फ्लाइंग साइट पर)
@@ -762,7 +774,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
 कृपया पहले से बुक करें ताकि हम आपके पैराग्लाइडिंग अनुभव की बेहतरीन व्यवस्था कर सकें!`,
       landscape: "ऊँचा दर्रा – घाटी – सुनहरा मौसम",
-      duration: "10–15 मिनट",
+      duration: "10–20 मिनट",
     },
   },
 
@@ -3326,7 +3338,15 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
 /* =========================
    Component
 ========================= */
-export function SpotDetailClient({ spot }: { spot: SpotData }) {
+export function SpotDetailClient({
+  spot,
+  articlesSlot,
+}: {
+  spot: SpotData;
+  /** Section "Đọc thêm về điểm bay" (render từ server) — đặt trước mục
+   *  "Khám phá thêm các điểm bay khác". */
+  articlesSlot?: React.ReactNode;
+}) {
   const { language } = useLanguage();
   const lang: Lang = toSafeLang(language);
   const ui = uiI18n[lang];
@@ -3518,18 +3538,32 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
 
                         // Section with header and list items
                         if (isPackageSection || isOptionalSection || isInfoSection) {
+                          // Chỉ phần TRƯỚC dấu ':' là tiêu đề (in hoa); phần sau
+                          // dấu ':' là nội dung thường — tránh cả dòng bị uppercase
+                          // (vd "DỊCH VỤ TÙY CHỌN: Quay Flycam..." ).
+                          const colonMatch = firstLine.match(/^([^:：]*[:：])\s*(\S.*)$/);
+                          const headerText = colonMatch ? colonMatch[1] : firstLine;
+                          const contentLines = colonMatch
+                            ? [colonMatch[2], ...lines.slice(1)]
+                            : lines.slice(1);
+
                           return (
                             <div key={blockIndex} className="space-y-2">
                               <h4 className="text-xs md:text-sm font-semibold text-amber-300 uppercase tracking-wide">
-                                {firstLine}
+                                {headerText}
                               </h4>
                               <div className="grid gap-1">
-                                {lines.slice(1).map((line, lineIndex) => {
+                                {contentLines.map((line, lineIndex) => {
                                   // Tách icon emoji ở đầu dòng một cách an toàn (cờ `u` để xử lý đúng emoji astral/surrogate),
                                   // bắt mọi emoji + biến thể (U+FE0F) thay vì danh sách cứng 5 ký tự → tránh lỗi "• + emoji" và ô vuông.
                                   const iconMatch = line.match(/^(\p{Extended_Pictographic}️?)\s*/u);
-                                  const icon = iconMatch ? iconMatch[1] : '•';
-                                  const text = iconMatch ? line.slice(iconMatch[0].length) : line;
+                                  const plusLine = !iconMatch && line.trim().startsWith('+');
+                                  const icon = iconMatch ? iconMatch[1] : plusLine ? '+' : '•';
+                                  const text = iconMatch
+                                    ? line.slice(iconMatch[0].length)
+                                    : plusLine
+                                      ? line.trim().slice(1).trim()
+                                      : line;
                                   return (
                                     <div key={lineIndex} className="flex items-start gap-2 text-xs md:text-sm text-stone-300">
                                       <span className="shrink-0">{icon}</span>
@@ -3652,6 +3686,9 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
         </div>
       </section>
 
+      {/* Bài viết về điểm bay (server render, truyền qua slot) */}
+      {articlesSlot}
+
       {/* CTA */}
       <section className="relative z-10 py-16">
         <motion.div
@@ -3664,7 +3701,7 @@ export function SpotDetailClient({ spot }: { spot: SpotData }) {
           <p className="text-xl mb-8 max-w-2xl mx-auto text-slate-200">{ui.exploreMoreDescription}</p>
 
           <Button asChild size="lg" className="bg-accent text-white hover:bg-accent/90 h-14 px-8">
-            <Link href="/#flying-spots">
+            <Link href="/spots">
               <span>{ui.viewAllSpots}</span>
             </Link>
           </Button>

@@ -5,6 +5,7 @@ export const fr: CommonTranslation = {
   nav: {
     home: "Accueil",
     about: "À propos",
+    spots: "Sites de vol",
     pilots: "Pilotes",
     homestay: "Homestay & Café",
     booking: "Réserver un vol",

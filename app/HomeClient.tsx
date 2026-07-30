@@ -367,7 +367,7 @@ export default function HomePage() {
               variant="outline"
               className="h-14 border-white bg-white/10 px-8 text-lg text-white backdrop-blur-sm hover:bg-white hover:text-foreground"
             >
-              <Link href="#about">{t?.hero?.learnMore ?? "Tìm hiểu thêm"}</Link>
+              <Link href="/spots">{t?.hero?.learnMore ?? "Tìm hiểu thêm"}</Link>
             </Button>
           </div>
         </motion.div>
@@ -408,28 +408,9 @@ export default function HomePage() {
 
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button asChild className="h-11 px-6 text-white">
-                    <a
-                      href="#spots"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const el = document.getElementById("spots");
-                        if (!el) return;
-
-                        const nav = document.querySelector<HTMLElement>(
-                          "nav[data-nav-root]",
-                        );
-                        const offset = (nav?.offsetHeight ?? 80) + 8;
-                        const top =
-                          el.getBoundingClientRect().top +
-                          window.scrollY -
-                          offset;
-
-                        window.scrollTo({ top, behavior: "smooth" });
-                        history.replaceState(null, "", "#spots");
-                      }}
-                    >
+                    <Link href="/pilots">
                       {t?.spots?.viewDetails ?? "Xem Chi Tiết"}
-                    </a>
+                    </Link>
                   </Button>
 
                   <Button
@@ -449,15 +430,15 @@ export default function HomePage() {
               viewport={{ once: true }}
             >
               <div className="relative aspect-16/10 w-full overflow-hidden rounded-[28px] shadow-2xl ring-1 ring-white/30 md:aspect-video lg:ml-[-5%] lg:w-[110%]">
-                <video
-                  className="absolute inset-0 h-full w-full object-cover"
-                  src="/about-us-video1.mp4"
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="metadata"
-                  muted
-                  aria-label="Mebayluon Paragliding - About"
+                {/* Trước đây là <video src="/about-us-video1.mp4"> nhưng file
+                    không tồn tại trong public/ nên ô hiển thị trống. Tạm dùng
+                    ảnh; khi có video thì thêm file vào public/ rồi đổi lại. */}
+                <Image
+                  src="/about-us.jpg"
+                  alt="Mebayluon Paragliding - Về chúng tôi"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               </div>
             </motion.div>

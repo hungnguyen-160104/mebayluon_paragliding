@@ -2,6 +2,7 @@ export type CommonTranslation = {
   nav: {
     home: string;
     about: string;
+    spots: string;
     pilots: string;
     homestay: string;
     booking: string;

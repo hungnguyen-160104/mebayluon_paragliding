@@ -222,13 +222,13 @@ const nextConfig = {
       { source: '/about', destination: '/', permanent: true },
 
       /* ===== Đường dẫn cha không có trang riêng =====
-       * /spots/khau-pha tồn tại nhưng /spots thì không. Người dùng hay cắt
-       * bớt URL, và Google cũng thử đường dẫn cha — để 404 là lãng phí.
-       * Đưa về mục danh sách điểm bay trên trang chủ.
-       * (Bản có prefix ngôn ngữ được middleware xử lý trước nên vẫn khớp.)
+       * /spots đã có trang danh sách riêng (app/spots/page.tsx) nên KHÔNG
+       * redirect nữa. /fixed vẫn chỉ có /fixed/[key].
        */
-      { source: '/spots', destination: '/#flying-spots', permanent: true },
       { source: '/fixed', destination: '/blog', permanent: true },
+
+      /* Viên Nam đã gộp vào thẻ Hà Nội (Đồi Bù – Viên Nam) */
+      { source: '/spots/vien-nam', destination: '/spots/doi-bu', permanent: true },
     ];
   },
   

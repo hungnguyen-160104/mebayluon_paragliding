@@ -12,6 +12,11 @@ import {
 } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
 import { getUrlLocale } from "@/lib/locale";
+import {
+  SPOT_ARTICLES,
+  SPOT_ARTICLES_HEADING,
+} from "@/lib/spot-articles";
+import { ArrowRight, BookOpen, Star } from "lucide-react";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -113,7 +118,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
   "son-tra": {
     name: "Sơn Trà",
     title: "Lướt Trên Bán Đảo Sơn Trà",
-    altitude: "300 – 700 m",
+    altitude: "600 – 800 m",
     description:
       "Hướng vịnh Đà Nẵng với gió biển ổn định, nhìn toàn cảnh thành phố và bãi biển.",
     landscape: "Bán đảo – đại dương – vịnh Đà Nẵng",
@@ -166,7 +171,9 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
 
 📌 THÔNG TIN THÊM:
-🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
+🕒 Thời gian bay trải nghiệm:
++ Dù lượn: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
++ Dù lượn gắn động cơ: 10–20 phút
 ⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay)
@@ -176,7 +183,7 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Đèo cao – thung lũng – mùa vàng",
     metaLandscape: "Hùng vĩ – ruộng bậc thang – mùa vàng",
-    duration: "10 – 15 phút",
+    duration: "10 – 20 phút",
     landingPoint: "Thung lũng dưới chân đèo",
     basePrice: 2190000,
     image: "/spots/khau-pha/hero.jpg",
@@ -506,6 +513,11 @@ export default async function SpotDetailPage({
   const isSapa = slug === "muong-hoa-sapa" || slug === "sapa" || /sapa/.test(slug);
   const isKhauPha = slug === "khau-pha" || /khau-pha/.test(slug);
 
+  // Bài viết CTA cho điểm bay này (nếu có) + tiêu đề theo ngôn ngữ URL
+  const articleSet = SPOT_ARTICLES[canonicalSpotSlug(slug)];
+  const heading =
+    SPOT_ARTICLES_HEADING[await getUrlLocale()] ?? SPOT_ARTICLES_HEADING.vi;
+
   /* ===== JSON-LD: TouristAttraction + Product (giá tour) + Breadcrumb =====
    * Giúp Google hiển thị rich result (giá, breadcrumb) trên kết quả tìm kiếm.
    * Alias (vd /spots/sapa) dùng URL chuẩn để gộp tín hiệu về một trang.
@@ -537,6 +549,73 @@ export default async function SpotDetailPage({
   const serializeJsonLd = (data: unknown) =>
     JSON.stringify(data).replace(/</g, "\\u003c");
 
+
+  /**
+   * Section "Đọc thêm về điểm bay" — truyền vào SpotDetailClient qua slot
+   * để đặt TRƯỚC mục "Khám phá thêm các điểm bay khác".
+   */
+  const articlesSection = articleSet ? (
+        <section className="relative z-10 py-16">
+          <div className="container mx-auto max-w-5xl px-4">
+            <div className="mb-8 text-center text-white">
+              <h2
+                className="font-serif text-3xl font-bold md:text-4xl"
+                style={{ textShadow: "2px 2px 8px rgba(0,0,0,.7)" }}
+              >
+                {heading.title}
+              </h2>
+              <p
+                className="mt-2 text-slate-200"
+                style={{ textShadow: "1px 1px 6px rgba(0,0,0,.7)" }}
+              >
+                {heading.subtitle}
+              </p>
+            </div>
+
+            {/* Bài nổi bật */}
+            <Link
+              href={`/blog/${articleSet.featured.slug}`}
+              className="group mb-6 flex items-center gap-4 rounded-2xl border-2 border-accent/60 bg-black/30 p-5 text-white shadow-lg backdrop-blur-lg transition-all hover:border-accent hover:bg-black/40 hover:shadow-2xl sm:p-6"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/90">
+                <Star size={22} className="text-white" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-bold leading-snug sm:text-xl">
+                  {articleSet.featured.title}
+                </span>
+              </span>
+              <ArrowRight
+                size={22}
+                className="shrink-0 text-accent transition-transform group-hover:translate-x-1"
+              />
+            </Link>
+
+            {/* Các bài liên quan */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {articleSet.articles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/blog/${article.slug}`}
+                  className="group flex items-center gap-3 rounded-xl border border-white/20 bg-black/20 p-4 text-white backdrop-blur-lg transition-all hover:border-accent/70 hover:bg-black/35"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+                    <BookOpen size={17} className="text-accent" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug">
+                    {article.title}
+                  </span>
+                  <ArrowRight
+                    size={18}
+                    className="shrink-0 text-white/50 transition-all group-hover:translate-x-1 group-hover:text-accent"
+                  />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+) : null;
+
   return (
     <div className="min-h-screen">
       <script
@@ -552,7 +631,8 @@ export default async function SpotDetailPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <Navigation />
-      <SpotDetailClient spot={spot as SpotData} />
+      <SpotDetailClient spot={spot as SpotData} articlesSlot={articlesSection} />
+
 
       {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}
       {isSapa && <SpotGoogleReview spot="sapa" variant="floating" position="br" />}

@@ -15,7 +15,7 @@ export const SPOT_SLUGS = [
   "khau-pha",
   "tram-tau",
   "ha-giang",
-  "vien-nam",
+  // "vien-nam" đã GỘP vào doi-bu (thẻ Hà Nội) — URL cũ 301 về /spots/doi-bu
   "doi-bu",
   "dalat",
 ] as const;

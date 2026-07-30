@@ -6,6 +6,11 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive } from "@/lib/posts-data";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+import {
+  RelatedPostsGrid,
+  RelatedPostsSidebar,
+  type RelatedPostItem,
+} from "./RelatedPosts";
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
@@ -377,6 +382,7 @@ const UI: Record<
   {
     back: string;
     related: string;
+    seeMore: string;
     unknownDate: string;
     views: (n: number) => string;
     noContent: string;
@@ -386,6 +392,7 @@ const UI: Record<
   vi: {
     back: "Quay lại",
     related: "Bài viết liên quan",
+    seeMore: "Xem thêm",
     unknownDate: "Không rõ ngày đăng",
     views: (n) => `${n} lượt xem`,
     noContent: "Bài viết chưa có nội dung.",
@@ -394,6 +401,7 @@ const UI: Record<
   en: {
     back: "Back",
     related: "Related posts",
+    seeMore: "See more",
     unknownDate: "Date unknown",
     views: (n) => `${n} views`,
     noContent: "This article has no content yet.",
@@ -402,6 +410,7 @@ const UI: Record<
   fr: {
     back: "Retour",
     related: "Articles associés",
+    seeMore: "Voir plus",
     unknownDate: "Date inconnue",
     views: (n) => `${n} vues`,
     noContent: "Cet article n’a pas encore de contenu.",
@@ -410,6 +419,7 @@ const UI: Record<
   ru: {
     back: "Назад",
     related: "Похожие статьи",
+    seeMore: "Показать ещё",
     unknownDate: "Дата неизвестна",
     views: (n) => `${n} просмотров`,
     noContent: "У этой статьи пока нет содержимого.",
@@ -418,6 +428,7 @@ const UI: Record<
   zh: {
     back: "返回",
     related: "相关文章",
+    seeMore: "查看更多",
     unknownDate: "日期未知",
     views: (n) => `${n} 次浏览`,
     noContent: "这篇文章还没有内容。",
@@ -426,6 +437,7 @@ const UI: Record<
   hi: {
     back: "वापस जाएँ",
     related: "संबंधित पोस्ट",
+    seeMore: "और देखें",
     unknownDate: "तारीख अज्ञात",
     views: (n) => `${n} व्यूज़`,
     noContent: "इस लेख में अभी सामग्री नहीं है।",
@@ -527,16 +539,21 @@ export default async function BlogPostPage({
     permanentRedirect(`/blog/${post.slug}`);
   }
 
+  /**
+   * Lấy RỘNG danh sách bài liên quan (không chỉ 6-7 bài): client hiển thị
+   * 8 bài đầu, bấm "Xem thêm" mở thêm 10 bài mỗi lần — dữ liệu đã có sẵn
+   * nên không cần gọi API khi bấm.
+   */
   const relatedResp = await getPosts({
     category: String(post.category || "news"),
     type: "blog",
     isPublished: true,
-    limit: 7,
+    limit: 100,
     sort: "-publishedAt,-createdAt",
     excludeSlug: post.slug,
   });
 
-  const relatedPosts = ((relatedResp.items ?? []) as Post[]).slice(0, 6);
+  const relatedPosts = (relatedResp.items ?? []) as Post[];
 
   const title = pickTitle(post, isVietnamese);
   const excerpt = pickExcerpt(post, isVietnamese);
@@ -553,6 +570,20 @@ export default async function BlogPostPage({
           day: "numeric",
         })
       : ui.unknownDate;
+
+  // Dữ liệu phẳng cho component "bài liên quan" (client) — format ngày ngay
+  // tại server để tránh lệch hydration giữa server/trình duyệt.
+  const relatedItems: RelatedPostItem[] = relatedPosts.map((item) => {
+    const itemDate = item.publishedAt || item.createdAt;
+    return {
+      slug: String(item.slug),
+      title: pickTitle(item, isVietnamese),
+      cover: item.coverImage || item.thumbnail || "/images/mebayluon.jpg",
+      dateLabel: itemDate
+        ? new Date(itemDate).toLocaleDateString(locale)
+        : undefined,
+    };
+  });
 
   const articleSchema = generateArticleSchema({
     title,
@@ -680,73 +711,22 @@ export default async function BlogPostPage({
               )}
 
               {/* related posts — chỉ hiện trên MOBILE (lg ẩn, vì desktop có sidebar) */}
-              {relatedPosts.length > 0 && (
+              {relatedItems.length > 0 && (
                 <section className="mt-10 lg:hidden">
                   <h2 className="mb-4 text-xl font-bold text-white">{ui.related}</h2>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {relatedPosts.map((item) => {
-                      const itemTitle = pickTitle(item, isVietnamese);
-                      const itemCover = item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
-                      return (
-                        <Link
-                          key={item._id || item.slug}
-                          href={`/blog/${item.slug}`}
-                          className="group flex gap-3 rounded-xl border border-white/15 bg-white/10 p-3 transition-all hover:bg-white/20"
-                        >
-                          <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
-                            <Image src={itemCover} alt={itemTitle} fill className="object-cover" />
-                          </div>
-                          <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
-                            {itemTitle}
-                          </p>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  <RelatedPostsGrid posts={relatedItems} seeMoreLabel={ui.seeMore} />
                 </section>
               )}
             </div>
 
             {/* ── CỘT PHẢI: sidebar (chỉ desktop) ── */}
-            {relatedPosts.length > 0 && (
+            {relatedItems.length > 0 && (
               <aside className="hidden lg:block">
                 <div className="sticky top-24 rounded-2xl border border-white/10 bg-[#071f0e]/75 p-5 text-white shadow-xl backdrop-blur-lg">
                   <h2 className="mb-4 border-b border-white/15 pb-3 text-sm font-bold uppercase tracking-widest text-white/70">
                     {ui.related}
                   </h2>
-                  <div className="flex flex-col gap-4">
-                    {relatedPosts.map((item) => {
-                      const itemTitle = pickTitle(item, isVietnamese);
-                      const itemCover = item.coverImage || item.thumbnail || "/images/mebayluon.jpg";
-                      const itemDate = item.publishedAt || item.createdAt;
-                      return (
-                        <Link
-                          key={item._id || item.slug}
-                          href={`/blog/${item.slug}`}
-                          className="group flex gap-3"
-                        >
-                          <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
-                            <Image
-                              src={itemCover}
-                              alt={itemTitle}
-                              fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                          </div>
-                          <div className="flex min-w-0 flex-col justify-center gap-1">
-                            <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
-                              {itemTitle}
-                            </p>
-                            {itemDate && (
-                              <span className="text-xs text-white/45">
-                                {new Date(itemDate).toLocaleDateString(locale)}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  <RelatedPostsSidebar posts={relatedItems} seeMoreLabel={ui.seeMore} />
                 </div>
               </aside>
             )}

@@ -5,6 +5,7 @@ export const hi: CommonTranslation = {
   nav: {
     home: "होम",
     about: "हमारे बारे में",
+    spots: "उड़ान स्थल",
     pilots: "पायलट",
     homestay: "होमस्टे और कैफ़े",
     booking: "फ़्लाइट बुक करें",
