@@ -363,7 +363,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
   "doi-bu": {
     name: "Đồi Bù",
     title: "Điểm Bay Phổ Biến Cuối Tuần",
-    altitude: "300 – 600 m",
+    altitude: "650m | 850m – 1.000m",
     description:
       "Gần Hà Nội, dễ tiếp cận, phù hợp cho người mới trải nghiệm.",
     landscape: "Đồi núi – thuận tiện – dễ tiếp cận",

@@ -373,7 +373,7 @@ function ToggleIndicator({
         variant === "radio" ? (
           <span className="h-2.5 w-2.5 rounded-full bg-[#FF5E1F]" />
         ) : (
-          <span className="text-[18px] leading-none text-[#FF5E1F]">✔</span>
+          <span className="text-[15px] leading-none text-[#FF5E1F]">✔</span>
         )
       ) : null}
     </span>
@@ -394,7 +394,7 @@ function QtyButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-8 w-8 items-center justify-center rounded-md text-[20px] font-bold text-[#5B6B7A] transition hover:bg-[#EAF4FE] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-8 w-8 items-center justify-center rounded-md text-[15px] font-bold text-[#5B6B7A] transition hover:bg-[#EAF4FE] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -419,7 +419,7 @@ function QuantityBox({
       <QtyButton onClick={onMinus} disabled={disableMinus}>
         −
       </QtyButton>
-      <span className="min-w-[20px] text-center text-[18px] font-bold text-[#0194F3]">
+      <span className="min-w-[20px] text-center text-[15px] font-bold text-[#0194F3]">
         {value}
       </span>
       <QtyButton onClick={onPlus} disabled={disablePlus}>
@@ -431,7 +431,7 @@ function QuantityBox({
 
 function SectionBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-[#0194F3] px-4 py-3 text-[16px] font-bold text-white md:px-5 md:text-[18px]">
+    <div className="rounded-lg bg-[#0194F3] px-3 py-2.5 text-[15px] font-bold text-white md:px-3 md:text-[15px]">
       {children}:
     </div>
   );
@@ -449,14 +449,14 @@ function InlineAddressInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="mt-3 rounded-lg border-2 border-[#0194F3] bg-white px-4 py-3 text-[15px] font-medium text-[#1C2930] sm:ml-11 sm:text-[16px]">
+    <div className="mt-3 rounded-lg border-2 border-[#0194F3] bg-white px-3 py-2.5 text-[15px] font-medium text-[#1C2930] sm:ml-11 sm:text-[15px]">
       <label className="flex flex-wrap items-center gap-2">
         <span className="font-semibold">{label}:</span>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 border-none bg-transparent p-0 text-[15px] font-medium text-[#1C2930] outline-none placeholder:text-[#94A3B8] focus:ring-0 sm:min-w-56 sm:text-[16px]"
+          className="min-w-0 flex-1 border-none bg-transparent p-0 text-[15px] font-medium text-[#1C2930] outline-none placeholder:text-[#94A3B8] focus:ring-0 sm:min-w-56 sm:text-[15px]"
           placeholder={placeholder}
         />
       </label>
@@ -486,7 +486,7 @@ function PackageDayCard({
       type="button"
       onClick={onClick}
       className={[
-        "w-full rounded-xl border-2 px-4 py-3 text-left transition-all sm:min-w-[240px] sm:flex-1",
+        "w-full rounded-xl border-2 px-3 py-2.5 text-left transition-all sm:min-w-[240px] sm:flex-1",
         active
           ? "border-[#0194F3] bg-[#EAF4FE] shadow-md"
           : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB] hover:shadow-sm",
@@ -500,19 +500,19 @@ function PackageDayCard({
           </div>
           <div className="mt-1 text-[13px] font-semibold text-[#FF5E1F] sm:text-[14px]">
             {originalPrice ? (
-              <span className="mr-1.5 text-[15px] font-bold text-[#E11D2E] line-through sm:text-[16px]">
+              <span className="mr-1.5 text-[15px] font-bold text-[#E11D2E] line-through sm:text-[15px]">
                 {originalPrice}
               </span>
             ) : null}
             {originalPrice && discountLabel ? (
-              <span className="mr-1.5 text-[15px] font-bold text-[#1C2930] sm:text-[16px]">
+              <span className="mr-1.5 text-[15px] font-bold text-[#1C2930] sm:text-[15px]">
                 {discountLabel}
               </span>
             ) : null}
             <span
               className={
                 originalPrice
-                  ? "text-[15px] font-bold sm:text-[16px]"
+                  ? "text-[15px] font-bold sm:text-[15px]"
                   : undefined
               }
             >
@@ -1292,7 +1292,7 @@ export default function SelectFlightStep() {
 
   return (
     <div className="border border-[#DCE7F3] bg-[#F5F7FA] text-[#1C2930]">
-      <div className="space-y-4 px-3 py-4 sm:p-4 md:p-6">
+      <div className="space-y-3 px-3 py-2.5 sm:p-3 md:p-3">
         {/* Location Cards */}
         <section className="space-y-3">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -1323,9 +1323,9 @@ export default function SelectFlightStep() {
                     </div>
                   )}
 
-                  <div className={["flex flex-1 flex-col justify-center px-3 py-3 sm:px-4 sm:py-4", isClosed ? "opacity-50" : ""].join(" ")}>
+                  <div className={["flex flex-1 flex-col justify-center px-3 py-2.5 sm:px-3 sm:py-2.5", isClosed ? "opacity-50" : ""].join(" ")}>
                     <div className={[
-                      "text-[17px] font-bold uppercase leading-tight tracking-[0.02em] sm:text-[20px] sm:leading-6",
+                      "text-[15px] font-bold uppercase leading-tight tracking-[0.02em] sm:text-[15px] sm:leading-6",
                       active && !isClosed ? "text-[#0194F3]" : "text-[#1C2930]"
                     ].join(" ")}>
                       {cardCopy.title}
@@ -1335,7 +1335,7 @@ export default function SelectFlightStep() {
                       {cardCopy.subtitle}
                     </div>
 
-                    <div className="mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[16px]">
+                    <div className="mt-2 text-[14px] font-bold text-[#FF5E1F] sm:mt-3 sm:text-[15px]">
                       {ui.fromLabel} {formatCardFromPrice(fromPrice)}
                     </div>
                   </div>
@@ -1346,14 +1346,14 @@ export default function SelectFlightStep() {
         </section>
 
         {!selectedCfg ? (
-          <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
+          <div className="rounded-xl border border-[#DCE7F3] bg-white px-3 py-2.5 text-[14px] italic text-[#5B6B7A]">
             {ui.chooseLocationPrompt}
           </div>
         ) : (
           <>
             {/* Selected Location Info */}
             <section className="space-y-2">
-              <div className="text-[20px] font-bold text-[#1C2930] sm:text-[22px]">
+              <div className="text-[15px] font-bold text-[#1C2930] sm:text-[19px]">
                 {ui.selectedLocationTitle}:{" "}
                 <span className="text-[#0194F3]">
                   {getText(selectedCfg.name, lang, selected)}
@@ -1361,7 +1361,7 @@ export default function SelectFlightStep() {
               </div>
 
               {locationIntroLines.length > 0 ? (
-                <div className="space-y-1 text-[15px] italic leading-7 text-[#5B6B7A] sm:text-[17px] sm:leading-8">
+                <div className="space-y-1 text-[15px] italic leading-6 text-[#5B6B7A] sm:text-[15px] sm:leading-6">
                   {locationIntroLines.map((line, idx) => (
                     <p key={idx}>{line}</p>
                   ))}
@@ -1405,7 +1405,7 @@ export default function SelectFlightStep() {
                           })
                         }
                         className={[
-                          "block w-full rounded-lg border-2 px-4 py-3 text-left transition-all",
+                          "block w-full rounded-lg border-2 px-3 py-2.5 text-left transition-all",
                           active
                             ? "border-[#0194F3] bg-[#EAF4FE]"
                             : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
@@ -1415,7 +1415,7 @@ export default function SelectFlightStep() {
                           <ToggleIndicator checked={active} variant="radio" />
                           <div className="min-w-0 flex-1">
                             <div className={[
-                              "text-[16px] font-semibold sm:text-[18px]",
+                              "text-[15px] font-semibold sm:text-[15px]",
                               active ? "text-[#0194F3]" : "text-[#1C2930]"
                             ].join(" ")}>
                               {item.title}
@@ -1441,16 +1441,16 @@ export default function SelectFlightStep() {
                 </div>
 
                 {!data.flightTypeKey ? (
-                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
+                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-3 py-2.5 text-[14px] italic text-[#5B6B7A]">
                     {ui.chooseFlightTypePrompt}
                   </div>
                 ) : null}
 
                 <a
                   href={HOMESTAY_URL}
-                  className="mx-auto block max-w-[680px] rounded-xl border-2 border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-center shadow-sm transition hover:shadow-md"
+                  className="mx-auto block max-w-[680px] rounded-xl border-2 border-[#FF5E1F] bg-[#FFF4ED] px-3 py-2.5 text-center shadow-sm transition hover:shadow-md"
                 >
-                  <div className="text-[15px] font-bold uppercase text-[#FF5E1F] sm:text-[16px]">
+                  <div className="text-[15px] font-bold uppercase text-[#FF5E1F] sm:text-[15px]">
                     ✩ {ui.khauPhaPromoTitle}
                   </div>
                   <div className="text-[13px] font-semibold italic text-[#0194F3] sm:text-[14px]">
@@ -1461,12 +1461,12 @@ export default function SelectFlightStep() {
             ) : null}
 
             {/* Service Section */}
-            <section className="space-y-4">
+            <section className="space-y-3">
               <SectionBar>{ui.serviceSectionTitle}</SectionBar>
 
-              <div className="flex flex-col gap-4 rounded-xl border border-[#DCE7F3] bg-white p-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-3 text-[16px] text-[#1C2930]">
+              <div className="flex flex-col gap-3 rounded-xl border border-[#DCE7F3] bg-white p-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-3 text-[15px] text-[#1C2930]">
                     <span className="text-[#0194F3]">👥</span>
                     <span className="font-semibold">{ui.guestsLabel}</span>
 
@@ -1591,7 +1591,7 @@ export default function SelectFlightStep() {
               </div>
 
               {needsPackage ? (
-                <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
+                <div className="rounded-xl border border-[#DCE7F3] bg-white px-3 py-2.5 text-[14px] italic text-[#5B6B7A]">
                   {ui.choosePackagePrompt}
                 </div>
               ) : null}
@@ -1599,25 +1599,25 @@ export default function SelectFlightStep() {
               {/* Price Summary Box */}
               <div className="rounded-xl border border-[#D6EAFB] bg-white shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-3">
-                  <div className="px-4 py-4">
+                  <div className="px-3 py-2.5">
                     <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.flightPrice}
                     </div>
-                    <div className="mt-2 inline-block rounded-lg bg-[#EAF4FE] px-3 py-2 text-[18px] font-bold text-[#1C2930] md:text-[20px]">
+                    <div className="mt-2 inline-block rounded-lg bg-[#EAF4FE] px-3 py-2 text-[15px] font-bold text-[#1C2930] md:text-[15px]">
                       {formatVND(Number(totalsVND.basePricePerPerson || 0))}
                     </div>
                   </div>
 
-                  <div className="px-4 py-4">
+                  <div className="px-3 py-2.5">
                     <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.optionalPrice}
                     </div>
-                    <div className="mt-2 text-[20px] font-bold text-[#355166]">
+                    <div className="mt-2 text-[15px] font-bold text-[#355166]">
                       +{formatVND(optionalTotalVND)}
                     </div>
                   </div>
 
-                  <div className="px-4 py-4 text-center md:text-right">
+                  <div className="px-3 py-2.5 text-center md:text-right">
                     <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                       {ui.totalPrice}:
                     </div>
@@ -1630,8 +1630,8 @@ export default function SelectFlightStep() {
                   </div>
                 </div>
 
-                <div className="border-t border-[#D6EAFB] px-4 py-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="border-t border-[#D6EAFB] px-3 py-2.5">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
                       <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
                         {ui.selectedFlightLabel}
@@ -1656,7 +1656,7 @@ export default function SelectFlightStep() {
                         {selectedOptionRows.map((row, idx) => (
                           <li
                             key={`${row.label}-${idx}`}
-                            className="flex items-start justify-between gap-4 text-[14px] text-[#5B6B7A]"
+                            className="flex items-start justify-between gap-3 text-[14px] text-[#5B6B7A]"
                           >
                             <span>{row.label}</span>
                             <span className="whitespace-nowrap font-semibold text-[#1C2930]">
@@ -1665,7 +1665,7 @@ export default function SelectFlightStep() {
                           </li>
                         ))}
 
-                        <li className="flex items-start justify-between gap-4 text-[14px] text-[#5B6B7A]">
+                        <li className="flex items-start justify-between gap-3 text-[14px] text-[#5B6B7A]">
                           <span>{ui.freeGopro}</span>
                           <span className="whitespace-nowrap font-semibold text-[#16A34A]">
                             FREE
@@ -1679,14 +1679,14 @@ export default function SelectFlightStep() {
 
               {/* Optional Services */}
               <div>
-                <div className="mb-3 text-[18px] font-bold text-[#1C2930] sm:text-[20px]">
+                <div className="mb-3 text-[15px] font-bold text-[#1C2930] sm:text-[15px]">
                   <span className="mr-2 text-[#0194F3]">✚</span>
                   {ui.optionalServiceTitle}:
                 </div>
 
                 {servicesWithMeta.length === 0 &&
                 ADDON_KEYS.every((key) => !selectedCfg?.addons?.[key]) ? (
-                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-4 py-3 text-[14px] italic text-[#5B6B7A]">
+                  <div className="rounded-xl border border-[#DCE7F3] bg-white px-3 py-2.5 text-[14px] italic text-[#5B6B7A]">
                     {ui.noVisibleServices}
                   </div>
                 ) : null}
@@ -1701,7 +1701,7 @@ export default function SelectFlightStep() {
                       <div
                         key={svc.key}
                         className={[
-                          "rounded-xl border-2 px-4 py-3 transition-all",
+                          "rounded-xl border-2 px-3 py-2.5 transition-all",
                           active
                             ? "border-[#0194F3] bg-[#EAF4FE]"
                             : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
@@ -1716,15 +1716,15 @@ export default function SelectFlightStep() {
                             <ToggleIndicator checked={active} />
 
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
+                                  <div className="text-[15px] font-semibold leading-6 text-[#1C2930] sm:text-[15px]">
                                     {label}:
                                   </div>
                                   {renderServiceDescription(svc, meta)}
                                 </div>
 
-                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[16px]">
+                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[15px]">
                                   {meta.priceText}
                                 </div>
                               </div>
@@ -1819,7 +1819,7 @@ export default function SelectFlightStep() {
                   })}
 
                   {activePickupWarning ? (
-                    <div className="rounded-xl border border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-[14px] italic leading-6 text-[#FF5E1F]">
+                    <div className="rounded-xl border border-[#FF5E1F] bg-[#FFF4ED] px-3 py-2.5 text-[14px] italic leading-6 text-[#FF5E1F]">
                       {activePickupWarning}
                     </div>
                   ) : null}
@@ -1840,7 +1840,7 @@ export default function SelectFlightStep() {
                       <div
                         key={key}
                         className={[
-                          "rounded-xl border-2 px-4 py-3 transition-all",
+                          "rounded-xl border-2 px-3 py-2.5 transition-all",
                           active
                             ? "border-[#0194F3] bg-[#EAF4FE]"
                             : "border-[#DCE7F3] bg-white hover:border-[#B9DDFB]"
@@ -1855,14 +1855,14 @@ export default function SelectFlightStep() {
                             <ToggleIndicator checked={active} />
 
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
+                                  <div className="text-[15px] font-semibold leading-6 text-[#1C2930] sm:text-[15px]">
                                     {title}:
                                   </div>
                                 </div>
 
-                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[16px]">
+                                <div className="shrink-0 whitespace-nowrap text-[14px] font-bold text-[#FF5E1F] sm:text-[15px]">
                                   {priceText}
                                 </div>
                               </div>
@@ -1914,10 +1914,10 @@ export default function SelectFlightStep() {
                   })}
 
                   {/* Free GoPro */}
-                  <div className="rounded-xl border-2 border-[#16A34A] bg-[#F0FDF4] px-4 py-3">
+                  <div className="rounded-xl border-2 border-[#16A34A] bg-[#F0FDF4] px-3 py-2.5">
                     <div className="flex items-start gap-3">
                       <ToggleIndicator checked />
-                      <div className="text-[16px] font-semibold leading-6 text-[#1C2930] sm:text-[18px]">
+                      <div className="text-[15px] font-semibold leading-6 text-[#1C2930] sm:text-[15px]">
                         {ui.freeGopro}: <span className="text-[#16A34A]">FREE</span>
                       </div>
                     </div>
@@ -1926,14 +1926,14 @@ export default function SelectFlightStep() {
               </div>
 
               {/* Details Accordions */}
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <details className="rounded-xl border border-[#DCE7F3] bg-white">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-[#1C2930] sm:text-[18px] [&::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[15px] font-semibold text-[#1C2930] sm:text-[15px] [&::-webkit-details-marker]:hidden">
                     <span>✅ {ui.includedLabel}:</span>
                     <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-[#DCE7F3] px-4 py-4">
+                  <div className="border-t border-[#DCE7F3] px-3 py-2.5">
                     <div className="flex flex-col gap-3">
                       {(() => {
                         const pkgCfg = selectedCfg?.packages?.find(
@@ -1961,10 +1961,10 @@ export default function SelectFlightStep() {
                           <>
                             {list.map((item: string, idx: number) => (
                               <div key={idx} className="flex items-start gap-3">
-                                <span className="mt-0.5 text-[18px] leading-none text-[#16A34A]">
+                                <span className="mt-0.5 text-[15px] leading-none text-[#16A34A]">
                                   ✓
                                 </span>
-                                <span className="text-[15px] leading-6 text-[#1C2930] sm:text-[16px]">
+                                <span className="text-[15px] leading-6 text-[#1C2930] sm:text-[15px]">
                                   {item}
                                 </span>
                               </div>
@@ -1975,10 +1975,10 @@ export default function SelectFlightStep() {
                                   key={`ex-${idx}`}
                                   className="flex items-start gap-3"
                                 >
-                                  <span className="mt-0.5 text-[18px] leading-none text-red-500">
+                                  <span className="mt-0.5 text-[15px] leading-none text-red-500">
                                     ✕
                                   </span>
-                                  <span className="text-[15px] font-medium leading-6 text-red-500 sm:text-[16px]">
+                                  <span className="text-[15px] font-medium leading-6 text-red-500 sm:text-[15px]">
                                     {ui.excludedLabel}: {item}
                                   </span>
                                 </div>
@@ -1991,12 +1991,12 @@ export default function SelectFlightStep() {
                 </details>
 
                 <details className="rounded-xl border border-[#DCE7F3] bg-white">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[16px] font-semibold text-[#1C2930] sm:text-[18px] [&::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[15px] font-semibold text-[#1C2930] sm:text-[15px] [&::-webkit-details-marker]:hidden">
                     <span>🎁 {ui.groupDiscountTitle}</span>
                     <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-[#DCE7F3] px-4 py-3 text-[14px] text-[#5B6B7A]">
+                  <div className="border-t border-[#DCE7F3] px-3 py-2.5 text-[14px] text-[#5B6B7A]">
                     <div className="space-y-2">
                       {[
                         { min: 2, vnd: 50_000 },
@@ -2006,7 +2006,7 @@ export default function SelectFlightStep() {
                       ].map((tier) => (
                         <div
                           key={tier.min}
-                          className="flex items-center justify-between gap-4 border-b border-[#DCE7F3] pb-2 last:border-b-0 last:pb-0"
+                          className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] pb-2 last:border-b-0 last:pb-0"
                         >
                           <span className="text-[#1C2930]">
                             {tier.min}+ {ui.groupGuestsSuffix}
@@ -2055,7 +2055,7 @@ export default function SelectFlightStep() {
                     type="button"
                     onClick={next}
                     disabled={!canGoNext}
-                    className="inline-flex min-h-[52px] min-w-[170px] items-center justify-center rounded-xl bg-[#0194F3] px-6 text-[16px] font-bold uppercase text-white shadow-md transition hover:bg-[#0B83D9] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-[#B9DDFB] disabled:shadow-none sm:min-h-[58px] sm:min-w-[200px] sm:px-8 sm:text-[18px]"
+                    className="inline-flex min-h-[52px] min-w-[170px] items-center justify-center rounded-xl bg-[#0194F3] px-3 text-[15px] font-bold uppercase text-white shadow-md transition hover:bg-[#0B83D9] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-[#B9DDFB] disabled:shadow-none sm:min-h-[58px] sm:min-w-[200px] sm:px-8 sm:text-[15px]"
                   >
                     {buttons.next || ui.continue} →
                   </button>

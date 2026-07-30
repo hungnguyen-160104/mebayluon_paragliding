@@ -293,19 +293,19 @@ export default function GuestInfoStep() {
 
   return (
     <form
-      className="space-y-5"
+      className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
         if (allValid) next();
       }}
     >
       <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-[#F5F7FA] shadow-sm">
-        <div className="border-b border-[#DCE7F3] bg-white px-4 py-4 md:px-6">
+        <div className="border-b border-[#DCE7F3] bg-white px-3 py-2.5 md:px-3">
           <h3 className="text-lg font-bold text-[#1C2930] md:text-xl">{ui.title}</h3>
         </div>
 
-        <div className="space-y-5 p-4 md:p-6">
-          <div className="rounded-lg border border-[#F2D27A] bg-[#FFF8E8] px-4 py-3 text-sm text-[#9A6700]">
+        <div className="space-y-3 p-3 md:p-3">
+          <div className="rounded-lg border border-[#F2D27A] bg-[#FFF8E8] px-3 py-2.5 text-sm text-[#9A6700]">
             <div className="flex items-start gap-2">
               <span className="mt-0.5">
                 <WarningIcon />
@@ -314,7 +314,7 @@ export default function GuestInfoStep() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {Array.from({ length: data.guestsCount }).map((_, idx) => {
               const g = data.guests[idx] || {};
 
@@ -323,7 +323,7 @@ export default function GuestInfoStep() {
                   key={idx}
                   className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white"
                 >
-                  <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F8FAFC] px-4 py-4 md:px-5">
+                  <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F8FAFC] px-3 py-2.5 md:px-3">
                     <div className="text-lg font-bold text-[#1C2930]">
                       {ui.passengerPrefix} #{idx + 1}
                     </div>
@@ -339,14 +339,14 @@ export default function GuestInfoStep() {
                             "",
                         })
                       }
-                      className="rounded-lg bg-[#0194F3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0B83D9]"
+                      className="rounded-lg bg-[#0194F3] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#0B83D9]"
                     >
                       {ui.fillBookerInfo}
                     </button>
                   </div>
 
-                  <div className="p-4 md:p-5">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="p-3 md:p-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <TextField
                         label={ui.fullNameLabel}
                         required
@@ -424,7 +424,7 @@ export default function GuestInfoStep() {
         <button
           type="button"
           onClick={back}
-          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {ui.back}
         </button>
@@ -432,7 +432,7 @@ export default function GuestInfoStep() {
         <button
           type="submit"
           disabled={!allValid}
-          className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="h-12 rounded-xl bg-[#0194F3] px-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {ui.next}
         </button>
@@ -482,7 +482,7 @@ function TextField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-4 text-[#1C2930] outline-none placeholder:text-[#94A3B8] focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
         required={required}
       />
     </div>
@@ -513,7 +513,7 @@ function DateField({
         onChange={(e) => onChange(e.target.value)}
         max={max}
         placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-4 text-[#1C2930] outline-none focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
         required={required}
       />
     </div>
@@ -543,7 +543,7 @@ function SelectField({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 w-full appearance-none rounded-lg border border-[#DCE7F3] bg-white px-4 pr-10 text-[#1C2930] outline-none focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+          className="h-12 w-full appearance-none rounded-lg border border-[#DCE7F3] bg-white px-3 pr-10 text-[#1C2930] outline-none focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
           required={required}
         >
           <option value="" disabled>

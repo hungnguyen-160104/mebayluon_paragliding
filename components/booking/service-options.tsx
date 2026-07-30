@@ -81,13 +81,13 @@ export default function ServiceOptions() {
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
-      <div className="border-b border-[#DCE7F3] bg-[#F5F7FA] px-4 py-4 md:px-5">
+      <div className="border-b border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5 md:px-3">
         <h4 className="text-lg font-bold text-[#1C2930]">{ui.title}</h4>
         <p className="mt-1 text-sm text-[#5B6B7A]">{ui.subtitle}</p>
       </div>
 
-      <div className="p-4 md:p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-3 md:p-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {(["pickup", "flycam", "camera360"] as const).map((k) => {
             const conf = cfg.addons[k];
             if (!conf) return null;
@@ -100,7 +100,7 @@ export default function ServiceOptions() {
             return (
               <div
                 key={k}
-                className={`rounded-xl border-2 p-4 transition ${
+                className={`rounded-xl border-2 p-3 transition ${
                   disabled
                     ? "opacity-50 border-[#DCE7F3] bg-[#F5F7FA]"
                     : active
@@ -132,7 +132,7 @@ export default function ServiceOptions() {
                         if (!active) setAddonQty(k, 1);
                         else setAddonQty(k, 0);
                       }}
-                      className={`inline-flex min-h-9 items-center rounded-lg px-4 text-xs font-semibold transition ${
+                      className={`inline-flex min-h-9 items-center rounded-lg px-3 text-xs font-semibold transition ${
                         active
                           ? "bg-[#0194F3] text-white"
                           : "border border-[#DCE7F3] bg-white text-[#5B6B7A] hover:border-[#0194F3] hover:text-[#0194F3]"
@@ -144,7 +144,7 @@ export default function ServiceOptions() {
                 </div>
 
                 {!disabled && active ? (
-                  <div className="mt-4 flex items-center justify-between rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+                  <div className="mt-4 flex items-center justify-between rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
                     <span className="text-sm text-[#5B6B7A]">{ui.quantity}</span>
 
                     <div className="flex items-center gap-3">

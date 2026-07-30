@@ -378,7 +378,7 @@ function Row({
   enabled: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
       <span className="text-sm text-[#5B6B7A]">{label}</span>
       <span
         className={`text-right text-sm font-semibold ${
@@ -1016,16 +1016,16 @@ export default function ReviewConfirmStep() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
-        <div className="border-b border-[#DCE7F3] bg-[#0194F3] px-4 py-4 md:px-6">
+        <div className="border-b border-[#DCE7F3] bg-[#0194F3] px-3 py-2.5 md:px-3">
           <h3 className="text-lg font-bold text-white md:text-xl">{ui.title}</h3>
           <p className="mt-1 max-w-3xl text-sm text-white/90">{ui.subtitle}</p>
         </div>
 
-        <div className="space-y-5 bg-[#F5F7FA] p-4 md:p-6">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.95fr]">
-            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+        <div className="space-y-3 bg-[#F5F7FA] p-3 md:p-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_0.95fr]">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("serviceDetails", "Service details")}
               </div>
@@ -1041,7 +1041,7 @@ export default function ReviewConfirmStep() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("contactInfo", "Contact information")}
               </div>
@@ -1061,7 +1061,7 @@ export default function ReviewConfirmStep() {
                 />
               </div>
 
-              <div className="mt-4 rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-sm text-[#355166]">
+              <div className="mt-4 rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-3 py-2.5 text-sm text-[#355166]">
                 {ui.supportNote}
               </div>
             </section>
@@ -1071,7 +1071,7 @@ export default function ReviewConfirmStep() {
             <button
               type="button"
               onClick={() => setShowPassengers((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-[#F5F7FA]"
+              className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-[#F5F7FA]"
             >
               <div className="flex items-center gap-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
@@ -1092,11 +1092,11 @@ export default function ReviewConfirmStep() {
             </button>
 
             {showPassengers && (
-              <div className="space-y-3 border-t border-[#DCE7F3] p-4">
+              <div className="space-y-3 border-t border-[#DCE7F3] p-3">
                 {(data.guests ?? []).map((guest: any, index: number) => (
                   <div
                     key={index}
-                    className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-4"
+                    className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-3"
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF4FE] text-sm font-bold text-[#0194F3]">
@@ -1140,7 +1140,7 @@ export default function ReviewConfirmStep() {
           </section>
 
           {!!specialRequest && (
-            <div className="rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] p-4">
+            <div className="rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] p-3">
               <p className="mb-1 text-xs font-semibold text-[#FF5E1F]">
                 {L("specialRequest", "Special requests")}
               </p>
@@ -1148,15 +1148,15 @@ export default function ReviewConfirmStep() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1fr]">
-            <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr]">
+            <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("additionalServices", "Additional services")}
               </div>
 
               <div className="mt-4 space-y-3">
                 {serviceLines.length > 0 ? (
-                  <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+                  <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-sm text-[#5B6B7A]">
                         {L("selectedServices", "Selected services")}
@@ -1228,7 +1228,7 @@ export default function ReviewConfirmStep() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-[#D6EAFB] bg-white p-4">
+            <section className="rounded-xl border border-[#D6EAFB] bg-white p-3">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
                 {L("priceBreakdown", "Price breakdown")}
               </div>
@@ -1278,7 +1278,7 @@ export default function ReviewConfirmStep() {
             </section>
           </div>
 
-          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
               {ui.paymentTitle}
             </div>
@@ -1291,7 +1291,7 @@ export default function ReviewConfirmStep() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
             <TurnstileWidget
               key={turnstileKey}
               onVerify={(token) => setTurnstileToken(token)}
@@ -1302,7 +1302,7 @@ export default function ReviewConfirmStep() {
             />
           </section>
 
-          <section className="rounded-xl border border-[#F3E38F] bg-[#FFF9DB] p-4">
+          <section className="rounded-xl border border-[#F3E38F] bg-[#FFF9DB] p-3">
             <p className="text-sm font-semibold text-[#7A5414]">
               {ui.paymentInfoTitle}:
             </p>
@@ -1311,7 +1311,7 @@ export default function ReviewConfirmStep() {
             </p>
           </section>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-4 transition hover:border-[#B9DDFB]">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-3 transition hover:border-[#B9DDFB]">
             <input
               type="checkbox"
               checked={!!data.acceptedTerms}
@@ -1333,7 +1333,7 @@ export default function ReviewConfirmStep() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-[#DC2626] bg-red-50 p-4 text-sm text-[#DC2626]">
+        <div className="rounded-xl border border-[#DC2626] bg-red-50 p-3 text-sm text-[#DC2626]">
           {error}
         </div>
       )}
@@ -1342,7 +1342,7 @@ export default function ReviewConfirmStep() {
         <button
           type="button"
           onClick={back}
-          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {t.buttons.back}
         </button>
@@ -1356,7 +1356,7 @@ export default function ReviewConfirmStep() {
             missingPickupAddress
           }
           onClick={handleConfirm}
-          className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="h-12 rounded-xl bg-[#0194F3] px-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {submitting ? t.buttons.processing : t.buttons.confirm}
         </button>
@@ -1369,7 +1369,7 @@ export default function ReviewConfirmStep() {
             onClick={() => setShowTerms(false)}
           />
           <div className="relative mx-auto my-6 flex h-[min(92vh,860px)] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+            <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
               <span className="text-sm font-semibold text-[#1C2930]">
                 {ui.termsTitle}
               </span>
@@ -1394,9 +1394,9 @@ export default function ReviewConfirmStep() {
             </div>
 
             <div
-              className="prose prose-sm max-w-none flex-1 overflow-y-auto p-6 text-[#1C2930]
+              className="prose prose-sm max-w-none flex-1 overflow-y-auto p-3 text-[#1C2930]
                 [&_h1]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#1C2930]
-                [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#1C2930]
+                [&_h2]:mt-4 [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#1C2930]
                 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[#1C2930]
                 [&_p]:mb-3 [&_p]:leading-relaxed
                 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5
@@ -1412,7 +1412,7 @@ export default function ReviewConfirmStep() {
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+    <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-[0.14em] text-[#5B6B7A]">
         {label}
       </div>
@@ -1425,7 +1425,7 @@ function InfoBox({ label, value }: { label: string; value: string }) {
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
       <span className="text-sm text-[#5B6B7A]">{label}</span>
       <span className="break-words text-right text-sm font-semibold text-[#1C2930]">
         {value}
@@ -1445,7 +1445,7 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 
 function SimpleInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
       <span className="text-sm text-[#5B6B7A]">{label}</span>
       <span className="text-sm font-semibold text-[#16A34A]">{value}</span>
     </div>
@@ -1454,7 +1454,7 @@ function SimpleInfo({ label, value }: { label: string; value: string }) {
 
 function PaymentItem({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-4 py-3">
+    <div className="flex items-center gap-2 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
       <span className="text-[#16A34A]">✔</span>
       <span className="text-[#1C2930]">{text}</span>
     </div>

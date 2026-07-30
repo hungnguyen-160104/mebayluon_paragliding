@@ -329,7 +329,7 @@ export default function ContactInfoStep() {
 
   return (
     <form
-      className="space-y-5"
+      className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
 
@@ -340,7 +340,7 @@ export default function ContactInfoStep() {
       }}
     >
       <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
-        <div className="border-b border-[#DCE7F3] bg-[#0194F3] px-4 py-4 md:px-6">
+        <div className="border-b border-[#DCE7F3] bg-[#0194F3] px-3 py-2.5 md:px-3">
           <h3 className="text-lg font-bold text-white md:text-xl">
             {ui.title}
           </h3>
@@ -349,14 +349,14 @@ export default function ContactInfoStep() {
           </p>
         </div>
 
-        <div className="space-y-5 p-4 md:p-6">
+        <div className="space-y-3 p-3 md:p-3">
           {!hasLocation ? (
-            <div className="rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">
+            <div className="rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 py-2.5 text-sm text-[#B91C1C]">
               {ui.chooseLocationFirst}
             </div>
           ) : null}
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             <div>
               <Label text={ui.flightDateLabel} required />
               <input
@@ -371,7 +371,7 @@ export default function ContactInfoStep() {
                   );
                 }}
                 required
-                className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-4 text-[#1C2930] outline-none transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+                className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
               />
               {dateError ? (
                 <p className="mt-2 text-sm text-[#DC2626]">{dateError}</p>
@@ -385,7 +385,7 @@ export default function ContactInfoStep() {
                   value={data.timeSlot || ""}
                   onChange={(e) => update({ timeSlot: e.target.value })}
                   required
-                  className="h-12 w-full appearance-none rounded-lg border border-[#DCE7F3] bg-white px-4 pr-10 text-[#1C2930] outline-none transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+                  className="h-12 w-full appearance-none rounded-lg border border-[#DCE7F3] bg-white px-3 pr-10 text-[#1C2930] outline-none transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
                 >
                   <option value="" disabled>
                     {ui.timeSlotPlaceholder}
@@ -413,7 +413,7 @@ export default function ContactInfoStep() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             <TextField
               label={ui.emailLabel}
               required
@@ -450,13 +450,13 @@ export default function ContactInfoStep() {
                   onChange={(e) => updatePhone(countryCode, e.target.value)}
                   placeholder={ui.phonePlaceholder}
                   required
-                  className="h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-4 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+                  className="h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
                 />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             <div>
               <Label text={ui.specialRequestLabel} />
               <textarea
@@ -466,11 +466,11 @@ export default function ContactInfoStep() {
                   setContact({ specialRequest: e.target.value })
                 }
                 placeholder={ui.specialRequestPlaceholder}
-                className="mt-2 w-full resize-none rounded-lg border border-[#DCE7F3] bg-white px-4 py-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+                className="mt-2 w-full resize-none rounded-lg border border-[#DCE7F3] bg-white px-3 py-2.5 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
               />
             </div>
 
-            <div className="rounded-lg border border-[#F2D27A] bg-[#FFF8E8] p-4">
+            <div className="rounded-lg border border-[#F2D27A] bg-[#FFF8E8] p-3">
               <div className="flex items-center gap-2 text-sm font-bold text-[#9A6700]">
                 <WarningIcon />
                 <span>{ui.importantNoticeTitle}</span>
@@ -495,7 +495,7 @@ export default function ContactInfoStep() {
         <button
           type="button"
           onClick={back}
-          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-sm font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {ui.back}
         </button>
@@ -503,7 +503,7 @@ export default function ContactInfoStep() {
         <button
           type="submit"
           disabled={!hasLocation || Boolean(dateError)}
-          className="h-12 rounded-xl bg-[#0194F3] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="h-12 rounded-xl bg-[#0194F3] px-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {ui.next}
         </button>
@@ -551,7 +551,7 @@ function TextField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-4 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+        className="mt-2 h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
       />
     </div>
   );
