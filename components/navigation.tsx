@@ -149,11 +149,12 @@ export function Navigation() {
                 .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
                 .map((item) => {
                   const active = isItemActive(item);
-                  const base = isScrolled
-                    ? `text-[#1C2930] hover:bg-[#EAF4FE] ${active ? "bg-[#EAF4FE] text-[#0194F3] font-semibold" : ""}`
-                    : `border border-white/40 text-white hover:bg-white/20 hover:border-white ${
-                        active ? "bg-white/20 border-white font-semibold" : ""
-                      }`;
+                  // Phím màu xanh thương hiệu (#0194F3) trên mọi trang/trạng
+                  // thái cuộn để menu luôn nổi bật; mục đang mở đậm màu hơn
+                  // kèm viền sáng.
+                  const base = active
+                    ? "bg-[#0166AE] text-white font-semibold shadow-md ring-2 ring-white/60"
+                    : "bg-[#0194F3] text-white shadow-md hover:bg-[#0177C8]";
 
                   if (item.type === "hash") {
                     const href = `/#${item.hashId}`;
@@ -163,7 +164,6 @@ export function Navigation() {
                         href={href}
                         onClick={(e) => handleHashClick(e, item.hashId)}
                         className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
-                        style={{ textShadow: isScrolled ? "none" : subtleShadow }}
                       >
                         {item.label}
                       </Link>
@@ -175,7 +175,6 @@ export function Navigation() {
                       key={`path-${item.href}`}
                       href={item.href}
                       className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
-                      style={{ textShadow: isScrolled ? "none" : subtleShadow }}
                     >
                       {item.label}
                     </Link>
@@ -248,11 +247,11 @@ export function Navigation() {
                         if (item.type === "hash") handleHashClick(e, item.hashId);
                         setIsOpen(false);
                       }}
-                      className={`text-2xl py-4 transition-colors font-medium ${
+                      className={`my-1.5 rounded-xl px-4 py-3.5 text-center text-xl font-semibold text-white shadow-md transition-colors ${
                         (item.type === "path" && pathname === item.href) ||
                         (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
-                          ? "text-[#0194F3]"
-                          : "text-slate-100 hover:text-white"
+                          ? "bg-[#0166AE] ring-2 ring-white/60"
+                          : "bg-[#0194F3] hover:bg-[#0177C8]"
                       }`}
                     >
                       {item.label}

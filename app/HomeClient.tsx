@@ -406,19 +406,13 @@ export default function HomePage() {
                   {aboutDescription}
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="mt-6">
+                  {/* Chỉ một nút — trước đây có thêm nút "Phi công" nhưng
+                      cùng trỏ /pilots nên trùng lặp, đã bỏ. */}
                   <Button asChild className="h-11 px-6 text-white">
                     <Link href="/pilots">
                       {t?.spots?.viewDetails ?? "Xem Chi Tiết"}
                     </Link>
-                  </Button>
-
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-11 border-white/60 bg-white/10 px-6 text-white hover:bg-white/20"
-                  >
-                    <Link href="/pilots">{t?.nav?.pilots ?? "Phi công"}</Link>
                   </Button>
                 </div>
               </div>
