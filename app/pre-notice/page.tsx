@@ -37,8 +37,10 @@ export default function PreNoticePage() {
       }
     },
     posters: {
-      title: "Lưu ý quan trọng",
-      subtitle: "Tóm tắt các quy định & chuẩn bị cần thiết. Nhấp vào ảnh để xem bản lớn."
+      title: t.preNotice?.posters?.title ?? "Lưu ý quan trọng",
+      subtitle:
+        t.preNotice?.posters?.subtitle ??
+        "Tóm tắt các quy định & chuẩn bị cần thiết. Nhấp vào ảnh để xem bản lớn.",
     },
     requirements: {
       title: t.preNotice?.requirements?.title ?? "Yêu cầu & Quy định",
@@ -65,7 +67,7 @@ export default function PreNoticePage() {
         items: t.preNotice?.requirements?.cancellation?.items ?? [
           "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
           "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",
-          "Khách vui lòng báo đổi/huỷ lịch bay qua email/hotline/Zalo/WhatsApp",
+          "Khách vui lòng báo đổi/huỷ lịch bay qua email/hotline/Zalo/WhatsApp ít nhất 03 tiếng trước giờ khởi hành",
           "Khách vui lòng thanh toán một số phí phát sinh đã sử dụng nếu huỷ lịch bay trong ngày (nước đã uống, xe đã đón)",
         ],
       }

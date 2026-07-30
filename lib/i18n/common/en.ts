@@ -157,8 +157,9 @@ export const en: CommonTranslation = {
     },
 
     posters: {
-      title: "PASSENGER TERMS & CONDITIONS",
-      subtitle: "",
+      title: "Important Notes",
+      subtitle:
+        "A summary of the rules and what to prepare. Tap an image to view it larger.",
     },
 
     requirements: {
@@ -195,7 +196,7 @@ export const en: CommonTranslation = {
         items: [
           "Flexible flight schedule — free cancellation, refund and rescheduling",
           "Flights are cancelled when the weather is unfavourable or when you do not feel ready",
-          "Please notify us of any rescheduling or cancellation via email/hotline/Zalo/WhatsApp",
+          "Please notify us of any rescheduling or cancellation via email/hotline/Zalo/WhatsApp at least 03 hours before departure time",
           "For same-day cancellations, please cover the costs already incurred (drinks consumed, transfer already provided)",
         ],
       },

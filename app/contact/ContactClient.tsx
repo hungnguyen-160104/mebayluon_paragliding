@@ -120,12 +120,28 @@ export default function ContactPage() {
 
           {/* Contact Info Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            {[
-              { icon: Phone, title: t.contact.phone, lines: ["+84 964 073 555", t.contact.support247] },
-              { icon: Mail, title: "Email", lines: ["mebayluon@gmail.com"] },
+            {([
+              {
+                icon: Phone,
+                title: t.contact.phone,
+                lines: [
+                  { text: "+84 964 073 555 (Mr. My)", href: "tel:+84964073555" },
+                  { text: "+84 385 907 789 (Ms Ngọc)", href: "tel:+84385907789" },
+                  t.contact.support247,
+                ],
+              },
+              {
+                icon: Mail,
+                title: "Email",
+                lines: [{ text: "mebayluon@gmail.com", href: "mailto:mebayluon@gmail.com" }],
+              },
               { icon: MapPin, title: t.contact.address, lines: ["Thị trấn Sapa", "Lào Cai, Việt Nam"] },
               { icon: Clock, title: t.contact.workingHours, lines: ["Thứ 2 - CN", "6:00 - 19:00"] },
-            ].map((info, index) => (
+            ] as Array<{
+              icon: React.ElementType;
+              title: string;
+              lines: Array<string | { text: string; href: string }>;
+            }>).map((info, index) => (
               <motion.div
                 key={info.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -142,7 +158,18 @@ export default function ContactPage() {
                       <div>
                         <h3 className="font-semibold text-lg mb-2">{info.title}</h3>
                         {info.lines.map((line, i) => (
-                          <p key={i} className="text-slate-200 text-sm">{line}</p>
+                          <p key={i} className="text-slate-200 text-sm">
+                            {typeof line === "string" ? (
+                              line
+                            ) : (
+                              <a
+                                href={line.href}
+                                className="underline-offset-2 transition-colors hover:text-white hover:underline"
+                              >
+                                {line.text}
+                              </a>
+                            )}
+                          </p>
                         ))}
                       </div>
                     </div>

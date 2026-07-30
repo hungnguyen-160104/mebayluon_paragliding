@@ -157,8 +157,8 @@ export const zh: CommonTranslation = {
     },
 
     posters: {
-      title: "乘客条款与规定",
-      subtitle: "",
+      title: "重要提示",
+      subtitle: "规定与准备事项一览。点击图片可查看大图。",
     },
 
     requirements: {
@@ -195,7 +195,7 @@ export const zh: CommonTranslation = {
         items: [
           "飞行时间灵活 — 取消、退款与改期均免费",
           "遇天气不佳或您尚未准备好时，可取消飞行",
-          "如需改期或取消，请通过电子邮件/hotline/Zalo/WhatsApp 告知我们",
+          "如需改期或取消，请在出发时间前至少 03 小时通过电子邮件/hotline/Zalo/WhatsApp 告知我们",
           "当天取消时，请支付已产生的费用（已饮用的饮品、已提供的接送）",
         ],
       },

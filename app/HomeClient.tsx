@@ -271,20 +271,32 @@ export default function HomePage() {
     },
   ];
 
-  const contactInfoCards = [
+  /**
+   * Mỗi dòng trong thẻ liên hệ: chuỗi thường, hoặc kèm href để bấm được
+   * (tel: gọi luôn trên điện thoại, mailto: mở ứng dụng mail).
+   */
+  type ContactLine = string | { text: string; href: string };
+
+  const contactInfoCards: Array<{
+    icon: React.ElementType;
+    title: string;
+    lines: ContactLine[];
+  }> = [
     {
       icon: Phone,
       title: t?.contact?.phone ?? "Điện thoại",
       lines: [
-        "+84 964 073 555 (Mr. My)",
-        "+84 385 907 789 (Ms Trang)",
+        { text: "+84 964 073 555 (Mr. My)", href: "tel:+84964073555" },
+        { text: "+84 385 907 789 (Ms Ngọc)", href: "tel:+84385907789" },
         t?.contact?.support247 ?? "Hỗ trợ 24/7",
       ],
     },
     {
       icon: Mail,
       title: "Email",
-      lines: ["mebayluon@gmail.com"],
+      lines: [
+        { text: "mebayluon@gmail.com", href: "mailto:mebayluon@gmail.com" },
+      ],
     },
     {
       icon: MapPin,
@@ -777,11 +789,22 @@ export default function HomePage() {
                         <h3 className="mb-1.5 text-sm font-semibold md:text-base">
                           {info.title}
                         </h3>
-                        {info.lines.map((line, i) => (
-                          <p key={i} className="text-xs text-slate-200">
-                            {line}
-                          </p>
-                        ))}
+                        {info.lines.map((line, i) =>
+                          typeof line === "string" ? (
+                            <p key={i} className="text-xs text-slate-200">
+                              {line}
+                            </p>
+                          ) : (
+                            <p key={i} className="text-xs text-slate-200">
+                              <a
+                                href={line.href}
+                                className="underline-offset-2 transition-colors hover:text-white hover:underline"
+                              >
+                                {line.text}
+                              </a>
+                            </p>
+                          )
+                        )}
                       </div>
                     </div>
                   </CardContent>

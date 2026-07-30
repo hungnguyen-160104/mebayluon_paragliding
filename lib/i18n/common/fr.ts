@@ -157,8 +157,9 @@ export const fr: CommonTranslation = {
     },
 
     posters: {
-      title: "CONDITIONS ET RÈGLEMENTS POUR LES PASSAGERS",
-      subtitle: "",
+      title: "Remarques importantes",
+      subtitle:
+        "Résumé des règles et de ce qu’il faut préparer. Touchez une image pour l’agrandir.",
     },
 
     requirements: {
@@ -195,7 +196,7 @@ export const fr: CommonTranslation = {
         items: [
           "Horaires de vol flexibles — annulation, remboursement et report gratuits",
           "Le vol est annulé si la météo est défavorable ou si vous ne vous sentez pas prêt",
-          "Merci de nous signaler tout report ou annulation par e-mail/hotline/Zalo/WhatsApp",
+          "Merci de nous signaler tout report ou annulation par e-mail/hotline/Zalo/WhatsApp au moins 03 heures avant l’heure de départ",
           "En cas d’annulation le jour même, merci de régler les frais déjà engagés (boissons consommées, navette déjà assurée)",
         ],
       },
