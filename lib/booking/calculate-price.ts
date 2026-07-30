@@ -286,6 +286,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Xe đón/trả 2 chiều từ khách sạn trong khu vực trung tâm Sapa, Tả Van, Lao Chải.",
           en: "Round-trip hotel pickup and drop-off within Sapa Center, Ta Van, and Lao Chai areas.",
+          fr: "Prise en charge et retour à l’hôtel dans les zones du centre de Sapa, Ta Van et Lao Chai.",
+          ru: "Трансфер туда-обратно от отеля в районах центра Сапы, Та Ван и Лао Чай.",
+          zh: "在沙坝市中心、塔凡和老寨区域内提供酒店往返接送。",
+          hi: "सापा सेंटर, ता वान और लाओ चाई क्षेत्रों में होटल से राउंड-ट्रिप पिकअप और ड्रॉप-ऑफ।",
         },
         // Đã gộp vào giá vé 2.190.000đ — dịch vụ miễn phí, tích sẵn,
         // giữ lại để khách nhập địa chỉ khách sạn cần đón.
@@ -527,6 +531,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Bay lên độ cao 2 nghìn mét để ngắm biển mây hoặc đón bình minh/hoàng hôn. Một trải nghiệm độc nhất!",
           en: "Ascend to 2,000m to admire the cloud sea or catch sunrise/sunset. A truly unique experience!",
+          fr: "Montez à 2 000 m pour admirer la mer de nuages ou assister au lever/coucher du soleil. Une expérience vraiment unique !",
+          ru: "Поднимитесь на 2 000 м, чтобы полюбоваться морем облаков или встретить рассвет либо закат. Поистине уникальные впечатления!",
+          zh: "飞升至 2,000 米高空，饱览云海或迎接日出日落。绝无仅有的体验！",
+          hi: "बादलों के समुद्र को निहारने या सूर्योदय/सूर्यास्त देखने के लिए 2,000 मीटर की ऊँचाई तक उड़ें। वास्तव में अनोखा अनुभव!",
         },
         // Counter để nhóm khách chọn đúng SỐ NGƯỜI bay 2.000m
         // (checkbox cũ mặc định tính cho cả đoàn).
@@ -549,6 +557,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Xe trung chuyển đón trả khách 2 chiều trong khu vực xã Tú Lệ.",
           en: "Round-trip shuttle pickup for guests within Tu Le area.",
+          fr: "Navette aller-retour pour les clients dans la zone de Tu Le.",
+          ru: "Трансфер туда-обратно для гостей в районе Ту Ле.",
+          zh: "为图勒地区的客人提供往返接送服务。",
+          hi: "तू ले क्षेत्र के मेहमानों के लिए राउंड-ट्रिप शटल पिकअप।",
         },
         controlType: "checkbox",
         defaultSelected: true,
@@ -572,6 +584,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Nếu đặt 2 chiều vui lòng chọn \"2\".\nKhách có thể chọn đi xe ôm hoặc liên hệ xe Mebayluon đón để tiết kiệm chi phí.",
           en: "For a round trip, please select \"2\".\nGuests may choose a motorbike transfer or contact Mebayluon's shuttle to save costs.",
+          fr: "Pour un aller-retour, veuillez sélectionner \"2\".\nLes clients peuvent choisir un transfert en moto ou contacter la navette Mebayluon pour réduire les coûts.",
+          ru: "Для поездки туда-обратно выберите \"2\".\nГости могут выбрать трансфер на мотобайке или обратиться к шаттлу Mebayluon, чтобы сэкономить.",
+          zh: "如需往返，请选择\"2\"。\n客人可选择摩托车接送，或联系 Mebayluon 班车以节省费用。",
+          hi: "राउंड ट्रिप के लिए कृपया \"2\" चुनें।\nमेहमान लागत बचाने के लिए मोटरबाइक ट्रांसफर चुन सकते हैं या Mebayluon शटल से संपर्क कर सकते हैं।",
         },
         controlType: "checkbox",
         requiresPickupInput: true,
@@ -592,6 +608,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Quay toàn cảnh thung lũng và hành trình bay, video gốc sẽ được gửi ngay sau chuyến bay",
           en: "Panoramic view of the valley and flight journey, original video sent immediately after flight",
+          fr: "Vue panoramique de la vallée et du vol, vidéo originale envoyée juste après le vol",
+          ru: "Панорамная съёмка долины и всего полёта, исходное видео отправляется сразу после полёта",
+          zh: "山谷与飞行全程的全景拍摄，原始视频于飞行后立即发送",
+          hi: "घाटी और उड़ान यात्रा का विहंगम दृश्य, मूल वीडियो उड़ान के तुरंत बाद भेजा जाता है",
         },
         controlType: "counter",
         priceVND: 400_000,
@@ -612,6 +632,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Quay toàn cảnh chuyến bay ấn tượng, video được edit và sẽ gửi trong vòng 24h",
           en: "Impressive panoramic flight video, edited and sent within 24h",
+          fr: "Vidéo panoramique de vol impressionnante, montée et envoyée sous 24 h",
+          ru: "Впечатляющее панорамное видео полёта, смонтированное и отправленное в течение 24 часов",
+          zh: "震撼的全景飞行视频，剪辑后 24 小时内发送",
+          hi: "प्रभावशाली विहंगम उड़ान वीडियो, एडिट करके 24 घंटे के भीतर भेजा जाता है",
         },
         controlType: "counter",
         priceVND: 400_000,
@@ -855,6 +879,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         subtitle: {
           vi: "Cất cánh từ đỉnh Viên Nam, độ cao 850m – điểm cất cánh dù lượn cao nhất Hà Nội, độ chênh cao lớn nhất Việt Nam (hơn 800m). Thời lượng bay lâu, tầm nhìn rộng, ngắm trọn Sông Đà và núi Ba Vì ngay trước mắt.",
           en: "Take off from Vien Nam summit, 850m altitude – the highest paragliding launch in Hanoi and the greatest altitude difference in Vietnam (over 800m). Longer flights, panoramic views, with the Da River and Ba Vi mountain right in front of you.",
+          fr: "Décollage du sommet de Vien Nam, à 850 m d’altitude – le plus haut site de parapente de Hanoï et le plus grand dénivelé du Vietnam (plus de 800 m). Vols plus longs, vues panoramiques, avec la rivière Da et le mont Ba Vi juste devant vous.",
+          ru: "Старт с вершины Виен Нам на высоте 850 м — самая высокая точка старта парапланов в Ханое и наибольший перепад высот во Вьетнаме (более 800 м). Более длительные полёты, панорамные виды, река Да и гора Ба Ви прямо перед вами.",
+          zh: "从员南山顶 850 米高度起飞——河内最高的滑翔伞起飞点，也是越南落差最大的飞行点（超过 800 米）。飞行时间更长，视野开阔，沱江与巴维山尽收眼底。",
+          hi: "विएन नाम शिखर से 850 मीटर की ऊँचाई पर टेकऑफ़ – हनोई का सबसे ऊँचा पैराग्लाइडिंग लॉन्च और वियतनाम में सबसे अधिक ऊँचाई अंतर (800 मीटर से अधिक)। लंबी उड़ानें, विहंगम दृश्य, और सामने दा नदी तथा बा वी पर्वत।",
         },
         priceVND: 2_090_000,
         priceUSD: 65,
@@ -932,6 +960,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         note: {
           vi: "1–3 khách: 1.400.000đ/xe. Từ khách thứ 4 trở đi cộng thêm 350.000đ/người.",
           en: "1–3 guests: 1,400,000 VND/car. From the 4th guest onward, add 350,000 VND/person.",
+          fr: "1 à 3 personnes : 1 400 000 VND/voiture. À partir de la 4e personne, ajouter 350 000 VND/personne.",
+          ru: "1–3 гостя: 1 400 000 VND за машину. С 4-го гостя — доплата 350 000 VND с человека.",
+          zh: "1–3 位客人：1,400,000 越南盾/车。从第 4 位客人起，每人加收 350,000 越南盾。",
+          hi: "1–3 मेहमान: 1,400,000 VND/कार। चौथे मेहमान से आगे, प्रति व्यक्ति 350,000 VND अतिरिक्त।",
         },
         requiresPickupInput: true,
         exclusiveGroup: "ha_noi_pickup_group",
@@ -1104,6 +1136,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         description: {
           vi: "Xe trung chuyển đón trả 2 chiều từ khách sạn trong khu vực Quản Bạ.\nPhí đón có thể thay đổi tùy vị trí khách sạn và số lượng khách bay.",
           en: "Round-trip shuttle pickup from hotels within Quan Ba area.\nPickup cost may vary depending on the hotel location and number of flying guests.",
+          fr: "Navette aller-retour depuis les hôtels de la zone de Quan Ba.\nLe coût de la prise en charge peut varier selon l’emplacement de l’hôtel et le nombre de participants.",
+          ru: "Трансфер туда-обратно от отелей в районе Куан Ба.\nСтоимость трансфера может меняться в зависимости от расположения отеля и числа гостей.",
+          zh: "从管坝地区的酒店提供往返接送。\n接送费用可能因酒店位置和飞行人数而有所不同。",
+          hi: "क्वान बा क्षेत्र के होटलों से राउंड-ट्रिप शटल पिकअप।\nपिकअप लागत होटल के स्थान और उड़ान भरने वाले मेहमानों की संख्या के अनुसार भिन्न हो सकती है।",
         },
         controlType: "counter",
         priceVND: 150_000,
