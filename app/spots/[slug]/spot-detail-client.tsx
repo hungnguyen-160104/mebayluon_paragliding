@@ -3396,7 +3396,8 @@ export function SpotDetailClient({
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
       {/* Hero */}
-      <section className="relative h-[70vh] flex items-center justify-center -mt-16 z-10">
+      {/* pt lớn + bỏ -mt để tiêu đề không dính vào thanh menu cố định */}
+      <section className="relative h-[70vh] flex items-center justify-center pt-20 md:pt-24 z-10">
         <motion.div
           className="relative z-10 container mx-auto px-4 text-center"
           initial={{ opacity: 0, y: 30 }}
