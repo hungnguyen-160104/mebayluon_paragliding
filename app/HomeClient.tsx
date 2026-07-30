@@ -336,16 +336,29 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
         >
+          {/* Viền chữ mảnh + bóng nhiều lớp: chữ bật hẳn khỏi nền ảnh
+              nhưng vẫn mềm nhờ lớp bóng khuếch tán rộng phía sau */}
           <h1
             className="
               wrap-break-word mb-5 font-serif font-extrabold leading-[0.92] tracking-tight
               text-[clamp(2.4rem,10vw,5.2rem)] md:text-[clamp(3.5rem,8vw,7rem)]
             "
+            style={{
+              WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
+              textShadow:
+                "0 2px 4px rgba(0,0,0,0.9), 0 6px 18px rgba(0,0,0,0.75), 0 12px 40px rgba(1,148,243,0.55)",
+            }}
           >
             {t?.hero?.title ?? "MEBAYLUON PARAGLIDING"}
           </h1>
 
-          <p className="mx-auto mb-8 max-w-3xl text-[clamp(0.95rem,3.2vw,1.25rem)] opacity-90">
+          <p
+            className="mx-auto mb-8 max-w-3xl text-[clamp(0.95rem,3.2vw,1.25rem)]"
+            style={{
+              textShadow:
+                "0 1px 3px rgba(0,0,0,0.95), 0 4px 12px rgba(0,0,0,0.7), 0 8px 26px rgba(1,148,243,0.45)",
+            }}
+          >
             {t?.hero?.description ??
               "Trải nghiệm bay tự do giữa mây trời Việt Nam"}
           </p>

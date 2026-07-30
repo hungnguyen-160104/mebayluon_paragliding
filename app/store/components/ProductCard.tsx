@@ -44,7 +44,7 @@ export default function ProductCard({ product }: { product: Post }) {
         <div className="flex gap-2">
           <Link href={detailHref} className="flex-1">
             <button className="w-full rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/35">
-              {isVi ? "Xem chi tiết" : "Details"}
+              {isVi ? "Chi tiết" : "Details"}
             </button>
           </Link>
           <Link href="/#contact" className="flex-1">
