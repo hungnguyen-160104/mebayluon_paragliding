@@ -120,6 +120,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [blogPosts, knowledgePosts, storeProducts] = await Promise.all([
       PostModel.find({
         isPublished: true,
+        // Loại category knowledge để không trùng với knowledgeRoutes bên dưới
+        // (bài knowledge cũng có type "blog" nên từng bị liệt kê 2 lần —
+        // 37 URL lặp trong sitemap).
+        category: { $ne: "knowledge" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
         .select("slug publishedAt updatedAt createdAt")
@@ -173,6 +177,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
+    // Chốt chặn cuối: loại URL trùng (giữ bản đầu tiên) — sitemap có URL
+    // lặp sẽ bị Google Search Console cảnh báo.
+    const seen = new Set<string>();
     return [
       ...staticRoutes,
       ...spotRoutes,
@@ -180,7 +187,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...blogRoutes,
       ...knowledgeRoutes,
       ...storeRoutes,
-    ];
+    ].filter((entry) => {
+      if (seen.has(entry.url)) return false;
+      seen.add(entry.url);
+      return true;
+    });
   } catch (err) {
     console.error("[sitemap] DB fetch failed, serving static only:", err);
     return [...staticRoutes, ...spotRoutes, ...pilotRoutes];

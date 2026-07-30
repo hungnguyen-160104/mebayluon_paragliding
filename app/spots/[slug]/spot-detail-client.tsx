@@ -1203,7 +1203,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     vi: {
       name: "Đồi Bù - Viên Nam",
       title: "Điểm Bay Gần Hà Nội - Ngoại Thành Yên Bình",
-      altitude: "650m | 850m – 1.000m",
+      altitude: "650m – 1.000m",
       description:
         `Rời xa phố thị chật chội, tìm về vùng ngoại ô xanh mướt cỏ cây và sự yên bình hiếm có. Điểm bay gần Hà Nội sở hữu độ cao lý tưởng cùng điều kiện thời tiết ổn định, là lựa chọn hấp dẫn, thu hút đông đảo phi công trong và ngoài nước đến khám phá và chinh phục bầu trời.
 
@@ -1253,7 +1253,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     en: {
       name: "Doi Bu - Vien Nam",
       title: "Flying Spot Near Hanoi - Peaceful Suburbs",
-      altitude: "650m | 850m – 1,000m",
+      altitude: "650m – 1,000m",
       description:
         `Escape the crowded city and find your way to lush green suburbs with rare tranquility. This flying spot near Hanoi offers ideal altitude and stable weather conditions, attracting numerous pilots from Vietnam and abroad to explore and conquer the sky.
 
@@ -1303,7 +1303,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
     fr: {
       name: "Đồi Bù - Viên Nam",
       title: "Site de vol près de Hanoï - Banlieue paisible",
-      altitude: "650m | 850m – 1,000m",
+      altitude: "650m – 1,000m",
       description:
         `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoï offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
 
@@ -1353,7 +1353,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     ru: {
       name: "Дой Бу - Вьен Нам",
       title: "Место полетов рядом с Ханоем - Тихий пригород",
-      altitude: "650 м | 850 м – 1 000 м",
+      altitude: "650 – 1 000 м",
       description:
         `Сбегите из переполненного города в зелёные пригороды с редким спокойствием. Эта лётная площадка недалеко от Ханоя предлагает идеальную высоту и стабильные погодные условия, привлекая множество пилотов из Вьетнама и из-за рубежа.
 
@@ -1403,7 +1403,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     zh: {
       name: "多伊布 - 维恩南",
       title: "河内附近的飞行点 - 宁静的郊区",
-      altitude: "650米 | 850–1,000米",
+      altitude: "650–1,000米",
       description:
         `逃离拥挤的都市，来到郁郁葱葱、难得宁静的郊区。这个靠近河内的飞行点拥有理想的海拔高度和稳定的天气条件，吸引众多国内外飞行员前来探索和征服天空。
 
@@ -1451,7 +1451,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     hi: {
       name: "दोई बू - विएन नाम",
       title: "हनोई के पास उड़ान स्थल - शांतिपूर्ण उपनगर",
-      altitude: "650मी | 850मी – 1,000मी",
+      altitude: "650–1,000मी",
       description:
         `भीड़-भाड़ वाले शहर से दूर, हरे-भरे उपनगरों की दुर्लभ शांति में जाएं। हनोई के पास यह उड़ान स्थल आदर्श ऊंचाई और स्थिर मौसम की स्थिति प्रदान करता है, जो वियतनाम और विदेश से कई पायलटों को आकर्षित करता है।
 

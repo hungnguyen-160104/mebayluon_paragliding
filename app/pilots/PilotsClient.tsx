@@ -515,7 +515,8 @@ export default function PilotsPage() {
         <section className="pt-28 pb-16 md:pt-32 relative z-10 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center space-y-6">
-              <h2 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl font-extrabold text-white shadow-lg">{introTitle}</h2>
+              {/* h1 duy nhất của trang — trước đây trang không có h1 nào (SEO) */}
+              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl font-extrabold text-white shadow-lg">{introTitle}</h1>
               <p className="text-lg text-slate-200 leading-relaxed">{introDesc}</p>
             </div>
           </div>
