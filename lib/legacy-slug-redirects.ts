@@ -16,8 +16,25 @@
  * - Không tạo vòng lặp (A -> B rồi B -> A).
  */
 export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
-  // Ví dụ — bỏ dấu // và sửa lại khi có slug thật cần chuyển:
-  // "slug-cu-cua-bai": "slug-moi-cua-bai",
+  /* ===== Slug đổi ngày 28-7-2026 — Google đã index bản cũ, báo 404 =====
+   * Slug cũ đặt theo tiếng Anh, slug mới theo tiếng Việt. Đối chiếu bằng
+   * tiêu đề tiếng Anh của bài trong DB để chắc chắn đúng bài.
+   */
+  // "13 Common Myths About Paragliding"
+  "cac-hieu-lam-pho-bien-ve-du-luon": "nhung-hieu-lam-pho-bien-ve-du-luon",
+  // "Choosing Your First Paragliding Gear"
+  "how-to-choose-paragliding-gears": "chon-thiet-bi-du-luon-dau-tien",
+  // "Turbulence - Part 1: Sources"
+  "turbulence-part-1": "nhieu-loan-phan-1-nguon-goc",
+  // "Paraglider Structure, Materials and Maintenance"
+  "paraglider-structure-materials-and-maintenance":
+    "cau-truc-vat-lieu-bao-tri-du-luon",
+  // "How to Deal With a Paraglider Collapse"
+  "how-to-dealing-with-big-collapse": "xu-ly-sap-vom-du",
+  // "Paraglider Aerodynamics Part 2: Flight Modes and Gliding"
+  "paragliding-aerodynamic-part2": "khi-dong-hoc-du-luon-phan-2",
+  // "P1 – P2 Paragliding Course for Complete Beginners"
+  "paragliding-course-for-beginners": "khoa-hoc-du-luon-p1-p2",
 };
 
 /**

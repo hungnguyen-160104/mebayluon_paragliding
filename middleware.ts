@@ -17,7 +17,25 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+
 const LOCALE_PREFIX = /^\/(en|fr|ru|zh|hi)(\/.*)?$/;
+
+/**
+ * Bài đã đổi slug: trả về đường dẫn mới, hoặc null nếu không phải slug cũ.
+ *
+ * Phải xử lý ở middleware chứ không phải trong page: trang blog là
+ * force-dynamic + streaming nên permanentRedirect() trong component chỉ tạo
+ * soft-redirect (header đã gửi) — người dùng vẫn tới đúng bài nhưng Google
+ * thấy HTTP 200 ở URL cũ, không tính là 301 và không chuyển thứ hạng.
+ */
+function legacyBlogPath(rest: string): string | null {
+  const match = rest.match(/^\/blog\/([^/?#]+)\/?$/);
+  if (!match) return null;
+
+  const newSlug = resolveLegacySlug(decodeURIComponent(match[1]));
+  return newSlug ? `/blog/${newSlug}` : null;
+}
 
 /**
  * Đường dẫn cha không có trang riêng (ví dụ /spots chỉ có /spots/[slug]).
@@ -45,6 +63,14 @@ export function middleware(request: NextRequest) {
     if (rest.startsWith("/blog/") && /[A-Z]/.test(rest)) {
       const url = request.nextUrl.clone();
       url.pathname = `/${locale}${rest.toLowerCase()}`;
+      return NextResponse.redirect(url, 301);
+    }
+
+    // Bài đổi slug, bản có prefix ngôn ngữ: 301 giữ nguyên prefix
+    const localeLegacy = legacyBlogPath(rest);
+    if (localeLegacy) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}${localeLegacy}`;
       return NextResponse.redirect(url, 301);
     }
 
@@ -81,6 +107,14 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/blog/") && /[A-Z]/.test(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.toLowerCase();
+    return NextResponse.redirect(url, 301);
+  }
+
+  // Bài đổi slug (URL không prefix ngôn ngữ)
+  const legacy = legacyBlogPath(pathname);
+  if (legacy) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacy;
     return NextResponse.redirect(url, 301);
   }
 
