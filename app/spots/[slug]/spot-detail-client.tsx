@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Mountain, Clock, Feather } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/language-context";
+import { ShareButtons } from "@/components/share-buttons";
 import { Footer } from "@/components/footer";
 
 /* =========================
@@ -3419,6 +3420,11 @@ export function SpotDetailClient({
               <Clock size={20} />
               <span>{copy.duration}</span>
             </div>
+          </div>
+
+          {/* chia sẻ điểm bay — ngay dưới hàng thông số */}
+          <div className="mt-5 flex justify-center">
+            <ShareButtons lang={lang} variant="spot" title={copy.name} />
           </div>
         </motion.div>
       </section>

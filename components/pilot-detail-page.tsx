@@ -81,6 +81,11 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                 <h2 className="text-lg md:text-xl font-medium">
                   {lang === "vi" ? `Biệt danh: "${nickname}"` : `Nickname: "${nickname}"`}
                 </h2>
+
+                {/* chia sẻ trang phi công */}
+                <div className="mt-4">
+                  <ShareButtons lang={lang} title={pilotData.name} />
+                </div>
               </motion.div>
 
               {/* Right collage */}
@@ -159,13 +164,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                           <span aria-hidden>→</span>
                         </Link>
                       ) : null}
-
-                      {/* chia sẻ trang phi công */}
-                      <ShareButtons
-                        lang={lang}
-                        title={pilotData.name}
-                        className="mt-6"
-                      />
                     </div>
                   </div>
 

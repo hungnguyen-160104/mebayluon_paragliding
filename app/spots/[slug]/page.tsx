@@ -12,7 +12,6 @@ import {
 } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
 import { getUrlLocale } from "@/lib/locale";
-import { ShareButtons } from "@/components/share-buttons";
 import {
   SPOT_ARTICLES,
   SPOT_ARTICLES_HEADING,
@@ -618,21 +617,6 @@ export default async function SpotDetailPage({
         </section>
 ) : null;
 
-  /**
-   * Slot truyền xuống SpotDetailClient: khối bài viết (nếu điểm bay có) +
-   * hàng nút chia sẻ — nút chia sẻ hiện ở MỌI trang điểm bay.
-   */
-  const spotBottomSlot = (
-    <>
-      {articlesSection}
-      <section className="relative z-10 pb-12">
-        <div className="container mx-auto max-w-5xl px-4">
-          <ShareButtons lang={spotLocale} variant="spot" title={spot.name} />
-        </div>
-      </section>
-    </>
-  );
-
   return (
     <div className="min-h-screen">
       <script
@@ -648,7 +632,7 @@ export default async function SpotDetailPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <Navigation />
-      <SpotDetailClient spot={spot as SpotData} articlesSlot={spotBottomSlot} />
+      <SpotDetailClient spot={spot as SpotData} articlesSlot={articlesSection} />
 
 
       {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}

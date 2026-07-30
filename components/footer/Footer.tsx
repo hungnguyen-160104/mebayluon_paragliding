@@ -312,8 +312,8 @@ export default function Footer() {
           <div
             className="
               grid grid-cols-1 gap-5
-              lg:grid-cols-[minmax(340px,1.45fr)_minmax(120px,0.5fr)_minmax(250px,0.95fr)_minmax(265px,0.8fr)]
-              xl:grid-cols-[minmax(390px,1.5fr)_minmax(130px,0.5fr)_minmax(268px,0.95fr)_minmax(285px,0.8fr)]
+              lg:grid-cols-[minmax(340px,1.4fr)_minmax(170px,0.65fr)_minmax(250px,0.95fr)_minmax(250px,0.75fr)]
+              xl:grid-cols-[minmax(390px,1.45fr)_minmax(180px,0.65fr)_minmax(268px,0.95fr)_minmax(265px,0.75fr)]
               xl:gap-6
             "
           >
@@ -373,7 +373,7 @@ export default function Footer() {
             </div>
 
             {/* QUICK LINKS */}
-            <div className="min-w-0 lg:pl-10">
+            <div className="min-w-0 lg:pl-6">
               <h3 className="mb-3 text-lg font-semibold text-white">
                 {t.quickLinks}
               </h3>
@@ -382,7 +382,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href={makeLocalizedHref("/pilots", pathname)}
-                    className="text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                    className="whitespace-nowrap text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
                   >
                     {t.pilots}
                   </Link>
@@ -391,7 +391,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href={makeLocalizedHref("/booking", pathname)}
-                    className="text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                    className="whitespace-nowrap text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
                   >
                     {t.bookTour}
                   </Link>
@@ -400,7 +400,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href={makeLocalizedHref("/pre-notice", pathname)}
-                    className="text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                    className="whitespace-nowrap text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
                   >
                     {t.preNotice}
                   </Link>

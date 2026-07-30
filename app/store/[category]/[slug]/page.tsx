@@ -160,9 +160,17 @@ export default async function ProductDetailPage({
               )}
             </div>
 
+            {/* title */}
+            <h1
+              className="mb-3 text-center text-4xl font-bold leading-tight text-white sm:text-5xl"
+              style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
+            >
+              {currentTitle}
+            </h1>
+
             {/* date */}
             {publishedDate && (
-              <div className="mb-3 text-xs text-white/60">
+              <div className="mb-3 text-center text-xs text-white/60">
                 {new Date(publishedDate).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US", {
                   year: "numeric",
                   month: "long",
@@ -171,13 +179,10 @@ export default async function ProductDetailPage({
               </div>
             )}
 
-            {/* title */}
-            <h1
-              className="mb-4 text-4xl font-bold leading-tight text-white sm:text-5xl"
-              style={{ fontFamily: "var(--font-merriweather), Georgia, serif" }}
-            >
-              {currentTitle}
-            </h1>
+            {/* thanh chia sẻ — cùng vị trí như trang bài viết */}
+            <div className="mb-5 flex justify-center">
+              <ShareButtons lang={lang} variant="product" title={currentTitle} />
+            </div>
 
             {/* excerpt */}
             {excerpt && (
@@ -235,9 +240,6 @@ export default async function ProductDetailPage({
                 </p>
               )}
             </article>
-
-            {/* chia sẻ sản phẩm */}
-            <ShareButtons lang={lang} variant="product" title={currentTitle} className="mt-8" />
 
             {/* contact CTA */}
             <div className="mt-8 flex flex-wrap gap-3">
