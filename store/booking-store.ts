@@ -191,7 +191,9 @@ function normalizeServicesForGuestsCount(
     const item: ServiceSelection = { ...value };
 
     if (typeof item.qty === "number") {
-      item.qty = clampInt(item.qty, 0, guestsCount);
+      // Xe Garrya: qty là SỐ CHIỀU (tối đa 2), không phụ thuộc số khách
+      const maxQty = key === "khau_pha_garrya_pickup" ? 2 : guestsCount;
+      item.qty = clampInt(item.qty, 0, maxQty);
       if (item.qty <= 0 && item.selected) {
         item.selected = false;
       }
@@ -213,6 +215,11 @@ function applyLocationDefaults(
 
   if (location === "ha_noi") {
     services["ha_noi_mountain_shuttle"] = { selected: true };
+  }
+
+  if (location === "sapa") {
+    // Xe đón trả khách sạn đã gộp vào giá vé — tích sẵn cho khách
+    services["sapa_hotel_pickup"] = { selected: true };
   }
 
   if (location === "khau_pha") {
@@ -497,7 +504,11 @@ export const useBookingStore = create<StoreState>()((set) => ({
 
   setServiceQty: (key, qty) =>
     set((s) => {
-      const max = Math.max(1, s.data.guestsCount || 1);
+      // Xe Garrya: qty là SỐ CHIỀU (tối đa 2), không khoá theo số khách
+      const max =
+        key === "khau_pha_garrya_pickup"
+          ? 2
+          : Math.max(1, s.data.guestsCount || 1);
       const q = clampInt(qty ?? 0, 0, max);
       const current = s.data.services?.[key] || { selected: false };
 

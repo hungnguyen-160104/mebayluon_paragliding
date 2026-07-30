@@ -62,7 +62,7 @@ const flyingSpots: FlyingSpot[] = [
     nameKey: "sonTra",
     slug: "son-tra",
     locationKey: "daNang",
-    price: 2590000,
+    price: 2190000,
     image: "/da-nang.jpg",
   },
   {
@@ -76,7 +76,7 @@ const flyingSpots: FlyingSpot[] = [
     nameKey: "muongHoaSapa",
     slug: "muong-hoa-sapa",
     locationKey: "saPa",
-    price: 2090000,
+    price: 2190000,
     image: "/muong-hoa-sapa.jpg",
   },
   {
@@ -90,7 +90,7 @@ const flyingSpots: FlyingSpot[] = [
     nameKey: "tramTau",
     slug: "tram-tau",
     locationKey: "yenBaiTramTau",
-    price: 2000000,
+    price: 2590000,
     image: "/tram-tau-yen-bai.jpg",
   },
 ];

@@ -40,6 +40,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     khauPhaPromoSub:
       "(non applicable pendant la haute saison et les jours fériés)",
     paramotorDiscountBefore: "Prix du vol ",
+    discountToLabel: "Réduit à",
     paramotorDiscountAfter: " réduit à 2.390.000 VND",
     paraglidingDescription: [
       "Décollage depuis le sommet du col de Khau Pha, l’un des quatre grands cols du Vietnam, à 1 268 m d’altitude, puis atterrissage dans la splendide vallée en rizières en terrasses de Lim Mong.",
@@ -89,7 +90,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "Point de prise en charge : Centre commercial GO! Thang Long, Hanoï",
     optionalServicesFixedPickupDeparture: "Départ : 8:00am~11:00am tous les jours – l'heure exacte dépend de la météo et sera communiquée avant le jour du vol.",
     optionalServicesPrivatePickupNote1: "Le coût de la prise en charge peut varier en fonction du lieu de l'hôtel et du nombre de passagers.",
-    optionalServicesPrivatePickupNote2: "1–3 personnes : tarif fixe 1.500.000 VND / voiture.",
+    optionalServicesPrivatePickupNote2: "1–3 personnes : tarif fixe 1.400.000 VND / voiture.",
     optionalServicesPrivatePickupNote3: "À partir du 4e passager : ajouter 350.000 VND / personne.",
     optionalServicesMountainShuttleDesc: "Utilisation d'un véhicule SUV Offroad du pied de la montagne (zone d'atterrissage) au sommet de la montagne (zone de décollage).",
     optionalServicesSunsetDesc: "Le vol a lieu entre 16h30 et 17h30 pour profiter du coucher de soleil. S'il n'y a pas de coucher de soleil, ces frais seront remboursés.",

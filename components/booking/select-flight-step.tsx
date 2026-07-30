@@ -38,6 +38,8 @@ type NormalizedPackage = {
 type TextLine = {
   text: string;
   tone?: "white" | "red" | "green" | "dark";
+  /** In đậm, bỏ nghiêng — dùng cho dòng hướng dẫn quan trọng. */
+  bold?: boolean;
   href?: string;
 };
 
@@ -64,6 +66,8 @@ type ServiceMeta = {
   inputLabel?: string;
   showQty?: boolean;
   readonlyQty?: boolean;
+  /** Trần số lượng riêng của dịch vụ (mặc định = số khách). */
+  maxQty?: number;
   priceText: string;
   lines: TextLine[];
   activeNoteLines?: TextLine[];
@@ -98,17 +102,30 @@ const LOCATION_ORDER: LocationKey[] = [
 const KHAU_PHA_PACKAGES = {
   weekday: "khau_pha_pkg_1" as PackageKey,
   weekend: "khau_pha_pkg_2" as PackageKey,
-  paramotor: "khau_pha_paramotor" as PackageKey,
+  // Paramotor cũng tách 2 gói theo ngày bay như dù không động cơ
+  paramotorWeekday: "khau_pha_paramotor_pkg_1" as PackageKey,
+  paramotorWeekend: "khau_pha_paramotor_pkg_2" as PackageKey,
+  // Key đồng giá cũ — chỉ để nhận diện dữ liệu cũ, không cho chọn mới
+  paramotorLegacy: "khau_pha_paramotor" as PackageKey,
 };
+
+/** Giá gốc paramotor trước giảm — hiện gạch ngang trên thẻ chọn ngày. */
+const KHAU_PHA_PARAMOTOR_ORIGINAL_PRICE = 2_690_000;
+
+const KHAU_PHA_PARAMOTOR_KEYS: PackageKey[] = [
+  KHAU_PHA_PACKAGES.paramotorWeekday,
+  KHAU_PHA_PACKAGES.paramotorWeekend,
+  KHAU_PHA_PACKAGES.paramotorLegacy,
+];
 
 const ADDON_KEYS: AddonKey[] = ["flycam", "camera360"];
 
 const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   ha_noi: 1_790_000,
   khau_pha: 2_190_000,
-  sapa: 2_090_000,
+  sapa: 2_190_000,
   quan_ba: 2_190_000,
-  da_nang: 2_590_000,
+  da_nang: 2_190_000,
 };
 
 const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
@@ -208,8 +225,14 @@ function getKhauPhaPackages(packages: NormalizedPackage[]) {
       packages.find((pkg) => pkg.key === KHAU_PHA_PACKAGES.weekday) || null,
     weekend:
       packages.find((pkg) => pkg.key === KHAU_PHA_PACKAGES.weekend) || null,
-    paramotor:
-      packages.find((pkg) => pkg.key === KHAU_PHA_PACKAGES.paramotor) || null,
+    paramotorWeekday:
+      packages.find(
+        (pkg) => pkg.key === KHAU_PHA_PACKAGES.paramotorWeekday,
+      ) || null,
+    paramotorWeekend:
+      packages.find(
+        (pkg) => pkg.key === KHAU_PHA_PACKAGES.paramotorWeekend,
+      ) || null,
   };
 }
 
@@ -445,11 +468,17 @@ function PackageDayCard({
   active,
   title,
   price,
+  originalPrice,
+  discountLabel,
   onClick,
 }: {
   active: boolean;
   title: string;
   price: string;
+  /** Giá gốc trước giảm — hiện gạch ngang, đỏ đậm, ngay trước giá bán. */
+  originalPrice?: string;
+  /** Chữ "Giảm còn" giữa giá gốc và giá bán — in đậm, cỡ to. */
+  discountLabel?: string;
   onClick: () => void;
 }) {
   return (
@@ -469,7 +498,27 @@ function PackageDayCard({
           <div className="text-[14px] font-bold leading-5 text-[#1C2930] sm:text-[15px]">
             {title}
           </div>
-          <div className="mt-1 text-[13px] font-semibold text-[#FF5E1F] sm:text-[14px]">{price}</div>
+          <div className="mt-1 text-[13px] font-semibold text-[#FF5E1F] sm:text-[14px]">
+            {originalPrice ? (
+              <span className="mr-1.5 text-[15px] font-bold text-[#E11D2E] line-through sm:text-[16px]">
+                {originalPrice}
+              </span>
+            ) : null}
+            {originalPrice && discountLabel ? (
+              <span className="mr-1.5 text-[15px] font-bold text-[#1C2930] sm:text-[16px]">
+                {discountLabel}
+              </span>
+            ) : null}
+            <span
+              className={
+                originalPrice
+                  ? "text-[15px] font-bold sm:text-[16px]"
+                  : undefined
+              }
+            >
+              {price}
+            </span>
+          </div>
         </div>
       </div>
     </button>
@@ -496,16 +545,18 @@ function getServiceMeta(
   const priceVND = Number(svc.priceVND || 0);
 
   if (key === "sapa_hotel_pickup") {
+    // Xe đón trả đã GỘP vào giá vé Sapa 2.190.000đ: miễn phí, tích sẵn,
+    // chỉ giữ ô nhập địa chỉ khách sạn.
     return {
       id: "sapa_hotel_pickup",
+      defaultSelected: true,
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
-      showQty: true,
-      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      priceText: ui.includedLabel,
       lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
-      lineTotalVND: (base, _guests, qty) => base * qty,
-      lineTotalUSD: (base, _guests, qty) => base * qty,
-      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
+      lineTotalVND: () => 0,
+      lineTotalUSD: () => 0,
+      summaryText: (name) => name,
     };
   }
 
@@ -538,15 +589,15 @@ function getServiceMeta(
       exclusiveGroup: "ha_noi_pickup_group",
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
-      priceText: "1.500.000 đ / xe 4 chỗ",
+      priceText: "1.400.000 đ / xe 4 chỗ",
       lines: [],
       activeNoteLines: [
         { text: ui.optionalServicesPrivatePickupNote1, tone: "dark" },
       ],
       lineTotalVND: (_base, guests) =>
-        1_500_000 + Math.max(0, guests - 3) * 350_000,
+        1_400_000 + Math.max(0, guests - 3) * 350_000,
       lineTotalUSD: (_base, guests) =>
-        60 + Math.max(0, guests - 3) * 14,
+        56 + Math.max(0, guests - 3) * 14,
       summaryText: (name) => name,
     };
   }
@@ -636,16 +687,26 @@ function getServiceMeta(
       exclusiveGroup: "khau_pha_pickup",
       requiresInput: true,
       inputLabel: ui.pickupLocationLabel,
+      // qty = SỐ CHIỀU (1 chiều / 2 chiều), không phải số khách.
+      // Khách đặt 2 chiều thì chọn "2" — vì vậy không khoá theo guestsCount.
       showQty: true,
-      readonlyQty: true,
-      priceText: "600.000 đ/xe 4 chỗ/1 chiều",
-      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
+      maxQty: 2,
+      priceText: "500.000 đ/xe 4 chỗ/1 chiều",
+      // Dòng đầu ("Nếu đặt 2 chiều vui lòng chọn 2") tô đỏ, in đậm
+      lines: descriptionLines.map((text, idx) =>
+        idx === 0
+          ? { text, tone: "red" as const, bold: true }
+          : { text, tone: "dark" as const },
+      ),
       activeNoteLines: noteLines.map((text) => ({
         text: `• ${text}`,
         tone: "red",
       })),
-      lineTotalVND: (_base, guests) => Math.ceil(guests / 4) * 600_000,
-      lineTotalUSD: (_base, guests) => Math.ceil(guests / 4) * 24,
+      // Số xe tính theo số khách (4 khách/xe) × số chiều × 500.000 đ
+      lineTotalVND: (_base, guests, qty) =>
+        Math.ceil(guests / 4) * Math.max(1, qty) * 500_000,
+      lineTotalUSD: (_base, guests, qty) =>
+        Math.ceil(guests / 4) * Math.max(1, qty) * 20,
       summaryText: (name, qty) => `${name} (${qty} ${ui.carUnit})`,
     };
   }
@@ -815,21 +876,24 @@ export default function SelectFlightStep() {
     }
 
     if (selected === "khau_pha") {
+      const isParamotorPackage =
+        !!data.packageKey &&
+        KHAU_PHA_PARAMOTOR_KEYS.includes(data.packageKey);
+
+      // Đổi loại bay mà gói đang chọn không khớp -> bắt chọn lại gói ngày
       if (
         data.flightTypeKey === "paramotor" &&
-        data.packageKey !== KHAU_PHA_PACKAGES.paramotor
+        data.packageKey &&
+        !isParamotorPackage
       ) {
         update({
-          packageKey: KHAU_PHA_PACKAGES.paramotor,
+          packageKey: undefined,
           services: {},
         });
         return;
       }
 
-      if (
-        data.flightTypeKey === "paragliding" &&
-        data.packageKey === KHAU_PHA_PACKAGES.paramotor
-      ) {
+      if (data.flightTypeKey === "paragliding" && isParamotorPackage) {
         update({
           packageKey: undefined,
           services: {},
@@ -990,7 +1054,7 @@ export default function SelectFlightStep() {
     meta: ServiceMeta,
     nextQty: number,
   ) => {
-    const qty = clampInt(nextQty, 1, guestsCount);
+    const qty = clampInt(nextQty, 1, meta.maxQty ?? guestsCount);
     const currentServices =
       (data.services as Record<string, ServiceSelection> | undefined) || {};
     const nextServices = { ...currentServices };
@@ -1067,7 +1131,8 @@ export default function SelectFlightStep() {
 
   const needsFlightType = isKhauPha && !data.flightTypeKey;
   const needsPackage =
-    (isKhauPha && isParagliding && !data.packageKey) ||
+    // Khau Phạ: cả dù không động cơ lẫn paramotor đều phải chọn gói ngày
+    (isKhauPha && !!data.flightTypeKey && !data.packageKey) ||
     (!isKhauPha && allPackages.length > 1 && !data.packageKey);
 
   const canGoNext =
@@ -1109,7 +1174,13 @@ export default function SelectFlightStep() {
 
     if (selected === "khau_pha") {
       if (isParamotor) {
-        return `${ui.paramotorTitle} - ${formatVND(2_390_000)}/${ui.pax}`;
+        if (data.packageKey === khauPhaPackages.paramotorWeekday?.key) {
+          return `${ui.paramotorTitle} - ${ui.weekdayFlightTitle} - ${formatVND(2_390_000)}/${ui.pax}`;
+        }
+        if (data.packageKey === khauPhaPackages.paramotorWeekend?.key) {
+          return `${ui.paramotorTitle} - ${ui.weekendFlightTitle} - ${formatVND(2_590_000)}/${ui.pax}`;
+        }
+        return ui.paramotorTitle;
       }
 
       if (isParagliding) {
@@ -1198,6 +1269,7 @@ export default function SelectFlightStep() {
             className={[
               "text-[12px] italic leading-5 md:text-[14px]",
               toneClass(line.tone),
+              line.bold ? "font-bold not-italic" : "",
             ].join(" ")}
           >
             {line.href ? (
@@ -1324,10 +1396,9 @@ export default function SelectFlightStep() {
                         onClick={() =>
                           update({
                             flightTypeKey: item.key,
-                            packageKey:
-                              item.key === "paramotor"
-                                ? KHAU_PHA_PACKAGES.paramotor
-                                : undefined,
+                            // Cả 2 loại bay đều phải chọn tiếp gói ngày
+                            // (T2–T6 / T7–CN & Lễ) nên chưa gán gói ở đây.
+                            packageKey: undefined,
                             services: {},
                             addons: {},
                             addonsQty: {},
@@ -1448,12 +1519,56 @@ export default function SelectFlightStep() {
                   ) : null}
 
                   {isKhauPha && isParamotor ? (
-                    <div className="rounded-xl border-2 border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-[16px] font-bold text-[#1C2930] sm:text-[18px]">
-                      <span>{ui.paramotorDiscountBefore}</span>
-                      <span className="text-[#5B6B7A] line-through">
-                        2.690.000 đ
-                      </span>
-                      <span>{ui.paramotorDiscountAfter}</span>
+                    <div className="flex w-full flex-col gap-3 sm:flex-row">
+                      {khauPhaPackages.paramotorWeekday ? (
+                        <PackageDayCard
+                          active={
+                            data.packageKey ===
+                            khauPhaPackages.paramotorWeekday.key
+                          }
+                          title={ui.weekdayFlightTitle}
+                          originalPrice={formatVND(
+                            KHAU_PHA_PARAMOTOR_ORIGINAL_PRICE,
+                          )}
+                          discountLabel={ui.discountToLabel}
+                          price={formatVND(
+                            khauPhaPackages.paramotorWeekday.priceVND ??
+                              2_390_000,
+                          )}
+                          onClick={() =>
+                            update({
+                              packageKey:
+                                khauPhaPackages.paramotorWeekday?.key,
+                              services: {},
+                            })
+                          }
+                        />
+                      ) : null}
+
+                      {khauPhaPackages.paramotorWeekend ? (
+                        <PackageDayCard
+                          active={
+                            data.packageKey ===
+                            khauPhaPackages.paramotorWeekend.key
+                          }
+                          title={ui.weekendFlightTitle}
+                          originalPrice={formatVND(
+                            KHAU_PHA_PARAMOTOR_ORIGINAL_PRICE,
+                          )}
+                          discountLabel={ui.discountToLabel}
+                          price={formatVND(
+                            khauPhaPackages.paramotorWeekend.priceVND ??
+                              2_590_000,
+                          )}
+                          onClick={() =>
+                            update({
+                              packageKey:
+                                khauPhaPackages.paramotorWeekend?.key,
+                              services: {},
+                            })
+                          }
+                        />
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -1648,7 +1763,8 @@ export default function SelectFlightStep() {
                                   meta.readonlyQty || !active || qty <= 1
                                 }
                                 disablePlus={
-                                  meta.readonlyQty || qty >= guestsCount
+                                  meta.readonlyQty ||
+                                  qty >= (meta.maxQty ?? guestsCount)
                                 }
                               />
                             </div>

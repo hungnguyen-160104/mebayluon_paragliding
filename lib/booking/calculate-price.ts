@@ -14,6 +14,13 @@ export type FlightTypeKey = "paragliding" | "paramotor";
 export type PackageKey =
   | "khau_pha_pkg_1"
   | "khau_pha_pkg_2"
+  // Paramotor Khau Phạ tách 2 gói theo ngày bay (giống dù không động cơ):
+  // pkg_1 = T2–T6 (2.390.000đ), pkg_2 = T7–CN & Lễ (2.590.000đ), đều giảm
+  // từ giá gốc 2.690.000đ.
+  | "khau_pha_paramotor_pkg_1"
+  | "khau_pha_paramotor_pkg_2"
+  // Key cũ (đồng giá 2.390.000đ) — giữ để booking cũ trong DB còn hiển thị
+  // đúng nhãn/giá; KHÔNG còn cho khách chọn mới.
   | "khau_pha_paramotor"
   | "ha_noi_850m"
   | "ha_noi_650m";
@@ -138,8 +145,18 @@ function getKhauPhaPackageBasePriceVND(
 ): number {
   const holidayType = getHolidayType(dateISO);
 
-  if (flightTypeKey === "paramotor" || packageKey === "khau_pha_paramotor") {
-    return 2_390_000;
+  if (
+    flightTypeKey === "paramotor" ||
+    packageKey === "khau_pha_paramotor" ||
+    packageKey === "khau_pha_paramotor_pkg_1" ||
+    packageKey === "khau_pha_paramotor_pkg_2"
+  ) {
+    if (packageKey === "khau_pha_paramotor_pkg_1") return 2_390_000;
+    if (packageKey === "khau_pha_paramotor_pkg_2") return 2_590_000;
+    // Booking cũ (key đồng giá) giữ nguyên 2.390.000đ như lúc khách đặt.
+    if (packageKey === "khau_pha_paramotor") return 2_390_000;
+    // Chưa chọn gói ngày: tính theo ngày bay đã chọn (nếu có).
+    return holidayType === "weekday" ? 2_390_000 : 2_590_000;
   }
 
   if (packageKey === "khau_pha_pkg_1") {
@@ -160,8 +177,16 @@ function getKhauPhaPackageBasePriceUSD(
 ): number {
   const holidayType = getHolidayType(dateISO);
 
-  if (flightTypeKey === "paramotor" || packageKey === "khau_pha_paramotor") {
-    return 93;
+  if (
+    flightTypeKey === "paramotor" ||
+    packageKey === "khau_pha_paramotor" ||
+    packageKey === "khau_pha_paramotor_pkg_1" ||
+    packageKey === "khau_pha_paramotor_pkg_2"
+  ) {
+    if (packageKey === "khau_pha_paramotor_pkg_1") return 93;
+    if (packageKey === "khau_pha_paramotor_pkg_2") return 97;
+    if (packageKey === "khau_pha_paramotor") return 93;
+    return holidayType === "weekday" ? 93 : 97;
   }
 
   if (packageKey === "khau_pha_pkg_1") {
@@ -175,6 +200,64 @@ function getKhauPhaPackageBasePriceUSD(
   return holidayType === "weekday" ? 82 : 97;
 }
 
+/**
+ * Nội dung bao gồm của gói paramotor Khau Phạ — dùng chung cho cả 2 gói ngày
+ * (T2–T6 và T7–CN & Lễ) để không phải duy trì 2 bản sao.
+ */
+const KHAU_PHA_PARAMOTOR_INCLUDED = {
+  vi: [
+    "01 chuyến bay từ 10–20 phút (tuỳ chọn)",
+    "Quay phim & chụp hình GoPro",
+    "Miễn phí cà phê & trà tại điểm bay",
+    "Bảo hiểm dù lượn",
+    "Giấy chứng nhận",
+  ],
+  en: [
+    "One flight 10–20 minutes (option)",
+    "GoPro filming & photography",
+    "Free coffee & tea at flight site",
+    "Paragliding insurance",
+    "Certificate",
+  ],
+  fr: [
+    "Un vol de 10 à 20 minutes (au choix)",
+    "Vidéos et photos GoPro",
+    "Café et thé gratuits sur le lieu du vol",
+    "Assurance parapente",
+    "Certificat",
+  ],
+  ru: [
+    "Один полет от 10 до 20 минут (по выбору)",
+    "Съемка на GoPro",
+    "Бесплатный кофе и чай на месте старта",
+    "Страховка парапланериста",
+    "Сертификат",
+  ],
+  zh: [
+    "1 次飞行 10-20 分钟（可选）",
+    "GoPro 拍摄及摄影",
+    "飞行点免费提供咖啡和茶",
+    "滑翔伞保险",
+    "证书",
+  ],
+  hi: [
+    "10-20 मिनट से 01 उड़ान (वैकल्पिक)",
+    "GoPro फिल्मिंग और फोटोग्राफी",
+    "उड़ान स्थल पर मुफ्त कॉफी और चाय",
+    "पैराग्लाइडिंग बीमा",
+    "प्रमाणपत्र",
+  ],
+};
+
+const KHAU_PHA_PARAMOTOR_FLIGHT_LABEL = {
+  vi: "Bay dù gắn động cơ",
+  en: "Paramotor",
+  fr: "Paramoteur",
+  ru: "Парамотор",
+  zh: "动力伞",
+  hi: "पैरामोटर",
+};
+
 export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   sapa: {
     key: "sapa",
@@ -186,8 +269,9 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "SAPA",
       hi: "SAPA",
     },
-    basePriceVND: () => 2_090_000,
-    basePriceUSD: () => 80,
+    // 2.190.000đ đã BAO GỒM xe đón trả khách sạn (không tách phí xe riêng)
+    basePriceVND: () => 2_190_000,
+    basePriceUSD: () => 82,
     services: [
       {
         key: "sapa_hotel_pickup",
@@ -203,9 +287,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           vi: "Xe đón/trả 2 chiều từ khách sạn trong khu vực trung tâm Sapa, Tả Van, Lao Chải.",
           en: "Round-trip hotel pickup and drop-off within Sapa Center, Ta Van, and Lao Chai areas.",
         },
-        controlType: "counter",
-        priceVND: 100_000,
-        priceUSD: 4,
+        // Đã gộp vào giá vé 2.190.000đ — dịch vụ miễn phí, tích sẵn,
+        // giữ lại để khách nhập địa chỉ khách sạn cần đón.
+        controlType: "checkbox",
+        defaultSelected: true,
+        priceVND: 0,
+        priceUSD: 0,
       },
     ],
     addons: {
@@ -367,73 +454,44 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         ],
       },
       {
-        key: "khau_pha_paramotor",
+        key: "khau_pha_paramotor_pkg_1",
         label: {
-          vi: "Bay dù gắn động cơ (paramotor)",
-          en: "Paramotor",
-          fr: "Paramoteur",
-          ru: "Парамотор",
-          zh: "动力伞",
-          hi: "पैरामोटर",
+          vi: "Ngày bay từ Thứ 2 - Thứ 6",
+          en: "Flights from Monday to Friday",
+          fr: "Vols du lundi au vendredi",
+          ru: "Полёты с понедельника по пятницу",
+          zh: "周一至周五飞行",
+          hi: "सोमवार से शुक्रवार उड़ान",
         },
         priceVND: 2_390_000,
         priceUSD: 93,
-        included: {
-          vi: [
-            "01 chuyến bay từ 10–20 phút (tuỳ chọn)",
-            "Quay phim & chụp hình GoPro",
-            "Miễn phí cà phê & trà tại điểm bay",
-            "Bảo hiểm dù lượn",
-            "Giấy chứng nhận",
-          ],
-          en: [
-            "One flight 10–20 minutes (option)",
-            "GoPro filming & photography",
-            "Free coffee & tea at flight site",
-            "Paragliding insurance",
-            "Certificate",
-          ],
-          fr: [
-            "Un vol de 10 à 20 minutes (au choix)",
-            "Vidéos et photos GoPro",
-            "Café et thé gratuits sur le lieu du vol",
-            "Assurance parapente",
-            "Certificat",
-          ],
-          ru: [
-            "Один полет от 10 до 20 минут (по выбору)",
-            "Съемка на GoPro",
-            "Бесплатный кофе и чай на месте старта",
-            "Страховка парапланериста",
-            "Сертификат",
-          ],
-          zh: [
-            "1 次飞行 10-20 分钟（可选）",
-            "GoPro 拍摄及摄影",
-            "飞行点免费提供咖啡和茶",
-            "滑翔伞保险",
-            "证书",
-          ],
-          hi: [
-            "10-20 मिनट से 01 उड़ान (वैकल्पिक)",
-            "GoPro फिल्मिंग और फोटोग्राफी",
-            "उड़ान स्थल पर मुफ्त कॉफी और चाय",
-            "पैराग्लाइडिंग बीमा",
-            "प्रमाणपत्र",
-          ],
-        },
+        included: KHAU_PHA_PARAMOTOR_INCLUDED,
         flightTypes: [
           {
             key: "paramotor",
-            label: {
-              vi: "Bay dù gắn động cơ",
-              en: "Paramotor",
-              fr: "Paramoteur",
-              ru: "Парамотор",
-              zh: "动力伞",
-              hi: "पैरामोटर",
-            },
+            label: KHAU_PHA_PARAMOTOR_FLIGHT_LABEL,
             fixed: 2_390_000,
+          },
+        ],
+      },
+      {
+        key: "khau_pha_paramotor_pkg_2",
+        label: {
+          vi: "Ngày bay Thứ 7 - CN & Lễ",
+          en: "Flights on Sat, Sun & Holidays",
+          fr: "Vols samedi, dimanche et jours fériés",
+          ru: "Полёты по субботам, воскресеньям и праздникам",
+          zh: "周六、周日及节假日飞行",
+          hi: "शनिवार, रविवार और अवकाश उड़ान",
+        },
+        priceVND: 2_590_000,
+        priceUSD: 97,
+        included: KHAU_PHA_PARAMOTOR_INCLUDED,
+        flightTypes: [
+          {
+            key: "paramotor",
+            label: KHAU_PHA_PARAMOTOR_FLIGHT_LABEL,
+            fixed: 2_590_000,
           },
         ],
       },
@@ -449,10 +507,11 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "国旗飞行 – 越南的象征",
           hi: "राष्ट्रीय ध्वज के साथ उड़ान – वियतनाम का प्रतीक",
         },
-        controlType: "checkbox",
+        // Counter để chọn đúng số khách bay cùng cờ (checkbox cũ tính cả đoàn)
+        controlType: "counter",
         priceVND: 100_000,
         priceUSD: 4,
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
@@ -469,10 +528,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           vi: "Bay lên độ cao 2 nghìn mét để ngắm biển mây hoặc đón bình minh/hoàng hôn. Một trải nghiệm độc nhất!",
           en: "Ascend to 2,000m to admire the cloud sea or catch sunrise/sunset. A truly unique experience!",
         },
-        controlType: "checkbox",
+        // Counter để nhóm khách chọn đúng SỐ NGƯỜI bay 2.000m
+        // (checkbox cũ mặc định tính cho cả đoàn).
+        controlType: "counter",
         priceVND: 700_000,
         priceUSD: 28,
-        visibleForPackages: ["khau_pha_paramotor"],
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paramotor"],
       },
       {
@@ -495,7 +556,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         priceVND: 70_000,
         priceUSD: 3,
         exclusiveGroup: "khau_pha_pickup",
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
@@ -509,13 +570,13 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "Garrya या Mu Cang Chai town से पिकअप",
         },
         description: {
-          vi: "Chi phí đón có thể thay đổi tùy vị trí cụ thể và số lượng khách.\nKhách có thể chọn đi xe ôm với giá khoảng 300.000 - 500.000 đ/pax/2 chiều (tùy vị trí đón).",
-          en: "Pickup cost may vary depending on the exact location and number of guests.\nGuests may also choose motorbike transfer at around 300,000 - 500,000 VND/pax/round trip, depending on the pickup point.",
+          vi: "Nếu đặt 2 chiều vui lòng chọn \"2\".\nKhách có thể chọn đi xe ôm hoặc liên hệ xe Mebayluon đón để tiết kiệm chi phí.",
+          en: "For a round trip, please select \"2\".\nGuests may choose a motorbike transfer or contact Mebayluon's shuttle to save costs.",
         },
         controlType: "checkbox",
         requiresPickupInput: true,
         exclusiveGroup: "khau_pha_pickup",
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
@@ -533,9 +594,9 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           en: "Panoramic view of the valley and flight journey, original video sent immediately after flight",
         },
         controlType: "counter",
-        priceVND: 300_000,
-        priceUSD: 12,
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        priceVND: 400_000,
+        priceUSD: 16,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
@@ -553,9 +614,9 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           en: "Impressive panoramic flight video, edited and sent within 24h",
         },
         controlType: "counter",
-        priceVND: 500_000,
-        priceUSD: 20,
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor"],
+        priceVND: 400_000,
+        priceUSD: 16,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
 
@@ -628,8 +689,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "岘港",
       hi: "दा नांग",
     },
-    basePriceVND: () => 1_690_000,
-    basePriceUSD: () => 65,
+    basePriceVND: () => 2_190_000,
+    basePriceUSD: () => 82,
     services: [
       {
         key: "da_nang_mountain_shuttle",
@@ -869,8 +930,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         controlType: "checkbox",
         note: {
-          vi: "1–3 khách: 1.500.000đ/xe. Từ khách thứ 4 trở đi cộng thêm 350.000đ/người.",
-          en: "1–3 guests: 1,500,000 VND/car. From the 4th guest onward, add 350,000 VND/person.",
+          vi: "1–3 khách: 1.400.000đ/xe. Từ khách thứ 4 trở đi cộng thêm 350.000đ/người.",
+          en: "1–3 guests: 1,400,000 VND/car. From the 4th guest onward, add 350,000 VND/person.",
         },
         requiresPickupInput: true,
         exclusiveGroup: "ha_noi_pickup_group",
@@ -943,8 +1004,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "360°全景相机",
           hi: "360° कैमरा",
         },
-        pricePerPersonVND: 500_000,
-        pricePerPersonUSD: 20,
+        pricePerPersonVND: 400_000,
+        pricePerPersonUSD: 16,
       },
       flycam: {
         label: {
@@ -955,8 +1016,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "航拍",
           hi: "फ्लाईकैम",
         },
-        pricePerPersonVND: 350_000,
-        pricePerPersonUSD: 14,
+        pricePerPersonVND: 400_000,
+        pricePerPersonUSD: 16,
       },
     },
     included: {

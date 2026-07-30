@@ -36,6 +36,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     khauPhaPromoTitle: "FREE STAY PROMOTION AT MEBAYLUON CLUBHOUSE",
     khauPhaPromoSub: "(not applicable during peak season and holidays)",
     paramotorDiscountBefore: "Flight price ",
+    discountToLabel: "Now only",
     paramotorDiscountAfter: " discounted to 2,390,000 VND",
     paraglidingDescription: [
       "Take off from the top of Khau Pha Pass - one of Vietnam’s four great mountain passes, at an altitude of 1,268m - and land in the stunning terraced rice fields of Lim Mong Valley. This is considered one of the most beautiful paragliding sites in the world with surreal scenery.",
@@ -85,7 +86,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "Pickup point: GO! Thang Long Mall, Hanoi",
     optionalServicesFixedPickupDeparture: "Departure: 8:00am~11:00am daily – exact time depends on weather and will be notified before the flight date.",
     optionalServicesPrivatePickupNote1: "Pickup cost may vary depending on hotel location and number of guests.",
-    optionalServicesPrivatePickupNote2: "1–3 guests: flat rate 1,500,000 VND/car.",
+    optionalServicesPrivatePickupNote2: "1–3 guests: flat rate 1,400,000 VND/car.",
     optionalServicesPrivatePickupNote3: "From 4th guest onwards: add 350,000 VND/person.",
     optionalServicesMountainShuttleDesc: "Use an SUV Offroad vehicle from the mountain foot (landing zone) to the mountain top (take-off zone).",
     optionalServicesSunsetDesc: "The flight takes place between 16:30–17:30 to catch the sunset. If there is no sunset, this fee will be refunded.",

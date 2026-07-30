@@ -40,6 +40,7 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     khauPhaPromoSub:
       "(не действует в высокий сезон и в праздничные дни)",
     paramotorDiscountBefore: "Цена полёта ",
+    discountToLabel: "Снижено до",
     paramotorDiscountAfter: " снижена до 2.390.000 VND",
     paraglidingDescription: [
       "Взлёт с вершины перевала Кхау Фа, одного из четырёх великих перевалов Вьетнама, на высоте 1268 м, и посадка в красивой долине Лим Монг среди террасных рисовых полей.",
@@ -89,7 +90,7 @@ export const RU_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "Место посадки: Торговый центр GO! Тханг Лонг, Ханой",
     optionalServicesFixedPickupDeparture: "Отправление: ежедневно с 8:00 до 11:00 – точное время зависит от погоды и будет сообщено до дня полёта.",
     optionalServicesPrivatePickupNote1: "Стоимость трансфера может меняться в зависимости от местоположения отеля и количества гостей.",
-    optionalServicesPrivatePickupNote2: "1–3 гостя: фиксированная цена 1.500.000 VND/машина.",
+    optionalServicesPrivatePickupNote2: "1–3 гостя: фиксированная цена 1.400.000 VND/машина.",
     optionalServicesPrivatePickupNote3: "Начиная с 4-го гостя: плюс 350.000 VND/чел.",
     optionalServicesMountainShuttleDesc: "Использование внедорожника от подножия горы (место посадки) до вершины горы (место взлёта).",
     optionalServicesSunsetDesc: "Полёт проводится с 16:30 до 17:30, чтобы поймать закат. В случае отсутствия заката этот сбор будет возвращён.",

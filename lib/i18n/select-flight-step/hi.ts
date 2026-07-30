@@ -39,6 +39,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     khauPhaPromoSub:
       "(पीक सीज़न और छुट्टियों में लागू नहीं)",
     paramotorDiscountBefore: "उड़ान मूल्य ",
+    discountToLabel: "घटकर",
     paramotorDiscountAfter: " घटाकर 2,390,000 VND",
     paraglidingDescription: [
       "Khau Pha Pass की चोटी से 1,268 मीटर की ऊँचाई पर टेकऑफ़ और Lim Mong Valley की खूबसूरत सीढ़ीनुमा घाटी में लैंडिंग का अनुभव लें।",
@@ -88,7 +89,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "पिकअप पॉइंट: GO! थैंग लॉन्ग मॉल, हनोई",
     optionalServicesFixedPickupDeparture: "प्रस्थान: प्रतिदिन सुबह 8:00 से 11:00 बजे - सटीक समय मौसम पर निर्भर करता है और उड़ान के दिन से पहले सूचित किया जाएगा।",
     optionalServicesPrivatePickupNote1: "पिकअप लागत होटल के स्थान और यात्रियों की संख्या के आधार पर भिन्न हो सकती है।",
-    optionalServicesPrivatePickupNote2: "1–3 यात्री: फ्लैट रेट 1,500,000 VND / कार।",
+    optionalServicesPrivatePickupNote2: "1–3 यात्री: फ्लैट रेट 1,400,000 VND / कार।",
     optionalServicesPrivatePickupNote3: "चौथे यात्री से: 350,000 VND / व्यक्ति अतरिक्त।",
     optionalServicesMountainShuttleDesc: "पहाड़ की तलहटी (लैंडिंग ज़ोन) से पहाड़ की चोटी (टेक-ऑफ़ ज़ोन) तक एसयूवी ऑफरोड वाहन का उपयोग करें।",
     optionalServicesSunsetDesc: "उड़ान सूर्यास्त पकड़ने के लिए 16:30–17:30 के बीच होती है। यदि सूर्यास्त नहीं होता है, तो यह शुल्क वापस कर दिया जाएगा।",

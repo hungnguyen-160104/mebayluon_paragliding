@@ -77,7 +77,7 @@ const UI_TEXT: Record<
     subtitle: "Thông tin khách bay",
     passengerPrefix: "Khách bay",
     warning:
-      "Vui lòng điền đúng thông tin cá nhân theo giấy tờ tùy thân. Nếu sai, bảo hiểm sẽ không có hiệu lực.",
+      "Thông tin này được dùng để kích hoạt Bảo hiểm, vui lòng điền đúng mọi thông tin. Chúng tôi cam kết mọi thông tin khách hàng đều được bảo mật.",
 
     fullNameLabel: "Họ và Tên",
     dobLabel: "Ngày Sinh",
@@ -104,7 +104,7 @@ const UI_TEXT: Record<
     subtitle: "Passenger information",
     passengerPrefix: "Passenger",
     warning:
-      "Please enter personal information exactly as shown on the identification document. Otherwise, insurance may be invalid.",
+      "This information is used to activate your insurance — please make sure every detail is correct. We are committed to keeping all customer information strictly confidential.",
 
     fullNameLabel: "Full Name",
     dobLabel: "Date of Birth",
@@ -131,7 +131,7 @@ const UI_TEXT: Record<
     subtitle: "Informations passager",
     passengerPrefix: "Passager",
     warning:
-      "Veuillez saisir les informations personnelles exactement comme sur la pièce d’identité. Sinon, l’assurance peut ne pas être valable.",
+      "Ces informations servent à activer votre assurance — merci de vérifier que chaque détail est exact. Nous nous engageons à garder toutes les informations de nos clients strictement confidentielles.",
 
     fullNameLabel: "Nom complet",
     dobLabel: "Date de naissance",
@@ -158,7 +158,7 @@ const UI_TEXT: Record<
     subtitle: "Информация о пассажире",
     passengerPrefix: "Пассажир",
     warning:
-      "Пожалуйста, введите личные данные точно как в удостоверении личности. Иначе страховка может быть недействительна.",
+      "Эти данные используются для оформления страховки — пожалуйста, заполните всё точно. Мы гарантируем полную конфиденциальность данных наших клиентов.",
 
     fullNameLabel: "Полное имя",
     dobLabel: "Дата рождения",
@@ -185,7 +185,7 @@ const UI_TEXT: Record<
     subtitle: "यात्री जानकारी",
     passengerPrefix: "यात्री",
     warning:
-      "कृपया व्यक्तिगत जानकारी पहचान पत्र के अनुसार सही भरें। गलत होने पर बीमा मान्य नहीं होगा।",
+      "यह जानकारी बीमा सक्रिय करने के लिए उपयोग होती है — कृपया सभी विवरण सही भरें। हम ग्राहकों की सभी जानकारी को पूर्ण गोपनीय रखने के लिए प्रतिबद्ध हैं।",
 
     fullNameLabel: "पूरा नाम",
     dobLabel: "जन्म तिथि",
@@ -212,7 +212,7 @@ const UI_TEXT: Record<
     subtitle: "乘客信息",
     passengerPrefix: "乘客",
     warning:
-      "请按照身份证件准确填写个人信息。若填写错误，保险可能无效。",
+      "此信息用于激活保险，请确保填写的每项信息准确无误。我们承诺对所有客户信息严格保密。",
 
     fullNameLabel: "姓名",
     dobLabel: "出生日期",
@@ -310,7 +310,7 @@ export default function GuestInfoStep() {
               <span className="mt-0.5">
                 <WarningIcon />
               </span>
-              <span>{ui.warning}</span>
+              <span className="font-bold">{ui.warning}</span>
             </div>
           </div>
 

@@ -34,6 +34,8 @@ export type SelectFlightStepUiText = {
   khauPhaPromoTitle: string;
   khauPhaPromoSub: string;
   paramotorDiscountBefore: string;
+  /** Chữ "Giảm còn" trên thẻ chọn ngày bay paramotor. */
+  discountToLabel: string;
   paramotorDiscountAfter: string;
   paraglidingDescription: string[];
   paramotorDescription: string[];

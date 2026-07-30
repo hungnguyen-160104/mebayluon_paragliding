@@ -83,7 +83,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Mây luồn – ruộng bậc thang – Fansipan",
     duration: "10 – 15 phút",
     landingPoint: "Thung lũng Mường Hoa",
-    basePrice: 2090000,
+    basePrice: 2190000,
     image: "/spots/sapa/hero.jpg",
     galleryImages: [
       "/spots/sapa/1.jpg",
@@ -101,7 +101,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 2090000,
+        price: 2190000,
         description: "Trải nghiệm cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
@@ -119,7 +119,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Bán đảo – đại dương – vịnh Đà Nẵng",
     duration: "8 – 15 phút",
     landingPoint: "Khu ven biển Sơn Trà",
-    basePrice: 2590000,
+    basePrice: 2190000,
     image: "/spots/da-nang/hero.jpg",
     galleryImages: [
       "/spots/da-nang/1.jpg",
@@ -137,7 +137,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 2590000,
+        price: 2190000,
         description: "Trọn gói cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },
@@ -147,7 +147,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
   "khau-pha": {
     name: "Đèo Khau Phạ",
     title: "Bay Trên Tứ Đại Đỉnh Đèo",
-    altitude: "1.268 – 1.500 m",
+    altitude: "1.268 – 2.000 m",
     description:
       `Trải nghiệm bay dù lượn tại đèo Khau Phạ – một trong tứ đại đỉnh đèo hùng vĩ bậc nhất Việt Nam.
 Mùa nước đổ (tháng 4–5): ruộng bậc thang óng ánh như những tấm gương trời
@@ -234,7 +234,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     landscape: "Săn mây – núi rừng – thung lũng",
     duration: "10 – 15 phút",
     landingPoint: "Bãi hạ cánh Trạm Tấu",
-    basePrice: 2000000,
+    basePrice: 2590000,
     image: "/spots/tram-tau/hero.jpg",
     galleryImages: [
       "/spots/tram-tau/1.JPG",
@@ -252,7 +252,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     packages: filterPackages([
       {
         name: "Tiêu chuẩn",
-        price: 2000000,
+        price: 2590000,
         description: "Trải nghiệm cơ bản",
         features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
       },

@@ -35,6 +35,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "MEBAYLUON CLUBHOUSE 免费住宿优惠",
     khauPhaPromoSub: "（旺季和节假日不适用）",
     paramotorDiscountBefore: "飞行价格 ",
+    discountToLabel: "降至",
     paramotorDiscountAfter: " 优惠至 2,390,000 VND",
     paraglidingDescription: [
       "从考帕山口山顶起飞，海拔 1268 米，在风景壮丽的 Lim Mong 梯田谷降落。",
@@ -83,7 +84,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "接送点：河内 GO! Thang Long 购物中心",
     optionalServicesFixedPickupDeparture: "出发时间：每天 8:00am~11:00am – 确切时间取决于天气，并在飞行日前通知。",
     optionalServicesPrivatePickupNote1: "接送费用可能因酒店位置和乘客人数而异。",
-    optionalServicesPrivatePickupNote2: "1-3 人：统一价 1,500,000 VND / 车。",
+    optionalServicesPrivatePickupNote2: "1-3 人：统一价 1,400,000 VND / 车。",
     optionalServicesPrivatePickupNote3: "从第 4 位乘客起：需加收 350,000 VND / 人。",
     optionalServicesMountainShuttleDesc: "使用越野 SUV 汽车从山脚（降落区）前往山顶（起飞区）。",
     optionalServicesSunsetDesc: "飞行在 16:30–17:30 之间进行，以欣赏日落。如果没有日落，该费用将被退还。",

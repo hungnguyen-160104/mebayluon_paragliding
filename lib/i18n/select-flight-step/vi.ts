@@ -35,6 +35,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "NHẬN NGAY ƯU ĐÃI MIỄN PHÍ LƯU TRÚ TẠI CLUBHOUSE MEBAYLUON",
     khauPhaPromoSub: "(không áp dụng trong mùa cao điểm và ngày lễ)",
     paramotorDiscountBefore: "Giá bay ",
+    discountToLabel: "Giảm còn",
     paramotorDiscountAfter: " giảm còn 2.390.000 đ",
     paraglidingDescription: [
       "Cất cánh từ đỉnh đèo Khau Pha - một trong Tứ đại Đỉnh đèo của Việt Nam, độ cao cất cánh 1.268m - Hạ cánh giữa danh thắng ruộng bậc thang Thung lũng Lìm Mông tuyệt đẹp. Đây là vào một trong những điểm bay dù lượn đẹp nhất thế giới với vẻ đẹp siêu thực.",
@@ -84,7 +85,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     optionalServicesFixedPickupLocation: "Điểm đón: TTTM GO! Thăng Long, Hà Nội",
     optionalServicesFixedPickupDeparture: "Xuất phát: 8:00am~11:00am hàng ngày – giờ chính xác tuỳ thời tiết, sẽ được thông báo trước ngày bay.",
     optionalServicesPrivatePickupNote1: "Chi phí đón có thể thay đổi tùy vị trí khách sạn và số lượng khách bay.",
-    optionalServicesPrivatePickupNote2: "1–3 khách: đồng giá 1.500.000đ/xe.",
+    optionalServicesPrivatePickupNote2: "1–3 khách: đồng giá 1.400.000đ/xe.",
     optionalServicesPrivatePickupNote3: "Từ khách thứ 4 trở đi: cộng thêm 350.000đ/người.",
     optionalServicesMountainShuttleDesc: "Sử dụng xe SUV Offroad đi từ chân núi (bãi hạ cánh) lên đỉnh núi (bãi cất cánh).",
     optionalServicesSunsetDesc: "Chuyến bay được thực hiện trong khung giờ 16:30–17:30 để đón khoảnh khắc hoàng hôn. Nếu không có hoàng hôn như dự đoán, chi phí này sẽ được hoàn lại.",

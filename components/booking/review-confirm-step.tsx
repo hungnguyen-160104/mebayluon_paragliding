@@ -568,14 +568,17 @@ export default function ReviewConfirmStep() {
       const key = String(svc.key || "");
 
       if (key === "khau_pha_garrya_pickup") {
+        // số xe (4 khách/xe) × số chiều (qty: 1-2) × 500.000 đ/xe/chiều
         const carCount = Math.ceil(guestsCount / 4);
-        return currency === "VND" ? carCount * 600_000 : carCount * 24;
+        return currency === "VND"
+          ? carCount * qty * 500_000
+          : carCount * qty * 20;
       }
 
       if (key === "ha_noi_private_hotel_pickup") {
         return currency === "VND"
-          ? 1_500_000 + Math.max(0, guestsCount - 3) * 350_000
-          : 60 + Math.max(0, guestsCount - 3) * 14;
+          ? 1_400_000 + Math.max(0, guestsCount - 3) * 350_000
+          : 56 + Math.max(0, guestsCount - 3) * 14;
       }
 
       if (svc.controlType === "counter") {
@@ -674,8 +677,8 @@ export default function ReviewConfirmStep() {
 
       if (key === "khau_pha_garrya_pickup") {
         const carCount = Math.ceil(guestsCount / 4);
-        const carPrice = 600_000;
-        detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe`;
+        const carPrice = 500_000;
+        detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe × ${qty} chiều`;
       } else if (key === "ha_noi_private_hotel_pickup") {
         detailText = "";
       } else if (svc.controlType === "counter") {
@@ -776,8 +779,8 @@ export default function ReviewConfirmStep() {
 
         if (key === "khau_pha_garrya_pickup") {
           const carCount = Math.ceil(guestsCount / 4);
-          const carPrice = 600_000;
-          detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe`;
+          const carPrice = 500_000;
+          detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe × ${qty} chiều`;
         } else if (key === "ha_noi_private_hotel_pickup") {
           detailText = "";
         } else if (svc.controlType === "counter") {

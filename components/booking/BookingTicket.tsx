@@ -361,16 +361,17 @@ export default function BookingTicket({
             : `${formatByLang(lang, baseUnit, baseUnit)} × ${guestsCount}`;
 
         if (serviceKey === "khau_pha_garrya_pickup") {
+          // số xe × số chiều (qty: 1-2) × 500.000 đ/xe/chiều
           const carCount = Math.ceil(guestsCount / 4);
-          const carPrice = lang === "vi" ? 600_000 : 24;
-          lineTotal = carCount * carPrice;
-          detail = `${formatByLang(lang, carPrice, carPrice)} × ${carCount} ${lang === "vi" ? "xe" : "car"}`;
+          const carPrice = lang === "vi" ? 500_000 : 20;
+          lineTotal = carCount * qty * carPrice;
+          detail = `${formatByLang(lang, carPrice, carPrice)} × ${carCount} ${lang === "vi" ? "xe" : "car"} × ${qty} ${lang === "vi" ? "chiều" : "way"}`;
         }
 
         if (serviceKey === "ha_noi_private_hotel_pickup") {
           lineTotal = lang === "vi"
-            ? 1_500_000 + Math.max(0, guestsCount - 3) * 350_000
-            : 60 + Math.max(0, guestsCount - 3) * 14;
+            ? 1_400_000 + Math.max(0, guestsCount - 3) * 350_000
+            : 56 + Math.max(0, guestsCount - 3) * 14;
           detail = undefined;
         }
 
