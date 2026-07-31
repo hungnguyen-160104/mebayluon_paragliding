@@ -13,7 +13,7 @@ import {
 } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
 import { getSpotTranslation, type SpotLanguage } from "@/lib/i18n/spots";
-import { getUrlLocale } from "@/lib/locale";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import {
   SPOT_ARTICLES,
   SPOT_ARTICLES_HEADING,
@@ -506,7 +506,7 @@ export default async function SpotDetailPage({
   const spot = SPOTS[slug];
 
   if (!spot) {
-    const t = getSpotTranslation((await getUrlLocale()) as SpotLanguage);
+    const t = getSpotTranslation((await getRequestLang()) as SpotLanguage);
 
     return (
       <div className="min-h-screen flex items-center justify-center px-6 text-center">
@@ -526,7 +526,11 @@ export default async function SpotDetailPage({
 
   // Bài viết CTA cho điểm bay này (nếu có) + tiêu đề theo ngôn ngữ URL
   const articleSet = SPOT_ARTICLES[canonicalSpotSlug(slug)];
-  const spotLocale = await getUrlLocale();
+  // Ngôn ngữ HIỂN THỊ: URL có prefix thì theo URL, không thì theo cookie
+  // (nút chuyển ngôn ngữ trên menu chỉ đổi cookie, không đổi URL) — dùng
+  // getUrlLocale ở đây sẽ làm mục "Đọc thêm..." kẹt tiếng Việt khi khách
+  // đổi ngôn ngữ bằng nút chuyển. Canonical/hreflang vẫn theo getUrlLocale.
+  const spotLocale = await getRequestLang();
 
   // Tiêu đề bài: bản Việt cho khách Việt, bản Anh cho mọi ngôn ngữ khác
   // (bài trong DB chỉ có 2 bản — khách fr/ru/zh/hi bấm vào sẽ đọc bản Anh)
