@@ -586,7 +586,7 @@ export default async function SpotDetailPage({
                 className="font-serif text-3xl font-bold md:text-4xl"
                 style={{ textShadow: "2px 2px 8px rgba(0,0,0,.7)" }}
               >
-                {heading.title}
+                {heading.title.replace("{name}", spot.name)}
               </h2>
               <p
                 className="mt-2 text-slate-200"

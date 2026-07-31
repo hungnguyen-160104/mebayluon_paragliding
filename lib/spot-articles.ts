@@ -169,33 +169,37 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
   },
 };
 
-/** Tiêu đề section theo ngôn ngữ URL. */
+/**
+ * Tiêu đề section theo ngôn ngữ URL.
+ * "{name}" được thay bằng tên điểm bay lúc render (vd "Đèo Khau Phạ") —
+ * tên riêng giữ nguyên ở mọi ngôn ngữ.
+ */
 export const SPOT_ARTICLES_HEADING: Record<
   string,
   { title: string; subtitle: string }
 > = {
   vi: {
-    title: "Đọc thêm về điểm bay này",
+    title: "Đọc thêm về điểm bay {name}",
     subtitle: "Cẩm nang, mùa đẹp và cách di chuyển — chọn bài để xem chi tiết",
   },
   en: {
-    title: "Read more about this flying site",
+    title: "Read more about {name}",
     subtitle: "Guides, best seasons and how to get there",
   },
   fr: {
-    title: "En savoir plus sur ce site de vol",
+    title: "En savoir plus sur {name}",
     subtitle: "Guides, meilleures saisons et accès",
   },
   ru: {
-    title: "Подробнее об этом месте полётов",
+    title: "Подробнее о месте полётов {name}",
     subtitle: "Гиды, лучшие сезоны и как добраться",
   },
   zh: {
-    title: "了解更多关于此飞行点",
+    title: "了解更多关于{name}",
     subtitle: "攻略、最佳季节与交通方式",
   },
   hi: {
-    title: "इस उड़ान स्थल के बारे में और पढ़ें",
+    title: "{name} के बारे में और पढ़ें",
     subtitle: "गाइड, सर्वोत्तम मौसम और पहुँचने का तरीका",
   },
 };

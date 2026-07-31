@@ -76,6 +76,78 @@ type SpotKey =
   | "ha-giang"
   | "generic";
 
+/**
+ * H1 SEO của trang điểm bay — đúng cụm từ khách thật sự tìm kiếm
+ * ("dù lượn Mù Cang Chải", "dù lượn Sapa"...). Đặt tại khối "Về điểm bay
+ * này"; tiêu đề bay bổng ở hero ("Bay Trên Tứ Đại Đỉnh Đèo") hạ xuống H2.
+ */
+const SPOT_H1: Partial<Record<SpotKey, Record<Lang, string>>> = {
+  "khau-pha": {
+    vi: "Dù lượn Mù Cang Chải",
+    en: "Mu Cang Chai Paragliding",
+    fr: "Parapente à Mu Cang Chai",
+    ru: "Парапланеризм в Мукангчае",
+    zh: "木江界滑翔伞",
+    hi: "मु कांग चाई पैराग्लाइडिंग",
+  },
+  "doi-bu": {
+    vi: "Dù lượn Hà Nội",
+    en: "Hanoi Paragliding",
+    fr: "Parapente à Hanoï",
+    ru: "Парапланеризм в Ханое",
+    zh: "河内滑翔伞",
+    hi: "हनोई पैराग्लाइडिंग",
+  },
+  "vien-nam": {
+    vi: "Dù lượn Hà Nội",
+    en: "Hanoi Paragliding",
+    fr: "Parapente à Hanoï",
+    ru: "Парапланеризм в Ханое",
+    zh: "河内滑翔伞",
+    hi: "हनोई पैराग्लाइडिंग",
+  },
+  "ha-giang": {
+    vi: "Dù lượn Hà Giang",
+    en: "Ha Giang Paragliding",
+    fr: "Parapente à Ha Giang",
+    ru: "Парапланеризм в Хазянге",
+    zh: "河江滑翔伞",
+    hi: "हा जियांग पैराग्लाइडिंग",
+  },
+  "muong-hoa-sapa": {
+    vi: "Dù lượn Sapa",
+    en: "Sapa Paragliding",
+    fr: "Parapente à Sapa",
+    ru: "Парапланеризм в Сапе",
+    zh: "沙坝滑翔伞",
+    hi: "सापा पैराग्लाइडिंग",
+  },
+  "son-tra": {
+    vi: "Dù lượn Đà Nẵng",
+    en: "Da Nang Paragliding",
+    fr: "Parapente à Da Nang",
+    ru: "Парапланеризм в Дананге",
+    zh: "岘港滑翔伞",
+    hi: "दा नांग पैराग्लाइडिंग",
+  },
+  "tram-tau": {
+    vi: "Dù lượn Phình Hồ",
+    en: "Phinh Ho Paragliding",
+    fr: "Parapente à Phinh Ho",
+    ru: "Парапланеризм в Финьхо",
+    zh: "Phinh Ho 滑翔伞",
+    hi: "फिन्ह हो पैराग्लाइडिंग",
+  },
+  dalat: {
+    vi: "Dù lượn Đà Lạt",
+    en: "Da Lat Paragliding",
+    fr: "Parapente à Da Lat",
+    ru: "Парапланеризм в Далате",
+    zh: "大叻滑翔伞",
+    hi: "दा लाट पैराग्लाइडिंग",
+  },
+};
+
 const resolveSpotKey = (spotName: string): SpotKey => {
   const key = normalize(spotName);
   if (/(^| )sapa( |$)/.test(key) || /muong hoa/.test(key)) return "muong-hoa-sapa";
@@ -3391,6 +3463,10 @@ export function SpotDetailClient({
   const copy = getSpotCopy(spot, lang);
   const stories = getStories(spot, lang);
 
+  // H1 SEO "Dù lượn <địa danh>"; điểm lạ không có trong bảng thì giữ
+  // nhãn cũ "Về điểm bay này"
+  const seoH1 = SPOT_H1[resolveSpotKey(spot.name)]?.[lang] ?? ui.aboutTitle;
+
   return (
     <main className="min-h-screen relative text-white">
       <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url(${spot.image})` }} />
@@ -3409,7 +3485,8 @@ export function SpotDetailClient({
           <Badge className="mb-4 text-base px-4 py-1.5 bg-accent/80 backdrop-blur-sm border border-white/20">
             {copy.name}
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 font-serif">{copy.title}</h1>
+          {/* Tiêu đề cảm xúc — H2; H1 SEO nằm ở khối "Dù lượn <địa danh>" bên dưới */}
+          <h2 className="text-5xl md:text-7xl font-bold mb-6 font-serif">{copy.title}</h2>
           <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto text-slate-200">{copy.landscape}</p>
           <div className="flex items-center justify-center gap-6 text-lg text-slate-100">
             <div className="flex items-center gap-2">
@@ -3464,9 +3541,9 @@ export function SpotDetailClient({
                   transition={{ duration: 0.6, delay: 0.2 }}
                   className="text-center mb-6"
                 >
-                  <h2 className="text-3xl md:text-4xl font-bold font-serif text-white mb-1.5 tracking-tight">
-                    {ui.aboutTitle}
-                  </h2>
+                  <h1 className="text-3xl md:text-4xl font-bold font-serif text-white mb-1.5 tracking-tight">
+                    {seoH1}
+                  </h1>
                   <p className="text-amber-200/80 text-xs uppercase tracking-[0.25em] font-medium">
                     {ui.quickFacts}
                   </p>
