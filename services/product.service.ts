@@ -20,6 +20,18 @@ export type ProductInput = {
 };
 
 /** ===== Query / List ===== */
+/** Mongoose không hiểu chuỗi sort có dấu phẩy — tách thành object. */
+function parseSort(sort: unknown): Record<string, 1 | -1> {
+  const out: Record<string, 1 | -1> = {};
+  for (const part of String(sort ?? "-createdAt").split(",")) {
+    const f = part.trim();
+    if (!f) continue;
+    if (f.startsWith("-")) out[f.slice(1)] = -1;
+    else out[f] = 1;
+  }
+  return out;
+}
+
 export async function listProducts(query: any = {}) {
   const {
     page = 1,
@@ -48,7 +60,7 @@ export async function listProducts(query: any = {}) {
   const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
 
   const [items, total] = await Promise.all([
-    Post.find(filter).sort(sort as any).skip((pageNum - 1) * limitNum).limit(limitNum),
+    Post.find(filter).sort(parseSort(sort)).skip((pageNum - 1) * limitNum).limit(limitNum),
     Post.countDocuments(filter),
   ]);
 

@@ -51,9 +51,10 @@ export default function AdminPostsPage() {
     try {
       const params = new URLSearchParams();
       params.set("limit", "100");
-      // Thứ tự theo ngày ĐĂNG (không phải ngày sửa — sửa bài cũ sẽ không
-      // làm nó nhảy lên đầu danh sách nữa); bản nháp xếp cuối.
-      params.set("sort", "-publishedAt,-createdAt");
+      // Bài đang ghim đứng đầu (theo thứ tự tick); còn lại theo ngày ĐĂNG
+      // (không phải ngày sửa — sửa bài cũ không làm nó nhảy lên đầu);
+      // bản nháp xếp cuối.
+      params.set("sort", "-fixed,featuredAt,-publishedAt,-createdAt");
       params.set("published", "all");
 
       if (filters.search) params.set("q", filters.search);

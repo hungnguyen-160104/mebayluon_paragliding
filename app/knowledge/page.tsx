@@ -198,17 +198,35 @@ export async function generateMetadata(): Promise<Metadata> {
 const INITIAL_COUNT = 25;
 
 async function getData(sub?: string) {
+  const subCategory = sub && sub !== "all" ? sub : undefined;
+
+  // Bài admin tick "Ghim" đứng đầu (tối đa 6, thứ tự theo lúc tick);
+  // phần còn lại theo ngày đăng, loại bài ghim để không hiện 2 lần.
+  const pinnedData = await getPosts({
+    category: "knowledge",
+    isPublished: true,
+    subCategory,
+    fixed: true,
+    limit: 6,
+    sort: "featuredAt",
+  });
+  const pinned = Array.isArray(pinnedData?.items) ? pinnedData.items : [];
+  const pinnedSlugs = pinned.map((post) => post.slug);
+
   const data = await getPosts({
     category: "knowledge",
     isPublished: true,
-    subCategory: sub && sub !== "all" ? sub : undefined,
-    limit: INITIAL_COUNT,
+    subCategory,
+    excludeSlug: pinnedSlugs.length ? pinnedSlugs : undefined,
+    limit: Math.max(1, INITIAL_COUNT - pinned.length),
     sort: "-publishedAt,-createdAt",
   });
 
   return {
-    items: Array.isArray(data?.items) ? data.items : [],
+    items: [...pinned, ...(Array.isArray(data?.items) ? data.items : [])],
+    // total KHÔNG tính bài ghim — nút "Xem thêm" đếm skip theo số này
     total: Number(data?.total ?? 0),
+    pinnedSlugs,
   };
 }
 
@@ -223,7 +241,7 @@ export default async function KnowledgeAllPage({
     : (params?.sub as string | undefined);
   const sub = raw?.toString().toLowerCase() || "all";
 
-  const [{ items, total }, lang] = await Promise.all([
+  const [{ items, total, pinnedSlugs }, lang] = await Promise.all([
     getData(sub),
     getLangFromCookies(),
   ]);
@@ -441,7 +459,8 @@ export default async function KnowledgeAllPage({
                   category="knowledge"
                   sub={sub}
                   lang={lang}
-                  initialCount={items.length}
+                  exclude={pinnedSlugs.join(",")}
+                  initialCount={items.length - pinnedSlugs.length}
                   total={total}
                   seeMoreLabel={t.seeMore}
                   loadingLabel={t.loading}

@@ -12,13 +12,13 @@ export async function listProductsByCategory(opts: {
     const isCategoryAll = !category || category === "all";
     const categoryQuery = isCategoryAll ? "" : `&storeCategory=${category}`;
     return await api<Paginated<Post>>(
-      `/api/products?published=true&page=${page}&limit=${limit}${categoryQuery}`
+      `/api/products?published=true&page=${page}&limit=${limit}&sort=-fixed,featuredAt,-createdAt${categoryQuery}`
     );
   } catch {
     const isCategoryAll = !category || category === "all";
     const categoryQuery = isCategoryAll ? "" : `&storeCategory=${category}`;
     return await api<Paginated<Post>>(
-      `/api/posts?category=store&published=true&page=${page}&limit=${limit}${categoryQuery}`
+      `/api/posts?category=store&published=true&page=${page}&limit=${limit}&sort=-fixed,featuredAt,-createdAt${categoryQuery}`
     );
   }
 }

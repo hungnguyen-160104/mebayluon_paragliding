@@ -33,8 +33,10 @@ function toStoreLang(v: string | undefined): StoreLang {
 
 async function fetchAllProducts(): Promise<Post[]> {
   await connectDB();
+  // Sản phẩm admin tick "Ghim" đứng đầu (thứ tự theo lúc tick),
+  // còn lại theo ngày tạo mới nhất
   const docs = await PostModel.find({ type: "product", isPublished: true })
-    .sort("-createdAt")
+    .sort({ fixed: -1, featuredAt: 1, createdAt: -1 })
     .limit(100)
     .lean();
   return JSON.parse(JSON.stringify(docs)) as Post[];
