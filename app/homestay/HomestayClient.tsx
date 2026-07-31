@@ -480,7 +480,7 @@ export default function HomestayPage() {
             </div>
 
             <div className="max-w-[1500px] mx-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-5">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2.5 md:gap-3">
                 {amenities.map((amenityKey) => {
                   const Icon = getAmenityIcon(amenityKey);
 
@@ -488,14 +488,14 @@ export default function HomestayPage() {
                     <Card
                       key={amenityKey}
                       className="
-                        text-center rounded-[28px]
+                        text-center rounded-2xl
                         bg-black/30 backdrop-blur-lg border border-white/10 text-white shadow-xl
-                        min-h-[150px] sm:min-h-[165px] xl:min-h-[175px]
+                        min-h-[104px] sm:min-h-[112px]
                       "
                     >
-                      <CardContent className="h-full px-4 py-5 sm:px-5 sm:py-6 flex flex-col items-center justify-center">
-                        <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-3 text-accent" />
-                        <p className="font-medium text-sm sm:text-base leading-snug text-white/90 max-w-[190px] mx-auto">
+                      <CardContent className="h-full px-2 py-3 flex flex-col items-center justify-center">
+                        <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-2 text-accent" />
+                        <p className="font-medium text-sm sm:text-base leading-snug text-white/90 mx-auto">
                           {t.homestay.amenities.list[amenityKey]}
                         </p>
                       </CardContent>
