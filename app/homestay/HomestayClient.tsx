@@ -194,7 +194,7 @@ const MOTORBIKE_RENTAL: Record<
   { title: string; day: string; halfDay: string; call: string }
 > = {
   vi: {
-    title: "Ở đây có cho thuê xe máy!",
+    title: "Home có xe máy cho thuê",
     day: "200.000đ/ngày",
     halfDay: "120.000đ/nửa ngày",
     call: "Gọi thuê xe",
