@@ -189,46 +189,13 @@ function GoogleReviewBadge() {
  * Khung nổi bật "treo" đầu trang homestay: dịch vụ cho thuê xe máy.
  * Giá giữ nguyên bằng số cho mọi ngôn ngữ, chỉ dịch chữ.
  */
-const MOTORBIKE_RENTAL: Record<
-  string,
-  { title: string; day: string; halfDay: string; call: string }
-> = {
-  vi: {
-    title: "Home có xe máy cho thuê",
-    day: "200.000đ/ngày",
-    halfDay: "120.000đ/nửa ngày",
-    call: "Gọi thuê xe",
-  },
-  en: {
-    title: "Motorbike rental available here!",
-    day: "200K VND/day",
-    halfDay: "120K VND/half day",
-    call: "Call to rent",
-  },
-  fr: {
-    title: "Location de scooters ici !",
-    day: "200K VND/jour",
-    halfDay: "120K VND/demi-journée",
-    call: "Appeler pour louer",
-  },
-  ru: {
-    title: "Здесь можно арендовать мотобайк!",
-    day: "200 тыс. VND/день",
-    halfDay: "120 тыс. VND/полдня",
-    call: "Позвонить",
-  },
-  zh: {
-    title: "这里可以租摩托车！",
-    day: "200K 越南盾/天",
-    halfDay: "120K 越南盾/半天",
-    call: "致电租车",
-  },
-  hi: {
-    title: "यहाँ मोटरबाइक किराये पर मिलती है!",
-    day: "200K VND/दिन",
-    halfDay: "120K VND/आधा दिन",
-    call: "किराये के लिए कॉल करें",
-  },
+const MOTORBIKE_RENTAL: Record<string, { title: string; price: string }> = {
+  vi: { title: "Home có xe máy cho thuê", price: "120k – 200k/ngày" },
+  en: { title: "Motorbikes for rent here", price: "120K–200K VND/day" },
+  fr: { title: "Scooters à louer ici", price: "120K–200K VND/jour" },
+  ru: { title: "Аренда мотобайков здесь", price: "120–200 тыс. VND/день" },
+  zh: { title: "本店提供摩托车出租", price: "120K–200K 越南盾/天" },
+  hi: { title: "यहाँ मोटरबाइक किराये पर", price: "120K–200K VND/दिन" },
 };
 
 const MOTORBIKE_PHONE_DISPLAY = "(+84) 033 7632532";
@@ -293,25 +260,36 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="mb-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center">
-                    {/* Icon xe máy quen thuộc, nhún nhảy cho vui mắt */}
-                    <span aria-hidden className="animate-bounce text-4xl drop-shadow-md">
-                      🛵
-                    </span>
-
-                    <span className="text-lg font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-xl">
-                      {rental.title}{" "}
-                      <span className="font-extrabold text-amber-300">
-                        {rental.day} · {rental.halfDay}
-                      </span>
-                    </span>
-
-                    <a
-                      href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                      className="cta-btn gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-slate-900 shadow-md transition-transform hover:scale-105 hover:bg-amber-300"
+                  <div className="relative mx-auto mb-10 w-fit">
+                    {/* Đinh ghim giữ bảng */}
+                    <span
+                      aria-hidden
+                      className="absolute -top-4 left-1/2 z-10 -translate-x-1/2 text-2xl drop-shadow"
                     >
-                      📞 {rental.call} · {MOTORBIKE_PHONE_DISPLAY}
-                    </a>
+                      📌
+                    </span>
+
+                    {/* Tấm bảng gỗ nhỏ, treo đung đưa quanh đinh */}
+                    <div className="sign-swing w-56 rounded-xl border-4 border-amber-950/70 bg-gradient-to-b from-amber-700 to-amber-800 px-4 pb-4 pt-3 text-center shadow-2xl">
+                      <span aria-hidden className="block text-5xl drop-shadow-md">
+                        🛵
+                      </span>
+
+                      <p className="mt-1 text-base font-extrabold leading-snug text-amber-50">
+                        {rental.title}
+                      </p>
+
+                      <p className="mt-1 text-sm font-bold text-yellow-300">
+                        💰 {rental.price}
+                      </p>
+
+                      <a
+                        href={`tel:${MOTORBIKE_PHONE_TEL}`}
+                        className="cta-btn mt-2.5 w-full gap-1 rounded-full bg-amber-400 px-2 py-1.5 text-[13px] font-bold text-amber-950 shadow transition-transform hover:scale-105 hover:bg-amber-300"
+                      >
+                        📞 {MOTORBIKE_PHONE_DISPLAY}
+                      </a>
+                    </div>
                   </div>
                 );
               })()}

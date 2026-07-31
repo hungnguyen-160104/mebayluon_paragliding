@@ -176,3 +176,16 @@
   text-align: center;
   text-decoration-line: none !important;
 }
+
+/**
+ * Tấm bảng treo đung đưa (banner thuê xe máy ở trang homestay).
+ * Quay quanh điểm treo ở đỉnh — như bảng gỗ móc vào đinh.
+ */
+@keyframes sign-swing {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+.sign-swing {
+  transform-origin: top center;
+  animation: sign-swing 3.5s ease-in-out infinite;
+}
