@@ -170,6 +170,37 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
 };
 
 /**
+ * Tên điểm bay theo ngôn ngữ, dùng để điền vào "{name}" của tiêu đề mục.
+ * "Đèo", "đồi", "thung lũng" là danh từ chung nên dịch; tên riêng giữ nguyên.
+ */
+export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
+  "khau-pha": {
+    vi: "Đèo Khau Phạ",
+    en: "Khau Pha Pass",
+    fr: "le col de Khau Pha",
+    ru: "перевал Кхау Фа",
+    zh: "考帕山口",
+    hi: "खाउ फ़ा दर्रा",
+  },
+  "doi-bu": {
+    vi: "Đồi Bù",
+    en: "Doi Bu Hill",
+    fr: "la colline de Doi Bu",
+    ru: "холм Дой Бу",
+    zh: "布山",
+    hi: "डोई बू पहाड़ी",
+  },
+  "muong-hoa-sapa": {
+    vi: "Mường Hoa (Sa Pa)",
+    en: "Muong Hoa Valley (Sapa)",
+    fr: "la vallée de Muong Hoa (Sapa)",
+    ru: "долина Мыонг Хоа (Сапа)",
+    zh: "孟花谷（沙坝）",
+    hi: "मुओंग होआ घाटी (सापा)",
+  },
+};
+
+/**
  * Tiêu đề section theo ngôn ngữ URL.
  * "{name}" được thay bằng tên điểm bay lúc render (vd "Đèo Khau Phạ") —
  * tên riêng giữ nguyên ở mọi ngôn ngữ.
@@ -191,7 +222,7 @@ export const SPOT_ARTICLES_HEADING: Record<
     subtitle: "Guides, meilleures saisons et accès",
   },
   ru: {
-    title: "Подробнее о месте полётов {name}",
+    title: "Подробнее о месте полётов: {name}",
     subtitle: "Гиды, лучшие сезоны и как добраться",
   },
   zh: {

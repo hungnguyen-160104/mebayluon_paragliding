@@ -17,6 +17,7 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import {
   SPOT_ARTICLES,
   SPOT_ARTICLES_HEADING,
+  SPOT_ARTICLE_NAMES,
 } from "@/lib/spot-articles";
 import { ArrowRight, BookOpen, Star } from "lucide-react";
 
@@ -590,7 +591,11 @@ export default async function SpotDetailPage({
                 className="font-serif text-3xl font-bold md:text-4xl"
                 style={{ textShadow: "2px 2px 8px rgba(0,0,0,.7)" }}
               >
-                {heading.title.replace("{name}", spot.name)}
+                {heading.title.replace(
+                  "{name}",
+                  SPOT_ARTICLE_NAMES[canonicalSpotSlug(slug)]?.[spotLocale] ??
+                    spot.name,
+                )}
               </h2>
               <p
                 className="mt-2 text-slate-200"
