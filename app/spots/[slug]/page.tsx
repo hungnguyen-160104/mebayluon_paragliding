@@ -528,6 +528,11 @@ export default async function SpotDetailPage({
   const articleSet = SPOT_ARTICLES[canonicalSpotSlug(slug)];
   const spotLocale = await getUrlLocale();
 
+  // Tiêu đề bài: bản Việt cho khách Việt, bản Anh cho mọi ngôn ngữ khác
+  // (bài trong DB chỉ có 2 bản — khách fr/ru/zh/hi bấm vào sẽ đọc bản Anh)
+  const articleTitle = (article: { title: { vi: string; en: string } }) =>
+    spotLocale === "vi" ? article.title.vi : article.title.en;
+
   // Điểm sao + số đánh giá lấy trực tiếp từ Google (cache 6 tiếng); nếu chưa
   // khai GOOGLE_PLACES_API_KEY thì tự rơi về số dự phòng trong lib.
   const [sapaReview, khauPhaReview] = await Promise.all([
@@ -601,7 +606,7 @@ export default async function SpotDetailPage({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-lg font-bold leading-snug sm:text-xl">
-                  {articleSet.featured.title}
+                  {articleTitle(articleSet.featured)}
                 </span>
               </span>
               <ArrowRight
@@ -622,7 +627,7 @@ export default async function SpotDetailPage({
                     <BookOpen size={17} className="text-accent" />
                   </span>
                   <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug">
-                    {article.title}
+                    {articleTitle(article)}
                   </span>
                   <ArrowRight
                     size={18}
