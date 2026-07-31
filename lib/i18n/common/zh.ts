@@ -350,7 +350,7 @@ export const zh: CommonTranslation = {
         "free-handmade-tea": "免费手工茶",
         "free-parking": "免费停车",
         "free-wifi": "免费 Wi-Fi",
-        "shared-bathroom": "公共卫浴设施（3间淋浴、4间卫生间、6个洗手盆）",
+        "shared-bathroom": "4间卫生间 & 3间淋浴",
         "bbq-area": "烧烤区",
         campfire: "篝火",
         karaoke: "卡拉OK",

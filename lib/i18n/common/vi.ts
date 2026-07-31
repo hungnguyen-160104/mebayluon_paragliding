@@ -344,7 +344,7 @@ export const vi: CommonTranslation = {
         "free-handmade-tea": "Trà handmade miễn phí",
         "free-parking": "Đỗ xe miễn phí",
         "free-wifi": "WiFi miễn phí",
-        "shared-bathroom": "Nhà vệ sinh chung (3 nhà tắm, 4 vệ sinh, 6 chậu rửa mặt)",
+        "shared-bathroom": "4 nhà vệ sinh & 3 nhà tắm",
         "bbq-area": "Khu BBQ",
         campfire: "Đốt lửa trại",
         karaoke: "Hát karaoke",

@@ -260,13 +260,13 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="mx-auto mb-10 flex w-fit flex-col items-center">
+                  <div className="mb-10 flex w-full flex-col items-center sm:items-end sm:pr-2">
                     {/* Icon xe máy to, đứng riêng phía trên */}
                     <span aria-hidden className="text-7xl drop-shadow-lg sm:text-8xl">
-                      🏍️
+                      🛵
                     </span>
 
-                    {/* Tấm bảng gỗ chỉ chứa chữ, treo đung đưa dưới đinh ghim */}
+                    {/* Tấm bảng gỗ mộc mạc chỉ chứa chữ, treo đung đưa dưới đinh */}
                     <div className="relative mt-2">
                       <span
                         aria-hidden
@@ -275,7 +275,8 @@ export default function HomestayPage() {
                         📌
                       </span>
 
-                      <div className="sign-swing w-56 rounded-xl border-4 border-amber-950/70 bg-gradient-to-b from-amber-700 to-amber-800 px-4 py-3 text-center shadow-2xl">
+                      {/* Khung gỗ mộc: viền gỗ sẫm dày + gờ sáng bên trong như ván bào */}
+                      <div className="sign-swing w-56 rounded-lg border-[6px] border-amber-950 bg-gradient-to-b from-amber-700 via-amber-800 to-amber-900 px-4 py-3 text-center shadow-2xl ring-2 ring-inset ring-amber-500/40">
                         <p className="text-base font-extrabold leading-snug text-amber-50">
                           {rental.title}
                         </p>
@@ -288,7 +289,7 @@ export default function HomestayPage() {
                     {/* Nút gọi ở dưới cùng, tách khỏi bảng */}
                     <a
                       href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                      className="cta-btn mt-3 gap-1 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300"
+                      className="cta-btn mt-3 gap-1 self-center rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300 sm:self-end sm:mr-6"
                     >
                       📞 {MOTORBIKE_PHONE_DISPLAY}
                     </a>
@@ -482,7 +483,7 @@ export default function HomestayPage() {
             </div>
 
             <div className="max-w-[1500px] mx-auto">
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2.5 md:gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
                 {amenities.map((amenityKey) => {
                   const Icon = getAmenityIcon(amenityKey);
 
@@ -490,13 +491,13 @@ export default function HomestayPage() {
                     <Card
                       key={amenityKey}
                       className="
-                        text-center rounded-2xl
+                        text-center rounded-xl
                         bg-black/30 backdrop-blur-lg border border-white/10 text-white shadow-xl
-                        min-h-[104px] sm:min-h-[112px]
+                        min-h-[84px] sm:min-h-[92px]
                       "
                     >
-                      <CardContent className="h-full px-2 py-3 flex flex-col items-center justify-center">
-                        <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-2 text-accent" />
+                      <CardContent className="h-full px-1.5 py-2 flex flex-col items-center justify-center">
+                        <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-1.5 text-accent" />
                         <p className="font-medium text-sm sm:text-base leading-snug text-white/90 mx-auto">
                           {t.homestay.amenities.list[amenityKey]}
                         </p>

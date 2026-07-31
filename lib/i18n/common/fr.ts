@@ -350,8 +350,7 @@ export const fr: CommonTranslation = {
         "free-handmade-tea": "Thé artisanal gratuit",
         "free-parking": "Parking gratuit",
         "free-wifi": "WiFi gratuit",
-        "shared-bathroom":
-          "Sanitaires communs (3 douches, 4 toilettes, 6 lavabos)",
+        "shared-bathroom": "4 toilettes & 3 douches",
         "bbq-area": "Espace barbecue",
         campfire: "Feu de camp",
         karaoke: "Karaoké",

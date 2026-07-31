@@ -349,8 +349,7 @@ export const hi: CommonTranslation = {
         "free-handmade-tea": "मुफ़्त हैंडमेड चाय",
         "free-parking": "मुफ़्त पार्किंग",
         "free-wifi": "मुफ़्त Wi-Fi",
-        "shared-bathroom":
-          "साझा बाथरूम सुविधाएँ (3 शॉवर, 4 टॉयलेट, 6 वॉश बेसिन)",
+        "shared-bathroom": "4 टॉयलेट और 3 शॉवर",
         "bbq-area": "BBQ क्षेत्र",
         campfire: "कैम्पफ़ायर",
         karaoke: "कराओके",

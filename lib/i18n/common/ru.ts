@@ -350,8 +350,7 @@ export const ru: CommonTranslation = {
         "free-handmade-tea": "Бесплатный чай ручной работы",
         "free-parking": "Бесплатная парковка",
         "free-wifi": "Бесплатный Wi-Fi",
-        "shared-bathroom":
-          "Общие санузлы (3 душа, 4 туалета, 6 умывальников)",
+        "shared-bathroom": "4 туалета и 3 душа",
         "bbq-area": "Зона BBQ",
         campfire: "Костёр",
         karaoke: "Караоке",
