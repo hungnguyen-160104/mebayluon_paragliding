@@ -182,13 +182,14 @@ export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
     zh: "考帕山口",
     hi: "खाउ फ़ा दर्रा",
   },
+  // Trang "Hà Nội" gộp 2 điểm bay Đồi Bù + Viên Nam — ghi cả hai tên
   "doi-bu": {
-    vi: "Đồi Bù",
-    en: "Doi Bu Hill",
-    fr: "la colline de Doi Bu",
-    ru: "холм Дой Бу",
-    zh: "布山",
-    hi: "डोई बू पहाड़ी",
+    vi: "Đồi Bù | Viên Nam",
+    en: "Doi Bu | Vien Nam",
+    fr: "Doi Bu | Vien Nam",
+    ru: "Дой Бу | Виен Нам",
+    zh: "布山 | 员南",
+    hi: "डोई बू | विएन नाम",
   },
   "muong-hoa-sapa": {
     vi: "Mường Hoa (Sa Pa)",
