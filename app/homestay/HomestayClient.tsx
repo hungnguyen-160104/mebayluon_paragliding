@@ -260,36 +260,38 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="relative mx-auto mb-10 w-fit">
-                    {/* Đinh ghim giữ bảng */}
-                    <span
-                      aria-hidden
-                      className="absolute -top-4 left-1/2 z-10 -translate-x-1/2 text-2xl drop-shadow"
-                    >
-                      📌
+                  <div className="mx-auto mb-10 flex w-fit flex-col items-center">
+                    {/* Icon xe máy to, đứng riêng phía trên */}
+                    <span aria-hidden className="text-7xl drop-shadow-lg sm:text-8xl">
+                      🏍️
                     </span>
 
-                    {/* Tấm bảng gỗ nhỏ, treo đung đưa quanh đinh */}
-                    <div className="sign-swing w-56 rounded-xl border-4 border-amber-950/70 bg-gradient-to-b from-amber-700 to-amber-800 px-4 pb-4 pt-3 text-center shadow-2xl">
-                      <span aria-hidden className="block text-5xl drop-shadow-md">
-                        🛵
+                    {/* Tấm bảng gỗ chỉ chứa chữ, treo đung đưa dưới đinh ghim */}
+                    <div className="relative mt-2">
+                      <span
+                        aria-hidden
+                        className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2 text-xl drop-shadow"
+                      >
+                        📌
                       </span>
 
-                      <p className="mt-1 text-base font-extrabold leading-snug text-amber-50">
-                        {rental.title}
-                      </p>
-
-                      <p className="mt-1 text-sm font-bold text-yellow-300">
-                        💰 {rental.price}
-                      </p>
-
-                      <a
-                        href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                        className="cta-btn mt-2.5 w-full gap-1 rounded-full bg-amber-400 px-2 py-1.5 text-[13px] font-bold text-amber-950 shadow transition-transform hover:scale-105 hover:bg-amber-300"
-                      >
-                        📞 {MOTORBIKE_PHONE_DISPLAY}
-                      </a>
+                      <div className="sign-swing w-56 rounded-xl border-4 border-amber-950/70 bg-gradient-to-b from-amber-700 to-amber-800 px-4 py-3 text-center shadow-2xl">
+                        <p className="text-base font-extrabold leading-snug text-amber-50">
+                          {rental.title}
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-yellow-300">
+                          💰 {rental.price}
+                        </p>
+                      </div>
                     </div>
+
+                    {/* Nút gọi ở dưới cùng, tách khỏi bảng */}
+                    <a
+                      href={`tel:${MOTORBIKE_PHONE_TEL}`}
+                      className="cta-btn mt-3 gap-1 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300"
+                    >
+                      📞 {MOTORBIKE_PHONE_DISPLAY}
+                    </a>
                   </div>
                 );
               })()}
