@@ -177,7 +177,7 @@ export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
   "khau-pha": {
     vi: "Đèo Khau Phạ",
     en: "Khau Pha Pass",
-    fr: "le col de Khau Pha",
+    fr: "col de Khau Pha",
     ru: "перевал Кхау Фа",
     zh: "考帕山口",
     hi: "खाउ फ़ा दर्रा",
@@ -194,7 +194,7 @@ export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
   "muong-hoa-sapa": {
     vi: "Mường Hoa (Sa Pa)",
     en: "Muong Hoa Valley (Sapa)",
-    fr: "la vallée de Muong Hoa (Sapa)",
+    fr: "vallée de Muong Hoa (Sapa)",
     ru: "долина Мыонг Хоа (Сапа)",
     zh: "孟花谷（沙坝）",
     hi: "मुओंग होआ घाटी (सापा)",
@@ -211,27 +211,27 @@ export const SPOT_ARTICLES_HEADING: Record<
   { title: string; subtitle: string }
 > = {
   vi: {
-    title: "Đọc thêm về điểm bay {name}",
+    title: "Đọc thêm về dù lượn {name}",
     subtitle: "Cẩm nang, mùa đẹp và cách di chuyển — chọn bài để xem chi tiết",
   },
   en: {
-    title: "Read more about {name}",
+    title: "Read more about paragliding at {name}",
     subtitle: "Guides, best seasons and how to get there",
   },
   fr: {
-    title: "En savoir plus sur {name}",
+    title: "En savoir plus sur le parapente : {name}",
     subtitle: "Guides, meilleures saisons et accès",
   },
   ru: {
-    title: "Подробнее о месте полётов: {name}",
+    title: "Подробнее о парапланеризме: {name}",
     subtitle: "Гиды, лучшие сезоны и как добраться",
   },
   zh: {
-    title: "了解更多关于{name}",
+    title: "了解更多{name}滑翔伞信息",
     subtitle: "攻略、最佳季节与交通方式",
   },
   hi: {
-    title: "{name} के बारे में और पढ़ें",
+    title: "{name} में पैराग्लाइडिंग के बारे में और पढ़ें",
     subtitle: "गाइड, सर्वोत्तम मौसम और पहुँचने का तरीका",
   },
 };
