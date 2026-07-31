@@ -241,10 +241,10 @@ export default function HomestayPage() {
 
       <div className="relative z-10 text-white">
         {/* ===== Introduction ===== */}
-        <section className="py-16 bg-transparent">
+        <section className="pt-16 pb-2 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] invisible">
+              <h2 className="hidden">
                 {t.homestay.intro.title}
               </h2>
 
@@ -302,7 +302,7 @@ export default function HomestayPage() {
                   const Icon = card.icon;
 
                   return (
-                    <Card key={card.titleKey} className="invisible">
+                    <Card key={card.titleKey} className="hidden">
                       <CardContent className="pt-6 pb-6 text-center space-y-2">
                         <Icon className="h-12 w-12 mx-auto mb-2 text-accent" />
                         <h3 className="font-semibold text-white/95 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
