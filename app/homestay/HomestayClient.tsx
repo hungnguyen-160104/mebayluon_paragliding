@@ -248,6 +248,10 @@ export default function HomestayPage() {
                 {t.homestay.intro.title}
               </h2>
 
+              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
+                {t.homestay.intro.title}
+              </h1>
+
               {/* ===== Khung cho thuê xe máy — nổi bật đầu trang ===== */}
               {(() => {
                 const rental =
@@ -256,7 +260,7 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="rotate-3 -mt-2 mb-2 flex w-full flex-col items-end pr-3 lg:absolute lg:right-[4%] lg:top-44 lg:mt-0 lg:mb-0 lg:w-auto lg:items-center lg:pr-0">
+                  <div className="rotate-3 -mt-4 mb-4 flex w-full flex-col items-end pr-3 lg:absolute lg:right-[4%] lg:top-44 lg:mt-0 lg:mb-0 lg:w-auto lg:items-center lg:pr-0">
                     {/* Icon xe máy đứng riêng phía trên (mobile +20%, desktop gấp đôi) */}
                     <span aria-hidden className="text-[53px] drop-shadow-lg lg:text-[88px]">
                       🛵
@@ -297,10 +301,6 @@ export default function HomestayPage() {
                   </div>
                 );
               })()}
-
-              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
-                {t.homestay.intro.title}
-              </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {introCards.map((card) => {
