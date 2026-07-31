@@ -232,23 +232,22 @@ export default async function BlogPage() {
                   {/* Hàng đầu: Featured lớn (2/3) + Danh sách bên (1/3) */}
                   <div className="grid grid-cols-[2fr_1fr] gap-6 mb-8">
 
-                    {/* Featured: ảnh lớn, text overlay */}
-                    <Link href={`/blog/${featured.slug}`} className="group relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
-                      <div className="relative h-90 overflow-hidden">
+                    {/* Featured: ảnh trên, khối chữ nằm DƯỚI ảnh (không đè lên ảnh) */}
+                    <Link href={`/blog/${featured.slug}`} className="group overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
+                      <div className="relative h-72 overflow-hidden">
                         <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
-                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-6">
-                          <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-red-300">
-                            {pickTitle(featured, isVietnamese)}
-                          </h2>
-                          <div className="mb-2 flex items-center gap-4 text-sm text-white/60">
-                            <span>{formatDate(featuredDate)}</span>
-                            <span>{ui.views(Number(featured.views || 0))}</span>
-                          </div>
-                          <p className="line-clamp-2 text-sm text-white/80">
-                            {pickExcerpt(featured, isVietnamese)}
-                          </p>
+                      </div>
+                      <div className="p-5">
+                        <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-red-300">
+                          {pickTitle(featured, isVietnamese)}
+                        </h2>
+                        <div className="mb-2 flex items-center gap-4 text-sm text-white/60">
+                          <span>{formatDate(featuredDate)}</span>
+                          <span>{ui.views(Number(featured.views || 0))}</span>
                         </div>
+                        <p className="line-clamp-2 text-sm text-white/80">
+                          {pickExcerpt(featured, isVietnamese)}
+                        </p>
                       </div>
                     </Link>
 
