@@ -184,6 +184,56 @@ function GoogleReviewBadge() {
   );
 }
 
+/* ================= Banner cho thuê xe máy ================= */
+/**
+ * Khung nổi bật "treo" đầu trang homestay: dịch vụ cho thuê xe máy.
+ * Giá giữ nguyên bằng số cho mọi ngôn ngữ, chỉ dịch chữ.
+ */
+const MOTORBIKE_RENTAL: Record<
+  string,
+  { title: string; day: string; halfDay: string; call: string }
+> = {
+  vi: {
+    title: "Ở đây có cho thuê xe máy!",
+    day: "200.000đ/ngày",
+    halfDay: "120.000đ/nửa ngày",
+    call: "Gọi thuê xe",
+  },
+  en: {
+    title: "Motorbike rental available here!",
+    day: "200K VND/day",
+    halfDay: "120K VND/half day",
+    call: "Call to rent",
+  },
+  fr: {
+    title: "Location de scooters ici !",
+    day: "200K VND/jour",
+    halfDay: "120K VND/demi-journée",
+    call: "Appeler pour louer",
+  },
+  ru: {
+    title: "Здесь можно арендовать мотобайк!",
+    day: "200 тыс. VND/день",
+    halfDay: "120 тыс. VND/полдня",
+    call: "Позвонить",
+  },
+  zh: {
+    title: "这里可以租摩托车！",
+    day: "200K 越南盾/天",
+    halfDay: "120K 越南盾/半天",
+    call: "致电租车",
+  },
+  hi: {
+    title: "यहाँ मोटरबाइक किराये पर मिलती है!",
+    day: "200K VND/दिन",
+    halfDay: "120K VND/आधा दिन",
+    call: "किराये के लिए कॉल करें",
+  },
+};
+
+const MOTORBIKE_PHONE_DISPLAY = "(+84) 033 7632532";
+const MOTORBIKE_PHONE_TEL = "+84337632532";
+
 /* ================= Page ================= */
 export default function HomestayPage() {
   const { t, language } = useLanguage();
@@ -234,6 +284,50 @@ export default function HomestayPage() {
               <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
                 {t.homestay.intro.title}
               </h1>
+
+              {/* ===== Khung cho thuê xe máy — nổi bật đầu trang ===== */}
+              {(() => {
+                const rental =
+                  MOTORBIKE_RENTAL[
+                    String(language ?? "vi").slice(0, 2).toLowerCase()
+                  ] ?? MOTORBIKE_RENTAL.vi;
+
+                return (
+                  <div className="mx-auto mb-10 max-w-2xl overflow-hidden rounded-3xl border-4 border-white/70 bg-gradient-to-r from-amber-300 via-yellow-300 to-orange-300 shadow-2xl">
+                    <div className="flex flex-col items-center gap-3 px-6 py-5 sm:flex-row sm:gap-5 sm:text-left">
+                      {/* Icon xe máy quen thuộc, nhún nhảy cho vui mắt */}
+                      <span
+                        aria-hidden
+                        className="animate-bounce text-6xl drop-shadow-md sm:text-7xl"
+                      >
+                        🛵
+                      </span>
+
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-xl font-extrabold text-slate-900 sm:text-2xl">
+                          {rental.title}
+                        </p>
+                        <p className="mt-1 text-base font-bold text-red-700 sm:text-lg">
+                          {rental.day} · {rental.halfDay}
+                        </p>
+                      </div>
+
+                      <a
+                        href={`tel:${MOTORBIKE_PHONE_TEL}`}
+                        className="cta-btn shrink-0 gap-2 rounded-full bg-slate-900 px-5 py-3 text-base font-bold text-amber-300 shadow-lg transition-transform hover:scale-105"
+                      >
+                        📞 {rental.call}
+                        <span className="hidden whitespace-nowrap sm:inline">
+                          {MOTORBIKE_PHONE_DISPLAY}
+                        </span>
+                      </a>
+                    </div>
+                    <div className="bg-slate-900/90 py-1.5 text-center text-sm font-semibold text-amber-300 sm:hidden">
+                      {MOTORBIKE_PHONE_DISPLAY}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {introCards.map((card) => {
