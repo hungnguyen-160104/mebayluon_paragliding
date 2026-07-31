@@ -146,15 +146,18 @@ const UI: Record<
   },
 };
 
-// Ghim "Lễ hội dù lượn Mùa Vàng 2026" lên đầu trang đến HẾT 31/10/2026
-// (giờ Việt Nam). Từ 00:00 ngày 01/11/2026, `pinActive` tự sai và bài
+// Ghim bài lên đầu trang đến HẾT 31/10/2026 (giờ Việt Nam), theo đúng thứ
+// tự trong mảng. Từ 00:00 ngày 01/11/2026, `pinActive` tự sai và các bài
 // trở về đúng vị trí theo ngày đăng — không cần sửa code.
-const PINNED_SLUG = "le-hoi-du-luon-bay-tren-mua-vang-2026";
+const PINNED_SLUGS = [
+  "le-hoi-du-luon-bay-tren-mua-vang-2026",
+  "mua-lua-xanh-mu-cang-chai",
+];
 const PIN_UNTIL = Date.parse("2026-11-01T00:00:00+07:00");
 
 // Server chỉ render 25 bài đầu cho nhẹ — phần còn lại tải lazy qua nút
-// "Xem thêm" (LazyPostCards, +15 bài/lần). Khi đang ghim: lấy bài ghim
-// riêng + 24 bài mới nhất (loại bài ghim để không trùng khi tải thêm).
+// "Xem thêm" (LazyPostCards, +15 bài/lần). Khi đang ghim: lấy các bài ghim
+// riêng + số bài còn lại (loại bài ghim để không trùng khi tải thêm).
 const INITIAL_COUNT = 25;
 
 // Tách khỏi thân component để không gọi Date.now() lúc render
@@ -162,12 +165,20 @@ const INITIAL_COUNT = 25;
 async function loadLatestPosts() {
   const pinActive = Date.now() < PIN_UNTIL;
 
+  // Lấy các bài ghim theo đúng thứ tự khai trong PINNED_SLUGS; bài nào
+  // không còn tồn tại / đã gỡ xuất bản thì tự bị bỏ qua.
+  const pinnedPosts = pinActive
+    ? (await Promise.all(PINNED_SLUGS.map((slug) => getPostBySlug(slug)))).filter(
+        (post): post is NonNullable<typeof post> => Boolean(post),
+      )
+    : [];
+
   const latestData = await getPosts({
     category: "news",
     type: "blog",
     isPublished: true,
-    excludeSlug: pinActive ? PINNED_SLUG : undefined,
-    limit: pinActive ? INITIAL_COUNT - 1 : INITIAL_COUNT,
+    excludeSlug: pinActive ? PINNED_SLUGS : undefined,
+    limit: INITIAL_COUNT - pinnedPosts.length,
     sort: "-publishedAt,-createdAt",
   });
 
@@ -175,11 +186,7 @@ async function loadLatestPosts() {
   const lazyInitialCount = latestData.items.length;
   const lazyTotal = Number(latestData.total ?? 0);
 
-  let latestItems = latestData.items;
-  if (pinActive) {
-    const pinned = await getPostBySlug(PINNED_SLUG);
-    if (pinned) latestItems = [pinned, ...latestItems];
-  }
+  const latestItems = [...pinnedPosts, ...latestData.items];
 
   return { latestItems, lazyInitialCount, lazyTotal, pinActive };
 }
@@ -355,7 +362,7 @@ export default async function BlogPage() {
                 <LazyPostCards
                   category="news"
                   lang={lang}
-                  exclude={pinActive ? PINNED_SLUG : ""}
+                  exclude={pinActive ? PINNED_SLUGS.join(",") : ""}
                   initialCount={lazyInitialCount}
                   total={lazyTotal}
                   seeMoreLabel={ui.seeMore}

@@ -59,7 +59,11 @@ export async function GET(req: Request) {
     const subRaw = (searchParams.get("sub") || "all").toLowerCase();
     const sub = category === "knowledge" && subRaw !== "all" ? subRaw : undefined;
 
-    const exclude = (searchParams.get("exclude") || "").trim() || undefined;
+    // Nhiều slug ngăn cách bởi dấu phẩy (các bài đang ghim ở đầu trang)
+    const exclude = (searchParams.get("exclude") || "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
 
     const skip = Math.max(0, parseInt(searchParams.get("skip") || "0", 10) || 0);
     const limit = Math.min(
@@ -77,7 +81,7 @@ export async function GET(req: Request) {
       category,
       subCategory: sub,
       isPublished: true,
-      excludeSlug: exclude,
+      excludeSlug: exclude.length ? exclude : undefined,
       skip,
       limit,
       sort: "-publishedAt,-createdAt",

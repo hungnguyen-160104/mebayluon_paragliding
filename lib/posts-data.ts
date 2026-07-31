@@ -14,7 +14,8 @@ export interface GetPostsOptions {
   skip?: number;
   sort?: string;
   search?: string;
-  excludeSlug?: string;
+  /** Slug cần loại khỏi kết quả — một slug hoặc danh sách (dùng cho bài ghim). */
+  excludeSlug?: string | string[];
   excludeId?: string;
 }
 
@@ -181,7 +182,9 @@ export async function getPosts(options: GetPostsOptions = {}) {
     }
 
     if (excludeSlug) {
-      andFilters.push({ slug: { $ne: excludeSlug } });
+      const list = (Array.isArray(excludeSlug) ? excludeSlug : [excludeSlug]).filter(Boolean);
+      if (list.length === 1) andFilters.push({ slug: { $ne: list[0] } });
+      else if (list.length > 1) andFilters.push({ slug: { $nin: list } });
     }
 
     if (excludeId) {
