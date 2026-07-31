@@ -25,7 +25,9 @@ export type ContentBlockType =
   | "bulletList"
   | "divider"
   | "cta"
-  | "embed";
+  | "embed"
+  /** Thư viện ảnh: nhiều ảnh dạng lưới, thường đặt cuối bài. */
+  | "gallery";
 
 export type ContentBlock = {
   id: string;
@@ -40,6 +42,12 @@ export type ContentBlock = {
     items?: string[];
     link?: string;
     embedType?: EmbedType;
+    /** Block thư viện ảnh: danh sách ảnh + số cột hiển thị. */
+    images?: { url: string; caption?: string }[];
+    columns?: number;
+    /** Đoạn văn: căn lề + cỡ chữ (dùng chung 2 ngôn ngữ). */
+    align?: "left" | "center" | "right";
+    fontSize?: "sm" | "base" | "lg" | "xl";
   };
 };
 
@@ -77,6 +85,8 @@ export type Post = {
   fixed?: boolean;
   isFixed?: boolean;
   fixedKey?: string | null;
+  /** Thời điểm tick "hiển thị đầu trang" — quyết định thứ tự bài ghim. */
+  featuredAt?: string | null;
 
   type?: PostType;
   storeCategory?: StoreCategory;

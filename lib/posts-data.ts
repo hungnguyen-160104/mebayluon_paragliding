@@ -16,6 +16,8 @@ export interface GetPostsOptions {
   search?: string;
   /** Slug cần loại khỏi kết quả — một slug hoặc danh sách (dùng cho bài ghim). */
   excludeSlug?: string | string[];
+  /** true = chỉ bài ghim đầu trang; false = chỉ bài KHÔNG ghim. */
+  fixed?: boolean;
   excludeId?: string;
 }
 
@@ -94,6 +96,10 @@ function normalizePostRecord(raw: RawPostLike): Post {
       ? raw.translatedLangs.map((x: unknown) => String(x))
       : [],
 
+    // Bài ghim đầu trang (tick trong admin) + thời điểm tick (quyết định thứ tự)
+    fixed: Boolean(raw?.fixed),
+    featuredAt: toIsoString(raw?.featuredAt),
+
     coverImage: String(raw?.coverImage ?? ""),
     thumbnail: String(raw?.thumbnail ?? raw?.coverImage ?? ""),
 
@@ -154,6 +160,7 @@ export async function getPosts(options: GetPostsOptions = {}) {
     search,
     excludeSlug,
     excludeId,
+    fixed,
   } = options;
 
   try {
@@ -189,6 +196,12 @@ export async function getPosts(options: GetPostsOptions = {}) {
 
     if (excludeId) {
       andFilters.push({ _id: { $ne: excludeId } });
+    }
+
+    if (fixed === true) {
+      andFilters.push({ fixed: true });
+    } else if (fixed === false) {
+      andFilters.push({ fixed: { $ne: true } });
     }
 
     if (search) {

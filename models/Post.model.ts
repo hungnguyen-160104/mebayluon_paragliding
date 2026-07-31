@@ -78,6 +78,13 @@ export interface IPost {
   isFixed?: boolean;
   fixedKey?: FixedKey | null;
 
+  /**
+   * Thời điểm bài được tick "hiển thị đầu trang" trong admin.
+   * Dùng để xếp thứ tự các bài ghim: tick trước đứng trước.
+   * null/không có = bài không ghim.
+   */
+  featuredAt?: Date | null;
+
   type?: PostType;
   storeCategory?: StoreCategory;
   price?: number;
@@ -173,6 +180,8 @@ const PostSchema = new Schema<IPost>(
       enum: FIXED_KEYS,
       default: undefined,
     },
+
+    featuredAt: { type: Date, default: null },
 
     type: { type: String, enum: ["blog", "product"], default: "blog" },
     storeCategory: {

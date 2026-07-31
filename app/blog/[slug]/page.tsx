@@ -150,6 +150,37 @@ function pickBlocks(post: Post, isVietnamese: boolean): ContentBlock[] {
   return Array.isArray(blocks) ? blocks : [];
 }
 
+/**
+ * Đổi ký hiệu định dạng nhanh trong đoạn văn thành thẻ HTML:
+ * **chữ đậm** -> <strong>, *chữ nghiêng* -> <em>.
+ * Chỉ nhận 2 ký hiệu này — mọi thứ khác giữ nguyên là chữ thường.
+ */
+function renderInlineFormat(text: string): React.ReactNode[] {
+  const parts = String(text || "").split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g);
+  return parts.map((part, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) {
+      return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+    }
+    if (/^\*[^*\n]+\*$/.test(part)) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
+const PARAGRAPH_ALIGN: Record<string, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+};
+
+const PARAGRAPH_SIZE: Record<string, string> = {
+  sm: "text-sm",
+  base: "text-base",
+  lg: "text-lg",
+  xl: "text-xl",
+};
+
 function hasVisibleBlockData(blocks: ContentBlock[]): boolean {
   return blocks.some((block) => {
     const data = block?.data || {};
@@ -162,6 +193,7 @@ function hasVisibleBlockData(blocks: ContentBlock[]): boolean {
     if (typeof data.author === "string" && data.author.trim()) return true;
     if (typeof data.link === "string" && data.link.trim()) return true;
     if (block?.type === "divider") return true;
+    if (Array.isArray(data.images) && data.images.some((img) => img?.url)) return true;
     return false;
   });
 }
@@ -235,12 +267,15 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       );
     }
 
-    case "paragraph":
+    case "paragraph": {
+      const align = PARAGRAPH_ALIGN[data.align || "left"] || "text-left";
+      const size = PARAGRAPH_SIZE[data.fontSize || "base"] || "text-base";
       return (
-        <p key={key} className="whitespace-pre-line text-base font-light leading-relaxed text-white/90">
-          {data.text || ""}
+        <p key={key} className={`whitespace-pre-line ${size} ${align} font-light leading-relaxed text-white/90`}>
+          {renderInlineFormat(data.text || "")}
         </p>
       );
+    }
 
     case "image":
       return data.url ? (
@@ -251,6 +286,41 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
           ) : null}
         </figure>
       ) : null;
+
+    case "gallery": {
+      const images = (Array.isArray(data.images) ? data.images : []).filter(
+        (img) => img?.url,
+      );
+      if (!images.length) return null;
+
+      const cols = Math.min(4, Math.max(2, Number(data.columns) || 3));
+      const colClass =
+        cols === 2
+          ? "grid-cols-1 sm:grid-cols-2"
+          : cols === 4
+            ? "grid-cols-2 md:grid-cols-4"
+            : "grid-cols-2 md:grid-cols-3";
+
+      return (
+        <div key={key} className={`not-prose grid gap-3 ${colClass}`}>
+          {images.map((img, imgIndex) => (
+            <figure key={`${img.url}-${imgIndex}`} className="overflow-hidden rounded-lg">
+              <img
+                src={img.url}
+                alt={img.caption || `${fallbackAlt} - ${imgIndex + 1}`}
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover transition-transform duration-300 hover:scale-105"
+              />
+              {img.caption ? (
+                <figcaption className="mt-1 text-center text-xs italic text-white/70">
+                  {img.caption}
+                </figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+      );
+    }
 
     case "quote":
       return (

@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 import Link from "next/link";
-import { getPosts, getPostBySlug } from "@/lib/posts-data";
+import { getPosts } from "@/lib/posts-data";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import type { Post, SupportedLocale } from "@/types/frontend/post";
 
@@ -146,39 +146,34 @@ const UI: Record<
   },
 };
 
-// Ghim bài lên đầu trang đến HẾT 31/10/2026 (giờ Việt Nam), theo đúng thứ
-// tự trong mảng. Từ 00:00 ngày 01/11/2026, `pinActive` tự sai và các bài
-// trở về đúng vị trí theo ngày đăng — không cần sửa code.
-const PINNED_SLUGS = [
-  "le-hoi-du-luon-bay-tren-mua-vang-2026",
-  "mua-lua-xanh-mu-cang-chai",
-];
-const PIN_UNTIL = Date.parse("2026-11-01T00:00:00+07:00");
-
 // Server chỉ render 25 bài đầu cho nhẹ — phần còn lại tải lazy qua nút
-// "Xem thêm" (LazyPostCards, +15 bài/lần). Khi đang ghim: lấy các bài ghim
-// riêng + số bài còn lại (loại bài ghim để không trùng khi tải thêm).
+// "Xem thêm" (LazyPostCards, +15 bài/lần).
 const INITIAL_COUNT = 25;
 
-// Tách khỏi thân component để không gọi Date.now() lúc render
-// (quy tắc react-hooks/purity) — trang force-dynamic nên vẫn chạy mỗi request.
+/**
+ * Bài ghim đầu trang do admin tick trong trang quản trị (nút ghim ở danh
+ * sách bài viết — tối đa 6 bài, xem /api/posts/[id]/feature). Thứ tự hiển
+ * thị theo thời điểm tick: tick trước đứng trước. Các bài không ghim xếp
+ * sau, theo ngày đăng mới nhất.
+ */
 async function loadLatestPosts() {
-  const pinActive = Date.now() < PIN_UNTIL;
-
-  // Lấy các bài ghim theo đúng thứ tự khai trong PINNED_SLUGS; bài nào
-  // không còn tồn tại / đã gỡ xuất bản thì tự bị bỏ qua.
-  const pinnedPosts = pinActive
-    ? (await Promise.all(PINNED_SLUGS.map((slug) => getPostBySlug(slug)))).filter(
-        (post): post is NonNullable<typeof post> => Boolean(post),
-      )
-    : [];
+  const pinnedData = await getPosts({
+    category: "news",
+    type: "blog",
+    isPublished: true,
+    fixed: true,
+    limit: 6,
+    sort: "featuredAt",
+  });
+  const pinnedPosts = pinnedData.items;
+  const pinnedSlugs = pinnedPosts.map((post) => post.slug);
 
   const latestData = await getPosts({
     category: "news",
     type: "blog",
     isPublished: true,
-    excludeSlug: pinActive ? PINNED_SLUGS : undefined,
-    limit: INITIAL_COUNT - pinnedPosts.length,
+    excludeSlug: pinnedSlugs.length ? pinnedSlugs : undefined,
+    limit: Math.max(1, INITIAL_COUNT - pinnedPosts.length),
     sort: "-publishedAt,-createdAt",
   });
 
@@ -188,7 +183,7 @@ async function loadLatestPosts() {
 
   const latestItems = [...pinnedPosts, ...latestData.items];
 
-  return { latestItems, lazyInitialCount, lazyTotal, pinActive };
+  return { latestItems, lazyInitialCount, lazyTotal, pinnedSlugs };
 }
 
 export default async function BlogPage() {
@@ -197,7 +192,7 @@ export default async function BlogPage() {
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
-  const { latestItems, lazyInitialCount, lazyTotal, pinActive } =
+  const { latestItems, lazyInitialCount, lazyTotal, pinnedSlugs } =
     await loadLatestPosts();
 
   const formatDate = (s?: string | null) =>
@@ -362,7 +357,7 @@ export default async function BlogPage() {
                 <LazyPostCards
                   category="news"
                   lang={lang}
-                  exclude={pinActive ? PINNED_SLUGS.join(",") : ""}
+                  exclude={pinnedSlugs.join(",")}
                   initialCount={lazyInitialCount}
                   total={lazyTotal}
                   seeMoreLabel={ui.seeMore}

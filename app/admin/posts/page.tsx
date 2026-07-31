@@ -51,7 +51,9 @@ export default function AdminPostsPage() {
     try {
       const params = new URLSearchParams();
       params.set("limit", "100");
-      params.set("sort", "-updatedAt,-createdAt");
+      // Thứ tự theo ngày ĐĂNG (không phải ngày sửa — sửa bài cũ sẽ không
+      // làm nó nhảy lên đầu danh sách nữa); bản nháp xếp cuối.
+      params.set("sort", "-publishedAt,-createdAt");
       params.set("published", "all");
 
       if (filters.search) params.set("q", filters.search);
@@ -161,6 +163,31 @@ export default function AdminPostsPage() {
     [fetchPosts, selectedPost, showToast]
   );
 
+  /** Tick / bỏ tick "hiển thị đầu trang" ngay từ danh sách (không cần mở bài). */
+  const handleToggleFeatured = useCallback(
+    async (post: Post) => {
+      const next = !(post.isFixed ?? post.fixed ?? false);
+
+      try {
+        await api(`/api/posts/${post._id}/feature`, {
+          method: "PATCH",
+          headers: { ...authHeader(), "Content-Type": "application/json" },
+          body: JSON.stringify({ featured: next }),
+        });
+
+        showToast(
+          "success",
+          next ? "Đã ghim bài lên đầu trang" : "Đã bỏ ghim bài"
+        );
+        await fetchPosts();
+      } catch (err: any) {
+        // Lỗi thường gặp: đã đủ 6 bài ghim — hiện đúng thông báo từ server
+        showToast("error", err?.message || "Không đổi được trạng thái ghim");
+      }
+    },
+    [fetchPosts, showToast]
+  );
+
   const handleCancel = useCallback(() => {
     setSelectedPost(null);
     setIsCreating(false);
@@ -210,6 +237,7 @@ export default function AdminPostsPage() {
             posts={posts}
             selectedId={selectedPost?._id || null}
             onSelect={handleSelectPost}
+            onToggleFeatured={handleToggleFeatured}
             onCreateNew={handleCreateNew}
             loading={loading}
             filters={filters}

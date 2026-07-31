@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calendar, Eye, EyeOff, Filter, Plus, Search, Star, Tag } from "lucide-react";
+import { Calendar, Eye, EyeOff, Filter, Pin, Plus, Search, Tag } from "lucide-react";
 import type { Post } from "@/types/frontend/post";
 
 const CATEGORIES = [
@@ -21,6 +21,8 @@ interface PostSidebarProps {
   posts: Post[];
   selectedId: string | null;
   onSelect: (post: Post) => void;
+  /** Tick / bỏ tick "hiển thị đầu trang" (tối đa 6 bài mỗi mục). */
+  onToggleFeatured: (post: Post) => void;
   onCreateNew: () => void;
   loading?: boolean;
   filters: {
@@ -41,6 +43,7 @@ export default function PostSidebar({
   posts,
   selectedId,
   onSelect,
+  onToggleFeatured,
   onCreateNew,
   loading,
   filters,
@@ -161,6 +164,7 @@ export default function PostSidebar({
                 post={post}
                 isSelected={selectedId === post._id}
                 onClick={() => onSelect(post)}
+                onToggleFeatured={() => onToggleFeatured(post)}
               />
             ))}
           </div>
@@ -180,10 +184,12 @@ function PostListItem({
   post,
   isSelected,
   onClick,
+  onToggleFeatured,
 }: {
   post: Post;
   isSelected: boolean;
   onClick: () => void;
+  onToggleFeatured: () => void;
 }) {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "—";
@@ -243,12 +249,34 @@ function PostListItem({
               </span>
             )}
 
-            {isFeatured && (
-              <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
-                <Star size={10} className="mr-1" />
-                Nổi bật
-              </span>
-            )}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFeatured();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleFeatured();
+                }
+              }}
+              title={
+                isFeatured
+                  ? "Đang ghim đầu trang — bấm để bỏ ghim"
+                  : "Ghim bài này lên đầu trang (tối đa 6 bài)"
+              }
+              className={`inline-flex cursor-pointer items-center rounded px-1.5 py-0.5 text-xs transition-colors ${
+                isFeatured
+                  ? "bg-amber-400 font-semibold text-white hover:bg-amber-500"
+                  : "bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-600"
+              }`}
+            >
+              <Pin size={10} className="mr-1" />
+              {isFeatured ? "Đầu trang" : "Ghim"}
+            </span>
 
             <span
               className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ${

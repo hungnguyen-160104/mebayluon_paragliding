@@ -334,9 +334,21 @@ export async function listPosts(query: any = {}) {
   const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
   const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
 
+  // Mongoose KHÔNG hiểu chuỗi sort ngăn cách bằng dấu phẩy
+  // ("-publishedAt,-createdAt" bị coi là một tên trường không tồn tại nên
+  // kết quả trả về không sort gì cả — chính là lỗi "danh sách bài trong
+  // admin xáo trộn"). Tách dấu phẩy thành object sort đúng chuẩn.
+  const sortObj: Record<string, 1 | -1> = {};
+  for (const part of String(sort).split(",")) {
+    const f = part.trim();
+    if (!f) continue;
+    if (f.startsWith("-")) sortObj[f.slice(1)] = -1;
+    else sortObj[f] = 1;
+  }
+
   const [items, total] = await Promise.all([
     Post.find(filter)
-      .sort(sort as any)
+      .sort(sortObj)
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum),
     Post.countDocuments(filter),

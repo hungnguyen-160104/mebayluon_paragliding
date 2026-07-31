@@ -18,6 +18,9 @@ import {
   Minus,
   MousePointerClick,
   Link2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from "lucide-react";
 import api from "@/lib/api";
 import { authHeader } from "@/lib/auth";
@@ -240,6 +243,14 @@ function getDefaultBlock(type: ContentBlockType): ContentBlock {
         type,
         data: { url: "", caption: "", embedType: "unknown" },
       };
+    case "gallery":
+      // images: [{ url, caption }] — dùng chung cho cả 2 ngôn ngữ (ảnh giống
+      // nhau, chỉ caption có thể khác); columns: số cột hiển thị.
+      return {
+        id: createId(),
+        type,
+        data: { images: [], columns: 3 },
+      };
     default:
       return {
         id: createId(),
@@ -338,8 +349,18 @@ function blocksToHtml(blocks: ContentBlock[]): string {
           return `<${tag}>${escapeHtml(data.text || "")}</${tag}>`;
         }
 
-        case "paragraph":
-          return `<p>${escapeHtml(data.text || "")}</p>`;
+        case "paragraph": {
+          // **đậm** / *nghiêng* -> thẻ HTML (escape trước để an toàn)
+          const inline = escapeHtml(data.text || "")
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+          const styles: string[] = [];
+          if (data.align && data.align !== "left") styles.push(`text-align:${data.align}`);
+          const sizeMap: Record<string, string> = { sm: "0.875rem", lg: "1.125rem", xl: "1.25rem" };
+          if (data.fontSize && sizeMap[data.fontSize]) styles.push(`font-size:${sizeMap[data.fontSize]}`);
+          const styleAttr = styles.length ? ` style="${styles.join(";")}"` : "";
+          return `<p${styleAttr}>${inline}</p>`;
+        }
 
         case "image":
           return `
@@ -364,6 +385,22 @@ function blocksToHtml(blocks: ContentBlock[]): string {
 
         case "divider":
           return "<hr />";
+
+        case "gallery": {
+          const images = Array.isArray(data.images) ? data.images : [];
+          if (!images.length) return "";
+          const cols = Number(data.columns) || 3;
+          const items = images
+            .map((img: any) => {
+              if (!img?.url) return "";
+              const cap = escapeHtml(img.caption || "");
+              return `<figure><img src="${img.url}" alt="${cap}" loading="lazy" />${
+                cap ? `<figcaption>${cap}</figcaption>` : ""
+              }</figure>`;
+            })
+            .join("");
+          return `<div class="post-gallery" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">${items}</div>`;
+        }
 
         case "cta":
           return `<p><a href="${data.link || "#"}">${escapeHtml(data.text || "")}</a></p>`;
@@ -438,6 +475,8 @@ function getBlockLabel(type: ContentBlockType) {
       return "Nút CTA";
     case "embed":
       return "Nhúng link";
+    case "gallery":
+      return "Thư viện ảnh";
     default:
       return "Block";
   }
@@ -456,6 +495,7 @@ const BLOCK_OPTIONS: {
   { type: "divider", label: "Phân cách", icon: <Minus size={18} /> },
   { type: "cta", label: "Nút CTA", icon: <MousePointerClick size={18} /> },
   { type: "embed", label: "Nhúng link", icon: <Link2 size={18} /> },
+  { type: "gallery", label: "Thư viện ảnh", icon: <ImageIcon size={18} /> },
 ];
 
 export default function PostEditor({
@@ -472,7 +512,13 @@ export default function PostEditor({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [showAddBlockModal, setShowAddBlockModal] = useState(false);
+  /**
+   * Vị trí sẽ chèn block mới khi mở hộp chọn loại block.
+   * null = đóng; một số = chèn TRƯỚC block ở vị trí đó (blocks.length = cuối).
+   */
+  const [addBlockIndex, setAddBlockIndex] = useState<number | null>(null);
+  /** id của block thư viện đang tải ảnh lên (hiện vòng xoay). */
+  const [galleryUploading, setGalleryUploading] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -563,6 +609,84 @@ export default function PostEditor({
     }
   }
 
+  /**
+   * Tải nhiều ảnh cho block thư viện. Ảnh dùng chung cho cả bản Việt và Anh
+   * (chỉ khác caption), nên ghi vào cả blocksVi lẫn blocksEn.
+   */
+  async function handleUploadGalleryImages(blockId: string, files: File[]) {
+    if (!files.length) return;
+    setGalleryUploading(blockId);
+
+    try {
+      const uploaded: { url: string; caption: string }[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const resp = await api<{ url: string }>("/api/uploads/image", {
+          method: "POST",
+          headers: { ...authHeader() },
+          body: fd,
+        });
+        uploaded.push({ url: resp.url, caption: "" });
+      }
+
+      const append = (prev: ContentBlock[]) =>
+        prev.map((block) => {
+          if (block.id !== blockId) return block;
+          const images = Array.isArray(block.data.images) ? block.data.images : [];
+          return { ...block, data: { ...block.data, images: [...images, ...uploaded] } };
+        });
+
+      setBlocksVi(append);
+      setBlocksEn(append);
+    } catch (error) {
+      console.error("Upload gallery images failed:", error);
+    } finally {
+      setGalleryUploading(null);
+    }
+  }
+
+  /** Xoá một ảnh khỏi block thư viện (cả 2 ngôn ngữ). */
+  function removeGalleryImage(blockId: string, imageIndex: number) {
+    const strip = (prev: ContentBlock[]) =>
+      prev.map((block) => {
+        if (block.id !== blockId) return block;
+        const images = Array.isArray(block.data.images) ? block.data.images : [];
+        return {
+          ...block,
+          data: { ...block.data, images: images.filter((_: unknown, i: number) => i !== imageIndex) },
+        };
+      });
+    setBlocksVi(strip);
+    setBlocksEn(strip);
+  }
+
+  /**
+   * Bọc vùng chữ đang bôi đen trong textarea đoạn văn bằng ký hiệu định
+   * dạng (** = đậm, * = nghiêng). Không bôi đen gì thì chèn ký hiệu đôi để
+   * gõ tiếp vào giữa.
+   */
+  function wrapSelection(locale: "vi" | "en", blockId: string, marker: string) {
+    const el = document.getElementById(
+      `pt-${blockId}-${locale}`,
+    ) as HTMLTextAreaElement | null;
+    if (!el) return;
+
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const value = el.value;
+    const selected = value.slice(start, end);
+
+    const next = value.slice(0, start) + marker + selected + marker + value.slice(end);
+    updateLangBlockField(locale, blockId, "text", next);
+
+    // trả con trỏ về giữa cặp ký hiệu sau khi React render lại
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + marker.length, end + marker.length);
+    });
+  }
+
   function updateEnglishTitle(value: string) {
     setForm((prev) => ({
       ...prev,
@@ -651,9 +775,18 @@ export default function PostEditor({
 
   function addBlock(type: ContentBlockType) {
     const pair = createParallelBlock(type);
-    setBlocksVi((prev) => [...prev, pair.vi]);
-    setBlocksEn((prev) => [...prev, pair.en]);
-    setShowAddBlockModal(false);
+    const at = addBlockIndex;
+
+    const insert = (prev: ContentBlock[], item: ContentBlock) => {
+      const index = at == null || at > prev.length ? prev.length : at;
+      const next = [...prev];
+      next.splice(index, 0, item);
+      return next;
+    };
+
+    setBlocksVi((prev) => insert(prev, pair.vi));
+    setBlocksEn((prev) => insert(prev, pair.en));
+    setAddBlockIndex(null);
   }
 
   function removeBlock(blockId: string) {
@@ -1134,6 +1267,19 @@ export default function PostEditor({
             <div className="space-y-4">
               {blocksVi.map((block, index) => {
                 const blockEn = blocksEn[index] || block;
+                const insertBefore = (
+                  <div key={`ins-${block.id}`} className="group relative -my-1 flex h-5 items-center justify-center">
+                    <div className="absolute inset-x-0 top-1/2 hidden h-px bg-red-200 group-hover:block" />
+                    <button
+                      type="button"
+                      onClick={() => setAddBlockIndex(index)}
+                      title="Chèn block tại đây"
+                      className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-400 opacity-40 transition-all hover:scale-125 hover:border-red-400 hover:text-red-500 group-hover:opacity-100"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                );
                 const listItemsVi = Array.isArray(block.data.items) ? block.data.items : [""];
                 const listItemsEn = Array.isArray(blockEn.data.items) ? blockEn.data.items : [""];
                 const sharedUrl = block.data.url || blockEn.data.url || "";
@@ -1142,7 +1288,9 @@ export default function PostEditor({
                   block.data.embedType || blockEn.data.embedType || detectEmbedType(sharedUrl);
 
                 return (
-                  <div key={block.id} className="rounded-xl border border-gray-200 bg-gray-50">
+                  <div key={block.id}>
+                    {insertBefore}
+                    <div className="rounded-xl border border-gray-200 bg-gray-50">
                     <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                       <div className="font-medium text-gray-800">{getBlockLabel(block.type)}</div>
 
@@ -1177,6 +1325,78 @@ export default function PostEditor({
                       {block.type === "divider" ? (
                         <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-center text-sm text-gray-500">
                           Đường phân cách
+                        </div>
+                      ) : block.type === "gallery" ? (
+                        <div className="space-y-4">
+                          {/* Số cột hiển thị */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Số cột:</span>
+                            {[2, 3, 4].map((cols) => (
+                              <button
+                                key={cols}
+                                type="button"
+                                onClick={() => updateSharedBlockField(block.id, "columns", cols)}
+                                className={`rounded-md border px-3 py-1 text-sm ${
+                                  (Number(block.data.columns) || 3) === cols
+                                    ? "border-red-500 bg-red-500 text-white"
+                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                }`}
+                              >
+                                {cols}
+                              </button>
+                            ))}
+                            <span className="ml-auto text-xs text-gray-500">
+                              {(block.data.images || []).length} ảnh
+                            </span>
+                          </div>
+
+                          {/* Lưới ảnh đã tải + ô thêm ảnh */}
+                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                            {(block.data.images || []).map((img, imgIndex) => (
+                              <div key={`${img.url}-${imgIndex}`} className="group relative">
+                                <img
+                                  src={img.url}
+                                  alt={img.caption || ""}
+                                  className="h-24 w-full rounded-lg object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeGalleryImage(block.id, imgIndex)}
+                                  title="Xoá ảnh"
+                                  className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-1 text-white opacity-0 shadow transition-opacity group-hover:opacity-100"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            ))}
+
+                            <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-white text-gray-400 transition-colors hover:border-red-400 hover:text-red-500">
+                              {galleryUploading === block.id ? (
+                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                              ) : (
+                                <>
+                                  <Plus size={20} />
+                                  <span className="text-[11px]">Thêm ảnh</span>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                disabled={galleryUploading === block.id}
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  e.target.value = "";
+                                  handleUploadGalleryImages(block.id, files);
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          <p className="text-xs text-gray-500">
+                            Chọn được nhiều ảnh cùng lúc. Ảnh dùng chung cho cả bản tiếng Việt và tiếng Anh.
+                          </p>
                         </div>
                       ) : block.type === "image" ? (
                         <div className="space-y-4">
@@ -1471,7 +1691,93 @@ export default function PostEditor({
                           </div>
                         </div>
                       ) : (
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-3">
+                          {block.type === "paragraph" && (
+                            <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5">
+                              {/* Căn lề (dùng chung 2 ngôn ngữ) */}
+                              {([
+                                ["left", <AlignLeft key="l" size={14} />],
+                                ["center", <AlignCenter key="c" size={14} />],
+                                ["right", <AlignRight key="r" size={14} />],
+                              ] as const).map(([align, icon]) => (
+                                <button
+                                  key={align}
+                                  type="button"
+                                  title={`Căn ${align === "left" ? "trái" : align === "center" ? "giữa" : "phải"}`}
+                                  onClick={() => updateSharedBlockField(block.id, "align", align)}
+                                  className={`rounded p-1.5 ${
+                                    (block.data.align || "left") === align
+                                      ? "bg-red-500 text-white"
+                                      : "text-gray-500 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  {icon}
+                                </button>
+                              ))}
+
+                              <span className="mx-1 h-4 w-px bg-gray-200" />
+
+                              {/* Cỡ chữ (dùng chung 2 ngôn ngữ) */}
+                              <select
+                                value={block.data.fontSize || "base"}
+                                onChange={(e) =>
+                                  updateSharedBlockField(block.id, "fontSize", e.target.value)
+                                }
+                                title="Cỡ chữ"
+                                className="rounded border border-gray-200 px-1.5 py-1 text-xs text-gray-700"
+                              >
+                                <option value="sm">Chữ nhỏ</option>
+                                <option value="base">Bình thường</option>
+                                <option value="lg">Chữ lớn</option>
+                                <option value="xl">Rất lớn</option>
+                              </select>
+
+                              <span className="mx-1 h-4 w-px bg-gray-200" />
+
+                              {/* Đậm / nghiêng: bôi đen chữ trong ô rồi bấm */}
+                              <button
+                                type="button"
+                                title="In đậm vùng đang bôi đen (ô tiếng Việt)"
+                                onClick={() => wrapSelection("vi", block.id, "**")}
+                                className="rounded px-2 py-1 text-sm font-bold text-gray-600 hover:bg-gray-100"
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                title="In nghiêng vùng đang bôi đen (ô tiếng Việt)"
+                                onClick={() => wrapSelection("vi", block.id, "*")}
+                                className="rounded px-2 py-1 text-sm italic text-gray-600 hover:bg-gray-100"
+                              >
+                                I
+                              </button>
+                              <span className="text-[10px] text-gray-400">VI</span>
+
+                              <button
+                                type="button"
+                                title="Bold selected text (English box)"
+                                onClick={() => wrapSelection("en", block.id, "**")}
+                                className="rounded px-2 py-1 text-sm font-bold text-gray-600 hover:bg-gray-100"
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                title="Italicize selected text (English box)"
+                                onClick={() => wrapSelection("en", block.id, "*")}
+                                className="rounded px-2 py-1 text-sm italic text-gray-600 hover:bg-gray-100"
+                              >
+                                I
+                              </button>
+                              <span className="text-[10px] text-gray-400">EN</span>
+
+                              <span className="ml-auto hidden text-[11px] text-gray-400 sm:inline">
+                                Bôi đen chữ rồi bấm B / I — hiển thị dạng **đậm**, *nghiêng*
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="grid gap-4 md:grid-cols-2">
                           <div>
                             <label className={labelClass}>
                               {block.type === "paragraph"
@@ -1479,6 +1785,7 @@ export default function PostEditor({
                                 : "Nội dung tiếng Việt"}
                             </label>
                             <textarea
+                              id={`pt-${block.id}-vi`}
                               className={`${inputClass} min-h-[180px]`}
                               value={block.data.text || ""}
                               onChange={(e) =>
@@ -1495,6 +1802,7 @@ export default function PostEditor({
                                 : "English content"}
                             </label>
                             <textarea
+                              id={`pt-${block.id}-en`}
                               className={`${inputClass} min-h-[180px]`}
                               value={blockEn.data.text || ""}
                               onChange={(e) =>
@@ -1503,8 +1811,10 @@ export default function PostEditor({
                               placeholder="Enter English content..."
                             />
                           </div>
+                          </div>
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                 );
@@ -1514,7 +1824,7 @@ export default function PostEditor({
             <div className="mt-4 flex justify-center">
               <button
                 type="button"
-                onClick={() => setShowAddBlockModal(true)}
+                onClick={() => setAddBlockIndex(blocksVi.length)}
                 className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-red-600 transition-colors hover:bg-red-100"
               >
                 <Plus size={16} />
@@ -1532,7 +1842,7 @@ export default function PostEditor({
         </div>
       </div>
 
-      {showAddBlockModal && (
+      {addBlockIndex != null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
             <h3 className="mb-4 text-xl font-semibold text-gray-900">Thêm block</h3>
@@ -1553,7 +1863,7 @@ export default function PostEditor({
 
             <button
               type="button"
-              onClick={() => setShowAddBlockModal(false)}
+              onClick={() => setAddBlockIndex(null)}
               className="mt-5 w-full rounded-xl px-4 py-3 text-gray-500 hover:bg-gray-50"
             >
               Hủy
