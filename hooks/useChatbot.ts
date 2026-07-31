@@ -147,18 +147,33 @@ export function useChatbot() {
     setMessages([makeGreeting(t.greeting)]);
   }, [t.greeting]);
 
+  /**
+   * Câu chào luôn bám theo ngôn ngữ ĐANG xem. State `messages` được khởi
+   * tạo một lần lúc mount — thời điểm đó bộ chọn ngôn ngữ chưa kịp đọc
+   * ngôn ngữ thật của khách (mặc định "vi"), nên nếu trả thẳng state thì
+   * khách nước ngoài luôn thấy câu chào tiếng Việt. Thay text của riêng
+   * tin nhắn chào lúc render để nó tự đổi khi ngôn ngữ đổi.
+   */
+  const localizedMessages = useMemo(
+    () =>
+      messages.map((message) =>
+        message.id === GREETING_ID ? { ...message, text: t.greeting } : message,
+      ),
+    [messages, t.greeting],
+  );
+
   const api = useMemo(
     () => ({
       open,
       setOpen,
-      messages,
+      messages: localizedMessages,
       setMessages,
       sendMessage,
       resetConversation,
       loading,
       sessionId,
     }),
-    [open, messages, sendMessage, resetConversation, loading, sessionId],
+    [open, localizedMessages, sendMessage, resetConversation, loading, sessionId],
   );
 
   return api;
