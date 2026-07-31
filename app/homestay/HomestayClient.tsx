@@ -241,16 +241,12 @@ export default function HomestayPage() {
 
       <div className="relative z-10 text-white">
         {/* ===== Introduction ===== */}
-        <section className="relative pt-16 pb-2 bg-transparent">
+        <section className="relative pt-16 pb-2 bg-transparent md:min-h-[calc(100vh-5rem)]">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="hidden">
                 {t.homestay.intro.title}
               </h2>
-
-              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
-                {t.homestay.intro.title}
-              </h1>
 
               {/* ===== Khung cho thuê xe máy — nổi bật đầu trang ===== */}
               {(() => {
@@ -260,9 +256,9 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="mb-6 flex w-full flex-col items-center lg:absolute lg:right-[3%] lg:top-4 lg:mb-0 lg:w-auto lg:rotate-3">
-                    {/* Icon xe máy đứng riêng phía trên */}
-                    <span aria-hidden className="text-[44px] drop-shadow-lg">
+                  <div className="rotate-3 -mt-2 mb-2 flex w-full flex-col items-end pr-3 lg:absolute lg:right-[4%] lg:top-44 lg:mt-0 lg:mb-0 lg:w-auto lg:items-center lg:pr-0">
+                    {/* Icon xe máy đứng riêng phía trên (mobile +20%, desktop gấp đôi) */}
+                    <span aria-hidden className="text-[53px] drop-shadow-lg lg:text-[88px]">
                       🛵
                     </span>
 
@@ -270,22 +266,22 @@ export default function HomestayPage() {
                     <div className="relative mt-1.5">
                       <span
                         aria-hidden
-                        className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 text-sm drop-shadow"
+                        className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 text-sm drop-shadow lg:-top-4 lg:text-2xl"
                       >
                         📌
                       </span>
 
                       <div
-                        className="sign-swing w-36 rounded-md px-2.5 py-2.5 text-center shadow-2xl"
+                        className="sign-swing w-36 rounded-md px-2.5 py-2.5 text-center shadow-2xl lg:w-72 lg:px-5 lg:py-5"
                         style={{
                           backgroundImage: "url(/wood-sign.svg)",
                           backgroundSize: "100% 100%",
                         }}
                       >
-                        <p className="text-xs font-extrabold leading-snug text-amber-50 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        <p className="text-xs font-extrabold leading-snug text-amber-50 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] lg:text-xl">
                           {rental.title}
                         </p>
-                        <p className="mt-0.5 text-[11px] font-bold text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        <p className="mt-0.5 text-[11px] font-bold text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] lg:mt-1.5 lg:text-base">
                           💰 {rental.price}
                         </p>
                       </div>
@@ -294,13 +290,17 @@ export default function HomestayPage() {
                     {/* Nút gọi ở dưới cùng */}
                     <a
                       href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                      className="cta-btn mt-2 gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300"
+                      className="cta-btn mt-2 gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300 lg:mt-3 lg:px-4 lg:py-2 lg:text-sm"
                     >
                       📞 {MOTORBIKE_PHONE_DISPLAY}
                     </a>
                   </div>
                 );
               })()}
+
+              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
+                {t.homestay.intro.title}
+              </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {introCards.map((card) => {
