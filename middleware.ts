@@ -34,7 +34,9 @@ function legacyBlogPath(rest: string): string | null {
   if (!match) return null;
 
   const newSlug = resolveLegacySlug(decodeURIComponent(match[1]));
-  return newSlug ? `/blog/${newSlug}` : null;
+  if (!newSlug) return null;
+  // Value bắt đầu "/" = trỏ thẳng sang trang khác (vd /spots/ha-giang)
+  return newSlug.startsWith("/") ? newSlug : `/blog/${newSlug}`;
 }
 
 /**

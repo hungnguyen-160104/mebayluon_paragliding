@@ -561,7 +561,7 @@ export default async function SpotDetailPage({
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: "Trang chủ", url: "/" },
-    { name: "Điểm bay", url: "/#flying-spots" },
+    { name: "Điểm bay", url: "/spots" },
     { name: spot.name, url: spotUrl },
   ]);
 

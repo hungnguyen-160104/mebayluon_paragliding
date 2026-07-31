@@ -35,6 +35,18 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
   "paragliding-aerodynamic-part2": "khi-dong-hoc-du-luon-phan-2",
   // "P1 – P2 Paragliding Course for Complete Beginners"
   "paragliding-course-for-beginners": "khoa-hoc-du-luon-p1-p2",
+
+  /* ===== Link điểm bay từ footer tiếng Anh CŨ (trước khi thay footer) =====
+   * Footer cũ trỏ /blog/VienNam, /blog/DoiBu... — các slug này chưa bao giờ
+   * tồn tại trong DB nên rơi vào trang "Bài viết không tồn tại". Map về bài
+   * (hoặc trang) đúng chủ đề. Value bắt đầu bằng "/" = đường dẫn tuyệt đối.
+   */
+  viennam: "du-luon-vien-nam",
+  doibu: "bay-du-luon-doi-bu",
+  phinhho: "di-chuyen-den-tram-tau",
+  sapa: "bay-du-luon-sa-pa-muong-hoa",
+  // Đồng Văn không có bài blog riêng — về trang điểm bay Hà Giang
+  dongvan: "/spots/ha-giang",
 };
 
 /**
@@ -44,4 +56,9 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
 export function resolveLegacySlug(slug: string): string | null {
   const target = LEGACY_SLUG_REDIRECTS[slug.toLowerCase()];
   return target && target !== slug ? target : null;
+}
+
+/** Value bắt đầu bằng "/" là đường dẫn tuyệt đối, không phải slug bài viết. */
+export function isAbsoluteRedirect(target: string): boolean {
+  return target.startsWith("/");
 }
