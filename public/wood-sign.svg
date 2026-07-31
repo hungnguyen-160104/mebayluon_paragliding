@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 130" preserveAspectRatio="none">
+  <!-- Tấm bảng gỗ mộc: 3 tấm ván ngang ghép, vân gỗ, đinh 4 góc -->
+  <defs>
+    <linearGradient id="plank" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9c6b3c"/>
+      <stop offset="0.5" stop-color="#8a5a2e"/>
+      <stop offset="1" stop-color="#75491f"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5c3714"/>
+      <stop offset="1" stop-color="#4a2c10"/>
+    </linearGradient>
+  </defs>
+
+  <!-- viền khung gỗ sẫm -->
+  <rect x="0" y="0" width="240" height="130" rx="10" fill="url(#edge)"/>
+
+  <!-- 3 tấm ván -->
+  <rect x="6" y="6"  width="228" height="38" rx="5" fill="url(#plank)"/>
+  <rect x="6" y="46" width="228" height="38" rx="5" fill="url(#plank)"/>
+  <rect x="6" y="86" width="228" height="38" rx="5" fill="url(#plank)"/>
+
+  <!-- khe hở giữa các ván -->
+  <rect x="6" y="44" width="228" height="2" fill="#3f250c" opacity="0.8"/>
+  <rect x="6" y="84" width="228" height="2" fill="#3f250c" opacity="0.8"/>
+
+  <!-- vân gỗ: các đường cong mảnh đậm nhạt -->
+  <g stroke="#6b4423" stroke-width="1.1" fill="none" opacity="0.55">
+    <path d="M12 16 Q 70 12 120 17 T 230 15"/>
+    <path d="M10 30 Q 90 34 150 29 T 232 32"/>
+    <path d="M14 56 Q 60 52 130 57 T 228 54"/>
+    <path d="M10 72 Q 80 76 160 71 T 234 74"/>
+    <path d="M12 96 Q 70 92 140 97 T 230 94"/>
+    <path d="M10 112 Q 90 116 170 111 T 232 114"/>
+  </g>
+  <g stroke="#b98756" stroke-width="0.8" fill="none" opacity="0.5">
+    <path d="M12 22 Q 80 26 140 21 T 230 24"/>
+    <path d="M14 64 Q 90 60 150 65 T 228 62"/>
+    <path d="M12 104 Q 84 108 156 103 T 230 106"/>
+  </g>
+
+  <!-- mắt gỗ -->
+  <g fill="none" stroke="#5c3714" opacity="0.6">
+    <ellipse cx="200" cy="26" rx="7" ry="4" stroke-width="1.2"/>
+    <ellipse cx="200" cy="26" rx="3.4" ry="1.8" stroke-width="1"/>
+    <ellipse cx="34" cy="102" rx="6" ry="3.4" stroke-width="1.2"/>
+    <ellipse cx="34" cy="102" rx="2.8" ry="1.5" stroke-width="1"/>
+  </g>
+
+  <!-- đinh 4 góc -->
+  <g>
+    <circle cx="14" cy="14" r="3.2" fill="#3a3a3a"/><circle cx="13" cy="13" r="1.1" fill="#9a9a9a"/>
+    <circle cx="226" cy="14" r="3.2" fill="#3a3a3a"/><circle cx="225" cy="13" r="1.1" fill="#9a9a9a"/>
+    <circle cx="14" cy="116" r="3.2" fill="#3a3a3a"/><circle cx="13" cy="115" r="1.1" fill="#9a9a9a"/>
+    <circle cx="226" cy="116" r="3.2" fill="#3a3a3a"/><circle cx="225" cy="115" r="1.1" fill="#9a9a9a"/>
+  </g>
+</svg>

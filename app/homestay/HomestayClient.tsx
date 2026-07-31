@@ -241,7 +241,7 @@ export default function HomestayPage() {
 
       <div className="relative z-10 text-white">
         {/* ===== Introduction ===== */}
-        <section className="pt-16 pb-2 bg-transparent">
+        <section className="relative pt-16 pb-2 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="hidden">
@@ -260,36 +260,41 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="mb-10 flex w-full flex-col items-center sm:items-end sm:pr-2">
-                    {/* Icon xe máy to, đứng riêng phía trên */}
-                    <span aria-hidden className="text-7xl drop-shadow-lg sm:text-8xl">
+                  <div className="mb-6 flex w-full flex-col items-center lg:absolute lg:right-[3%] lg:top-4 lg:mb-0 lg:w-auto lg:rotate-3">
+                    {/* Icon xe máy đứng riêng phía trên */}
+                    <span aria-hidden className="text-[44px] drop-shadow-lg">
                       🛵
                     </span>
 
-                    {/* Tấm bảng gỗ mộc mạc chỉ chứa chữ, treo đung đưa dưới đinh */}
-                    <div className="relative mt-2">
+                    {/* Tấm bảng gỗ (ảnh vân gỗ) treo đung đưa dưới đinh */}
+                    <div className="relative mt-1.5">
                       <span
                         aria-hidden
-                        className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2 text-xl drop-shadow"
+                        className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 text-sm drop-shadow"
                       >
                         📌
                       </span>
 
-                      {/* Khung gỗ mộc: viền gỗ sẫm dày + gờ sáng bên trong như ván bào */}
-                      <div className="sign-swing w-56 rounded-lg border-[6px] border-amber-950 bg-gradient-to-b from-amber-700 via-amber-800 to-amber-900 px-4 py-3 text-center shadow-2xl ring-2 ring-inset ring-amber-500/40">
-                        <p className="text-base font-extrabold leading-snug text-amber-50">
+                      <div
+                        className="sign-swing w-36 rounded-md px-2.5 py-2.5 text-center shadow-2xl"
+                        style={{
+                          backgroundImage: "url(/wood-sign.svg)",
+                          backgroundSize: "100% 100%",
+                        }}
+                      >
+                        <p className="text-xs font-extrabold leading-snug text-amber-50 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           {rental.title}
                         </p>
-                        <p className="mt-1 text-sm font-bold text-yellow-300">
+                        <p className="mt-0.5 text-[11px] font-bold text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           💰 {rental.price}
                         </p>
                       </div>
                     </div>
 
-                    {/* Nút gọi ở dưới cùng, tách khỏi bảng */}
+                    {/* Nút gọi ở dưới cùng */}
                     <a
                       href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                      className="cta-btn mt-3 gap-1 self-center rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300 sm:self-end sm:mr-6"
+                      className="cta-btn mt-2 gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow-lg transition-transform hover:scale-105 hover:bg-amber-300"
                     >
                       📞 {MOTORBIKE_PHONE_DISPLAY}
                     </a>
