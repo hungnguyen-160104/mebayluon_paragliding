@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 
 import { Navigation } from "@/components/navigation";
 import { buildMetadata } from "@/lib/metadata-builder";
+import { pageMeta } from "@/lib/page-meta";
 import { getUrlLocale } from "@/lib/locale";
 import { absoluteUrl } from "@/lib/site-config";
 import { SPOTS_LIST } from "@/lib/spots-registry";
@@ -12,11 +13,11 @@ import SpotsListClient from "./SpotsListClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getUrlLocale();
+  const meta = pageMeta("spots", locale);
 
   return buildMetadata({
-    title: "Các Điểm Bay Dù Lượn Tại Việt Nam | Mebayluon",
-    description:
-      "Danh sách đầy đủ các điểm bay dù lượn của Mebayluon: Đèo Khau Phạ, Sapa, Sơn Trà, Trạm Tấu, Hà Giang, Đồi Bù, Viên Nam, Đà Lạt — kèm độ cao, thời gian bay và giá tour.",
+    title: meta.title,
+    description: meta.description,
     keywords: [
       "điểm bay dù lượn",
       "điểm bay dù lượn Việt Nam",

@@ -16,7 +16,13 @@ function getPilotBySlug(slug: string): Pilot | undefined {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const pilot = getPilotBySlug(slug);
-  if (!pilot) return { title: "Phi công | Mebayluon" };
+  if (!pilot) {
+    return {
+      title: "Phi công | Mebayluon",
+      // xem chú thích ở app/blog/[slug]/page.tsx
+      robots: { index: false, follow: false },
+    };
+  }
 
   const locale = await getUrlLocale();
 

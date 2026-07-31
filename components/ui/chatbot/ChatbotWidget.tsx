@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "../../../types/frontend/chatbot";
+import { useLanguage } from "@/contexts/language-context";
+import { getChatbotTexts } from "@/lib/i18n/chatbot";
 
 type Props = {
   open: boolean;
@@ -60,6 +62,9 @@ export default function ChatbotWidget({
   onReset,
   loading,
 }: Props) {
+  const { language } = useLanguage();
+  const t = getChatbotTexts(language);
+
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -82,15 +87,15 @@ export default function ChatbotWidget({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 rounded-t-2xl bg-gradient-to-r from-[#0194F3] to-[#0B83D9] text-white">
-        <div className="text-sm font-semibold">Hỗ trợ Mebayluon</div>
+        <div className="text-sm font-semibold">{t.title}</div>
 
         <div className="flex items-center gap-1">
           {onReset && (
             <button
               type="button"
               onClick={onReset}
-              aria-label="Bắt đầu hội thoại mới"
-              title="Bắt đầu hội thoại mới"
+              aria-label={t.newChat}
+              title={t.newChat}
               className="rounded-md px-2 py-1 text-white/90 hover:text-white hover:bg-white/20"
             >
               ↻
@@ -100,8 +105,8 @@ export default function ChatbotWidget({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Đóng cửa sổ chat"
-            title="Đóng"
+            aria-label={t.close}
+            title={t.close}
             className="rounded-md px-2 py-1 text-white/90 hover:text-white hover:bg-white/20"
           >
             ✕
@@ -151,8 +156,8 @@ export default function ChatbotWidget({
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
           maxLength={1000}
-          placeholder={loading ? "Bot đang trả lời…" : "Nhập câu hỏi…"}
-          aria-label="Nhập câu hỏi"
+          placeholder={loading ? t.botTyping : t.inputPlaceholder}
+          aria-label={t.inputPlaceholder}
           className="flex-1 rounded-lg border border-[#DCE7F3] px-3 py-2 text-sm
                      outline-none focus:ring-2 focus:ring-[#0194F3] focus:border-[#0194F3]
                      disabled:bg-[#F5F7FA]"
@@ -162,7 +167,7 @@ export default function ChatbotWidget({
           disabled={loading || !input.trim()}
           className="rounded-lg bg-[#0194F3] px-3 py-2 text-sm font-medium text-white hover:bg-[#0B83D9] disabled:opacity-60"
         >
-          Gửi
+          {t.send}
         </button>
       </form>
     </div>

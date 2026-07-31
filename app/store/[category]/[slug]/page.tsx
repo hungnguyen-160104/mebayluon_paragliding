@@ -8,6 +8,7 @@ import { Post as PostModel } from "@/models/Post.model";
 import { buildMetadata, generateProductSchema } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { postLocales } from "@/lib/post-locales";
+import { getProductUi, getStoreLocale } from "@/lib/store-texts";
 import { ShareButtons } from "@/components/share-buttons";
 
 type PostLite = {
@@ -72,20 +73,28 @@ export async function generateMetadata({
   const { category, slug } = await params;
   await connectDB();
   const p = await getProductBySlug(slug).catch(() => null);
-  const title = p ? `${p.titleVi || p.title} | Mebayluon Store` : "Sản phẩm | Mebayluon Store";
-  const description = p
-    ? String(p.contentVi || p.content || "")
-        .replace(/<[^>]+>/g, "")
-        .replace(/\s+/g, " ")
-        .slice(0, 150)
-    : "";
+
+  if (!p) {
+    return {
+      title: "Sản phẩm | Mebayluon Store",
+      // URL không tồn tại: trang render kiểu streaming nên không đổi được mã
+      // trạng thái sang 404 — chặn index để tránh URL rác lọt vào Google.
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${p.titleVi || p.title} | Mebayluon Store`;
+  const description = String(p.contentVi || p.content || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 150);
 
   // Chỉ khai hreflang cho ngôn ngữ sản phẩm này thật sự có nội dung
   return buildMetadata({
     title,
     description,
-    image: p?.coverImage || undefined,
-    url: `/store/${p?.storeCategory || category}/${slug}`,
+    image: p.coverImage || undefined,
+    url: `/store/${p.storeCategory || category}/${slug}`,
     type: "website",
     locale: await getUrlLocale(),
     availableLocales: postLocales(p),
@@ -100,6 +109,8 @@ export default async function ProductDetailPage({
   const { slug, category } = await params;
   const lang = await getRequestLang();
   const isVietnamese = lang === "vi";
+  const t = getProductUi(lang);
+  const dateLocale = getStoreLocale(lang);
 
   await connectDB();
 
@@ -154,7 +165,7 @@ export default async function ProductDetailPage({
                 href={`/store/${category}`}
                 className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
               >
-                ← {isVietnamese ? "Quay lại" : "Back"}
+                ← {t.back}
               </Link>
               {product.storeCategory && (
                 <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
@@ -174,7 +185,7 @@ export default async function ProductDetailPage({
             {/* date */}
             {publishedDate && (
               <div className="mb-3 text-center text-xs text-white/60">
-                {new Date(publishedDate).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US", {
+                {new Date(publishedDate).toLocaleDateString(dateLocale, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -197,7 +208,7 @@ export default async function ProductDetailPage({
             {/* price */}
             {typeof product.price === "number" && (
               <p className="mb-5 text-lg font-semibold text-yellow-300">
-                {isVietnamese ? "Giá: " : "Price: "}
+                {t.price}
                 {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
               </p>
             )}
@@ -239,7 +250,7 @@ export default async function ProductDetailPage({
                 )
               ) : (
                 <p className="text-white/60">
-                  {isVietnamese ? "Sản phẩm chưa có mô tả." : "No description available."}
+                  {t.noDescription}
                 </p>
               )}
             </article>
@@ -250,13 +261,13 @@ export default async function ProductDetailPage({
                 href="/#contact"
                 className="cta-btn rounded-full bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition hover:bg-red-700"
               >
-                {isVietnamese ? "Liên hệ đặt mua" : "Contact to order"}
+                {t.orderNow}
               </Link>
               <Link
                 href="/store"
                 className="cta-btn rounded-full border border-white/20 bg-white/10 px-6 py-3 text-lg font-semibold text-white transition hover:bg-white/20"
               >
-                {isVietnamese ? "Xem thêm sản phẩm" : "More products"}
+                {t.moreProducts}
               </Link>
             </div>
 
@@ -264,7 +275,7 @@ export default async function ProductDetailPage({
             {relatedProducts.length > 0 && (
               <section className="mt-10 lg:hidden">
                 <h2 className="mb-4 text-xl font-bold text-white">
-                  {isVietnamese ? "Sản phẩm liên quan" : "Related Products"}
+                  {t.relatedProducts}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {relatedProducts.slice(0, 4).map((p) => {
@@ -296,7 +307,7 @@ export default async function ProductDetailPage({
             <aside className="hidden lg:block">
               <div className="sticky top-24 rounded-2xl border border-white/10 bg-black/60 p-5 text-white shadow-xl backdrop-blur-lg">
                 <h2 className="mb-4 border-b border-white/15 pb-3 text-sm font-bold uppercase tracking-widest text-white/70">
-                  {isVietnamese ? "Sản phẩm liên quan" : "Related Products"}
+                  {t.relatedProducts}
                 </h2>
                 <div className="flex flex-col gap-4">
                   {relatedProducts.map((p) => {
@@ -324,7 +335,7 @@ export default async function ProductDetailPage({
                           </p>
                           {itemDate && (
                             <span className="text-xs text-white/45">
-                              {new Date(itemDate).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US")}
+                              {new Date(itemDate).toLocaleDateString(dateLocale)}
                             </span>
                           )}
                         </div>

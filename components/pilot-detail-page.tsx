@@ -11,6 +11,58 @@ import { ShareButtons } from "@/components/share-buttons"
 import { useLanguage, type Language } from "@/contexts/language-context"
 
 /** Nhãn nút "Đọc câu chuyện" theo ngôn ngữ. */
+/** Nhãn các mục trên trang phi công — trước đây chỉ có vi/en. */
+const LABELS: Record<Language, {
+  nickname: string
+  whoIAm: string
+  nicknameCaps: string
+  experience: string
+  personality: string
+}> = {
+  vi: {
+    nickname: "Biệt danh",
+    whoIAm: "TÔI LÀ AI",
+    nicknameCaps: "BIỆT DANH",
+    experience: "KINH NGHIỆM & THÀNH TÍCH",
+    personality: "CÁ TÍNH",
+  },
+  en: {
+    nickname: "Nickname",
+    whoIAm: "WHO I AM",
+    nicknameCaps: "NICKNAME",
+    experience: "EXPERIENCE & ACHIEVEMENTS",
+    personality: "PERSONALITY",
+  },
+  fr: {
+    nickname: "Surnom",
+    whoIAm: "QUI JE SUIS",
+    nicknameCaps: "SURNOM",
+    experience: "EXPÉRIENCE & PALMARÈS",
+    personality: "PERSONNALITÉ",
+  },
+  ru: {
+    nickname: "Прозвище",
+    whoIAm: "КТО Я",
+    nicknameCaps: "ПРОЗВИЩЕ",
+    experience: "ОПЫТ И ДОСТИЖЕНИЯ",
+    personality: "ХАРАКТЕР",
+  },
+  zh: {
+    nickname: "绰号",
+    whoIAm: "关于我",
+    nicknameCaps: "绰号",
+    experience: "经验与成就",
+    personality: "个性",
+  },
+  hi: {
+    nickname: "उपनाम",
+    whoIAm: "मैं कौन हूँ",
+    nicknameCaps: "उपनाम",
+    experience: "अनुभव और उपलब्धियाँ",
+    personality: "व्यक्तित्व",
+  },
+}
+
 const STORY_LABEL: Record<Language, string> = {
   vi: "Đọc câu chuyện của phi công",
   en: "Read the pilot's story",
@@ -32,6 +84,7 @@ function getSafeLang(language: unknown): Language {
 export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPageProps) {
   const { language } = useLanguage()
   const lang = getSafeLang(language)
+  const L = LABELS[lang] ?? LABELS.vi
 
   const heroCollage = pilotData.gallery.slice(0, 5)
   const contentImages = pilotData.gallery.slice(5, 8)
@@ -79,7 +132,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                 <div className="h-4 md:h-8" />
 
                 <h2 className="text-lg md:text-xl font-medium">
-                  {lang === "vi" ? `Biệt danh: "${nickname}"` : `Nickname: "${nickname}"`}
+                  {`${L.nickname}: "${nickname}"`}
                 </h2>
 
                 {/* chia sẻ trang phi công */}
@@ -134,11 +187,11 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                   <div className="space-y-10">
                     <div>
                       <h2 className="text-lg font-bold text-white/80">
-                        {lang === "vi" ? "TÔI LÀ AI" : "WHO I AM"}
+                        {L.whoIAm}
                       </h2>
 
                       <p className="text-2xl font-bold mt-1 text-white">
-                        {lang === "vi" ? `BIỆT DANH: "${nickname}"` : `NICKNAME: "${nickname}"`}
+                        {`${L.nicknameCaps}: "${nickname}"`}
                       </p>
 
                       <p className="mt-4 text-xl text-white/90">{bio}</p>
@@ -146,7 +199,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
 
                     <div>
                       <h3 className="text-2xl md:text-3xl font-bold text-cyan-400 mb-4">
-                        {lang === "vi" ? "KINH NGHIỆM & THÀNH TÍCH" : "EXPERIENCE & ACHIEVEMENTS"}
+                        {L.experience}
                       </h3>
 
                       <ul className="list-disc list-outside ml-5 space-y-2 text-lg text-white/90">
@@ -178,7 +231,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                     />
                     <div>
                       <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                        {lang === "vi" ? "CÁ TÍNH" : "PERSONALITY"}
+                        {L.personality}
                       </h3>
 
                       <div className="space-y-3">

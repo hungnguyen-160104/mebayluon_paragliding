@@ -467,7 +467,14 @@ export async function generateMetadata({
 
   const post = (await getPostBySlug(slug, { publishedOnly: !isPreview })) as Post | null;
 
-  if (!post) return { title: "Bài viết không tồn tại" };
+  if (!post) {
+    return {
+      title: "Bài viết không tồn tại | Mebayluon",
+      // URL không tồn tại: trang render kiểu streaming nên không đổi được mã
+      // trạng thái sang 404 — chặn index để tránh URL rác lọt vào Google.
+      robots: { index: false, follow: false },
+    };
+  }
 
   const title = pickTitle(post, isVietnamese);
   const description = pickExcerpt(post, isVietnamese);

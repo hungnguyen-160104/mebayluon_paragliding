@@ -215,6 +215,10 @@ export const fr: CommonTranslation = {
     support247: "Assistance 24h/24 et 7j/7",
     address: "Bureau",
     workingHours: "Horaires d’ouverture",
+    /** Ngày mở cửa, dùng cho thẻ "Giờ làm việc". */
+    openDays: "Lun - Dim",
+    officeCity: "Ville de Sapa",
+    officeProvince: "Lao Cai, Vietnam",
     social: {
       facebook: "Suivez notre page pour les dernières actualités",
       zalo: "Discutez directement avec nous sur Zalo pour une assistance rapide",

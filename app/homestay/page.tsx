@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { buildMetadata } from "@/lib/metadata-builder";
+import { pageMeta } from "@/lib/page-meta";
 import { getUrlLocale } from "@/lib/locale";
 
 /**
@@ -11,10 +12,12 @@ import { getUrlLocale } from "@/lib/locale";
  * không được Google index. Tách vỏ server để trang có danh tính riêng.
  */
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getUrlLocale();
+  const meta = pageMeta("homestay", locale);
+
   return buildMetadata({
-    title: "Homestay & Café Mù Cang Chải — Nghỉ Gần Điểm Bay Khau Phạ | Mebayluon",
-    description:
-      "Homestay Mebayluon tại Mù Cang Chải: phòng nghỉ truyền thống, café view ruộng bậc thang, ngay gần điểm bay dù lượn đèo Khau Phạ. Combo bay dù lượn + nghỉ dưỡng tiết kiệm.",
+    title: meta.title,
+    description: meta.description,
     keywords: [
       "homestay mù cang chải",
       "homestay khau phạ",
@@ -24,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     url: "/homestay",
     type: "website",
-    locale: await getUrlLocale(),
+    locale,
   });
 }
 

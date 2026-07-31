@@ -3,10 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Post } from "@/types/frontend/post";
 import { useLanguage } from "@/contexts/language-context";
+import { getProductUi } from "@/lib/store-texts";
 
 export default function ProductCard({ product }: { product: Post }) {
   const { language } = useLanguage();
   const isVi = String(language || "vi").toLowerCase().startsWith("vi");
+  const t = getProductUi(language);
 
   const detailHref = product.storeCategory
     ? `/store/${product.storeCategory}/${product.slug}`
@@ -36,7 +38,7 @@ export default function ProductCard({ product }: { product: Post }) {
 
         {typeof product.price === "number" && (
           <p className="mb-3 text-xs font-medium text-slate-200">
-            {isVi ? "Giá: " : "Price: "}
+            {t.price}
             {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
           </p>
         )}
@@ -44,12 +46,12 @@ export default function ProductCard({ product }: { product: Post }) {
         <div className="flex gap-2">
           <Link href={detailHref} className="flex-1">
             <button className="cta-btn w-full rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/35">
-              {isVi ? "Chi tiết" : "Details"}
+              {t.details}
             </button>
           </Link>
           <Link href="/#contact" className="flex-1">
             <button className="cta-btn w-full rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-orange-50 transition hover:bg-red-700">
-              {isVi ? "Liên hệ" : "Contact"}
+              {t.contact}
             </button>
           </Link>
         </div>

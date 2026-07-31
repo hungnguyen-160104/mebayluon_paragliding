@@ -215,6 +215,10 @@ export const hi: CommonTranslation = {
     support247: "24/7 सहायता",
     address: "कार्यालय",
     workingHours: "कार्य समय",
+    /** Ngày mở cửa, dùng cho thẻ "Giờ làm việc". */
+    openDays: "सोम - रवि",
+    officeCity: "सापा शहर",
+    officeProvince: "लाओ कै, वियतनाम",
     social: {
       facebook: "नवीनतम अपडेट के लिए हमारे पेज को फ़ॉलो करें",
       zalo: "तेज़ सहायता के लिए Zalo पर सीधे चैट करें",

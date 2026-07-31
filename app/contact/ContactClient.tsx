@@ -135,8 +135,19 @@ export default function ContactPage() {
                 title: "Email",
                 lines: [{ text: "mebayluon@gmail.com", href: "mailto:mebayluon@gmail.com" }],
               },
-              { icon: MapPin, title: t.contact.address, lines: ["Thị trấn Sapa", "Lào Cai, Việt Nam"] },
-              { icon: Clock, title: t.contact.workingHours, lines: ["Thứ 2 - CN", "6:00 - 19:00"] },
+              {
+                icon: MapPin,
+                title: t.contact.address,
+                lines: [
+                  t.contact.officeCity ?? "Thị trấn Sapa",
+                  t.contact.officeProvince ?? "Lào Cai, Việt Nam",
+                ],
+              },
+              {
+                icon: Clock,
+                title: t.contact.workingHours,
+                lines: [t.contact.openDays ?? "Thứ 2 - CN", "6:00 - 19:00"],
+              },
             ] as Array<{
               icon: React.ElementType;
               title: string;

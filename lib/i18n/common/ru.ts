@@ -216,6 +216,10 @@ export const ru: CommonTranslation = {
     support247: "Поддержка 24/7",
     address: "Офис",
     workingHours: "Часы работы",
+    /** Ngày mở cửa, dùng cho thẻ "Giờ làm việc". */
+    openDays: "Пн - Вс",
+    officeCity: "город Сапа",
+    officeProvince: "Лаокай, Вьетнам",
     social: {
       facebook: "Подписывайтесь на нашу страницу, чтобы быть в курсе новостей",
       zalo: "Напишите нам в Zalo для быстрой консультации",

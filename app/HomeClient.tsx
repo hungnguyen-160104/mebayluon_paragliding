@@ -312,7 +312,7 @@ export default function HomePage() {
     {
       icon: Clock,
       title: t?.contact?.workingHours ?? "Giờ làm việc",
-      lines: ["Thứ 2 - CN", "6:00 - 19:00"],
+      lines: [t?.contact?.openDays ?? "Thứ 2 - CN", "6:00 - 19:00"],
     },
   ];
 

@@ -12,6 +12,7 @@ import {
   generateBreadcrumbSchema,
 } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
+import { getSpotTranslation, type SpotLanguage } from "@/lib/i18n/spots";
 import { getUrlLocale } from "@/lib/locale";
 import {
   SPOT_ARTICLES,
@@ -467,7 +468,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const spot = SPOTS[slug];
 
-  if (!spot) return { title: "Điểm bay | Mebayluon" };
+  if (!spot) {
+    const t = getSpotTranslation((await getUrlLocale()) as SpotLanguage);
+    return {
+      title: `${t.spotDetail.notFoundTitle} | Mebayluon`,
+      // xem chú thích ở app/blog/[slug]/page.tsx
+      robots: { index: false, follow: false },
+    };
+  }
 
   const canonicalSlug = canonicalSpotSlug(slug);
   const locale = await getUrlLocale();
@@ -498,12 +506,14 @@ export default async function SpotDetailPage({
   const spot = SPOTS[slug];
 
   if (!spot) {
+    const t = getSpotTranslation((await getUrlLocale()) as SpotLanguage);
+
     return (
       <div className="min-h-screen flex items-center justify-center px-6 text-center">
         <div>
-          <h1 className="text-2xl font-bold mb-4">Không tìm thấy điểm bay</h1>
+          <h1 className="text-2xl font-bold mb-4">{t.spotDetail.notFoundTitle}</h1>
           <Button asChild>
-            <Link href="/#flying-spots">Quay về danh sách điểm bay</Link>
+            <Link href="/spots">{t.spotDetail.backToList}</Link>
           </Button>
         </div>
       </div>

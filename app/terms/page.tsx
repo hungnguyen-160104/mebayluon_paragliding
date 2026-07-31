@@ -8,7 +8,7 @@ import { TERMS_HTML, LangCode } from "@/lib/terms";
 import { useLangCode } from "@/lib/booking/translations-booking";
 
 const isLang = (v: string | null): v is LangCode =>
-  v === "vi" || v === "en" || v === "fr" || v === "ru";
+  v === "vi" || v === "en" || v === "fr" || v === "ru" || v === "zh" || v === "hi";
 
 export default function TermsPage() {
   // Ưu tiên ?lang=; nếu không có thì theo ngôn ngữ hệ thống

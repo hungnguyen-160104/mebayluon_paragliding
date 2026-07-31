@@ -4,18 +4,21 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 import { buildMetadata } from "@/lib/metadata-builder";
+import { pageMeta } from "@/lib/page-meta";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getUrlLocale();
+  const meta = pageMeta("blog", locale);
+
   return buildMetadata({
-    title: "Tin Tức & Blog Dù Lượn Việt Nam | Mebayluon",
-    description:
-      "Tin tức mới nhất về dù lượn, kinh nghiệm bay, hướng dẫn kỹ thuật và câu chuyện từ cộng đồng dù lượn Việt Nam của Mebayluon.",
+    title: meta.title,
+    description: meta.description,
     keywords: ["blog dù lượn", "tin tức paragliding", "kinh nghiệm bay dù lượn", "mebayluon blog"],
     image: "/tin-tuc-2.jpg",
     url: "/blog",
     type: "website",
-    locale: await getUrlLocale(),
+    locale,
   });
 }
 import Link from "next/link";

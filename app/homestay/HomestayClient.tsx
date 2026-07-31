@@ -64,17 +64,23 @@ type IntroDescKey = "traditionalDesc" | "cafeDesc";
 const GOOGLE_REVIEW_URL =
   "https://www.google.com/maps/place/Clubhouse+Mebayluon+Paragliding/@21.7764187,104.2636752,1008m/data=!3m1!1e3!4m11!3m10!1s0x3132d86a65a88495:0x69a2a48b9f14bb71!5m2!4m1!1i2!8m2!3d21.7764187!4d104.2636752!9m1!1b1!16s%2Fg%2F11dxdh48gt!17m2!4m1!1e3!18m1!1e1?entry=ttu";
 
-type Lang = "vi" | "en" | "fr" | "ru";
+type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
+
+/** Định dạng số tiền theo ngôn ngữ khách đang xem. */
+const LOCALE_FOR_PRICE: Record<string, string> = {
+  vi: "vi-VN", en: "en-US", fr: "fr-FR", ru: "ru-RU", zh: "zh-CN", hi: "hi-IN",
+};
 
 function formatRating(rating: number, langKey: Lang) {
-  const locale =
-    langKey === "vi"
-      ? "vi-VN"
-      : langKey === "fr"
-      ? "fr-FR"
-      : langKey === "ru"
-      ? "ru-RU"
-      : "en-US";
+  const LOCALE_BY_LANG: Record<Lang, string> = {
+    vi: "vi-VN",
+    en: "en-US",
+    fr: "fr-FR",
+    ru: "ru-RU",
+    zh: "zh-CN",
+    hi: "hi-IN",
+  };
+  const locale = LOCALE_BY_LANG[langKey] ?? "vi-VN";
 
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 1,
@@ -97,6 +103,8 @@ function GoogleReviewBadge() {
       en: { reviews: "reviews", open: "Open", onGoogle: "on Google" },
       fr: { reviews: "avis", open: "Voir", onGoogle: "sur Google" },
       ru: { reviews: "отзывов", open: "Открыть", onGoogle: "в Google" },
+      zh: { reviews: "条评价", open: "查看", onGoogle: "在 Google 上" },
+      hi: { reviews: "समीक्षाएँ", open: "देखें", onGoogle: "Google पर" },
     };
 
   const text = i18n[langKey] ?? i18n.vi;
@@ -179,7 +187,7 @@ function GoogleReviewBadge() {
 /* ================= Page ================= */
 export default function HomestayPage() {
   const { t, language } = useLanguage();
-  const currentLocale = language === "en" ? "en-US" : "vi-VN";
+  const currentLocale = LOCALE_FOR_PRICE[String(language ?? "vi").slice(0,2).toLowerCase()] ?? "vi-VN";
 
   // Ngôn ngữ dùng cho tên món & đơn vị trong menu (fallback tiếng Việt)
   const menuLang: HomestayLang = (

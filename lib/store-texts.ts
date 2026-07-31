@@ -35,7 +35,7 @@ export const EMPTY_CATEGORY_TEXT: MultiLangText = {
   hi: "इस श्रेणी में कोई उत्पाद नहीं है।",
 };
 
-const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
+export const STORE_CATEGORY_CONFIG: StoreCategoryConfig[] = [
   {
     key: "all",
     title: {
@@ -115,4 +115,98 @@ export function getStoreTexts(lang: StoreLang): StoreUiTexts {
       title: c.title[lang],
     })),
   };
+}
+
+/**
+ * Chữ trên thẻ sản phẩm và trang chi tiết sản phẩm.
+ * Trước đây các trang này dùng `isVietnamese ? "..." : "..."` — chỉ 2 nhánh
+ * nên khách Pháp/Nga/Trung/Ấn đều nhận bản tiếng Anh.
+ */
+export type ProductUiTexts = {
+  price: string;
+  details: string;
+  contact: string;
+  back: string;
+  noDescription: string;
+  orderNow: string;
+  moreProducts: string;
+  relatedProducts: string;
+};
+
+export const PRODUCT_UI: Record<StoreLang, ProductUiTexts> = {
+  vi: {
+    price: "Giá: ",
+    details: "Chi tiết",
+    contact: "Liên hệ",
+    back: "Quay lại",
+    noDescription: "Sản phẩm chưa có mô tả.",
+    orderNow: "Liên hệ đặt mua",
+    moreProducts: "Xem thêm sản phẩm",
+    relatedProducts: "Sản phẩm liên quan",
+  },
+  en: {
+    price: "Price: ",
+    details: "Details",
+    contact: "Contact",
+    back: "Back",
+    noDescription: "No description available.",
+    orderNow: "Contact to order",
+    moreProducts: "More products",
+    relatedProducts: "Related products",
+  },
+  fr: {
+    price: "Prix : ",
+    details: "Détails",
+    contact: "Contact",
+    back: "Retour",
+    noDescription: "Aucune description disponible.",
+    orderNow: "Nous contacter pour commander",
+    moreProducts: "Voir plus de produits",
+    relatedProducts: "Produits similaires",
+  },
+  ru: {
+    price: "Цена: ",
+    details: "Подробнее",
+    contact: "Связаться",
+    back: "Назад",
+    noDescription: "Описание отсутствует.",
+    orderNow: "Связаться для заказа",
+    moreProducts: "Другие товары",
+    relatedProducts: "Похожие товары",
+  },
+  zh: {
+    price: "价格：",
+    details: "详情",
+    contact: "联系",
+    back: "返回",
+    noDescription: "暂无产品描述。",
+    orderNow: "联系订购",
+    moreProducts: "查看更多产品",
+    relatedProducts: "相关产品",
+  },
+  hi: {
+    price: "क़ीमत: ",
+    details: "विवरण",
+    contact: "संपर्क",
+    back: "वापस",
+    noDescription: "कोई विवरण उपलब्ध नहीं है।",
+    orderNow: "ऑर्डर के लिए संपर्क करें",
+    moreProducts: "और उत्पाद देखें",
+    relatedProducts: "संबंधित उत्पाद",
+  },
+};
+
+/** Định dạng ngày/số theo ngôn ngữ cửa hàng. */
+export const STORE_LOCALE: Record<StoreLang, string> = {
+  vi: "vi-VN", en: "en-US", fr: "fr-FR", ru: "ru-RU", zh: "zh-CN", hi: "hi-IN",
+};
+
+export function getProductUi(lang: unknown): ProductUiTexts {
+  const code = String(lang ?? "vi").slice(0, 2).toLowerCase() as StoreLang;
+  return PRODUCT_UI[code] ?? PRODUCT_UI.vi;
+}
+
+export function getStoreLocale(lang: unknown): string {
+  const code = String(lang ?? "vi").slice(0, 2).toLowerCase() as StoreLang;
+  return STORE_LOCALE[code] ?? STORE_LOCALE.vi;
 }

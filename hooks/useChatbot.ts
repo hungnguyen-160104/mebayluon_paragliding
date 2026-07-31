@@ -3,16 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatHistoryPayload, ChatMessage } from "../types/frontend/chatbot";
 import { askChatbot } from "../lib/chatbot-api";
+import { useLanguage } from "@/contexts/language-context";
+import { getChatbotTexts } from "@/lib/i18n/chatbot";
 
 const SESSION_STORAGE_KEY = "mbl_chat_session_id";
 const GREETING_ID = "hello";
 const MAX_HISTORY = 10;
 
-const GREETING: ChatMessage = {
-  id: GREETING_ID,
-  side: "bot",
-  text: "Xin chào! Mình có thể giúp gì cho bạn? 😊",
-};
+/** Câu chào đổi theo ngôn ngữ khách đang xem. */
+function makeGreeting(text: string): ChatMessage {
+  return { id: GREETING_ID, side: "bot", text };
+}
 
 function createSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -44,8 +45,13 @@ function loadSessionId(): string {
 }
 
 export function useChatbot() {
+  const { language } = useLanguage();
+  const t = getChatbotTexts(language);
+
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    makeGreeting(getChatbotTexts(language).greeting),
+  ]);
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState("");
 
@@ -115,8 +121,7 @@ export function useChatbot() {
           {
             id: `e-${Date.now()}`,
             side: "bot",
-            text:
-              "Xin lỗi, hệ thống đang bận hoặc không phản hồi. Bạn vui lòng thử lại sau, hoặc liên hệ hotline 0964 073 555 để được hỗ trợ ngay.",
+            text: t.error,
             source: "fallback",
           },
         ]);
@@ -124,7 +129,7 @@ export function useChatbot() {
         setLoading(false);
       }
     },
-    [loading],
+    [loading, t.error],
   );
 
   /** Bắt đầu hội thoại mới: xoá khung chat và cấp sessionId mới cho n8n. */
@@ -139,8 +144,8 @@ export function useChatbot() {
 
     sessionIdRef.current = created;
     setSessionId(created);
-    setMessages([GREETING]);
-  }, []);
+    setMessages([makeGreeting(t.greeting)]);
+  }, [t.greeting]);
 
   const api = useMemo(
     () => ({

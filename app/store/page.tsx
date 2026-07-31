@@ -5,20 +5,23 @@ import StoreHomeClient from "./components/StoreHomeClient";
 import type { Post } from "@/types/frontend/post";
 import type { StoreLang } from "@/lib/store-texts";
 import { buildMetadata } from "@/lib/metadata-builder";
+import { pageMeta } from "@/lib/page-meta";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getUrlLocale();
+  const meta = pageMeta("store", locale);
+
   return buildMetadata({
-    title: "Cửa Hàng Dù Lượn - Thiết Bị & Sách Bay | Mebayluon",
-    description:
-      "Mua sắm thiết bị dù lượn, sách kỹ thuật bay, phụ kiện và đăng ký khóa học dù lượn chuyên nghiệp tại cửa hàng Mebayluon.",
+    title: meta.title,
+    description: meta.description,
     keywords: ["cửa hàng dù lượn", "thiết bị paragliding", "sách dù lượn", "khóa học dù lượn", "mua dù lượn"],
     image: "/cua-hang.jpg",
     url: "/store",
     type: "website",
-    locale: await getUrlLocale(),
+    locale,
   });
 }
 

@@ -99,6 +99,11 @@ export type CommonTranslation = {
     support247: string;
     address: string;
     workingHours: string;
+    /** Ngày mở cửa, ví dụ "Thứ 2 - CN" / "Mon - Sun". */
+    openDays: string;
+    /** Địa chỉ văn phòng, tách 2 dòng để dịch được từng phần. */
+    officeCity: string;
+    officeProvince: string;
     social: {
       facebook: string;
       zalo: string;
