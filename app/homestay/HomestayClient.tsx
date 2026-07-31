@@ -293,38 +293,25 @@ export default function HomestayPage() {
                   ] ?? MOTORBIKE_RENTAL.vi;
 
                 return (
-                  <div className="mx-auto mb-10 max-w-2xl overflow-hidden rounded-3xl border-4 border-white/70 bg-gradient-to-r from-amber-300 via-yellow-300 to-orange-300 shadow-2xl">
-                    <div className="flex flex-col items-center gap-3 px-6 py-5 sm:flex-row sm:gap-5 sm:text-left">
-                      {/* Icon xe máy quen thuộc, nhún nhảy cho vui mắt */}
-                      <span
-                        aria-hidden
-                        className="animate-bounce text-6xl drop-shadow-md sm:text-7xl"
-                      >
-                        🛵
+                  <div className="mb-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center">
+                    {/* Icon xe máy quen thuộc, nhún nhảy cho vui mắt */}
+                    <span aria-hidden className="animate-bounce text-4xl drop-shadow-md">
+                      🛵
+                    </span>
+
+                    <span className="text-lg font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-xl">
+                      {rental.title}{" "}
+                      <span className="font-extrabold text-amber-300">
+                        {rental.day} · {rental.halfDay}
                       </span>
+                    </span>
 
-                      <div className="flex-1 text-center sm:text-left">
-                        <p className="text-xl font-extrabold text-slate-900 sm:text-2xl">
-                          {rental.title}
-                        </p>
-                        <p className="mt-1 text-base font-bold text-red-700 sm:text-lg">
-                          {rental.day} · {rental.halfDay}
-                        </p>
-                      </div>
-
-                      <a
-                        href={`tel:${MOTORBIKE_PHONE_TEL}`}
-                        className="cta-btn shrink-0 gap-2 rounded-full bg-slate-900 px-5 py-3 text-base font-bold text-amber-300 shadow-lg transition-transform hover:scale-105"
-                      >
-                        📞 {rental.call}
-                        <span className="hidden whitespace-nowrap sm:inline">
-                          {MOTORBIKE_PHONE_DISPLAY}
-                        </span>
-                      </a>
-                    </div>
-                    <div className="bg-slate-900/90 py-1.5 text-center text-sm font-semibold text-amber-300 sm:hidden">
-                      {MOTORBIKE_PHONE_DISPLAY}
-                    </div>
+                    <a
+                      href={`tel:${MOTORBIKE_PHONE_TEL}`}
+                      className="cta-btn gap-1.5 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-slate-900 shadow-md transition-transform hover:scale-105 hover:bg-amber-300"
+                    >
+                      📞 {rental.call} · {MOTORBIKE_PHONE_DISPLAY}
+                    </a>
                   </div>
                 );
               })()}
