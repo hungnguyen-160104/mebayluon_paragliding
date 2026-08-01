@@ -428,15 +428,17 @@ export default function HomePage() {
               viewport={{ once: true }}
             >
               <div className="relative aspect-16/10 w-full overflow-hidden rounded-[28px] shadow-2xl ring-1 ring-white/30 md:aspect-video lg:ml-[-5%] lg:w-[110%]">
-                {/* Trước đây là <video src="/about-us-video1.mp4"> nhưng file
-                    không tồn tại trong public/ nên ô hiển thị trống. Tạm dùng
-                    ảnh; khi có video thì thêm file vào public/ rồi đổi lại. */}
-                <Image
-                  src="/about-us.jpg"
-                  alt="Mebayluon Paragliding - Về chúng tôi"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                {/* Video nền 5,6MB (đã nén từ bản gốc 4K): tự phát, lặp,
+                    tắt tiếng — dùng ảnh cũ làm màn chờ trong lúc tải. */}
+                <video
+                  src="/about-us-video1.mp4"
+                  poster="/about-us.jpg"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>
             </motion.div>
