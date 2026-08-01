@@ -664,7 +664,11 @@ export default async function SpotDetailPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <Navigation />
-      <SpotDetailClient spot={spot as SpotData} articlesSlot={articlesSection} />
+      <SpotDetailClient
+        spot={spot as SpotData}
+        spotSlug={canonicalSpotSlug(slug)}
+        articlesSlot={articlesSection}
+      />
 
 
       {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}

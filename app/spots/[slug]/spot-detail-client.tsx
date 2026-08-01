@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Mountain, Clock, Feather } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/language-context";
+import { bookingHrefForSpot } from "@/lib/booking/spot-to-location";
 import { ShareButtons } from "@/components/share-buttons";
 import { Footer } from "@/components/footer";
 
@@ -3465,11 +3466,14 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
 ========================= */
 export function SpotDetailClient({
   spot,
+  spotSlug,
   articlesSlot,
 }: {
   spot: SpotData;
   /** Section "Đọc thêm về điểm bay" (render từ server) — đặt trước mục
    *  "Khám phá thêm các điểm bay khác". */
+  /** Slug chuẩn của điểm bay — dùng để chọn sẵn điểm ở trang đặt bay. */
+  spotSlug?: string;
   articlesSlot?: React.ReactNode;
 }) {
   const { language } = useLanguage();
@@ -3760,7 +3764,7 @@ export function SpotDetailClient({
               size="lg"
               className="cta-btn h-14 bg-accent px-8 text-lg text-white hover:bg-accent/90"
             >
-              <Link href="/booking">
+              <Link href={bookingHrefForSpot(spotSlug ?? "")}>
                 <span>{ui.bookAtSpot.replace("{name}", copy.name)}</span>
               </Link>
             </Button>

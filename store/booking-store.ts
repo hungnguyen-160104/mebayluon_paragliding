@@ -39,6 +39,12 @@ export interface ServiceSelection {
 
 export interface BookingData {
   location: LocationKey;
+  /**
+   * false = điểm bay hiện tại chỉ là giá trị mặc định, khách CHƯA chọn.
+   * Dùng khi mở /booking từ điểm bay chưa mở đặt online: giao diện hiện
+   * lời nhắc chọn điểm thay vì tự chọn sẵn một điểm không liên quan.
+   */
+  locationChosen?: boolean;
   guestsCount: number;
   packageKey?: PackageKey;
   flightTypeKey?: FlightTypeKey;
@@ -76,6 +82,11 @@ interface StoreState {
   setAddonSelected: (key: AddonKey, selected: boolean) => void;
 
   setLocation: (location: LocationKey) => void;
+  /**
+   * Áp điểm bay theo tham số ?spot= trên URL (nút "Đặt bay ngay tại ..."
+   * ở trang điểm bay). null = điểm bay chưa mở đặt online -> để trống.
+   */
+  applySpotFromUrl: (location: LocationKey | null) => void;
   setPackageKey: (packageKey?: PackageKey) => void;
   setFlightTypeKey: (flightTypeKey?: FlightTypeKey) => void;
 
@@ -396,6 +407,30 @@ export const useBookingStore = create<StoreState>()((set) => ({
       };
     }),
 
+  applySpotFromUrl: (location) =>
+    set((s) => {
+      // Khách đã đi sang bước sau thì không ghi đè lựa chọn của họ
+      if (s.step > 1) return {};
+
+      if (!location) {
+        return { data: { ...s.data, locationChosen: false } };
+      }
+
+      const defaults = applyLocationDefaults(location, s.data.guestsCount || 1);
+      return {
+        data: {
+          ...s.data,
+          location,
+          locationChosen: true,
+          ...defaults,
+          contact: {
+            ...(s.data.contact ?? emptyContact),
+            pickupLocation: "",
+          },
+        },
+      };
+    }),
+
   setLocation: (location) =>
     set((s) => {
       const defaults = applyLocationDefaults(location, s.data.guestsCount || 1);
@@ -404,6 +439,7 @@ export const useBookingStore = create<StoreState>()((set) => ({
         data: {
           ...s.data,
           location,
+          locationChosen: true,
           ...defaults,
           contact: {
             ...(s.data.contact ?? emptyContact),

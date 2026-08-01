@@ -805,7 +805,12 @@ export default function SelectFlightStep() {
   const setLocation = useBookingStore((s) => s.setLocation);
 
   const orderedLocations = useMemo(() => getOrderedLocations(), []);
-  const selected = data.location as LocationKey | undefined;
+  // locationChosen === false: đến từ điểm bay chưa mở đặt online -> coi như
+  // chưa chọn điểm, hiện lời nhắc thay vì tự chọn sẵn điểm không liên quan.
+  const selected =
+    data.locationChosen === false
+      ? undefined
+      : (data.location as LocationKey | undefined);
   const selectedCfg = selected ? LOCATIONS[selected] : null;
   const guestsCount = Math.max(1, data.guestsCount || 1);
 
