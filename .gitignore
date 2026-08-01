@@ -103,6 +103,10 @@ pnpm-workspace.yaml
 
 # ⚠️ Large media files - dùng Cloudinary/YouTube thay vì commit vào git
 *.mp4
+# NGOẠI LỆ: video "Về chúng tôi" trang chủ — đã nén 5.6MB, cần commit để
+# Vercel deploy được (chính dòng *.mp4 phía trên là lý do trước đây video
+# "biến mất" trên production dù có bỏ file vào public/)
+!public/about-us-video1.mp4
 *.mov
 *.avi
 *.mkv
