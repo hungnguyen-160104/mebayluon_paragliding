@@ -12,6 +12,7 @@ import {
   generateBreadcrumbSchema,
 } from "@/lib/metadata-builder";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
+import { spotSeoMeta } from "@/lib/spot-meta";
 import { getSpotTranslation, type SpotLanguage } from "@/lib/i18n/spots";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import {
@@ -481,9 +482,13 @@ export async function generateMetadata({
   const canonicalSlug = canonicalSpotSlug(slug);
   const locale = await getUrlLocale();
 
+  // Tiêu đề + mô tả dịch theo ngôn ngữ URL — trước đây dùng chung một bản
+  // tiếng Việt cho cả 6 ngôn ngữ (42 URL trùng thẻ meta).
+  const seo = spotSeoMeta(canonicalSlug, locale, spot.name, spot.basePrice);
+
   return buildMetadata({
-    title: `Bay Dù Lượn ${spot.name} - ${spot.title} | Mebayluon`,
-    description: spotMetaDescription(spot),
+    title: seo.title,
+    description: seo.description,
     image: spot.image,
     url: `/spots/${canonicalSlug}`,
     type: "website",
@@ -506,6 +511,15 @@ export default async function SpotDetailPage({
   const { slug } = await params;
   const spot = SPOTS[slug];
 
+  /**
+   * Điểm bay không tồn tại.
+   *
+   * Đã thử notFound() nhưng trang này render động (đọc cookie ngôn ngữ) và
+   * Next stream HTML ra trước khi biết kết quả, nên mã trạng thái vẫn kẹt ở
+   * 200 — chỉ được trang trắng, mất luôn nút quay lại. Vì vậy giữ trang lỗi
+   * tự vẽ (có nội dung dịch + lối thoát cho khách) và dựa vào thẻ noindex
+   * trong generateMetadata để Google không đưa vào kết quả tìm kiếm.
+   */
   if (!spot) {
     const t = getSpotTranslation((await getRequestLang()) as SpotLanguage);
 

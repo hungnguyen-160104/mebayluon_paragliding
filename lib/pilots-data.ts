@@ -86,7 +86,7 @@ export const pilots: Pilot[] = [
       hi: "1500+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/dinh-the-anh/dinh-the-anh.png",
+    avatar: "/pilots/dinh-the-anh/dinh-the-anh.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/dinh-the-anh/hero-1.png",
@@ -400,7 +400,7 @@ export const pilots: Pilot[] = [
       hi: "1000+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/minh-trung/minh-trung.png",
+    avatar: "/pilots/minh-trung/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/minh-trung/hero-1.png",
@@ -566,7 +566,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/phan-hung/phan-hung.png",
+    avatar: "/pilots/phan-hung/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/phan-hung/hero-1.png",
@@ -732,7 +732,7 @@ export const pilots: Pilot[] = [
       hi: "500+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/ngo-doi/ngo-doi.png",
+    avatar: "/pilots/ngo-doi/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/ngo-doi/hero-1.png",
@@ -898,7 +898,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/minh-vo/minh-vo.png",
+    avatar: "/pilots/minh-vo/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/minh-vo/hero-1.png",
@@ -1040,7 +1040,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/toan-nguyen/toan-nguyen.png",
+    avatar: "/pilots/toan-nguyen/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/toan-nguyen/hero-1.png",
@@ -1195,7 +1195,7 @@ export const pilots: Pilot[] = [
       hi: "1000+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/chien-thang/chien-thang.png",
+    avatar: "/pilots/chien-thang/chien-thang.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/chien-thang/hero-1.png",
@@ -1355,7 +1355,7 @@ export const pilots: Pilot[] = [
       hi: "1000+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/suman-thapa/suman-thapa.png",
+    avatar: "/pilots/suman-thapa/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/suman-thapa/hero-1.png",
@@ -1521,7 +1521,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/alish-thapa/alish-thapa.png",
+    avatar: "/pilots/alish-thapa/alish-thapa.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/alish-thapa/hero-1.png",
@@ -1693,7 +1693,7 @@ export const pilots: Pilot[] = [
       hi: "1000+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/bishal-thapa/bishal-thapa.png",
+    avatar: "/pilots/bishal-thapa/bishal-thapa.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/bishal-thapa/hero-1.png",
@@ -1860,7 +1860,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/bishal-skyboy/bishal-skyboy.png",
+    avatar: "/pilots/bishal-skyboy/bishal-skyboy.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/bishal-skyboy/hero-1.png",
@@ -1966,7 +1966,7 @@ export const pilots: Pilot[] = [
       hi: "4000+ घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/subash-thapa/subash-thapa.png",
+    avatar: "/pilots/subash-thapa/hero-1.png",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/subash-thapa/hero-1.png",
@@ -2133,7 +2133,7 @@ export const pilots: Pilot[] = [
       hi: "कई घंटे",
     },
     phone: "0964073555",
-    avatar: "/pilots/dang-van-my/dang-van-my.png",
+    avatar: "/pilots/dang-van-my/dang-van-my.jpg",
     hero: "/pilots/hero.jpg",
     gallery: [
       "/pilots/dang-van-my/hero-1.png",
