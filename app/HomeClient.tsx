@@ -396,24 +396,29 @@ export default function HomePage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <div className="rounded-3xl bg-white/25 p-8 shadow-2xl ring-1 ring-white/40 backdrop-blur-md md:p-10">
-                <h2 className="mb-4 font-serif text-4xl font-bold text-white md:text-5xl">
+              {/* Từ lg trở lên: khung chữ cao ĐÚNG BẰNG khung video bên cạnh.
+                  Video rộng 110% cột và tỉ lệ 16:9 -> chiều cao = 0.619 lần bề
+                  ngang cột, tức khung chữ có tỉ lệ ~1.616/1. Cỡ chữ thu nhỏ
+                  theo từng mốc màn hình để nội dung dài nhất (bản tiếng Anh,
+                  341 ký tự) vẫn nằm gọn, không tràn. */}
+              <div className="flex flex-col justify-center overflow-hidden rounded-3xl bg-white/25 p-8 shadow-2xl ring-1 ring-white/40 backdrop-blur-md md:p-10 lg:aspect-[1.616/1] lg:p-5 xl:p-6">
+                <h2 className="mb-4 font-serif text-4xl font-bold text-white md:text-5xl lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl">
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
 
-                <p className="mb-5 text-lg text-white/95 md:text-xl">
+                <p className="mb-5 text-lg text-white/95 md:text-xl lg:mb-1.5 lg:text-[13px] lg:leading-snug xl:mb-2 xl:text-base">
                   {t?.about?.subtitle ??
                     "Mebayluon Paragliding – nơi những giấc mơ bay cao trở thành hiện thực!"}
                 </p>
 
-                <p className="text-base leading-relaxed text-white/90 md:text-lg">
+                <p className="text-base leading-relaxed text-white/90 md:text-lg lg:text-[11px] xl:text-sm">
                   {aboutDescription}
                 </p>
 
-                <div className="mt-6">
+                <div className="mt-6 lg:mt-3 xl:mt-4">
                   {/* Chỉ một nút — trước đây có thêm nút "Phi công" nhưng
                       cùng trỏ /pilots nên trùng lặp, đã bỏ. */}
-                  <Button asChild className="h-11 px-6 text-white">
+                  <Button asChild className="h-11 px-6 text-white lg:h-8 lg:px-4 lg:text-xs xl:h-9 xl:text-sm">
                     <Link href="/pilots">
                       {t?.spots?.viewDetails ?? "Xem Chi Tiết"}
                     </Link>
