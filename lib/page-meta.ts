@@ -157,34 +157,34 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
 
   homestay: {
     vi: {
-      title: "Homestay & Café Mù Cang Chải — Nghỉ Gần Điểm Bay Khau Phạ | Mebayluon",
+      title: "Homestay Tại Bãi Hạ Cánh Dù Lượn Đèo Khau Phạ — Café Check-in | Mebayluon",
       description:
-        "Homestay Mebayluon tại Mù Cang Chải: phòng nghỉ truyền thống, café view ruộng bậc thang, ngay gần điểm bay dù lượn đèo Khau Phạ. Combo bay dù lượn + nghỉ dưỡng tiết kiệm.",
+        "Homestay Mebayluon nằm ngay tại bãi hạ cánh dù lượn đèo Khau Phạ — café check-in view ruộng bậc thang, ngắm dù lượn hạ cánh trước mắt. Phòng nghỉ truyền thống, combo bay + nghỉ tiết kiệm.",
     },
     en: {
-      title: "Homestay & Café in Mu Cang Chai — Near Khau Pha | Mebayluon",
+      title: "Homestay at the Khau Pha Paragliding Landing Zone — Check-in Café | Mebayluon",
       description:
-        "Mebayluon homestay in Mu Cang Chai: traditional rooms and a café overlooking the rice terraces, minutes from the Khau Pha paragliding site. Flight + stay combos available.",
+        "Mebayluon homestay right at the Khau Pha Pass paragliding landing zone — a check-in café overlooking the rice terraces, with paragliders touching down before your eyes. Flight + stay combos available.",
     },
     fr: {
-      title: "Homestay & Café à Mu Cang Chai — Près de Khau Pha | Mebayluon",
+      title: "Homestay sur la zone d'atterrissage parapente de Khau Pha — Café | Mebayluon",
       description:
-        "Le homestay Mebayluon à Mu Cang Chai : chambres traditionnelles et café avec vue sur les rizières en terrasses, à deux pas du site de vol de Khau Pha. Formules vol + séjour.",
+        "Le homestay Mebayluon, situé sur la zone d'atterrissage des parapentes du col de Khau Pha — café avec vue sur les rizières, atterrissages sous vos yeux. Formules vol + séjour.",
     },
     ru: {
-      title: "Хоумстей и кафе в Мукангчае — рядом с Кхау Фа | Mebayluon",
+      title: "Хоумстей у зоны приземления парапланов Кхау Фа — кафе | Mebayluon",
       description:
-        "Хоумстей Mebayluon в Мукангчае: традиционные номера и кафе с видом на рисовые террасы, в нескольких минутах от площадки Кхау Фа. Есть пакеты «полёт + проживание».",
+        "Хоумстей Mebayluon прямо у зоны приземления парапланов перевала Кхау Фа — кафе с видом на рисовые террасы, парапланы приземляются у вас на глазах. Пакеты «полёт + проживание».",
     },
     zh: {
-      title: "木江界民宿与咖啡馆 — 紧邻考帕飞行点 | Mebayluon",
+      title: "考帕滑翔伞降落场民宿 — 打卡咖啡馆 | Mebayluon",
       description:
-        "Mebayluon 位于木江界的民宿：传统客房与可俯瞰梯田的咖啡馆，距考帕山口滑翔伞飞行点仅数分钟。提供飞行加住宿套餐。",
+        "Mebayluon 民宿位于考帕山口滑翔伞降落场旁——打卡咖啡馆俯瞰梯田，滑翔伞就在眼前降落。传统客房，飞行加住宿套餐更划算。",
     },
     hi: {
-      title: "मु कांग चाई में होमस्टे और कैफ़े — खाउ फ़ा के पास | Mebayluon",
+      title: "खाउ फ़ा पैराग्लाइडिंग लैंडिंग ज़ोन पर होमस्टे — कैफ़े | Mebayluon",
       description:
-        "मु कांग चाई में Mebayluon होमस्टे: पारंपरिक कमरे और सीढ़ीनुमा खेतों के नज़ारे वाला कैफ़े, खाउ फ़ा पैराग्लाइडिंग स्थल से कुछ ही मिनट दूर। उड़ान और ठहराव के कॉम्बो उपलब्ध।",
+        "Mebayluon होमस्टे खाउ फ़ा दर्रे के पैराग्लाइडिंग लैंडिंग ज़ोन पर ही स्थित है — सीढ़ीनुमा खेतों के नज़ारे वाला चेक-इन कैफ़े, आँखों के सामने उतरते पैराग्लाइडर। उड़ान + ठहराव कॉम्बो उपलब्ध।",
     },
   },
 
