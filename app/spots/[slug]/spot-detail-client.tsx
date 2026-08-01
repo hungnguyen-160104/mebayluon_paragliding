@@ -187,6 +187,10 @@ const uiI18n: Record<
     exploreMore: string;
     exploreMoreDescription: string;
     viewAllSpots: string;
+    /** Nút đặt bay — "{name}" thay bằng tên điểm bay lúc render. */
+    bookAtSpot: string;
+    /** Nút xem các điểm bay khác (đặt cạnh nút đặt bay). */
+    viewOtherSpots: string;
     galleryAltPrefix: string;
   }
 > = {
@@ -205,6 +209,8 @@ const uiI18n: Record<
     exploreMore: "Khám phá thêm các điểm bay khác",
     exploreMoreDescription: "Chúng tôi còn nhiều điểm bay tuyệt đẹp khắp Việt Nam",
     viewAllSpots: "Xem tất cả điểm bay",
+    bookAtSpot: "Đặt bay ngay tại {name}",
+    viewOtherSpots: "Xem thêm điểm bay khác",
     galleryAltPrefix: "Ảnh thư viện",
   },
   en: {
@@ -222,6 +228,8 @@ const uiI18n: Record<
     exploreMore: "Explore other flying spots",
     exploreMoreDescription: "We have many other beautiful flying spots across Vietnam",
     viewAllSpots: "View all flying spots",
+    bookAtSpot: "Book your flight at {name}",
+    viewOtherSpots: "See other flying spots",
     galleryAltPrefix: "Gallery image",
   },
   fr: {
@@ -239,6 +247,8 @@ const uiI18n: Record<
     exploreMore: "Découvrir d'autres sites de vol",
     exploreMoreDescription: "Nous avons de nombreux autres sites magnifiques à travers le Vietnam",
     viewAllSpots: "Voir tous les sites de vol",
+    bookAtSpot: "Réserver un vol à {name}",
+    viewOtherSpots: "Voir d’autres sites de vol",
     galleryAltPrefix: "Image de la galerie",
   },
   ru: {
@@ -256,6 +266,8 @@ const uiI18n: Record<
     exploreMore: "Откройте другие лётные точки",
     exploreMoreDescription: "У нас много красивых мест для полётов по всему Вьетнаму",
     viewAllSpots: "Все лётные точки",
+    bookAtSpot: "Забронировать полёт: {name}",
+    viewOtherSpots: "Другие места полётов",
     galleryAltPrefix: "Изображение галереи",
   },
   zh: {
@@ -273,6 +285,8 @@ const uiI18n: Record<
     exploreMore: "探索更多飞行点",
     exploreMoreDescription: "我们在越南还有很多绝美飞行点等你解锁",
     viewAllSpots: "查看所有飞行点",
+    bookAtSpot: "立即预订{name}飞行",
+    viewOtherSpots: "查看其他飞行点",
     galleryAltPrefix: "画廊图片",
   },
   hi: {
@@ -290,6 +304,8 @@ const uiI18n: Record<
     exploreMore: "अन्य उड़ान स्थल देखें",
     exploreMoreDescription: "वियतनाम में हमारे पास और भी कई खूबसूरत उड़ान स्थल हैं",
     viewAllSpots: "सभी उड़ान स्थल देखें",
+    bookAtSpot: "{name} में उड़ान बुक करें",
+    viewOtherSpots: "अन्य उड़ान स्थल देखें",
     galleryAltPrefix: "गैलरी इमेज",
   },
 };
@@ -3729,6 +3745,44 @@ export function SpotDetailClient({
         </div>
       </section>
 
+      {/* Hai nút hành động: đặt bay tại điểm này + xem điểm bay khác.
+          Đặt trên phần "Khoảnh khắc tại đây" để khách quyết định sớm. */}
+      <section className="relative z-10 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="container mx-auto max-w-3xl rounded-2xl border border-white/20 bg-black/25 px-6 py-8 text-center shadow-lg backdrop-blur-xl"
+        >
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button
+              asChild
+              size="lg"
+              className="cta-btn h-14 bg-accent px-8 text-lg text-white hover:bg-accent/90"
+            >
+              <Link href="/booking">
+                <span>{ui.bookAtSpot.replace("{name}", copy.name)}</span>
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="cta-btn h-14 border-white/40 bg-white/10 px-8 text-lg text-white hover:bg-white/20 hover:text-white"
+            >
+              <Link href="/spots">
+                <span>{ui.viewOtherSpots}</span>
+              </Link>
+            </Button>
+          </div>
+
+          <p className="mt-4 text-base text-slate-200">
+            {ui.exploreMoreDescription}
+          </p>
+        </motion.div>
+      </section>
+
       {/* Gallery */}
       {spot.galleryImages && spot.galleryImages.length > 0 && (
         <section className="relative z-10 py-16">
@@ -3810,25 +3864,6 @@ export function SpotDetailClient({
 
       {/* Bài viết về điểm bay (server render, truyền qua slot) */}
       {articlesSlot}
-
-      {/* CTA */}
-      <section className="relative z-10 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="container mx-auto px-4 text-center p-12 bg-black/20 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg max-w-4xl"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif text-white">{ui.exploreMore}</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto text-slate-200">{ui.exploreMoreDescription}</p>
-
-          <Button asChild size="lg" className="cta-btn bg-accent text-white hover:bg-accent/90 h-14 px-8 text-xl">
-            <Link href="/spots">
-              <span>{ui.viewAllSpots}</span>
-            </Link>
-          </Button>
-        </motion.div>
-      </section>
 
       {/* Footer */}
       <div className="relative z-10 pt-16">
