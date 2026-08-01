@@ -401,7 +401,13 @@ export default function HomePage() {
                   ngang cột, tức khung chữ có tỉ lệ ~1.616/1. Cỡ chữ thu nhỏ
                   theo từng mốc màn hình để nội dung dài nhất (bản tiếng Anh,
                   341 ký tự) vẫn nằm gọn, không tràn. */}
-              <div className="flex flex-col justify-center overflow-hidden rounded-3xl bg-white/25 p-8 shadow-2xl ring-1 ring-white/40 backdrop-blur-md md:p-10 lg:aspect-[1.616/1] lg:p-5 xl:p-6">
+              <div
+                className="flex flex-col justify-center overflow-hidden rounded-3xl bg-white/25 p-8 ring-2 ring-white/50 backdrop-blur-md md:p-10 lg:aspect-[1.616/1] lg:p-5 xl:p-6"
+                style={{
+                  boxShadow:
+                    "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
+                }}
+              >
                 <h2 className="mb-4 font-serif text-4xl font-bold text-white md:text-5xl lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl">
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
@@ -432,7 +438,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <div className="relative aspect-16/10 w-full overflow-hidden rounded-[28px] shadow-2xl ring-1 ring-white/30 md:aspect-video lg:ml-[-5%] lg:w-[110%]">
+              <div
+                className="relative aspect-16/10 w-full overflow-hidden rounded-[28px] ring-2 ring-white/40 md:aspect-video lg:ml-[-5%] lg:w-[110%]"
+                style={{
+                  boxShadow:
+                    "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
+                }}
+              >
                 {/* Video nền 5,6MB (đã nén từ bản gốc 4K): tự phát, lặp,
                     tắt tiếng — dùng ảnh cũ làm màn chờ trong lúc tải. */}
                 <video
