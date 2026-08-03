@@ -5,6 +5,7 @@ import { SITE_URL, languageAlternates, type Locale } from "@/lib/site-config";
 import { postLocales } from "@/lib/post-locales";
 import { SPOT_SLUGS } from "@/lib/spots-slugs";
 import { getActivePilots } from "@/lib/pilots-data";
+import { collectPostVideos } from "@/lib/video-schema";
 
 export const revalidate = 3600; // regenerate every hour
 
@@ -21,6 +22,31 @@ function alts(
 ): { languages: Record<string, string> } {
   const path = url.startsWith(BASE) ? url.slice(BASE.length) || "/" : url;
   return { languages: languageAlternates(path, available) };
+}
+
+/**
+ * Khai báo video nhúng trong bài ngay trong sitemap. Search Console báo
+ * "Video không nằm trên trang xem" — khai ở đây là cách Google khuyên dùng để
+ * biết trang nào là trang xem của video nào. Bài không có video thì trả về {}
+ * nên mục sitemap giữ nguyên như cũ.
+ */
+function postVideos(post: any) {
+  const videos = collectPostVideos(post?.contentBlocksVi || post?.contentBlocks, {
+    title: post?.titleVi || post?.title || "",
+    description: post?.excerptVi || post?.excerpt || "",
+  });
+  if (!videos.length) return {};
+
+  return {
+    videos: videos.map((v) => ({
+      title: v.name,
+      thumbnail_loc: v.thumbnailUrl[0],
+      description: v.description || v.name,
+      // Không khai content_loc — chuẩn sitemap bắt trường đó phải là file
+      // video thật, video YouTube chỉ khai được player_loc.
+      player_loc: v.embedUrl,
+    })),
+  };
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -130,14 +156,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         category: { $ne: "knowledge" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
-        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
+        .select(
+          "slug title titleVi excerpt excerptVi contentBlocks contentBlocksVi translatedLangs publishedAt updatedAt createdAt",
+        )
         .lean(),
 
       PostModel.find({
         isPublished: true,
         category: "knowledge",
       })
-        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
+        .select(
+          "slug title titleVi excerpt excerptVi contentBlocks contentBlocksVi translatedLangs publishedAt updatedAt createdAt",
+        )
         .lean(),
 
       PostModel.find({
@@ -156,6 +186,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.7,
         alternates: alts(url, postLocales(p)),
+        ...postVideos(p),
       };
     });
 
@@ -167,6 +198,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.65,
         alternates: alts(url, postLocales(p)),
+        ...postVideos(p),
       };
     });
 

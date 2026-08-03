@@ -15,6 +15,7 @@ import {
 } from "./RelatedPosts";
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
+import { collectPostVideos, generateVideoSchema } from "@/lib/video-schema";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -697,14 +698,31 @@ export default async function BlogPostPage({
     };
   });
 
+  const schemaDates = articleSchemaDates(post);
+
   const articleSchema = generateArticleSchema({
     title,
     description: excerpt,
     image: cover,
-    ...articleSchemaDates(post),
+    ...schemaDates,
     author: post.author || "Mebayluon Team",
     url: `/blog/${slug}`,
   });
+
+  /**
+   * VideoObject cho từng video nhúng trong bài. Không có phần này thì Search
+   * Console báo "Video không nằm trên trang xem" — Google thấy iframe nhưng
+   * không biết đây là trang xem của video nào.
+   */
+  const videoSchemas = collectPostVideos(blocks, {
+    title,
+    description: excerpt,
+  }).map((video) =>
+    generateVideoSchema(video, {
+      pageUrl: `/blog/${slug}`,
+      uploadDate: schemaDates.publishedDate,
+    }),
+  );
 
   return (
     <>
@@ -712,6 +730,13 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
+      {videoSchemas.map((schema) => (
+        <script
+          key={schema.embedUrl}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
       <ViewCounter slug={slug} />
       <main className="relative min-h-screen w-full">
         <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/mebayluon.jpg')" }} />
