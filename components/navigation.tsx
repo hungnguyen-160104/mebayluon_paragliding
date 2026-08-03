@@ -13,6 +13,28 @@ type PathItem = { type: "path"; href: string; label: string };
 type HashItem = { type: "hash"; href: string; hashId: string; label: string };
 type NavItem = PathItem | HashItem;
 
+/**
+ * Bảng màu riêng cho từng phím — dải màu thiên nhiên trời/biển/rừng/nắng cùng
+ * độ bão hoà để hài hoà với nhau và với tông xanh + cam của thương hiệu.
+ * Dùng chung cho cả thanh ngang desktop lẫn menu xổ trên điện thoại.
+ */
+const NAV_COLORS: Record<string, { normal: string; active: string }> = {
+  "/#hero":    { normal: "bg-[#0EA5E9] hover:bg-[#0284C7]", active: "bg-[#0369A1]" }, // Trang chủ — xanh da trời
+  "/booking":  { normal: "bg-[#FF5E1F] hover:bg-[#EA4E10]", active: "bg-[#C2410C]" }, // Đặt bay — cam thương hiệu (CTA)
+  "/spots":    { normal: "bg-[#0D9488] hover:bg-[#0F766E]", active: "bg-[#115E59]" }, // Điểm bay — xanh ngọc
+  "/pilots":   { normal: "bg-[#6366F1] hover:bg-[#4F46E5]", active: "bg-[#4338CA]" }, // Phi công — chàm
+  "/homestay": { normal: "bg-[#16A34A] hover:bg-[#15803D]", active: "bg-[#166534]" }, // Homestay — xanh lá
+  "/store":    { normal: "bg-[#D97706] hover:bg-[#B45309]", active: "bg-[#92400E]" }, // Cửa hàng — hổ phách
+  "/blog":     { normal: "bg-[#0284C7] hover:bg-[#0369A1]", active: "bg-[#075985]" }, // Tin tức — xanh dương đậm
+  "/knowledge":{ normal: "bg-[#8B5CF6] hover:bg-[#7C3AED]", active: "bg-[#6D28D9]" }, // Kiến thức — tím
+};
+
+const navColorOf = (item: NavItem) =>
+  NAV_COLORS[item.type === "hash" ? `/#${item.hashId}` : item.href] ?? {
+    normal: "bg-[#0194F3] hover:bg-[#0177C8]",
+    active: "bg-[#0166AE]",
+  };
+
 export function Navigation() {
   const { t } = useLanguage();
   const pathname = usePathname();
@@ -34,14 +56,6 @@ export function Navigation() {
       window.removeEventListener("resize", onResize);
     };
   }, []);
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = isOpen ? "hidden" : prev || "auto";
-    return () => {
-      document.body.style.overflow = prev || "auto";
-    };
-  }, [isOpen]);
 
   // ✅ Tránh hydration mismatch: chỉ đọc hash sau khi mount
   useEffect(() => {
@@ -151,27 +165,7 @@ export function Navigation() {
                 .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
                 .map((item) => {
                   const active = isItemActive(item);
-                  /**
-                   * Bảng màu riêng cho từng phím (chỉ desktop) — dải màu
-                   * thiên nhiên trời/biển/rừng/nắng cùng độ bão hoà để hài
-                   * hoà với nhau và với tông xanh + cam của thương hiệu.
-                   */
-                  const NAV_COLORS: Record<string, { normal: string; active: string }> = {
-                    "/#hero":    { normal: "bg-[#0EA5E9] hover:bg-[#0284C7]", active: "bg-[#0369A1]" }, // Trang chủ — xanh da trời
-                    "/booking":  { normal: "bg-[#FF5E1F] hover:bg-[#EA4E10]", active: "bg-[#C2410C]" }, // Đặt bay — cam thương hiệu (CTA)
-                    "/spots":    { normal: "bg-[#0D9488] hover:bg-[#0F766E]", active: "bg-[#115E59]" }, // Điểm bay — xanh ngọc
-                    "/pilots":   { normal: "bg-[#6366F1] hover:bg-[#4F46E5]", active: "bg-[#4338CA]" }, // Phi công — chàm
-                    "/homestay": { normal: "bg-[#16A34A] hover:bg-[#15803D]", active: "bg-[#166534]" }, // Homestay — xanh lá
-                    "/store":    { normal: "bg-[#D97706] hover:bg-[#B45309]", active: "bg-[#92400E]" }, // Cửa hàng — hổ phách
-                    "/blog":     { normal: "bg-[#0284C7] hover:bg-[#0369A1]", active: "bg-[#075985]" }, // Tin tức — xanh dương đậm
-                    "/knowledge":{ normal: "bg-[#8B5CF6] hover:bg-[#7C3AED]", active: "bg-[#6D28D9]" }, // Kiến thức — tím
-                  };
-                  const colorKey =
-                    item.type === "hash" ? `/#${item.hashId}` : item.href;
-                  const color = NAV_COLORS[colorKey] ?? {
-                    normal: "bg-[#0194F3] hover:bg-[#0177C8]",
-                    active: "bg-[#0166AE]",
-                  };
+                  const color = navColorOf(item);
                   const base = active
                     ? `${color.active} text-white font-semibold shadow-md ring-2 ring-white/60`
                     : `${color.normal} text-white shadow-md`;
@@ -214,74 +208,78 @@ export function Navigation() {
               <div className={`${isScrolled ? "text-[#1C2930]" : "text-white"}`}>
                 <LanguageSwitcher />
               </div>
+              {/* Menu giờ là các phím rời xổ ngay dưới thanh nav nên chính nút
+                  này kiêm luôn việc đóng — đổi icon cho khách biết. */}
               <button
                 onClick={() => setIsOpen((s) => !s)}
-                aria-label="Toggle menu"
-                className={`p-2 ${isScrolled ? "text-[#1C2930]" : "text-white"}`}
+                aria-label={isOpen ? "Đóng menu" : "Mở menu"}
+                aria-expanded={isOpen}
+                className={`relative z-100 p-2 ${isScrolled ? "text-[#1C2930]" : "text-white"}`}
                 style={{ filter: isScrolled ? "none" : "drop-shadow(0 1px 2px rgb(0 0 0 / .6))" }}
               >
-                <Menu size={24} />
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Menu điện thoại: các phím rời nổi trên trang, KHÔNG phủ kín nền.
+          Lớp bắt chạm bên dưới trong suốt hoàn toàn — chỉ để chạm ra ngoài là
+          đóng menu, không làm tối trang phía sau. */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            key="mobile-menu"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 bg-black/60 backdrop-blur-lg md:hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20">
-              <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
-                <Image src="/logo.png" alt="Mebayluon - bay dù lượn Việt Nam" width={40} height={40} className="rounded-full" />
-                <div>
-                  {/* Không dùng h1 trong navigation — h1 thuộc về nội dung từng trang */}
-                  <span className="block font-bold text-white">MEBAYLUON</span>
-                  <p className="-mt-0.5 text-right text-lg font-medium tracking-wide text-white">
-                    Paragliding
-                  </p>
-                </div>
-              </Link>
-              <button onClick={() => setIsOpen(false)} className="p-2 text-white" aria-label="Close menu">
-                <X size={28} />
-              </button>
-            </div>
-
-            {/* Links */}
-            <nav className="mt-8 flex flex-col p-4">
+          <>
+            <div
+              key="mobile-menu-catcher"
+              className="fixed inset-0 z-90 md:hidden"
+              onClick={() => setIsOpen(false)}
+              aria-hidden
+            />
+            <motion.nav
+              key="mobile-menu"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              aria-label="Menu chính"
+              className="fixed top-20 right-3 z-100 flex w-52 flex-col gap-2 md:hidden"
+            >
               {navItems
                 .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
-                .map((item) => {
+                .map((item, i) => {
                   const href = item.type === "hash" ? `/#${item.hashId}` : item.href;
+                  const active = isItemActive(item);
+                  const color = navColorOf(item);
 
                   return (
-                    <Link
+                    <motion.div
                       key={`${item.type}-${item.type === "hash" ? item.hashId : item.href}`}
-                      href={href}
-                      onClick={(e) => {
-                        if (item.type === "hash") handleHashClick(e, item.hashId);
-                        setIsOpen(false);
-                      }}
-                      className={`text-2xl py-4 transition-colors font-medium ${
-                        (item.type === "path" && pathname === item.href) ||
-                        (item.type === "hash" && pathname === "/" && currentHash === `#${item.hashId}`)
-                          ? "text-[#0194F3]"
-                          : "text-slate-100 hover:text-white"
-                      }`}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      // Xổ lần lượt từng phím cho thấy rõ đây là các nút rời
+                      transition={{ duration: 0.18, delay: i * 0.035, ease: "easeOut" }}
                     >
-                      {item.label}
-                    </Link>
+                      <Link
+                        href={href}
+                        onClick={(e) => {
+                          if (item.type === "hash") handleHashClick(e, item.hashId);
+                          setIsOpen(false);
+                        }}
+                        className={`block rounded-full px-5 py-3 text-center text-base font-semibold text-white shadow-lg shadow-black/30 ring-1 backdrop-blur-sm transition-transform active:scale-95 ${
+                          active
+                            ? `${color.active} ring-white/70`
+                            : `${color.normal} ring-white/25`
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    </motion.div>
                   );
                 })}
-            </nav>
-          </motion.div>
+            </motion.nav>
+          </>
         )}
       </AnimatePresence>
     </>
