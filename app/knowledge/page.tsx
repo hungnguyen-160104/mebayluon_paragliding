@@ -328,9 +328,11 @@ export default async function KnowledgeAllPage({
                   {/* Hàng đầu: Featured lớn (2/3) + Danh sách bên (1/3) */}
                   <div className="grid grid-cols-[2fr_1fr] gap-6 mb-8">
 
-                    {/* Featured: ảnh lớn, text overlay */}
-                    <Link href={`/blog/${featured.slug}`} className="group relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
-                      <div className="relative h-90 overflow-hidden">
+                    {/* Featured: ảnh lớn, text overlay. Ô này là grid item nên bị kéo
+                        cao bằng cột 4 bài bên phải; cho ảnh flex-1 để nó phủ kín thẻ
+                        thay vì chừa khoảng trống dưới chữ. */}
+                    <Link href={`/blog/${featured.slug}`} className="group relative flex flex-col overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
+                      <div className="relative min-h-90 w-full flex-1 overflow-hidden">
                         <Image src={featuredCover} alt={`${pickTitle(featured, isVi)} - Kiến thức dù lượn Mebayluon`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
                         <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-6">

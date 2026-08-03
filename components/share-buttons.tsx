@@ -11,7 +11,6 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
-import Image from "next/image";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -98,6 +97,24 @@ function openPopup(url: string) {
   window.open(url, "_blank", "noopener,noreferrer,width=640,height=640");
 }
 
+/** Chép link vào clipboard, có đường lui cho trình duyệt cũ. */
+async function writeClipboard(url: string) {
+  try {
+    await navigator.clipboard.writeText(url);
+    return;
+  } catch {
+    // Trình duyệt cũ / không cấp quyền clipboard — dùng cách thủ công
+  }
+  const el = document.createElement("textarea");
+  el.value = url;
+  el.style.position = "fixed";
+  el.style.opacity = "0";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+
 /** Nút tròn nhỏ, nền màu thương hiệu để nổi bật trên nền ảnh tối. */
 const btnBase =
   "inline-flex h-8 w-8 items-center justify-center rounded-full text-white shadow-md ring-1 ring-white/25 transition-all hover:scale-110 hover:shadow-lg";
@@ -141,32 +158,14 @@ export function ShareButtons({
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl())}`
     );
 
-  const shareZalo = () =>
-    openPopup(
-      `https://sp.zalo.me/plugins/share?u=${encodeURIComponent(currentUrl())}`
-    );
-
   const shareX = () =>
     openPopup(
-      `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl())}` +
+      `https://x.com/intent/post?url=${encodeURIComponent(currentUrl())}` +
         (title ? `&text=${encodeURIComponent(title)}` : "")
     );
 
   const copyLink = async () => {
-    const url = currentUrl();
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Trình duyệt cũ / không cấp quyền clipboard — dùng cách thủ công
-      const el = document.createElement("textarea");
-      el.value = url;
-      el.style.position = "fixed";
-      el.style.opacity = "0";
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    }
+    await writeClipboard(currentUrl());
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   };
@@ -190,12 +189,6 @@ export function ShareButtons({
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true">
             <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22c4.78-.79 8.44-4.93 8.44-9.94Z" />
           </svg>
-        </button>
-
-        <button type="button" onClick={shareZalo} className={`${btnBase} bg-[#0068FF] hover:bg-[#0055D4]`} aria-label="Zalo" title="Zalo">
-          <span className="relative h-5 w-5 overflow-hidden rounded-full">
-            <Image src="/social_icons/zalo.png" alt="" fill className="object-cover" sizes="20px" />
-          </span>
         </button>
 
         <button type="button" onClick={shareX} className={`${btnBase} bg-black hover:bg-neutral-800`} aria-label="X (Twitter)" title="X (Twitter)">
