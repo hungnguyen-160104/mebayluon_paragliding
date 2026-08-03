@@ -30,12 +30,9 @@ function alts(
  * biết trang nào là trang xem của video nào. Bài không có video thì trả về {}
  * nên mục sitemap giữ nguyên như cũ.
  */
-function postVideos(post: any) {
-  const videos = collectPostVideos(post?.contentBlocksVi || post?.contentBlocks, {
-    title: post?.titleVi || post?.title || "",
-    description: post?.excerptVi || post?.excerpt || "",
-  });
-  if (!videos.length) return {};
+function postVideos(slug: string, bySlug: Map<string, ReturnType<typeof collectPostVideos>>) {
+  const videos = bySlug.get(slug);
+  if (!videos?.length) return {};
 
   return {
     videos: videos.map((v) => ({
@@ -47,6 +44,33 @@ function postVideos(post: any) {
       player_loc: v.embedUrl,
     })),
   };
+}
+
+/**
+ * Chỉ lấy khối nội dung của những bài THẬT SỰ có video nhúng.
+ *
+ * Ban đầu tôi kéo contentBlocks trong chính truy vấn danh sách bài, nhưng như
+ * thế là tải toàn bộ nội dung của ~90 bài chỉ để tìm 2 bài có video — đủ chậm
+ * để làm /sitemap.xml quá 60 giây lúc build. Lọc thẳng bằng contentBlocks.type
+ * thì Mongo chỉ trả về đúng mấy bài cần.
+ */
+async function loadVideosBySlug() {
+  const posts = (await PostModel.find({
+    isPublished: true,
+    $or: [{ "contentBlocks.type": "embed" }, { "contentBlocksVi.type": "embed" }],
+  })
+    .select("slug title titleVi excerpt excerptVi contentBlocks contentBlocksVi")
+    .lean()) as any[];
+
+  const map = new Map<string, ReturnType<typeof collectPostVideos>>();
+  for (const p of posts) {
+    const videos = collectPostVideos(p.contentBlocksVi || p.contentBlocks, {
+      title: p.titleVi || p.title || "",
+      description: p.excerptVi || p.excerpt || "",
+    });
+    if (videos.length) map.set(p.slug, videos);
+  }
+  return map;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -147,7 +171,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     await connectDB();
 
-    const [blogPosts, knowledgePosts, storeProducts] = await Promise.all([
+    const [blogPosts, knowledgePosts, storeProducts, videosBySlug] = await Promise.all([
       PostModel.find({
         isPublished: true,
         // Loại category knowledge để không trùng với knowledgeRoutes bên dưới
@@ -156,18 +180,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         category: { $ne: "knowledge" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
-        .select(
-          "slug title titleVi excerpt excerptVi contentBlocks contentBlocksVi translatedLangs publishedAt updatedAt createdAt",
-        )
+        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
         isPublished: true,
         category: "knowledge",
       })
-        .select(
-          "slug title titleVi excerpt excerptVi contentBlocks contentBlocksVi translatedLangs publishedAt updatedAt createdAt",
-        )
+        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
@@ -176,6 +196,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })
         .select("slug storeCategory title titleVi translatedLangs publishedAt updatedAt createdAt")
         .lean(),
+
+      loadVideosBySlug(),
     ]);
 
     const blogRoutes: MetadataRoute.Sitemap = (blogPosts as any[]).map((p) => {
@@ -186,7 +208,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.7,
         alternates: alts(url, postLocales(p)),
-        ...postVideos(p),
+        ...postVideos(p.slug, videosBySlug),
       };
     });
 
@@ -198,7 +220,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.65,
         alternates: alts(url, postLocales(p)),
-        ...postVideos(p),
+        ...postVideos(p.slug, videosBySlug),
       };
     });
 

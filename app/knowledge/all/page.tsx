@@ -1,3 +1,4 @@
+import { PageBackground } from "@/components/page-background";
 // app/knowledge/all/page.tsx
 import Image from "next/image";
 import Link from "next/link";
@@ -124,10 +125,8 @@ export default async function KnowledgeAllPage() {
   const t = I18N[lang] ?? I18N.vi;
 
   return (
-    <div
-      className="min-h-screen relative bg-cover bg-center"
-      style={{ backgroundImage: "url('/hinh-nen.jpg')" }}
-    >
+    <div className="min-h-screen relative">
+      <PageBackground src="/hinh-nen.jpg" className="absolute inset-0" />
       <div className="absolute inset-0 bg-black/35" />
       <main className="relative z-10 container mx-auto px-4 py-14 text-white">
         <h1 className="text-5xl md:text-6xl font-extrabold text-center drop-shadow mb-8">

@@ -1,4 +1,5 @@
 "use client";
+import { PageBackground } from "@/components/page-background";
 
 import Image from "next/image";
 // import Link from "next/link"; // tạm ẩn cùng nút "Đặt phòng online"
@@ -236,7 +237,7 @@ export default function HomestayPage() {
 
   return (
     <div className="min-h-screen pt-20 relative antialiased">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/contact.jpg)" }} />
+      <PageBackground src="/contact.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/30" />
 
       <div className="relative z-10 text-white">

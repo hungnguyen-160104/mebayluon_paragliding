@@ -1,4 +1,5 @@
 "use client"
+import { PageBackground } from "@/components/page-background";
 
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
@@ -76,7 +77,7 @@ export default function PreNoticePage() {
 
   return (
     <main className="min-h-screen relative text-white">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/per-flight.jpg)" }} />
+      <PageBackground src="/per-flight.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/20" />
       <div className="relative z-20">
         <Navigation />

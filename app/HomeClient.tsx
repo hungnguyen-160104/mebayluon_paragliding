@@ -1,4 +1,6 @@
 "use client";
+import { PageBackground } from "@/components/page-background";
+import { LazyVideo } from "@/components/lazy-video";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -319,10 +321,7 @@ export default function HomePage() {
   return (
     <div className="relative text-foreground">
       {/* Fixed background - iOS Safari does not support background-attachment:fixed on non-body elements */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
-      />
+      <PageBackground src="/hinh-nen.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* ================= HERO ================= */}
@@ -445,16 +444,19 @@ export default function HomePage() {
                     "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
                 }}
               >
-                {/* Video nền 5,6MB (đã nén từ bản gốc 4K): tự phát, lặp,
-                    tắt tiếng — dùng ảnh cũ làm màn chờ trong lúc tải. */}
-                <video
+                {/* Ảnh chờ nằm dưới, video 5,6MB nằm trên và chỉ tải khi cuộn
+                    tới. Trước đây ảnh này là thuộc tính poster nên trình duyệt
+                    tải nguyên bản gốc 2,4MB; đi qua next/image thì Next tự xuất
+                    AVIF/WebP đúng khổ máy. */}
+                <Image
+                  src="/about-us.jpg"
+                  alt=""
+                  fill
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                  className="object-cover"
+                />
+                <LazyVideo
                   src="/about-us-video1.mp4"
-                  poster="/about-us.jpg"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>

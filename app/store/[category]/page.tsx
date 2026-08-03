@@ -1,3 +1,4 @@
+import { PageBackground } from "@/components/page-background";
 // mbl-paragliding/app/store/[category]/page.tsx
 import type { StoreCategory } from "@/types/frontend/post";
 import { listProductsByCategory } from "@/lib/product-api";
@@ -68,10 +69,8 @@ export default async function StoreCategoryPage({ params }: Props) {
   const { items } = await listProductsByCategory({ category, limit: 30 });
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center"
-      style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
-    >
+    <main className="min-h-screen relative">
+      <PageBackground src="/hinh-nen.jpg" className="absolute inset-0" />
       <div className="absolute inset-0 bg-black/20" />
       <section className="relative z-10 py-24">
         <div className="container mx-auto px-4">

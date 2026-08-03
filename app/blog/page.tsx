@@ -1,3 +1,4 @@
+import { PageBackground } from "@/components/page-background";
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
@@ -206,7 +207,7 @@ export default async function BlogPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/tin-tuc-2.jpg')" }} />
+      <PageBackground src="/tin-tuc-2.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
       <main className="container relative z-10 mx-auto px-4 pt-28 pb-16 text-white">

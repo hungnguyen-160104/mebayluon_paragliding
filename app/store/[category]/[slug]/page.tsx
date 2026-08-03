@@ -1,3 +1,4 @@
+import { PageBackground } from "@/components/page-background";
 // app/store/[category]/[slug]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
@@ -145,10 +146,7 @@ export default async function ProductDetailPage({
       />
     <div className="relative min-h-screen">
       {/* Fixed background — iOS Safari does not support background-attachment:fixed on non-body elements */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/mebayluon.jpg')" }}
-      />
+      <PageBackground src="/images/mebayluon.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/55" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28">

@@ -1,5 +1,6 @@
 // app/terms/page.tsx
 "use client";
+import { PageBackground } from "@/components/page-background";
 
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -62,7 +63,7 @@ export default function TermsPage() {
       className="min-h-screen relative text-white"
       aria-label="Terms & Conditions"
     >
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/hinh-nen.jpg)" }} />
+      <PageBackground src="/hinh-nen.jpg" />
       {/* Ẩn toàn bộ header/nav/footer & widget nổi; bỏ khoảng trắng mặc định */}
       <style jsx global>{`
         html, body, #__next { margin: 0 !important; padding: 0 !important; }

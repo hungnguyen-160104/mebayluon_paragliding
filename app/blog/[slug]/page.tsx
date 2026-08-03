@@ -1,3 +1,4 @@
+import { PageBackground } from "@/components/page-background";
 export const dynamic = "force-dynamic";
 
 import Image from "next/image";
@@ -739,7 +740,7 @@ export default async function BlogPostPage({
       ))}
       <ViewCounter slug={slug} />
       <main className="relative min-h-screen w-full">
-        <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/mebayluon.jpg')" }} />
+        <PageBackground src="/images/mebayluon.jpg" />
         {/* Nền xanh lá đậm (xanh như lá lúa) thay vì gần như đen — theo yêu cầu khách hàng */}
         <div className="fixed inset-0 -z-10 bg-[#0b3a1c]/85" />
 

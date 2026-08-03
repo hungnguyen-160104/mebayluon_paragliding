@@ -1,4 +1,5 @@
 "use client";
+import { PageBackground } from "@/components/page-background";
 
 import { useState, useMemo } from "react";
 import ProductCard from "./ProductCard";
@@ -31,10 +32,8 @@ export default function StoreHomeClient({
   }, [active, allProducts]);
 
   return (
-    <main
-      className="min-h-screen relative bg-cover bg-center"
-      style={{ backgroundImage: "url(/cua-hang.jpg)" }}
-    >
+    <main className="min-h-screen relative">
+      <PageBackground src="/cua-hang.jpg" className="absolute inset-0" />
       <div className="absolute inset-0 bg-black/20" />
       <section className="relative z-10 py-24">
         <div className="container mx-auto px-4">

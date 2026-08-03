@@ -1,4 +1,5 @@
 "use client";
+import { PageBackground } from "@/components/page-background";
 
 // app/spots/SpotsListClient.tsx
 // Danh sách toàn bộ điểm bay — dùng lại phong cách thẻ của mục
@@ -35,10 +36,7 @@ export default function SpotsListClient() {
   return (
     <div className="relative text-foreground">
       {/* Nền cố định giống trang chủ */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundImage: "url(/hinh-nen.jpg)" }}
-      />
+      <PageBackground src="/hinh-nen.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/25" />
 
       <section className="relative z-10 pb-16 pt-32 md:pt-36">

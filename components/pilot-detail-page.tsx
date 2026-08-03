@@ -1,5 +1,6 @@
 // components/pilot-detail-page.tsx
 "use client"
+import { PageBackground } from "@/components/page-background";
 
 import Image from "next/image"
 import { motion } from "framer-motion"
@@ -98,7 +99,7 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
   return (
     <div className="min-h-screen text-white relative">
       {/* Fixed background — iOS Safari không hỗ trợ backgroundAttachment:fixed trên non-body */}
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/pilots/hero.jpg)" }} />
+      <PageBackground src="/pilots/hero.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/30" />
 
       <Navigation />

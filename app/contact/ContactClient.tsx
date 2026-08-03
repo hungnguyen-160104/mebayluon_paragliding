@@ -1,4 +1,5 @@
 "use client"
+import { PageBackground } from "@/components/page-background";
 
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -51,7 +52,7 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen relative text-white">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: "url(/contact.jpg)" }} />
+      <PageBackground src="/contact.jpg" />
       <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* Hero Section */}

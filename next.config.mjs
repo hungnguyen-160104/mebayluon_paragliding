@@ -23,7 +23,10 @@ const nextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000, // 1 year cache for images
-    deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536],
+    // Thêm 1920 và 2048: ảnh nền giờ đi qua next/image và phủ kín màn hình,
+    // dừng ở 1536 thì màn 2K/4K phải phóng to lên nên trông mờ. Chỉ máy nào
+    // thật sự rộng mới nhận bản lớn, máy nhỏ vẫn lấy bản nhẹ như cũ.
+    deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     dangerouslyAllowSVG: false,
   },
@@ -49,59 +52,15 @@ const nextConfig = {
   // 🔴 SECURITY FIX: Disable source maps in production
   productionBrowserSourceMaps: false,
   
-  // Webpack optimization
-  webpack: (config, { isServer, dev }) => {
-    if (!isServer && !dev) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            // Separate vendor bundles
-            default: false,
-            vendors: false,
-            
-            // React & related
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom|react-hook-form)[\\/]/,
-              name: 'react',
-              priority: 20,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            
-            // UI libraries
-            ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|sonner)[\\/]/,
-              name: 'ui',
-              priority: 15,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            
-            // Animations
-            animations: {
-              test: /[\\/]node_modules[\\/](framer-motion)[\\/]/,
-              name: 'animations',
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            
-            // Common
-            common: {
-              minChunks: 2,
-              priority: 5,
-              reuseExistingChunk: true,
-              name: 'common',
-            },
-          },
-        },
-      };
-    }
-    return config;
-  },
-  
+  // KHÔNG tự cấu hình splitChunks ở đây.
+  //
+  // Bản cũ gom mọi module dùng từ 2 nơi trở lên vào MỘT gói tên 'common'
+  // (minChunks: 2). Hệ quả: trang nào cần một mẩu trong đó là phải tải cả gói —
+  // đo trên production thấy common-*.js nặng 892 KB giải nén / 267 KB nén và
+  // được tải ở mọi trang, bên trong có cả recharts vốn chỉ dùng cho biểu đồ
+  // trang quản trị. Cấu hình mặc định của Next.js chia gói theo route nên nhẹ
+  // hơn nhiều; để trống để Next tự lo.
+
   // Headers for caching
   async headers() {
     return [
