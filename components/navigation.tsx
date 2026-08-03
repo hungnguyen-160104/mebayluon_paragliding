@@ -243,7 +243,7 @@ export function Navigation() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
               aria-label="Menu chính"
-              className="fixed top-20 right-3 z-100 flex w-52 flex-col gap-2 md:hidden"
+              className="fixed top-20 right-3 z-100 flex w-44 flex-col gap-2 md:hidden"
             >
               {navItems
                 .filter((it) => typeof (it as any)?.href === "string" && (it as any).href.length > 0)
@@ -267,7 +267,7 @@ export function Navigation() {
                           if (item.type === "hash") handleHashClick(e, item.hashId);
                           setIsOpen(false);
                         }}
-                        className={`block rounded-full px-5 py-3 text-center text-base font-semibold text-white shadow-lg shadow-black/30 ring-1 backdrop-blur-sm transition-transform active:scale-95 ${
+                        className={`block rounded-full px-4 py-3 text-center text-base font-semibold leading-snug text-white shadow-xl shadow-black/60 ring-1 backdrop-blur-sm transition-transform active:scale-95 ${
                           active
                             ? `${color.active} ring-white/70`
                             : `${color.normal} ring-white/25`
