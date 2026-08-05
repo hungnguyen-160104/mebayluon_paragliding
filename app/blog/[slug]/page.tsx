@@ -672,6 +672,7 @@ export default async function BlogPostPage({
    * nên không cần gọi API khi bấm.
    */
   const relatedResp = await getPosts({
+    forList: true,
     category: String(post.category || "news"),
     type: "blog",
     isPublished: true,

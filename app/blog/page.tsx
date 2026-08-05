@@ -159,6 +159,7 @@ const INITIAL_COUNT = 25;
  */
 async function loadLatestPosts() {
   const pinnedData = await getPosts({
+    forList: true,
     category: "news",
     type: "blog",
     isPublished: true,
@@ -170,6 +171,7 @@ async function loadLatestPosts() {
   const pinnedSlugs = pinnedPosts.map((post) => post.slug);
 
   const latestData = await getPosts({
+    forList: true,
     category: "news",
     type: "blog",
     isPublished: true,

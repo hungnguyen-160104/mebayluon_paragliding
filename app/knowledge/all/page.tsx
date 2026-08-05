@@ -112,6 +112,7 @@ function pickExcerpt(post: any, isVietnamese: boolean) {
 
 async function fetchPosts() {
   const data = await getPosts({
+    forList: true,
     category: "knowledge",
     isPublished: true,
     sort: "-publishedAt,-createdAt",

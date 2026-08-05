@@ -203,6 +203,7 @@ async function getData(sub?: string) {
   // Bài admin tick "Ghim" đứng đầu (tối đa 6, thứ tự theo lúc tick);
   // phần còn lại theo ngày đăng, loại bài ghim để không hiện 2 lần.
   const pinnedData = await getPosts({
+    forList: true,
     category: "knowledge",
     isPublished: true,
     subCategory,
@@ -214,6 +215,7 @@ async function getData(sub?: string) {
   const pinnedSlugs = pinned.map((post) => post.slug);
 
   const data = await getPosts({
+    forList: true,
     category: "knowledge",
     isPublished: true,
     subCategory,

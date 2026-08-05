@@ -78,6 +78,7 @@ export async function GET(req: Request) {
     const isVi = lang === "vi";
 
     const data = await getPosts({
+    forList: true,
       category,
       subCategory: sub,
       isPublished: true,
