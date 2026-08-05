@@ -14,6 +14,7 @@ import {
   canonicalUrlFor,
   type Locale,
 } from "@/lib/site-config";
+import { PARAGLIDING_PARTNERS, HOMESTAY_PARTNERS } from "@/lib/partner-links";
 
 export interface SEOMetadata {
   title: string;
@@ -334,7 +335,44 @@ export function generateLocalBusinessSchema() {
     sameAs: [
       "https://www.facebook.com/mebayluon",
       "https://www.youtube.com/@mebayluon",
+      "https://www.tiktok.com/@mebayluon_paragliding",
+      ...PARAGLIDING_PARTNERS.map((p) => p.url),
     ],
+  };
+}
+
+/**
+ * Homestay Clubhouse Mebayluon — khai riêng ở trang /homestay.
+ *
+ * Đây là thực thể KHÁC với công ty dù lượn: khác loại hình, khác hồ sơ trên
+ * các nền tảng đặt phòng. Trộn chung vào LocalBusiness ở trên thì Google dễ
+ * hiểu nhầm hai doanh nghiệp là một.
+ */
+export function generateLodgingSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "LodgingBusiness",
+    name: "Clubhouse Mebayluon Paragliding",
+    url: `${SITE_URL.replace(/\/$/, "")}/homestay`,
+    image: DEFAULT_IMAGE,
+    telephone: "+84-964-073-555",
+    email: "mebayluon@gmail.com",
+    description:
+      "Homestay bên suối nằm ngay trong bãi hạ cánh dù lượn ở thung lũng Tú Lệ — phòng nghỉ, bể bơi, sân cỏ và chỗ cắm trại, xem dù lượn hạ cánh ngay trước cửa.",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Thôn Lìm Thái, Xã Tú Lệ",
+      addressLocality: "Lào Cai",
+      addressCountry: "VN",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 21.8167,
+      longitude: 104.1167,
+    },
+    priceRange: "$$",
+    currenciesAccepted: "VND",
+    sameAs: HOMESTAY_PARTNERS.map((p) => p.url),
   };
 }
 

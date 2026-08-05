@@ -2,6 +2,7 @@
 
 // /components/footer/Footer.tsx
 import Link from "next/link";
+import { ALL_PARTNERS } from "@/lib/partner-links";
 import { Dancing_Script } from "next/font/google";
 import { usePathname } from "next/navigation";
 
@@ -67,6 +68,7 @@ type FooterDict = {
   preNotice: string;
   contact: string;
   followUs: string;
+  bookOnPartners: string;
   spotsInfo: string;
   license: string;
   rightsReserved: string;
@@ -81,6 +83,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Lưu ý trước khi bay",
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
+    bookOnPartners: "Đặt qua đối tác",
     spotsInfo: "Thông tin điểm bay",
     license:
       "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
@@ -94,6 +97,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Pre-Notice",
     contact: "Contact",
     followUs: "Follow Us",
+    bookOnPartners: "Book via partners",
     spotsInfo: "Flying Spots Info",
     license:
       "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
@@ -107,6 +111,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Préavis",
     contact: "Contact",
     followUs: "Suivez-nous",
+    bookOnPartners: "Réserver via nos partenaires",
     spotsInfo: "Infos sites de vol",
     license:
       "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
@@ -120,6 +125,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "Предуведомление",
     contact: "Контакты",
     followUs: "Подписывайтесь",
+    bookOnPartners: "Бронирование у партнёров",
     spotsInfo: "О местах полётов",
     license:
       "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
@@ -133,6 +139,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "预先通知",
     contact: "联系方式",
     followUs: "关注我们",
+    bookOnPartners: "通过合作平台预订",
     spotsInfo: "飞行点信息",
     license: "飞行运营已获越南国防部总参谋部作战局许可。",
     rightsReserved: "保留所有权利。",
@@ -145,6 +152,7 @@ const DICT: Record<Language, FooterDict> = {
     preNotice: "पूर्व सूचना",
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
+    bookOnPartners: "पार्टनर के ज़रिए बुक करें",
     spotsInfo: "उड़ान स्थल जानकारी",
     license:
       "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
@@ -456,6 +464,36 @@ export default function Footer() {
                   </a>
                 ))}
               </div>
+
+              {/* Trang đặt tour / đặt phòng trên nền tảng đối tác. Danh sách
+                  lấy từ lib/partner-links.ts — cùng nguồn với sameAs trong
+                  JSON-LD nên hai nơi không bao giờ lệch nhau. */}
+              {ALL_PARTNERS.length > 0 && (
+                <>
+                  <h3 className="mb-3 mt-6 text-lg font-semibold text-white">
+                    {t.bookOnPartners}
+                  </h3>
+                  <ul className="flex flex-wrap gap-2">
+                    {ALL_PARTNERS.map((p) => (
+                      <li key={p.url}>
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="
+                            inline-flex items-center rounded-lg border border-white/15
+                            bg-white/5 px-3 py-1.5 text-[13px] text-slate-300
+                            transition-all hover:-translate-y-0.5
+                            hover:border-white/30 hover:text-white
+                          "
+                        >
+                          {p.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </div>
 

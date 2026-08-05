@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { buildMetadata } from "@/lib/metadata-builder";
+import { buildMetadata, generateLodgingSchema } from "@/lib/metadata-builder";
 import { pageMeta } from "@/lib/page-meta";
 import { getUrlLocale } from "@/lib/locale";
 
@@ -31,4 +31,23 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export { default } from "./HomestayClient";
+import HomestayClient from "./HomestayClient";
+
+/**
+ * Trang này trước đó không có JSON-LD nào. Thêm LodgingBusiness để Google
+ * hiểu Clubhouse là một cơ sở lưu trú riêng, không lẫn với công ty dù lượn
+ * (LocalBusiness khai ở app/layout.tsx).
+ */
+export default function HomestayPage() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateLodgingSchema()).replace(/</g, "\\u003c"),
+        }}
+      />
+      <HomestayClient />
+    </>
+  );
+}
