@@ -30,7 +30,7 @@ export default function ContactPage() {
     {
       name: "YouTube",
       iconSrc: "/social_icons/youtube.png",
-      url: "https://www.youtube.com/@dangvm",
+      url: "https://www.youtube.com/@mebayluon",
       color: "bg-[#FF0000]",
       description: t.contact.social.youtube,
     },

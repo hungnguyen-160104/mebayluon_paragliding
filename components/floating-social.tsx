@@ -25,7 +25,7 @@ export function FloatingSocial() {
     {
       name: "YouTube",
       iconSrc: "/social_icons/youtube.png",
-      url: "https://www.youtube.com/@dangvm",
+      url: "https://www.youtube.com/@mebayluon",
       color: "bg-[#FF0000] hover:bg-[#FF0000]/90",
       iconSize: 28,
     },

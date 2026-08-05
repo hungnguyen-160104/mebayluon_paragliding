@@ -15,7 +15,7 @@ import {
   type RelatedPostItem,
 } from "./RelatedPosts";
 import { ViewCounter } from "@/components/ViewCounter";
-import { buildMetadata, generateArticleSchema } from "@/lib/metadata-builder";
+import { buildMetadata, generateArticleSchema, generateBreadcrumbSchema } from "@/lib/metadata-builder";
 import { collectPostVideos, generateVideoSchema } from "@/lib/video-schema";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
@@ -593,6 +593,19 @@ function articleSchemaDates(post: {
   };
 }
 
+/**
+ * Nhãn cho đường dẫn phân cấp (BreadcrumbList). Lấy đúng chữ mà trang danh
+ * sách đang dùng làm tiêu đề để hai nơi không nói khác nhau.
+ */
+const CRUMB: Record<Lang, { home: string; blog: string; knowledge: string }> = {
+  vi: { home: "Trang chủ", blog: "Tin tức & Blog", knowledge: "Kiến thức dù lượn" },
+  en: { home: "Home", blog: "News & Blog", knowledge: "Paragliding knowledge" },
+  fr: { home: "Accueil", blog: "Actualités & Blog", knowledge: "Connaissances en parapente" },
+  ru: { home: "Главная", blog: "Новости и блог", knowledge: "Знания о парапланеризме" },
+  zh: { home: "首页", blog: "资讯与博客", knowledge: "滑翔伞知识" },
+  hi: { home: "होम", blog: "समाचार और ब्लॉग", knowledge: "पैराग्लाइडिंग ज्ञान" },
+};
+
 export default async function BlogPostPage({
   params,
   searchParams,
@@ -715,6 +728,17 @@ export default async function BlogPostPage({
    * Console báo "Video không nằm trên trang xem" — Google thấy iframe nhưng
    * không biết đây là trang xem của video nào.
    */
+  // Đường dẫn phân cấp: Trang chủ > Tin tức (hoặc Kiến thức) > Tiêu đề bài.
+  // Bậc giữa bám theo backUrl để khớp với nút "Quay lại" ngay trên trang.
+  const crumb = CRUMB[lang];
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: crumb.home, url: "/" },
+    backUrl === "/knowledge"
+      ? { name: crumb.knowledge, url: "/knowledge" }
+      : { name: crumb.blog, url: "/blog" },
+    { name: title, url: `/blog/${slug}` },
+  ]);
+
   const videoSchemas = collectPostVideos(blocks, {
     title,
     description: excerpt,
@@ -730,6 +754,10 @@ export default async function BlogPostPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       {videoSchemas.map((schema) => (
         <script

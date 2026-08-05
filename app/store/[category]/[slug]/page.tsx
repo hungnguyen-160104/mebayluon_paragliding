@@ -6,10 +6,10 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
-import { buildMetadata, generateProductSchema } from "@/lib/metadata-builder";
+import { buildMetadata, generateProductSchema, generateBreadcrumbSchema } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { postLocales } from "@/lib/post-locales";
-import { getProductUi, getStoreLocale } from "@/lib/store-texts";
+import { getProductUi, getStoreLocale, STORE_CATEGORY_CONFIG, type StoreLang } from "@/lib/store-texts";
 import { ShareButtons } from "@/components/share-buttons";
 
 type PostLite = {
@@ -102,6 +102,19 @@ export async function generateMetadata({
   });
 }
 
+/**
+ * Nhãn "Cửa hàng" cho đường dẫn phân cấp. Không dùng lại STORE_TITLE vì chuỗi
+ * đó viết hoa toàn bộ để làm tiêu đề trang, đọc trong breadcrumb rất kỳ.
+ */
+const STORE_CRUMB: Record<StoreLang, string> = {
+  vi: "Cửa hàng",
+  en: "Store",
+  fr: "Boutique",
+  ru: "Магазин",
+  zh: "商店",
+  hi: "स्टोर",
+};
+
 export default async function ProductDetailPage({
   params,
 }: {
@@ -138,11 +151,31 @@ export default async function ProductDetailPage({
     url: `/store/${category}/${slug}`,
   });
 
+  // Đường dẫn phân cấp: Trang chủ > Cửa hàng > Danh mục > Sản phẩm.
+  // Tên danh mục lấy đúng bản dịch theo ngôn ngữ đang xem; danh mục lạ
+  // (dữ liệu cũ) thì bỏ bậc đó đi chứ không in ra khoá thô.
+  const storeLang = (lang || "vi") as StoreLang;
+  const categoryTitle = STORE_CATEGORY_CONFIG.find((c) => c.key === category)
+    ?.title?.[storeLang];
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: isVietnamese ? "Trang chủ" : "Home", url: "/" },
+    { name: STORE_CRUMB[storeLang] ?? STORE_CRUMB.vi, url: "/store" },
+    ...(categoryTitle
+      ? [{ name: categoryTitle, url: `/store/${category}` }]
+      : []),
+    { name: currentTitle, url: `/store/${category}/${slug}` },
+  ]);
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
     <div className="relative min-h-screen">
       {/* Fixed background — iOS Safari does not support background-attachment:fixed on non-body elements */}

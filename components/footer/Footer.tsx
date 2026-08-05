@@ -237,7 +237,7 @@ export default function Footer() {
         icon: <Facebook size={18} />,
       },
       {
-        href: "https://www.youtube.com/@dangvm",
+        href: "https://www.youtube.com/@mebayluon",
         label: "YouTube",
         icon: <Youtube size={18} />,
       },

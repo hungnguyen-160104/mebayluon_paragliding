@@ -264,9 +264,9 @@ export function generateOrganizationSchema() {
     logo: `${SITE_URL.replace(/\/$/, "")}/logo.png`,
     description: "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam",
     sameAs: [
-      "https://facebook.com/mebayluon",
+      "https://www.facebook.com/mebayluon",
       "https://www.youtube.com/@mebayluon",
-      "https://www.tiktok.com/@mebayluon",
+      "https://www.tiktok.com/@mebayluon_paragliding",
     ],
     contactPoint: {
       "@type": "ContactPoint",
@@ -311,8 +311,28 @@ export function generateLocalBusinessSchema() {
     priceRange: "$$",
     currenciesAccepted: "VND",
     paymentAccepted: "Cash, Bank Transfer",
+
+    /**
+     * address ở trên là trụ sở (Tú Lệ), nhưng Mebayluon tổ chức bay ở nhiều
+     * tỉnh. Không khai areaServed thì Google chỉ hiểu doanh nghiệp phục vụ
+     * quanh Tú Lệ, nên các tìm kiếm kiểu "bay dù lượn Hà Nội" hay "dù lượn
+     * Sa Pa" khó nối được về đây. Liệt kê đúng những nơi đang có điểm bay
+     * (xem SPOT_SLUGS trong lib/spots-slugs.ts) — thêm điểm bay mới thì nhớ
+     * bổ sung vào đây.
+     */
+    areaServed: [
+      { "@type": "Place", name: "Hà Nội" },
+      { "@type": "Place", name: "Sa Pa" },
+      { "@type": "Place", name: "Mù Cang Chải" },
+      { "@type": "Place", name: "Trạm Tấu" },
+      { "@type": "Place", name: "Tú Lệ" },
+      { "@type": "Place", name: "Hà Giang" },
+      { "@type": "Place", name: "Đà Nẵng" },
+      { "@type": "Place", name: "Đà Lạt" },
+    ],
+
     sameAs: [
-      "https://facebook.com/mebayluon",
+      "https://www.facebook.com/mebayluon",
       "https://www.youtube.com/@mebayluon",
     ],
   };
