@@ -19,7 +19,7 @@ type NavItem = PathItem | HashItem;
  * Dùng chung cho cả thanh ngang desktop lẫn menu xổ trên điện thoại.
  */
 const NAV_COLORS: Record<string, { normal: string; active: string }> = {
-  "/#hero":    { normal: "bg-[#0EA5E9] hover:bg-[#0284C7]", active: "bg-[#0369A1]" }, // Trang chủ — xanh da trời
+  "/":         { normal: "bg-[#0EA5E9] hover:bg-[#0284C7]", active: "bg-[#0369A1]" }, // Trang chủ — xanh da trời
   "/booking":  { normal: "bg-[#FF5E1F] hover:bg-[#EA4E10]", active: "bg-[#C2410C]" }, // Đặt bay — cam thương hiệu (CTA)
   "/spots":    { normal: "bg-[#0D9488] hover:bg-[#0F766E]", active: "bg-[#115E59]" }, // Điểm bay — xanh ngọc
   "/pilots":   { normal: "bg-[#6366F1] hover:bg-[#4F46E5]", active: "bg-[#4338CA]" }, // Phi công — chàm
@@ -95,7 +95,11 @@ export function Navigation() {
   }, [pathname, scrollToId]);
 
   const navItems: NavItem[] = [
-    { type: "hash", href: "/#hero", hashId: "hero", label: t?.nav?.home ?? "Trang chủ" },
+    // Trỏ thẳng "/" chứ không phải "/#hero": mọi trang đều link về trang chủ
+    // kèm fragment thì tín hiệu nội bộ về trang chủ bị loãng. Bỏ fragment cũng
+    // làm mục "Trang chủ" sáng đúng khi đang ở trang chủ (trước phải bấm vào
+    // mới sáng vì điều kiện dựa trên hash).
+    { type: "path", href: "/", label: t?.nav?.home ?? "Trang chủ" },
     { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
     { type: "path", href: "/spots", label: t?.nav?.spots ?? "Điểm bay" },
     { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },

@@ -5,6 +5,7 @@ import { PageBackground } from "@/components/page-background";
 // Danh sách toàn bộ điểm bay — dùng lại phong cách thẻ của mục
 // "Điểm bay nổi bật" trên trang chủ, nhưng liệt kê đủ 8 điểm.
 
+import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Mountain, Clock } from "lucide-react";
 
@@ -61,6 +62,7 @@ export default function SpotsListClient() {
               const loc = spot.i18nKey ? locations[spot.i18nKey] ?? {} : {};
               const description = text(loc.description);
               const highlight = text(loc.highlight);
+              const area = text(loc.area);
 
               return (
                 <Link
@@ -69,13 +71,14 @@ export default function SpotsListClient() {
                   className="group relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 shadow-lg backdrop-blur-md transition-all duration-500 hover:shadow-2xl"
                 >
                   <div className="relative h-72 overflow-hidden">
-                    <div
-                      className="absolute inset-0 transition-transform duration-500 group-hover:scale-110"
-                      style={{
-                        backgroundImage: `url(${spot.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }}
+                    {/* Trước đây đặt bằng CSS background-image nên trình duyệt
+                        tải nguyên ảnh gốc — 8 thẻ cộng lại 4,34 MB. */}
+                    <Image
+                      src={spot.image}
+                      alt={`${spot.name} — ${spot.province}`}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -106,12 +109,23 @@ export default function SpotsListClient() {
                         </span>
                       </div>
 
+                      {/* Trước chỉ hiện MỘT trong hai câu và cắt cụt còn 1 dòng,
+                          nên cả trang /spots chỉ có ~330 từ kể cả menu và chân
+                          trang — quá mỏng để Google coi là trang đáng lập chỉ
+                          mục. Cả ba câu dưới đây đều đã dịch sẵn 6 ngôn ngữ
+                          trong t.spots.locations, chỉ là chưa được dùng. */}
+                      {area ? (
+                        <p className="mb-1 text-xs text-slate-300">{area}</p>
+                      ) : null}
+
                       {highlight ? (
-                        <p className="line-clamp-1 text-sm text-slate-200">
+                        <p className="text-sm font-medium text-slate-100">
                           {highlight}
                         </p>
-                      ) : description ? (
-                        <p className="line-clamp-1 text-sm text-slate-200">
+                      ) : null}
+
+                      {description && description !== highlight ? (
+                        <p className="mt-1 text-sm text-slate-200">
                           {description}
                         </p>
                       ) : null}

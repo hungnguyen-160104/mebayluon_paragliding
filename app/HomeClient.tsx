@@ -513,16 +513,22 @@ export default function HomePage() {
                 >
                   <Link href={`/spots/${spot.slug}`}>
                     <div className="relative h-80 overflow-hidden">
+                      {/* Ảnh thẻ trước đây đặt bằng CSS background-image nên
+                          tải nguyên bản gốc; qua next/image thì Next tự xuất
+                          AVIF/WebP đúng khổ máy. */}
                       <motion.div
                         className="absolute inset-0"
                         animate={{ scale: hoveredSpot === index ? 1.1 : 1 }}
                         transition={{ duration: 0.6 }}
-                        style={{
-                          backgroundImage: `url(${spot.image})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }}
-                      />
+                      >
+                        <Image
+                          src={spot.image}
+                          alt={`${locations[spot.nameKey]?.name ?? spot.nameKey} — ${locations[spot.locationKey]?.name ?? ""}`.trim()}
+                          fill
+                          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                          className="object-cover"
+                        />
+                      </motion.div>
 
                       <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
 

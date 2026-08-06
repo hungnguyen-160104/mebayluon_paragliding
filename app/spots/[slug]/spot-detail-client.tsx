@@ -1,4 +1,5 @@
 "use client";
+import { PageBackground } from "@/components/page-background";
 
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -3489,7 +3490,7 @@ export function SpotDetailClient({
 
   return (
     <main className="min-h-screen relative text-white">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url(${spot.image})` }} />
+      <PageBackground src={spot.image} />
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
       {/* Hero */}
