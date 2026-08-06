@@ -36,6 +36,7 @@ import {
   type HomestayLang,
   locationInfo,
   locationTranslations,
+  HOMESTAY_MAP_URL,
 } from "@/lib/homestay-data";
 
 /* ================= Helpers ================= */
@@ -549,6 +550,23 @@ export default function HomestayPage() {
                         <p className="text-sm text-white/80">
                           {locationInfo.address}
                         </p>
+                        {/* Mở đúng vị trí Clubhouse trên Google Maps — cũng là
+                            nơi xem đánh giá. Khách dùng điện thoại bấm vào là
+                            chỉ đường được ngay. */}
+                        <a
+                          href={HOMESTAY_MAP_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="
+                            mt-2 inline-flex items-center gap-1.5 rounded-full
+                            border border-white/25 bg-white/10 px-3 py-1.5
+                            text-sm font-medium text-white transition-colors
+                            hover:bg-white/20
+                          "
+                        >
+                          <MapPin className="h-4 w-4" />
+                          {locText.viewOnMap}
+                        </a>
                       </div>
                     </div>
 

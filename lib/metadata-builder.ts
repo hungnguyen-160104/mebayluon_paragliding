@@ -15,6 +15,7 @@ import {
   type Locale,
 } from "@/lib/site-config";
 import { PARAGLIDING_PARTNERS, HOMESTAY_PARTNERS } from "@/lib/partner-links";
+import { HOMESTAY_MAP_URL, HOMESTAY_GEO } from "@/lib/homestay-data";
 
 export interface SEOMetadata {
   title: string;
@@ -365,14 +366,20 @@ export function generateLodgingSchema() {
       addressLocality: "Lào Cai",
       addressCountry: "VN",
     },
+    /**
+     * Toạ độ lấy từ chính địa điểm Clubhouse trên Google Maps. Bản trước dùng
+     * 21.8167 / 104.1167 chép từ LocalBusiness của công ty dù lượn — lệch
+     * khoảng 15 km so với vị trí thật.
+     */
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 21.8167,
-      longitude: 104.1167,
+      latitude: HOMESTAY_GEO.lat,
+      longitude: HOMESTAY_GEO.lng,
     },
+    hasMap: HOMESTAY_MAP_URL,
     priceRange: "$$",
     currenciesAccepted: "VND",
-    sameAs: HOMESTAY_PARTNERS.map((p) => p.url),
+    sameAs: [HOMESTAY_MAP_URL, ...HOMESTAY_PARTNERS.map((p) => p.url)],
   };
 }
 

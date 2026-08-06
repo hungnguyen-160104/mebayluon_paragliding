@@ -334,6 +334,16 @@ export const locationInfo = {
   ],
 } as const;
 
+/**
+ * Địa điểm Clubhouse trên Google Maps — link rút gọn chính chủ, vừa mở được
+ * bản đồ vừa mở phần đánh giá. Dùng chung cho nút trên trang và trường hasMap
+ * trong JSON-LD (lib/metadata-builder.ts) nên chỉ khai một chỗ.
+ *
+ * Toạ độ thật lấy từ chính link này: 21.7764187, 104.2636752.
+ */
+export const HOMESTAY_MAP_URL = "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6";
+export const HOMESTAY_GEO = { lat: 21.7764187, lng: 104.2636752 } as const;
+
 // ===== i18n cho phần Location =====
 export const locationTranslations = {
   vi: {
@@ -341,6 +351,7 @@ export const locationTranslations = {
     description:
       "Ngay tại điểm hạ cánh dù lượn – trung tâm hoạt động của các phi công chuyên nghiệp. Du khách có thể tương tác cùng cộng đồng bay và ngắm nhìn những cánh dù rực rỡ trên bầu trời.",
     addressLabel: "Địa chỉ",
+    viewOnMap: "Xem trên Google Maps",
     fromHanoi: "Từ Hà Nội",
     nearby: "Các điểm xung quanh",
     nearbyList: [
@@ -357,6 +368,7 @@ export const locationTranslations = {
     description:
       "Right at the paragliding landing area – the center of professional pilot activities. Guests can interact with the flying community and admire colorful paragliders in the sky.",
     addressLabel: "Address",
+    viewOnMap: "View on Google Maps",
     fromHanoi: "From Hanoi",
     nearby: "Nearby attractions",
     nearbyList: [
@@ -373,6 +385,7 @@ export const locationTranslations = {
     description:
       "Situé directement sur la zone d’atterrissage du parapente, au cœur des activités des pilotes professionnels. Les visiteurs peuvent rencontrer la communauté aérienne et admirer les parapentes colorés dans le ciel.",
     addressLabel: "Adresse",
+    viewOnMap: "Voir sur Google Maps",
     fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
     nearbyList: [
@@ -389,6 +402,7 @@ export const locationTranslations = {
     description:
       "Прямо у зоны приземления парапланов — в центре активности профессиональных пилотов. Гости могут пообщаться с лётным сообществом и любоваться яркими парапланами в небе.",
     addressLabel: "Адрес",
+    viewOnMap: "Смотреть на Google Картах",
     fromHanoi: "Из Ханоя",
     nearby: "Ближайшие места",
     nearbyList: [
@@ -405,6 +419,7 @@ export const locationTranslations = {
     description:
       "这里正位于滑翔伞降落点，是专业飞行员活动的中心。游客可以与飞行社群互动，并欣赏天空中绚丽多彩的滑翔伞。",
     addressLabel: "地址",
+    viewOnMap: "在 Google 地图上查看",
     fromHanoi: "从河内出发",
     nearby: "附近景点",
     nearbyList: [
@@ -421,6 +436,7 @@ export const locationTranslations = {
     description:
       "यह ठीक पैराग्लाइडिंग लैंडिंग स्थल पर स्थित है — पेशेवर पायलट गतिविधियों का केंद्र। मेहमान उड़ान समुदाय से जुड़ सकते हैं और आसमान में रंग-बिरंगे पैराग्लाइडर देख सकते हैं।",
     addressLabel: "पता",
+    viewOnMap: "Google Maps पर देखें",
     fromHanoi: "हनोई से",
     nearby: "नज़दीकी स्थान",
     nearbyList: [
