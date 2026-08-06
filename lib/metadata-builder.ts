@@ -12,10 +12,11 @@ import {
   DEFAULT_LOCALE,
   languageAlternates,
   canonicalUrlFor,
+  PLACE_MAP_URL,
+  PLACE_GEO,
   type Locale,
 } from "@/lib/site-config";
 import { PARAGLIDING_PARTNERS, HOMESTAY_PARTNERS } from "@/lib/partner-links";
-import { HOMESTAY_MAP_URL, HOMESTAY_GEO } from "@/lib/homestay-data";
 
 export interface SEOMetadata {
   title: string;
@@ -299,11 +300,13 @@ export function generateLocalBusinessSchema() {
       addressLocality: "Lào Cai",
       addressCountry: "VN",
     },
+    // Trụ sở công ty đặt cùng chỗ với Clubhouse nên dùng chung toạ độ.
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 21.8167,
-      longitude: 104.1167,
+      latitude: PLACE_GEO.lat,
+      longitude: PLACE_GEO.lng,
     },
+    hasMap: PLACE_MAP_URL,
     openingHoursSpecification: {
       "@type": "OpeningHoursSpecification",
       dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
@@ -373,13 +376,13 @@ export function generateLodgingSchema() {
      */
     geo: {
       "@type": "GeoCoordinates",
-      latitude: HOMESTAY_GEO.lat,
-      longitude: HOMESTAY_GEO.lng,
+      latitude: PLACE_GEO.lat,
+      longitude: PLACE_GEO.lng,
     },
-    hasMap: HOMESTAY_MAP_URL,
+    hasMap: PLACE_MAP_URL,
     priceRange: "$$",
     currenciesAccepted: "VND",
-    sameAs: [HOMESTAY_MAP_URL, ...HOMESTAY_PARTNERS.map((p) => p.url)],
+    sameAs: [PLACE_MAP_URL, ...HOMESTAY_PARTNERS.map((p) => p.url)],
   };
 }
 

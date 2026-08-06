@@ -334,16 +334,6 @@ export const locationInfo = {
   ],
 } as const;
 
-/**
- * Địa điểm Clubhouse trên Google Maps — link rút gọn chính chủ, vừa mở được
- * bản đồ vừa mở phần đánh giá. Dùng chung cho nút trên trang và trường hasMap
- * trong JSON-LD (lib/metadata-builder.ts) nên chỉ khai một chỗ.
- *
- * Toạ độ thật lấy từ chính link này: 21.7764187, 104.2636752.
- */
-export const HOMESTAY_MAP_URL = "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6";
-export const HOMESTAY_GEO = { lat: 21.7764187, lng: 104.2636752 } as const;
-
 // ===== i18n cho phần Location =====
 export const locationTranslations = {
   vi: {

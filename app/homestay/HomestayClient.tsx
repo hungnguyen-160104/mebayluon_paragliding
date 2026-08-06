@@ -36,8 +36,8 @@ import {
   type HomestayLang,
   locationInfo,
   locationTranslations,
-  HOMESTAY_MAP_URL,
 } from "@/lib/homestay-data";
+import { PLACE_MAP_URL } from "@/lib/site-config";
 
 /* ================= Helpers ================= */
 const getAmenityIcon = (amenity: AmenityKey) => {
@@ -554,7 +554,7 @@ export default function HomestayPage() {
                             nơi xem đánh giá. Khách dùng điện thoại bấm vào là
                             chỉ đường được ngay. */}
                         <a
-                          href={HOMESTAY_MAP_URL}
+                          href={PLACE_MAP_URL}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="

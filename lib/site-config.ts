@@ -140,3 +140,14 @@ export function canonicalUrlFor(
 
   return localizedUrl(path, target);
 }
+
+/**
+ * Địa điểm trên Google Maps của cơ sở Tú Lệ.
+ *
+ * Công ty dù lượn và homestay Clubhouse dùng chung một địa chỉ, nên cả hai
+ * schema (LocalBusiness và LodgingBusiness) cùng lấy toạ độ ở đây. Toạ độ rút
+ * từ chính link Maps bên dưới; bản cũ ghi 21.8167 / 104.1167 là số áng chừng,
+ * lệch khoảng 15 km.
+ */
+export const PLACE_MAP_URL = "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6";
+export const PLACE_GEO = { lat: 21.7764187, lng: 104.2636752 } as const;
