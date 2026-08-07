@@ -304,12 +304,12 @@ const pilotsData: PilotCard[] = [
     slug: "a-xieng",
     avatar: "/pilots/A-Xieng/A-Xieng.jpg",
     nickname: {
-      vi: "Trai Bản Thái Lão Làng",
-      en: "Trai Bản Thái Lão Làng",
-      fr: "Trai Bản Thái Lão Làng",
-      ru: "Trai Bản Thái Lão Làng",
-      zh: "Trai Bản Thái Lão Làng",
-      hi: "Trai Bản Thái Lão Làng",
+      vi: "Trai bản chăm chỉ",
+      en: "The hardworking village guy",
+      fr: "Le garçon du village travailleur",
+      ru: "Трудолюбивый парень из деревни",
+      zh: "勤奋的山村小伙",
+      hi: "मेहनती गाँव का लड़का",
     },
     role: {
       vi: "Phi công bản địa",
@@ -326,12 +326,12 @@ const pilotsData: PilotCard[] = [
     avatar: "/pilots/A-Mac/A-mac.jpg",
     imageObjectPosition: "object-[center_72%]",
     nickname: {
-      vi: "Trai Bản việc gì cũng làm được",
-      en: "Trai Bản việc gì cũng làm được",
-      fr: "Trai Bản việc gì cũng làm được",
-      ru: "Trai Bản việc gì cũng làm được",
-      zh: "Trai Bản việc gì cũng làm được",
-      hi: "Trai Bản việc gì cũng làm được",
+      vi: "Trai bản đa năng",
+      en: "The all-round village guy",
+      fr: "Le garçon du village polyvalent",
+      ru: "Универсальный парень из деревни",
+      zh: "全能的山村小伙",
+      hi: "गाँव का बहुमुखी लड़का",
     },
     role: {
       vi: "Phi công PG/PPG",
@@ -348,12 +348,12 @@ const pilotsData: PilotCard[] = [
     avatar: "/pilots/A-Hung/A-hung.jpg",
     imageObjectPosition: "object-[center_72%]",
     nickname: {
-      vi: "Trai bản thổi sáo trên không",
-      en: "Trai bản thổi sáo trên không",
-      fr: "Trai bản thổi sáo trên không",
-      ru: "Trai bản thổi sáo trên không",
-      zh: "Trai bản thổi sáo trên không",
-      hi: "Trai bản thổi sáo trên không",
+      vi: "Trai H’Mông thổi sáo",
+      en: "The H’Mong flute player",
+      fr: "Le joueur de flûte H’Mong",
+      ru: "Хмонг, играющий на флейте",
+      zh: "会吹笛的赫蒙族小伙",
+      hi: "बाँसुरी बजाने वाला H’Mông युवक",
     },
     role: {
       vi: "Phi công tập sự",
@@ -365,16 +365,16 @@ const pilotsData: PilotCard[] = [
     },
   },
   {
-    name: "Khang Dũng",
+    name: "Khang Dùng",
     slug: "a-dung",
     avatar: "/pilots/A-Dung/A-Dung.jpeg",
     nickname: {
-      vi: "Trai bản bay flycam, bay cả dù lượn",
-      en: "Trai bản bay flycam, bay cả dù lượn",
-      fr: "Trai bản bay flycam, bay cả dù lượn",
-      ru: "Trai bản bay flycam, bay cả dù lượn",
-      zh: "Trai bản bay flycam, bay cả dù lượn",
-      hi: "Trai bản bay flycam, bay cả dù lượn",
+      vi: "Nhiếp ảnh gia bầu trời",
+      en: "The sky photographer",
+      fr: "Le photographe du ciel",
+      ru: "Небесный фотограф",
+      zh: "天空摄影师",
+      hi: "आसमान का फ़ोटोग्राफ़र",
     },
     role: {
       vi: "Phi công tập sự",
@@ -518,7 +518,7 @@ export default function PilotsPage() {
             <div className="max-w-3xl mx-auto text-center space-y-6">
               {/* h1 duy nhất của trang — trước đây trang không có h1 nào (SEO) */}
               <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-3xl font-extrabold text-white shadow-lg">{introTitle}</h1>
-              <p className="text-lg text-slate-200 leading-relaxed">{introDesc}</p>
+              <p className="text-hero-shadow-soft text-lg leading-relaxed text-white/95">{introDesc}</p>
             </div>
           </div>
         </section>
@@ -578,12 +578,12 @@ export default function PilotsPage() {
         <section className="py-20 relative z-10 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center space-y-6">
-              <h2 className="text-4xl font-bold mb-8 font-serif">{safety.title}</h2>
+              <h2 className="text-hero-shadow mb-8 font-serif text-4xl font-bold">{safety.title}</h2>
               <div className="grid md:grid-cols-3 gap-8 text-left">
                 {safety.items.map((s, i) => (
                   <div key={i} className="space-y-3">
                     <h3 className="text-xl font-semibold">{s.title}</h3>
-                    <p className="text-slate-200">{s.desc}</p>
+                    <p className="text-slate-100">{s.desc}</p>
                   </div>
                 ))}
               </div>

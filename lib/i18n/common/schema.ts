@@ -1,8 +1,24 @@
+/** Nội dung một điểm bay dùng chung cho thẻ ở trang chủ và trang /spots. */
+export type SpotLocationCopy = {
+  name: string;
+  location: string;
+  duration: string;
+  highlights: string[];
+  summary: string;
+  /**
+   * Thế mạnh riêng, hiện thành dải chữ nổi bật trên thẻ điểm bay (trang chủ +
+   * /spots) và ở hero trang chi tiết. Hiện chỉ Khau Phạ có — là nơi duy nhất
+   * bay được cả dù lượn lẫn dù lượn gắn động cơ.
+   */
+  tagline?: string;
+};
+
 export type CommonTranslation = {
   nav: {
     home: string;
     about: string;
     spots: string;
+    ppg: string;
     pilots: string;
     homestay: string;
     booking: string;
@@ -33,13 +49,24 @@ export type CommonTranslation = {
     title: string;
     subtitle: string;
     viewDetails: string;
+    /**
+     * Mỗi điểm bay chỉ còn 4 trường để không lặp thông tin trên thẻ:
+     *  - name      : tên điểm bay (tiêu đề thẻ)
+     *  - location  : tỉnh/thành, hiện ở nhãn góc trên bên trái
+     *  - duration  : độ dài TOUR (đã kèm chữ "Tour" để khách không nhầm là
+     *                thời gian bay trên không)
+     *  - highlights: 2–3 điểm nhấn ngắn, hiện thành các chip ở trang chủ
+     *  - summary   : mô tả ngắn cho thẻ ở trang /spots
+     * Các trường cũ (area/description/highlight) đã bỏ vì trùng với name,
+     * location và với chính nhau.
+     */
     locations: {
-      muongHoaSapa: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
-      sonTra: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
-      khauPha: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
-      tramTau: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
-      vienNam: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
-      doiBu: { name: string; location: string; area: string; description: string; highlight: string; duration: string };
+      muongHoaSapa: SpotLocationCopy;
+      sonTra: SpotLocationCopy;
+      khauPha: SpotLocationCopy;
+      tramTau: SpotLocationCopy;
+      vienNam: SpotLocationCopy;
+      doiBu: SpotLocationCopy;
     };
   };
 

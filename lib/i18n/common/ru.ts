@@ -6,6 +6,7 @@ export const ru: CommonTranslation = {
     home: "Главная",
     about: "О нас",
     spots: "Места полётов",
+    ppg: "Парамотор (PPG)",
     pilots: "Пилоты",
     homestay: "Homestay & Café",
     booking: "Забронировать полёт",
@@ -42,54 +43,75 @@ export const ru: CommonTranslation = {
     viewDetails: "Подробнее",
     locations: {
       muongHoaSapa: {
-        name: "Sapa",
+        name: "Sapa (долина Muong Hoa)",
         location: "Lao Cai",
-        area: "Lao Chai, Ta Van",
-        description:
-          "Полетайте над долиной Muong Hoa и полюбуйтесь террасными рисовыми полями",
-        highlight: "Террасные поля и вершина Fansipan",
-        duration: "90 минут",
+        duration: "Тур 90 минут",
+        highlights: [
+          "Вся Sapa с высоты",
+          "Вид на вершину Fansipan",
+          "Полёт над морем облаков",
+        ],
+        summary:
+          "Полёт на высоте нескольких тысяч метров: вся Sapa как на ладони - террасные поля и вид на вершину Fansipan. Место старта всего в 10 минутах от центра Sapa.",
       },
       sonTra: {
-        name: "Da Nang",
+        name: "Son Tra",
         location: "Da Nang",
-        area: "Полуостров Son Tra",
-        description: "Насладитесь панорамным видом на побережье Да Нанга",
-        highlight: "Панорамный вид на море Да Нанга",
-        duration: "60 минут",
+        duration: "Тур 60 минут",
+        highlights: [
+          "Панорама всего Да Нанга",
+          "Полёт над морем",
+          "Старт с вершины Son Tra",
+        ],
+        summary:
+          "Старт с вершины Son Tra и полёт над пляжем - весь Да Нанг под вами. Знаменит потрясающими закатами над морем.",
       },
       khauPha: {
-        name: "Mu Cang Chai, Tu Le",
-        location: "Lao Cai",
-        area: "Перевал Khau Pha",
-        description:
-          "Пролетите над величественным перевалом Khau Pha — одним из четырёх великих перевалов Северо-Западного Вьетнама",
-        highlight: "Один из четырёх великих перевалов Северо-Запада",
-        duration: "60 минут",
+        name: "Перевал Khau Pha",
+        location: "Tu Le - Mu Cang Chai",
+        tagline: "Полёты на параплане и парамоторе",
+        duration: "Тур 60 минут",
+        highlights: [
+          "Полёт над одним из четырёх великих перевалов",
+          "Полёт над золотым сезоном риса",
+          "Охота за облаками выше 2 000 м",
+        ],
+        summary:
+          "Одно из красивейших мест для полётов в мире. Полёт над величественным перевалом Khau Pha — одним из четырёх великих перевалов Вьетнама. Полёты над золотым сезоном риса, над сезоном залитых водой полей и охота за облаками до 2 000 м (парамотор).",
       },
       tramTau: {
-        name: "Tram Tau",
-        location: "Yen Bai, Lao Cai",
-        area: "Поле Muong Lo",
-        description: "Полёт над просторами поля Muong Lo",
-        highlight: "Край белых плывущих облаков",
-        duration: "90 минут",
+        name: "Phinh Ho - Tram Tau",
+        location: "Lao Cai",
+        duration: "Тур 90 минут",
+        highlights: [
+          "Полёт над полем Muong Lo",
+          "Полёт над морем облаков",
+        ],
+        summary:
+          "Место находится совсем рядом с Nghia Lo, всё поле Muong Lo раскинулось внизу. Район знаменит своими морями облаков.",
       },
       vienNam: {
-        name: "Ha Giang",
+        name: "Bac Sum | Quan Ba",
         location: "Ha Giang",
-        area: "Quan Ba",
-        description: "Полюбуйтесь первозданным каменным плато Северо-Западного Вьетнама",
-        highlight: "Первозданное каменное плато",
-        duration: "90 минут",
+        duration: "Тур 90 минут",
+        highlights: [
+          "Кадр из Ha Giang с высоты в тысячи метров",
+          "Панорама Каменного плато",
+        ],
+        summary:
+          "Полюбуйтесь великолепным каменным плато Ha Giang с высоты в тысячи метров — совершенно новый ракурс.",
       },
       doiBu: {
-        name: "Doi Bu - Vien Nam",
+        name: "Doi Bu | Vien Nam",
         location: "Ханой",
-        area: "Doi Bu - Vien Nam",
-        description: "Место для полётов недалеко от столицы Ханоя",
-        highlight: "Локация рядом со столицей",
-        duration: "180 минут",
+        duration: "Тур 3 - 5 часов",
+        highlights: [
+          "Локация рядом со столицей",
+          "Полёт над холмами тростника",
+          "Полёт на закате",
+        ],
+        summary:
+          "Место для полётов на окраине Ханоя — вся поездка занимает всего 3–5 часов. Знаменито холмами белого тростника, легко совместить с кемпингом и треккингом.",
       },
     },
   },

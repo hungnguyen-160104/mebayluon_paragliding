@@ -23,6 +23,11 @@ import {
   getSelectFlightStepLocale,
   type BookingLang,
 } from "@/lib/i18n/select-flight-step";
+import {
+  imageComboDiscountVND,
+  imageComboDiscountUSD,
+  imageComboLabel,
+} from "@/lib/booking/image-combo";
 
 type ServiceConfig =
   NonNullable<(typeof LOCATIONS)[LocationKey]["services"]>[number];
@@ -1116,16 +1121,43 @@ export default function SelectFlightStep() {
     [servicesWithMeta, data, guestsCount, getServiceQty],
   );
 
+  // Chọn cả flycam lẫn camera 360° thì bớt 100.000đ mỗi khách (xem
+  // lib/booking/image-combo.ts).
+  const comboServiceStates = useMemo(
+    () =>
+      servicesWithMeta.map(({ svc, meta }) => {
+        const state = getServiceState(data, svc.key);
+        return {
+          key: String(svc.key),
+          selected: !!state.selected,
+          qty: state.selected ? getServiceQty(svc, meta) : 0,
+        };
+      }),
+    [servicesWithMeta, data, getServiceQty],
+  );
+
+  const imageComboOffVND = imageComboDiscountVND(comboServiceStates);
+  const imageComboOffUSD = imageComboDiscountUSD(comboServiceStates);
+
   const addonTotalVND = Object.values(totalsVND.addonsTotal || {}).reduce(
     (sum, value) => sum + Number(value || 0),
     0,
   );
 
-  const optionalTotalVND = addonTotalVND + selectedServicesTotalVND;
-  const grandTotalVND =
-    Number(totalsVND.totalAfterDiscount || 0) + selectedServicesTotalVND;
-  const grandTotalUSD =
-    Number(totalsUSD.totalAfterDiscount || 0) + selectedServicesTotalUSD;
+  const optionalTotalVND =
+    addonTotalVND + selectedServicesTotalVND - imageComboOffVND;
+  const grandTotalVND = Math.max(
+    0,
+    Number(totalsVND.totalAfterDiscount || 0) +
+      selectedServicesTotalVND -
+      imageComboOffVND,
+  );
+  const grandTotalUSD = Math.max(
+    0,
+    Number(totalsUSD.totalAfterDiscount || 0) +
+      selectedServicesTotalUSD -
+      imageComboOffUSD,
+  );
 
   const requiredPickupInputsMissing = servicesWithMeta.some(({ svc, meta }) => {
     if (!meta.requiresInput) return false;
@@ -1620,6 +1652,14 @@ export default function SelectFlightStep() {
                     <div className="mt-2 text-[15px] font-bold text-[#355166]">
                       +{formatVND(optionalTotalVND)}
                     </div>
+
+                    {/* Chọn cả flycam lẫn camera 360° thì hiện rõ khoản được
+                        bớt, không im lặng trừ vào tổng. */}
+                    {imageComboOffVND > 0 ? (
+                      <div className="mt-1 text-[12px] font-semibold text-emerald-600">
+                        {imageComboLabel(lang)}: −{formatVND(imageComboOffVND)}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="px-3 py-2.5 text-center md:text-right">

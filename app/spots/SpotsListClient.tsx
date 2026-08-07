@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer/Footer";
 import { SPOTS_LIST } from "@/lib/spots-registry";
+import { SpotTagline } from "@/components/spots/SpotTagline";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("vi-VN", {
@@ -43,16 +44,10 @@ export default function SpotsListClient() {
       <section className="relative z-10 pb-16 pt-32 md:pt-36">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
-            <h1
-              className="font-serif text-4xl font-bold text-white md:text-5xl"
-              style={{ textShadow: "2px 2px 8px rgba(0,0,0,.7)" }}
-            >
+            <h1 className="text-hero-shadow font-serif text-4xl font-bold text-white md:text-5xl">
               {title}
             </h1>
-            <p
-              className="mx-auto mt-4 max-w-3xl text-lg text-slate-200"
-              style={{ textShadow: "1px 1px 6px rgba(0,0,0,.7)" }}
-            >
+            <p className="text-hero-shadow-soft mx-auto mt-4 max-w-3xl text-lg font-medium text-white/95">
               {subtitle}
             </p>
           </div>
@@ -60,9 +55,8 @@ export default function SpotsListClient() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {SPOTS_LIST.map((spot) => {
               const loc = spot.i18nKey ? locations[spot.i18nKey] ?? {} : {};
-              const description = text(loc.description);
-              const highlight = text(loc.highlight);
-              const area = text(loc.area);
+              const summary = text(loc.summary);
+              const tagline = text(loc.tagline);
 
               return (
                 <Link
@@ -109,25 +103,18 @@ export default function SpotsListClient() {
                         </span>
                       </div>
 
-                      {/* Trước chỉ hiện MỘT trong hai câu và cắt cụt còn 1 dòng,
-                          nên cả trang /spots chỉ có ~330 từ kể cả menu và chân
-                          trang — quá mỏng để Google coi là trang đáng lập chỉ
-                          mục. Cả ba câu dưới đây đều đã dịch sẵn 6 ngôn ngữ
-                          trong t.spots.locations, chỉ là chưa được dùng. */}
-                      {area ? (
-                        <p className="mb-1 text-xs text-slate-300">{area}</p>
+                      {tagline ? (
+                        <div className="mb-2">
+                          <SpotTagline text={tagline} />
+                        </div>
                       ) : null}
 
-                      {highlight ? (
-                        <p className="text-sm font-medium text-slate-100">
-                          {highlight}
-                        </p>
-                      ) : null}
-
-                      {description && description !== highlight ? (
-                        <p className="mt-1 text-sm text-slate-200">
-                          {description}
-                        </p>
+                      {/* Một đoạn mô tả duy nhất (t.spots.locations.*.summary,
+                          đã dịch 6 ngôn ngữ). Trước đây chỗ này có 3 dòng
+                          area/highlight/description nhưng chúng lặp lại tên
+                          điểm bay ở trên và lặp lẫn nhau. */}
+                      {summary ? (
+                        <p className="text-sm text-slate-100">{summary}</p>
                       ) : null}
                     </div>
                   </div>

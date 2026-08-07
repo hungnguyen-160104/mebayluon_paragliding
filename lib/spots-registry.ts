@@ -27,7 +27,7 @@ export const SPOTS_LIST: SpotListItem[] = [
   {
     slug: "khau-pha",
     name: "Đèo Khau Phạ",
-    province: "Mù Cang Chải",
+    province: "Tú Lệ - Mù Cang Chải",
     altitude: "1.268 – 2.000 m",
     duration: "10 – 20'",
     priceVND: 2_190_000,
@@ -48,7 +48,7 @@ export const SPOTS_LIST: SpotListItem[] = [
   },
   {
     slug: "muong-hoa-sapa",
-    name: "Mường Hoa (Sa Pa)",
+    name: "Sapa (Thung lũng Mường Hoa)",
     province: "Lào Cai",
     altitude: "1.500 – 2.000 m",
     duration: "10 – 15'",
@@ -79,7 +79,8 @@ export const SPOTS_LIST: SpotListItem[] = [
   {
     slug: "tram-tau",
     name: "Phình Hồ - Trạm Tấu",
-    province: "Yên Bái",
+    // Trạm Tấu / Phình Hồ nay thuộc tỉnh Lào Cai sau khi sáp nhập Yên Bái.
+    province: "Lào Cai",
     altitude: "1.000 – 1.500 m",
     duration: "10 – 15'",
     priceVND: 2_590_000,

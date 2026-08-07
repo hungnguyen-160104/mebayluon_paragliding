@@ -38,6 +38,9 @@ import {
   locationTranslations,
 } from "@/lib/homestay-data";
 import { PLACE_MAP_URL } from "@/lib/site-config";
+import { HOMESTAY_PARTNERS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
+import { Footer } from "@/components/footer";
+import HomestayGallery from "@/components/homestay/HomestayGallery";
 
 /* ================= Helpers ================= */
 const getAmenityIcon = (amenity: AmenityKey) => {
@@ -312,10 +315,10 @@ export default function HomestayPage() {
                     <Card key={card.titleKey} className="hidden">
                       <CardContent className="pt-6 pb-6 text-center space-y-2">
                         <Icon className="h-12 w-12 mx-auto mb-2 text-accent" />
-                        <h3 className="font-semibold text-white/95 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                        <h3 className="font-semibold text-white/95 text-hero-shadow-soft">
                           {t.homestay.intro[card.titleKey]}
                         </h3>
-                        <p className="text-sm text-white/80">
+                        <p className="text-sm text-white/90">
                           {card.desc ??
                             (card.descKey
                               ? t.homestay.intro[card.descKey]
@@ -337,10 +340,10 @@ export default function HomestayPage() {
         >
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 text-hero-shadow">
                 {t.homestay.rooms.title}
               </h2>
-              <p className="text-white/85">{t.homestay.rooms.subtitle}</p>
+              <p className="text-hero-shadow-soft font-medium text-white">{t.homestay.rooms.subtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -359,7 +362,7 @@ export default function HomestayPage() {
                   </div>
 
                   <CardContent className="p-6 flex flex-col grow">
-                    <h3 className="text-2xl font-bold mb-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                    <h3 className="text-2xl font-bold mb-2 text-hero-shadow-soft">
                       {t.homestay.rooms[room.nameKey].name}
                     </h3>
 
@@ -367,12 +370,12 @@ export default function HomestayPage() {
                       <span className="text-3xl font-bold text-accent">
                         {priceFormatter.format(room.price)} ₫
                       </span>
-                      <span className="text-sm text-white/80">
+                      <span className="text-sm text-white/90">
                         {t.homestay.rooms.priceTypes[room.priceType]}
                       </span>
                     </div>
 
-                    <p className="text-sm text-white/85 mb-4 grow leading-relaxed">
+                    <p className="text-sm text-white/95 mb-4 grow leading-relaxed">
                       {t.homestay.rooms[room.nameKey].description}
                     </p>
 
@@ -418,10 +421,10 @@ export default function HomestayPage() {
         <section className="py-16 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 text-hero-shadow">
                 {t.homestay.cafe.title}
               </h2>
-              <p className="text-white/85">{t.homestay.cafe.subtitle}</p>
+              <p className="text-hero-shadow-soft font-medium text-white">{t.homestay.cafe.subtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -439,7 +442,7 @@ export default function HomestayPage() {
                 <div className="space-y-8">
                   {menuItems.map((category) => (
                     <div key={category.category}>
-                      <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                      <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-hero-shadow-soft">
                         <Coffee className="h-6 w-6 text-accent" />
                         {t.homestay.cafe.categories[category.category]}
                       </h3>
@@ -467,10 +470,10 @@ export default function HomestayPage() {
                 </div>
 
                 <div className="mt-8 p-6 rounded-lg bg-accent/20 border border-accent/30">
-                  <p className="text-lg font-semibold mb-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                  <p className="text-lg font-semibold mb-2 text-hero-shadow-soft">
                     {t.homestay.cafe.specialNote}
                   </p>
-                  <p className="text-white/90">
+                  <p className="text-white/95">
                     {t.homestay.cafe.specialNoteDesc}
                   </p>
                 </div>
@@ -483,10 +486,10 @@ export default function HomestayPage() {
         <section className="py-16 bg-transparent border-y border-white/10">
           <div className="container mx-auto px-4">
             <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 text-hero-shadow">
                 {t.homestay.amenities.title}
               </h2>
-              <p className="text-white/85">{t.homestay.amenities.subtitle}</p>
+              <p className="text-hero-shadow-soft font-medium text-white">{t.homestay.amenities.subtitle}</p>
             </div>
 
             <div className="max-w-[1500px] mx-auto">
@@ -505,7 +508,7 @@ export default function HomestayPage() {
                     >
                       <CardContent className="h-full px-1.5 py-2 flex flex-col items-center justify-center">
                         <Icon className="h-8 w-8 sm:h-9 sm:w-9 mb-1.5 text-accent" />
-                        <p className="font-medium text-sm sm:text-base leading-snug text-white/90 mx-auto">
+                        <p className="text-hero-shadow-soft mx-auto text-sm font-semibold leading-snug text-white sm:text-base">
                           {t.homestay.amenities.list[amenityKey]}
                         </p>
                       </CardContent>
@@ -516,6 +519,12 @@ export default function HomestayPage() {
             </div>
           </div>
         </section>
+
+        {/* ===== Bộ sưu tập ảnh =====
+             Đặt trước mục "Vị trí & Trải nghiệm": khách xem phòng và không gian
+             xong mới tới phần đường đi. Ảnh và chú thích sinh từ tên file trong
+             media-inbox/Homestay photo (xem lib/homestay-gallery.ts). */}
+        <HomestayGallery lang={language} />
 
         {/* ===== Location & Experience ===== */}
         <section className="py-16 bg-transparent border-b border-white/10">
@@ -533,10 +542,10 @@ export default function HomestayPage() {
 
               <Card className="flex flex-col justify-center bg-black/30 backdrop-blur-lg border border-white/10 text-white rounded-2xl shadow-xl">
                 <CardContent className="p-8">
-                  <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                  <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 text-hero-shadow">
                     {locText.title}
                   </h2>
-                  <p className="text-white/90 mb-6 leading-relaxed">
+                  <p className="mb-6 leading-relaxed text-white/95">
                     {locText.description}
                   </p>
 
@@ -547,7 +556,7 @@ export default function HomestayPage() {
                         <p className="font-semibold text-white/95">
                           {locText.addressLabel}
                         </p>
-                        <p className="text-sm text-white/80">
+                        <p className="text-sm text-white/90">
                           {locationInfo.address}
                         </p>
                         {/* Mở đúng vị trí Clubhouse trên Google Maps — cũng là
@@ -559,14 +568,54 @@ export default function HomestayPage() {
                           rel="noopener noreferrer"
                           className="
                             mt-2 inline-flex items-center gap-1.5 rounded-full
-                            border border-white/25 bg-white/10 px-3 py-1.5
-                            text-sm font-medium text-white transition-colors
-                            hover:bg-white/20
+                            bg-accent px-4 py-2 text-sm font-semibold text-white
+                            shadow-lg ring-1 ring-white/25 transition-all
+                            hover:-translate-y-0.5 hover:bg-accent/90 hover:shadow-xl
                           "
                         >
                           <MapPin className="h-4 w-4" />
                           {locText.viewOnMap}
                         </a>
+                      </div>
+                    </div>
+
+                    {/* Hồ sơ Clubhouse trên Google, Facebook và các trang đặt
+                        phòng. Danh sách lấy từ lib/partner-links.ts nên trùng
+                        đúng với `sameAs` trong JSON-LD của trang này. */}
+                    <div className="flex items-start gap-3">
+                      <Star className="h-6 w-6 text-accent shrink-0 mt-1" />
+                      <div className="min-w-0">
+                        <p className="font-semibold mb-2 text-white/95">
+                          {locText.seeUsOn}
+                        </p>
+
+                        <ul className="flex flex-wrap gap-2">
+                          <li>
+                            <a
+                              href={PLACE_MAP_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`inline-flex items-center rounded-lg px-3 py-1.5 text-[13px] font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${BRAND_BUTTON_CLASS.google}`}
+                            >
+                              Google
+                            </a>
+                          </li>
+
+                          {HOMESTAY_PARTNERS.map((partner) => (
+                            <li key={partner.url}>
+                              <a
+                                href={partner.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`inline-flex items-center rounded-lg px-3 py-1.5 text-[13px] font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${BRAND_BUTTON_CLASS[partner.brand]}`}
+                              >
+                                {partner.brand === "facebook"
+                                  ? locText.fanpage
+                                  : partner.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
 
@@ -576,7 +625,7 @@ export default function HomestayPage() {
                         <p className="font-semibold text-white/95">
                           {locText.fromHanoi}
                         </p>
-                        <p className="text-sm text-white/80">
+                        <p className="text-sm text-white/90">
                           {locationInfo.distanceFromHanoi} -{" "}
                           {locationInfo.travelTime}
                         </p>
@@ -608,11 +657,11 @@ export default function HomestayPage() {
         {/* ===== CTA ===== */}
         <section className="py-16">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-hero-shadow">
               {t.homestay.cta.title}
             </h2>
 
-            <p className="text-xl mb-8 max-w-2xl mx-auto text-white/90 leading-relaxed drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+            <p className="text-hero-shadow-soft text-xl mb-8 max-w-2xl mx-auto font-medium text-white leading-relaxed">
               {t.homestay.cta.subtitle}
             </p>
 
@@ -644,6 +693,14 @@ export default function HomestayPage() {
         </section>
       </div>
 
+
+      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
+          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
+      <div className="relative z-10 pb-6">
+        <div className="container mx-auto">
+          <Footer />
+        </div>
+      </div>
       <GoogleReviewBadge />
     </div>
   );

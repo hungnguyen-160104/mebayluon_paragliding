@@ -33,6 +33,7 @@ import type {
   PostCategory,
   PostPayload,
   StoreCategory,
+  BlogCategoryKey,
 } from "@/types/frontend/post";
 
 type EditorForm = {
@@ -44,6 +45,7 @@ type EditorForm = {
   coverImage: string;
   category: "" | PostCategory;
   subCategory: "" | KnowledgeSubCategory;
+  blogCategory: "" | BlogCategoryKey;
   storeCategory: "" | StoreCategory;
   price: string;
   tags: string;
@@ -61,6 +63,15 @@ const CATEGORY_OPTIONS: { value: "" | PostCategory; label: string }[] = [
   { value: "news", label: "Tin tức" },
   { value: "knowledge", label: "Kiến thức dù lượn" },
   { value: "store", label: "Cửa hàng" },
+];
+
+/** Chuyên mục bài blog — trùng với BLOG_CATEGORIES ở lib/blog-categories.ts. */
+const BLOG_CATEGORY_OPTIONS: { value: "" | BlogCategoryKey; label: string }[] = [
+  { value: "", label: "Chọn chuyên mục" },
+  { value: "tin-tuc", label: "Tin tức" },
+  { value: "su-kien", label: "Sự kiện" },
+  { value: "tip", label: "Tip" },
+  { value: "du-lich", label: "Du lịch" },
 ];
 
 const KNOWLEDGE_OPTIONS: { value: "" | KnowledgeSubCategory; label: string }[] = [
@@ -89,6 +100,7 @@ const EMPTY_FORM: EditorForm = {
   coverImage: "",
   category: "",
   subCategory: "",
+  blogCategory: "",
   storeCategory: "",
   price: "",
   tags: "",
@@ -533,6 +545,7 @@ export default function PostEditor({
         coverImage: post.coverImage || "",
         category: (post.category as "" | PostCategory) || "",
         subCategory: (post.subCategory as "" | KnowledgeSubCategory) || "",
+        blogCategory: (post.blogCategory as "" | BlogCategoryKey) || "",
         storeCategory: (post.storeCategory as "" | StoreCategory) || "",
         price: typeof post.price === "number" ? String(post.price) : "",
         tags: Array.isArray(post.tags) ? post.tags.join(", ") : "",
@@ -562,6 +575,8 @@ export default function PostEditor({
   const isKnowledge = form.category === "knowledge";
   const isStore = form.category === "store";
   const isCourseInStore = isStore && form.storeCategory === "khoa-hoc-du-luon";
+  // Bài blog thường (category "news") -> hiện ô chọn chuyên mục.
+  const isNews = form.category === "news";
 
   const previewSlug = useMemo(
     () => form.slug || slugify(form.title || form.titleVi),
@@ -940,6 +955,7 @@ export default function PostEditor({
         (isKnowledge || isCourseInStore) && form.subCategory
           ? form.subCategory
           : undefined,
+      blogCategory: isNews && form.blogCategory ? form.blogCategory : undefined,
 
       type: isStore ? "product" : "blog",
       storeCategory: isStore && form.storeCategory ? form.storeCategory : undefined,
@@ -1129,6 +1145,31 @@ export default function PostEditor({
                     ))}
                   </select>
                   {errors.subCategory && <p className={errorClass}>{errors.subCategory}</p>}
+                </div>
+              )}
+
+              {isNews && (
+                <div>
+                  <label className={labelClass}>Chuyên mục blog</label>
+                  <select
+                    className={inputClass}
+                    value={form.blogCategory}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        blogCategory: e.target.value as "" | BlogCategoryKey,
+                      }))
+                    }
+                  >
+                    {BLOG_CATEGORY_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Để trống thì bài tự xếp vào &quot;Tin tức&quot;.
+                  </p>
                 </div>
               )}
 

@@ -21,6 +21,7 @@ export type PostInput = {
   author?: string;
   category?: string;
   subCategory?: string;
+  blogCategory?: string;
   tags?: string[];
   slug?: string;
   isPublished?: boolean;
@@ -435,6 +436,7 @@ export async function createPost(data: PostInput, _auth?: any) {
     author: data.author || "Admin",
     category: data.category || "news",
     subCategory: data.subCategory,
+    blogCategory: data.blogCategory,
     tags: data.tags || [],
     language: "bilingual",
     readTime: computeReadTime(normalizedContent, normalizedContentVi),

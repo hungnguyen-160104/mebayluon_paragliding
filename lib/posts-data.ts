@@ -126,6 +126,7 @@ function normalizePostRecord(raw: RawPostLike): Post {
     author: String(raw?.author ?? "Admin"),
     category: String(raw?.category ?? "news"),
     subCategory: raw?.subCategory ? String(raw.subCategory) as any : undefined,
+    blogCategory: raw?.blogCategory ? String(raw.blogCategory) as any : undefined,
     tags: normalizeTags(raw?.tags),
 
     language:

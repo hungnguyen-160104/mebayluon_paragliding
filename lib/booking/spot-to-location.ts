@@ -8,7 +8,10 @@
  * vì chọn nhầm sang điểm khác.
  */
 
-import type { LocationKey } from "@/lib/booking/calculate-price";
+import type {
+  LocationKey,
+  FlightTypeKey,
+} from "@/lib/booking/calculate-price";
 
 export const SPOT_TO_BOOKING_LOCATION: Record<string, LocationKey> = {
   "khau-pha": "khau_pha",
@@ -33,4 +36,19 @@ export function bookingLocationForSpot(slug: string): LocationKey | null {
 export function bookingHrefForSpot(slug: string): string {
   const key = bookingLocationForSpot(slug);
   return key ? `/booking?spot=${key}` : "/booking";
+}
+
+/**
+ * Link đặt bay chọn sẵn CẢ điểm bay lẫn loại hình bay — dùng cho nút "Đặt bay
+ * ngay" ở trang /ppg, để khách khỏi phải tự chọn lại Khau Phạ rồi bấm tiếp
+ * "dù lượn gắn động cơ".
+ */
+export function bookingHrefForFlightType(
+  slug: string,
+  flightType: FlightTypeKey,
+): string {
+  const key = bookingLocationForSpot(slug);
+  return key
+    ? `/booking?spot=${key}&type=${flightType}`
+    : `/booking?type=${flightType}`;
 }

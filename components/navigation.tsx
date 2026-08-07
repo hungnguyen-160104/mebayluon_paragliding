@@ -102,6 +102,7 @@ export function Navigation() {
     { type: "path", href: "/", label: t?.nav?.home ?? "Trang chủ" },
     { type: "path", href: "/booking", label: t?.nav?.booking ?? "Đặt bay" },
     { type: "path", href: "/spots", label: t?.nav?.spots ?? "Điểm bay" },
+    { type: "path", href: "/ppg", label: t?.nav?.ppg ?? "Dù máy (PPG)" },
     { type: "path", href: "/pilots", label: t?.nav?.pilots ?? "Phi công" },
     { type: "path", href: "/homestay", label: t?.nav?.homestay ?? "Homestay & Cà phê" },
     { type: "path", href: "/store", label: t?.nav?.store ?? "Cửa hàng" },

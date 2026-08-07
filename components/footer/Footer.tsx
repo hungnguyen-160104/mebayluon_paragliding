@@ -2,7 +2,15 @@
 
 // /components/footer/Footer.tsx
 import Link from "next/link";
-import { ALL_PARTNERS } from "@/lib/partner-links";
+import {
+  PARAGLIDING_PARTNERS,
+  HOMESTAY_PARTNERS,
+  BRAND_BUTTON_CLASS,
+} from "@/lib/partner-links";
+import {
+  TOUR_PARTNER_LINKS,
+  COURSE_PARTNER_LINKS,
+} from "@/lib/spot-partner-links";
 import { Dancing_Script } from "next/font/google";
 import { usePathname } from "next/navigation";
 
@@ -60,6 +68,22 @@ export const FOOTER_SPOTS = [
   },
 ];
 
+/**
+ * Các nhóm link đối tác ở dải ngang cuối footer.
+ *
+ * Nhóm "tour dù lượn" gồm hồ sơ doanh nghiệp (Tripadvisor, Seek Sophie) cộng
+ * với trang bán tour của từng điểm bay — lấy tự động từ lib/spot-partner-links
+ * nên thêm link cho một điểm bay là footer có luôn.
+ */
+const PARTNER_GROUPS = [
+  {
+    labelKey: "partnersFlights" as const,
+    links: [...PARAGLIDING_PARTNERS, ...TOUR_PARTNER_LINKS],
+  },
+  { labelKey: "partnersCourses" as const, links: COURSE_PARTNER_LINKS },
+  { labelKey: "partnersStay" as const, links: HOMESTAY_PARTNERS },
+];
+
 type FooterDict = {
   slogan: string;
   quickLinks: string;
@@ -69,7 +93,15 @@ type FooterDict = {
   contact: string;
   followUs: string;
   bookOnPartners: string;
+  /** Nhãn nhóm link đối tác bán tour dù lượn. */
+  partnersFlights: string;
+  /** Nhãn nhóm link bán khoá học bay. */
+  partnersCourses: string;
+  /** Nhãn nhóm link đặt phòng Clubhouse. */
+  partnersStay: string;
   spotsInfo: string;
+  /** Nhãn link trang Điều khoản & Điều kiện ở dòng bản quyền. */
+  terms: string;
   license: string;
   rightsReserved: string;
 };
@@ -84,7 +116,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     bookOnPartners: "Đặt qua đối tác",
+    partnersFlights: "Tour dù lượn",
+    partnersCourses: "Học bay dù lượn",
+    partnersStay: "Đặt phòng Clubhouse",
     spotsInfo: "Thông tin điểm bay",
+    terms: "Điều khoản & Điều kiện",
     license:
       "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
     rightsReserved: "Đã đăng ký bản quyền.",
@@ -98,7 +134,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Follow Us",
     bookOnPartners: "Book via partners",
+    partnersFlights: "Paragliding tours",
+    partnersCourses: "Paragliding courses",
+    partnersStay: "Clubhouse stays",
     spotsInfo: "Flying Spots Info",
+    terms: "Terms & Conditions",
     license:
       "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
     rightsReserved: "All rights reserved.",
@@ -112,7 +152,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Suivez-nous",
     bookOnPartners: "Réserver via nos partenaires",
+    partnersFlights: "Vols en parapente",
+    partnersCourses: "Stages de parapente",
+    partnersStay: "Séjours au Clubhouse",
     spotsInfo: "Infos sites de vol",
+    terms: "Conditions générales",
     license:
       "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
     rightsReserved: "Tous droits réservés.",
@@ -126,7 +170,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Контакты",
     followUs: "Подписывайтесь",
     bookOnPartners: "Бронирование у партнёров",
+    partnersFlights: "Полёты на параплане",
+    partnersCourses: "Курсы парапланеризма",
+    partnersStay: "Проживание в Clubhouse",
     spotsInfo: "О местах полётов",
+    terms: "Условия обслуживания",
     license:
       "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
     rightsReserved: "Все права защищены.",
@@ -140,7 +188,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "联系方式",
     followUs: "关注我们",
     bookOnPartners: "通过合作平台预订",
+    partnersFlights: "滑翔伞行程",
+    partnersCourses: "滑翔伞课程",
+    partnersStay: "Clubhouse 住宿",
     spotsInfo: "飞行点信息",
+    terms: "服务条款",
     license: "飞行运营已获越南国防部总参谋部作战局许可。",
     rightsReserved: "保留所有权利。",
   },
@@ -153,7 +205,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
     bookOnPartners: "पार्टनर के ज़रिए बुक करें",
+    partnersFlights: "पैराग्लाइडिंग टूर",
+    partnersCourses: "पैराग्लाइडिंग कोर्स",
+    partnersStay: "Clubhouse ठहरने",
     spotsInfo: "उड़ान स्थल जानकारी",
+    terms: "नियम और शर्तें",
     license:
       "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
     rightsReserved: "सर्वाधिकार सुरक्षित।",
@@ -465,37 +521,58 @@ export default function Footer() {
                 ))}
               </div>
 
-              {/* Trang đặt tour / đặt phòng trên nền tảng đối tác. Danh sách
-                  lấy từ lib/partner-links.ts — cùng nguồn với sameAs trong
-                  JSON-LD nên hai nơi không bao giờ lệch nhau. */}
-              {ALL_PARTNERS.length > 0 && (
-                <>
-                  <h3 className="mb-3 mt-6 text-lg font-semibold text-white">
-                    {t.bookOnPartners}
-                  </h3>
-                  <ul className="flex flex-wrap gap-2">
-                    {ALL_PARTNERS.map((p) => (
-                      <li key={p.url}>
-                        <a
-                          href={p.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="
-                            inline-flex items-center rounded-lg border border-white/15
-                            bg-white/5 px-3 py-1.5 text-[13px] text-slate-300
-                            transition-all hover:-translate-y-0.5
-                            hover:border-white/30 hover:text-white
-                          "
-                        >
-                          {p.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
             </div>
           </div>
+
+          {/* Trang đặt tour / đặt phòng trên nền tảng đối tác. Danh sách lấy từ
+              lib/partner-links.ts — cùng nguồn với sameAs trong JSON-LD nên hai
+              nơi không bao giờ lệch nhau.
+
+              Khối này trước nằm trong cột "Theo dõi chúng tôi" (rộng ~265px)
+              nên 7 nút màu phải xuống 4 hàng và kéo footer dài ra. Giờ tách
+              thành một dải ngang chiếm hết bề rộng, chia hai nhóm rõ ràng: tour
+              dù lượn và đặt phòng Clubhouse. */}
+          {PARTNER_GROUPS.some((g) => g.links.length > 0) && (
+            <div className="mt-5 border-t border-white/15 pt-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-8">
+                <h3 className="shrink-0 text-lg font-semibold text-white lg:pt-1">
+                  {t.bookOnPartners}
+                </h3>
+
+                <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                  {PARTNER_GROUPS.map(({ labelKey, links }) =>
+                    links.length === 0 ? null : (
+                      <div key={labelKey} className="min-w-0">
+                        <p className="mb-1.5 text-[11px] uppercase tracking-wider text-slate-400">
+                          {t[labelKey]}
+                        </p>
+
+                        <ul className="flex flex-wrap gap-2">
+                          {links.map((p) => (
+                            <li key={p.url}>
+                              <a
+                                href={p.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`
+                                  inline-flex items-center rounded-lg px-2.5 py-1
+                                  text-[12px] font-semibold shadow-md ring-1 ring-black/10
+                                  transition-all hover:-translate-y-0.5 hover:shadow-lg
+                                  ${BRAND_BUTTON_CLASS[p.brand]}
+                                `}
+                              >
+                                {p.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* COPYRIGHT */}
           <div className="mt-4 border-t border-white/15 pt-3 text-center text-[13px] text-slate-400">
@@ -520,6 +597,19 @@ export default function Footer() {
 
                 <span>{t.rightsReserved}</span>
               </span>
+
+              {/* TẠM ẨN link Điều khoản & Điều kiện theo yêu cầu (nội dung
+                  chưa chốt). Trang /terms và ô đồng ý ở bước 5 của luồng đặt
+                  bay VẪN hoạt động — chỉ ẩn lối vào từ footer. Bỏ comment khối
+                  dưới là hiện lại.
+              <span aria-hidden className="text-slate-600">|</span>
+              <Link
+                href={makeLocalizedHref("/terms", pathname)}
+                className="font-medium text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+              >
+                {t.terms}
+              </Link>
+              */}
             </p>
           </div>
 

@@ -4,6 +4,9 @@ export type StoreCategory =
   | "sach-du-luon"
   | "khoa-hoc-du-luon";
 
+/** Chuyên mục bài blog — khớp với BlogCategory ở lib/blog-categories.ts. */
+export type BlogCategoryKey = "tin-tuc" | "su-kien" | "tip" | "du-lich";
+
 export type KnowledgeSubCategory =
   | "can-ban"
   | "nang-cao"
@@ -74,6 +77,7 @@ export type Post = {
   author?: string;
   category?: PostCategory | string;
   subCategory?: KnowledgeSubCategory;
+  blogCategory?: BlogCategoryKey;
   tags?: string[];
 
   language?: "bilingual" | "vi" | "en";
@@ -135,6 +139,7 @@ export type PostPayload = {
 
   category?: PostCategory | "";
   subCategory?: KnowledgeSubCategory;
+  blogCategory?: BlogCategoryKey;
   type?: PostType;
 
   storeCategory?: StoreCategory;

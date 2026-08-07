@@ -107,6 +107,14 @@ pnpm-workspace.yaml
 # Vercel deploy được (chính dòng *.mp4 phía trên là lý do trước đây video
 # "biến mất" trên production dù có bỏ file vào public/)
 !public/about-us-video1.mp4
+
+# NGOẠI LỆ: video toàn cảnh điểm bay Khau Phạ — đã nén, cần commit để Vercel
+# deploy được (dòng *.mp4 phía trên là lý do phải khai riêng từng file).
+!public/spots/khau-pha/toan-canh-du-luon.mp4
+!public/spots/khau-pha/toan-canh-du-luon-gan-dong-co.mp4
+
+# NGOẠI LỆ: video nền trang Dù máy (PPG) — đã nén 1,2MB, không tiếng.
+!public/ppg/hero-bg.mp4
 *.mov
 *.avi
 *.mkv
@@ -118,3 +126,4 @@ memory/
 MEMORY.md
 
 huongdan.md
+media-inbox/

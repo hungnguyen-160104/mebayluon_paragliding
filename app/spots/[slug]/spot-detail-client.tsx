@@ -12,6 +12,9 @@ import { useLanguage } from "@/contexts/language-context";
 import { bookingHrefForSpot } from "@/lib/booking/spot-to-location";
 import { ShareButtons } from "@/components/share-buttons";
 import { Footer } from "@/components/footer";
+import SpotPartnerLinks from "@/components/spots/SpotPartnerLinks";
+import SpotVideos from "@/components/spots/SpotVideos";
+import { SpotTagline, SPOT_I18N_KEY_BY_SLUG } from "@/components/spots/SpotTagline";
 
 /* =========================
    Types
@@ -334,9 +337,10 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình từ lúc đón đến lúc trả khách: khoảng 90 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -363,9 +367,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time from pickup to drop-off: approximately 90 minutes
 🔄 Free reschedule/cancellation due to weather
@@ -392,9 +397,10 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 90 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -421,9 +427,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время от встречи до возвращения: около 90 минут
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -450,9 +457,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 从接客到送回总时长：约90分钟
 🔄 因天气原因可免费改期/取消
@@ -479,9 +487,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 ⏳ पिकअप से ड्रॉप-ऑफ तक कुल समय: लगभग 90 minute
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
@@ -511,9 +520,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -538,9 +548,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 40–60 minutes
 🔄 Free reschedule/cancellation due to weather
@@ -565,9 +576,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Assurance
 ✅ Pilote professionnel et équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 40–60 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -592,9 +604,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съемка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съемка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 40–60 минут
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -619,9 +632,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行体验时间：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：约40–60分钟
 🔄 因天气原因可免费改期/取消
@@ -646,9 +660,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कामना रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कामना रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान की अवधि: 10–15 मिनट (मौसम के अनुसार पायलट समय बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: लगभग 40–60 मिनट
 🔄 मौसम के कारण मुफ्त पुनर्निर्धारण/रद्दीकरण
@@ -680,9 +695,10 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 ✅ Miễn phí lưu trú không bao gồm tháng cao điểm và ngày lễ
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm:
 + Dù lượn: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 + Dù lượn gắn động cơ: 10–20 phút
@@ -715,9 +731,10 @@ Golden harvest season (August–September): terraces dyed in brilliant gold, enc
 ✅ Professional pilot & safety equipment
 ✅ Free accommodation (excluding peak season and holidays)
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration:
 + Paragliding: 10–15 minutes (pilot may extend depending on weather)
 + Paramotor: 10–20 minutes
@@ -750,9 +767,10 @@ Saison dorée (août–septembre) : les terrasses se parent d’or éclatant, d�
 ✅ Pilote professionnel & équipement de sécurité
 ✅ Hébergement gratuit (hors haute saison et jours fériés)
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol :
 + Parapente : 10–15 minutes (le pilote peut prolonger selon la météo)
 + Paramoteur : 10–20 minutes
@@ -785,9 +803,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Профессиональный пилот и защитное снаряжение
 ✅ Бесплатное проживание (кроме высокого сезона и праздников)
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта:
 + Параплан: 10–15 минут (пилот может продлить в зависимости от погоды)
 + Парамотор: 10–20 минут
@@ -820,9 +839,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 专业飞行员和安全装备
 ✅ 免费住宿（不含旺季和节假日）
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：
 + 无动力滑翔伞：10–15分钟（飞行员可根据天气延长）
 + 动力伞：10–20分钟
@@ -855,9 +875,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 ✅ मुफ्त आवास (पीक सीज़न और छुट्टियों को छोड़कर)
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि:
 + पैराग्लाइडिंग: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 + पैरामोटर: 10–20 मिनट
@@ -889,9 +910,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 60~90 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -918,9 +940,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 60–90 minutes
 🔄 Free reschedule/cancellation due to weather
@@ -947,9 +970,10 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 60–90 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -976,9 +1000,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 60–90 минут
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -1003,9 +1028,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：约60–90分钟
 🔄 因天气原因可免费改期/取消
@@ -1032,9 +1058,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: लगभग 60–90 मिनट
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
@@ -1064,9 +1091,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 3~5 tiếng từ khi đón tới lúc quay về trung tâm Hà Nội
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -1105,9 +1133,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 3–5 hours from pickup to return to central Hanoi
 🔄 Free reschedule/cancellation due to weather
@@ -1141,9 +1170,10 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ✅ Assurance
 ✅ Pilote professionnel et équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 3–5 heures de la prise en charge au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -1182,9 +1212,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съемка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съемка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 3–5 часов от встречи до возвращения в центр Ханоя
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -1223,9 +1254,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行体验时间：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：从接送到返回河内市中心约3–5小时
 🔄 因天气原因可免费改期/取消
@@ -1262,9 +1294,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान की अवधि: 10–15 मिनट (मौसम के अनुसार पायलट समय बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: पिकअप से मध्य हनोई लौटने तक लगभग 3–5 घंटे
 🔄 मौसम के कारण मुफ्त पुनर्निर्धारण/रद्दीकरण
@@ -1306,9 +1339,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 3~5 tiếng từ khi đón tới lúc quay về trung tâm Hà Nội
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -1356,9 +1390,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 3–5 hours from pickup to return to central Hanoi
 🔄 Free reschedule/cancellation due to weather
@@ -1406,9 +1441,10 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -1456,9 +1492,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 3–5 часов от встречи до возвращения в центр Ханоя
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -1506,9 +1543,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：从接客到返回河内市中心约3–5小时
 🔄 因天气原因可免费改期/取消
@@ -1554,9 +1592,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज and 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज and 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: पिकअप से हनोई केंद्र वापसी तक लगभग 3–5 घंटे
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
@@ -1664,9 +1703,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -1693,9 +1733,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 40–60 minutes
 🔄 Free reschedule/cancellation due to weather
@@ -1722,9 +1763,10 @@ Please book in advance so we can best arrange your paragliding experience!`,
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 40–60 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -1751,9 +1793,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 40–60 минут
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -1778,9 +1821,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：约40–60分钟
 🔄 因天气原因可免费改期/取消
@@ -1807,9 +1851,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: लगभग 40–60 मिनट
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
@@ -1839,9 +1884,10 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN:  Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 3~5 tiếng từ khi đón tới lúc quay về trung tâm Hà Nội
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -1866,9 +1912,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
-📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording
+📸 OPTIONAL SERVICES: Flycam/Drone footage and 360° camera recording, round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
+🎥 Free GoPro flight photos & video
 🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
 ⏳ Total trip time: approximately 3–5 hours from pickup to return to central Hanoi
 🔄 Free reschedule/cancellation due to weather
@@ -1893,9 +1940,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
-📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°
+📸 SERVICES OPTIONNELS : Prise de vue Flycam/Drone et enregistrement caméra 360°, transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
+🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
 ⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
@@ -1922,9 +1970,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
-📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°
+📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ: Съёмка с дрона/Flycam и запись на камеру 360°, трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
+🎥 Фото и видео полёта с GoPro бесплатно
 🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
 ⏳ Общее время поездки: около 3–5 часов от встречи до возвращения в центр Ханоя
 🔄 Бесплатный перенос/отмена из-за погоды
@@ -1949,9 +1998,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
-📸 可选服务：航拍/无人机拍摄和360°摄像
+📸 可选服务：航拍/无人机拍摄和360°摄像、酒店往返接送
 
 📌 更多信息：
+🎥 免费赠送 GoPro 飞行照片与视频
 🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
 ⏳ 总行程时间：从接客到返回河内市中心约3–5小时
 🔄 因天气原因可免费改期/取消
@@ -1974,9 +2024,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
-📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
+📸 वैकल्पिक सेवाएं: फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग, होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
+🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
 🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
 ⏳ कुल यात्रा समय: पिकअप से हनोई केंद्र वापसी तक लगभग 3–5 घंटे
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
@@ -3477,7 +3528,10 @@ export function SpotDetailClient({
   spotSlug?: string;
   articlesSlot?: React.ReactNode;
 }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage() as {
+    language: unknown;
+    t?: { spots?: { locations?: Record<string, { tagline?: string }> } };
+  };
   const lang: Lang = toSafeLang(language);
   const ui = uiI18n[lang];
 
@@ -3487,6 +3541,11 @@ export function SpotDetailClient({
   // H1 SEO "Dù lượn <địa danh>"; điểm lạ không có trong bảng thì giữ
   // nhãn cũ "Về điểm bay này"
   const seoH1 = SPOT_H1[resolveSpotKey(spot.name)]?.[lang] ?? ui.aboutTitle;
+  // Chữ nổi bật lấy chung một nguồn với thẻ ở trang chủ và trang /spots.
+  const tagline =
+    t?.spots?.locations?.[
+      SPOT_I18N_KEY_BY_SLUG[spotSlug ?? ""] ?? ""
+    ]?.tagline;
 
   return (
     <main className="min-h-screen relative text-white">
@@ -3497,18 +3556,25 @@ export function SpotDetailClient({
       {/* pt lớn + bỏ -mt để tiêu đề không dính vào thanh menu cố định */}
       <section className="relative h-[70vh] flex items-center justify-center pt-20 md:pt-24 z-10">
         <motion.div
-          className="relative z-10 container mx-auto px-4 text-center"
+          className="text-hero-shadow-soft relative z-10 container mx-auto px-4 text-center"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          style={{ textShadow: "1px 1px 4px rgba(0,0,0,0.8)" }}
         >
           <Badge className="mb-4 text-base px-4 py-1.5 bg-accent/80 backdrop-blur-sm border border-white/20">
             {copy.name}
           </Badge>
+
+          {/* Thế mạnh riêng của điểm bay (hiện nay chỉ Khau Phạ có) — cùng
+              dải chữ với thẻ ở trang chủ và trang /spots, chỉ to hơn. */}
+          {tagline ? (
+            <div className="mb-5 flex justify-center">
+              <SpotTagline text={tagline} size="lg" />
+            </div>
+          ) : null}
           {/* Tiêu đề cảm xúc — H2; H1 SEO nằm ở khối "Dù lượn <địa danh>" bên dưới */}
           <h2 className="text-5xl md:text-7xl font-bold mb-6 font-serif">{copy.title}</h2>
-          <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto text-slate-200">{copy.landscape}</p>
+          <p className="mx-auto mb-4 max-w-3xl text-xl font-medium text-white/95 md:text-2xl">{copy.landscape}</p>
           <div className="flex items-center justify-center gap-6 text-lg text-slate-100">
             <div className="flex items-center gap-2">
               <Mountain size={20} />
@@ -3782,11 +3848,20 @@ export function SpotDetailClient({
             </Button>
           </div>
 
-          <p className="mt-4 text-base text-slate-200">
+          <p className="mt-4 text-base text-slate-100">
             {ui.exploreMoreDescription}
           </p>
         </motion.div>
       </section>
+
+      {/* Vị trí bãi cất/hạ cánh + trang bán tour trên OTA của riêng điểm bay
+          này. Đặt ngay trên "Khoảnh khắc tại đây" để khách đối chiếu đánh giá
+          bên thứ ba trước khi xem ảnh. Điểm bay chưa khai link thì khối tự ẩn. */}
+      <SpotPartnerLinks slug={spotSlug} lang={lang} />
+
+      {/* Video toàn cảnh — cũng đặt trên "Khoảnh khắc tại đây". Điểm bay chưa
+          khai video thì khối tự ẩn. */}
+      <SpotVideos slug={spotSlug} lang={lang} />
 
       {/* Gallery */}
       {spot.galleryImages && spot.galleryImages.length > 0 && (
@@ -3796,7 +3871,7 @@ export function SpotDetailClient({
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-4xl font-bold font-serif mb-12 text-center text-white"
+              className="text-hero-shadow mb-12 text-center font-serif text-4xl font-bold text-white"
             >
               {ui.galleryTitle}
             </motion.h2>
@@ -3829,8 +3904,8 @@ export function SpotDetailClient({
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl font-bold mb-4 font-serif text-white">{ui.storyTitle}</h2>
-            <p className="text-lg text-slate-200">{ui.storySubtitle}</p>
+            <h2 className="text-hero-shadow mb-4 font-serif text-4xl font-bold text-white">{ui.storyTitle}</h2>
+            <p className="text-hero-shadow-soft text-lg font-medium text-white/95">{ui.storySubtitle}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">

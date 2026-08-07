@@ -66,6 +66,8 @@ export interface IPost {
   author?: string;
   category?: PostCategory | string;
   subCategory?: KnowledgeSubCategory;
+  /** Chuyên mục bài blog: tin-tuc | su-kien | tip | du-lich. */
+  blogCategory?: "tin-tuc" | "su-kien" | "tip" | "du-lich";
   tags?: string[];
 
   language?: "bilingual" | "vi" | "en";
@@ -157,6 +159,13 @@ const PostSchema = new Schema<IPost>(
       enum: ["can-ban", "nang-cao", "thermal", "xc", "khi-tuong"],
       required: false,
     },
+    // Chuyên mục của bài blog. Bài cũ chưa có giá trị -> trang /blog tự xếp
+    // theo bảng slug trong lib/blog-categories.ts.
+    blogCategory: {
+      type: String,
+      enum: ["tin-tuc", "su-kien", "tip", "du-lich"],
+      required: false,
+    },
     tags: [{ type: String }],
 
     language: {
@@ -207,6 +216,7 @@ const PostSchema = new Schema<IPost>(
 PostSchema.index({ slug: 1 }, { unique: true });
 PostSchema.index({ previousSlugs: 1 });
 PostSchema.index({ category: 1, subCategory: 1, isPublished: 1, createdAt: -1 });
+PostSchema.index({ category: 1, blogCategory: 1, isPublished: 1, publishedAt: -1 });
 PostSchema.index({ type: 1, storeCategory: 1, isPublished: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, publishedAt: -1, createdAt: -1 });
 PostSchema.index({ fixed: 1, fixedKey: 1, isPublished: 1, createdAt: -1 });

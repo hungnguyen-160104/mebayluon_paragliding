@@ -7,6 +7,7 @@ import { KnowledgeTabs } from "./KnowledgeTabs";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { Footer } from "@/components/footer";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -476,6 +477,14 @@ export default async function KnowledgeAllPage({
             );
           })()}
         </div>
+
+      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
+          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
+      <div className="relative z-10 pb-6">
+        <div className="container mx-auto">
+          <Footer />
+        </div>
+      </div>
       </main>
 
       <style>{`

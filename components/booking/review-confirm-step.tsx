@@ -12,6 +12,11 @@ import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
+import {
+  imageComboDiscountVND,
+  imageComboDiscountUSD,
+  imageComboLabel,
+} from "@/lib/booking/image-combo";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 type CurrencyCode = "VND" | "USD";
@@ -502,6 +507,23 @@ export default function ReviewConfirmStep() {
     });
   }, [visibleSelectedServices, data.services, lang]);
 
+  // Giảm combo ảnh: khách chọn cả flycam lẫn camera 360°.
+  // Cùng quy tắc với bước chọn dịch vụ (lib/booking/image-combo.ts).
+  const comboServiceStates = useMemo(
+    () =>
+      Object.entries((data.services || {}) as Record<string, any>).map(
+        ([key, st]) => ({
+          key,
+          selected: !!st?.selected,
+          qty: Math.max(1, Number(st?.qty) || 1),
+        }),
+      ),
+    [data.services],
+  );
+
+  const imageComboOffVND = imageComboDiscountVND(comboServiceStates);
+  const imageComboOffUSD = imageComboDiscountUSD(comboServiceStates);
+
   const billVND = useMemo(
     () =>
       computePriceByLang(
@@ -900,11 +922,29 @@ export default function ReviewConfirmStep() {
           addonsQty: (billVND as any).addonsQty,
           addonsUnitPrice: (billVND as any).addonsUnitPrice,
           addonsTotal: (billVND as any).addonsTotal,
-          servicesBreakdown: selectedServicesBreakdown,
-          servicesTotal: selectedServicesTotalVND,
-          total: Number(billVND.totalAfterDiscount || 0) + selectedServicesTotalVND,
-          usdTotal:
-            Number(billUSD.totalAfterDiscount || 0) + selectedServicesTotalUSD,
+          servicesBreakdown: imageComboOffVND
+            ? [
+                ...selectedServicesBreakdown,
+                {
+                  key: "image_combo_discount",
+                  label: imageComboLabel(lang),
+                  lineTotal: -imageComboOffVND,
+                },
+              ]
+            : selectedServicesBreakdown,
+          servicesTotal: selectedServicesTotalVND - imageComboOffVND,
+          total: Math.max(
+            0,
+            Number(billVND.totalAfterDiscount || 0) +
+              selectedServicesTotalVND -
+              imageComboOffVND,
+          ),
+          usdTotal: Math.max(
+            0,
+            Number(billUSD.totalAfterDiscount || 0) +
+              selectedServicesTotalUSD -
+              imageComboOffUSD,
+          ),
           usdPerPerson: billUSD.totalPerPerson,
         },
 

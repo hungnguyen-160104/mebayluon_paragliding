@@ -3,8 +3,9 @@ import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
-import { SpotGoogleReview } from "@/components/reviews/SpotGoogleReview";
+import { SpotReviewBadges } from "@/components/reviews/SpotReviewBadges";
 import { getSpotReview } from "@/lib/google-reviews";
+import { getSpotTripadvisorUrl } from "@/lib/spot-partner-links";
 import {
   buildMetadata,
   generateSpotSchema,
@@ -78,9 +79,10 @@ const BASE_SPOTS: Record<string, SpotData> = {
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình từ lúc đón đến lúc trả khách: khoảng 90 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -172,9 +174,10 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 ✅ Miễn phí lưu trú không bao gồm tháng cao điểm và ngày lễ
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm:
 + Dù lượn: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 + Dù lượn gắn động cơ: 10–20 phút
@@ -231,9 +234,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 60~90 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -318,9 +322,10 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°
+📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
+🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
 ⏳ Tổng hành trình khoảng 3~5 tiếng từ khi đón tới lúc quay về trung tâm Hà Nội
 🔄 Miễn phí đổi/hủy lịch do thời tiết
@@ -685,27 +690,14 @@ export default async function SpotDetailPage({
       />
 
 
-      {/* ===== Badge Google Reviews (nổi cố định) chỉ cho Sapa & Khau Phạ ===== */}
-      {isSapa && (
-        <SpotGoogleReview
-          spot="sapa"
-          rating={sapaReview.rating}
-          reviews={sapaReview.reviews}
-          lang={spotLocale}
-          variant="floating"
-          position="br"
-        />
-      )}
-      {isKhauPha && (
-        <SpotGoogleReview
-          spot="khau-pha"
-          rating={khauPhaReview.rating}
-          reviews={khauPhaReview.reviews}
-          lang={spotLocale}
-          variant="floating"
-          position="br"
-        />
-      )}
+      {/* ===== Bong bóng đánh giá nổi: Google (Sapa & Khau Phạ) + Tripadvisor
+           (điểm bay nào có hồ sơ thì hiện, không có thì tự ẩn) ===== */}
+      <SpotReviewBadges
+        googleSpot={isSapa ? "sapa" : isKhauPha ? "khau-pha" : null}
+        rating={isSapa ? sapaReview.rating : khauPhaReview.rating}
+        tripadvisorUrl={getSpotTripadvisorUrl(canonicalSpotSlug(slug))}
+        lang={spotLocale}
+      />
 
       {/* KHÔNG RENDER FOOTER Ở ĐÂY */}
     </div>

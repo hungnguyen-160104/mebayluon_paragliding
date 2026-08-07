@@ -3,7 +3,10 @@
 import React, { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useBookingStore } from "@/store/booking-store";
-import type { LocationKey } from "@/lib/booking/calculate-price";
+import type {
+  LocationKey,
+  FlightTypeKey,
+} from "@/lib/booking/calculate-price";
 import SelectFlightStep from "@/components/booking/select-flight-step";
 import ContactInfoStep from "@/components/booking/contact-info-step";
 import GuestInfoStep from "@/components/booking/guest-info-step";
@@ -20,24 +23,42 @@ const BOOKING_LOCATIONS: LocationKey[] = [
   "quan_ba",
 ];
 
+const FLIGHT_TYPES: FlightTypeKey[] = ["paragliding", "paramotor"];
+
 /**
- * Đọc ?spot= trên URL (nút "Đặt bay ngay tại ..." ở trang điểm bay) và chọn
- * sẵn điểm bay. Tham số lạ / điểm chưa mở đặt online -> để trống cho khách
- * tự chọn. Tách riêng vì useSearchParams cần bọc trong <Suspense>.
+ * Đọc ?spot= và ?type= trên URL rồi chọn sẵn điểm bay + loại hình bay.
+ *  - ?spot=  : nút "Đặt bay ngay tại ..." ở trang điểm bay
+ *  - ?type=  : nút "Đặt bay ngay" ở trang /ppg (chọn sẵn dù lượn gắn động cơ)
+ * Tham số lạ / điểm chưa mở đặt online -> để trống cho khách tự chọn.
+ * Tách riêng vì useSearchParams cần bọc trong <Suspense>.
  */
 function SpotFromUrl() {
   const searchParams = useSearchParams();
   const applySpotFromUrl = useBookingStore((s) => s.applySpotFromUrl);
+  const setFlightTypeKey = useBookingStore((s) => s.setFlightTypeKey);
 
   useEffect(() => {
-    const raw = searchParams.get("spot");
-    if (!raw) return;
+    const rawSpot = searchParams.get("spot");
+    const rawType = searchParams.get("type");
+    if (!rawSpot && !rawType) return;
 
-    const key = BOOKING_LOCATIONS.includes(raw as LocationKey)
-      ? (raw as LocationKey)
-      : null;
-    applySpotFromUrl(key);
-  }, [searchParams, applySpotFromUrl]);
+    // Khách đã đi qua bước 1 thì không ghi đè lựa chọn của họ — cùng nguyên
+    // tắc với applySpotFromUrl trong store.
+    if (useBookingStore.getState().step > 1) return;
+
+    if (rawSpot) {
+      const key = BOOKING_LOCATIONS.includes(rawSpot as LocationKey)
+        ? (rawSpot as LocationKey)
+        : null;
+      applySpotFromUrl(key);
+    }
+
+    // Đặt loại hình bay SAU khi áp điểm bay, vì applySpotFromUrl nạp lại bộ
+    // mặc định của điểm và sẽ ghi đè nếu làm ngược thứ tự.
+    if (rawType && FLIGHT_TYPES.includes(rawType as FlightTypeKey)) {
+      setFlightTypeKey(rawType as FlightTypeKey);
+    }
+  }, [searchParams, applySpotFromUrl, setFlightTypeKey]);
 
   return null;
 }

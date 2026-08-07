@@ -26,6 +26,14 @@ import Link from "next/link";
 import { getPosts } from "@/lib/posts-data";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import type { Post, SupportedLocale } from "@/types/frontend/post";
+import { Footer } from "@/components/footer";
+import BlogTabs from "@/components/blog/BlogTabs";
+import {
+  BLOG_CATEGORIES,
+  categoryOfPost,
+  isBlogCategory,
+  type BlogCategory,
+} from "@/lib/blog-categories";
 
 type Lang = SupportedLocale;
 
@@ -189,14 +197,53 @@ async function loadLatestPosts() {
   return { latestItems, lazyInitialCount, lazyTotal, pinnedSlugs };
 }
 
-export default async function BlogPage() {
+/**
+ * Toàn bộ bài blog (hiện ~53 bài) — dùng để đếm số bài mỗi chuyên mục và để
+ * render khi khách chọn một chuyên mục. Lấy hết một lần thay vì phân trang vì
+ * số lượng còn nhỏ; nếu sau này vượt vài trăm bài thì chuyển sang lọc ở tầng
+ * truy vấn.
+ */
+async function loadAllBlogPosts() {
+  const data = await getPosts({
+    forList: true,
+    category: "news",
+    type: "blog",
+    isPublished: true,
+    limit: 500,
+    sort: "-publishedAt,-createdAt",
+  });
+
+  return data.items;
+}
+
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const lang = getSafeLang(await getRequestLang());
   const isVietnamese = lang === "vi";
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
+  const rawCat = (await searchParams)?.cat;
+  const activeCat: BlogCategory | "all" = isBlogCategory(rawCat)
+    ? (rawCat as BlogCategory)
+    : "all";
+
   const { latestItems, lazyInitialCount, lazyTotal, pinnedSlugs } =
     await loadLatestPosts();
+
+  // Đếm bài từng chuyên mục để hiện số trên thanh lọc.
+  const allPosts = await loadAllBlogPosts();
+  const counts: Record<string, number> = { all: allPosts.length };
+  for (const key of BLOG_CATEGORIES) counts[key] = 0;
+  for (const post of allPosts) counts[categoryOfPost(post)] += 1;
+
+  const filteredPosts =
+    activeCat === "all"
+      ? []
+      : allPosts.filter((post) => categoryOfPost(post) === activeCat);
 
   const formatDate = (s?: string | null) =>
     s
@@ -217,10 +264,62 @@ export default async function BlogPage() {
           {ui.pageTitle}
         </h1>
 
-        <section>
-          <h2 className="mb-6 text-3xl font-bold md:text-4xl">{ui.latestTitle}</h2>
+        {/* Thanh lọc chuyên mục — cùng kiểu với thanh tab của /knowledge */}
+        <div className="mb-10">
+          <BlogTabs current={activeCat} counts={counts} />
+        </div>
 
-          {latestItems.length ? (() => {
+        <section>
+          <h2 className="text-hero-shadow mb-6 text-3xl font-bold md:text-4xl">
+            {ui.latestTitle}
+          </h2>
+
+          {activeCat !== "all" ? (
+            filteredPosts.length ? (
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredPosts.map((post) => {
+                  const cover =
+                    post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+                  const date = post.publishedAt || post.createdAt;
+
+                  return (
+                    <li key={post._id || post.slug}>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/15 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20"
+                      >
+                        <div className="relative aspect-16/10 w-full overflow-hidden">
+                          <Image
+                            src={cover}
+                            alt={pickTitle(post, isVietnamese)}
+                            fill
+                            sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+
+                        <div className="flex grow flex-col gap-1.5 p-4">
+                          <p className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-red-300">
+                            {pickTitle(post, isVietnamese)}
+                          </p>
+                          <p className="line-clamp-3 grow text-xs text-white/75">
+                            {pickExcerpt(post, isVietnamese)}
+                          </p>
+                          <span className="text-xs text-white/55">
+                            {formatDate(date)}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="py-16 text-center text-xl text-white/70">
+                {ui.emptyTitle}
+              </p>
+            )
+          ) : latestItems.length ? (() => {
             const featured   = latestItems[0];
             const mobileTail = latestItems.slice(1);
 
@@ -386,6 +485,14 @@ export default async function BlogPage() {
             </div>
           )}
         </section>
+
+      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
+          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
+      <div className="relative z-10 pb-6">
+        <div className="container mx-auto">
+          <Footer />
+        </div>
+      </div>
       </main>
     </div>
   );

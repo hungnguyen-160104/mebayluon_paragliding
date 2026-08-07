@@ -9,6 +9,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer/Footer";
+import { SpotTagline } from "@/components/spots/SpotTagline";
 import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,11 +32,11 @@ const RecentPosts = dynamic(() => import("@/components/posts/RecentPosts"), {
     <section className="relative z-10 py-12 md:py-16">
       <div className="container mx-auto px-4">
         <div className="mb-6 h-8 w-56 rounded-full bg-white/10 backdrop-blur-md" />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="flex gap-6 overflow-hidden">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-56 animate-pulse rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md"
+              className="h-56 w-[85%] shrink-0 animate-pulse rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)]"
             />
           ))}
         </div>
@@ -495,10 +496,16 @@ export default function HomePage() {
                 spotData.location,
                 spot.locationKey,
               );
-              const spotArea = normalizeText(spotData.area);
-              const spotDescription = normalizeText(spotData.description);
-              const spotHighlight = normalizeText(spotData.highlight);
               const spotDuration = normalizeText(spotData.duration);
+              const spotTagline = normalizeText(spotData.tagline);
+              // Độ dài tour + 2–3 điểm nhấn, mỗi thứ một chip. Trước đây thẻ
+              // còn có area/description/highlight nhưng ba dòng đó lặp lại tên
+              // điểm bay và lặp lẫn nhau ("Đà Nẵng" hiện 2 lần), nên đã gộp
+              // thành một mảng highlights duy nhất.
+              const spotChips = [
+                spotDuration,
+                ...normalizeList(spotData.highlights),
+              ].filter(Boolean);
 
               return (
                 <motion.div
@@ -523,7 +530,7 @@ export default function HomePage() {
                       >
                         <Image
                           src={spot.image}
-                          alt={`${locations[spot.nameKey]?.name ?? spot.nameKey} — ${locations[spot.locationKey]?.name ?? ""}`.trim()}
+                          alt={`${spotName} — ${spotLocation}`}
                           fill
                           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                           className="object-cover"
@@ -550,30 +557,21 @@ export default function HomePage() {
                           {spotName}
                         </h3>
 
-                        {spotArea ? (
-                          <p className="mb-1 text-sm font-medium text-white/90">
-                            {spotArea}
-                          </p>
-                        ) : null}
-
-                        {spotDescription ? (
-                          <p className="mb-3 text-sm text-white/85">
-                            {spotDescription}
-                          </p>
+                        {spotTagline ? (
+                          <div className="mb-2">
+                            <SpotTagline text={spotTagline} />
+                          </div>
                         ) : null}
 
                         <div className="mb-4 flex flex-wrap gap-2">
-                          {spotDuration ? (
-                            <span className="rounded-full bg-white/15 px-3 py-1 text-xs text-white/90 backdrop-blur-sm">
-                              {spotDuration}
+                          {spotChips.map((chip) => (
+                            <span
+                              key={chip}
+                              className="rounded-full bg-white/15 px-3 py-1 text-xs text-white/90 backdrop-blur-sm"
+                            >
+                              {chip}
                             </span>
-                          ) : null}
-
-                          {spotHighlight ? (
-                            <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
-                              {spotHighlight}
-                            </span>
-                          ) : null}
+                          ))}
                         </div>
 
                         <motion.div

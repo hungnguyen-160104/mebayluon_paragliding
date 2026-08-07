@@ -342,6 +342,8 @@ export const locationTranslations = {
       "Ngay tại điểm hạ cánh dù lượn – trung tâm hoạt động của các phi công chuyên nghiệp. Du khách có thể tương tác cùng cộng đồng bay và ngắm nhìn những cánh dù rực rỡ trên bầu trời.",
     addressLabel: "Địa chỉ",
     viewOnMap: "Xem trên Google Maps",
+    seeUsOn: "Xem chúng tôi trên",
+    fanpage: "Fanpage Clubhouse",
     fromHanoi: "Từ Hà Nội",
     nearby: "Các điểm xung quanh",
     nearbyList: [
@@ -359,6 +361,8 @@ export const locationTranslations = {
       "Right at the paragliding landing area – the center of professional pilot activities. Guests can interact with the flying community and admire colorful paragliders in the sky.",
     addressLabel: "Address",
     viewOnMap: "View on Google Maps",
+    seeUsOn: "See us on",
+    fanpage: "Clubhouse fanpage",
     fromHanoi: "From Hanoi",
     nearby: "Nearby attractions",
     nearbyList: [
@@ -376,6 +380,8 @@ export const locationTranslations = {
       "Situé directement sur la zone d’atterrissage du parapente, au cœur des activités des pilotes professionnels. Les visiteurs peuvent rencontrer la communauté aérienne et admirer les parapentes colorés dans le ciel.",
     addressLabel: "Adresse",
     viewOnMap: "Voir sur Google Maps",
+    seeUsOn: "Retrouvez-nous sur",
+    fanpage: "Page Facebook du Clubhouse",
     fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
     nearbyList: [
@@ -393,6 +399,8 @@ export const locationTranslations = {
       "Прямо у зоны приземления парапланов — в центре активности профессиональных пилотов. Гости могут пообщаться с лётным сообществом и любоваться яркими парапланами в небе.",
     addressLabel: "Адрес",
     viewOnMap: "Смотреть на Google Картах",
+    seeUsOn: "Мы на площадках",
+    fanpage: "Страница Clubhouse в Facebook",
     fromHanoi: "Из Ханоя",
     nearby: "Ближайшие места",
     nearbyList: [
@@ -410,6 +418,8 @@ export const locationTranslations = {
       "这里正位于滑翔伞降落点，是专业飞行员活动的中心。游客可以与飞行社群互动，并欣赏天空中绚丽多彩的滑翔伞。",
     addressLabel: "地址",
     viewOnMap: "在 Google 地图上查看",
+    seeUsOn: "在以下平台找到我们",
+    fanpage: "Clubhouse 官方专页",
     fromHanoi: "从河内出发",
     nearby: "附近景点",
     nearbyList: [
@@ -427,6 +437,8 @@ export const locationTranslations = {
       "यह ठीक पैराग्लाइडिंग लैंडिंग स्थल पर स्थित है — पेशेवर पायलट गतिविधियों का केंद्र। मेहमान उड़ान समुदाय से जुड़ सकते हैं और आसमान में रंग-बिरंगे पैराग्लाइडर देख सकते हैं।",
     addressLabel: "पता",
     viewOnMap: "Google Maps पर देखें",
+    seeUsOn: "हमें यहाँ देखें",
+    fanpage: "Clubhouse फ़ेसबुक पेज",
     fromHanoi: "हनोई से",
     nearby: "नज़दीकी स्थान",
     nearbyList: [
