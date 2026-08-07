@@ -105,8 +105,20 @@ export default function PpgClient() {
       {/* ===== HERO: video bay PPG làm nền ===== */}
       {/* items-end + pb: đẩy khối chữ xuống 1/3 dưới màn hình để không che
           mặt khách trong video. */}
-      <section className="relative flex min-h-[92vh] items-end justify-center overflow-hidden pb-8 pt-28 md:pb-10">
-        <div className="absolute inset-0">
+      <section className="relative flex min-h-[80vh] items-end justify-center overflow-hidden pb-8 pt-28 sm:min-h-[92vh] md:pb-10">
+        <div className="absolute inset-0 bg-slate-950">
+          {/* Video quay ngang (1600x1080). Trên điện thoại dọc, object-cover sẽ
+              phóng to và cắt mất gần hết bề ngang — chỉ còn thấy một dải giữa.
+              Nên ở màn hẹp dùng object-contain để lọt trọn khung hình, từ sm
+              trở lên mới phủ kín. */}
+          <Image
+            src="/ppg/hero-bg.jpg"
+            alt=""
+            aria-hidden
+            fill
+            sizes="100vw"
+            className="scale-110 object-cover blur-2xl sm:hidden"
+          />
           <Image
             src="/ppg/hero-bg.jpg"
             alt=""
@@ -114,11 +126,11 @@ export default function PpgClient() {
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            className="object-contain sm:object-cover"
           />
           <LazyVideo
             src="/ppg/hero-bg.mp4"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain sm:object-cover"
           />
           {/* Chỉ tối vừa đủ ở dải dưới nơi có chữ; phần trên để video sáng rõ.
               Video đã được nâng sáng sẵn lúc nén nên lớp phủ nhẹ hơn trước. */}
