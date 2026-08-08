@@ -14,21 +14,6 @@ import { TERMS_HTML, type LangCode } from "@/lib/terms";
 import { shortServiceLabel } from "@/lib/booking/service-label";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
 import BookingTicket from "@/components/booking/BookingTicket";
-import spots from "@/data/spots.json";
-
-/**
- * Tiền tố mã đặt chỗ — chép nguyên từ app/api/booking/create/route.ts.
- * Lưu ý: tên trong data/spots.json là "Yên Bái (Đèo Khau Phạ – Mù Cang Chải)"
- * nên không khớp khoá nào ở bảng này, mã thực tế luôn bắt đầu bằng "BOOK".
- * Giữ y hệt máy chủ để mã trên ảnh vé không bao giờ lệch với mã máy chủ cấp.
- */
-const BOOKING_CODE_PREFIX: Record<string, string> = {
-  "HÀ NỘI": "HN",
-  "ĐÈO KHAU PHẠ": "DKP",
-  SAPA: "SAPA",
-  "HÀ GIANG": "HG",
-  "ĐÀ NẴNG": "DN",
-};
 import {
   imageComboDiscountVND,
   imageComboDiscountUSD,
@@ -1080,33 +1065,22 @@ export default function ReviewConfirmStep() {
   const termsUrl = `/terms?lang=${lang}`;
 
   /**
-   * Mã đặt chỗ tính trước ở máy khách bằng ĐÚNG công thức của máy chủ
-   * (app/api/booking/create/route.ts → buildBookingCode): tiền tố theo điểm
-   * bay + DDMM + các chữ số của điện thoại.
+   * Mã vé tính trước ở máy khách bằng ĐÚNG công thức của máy chủ
+   * (app/api/booking/create/route.ts → buildBookingCode):
+   * [ngày-tháng bay].[số điện thoại kèm mã nước].
    *
-   * Nhờ vậy tấm vé vẽ sẵn ở bước này mang đúng mã mà máy chủ sẽ cấp, không bị
+   * Nhờ vậy tấm vé vẽ sẵn ở bước này mang đúng mã mà máy chủ sẽ cấp, không
    * lệch với mã in trong email.
    */
   const previewBookingCode = useMemo(() => {
-    // Máy chủ chuẩn hoá tên điểm bay theo data/spots.json trước khi tra bảng
-    // tiền tố, nên ở đây phải tra đúng như vậy chứ không dùng tên hiển thị.
-    const canonicalName =
-      (spots as Record<string, string>)[String(data.location || "")] ||
-      locationName ||
-      "";
-
-    const prefix =
-      BOOKING_CODE_PREFIX[canonicalName.trim().toUpperCase()] || "BOOK";
-
     const d = data.dateISO ? new Date(data.dateISO) : null;
     const datePart =
       d && !Number.isNaN(d.getTime())
         ? `${String(d.getDate()).padStart(2, "0")}${String(d.getMonth() + 1).padStart(2, "0")}`
         : "";
 
-    const phonePart = String(contactPhone || "").replace(/\D/g, "");
-    return `${prefix}${datePart}${phonePart}`;
-  }, [data.location, locationName, data.dateISO, contactPhone]);
+    return `${datePart}.${String(contactPhone || "").replace(/\D/g, "")}`;
+  }, [data.dateISO, contactPhone]);
 
   const hiddenTicketRef = useRef<HTMLDivElement | null>(null);
 
@@ -1854,14 +1828,17 @@ export default function ReviewConfirmStep() {
               onChange={(e) => update({ acceptedTerms: e.target.checked })}
               className="mt-1 h-4 w-4 rounded border-[#DCE7F3] text-[#0194F3] focus:ring-[#0194F3]"
             />
+            {/* Một câu duy nhất, cụm "điều khoản dịch vụ" chính là link mở
+                hộp điều khoản — bỏ câu "Tôi xác nhận thông tin đặt bay" và
+                nút "Xem điều khoản" đứng rời phía sau. */}
             <span className="text-sm text-[#1C2930]">
-              {(t as any)?.labels?.termsText ?? "I agree to the terms"}{" "}
+              {(t as any)?.labels?.termsText ?? "I have read and agree to the"}{" "}
               <button
                 type="button"
                 onClick={() => setShowTerms(true)}
-                className="text-[#0194F3] underline"
+                className="font-semibold text-[#0194F3] underline underline-offset-2 hover:text-[#0B6FC4]"
               >
-                {(t as any)?.labels?.viewTerms ?? "View terms"}
+                {(t as any)?.labels?.viewTerms ?? "terms of service"}
               </button>
             </span>
           </label>

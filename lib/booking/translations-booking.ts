@@ -139,8 +139,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "Thông tin liên hệ",
       passengerList: "Danh sách khách",
       termsText:
-        "Tôi đã đọc và đồng ý với mọi điều khoản dịch vụ. Tôi xác nhận thông tin đặt bay.",
-      viewTerms: "Xem điều khoản",
+        "Tôi đã đọc và đồng ý với mọi",
+      viewTerms: "điều khoản dịch vụ",
 
       priceSummary: "Tóm tắt chi phí",
       location: "Điểm bay",
@@ -231,8 +231,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "Contact information",
       passengerList: "Passenger list",
       termsText:
-        "I have read and agree to the terms of service. I confirm the booking details.",
-      viewTerms: "View terms",
+        "I have read and agree to the",
+      viewTerms: "terms of service",
 
       priceSummary: "Price summary",
       location: "Location",
@@ -322,8 +322,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "Coordonnées",
       passengerList: "Liste des passagers",
       termsText:
-        "J’ai lu et j’accepte les conditions d’utilisation. Je confirme les détails de la réservation.",
-      viewTerms: "Voir les conditions",
+        "J'ai lu et j'accepte les",
+      viewTerms: "conditions de service",
 
       priceSummary: "Récapitulatif",
       location: "Site",
@@ -415,8 +415,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "Контактная информация",
       passengerList: "Список пассажиров",
       termsText:
-        "Я прочитал(а) и согласен(на) с условиями. Подтверждаю детали бронирования.",
-      viewTerms: "Условия",
+        "Я прочитал(а) и согласен(на) с",
+      viewTerms: "условиями обслуживания",
 
       priceSummary: "Итоговая стоимость",
       location: "Локация",
@@ -508,8 +508,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "联系信息",
       passengerList: "乘客名单",
       termsText:
-        "我已阅读并同意服务条款，并确认预订信息无误。",
-      viewTerms: "查看条款",
+        "我已阅读并同意",
+      viewTerms: "服务条款",
 
       priceSummary: "费用汇总",
       location: "飞行点",
@@ -601,8 +601,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       contactInfo: "संपर्क जानकारी",
       passengerList: "यात्री सूची",
       termsText:
-        "मैंने सेवा शर्तें पढ़ ली हैं और उनसे सहमत हूँ। मैं बुकिंग विवरण की पुष्टि करता/करती हूँ।",
-      viewTerms: "शर्तें देखें",
+        "मैंने पढ़ लिया है और मैं सहमत हूँ",
+      viewTerms: "सेवा शर्तों",
 
       priceSummary: "कीमत सारांश",
       location: "लोकेशन",

@@ -10,6 +10,7 @@ import {
 } from "@/lib/mailer";
 import {
   formatAdminEmailHtml,
+  formatAdminEmailSubject,
   formatCustomerEmailHtml,
   formatCustomerEmailSubject,
   type TelegramBookingPayload,
@@ -108,7 +109,7 @@ export async function postNotifyGmail(payload: TelegramBookingPayload) {
     if (adminEmails.length > 0) {
       await sendSmtpMail({
         to: adminEmails,
-        subject: `NEW BOOKING - ${bookingId} - ${contactName}`,
+        subject: formatAdminEmailSubject(payload),
         html: formatAdminEmailHtml(payload),
         text: `NEW BOOKING ${bookingId} | ${contactName} | ${contactEmail}`,
       });

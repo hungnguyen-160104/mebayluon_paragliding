@@ -103,13 +103,6 @@ const nameOf = (k?: string, fallback?: string) =>
   (k && (spots as Record<string, string>)[k]) || fallback || (k || "—");
 
 /** ============ Booking code helpers ============ */
-const BOOKING_CODE_PREFIX: Record<string, string> = {
-  "HÀ NỘI": "HN",
-  "ĐÈO KHAU PHẠ": "DKP",
-  "SAPA": "SAPA",
-  "HÀ GIANG": "HG",
-  "ĐÀ NẴNG": "DN",
-};
 
 function toBookingDatePart(dateISO?: string): string {
   if (!dateISO) return "";
@@ -133,17 +126,19 @@ function toPhoneDigits(phone?: string): string {
   return String(phone || "").replace(/\D/g, "");
 }
 
-function buildBookingCode(input: {
-  locationName?: string;
-  dateISO?: string;
-  phone?: string;
-}) {
-  const locationName = String(input.locationName || "").trim().toUpperCase();
-  const prefix = BOOKING_CODE_PREFIX[locationName] || "BOOK";
-  const datePart = toBookingDatePart(input.dateISO);
-  const phonePart = toPhoneDigits(input.phone);
-
-  return `${prefix}${datePart}${phonePart}`;
+/**
+ * Mã vé: [ngày-tháng bay].[số điện thoại kèm mã nước] — ví dụ bay 15/09,
+ * số +84 912345678 -> "1509.84912345678".
+ *
+ * Cùng cấu tứ với web paraglidingsapa.com, thêm dấu chấm ngăn cho dễ đọc và
+ * dễ đọc qua điện thoại.
+ *
+ * Bảng BOOKING_CODE_PREFIX cũ đã bỏ: khoá của nó ("ĐÈO KHAU PHẠ") không bao
+ * giờ khớp tên chuẩn trong data/spots.json ("Yên Bái (Đèo Khau Phạ – Mù Cang
+ * Chải)"), nên mọi mã đều rơi về tiền tố "BOOK" vô nghĩa.
+ */
+function buildBookingCode(input: { dateISO?: string; phone?: string }) {
+  return `${toBookingDatePart(input.dateISO)}.${toPhoneDigits(input.phone)}`;
 }
 
 function clampInt(v: unknown, min: number, max: number): number {
@@ -413,7 +408,6 @@ export async function POST(req: NextRequest) {
 
       // Tạo booking code theo format: prefix + DDMM + phone
       const bookingCode = buildBookingCode({
-        locationName: normalized.locationName,
         dateISO: normalized.dateISO,
         phone: normalizedPhone,
       });
