@@ -137,7 +137,7 @@ export type PpgCopy = {
 };
 
 const vi: PpgCopy = {
-  metaTitle: "Dù lượn gắn động cơ (PPG) tại Đèo Khau Phạ | Mebayluon",
+  metaTitle: "Dù Lượn Gắn Động Cơ Khau Phạ: Bay Cao 2.000m | Mebayluon",
   metaDescription:
     "Bay dù lượn gắn động cơ tại đèo Khau Phạ — cất cánh ngay tại Clubhouse Mebayluon. Bay săn mây, bay hoàng hôn, bay cao 2.000m. Giá từ 2.390.000đ.",
 
@@ -285,7 +285,7 @@ const vi: PpgCopy = {
 };
 
 const en: PpgCopy = {
-  metaTitle: "Powered Paragliding (PPG) at Khau Pha Pass | Mebayluon",
+  metaTitle: "Powered Paragliding at Khau Pha: Climb to 2,000m | Mebayluon",
   metaDescription:
     "Powered paragliding at Khau Pha Pass — take off right at Clubhouse Mebayluon. Cloud hunting, sunset flights, climbs to 2,000 m. From 2,390,000 VND.",
 
@@ -432,7 +432,7 @@ const en: PpgCopy = {
 };
 
 const fr: PpgCopy = {
-  metaTitle: "Paramoteur (PPG) au col de Khau Pha | Mebayluon",
+  metaTitle: "Paramoteur au col de Khau Pha : jusqu'à 2 000 m | Mebayluon",
   metaDescription:
     "Paramoteur au col de Khau Pha — décollage sur le terrain du Clubhouse Mebayluon. Vol sur mer de nuages, coucher de soleil, montée à 2 000 m. À partir de 2 390 000 VND.",
 
@@ -580,7 +580,7 @@ const fr: PpgCopy = {
 };
 
 const ru: PpgCopy = {
-  metaTitle: "Парамотор (PPG) на перевале Khau Pha | Mebayluon",
+  metaTitle: "Парамотор на перевале Khau Pha: подъём до 2000 м | Mebayluon",
   metaDescription:
     "Полёты на парамоторе на перевале Khau Pha — старт прямо на площадке Clubhouse Mebayluon. Над морем облаков, на закате, подъём до 2 000 м. От 2 390 000 VND.",
 
@@ -727,7 +727,7 @@ const ru: PpgCopy = {
 };
 
 const zh: PpgCopy = {
-  metaTitle: "Khau Pha 山口动力滑翔伞（PPG）| Mebayluon",
+  metaTitle: "Khau Pha 山口动力滑翔伞：可爬升至 2,000 米 | Mebayluon",
   metaDescription:
     "在 Khau Pha 山口体验动力滑翔伞——直接从 Clubhouse Mebayluon 场地起飞。追云飞行、日落飞行、爬升至 2,000 米。2,390,000 越南盾起。",
 
@@ -872,7 +872,7 @@ const zh: PpgCopy = {
 };
 
 const hi: PpgCopy = {
-  metaTitle: "Khau Pha दर्रे पर पैरामोटर (PPG) | Mebayluon",
+  metaTitle: "Khau Pha दर्रे पर पैरामोटर: 2,000 मीटर तक उड़ान | Mebayluon",
   metaDescription:
     "Khau Pha दर्रे पर पैरामोटर उड़ान — Clubhouse Mebayluon के मैदान से सीधे टेक-ऑफ़। बादलों के ऊपर, सूर्यास्त उड़ान, 2,000 मीटर तक चढ़ाई। 2,390,000 VND से।",
 

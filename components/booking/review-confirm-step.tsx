@@ -342,6 +342,30 @@ function getHolidayTypeLabel(
   return ui.weekday;
 }
 
+/**
+ * Nhãn dòng phụ thu ở bảng giá bước 4. Nói rõ "ngày lễ" hay "cuối tuần" theo
+ * đúng loại ngày khách chọn, để khách không phải đoán vì sao bị cộng thêm.
+ */
+const PEAK_SURCHARGE_LABEL: Record<
+  string,
+  { holiday: string; weekend: string }
+> = {
+  vi: { holiday: "Phụ thu ngày lễ", weekend: "Phụ thu cuối tuần" },
+  en: { holiday: "Public holiday surcharge", weekend: "Weekend surcharge" },
+  fr: { holiday: "Supplément jour férié", weekend: "Supplément week-end" },
+  ru: { holiday: "Праздничная доплата", weekend: "Доплата за выходные" },
+  zh: { holiday: "节假日附加费", weekend: "周末附加费" },
+  hi: { holiday: "अवकाश अधिभार", weekend: "सप्ताहांत अधिभार" },
+};
+
+function peakSurchargeLabel(
+  lang: string,
+  holidayType?: "weekday" | "weekend" | "holiday",
+) {
+  const set = PEAK_SURCHARGE_LABEL[lang] ?? PEAK_SURCHARGE_LABEL.vi;
+  return holidayType === "holiday" ? set.holiday : set.weekend;
+}
+
 function resolveFlightTypeKey(cfg: any, selected?: string) {
   if (selected === "paramotor" || selected === "paragliding") {
     return selected;
@@ -764,7 +788,16 @@ export default function ReviewConfirmStep() {
   const { priceLines, totalTextVND, totalTextUSD } = useMemo(() => {
     const lines: PriceLine[] = [];
 
-    const flightUnit = Number(billVND.basePricePerPerson || 0);
+    /**
+     * Khách chọn gói ở bước 1 rồi mới nhập ngày bay ở bước 2, nên nếu ngày
+     * rơi vào cuối tuần hoặc lễ thì giá thu cao hơn con số đã báo. Tách làm
+     * hai dòng — giá gói như đã báo, rồi phụ thu — thay vì lặng lẽ hiện một
+     * mức giá khác với lúc khách chọn.
+     */
+    const peakUnit = Number(billVND.peakSurchargePerPerson || 0);
+    const flightUnit = peakUnit
+      ? Number(billVND.quotedBasePerPerson || 0)
+      : Number(billVND.basePricePerPerson || 0);
     const flightSub = flightUnit * pax;
 
     lines.push({
@@ -773,6 +806,15 @@ export default function ReviewConfirmStep() {
       amountText: formatMoneyVND(flightSub),
       type: "normal",
     });
+
+    if (peakUnit > 0) {
+      lines.push({
+        label: peakSurchargeLabel(lang, billVND.holidayType),
+        detail: `${formatMoneyVND(peakUnit)} × ${pax}`,
+        amountText: formatMoneyVND(peakUnit * pax),
+        type: "normal",
+      });
+    }
 
     if (cfg?.services?.length) {
       cfg.services.forEach((svc: any) => {
@@ -854,10 +896,29 @@ export default function ReviewConfirmStep() {
       });
     }
 
-    const grandTotalVND =
-      Number(billVND.totalAfterDiscount || 0) + selectedServicesTotalVND;
-    const grandTotalUSD =
-      Number(billUSD.totalAfterDiscount || 0) + selectedServicesTotalUSD;
+    // Giảm combo ảnh (flycam + camera 360°). Trước đây dòng này chỉ được trừ
+    // trong payload gửi lên máy chủ, còn tổng tiền hiện trên màn hình lại
+    // quên trừ — khách thấy đắt hơn 100k so với số thật trên vé.
+    if (imageComboOffVND > 0) {
+      lines.push({
+        label: imageComboLabel(lang),
+        amountText: `-${formatMoneyVND(imageComboOffVND)}`,
+        type: "discount",
+      });
+    }
+
+    const grandTotalVND = Math.max(
+      0,
+      Number(billVND.totalAfterDiscount || 0) +
+        selectedServicesTotalVND -
+        imageComboOffVND,
+    );
+    const grandTotalUSD = Math.max(
+      0,
+      Number(billUSD.totalAfterDiscount || 0) +
+        selectedServicesTotalUSD -
+        imageComboOffUSD,
+    );
 
     return {
       priceLines: lines,
@@ -878,6 +939,8 @@ export default function ReviewConfirmStep() {
     getServiceLineTotalByCurrency,
     selectedServicesTotalVND,
     selectedServicesTotalUSD,
+    imageComboOffVND,
+    imageComboOffUSD,
   ]);
 
   const handleConfirm = async () => {

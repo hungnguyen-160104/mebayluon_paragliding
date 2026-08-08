@@ -168,6 +168,11 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
     robots: {
       index: true,
       follow: true,
+      // Khai cả ở thẻ robots chung, không riêng googleBot: web nhiều ảnh đẹp
+      // nên cần ảnh xem trước cỡ lớn và snippet không giới hạn độ dài.
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
       googleBot: {
         index: true,
         follow: true,

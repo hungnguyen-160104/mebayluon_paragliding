@@ -288,6 +288,27 @@ function computeReadTime(englishHtml?: string, vietnameseHtml?: string) {
   return estimateReadTime(merged);
 }
 
+/**
+ * Đổi from/to (YYYY-MM-DD) thành điều kiện $gte/$lte cho Mongo.
+ * `to` được đẩy tới cuối ngày để bài đăng lúc 20h vẫn lọt vào khoảng.
+ * Trả về null khi không có mốc nào hợp lệ.
+ */
+function buildDateRange(from?: unknown, to?: unknown) {
+  const range: Record<string, Date> = {};
+
+  if (from) {
+    const d = new Date(`${String(from)}T00:00:00.000`);
+    if (!Number.isNaN(d.getTime())) range.$gte = d;
+  }
+
+  if (to) {
+    const d = new Date(`${String(to)}T23:59:59.999`);
+    if (!Number.isNaN(d.getTime())) range.$lte = d;
+  }
+
+  return Object.keys(range).length ? range : null;
+}
+
 export async function listPosts(query: any = {}) {
   const {
     page = 1,
@@ -299,6 +320,8 @@ export async function listPosts(query: any = {}) {
     subCategory,
     type,
     storeCategory,
+    from,
+    to,
   } = query;
 
   const filter: any = {};
@@ -315,6 +338,26 @@ export async function listPosts(query: any = {}) {
         { content: rx },
         { contentVi: rx },
         { tags: { $in: [rx] } },
+      ],
+    });
+  }
+
+  /**
+   * Lọc theo khoảng ngày đăng (from/to dạng YYYY-MM-DD, tính cả hai đầu).
+   *
+   * Bài chưa xuất bản không có publishedAt, nên xét cả createdAt: nếu có
+   * publishedAt thì so theo publishedAt, không có thì so theo createdAt —
+   * đúng với cột ngày mà trang quản trị đang hiện.
+   */
+  const dateRange = buildDateRange(from, to);
+  if (dateRange) {
+    andFilters.push({
+      $or: [
+        { publishedAt: dateRange },
+        {
+          publishedAt: { $in: [null, undefined] },
+          createdAt: dateRange,
+        },
       ],
     });
   }

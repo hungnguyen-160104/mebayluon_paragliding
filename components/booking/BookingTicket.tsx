@@ -177,6 +177,7 @@ function useTicketLabels(lang: LangCode) {
     selectedServicesList: isVI ? "Danh sách dịch vụ" : isFR ? "Liste des services" : isRU ? "Список услуг" : isHI ? "सेवा सूची" : isZH || isZHTW ? zh("服务列表", "服務列表") : "Service list",
     specialRequests: isVI ? "Yêu cầu đặc biệt" : isFR ? "Demandes spéciales" : isRU ? "Особые запросы" : isHI ? "विशेष अनुरोध" : isZH || isZHTW ? zh("特殊要求", "特殊要求") : "Special requests",
     flightCost: isVI ? "Giá bay" : isFR ? "Prix du vol" : isRU ? "Стоимость полёта" : isHI ? "फ्लाइट शुल्क" : isZH || isZHTW ? zh("飞行费用", "飛行費用") : "Flight cost",
+    surcharge: isVI ? "Phụ thu" : isFR ? "Supplément" : isRU ? "Доплата" : isHI ? "अधिभार" : isZH || isZHTW ? zh("附加费", "附加費") : "Surcharge",
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
     droneCost: isVI ? "Flycam / Drone" : "Drone / Flycam",
     groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Group discount"),
@@ -222,6 +223,14 @@ function getHolidayTypeLabel(
   if (holidayType === "holiday") return labels.holiday;
   if (holidayType === "weekend") return labels.weekend;
   return labels.weekday;
+}
+
+/** Nhãn dòng phụ thu trên vé — cùng chữ với bảng giá ở bước 4. */
+function getPeakSurchargeLabel(
+  labels: ReturnType<typeof useTicketLabels>,
+  holidayType?: "weekday" | "weekend" | "holiday",
+) {
+  return `${labels.surcharge} ${getHolidayTypeLabel(labels, holidayType)}`;
 }
 
 export default function BookingTicket({
@@ -424,8 +433,16 @@ export default function BookingTicket({
 
   const priceLines: PriceLine[] = useMemo(() => {
     const rows: PriceLine[] = [];
-    const flightUnit =
-      guestsCount > 0 ? Math.round((totals.baseTotal || 0) / guestsCount) : 0;
+
+    // Tách phụ thu cuối tuần & lễ ra dòng riêng, khớp với bảng giá khách đã
+    // xem ở bước 4 — nếu gộp vào "Giá bay" thì con số trên vé sẽ khác con số
+    // khách bấm đồng ý.
+    const peakUnit = Number(totals.peakSurchargePerPerson || 0);
+    const flightUnit = peakUnit
+      ? Number(totals.quotedBasePerPerson || 0)
+      : guestsCount > 0
+        ? Math.round((totals.baseTotal || 0) / guestsCount)
+        : 0;
     const flightSub = flightUnit * guestsCount;
 
     rows.push({
@@ -434,10 +451,21 @@ export default function BookingTicket({
       amountText: formatByLang(lang, flightSub, flightSub),
     });
 
+    if (peakUnit > 0) {
+      const peakSub = peakUnit * guestsCount;
+      rows.push({
+        label: getPeakSurchargeLabel(labels, totals.holidayType),
+        detail: `${formatByLang(lang, peakUnit, peakUnit)} × ${guestsCount}`,
+        amountText: formatByLang(lang, peakSub, peakSub),
+      });
+    }
+
     if (hasServicesBreakdownFromResult) {
       servicesBreakdownFromResult.forEach((row: any) => {
         const lineTotal = Number(row?.lineTotal || 0);
-        if (lineTotal <= 0) return;
+        // Cho phép cả dòng âm (giảm combo ảnh) — trước đây lọc `<= 0` nên
+        // dòng giảm giá biến mất khỏi vé mà tổng tiền vẫn đã trừ.
+        if (lineTotal === 0) return;
 
         rows.push({
           label: String(row?.label || labels.additionalServices),
@@ -486,10 +514,7 @@ export default function BookingTicket({
   }, [
     addonRows,
     guestsCount,
-    labels.flightCost,
-    labels.groupDiscount,
     lang,
-    labels.additionalServices,
     hasServicesBreakdownFromResult,
     servicesBreakdownFromResult,
     hasServicesTotalFromResult,
@@ -497,6 +522,10 @@ export default function BookingTicket({
     selectedServicePriceRows,
     totals.baseTotal,
     totals.discountTotal,
+    totals.peakSurchargePerPerson,
+    totals.quotedBasePerPerson,
+    totals.holidayType,
+    labels,
   ]);
 
   return (

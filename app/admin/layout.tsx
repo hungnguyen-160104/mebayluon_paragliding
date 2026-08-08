@@ -26,10 +26,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAuth();
   }, [pathname, router]);
 
-  if (!ready) return <div className="p-6">Đang kiểm tra phiên đăng nhập…</div>;
+  if (!ready)
+    return <div className="p-6 pt-28">Đang kiểm tra phiên đăng nhập…</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    /* pt-20: menu chính của website (components/navigation.tsx) là thanh
+       `fixed top-0` cao h-20 và được render ở app/layout.tsx cho MỌI route,
+       kể cả /admin. Trang công khai tự chừa khoảng trên, còn khu quản trị thì
+       chưa nên thanh menu đè lên chữ. */
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 pt-20">
       {/* Header */}
       <header className="border-b border-slate-200">
         <nav className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4">

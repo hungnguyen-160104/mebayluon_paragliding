@@ -38,6 +38,28 @@ export default function AdminDashboardPage() {
   const [page, setPage] = useState<number>(pageFromUrl);
   const [activeTab, setActiveTab] = useState("posts");
 
+  /**
+   * Bộ lọc danh sách bài viết. Lọc ở phía máy chủ chứ không lọc trên mảng
+   * đang hiển thị, vì mỗi trang chỉ tải 10 bài — lọc tại chỗ sẽ chỉ tìm được
+   * trong 10 bài đó, còn 80 bài ở các trang sau thì không thấy.
+   */
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [sortBy, setSortBy] = useState("-publishedAt,-createdAt");
+
+  // Chờ khách gõ xong mới gọi API, tránh mỗi phím một lượt truy vấn.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Đổi điều kiện lọc thì quay về trang 1, nếu không sẽ rơi vào trang trống.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, fromDate, toDate, sortBy]);
+
   const [statsSeed, setStatsSeed] = useState<{ range: FilterState; data: StatisticsBundle } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -59,10 +81,18 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await api<ListResp>(
-        `/api/posts?page=${page}&limit=${LIMIT}`,
-        { headers: { ...authHeader() } }
-      );
+      const usp = new URLSearchParams({
+        page: String(page),
+        limit: String(LIMIT),
+        sort: sortBy,
+      });
+      if (debouncedSearch) usp.set("q", debouncedSearch);
+      if (fromDate) usp.set("from", fromDate);
+      if (toDate) usp.set("to", toDate);
+
+      const res = await api<ListResp>(`/api/posts?${usp.toString()}`, {
+        headers: { ...authHeader() },
+      });
       setData(res);
     } catch (e: any) {
       if (String(e?.message || "").includes("401")) {
@@ -73,7 +103,7 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, router]);
+  }, [page, router, debouncedSearch, fromDate, toDate, sortBy]);
 
   // 3. Tải dữ liệu khi 'loadPosts' (tức là 'page') thay đổi
   useEffect(() => {
@@ -138,6 +168,15 @@ export default function AdminDashboardPage() {
     },
     [loadPosts]
   );
+
+  const hasActiveFilter = Boolean(debouncedSearch || fromDate || toDate);
+
+  const resetFilters = useCallback(() => {
+    setSearch("");
+    setDebouncedSearch("");
+    setFromDate("");
+    setToDate("");
+  }, []);
 
   // 5. Tính toán tổng số trang
   const totalPages = useMemo(() => {
@@ -204,8 +243,24 @@ export default function AdminDashboardPage() {
             <div className="px-1 pb-1">
               {/* Tab: Posts */}
               <TabsContent value="posts" className="m-0">
+                <PostFilters
+                  search={search}
+                  onSearch={setSearch}
+                  fromDate={fromDate}
+                  onFromDate={setFromDate}
+                  toDate={toDate}
+                  onToDate={setToDate}
+                  sortBy={sortBy}
+                  onSortBy={setSortBy}
+                  total={data?.total ?? 0}
+                />
+
                 {!data?.items?.length ? (
-                  <EmptyState />
+                  hasActiveFilter ? (
+                    <NoMatchState onReset={resetFilters} />
+                  ) : (
+                    <EmptyState />
+                  )
                 ) : (
                   <div className="space-y-5">
                     <PostTable
@@ -348,6 +403,125 @@ function EmptyState() {
 }
 
 /** Bảng hiển thị danh sách bài viết */
+/** Thanh lọc danh sách bài viết: theo tên, theo khoảng ngày đăng, và sắp xếp. */
+function PostFilters({
+  search,
+  onSearch,
+  fromDate,
+  onFromDate,
+  toDate,
+  onToDate,
+  sortBy,
+  onSortBy,
+  total,
+}: {
+  search: string;
+  onSearch: (v: string) => void;
+  fromDate: string;
+  onFromDate: (v: string) => void;
+  toDate: string;
+  onToDate: (v: string) => void;
+  sortBy: string;
+  onSortBy: (v: string) => void;
+  total: number;
+}) {
+  const hasFilter = Boolean(search || fromDate || toDate);
+  const field =
+    "h-10 rounded-lg border border-white/40 bg-white/70 px-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white";
+
+  return (
+    <div className="mb-5 rounded-2xl border border-white/20 bg-white/15 p-4 shadow-lg backdrop-blur-xl">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex min-w-[220px] flex-1 flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">
+            Tìm theo tên bài
+          </span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Gõ một phần tiêu đề…"
+            className={field}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Từ ngày</span>
+          <input
+            type="date"
+            value={fromDate}
+            max={toDate || undefined}
+            onChange={(e) => onFromDate(e.target.value)}
+            className={field}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Đến ngày</span>
+          <input
+            type="date"
+            value={toDate}
+            min={fromDate || undefined}
+            onChange={(e) => onToDate(e.target.value)}
+            className={field}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Sắp xếp</span>
+          <select
+            value={sortBy}
+            onChange={(e) => onSortBy(e.target.value)}
+            className={field}
+          >
+            <option value="-publishedAt,-createdAt">Ngày đăng mới nhất</option>
+            <option value="publishedAt,createdAt">Ngày đăng cũ nhất</option>
+            <option value="-updatedAt,-createdAt">Sửa gần đây nhất</option>
+            <option value="title">Tên bài A → Z</option>
+            <option value="-title">Tên bài Z → A</option>
+          </select>
+        </label>
+
+        {hasFilter ? (
+          <button
+            type="button"
+            onClick={() => {
+              onSearch("");
+              onFromDate("");
+              onToDate("");
+            }}
+            className="h-10 rounded-lg border border-white/40 bg-white/50 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white/80"
+          >
+            Xoá lọc
+          </button>
+        ) : null}
+      </div>
+
+      <p className="mt-3 text-xs text-slate-700">
+        {hasFilter ? `Tìm thấy ${total} bài khớp điều kiện.` : `Tổng ${total} bài viết.`}
+      </p>
+    </div>
+  );
+}
+
+/** Không có bài nào khớp bộ lọc — khác với việc chưa có bài viết nào. */
+function NoMatchState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="rounded-2xl border border-white/20 bg-white/15 p-10 text-center shadow-xl backdrop-blur-xl">
+      <p className="text-slate-800">
+        Không có bài viết nào khớp với điều kiện lọc.
+      </p>
+      <button
+        type="button"
+        onClick={onReset}
+        className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+      >
+        Xoá bộ lọc
+      </button>
+    </div>
+  );
+}
+
 function PostTable({
   posts,
   onDelete,

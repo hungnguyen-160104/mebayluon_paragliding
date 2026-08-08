@@ -155,15 +155,15 @@ const I18N: Record<
 
 const META: Record<Lang, { title: string; description: string }> = {
   vi: {
-    title: "Khóa Học & Kiến Thức Dù Lượn | Mebayluon",
+    title: "Học Bay Dù Lượn: Khoá P1–P2 & Kiến Thức Bay | Mebayluon",
     description: "Tìm hiểu kiến thức dù lượn từ cơ bản đến nâng cao — kỹ thuật bay, an toàn, thời tiết, trang thiết bị. Học từ các huấn luyện viên chuyên nghiệp tại Mebayluon.",
   },
   en: {
-    title: "Paragliding Courses & Knowledge | Mebayluon",
+    title: "Learn Paragliding: P1–P2 Courses & Knowledge | Mebayluon",
     description: "Learn paragliding from beginner to advanced — flying techniques, safety, weather, gear. Guided by professional instructors at Mebayluon Vietnam.",
   },
   fr: {
-    title: "Cours & Connaissances Parapente | Mebayluon",
+    title: "Apprendre le parapente : stages P1–P2 & savoir | Mebayluon",
     description: "Apprenez le parapente du niveau débutant à avancé — techniques de vol, sécurité, météo, équipement. Encadré par des instructeurs professionnels chez Mebayluon.",
   },
   ru: {

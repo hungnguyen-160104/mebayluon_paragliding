@@ -79,6 +79,84 @@ const SEO_NAME: Record<string, Record<Locale, string>> = {
   },
 };
 
+/**
+ * Tiêu đề đầy đủ cho thẻ <title>, theo công thức: từ khoá chính + tên riêng
+ * của điểm bay + một USP ngắn (giá, mùa đẹp, lịch bay...).
+ *
+ * Tách khỏi SEO_NAME vì SEO_NAME còn được ghép vào câu mô tả, phải giữ dạng
+ * cụm danh từ ngắn. Còn title thì trước đây chỉ là "Dù lượn Mù Cang Chải |
+ * Mebayluon" — 32 ký tự, bỏ phí hơn một nửa độ dài Google cho hiển thị, lại
+ * thiếu hẳn từ khoá "Khau Phạ" trên chính trang chủ lực.
+ *
+ * Giữ dưới ~65 ký tự kể cả đuôi " | Mebayluon" để Google không cắt.
+ */
+const SEO_TITLE: Record<string, Record<Locale, string>> = {
+  "khau-pha": {
+    vi: "Bay Dù Lượn Đèo Khau Phạ – Mù Cang Chải: Giá & Mùa Đẹp",
+    en: "Khau Pha Paragliding, Mu Cang Chai: Prices & Season",
+    fr: "Parapente au col de Khau Pha : prix & saison",
+    ru: "Параплан на перевале Кхау Фа, Мукангчай: цены и сезон",
+    zh: "考帕山口滑翔伞（木江界）：价格与最佳季节",
+    hi: "खाउ फ़ा दर्रा पैराग्लाइडिंग, मु कांग चाई: क़ीमत व मौसम",
+  },
+  "doi-bu": {
+    vi: "Bay Dù Lượn Hà Nội – Đồi Bù: Giá Từ 1.790.000đ",
+    en: "Paragliding Near Hanoi – Doi Bu: From 1,790,000₫",
+    fr: "Parapente près de Hanoï – Doi Bu : dès 1 790 000 ₫",
+    ru: "Параплан под Ханоем – Дой Бу: от 1 790 000 ₫",
+    zh: "河内近郊滑翔伞 – 堆布山：1,790,000 越南盾起",
+    hi: "हनोई के पास पैराग्लाइडिंग – दोई बू: 1,790,000₫ से",
+  },
+  "vien-nam": {
+    vi: "Bay Dù Lượn Viên Nam – Gần Hà Nội: Chênh Cao Hơn 800m",
+    en: "Vien Nam Paragliding Near Hanoi: Over 800m Vertical Drop",
+    fr: "Parapente à Vien Nam près de Hanoï : plus de 800 m",
+    ru: "Параплан Виен Нам под Ханоем: перепад более 800 м",
+    zh: "员南滑翔伞（近河内）：落差超过 800 米",
+    hi: "वियन नाम पैराग्लाइडिंग, हनोई के पास: 800 मी+ ऊँचाई",
+  },
+  "muong-hoa-sapa": {
+    vi: "Bay Dù Lượn Sapa – Mường Hoa: Giá & Lịch Bay",
+    en: "Sapa Paragliding – Muong Hoa Valley: Prices & Schedule",
+    fr: "Parapente à Sapa – vallée de Muong Hoa : prix & horaires",
+    ru: "Параплан в Сапе – долина Мыонг Хоа: цены и расписание",
+    zh: "沙坝滑翔伞 – 孟花谷：价格与飞行时段",
+    hi: "सापा पैराग्लाइडिंग – मुओंग होआ घाटी: क़ीमत व समय",
+  },
+  "son-tra": {
+    vi: "Bay Dù Lượn Đà Nẵng – Bán Đảo Sơn Trà: Giá & Lịch Bay",
+    en: "Da Nang Paragliding – Son Tra Peninsula: Prices",
+    fr: "Parapente à Da Nang – péninsule de Son Tra : prix",
+    ru: "Параплан в Дананге – полуостров Шонча: цены",
+    zh: "岘港滑翔伞 – 山茶半岛：价格与飞行时段",
+    hi: "दा नांग पैराग्लाइडिंग – सोन ट्रा प्रायद्वीप: क़ीमत",
+  },
+  "ha-giang": {
+    vi: "Bay Dù Lượn Hà Giang – Quản Bạ, Bắc Sum: Giá & Mùa Đẹp",
+    en: "Ha Giang Paragliding – Quan Ba, Bac Sum: Prices",
+    fr: "Parapente à Ha Giang – Quan Ba & Bac Sum : prix & saison",
+    ru: "Параплан в Хазянге – Куанба и Бакшум: цены и сезон",
+    zh: "河江滑翔伞 – 管坝、北森坡：价格与最佳季节",
+    hi: "हा जियांग पैराग्लाइडिंग – क्वान बा, बाक सुम: क़ीमत",
+  },
+  "tram-tau": {
+    vi: "Bay Dù Lượn Trạm Tấu – Phình Hồ: Săn Mây & Bảng Giá",
+    en: "Tram Tau Paragliding – Phinh Ho: Cloud Hunting & Prices",
+    fr: "Parapente à Tram Tau – Phinh Ho : mer de nuages & prix",
+    ru: "Параплан в Чамтау – Финьхо: охота за облаками и цены",
+    zh: "占秋滑翔伞 – Phinh Ho：追云飞行与价格",
+    hi: "त्राम ताउ पैराग्लाइडिंग – फिन्ह हो: बादल व क़ीमत",
+  },
+  dalat: {
+    vi: "Bay Dù Lượn Đà Lạt – Rừng Thông Lâm Đồng: Giá & Lịch Bay",
+    en: "Da Lat Paragliding – Lam Dong Pine Forests: Prices",
+    fr: "Parapente à Da Lat – forêts de pins du Lam Dong : prix",
+    ru: "Параплан в Далате – сосновые леса Ламдонга: цены",
+    zh: "大叻滑翔伞 – 林同松林：价格与飞行时段",
+    hi: "दा लाट पैराग्लाइडिंग – लाम डोंग चीड़ वन: क़ीमत",
+  },
+};
+
 /** Điểm nhấn ngắn cho mô tả — mỗi điểm bay một câu, dịch 6 ngôn ngữ. */
 const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "khau-pha": {
@@ -186,8 +264,11 @@ export function spotSeoMeta(
   const highlight = HIGHLIGHT[spotKey]?.[locale] ?? "";
   const price = basePrice.toLocaleString(LOCALE_NUMBER[locale] ?? "vi-VN");
 
+  // Điểm bay chưa khai title riêng thì lùi về cụm từ khoá ngắn như trước.
+  const title = SEO_TITLE[spotKey]?.[locale] ?? name;
+
   return {
-    title: `${name} | Mebayluon`,
+    title: `${title} | Mebayluon`,
     description: DESCRIPTION[locale](name, highlight, price),
   };
 }

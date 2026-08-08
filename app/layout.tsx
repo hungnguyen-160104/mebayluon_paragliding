@@ -128,6 +128,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
 
+    // Xem chú thích ở lib/metadata-builder.ts
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+
     googleBot: {
       index: true,
       follow: true,

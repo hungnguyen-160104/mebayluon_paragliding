@@ -117,9 +117,25 @@ function toYMD(dateISO?: string): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Các đợt nghỉ lễ DÀI NGÀY theo lịch nghỉ chính thức: mọi ngày nằm trong
+ * khoảng (tính cả hai đầu) đều ăn giá cuối tuần & lễ, kể cả ngày giữa tuần.
+ *
+ * Ngày ghi dạng YYYY-MM-DD nên so sánh chuỗi là đủ, không cần dựng Date.
+ * Thêm đợt nghỉ mới thì chỉ cần thêm một dòng vào đây.
+ */
+const HOLIDAY_RANGES: ReadonlyArray<readonly [string, string]> = [
+  // Quốc khánh 2/9/2026 — nghỉ 5 ngày, từ thứ Bảy 29/8 đến thứ Tư 2/9.
+  ["2026-08-29", "2026-09-02"],
+];
+
 function isVietnamMajorHoliday(dateISO?: string): boolean {
   const ymd = toYMD(dateISO);
   if (!ymd) return false;
+
+  for (const [from, to] of HOLIDAY_RANGES) {
+    if (ymd >= from && ymd <= to) return true;
+  }
 
   const mmdd = ymd.slice(5);
 
@@ -144,6 +160,10 @@ function getKhauPhaPackageBasePriceVND(
   dateISO?: string,
 ): number {
   const holidayType = getHolidayType(dateISO);
+  // Khách chọn gói ở bước 1 nhưng mãi bước 2 mới nhập ngày bay, nên rất dễ
+  // chọn gói "Thứ 2 - Thứ 6" rồi lại đặt vào Chủ nhật hoặc ngày lễ. Ngày bay
+  // mới là căn cứ tính tiền: rơi vào cuối tuần hay lễ thì tự lên giá lễ.
+  const isPeakDay = holidayType !== "weekday";
 
   if (
     flightTypeKey === "paramotor" ||
@@ -151,23 +171,17 @@ function getKhauPhaPackageBasePriceVND(
     packageKey === "khau_pha_paramotor_pkg_1" ||
     packageKey === "khau_pha_paramotor_pkg_2"
   ) {
-    if (packageKey === "khau_pha_paramotor_pkg_1") return 2_390_000;
-    if (packageKey === "khau_pha_paramotor_pkg_2") return 2_590_000;
     // Booking cũ (key đồng giá) giữ nguyên 2.390.000đ như lúc khách đặt.
     if (packageKey === "khau_pha_paramotor") return 2_390_000;
-    // Chưa chọn gói ngày: tính theo ngày bay đã chọn (nếu có).
-    return holidayType === "weekday" ? 2_390_000 : 2_590_000;
-  }
-
-  if (packageKey === "khau_pha_pkg_1") {
-    return 2_190_000;
+    if (packageKey === "khau_pha_paramotor_pkg_2") return 2_590_000;
+    return isPeakDay ? 2_590_000 : 2_390_000;
   }
 
   if (packageKey === "khau_pha_pkg_2") {
     return 2_590_000;
   }
 
-  return holidayType === "weekday" ? 2_190_000 : 2_590_000;
+  return isPeakDay ? 2_590_000 : 2_190_000;
 }
 
 function getKhauPhaPackageBasePriceUSD(
@@ -175,7 +189,8 @@ function getKhauPhaPackageBasePriceUSD(
   flightTypeKey?: string,
   dateISO?: string,
 ): number {
-  const holidayType = getHolidayType(dateISO);
+  // Cùng quy tắc với bản VND ở trên: ngày bay quyết định giá.
+  const isPeakDay = getHolidayType(dateISO) !== "weekday";
 
   if (
     flightTypeKey === "paramotor" ||
@@ -183,21 +198,59 @@ function getKhauPhaPackageBasePriceUSD(
     packageKey === "khau_pha_paramotor_pkg_1" ||
     packageKey === "khau_pha_paramotor_pkg_2"
   ) {
-    if (packageKey === "khau_pha_paramotor_pkg_1") return 93;
-    if (packageKey === "khau_pha_paramotor_pkg_2") return 97;
     if (packageKey === "khau_pha_paramotor") return 93;
-    return holidayType === "weekday" ? 93 : 97;
-  }
-
-  if (packageKey === "khau_pha_pkg_1") {
-    return 82;
+    if (packageKey === "khau_pha_paramotor_pkg_2") return 97;
+    return isPeakDay ? 97 : 93;
   }
 
   if (packageKey === "khau_pha_pkg_2") {
     return 97;
   }
 
-  return holidayType === "weekday" ? 82 : 97;
+  return isPeakDay ? 97 : 82;
+}
+
+/**
+ * Giá gói ĐÚNG NHƯ KHÁCH THẤY Ở BƯỚC 1, tức là bỏ qua ngày bay.
+ *
+ * Khách chọn gói ở bước 1 rồi mới nhập ngày bay ở bước 2, nên nếu ngày rơi
+ * vào cuối tuần hay lễ thì số tiền thật cao hơn con số đã báo. Thay vì lặng
+ * lẽ đổi giá, bước 4 tách phần chênh ra thành một dòng "phụ thu ngày lễ &
+ * cuối tuần" để khách hiểu vì sao 2.190.000đ thành 2.590.000đ.
+ *
+ * Không chọn gói thì lấy giá ngày thường làm mốc — đó cũng là con số hiện
+ * trên thẻ điểm bay ở bước 1.
+ */
+function getKhauPhaQuotedBaseVND(
+  packageKey?: string,
+  flightTypeKey?: string,
+): number {
+  if (packageKey === "khau_pha_pkg_2") return 2_590_000;
+  if (packageKey === "khau_pha_paramotor_pkg_2") return 2_590_000;
+  if (packageKey === "khau_pha_paramotor") return 2_390_000;
+  if (
+    flightTypeKey === "paramotor" ||
+    packageKey === "khau_pha_paramotor_pkg_1"
+  ) {
+    return 2_390_000;
+  }
+  return 2_190_000;
+}
+
+function getKhauPhaQuotedBaseUSD(
+  packageKey?: string,
+  flightTypeKey?: string,
+): number {
+  if (packageKey === "khau_pha_pkg_2") return 97;
+  if (packageKey === "khau_pha_paramotor_pkg_2") return 97;
+  if (packageKey === "khau_pha_paramotor") return 93;
+  if (
+    flightTypeKey === "paramotor" ||
+    packageKey === "khau_pha_paramotor_pkg_1"
+  ) {
+    return 93;
+  }
+  return 82;
 }
 
 /**
@@ -1285,6 +1338,16 @@ export type ComputeResult = {
   basePricePerPerson: number;
   baseTotal: number;
 
+  /**
+   * Giá gói khách đã thấy ở bước 1 (chưa cộng phụ thu ngày lễ & cuối tuần),
+   * và phần chênh lệch mỗi khách. Bước 4 tách hai con số này thành hai dòng
+   * riêng thay vì chỉ hiện một mức giá đã cộng gộp.
+   * Ngày thường hoặc điểm bay đồng giá thì phụ thu bằng 0.
+   */
+  quotedBasePerPerson: number;
+  peakSurchargePerPerson: number;
+  peakSurchargeTotal: number;
+
   addonsPerPerson: Record<AddonKey, number>;
   addonsUnitPrice: Record<AddonKey, number>;
   addonsQty: Record<AddonKey, number>;
@@ -1440,6 +1503,17 @@ function computePriceByCurrency(
   }
 
   const baseTotal = base * guestsCount;
+
+  // Chỉ Khau Phạ mới có hai mức giá theo ngày; các điểm còn lại đồng giá nên
+  // giá báo ở bước 1 luôn bằng giá thu.
+  const quotedBase =
+    location === "khau_pha"
+      ? currency === "VND"
+        ? getKhauPhaQuotedBaseVND(p.packageKey, p.flightTypeKey)
+        : getKhauPhaQuotedBaseUSD(p.packageKey, p.flightTypeKey)
+      : base;
+  const peakSurcharge = Math.max(0, base - quotedBase);
+
   const discountTotal = discount * guestsCount;
   const totalAfterDiscount = baseTotal + addonsGrandTotal - discountTotal;
   const totalPerPerson = Math.round(totalAfterDiscount / guestsCount);
@@ -1451,6 +1525,10 @@ function computePriceByCurrency(
 
     basePricePerPerson: base,
     baseTotal,
+
+    quotedBasePerPerson: quotedBase,
+    peakSurchargePerPerson: peakSurcharge,
+    peakSurchargeTotal: peakSurcharge * guestsCount,
 
     addonsPerPerson,
     addonsUnitPrice,
