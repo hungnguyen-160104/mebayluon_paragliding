@@ -3,7 +3,6 @@ import { PageBackground } from "@/components/page-background";
 
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
@@ -52,7 +51,10 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen relative text-white">
-      <PageBackground src="/contact.jpg" />
+      <PageBackground
+        src="/contact.jpg"
+        alt="Đội ngũ Mebayluon Paragliding tại điểm bay"
+      />
       <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* Hero Section */}
@@ -107,12 +109,19 @@ export default function ContactPage() {
                     <p className="text-xs sm:text-sm text-slate-200 min-h-12 sm:min-h-15 flex items-center justify-center px-1 sm:px-2">
                       {social.description}
                     </p>
-                    <Button
-                      className={`w-full mt-auto ${social.color} hover:${social.color}/90 text-white text-sm`}
-                      onClick={() => window.open(social.url, "_blank")}
+                    {/* Dùng <a> thay cho <button onClick=window.open>: máy
+                        tìm kiếm mới thấy đây là liên kết, và khách bấm giữa
+                        chuột mở tab mới được. Nhãn ẩn nêu rõ nền tảng để năm
+                        nút không còn trùng chữ "Liên hệ ngay". */}
+                    <a
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`mt-auto inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 ${social.color}`}
                     >
                       {t.contact.contactNow}
-                    </Button>
+                      <span className="sr-only"> — {social.name}</span>
+                    </a>
                   </CardContent>
                 </Card>
               </motion.div>

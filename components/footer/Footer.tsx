@@ -517,6 +517,11 @@ export default function Footer() {
                     "
                   >
                     {item.icon}
+                    {/* Link chỉ có icon thì công cụ SEO lấy nguyên URL làm
+                        anchor. Thêm nhãn ẩn để anchor là tên nền tảng. */}
+                    <span className="sr-only">
+                      {t.followUs} — {item.label}
+                    </span>
                   </a>
                 ))}
               </div>

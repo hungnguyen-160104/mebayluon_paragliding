@@ -102,14 +102,17 @@ export default function PpgClient() {
 
   return (
     <main className="relative min-h-screen text-white">
-      {/* ===== HERO: video bay PPG làm nền ===== */}
-      {/* items-end + pb: đẩy khối chữ xuống 1/3 dưới màn hình để không che
-          mặt khách trong video. */}
-      {/* Hai bố cục khác hẳn nhau:
+      {/* ===== HERO: video bay PPG làm nền =====
+          Hai bố cục khác hẳn nhau:
           - Điện thoại: video là một KHỐI THẬT nằm ngay dưới menu (pt-20 = chiều
             cao thanh menu), chữ chạy xuống phía dưới, không đè lên video.
-          - Từ sm trở lên: video phủ kín section làm nền, chữ nằm đè ở đáy. */}
-      <section className="relative flex flex-col overflow-hidden pt-20 sm:min-h-[92vh] sm:items-end sm:justify-center sm:pb-10 sm:pt-28 md:pb-10">
+          - Từ sm trở lên: video phủ kín section làm nền, chữ đè ở ĐÁY.
+
+          Lưu ý hướng flex: cả section là flex-col, nên muốn chữ nằm sát đáy
+          phải dùng justify-end (trục chính = dọc), còn items-center mới là căn
+          giữa ngang. Dùng nhầm items-end + justify-center sẽ đẩy chữ lên giữa
+          màn hình và che mặt khách trong video. */}
+      <section className="relative flex flex-col overflow-hidden pt-20 sm:min-h-[92vh] sm:items-center sm:justify-end sm:pb-10 sm:pt-28">
         {/* Khung đúng tỉ lệ video (1600x1080 = 40/27) nên object-cover ở đây
             không cắt mất gì trên điện thoại. */}
         <div className="relative aspect-40/27 w-full bg-slate-950 sm:absolute sm:inset-0 sm:aspect-auto">
@@ -513,18 +516,24 @@ export default function PpgClient() {
         )}
 
         {/* ===== CTA CUỐI ===== */}
-        <section className="py-16">
+        {/* Khối chốt: gọn lại (py nhỏ hơn, chữ và nút nhỏ hơn một nấc).
+            Bỏ max-w-xl ở dòng mô tả — nó hẹp hơn cả thẻ chứa nên ép câu xuống
+            hàng một cách vô nghĩa; để rộng theo thẻ thì trên desktop câu nằm
+            gọn một dòng, màn hẹp vẫn tự xuống hàng bình thường. */}
+        <section className="py-10">
           <div
-            className={`${glassCard} container mx-auto max-w-3xl px-6 py-10 text-center`}
+            className={`${glassCard} container mx-auto max-w-3xl px-6 py-8 text-center`}
           >
-            <h2 className="font-serif text-3xl font-bold">{c.finalCtaTitle}</h2>
-            <p className="text-hero-shadow-soft mx-auto mt-3 max-w-xl font-medium text-white/95">
+            <h2 className="font-serif text-2xl font-bold md:text-3xl">
+              {c.finalCtaTitle}
+            </h2>
+            <p className="text-hero-shadow-soft mt-2.5 font-medium text-white/95">
               {c.finalCtaBody}
             </p>
             <Button
               asChild
               size="lg"
-              className="cta-btn mt-7 h-13 bg-accent px-10 text-base text-white hover:bg-accent/90"
+              className="cta-btn mt-5 h-12 bg-accent px-9 text-base text-white hover:bg-accent/90"
             >
               <Link href={bookingHref}>{c.ctaBook}</Link>
             </Button>

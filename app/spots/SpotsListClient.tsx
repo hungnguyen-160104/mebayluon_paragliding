@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer/Footer";
 import { SPOTS_LIST } from "@/lib/spots-registry";
 import { SpotTagline } from "@/components/spots/SpotTagline";
+import { getSpotsPageCopy } from "@/lib/i18n/spots-page";
+import { generateFAQSchema } from "@/lib/metadata-builder";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("vi-VN", {
@@ -25,7 +27,11 @@ const text = (value: unknown, fallback = ""): string =>
   typeof value === "string" ? value : fallback;
 
 export default function SpotsListClient() {
-  const { t } = useLanguage() as any;
+  const { t, language } = useLanguage() as any;
+
+  // Nội dung bổ sung cho trang: giới thiệu, hướng dẫn chọn điểm bay và FAQ.
+  // Trước đây trang chỉ có tiêu đề + 6 thẻ, khoảng 310 từ — quá mỏng.
+  const copy = getSpotsPageCopy(language);
 
   const locations = (t?.spots?.locations ?? {}) as Record<string, any>;
   const title = text(t?.spots?.title, "CÁC ĐIỂM BAY");
@@ -50,6 +56,17 @@ export default function SpotsListClient() {
             <p className="text-hero-shadow-soft mx-auto mt-4 max-w-3xl text-lg font-medium text-white/95">
               {subtitle}
             </p>
+
+            <div className="mx-auto mt-8 max-w-3xl space-y-4 text-left">
+              {copy.intro.map((paragraph, i) => (
+                <p
+                  key={i}
+                  className="text-hero-shadow-soft text-[15px] leading-relaxed text-white/95 sm:text-base"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -128,8 +145,77 @@ export default function SpotsListClient() {
               );
             })}
           </div>
+
+          {/* Hướng dẫn chọn điểm bay */}
+          <section className="mt-20">
+            <h2 className="text-hero-shadow text-center font-serif text-3xl font-bold text-white md:text-4xl">
+              {copy.chooseTitle}
+            </h2>
+            <p className="text-hero-shadow-soft mx-auto mt-3 max-w-2xl text-center font-medium text-white/95">
+              {copy.chooseSubtitle}
+            </p>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {copy.chooseCards.map((card) => (
+                <div
+                  key={card.title}
+                  className="rounded-2xl border border-white/20 bg-slate-800/50 p-6 backdrop-blur-xl"
+                >
+                  <h3 className="font-serif text-xl font-bold text-white">
+                    {card.title}
+                  </h3>
+                  <p className="mt-3 text-[15px] leading-relaxed text-slate-100">
+                    {card.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Câu hỏi thường gặp — cũng dựng thành JSON-LD FAQPage bên dưới để
+              Google có thể hiện dạng câu hỏi mở rộng trên kết quả tìm kiếm. */}
+          <section className="mx-auto mt-20 max-w-3xl">
+            <h2 className="text-hero-shadow text-center font-serif text-3xl font-bold text-white md:text-4xl">
+              {copy.faqTitle}
+            </h2>
+
+            <div className="mt-8 space-y-3">
+              {copy.faqs.map((faq) => (
+                <details
+                  key={faq.q}
+                  className="group rounded-2xl border border-white/20 bg-slate-800/70 shadow-lg backdrop-blur-xl"
+                >
+                  {/* Câu hỏi: chữ trắng, đậm, cỡ lớn hơn phần trả lời.
+                      Câu trả lời: tách bằng đường kẻ ngang và một vạch màu
+                      accent bên trái, để mắt phân biệt ngay hỏi với đáp. */}
+                  <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 text-base font-bold text-white marker:content-none sm:text-lg">
+                    {faq.q}
+                    <span className="shrink-0 text-2xl leading-none text-accent transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <div className="border-t border-white/10 px-5 pb-5 pt-4">
+                    <p className="border-l-2 border-accent/70 pl-4 text-[15px] leading-relaxed text-slate-100">
+                      {faq.a}
+                    </p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateFAQSchema(
+              copy.faqs.map((f) => ({ question: f.q, answer: f.a })),
+            ),
+          ).replace(/</g, "\\u003c"),
+        }}
+      />
 
       <div className="relative z-10 pb-6">
         <div className="container mx-auto">

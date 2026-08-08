@@ -507,7 +507,10 @@ export default function PilotsPage() {
 
   return (
     <main className="min-h-screen relative text-foreground">
-      <PageBackground src="/pilots/hero.jpg" />
+      <PageBackground
+        src="/pilots/hero.jpg"
+        alt="Đội phi công dù lượn Mebayluon Paragliding"
+      />
       <div className="fixed inset-0 -z-10 bg-black/10" />
       <div className="relative z-10">
         <Navigation />
@@ -580,10 +583,16 @@ export default function PilotsPage() {
             <div className="max-w-4xl mx-auto text-center space-y-6">
               <h2 className="text-hero-shadow mb-8 font-serif text-4xl font-bold">{safety.title}</h2>
               <div className="grid md:grid-cols-3 gap-8 text-left">
+                {/* Trước đây ba mục này là div trần, chữ nằm thẳng trên ảnh
+                    nền nên rất khó đọc. Bọc vào thẻ kính như phần còn lại của
+                    site để chữ có nền tựa. */}
                 {safety.items.map((s, i) => (
-                  <div key={i} className="space-y-3">
-                    <h3 className="text-xl font-semibold">{s.title}</h3>
-                    <p className="text-slate-100">{s.desc}</p>
+                  <div
+                    key={i}
+                    className="space-y-3 rounded-2xl border border-white/20 bg-slate-800/60 p-6 backdrop-blur-xl"
+                  >
+                    <h3 className="text-xl font-bold text-white">{s.title}</h3>
+                    <p className="leading-relaxed text-slate-100">{s.desc}</p>
                   </div>
                 ))}
               </div>

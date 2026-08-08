@@ -322,7 +322,10 @@ export default function HomePage() {
   return (
     <div className="relative text-foreground">
       {/* Fixed background - iOS Safari does not support background-attachment:fixed on non-body elements */}
-      <PageBackground src="/hinh-nen.jpg" />
+      <PageBackground
+        src="/hinh-nen.jpg"
+        alt="Dù lượn bay trên ruộng bậc thang Tây Bắc Việt Nam"
+      />
       <div className="fixed inset-0 -z-10 bg-black/20" />
 
       {/* ================= HERO ================= */}
@@ -369,7 +372,7 @@ export default function HomePage() {
               asChild
               size="lg"
               variant="outline"
-              className="h-14 border-white bg-white/10 px-8 text-lg text-white backdrop-blur-sm hover:bg-white hover:text-foreground"
+              className="h-14 border-2 border-white bg-black/55 px-8 text-lg font-semibold text-white shadow-lg backdrop-blur-sm hover:bg-white hover:text-foreground"
             >
               <Link href="/spots">{t?.hero?.learnMore ?? "Tìm hiểu thêm"}</Link>
             </Button>
@@ -451,7 +454,10 @@ export default function HomePage() {
                     AVIF/WebP đúng khổ máy. */}
                 <Image
                   src="/about-us.jpg"
-                  alt=""
+                  alt={
+                    (t as any)?.about?.subtitle ??
+                    "Đội phi công Mebayluon Paragliding chuẩn bị cho chuyến bay dù lượn"
+                  }
                   fill
                   sizes="(min-width: 1024px) 60vw, 100vw"
                   className="object-cover"
@@ -761,13 +767,17 @@ export default function HomePage() {
                       {social.description}
                     </p>
 
-                    <Button
-                      size="sm"
-                      className={`h-8 w-full ${social.color} text-xs text-white hover:opacity-90`}
-                      onClick={() => window.open(social.url, "_blank")}
+                    {/* <a> thay cho <button onClick=window.open> — xem chú
+                        thích ở app/contact/ContactClient.tsx */}
+                    <a
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex h-8 w-full items-center justify-center rounded-md text-xs font-medium text-white transition-opacity hover:opacity-90 ${social.color}`}
                     >
                       {t?.contact?.contactNow ?? "Liên hệ ngay"}
-                    </Button>
+                      <span className="sr-only"> — {social.name}</span>
+                    </a>
                   </CardContent>
                 </Card>
               </motion.div>

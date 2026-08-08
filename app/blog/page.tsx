@@ -256,10 +256,13 @@ export default async function BlogPage({
 
   return (
     <div className="relative min-h-screen">
-      <PageBackground src="/tin-tuc-2.jpg" />
+      <PageBackground
+        src="/tin-tuc-2.jpg"
+        alt="Bay dù lượn trên đèo Khau Phạ, Mù Cang Chải"
+      />
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
-      <main className="container relative z-10 mx-auto px-4 pt-28 pb-16 text-white">
+      <main className="container relative z-10 mx-auto px-4 pb-4 pt-28 text-white">
         <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 mb-10 mt-8 text-5xl font-extrabold text-white shadow-lg md:text-6xl">
           {ui.pageTitle}
         </h1>
@@ -269,10 +272,9 @@ export default async function BlogPage({
           <BlogTabs current={activeCat} counts={counts} />
         </div>
 
+        {/* Bỏ tiêu đề "Tất cả bài viết": thanh lọc ngay trên đã có mục
+            "Tất cả", để thêm dòng này là lặp ý. */}
         <section>
-          <h2 className="text-hero-shadow mb-6 text-3xl font-bold md:text-4xl">
-            {ui.latestTitle}
-          </h2>
 
           {activeCat !== "all" ? (
             filteredPosts.length ? (
@@ -486,14 +488,16 @@ export default async function BlogPage({
           )}
         </section>
 
-      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
-          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
-      <div className="relative z-10 pb-6">
+      </main>
+
+      {/* Footer nằm NGOÀI <main>: để bên trong thì nó bị bọc thêm một lớp
+          container (hẹp lại) và ăn luôn khoảng đệm đáy của main, tạo ra một
+          mảng trống lớn phía dưới. mt-8 tách footer khỏi nút "Xem thêm". */}
+      <div className="relative z-10 mt-8 pb-4">
         <div className="container mx-auto">
           <Footer />
         </div>
       </div>
-      </main>
     </div>
   );
 }

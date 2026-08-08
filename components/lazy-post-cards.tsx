@@ -156,7 +156,9 @@ export function LazyPostCards({
           type="button"
           onClick={loadMore}
           disabled={loading}
-          className="mx-auto mt-8 block w-full max-w-md rounded-xl border border-white/25 bg-white/10 py-3 text-sm font-semibold text-white backdrop-blur-md transition-all hover:border-white/50 hover:bg-white/20 disabled:opacity-60"
+          /* Nền trắng mờ 10% chìm vào ảnh nền -> nền accent đặc, viền sáng,
+             đổ bóng. Cùng kiểu với các nút hành động chính khác của site. */
+          className="mx-auto mt-8 block w-full max-w-md rounded-full border border-white/30 bg-accent/40 py-3.5 text-base font-semibold text-white shadow-xl shadow-black/50 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-accent/60 hover:shadow-2xl disabled:translate-y-0 disabled:opacity-60"
         >
           {loading ? loadingLabel : `${seeMoreLabel} ↓`}
         </button>

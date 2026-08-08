@@ -16,19 +16,27 @@ import Image from "next/image";
 export function PageBackground({
   src,
   /**
+   * Mô tả ảnh nền. Để trống là đúng chuẩn cho ảnh thuần trang trí, nhưng
+   * những trang mà ảnh nền chính là ảnh minh hoạ nội dung (đèo Khau Phạ,
+   * Clubhouse, đội phi công...) thì nên mô tả — vừa giúp trình đọc màn hình,
+   * vừa để ảnh xuất hiện trong tìm kiếm hình ảnh.
+   */
+  alt = "",
+  /**
    * Mặc định là nền cố định theo màn hình. Trang nào đang đặt nền ngay trên
    * thẻ bọc (nền cuộn theo nội dung) thì truyền "absolute inset-0".
    */
   className = "fixed inset-0 -z-10",
 }: {
   src: string;
+  alt?: string;
   className?: string;
 }) {
   return (
     <div className={className}>
       <Image
         src={src}
-        alt=""
+        alt={alt}
         fill
         // Nền thường là phần tử lớn nhất màn hình đầu tiên nên tải sớm.
         priority

@@ -305,7 +305,7 @@ export default async function KnowledgeAllPage({
       </section>
 
       {/* --- MAIN CONTENT (Detailed List) --- */}
-      <main className="relative z-10 w-full min-h-screen py-20">
+      <main className="relative z-10 min-h-screen w-full pb-6 pt-20">
         <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/40 to-black/60 pointer-events-none -z-10" />
 
         <div className="container mx-auto px-4">
@@ -478,14 +478,16 @@ export default async function KnowledgeAllPage({
           })()}
         </div>
 
-      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
-          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
-      <div className="relative z-10 pb-6">
+      </main>
+
+      {/* Footer nằm NGOÀI <main>: để bên trong thì nó bị bọc thêm một lớp
+          container (hẹp lại) và ăn luôn khoảng đệm đáy của main, tạo ra một
+          mảng trống lớn phía dưới. mt-8 tách footer khỏi nút "Xem thêm". */}
+      <div className="relative z-10 mt-8 pb-4">
         <div className="container mx-auto">
           <Footer />
         </div>
       </div>
-      </main>
 
       <style>{`
         @keyframes fadeInRight {

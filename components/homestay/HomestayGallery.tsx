@@ -158,7 +158,9 @@ export default function HomestayGallery({
             <button
               type="button"
               onClick={() => setShown((n) => n + PAGE_SIZE)}
-              className="rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20"
+              /* Nền trắng mờ 10% chìm hẳn vào ảnh nền -> đổi sang nền accent
+                 đặc, viền sáng và đổ bóng cho tách khỏi nền. */
+              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-accent/40 px-8 py-3 text-base font-semibold text-white shadow-xl shadow-black/50 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-accent/60 hover:shadow-2xl"
             >
               {seeMoreLabel ?? "Xem thêm"} ({photos.length - shown})
             </button>

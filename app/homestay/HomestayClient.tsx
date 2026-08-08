@@ -241,7 +241,10 @@ export default function HomestayPage() {
 
   return (
     <div className="min-h-screen pt-20 relative antialiased">
-      <PageBackground src="/contact.jpg" />
+      <PageBackground
+        src="/contact.jpg"
+        alt="Clubhouse Mebayluon giữa thung lũng Tú Lệ"
+      />
       <div className="fixed inset-0 -z-10 bg-black/30" />
 
       <div className="relative z-10 text-white">
@@ -666,13 +669,15 @@ export default function HomestayPage() {
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
+              {/* Nút hành động chính của cả trang — cỡ mặc định trông lọt
+                  thỏm giữa tiêu đề lớn, nên phóng to hẳn và cho đổ bóng. */}
               <Button
                 size="lg"
-                className="bg-accent hover:bg-accent/90 text-white"
+                className="h-14 rounded-full bg-accent px-10 text-base font-bold text-white shadow-xl shadow-black/30 transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:h-16 sm:px-12 sm:text-lg"
                 asChild
               >
                 <a href={`tel:${locationInfo.phone}`}>
-                  <Phone className="mr-2 h-5 w-5" />
+                  <Phone className="mr-2 h-6 w-6" />
                   {t.homestay.callNow}
                 </a>
               </Button>
