@@ -603,6 +603,10 @@ export default function Footer() {
                 <span>{t.rightsReserved}</span>
               </span>
 
+              {/* ẨN link Điều khoản & Điều kiện theo yêu cầu. Trang /terms và
+                  ô đồng ý ở bước 4 của luồng đặt bay VẪN hoạt động bình
+                  thường — chỉ ẩn lối vào từ footer. Bỏ comment khối dưới là
+                  hiện lại.
               <span aria-hidden className="text-slate-600">|</span>
               <Link
                 href={makeLocalizedHref("/terms", pathname)}
@@ -610,6 +614,7 @@ export default function Footer() {
               >
                 {t.terms}
               </Link>
+              */}
             </p>
           </div>
 
