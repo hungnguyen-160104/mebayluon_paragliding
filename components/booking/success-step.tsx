@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import { computePriceByLang, LOCATIONS } from "@/lib/booking/calculate-price";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
@@ -21,7 +21,6 @@ const UI_TEXT: Record<
     note: string;
     preFlightNotesTitle: string;
     preFlightNotes: string[];
-    confirmedBadge: string;
     contactTitle: string;
     contactHint: string;
     guideTitle: string;
@@ -37,13 +36,14 @@ const UI_TEXT: Record<
   }
 > = {
   vi: {
-    title: "Booking đã được ghi nhận",
+    title: "Đặt lịch của bạn đã được ghi nhận",
     subtitle:
-      "Bạn có thể tải vé đặt bay ngay bên dưới hoặc bắt đầu một booking mới.",
+      "Vui lòng tải vé đặt bay ngay bên dưới — Chúng tôi sẽ sớm liên hệ trực tiếp với bạn!",
     imageFail: "Không tạo được ảnh. Vui lòng thử lại hoặc chụp màn hình.",
     note: "Đội ngũ sẽ liên hệ xác nhận lịch bay, thời tiết và các dịch vụ đi kèm trong thời gian sớm nhất.",
     preFlightNotesTitle: "Thông tin lưu ý trước khi bay",
     preFlightNotes: [
+      "Mang theo điện thoại và chừa sẵn khoảng 4GB trống để chép ảnh & video chuyến bay ngay tại điểm bay.",
       "Lịch bay có thể thay đổi tùy theo điều kiện thời tiết thực tế.",
       "Vui lòng có mặt tại điểm hẹn trước giờ bay ít nhất 30 phút.",
       "Mang theo giấy tờ tùy thân và xác nhận đặt chỗ khi đến.",
@@ -51,7 +51,6 @@ const UI_TEXT: Record<
       "Nếu có vấn đề sức khỏe hoặc cần hỗ trợ đặc biệt, vui lòng thông báo trước.",
       "Liên hệ hotline nếu cần thay đổi hoặc hủy lịch bay.",
     ],
-    confirmedBadge: "Đã xác nhận",
     contactTitle: "Cần hỗ trợ? Gọi ngay",
     contactHint: "Đổi lịch, huỷ bay hay hỏi thời tiết — gọi hoặc nhắn bất cứ lúc nào.",
     guideTitle: "Đọc trước khi đi bay",
@@ -59,7 +58,7 @@ const UI_TEXT: Record<
     guidePreNotice: "Lưu ý trước chuyến bay",
     guideSafety: "Dù lượn có an toàn không?",
     guideSteps: "Các bước khi đi bay dù lượn",
-    readyTitle: "Bạn đã sẵn sàng cất cánh! 🪂",
+    readyTitle: "Đặt lịch của bạn đã được ghi nhận",
     flightAtLabel: "Chuyến bay của bạn",
     passengerLabel: "Khách bay",
     andOthers: (n: number) => `và ${n} khách nữa`,
@@ -71,13 +70,14 @@ const UI_TEXT: Record<
     ],
   },
   en: {
-    title: "Booking received",
+    title: "Your booking has been received",
     subtitle:
-      "You can download your booking ticket below or start a new booking.",
+      "Please download your ticket below — we will contact you directly very soon!",
     imageFail: "Failed to generate image. Please try again or take a screenshot.",
     note: "Our team will contact you soon to confirm schedule, weather, and selected services.",
     preFlightNotesTitle: "Pre-flight information",
     preFlightNotes: [
+      "Bring your phone with about 4GB free so we can copy your flight photos and video on the spot.",
       "Flight schedule may change depending on actual weather conditions.",
       "Please arrive at the meeting point at least 30 minutes before flight time.",
       "Bring ID and booking confirmation when you arrive.",
@@ -85,7 +85,6 @@ const UI_TEXT: Record<
       "If you have health issues or need special assistance, please inform us in advance.",
       "Contact our hotline to reschedule or cancel your flight.",
     ],
-    confirmedBadge: "Confirmed",
     contactTitle: "Need help? Call us",
     contactHint: "Reschedule, cancel or ask about the weather — call or message any time.",
     guideTitle: "Read before you fly",
@@ -93,7 +92,7 @@ const UI_TEXT: Record<
     guidePreNotice: "Pre-flight notes",
     guideSafety: "Is paragliding safe?",
     guideSteps: "How a paragliding flight goes",
-    readyTitle: "You are ready for take-off! 🪂",
+    readyTitle: "Your booking has been received",
     flightAtLabel: "Your flight",
     passengerLabel: "Passenger",
     andOthers: (n: number) => `and ${n} more`,
@@ -105,13 +104,14 @@ const UI_TEXT: Record<
     ],
   },
   fr: {
-    title: "Réservation enregistrée",
+    title: "Votre réservation a bien été enregistrée",
     subtitle:
-      "Vous pouvez télécharger votre billet ci-dessous ou commencer une nouvelle réservation.",
+      "Merci de télécharger votre billet ci-dessous — nous vous contacterons très bientôt !",
     imageFail: "Impossible de générer l'image. Veuillez réessayer.",
     note: "Notre équipe vous contactera rapidement pour confirmer l'horaire, la météo et les services choisis.",
     preFlightNotesTitle: "Informations avant le vol",
     preFlightNotes: [
+      "Apportez votre téléphone avec environ 4 Go libres pour copier vos photos et vidéos de vol sur place.",
       "L'horaire du vol peut changer en fonction des conditions météorologiques.",
       "Veuillez arriver au point de rendez-vous au moins 30 minutes avant le vol.",
       "Apportez une pièce d'identité et la confirmation de réservation.",
@@ -119,7 +119,6 @@ const UI_TEXT: Record<
       "Si vous avez des problèmes de santé ou besoin d'une assistance particulière, informez-nous à l'avance.",
       "Contactez notre hotline pour modifier ou annuler votre vol.",
     ],
-    confirmedBadge: "Confirmé",
     contactTitle: "Besoin d'aide ? Appelez-nous",
     contactHint: "Report, annulation ou météo — appelez ou écrivez à tout moment.",
     guideTitle: "À lire avant de voler",
@@ -127,7 +126,7 @@ const UI_TEXT: Record<
     guidePreNotice: "Notes avant le vol",
     guideSafety: "Le parapente est-il sûr ?",
     guideSteps: "Comment se déroule un vol",
-    readyTitle: "Prêt pour le décollage ! 🪂",
+    readyTitle: "Votre réservation a bien été enregistrée",
     flightAtLabel: "Votre vol",
     passengerLabel: "Passager",
     andOthers: (n: number) => `et ${n} de plus`,
@@ -139,13 +138,14 @@ const UI_TEXT: Record<
     ],
   },
   ru: {
-    title: "Бронирование получено",
+    title: "Ваше бронирование принято",
     subtitle:
-      "Ниже вы можете скачать билет или начать новое бронирование.",
+      "Пожалуйста, скачайте билет ниже — мы свяжемся с вами в ближайшее время!",
     imageFail: "Не удалось создать изображение. Попробуйте ещё раз.",
     note: "Наша команда скоро свяжется с вами для подтверждения времени, погоды и выбранных услуг.",
     preFlightNotesTitle: "Информация перед полётом",
     preFlightNotes: [
+      "Возьмите телефон и оставьте около 4 ГБ свободного места — фото и видео полёта скопируем прямо на площадке.",
       "Расписание полёта может измениться в зависимости от погодных условий.",
       "Пожалуйста, прибудьте к месту встречи минимум за 30 минут до вылета.",
       "Возьмите удостоверение личности и подтверждение бронирования.",
@@ -153,7 +153,6 @@ const UI_TEXT: Record<
       "Если у вас есть проблемы со здоровьем или нужна особая помощь, сообщите заранее.",
       "Свяжитесь с нашей горячей линией для изменения или отмены полёта.",
     ],
-    confirmedBadge: "Подтверждено",
     contactTitle: "Нужна помощь? Звоните",
     contactHint: "Перенос, отмена или вопрос о погоде — звоните или пишите в любое время.",
     guideTitle: "Прочитайте перед полётом",
@@ -161,7 +160,7 @@ const UI_TEXT: Record<
     guidePreNotice: "Памятка перед полётом",
     guideSafety: "Безопасен ли параплан?",
     guideSteps: "Как проходит полёт",
-    readyTitle: "Вы готовы к взлёту! 🪂",
+    readyTitle: "Ваше бронирование принято",
     flightAtLabel: "Ваш полёт",
     passengerLabel: "Пассажир",
     andOthers: (n: number) => `и ещё ${n}`,
@@ -173,13 +172,14 @@ const UI_TEXT: Record<
     ],
   },
   hi: {
-    title: "बुकिंग प्राप्त हो गई",
+    title: "आपकी बुकिंग दर्ज हो गई है",
     subtitle:
-      "आप नीचे अपना बुकिंग टिकट डाउनलोड कर सकते हैं या नई बुकिंग शुरू कर सकते हैं।",
+      "कृपया नीचे से अपना टिकट डाउनलोड करें — हम जल्द ही आपसे सीधे संपर्क करेंगे!",
     imageFail: "इमेज बनाई नहीं जा सकी। कृपया फिर से प्रयास करें।",
     note: "हमारी टीम जल्द ही समय, मौसम और चुनी गई सेवाओं की पुष्टि के लिए आपसे संपर्क करेगी।",
     preFlightNotesTitle: "उड़ान से पहले की जानकारी",
     preFlightNotes: [
+      "फ़ोन साथ लाएँ और लगभग 4GB जगह खाली रखें — उड़ान की फ़ोटो व वीडियो वहीं कॉपी कर दी जाएगी।",
       "मौसम की स्थिति के अनुसार उड़ान का समय बदल सकता है।",
       "कृपया उड़ान से कम से कम 30 मिनट पहले मिलन स्थल पर पहुँचें।",
       "आईडी और बुकिंग पुष्टि साथ लाएं।",
@@ -187,7 +187,6 @@ const UI_TEXT: Record<
       "यदि स्वास्थ्य संबंधी कोई समस्या है या विशेष सहायता चाहिए, तो पहले से सूचित करें।",
       "उड़ान में बदलाव या रद्द करने के लिए हमारी हॉटलाइन से संपर्क करें।",
     ],
-    confirmedBadge: "पुष्ट",
     contactTitle: "मदद चाहिए? कॉल करें",
     contactHint: "तारीख़ बदलना, रद्द करना या मौसम — कभी भी कॉल या मैसेज करें।",
     guideTitle: "उड़ान से पहले पढ़ें",
@@ -195,7 +194,7 @@ const UI_TEXT: Record<
     guidePreNotice: "उड़ान से पहले की बातें",
     guideSafety: "क्या पैराग्लाइडिंग सुरक्षित है?",
     guideSteps: "उड़ान कैसे होती है",
-    readyTitle: "आप उड़ान के लिए तैयार हैं! 🪂",
+    readyTitle: "आपकी बुकिंग दर्ज हो गई है",
     flightAtLabel: "आपकी उड़ान",
     passengerLabel: "यात्री",
     andOthers: (n: number) => `और ${n} लोग`,
@@ -207,13 +206,14 @@ const UI_TEXT: Record<
     ],
   },
   zh: {
-    title: "预订已收到",
+    title: "您的预订已受理",
     subtitle:
-      "您可以在下方下载预订票，或重新开始新的预订。",
+      "请在下方下载您的电子票——我们会尽快直接与您联系！",
     imageFail: "无法生成图片。请重试或直接截图。",
     note: "团队会尽快联系您确认飞行时间、天气和已选服务。",
     preFlightNotesTitle: "飞行前须知",
     preFlightNotes: [
+      "请带上手机并预留约 4GB 空间，飞行照片和视频可当场拷贝给您。",
       "飞行时间可能根据实际天气情况调整。",
       "请至少提前30分钟到达集合点。",
       "请携带身份证件和预订确认信息。",
@@ -221,7 +221,6 @@ const UI_TEXT: Record<
       "如有健康问题或需要特殊协助，请提前告知。",
       "如需更改或取消航班，请联系客服热线。",
     ],
-    confirmedBadge: "已确认",
     contactTitle: "需要帮助？请致电",
     contactHint: "改期、取消或询问天气——随时来电或留言。",
     guideTitle: "飞行前请先阅读",
@@ -229,7 +228,7 @@ const UI_TEXT: Record<
     guidePreNotice: "飞行前须知",
     guideSafety: "滑翔伞安全吗？",
     guideSteps: "一次飞行是怎样进行的",
-    readyTitle: "准备起飞啦！🪂",
+    readyTitle: "您的预订已受理",
     flightAtLabel: "您的飞行",
     passengerLabel: "飞行乘客",
     andOthers: (n: number) => `等 ${n} 位`,
@@ -337,6 +336,7 @@ export default function SuccessStep() {
 
   const ticketRef = useRef<HTMLDivElement | null>(null);
   const [downloadingIMG, setDownloadingIMG] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const baseFileName = useMemo(() => {
     const loc = bookingData.location || "booking";
@@ -345,6 +345,80 @@ export default function SuccessStep() {
     const date = (bookingData.dateISO || "date").replaceAll("/", "-");
     return `ticket-${loc}-${pkg}-${flight}-${date}`;
   }, [bookingData.location, bookingData.packageKey, bookingData.flightTypeKey, bookingData.dateISO]);
+
+  /**
+   * Chụp tấm vé thành canvas. Dùng chung cho cả tải ảnh lẫn tải PDF, để hai
+   * kiểu tệp không bao giờ lệch nhau về nội dung hay cách xử lý CSS.
+   */
+  const renderTicketCanvas = useCallback(async () => {
+    if (!ticketRef.current) return null;
+
+    const { default: html2canvas } = await import("html2canvas");
+
+    return html2canvas(ticketRef.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      onclone: (doc) => {
+        doc
+          .querySelectorAll('style, link[rel="stylesheet"]')
+          .forEach((el) => el.remove());
+
+        const safeStyle = doc.createElement("style");
+        safeStyle.textContent = `
+          *, *::before, *::after {
+            box-shadow: none !important;
+            filter: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            text-shadow: none !important;
+          }
+        `;
+        doc.head.appendChild(safeStyle);
+      },
+    });
+  }, []);
+
+  /**
+   * Tải vé dạng PDF. Vé đã dựng theo tỉ lệ A4 nên đặt vừa khít một trang A4
+   * dọc, in ra giấy là đúng khổ, không phải căn lại.
+   */
+  const downloadPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      const canvas = await renderTicketCanvas();
+      if (!canvas) return;
+
+      const { default: jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      // Chừa lề 8mm, giữ nguyên tỉ lệ ảnh và căn giữa trang.
+      const margin = 8;
+      const maxW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+      const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+
+      pdf.addImage(
+        canvas.toDataURL("image/jpeg", 0.95),
+        "JPEG",
+        (pageW - w) / 2,
+        (pageH - h) / 2,
+        w,
+        h,
+      );
+      pdf.save(`${baseFileName}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert(ui.imageFail);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   const downloadImage = async () => {
     if (!ticketRef.current) return;
@@ -411,19 +485,16 @@ export default function SuccessStep() {
         {/* Đầu trang chúc mừng: chào đích danh khách, nhắc luôn giờ bay và
             điểm bay — ba thứ khách muốn biết ngay khi đặt xong. */}
         <div className="border-b border-[#DCE7F3] bg-gradient-to-br from-[#16A34A] to-[#0E7A38] px-4 py-5 text-white md:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h3 className="text-2xl font-black leading-tight md:text-3xl">
-                {ui.readyTitle}
-              </h3>
-              <p className="mt-1 max-w-3xl text-sm text-white/90">
-                {ui.subtitle}
-              </p>
-            </div>
-
-            <div className="cta-btn shrink-0 rounded-full border border-white/40 bg-white/20 px-4 py-2 text-base font-bold">
-              ✓ {ui.confirmedBadge}
-            </div>
+          {/* Căn giữa, bỏ huy hiệu "Đã xác nhận" — dải xanh và dòng chữ đã
+              nói rõ booking thành công, thêm huy hiệu chỉ làm loãng. */}
+          <div className="text-center">
+            <div className="text-4xl md:text-5xl">🪂</div>
+            <h3 className="mt-2 text-2xl font-black leading-tight md:text-4xl">
+              {ui.readyTitle}
+            </h3>
+            <p className="mx-auto mt-2 max-w-2xl text-base font-medium text-white/95 md:text-lg">
+              {ui.subtitle}
+            </p>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -467,13 +538,21 @@ export default function SuccessStep() {
 
           {/* Căn giữa, ngay trên tấm vé — đây là việc khách cần làm đầu tiên
               sau khi đặt xong nên không để nép ở góc phải. */}
-          <div className="flex justify-center">
+          <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={downloadImage}
-              disabled={downloadingIMG}
-              className="cta-btn inline-flex h-12 items-center gap-2 rounded-full bg-red-600 px-8 text-base font-bold text-white shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-red-700 disabled:translate-y-0 disabled:bg-red-300 disabled:shadow-none"
+              disabled={downloadingIMG || downloadingPDF}
+              className="cta-btn inline-flex h-12 items-center gap-2 rounded-full bg-red-600 px-7 text-base font-bold text-white shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-red-700 disabled:translate-y-0 disabled:bg-red-300 disabled:shadow-none"
             >
-              ⬇️ {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
+              🖼️ {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
+            </button>
+
+            <button
+              onClick={downloadPDF}
+              disabled={downloadingIMG || downloadingPDF}
+              className="cta-btn inline-flex h-12 items-center gap-2 rounded-full border-2 border-red-600 bg-white px-7 text-base font-bold text-red-600 shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5 hover:bg-red-50 disabled:translate-y-0 disabled:border-red-200 disabled:text-red-300 disabled:shadow-none"
+            >
+              📄 {downloadingPDF ? t.buttons.generatingPDF : t.buttons.downloadPDF}
             </button>
           </div>
 
