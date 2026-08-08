@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Calendar, Eye, EyeOff, Filter, Pin, Plus, Search, Tag } from "lucide-react";
 import type { Post } from "@/types/frontend/post";
+import type { PostSortKey } from "@/app/admin/posts/page";
 
 const CATEGORIES = [
   { value: "", label: "Tất cả danh mục" },
@@ -17,6 +18,22 @@ const STATUSES = [
   { value: "draft", label: "Bản nháp" },
 ];
 
+/** Cách sắp xếp danh sách. Xử lý ở app/admin/posts/page.tsx (sortPosts). */
+const SORTS: Array<{ value: PostSortKey; label: string }> = [
+  { value: "default", label: "Mặc định (ghim đầu, mới nhất)" },
+  { value: "date-desc", label: "Ngày đăng: mới nhất trước" },
+  { value: "date-asc", label: "Ngày đăng: cũ nhất trước" },
+  { value: "title-asc", label: "Tên bài: A → Z" },
+  { value: "title-desc", label: "Tên bài: Z → A" },
+];
+
+type PostSidebarFilters = {
+  search: string;
+  category: string;
+  status: string;
+  sort: PostSortKey;
+};
+
 interface PostSidebarProps {
   posts: Post[];
   selectedId: string | null;
@@ -25,12 +42,8 @@ interface PostSidebarProps {
   onToggleFeatured: (post: Post) => void;
   onCreateNew: () => void;
   loading?: boolean;
-  filters: {
-    search: string;
-    category: string;
-    status: string;
-  };
-  onFiltersChange: (filters: { search: string; category: string; status: string }) => void;
+  filters: PostSidebarFilters;
+  onFiltersChange: (filters: PostSidebarFilters) => void;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -51,7 +64,9 @@ export default function PostSidebar({
 }: PostSidebarProps) {
   const [showFilters, setShowFilters] = useState(false);
 
-  const hasActiveFilters = Boolean(filters.category || filters.status);
+  const hasActiveFilters = Boolean(
+    filters.category || filters.status || filters.sort !== "default",
+  );
 
   const totalPublished = useMemo(
     () => posts.filter((post) => post.isPublished).length,
@@ -128,6 +143,23 @@ export default function PostSidebar({
               ))}
             </select>
 
+            <select
+              value={filters.sort}
+              onChange={(e) =>
+                onFiltersChange({
+                  ...filters,
+                  sort: e.target.value as PostSortKey,
+                })
+              }
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-500 focus:outline-none"
+            >
+              {SORTS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+
             {hasActiveFilters && (
               <button
                 type="button"
@@ -136,6 +168,7 @@ export default function PostSidebar({
                     search: filters.search,
                     category: "",
                     status: "",
+                    sort: "default",
                   })
                 }
                 className="w-full text-sm text-red-500 hover:text-red-600"

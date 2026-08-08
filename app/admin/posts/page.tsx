@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -10,11 +10,63 @@ import type { Paginated, Post, PostPayload } from "@/types/frontend/post";
 import api from "@/lib/api";
 import { authHeader, getToken } from "@/lib/auth";
 
+export type PostSortKey =
+  | "default"
+  | "date-desc"
+  | "date-asc"
+  | "title-asc"
+  | "title-desc";
+
 type FilterState = {
   search: string;
   category: string;
   status: string;
+  sort: PostSortKey;
 };
+
+/** Ngày dùng để sắp xếp: ưu tiên ngày đăng, bài nháp thì lấy ngày tạo. */
+function postDateValue(post: Post): number {
+  const raw = (post as any).publishedAt || (post as any).createdAt;
+  const t = raw ? new Date(raw).getTime() : 0;
+  return Number.isNaN(t) ? 0 : t;
+}
+
+/** Tiêu đề hiện trong danh sách — khớp với PostSidebar (titleVi trước). */
+function postTitleValue(post: Post): string {
+  return String((post as any).titleVi || post.title || "");
+}
+
+/**
+ * Sắp xếp ở phía trình duyệt chứ không nhờ máy chủ, vì danh sách tải một lần
+ * tối đa 100 bài và vì A–Z phải so theo ĐÚNG tiêu đề đang hiện (tiếng Việt),
+ * trong khi Mongo chỉ sort được trường `title` tiếng Anh.
+ */
+function sortPosts(posts: Post[], sort: PostSortKey): Post[] {
+  if (sort === "default") return posts;
+
+  const sorted = [...posts];
+
+  switch (sort) {
+    case "date-desc":
+      sorted.sort((a, b) => postDateValue(b) - postDateValue(a));
+      break;
+    case "date-asc":
+      sorted.sort((a, b) => postDateValue(a) - postDateValue(b));
+      break;
+    case "title-asc":
+      sorted.sort((a, b) =>
+        postTitleValue(a).localeCompare(postTitleValue(b), "vi"),
+      );
+      break;
+    case "title-desc":
+      sorted.sort((a, b) =>
+        postTitleValue(b).localeCompare(postTitleValue(a), "vi"),
+      );
+      break;
+  }
+
+  return sorted;
+}
 
 type ListResp = Paginated<Post>;
 
@@ -32,6 +84,7 @@ export default function AdminPostsPage() {
     search: "",
     category: "",
     status: "",
+    sort: "default",
   });
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,7 +126,12 @@ export default function AdminPostsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, showToast]);
+  }, [filters.search, filters.category, filters.status, showToast]);
+
+  const sortedPosts = useMemo(
+    () => sortPosts(posts, filters.sort),
+    [posts, filters.sort],
+  );
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -195,7 +253,11 @@ export default function AdminPostsPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-100">
+    /* top-20: menu chính của website là thanh `fixed top-0` cao h-20 và được
+       render cho MỌI route ở app/layout.tsx, kể cả /admin. Khung này cũng
+       `fixed inset-0` nên trước đây bị menu đè lên chữ "Quản lý bài viết".
+       Dùng top-20 thay cho pt-20 để vùng cuộn bên trong vẫn đúng chiều cao. */
+    <div className="fixed inset-0 top-20 flex flex-col bg-gray-100">
       <header className="z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-4">
           <Link
@@ -235,7 +297,7 @@ export default function AdminPostsPage() {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-80 flex-shrink-0 overflow-hidden border-r border-gray-200 lg:w-96">
           <PostSidebar
-            posts={posts}
+            posts={sortedPosts}
             selectedId={selectedPost?._id || null}
             onSelect={handleSelectPost}
             onToggleFeatured={handleToggleFeatured}

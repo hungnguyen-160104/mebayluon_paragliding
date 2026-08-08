@@ -339,7 +339,7 @@ function CenteredMessage({
   const textColor = type === "error" ? "text-red-700" : "text-gray-900"; // Đổi sang chữ tối
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-cover bg-center"
+      className="fixed inset-0 top-20 flex items-center justify-center bg-cover bg-center"
       style={{ backgroundImage: "url('/hinh-nen.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] z-0" />
