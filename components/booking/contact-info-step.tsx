@@ -3,6 +3,11 @@
 import React, { useMemo, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import { useLangCode } from "@/lib/booking/translations-booking";
+import {
+  formatPhoneForStorage,
+  phoneErrorMessage,
+  validatePhoneNumber,
+} from "@/lib/booking/phone";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 
@@ -299,6 +304,12 @@ export default function ContactInfoStep() {
   const hasLocation = Boolean(data.location);
   const [dateError, setDateError] = useState<string | null>(null);
 
+  /**
+   * Lỗi số điện thoại. Chỉ hiện sau khi khách rời ô (hoặc bấm Tiếp tục), để
+   * không báo đỏ ngay từ chữ số đầu tiên khách vừa gõ.
+   */
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
   const todayISO = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -325,6 +336,29 @@ export default function ContactInfoStep() {
       : nextCountryCode;
 
     setContact({ phone: fullPhone });
+
+    // Đang có báo lỗi mà khách sửa thành số đúng thì bỏ báo lỗi ngay.
+    if (phoneError && !validatePhoneNumber(nextCountryCode, cleanedNumber)) {
+      setPhoneError(null);
+    }
+  };
+
+  /**
+   * Kiểm tra số và hiện lỗi nếu sai. Trả về true khi hợp lệ.
+   * Lúc hợp lệ thì lưu lại dạng chuẩn "+84 912345678" — bỏ số 0 đầu và mọi
+   * dấu cách/chấm/gạch, để mã booking và việc tra cứu khách luôn nhất quán.
+   */
+  const checkPhone = () => {
+    const code = validatePhoneNumber(countryCode, phoneNumber);
+
+    if (code) {
+      setPhoneError(phoneErrorMessage(lang, code, countryCode));
+      return false;
+    }
+
+    setPhoneError(null);
+    setContact({ phone: formatPhoneForStorage(countryCode, phoneNumber) });
+    return true;
   };
 
   return (
@@ -335,6 +369,7 @@ export default function ContactInfoStep() {
 
         if (!hasLocation) return;
         if (dateError) return;
+        if (!checkPhone()) return;
 
         next();
       }}
@@ -446,13 +481,24 @@ export default function ContactInfoStep() {
 
                 <input
                   type="tel"
+                  inputMode="tel"
                   value={phoneNumber}
                   onChange={(e) => updatePhone(countryCode, e.target.value)}
+                  onBlur={checkPhone}
                   placeholder={ui.phonePlaceholder}
                   required
-                  className="h-12 w-full rounded-lg border border-[#DCE7F3] bg-white px-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
+                  aria-invalid={!!phoneError}
+                  className={`h-12 w-full rounded-lg border bg-white px-3 text-[#1C2930] outline-none placeholder:text-[#94A3B8] transition focus:ring-1 ${
+                    phoneError
+                      ? "border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]"
+                      : "border-[#DCE7F3] focus:border-[#0194F3] focus:ring-[#0194F3]"
+                  }`}
                 />
               </div>
+
+              {phoneError ? (
+                <p className="mt-2 text-sm text-[#DC2626]">{phoneError}</p>
+              ) : null}
             </div>
           </div>
 

@@ -67,6 +67,31 @@ const UI_I18N: Record<
     weekend: string;
     holiday: string;
     selectedCount: string;
+    /* Nhãn khối dịch vụ — trước đây không có trong bookingTranslations.labels
+       nên L() luôn rơi về chuỗi tiếng Anh, kể cả khi khách xem bản tiếng Việt. */
+    additionalServices: string;
+    selectedServices: string;
+    hotelTransfer: string;
+    camera360: string;
+    drone: string;
+    gopro: string;
+    drinks: string;
+    certificate: string;
+    freeTag: string;
+    includedTag: string;
+    noTag: string;
+    flightCost: string;
+    includedTitle: string;
+    serviceDetails: string;
+    priceBreakdown: string;
+    totalCost: string;
+    dayType: string;
+    name: string;
+    viewMap: string;
+    cashPayment: string;
+    bankTransfer: string;
+    paypalPayment: string;
+    creditCard: string;
     passengerList: string;
     paymentTitle: string;
     supportNote: string;
@@ -79,7 +104,7 @@ const UI_I18N: Record<
   vi: {
     title: "Xác nhận đặt bay",
     subtitle:
-      "Vui lòng kiểm tra thật kỹ thông tin chuyến bay, hành khách và dịch vụ đã chọn trước khi xác nhận",
+      "Vui lòng kiểm tra thật kỹ thông tin chuyến bay, khách bay và dịch vụ đã chọn trước khi xác nhận",
     termsTitle: "Điều khoản & điều kiện",
     openInNewTab: "Mở trong tab mới",
     close: "Đóng",
@@ -96,7 +121,30 @@ const UI_I18N: Record<
     weekend: "Cuối tuần",
     holiday: "Ngày lễ",
     selectedCount: "đã chọn",
-    passengerList: "Danh sách hành khách",
+    additionalServices: "Dịch vụ & tiện ích",
+    selectedServices: "Dịch vụ tuỳ chọn",
+    hotelTransfer: "Đón / trả tận nơi",
+    camera360: "Camera 360",
+    drone: "Flycam (drone camera)",
+    gopro: "Ảnh & video GoPro",
+    drinks: "Đồ uống",
+    certificate: "Chứng nhận bay",
+    freeTag: "miễn phí",
+    includedTag: "đã bao gồm",
+    noTag: "không",
+    flightCost: "Giá chuyến bay cơ bản",
+    includedTitle: "Giá trên đã bao gồm",
+    serviceDetails: "Thông tin chuyến bay",
+    priceBreakdown: "Chi tiết giá",
+    totalCost: "Tổng cộng",
+    dayType: "Loại ngày",
+    name: "Họ và tên",
+    viewMap: "Xem bản đồ",
+    cashPayment: "Tiền mặt",
+    bankTransfer: "Chuyển khoản",
+    paypalPayment: "PayPal",
+    creditCard: "Thẻ tín dụng",
+    passengerList: "Danh sách khách bay",
     paymentTitle: "Phương thức thanh toán",
     supportNote:
       "Sau khi gửi booking, đội ngũ sẽ liên hệ xác nhận lịch bay, dịch vụ và các điều kiện thời tiết.",
@@ -133,6 +181,29 @@ const UI_I18N: Record<
     weekend: "Weekend",
     holiday: "Holiday",
     selectedCount: "selected",
+    additionalServices: "Services & perks",
+    selectedServices: "Optional services",
+    hotelTransfer: "Hotel pickup / drop-off",
+    camera360: "360 camera",
+    drone: "Flycam (drone camera)",
+    gopro: "GoPro photos & video",
+    drinks: "Drinks",
+    certificate: "Flight certificate",
+    freeTag: "free",
+    includedTag: "included",
+    noTag: "no",
+    flightCost: "Base flight price",
+    includedTitle: "The price includes",
+    serviceDetails: "Flight details",
+    priceBreakdown: "Price breakdown",
+    totalCost: "Total",
+    dayType: "Day type",
+    name: "Full name",
+    viewMap: "View map",
+    cashPayment: "Cash",
+    bankTransfer: "Bank transfer",
+    paypalPayment: "PayPal",
+    creditCard: "Credit card",
     passengerList: "Passenger list",
     paymentTitle: "Payment methods",
     supportNote:
@@ -171,6 +242,29 @@ const UI_I18N: Record<
     weekend: "Week-end",
     holiday: "Jour férié",
     selectedCount: "sélectionné",
+    additionalServices: "Services & avantages",
+    selectedServices: "Services en option",
+    hotelTransfer: "Transfert hôtel",
+    camera360: "Caméra 360",
+    drone: "Drone (flycam)",
+    gopro: "Photos & vidéo GoPro",
+    drinks: "Boissons",
+    certificate: "Certificat de vol",
+    freeTag: "offert",
+    includedTag: "inclus",
+    noTag: "non",
+    flightCost: "Prix de base du vol",
+    includedTitle: "Ce prix comprend",
+    serviceDetails: "Détails du vol",
+    priceBreakdown: "Détail des prix",
+    totalCost: "Total",
+    dayType: "Type de jour",
+    name: "Nom complet",
+    viewMap: "Voir la carte",
+    cashPayment: "Espèces",
+    bankTransfer: "Virement",
+    paypalPayment: "PayPal",
+    creditCard: "Carte bancaire",
     passengerList: "Liste des passagers",
     paymentTitle: "Modes de paiement",
     supportNote:
@@ -208,6 +302,29 @@ const UI_I18N: Record<
     weekend: "Выходной",
     holiday: "Праздничный день",
     selectedCount: "выбрано",
+    additionalServices: "Услуги и бонусы",
+    selectedServices: "Дополнительные услуги",
+    hotelTransfer: "Трансфер от отеля",
+    camera360: "Камера 360",
+    drone: "Дрон (flycam)",
+    gopro: "Фото и видео GoPro",
+    drinks: "Напитки",
+    certificate: "Сертификат о полёте",
+    freeTag: "бесплатно",
+    includedTag: "включено",
+    noTag: "нет",
+    flightCost: "Базовая стоимость полёта",
+    includedTitle: "В цену входит",
+    serviceDetails: "Детали полёта",
+    priceBreakdown: "Детализация цены",
+    totalCost: "Итого",
+    dayType: "Тип дня",
+    name: "Полное имя",
+    viewMap: "Открыть карту",
+    cashPayment: "Наличные",
+    bankTransfer: "Перевод",
+    paypalPayment: "PayPal",
+    creditCard: "Карта",
     passengerList: "Список пассажиров",
     paymentTitle: "Способы оплаты",
     supportNote:
@@ -245,6 +362,29 @@ const UI_I18N: Record<
     weekend: "सप्ताहांत",
     holiday: "छुट्टी",
     selectedCount: "चयनित",
+    additionalServices: "सेवाएँ व सुविधाएँ",
+    selectedServices: "वैकल्पिक सेवाएँ",
+    hotelTransfer: "होटल पिकअप / ड्रॉप",
+    camera360: "360 कैमरा",
+    drone: "फ़्लाईकैम (ड्रोन)",
+    gopro: "GoPro फ़ोटो व वीडियो",
+    drinks: "पेय",
+    certificate: "उड़ान प्रमाणपत्र",
+    freeTag: "निःशुल्क",
+    includedTag: "शामिल",
+    noTag: "नहीं",
+    flightCost: "मूल उड़ान शुल्क",
+    includedTitle: "इस क़ीमत में शामिल है",
+    serviceDetails: "उड़ान विवरण",
+    priceBreakdown: "मूल्य विवरण",
+    totalCost: "कुल",
+    dayType: "दिन का प्रकार",
+    name: "पूरा नाम",
+    viewMap: "नक्शा देखें",
+    cashPayment: "नकद",
+    bankTransfer: "बैंक ट्रांसफ़र",
+    paypalPayment: "PayPal",
+    creditCard: "क्रेडिट कार्ड",
     passengerList: "यात्री सूची",
     paymentTitle: "भुगतान के तरीके",
     supportNote:
@@ -282,6 +422,29 @@ const UI_I18N: Record<
     weekend: "周末",
     holiday: "节假日",
     selectedCount: "已选择",
+    additionalServices: "服务与福利",
+    selectedServices: "可选服务",
+    hotelTransfer: "酒店接送",
+    camera360: "360 相机",
+    drone: "航拍无人机",
+    gopro: "GoPro 照片与视频",
+    drinks: "饮品",
+    certificate: "飞行证书",
+    freeTag: "免费",
+    includedTag: "已包含",
+    noTag: "无",
+    flightCost: "基础飞行价格",
+    includedTitle: "价格已包含",
+    serviceDetails: "飞行信息",
+    priceBreakdown: "价格明细",
+    totalCost: "总计",
+    dayType: "日期类型",
+    name: "姓名",
+    viewMap: "查看地图",
+    cashPayment: "现金",
+    bankTransfer: "银行转账",
+    paypalPayment: "PayPal",
+    creditCard: "信用卡",
     passengerList: "乘客名单",
     paymentTitle: "支付方式",
     supportNote:
@@ -397,27 +560,77 @@ function formatMoneyUSD(n: number) {
   })}`;
 }
 
-function Row({
-  label,
-  value,
-  enabled,
+
+/**
+ * Một dòng trong danh sách dịch vụ: dấu ✓ xanh nếu có, ✕ đỏ nếu không.
+ * Giữ nguyên một dòng text, không khung, không nền — khối này trước đây mỗi
+ * mục là một thẻ có viền nên chiếm gần nửa màn hình chỉ để nói "No".
+ */
+function ServiceItem({
+  ok,
+  noLabel,
+  children,
 }: {
-  label: string;
-  value: React.ReactNode;
-  enabled: boolean;
+  ok: boolean;
+  /** Chữ trong ngoặc cho mục không chọn, ví dụ "(không)". */
+  noLabel?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-      <span className="text-sm text-[#5B6B7A]">{label}</span>
+    <li className="flex items-baseline gap-2 text-sm leading-6">
       <span
-        className={`text-right text-sm font-semibold ${
-          enabled ? "text-[#1C2930]" : "text-[#94A3B8]"
-        }`}
+        aria-hidden
+        className={
+          ok
+            ? "shrink-0 font-bold text-[#16A34A]"
+            : "shrink-0 text-base font-black text-[#DC2626]"
+        }
       >
-        {value}
+        {ok ? "✔" : "✕"}
       </span>
-    </div>
+      <span className={`min-w-0 ${ok ? "text-[#1C2930]" : "text-[#94A3B8]"}`}>
+        {children}
+        {!ok && noLabel ? (
+          <span className="text-[#DC2626]"> ({noLabel})</span>
+        ) : null}
+      </span>
+    </li>
   );
+}
+
+type IncludedTag = "none" | "free" | "included";
+
+/**
+ * Nhãn cho một mục trong danh sách "đã có trong giá":
+ *  - phần tử đầu tiên luôn là chính chuyến bay  -> không gắn nhãn
+ *  - đồ uống và ảnh/video quay tặng khách       -> (miễn phí)
+ *  - phần còn lại (bảo hiểm, giấy chứng nhận,
+ *    xe lên/xuống núi...)                        -> (đã bao gồm)
+ *
+ * Xét trên chuỗi TIẾNG VIỆT của mục đó (xem includedList) nên chỉ cần một bộ
+ * từ khoá, không phải viết lại cho từng ngôn ngữ.
+ */
+const FREE_KEYWORDS = [
+  "gopro",
+  "quay phim",
+  "chụp hình",
+  "nước uống",
+  "đồ uống",
+  "cà phê",
+  "trà",
+  "ảnh",
+  "video",
+];
+
+function includedTagOf(viText: string, index: number): IncludedTag {
+  if (index === 0) return "none";
+  const lower = viText.toLowerCase();
+  return FREE_KEYWORDS.some((k) => lower.includes(k)) ? "free" : "included";
+}
+
+/** Số lượng "×2" — cùng màu xanh với các nhãn (miễn phí) / (đã bao gồm). */
+function Qty({ n }: { n: number }) {
+  return <span className="font-semibold text-[#16A34A]">×{n}</span>;
 }
 
 function splitInputEntries(raw?: string) {
@@ -440,12 +653,28 @@ export default function ReviewConfirmStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [showTerms, setShowTerms] = useState(false);
-  const [showPassengers, setShowPassengers] = useState(false);
 
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [turnstileKey, setTurnstileKey] = useState(0);
 
   const ui = UI_I18N[lang] ?? UI_I18N.vi;
+
+  /**
+   * Lấy nhãn: ưu tiên bookingTranslations.labels, thiếu thì tra bảng UI_I18N
+   * ngay trong file này, cuối cùng mới rơi về chuỗi tiếng Anh.
+   *
+   * Khai báo ngay đây chứ không để cuối component: các useMemo dựng bảng giá
+   * nằm phía trên và chạy ngay lúc render, gọi L() khi nó chưa khởi tạo sẽ
+   * lỗi "Cannot access 'L' before initialization" — TypeScript không bắt
+   * được vì lời gọi nằm trong hàm mũi tên.
+   */
+  const L = useCallback(
+    (key: string, fallback: string) =>
+      ((t as any)?.labels?.[key] as string) ||
+      ((ui as any)?.[key] as string) ||
+      fallback,
+    [t, ui],
+  );
   const termsContent = TERMS_HTML[lang as LangCode] || TERMS_HTML.vi;
 
   useEffect(() => {
@@ -460,6 +689,35 @@ export default function ReviewConfirmStep() {
   }, [showTerms]);
 
   const cfg = data.location ? LOCATIONS[data.location] : undefined;
+
+  /**
+   * Những gì đã nằm trong giá — lấy theo gói khách chọn, không có thì lấy
+   * của điểm bay. Cùng nguồn dữ liệu với thẻ "Đã bao gồm" ở bước 1, để bước
+   * xác nhận không nói khác đi so với lúc khách chọn.
+   */
+  const includedList = useMemo(() => {
+    if (!cfg) return [] as Array<{ text: string; tag: IncludedTag }>;
+
+    const pkgCfg = (cfg as any)?.packages?.find(
+      (p: any) => p.key === data.packageKey,
+    );
+
+    const source = pkgCfg?.included ?? (cfg as any)?.included;
+    const items = (source?.[lang] ??
+      source?.en ??
+      source?.vi ??
+      []) as string[];
+
+    // Bản tiếng Việt của CÙNG danh sách, dùng để phân loại nhãn: các mảng
+    // ngôn ngữ song song nhau theo chỉ số nên tra được, và như vậy quy tắc
+    // phân loại chỉ cần viết một lần cho tiếng Việt.
+    const viItems = (source?.vi ?? []) as string[];
+
+    return items.map((text, idx) => ({
+      text,
+      tag: includedTagOf(viItems[idx] ?? text, idx),
+    }));
+  }, [cfg, data.packageKey, lang]);
 
   const packages = useMemo(() => extractPackages(cfg?.packages), [cfg?.packages]);
 
@@ -517,19 +775,36 @@ export default function ReviewConfirmStep() {
     });
   }, [selectedPickupServices, data.services]);
 
+  const guestsCount = Math.max(1, data.guestsCount || 1);
+
   const serviceLines = useMemo(() => {
     return visibleSelectedServices.map((svc: any) => {
       const label = getLocalizedText(svc.label, lang, String(svc.key));
-      const inputText = data.services?.[svc.key]?.inputText || "";
+      const state = data.services?.[svc.key];
+      const inputText = state?.inputText || "";
+
+      /**
+       * Số lượng của dịch vụ, để hiện "×2" cho khách biết đã mua mấy suất.
+       * Dịch vụ dạng đếm (flycam, camera 360, số chiều xe...) lấy đúng số
+       * khách bấm; dịch vụ tính theo đầu người thì bằng số khách bay.
+       * Trả 0 khi không có khái niệm số lượng, ví dụ dòng chỉ dẫn bản đồ.
+       */
+      const qty =
+        svc.controlType === "counter"
+          ? Math.max(1, Number(state?.qty) || 1)
+          : svc.priceVND || svc.priceUSD
+            ? guestsCount
+            : 0;
 
       return {
         key: svc.key,
         label,
         inputText,
+        qty,
         fixedMapUrl: svc.fixedMapUrl,
       };
     });
-  }, [visibleSelectedServices, data.services, lang]);
+  }, [visibleSelectedServices, data.services, lang, guestsCount]);
 
   // Giảm combo ảnh: khách chọn cả flycam lẫn camera 360°.
   // Cùng quy tắc với bước chọn dịch vụ (lib/booking/image-combo.ts).
@@ -597,8 +872,6 @@ export default function ReviewConfirmStep() {
       data.addonsQty,
     ],
   );
-
-  const guestsCount = Math.max(1, data.guestsCount || 1);
 
   const getServiceLineTotalByCurrency = useCallback(
     (svc: any, currency: CurrencyCode): number => {
@@ -801,7 +1074,7 @@ export default function ReviewConfirmStep() {
     const flightSub = flightUnit * pax;
 
     lines.push({
-      label: (t as any)?.labels?.flightCost ?? "Flight",
+      label: L("flightCost", "Base flight price"),
       detail: `${formatMoneyVND(flightUnit)} × ${pax}`,
       amountText: formatMoneyVND(flightSub),
       type: "normal",
@@ -936,6 +1209,7 @@ export default function ReviewConfirmStep() {
     pax,
     lang,
     t,
+    L,
     getServiceLineTotalByCurrency,
     selectedServicesTotalVND,
     selectedServicesTotalUSD,
@@ -1063,9 +1337,6 @@ export default function ReviewConfirmStep() {
     }
   };
 
-  const L = (key: string, fallback: string) =>
-    ((t as any)?.labels?.[key] as string) || fallback;
-
   const pickupAddonQty = getAddonQty("pickup");
   const camera360Qty = getAddonQty("camera360");
   const flycamQty = getAddonQty("flycam");
@@ -1126,14 +1397,14 @@ export default function ReviewConfirmStep() {
           <p className="mt-1 max-w-3xl text-sm text-white/90">{ui.subtitle}</p>
         </div>
 
-        <div className="space-y-3 bg-[#F5F7FA] p-3 md:p-3">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_0.95fr]">
+        <div className="space-y-2 bg-[#F5F7FA] p-2.5 md:p-3">
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[1.2fr_0.95fr]">
             <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
                 {L("serviceDetails", "Service details")}
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+              <div className="mt-2 grid grid-cols-2 gap-1.5 md:grid-cols-3">
                 {serviceDetails.map((item) => (
                   <InfoBox
                     key={item.label}
@@ -1145,11 +1416,11 @@ export default function ReviewConfirmStep() {
             </section>
 
             <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
                 {L("contactInfo", "Contact information")}
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-2 space-y-1.5">
                 <InfoLine
                   label={L("name", "Name")}
                   value={contactName || firstGuestName || ""}
@@ -1164,82 +1435,66 @@ export default function ReviewConfirmStep() {
                 />
               </div>
 
-              <div className="mt-4 rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-3 py-2.5 text-sm text-[#355166]">
+              {/* Đổi từ xanh nhạt sang đỏ: đây là lời hứa liên hệ lại, khách
+                  cần đọc thấy chứ không được lướt qua như một ghi chú phụ. */}
+              <div className="mt-2 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-2.5 py-2 text-sm font-semibold text-[#B91C1C]">
                 {ui.supportNote}
               </div>
             </section>
           </div>
 
           <section className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white">
-            <button
-              type="button"
-              onClick={() => setShowPassengers((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-[#F5F7FA]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
-                  {ui.passengerList}
-                </div>
-                <span className="rounded-full bg-[#EAF4FE] px-2.5 py-1 text-xs font-semibold text-[#0194F3]">
-                  {(data.guests ?? []).length}
-                </span>
+            {/* Luôn hiện, không gập lại: đây là phần khách cần soát kỹ nhất
+                trước khi bấm xác nhận, bắt bấm thêm một lần là dễ bỏ qua. */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
+                {ui.passengerList}
               </div>
-
-              <span
-                className={`text-[#5B6B7A] transition-transform ${
-                  showPassengers ? "rotate-180" : ""
-                }`}
-              >
-                ▾
+              <span className="rounded-full bg-[#EAF4FE] px-2 py-0.5 text-xs font-semibold text-[#0194F3]">
+                {(data.guests ?? []).length}
               </span>
-            </button>
+            </div>
 
-            {showPassengers && (
-              <div className="space-y-3 border-t border-[#DCE7F3] p-3">
-                {(data.guests ?? []).map((guest: any, index: number) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] p-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF4FE] text-sm font-bold text-[#0194F3]">
-                        {index + 1}
-                      </div>
+            {
+              /* Mỗi khách một dòng: số thứ tự, tên in đậm, rồi các thông tin
+                 phụ nối bằng dấu · và chỉ hiện những mục KHÁCH ĐÃ NHẬP. Trước
+                 đây mỗi khách là một thẻ chứa 5 ô con, luôn hiện cả những ô
+                 "Chưa chọn" — bốn khách là kín cả màn hình. */
+              <ul className="divide-y divide-[#EDF2F7] border-t border-[#DCE7F3]">
+                {(data.guests ?? []).map((guest: any, index: number) => {
+                  const details = [
+                    guest.dob,
+                    guest.gender,
+                    guest.weightKg ? `${guest.weightKg} kg` : "",
+                    guest.nationality,
+                    guest.idNumber,
+                  ].filter(Boolean);
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[#1C2930]">
-                          {guest.fullName}
-                        </p>
+                  return (
+                    <li
+                      key={index}
+                      className="flex items-baseline gap-2 px-3 py-2 text-sm leading-6"
+                    >
+                      <span className="shrink-0 font-bold text-[#0194F3]">
+                        {index + 1}.
+                      </span>
 
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#5B6B7A] md:grid-cols-3">
-                          <MiniInfo label={L("dob", "DOB")} value={guest.dob || ui.notSelected} />
-                          <MiniInfo
-                            label={L("gender", "Gender")}
-                            value={guest.gender || ui.notSelected}
-                          />
-                          <MiniInfo
-                            label={L("idNumber", "ID")}
-                            value={guest.idNumber || ui.notSelected}
-                          />
-                          <MiniInfo
-                            label={L("nationality", "Nationality")}
-                            value={guest.nationality || ui.notSelected}
-                          />
-                          <MiniInfo
-                            label={L("weightKg", "Weight")}
-                            value={
-                              guest.weightKg
-                                ? `${guest.weightKg}kg`
-                                : ui.notSelected
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <span className="min-w-0">
+                        <span className="font-semibold text-[#1C2930]">
+                          {guest.fullName || ui.notSelected}
+                        </span>
+                        {details.length ? (
+                          <span className="text-[#5B6B7A]">
+                            {" — "}
+                            {details.join(" · ")}
+                          </span>
+                        ) : null}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            }
           </section>
 
           {!!specialRequest && (
@@ -1251,105 +1506,141 @@ export default function ReviewConfirmStep() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr]">
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[1fr_1fr]">
             <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
                 {L("additionalServices", "Additional services")}
               </div>
 
-              <div className="mt-4 space-y-3">
-                {serviceLines.length > 0 ? (
-                  <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-sm text-[#5B6B7A]">
-                        {L("selectedServices", "Selected services")}
+              {/* Một dòng text cho mỗi mục thay vì mỗi mục một thẻ có khung:
+                  dấu ✕ đỏ cho thứ không chọn, ✓ xanh cho thứ có. Số lượng ghi
+                  thẳng dạng "×2" nên không phải xuống dòng. */}
+              {/* Thứ tự: những gì đã có trong giá (chuyến bay đứng đầu) →
+                  dịch vụ khách chọn thêm → cuối cùng mới tới những mục KHÔNG
+                  chọn, để mắt đọc từ trên xuống thấy ngay cái mình có.
+
+                  Mỗi mục một dòng text, dấu ✕ đỏ cho thứ không chọn và ✓ xanh
+                  cho thứ có; số lượng ghi thẳng dạng "×2" nên không xuống dòng. */}
+              <ul className="mt-3 space-y-1">
+                {/* 1. Đã nằm trong giá — lấy từ cấu hình gói / điểm bay (cùng
+                       nguồn với thẻ "Đã bao gồm" ở bước 1), nên Khau Phạ và
+                       Trạm Tấu tự có thêm dòng xe lên/xuống núi. */}
+                {includedList.map((item, idx) => (
+                  <ServiceItem key={`inc-${idx}`} ok>
+                    <span className="font-semibold">{item.text}</span>
+                    {item.tag !== "none" ? (
+                      <span className="text-[#16A34A]">
+                        {" "}
+                        (
+                        {item.tag === "free"
+                          ? L("freeTag", "free")
+                          : L("includedTag", "included")}
+                        )
                       </span>
-                      <span className="text-right text-sm font-semibold text-[#1C2930]">
-                        {serviceLines.length} {ui.selectedCount}
-                      </span>
-                    </div>
+                    ) : null}
+                  </ServiceItem>
+                ))}
 
-                    <div className="mt-2 space-y-2 border-t border-[#DCE7F3] pt-2">
-                      {serviceLines.map((sl) => {
-                        const entries = splitInputEntries(sl.inputText);
-                        const detailLines =
-                          entries.length > 0
-                            ? entries
-                            : sl.fixedMapUrl
-                              ? [L("viewMap", "Xem bản đồ")]
-                              : [L("yes", "Có")];
+                {/* 2. Dịch vụ khách chọn thêm ở bước 1 */}
+                {serviceLines.map((sl) => {
+                  const entries = splitInputEntries(sl.inputText);
+                  // Số lượng đứng trước, rồi mới tới ghi chú khách nhập
+                  // (địa chỉ đón, ghi chú riêng...) — nối bằng dấu · để tất
+                  // cả nằm gọn trên một dòng.
+                  const notes = [
+                    ...entries,
+                    entries.length === 0 && sl.fixedMapUrl
+                      ? L("viewMap", "Xem bản đồ")
+                      : "",
+                  ].filter(Boolean);
 
-                        return (
-                          <div key={sl.key}>
-                            <p className="text-sm font-semibold text-[#1C2930]">{sl.label}</p>
-                            {detailLines.map((detail, idx) => (
-                              <p key={`${sl.key}-${idx}`} className="text-sm text-[#5B6B7A]">
-                                {detail}
-                              </p>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <Row
-                    label={L("selectedServices", "Selected services")}
-                    value={L("no", "No")}
-                    enabled={false}
-                  />
+                  return (
+                    <ServiceItem key={sl.key} ok>
+                      <span className="font-semibold">{sl.label}</span>
+                      {sl.qty > 0 || notes.length ? ": " : ""}
+                      {sl.qty > 0 ? <Qty n={sl.qty} /> : null}
+                      {sl.qty > 0 && notes.length ? " · " : ""}
+                      {notes.join(" · ")}
+                    </ServiceItem>
+                  );
+                })}
+
+                {!hasPickupServiceLine && !!pickupAddonQty && (
+                  <ServiceItem ok>
+                    <span className="font-semibold">
+                      {L("hotelTransfer", "Hotel pickup / drop-off")}
+                    </span>
+                    {": "}
+                    <Qty n={pickupAddonQty} />
+                  </ServiceItem>
                 )}
 
-                {!hasPickupServiceLine && (
-                  <Row
-                    label={L("hotelTransfer", "Pickup / transfer")}
-                    value={pickupAddonQty ? L("yes", "Có") : L("no", "No")}
-                    enabled={!!pickupAddonQty}
-                  />
-                )}
-                {!hasCameraServiceLine && (
-                  <Row
-                    label={L("camera360", "Camera 360")}
-                    value={camera360Qty ? `${camera360Qty} pax` : L("no", "No")}
-                    enabled={!!camera360Qty}
-                  />
-                )}
-                {!hasFlycamServiceLine && (
-                  <Row
-                    label={L("drone", "Drone/Flycam")}
-                    value={flycamQty ? `${flycamQty} pax` : L("no", "No")}
-                    enabled={!!flycamQty}
-                  />
+                {!hasCameraServiceLine && !!camera360Qty && (
+                  <ServiceItem ok>
+                    <span className="font-semibold">
+                      {L("camera360", "360 camera")}
+                    </span>
+                    {": "}
+                    <Qty n={camera360Qty} />
+                  </ServiceItem>
                 )}
 
-                <SimpleInfo label={L("gopro", "GoPro")} value={L("free", "Free")} />
-                <SimpleInfo label={L("drinks", "Drinks")} value={L("free", "Free")} />
-                <SimpleInfo
-                  label={L("certificate", "Certificate")}
-                  value={L("included", "Included")}
-                />
-              </div>
+                {!hasFlycamServiceLine && !!flycamQty && (
+                  <ServiceItem ok>
+                    <span className="font-semibold">
+                      {L("drone", "Flycam (drone camera)")}
+                    </span>
+                    {": "}
+                    <Qty n={flycamQty} />
+                  </ServiceItem>
+                )}
+
+                {/* 3. Không chọn — dồn hết xuống cuối */}
+                {serviceLines.length === 0 && (
+                  <ServiceItem ok={false} noLabel={L("noTag", "no")}>
+                    {L("selectedServices", "Optional services")}
+                  </ServiceItem>
+                )}
+
+                {!hasPickupServiceLine && !pickupAddonQty && (
+                  <ServiceItem ok={false} noLabel={L("noTag", "no")}>
+                    {L("hotelTransfer", "Hotel pickup / drop-off")}
+                  </ServiceItem>
+                )}
+
+                {!hasCameraServiceLine && !camera360Qty && (
+                  <ServiceItem ok={false} noLabel={L("noTag", "no")}>
+                    {L("camera360", "360 camera")}
+                  </ServiceItem>
+                )}
+
+                {!hasFlycamServiceLine && !flycamQty && (
+                  <ServiceItem ok={false} noLabel={L("noTag", "no")}>
+                    {L("drone", "Flycam (drone camera)")}
+                  </ServiceItem>
+                )}
+              </ul>
             </section>
 
             <section className="rounded-xl border border-[#D6EAFB] bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
                 {L("priceBreakdown", "Price breakdown")}
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-2 space-y-1.5">
                 {priceLines.map((line, index) => (
                   <div
                     key={index}
-                    className={`flex items-start justify-between gap-3 ${
+                    className={`flex items-start justify-between gap-2 ${
                       line.type === "discount" ? "text-[#16A34A]" : "text-[#1C2930]"
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="break-words text-sm text-[#5B6B7A]">
+                      <p className="break-words text-sm font-medium text-[#1C2930]">
                         {line.label}
                       </p>
                       {line.detail ? (
-                        <p className="mt-1 break-words text-xs text-[#94A3B8]">
+                        <p className="break-words text-xs text-[#94A3B8]">
                           {line.detail}
                         </p>
                       ) : null}
@@ -1363,35 +1654,46 @@ export default function ReviewConfirmStep() {
 
                 <div className="h-px bg-[#DCE7F3]" />
 
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-lg font-bold text-[#1C2930]">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-base font-bold text-[#1C2930]">
                     {L("totalCost", "Total")}
                   </span>
 
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-[#FF5E1F]">
+                  <span className="text-right">
+                    <span className="text-xl font-bold text-[#FF5E1F]">
                       {totalTextVND}
-                    </div>
-                    <div className="text-sm font-semibold text-[#5B6B7A]">
+                    </span>{" "}
+                    <span className="text-sm font-semibold text-[#5B6B7A]">
                       ({totalTextUSD})
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 </div>
               </div>
             </section>
           </div>
 
           <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0194F3]">
+            <div className="text-xs font-bold uppercase tracking-wide text-[#0194F3]">
               {ui.paymentTitle}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-[#5B6B7A] md:grid-cols-2">
+            {/* 2 cột trên máy nhỏ, 4 cột từ sm trở lên — trước đây tối đa 2
+                cột nên bốn phương thức chiếm hai hàng ngay cả trên desktop. */}
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-[#5B6B7A] sm:grid-cols-4">
               <PaymentItem text={L("cashPayment", "Cash payment")} />
               <PaymentItem text={L("bankTransfer", "Bank transfer")} />
               <PaymentItem text={L("paypalPayment", "PayPal")} />
               <PaymentItem text={L("creditCard", "Credit card")} />
             </div>
+          </section>
+
+          <section className="rounded-xl border border-[#F3E38F] bg-[#FFF9DB] p-3">
+            <p className="text-sm font-semibold text-[#7A5414]">
+              {ui.paymentInfoTitle}:
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-[#7A5414]">
+              {ui.paymentInfoDescription}
+            </p>
           </section>
 
           <section className="rounded-xl border border-[#DCE7F3] bg-white p-3">
@@ -1403,15 +1705,6 @@ export default function ReviewConfirmStep() {
               lang={lang}
               theme="light"
             />
-          </section>
-
-          <section className="rounded-xl border border-[#F3E38F] bg-[#FFF9DB] p-3">
-            <p className="text-sm font-semibold text-[#7A5414]">
-              {ui.paymentInfoTitle}:
-            </p>
-            <p className="mt-1 text-sm leading-relaxed text-[#7A5414]">
-              {ui.paymentInfoDescription}
-            </p>
           </section>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-3 transition hover:border-[#B9DDFB]">
@@ -1515,11 +1808,11 @@ export default function ReviewConfirmStep() {
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-[#5B6B7A]">
+    <div className="rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-2.5 py-1.5">
+      <div className="text-[11px] uppercase tracking-wide text-[#5B6B7A]">
         {label}
       </div>
-      <div className="mt-1 break-words text-sm font-semibold text-[#1C2930]">
+      <div className="break-words text-sm font-semibold text-[#1C2930]">
         {value}
       </div>
     </div>
@@ -1528,7 +1821,7 @@ function InfoBox({ label, value }: { label: string; value: string }) {
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
+    <div className="flex items-start justify-between gap-2 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-2.5 py-1.5">
       <span className="text-sm text-[#5B6B7A]">{label}</span>
       <span className="break-words text-right text-sm font-semibold text-[#1C2930]">
         {value}
@@ -1537,28 +1830,12 @@ function InfoLine({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-[#DCE7F3] bg-white px-3 py-2">
-      <span className="font-medium text-[#5B6B7A]">{label}:</span>{" "}
-      <span className="text-[#1C2930]">{value}</span>
-    </div>
-  );
-}
 
-function SimpleInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-      <span className="text-sm text-[#5B6B7A]">{label}</span>
-      <span className="text-sm font-semibold text-[#16A34A]">{value}</span>
-    </div>
-  );
-}
 
 function PaymentItem({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-      <span className="text-[#16A34A]">✔</span>
+    <div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#DCE7F3] bg-[#F5F7FA] px-2 py-2 text-center">
+      <span className="shrink-0 text-[#16A34A]">✔</span>
       <span className="text-[#1C2930]">{text}</span>
     </div>
   );

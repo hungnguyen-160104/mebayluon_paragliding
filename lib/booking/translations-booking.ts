@@ -90,7 +90,7 @@ type Dict = {
 
 export const bookingTranslations: Record<LangCode, Dict> = {
   vi: {
-    pageTitle: "Đặt bay",
+    pageTitle: "Đặt bay dù lượn cùng Mebayluon",
     pageSubtitle:
       "Lịch bay linh động, hoàn hủy miễn phí",
     bookingProgress: "Tiến trình đặt chỗ",
@@ -188,7 +188,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   },
 
   en: {
-    pageTitle: "Book your flight",
+    pageTitle: "Book a paragliding flight with Mebayluon",
     pageSubtitle:
       "Flexible flight schedule, free cancellation and changes",
     bookingProgress: "Booking progress",
@@ -279,7 +279,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   },
 
   fr: {
-    pageTitle: "Réserver votre vol",
+    pageTitle: "Réservez votre vol en parapente avec Mebayluon",
     pageSubtitle:
       "Horaires de vol flexibles, annulation et modification gratuites",
     bookingProgress: "Progression de la réservation",
@@ -373,7 +373,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   },
 
   ru: {
-    pageTitle: "Бронирование полёта",
+    pageTitle: "Забронируйте полёт на параплане с Mebayluon",
     pageSubtitle: "Гибкое расписание рейсов, бесплатная отмена и изменение",
     bookingProgress: "Ход бронирования",
     stepNames: ["Выбор", "Дата и контакт", "Пассажиры", "Подтверждение", "Готово"],
@@ -466,7 +466,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   },
 
   zh: {
-    pageTitle: "预订飞行",
+    pageTitle: "与 Mebayluon 一起预订滑翔伞飞行",
     pageSubtitle: "灵活的航班时刻，可免费取消和改签",
     bookingProgress: "预订进度",
     stepNames: ["选择服务", "日期与联系", "乘客信息", "确认", "完成"],
@@ -558,7 +558,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
   },
 
   hi: {
-    pageTitle: "फ्लाइट बुक करें",
+    pageTitle: "Mebayluon के साथ पैराग्लाइडिंग उड़ान बुक करें",
     pageSubtitle:
       "लचीला उड़ान शेड्यूल, मुफ्त रद्दीकरण और बदलाव",
     bookingProgress: "बुकिंग प्रगति",

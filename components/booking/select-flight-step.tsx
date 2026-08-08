@@ -104,6 +104,62 @@ const LOCATION_ORDER: LocationKey[] = [
   "da_nang",
 ];
 
+/**
+ * Nhãn NGẮN cho dòng tóm tắt "Loại bay đã chọn" ở cuối bước 1.
+ *
+ * Cố ý để ngay tại đây chứ không nằm trong lib/i18n/select-flight-step: đó là
+ * chữ trình bày của đúng một dòng, và giữ chung một file với chỗ dùng thì
+ * không bao giờ xảy ra cảnh component đã cập nhật mà bảng chữ thì chưa.
+ * Bản dài (ui.paraglidingTitle, ui.weekdayFlightTitle...) vẫn dùng cho các
+ * thẻ chọn phía trên — ở đó cần mô tả đầy đủ.
+ */
+const SHORT_FLIGHT_LABELS: Record<
+  string,
+  {
+    paragliding: string;
+    paramotor: string;
+    weekday: string;
+    weekend: string;
+  }
+> = {
+  vi: {
+    paragliding: "Dù lượn",
+    paramotor: "Dù gắn động cơ",
+    weekday: "Ngày thường",
+    weekend: "Cuối tuần & Lễ",
+  },
+  en: {
+    paragliding: "Paragliding",
+    paramotor: "Paramotor",
+    weekday: "Weekday",
+    weekend: "Weekend & holiday",
+  },
+  fr: {
+    paragliding: "Parapente",
+    paramotor: "Paramoteur",
+    weekday: "En semaine",
+    weekend: "Week-end & fériés",
+  },
+  ru: {
+    paragliding: "Параплан",
+    paramotor: "Парамотор",
+    weekday: "Будни",
+    weekend: "Выходные и праздники",
+  },
+  zh: {
+    paragliding: "滑翔伞",
+    paramotor: "动力滑翔伞",
+    weekday: "平日",
+    weekend: "周末与节假日",
+  },
+  hi: {
+    paragliding: "पैराग्लाइडिंग",
+    paramotor: "पैरामोटर",
+    weekday: "कार्यदिवस",
+    weekend: "सप्ताहांत व अवकाश",
+  },
+};
+
 const KHAU_PHA_PACKAGES = {
   weekday: "khau_pha_pkg_1" as PackageKey,
   weekend: "khau_pha_pkg_2" as PackageKey,
@@ -1209,43 +1265,38 @@ export default function SelectFlightStep() {
   const selectedFlightSummary = useMemo(() => {
     if (!selectedCfg || !selected) return "";
 
-    if (selected === "khau_pha") {
-      if (isParamotor) {
-        if (data.packageKey === khauPhaPackages.paramotorWeekday?.key) {
-          return `${ui.paramotorTitle} - ${ui.weekdayFlightTitle} - ${formatVND(2_390_000)}/${ui.pax}`;
-        }
-        if (data.packageKey === khauPhaPackages.paramotorWeekend?.key) {
-          return `${ui.paramotorTitle} - ${ui.weekendFlightTitle} - ${formatVND(2_590_000)}/${ui.pax}`;
-        }
-        return ui.paramotorTitle;
-      }
+    const short = SHORT_FLIGHT_LABELS[lang] ?? SHORT_FLIGHT_LABELS.vi;
 
-      if (isParagliding) {
-        if (data.packageKey === khauPhaPackages.weekday?.key) {
-          return `${ui.paraglidingTitle} - ${ui.weekdayFlightTitle}`;
-        }
-        if (data.packageKey === khauPhaPackages.weekend?.key) {
-          return `${ui.paraglidingTitle} - ${ui.weekendFlightTitle}`;
-        }
-        return ui.paraglidingTitle;
-      }
-    }
+    // Tên loại bay: lấy theo flightTypeKey nên đúng ở mọi điểm bay.
+    const flightName = isParamotor
+      ? short.paramotor
+      : isParagliding
+        ? short.paragliding
+        : "";
 
-    const packageText =
+    // Loại ngày: nhận ra gói ngày thường / cuối tuần qua chính nhãn của gói,
+    // không phụ thuộc key, rồi thay bằng bản ngắn.
+    const packageLabel =
       allPackages.find((pkg) => pkg.key === data.packageKey)?.label || "";
 
-    return packageText
-      ? `${getText(selectedCfg.name, lang, selected)} - ${packageText}`
-      : getText(selectedCfg.name, lang, selected);
+    const dayName =
+      packageLabel === ui.weekdayFlightTitle
+        ? short.weekday
+        : packageLabel === ui.weekendFlightTitle
+          ? short.weekend
+          : packageLabel;
+
+    const head = flightName || getText(selectedCfg.name, lang, selected);
+
+    return [head, dayName].filter(Boolean).join(" - ");
   }, [
     selectedCfg,
     selected,
     isParamotor,
     isParagliding,
     data.packageKey,
-    khauPhaPackages.weekday?.key,
-    khauPhaPackages.weekend?.key,
-    ui,
+    ui.weekdayFlightTitle,
+    ui.weekendFlightTitle,
     allPackages,
     lang,
   ]);
@@ -1637,19 +1688,19 @@ export default function SelectFlightStep() {
               <div className="rounded-xl border border-[#D6EAFB] bg-white shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-3">
                   <div className="px-3 py-2.5">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
+                    <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#0194F3]">
                       {ui.flightPrice}
                     </div>
-                    <div className="mt-2 inline-block rounded-lg bg-[#EAF4FE] px-3 py-2 text-[15px] font-bold text-[#1C2930] md:text-[15px]">
+                    <div className="mt-1 inline-block rounded-lg bg-[#EAF4FE] px-3 py-2 text-[15px] font-bold text-[#1C2930] md:text-[15px]">
                       {formatVND(Number(totalsVND.basePricePerPerson || 0))}
                     </div>
                   </div>
 
                   <div className="px-3 py-2.5">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
+                    <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#0194F3]">
                       {ui.optionalPrice}
                     </div>
-                    <div className="mt-2 text-[15px] font-bold text-[#355166]">
+                    <div className="mt-1 text-[15px] font-bold text-[#355166]">
                       +{formatVND(optionalTotalVND)}
                     </div>
 
@@ -1663,10 +1714,10 @@ export default function SelectFlightStep() {
                   </div>
 
                   <div className="px-3 py-2.5 text-center md:text-right">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
+                    <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#0194F3]">
                       {ui.totalPrice}:
                     </div>
-                    <div className="mt-2 text-[26px] font-bold text-[#FF5E1F]">
+                    <div className="mt-1 text-[26px] font-bold text-[#FF5E1F]">
                       {formatVND(grandTotalVND)}
                     </div>
                     <div className="text-[14px] font-semibold text-[#5B6B7A]">
@@ -1678,16 +1729,16 @@ export default function SelectFlightStep() {
                 <div className="border-t border-[#D6EAFB] px-3 py-2.5">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
+                      <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#0194F3]">
                         {ui.selectedFlightLabel}
                       </div>
-                      <div className="mt-2 text-[15px] font-semibold text-[#1C2930]">
+                      <div className="mt-1 text-[15px] font-semibold text-[#1C2930]">
                         {selectedFlightSummary || "-"}
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5B6B7A]">
+                      <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#0194F3]">
                         {ui.selectedOptionsLabel}
                       </div>
 
@@ -1724,8 +1775,8 @@ export default function SelectFlightStep() {
 
               {/* Optional Services */}
               <div>
-                <div className="mb-3 text-[15px] font-bold text-[#1C2930] sm:text-[15px]">
-                  <span className="mr-2 text-[#0194F3]">✚</span>
+                <div className="mb-3 text-[15px] font-bold text-[#0194F3] sm:text-[15px]">
+                  <span className="mr-2">✚</span>
                   {ui.optionalServiceTitle}:
                 </div>
 
@@ -1978,8 +2029,10 @@ export default function SelectFlightStep() {
                     <span className="text-[#5B6B7A]">▾</span>
                   </summary>
 
-                  <div className="border-t border-[#DCE7F3] px-3 py-2.5">
-                    <div className="flex flex-col gap-3">
+                  <div className="border-t border-[#DCE7F3] px-3 py-2">
+                    {/* gap-3 + leading-6 làm mỗi dòng cao gần 40px, sáu dòng
+                        chiếm cả một màn hình điện thoại. */}
+                    <div className="flex flex-col gap-0.5">
                       {(() => {
                         const pkgCfg = selectedCfg?.packages?.find(
                           (p) => p.key === data.packageKey,
@@ -2005,11 +2058,11 @@ export default function SelectFlightStep() {
                         return (
                           <>
                             {list.map((item: string, idx: number) => (
-                              <div key={idx} className="flex items-start gap-3">
-                                <span className="mt-0.5 text-[15px] leading-none text-[#16A34A]">
+                              <div key={idx} className="flex items-baseline gap-2">
+                                <span className="text-[14px] leading-5 text-[#16A34A]">
                                   ✓
                                 </span>
-                                <span className="text-[15px] leading-6 text-[#1C2930] sm:text-[15px]">
+                                <span className="text-[14px] leading-5 text-[#1C2930]">
                                   {item}
                                 </span>
                               </div>
@@ -2018,12 +2071,12 @@ export default function SelectFlightStep() {
                               excludedList.map((item: string, idx: number) => (
                                 <div
                                   key={`ex-${idx}`}
-                                  className="flex items-start gap-3"
+                                  className="flex items-baseline gap-2"
                                 >
-                                  <span className="mt-0.5 text-[15px] leading-none text-red-500">
+                                  <span className="text-[14px] leading-5 text-red-500">
                                     ✕
                                   </span>
-                                  <span className="text-[15px] font-medium leading-6 text-red-500 sm:text-[15px]">
+                                  <span className="text-[14px] font-medium leading-5 text-red-500">
                                     {ui.excludedLabel}: {item}
                                   </span>
                                 </div>
@@ -2077,7 +2130,7 @@ export default function SelectFlightStep() {
                         target="_blank"
                         rel="noreferrer"
                         className={[
-                          "underline underline-offset-2 transition hover:opacity-80",
+                          "font-bold underline underline-offset-2 transition hover:opacity-80",
                           item.tone === "red"
                             ? "text-[#FF5E1F]"
                             : "text-[#0194F3]",

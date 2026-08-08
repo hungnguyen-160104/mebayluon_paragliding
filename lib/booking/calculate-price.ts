@@ -260,43 +260,43 @@ function getKhauPhaQuotedBaseUSD(
 const KHAU_PHA_PARAMOTOR_INCLUDED = {
   vi: [
     "01 chuyến bay từ 10–20 phút (tuỳ chọn)",
-    "Quay phim & chụp hình GoPro",
-    "Miễn phí cà phê & trà tại điểm bay",
+    "Quay phim & chụp hình bằng GoPro",
+    "Trà & cà phê tại điểm bay",
     "Bảo hiểm dù lượn",
     "Giấy chứng nhận",
   ],
   en: [
     "One flight 10–20 minutes (option)",
     "GoPro filming & photography",
-    "Free coffee & tea at flight site",
+    "Coffee & tea at flight site",
     "Paragliding insurance",
     "Certificate",
   ],
   fr: [
     "Un vol de 10 à 20 minutes (au choix)",
     "Vidéos et photos GoPro",
-    "Café et thé gratuits sur le lieu du vol",
+    "Café et thé sur le lieu du vol",
     "Assurance parapente",
     "Certificat",
   ],
   ru: [
     "Один полет от 10 до 20 минут (по выбору)",
     "Съемка на GoPro",
-    "Бесплатный кофе и чай на месте старта",
+    "Кофе и чай на месте старта",
     "Страховка парапланериста",
     "Сертификат",
   ],
   zh: [
     "1 次飞行 10-20 分钟（可选）",
     "GoPro 拍摄及摄影",
-    "飞行点免费提供咖啡和茶",
+    "飞行点提供咖啡和茶",
     "滑翔伞保险",
     "证书",
   ],
   hi: [
     "10-20 मिनट से 01 उड़ान (वैकल्पिक)",
     "GoPro फिल्मिंग और फोटोग्राफी",
-    "उड़ान स्थल पर मुफ्त कॉफी और चाय",
+    "उड़ान स्थल पर चाय और कॉफ़ी",
     "पैराग्लाइडिंग बीमा",
     "प्रमाणपत्र",
   ],
@@ -393,7 +393,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     included: {
       vi: [
         "01 chuyến bay dù lượn 8–15 phút (tuỳ gió)",
-        "Quay phim & chụp hình từ GoPro",
+        "Quay phim & chụp hình bằng GoPro",
         "Nước uống tại điểm bay",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
@@ -702,8 +702,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     included: {
       vi: [
         "01 chuyến bay dù lượn 8–15 phút (tuỳ gió)",
-        "Quay phim & chụp hình GoPro",
-        "Miễn phí cà phê & trà tại điểm bay",
+        "Quay phim & chụp hình bằng GoPro",
+        "Trà & cà phê tại điểm bay",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
         "Xe lên/xuống núi",
@@ -711,7 +711,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       en: [
         "One paragliding flight 8–15 minutes (weather dependent)",
         "GoPro filming & photography",
-        "Free coffee & tea at flight site",
+        "Coffee & tea at flight site",
         "Paragliding insurance",
         "Certificate",
         "Mountain shuttle up/down",
@@ -719,7 +719,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       fr: [
         "Un vol en parapente de 8 à 15 minutes (selon le vent)",
         "Vidéos et photos GoPro",
-        "Café et thé gratuits sur le lieu du vol",
+        "Café et thé sur le lieu du vol",
         "Assurance parapente",
         "Certificat",
         "Navette montée/descente",
@@ -727,7 +727,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       ru: [
         "Один полет на параплане 8–15 минут (по погоде)",
         "Съемка на GoPro",
-        "Бесплатный кофе и чай на месте старта",
+        "Кофе и чай на месте старта",
         "Страховка парапланериста",
         "Сертификат",
         "Трансфер вверх/вниз по горе",
@@ -735,7 +735,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: [
         "一次滑翔伞飞行 8 - 15 分钟（视风况而定）",
         "GoPro 拍摄及摄影",
-        "飞行点免费提供咖啡和茶",
+        "飞行点提供咖啡和茶",
         "滑翔伞保险",
         "证书",
         "上下山接送车",
@@ -743,7 +743,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       hi: [
         "1 पैराग्लाइडिंग उड़ान 8-15 मिनट (मौसम पर निर्भर)",
         "GoPro फिल्मिंग और फोटोग्राफी",
-        "उड़ान स्थल पर मुफ्त कॉफी और चाय",
+        "उड़ान स्थल पर चाय और कॉफ़ी",
         "पैराग्लाइडिंग बीमा",
         "प्रमाणपत्र",
         "पहाड़ ऊपर/नीचे शटल",
@@ -858,7 +858,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     included: {
       vi: [
         "01 chuyến bay dù lượn 8–15 phút (tuỳ gió)",
-        "Quay phim & chụp hình GoPro",
+        "Quay phim & chụp hình bằng GoPro",
         "Nước uống",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
@@ -1108,7 +1108,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     included: {
       vi: [
         "01 chuyến bay dù lượn từ 8–20 phút (tuỳ gió)",
-        "Quay phim & chụp hình GoPro",
+        "Quay phim & chụp hình bằng GoPro",
         "Nước uống",
         "Bảo hiểm dù lượn",
         "Giấy chứng nhận",
@@ -1241,7 +1241,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
     included: {
       vi: [
         "01 chuyến bay dù lượn 8-15 phút (tuỳ gió)",
-        "Quay phim & chụp hình GoPro",
+        "Quay phim & chụp hình bằng GoPro",
         "Nước uống tại điểm bay",
         "Bảo hiểm dù lượn",
         "Xe lên/xuống núi",

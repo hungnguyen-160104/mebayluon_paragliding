@@ -96,6 +96,55 @@ function buildBookingRef(dateISO?: string, phone?: string) {
   return `MBL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+type IncludedTag = "none" | "free" | "included";
+
+/**
+ * Nhãn cho một mục trong danh sách đã có trong giá:
+ * mục đầu tiên là chính chuyến bay (không nhãn), đồ uống và ảnh/video là quà
+ * tặng kèm -> (miễn phí), phần còn lại -> (đã bao gồm).
+ * Giống quy tắc ở components/booking/review-confirm-step.tsx.
+ */
+const FREE_KEYWORDS = [
+  "gopro",
+  "quay phim",
+  "chụp hình",
+  "nước uống",
+  "đồ uống",
+  "cà phê",
+  "trà",
+  "ảnh",
+  "video",
+];
+
+function includedTagOf(viText: string, index: number): IncludedTag {
+  if (index === 0) return "none";
+  const lower = String(viText || "").toLowerCase();
+  return FREE_KEYWORDS.some((k) => lower.includes(k)) ? "free" : "included";
+}
+
+/**
+ * Ngày giờ hiển thị trên vé, luôn theo giờ Việt Nam (UTC+7).
+ *
+ * Máy chủ lưu createdAt dạng ISO UTC ("2026-08-08T08:24:24.556Z"); in thẳng
+ * ra vé thì vừa khó đọc vừa lệch 7 tiếng so với giờ khách đặt. Ép múi giờ
+ * Asia/Ho_Chi_Minh chứ không dùng múi giờ máy khách, để vé của khách nước
+ * ngoài cũng ghi đúng giờ tại điểm bay.
+ */
+function formatVietnamDateTime(value?: string): string {
+  const d = value ? new Date(value) : new Date();
+  if (Number.isNaN(d.getTime())) return String(value ?? "");
+
+  return d.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 function useTicketLabels(lang: LangCode) {
   const L = lang as unknown as string;
   const t = (bookingTranslations as any)[L] ?? bookingTranslations.en;
@@ -112,7 +161,7 @@ function useTicketLabels(lang: LangCode) {
 
   return {
     title: isVI
-      ? "Vé đặt bay"
+      ? "VÉ BAY DÙ LƯỢN"
       : isFR
         ? "Billet de réservation"
         : isRU
@@ -158,7 +207,7 @@ function useTicketLabels(lang: LangCode) {
     brandName: "MEBAYLUON PARAGLIDING",
     serviceDetails: isVI ? "Thông tin chuyến bay" : isFR ? "Détails du vol" : isRU ? "Детали полёта" : isHI ? "फ्लाइट विवरण" : isZH || isZHTW ? zh("飞行信息", "飛行資訊") : "Flight details",
     contactInfo: (t as any)?.labels?.contactInfo ?? "Contact information",
-    passengersList: isVI ? "Danh sách hành khách" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers",
+    passengersList: isVI ? "Danh sách khách bay" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers",
     additionalServices: isVI ? "Dịch vụ đã chọn" : isFR ? "Services sélectionnés" : isRU ? "Выбранные услуги" : isHI ? "चयनित सेवाएँ" : isZH || isZHTW ? zh("已选服务", "已選服務") : "Selected services",
     priceBreakdown: isVI ? "Chi tiết giá" : isFR ? "Détail des prix" : isRU ? "Детализация цены" : isHI ? "मूल्य विवरण" : isZH || isZHTW ? zh("价格明细", "價格明細") : "Price breakdown",
     total: isVI ? "Tổng cộng" : isFR ? "Total" : isRU ? "Итого" : isHI ? "कुल" : isZH || isZHTW ? zh("总计", "總計") : "Total",
@@ -181,6 +230,63 @@ function useTicketLabels(lang: LangCode) {
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
     droneCost: isVI ? "Flycam / Drone" : "Drone / Flycam",
     groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Group discount"),
+    freeTag: isVI ? "miễn phí" : isFR ? "offert" : isRU ? "бесплатно" : isHI ? "निःशुल्क" : isZH || isZHTW ? zh("免费", "免費") : "free",
+    includedTag: isVI ? "đã bao gồm" : isFR ? "inclus" : isRU ? "включено" : isHI ? "शामिल" : isZH || isZHTW ? zh("已包含", "已包含") : "included",
+    noTag: isVI ? "không" : isFR ? "non" : isRU ? "нет" : isHI ? "नहीं" : isZH || isZHTW ? zh("无", "無") : "no",
+
+    // Hướng dẫn nhanh in ngay trên vé
+    quickGuideTitle: isVI ? "Hướng dẫn nhanh khi đi bay" : isFR ? "Aide-mémoire avant le vol" : isRU ? "Памятка перед полётом" : isHI ? "उड़ान से पहले संक्षिप्त गाइड" : isZH || isZHTW ? zh("飞行前速查", "飛行前速查") : "Quick pre-flight guide",
+    guideWearTitle: isVI ? "Trang phục" : isFR ? "Tenue" : isRU ? "Одежда" : isHI ? "पहनावा" : isZH || isZHTW ? zh("着装", "著裝") : "What to wear",
+    guideBringTitle: isVI ? "Nên mang theo" : isFR ? "À emporter" : isRU ? "Взять с собой" : isHI ? "साथ लाएँ" : isZH || isZHTW ? zh("建议携带", "建議攜帶") : "What to bring",
+    guideAvoidTitle: isVI ? "Không mang theo" : isFR ? "À éviter" : isRU ? "Не брать" : isHI ? "न लाएँ" : isZH || isZHTW ? zh("请勿携带", "請勿攜帶") : "What to leave behind",
+
+    guideWear: isVI
+      ? ["Quần dài, áo tay dài, gọn gàng", "Giày thể thao hoặc giày leo núi", "Không mặc váy, không đi cao gót / dép lê"]
+      : isFR
+        ? ["Pantalon et manches longues", "Baskets ou chaussures de randonnée", "Ni jupe, ni talons, ni tongs"]
+        : isRU
+          ? ["Длинные брюки и рукава", "Кроссовки или треккинговая обувь", "Без юбки, каблуков и шлёпанцев"]
+          : isHI
+            ? ["लंबी पैंट और पूरी बाँह", "स्नीकर्स या ट्रेकिंग जूते", "स्कर्ट, हील्स या चप्पल नहीं"]
+            : isZH || isZHTW
+              ? [zh("长裤、长袖，衣着利落", "長褲、長袖，衣著俐落"), zh("运动鞋或登山鞋", "運動鞋或登山鞋"), zh("勿穿裙子、高跟鞋或拖鞋", "勿穿裙子、高跟鞋或拖鞋")]
+              : ["Long trousers and sleeves", "Trainers or hiking shoes", "No skirts, heels or flip-flops"],
+
+    guideBring: isVI
+      ? ["Giấy tờ tuỳ thân (CCCD / Hộ chiếu)", "Kính râm, áo khoác mỏng", "Túi nhỏ 1–2 kg cho đồ cá nhân"]
+      : isFR
+        ? ["Pièce d'identité ou passeport", "Lunettes de soleil, veste légère", "Petit sac de 1 à 2 kg"]
+        : isRU
+          ? ["Паспорт или удостоверение", "Очки от солнца, лёгкая куртка", "Небольшая сумка 1–2 кг"]
+          : isHI
+            ? ["पहचान पत्र या पासपोर्ट", "धूप का चश्मा, हल्की जैकेट", "1–2 किग्रा का छोटा बैग"]
+            : isZH || isZHTW
+              ? [zh("身份证件或护照", "身分證件或護照"), zh("墨镜、薄外套", "墨鏡、薄外套"), zh("1–2 公斤随身小包", "1–2 公斤隨身小包")]
+              : ["ID card or passport", "Sunglasses and a light jacket", "A small 1–2 kg bag"],
+
+    guideAvoid: isVI
+      ? ["Vật sắc nhọn, gậy selfie", "Đồ dễ rơi: mũ rộng vành, khăn choàng", "Tư trang giá trị cao"]
+      : isFR
+        ? ["Objets pointus, perche à selfie", "Objets qui tombent : chapeau, écharpe", "Objets de valeur"]
+        : isRU
+          ? ["Острые предметы, селфи-палка", "То, что легко потерять: шляпа, шарф", "Ценные вещи"]
+          : isHI
+            ? ["नुकीली चीज़ें, सेल्फ़ी स्टिक", "गिरने वाली चीज़ें: टोपी, स्कार्फ़", "क़ीमती सामान"]
+            : isZH || isZHTW
+              ? [zh("尖锐物品、自拍杆", "尖銳物品、自拍桿"), zh("易掉落物：宽檐帽、围巾", "易掉落物：寬簷帽、圍巾"), zh("贵重物品", "貴重物品")]
+              : ["Sharp objects, selfie sticks", "Loose items: wide hats, scarves", "Valuables"],
+
+    guideNote: isVI
+      ? "Có mặt trước giờ bay 15 phút. Nếu bạn có vấn đề tim mạch, huyết áp, động kinh hoặc đang mang thai, vui lòng báo phi công trước khi bay."
+      : isFR
+        ? "Arrivez 15 minutes avant le vol. En cas de problème cardiaque, de tension, d'épilepsie ou de grossesse, prévenez le pilote avant le décollage."
+        : isRU
+          ? "Приходите за 15 минут до полёта. При проблемах с сердцем, давлением, эпилепсии или беременности предупредите пилота заранее."
+          : isHI
+            ? "उड़ान से 15 मिनट पहले पहुँचें। हृदय, रक्तचाप, मिर्गी की समस्या या गर्भावस्था हो तो पायलट को पहले बताएँ।"
+            : isZH || isZHTW
+              ? zh("请提前 15 分钟抵达。如有心脏、血压、癫痫问题或正在怀孕，请飞行前告知飞行员。", "請提前 15 分鐘抵達。如有心臟、血壓、癲癇問題或正在懷孕，請飛行前告知飛行員。")
+              : "Arrive 15 minutes before your flight. If you have heart or blood-pressure conditions, epilepsy, or are pregnant, tell your pilot beforehand.",
     free: isVI ? "Miễn phí" : "Free",
     included: isVI ? "Bao gồm" : "Included",
     yes: isVI ? "Có" : "Yes",
@@ -256,10 +362,9 @@ export default function BookingTicket({
     ""
   ).toString();
 
-  const createdAt =
-    bookingResult?.createdAt ||
-    bookingResult?.createdAtISO ||
-    new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  const createdAt = formatVietnamDateTime(
+    bookingResult?.createdAt || bookingResult?.createdAtISO,
+  );
 
   const locationName = cfg?.name?.[lang] || cfg?.name?.vi || "—";
   const hasPackages = !!(cfg?.packages && cfg.packages.length > 0);
@@ -301,26 +406,6 @@ export default function BookingTicket({
       }));
   }, [booking.packageKey, booking.services, cfg?.services, lang]);
 
-  const selectedServiceItems = useMemo(() => {
-    return selectedServices.map((svc) => {
-      const inputs = splitInputEntries(svc.inputText);
-      let detail: string | undefined;
-
-      if (inputs.length) {
-        detail = inputs.join(" | ");
-      } else if (svc.fixedMapUrl) {
-        detail = lang === "vi" ? "Xem bản đồ" : "View map";
-      } else {
-        detail = labels.yes;
-      }
-
-      return {
-        key: String(svc.key),
-        label: String(svc.label),
-        detail,
-      };
-    });
-  }, [selectedServices, lang, labels.yes]);
 
   const selectedAddonItems = useMemo(() => {
     const hasCameraService = selectedServices.some((svc) =>
@@ -351,9 +436,72 @@ export default function BookingTicket({
     }).filter(Boolean) as Array<{ key: string; label: string; detail?: string }>;
   }, [selectedServices, totals.addonsQty, cfg?.addons, lang, labels.pax]);
 
-  const additionalServiceItems = useMemo(() => {
-    return [...selectedServiceItems, ...selectedAddonItems];
-  }, [selectedServiceItems, selectedAddonItems]);
+  /**
+   * Những gì đã nằm trong giá, kèm nhãn (miễn phí) / (đã bao gồm) — giống hệt
+   * cách bước 4 hiển thị, để vé và màn hình xác nhận không nói khác nhau.
+   * Phân loại xét trên chuỗi tiếng Việt của cùng chỉ số (các mảng ngôn ngữ
+   * song song nhau), nên chỉ cần một bộ từ khoá.
+   */
+  const includedItems = useMemo(() => {
+    const pkgCfg = (cfg as any)?.packages?.find(
+      (pk: any) => pk.key === booking.packageKey,
+    );
+    const source = pkgCfg?.included ?? (cfg as any)?.included;
+    const items = (source?.[lang] ?? source?.vi ?? []) as string[];
+    const viItems = (source?.vi ?? []) as string[];
+
+    return items.map((text, idx) => ({
+      text,
+      tag: includedTagOf(viItems[idx] ?? text, idx),
+    }));
+  }, [cfg, booking.packageKey, lang]);
+
+  /** Dịch vụ khách CÓ chọn: tên + số lượng + ghi chú khách nhập. */
+  const chosenServiceRows = useMemo(() => {
+    const fromServices = selectedServices.map((svc) => {
+      const notes = splitInputEntries(svc.inputText);
+      if (!notes.length && svc.fixedMapUrl) {
+        notes.push(lang === "vi" ? "Xem bản đồ" : "View map");
+      }
+
+      const qty =
+        svc.controlType === "counter"
+          ? Math.max(1, Number(svc.qty) || 1)
+          : svc.priceVND || svc.priceUSD
+            ? guestsCount
+            : 0;
+
+      return { key: String(svc.key), label: String(svc.label), qty, notes };
+    });
+
+    const fromAddons = selectedAddonItems.map((a) => ({
+      key: a.key,
+      label: a.label,
+      qty: Number(String(a.detail || "").replace(/\D/g, "")) || 0,
+      notes: [] as string[],
+    }));
+
+    return [...fromServices, ...fromAddons];
+  }, [selectedServices, selectedAddonItems, lang, guestsCount]);
+
+  /** Dịch vụ tuỳ chọn khách KHÔNG chọn — vé vẫn ghi để khách khỏi thắc mắc. */
+  const missingServiceRows = useMemo(() => {
+    const taken = new Set(
+      chosenServiceRows.map((r) => r.label.toLowerCase()),
+    );
+
+    return ADDON_KEYS.map((k) => {
+      if (Number(totals.addonsQty?.[k] || 0) > 0) return null;
+
+      const label = String(
+        cfg?.addons?.[k]?.label?.[lang] ?? cfg?.addons?.[k]?.label?.vi ?? k,
+      );
+      if (taken.has(label.toLowerCase())) return null;
+
+      return { key: `miss-${k}`, label };
+    }).filter(Boolean) as Array<{ key: string; label: string }>;
+  }, [chosenServiceRows, totals.addonsQty, cfg?.addons, lang]);
+
 
   const selectedServicePriceRows = useMemo(() => {
     return selectedServices
@@ -652,7 +800,10 @@ export default function BookingTicket({
         </div>
       </div>
 
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 12 }}>
+        {/* Một khối duy nhất cho chuyến bay + liên hệ. Trước đây hai khối
+            nằm rời nhau, mỗi khối một khung, khiến vé dài gấp đôi mà thông
+            tin thì rời rạc. */}
         <SectionCard title={labels.serviceDetails}>
           <PillRow
             items={[
@@ -662,29 +813,14 @@ export default function BookingTicket({
               { label: labels.guests, value: String(booking.guestsCount ?? "—") },
               ...(hasPackages
                 ? [
-                    {
-                      label: labels.packageLabel,
-                      value: packageLabel,
-                    },
-                    {
-                      label: labels.flightTypeLabel,
-                      value: flightTypeLabel,
-                    },
+                    { label: labels.packageLabel, value: packageLabel },
+                    { label: labels.flightTypeLabel, value: flightTypeLabel },
                     {
                       label: labels.dayTypeLabel,
                       value: getHolidayTypeLabel(labels, totals.holidayType),
                     },
                   ]
                 : []),
-            ]}
-          />
-        </SectionCard>
-
-        <SectionSpacer />
-
-        <SectionCard title={labels.contactInfo}>
-          <StackInfo
-            rows={[
               { label: labels.name, value: contactName || passengers?.[0]?.fullName || "—" },
               { label: labels.phone, value: contactPhone || "—" },
               { label: labels.email, value: contactEmail || "—" },
@@ -699,74 +835,93 @@ export default function BookingTicket({
               title={labels.passengersList}
               rightBadge={String(passengers.length)}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {passengers.map((p, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      background: C.bg,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 16,
-                      padding: 12,
-                    }}
-                  >
+              {/* Mỗi khách một dòng, chỉ ghi những mục đã nhập — trước đây
+                  mỗi khách là một thẻ chứa 5 ô con, luôn hiện cả ô trống. */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {passengers.map((pax, idx) => {
+                  const details = [
+                    pax.dob ? formatDateDisplay(pax.dob) : "",
+                    pax.gender || "",
+                    pax.weightKg ? `${pax.weightKg} kg` : "",
+                    pax.nationality || "",
+                    pax.idNumber || "",
+                  ].filter(Boolean);
+
+                  return (
                     <div
+                      key={idx}
                       style={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        marginBottom: 10,
+                        gap: 6,
+                        fontSize: 12,
+                        lineHeight: 1.5,
                       }}
                     >
-                      <div
-                        style={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: 999,
-                          background: C.accentSoft,
-                          color: C.accent,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 12,
-                          fontWeight: 900,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {idx + 1}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 900,
-                          color: C.text,
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {p.fullName || "—"}
-                      </div>
+                      <span style={{ color: C.accent, fontWeight: 900, flexShrink: 0 }}>
+                        {idx + 1}.
+                      </span>
+                      <span style={{ minWidth: 0, wordBreak: "break-word" }}>
+                        <span style={{ fontWeight: 800, color: C.text }}>
+                          {pax.fullName || "—"}
+                        </span>
+                        {details.length ? (
+                          <span style={{ color: C.subtext }}>
+                            {" — "}
+                            {details.join(" · ")}
+                          </span>
+                        ) : null}
+                      </span>
                     </div>
-
-                    <PillRow
-                      items={[
-                        { label: "DOB", value: formatDateDisplay(p.dob) },
-                        { label: "Gender", value: p.gender || "—" },
-                        { label: "ID", value: p.idNumber || "—" },
-                        { label: "Nationality", value: p.nationality || "—" },
-                        {
-                          label: "Weight",
-                          value: p.weightKg ? `${p.weightKg}kg` : "—",
-                        },
-                      ]}
-                      soft
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </SectionCard>
           </>
         )}
+
+        <SectionSpacer />
+
+        {/* Một danh sách duy nhất cho dịch vụ, thay cho hai khối "Dịch vụ bao
+            gồm" và "Additional services" trước đây. Thứ tự và cách ghi giống
+            hệt bước 4: đã có trong giá trước, rồi dịch vụ chọn thêm kèm ×N,
+            cuối cùng là những mục không chọn với dấu ✕ đỏ. */}
+        <SectionCard title={labels.additionalServices}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {includedItems.map((item, idx) => (
+              <TicketServiceLine
+                key={`inc-${idx}`}
+                ok
+                label={item.text}
+                tag={
+                  item.tag === "free"
+                    ? labels.freeTag
+                    : item.tag === "included"
+                      ? labels.includedTag
+                      : undefined
+                }
+              />
+            ))}
+
+            {chosenServiceRows.map((row) => (
+              <TicketServiceLine
+                key={row.key}
+                ok
+                label={row.label}
+                qty={row.qty}
+                notes={row.notes}
+              />
+            ))}
+
+            {missingServiceRows.map((row) => (
+              <TicketServiceLine
+                key={row.key}
+                ok={false}
+                label={row.label}
+                tag={labels.noTag}
+              />
+            ))}
+          </div>
+        </SectionCard>
 
         {!!specialRequest && (
           <>
@@ -775,15 +930,15 @@ export default function BookingTicket({
               style={{
                 background: C.orangeSoft,
                 border: `1px solid ${C.orange}`,
-                borderRadius: 16,
-                padding: 14,
+                borderRadius: 12,
+                padding: 10,
               }}
             >
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 900,
-                  letterSpacing: 1,
+                  letterSpacing: 0.6,
                   textTransform: "uppercase",
                   color: C.warningText,
                 }}
@@ -792,10 +947,11 @@ export default function BookingTicket({
               </div>
               <div
                 style={{
-                  marginTop: 6,
+                  marginTop: 3,
                   color: C.warningText,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
+                  lineHeight: 1.5,
                   wordBreak: "break-word",
                 }}
               >
@@ -807,117 +963,21 @@ export default function BookingTicket({
 
         <SectionSpacer />
 
-        {/* What's Included in the Flight */}
-        <SectionCard
-          title={lang === "vi" ? "Dịch vụ bao gồm" : lang === "en" ? "Services Included" : "Services Included"}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {(cfg?.included?.[lang] || cfg?.included?.vi || []).map((item, idx) => (
-              <div key={idx} style={{ display: "flex", gap: 10, textAlign: lang === "vi" ? "left" : "left" }}>
-                <span style={{ color: C.success, fontWeight: 900, flexShrink: 0 }}>✓</span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: C.text,
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {item}
-                </span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionSpacer />
-
-        <SectionCard title={labels.additionalServices}>
-          {additionalServiceItems.length ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              {additionalServiceItems.map((item) => (
-                <div
-                  key={item.key}
-                  style={{
-                    background: C.bg,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 12,
-                    padding: "10px 12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 900,
-                        color: C.text,
-                        wordBreak: "break-word",
-                        flex: 1,
-                      }}
-                    >
-                      {item.label}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 800,
-                        color: C.text,
-                        textAlign: "right",
-                        lineHeight: 1.45,
-                        wordBreak: "break-word",
-                        maxWidth: "55%",
-                      }}
-                    >
-                      {item.detail || labels.no}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-            </div>
-          ) : (
-            <div
-              style={{
-                fontSize: 13,
-                color: C.muted,
-                fontWeight: 700,
-              }}
-            >
-              {labels.no}
-            </div>
-          )}
-        </SectionCard>
-
-        <SectionSpacer />
-
         <div
           style={{
             background: C.totalBg,
             color: C.white,
-            borderRadius: 18,
-            padding: 16,
+            borderRadius: 14,
+            padding: 12,
           }}
         >
           <div
             style={{
-              fontSize: 11,
-              letterSpacing: 1,
+              fontSize: 10,
+              letterSpacing: 0.6,
               textTransform: "uppercase",
               opacity: 0.85,
+              fontWeight: 900,
             }}
           >
             {labels.priceBreakdown}
@@ -925,10 +985,10 @@ export default function BookingTicket({
 
           <div
             style={{
-              marginTop: 14,
+              marginTop: 8,
               display: "flex",
               flexDirection: "column",
-              gap: 10,
+              gap: 5,
             }}
           >
             {priceLines.map((line, idx) => (
@@ -937,16 +997,19 @@ export default function BookingTicket({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  gap: 12,
+                  gap: 10,
                   alignItems: "flex-start",
                 }}
               >
                 <div style={{ minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: 700,
-                      color: line.type === "discount" ? "#fca5a5" : "rgba(255,255,255,0.95)",
+                      color:
+                        line.type === "discount"
+                          ? "#bbf7d0"
+                          : "rgba(255,255,255,0.95)",
                     }}
                   >
                     {line.label}
@@ -954,9 +1017,8 @@ export default function BookingTicket({
                   {line.detail ? (
                     <div
                       style={{
-                        fontSize: 11,
+                        fontSize: 10,
                         color: "rgba(255,255,255,0.7)",
-                        marginTop: 3,
                       }}
                     >
                       {line.detail}
@@ -966,10 +1028,10 @@ export default function BookingTicket({
 
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 900,
                     whiteSpace: "nowrap",
-                    color: line.type === "discount" ? "#fca5a5" : C.white,
+                    color: line.type === "discount" ? "#bbf7d0" : C.white,
                   }}
                 >
                   {line.amountText}
@@ -979,37 +1041,32 @@ export default function BookingTicket({
 
             <div
               style={{
-                marginTop: 6,
-                paddingTop: 12,
+                marginTop: 4,
+                paddingTop: 8,
                 borderTop: "1px solid rgba(255,255,255,0.25)",
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
+                alignItems: "baseline",
+                gap: 10,
               }}
             >
-              <div style={{ fontSize: 20, fontWeight: 900 }}>
-                {labels.total}
-              </div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 900,
-                  color: C.white,
-                }}
-              >
-                {formatByLang(lang, totalWithSelectedServices, totalWithSelectedServices)}
+              <div style={{ fontSize: 14, fontWeight: 900 }}>{labels.total}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: C.white }}>
+                {formatByLang(
+                  lang,
+                  totalWithSelectedServices,
+                  totalWithSelectedServices,
+                )}
               </div>
             </div>
           </div>
 
           <div
             style={{
-              marginTop: 14,
-              paddingTop: 12,
+              marginTop: 8,
+              paddingTop: 8,
               borderTop: "1px solid rgba(255,255,255,0.15)",
-              fontSize: 11,
+              fontSize: 10,
               color: "rgba(255,255,255,0.8)",
               lineHeight: 1.5,
             }}
@@ -1018,20 +1075,172 @@ export default function BookingTicket({
           </div>
         </div>
 
+        <SectionSpacer />
+
+        {/* Hướng dẫn nhanh cho khách đọc ngay trên vé — trước đây khách phải
+            mở lại trang web mới biết mặc gì, mang gì. */}
         <div
           style={{
-            marginTop: 14,
+            border: `1px solid ${C.border}`,
+            borderRadius: 14,
+            padding: 12,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 900,
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+              color: C.accent,
+            }}
+          >
+            {labels.quickGuideTitle}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+            }}
+          >
+            {[
+              { title: labels.guideWearTitle, items: labels.guideWear, tone: C.accent },
+              { title: labels.guideBringTitle, items: labels.guideBring, tone: C.success },
+              { title: labels.guideAvoidTitle, items: labels.guideAvoid, tone: C.orange },
+            ].map((block) => (
+              <div
+                key={block.title}
+                style={{
+                  flex: "1 1 180px",
+                  minWidth: 160,
+                  background: C.card,
+                  borderRadius: 10,
+                  padding: 10,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 900,
+                    color: block.tone,
+                    marginBottom: 4,
+                  }}
+                >
+                  {block.title}
+                </div>
+                {block.items.map((line, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      gap: 5,
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      color: C.text,
+                    }}
+                  >
+                    <span style={{ color: block.tone, flexShrink: 0 }}>•</span>
+                    <span style={{ minWidth: 0 }}>{line}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 11,
+              lineHeight: 1.5,
+              color: C.warningText,
+              background: C.warningBg,
+              border: `1px solid ${C.warningBorder}`,
+              borderRadius: 8,
+              padding: "6px 8px",
+              fontWeight: 700,
+            }}
+          >
+            {labels.guideNote}
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
             textAlign: "center",
             fontSize: 11,
-            color: C.muted,
+            color: C.text,
             lineHeight: 1.6,
+            fontWeight: 700,
           }}
         >
           Hotline: 0964.073.555 — 0385.907.789
           <br />
-          Zalo / WhatsApp / Telegram — mebayluon.com
+          <span style={{ color: C.muted, fontWeight: 500 }}>
+            Zalo / WhatsApp / Telegram — mebayluon.com
+          </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Một dòng dịch vụ trên vé — cùng cách đọc với bước 4: ✓ xanh cho thứ có,
+ * ✕ đỏ cho thứ không, số lượng "×2" và nhãn (miễn phí)/(đã bao gồm)/(không)
+ * đều màu theo trạng thái.
+ */
+function TicketServiceLine({
+  ok,
+  label,
+  qty,
+  notes,
+  tag,
+}: {
+  ok: boolean;
+  label: string;
+  qty?: number;
+  notes?: string[];
+  tag?: string;
+}) {
+  const tone = ok ? C.success : "#DC2626";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        fontSize: 12,
+        lineHeight: 1.55,
+        color: ok ? C.text : C.muted,
+      }}
+    >
+      <span style={{ color: tone, fontWeight: 900, flexShrink: 0 }}>
+        {ok ? "✓" : "✕"}
+      </span>
+
+      <span style={{ minWidth: 0, wordBreak: "break-word" }}>
+        <span style={{ fontWeight: 800 }}>{label}</span>
+
+        {qty && qty > 0 ? (
+          <>
+            {": "}
+            <span style={{ color: C.success, fontWeight: 800 }}>×{qty}</span>
+          </>
+        ) : null}
+
+        {notes && notes.length ? (
+          <span style={{ color: C.subtext }}>
+            {qty && qty > 0 ? " · " : ": "}
+            {notes.join(" · ")}
+          </span>
+        ) : null}
+
+        {tag ? <span style={{ color: tone }}> ({tag})</span> : null}
+      </span>
     </div>
   );
 }
@@ -1137,52 +1346,6 @@ function PillRow({
   );
 }
 
-function StackInfo({
-  rows,
-}: {
-  rows: Array<{ label: string; value: React.ReactNode }>;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {rows.map((row, idx) => (
-        <div
-          key={`${row.label}-${idx}`}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "flex-start",
-            paddingBottom: 10,
-            borderBottom:
-              idx === rows.length - 1 ? "none" : `1px dashed ${C.line}`,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: C.muted,
-              flexShrink: 0,
-            }}
-          >
-            {row.label}
-          </div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 900,
-              color: C.text,
-              textAlign: "right",
-              wordBreak: "break-word",
-            }}
-          >
-            {row.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function SectionSpacer() {
   return <div style={{ height: 12 }} />;

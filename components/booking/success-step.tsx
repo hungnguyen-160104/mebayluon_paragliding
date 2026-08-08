@@ -5,8 +5,12 @@ import { useBookingStore } from "@/store/booking-store";
 import { computePriceByLang } from "@/lib/booking/calculate-price";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import BookingTicket from "@/components/booking/BookingTicket";
+import Link from "next/link";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
+
+/** Hai số hotline, hiển thị thành nút bấm gọi được trên điện thoại. */
+const HOTLINES = ["0964.073.555", "0385.907.789"];
 
 const UI_TEXT: Record<
   LangUI,
@@ -17,6 +21,14 @@ const UI_TEXT: Record<
     note: string;
     preFlightNotesTitle: string;
     preFlightNotes: string[];
+    confirmedBadge: string;
+    contactTitle: string;
+    contactHint: string;
+    guideTitle: string;
+    guideHint: string;
+    guidePreNotice: string;
+    guideSafety: string;
+    guideSteps: string;
   }
 > = {
   vi: {
@@ -34,6 +46,14 @@ const UI_TEXT: Record<
       "Nếu có vấn đề sức khỏe hoặc cần hỗ trợ đặc biệt, vui lòng thông báo trước.",
       "Liên hệ hotline nếu cần thay đổi hoặc hủy lịch bay.",
     ],
+    confirmedBadge: "Đã xác nhận",
+    contactTitle: "Cần hỗ trợ? Gọi ngay",
+    contactHint: "Đổi lịch, huỷ bay hay hỏi thời tiết — gọi hoặc nhắn bất cứ lúc nào.",
+    guideTitle: "Đọc trước khi đi bay",
+    guideHint: "Ba bài ngắn giúp bạn chuẩn bị đúng và bay thoải mái hơn.",
+    guidePreNotice: "Lưu ý trước chuyến bay",
+    guideSafety: "Dù lượn có an toàn không?",
+    guideSteps: "Các bước khi đi bay dù lượn",
   },
   en: {
     title: "Booking received",
@@ -50,6 +70,14 @@ const UI_TEXT: Record<
       "If you have health issues or need special assistance, please inform us in advance.",
       "Contact our hotline to reschedule or cancel your flight.",
     ],
+    confirmedBadge: "Confirmed",
+    contactTitle: "Need help? Call us",
+    contactHint: "Reschedule, cancel or ask about the weather — call or message any time.",
+    guideTitle: "Read before you fly",
+    guideHint: "Three short reads to help you prepare and enjoy the flight.",
+    guidePreNotice: "Pre-flight notes",
+    guideSafety: "Is paragliding safe?",
+    guideSteps: "How a paragliding flight goes",
   },
   fr: {
     title: "Réservation enregistrée",
@@ -66,6 +94,14 @@ const UI_TEXT: Record<
       "Si vous avez des problèmes de santé ou besoin d'une assistance particulière, informez-nous à l'avance.",
       "Contactez notre hotline pour modifier ou annuler votre vol.",
     ],
+    confirmedBadge: "Confirmé",
+    contactTitle: "Besoin d'aide ? Appelez-nous",
+    contactHint: "Report, annulation ou météo — appelez ou écrivez à tout moment.",
+    guideTitle: "À lire avant de voler",
+    guideHint: "Trois lectures courtes pour bien vous préparer.",
+    guidePreNotice: "Notes avant le vol",
+    guideSafety: "Le parapente est-il sûr ?",
+    guideSteps: "Comment se déroule un vol",
   },
   ru: {
     title: "Бронирование получено",
@@ -82,6 +118,14 @@ const UI_TEXT: Record<
       "Если у вас есть проблемы со здоровьем или нужна особая помощь, сообщите заранее.",
       "Свяжитесь с нашей горячей линией для изменения или отмены полёта.",
     ],
+    confirmedBadge: "Подтверждено",
+    contactTitle: "Нужна помощь? Звоните",
+    contactHint: "Перенос, отмена или вопрос о погоде — звоните или пишите в любое время.",
+    guideTitle: "Прочитайте перед полётом",
+    guideHint: "Три короткие статьи, чтобы всё прошло гладко.",
+    guidePreNotice: "Памятка перед полётом",
+    guideSafety: "Безопасен ли параплан?",
+    guideSteps: "Как проходит полёт",
   },
   hi: {
     title: "बुकिंग प्राप्त हो गई",
@@ -98,6 +142,14 @@ const UI_TEXT: Record<
       "यदि स्वास्थ्य संबंधी कोई समस्या है या विशेष सहायता चाहिए, तो पहले से सूचित करें।",
       "उड़ान में बदलाव या रद्द करने के लिए हमारी हॉटलाइन से संपर्क करें।",
     ],
+    confirmedBadge: "पुष्ट",
+    contactTitle: "मदद चाहिए? कॉल करें",
+    contactHint: "तारीख़ बदलना, रद्द करना या मौसम — कभी भी कॉल या मैसेज करें।",
+    guideTitle: "उड़ान से पहले पढ़ें",
+    guideHint: "तीन छोटी जानकारियाँ जो तैयारी आसान बनाती हैं।",
+    guidePreNotice: "उड़ान से पहले की बातें",
+    guideSafety: "क्या पैराग्लाइडिंग सुरक्षित है?",
+    guideSteps: "उड़ान कैसे होती है",
   },
   zh: {
     title: "预订已收到",
@@ -114,6 +166,14 @@ const UI_TEXT: Record<
       "如有健康问题或需要特殊协助，请提前告知。",
       "如需更改或取消航班，请联系客服热线。",
     ],
+    confirmedBadge: "已确认",
+    contactTitle: "需要帮助？请致电",
+    contactHint: "改期、取消或询问天气——随时来电或留言。",
+    guideTitle: "飞行前请先阅读",
+    guideHint: "三篇简短内容，帮您做好准备。",
+    guidePreNotice: "飞行前须知",
+    guideSafety: "滑翔伞安全吗？",
+    guideSteps: "一次飞行是怎样进行的",
   },
 };
 
@@ -238,7 +298,7 @@ export default function SuccessStep() {
             </div>
 
             <div className="cta-btn rounded-full border border-white/30 bg-white/20 px-4 py-2 text-base font-semibold text-white">
-              ✓ Confirmed
+              ✓ {ui.confirmedBadge}
             </div>
           </div>
         </div>
@@ -269,6 +329,64 @@ export default function SuccessStep() {
               />
             </div>
           </div>
+
+          {/* Khối liên hệ: trước đây hotline chỉ là dòng chữ 11px ở chân vé,
+              khách khó thấy đúng lúc cần nhất. Nay là hai nút bấm gọi được
+              ngay trên điện thoại. */}
+          <section className="rounded-xl border-2 border-[#FF5E1F] bg-white p-4 shadow-md">
+            <div className="text-base font-bold text-[#FF5E1F] md:text-lg">
+              {ui.contactTitle}
+            </div>
+            <p className="mt-1 text-sm text-[#5B6B7A]">{ui.contactHint}</p>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {HOTLINES.map((tel) => (
+                <a
+                  key={tel}
+                  href={`tel:${tel.replace(/\D/g, "")}`}
+                  className="cta-btn flex h-12 items-center justify-center rounded-xl bg-[#FF5E1F] text-lg font-bold tracking-wide text-white shadow-md transition hover:bg-[#E14E12]"
+                >
+                  {tel}
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm font-semibold text-[#5B6B7A]">
+              <span>Zalo</span>
+              <span>·</span>
+              <span>WhatsApp</span>
+              <span>·</span>
+              <span>Telegram</span>
+              <span>·</span>
+              <Link href="/" className="text-[#0194F3] underline">
+                mebayluon.com
+              </Link>
+            </div>
+          </section>
+
+          {/* Dẫn khách sang các bài chuẩn bị trước chuyến bay */}
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+            <div className="text-base font-bold text-[#1C2930]">
+              {ui.guideTitle}
+            </div>
+            <p className="mt-1 text-sm text-[#5B6B7A]">{ui.guideHint}</p>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {[
+                { href: "/pre-notice", label: ui.guidePreNotice },
+                { href: "/blog/trai-nghiem-bay-du-luon-mebayluon", label: ui.guideSteps },
+                { href: "/blog/du-luon-co-an-toan-khong", label: ui.guideSafety },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="cta-btn flex min-h-12 items-center justify-center rounded-xl border border-[#B9DDFB] bg-[#EAF4FE] px-3 py-2 text-center text-sm font-semibold text-[#0B5FA5] transition hover:bg-[#D8ECFD]"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </section>
 
           <section className="rounded-xl border border-[#FF5E1F] bg-[#FFF4ED] p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF5E1F]">
