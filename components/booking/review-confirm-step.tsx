@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import {
   computePriceByLang,
@@ -11,7 +11,24 @@ import { useBookingText, useLangCode } from "@/lib/booking/translations-booking"
 import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
+import { shortServiceLabel } from "@/lib/booking/service-label";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
+import BookingTicket from "@/components/booking/BookingTicket";
+import spots from "@/data/spots.json";
+
+/**
+ * Tiền tố mã đặt chỗ — chép nguyên từ app/api/booking/create/route.ts.
+ * Lưu ý: tên trong data/spots.json là "Yên Bái (Đèo Khau Phạ – Mù Cang Chải)"
+ * nên không khớp khoá nào ở bảng này, mã thực tế luôn bắt đầu bằng "BOOK".
+ * Giữ y hệt máy chủ để mã trên ảnh vé không bao giờ lệch với mã máy chủ cấp.
+ */
+const BOOKING_CODE_PREFIX: Record<string, string> = {
+  "HÀ NỘI": "HN",
+  "ĐÈO KHAU PHẠ": "DKP",
+  SAPA: "SAPA",
+  "HÀ GIANG": "HG",
+  "ĐÀ NẴNG": "DN",
+};
 import {
   imageComboDiscountVND,
   imageComboDiscountUSD,
@@ -123,7 +140,7 @@ const UI_I18N: Record<
     selectedCount: "đã chọn",
     additionalServices: "Dịch vụ & tiện ích",
     selectedServices: "Dịch vụ tuỳ chọn",
-    hotelTransfer: "Đón / trả tận nơi",
+    hotelTransfer: "Dịch vụ đón trả",
     camera360: "Camera 360",
     drone: "Flycam (drone camera)",
     gopro: "Ảnh & video GoPro",
@@ -779,7 +796,11 @@ export default function ReviewConfirmStep() {
 
   const serviceLines = useMemo(() => {
     return visibleSelectedServices.map((svc: any) => {
-      const label = getLocalizedText(svc.label, lang, String(svc.key));
+      // Bỏ phần giải thích trong ngoặc — khách đã chọn xong rồi, giữ lại chỉ
+      // làm dòng dài gấp đôi mà không thêm thông tin gì.
+      const label = shortServiceLabel(
+        getLocalizedText(svc.label, lang, String(svc.key)),
+      );
       const state = data.services?.[svc.key];
       const inputText = state?.inputText || "";
 
@@ -1058,6 +1079,69 @@ export default function ReviewConfirmStep() {
 
   const termsUrl = `/terms?lang=${lang}`;
 
+  /**
+   * Mã đặt chỗ tính trước ở máy khách bằng ĐÚNG công thức của máy chủ
+   * (app/api/booking/create/route.ts → buildBookingCode): tiền tố theo điểm
+   * bay + DDMM + các chữ số của điện thoại.
+   *
+   * Nhờ vậy tấm vé vẽ sẵn ở bước này mang đúng mã mà máy chủ sẽ cấp, không bị
+   * lệch với mã in trong email.
+   */
+  const previewBookingCode = useMemo(() => {
+    // Máy chủ chuẩn hoá tên điểm bay theo data/spots.json trước khi tra bảng
+    // tiền tố, nên ở đây phải tra đúng như vậy chứ không dùng tên hiển thị.
+    const canonicalName =
+      (spots as Record<string, string>)[String(data.location || "")] ||
+      locationName ||
+      "";
+
+    const prefix =
+      BOOKING_CODE_PREFIX[canonicalName.trim().toUpperCase()] || "BOOK";
+
+    const d = data.dateISO ? new Date(data.dateISO) : null;
+    const datePart =
+      d && !Number.isNaN(d.getTime())
+        ? `${String(d.getDate()).padStart(2, "0")}${String(d.getMonth() + 1).padStart(2, "0")}`
+        : "";
+
+    const phonePart = String(contactPhone || "").replace(/\D/g, "");
+    return `${prefix}${datePart}${phonePart}`;
+  }, [data.location, locationName, data.dateISO, contactPhone]);
+
+  const hiddenTicketRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Vẽ tấm vé thành ảnh PNG để đính kèm email.
+   *
+   * Vẽ ở ĐÂY chứ không ở bước 5, vì email xác nhận được gửi ngay lúc máy chủ
+   * tạo booking — lúc đó bước 5 còn chưa hiện. Vé nằm trong một khối đặt
+   * ngoài màn hình, khách không nhìn thấy.
+   *
+   * Hỏng thì trả chuỗi rỗng: thà email không có ảnh còn hơn hỏng cả booking.
+   */
+  const renderTicketImage = useCallback(async (): Promise<string> => {
+    const node = hiddenTicketRef.current;
+    if (!node) return "";
+
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        onclone: (doc) => {
+          doc
+            .querySelectorAll('style, link[rel="stylesheet"]')
+            .forEach((el) => el.remove());
+        },
+      });
+      return canvas.toDataURL("image/png");
+    } catch (err) {
+      console.warn("[BookingTicket] render image failed:", err);
+      return "";
+    }
+  }, []);
+
   const { priceLines, totalTextVND, totalTextUSD } = useMemo(() => {
     const lines: PriceLine[] = [];
 
@@ -1136,7 +1220,7 @@ export default function ReviewConfirmStep() {
     }
 
     const addonLabel: Record<string, string> = {
-      pickup: (t as any)?.labels?.pickupCost ?? "Pickup",
+      pickup: L("hotelTransfer", "Hotel pickup / drop-off"),
       camera360: (t as any)?.labels?.camera360Cost ?? "Camera 360",
       flycam: (t as any)?.labels?.droneCost ?? "Drone/Flycam",
     };
@@ -1241,8 +1325,13 @@ export default function ReviewConfirmStep() {
         throw new Error(`Missing ${missing.join(", ")}.`);
       }
 
+      const ticketImageBase64 = await renderTicketImage();
+
       const payload = {
         ...data,
+        // Ảnh vé để máy chủ đính kèm email cho khách. Không lưu vào cơ sở dữ
+        // liệu — route tạo booking loại bỏ trường này trước khi ghi.
+        ticketImageBase64,
         name: primaryName,
         phone: primaryPhone,
         date: data.dateISO,
@@ -1250,6 +1339,31 @@ export default function ReviewConfirmStep() {
         locationName,
         packageLabel,
         flightTypeLabel: getFlightTypeLabel(lang, resolvedFlightTypeKey),
+
+        // Ngôn ngữ khách đang dùng -> email và tiêu đề email gửi đúng thứ
+        // tiếng đó. Trước đây email luôn tiếng Anh cho mọi khách.
+        lang,
+        // Danh sách "đã bao gồm" của đúng gói / điểm bay, đã dịch sẵn ở đây
+        // để máy chủ khỏi phải tra lại cấu hình.
+        includedLines: includedList.map((item) => item.text),
+        // Dịch vụ khách chọn thêm, đã dịch sẵn — email hiện thành danh sách
+        // có dấu ✓ giống trên vé.
+        selectedServiceLines: [
+          ...serviceLines.map((sl) => ({
+            label: sl.label,
+            qty: sl.qty,
+            note: splitInputEntries(sl.inputText).join(" · "),
+          })),
+          ...(!hasPickupServiceLine && pickupAddonQty
+            ? [{ label: L("hotelTransfer", "Pickup"), qty: pickupAddonQty }]
+            : []),
+          ...(!hasCameraServiceLine && camera360Qty
+            ? [{ label: L("camera360", "360 camera"), qty: camera360Qty }]
+            : []),
+          ...(!hasFlycamServiceLine && flycamQty
+            ? [{ label: L("drone", "Flycam"), qty: flycamQty }]
+            : []),
+        ],
 
         price: {
           currency: "VND",
@@ -1343,14 +1457,31 @@ export default function ReviewConfirmStep() {
 
   const hasPackages = cfg?.packages && cfg.packages.length > 0;
   const showPackageRow = hasPackages || data.location === "khau_pha";
-  const hasPickupServiceLine = serviceLines.some((sl) =>
-    String(sl.key || "").toLowerCase().includes("pickup"),
-  );
-  const hasCameraServiceLine = serviceLines.some((sl) =>
-    String(sl.key || "").toLowerCase().includes("camera360"),
-  );
-  const hasFlycamServiceLine = serviceLines.some((sl) => {
-    const key = String(sl.key || "").toLowerCase();
+  /**
+   * Hạng mục đón trả / camera 360 / flycam có thể do dịch vụ riêng của điểm
+   * bay đảm nhiệm. Nhận diện theo BẢN CHẤT chứ không theo tên khoá: dịch vụ
+   * "khau_pha_shuttle" (Xe trung chuyển xã Tú Lệ) không có chữ "pickup" trong
+   * khoá nên bản cũ bỏ sót, khiến vé vừa ghi có xe đón vừa ghi
+   * "Đón / trả tận nơi (không)" — hai dòng nói ngược nhau.
+   */
+  const hasPickupServiceLine = visibleSelectedServices.some((svc: any) => {
+    const key = String(svc?.key || "").toLowerCase();
+    const group = String(svc?.exclusiveGroup || "").toLowerCase();
+    return (
+      key.includes("pickup") ||
+      group.includes("pickup") ||
+      !!svc?.requiresPickupInput ||
+      !!svc?.fixedMapUrl
+    );
+  });
+
+  const hasCameraServiceLine = visibleSelectedServices.some((svc: any) => {
+    const key = String(svc?.key || "").toLowerCase();
+    return key.includes("camera360") || key.includes("camera_360");
+  });
+
+  const hasFlycamServiceLine = visibleSelectedServices.some((svc: any) => {
+    const key = String(svc?.key || "").toLowerCase();
     return key.includes("flycam") || key.includes("drone");
   });
 
@@ -1543,24 +1674,33 @@ export default function ReviewConfirmStep() {
 
                 {/* 2. Dịch vụ khách chọn thêm ở bước 1 */}
                 {serviceLines.map((sl) => {
-                  const entries = splitInputEntries(sl.inputText);
                   // Số lượng đứng trước, rồi mới tới ghi chú khách nhập
                   // (địa chỉ đón, ghi chú riêng...) — nối bằng dấu · để tất
                   // cả nằm gọn trên một dòng.
-                  const notes = [
-                    ...entries,
-                    entries.length === 0 && sl.fixedMapUrl
-                      ? L("viewMap", "Xem bản đồ")
-                      : "",
-                  ].filter(Boolean);
+                  const notes = splitInputEntries(sl.inputText);
+
+                  // Dịch vụ đón tại điểm cố định: "Xem bản đồ" phải là LINK
+                  // bấm được, trước đây chỉ là chữ nên khách bấm không ra gì.
+                  const showMap = notes.length === 0 && !!sl.fixedMapUrl;
+                  const hasExtra = notes.length > 0 || showMap;
 
                   return (
                     <ServiceItem key={sl.key} ok>
                       <span className="font-semibold">{sl.label}</span>
-                      {sl.qty > 0 || notes.length ? ": " : ""}
+                      {sl.qty > 0 || hasExtra ? ": " : ""}
                       {sl.qty > 0 ? <Qty n={sl.qty} /> : null}
-                      {sl.qty > 0 && notes.length ? " · " : ""}
+                      {sl.qty > 0 && hasExtra ? " · " : ""}
                       {notes.join(" · ")}
+                      {showMap ? (
+                        <a
+                          href={sl.fixedMapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-[#0194F3] underline underline-offset-2"
+                        >
+                          {L("viewMap", "Xem bản đồ")}
+                        </a>
+                      ) : null}
                     </ServiceItem>
                   );
                 })}
@@ -1728,17 +1868,43 @@ export default function ReviewConfirmStep() {
         </div>
       </div>
 
+      {/* Vé vẽ sẵn để chụp thành ảnh đính kèm email. Đặt ngoài màn hình chứ
+          không dùng display:none — html2canvas không chụp được phần tử ẩn. */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          width: 760,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <div ref={hiddenTicketRef} style={{ background: "#ffffff", padding: 14 }}>
+          <BookingTicket
+            booking={data as any}
+            totals={billVND}
+            lang={lang as any}
+            bookingResult={{ bookingCode: previewBookingCode }}
+          />
+        </div>
+      </div>
+
       {error && (
         <div className="rounded-xl border border-[#DC2626] bg-red-50 p-3 text-sm text-[#DC2626]">
           {error}
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      {/* Trước đây justify-between đẩy "Quay lại" và "Tiếp theo" ra hai mép,
+          trên màn hình rộng hai nút cách nhau cả gang tay. Nay cụm nút nằm
+          giữa trang và sát nhau. */}
+      <div className="flex items-center justify-center gap-3 pt-1">
         <button
           type="button"
           onClick={back}
-          className="cta-btn h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="cta-btn h-12 min-w-[130px] rounded-xl border border-[#DCE7F3] bg-white px-6 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {t.buttons.back}
         </button>
@@ -1752,7 +1918,7 @@ export default function ReviewConfirmStep() {
             missingPickupAddress
           }
           onClick={handleConfirm}
-          className="cta-btn h-12 rounded-xl bg-[#0194F3] px-3 text-base font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="cta-btn h-12 min-w-[170px] rounded-xl bg-[#0194F3] px-6 text-base font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {submitting ? t.buttons.processing : t.buttons.confirm}
         </button>

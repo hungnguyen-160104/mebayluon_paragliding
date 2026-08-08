@@ -420,11 +420,14 @@ export default function GuestInfoStep() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      {/* Trước đây justify-between đẩy "Quay lại" và "Tiếp theo" ra hai mép,
+          trên màn hình rộng hai nút cách nhau cả gang tay. Nay cụm nút nằm
+          giữa trang và sát nhau. */}
+      <div className="flex items-center justify-center gap-3 pt-1">
         <button
           type="button"
           onClick={back}
-          className="cta-btn h-12 rounded-xl border border-[#DCE7F3] bg-white px-3 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="cta-btn h-12 min-w-[130px] rounded-xl border border-[#DCE7F3] bg-white px-6 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
         >
           {ui.back}
         </button>
@@ -432,7 +435,7 @@ export default function GuestInfoStep() {
         <button
           type="submit"
           disabled={!allValid}
-          className="cta-btn h-12 rounded-xl bg-[#0194F3] px-3 text-base font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
+          className="cta-btn h-12 min-w-[170px] rounded-xl bg-[#0194F3] px-6 text-base font-semibold text-white shadow-md transition hover:bg-[#0B83D9] disabled:bg-[#B9DDFB] disabled:shadow-none"
         >
           {ui.next}
         </button>

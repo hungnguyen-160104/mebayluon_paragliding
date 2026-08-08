@@ -1,8 +1,15 @@
 // services/gmail.service.ts
-import { parseAdminEmails, sendSmtpMail } from "@/lib/mailer";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  dataUrlToAttachment,
+  parseAdminEmails,
+  sendSmtpMail,
+} from "@/lib/mailer";
 import {
   formatAdminEmailHtml,
   formatCustomerEmailHtml,
+  formatCustomerEmailSubject,
   type TelegramBookingPayload,
 } from "@/lib/templates";
 
@@ -41,13 +48,45 @@ export async function postNotifyGmail(payload: TelegramBookingPayload) {
     admin: { ok: false, to: adminEmails },
   };
 
-  // 1) Email cho khách
+  /**
+   * Logo đính kèm dạng inline (cid) thay vì trỏ URL ngoài: Gmail và Outlook
+   * hay chặn ảnh từ máy chủ lạ cho tới khi người nhận bấm "hiển thị ảnh",
+   * còn ảnh đính kèm thì hiện ngay.
+   */
+  const logo = (() => {
+    try {
+      const file = path.join(process.cwd(), "public", "logo-mbl.png");
+      return {
+        filename: "logo-mbl.png",
+        content: fs.readFileSync(file),
+        contentType: "image/png",
+        cid: "mbl-logo",
+      };
+    } catch {
+      return null;
+    }
+  })();
+
+  // 1) Email cho khách — kèm ảnh vé nếu trình duyệt khách vẽ được ở bước 4
+  const ticket = dataUrlToAttachment(
+    (payload as any)?.ticketImageBase64,
+    `ve-bay-${bookingId}.png`,
+  );
+
   try {
     await sendSmtpMail({
       to: contactEmail,
-      subject: `Xác nhận đặt bay - ${bookingId}`,
-      html: formatCustomerEmailHtml(payload),
-      text: `Xác nhận đặt bay - ${bookingId}`,
+      subject: formatCustomerEmailSubject(payload),
+      html: formatCustomerEmailHtml({
+        ...(payload as any),
+        hasTicketAttachment: !!ticket,
+        // Không đọc được tệp logo thì quay về ảnh trên web.
+        logoSrc: logo ? "cid:mbl-logo" : "https://mebayluon.com/logo-mbl.png",
+      }),
+      text: formatCustomerEmailSubject(payload),
+      attachments: [logo, ticket].filter(Boolean) as NonNullable<
+        typeof ticket
+      >[],
     });
     results.customer.ok = true;
   } catch (e: any) {

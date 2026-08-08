@@ -35,7 +35,7 @@ export const flightOptions: FlightOption[] = [
     price: { weekday: 1790000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–20 phút (tùy điều kiện gió)",
-      "Quay phim & chụp hình bằng GoPro",
+      "Ảnh & video bằng GoPro",
       "Nước uống",
       "Bảo hiểm dù lượn",
       "Giấy chứng nhận",
@@ -76,7 +76,7 @@ export const flightOptions: FlightOption[] = [
     price: { weekday: 2190000, weekend: 2590000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
-      "Quay phim & chụp hình bằng GoPro",
+      "Ảnh & video bằng GoPro",
       "Menu đồ uống (Trà & cà phê tại điểm bay)",
       "Bảo hiểm dù lượn",
       "Giấy chứng nhận",
@@ -114,7 +114,7 @@ export const flightOptions: FlightOption[] = [
     price: { weekday: 2090000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
-      "Quay phim & chụp hình bằng GoPro",
+      "Ảnh & video bằng GoPro",
       "Menu đồ uống (Trà & cà phê tại điểm bay)",
       "Bảo hiểm dù lượn",
       "Giấy chứng nhận",
@@ -152,7 +152,7 @@ export const flightOptions: FlightOption[] = [
     price: { weekday: 2190000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn từ 8–15 phút (tùy điều kiện gió)",
-      "Quay phim & chụp hình bằng GoPro",
+      "Ảnh & video bằng GoPro",
       "Nước uống",
       "Bảo hiểm dù lượn",
       "Giấy chứng nhận",
@@ -193,7 +193,7 @@ export const flightOptions: FlightOption[] = [
     price: { weekday: 2190000, unit: "VND" },
     included: [
       "01 chuyến bay dù lượn",
-      "Quay phim & chụp hình bằng GoPro",
+      "Ảnh & video bằng GoPro",
       "Bảo hiểm dù lượn",
       "Giấy chứng nhận",
     ],

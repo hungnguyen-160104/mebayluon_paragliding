@@ -2148,7 +2148,7 @@ export default function SelectFlightStep() {
                   </div>
                 ) : null}
 
-                <div className="flex justify-end">
+                <div className="flex justify-center pt-1">
                   <button
                     type="button"
                     onClick={next}

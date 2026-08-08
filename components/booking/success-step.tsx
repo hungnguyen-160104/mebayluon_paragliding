@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
-import { computePriceByLang } from "@/lib/booking/calculate-price";
+import { computePriceByLang, LOCATIONS } from "@/lib/booking/calculate-price";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import BookingTicket from "@/components/booking/BookingTicket";
 import Link from "next/link";
@@ -29,6 +29,11 @@ const UI_TEXT: Record<
     guidePreNotice: string;
     guideSafety: string;
     guideSteps: string;
+    readyTitle: string;
+    flightAtLabel: string;
+    passengerLabel: string;
+    andOthers: (n: number) => string;
+    funLines: string[];
   }
 > = {
   vi: {
@@ -54,6 +59,16 @@ const UI_TEXT: Record<
     guidePreNotice: "Lưu ý trước chuyến bay",
     guideSafety: "Dù lượn có an toàn không?",
     guideSteps: "Các bước khi đi bay dù lượn",
+    readyTitle: "Bạn đã sẵn sàng cất cánh! 🪂",
+    flightAtLabel: "Chuyến bay của bạn",
+    passengerLabel: "Khách bay",
+    andOthers: (n: number) => `và ${n} khách nữa`,
+    funLines: [
+      "Mặc thật xinh nhé — trên trời, máy ảnh không biết nói dối đâu! 📸",
+      "Hít một hơi thật sâu. Vài phút nữa thôi, cả thung lũng sẽ nằm dưới chân bạn. ☁️",
+      "Chuẩn bị tinh thần cho một trong những trải nghiệm đáng nhớ nhất đời. 🌄",
+      "Nhớ cười thật tươi — phi công đang cầm sẵn GoPro rồi đấy! 😄",
+    ],
   },
   en: {
     title: "Booking received",
@@ -78,6 +93,16 @@ const UI_TEXT: Record<
     guidePreNotice: "Pre-flight notes",
     guideSafety: "Is paragliding safe?",
     guideSteps: "How a paragliding flight goes",
+    readyTitle: "You are ready for take-off! 🪂",
+    flightAtLabel: "Your flight",
+    passengerLabel: "Passenger",
+    andOthers: (n: number) => `and ${n} more`,
+    funLines: [
+      "Dress your best — up there, the camera never lies! 📸",
+      "Take a deep breath. In a few minutes the whole valley is under your feet. ☁️",
+      "Get ready for one of the most memorable hours of your life. 🌄",
+      "Don't forget to smile — your pilot already has the GoPro out! 😄",
+    ],
   },
   fr: {
     title: "Réservation enregistrée",
@@ -102,6 +127,16 @@ const UI_TEXT: Record<
     guidePreNotice: "Notes avant le vol",
     guideSafety: "Le parapente est-il sûr ?",
     guideSteps: "Comment se déroule un vol",
+    readyTitle: "Prêt pour le décollage ! 🪂",
+    flightAtLabel: "Votre vol",
+    passengerLabel: "Passager",
+    andOthers: (n: number) => `et ${n} de plus`,
+    funLines: [
+      "Mettez votre plus belle tenue — là-haut, l'appareil photo ne ment jamais ! 📸",
+      "Respirez un grand coup. Dans quelques minutes, toute la vallée sera sous vos pieds. ☁️",
+      "Préparez-vous à l'un des moments les plus mémorables de votre vie. 🌄",
+      "N'oubliez pas de sourire — le pilote a déjà sorti la GoPro ! 😄",
+    ],
   },
   ru: {
     title: "Бронирование получено",
@@ -126,6 +161,16 @@ const UI_TEXT: Record<
     guidePreNotice: "Памятка перед полётом",
     guideSafety: "Безопасен ли параплан?",
     guideSteps: "Как проходит полёт",
+    readyTitle: "Вы готовы к взлёту! 🪂",
+    flightAtLabel: "Ваш полёт",
+    passengerLabel: "Пассажир",
+    andOthers: (n: number) => `и ещё ${n}`,
+    funLines: [
+      "Оденьтесь понаряднее — в небе камера не умеет врать! 📸",
+      "Вдохните поглубже. Через пару минут вся долина будет под вашими ногами. ☁️",
+      "Готовьтесь к одному из самых ярких впечатлений в жизни. 🌄",
+      "Не забудьте улыбнуться — пилот уже достал GoPro! 😄",
+    ],
   },
   hi: {
     title: "बुकिंग प्राप्त हो गई",
@@ -150,6 +195,16 @@ const UI_TEXT: Record<
     guidePreNotice: "उड़ान से पहले की बातें",
     guideSafety: "क्या पैराग्लाइडिंग सुरक्षित है?",
     guideSteps: "उड़ान कैसे होती है",
+    readyTitle: "आप उड़ान के लिए तैयार हैं! 🪂",
+    flightAtLabel: "आपकी उड़ान",
+    passengerLabel: "यात्री",
+    andOthers: (n: number) => `और ${n} लोग`,
+    funLines: [
+      "अच्छे कपड़े पहनिए — ऊपर कैमरा झूठ नहीं बोलता! 📸",
+      "एक गहरी साँस लीजिए। कुछ ही मिनटों में पूरी घाटी आपके पैरों के नीचे होगी। ☁️",
+      "ज़िंदगी के सबसे यादगार पलों में से एक के लिए तैयार हो जाइए। 🌄",
+      "मुस्कुराना न भूलें — पायलट ने GoPro निकाल ली है! 😄",
+    ],
   },
   zh: {
     title: "预订已收到",
@@ -174,6 +229,16 @@ const UI_TEXT: Record<
     guidePreNotice: "飞行前须知",
     guideSafety: "滑翔伞安全吗？",
     guideSteps: "一次飞行是怎样进行的",
+    readyTitle: "准备起飞啦！🪂",
+    flightAtLabel: "您的飞行",
+    passengerLabel: "飞行乘客",
+    andOthers: (n: number) => `等 ${n} 位`,
+    funLines: [
+      "穿得美一点——在天上，镜头可不会骗人！📸",
+      "深呼吸。再过几分钟，整片山谷就在您脚下。☁️",
+      "准备好迎接此生难忘的一段时光吧。🌄",
+      "别忘了笑——飞行员已经把 GoPro 准备好了！😄",
+    ],
   },
 };
 
@@ -202,18 +267,73 @@ export default function SuccessStep() {
     };
   }, [data, bookingResult]);
 
-  const totals = computePriceByLang(
-    {
-      location: bookingData.location,
-      guestsCount: bookingData.guestsCount,
-      dateISO: bookingData.dateISO,
-      packageKey: bookingData.packageKey,
-      flightTypeKey: bookingData.flightTypeKey,
-      addons: bookingData.addons,
-      addonsQty: bookingData.addonsQty,
-    },
-    lang
-  );
+  /**
+   * LUÔN tính bằng VNĐ, kể cả khi khách xem bằng tiếng Anh.
+   *
+   * computePriceByLang(..., lang) trả kết quả bằng USD cho mọi ngôn ngữ khác
+   * tiếng Việt, nên vé của khách nước ngoài in giá bằng đô — sai, vì khách
+   * thanh toán bằng tiền Việt tại điểm bay. USD chỉ là số quy đổi tham khảo.
+   */
+  const priceParams = {
+    location: bookingData.location,
+    guestsCount: bookingData.guestsCount,
+    dateISO: bookingData.dateISO,
+    packageKey: bookingData.packageKey,
+    flightTypeKey: bookingData.flightTypeKey,
+    addons: bookingData.addons,
+    addonsQty: bookingData.addonsQty,
+  };
+
+  const totals = computePriceByLang(priceParams, "vi");
+  const totalsUSD = computePriceByLang(priceParams, "en");
+
+  /** Tên khách bay chính + số khách còn lại, để chào đích danh. */
+  const heroPassenger = useMemo(() => {
+    const guests = (bookingData.guests ?? []) as Array<{ fullName?: string }>;
+    const first =
+      guests[0]?.fullName?.trim() ||
+      (bookingData as any)?.contact?.contactName?.trim() ||
+      (bookingData as any)?.contact?.fullName?.trim() ||
+      "";
+    const others = Math.max(0, guests.length - 1);
+    return { first, others };
+  }, [bookingData]);
+
+  /** "15/09/2026 · 07:30 · Đèo Khau Phạ" */
+  const heroFlight = useMemo(() => {
+    const cfg = bookingData.location
+      ? (LOCATIONS as any)[bookingData.location]
+      : null;
+    const place = cfg?.name?.[lang] ?? cfg?.name?.vi ?? "";
+    const raw = bookingData.dateISO || "";
+    const d = raw ? new Date(raw) : null;
+    const date =
+      d && !Number.isNaN(d.getTime())
+        ? d.toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+        : raw;
+
+    return [date, bookingData.timeSlot, place].filter(Boolean).join(" · ");
+  }, [bookingData, lang]);
+
+  /**
+   * Câu dặn vui, đổi theo từng booking cho đỡ nhàm nhưng vẫn cố định với một
+   * booking (dùng mã đặt chỗ làm mốc, không dùng random để lần nào mở lại vé
+   * cũng ra đúng câu đó).
+   */
+  const funLine = useMemo(() => {
+    const seedText = String(
+      bookingResult?.bookingCode || bookingData.dateISO || "mbl",
+    );
+    let seed = 0;
+    for (let i = 0; i < seedText.length; i += 1) {
+      seed = (seed + seedText.charCodeAt(i)) % 997;
+    }
+    return ui.funLines[seed % ui.funLines.length];
+  }, [bookingResult?.bookingCode, bookingData.dateISO, ui.funLines]);
 
   const ticketRef = useRef<HTMLDivElement | null>(null);
   const [downloadingIMG, setDownloadingIMG] = useState(false);
@@ -288,43 +408,94 @@ export default function SuccessStep() {
   return (
     <div className="space-y-5">
       <div className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-sm">
-        <div className="border-b border-[#DCE7F3] bg-[#16A34A] px-4 py-4 md:px-6">
+        {/* Đầu trang chúc mừng: chào đích danh khách, nhắc luôn giờ bay và
+            điểm bay — ba thứ khách muốn biết ngay khi đặt xong. */}
+        <div className="border-b border-[#DCE7F3] bg-gradient-to-br from-[#16A34A] to-[#0E7A38] px-4 py-5 text-white md:px-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-white md:text-xl">{ui.title}</h3>
+            <div className="min-w-0">
+              <h3 className="text-2xl font-black leading-tight md:text-3xl">
+                {ui.readyTitle}
+              </h3>
               <p className="mt-1 max-w-3xl text-sm text-white/90">
                 {ui.subtitle}
               </p>
             </div>
 
-            <div className="cta-btn rounded-full border border-white/30 bg-white/20 px-4 py-2 text-base font-semibold text-white">
+            <div className="cta-btn shrink-0 rounded-full border border-white/40 bg-white/20 px-4 py-2 text-base font-bold">
               ✓ {ui.confirmedBadge}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="rounded-xl bg-white/15 px-3 py-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                {ui.flightAtLabel}
+              </div>
+              <div className="mt-0.5 text-base font-bold">
+                {heroFlight || "—"}
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-white/15 px-3 py-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                {ui.passengerLabel}
+              </div>
+              <div className="mt-0.5 text-base font-bold">
+                {heroPassenger.first || "—"}
+                {heroPassenger.others > 0 ? (
+                  <span className="font-medium text-white/85">
+                    {" "}
+                    {ui.andOthers(heroPassenger.others)}
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-5 bg-[#F5F7FA] p-4 md:p-6">
+          {/* Một câu dặn vui, cỡ chữ to, để bước cuối không chỉ toàn thủ tục */}
+          <div className="rounded-xl border-2 border-dashed border-[#FF5E1F] bg-[#FFF4ED] px-4 py-3 text-center">
+            <p className="text-base font-bold leading-snug text-[#C2410C] md:text-lg">
+              {funLine}
+            </p>
+          </div>
+
           <div className="rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-sm text-[#355166]">
             {ui.note}
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            
+          {/* Căn giữa, ngay trên tấm vé — đây là việc khách cần làm đầu tiên
+              sau khi đặt xong nên không để nép ở góc phải. */}
+          <div className="flex justify-center">
             <button
               onClick={downloadImage}
               disabled={downloadingIMG}
-              className="cta-btn h-12 rounded-xl bg-red-600 px-6 text-base font-semibold text-orange-50 shadow-md transition hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
+              className="cta-btn inline-flex h-12 items-center gap-2 rounded-full bg-red-600 px-8 text-base font-bold text-white shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-red-700 disabled:translate-y-0 disabled:bg-red-300 disabled:shadow-none"
             >
-              {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
+              ⬇️ {downloadingIMG ? t.buttons.generatingImage : t.buttons.downloadImage}
             </button>
           </div>
 
-          <div className="rounded-xl border border-[#DCE7F3] bg-white p-2 md:p-3 mx-auto" style={{ maxWidth: "100%" }}>
-            <div ref={ticketRef} style={{ background: "#ffffff", borderRadius: 12 }}>
+          <div className="mx-auto w-fit max-w-full overflow-x-auto rounded-xl border border-[#DCE7F3] bg-white">
+            {/* Vùng html2canvas chụp. Trước đây div này rộng bằng cả khung
+                chứa (~900px) trong khi vé chỉ 700px, nên ảnh PNG thừa hai dải
+                trắng hai bên mà trên/dưới lại sát viền.
+                w-fit ôm sát vé, padding dọc 20 / ngang 14 cho ảnh có lề đều. */}
+            <div
+              ref={ticketRef}
+              style={{
+                background: "#ffffff",
+                width: "fit-content",
+                margin: "0 auto",
+                padding: "20px 14px",
+              }}
+            >
               <BookingTicket
                 booking={bookingData}
                 bookingResult={bookingResult}
                 totals={totals}
+                totalsUSD={totalsUSD}
                 lang={lang}
               />
             </div>
@@ -355,8 +526,6 @@ export default function SuccessStep() {
               <span>Zalo</span>
               <span>·</span>
               <span>WhatsApp</span>
-              <span>·</span>
-              <span>Telegram</span>
               <span>·</span>
               <Link href="/" className="text-[#0194F3] underline">
                 mebayluon.com
@@ -404,12 +573,15 @@ export default function SuccessStep() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      {/* Nút này trước đây là viền xám chữ xám nép ở góc phải, gần như tàng
+          hình. Đưa ra giữa và cho nền accent để khách muốn đặt thêm chuyến
+          nữa thì thấy ngay. */}
+      <div className="flex justify-center">
         <button
           onClick={reset}
-          className="cta-btn h-12 rounded-xl border border-[#DCE7F3] bg-white px-5 text-base font-medium text-[#5B6B7A] transition hover:border-[#B9DDFB] hover:bg-[#F5F7FA]"
+          className="cta-btn inline-flex h-14 items-center gap-2 rounded-full bg-accent px-10 text-lg font-bold text-white shadow-xl shadow-black/20 ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:bg-accent/90 hover:shadow-2xl"
         >
-          {t.buttons.startOver}
+          🪂 {t.buttons.startOver}
         </button>
       </div>
     </div>

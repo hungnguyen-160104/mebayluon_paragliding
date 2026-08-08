@@ -343,6 +343,11 @@ export async function POST(req: NextRequest) {
       addons[k] = (addonsQty[k] ?? 0) > 0;
     });
 
+    // Ảnh vé chỉ dùng để đính kèm email, KHÔNG ghi vào cơ sở dữ liệu — mỗi
+    // ảnh cỡ vài trăm KB, lưu vào Mongo là phình bộ sưu tập booking vô ích.
+    const ticketImageBase64 = String((raw as any)?.ticketImageBase64 || "");
+    delete (raw as any).ticketImageBase64;
+
     const normalized: Payload = {
       ...raw,
       location: key,
@@ -493,6 +498,7 @@ export async function POST(req: NextRequest) {
       // Payload dùng cho Telegram/Gmail
       const notifyPayload = {
         ...normalized,
+        ticketImageBase64,
         bookingId: bookingCode,
         bookingObjectId,
         serviceName: normalized.locationName,

@@ -1,21 +1,26 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import type { BookingData } from "@/store/booking-store";
 import {
   LOCATIONS,
-  formatByLang,
+  formatVND,
+  formatUSD,
   type AddonKey,
   type ComputeResult,
 } from "@/lib/booking/calculate-price";
 import type { LangCode } from "@/lib/booking/translations-booking";
 import { bookingTranslations } from "@/lib/booking/translations-booking";
+import { shortServiceLabel } from "@/lib/booking/service-label";
 
 const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
 
 type Props = {
   booking: BookingData;
+  /** Luôn là kết quả tính bằng VNĐ — đơn vị chính của vé. */
   totals: ComputeResult;
+  /** Bản quy đổi USD, chỉ dùng làm số tham chiếu cạnh tổng tiền. */
+  totalsUSD?: ComputeResult;
   lang: LangCode;
   bookingResult?: any;
 };
@@ -96,6 +101,23 @@ function buildBookingRef(dateISO?: string, phone?: string) {
   return `MBL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+type InfoItem = { icon: string; label: string; value: string };
+
+/**
+ * Gói bay chỉ có hai loại — dùng đúng nhãn ngắn của Loại ngày cho gọn dòng.
+ * Gói nào không theo quy ước *_pkg_1 / *_pkg_2 thì giữ nguyên nhãn gốc.
+ */
+function shortPackageLabel(
+  packageKey: string | undefined,
+  fallback: string,
+  labels: ReturnType<typeof useTicketLabels>,
+): string {
+  const key = String(packageKey || "");
+  if (key.endsWith("_pkg_2")) return labels.weekend;
+  if (key.endsWith("_pkg_1")) return labels.weekday;
+  return fallback;
+}
+
 type IncludedTag = "none" | "free" | "included";
 
 /**
@@ -170,7 +192,7 @@ function useTicketLabels(lang: LangCode) {
             ? "बुकिंग टिकट"
             : isZH || isZHTW
               ? zh("预订票", "預訂票")
-              : "Booking Ticket",
+              : "Paragliding Ticket",
     subtitle: isVI
       ? "Xác nhận thông tin đặt bay"
       : isFR
@@ -205,6 +227,66 @@ function useTicketLabels(lang: LangCode) {
               ? zh("已确认", "已確認")
               : "Confirmed",
     brandName: "MEBAYLUON PARAGLIDING",
+    readyLine: isVI ? "Bạn đã sẵn sàng cất cánh!" : isFR ? "Prêt pour le décollage !" : isRU ? "Вы готовы к взлёту!" : isHI ? "आप उड़ान के लिए तैयार हैं!" : isZH || isZHTW ? zh("准备起飞啦！", "準備起飛囉！") : "You are ready for take-off!",
+    funLine: isVI
+      ? "Mặc thật xinh nhé — trên trời, máy ảnh không biết nói dối đâu! 📸"
+      : isFR
+        ? "Mettez votre plus belle tenue — là-haut, l'appareil photo ne ment jamais ! 📸"
+        : isRU
+          ? "Оденьтесь понаряднее — в небе камера не умеет врать! 📸"
+          : isHI
+            ? "अच्छे कपड़े पहनिए — ऊपर कैमरा झूठ नहीं बोलता! 📸"
+            : isZH || isZHTW
+              ? zh("穿得美一点——在天上，镜头可不会骗人！📸", "穿得美一點——在天上，鏡頭可不會騙人！📸")
+              : "Dress your best — up there, the camera never lies! 📸",
+    colDob: (t as any)?.labels?.dob ?? (isVI ? "Ngày sinh" : "Date of birth"),
+    colGender: (t as any)?.labels?.gender ?? (isVI ? "Giới tính" : "Gender"),
+    /* Không dùng labels.weightKg ("Cân nặng (kg)"): phần "(kg)" làm tiêu đề
+       cột gãy hai dòng, mà đơn vị đã nằm sẵn trong giá trị ("68 kg"). Ô nhập
+       ở bước 3 vẫn giữ nhãn có đơn vị vì ở đó nó là gợi ý cần thiết. */
+    colWeight: isVI ? "Cân nặng" : isFR ? "Poids" : isRU ? "Вес" : isHI ? "वज़न" : isZH || isZHTW ? zh("体重", "體重") : "Weight",
+    colNationality:
+      (t as any)?.labels?.nationality ?? (isVI ? "Quốc tịch" : "Nationality"),
+    /* Cùng lý do với colWeight: nhãn ở bước 3 là "Số CCCD/Passport", bỏ chữ
+       "Số" cho tiêu đề cột đỡ dài. */
+    colId: isVI ? "CCCD/Passport" : isFR ? "CNI / Passeport" : isRU ? "Паспорт" : isHI ? "आईडी / पासपोर्ट" : isZH || isZHTW ? zh("证件号", "證件號") : "ID / Passport",
+    viewMap: isVI ? "Xem bản đồ" : isFR ? "Voir la carte" : isRU ? "Открыть карту" : isHI ? "नक्शा देखें" : isZH || isZHTW ? zh("查看地图", "查看地圖") : "View map",
+    pickupPointLabel: isVI ? "Điểm đón" : isFR ? "Point de prise en charge" : isRU ? "Место посадки" : isHI ? "पिकअप स्थान" : isZH || isZHTW ? zh("接送地点", "接送地點") : "Pickup point",
+    meetingPointLabel: isVI ? "Điểm hẹn" : isFR ? "Point de rendez-vous" : isRU ? "Место встречи" : isHI ? "मिलन स्थल" : isZH || isZHTW ? zh("集合地点", "集合地點") : "Meeting point",
+    pickupOneHourNote: isVI
+      ? "Xe đón trước giờ bay khoảng 1 tiếng, tài xế sẽ gọi trước khi tới."
+      : isFR
+        ? "La navette passe environ 1 heure avant le vol ; le chauffeur vous appellera."
+        : isRU
+          ? "Трансфер подаётся примерно за 1 час до полёта, водитель позвонит заранее."
+          : isHI
+            ? "गाड़ी उड़ान से क़रीब 1 घंटा पहले आएगी; ड्राइवर पहले कॉल करेगा।"
+            : isZH || isZHTW
+              ? zh("车辆约在飞行前 1 小时来接，司机会提前致电。", "車輛約在飛行前 1 小時來接，司機會提前致電。")
+              : "The car picks you up about 1 hour before the flight; the driver will call ahead.",
+    meetingAtSite: isVI
+      ? "Khách tự tới điểm bay"
+      : isFR
+        ? "Le client se rend au site par ses propres moyens"
+        : isRU
+          ? "Гость добирается до площадки самостоятельно"
+          : isHI
+            ? "मेहमान स्वयं उड़ान स्थल पर पहुँचें"
+            : isZH || isZHTW
+              ? zh("客人自行前往飞行点", "客人自行前往飛行點")
+              : "Guest makes their own way to the site",
+    meetingHanoi: isVI
+      ? "Điểm bay Đồi Bù | Viên Nam"
+      : isFR
+        ? "Site de vol Doi Bu | Vien Nam"
+        : isRU
+          ? "Площадка Дой Бу | Виен Нам"
+          : isHI
+            ? "उड़ान स्थल दोई बू | वियन नाम"
+            : isZH || isZHTW
+              ? zh("堆布山 | 员南飞行点", "堆布山 | 員南飛行點")
+              : "Doi Bu | Vien Nam flying site",
+    bookingRefLabel: isVI ? "Mã vé" : isFR ? "N° de billet" : isRU ? "Номер билета" : isHI ? "टिकट क्रमांक" : isZH || isZHTW ? zh("票号", "票號") : "Ticket no.",
     serviceDetails: isVI ? "Thông tin chuyến bay" : isFR ? "Détails du vol" : isRU ? "Детали полёта" : isHI ? "फ्लाइट विवरण" : isZH || isZHTW ? zh("飞行信息", "飛行資訊") : "Flight details",
     contactInfo: (t as any)?.labels?.contactInfo ?? "Contact information",
     passengersList: isVI ? "Danh sách khách bay" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers",
@@ -222,7 +304,7 @@ function useTicketLabels(lang: LangCode) {
     name: isVI ? "Tên" : "Name",
     phone: (t as any)?.labels?.phone ?? "Phone",
     email: "Email",
-    pickupLocation: isVI ? "Đón / trả" : isFR ? "Prise en charge" : isRU ? "Трансфер" : isHI ? "पिकअप" : isZH || isZHTW ? zh("接送", "接送") : "Pickup",
+    pickupLocation: isVI ? "Dịch vụ đón trả" : isFR ? "Prise en charge" : isRU ? "Трансфер" : isHI ? "पिकअप" : isZH || isZHTW ? zh("接送", "接送") : "Pickup",
     selectedServicesList: isVI ? "Danh sách dịch vụ" : isFR ? "Liste des services" : isRU ? "Список услуг" : isHI ? "सेवा सूची" : isZH || isZHTW ? zh("服务列表", "服務列表") : "Service list",
     specialRequests: isVI ? "Yêu cầu đặc biệt" : isFR ? "Demandes spéciales" : isRU ? "Особые запросы" : isHI ? "विशेष अनुरोध" : isZH || isZHTW ? zh("特殊要求", "特殊要求") : "Special requests",
     flightCost: isVI ? "Giá bay" : isFR ? "Prix du vol" : isRU ? "Стоимость полёта" : isHI ? "फ्लाइट शुल्क" : isZH || isZHTW ? zh("飞行费用", "飛行費用") : "Flight cost",
@@ -342,6 +424,7 @@ function getPeakSurchargeLabel(
 export default function BookingTicket({
   booking,
   totals,
+  totalsUSD,
   lang,
   bookingResult,
 }: Props) {
@@ -402,6 +485,7 @@ export default function BookingTicket({
         priceVND: Number(svc.priceVND || 0),
         priceUSD: Number(svc.priceUSD || 0),
         requiresPickupInput: !!svc.requiresPickupInput,
+        exclusiveGroup: String(svc.exclusiveGroup || ""),
         fixedMapUrl: svc.fixedMapUrl || "",
       }));
   }, [booking.packageKey, booking.services, cfg?.services, lang]);
@@ -437,6 +521,24 @@ export default function BookingTicket({
   }, [selectedServices, totals.addonsQty, cfg?.addons, lang, labels.pax]);
 
   /**
+   * Tên addon. Điểm bay nào không khai nhãn riêng thì trước đây rơi về CHÍNH
+   * KHOÁ ("pickup", "flycam") — chữ tiếng Anh lọt vào vé tiếng Việt. Nay lùi
+   * về bộ nhãn đã dịch của vé.
+   */
+  const addonLabelOf = useCallback(
+    (k: AddonKey) => {
+      const fromConfig =
+        (cfg?.addons?.[k]?.label as any)?.[lang] ?? cfg?.addons?.[k]?.label?.vi;
+      if (fromConfig) return String(fromConfig);
+
+      if (k === "pickup") return labels.pickupLocation;
+      if (k === "camera360") return labels.camera360Cost;
+      return labels.droneCost;
+    },
+    [cfg?.addons, lang, labels],
+  );
+
+  /**
    * Những gì đã nằm trong giá, kèm nhãn (miễn phí) / (đã bao gồm) — giống hệt
    * cách bước 4 hiển thị, để vé và màn hình xác nhận không nói khác nhau.
    * Phân loại xét trên chuỗi tiếng Việt của cùng chỉ số (các mảng ngôn ngữ
@@ -460,9 +562,9 @@ export default function BookingTicket({
   const chosenServiceRows = useMemo(() => {
     const fromServices = selectedServices.map((svc) => {
       const notes = splitInputEntries(svc.inputText);
-      if (!notes.length && svc.fixedMapUrl) {
-        notes.push(lang === "vi" ? "Xem bản đồ" : "View map");
-      }
+      // Không nhét chữ "Xem bản đồ" vào ghi chú nữa — nó được vẽ thành LINK
+      // riêng bên dưới để khách bấm được khi xem vé trên màn hình.
+      const mapUrl = !notes.length ? String(svc.fixedMapUrl || "") : "";
 
       const qty =
         svc.controlType === "counter"
@@ -471,7 +573,13 @@ export default function BookingTicket({
             ? guestsCount
             : 0;
 
-      return { key: String(svc.key), label: String(svc.label), qty, notes };
+      return {
+        key: String(svc.key),
+        label: shortServiceLabel(svc.label),
+        qty,
+        notes,
+        mapUrl,
+      };
     });
 
     const fromAddons = selectedAddonItems.map((a) => ({
@@ -479,34 +587,57 @@ export default function BookingTicket({
       label: a.label,
       qty: Number(String(a.detail || "").replace(/\D/g, "")) || 0,
       notes: [] as string[],
+      mapUrl: "",
     }));
 
     return [...fromServices, ...fromAddons];
-  }, [selectedServices, selectedAddonItems, lang, guestsCount]);
+  }, [selectedServices, selectedAddonItems, guestsCount]);
 
   /** Dịch vụ tuỳ chọn khách KHÔNG chọn — vé vẫn ghi để khách khỏi thắc mắc. */
   const missingServiceRows = useMemo(() => {
-    const taken = new Set(
-      chosenServiceRows.map((r) => r.label.toLowerCase()),
-    );
+    /**
+     * Một hạng mục (đón trả / camera 360 / flycam) có thể được đáp ứng bằng
+     * ADDON dùng chung hoặc bằng DỊCH VỤ riêng của điểm bay. Bản trước chỉ
+     * xét addon, còn việc trùng với dịch vụ thì so bằng tên — nên khách đặt
+     * "Xe trung chuyển xã Tú Lệ (Đón/Trả)" vẫn bị ghi thêm dòng
+     * "Đón / trả tận nơi (không)", hai dòng nói ngược nhau.
+     *
+     * Nay nhận diện theo BẢN CHẤT dịch vụ: khoá dịch vụ, cờ requiresPickupInput
+     * và fixedMapUrl — không phụ thuộc cách đặt tên của từng điểm bay.
+     */
+    const coveredByService = (k: AddonKey) =>
+      selectedServices.some((svc) => {
+        const key = String(svc.key || "").toLowerCase();
+
+        if (k === "pickup") {
+          return (
+            key.includes("pickup") ||
+            String(svc.exclusiveGroup || "").toLowerCase().includes("pickup") ||
+            !!svc.requiresPickupInput ||
+            !!svc.fixedMapUrl
+          );
+        }
+
+        if (k === "camera360") {
+          return key.includes("camera360") || key.includes("camera_360");
+        }
+
+        return key.includes("flycam") || key.includes("drone");
+      });
 
     return ADDON_KEYS.map((k) => {
       if (Number(totals.addonsQty?.[k] || 0) > 0) return null;
+      if (coveredByService(k)) return null;
 
-      const label = String(
-        cfg?.addons?.[k]?.label?.[lang] ?? cfg?.addons?.[k]?.label?.vi ?? k,
-      );
-      if (taken.has(label.toLowerCase())) return null;
-
-      return { key: `miss-${k}`, label };
+      return { key: `miss-${k}`, label: addonLabelOf(k) };
     }).filter(Boolean) as Array<{ key: string; label: string }>;
-  }, [chosenServiceRows, totals.addonsQty, cfg?.addons, lang]);
+  }, [selectedServices, totals.addonsQty, addonLabelOf]);
 
 
   const selectedServicePriceRows = useMemo(() => {
     return selectedServices
       .map((svc) => {
-        const baseUnit = lang === "vi" ? Number(svc.priceVND || 0) : Number(svc.priceUSD || 0);
+        const baseUnit = Number(svc.priceVND || 0);
         const qty = Math.max(1, Number(svc.qty || 1));
 
         const serviceKey = String(svc.key || "");
@@ -514,21 +645,19 @@ export default function BookingTicket({
           svc.controlType === "counter" ? baseUnit * qty : baseUnit * guestsCount;
         let detail: string | undefined =
           svc.controlType === "counter"
-            ? `${formatByLang(lang, baseUnit, baseUnit)} × ${qty}`
-            : `${formatByLang(lang, baseUnit, baseUnit)} × ${guestsCount}`;
+            ? `${formatVND(baseUnit)} × ${qty}`
+            : `${formatVND(baseUnit)} × ${guestsCount}`;
 
         if (serviceKey === "khau_pha_garrya_pickup") {
           // số xe × số chiều (qty: 1-2) × 500.000 đ/xe/chiều
           const carCount = Math.ceil(guestsCount / 4);
-          const carPrice = lang === "vi" ? 500_000 : 20;
+          const carPrice = 500_000;
           lineTotal = carCount * qty * carPrice;
-          detail = `${formatByLang(lang, carPrice, carPrice)} × ${carCount} ${lang === "vi" ? "xe" : "car"} × ${qty} ${lang === "vi" ? "chiều" : "way"}`;
+          detail = `${formatVND(carPrice)} × ${carCount} ${lang === "vi" ? "xe" : "car"} × ${qty} ${lang === "vi" ? "chiều" : "way"}`;
         }
 
         if (serviceKey === "ha_noi_private_hotel_pickup") {
-          lineTotal = lang === "vi"
-            ? 1_400_000 + Math.max(0, guestsCount - 3) * 350_000
-            : 56 + Math.max(0, guestsCount - 3) * 14;
+          lineTotal = 1_400_000 + Math.max(0, guestsCount - 3) * 350_000;
           detail = undefined;
         }
 
@@ -571,13 +700,18 @@ export default function BookingTicket({
       const qty = totals.addonsQty?.[k] || 0;
       const unit = totals.addonsUnitPrice?.[k] || 0;
       const total = totals.addonsTotal?.[k] || 0;
-      const label =
-        cfg?.addons?.[k]?.label?.[lang] ??
-        cfg?.addons?.[k]?.label?.vi ??
-        String(k);
-      return { key: k, qty, unit, total, label };
+      return { key: k, qty, unit, total, label: addonLabelOf(k) };
     }).filter((x) => x.qty > 0);
-  }, [cfg?.addons, lang, totals.addonsQty, totals.addonsTotal, totals.addonsUnitPrice]);
+  }, [addonLabelOf, totals.addonsQty, totals.addonsTotal, totals.addonsUnitPrice]);
+
+  /**
+   * Số quy đổi USD, in nhỏ dưới tổng tiền làm THAM CHIẾU. Đơn vị chính của vé
+   * luôn là VNĐ vì khách thanh toán bằng tiền Việt tại điểm bay.
+   */
+  const usdReference = useMemo(() => {
+    const value = Number(totalsUSD?.totalAfterDiscount || 0);
+    return value > 0 ? formatUSD(value) : "";
+  }, [totalsUSD]);
 
   const priceLines: PriceLine[] = useMemo(() => {
     const rows: PriceLine[] = [];
@@ -595,18 +729,22 @@ export default function BookingTicket({
 
     rows.push({
       label: labels.flightCost,
-      detail: `${formatByLang(lang, flightUnit, flightUnit)} × ${guestsCount}`,
-      amountText: formatByLang(lang, flightSub, flightSub),
+      detail: `${formatVND(flightUnit)} × ${guestsCount}`,
+      amountText: formatVND(flightSub),
     });
 
     if (peakUnit > 0) {
       const peakSub = peakUnit * guestsCount;
       rows.push({
         label: getPeakSurchargeLabel(labels, totals.holidayType),
-        detail: `${formatByLang(lang, peakUnit, peakUnit)} × ${guestsCount}`,
-        amountText: formatByLang(lang, peakSub, peakSub),
+        detail: `${formatVND(peakUnit)} × ${guestsCount}`,
+        amountText: formatVND(peakSub),
       });
     }
+
+    // Khoản giảm gom riêng để đẩy xuống cuối bảng — nằm lẫn giữa các dịch vụ
+    // thì nhìn như đang giảm cho thứ chưa liệt kê.
+    const discountRows: PriceLine[] = [];
 
     if (hasServicesBreakdownFromResult) {
       servicesBreakdownFromResult.forEach((row: any) => {
@@ -615,23 +753,27 @@ export default function BookingTicket({
         // dòng giảm giá biến mất khỏi vé mà tổng tiền vẫn đã trừ.
         if (lineTotal === 0) return;
 
-        rows.push({
+        const line: PriceLine = {
           label: String(row?.label || labels.additionalServices),
           detail: row?.detail ? String(row.detail) : undefined,
-          amountText: formatByLang(lang, lineTotal, lineTotal),
-        });
+          amountText: formatVND(lineTotal),
+          ...(lineTotal < 0 ? { type: "discount" as const } : {}),
+        };
+
+        if (lineTotal < 0) discountRows.push(line);
+        else rows.push(line);
       });
     } else if (hasServicesTotalFromResult) {
       rows.push({
         label: labels.additionalServices,
-        amountText: formatByLang(lang, servicesTotalFromResult, servicesTotalFromResult),
+        amountText: formatVND(servicesTotalFromResult),
       });
     } else {
       selectedServicePriceRows.forEach((row) => {
         rows.push({
           label: row.label,
           detail: row.detail,
-          amountText: formatByLang(lang, row.lineTotal, row.lineTotal),
+          amountText: formatVND(row.lineTotal),
         });
       });
     }
@@ -639,10 +781,12 @@ export default function BookingTicket({
     addonRows.forEach((a) => {
       rows.push({
         label: a.label,
-        detail: `${formatByLang(lang, a.unit, a.unit)} × ${a.qty}`,
-        amountText: formatByLang(lang, a.total, a.total),
+        detail: `${formatVND(a.unit)} × ${a.qty}`,
+        amountText: formatVND(a.total),
       });
     });
+
+    rows.push(...discountRows);
 
     if ((totals.discountTotal || 0) > 0) {
       const perPax =
@@ -652,8 +796,8 @@ export default function BookingTicket({
 
       rows.push({
         label: labels.groupDiscount,
-        detail: `-${formatByLang(lang, perPax, perPax)} × ${guestsCount}`,
-        amountText: `-${formatByLang(lang, totals.discountTotal, totals.discountTotal)}`,
+        detail: `-${formatVND(perPax)} × ${guestsCount}`,
+        amountText: `-${formatVND(totals.discountTotal)}`,
         type: "discount",
       });
     }
@@ -662,7 +806,6 @@ export default function BookingTicket({
   }, [
     addonRows,
     guestsCount,
-    lang,
     hasServicesBreakdownFromResult,
     servicesBreakdownFromResult,
     hasServicesTotalFromResult,
@@ -676,115 +819,209 @@ export default function BookingTicket({
     labels,
   ]);
 
+  /** Thông tin chuyến bay, dạng nhãn - giá trị để xếp thành lưới đều nhau. */
+  /**
+   * Điểm đón hoặc điểm hẹn, tuỳ khách có đặt xe đón hay không.
+   *
+   *  - Có dịch vụ đón và khách đã điền địa chỉ  -> ghi đúng địa chỉ đó, kèm
+   *    ghi chú xe tới trước giờ bay khoảng 1 tiếng.
+   *  - Đón tại điểm cố định (GO! Thăng Long)     -> ghi tên điểm đó.
+   *  - Không đặt xe đón                          -> ghi điểm hẹn của từng
+   *    điểm bay: Hà Nội là Đồi Bù | Viên Nam, còn lại là bãi cất/hạ cánh.
+   *
+   * Không đoán theo tên dịch vụ mà xét hai cờ có sẵn trong cấu hình:
+   * requiresPickupInput (khách phải nhập địa chỉ) và fixedMapUrl (điểm đón
+   * cố định), nên thêm điểm bay mới cũng chạy đúng.
+   */
+  const pickupInfo = useMemo(() => {
+    const withAddress = selectedServices.find(
+      (svc) => svc.requiresPickupInput && splitInputEntries(svc.inputText).length,
+    );
+
+    if (withAddress) {
+      return {
+        label: labels.pickupPointLabel,
+        value: splitInputEntries(withAddress.inputText).join(" · "),
+        note: labels.pickupOneHourNote,
+      };
+    }
+
+    const fixed = selectedServices.find((svc) => svc.fixedMapUrl);
+    if (fixed) {
+      return {
+        label: labels.pickupPointLabel,
+        value: String(fixed.label),
+        note: labels.pickupOneHourNote,
+      };
+    }
+
+    // Khách đã chọn dịch vụ đón nhưng chưa kịp nhập địa chỉ.
+    const pendingAddress = selectedServices.find((svc) => svc.requiresPickupInput);
+    if (pendingAddress) {
+      return {
+        label: labels.pickupPointLabel,
+        value: String(pendingAddress.label),
+        note: labels.pickupOneHourNote,
+      };
+    }
+
+    return {
+      label: labels.meetingPointLabel,
+      value:
+        booking.location === "ha_noi"
+          ? labels.meetingHanoi
+          : labels.meetingAtSite,
+      note: "",
+    };
+  }, [selectedServices, booking.location, labels]);
+
+  const flightFacts: InfoItem[] = [
+    { icon: "📍", label: labels.service, value: locationName },
+    {
+      icon: "📅",
+      label: `${labels.date} · ${labels.time}`,
+      value: [formatDateDisplay(booking.dateISO), booking.timeSlot]
+        .filter(Boolean)
+        .join(" · "),
+    },
+    { icon: "👥", label: labels.guests, value: String(booking.guestsCount ?? "—") },
+    { icon: "🚐", label: pickupInfo.label, value: pickupInfo.value },
+    ...(hasPackages
+      ? [
+          { icon: "🪂", label: labels.flightTypeLabel, value: flightTypeLabel },
+          {
+        icon: "🎫",
+        label: labels.packageLabel,
+        // "Ngày bay từ Thứ 2 - Thứ 6" dài gấp đôi các dòng khác nên phải
+        // xuống dòng, làm cả khối so le. Rút còn hai chữ như nhãn Loại ngày.
+        value: shortPackageLabel(booking.packageKey, packageLabel, labels),
+      },
+          {
+            icon: "🗓️",
+            label: labels.dayTypeLabel,
+            value: getHolidayTypeLabel(labels, totals.holidayType),
+          },
+        ]
+      : []),
+  ];
+
+  const contactFacts: InfoItem[] = [
+    {
+      icon: "👤",
+      label: labels.name,
+      value: contactName || passengers?.[0]?.fullName || "—",
+    },
+    { icon: "📱", label: labels.phone, value: contactPhone || "—" },
+    { icon: "✉️", label: labels.email, value: contactEmail || "—" },
+  ];
+
   return (
     <div
       data-ticket
       style={{
+        /* Khổ cố định 520px thay vì kéo hết bề ngang khung chứa: dòng dài quá
+           thì nhãn nằm mãi bên trái còn giá trị dạt sang phải, đọc rời rạc.
+           520px cũng là khổ ảnh dọc đẹp khi khách lưu về máy hay gửi Zalo. */
+        /* Tỉ lệ A4 (210 × 297). minHeight giữ đúng khổ cho vé thường gặp;
+           vé nào nhiều khách hoặc nhiều dịch vụ thì cao thêm chứ không cắt
+           mất thông tin. 700px để mỗi cột còn ~335px — đủ cho những nhãn dài
+           như "Flycam (drone camera)" nằm gọn một dòng. */
+        width: 700,
+        minHeight: 990,
+        maxWidth: "100%",
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
         background: C.bg,
         color: C.text,
-        borderRadius: 22,
+        borderRadius: 16,
         overflow: "hidden",
         border: `1px solid ${C.border}`,
-        boxShadow: "0 18px 48px rgba(28,41,48,0.08)",
+        boxShadow: "0 12px 32px rgba(28,41,48,0.10)",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
+      {/* ============ ĐẦU VÉ ============
+          Hai hàng rõ ràng: hàng trên là thương hiệu + mã vé, hàng dưới là ba
+          thông tin khách cần nhất (điểm bay, ngày, giờ) in to. Trước đây mọi
+          thứ chen trong một hàng flex-wrap nên trên ảnh xuất ra thì lệch. */}
       <div
         style={{
-          background:
-            "linear-gradient(135deg, #0194F3 0%, #0B83D9 100%)",
+          background: "linear-gradient(135deg, #0194F3 0%, #0B6FC4 100%)",
           color: C.white,
-          padding: 18,
+          padding: "16px 16px 0",
         }}
       >
         <div
           style={{
             display: "flex",
-            gap: 14,
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 12,
           }}
         >
-          <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
-            <div
+          <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
+            {/* /logo-mbl.png là bản logo chuẩn (PNG RGBA 354×354, nền trong
+                suốt). KHÔNG dùng /logo.png — file đó thật ra là ảnh JPEG bị
+                đổi đuôi, không có kênh alpha nên nền trắng đè lên dải xanh.
+                Không cần khung nền mờ phía sau nữa, nhờ vậy logo to được. */}
+            <img
+              src="/logo-mbl.png"
+              alt="Mebayluon Paragliding"
+              crossOrigin="anonymous"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                background: "rgba(255,255,255,0.18)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                width: 87,
+                height: 87,
+                objectFit: "contain",
                 flexShrink: 0,
               }}
-            >
-              <img
-                src="/logo.png"
-                alt="MBL"
-                crossOrigin="anonymous"
-                style={{ width: 30, height: 30, objectFit: "contain" }}
-              />
-            </div>
+            />
 
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  letterSpacing: 1.6,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: 1.4,
                   textTransform: "uppercase",
-                  opacity: 0.95,
+                  opacity: 0.9,
                 }}
               >
                 {labels.brandName}
               </div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 900,
-                  lineHeight: 1.1,
-                  marginTop: 4,
-                }}
-              >
+              <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.15 }}>
                 {labels.title}
               </div>
-              <div style={{ fontSize: 12, opacity: 0.92, marginTop: 4 }}>
-                {labels.subtitle}
+              <div
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  opacity: 0.95,
+                  marginTop: 2,
+                }}
+              >
+                🪂 {labels.readyLine}
               </div>
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              alignItems: "flex-end",
-              maxWidth: "100%",
-            }}
-          >
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
             <div
               style={{
-                background: "rgba(255,255,255,0.18)",
-                borderRadius: 999,
-                padding: "6px 12px",
-                fontSize: 12,
-                fontWeight: 800,
-                whiteSpace: "nowrap",
+                fontSize: 10,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                opacity: 0.85,
+                fontWeight: 700,
               }}
             >
-              ✓ {labels.confirmed}
+              {labels.bookingRefLabel}
             </div>
-
             <div
               style={{
-                background: "rgba(255,255,255,0.18)",
-                borderRadius: 12,
-                padding: "8px 12px",
-                fontSize: 14,
-                fontWeight: 900,
+                fontSize: 17,
+                fontWeight: 800,
                 letterSpacing: 1,
                 fontFamily:
                   "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
@@ -792,358 +1029,471 @@ export default function BookingTicket({
             >
               {bookingRef}
             </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.94 }}>
-          {labels.created}: {createdAt}
-        </div>
-      </div>
-
-      <div style={{ padding: 12 }}>
-        {/* Một khối duy nhất cho chuyến bay + liên hệ. Trước đây hai khối
-            nằm rời nhau, mỗi khối một khung, khiến vé dài gấp đôi mà thông
-            tin thì rời rạc. */}
-        <SectionCard title={labels.serviceDetails}>
-          <PillRow
-            items={[
-              { label: labels.service, value: locationName },
-              { label: labels.date, value: formatDateDisplay(booking.dateISO) },
-              { label: labels.time, value: booking.timeSlot || "—" },
-              { label: labels.guests, value: String(booking.guestsCount ?? "—") },
-              ...(hasPackages
-                ? [
-                    { label: labels.packageLabel, value: packageLabel },
-                    { label: labels.flightTypeLabel, value: flightTypeLabel },
-                    {
-                      label: labels.dayTypeLabel,
-                      value: getHolidayTypeLabel(labels, totals.holidayType),
-                    },
-                  ]
-                : []),
-              { label: labels.name, value: contactName || passengers?.[0]?.fullName || "—" },
-              { label: labels.phone, value: contactPhone || "—" },
-              { label: labels.email, value: contactEmail || "—" },
-            ]}
-          />
-        </SectionCard>
-
-        {passengers.length > 0 && (
-          <>
-            <SectionSpacer />
-            <SectionCard
-              title={labels.passengersList}
-              rightBadge={String(passengers.length)}
-            >
-              {/* Mỗi khách một dòng, chỉ ghi những mục đã nhập — trước đây
-                  mỗi khách là một thẻ chứa 5 ô con, luôn hiện cả ô trống. */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {passengers.map((pax, idx) => {
-                  const details = [
-                    pax.dob ? formatDateDisplay(pax.dob) : "",
-                    pax.gender || "",
-                    pax.weightKg ? `${pax.weightKg} kg` : "",
-                    pax.nationality || "",
-                    pax.idNumber || "",
-                  ].filter(Boolean);
-
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: "flex",
-                        gap: 6,
-                        fontSize: 12,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span style={{ color: C.accent, fontWeight: 900, flexShrink: 0 }}>
-                        {idx + 1}.
-                      </span>
-                      <span style={{ minWidth: 0, wordBreak: "break-word" }}>
-                        <span style={{ fontWeight: 800, color: C.text }}>
-                          {pax.fullName || "—"}
-                        </span>
-                        {details.length ? (
-                          <span style={{ color: C.subtext }}>
-                            {" — "}
-                            {details.join(" · ")}
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </SectionCard>
-          </>
-        )}
-
-        <SectionSpacer />
-
-        {/* Một danh sách duy nhất cho dịch vụ, thay cho hai khối "Dịch vụ bao
-            gồm" và "Additional services" trước đây. Thứ tự và cách ghi giống
-            hệt bước 4: đã có trong giá trước, rồi dịch vụ chọn thêm kèm ×N,
-            cuối cùng là những mục không chọn với dấu ✕ đỏ. */}
-        <SectionCard title={labels.additionalServices}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {includedItems.map((item, idx) => (
-              <TicketServiceLine
-                key={`inc-${idx}`}
-                ok
-                label={item.text}
-                tag={
-                  item.tag === "free"
-                    ? labels.freeTag
-                    : item.tag === "included"
-                      ? labels.includedTag
-                      : undefined
-                }
-              />
-            ))}
-
-            {chosenServiceRows.map((row) => (
-              <TicketServiceLine
-                key={row.key}
-                ok
-                label={row.label}
-                qty={row.qty}
-                notes={row.notes}
-              />
-            ))}
-
-            {missingServiceRows.map((row) => (
-              <TicketServiceLine
-                key={row.key}
-                ok={false}
-                label={row.label}
-                tag={labels.noTag}
-              />
-            ))}
-          </div>
-        </SectionCard>
-
-        {!!specialRequest && (
-          <>
-            <SectionSpacer />
             <div
               style={{
-                background: C.orangeSoft,
-                border: `1px solid ${C.orange}`,
-                borderRadius: 12,
-                padding: 10,
+                display: "inline-block",
+                marginTop: 3,
+                background: "rgba(255,255,255,0.22)",
+                borderRadius: 999,
+                padding: "2px 8px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✓ {labels.confirmed}
+            </div>
+          </div>
+        </div>
+
+        {/* Dải trang trí nhỏ cho đỡ khô */}
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 12,
+            letterSpacing: 6,
+            opacity: 0.55,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+          }}
+        >
+          ☁️ 🪂 ⛰️ ☁️ 🪂 ⛰️ ☁️ 🪂 ⛰️ ☁️ 🪂 ⛰️
+        </div>
+
+        {/* Ba thông tin quan trọng nhất, chia đều ba cột bằng nhau */}
+        <div
+          style={{
+            display: "flex",
+            marginTop: 12,
+            borderTop: "1px solid rgba(255,255,255,0.25)",
+          }}
+        >
+          {[
+            { label: labels.service, value: locationName },
+            { label: labels.date, value: formatDateDisplay(booking.dateISO) },
+            { label: labels.time, value: booking.timeSlot || "—" },
+          ].map((item, idx) => (
+            <div
+              key={item.label}
+              style={{
+                width: "33.333%",
+                padding: "8px 10px",
+                borderLeft: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.2)",
+                minWidth: 0,
               }}
             >
               <div
                 style={{
                   fontSize: 10,
-                  fontWeight: 900,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.8,
                   textTransform: "uppercase",
-                  color: C.warningText,
+                  opacity: 0.85,
+                  fontWeight: 600,
                 }}
               >
-                {labels.specialRequests}
+                {item.label}
               </div>
               <div
                 style={{
-                  marginTop: 3,
-                  color: C.warningText,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  lineHeight: 1.5,
+                  fontSize: 15,
+                  fontWeight: 800,
+                  marginTop: 2,
+                  lineHeight: 1.3,
                   wordBreak: "break-word",
                 }}
               >
-                {specialRequest}
+                {item.value}
               </div>
             </div>
-          </>
-        )}
+          ))}
+        </div>
+      </div>
 
-        <SectionSpacer />
+      {/* ============ THÂN VÉ ============
+          Xếp hai cột: một cột dài 9 khối chồng lên nhau thì vé cao gấp rưỡi
+          khổ A4 và nửa bề ngang bỏ trống. */}
+      <div
+        style={{
+          flex: 1,
+          padding: 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ width: "50%", minWidth: 0 }}>
+            <TicketCard title={`🪂 ${labels.serviceDetails}`}>
+              <InfoGrid items={flightFacts} />
 
-        <div
-          style={{
-            background: C.totalBg,
-            color: C.white,
-            borderRadius: 14,
-            padding: 12,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              letterSpacing: 0.6,
-              textTransform: "uppercase",
-              opacity: 0.85,
-              fontWeight: 900,
-            }}
-          >
-            {labels.priceBreakdown}
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              flexDirection: "column",
-              gap: 5,
-            }}
-          >
-            {priceLines.map((line, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  alignItems: "flex-start",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color:
-                        line.type === "discount"
-                          ? "#bbf7d0"
-                          : "rgba(255,255,255,0.95)",
-                    }}
-                  >
-                    {line.label}
-                  </div>
-                  {line.detail ? (
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "rgba(255,255,255,0.7)",
-                      }}
-                    >
-                      {line.detail}
-                    </div>
-                  ) : null}
-                </div>
-
+              {pickupInfo.note ? (
                 <div
                   style={{
-                    fontSize: 12,
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                    color: line.type === "discount" ? "#bbf7d0" : C.white,
+                    marginTop: 7,
+                    background: C.accentSoft,
+                    borderRadius: 8,
+                    padding: "5px 8px",
+                    fontSize: 11.5,
+                    lineHeight: 1.45,
+                    color: C.accentDark,
+                    fontWeight: 600,
                   }}
                 >
-                  {line.amountText}
+                  ⏱️ {pickupInfo.note}
                 </div>
-              </div>
-            ))}
-
-            <div
-              style={{
-                marginTop: 4,
-                paddingTop: 8,
-                borderTop: "1px solid rgba(255,255,255,0.25)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                gap: 10,
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 900 }}>{labels.total}</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: C.white }}>
-                {formatByLang(
-                  lang,
-                  totalWithSelectedServices,
-                  totalWithSelectedServices,
-                )}
-              </div>
-            </div>
+              ) : null}
+            </TicketCard>
           </div>
 
           <div
             style={{
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: "1px solid rgba(255,255,255,0.15)",
-              fontSize: 10,
-              color: "rgba(255,255,255,0.8)",
-              lineHeight: 1.5,
-            }}
-          >
-            {labels.safetyNote}
-          </div>
-        </div>
-
-        <SectionSpacer />
-
-        {/* Hướng dẫn nhanh cho khách đọc ngay trên vé — trước đây khách phải
-            mở lại trang web mới biết mặc gì, mang gì. */}
-        <div
-          style={{
-            border: `1px solid ${C.border}`,
-            borderRadius: 14,
-            padding: 12,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 900,
-              letterSpacing: 0.6,
-              textTransform: "uppercase",
-              color: C.accent,
-            }}
-          >
-            {labels.quickGuideTitle}
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
+              width: "50%",
+              minWidth: 0,
               display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
+              flexDirection: "column",
+              gap: 10,
             }}
           >
-            {[
-              { title: labels.guideWearTitle, items: labels.guideWear, tone: C.accent },
-              { title: labels.guideBringTitle, items: labels.guideBring, tone: C.success },
-              { title: labels.guideAvoidTitle, items: labels.guideAvoid, tone: C.orange },
-            ].map((block) => (
+            <TicketCard title={`📞 ${labels.contactInfo}`}>
+              <InfoGrid items={contactFacts} />
+            </TicketCard>
+
+            {!!specialRequest && (
               <div
-                key={block.title}
                 style={{
-                  flex: "1 1 180px",
-                  minWidth: 160,
-                  background: C.card,
-                  borderRadius: 10,
-                  padding: 10,
+                  background: C.orangeSoft,
+                  border: `1px solid ${C.orange}`,
+                  borderRadius: 12,
+                  padding: 9,
                 }}
               >
                 <div
                   style={{
                     fontSize: 11,
-                    fontWeight: 900,
-                    color: block.tone,
-                    marginBottom: 4,
+                    fontWeight: 800,
+                    letterSpacing: 0.6,
+                    textTransform: "uppercase",
+                    color: C.warningText,
                   }}
                 >
-                  {block.title}
+                  ✍️ {labels.specialRequests}
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: C.warningText,
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {specialRequest}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {passengers.length > 0 && (
+          <TicketCard
+            title={`🧍 ${labels.passengersList}`}
+            rightBadge={String(passengers.length)}
+          >
+            {/* Dạng bảng chiếm trọn bề ngang: mỗi khách một hàng, đủ ngày
+                sinh / giới tính / cân nặng / quốc tịch / số giấy tờ. Trước đây
+                khối này nằm trong cột hẹp nên phải cắt bớt ba cột cuối. */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingBottom: 4,
+                  borderBottom: `1px solid ${C.line}`,
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: C.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.3,
+                }}
+              >
+                <div style={{ width: 18, flexShrink: 0 }}>#</div>
+                <div style={{ flex: "1 1 0", minWidth: 0 }}>{labels.name}</div>
+                <div style={{ width: 74, flexShrink: 0 }}>{labels.colDob}</div>
+                <div style={{ width: 54, flexShrink: 0 }}>{labels.colGender}</div>
+                <div style={{ width: 52, flexShrink: 0 }}>{labels.colWeight}</div>
+                <div style={{ width: 74, flexShrink: 0 }}>
+                  {labels.colNationality}
+                </div>
+                <div style={{ width: 116, flexShrink: 0 }}>{labels.colId}</div>
+              </div>
+
+              {passengers.map((pax, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 0",
+                    borderTop: idx === 0 ? "none" : `1px solid ${C.line}`,
+                    fontSize: 12.5,
+                    lineHeight: 1.4,
+                    color: C.text,
+                  }}
+                >
+                  <div
+                    style={{ width: 18, flexShrink: 0, color: C.accent, fontWeight: 700 }}
+                  >
+                    {idx + 1}.
+                  </div>
+                  <div
+                    style={{
+                      flex: "1 1 0",
+                      minWidth: 0,
+                      fontWeight: 700,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {pax.fullName || "—"}
+                  </div>
+                  <div style={{ width: 74, flexShrink: 0 }}>
+                    {pax.dob ? formatDateDisplay(pax.dob) : "—"}
+                  </div>
+                  <div style={{ width: 54, flexShrink: 0 }}>
+                    {pax.gender || "—"}
+                  </div>
+                  <div style={{ width: 52, flexShrink: 0 }}>
+                    {pax.weightKg ? `${pax.weightKg} kg` : "—"}
+                  </div>
+                  <div
+                    style={{ width: 74, flexShrink: 0, wordBreak: "break-word" }}
+                  >
+                    {pax.nationality || "—"}
+                  </div>
+                  <div
+                    style={{ width: 116, flexShrink: 0, wordBreak: "break-word" }}
+                  >
+                    {pax.idNumber || "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TicketCard>
+        )}
+
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ width: "50%", minWidth: 0 }}>
+            <TicketCard title={`🎁 ${labels.additionalServices}`}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {includedItems.map((item, idx) => (
+                  <TicketServiceLine
+                    key={`inc-${idx}`}
+                    ok
+                    label={item.text}
+                    tag={
+                      item.tag === "free"
+                        ? labels.freeTag
+                        : item.tag === "included"
+                          ? labels.includedTag
+                          : undefined
+                    }
+                  />
+                ))}
+
+                {chosenServiceRows.map((row) => (
+                  <TicketServiceLine
+                    key={row.key}
+                    ok
+                    label={row.label}
+                    qty={row.qty}
+                    notes={row.notes}
+                  />
+                ))}
+
+                {missingServiceRows.map((row) => (
+                  <TicketServiceLine
+                    key={row.key}
+                    ok={false}
+                    label={row.label}
+                    tag={labels.noTag}
+                  />
+                ))}
+              </div>
+            </TicketCard>
+          </div>
+
+          <div
+            style={{
+              width: "50%",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                background: C.totalBg,
+                color: C.white,
+                borderRadius: 12,
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  opacity: 0.85,
+                  fontWeight: 800,
+                  paddingBottom: 5,
+                  borderBottom: "1px solid rgba(255,255,255,0.22)",
+                }}
+              >
+                💰 {labels.priceBreakdown}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 6,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 3,
+                }}
+              >
+                {priceLines.map((line, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    {/* Tên khoản + dòng chi tiết đơn giá × số lượng ngay bên
+                        dưới. Lúc nén vé về khổ A4 em bỏ dòng chi tiết cho gọn,
+                        nhưng khách cần thấy vì sao ra con số đó. */}
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 12.5,
+                          fontWeight: 600,
+                          wordBreak: "break-word",
+                          color:
+                            line.type === "discount"
+                              ? "#bbf7d0"
+                              : "rgba(255,255,255,0.95)",
+                        }}
+                      >
+                        {line.label}
+                      </span>
+                      {line.detail ? (
+                        <span
+                          style={{
+                            display: "block",
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.7)",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {line.detail}
+                        </span>
+                      ) : null}
+                    </span>
+
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                        color: line.type === "discount" ? "#bbf7d0" : C.white,
+                      }}
+                    >
+                      {line.amountText}
+                    </span>
+                  </div>
+                ))}
+
+                <div
+                  style={{
+                    marginTop: 3,
+                    paddingTop: 6,
+                    borderTop: "1px solid rgba(255,255,255,0.25)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>
+                    {labels.total}
+                  </span>
+                  <span style={{ textAlign: "right" }}>
+                    <span style={{ display: "block", fontSize: 20, fontWeight: 900 }}>
+                      {formatVND(totalWithSelectedServices)}
+                    </span>
+                    {usdReference ? (
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          color: "rgba(255,255,255,0.75)",
+                        }}
+                      >
+                        ≈ {usdReference}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <TicketCard title={`🎒 ${labels.quickGuideTitle}`}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { icon: "👕", title: labels.guideWearTitle, items: labels.guideWear, tone: C.accent },
+              { icon: "🎒", title: labels.guideBringTitle, items: labels.guideBring, tone: C.success },
+              { icon: "🚫", title: labels.guideAvoidTitle, items: labels.guideAvoid, tone: C.orange },
+            ].map((block) => (
+              <div key={block.title} style={{ width: "33.333%", minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: block.tone,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.3,
+                    paddingBottom: 3,
+                    marginBottom: 3,
+                    borderBottom: `2px solid ${block.tone}`,
+                  }}
+                >
+                  {block.icon} {block.title}
                 </div>
                 {block.items.map((line, idx) => (
                   <div
                     key={idx}
                     style={{
                       display: "flex",
-                      gap: 5,
-                      fontSize: 11,
-                      lineHeight: 1.45,
+                      gap: 4,
+                      fontSize: 12,
+                      lineHeight: 1.5,
                       color: C.text,
+                      marginBottom: 2,
                     }}
                   >
                     <span style={{ color: block.tone, flexShrink: 0 }}>•</span>
-                    <span style={{ minWidth: 0 }}>{line}</span>
+                    <span style={{ minWidth: 0, wordBreak: "break-word" }}>
+                      {line}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -1152,38 +1502,222 @@ export default function BookingTicket({
 
           <div
             style={{
-              marginTop: 8,
-              fontSize: 11,
+              marginTop: 6,
+              fontSize: 12,
               lineHeight: 1.5,
               color: C.warningText,
               background: C.warningBg,
-              border: `1px solid ${C.warningBorder}`,
               borderRadius: 8,
-              padding: "6px 8px",
-              fontWeight: 700,
+              padding: "5px 7px",
+              fontWeight: 600,
             }}
           >
-            {labels.guideNote}
+            ⚠️ {labels.guideNote}
           </div>
-        </div>
+        </TicketCard>
 
+        {/* Một câu dặn vui để tấm vé không chỉ là giấy tờ */}
         <div
           style={{
-            marginTop: 10,
+            marginTop: "auto",
+            border: `2px dashed ${C.orange}`,
+            background: C.orangeSoft,
+            borderRadius: 12,
+            padding: "9px 12px",
             textAlign: "center",
-            fontSize: 11,
-            color: C.text,
-            lineHeight: 1.6,
+            fontSize: 15,
             fontWeight: 700,
+            color: C.warningText,
+            lineHeight: 1.45,
           }}
         >
-          Hotline: 0964.073.555 — 0385.907.789
-          <br />
-          <span style={{ color: C.muted, fontWeight: 500 }}>
-            Zalo / WhatsApp / Telegram — mebayluon.com
-          </span>
+          {labels.funLine}
         </div>
       </div>
+
+      {/* Đường xé có hai khuyết tròn hai bên — cho ra dáng một tấm vé thật */}
+      <div style={{ position: "relative", height: 18 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: -9,
+            top: 0,
+            width: 18,
+            height: 18,
+            borderRadius: 999,
+            background: "#ffffff",
+            border: `1px solid ${C.border}`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: -9,
+            top: 0,
+            width: 18,
+            height: 18,
+            borderRadius: 999,
+            background: "#ffffff",
+            border: `1px solid ${C.border}`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 16,
+            right: 16,
+            top: 8,
+            borderTop: `2px dashed ${C.border}`,
+          }}
+        />
+      </div>
+
+      {/* ============ CHÂN VÉ ============ */}
+      <div
+        style={{
+          borderTop: `1px solid ${C.border}`,
+          background: C.card,
+          padding: "10px 12px",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
+          Hotline: 0964.073.555 — 0385.907.789
+        </div>
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>
+          Zalo / WhatsApp — mebayluon.com
+        </div>
+        <div
+          style={{
+            fontSize: 11.5,
+            color: C.accentDark,
+            marginTop: 4,
+            fontWeight: 600,
+          }}
+        >
+          ⏱️ {labels.safetyNote}
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>
+          {labels.created}: {createdAt}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Khung một khối trên vé: tiêu đề nhỏ in hoa màu xanh, gạch chân mảnh, rồi
+ * tới nội dung. Mọi khối dùng chung một kiểu nên nhìn dọc xuống thấy đều.
+ */
+function TicketCard({
+  title,
+  children,
+  rightBadge,
+}: {
+  title: string;
+  children: React.ReactNode;
+  rightBadge?: string;
+}) {
+  return (
+    <div
+      style={{
+        background: C.bg,
+        border: `1px solid ${C.border}`,
+        borderRadius: 12,
+        padding: 12,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          paddingBottom: 6,
+          marginBottom: 7,
+          borderBottom: `1px solid ${C.line}`,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+            color: C.accentDark,
+          }}
+        >
+          {title}
+        </div>
+
+        {rightBadge ? (
+          <div
+            style={{
+              background: C.accentSoft,
+              color: C.accent,
+              borderRadius: 999,
+              padding: "1px 8px",
+              fontSize: 11,
+              fontWeight: 800,
+            }}
+          >
+            {rightBadge}
+          </div>
+        ) : null}
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Lưới nhãn - giá trị: nhãn bên trái, giá trị in đậm bên phải, mỗi dòng một
+ * đường kẻ mảnh. Thay cho các ô "pill" co giãn trước đây — chúng có bề rộng
+ * khác nhau nên khi xuống hàng thì so le, ảnh xuất ra trông rối.
+ */
+function InfoGrid({ items }: { items: InfoItem[] }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {items.map((item, idx) => (
+        <div
+          key={`${item.label}-${idx}`}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 10,
+            padding: "5px 0",
+            borderTop: idx === 0 ? "none" : `1px solid ${C.line}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: C.subtext,
+              fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ marginRight: 5, fontSize: 12 }}>{item.icon}</span>
+            {item.label}
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: C.text,
+              fontWeight: 700,
+              textAlign: "right",
+              minWidth: 0,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1199,12 +1733,17 @@ function TicketServiceLine({
   qty,
   notes,
   tag,
+  mapUrl,
+  mapLabel,
 }: {
   ok: boolean;
   label: string;
   qty?: number;
   notes?: string[];
   tag?: string;
+  /** Điểm đón cố định: hiện thành link bấm được. */
+  mapUrl?: string;
+  mapLabel?: string;
 }) {
   const tone = ok ? C.success : "#DC2626";
 
@@ -1212,23 +1751,24 @@ function TicketServiceLine({
     <div
       style={{
         display: "flex",
+        alignItems: "flex-start",
         gap: 6,
-        fontSize: 12,
-        lineHeight: 1.55,
+        fontSize: 13.5,
+        lineHeight: 1.6,
         color: ok ? C.text : C.muted,
       }}
     >
-      <span style={{ color: tone, fontWeight: 900, flexShrink: 0 }}>
+      <span style={{ color: tone, fontWeight: 800, flexShrink: 0 }}>
         {ok ? "✓" : "✕"}
       </span>
 
       <span style={{ minWidth: 0, wordBreak: "break-word" }}>
-        <span style={{ fontWeight: 800 }}>{label}</span>
+        <span style={{ fontWeight: 700 }}>{label}</span>
 
         {qty && qty > 0 ? (
           <>
             {": "}
-            <span style={{ color: C.success, fontWeight: 800 }}>×{qty}</span>
+            <span style={{ color: C.success, fontWeight: 700 }}>×{qty}</span>
           </>
         ) : null}
 
@@ -1239,114 +1779,26 @@ function TicketServiceLine({
           </span>
         ) : null}
 
+        {mapUrl ? (
+          <>
+            {qty && qty > 0 ? " · " : ": "}
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: C.accent, fontWeight: 700 }}
+            >
+              {mapLabel || "Xem bản đồ"}
+            </a>
+          </>
+        ) : null}
+
         {tag ? <span style={{ color: tone }}> ({tag})</span> : null}
       </span>
     </div>
   );
 }
 
-function SectionCard({
-  title,
-  children,
-  rightBadge,
-}: {
-  title: string;
-  children: React.ReactNode;
-  rightBadge?: string;
-}) {
-  return (
-    <div
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: 18,
-        padding: 14,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 12,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 900,
-            letterSpacing: 1,
-            textTransform: "uppercase",
-            color: C.accentDark,
-          }}
-        >
-          {title}
-        </div>
-
-        {rightBadge ? (
-          <div
-            style={{
-              background: C.accentSoft,
-              color: C.accent,
-              borderRadius: 999,
-              padding: "2px 8px",
-              fontSize: 11,
-              fontWeight: 900,
-            }}
-          >
-            {rightBadge}
-          </div>
-        ) : null}
-      </div>
-
-      {children}
-    </div>
-  );
-}
-
-function PillRow({
-  items,
-  soft = false,
-}: {
-  items: Array<{ label: string; value: string }>;
-  soft?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      {items.map((item, idx) => (
-        <div
-          key={`${item.label}-${idx}`}
-          style={{
-            minWidth: 120,
-            flex: "1 1 180px",
-            background: soft ? C.accentSoft : C.bg,
-            border: `1px solid ${soft ? "#B9DDFB" : C.border}`,
-            borderRadius: 14,
-            padding: "10px 12px",
-          }}
-        >
-          <div style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>
-            {item.label}
-          </div>
-          <div
-            style={{
-              marginTop: 4,
-              fontSize: 13,
-              color: C.text,
-              fontWeight: 900,
-              wordBreak: "break-word",
-            }}
-          >
-            {item.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 
-function SectionSpacer() {
-  return <div style={{ height: 12 }} />;
-}
+
