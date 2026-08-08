@@ -70,6 +70,7 @@ type Dict = {
   footerRights: string;
   attachmentNote: string;
   idMaskedNote: string;
+  spotMore: (name: string) => string;
 };
 
 const T: Record<EmailLang, Dict> = {
@@ -114,13 +115,14 @@ const T: Record<EmailLang, Dict> = {
       "Mang theo giấy tờ tuỳ thân và email này (hoặc ảnh vé đính kèm).",
       "Đổi lịch hoặc huỷ bay miễn phí, chỉ cần báo trước vài giờ.",
     ],
-    guideWear: "Quần dài, áo tay dài, giày thể thao. Không váy, không cao gót, không dép lê.",
+    guideWear: "Quần áo dài tay, giày thể thao. Không váy, không cao gót, không dép lê.",
     guideBring: "Giấy tờ tuỳ thân, kính râm, áo khoác mỏng, túi nhỏ 1–2 kg. Điện thoại còn trống ~4GB để chép ảnh & video.",
-    guideAvoid: "Vật sắc nhọn, gậy selfie, mũ rộng vành, khăn choàng, tư trang giá trị cao.",
+    guideAvoid: "Vật sắc nhọn, đồ cồng kềnh, tư trang giá trị cao, đồ nặng.",
     contactIntro: "Cần hỗ trợ, bạn gọi hoặc nhắn cho chúng tôi bất cứ lúc nào:",
     footerRights: "Mebayluon Paragliding. Bảo lưu mọi quyền.",
     attachmentNote: "🎫 Vé bay của bạn được đính kèm trong email này.",
     idMaskedNote: "Số giấy tờ được ẩn bớt để bảo vệ thông tin cá nhân của bạn.",
+    spotMore: (n) => `Vui lòng xem chi tiết thông tin điểm bay ${n}`,
   },
 
   en: {
@@ -167,11 +169,12 @@ const T: Record<EmailLang, Dict> = {
     ],
     guideWear: "Long trousers and sleeves, trainers. No skirts, heels or flip-flops.",
     guideBring: "ID or passport, sunglasses, a light jacket, a small 1–2 kg bag. Phone with ~4GB free for your photos and video.",
-    guideAvoid: "Sharp objects, selfie sticks, wide hats, scarves, valuables.",
+    guideAvoid: "Sharp objects, bulky items, valuables, heavy items.",
     contactIntro: "Need help? Call or message us any time:",
     footerRights: "Mebayluon Paragliding. All rights reserved.",
     attachmentNote: "🎫 Your flight ticket is attached to this email.",
     idMaskedNote: "ID numbers are partly hidden to protect your personal data.",
+    spotMore: (n) => `See full details about the ${n} flying site`,
   },
 
   fr: {
@@ -218,11 +221,12 @@ const T: Record<EmailLang, Dict> = {
     ],
     guideWear: "Pantalon et manches longues, baskets. Ni jupe, ni talons, ni tongs.",
     guideBring: "Pièce d'identité, lunettes de soleil, veste légère, petit sac de 1 à 2 kg. Téléphone avec ~4 Go libres pour vos photos et vidéos.",
-    guideAvoid: "Objets pointus, perche à selfie, chapeau, écharpe, objets de valeur.",
+    guideAvoid: "Objets pointus, objets encombrants, objets de valeur, objets lourds.",
     contactIntro: "Besoin d'aide ? Appelez-nous ou écrivez-nous à tout moment :",
     footerRights: "Mebayluon Paragliding. Tous droits réservés.",
     attachmentNote: "🎫 Votre billet de vol est joint à cet e-mail.",
     idMaskedNote: "Les numéros de pièce d'identité sont partiellement masqués pour protéger vos données.",
+    spotMore: (n) => `Voir toutes les informations sur le site de vol ${n}`,
   },
 
   ru: {
@@ -269,11 +273,12 @@ const T: Record<EmailLang, Dict> = {
     ],
     guideWear: "Длинные брюки и рукава, кроссовки. Без юбки, каблуков и шлёпанцев.",
     guideBring: "Документ, очки от солнца, лёгкая куртка, небольшая сумка 1–2 кг. Телефон со свободными ~4 ГБ для фото и видео.",
-    guideAvoid: "Острые предметы, селфи-палка, шляпа, шарф, ценные вещи.",
+    guideAvoid: "Острые предметы, громоздкие вещи, ценные вещи, тяжёлые предметы.",
     contactIntro: "Нужна помощь? Звоните или пишите в любое время:",
     footerRights: "Mebayluon Paragliding. Все права защищены.",
     attachmentNote: "🎫 Ваш билет прикреплён к этому письму.",
     idMaskedNote: "Номера документов частично скрыты для защиты ваших данных.",
+    spotMore: (n) => `Подробная информация о площадке ${n}`,
   },
 
   zh: {
@@ -318,11 +323,12 @@ const T: Record<EmailLang, Dict> = {
     ],
     guideWear: "长裤、长袖、运动鞋。请勿穿裙子、高跟鞋或拖鞋。",
     guideBring: "身份证件、墨镜、薄外套、1–2 公斤随身小包。手机预留约 4GB 空间用于拷贝照片和视频。",
-    guideAvoid: "尖锐物品、自拍杆、宽檐帽、围巾、贵重物品。",
+    guideAvoid: "尖锐物品、体积过大的物品、贵重物品、过重的物品。",
     contactIntro: "需要协助，请随时来电或留言：",
     footerRights: "Mebayluon Paragliding 版权所有。",
     attachmentNote: "🎫 您的电子票已作为附件随本邮件发送。",
     idMaskedNote: "证件号码已部分隐藏，以保护您的个人信息。",
+    spotMore: (n) => `查看飞行点 ${n} 的详细信息`,
   },
 
   hi: {
@@ -368,11 +374,12 @@ const T: Record<EmailLang, Dict> = {
     ],
     guideWear: "लंबी पैंट व पूरी बाँह, स्नीकर्स। स्कर्ट, हील्स या चप्पल नहीं।",
     guideBring: "पहचान पत्र, धूप का चश्मा, हल्की जैकेट, 1–2 किग्रा का छोटा बैग। फ़ोटो-वीडियो के लिए ~4GB खाली फ़ोन।",
-    guideAvoid: "नुकीली चीज़ें, सेल्फ़ी स्टिक, चौड़ी टोपी, स्कार्फ़, क़ीमती सामान।",
+    guideAvoid: "नुकीली चीज़ें, भारी-भरकम सामान, क़ीमती सामान, वज़नी वस्तुएँ।",
     contactIntro: "मदद चाहिए? कभी भी कॉल या मैसेज करें:",
     footerRights: "Mebayluon Paragliding. सर्वाधिकार सुरक्षित।",
     attachmentNote: "🎫 आपका उड़ान टिकट इस ईमेल के साथ संलग्न है।",
     idMaskedNote: "आपकी निजता की रक्षा के लिए आईडी नंबर आंशिक रूप से छिपाया गया है।",
+    spotMore: (n) => `उड़ान स्थल ${n} की पूरी जानकारी देखें`,
   },
 };
 
@@ -471,12 +478,14 @@ export type CustomerEmailInput = {
   includedLines?: string[];
   /** Dịch vụ khách chọn thêm, đã dịch sẵn: [{ label, qty }]. */
   selectedServiceLines?: Array<{ label: string; qty?: number; note?: string }>;
+  /** Đường dẫn tuyệt đối tới trang giới thiệu điểm bay đã đặt. */
+  spotPageUrl?: string;
   /** Có ảnh vé đính kèm hay không — quyết định hiện dòng nhắc trong thư. */
   hasTicketAttachment?: boolean;
   /**
    * Nguồn ảnh logo. Mặc định là "cid:mbl-logo" — logo được đính kèm ngay
    * trong thư nên hiện được cả khi khách chưa cho phép tải ảnh từ ngoài, và
-   * không phụ thuộc vào việc mebayluon.com đã deploy tệp đó hay chưa.
+   * không phụ thuộc vào việc www.mebayluon.com đã deploy tệp đó hay chưa.
    */
   logoSrc?: string;
   price?: {
@@ -748,6 +757,16 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         <div style="margin-top:6px;font-size:12px;color:${C.soft};line-height:1.5;">${esc(t.paymentNote)}</div>
       </td></tr>
 
+      ${
+        input.spotPageUrl
+          ? `<tr><td style="padding-top:16px;">
+              <div style="background:#EAF4FE;border:1px solid #B9DDFB;border-radius:8px;padding:11px 14px;font-size:14px;">
+                🔗 <a href="${esc(input.spotPageUrl)}" style="color:${C.blueDark};font-weight:700;">${esc(t.spotMore(input.locationName || ""))}</a>
+              </div>
+            </td></tr>`
+          : ""
+      }
+
       ${servicesHtml}
       ${includedHtml}
       ${requestHtml}
@@ -770,7 +789,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         <div style="background:${C.bg};border-radius:10px;padding:16px;text-align:center;">
           <div style="font-size:14px;color:${C.soft};">${esc(t.contactIntro)}</div>
           <div style="font-size:18px;font-weight:800;color:${C.orange};margin-top:6px;">0964.073.555 &nbsp;•&nbsp; 0385.907.789</div>
-          <div style="font-size:13px;color:${C.soft};margin-top:4px;">Zalo &nbsp;•&nbsp; WhatsApp &nbsp;•&nbsp; mebayluon.com</div>
+          <div style="font-size:13px;color:${C.soft};margin-top:4px;">Zalo &nbsp;•&nbsp; WhatsApp &nbsp;•&nbsp; www.mebayluon.com</div>
         </div>
       </td></tr>
 
@@ -779,7 +798,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
 
   <tr><td style="background:${C.bg};border-top:1px solid ${C.line};padding:16px;text-align:center;font-size:12px;color:#94A3B8;">
     © ${esc(t.footerRights)}<br/>
-    <a href="https://mebayluon.com" style="color:${C.blue};text-decoration:none;">mebayluon.com</a>
+    <a href="https://www.mebayluon.com" style="color:${C.blue};text-decoration:none;">www.mebayluon.com</a>
   </td></tr>
 
 </table>

@@ -85,7 +85,7 @@ export async function generateMetadata({
   return {
     title: `${label} — ${t.heading} | Mebayluon`,
     description: t.metaDesc(label),
-    alternates: { canonical: `https://mebayluon.com/knowledge/${sub}` },
+    alternates: { canonical: `https://www.mebayluon.com/knowledge/${sub}` },
   };
 }
 

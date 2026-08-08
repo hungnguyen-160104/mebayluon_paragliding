@@ -3,14 +3,29 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import { computePriceByLang, LOCATIONS } from "@/lib/booking/calculate-price";
+import { spotPageForBooking } from "@/lib/booking/spot-to-location";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import BookingTicket from "@/components/booking/BookingTicket";
 import Link from "next/link";
+import Image from "next/image";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 
 /** Hai số hotline, hiển thị thành nút bấm gọi được trên điện thoại. */
 const HOTLINES = ["0964.073.555", "0385.907.789"];
+
+/**
+ * Kênh nhắn tin — dùng lại đúng logo và đường dẫn của nút mạng xã hội nổi
+ * (components/floating-social.tsx) để cả site chỉ có một nguồn.
+ */
+const CHAT_CHANNELS = [
+  { name: "Zalo", icon: "/social_icons/zalo.png", url: "https://zalo.me/0964073555" },
+  {
+    name: "WhatsApp",
+    icon: "/social_icons/whatsapp.jpg",
+    url: "https://api.whatsapp.com/send/?phone=840964073555",
+  },
+];
 
 const UI_TEXT: Record<
   LangUI,
@@ -28,6 +43,7 @@ const UI_TEXT: Record<
     guidePreNotice: string;
     guideSafety: string;
     guideSteps: string;
+    spotMore: string;
     readyTitle: string;
     flightAtLabel: string;
     passengerLabel: string;
@@ -36,7 +52,7 @@ const UI_TEXT: Record<
   }
 > = {
   vi: {
-    title: "Đặt lịch của bạn đã được ghi nhận",
+    title: "Đặt lịch thành công — Sẵn sàng bay!",
     subtitle:
       "Vui lòng tải vé đặt bay ngay bên dưới — Chúng tôi sẽ sớm liên hệ trực tiếp với bạn!",
     imageFail: "Không tạo được ảnh. Vui lòng thử lại hoặc chụp màn hình.",
@@ -58,8 +74,9 @@ const UI_TEXT: Record<
     guidePreNotice: "Lưu ý trước chuyến bay",
     guideSafety: "Dù lượn có an toàn không?",
     guideSteps: "Các bước khi đi bay dù lượn",
-    readyTitle: "Đặt lịch của bạn đã được ghi nhận",
-    flightAtLabel: "Chuyến bay của bạn",
+    spotMore: "Xem thêm thông tin về điểm bay",
+    readyTitle: "Đặt lịch thành công — Sẵn sàng bay!",
+    flightAtLabel: "Giờ lên dù",
     passengerLabel: "Khách bay",
     andOthers: (n: number) => `và ${n} khách nữa`,
     funLines: [
@@ -70,7 +87,7 @@ const UI_TEXT: Record<
     ],
   },
   en: {
-    title: "Your booking has been received",
+    title: "Booking confirmed — ready to fly!",
     subtitle:
       "Please download your ticket below — we will contact you directly very soon!",
     imageFail: "Failed to generate image. Please try again or take a screenshot.",
@@ -92,8 +109,9 @@ const UI_TEXT: Record<
     guidePreNotice: "Pre-flight notes",
     guideSafety: "Is paragliding safe?",
     guideSteps: "How a paragliding flight goes",
-    readyTitle: "Your booking has been received",
-    flightAtLabel: "Your flight",
+    spotMore: "More about this flying site",
+    readyTitle: "Booking confirmed — ready to fly!",
+    flightAtLabel: "Boarding time",
     passengerLabel: "Passenger",
     andOthers: (n: number) => `and ${n} more`,
     funLines: [
@@ -104,7 +122,7 @@ const UI_TEXT: Record<
     ],
   },
   fr: {
-    title: "Votre réservation a bien été enregistrée",
+    title: "Réservation confirmée — prêts à voler !",
     subtitle:
       "Merci de télécharger votre billet ci-dessous — nous vous contacterons très bientôt !",
     imageFail: "Impossible de générer l'image. Veuillez réessayer.",
@@ -126,8 +144,9 @@ const UI_TEXT: Record<
     guidePreNotice: "Notes avant le vol",
     guideSafety: "Le parapente est-il sûr ?",
     guideSteps: "Comment se déroule un vol",
-    readyTitle: "Votre réservation a bien été enregistrée",
-    flightAtLabel: "Votre vol",
+    spotMore: "En savoir plus sur le site de vol",
+    readyTitle: "Réservation confirmée — prêts à voler !",
+    flightAtLabel: "Heure d'embarquement",
     passengerLabel: "Passager",
     andOthers: (n: number) => `et ${n} de plus`,
     funLines: [
@@ -138,7 +157,7 @@ const UI_TEXT: Record<
     ],
   },
   ru: {
-    title: "Ваше бронирование принято",
+    title: "Бронирование принято — готовы к полёту!",
     subtitle:
       "Пожалуйста, скачайте билет ниже — мы свяжемся с вами в ближайшее время!",
     imageFail: "Не удалось создать изображение. Попробуйте ещё раз.",
@@ -160,8 +179,9 @@ const UI_TEXT: Record<
     guidePreNotice: "Памятка перед полётом",
     guideSafety: "Безопасен ли параплан?",
     guideSteps: "Как проходит полёт",
-    readyTitle: "Ваше бронирование принято",
-    flightAtLabel: "Ваш полёт",
+    spotMore: "Подробнее о площадке",
+    readyTitle: "Бронирование принято — готовы к полёту!",
+    flightAtLabel: "Время посадки",
     passengerLabel: "Пассажир",
     andOthers: (n: number) => `и ещё ${n}`,
     funLines: [
@@ -172,7 +192,7 @@ const UI_TEXT: Record<
     ],
   },
   hi: {
-    title: "आपकी बुकिंग दर्ज हो गई है",
+    title: "बुकिंग सफल — उड़ान के लिए तैयार!",
     subtitle:
       "कृपया नीचे से अपना टिकट डाउनलोड करें — हम जल्द ही आपसे सीधे संपर्क करेंगे!",
     imageFail: "इमेज बनाई नहीं जा सकी। कृपया फिर से प्रयास करें।",
@@ -194,8 +214,9 @@ const UI_TEXT: Record<
     guidePreNotice: "उड़ान से पहले की बातें",
     guideSafety: "क्या पैराग्लाइडिंग सुरक्षित है?",
     guideSteps: "उड़ान कैसे होती है",
-    readyTitle: "आपकी बुकिंग दर्ज हो गई है",
-    flightAtLabel: "आपकी उड़ान",
+    spotMore: "उड़ान स्थल के बारे में और जानें",
+    readyTitle: "बुकिंग सफल — उड़ान के लिए तैयार!",
+    flightAtLabel: "बोर्डिंग समय",
     passengerLabel: "यात्री",
     andOthers: (n: number) => `और ${n} लोग`,
     funLines: [
@@ -206,7 +227,7 @@ const UI_TEXT: Record<
     ],
   },
   zh: {
-    title: "您的预订已受理",
+    title: "预订成功——准备起飞！",
     subtitle:
       "请在下方下载您的电子票——我们会尽快直接与您联系！",
     imageFail: "无法生成图片。请重试或直接截图。",
@@ -228,8 +249,9 @@ const UI_TEXT: Record<
     guidePreNotice: "飞行前须知",
     guideSafety: "滑翔伞安全吗？",
     guideSteps: "一次飞行是怎样进行的",
-    readyTitle: "您的预订已受理",
-    flightAtLabel: "您的飞行",
+    spotMore: "了解更多飞行点信息",
+    readyTitle: "预订成功——准备起飞！",
+    flightAtLabel: "登伞时间",
     passengerLabel: "飞行乘客",
     andOthers: (n: number) => `等 ${n} 位`,
     funLines: [
@@ -285,6 +307,21 @@ export default function SuccessStep() {
 
   const totals = computePriceByLang(priceParams, "vi");
   const totalsUSD = computePriceByLang(priceParams, "en");
+
+  /** Trang giới thiệu điểm bay khách vừa đặt (dù máy Khau Phạ -> /ppg). */
+  const spotPage = useMemo(() => {
+    const href = spotPageForBooking(
+      bookingData.location,
+      bookingData.flightTypeKey,
+    );
+    if (!href) return null;
+
+    const cfg = bookingData.location
+      ? (LOCATIONS as any)[bookingData.location]
+      : null;
+    const name = cfg?.name?.[lang] ?? cfg?.name?.vi ?? "";
+    return { href, name };
+  }, [bookingData.location, bookingData.flightTypeKey, lang]);
 
   /** Tên khách bay chính + số khách còn lại, để chào đích danh. */
   const heroPassenger = useMemo(() => {
@@ -489,7 +526,11 @@ export default function SuccessStep() {
               nói rõ booking thành công, thêm huy hiệu chỉ làm loãng. */}
           <div className="text-center">
             <div className="text-4xl md:text-5xl">🪂</div>
-            <h3 className="mt-2 text-2xl font-black leading-tight md:text-4xl">
+            {/* Đổ bóng để chữ trắng nổi hẳn trên nền xanh chuyển sắc */}
+            <h3
+              className="mt-2 text-2xl font-black leading-tight md:text-4xl"
+              style={{ textShadow: "0 2px 10px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.45)" }}
+            >
               {ui.readyTitle}
             </h3>
             <p className="mx-auto mt-2 max-w-2xl text-base font-medium text-white/95 md:text-lg">
@@ -532,9 +573,20 @@ export default function SuccessStep() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-sm text-[#355166]">
+          <div className="rounded-lg border border-[#B9DDFB] bg-[#EAF4FE] px-4 py-3 text-center text-base font-bold text-[#1B4A6B]">
             {ui.note}
           </div>
+
+          {spotPage ? (
+            <div className="text-center">
+              <Link
+                href={spotPage.href}
+                className="inline-flex items-center gap-2 text-base font-semibold text-[#0194F3] underline underline-offset-4 hover:text-[#0B6FC4]"
+              >
+                🔗 {ui.spotMore} {spotPage.name}
+              </Link>
+            </div>
+          ) : null}
 
           {/* Căn giữa, ngay trên tấm vé — đây là việc khách cần làm đầu tiên
               sau khi đặt xong nên không để nép ở góc phải. */}
@@ -583,41 +635,66 @@ export default function SuccessStep() {
           {/* Khối liên hệ: trước đây hotline chỉ là dòng chữ 11px ở chân vé,
               khách khó thấy đúng lúc cần nhất. Nay là hai nút bấm gọi được
               ngay trên điện thoại. */}
-          <section className="rounded-xl border-2 border-[#FF5E1F] bg-white p-4 shadow-md">
+          {/* Căn giữa cả khối. Nút gọi hạ xuống cỡ vừa và dùng viền thay vì
+              nền cam đặc — trước đây hai nút cam to chiếm hết sự chú ý, lấn
+              cả nút tải vé vốn mới là việc khách cần làm trước. */}
+          <section className="rounded-xl border-2 border-[#FF5E1F] bg-white p-4 text-center shadow-md">
             <div className="text-base font-bold text-[#FF5E1F] md:text-lg">
               {ui.contactTitle}
             </div>
-            <p className="mt-1 text-sm text-[#5B6B7A]">{ui.contactHint}</p>
+            <p className="mx-auto mt-1 max-w-xl text-sm text-[#5B6B7A]">
+              {ui.contactHint}
+            </p>
 
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               {HOTLINES.map((tel) => (
                 <a
                   key={tel}
                   href={`tel:${tel.replace(/\D/g, "")}`}
-                  className="cta-btn flex h-12 items-center justify-center rounded-xl bg-[#FF5E1F] text-lg font-bold tracking-wide text-white shadow-md transition hover:bg-[#E14E12]"
+                  className="cta-btn inline-flex h-10 items-center gap-2 rounded-lg border border-[#FF5E1F] bg-[#FFF4ED] px-4 text-sm font-bold text-[#C2410C] transition hover:bg-[#FFE8DA]"
                 >
-                  {tel}
+                  📞 {tel}
                 </a>
               ))}
             </div>
 
-            <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm font-semibold text-[#5B6B7A]">
-              <span>Zalo</span>
-              <span>·</span>
-              <span>WhatsApp</span>
-              <span>·</span>
-              <Link href="/" className="text-[#0194F3] underline">
-                mebayluon.com
+            {/* Zalo / WhatsApp mở thẳng khung chat, không bắt khách tự lưu số */}
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {CHAT_CHANNELS.map((c) => (
+                <a
+                  key={c.name}
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cta-btn inline-flex h-10 items-center gap-2 rounded-lg border border-[#DCE7F3] bg-white px-4 text-sm font-semibold text-[#1C2930] transition hover:bg-[#F5F7FA]"
+                >
+                  <Image
+                    src={c.icon}
+                    alt={c.name}
+                    width={20}
+                    height={20}
+                    className="rounded"
+                  />
+                  {c.name}
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-3 text-sm">
+              <Link href="/" className="font-medium text-[#0194F3] underline">
+                www.mebayluon.com
               </Link>
             </div>
           </section>
 
           {/* Dẫn khách sang các bài chuẩn bị trước chuyến bay */}
-          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4">
+          <section className="rounded-xl border border-[#DCE7F3] bg-white p-4 text-center">
             <div className="text-base font-bold text-[#1C2930]">
               {ui.guideTitle}
             </div>
-            <p className="mt-1 text-sm text-[#5B6B7A]">{ui.guideHint}</p>
+            <p className="mx-auto mt-1 max-w-xl text-sm text-[#5B6B7A]">
+              {ui.guideHint}
+            </p>
 
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {[

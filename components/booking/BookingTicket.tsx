@@ -12,6 +12,8 @@ import {
 import type { LangCode } from "@/lib/booking/translations-booking";
 import { bookingTranslations } from "@/lib/booking/translations-booking";
 import { shortServiceLabel } from "@/lib/booking/service-label";
+import { spotPageForBooking } from "@/lib/booking/spot-to-location";
+import { SITE_URL } from "@/lib/site-config";
 
 const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
 
@@ -250,6 +252,7 @@ function useTicketLabels(lang: LangCode) {
     /* Cùng lý do với colWeight: nhãn ở bước 3 là "Số CCCD/Passport", bỏ chữ
        "Số" cho tiêu đề cột đỡ dài. */
     colId: isVI ? "CCCD/Passport" : isFR ? "CNI / Passeport" : isRU ? "Паспорт" : isHI ? "आईडी / पासपोर्ट" : isZH || isZHTW ? zh("证件号", "證件號") : "ID / Passport",
+    spotMore: isVI ? "Xem thêm thông tin về điểm bay" : isFR ? "En savoir plus sur le site de vol" : isRU ? "Подробнее о площадке" : isHI ? "उड़ान स्थल के बारे में और जानें" : isZH || isZHTW ? zh("了解更多飞行点信息", "了解更多飛行點資訊") : "More about this flying site",
     qrHint: isVI ? "Quét để mở bản đồ điểm hẹn" : isFR ? "Scannez pour ouvrir la carte" : isRU ? "Отсканируйте, чтобы открыть карту" : isHI ? "नक्शा खोलने के लिए स्कैन करें" : isZH || isZHTW ? zh("扫码打开地图", "掃碼開啟地圖") : "Scan to open the map",
     viewMap: isVI ? "Xem bản đồ" : isFR ? "Voir la carte" : isRU ? "Открыть карту" : isHI ? "नक्शा देखें" : isZH || isZHTW ? zh("查看地图", "查看地圖") : "View map",
     pickupPointLabel: isVI ? "Điểm đón" : isFR ? "Point de prise en charge" : isRU ? "Место посадки" : isHI ? "पिकअप स्थान" : isZH || isZHTW ? zh("接送地点", "接送地點") : "Pickup point",
@@ -321,10 +324,10 @@ function useTicketLabels(lang: LangCode) {
     quickGuideTitle: isVI ? "Hướng dẫn nhanh khi đi bay" : isFR ? "Aide-mémoire avant le vol" : isRU ? "Памятка перед полётом" : isHI ? "उड़ान से पहले संक्षिप्त गाइड" : isZH || isZHTW ? zh("飞行前速查", "飛行前速查") : "Quick pre-flight guide",
     guideWearTitle: isVI ? "Trang phục" : isFR ? "Tenue" : isRU ? "Одежда" : isHI ? "पहनावा" : isZH || isZHTW ? zh("着装", "著裝") : "What to wear",
     guideBringTitle: isVI ? "Nên mang theo" : isFR ? "À emporter" : isRU ? "Взять с собой" : isHI ? "साथ लाएँ" : isZH || isZHTW ? zh("建议携带", "建議攜帶") : "What to bring",
-    guideAvoidTitle: isVI ? "Không mang theo" : isFR ? "À éviter" : isRU ? "Не брать" : isHI ? "न लाएँ" : isZH || isZHTW ? zh("请勿携带", "請勿攜帶") : "What to leave behind",
+    guideAvoidTitle: isVI ? "Không nên mang theo" : isFR ? "À ne pas emporter" : isRU ? "Что не брать" : isHI ? "जो न लाएँ" : isZH || isZHTW ? zh("请勿携带", "請勿攜帶") : "What not to bring",
 
     guideWear: isVI
-      ? ["Quần dài, áo tay dài, gọn gàng", "Giày thể thao hoặc giày leo núi", "Không mặc váy, không đi cao gót / dép lê"]
+      ? ["Quần áo dài tay, gọn gàng", "Giày thể thao hoặc giày leo núi", "Không mặc váy, không đi cao gót / dép lê"]
       : isFR
         ? ["Pantalon et manches longues", "Baskets ou chaussures de randonnée", "Ni jupe, ni talons, ni tongs"]
         : isRU
@@ -348,16 +351,16 @@ function useTicketLabels(lang: LangCode) {
               : ["ID card or passport", "Sunglasses and a light jacket", "A small 1–2 kg bag", "Phone with ~4GB free for your photos and video"],
 
     guideAvoid: isVI
-      ? ["Vật sắc nhọn, gậy selfie", "Đồ dễ rơi: mũ rộng vành, khăn choàng", "Tư trang giá trị cao"]
+      ? ["Vật sắc nhọn", "Đồ cồng kềnh", "Tư trang giá trị cao", "Đồ nặng"]
       : isFR
-        ? ["Objets pointus, perche à selfie", "Objets qui tombent : chapeau, écharpe", "Objets de valeur"]
+        ? ["Objets pointus", "Objets encombrants", "Objets de valeur", "Objets lourds"]
         : isRU
-          ? ["Острые предметы, селфи-палка", "То, что легко потерять: шляпа, шарф", "Ценные вещи"]
+          ? ["Острые предметы", "Громоздкие вещи", "Ценные вещи", "Тяжёлые предметы"]
           : isHI
-            ? ["नुकीली चीज़ें, सेल्फ़ी स्टिक", "गिरने वाली चीज़ें: टोपी, स्कार्फ़", "क़ीमती सामान"]
+            ? ["नुकीली चीज़ें", "भारी-भरकम सामान", "क़ीमती सामान", "वज़नी वस्तुएँ"]
             : isZH || isZHTW
-              ? [zh("尖锐物品、自拍杆", "尖銳物品、自拍桿"), zh("易掉落物：宽檐帽、围巾", "易掉落物：寬簷帽、圍巾"), zh("贵重物品", "貴重物品")]
-              : ["Sharp objects, selfie sticks", "Loose items: wide hats, scarves", "Valuables"],
+              ? [zh("尖锐物品", "尖銳物品"), zh("体积过大的物品", "體積過大的物品"), zh("贵重物品", "貴重物品"), zh("过重的物品", "過重的物品")]
+              : ["Sharp objects", "Bulky items", "Valuables", "Heavy items"],
 
     guideNote: isVI
       ? "Có mặt trước giờ bay 15 phút. Nếu bạn có vấn đề tim mạch, huyết áp, động kinh hoặc đang mang thai, vui lòng báo phi công trước khi bay."
@@ -893,6 +896,16 @@ export default function BookingTicket({
     return String(coords?.takeoff || coords?.landing || "");
   }, [selectedServices, cfg]);
 
+  /**
+   * Trang giới thiệu điểm bay tương ứng với chuyến đã đặt. Dùng URL tuyệt đối
+   * vì tấm vé còn được chụp thành ảnh và gửi qua email — link tương đối ở đó
+   * sẽ không mở được.
+   */
+  const spotPageUrl = useMemo(() => {
+    const path = spotPageForBooking(booking.location, booking.flightTypeKey);
+    return path ? `${SITE_URL}${path}` : "";
+  }, [booking.location, booking.flightTypeKey]);
+
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
@@ -1080,15 +1093,20 @@ export default function BookingTicket({
             >
               {bookingRef}
             </div>
+            {/* Nền đỏ đặc thay cho nền trắng mờ: trên dải xanh của đầu vé
+                thì đỏ mới bật lên, khách nhìn phát biết vé đã xác nhận. */}
             <div
               style={{
                 display: "inline-block",
-                marginTop: 3,
-                background: "rgba(255,255,255,0.22)",
+                marginTop: 5,
+                background: C.orange,
+                color: C.white,
+                border: "1px solid rgba(255,255,255,0.55)",
                 borderRadius: 999,
-                padding: "2px 8px",
-                fontSize: 11,
-                fontWeight: 700,
+                padding: "3px 12px",
+                fontSize: 12.5,
+                fontWeight: 800,
+                letterSpacing: 0.3,
                 whiteSpace: "nowrap",
               }}
             >
@@ -1176,6 +1194,20 @@ export default function BookingTicket({
           <div style={{ width: "50%", minWidth: 0 }}>
             <TicketCard title={`🪂 ${labels.serviceDetails}`}>
               <InfoGrid items={flightFacts} />
+
+              {spotPageUrl ? (
+                <div style={{ marginTop: 7, fontSize: 12.5, lineHeight: 1.45 }}>
+                  🔗{" "}
+                  <a
+                    href={spotPageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: C.accent, fontWeight: 700 }}
+                  >
+                    {labels.spotMore} {locationName}
+                  </a>
+                </div>
+              ) : null}
 
               {qrDataUrl ? (
                 <div
@@ -1672,7 +1704,7 @@ export default function BookingTicket({
           Hotline: 0964.073.555 — 0385.907.789
         </div>
         <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>
-          Zalo / WhatsApp — mebayluon.com
+          Zalo / WhatsApp — www.mebayluon.com
         </div>
         <div
           style={{

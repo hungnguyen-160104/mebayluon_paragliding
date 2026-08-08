@@ -36,7 +36,7 @@ export const LEGAL_ENTITY = {
   ],
   phones: ["+84 964 073 555", "+84 385 907 789"],
   email: "mebayluon@gmail.com",
-  website: "https://mebayluon.com",
+  website: "https://www.mebayluon.com",
   /**
    * Giấy chứng nhận đủ điều kiện kinh doanh hoạt động thể thao. Kinh doanh
    * hoạt động thể thao mạo hiểm là ngành nghề có điều kiện, nên Nghị định

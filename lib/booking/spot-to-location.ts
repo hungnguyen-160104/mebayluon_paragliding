@@ -52,3 +52,36 @@ export function bookingHrefForFlightType(
     ? `/booking?spot=${key}&type=${flightType}`
     : `/booking?type=${flightType}`;
 }
+
+/**
+ * Chiều ngược lại: từ khoá điểm bay trong booking suy ra trang giới thiệu
+ * điểm bay, để vé và email dẫn khách "xem thêm thông tin về điểm bay X".
+ *
+ * Hà Nội có hai bãi (Đồi Bù và Viên Nam) dùng chung một khoá booking; chọn
+ * /spots/doi-bu vì đó là trang mô tả cả cụm.
+ */
+const BOOKING_LOCATION_TO_SPOT: Record<string, string> = {
+  khau_pha: "khau-pha",
+  sapa: "muong-hoa-sapa",
+  da_nang: "son-tra",
+  ha_noi: "doi-bu",
+  quan_ba: "ha-giang",
+  tram_tau: "tram-tau",
+};
+
+/**
+ * Đường dẫn trang giới thiệu ứng với chuyến bay đã đặt.
+ *
+ * Bay dù máy ở Khau Phạ thì trỏ về /ppg — trang đó mới nói về dù lượn gắn
+ * động cơ, còn /spots/khau-pha là trang dù lượn thường.
+ * Không có ánh xạ thì trả null để nơi gọi tự ẩn link đi.
+ */
+export function spotPageForBooking(
+  location?: string,
+  flightTypeKey?: string,
+): string | null {
+  if (location === "khau_pha" && flightTypeKey === "paramotor") return "/ppg";
+
+  const slug = BOOKING_LOCATION_TO_SPOT[String(location || "")];
+  return slug ? `/spots/${slug}` : null;
+}

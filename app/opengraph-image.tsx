@@ -131,7 +131,7 @@ export default function OgImage() {
             letterSpacing: "1px",
           }}
         >
-          🌐 mebayluon.com
+          🌐 www.mebayluon.com
         </div>
       </div>
     ),

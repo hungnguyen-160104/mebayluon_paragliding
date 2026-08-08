@@ -1,5 +1,7 @@
 // services/gmail.service.ts
 import fs from "node:fs";
+import { spotPageForBooking } from "@/lib/booking/spot-to-location";
+import { SITE_URL } from "@/lib/site-config";
 import path from "node:path";
 import {
   dataUrlToAttachment,
@@ -80,8 +82,15 @@ export async function postNotifyGmail(payload: TelegramBookingPayload) {
       html: formatCustomerEmailHtml({
         ...(payload as any),
         hasTicketAttachment: !!ticket,
+        spotPageUrl: (() => {
+          const path = spotPageForBooking(
+            (payload as any)?.location,
+            (payload as any)?.flightTypeKey,
+          );
+          return path ? `${SITE_URL}${path}` : "";
+        })(),
         // Không đọc được tệp logo thì quay về ảnh trên web.
-        logoSrc: logo ? "cid:mbl-logo" : "https://mebayluon.com/logo-mbl.png",
+        logoSrc: logo ? "cid:mbl-logo" : "https://www.mebayluon.com/logo-mbl.png",
       }),
       text: formatCustomerEmailSubject(payload),
       attachments: [logo, ticket].filter(Boolean) as NonNullable<
