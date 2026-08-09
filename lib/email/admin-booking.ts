@@ -15,7 +15,8 @@
  * Luôn tiếng Việt, kể cả khi khách đặt bằng ngôn ngữ khác.
  */
 
-import { pickupHeadingVi, resolvePickup } from "@/lib/booking/pickup";
+import { isPickupService, pickupHeadingVi, resolvePickup } from "@/lib/booking/pickup";
+import { viLabel } from "@/lib/booking/vi-label";
 
 const C = {
   ink: "#111827",
@@ -121,6 +122,7 @@ export type AdminBookingInput = {
   lang?: string;
   location?: string;
   locationName?: string;
+  flightTypeKey?: string;
   flightTypeLabel?: string;
   packageKey?: string;
   packageLabel?: string;
@@ -157,6 +159,8 @@ export type AdminBookingInput = {
       key?: string;
       label?: string;
       detail?: string;
+      /** Bản tiếng Việt của `detail` (xem chú thích ở viFromConfig). */
+      detailVi?: string;
       lineTotal?: number;
     }>;
     total?: number;
@@ -192,7 +196,20 @@ export function adminEmailHtml(b: AdminBookingInput): string {
   // Xét cả dịch vụ đón CỐ ĐỊNH (GO! Thăng Long) chứ không chỉ địa chỉ khách
   // gõ — điểm đón cố định không cần gõ địa chỉ, bản cũ vì thế báo nhầm là
   // "khách tự tới" trong khi bảng giá vẫn thu tiền xe.
-  const pickup = resolvePickup(b);
+  const pickup = resolvePickup({
+    ...b,
+    selectedServices: (b.selectedServices || []).map((row) => ({
+      ...row,
+      label: viLabel(b.location, row?.key, row?.label),
+    })),
+    price: {
+      ...(b.price || {}),
+      servicesBreakdown: (b.price?.servicesBreakdown || []).map((row) => ({
+        ...row,
+        label: viLabel(b.location, row?.key, row?.label),
+      })),
+    },
+  });
   const pickupBox = pickup.hasPickup
     ? `<div style="background:${C.amberBg};border:1px solid ${C.amberLine};border-radius:8px;padding:12px 14px;">
          <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#92400E;">🚐 ${esc(pickupHeadingVi(pickup.mode))} <span style="color:${C.red};font-size:13px;">x${pax}</span></div>
@@ -209,10 +226,10 @@ export function adminEmailHtml(b: AdminBookingInput): string {
   const extras: string[] = [];
 
   for (const row of b.selectedServices || []) {
-    const label = shortLabel(row?.label || row?.key);
+    const label = shortLabel(viLabel(b.location, row?.key, row?.label));
     if (!label) continue;
     // Bỏ dịch vụ đón — đã có ô riêng phía trên, nhắc lại chỉ tốn chỗ.
-    if (/đón|xe trung chuyển|shuttle|pickup/i.test(label)) continue;
+    if (isPickupService({ key: row?.key, label })) continue;
     const qty = Number(row?.qty || 0);
     const tag = qty > 1 ? ` <b style="color:${C.red};">x${qty}</b>` : "";
     extras.push(`${serviceIcon(label)} ${esc(label)}${tag}`);
@@ -271,8 +288,8 @@ export function adminEmailHtml(b: AdminBookingInput): string {
     const amount = Number(row?.lineTotal || 0);
     if (!amount) continue;
     const line: Line = {
-      label: shortLabel(row?.label || row?.key),
-      detail: String(row?.detail || ""),
+      label: shortLabel(viLabel(b.location, row?.key, row?.label)),
+      detail: String(row?.detailVi || row?.detail || ""),
       amount,
       discount: amount < 0,
     };
@@ -319,8 +336,8 @@ export function adminEmailHtml(b: AdminBookingInput): string {
 
   /* ---------- HTML ---------- */
   const flightLine = [
-    b.flightTypeLabel,
-    shortPackage(b.packageKey, b.packageLabel),
+    viLabel(b.location, b.flightTypeKey, b.flightTypeLabel),
+    shortPackage(b.packageKey, viLabel(b.location, b.packageKey, b.packageLabel)),
   ]
     .filter(Boolean)
     .join(" · ");

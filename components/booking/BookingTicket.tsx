@@ -309,7 +309,7 @@ function useTicketLabels(lang: LangCode) {
     packageLabel: isVI ? "Gói bay" : isFR ? "Forfait" : isRU ? "Пакет" : isHI ? "पैकेज" : isZH || isZHTW ? zh("套餐", "套餐") : "Package",
     flightTypeLabel: isVI ? "Loại bay" : isFR ? "Type de vol" : isRU ? "Тип полёта" : isHI ? "फ्लाइट प्रकार" : isZH || isZHTW ? zh("飞行类型", "飛行類型") : "Flight type",
     dayTypeLabel: isVI ? "Loại ngày" : isFR ? "Type de jour" : isRU ? "Тип дня" : isHI ? "दिन का प्रकार" : isZH || isZHTW ? zh("日期类型", "日期類型") : "Day type",
-    name: isVI ? "Tên" : "Name",
+    name: isVI ? "Tên" : isFR ? "Nom" : isRU ? "Имя" : isHI ? "नाम" : isZH || isZHTW ? zh("姓名", "姓名") : "Name",
     phone: (t as any)?.labels?.phone ?? "Phone",
     email: "Email",
     pickupLocation: isVI ? "Dịch vụ đón trả" : isFR ? "Prise en charge" : isRU ? "Трансфер" : isHI ? "पिकअप" : isZH || isZHTW ? zh("接送", "接送") : "Pickup",
@@ -379,10 +379,6 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("请提前 15 分钟抵达。如有心脏、血压、癫痫问题或正在怀孕，请飞行前告知飞行员。", "請提前 15 分鐘抵達。如有心臟、血壓、癲癇問題或正在懷孕，請飛行前告知飛行員。")
               : "Arrive 15 minutes before your flight. If you have heart or blood-pressure conditions, epilepsy, or are pregnant, tell your pilot beforehand.",
-    free: isVI ? "Miễn phí" : "Free",
-    included: isVI ? "Bao gồm" : "Included",
-    yes: isVI ? "Có" : "Yes",
-    no: isVI ? "Không" : "No",
     notProvided: isVI ? "Chưa cung cấp" : isFR ? "Non fourni" : isRU ? "Не указано" : isHI ? "प्रदान नहीं" : isZH || isZHTW ? zh("未提供", "未提供") : "Not provided",
     pax: isVI ? "khách" : isFR ? "pers" : isRU ? "чел" : isHI ? "यात्री" : isZH || isZHTW ? zh("人", "人") : "pax",
     weekday: isVI ? "Ngày thường" : isFR ? "Jour ouvré" : isRU ? "Будний день" : isHI ? "कार्यदिवस" : isZH || isZHTW ? zh("工作日", "工作日") : "Weekday",

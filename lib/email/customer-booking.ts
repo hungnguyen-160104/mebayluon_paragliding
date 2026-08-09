@@ -60,6 +60,8 @@ type Dict = {
   colNationality: string;
   colId: string;
 
+  basePrice: string;
+  groupDiscount: string;
   total: string;
   paymentNote: string;
 
@@ -108,6 +110,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "Cân nặng",
     colNationality: "Quốc tịch",
     colId: "CCCD/Passport",
+    basePrice: "Giá chuyến bay cơ bản",
+    groupDiscount: "Giảm giá nhóm",
     total: "TỔNG CỘNG",
     paymentNote:
       "Thanh toán trực tiếp tại điểm bay trước giờ cất cánh. Nhận tiền mặt, chuyển khoản và thẻ.",
@@ -160,6 +164,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "Weight",
     colNationality: "Nationality",
     colId: "ID / Passport",
+    basePrice: "Base flight price",
+    groupDiscount: "Group discount",
     total: "TOTAL",
     paymentNote:
       "Payment is made on site before take-off. We accept cash, bank transfer and cards.",
@@ -212,6 +218,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "Poids",
     colNationality: "Nationalité",
     colId: "CNI / Passeport",
+    basePrice: "Prix de base du vol",
+    groupDiscount: "Remise groupe",
     total: "TOTAL",
     paymentNote:
       "Le paiement se fait sur place avant le décollage. Espèces, virement et carte acceptés.",
@@ -264,6 +272,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "Вес",
     colNationality: "Гражданство",
     colId: "Паспорт",
+    basePrice: "Базовая стоимость полёта",
+    groupDiscount: "Групповая скидка",
     total: "ИТОГО",
     paymentNote:
       "Оплата на месте перед взлётом. Принимаем наличные, перевод и карты.",
@@ -315,6 +325,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "体重",
     colNationality: "国籍",
     colId: "证件号",
+    basePrice: "飞行基础价格",
+    groupDiscount: "团体优惠",
     total: "总计",
     paymentNote: "起飞前在飞行点现场付款，接受现金、转账与刷卡。",
     nextSteps: [
@@ -365,6 +377,8 @@ const T: Record<EmailLang, Dict> = {
     colWeight: "वज़न",
     colNationality: "राष्ट्रीयता",
     colId: "आईडी / पासपोर्ट",
+    basePrice: "उड़ान का मूल मूल्य",
+    groupDiscount: "समूह छूट",
     total: "कुल",
     paymentNote:
       "भुगतान उड़ान स्थल पर उड़ान से पहले। नकद, बैंक ट्रांसफ़र और कार्ड स्वीकार्य।",
@@ -602,7 +616,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
   if (base > 0) {
     rows.push(
       priceRow(
-        lang === "vi" ? "Giá chuyến bay cơ bản" : "Base flight price",
+        t.basePrice,
         `${money(base)} × ${pax}`,
         base * pax,
       ),
@@ -653,7 +667,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
   if (discountPerPerson > 0) {
     rows.push(
       priceRow(
-        lang === "vi" ? "Giảm giá nhóm" : "Group discount",
+        t.groupDiscount,
         `-${money(discountPerPerson)} × ${pax}`,
         -discountPerPerson * pax,
         true,

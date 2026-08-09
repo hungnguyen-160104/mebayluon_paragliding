@@ -1,4 +1,6 @@
 // services/telegram.service.ts
+import { viLabel } from "@/lib/booking/vi-label";
+
 type SendResult = { chat_id: string; ok: boolean; status?: number; error?: string };
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -62,9 +64,10 @@ export function buildBookingMessage(payload: any): string {
     if (selectedServices.length > 0) {
       return selectedServices
         .map((row: any) => {
-          const label = String(row?.label || row?.key || "").trim();
+          const label = viLabel(payload?.location, row?.key, row?.label);
           if (!label) return "";
-          const detail = String(row?.detail || "").trim();
+          // detailVi: bản tiếng Việt, xem chú thích ở lib/booking/vi-label.ts
+        const detail = String(row?.detailVi || row?.detail || "").trim();
           const amountText = String(row?.amountText || "").trim();
           const parts = [esc(label)];
           if (detail) parts.push(esc(detail));
@@ -81,9 +84,10 @@ export function buildBookingMessage(payload: any): string {
     if (breakdown.length > 0) {
       return breakdown
         .map((row: any) => {
-          const label = String(row?.label || row?.key || "").trim();
+          const label = viLabel(payload?.location, row?.key, row?.label);
           if (!label) return "";
-          const detail = String(row?.detail || "").trim();
+          // detailVi: bản tiếng Việt, xem chú thích ở lib/booking/vi-label.ts
+        const detail = String(row?.detailVi || row?.detail || "").trim();
           const lineTotal =
             typeof row?.lineTotal === "number"
               ? fmtVND(row.lineTotal)
@@ -121,9 +125,10 @@ export function buildBookingMessage(payload: any): string {
     if (breakdown.length > 0) {
       return breakdown
         .map((row: any) => {
-          const label = String(row?.label || row?.key || "").trim();
+          const label = viLabel(payload?.location, row?.key, row?.label);
           if (!label) return "";
-          const detail = String(row?.detail || "").trim();
+          // detailVi: bản tiếng Việt, xem chú thích ở lib/booking/vi-label.ts
+        const detail = String(row?.detailVi || row?.detail || "").trim();
           const amountText =
             typeof row?.lineTotal === "number"
               ? fmtVND(row.lineTotal)
@@ -142,9 +147,10 @@ export function buildBookingMessage(payload: any): string {
 
     return selectedServices
       .map((row: any) => {
-        const label = String(row?.label || row?.key || "").trim();
+        const label = viLabel(payload?.location, row?.key, row?.label);
         if (!label) return "";
-        const detail = String(row?.detail || "").trim();
+        // detailVi: bản tiếng Việt, xem chú thích ở lib/booking/vi-label.ts
+        const detail = String(row?.detailVi || row?.detail || "").trim();
         const amountText = String(row?.amountText || "").trim();
         if (!amountText) return "";
 

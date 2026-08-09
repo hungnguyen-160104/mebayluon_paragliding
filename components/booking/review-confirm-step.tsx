@@ -46,6 +46,15 @@ type ServiceBreakdownRow = {
   key: string;
   label: string;
   detail?: string;
+  /**
+   * Bản tiếng Việt của `detail`, chỉ dùng cho email nội bộ.
+   *
+   * `detail` viết theo ngôn ngữ khách đang xem ("500.000 ₫ × 2 voiture × 1
+   * trajet"). Email nội bộ luôn tiếng Việt và không tự dịch ngược được cụm
+   * đơn vị đó, nên gửi kèm sẵn bản tiếng Việt. Nhãn dịch vụ thì email nội bộ
+   * tự tra theo khoá nên không cần gửi kèm.
+   */
+  detailVi?: string;
   lineTotal: number;
 };
 
@@ -73,6 +82,9 @@ const UI_I18N: Record<
        nên L() luôn rơi về chuỗi tiếng Anh, kể cả khi khách xem bản tiếng Việt. */
     additionalServices: string;
     selectedServices: string;
+  /** Đơn vị trong dòng "500.000 ₫ × 2 xe × 1 chiều" của dịch vụ đón Garrya. */
+  carUnit: string;
+  legUnit: string;
     hotelTransfer: string;
     camera360: string;
     drone: string;
@@ -125,6 +137,8 @@ const UI_I18N: Record<
     selectedCount: "đã chọn",
     additionalServices: "Dịch vụ & tiện ích",
     selectedServices: "Dịch vụ tuỳ chọn",
+    carUnit: "xe",
+    legUnit: "chiều",
     hotelTransfer: "Dịch vụ đón trả",
     camera360: "Camera 360",
     drone: "Flycam (drone camera)",
@@ -185,6 +199,8 @@ const UI_I18N: Record<
     selectedCount: "selected",
     additionalServices: "Services & perks",
     selectedServices: "Optional services",
+    carUnit: "car",
+    legUnit: "leg",
     hotelTransfer: "Hotel pickup / drop-off",
     camera360: "360 camera",
     drone: "Flycam (drone camera)",
@@ -246,6 +262,8 @@ const UI_I18N: Record<
     selectedCount: "sélectionné",
     additionalServices: "Services & avantages",
     selectedServices: "Services en option",
+    carUnit: "voiture",
+    legUnit: "trajet",
     hotelTransfer: "Transfert hôtel",
     camera360: "Caméra 360",
     drone: "Drone (flycam)",
@@ -306,6 +324,8 @@ const UI_I18N: Record<
     selectedCount: "выбрано",
     additionalServices: "Услуги и бонусы",
     selectedServices: "Дополнительные услуги",
+    carUnit: "авто",
+    legUnit: "в одну сторону",
     hotelTransfer: "Трансфер от отеля",
     camera360: "Камера 360",
     drone: "Дрон (flycam)",
@@ -366,6 +386,8 @@ const UI_I18N: Record<
     selectedCount: "चयनित",
     additionalServices: "सेवाएँ व सुविधाएँ",
     selectedServices: "वैकल्पिक सेवाएँ",
+    carUnit: "गाड़ी",
+    legUnit: "तरफ़",
     hotelTransfer: "होटल पिकअप / ड्रॉप",
     camera360: "360 कैमरा",
     drone: "फ़्लाईकैम (ड्रोन)",
@@ -426,6 +448,8 @@ const UI_I18N: Record<
     selectedCount: "已选择",
     additionalServices: "服务与福利",
     selectedServices: "可选服务",
+    carUnit: "辆车",
+    legUnit: "程",
     hotelTransfer: "酒店接送",
     camera360: "360 相机",
     drone: "航拍无人机",
@@ -987,11 +1011,17 @@ export default function ReviewConfirmStep() {
 
       const key = String(svc.key || "");
       let detailText = "";
+      let detailVi = "";
 
       if (key === "khau_pha_garrya_pickup") {
         const carCount = Math.ceil(guestsCount / 4);
         const carPrice = 500_000;
-        detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe × ${qty} chiều`;
+        const money = formatMoneyVND(carPrice);
+        detailText = `${money} × ${carCount} ${L("carUnit", "car")} × ${qty} ${L(
+          "legUnit",
+          "leg",
+        )}`;
+        detailVi = `${money} × ${carCount} xe × ${qty} chiều`;
       } else if (key === "ha_noi_private_hotel_pickup") {
         detailText = "";
       } else if (svc.controlType === "counter") {
@@ -1004,6 +1034,7 @@ export default function ReviewConfirmStep() {
         key,
         label,
         detail: detailText || undefined,
+        detailVi: detailVi || undefined,
         lineTotal,
       });
     });
@@ -1015,6 +1046,7 @@ export default function ReviewConfirmStep() {
     data.flightTypeKey,
     data.services,
     getServiceLineTotalByCurrency,
+    L,
     lang,
     guestsCount,
   ]);
