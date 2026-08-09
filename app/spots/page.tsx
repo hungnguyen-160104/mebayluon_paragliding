@@ -25,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "địa điểm bay dù lượn đẹp",
       "Mebayluon",
     ],
+    image: "/spots/khau-pha/hero.jpg",
     url: "/spots",
     author: "Mebayluon",
     type: "website",

@@ -25,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "combo dù lượn homestay",
       "nghỉ dưỡng mù cang chải",
     ],
+    image: "/homestay/overview.jpeg",
     url: "/homestay",
     type: "website",
     locale,

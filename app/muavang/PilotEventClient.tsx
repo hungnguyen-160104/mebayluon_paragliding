@@ -5,21 +5,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useLanguage } from "@/contexts/language-context";
+import { pilotDict } from "@/lib/i18n/pilot-event";
 import {
   EVENT_PLACES,
   GUIDE_LINKS,
-  KIND_LABEL,
+  MUA_VANG_CONTACTS,
+  MUA_VANG_GALLERY,
+  MUA_VANG_RADIO_FREQ,
   PAYMENT_ACCOUNT,
-  MOTOR_LABEL,
-  MUA_VANG_COMBO_ITEMS,
   COMPANION_VND,
   MUA_VANG_COMBO_VND,
   MUA_VANG_MAX_COMPANIONS,
-  MUA_VANG_FREE_SITE_FEE_TEXT,
   MUA_VANG_MAX_PILOTS,
   OPENING_BY_PERIOD,
   MUA_VANG_ZALO_GROUP,
-  PILOT_DISCOUNT_TEXT,
   PERIODS,
   SITE_FEE_PER_DAY,
   SITE_FEE_PER_MONTH,
@@ -41,8 +41,6 @@ import { buildVietQrPayload } from "@/lib/vietqr";
  * Lịch chọn ngày bay
  * ------------------------------------------------------------------ */
 
-const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-
 function toISO(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
@@ -60,11 +58,6 @@ function monthGrid(year: number, month: number): Array<string | null> {
   for (let d = 1; d <= dayCount; d++) cells.push(toISO(year, month, d));
   return cells;
 }
-
-const MONTH_NAME = [
-  "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
-  "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12",
-];
 
 /* ------------------------------------------------------------------ *
  * Mảnh giao diện dùng lại
@@ -195,6 +188,12 @@ const ERROR_ORDER = [
 type ErrorKey = (typeof ERROR_ORDER)[number];
 
 export default function PilotEventClient() {
+  // Trang này dựng chữ từ lib/i18n/pilot-event chứ không viết thẳng vào JSX:
+  // phi công nước ngoài đọc được, mà email nội bộ và Google Sheets vẫn tiếng
+  // Việt vì chúng lấy nhãn từ lib/pilot-event.ts.
+  const { language } = useLanguage();
+  const T = pilotDict(language);
+
   const formRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -258,6 +257,8 @@ export default function PilotEventClient() {
     transferNote: string;
   } | null>(null);
   /** Mã của đăng ký đang sửa lại; rỗng = đăng ký mới. */
+  /** Ảnh đang xem phóng to trong bộ sưu tập; null = đang đóng. */
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const [editCode, setEditCode] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [paidDeclared, setPaidDeclared] = useState(false);
@@ -309,6 +310,31 @@ export default function PilotEventClient() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (lightbox === null) return;
+
+    // Khoá cuộn nền và cho dùng bàn phím: mở ảnh to trên máy tính mà phải
+    // rê chuột đi tìm nút mới chuyển được ảnh thì rất khó chịu.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+      if (e.key === "ArrowRight")
+        setLightbox((n) => ((n ?? 0) + 1) % MUA_VANG_GALLERY.length);
+      if (e.key === "ArrowLeft")
+        setLightbox(
+          (n) => ((n ?? 0) - 1 + MUA_VANG_GALLERY.length) % MUA_VANG_GALLERY.length,
+        );
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [lightbox]);
 
   const todayISO = useMemo(() => {
     const d = new Date();
@@ -369,24 +395,24 @@ export default function PilotEventClient() {
 
   const validate = useCallback((): Errors => {
     const next: Errors = {};
-    if (!fullName.trim()) next.fullName = "Vui lòng nhập họ tên";
-    if (!idNumber.trim()) next.idNumber = "Vui lòng nhập số CCCD/Passport";
+    if (!fullName.trim()) next.fullName = T.err.name;
+    if (!idNumber.trim()) next.idNumber = T.err.id;
 
     const digits = phone.replace(/\D/g, "");
-    if (!phone.trim()) next.phone = "Số điện thoại là bắt buộc";
-    else if (digits.length < 8) next.phone = "Số điện thoại chưa đúng, vui lòng kiểm tra lại";
+    if (!phone.trim()) next.phone = T.err.phone;
+    else if (digits.length < 8) next.phone = T.err.phoneBad;
 
-    if (!dates.length) next.dates = "Vui lòng chọn ít nhất một ngày bay";
-    if (motor && !motorType) next.motorType = "Vui lòng chọn loại máy";
+    if (!dates.length) next.dates = T.err.dates;
+    if (motor && !motorType) next.motorType = T.err.motor;
     return next;
-  }, [fullName, idNumber, phone, dates.length, motor, motorType]);
+  }, [fullName, idNumber, phone, dates.length, motor, motorType, T]);
 
   const submit = async () => {
     setServerError("");
 
     const found: Errors = {
-      ...(flyingKind ? {} : { flyingKind: "Vui lòng chọn loại hình bay" }),
-      ...(period ? {} : { period: "Vui lòng chọn đợt bay" }),
+      ...(flyingKind ? {} : { flyingKind: T.err.kind }),
+      ...(period ? {} : { period: T.err.period }),
       ...(flyingKind && period ? validate() : {}),
     };
 
@@ -427,7 +453,7 @@ export default function PilotEventClient() {
 
       const data = await res.json();
       if (!res.ok || !data?.ok) {
-        setServerError(data?.message || "Không gửi được đăng ký, vui lòng thử lại");
+        setServerError(data?.message || T.errSubmit);
         return;
       }
 
@@ -440,7 +466,7 @@ export default function PilotEventClient() {
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      setServerError("Mất kết nối, vui lòng thử lại");
+      setServerError(T.errNetwork);
     } finally {
       setSubmitting(false);
     }
@@ -530,16 +556,16 @@ export default function PilotEventClient() {
             className="mt-6 font-serif text-3xl font-extrabold text-white md:text-4xl"
             style={{ textShadow: "0 3px 18px rgba(0,0,0,.6)" }}
           >
-            Đăng ký thành công — Hẹn gặp trên mùa vàng!
+            {T.okTitle}
           </motion.h1>
 
           <p className="mt-3 text-white/75">
-            Ban tổ chức đã nhận thông tin của bạn và sẽ liên hệ để xác nhận lịch bay.
+            {T.okSubtitle}
           </p>
 
           <div className="mt-7 w-full rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
             <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
-              Mã đăng ký
+              {T.okCode}
             </div>
             <div className="mt-1.5 font-mono text-3xl font-extrabold tracking-wider text-white">
               {result.code}
@@ -549,10 +575,10 @@ export default function PilotEventClient() {
           {period && OPENING_BY_PERIOD[period] ? (
             <div className="mt-5 w-full rounded-2xl border-2 border-amber-400/60 bg-gradient-to-b from-amber-400/25 to-amber-400/5 px-5 py-4 text-center shadow-[0_0_30px_rgba(251,191,36,.22)]">
               <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
-                🎬 Lễ khai mạc
+                🎬 {T.openingLabel}
               </div>
               <div className="mt-1 text-base font-extrabold text-white">
-                {OPENING_BY_PERIOD[period]}
+                {period === "mua_vang" ? T.openingMuaVang : T.openingCom}
               </div>
             </div>
           ) : null}
@@ -565,12 +591,9 @@ export default function PilotEventClient() {
               transition={{ delay: 0.14 }}
               className="mt-5 w-full rounded-2xl border border-sky-400/40 bg-sky-400/10 p-5 text-center"
             >
-              <div className="text-base font-bold text-sky-300">
-                Vui lòng tham gia nhóm Zalo của sự kiện
-              </div>
+              <div className="text-base font-bold text-sky-300">{T.zaloTitle}</div>
               <p className="mt-1.5 text-sm leading-relaxed text-white/70">
-                Ba ngày sự kiện lịch bay thay đổi theo gió — ban tổ chức báo tin
-                trong nhóm, không gọi từng người.
+                {T.zaloDesc}
               </p>
               <a
                 href={MUA_VANG_ZALO_GROUP}
@@ -578,7 +601,7 @@ export default function PilotEventClient() {
                 rel="noreferrer"
                 className="cta-btn mt-4 inline-flex h-12 items-center rounded-xl bg-[#0068FF] px-6 text-base font-bold text-white transition hover:brightness-110"
               >
-                Vào nhóm Zalo sự kiện
+                {T.zaloBtn}
               </a>
             </motion.div>
           ) : null}
@@ -592,7 +615,7 @@ export default function PilotEventClient() {
               className="mt-6 w-full rounded-2xl border border-white/15 bg-white/[0.06] p-5 text-left"
             >
               <div className="text-center text-xs font-bold uppercase tracking-[.15em] text-amber-300">
-                Chuyển khoản cọc
+                {T.payTitle}
               </div>
               <div className="mt-1 text-center text-3xl font-extrabold text-amber-300">
                 {formatVnd(result.feeTotal)}
@@ -603,7 +626,7 @@ export default function PilotEventClient() {
                   <div className="rounded-2xl bg-white p-3 shadow-lg">
                     <img
                       src={qrDataUrl}
-                      alt="Mã QR chuyển khoản"
+                      alt={T.altQr}
                       width={230}
                       height={230}
                       className="block h-[230px] w-[230px]"
@@ -611,31 +634,28 @@ export default function PilotEventClient() {
                   </div>
                 ) : (
                   <div className="flex h-[254px] w-[254px] items-center justify-center rounded-2xl bg-white/10 text-sm text-white/50">
-                    Đang tạo mã QR…
+                    {T.payMaking}
                   </div>
                 )}
               </div>
 
               <p className="mt-3 text-center text-sm text-white/60">
-                Quét bằng app ngân hàng — số tiền và nội dung đã điền sẵn.
+                {T.payScanHint}
               </p>
 
               {/* Hai câu này quyết định việc phi công có chuyển tiền hay không,
                   nên đặt ngay dưới mã QR chứ không nhét xuống cuối trang. */}
               <div className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm leading-relaxed text-amber-100">
-                <b>Lưu ý:</b> đăng ký chỉ được ghi nhận sau khi phi công chuyển
-                khoản phí đăng ký.
-                <span className="mt-1 block text-emerald-300">
-                  Yên tâm — nếu huỷ lịch bay, bạn sẽ được hoàn tiền.
-                </span>
+                {T.payNotice}
+                <span className="mt-1 block text-emerald-300">{T.payRefund}</span>
               </div>
 
               <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-black/25 p-4 text-sm">
                 {[
-                  ["Ngân hàng", PAYMENT_ACCOUNT.bankName],
-                  ["Số tài khoản", PAYMENT_ACCOUNT.accountDisplay],
-                  ["Chủ tài khoản", "Đặng Văn Mỹ"],
-                  ["Nội dung", result.transferNote],
+                  [T.payBank, PAYMENT_ACCOUNT.bankName],
+                  [T.payAccount, PAYMENT_ACCOUNT.accountDisplay],
+                  [T.payOwner, "Đặng Văn Mỹ"],
+                  [T.payNote, result.transferNote],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-start justify-between gap-3">
                     <span className="shrink-0 text-white/50">{label}</span>
@@ -646,7 +666,7 @@ export default function PilotEventClient() {
 
               {paidDeclared ? (
                 <div className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-center text-sm font-semibold text-emerald-300">
-                  ✓ Đã ghi nhận. Ban tổ chức sẽ đối chiếu sao kê và liên hệ lại với bạn.
+                  {T.payDone}
                 </div>
               ) : (
                 <button
@@ -655,25 +675,23 @@ export default function PilotEventClient() {
                   disabled={declaring}
                   className="cta-btn mt-4 h-13 w-full rounded-xl bg-emerald-500 py-3.5 text-base font-extrabold text-white transition hover:bg-emerald-400 disabled:opacity-60"
                 >
-                  {declaring ? "Đang ghi nhận…" : "Tôi đã CK cọc"}
+                  {declaring ? T.payButtonBusy : T.payButton}
                 </button>
               )}
             </motion.div>
           ) : (
             <div className="mt-6 w-full rounded-2xl border border-emerald-400/35 bg-emerald-400/10 p-5 text-center">
               <div className="text-lg font-bold text-emerald-300">
-                Đợt bay này không thu phí
+                {T.noFeeTitle}
               </div>
               <p className="mt-1 text-sm text-white/65">
-                Bạn không phải chuyển khoản gì cả, chỉ cần có mặt đúng lịch.
+                {T.noFeeDesc}
               </p>
             </div>
           )}
 
           <p className="mt-5 text-sm leading-relaxed text-white/60">
-            {result.emailSent
-              ? "Bản xác nhận chi tiết đã được gửi vào email của bạn."
-              : "Bạn chưa khai email nên ban tổ chức sẽ gọi điện xác nhận trực tiếp."}
+            {result.emailSent ? T.okEmailSent : T.okNoEmail}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -681,7 +699,7 @@ export default function PilotEventClient() {
               href="tel:+84964073555"
               className="cta-btn inline-flex h-12 items-center rounded-xl bg-amber-400 px-6 text-base font-bold text-black transition hover:bg-amber-300"
             >
-              Gọi ban tổ chức: 0964 073 555
+              {T.callBtn}
             </a>
             {/* Quay lại phiếu với nguyên dữ liệu đã điền. Gửi lại sẽ CẬP NHẬT
                 đúng bản ghi cũ (nhờ editCode) chứ không tạo thêm đăng ký mới. */}
@@ -698,7 +716,7 @@ export default function PilotEventClient() {
               }}
               className="inline-flex h-12 items-center rounded-xl border border-amber-400/60 bg-amber-400/15 px-6 text-base font-semibold text-amber-200 transition hover:bg-amber-400/25"
             >
-              Sửa lại thông tin đăng ký
+              {T.editBtn}
             </button>
 
             <button
@@ -706,7 +724,7 @@ export default function PilotEventClient() {
               onClick={() => window.location.reload()}
               className="inline-flex h-12 items-center rounded-xl border border-white/25 bg-white/10 px-6 text-base font-medium text-white transition hover:bg-white/20"
             >
-              Đăng ký cho phi công khác
+              {T.againBtn}
             </button>
           </div>
         </div>
@@ -724,7 +742,7 @@ export default function PilotEventClient() {
         <div className="absolute inset-0">
           <Image
             src="/spots/khau-pha/hero.jpg"
-            alt="Ruộng bậc thang mùa vàng tại đèo Khau Phạ"
+            alt={T.altHero}
             fill
             priority
             className="scale-105 object-cover brightness-[1.12] contrast-[1.05] saturate-[1.12]"
@@ -750,7 +768,7 @@ export default function PilotEventClient() {
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-1.5 text-[13px] font-bold uppercase tracking-[.18em] text-amber-300 backdrop-blur"
           >
-            🪂 Trang dành riêng cho phi công
+            {T.heroBadge}
           </motion.span>
 
           <motion.h1
@@ -768,7 +786,7 @@ export default function PilotEventClient() {
                   "0 1px 2px rgba(0,0,0,.95), 0 3px 10px rgba(0,0,0,.85), 0 8px 26px rgba(0,0,0,.7)",
               }}
             >
-              Chào mừng đến với
+              {T.heroWelcome}
             </span>
 
             {/* Tên sự kiện: chữ khối, nén chiều cao còn 83% cho ra dáng tít áp
@@ -801,7 +819,7 @@ export default function PilotEventClient() {
             className="mx-auto mt-4 max-w-2xl text-lg font-semibold uppercase tracking-[.12em] text-white/90 sm:text-xl"
             style={{ textShadow: "0 2px 12px rgba(0,0,0,.7)" }}
           >
-            Khau Phạ · Tú Lệ · Mù Cang Chải
+            {T.heroPlace}
           </motion.p>
 
           <motion.div
@@ -811,9 +829,9 @@ export default function PilotEventClient() {
             className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm"
           >
             {[
-              { icon: "🌾", text: "Bay trên mùa vàng · 29–31/8" },
-              { icon: "🍚", text: "Lễ hội Cốm Tú Lệ · 21–23/8" },
-              { icon: "⛰️", text: "Cất cánh 1.268m" },
+              { icon: "🌾", text: T.chipFestival },
+              { icon: "🍚", text: T.chipCom },
+              { icon: "⛰️", text: T.chipAltitude },
             ].map((chip) => (
               <span
                 key={chip.text}
@@ -838,10 +856,10 @@ export default function PilotEventClient() {
               }
               className="cta-btn inline-flex h-14 items-center rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 px-9 text-lg font-extrabold text-black shadow-[0_10px_40px_rgba(251,191,36,.35)] transition hover:brightness-110"
             >
-              Đăng ký bay ngay
+              {T.heroCta}
             </button>
             <p className="mt-3 text-sm text-white/55">
-              Phi công phải đăng ký trước khi bay tại điểm bay
+              {T.heroCtaNote}
             </p>
           </motion.div>
         </div>
@@ -851,11 +869,10 @@ export default function PilotEventClient() {
       <section className="relative bg-[#0B0A08] py-16">
         <div className="mx-auto max-w-5xl px-4">
           <h2 className="text-center font-serif text-3xl font-bold text-white">
-            Chọn thời điểm bay
+            {T.periodsTitle}
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-center text-white/60">
-            Hai đợt lễ hội không thu phí điểm bay. Phí điểm bay chỉ áp dụng cho những
-            ngày bay thường ngoài hai đợt này.
+            {T.periodsSubtitle}
           </p>
 
           <div className="mt-9 grid gap-4 md:grid-cols-3">
@@ -866,10 +883,9 @@ export default function PilotEventClient() {
                 dates: "29 – 31/08/2026",
                 highlight: true,
                 lines: [
-                  OPENING_BY_PERIOD.mua_vang as string,
-                  `Combo trọn gói ${formatVnd(MUA_VANG_COMBO_VND)}`,
-                  "**Phi công PPG: Được FREE**",
-                  "Không tách lẻ từng mục",
+                  T.openingMuaVang,
+                  `${T.comboTitle.split("—")[0].trim()} ${formatVnd(MUA_VANG_COMBO_VND)}`,
+                  ...T.muaVangLines,
                 ],
               },
               {
@@ -877,23 +893,18 @@ export default function PilotEventClient() {
                 icon: "🍚",
                 dates: "21 – 23/08/2026",
                 highlight: false,
-                lines: [
-                  OPENING_BY_PERIOD.le_hoi_com as string,
-                  "Không thu phí điểm bay",
-                  "Mọi phi công đều được bay miễn phí",
-                  "Phi công dù lượn tự túc ăn ở",
-                ],
+                lines: [T.openingCom, ...T.comLines],
               },
               {
                 key: "ngay_thuong" as const,
                 icon: "🗓️",
-                dates: "ngoài thời điểm lễ hội",
+                dates: T.normalDates,
                 highlight: false,
                 lines: [
-                  `Phí điểm bay: ${formatVnd(SITE_FEE_PER_DAY)}/ngày`,
-                  `hoặc ${formatVnd(SITE_FEE_PER_MONTH)}/tháng`,
-                  "Vui lòng đăng ký trước khi bay",
-                  "Chưa bao gồm ăn ở và đi lại",
+                  `${T.normalLines[2]} ${T.feeModeDay(formatVnd(SITE_FEE_PER_DAY))}`,
+                  T.feeModeMonth(formatVnd(SITE_FEE_PER_MONTH)),
+                  T.normalLines[0],
+                  T.normalLines[1],
                 ],
               },
             ].map((card, i) => (
@@ -917,7 +928,7 @@ export default function PilotEventClient() {
                 <div className="text-center">
                   <div className="text-3xl leading-none">{card.icon}</div>
                   <h3 className="mt-2 text-lg font-bold leading-snug text-white">
-                    {PERIODS[card.key].name}
+                    {T.periodName[card.key]}
                   </h3>
                   <div className="mt-1 text-sm font-bold text-amber-300">
                     {card.dates}
@@ -961,7 +972,7 @@ export default function PilotEventClient() {
           >
             <span className="text-2xl">🎁</span>
             <span className="text-[15px] font-semibold text-emerald-200">
-              {PILOT_DISCOUNT_TEXT}
+              {T.discountText}
             </span>
           </motion.div>
 
@@ -973,14 +984,13 @@ export default function PilotEventClient() {
             className="mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-5"
           >
             <h3 className="text-base font-bold text-amber-300">
-              Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói —{" "}
-              {formatVnd(MUA_VANG_COMBO_VND)}
+              {T.comboTitle} — {formatVnd(MUA_VANG_COMBO_VND)}
             </h3>
             <p className="mt-1 text-sm text-white/60">
-              Ban tổ chức bao trọn từ chiều 29/8 đến trưa 31/8.
+              {T.comboSubtitle}
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {MUA_VANG_COMBO_ITEMS.map((item) => (
+              {T.comboItems.map((item) => (
                 <div key={item} className="flex items-start gap-2 text-sm text-white/80">
                   <span className="mt-0.5 text-emerald-400">✓</span>
                   {item}
@@ -995,10 +1005,10 @@ export default function PilotEventClient() {
       <section className="relative bg-[#0B0A08] pb-16">
         <div className="mx-auto max-w-5xl px-4">
           <h2 className="text-center font-serif text-3xl font-bold text-white">
-            Địa điểm sự kiện
+            {T.placesTitle}
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-center text-white/60">
-            Bấm vào từng thẻ để mở chỉ đường trên Google Maps.
+            {T.placesSubtitle}
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -1016,13 +1026,13 @@ export default function PilotEventClient() {
 
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-bold uppercase tracking-[.14em] text-amber-400">
-                      {place.role}
+                      {T.placeRoles[i]}
                     </div>
                     <div className="mt-1 text-lg font-bold text-white">
-                      {place.name}
+                      {T.placeNames[i]}
                     </div>
                     <div className="mt-0.5 text-sm text-white/60">
-                      {place.detail}
+                      {T.placeDetails[i]}
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1032,7 +1042,7 @@ export default function PilotEventClient() {
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-300 underline underline-offset-4 transition hover:text-amber-200"
                       >
-                        📍 Xem bản đồ
+                        📍 {T.viewMap}
                       </a>
 
                       {place.pageUrl ? (
@@ -1042,7 +1052,7 @@ export default function PilotEventClient() {
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/70 underline underline-offset-4 transition hover:text-white"
                         >
-                          🏡 {place.pageLabel}
+                          🏡 {T.viewHomestay}
                         </a>
                       ) : null}
                     </div>
@@ -1058,16 +1068,16 @@ export default function PilotEventClient() {
       <section className="relative bg-[#0B0A08] pb-14">
         <div className="mx-auto max-w-4xl px-4">
           <h2 className="text-center font-serif text-2xl font-bold text-white">
-            Đọc thêm trước khi lên đường
+            {T.guideTitle}
           </h2>
           <p className="mt-1.5 text-center text-sm text-white/55">
-            Đường đi, nhà xe và những gì có ở Mù Cang Chải — cho cả người nhà đi cùng.
+            {T.guideSubtitle}
           </p>
 
           {/* Dải chip một dòng thay cho lưới thẻ: đây là mục tham khảo, không
               nên chiếm chỗ của phần đăng ký ngay bên dưới. */}
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {GUIDE_LINKS.map((item) => (
+            {GUIDE_LINKS.map((item, i) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -1075,7 +1085,7 @@ export default function PilotEventClient() {
                 className="group inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/[0.06] px-3.5 py-2 text-[13px] font-medium text-white/80 transition-colors hover:border-amber-400/50 hover:bg-white/[0.12] hover:text-amber-200"
               >
                 <span>{item.icon}</span>
-                {item.title}
+                {T.guideLinks[i] ?? item.title}
                 <span className="text-amber-400/70 transition-transform group-hover:translate-x-0.5">
                   →
                 </span>
@@ -1094,21 +1104,10 @@ export default function PilotEventClient() {
           <div className="overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-[#28344A] shadow-[0_0_70px_rgba(251,191,36,.22),0_24px_60px_rgba(0,0,0,.55)]">
             <div className="border-b border-white/15 bg-gradient-to-r from-amber-400/30 via-amber-400/15 to-transparent px-5 py-5 sm:px-7">
               <h2 className="font-serif text-2xl font-bold text-white sm:text-3xl">
-                {editCode ? "Sửa phiếu đăng ký" : "Phiếu đăng ký bay"}
+                {editCode ? T.formTitleEdit : T.formTitle}
               </h2>
               <p className="mt-1 text-sm text-white/65">
-                {editCode ? (
-                  <>
-                    Đang sửa đăng ký{" "}
-                    <b className="font-mono text-amber-300">{editCode}</b> — gửi lại sẽ
-                    cập nhật chính đăng ký này, không tạo thêm bản mới.
-                  </>
-                ) : (
-                  <>
-                    Điền đủ các mục có dấu{" "}
-                    <span className="text-amber-400">*</span> rồi bấm xác nhận.
-                  </>
-                )}
+                {editCode ? T.formSubtitleEdit(editCode) : T.formSubtitle}
               </p>
             </div>
 
@@ -1121,19 +1120,17 @@ export default function PilotEventClient() {
                 fieldRefs.current.flyingKind = el;
               }}
             >
-              <SectionTitle step={1} title="Bạn bay loại nào?" />
+              <SectionTitle step={1} title={T.step1} />
               <div className="grid gap-3 sm:grid-cols-3">
                 {(["paragliding", "paramotor", "both"] as FlyingKind[]).map((k) => (
                   <ChoiceCard
                     key={k}
                     active={flyingKind === k}
                     icon={k === "paragliding" ? "🪂" : k === "paramotor" ? "🛩️" : "✨"}
-                    title={KIND_LABEL[k]}
-                    desc={k === "paragliding" ? "Dù không động cơ" : ""}
+                    title={T.kind[k]}
+                    desc={k === "paragliding" ? T.kindParaDesc : ""}
                     highlight={
-                      k === "paramotor" || k === "both"
-                        ? "Phi công PPG được miễn phí ăn ở trong đợt lễ hội"
-                        : undefined
+                      k === "paramotor" || k === "both" ? T.ppgPerk : undefined
                     }
                     onClick={() => {
                       setFlyingKind(k);
@@ -1149,7 +1146,7 @@ export default function PilotEventClient() {
 
             {/* --- 2. thông tin phi công --- */}
             <div className="mt-9">
-              <SectionTitle step={2} title="Thông tin phi công" />
+              <SectionTitle step={2} title={T.step2} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div
                   className="scroll-mt-24"
@@ -1157,12 +1154,12 @@ export default function PilotEventClient() {
                     fieldRefs.current.fullName = el;
                   }}
                 >
-                  <Field label="Họ và tên" required error={errors.fullName}>
+                  <Field label={T.fFullName} required error={errors.fullName}>
                     <input
                       className={inputClass}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nguyễn Văn A"
+                      placeholder={T.fFullNamePh}
                     />
                   </Field>
                 </div>
@@ -1174,21 +1171,21 @@ export default function PilotEventClient() {
                   }}
                 >
                   <Field
-                    label="Số CCCD/Passport"
+                    label={T.fId}
                     required
-                    hint="để đăng ký lưu trú"
+                    hint={T.fIdHint}
                     error={errors.idNumber}
                   >
                     <input
                       className={inputClass}
                       value={idNumber}
                       onChange={(e) => setIdNumber(e.target.value)}
-                      placeholder="0010xxxxxxx"
+                      placeholder={T.fIdPh}
                     />
                   </Field>
                 </div>
 
-                <Field label="Quốc tịch">
+                <Field label={T.fNationality}>
                   <input
                     className={inputClass}
                     value={nationality}
@@ -1203,7 +1200,7 @@ export default function PilotEventClient() {
                         e.target.select();
                       }
                     }}
-                    placeholder="Việt Nam"
+                    placeholder={T.fNationality}
                   />
                 </Field>
 
@@ -1213,53 +1210,53 @@ export default function PilotEventClient() {
                     fieldRefs.current.phone = el;
                   }}
                 >
-                  <Field label="Số điện thoại" required error={errors.phone}>
+                  <Field label={T.fPhone} required error={errors.phone}>
                     <input
                       className={inputClass}
                       value={phone}
                       inputMode="tel"
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0912 345 678 hoặc +33 6 12 34 56 78"
+                      placeholder={T.fPhonePh}
                     />
                   </Field>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Field label="Email (không bắt buộc)">
+                  <Field label={T.fEmail}>
                     <input
                       className={inputClass}
                       value={email}
                       type="email"
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Có email thì bản xác nhận sẽ được gửi tới đây"
+                      placeholder={T.fEmailPh}
                     />
                   </Field>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Field label="Địa chỉ">
+                  <Field label={T.fAddress}>
                     <input
                       className={inputClass}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Số nhà, phường/xã, tỉnh/thành"
+                      placeholder={T.fAddressPh}
                     />
                   </Field>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Field label="CLB / Hội">
+                  <Field label={T.fClub}>
                     <input
                       className={inputClass}
                       value={club}
                       onChange={(e) => setClub(e.target.value)}
-                      placeholder="Ví dụ: HNAA, VWHN, SGPG, …"
+                      placeholder={T.fClubPh}
                     />
                   </Field>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Field label="Yêu cầu riêng" hint="không bắt buộc">
+                  <Field label={T.fRequest} hint={T.fRequestHint}>
                     {/* Ô nhiều dòng: phi công hay viết vài câu (ăn chay, đi
                         cùng bạn, cần chỗ để xe, tới muộn…) chứ không phải một
                         cụm ngắn như các ô trên. */}
@@ -1268,7 +1265,7 @@ export default function PilotEventClient() {
                       value={specialRequest}
                       maxLength={500}
                       onChange={(e) => setSpecialRequest(e.target.value)}
-                      placeholder="Ví dụ: ăn chay, đi cùng bạn cùng phòng, tới muộn tối 29, cần chỗ để xe…"
+                      placeholder={T.fRequestPh}
                     />
                   </Field>
                 </div>
@@ -1282,22 +1279,22 @@ export default function PilotEventClient() {
                 fieldRefs.current.period = el;
               }}
             >
-              <SectionTitle step={3} title="Đợt bay" />
+              <SectionTitle step={3} title={T.step3} />
               <div className="grid gap-3">
                 {(["mua_vang", "le_hoi_com", "ngay_thuong"] as PeriodKey[]).map((k) => (
                   <ChoiceCard
                     key={k}
                     active={period === k}
                     icon={k === "mua_vang" ? "🌾" : k === "le_hoi_com" ? "🍚" : "🗓️"}
-                    title={PERIODS[k].name}
+                    title={T.periodName[k]}
                     desc={
                       PERIODS[k].dates.length
                         ? `${formatVnDate(PERIODS[k].dates[0])} – ${formatVnDate(
                             PERIODS[k].dates[PERIODS[k].dates.length - 1],
-                          )} · ${PERIODS[k].note}`
-                        : PERIODS[k].note
+                          )} · ${T.periodNote[k]}`
+                        : T.periodNote[k]
                     }
-                    badge={k === "mua_vang" ? "Sự kiện chính" : undefined}
+                    badge={k === "mua_vang" ? T.chipFestival.split("·")[0].trim() : undefined}
                     onClick={() => selectPeriod(k)}
                   />
                 ))}
@@ -1314,10 +1311,10 @@ export default function PilotEventClient() {
                 <span className="text-3xl">🎬</span>
                 <span className="min-w-0">
                   <span className="block text-[11px] font-bold uppercase tracking-[.16em] text-amber-300">
-                    Lễ khai mạc
+                    {T.openingLabel}
                   </span>
                   <span className="mt-0.5 block text-base font-extrabold leading-snug text-white">
-                    {OPENING_BY_PERIOD[period]}
+                    {period === "mua_vang" ? T.openingMuaVang : T.openingCom}
                   </span>
                 </span>
               </div>
@@ -1334,8 +1331,8 @@ export default function PilotEventClient() {
                   <div>
                     <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
                       {slots.taken >= MUA_VANG_MAX_PILOTS
-                        ? "Phi công đã đăng ký"
-                        : "Suất phi công còn lại"}
+                        ? T.slotsTakenLabel
+                        : T.slotsLeft}
                     </div>
                     <div className="mt-1 text-3xl font-extrabold text-white">
                       {slots.taken >= MUA_VANG_MAX_PILOTS
@@ -1347,7 +1344,7 @@ export default function PilotEventClient() {
                     </div>
                   </div>
                   <div className="text-sm text-white/60">
-                    Đã có <b className="text-amber-300">{slots.taken}</b> phi công đăng ký
+                    {T.slotsTaken(slots.taken)}
                   </div>
                 </div>
 
@@ -1364,7 +1361,7 @@ export default function PilotEventClient() {
                 {slots.pilots.length ? (
                   <div className="mt-4 border-t border-white/12 pt-4">
                     <div className="text-xs font-bold uppercase tracking-[.14em] text-white/50">
-                      Phi công đã đăng ký
+                      {T.slotsListTitle}
                     </div>
                     {/* Danh sách chỉ để phi công liếc xem có ai quen, không
                         phải nội dung chính — để chữ nhỏ và xếp nhiều cột cho
@@ -1381,11 +1378,11 @@ export default function PilotEventClient() {
                           <span className="font-semibold">{p.name}</span>
                           <span className="text-white/35">
                             {p.kind === "paramotor"
-                              ? "· dù máy"
+                              ? `· ${T.kindShort.paramotor}`
                               : p.kind === "both"
-                                ? "· cả hai"
-                                : "· dù lượn"}
-                            {p.companions > 0 ? ` · +${p.companions} người nhà` : ""}
+                                ? `· ${T.kindShort.both}`
+                                : `· ${T.kindShort.paragliding}`}
+                            {p.companions > 0 ? T.companionSuffix(p.companions) : ""}
                           </span>
                         </li>
                       ))}
@@ -1393,14 +1390,13 @@ export default function PilotEventClient() {
                   </div>
                 ) : (
                   <div className="mt-4 border-t border-white/12 pt-4 text-sm text-white/50">
-                    Chưa có phi công nào đăng ký — bạn có thể là người đầu tiên.
+                    {T.slotsEmpty}
                   </div>
                 )}
 
                 {slots.taken >= MUA_VANG_MAX_PILOTS ? (
                   <div className="mt-4 rounded-xl border border-amber-400/45 bg-amber-400/15 px-4 py-3 text-sm font-semibold text-amber-200">
-                    Đã hơn {MUA_VANG_MAX_PILOTS} phi công đăng ký sự kiện. Bạn vẫn đăng ký
-                    được, ban tổ chức sẽ liên hệ để sắp xếp.
+                    {T.slotsOver(MUA_VANG_MAX_PILOTS)}
                   </div>
                 ) : null}
               </motion.div>
@@ -1416,13 +1412,9 @@ export default function PilotEventClient() {
               >
                 <SectionTitle
                   step={4}
-                  title="Ngày bay"
+                  title={T.step4}
                   hint={
-                    period === "mua_vang"
-                      ? "Ba ngày lễ hội đi trọn gói nên đã chọn sẵn, không bỏ lẻ ngày nào."
-                      : period === "le_hoi_com"
-                        ? "Tích những ngày bạn bay trong Lễ hội Cốm Tú Lệ."
-                        : "Tích những ngày bạn dự định bay — chọn ngày rời rạc cũng được, bay bao nhiêu ngày tính bấy nhiêu."
+                    period ? T.hint[period] : ""
                   }
                 />
 
@@ -1443,12 +1435,8 @@ export default function PilotEventClient() {
                       className="mt-1 h-4 w-4 rounded border-white/30 accent-amber-400"
                     />
                     <span className="text-sm leading-relaxed text-white/80">
-                      <b className="text-amber-300">Tôi muốn bay thêm ngày</b> ngoài ba
-                      ngày lễ hội.
-                      <span className="mt-1 block text-white/60">
-                        {MUA_VANG_FREE_SITE_FEE_TEXT}. Ngày nằm ngoài khoảng này vẫn thu
-                        phí điểm bay như thường.
-                      </span>
+                      <b className="text-amber-300">{T.extraDaysLabel}</b>
+                      <span className="mt-1 block text-white/60">{T.extraDaysNote}</span>
                     </span>
                   </label>
                 ) : null}
@@ -1470,7 +1458,7 @@ export default function PilotEventClient() {
                       ‹
                     </button>
                     <span className="text-base font-bold text-white">
-                      {MONTH_NAME[viewMonth.month]} {viewMonth.year}
+                      {T.months[viewMonth.month]} {viewMonth.year}
                     </span>
                     <button
                       type="button"
@@ -1489,7 +1477,7 @@ export default function PilotEventClient() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1 text-center">
-                    {WEEKDAYS.map((w) => (
+                    {T.weekdays.map((w) => (
                       <div key={w} className="pb-1 text-xs font-semibold text-white/40">
                         {w}
                       </div>
@@ -1514,7 +1502,7 @@ export default function PilotEventClient() {
                           onClick={() => toggleDate(iso)}
                           title={
                             isFestival
-                              ? "Ngày này thuộc đợt lễ hội, hãy chọn đợt tương ứng ở trên"
+                              ? T.festivalDateTip
                               : undefined
                           }
                           className={[
@@ -1534,8 +1522,7 @@ export default function PilotEventClient() {
 
                   {dates.length ? (
                     <div className="mt-3 border-t border-white/10 pt-3 text-sm text-white/70">
-                      Đã chọn <b className="text-amber-300">{dates.length}</b> ngày:{" "}
-                      {dates.map(formatVnDate).join(" · ")}
+                      {T.chosenDays(dates.length)} {dates.map(formatVnDate).join(" · ")}
                     </div>
                   ) : null}
                 </div>
@@ -1554,13 +1541,11 @@ export default function PilotEventClient() {
                         icon={m === "day" ? "☀️" : "📅"}
                         title={
                           m === "day"
-                            ? `${formatVnd(SITE_FEE_PER_DAY)} / ngày`
-                            : `${formatVnd(SITE_FEE_PER_MONTH)} / tháng`
+                            ? T.feeModeDay(formatVnd(SITE_FEE_PER_DAY))
+                            : T.feeModeMonth(formatVnd(SITE_FEE_PER_MONTH))
                         }
                         desc={
-                          m === "day"
-                            ? "Trả theo đúng số ngày đã chọn"
-                            : "Bằng đúng 7 ngày lẻ, bay thoải mái cả tháng"
+                          m === "day" ? T.feeModeDayDesc : T.feeModeMonthDesc
                         }
                         onClick={() => setSiteFeeMode(m)}
                       />
@@ -1576,11 +1561,11 @@ export default function PilotEventClient() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="text-[15px] font-bold text-white">
-                      Người nhà đi kèm
+                      {T.companionTitle}
                     </div>
                     <p className="mt-1 max-w-md text-sm leading-relaxed text-white/60">
-                      {formatVnd(COMPANION_VND)}/người. Ăn ở cùng đoàn,{" "}
-                      <b className="text-white/80">không có phòng riêng</b>.
+                      {T.companionDesc(formatVnd(COMPANION_VND))}{" "}
+                      <b className="text-white/80">{T.companionNoRoom}</b>.
                     </p>
                   </div>
 
@@ -1589,7 +1574,7 @@ export default function PilotEventClient() {
                       type="button"
                       onClick={() => setCompanionCount((n) => Math.max(0, n - 1))}
                       className="h-11 w-11 rounded-xl border border-white/25 bg-white/[0.12] text-xl font-bold text-white transition hover:bg-white/20"
-                      aria-label="Bớt một người"
+                      aria-label={T.minusOne}
                     >
                       −
                     </button>
@@ -1604,7 +1589,7 @@ export default function PilotEventClient() {
                         )
                       }
                       className="h-11 w-11 rounded-xl border border-white/25 bg-white/[0.12] text-xl font-bold text-white transition hover:bg-white/20"
-                      aria-label="Thêm một người"
+                      aria-label={T.plusOne}
                     >
                       +
                     </button>
@@ -1624,11 +1609,9 @@ export default function PilotEventClient() {
                   className="mt-1 h-4 w-4 rounded border-white/30 accent-amber-400"
                 />
                 <span className="text-sm leading-relaxed text-white/80">
-                  Tôi đã đăng ký <b>và thanh toán</b>{" "}
-                  <b className="text-amber-300">Festival Bay trên mùa vàng 2026</b> —
-                  được miễn phí điểm bay 10 ngày, từ 26/8 đến hết 4/9.
+                  {T.muaVangCheckbox}
                   <span className="mt-1 block text-white/50">
-                    Ban tổ chức đối chiếu lại khi bạn tới điểm bay.
+                    {T.muaVangCheckboxNote}
                   </span>
                 </span>
               </label>
@@ -1643,8 +1626,8 @@ export default function PilotEventClient() {
             >
               <SectionTitle
                 step={5}
-                title="Phương tiện"
-                hint="Vui lòng khai báo cấp dù của bạn."
+                title={T.step5}
+                hint={T.step5Hint}
               />
 
               {motor ? (
@@ -1654,14 +1637,14 @@ export default function PilotEventClient() {
                       key={m}
                       active={motorType === m}
                       icon={m === "trike" ? "🛺" : "🎒"}
-                      title={MOTOR_LABEL[m]}
+                      title={T.motor[m]}
                       desc=""
                       /* Xăng là thứ phi công bay máy lo nhất khi bay xa nhà:
                          đổ nhầm E10 pha cồn là hỏng chế hoà khí. Nói ngay
                          trong thẻ chọn máy chứ không giấu dưới ghi chú. */
                       highlight={
                         m === "trike"
-                          ? "Chúng tôi có xăng A95, không phải lo xăng E10 — anh em yên tâm quạt máy"
+                          ? T.fuelPerk
                           : undefined
                       }
                       onClick={() => {
@@ -1673,7 +1656,7 @@ export default function PilotEventClient() {
                 </div>
               ) : (
                 <p className="rounded-xl border border-white/18 bg-white/[0.08] px-4 py-3 text-sm text-white/60">
-                  Chọn loại hình có dù gắn động cơ ở bước 1 thì mục chọn máy sẽ hiện ra.
+                  {T.motorLocked}
                 </p>
               )}
 
@@ -1683,7 +1666,7 @@ export default function PilotEventClient() {
 
               <div className="mt-4">
                 <span className="mb-2 block text-sm font-medium text-white/80">
-                  Cấp dù — vui lòng khai báo
+                  {T.wingLabel}
                 </span>
                 {/* Mỗi phi công bay một cánh dù, nên đây là chọn MỘT: bấm cấp
                     khác là đổi, bấm lại chính nó là bỏ chọn. Dù PPG đứng riêng
@@ -1703,7 +1686,7 @@ export default function PilotEventClient() {
                             : "border-white/25 bg-white/[0.12] text-white/85 hover:bg-white/20",
                         ].join(" ")}
                       >
-                        {wingClassLabel(w)}
+                        {w === "PPG" ? T.wingPpg : wingClassLabel(w)}
                       </button>
                     );
                   })}
@@ -1717,10 +1700,10 @@ export default function PilotEventClient() {
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-400/35 bg-sky-400/10 p-4">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-sky-300">
-                    Sự kiện có nhóm Zalo riêng
+                    {T.zaloInlineTitle}
                   </div>
                   <div className="mt-0.5 text-sm text-white/65">
-                    Đăng ký xong nhớ vào nhóm để nhận lịch bay từng ngày.
+                    {T.zaloInlineDesc}
                   </div>
                 </div>
                 <a
@@ -1729,7 +1712,7 @@ export default function PilotEventClient() {
                   rel="noreferrer"
                   className="inline-flex h-10 shrink-0 items-center rounded-lg bg-[#0068FF] px-4 text-sm font-bold text-white transition hover:brightness-110"
                 >
-                  Vào nhóm Zalo
+                  {T.zaloInlineBtn}
                 </a>
               </div>
             ) : null}
@@ -1742,18 +1725,22 @@ export default function PilotEventClient() {
                 className="mt-9 rounded-2xl border border-amber-400/35 bg-amber-400/[0.08] p-5"
               >
                 <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
-                  Chi phí đăng ký
+                  {T.feeTitle}
                 </div>
 
                 <div className="mt-3 space-y-2">
                   {fee.lines.map((line) => (
                     <div key={line.label} className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm text-white/85">{line.label}</span>
+                      <span className="text-sm text-white/85">
+                        {T.fee[line.key](line.count ?? 0, formatVnd(SITE_FEE_PER_DAY))}
+                      </span>
                       <span
                         className={`shrink-0 text-sm font-bold ${line.free ? "text-emerald-400" : "text-white"}`}
                       >
                         {line.free
-                          ? line.freeLabel || "Miễn phí"
+                          ? line.freeLabel
+                            ? T.feeFreePpg
+                            : T.feeFree
                           : formatVnd(line.amount)}
                       </span>
                     </div>
@@ -1761,28 +1748,30 @@ export default function PilotEventClient() {
                 </div>
 
                 <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-white/15 pt-3">
-                  <span className="text-base font-bold text-white">Tổng cộng</span>
+                  <span className="text-base font-bold text-white">{T.feeTotal}</span>
                   <span
                     className={`text-2xl font-extrabold ${fee.total > 0 ? "text-amber-300" : "text-emerald-400"}`}
                   >
-                    {fee.total > 0 ? formatVnd(fee.total) : "Miễn phí"}
+                    {fee.total > 0 ? formatVnd(fee.total) : T.feeFree}
                   </span>
                 </div>
 
-                <p className="mt-2 text-sm leading-relaxed text-white/60">{fee.note}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white/60">
+                  {T.note[fee.noteKey]}
+                </p>
 
                 {fee.total > 0 ? (
                   <div className="mt-3 border-t border-white/15 pt-3 text-sm leading-relaxed text-white/75">
-                    Đăng ký chỉ được ghi nhận sau khi phi công chuyển khoản phí đăng ký.
+                    {T.payNotice}
                     <span className="mt-0.5 block font-semibold text-emerald-300">
-                      Yên tâm — nếu huỷ lịch bay, bạn sẽ được hoàn tiền.
+                      {T.payRefund}
                     </span>
                   </div>
                 ) : null}
               </motion.div>
             ) : (
               <div className="mt-9 rounded-2xl border border-white/18 bg-white/[0.08] p-5 text-sm text-white/60">
-                Chọn loại hình bay và đợt bay để xem chi phí.
+                {T.feeEmpty}
               </div>
             )}
 
@@ -1799,22 +1788,158 @@ export default function PilotEventClient() {
                 onClick={submit}
                 className="cta-btn h-14 w-full max-w-sm rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-lg font-extrabold text-black shadow-[0_10px_36px_rgba(251,191,36,.3)] transition hover:brightness-110 disabled:opacity-60"
               >
-                {submitting
-                  ? "Đang gửi…"
-                  : editCode
-                    ? "Cập nhật đăng ký"
-                    : "Xác nhận đăng ký"}
+                {submitting ? T.submitting : editCode ? T.submitEdit : T.submit}
               </button>
               <p className="text-center text-xs leading-relaxed text-white/45">
-                Thông tin đăng ký được gửi về ban tổ chức Mebayluon Paragliding.
+                {T.submitFoot}
                 <br />
-                Cần hỗ trợ, gọi <b className="text-white/70">0964 073 555</b> (Mr. Mỹ).
+                {T.needHelp} <b className="text-white/70">0964 073 555</b> (Mr. Mỹ).
               </p>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ============ BAN ĐIỀU HÀNH ============ */}
+      <section className="relative bg-[#0B0A08] pb-14">
+        <div className="mx-auto max-w-3xl px-4">
+          {/* Gom cả tần số bộ đàm lẫn danh bạ vào MỘT khung: đây là bảng tra
+              cứu khi có việc, không phải nội dung để đọc — càng gọn càng dễ
+              liếc, và không đẩy phần đăng ký xuống xa. */}
+          <div className="rounded-2xl border border-white/15 bg-white/[0.05] p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/12 pb-3">
+              <h2 className="text-base font-bold text-white">{T.contactsTitle}</h2>
+              <span className="text-sm text-white/60">
+                📻 {T.radioLabel}:{" "}
+                <b className="font-mono text-amber-300">{MUA_VANG_RADIO_FREQ}</b>
+              </span>
+            </div>
+
+            <ul className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+              {MUA_VANG_CONTACTS.map((c) => (
+                <li
+                  key={c.roleKey}
+                  className="flex items-baseline gap-2 text-[13px] leading-snug"
+                >
+                  <span className="shrink-0">{c.icon}</span>
+                  <span className="min-w-0 flex-1 text-white/55">
+                    {T.contactRole[c.roleKey]}
+                  </span>
+                  <span className="shrink-0 font-semibold text-white">{c.name}</span>
+                  {c.phone ? (
+                    <a
+                      href={`tel:+84${c.phone.replace(/^0/, "")}`}
+                      className="shrink-0 font-mono text-sky-300 underline underline-offset-2 transition hover:text-sky-200"
+                    >
+                      {c.phone}
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ BỘ SƯU TẬP ẢNH ============ */}
+      <section className="relative bg-[#0B0A08] pb-24">
+        <div className="mx-auto max-w-6xl px-4">
+          <h2 className="text-center font-serif text-2xl font-bold text-white sm:text-3xl">
+            {T.galleryTitle}
+          </h2>
+          <p className="mt-1.5 text-center text-sm text-white/55">
+            {T.gallerySubtitle}
+          </p>
+
+          {/* Lưới ô vuông: ảnh gốc mỗi tấm một tỉ lệ, để nguyên thì lưới so le
+              rất rối. Bấm vào ảnh mới mở đúng khung hình đầy đủ. */}
+          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+            {MUA_VANG_GALLERY.map((src, i) => (
+              <motion.button
+                key={src}
+                type="button"
+                initial={{ opacity: 0, scale: 0.96 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: (i % 8) * 0.04 }}
+                onClick={() => setLightbox(i)}
+                className="group relative aspect-square overflow-hidden rounded-xl border border-white/12 bg-white/[0.04]"
+              >
+                <Image
+                  src={src}
+                  alt={`${T.galleryTitle} ${i + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <span className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---- ảnh phóng to ---- */}
+      {lightbox !== null ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/92 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            aria-label={T.close}
+            onClick={() => setLightbox(null)}
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-2xl leading-none text-white transition hover:bg-white/20"
+          >
+            ×
+          </button>
+
+          <button
+            type="button"
+            aria-label={T.prevPhoto}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(
+                (n) => ((n ?? 0) - 1 + MUA_VANG_GALLERY.length) % MUA_VANG_GALLERY.length,
+              );
+            }}
+            className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-white/10 text-2xl text-white transition hover:bg-white/20 sm:left-6"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            aria-label={T.nextPhoto}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox((n) => ((n ?? 0) + 1) % MUA_VANG_GALLERY.length);
+            }}
+            className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-white/10 text-2xl text-white transition hover:bg-white/20 sm:right-6"
+          >
+            ›
+          </button>
+
+          <div
+            className="relative h-[80vh] w-full max-w-5xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={MUA_VANG_GALLERY[lightbox]}
+              alt={`${T.galleryTitle} ${lightbox + 1}`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority
+            />
+          </div>
+
+          <div className="absolute bottom-5 font-mono text-sm text-white/60">
+            {lightbox + 1} / {MUA_VANG_GALLERY.length}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

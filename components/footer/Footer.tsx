@@ -132,7 +132,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "Tin tức & Blog",
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
-    pilotEvent: "Đăng ký sự kiện dành cho phi công",
+    pilotEvent: "Đăng ký Mùa vàng 2026",
     bookOnPartners: "Đặt qua đối tác",
     partnersFlights: "Tour dù lượn",
     partnersCourses: "Học bay dù lượn",
@@ -155,7 +155,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "News & Blog",
     contact: "Contact",
     followUs: "Follow Us",
-    pilotEvent: "Pilot event registration",
+    pilotEvent: "Golden Season 2026 registration",
     bookOnPartners: "Book via partners",
     partnersFlights: "Paragliding tours",
     partnersCourses: "Paragliding courses",
@@ -178,7 +178,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "Actualités & Blog",
     contact: "Contact",
     followUs: "Suivez-nous",
-    pilotEvent: "Inscription pilotes à l'événement",
+    pilotEvent: "Inscription Mùa Vàng 2026",
     bookOnPartners: "Réserver via nos partenaires",
     partnersFlights: "Vols en parapente",
     partnersCourses: "Stages de parapente",
@@ -201,7 +201,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "Новости и блог",
     contact: "Контакты",
     followUs: "Подписывайтесь",
-    pilotEvent: "Регистрация пилотов на фестиваль",
+    pilotEvent: "Регистрация Mùa Vàng 2026",
     bookOnPartners: "Бронирование у партнёров",
     partnersFlights: "Полёты на параплане",
     partnersCourses: "Курсы парапланеризма",
@@ -224,7 +224,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "新闻与博客",
     contact: "联系方式",
     followUs: "关注我们",
-    pilotEvent: "飞行员活动报名",
+    pilotEvent: "Mùa Vàng 2026 报名",
     bookOnPartners: "通过合作平台预订",
     partnersFlights: "滑翔伞行程",
     partnersCourses: "滑翔伞课程",
@@ -246,7 +246,7 @@ const DICT: Record<Language, FooterDict> = {
     blog: "समाचार और ब्लॉग",
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
-    pilotEvent: "पायलट इवेंट पंजीकरण",
+    pilotEvent: "Mùa Vàng 2026 पंजीकरण",
     bookOnPartners: "पार्टनर के ज़रिए बुक करें",
     partnersFlights: "पैराग्लाइडिंग टूर",
     partnersCourses: "पैराग्लाइडिंग कोर्स",
@@ -588,14 +588,6 @@ export default function Footer() {
                 ))}
               </div>
 
-              {/* Trang nghiệp vụ cho phi công, không phải cho khách du lịch —
-                  để ở footer cho anh em tìm được mà không cần gửi link tay. */}
-              <Link
-                href={makeLocalizedHref("/muavang", pathname)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-[14px] font-semibold text-amber-300 transition-colors hover:border-amber-400/70 hover:bg-amber-400/20 hover:text-amber-200"
-              >
-                🪂 {t.pilotEvent}
-              </Link>
             </div>
           </div>
 
@@ -672,6 +664,17 @@ export default function Footer() {
 
                 <span>{t.rightsReserved}</span>
               </span>
+
+              {/* Trang nghiệp vụ cho phi công, không phải cho khách du lịch.
+                  Để tận đáy footer: người cần thì biết đường tìm, còn khách
+                  du lịch lướt qua không bị phân tâm. */}
+              <span aria-hidden className="text-slate-600">|</span>
+              <Link
+                href={makeLocalizedHref("/muavang", pathname)}
+                className="font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+              >
+                {t.pilotEvent}
+              </Link>
 
               {/* ẨN link Điều khoản & Điều kiện theo yêu cầu. Trang /terms và
                   ô đồng ý ở bước 4 của luồng đặt bay VẪN hoạt động bình

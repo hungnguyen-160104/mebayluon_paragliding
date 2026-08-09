@@ -88,6 +88,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: `${label} — ${t.heading} | Mebayluon`,
     description: t.metaDesc(label),
+    image: "/knowledge.jpg",
     url: `/knowledge/${sub}`,
     author: "Mebayluon",
     type: "website",

@@ -25,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon",
     description:
       "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay.",
+    image: "/knowledge.jpg",
     url: "/knowledge/all",
     author: "Mebayluon",
     type: "website",

@@ -168,6 +168,70 @@ export const PERIODS: Record<PeriodKey, PeriodConfig> = {
 export const CLUBHOUSE_MAP = "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6";
 export const KHAU_PHA_TAKEOFF_MAP = "https://maps.app.goo.gl/Z9X6BnNV4eaUKTE29";
 
+/**
+ * Ban điều hành sự kiện Bay trên mùa vàng.
+ *
+ * `roleKey` để trang tra tên vai trò theo ngôn ngữ; tên người và số điện
+ * thoại là dữ liệu thật nên giữ nguyên ở mọi ngôn ngữ.
+ */
+export const MUA_VANG_RADIO_FREQ = "148.770";
+
+/**
+ * Ảnh sự kiện các mùa trước, để trong public/muavang/gallery.
+ *
+ * Liệt kê thẳng tên tệp thay vì đánh số 01…16 chạy theo thứ tự thư mục. Đánh
+ * số thì thêm một ảnh vào giữa là toàn bộ ảnh sau nó đổi tên, mà trình duyệt
+ * vẫn giữ ảnh cũ trong bộ nhớ đệm theo tên — khách sẽ thấy đúng một tấm hiện
+ * lên hai lần. Tên gắn với chính tấm ảnh thì thêm bớt bao nhiêu cũng không
+ * ảnh hưởng những tấm còn lại.
+ *
+ * Ảnh gốc có cả HEIC (trình duyệt không mở được) và tệp gần 20MB, nên đều
+ * được chuyển sang JPEG rộng tối đa 1800px trước khi đưa vào đây.
+ */
+export const MUA_VANG_GALLERY = [
+  "/muavang/gallery/1747730471089-552366886798627704-5523668.jpg",
+  "/muavang/gallery/1747730471161-552366886798627704-5523668.jpg",
+  "/muavang/gallery/1757073763521-552366886798627704-5523668.jpg",
+  "/muavang/gallery/1757073770099-552366886798627704-5523668.jpg",
+  "/muavang/gallery/1757074008862-552366886798627704-5523668.jpg",
+  "/muavang/gallery/1785293774880-2299930973201648440-464409.jpg",
+  "/muavang/gallery/1786107183058-2299930973201648440-464409.jpg",
+  "/muavang/gallery/anh1.jpg",
+  "/muavang/gallery/anh2.jpg",
+  "/muavang/gallery/bien-lua.jpg",
+  "/muavang/gallery/img-20240901-185939.jpg",
+  "/muavang/gallery/img-20240901-210523.jpg",
+  "/muavang/gallery/img-2210.jpg",
+  "/muavang/gallery/img-2811-2.jpg",
+  "/muavang/gallery/nen.jpg",
+  "/muavang/gallery/screenshot-2026-07-29-at-11-15-07.jpg",
+];
+export type EventContact = {
+  roleKey:
+    | "shuttle"
+    | "flightOps"
+    | "tech"
+    | "launch"
+    | "lead"
+    | "band"
+    | "media"
+    | "catering";
+  name: string;
+  phone?: string;
+  icon: string;
+};
+
+export const MUA_VANG_CONTACTS: EventContact[] = [
+  { roleKey: "lead", name: "A Mỹ", phone: "0964073555", icon: "🎯" },
+  { roleKey: "flightOps", name: "A Mặc", phone: "0337632532", icon: "🪂" },
+  { roleKey: "launch", name: "A Hưng", phone: "0918408204", icon: "🚀" },
+  { roleKey: "tech", name: "A Xiêng", phone: "0355507241", icon: "🔧" },
+  { roleKey: "shuttle", name: "A Sôm", phone: "0334913924", icon: "🚐" },
+  { roleKey: "media", name: "Khang Dùng & Thanh Viên Nam", icon: "📸" },
+  { roleKey: "band", name: "Lai Nguyen", icon: "🎸" },
+  { roleKey: "catering", name: "Ms Vân", icon: "🍽️" },
+];
+
 export type EventPlace = {
   role: string;
   name: string;
@@ -336,7 +400,36 @@ export const GUIDE_LINKS = [
   },
 ] as const;
 
+/**
+ * Khoá của từng dòng phí.
+ *
+ * Nhãn tiếng Việt bên dưới dùng cho email và Google Sheets (hai nơi luôn
+ * tiếng Việt). Trang đăng ký thì tra theo khoá này để lấy câu chữ đúng ngôn
+ * ngữ khách đang xem — đổi câu tiếng Việt không làm hỏng bản dịch.
+ */
+export type FeeKey =
+  | "combo"
+  | "companions"
+  | "extraFree"
+  | "extraPaid"
+  | "comFree"
+  | "siteMonth"
+  | "siteDay"
+  | "siteFreeDays"
+  | "siteNone";
+
+export type NoteKey =
+  | "muaVangMotor"
+  | "muaVangPara"
+  | "com"
+  | "month"
+  | "dayFree"
+  | "day";
+
 export type FeeLine = {
+  key: FeeKey;
+  /** Số lượng đi kèm (số ngày, số người) để bản dịch ghép câu. */
+  count?: number;
   label: string;
   amount: number;
   free?: boolean;
@@ -355,6 +448,7 @@ export type FeeResult = {
   total: number;
   /** Câu giải thích ngắn hiện dưới bảng phí. */
   note: string;
+  noteKey: NoteKey;
 };
 
 /**
@@ -386,19 +480,22 @@ export function computePilotFee(input: {
 
     if (motor) {
       lines.push({
+        key: "combo",
         label: comboLabel,
         amount: 0,
         free: true,
         freeLabel: "Free cho pc PPG",
       });
     } else {
-      lines.push({ label: comboLabel, amount: MUA_VANG_COMBO_VND });
+      lines.push({ key: "combo", label: comboLabel, amount: MUA_VANG_COMBO_VND });
     }
 
     // Người nhà đóng đủ kể cả khi phi công được miễn phí: suất ăn ở của họ
     // vẫn là chi phí thật của ban tổ chức.
     if (companions > 0) {
       lines.push({
+        key: "companions",
+        count: companions,
         label: `Người nhà đi kèm × ${companions}`,
         amount: COMPANION_VND * companions,
       });
@@ -415,6 +512,8 @@ export function computePilotFee(input: {
 
     if (extraFree.length) {
       lines.push({
+        key: "extraFree",
+        count: extraFree.length,
         label: `Bay thêm × ${extraFree.length} ngày (trong ${MUA_VANG_FREE_SITE_FEE_DAYS} ngày miễn phí)`,
         amount: 0,
         free: true,
@@ -423,6 +522,8 @@ export function computePilotFee(input: {
 
     if (extraPaid.length) {
       lines.push({
+        key: "extraPaid",
+        count: extraPaid.length,
         label: `Phí điểm bay ${SITE_FEE_PER_DAY.toLocaleString("vi-VN")} đ × ${extraPaid.length} ngày (ngoài khoảng miễn phí)`,
         amount: SITE_FEE_PER_DAY * extraPaid.length,
       });
@@ -433,6 +534,7 @@ export function computePilotFee(input: {
     return {
       lines,
       total,
+      noteKey: motor ? "muaVangMotor" : "muaVangPara",
       note: motor
         ? `Phi công bay dù máy được miễn phí combo. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
         : `Combo trọn gói, không tách lẻ và không nhận đặt lẻ từng mục. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`,
@@ -441,8 +543,11 @@ export function computePilotFee(input: {
 
   if (input.period === "le_hoi_com") {
     return {
-      lines: [{ label: "Phí bay trong Lễ hội Cốm Tú Lệ", amount: 0, free: true }],
+      lines: [
+        { key: "comFree", label: "Phí bay trong Lễ hội Cốm Tú Lệ", amount: 0, free: true },
+      ],
       total: 0,
+      noteKey: "com",
       note: "Ban tổ chức không thu phí trong dịp Lễ hội Cốm Tú Lệ, phi công tự túc ăn ở đi lại.",
     };
   }
@@ -451,9 +556,10 @@ export function computePilotFee(input: {
   if (input.siteFeeMode === "month") {
     return {
       lines: [
-        { label: "Phí điểm bay trọn tháng", amount: SITE_FEE_PER_MONTH },
+        { key: "siteMonth", label: "Phí điểm bay trọn tháng", amount: SITE_FEE_PER_MONTH },
       ],
       total: SITE_FEE_PER_MONTH,
+      noteKey: "month",
       note: "Gói tháng bằng đúng 7 ngày lẻ — từ ngày thứ 8 trong tháng là bay không mất thêm. Chi phí này không bao gồm ăn ở và đi lại.",
     };
   }
@@ -473,6 +579,8 @@ export function computePilotFee(input: {
 
   if (paidDays.length) {
     lines.push({
+      key: "siteDay",
+      count: paidDays.length,
       label: `Phí điểm bay ${SITE_FEE_PER_DAY.toLocaleString("vi-VN")} đ × ${paidDays.length} ngày`,
       amount: SITE_FEE_PER_DAY * paidDays.length,
     });
@@ -480,6 +588,8 @@ export function computePilotFee(input: {
 
   if (freeDays.length) {
     lines.push({
+      key: "siteFreeDays",
+      count: freeDays.length,
       label: `Miễn phí điểm bay × ${freeDays.length} ngày (đã đăng ký và thanh toán Mùa Vàng)`,
       amount: 0,
       free: true,
@@ -487,12 +597,13 @@ export function computePilotFee(input: {
   }
 
   if (!lines.length) {
-    lines.push({ label: "Phí điểm bay", amount: 0, free: true });
+    lines.push({ key: "siteNone", label: "Phí điểm bay", amount: 0, free: true });
   }
 
   return {
     lines,
     total: SITE_FEE_PER_DAY * paidDays.length,
+    noteKey: freeDays.length ? "dayFree" : "day",
     note: freeDays.length
       ? `Phi công dự Festival Mùa Vàng được ${MUA_VANG_FREE_SITE_FEE_TEXT.toLowerCase()}. Chi phí này không bao gồm ăn ở và đi lại.`
       : "Bay ngày nào tính ngày đó, không cần chọn các ngày liền nhau. Từ 8 ngày trong tháng thì gói tháng rẻ hơn. Chi phí này không bao gồm ăn ở và đi lại.",

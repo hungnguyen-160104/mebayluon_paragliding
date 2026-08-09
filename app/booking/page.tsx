@@ -68,6 +68,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "booking paragliding vietnam",
       "đặt chỗ dù lượn",
     ],
+    image: "/per-flight.jpg",
     url: "/booking",
     type: "website",
     locale,

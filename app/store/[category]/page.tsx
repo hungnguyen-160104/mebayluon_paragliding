@@ -60,6 +60,7 @@ export async function generateMetadata({ params }: Props) {
   return buildMetadata({
     title: `${title} | ${storeName}`,
     description: META_DESCRIPTION[lang](title),
+    image: "/cua-hang.jpg",
     url: `/store/${category}`,
     type: "website",
     locale,
