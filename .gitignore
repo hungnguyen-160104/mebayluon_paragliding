@@ -127,3 +127,7 @@ MEMORY.md
 
 huongdan.md
 media-inbox/
+
+# Thu muc build kiem tra (xem distDir trong next.config.mjs)
+.next-buildcheck/
+.og-cards-tmp/

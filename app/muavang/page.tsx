@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { Navigation } from "@/components/navigation";
 import { getUrlLocale } from "@/lib/locale";
+import { SITE_URL } from "@/lib/site-config";
 
 import PilotEventClient from "./PilotEventClient";
 
@@ -54,10 +55,29 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = String(await getUrlLocale());
   const meta = META[locale] ?? META.vi;
 
+  const card = `${SITE_URL}/og/cards/muavang.jpg`;
+
   return {
     title: meta.title,
     description: meta.description,
     robots: { index: false, follow: false },
+
+    /**
+     * Trang này không đi qua buildMetadata (nó tự khai tiêu đề để đặt noindex)
+     * nên phải chỉ thẳng thẻ chia sẻ, không thì rơi về thẻ trang chủ. Trang
+     * noindex vẫn cần thẻ đẹp vì link được gửi tay cho phi công qua Zalo.
+     */
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      images: [{ url: card, width: 1200, height: 630, alt: meta.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: meta.title,
+      description: meta.description,
+      images: [card],
+    },
   };
 }
 

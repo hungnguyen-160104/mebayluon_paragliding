@@ -11,18 +11,20 @@ const nextConfig = {
   // breaks module resolution/caching and triggers webpack "reading 'call'" errors.
   outputFileTracingRoot: __dirname,
 
+  // Cho phép build ra thư mục khác để không giẫm lên .next mà `next dev` đang
+  // dùng — build đè lúc dev đang chạy làm hỏng CSS/JS của bản xem thử.
+  //   NEXT_DIST_DIR=.next-buildcheck npx next build
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   /**
-   * Thẻ chia sẻ link (các tệp opengraph-image.tsx trong app) đọc ảnh nền
-   * thẳng từ public/og bằng fs.readFile.
+   * KHÔNG khai outputFileTracingIncludes trỏ vào public/ ở đây.
    *
-   * Vercel chỉ đóng gói vào hàm serverless những tệp nó dò được từ mã nguồn;
-   * public/ được phục vụ như tài nguyên tĩnh chứ KHÔNG tự nằm trong gói hàm.
-   * Không khai ở đây thì build vẫn xanh nhưng lúc chạy thật sẽ lỗi ENOENT —
-   * đúng loại lỗi mà chạy thử ở máy mình không bao giờ gặp.
+   * Từng có dòng `'/**' + '/opengraph-image': ['./public/og/**']` để hàm sinh
+   * thẻ chia sẻ đọc được ảnh nền. Vercel hiểu khai báo đó rộng hơn mong đợi và
+   * kéo cả thư mục public (319 MB) vào một hàm, khiến hàm nặng 325 MB và build
+   * hỏng vì trần là 250 MB. Nay thẻ chia sẻ là ảnh tĩnh dựng sẵn trong
+   * public/og/cards nên không hàm nào cần đọc tệp trong public nữa.
    */
-  outputFileTracingIncludes: {
-    '/**/opengraph-image': ['./public/og/**'],
-  },
 
   // Enable image optimization for better performance
   images: {

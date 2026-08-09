@@ -58,13 +58,46 @@ export interface SEOMetadata {
 }
 
 /**
- * Ảnh chia sẻ mặc định.
+ * Thẻ xem trước khi chia sẻ link (Zalo, Messenger, Facebook, Telegram…).
  *
- * Dùng route /opengraph-image do app/opengraph-image.tsx sinh ra thay vì
- * /og-image.jpg — file tĩnh đó không tồn tại trong public/ nên mọi khai báo
- * cũ đều trả về 404 (lỗi trong JSON-LD và khi chia sẻ link).
+ * Mỗi trang có một tấm riêng: ảnh thật của trang làm nền, phủ tối dần từ dưới
+ * lên, tên trang và thương hiệu in ngay trên ảnh. Nhờ vậy người nhận link biết
+ * ngay là trang gì, không phải đoán qua tấm ảnh trần.
+ *
+ * Các tấm này là ảnh TĨNH dựng sẵn trong public/og/cards, không sinh lúc chạy.
+ * Trước đây mỗi trang có một tệp opengraph-image.tsx sinh ảnh theo yêu cầu;
+ * cách đó buộc phải gói ảnh nền vào hàm serverless, mà khai gói theo thư mục
+ * thì Vercel kéo cả public/ (319 MB) vào một hàm và build hỏng vì vượt trần
+ * 250 MB. Dựng sẵn thì hàm nhẹ tênh, ảnh lại được CDN phục vụ nhanh hơn.
+ *
+ * Dựng lại khi đổi ảnh nền hay câu chữ: xem scripts/build-og-cards.md.
  */
-const DEFAULT_IMAGE = `${SITE_URL}/opengraph-image`;
+const OG_CARD_BY_SECTION: Record<string, string> = {
+  "": "home",
+  spots: "spots",
+  store: "store",
+  contact: "contact",
+  homestay: "homestay",
+  blog: "blog",
+  pilots: "pilots",
+  ppg: "ppg",
+  booking: "booking",
+  knowledge: "knowledge",
+  muavang: "muavang",
+  "pre-notice": "pre-notice",
+};
+
+const DEFAULT_IMAGE = `${SITE_URL}/og/cards/home.jpg`;
+
+/**
+ * Chọn thẻ theo mục lớn của trang, ví dụ "/spots/khau-pha" -> thẻ "spots".
+ * Đường dẫn ở đây đã bỏ tiền tố ngôn ngữ nên /fr/spots cũng ra cùng một thẻ.
+ */
+function ogCardFor(basePath: string): string {
+  const section = basePath.split("/").filter(Boolean)[0] ?? "";
+  const card = OG_CARD_BY_SECTION[section];
+  return card ? `${SITE_URL}/og/cards/${card}.jpg` : DEFAULT_IMAGE;
+}
 
 /**
  * Safely resolve a possibly-relative URL against SITE_URL
@@ -111,14 +144,10 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
   const canonicalUrl = canonicalUrlFor(basePath, locale, available);
 
   /**
-   * Chỉ khai ảnh khi trang thật sự truyền vào.
-   *
-   * Trước đây thiếu ảnh thì tự điền thẻ mặc định — mà khai tay như vậy sẽ ĐÈ
-   * LÊN tệp opengraph-image.tsx của chính trang đó, nên thẻ riêng vừa dựng
-   * không bao giờ được dùng. Để trống thì Next tự lấy tệp gần nhất trong cây
-   * thư mục, tức thẻ của trang, và nếu trang không có thì mới về thẻ gốc.
+   * Trang tự truyền ảnh (bài viết, sản phẩm, hồ sơ phi công) thì dùng ảnh đó
+   * vì nó sát nội dung hơn; còn lại lấy thẻ dựng sẵn của mục.
    */
-  const imageUrl = seo.image ? resolveImage(seo.image) : undefined;
+  const imageUrl = seo.image ? resolveImage(seo.image) : ogCardFor(basePath);
 
   // Map internal type -> Next OpenGraph supported type
   const ogType: "article" | "website" =

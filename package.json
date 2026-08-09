@@ -8,6 +8,7 @@
     "start": "next start -p 8080",
     "postinstall": "prisma generate",
     "lint": "eslint .",
+    "og:cards": "tsx scripts/og-cards/build.tsx",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
