@@ -108,11 +108,10 @@ export type PilotDict = {
   step3: string;
   openingLabel: string;
   slotsLeft: string;
-  slotsTakenLabel: string;
-  slotsTaken: (n: number) => string;
+  slotsLine: (taken: number, remaining: number) => string;
+  slotsFullNote: string;
   slotsListTitle: string;
   slotsEmpty: string;
-  slotsOver: (max: number) => string;
   kindShort: Record<"paragliding" | "paramotor" | "both", string>;
   companionSuffix: (n: number) => string;
 

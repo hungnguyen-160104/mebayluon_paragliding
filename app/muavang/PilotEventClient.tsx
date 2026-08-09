@@ -197,6 +197,27 @@ export default function PilotEventClient() {
   const formRef = useRef<HTMLDivElement>(null);
 
   /**
+   * Bóng đổ của tên sự kiện, dày hơn trên điện thoại.
+   *
+   * Khung hero trên máy nhỏ đã hạ thấp và bỏ phóng to nên nền sáng hơn hẳn;
+   * chữ vàng đặt trên ruộng lúa vàng rất dễ chìm. drop-shadow không viết được
+   * theo điểm ngắt của Tailwind nên phải chọn bằng JS.
+   */
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setIsNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const heroTitleShadow = isNarrow
+    ? "drop-shadow(0 2px 3px rgba(0,0,0,.95)) drop-shadow(0 4px 10px rgba(0,0,0,.9)) drop-shadow(0 10px 26px rgba(0,0,0,.85))"
+    : "drop-shadow(0 2px 6px rgba(0,0,0,.85)) drop-shadow(0 10px 30px rgba(0,0,0,.75))";
+
+  /**
    * Neo tới từng ô có thể báo lỗi, để bấm xác nhận mà thiếu gì thì màn hình
    * tự cuộn tới đúng chỗ đó. Trước đây lỗi hiện ở tận trên cùng còn nút bấm
    * ở cuối trang — phi công bấm mãi không được mà không hiểu tại sao.
@@ -738,14 +759,14 @@ export default function PilotEventClient() {
   return (
     <main className="relative">
       {/* ============ HERO ============ */}
-      <section className="relative flex min-h-[62vh] items-center justify-center overflow-hidden sm:min-h-[78vh] lg:min-h-[86vh]">
+      <section className="relative flex min-h-[44vh] items-center justify-center overflow-hidden sm:min-h-[68vh] lg:min-h-[86vh]">
         <div className="absolute inset-0">
           <Image
             src="/spots/khau-pha/hero.jpg"
             alt={T.altHero}
             fill
             priority
-            className="scale-105 object-cover brightness-[1.12] contrast-[1.05] saturate-[1.12]"
+            className="object-cover brightness-[1.12] contrast-[1.05] saturate-[1.12] sm:scale-105"
           />
           {/* Lớp phủ mỏng hơn hẳn bản đầu: ruộng bậc thang mùa vàng là thứ
               đáng khoe nhất ở đây, phủ đen dày quá thì ảnh thành nền xám. Chữ
@@ -762,7 +783,7 @@ export default function PilotEventClient() {
             max-w-6xl chứ không phải 4xl: dòng "MÙA VÀNG 2026" cỡ chữ khối
             rộng hơn 4xl, mà <section> có overflow-hidden nên tràn ra là bị
             cắt cụt mất đuôi. */}
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-[10vh] text-center sm:pb-16 sm:pt-[16vh] lg:pt-[18vh]">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-8 pt-[6vh] text-center sm:pb-16 sm:pt-[14vh] lg:pt-[18vh]">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -775,7 +796,7 @@ export default function PilotEventClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="mt-[12vh] sm:mt-[18vh] lg:mt-[22vh]"
+            className="mt-[7vh] sm:mt-[15vh] lg:mt-[22vh]"
           >
             {/* Dòng dẫn nên nhường hẳn cho tên sự kiện: chữ nhỏ lại, nhưng
                 bóng đổ dày ba lớp để vẫn tách khỏi nền ảnh nay đã sáng. */}
@@ -804,8 +825,7 @@ export default function PilotEventClient() {
                   "linear-gradient(180deg,#FFFDF2 0%,#FDE68A 30%,#F59E0B 62%,#B45309 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
-                filter:
-                  "drop-shadow(0 2px 6px rgba(0,0,0,.85)) drop-shadow(0 10px 30px rgba(0,0,0,.75))",
+                filter: heroTitleShadow,
               }}
             >
               Mùa Vàng 2026
@@ -1327,25 +1347,14 @@ export default function PilotEventClient() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 rounded-2xl border border-amber-400/35 bg-amber-400/[0.08] p-5"
               >
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
-                      {slots.taken >= MUA_VANG_MAX_PILOTS
-                        ? T.slotsTakenLabel
-                        : T.slotsLeft}
-                    </div>
-                    <div className="mt-1 text-3xl font-extrabold text-white">
-                      {slots.taken >= MUA_VANG_MAX_PILOTS
-                        ? slots.taken
-                        : slots.remaining}
-                      <span className="ml-1 text-lg font-bold text-white/50">
-                        / {MUA_VANG_MAX_PILOTS}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-sm text-white/60">
-                    {T.slotsTaken(slots.taken)}
-                  </div>
+                {/* Một câu duy nhất: đã có bao nhiêu người và còn bao nhiêu
+                    chỗ. Trước đây là con số lớn kèm nhãn riêng, đọc phải ghép
+                    hai mảnh mới hiểu. */}
+                <div className="text-xs font-bold uppercase tracking-[.15em] text-amber-300">
+                  {T.slotsLeft}
+                </div>
+                <div className="mt-1 text-[17px] font-bold leading-snug text-white sm:text-lg">
+                  {T.slotsLine(slots.taken, slots.remaining)}
                 </div>
 
                 {/* Thanh lấp đầy: nhìn phát biết còn nhiều hay sắp hết. */}
@@ -1396,7 +1405,7 @@ export default function PilotEventClient() {
 
                 {slots.taken >= MUA_VANG_MAX_PILOTS ? (
                   <div className="mt-4 rounded-xl border border-amber-400/45 bg-amber-400/15 px-4 py-3 text-sm font-semibold text-amber-200">
-                    {T.slotsOver(MUA_VANG_MAX_PILOTS)}
+                    {T.slotsFullNote}
                   </div>
                 ) : null}
               </motion.div>

@@ -163,13 +163,12 @@ export const fr: PilotDict = {
   step3: "Période de vol",
   openingLabel: "Cérémonie d'ouverture",
   slotsLeft: "Places de pilote restantes",
-  slotsTakenLabel: "Pilotes inscrits",
-  slotsTaken: (n) => `${n} pilotes déjà inscrits`,
+  slotsLine: (n, r) => `${n} pilotes inscrits, ${r} places restantes`,
+  slotsFullNote:
+    "La limite est atteinte, mais inscrivez-vous quand même — les organisateurs vous trouveront une place.",
   slotsListTitle: "Pilotes inscrits",
   slotsEmpty:
     "Aucun pilote inscrit pour l'instant — vous pouvez être le premier.",
-  slotsOver: (max) =>
-    `Plus de ${max} pilotes se sont inscrits. Vous pouvez toujours vous inscrire ; les organisateurs vous contacteront pour s'organiser.`,
   kindShort: {
     paragliding: "parapente",
     paramotor: "paramoteur",

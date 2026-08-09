@@ -155,12 +155,11 @@ export const en: PilotDict = {
   step3: "Flying period",
   openingLabel: "Opening ceremony",
   slotsLeft: "Pilot places left",
-  slotsTakenLabel: "Pilots registered",
-  slotsTaken: (n) => `${n} pilots already registered`,
+  slotsLine: (n, r) => `${n} pilots registered, ${r} slots left`,
+  slotsFullNote:
+    "The limit has been reached, but go ahead and register — the organisers will find a place for you.",
   slotsListTitle: "Registered pilots",
   slotsEmpty: "No pilot has registered yet — you could be the first.",
-  slotsOver: (max) =>
-    `More than ${max} pilots have registered. You can still sign up; the organisers will be in touch to arrange things.`,
   kindShort: { paragliding: "paraglider", paramotor: "paramotor", both: "both" },
   companionSuffix: (n) => ` · +${n} guest${n > 1 ? "s" : ""}`,
 

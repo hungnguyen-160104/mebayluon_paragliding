@@ -114,7 +114,7 @@ export const vi: PilotDict = {
     "Cẩm nang du lịch Mù Cang Chải",
   ],
 
-  formTitle: "Phiếu đăng ký bay",
+  formTitle: "Đăng ký mùa vàng",
   formTitleEdit: "Sửa phiếu đăng ký",
   formSubtitle: "Điền đủ các mục có dấu * rồi bấm xác nhận.",
   formSubtitleEdit: (code) =>
@@ -152,12 +152,11 @@ export const vi: PilotDict = {
   step3: "Đợt bay",
   openingLabel: "Lễ khai mạc",
   slotsLeft: "Suất phi công còn lại",
-  slotsTakenLabel: "Phi công đã đăng ký",
-  slotsTaken: (n) => `Đã có ${n} phi công đăng ký`,
+  slotsLine: (n, r) => `Đã có ${n} phi công đăng ký, còn ${r} slot`,
+  slotsFullNote:
+    "Số lượng đăng ký đã đạt giới hạn, nhưng bạn cứ đăng ký, ban tổ chức sẽ sắp xếp cho bạn.",
   slotsListTitle: "Phi công đã đăng ký",
   slotsEmpty: "Chưa có phi công nào đăng ký — bạn có thể là người đầu tiên.",
-  slotsOver: (max) =>
-    `Đã hơn ${max} phi công đăng ký sự kiện. Bạn vẫn đăng ký được, ban tổ chức sẽ liên hệ để sắp xếp.`,
   kindShort: { paragliding: "dù lượn", paramotor: "dù máy", both: "cả hai" },
   companionSuffix: (n) => ` · +${n} người nhà`,
 
