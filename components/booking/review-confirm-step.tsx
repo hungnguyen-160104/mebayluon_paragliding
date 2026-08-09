@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useMemo, useRef, useState, useCallback } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import {
   computePriceByLang,
@@ -654,7 +654,6 @@ export default function ReviewConfirmStep() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
-  const [showTerms, setShowTerms] = useState(false);
 
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [turnstileKey, setTurnstileKey] = useState(0);
@@ -678,17 +677,6 @@ export default function ReviewConfirmStep() {
     [t, ui],
   );
   const termsContent = TERMS_HTML[lang as LangCode] || TERMS_HTML.vi;
-
-  useEffect(() => {
-    if (!showTerms) return;
-
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showTerms]);
 
   const cfg = data.location ? LOCATIONS[data.location] : undefined;
 
@@ -1821,27 +1809,55 @@ export default function ReviewConfirmStep() {
             />
           </section>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#DCE7F3] bg-white p-3 transition hover:border-[#B9DDFB]">
-            <input
-              type="checkbox"
-              checked={!!data.acceptedTerms}
-              onChange={(e) => update({ acceptedTerms: e.target.checked })}
-              className="mt-1 h-4 w-4 rounded border-[#DCE7F3] text-[#0194F3] focus:ring-[#0194F3]"
-            />
-            {/* Một câu duy nhất, cụm "điều khoản dịch vụ" chính là link mở
-                hộp điều khoản — bỏ câu "Tôi xác nhận thông tin đặt bay" và
-                nút "Xem điều khoản" đứng rời phía sau. */}
-            <span className="text-sm text-[#1C2930]">
-              {(t as any)?.labels?.termsText ?? "I have read and agree to the"}{" "}
-              <button
-                type="button"
-                onClick={() => setShowTerms(true)}
-                className="font-semibold text-[#0194F3] underline underline-offset-2 hover:text-[#0B6FC4]"
+          {/* Điều khoản hiện thẳng ra để khách cuộn đọc tại chỗ. Trước đây
+              phải bấm link mới bung hộp thoại — thêm một bước mà hầu như
+              không ai bấm, nên chữ ký đồng ý ở dưới thành ra ký khống. */}
+          <section className="overflow-hidden rounded-xl border border-[#DCE7F3] bg-white">
+            <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2">
+              <span className="text-sm font-semibold text-[#1C2930]">
+                {ui.termsTitle}
+              </span>
+              <a
+                href={termsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 text-xs text-[#0194F3] underline underline-offset-2"
               >
-                {(t as any)?.labels?.viewTerms ?? "terms of service"}
-              </button>
-            </span>
-          </label>
+                {ui.openInNewTab}
+              </a>
+            </div>
+
+            <div
+              className="prose prose-sm max-w-none h-56 overflow-y-auto px-3 py-2.5 text-[13px] leading-relaxed text-[#42555F]
+                [&_h1]:mb-3 [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-[#1C2930]
+                [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-[#1C2930]
+                [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-[#1C2930]
+                [&_p]:mb-2
+                [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5
+                [&_li]:mb-1"
+              dangerouslySetInnerHTML={{ __html: termsContent }}
+            />
+
+            <label className="flex cursor-pointer items-start gap-3 border-t border-[#DCE7F3] bg-[#F8FBFF] p-3 transition hover:bg-[#EAF4FE]">
+              <input
+                type="checkbox"
+                checked={!!data.acceptedTerms}
+                onChange={(e) => update({ acceptedTerms: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-[#DCE7F3] text-[#0194F3] focus:ring-[#0194F3]"
+              />
+              <span className="text-sm text-[#1C2930]">
+                {(t as any)?.labels?.termsText ?? "I have read and agree to the"}{" "}
+                <a
+                  href={termsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-[#0194F3] underline underline-offset-2 hover:text-[#0B6FC4]"
+                >
+                  {(t as any)?.labels?.viewTerms ?? "terms of service"}
+                </a>
+              </span>
+            </label>
+          </section>
         </div>
       </div>
 
@@ -1901,50 +1917,6 @@ export default function ReviewConfirmStep() {
         </button>
       </div>
 
-      {showTerms && (
-        <div className="fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowTerms(false)}
-          />
-          <div className="relative mx-auto my-6 flex h-[min(92vh,860px)] w-[min(96vw,1040px)] flex-col overflow-hidden rounded-xl border border-[#DCE7F3] bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] bg-[#F5F7FA] px-3 py-2.5">
-              <span className="text-sm font-semibold text-[#1C2930]">
-                {ui.termsTitle}
-              </span>
-
-              <div className="flex items-center gap-3">
-                <a
-                  href={termsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-[#0194F3] underline"
-                >
-                  {ui.openInNewTab}
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setShowTerms(false)}
-                  className="rounded-lg border border-[#DCE7F3] px-3 py-1.5 text-sm text-[#5B6B7A] transition hover:bg-[#EAF4FE]"
-                >
-                  {ui.close}
-                </button>
-              </div>
-            </div>
-
-            <div
-              className="prose prose-sm max-w-none flex-1 overflow-y-auto p-3 text-[#1C2930]
-                [&_h1]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#1C2930]
-                [&_h2]:mt-4 [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#1C2930]
-                [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[#1C2930]
-                [&_p]:mb-3 [&_p]:leading-relaxed
-                [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5
-                [&_li]:mb-1"
-              dangerouslySetInnerHTML={{ __html: termsContent }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

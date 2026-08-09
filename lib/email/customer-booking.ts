@@ -14,6 +14,8 @@
  * Outlook bỏ qua phần lớn CSS hiện đại.
  */
 
+import { resolvePickup } from "@/lib/booking/pickup";
+
 export type EmailLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 const LANGS: EmailLang[] = ["vi", "en", "fr", "ru", "zh", "hi"];
@@ -524,10 +526,12 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
     "";
 
   /* ---------- điểm đón / điểm hẹn ---------- */
-  const pickupAddress = input.contact?.pickupLocation?.trim();
-  const meetingLabel = pickupAddress ? t.pickupPoint : t.meetingPoint;
-  const meetingValue = pickupAddress
-    ? pickupAddress
+  // Xem chú thích ở lib/booking/pickup.ts: phải xét cả dịch vụ đón cố định,
+  // không chỉ địa chỉ khách tự gõ.
+  const pickup = resolvePickup(input as any);
+  const meetingLabel = pickup.hasPickup ? t.pickupPoint : t.meetingPoint;
+  const meetingValue = pickup.hasPickup
+    ? pickup.name || t.pickupPoint
     : input.location === "ha_noi"
       ? t.meetingHanoi
       : t.meetingSelf;
@@ -545,7 +549,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
     kvRow(meetingLabel, meetingValue),
   ].join("");
 
-  const pickupNoteHtml = pickupAddress
+  const pickupNoteHtml = pickup.hasPickup
     ? `<tr><td style="padding:8px 0 0;">
         <div style="background:#EAF4FE;border-radius:8px;padding:9px 12px;font-size:13px;color:${C.blueDark};line-height:1.5;">⏱️ ${esc(t.pickupNote)}</div>
       </td></tr>`

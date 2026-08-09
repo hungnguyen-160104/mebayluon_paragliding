@@ -15,6 +15,8 @@
  * Luôn tiếng Việt, kể cả khi khách đặt bằng ngôn ngữ khác.
  */
 
+import { pickupHeadingVi, resolvePickup } from "@/lib/booking/pickup";
+
 const C = {
   ink: "#111827",
   soft: "#6B7280",
@@ -187,10 +189,14 @@ export function adminEmailHtml(b: AdminBookingInput): string {
     </td>`;
 
   /* ---------- điều xe: việc PHẢI làm nên tô nổi ---------- */
-  const pickupBox = c.pickupLocation
+  // Xét cả dịch vụ đón CỐ ĐỊNH (GO! Thăng Long) chứ không chỉ địa chỉ khách
+  // gõ — điểm đón cố định không cần gõ địa chỉ, bản cũ vì thế báo nhầm là
+  // "khách tự tới" trong khi bảng giá vẫn thu tiền xe.
+  const pickup = resolvePickup(b);
+  const pickupBox = pickup.hasPickup
     ? `<div style="background:${C.amberBg};border:1px solid ${C.amberLine};border-radius:8px;padding:12px 14px;">
-         <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#92400E;">🚐 Cần đón <span style="color:${C.red};font-size:13px;">x${pax}</span></div>
-         <div style="margin-top:3px;font-size:15px;font-weight:700;color:${C.ink};">${esc(c.pickupLocation)}</div>
+         <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#92400E;">🚐 ${esc(pickupHeadingVi(pickup.mode))} <span style="color:${C.red};font-size:13px;">x${pax}</span></div>
+         <div style="margin-top:3px;font-size:15px;font-weight:700;color:${C.ink};">${esc(pickup.name || "⚠️ CHƯA RÕ ĐIỂM ĐÓN")}</div>
        </div>`
     : `<div style="background:${C.greenBg};border:1px solid ${C.greenLine};border-radius:8px;padding:12px 14px;">
          <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;">🚐 Đón</div>

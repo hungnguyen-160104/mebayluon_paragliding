@@ -12,6 +12,7 @@ import {
 import type { LangCode } from "@/lib/booking/translations-booking";
 import { bookingTranslations } from "@/lib/booking/translations-booking";
 import { shortServiceLabel } from "@/lib/booking/service-label";
+import { isPickupService, resolvePickup } from "@/lib/booking/pickup";
 import { spotPageForBooking } from "@/lib/booking/spot-to-location";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -102,6 +103,7 @@ function buildBookingRef(dateISO?: string, phone?: string) {
   if (ymd && last4) return `${ymd}-${last4}`;
   return `MBL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
+
 
 type InfoItem = { icon: string; label: string; value: string };
 
@@ -255,6 +257,8 @@ function useTicketLabels(lang: LangCode) {
     spotMore: isVI ? "Xem thêm thông tin về điểm bay" : isFR ? "En savoir plus sur le site de vol" : isRU ? "Подробнее о площадке" : isHI ? "उड़ान स्थल के बारे में और जानें" : isZH || isZHTW ? zh("了解更多飞行点信息", "了解更多飛行點資訊") : "More about this flying site",
     qrHint: isVI ? "Quét để mở bản đồ điểm hẹn" : isFR ? "Scannez pour ouvrir la carte" : isRU ? "Отсканируйте, чтобы открыть карту" : isHI ? "नक्शा खोलने के लिए स्कैन करें" : isZH || isZHTW ? zh("扫码打开地图", "掃碼開啟地圖") : "Scan to open the map",
     viewMap: isVI ? "Xem bản đồ" : isFR ? "Voir la carte" : isRU ? "Открыть карту" : isHI ? "नक्शा देखें" : isZH || isZHTW ? zh("查看地图", "查看地圖") : "View map",
+    pickupPrivate: isVI ? "xe riêng" : isFR ? "privé" : isRU ? "индивидуальный" : isHI ? "प्राइवेट" : isZH || isZHTW ? zh("专车", "專車") : "private",
+    pickupShared: isVI ? "xe ghép" : isFR ? "partagé" : isRU ? "групповой" : isHI ? "शेयर्ड" : isZH || isZHTW ? zh("拼车", "拼車") : "shared",
     pickupPointLabel: isVI ? "Điểm đón" : isFR ? "Point de prise en charge" : isRU ? "Место посадки" : isHI ? "पिकअप स्थान" : isZH || isZHTW ? zh("接送地点", "接送地點") : "Pickup point",
     meetingPointLabel: isVI ? "Điểm hẹn" : isFR ? "Point de rendez-vous" : isRU ? "Место встречи" : isHI ? "मिलन स्थल" : isZH || isZHTW ? zh("集合地点", "集合地點") : "Meeting point",
     pickupOneHourNote: isVI
@@ -316,6 +320,8 @@ function useTicketLabels(lang: LangCode) {
     camera360Cost: isVI ? "Camera 360" : "Camera 360",
     droneCost: isVI ? "Flycam / Drone" : "Drone / Flycam",
     groupDiscount: (t as any)?.labels?.groupDiscount ?? (isVI ? "Giảm giá nhóm" : "Group discount"),
+    flightLine: isVI ? "Bay dù lượn" : isFR ? "Vol en parapente" : isRU ? "Полёт на параплане" : isHI ? "पैराग्लाइडिंग उड़ान" : isZH || isZHTW ? zh("滑翔伞飞行", "滑翔傘飛行") : "Paragliding flight",
+    flightLinePPG: isVI ? "Bay dù lượn có động cơ" : isFR ? "Vol en paramoteur" : isRU ? "Полёт на парамоторе" : isHI ? "पैरामोटर उड़ान" : isZH || isZHTW ? zh("动力滑翔伞飞行", "動力滑翔傘飛行") : "Paramotor flight",
     freeTag: isVI ? "miễn phí" : isFR ? "offert" : isRU ? "бесплатно" : isHI ? "निःशुल्क" : isZH || isZHTW ? zh("免费", "免費") : "free",
     includedTag: isVI ? "đã bao gồm" : isFR ? "inclus" : isRU ? "включено" : isHI ? "शामिल" : isZH || isZHTW ? zh("已包含", "已包含") : "included",
     noTag: isVI ? "không" : isFR ? "non" : isRU ? "нет" : isHI ? "नहीं" : isZH || isZHTW ? zh("无", "無") : "no",
@@ -557,10 +563,18 @@ export default function BookingTicket({
     const viItems = (source?.vi ?? []) as string[];
 
     return items.map((text, idx) => ({
-      text,
+      // Mục đầu là chính chuyến bay. Câu dài "01 chuyến bay dù lượn 8–15 phút
+      // (tuỳ gió)" viết để khách cân nhắc lúc chọn gói; trên vé đã chốt thì nó
+      // chỉ làm xuống dòng, nên rút còn tên chuyến bay.
+      text:
+        idx === 0
+          ? booking.flightTypeKey === "paramotor"
+            ? labels.flightLinePPG
+            : labels.flightLine
+          : text,
       tag: includedTagOf(viItems[idx] ?? text, idx),
     }));
-  }, [cfg, booking.packageKey, lang]);
+  }, [cfg, booking.packageKey, booking.flightTypeKey, labels, lang]);
 
   /** Dịch vụ khách CÓ chọn: tên + số lượng + ghi chú khách nhập. */
   const chosenServiceRows = useMemo(() => {
@@ -613,14 +627,7 @@ export default function BookingTicket({
       selectedServices.some((svc) => {
         const key = String(svc.key || "").toLowerCase();
 
-        if (k === "pickup") {
-          return (
-            key.includes("pickup") ||
-            String(svc.exclusiveGroup || "").toLowerCase().includes("pickup") ||
-            !!svc.requiresPickupInput ||
-            !!svc.fixedMapUrl
-          );
-        }
+        if (k === "pickup") return isPickupService(svc);
 
         if (k === "camera360") {
           return key.includes("camera360") || key.includes("camera_360");
@@ -838,33 +845,29 @@ export default function BookingTicket({
    * cố định), nên thêm điểm bay mới cũng chạy đúng.
    */
   const pickupInfo = useMemo(() => {
-    const withAddress = selectedServices.find(
-      (svc) => svc.requiresPickupInput && splitInputEntries(svc.inputText).length,
-    );
+    // Dùng chung hàm với hai email (lib/booking/pickup.ts) để ba nơi không
+    // bao giờ nói khác nhau về việc có điều xe hay không.
+    const pickup = resolvePickup({
+      selectedServices: selectedServices.map((svc) => ({
+        key: String(svc.key),
+        label: String(svc.label),
+        inputText: splitInputEntries(svc.inputText).join(" · "),
+      })),
+    });
 
-    if (withAddress) {
-      return {
-        label: labels.pickupPointLabel,
-        value: splitInputEntries(withAddress.inputText).join(" · "),
-        note: labels.pickupOneHourNote,
-      };
-    }
+    if (pickup.hasPickup) {
+      const mode =
+        pickup.mode === "private"
+          ? labels.pickupPrivate
+          : pickup.mode === "shared"
+            ? labels.pickupShared
+            : "";
 
-    const fixed = selectedServices.find((svc) => svc.fixedMapUrl);
-    if (fixed) {
       return {
-        label: labels.pickupPointLabel,
-        value: String(fixed.label),
-        note: labels.pickupOneHourNote,
-      };
-    }
-
-    // Khách đã chọn dịch vụ đón nhưng chưa kịp nhập địa chỉ.
-    const pendingAddress = selectedServices.find((svc) => svc.requiresPickupInput);
-    if (pendingAddress) {
-      return {
-        label: labels.pickupPointLabel,
-        value: String(pendingAddress.label),
+        label: mode
+          ? `${labels.pickupPointLabel} (${mode})`
+          : labels.pickupPointLabel,
+        value: pickup.name || labels.pickupPointLabel,
         note: labels.pickupOneHourNote,
       };
     }

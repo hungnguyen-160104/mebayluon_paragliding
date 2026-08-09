@@ -895,6 +895,53 @@ export default function SelectFlightStep() {
     [allPackages],
   );
 
+  /**
+   * Giữ lại lựa chọn dịch vụ khi khách đổi gói bay hoặc loại hình bay.
+   *
+   * Trước đây mọi nút đổi gói đều gọi `services: {}` — xoá sạch. Khách chọn
+   * "Xe đón/trả từ TTTM GO! Thăng Long" rồi đổi gói 850m sang 650m là mất
+   * luôn lựa chọn đó, phải chọn lại từ đầu.
+   *
+   * Nay chỉ bỏ những dịch vụ KHÔNG CÒN HIỂN THỊ với lựa chọn mới (theo
+   * visibleForPackages / visibleForFlightTypes trong cấu hình). Truyền
+   * undefined cho vế nào chưa chọn thì vế đó không lọc — dùng khi khách vừa
+   * đổi loại hình bay và chưa chọn gói ngày.
+   */
+  const keepServicesFor = useCallback(
+    (nextPackageKey?: PackageKey, nextFlightTypeKey?: FlightTypeKey) => {
+      const current = (data.services ||
+        {}) as Record<string, ServiceSelection>;
+      const services = (selectedCfg?.services || []) as ServiceConfig[];
+      const kept: Record<string, ServiceSelection> = {};
+
+      for (const svc of services) {
+        const state = current[svc.key];
+        if (!state) continue;
+
+        if (
+          svc.visibleForPackages?.length &&
+          nextPackageKey &&
+          !svc.visibleForPackages.includes(nextPackageKey)
+        ) {
+          continue;
+        }
+
+        if (
+          svc.visibleForFlightTypes?.length &&
+          nextFlightTypeKey &&
+          !svc.visibleForFlightTypes.includes(nextFlightTypeKey)
+        ) {
+          continue;
+        }
+
+        kept[svc.key] = state;
+      }
+
+      return kept;
+    },
+    [data.services, selectedCfg],
+  );
+
   const visibleServices = useMemo(() => {
     const services = (selectedCfg?.services || []) as ServiceConfig[];
 
@@ -954,7 +1001,7 @@ export default function SelectFlightStep() {
       ) {
         update({
           packageKey: undefined,
-          services: {},
+          services: keepServicesFor(undefined, "paramotor"),
         });
         return;
       }
@@ -962,11 +1009,12 @@ export default function SelectFlightStep() {
       if (data.flightTypeKey === "paragliding" && isParamotorPackage) {
         update({
           packageKey: undefined,
-          services: {},
+          services: keepServicesFor(undefined, "paragliding"),
         });
       }
     }
   }, [
+    keepServicesFor,
     selected,
     selectedCfg,
     allPackages,
@@ -1487,9 +1535,10 @@ export default function SelectFlightStep() {
                             // Cả 2 loại bay đều phải chọn tiếp gói ngày
                             // (T2–T6 / T7–CN & Lễ) nên chưa gán gói ở đây.
                             packageKey: undefined,
-                            services: {},
-                            addons: {},
-                            addonsQty: {},
+                            // Giữ dịch vụ nào vẫn dùng được với loại bay mới;
+                            // addon (flycam, camera 360, đón trả) không phụ
+                            // thuộc gói nên giữ nguyên.
+                            services: keepServicesFor(undefined, item.key),
                           })
                         }
                         className={[
@@ -1582,7 +1631,10 @@ export default function SelectFlightStep() {
                           onClick={() =>
                             update({
                               packageKey: khauPhaPackages.weekday?.key,
-                              services: {},
+                              services: keepServicesFor(
+                                khauPhaPackages.weekday?.key,
+                                data.flightTypeKey as FlightTypeKey | undefined,
+                              ),
                             })
                           }
                         />
@@ -1598,7 +1650,10 @@ export default function SelectFlightStep() {
                           onClick={() =>
                             update({
                               packageKey: khauPhaPackages.weekend?.key,
-                              services: {},
+                              services: keepServicesFor(
+                                khauPhaPackages.weekend?.key,
+                                data.flightTypeKey as FlightTypeKey | undefined,
+                              ),
                             })
                           }
                         />
@@ -1627,7 +1682,10 @@ export default function SelectFlightStep() {
                             update({
                               packageKey:
                                 khauPhaPackages.paramotorWeekday?.key,
-                              services: {},
+                              services: keepServicesFor(
+                              khauPhaPackages.paramotorWeekday?.key,
+                              data.flightTypeKey as FlightTypeKey | undefined,
+                            ),
                             })
                           }
                         />
@@ -1652,7 +1710,10 @@ export default function SelectFlightStep() {
                             update({
                               packageKey:
                                 khauPhaPackages.paramotorWeekend?.key,
-                              services: {},
+                              services: keepServicesFor(
+                              khauPhaPackages.paramotorWeekend?.key,
+                              data.flightTypeKey as FlightTypeKey | undefined,
+                            ),
                             })
                           }
                         />
@@ -1669,7 +1730,13 @@ export default function SelectFlightStep() {
                           title={pkg.label}
                           price={pkg.priceVND ? formatVND(pkg.priceVND) : ""}
                           onClick={() =>
-                            update({ packageKey: pkg.key, services: {} })
+                            update({
+                              packageKey: pkg.key,
+                              services: keepServicesFor(
+                                pkg.key,
+                                data.flightTypeKey as FlightTypeKey | undefined,
+                              ),
+                            })
                           }
                         />
                       ))}
