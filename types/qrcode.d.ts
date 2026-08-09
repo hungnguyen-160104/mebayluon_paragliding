@@ -1,8 +1,10 @@
 // types/qrcode.d.ts
 /**
  * Gói `qrcode` không kèm khai báo kiểu và dự án chưa cài @types/qrcode.
- * Chỉ khai đúng hàm đang dùng (toDataURL) thay vì `declare module` trống,
- * để TypeScript vẫn kiểm được lời gọi.
+ * Chỉ khai đúng những hàm đang dùng thay vì `declare module` trống, để
+ * TypeScript vẫn kiểm được lời gọi:
+ *   - toDataURL: vẽ mã QR ngay trên trình duyệt (vé bay, trang đăng ký)
+ *   - toBuffer : vẽ ở máy chủ để đính kèm vào email
  */
 declare module "qrcode" {
   export interface QRCodeToDataURLOptions {
@@ -18,6 +20,14 @@ declare module "qrcode" {
     options?: QRCodeToDataURLOptions,
   ): Promise<string>;
 
-  const _default: { toDataURL: typeof toDataURL };
+  export function toBuffer(
+    text: string,
+    options?: QRCodeToDataURLOptions,
+  ): Promise<Buffer>;
+
+  const _default: {
+    toDataURL: typeof toDataURL;
+    toBuffer: typeof toBuffer;
+  };
   export default _default;
 }

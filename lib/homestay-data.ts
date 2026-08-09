@@ -382,7 +382,7 @@ export const locationTranslations = {
     viewOnMap: "Voir sur Google Maps",
     seeUsOn: "Retrouvez-nous sur",
     fanpage: "Page Facebook du Clubhouse",
-    fromHanoi: "Depuis Hanoi",
+    fromHanoi: "Depuis Hanoï",
     nearby: "Attractions à proximité",
     nearbyList: [
       "Source chaude de Tu Le – 4 km",

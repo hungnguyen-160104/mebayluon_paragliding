@@ -56,7 +56,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     ],
     locationDescription: {
       ha_noi: [
-        "Découvrez un autre visage de Hanoi grâce à une expérience de parapente au-dessus des montagnes, des champs et des villages périphériques. Le site de vol se situe à seulement 50 km à l’ouest du centre-ville de Hanoi.",
+        "Découvrez un autre visage de Hanoï grâce à une expérience de parapente au-dessus des montagnes, des champs et des villages périphériques. Le site de vol se situe à seulement 50 km à l’ouest du centre-ville de Hanoï.",
         "Durée totale de la visite : 3-5 heures (excursion d'une journée)",
       ],
       khau_pha: [],
@@ -90,8 +90,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "Vue aérienne complète de la vallée et du parcours de vol. La vidéo brute sera envoyée juste après le vol.",
     camera360Description:
       "Vidéo 360° impressionnante du vol. La vidéo éditée sera envoyée sous 24 heures.",
-    optionalServicesFlightLocation: "Lieu de vol : Doi Bu, Hanoi",
-    optionalServicesFixedPickupLocation: "Point de prise en charge : Centre commercial GO! Thang Long, Hanoi",
+    optionalServicesFlightLocation: "Lieu de vol : Doi Bu, Hanoï",
+    optionalServicesFixedPickupLocation: "Point de prise en charge : Centre commercial GO! Thang Long, Hanoï",
     optionalServicesFixedPickupDeparture: "Départ : 8:00am~11:00am tous les jours – l'heure exacte dépend de la météo et sera communiquée avant le jour du vol.",
     optionalServicesPrivatePickupNote1: "Le coût de la prise en charge peut varier en fonction du lieu de l'hôtel et du nombre de passagers.",
     optionalServicesPrivatePickupNote2: "1–3 personnes : tarif fixe 1.400.000 VND / voiture.",
@@ -101,9 +101,9 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     groupGuestsSuffix: "passagers",
     perPersonWord: "personne",
     carUnit: "voiture",
-    mapDoiBuLabel: "Lieu de vol : Doi Bu, Hanoi - Voir la carte",
+    mapDoiBuLabel: "Lieu de vol : Doi Bu, Hanoï - Voir la carte",
     mapVienNamLabel: "Vien Nam - Voir la carte",
-    mapGoThangLongLabel: "Point de prise en charge fixe depuis Hanoi : GO! Thang Long - Voir la carte",
+    mapGoThangLongLabel: "Point de prise en charge fixe depuis Hanoï : GO! Thang Long - Voir la carte",
     mapKhauPhaTakeoffLabel: "Sommet de Khau Pha - Voir la carte",
     mapKhauPhaLandingLabel: "Atterrissage Clubhouse - Voir la carte",
     mapKhauPhaClubhouseLabel: "Clubhouse Mebayluon - Voir la carte",

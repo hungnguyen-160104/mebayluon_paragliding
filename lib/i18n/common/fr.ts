@@ -103,7 +103,7 @@ export const fr: CommonTranslation = {
       },
       doiBu: {
         name: "Doi Bu | Vien Nam",
-        location: "Hanoi",
+        location: "Hanoï",
         duration: "Sortie de 3 à 5 heures",
         highlights: [
           "Un site de vol près de la capitale",
@@ -111,7 +111,7 @@ export const fr: CommonTranslation = {
           "Vol au coucher du soleil",
         ],
         summary:
-          "Un site de vol aux portes de Hanoi — aller-retour en 3 à 5 heures seulement. Célèbre pour ses collines de roseaux blancs, facile à combiner avec du camping et du trekking.",
+          "Un site de vol aux portes de Hanoï — aller-retour en 3 à 5 heures seulement. Célèbre pour ses collines de roseaux blancs, facile à combiner avec du camping et du trekking.",
       },
     },
   },
@@ -283,7 +283,7 @@ export const fr: CommonTranslation = {
     intro: {
       title: "Bienvenue au Clubhouse MEBAYLUON",
       description:
-        "Situé dans le village de Lim Thai – commune de Tu Le – province de Lao Cai, à environ 250 km de Hanoi (environ 5 heures de route), notre charmant homestay se trouve juste au pied du col de Khau Pha – l’un des célèbres “quatre grands cols” du Vietnam. C’est l’étape idéale pour ceux qui souhaitent se reposer avant de parcourir les plus de 40 km de route de montagne du col de Khau Pha et découvrir pleinement la majestueuse route Tu Le - Mu Cang Chai. Le plus remarquable, c’est que l’homestay se situe dans la zone d’atterrissage du parapente : en dégustant simplement un café, vous pourrez admirer les voiles colorées glisser dans le ciel.",
+        "Situé dans le village de Lim Thai – commune de Tu Le – province de Lao Cai, à environ 250 km de Hanoï (environ 5 heures de route), notre charmant homestay se trouve juste au pied du col de Khau Pha – l’un des célèbres “quatre grands cols” du Vietnam. C’est l’étape idéale pour ceux qui souhaitent se reposer avant de parcourir les plus de 40 km de route de montagne du col de Khau Pha et découvrir pleinement la majestueuse route Tu Le - Mu Cang Chai. Le plus remarquable, c’est que l’homestay se situe dans la zone d’atterrissage du parapente : en dégustant simplement un café, vous pourrez admirer les voiles colorées glisser dans le ciel.",
       location: "Emplacement privilégié",
       traditional: "Maison sur pilotis traditionnelle",
       traditionalDesc: "Matériaux en bois naturel, respectueux de l’environnement",
@@ -390,7 +390,7 @@ export const fr: CommonTranslation = {
       description:
         "Situé juste dans la zone d’atterrissage du parapente - au cœur de l’activité des pilotes professionnels. Les clients peuvent rencontrer la communauté du vol et admirer les voiles colorées flottant dans le ciel.",
       address: "Adresse",
-      fromHanoi: "Depuis Hanoi",
+      fromHanoi: "Depuis Hanoï",
       nearby: "Lieux à proximité",
     },
     cta: {

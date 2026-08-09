@@ -118,7 +118,7 @@ const SHORT_PACKAGE: Record<string, Record<LangCode, string>> = {
   ha_noi_850m: {
     vi: "850m cao nhất HN",
     en: "850m – highest in Hanoi",
-    fr: "850m – le plus haut de Hanoi",
+    fr: "850m – le plus haut de Hanoï",
     ru: "850м – высшая точка Ханоя",
     zh: "850米 – 河内最高",
     hi: "850m – हनोई में सबसे ऊँचा",

@@ -69,7 +69,7 @@ export const CHATBOT_TEXTS: Record<ChatbotLang, ChatbotTexts> = {
     inputPlaceholder: "Saisissez votre question…",
     send: "Envoyer",
     greeting:
-      "Bonjour ! Mebayluon vole tous les jours à Mu Cang Chai, Hanoi et Sapa, de 7h00 à 18h00. Retrouvez rapidement toutes les infos sur nos vols en parapente dans cette fenêtre de chat. En cas d’urgence, appelez notre chef pilote : 0964 073 555 (M. My).",
+      "Bonjour ! Mebayluon vole tous les jours à Mu Cang Chai, Hanoï et Sapa, de 7h00 à 18h00. Retrouvez rapidement toutes les infos sur nos vols en parapente dans cette fenêtre de chat. En cas d’urgence, appelez notre chef pilote : 0964 073 555 (M. My).",
     error: `Désolé, le système est occupé ou ne répond pas. Réessayez plus tard ou appelez notre hotline ${HOTLINE} pour une aide immédiate.`,
   },
   ru: {

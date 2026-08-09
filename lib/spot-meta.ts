@@ -24,7 +24,7 @@ const SEO_NAME: Record<string, Record<Locale, string>> = {
   "doi-bu": {
     vi: "Dù lượn Hà Nội",
     en: "Hanoi Paragliding",
-    fr: "Parapente à Hanoi",
+    fr: "Parapente à Hanoï",
     ru: "Парапланеризм в Ханое",
     zh: "河内滑翔伞",
     hi: "हनोई पैराग्लाइडिंग",
@@ -32,7 +32,7 @@ const SEO_NAME: Record<string, Record<Locale, string>> = {
   "vien-nam": {
     vi: "Dù lượn Hà Nội",
     en: "Hanoi Paragliding",
-    fr: "Parapente à Hanoi",
+    fr: "Parapente à Hanoï",
     ru: "Парапланеризм в Ханое",
     zh: "河内滑翔伞",
     hi: "हनोई पैराग्लाइडिंग",
@@ -102,7 +102,7 @@ const SEO_TITLE: Record<string, Record<Locale, string>> = {
   "doi-bu": {
     vi: "Bay Dù Lượn Hà Nội – Đồi Bù: Giá Từ 1.790.000đ",
     en: "Paragliding Near Hanoi – Doi Bu: From 1,790,000₫",
-    fr: "Parapente près de Hanoi – Doi Bu : dès 1 790 000 ₫",
+    fr: "Parapente près de Hanoï – Doi Bu : dès 1 790 000 ₫",
     ru: "Параплан под Ханоем – Дой Бу: от 1 790 000 ₫",
     zh: "河内近郊滑翔伞 – 堆布山：1,790,000 越南盾起",
     hi: "हनोई के पास पैराग्लाइडिंग – दोई बू: 1,790,000₫ से",
@@ -110,7 +110,7 @@ const SEO_TITLE: Record<string, Record<Locale, string>> = {
   "vien-nam": {
     vi: "Bay Dù Lượn Viên Nam – Gần Hà Nội: Chênh Cao Hơn 800m",
     en: "Vien Nam Paragliding Near Hanoi: Over 800m Vertical Drop",
-    fr: "Parapente à Vien Nam près de Hanoi : plus de 800 m",
+    fr: "Parapente à Vien Nam près de Hanoï : plus de 800 m",
     ru: "Параплан Виен Нам под Ханоем: перепад более 800 м",
     zh: "员南滑翔伞（近河内）：落差超过 800 米",
     hi: "वियन नाम पैराग्लाइडिंग, हनोई के पास: 800 मी+ ऊँचाई",
@@ -170,7 +170,7 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "doi-bu": {
     vi: "điểm bay gần Hà Nội nhất, bay được quanh năm",
     en: "the closest flying site to Hanoi, flyable year-round",
-    fr: "le site le plus proche de Hanoi, praticable toute l'année",
+    fr: "le site le plus proche de Hanoï, praticable toute l'année",
     ru: "ближайшая к Ханою площадка, полёты круглый год",
     zh: "距河内最近的飞行点，全年可飞",
     hi: "हनोई से सबसे नज़दीक उड़ान स्थल, पूरे साल उड़ान",
@@ -178,7 +178,7 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "vien-nam": {
     vi: "điểm cất cánh cao nhất Hà Nội, chênh cao hơn 800m",
     en: "Hanoi's highest launch, with over 800m of vertical drop",
-    fr: "le décollage le plus haut de Hanoi, plus de 800 m de dénivelé",
+    fr: "le décollage le plus haut de Hanoï, plus de 800 m de dénivelé",
     ru: "самый высокий старт Ханоя, перепад более 800 м",
     zh: "河内最高起飞点，落差超过 800 米",
     hi: "हनोई का सबसे ऊँचा लॉन्च, 800 मीटर से अधिक ऊँचाई अंतर",

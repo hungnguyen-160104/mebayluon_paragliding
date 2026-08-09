@@ -28,7 +28,7 @@ const META: Record<Lang, { title: string; description: string }> = {
   fr: {
     title: "Réserver un vol en parapente : annulation gratuite | Mebayluon",
     description:
-      "Réservez votre vol en parapente en ligne à Hanoi, Mu Cang Chai, Sapa et sur les sites de vol partout au Vietnam. Choisissez un site et une formule, confirmez en 2 minutes. Pilotes certifiés, assurance complète, service attentionné.",
+      "Réservez votre vol en parapente en ligne à Hanoï, Mu Cang Chai, Sapa et sur les sites de vol partout au Vietnam. Choisissez un site et une formule, confirmez en 2 minutes. Pilotes certifiés, assurance complète, service attentionné.",
   },
   ru: {
     title: "Онлайн-бронь полёта на параплане: отмена бесплатно | Mebayluon",

@@ -54,7 +54,7 @@ export default function BookingQRPage() {
       },
       fr: {
         title: "Merci d’avoir choisi Mebayluon Paragliding",
-        subtitle: "Nous avons des vols quotidiens à Hanoi, Sapa, Mu Cang Chai",
+        subtitle: "Nous avons des vols quotidiens à Hanoï, Sapa, Mu Cang Chai",
         cta: "Continuer la réservation",
         infoPrefix:
           "Voir les informations sur les sites de vol, les offres et les services",

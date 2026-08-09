@@ -38,7 +38,7 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     fr: {
       title: "Parapente au Vietnam : 6 sites, dès 1 790 000 ₫ | Mebayluon",
       description:
-        "Volez avec Mebayluon à Hanoi, Sapa, Mu Cang Chai et sur de nombreux autres sites du Vietnam. Pilotes certifiés, assurance et vidéo GoPro offerte.",
+        "Volez avec Mebayluon à Hanoï, Sapa, Mu Cang Chai et sur de nombreux autres sites du Vietnam. Pilotes certifiés, assurance et vidéo GoPro offerte.",
     },
     ru: {
       title: "Парапланеризм во Вьетнаме: 6 площадок, от 1 790 000 ₫ | Mebayluon",
@@ -137,7 +137,7 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     fr: {
       title: "Nous contacter : réserver par hotline, Zalo, WhatsApp | Mebayluon",
       description:
-        "Contactez Mebayluon pour réserver votre vol en parapente. Hotline : +84 964 073 555. Vols à Mu Cang Chai, Sapa, Hanoi et partout au Vietnam.",
+        "Contactez Mebayluon pour réserver votre vol en parapente. Hotline : +84 964 073 555. Vols à Mu Cang Chai, Sapa, Hanoï et partout au Vietnam.",
     },
     ru: {
       title: "Связаться с нами: телефон, Zalo, WhatsApp | Mebayluon",

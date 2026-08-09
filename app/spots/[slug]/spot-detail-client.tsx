@@ -99,7 +99,7 @@ const SPOT_H1: Partial<Record<SpotKey, Record<Lang, string>>> = {
   "doi-bu": {
     vi: "Dù lượn Hà Nội",
     en: "Hanoi Paragliding",
-    fr: "Parapente à Hanoi",
+    fr: "Parapente à Hanoï",
     ru: "Парапланеризм в Ханое",
     zh: "河内滑翔伞",
     hi: "हनोई पैराग्लाइडिंग",
@@ -107,7 +107,7 @@ const SPOT_H1: Partial<Record<SpotKey, Record<Lang, string>>> = {
   "vien-nam": {
     vi: "Dù lượn Hà Nội",
     en: "Hanoi Paragliding",
-    fr: "Parapente à Hanoi",
+    fr: "Parapente à Hanoï",
     ru: "Парапланеризм в Ханое",
     zh: "河内滑翔伞",
     hi: "हनोई पैराग्लाइडिंग",
@@ -1158,13 +1158,13 @@ Please book in advance so we can best arrange your paragliding experience!`,
     },
     fr: {
       name: "Viên Nam",
-      title: "Site de vol proche de Hanoi",
+      title: "Site de vol proche de Hanoï",
       altitude: "600–1000 m",
       description:
-        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoi offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
+        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoï offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
 
 📦 FORFAIT INCLUS :
-✅ Transport vers la montagne, Navette de Hanoi au site de vold (Les passagers peuvent également se rendre par leurs propres moyens au site de vol selon l'option de réservation)
+✅ Transport vers la montagne, Navette de Hanoï au site de vold (Les passagers peuvent également se rendre par leurs propres moyens au site de vol selon l'option de réservation)
 ✅ Certificat de participation
 ✅ Eau potable, cadeau souvenir
 ✅ Photos et vidéos GoPro du vol complet (fournies par nous)
@@ -1176,7 +1176,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
-⏳ Durée totale du trajet : environ 3–5 heures de la prise en charge au retour au centre de Hanoi
+⏳ Durée totale du trajet : environ 3–5 heures de la prise en charge au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
 💳 Paiement en espèces (sur le site de vol)
 
@@ -1195,7 +1195,7 @@ PROGRAMME
 14:00 – 15:00 | La voiture ramène les clients à l'hôtel ou au point de rendez-vous initial
 
 Veuillez réserver à l’avance pour que nous puissions organiser au mieux votre expérience de parapente !`,
-      landscape: "Collines – proche de Hanoi",
+      landscape: "Collines – proche de Hanoï",
       duration: "10–15 minutes",
     },
     ru: {
@@ -1429,13 +1429,13 @@ Please book in advance so we can best arrange your paragliding experience!`,
     },
     fr: {
       name: "Đồi Bù - Viên Nam",
-      title: "Site de vol près de Hanoi - Banlieue paisible",
+      title: "Site de vol près de Hanoï - Banlieue paisible",
       altitude: "650m – 1,000m",
       description:
-        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoi offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
+        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoï offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
 
 📦 FORFAIT INCLUS :
-✅ Transport jusqu’à la montagne, navette depuis Hanoi vers le site de vol (possibilité de venir par ses propres moyens selon l’option de réservation)
+✅ Transport jusqu’à la montagne, navette depuis Hanoï vers le site de vol (possibilité de venir par ses propres moyens selon l’option de réservation)
 ✅ Certificat de participation
 ✅ Eau potable, cadeau souvenir
 ✅ Photos & vidéos GoPro du vol complet (fournies par nous)
@@ -1447,7 +1447,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
-⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoi
+⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
 💳 Paiement en espèces (sur le site de vol)
 
@@ -1927,14 +1927,14 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
       duration: "10–20 minutes",
     },
     fr: {
-      name: "Site de vol près de Hanoi",
-      title: "Site de vol près de Hanoi - Banlieue paisible",
+      name: "Site de vol près de Hanoï",
+      title: "Site de vol près de Hanoï - Banlieue paisible",
       altitude: "600–1000 m",
       description:
-        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoi offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
+        `Échappez à la ville bondée et rejoignez une banlieue verdoyante d’une tranquillité rare. Ce site de vol proche de Hanoï offre une altitude idéale et des conditions météo stables, attirant de nombreux pilotes vietnamiens et étrangers pour explorer et conquérir le ciel.
 
 📦 FORFAIT INCLUS :
-✅ Transport jusqu’à la montagne, navette depuis Hanoi vers le site de vol (possibilité de venir par ses propres moyens selon l’option de réservation)
+✅ Transport jusqu’à la montagne, navette depuis Hanoï vers le site de vol (possibilité de venir par ses propres moyens selon l’option de réservation)
 ✅ Certificat de participation
 ✅ Eau potable, cadeau souvenir
 ✅ Photos & vidéos GoPro du vol complet (fournies par nous)
@@ -1946,7 +1946,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
 🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
-⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoi
+⏳ Durée totale du trajet : environ 3–5 heures depuis la prise en charge jusqu’au retour au centre de Hanoï
 🔄 Report/annulation gratuit en cas de mauvais temps
 💳 Paiement en espèces (sur le site de vol)
 
@@ -2750,11 +2750,11 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
       },
       {
         id: 2,
-        title: "Si proche de Hanoi",
+        title: "Si proche de Hanoï",
         author: "Phạm Thu Huyền",
         date: "21/06/2025",
         content:
-          "Départ de Hanoi le matin ; 1–1,5 h plus tard on y est. Retour pour déjeuner — ultra pratique !",
+          "Départ de Hanoï le matin ; 1–1,5 h plus tard on y est. Retour pour déjeuner — ultra pratique !",
       },
       {
         id: 3,
@@ -2921,7 +2921,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Nguyễn Huyền Trang",
         date: "01/09/2025",
         content:
-          "À un peu plus d’une heure du centre. Proche de Hanoi mais vue dégagée sur les collines — café au bord du lac après le vol !",
+          "À un peu plus d’une heure du centre. Proche de Hanoï mais vue dégagée sur les collines — café au bord du lac après le vol !",
       },
     ],
     ru: [

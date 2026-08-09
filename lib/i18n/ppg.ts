@@ -550,7 +550,7 @@ const fr: PpgCopy = {
   reviews: [
     {
       name: "Nguyen Hoang Anh",
-      from: "Hanoi",
+      from: "Hanoï",
       text: "Il a fallu trois voyages à Khau Pha pour tomber sur un matin avec de tels nuages. Assis à l’avant, rien ne gêne la vue — on a vraiment l’impression de flotter au milieu d’une mer de nuages. Le pilote vole très doucement ; ma mère de 58 ans a volé aussi sans avoir peur.",
     },
     {
