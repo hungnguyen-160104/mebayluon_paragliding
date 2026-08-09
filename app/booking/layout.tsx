@@ -1,16 +1,10 @@
-import type { Metadata } from "next";
-
 /**
- * Trang /booking và /booking/QR là trang chức năng (form đặt chỗ) —
- * không cần index để tránh loãng chất lượng site trên Google.
+ * Metadata của /booking do chính app/booking/page.tsx dựng (buildMetadata:
+ * canonical theo ngôn ngữ + hreflang). Layout này từng khai thêm
+ * `robots: { index: false }`, nhưng metadata của page ghi đè metadata của
+ * layout nên thẻ đó chưa từng có tác dụng — chỉ gây hiểu nhầm là trang đang
+ * bị chặn index. /booking/QR kế thừa metadata của page cha.
  */
-export const metadata: Metadata = {
-  title: "Đặt Lịch Bay Dù Lượn | Mebayluon",
-  description:
-    "Đặt lịch bay dù lượn cùng Mebayluon tại Sapa, Mù Cang Chải, Đà Nẵng và khắp Việt Nam.",
-  robots: { index: false, follow: true },
-};
-
 export default function BookingLayout({
   children,
 }: {

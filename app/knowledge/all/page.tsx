@@ -4,17 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { KnowledgeTabs } from "../KnowledgeTabs";
 import { getPosts } from "@/lib/posts-data";
-import { getRequestLang } from "@/lib/locale";
+import type { Metadata } from "next";
+
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { buildMetadata } from "@/lib/metadata-builder";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon",
-  description:
-    "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay.",
-  alternates: { canonical: "https://www.mebayluon.com/knowledge/all" },
-};
+/**
+ * Canonical trước đây cắm cứng vào URL tiếng Việt, nên bản /en/knowledge/all,
+ * /fr/knowledge/all... đều tự khai mình là bản sao của trang tiếng Việt và
+ * không có hreflang nào. buildMetadata dựng canonical tự trỏ theo ngôn ngữ
+ * đang xem cộng đủ 6 thẻ hreflang.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getUrlLocale();
+
+  return buildMetadata({
+    title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon",
+    description:
+      "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay.",
+    url: "/knowledge/all",
+    author: "Mebayluon",
+    type: "website",
+    locale,
+  });
+}
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 

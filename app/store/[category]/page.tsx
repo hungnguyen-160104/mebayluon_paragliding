@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { PageBackground } from "@/components/page-background";
 // mbl-paragliding/app/store/[category]/page.tsx
 import type { StoreCategory } from "@/types/frontend/post";
@@ -5,6 +7,7 @@ import { listProductsByCategory } from "@/lib/product-api";
 import ProductCard from "@/app/store/components/ProductCard";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { getUrlLocale } from "@/lib/locale";
+import { absoluteUrl } from "@/lib/site-config";
 import {
   STORE_CATEGORY_CONFIG,
   EMPTY_CATEGORY_TEXT,
@@ -63,13 +66,47 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
+/** Nhãn "Danh mục khác" cho dải link cuối trang. */
+const OTHER_CATEGORIES_LABEL: Record<StoreLang, string> = {
+  vi: "Danh mục khác",
+  en: "Other categories",
+  fr: "Autres catégories",
+  ru: "Другие категории",
+  zh: "其他分类",
+  hi: "अन्य श्रेणियाँ",
+};
+
 export default async function StoreCategoryPage({ params }: Props) {
   const { category } = await params;
   const lang = toStoreLang(await getUrlLocale());
   const { items } = await listProductsByCategory({ category, limit: 30 });
 
+  // ItemList giúp Google hiểu đây là trang danh mục sản phẩm, giống cách
+  // trang /spots khai danh sách điểm bay.
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: categoryTitle(category, lang),
+    itemListElement: items.map((p, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: p.titleVi || p.title,
+      url: absoluteUrl(`/store/${p.storeCategory ?? category}/${p.slug}`),
+    })),
+  };
+
+  const otherCategories = STORE_CATEGORY_CONFIG.filter(
+    (c) => c.key !== "all" && c.key !== category,
+  );
+
   return (
     <main className="min-h-screen relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(itemListSchema).replace(/</g, "\\u003c"),
+        }}
+      />
       <PageBackground src="/hinh-nen.jpg" className="absolute inset-0" />
       <div className="absolute inset-0 bg-black/20" />
       <section className="relative z-10 py-24">
@@ -89,6 +126,26 @@ export default async function StoreCategoryPage({ params }: Props) {
               ))}
             </div>
           )}
+
+          {/* Link chéo sang các danh mục còn lại: trước đây trang danh mục là
+              nhánh cụt, chỉ vào được từ trang /store. */}
+          <nav className="mt-14 text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-200">
+              {OTHER_CATEGORIES_LABEL[lang]}
+            </p>
+            <ul className="flex flex-wrap justify-center gap-2">
+              {otherCategories.map((c) => (
+                <li key={c.key}>
+                  <Link
+                    href={`/store/${c.key}`}
+                    className="inline-flex rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                  >
+                    {c.title[lang] ?? c.title.vi}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </section>
     </main>

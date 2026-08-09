@@ -57,6 +57,21 @@ const PARENT_PATH_REDIRECTS: Record<string, string> = {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  /**
+   * Khu quản trị: chặn index bằng header thay vì thẻ meta.
+   *
+   * app/admin/layout.tsx là client component nên không export được metadata,
+   * và các trang admin đều render phía client. X-Robots-Tag đi kèm phản hồi
+   * nên không phụ thuộc vào việc trang có kịp render thẻ head hay không.
+   * robots.txt vẫn Disallow /admin/ — header này là lớp thứ hai, có tác dụng
+   * với những URL admin đã lọt vào Google từ trước khi có dòng Disallow.
+   */
+  if (pathname.startsWith("/admin")) {
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
   const localeMatch = pathname.match(LOCALE_PREFIX);
 
   if (localeMatch) {

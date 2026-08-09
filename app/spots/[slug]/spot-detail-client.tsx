@@ -15,6 +15,7 @@ import { Footer } from "@/components/footer";
 import SpotPartnerLinks from "@/components/spots/SpotPartnerLinks";
 import SpotVideos from "@/components/spots/SpotVideos";
 import { SpotTagline, SPOT_I18N_KEY_BY_SLUG } from "@/components/spots/SpotTagline";
+import { SPOTS_LIST } from "@/lib/spots-registry";
 
 /* =========================
    Types
@@ -3851,6 +3852,24 @@ export function SpotDetailClient({
           <p className="mt-4 text-base text-slate-100">
             {ui.exploreMoreDescription}
           </p>
+
+          {/* Link thẳng sang từng điểm bay còn lại.
+              Trước đây cả trang chỉ có đúng một link "/spots", nên các trang
+              điểm bay không hề trỏ sang nhau — Google coi chúng là nhánh cụt
+              và để nguyên trong nhóm "đã phát hiện, chưa lập chỉ mục". */}
+          <ul className="mt-6 flex flex-wrap justify-center gap-2">
+            {SPOTS_LIST.filter((item) => item.slug !== spotSlug).map((item) => (
+              <li key={item.slug}>
+                <Link
+                  href={`/spots/${item.slug}`}
+                  className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:border-accent/70 hover:bg-white/20"
+                >
+                  {item.name}
+                  <span className="ml-1.5 text-white/60">· {item.province}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </motion.div>
       </section>
 

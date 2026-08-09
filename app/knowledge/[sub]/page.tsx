@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import KnowledgeTabs, { KnowledgeSub } from "@/components/knowledge/KnowledgeTabs";
-import { getRequestLang } from "@/lib/locale";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { buildMetadata } from "@/lib/metadata-builder";
 
 type Item = {
   _id: string;
@@ -82,11 +83,16 @@ export async function generateMetadata({
 
   const label = SUB_LABEL[lang][key];
 
-  return {
+  // Canonical + hreflang dựng theo ngôn ngữ đang xem; trước đây cắm cứng URL
+  // tiếng Việt nên các bản ngôn ngữ khác bị coi là trang trùng lặp.
+  return buildMetadata({
     title: `${label} — ${t.heading} | Mebayluon`,
     description: t.metaDesc(label),
-    alternates: { canonical: `https://www.mebayluon.com/knowledge/${sub}` },
-  };
+    url: `/knowledge/${sub}`,
+    author: "Mebayluon",
+    type: "website",
+    locale: await getUrlLocale(),
+  });
 }
 
 async function getLangFromCookies(): Promise<string> {

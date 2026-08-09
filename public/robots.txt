@@ -7,8 +7,8 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /*.json$
 
-# /booking va /pre-notice dung meta noindex (khong Disallow o day,
-# vi bi chan crawl thi Google se khong doc duoc the noindex)
+# /booking va /pre-notice DA MO index tro lai — chi khu /admin bi chan.
+# Trang admin con duoc chan them bang header X-Robots-Tag trong middleware.ts
 
 # Block bad bots
 User-agent: AhrefsBot

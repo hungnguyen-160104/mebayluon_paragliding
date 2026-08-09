@@ -1,13 +1,34 @@
 import type { Metadata } from "next";
 
+import { getUrlLocale } from "@/lib/locale";
+import { buildMetadata } from "@/lib/metadata-builder";
+import { pageMeta } from "@/lib/page-meta";
+
 /**
- * Trang thông báo trước chuyến bay — trang chức năng, không cần index.
+ * Trang "Lưu ý trước khi bay" — trước đây gắn noindex vì bị xem là trang
+ * chức năng. Thực tế đây là nội dung khách tìm trước chuyến bay đầu tiên
+ * ("bay dù lượn mặc gì", "cần mang gì"), nên phải cho index.
  */
-export const metadata: Metadata = {
-  title: "Lưu Ý Trước Chuyến Bay | Mebayluon",
-  description: "Những lưu ý quan trọng trước chuyến bay dù lượn cùng Mebayluon.",
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getUrlLocale();
+  const meta = pageMeta("preNotice", locale);
+
+  return buildMetadata({
+    title: meta.title,
+    description: meta.description,
+    keywords: [
+      "lưu ý trước khi bay dù lượn",
+      "bay dù lượn mặc gì",
+      "chuẩn bị bay dù lượn",
+      "điều kiện bay dù lượn",
+      "cân nặng bay dù lượn",
+    ],
+    url: "/pre-notice",
+    author: "Mebayluon",
+    type: "website",
+    locale,
+  });
+}
 
 export default function PreNoticeLayout({
   children,

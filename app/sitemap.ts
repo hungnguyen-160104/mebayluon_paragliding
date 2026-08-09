@@ -4,6 +4,7 @@ import { Post as PostModel } from "@/models/Post.model";
 import { SITE_URL, languageAlternates, type Locale } from "@/lib/site-config";
 import { postLocales } from "@/lib/post-locales";
 import { SPOT_SLUGS } from "@/lib/spots-slugs";
+import { STORE_CATEGORY_CONFIG } from "@/lib/store-texts";
 import { getActivePilots } from "@/lib/pilots-data";
 import { collectPostVideos } from "@/lib/video-schema";
 
@@ -111,6 +112,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: alts(`${BASE}/store`),
     },
     {
+      url: `${BASE}/ppg`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+      alternates: alts(`${BASE}/ppg`),
+    },
+    {
       url: `${BASE}/pilots`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -138,6 +146,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
       alternates: alts(`${BASE}/booking`),
     },
+    {
+      url: `${BASE}/pre-notice`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+      alternates: alts(`${BASE}/pre-notice`),
+    },
+    {
+      url: `${BASE}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+      alternates: alts(`${BASE}/terms`),
+    },
   ];
 
   /**
@@ -155,6 +177,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: alts(url),
     };
   });
+
+  /**
+   * Trang danh mục con: chuyên mục kiến thức và danh mục cửa hàng.
+   *
+   * Đây là tầng giữa nối trang danh sách với trang chi tiết. Thiếu chúng
+   * trong sitemap thì bài kiến thức và sản phẩm chỉ còn đúng một đường vào,
+   * và đó là lý do /store/khoa-hoc-du-luon/... nằm mãi ở nhóm chưa index.
+   */
+  const KNOWLEDGE_SUBS = ["basic", "advanced", "thermal", "xc", "weather"] as const;
+
+  const sectionRoutes: MetadataRoute.Sitemap = [
+    ...KNOWLEDGE_SUBS.map((sub) => `/knowledge/${sub}`),
+    "/knowledge/all",
+    // Bỏ "all": /store/all hiện đúng nội dung của /store nên là URL trùng.
+    ...STORE_CATEGORY_CONFIG.filter((c) => c.key !== "all").map(
+      (c) => `/store/${c.key}`,
+    ),
+  ].map((path) => ({
+    url: `${BASE}${path}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.6,
+    alternates: alts(`${BASE}${path}`),
+  }));
 
   /** Trang chi tiết phi công đang hoạt động. */
   const pilotRoutes: MetadataRoute.Sitemap = getActivePilots().map((pilot) => {
@@ -241,6 +287,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       ...staticRoutes,
       ...spotRoutes,
+      ...sectionRoutes,
       ...pilotRoutes,
       ...blogRoutes,
       ...knowledgeRoutes,
@@ -252,6 +299,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   } catch (err) {
     console.error("[sitemap] DB fetch failed, serving static only:", err);
-    return [...staticRoutes, ...spotRoutes, ...pilotRoutes];
+    return [...staticRoutes, ...spotRoutes, ...sectionRoutes, ...pilotRoutes];
   }
 }

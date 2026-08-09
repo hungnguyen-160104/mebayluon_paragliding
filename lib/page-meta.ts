@@ -20,7 +20,8 @@ export type PageKey =
   | "contact"
   | "homestay"
   | "blog"
-  | "pilots";
+  | "pilots"
+  | "preNotice";
 
 const META: Record<PageKey, Record<Locale, PageMeta>> = {
   home: {
@@ -251,6 +252,39 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
       title: "हमारे पैराग्लाइडिंग पायलट: APPI व IPPI प्रमाणित | Mebayluon",
       description:
         "Mebayluon की पेशेवर पैराग्लाइडिंग पायलट टीम से मिलें — IPPI प्रमाणित, मु कांग चाई, सापा और पूरे वियतनाम में वर्षों का उड़ान अनुभव।",
+    },
+  },
+
+  preNotice: {
+    vi: {
+      title: "Lưu Ý Trước Khi Bay Dù Lượn: Chuẩn Bị & Quy Định | Mebayluon",
+      description:
+        "Cần chuẩn bị gì trước chuyến bay dù lượn: trang phục, đồ mang theo, đồ không nên mang, điều kiện sức khoẻ và cân nặng, quy trình bay và cách đặt vé tại Mebayluon.",
+    },
+    en: {
+      title: "Before Your Paragliding Flight: What to Wear & Bring | Mebayluon",
+      description:
+        "Everything to prepare before a tandem paragliding flight: what to wear, what to bring, what to leave behind, health and weight requirements, how the flight runs and how to book with Mebayluon.",
+    },
+    fr: {
+      title: "Avant Votre Vol en Parapente : Tenue et Règles | Mebayluon",
+      description:
+        "Tout ce qu'il faut préparer avant un vol en parapente biplace : tenue, affaires à emporter, objets à laisser, conditions de santé et de poids, déroulement du vol et réservation chez Mebayluon.",
+    },
+    ru: {
+      title: "Перед полётом на параплане: подготовка и правила | Mebayluon",
+      description:
+        "Что подготовить перед полётом на параплане: одежда, что взять с собой, что оставить, требования к здоровью и весу, как проходит полёт и как забронировать в Mebayluon.",
+    },
+    zh: {
+      title: "滑翔伞飞行前须知：着装、携带物品与规定 | Mebayluon",
+      description:
+        "双人滑翔伞飞行前需要准备什么：着装、随身物品、不宜携带的物品、健康与体重要求、飞行流程以及在 Mebayluon 的预订方式。",
+    },
+    hi: {
+      title: "पैराग्लाइडिंग से पहले: पहनावा, सामान और नियम | Mebayluon",
+      description:
+        "टेंडेम पैराग्लाइडिंग उड़ान से पहले क्या तैयार करें: पहनावा, साथ ले जाने का सामान, जो न लाएँ, स्वास्थ्य और वज़न की शर्तें, उड़ान की प्रक्रिया और Mebayluon पर बुकिंग।",
     },
   },
 };

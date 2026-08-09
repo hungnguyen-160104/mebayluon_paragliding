@@ -35,36 +35,42 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage, type Language } from "@/contexts/language-context";
 
 /**
- * Link điểm bay ở footer.
+ * Link điểm bay ở footer — trỏ thẳng vào trang điểm bay chuẩn.
  *
- * Lưu ý: slug bài viết luôn là chữ thường (hệ thống không cho tạo slug
- * viết hoa), nên href phải khớp đúng slug thật trong DB. Hai điểm chưa
- * có bài viết riêng thì trỏ về trang điểm bay /spots/... tương ứng.
+ * Trước đây phần lớn trỏ sang bài blog tương ứng. Bài blog thì đã được index
+ * từ lâu, còn chính các trang /spots/... lại nằm trong nhóm "đã phát hiện
+ * nhưng chưa lập chỉ mục" của Search Console — tức Google biết URL mà chưa
+ * thấy đủ tín hiệu để bò vào. Footer có mặt ở mọi trang nên đây là chỗ rẻ
+ * nhất để cấp tín hiệu đó. Slug phải khớp lib/spots-slugs.ts.
  */
 export const FOOTER_SPOTS = [
   {
-    name: "Viên Nam (Hà Nội)",
-    href: "/blog/du-luon-vien-nam",
-  },
-  {
-    name: "Đồi Bù (Hà Nội)",
-    href: "/blog/diem-bay-du-luon-doi-bu",
-  },
-  {
     name: "Đèo Khau Phạ (Mù Cang Chải)",
-    href: "/blog/deokhaupha",
+    href: "/spots/khau-pha",
+  },
+  {
+    name: "Đồi Bù | Viên Nam (Hà Nội)",
+    href: "/spots/doi-bu",
+  },
+  {
+    name: "Mường Hoa (Sapa)",
+    href: "/spots/muong-hoa-sapa",
+  },
+  {
+    name: "Sơn Trà (Đà Nẵng)",
+    href: "/spots/son-tra",
   },
   {
     name: "Phình Hồ (Trạm Tấu)",
     href: "/spots/tram-tau",
   },
   {
-    name: "Sapa (Lào Cai)",
-    href: "/blog/bay-du-luon-sa-pa-muong-hoa",
-  },
-  {
     name: "Đồng Văn (Hà Giang)",
     href: "/spots/ha-giang",
+  },
+  {
+    name: "Đà Lạt (Lâm Đồng)",
+    href: "/spots/dalat",
   },
 ];
 
@@ -90,6 +96,11 @@ type FooterDict = {
   pilots: string;
   bookTour: string;
   preNotice: string;
+  /** Nhãn các link nội bộ bổ sung ở cột "Liên kết nhanh". */
+  spots: string;
+  store: string;
+  knowledge: string;
+  blog: string;
   contact: string;
   followUs: string;
   bookOnPartners: string;
@@ -113,6 +124,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "Phi công",
     bookTour: "Đặt tour",
     preNotice: "Lưu ý trước khi bay",
+    spots: "Điểm bay",
+    store: "Cửa hàng",
+    knowledge: "Kiến thức dù lượn",
+    blog: "Tin tức & Blog",
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     bookOnPartners: "Đặt qua đối tác",
@@ -131,6 +146,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "Pilots",
     bookTour: "Book Tour",
     preNotice: "Pre-Notice",
+    spots: "Flying spots",
+    store: "Store",
+    knowledge: "Paragliding knowledge",
+    blog: "News & Blog",
     contact: "Contact",
     followUs: "Follow Us",
     bookOnPartners: "Book via partners",
@@ -149,6 +168,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "Pilotes",
     bookTour: "Réserver",
     preNotice: "Préavis",
+    spots: "Sites de vol",
+    store: "Boutique",
+    knowledge: "Savoir parapente",
+    blog: "Actualités & Blog",
     contact: "Contact",
     followUs: "Suivez-nous",
     bookOnPartners: "Réserver via nos partenaires",
@@ -167,6 +190,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "Пилоты",
     bookTour: "Забронировать",
     preNotice: "Предуведомление",
+    spots: "Места полётов",
+    store: "Магазин",
+    knowledge: "О парапланеризме",
+    blog: "Новости и блог",
     contact: "Контакты",
     followUs: "Подписывайтесь",
     bookOnPartners: "Бронирование у партнёров",
@@ -185,6 +212,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "飞行员",
     bookTour: "预订",
     preNotice: "预先通知",
+    spots: "飞行点",
+    store: "商店",
+    knowledge: "滑翔伞知识",
+    blog: "新闻与博客",
     contact: "联系方式",
     followUs: "关注我们",
     bookOnPartners: "通过合作平台预订",
@@ -202,6 +233,10 @@ const DICT: Record<Language, FooterDict> = {
     pilots: "पायलट",
     bookTour: "बुकिंग",
     preNotice: "पूर्व सूचना",
+    spots: "उड़ान स्थल",
+    store: "स्टोर",
+    knowledge: "पैराग्लाइडिंग ज्ञान",
+    blog: "समाचार और ब्लॉग",
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
     bookOnPartners: "पार्टनर के ज़रिए बुक करें",
@@ -469,6 +504,25 @@ export default function Footer() {
                     {t.preNotice}
                   </Link>
                 </li>
+
+                {/* /spots và /store là hai trang danh mục quan trọng nhưng
+                    trước đây chỉ được link từ thanh menu; menu lại nằm trong
+                    phần tử cuộn ngang trên di động nên tín hiệu yếu. */}
+                {[
+                  { href: "/spots", label: t.spots },
+                  { href: "/store", label: t.store },
+                  { href: "/knowledge", label: t.knowledge },
+                  { href: "/blog", label: t.blog },
+                ].map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={makeLocalizedHref(item.href, pathname)}
+                      className="whitespace-nowrap text-[15px] text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -484,7 +538,7 @@ export default function Footer() {
                     <MapPin size={18} className="mt-0.5 shrink-0" />
 
                     <Link
-                      href={spot.href}
+                      href={makeLocalizedHref(spot.href, pathname)}
                       className="whitespace-nowrap transition-colors hover:text-white hover:underline underline-offset-4"
                     >
                       {spot.name}
@@ -627,6 +681,7 @@ export default function Footer() {
             >
               <Link
                 href={makeLocalizedHref("/admin/login", pathname)}
+                rel="nofollow"
                 className="
                   inline-flex items-center gap-2 rounded-full
                   border border-white/20 bg-black/60 px-3 py-2
