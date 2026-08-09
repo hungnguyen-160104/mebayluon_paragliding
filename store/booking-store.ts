@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type {
   LocationKey,
   AddonKey,
@@ -8,12 +9,19 @@ import type {
   FlightTypeKey,
 } from "@/lib/booking/calculate-price";
 
+/**
+ * "" = khách CHƯA chọn.
+ *
+ * Trước đây mặc định là "Nam", nên ô giới tính trông như đã điền và phần lớn
+ * khách lướt qua — đoàn toàn nữ vẫn về hệ thống là nam. Giới tính quyết định
+ * việc ghép phi công và cỡ đai ngồi nên phải là lựa chọn có ý thức.
+ */
 export type Gender = "Nam" | "Nữ" | "Khác";
 
 export interface Guest {
   fullName: string;
   dob: string;
-  gender: Gender;
+  gender: Gender | "";
   idNumber?: string;
   weightKg?: number;
   nationality?: string;
@@ -105,7 +113,7 @@ const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
 const emptyGuest = (): Guest => ({
   fullName: "",
   dob: "",
-  gender: "Nam",
+  gender: "",
   idNumber: "",
   weightKg: undefined,
   nationality: "",
@@ -250,7 +258,25 @@ function applyLocationDefaults(
   };
 }
 
-export const useBookingStore = create<StoreState>()((set) => ({
+/**
+ * Giữ lại những gì khách đã chọn/điền trong suốt phiên làm việc.
+ *
+ * Store nằm trong bộ nhớ nên trước đây mọi lần trang tải lại đều xoá sạch:
+ * đổi ngôn ngữ website (điều hướng sang /en/booking...), lỡ tay F5, bấm quay
+ * lại rồi vào lại — khách phải nhập lại từ đầu tên, số điện thoại, hộ chiếu
+ * của từng người bay.
+ *
+ * Dùng sessionStorage chứ không phải localStorage: dữ liệu chỉ sống trong
+ * tab đang đặt, đóng tab là hết. Đây là thông tin cá nhân (họ tên, ngày sinh,
+ * số CCCD/hộ chiếu) nên không nên nằm lại trên máy khách sau khi họ đóng
+ * trình duyệt, nhất là máy dùng chung ở khách sạn.
+ *
+ * skipHydration: nạp lại ở useEffect thay vì ngay lúc import. Nếu nạp sớm,
+ * lần render đầu phía client sẽ khác HTML server dựng ra và React báo lỗi
+ * hydrate. Đổi lại, khung sườn hiện ra với giá trị mặc định trong chớp mắt
+ * rồi mới điền dữ liệu cũ vào.
+ */
+export const useBookingStore = create<StoreState>()(persist((set) => ({
   step: 1,
   data: {
     ...defaultData,
@@ -605,6 +631,38 @@ export const useBookingStore = create<StoreState>()((set) => ({
       };
     }),
 
-  setBookingResult: (booking) => set({ bookingResult: booking }),
+  setBookingResult: (booking) => {
+    set({ bookingResult: booking });
+
+    // Đặt xong thì xoá bản lưu: không giữ họ tên, ngày sinh, số CCCD/hộ chiếu
+    // của khách trong sessionStorage lâu hơn mức cần thiết. Phải xoá SAU khi
+    // set, vì mỗi lần set là một lần ghi lại vào sessionStorage.
+    if (booking) useBookingStore.persist.clearStorage();
+  },
   clearBookingResult: () => set({ bookingResult: undefined }),
+}), {
+  name: "mbl-booking",
+  version: 1,
+  skipHydration: true,
+  storage: createJSONStorage(() =>
+    typeof window === "undefined"
+      ? // Không có sessionStorage lúc render phía máy chủ.
+        {
+          getItem: () => null,
+          setItem: () => undefined,
+          removeItem: () => undefined,
+        }
+      : window.sessionStorage,
+  ),
+
+  /**
+   * Chỉ lưu bước và dữ liệu khách nhập; `bookingResult` (kết quả trả về từ
+   * máy chủ sau khi đặt xong) thì không. Vì thế bước 5 cũng không được lưu —
+   * tải lại trang mà nhảy vào màn hình "đặt thành công" nhưng không có mã vé
+   * thì màn hình đó rỗng. Quay về bước 4 để khách bấm xác nhận lại.
+   */
+  partialize: (s) => ({
+    step: s.step >= 5 ? 4 : s.step,
+    data: s.data,
+  }),
 }));

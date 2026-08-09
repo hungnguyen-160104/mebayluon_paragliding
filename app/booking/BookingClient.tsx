@@ -38,26 +38,43 @@ function SpotFromUrl() {
   const setFlightTypeKey = useBookingStore((s) => s.setFlightTypeKey);
 
   useEffect(() => {
-    const rawSpot = searchParams.get("spot");
-    const rawType = searchParams.get("type");
-    if (!rawSpot && !rawType) return;
+    let cancelled = false;
 
-    // Khách đã đi qua bước 1 thì không ghi đè lựa chọn của họ — cùng nguyên
-    // tắc với applySpotFromUrl trong store.
-    if (useBookingStore.getState().step > 1) return;
+    (async () => {
+      /**
+       * Nạp lại dữ liệu khách đã điền ở phiên trước (xem chú thích trong
+       * store/booking-store.ts). Phải chờ xong rồi mới xét ?spot=: nếu áp
+       * điểm bay từ URL trước, bản khôi phục sẽ ập đến ngay sau đó và ghi đè
+       * lựa chọn vừa áp.
+       */
+      await useBookingStore.persist.rehydrate();
+      if (cancelled) return;
 
-    if (rawSpot) {
-      const key = BOOKING_LOCATIONS.includes(rawSpot as LocationKey)
-        ? (rawSpot as LocationKey)
-        : null;
-      applySpotFromUrl(key);
-    }
+      const rawSpot = searchParams.get("spot");
+      const rawType = searchParams.get("type");
+      if (!rawSpot && !rawType) return;
 
-    // Đặt loại hình bay SAU khi áp điểm bay, vì applySpotFromUrl nạp lại bộ
-    // mặc định của điểm và sẽ ghi đè nếu làm ngược thứ tự.
-    if (rawType && FLIGHT_TYPES.includes(rawType as FlightTypeKey)) {
-      setFlightTypeKey(rawType as FlightTypeKey);
-    }
+      // Khách đã đi qua bước 1 thì không ghi đè lựa chọn của họ — cùng nguyên
+      // tắc với applySpotFromUrl trong store.
+      if (useBookingStore.getState().step > 1) return;
+
+      if (rawSpot) {
+        const key = BOOKING_LOCATIONS.includes(rawSpot as LocationKey)
+          ? (rawSpot as LocationKey)
+          : null;
+        applySpotFromUrl(key);
+      }
+
+      // Đặt loại hình bay SAU khi áp điểm bay, vì applySpotFromUrl nạp lại bộ
+      // mặc định của điểm và sẽ ghi đè nếu làm ngược thứ tự.
+      if (rawType && FLIGHT_TYPES.includes(rawType as FlightTypeKey)) {
+        setFlightTypeKey(rawType as FlightTypeKey);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, applySpotFromUrl, setFlightTypeKey]);
 
   return null;
