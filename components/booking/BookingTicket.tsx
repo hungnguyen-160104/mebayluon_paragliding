@@ -108,18 +108,45 @@ function buildBookingRef(dateISO?: string, phone?: string) {
 type InfoItem = { icon: string; label: string; value: string };
 
 /**
- * Gói bay chỉ có hai loại — dùng đúng nhãn ngắn của Loại ngày cho gọn dòng.
- * Gói nào không theo quy ước *_pkg_1 / *_pkg_2 thì giữ nguyên nhãn gốc.
+ * Nhãn gói bay RÚT GỌN cho vé.
+ *
+ * Nhãn trong cấu hình viết để khách cân nhắc lúc chọn gói ("Cất cánh từ 850m
+ * – Điểm dù lượn cao nhất Hà Nội"), dài gần bằng cả dòng và đẩy phần còn lại
+ * xuống hàng. Vé đã chốt rồi thì chỉ cần đủ để phân biệt hai gói.
+ */
+const SHORT_PACKAGE: Record<string, Record<LangCode, string>> = {
+  ha_noi_850m: {
+    vi: "850m cao nhất HN",
+    en: "850m – highest in Hanoi",
+    fr: "850m – le plus haut de Hanoi",
+    ru: "850м – высшая точка Ханоя",
+    zh: "850米 – 河内最高",
+    hi: "850m – हनोई में सबसे ऊँचा",
+  },
+  ha_noi_650m: {
+    vi: "650m tiêu chuẩn",
+    en: "650m standard",
+    fr: "650m standard",
+    ru: "650м стандарт",
+    zh: "650米标准",
+    hi: "650m मानक",
+  },
+};
+
+/**
+ * Gói theo quy ước *_pkg_1 / *_pkg_2 dùng luôn nhãn ngắn của Loại ngày.
+ * Gói có tên riêng thì tra bảng trên; không có thì giữ nguyên nhãn gốc.
  */
 function shortPackageLabel(
   packageKey: string | undefined,
   fallback: string,
   labels: ReturnType<typeof useTicketLabels>,
+  lang: LangCode,
 ): string {
   const key = String(packageKey || "");
   if (key.endsWith("_pkg_2")) return labels.weekend;
   if (key.endsWith("_pkg_1")) return labels.weekday;
-  return fallback;
+  return SHORT_PACKAGE[key]?.[lang] ?? SHORT_PACKAGE[key]?.en ?? fallback;
 }
 
 type IncludedTag = "none" | "free" | "included";
@@ -957,7 +984,12 @@ export default function BookingTicket({
         label: labels.packageLabel,
         // "Ngày bay từ Thứ 2 - Thứ 6" dài gấp đôi các dòng khác nên phải
         // xuống dòng, làm cả khối so le. Rút còn hai chữ như nhãn Loại ngày.
-        value: shortPackageLabel(booking.packageKey, packageLabel, labels),
+        value: shortPackageLabel(
+          booking.packageKey,
+          packageLabel,
+          labels,
+          lang,
+        ),
       },
           {
             icon: "🗓️",

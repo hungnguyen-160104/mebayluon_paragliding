@@ -1,4 +1,13 @@
-"use client";
+/**
+ * KHÔNG đánh dấu "use client" ở đây.
+ *
+ * File này chỉ có dữ liệu cấu hình điểm bay và hàm tính giá thuần — không
+ * hook, không API trình duyệt — nên chạy được cả hai phía. Khi còn "use
+ * client", mọi module phía máy chủ nhập LOCATIONS chỉ nhận được một tham
+ * chiếu rỗng: email nội bộ tra tên dịch vụ theo khoá luôn ra chuỗi rỗng, và
+ * đơn của khách Pháp về tới hộp thư nội bộ vẫn nguyên tiếng Pháp — chạy thử
+ * bằng node thì lại đúng, vì node không có ranh giới client/server.
+ */
 
 import type { LangCode } from "./translations-booking";
 
@@ -924,7 +933,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         label: {
           vi: "Cất cánh từ 850m – Điểm dù lượn cao nhất Hà Nội",
           en: "Take off from 850m – Highest Paragliding point in Hanoi",
-          fr: "Décollage depuis 850m – Point de parapente le plus haut de Hanoï",
+          fr: "Décollage depuis 850m – Point de parapente le plus haut de Hanoi",
           ru: "Взлёт с 850м – Высочайшая точка парапланеризма в Ханое",
           zh: "从850米起飞 – 河内最高滑翔伞点",
           hi: "850m से उड़ान – हनोई का सबसे ऊँचा पैराग्लाइडिंग बिंदु",
@@ -932,7 +941,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         subtitle: {
           vi: "Cất cánh từ đỉnh Viên Nam, độ cao 850m – điểm cất cánh dù lượn cao nhất Hà Nội, độ chênh cao lớn nhất Việt Nam (hơn 800m). Thời lượng bay lâu, tầm nhìn rộng, ngắm trọn Sông Đà và núi Ba Vì ngay trước mắt.",
           en: "Take off from Vien Nam summit, 850m altitude – the highest paragliding launch in Hanoi and the greatest altitude difference in Vietnam (over 800m). Longer flights, panoramic views, with the Da River and Ba Vi mountain right in front of you.",
-          fr: "Décollage du sommet de Vien Nam, à 850 m d’altitude – le plus haut site de parapente de Hanoï et le plus grand dénivelé du Vietnam (plus de 800 m). Vols plus longs, vues panoramiques, avec la rivière Da et le mont Ba Vi juste devant vous.",
+          fr: "Décollage du sommet de Vien Nam, à 850 m d’altitude – le plus haut site de parapente de Hanoi et le plus grand dénivelé du Vietnam (plus de 800 m). Vols plus longs, vues panoramiques, avec la rivière Da et le mont Ba Vi juste devant vous.",
           ru: "Старт с вершины Виен Нам на высоте 850 м — самая высокая точка старта парапланов в Ханое и наибольший перепад высот во Вьетнаме (более 800 м). Более длительные полёты, панорамные виды, река Да и гора Ба Ви прямо перед вами.",
           zh: "从员南山顶 850 米高度起飞——河内最高的滑翔伞起飞点，也是越南落差最大的飞行点（超过 800 米）。飞行时间更长，视野开阔，沱江与巴维山尽收眼底。",
           hi: "विएन नाम शिखर से 850 मीटर की ऊँचाई पर टेकऑफ़ – हनोई का सबसे ऊँचा पैराग्लाइडिंग लॉन्च और वियतनाम में सबसे अधिक ऊँचाई अंतर (800 मीटर से अधिक)। लंबी उड़ानें, विहंगम दृश्य, और सामने दा नदी तथा बा वी पर्वत।",
@@ -988,7 +997,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         label: {
           vi: "Xe đón/trả từ TTTM GO! Thăng Long, Hà Nội",
           en: "Round-trip pickup from GO! Thang Long Mall, Hanoi",
-          fr: "Prise en charge aller-retour depuis GO! Thang Long, Hanoï",
+          fr: "Prise en charge aller-retour depuis GO! Thang Long, Hanoi",
           ru: "Трансфер туда-обратно от ТЦ GO! Thang Long, Ханой",
           zh: "河内 GO! Thang Long 购物中心往返接送",
           hi: "GO! थैंग लॉन्ग मॉल, हनोई से राउंड-ट्रिप पिकअप",
@@ -1072,7 +1081,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         label: {
           vi: "Xe đón/trả từ TTTM GO! Thăng Long, Hà Nội",
           en: "Round-trip pickup from GO! Thang Long Mall, Hanoi",
-          fr: "Prise en charge aller-retour depuis GO! Thang Long, Hanoï",
+          fr: "Prise en charge aller-retour depuis GO! Thang Long, Hanoi",
           ru: "Трансфер туда-обратно от ТЦ GO! Thang Long, Ханой",
           zh: "河内 GO! Thang Long 购物中心往返接送",
           hi: "GO! थैंग लॉन्ग मॉल, हनोई से राउंड-ट्रिप पिकअप",

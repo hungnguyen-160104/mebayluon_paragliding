@@ -309,7 +309,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       phone: "Téléphone",
       email: "E-mail",
       pickup: "Point de prise en charge",
-      pickupFixed: "Ramassage fixe : GO! Thang Long, Hanoï (8h–9h)",
+      pickupFixed: "Ramassage fixe : GO! Thang Long, Hanoi (8h–9h)",
       specialRequest: "Demandes particulières",
 
       fullName: "Nom complet (passeport)",
@@ -349,7 +349,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       pickupNoteSapa:
         "Prise en charge à l’hôtel (centre de Sapa, Lao Chải, Tả Van).",
       pickupNoteHN:
-        "Prise en charge aller-retour depuis GO! Thang Long (Hanoï).",
+        "Prise en charge aller-retour depuis GO! Thang Long (Hanoi).",
       successTitle: "TERMINÉ",
       successBody:
         "Merci pour votre réservation ! Nous vous contacterons pour confirmer les détails du vol.",

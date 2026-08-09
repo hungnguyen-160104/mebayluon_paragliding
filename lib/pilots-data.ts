@@ -2692,7 +2692,7 @@ export const pilots: Pilot[] = [
     bio: {
       vi: "Phi công được đào tạo bởi Hội Dù Lượn TP Hà Nội và Mebayluon Paragliding. Là người gốc H’Mông sinh ra và lớn lên tại vùng đèo Khau Phạ (Mù Cang Chải), A Hưng gây ấn tượng bởi sự chăm chỉ, bền bỉ và tinh thần không ngừng vươn lên trong cuộc sống.",
       en: "A pilot trained by the Hanoi Paragliding Association and Mebayluon Paragliding. An ethnic H’Mong born and raised around Khau Pha Pass (Mu Cang Chai), A Hung stands out for his diligence, perseverance, and a never-ending drive to rise in life.",
-      fr: "Pilote formé par l’Association de parapente de Hanoï et par Mebayluon Paragliding. H’Mong d’origine, né et grandi autour du col de Khau Pha (Mu Cang Chai), A Hung impressionne par son assiduité, sa persévérance et sa volonté constante de progresser dans la vie.",
+      fr: "Pilote formé par l’Association de parapente de Hanoi et par Mebayluon Paragliding. H’Mong d’origine, né et grandi autour du col de Khau Pha (Mu Cang Chai), A Hung impressionne par son assiduité, sa persévérance et sa volonté constante de progresser dans la vie.",
       ru: "Пилот, прошедший обучение в Ханойской ассоциации парапланеризма и в Mebayluon Paragliding. Этнический хмонг, родившийся и выросший в районе перевала Khau Pha (Му Канг Чай), А Хунг выделяется трудолюбием, настойчивостью и неустанным стремлением расти в жизни.",
       zh: "A Hưng 由河内滑翔伞协会与 Mebayluon Paragliding 共同培养。作为一名在 Khau Phạ 山口（Mù Cang Chải）出生长大的赫蒙族青年，他以勤奋、坚韧和在生活中不断向上的精神令人印象深刻。",
       hi: "A Hưng को हनोई पैराग्लाइडिंग एसोसिएशन और Mebayluon Paragliding द्वारा प्रशिक्षित किया गया है। Khau Phạ दर्रे (Mù Cang Chải) में जन्मे और पले-बढ़े एक मूल H’Mông युवक के रूप में, वह अपनी मेहनत, धैर्य और जीवन में लगातार आगे बढ़ने की भावना से अलग पहचान बनाते हैं।",
@@ -2748,7 +2748,7 @@ export const pilots: Pilot[] = [
       ],
       fr: [
         "Avec plus de 3 ans consacrés au parapente et près de 500 vols solo, il affirme peu à peu sa place sur la voie qui mène au métier d’instructeur professionnel.",
-        "Formé par l’Association de parapente de Hanoï.",
+        "Formé par l’Association de parapente de Hanoi.",
         "Son objectif : devenir pilote de parapente professionnel.",
       ],
       ru: [

@@ -417,8 +417,13 @@ export default function SuccessStep() {
   }, []);
 
   /**
-   * Tải vé dạng PDF. Vé đã dựng theo tỉ lệ A4 nên đặt vừa khít một trang A4
-   * dọc, in ra giấy là đúng khổ, không phải căn lại.
+   * Tải vé dạng PDF — trang PDF cắt đúng theo tấm vé, không nhét vào khổ A4.
+   *
+   * Trước đây trang luôn là A4 dọc, vé thì cao hơn tỉ lệ A4 nên phải co lại
+   * cho vừa chiều cao; kết quả là vé bé tí ở giữa với hai dải trắng hai bên.
+   * Nay trang PDF lấy đúng tỉ lệ ảnh vé, giống hệt bản PNG. Bề ngang vẫn để
+   * 210mm bằng A4 để in ra giấy A4 là vừa khít chiều ngang, phần thừa chỉ
+   * rơi vào chiều dài.
    */
   const downloadPDF = async () => {
     setDownloadingPDF(true);
@@ -427,26 +432,27 @@ export default function SuccessStep() {
       if (!canvas) return;
 
       const { default: jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
+      const width = 210;
+      const height = (width * canvas.height) / canvas.width;
+
+      const pdf = new jsPDF({
+        orientation: height >= width ? "portrait" : "landscape",
+        unit: "mm",
+        format: [width, height],
+      });
+
+      // Đọc lại kích thước thật: jsPDF tự hoán đổi rộng/cao theo orientation.
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-
-      // Chừa lề 8mm, giữ nguyên tỉ lệ ảnh và căn giữa trang.
-      const margin = 8;
-      const maxW = pageW - margin * 2;
-      const maxH = pageH - margin * 2;
-      const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
 
       pdf.addImage(
         canvas.toDataURL("image/jpeg", 0.95),
         "JPEG",
-        (pageW - w) / 2,
-        (pageH - h) / 2,
-        w,
-        h,
+        0,
+        0,
+        pageW,
+        pageH,
       );
       pdf.save(`${baseFileName}.pdf`);
     } catch (err) {
@@ -462,28 +468,8 @@ export default function SuccessStep() {
 
     setDownloadingIMG(true);
     try {
-      const { default: html2canvas } = await import("html2canvas");
-
-      const canvas = await html2canvas(ticketRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        onclone: (doc) => {
-          doc.querySelectorAll('style, link[rel="stylesheet"]').forEach((el) => el.remove());
-
-          const safeStyle = doc.createElement("style");
-          safeStyle.textContent = `
-            *, *::before, *::after {
-              box-shadow: none !important;
-              filter: none !important;
-              backdrop-filter: none !important;
-              -webkit-backdrop-filter: none !important;
-              text-shadow: none !important;
-            }
-          `;
-          doc.head.appendChild(safeStyle);
-        },
-      });
+      const canvas = await renderTicketCanvas();
+      if (!canvas) return;
 
       const blob: Blob | null = await new Promise((resolve) =>
         canvas.toBlob((b) => resolve(b), "image/png", 1)

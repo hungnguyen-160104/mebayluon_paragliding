@@ -155,7 +155,7 @@ const en: SpotsPageCopy = {
 
 const fr: SpotsPageCopy = {
   intro: [
-    "Mebayluon exploite six sites de parapente, des portes de Hanoï aux montagnes du Nord-Ouest jusqu’à Da Nang. Chacun a son relief et sa saison : rizières en terrasses à la saison dorée pour l’un, mer de nuages pour l’autre, décollage en montagne et atterrissage sur la plage pour un troisième.",
+    "Mebayluon exploite six sites de parapente, des portes de Hanoi aux montagnes du Nord-Ouest jusqu’à Da Nang. Chacun a son relief et sa saison : rizières en terrasses à la saison dorée pour l’un, mer de nuages pour l’autre, décollage en montagne et atterrissage sur la plage pour un troisième.",
     "Nous exploitons les deux formes du sport : le parapente sans moteur et le parapente motorisé. Sans moteur, le vol suit le vent et le relief — calme et fluide. Si vous préférez voler à votre initiative, monter aussi haut que vous le souhaitez et surtout profiter d’un vol au coucher du soleil ou d’une chasse aux nuages au petit matin, choisissez le paramoteur : vous ne le regretterez pas.",
     "Tous les sites sont encadrés par nos pilotes certifiés, selon les mêmes standards de matériel, d’assurance et de procédure de sécurité. Ce qui change, c’est le paysage, l’altitude de décollage, la distance et le temps que prend l’ensemble de la sortie.",
     "Ouvrez chaque site pour connaître l’altitude, la durée de vol, le prix du forfait, les points de décollage et d’atterrissage sur Google Maps, ainsi que les photos prises par nos clients.",
@@ -165,7 +165,7 @@ const fr: SpotsPageCopy = {
   chooseCards: [
     {
       title: "De combien de temps disposez-vous ?",
-      body: "Avec une demi-journée au départ de Hanoï, Doi Bu ou Vien Nam sont les seules options raisonnables : l’aller-retour tient en 3 à 5 heures. Avec un week-end entier, Khau Pha, Sapa ou Tram Tau valent le trajet.",
+      body: "Avec une demi-journée au départ de Hanoi, Doi Bu ou Vien Nam sont les seules options raisonnables : l’aller-retour tient en 3 à 5 heures. Avec un week-end entier, Khau Pha, Sapa ou Tram Tau valent le trajet.",
     },
     {
       title: "Que voulez-vous voir ?",
@@ -179,8 +179,8 @@ const fr: SpotsPageCopy = {
   faqTitle: "Questions fréquentes sur nos sites de vol",
   faqs: [
     {
-      q: "Quel site est le plus proche de Hanoï ?",
-      a: "Doi Bu et Vien Nam, tous deux aux portes de Hanoï, à environ 50–60 km du centre. L’aller-retour prend 3 à 5 heures, ce qui en fait une sortie à la journée, et les deux volent tous les jours.",
+      q: "Quel site est le plus proche de Hanoi ?",
+      a: "Doi Bu et Vien Nam, tous deux aux portes de Hanoi, à environ 50–60 km du centre. L’aller-retour prend 3 à 5 heures, ce qui en fait une sortie à la journée, et les deux volent tous les jours.",
     },
     {
       q: "Quel est le meilleur mois pour voler à Mu Cang Chai ?",
