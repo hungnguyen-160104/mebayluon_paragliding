@@ -11,6 +11,19 @@ const nextConfig = {
   // breaks module resolution/caching and triggers webpack "reading 'call'" errors.
   outputFileTracingRoot: __dirname,
 
+  /**
+   * Thẻ chia sẻ link (các tệp opengraph-image.tsx trong app) đọc ảnh nền
+   * thẳng từ public/og bằng fs.readFile.
+   *
+   * Vercel chỉ đóng gói vào hàm serverless những tệp nó dò được từ mã nguồn;
+   * public/ được phục vụ như tài nguyên tĩnh chứ KHÔNG tự nằm trong gói hàm.
+   * Không khai ở đây thì build vẫn xanh nhưng lúc chạy thật sẽ lỗi ENOENT —
+   * đúng loại lỗi mà chạy thử ở máy mình không bao giờ gặp.
+   */
+  outputFileTracingIncludes: {
+    '/**/opengraph-image': ['./public/og/**'],
+  },
+
   // Enable image optimization for better performance
   images: {
     remotePatterns: [
