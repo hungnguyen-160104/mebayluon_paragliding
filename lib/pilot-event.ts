@@ -455,6 +455,9 @@ export type FeeLine = {
 export type FeeResult = {
   lines: FeeLine[];
   total: number;
+  /** Gói tháng: ngày bắt đầu và ngày hết hạn, dạng ISO. */
+  monthFrom?: string;
+  monthTo?: string;
   /** Câu giải thích ngắn hiện dưới bảng phí. */
   note: string;
   noteKey: NoteKey;
@@ -562,16 +565,19 @@ export function computePilotFee(input: {
   }
 
   // Còn lại là ngày thường: phí điểm bay, theo ngày hoặc trọn tháng.
-  if (input.siteFeeMode === "month") {
-    return {
-      lines: [
-        { key: "siteMonth", label: "Phí điểm bay trọn tháng", amount: SITE_FEE_PER_MONTH },
-      ],
-      total: SITE_FEE_PER_MONTH,
-      noteKey: "month",
-      note: "Gói tháng bằng đúng 7 ngày lẻ — từ ngày thứ 8 trong tháng là bay không mất thêm. Chi phí này không bao gồm ăn ở và đi lại.",
-    };
-  }
+  const sorted = [...dates].sort();
+  const monthResult = (): FeeResult => ({
+    lines: [
+      { key: "siteMonth", label: "Phí điểm bay trọn tháng", amount: SITE_FEE_PER_MONTH },
+    ],
+    total: SITE_FEE_PER_MONTH,
+    monthFrom: sorted[0],
+    monthTo: sorted[0] ? addOneMonth(sorted[0]) : undefined,
+    noteKey: "month",
+    note: "Gói tháng bằng đúng 7 ngày lẻ — từ ngày thứ 8 trong tháng là bay không mất thêm. Chi phí này không bao gồm ăn ở và đi lại.",
+  });
+
+  if (input.siteFeeMode === "month") return monthResult();
 
   /**
    * Tính theo ĐÚNG số ngày đã tích, kể cả tích rời rạc — bay ngày nào tính
@@ -583,6 +589,14 @@ export function computePilotFee(input: {
     ? dates.filter(isInFreeSiteFeeWindow)
     : [];
   const paidDays = dates.filter((d) => !freeDays.includes(d));
+
+  /**
+   * Tích đủ số ngày mà tiền lẻ đã bằng hoặc hơn gói tháng thì tự chuyển sang
+   * gói tháng: cùng giá hoặc rẻ hơn, lại bay không giới hạn. Để khách trả
+   * theo ngày trong trường hợp này là thu đắt hơn mà không cho thêm gì.
+   */
+  const BREAK_EVEN_DAYS = Math.ceil(SITE_FEE_PER_MONTH / SITE_FEE_PER_DAY);
+  if (paidDays.length >= BREAK_EVEN_DAYS) return monthResult();
 
   const lines: FeeLine[] = [];
 
@@ -660,6 +674,22 @@ export function shortenPilotName(raw: string): string {
     .join("");
 
   return `${initials}.${last}`;
+}
+
+/**
+ * Cùng ngày đó của tháng sau — hạn dùng của gói trọn tháng.
+ * Ngày 31 mà tháng sau không có thì lùi về ngày cuối tháng.
+ */
+export function addOneMonth(iso: string): string {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  if (!y || !m || !d) return iso;
+
+  const year = m === 12 ? y + 1 : y;
+  const month = m === 12 ? 1 : m + 1;
+  const lastDay = new Date(year, month, 0).getDate();
+  const day = Math.min(d, lastDay);
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /** "2026-08-29" -> "29/08/2026" */

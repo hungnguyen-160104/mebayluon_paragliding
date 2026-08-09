@@ -160,6 +160,7 @@ export const vi: PilotDict = {
   kindShort: { paragliding: "dù lượn", paramotor: "dù máy", both: "cả hai" },
 
   step4: "Ngày bay",
+  pickPeriodFirst: "Chọn đợt bay ở bước 3 thì lịch chọn ngày sẽ hiện ra.",
   hint: {
     mua_vang: "Ba ngày lễ hội đi trọn gói nên đã chọn sẵn, không bỏ lẻ ngày nào.",
     le_hoi_com: "Tích những ngày bạn bay trong Lễ hội Cốm Tú Lệ.",
@@ -201,6 +202,7 @@ export const vi: PilotDict = {
   feeFree: "Miễn phí",
   feeFreePpg: "Free cho pc PPG",
   feeEmpty: "Chọn loại hình bay và đợt bay để xem chi phí.",
+  monthNotice: (from, to) => `Bạn đã đăng ký trọn tháng — bay không giới hạn từ ${from} đến hết ${to}.`,
   payNotice:
     "Đăng ký chỉ được ghi nhận sau khi phi công chuyển khoản phí đăng ký.",
   payRefund: "Yên tâm — nếu huỷ lịch bay, bạn sẽ được hoàn tiền.",

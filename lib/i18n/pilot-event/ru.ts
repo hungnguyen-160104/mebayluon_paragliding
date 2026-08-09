@@ -170,6 +170,7 @@ export const ru: PilotDict = {
   kindShort: { paragliding: "параплан", paramotor: "парамотор", both: "оба" },
 
   step4: "Дни полётов",
+  pickPeriodFirst: "Выберите период на шаге 3 — появится календарь.",
   hint: {
     mua_vang: "Три дня фестиваля идут пакетом и уже отмечены.",
     le_hoi_com:
@@ -214,6 +215,7 @@ export const ru: PilotDict = {
   feeFree: "Бесплатно",
   feeFreePpg: "Бесплатно для пилотов PPG",
   feeEmpty: "Выберите тип полёта и период, чтобы увидеть стоимость.",
+  monthNotice: (from, to) => `У вас месячный абонемент — полёты без ограничений с ${from} по ${to}.`,
   payNotice: "Заявка считается принятой только после перевода взноса.",
   payRefund: "Не волнуйтесь — при отмене деньги вернут.",
 

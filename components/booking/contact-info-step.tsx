@@ -8,23 +8,11 @@ import {
   phoneErrorMessage,
   validatePhoneNumber,
 } from "@/lib/booking/phone";
+import { matchCountryCode } from "@/lib/booking/country-codes";
+import CountryCodePicker from "./country-code-picker";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 
-const COUNTRY_CODES = [
-  { value: "+84", label: "🇻🇳 +84" },
-  { value: "+1", label: "🇺🇸 +1" },
-  { value: "+44", label: "🇬🇧 +44" },
-  { value: "+33", label: "🇫🇷 +33" },
-  { value: "+7", label: "🇷🇺 +7" },
-  { value: "+91", label: "🇮🇳 +91" },
-  { value: "+86", label: "🇨🇳 +86" },
-  { value: "+81", label: "🇯🇵 +81" },
-  { value: "+82", label: "🇰🇷 +82" },
-  { value: "+49", label: "🇩🇪 +49" },
-  { value: "+66", label: "🇹🇭 +66" },
-  { value: "+61", label: "🇦🇺 +61" },
-];
 
 const UI_TEXT: Record<
   LangUI,
@@ -274,7 +262,7 @@ function splitPhone(phone: string | undefined) {
     };
   }
 
-  const matchedCode = COUNTRY_CODES.find((item) => raw.startsWith(item.value));
+  const matchedCode = matchCountryCode(raw);
 
   if (!matchedCode) {
     return {
@@ -283,11 +271,9 @@ function splitPhone(phone: string | undefined) {
     };
   }
 
-  const phoneNumber = raw.slice(matchedCode.value.length).trim();
-
   return {
-    countryCode: matchedCode.value,
-    phoneNumber,
+    countryCode: matchedCode.dial,
+    phoneNumber: raw.slice(matchedCode.dial.length).trim(),
   };
 }
 
@@ -461,23 +447,10 @@ export default function ContactInfoStep() {
             <div>
               <Label text={ui.phoneLabel} required />
               <div className="mt-2 grid grid-cols-[120px_minmax(0,1fr)] gap-3">
-                <div className="relative">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => updatePhone(e.target.value, phoneNumber)}
-                    className="h-12 w-full appearance-none rounded-lg border border-[#DCE7F3] bg-white px-3 pr-8 text-[#1C2930] outline-none transition focus:border-[#0194F3] focus:ring-1 focus:ring-[#0194F3]"
-                  >
-                    {COUNTRY_CODES.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[#5B6B7A]">
-                    <ChevronDownIcon />
-                  </div>
-                </div>
+                <CountryCodePicker
+                  value={countryCode}
+                  onChange={(dial) => updatePhone(dial, phoneNumber)}
+                />
 
                 <input
                   type="tel"

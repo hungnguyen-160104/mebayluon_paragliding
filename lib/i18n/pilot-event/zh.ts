@@ -152,6 +152,7 @@ export const zh: PilotDict = {
   kindShort: { paragliding: "滑翔伞", paramotor: "动力伞", both: "两者" },
 
   step4: "飞行日期",
+  pickPeriodFirst: "在第 3 步选择飞行时段后，日历就会出现。",
   hint: {
     mua_vang: "节庆三天为整套行程，已自动选定。",
     le_hoi_com: "勾选您在绿米节期间飞行的日子。",
@@ -191,6 +192,7 @@ export const zh: PilotDict = {
   feeFree: "免费",
   feeFreePpg: "动力伞飞行员免费",
   feeEmpty: "选择飞行类型与时段后即可查看费用。",
+  monthNotice: (from, to) => `您已购买月票——${from} 至 ${to} 期间飞行不限次数。`,
   payNotice: "报名须在缴纳报名费后方视为成立。",
   payRefund: "请放心——若取消行程，费用全额退还。",
 

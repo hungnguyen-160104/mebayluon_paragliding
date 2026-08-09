@@ -1411,20 +1411,27 @@ export default function PilotEventClient() {
             ) : null}
 
             {/* --- 4. lịch chọn ngày --- */}
+            <div
+              className="mt-9 scroll-mt-24"
+              ref={(el) => {
+                fieldRefs.current.dates = el;
+              }}
+            >
+              <SectionTitle
+                step={4}
+                title={T.step4}
+                hint={period ? T.hint[period] : ""}
+              />
+
+              {!period ? (
+                <p className="rounded-xl border border-white/18 bg-white/[0.08] px-4 py-3 text-sm text-white/60">
+                  {T.pickPeriodFirst}
+                </p>
+              ) : null}
+            </div>
+
             {period ? (
-              <div
-                className="mt-9 scroll-mt-24"
-                ref={(el) => {
-                  fieldRefs.current.dates = el;
-                }}
-              >
-                <SectionTitle
-                  step={4}
-                  title={T.step4}
-                  hint={
-                    period ? T.hint[period] : ""
-                  }
-                />
+              <div className="mt-6">
 
                 {/* Bay thêm ngày ngoài ba ngày lễ hội. Để ngay trên lịch vì
                     bấm vào đây mới mở khoá được các ngày còn lại. */}
@@ -1767,6 +1774,17 @@ export default function PilotEventClient() {
                 <p className="mt-2 text-sm leading-relaxed text-white/60">
                   {T.note[fee.noteKey]}
                 </p>
+
+                {/* Tự chuyển sang gói tháng thì phải nói rõ, kèm ngày hết hạn —
+                    không thì khách tưởng mình vẫn đang trả theo ngày. */}
+                {fee.monthFrom && fee.monthTo ? (
+                  <div className="mt-3 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-sm font-semibold leading-relaxed text-emerald-200">
+                    {T.monthNotice(
+                      formatVnDate(fee.monthFrom),
+                      formatVnDate(fee.monthTo),
+                    )}
+                  </div>
+                ) : null}
 
                 {fee.total > 0 ? (
                   <div className="mt-3 border-t border-white/15 pt-3 text-sm leading-relaxed text-white/75">

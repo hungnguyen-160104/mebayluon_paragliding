@@ -176,6 +176,7 @@ export const fr: PilotDict = {
   },
 
   step4: "Dates de vol",
+  pickPeriodFirst: "Choisissez une période à l'étape 3 et le calendrier apparaîtra.",
   hint: {
     mua_vang:
       "Les trois jours de fête forment un tout et sont déjà sélectionnés.",
@@ -223,6 +224,8 @@ export const fr: PilotDict = {
   feeFreePpg: "Gratuit pour les pilotes PPG",
   feeEmpty:
     "Choisissez ce que vous pilotez et votre période pour voir le coût.",
+  monthNotice: (from, to) =>
+    `Vous avez le forfait mensuel — vols illimités du ${from} au ${to}.`,
   payNotice:
     "Votre inscription n'est validée qu'après le virement des frais d'inscription.",
   payRefund: "Rassurez-vous — en cas d'annulation, vous êtes remboursé.",

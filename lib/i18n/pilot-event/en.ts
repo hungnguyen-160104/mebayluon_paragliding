@@ -163,6 +163,7 @@ export const en: PilotDict = {
   kindShort: { paragliding: "paraglider", paramotor: "paramotor", both: "both" },
 
   step4: "Flying dates",
+  pickPeriodFirst: "Pick a flying period in step 3 and the calendar will appear.",
   hint: {
     mua_vang:
       "The three festival days come as one package and are already selected.",
@@ -206,6 +207,7 @@ export const en: PilotDict = {
   feeFree: "Free",
   feeFreePpg: "Free for PPG pilots",
   feeEmpty: "Choose what you fly and when to see the cost.",
+  monthNotice: (from, to) => `You have the monthly pass — unlimited flying from ${from} to ${to}.`,
   payNotice: "Your registration is confirmed only once the fee has been transferred.",
   payRefund: "Rest assured — if you cancel, you get your money back.",
 

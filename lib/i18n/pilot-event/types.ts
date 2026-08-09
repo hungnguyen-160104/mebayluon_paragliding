@@ -115,6 +115,7 @@ export type PilotDict = {
   kindShort: Record<"paragliding" | "paramotor" | "both", string>;
 
   step4: string;
+  pickPeriodFirst: string;
   hint: Record<"mua_vang" | "le_hoi_com" | "ngay_thuong", string>;
   extraDaysLabel: string;
   extraDaysNote: string;
@@ -146,6 +147,7 @@ export type PilotDict = {
   feeFree: string;
   feeFreePpg: string;
   feeEmpty: string;
+  monthNotice: (from: string, to: string) => string;
   payNotice: string;
   payRefund: string;
 
