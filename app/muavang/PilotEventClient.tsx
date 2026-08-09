@@ -759,7 +759,7 @@ export default function PilotEventClient() {
   return (
     <main className="relative">
       {/* ============ HERO ============ */}
-      <section className="relative flex min-h-[44vh] items-center justify-center overflow-hidden sm:min-h-[68vh] lg:min-h-[86vh]">
+      <section className="relative flex min-h-[52vh] items-center justify-center overflow-hidden sm:min-h-[68vh] lg:min-h-[86vh]">
         <div className="absolute inset-0">
           <Image
             src="/spots/khau-pha/hero.jpg"
@@ -783,11 +783,11 @@ export default function PilotEventClient() {
             max-w-6xl chứ không phải 4xl: dòng "MÙA VÀNG 2026" cỡ chữ khối
             rộng hơn 4xl, mà <section> có overflow-hidden nên tràn ra là bị
             cắt cụt mất đuôi. */}
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-8 pt-[6vh] text-center sm:pb-16 sm:pt-[14vh] lg:pt-[18vh]">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-8 pt-28 text-center sm:pb-16 sm:pt-[14vh] lg:pt-[18vh]">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-1.5 text-[13px] font-bold uppercase tracking-[.18em] text-amber-300 backdrop-blur"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-amber-300 backdrop-blur sm:gap-2 sm:px-4 sm:py-1.5 sm:text-[13px] sm:tracking-[.18em]"
           >
             {T.heroBadge}
           </motion.span>
