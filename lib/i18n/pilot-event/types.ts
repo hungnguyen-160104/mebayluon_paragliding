@@ -113,7 +113,6 @@ export type PilotDict = {
   slotsListTitle: string;
   slotsEmpty: string;
   kindShort: Record<"paragliding" | "paramotor" | "both", string>;
-  companionSuffix: (n: number) => string;
 
   step4: string;
   hint: Record<"mua_vang" | "le_hoi_com" | "ngay_thuong", string>;

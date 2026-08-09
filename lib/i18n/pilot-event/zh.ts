@@ -150,7 +150,6 @@ export const zh: PilotDict = {
   slotsListTitle: "已报名飞行员",
   slotsEmpty: "目前还没有飞行员报名——您可以是第一位。",
   kindShort: { paragliding: "滑翔伞", paramotor: "动力伞", both: "两者" },
-  companionSuffix: (n) => ` · +${n} 位随行`,
 
   step4: "飞行日期",
   hint: {

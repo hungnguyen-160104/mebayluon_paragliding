@@ -6,8 +6,8 @@
  * là giới hạn phi công.
  *
  * Danh sách trả về CHỈ có tên viết gọn và loại hình bay. Số điện thoại, CCCD,
- * email không bao giờ rời khỏi máy chủ qua đường này: ai cũng gọi được điểm
- * cuối này mà không cần đăng nhập.
+ * email, số người nhà không bao giờ rời khỏi máy chủ qua đường này: ai cũng
+ * gọi được điểm cuối này mà không cần đăng nhập.
  */
 
 import { NextResponse } from "next/server";
@@ -25,12 +25,11 @@ export async function GET() {
       period: "mua_vang",
       status: { $ne: "cancelled" },
     })
-      .select("fullName flyingKind companionCount createdAt")
+      .select("fullName flyingKind createdAt")
       .sort({ createdAt: 1 })
       .lean()) as Array<{
       fullName?: string;
       flyingKind?: string;
-      companionCount?: number;
     }>;
 
     const taken = docs.length;
@@ -43,7 +42,6 @@ export async function GET() {
       pilots: docs.map((d) => ({
         name: shortenPilotName(String(d.fullName || "")),
         kind: String(d.flyingKind || ""),
-        companions: Number(d.companionCount || 0),
       })),
     });
   } catch (e) {

@@ -158,7 +158,6 @@ export const vi: PilotDict = {
   slotsListTitle: "Phi công đã đăng ký",
   slotsEmpty: "Chưa có phi công nào đăng ký — bạn có thể là người đầu tiên.",
   kindShort: { paragliding: "dù lượn", paramotor: "dù máy", both: "cả hai" },
-  companionSuffix: (n) => ` · +${n} người nhà`,
 
   step4: "Ngày bay",
   hint: {

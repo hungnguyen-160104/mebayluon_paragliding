@@ -168,7 +168,6 @@ export const ru: PilotDict = {
   slotsListTitle: "Зарегистрированные пилоты",
   slotsEmpty: "Пока никто не зарегистрировался — вы можете быть первым.",
   kindShort: { paragliding: "параплан", paramotor: "парамотор", both: "оба" },
-  companionSuffix: (n) => ` · +${n} сопровожд.`,
 
   step4: "Дни полётов",
   hint: {

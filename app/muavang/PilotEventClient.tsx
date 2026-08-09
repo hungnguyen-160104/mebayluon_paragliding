@@ -266,7 +266,7 @@ export default function PilotEventClient() {
   const [slots, setSlots] = useState<{
     remaining: number;
     taken: number;
-    pilots: Array<{ name: string; kind: string; companions: number }>;
+    pilots: Array<{ name: string; kind: string }>;
   } | null>(null);
 
   const [errors, setErrors] = useState<Errors>({});
@@ -1391,7 +1391,6 @@ export default function PilotEventClient() {
                               : p.kind === "both"
                                 ? `· ${T.kindShort.both}`
                                 : `· ${T.kindShort.paragliding}`}
-                            {p.companions > 0 ? T.companionSuffix(p.companions) : ""}
                           </span>
                         </li>
                       ))}

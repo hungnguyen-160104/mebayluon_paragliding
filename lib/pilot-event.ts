@@ -629,9 +629,12 @@ export const SITE_FEE_LABEL: Record<SiteFeeMode, string> = {
 /**
  * Tên viết gọn để công bố danh sách phi công đã đăng ký.
  *
- * Giữ nguyên họ và tên gọi, viết tắt phần đệm: "Nguyễn Văn Mỹ" -> "Nguyễn V.
- * Mỹ". Đủ để anh em trong giới nhận ra nhau mà không phơi tên đầy đủ của
- * người ta lên trang ai cũng xem được.
+ * Viết tắt mọi chữ trước tên gọi rồi chấm, giữ nguyên tên gọi:
+ *   "Nguyễn Mạnh Hùng" -> "NM.Hùng"
+ *   "Đặng Văn Mỹ"      -> "ĐV.Mỹ"
+ *
+ * Đủ để anh em trong giới nhận ra nhau mà không phơi tên đầy đủ của người ta
+ * lên một trang ai cũng xem được.
  */
 export function shortenPilotName(raw: string): string {
   const parts = String(raw || "")
@@ -639,16 +642,15 @@ export function shortenPilotName(raw: string): string {
     .split(/\s+/)
     .filter(Boolean);
 
-  if (parts.length <= 2) return parts.join(" ");
+  if (parts.length <= 1) return parts.join(" ");
 
-  const first = parts[0];
   const last = parts[parts.length - 1];
-  const middle = parts
-    .slice(1, -1)
-    .map((w) => `${w.charAt(0).toUpperCase()}.`)
-    .join(" ");
+  const initials = parts
+    .slice(0, -1)
+    .map((w) => w.charAt(0).toLocaleUpperCase("vi-VN"))
+    .join("");
 
-  return `${first} ${middle} ${last}`;
+  return `${initials}.${last}`;
 }
 
 /** "2026-08-29" -> "29/08/2026" */

@@ -169,7 +169,6 @@ export const hi: PilotDict = {
     paramotor: "पैरामोटर",
     both: "दोनों",
   },
-  companionSuffix: (n) => ` · +${n} साथी`,
 
   step4: "उड़ान की तारीख़ें",
   hint: {

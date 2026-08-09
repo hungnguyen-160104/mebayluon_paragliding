@@ -161,7 +161,6 @@ export const en: PilotDict = {
   slotsListTitle: "Registered pilots",
   slotsEmpty: "No pilot has registered yet — you could be the first.",
   kindShort: { paragliding: "paraglider", paramotor: "paramotor", both: "both" },
-  companionSuffix: (n) => ` · +${n} guest${n > 1 ? "s" : ""}`,
 
   step4: "Flying dates",
   hint: {

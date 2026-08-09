@@ -174,7 +174,6 @@ export const fr: PilotDict = {
     paramotor: "paramoteur",
     both: "les deux",
   },
-  companionSuffix: (n) => ` · +${n} accompagnant${n > 1 ? "s" : ""}`,
 
   step4: "Dates de vol",
   hint: {
