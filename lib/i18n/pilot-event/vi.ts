@@ -12,7 +12,7 @@ export const vi: PilotDict = {
   chipFestival: "Bay trên mùa vàng · 29–31/8",
   chipCom: "Lễ hội Cốm Tú Lệ · 21–23/8",
   chipAltitude: "Cất cánh 1.268m",
-  heroCta: "Đăng ký bay ngay",
+  heroCta: "Đăng ký bay",
   heroCtaNote: "Phi công phải đăng ký trước khi bay tại điểm bay",
 
   periodsTitle: "Chọn thời điểm bay",

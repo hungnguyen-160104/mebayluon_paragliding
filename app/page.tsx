@@ -33,6 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     author: "Mebayluon",
     type: "website",
+    image: "/hinh-nen.jpg",
     url: "/",
     locale,
   });

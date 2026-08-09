@@ -738,7 +738,7 @@ export default function PilotEventClient() {
   return (
     <main className="relative">
       {/* ============ HERO ============ */}
-      <section className="relative flex min-h-[86vh] items-center justify-center overflow-hidden">
+      <section className="relative flex min-h-[62vh] items-center justify-center overflow-hidden sm:min-h-[78vh] lg:min-h-[86vh]">
         <div className="absolute inset-0">
           <Image
             src="/spots/khau-pha/hero.jpg"
@@ -762,7 +762,7 @@ export default function PilotEventClient() {
             max-w-6xl chứ không phải 4xl: dòng "MÙA VÀNG 2026" cỡ chữ khối
             rộng hơn 4xl, mà <section> có overflow-hidden nên tràn ra là bị
             cắt cụt mất đuôi. */}
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-[18vh] text-center sm:pt-[20vh]">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-[10vh] text-center sm:pb-16 sm:pt-[16vh] lg:pt-[18vh]">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -775,7 +775,7 @@ export default function PilotEventClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="mt-[22vh] sm:mt-[24vh]"
+            className="mt-[12vh] sm:mt-[18vh] lg:mt-[22vh]"
           >
             {/* Dòng dẫn nên nhường hẳn cho tên sự kiện: chữ nhỏ lại, nhưng
                 bóng đổ dày ba lớp để vẫn tách khỏi nền ảnh nay đã sáng. */}
@@ -794,7 +794,7 @@ export default function PilotEventClient() {
                 từ bóng đổ mềm phía sau, để nét chữ vẫn sạch.
                 whitespace-nowrap giữ "Mùa Vàng 2026" không bị bẻ đôi. */}
             <span
-              className="mt-3 block whitespace-nowrap text-[clamp(2.5rem,10.2vw,6.5rem)] font-black uppercase leading-[0.9] tracking-[-0.03em] text-transparent"
+              className="mt-3 block whitespace-nowrap pt-[0.12em] text-[clamp(2.5rem,10.2vw,6.5rem)] font-black uppercase leading-[1.12] tracking-[-0.03em] text-transparent"
               style={{
                 fontFamily:
                   "'Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif",

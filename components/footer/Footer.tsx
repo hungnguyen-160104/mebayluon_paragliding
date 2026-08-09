@@ -588,6 +588,15 @@ export default function Footer() {
                 ))}
               </div>
 
+              {/* Trang nghiệp vụ cho phi công. Đặt trong cột này nhưng đẩy
+                  xuống sát đáy: khách du lịch lướt qua không vướng mắt, phi
+                  công cần thì vẫn thấy ngay dưới cụm mạng xã hội. */}
+              <Link
+                href={makeLocalizedHref("/muavang", pathname)}
+                className="mt-10 inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+              >
+                {t.pilotEvent}
+              </Link>
             </div>
           </div>
 
@@ -665,16 +674,6 @@ export default function Footer() {
                 <span>{t.rightsReserved}</span>
               </span>
 
-              {/* Trang nghiệp vụ cho phi công, không phải cho khách du lịch.
-                  Để tận đáy footer: người cần thì biết đường tìm, còn khách
-                  du lịch lướt qua không bị phân tâm. */}
-              <span aria-hidden className="text-slate-600">|</span>
-              <Link
-                href={makeLocalizedHref("/muavang", pathname)}
-                className="font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
-              >
-                {t.pilotEvent}
-              </Link>
 
               {/* ẨN link Điều khoản & Điều kiện theo yêu cầu. Trang /terms và
                   ô đồng ý ở bước 4 của luồng đặt bay VẪN hoạt động bình
