@@ -26,37 +26,36 @@ export type PageKey =
 const META: Record<PageKey, Record<Locale, PageMeta>> = {
   home: {
     vi: {
-      title: "Bay Dù Lượn Việt Nam: 6 Điểm Bay, Giá Từ 1.790.000đ | Mebayluon",
+      title: "Mebayluon Paragliding | Bay Dù Lượn Tự Do Khắp Việt Nam",
       description:
-        "Đặt bay dù lượn cùng Mebayluon tại Hà Nội, Sapa, Mù Cang Chải và nhiều điểm bay tại Việt Nam. Phi công chuyên nghiệp, bảo hiểm và GoPro miễn phí.",
+        "Bay dù lượn chuyên nghiệp với đội ngũ phi công nhiều giờ bay nhất Việt Nam. Có lịch bay dù lượn hàng ngày tại Hà Nội, Sapa và Mù Cang Chải (Khau Phạ).",
     },
     en: {
-      title: "Paragliding in Vietnam: 6 Sites, From 1,790,000₫ | Mebayluon",
+      title: "Mebayluon Paragliding | Free Flying Across Vietnam",
       description:
-        "Fly with Mebayluon in Hanoi, Sapa, Mu Cang Chai and many other sites across Vietnam. Certified pilots, insurance and free GoPro footage included.",
+        "Professional paragliding with the most experienced tandem pilots in Vietnam. Daily paragliding flights in Hanoi, Sapa and Mu Cang Chai (Khau Pha).",
     },
     fr: {
-      title: "Parapente au Vietnam : 6 sites, dès 1 790 000 ₫ | Mebayluon",
+      title: "Mebayluon Paragliding | Vol libre partout au Vietnam",
       description:
-        "Volez avec Mebayluon à Hanoï, Sapa, Mu Cang Chai et sur de nombreux autres sites du Vietnam. Pilotes certifiés, assurance et vidéo GoPro offerte.",
+        "Parapente professionnel avec les pilotes les plus expérimentés du Vietnam. Vols quotidiens à Hanoï, Sapa et Mu Cang Chai (col de Khau Pha).",
     },
     ru: {
-      title: "Парапланеризм во Вьетнаме: 6 площадок, от 1 790 000 ₫ | Mebayluon",
+      title: "Mebayluon Paragliding | Свободные полёты по всему Вьетнаму",
       description:
-        "Летайте с Mebayluon в Ханое, Сапе, Мукангчае и на других площадках Вьетнама. Сертифицированные пилоты, страховка и бесплатная съёмка на GoPro.",
+        "Профессиональный парапланеризм с самыми налётанными пилотами Вьетнама. Ежедневные полёты в Ханое, Сапе и Мукангчае (перевал Кхау Фа).",
     },
     zh: {
-      title: "越南滑翔伞：6 大飞行点，1,790,000 越南盾起 | Mebayluon",
+      title: "Mebayluon Paragliding | 越南各地自由飞行",
       description:
-        "与 Mebayluon 一起在河内、沙坝、木江界等越南各地飞行。专业持证飞行员，含保险与免费 GoPro 拍摄。",
+        "专业滑翔伞飞行，拥有越南飞行时数最多的双人飞行员。河内、沙巴与木江界（考帕山口）每日均有滑翔伞飞行。",
     },
     hi: {
-      title: "वियतनाम पैराग्लाइडिंग: 6 स्थल, 1,790,000₫ से | Mebayluon",
+      title: "Mebayluon Paragliding | पूरे वियतनाम में फ्री फ़्लाइंग",
       description:
-        "हनोई, सापा, मु कांग चाई और वियतनाम के कई अन्य स्थलों पर Mebayluon के साथ उड़ान भरें। प्रमाणित पायलट, बीमा और मुफ़्त GoPro रिकॉर्डिंग।",
+        "वियतनाम के सबसे अनुभवी टैंडेम पायलटों के साथ पेशेवर पैराग्लाइडिंग। हनोई, सापा और मु कांग चाई (खाउ फ़ा) में प्रतिदिन उड़ानें।",
     },
   },
-
   spots: {
     vi: {
       title: "6 Điểm Bay Dù Lượn Việt Nam: Giá & Mùa Đẹp | Mebayluon",

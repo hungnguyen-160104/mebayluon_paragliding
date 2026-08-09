@@ -144,7 +144,7 @@ export const zh: PilotDict = {
   step3: "飞行时段",
   openingLabel: "开幕式",
   slotsLeft: "剩余飞行员名额",
-  slotsLine: (n, r) => `已有 ${n} 位飞行员报名，还剩 ${r} 个名额`,
+  slotsLine: (n, r, max) => `已有 ${n} 位飞行员报名，还剩 ${r}/${max} 个名额`,
   slotsFullNote:
     "报名人数已达上限，但您仍可报名，主办方会为您安排。",
   slotsListTitle: "已报名飞行员",

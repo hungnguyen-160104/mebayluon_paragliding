@@ -159,7 +159,7 @@ export const hi: PilotDict = {
   step3: "उड़ान अवधि",
   openingLabel: "उद्घाटन समारोह",
   slotsLeft: "शेष पायलट स्थान",
-  slotsLine: (n, r) => `${n} पायलट पंजीकृत, ${r} स्थान शेष`,
+  slotsLine: (n, r, max) => `${n} पायलट पंजीकृत, ${r}/${max} स्थान शेष`,
   slotsFullNote:
     "सीमा पूरी हो चुकी है, फिर भी पंजीकरण करें — आयोजक आपके लिए व्यवस्था करेंगे।",
   slotsListTitle: "पंजीकृत पायलट",

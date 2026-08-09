@@ -16,7 +16,6 @@ export async function generateMetadata(): Promise<Metadata> {
     title: meta.title,
     description: meta.description,
     keywords: ["blog dù lượn", "tin tức paragliding", "kinh nghiệm bay dù lượn", "mebayluon blog"],
-    image: "/tin-tuc-2.jpg",
     url: "/blog",
     type: "website",
     locale,

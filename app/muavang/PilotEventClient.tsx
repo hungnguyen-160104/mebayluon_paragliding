@@ -1354,7 +1354,7 @@ export default function PilotEventClient() {
                   {T.slotsLeft}
                 </div>
                 <div className="mt-1 text-[17px] font-bold leading-snug text-white sm:text-lg">
-                  {T.slotsLine(slots.taken, slots.remaining)}
+                  {T.slotsLine(slots.taken, slots.remaining, MUA_VANG_MAX_PILOTS)}
                 </div>
 
                 {/* Thanh lấp đầy: nhìn phát biết còn nhiều hay sắp hết. */}

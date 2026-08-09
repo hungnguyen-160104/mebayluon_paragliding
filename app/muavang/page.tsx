@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 
 import { Navigation } from "@/components/navigation";
 import { getUrlLocale } from "@/lib/locale";
-import { absoluteUrl } from "@/lib/site-config";
 
 import PilotEventClient from "./PilotEventClient";
 
@@ -59,29 +58,6 @@ export async function generateMetadata(): Promise<Metadata> {
     title: meta.title,
     description: meta.description,
     robots: { index: false, follow: false },
-    // Ảnh xem trước khi gửi link qua Zalo/Messenger: dùng chính ảnh ruộng bậc
-    // thang của điểm bay, không để rơi về thẻ mặc định của trang chủ.
-    openGraph: {
-      title: meta.title,
-      description: meta.description,
-      url: absoluteUrl("/muavang"),
-      siteName: "Mebayluon Paragliding",
-      type: "website",
-      images: [
-        {
-          url: absoluteUrl("/spots/khau-pha/hero.jpg"),
-          width: 1200,
-          height: 630,
-          alt: meta.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: meta.title,
-      description: meta.description,
-      images: [absoluteUrl("/spots/khau-pha/hero.jpg")],
-    },
   };
 }
 

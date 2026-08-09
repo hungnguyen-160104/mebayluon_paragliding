@@ -13,7 +13,11 @@
 import { NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
-import { MUA_VANG_MAX_PILOTS, shortenPilotName } from "@/lib/pilot-event";
+import {
+  MUA_VANG_BASE_PILOTS,
+  MUA_VANG_MAX_PILOTS,
+  shortenPilotName,
+} from "@/lib/pilot-event";
 import { PilotRegistration } from "@/models/PilotRegistration.model";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +36,9 @@ export async function GET() {
       flyingKind?: string;
     }>;
 
-    const taken = docs.length;
+    // Cộng phi công nội bộ đã chắc suất: họ không điền biểu mẫu nên không có
+    // bản ghi, nhưng vẫn chiếm chỗ thật.
+    const taken = MUA_VANG_BASE_PILOTS + docs.length;
 
     return NextResponse.json({
       ok: true,
@@ -50,8 +56,8 @@ export async function GET() {
     return NextResponse.json({
       ok: false,
       max: MUA_VANG_MAX_PILOTS,
-      taken: 0,
-      remaining: MUA_VANG_MAX_PILOTS,
+      taken: MUA_VANG_BASE_PILOTS,
+      remaining: Math.max(0, MUA_VANG_MAX_PILOTS - MUA_VANG_BASE_PILOTS),
       pilots: [],
     });
   }

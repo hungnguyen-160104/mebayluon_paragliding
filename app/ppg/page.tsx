@@ -20,7 +20,6 @@ export async function generateMetadata(): Promise<Metadata> {
       "bay săn mây Mù Cang Chải",
       "powered paragliding Vietnam",
     ],
-    image: "/ppg/hero-bg.jpg",
     url: "/ppg",
     type: "website",
     locale,

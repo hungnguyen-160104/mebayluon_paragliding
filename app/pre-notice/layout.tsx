@@ -23,7 +23,6 @@ export async function generateMetadata(): Promise<Metadata> {
       "điều kiện bay dù lượn",
       "cân nặng bay dù lượn",
     ],
-    image: "/Chuan-bi-bay.jpg",
     url: "/pre-notice",
     author: "Mebayluon",
     type: "website",

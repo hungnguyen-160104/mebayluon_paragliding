@@ -163,7 +163,7 @@ export const fr: PilotDict = {
   step3: "Période de vol",
   openingLabel: "Cérémonie d'ouverture",
   slotsLeft: "Places de pilote restantes",
-  slotsLine: (n, r) => `${n} pilotes inscrits, ${r} places restantes`,
+  slotsLine: (n, r, max) => `${n} pilotes inscrits, ${r}/${max} places restantes`,
   slotsFullNote:
     "La limite est atteinte, mais inscrivez-vous quand même — les organisateurs vous trouveront une place.",
   slotsListTitle: "Pilotes inscrits",

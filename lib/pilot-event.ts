@@ -59,7 +59,16 @@ export const PILOT_DISCOUNT_TEXT =
 export const MUA_VANG_COMBO_VND = 1_500_000;
 
 /** Số phi công tối đa ban tổ chức nhận cho Festival Mùa Vàng. */
-export const MUA_VANG_MAX_PILOTS = 50;
+export const MUA_VANG_MAX_PILOTS = 60;
+
+/**
+ * Phi công nội bộ đã chắc suất, không đăng ký qua biểu mẫu.
+ *
+ * Cộng thẳng vào con số công bố để phi công ngoài nhìn đúng số chỗ thật sự
+ * còn trống. KHÔNG lưu thành bản ghi giả trong cơ sở dữ liệu — làm vậy thì
+ * danh sách công bố sẽ hiện 18 cái tên rỗng, và mọi thống kê sau này đều lệch.
+ */
+export const MUA_VANG_BASE_PILOTS = 18;
 
 /**
  * Người nhà đi kèm phi công trong dịp Mùa Vàng.

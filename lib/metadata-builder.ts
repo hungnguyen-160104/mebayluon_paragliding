@@ -109,7 +109,16 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
 
   const available = seo.availableLocales;
   const canonicalUrl = canonicalUrlFor(basePath, locale, available);
-  const imageUrl = resolveImage(seo.image);
+
+  /**
+   * Chỉ khai ảnh khi trang thật sự truyền vào.
+   *
+   * Trước đây thiếu ảnh thì tự điền thẻ mặc định — mà khai tay như vậy sẽ ĐÈ
+   * LÊN tệp opengraph-image.tsx của chính trang đó, nên thẻ riêng vừa dựng
+   * không bao giờ được dùng. Để trống thì Next tự lấy tệp gần nhất trong cây
+   * thư mục, tức thẻ của trang, và nếu trang không có thì mới về thẻ gốc.
+   */
+  const imageUrl = seo.image ? resolveImage(seo.image) : undefined;
 
   // Map internal type -> Next OpenGraph supported type
   const ogType: "article" | "website" =
@@ -137,16 +146,20 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
       siteName: SITE_NAME,
       type: ogType,
 
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: seo.title,
-          // "type" here is OK (image mime type)
-          type: "image/png",
-        },
-      ],
+      ...(imageUrl
+        ? {
+            images: [
+              {
+                url: imageUrl,
+                width: 1200,
+                height: 630,
+                alt: seo.title,
+                // "type" here is OK (image mime type)
+                type: "image/png",
+              },
+            ],
+          }
+        : {}),
 
       // Only attach article times if it's an article page
       ...(ogType === "article" && seo.publishedDate
@@ -161,7 +174,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
       card: "summary_large_image",
       title: seo.title,
       description: seo.description,
-      images: [imageUrl],
+      ...(imageUrl ? { images: [imageUrl] } : {}),
       creator: "@mebayluon",
     },
 

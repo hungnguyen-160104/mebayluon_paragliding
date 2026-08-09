@@ -152,7 +152,7 @@ export const vi: PilotDict = {
   step3: "Đợt bay",
   openingLabel: "Lễ khai mạc",
   slotsLeft: "Suất phi công còn lại",
-  slotsLine: (n, r) => `Đã có ${n} phi công đăng ký, còn ${r} slot`,
+  slotsLine: (n, r, max) => `Đã có ${n} phi công đăng ký, còn ${r}/${max} slot`,
   slotsFullNote:
     "Số lượng đăng ký đã đạt giới hạn, nhưng bạn cứ đăng ký, ban tổ chức sẽ sắp xếp cho bạn.",
   slotsListTitle: "Phi công đã đăng ký",

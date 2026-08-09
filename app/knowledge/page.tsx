@@ -189,7 +189,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({
     title: m.title,
     description: m.description,
-    image: "/knowledge.jpg",
     url: "/knowledge",
     type: "website",
     locale,

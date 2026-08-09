@@ -12,7 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
     title: meta.title,
     description: meta.description,
     keywords: ["phi công dù lượn", "paragliding pilot vietnam", "phi công mù cang chải", "mebayluon pilot", "dù lượn đôi"],
-    image: "/pilots/hero.jpg",
     url: "/pilots",
     type: "website",
     locale,

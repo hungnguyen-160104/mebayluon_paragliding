@@ -108,7 +108,7 @@ export type PilotDict = {
   step3: string;
   openingLabel: string;
   slotsLeft: string;
-  slotsLine: (taken: number, remaining: number) => string;
+  slotsLine: (taken: number, remaining: number, max: number) => string;
   slotsFullNote: string;
   slotsListTitle: string;
   slotsEmpty: string;
