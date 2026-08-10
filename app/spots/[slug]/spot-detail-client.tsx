@@ -3479,7 +3479,7 @@ export function SpotDetailClient({
               luôn đúng hai dòng cân nhau.
               Cỡ chữ trên điện thoại hạ còn 28px: vế dài hơn ("Ngoại Thành Yên
               Bình") rộng 324px, vừa bề ngang 343px của màn 375px. */}
-          <h2 className="text-[1.75rem] sm:text-5xl md:text-7xl font-bold mb-6 font-serif">
+          <h2 className="text-[1.75rem]/[1.15] sm:text-5xl md:text-7xl font-bold mb-6 font-serif">
             {copy.title.split(" - ").map((part, i) => (
               <span key={i} className="block">
                 {part}

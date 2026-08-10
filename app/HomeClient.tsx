@@ -694,7 +694,10 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          <div className="mx-auto mt-16 max-w-7xl">
+          {/* KHÔNG thêm mt- ở đây: khoảng cách tới thẻ đã do mb-8 của khối
+              tiêu đề bên trên quy định, giống hệt mục "Chuẩn bị trước khi bay".
+              Trước đây có thêm mt-16 nên khoảng này là 96px thay vì 32px. */}
+          <div className="mx-auto max-w-7xl">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
               {requirementCards.map(
                 ({ title, items, icon: Icon, accentClassName, bulletIcon: BulletIcon }, index) => (
