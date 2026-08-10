@@ -28,7 +28,7 @@ export const en: CommonTranslation = {
   },
 
   about: {
-    title: "ABOUT US",
+    title: "About us",
     subtitle: "Mebayluon Paragliding – where dreams of flight come true",
     description: [
       "We are proud to be the first professional paragliding operator in Vietnam, with the most experienced team of pilots in the country.",
@@ -38,7 +38,7 @@ export const en: CommonTranslation = {
   },
 
   spots: {
-    title: "FEATURED FLYING SPOTS",
+    title: "Featured flying spots",
     subtitle: "Discover the beauty of Vietnam from above at the best paragliding spots",
     viewDetails: "View Details",
     locations: {

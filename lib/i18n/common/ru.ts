@@ -28,7 +28,7 @@ export const ru: CommonTranslation = {
   },
 
   about: {
-    title: "О НАС",
+    title: "О нас",
     subtitle: "Mebayluon Paragliding — место, где мечты о полёте становятся реальностью",
     description: [
       "Мы гордимся тем, что являемся первым профессиональным оператором парапланеризма во Вьетнаме с самой опытной командой пилотов в стране.",
@@ -38,7 +38,7 @@ export const ru: CommonTranslation = {
   },
 
   spots: {
-    title: "ЛУЧШИЕ МЕСТА ДЛЯ ПОЛЁТОВ",
+    title: "Лучшие места для полётов",
     subtitle: "Откройте красоту Вьетнама с высоты лучших парапланерных локаций",
     viewDetails: "Подробнее",
     locations: {

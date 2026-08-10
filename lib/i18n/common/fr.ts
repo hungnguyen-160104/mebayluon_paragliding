@@ -28,7 +28,7 @@ export const fr: CommonTranslation = {
   },
 
   about: {
-    title: "À PROPOS DE NOUS",
+    title: "À propos de nous",
     subtitle: "Mebayluon Paragliding – là où les rêves de voler deviennent réalité",
     description: [
       "Nous sommes fiers d’être le premier opérateur professionnel de parapente au Vietnam, avec l’équipe de pilotes la plus expérimentée du pays.",
@@ -38,7 +38,7 @@ export const fr: CommonTranslation = {
   },
 
   spots: {
-    title: "SITES DE VOL PHARES",
+    title: "Sites de vol phares",
     subtitle: "Découvrez la beauté du Vietnam vue du ciel dans les meilleurs sites de parapente",
     viewDetails: "Voir les détails",
     locations: {

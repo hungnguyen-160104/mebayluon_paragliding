@@ -426,9 +426,10 @@ export default function HomePage() {
                     "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
                 }}
               >
-                {/* Trên điện thoại hạ 30%: 36px xuống 25,6px. Từ 768px trở lên
-                    giữ nguyên các cỡ cũ. */}
-                <h2 className="mb-4 font-serif text-[1.6rem] font-bold text-white md:text-5xl lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl">
+                {/* Dùng chung kiểu với các tiêu đề mục khác, nhưng GIỮ hai mốc
+                    lg/xl: từ 1024px khối chữ này bị khoá đúng tỉ lệ khung video
+                    bên cạnh, chữ to hơn là nội dung tràn ra ngoài. */}
+                <h2 className={`${sectionHeadingClass} mb-4 lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl`}>
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
 
@@ -499,9 +500,7 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="mb-16 text-center"
           >
-            {/* "ĐIỂM BAY NỔI BẬT" ở text-5xl rộng 496px, tràn màn điện thoại nên
-                xuống dòng giữa cụm. text-3xl còn 310px, vừa một dòng. */}
-            <h2 className="text-hero-shadow mb-6 text-3xl font-bold text-white sm:text-5xl md:text-6xl">
+            <h2 className={`${sectionHeadingClass} mb-6`}>
               {t?.spots?.title ?? "Các điểm bay nổi bật"}
             </h2>
             <p className="text-hero-shadow-soft mx-auto max-w-2xl text-xl text-slate-100">

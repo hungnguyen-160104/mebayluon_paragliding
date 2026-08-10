@@ -28,7 +28,7 @@ export const vi: CommonTranslation = {
   },
 
   about: {
-    title: "VỀ CHÚNG TÔI",
+    title: "Về chúng tôi",
     subtitle: "Mebayluon Paragliding – nơi những giấc mơ bay cao",
     description: [
       "Tự hào là đơn vị bay dù lượn chuyên nghiệp đầu tiên tại Việt Nam với đội ngũ phi công có nhiều giờ bay nhất Việt Nam.",
@@ -38,7 +38,7 @@ export const vi: CommonTranslation = {
   },
 
   spots: {
-    title: "ĐIỂM BAY NỔI BẬT",
+    title: "Điểm bay nổi bật",
     subtitle: "Khám phá vẻ đẹp Việt Nam từ trên cao với những điểm bay tuyệt nhất",
     viewDetails: "Xem Chi Tiết",
     locations: {
