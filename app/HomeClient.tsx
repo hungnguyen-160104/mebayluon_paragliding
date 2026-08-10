@@ -432,7 +432,9 @@ export default function HomePage() {
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
 
-                <p className="mb-5 text-base leading-relaxed text-white/95">
+                {/* Câu dẫn: 18px in nghiêng — to hơn thân bài 2px để tách khỏi
+                    đoạn văn ngay dưới, nhưng vẫn dưới cỡ tiêu đề. */}
+                <p className="mb-5 text-lg italic text-white/95">
                   {t?.about?.subtitle ??
                     "Mebayluon Paragliding – nơi những giấc mơ bay cao trở thành hiện thực!"}
                 </p>
