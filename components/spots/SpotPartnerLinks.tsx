@@ -107,7 +107,14 @@ export default function SpotPartnerLinks({
                   <a
                     href={link.url}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    /* Trang bán tour trên OTA là quan hệ thương mại có ăn chia,
+                       Google yêu cầu đánh dấu "sponsored". Riêng trang đánh giá
+                       (Tripadvisor) là hồ sơ của chính mình nên để thường. */
+                    rel={
+                      link.kind === "reviews"
+                        ? "noopener noreferrer"
+                        : "noopener noreferrer sponsored"
+                    }
                     className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${BRAND_BUTTON_CLASS[link.brand]}`}
                   >
                     <span>{link.platform}</span>

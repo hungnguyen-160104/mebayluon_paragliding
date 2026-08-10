@@ -2,15 +2,7 @@
 
 // /components/footer/Footer.tsx
 import Link from "next/link";
-import {
-  PARAGLIDING_PARTNERS,
-  HOMESTAY_PARTNERS,
-  BRAND_BUTTON_CLASS,
-} from "@/lib/partner-links";
-import {
-  TOUR_PARTNER_LINKS,
-  COURSE_PARTNER_LINKS,
-} from "@/lib/spot-partner-links";
+import { TRUST_LINKS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
 import { Dancing_Script } from "next/font/google";
 import { usePathname } from "next/navigation";
 
@@ -69,26 +61,30 @@ export const FOOTER_SPOTS = [
     href: "/spots/ha-giang",
   },
   {
-    name: "Đà Lạt (Lâm Đồng)",
-    href: "/spots/dalat",
+    // Dù lượn gắn động cơ không có trang /spots riêng — nó là loại hình bay
+    // chứ không phải điểm bay — nhưng vẫn để ở đây vì khách tìm theo địa danh.
+    name: "PPG Đèo Khau Phạ (Tú Lệ)",
+    href: "/ppg",
   },
+  // KHÔNG liệt kê Đà Lạt: điểm bay đó do đơn vị khác khai thác, mình không có
+  // đội bay ở đấy. Footer nằm trên mọi trang nên để vào là quảng cáo không
+  // công cho đối thủ ở khắp site.
 ];
 
 /**
- * Các nhóm link đối tác ở dải ngang cuối footer.
+ * Footer từng có dải "Đặt qua đối tác" 25 nút, nằm trên MỌI trang: Klook,
+ * GetYourGuide, KKday, Viator, Seek Sophie, Booking, Agoda, Trip.com… cho cả
+ * sáu điểm bay. Mỗi nút đưa khách đã vào tận web mình sang một kênh ăn hoa
+ * hồng 20–30%, trong khi cùng chuyến bay ấy đặt thẳng ở /booking thì không
+ * mất đồng nào.
  *
- * Nhóm "tour dù lượn" gồm hồ sơ doanh nghiệp (Tripadvisor, Seek Sophie) cộng
- * với trang bán tour của từng điểm bay — lấy tự động từ lib/spot-partner-links
- * nên thêm link cho một điểm bay là footer có luôn.
+ * Nay chỉ còn dải chọn tay ở lib/partner-links.ts (TRUST_LINKS) — vừa đủ để
+ * khách nước ngoài thấy chỗ quen mà yên tâm, không còn là chợ link.
+ *
+ * Tín hiệu định danh cho Google không đổi: `sameAs` trong JSON-LD
+ * (lib/metadata-builder.ts) đọc thẳng từ lib/partner-links.ts, không phụ
+ * thuộc vào việc footer có bày nút hay không.
  */
-const PARTNER_GROUPS = [
-  {
-    labelKey: "partnersFlights" as const,
-    links: [...PARAGLIDING_PARTNERS, ...TOUR_PARTNER_LINKS],
-  },
-  { labelKey: "partnersCourses" as const, links: COURSE_PARTNER_LINKS },
-  { labelKey: "partnersStay" as const, links: HOMESTAY_PARTNERS },
-];
 
 type FooterDict = {
   slogan: string;
@@ -105,14 +101,16 @@ type FooterDict = {
   followUs: string;
   /** Link tới trang đăng ký bay dành cho phi công (sự kiện Mùa Vàng). */
   pilotEvent: string;
-  bookOnPartners: string;
-  /** Nhãn nhóm link đối tác bán tour dù lượn. */
-  partnersFlights: string;
-  /** Nhãn nhóm link bán khoá học bay. */
-  partnersCourses: string;
-  /** Nhãn nhóm link đặt phòng Clubhouse. */
-  partnersStay: string;
   spotsInfo: string;
+  /** Tiêu đề dải link đặt qua nơi uy tín. */
+  trustTitle: string;
+  /**
+   * Câu nhắc dưới tiêu đề, tách ba mảnh để chèn được link vào giữa:
+   * "Hoặc đặt thẳng " + [tại đây] + " để được giá tốt nhất."
+   */
+  trustNoteBefore: string;
+  trustNoteLink: string;
+  trustNoteAfter: string;
   /** Nhãn link trang Điều khoản & Điều kiện ở dòng bản quyền. */
   terms: string;
   license: string;
@@ -133,11 +131,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     pilotEvent: "Đăng ký Mùa vàng 2026",
-    bookOnPartners: "Đặt qua đối tác",
-    partnersFlights: "Tour dù lượn",
-    partnersCourses: "Học bay dù lượn",
-    partnersStay: "Đặt phòng Clubhouse",
     spotsInfo: "Thông tin điểm bay",
+    trustTitle: "Đặt qua nơi uy tín",
+    trustNoteBefore: "Hoặc đặt thẳng ",
+    trustNoteLink: "tại đây",
+    trustNoteAfter: " để được giá tốt nhất.",
     terms: "Điều khoản & Điều kiện",
     license:
       "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
@@ -156,11 +154,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Follow Us",
     pilotEvent: "Golden Season 2026 registration",
-    bookOnPartners: "Book via partners",
-    partnersFlights: "Paragliding tours",
-    partnersCourses: "Paragliding courses",
-    partnersStay: "Clubhouse stays",
     spotsInfo: "Flying Spots Info",
+    trustTitle: "Book on trusted platforms",
+    trustNoteBefore: "Or book direct ",
+    trustNoteLink: "here",
+    trustNoteAfter: " for the best price.",
     terms: "Terms & Conditions",
     license:
       "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
@@ -179,11 +177,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Suivez-nous",
     pilotEvent: "Inscription Mùa Vàng 2026",
-    bookOnPartners: "Réserver via nos partenaires",
-    partnersFlights: "Vols en parapente",
-    partnersCourses: "Stages de parapente",
-    partnersStay: "Séjours au Clubhouse",
     spotsInfo: "Infos sites de vol",
+    trustTitle: "Réserver sur des plateformes de confiance",
+    trustNoteBefore: "Ou réservez en direct ",
+    trustNoteLink: "ici",
+    trustNoteAfter: " pour le meilleur tarif.",
     terms: "Conditions générales",
     license:
       "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
@@ -202,11 +200,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Контакты",
     followUs: "Подписывайтесь",
     pilotEvent: "Регистрация Mùa Vàng 2026",
-    bookOnPartners: "Бронирование у партнёров",
-    partnersFlights: "Полёты на параплане",
-    partnersCourses: "Курсы парапланеризма",
-    partnersStay: "Проживание в Clubhouse",
     spotsInfo: "О местах полётов",
+    trustTitle: "Бронирование на проверенных площадках",
+    trustNoteBefore: "Или бронируйте напрямую ",
+    trustNoteLink: "здесь",
+    trustNoteAfter: " — так выгоднее всего.",
     terms: "Условия обслуживания",
     license:
       "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
@@ -225,11 +223,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "联系方式",
     followUs: "关注我们",
     pilotEvent: "Mùa Vàng 2026 报名",
-    bookOnPartners: "通过合作平台预订",
-    partnersFlights: "滑翔伞行程",
-    partnersCourses: "滑翔伞课程",
-    partnersStay: "Clubhouse 住宿",
     spotsInfo: "飞行点信息",
+    trustTitle: "在可信平台预订",
+    trustNoteBefore: "或",
+    trustNoteLink: "直接在本站预订",
+    trustNoteAfter: "，价格最优。",
     terms: "服务条款",
     license: "飞行运营已获越南国防部总参谋部作战局许可。",
     rightsReserved: "保留所有权利。",
@@ -247,11 +245,11 @@ const DICT: Record<Language, FooterDict> = {
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
     pilotEvent: "Mùa Vàng 2026 पंजीकरण",
-    bookOnPartners: "पार्टनर के ज़रिए बुक करें",
-    partnersFlights: "पैराग्लाइडिंग टूर",
-    partnersCourses: "पैराग्लाइडिंग कोर्स",
-    partnersStay: "Clubhouse ठहरने",
     spotsInfo: "उड़ान स्थल जानकारी",
+    trustTitle: "भरोसेमंद प्लेटफ़ॉर्म पर बुक करें",
+    trustNoteBefore: "सबसे अच्छे दाम के लिए ",
+    trustNoteLink: "यहीं सीधे बुक करें",
+    trustNoteAfter: "।",
     terms: "नियम और शर्तें",
     license:
       "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
@@ -485,7 +483,12 @@ export default function Footer() {
                 {t.quickLinks}
               </h3>
 
-              <ul className="space-y-2">
+              {/* leading-5 khoá chiều cao mỗi hàng ở đúng 20px, bằng hàng của
+                  cột "Thông tin điểm bay" bên cạnh (biểu tượng 18px + mt-0.5).
+                  Trước đây hai cột cùng space-y-2 nhưng chữ 15px và 14px làm
+                  mỗi hàng lệch nhau khoảng 1,5px — qua bảy hàng thì đáy cột
+                  này tụt hơn 10px so với cột bên. */}
+              <ul className="space-y-2 leading-5">
                 <li>
                   <Link
                     href={makeLocalizedHref("/pilots", pathname)}
@@ -540,7 +543,7 @@ export default function Footer() {
                 {t.spotsInfo}
               </h3>
 
-              <ul className="space-y-2 text-[14px] text-slate-300">
+              <ul className="space-y-2 text-[14px] leading-5 text-slate-300">
                 {FOOTER_SPOTS.map((spot) => (
                   <li key={spot.href} className="flex items-start gap-3">
                     <MapPin size={18} className="mt-0.5 shrink-0" />
@@ -600,55 +603,58 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Trang đặt tour / đặt phòng trên nền tảng đối tác. Danh sách lấy từ
-              lib/partner-links.ts — cùng nguồn với sameAs trong JSON-LD nên hai
-              nơi không bao giờ lệch nhau.
-
-              Khối này trước nằm trong cột "Theo dõi chúng tôi" (rộng ~265px)
-              nên 7 nút màu phải xuống 4 hàng và kéo footer dài ra. Giờ tách
-              thành một dải ngang chiếm hết bề rộng, chia hai nhóm rõ ràng: tour
-              dù lượn và đặt phòng Clubhouse. */}
-          {PARTNER_GROUPS.some((g) => g.links.length > 0) && (
-            <div className="mt-5 border-t border-white/15 pt-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-8">
-                <h3 className="shrink-0 text-lg font-semibold text-white lg:pt-1">
-                  {t.bookOnPartners}
+          {/* Dải "đặt qua nơi uy tín" — danh sách chọn tay ở lib/partner-links.
+              Kèm một câu nhắc rằng đặt thẳng ở đây vẫn là rẻ nhất, để nút uy
+              tín làm đúng việc trấn an chứ không kéo mất đơn. */}
+          <div className="mt-5 border-t border-white/15 pt-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+              <div className="shrink-0">
+                <h3 className="text-lg font-semibold text-white">
+                  {t.trustTitle}
                 </h3>
-
-                <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
-                  {PARTNER_GROUPS.map(({ labelKey, links }) =>
-                    links.length === 0 ? null : (
-                      <div key={labelKey} className="min-w-0">
-                        <p className="mb-1.5 text-[11px] uppercase tracking-wider text-slate-400">
-                          {t[labelKey]}
-                        </p>
-
-                        <ul className="flex flex-wrap gap-2">
-                          {links.map((p) => (
-                            <li key={p.url}>
-                              <a
-                                href={p.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`
-                                  inline-flex items-center rounded-lg px-2.5 py-1
-                                  text-[12px] font-semibold shadow-md ring-1 ring-black/10
-                                  transition-all hover:-translate-y-0.5 hover:shadow-lg
-                                  ${BRAND_BUTTON_CLASS[p.brand]}
-                                `}
-                              >
-                                {p.name}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ),
-                  )}
-                </div>
+                <p className="mt-0.5 text-[13px] text-slate-400">
+                  {t.trustNoteBefore}
+                  {/* Tô vàng và gạch chân để nhìn ra ngay là bấm được: đây là
+                      đường đặt bay không mất hoa hồng, nằm cạnh mấy nút OTA
+                      màu sắc nên không được chìm hơn chúng. */}
+                  <Link
+                    href={makeLocalizedHref("/booking", pathname)}
+                    className="rounded bg-amber-400/15 px-1.5 py-0.5 font-bold text-amber-300 underline decoration-amber-400/50 underline-offset-2 transition-colors hover:bg-amber-400/25 hover:text-amber-200"
+                  >
+                    {t.trustNoteLink}
+                  </Link>
+                  {t.trustNoteAfter}
+                </p>
               </div>
+
+              <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
+                {TRUST_LINKS.map((p) => (
+                  <li key={p.url}>
+                    <a
+                      href={p.url}
+                      target="_blank"
+                      /* Trang bán tour trên OTA là quan hệ có ăn chia nên đánh
+                         dấu "sponsored"; Tripadvisor là trang đánh giá và web
+                         Sapa là công ty con nên để link thường. */
+                      rel={
+                        p.brand === "klook"
+                          ? "noopener noreferrer sponsored"
+                          : "noopener noreferrer"
+                      }
+                      className={`
+                        inline-flex items-center rounded-lg px-2.5 py-1
+                        text-[12px] font-semibold shadow-md ring-1 ring-black/10
+                        transition-all hover:-translate-y-0.5 hover:shadow-lg
+                        ${BRAND_BUTTON_CLASS[p.brand]}
+                      `}
+                    >
+                      {p.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
+          </div>
 
           {/* COPYRIGHT */}
           <div className="mt-4 border-t border-white/15 pt-3 text-center text-[13px] text-slate-400">

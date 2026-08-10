@@ -82,36 +82,6 @@ const HA_NOI_GROUP: SpotLinkGroup = {
   ],
   partners: [
     {
-      platform: "Klook",
-      url: "https://www.klook.com/activity/65949-paragliding-experience-in-ha-noi-city/",
-      kind: "paragliding",
-      brand: "klook",
-    },
-    {
-      platform: "KKday",
-      url: "https://www.kkday.com/vi/product/529322",
-      kind: "paragliding",
-      brand: "kkday",
-    },
-    {
-      platform: "GetYourGuide",
-      url: "https://www.getyourguide.com/hanoi-l205/paragliding-tour-near-hanoi-roundtrip-transfer-from-city-t1138375/",
-      kind: "paragliding",
-      brand: "getyourguide",
-    },
-    {
-      platform: "GetYourGuide",
-      url: "https://www.getyourguide.com/hanoi-l205/hanoi-7-day-paragliding-training-course-for-beginners-t1191130/",
-      kind: "course",
-      brand: "getyourguide",
-    },
-    {
-      platform: "Seek Sophie",
-      url: "https://www.seeksophie.com/experiences/hanoi-me-bay-luon-paragliding-doi-bu-hanoi-owe5om00jo",
-      kind: "paragliding",
-      brand: "seeksophie",
-    },
-    {
       platform: "Tripadvisor",
       url: "https://www.tripadvisor.com/Attraction_Review-g293924-d27966587-Reviews-Mebayluon_Paragliding-Hanoi.html",
       kind: "reviews",
@@ -152,36 +122,6 @@ export const SPOT_LINKS: Record<string, SpotLinkGroup> = {
         kind: "reviews",
         brand: "tripadvisor",
       },
-      {
-        platform: "Klook",
-        url: "https://www.klook.com/activity/76583-paragliding-experience-north-viet-nam/",
-        kind: "paragliding",
-        brand: "klook",
-      },
-      {
-        platform: "Klook",
-        url: "https://www.klook.com/activity/208894-paramotor-paragliding-experience-in-mu-cang-chai/",
-        kind: "paramotor",
-        brand: "klook",
-      },
-      {
-        platform: "GetYourGuide",
-        url: "https://www.getyourguide.com/mu-cang-chai-l149196/mu-cang-chai-paragliding-adventure-flying-over-scenic-spot-t1139081/",
-        kind: "paragliding",
-        brand: "getyourguide",
-      },
-      {
-        platform: "GetYourGuide",
-        url: "https://www.getyourguide.com/lao-cai-l244871/paramotor-paragliding-experience-in-mu-cang-chai-t1295428/",
-        kind: "paramotor",
-        brand: "getyourguide",
-      },
-      {
-        platform: "GetYourGuide",
-        url: "https://www.getyourguide.com/mu-cang-chai-l149196/10-day-paragliding-course-in-mu-cang-chai-beginner-level-t1186083/",
-        kind: "course",
-        brand: "getyourguide",
-      },
     ],
     courses: SCHOOL_COURSES,
   },
@@ -213,55 +153,13 @@ export const SPOT_LINKS: Record<string, SpotLinkGroup> = {
         kind: "reviews",
         brand: "tripadvisor",
       },
-      {
-        platform: "Klook",
-        url: "https://www.klook.com/activity/158451-paragliding-experience-in-sapa/",
-        kind: "paragliding",
-        brand: "klook",
-      },
-      {
-        platform: "GetYourGuide",
-        url: "https://www.getyourguide.com/sa-pa-l1049/paragliding-adventure-in-sapa-with-top-vietnamese-pilots-t1128335/",
-        kind: "paragliding",
-        brand: "getyourguide",
-      },
-      {
-        platform: "Viator",
-        url: "https://www.viator.com/tours/Sapa/Paragliding-Experience-in-Sapa-Hotel-Pickup-and-Drop-off/d50492-5583754P4",
-        kind: "paragliding",
-        brand: "viator",
-      },
-      {
-        platform: "Seek Sophie",
-        url: "https://www.seeksophie.com/experiences/sapa-sapa-paragliding-over-terraced-valleys-o32jl0rgj6",
-        kind: "paragliding",
-        brand: "seeksophie",
-      },
     ],
   },
 
+  // Đà Nẵng chưa có hồ sơ Tripadvisor riêng nên khối "Xem thêm" không hiện.
   "son-tra": {
     maps: [],
-    partners: [
-      {
-        platform: "Klook",
-        url: "https://www.klook.com/activity/90127-paragliding-experience-in-da-nang/",
-        kind: "paragliding",
-        brand: "klook",
-      },
-      {
-        platform: "KKday",
-        url: "https://www.kkday.com/en/product/529519",
-        kind: "paragliding",
-        brand: "kkday",
-      },
-      {
-        platform: "Seek Sophie",
-        url: "https://www.seeksophie.com/experiences/da-nang-soar-over-da-nang-paragliding-adventure-ol2zmr1dj7",
-        kind: "paragliding",
-        brand: "seeksophie",
-      },
-    ],
+    partners: [],
   },
 };
 
@@ -276,59 +174,6 @@ export const getSpotTripadvisorUrl = (slug?: string | null): string | null =>
   getSpotLinks(slug)?.partners.find((p) => p.brand === "tripadvisor")?.url ??
   null;
 
-/**
- * Tên rút gọn của điểm bay, dùng làm nhãn nút ở footer ("Klook · Khau Phạ").
- * Danh từ riêng nên không dịch.
- */
-const SPOT_SHORT_NAME: Record<string, string> = {
-  "khau-pha": "Khau Phạ",
-  "doi-bu": "Hà Nội",
-  "vien-nam": "Hà Nội",
-  "muong-hoa-sapa": "Sapa",
-  "son-tra": "Đà Nẵng",
-};
-
-export type FooterPartnerLink = {
-  name: string;
-  url: string;
-  brand: PartnerBrand;
-};
-
-/**
- * Gom link OTA của TẤT CẢ điểm bay theo loại, khử trùng theo URL (Đồi Bù và
- * Viên Nam dùng chung một bộ link nên URL sẽ lặp).
- *
- * Footer lấy từ đây chứ không khai riêng, để thêm link vào SPOT_LINKS là
- * footer tự có luôn — không bao giờ lệch nhau.
- */
-function collectSpotLinks(kinds: SpotLinkKind[]): FooterPartnerLink[] {
-  const seen = new Set<string>();
-  const out: FooterPartnerLink[] = [];
-
-  for (const [slug, group] of Object.entries(SPOT_LINKS)) {
-    for (const link of group.partners) {
-      if (!kinds.includes(link.kind) || seen.has(link.url)) continue;
-      seen.add(link.url);
-
-      const place = SPOT_SHORT_NAME[slug] ?? slug;
-      const suffix = link.kind === "paramotor" ? " (Paramotor)" : "";
-
-      out.push({
-        name: `${link.platform} · ${place}${suffix}`,
-        url: link.url,
-        brand: link.brand,
-      });
-    }
-  }
-
-  return out;
-}
-
-/** Trang bán tour bay trải nghiệm (dù lượn + dù lượn gắn động cơ). */
-export const TOUR_PARTNER_LINKS = collectSpotLinks(["paragliding", "paramotor"]);
-
-/** Trang bán khoá học bay. */
-export const COURSE_PARTNER_LINKS = collectSpotLinks(["course"]);
 
 type SpotLinkLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 

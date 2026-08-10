@@ -2,10 +2,12 @@
 /**
  * Các trang bán tour / đặt phòng của Mebayluon trên nền tảng đối tác.
  *
- * Một nguồn duy nhất cho cả hai chỗ dùng:
+ * Một nguồn duy nhất cho hai chỗ dùng:
  *  - `sameAs` trong JSON-LD (ẩn, để Google nối các hồ sơ về cùng một doanh nghiệp)
- *  - khối "Đặt qua đối tác" hiển thị ở footer
+ *  - khối "Xem chúng tôi trên" ở trang /homestay (chỉ HOMESTAY_PARTNERS)
  * Sửa link ở đây là cả hai nơi cùng đổi.
+ *
+ * Footer KHÔNG còn bày các link này — lý do ghi trong components/footer/Footer.tsx.
  *
  * THÊM LINK MỚI: chỉ cần thêm một dòng vào đúng mảng bên dưới. Nhớ dùng URL
  * sạch (bỏ tham số theo dõi kiểu ?visitor-id=...) và tránh khoá vùng trong
@@ -27,7 +29,8 @@ export type PartnerBrand =
   | "agoda"
   | "tripcom"
   | "google"
-  | "facebook";
+  | "facebook"
+  | "sapa";
 
 /**
  * Màu nút theo nhận diện của từng nền tảng. Trước đây mọi nút đối tác đều là
@@ -46,6 +49,8 @@ export const BRAND_BUTTON_CLASS: Record<PartnerBrand, string> = {
   tripcom: "bg-[#287DFA] text-white hover:bg-[#4d95fb]",
   google: "bg-white text-[#1A73E8] hover:bg-slate-100",
   facebook: "bg-[#1877F2] text-white hover:bg-[#3d90f5]",
+  // Web Sapa Paragliding — công ty con, không phải OTA.
+  sapa: "bg-[#0EA5E9] text-white hover:bg-[#38bdf8]",
 };
 
 export type PartnerLink = {
@@ -74,8 +79,10 @@ export const PARAGLIDING_PARTNERS: PartnerLink[] = [
   },
   {
     // Trang nhà cung cấp trên Seek Sophie (không phải trang một tour lẻ).
+    // Seek Sophie đã đổi /operators/ thành /hosts/; khai thẳng đích đến vì
+    // `sameAs` nên trỏ URL cuối, đừng bắt Google đi qua một lần chuyển hướng.
     name: "Seek Sophie",
-    url: "https://www.seeksophie.com/operators/me-bay-luon-paragliding",
+    url: "https://www.seeksophie.com/hosts/me-bay-luon-paragliding",
     brand: "seeksophie",
   },
 ];
@@ -97,8 +104,9 @@ export const HOMESTAY_PARTNERS: PartnerLink[] = [
     brand: "agoda",
   },
   {
+    // Trip.com đã đổi slug sang mebayluon-paragliding-clubhouse.
     name: "Trip.com",
-    url: "https://www.trip.com/hotels/cao-pha-hotel-detail-116617838/club-house-mebayluon-paragliding/",
+    url: "https://www.trip.com/hotels/cao-pha-hotel-detail-116617838/mebayluon-paragliding-clubhouse/",
     brand: "tripcom",
   },
   {
@@ -113,8 +121,52 @@ export const HOMESTAY_PARTNERS: PartnerLink[] = [
   },
 ];
 
-/** Gộp cho những chỗ cần hiện tất cả (footer). */
-export const ALL_PARTNERS: PartnerLink[] = [
-  ...PARAGLIDING_PARTNERS,
-  ...HOMESTAY_PARTNERS,
+// Từng có ALL_PARTNERS gộp hai danh sách trên cho footer. Footer nay chỉ bày
+// đúng danh sách chọn lọc bên dưới nên đã bỏ — hai thực thể này khác nhau,
+// gộp lại chỉ đúng cho một chỗ hiển thị.
+
+/**
+ * Dải "đặt qua nơi uy tín" ở footer — danh sách CHỌN TAY, cố ý ngắn.
+ *
+ * Khách nước ngoài lần đầu biết tới mình thường ngại đặt thẳng trên một web
+ * Việt Nam họ chưa nghe tên, nên vẫn cần vài chỗ quen thuộc để họ yên tâm.
+ * Nhưng mỗi nút ở footer là nút nằm trên MỌI trang, và mỗi lượt đặt qua đó
+ * mất 20–30% hoa hồng — nên chỉ giữ đúng vài cái đắt giá nhất, không bày cả
+ * chục nền tảng như trước.
+ *
+ * Vì sao đúng những cái này:
+ *  - Tripadvisor: trang ĐÁNH GIÁ, không phải chỗ bán tour, nên giữ được uy
+ *    tín mà không kéo mất đơn. Đây là thứ phải giữ.
+ *  - Klook Hà Nội và Klook Mù Cang Chải: hai điểm bay chủ lực, và Klook là
+ *    cái tên khách châu Á nhận ra ngay.
+ *  - Sapa: dẫn sang web của công ty con, không mất hoa hồng cho ai cả.
+ *
+ * Mọi link OTA khác đã gỡ khỏi site — xem chú thích trong Footer.tsx.
+ */
+export const TRUST_LINKS: PartnerLink[] = [
+  {
+    name: "Tripadvisor · Hà Nội",
+    url: "https://www.tripadvisor.com/Attraction_Review-g293924-d27966587-Reviews-Mebayluon_Paragliding-Hanoi.html",
+    brand: "tripadvisor",
+  },
+  {
+    name: "Tripadvisor · Yên Bái",
+    url: "https://www.tripadvisor.com/Attraction_Review-g800616-d27969404-Reviews-Mebayluon_Paragliding-Yen_Bai_Yen_Bai_Province.html",
+    brand: "tripadvisor",
+  },
+  {
+    name: "Klook · Hà Nội",
+    url: "https://www.klook.com/activity/65949-paragliding-experience-in-ha-noi-city/",
+    brand: "klook",
+  },
+  {
+    name: "Klook · Mù Cang Chải",
+    url: "https://www.klook.com/activity/76583-paragliding-experience-north-viet-nam/",
+    brand: "klook",
+  },
+  {
+    name: "Bay dù lượn Sapa",
+    url: "https://www.paraglidingsapa.com",
+    brand: "sapa",
+  },
 ];

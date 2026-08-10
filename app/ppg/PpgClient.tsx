@@ -28,8 +28,7 @@ import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer/Footer";
 import { LazyVideo } from "@/components/lazy-video";
 import { useLanguage } from "@/contexts/language-context";
-import { BRAND_BUTTON_CLASS } from "@/lib/partner-links";
-import { getSpotLinks, SPOT_LINK_I18N } from "@/lib/spot-partner-links";
+import { getSpotLinks } from "@/lib/spot-partner-links";
 import { bookingHrefForFlightType } from "@/lib/booking/spot-to-location";
 import {
   getPpgCopy,
@@ -73,16 +72,15 @@ export default function PpgClient() {
   const lang = safeLang(language);
   const c = getPpgCopy(lang);
 
-  // Khối đặt qua đối tác: chỉ lấy các link BÁN TOUR DÙ MÁY của Khau Phạ,
-  // không lấy link dù lượn thường để khách khỏi bấm nhầm sang sản phẩm khác.
+  // Trang này từng có khối "Đặt qua đối tác" dẫn sang Klook và GetYourGuide.
+  // Đã gỡ cùng đợt dọn link OTA toàn site: khách đã vào tận đây rồi thì đặt
+  // thẳng ở /booking, không việc gì phải trả 20–30% hoa hồng cho một lượt đặt
+  // mình tự kiếm được. Chi tiết ghi trong components/footer/Footer.tsx.
   const spotLinks = getSpotLinks("khau-pha");
-  const paramotorLinks =
-    spotLinks?.partners.filter((p) => p.kind === "paramotor") ?? [];
   // Trang này chỉ nói về dù máy: chỉ lấy toạ độ Clubhouse (nơi vừa cất vừa
   // hạ cánh dù máy), bỏ toạ độ bãi cất cánh của dù lượn thường trên đỉnh đèo.
   const paramotorMap =
     spotLinks?.maps.find((m) => m.kind === "paramotorTakeoff") ?? null;
-  const SL = SPOT_LINK_I18N[lang] ?? SPOT_LINK_I18N.vi;
 
   // Nút đặt bay mở thẳng /booking với Khau Phạ + dù lượn gắn động cơ chọn sẵn.
   const bookingHref = bookingHrefForFlightType("khau-pha", "paramotor");
@@ -487,33 +485,6 @@ export default function PpgClient() {
           </div>
         </section>
 
-        {/* ===== ĐẶT QUA ĐỐI TÁC ===== */}
-        {paramotorLinks.length > 0 && (
-          <section id="partners" className="scroll-mt-24 py-16">
-            <div className="container mx-auto max-w-4xl px-4 text-center">
-              <h2 className={sectionTitle}>{c.partnersTitle}</h2>
-              <p className="text-hero-shadow-soft mx-auto mt-3 max-w-2xl font-medium text-white/95">
-                {c.partnersSubtitle}
-              </p>
-
-              <ul className="mt-8 flex flex-wrap justify-center gap-3">
-                {paramotorLinks.map((p) => (
-                  <li key={p.url}>
-                    <a
-                      href={p.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${BRAND_BUTTON_CLASS[p.brand]}`}
-                    >
-                      <span>{p.platform}</span>
-                      <span className="opacity-75">· {SL.paramotor}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        )}
 
         {/* ===== CTA CUỐI ===== */}
         {/* Khối chốt: gọn lại (py nhỏ hơn, chữ và nút nhỏ hơn một nấc).
