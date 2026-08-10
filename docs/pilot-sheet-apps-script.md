@@ -25,7 +25,7 @@ const HEADERS = [
   'Điện thoại', 'Email', 'Địa chỉ', 'CLB/Hội',
   'Loại hình bay', 'Loại máy', 'Cấp dù',
   'Đợt bay', 'Ngày bay', 'Số ngày', 'Người nhà',
-  'Phí điểm bay', 'Chi tiết phí', 'Tổng tiền', 'Yêu cầu riêng',
+  'Phí điểm bay', 'Chi tiết phí', 'Tổng tiền', 'Yêu cầu riêng', 'Cỡ áo',
 ];
 
 /**
@@ -63,7 +63,7 @@ function doPost(e) {
       r.phone, r.email, r.address, r.club,
       r.flyingKind, r.motorType, r.wingClass,
       r.period, r.dates, r.dayCount, r.companionCount,
-      r.siteFeeMode, r.feeDetail, r.feeTotal, r.specialRequest,
+      r.siteFeeMode, r.feeDetail, r.feeTotal, r.specialRequest, r.shirtSize,
     ]);
 
     return ContentService
@@ -102,6 +102,17 @@ Mở đường dẫn `.../exec` bằng trình duyệt. Phải thấy đúng ch�
 **Sửa script xong phải triển khai lại một PHIÊN BẢN MỚI**, nếu không Google vẫn
 chạy bản cũ: **Triển khai → Quản lý các bản triển khai → biểu tượng bút chì →
 Phiên bản: Phiên bản mới → Triển khai**.
+
+> ⚠️ Phải đi đúng đường **Quản lý các bản triển khai → bút chì**. Nếu bấm
+> **Tuỳ chọn triển khai mới** thì Google cấp một đường dẫn `/exec` KHÁC và
+> đường cũ chết ngay — production vẫn cầm đường cũ nên mọi đăng ký sẽ trả về
+> 404 và không có dòng nào vào bảng. Chuyện này đã xảy ra một lần: 14 đăng ký
+> nằm im trong cơ sở dữ liệu mà bảng trống trơn. Lỡ tạo bản triển khai mới thì
+> phải cập nhật `PILOT_SHEET_WEBHOOK_URL` trên Vercel rồi deploy lại.
+
+**Thêm cột vào bảng đang chạy**: script chỉ tự ghi dòng tiêu đề khi bảng còn
+trống. Bảng đã có dữ liệu thì phải tự gõ tên cột mới vào ô trống kế tiếp ở
+hàng 1 (ví dụ `Cỡ áo`), đúng thứ tự như trong `HEADERS`.
 
 ## 5. Khai vào biến môi trường
 

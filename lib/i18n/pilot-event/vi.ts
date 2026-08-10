@@ -52,7 +52,7 @@ export const vi: PilotDict = {
     "Ăn sáng và trưa ngày 30/8",
     "Gala dinner đêm 30/8",
     "Ăn sáng và trưa ngày 31/8",
-    "Áo sự kiện",
+    "Áo sự kiện (chỉ dành cho phi công đăng ký trước ngày 15/8)",
     "Xe con thoi 16 chỗ lên xuống núi, chạy liên tục không giới hạn",
     "Nước uống tại điểm bay",
     "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 (sau khi hoàn tất thanh toán sự kiện)",
@@ -148,6 +148,10 @@ export const vi: PilotDict = {
   fRequestHint: "không bắt buộc",
   fRequestPh:
     "Ví dụ: ăn chay, đi cùng bạn cùng phòng, tới muộn tối 29, cần chỗ để xe…",
+
+  fShirt: "Cỡ áo sự kiện",
+  fShirtHint: "áo trong combo Mùa Vàng — chỉ dành cho phi công đăng ký trước ngày 15/8",
+  fShirtPh: "Chọn cỡ áo",
 
   step3: "Đợt bay",
   openingLabel: "Lễ khai mạc",

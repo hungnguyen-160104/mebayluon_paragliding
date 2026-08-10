@@ -55,7 +55,7 @@ export const en: PilotDict = {
     "Breakfast and lunch on 30 Aug",
     "Gala dinner on the night of 30 Aug",
     "Breakfast and lunch on 31 Aug",
-    "Event T-shirt",
+    "Event T-shirt (only for pilots who register before 15 Aug)",
     "16-seat shuttle up and down the mountain, running non-stop",
     "Drinking water at the site",
     "10 days free of site fees, 26 Aug to 4 Sep (once the event fee is paid)",
@@ -151,6 +151,10 @@ export const en: PilotDict = {
   fRequestHint: "optional",
   fRequestPh:
     "e.g. vegetarian, sharing a room with a friend, arriving late on the 29th, need parking…",
+
+  fShirt: "Event T-shirt size",
+  fShirtHint: "part of the Golden Season combo — only for pilots who register before 15 Aug",
+  fShirtPh: "Pick a size",
 
   step3: "Flying period",
   openingLabel: "Opening ceremony",

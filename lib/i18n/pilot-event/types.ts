@@ -104,6 +104,10 @@ export type PilotDict = {
   fRequest: string;
   fRequestHint: string;
   fRequestPh: string;
+  /** Cỡ áo sự kiện — chỉ hiện với đợt Mùa Vàng. */
+  fShirt: string;
+  fShirtHint: string;
+  fShirtPh: string;
 
   step3: string;
   openingLabel: string;

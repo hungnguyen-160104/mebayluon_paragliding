@@ -55,6 +55,8 @@ export type PilotEmailInput = {
   address?: string;
   club?: string;
   specialRequest?: string;
+  /** Cỡ áo sự kiện — chỉ có ở đợt Mùa Vàng. */
+  shirtSize?: string;
   flyingKind: FlyingKind;
   motorType?: MotorType;
   wingClass?: string;
@@ -127,6 +129,7 @@ function infoRows(b: PilotEmailInput): string {
     b.companionCount
       ? row("Người nhà đi kèm", `${b.companionCount} người (ăn ở cùng đoàn)`)
       : "",
+    b.shirtSize ? row("Cỡ áo sự kiện", b.shirtSize) : "",
     b.specialRequest ? row("Yêu cầu riêng", b.specialRequest) : "",
   ];
 

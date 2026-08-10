@@ -124,13 +124,24 @@ export const MUA_VANG_OPENING = OPENING_BY_PERIOD.mua_vang as string;
 export const MUA_VANG_ZALO_GROUP =
   "https://zalo.me/g/r8ev6in2xlueiydbnbvn";
 
+/**
+ * Áo sự kiện phải đặt xưởng in trước nên có hạn chốt riêng, sớm hơn ngày bay.
+ * Đăng ký sau ngày này vẫn dự sự kiện bình thường, chỉ là không kịp có áo.
+ */
+export const MUA_VANG_SHIRT_DEADLINE = "2026-08-15";
+export const MUA_VANG_SHIRT_DEADLINE_TEXT = "15/8";
+
+/** Cỡ áo sự kiện. */
+export const SHIRT_SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+export type ShirtSize = (typeof SHIRT_SIZES)[number];
+
 export const MUA_VANG_COMBO_ITEMS = [
   "Ngủ 2 đêm (29 và 30/8)",
   "Ăn tối ngày 29/8",
   "Ăn sáng và trưa ngày 30/8",
   "Gala dinner đêm 30/8",
   "Ăn sáng và trưa ngày 31/8",
-  "Áo sự kiện",
+  `Áo sự kiện (chỉ dành cho phi công đăng ký trước ngày ${MUA_VANG_SHIRT_DEADLINE_TEXT})`,
   "Xe con thoi 16 chỗ lên xuống núi, chạy liên tục không giới hạn",
   "Nước uống tại điểm bay",
   "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 (sau khi hoàn tất thanh toán sự kiện)",
@@ -469,6 +480,15 @@ export type FeeResult = {
  * Ba đợt bay có ba cách tính khác hẳn nhau nên gom về một hàm: bảng phí trên
  * trang, email gửi phi công và dòng ghi vào Google Sheets đều gọi hàm này.
  */
+/**
+ * Tích đủ số ngày mà tiền lẻ đã bằng hoặc hơn gói tháng thì tự chuyển sang
+ * gói tháng: cùng giá hoặc rẻ hơn, lại bay không giới hạn. Để phi công trả
+ * theo ngày trong trường hợp này là thu đắt hơn mà không cho thêm gì.
+ *
+ * Áp cho CẢ hai nhánh — ngày thường lẫn ngày bay thêm của đợt Mùa Vàng.
+ */
+const BREAK_EVEN_DAYS = Math.ceil(SITE_FEE_PER_MONTH / SITE_FEE_PER_DAY);
+
 export function computePilotFee(input: {
   period: PeriodKey;
   kind: FlyingKind;
@@ -532,7 +552,23 @@ export function computePilotFee(input: {
       });
     }
 
-    if (extraPaid.length) {
+    /**
+     * Ngày bay thêm cũng phải chốt ở giá trọn tháng.
+     *
+     * Trước đây nhánh Mùa Vàng luôn nhân theo ngày, nên phi công tích 8 ngày
+     * bay thêm bị tính 800.000 đ trong khi gói tháng chỉ 700.000 đ mà bay
+     * không giới hạn — thu đắt hơn mà không cho thêm gì. Nhánh ngày thường
+     * đã chốt đúng, nhánh này thì chưa.
+     */
+    const monthFromExtra = [...extraPaid].sort()[0];
+
+    if (extraPaid.length >= BREAK_EVEN_DAYS) {
+      lines.push({
+        key: "siteMonth",
+        label: "Phí điểm bay trọn tháng",
+        amount: SITE_FEE_PER_MONTH,
+      });
+    } else if (extraPaid.length) {
       lines.push({
         key: "extraPaid",
         count: extraPaid.length,
@@ -546,6 +582,9 @@ export function computePilotFee(input: {
     return {
       lines,
       total,
+      ...(extraPaid.length >= BREAK_EVEN_DAYS
+        ? { monthFrom: monthFromExtra, monthTo: addOneMonth(monthFromExtra) }
+        : {}),
       noteKey: motor ? "muaVangMotor" : "muaVangPara",
       note: motor
         ? `Phi công bay dù máy được miễn phí combo. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
@@ -590,12 +629,6 @@ export function computePilotFee(input: {
     : [];
   const paidDays = dates.filter((d) => !freeDays.includes(d));
 
-  /**
-   * Tích đủ số ngày mà tiền lẻ đã bằng hoặc hơn gói tháng thì tự chuyển sang
-   * gói tháng: cùng giá hoặc rẻ hơn, lại bay không giới hạn. Để khách trả
-   * theo ngày trong trường hợp này là thu đắt hơn mà không cho thêm gì.
-   */
-  const BREAK_EVEN_DAYS = Math.ceil(SITE_FEE_PER_MONTH / SITE_FEE_PER_DAY);
   if (paidDays.length >= BREAK_EVEN_DAYS) return monthResult();
 
   const lines: FeeLine[] = [];

@@ -31,6 +31,8 @@ import {
   formatVnDate,
   hasMotor,
   wingClassLabel,
+  SHIRT_SIZES,
+  type ShirtSize,
   type FlyingKind,
   type MotorType,
   type PeriodKey,
@@ -107,6 +109,11 @@ export async function POST(req: Request) {
   const club = clean(raw.club);
   const specialRequest = clean(raw.specialRequest).slice(0, 500);
 
+  // Áo nằm trong combo Mùa Vàng, nhưng ô vẫn hỏi mọi phi công (xem chú
+  // thích ở PilotEventClient) nên cứ có gì lưu nấy.
+  const shirtRaw = clean(raw.shirtSize) as ShirtSize;
+  const shirtSize = SHIRT_SIZES.includes(shirtRaw) ? shirtRaw : undefined;
+
   const flyingKind = clean(raw.flyingKind) as FlyingKind;
   const period = clean(raw.period) as PeriodKey;
   const motorType = clean(raw.motorType) as MotorType;
@@ -174,6 +181,7 @@ export async function POST(req: Request) {
     address: address || undefined,
     club: club || undefined,
     specialRequest: specialRequest || undefined,
+    shirtSize,
     flyingKind,
     motorType: hasMotor(flyingKind) ? motorType : undefined,
     wingClass,
@@ -217,6 +225,7 @@ export async function POST(req: Request) {
           address: address || undefined,
           club: club || undefined,
           specialRequest: specialRequest || undefined,
+          shirtSize,
           flyingKind,
           motorType: emailInput.motorType,
           wingClass,
@@ -251,6 +260,7 @@ export async function POST(req: Request) {
       address: address || undefined,
       club: club || undefined,
       specialRequest: specialRequest || undefined,
+      shirtSize,
       flyingKind,
       motorType: emailInput.motorType,
       wingClass,
@@ -288,6 +298,7 @@ export async function POST(req: Request) {
     address,
     club,
     specialRequest,
+    shirtSize: shirtSize ?? "",
     flyingKind: KIND_LABEL[flyingKind],
     motorType: emailInput.motorType ? MOTOR_LABEL[emailInput.motorType] : "",
     wingClass: wingClass ? wingClassLabel(wingClass) : "",

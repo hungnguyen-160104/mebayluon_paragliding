@@ -29,6 +29,8 @@ import {
   formatVnd,
   hasMotor,
   wingClassLabel,
+  SHIRT_SIZES,
+  type ShirtSize,
   type FlyingKind,
   type MotorType,
   type PeriodKey,
@@ -250,6 +252,7 @@ export default function PilotEventClient() {
   const [address, setAddress] = useState("");
   const [club, setClub] = useState("");
   const [specialRequest, setSpecialRequest] = useState("");
+  const [shirtSize, setShirtSize] = useState<ShirtSize | "">("");
 
   const [period, setPeriod] = useState<PeriodKey | "">("");
   const [dates, setDates] = useState<string[]>([]);
@@ -459,6 +462,7 @@ export default function PilotEventClient() {
           address: address.trim(),
           club: club.trim(),
           specialRequest: specialRequest.trim(),
+          shirtSize,
           flyingKind,
           period,
           dates,
@@ -1272,6 +1276,36 @@ export default function PilotEventClient() {
                       onChange={(e) => setClub(e.target.value)}
                       placeholder={T.fClubPh}
                     />
+                  </Field>
+                </div>
+
+                {/* Cỡ áo hiện luôn, không chờ chọn đợt bay.
+                    Áo chỉ có trong combo Mùa Vàng, nhưng đợt bay lại chọn ở
+                    bước 3 — nằm DƯỚI khối này. Nếu để hiện theo điều kiện thì
+                    ô mới nhảy ra ở chỗ phi công vừa cuộn qua và gần như chắc
+                    chắn bị bỏ sót. Điều kiện nói rõ ở dòng chú thích. */}
+                <div className="sm:col-span-2">
+                  <Field label={T.fShirt} hint={T.fShirtHint}>
+                    <div className="flex flex-wrap gap-2">
+                      {SHIRT_SIZES.map((s) => {
+                        const on = shirtSize === s;
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setShirtSize(on ? "" : s)}
+                            className={[
+                              "h-11 min-w-[62px] rounded-xl border px-4 text-sm font-bold transition",
+                              on
+                                ? "border-amber-400 bg-amber-400 text-black"
+                                : "border-white/25 bg-white/[0.12] text-white/85 hover:bg-white/20",
+                            ].join(" ")}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Field>
                 </div>
 

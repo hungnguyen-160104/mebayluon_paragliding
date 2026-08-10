@@ -45,6 +45,8 @@ export type PilotSheetRow = {
   feeDetail: string;
   feeTotal: number;
   specialRequest: string;
+  /** Cỡ áo sự kiện — rỗng nếu không phải đợt Mùa Vàng. */
+  shirtSize: string;
 };
 
 export async function pushPilotRowToSheet(

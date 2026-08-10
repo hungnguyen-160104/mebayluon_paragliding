@@ -61,7 +61,7 @@ export const fr: PilotDict = {
     "Petit-déjeuner et déjeuner du 30 août",
     "Dîner de gala le soir du 30 août",
     "Petit-déjeuner et déjeuner du 31 août",
-    "T-shirt de l'événement",
+    "T-shirt de l'événement (réservé aux pilotes inscrits avant le 15/08)",
     "Navette de 16 places entre la vallée et le sommet, en continu",
     "Eau potable sur le site",
     "10 jours sans redevance de site, du 26 août au 4 septembre (une fois les frais réglés)",
@@ -159,6 +159,10 @@ export const fr: PilotDict = {
   fRequestHint: "facultatif",
   fRequestPh:
     "ex. végétarien, partage de chambre avec un ami, arrivée tardive le 29, besoin d'un parking…",
+
+  fShirt: "Taille du T-shirt de l'événement",
+  fShirtHint: "inclus dans le forfait Saison Dorée — réservé aux pilotes inscrits avant le 15/08",
+  fShirtPh: "Choisir une taille",
 
   step3: "Période de vol",
   openingLabel: "Cérémonie d'ouverture",

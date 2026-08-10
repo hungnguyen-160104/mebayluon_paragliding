@@ -20,6 +20,8 @@ export interface IPilotRegistration {
   club?: string;
   /** Yêu cầu riêng phi công tự viết khi đăng ký. */
   specialRequest?: string;
+  /** Cỡ áo sự kiện (S–XXL) — chỉ hỏi ở đợt Mùa Vàng. */
+  shirtSize?: string;
 
   flyingKind: string;
   motorType?: string;
@@ -57,6 +59,7 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     address: String,
     club: String,
     specialRequest: String,
+    shirtSize: String,
 
     flyingKind: { type: String, required: true },
     motorType: String,
