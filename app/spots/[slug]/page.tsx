@@ -22,6 +22,7 @@ import {
   SPOT_ARTICLE_NAMES,
 } from "@/lib/spot-articles";
 import { ArrowRight, BookOpen, Star } from "lucide-react";
+import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -79,7 +80,11 @@ const BASE_SPOTS: Record<string, SpotData> = {
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
+📸 DỊCH VỤ TÙY CHỌN:
+🚁 Quay Flycam/Drone và Quay camera 360°
+🚐 Đón trả 2 chiều từ khách sạn
+🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
+☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -174,7 +179,11 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 ✅ Miễn phí lưu trú không bao gồm tháng cao điểm và ngày lễ
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
+📸 DỊCH VỤ TÙY CHỌN:
+🚁 Quay Flycam/Drone và Quay camera 360°
+🚐 Đón trả 2 chiều từ khách sạn
+🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
+☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -234,7 +243,11 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
+📸 DỊCH VỤ TÙY CHỌN:
+🚁 Quay Flycam/Drone và Quay camera 360°
+🚐 Đón trả 2 chiều từ khách sạn
+🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
+☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -322,7 +335,11 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
-📸 DỊCH VỤ TÙY CHỌN: Quay Flycam/Drone và Quay camera 360°, Đón trả 2 chiều từ khách sạn
+📸 DỊCH VỤ TÙY CHỌN:
+🚁 Quay Flycam/Drone và Quay camera 360°
+🚐 Đón trả 2 chiều từ khách sạn
+🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
+☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -606,15 +623,23 @@ export default async function SpotDetailPage({
         <section className="relative z-10 py-16">
           <div className="container mx-auto max-w-5xl px-4">
             <div className="mb-8 text-center text-white">
-              <h2
-                className="font-serif text-3xl font-bold md:text-4xl"
-                style={{ textShadow: "2px 2px 8px rgba(0,0,0,.7)" }}
-              >
-                {heading.title.replace(
-                  "{name}",
-                  SPOT_ARTICLE_NAMES[canonicalSpotSlug(slug)]?.[spotLocale] ??
-                    spot.name,
-                )}
+              <h2 className={SPOT_SECTION_HEADING}>
+                {/* "\n" trong tiêu đề là chỗ ngắt dòng dành cho điện thoại —
+                    xem chú thích ở SPOT_ARTICLES_HEADING. Từ 640px trở lên hai
+                    mảnh nối lại thành một dòng như cũ. */}
+                {heading.title
+                  .replace(
+                    "{name}",
+                    SPOT_ARTICLE_NAMES[canonicalSpotSlug(slug)]?.[spotLocale] ??
+                      spot.name,
+                  )
+                  .split("\n")
+                  .map((part, i) => (
+                    <span key={i} className="block sm:inline">
+                      {i > 0 ? <span className="hidden sm:inline"> </span> : null}
+                      {part}
+                    </span>
+                  ))}
               </h2>
               <p
                 className="mt-2 text-slate-200"

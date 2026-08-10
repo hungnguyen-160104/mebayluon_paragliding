@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 import { Play } from "lucide-react";
 
 import { getSpotVideos, SPOT_VIDEO_I18N } from "@/lib/spot-videos";
+import { SPOT_SECTION_HEADING } from "./section-heading";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -48,7 +49,7 @@ export default function SpotVideos({
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-8 text-center font-serif text-3xl font-bold text-white md:text-4xl"
+          className={`${SPOT_SECTION_HEADING} mb-8 text-center`}
         >
           {L.sectionTitle}
         </motion.h2>

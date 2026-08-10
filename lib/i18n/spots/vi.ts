@@ -4,7 +4,7 @@ export const vi: SpotTranslations = {
   spotDetail: {
     aboutTitle: "Về điểm bay này",
     galleryTitle: "Khoảnh khắc tại đây",
-    storyTitle: "Câu chuyện và Trải nghiệm",
+    storyTitle: "Câu chuyện trải nghiệm",
     storySubtitle: "Lắng nghe những chia sẻ đáng nhớ từ du khách",
     exploreMore: "Khám phá thêm các điểm bay khác",
     exploreMoreDescription: "Chúng tôi còn nhiều điểm bay tuyệt đẹp khắp Việt Nam",

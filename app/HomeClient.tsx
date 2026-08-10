@@ -221,8 +221,14 @@ export default function HomePage() {
     },
   };
 
+  /**
+   * Cỡ chữ tiêu đề mục. Trên điện thoại hạ từ 36px xuống 28px: đo bằng
+   * chỉ số phông Georgia Bold thì "Chuẩn bị trước khi bay" ở 36px rộng
+   * 428px, quá bề ngang dùng được của màn 375px (343px) nên bị bẻ đôi.
+   * Ở 28px còn 333px, vừa một dòng. Từ 640px trở lên giữ nguyên cỡ cũ.
+   */
   const sectionHeadingClass =
-    "text-hero-shadow text-4xl md:text-5xl font-bold font-serif text-white";
+    "text-hero-shadow text-[1.75rem] sm:text-4xl md:text-5xl font-bold font-serif text-white";
   const glassCardClass =
     "h-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md";
 
@@ -411,7 +417,9 @@ export default function HomePage() {
                     "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
                 }}
               >
-                <h2 className="mb-4 font-serif text-4xl font-bold text-white md:text-5xl lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl">
+                {/* Trên điện thoại hạ 30%: 36px xuống 25,6px. Từ 768px trở lên
+                    giữ nguyên các cỡ cũ. */}
+                <h2 className="mb-4 font-serif text-[1.6rem] font-bold text-white md:text-5xl lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl">
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
 
@@ -482,7 +490,9 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="mb-16 text-center"
           >
-            <h2 className="text-hero-shadow mb-6 text-5xl font-bold text-white md:text-6xl">
+            {/* "ĐIỂM BAY NỔI BẬT" ở text-5xl rộng 496px, tràn màn điện thoại nên
+                xuống dòng giữa cụm. text-3xl còn 310px, vừa một dòng. */}
+            <h2 className="text-hero-shadow mb-6 text-3xl font-bold text-white sm:text-5xl md:text-6xl">
               {t?.spots?.title ?? "Các điểm bay nổi bật"}
             </h2>
             <p className="text-hero-shadow-soft mx-auto max-w-2xl text-xl text-slate-100">
@@ -729,7 +739,9 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="mb-8 text-center"
           >
-            <h2 className="text-hero-shadow mb-3 font-serif text-4xl font-bold text-white">
+            {/* "LIÊN HỆ VỚI CHÚNG TÔI" viết hoa nên rộng hơn chữ thường: 489px ở
+                text-4xl. Phải xuống text-2xl (326px) mới gọn một dòng. */}
+            <h2 className="text-hero-shadow mb-3 font-serif text-2xl font-bold text-white sm:text-3xl md:text-4xl">
               {t?.contact?.title ?? "Liên hệ"}
             </h2>
             <p className="text-hero-shadow-soft mx-auto max-w-3xl text-lg text-slate-200">

@@ -206,32 +206,39 @@ export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
  * "{name}" được thay bằng tên điểm bay lúc render (vd "Đèo Khau Phạ") —
  * tên riêng giữ nguyên ở mọi ngôn ngữ.
  */
+/**
+ * Dấu "\n" trong title là CHỖ NGẮT DÒNG trên điện thoại.
+ *
+ * Tên điểm bay dài (vd "Đồi Bù | Viên Nam") làm tiêu đề vỡ thành ba dòng lẻ
+ * với một hai chữ mồ côi. Ngắt sẵn ở chỗ đọc thuận nhất rồi cho dòng thứ hai
+ * xuống hàng dưới 640px; từ 640px trở lên hai mảnh nối lại thành một dòng.
+ */
 export const SPOT_ARTICLES_HEADING: Record<
   string,
   { title: string; subtitle: string }
 > = {
   vi: {
-    title: "Đọc thêm về dù lượn {name}",
+    title: "Đọc thêm về\nDù lượn {name}",
     subtitle: "Cẩm nang, mùa đẹp và cách di chuyển — chọn bài để xem chi tiết",
   },
   en: {
-    title: "Read more about paragliding at {name}",
+    title: "Read more about\nParagliding at {name}",
     subtitle: "Guides, best seasons and how to get there",
   },
   fr: {
-    title: "En savoir plus sur le parapente : {name}",
+    title: "En savoir plus sur\nle parapente : {name}",
     subtitle: "Guides, meilleures saisons et accès",
   },
   ru: {
-    title: "Подробнее о парапланеризме: {name}",
+    title: "Подробнее о\nпарапланеризме: {name}",
     subtitle: "Гиды, лучшие сезоны и как добраться",
   },
   zh: {
-    title: "了解更多{name}滑翔伞信息",
+    title: "了解更多\n{name}滑翔伞信息",
     subtitle: "攻略、最佳季节与交通方式",
   },
   hi: {
-    title: "{name} में पैराग्लाइडिंग के बारे में और पढ़ें",
+    title: "{name} में पैराग्लाइडिंग\nके बारे में और पढ़ें",
     subtitle: "गाइड, सर्वोत्तम मौसम और पहुँचने का तरीका",
   },
 };

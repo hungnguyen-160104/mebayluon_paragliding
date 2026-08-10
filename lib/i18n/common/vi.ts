@@ -43,7 +43,7 @@ export const vi: CommonTranslation = {
     viewDetails: "Xem Chi Tiết",
     locations: {
       muongHoaSapa: {
-        name: "Sapa (Thung lũng Mường Hoa)",
+        name: "Sapa",
         location: "Lào Cai",
         duration: "Tour 90 phút",
         highlights: [

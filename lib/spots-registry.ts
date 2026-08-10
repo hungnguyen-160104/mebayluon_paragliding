@@ -48,7 +48,7 @@ export const SPOTS_LIST: SpotListItem[] = [
   },
   {
     slug: "muong-hoa-sapa",
-    name: "Sapa (Thung lũng Mường Hoa)",
+    name: "Sapa",
     province: "Lào Cai",
     altitude: "1.500 – 2.000 m",
     duration: "10 – 15'",
