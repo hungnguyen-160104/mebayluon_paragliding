@@ -84,8 +84,30 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${p.titleVi || p.title} | Mebayluon Store`;
-  const description = String(p.contentVi || p.content || "")
+  const locale = await getUrlLocale();
+
+  /**
+   * Lấy tiêu đề và mô tả THEO NGÔN NGỮ ĐANG XEM.
+   *
+   * Trước đây hai dòng này luôn lấy cột tiếng Việt, nên /en/store/... có H1
+   * tiếng Anh nhưng thẻ <title> và <meta description> vẫn y hệt bản tiếng
+   * Việt. Google đọc hai URL thấy tiêu đề và mô tả trùng khít nên xếp bản
+   * /en vào "trang trùng lặp" và bỏ không lập chỉ mục.
+   *
+   * Quy ước cột trong database: `title`/`content` là bản tiếng Anh,
+   * `titleVi`/`contentVi` là bản tiếng Việt (xem lib/post-locales.ts).
+   * Các ngôn ngữ chưa dịch dùng bản tiếng Anh, đúng như canonical trỏ tới.
+   */
+  const isVietnamese = String(locale) === "vi";
+  const rawTitle = isVietnamese
+    ? p.titleVi || p.title
+    : p.title || p.titleVi;
+  const rawContent = isVietnamese
+    ? p.contentVi || p.content
+    : p.content || p.contentVi;
+
+  const title = `${rawTitle} | Mebayluon Store`;
+  const description = String(rawContent || "")
     .replace(/<[^>]+>/g, "")
     .replace(/\s+/g, " ")
     .slice(0, 150);
@@ -97,7 +119,7 @@ export async function generateMetadata({
     image: p.coverImage || undefined,
     url: `/store/${p.storeCategory || category}/${slug}`,
     type: "website",
-    locale: await getUrlLocale(),
+    locale,
     availableLocales: postLocales(p),
   });
 }
