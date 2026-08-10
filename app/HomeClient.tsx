@@ -414,38 +414,37 @@ export default function HomePage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              {/* Từ lg trở lên: khung chữ cao ĐÚNG BẰNG khung video bên cạnh.
-                  Video rộng 110% cột và tỉ lệ 16:9 -> chiều cao = 0.619 lần bề
-                  ngang cột, tức khung chữ có tỉ lệ ~1.616/1. Cỡ chữ thu nhỏ
-                  theo từng mốc màn hình để nội dung dài nhất (bản tiếng Anh,
-                  341 ký tự) vẫn nằm gọn, không tràn. */}
+              {/* KHÔNG khoá khung chữ theo tỉ lệ khung video bên cạnh.
+                  Trước đây khung này để lg:aspect-[1.616/1] cho cao đúng bằng
+                  video, và để nội dung dài nhất (bản tiếng Anh, 341 ký tự) nằm
+                  lọt thì cỡ chữ phải tụt xuống 13px rồi 11px — nhỏ tới mức khó
+                  đọc trên chính màn hình rộng. Nay bỏ khoá, khung cao theo nội
+                  dung, chữ giữ 16px như mọi khối khác. Hai cột đã canh giữa nên
+                  lệch chiều cao chút không sao. */}
               <div
-                className="flex flex-col justify-center overflow-hidden rounded-3xl bg-white/25 p-8 ring-2 ring-white/50 backdrop-blur-md md:p-10 lg:aspect-[1.616/1] lg:p-5 xl:p-6"
+                className="flex flex-col justify-center overflow-hidden rounded-3xl bg-white/25 p-8 ring-2 ring-white/50 backdrop-blur-md md:p-10"
                 style={{
                   boxShadow:
                     "0 24px 60px -12px rgba(0,0,0,0.65), 0 8px 24px -8px rgba(0,0,0,0.5)",
                 }}
               >
-                {/* Dùng chung kiểu với các tiêu đề mục khác, nhưng GIỮ hai mốc
-                    lg/xl: từ 1024px khối chữ này bị khoá đúng tỉ lệ khung video
-                    bên cạnh, chữ to hơn là nội dung tràn ra ngoài. */}
-                <h2 className={`${sectionHeadingClass} mb-4 lg:mb-1.5 lg:text-xl xl:mb-2 xl:text-3xl`}>
+                <h2 className={`${sectionHeadingClass} mb-4`}>
                   {t?.about?.title ?? "VỀ CHÚNG TÔI"}
                 </h2>
 
-                <p className="mb-5 text-lg text-white/95 md:text-xl lg:mb-1.5 lg:text-[13px] lg:leading-snug xl:mb-2 xl:text-base">
+                <p className="mb-5 text-base leading-relaxed text-white/95">
                   {t?.about?.subtitle ??
                     "Mebayluon Paragliding – nơi những giấc mơ bay cao trở thành hiện thực!"}
                 </p>
 
-                <p className="text-base leading-relaxed text-white/90 md:text-lg lg:text-[11px] xl:text-sm">
+                <p className="text-base leading-relaxed text-white/90">
                   {aboutDescription}
                 </p>
 
-                <div className="mt-6 lg:mt-3 xl:mt-4">
+                <div className="mt-6">
                   {/* Chỉ một nút — trước đây có thêm nút "Phi công" nhưng
                       cùng trỏ /pilots nên trùng lặp, đã bỏ. */}
-                  <Button asChild className="h-11 px-6 text-white lg:h-8 lg:px-4 lg:text-xs xl:h-9 xl:text-sm">
+                  <Button asChild className="h-11 px-6 text-white">
                     <Link href="/pilots">
                       {t?.spots?.viewDetails ?? "Xem Chi Tiết"}
                     </Link>
@@ -666,11 +665,10 @@ export default function HomePage() {
                               className={`${accentClassName} mt-0.5 shrink-0`}
                               size={18}
                             />
-                            {/* To gần bằng chữ thân bài của khối "Về chúng tôi" (18/20px).
-                                Dừng ở 16/18px để vẫn thấp hơn tiêu đề thẻ
-                                (20px) — chữ nội dung to bằng tiêu đề thì
-                                mất thứ bậc, nhìn không ra đâu là đầu mục. */}
-                            <span className="text-base leading-relaxed text-slate-200 md:text-lg">
+                            {/* Đúng 16px, bằng chữ trong thẻ "Điều kiện quy định đối với
+                                hành khách" ngay bên dưới — hai nhóm thẻ này cùng
+                                một cấp nên phải cùng cỡ chữ. */}
+                            <span className="text-base leading-relaxed text-slate-200">
                               {item}
                             </span>
                           </li>
