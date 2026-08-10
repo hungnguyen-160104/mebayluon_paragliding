@@ -213,7 +213,7 @@ export const en: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Cancellation & Rescheduling Policy",
+        title: "Refunds & Rescheduling",
         items: [
           "Flexible flight schedule — free cancellation, refund and rescheduling",
           "Flights are cancelled when the weather is unfavourable or when you do not feel ready",

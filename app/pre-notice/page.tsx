@@ -120,7 +120,7 @@ export default function PreNoticePage() {
       cancellation: {
         title:
           t.preNotice?.requirements?.cancellation?.title ??
-          "Chính sách huỷ & đổi lịch bay",
+          "Hoàn huỷ & Đổi lịch bay",
         items: t.preNotice?.requirements?.cancellation?.items ?? [
           "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
           "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",

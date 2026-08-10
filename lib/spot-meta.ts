@@ -69,14 +69,6 @@ const SEO_NAME: Record<string, Record<Locale, string>> = {
     zh: "Phinh Ho 滑翔伞",
     hi: "फिन्ह हो पैराग्लाइडिंग",
   },
-  dalat: {
-    vi: "Dù lượn Đà Lạt",
-    en: "Da Lat Paragliding",
-    fr: "Parapente à Da Lat",
-    ru: "Парапланеризм в Далате",
-    zh: "大叻滑翔伞",
-    hi: "दा लाट पैराग्लाइडिंग",
-  },
 };
 
 /**
@@ -147,14 +139,6 @@ const SEO_TITLE: Record<string, Record<Locale, string>> = {
     zh: "占秋滑翔伞 – Phinh Ho：追云飞行与价格",
     hi: "त्राम ताउ पैराग्लाइडिंग – फिन्ह हो: बादल व क़ीमत",
   },
-  dalat: {
-    vi: "Bay Dù Lượn Đà Lạt – Rừng Thông Lâm Đồng: Giá & Lịch Bay",
-    en: "Da Lat Paragliding – Lam Dong Pine Forests: Prices",
-    fr: "Parapente à Da Lat – forêts de pins du Lam Dong : prix",
-    ru: "Параплан в Далате – сосновые леса Ламдонга: цены",
-    zh: "大叻滑翔伞 – 林同松林：价格与飞行时段",
-    hi: "दा लाट पैराग्लाइडिंग – लाम डोंग चीड़ वन: क़ीमत",
-  },
 };
 
 /** Điểm nhấn ngắn cho mô tả — mỗi điểm bay một câu, dịch 6 ngôn ngữ. */
@@ -214,14 +198,6 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
     ru: "Финьхо – Чамтау, охота за облаками над бесконечными хребтами",
     zh: "Phinh Ho – 占秋，在连绵山峦上追云",
     hi: "फिन्ह हो – त्राम ताउ, अनंत पहाड़ियों पर बादलों का पीछा",
-  },
-  dalat: {
-    vi: "rừng thông và cao nguyên Lâm Đồng",
-    en: "pine forests and the Lam Dong highlands",
-    fr: "forêts de pins et hauts plateaux de Lam Dong",
-    ru: "сосновые леса и плато Ламдонг",
-    zh: "松林与林同高原",
-    hi: "चीड़ के जंगल और लाम डोंग पठार",
   },
 };
 

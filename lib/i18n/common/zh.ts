@@ -190,7 +190,7 @@ export const zh: CommonTranslation = {
       },
 
       cancellation: {
-        title: "取消与改期政策",
+        title: "退款与改期",
         items: [
           "飞行时间灵活 — 取消、退款与改期均免费",
           "遇天气不佳或您尚未准备好时，可取消飞行",

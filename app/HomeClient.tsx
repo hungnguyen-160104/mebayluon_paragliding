@@ -230,7 +230,7 @@ export default function HomePage() {
       cancellation: (() => {
         const cancel = (t?.preNotice as any)?.requirements?.cancellation;
         return {
-          title: cancel?.title ?? "Chính sách huỷ & đổi lịch bay",
+          title: cancel?.title ?? "Hoàn huỷ & Đổi lịch bay",
           items: normalizeList(cancel?.items),
         };
       })(),
@@ -406,7 +406,7 @@ export default function HomePage() {
       </section>
 
       {/* ================= ABOUT ================= */}
-      <section id="about" className="relative z-10 py-24">
+      <section id="about" className="relative z-10 py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <motion.div
@@ -491,19 +491,19 @@ export default function HomePage() {
       </section>
 
       {/* ================= SPOTS ================= */}
-      <section id="spots" className="relative z-10 py-24">
+      <section id="spots" className="relative z-10 py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mb-16 text-center"
+            className="mb-10 text-center"
           >
-            <h2 className={`${sectionHeadingClass} mb-6`}>
+            <h2 className={sectionHeadingClass}>
               {t?.spots?.title ?? "Các điểm bay nổi bật"}
             </h2>
-            <p className="text-hero-shadow-soft mx-auto max-w-2xl text-xl text-slate-100">
+            <p className="text-hero-shadow-soft mx-auto mt-3 max-w-2xl text-xl text-slate-100">
               {t?.spots?.subtitle ??
                 "Những địa điểm nổi tiếng với cảnh quan hùng vĩ và điều kiện gió lý tưởng."}
             </p>
@@ -625,13 +625,13 @@ export default function HomePage() {
       </section>
 
       {/* ================= PRE-NOTICE ================= */}
-      <section id="pre-notice" className="relative z-10 py-24">
+      <section id="pre-notice" className="relative z-10 py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-12 text-center"
+            className="mb-8 text-center"
           >
             <h2 className={sectionHeadingClass}>
               {preNotice.preparation.title}
@@ -666,7 +666,13 @@ export default function HomePage() {
                               className={`${accentClassName} mt-0.5 shrink-0`}
                               size={18}
                             />
-                            <span className="text-sm text-slate-200">{item}</span>
+                            {/* To gần bằng chữ thân bài của khối "Về chúng tôi" (18/20px).
+                                Dừng ở 16/18px để vẫn thấp hơn tiêu đề thẻ
+                                (20px) — chữ nội dung to bằng tiêu đề thì
+                                mất thứ bậc, nhìn không ra đâu là đầu mục. */}
+                            <span className="text-base leading-relaxed text-slate-200 md:text-lg">
+                              {item}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -682,7 +688,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-12 text-center"
+              className="mb-8 text-center"
             >
               <h3 className={sectionHeadingClass}>
                 {preNotice.requirements.title}
@@ -747,10 +753,10 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="mb-8 text-center"
           >
-            <h2 className={`${sectionHeadingClass} mb-3`}>
+            <h2 className={sectionHeadingClass}>
               {t?.contact?.title ?? "Liên hệ"}
             </h2>
-            <p className="text-hero-shadow-soft mx-auto max-w-3xl text-lg text-slate-200">
+            <p className="text-hero-shadow-soft mx-auto mt-3 max-w-3xl text-lg text-slate-200">
               {t?.contact?.subtitle ??
                 "Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc!"}
             </p>
@@ -830,11 +836,11 @@ export default function HomePage() {
                         </h3>
                         {info.lines.map((line, i) =>
                           typeof line === "string" ? (
-                            <p key={i} className="text-[11px] leading-snug text-slate-200">
+                            <p key={i} className="text-[11px] leading-snug text-slate-200 md:text-sm lg:text-[15px]">
                               {line}
                             </p>
                           ) : (
-                            <p key={i} className="text-[11px] leading-snug text-slate-200">
+                            <p key={i} className="text-[11px] leading-snug text-slate-200 md:text-sm lg:text-[15px]">
                               <a
                                 href={line.href}
                                 className="underline-offset-2 transition-colors hover:text-white hover:underline"

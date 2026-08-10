@@ -423,32 +423,6 @@ const ALIAS_SPOTS: Record<string, SpotData> = {
   sapa: {
     ...BASE_SPOTS["muong-hoa-sapa"],
   },
-  dalat: {
-    name: "Đà Lạt",
-    title: "Chạm vào bầu trời mộng mơ",
-    altitude: "1.400 m",
-    description:
-      "Bay giữa thành phố ngàn hoa, đón gió se lạnh và ngắm cảnh lãng mạn. Tà Nung – rừng thông – sương mù – hoa dã quỳ tạo nên khung cảnh tuyệt đẹp.",
-    landscape: "Thung lũng Tà Nung – rừng thông – sương mù",
-    duration: "10–20 phút",
-    landingPoint: "Đồi Robin / Langbiang",
-    basePrice: 2290000,
-    image: "/dalat-city-pine-forests-aerial-view-vietnam.jpg",
-    galleryImages: [],
-    packages: filterPackages([
-      {
-        name: "Gói cơ bản",
-        price: 2290000,
-        description: "Chỉ bay",
-        features: [
-          "10–20 phút",
-          "Phi công chuyên nghiệp",
-          "Bảo hiểm",
-          "Brief an toàn",
-        ],
-      },
-    ]),
-  },
 };
 
 /* ============================================================

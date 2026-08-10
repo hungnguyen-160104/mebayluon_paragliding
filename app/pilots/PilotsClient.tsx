@@ -109,27 +109,9 @@ const pilotsData: PilotCard[] = [
       hi: "एक्रो पायलट, SIV प्रशिक्षक, PPG पायलट",
     },
   },
-  {
-    name: "TOÀN NGUYÊN",
-    slug: "toan-nguyen",
-    avatar: "/pilots/toan-nguyen/toan-nguyen.jpg",
-    nickname: {
-      vi: "Rambo",
-      en: "Rambo",
-      fr: "Rambo",
-      ru: "Рэмбо",
-      zh: "兰博",
-      hi: "रैम्बो",
-    },
-    role: {
-      vi: "Phi công đội bay",
-      en: "Team Pilot",
-      fr: "Pilote d'équipe",
-      ru: "Пилот команды",
-      zh: "团队飞行员",
-      hi: "टीम पायलट",
-    },
-  },
+    // TOÀN NGUYÊN đã ngừng hợp tác 8-2026 — cũng khai trong
+    // REMOVED_PILOT_SLUGS ở lib/pilots-data.ts để trang chi tiết và
+    // sitemap cùng ẩn theo.
   {
     name: "MINH VÕ",
     slug: "minh-vo",

@@ -34,7 +34,12 @@ export interface Pilot {
  * Phi công đã rời đội — giữ dữ liệu nhưng ẩn trang chi tiết.
  * Sitemap và trang /pilots/[slug] cùng dùng danh sách này.
  */
-export const REMOVED_PILOT_SLUGS = new Set(["removed-pilot-01", "yupi"]);
+export const REMOVED_PILOT_SLUGS = new Set([
+  "removed-pilot-01",
+  "yupi",
+  // Ngừng hợp tác 8-2026
+  "toan-nguyen",
+]);
 
 /** Danh sách phi công đang hoạt động (có trang chi tiết công khai). */
 export function getActivePilots(): Pilot[] {

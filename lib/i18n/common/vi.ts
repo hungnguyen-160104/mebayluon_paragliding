@@ -213,7 +213,7 @@ export const vi: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Chính sách huỷ & đổi lịch bay",
+        title: "Hoàn huỷ & Đổi lịch bay",
         items: [
           "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
           "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",

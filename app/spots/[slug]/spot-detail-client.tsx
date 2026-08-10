@@ -84,7 +84,6 @@ type SpotKey =
   | "tram-tau"
   | "vien-nam"
   | "doi-bu"
-  | "dalat"
   | "ha-giang"
   | "generic";
 
@@ -150,14 +149,6 @@ const SPOT_H1: Partial<Record<SpotKey, Record<Lang, string>>> = {
     zh: "Phinh Ho 滑翔伞",
     hi: "फिन्ह हो पैराग्लाइडिंग",
   },
-  dalat: {
-    vi: "Dù lượn Đà Lạt",
-    en: "Da Lat Paragliding",
-    fr: "Parapente à Da Lat",
-    ru: "Парапланеризм в Далате",
-    zh: "大叻滑翔伞",
-    hi: "दा लाट पैराग्लाइडिंग",
-  },
 };
 
 const resolveSpotKey = (spotName: string): SpotKey => {
@@ -168,7 +159,6 @@ const resolveSpotKey = (spotName: string): SpotKey => {
   if (/tram tau/.test(key)) return "tram-tau";
   if (/vien nam/.test(key)) return "vien-nam";
   if (/doi bu/.test(key)) return "doi-bu";
-  if (/da lat|dalat|langbiang|ta nung/.test(key)) return "dalat";
   if (/ha giang|hagiang|bac sum|doc bac sum/.test(key)) return "ha-giang";
   return "generic";
 };
@@ -1733,63 +1723,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
     },
   },
 
-  dalat: {
-    vi: {
-      name: "Đà Lạt",
-      title: "Chạm vào bầu trời mộng mơ",
-      altitude: "1.400 m",
-      description:
-        "Bay giữa thành phố ngàn hoa, đón gió se lạnh và ngắm cảnh lãng mạn. Tà Nung – rừng thông – sương mù – hoa dã quỳ tạo nên khung cảnh tuyệt đẹp.",
-      landscape: "Thung lũng Tà Nung – rừng thông – sương mù",
-      duration: "10–20 phút",
-    },
-    en: {
-      name: "Da Lat",
-      title: "Touch the Dreamy Sky",
-      altitude: "1,400 m",
-      description:
-        "Soar above the city of flowers in cool mountain breeze. Ta Nung valley, pine forests and mist paint a romantic scene.",
-      landscape: "Ta Nung valley – pine forests – mist",
-      duration: "10–20 minutes",
-    },
-    fr: {
-      name: "Đà Lạt",
-      title: "Toucher le ciel rêveur",
-      altitude: "1 400 m",
-      description:
-        "Survolez la « ville des fleurs » dans une brise montagnarde fraîche. Vallée de Tà Nung, forêts de pins et brume composent un décor romantique.",
-      landscape: "Vallée de Tà Nung – forêts de pins – brume",
-      duration: "10–20 minutes",
-    },
-    ru: {
-      name: "Далат",
-      title: "Касаясь мечтательного неба",
-      altitude: "1 400 м",
-      description:
-        "Летайте над «городом цветов» в прохладном горном бризе. Долина Та Нунг, сосновые леса и туман создают романтичные виды.",
-      landscape: "Долина Та Нунг – сосновые леса – туман",
-      duration: "10–20 минут",
-    },
-    zh: {
-      name: "大叻",
-      title: "触碰梦幻天空",
-      altitude: "1,400 米",
-      description:
-        "在清凉山风中飞越花之城。塔农山谷、松林与薄雾勾勒出浪漫画面。",
-      landscape: "塔农山谷 – 松林 – 薄雾",
-      duration: "10–20 分钟",
-    },
-    hi: {
-      name: "दा लात",
-      title: "स्वप्निल आसमान को छूएँ",
-      altitude: "1,400 मी",
-      description:
-        "ठंडी पहाड़ी हवा में फूलों के शहर के ऊपर उड़ें। ता नुंग घाटी, पाइन जंगल और धुंध एक रोमांटिक दृश्य बनाते हैं।",
-      landscape: "ता नुंग घाटी – पाइन जंगल – धुंध",
-      duration: "10–20 मिनट",
-    },
-  },
-
   "ha-giang": {
     vi: {
       name: "Hà Giang",
@@ -3130,165 +3063,6 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
     ],
   },
 
-  dalat: {
-    vi: [
-      {
-        id: 1,
-        title: "Sớm mai ở Đà Lạt",
-        author: "Phạm Gia Huy",
-        date: "04/04/2025",
-        content:
-          "Sương còn giăng mặt hồ, gió mát rượi. Bay qua rừng thông nghe mùi nhựa gỗ, nhìn phố phường thức dậy.",
-      },
-      {
-        id: 2,
-        title: "Tà Nung mộng mơ",
-        author: "Lưu Bảo Trâm",
-        date: "10/07/2025",
-        content:
-          "Thung lũng Tà Nung như bức tranh — mây lững lờ, nắng rải vàng trên đồi chè.",
-      },
-      {
-        id: 3,
-        title: "Chạm mây Langbiang",
-        author: "Đặng Hoài An",
-        date: "19/08/2025",
-        content:
-          "Vệt mây lùa qua sống núi, cánh dù trôi êm như lụa. Đà Lạt đúng là thành phố của cảm hứng.",
-      },
-    ],
-    en: [
-      {
-        id: 1,
-        title: "Early morning in Da Lat",
-        author: "Pham Gia Huy",
-        date: "2025-04-04",
-        content:
-          "Mist hugged the lake and the breeze was crisp. Gliding past pine forests with a resin scent as the town woke up.",
-      },
-      {
-        id: 2,
-        title: "Dreamy Ta Nung",
-        author: "Luu Bao Tram",
-        date: "2025-07-10",
-        content:
-          "Ta Nung valley looked like a painting — drifting clouds and sunlight sprinkled over tea hills.",
-      },
-      {
-        id: 3,
-        title: "Brushing Langbiang’s clouds",
-        author: "Dang Hoai An",
-        date: "2025-08-19",
-        content:
-          "Cloud bands spilled over the ridge while the wing floated like silk. Da Lat truly fuels inspiration.",
-      },
-    ],
-    fr: [
-      {
-        id: 1,
-        title: "Tôt le matin à Đà Lạt",
-        author: "Phạm Gia Huy",
-        date: "04/04/2025",
-        content:
-          "La brume ceint le lac, l’air est vif. On glisse près des pins au parfum de résine, la ville s’éveille.",
-      },
-      {
-        id: 2,
-        title: "Tà Nung, tout en rêverie",
-        author: "Lưu Bảo Trâm",
-        date: "10/07/2025",
-        content:
-          "La vallée de Tà Nung ressemble à un tableau — nuages flâneurs et soleil sur les collines de thé.",
-      },
-      {
-        id: 3,
-        title: "Effleurer les nuages de Langbiang",
-        author: "Đặng Hoài An",
-        date: "19/08/2025",
-        content:
-          "Des rubans de nuages franchissent l’arête, l’aile file comme de la soie. Đà Lạt est une source d’inspiration.",
-      },
-    ],
-    ru: [
-      {
-        id: 1,
-        title: "Раннее утро в Далате",
-        author: "Фам Зя Хуи",
-        date: "04.04.2025",
-        content:
-          "Туман обнимает озеро, свежий ветер. Скользим вдоль сосновых лесов с ароматом смолы, город просыпается.",
-      },
-      {
-        id: 2,
-        title: "Мечтательный Та Нунг",
-        author: "Лыу Бао Трам",
-        date: "10.07.2025",
-        content:
-          "Долина Та Нунг — как картина: плывущие облака и солнечные блики на чайных холмах.",
-      },
-      {
-        id: 3,
-        title: "Задевая облака Лангбианга",
-        author: "Данг Хоай Ан",
-        date: "19.08.2025",
-        content:
-          "Полосы облаков переливаются через хребет, крыло плывёт как шёлк. Далат действительно вдохновляет.",
-      },
-    ],
-    zh: [
-      {
-        id: 1,
-        title: "大叻的清晨",
-        author: "Mebayluon 团队",
-        date: "2025-04-04",
-        content:
-          "雾气仍笼着湖面，山风清爽。掠过松林闻到树脂香，看城市慢慢苏醒。",
-      },
-      {
-        id: 2,
-        title: "梦幻塔农",
-        author: "Mebayluon 团队",
-        date: "2025-07-10",
-        content:
-          "塔农山谷像一幅画：云缓缓漂，阳光洒在茶山上金光点点。",
-      },
-      {
-        id: 3,
-        title: "触碰朗边的云",
-        author: "Mebayluon 团队",
-        date: "2025-08-19",
-        content:
-          "云带从山脊滑过，伞翼像丝绸般平顺。大叻真的让人充满灵感。",
-      },
-    ],
-    hi: [
-      {
-        id: 1,
-        title: "दा लात की सुबह",
-        author: "Mebayluon टीम",
-        date: "2025-04-04",
-        content:
-          "झील पर धुंध थी और पहाड़ी हवा ठंडी व ताज़ा। पाइन जंगलों के ऊपर से ग्लाइड करते हुए शहर को जागते देखना शानदार था।",
-      },
-      {
-        id: 2,
-        title: "स्वप्निल ता नुंग",
-        author: "Mebayluon टीम",
-        date: "2025-07-10",
-        content:
-          "ता नुंग घाटी किसी पेंटिंग जैसी—धीरे बहते बादल और चाय की पहाड़ियों पर बिखरी धूप।",
-      },
-      {
-        id: 3,
-        title: "लैंगबियांग के बादलों को छूना",
-        author: "Mebayluon टीम",
-        date: "2025-08-19",
-        content:
-          "रिज के ऊपर बादलों की पट्टियाँ बह रहीं थीं और विंग रेशम जैसा स्मूद था। दा लात सच में इंस्पिरेशन देता है।",
-      },
-    ],
-  },
-
   "ha-giang": {
     vi: [
       {
@@ -3629,8 +3403,6 @@ const getStories = (spot: SpotData, lang: Lang): Story[] => {
         ? `/placeholder-vien-nam-${i + 1}.jpg`
         : key === "doi-bu"
         ? `/placeholder-doi-bu-${i + 1}.jpg`
-        : key === "dalat"
-        ? `/placeholder-dalat-${i + 1}.jpg`
         : `/placeholder-generic-${i + 1}.jpg`;
 
     return {

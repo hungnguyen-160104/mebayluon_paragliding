@@ -216,7 +216,7 @@ export const fr: CommonTranslation = {
       },
 
       cancellation: {
-        title: "Politique d’annulation et de report",
+        title: "Remboursement et report",
         items: [
           "Horaires de vol flexibles — annulation, remboursement et report gratuits",
           "Le vol est annulé si la météo est défavorable ou si vous ne vous sentez pas prêt",
