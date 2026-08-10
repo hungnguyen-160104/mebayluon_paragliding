@@ -120,7 +120,9 @@ export const zh: PilotDict = {
     both: "滑翔伞与动力伞都飞",
   },
   kindParaDesc: "无动力自由飞行",
-  ppgPerk: "动力伞飞行员在节庆期间食宿免费",
+  ppgPerk: "参与开幕表演的动力伞飞行员免费",
+  flagFlight: "我参加开幕升旗飞行（动力伞）",
+  flagFlightNote: "参加升旗飞行可免除全部活动费用；不参加则按正常收费。",
 
   step2: "飞行员信息",
   fFullName: "姓名",

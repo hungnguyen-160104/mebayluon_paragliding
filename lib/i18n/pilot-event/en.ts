@@ -130,7 +130,9 @@ export const en: PilotDict = {
     both: "Both paragliding and paramotor",
   },
   kindParaDesc: "Free flight, no engine",
-  ppgPerk: "Paramotor pilots get free food and lodging during the festivals",
+  ppgPerk: "FREE for paramotor pilots flying the opening display",
+  flagFlight: "I will fly the opening flag display (paramotor)",
+  flagFlightNote: "Flying the flag display waives the whole event fee. Otherwise the normal fee applies.",
 
   step2: "Pilot details",
   fFullName: "Full name",

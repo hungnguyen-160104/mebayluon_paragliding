@@ -47,6 +47,8 @@ export type PilotSheetRow = {
   specialRequest: string;
   /** Cỡ áo sự kiện — rỗng nếu không phải đợt Mùa Vàng. */
   shirtSize: string;
+  /** "CÓ" nếu phi công nhận bay PPG kéo cờ khai mạc. */
+  flagFlight: string;
 };
 
 export async function pushPilotRowToSheet(

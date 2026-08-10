@@ -22,6 +22,8 @@ export interface IPilotRegistration {
   specialRequest?: string;
   /** Cỡ áo sự kiện (S–XXL) — chỉ hỏi ở đợt Mùa Vàng. */
   shirtSize?: string;
+  /** Nhận bay PPG kéo cờ trong lễ khai mạc Mùa Vàng. */
+  openingFlagFlight?: boolean;
 
   flyingKind: string;
   motorType?: string;
@@ -60,6 +62,7 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     club: String,
     specialRequest: String,
     shirtSize: String,
+    openingFlagFlight: { type: Boolean, default: false },
 
     flyingKind: { type: String, required: true },
     motorType: String,

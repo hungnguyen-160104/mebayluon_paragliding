@@ -499,6 +499,13 @@ export function computePilotFee(input: {
   companionCount?: number;
   /** Đã đăng ký VÀ thanh toán Festival Mùa Vàng (miễn phí điểm bay 26/8–4/9). */
   muaVangRegistered?: boolean;
+  /**
+   * Nhận bay PPG kéo cờ trong lễ khai mạc.
+   *
+   * Đây mới là điều kiện được miễn phí combo, chứ không phải cứ bay dù máy
+   * là miễn. Phi công PPG không nhận bay kéo cờ thì vẫn đóng như mọi người.
+   */
+  openingFlagFlight?: boolean;
 }): FeeResult {
   const motor = hasMotor(input.kind);
   const dates = Array.isArray(input.dates) ? input.dates : [];
@@ -510,13 +517,15 @@ export function computePilotFee(input: {
     const comboLabel =
       "Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói";
 
-    if (motor) {
+    const flagFlight = motor && Boolean(input.openingFlagFlight);
+
+    if (flagFlight) {
       lines.push({
         key: "combo",
         label: comboLabel,
         amount: 0,
         free: true,
-        freeLabel: "Free cho pc PPG",
+        freeLabel: "Free cho pc PPG kéo cờ khai mạc",
       });
     } else {
       lines.push({ key: "combo", label: comboLabel, amount: MUA_VANG_COMBO_VND });
@@ -585,9 +594,9 @@ export function computePilotFee(input: {
       ...(extraPaid.length >= BREAK_EVEN_DAYS
         ? { monthFrom: monthFromExtra, monthTo: addOneMonth(monthFromExtra) }
         : {}),
-      noteKey: motor ? "muaVangMotor" : "muaVangPara",
-      note: motor
-        ? `Phi công bay dù máy được miễn phí combo. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
+      noteKey: flagFlight ? "muaVangMotor" : "muaVangPara",
+      note: flagFlight
+        ? `Phi công nhận bay PPG kéo cờ khai mạc được miễn phí combo. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
         : `Combo trọn gói, không tách lẻ và không nhận đặt lẻ từng mục. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`,
     };
   }

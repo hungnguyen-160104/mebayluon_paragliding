@@ -57,6 +57,8 @@ export type PilotEmailInput = {
   specialRequest?: string;
   /** Cỡ áo sự kiện — chỉ có ở đợt Mùa Vàng. */
   shirtSize?: string;
+  /** Nhận bay PPG kéo cờ khai mạc — điều kiện miễn phí combo. */
+  openingFlagFlight?: boolean;
   flyingKind: FlyingKind;
   motorType?: MotorType;
   wingClass?: string;
@@ -130,6 +132,9 @@ function infoRows(b: PilotEmailInput): string {
       ? row("Người nhà đi kèm", `${b.companionCount} người (ăn ở cùng đoàn)`)
       : "",
     b.shirtSize ? row("Cỡ áo sự kiện", b.shirtSize) : "",
+    b.openingFlagFlight
+      ? row("Bay PPG kéo cờ khai mạc", "CÓ — được miễn phí sự kiện")
+      : "",
     b.specialRequest ? row("Yêu cầu riêng", b.specialRequest) : "",
   ];
 

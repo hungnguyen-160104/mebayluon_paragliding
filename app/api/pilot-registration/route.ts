@@ -150,9 +150,13 @@ export async function POST(req: Request) {
   }
 
   const muaVangRegistered = Boolean(raw.muaVangRegistered);
+  // Chỉ phi công bay máy mới nhận kéo cờ được — người khác tích cũng bỏ qua.
+  const openingFlagFlight =
+    hasMotor(flyingKind) && period === "mua_vang" && Boolean(raw.openingFlagFlight);
   const editCode = clean(raw.editCode);
 
   const fee = computePilotFee({
+    openingFlagFlight,
     period,
     kind: flyingKind,
     dates,
@@ -182,6 +186,7 @@ export async function POST(req: Request) {
     club: club || undefined,
     specialRequest: specialRequest || undefined,
     shirtSize,
+    openingFlagFlight,
     flyingKind,
     motorType: hasMotor(flyingKind) ? motorType : undefined,
     wingClass,
@@ -226,6 +231,7 @@ export async function POST(req: Request) {
           club: club || undefined,
           specialRequest: specialRequest || undefined,
           shirtSize,
+          openingFlagFlight,
           flyingKind,
           motorType: emailInput.motorType,
           wingClass,
@@ -261,6 +267,7 @@ export async function POST(req: Request) {
       club: club || undefined,
       specialRequest: specialRequest || undefined,
       shirtSize,
+      openingFlagFlight,
       flyingKind,
       motorType: emailInput.motorType,
       wingClass,
@@ -299,6 +306,7 @@ export async function POST(req: Request) {
     club,
     specialRequest,
     shirtSize: shirtSize ?? "",
+    flagFlight: openingFlagFlight ? "CÓ" : "",
     flyingKind: KIND_LABEL[flyingKind],
     motorType: emailInput.motorType ? MOTOR_LABEL[emailInput.motorType] : "",
     wingClass: wingClass ? wingClassLabel(wingClass) : "",

@@ -127,7 +127,9 @@ export const vi: PilotDict = {
     both: "Bay cả dù lượn và dù gắn động cơ",
   },
   kindParaDesc: "Dù không động cơ",
-  ppgPerk: "Phi công PPG được miễn phí ăn ở trong đợt lễ hội",
+  ppgPerk: "FREE dành cho phi công PPG biểu diễn khai mạc",
+  flagFlight: "Tôi nhận bay PPG kéo cờ trong lễ khai mạc",
+  flagFlightNote: "Nhận bay kéo cờ thì được miễn toàn bộ phí sự kiện. Không nhận thì đóng phí như bình thường.",
 
   step2: "Thông tin phi công",
   fFullName: "Họ và tên",

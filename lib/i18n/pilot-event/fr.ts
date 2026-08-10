@@ -137,8 +137,9 @@ export const fr: PilotDict = {
     both: "Parapente et paramoteur",
   },
   kindParaDesc: "Vol libre, sans moteur",
-  ppgPerk:
-    "Les pilotes de paramoteur sont logés et nourris gratuitement pendant les fêtes",
+  ppgPerk: "GRATUIT pour les pilotes paramoteur du spectacle d'ouverture",
+  flagFlight: "Je participe au vol du drapeau à l'ouverture (paramoteur)",
+  flagFlightNote: "Participer au vol du drapeau dispense de tous les frais de l'événement. Sinon, le tarif normal s'applique.",
 
   step2: "Informations du pilote",
   fFullName: "Nom complet",

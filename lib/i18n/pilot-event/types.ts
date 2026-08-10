@@ -85,6 +85,9 @@ export type PilotDict = {
   kind: Record<"paragliding" | "paramotor" | "both", string>;
   kindParaDesc: string;
   ppgPerk: string;
+  /** Ô tích nhận bay PPG kéo cờ trong lễ khai mạc. */
+  flagFlight: string;
+  flagFlightNote: string;
 
   step2: string;
   fFullName: string;

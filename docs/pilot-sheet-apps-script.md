@@ -26,6 +26,7 @@ const HEADERS = [
   'Loại hình bay', 'Loại máy', 'Cấp dù',
   'Đợt bay', 'Ngày bay', 'Số ngày', 'Người nhà',
   'Phí điểm bay', 'Chi tiết phí', 'Tổng tiền', 'Yêu cầu riêng', 'Cỡ áo',
+  'Kéo cờ khai mạc',
 ];
 
 /**
@@ -64,6 +65,7 @@ function doPost(e) {
       r.flyingKind, r.motorType, r.wingClass,
       r.period, r.dates, r.dayCount, r.companionCount,
       r.siteFeeMode, r.feeDetail, r.feeTotal, r.specialRequest, r.shirtSize,
+      r.flagFlight,
     ]);
 
     return ContentService

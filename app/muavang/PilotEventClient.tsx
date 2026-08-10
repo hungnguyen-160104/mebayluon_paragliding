@@ -253,6 +253,7 @@ export default function PilotEventClient() {
   const [club, setClub] = useState("");
   const [specialRequest, setSpecialRequest] = useState("");
   const [shirtSize, setShirtSize] = useState<ShirtSize | "">("");
+  const [openingFlagFlight, setOpeningFlagFlight] = useState(false);
 
   const [period, setPeriod] = useState<PeriodKey | "">("");
   const [dates, setDates] = useState<string[]>([]);
@@ -411,8 +412,17 @@ export default function PilotEventClient() {
       siteFeeMode,
       companionCount,
       muaVangRegistered,
+      openingFlagFlight,
     });
-  }, [period, flyingKind, dates, siteFeeMode, companionCount, muaVangRegistered]);
+  }, [
+    period,
+    flyingKind,
+    dates,
+    siteFeeMode,
+    companionCount,
+    muaVangRegistered,
+    openingFlagFlight,
+  ]);
 
   // Chỉ ngày thường mới có phí điểm bay; hai đợt lễ hội không thu.
   const showSiteFeeChoice = period === "ngay_thuong";
@@ -463,6 +473,7 @@ export default function PilotEventClient() {
           club: club.trim(),
           specialRequest: specialRequest.trim(),
           shirtSize,
+          openingFlagFlight,
           flyingKind,
           period,
           dates,
@@ -1645,6 +1656,25 @@ export default function PilotEventClient() {
                   </div>
                 </div>
               </div>
+            ) : null}
+
+            {/* Nhận bay PPG kéo cờ khai mạc thì được miễn toàn bộ phí sự kiện.
+                Chỉ hỏi phi công có bay máy — dù lượn thường không kéo cờ được. */}
+            {period === "mua_vang" && motor ? (
+              <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 transition hover:border-amber-400/70">
+                <input
+                  type="checkbox"
+                  checked={openingFlagFlight}
+                  onChange={(e) => setOpeningFlagFlight(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/30 accent-amber-400"
+                />
+                <span className="text-sm leading-relaxed text-white/90">
+                  <b className="text-amber-300">{T.flagFlight}</b>
+                  <span className="mt-1 block text-white/60">
+                    {T.flagFlightNote}
+                  </span>
+                </span>
+              </label>
             ) : null}
 
             {/* Miễn phí điểm bay 26/8–4/9, chỉ cho phi công đã đăng ký VÀ thanh
