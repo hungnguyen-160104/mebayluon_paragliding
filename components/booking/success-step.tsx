@@ -8,6 +8,7 @@ import { useBookingText, useLangCode } from "@/lib/booking/translations-booking"
 import BookingTicket from "@/components/booking/BookingTicket";
 import Link from "next/link";
 import Image from "next/image";
+import { CONTACT_WHATSAPP } from "@/lib/contact-channels";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 
@@ -23,7 +24,7 @@ const CHAT_CHANNELS = [
   {
     name: "WhatsApp",
     icon: "/social_icons/whatsapp.jpg",
-    url: "https://api.whatsapp.com/send/?phone=840964073555",
+    url: CONTACT_WHATSAPP,
   },
 ];
 

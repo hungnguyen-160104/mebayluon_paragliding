@@ -7,6 +7,7 @@ import Image from "next/image";
 // ✅ chatbot import
 import { useChatbot } from "@/hooks/useChatbot";
 import { ChatbotButton, ChatbotWidget } from "@/components/ui/chatbot";
+import { CONTACT_WHATSAPP } from "@/lib/contact-channels";
 
 export function FloatingSocial() {
   // Hook chatbot
@@ -39,7 +40,7 @@ export function FloatingSocial() {
     {
       name: "WhatsApp",
       iconSrc: "/social_icons/whatsapp.jpg",
-      url: "https://api.whatsapp.com/send/?phone=840964073555",
+      url: CONTACT_WHATSAPP,
       color: "bg-[#25D366] hover:bg-[#25D366]/90",
       iconSize: 28,
     },

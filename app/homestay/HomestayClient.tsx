@@ -19,6 +19,7 @@ import {
   Star,
   Mountain,
   Camera,
+  MessageCircle,
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/language-context";
@@ -39,6 +40,7 @@ import {
 } from "@/lib/homestay-data";
 import { PLACE_MAP_URL } from "@/lib/site-config";
 import { HOMESTAY_PARTNERS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
+import { bookingContactChannels } from "@/lib/contact-channels";
 import { Footer } from "@/components/footer";
 import HomestayGallery from "@/components/homestay/HomestayGallery";
 
@@ -582,9 +584,56 @@ export default function HomestayPage() {
                       </div>
                     </div>
 
+                    {/* Đặt phòng trực tiếp.
+                        Web chưa có chức năng đặt phòng nên trước đây khách chỉ
+                        còn đường đi qua Booking/Agoda — mỗi đêm mất 15–20% hoa
+                        hồng cho một khách mình tự kiếm được. Nhắn tin là cách
+                        rẻ nhất để mở đường đặt thẳng: khách bấm kênh nào thì
+                        mở đúng ứng dụng đó, không qua bước trung gian nào. */}
+                    <div className="flex items-start gap-3">
+                      <MessageCircle className="h-6 w-6 text-accent shrink-0 mt-1" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white/95">
+                          {locText.bookTitle}
+                        </p>
+                        <p className="mb-2.5 text-sm text-white/75">
+                          {locText.bookNote}
+                        </p>
+
+                        <ul className="flex flex-wrap gap-2">
+                          {bookingContactChannels({
+                            zalo: locText.bookZalo,
+                            whatsapp: locText.bookWhatsapp,
+                            messenger: locText.bookMessenger,
+                            phone: locText.bookPhone,
+                          }).map((ch) => (
+                            <li key={ch.key}>
+                              <a
+                                href={ch.url}
+                                // Gọi điện mở ngay trong tab hiện tại; các ứng
+                                // dụng nhắn tin mở tab mới để khách không mất
+                                // trang đang xem.
+                                {...(ch.key === "phone"
+                                  ? {}
+                                  : {
+                                      target: "_blank",
+                                      rel: "noopener noreferrer",
+                                    })}
+                                className={`inline-flex items-center rounded-lg px-3.5 py-2 text-[13px] font-bold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${ch.className}`}
+                              >
+                                {ch.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
                     {/* Hồ sơ Clubhouse trên Google, Facebook và các trang đặt
                         phòng. Danh sách lấy từ lib/partner-links.ts nên trùng
-                        đúng với `sameAs` trong JSON-LD của trang này. */}
+                        đúng với `sameAs` trong JSON-LD của trang này.
+                        Đặt SAU khối nhắn tin: khách quen dùng Booking vẫn tìm
+                        thấy, nhưng đường rẻ nhất là đường đập vào mắt trước. */}
                     <div className="flex items-start gap-3">
                       <Star className="h-6 w-6 text-accent shrink-0 mt-1" />
                       <div className="min-w-0">
