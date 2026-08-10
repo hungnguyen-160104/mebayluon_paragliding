@@ -330,7 +330,7 @@ type SpotCopy = Pick<SpotData, "name" | "title" | "altitude" | "description" | "
 const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
   "muong-hoa-sapa": {
     vi: {
-      name: "Mường Hoa (Sa Pa)",
+      name: "Sapa (Lao Chải - Tả Van)",
       title: "Bay Trên Thung Lũng Mường Hoa",
       altitude: "1.500 – 2.000 m",
       description:
@@ -347,8 +347,6 @@ const spotCopyI18n: Record<SpotKey, Record<Lang, SpotCopy>> = {
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -364,7 +362,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
       duration: "10 – 15 phút",
     },
     en: {
-      name: "Muong Hoa (Sa Pa)",
+      name: "Sapa (Lao Chai - Ta Van)",
       title: "Fly Over Muong Hoa Valley",
       altitude: "1,500–2,000 m",
       description:
@@ -381,8 +379,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -398,7 +394,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
       duration: "10–15 minutes",
     },
     fr: {
-      name: "Mường Hoa (Sa Pa)",
+      name: "Sapa (Lao Chải - Tả Van)",
       title: "Survol de la Vallée de Mường Hoa",
       altitude: "1 500–2 000 m",
       description:
@@ -415,8 +411,6 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -432,7 +426,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       duration: "10–15 minutes",
     },
     ru: {
-      name: "Муонг Хоа (Са Па)",
+      name: "Сапа (Лао Чай - Та Ван)",
       title: "Полёт над долиной Муонг Хоа",
       altitude: "1 500–2 000 м",
       description:
@@ -449,8 +443,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -466,7 +458,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       duration: "10–15 минут",
     },
     zh: {
-      name: "芒华谷（沙坝）",
+      name: "沙坝（老寨 - 打万）",
       title: "飞越芒华山谷",
       altitude: "1,500–2,000 米",
       description:
@@ -483,8 +475,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -500,7 +490,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       duration: "10–15 分钟",
     },
     hi: {
-      name: "मुओंग होआ (सा पा)",
+      name: "सापा (लाओ चाई - ता वान)",
       title: "मुओंग होआ घाटी के ऊपर उड़ान",
       altitude: "1,500–2,000 मी",
       description:
@@ -517,8 +507,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -554,8 +542,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -586,8 +572,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -618,8 +602,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -650,8 +632,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -682,8 +662,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -714,8 +692,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -753,8 +729,8 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
+🌅 Bay săn hoàng hôn
+☁️ Bay dù lượn gắn động cơ săn mây
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -793,8 +769,8 @@ Golden harvest season (August–September): terraces dyed in brilliant gold, enc
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
+🌅 Sunset flight
+☁️ Paramotor cloud-hunting flight
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -833,8 +809,8 @@ Saison dorée (août–septembre) : les terrasses se parent d’or éclatant, d�
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
+🌅 Vol au coucher du soleil
+☁️ Vol en paramoteur au-dessus des nuages
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -873,8 +849,8 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
+🌅 Полёт на закате
+☁️ Полёт на парамоторе за облаками
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -913,8 +889,8 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
+🌅 日落飞行
+☁️ 动力伞追云飞行
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -953,8 +929,8 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
+🌅 सूर्यास्त उड़ान
+☁️ पैरामोटर बादल-उड़ान
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -992,8 +968,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -1026,8 +1000,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -1060,8 +1032,6 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -1094,8 +1064,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -1126,8 +1094,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -1160,8 +1126,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -1197,8 +1161,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
+🌅 Bay săn hoàng hôn
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -1243,8 +1206,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
+🌅 Sunset flight
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -1284,8 +1246,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
+🌅 Vol au coucher du soleil
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -1330,8 +1291,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
+🌅 Полёт на закате
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -1376,8 +1336,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
+🌅 日落飞行
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -1420,8 +1379,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
+🌅 सूर्यास्त उड़ान
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -1469,8 +1427,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
+🌅 Bay săn hoàng hôn
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -1524,8 +1481,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
+🌅 Sunset flight
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -1579,8 +1535,7 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
+🌅 Vol au coucher du soleil
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -1634,8 +1589,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
+🌅 Полёт на закате
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -1689,8 +1643,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
+🌅 日落飞行
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -1742,8 +1695,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
+🌅 सूर्यास्त उड़ान
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -1857,8 +1809,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -1891,8 +1841,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -1925,8 +1873,6 @@ Please book in advance so we can best arrange your paragliding experience!`,
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -1959,8 +1905,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -1991,8 +1935,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -2025,8 +1967,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
@@ -2062,8 +2002,6 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -2094,8 +2032,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight (Hanoi and Khau Pha pass only)
-☁️ Paramotor cloud-hunting flight (Khau Pha pass only)
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -2126,8 +2062,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil (uniquement à Hanoï et au col de Khau Pha)
-☁️ Vol en paramoteur au-dessus des nuages (uniquement au col de Khau Pha)
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -2160,8 +2094,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате (только в Ханое и на перевале Кхау Фа)
-☁️ Полёт на парамоторе за облаками (только на перевале Кхау Фа)
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -2192,8 +2124,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行（仅限河内和考帕山口）
-☁️ 动力伞追云飞行（仅限考帕山口）
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -2222,8 +2152,6 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान (केवल हनोई और खाउ फ़ा दर्रे पर)
-☁️ पैरामोटर बादल-उड़ान (केवल खाउ फ़ा दर्रे पर)
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त

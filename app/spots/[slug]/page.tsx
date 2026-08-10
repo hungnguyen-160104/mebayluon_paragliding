@@ -66,7 +66,7 @@ const filterPackages = (packages: SpotPackage[]) =>
    ============================================================ */
 const BASE_SPOTS: Record<string, SpotData> = {
   "muong-hoa-sapa": {
-    name: "Mường Hoa (Sa Pa)",
+    name: "Sapa (Lao Chải - Tả Van)",
     title: "Bay Trên Thung Lũng Mường Hoa",
     altitude: "1.500 – 2.000 m",
     description:
@@ -83,8 +83,6 @@ const BASE_SPOTS: Record<string, SpotData> = {
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -182,8 +180,8 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
+🌅 Bay săn hoàng hôn
+☁️ Bay dù lượn gắn động cơ săn mây
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -246,8 +244,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -338,8 +334,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn (chỉ có tại điểm Hà Nội và đèo Khau Phạ)
-☁️ Bay dù lượn gắn động cơ săn mây (chỉ có tại đèo Khau Phạ)
+🌅 Bay săn hoàng hôn
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro

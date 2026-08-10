@@ -48,7 +48,7 @@ const vi: SpotsPageCopy = {
       body: "Dù lượn thường phụ thuộc vào gió, thời gian trên không khoảng 10–20 phút. Muốn chủ động độ cao và thời lượng thì chọn dù lượn gắn động cơ — hiện chỉ có tại Khau Phạ, bay được tới 2.000m và tự chọn 10–25 phút. Đây cũng là lựa chọn hợp lý nhất cho bay ngắm hoàng hôn và bay săn mây.",
     },
   ],
-  faqTitle: "Câu hỏi thường gặp về các điểm bay",
+  faqTitle: "Câu hỏi thường gặp",
   faqs: [
     {
       q: "Điểm bay nào gần Hà Nội nhất?",
@@ -112,7 +112,7 @@ const en: SpotsPageCopy = {
       body: "Unpowered paragliding depends on the wind, with roughly 10–20 minutes of airtime. If you want control over height and duration, choose powered paragliding — available only at Khau Pha, up to 2,000 m with 10–25 minutes of your choosing. It is also the better choice for sunset flights and cloud hunting.",
     },
   ],
-  faqTitle: "Frequently asked questions about our sites",
+  faqTitle: "Frequently asked questions",
   faqs: [
     {
       q: "Which site is closest to Hanoi?",
@@ -176,7 +176,7 @@ const fr: SpotsPageCopy = {
       body: "Le parapente classique dépend du vent, avec environ 10 à 20 minutes de vol. Pour maîtriser l’altitude et la durée, choisissez le paramoteur — disponible uniquement à Khau Pha, jusqu’à 2 000 m et de 10 à 25 minutes au choix. C’est aussi le meilleur choix pour les vols au coucher du soleil et la chasse aux nuages.",
     },
   ],
-  faqTitle: "Questions fréquentes sur nos sites de vol",
+  faqTitle: "Questions fréquentes",
   faqs: [
     {
       q: "Quel site est le plus proche de Hanoï ?",
@@ -240,7 +240,7 @@ const ru: SpotsPageCopy = {
       body: "Обычный параплан зависит от ветра, время в воздухе примерно 10–20 минут. Если нужен контроль высоты и длительности, выбирайте парамотор — он есть только на Khau Pha: до 2 000 м и 10–25 минут на ваш выбор. Это же лучший вариант для полёта на закате и для охоты за облаками.",
     },
   ],
-  faqTitle: "Частые вопросы о площадках",
+  faqTitle: "Частые вопросы",
   faqs: [
     {
       q: "Какая площадка ближе всего к Ханою?",
@@ -304,7 +304,7 @@ const zh: SpotsPageCopy = {
       body: "无动力滑翔伞依赖风况，空中时间约 10–20 分钟。若想自主掌控高度与时长，请选动力滑翔伞——仅 Khau Pha 提供，最高 2,000 米，时长 10–25 分钟自选。飞黄昏日落与清晨云海，也以动力滑翔伞最为合适。",
     },
   ],
-  faqTitle: "关于飞行点的常见问题",
+  faqTitle: "常见问题",
   faqs: [
     {
       q: "哪个飞行点离河内最近？",
@@ -368,7 +368,7 @@ const hi: SpotsPageCopy = {
       body: "बिना इंजन वाली पैराग्लाइडिंग हवा पर निर्भर है, हवाई समय लगभग 10–20 मिनट। ऊँचाई और अवधि पर नियंत्रण चाहिए तो पैरामोटर चुनें — यह केवल Khau Pha पर है, 2,000 मीटर तक और 10–25 मिनट आपकी पसंद से। सूर्यास्त की उड़ान और बादलों का पीछा करने के लिए भी यही सबसे उपयुक्त है।",
     },
   ],
-  faqTitle: "उड़ान स्थलों के बारे में सामान्य प्रश्न",
+  faqTitle: "सामान्य प्रश्न",
   faqs: [
     {
       q: "हनोई से सबसे नज़दीक कौन-सा स्थल है?",
