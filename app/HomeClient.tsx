@@ -651,7 +651,10 @@ export default function HomePage() {
                 >
                   <Card className={glassCardClass}>
                     <CardHeader className="px-4 pb-3 pt-4">
-                      <CardTitle className="flex items-center gap-3 text-xl">
+                      {/* 24px, bằng tiêu đề thẻ ở khối "Điều kiện quy định đối với
+                          hành khách" ngay dưới — hai khối thẻ cùng một cấp
+                          nên tiêu đề phải cùng cỡ. */}
+                      <CardTitle className="flex items-center gap-3 text-2xl">
                         <Icon className={accentClassName} />
                         {title}
                       </CardTitle>
