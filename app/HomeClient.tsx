@@ -764,7 +764,11 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="mx-auto mb-8 grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
+          {/* Sáu kênh phải nằm gọn MỘT hàng trên máy tính. Trước là lg:grid-cols-5
+              nên kênh thứ sáu rơi xuống hàng dưới đứng lẻ loi. Ở 6 cột, mỗi ô
+              rộng khoảng 179px trong khung max-w-6xl — đủ cho tên kênh, hai
+              dòng mô tả và nút bấm. */}
+          <div className="mx-auto mb-8 grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-6 lg:gap-3">
             {socialLinks.map((social, index) => (
               <motion.div
                 key={social.name}

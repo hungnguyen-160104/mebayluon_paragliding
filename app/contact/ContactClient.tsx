@@ -3,7 +3,7 @@ import { PageBackground } from "@/components/page-background";
 
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
-import { Phone, Mail, MapPin, Clock } from "lucide-react"
+import { Phone, Mail, MapPin, Clock, Instagram } from "lucide-react"
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
 import Image from "next/image"
@@ -47,6 +47,17 @@ export default function ContactPage() {
       color: "bg-[#0068FF]",
       description: t.contact.social.zalo,
     },
+    {
+      // Chưa có tệp biểu tượng Instagram trong public/social_icons như năm
+      // kênh kia, mà next/image đang chặn SVG (dangerouslyAllowSVG: false)
+      // nên dùng biểu tượng vẽ sẵn của lucide. Giống hệt cách làm ở mục
+      // Liên hệ trên trang chủ.
+      name: "Instagram",
+      iconNode: <Instagram className="h-8 w-8 text-white" strokeWidth={2} />,
+      url: "https://www.instagram.com/mebayluon.paragliding/",
+      color: "bg-linear-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]",
+      description: t.contact.social.instagram,
+    },
   ]
 
   return (
@@ -83,7 +94,7 @@ export default function ContactPage() {
             <p className="text-lg text-slate-200 max-w-2xl mx-auto">{t.contact.connectSubtitle}</p>
           </motion.div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 max-w-7xl mx-auto mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 lg:gap-4 max-w-7xl mx-auto mb-16">
             {socialLinks.map((social, index) => (
               <motion.div
                 key={social.name}
@@ -98,12 +109,14 @@ export default function ContactPage() {
                     <div
                       className={`relative inline-flex items-center justify-center w-16 h-16 rounded-full ${social.color} mb-2 overflow-hidden`}
                     >
-                      <Image
-                        src={social.iconSrc}
-                        alt={social.name}
-                        fill
-                        className="object-cover"
-                      />
+                      {social.iconNode ?? (
+                        <Image
+                          src={social.iconSrc as string}
+                          alt={social.name}
+                          fill
+                          className="object-cover"
+                        />
+                      )}
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold">{social.name}</h3>
                     <p className="text-xs sm:text-sm text-slate-200 min-h-12 sm:min-h-15 flex items-center justify-center px-1 sm:px-2">
