@@ -74,88 +74,110 @@ async function loadVideosBySlug() {
   return map;
 }
 
+/**
+ * Ngày nội dung các TRANG TĨNH thay đổi lần gần nhất.
+ *
+ * Trước đây mỗi mục tĩnh khai `lastModified: new Date()`, tức lấy giờ build.
+ * Hệ quả: 46 URL — toàn bộ /spots/*, /pilots/*, /store/*, /knowledge/* và các
+ * trang danh sách — cứ mỗi lần deploy lại báo với Google là "vừa thay đổi",
+ * kể cả khi chỉ sửa một dòng CSS ở trang khác. Google đối chiếu thấy nội dung
+ * không đổi, học được rằng lastmod của web này là nhiễu, rồi bỏ qua luôn tín
+ * hiệu đó. Đúng nhóm 46 URL này đang nằm trong "Đã phát hiện thấy — hiện chưa
+ * được lập chỉ mục" của Search Console.
+ *
+ * Nay dùng một mốc cố định, không đổi theo mỗi lần deploy.
+ *
+ * KHI NÀO SỬA: chỉ khi thật sự viết lại nội dung các trang tĩnh (đổi mô tả
+ * điểm bay, thêm phi công, sửa bảng giá...). Sửa giao diện, đổi cỡ chữ, dọn
+ * link thì ĐỪNG đụng vào — nội dung không đổi thì không được báo là đổi.
+ *
+ * Bài viết và sản phẩm KHÔNG dùng mốc này: chúng đã có ngày thật trong cơ sở
+ * dữ liệu (publishedAt / updatedAt).
+ */
+const STATIC_CONTENT_UPDATED = new Date("2026-08-10T00:00:00Z");
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: BASE,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 1,
       alternates: alts(BASE),
     },
     {
       url: `${BASE}/spots`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: alts(`${BASE}/spots`),
     },
     {
       url: `${BASE}/blog`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "daily",
       priority: 0.8,
       alternates: alts(`${BASE}/blog`),
     },
     {
       url: `${BASE}/knowledge`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 0.8,
       alternates: alts(`${BASE}/knowledge`),
     },
     {
       url: `${BASE}/store`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 0.8,
       alternates: alts(`${BASE}/store`),
     },
     {
       url: `${BASE}/ppg`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: alts(`${BASE}/ppg`),
     },
     {
       url: `${BASE}/pilots`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly",
       priority: 0.7,
       alternates: alts(`${BASE}/pilots`),
     },
     {
       url: `${BASE}/contact`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly",
       priority: 0.6,
       alternates: alts(`${BASE}/contact`),
     },
     {
       url: `${BASE}/homestay`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly",
       priority: 0.6,
       alternates: alts(`${BASE}/homestay`),
     },
     {
       url: `${BASE}/booking`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",
       priority: 0.9,
       alternates: alts(`${BASE}/booking`),
     },
     {
       url: `${BASE}/pre-notice`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly",
       priority: 0.7,
       alternates: alts(`${BASE}/pre-notice`),
     },
     {
       url: `${BASE}/terms`,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "yearly",
       priority: 0.3,
       alternates: alts(`${BASE}/terms`),
@@ -171,7 +193,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const url = `${BASE}/spots/${slug}`;
     return {
       url,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly" as const,
       priority: 0.9,
       alternates: alts(url),
@@ -196,7 +218,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   ].map((path) => ({
     url: `${BASE}${path}`,
-    lastModified: new Date(),
+    lastModified: STATIC_CONTENT_UPDATED,
     changeFrequency: "weekly" as const,
     priority: 0.6,
     alternates: alts(`${BASE}${path}`),
@@ -207,7 +229,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const url = `${BASE}/pilots/${pilot.slug}`;
     return {
       url,
-      lastModified: new Date(),
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly" as const,
       priority: 0.6,
       alternates: alts(url),
