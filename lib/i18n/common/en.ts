@@ -225,7 +225,7 @@ export const en: CommonTranslation = {
   } as any,
 
   contact: {
-    title: "CONTACT US",
+    title: "Contact us",
     subtitle: "We are always ready to support you and answer all your questions",
     connectTitle: "Connect With Us",
     connectSubtitle:

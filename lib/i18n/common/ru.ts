@@ -228,7 +228,7 @@ export const ru: CommonTranslation = {
   } as any,
 
   contact: {
-    title: "СВЯЖИТЕСЬ С НАМИ",
+    title: "Свяжитесь с нами",
     subtitle: "Мы всегда готовы помочь вам и ответить на все ваши вопросы",
     connectTitle: "Свяжитесь с нами",
     connectSubtitle:

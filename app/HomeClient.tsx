@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer/Footer";
 import { SpotTagline } from "@/components/spots/SpotTagline";
+import { HOME_SECTION_HEADING } from "@/components/section-heading";
 import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -120,7 +121,8 @@ export default function HomePage() {
 
   // Logic xác định tiêu đề Bài viết mới nhất
   const currentLang = language || t?.locale || "vi"; // fallback về "vi" nếu không lấy được
-  const recentPostsTitle = currentLang === "vi" ? "BÀI VIẾT MỚI NHẤT" : "LATEST POSTS";
+  const recentPostsTitle =
+    currentLang === "vi" ? "Bài viết mới nhất" : "Latest posts";
 
   const locations = ((t as any)?.spots?.locations ?? {}) as Record<string, any>;
 
@@ -235,14 +237,7 @@ export default function HomePage() {
     },
   };
 
-  /**
-   * Cỡ chữ tiêu đề mục. Trên điện thoại hạ từ 36px xuống 28px: đo bằng
-   * chỉ số phông Georgia Bold thì "Chuẩn bị trước khi bay" ở 36px rộng
-   * 428px, quá bề ngang dùng được của màn 375px (343px) nên bị bẻ đôi.
-   * Ở 28px còn 333px, vừa một dòng. Từ 640px trở lên giữ nguyên cỡ cũ.
-   */
-  const sectionHeadingClass =
-    "text-hero-shadow text-[1.75rem] sm:text-4xl md:text-5xl font-bold font-serif text-white";
+  const sectionHeadingClass = HOME_SECTION_HEADING;
   const glassCardClass =
     "h-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md";
 
@@ -753,9 +748,7 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="mb-8 text-center"
           >
-            {/* "LIÊN HỆ VỚI CHÚNG TÔI" viết hoa nên rộng hơn chữ thường: 489px ở
-                text-4xl. Phải xuống text-2xl (326px) mới gọn một dòng. */}
-            <h2 className="text-hero-shadow mb-3 font-serif text-2xl font-bold text-white sm:text-3xl md:text-4xl">
+            <h2 className={`${sectionHeadingClass} mb-3`}>
               {t?.contact?.title ?? "Liên hệ"}
             </h2>
             <p className="text-hero-shadow-soft mx-auto max-w-3xl text-lg text-slate-200">

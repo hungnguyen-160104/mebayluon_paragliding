@@ -225,7 +225,7 @@ export const vi: CommonTranslation = {
   } as any,
 
   contact: {
-    title: "LIÊN HỆ VỚI CHÚNG TÔI",
+    title: "Liên hệ với chúng tôi",
     subtitle: "Chúng tôi luôn sẵn sàng hỗ trợ và giải đáp mọi thắc mắc của bạn",
     connectTitle: "Kết nối với chúng tôi",
     connectSubtitle:

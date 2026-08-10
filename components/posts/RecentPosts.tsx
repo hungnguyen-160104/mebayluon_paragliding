@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
+import { HOME_SECTION_HEADING } from "@/components/section-heading";
 
 type RecentPost = {
   id: string;
@@ -41,7 +42,8 @@ export default function RecentPosts({
 }: RecentPostsProps) {
   const { language } = useLanguage();
   const isVietnamese = language === "vi";
-  const displayTitle = title || (isVietnamese ? "BÀI VIẾT MỚI NHẤT" : "LATEST POSTS");
+  const displayTitle =
+    title || (isVietnamese ? "Bài viết mới nhất" : "Latest posts");
 
   const [posts, setPosts] = useState<RecentPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +128,7 @@ export default function RecentPosts({
   return (
     <section className="py-8">
       <div className="container mx-auto max-w-6xl px-4">
-        <h2 className="text-hero-shadow mb-6 text-center text-3xl font-extrabold text-white md:text-4xl">
+        <h2 className={`${HOME_SECTION_HEADING} mb-6 text-center`}>
           {displayTitle}
         </h2>
       </div>
