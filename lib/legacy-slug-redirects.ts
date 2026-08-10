@@ -47,6 +47,13 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
   sapa: "bay-du-luon-sa-pa-muong-hoa",
   // Đồng Văn không có bài blog riêng — về trang điểm bay Hà Giang
   dongvan: "/spots/ha-giang",
+
+  /* ===== Search Console 10-8-2026: "Đã thu thập dữ liệu — chưa lập chỉ mục"
+   * Google bò vào URL này ngày 28-6-2026 và nhận trang "Bài viết không tồn
+   * tại". Slug chưa bao giờ có trong DB (đã dò cả slugHistory). Bài đúng chủ
+   * đề, gần như trùng tiêu đề, là "Bay dù lượn Đồi Bù – điểm bay gần Hà Nội".
+   */
+  "bay-du-luon-doi-bu-trai-nghiem-bay-gan-ha-noi": "bay-du-luon-doi-bu",
 };
 
 /**
