@@ -335,37 +335,55 @@ export default function Footer() {
 
   const t = DICT[language];
 
+  /**
+   * Sáu kênh, mỗi kênh mang đúng màu nhận diện của nó.
+   *
+   * Trước đây cả sáu đều xám nhạt như nhau nên nhìn thành một dải ô vuông
+   * vô danh, phải đọc kỹ mới ra kênh nào. Tô màu thật thì nhận ra ngay.
+   *
+   * Tô MÀU CHỮ chứ không tô nền: nền footer đã tối, sáu ô nền đặc màu sẽ
+   * chói và tranh chỗ với nút "Đăng ký Mùa vàng 2026" ngay bên dưới.
+   *
+   * TikTok để trắng — dấu hiệu thật của họ màu đen, trên nền tối thì mất hút.
+   * Instagram lấy sắc hồng #E1306C, màu dễ nhận nhất trong dải chuyển sắc.
+   */
   const socialLinks = useMemo(
     () => [
       {
         href: "https://www.facebook.com/mebayluon",
         label: "Facebook",
         icon: <Facebook size={18} />,
+        color: "#1877F2",
       },
       {
         href: "https://www.youtube.com/@mebayluon",
         label: "YouTube",
         icon: <Youtube size={18} />,
+        color: "#FF0000",
       },
       {
         href: "https://www.tiktok.com/@mebayluon_paragliding",
         label: "TikTok",
         icon: <TikTokIcon className="h-[18px] w-[18px]" />,
+        color: "#FFFFFF",
       },
       {
         href: "https://api.whatsapp.com/send/?phone=84964073555",
         label: "WhatsApp",
         icon: <WhatsAppIcon className="h-[18px] w-[18px]" />,
+        color: "#25D366",
       },
       {
         href: "https://zalo.me/0964073555",
         label: "Zalo",
         icon: <ZaloIcon className="h-[18px] w-[18px]" />,
+        color: "#0068FF",
       },
       {
         href: "https://www.instagram.com/mebayluon.paragliding/",
         label: "Instagram",
         icon: <Instagram size={18} />,
+        color: "#E1306C",
       },
     ],
     []
@@ -571,7 +589,9 @@ export default function Footer() {
                 {t.followUs}
               </h3>
 
-              <div className="flex flex-wrap gap-2">
+              {/* Lưới 3 cột: sáu kênh xếp gọn đúng hai hàng. Trước để trôi tự
+                  do nên số ô mỗi hàng đổi theo bề ngang cột, nhìn so le. */}
+              <div className="grid w-max grid-cols-3 gap-2">
                 {socialLinks.map((item) => (
                   <a
                     key={item.label}
@@ -580,11 +600,12 @@ export default function Footer() {
                     rel="noopener noreferrer"
                     aria-label={item.label}
                     title={item.label}
+                    style={{ color: item.color }}
                     className="
                       flex h-10 w-10 items-center justify-center
                       rounded-xl border border-white/15 bg-white/5
-                      text-slate-300 transition-all
-                      hover:-translate-y-0.5 hover:border-white/30 hover:text-white
+                      transition-all
+                      hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10
                     "
                   >
                     {item.icon}

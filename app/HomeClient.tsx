@@ -253,7 +253,7 @@ export default function HomePage() {
       title: preNotice.preparation.process.title,
       items: preNotice.preparation.process.items,
       icon: PackageCheck,
-      accentClassName: "text-green-400",
+      accentClassName: "text-yellow-400",
       bulletIcon: CheckCircle2,
     },
     {
