@@ -620,10 +620,15 @@ export default function Footer() {
 
               {/* Trang nghiệp vụ cho phi công. Đặt trong cột này nhưng đẩy
                   xuống sát đáy: khách du lịch lướt qua không vướng mắt, phi
-                  công cần thì vẫn thấy ngay dưới cụm mạng xã hội. */}
+                  công cần thì vẫn thấy ngay dưới cụm mạng xã hội.
+                  mt-20 để dòng này nằm ngang hàng dòng cuối của cột "Thông tin
+                  điểm bay" (PPG Đèo Khau Phạ). Tính: cột đó có 7 hàng cao 20px
+                  cách nhau 8px nên dòng cuối bắt đầu ở 168px dưới tiêu đề; bên
+                  này lưới logo cao 88px (2 hàng 40px + khe 8px), nên cần đẩy
+                  thêm 80px. Sửa số hàng ở một trong hai cột thì tính lại. */}
               <Link
                 href={makeLocalizedHref("/muavang", pathname)}
-                className="mt-10 inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+                className="mt-20 inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
               >
                 {t.pilotEvent}
               </Link>
