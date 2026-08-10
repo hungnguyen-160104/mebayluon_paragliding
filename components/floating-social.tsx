@@ -23,13 +23,8 @@ export function FloatingSocial() {
       color: "bg-[#1877F2] hover:bg-[#1877F2]/90",
       iconSize: 28,
     },
-    {
-      name: "YouTube",
-      iconSrc: "/social_icons/youtube.png",
-      url: "https://www.youtube.com/@mebayluon",
-      color: "bg-[#FF0000] hover:bg-[#FF0000]/90",
-      iconSize: 28,
-    },
+    // KHÔNG bày YouTube ở cụm nút nổi: cụm này để khách NHẮN TIN nhanh, còn
+    // YouTube là kênh xem nội dung — vẫn có ở footer và mục Liên hệ.
     {
       name: "Zalo",
       iconSrc: "/social_icons/zalo.png",

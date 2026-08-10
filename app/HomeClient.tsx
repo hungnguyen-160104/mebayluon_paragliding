@@ -23,6 +23,7 @@ import {
   Ban,
   Ticket,
   Car,
+  Instagram,
 } from "lucide-react";
 
 /** ============ Dynamic RecentPosts (client-only) ============ */
@@ -170,6 +171,19 @@ export default function HomePage() {
       url: "https://zalo.me/0964073555",
       color: "bg-[#0068FF]",
       description: t?.contact?.social?.zalo ?? "Chat Zalo 24/7",
+    },
+    {
+      // Chưa có tệp biểu tượng Instagram trong public/social_icons như năm
+      // kênh kia, mà next/image đang chặn SVG (dangerouslyAllowSVG: false)
+      // nên dùng biểu tượng vẽ sẵn của lucide, đặt trên nền chuyển sắc đúng
+      // nhận diện Instagram.
+      name: "Instagram",
+      iconNode: <Instagram className="h-6 w-6 text-white" strokeWidth={2} />,
+      url: "https://www.instagram.com/mebayluon.paragliding/",
+      color: "bg-linear-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]",
+      description:
+        t?.contact?.social?.instagram ??
+        "Ảnh và khoảnh khắc bay đẹp nhất trên Instagram",
     },
   ];
 
@@ -765,12 +779,14 @@ export default function HomePage() {
                     <div
                       className={`relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ${social.color}`}
                     >
-                      <Image
-                        src={social.iconSrc}
-                        alt={social.name}
-                        fill
-                        className="object-cover"
-                      />
+                      {social.iconNode ?? (
+                        <Image
+                          src={social.iconSrc as string}
+                          alt={social.name}
+                          fill
+                          className="object-cover"
+                        />
+                      )}
                     </div>
 
                     <h3 className="text-sm font-bold sm:text-base">{social.name}</h3>

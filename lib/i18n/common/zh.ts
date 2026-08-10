@@ -221,6 +221,7 @@ export const zh: CommonTranslation = {
       zalo: "通过 Zalo 与我们直接聊天，获得快速支持",
       whatsapp: "通过 WhatsApp 24/7 联系我们",
       youtube: "在 YouTube 上观看我们的滑翔伞视频",
+      instagram: "在 Instagram 看最美的飞行瞬间",
       tiktokDescription:
         "关注我们的 TikTok 频道，观看独特的飞行视频！",
     },

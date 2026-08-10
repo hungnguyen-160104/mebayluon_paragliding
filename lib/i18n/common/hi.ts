@@ -247,6 +247,7 @@ export const hi: CommonTranslation = {
       zalo: "तेज़ सहायता के लिए Zalo पर सीधे चैट करें",
       whatsapp: "WhatsApp पर 24/7 संपर्क करें",
       youtube: "YouTube पर हमारे पैराग्लाइडिंग वीडियो देखें",
+      instagram: "Instagram पर हमारी सबसे सुंदर उड़ान तस्वीरें",
       tiktokDescription:
         "हमारे TikTok चैनल को फ़ॉलो करें और अनोखे उड़ान वीडियो देखें!",
     },

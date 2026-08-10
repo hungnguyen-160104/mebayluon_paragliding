@@ -247,6 +247,7 @@ export const ru: CommonTranslation = {
       zalo: "Напишите нам в Zalo для быстрой консультации",
       whatsapp: "Свяжитесь с нами через WhatsApp 24/7",
       youtube: "Смотрите наши видео о полётах на YouTube",
+      instagram: "Лучшие кадры полётов в Instagram",
       tiktokDescription:
         "Подписывайтесь на наш TikTok, чтобы смотреть уникальные видео о полётах!",
     },

@@ -18,6 +18,7 @@ const dancingScript = Dancing_Script({
 import {
   Facebook,
   Youtube,
+  Instagram,
   Phone,
   Mail,
   MapPin,
@@ -360,6 +361,11 @@ export default function Footer() {
         href: "https://zalo.me/0964073555",
         label: "Zalo",
         icon: <ZaloIcon className="h-[18px] w-[18px]" />,
+      },
+      {
+        href: "https://www.instagram.com/mebayluon.paragliding/",
+        label: "Instagram",
+        icon: <Instagram size={18} />,
       },
     ],
     []

@@ -136,6 +136,7 @@ export type CommonTranslation = {
       zalo: string;
       whatsapp: string;
       youtube: string;
+      instagram: string;
       tiktokDescription: string;
     };
   };

@@ -247,6 +247,7 @@ export const fr: CommonTranslation = {
       zalo: "Discutez directement avec nous sur Zalo pour une assistance rapide",
       whatsapp: "Contactez-nous via WhatsApp 24h/24 et 7j/7",
       youtube: "Regardez nos vidéos de parapente sur YouTube",
+      instagram: "Nos plus belles images de vol sur Instagram",
       tiktokDescription: "Suivez notre chaîne TikTok pour découvrir des vidéos de vol uniques !",
     },
   },

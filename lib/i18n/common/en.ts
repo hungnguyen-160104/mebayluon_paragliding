@@ -244,6 +244,7 @@ export const en: CommonTranslation = {
       zalo: "Chat with us directly on Zalo for quick support",
       whatsapp: "Contact us via WhatsApp 24/7",
       youtube: "Watch our paragliding videos on YouTube",
+      instagram: "Our best flying moments on Instagram",
       tiktokDescription: "Follow our TikTok channel for unique paragliding videos!",
     },
   },

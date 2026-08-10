@@ -244,6 +244,7 @@ export const vi: CommonTranslation = {
       zalo: "Chat trực tiếp qua Zalo để được tư vấn nhanh",
       whatsapp: "Liên hệ qua WhatsApp 24/7",
       youtube: "Xem video bay dù lượn trên YouTube",
+      instagram: "Ảnh và khoảnh khắc bay đẹp nhất trên Instagram",
       tiktokDescription: "Theo dõi kênh TikTok để xem các video bay lượn độc đáo!",
     },
   },
