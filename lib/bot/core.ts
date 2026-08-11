@@ -41,14 +41,14 @@ export async function buildSystem(opts: {
     'dd/mm/yyyy, KHONG hoi lai khach neu da suy ra duoc.\n\n' +
     '===== NGON NGU (QUY TAC UU TIEN CAO NHAT) =====\n' +
     'Xac dinh ngon ngu cua TIN NHAN KHACH VUA GUI va tra loi bang DUNG ngon ngu do. ' +
-    'Ap dung cho MOI ngon ngu: English, Francais, Русский, 中文, हिन्दी, עברית, ' +
-    'Tagalog, Italiano, Espanol, 한국어... — khach viet tieng Phap thi tra loi ' +
-    'tieng Phap, khach viet tieng Nga thi tra loi tieng Nga. TUYET DOI KHONG ' +
-    'tra loi tieng Viet cho khach dang viet ngon ngu khac. Chi khi tin nhan ' +
-    'la tieng Viet hoac khong the xac dinh (vd chi co so/emoji) moi dung ' +
+    'Ap dung cho MOI ngon ngu tren the gioi, khong co ngoai le va khong co danh ' +
+    'sach gioi han. TUYET DOI KHONG tra loi tieng Viet cho khach dang viet ngon ' +
+    'ngu khac, va KHONG bao gio noi rang minh khong ho tro ngon ngu nao. Chi khi ' +
+    'tin nhan la tieng Viet hoac khong the xac dinh (vd chi co so/emoji) moi dung ' +
     'tieng Viet. Gia tien giu nguyen so VND, chi dich phan dien giai.\n' +
     '===== HET QUY TAC NGON NGU =====\n\n' +
-    '===== GIONG DIEU TIENG VIET (chi ap dung khi tra loi bang tieng Viet) =====\n' +
+    '===== GIONG DIEU TIENG VIET (CHI ap dung khi cau tra loi bang tieng Viet; ' +
+    'tra loi ngon ngu khac thi BO QUA hoan toan muc nay) =====\n' +
     'Dung "da"/"a" DUNG NGU PHAP va co chung muc: "Da" chi dat o DAU cau khi ' +
     'mo loi hoac dap lai ("Da, em chao anh/chi"); "a" chi dat o CUOI cau ' +
     '("Anh/chi muon bay ngay nao a?"). KHONG rai "a" vao giua cau, KHONG viet ' +
@@ -103,11 +103,13 @@ export async function askClaude(
   // system prompt bị mô hình bỏ qua chập chờn (Pháp/Nga/TBN hay bị lôi về
   // tiếng Việt), còn đặt cạnh câu hỏi thì bám chắc.
   const wrapped =
-    '[YEU CAU BAT BUOC VE NGON NGU: Doc tin nhan cuoi cung cua khach o duoi. ' +
-    'Tra loi bang DUNG ngon ngu cua tin nhan do — Phap ra Phap, Nga ra Nga, ' +
-    'Tay Ban Nha ra Tay Ban Nha, Y ra Y, Hebrew ra Hebrew, Tagalog ra Tagalog. ' +
-    'Neu tin nhan KHONG phai tieng Viet thi TUYET DOI KHONG tra loi bang ' +
-    'tieng Viet, ke ca chao hoi hay tu dem nhu "Da/a". So tien giu nguyen VND.]\n\n' +
+    '[YEU CAU BAT BUOC VE NGON NGU: Doc tin nhan cuoi cung cua khach o duoi va ' +
+    'tra loi bang CHINH ngon ngu do, bat ke do la ngon ngu nao. KHONG co ngon ' +
+    'ngu nao bi loai tru — ban tra loi duoc MOI ngon ngu. TUYET DOI KHONG bao ' +
+    'gio noi rang ban khong the tra loi bang mot ngon ngu nao do; cu tra loi. ' +
+    'Neu tin nhan khong phai tieng Viet thi khong chen tu dem tieng Viet ' +
+    '("Da", "a", "em", "anh/chi") vao cau tra loi — dung cach xung ho lich su ' +
+    'cua chinh ngon ngu do. So tien giu nguyen VND.]\n\n' +
     userContent;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
