@@ -1,0 +1,206 @@
+/**
+ * Lõi con bot — dùng chung cho cả Messenger và web.
+ *
+ * Tương ứng node "Code in JavaScript" + "HTTP Request" của n8n cũ.
+ */
+
+import { SYSTEM_STATIC_TEMPLATE, EXTRA_RULES } from './rules';
+import { getKnowledge, getConversationState } from './google-bridge';
+
+const MODEL = process.env.BOT_MODEL || 'claude-haiku-4-5';
+const MAX_TOKENS = 600;
+
+export type Channel = 'facebook' | 'web';
+
+/* ---------------------------------------------------------------------
+ * Dựng system prompt
+ * ------------------------------------------------------------------ */
+export async function buildSystem(opts: {
+  psid: string;
+  historyText: string;
+}): Promise<{ staticPart: string; dynamicPart: string }> {
+  const knowledge = await getKnowledge();
+
+  const staticPart =
+    SYSTEM_STATIC_TEMPLATE.replace('{{KNOWLEDGE}}', knowledge) + EXTRA_RULES;
+
+  const now = new Date().toLocaleString('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour12: false,
+  });
+
+  const state = await getConversationState(opts.psid);
+  const stateContext = state?.psid
+    ? 'Trang thai hoi thoai hien tai: ' + (state.trang_thai || '(chua xac dinh)') + '.'
+    : 'Day la khach hang moi, chua co lich su hoi thoai truoc do.';
+
+  const dynamicPart =
+    '===== BOI CANH HOI THOAI VOI KHACH NAY =====\n' +
+    'HOM NAY LA: ' + now + ' (gio Viet Nam). Tu quy doi cac tu nhu "ngay mai", ' +
+    '"hom nay", "cuoi tuan", "thu 7 nay" ra ngay duong lich cu the dang ' +
+    'dd/mm/yyyy, KHONG hoi lai khach neu da suy ra duoc.\n\n' +
+    '===== QUY TAC CHOT DON (BAT BUOC, GHI DE MOI QUY TAC KHAC NEU MAU THUAN) =====\n' +
+    '1. Thong tin BAT BUOC de chot don chi gom 3 muc: NGAY BAY DU KIEN, TEN khach, ' +
+    'SO DIEN THOAI. Thieu muc nao thi hoi dung muc do.\n' +
+    '2. Ngay sinh, so CCCD/passport, can nang: HOI MOT LAN kem giai thich rang ' +
+    'cac thong tin nay can de khai bao bao hiem, anh chi co the cung cap sau ' +
+    'truoc khi bay de kich hoat bao hiem. Khach khong tra loi hoac tu choi thi ' +
+    'KHONG hoi lai, van chot don binh thuong va de trong cac muc do.\n' +
+    '3. Khi da co du 3 muc bat buoc (+ diem bay va so nguoi neu khach da noi), ' +
+    'xuat khoi BOOKING_DATA dung dinh dang ngay trong cau tra loi do — nhung ' +
+    'CHI XUAT MOT LAN DUY NHAT cho moi don. Neu trong lich su hoi thoai don nay ' +
+    'DA duoc chot roi thi cac luot sau (khach cam on, hoi them, bo sung chi tiet ' +
+    'nho) TUYET DOI KHONG xuat lai khoi BOOKING_DATA nua; chi xuat khoi moi khi ' +
+    'khach doi thong tin quan trong (ngay bay, so nguoi, diem bay) va noi ro do ' +
+    'la CAP NHAT don.\n' +
+    '4. CHUA xuat khoi BOOKING_DATA thi TUYET DOI KHONG duoc noi cac cau nhu ' +
+    '"da ghi nhan", "da chuyen toi doi bay", "da chot don" — thieu thong tin nao ' +
+    'thi hoi dung thong tin do.\n' +
+    '5. Ban KHONG co kha nang xem lich trong/full. KHONG bao gio tu phan ' +
+    'ngay nao "da full" hay "con cho". Neu khach hoi lich con trong khong, tra loi: ' +
+    'em ghi nhan ngay khach muon, dieu phoi vien se goi xac nhan lich trong ngay.\n' +
+    '===== HET QUY TAC CHOT DON =====\n\n' +
+    (opts.historyText
+      ? 'LICH SU HOI THOAI (cu nhat o tren, moi nhat o duoi):\n' + opts.historyText + '\n\n'
+      : '') +
+    stateContext +
+    '\n===== HET BOI CANH =====';
+
+  return { staticPart, dynamicPart };
+}
+
+/* ---------------------------------------------------------------------
+ * Gọi Anthropic
+ *
+ * Khối tĩnh (quy tắc + tài liệu, ~10k ký tự) được đánh dấu cache_control
+ * y như bản n8n cũ. Phần này không đổi giữa các lượt chat nên Anthropic
+ * tính rẻ hơn nhiều — giữ nguyên, đừng bỏ đi.
+ * ------------------------------------------------------------------ */
+export async function askClaude(
+  staticPart: string,
+  dynamicPart: string,
+  userContent: string,
+): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: [
+        { type: 'text', text: staticPart, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: dynamicPart },
+      ],
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  });
+
+  if (!res.ok) {
+    console.error('[claude] lỗi', res.status, await res.text());
+    throw new Error('Anthropic API lỗi ' + res.status);
+  }
+
+  const json = await res.json();
+  return json?.content?.[0]?.text || '';
+}
+
+/* ---------------------------------------------------------------------
+ * Làm sạch câu trả lời trước khi gửi khách
+ *
+ * Cắt bỏ khối BOOKING_DATA (dữ liệu nội bộ, khách không được thấy) và
+ * gỡ markdown vì Messenger hiện ra dấu sao, dấu thăng lồ lộ.
+ * ------------------------------------------------------------------ */
+export function cleanReply(text: string): string {
+  let t = String(text);
+
+  for (const marker of ['BOOKING_DATA', 'BOOKING_CONFIRMED', 'BOOKING CONFIRMED', 'BOOKING DATA']) {
+    t = t.split(marker)[0];
+  }
+
+  return t
+    .replace(/[*_`~]/g, '')
+    .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+    .split('\n')
+    .filter((l) => !/^\s*[-=_]{3,}\s*$/.test(l))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* ---------------------------------------------------------------------
+ * Tách khối JSON đặt lịch
+ *
+ * Không dùng regex: JSON có ngoặc lồng nhau, regex sẽ cắt sai. Đếm độ sâu
+ * ngoặc là cách duy nhất chắc chắn — giữ nguyên thuật toán bản cũ.
+ * ------------------------------------------------------------------ */
+export function extractBooking(text: string): Record<string, string> | null {
+  const idx = text.indexOf('BOOKING_DATA');
+  if (idx === -1) return null;
+
+  const start = text.indexOf('{', idx);
+  if (start === -1) return null;
+
+  let depth = 0;
+  let end = -1;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') {
+      depth--;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  if (end === -1) return null;
+
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch (err) {
+    console.error('[booking] JSON hỏng:', err);
+    return null;
+  }
+}
+
+/** Tên Facebook của khách, để nhân viên dễ tìm lại đoạn chat. */
+export async function getFacebookName(psid: string, pageToken: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v25.0/${psid}?fields=name&access_token=${encodeURIComponent(pageToken)}`,
+    );
+    if (!res.ok) return '(không lấy được)';
+    const j = await res.json();
+    return j?.name || '(không lấy được)';
+  } catch {
+    return '(không lấy được)';
+  }
+}
+
+/** Email báo booking mới — giữ nguyên bố cục bản Gmail cũ. */
+export function bookingEmailHtml(d: Record<string, any>, rawText: string): string {
+  const li = (k: string, v: unknown) =>
+    `<li><b>${k}:</b> ${escapeHtml(String(v ?? ''))}</li>`;
+
+  return (
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#222;line-height:1.7">' +
+    '<h2 style="font-size:24px;color:#0a7d33;margin-bottom:8px">BOOKING MỚI — Mebayluon</h2>' +
+    '<ul style="font-size:19px;padding-left:20px;margin:0 0 14px 0">' +
+    li('Tên khách', d.ho_ten) +
+    li('Tên Facebook', d.ten_facebook) +
+    li('Số điện thoại', d.so_dien_thoai) +
+    li('Số người', d.so_luong_nguoi) +
+    li('Ngày bay', d.ngay_dat_bay) +
+    li('Điểm bay', d.dia_diem_dich_vu) +
+    li('Dịch vụ đi kèm', d.dich_vu_kem || 'Không') +
+    li('Tổng giá', d.gia_da_chot) +
+    '</ul><hr style="border:none;border-top:1px solid #ccc">' +
+    '<p style="font-size:16px;color:#555;margin-bottom:4px"><b>Nội dung bot đã gửi khách:</b></p>' +
+    '<p style="font-size:15px;color:#555;white-space:pre-wrap">' + escapeHtml(rawText) + '</p>' +
+    '</div>'
+  );
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
