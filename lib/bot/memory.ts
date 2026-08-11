@@ -157,14 +157,16 @@ type BookingSentDoc = { key: string; createdAt: Date };
 
 const BookingSentSchema = new Schema<BookingSentDoc>({
   key: { type: String, required: true, unique: true, index: true },
-  // Tự dọn sau 30 ngày — đủ xa để không chặn nhầm khách đặt lại đúng
-  // ngày đó cho chuyến sau.
-  createdAt: { type: Date, default: Date.now, expires: 30 * 24 * 60 * 60 },
+  // Hiệu lực 2 GIỜ: một cuộc trò chuyện = một đơn. Khách quay lại đặt
+  // chuyến khác (kể cả cùng psid Messenger) sau đó thì khoá đã hết hạn.
+  createdAt: { type: Date, default: Date.now, expires: 2 * 60 * 60 },
 });
 
+// Tên collection mới (v2): đổi TTL trên collection cũ sẽ đụng index đã
+// tạo với thời hạn cũ — tạo collection sạch đỡ rắc rối hơn sửa index.
 const BookingSent: Model<BookingSentDoc> =
-  (mongoose.models.BotBookingSent as Model<BookingSentDoc>) ||
-  mongoose.model<BookingSentDoc>("BotBookingSent", BookingSentSchema);
+  (mongoose.models.BotBookingSent2 as Model<BookingSentDoc>) ||
+  mongoose.model<BookingSentDoc>("BotBookingSent2", BookingSentSchema);
 
 /**
  * true  = lần đầu thấy đơn này -> cho ghi sheet + gửi email
@@ -178,13 +180,14 @@ export async function markBookingOnce(parts: {
   ngay_dat_bay?: unknown;
   dia_diem_dich_vu?: unknown;
 }): Promise<boolean> {
-  // Khoá CHỈ gồm khách + ngày bay. Điểm bay do mô hình tự diễn đạt, mỗi
-  // lần một kiểu ("Đèo Khau Phạ", "Khau Phạ - Mù Cang Chải"...) — đưa vào
-  // khoá là chống trùng thủng ngay. Ngày rút về toàn chữ số để "25/08/2026"
-  // và "25-8-2026" ra cùng một khoá.
-  const psid = String(parts.psid ?? "").trim().toLowerCase();
-  const dateDigits = String(parts.ngay_dat_bay ?? "").replace(/\D+/g, "");
-  const key = psid + "|" + dateDigits;
+  // Khoá CHỈ là psid. Bài học sau ba vòng vá: mọi trường do mô hình tự
+  // viết (điểm bay, thậm chí định dạng ngày) đều mỗi lần một kiểu — đưa
+  // vào khoá là chống trùng thủng. psid là thứ duy nhất do máy sinh,
+  // ổn định tuyệt đối. Phạm vi "một đơn" = một phiên chat trong 2 giờ
+  // (TTL ở schema); parts còn lại giữ trong chữ ký để khỏi đổi chỗ gọi.
+  void parts.ngay_dat_bay;
+  void parts.dia_diem_dich_vu;
+  const key = String(parts.psid ?? "").trim().toLowerCase();
 
   try {
     await connectDB();
