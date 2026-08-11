@@ -39,6 +39,15 @@ export async function buildSystem(opts: {
     'HOM NAY LA: ' + now + ' (gio Viet Nam). Tu quy doi cac tu nhu "ngay mai", ' +
     '"hom nay", "cuoi tuan", "thu 7 nay" ra ngay duong lich cu the dang ' +
     'dd/mm/yyyy, KHONG hoi lai khach neu da suy ra duoc.\n\n' +
+    '===== NGON NGU (QUY TAC UU TIEN CAO NHAT) =====\n' +
+    'Xac dinh ngon ngu cua TIN NHAN KHACH VUA GUI va tra loi bang DUNG ngon ngu do. ' +
+    'Ap dung cho MOI ngon ngu: English, Francais, Русский, 中文, हिन्दी, עברית, ' +
+    'Tagalog, Italiano, Espanol, 한국어... — khach viet tieng Phap thi tra loi ' +
+    'tieng Phap, khach viet tieng Nga thi tra loi tieng Nga. TUYET DOI KHONG ' +
+    'tra loi tieng Viet cho khach dang viet ngon ngu khac. Chi khi tin nhan ' +
+    'la tieng Viet hoac khong the xac dinh (vd chi co so/emoji) moi dung ' +
+    'tieng Viet. Gia tien giu nguyen so VND, chi dich phan dien giai.\n' +
+    '===== HET QUY TAC NGON NGU =====\n\n' +
     '===== QUY TAC CHOT DON (BAT BUOC, GHI DE MOI QUY TAC KHAC NEU MAU THUAN) =====\n' +
     '1. Thong tin BAT BUOC de chot don chi gom 3 muc: NGAY BAY DU KIEN, TEN khach, ' +
     'SO DIEN THOAI. Thieu muc nao thi hoi dung muc do.\n' +
@@ -46,8 +55,9 @@ export async function buildSystem(opts: {
     'cac thong tin nay can de khai bao bao hiem, anh chi co the cung cap sau ' +
     'truoc khi bay de kich hoat bao hiem. Khach khong tra loi hoac tu choi thi ' +
     'KHONG hoi lai, van chot don binh thuong va de trong cac muc do.\n' +
-    '3. Khi da co du 3 muc bat buoc (+ diem bay va so nguoi neu khach da noi), ' +
-    'xuat khoi BOOKING_DATA dung dinh dang ngay trong cau tra loi do — nhung ' +
+    '3. CHI xuat khoi BOOKING_DATA khi da chot xong ca LOAI BAY va GIA cu the ' +
+    '(khong xuat voi gia \"chua xac dinh\"). Khi da du 3 muc bat buoc va da chot ' +
+    'loai bay + gia, xuat khoi ngay trong cau tra loi do — nhung ' +
     'CHI XUAT MOT LAN DUY NHAT cho moi don. Neu trong lich su hoi thoai don nay ' +
     'DA duoc chot roi thi cac luot sau (khach cam on, hoi them, bo sung chi tiet ' +
     'nho) TUYET DOI KHONG xuat lai khoi BOOKING_DATA nua; chi xuat khoi moi khi ' +
@@ -81,6 +91,17 @@ export async function askClaude(
   dynamicPart: string,
   userContent: string,
 ): Promise<string> {
+  // Mệnh lệnh ngôn ngữ đặt NGAY SÁT tin nhắn khách — quy tắc nằm xa trong
+  // system prompt bị mô hình bỏ qua chập chờn (Pháp/Nga/TBN hay bị lôi về
+  // tiếng Việt), còn đặt cạnh câu hỏi thì bám chắc.
+  const wrapped =
+    '[YEU CAU BAT BUOC VE NGON NGU: Doc tin nhan cuoi cung cua khach o duoi. ' +
+    'Tra loi bang DUNG ngon ngu cua tin nhan do — Phap ra Phap, Nga ra Nga, ' +
+    'Tay Ban Nha ra Tay Ban Nha, Y ra Y, Hebrew ra Hebrew, Tagalog ra Tagalog. ' +
+    'Neu tin nhan KHONG phai tieng Viet thi TUYET DOI KHONG tra loi bang ' +
+    'tieng Viet, ke ca chao hoi hay tu dem nhu "Da/a". So tien giu nguyen VND.]\n\n' +
+    userContent;
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -95,7 +116,7 @@ export async function askClaude(
         { type: 'text', text: staticPart, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: dynamicPart },
       ],
-      messages: [{ role: 'user', content: userContent }],
+      messages: [{ role: 'user', content: wrapped }],
     }),
   });
 
