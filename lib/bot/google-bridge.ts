@@ -11,6 +11,8 @@
  * Env: BOT_BRIDGE_URL, BOT_BRIDGE_SECRET
  */
 
+import { markBookingOnce } from '@/lib/bot/memory';
+
 const URL_ = process.env.BOT_BRIDGE_URL || '';
 const SECRET = process.env.BOT_BRIDGE_SECRET || '';
 
@@ -79,5 +81,19 @@ export async function getConversationState(psid: string) {
  * Ghi một dòng đặt lịch (sheet DatLich) + gửi email báo về hộp thư
  * ------------------------------------------------------------------ */
 export async function saveBooking(row: Record<string, unknown>, emailHtml: string) {
+  // Chốt chống trùng nằm ở ĐÂY — điểm nghẽn duy nhất mà cả kênh web lẫn
+  // Messenger đều đi qua. Prompt có xuất lại BOOKING_DATA bao nhiêu lần
+  // thì sheet cũng chỉ nhận một dòng cho mỗi đơn.
+  const firstTime = await markBookingOnce({
+    psid: row.psid,
+    ngay_dat_bay: row.ngay_dat_bay,
+    dia_diem_dich_vu: row.dia_diem_dich_vu,
+  });
+
+  if (!firstTime) {
+    console.log('[bridge] saveBooking bỏ qua: đơn này đã ghi rồi', row.psid);
+    return { appended: false };
+  }
+
   return call<{ appended: boolean }>('saveBooking', { row, emailHtml });
 }

@@ -142,3 +142,59 @@ export function formatWebHistory(turns: Turn[]): string {
     "\n=== HET LICH SU. Tin nhan moi cua khach: ===\n"
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* CHỐNG GHI TRÙNG BOOKING                                             */
+/*                                                                     */
+/* Quy tắc trong prompt không đủ tin cậy — mô hình thỉnh thoảng vẫn    */
+/* xuất lại khối BOOKING_DATA cho cùng một đơn. Chặn ở tầng code:      */
+/* mỗi (khách + ngày bay + điểm bay) chỉ được ghi MỘT lần. Unique      */
+/* index của MongoDB là trọng tài — hai request chạy song song cũng    */
+/* chỉ một bên thắng.                                                  */
+/* ------------------------------------------------------------------ */
+
+type BookingSentDoc = { key: string; createdAt: Date };
+
+const BookingSentSchema = new Schema<BookingSentDoc>({
+  key: { type: String, required: true, unique: true, index: true },
+  // Tự dọn sau 30 ngày — đủ xa để không chặn nhầm khách đặt lại đúng
+  // ngày đó cho chuyến sau.
+  createdAt: { type: Date, default: Date.now, expires: 30 * 24 * 60 * 60 },
+});
+
+const BookingSent: Model<BookingSentDoc> =
+  (mongoose.models.BotBookingSent as Model<BookingSentDoc>) ||
+  mongoose.model<BookingSentDoc>("BotBookingSent", BookingSentSchema);
+
+/**
+ * true  = lần đầu thấy đơn này -> cho ghi sheet + gửi email
+ * false = đã ghi trước đó      -> bỏ qua trong im lặng
+ *
+ * Lỗi kết nối thì trả true: thà lọt một dòng trùng (điều phối viên
+ * thấy ngay) còn hơn nuốt mất một đơn thật.
+ */
+export async function markBookingOnce(parts: {
+  psid?: unknown;
+  ngay_dat_bay?: unknown;
+  dia_diem_dich_vu?: unknown;
+}): Promise<boolean> {
+  const norm = (v: unknown) =>
+    String(v ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFC")
+      .replace(/\s+/g, " ");
+
+  const key = [norm(parts.psid), norm(parts.ngay_dat_bay), norm(parts.dia_diem_dich_vu)].join("|");
+
+  try {
+    await connectDB();
+    await BookingSent.create({ key });
+    return true;
+  } catch (err: unknown) {
+    const code = (err as { code?: number })?.code;
+    if (code === 11000) return false; // trùng khoá -> đơn đã ghi rồi
+    console.error("[booking-dedup] lỗi, cho ghi để không mất đơn:", err);
+    return true;
+  }
+}
