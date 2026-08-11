@@ -73,6 +73,36 @@ export async function pushPilotRowToSheet(
       return { ok: false, error: `HTTP ${res.status}` };
     }
 
+    /**
+     * PHẢI đọc nội dung trả về, không được chỉ nhìn mã HTTP.
+     *
+     * Apps Script luôn đáp 200 kể cả khi script bên trong hỏng — nó gói lỗi
+     * vào phần thân dạng {"ok":false,"error":...}. Trước đây hàm này thấy 200
+     * là báo thành công, nên có lúc bảng tính không nhận được dòng nào mà bản
+     * ghi vẫn ghi `sheetSynced: true` — hỏng mà không ai biết.
+     *
+     * `missingColumns` là các cột script biết mà bảng chưa có; ghi lại vào
+     * nhật ký để còn biết đường thêm tiêu đề.
+     */
+    const text = await res.text();
+    let body: { ok?: boolean; error?: string; missingColumns?: string[] };
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return { ok: false, error: `Trả về không phải JSON: ${text.slice(0, 120)}` };
+    }
+
+    if (body.ok !== true) {
+      return { ok: false, error: body.error || "Apps Script báo thất bại" };
+    }
+
+    if (body.missingColumns?.length) {
+      console.warn(
+        "[PilotRegistration] bảng tính thiếu cột:",
+        body.missingColumns.join(", "),
+      );
+    }
+
     return { ok: true };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
