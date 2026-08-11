@@ -1,4 +1,4 @@
-// PLACEHOLDER// services/chatbot.service.ts
+// services/chatbot.service.ts
 //
 // Nguồn trả lời DUY NHẤT: bot AI Claude chạy ngay trên Vercel (cùng bộ quy
 // tắc đang trả lời Messenger của fanpage). Khi chưa cấu hình / lỗi / trả rỗng
