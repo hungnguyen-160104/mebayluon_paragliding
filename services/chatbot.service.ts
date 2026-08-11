@@ -1,21 +1,24 @@
-// services/chatbot.service.ts
+// PLACEHOLDER// services/chatbot.service.ts
 //
-// Nguồn trả lời DUY NHẤT: bot AI trên n8n (cùng bot đang trả lời Messenger
-// của fanpage). Khi n8n chưa cấu hình / lỗi / timeout / trả rỗng thì chỉ đưa
-// lời nhắn ngắn kèm hotline, KHÔNG cố tự trả lời.
+// Nguồn trả lời DUY NHẤT: bot AI Claude chạy ngay trên Vercel (cùng bộ quy
+// tắc đang trả lời Messenger của fanpage). Khi chưa cấu hình / lỗi / trả rỗng
+// thì chỉ đưa lời nhắn ngắn kèm hotline, KHÔNG cố tự trả lời.
+//
+// Trước 8/2026 phần này gọi sang workflow n8n. n8n hết hạn nên toàn bộ đã
+// chuyển về đây; lib/chatbot/n8n-client.ts vẫn giữ lại làm đường lùi.
 //
 // Trước đây có thêm một tầng FAQ tĩnh đọc từ data/faq.json (9MB, 5150 mục
 // nhưng chỉ 277 câu trả lời khác nhau, và dữ liệu tự xung đột: cùng một alias
 // trỏ tới hai câu trả lời khác nhau). Tầng này đã bỏ vì:
-//   - Toàn bộ tri thức nghiệp vụ giờ nằm trong workflow n8n.
-//   - 9MB JSON bị bundle vào serverless function, phình bundle và chậm cold
-//     start, đổi lại những câu trả lời chất lượng thấp.
+//  - Toàn bộ tri thức nghiệp vụ giờ nằm trong lib/bot/rules.ts + Google Doc.
+//  - 9MB JSON bị bundle vào serverless function, phình bundle và chậm cold
+//    start, đổi lại những câu trả lời chất lượng thấp.
 // Trả lời sai/cũ còn tệ hơn thừa nhận không biết rồi mời khách gọi hotline.
 
-import { askN8n, isN8nChatConfigured, type ChatHistoryItem } from "@/lib/chatbot/n8n-client";
+import { askBot, isBotConfigured, type ChatHistoryItem } from "@/lib/chatbot/bot-client";
 
 /** Nguồn sinh ra câu trả lời — dùng để debug, không hiển thị cho khách. */
-export type ChatSource = "n8n" | "fallback";
+export type ChatSource = "bot" | "fallback";
 
 /** Kiểu trả lời cho API /chatbot */
 export type ChatAnswer = {
@@ -70,8 +73,9 @@ export type AskChatbotInput = {
 /**
  * Luồng trả lời của widget chat trên website.
  *
- * Ngữ cảnh hội thoại do n8n tự giữ theo sessionId (được gửi sang dưới dạng
- * sender.id), nên phía này không cần lưu gì.
+ * Lịch sử hội thoại do lib/bot/memory.ts giữ trong MongoDB theo sessionId,
+ * tự hết hạn sau 7 ngày. Không dùng input.history do client gửi lên vì nó
+ * đi thẳng vào prompt và client sửa được.
  */
 export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
   const question = input.question.trim();
@@ -80,8 +84,8 @@ export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
     return fallbackAnswer(pick(EMPTY_QUESTION_MESSAGE, input.locale));
   }
 
-  if (isN8nChatConfigured()) {
-    const answer = await askN8n({
+  if (isBotConfigured()) {
+    const answer = await askBot({
       question,
       sessionId: input.sessionId,
       history: input.history,
@@ -89,7 +93,7 @@ export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
     });
 
     if (answer) {
-      return { answer, matchedQuestion: null, score: null, source: "n8n" };
+      return { answer, matchedQuestion: null, score: null, source: "bot" };
     }
   }
 
