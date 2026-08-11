@@ -46,8 +46,14 @@ export async function buildSystem(opts: {
     'cac thong tin nay can de khai bao bao hiem, anh chi co the cung cap sau ' +
     'truoc khi bay de kich hoat bao hiem. Khach khong tra loi hoac tu choi thi ' +
     'KHONG hoi lai, van chot don binh thuong va de trong cac muc do.\n' +
-    '3. Khi da co du 3 muc bat buoc (+ diem bay va so nguoi neu khach da noi), ' +
-    'BAT BUOC xuat khoi BOOKING_DATA dung dinh dang ngay trong cau tra loi do.\n' +
+    '3. CHI xuat khoi BOOKING_DATA khi da chot xong ca LOAI BAY va GIA cu the ' +
+    '(khong xuat voi gia \"chua xac dinh\"). Khi da du 3 muc bat buoc va da chot ' +
+    'loai bay + gia, xuat khoi ngay trong cau tra loi do — nhung ' +
+    'CHI XUAT MOT LAN DUY NHAT cho moi don. Neu trong lich su hoi thoai don nay ' +
+    'DA duoc chot roi thi cac luot sau (khach cam on, hoi them, bo sung chi tiet ' +
+    'nho) TUYET DOI KHONG xuat lai khoi BOOKING_DATA nua; chi xuat khoi moi khi ' +
+    'khach doi thong tin quan trong (ngay bay, so nguoi, diem bay) va noi ro do ' +
+    'la CAP NHAT don.\n' +
     '4. CHUA xuat khoi BOOKING_DATA thi TUYET DOI KHONG duoc noi cac cau nhu ' +
     '"da ghi nhan", "da chuyen toi doi bay", "da chot don" — thieu thong tin nao ' +
     'thi hoi dung thong tin do.\n' +

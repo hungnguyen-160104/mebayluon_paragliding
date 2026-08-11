@@ -178,14 +178,13 @@ export async function markBookingOnce(parts: {
   ngay_dat_bay?: unknown;
   dia_diem_dich_vu?: unknown;
 }): Promise<boolean> {
-  const norm = (v: unknown) =>
-    String(v ?? "")
-      .trim()
-      .toLowerCase()
-      .normalize("NFC")
-      .replace(/\s+/g, " ");
-
-  const key = [norm(parts.psid), norm(parts.ngay_dat_bay), norm(parts.dia_diem_dich_vu)].join("|");
+  // Khoá CHỈ gồm khách + ngày bay. Điểm bay do mô hình tự diễn đạt, mỗi
+  // lần một kiểu ("Đèo Khau Phạ", "Khau Phạ - Mù Cang Chải"...) — đưa vào
+  // khoá là chống trùng thủng ngay. Ngày rút về toàn chữ số để "25/08/2026"
+  // và "25-8-2026" ra cùng một khoá.
+  const psid = String(parts.psid ?? "").trim().toLowerCase();
+  const dateDigits = String(parts.ngay_dat_bay ?? "").replace(/\D+/g, "");
+  const key = psid + "|" + dateDigits;
 
   try {
     await connectDB();
