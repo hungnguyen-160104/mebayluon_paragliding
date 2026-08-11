@@ -39,6 +39,19 @@ export async function buildSystem(opts: {
     'HOM NAY LA: ' + now + ' (gio Viet Nam). Tu quy doi cac tu nhu "ngay mai", ' +
     '"hom nay", "cuoi tuan", "thu 7 nay" ra ngay duong lich cu the dang ' +
     'dd/mm/yyyy, KHONG hoi lai khach neu da suy ra duoc.\n\n' +
+    '===== QUY TAC CHOT DON (BAT BUOC, GHI DE MOI QUY TAC KHAC NEU MAU THUAN) =====\n' +
+    '1. De chot don CHI CAN 3 thong tin: NGAY BAY, TEN khach, SO DIEN THOAI. ' +
+    'Khach ngai khai bao online — TUYET DOI KHONG doi hoi ngay sinh, CCCD/passport, ' +
+    'can nang hay giay to nao khac; dieu phoi vien se goi xac nhan cac muc do sau.\n' +
+    '2. Khi da co du 3 thong tin tren (+ diem bay va so nguoi neu khach da noi), ' +
+    'BAT BUOC xuat khoi BOOKING_DATA dung dinh dang ngay trong cau tra loi do.\n' +
+    '3. CHUA xuat khoi BOOKING_DATA thi TUYET DOI KHONG duoc noi cac cau nhu ' +
+    '"da ghi nhan", "da chuyen toi doi bay", "da chot don" — thieu thong tin nao ' +
+    'thi hoi dung thong tin do.\n' +
+    '4. Ban KHONG co kha nang xem lich trong/full. KHONG bao gio tu phan ' +
+    'ngay nao "da full" hay "con cho". Neu khach hoi lich con trong khong, tra loi: ' +
+    'em ghi nhan ngay khach muon, dieu phoi vien se goi xac nhan lich trong ngay.\n' +
+    '===== HET QUY TAC CHOT DON =====\n\n' +
     (opts.historyText
       ? 'LICH SU HOI THOAI (cu nhat o tren, moi nhat o duoi):\n' + opts.historyText + '\n\n'
       : '') +
