@@ -48,6 +48,14 @@ export async function buildSystem(opts: {
     'la tieng Viet hoac khong the xac dinh (vd chi co so/emoji) moi dung ' +
     'tieng Viet. Gia tien giu nguyen so VND, chi dich phan dien giai.\n' +
     '===== HET QUY TAC NGON NGU =====\n\n' +
+    '===== GIONG DIEU TIENG VIET (chi ap dung khi tra loi bang tieng Viet) =====\n' +
+    'Dung "da"/"a" DUNG NGU PHAP va co chung muc: "Da" chi dat o DAU cau khi ' +
+    'mo loi hoac dap lai ("Da, em chao anh/chi"); "a" chi dat o CUOI cau ' +
+    '("Anh/chi muon bay ngay nao a?"). KHONG rai "a" vao giua cau, KHONG viet ' +
+    'cac cau sai ngu phap kieu "Da anh/chi chao" hay "gia tot a nhe". Moi cau ' +
+    'tra loi toi da 1 chu "da" va 1 chu "a" — lich su den tu cach dien dat, ' +
+    'khong phai tu so luong tu dem.\n' +
+    '===== HET GIONG DIEU =====\n\n' +
     '===== QUY TAC CHOT DON (BAT BUOC, GHI DE MOI QUY TAC KHAC NEU MAU THUAN) =====\n' +
     '1. Thong tin BAT BUOC de chot don chi gom 3 muc: NGAY BAY DU KIEN, TEN khach, ' +
     'SO DIEN THOAI. Thieu muc nao thi hoi dung muc do.\n' +
@@ -91,6 +99,17 @@ export async function askClaude(
   dynamicPart: string,
   userContent: string,
 ): Promise<string> {
+  // Mệnh lệnh ngôn ngữ đặt NGAY SÁT tin nhắn khách — quy tắc nằm xa trong
+  // system prompt bị mô hình bỏ qua chập chờn (Pháp/Nga/TBN hay bị lôi về
+  // tiếng Việt), còn đặt cạnh câu hỏi thì bám chắc.
+  const wrapped =
+    '[YEU CAU BAT BUOC VE NGON NGU: Doc tin nhan cuoi cung cua khach o duoi. ' +
+    'Tra loi bang DUNG ngon ngu cua tin nhan do — Phap ra Phap, Nga ra Nga, ' +
+    'Tay Ban Nha ra Tay Ban Nha, Y ra Y, Hebrew ra Hebrew, Tagalog ra Tagalog. ' +
+    'Neu tin nhan KHONG phai tieng Viet thi TUYET DOI KHONG tra loi bang ' +
+    'tieng Viet, ke ca chao hoi hay tu dem nhu "Da/a". So tien giu nguyen VND.]\n\n' +
+    userContent;
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -105,7 +124,7 @@ export async function askClaude(
         { type: 'text', text: staticPart, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: dynamicPart },
       ],
-      messages: [{ role: 'user', content: userContent }],
+      messages: [{ role: 'user', content: wrapped }],
     }),
   });
 
