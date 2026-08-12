@@ -43,6 +43,18 @@ export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentHash, setCurrentHash] = useState<string>("");
 
+  /**
+   * Khu báo bay nội bộ (/baobay) không có thanh menu khách.
+   *
+   * Thanh này là `fixed top-0` cao h-20 và được render ở app/layout.tsx cho
+   * MỌI route. Phi công nhập liệu bằng điện thoại, giữ menu "Đặt bay / Điểm
+   * bay" ở đó chỉ chiếm chỗ và dễ bấm nhầm ra trang khách giữa lúc nhập.
+   * Khu /admin thì vẫn giữ (đã tự chừa pt-20 từ trước).
+   *
+   * Đặt SAU các hook: gọi hook có điều kiện là vi phạm quy tắc hook của React.
+   */
+  const isInternalTool = pathname?.startsWith("/baobay") ?? false;
+
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     const onResize = () => {
@@ -127,6 +139,8 @@ export function Navigation() {
     if (item.type === "hash") return pathname === "/" && currentHash === `#${item.hashId}`;
     return false;
   };
+
+  if (isInternalTool) return null;
 
   return (
     <>

@@ -49,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <NavLink href="/admin" currentPath={pathname}>Quản Lý</NavLink>
               <NavLink href="/admin/dashboard" currentPath={pathname}>Bài Viết</NavLink>
               <NavLink href="/admin/statistics" currentPath={pathname}>Thống kê</NavLink>
+              <NavLink href="/admin/baobay" currentPath={pathname}>Nhân sự báo bay</NavLink>
             </div>
           </div>
         </nav>

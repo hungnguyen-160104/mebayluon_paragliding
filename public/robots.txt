@@ -4,11 +4,15 @@ User-agent: *
 Allow: /
 Allow: /manifest.json
 Disallow: /admin/
+Disallow: /baobay
 Disallow: /api/
 Disallow: /*.json$
 
 # /booking va /pre-notice DA MO index tro lai — chi khu /admin bi chan.
 # Trang admin con duoc chan them bang header X-Robots-Tag trong middleware.ts
+# /baobay la khu nhap lieu noi bo cua phi cong va quay ve — chan ca trang goc
+# nen viet "Disallow: /baobay" (khong co dau / o cuoi) de chan luon /baobay va
+# moi duong dan con.
 
 # Block bad bots
 User-agent: AhrefsBot

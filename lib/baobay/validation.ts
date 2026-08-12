@@ -1,0 +1,234 @@
+// lib/baobay/validation.ts
+/**
+ * Kiểm dữ liệu báo bay ở máy chủ. Trình duyệt cũng kiểm để hiện lỗi ngay,
+ * nhưng đây mới là chỗ tính thật — số lượng vé từ dải mã, số vé huỷ, số vé dời
+ * lịch đều được tính LẠI từ chuỗi mã, không tin con số client gửi lên.
+ */
+
+import { z } from "zod";
+
+import { isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { isSpotId } from "@/lib/baobay/spots";
+
+/** Số đếm: nguyên, không âm, có trần để một lần gõ nhầm không thành 99999 chuyến. */
+const count = (max: number) =>
+  z.coerce.number().int("Phải là số nguyên").min(0, "Không được âm").max(max, `Không vượt quá ${max}`);
+
+/** Tiền VND: nguyên, không âm. Trần 10 tỉ/ngày cho một người là quá đủ. */
+const money = z.coerce
+  .number()
+  .int("Số tiền phải là số nguyên (đồng)")
+  .min(0, "Không được âm")
+  .max(10_000_000_000, "Số tiền quá lớn");
+
+const text = (max: number) => z.string().trim().max(max).optional().default("");
+
+/**
+ * Ngày báo cáo: không được ở tương lai (chưa bay sao báo) và không quá 60 ngày
+ * trước (gõ nhầm năm thành 2025 thì báo lỗi thay vì lặng lẽ tạo bản ghi lạc).
+ * Muốn sửa số của kỳ cũ hơn thì kế toán sửa thẳng trên bảng.
+ */
+export const BACKDATE_LIMIT_DAYS = 60;
+
+/** Điểm bay của báo cáo — bắt buộc, và máy chủ còn kiểm người này có được chỉ định điểm đó không. */
+const spotField = z.string().refine(isSpotId, "Điểm bay không hợp lệ");
+
+const reportDate = z
+  .string()
+  .refine(isDateKey, "Ngày không hợp lệ (cần dạng YYYY-MM-DD)")
+  .superRefine((value, ctx) => {
+    const today = todayInVN();
+    if (value > today) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Không báo cáo cho ngày ở tương lai" });
+      return;
+    }
+    if (value < shiftDateKey(today, -BACKDATE_LIMIT_DAYS)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Ngày quá cũ (chỉ nhập trong ${BACKDATE_LIMIT_DAYS} ngày gần đây)`,
+      });
+    }
+  });
+
+/** Một dải mã vé đã xuất. `count` do máy chủ tính lại, client gửi gì cũng bỏ. */
+const rangeInput = z.object({
+  from: text(50),
+  to: text(50),
+});
+
+/**
+ * Vé dời lịch: mã cũ + ngày dời tới.
+ *
+ * Ngày dời tới KHÔNG dùng `reportDate`: nó ở tương lai so với ngày báo cáo, còn
+ * reportDate cấm ngày tương lai. Chỉ cần đúng dạng, còn "phải sau ngày báo cáo"
+ * do bộ đối chiếu kiểm (lib/baobay/reconcile.ts) để báo lỗi kèm ngữ cảnh.
+ */
+const rescheduledInput = z.object({
+  code: z.string().trim().max(50),
+  toDate: z.string().refine((v) => v === "" || isDateKey(v), "Ngày dời tới không hợp lệ"),
+  note: text(500),
+});
+
+/** Một dòng thu/chi: nội dung – số tiền – thu/chi – ghi chú. */
+const expenseInput = z.object({
+  content: z.string().trim().max(200),
+  amount: money,
+  kind: z.enum(["thu", "chi"]).optional().default("chi"),
+  note: text(500),
+});
+
+/** Vé huỷ theo nhóm đoàn: nhiều mã một ô – lý do – tên liên hệ. */
+const cancelEntryInput = z.object({
+  codesText: text(2_000),
+  reason: text(200),
+  contactName: text(200),
+});
+
+/** Vé dời lịch theo nhóm: nhiều mã một ô – ngày dời – lý do – liên hệ – sđt. */
+const rescheduleEntryInput = z.object({
+  codesText: text(2_000),
+  toDate: z.string().refine((v) => v === "" || isDateKey(v), "Ngày dời tới không hợp lệ"),
+  reason: text(200),
+  contactName: text(200),
+  phone: text(50),
+});
+
+/** Khách ngoại giao: mã vé – số tiền thu (nếu có). */
+const diploEntryInput = z.object({
+  codesText: text(2_000),
+  amount: money,
+});
+
+const expenseList = z.array(expenseInput).max(50, "Tối đa 50 khoản chi một ngày").default([]);
+
+/* ------------------------------------------------------------------ */
+
+/** PHI CÔNG: số chuyến, mã vé, Camera360, khách ngoại giao, chi tiêu. */
+export const pilotReportSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  flightCount: count(300),
+  ticketCodesText: text(20_000),
+  /** Dịch vụ gia tăng: SỐ LƯỢNG bắt buộc, mã vé để trống được. */
+  flycam: count(300),
+  flycamCodesText: text(20_000),
+  video360: count(300),
+  video360CodesText: text(20_000),
+  redFlag: count(300),
+  redFlagCodesText: text(20_000),
+  flagFlight: count(300),
+  flagFlightCodesText: text(20_000),
+  diplomaticGuests: count(300),
+  diplomaticCodesText: text(20_000),
+  siteFee: money,
+  waterCost: money,
+  guestCarCost: money,
+  expenses: expenseList,
+  note: text(2_000),
+  /**
+   * true = phi công bấm "Chốt báo cáo" (khẳng định số đã xong, soát được).
+   * Máy chủ vẫn từ chối nếu mã vé sai dạng hoặc số chuyến lệch số mã.
+   */
+  submit: z.boolean().optional().default(false),
+});
+
+/** ĐIỀU PHỐI BAY: vé xuất/thu, tiền mặt, dịch vụ gia tăng, chi cho khách. */
+export const dispatcherReportSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  guestCount: count(5_000),
+  ticketsIssued: count(5_000),
+  ticketsReturned: count(5_000),
+  issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
+  cancelledEntries: z.array(cancelEntryInput).max(200).default([]),
+  rescheduledEntries: z.array(rescheduleEntryInput).max(200).default([]),
+  diplomaticEntries: z.array(diploEntryInput).max(200).default([]),
+  flycam: count(1_000),
+  flycamCodesText: text(20_000),
+  video360: count(1_000),
+  video360CodesText: text(20_000),
+  redFlag: count(1_000),
+  redFlagCodesText: text(20_000),
+  flagFlight: count(1_000),
+  flagFlightCodesText: text(20_000),
+  cashReceived: money,
+  transferReceived: money,
+  guestWaterCost: money,
+  mountainCarCost: money,
+  shuttleCarCost: money,
+  expenses: expenseList,
+  note: text(2_000),
+});
+
+/** CAMERA MAN: số chuyến quay flycam + chi tiêu. */
+export const cameramanReportSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  flycamFlights: count(1_000),
+  flycamCodesText: text(20_000),
+  paraglidingFlights: count(1_000),
+  paraglidingCodesText: text(20_000),
+  expenses: expenseList,
+  note: text(2_000),
+  submit: z.boolean().optional().default(false),
+});
+
+/** KẾ TOÁN: số chốt ngày — mọi ô đều do kế toán tự gõ. */
+export const dailyCloseSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  guestCount: count(5_000),
+  ticketsIssued: count(5_000),
+  ticketsReturned: count(5_000),
+  cancelledCount: count(5_000),
+  rescheduledCount: count(5_000),
+  issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
+  cancelledCodesText: text(20_000),
+  rescheduled: z.array(rescheduledInput).max(500).default([]),
+  cashTotal: money,
+  transferTotal: money,
+  flycam: count(1_000),
+  video360: count(1_000),
+  flagFlight: count(1_000),
+  expensesApproved: z.boolean().optional().default(false),
+  expensesApprovedNote: text(1_000),
+  varianceApproved: z.boolean().optional().default(false),
+  varianceNote: text(1_000),
+  note: text(2_000),
+});
+
+/** Nhân sự đưa tiền cho quản lý/giám đốc. */
+export const handoverSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  /** Tài khoản người nhận — bắt buộc chọn; máy chủ kiểm lại vai trò và điểm bay. */
+  recipientUsername: z.string().trim().min(1, "Chưa chọn người nhận tiền"),
+  amount: money.refine((v) => v > 0, "Chưa nhập số tiền"),
+  method: z.enum(["cash", "transfer"]).default("cash"),
+  content: text(500),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Chưa nhập mật khẩu hiện tại"),
+  newPassword: z
+    .string()
+    .min(8, "Mật khẩu mới phải từ 8 ký tự")
+    .max(72, "Mật khẩu quá dài") // bcrypt chỉ đọc 72 byte đầu
+    .refine((v) => v.trim() === v, "Mật khẩu không được có khoảng trắng ở đầu/cuối"),
+});
+
+export const summaryQuerySchema = z
+  .object({
+    spot: spotField,
+    from: z.string().refine(isDateKey, "Ngày bắt đầu không hợp lệ"),
+    to: z.string().refine(isDateKey, "Ngày kết thúc không hợp lệ"),
+  })
+  .refine((v) => v.from <= v.to, { message: "Ngày bắt đầu phải trước ngày kết thúc", path: ["from"] });
+
+/** Gộp lỗi zod thành một câu tiếng Việt để hiện trên form. */
+export function firstZodMessage(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) return "Dữ liệu không hợp lệ";
+  const field = issue.path.join(".");
+  return field ? `${field}: ${issue.message}` : issue.message;
+}

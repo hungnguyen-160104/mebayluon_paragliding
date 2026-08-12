@@ -33,5 +33,19 @@ export function verifyToken(token: string): JwtPayload & TokenPayload {
     throw new Error("Invalid token payload");
   }
 
+  /**
+   * Chặn token của khu khác dùng làm token admin.
+   *
+   * Trang báo bay (/baobay) ký token bằng CÙNG JWT_SECRET và cũng có trường
+   * `username`, nên nếu không kiểm `scope` thì cookie của một phi công sẽ đi
+   * qua requireAuth và mở được toàn bộ API admin. Token admin do signToken()
+   * tạo ra không có `scope`, vì vậy chỉ cần từ chối mọi token CÓ scope khác
+   * "admin" — không ảnh hưởng token đã phát trước đây.
+   */
+  const scope = (decoded as any).scope;
+  if (scope !== undefined && scope !== "admin") {
+    throw new Error(`Token thuộc phạm vi khác: ${String(scope)}`);
+  }
+
   return decoded as JwtPayload & TokenPayload;
 }

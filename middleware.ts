@@ -17,6 +17,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
+import { BAOBAY_COOKIE } from "@/lib/baobay/cookie";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
 
 const LOCALE_PREFIX = /^\/(en|fr|ru|zh|hi)(\/.*)?$/;
@@ -67,6 +68,35 @@ export function middleware(request: NextRequest) {
    * với những URL admin đã lọt vào Google từ trước khi có dòng Disallow.
    */
   if (pathname.startsWith("/admin")) {
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
+  /**
+   * Khu báo bay nội bộ (/baobay): phi công và quầy vé nhập số liệu hằng ngày.
+   *
+   * - noindex như khu admin (robots.txt và metadata của trang là hai lớp còn lại).
+   * - Chưa có cookie phiên thì đưa thẳng về trang đăng nhập, khỏi phải nháy một
+   *   nhịp trang trắng rồi mới chuyển bằng JavaScript.
+   *
+   * Ở đây CHỈ kiểm cookie có tồn tại hay không, KHÔNG xác thực chữ ký: Edge
+   * runtime không chạy được jsonwebtoken. Cửa thật nằm ở các route handler
+   * (middlewares/requireBaobay.ts) — cookie giả vào được trang nhưng không đọc
+   * hay ghi được một dòng dữ liệu nào.
+   */
+  if (pathname === "/baobay" || pathname.startsWith("/baobay/")) {
+    const isLoginPage = pathname === "/baobay" || pathname === "/baobay/";
+    const hasSession = Boolean(request.cookies.get(BAOBAY_COOKIE)?.value);
+
+    if (!isLoginPage && !hasSession) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/baobay";
+      const response = NextResponse.redirect(url);
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return response;
+    }
+
     const response = NextResponse.next();
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
