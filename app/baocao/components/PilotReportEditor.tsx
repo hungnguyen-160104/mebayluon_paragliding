@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
@@ -148,7 +149,7 @@ function PilotRow({
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Số chuyến">
+            <Field label="Số chuyến PG">
               <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
             </Field>
             <Field label="Camera 360">
@@ -156,7 +157,7 @@ function PilotRow({
             </Field>
           </div>
 
-          <Field label="Mã vé đã bay">
+          <Field label="Mã vé đã bay (PG)">
             <TextArea
               value={form.ticketCodesText}
               onChange={(e) => set("ticketCodesText", e.target.value)}
@@ -174,6 +175,89 @@ function PilotRow({
               spellCheck={false}
             />
           </Field>
+
+          {/* PPG chỉ có ở Khau Phạ — mã vé PPG khai Ở ĐÂY, không gộp vào ô mã PG */}
+          {spot === "khau-pha" && (
+            <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-3">
+              <div className="mb-2 text-xs font-semibold text-violet-900">
+                PPG (dù có động cơ) — mã vé PPG khai ở đây, đừng gộp vào ô mã PG phía trên
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Số chuyến PPG">
+                  <CountInput
+                    value={form.ppgFlights}
+                    onChange={(v) => {
+                      // Ô "không vé" tự chạy theo khi chưa liệt kê mã — giống trang phi công
+                      const codes = countCodes(form.ppgCodesText);
+                      setForm((prev) => ({ ...prev, ppgFlights: v, ppgNoTicket: Math.max(0, v - codes) }));
+                    }}
+                    max={300}
+                  />
+                </Field>
+                <Field label="PPG không vé">
+                  <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
+                </Field>
+              </div>
+              <div className="mt-3">
+                <Field label="Mã vé PPG">
+                  <TextInput
+                    value={form.ppgCodesText}
+                    onChange={(e) => {
+                      const text = e.target.value.toUpperCase();
+                      const codes = countCodes(text);
+                      setForm((prev) => ({
+                        ...prev,
+                        ppgCodesText: text,
+                        ppgNoTicket: Math.max(0, prev.ppgFlights - codes),
+                      }));
+                    }}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder="MBL0001, MBL0002…"
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Flycam">
+              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={300} />
+            </Field>
+            <Field label="Dù cờ đỏ">
+              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
+            </Field>
+            <Field label="Bay kéo cờ">
+              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
+            </Field>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Mã vé Flycam">
+              <TextInput
+                value={form.flycamCodesText}
+                onChange={(e) => set("flycamCodesText", e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </Field>
+            <Field label="Mã vé cờ đỏ">
+              <TextInput
+                value={form.redFlagCodesText}
+                onChange={(e) => set("redFlagCodesText", e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </Field>
+            <Field label="Mã vé kéo cờ">
+              <TextInput
+                value={form.flagFlightCodesText}
+                onChange={(e) => set("flagFlightCodesText", e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </Field>
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Khách ngoại giao">
@@ -248,6 +332,11 @@ function PilotRow({
   );
 }
 
+/** Đếm mã hợp lệ trong ô nhập — cùng bộ phân tích với máy chủ, để ô "không vé" tự chạy đúng. */
+function countCodes(text: string): number {
+  return parseTicketCodeList(text).codes.length;
+}
+
 /** 500000 -> "500k", 1200000 -> "1.200k" — chữ k thay cho .000đ, đọc nhanh trên một dòng. */
 function kVND(amount: number): string {
   return `${Math.round(amount / 1000).toLocaleString("vi-VN")}k`;
@@ -271,8 +360,9 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
       </span>,
     );
 
-  add(`${r.flightCount} chuyến`, "fl");
-  add(`${r.ticketCodes.length} mã`, "codes");
+  const totalFlights = r.flightCount + (r.ppgFlights || 0);
+  add(r.ppgFlights ? `${totalFlights} chuyến (${r.flightCount} PG + ${r.ppgFlights} PPG)` : `${r.flightCount} chuyến`, "fl");
+  add(`${r.ticketCodes.length + (r.ppgCodes?.length || 0)} mã`, "codes");
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
   if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");

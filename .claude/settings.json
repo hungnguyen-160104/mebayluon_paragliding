@@ -40,7 +40,13 @@
       "Bash(curl -s -c cj7.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t7-pc\",\"password\":\"Test1234\"}' -o /dev/null -w \"login7:%{http_code}\\\\n\")",
       "Bash(curl -s -b cj7.txt -X POST http://localhost:8080/api/baocao/handover/confirm?spot=khau-pha -H 'Content-Type: application/json' -d '{\"id\":\"6a7c7cf57dbea1b3f6f14993\",\"reject\":\"\"}' -o cf.json -w 'confirm:%{http_code}\\\\n')",
       "Bash(curl -s -b cj.txt -o st-t7.xlsx -w \"st:%{http_code}\\\\n\" \"http://localhost:8080/api/baocao/statement?spot=khau-pha&username=t7-pc&from=2025-01-01&to=2025-01-10\")",
-      "Bash(curl -s -b cj7.txt \"http://localhost:8080/api/baocao/my-summary?spot=khau-pha\" -o ms.json -w \"ms:%{http_code}\\\\n\")"
+      "Bash(curl -s -b cj7.txt \"http://localhost:8080/api/baocao/my-summary?spot=khau-pha\" -o ms.json -w \"ms:%{http_code}\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"money-order: %{http_code}\\\\n\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/126 Safari/537.36\" \"https://mebayluon.com/api/baocao/money-order?spot=khau-pha\")",
+      "Bash(curl -s -o /dev/null -w \"trang chủ: %{http_code}\\\\n\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/126 Safari/537.36\" \"https://mebayluon.com/\")",
+      "Bash(curl -sL -o /dev/null -w \"money-order: %{http_code} \\(url: %{url_effective}\\)\\\\n\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/126 Safari/537.36\" \"https://mebayluon.com/api/baocao/money-order?spot=khau-pha\")",
+      "Bash(curl -s -b cj.txt \"http://localhost:8080/api/baocao/close?date=2026-08-12&spot=khau-pha\" -o close.json -w \"%{http_code}\\\\n\")",
+      "Bash(node --import ./alias.mjs live.mjs)",
+      "Bash(sed -i '' 's|await import\\(\"mongoose\"\\)|await import\\(\"/Users/dangvm/Desktop/mebayluon_paragliding/node_modules/mongoose/index.js\"\\)|' live.mjs)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

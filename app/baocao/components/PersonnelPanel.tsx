@@ -100,7 +100,8 @@ export function PersonnelPanel() {
 
       {credentials.length > 0 && <CredentialBox items={credentials} onClear={() => setCredentials([])} />}
 
-      <AdminMoneyOrder />
+      {/* Lệnh tiền nhân sự gửi lên để trên cùng — việc cần duyệt ngay mỗi khi mở trang */}
+      <HandoverCard />
 
       <StatementCard accounts={accounts} />
 
@@ -108,7 +109,7 @@ export function PersonnelPanel() {
 
       <SpotSettingsCard />
 
-      <HandoverCard />
+      <AdminMoneyOrder />
 
       <PeriodTotalsCard />
 
