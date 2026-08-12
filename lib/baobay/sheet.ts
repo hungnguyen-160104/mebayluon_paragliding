@@ -130,7 +130,7 @@ async function pushOnce(
      * trống trơn mà bản ghi vẫn ghi đã đồng bộ.
      */
     const text = await res.text();
-    let body: { ok?: boolean; error?: string; missingColumns?: string[] };
+    let body: { ok?: boolean; error?: string; row?: number; missingColumns?: string[] };
     try {
       body = JSON.parse(text);
     } catch {
@@ -140,6 +140,16 @@ async function pushOnce(
 
     if (body.ok !== true) {
       return { ok: false, error: body.error || "Apps Script báo thất bại" };
+    }
+
+    /**
+     * `ok: true` chưa đủ: lúc Google chập chờn, câu trả lời có khi là JSON của
+     * doGet (liệt kê version/kinds, KHÔNG có `row`) — nghĩa là yêu cầu ghi chưa
+     * hề chạy. Bắt gặp thật trên bảng Sa Pa: hai dòng "thành công" mà bảng
+     * trống. Ghi thành công thì doPost luôn trả số dòng.
+     */
+    if (body.row === undefined) {
+      return { ok: false, error: "Trả về không phải kết quả ghi (thiếu số dòng)", retryable: true };
     }
 
     if (body.missingColumns?.length) {
