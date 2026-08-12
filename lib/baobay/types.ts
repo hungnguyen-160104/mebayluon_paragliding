@@ -208,6 +208,7 @@ export type DailyCloseDTO = {
   transferTotal: number;
   flycam: number;
   video360: number;
+  redFlag: number;
   flagFlight: number;
   /** Sổ THU/CHI riêng của kế toán. */
   ledger: ExpenseDTO[];
@@ -264,6 +265,9 @@ export type DailyRollupDTO = {
   flycam: number;
   video360: number;
   flagFlight: number;
+
+  /** Ai bấm chốt ngày này — hiện cạnh nhãn ĐÃ CHỐT. */
+  closedBy?: string;
 
   /** Số cộng từ báo cáo nhân viên, để so với số kế toán khai. */
   pilotFlights: number;

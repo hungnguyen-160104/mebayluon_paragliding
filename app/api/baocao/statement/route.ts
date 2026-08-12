@@ -1,7 +1,7 @@
 // app/api/baocao/statement/route.ts
 import { NextResponse } from "next/server";
 
-import { isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { spotName } from "@/lib/baobay/spots";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
@@ -92,23 +92,25 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
   const thuTaiBai = (r: Statement["reports"][number]) =>
     r.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
 
+  const isKP = st.spot === "khau-pha";
   const daily: SheetSpec = {
     name: "Bảng kê theo ngày",
     header: [
-      "Ngày", "Ngày đã chốt", "Số chuyến PG", "Số mã vé", "Chuyến PPG", "PPG không vé", "Flycam", "Camera 360", "Cờ đỏ", "Kéo cờ",
+      "Ngày", "Ngày đã chốt", "Số chuyến PG", "Số mã vé",
+      ...(isKP ? ["Chuyến PPG", "PPG không vé"] : []),
+      "Flycam", "Camera 360", "Cờ đỏ", "Kéo cờ",
       "Ngoại giao", "Phí bãi (khách)", "Nước", "Xe cho khách",
       ...(isHanoi ? ["Đón BigC (lượt)", "Đón KS (lượt)", "Xe lên núi (lượt)"] : []),
       "Chi khác", "Tổng chi (hoàn lại)", "Thu hộ tại bãi", "Phạt nộp muộn", "Ghi chú",
     ],
-    widths: [12, 12, 11, 10, 11, 12, 9, 11, 8, 8, 10, 12, 10, 12, ...(isHanoi ? [13, 13, 13] : []), 12, 16, 14, 14, 30],
+    widths: [12, 12, 11, 10, ...(isKP ? [11, 12] : []), 9, 11, 8, 8, 10, 12, 10, 12, ...(isHanoi ? [13, 13, 13] : []), 12, 16, 14, 14, 30],
     rows: [
       ...st.reports.map((r) => [
-        r.date,
+        formatDateKeyVN(r.date),
         closed.has(r.date) ? "x" : "chưa",
         r.flightCount,
         r.ticketCodes.length,
-        r.ppgFlights,
-        r.ppgNoTicket,
+        ...(isKP ? [r.ppgFlights, r.ppgNoTicket] : []),
         r.flycam,
         r.video360,
         r.redFlag,
@@ -127,7 +129,7 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
       [],
       [
         "TỔNG", "", sum((r) => r.flightCount), sum((r) => r.ticketCodes.length),
-        sum((r) => r.ppgFlights), sum((r) => r.ppgNoTicket),
+        ...(isKP ? [sum((r) => r.ppgFlights), sum((r) => r.ppgNoTicket)] : []),
         sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.flagFlight),
         sum((r) => r.diplomaticGuests), sum((r) => r.siteFeeGuests), sum((r) => r.waterCost), sum((r) => r.guestCarCost),
         ...(isHanoi ? [sum((r) => r.pickupBigC), sum((r) => r.pickupHotel), sum((r) => r.mountainTrips)] : []),
@@ -139,7 +141,7 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
       ],
       [],
       [
-        "Bảng kê", `${st.pilotName} (${st.username}) · ${spotName(st.spot)} · ${st.from} → ${st.to}`,
+        "Bảng kê", `${st.pilotName} (${st.username}) · ${spotName(st.spot)} · ${formatDateKeyVN(st.from)} → ${formatDateKeyVN(st.to)}`,
       ],
       [
         "Ghi chú",
@@ -157,7 +159,11 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
 /** Sheet ứng tiền & giao tiền — chung cho mọi vai trò. */
 function moneySheetOf(st: Statement): SheetSpec {
   const advances = st.money.filter((m) => m.kind === "advance");
-  const handovers = st.money.filter((m) => m.kind !== "advance");
+  /** Lệnh chuyển GỬI CHO người này (kế toán lập) — chiều NHẬN, tách khỏi chiều giao. */
+  const isReceived = (m: Statement["money"][number]) =>
+    m.kind !== "advance" && m.recipientUsername === st.username && m.username !== st.username;
+  const handovers = st.money.filter((m) => m.kind !== "advance" && !isReceived(m));
+  const received = st.money.filter(isReceived);
 
   return {
     name: "Ứng tiền & giao tiền",
@@ -165,10 +171,11 @@ function moneySheetOf(st: Statement): SheetSpec {
     widths: [12, 12, 36, 24, 14, 12, 18],
     rows: [
       ...st.money.map((m) => [
-        m.date,
-        m.kind === "advance" ? "Ứng tiền" : "Giao tiền",
+        formatDateKeyVN(m.date),
+        m.kind === "advance" ? "Ứng tiền" : isReceived(m) ? "Nhận tiền (lệnh KT)" : "Giao tiền",
         m.content,
-        m.recipientName,
+        // Chiều nhận thì cột "người kia" là NGƯỜI LẬP LỆNH, không phải chính mình
+        isReceived(m) ? m.createdBy || m.staffName : m.recipientName,
         m.amount,
         m.method === "cash" ? "Tiền mặt" : "CK",
         m.rejected ? `TỪ CHỐI: ${m.rejectedReason || ""}` : m.confirmed ? (m.kind === "advance" ? "Đã duyệt" : "Đã nhận") : "Chờ",
@@ -176,6 +183,7 @@ function moneySheetOf(st: Statement): SheetSpec {
       [],
       ["TỔNG ỨNG ĐÃ DUYỆT (trừ lương)", "", "", "", advances.filter((m) => m.confirmed).reduce((a, m) => a + m.amount, 0), "", ""],
       ["TỔNG ĐÃ GIAO (xác nhận)", "", "", "", handovers.filter((m) => m.confirmed).reduce((a, m) => a + m.amount, 0), "", ""],
+      ["TỔNG ĐÃ NHẬN (lệnh KT: lương/phí/khác)", "", "", "", received.filter((m) => m.confirmed).reduce((a, m) => a + m.amount, 0), "", ""],
     ],
   };
 }
@@ -199,7 +207,7 @@ function dispatcherDaily(st: Statement): SheetSpec {
     widths: [12, 12, 8, 9, 11, 8, 8, 9, 11, 8, 8, 13, 14, 14, 14, 36, 16, 24],
     rows: [
       ...list.map((r) => [
-        r.date,
+        formatDateKeyVN(r.date),
         closed.has(r.date) ? "x" : "chưa",
         r.guestCount, r.ticketsIssued, r.ticketsReturned, r.cancelledCount, r.rescheduledCount,
         r.flycam, r.video360, r.redFlag, r.flagFlight,
@@ -218,7 +226,7 @@ function dispatcherDaily(st: Statement): SheetSpec {
         sum((r) => r.cashReceived), sum((r) => r.transferReceived), "", sum(chi), "",
       ],
       [],
-      ["Bảng kê", `${st.pilotName} (${st.username}) · Điều phối · ${st.from} → ${st.to}`],
+      ["Bảng kê", `${st.pilotName} (${st.username}) · Điều phối · ${formatDateKeyVN(st.from)} → ${formatDateKeyVN(st.to)}`],
     ],
   };
 }
@@ -237,14 +245,14 @@ function cameramanDaily(st: Statement): SheetSpec {
     widths: [12, 12, 13, 13, 14, 12, 30],
     rows: [
       ...list.map((r) => [
-        r.date,
+        formatDateKeyVN(r.date),
         closed.has(r.date) ? "x" : "chưa",
         r.flycamFlights, r.paraglidingFlights, thu(r), chi(r), r.note,
       ]),
       [],
       ["TỔNG", "", sum((r) => r.flycamFlights), sum((r) => r.paraglidingFlights), sum(thu), sum(chi), ""],
       [],
-      ["Bảng kê", `${st.pilotName} (${st.username}) · Camera man · ${st.from} → ${st.to}`],
+      ["Bảng kê", `${st.pilotName} (${st.username}) · Camera man · ${formatDateKeyVN(st.from)} → ${formatDateKeyVN(st.to)}`],
     ],
   };
 }

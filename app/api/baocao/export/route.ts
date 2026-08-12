@@ -68,7 +68,7 @@ export async function GET(req: Request) {
     const rec = await getReconcile(spot, day.date);
     for (const line of rec.expenseLines) {
       expenseRows.push([
-        day.date,
+        formatDateKeyVN(day.date),
         line.who,
         ROLE_LABEL[line.role],
         line.content.startsWith("[THU") ? "Thu" : "Chi",
@@ -208,7 +208,7 @@ function buildSheets(
     ],
     rows: [
       ...summary.days.map((d) => [
-        d.date, STATUS_LABEL[d.status], d.issueCount, d.guestCount, d.ticketsIssued, d.ticketsReturned,
+        formatDateKeyVN(d.date), STATUS_LABEL[d.status], d.issueCount, d.guestCount, d.ticketsIssued, d.ticketsReturned,
         d.cancelledCount, d.rescheduledCount,
         d.cashTotal, d.transferTotal, d.revenueTotal, d.expenseTotal,
         d.flycam, d.cameramanFlycam, d.video360, d.pilot360, d.flagFlight,
@@ -244,7 +244,7 @@ function buildSheets(
     rows: summary.pilotReports.map((r) => {
       const other = r.expenses.reduce((s, e) => s + (e.kind === "thu" ? 0 : e.amount), 0);
       return [
-        r.date, r.pilotName, r.submitted ? "x" : "", r.flightCount, r.ticketCodes.length,
+        formatDateKeyVN(r.date), r.pilotName, r.submitted ? "x" : "", r.flightCount, r.ticketCodes.length,
         r.flycam, r.video360, r.redFlag, r.flagFlight, r.diplomaticGuests,
         r.siteFeeGuests, r.waterCost, r.guestCarCost,
         ...(summary.spot === "ha-noi" ? [r.pickupBigC, r.pickupHotel, r.mountainTrips] : []),
@@ -316,7 +316,7 @@ function buildSheets(
     widths: [12, 26, 14, 26, 16, 14, 34, 16, 22, 18],
     rows: [
       ...givens.map((h) => [
-        h.date,
+        formatDateKeyVN(h.date),
         h.staffName,
         ROLE_TEXT[h.role] ?? h.role,
         h.recipientName,
@@ -349,7 +349,7 @@ function buildSheets(
     widths: [12, 26, 14, 26, 16, 40, 16, 22, 18],
     rows: [
       ...advances.map((h) => [
-        h.date,
+        formatDateKeyVN(h.date),
         h.staffName,
         ROLE_TEXT[h.role] ?? h.role,
         h.recipientName,

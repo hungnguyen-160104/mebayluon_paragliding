@@ -23,7 +23,24 @@
       "Bash(node -e ' *)",
       "Bash(python3 -c ' *)",
       "Bash(python3)",
-      "Bash(nohup npm run dev)"
+      "Bash(nohup npm run dev)",
+      "Bash(lsof -i :8080 -sTCP:LISTEN)",
+      "Bash(node --import ./alias.mjs mbl.mjs)",
+      "Bash(curl -s -c cj.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"dangvm\",\"password\":\"Iphone11\"}' -o login.json -w \"%{http_code}\\\\n\")",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('login.json'\\)\\);print\\(d.get\\('account',{}\\).get\\('role'\\), d.get\\('account',{}\\).get\\('adminLevel'\\)\\)\")",
+      "Bash(curl -s -b cj.txt -o st-kp.xlsx -w \"KP:%{http_code} \" \"http://localhost:8080/api/baocao/statement?spot=khau-pha&username=amac&from=2026-08-01&to=2026-08-11\")",
+      "Bash(curl -s -b cj.txt -o st-hn.xlsx -w \"HN:%{http_code}\\\\n\" \"http://localhost:8080/api/baocao/statement?spot=ha-noi&username=dungpilot&from=2026-08-01&to=2026-08-11\")",
+      "Bash(node --env-file=.env.local -e ' *)",
+      "Bash(curl -s -b cj.txt -o st-tc.xlsx -w \"%{http_code}\\\\n\" \"http://localhost:8080/api/baocao/statement?spot=sapa&username=tc-pc&from=2026-08-10&to=2026-08-12\")",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t7-pc\",\"password\":\"Test1234\",\"displayName\":\"T7 Test Pilot\",\"role\":\"pilot\",\"spot\":\"sapa\"}' -o acc.json -w 'acc:%{http_code}\\\\n')",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/baocao/money-order?spot=sapa -H 'Content-Type: application/json' -d '{\"targetUsername\":\"t7-pc\",\"category\":\"luong\",\"amount\":5000000,\"method\":\"transfer\",\"content\":\"t7 test luong\",\"date\":\"2025-01-05\"}' -o ord.json -w 'order:%{http_code}\\\\n')",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('ord.json'\\)\\);o=d.get\\('order',{}\\);print\\(o.get\\('id'\\),o.get\\('username'\\),'->',o.get\\('recipientUsername'\\),o.get\\('createdBy'\\)\\)\")",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/baocao/money-order?spot=khau-pha -H 'Content-Type: application/json' -d '{\"targetUsername\":\"t7-pc\",\"category\":\"luong\",\"amount\":5000000,\"method\":\"transfer\",\"content\":\"t7 test luong\",\"date\":\"2025-01-05\"}' -o ord.json -w 'order:%{http_code}\\\\n')",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('ord.json'\\)\\);o=d.get\\('order',{}\\);print\\('id:',o.get\\('id'\\),'| user:',o.get\\('username'\\),'->',o.get\\('recipientUsername'\\),'| createdBy:',o.get\\('createdBy'\\)\\)\")",
+      "Bash(curl -s -c cj7.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t7-pc\",\"password\":\"Test1234\"}' -o /dev/null -w \"login7:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cj7.txt -X POST http://localhost:8080/api/baocao/handover/confirm?spot=khau-pha -H 'Content-Type: application/json' -d '{\"id\":\"6a7c7cf57dbea1b3f6f14993\",\"reject\":\"\"}' -o cf.json -w 'confirm:%{http_code}\\\\n')",
+      "Bash(curl -s -b cj.txt -o st-t7.xlsx -w \"st:%{http_code}\\\\n\" \"http://localhost:8080/api/baocao/statement?spot=khau-pha&username=t7-pc&from=2025-01-01&to=2025-01-10\")",
+      "Bash(curl -s -b cj7.txt \"http://localhost:8080/api/baocao/my-summary?spot=khau-pha\" -o ms.json -w \"ms:%{http_code}\\\\n\")"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

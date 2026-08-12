@@ -89,7 +89,7 @@ export function PersonnelPanel() {
       <header>
         <h1 className="text-2xl font-bold text-slate-900">Nhân sự báo bay</h1>
         <p className="mt-1 text-sm text-slate-600">
-          {activeCount} người đang làm việc · cấp tài khoản cho phi công, điều phối bay, camera man và kế
+          {activeCount} người làm việc · cấp tài khoản cho phi công, điều phối bay, camera man và kế
           toán. Người được cấp đăng nhập tại{" "}
           <a href="/baocao" className="font-medium text-sky-700 underline" target="_blank" rel="noreferrer">
             mebayluon.com/baocao
@@ -123,7 +123,7 @@ export function PersonnelPanel() {
           <div className="flex flex-wrap items-center gap-2">
             {(
               [
-                ["active", `Đang làm việc (${activeCount})`],
+                ["active", `Làm việc (${activeCount})`],
                 ["inactive", `Đã khoá (${accounts.length - activeCount})`],
                 ["all", "Tất cả"],
               ] as Array<[Filter, string]>
@@ -379,6 +379,7 @@ function SpotSettingsCard() {
 type HandoverRowDTO = {
   id: string;
   kind: "handover" | "advance";
+  createdBy?: string;
   date: string;
   staffName: string;
   username: string;
@@ -537,7 +538,13 @@ function HandoverCard() {
                     (r.kind === "advance" ? "bg-violet-100 text-violet-800" : "bg-sky-100 text-sky-800")
                   }
                 >
-                  {r.kind === "advance" ? "xin ứng" : "giao tiền"}
+                  {r.kind === "advance"
+                    ? r.createdBy
+                      ? "lệnh ứng (QL lập)"
+                      : "xin ứng"
+                    : r.createdBy
+                      ? "lệnh chuyển (QL lập)"
+                      : "giao tiền"}
                 </span>
                 <span className="text-slate-500">{formatDateKeyVN(r.date)}</span>
                 <span className="font-medium text-slate-900">{r.staffName}</span>
@@ -1140,7 +1147,7 @@ function AccountRow({
       <td className="py-2 pr-3">
         {account.isActive ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            đang làm việc
+            làm việc
           </span>
         ) : (
           <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">đã khoá</span>

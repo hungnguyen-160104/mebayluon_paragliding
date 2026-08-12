@@ -370,6 +370,7 @@ function DaysTable({ data }: { data: BaobaySummaryDTO }) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <StatusPill status={d.status} blocked={d.blocked} />
+                  {d.closedBy && <span className="ml-1 text-xs text-emerald-700">{d.closedBy} đã chốt</span>}
                   {d.issueCount > 0 && <span className="ml-1 text-xs text-rose-700">{d.issueCount} lỗi</span>}
                 </td>
                 <td className={td}>{d.guestCount || "—"}</td>

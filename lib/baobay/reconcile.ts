@@ -80,6 +80,12 @@ export type ReconcilePilot = {
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
+  /**
+   * Mã vé chuyến PPG (dù có động cơ). Vé PPG lấy từ CÙNG cuốn MBL với vé PG,
+   * nên phải tính là VÉ ĐÃ BAY — nếu không, bay PPG có vé là ngày treo oan:
+   * "mã đã xuất mà không ai bay" + "vé xuất khác tổng bay + thu hồi".
+   */
+  ppgCodes: string[];
   expenseTotal: number;
   submitted: boolean;
 };
@@ -129,6 +135,7 @@ export type ReconcileClose = {
   transferTotal: number;
   flycam: number;
   video360: number;
+  redFlag: number;
   flagFlight: number;
   expensesApproved: boolean;
   varianceApproved: boolean;
@@ -399,6 +406,22 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       else flownBy.set(c, [p.username]);
     }
 
+    /** Số mã PG — kiểm "số chuyến = số mã" trước khi trộn thêm mã PPG vào. */
+    const pgCodeCount = seen.size;
+
+    // Mã PPG cũng là vé đã bay: vào chung bộ soát trùng / lạ / thiếu
+    for (const raw of p.ppgCodes ?? []) {
+      const c = raw.trim().toUpperCase();
+      if (!c) continue;
+      if (!TICKET_CODE_PATTERN.test(c)) malformed.push(c);
+      if (seen.has(c)) continue;
+      seen.add(c);
+
+      const list = flownBy.get(c);
+      if (list) list.push(p.username);
+      else flownBy.set(c, [p.username]);
+    }
+
     if (malformed.length) {
       flag({
         code: "MA_SAI_DANG",
@@ -409,19 +432,19 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (requireCodes && p.flightCount !== seen.size) {
+    if (requireCodes && p.flightCount !== pgCodeCount) {
       flag({
         code: "PHI_CONG_LECH_SO",
         severity: "red",
-        message: `${p.pilotName} khai ${p.flightCount} chuyến nhưng liệt kê ${seen.size} mã vé`,
+        message: `${p.pilotName} khai ${p.flightCount} chuyến nhưng liệt kê ${pgCodeCount} mã vé`,
         who: [p.username],
       });
-    } else if (!requireCodes && seen.size > 0 && p.flightCount !== seen.size) {
+    } else if (!requireCodes && pgCodeCount > 0 && p.flightCount !== pgCodeCount) {
       // Điểm không bắt mã: khai một phần là bình thường, chỉ nhắc chứ không treo ngày
       flag({
         code: "PHI_CONG_LECH_SO",
         severity: "warn",
-        message: `${p.pilotName} khai ${p.flightCount} chuyến, ghi ${seen.size} mã (điểm này không bắt buộc mã)`,
+        message: `${p.pilotName} khai ${p.flightCount} chuyến, ghi ${pgCodeCount} mã (điểm này không bắt buộc mã)`,
         who: [p.username],
       });
     }
@@ -819,6 +842,16 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
         severity: varianceApproved ? "warn" : "red",
         message: `Camera360: kế toán khai ${close.video360}, phi công báo ${totals.pilot360}`,
         // Lệch với con số kế toán tự khai — không chỉ đích danh phi công nào được
+        who: [],
+      });
+    }
+
+    // Cờ đỏ cùng khuôn với 360: nguồn chuẩn là phi công, lệch thì duyệt được
+    if ((close.redFlag ?? 0) !== totals.pilotRedFlag && pilots.length) {
+      flag({
+        code: "LECH_CO_DO",
+        severity: varianceApproved ? "warn" : "red",
+        message: `Dù cờ đỏ: kế toán khai ${close.redFlag}, phi công báo ${totals.pilotRedFlag}`,
         who: [],
       });
     }

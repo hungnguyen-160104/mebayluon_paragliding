@@ -1231,7 +1231,7 @@ async function pushPilotRow(doc: any) {
     "pilot",
     {
       key: `${doc.date}|${doc.username}`,
-      date: doc.date,
+      date: formatDateKeyVN(doc.date),
       pilotName: doc.pilotName,
       username: doc.username,
       spot: doc.spot || "",
@@ -1634,7 +1634,7 @@ export async function upsertDispatcherReport(
 async function pushDispatcherRow(doc: any) {
   return pushBaobayRow("dispatcher", {
     key: `${doc.date}|${doc.username}`,
-    date: doc.date,
+    date: formatDateKeyVN(doc.date),
     staffName: doc.staffName,
     username: doc.username,
     spot: doc.spot || "",
@@ -1828,7 +1828,7 @@ export async function upsertCameramanReport(
 async function pushCameramanRow(doc: any) {
   return pushBaobayRow("cameraman", {
     key: `${doc.date}|${doc.username}`,
-    date: doc.date,
+    date: formatDateKeyVN(doc.date),
     cameramanName: doc.cameramanName,
     username: doc.username,
     flycamFlights: doc.flycamFlights,
@@ -2255,7 +2255,7 @@ async function pushHandoverRow(doc: any) {
     doc.kind === "advance" ? "advance" : "handover",
     {
       key: String(doc._id),
-      date: doc.date,
+      date: formatDateKeyVN(doc.date),
       spot: doc.spot,
       staffName: doc.staffName,
       username: doc.username,
@@ -2306,6 +2306,13 @@ function toHandoverDTO(doc: any): HandoverDTO {
 /* ================================================================== */
 
 export type CashOnHandDTO = {
+  /**
+   * Tiền nhân sự khác NỘP LÊN cho mình, hai bên đã xác nhận — cộng vào số đang
+   * giữ của người nhận (điều phối/kế toán cầm tiền anh em nộp lên là đang cầm
+   * hộ công ty). Lệnh do kế toán/quản trị LẬP (lương, trả phí…) không tính:
+   * đó là tiền cá nhân được trả, không phải tiền công ty gửi giữ.
+   */
+  received: number;
   spot: string;
   /** Khoảng ngày đã cộng; rỗng nghĩa là cộng toàn bộ lịch sử. */
   from: string;
@@ -2380,14 +2387,28 @@ export async function getCashOnHand(
    * Chỉ tính lệnh GIAO TIỀN. Tiền ứng là công ty chi ra cho cá nhân, trừ vào
    * lương cuối tháng — không liên quan tới số tiền đang cầm hộ công ty.
    */
-  const handovers = await BaobayHandover.find({
-    accountId,
-    spot,
-    kind: { $ne: "advance" },
-    ...dateFilter,
-  })
-    .select("amount confirmed rejected")
-    .lean<any[]>();
+  const [handovers, receivedDocs] = await Promise.all([
+    BaobayHandover.find({
+      accountId,
+      spot,
+      kind: { $ne: "advance" },
+      ...dateFilter,
+    })
+      .select("amount confirmed rejected createdBy username")
+      .lean<any[]>(),
+    // Khoản người khác NỘP LÊN cho mình đã xác nhận 2 bên (bỏ lệnh do quản lý lập)
+    BaobayHandover.find({
+      recipientUsername: session.username,
+      spot,
+      kind: { $ne: "advance" },
+      confirmed: true,
+      createdBy: { $in: [null, ""] },
+      ...dateFilter,
+    })
+      .select("amount")
+      .lean<any[]>(),
+  ]);
+  const received = receivedDocs.reduce((a, h) => a + (h.amount || 0), 0);
 
   let handedConfirmed = 0;
   let handedPending = 0;
@@ -2402,12 +2423,14 @@ export async function getCashOnHand(
     spot,
     from: from || "",
     to: to || "",
+    received,
     collected,
     spent,
     handedConfirmed,
     handedPending,
     handedRejected,
-    holding: collected - spent - handedConfirmed - handedPending,
+    // Nhận của anh em nộp lên cũng là tiền đang cầm hộ công ty
+    holding: collected + received - spent - handedConfirmed - handedPending,
   };
 }
 
@@ -2463,7 +2486,18 @@ export async function getStaffStatement(
       ? CameramanDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
       : Promise.resolve([]),
     AccountantDailyClose.find({ spot, date: range, status: "closed" }).select("date").lean<any[]>(),
-    BaobayHandover.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>(),
+    /**
+     * Cả hai chiều: lệnh MÌNH gửi (nộp tiền, xin ứng) và lệnh GỬI CHO MÌNH do
+     * kế toán/quản trị lập (chuyển lương, trả phí) — bảng kê phải thấy lương
+     * đã nhận, không chỉ tiền đã nộp.
+     */
+    BaobayHandover.find({
+      spot,
+      date: range,
+      $or: [{ username }, { recipientUsername: username, createdBy: { $exists: true, $ne: "" } }],
+    })
+      .sort({ date: 1 })
+      .lean<any[]>(),
   ]);
 
   return {
@@ -2968,14 +3002,20 @@ export type CloseSuggestionDTO = {
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
+  dispatcherSpend: number;
   /** Flycam lấy theo CAMERA MAN — nguồn chuẩn của dịch vụ này. */
   flycam: number;
   /** Camera 360 lấy theo PHI CÔNG — nguồn chuẩn của dịch vụ này. */
   video360: number;
+  /** Cờ đỏ lấy theo PHI CÔNG — nguồn chuẩn của dịch vụ này. */
+  redFlag: number;
   flagFlight: number;
   /** Tổng theo TỪNG PHÍA — cho hai nút "lấy số phi công" / "lấy số điều phối". */
-  pilot: { flights: number; flycam: number; video360: number; flagFlight: number; hasData: boolean };
-  dispatcher: { flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
+  /** Tên những điều phối/trực quầy đã báo — nút chấp nhận ghi rõ nhận số từ ai. */
+  dispatcherNames: string[];
   /** Có báo cáo nào của nhân viên chưa — chưa có thì khỏi hiện nút chép. */
   hasData: boolean;
 };
@@ -3026,22 +3066,27 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     rescheduled,
     cashTotal: sum(dispatchers, (d) => d.cashReceived),
     transferTotal: sum(dispatchers, (d) => d.transferReceived),
+    dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
     flycam: sum(cameramen, (c) => c.flycamFlights),
     video360: sum(pilots, (p) => p.video360),
+    redFlag: sum(pilots, (p) => p.redFlag),
     flagFlight: sum(dispatchers, (d) => d.flagFlight),
     pilot: {
       flights: sum(pilots, (p) => p.flightCount),
       flycam: sum(pilots, (p) => p.flycam),
       video360: sum(pilots, (p) => p.video360),
+      redFlag: sum(pilots, (p) => p.redFlag),
       flagFlight: sum(pilots, (p) => p.flagFlight),
       hasData: pilots.length > 0,
     },
     dispatcher: {
       flycam: sum(dispatchers, (d) => d.flycam),
       video360: sum(dispatchers, (d) => d.video360),
+      redFlag: sum(dispatchers, (d) => d.redFlag),
       flagFlight: sum(dispatchers, (d) => d.flagFlight),
       hasData: dispatchers.length > 0,
     },
+    dispatcherNames: dispatchers.map((d) => d.staffName),
     hasData: dispatchers.length + pilots.length + cameramen.length > 0,
   };
 }
@@ -3068,6 +3113,7 @@ export type DailyCloseSaveInput = {
   transferTotal: number;
   flycam: number;
   video360: number;
+  redFlag: number;
   flagFlight: number;
   expensesApproved: boolean;
   expensesApprovedNote: string;
@@ -3123,6 +3169,7 @@ export async function upsertDailyClose(
         transferTotal: input.transferTotal,
         flycam: input.flycam,
         video360: input.video360,
+        redFlag: input.redFlag,
         flagFlight: input.flagFlight,
         ledger,
         expensesApproved: input.expensesApproved,
@@ -3153,7 +3200,7 @@ export async function upsertDailyClose(
 async function pushCloseRow(doc: any) {
   return pushBaobayRow("close", {
     key: doc.date,
-    date: doc.date,
+    date: formatDateKeyVN(doc.date),
     spot: doc.spot || "",
     accountantName: doc.accountantName || "",
     guestCount: doc.guestCount ?? 0,
@@ -3231,7 +3278,7 @@ async function pushDaySummaryRow(spot: string, date: string): Promise<{ ok: bool
     "daysummary",
     {
       key: date,
-      date,
+      date: formatDateKeyVN(date),
       spot: spotName(spot),
       status: close?.status === "closed" ? "ĐÃ CHỐT" : reds ? `TREO (${reds} lỗi)` : "chưa chốt",
       issues: reds,
@@ -3436,6 +3483,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     transferTotal: doc.transferTotal ?? 0,
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
+    redFlag: doc.redFlag ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledger: doc.ledger ?? [],
     expensesApproved: Boolean(doc.expensesApproved),
@@ -3576,6 +3624,7 @@ export async function getReconcile(
           transferTotal: close.transferTotal ?? 0,
           flycam: close.flycam ?? 0,
           video360: close.video360 ?? 0,
+          redFlag: close.redFlag ?? 0,
           flagFlight: close.flagFlight ?? 0,
           expensesApproved: Boolean(close.expensesApproved),
           varianceApproved: Boolean(close.varianceApproved),
@@ -3617,6 +3666,7 @@ export async function getReconcile(
       flagFlight: p.flagFlight ?? 0,
       flagFlightCodes: p.flagFlightCodes ?? [],
       diplomaticGuests: p.diplomaticGuests ?? 0,
+      ppgCodes: p.ppgCodes ?? [],
       expenseTotal: pilotExpenseTotal(p),
       submitted: Boolean(p.submitted),
     })),
@@ -3754,7 +3804,7 @@ async function advanceByUserDay(spot: string, from: string, to: string): Promise
 }
 
 
-const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked"> = {
+const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closedBy"> = {
   issueCount: 0,
   guestCount: 0,
   ticketsIssued: 0,
@@ -3858,6 +3908,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   for (const c of closes) {
     const row = rowFor(c.date);
     row.status = c.status;
+    row.closedBy = c.status === "closed" ? c.closedBy || undefined : undefined;
     row.guestCount = c.guestCount;
     row.ticketsIssued = c.ticketsIssued;
     row.ticketsReturned = c.ticketsReturned;
@@ -3889,10 +3940,11 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   );
 
   const closedDays = days.filter((d) => d.status === "closed");
-  const totals = closedDays.reduce<Omit<DailyRollupDTO, "date" | "status" | "blocked">>(
+  /** Chỉ cộng các khoá SỐ trong EMPTY_ROLLUP — closedBy là chuỗi, không nằm trong đây. */
+  const totals = closedDays.reduce<typeof EMPTY_ROLLUP>(
     (acc, row) => {
       for (const key of Object.keys(EMPTY_ROLLUP) as Array<keyof typeof EMPTY_ROLLUP>) {
-        acc[key] += row[key];
+        acc[key] += (row[key] as number) || 0;
       }
       return acc;
     },

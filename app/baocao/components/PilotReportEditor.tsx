@@ -190,12 +190,17 @@ function PilotRow({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Phí bãi (khách)">
-              <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
-            </Field>
-            <Field label="Nước cho khách">
-              <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
-            </Field>
+            {/* Phí bãi + nước: chỉ Hà Nội (Sa Pa, Khau Phạ miễn phí) */}
+            {spot === "ha-noi" && (
+              <>
+                <Field label="Phí bãi (khách)">
+                  <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
+                </Field>
+                <Field label="Nước cho khách">
+                  <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
+                </Field>
+              </>
+            )}
             {/* "Xe cho khách" đã bỏ khỏi form — tiền xe nằm trong sổ Thu/Chi của phi công */}
           </div>
 

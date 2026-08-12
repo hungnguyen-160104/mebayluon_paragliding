@@ -24,7 +24,6 @@ import {
   ExpenseRows,
   type ExpenseRow,
 } from "../components/rows";
-import { HandoverBox } from "../components/HandoverBox";
 import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
@@ -72,11 +71,14 @@ type CloseSuggestion = {
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  dispatcherSpend: number;
+  dispatcherNames: string[];
   flycam: number;
   video360: number;
+  redFlag: number;
   flagFlight: number;
-  pilot: { flights: number; flycam: number; video360: number; flagFlight: number; hasData: boolean };
-  dispatcher: { flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
   hasData: boolean;
 };
 
@@ -93,6 +95,7 @@ type FormState = {
   transferTotal: number;
   flycam: number;
   video360: number;
+  redFlag: number;
   flagFlight: number;
   ledger: ExpenseRow[];
   expensesApproved: boolean;
@@ -115,6 +118,7 @@ const EMPTY_FORM: FormState = {
   transferTotal: 0,
   flycam: 0,
   video360: 0,
+  redFlag: 0,
   flagFlight: 0,
   ledger: [],
   expensesApproved: false,
@@ -194,6 +198,7 @@ function DailyCloseInner() {
             transferTotal: res.close.transferTotal,
             flycam: res.close.flycam,
             video360: res.close.video360,
+            redFlag: res.close.redFlag,
             flagFlight: res.close.flagFlight,
             ledger: toExpenseRows(res.close.ledger).filter((e) => e.content || e.amount),
             expensesApproved: res.close.expensesApproved,
@@ -265,6 +270,7 @@ function DailyCloseInner() {
       transferTotal: suggest.transferTotal,
       flycam: suggest.dispatcher.flycam,
       video360: suggest.dispatcher.video360,
+      redFlag: suggest.dispatcher.redFlag,
       flagFlight: suggest.dispatcher.flagFlight,
     }));
     setMessage("Đã lấy số ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
@@ -280,6 +286,7 @@ function DailyCloseInner() {
       ...prev,
       flycam: suggest.pilot.flycam,
       video360: suggest.pilot.video360,
+      redFlag: suggest.pilot.redFlag,
       flagFlight: suggest.pilot.flagFlight,
     }));
     setMessage(
@@ -311,6 +318,9 @@ function DailyCloseInner() {
       setError(err?.message || "Không đánh dấu được");
     }
   }
+
+  /** "fiona" / "fiona + havan" — nút chấp nhận ghi rõ số đến từ ai. */
+  const reporterNames = suggest?.dispatcherNames.length ? suggest.dispatcherNames.join(" + ") : "điều phối";
 
   async function action(kind: "save" | "close" | "reopen") {
     setError(null);
@@ -395,9 +405,9 @@ function DailyCloseInner() {
           <div className="mt-3">
             {locked ? (
               <Banner tone="success">
-                <strong>Ngày này đã chốt</strong>
-                {close?.closedAt ? ` lúc ${new Date(close.closedAt).toLocaleString("vi-VN")}` : ""}
-                {close?.closedBy ? ` bởi ${close.closedBy}` : ""}. Số liệu đã khoá với mọi nhân viên.
+                <strong>{close?.closedBy ? `${close.closedBy} đã chốt` : "Ngày này đã chốt"}</strong>
+                {close?.closedAt ? ` lúc ${new Date(close.closedAt).toLocaleString("vi-VN")}` : ""}. Số liệu đã
+                khoá với mọi nhân viên.
               </Banner>
             ) : reds.length ? (
               <Banner tone="error">
@@ -462,7 +472,7 @@ function DailyCloseInner() {
               <span className="text-sm text-emerald-900">Nhân viên đã báo — đúng thì lấy, khỏi gõ lại:</span>
               {suggest.dispatcher.hasData && (
                 <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={copyFromDispatcher}>
-                  ⧉ Lấy số ĐIỀU PHỐI báo
+                  ⧉ Chấp nhận số liệu từ {reporterNames}
                 </Button>
               )}
               {suggest.pilot.hasData && (
@@ -526,6 +536,13 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("video360", v)} />
               <Compare label="điều phối báo" value={t?.dispatcher360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
+            </Field>
+            <Field label="Số lượng dù cờ đỏ">
+              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
+              <Compare label="phi công báo" value={t?.pilotRedFlag} mine={form.redFlag}
+                onTake={locked ? undefined : (v) => set("redFlag", v)} />
+              <Compare label="điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
+                onTake={locked ? undefined : (v) => set("redFlag", v)} />
             </Field>
             <Field label="Số lượng bay kéo cờ">
               <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
@@ -592,10 +609,20 @@ function DailyCloseInner() {
 
           <div className="mt-4">
             <Readout
-              label="Vé xuất − vé thu hồi (phải bằng tổng chuyến phi công báo)"
-              value={`${form.ticketsIssued - form.ticketsReturned} / ${t?.pilotFlights ?? "?"} chuyến`}
+              label={
+                spot === "khau-pha"
+                  ? "Vé xuất − vé thu hồi (phải bằng số MÃ đã bay, gồm cả vé PPG)"
+                  : "Vé xuất − vé thu hồi (phải bằng tổng chuyến phi công báo)"
+              }
+              value={`${form.ticketsIssued - form.ticketsReturned} / ${
+                (spot === "khau-pha" ? t?.pilotCodes : t?.pilotFlights) ?? "?"
+              } ${spot === "khau-pha" ? "mã" : "chuyến"}`}
               tone={
-                t && form.ticketsIssued - form.ticketsReturned !== t.pilotFlights ? "warning" : "normal"
+                t &&
+                form.ticketsIssued - form.ticketsReturned !==
+                  (spot === "khau-pha" ? t.pilotCodes : t.pilotFlights)
+                  ? "warning"
+                  : "normal"
               }
             />
           </div>
@@ -603,8 +630,45 @@ function DailyCloseInner() {
 
         <Card
           title="Sổ THU / CHI của kế toán"
-          hint="Khoản tiền kế toán trực tiếp thu hoặc chi trong ngày — mỗi dòng: nội dung – số tiền – tick Thu hoặc Chi"
+          hint="Nhận nhanh số điều phối báo, hoặc tự thêm dòng: nội dung – số tiền – tick Thu hoặc Chi (mua đồ, thu dịch vụ ngoài…)"
         >
+          {/* Điều phối báo gì thì nhận thẳng vào sổ — CHỈ tiền mặt, vì chuyển khoản
+              đã nằm trong tài khoản công ty, điều phối không hề cầm */}
+          {suggest?.dispatcher.hasData && !locked && (
+            <div className="mb-3 space-y-1.5">
+              {suggest.cashTotal > 0 && (
+                <LedgerSuggest
+                  label={`điều phối báo THU tiền mặt ${formatVND(suggest.cashTotal)}`}
+                  taken={form.ledger.some((e) => e.kind === "thu" && e.amount === suggest.cashTotal && e.content.includes("điều phối"))}
+                  onTake={() =>
+                    set("ledger", [
+                      ...form.ledger.filter((e) => e.content.trim() || e.amount),
+                      { content: "Nhận tiền mặt từ điều phối", amount: suggest.cashTotal, kind: "thu", note: "" },
+                    ])
+                  }
+                />
+              )}
+              {suggest.dispatcherSpend > 0 && (
+                <LedgerSuggest
+                  label={`điều phối báo CHI hộ khách ${formatVND(suggest.dispatcherSpend)}`}
+                  taken={form.ledger.some((e) => e.kind === "chi" && e.amount === suggest.dispatcherSpend && e.content.includes("điều phối"))}
+                  onTake={() =>
+                    set("ledger", [
+                      ...form.ledger.filter((e) => e.content.trim() || e.amount),
+                      { content: "Hoàn chi hộ khách (điều phối)", amount: suggest.dispatcherSpend, kind: "chi", note: "" },
+                    ])
+                  }
+                />
+              )}
+              {suggest.transferTotal > 0 && (
+                <p className="text-xs text-slate-500">
+                  Chuyển khoản {formatVND(suggest.transferTotal)} đã vào thẳng tài khoản công ty — điều phối
+                  không cầm nên không vào sổ này.
+                </p>
+              )}
+            </div>
+          )}
+
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind />
         </Card>
 
@@ -638,7 +702,8 @@ function DailyCloseInner() {
             />
             {suggest && suggest.cancelledCodesText && !locked && (
               <CopyLine
-                label={`điều phối khai: ${suggest.cancelledCodesText}`}
+                label={`${reporterNames} báo mã huỷ: ${suggest.cancelledCodesText}`}
+                action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
                 onCopy={() => set("cancelledCodesText", suggest.cancelledCodesText)}
               />
             )}
@@ -656,7 +721,7 @@ function DailyCloseInner() {
             />
             {suggest && suggest.rescheduled.length > 0 && !locked && (
               <CopyLine
-                label={`điều phối khai ${suggest.rescheduled.length} vé dời: ${suggest.rescheduled.map((r) => `${r.code}→${r.toDate}`).join(" · ")}`}
+                label={`điều phối khai ${suggest.rescheduled.length} vé dời: ${suggest.rescheduled.map((r) => `${r.code}→${formatDateKeyVN(r.toDate)}`).join(" · ")}`}
                 onCopy={() => set("rescheduled", suggest.rescheduled.map((r) => ({ ...r })))}
               />
             )}
@@ -820,10 +885,6 @@ function DailyCloseInner() {
         <MoneyOrderCard spot={spot} />
       </div>
 
-      {/* Kế toán cũng có lúc cầm tiền hộ và phải nộp lại — cùng một khung với nhân sự khác */}
-      <div className="mt-4">
-        <HandoverBox spot={spot} />
-      </div>
     </Shell>
   );
 }
@@ -832,17 +893,38 @@ function DailyCloseInner() {
  * Dòng so sánh nhỏ dưới mỗi ô: số app cộng được từ báo cáo nhân viên.
  * Khớp thì hiện dấu ✓ xanh, lệch thì hiện nút "lấy số này" để kế toán chọn.
  */
+/** Dòng gợi ý cho SỔ THU/CHI: bấm là thành một dòng trong sổ, nhận rồi thì đánh dấu ✓. */
+function LedgerSuggest({ label, taken, onTake }: { label: string; taken: boolean; onTake: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className={taken ? "text-emerald-700" : "text-slate-600"}>
+        {taken ? "✓ " : ""}
+        {label}
+      </span>
+      {!taken && (
+        <button
+          type="button"
+          onClick={onTake}
+          className="rounded-md border border-slate-300 bg-white px-2 py-0.5 font-medium text-slate-700 hover:bg-slate-50"
+        >
+          ⧉ nhận vào sổ
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Một dòng "điều phối khai: …" kèm nút chép — cho các trường mã vé, không phải ô số. */
-function CopyLine({ label, onCopy }: { label: string; onCopy: () => void }) {
+function CopyLine({ label, action, onCopy }: { label: string; action?: string; onCopy: () => void }) {
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
       <span className="text-slate-600">{label}</span>
       <button
         type="button"
         onClick={onCopy}
-        className="rounded-md border border-slate-300 bg-white px-2 py-0.5 font-medium text-slate-700 hover:bg-slate-50"
+        className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 hover:bg-emerald-100"
       >
-        ⧉ chép để xác nhận
+        {action ?? "⧉ chép để xác nhận"}
       </button>
     </div>
   );

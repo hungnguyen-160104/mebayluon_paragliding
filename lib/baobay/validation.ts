@@ -213,6 +213,7 @@ export const dailyCloseSchema = z.object({
   transferTotal: money,
   flycam: count(1_000),
   video360: count(1_000),
+  redFlag: count(1_000),
   flagFlight: count(1_000),
   /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
   ledger: expenseList,

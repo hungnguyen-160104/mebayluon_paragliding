@@ -62,6 +62,8 @@ export interface IAccountantDailyClose {
 
   flycam: number;
   video360: number;
+  /** Số dù cờ đỏ — nguồn chuẩn là PHI CÔNG, đối chiếu với điều phối. */
+  redFlag: number;
   /** Số chuyến bay kéo cờ. */
   flagFlight: number;
 
@@ -132,6 +134,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
 
     flycam: { type: Number, default: 0, min: 0 },
     video360: { type: Number, default: 0, min: 0 },
+    redFlag: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
 
     ledger: { type: [ExpenseSchema], default: [] },
