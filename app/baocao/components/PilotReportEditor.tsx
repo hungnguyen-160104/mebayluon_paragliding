@@ -120,10 +120,7 @@ function PilotRow({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="font-medium text-slate-900">{report.pilotName}</div>
-          <div className="text-xs text-slate-500">
-            {report.flightCount} chuyến · {report.ticketCodes.length} mã · {report.video360}×360
-            {report.diplomaticGuests ? ` · ${report.diplomaticGuests} ngoại giao` : ""}
-          </div>
+          <PilotSummaryLine report={report} />
         </div>
         <div className="flex items-center gap-2">
           {report.latePenalty > 0 && (
@@ -245,6 +242,79 @@ function PilotRow({
         </div>
       )}
     </li>
+  );
+}
+
+/** 500000 -> "500k", 1200000 -> "1.200k" — chữ k thay cho .000đ, đọc nhanh trên một dòng. */
+function kVND(amount: number): string {
+  return `${Math.round(amount / 1000).toLocaleString("vi-VN")}k`;
+}
+
+/**
+ * Một dòng liệt kê ĐỦ những gì phi công đã khai — kế toán lướt danh sách là
+ * thấy hết, không phải mở từng người: chuyến/mã, dịch vụ, PPG, lượt đưa đón,
+ * rồi tiền — THU màu xanh dấu +, CHI màu đỏ dấu −, "k" thay cho nghìn đồng.
+ * Khoản bằng 0 không hiện cho đỡ rối.
+ */
+function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
+  const thu = r.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
+  const chiKhac = r.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount : 0), 0);
+
+  const parts: React.ReactNode[] = [];
+  const add = (node: React.ReactNode, key: string) =>
+    parts.push(
+      <span key={key} className="whitespace-nowrap">
+        {node}
+      </span>,
+    );
+
+  add(`${r.flightCount} chuyến`, "fl");
+  add(`${r.ticketCodes.length} mã`, "codes");
+  if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
+  if (r.video360) add(`${r.video360}×360`, "v360");
+  if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");
+  if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
+  if (r.ppgFlights) add(`${r.ppgFlights}×PPG${r.ppgNoTicket ? ` (${r.ppgNoTicket} không vé)` : ""}`, "ppg");
+  if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
+  if (r.pickupBigC) add(`xe BigC ×${r.pickupBigC}`, "bigc");
+  if (r.pickupHotel) add(`xe đón KS ×${r.pickupHotel}`, "hotel");
+  if (r.mountainTrips) add(`xe lên núi ×${r.mountainTrips}`, "mount");
+
+  const money: React.ReactNode[] = [];
+  const addMoney = (label: string, amount: number, kind: "thu" | "chi", key: string) =>
+    money.push(
+      <span
+        key={key}
+        className={"whitespace-nowrap font-medium " + (kind === "thu" ? "text-emerald-700" : "text-rose-700")}
+      >
+        {label ? `${label} ` : ""}
+        {kind === "thu" ? "+" : "−"}
+        {kVND(amount)}
+      </span>,
+    );
+
+  if (r.siteFee) addMoney("phí bãi", r.siteFee, "chi", "site");
+  if (r.waterCost) addMoney("nước", r.waterCost, "chi", "water");
+  if (r.guestCarCost) addMoney("xe khách", r.guestCarCost, "chi", "car");
+  if (chiKhac) addMoney("chi khác", chiKhac, "chi", "other");
+  if (thu) addMoney("thu", thu, "thu", "thu");
+
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-slate-500">
+      {parts.map((node, i) => (
+        <span key={i} className="flex items-baseline gap-x-2">
+          {i > 0 && <span className="text-slate-300">·</span>}
+          {node}
+        </span>
+      ))}
+      {money.length > 0 && <span className="text-slate-300">·</span>}
+      {money.map((node, i) => (
+        <span key={`m${i}`} className="flex items-baseline gap-x-2">
+          {i > 0 && <span className="text-slate-300">·</span>}
+          {node}
+        </span>
+      ))}
+    </div>
   );
 }
 

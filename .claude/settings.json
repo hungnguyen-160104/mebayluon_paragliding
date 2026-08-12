@@ -19,7 +19,8 @@
       "Bash(curl -sL --max-time 60 'https://web.archive.org/cdx/search/cdx?url=mebayluon.com%2A&output=text&fl=original,statuscode&collapse=urlkey&limit=3000' -o /private/tmp/claude-501/-Users-dangvm-Desktop-mebayluon-paragliding/3c3693a9-5be0-42be-9cd9-0740cb885ce3/scratchpad/wayback_raw.txt -w 'http=%{http_code}\\\\n')",
       "Bash(curl -sL --max-time 90 -A \"Mozilla/5.0\" \"https://web.archive.org/cdx/search/cdx?url=mebayluon.com*&output=text&fl=original,statuscode&collapse=urlkey&limit=3000\" -w \"\\\\nhttp=%{http_code}\\\\n\")",
       "WebFetch(domain:web.archive.org)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"
