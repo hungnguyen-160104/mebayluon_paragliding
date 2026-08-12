@@ -98,7 +98,8 @@ export type PilotReportDTO = {
   flagFlightCodes: string[];
   diplomaticGuests: number;
   diplomaticCodes: string[];
-  siteFee: number;
+  /** Phí bãi bay theo ĐẦU KHÁCH — số khách, không phải tiền. */
+  siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán nhân đơn giá rồi hoàn. */
@@ -337,7 +338,8 @@ export type MonthlyTotalsDTO = {
   redFlag: number;
   flagFlight: number;
   diplomaticGuests: number;
-  siteFee: number;
+  /** Phí bãi theo đầu khách (số khách). */
+  siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
   otherExpense: number;

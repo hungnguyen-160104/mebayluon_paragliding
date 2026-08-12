@@ -128,7 +128,8 @@ export const pilotReportSchema = z.object({
   flagFlightCodesText: text(20_000),
   diplomaticGuests: count(300),
   diplomaticCodesText: text(20_000),
-  siteFee: money,
+  /** Phí bãi theo ĐẦU KHÁCH: bấm +/− số khách, kế toán nhân đơn giá ngoài app. */
+  siteFeeGuests: count(500),
   waterCost: money,
   guestCarCost: money,
   /** Số LƯỢT đưa đón (phi công tự trả tiền, kế toán hoàn theo đơn giá ngoài app). */

@@ -756,12 +756,12 @@ function formatRescheduled(list: RescheduledDTO[] = []): string {
 
 /** Tổng chi của phi công: ba khoản có tên + các khoản tự thêm. */
 function pilotExpenseTotal(doc: {
-  siteFee?: number;
   waterCost?: number;
   guestCarCost?: number;
   expenses?: ExpenseDTO[];
 }): number {
-  return (doc.siteFee || 0) + (doc.waterCost || 0) + (doc.guestCarCost || 0) + expenseTotal(doc.expenses);
+  // Phí bãi KHÔNG cộng ở đây nữa: nay khai theo đầu khách, kế toán nhân đơn giá ngoài app
+  return (doc.waterCost || 0) + (doc.guestCarCost || 0) + expenseTotal(doc.expenses);
 }
 
 /** Tổng chi của điều phối: ba khoản chi hộ khách + các khoản tự thêm. */
@@ -879,7 +879,8 @@ export type PilotReportSaveInput = {
   flagFlightCodesText: string;
   diplomaticGuests: number;
   diplomaticCodesText: string;
-  siteFee: number;
+  /** Phí bãi theo ĐẦU KHÁCH — số khách, kế toán nhân đơn giá ngoài app. */
+  siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
@@ -1102,7 +1103,7 @@ export async function upsertPilotReport(
         flagFlightCodes: codesFlagFlight.codes,
         diplomaticGuests: input.diplomaticGuests,
         diplomaticCodes: diplomatic.codes,
-        siteFee: input.siteFee,
+        siteFeeGuests: input.siteFeeGuests,
         waterCost: input.waterCost,
         guestCarCost: input.guestCarCost,
         /**
@@ -1177,7 +1178,7 @@ async function pushPilotRow(doc: any) {
       flagFlightCodes: (doc.flagFlightCodes || []).join(", "),
       diplomaticGuests: doc.diplomaticGuests || 0,
       diplomaticCodes: (doc.diplomaticCodes || []).join(", "),
-      siteFee: doc.siteFee || 0,
+      siteFeeGuests: doc.siteFeeGuests || 0,
       waterCost: doc.waterCost || 0,
       guestCarCost: doc.guestCarCost || 0,
       thuTotal: thuTotal(doc.expenses),
@@ -1253,7 +1254,7 @@ function toPilotDTO(doc: any): PilotReportDTO {
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
     diplomaticCodes: doc.diplomaticCodes ?? [],
-    siteFee: doc.siteFee ?? 0,
+    siteFeeGuests: doc.siteFeeGuests ?? 0,
     waterCost: doc.waterCost ?? 0,
     guestCarCost: doc.guestCarCost ?? 0,
     pickupBigC: doc.pickupBigC ?? 0,
@@ -3390,7 +3391,6 @@ export async function getReconcile(
   };
 
   for (const p of pilots) {
-    pushNamed(p.pilotName, "pilot", "Phí bãi bay", p.siteFee ?? 0);
     pushNamed(p.pilotName, "pilot", "Nước cho khách", p.waterCost ?? 0);
     pushNamed(p.pilotName, "pilot", "Xe cho khách", p.guestCarCost ?? 0);
     for (const e of p.expenses ?? []) {
@@ -3797,7 +3797,7 @@ export async function getMyPeriodSummary(
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
         { label: "Bay kéo cờ (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
-        { label: "Phí bãi bay (site fee)", value: sumOf((d) => d.siteFee), money: true },
+        { label: "Phí bãi — khách (site fee, guests)", value: sumOf((d) => d.siteFeeGuests) },
         { label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true },
         { label: "Xe cho khách (car)", value: sumOf((d) => d.guestCarCost), money: true },
         { label: "Chuyến PPG (PPG flights)", value: sumOf((d) => d.ppgFlights) },
@@ -3874,7 +3874,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   redFlag: 0,
   flagFlight: 0,
   diplomaticGuests: 0,
-  siteFee: 0,
+  siteFeeGuests: 0,
   waterCost: 0,
   guestCarCost: 0,
   otherExpense: 0,
@@ -3895,11 +3895,12 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.redFlag += r.redFlag;
   acc.flagFlight += r.flagFlight;
   acc.diplomaticGuests += r.diplomaticGuests;
-  acc.siteFee += r.siteFee;
+  acc.siteFeeGuests += r.siteFeeGuests;
   acc.waterCost += r.waterCost;
   acc.guestCarCost += r.guestCarCost;
   acc.otherExpense += expenseTotal(r.expenses);
-  acc.expenseTotal = acc.siteFee + acc.waterCost + acc.guestCarCost + acc.otherExpense;
+  // Phí bãi nay là SỐ KHÁCH, không cộng vào tổng tiền chi
+  acc.expenseTotal = acc.waterCost + acc.guestCarCost + acc.otherExpense;
   acc.latePenalty += r.latePenalty;
   acc.pickupBigC += r.pickupBigC;
   acc.pickupHotel += r.pickupHotel;
@@ -3991,7 +3992,7 @@ export async function getMonthlyReport(
           if (day <= todayDay) addMonthly(toDate, r);
 
           // Ba khoản có tên cũng đưa vào danh sách chi tiết cho kế toán soát
-          if (r.siteFee) expenses.push({ date, content: "Phí bãi bay", amount: r.siteFee });
+    
           if (r.waterCost) expenses.push({ date, content: "Nước cho khách", amount: r.waterCost });
           if (r.guestCarCost) expenses.push({ date, content: "Xe cho khách", amount: r.guestCarCost });
           for (const e of r.expenses) expenses.push({ ...e, date });

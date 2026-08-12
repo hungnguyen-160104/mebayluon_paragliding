@@ -190,15 +190,13 @@ function PilotRow({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Phí bãi bay">
-              <MoneyInput value={form.siteFee} onChange={(v) => set("siteFee", v)} />
+            <Field label="Phí bãi (khách)">
+              <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
             </Field>
             <Field label="Nước cho khách">
               <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
             </Field>
-            <Field label="Xe cho khách">
-              <MoneyInput value={form.guestCarCost} onChange={(v) => set("guestCarCost", v)} />
-            </Field>
+            {/* "Xe cho khách" đã bỏ khỏi form — tiền xe nằm trong sổ Thu/Chi của phi công */}
           </div>
 
           {/* Đưa đón tự trả — chỉ điểm Hà Nội */}
@@ -293,7 +291,8 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
       </span>,
     );
 
-  if (r.siteFee) addMoney("phí bãi", r.siteFee, "chi", "site");
+  // Phí bãi tính theo ĐẦU KHÁCH — "3k" = 3 khách, không phải tiền
+  if (r.siteFeeGuests) add(`phí bãi ${r.siteFeeGuests}k`, "site");
   if (r.waterCost) addMoney("nước", r.waterCost, "chi", "water");
   if (r.guestCarCost) addMoney("xe khách", r.guestCarCost, "chi", "car");
   if (chiKhac) addMoney("chi khác", chiKhac, "chi", "other");
@@ -338,7 +337,7 @@ function toForm(r: PilotReportDTO) {
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     diplomaticGuests: r.diplomaticGuests,
     diplomaticCodesText: r.diplomaticCodes.join(", "),
-    siteFee: r.siteFee,
+    siteFeeGuests: r.siteFeeGuests,
     waterCost: r.waterCost,
     guestCarCost: r.guestCarCost,
     pickupBigC: r.pickupBigC,

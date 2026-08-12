@@ -49,7 +49,7 @@ const KINDS = {
     'Mã vé kéo cờ': 'flagFlightCodes',
     'Khách ngoại giao': 'diplomaticGuests',
     'Mã vé ngoại giao': 'diplomaticCodes',
-    'Phí bãi bay': 'siteFee',
+    'Phí bãi (khách)': 'siteFeeGuests',
     'Nước cho khách': 'waterCost',
     'Xe cho khách': 'guestCarCost',
     'Chuyến PPG': 'ppgFlights',

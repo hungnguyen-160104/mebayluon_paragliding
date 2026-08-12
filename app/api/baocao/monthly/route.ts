@@ -76,7 +76,7 @@ function buildCsv(report: Awaited<ReturnType<typeof getMonthlyReport>>): string 
       p.toDate.flights, p.month.flights,
       p.toDate.video360, p.month.video360,
       p.month.diplomaticGuests,
-      p.month.siteFee, p.month.waterCost, p.month.guestCarCost,
+      p.month.siteFeeGuests, p.month.waterCost, p.month.guestCarCost,
       p.month.otherExpense, p.month.expenseTotal, p.month.latePenalty,
     ]);
   }
@@ -88,7 +88,7 @@ function buildCsv(report: Awaited<ReturnType<typeof getMonthlyReport>>): string 
     t.flights, g.flights,
     t.video360, g.video360,
     g.diplomaticGuests,
-    g.siteFee, g.waterCost, g.guestCarCost,
+    g.siteFeeGuests, g.waterCost, g.guestCarCost,
     g.otherExpense, g.expenseTotal, g.latePenalty,
   ]);
 

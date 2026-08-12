@@ -59,7 +59,7 @@ type FormState = {
   flagFlightCodesText: string;
   diplomaticGuests: number;
   diplomaticCodesText: string;
-  siteFee: number;
+  siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
   pickupBigC: number;
@@ -85,7 +85,7 @@ const EMPTY_FORM: FormState = {
   flagFlightCodesText: "",
   diplomaticGuests: 0,
   diplomaticCodesText: "",
-  siteFee: 0,
+  siteFeeGuests: 0,
   waterCost: 0,
   guestCarCost: 0,
   pickupBigC: 0,
@@ -158,7 +158,7 @@ export default function PilotReportPage() {
               flagFlightCodesText: res.report.flagFlightCodes.join(", "),
               diplomaticGuests: res.report.diplomaticGuests,
               diplomaticCodesText: res.report.diplomaticCodes.join(", "),
-              siteFee: res.report.siteFee,
+              siteFeeGuests: res.report.siteFeeGuests,
               waterCost: res.report.waterCost,
               guestCarCost: res.report.guestCarCost,
               pickupBigC: res.report.pickupBigC,
@@ -249,7 +249,6 @@ export default function PilotReportPage() {
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
   // Dòng THU (phi công cầm hộ tiền khách) không phải khoản chi — không cộng vào tổng chi
   const expenseSum =
-    form.siteFee +
     form.waterCost +
     form.guestCarCost +
     form.expenses.reduce((s, e) => s + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
@@ -569,15 +568,16 @@ export default function PilotReportPage() {
         </Card>
 
         <Card title="Thu / Chi trong ngày (Money in & out)" hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Phí bãi bay (Site fee)">
-              <MoneyInput value={form.siteFee} onChange={(v) => set("siteFee", v)} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Phí bãi — số khách (Site fee — guests)"
+              hint="Tính theo đầu khách, bấm +/− (per guest — accountant applies unit price)"
+            >
+              <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
             </Field>
+            {/* "Xe cho khách" đã bỏ: tiền xe khai vào sổ Thu/Chi bên dưới như mọi khoản khác */}
             <Field label="Nước cho khách (Water for guests)">
               <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
-            </Field>
-            <Field label="Xe cho khách (Car for guests)">
-              <MoneyInput value={form.guestCarCost} onChange={(v) => set("guestCarCost", v)} />
             </Field>
           </div>
 
@@ -705,8 +705,8 @@ export default function PilotReportPage() {
                       {r.redFlag ? ` · ${r.redFlag} cờ đỏ` : ""}
                       {r.flagFlight ? ` · ${r.flagFlight} kéo cờ` : ""}
                       {r.diplomaticGuests ? ` · ${r.diplomaticGuests} ngoại giao` : ""}
-                      {r.siteFee + r.waterCost + r.guestCarCost
-                        ? ` · chi ${formatVND(r.siteFee + r.waterCost + r.guestCarCost)}`
+                      {r.waterCost + r.guestCarCost
+                        ? ` · chi ${formatVND(r.waterCost + r.guestCarCost)}`
                         : ""}
                     </div>
                   </div>

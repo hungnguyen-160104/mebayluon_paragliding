@@ -30,7 +30,7 @@ type MetricKey = keyof Pick<
   | "flights"
   | "video360"
   | "diplomaticGuests"
-  | "siteFee"
+  | "siteFeeGuests"
   | "waterCost"
   | "guestCarCost"
   | "otherExpense"
@@ -54,7 +54,7 @@ const METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
   { key: "ppgFlights", label: "Chuyến PPG" },
   { key: "video360", label: "Camera 360" },
   { key: "diplomaticGuests", label: "Khách ngoại giao" },
-  { key: "siteFee", label: "Phí bãi bay", money: true },
+  { key: "siteFeeGuests", label: "Phí bãi (khách)" },
   { key: "waterCost", label: "Nước cho khách", money: true },
   { key: "guestCarCost", label: "Xe cho khách", money: true },
   { key: "otherExpense", label: "Chi tiêu khác", money: true },
@@ -149,7 +149,7 @@ export default function MonthlyReportPage() {
               <Stat label="Chuyến cả tháng" value={String(data.grandMonth.flights)} strong />
               <Stat label="Camera 360 cả tháng" value={String(data.grandMonth.video360)} />
               <Stat label="Khách ngoại giao" value={String(data.grandMonth.diplomaticGuests)} />
-              <Stat label="Phí bãi bay" value={formatVND(data.grandMonth.siteFee)} />
+              <Stat label="Phí bãi (khách)" value={String(data.grandMonth.siteFeeGuests)} />
               <Stat label="Nước cho khách" value={formatVND(data.grandMonth.waterCost)} />
               <Stat label="Xe cho khách + chi khác" value={formatVND(data.grandMonth.guestCarCost + data.grandMonth.otherExpense)} />
               <Stat label="Tổng chi cả tháng" value={formatVND(data.grandMonth.expenseTotal)} strong />

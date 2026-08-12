@@ -54,7 +54,11 @@ export interface IPilotDailyReport {
   diplomaticCodes: string[];
 
   /** Tiền phi công đã bỏ ra trong ngày — để trống nếu không có. */
-  siteFee: number;
+  /**
+   * Phí bãi bay tính THEO ĐẦU KHÁCH — khai số khách, kế toán nhân đơn giá bên
+   * ngoài (trước đây là số tiền; đổi theo lệnh chủ hệ thống 12/08/2026).
+   */
+  siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
   /**
@@ -141,7 +145,7 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     diplomaticGuests: { type: Number, default: 0, min: 0 },
     diplomaticCodes: { type: [String], default: [] },
 
-    siteFee: { type: Number, default: 0, min: 0 },
+    siteFeeGuests: { type: Number, default: 0, min: 0 },
     waterCost: { type: Number, default: 0, min: 0 },
     guestCarCost: { type: Number, default: 0, min: 0 },
     pickupBigC: { type: Number, default: 0, min: 0 },

@@ -89,7 +89,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     rows.push([
       "Ngày", "Phi công", "Tài khoản", "Đã chốt", "Số chuyến", "Số mã vé", "Mã vé đã bay",
       "Camera 360", "Mã 360", "Khách ngoại giao",
-      "Phí bãi bay", "Nước cho khách", "Xe cho khách", "Chi khác", "Chi tiết chi khác", "Tổng chi",
+      "Phí bãi (khách)", "Nước cho khách", "Xe cho khách", "Chi khác", "Chi tiết chi khác", "Tổng chi",
       "Ghi chú",
     ]);
     for (const r of summary.pilotReports) {
@@ -98,8 +98,8 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
         r.date, r.pilotName, r.username, r.submitted ? "x" : "", r.flightCount, r.ticketCodes.length,
         r.ticketCodes.join(" "),
         r.video360, r.video360Codes.join(" "), r.diplomaticGuests,
-        r.siteFee, r.waterCost, r.guestCarCost, other, expensesText(r.expenses),
-        r.siteFee + r.waterCost + r.guestCarCost + other,
+        r.siteFeeGuests, r.waterCost, r.guestCarCost, other, expensesText(r.expenses),
+        r.siteFeeGuests + r.waterCost + r.guestCarCost + other,
         r.note,
       ]);
     }

@@ -445,7 +445,7 @@ function PilotTable({ data }: { data: BaobaySummaryDTO }) {
           {data.pilotReports.map((r) => {
             const mismatch = r.ticketCodes.length !== r.flightCount;
             const expense =
-              r.siteFee + r.waterCost + r.guestCarCost + r.expenses.reduce((s, e) => s + e.amount, 0);
+              r.waterCost + r.guestCarCost + r.expenses.reduce((s, e) => s + e.amount, 0);
             return (
               <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className={`${td} font-medium`}>{formatDateKeyVN(r.date)}</td>

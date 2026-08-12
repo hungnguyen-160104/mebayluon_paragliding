@@ -232,7 +232,7 @@ function buildSheets(
     name: "Phi công theo ngày",
     header: [
       "Ngày", "Phi công", "Đã chốt", "Chuyến", "Số mã vé", "Flycam", "360", "Cờ đỏ", "Kéo cờ",
-      "Ngoại giao", "Phí bãi bay", "Nước", "Xe cho khách",
+      "Ngoại giao", "Phí bãi (khách)", "Nước", "Xe cho khách",
       // Đưa đón tự trả là đặc thù riêng Hà Nội — điểm khác không có ba cột này
       ...(summary.spot === "ha-noi" ? ["Đón BigC (lượt)", "Đón KS (lượt)", "Xe lên núi (lượt)"] : []),
       "Chi khác", "Tổng chi", "Phạt", "Mã vé đã bay", "Ghi chú",
@@ -246,10 +246,10 @@ function buildSheets(
       return [
         r.date, r.pilotName, r.submitted ? "x" : "", r.flightCount, r.ticketCodes.length,
         r.flycam, r.video360, r.redFlag, r.flagFlight, r.diplomaticGuests,
-        r.siteFee, r.waterCost, r.guestCarCost,
+        r.siteFeeGuests, r.waterCost, r.guestCarCost,
         ...(summary.spot === "ha-noi" ? [r.pickupBigC, r.pickupHotel, r.mountainTrips] : []),
         other,
-        r.siteFee + r.waterCost + r.guestCarCost + other,
+        r.waterCost + r.guestCarCost + other,
         r.latePenalty,
         r.ticketCodes.join(" "),
         r.note,
