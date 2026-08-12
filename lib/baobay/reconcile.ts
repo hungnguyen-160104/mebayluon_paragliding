@@ -740,10 +740,17 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     ) => {
       if (mine === theirs) return;
       const fmt = (n: number) => (money ? vnd(n) : String(n));
+      /**
+       * Kế toán là người quyết định cuối: tick "duyệt lệch" thì các lệch
+       * kế-toán-vs-nhân-viên chỉ còn là NHẮC vàng, không chặn chốt nữa —
+       * giống các lỗi lệch khác. Số của kế toán là số được ghi sổ.
+       */
       flag({
         code,
-        severity: "red",
-        message: `${label}: kế toán khai ${fmt(mine)}, nhân viên báo tổng ${fmt(theirs)}`,
+        severity: varianceApproved ? "warn" : "red",
+        message:
+          `${label}: kế toán khai ${fmt(mine)}, nhân viên báo tổng ${fmt(theirs)}` +
+          (varianceApproved ? " (kế toán đã duyệt lệch — lấy số kế toán)" : ""),
         who,
       });
     };

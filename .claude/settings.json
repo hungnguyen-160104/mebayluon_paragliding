@@ -46,7 +46,9 @@
       "Bash(curl -sL -o /dev/null -w \"money-order: %{http_code} \\(url: %{url_effective}\\)\\\\n\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/126 Safari/537.36\" \"https://mebayluon.com/api/baocao/money-order?spot=khau-pha\")",
       "Bash(curl -s -b cj.txt \"http://localhost:8080/api/baocao/close?date=2026-08-12&spot=khau-pha\" -o close.json -w \"%{http_code}\\\\n\")",
       "Bash(node --import ./alias.mjs live.mjs)",
-      "Bash(sed -i '' 's|await import\\(\"mongoose\"\\)|await import\\(\"/Users/dangvm/Desktop/mebayluon_paragliding/node_modules/mongoose/index.js\"\\)|' live.mjs)"
+      "Bash(sed -i '' 's|await import\\(\"mongoose\"\\)|await import\\(\"/Users/dangvm/Desktop/mebayluon_paragliding/node_modules/mongoose/index.js\"\\)|' live.mjs)",
+      "Bash(sed 's/varianceApproved: !!c.varianceApproved/varianceApproved: true/' live.mjs)",
+      "Bash(node --import ./alias.mjs live-approved.mjs)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

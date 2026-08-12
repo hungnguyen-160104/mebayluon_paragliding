@@ -789,10 +789,10 @@ function DailyCloseInner() {
           />
         </Card>
 
-        {/* Duyệt lệch dịch vụ gia tăng */}
+        {/* Duyệt lệch: kế toán là người quyết định cuối cùng */}
         <Card
-          title="Duyệt lệch dịch vụ gia tăng"
-          hint="Khách hay đăng ký thêm flycam/360 ngay tại bãi nên số các bên có thể lệch. Đúng thực tế thì duyệt; sai thì yêu cầu người báo sửa lại."
+          title="Duyệt lệch số liệu"
+          hint="Số kế toán khai lệch với số nhân viên báo (tiền, khách, vé, dịch vụ) mà đúng thực tế thì tick duyệt — ngày chốt theo SỐ CỦA KẾ TOÁN. Sai ở phía nhân viên thì sửa trực tiếp báo cáo của họ ở các khung bên dưới."
         >
           <div className="mb-3 grid grid-cols-3 gap-3">
             <Readout label="Flycam: camera man / điều phối" value={`${t?.cameramanFlycam ?? 0} / ${t?.dispatcherFlycam ?? 0}`}
@@ -812,7 +812,8 @@ function DailyCloseInner() {
               className="mt-1 h-5 w-5 rounded border-slate-300"
             />
             <span className="text-sm text-slate-800">
-              <strong>Chấp nhận lệch</strong> — số lệch là phát sinh thật tại bãi, không phải khai sai.
+              <strong>Chấp nhận lệch</strong> — số của kế toán là số ghi sổ; các lệch với nhân viên chỉ còn nhắc
+              vàng, không chặn chốt nữa.
             </span>
           </label>
           <TextInput
