@@ -356,6 +356,10 @@ export type MonthlyTotalsDTO = {
   mountainTrips: number;
   /** Chuyến PPG (có động cơ). */
   ppgFlights: number;
+  /** Tiền THU trong ngày (thu hộ tiền bay, flycam… — các dòng THU trong sổ). */
+  thuTotal: number;
+  /** Tiền CHI trong ngày (nước + chi khác). */
+  chiTotal: number;
 };
 
 export type MonthlyDayCellDTO = MonthlyTotalsDTO & {

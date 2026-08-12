@@ -22,6 +22,8 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
+import { after } from "next/server";
+
 import { connectDB } from "@/lib/mongodb";
 import { formatDateKeyVN, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
@@ -76,6 +78,61 @@ import { toSlug } from "@/utils/slug";
 const BCRYPT_ROUNDS = 10;
 
 /** Lỗi nghiệp vụ có câu tiếng Việt hiện thẳng lên form. */
+/**
+ * Đẩy sang Google Sheets SAU KHI đã trả lời người dùng.
+ *
+ * Trước đây mọi lần lưu đều ngồi CHỜ Apps Script (3–13 giây, lúc "nguội" còn
+ * thử lại) rồi mới trả lời — người đứng bãi bấm Lưu tưởng app treo, tệ nhất
+ * vượt trần 30 giây của hàm và yêu cầu bị cắt = "không lưu". Nay ghi cơ sở dữ
+ * liệu xong là trả lời ngay; bảng tính nhận số sau vài giây bằng `after()`
+ * (Next chạy phần này sau khi đã đóng phản hồi, serverless không cắt mất).
+ * Kết quả đẩy ghi lại vào bản ghi — hỏng thì mang nhãn "chưa sang bảng" và
+ * nút "Đẩy lại Google Sheets" quét lại được như trước.
+ */
+function pushSheetInBackground(
+  push: () => Promise<{ ok: boolean; error?: string }>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  model: { updateOne: (filter: any, update: any) => unknown },
+  id: unknown,
+): void {
+  const job = async () => {
+    try {
+      const sync = await push();
+      await model.updateOne(
+        { _id: id },
+        { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
+      );
+      if (!sync.ok) console.warn("[baocao] đẩy bảng tính thất bại:", sync.error);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await model.updateOne({ _id: id }, { $set: { sheetSynced: false, sheetError: msg } });
+      console.warn("[baocao] đẩy bảng tính lỗi:", msg);
+    }
+  };
+
+  try {
+    after(job); // trong ngữ cảnh request của Next
+  } catch {
+    void job(); // gọi từ chỗ khác (script, test) thì chạy thẳng, không chặn ai
+  }
+}
+
+/** Việc nền không gắn với một bản ghi nào (đẩy lại cả ngày, dòng tổng hợp…). */
+function runInBackground(job: () => Promise<unknown>): void {
+  const wrapped = async () => {
+    try {
+      await job();
+    } catch (e: unknown) {
+      console.warn("[baocao] việc nền lỗi:", e instanceof Error ? e.message : String(e));
+    }
+  };
+  try {
+    after(wrapped);
+  } catch {
+    void wrapped();
+  }
+}
+
 export class BaobayError extends Error {
   status: number;
   constructor(message: string, status = 400) {
@@ -1136,16 +1193,11 @@ export async function upsertPilotReport(
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean<any>();
 
-  const sync = await pushPilotRow(doc);
-
-  await PilotDailyReport.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
-  if (!sync.ok) console.warn("[baobay] đẩy báo cáo phi công sang bảng tính thất bại:", sync.error);
+  // Trả lời NGAY, bảng tính nhận số sau vài giây — xem pushSheetInBackground
+  pushSheetInBackground(() => pushPilotRow(doc), PilotDailyReport, doc._id);
 
   return {
-    report: toPilotDTO({ ...doc, sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error }),
+    report: toPilotDTO({ ...doc, sheetSynced: false, sheetError: "đang gửi sang bảng tính…" }),
     warnings,
   };
 }
@@ -1501,16 +1553,11 @@ export async function upsertDispatcherReport(
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean<any>();
 
-  const sync = await pushDispatcherRow(doc);
-
-  await DispatcherDailyReport.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
-  if (!sync.ok) console.warn("[baobay] đẩy báo cáo điều phối sang bảng tính thất bại:", sync.error);
+  // Trả lời NGAY, bảng tính nhận số sau vài giây — xem pushSheetInBackground
+  pushSheetInBackground(() => pushDispatcherRow(doc), DispatcherDailyReport, doc._id);
 
   return {
-    report: toDispatcherDTO({ ...doc, sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error }),
+    report: toDispatcherDTO({ ...doc, sheetSynced: false, sheetError: "đang gửi sang bảng tính…" }),
     warnings,
   };
 }
@@ -1700,15 +1747,11 @@ export async function upsertCameramanReport(
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean<any>();
 
-  const sync = await pushCameramanRow(doc);
-
-  await CameramanDailyReport.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
+  // Trả lời NGAY, bảng tính nhận số sau vài giây — xem pushSheetInBackground
+  pushSheetInBackground(() => pushCameramanRow(doc), CameramanDailyReport, doc._id);
 
   return {
-    report: toCameramanDTO({ ...doc, sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error }),
+    report: toCameramanDTO({ ...doc, sheetSynced: false, sheetError: "đang gửi sang bảng tính…" }),
     warnings,
   };
 }
@@ -1918,13 +1961,9 @@ export async function createHandover(
   });
 
   const saved = doc.toObject();
-  const sync = await pushHandoverRow(saved);
-  await BaobayHandover.updateOne(
-    { _id: saved._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
+  pushSheetInBackground(() => pushHandoverRow(saved), BaobayHandover, saved._id);
 
-  return toHandoverDTO({ ...saved, sheetSynced: sync.ok });
+  return toHandoverDTO({ ...saved, sheetSynced: false });
 }
 
 /** Các lần đưa tiền của CHÍNH mình, mới nhất trước — để nhân sự theo dõi đã ai nhận chưa. */
@@ -2042,12 +2081,8 @@ export async function confirmHandover(
 
   const updated = await BaobayHandover.findByIdAndUpdate(id, { $set: set }, { new: true }).lean<any>();
 
-  // Bảng tính phải phản ánh trạng thái mới ngay, ghi đè đúng dòng cũ
-  const sync = await pushHandoverRow(updated);
-  await BaobayHandover.updateOne(
-    { _id: id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
+  // Bảng tính ghi đè đúng dòng cũ — chạy nền, người bấm không phải chờ Google
+  pushSheetInBackground(() => pushHandoverRow(updated), BaobayHandover, updated._id);
 
   return { ok: true, handover: toHandoverDTO(updated) };
 }
@@ -2658,14 +2693,10 @@ export async function waiveLatePenalty(
 
   const updated = await PilotDailyReport.findOneAndUpdate({ _id: doc._id }, { $set: set }, { new: true }).lean<any>();
 
-  // Bảng lương trên bảng tính phải đổi theo ngay
-  const sync = await pushPilotRow(updated);
-  await PilotDailyReport.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
+  // Bảng lương trên bảng tính đổi theo — chạy nền
+  pushSheetInBackground(() => pushPilotRow(updated), PilotDailyReport, doc._id);
 
-  return { ok: true, report: toPilotDTO({ ...updated, sheetSynced: sync.ok }) };
+  return { ok: true, report: toPilotDTO(updated) };
 }
 
 /* ================================================================== */
@@ -2941,15 +2972,11 @@ export async function upsertDailyClose(
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean<any>();
 
-  const sync = await pushCloseRow(doc);
-  await AccountantDailyClose.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
-  // Kế toán vừa đổi số của ngày -> dòng tổng hợp phải theo kịp
-  await pushDaySummaryRow(spot, input.date);
+  pushSheetInBackground(() => pushCloseRow(doc), AccountantDailyClose, doc._id);
+  // Kế toán vừa đổi số của ngày -> dòng tổng hợp theo kịp, cũng chạy nền
+  runInBackground(() => pushDaySummaryRow(spot, input.date));
 
-  return { report: toCloseDTO({ ...doc, sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error }), warnings };
+  return { report: toCloseDTO({ ...doc, sheetSynced: false, sheetError: "đang gửi sang bảng tính…" }), warnings };
 }
 
 /**
@@ -3177,14 +3204,15 @@ export async function closeDay(
     { $set: { resolvedAt: new Date(), resolvedBy: session.username } },
   );
 
-  const sync = await pushCloseRow(doc);
-  await AccountantDailyClose.updateOne(
-    { _id: doc._id },
-    { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
-  );
-  await pushDayToSheet(spot, date);
+  /**
+   * Nặng nhất cả hệ: lật nhãn "ĐÃ CHỐT" cho MỌI dòng của ngày (15 phi công là
+   * 15+ lượt gọi Apps Script, mỗi lượt vài giây). Chạy nền hết — kế toán thấy
+   * "đã chốt" ngay, bảng tính lật nhãn dần trong một hai phút.
+   */
+  pushSheetInBackground(() => pushCloseRow(doc), AccountantDailyClose, doc._id);
+  runInBackground(() => pushDayToSheet(spot, date));
 
-  return { close: toCloseDTO({ ...doc, sheetSynced: sync.ok }), reconcile };
+  return { close: toCloseDTO({ ...doc, sheetSynced: false }), reconcile };
 }
 
 /**
@@ -3220,9 +3248,9 @@ export async function reopenDay(
     { new: true },
   ).lean<any>();
 
-  await pushCloseRow(doc);
+  pushSheetInBackground(() => pushCloseRow(doc), AccountantDailyClose, doc._id);
   // Gỡ khoá xong, mọi dòng của ngày quay lại nhãn "chưa chốt" trên bảng tính.
-  await pushDayToSheet(spot, date);
+  runInBackground(() => pushDayToSheet(spot, date));
 
   return toCloseDTO(doc);
 }
@@ -3550,6 +3578,15 @@ async function advanceTotalsByUser(spot: string, from: string, to: string): Prom
     { $group: { _id: "$username", total: { $sum: "$amount" } } },
   ]);
   return new Map(rows.map((r) => [r._id, r.total]));
+}
+
+/** Tiền ứng ĐÃ DUYỆT theo từng ngày của từng người — để ghi vào đúng ô ngày. */
+async function advanceByUserDay(spot: string, from: string, to: string): Promise<Map<string, number>> {
+  const rows = await BaobayHandover.aggregate<{ _id: { u: string; d: string }; total: number }>([
+    { $match: { spot, kind: "advance", confirmed: true, date: { $gte: from, $lte: to } } },
+    { $group: { _id: { u: "$username", d: "$date" }, total: { $sum: "$amount" } } },
+  ]);
+  return new Map(rows.map((r) => [`${r._id.u}|${r._id.d}`, r.total]));
 }
 
 
@@ -3954,6 +3991,8 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   pickupHotel: 0,
   mountainTrips: 0,
   ppgFlights: 0,
+  thuTotal: 0,
+  chiTotal: 0,
 };
 
 function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
@@ -3975,6 +4014,10 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.pickupHotel += r.pickupHotel;
   acc.mountainTrips += r.mountainTrips;
   acc.ppgFlights += r.ppgFlights;
+  // Tiền thu/chi ghi vào ĐÚNG NGÀY phát sinh — cộng ở đây là cộng theo từng ô ngày
+  acc.thuTotal += r.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
+  acc.chiTotal +=
+    r.waterCost + r.guestCarCost + r.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount : 0), 0);
 }
 
 function daysInMonthOf(month: string): number {
@@ -4012,13 +4055,14 @@ export async function getMonthlyReport(
   const filter: Record<string, unknown> = { spot, date: { $gte: from, $lte: to } };
   if (onlyUsername) filter.username = onlyUsername;
 
-  const [pilotDocs, closeDocs, advancesMonth, advancesToDate] = await Promise.all([
+  const [pilotDocs, closeDocs, advancesMonth, advancesToDate, advancesDay] = await Promise.all([
     PilotDailyReport.find(filter).sort({ date: 1, pilotName: 1 }).lean<any[]>(),
     AccountantDailyClose.find({ spot, date: { $gte: from, $lte: to } })
       .select("date status")
       .lean<any[]>(),
     advanceTotalsByUser(spot, from, to),
     advanceTotalsByUser(spot, from, isCurrentMonth ? today : to),
+    advanceByUserDay(spot, from, to),
   ]);
 
   const closedDates = new Set(closeDocs.filter((c) => c.status === "closed").map((c) => c.date));
@@ -4055,6 +4099,9 @@ export async function getMonthlyReport(
           ...EMPTY_MONTHLY,
         };
 
+        // Tiền ứng ghi vào ĐÚNG NGÀY xin ứng, kể cả hôm đó không bay
+        cell.advanceTotal = advancesDay.get(`${username}|${date}`) ?? 0;
+
         if (r) {
           addMonthly(cell, r);
           addMonthly(monthTotals, r);
@@ -4062,8 +4109,8 @@ export async function getMonthlyReport(
 
           // Ba khoản có tên cũng đưa vào danh sách chi tiết cho kế toán soát
     
-          if (r.waterCost) expenses.push({ date, content: "Nước cho khách", amount: r.waterCost });
-          if (r.guestCarCost) expenses.push({ date, content: "Xe cho khách", amount: r.guestCarCost });
+          if (r.waterCost) expenses.push({ date, content: "Nước cho khách", amount: r.waterCost, kind: "chi" });
+          if (r.guestCarCost) expenses.push({ date, content: "Xe cho khách", amount: r.guestCarCost, kind: "chi" });
           for (const e of r.expenses) expenses.push({ ...e, date });
         }
 

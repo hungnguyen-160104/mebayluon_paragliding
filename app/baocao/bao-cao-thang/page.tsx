@@ -28,39 +28,44 @@ import { Banner, Button, Card, Field, TextInput } from "../components/ui";
 type MetricKey = keyof Pick<
   MonthlyTotalsDTO,
   | "flights"
-  | "video360"
-  | "diplomaticGuests"
-  | "siteFeeGuests"
-  | "waterCost"
-  | "guestCarCost"
-  | "otherExpense"
-  | "latePenalty"
-  | "advanceTotal"
   | "ppgFlights"
+  | "video360"
+  | "redFlag"
   | "pickupBigC"
   | "pickupHotel"
   | "mountainTrips"
+  | "waterCost"
+  | "thuTotal"
+  | "chiTotal"
+  | "advanceTotal"
+  | "latePenalty"
 >;
 
-/** Số LƯỢT đưa đón phi công tự trả — đặc thù RIÊNG điểm Hà Nội. */
-const HANOI_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
-  { key: "pickupBigC", label: "Đón BigC (lượt)" },
-  { key: "pickupHotel", label: "Đón khách sạn (lượt)" },
-  { key: "mountainTrips", label: "Xe lên núi (lượt)" },
+/**
+ * Danh mục bảng kê THEO LỆNH chủ hệ thống (12/08/2026): ngắn gọn, tiền của
+ * ngày nào ghi vào đúng cột ngày đó. Bốn dòng đầu là số đếm, bốn dòng cuối là
+ * tiền; khối giữa chỉ hiện ở điểm Hà Nội.
+ */
+const BASE_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "flights", label: "PG" },
+  { key: "ppgFlights", label: "PPG" },
+  { key: "video360", label: "360" },
+  { key: "redFlag", label: "Cờ" },
 ];
 
-const METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
-  { key: "flights", label: "Số chuyến bay (PG)" },
-  { key: "ppgFlights", label: "Chuyến PPG" },
-  { key: "video360", label: "Camera 360" },
-  { key: "diplomaticGuests", label: "Khách ngoại giao" },
-  { key: "siteFeeGuests", label: "Phí bãi (khách)" },
-  { key: "waterCost", label: "Nước cho khách", money: true },
-  { key: "guestCarCost", label: "Xe cho khách", money: true },
-  { key: "otherExpense", label: "Chi tiêu khác", money: true },
-  { key: "latePenalty", label: "Phạt nộp muộn", money: true },
-  // Tiền ứng không rơi vào ngày nào — chỉ có ở hai cột tổng
-  { key: "advanceTotal", label: "Tiền ứng (trừ lương)", money: true },
+/** Chỉ điểm Hà Nội mới có đưa đón và nước khách. */
+const HANOI_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "pickupBigC", label: "Xe BigC" },
+  { key: "pickupHotel", label: "Xe KS" },
+  { key: "mountainTrips", label: "Xe lên núi" },
+  { key: "waterCost", label: "Nước khách", money: true },
+];
+
+const MONEY_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "thuTotal", label: "Tiền thu", money: true },
+  { key: "chiTotal", label: "Tiền chi", money: true },
+  { key: "advanceTotal", label: "Tiền ứng", money: true },
+  { key: "latePenalty", label: "Tiền phạt", money: true },
 ];
 
 export default function MonthlyReportPage() {
@@ -192,8 +197,11 @@ function Stat({ label, value, strong }: { label: string; value: string; strong?:
 }
 
 function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyReportDTO }) {
-  // Ba dòng đưa đón tự trả chỉ có nghĩa ở điểm Hà Nội
-  const metrics = data.spot === "ha-noi" ? [...METRICS, ...HANOI_METRICS] : METRICS;
+  // Khối đưa đón + nước khách chỉ có ở điểm Hà Nội
+  const metrics =
+    data.spot === "ha-noi"
+      ? [...BASE_METRICS, ...HANOI_METRICS, ...MONEY_METRICS]
+      : [...BASE_METRICS, ...MONEY_METRICS];
   const [showExpenses, setShowExpenses] = useState(false);
 
   const fmt = (value: number, money?: boolean) => {
@@ -290,7 +298,7 @@ function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyRepo
             className="h-9 px-3 text-xs"
             onClick={() => setShowExpenses((v) => !v)}
           >
-            {showExpenses ? "Ẩn" : `Xem ${pilot.expenses.length} khoản chi khác`}
+            {showExpenses ? "Ẩn" : `Chi tiết ${pilot.expenses.length} khoản thu chi theo ngày`}
           </Button>
 
           {showExpenses && (
@@ -298,9 +306,24 @@ function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyRepo
               {pilot.expenses.map((e, k) => (
                 <li key={k} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm">
                   <span className="text-slate-500">{formatDateKeyVN(e.date)}</span>
+                  <span
+                    className={
+                      "rounded-full px-2 py-0.5 text-[11px] font-semibold " +
+                      (e.kind === "thu" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800")
+                    }
+                  >
+                    {e.kind === "thu" ? "THU" : "CHI"}
+                  </span>
                   <span className="flex-1 text-slate-900">{e.content}</span>
                   {e.note && <span className="text-xs text-slate-500">{e.note}</span>}
-                  <span className="font-semibold tabular-nums text-slate-900">{formatVND(e.amount)}</span>
+                  <span
+                    className={
+                      "font-semibold tabular-nums " + (e.kind === "thu" ? "text-emerald-700" : "text-rose-700")
+                    }
+                  >
+                    {e.kind === "thu" ? "+" : "−"}
+                    {formatVND(e.amount)}
+                  </span>
                 </li>
               ))}
             </ul>
