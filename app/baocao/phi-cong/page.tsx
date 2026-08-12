@@ -517,7 +517,8 @@ export default function PilotReportPage() {
             </Field>
           </div>
 
-          {/* Ba khoản đưa đón phi công TỰ TRẢ TIỀN — khai số LƯỢT, kế toán nhân đơn giá rồi hoàn */}
+          {/* Ba khoản đưa đón tự trả tiền — ĐẶC THÙ RIÊNG điểm Hà Nội, điểm khác không có */}
+          {spot === "ha-noi" && (
           <div className="mt-4">
             <Field
               label="Đưa đón tự trả tiền — số lượt (Self-paid transfers — trips)"
@@ -537,6 +538,7 @@ export default function PilotReportPage() {
               </Field>
             </div>
           </div>
+          )}
 
           <div className="mt-4">
             <Field

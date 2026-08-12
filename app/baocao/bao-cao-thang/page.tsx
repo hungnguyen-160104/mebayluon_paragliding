@@ -41,6 +41,13 @@ type MetricKey = keyof Pick<
   | "mountainTrips"
 >;
 
+/** Số LƯỢT đưa đón phi công tự trả — đặc thù RIÊNG điểm Hà Nội. */
+const HANOI_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "pickupBigC", label: "Đón BigC (lượt)" },
+  { key: "pickupHotel", label: "Đón khách sạn (lượt)" },
+  { key: "mountainTrips", label: "Xe lên núi (lượt)" },
+];
+
 const METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
   { key: "flights", label: "Số chuyến bay" },
   { key: "video360", label: "Camera 360" },
@@ -48,10 +55,6 @@ const METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
   { key: "siteFee", label: "Phí bãi bay", money: true },
   { key: "waterCost", label: "Nước cho khách", money: true },
   { key: "guestCarCost", label: "Xe cho khách", money: true },
-  // Số LƯỢT đưa đón phi công tự trả — kế toán nhân đơn giá ngoài app rồi hoàn
-  { key: "pickupBigC", label: "Đón BigC (lượt)" },
-  { key: "pickupHotel", label: "Đón khách sạn (lượt)" },
-  { key: "mountainTrips", label: "Xe lên núi (lượt)" },
   { key: "otherExpense", label: "Chi tiêu khác", money: true },
   { key: "latePenalty", label: "Phạt nộp muộn", money: true },
   // Tiền ứng không rơi vào ngày nào — chỉ có ở hai cột tổng
@@ -187,6 +190,8 @@ function Stat({ label, value, strong }: { label: string; value: string; strong?:
 }
 
 function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyReportDTO }) {
+  // Ba dòng đưa đón tự trả chỉ có nghĩa ở điểm Hà Nội
+  const metrics = data.spot === "ha-noi" ? [...METRICS, ...HANOI_METRICS] : METRICS;
   const [showExpenses, setShowExpenses] = useState(false);
 
   const fmt = (value: number, money?: boolean) => {
@@ -233,7 +238,7 @@ function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyRepo
             </tr>
           </thead>
           <tbody>
-            {METRICS.map((metric) => (
+            {metrics.map((metric) => (
               <tr key={metric.key} className="border-b border-slate-100">
                 <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-2 text-xs font-medium text-slate-700">
                   {metric.label}

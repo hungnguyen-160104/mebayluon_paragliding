@@ -204,6 +204,8 @@ function PilotRow({
             </Field>
           </div>
 
+          {/* Đưa đón tự trả — chỉ điểm Hà Nội */}
+          {spot === "ha-noi" && (
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Đón BigC (lượt)">
               <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
@@ -215,6 +217,7 @@ function PilotRow({
               <CountInput value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
             </Field>
           </div>
+          )}
 
           <Field label="Ghi chú">
             <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />

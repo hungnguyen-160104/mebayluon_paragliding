@@ -1070,9 +1070,13 @@ export async function upsertPilotReport(
         siteFee: input.siteFee,
         waterCost: input.waterCost,
         guestCarCost: input.guestCarCost,
-        pickupBigC: input.pickupBigC,
-        pickupHotel: input.pickupHotel,
-        mountainTrips: input.mountainTrips,
+        /**
+         * Ba khoản đưa đón (BigC / khách sạn / xe lên núi) là đặc thù RIÊNG
+         * của điểm Hà Nội — điểm khác gửi gì cũng ghi 0 để số liệu không lẫn.
+         */
+        pickupBigC: spot === "ha-noi" ? input.pickupBigC : 0,
+        pickupHotel: spot === "ha-noi" ? input.pickupHotel : 0,
+        mountainTrips: spot === "ha-noi" ? input.mountainTrips : 0,
         expenses,
         note: input.note,
         submitted: input.submit,
@@ -3469,9 +3473,14 @@ export async function getMyPeriodSummary(
         { label: "Phí bãi bay (site fee)", value: sumOf((d) => d.siteFee), money: true },
         { label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true },
         { label: "Xe cho khách (car)", value: sumOf((d) => d.guestCarCost), money: true },
-        { label: "Đón BigC (lượt)", value: sumOf((d) => d.pickupBigC) },
-        { label: "Đón khách sạn (lượt)", value: sumOf((d) => d.pickupHotel) },
-        { label: "Xe lên núi (lượt)", value: sumOf((d) => d.mountainTrips) },
+        // Đưa đón tự trả là đặc thù điểm Hà Nội — điểm khác không hiện cho đỡ rối
+        ...(spot === "ha-noi"
+          ? [
+              { label: "Đón BigC (lượt)", value: sumOf((d) => d.pickupBigC) },
+              { label: "Đón khách sạn (lượt)", value: sumOf((d) => d.pickupHotel) },
+              { label: "Xe lên núi (lượt)", value: sumOf((d) => d.mountainTrips) },
+            ]
+          : []),
         { label: "Chi khác (other)", value: sumOf((d) => expenseTotal(d.expenses)), money: true },
         { label: "Tổng chi (total expenses)", value: sumOf((d) => pilotExpenseTotal(d)), money: true },
         ...cashLines,
