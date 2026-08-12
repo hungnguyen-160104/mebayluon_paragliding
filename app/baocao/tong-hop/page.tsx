@@ -382,6 +382,7 @@ function ByPilotTable({ data }: { data: BaobaySummaryDTO }) {
             <th className={th}>Tổng chi</th>
             <th className={th}>Phạt nộp muộn</th>
             <th className={th}>Tiền ứng</th>
+            <th className={th}>Bảng kê</th>
           </tr>
         </thead>
         <tbody>
@@ -402,6 +403,16 @@ function ByPilotTable({ data }: { data: BaobaySummaryDTO }) {
                 ) : (
                   "—"
                 )}
+              </td>
+              <td className={td}>
+                {/* Bảng kê Excel của riêng phi công này, đúng khoảng ngày đang xem */}
+                <a
+                  href={`/api/baocao/statement?from=${data.from}&to=${data.to}&spot=${data.spot}&username=${p.username}`}
+                  className="font-medium text-emerald-700 hover:underline"
+                  download
+                >
+                  ⬇ Tải
+                </a>
               </td>
             </tr>
           ))}

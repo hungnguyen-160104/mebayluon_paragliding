@@ -11,7 +11,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { ROLE_LABEL } from "@/lib/baobay/roles";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "../components/client-api";
+import { apiGet, apiPatch, apiPost } from "../components/client-api";
 import {
   RangeRows,
   RescheduleRows,
@@ -54,6 +54,26 @@ import {
  * Bấm "Chốt ngày" chỉ được khi sạch lỗi đỏ. Chốt xong ngày bị KHOÁ: mọi nhân
  * viên hết sửa được, và ngày đó mới được tính vào tổng của kỳ.
  */
+
+/** Số nhân viên báo, do máy chủ gom — nguồn cho nút "chép để xác nhận". */
+type CloseSuggestion = {
+  guestCount: number;
+  ticketsIssued: number;
+  ticketsReturned: number;
+  cancelledCount: number;
+  rescheduledCount: number;
+  issuedRanges: Array<{ from: string; to: string }>;
+  cancelledCodesText: string;
+  rescheduled: Array<{ code: string; toDate: string; note: string }>;
+  cashTotal: number;
+  transferTotal: number;
+  flycam: number;
+  video360: number;
+  flagFlight: number;
+  pilot: { flights: number; flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  hasData: boolean;
+};
 
 type FormState = {
   guestCount: number;
@@ -122,6 +142,12 @@ function DailyCloseInner() {
     return q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : today;
   });
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [suggest, setSuggest] = useState<CloseSuggestion | null>(null);
+  /** Khung "yêu cầu soát lại": chủ đề + lời nhắn + các lệnh đang treo. */
+  const [reviewTopic, setReviewTopic] = useState("flycam");
+  const [reviewNote, setReviewNote] = useState("");
+  const [reviews, setReviews] = useState<Array<{ id: string; topicLabel: string; note: string; resolvedAt?: string; requestedBy: string }>>([]);
+  const [reviewBusy, setReviewBusy] = useState(false);
   const [close, setClose] = useState<DailyCloseDTO | null>(null);
   const [check, setCheck] = useState<ReconcileDTO | null>(null);
   const [loadingDay, setLoadingDay] = useState(false);
@@ -141,9 +167,10 @@ function DailyCloseInner() {
   const cancelled = useMemo(() => parseTicketCodeList(form.cancelledCodesText), [form.cancelledCodesText]);
   const rescheduledFilled = form.rescheduled.filter((r) => r.code.trim());
 
-  const apply = useCallback((res: { close: DailyCloseDTO | null; reconcile: ReconcileDTO }) => {
+  const apply = useCallback((res: { close: DailyCloseDTO | null; reconcile: ReconcileDTO; suggest?: CloseSuggestion }) => {
     setClose(res.close);
     setCheck(res.reconcile);
+    if (res.suggest) setSuggest(res.suggest);
     setReloadKey((k) => k + 1);
     setForm(
       res.close
@@ -180,7 +207,7 @@ function DailyCloseInner() {
       setWarnings([]);
       try {
         apply(
-          await apiGet<{ close: DailyCloseDTO | null; reconcile: ReconcileDTO }>(
+          await apiGet<{ close: DailyCloseDTO | null; reconcile: ReconcileDTO; suggest?: CloseSuggestion }>(
             `/api/baocao/close?date=${targetDate}&spot=${spot}`,
           ),
         );
@@ -196,6 +223,86 @@ function DailyCloseInner() {
   useEffect(() => {
     if (user && spot) loadDay(date);
   }, [user, spot, date, loadDay]);
+
+  useEffect(() => {
+    if (!user || !spot) return;
+    let alive = true;
+    apiGet<{ reviews: typeof reviews }>(`/api/baocao/review?date=${date}&spot=${spot}`)
+      .then((r) => {
+        if (alive) setReviews(r.reviews);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [user, spot, date, reloadKey]);
+
+  /**
+   * Lấy số ĐIỀU PHỐI báo: điều phối nắm quầy vé nên phía này cho được trọn bộ —
+   * khách, vé, dải mã, huỷ/dời, tiền, và cả ba dịch vụ theo con số quầy đếm.
+   */
+  function copyFromDispatcher() {
+    if (!suggest?.dispatcher.hasData) return;
+    setForm((prev) => ({
+      ...prev,
+      guestCount: suggest.guestCount,
+      ticketsIssued: suggest.ticketsIssued,
+      ticketsReturned: suggest.ticketsReturned,
+      cancelledCount: suggest.cancelledCount,
+      rescheduledCount: suggest.rescheduledCount,
+      issuedRanges: suggest.issuedRanges.length ? suggest.issuedRanges.map((r) => ({ ...r })) : prev.issuedRanges,
+      cancelledCodesText: suggest.cancelledCodesText,
+      rescheduled: suggest.rescheduled.length ? suggest.rescheduled.map((r) => ({ ...r })) : prev.rescheduled,
+      cashTotal: suggest.cashTotal,
+      transferTotal: suggest.transferTotal,
+      flycam: suggest.dispatcher.flycam,
+      video360: suggest.dispatcher.video360,
+      flagFlight: suggest.dispatcher.flagFlight,
+    }));
+    setMessage("Đã lấy số ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
+  }
+
+  /**
+   * Lấy tổng số PHI CÔNG báo: phi công chỉ nắm phần mình bay — dịch vụ trên
+   * từng chuyến và tổng chuyến. Khách/tiền/dải mã là việc của quầy, giữ nguyên.
+   */
+  function copyFromPilots() {
+    if (!suggest?.pilot.hasData) return;
+    setForm((prev) => ({
+      ...prev,
+      flycam: suggest.pilot.flycam,
+      video360: suggest.pilot.video360,
+      flagFlight: suggest.pilot.flagFlight,
+    }));
+    setMessage(
+      `Đã lấy tổng PHI CÔNG báo (flycam/360/kéo cờ; tổng ${suggest.pilot.flights} chuyến) — khách, tiền và mã vé vẫn theo số đang nhập.`,
+    );
+  }
+
+  /** Gửi lệnh "soát lại" tới đúng các vai trò của chủ đề (flycam -> điều phối + camera man…). */
+  async function sendReview() {
+    setReviewBusy(true);
+    try {
+      await apiPost(`/api/baocao/review?spot=${spot}`, { date, topic: reviewTopic, note: reviewNote });
+      setReviewNote("");
+      const r = await apiGet<{ reviews: typeof reviews }>(`/api/baocao/review?date=${date}&spot=${spot}`);
+      setReviews(r.reviews);
+      setMessage("Đã gửi yêu cầu soát lại — lệnh hiện ngay trên trang của các vai trò liên quan.");
+    } catch (err: any) {
+      setError(err?.message || "Không gửi được yêu cầu");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function resolveReview(id: string) {
+    try {
+      await apiPatch(`/api/baocao/review?spot=${spot}`, { id });
+      setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, resolvedAt: new Date().toISOString() } : r)));
+    } catch (err: any) {
+      setError(err?.message || "Không đánh dấu được");
+    }
+  }
 
   async function action(kind: "save" | "close" | "reopen") {
     setError(null);
@@ -337,6 +444,29 @@ function DailyCloseInner() {
           title="Số tổng trong ngày"
           hint="Kế toán tự gõ. Con số nhỏ bên dưới là số app cộng từ báo cáo nhân viên — để so, không phải để điền hộ."
         >
+          {/* Nhân viên nhập, kế toán chỉ XÁC NHẬN: chép cả bảng rồi soát, sai chỗ nào sửa tay hoặc truy người nhập */}
+          {suggest?.hasData && !locked && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+              <span className="text-sm text-emerald-900">Nhân viên đã báo — đúng thì lấy, khỏi gõ lại:</span>
+              {suggest.dispatcher.hasData && (
+                <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={copyFromDispatcher}>
+                  ⧉ Lấy số ĐIỀU PHỐI báo
+                </Button>
+              )}
+              {suggest.pilot.hasData && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-9 bg-white px-3 text-xs"
+                  onClick={copyFromPilots}
+                  title={`Tổng phi công: ${suggest.pilot.flights} chuyến · flycam ${suggest.pilot.flycam} · 360 ${suggest.pilot.video360} · kéo cờ ${suggest.pilot.flagFlight}`}
+                >
+                  ⧉ Lấy tổng PHI CÔNG báo
+                </Button>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
@@ -370,22 +500,83 @@ function DailyCloseInner() {
           </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            {/* Mỗi dịch vụ hiện CẢ HAI nguồn — kế toán chấp nhận nguồn nào thì bấm nguồn đó */}
             <Field label="Số lượng flycam">
               <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
+                onTake={locked ? undefined : (v) => set("flycam", v)} />
+              <Compare label="điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
             </Field>
             <Field label="Số lượng Camera 360">
               <CountInput value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilot360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
+              <Compare label="điều phối báo" value={t?.dispatcher360} mine={form.video360}
+                onTake={locked ? undefined : (v) => set("video360", v)} />
             </Field>
             <Field label="Số lượng bay kéo cờ">
               <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
+              <Compare label="phi công báo" value={t?.pilotFlagFlight} mine={form.flagFlight}
+                onTake={locked ? undefined : (v) => set("flagFlight", v)} />
               <Compare label="điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
             </Field>
           </div>
+
+          {/* Hai nguồn lệch mà chưa rõ ai đúng: gửi lệnh cho đúng các vai trò soát lại */}
+          {!locked && (
+            <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50/60 p-3">
+              <div className="text-sm font-semibold text-orange-900">📣 Yêu cầu soát lại</div>
+              <p className="mt-0.5 text-xs text-slate-600">
+                Lệnh hiện ngay trên trang của đúng vai trò liên quan (flycam → điều phối + camera man;
+                360/cờ đỏ/kéo cờ → điều phối + phi công). Tự tan khi chốt ngày.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <select
+                  value={reviewTopic}
+                  onChange={(e) => setReviewTopic(e.target.value)}
+                  className="h-10 rounded-xl border border-orange-300 bg-white px-2 text-sm"
+                >
+                  <option value="flycam">Flycam</option>
+                  <option value="video360">Camera 360</option>
+                  <option value="redFlag">Dù cờ đỏ</option>
+                  <option value="flagFlight">Bay kéo cờ</option>
+                  <option value="general">Số liệu chung</option>
+                </select>
+                <input
+                  value={reviewNote}
+                  onChange={(e) => setReviewNote(e.target.value)}
+                  placeholder="Lời nhắn · VD: điều phối báo 5, camera man báo 4"
+                  className="h-10 min-w-52 flex-1 rounded-xl border border-orange-300 bg-white px-3 text-sm"
+                />
+                <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" disabled={reviewBusy} onClick={sendReview}>
+                  {reviewBusy ? "Đang gửi…" : "Gửi lệnh"}
+                </Button>
+              </div>
+              {reviews.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs">
+                      <strong className={r.resolvedAt ? "text-slate-400 line-through" : "text-orange-900"}>
+                        {r.topicLabel}
+                      </strong>
+                      <span className={"flex-1 truncate " + (r.resolvedAt ? "text-slate-400" : "text-slate-700")}>
+                        {r.note}
+                      </span>
+                      {r.resolvedAt ? (
+                        <span className="text-emerald-700">đã xử lý</span>
+                      ) : (
+                        <button type="button" onClick={() => resolveReview(r.id)} className="rounded-md border border-slate-300 px-2 py-0.5 font-medium text-slate-600">
+                          đánh dấu xong
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <div className="mt-4">
             <Readout
@@ -400,6 +591,12 @@ function DailyCloseInner() {
 
         <Card title="Mã vé đã xuất" hint="Nhiều cuốn khác tiền tố thì thêm dòng: A1234–A1256 và B1234–B1239">
           <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
+          {suggest && suggest.issuedRanges.length > 0 && !locked && (
+            <CopyLine
+              label={`điều phối khai ${suggest.issuedRanges.length} dải: ${suggest.issuedRanges.map((r) => `${r.from}→${r.to}`).join(" · ")}`}
+              onCopy={() => set("issuedRanges", suggest.issuedRanges.map((r) => ({ ...r })))}
+            />
+          )}
           <div className="mt-3">
             <Readout
               label="Tổng theo dải mã (phải bằng số vé xuất ra)"
@@ -420,6 +617,12 @@ function DailyCloseInner() {
               className="min-h-16"
               disabled={locked}
             />
+            {suggest && suggest.cancelledCodesText && !locked && (
+              <CopyLine
+                label={`điều phối khai: ${suggest.cancelledCodesText}`}
+                onCopy={() => set("cancelledCodesText", suggest.cancelledCodesText)}
+              />
+            )}
           </Field>
 
           <div className="mt-4 border-t border-slate-100 pt-4">
@@ -432,6 +635,12 @@ function DailyCloseInner() {
               minDate={shiftDateKey(date, 1)}
               disabled={locked}
             />
+            {suggest && suggest.rescheduled.length > 0 && !locked && (
+              <CopyLine
+                label={`điều phối khai ${suggest.rescheduled.length} vé dời: ${suggest.rescheduled.map((r) => `${r.code}→${r.toDate}`).join(" · ")}`}
+                onCopy={() => set("rescheduled", suggest.rescheduled.map((r) => ({ ...r })))}
+              />
+            )}
           </div>
         </Card>
 
@@ -599,6 +808,22 @@ function DailyCloseInner() {
  * Dòng so sánh nhỏ dưới mỗi ô: số app cộng được từ báo cáo nhân viên.
  * Khớp thì hiện dấu ✓ xanh, lệch thì hiện nút "lấy số này" để kế toán chọn.
  */
+/** Một dòng "điều phối khai: …" kèm nút chép — cho các trường mã vé, không phải ô số. */
+function CopyLine({ label, onCopy }: { label: string; onCopy: () => void }) {
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-slate-600">{label}</span>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="rounded-md border border-slate-300 bg-white px-2 py-0.5 font-medium text-slate-700 hover:bg-slate-50"
+      >
+        ⧉ chép để xác nhận
+      </button>
+    </div>
+  );
+}
+
 function Compare({
   label,
   value,

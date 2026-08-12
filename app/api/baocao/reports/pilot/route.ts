@@ -1,8 +1,9 @@
 // app/api/baocao/reports/pilot/route.ts
 import { NextResponse } from "next/server";
 
-import { isDateKey, isPastSubmitDeadline } from "@/lib/baobay/date";
+import { isDateKey, isPastSubmitDeadline, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 
 import { firstZodMessage, pilotReportSchema } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
@@ -52,6 +53,14 @@ export async function GET(req: Request) {
 
   if (date && !isDateKey(date)) {
     return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
+  }
+
+  /** Phi công chỉ tự tra 45 ngày gần nhất — phần cũ hơn do kế toán/quản trị giữ. */
+  if (auth.role === "pilot" && date && date < shiftDateKey(todayInVN(), -PILOT_VIEW_LIMIT_DAYS)) {
+    return NextResponse.json(
+      { message: `Dữ liệu quá ${PILOT_VIEW_LIMIT_DAYS} ngày đã khoá tra cứu — cần xem thì nhờ kế toán.` },
+      { status: 403 },
+    );
   }
 
   // Kế toán: danh sách báo cáo cả ngày để sửa trực tiếp

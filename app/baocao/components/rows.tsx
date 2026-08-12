@@ -577,3 +577,92 @@ export function DiploEntryRows({
     </div>
   );
 }
+
+
+/* ------------------------------------------------------------------ */
+/* Khoản thu có tên — nút "+" dưới hai ô Tiền mặt / Chuyển khoản       */
+/* ------------------------------------------------------------------ */
+
+export type RevenueRow = { content: string; method: "cash" | "transfer"; amount: number };
+
+/**
+ * Mỗi dòng: nội dung – chọn Tiền mặt HOẶC CK (hai nút, chỉ một sáng) – số tiền.
+ * Máy chủ tự cộng các dòng này vào tổng tiền mặt / chuyển khoản của ngày.
+ */
+export function RevenueRows({
+  rows,
+  onChange,
+  disabled,
+}: {
+  rows: RevenueRow[];
+  onChange: (next: RevenueRow[]) => void;
+  disabled?: boolean;
+}) {
+  const set = (index: number, patch: Partial<RevenueRow>) =>
+    onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_11rem]">
+            <TextInput
+              value={row.content}
+              onChange={(e) => set(i, { content: e.target.value })}
+              placeholder="Nội dung · VD: khách đoàn trả thêm"
+              disabled={disabled}
+            />
+            <MoneyInput value={row.amount} onChange={(v) => set(i, { amount: v })} />
+          </div>
+          <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-300">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => set(i, { method: "cash" })}
+              className={
+                row.method === "cash"
+                  ? "h-12 bg-sky-600 px-3 text-xs font-semibold text-white"
+                  : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+              }
+            >
+              Tiền mặt
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => set(i, { method: "transfer" })}
+              className={
+                row.method === "transfer"
+                  ? "h-12 bg-sky-600 px-3 text-xs font-semibold text-white"
+                  : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+              }
+            >
+              CK
+            </button>
+          </div>
+          {!disabled && (
+            <button
+              type="button"
+              onClick={() => onChange(rows.filter((_, k) => k !== i))}
+              className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+              aria-label="Bỏ dòng này"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+
+      {!disabled && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 px-3 text-xs"
+          onClick={() => onChange([...rows, { content: "", method: "cash", amount: 0 }])}
+        >
+          + Thêm khoản thu
+        </Button>
+      )}
+    </div>
+  );
+}

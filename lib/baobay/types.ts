@@ -105,6 +105,10 @@ export type PilotReportDTO = {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+  /** Chuyến PPG (có động cơ) — vé không bắt buộc, không vé thì đếm vào ppgNoTicket. */
+  ppgFlights: number;
+  ppgCodes: string[];
+  ppgNoTicket: number;
   expenses: ExpenseDTO[];
   note: string;
   submitted: boolean;
@@ -151,6 +155,8 @@ export type DispatcherReportDTO = {
   diplomaticCodes: string[];
   cashReceived: number;
   transferReceived: number;
+  /** Khoản thu có tên (thêm bằng nút +) — đã được cộng sẵn vào hai tổng trên. */
+  revenueEntries: Array<{ content: string; method: "cash" | "transfer"; amount: number }>;
   guestWaterCost: number;
   mountainCarCost: number;
   shuttleCarCost: number;
@@ -344,6 +350,8 @@ export type MonthlyTotalsDTO = {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+  /** Chuyến PPG (có động cơ). */
+  ppgFlights: number;
 };
 
 export type MonthlyDayCellDTO = MonthlyTotalsDTO & {

@@ -136,6 +136,13 @@ export type ReconcileClose = {
 
 export type ReconcileInput = {
   date: string;
+  /**
+   * Có bắt phi công khai MÃ VÉ từng chuyến không. Khau Phạ: có — đối chiếu tới
+   * từng mã. Điểm khác: không — chỉ soát SỐ LƯỢNG; mã nào đã khai thì vẫn kiểm
+   * (trùng/lạ vẫn là lỗi thật), nhưng không đòi đủ và không truy "mã thiếu".
+   * Bỏ trống = true để không đổi hành vi các nơi gọi cũ.
+   */
+  requireCodes?: boolean;
   /** null khi kế toán chưa nhập số chốt cho ngày đó. */
   close: ReconcileClose | null;
   dispatchers: ReconcileDispatcher[];
@@ -200,6 +207,7 @@ const sum = <T>(list: T[], pick: (item: T) => number): number =>
 
 export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const { date, close, dispatchers, pilots, cameramen } = input;
+  const requireCodes = input.requireCodes !== false;
   const issues: Issue[] = [];
   const byUser: Record<string, Issue[]> = {};
 
@@ -401,11 +409,19 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (p.flightCount !== seen.size) {
+    if (requireCodes && p.flightCount !== seen.size) {
       flag({
         code: "PHI_CONG_LECH_SO",
         severity: "red",
         message: `${p.pilotName} khai ${p.flightCount} chuyến nhưng liệt kê ${seen.size} mã vé`,
+        who: [p.username],
+      });
+    } else if (!requireCodes && seen.size > 0 && p.flightCount !== seen.size) {
+      // Điểm không bắt mã: khai một phần là bình thường, chỉ nhắc chứ không treo ngày
+      flag({
+        code: "PHI_CONG_LECH_SO",
+        severity: "warn",
+        message: `${p.pilotName} khai ${p.flightCount} chuyến, ghi ${seen.size} mã (điểm này không bắt buộc mã)`,
         who: [p.username],
       });
     }
@@ -490,9 +506,9 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     });
   }
 
-  const missingCodes = issuedCodes.filter(
-    (c) => !flownBy.has(c) && !cancelledSet.has(c) && !rescheduledSet.has(c),
-  );
+  const missingCodes = requireCodes
+    ? issuedCodes.filter((c) => !flownBy.has(c) && !cancelledSet.has(c) && !rescheduledSet.has(c))
+    : [];
 
   if (missingCodes.length) {
     /**
@@ -767,7 +783,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
      * hai phi công khai trùng một mã thì tổng số chuyến bị đội lên 1, cân bằng
      * này sẽ khớp giả và giấu mất chỗ thiếu vé.
      */
-    const flownDistinct = flownBy.size;
+    const flownDistinct = requireCodes ? flownBy.size : totals.pilotFlights;
     const accounted = close.ticketsReturned + flownDistinct;
     if (close.ticketsIssued !== accounted) {
       flag({
@@ -776,7 +792,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
         message:
           `Vé xuất (${close.ticketsIssued}) khác tổng đã bay + thu hồi ` +
           `(${flownDistinct} + ${close.ticketsReturned} = ${accounted})` +
-          (totals.pilotFlights !== flownDistinct
+          (requireCodes && totals.pilotFlights !== flownDistinct
             ? ` — phi công khai tổng ${totals.pilotFlights} chuyến nhưng chỉ có ${flownDistinct} mã khác nhau`
             : ""),
         // Không quy cho phi công nào: chỗ lệch nằm ở tổng của cả ngày

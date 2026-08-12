@@ -64,6 +64,15 @@ export interface IPilotDailyReport {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+
+  /**
+   * Chuyến PPG (dù lượn có động cơ) — mặc định mọi chuyến ở trên là PG.
+   * Vé KHÔNG bắt buộc, nhưng đã bay có vé thì phải khai mã; chuyến không vé
+   * khai vào `ppgNoTicket`. Ràng buộc: ppgCodes.length + ppgNoTicket = ppgFlights.
+   */
+  ppgFlights: number;
+  ppgCodes: string[];
+  ppgNoTicket: number;
   /** Các khoản chi khác: nội dung – số tiền – ghi chú. */
   expenses: ExpenseDTO[];
 
@@ -138,6 +147,9 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     pickupBigC: { type: Number, default: 0, min: 0 },
     pickupHotel: { type: Number, default: 0, min: 0 },
     mountainTrips: { type: Number, default: 0, min: 0 },
+    ppgFlights: { type: Number, default: 0, min: 0 },
+    ppgCodes: { type: [String], default: [] },
+    ppgNoTicket: { type: Number, default: 0, min: 0 },
     expenses: { type: [ExpenseSchema], default: [] },
 
     note: String,

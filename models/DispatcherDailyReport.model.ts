@@ -86,6 +86,12 @@ export interface IDispatcherDailyReport {
 
   cashReceived: number;
   transferReceived: number;
+  /**
+   * Các khoản thu CÓ TÊN, thêm bằng nút "+" dưới hai ô tiền vé: nội dung –
+   * tiền mặt/CK – số tiền. `cashReceived`/`transferReceived` lưu TỔNG đã gộp
+   * cả các dòng này (máy chủ cộng), nên mọi phép đối chiếu giữ nguyên.
+   */
+  revenueEntries: Array<{ content: string; method: "cash" | "transfer"; amount: number }>;
 
   /** Chi hộ khách — ba khoản hay gặp nhất, tách riêng để cộng nhanh. */
   guestWaterCost: number;
@@ -198,6 +204,19 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
     diplomaticCodes: { type: [String], default: [] },
 
     cashReceived: { type: Number, default: 0, min: 0 },
+    revenueEntries: {
+      type: [
+        new Schema(
+          {
+            content: { type: String, default: "" },
+            method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+            amount: { type: Number, default: 0, min: 0 },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     transferReceived: { type: Number, default: 0, min: 0 },
 
     guestWaterCost: { type: Number, default: 0, min: 0 },

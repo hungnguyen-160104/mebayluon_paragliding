@@ -13,6 +13,7 @@ import { apiGet, apiPost } from "../components/client-api";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
+import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
@@ -166,6 +167,9 @@ export default function CameramanReportPage() {
       subtitle="Nhập số chuyến đã quay flycam trong ngày rồi bấm Chốt để kế toán soát."
     >
       <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
+
+      {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      <ReviewNotices spot={spot} date={date} />
 
       {myReds.length > 0 && (
         <Banner tone="error">

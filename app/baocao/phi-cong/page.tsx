@@ -15,6 +15,7 @@ import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows"
 import { HandoverBox } from "../components/HandoverBox";
 import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
+import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
@@ -64,6 +65,9 @@ type FormState = {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+  ppgFlights: number;
+  ppgCodesText: string;
+  ppgNoTicket: number;
   expenses: ExpenseRow[];
   note: string;
 };
@@ -87,6 +91,9 @@ const EMPTY_FORM: FormState = {
   pickupBigC: 0,
   pickupHotel: 0,
   mountainTrips: 0,
+  ppgFlights: 0,
+  ppgCodesText: "",
+  ppgNoTicket: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
   note: "",
 };
@@ -116,6 +123,7 @@ export default function PilotReportPage() {
   /** Đọc mã vé ngay khi gõ để phi công thấy số mã có khớp số chuyến hay không. */
   const parsedCodes = useMemo(() => parseTicketCodeList(form.ticketCodesText), [form.ticketCodesText]);
   const parsed360 = useMemo(() => parseTicketCodeList(form.video360CodesText), [form.video360CodesText]);
+  const parsedPpg = useMemo(() => parseTicketCodeList(form.ppgCodesText), [form.ppgCodesText]);
 
   const loadDay = useCallback(async (targetDate: string) => {
     if (!spot) return;
@@ -156,6 +164,9 @@ export default function PilotReportPage() {
               pickupBigC: res.report.pickupBigC,
               pickupHotel: res.report.pickupHotel,
               mountainTrips: res.report.mountainTrips,
+              ppgFlights: res.report.ppgFlights,
+              ppgCodesText: res.report.ppgCodes.join(", "),
+              ppgNoTicket: res.report.ppgNoTicket,
               expenses: toExpenseRows(res.report.expenses),
               note: res.report.note,
             }
@@ -227,8 +238,14 @@ export default function PilotReportPage() {
     return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
   }
 
+  /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã) — điểm khác khai được thì tốt. */
+  const requireCodes = spot === "khau-pha";
   const codeCountMismatch = parsedCodes.codes.length !== form.flightCount;
-  const canSubmit = !locked && !parsedCodes.malformed.length && !codeCountMismatch && form.flightCount > 0;
+  const canSubmit =
+    !locked &&
+    !parsedCodes.malformed.length &&
+    (!requireCodes || !codeCountMismatch) &&
+    form.flightCount > 0;
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
   // Dòng THU (phi công cầm hộ tiền khách) không phải khoản chi — không cộng vào tổng chi
   const expenseSum =
@@ -248,6 +265,9 @@ export default function PilotReportPage() {
 
       {/* Lịch bay do quản lý chấm — xem là chính, không khoá gì việc nhập số */}
       <MyShifts spot={spot} bilingual />
+
+      {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      <ReviewNotices spot={spot} date={date} />
 
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (
@@ -350,7 +370,11 @@ export default function PilotReportPage() {
             <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
 
             <Field
-              label="Mã vé đã bay (Ticket codes flown)"
+              label={
+                requireCodes
+                  ? "Mã vé đã bay (Ticket codes flown)"
+                  : "Mã vé đã bay — không bắt buộc ở điểm này (Ticket codes — optional here)"
+              }
               hint={`Cách nhau bằng khoảng trắng, phẩy, chấm hoặc gạch — app tự nhận. Bay liền dải thì viết A1234..A1240. ${TICKET_CODE_HINT}`}
             >
               <TextArea
@@ -372,10 +396,10 @@ export default function PilotReportPage() {
               <Readout label="Số chuyến đã khai (flights declared)" value={String(form.flightCount)} />
             </div>
 
-            {codeCountMismatch && !locked && (
+            {codeCountMismatch && !locked && (requireCodes || parsedCodes.codes.length > 0) && (
               <Banner tone="warning">
-                Số mã vé ({parsedCodes.codes.length}) khác số chuyến bay ({form.flightCount}) — phải bằng nhau
-                mới chốt được.
+                Số mã vé ({parsedCodes.codes.length}) khác số chuyến bay ({form.flightCount})
+                {requireCodes ? " — phải bằng nhau mới chốt được." : " — điểm này không bắt buộc mã, vẫn chốt được."}
                 <div className="mt-2">
                   <Button
                     type="button"
@@ -504,6 +528,46 @@ export default function PilotReportPage() {
           </div>
         </Card>
 
+        {/* PPG — dù lượn CÓ ĐỘNG CƠ; mọi ô bên trên mặc định là PG. Vé không bắt buộc:
+            có vé thì khai mã, không vé thì đếm vào ô "không vé". */}
+        <Card
+          title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
+          hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Số chuyến PPG (PPG flights)">
+              <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
+            </Field>
+            <Field label="Trong đó KHÔNG vé (ticketless)">
+              <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
+            </Field>
+          </div>
+          {form.ppgFlights > 0 && (
+            <div className="mt-3">
+              <Field
+                label="Mã vé PPG (PPG ticket codes)"
+                hint={`Chuyến có vé phải khai đủ mã: mã + không vé = số chuyến (${parsedPpg.codes.length} mã + ${form.ppgNoTicket} không vé / ${form.ppgFlights} chuyến)`}
+              >
+                <TextInput
+                  value={form.ppgCodesText}
+                  onChange={(e) => set("ppgCodesText", e.target.value.toUpperCase())}
+                  placeholder="P1234, P1235 — không có vé thì để trống và đếm vào ô 'không vé'"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={locked}
+                />
+              </Field>
+              {form.ppgFlights !== parsedPpg.codes.length + form.ppgNoTicket && (
+                <Banner tone="warning">
+                  PPG: {form.ppgFlights} chuyến nhưng {parsedPpg.codes.length} mã + {form.ppgNoTicket} không vé ={" "}
+                  {parsedPpg.codes.length + form.ppgNoTicket} — hai bên phải bằng nhau mới chốt được (codes +
+                  ticketless must equal flights).
+                </Banner>
+              )}
+            </div>
+          )}
+        </Card>
+
         <Card title="Thu / Chi trong ngày (Money in & out)" hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Phí bãi bay (Site fee)">
@@ -597,7 +661,13 @@ export default function PilotReportPage() {
               onClick={() => save(true)}
               disabled={saving !== null || loadingDay || !canSubmit}
               className="flex-1 shadow-lg"
-              title={canSubmit ? undefined : "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"}
+              title={
+                canSubmit
+                  ? undefined
+                  : requireCodes
+                    ? "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"
+                    : "Khai số chuyến (và sửa mã sai dạng nếu có) rồi mới chốt được"
+              }
             >
               {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại (Re-submit)" : "Chốt báo cáo (Submit)"}
             </Button>
@@ -608,6 +678,7 @@ export default function PilotReportPage() {
       <HandoverBox spot={spot} bilingual />
 
       <PeriodSummary
+        statement
         spot={spot}
         title="Tổng theo chu kỳ (Period totals)"
         hint="Chọn khoảng ngày để xem tổng từng nội dung của anh/chị (pick a date range to see your totals)"

@@ -9,6 +9,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
   closeDay,
+  getCloseSuggestion,
   getDailyClose,
   getReconcile,
   reopenDay,
@@ -39,8 +40,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Thiếu tham số date (YYYY-MM-DD)" }, { status: 400 });
   }
 
-  const [close, reconcile] = await Promise.all([getDailyClose(spot, date), getReconcile(spot, date)]);
-  return NextResponse.json({ spot, close, reconcile });
+  const [close, reconcile, suggest] = await Promise.all([
+    getDailyClose(spot, date),
+    getReconcile(spot, date),
+    // Số nhân viên báo — kế toán bấm chép để xác nhận thay vì gõ lại
+    getCloseSuggestion(spot, date),
+  ]);
+  return NextResponse.json({ spot, close, reconcile, suggest });
 }
 
 export async function POST(req: Request) {

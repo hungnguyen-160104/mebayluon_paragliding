@@ -23,7 +23,7 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/mongodb";
-import { formatDateKeyVN, isPastSubmitDeadline, nowStampVN, todayInVN } from "@/lib/baobay/date";
+import { formatDateKeyVN, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
@@ -38,6 +38,7 @@ import {
   TICKET_CODE_HINT,
   TICKET_CODE_PATTERN,
 } from "@/lib/baobay/ticket-code";
+import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type {
   BaobayAccountDTO,
@@ -64,6 +65,7 @@ import type {
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
+import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
@@ -884,6 +886,10 @@ export type PilotReportSaveInput = {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+  /** Chuyến PPG: có vé thì khai mã, không vé thì đếm vào ppgNoTicket. */
+  ppgFlights: number;
+  ppgCodesText: string;
+  ppgNoTicket: number;
   expenses: Array<{ content: string; amount: number; note?: string }>;
   note: string;
   submit: boolean;
@@ -917,15 +923,24 @@ export async function upsertPilotReport(
    * chặn kế toán chốt ngày chứ không chặn từng phi công, vì người này không thể
    * tự biết người kia khai gì.
    */
+  /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã); điểm khác khai được thì tốt. */
+  const requireCodes = spot === "khau-pha";
+
   if (input.submit) {
     if (parsed.malformed.length) {
+      // Mã sai dạng là gõ nhầm — chặn ở mọi điểm, đã gõ thì phải gõ đúng
       throw new BaobayError(
         `Chưa chốt được: ${parsed.malformed.length} mã vé sai dạng — ${parsed.malformed.slice(0, 8).join(", ")}. ${TICKET_CODE_HINT}`,
       );
     }
-    if (parsed.codes.length !== input.flightCount) {
+    if (requireCodes && parsed.codes.length !== input.flightCount) {
       throw new BaobayError(
         `Chưa chốt được: khai ${input.flightCount} chuyến nhưng liệt kê ${parsed.codes.length} mã vé. Hai số phải bằng nhau.`,
+      );
+    }
+    if (!requireCodes && parsed.codes.length && parsed.codes.length !== input.flightCount) {
+      warnings.push(
+        `Số mã vé (${parsed.codes.length}) khác số chuyến (${input.flightCount}) — điểm này không bắt buộc mã nên vẫn chốt được.`,
       );
     }
   } else {
@@ -978,6 +993,26 @@ export async function upsertPilotReport(
     warnings.push(
       `Mã vé khách ngoại giao không có trong danh sách đã bay: ${orphanDiplomatic.slice(0, 5).join(", ")}`,
     );
+  }
+
+  /**
+   * PPG: vé không bắt buộc, nhưng SỐ PHẢI KHỚP — mã đã khai + chuyến không vé
+   * phải bằng tổng chuyến PPG. Đã bay có vé thì phải khai mã; không vé thì đếm
+   * vào ô "không vé", không được bỏ lửng.
+   */
+  const ppg = parseTicketCodeList(input.ppgCodesText);
+  if (ppg.malformed.length) {
+    if (input.submit) {
+      throw new BaobayError(
+        `Chưa chốt được: mã vé PPG sai dạng — ${ppg.malformed.slice(0, 5).join(", ")}. ${TICKET_CODE_HINT}`,
+      );
+    }
+    warnings.push(`Mã vé PPG sai dạng: ${ppg.malformed.slice(0, 5).join(", ")}`);
+  }
+  if (input.ppgFlights > 0 && ppg.codes.length + input.ppgNoTicket !== input.ppgFlights) {
+    const msg = `PPG: khai ${input.ppgFlights} chuyến nhưng mã vé (${ppg.codes.length}) + không vé (${input.ppgNoTicket}) = ${ppg.codes.length + input.ppgNoTicket}. Có vé thì khai mã, không vé thì đếm vào ô "không vé".`;
+    if (input.submit) throw new BaobayError(`Chưa chốt được: ${msg}`);
+    warnings.push(msg);
   }
 
   const { list: expenses, warnings: expenseWarnings } = normalizeExpenses(input.expenses);
@@ -1077,6 +1112,9 @@ export async function upsertPilotReport(
         pickupBigC: spot === "ha-noi" ? input.pickupBigC : 0,
         pickupHotel: spot === "ha-noi" ? input.pickupHotel : 0,
         mountainTrips: spot === "ha-noi" ? input.mountainTrips : 0,
+        ppgFlights: input.ppgFlights,
+        ppgCodes: ppg.codes,
+        ppgNoTicket: input.ppgNoTicket,
         expenses,
         note: input.note,
         submitted: input.submit,
@@ -1168,7 +1206,15 @@ export async function listPilotReportsOfAccount(
   limit = 30,
 ): Promise<PilotReportDTO[]> {
   await connectDB();
-  const docs = await PilotDailyReport.find({ accountId, spot: normalizeSpot(spot) }).sort({ date: -1 }).limit(limit).lean<any[]>();
+  // Danh sách tự tra của phi công dừng ở cửa sổ 45 ngày — phần cũ hơn đã khoá
+  const docs = await PilotDailyReport.find({
+    accountId,
+    spot: normalizeSpot(spot),
+    date: { $gte: shiftDateKey(todayInVN(), -PILOT_VIEW_LIMIT_DAYS) },
+  })
+    .sort({ date: -1 })
+    .limit(limit)
+    .lean<any[]>();
   return docs.map(toPilotDTO);
 }
 
@@ -1213,6 +1259,9 @@ function toPilotDTO(doc: any): PilotReportDTO {
     pickupBigC: doc.pickupBigC ?? 0,
     pickupHotel: doc.pickupHotel ?? 0,
     mountainTrips: doc.mountainTrips ?? 0,
+    ppgFlights: doc.ppgFlights ?? 0,
+    ppgCodes: doc.ppgCodes ?? [],
+    ppgNoTicket: doc.ppgNoTicket ?? 0,
     expenses: doc.expenses ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
@@ -1288,6 +1337,8 @@ export type DispatcherReportSaveInput = {
   flagFlightCodesText: string;
   cashReceived: number;
   transferReceived: number;
+  /** Khoản thu có tên (nút +): nội dung – tiền mặt/CK – số tiền. */
+  revenueEntries: Array<{ content: string; method: "cash" | "transfer"; amount: number }>;
   guestWaterCost: number;
   mountainCarCost: number;
   shuttleCarCost: number;
@@ -1372,6 +1423,15 @@ export async function upsertDispatcherReport(
   const { list: expenses, warnings: expenseWarnings } = normalizeExpenses(input.expenses);
   warnings.push(...expenseWarnings);
 
+  /** Khoản thu có tên: bỏ dòng trống, tiền phải dương. */
+  const revenueEntries = (input.revenueEntries ?? [])
+    .map((e) => ({
+      content: (e.content || "").trim(),
+      method: e.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+      amount: e.amount || 0,
+    }))
+    .filter((e) => e.amount > 0 || e.content);
+
   const returned = cancelledCount + rescheduled.length;
   if (input.ticketsReturned && input.ticketsReturned !== returned) {
     warnings.push(
@@ -1408,8 +1468,18 @@ export async function upsertDispatcherReport(
         flagFlightCodes: parseTicketCodeList(input.flagFlightCodesText).codes,
         diplomaticGuests: diplomaticCodesUnique.length,
         diplomaticCodes: diplomaticCodesUnique,
-        cashReceived: input.cashReceived,
-        transferReceived: input.transferReceived,
+        /**
+         * Hai tổng LƯU LUÔN cả các khoản thu có tên — mọi phép đối chiếu và
+         * bảng tổng hợp phía sau đọc hai số này, không phải cộng lại lần nữa.
+         * Form đọc ngược ra ô "tiền vé" bằng phép trừ (tổng − các dòng).
+         */
+        cashReceived:
+          input.cashReceived +
+          revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0),
+        transferReceived:
+          input.transferReceived +
+          revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0),
+        revenueEntries,
         guestWaterCost: input.guestWaterCost,
         mountainCarCost: input.mountainCarCost,
         shuttleCarCost: input.shuttleCarCost,
@@ -1468,6 +1538,9 @@ async function pushDispatcherRow(doc: any) {
     diplomaticCodes: (doc.diplomaticCodes || []).join(", "),
     cashReceived: doc.cashReceived,
     transferReceived: doc.transferReceived,
+    revenueDetail: (doc.revenueEntries ?? [])
+      .map((e: any) => `${e.content || "?"}: ${(e.amount || 0).toLocaleString("vi-VN")}đ (${e.method === "transfer" ? "CK" : "TM"})`)
+      .join(" | "),
     revenueTotal: (doc.cashReceived || 0) + (doc.transferReceived || 0),
     dayStatus: await dayStatusLabel(doc.spot, doc.date),
     guestWaterCost: doc.guestWaterCost || 0,
@@ -1534,6 +1607,11 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     diplomaticCodes: doc.diplomaticCodes ?? [],
     cashReceived: doc.cashReceived ?? 0,
     transferReceived: doc.transferReceived ?? 0,
+    revenueEntries: (doc.revenueEntries ?? []).map((e: any) => ({
+      content: e.content || "",
+      method: e.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+      amount: e.amount ?? 0,
+    })),
     guestWaterCost: doc.guestWaterCost ?? 0,
     mountainCarCost: doc.mountainCarCost ?? 0,
     shuttleCarCost: doc.shuttleCarCost ?? 0,
@@ -2107,6 +2185,57 @@ export async function getCashOnHand(
 }
 
 /* ================================================================== */
+/* Bảng kê của một phi công theo chu kỳ                                 */
+/* ================================================================== */
+
+export type PilotStatementDTO = {
+  spot: string;
+  from: string;
+  to: string;
+  username: string;
+  pilotName: string;
+  reports: PilotReportDTO[];
+  /** Ngày đã được kế toán chốt — số của ngày đó mới là số trả tiền. */
+  closedDates: string[];
+  /** Lệnh tiền của chính phi công trong kỳ: ứng tiền và giao tiền. */
+  money: HandoverDTO[];
+};
+
+/** Toàn bộ số liệu của MỘT phi công trong một khoảng ngày — nguồn cho bảng kê Excel. */
+export async function getPilotStatement(
+  spotRaw: string,
+  usernameRaw: string,
+  from: string,
+  to: string,
+): Promise<PilotStatementDTO> {
+  await connectDB();
+
+  const spot = normalizeSpot(spotRaw);
+  const username = normalizeUsername(usernameRaw);
+  const range = { $gte: from, $lte: to };
+
+  const [account, docs, closes, money] = await Promise.all([
+    BaobayAccount.findOne({ username }).select("displayName").lean<any>(),
+    PilotDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>(),
+    AccountantDailyClose.find({ spot, date: range, status: "closed" }).select("date").lean<any[]>(),
+    BaobayHandover.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>(),
+  ]);
+
+  if (!account) throw new BaobayError(`Không tìm thấy tài khoản “${usernameRaw}”`, 404);
+
+  return {
+    spot,
+    from,
+    to,
+    username,
+    pilotName: account.displayName,
+    reports: docs.map(toPilotDTO),
+    closedDates: closes.map((c) => c.date),
+    money: money.map(toHandoverDTO),
+  };
+}
+
+/* ================================================================== */
 /* Lịch bay theo tháng                                                 */
 /* ================================================================== */
 
@@ -2492,6 +2621,189 @@ export async function waiveLatePenalty(
 }
 
 /* ================================================================== */
+/* Yêu cầu soát lại — kế toán gửi lệnh xuống nhân sự                   */
+/* ================================================================== */
+
+export type ReviewRequestDTO = {
+  id: string;
+  spot: string;
+  date: string;
+  topic: ReviewTopic;
+  topicLabel: string;
+  note: string;
+  requestedBy: string;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+};
+
+function toReviewDTO(doc: any): ReviewRequestDTO {
+  return {
+    id: String(doc._id),
+    spot: doc.spot,
+    date: doc.date,
+    topic: doc.topic,
+    topicLabel: REVIEW_TOPIC_LABEL[doc.topic as ReviewTopic] ?? doc.topic,
+    note: doc.note || "",
+    requestedBy: doc.requestedBy,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
+    resolvedAt: doc.resolvedAt ? new Date(doc.resolvedAt).toISOString() : undefined,
+    resolvedBy: doc.resolvedBy || undefined,
+  };
+}
+
+/** Kế toán bấm "yêu cầu soát lại" — một lệnh cho một chủ đề của một ngày. */
+export async function createReviewRequest(
+  session: BaobaySession,
+  spotRaw: string,
+  date: string,
+  topic: ReviewTopic,
+  note: string,
+): Promise<ReviewRequestDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  // Cùng chủ đề cùng ngày đang còn treo thì cập nhật lời nhắn thay vì xếp chồng lệnh
+  const doc = await BaobayReviewRequest.findOneAndUpdate(
+    { spot, date, topic, resolvedAt: { $exists: false } },
+    { $set: { note: note.trim(), requestedBy: session.username } },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  ).lean<any>();
+
+  return toReviewDTO(doc);
+}
+
+/**
+ * Các lệnh của một ngày. `forRole` để trang nhân sự chỉ thấy lệnh NHẮM VÀO
+ * vai trò mình (flycam không phải việc của phi công); bỏ trống = trang kế toán
+ * xem tất, kèm cả lệnh đã xử lý để còn đối chiếu.
+ */
+export async function listReviewRequests(
+  spotRaw: string,
+  date: string,
+  forRole?: BaobayRole,
+): Promise<ReviewRequestDTO[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+
+  const filter: Record<string, unknown> = { spot, date };
+  if (forRole) filter.resolvedAt = { $exists: false };
+
+  const docs = await BaobayReviewRequest.find(filter).sort({ createdAt: -1 }).lean<any[]>();
+  const list = docs.map(toReviewDTO);
+  if (!forRole) return list;
+  return list.filter((r) => (REVIEW_TARGET_ROLES[r.topic] ?? []).includes(forRole));
+}
+
+/** Kế toán đánh dấu một lệnh là đã xử lý. */
+export async function resolveReviewRequest(
+  session: BaobaySession,
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await connectDB();
+  if (!mongoose.Types.ObjectId.isValid(id)) return { ok: false, error: "Mã lệnh không hợp lệ" };
+
+  const r = await BaobayReviewRequest.updateOne(
+    { _id: id, resolvedAt: { $exists: false } },
+    { $set: { resolvedAt: new Date(), resolvedBy: session.username } },
+  );
+  return r.matchedCount ? { ok: true } : { ok: false, error: "Lệnh này đã được xử lý rồi" };
+}
+
+/* ================================================================== */
+/* Số nhân viên báo — cho kế toán XÁC NHẬN thay vì gõ lại              */
+/* ================================================================== */
+
+export type CloseSuggestionDTO = {
+  guestCount: number;
+  ticketsIssued: number;
+  ticketsReturned: number;
+  cancelledCount: number;
+  rescheduledCount: number;
+  issuedRanges: Array<{ from: string; to: string }>;
+  cancelledCodesText: string;
+  rescheduled: Array<{ code: string; toDate: string; note: string }>;
+  cashTotal: number;
+  transferTotal: number;
+  /** Flycam lấy theo CAMERA MAN — nguồn chuẩn của dịch vụ này. */
+  flycam: number;
+  /** Camera 360 lấy theo PHI CÔNG — nguồn chuẩn của dịch vụ này. */
+  video360: number;
+  flagFlight: number;
+  /** Tổng theo TỪNG PHÍA — cho hai nút "lấy số phi công" / "lấy số điều phối". */
+  pilot: { flights: number; flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; flagFlight: number; hasData: boolean };
+  /** Có báo cáo nào của nhân viên chưa — chưa có thì khỏi hiện nút chép. */
+  hasData: boolean;
+};
+
+/**
+ * Gom số NHÂN VIÊN ĐÃ BÁO của một ngày thành đúng hình dạng form kế toán.
+ *
+ * Quy trình thật: phi công/điều phối nhập, kế toán chỉ ĐỐI SOÁT — đúng thì bấm
+ * chép sang trường của mình (xác nhận), sai thì không chép và truy ngược người
+ * nhập. Số chốt vẫn là con số kế toán TỰ CHỊU TRÁCH NHIỆM: chép xong sửa tay
+ * được, và không chép gì cả cũng được.
+ *
+ * Mỗi dịch vụ lấy theo NGUỒN CHUẨN của nó: flycam theo camera man, Camera 360
+ * theo phi công, còn lại theo điều phối — trùng với quy tắc của bộ đối chiếu.
+ */
+export async function getCloseSuggestion(spotRaw: string, date: string): Promise<CloseSuggestionDTO> {
+  await connectDB();
+
+  const spot = normalizeSpot(spotRaw);
+  const filter = { spot, date };
+  const [dispatchers, pilots, cameramen] = await Promise.all([
+    DispatcherDailyReport.find(filter).lean<any[]>(),
+    PilotDailyReport.find(filter).lean<any[]>(),
+    CameramanDailyReport.find(filter).lean<any[]>(),
+  ]);
+
+  const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
+
+  const cancelledCodes = [...new Set(dispatchers.flatMap((d) => d.cancelledCodes ?? []))];
+  const rescheduled = dispatchers.flatMap((d) =>
+    (d.rescheduled ?? []).map((r: any) => ({
+      code: r.code || "",
+      toDate: r.toDate || "",
+      note: r.note || "",
+    })),
+  );
+
+  return {
+    guestCount: sum(dispatchers, (d) => d.guestCount),
+    ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
+    ticketsReturned: sum(dispatchers, (d) => d.ticketsReturned),
+    cancelledCount: cancelledCodes.length,
+    rescheduledCount: rescheduled.length,
+    issuedRanges: dispatchers.flatMap((d) =>
+      (d.issuedRanges ?? []).map((r: any) => ({ from: r.from || "", to: r.to || "" })),
+    ),
+    cancelledCodesText: cancelledCodes.join(", "),
+    rescheduled,
+    cashTotal: sum(dispatchers, (d) => d.cashReceived),
+    transferTotal: sum(dispatchers, (d) => d.transferReceived),
+    flycam: sum(cameramen, (c) => c.flycamFlights),
+    video360: sum(pilots, (p) => p.video360),
+    flagFlight: sum(dispatchers, (d) => d.flagFlight),
+    pilot: {
+      flights: sum(pilots, (p) => p.flightCount),
+      flycam: sum(pilots, (p) => p.flycam),
+      video360: sum(pilots, (p) => p.video360),
+      flagFlight: sum(pilots, (p) => p.flagFlight),
+      hasData: pilots.length > 0,
+    },
+    dispatcher: {
+      flycam: sum(dispatchers, (d) => d.flycam),
+      video360: sum(dispatchers, (d) => d.video360),
+      flagFlight: sum(dispatchers, (d) => d.flagFlight),
+      hasData: dispatchers.length > 0,
+    },
+    hasData: dispatchers.length + pilots.length + cameramen.length > 0,
+  };
+}
+
+/* ================================================================== */
 /* Chốt ngày của kế toán                                               */
 /* ================================================================== */
 
@@ -2803,6 +3115,12 @@ export async function closeDay(
    * Trạng thái "đã chốt" phải sang bảng tính ngay — cả dòng chốt ngày lẫn mọi
    * dòng nhân viên của ngày đó, để cột trạng thái trên bảng lật theo.
    */
+  /** Chốt được nghĩa là đã soát xong — lệnh "soát lại" còn treo của ngày tự tan. */
+  await BaobayReviewRequest.updateMany(
+    { spot, date, resolvedAt: { $exists: false } },
+    { $set: { resolvedAt: new Date(), resolvedBy: session.username } },
+  );
+
   const sync = await pushCloseRow(doc);
   await AccountantDailyClose.updateOne(
     { _id: doc._id },
@@ -2993,6 +3311,8 @@ export async function getReconcile(
 
   const input: ReconcileInput = {
     date,
+    // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
+    requireCodes: spot === "khau-pha",
     close: close
       ? {
           guestCount: close.guestCount ?? 0,
@@ -3424,6 +3744,13 @@ export async function getMyPeriodSummary(
   await connectDB();
 
   const spot = assertSpotAllowed(session, spotRaw);
+
+  /** Phi công chỉ tự tra 45 ngày gần nhất — kế toán khoá phần cũ hơn. */
+  if (session.role === "pilot") {
+    const limit = shiftDateKey(todayInVN(), -PILOT_VIEW_LIMIT_DAYS);
+    if (from < limit) from = limit;
+    if (to < from) to = from;
+  }
   const range = { $gte: from, $lte: to };
   const closedDates = new Set(
     (
@@ -3473,6 +3800,7 @@ export async function getMyPeriodSummary(
         { label: "Phí bãi bay (site fee)", value: sumOf((d) => d.siteFee), money: true },
         { label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true },
         { label: "Xe cho khách (car)", value: sumOf((d) => d.guestCarCost), money: true },
+        { label: "Chuyến PPG (PPG flights)", value: sumOf((d) => d.ppgFlights) },
         // Đưa đón tự trả là đặc thù điểm Hà Nội — điểm khác không hiện cho đỡ rối
         ...(spot === "ha-noi"
           ? [
@@ -3556,6 +3884,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   pickupBigC: 0,
   pickupHotel: 0,
   mountainTrips: 0,
+  ppgFlights: 0,
 };
 
 function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
@@ -3575,6 +3904,7 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.pickupBigC += r.pickupBigC;
   acc.pickupHotel += r.pickupHotel;
   acc.mountainTrips += r.mountainTrips;
+  acc.ppgFlights += r.ppgFlights;
 }
 
 function daysInMonthOf(month: string): number {

@@ -36,6 +36,7 @@ type MetricKey = keyof Pick<
   | "otherExpense"
   | "latePenalty"
   | "advanceTotal"
+  | "ppgFlights"
   | "pickupBigC"
   | "pickupHotel"
   | "mountainTrips"
@@ -49,7 +50,8 @@ const HANOI_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> =
 ];
 
 const METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
-  { key: "flights", label: "Số chuyến bay" },
+  { key: "flights", label: "Số chuyến bay (PG)" },
+  { key: "ppgFlights", label: "Chuyến PPG" },
   { key: "video360", label: "Camera 360" },
   { key: "diplomaticGuests", label: "Khách ngoại giao" },
   { key: "siteFee", label: "Phí bãi bay", money: true },

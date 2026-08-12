@@ -29,7 +29,18 @@ type MySummary = {
   lines: PeriodLine[];
 };
 
-export function PeriodSummary({ spot, title, hint }: { spot: string; title: string; hint?: string }) {
+export function PeriodSummary({
+  spot,
+  title,
+  hint,
+  statement = false,
+}: {
+  spot: string;
+  title: string;
+  hint?: string;
+  /** Hiện nút tải bảng kê Excel của CHÍNH mình theo khoảng ngày đang chọn (chỉ trang phi công). */
+  statement?: boolean;
+}) {
   const today = todayInVN();
   const [from, setFrom] = useState(shiftDateKey(today, -29));
   const [to, setTo] = useState(today);
@@ -90,7 +101,21 @@ export function PeriodSummary({ spot, title, hint }: { spot: string; title: stri
         <Button variant="ghost" className="h-9 px-3 text-xs" onClick={() => preset(30)}>
           30 ngày
         </Button>
+        {statement && (
+          <a
+            href={`/api/baocao/statement?from=${from}&to=${to}&spot=${spot}`}
+            className="inline-flex h-9 items-center rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white"
+            download
+          >
+            ⬇ Tải bảng kê (Excel)
+          </a>
+        )}
       </div>
+      {statement && (
+        <p className="mt-1 text-xs text-slate-500">
+          Bảng kê tự tra được trong 45 ngày gần nhất — cũ hơn thì nhờ kế toán xuất.
+        </p>
+      )}
 
       {error && (
         <div className="mt-3">

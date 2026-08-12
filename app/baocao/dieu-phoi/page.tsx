@@ -17,6 +17,7 @@ import {
   ExpenseRows,
   RangeRows,
   RescheduleEntryRows,
+  RevenueRows,
   rangeRowsTotal,
   toExpenseRows,
   toRangeRows,
@@ -24,10 +25,12 @@ import {
   type DiploRow,
   type ExpenseRow,
   type RangeRow,
+  type RevenueRow,
   type RescheduleEntryRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
+import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
@@ -71,6 +74,7 @@ type FormState = {
   flagFlightCodesText: string;
   cashReceived: number;
   transferReceived: number;
+  revenueEntries: RevenueRow[];
   guestWaterCost: number;
   mountainCarCost: number;
   shuttleCarCost: number;
@@ -96,6 +100,7 @@ const EMPTY_FORM: FormState = {
   flagFlightCodesText: "",
   cashReceived: 0,
   transferReceived: 0,
+  revenueEntries: [],
   guestWaterCost: 0,
   mountainCarCost: 0,
   shuttleCarCost: 0,
@@ -141,8 +146,18 @@ function fromReport(r: DispatcherReportDTO): FormState {
     redFlagCodesText: r.redFlagCodes.join(", "),
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
-    cashReceived: r.cashReceived,
-    transferReceived: r.transferReceived,
+    /**
+     * Máy chủ lưu TỔNG đã gộp các khoản thu có tên — ô "Tiền mặt"/"Chuyển
+     * khoản" hiển thị phần còn lại sau khi trừ các dòng, để lưu lại không bị
+     * cộng đôi.
+     */
+    cashReceived:
+      r.cashReceived -
+      r.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0),
+    transferReceived:
+      r.transferReceived -
+      r.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0),
+    revenueEntries: r.revenueEntries.length ? r.revenueEntries.map((e) => ({ ...e })) : [],
     guestWaterCost: r.guestWaterCost,
     mountainCarCost: r.mountainCarCost,
     shuttleCarCost: r.shuttleCarCost,
@@ -257,7 +272,10 @@ export default function DispatcherReportPage() {
 
   const rangeMismatch = rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = form.ticketsReturned !== returned;
-  const revenue = form.cashReceived + form.transferReceived;
+  const revenue =
+    form.cashReceived +
+    form.transferReceived +
+    form.revenueEntries.reduce((a, e) => a + (e.amount || 0), 0);
   const expenseSum =
     form.guestWaterCost +
     form.mountainCarCost +
@@ -272,6 +290,9 @@ export default function DispatcherReportPage() {
       subtitle="Cuối buổi nhập vé xuất/thu, tiền mặt, dịch vụ gia tăng và các khoản chi cho khách."
     >
       <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
+
+      {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      <ReviewNotices spot={spot} date={date} />
 
       {myReds.length > 0 && (
         <Banner tone="error">
@@ -479,6 +500,17 @@ export default function DispatcherReportPage() {
               <MoneyInput value={form.transferReceived} onChange={(v) => set("transferReceived", v)} />
             </Field>
           </div>
+          <div className="mt-4">
+            <Field label="Khoản thu khác" hint="Bấm + để thêm: nội dung – tiền mặt/CK – số tiền. Máy tự cộng vào tổng">
+              <div />
+            </Field>
+            <RevenueRows
+              rows={form.revenueEntries}
+              onChange={(rows) => set("revenueEntries", rows)}
+              disabled={locked}
+            />
+          </div>
+
           <div className="mt-3">
             <Readout label="Tổng thu trong ngày" value={formatVND(revenue)} />
           </div>

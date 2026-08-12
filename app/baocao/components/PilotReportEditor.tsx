@@ -274,6 +274,9 @@ function toForm(r: PilotReportDTO) {
     pickupBigC: r.pickupBigC,
     pickupHotel: r.pickupHotel,
     mountainTrips: r.mountainTrips,
+    ppgFlights: r.ppgFlights,
+    ppgCodesText: r.ppgCodes.join(", "),
+    ppgNoTicket: r.ppgNoTicket,
     note: r.note,
   };
 }

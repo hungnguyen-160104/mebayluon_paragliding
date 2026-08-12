@@ -82,13 +82,65 @@ báo (chỉ số của chính mình).
      bên đã ghi thì app chỉ thẳng vé nào lệch, chưa ghi thì nhắc bổ sung.
    - Lệch dịch vụ thì **kế toán duyệt lệch** được — khách hay phát sinh ngay tại bãi.
    - Có chi tiêu mà kế toán chưa tick "đã xác nhận" thì chưa chốt được.
-3. **Kế toán chốt ngày** khi sạch lỗi đỏ. Chốt xong ngày bị KHOÁ — không ai sửa
+3. **Kế toán ĐỐI SOÁT rồi XÁC NHẬN, không gõ lại.** Trang Chốt ngày hiện số
+   nhân viên đã báo ngay cạnh từng ô: ô số có dòng *"✓/≠ điều phối báo: X —
+   lấy số này"*, các trường mã vé (dải mã đã xuất, mã huỷ, vé dời lịch) có nút
+   *"⧉ chép để xác nhận"*, và trên cùng có nút **"⧉ Chép toàn bộ số nhân viên
+   báo"**. Đúng thì chép — số tự đẩy về trường của kế toán; sai thì KHÔNG chép,
+   sửa hộ (khung báo cáo phi công) hoặc truy người nhập. Số chốt vẫn là con số
+   kế toán tự chịu trách nhiệm: chép xong sửa tay được.
+4. **Kế toán chốt ngày** khi sạch lỗi đỏ. Chốt xong ngày bị KHOÁ — không ai sửa
    được nữa; cần sửa thì kế toán **gỡ khoá** (có ghi vết ai gỡ, lúc nào, vì sao).
-4. **Tổng của kỳ và báo cáo tháng chỉ cộng ngày đã chốt.** Ngày treo/chưa chốt
+5. **Tổng của kỳ và báo cáo tháng chỉ cộng ngày đã chốt.** Ngày treo/chưa chốt
    được liệt kê riêng.
+
+## Nhiều người cùng vai trò
+
+Điều phối, camera man (và phi công) đều có thể **nhiều người báo cáo độc lập**
+trong cùng một ngày — mỗi người một bản ghi, hệ thống tự cộng tổng khi đối chiếu
+và lên bảng. Kế toán cũng nhiều người ngang cấp: bản chốt của ngày là MỘT bản
+chung, ai lưu/chốt cũng được; một người chốt rồi thì người kia không cần chốt
+lại (muốn sửa thì gỡ khoá — có ghi vết ai chốt, ai gỡ).
+
+## Kế toán chọn nguồn hoặc yêu cầu soát lại
+
+Ba ô dịch vụ trên trang Chốt ngày hiện **cả hai nguồn** kèm nút lấy số:
+
+| Dịch vụ | Nguồn 1 | Nguồn 2 |
+|---|---|---|
+| Flycam | camera man báo | điều phối báo |
+| Camera 360 | phi công báo | điều phối báo |
+| Bay kéo cờ | phi công báo | điều phối báo |
+
+Khớp thì chip xanh ✓; lệch thì kế toán **bấm nhận nguồn mình tin**, hoặc dùng
+khung **"📣 Yêu cầu soát lại"**: chọn chủ đề + lời nhắn + Gửi lệnh. Lệnh hiện
+ngay (trong 30 giây) thành băng rôn cam trên trang của ĐÚNG vai trò liên quan
+(flycam → điều phối + camera man; 360/cờ đỏ/kéo cờ → điều phối + phi công) và
+tự tan khi kế toán đánh dấu đã xử lý hoặc chốt ngày.
+
+## Chuyến PPG
+
+Mọi ô báo cáo mặc định là **PG**. Phi công bay dù CÓ ĐỘNG CƠ khai thêm ở khối
+**"Chuyến PPG"**: số chuyến – mã vé – số chuyến KHÔNG vé. Vé không bắt buộc,
+nhưng phải khai rõ: **mã vé + không vé = số chuyến PPG** mới chốt được (có vé
+thì điền mã, không vé thì đếm vào ô "không vé"). Số PPG lên thẻ phi công trên
+Sheets (cột "Chuyến PPG", "Mã vé PPG" — chuyến không vé ghi "không vé (N)"),
+bảng kê và báo cáo tháng.
 
 ## Quy tắc nhập liệu
 
+- **Mã vé chỉ BẮT BUỘC ở Khau Phạ** (vé 3 liên in mã, đối chiếu tới từng mã).
+  Hà Nội / Sa Pa: khai được thì tốt — mã đã khai vẫn bị soát trùng/lạ, nhưng
+  không đòi đủ, không truy "mã thiếu", và cân bằng vé xuất = bay + thu hồi đếm
+  theo SỐ CHUYẾN khai thay vì số mã.
+- **Khoản thu có tên** (trang điều phối): dưới hai ô Tiền mặt / Chuyển khoản có
+  nút **+ Thêm khoản thu** — mỗi dòng: nội dung – chọn tiền mặt HOẶC CK – số
+  tiền. Máy chủ tự cộng vào hai tổng, bảng tính có cột "Chi tiết tiền thu".
+- **Bảng kê phi công**: kế toán/quản trị tải Excel của TỪNG phi công theo chu
+  kỳ (nút ⬇ Tải ở bảng theo phi công, trang Tổng hợp); phi công tự tải bảng của
+  chính mình (nút ở khung Tổng theo chu kỳ). **Phi công chỉ tự tra được 45 ngày
+  gần nhất** — bảng kê, tổng chu kỳ, xem lại ngày cũ đều bị khoá quá hạn đó;
+  kế toán và quản trị xem không giới hạn.
 - **Mã vé** dạng 1–3 chữ + 3–6 số: `A1234`, `AB1234`, `KP-001234`. Dán danh sách
   cách nhau bằng khoảng trắng / phẩy / chấm / gạch đều được; dải mã viết
   `A1234..A1240`. Mã thường tự in hoa, mã trùng chỉ tính một lần.

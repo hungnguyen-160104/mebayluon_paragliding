@@ -30,6 +30,14 @@ const text = (max: number) => z.string().trim().max(max).optional().default("");
  */
 export const BACKDATE_LIMIT_DAYS = 60;
 
+/**
+ * PHI CÔNG chỉ tự tra cứu được dữ liệu trong 45 ngày gần nhất — bảng kê, tổng
+ * chu kỳ, xem lại báo cáo cũ. Kế toán và quản trị xem không giới hạn. Đây là
+ * quyền khoá dữ liệu của kế toán: quá 45 ngày, số liệu chỉ còn phục vụ đối
+ * soát nội bộ, không phải để nhân sự tự soát lại.
+ */
+export const PILOT_VIEW_LIMIT_DAYS = 45;
+
 /** Điểm bay của báo cáo — bắt buộc, và máy chủ còn kiểm người này có được chỉ định điểm đó không. */
 const spotField = z.string().refine(isSpotId, "Điểm bay không hợp lệ");
 
@@ -127,6 +135,10 @@ export const pilotReportSchema = z.object({
   pickupBigC: count(100),
   pickupHotel: count(100),
   mountainTrips: count(100),
+  /** Chuyến PPG: có vé thì khai mã, không vé thì đếm số chuyến không vé. */
+  ppgFlights: count(300),
+  ppgCodesText: text(20_000),
+  ppgNoTicket: count(300),
   expenses: expenseList,
   note: text(2_000),
   /**
@@ -157,6 +169,11 @@ export const dispatcherReportSchema = z.object({
   flagFlightCodesText: text(20_000),
   cashReceived: money,
   transferReceived: money,
+  /** Khoản thu có tên: nội dung – tiền mặt/CK – số tiền. */
+  revenueEntries: z
+    .array(z.object({ content: text(200), method: z.enum(["cash", "transfer"]).default("cash"), amount: money }))
+    .max(50, "Tối đa 50 khoản thu một ngày")
+    .default([]),
   guestWaterCost: money,
   mountainCarCost: money,
   shuttleCarCost: money,
