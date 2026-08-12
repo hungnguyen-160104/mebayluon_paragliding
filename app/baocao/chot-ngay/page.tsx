@@ -346,6 +346,32 @@ function DailyCloseInner() {
       }
 
       if (kind === "close") {
+        /**
+         * LƯU trước — CHỐT sau, trong một cú bấm. Trước đây nút Chốt dựa vào
+         * kết quả đối chiếu của lần lưu TRƯỚC: kế toán vừa sửa số hay vừa tick
+         * "chấp nhận lệch" mà bấm Chốt ngay là bị trạng thái cũ chặn oan,
+         * tưởng "sửa hết lỗi mà vẫn không cho chốt".
+         */
+        const saved = await apiPost<{ close: DailyCloseDTO; warnings: string[]; reconcile: ReconcileDTO }>(
+          `/api/baocao/close?spot=${spot}`,
+          {
+            action: "save",
+            date,
+            ...form,
+            issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
+            rescheduled: rescheduledFilled,
+            ledger: form.ledger.filter((e) => e.content.trim() || e.amount),
+          },
+        );
+        apply(saved);
+        setWarnings(saved.warnings || []);
+        if (!saved.reconcile.canClose) {
+          const reds = saved.reconcile.issues.filter((i) => i.severity === "red");
+          setError(
+            `Đã lưu số nhưng còn ${reds.length} lỗi đỏ, chưa chốt được: ${reds[0]?.message ?? ""}`,
+          );
+          return;
+        }
         const res = await apiPost<{ close: DailyCloseDTO; reconcile: ReconcileDTO }>(`/api/baocao/close?spot=${spot}`, {
           action: "close",
           date,
@@ -870,11 +896,11 @@ function DailyCloseInner() {
               <Button
                 type="button"
                 className="flex-1 shadow-lg"
-                disabled={busy !== null || loadingDay || !check?.canClose}
+                disabled={busy !== null || loadingDay}
                 onClick={() => action("close")}
-                title={check?.canClose ? undefined : "Còn lỗi đỏ, chưa chốt được"}
+                title={check?.canClose ? undefined : "Sẽ lưu số hiện tại rồi đối chiếu lại — còn lỗi đỏ thật thì báo cụ thể"}
               >
-                {busy === "close" ? "Đang chốt…" : "Chốt ngày"}
+                {busy === "close" ? "Đang chốt…" : "Lưu & chốt ngày"}
               </Button>
             </>
           )}
