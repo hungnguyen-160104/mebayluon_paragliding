@@ -17,8 +17,9 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
  * Lịch bay theo tháng — bảng dàn ngang: hàng là phi công, cột là ngày.
  *
  * GET  ?month=YYYY-MM        -> bảng lịch + danh sách phi công đang làm ở điểm đó
- * PUT  {month, rows, needed} -> lưu cả bảng (tăng số bản, để email ghi "cập nhật lần N")
- * POST {month, usernames?}   -> gửi email lịch cho phi công (bỏ trống = gửi tất cả)
+ * PUT  {month, rows, needed} -> lưu cả bảng và TỰ GỬI EMAIL cho đúng những phi
+ *                               công có lịch thay đổi (thư đề "cập nhật lần N")
+ * POST {month, usernames?}   -> gửi lại email cho phi công (bỏ trống = cả đội)
  *
  * Cả quản trị cấp 1 lẫn cấp 2 đều xếp được lịch: đây là việc điều hành hằng
  * ngày, không phải cấu hình hệ thống.
@@ -58,14 +59,15 @@ export async function PUT(req: Request) {
       }))
     : [];
 
-  const board = await saveShiftBoard(
+  const { board, mail } = await saveShiftBoard(
     spot,
     month,
     { rows, neededPerDay: body?.neededPerDay !== undefined ? Number(body.neededPerDay) : undefined },
     auth.username,
   );
 
-  return NextResponse.json(board);
+  // Lưu là email tự bay tới đúng người có lịch đổi; `mail` cho UI báo lại ai đã nhận
+  return NextResponse.json({ ...board, mail });
 }
 
 export async function POST(req: Request) {

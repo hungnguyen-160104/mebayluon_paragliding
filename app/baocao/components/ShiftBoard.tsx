@@ -168,7 +168,7 @@ export function ShiftBoard({
     setError(null);
     setMessage(null);
     try {
-      const b = await api<Board>(`/api/admin/baocao/shifts?spot=${spot}`, {
+      const b = await api<Board & { mail: MailReport }>(`/api/admin/baocao/shifts?spot=${spot}`, {
         method: "PUT",
         headers: authHeader(),
         body: JSON.stringify({
@@ -180,7 +180,12 @@ export function ShiftBoard({
       setBoard(b);
       setDraft(Object.fromEntries(b.rows.map((r) => [r.username, new Set(r.days)])));
       setDirty(false);
-      setMessage(`Đã lưu lịch (bản ${b.version}). Nhớ bấm "Gửi email" để phi công biết.`);
+      setMail(b.mail);
+      const n = b.mail?.sent.length ?? 0;
+      setMessage(
+        `Đã lưu lịch (bản ${b.version})` +
+          (n ? ` — email tự gửi cho ${n} phi công có lịch đổi.` : " — không lịch của ai đổi, không gửi email."),
+      );
     } catch (e: any) {
       setError(e?.message || "Không lưu được lịch");
     } finally {
@@ -215,7 +220,8 @@ export function ShiftBoard({
       <h2 className="font-semibold text-slate-900">🗓️ Lịch bay theo tháng</h2>
       <p className="mt-1 text-sm text-slate-600">
         Chấm ô = hôm đó <strong>đi làm</strong>, để trống = <strong>nghỉ</strong>. Bấm giữ rồi rê ngang để
-        chấm nhanh cả dãy. Lưu xong bấm <strong>Gửi email</strong> để từng phi công nhận lịch của mình.
+        chấm cả dãy. <strong>Lưu là email tự gửi</strong> cho đúng phi công có lịch đổi; lịch cũng hiện ngay
+        trên trang của họ. Nút <strong>Gửi lại cả đội</strong> dùng khi vào kỳ mới.
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -282,7 +288,7 @@ export function ShiftBoard({
           disabled={busy === "mail" || !board?.version}
           className="h-9 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white disabled:opacity-50"
         >
-          {busy === "mail" ? "Đang gửi…" : "Gửi email lịch bay"}
+          {busy === "mail" ? "Đang gửi…" : "Gửi lại cả đội"}
         </button>
       </div>
 

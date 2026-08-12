@@ -216,13 +216,17 @@ vòng theo danh sách (8 phi công cần 7 người/ngày) — chấm xong vẫn
 Hàng cuối đếm **số người có mặt từng ngày**; đặt ô "Cần mỗi ngày" thì ngày thiếu
 người tô đỏ. Chỉ cảnh báo, không chặn lưu.
 
-**Gửi email**: bấm *"Gửi email lịch bay"* là mỗi phi công nhận đúng lịch CỦA
-MÌNH (bảng tháng tô xanh ngày bay, danh sách ngày nghỉ) kèm lời nhắc: *"Phi công
-cần nghỉ ngơi để đảm bảo sức khoẻ và an toàn bay. Hãy sắp xếp lịch để relax mà
-không phải vướng bận công việc. Chúc vui vẻ và nhớ trở lại bầu trời đúng ngày."*
-Mỗi lần lưu tăng số bản; sửa lịch sau khi đã gửi thì bảng nhắc *"có sửa sau lần
-gửi gần nhất"* và email lần sau tự đề **BẢN CẬP NHẬT (lần N)**. Phi công chưa
-khai email thì bị bỏ qua (có báo rõ).
+**Email tự gửi khi lưu**: bấm *Lưu* là email bay tới **đúng những phi công có
+lịch thay đổi** — không dội thư cho cả đội 15 người chỉ vì sửa một ô. Mỗi người
+nhận đúng lịch CỦA MÌNH (bảng tháng tô xanh ngày bay, danh sách ngày nghỉ) kèm
+lời nhắc: *"Phi công cần nghỉ ngơi để đảm bảo sức khoẻ và an toàn bay. Hãy sắp
+xếp lịch để relax mà không phải vướng bận công việc. Chúc vui vẻ và nhớ trở lại
+bầu trời đúng ngày."* Bản sau lần sửa tự đề **BẢN CẬP NHẬT (lần N)**. Nút *"Gửi
+lại cả đội"* dùng khi vào kỳ mới hoặc ai đó mất thư. Phi công chưa khai email
+thì bị bỏ qua (có báo rõ ai, vì sao).
+
+**Phi công mới tự hiện trong bảng**: admin cấp tài khoản phi công là tháng nào
+mở ra cũng có ngay hàng của người đó để chấm — không phải khai thêm gì.
 
 **Trang phi công** có khung *"Lịch bay của tôi"* ngay trên đầu: hôm nay có bay
 không, bay tiếp ngày nào, lịch cả tháng — quản lý sửa là thấy bản mới ngay,

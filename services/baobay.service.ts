@@ -2144,7 +2144,7 @@ export async function saveShiftBoard(
   month: string,
   input: { rows: Array<{ username: string; days: number[] }>; neededPerDay?: number },
   by: string,
-): Promise<ShiftBoardDTO> {
+): Promise<{ board: ShiftBoardDTO; mail: ShiftMailReport }> {
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
@@ -2163,6 +2163,19 @@ export async function saveShiftBoard(
       days: [...new Set(r.days.filter((d) => Number.isInteger(d) && d >= 1 && d <= total))].sort((a, b) => a - b),
     }));
 
+  /**
+   * So với bản CŨ để biết lịch của AI thực sự đổi — email chỉ bay tới đúng
+   * những người đó. Điểm bay 15 phi công mà admin sửa một ô cũng dội thư cho
+   * cả đội thì chỉ vài tuần là không ai thèm mở "Lịch bay" nữa.
+   */
+  const before = await BaobayShift.findOne({ spot, month }).select("assignments").lean<any>();
+  const oldDays = new Map<string, string>(
+    (before?.assignments ?? []).map((a: any) => [a.username, [...(a.days ?? [])].sort((x, y) => x - y).join(",")]),
+  );
+  const changed = assignments
+    .filter((a) => a.days.join(",") !== (oldDays.get(a.username) ?? ""))
+    .map((a) => a.username);
+
   await BaobayShift.updateOne(
     { spot, month },
     {
@@ -2177,7 +2190,16 @@ export async function saveShiftBoard(
     { upsert: true },
   );
 
-  return getShiftBoard(spot, month);
+  /**
+   * Gửi email NGAY trong lần lưu, cho đúng những người có lịch đổi — "mỗi lần
+   * bấm lịch là phi công nhận được thư", không phải nhớ bấm thêm nút. Nút "Gửi
+   * email" riêng vẫn còn để gửi lại cho CẢ ĐỘI khi cần (ví dụ đầu kỳ mới).
+   */
+  const mail: ShiftMailReport = changed.length
+    ? await sendShiftEmails(spot, month, changed)
+    : { sent: [], skipped: [], failed: [] };
+
+  return { board: await getShiftBoard(spot, month), mail };
 }
 
 export type ShiftMailReport = {
