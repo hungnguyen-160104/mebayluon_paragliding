@@ -19,7 +19,12 @@ export const dynamic = "force-dynamic";
 /** 30 giây — ghi xong còn đẩy sang Apps Script, xem lib/baobay/sheet.ts. */
 export const maxDuration = 30;
 
-const STAFF_ROLES = ["pilot", "dispatcher", "cameraman", "accountant"] as const;
+/**
+ * Cả "admin" cũng phải vào được: thẻ "Lập lệnh chuyển tiền" ở /baocao/admin
+ * đọc danh sách người nhận từ chính GET này — thiếu admin là ô chọn nhân sự
+ * trống trơn (lỗi đã xảy ra thật). Quản trị cũng giao/nhận tiền như mọi người.
+ */
+const STAFF_ROLES = ["pilot", "dispatcher", "cameraman", "accountant", "admin"] as const;
 
 /**
  * Nhân sự đưa tiền cho quản lý/giám đốc.
