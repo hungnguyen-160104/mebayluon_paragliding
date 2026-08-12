@@ -128,6 +128,8 @@ export const pilotReportSchema = z.object({
   flagFlightCodesText: text(20_000),
   diplomaticGuests: count(300),
   diplomaticCodesText: text(20_000),
+  /** Khách ngoại giao KHÔNG xuất vé (vẫn bay). */
+  diplomaticNoTicket: count(300),
   /** Phí bãi theo ĐẦU KHÁCH: bấm +/− số khách, kế toán nhân đơn giá ngoài app. */
   siteFeeGuests: count(500),
   waterCost: money,

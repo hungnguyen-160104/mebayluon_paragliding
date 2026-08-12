@@ -59,6 +59,7 @@ type FormState = {
   flagFlightCodesText: string;
   diplomaticGuests: number;
   diplomaticCodesText: string;
+  diplomaticNoTicket: number;
   siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
@@ -85,6 +86,7 @@ const EMPTY_FORM: FormState = {
   flagFlightCodesText: "",
   diplomaticGuests: 0,
   diplomaticCodesText: "",
+  diplomaticNoTicket: 0,
   siteFeeGuests: 0,
   waterCost: 0,
   guestCarCost: 0,
@@ -99,6 +101,15 @@ const EMPTY_FORM: FormState = {
 };
 
 type DayCheck = { dayBlocked: boolean; myIssues: Issue[]; otherIssueCount: number };
+
+/** Phụ đề tiếng Anh cỡ chữ rất nhỏ, mờ — tiếng Việt vẫn là chữ chính. */
+function bi(vi: string, en: string) {
+  return (
+    <>
+      {vi} <span className="text-[10px] font-normal text-slate-400">({en})</span>
+    </>
+  );
+}
 
 export default function PilotReportPage() {
   const { user, loading } = useBaobaySession("pilot");
@@ -158,6 +169,7 @@ export default function PilotReportPage() {
               flagFlightCodesText: res.report.flagFlightCodes.join(", "),
               diplomaticGuests: res.report.diplomaticGuests,
               diplomaticCodesText: res.report.diplomaticCodes.join(", "),
+              diplomaticNoTicket: res.report.diplomaticNoTicket,
               siteFeeGuests: res.report.siteFeeGuests,
               waterCost: res.report.waterCost,
               guestCarCost: res.report.guestCarCost,
@@ -374,7 +386,7 @@ export default function PilotReportPage() {
                   ? "Mã vé đã bay (Ticket codes flown)"
                   : "Mã vé đã bay — không bắt buộc ở điểm này (Ticket codes — optional here)"
               }
-              hint={`Cách nhau bằng khoảng trắng, phẩy, chấm hoặc gạch — app tự nhận. Bay liền dải thì viết A1234..A1240. ${TICKET_CODE_HINT}`}
+              hint="Vé năm nay là MBLxxxx — gõ tắt 4 số cuối cũng nhận: 1299 hay MBL1299 như nhau. Bay liền dải viết 1299..1305; cách nhau bằng khoảng trắng, phẩy hay gạch đều được"
             >
               <TextArea
                 value={form.ticketCodesText}
@@ -388,11 +400,11 @@ export default function PilotReportPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Readout
-                label="Số mã vé đã nhập (codes entered)"
+                label={bi("Số mã vé đã nhập", "codes entered")}
                 value={String(parsedCodes.codes.length)}
                 tone={codeCountMismatch ? "warning" : "normal"}
               />
-              <Readout label="Số chuyến đã khai (flights declared)" value={String(form.flightCount)} />
+              <Readout label={bi("Số chuyến đã khai", "flights declared")} value={String(form.flightCount)} />
             </div>
 
             {codeCountMismatch && !locked && (requireCodes || parsedCodes.codes.length > 0) && (
@@ -447,10 +459,10 @@ export default function PilotReportPage() {
             <Field label="Camera 360">
               <CountInput value={form.video360} onChange={(v) => set("video360", v)} />
             </Field>
-            <Field label="Dù cờ đỏ (red flag)">
+            <Field label={bi("Dù cờ đỏ", "red flag")}>
               <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} />
             </Field>
-            <Field label="Bay kéo cờ (flag flight)">
+            <Field label={bi("Bay kéo cờ", "flag flight")}>
               <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
             </Field>
           </div>
@@ -509,12 +521,15 @@ export default function PilotReportPage() {
           </details>
         </Card>
 
-        <Card title="Khách ngoại giao (Complimentary guests)" hint="Không thu tiền nhưng vẫn xuất vé — để trống nếu hôm đó không có (free of charge but still ticketed — leave empty if none)">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Số khách ngoại giao (guest count)">
+        <Card
+          title={bi("Khách ngoại giao", "complimentary guests")}
+          hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
+        >
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label={bi("Số khách ngoại giao", "guest count")}>
               <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} />
             </Field>
-            <Field label="Mã vé ngoại giao (ticket codes)">
+            <Field label={bi("Mã vé — nếu CÓ vé", "codes if ticketed")}>
               <TextInput
                 value={form.diplomaticCodesText}
                 onChange={(e) => set("diplomaticCodesText", e.target.value.toUpperCase())}
@@ -524,27 +539,30 @@ export default function PilotReportPage() {
                 disabled={locked}
               />
             </Field>
+            <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
+              <CountInput value={form.diplomaticNoTicket} onChange={(v) => set("diplomaticNoTicket", v)} />
+            </Field>
           </div>
         </Card>
 
-        {/* PPG — dù lượn CÓ ĐỘNG CƠ; mọi ô bên trên mặc định là PG. Vé không bắt buộc:
-            có vé thì khai mã, không vé thì đếm vào ô "không vé". */}
+        {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
+        {spot === "khau-pha" && (
         <Card
           title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
           hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Số chuyến PPG (PPG flights)">
+            <Field label={bi("Số chuyến PPG", "PPG flights")}>
               <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
             </Field>
-            <Field label="Trong đó KHÔNG vé (ticketless)">
+            <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
               <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
             </Field>
           </div>
           {form.ppgFlights > 0 && (
             <div className="mt-3">
               <Field
-                label="Mã vé PPG (PPG ticket codes)"
+                label={bi("Mã vé PPG", "PPG codes")}
                 hint={`Chuyến có vé phải khai đủ mã: mã + không vé = số chuyến (${parsedPpg.codes.length} mã + ${form.ppgNoTicket} không vé / ${form.ppgFlights} chuyến)`}
               >
                 <TextInput
@@ -566,20 +584,23 @@ export default function PilotReportPage() {
             </div>
           )}
         </Card>
+        )}
 
-        <Card title="Thu / Chi trong ngày (Money in & out)" hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Phí bãi — số khách (Site fee — guests)"
-              hint="Tính theo đầu khách, bấm +/− (per guest — accountant applies unit price)"
-            >
-              <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
-            </Field>
-            {/* "Xe cho khách" đã bỏ: tiền xe khai vào sổ Thu/Chi bên dưới như mọi khoản khác */}
-            <Field label="Nước cho khách (Water for guests)">
-              <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
-            </Field>
-          </div>
+        <Card title={bi("Thu / Chi trong ngày", "money in & out")} hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
+          {/* Phí bãi + nước: đặc thù RIÊNG Hà Nội — Sa Pa và Khau Phạ được miễn phí */}
+          {spot === "ha-noi" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label={bi("Phí bãi — số khách", "site fee, per guest")}
+                hint="Tính theo đầu khách, bấm +/−"
+              >
+                <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
+              </Field>
+              <Field label={bi("Nước cho khách", "water for guests")}>
+                <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
+              </Field>
+            </div>
+          )}
 
           {/* Ba khoản đưa đón tự trả tiền — ĐẶC THÙ RIÊNG điểm Hà Nội, điểm khác không có */}
           {spot === "ha-noi" && (
@@ -591,13 +612,13 @@ export default function PilotReportPage() {
               <div />
             </Field>
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Đón khách từ BigC (Pickup from BigC)">
+              <Field label="Đón khách từ BigC">
                 <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
               </Field>
-              <Field label="Đón khách từ khách sạn (Pickup from hotel)">
+              <Field label="Đón khách từ khách sạn">
                 <CountInput value={form.pickupHotel} onChange={(v) => set("pickupHotel", v)} max={100} />
               </Field>
-              <Field label="Xe lên núi (Ride up the mountain)">
+              <Field label={bi("Xe lên núi", "ride up the mountain")}>
                 <CountInput value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
               </Field>
             </div>

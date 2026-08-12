@@ -337,6 +337,7 @@ function toForm(r: PilotReportDTO) {
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     diplomaticGuests: r.diplomaticGuests,
     diplomaticCodesText: r.diplomaticCodes.join(", "),
+    diplomaticNoTicket: r.diplomaticNoTicket,
     siteFeeGuests: r.siteFeeGuests,
     waterCost: r.waterCost,
     guestCarCost: r.guestCarCost,

@@ -18,8 +18,8 @@ export function Card({
   children,
   className,
 }: {
-  title?: string;
-  hint?: string;
+  title?: React.ReactNode;
+  hint?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -40,8 +40,8 @@ export function Field({
   children,
   className,
 }: {
-  label: string;
-  hint?: string;
+  label: React.ReactNode;
+  hint?: React.ReactNode;
   error?: string;
   children: React.ReactNode;
   className?: string;
@@ -210,7 +210,7 @@ export function Readout({
   value,
   tone = "normal",
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   tone?: "normal" | "warning";
 }) {

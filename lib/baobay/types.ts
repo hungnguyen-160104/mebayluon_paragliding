@@ -98,6 +98,8 @@ export type PilotReportDTO = {
   flagFlightCodes: string[];
   diplomaticGuests: number;
   diplomaticCodes: string[];
+  /** Khách ngoại giao KHÔNG xuất vé (vẫn bay). */
+  diplomaticNoTicket: number;
   /** Phí bãi bay theo ĐẦU KHÁCH — số khách, không phải tiền. */
   siteFeeGuests: number;
   waterCost: number;

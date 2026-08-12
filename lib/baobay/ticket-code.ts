@@ -50,10 +50,23 @@ export function isValidTicketCode(raw: unknown): boolean {
   return TICKET_CODE_PATTERN.test(normalizeTicketCode(raw));
 }
 
+/**
+ * Tiền tố vé của công ty năm nay. Phi công đứng bãi hay gõ TẮT bốn số cuối
+ * ("1299" thay vì "MBL1299") — chuỗi TOÀN CHỮ SỐ 3–6 ký tự được tự gắn tiền tố
+ * này để hai cách gõ ra cùng một mã. Sang năm đổi sổ vé thì sửa một chỗ này.
+ */
+export const DEFAULT_TICKET_PREFIX = "MBL";
+
+/** "1299" -> "MBL1299"; chuỗi đã có chữ cái thì giữ nguyên. */
+function addDefaultPrefix(code: string): string {
+  return /^\d{3,6}$/.test(code) ? `${DEFAULT_TICKET_PREFIX}${code}` : code;
+}
+
 export function normalizeTicketCode(raw: unknown): string {
-  return String(raw ?? "")
+  const cleaned = String(raw ?? "")
     .toUpperCase()
     .replace(/\s+/g, "");
+  return addDefaultPrefix(cleaned);
 }
 
 export function parseTicketCode(raw: unknown): ParsedTicketCode | null {
@@ -223,8 +236,9 @@ export function parseTicketCodeList(text: unknown): TicketCodeListResult {
      * (AB1234-AB1235 là hai mã). Còn lại mới báo không đọc được.
      */
     if (token.includes("-") && !TICKET_CODE_PATTERN.test(token)) {
-      const parts = token.split("-").filter(Boolean);
-      if (parts.length >= 2 && parts.every((p) => TICKET_CODE_PATTERN.test(p))) {
+      // Gõ tắt "1299-1305" cũng phải hiểu là hai mã MBL — gắn tiền tố trước khi soi
+      const parts = token.split("-").filter(Boolean).map((x) => addDefaultPrefix(x));
+      if (parts.length >= 2 && parts.every((x) => TICKET_CODE_PATTERN.test(x))) {
         parts.forEach(push);
         continue;
       }

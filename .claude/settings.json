@@ -21,7 +21,9 @@
       "WebFetch(domain:web.archive.org)",
       "WebSearch",
       "Bash(node -e ' *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(nohup npm run dev)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

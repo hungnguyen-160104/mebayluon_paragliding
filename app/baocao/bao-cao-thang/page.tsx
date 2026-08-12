@@ -31,6 +31,8 @@ type MetricKey = keyof Pick<
   | "ppgFlights"
   | "video360"
   | "redFlag"
+  | "flagFlight"
+  | "siteFeeGuests"
   | "pickupBigC"
   | "pickupHotel"
   | "mountainTrips"
@@ -48,13 +50,19 @@ type MetricKey = keyof Pick<
  */
 const BASE_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
   { key: "flights", label: "PG" },
-  { key: "ppgFlights", label: "PPG" },
   { key: "video360", label: "360" },
   { key: "redFlag", label: "Cờ" },
+  { key: "flagFlight", label: "Kéo cờ" },
+];
+
+/** PPG chỉ bay ở Khau Phạ. */
+const KHAUPHA_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "ppgFlights", label: "PPG" },
 ];
 
 /** Chỉ điểm Hà Nội mới có đưa đón và nước khách. */
 const HANOI_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = [
+  { key: "siteFeeGuests", label: "Phí bãi (khách)" },
   { key: "pickupBigC", label: "Xe BigC" },
   { key: "pickupHotel", label: "Xe KS" },
   { key: "mountainTrips", label: "Xe lên núi" },
@@ -198,10 +206,13 @@ function Stat({ label, value, strong }: { label: string; value: string; strong?:
 
 function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyReportDTO }) {
   // Khối đưa đón + nước khách chỉ có ở điểm Hà Nội
-  const metrics =
-    data.spot === "ha-noi"
-      ? [...BASE_METRICS, ...HANOI_METRICS, ...MONEY_METRICS]
-      : [...BASE_METRICS, ...MONEY_METRICS];
+  // Mỗi điểm chỉ hiện dịch vụ mình có: PPG riêng Khau Phạ; phí bãi/nước/đưa đón riêng Hà Nội
+  const metrics = [
+    ...BASE_METRICS,
+    ...(data.spot === "khau-pha" ? KHAUPHA_METRICS : []),
+    ...(data.spot === "ha-noi" ? HANOI_METRICS : []),
+    ...MONEY_METRICS,
+  ];
   const [showExpenses, setShowExpenses] = useState(false);
 
   const fmt = (value: number, money?: boolean) => {

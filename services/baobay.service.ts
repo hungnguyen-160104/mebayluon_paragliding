@@ -947,6 +947,8 @@ export type PilotReportSaveInput = {
   siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
+  /** Khách ngoại giao KHÔNG xuất vé (vẫn bay) — ghi chú tách khỏi phần có vé. */
+  diplomaticNoTicket: number;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
   pickupBigC: number;
   pickupHotel: number;
@@ -1066,7 +1068,7 @@ export async function upsertPilotReport(
    * vào ô "không vé", không được bỏ lửng.
    */
   const ppg = parseTicketCodeList(input.ppgCodesText);
-  if (ppg.malformed.length) {
+  if (spot === "khau-pha" && ppg.malformed.length) {
     if (input.submit) {
       throw new BaobayError(
         `Chưa chốt được: mã vé PPG sai dạng — ${ppg.malformed.slice(0, 5).join(", ")}. ${TICKET_CODE_HINT}`,
@@ -1074,7 +1076,7 @@ export async function upsertPilotReport(
     }
     warnings.push(`Mã vé PPG sai dạng: ${ppg.malformed.slice(0, 5).join(", ")}`);
   }
-  if (input.ppgFlights > 0 && ppg.codes.length + input.ppgNoTicket !== input.ppgFlights) {
+  if (spot === "khau-pha" && input.ppgFlights > 0 && ppg.codes.length + input.ppgNoTicket !== input.ppgFlights) {
     const msg = `PPG: khai ${input.ppgFlights} chuyến nhưng mã vé (${ppg.codes.length}) + không vé (${input.ppgNoTicket}) = ${ppg.codes.length + input.ppgNoTicket}. Có vé thì khai mã, không vé thì đếm vào ô "không vé".`;
     if (input.submit) throw new BaobayError(`Chưa chốt được: ${msg}`);
     warnings.push(msg);
@@ -1170,8 +1172,10 @@ export async function upsertPilotReport(
         flagFlightCodes: codesFlagFlight.codes,
         diplomaticGuests: input.diplomaticGuests,
         diplomaticCodes: diplomatic.codes,
-        siteFeeGuests: input.siteFeeGuests,
-        waterCost: input.waterCost,
+        diplomaticNoTicket: input.diplomaticNoTicket,
+        // Phí bãi + nước: đặc thù RIÊNG Hà Nội (Sa Pa, Khau Phạ được miễn phí)
+        siteFeeGuests: spot === "ha-noi" ? input.siteFeeGuests : 0,
+        waterCost: spot === "ha-noi" ? input.waterCost : 0,
         guestCarCost: input.guestCarCost,
         /**
          * Ba khoản đưa đón (BigC / khách sạn / xe lên núi) là đặc thù RIÊNG
@@ -1180,9 +1184,10 @@ export async function upsertPilotReport(
         pickupBigC: spot === "ha-noi" ? input.pickupBigC : 0,
         pickupHotel: spot === "ha-noi" ? input.pickupHotel : 0,
         mountainTrips: spot === "ha-noi" ? input.mountainTrips : 0,
-        ppgFlights: input.ppgFlights,
-        ppgCodes: ppg.codes,
-        ppgNoTicket: input.ppgNoTicket,
+        // PPG chỉ bay ở Khau Phạ — điểm khác gửi gì cũng ghi 0
+        ppgFlights: spot === "khau-pha" ? input.ppgFlights : 0,
+        ppgCodes: spot === "khau-pha" ? ppg.codes : [],
+        ppgNoTicket: spot === "khau-pha" ? input.ppgNoTicket : 0,
         expenses,
         note: input.note,
         submitted: input.submit,
@@ -1316,6 +1321,7 @@ function toPilotDTO(doc: any): PilotReportDTO {
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
     diplomaticCodes: doc.diplomaticCodes ?? [],
+    diplomaticNoTicket: doc.diplomaticNoTicket ?? 0,
     siteFeeGuests: doc.siteFeeGuests ?? 0,
     waterCost: doc.waterCost ?? 0,
     guestCarCost: doc.guestCarCost ?? 0,
@@ -3962,10 +3968,15 @@ export async function getMyPeriodSummary(
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
         { label: "Bay kéo cờ (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
-        { label: "Phí bãi — khách (site fee, guests)", value: sumOf((d) => d.siteFeeGuests) },
-        { label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true },
+        // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
+        ...(spot === "ha-noi"
+          ? [{ label: "Phí bãi — khách (site fee, guests)", value: sumOf((d) => d.siteFeeGuests) }]
+          : []),
+        ...(spot === "ha-noi"
+          ? [{ label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true }]
+          : []),
         { label: "Xe cho khách (car)", value: sumOf((d) => d.guestCarCost), money: true },
-        { label: "Chuyến PPG (PPG flights)", value: sumOf((d) => d.ppgFlights) },
+        ...(spot === "khau-pha" ? [{ label: "Chuyến PPG (PPG flights)", value: sumOf((d) => d.ppgFlights) }] : []),
         // Đưa đón tự trả là đặc thù điểm Hà Nội — điểm khác không hiện cho đỡ rối
         ...(spot === "ha-noi"
           ? [
