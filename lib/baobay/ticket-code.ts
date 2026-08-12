@@ -44,7 +44,7 @@ export const MAX_RANGE_SIZE = 5000;
 export const TICKET_CODE_PATTERN = /^[A-Z]{1,3}-?\d{3,6}$/;
 
 export const TICKET_CODE_HINT =
-  "Mã vé gồm 1–3 chữ cái rồi 3–6 chữ số, ví dụ AB1234 hoặc KP-001234";
+  "Mã vé dạng MBL0001 — gõ tắt 4 số cuối (0001) cũng được";
 
 export function isValidTicketCode(raw: unknown): boolean {
   return TICKET_CODE_PATTERN.test(normalizeTicketCode(raw));

@@ -54,7 +54,7 @@ export function RangeRows({
                 <TextInput
                   value={row.from}
                   onChange={(e) => set(i, { from: e.target.value.toUpperCase() })}
-                  placeholder="Từ mã · A1234"
+                  placeholder="Từ mã · MBL0001"
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={disabled}
@@ -62,7 +62,7 @@ export function RangeRows({
                 <TextInput
                   value={row.to}
                   onChange={(e) => set(i, { to: e.target.value.toUpperCase() })}
-                  placeholder="Đến mã · A1256"
+                  placeholder="Đến mã · MBL0056"
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={disabled}
@@ -157,7 +157,7 @@ export function RescheduleRows({
               <TextInput
                 value={row.code}
                 onChange={(e) => set(i, { code: e.target.value.toUpperCase() })}
-                placeholder="Mã vé dời · A1244"
+                placeholder="Mã vé dời · MBL0044"
                 autoCapitalize="characters"
                 spellCheck={false}
                 disabled={disabled}
@@ -371,7 +371,7 @@ export function CancelEntryRows({
               <TextInput
                 value={row.codesText}
                 onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-                placeholder="Mã vé (cùng đoàn ghi chung) · A1235 A1236 A1237"
+                placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
                 autoCapitalize="characters"
                 spellCheck={false}
                 disabled={disabled}
@@ -458,7 +458,7 @@ export function RescheduleEntryRows({
                 <TextInput
                   value={row.codesText}
                   onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-                  placeholder="Mã vé (cùng đoàn ghi chung) · A1244 A1245"
+                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0044 MBL0045"
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={disabled}
@@ -544,7 +544,7 @@ export function DiploEntryRows({
             <TextInput
               value={row.codesText}
               onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-              placeholder="Mã vé ngoại giao · A1250"
+              placeholder="Mã vé ngoại giao · MBL0001"
               autoCapitalize="characters"
               spellCheck={false}
               disabled={disabled}

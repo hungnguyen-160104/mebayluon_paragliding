@@ -608,7 +608,7 @@ function DailyCloseInner() {
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind />
         </Card>
 
-        <Card title="Mã vé đã xuất" hint="Nhiều cuốn khác tiền tố thì thêm dòng: A1234–A1256 và B1234–B1239">
+        <Card title="Mã vé đã xuất" hint="Vé năm nay là MBLxxxx — gõ tắt số cũng được. Nhiều cuốn thì thêm dòng">
           <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
           {suggest && suggest.issuedRanges.length > 0 && !locked && (
             <CopyLine
@@ -630,7 +630,7 @@ function DailyCloseInner() {
             <TextArea
               value={form.cancelledCodesText}
               onChange={(e) => set("cancelledCodesText", e.target.value)}
-              placeholder="A1235, B1235, A1244"
+              placeholder="MBL0005, MBL0012"
               autoCapitalize="characters"
               spellCheck={false}
               className="min-h-16"

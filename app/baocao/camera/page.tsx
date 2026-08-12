@@ -237,7 +237,7 @@ export default function CameramanReportPage() {
               <TextArea
                 value={form.flycamCodesText}
                 onChange={(e) => set("flycamCodesText", e.target.value)}
-                placeholder="A1235, A1240"
+                placeholder="MBL0001, MBL0002"
                 autoCapitalize="characters"
                 spellCheck={false}
                 className="min-h-16"
@@ -264,7 +264,7 @@ export default function CameramanReportPage() {
               <TextArea
                 value={form.paraglidingCodesText}
                 onChange={(e) => set("paraglidingCodesText", e.target.value)}
-                placeholder="A1237, A1242"
+                placeholder="MBL0003, MBL0004"
                 autoCapitalize="characters"
                 spellCheck={false}
                 className="min-h-16"

@@ -401,7 +401,7 @@ export default function PilotReportPage() {
               <TextArea
                 value={form.ticketCodesText}
                 onChange={(e) => set("ticketCodesText", e.target.value)}
-                placeholder="AB1234, AB1235, AB1236"
+                placeholder="MBL0001, MBL0002 — gõ tắt: 0001 0002"
                 autoCapitalize="characters"
                 spellCheck={false}
                 disabled={locked}
@@ -496,7 +496,7 @@ export default function PilotReportPage() {
                 <TextInput
                   value={form.video360CodesText}
                   onChange={(e) => set("video360CodesText", e.target.value.toUpperCase())}
-                  placeholder="AB1235, AB1236"
+                  placeholder="MBL0001, MBL0002"
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={locked}
@@ -543,7 +543,7 @@ export default function PilotReportPage() {
               <TextInput
                 value={form.diplomaticCodesText}
                 onChange={(e) => set("diplomaticCodesText", e.target.value.toUpperCase())}
-                placeholder="A1250"
+                placeholder="MBL0001"
                 autoCapitalize="characters"
                 spellCheck={false}
                 disabled={locked}
@@ -563,7 +563,22 @@ export default function PilotReportPage() {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={bi("Số chuyến PPG", "PPG flights")}>
-              <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
+              <CountInput
+                value={form.ppgFlights}
+                onChange={(v) => {
+                  /**
+                   * PPG đa phần bay KHÔNG vé — chưa gõ mã nào thì ô "không vé"
+                   * tự chạy theo số chuyến, khỏi phải điền hai lần rồi thắc mắc
+                   * vì sao nút chốt xám. Đã có mã thì thôi, để người nhập tự cân.
+                   */
+                  setForm((prev) => ({
+                    ...prev,
+                    ppgFlights: v,
+                    ppgNoTicket: prev.ppgCodesText.trim() === "" ? v : prev.ppgNoTicket,
+                  }));
+                }}
+                max={300}
+              />
             </Field>
             <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
               <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
