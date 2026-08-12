@@ -2031,6 +2031,101 @@ export async function createHandover(
   return toHandoverDTO({ ...saved, sheetSynced: false });
 }
 
+export type FinanceOrderCategory = "luong" | "ung" | "phi" | "khac";
+
+const ORDER_LABEL: Record<FinanceOrderCategory, string> = {
+  luong: "Chuyển lương",
+  ung: "Ứng tiền",
+  phi: "Trả phí",
+  khac: "Chuyển tiền",
+};
+
+/**
+ * KẾ TOÁN / QUẢN TRỊ chủ động lập LỆNH CHUYỂN TIỀN cho một nhân sự — chuyển
+ * lương, ứng, trả phí hay khoản khác. Nhân sự vào app bấm "Đã nhận tiền" là
+ * xong hai bên.
+ *
+ * Riêng loại Ứ NG: bản ghi đứng tên NGƯỜI HƯỞNG (username/accountId là nhân sự)
+ * để tiền tự cộng vào cột "Tiền ứng" và trừ vào lương của đúng người — người
+ * xác nhận cũng chính là họ. Ba loại còn lại là lệnh GIAO TIỀN bình thường,
+ * đứng tên người lập, nhân sự là bên nhận.
+ */
+export async function createFinanceOrder(
+  session: BaobaySession,
+  spotRaw: string,
+  input: {
+    targetUsername: string;
+    category: FinanceOrderCategory;
+    date: string;
+    amount: number;
+    method: "cash" | "transfer";
+    content: string;
+  },
+): Promise<HandoverDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  if (session.role !== "accountant" && session.role !== "admin") {
+    throw new BaobayError("Chỉ kế toán hoặc quản trị được lập lệnh chuyển tiền", 403);
+  }
+  if (input.amount <= 0) throw new BaobayError("Chưa nhập số tiền");
+
+  const target = await BaobayAccount.findOne({ username: normalizeUsername(input.targetUsername) })
+    .select("username displayName role isActive spots")
+    .lean<any>();
+  if (!target) throw new BaobayError("Không tìm thấy nhân sự");
+  if (!target.isActive) throw new BaobayError(`Tài khoản “${target.displayName}” đã bị khoá`);
+  if (target.username === session.username) throw new BaobayError("Không lập lệnh cho chính mình");
+  if (!normalizeSpotList(target.spots).includes(spot)) {
+    throw new BaobayError(`“${target.displayName}” không làm ở ${spotName(spot)}`);
+  }
+
+  const label = ORDER_LABEL[input.category];
+  const content = input.content.trim() ? `${label}: ${input.content.trim()}` : label;
+  const isAdvance = input.category === "ung";
+
+  const doc = await BaobayHandover.create({
+    kind: isAdvance ? "advance" : "handover",
+    spot,
+    date: input.date,
+    /**
+     * Ứng: đứng tên người hưởng để trừ đúng lương. Còn lại: đứng tên người
+     * lập (kế toán giao tiền), nhân sự là bên nhận — như lệnh giao tiền thường.
+     */
+    accountId: isAdvance ? target._id : new mongoose.Types.ObjectId(session.id),
+    username: isAdvance ? target.username : session.username,
+    staffName: isAdvance ? target.displayName : session.name,
+    role: isAdvance ? target.role : session.role,
+    recipientId: target._id,
+    recipientUsername: target.username,
+    recipientName: target.displayName,
+    recipientRole: target.role,
+    createdBy: session.username,
+    amount: input.amount,
+    method: input.method,
+    content,
+  });
+
+  const saved = doc.toObject();
+  pushSheetInBackground(() => pushHandoverRow(saved), BaobayHandover, saved._id);
+  return toHandoverDTO(saved);
+}
+
+/** Các lệnh do CHÍNH MÌNH lập gần đây — để kế toán theo dõi ai đã bấm nhận. */
+export async function listOrdersCreatedBy(
+  session: BaobaySession,
+  spotRaw: string,
+  limit = 20,
+): Promise<HandoverDTO[]> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const docs = await BaobayHandover.find({ spot, createdBy: session.username })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean<any[]>();
+  return docs.map(toHandoverDTO);
+}
+
 /** Các lần đưa tiền của CHÍNH mình, mới nhất trước — để nhân sự theo dõi đã ai nhận chưa. */
 export async function listMyHandovers(
   session: BaobaySession,
@@ -2193,6 +2288,7 @@ function toHandoverDTO(doc: any): HandoverDTO {
     amount: doc.amount ?? 0,
     method: doc.method === "transfer" ? "transfer" : "cash",
     content: doc.content || "",
+    createdBy: doc.createdBy || undefined,
     confirmed: Boolean(doc.confirmed),
     confirmedAt: doc.confirmedAt ? new Date(doc.confirmedAt).toISOString() : undefined,
     confirmedBy: doc.confirmedBy || undefined,

@@ -25,6 +25,7 @@ import {
   type ExpenseRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
+import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
@@ -813,6 +814,11 @@ function DailyCloseInner() {
           )}
         </div>
       </form>
+
+      {/* Kế toán chủ động lập lệnh chuyển lương / ứng / trả phí cho nhân sự */}
+      <div className="mt-4">
+        <MoneyOrderCard spot={spot} />
+      </div>
 
       {/* Kế toán cũng có lúc cầm tiền hộ và phải nộp lại — cùng một khung với nhân sự khác */}
       <div className="mt-4">

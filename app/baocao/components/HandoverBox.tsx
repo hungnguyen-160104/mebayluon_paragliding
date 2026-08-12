@@ -222,7 +222,13 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
                         : "bg-sky-100 text-sky-800")
                     }
                   >
-                    {h.kind === "advance" ? t("xin ứng", "advance") : t("giao tiền", "hand over")}
+                    {h.kind === "advance"
+                      ? h.createdBy
+                        ? t("lệnh ứng — trừ lương", "advance order")
+                        : t("xin ứng", "advance")
+                      : h.createdBy
+                        ? t("lệnh chuyển tiền", "transfer order")
+                        : t("giao tiền", "hand over")}
                   </span>
                   <span className="font-medium text-slate-900">{h.staffName}</span>
                   <span className="text-xs text-slate-500">{formatDateKeyVN(h.date)}</span>
@@ -244,9 +250,11 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
                   >
                     {inboxBusy === h.id
                       ? "Đang lưu…"
-                      : h.kind === "advance"
-                        ? t("Đồng ý", "approve")
-                        : t("Đã nhận", "confirm")}
+                      : h.createdBy
+                        ? t("Đã nhận tiền", "received")
+                        : h.kind === "advance"
+                          ? t("Đồng ý", "approve")
+                          : t("Đã nhận", "confirm")}
                   </Button>
                   <Button
                     type="button"

@@ -8,6 +8,7 @@ import { authHeader } from "@/lib/auth";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { BAOBAY_ROLES, ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
 
+import { MoneyOrderCard } from "./MoneyOrderCard";
 import { ShiftBoard } from "./ShiftBoard";
 import { SPOTS, spotName, type SpotId } from "@/lib/baobay/spots";
 import type { BaobayAccountDTO, BaobaySummaryDTO } from "@/lib/baobay/types";
@@ -98,6 +99,8 @@ export function PersonnelPanel() {
       </header>
 
       {credentials.length > 0 && <CredentialBox items={credentials} onClear={() => setCredentials([])} />}
+
+      <AdminMoneyOrder />
 
       <StatementCard accounts={accounts} />
 
@@ -1269,5 +1272,31 @@ function StatementCard({ accounts }: { accounts: BaobayAccountDTO[] }) {
         </a>
       </div>
     </section>
+  );
+}
+
+
+/** Lệnh chuyển tiền phía quản trị — thêm nút chọn điểm bay rồi dùng chung thẻ với kế toán. */
+function AdminMoneyOrder() {
+  const [spot, setSpot] = useState<SpotId>("khau-pha");
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-1">
+        {SPOTS.map((sp) => (
+          <button
+            key={sp.id}
+            type="button"
+            onClick={() => setSpot(sp.id)}
+            className={
+              "rounded-lg px-3 py-1.5 text-xs font-medium " +
+              (sp.id === spot ? "bg-cyan-600 font-semibold text-white" : "border border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {sp.name}
+          </button>
+        ))}
+      </div>
+      <MoneyOrderCard spot={spot} />
+    </div>
   );
 }

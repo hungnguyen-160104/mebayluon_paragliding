@@ -53,6 +53,13 @@ export interface IBaobayHandover {
   method: "cash" | "transfer";
   content?: string;
 
+  /**
+   * Lệnh do KẾ TOÁN/QUẢN TRỊ lập hộ (chuyển lương, ứng chủ động…) — ghi ai lập.
+   * Với lệnh ứng lập hộ: username/accountId là NGƯỜI HƯỞNG (để trừ đúng lương),
+   * recipient cũng là người đó (chính họ bấm "đã nhận tiền").
+   */
+  createdBy?: string;
+
   confirmed: boolean;
   confirmedAt?: Date;
   confirmedBy?: string;
@@ -87,6 +94,8 @@ const BaobayHandoverSchema = new Schema<IBaobayHandover>(
     amount: { type: Number, required: true, min: 1 },
     method: { type: String, enum: ["cash", "transfer"], default: "cash" },
     content: String,
+
+    createdBy: String,
 
     confirmed: { type: Boolean, default: false, index: true },
     confirmedAt: Date,

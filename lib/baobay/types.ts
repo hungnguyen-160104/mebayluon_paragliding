@@ -58,6 +58,8 @@ export type HandoverDTO = {
   amount: number;
   method: "cash" | "transfer";
   content: string;
+  /** Lệnh do kế toán/quản trị lập hộ — tên người lập. */
+  createdBy?: string;
   confirmed: boolean;
   confirmedAt?: string;
   confirmedBy?: string;
