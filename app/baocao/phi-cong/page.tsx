@@ -253,11 +253,21 @@ export default function PilotReportPage() {
   /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã) — điểm khác khai được thì tốt. */
   const requireCodes = spot === "khau-pha";
   const codeCountMismatch = parsedCodes.codes.length !== form.flightCount;
+  /**
+   * Ngày CHỈ BAY PPG (0 chuyến PG) vẫn phải chốt được — trước đây nút chốt đòi
+   * flightCount > 0 nên phi công nhập PPG xong mà nút vẫn xám, tưởng app hỏng.
+   */
+  const hasAnyFlights = form.flightCount > 0 || form.ppgFlights > 0;
+  const ppgConsistent =
+    spot !== "khau-pha" ||
+    form.ppgFlights === 0 ||
+    (!parsedPpg.malformed.length && parsedPpg.codes.length + form.ppgNoTicket === form.ppgFlights);
   const canSubmit =
     !locked &&
     !parsedCodes.malformed.length &&
     (!requireCodes || !codeCountMismatch) &&
-    form.flightCount > 0;
+    ppgConsistent &&
+    hasAnyFlights;
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
   // Dòng THU (phi công cầm hộ tiền khách) không phải khoản chi — không cộng vào tổng chi
   const expenseSum =
@@ -685,9 +695,13 @@ export default function PilotReportPage() {
               title={
                 canSubmit
                   ? undefined
-                  : requireCodes
-                    ? "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"
-                    : "Khai số chuyến (và sửa mã sai dạng nếu có) rồi mới chốt được"
+                  : !hasAnyFlights
+                    ? "Khai số chuyến (PG hoặc PPG) rồi mới chốt được"
+                    : !ppgConsistent
+                      ? "PPG: mã vé + không vé phải bằng số chuyến"
+                      : requireCodes
+                        ? "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"
+                        : "Sửa mã sai dạng rồi mới chốt được"
               }
             >
               {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại (Re-submit)" : "Chốt báo cáo (Submit)"}

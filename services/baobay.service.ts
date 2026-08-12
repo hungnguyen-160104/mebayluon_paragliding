@@ -1132,8 +1132,10 @@ export async function upsertPilotReport(
   const penaltySet: Record<string, unknown> = {};
   if (input.submit && !existing?.firstSubmittedAt) {
     const deadline = await getSubmitDeadline(spot);
+    // Ngày CHỈ bay PPG cũng là ngày bay — chốt muộn vẫn tính phạt như thường
+    const flewAnything = input.flightCount > 0 || (spot === "khau-pha" && input.ppgFlights > 0);
     const late =
-      input.flightCount > 0 &&
+      flewAnything &&
       input.date > LATE_PENALTY_GRACE_UNTIL &&
       isPastSubmitDeadline(input.date, deadline);
     penaltySet.firstSubmittedAt = new Date();
@@ -1146,11 +1148,12 @@ export async function upsertPilotReport(
     }
   } else if (existing?.lateSubmit && !existing.latePenaltyWaived) {
     /**
-     * Sửa lại báo cáo đã ghi phạt: số chuyến về 0 thì tiền phạt cũng về 0 (không
-     * bay thì không phải báo cáo, lấy gì mà muộn); khai lại có chuyến thì phạt
-     * quay lại. Giờ chốt lần đầu vẫn giữ nguyên, không tính lại theo giờ sửa.
+     * Sửa lại báo cáo đã ghi phạt: cả PG lẫn PPG về 0 thì tiền phạt cũng về 0
+     * (không bay thì không phải báo cáo); khai lại có chuyến thì phạt quay lại.
+     * Giờ chốt lần đầu vẫn giữ nguyên, không tính lại theo giờ sửa.
      */
-    penaltySet.latePenalty = input.flightCount > 0 ? LATE_PENALTY_VND : 0;
+    const stillFlew = input.flightCount > 0 || (spot === "khau-pha" && input.ppgFlights > 0);
+    penaltySet.latePenalty = stillFlew ? LATE_PENALTY_VND : 0;
   }
 
   const doc = await PilotDailyReport.findOneAndUpdate(
@@ -3343,7 +3346,7 @@ export async function closeDay(
    * "0 chuyến thì không phải báo cáo, không phạt".
    */
   await PilotDailyReport.updateMany(
-    { spot, date, flightCount: 0, latePenalty: { $gt: 0 } },
+    { spot, date, flightCount: 0, ppgFlights: { $not: { $gt: 0 } }, latePenalty: { $gt: 0 } },
     {
       $set: {
         latePenalty: 0,
