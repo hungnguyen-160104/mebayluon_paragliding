@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v8`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v9`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -161,6 +161,42 @@ const KINDS = {
     'Lý do từ chối': 'rejectedReason',
     'Cập nhật lúc': 'updatedAt',
   },
+  daysummary: {
+    'Khoá': 'key',
+    'Ngày': 'date',
+    'Điểm bay': 'spot',
+    'Trạng thái': 'status',
+    'Số lỗi đỏ': 'issues',
+    'Số khách': 'guestCount',
+    'Vé xuất ra': 'ticketsIssued',
+    'Vé thu hồi': 'ticketsReturned',
+    'Vé huỷ': 'cancelledCount',
+    'Vé dời lịch': 'rescheduledCount',
+    'PC khai chuyến': 'pilotFlights',
+    'Số mã đã bay': 'flownCodes',
+    'Số PC báo cáo': 'pilotCount',
+    'PC đã chốt': 'pilotSubmitted',
+    'Tiền mặt': 'cashTotal',
+    'Chuyển khoản': 'transferTotal',
+    'Tổng thu': 'revenueTotal',
+    'Flycam (điều phối)': 'flycamDispatcher',
+    'Flycam (camera man)': 'flycamCameraman',
+    'Camera 360 (điều phối)': 'video360Dispatcher',
+    'Camera 360 (phi công)': 'video360Pilot',
+    'Dù cờ đỏ': 'redFlag',
+    'Bay kéo cờ': 'flagFlight',
+    'Vé ngoại giao': 'diplomaticTickets',
+    'Thu ngoại giao': 'diplomaticAmount',
+    'Tổng chi nhân viên': 'expenseTotal',
+    'Thu hộ tại bãi': 'thuTotal',
+    'Phạt nộp muộn': 'latePenalty',
+    'Tiền ứng đã duyệt': 'advanceTotal',
+    'Giao tiền đã nhận': 'handoverConfirmed',
+    'Giao tiền chờ nhận': 'handoverPending',
+    'Kế toán': 'accountantName',
+    'Chốt lúc': 'closedAt',
+    'Cập nhật lúc': 'updatedAt',
+  },
   advance: {
     'Khoá': 'key',
     'Ngày': 'date',
@@ -195,7 +231,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v8',
+    version: 'baobay-multispot-v9',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

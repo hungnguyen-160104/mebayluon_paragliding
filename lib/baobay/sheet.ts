@@ -16,7 +16,7 @@
  * `sheetSynced: false` kèm lý do trong `sheetError` để còn bù sau.
  */
 
-export type BaobaySheetKind = "pilot" | "dispatcher" | "cameraman" | "close" | "handover" | "advance";
+export type BaobaySheetKind = "pilot" | "dispatcher" | "cameraman" | "close" | "handover" | "advance" | "daysummary";
 
 /**
  * Tab mặc định cho từng loại báo cáo.
@@ -33,6 +33,7 @@ const SHEET_NAME: Record<BaobaySheetKind, string> = {
   close: "Chốt ngày",
   handover: "Giao tiền",
   advance: "Ứng tiền",
+  daysummary: "Tổng hợp ngày",
 };
 
 export type SheetPushResult = { ok: boolean; error?: string };

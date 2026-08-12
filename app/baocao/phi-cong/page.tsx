@@ -13,6 +13,7 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet, apiPost } from "../components/client-api";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
+import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
@@ -235,6 +236,9 @@ export default function PilotReportPage() {
       subtitle="Bay xong nhập số liệu trong ngày, rồi bấm Chốt để kế toán soát (fill in after flying, then Submit). Chưa chốt vẫn sửa được (editable until submitted)."
     >
       <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
+
+      {/* Lịch bay do quản lý chấm — xem là chính, không khoá gì việc nhập số */}
+      <MyShifts spot={spot} bilingual />
 
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (

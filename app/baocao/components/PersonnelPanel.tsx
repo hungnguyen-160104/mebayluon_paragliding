@@ -7,6 +7,8 @@ import api from "@/lib/api";
 import { authHeader } from "@/lib/auth";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { BAOBAY_ROLES, ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
+
+import { ShiftBoard } from "./ShiftBoard";
 import { SPOTS, spotName, type SpotId } from "@/lib/baobay/spots";
 import type { BaobayAccountDTO, BaobaySummaryDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
@@ -96,6 +98,8 @@ export function PersonnelPanel() {
       </header>
 
       {credentials.length > 0 && <CredentialBox items={credentials} onClear={() => setCredentials([])} />}
+
+      <ShiftBoard api={api} authHeader={authHeader} />
 
       <SpotSettingsCard />
 

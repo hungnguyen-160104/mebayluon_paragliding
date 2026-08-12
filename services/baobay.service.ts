@@ -28,6 +28,8 @@ import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/b
 import { ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
+import { buildShiftEmail } from "@/lib/baobay/shift-email";
+import { sendSmtpMail } from "@/lib/mailer";
 import {
   countTicketRange,
   expandTicketRanges,
@@ -62,6 +64,7 @@ import type {
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
+import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
@@ -2048,6 +2051,217 @@ export async function getCashOnHand(
 }
 
 /* ================================================================== */
+/* Lịch bay theo tháng                                                 */
+/* ================================================================== */
+
+export type ShiftRowDTO = {
+  username: string;
+  pilotName: string;
+  email: string;
+  /** Ngày ĐI LÀM trong tháng. Không có trong đây = nghỉ. */
+  days: number[];
+};
+
+export type ShiftBoardDTO = {
+  spot: string;
+  month: string;
+  daysInMonth: number;
+  neededPerDay: number;
+  rows: ShiftRowDTO[];
+  /** Số phi công đi làm từng ngày (chỉ số 0 = ngày 1). */
+  perDay: number[];
+  version: number;
+  updatedBy: string;
+  updatedAt?: string;
+  notifiedAt?: string;
+  /** Đã sửa lịch nhưng chưa gửi email báo lại. */
+  needsNotify: boolean;
+};
+
+function daysInMonthOfKey(month: string): number {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+/**
+ * Bảng lịch của một tháng: hàng là phi công ĐANG LÀM VIỆC ở điểm đó, cột là
+ * ngày trong tháng.
+ *
+ * Danh sách hàng luôn dựng lại từ danh sách nhân sự hiện tại, không lấy cứng
+ * theo bản đã lưu: thêm phi công mới là tháng này có ngay một hàng trống để
+ * chấm, còn người đã nghỉ việc thì biến khỏi bảng nhưng lịch cũ vẫn nguyên.
+ */
+export async function getShiftBoard(spotRaw: string, month: string): Promise<ShiftBoardDTO> {
+  await connectDB();
+
+  const spot = normalizeSpot(spotRaw);
+  const [doc, roster] = await Promise.all([
+    BaobayShift.findOne({ spot, month }).lean<any>(),
+    BaobayAccount.find({ role: "pilot", isActive: true, spots: spot })
+      .select("username displayName email")
+      .sort({ displayName: 1 })
+      .lean<any[]>(),
+  ]);
+
+  const total = daysInMonthOfKey(month);
+  const saved = new Map<string, number[]>(
+    (doc?.assignments ?? []).map((a: any) => [a.username, (a.days ?? []).filter((d: number) => d >= 1 && d <= total)]),
+  );
+
+  const rows: ShiftRowDTO[] = roster.map((p) => ({
+    username: p.username,
+    pilotName: p.displayName,
+    email: p.email || "",
+    days: (saved.get(p.username) ?? []).slice().sort((a, b) => a - b),
+  }));
+
+  const perDay = Array.from({ length: total }, (_, i) => rows.filter((r) => r.days.includes(i + 1)).length);
+
+  return {
+    spot,
+    month,
+    daysInMonth: total,
+    neededPerDay: doc?.neededPerDay ?? 0,
+    rows,
+    perDay,
+    version: doc?.version ?? 0,
+    updatedBy: doc?.updatedBy ?? "",
+    updatedAt: doc?.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
+    notifiedAt: doc?.notifiedAt ? new Date(doc.notifiedAt).toISOString() : undefined,
+    needsNotify: Boolean(doc) && (doc.notifiedVersion ?? 0) < (doc.version ?? 1),
+  };
+}
+
+/**
+ * Lưu cả bảng một lần.
+ *
+ * Chỉ nhận username của phi công ĐANG LÀM ở đúng điểm bay này — bảng gửi lên từ
+ * trình duyệt không được phép chấm lịch cho người ở điểm khác. Mỗi lần lưu tăng
+ * `version` để email sau đó ghi rõ là bản cập nhật lần mấy.
+ */
+export async function saveShiftBoard(
+  spotRaw: string,
+  month: string,
+  input: { rows: Array<{ username: string; days: number[] }>; neededPerDay?: number },
+  by: string,
+): Promise<ShiftBoardDTO> {
+  await connectDB();
+
+  const spot = normalizeSpot(spotRaw);
+  const total = daysInMonthOfKey(month);
+
+  const roster = await BaobayAccount.find({ role: "pilot", isActive: true, spots: spot })
+    .select("username displayName")
+    .lean<any[]>();
+  const known = new Map(roster.map((p) => [p.username, p.displayName]));
+
+  const assignments = input.rows
+    .filter((r) => known.has(r.username))
+    .map((r) => ({
+      username: r.username,
+      pilotName: known.get(r.username) as string,
+      days: [...new Set(r.days.filter((d) => Number.isInteger(d) && d >= 1 && d <= total))].sort((a, b) => a - b),
+    }));
+
+  await BaobayShift.updateOne(
+    { spot, month },
+    {
+      $set: {
+        assignments,
+        updatedBy: by,
+        ...(input.neededPerDay !== undefined ? { neededPerDay: Math.max(0, Math.floor(input.neededPerDay)) } : {}),
+      },
+      $inc: { version: 1 },
+      $setOnInsert: { spot, month, notifiedVersion: 0 },
+    },
+    { upsert: true },
+  );
+
+  return getShiftBoard(spot, month);
+}
+
+export type ShiftMailReport = {
+  sent: Array<{ pilotName: string; email: string }>;
+  skipped: Array<{ pilotName: string; reason: string }>;
+  failed: Array<{ pilotName: string; email: string; error: string }>;
+};
+
+/**
+ * Gửi email lịch bay cho từng phi công.
+ *
+ * Gửi TUẦN TỰ chứ không song song: Gmail SMTP chặn khi bị dội nhiều kết nối một
+ * lúc, mà danh sách chỉ khoảng chục người nên chậm vài giây không sao. Một
+ * người hỏng không làm hỏng cả lượt — trả về danh sách ai gửi được, ai không.
+ */
+export async function sendShiftEmails(
+  spotRaw: string,
+  month: string,
+  onlyUsernames?: string[],
+): Promise<ShiftMailReport> {
+  await connectDB();
+
+  const spot = normalizeSpot(spotRaw);
+  const board = await getShiftBoard(spot, month);
+  const filter = onlyUsernames?.length ? new Set(onlyUsernames) : null;
+
+  const report: ShiftMailReport = { sent: [], skipped: [], failed: [] };
+
+  for (const row of board.rows) {
+    if (filter && !filter.has(row.username)) continue;
+
+    if (!row.email) {
+      report.skipped.push({ pilotName: row.pilotName, reason: "chưa khai email" });
+      continue;
+    }
+    if (!row.days.length) {
+      report.skipped.push({ pilotName: row.pilotName, reason: "chưa chấm ngày làm nào" });
+      continue;
+    }
+
+    const mail = buildShiftEmail({
+      pilotName: row.pilotName,
+      month,
+      spotName: spotName(spot),
+      workDays: row.days,
+      version: board.version,
+    });
+
+    try {
+      await sendSmtpMail({ to: row.email, subject: mail.subject, html: mail.html, text: mail.text });
+      report.sent.push({ pilotName: row.pilotName, email: row.email });
+    } catch (e: any) {
+      report.failed.push({ pilotName: row.pilotName, email: row.email, error: e?.message || "không gửi được" });
+    }
+  }
+
+  if (report.sent.length) {
+    await BaobayShift.updateOne({ spot, month }, { $set: { notifiedAt: new Date(), notifiedVersion: board.version } });
+  }
+
+  return report;
+}
+
+/** Lịch của CHÍNH mình — phi công xem trên trang báo cáo, khỏi phải lục email. */
+export async function getMyShifts(
+  session: BaobaySession,
+  spotRaw: string,
+  month: string,
+): Promise<{ month: string; daysInMonth: number; workDays: number[]; updatedAt?: string }> {
+  await connectDB();
+
+  const spot = assertSpotAllowed(session, spotRaw);
+  const doc = await BaobayShift.findOne({ spot, month }).lean<any>();
+  const mine = (doc?.assignments ?? []).find((a: any) => a.username === session.username);
+
+  return {
+    month,
+    daysInMonth: daysInMonthOfKey(month),
+    workDays: (mine?.days ?? []).slice().sort((a: number, b: number) => a - b),
+    updatedAt: doc?.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
+  };
+}
+
+/* ================================================================== */
 /* Phạt nộp muộn: báo tạm tính và huỷ lệnh phạt                        */
 /* ================================================================== */
 
@@ -2287,6 +2501,8 @@ export async function upsertDailyClose(
     { _id: doc._id },
     { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
   );
+  // Kế toán vừa đổi số của ngày -> dòng tổng hợp phải theo kịp
+  await pushDaySummaryRow(spot, input.date);
 
   return { report: toCloseDTO({ ...doc, sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error }), warnings };
 }
@@ -2344,6 +2560,92 @@ export async function getDailyClose(spot: string, date: string): Promise<DailyCl
  * ngay, nếu không kế toán mở bảng ra vẫn thấy "chưa chốt" ở ngày đã khoá. Ghi
  * đè đúng dòng cũ (khoá là ngày|tài khoản) nên không sinh dòng trùng.
  */
+/**
+ * Một dòng TỔNG HỢP cho cả ngày, đẩy sang tab "Tổng hợp ngày".
+ *
+ * Kế toán cần một bảng dàn ngang theo ngày để lấy số nhanh, không phải mở từng
+ * thẻ phi công rồi cộng tay. Dòng này gộp mọi phía: số kế toán chốt, số nhân
+ * viên báo, tiền, dịch vụ, chi tiêu, tiền ứng, phạt — và cột "Chốt/Treo" để
+ * biết số đã dùng được chưa.
+ *
+ * Ghi đè theo khoá = ngày, nên gọi lại bao nhiêu lần cũng chỉ một dòng.
+ */
+async function pushDaySummaryRow(spot: string, date: string): Promise<{ ok: boolean; error?: string }> {
+  const filter = { spot, date };
+  const [close, pilots, dispatchers, cameramen, money] = await Promise.all([
+    AccountantDailyClose.findOne(filter).lean<any>(),
+    PilotDailyReport.find(filter).lean<any[]>(),
+    DispatcherDailyReport.find(filter).lean<any[]>(),
+    CameramanDailyReport.find(filter).lean<any[]>(),
+    BaobayHandover.find(filter).lean<any[]>(),
+  ]);
+
+  const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
+  const flownCodes = new Set<string>();
+  for (const p of pilots) for (const c of p.ticketCodes ?? []) flownCodes.add(c);
+
+  const reconcile = await getReconcile(spot, date);
+  const reds = reconcile.issues.filter((i) => i.severity === "red").length;
+
+  const advances = money.filter((m) => m.kind === "advance" && m.confirmed);
+  const handovers = money.filter((m) => m.kind !== "advance");
+
+  return pushBaobayRow(
+    "daysummary",
+    {
+      key: date,
+      date,
+      spot: spotName(spot),
+      status: close?.status === "closed" ? "ĐÃ CHỐT" : reds ? `TREO (${reds} lỗi)` : "chưa chốt",
+      issues: reds,
+
+      guestCount: close?.guestCount ?? sum(dispatchers, (d) => d.guestCount),
+      ticketsIssued: close?.ticketsIssued ?? sum(dispatchers, (d) => d.ticketsIssued),
+      ticketsReturned: close?.ticketsReturned ?? sum(dispatchers, (d) => d.ticketsReturned),
+      cancelledCount: close?.cancelledCount ?? 0,
+      rescheduledCount: close?.rescheduledCount ?? 0,
+
+      pilotFlights: sum(pilots, (p) => p.flightCount),
+      flownCodes: flownCodes.size,
+      pilotCount: pilots.length,
+      pilotSubmitted: pilots.filter((p) => p.submitted).length,
+
+      cashTotal: close?.cashTotal ?? sum(dispatchers, (d) => d.cashReceived),
+      transferTotal: close?.transferTotal ?? sum(dispatchers, (d) => d.transferReceived),
+      revenueTotal:
+        (close?.cashTotal ?? sum(dispatchers, (d) => d.cashReceived)) +
+        (close?.transferTotal ?? sum(dispatchers, (d) => d.transferReceived)),
+
+      flycamDispatcher: sum(dispatchers, (d) => d.flycam),
+      flycamCameraman: sum(cameramen, (c) => c.flycamFlights),
+      video360Dispatcher: sum(dispatchers, (d) => d.video360),
+      video360Pilot: sum(pilots, (p) => p.video360),
+      redFlag: sum(dispatchers, (d) => d.redFlag),
+      flagFlight: sum(dispatchers, (d) => d.flagFlight),
+
+      diplomaticTickets: sum(dispatchers, (d) => (d.diplomaticCodes?.length ?? 0) || (d.diplomaticGuests ?? 0)),
+      diplomaticAmount: sum(dispatchers, (d) => d.diplomaticAmount),
+
+      expenseTotal:
+        sum(pilots, (p) => pilotExpenseTotal(p)) +
+        sum(dispatchers, (d) => dispatcherExpenseTotal(d)) +
+        sum(cameramen, (c) => expenseTotal(c.expenses)),
+      thuTotal:
+        sum(pilots, (p) => thuTotal(p.expenses)) + sum(cameramen, (c) => thuTotal(c.expenses)),
+      latePenalty: sum(pilots, (p) => p.latePenalty),
+      advanceTotal: sum(advances, (a) => a.amount),
+      handoverConfirmed: sum(handovers.filter((h) => h.confirmed), (h) => h.amount),
+      handoverPending: sum(handovers.filter((h) => !h.confirmed && !h.rejected), (h) => h.amount),
+
+      accountantName: close?.accountantName || "",
+      closedAt: close?.closedAt ? new Date(close.closedAt).toLocaleString("vi-VN") : "",
+      updatedAt: nowStampVN(),
+    },
+    undefined,
+    await sheetTargetForSpot(spot),
+  );
+}
+
 async function pushDayToSheet(spot: string, date: string): Promise<void> {
   const filter = { spot, date };
   const [pilots, dispatchers, cameramen] = await Promise.all([
@@ -2365,6 +2667,9 @@ async function pushDayToSheet(spot: string, date: string): Promise<void> {
       { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
     );
   }
+
+  // Dòng tổng hợp đi cuối cùng: lúc này mọi dòng chi tiết của ngày đã sang bảng
+  await pushDaySummaryRow(spot, date);
 }
 
 /**

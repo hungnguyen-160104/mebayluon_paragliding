@@ -203,6 +203,34 @@ máy chủ chặn cả đường đổi vai trò.
 Khung *"Cấu hình từng điểm bay"* mặc định **thu gọn**, phải bấm mở mới thấy ô
 nhập — đây là chỗ gõ nhầm một ký tự là dữ liệu ngừng chảy sang bảng tính.
 
+## Lịch bay theo tháng
+
+CHỈ xếp lịch cho **phi công** — kế toán, điều phối, camera man không cần lịch.
+
+Khung **"Lịch bay theo tháng"** ở `/baocao/admin`: bảng dàn ngang, hàng là phi
+công, cột là ngày 1…31. **Chấm ô = đi làm, để trống = nghỉ.** Bấm giữ rồi rê
+ngang để chấm cả dãy; bấm tên là chấm/bỏ cả tháng; bấm số ngày trên đầu cột là
+chấm/bỏ cả cột. Nút **"Xếp lần lượt"** tự chia mỗi ngày một người nghỉ, xoay
+vòng theo danh sách (8 phi công cần 7 người/ngày) — chấm xong vẫn sửa tay được.
+
+Hàng cuối đếm **số người có mặt từng ngày**; đặt ô "Cần mỗi ngày" thì ngày thiếu
+người tô đỏ. Chỉ cảnh báo, không chặn lưu.
+
+**Gửi email**: bấm *"Gửi email lịch bay"* là mỗi phi công nhận đúng lịch CỦA
+MÌNH (bảng tháng tô xanh ngày bay, danh sách ngày nghỉ) kèm lời nhắc: *"Phi công
+cần nghỉ ngơi để đảm bảo sức khoẻ và an toàn bay. Hãy sắp xếp lịch để relax mà
+không phải vướng bận công việc. Chúc vui vẻ và nhớ trở lại bầu trời đúng ngày."*
+Mỗi lần lưu tăng số bản; sửa lịch sau khi đã gửi thì bảng nhắc *"có sửa sau lần
+gửi gần nhất"* và email lần sau tự đề **BẢN CẬP NHẬT (lần N)**. Phi công chưa
+khai email thì bị bỏ qua (có báo rõ).
+
+**Trang phi công** có khung *"Lịch bay của tôi"* ngay trên đầu: hôm nay có bay
+không, bay tiếp ngày nào, lịch cả tháng — quản lý sửa là thấy bản mới ngay,
+khỏi lục email.
+
+**Lịch KHÔNG khoá việc báo cáo**: hôm nghỉ mà bay tăng cường đột xuất vẫn nhập
+báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
+
 ## Quản lý nhân sự (admin)
 
 Vào **`/admin/baocao`** (menu "Nhân sự báo bay", cần đăng nhập quản trị website):
@@ -244,7 +272,11 @@ Số liệu tự chảy sang bảng tính (docs/baocao-apps-script.md — bản
 - **Mỗi phi công một thẻ riêng theo tháng**: tab "Giàng A Sáu 2026-08" tự tạo,
   mỗi ngày một dòng, sửa báo cáo là ghi đè đúng dòng cũ.
 - Điều phối vào tab **"Điều phối"**, camera man vào tab **"Camera man"**, số chốt
-  vào tab **"Chốt ngày"**, tiền nhân sự đưa quản lý vào tab **"Giao tiền"**.
+  vào tab **"Chốt ngày"**, giao tiền vào **"Giao tiền"**, ứng tiền vào **"Ứng tiền"**.
+- Tab **"Tổng hợp ngày"**: mỗi ngày MỘT dòng gộp mọi phía (vé, tiền, dịch vụ,
+  chi tiêu, phạt, tiền ứng, giao tiền) kèm cột Chốt/Treo — chỗ kế toán lấy số
+  nhanh mà không phải mở từng thẻ. Tự cập nhật mỗi khi kế toán lưu số hoặc
+  chốt/mở ngày.
 - **Mỗi điểm bay một bảng tính riêng** — khai webhook của từng điểm ở `/baocao/admin`.
 - Mọi dòng mang cột **"Trạng thái ngày"**: dữ liệu sang bảng ngay khi nhân viên
   lưu (kèm chữ *chưa chốt*), kế toán bấm chốt thì mọi dòng của ngày đó được ghi
