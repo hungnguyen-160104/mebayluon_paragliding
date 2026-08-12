@@ -90,16 +90,17 @@ export function PenaltyCard({ spot, date, reloadKey }: { spot: string; date: str
 
   return (
     <Card
-      title="Phạt nộp muộn trong ngày"
-      hint={`Giờ quy định ${data.deadline}. Nộp muộn là bị ghi phạt, kể cả khi kế toán chốt hộ — trừ khi kế toán huỷ lệnh phạt.`}
+      className="border-rose-200 bg-rose-50/40"
+      title="⏰ Phạt nộp muộn"
+      hint={`Giờ chốt ${data.deadline} · nộp muộn là phạt, trừ khi kế toán huỷ`}
     >
       {error && <Banner tone="error">{error}</Banner>}
 
       {recorded.length === 0 && pending.length === 0 && (
         <p className="text-sm text-slate-500">
           {data.pastDeadline
-            ? "Không ai nộp muộn trong ngày này."
-            : `Chưa tới giờ chốt (${data.deadline}) — chưa tính phạt ai.`}
+            ? "Không ai nộp muộn."
+            : `Chưa tới giờ chốt (${data.deadline}).`}
         </p>
       )}
 
@@ -147,8 +148,7 @@ export function PenaltyCard({ spot, date, reloadKey }: { spot: string; date: str
         <>
           <h3 className="mt-4 text-sm font-semibold text-amber-800">Tạm tính ({pending.length})</h3>
           <p className="text-xs text-slate-500">
-            Quá giờ mà chưa thấy báo cáo. Hệ thống chưa biết ai có bay — ai hôm nay 0 chuyến thì{" "}
-            <strong>phạt tự huỷ khi bấm Chốt ngày</strong>; ai có bay thì lúc chốt sẽ thành phạt thật.
+            Chưa biết ai có bay. Ai 0 chuyến thì <strong>tự huỷ khi Chốt ngày</strong>; ai có bay thành phạt thật.
           </p>
           <ul className="mt-1 divide-y divide-amber-100 rounded-xl border border-amber-200">
             {pending.map((r) => (

@@ -467,9 +467,9 @@ function HandoverCard() {
   const pendingAmount = pending.reduce((sum, r) => sum + r.amount, 0);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
+    <section className="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-5">
       <h2 className="font-semibold text-slate-900">
-        Lệnh tiền của nhân sự
+        💰 Lệnh tiền của nhân sự
         {totalPending > 0 && (
           <span className="ml-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white">
             {totalPending} khoản chưa xác nhận
@@ -477,9 +477,8 @@ function HandoverCard() {
         )}
       </h2>
       <p className="mt-1 text-sm text-slate-600">
-        Nhân sự khai ở trang của mình và tự chọn người nhận (giám đốc, kế toán hay điều phối) — người
-        nhận bấm xác nhận ngay trên trang của họ. Bảng này là chỗ quản trị nhìn TOÀN BỘ điểm bay và
-        xác nhận thay khi cần. Tự làm mới mỗi 20 giây.
+        Giao tiền và ứng tiền của mọi điểm bay. Người nhận tự xác nhận ở trang của họ; quản trị xác
+        nhận thay khi cần. Tự làm mới mỗi 20 giây.
       </p>
       <div className="mt-2 flex flex-wrap gap-1">
         {SPOTS.map((sp) => {

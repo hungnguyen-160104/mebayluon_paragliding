@@ -200,17 +200,15 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
 
   return (
     <Card
-      title={t("Tiền đang giữ và giao tiền", "Cash on hand & hand over")}
-      hint={t(
-        "Số đang giữ máy tự cộng từ các khoản thu trong báo cáo của bạn, trừ chi tại bãi và tiền đã đưa",
-        "auto-computed from your reports",
-      )}
+      className="border-teal-200 bg-teal-50/40"
+      title={t("Tiền bạc", "Money")}
+      hint={t("Máy tự cộng từ báo cáo của bạn", "auto-computed")}
     >
       {/* Có người giao tiền cho mình: việc cần bấm ngay, đặt trên cùng */}
       {inboxPending.length > 0 && (
-        <div className="mb-4 rounded-xl border-2 border-sky-300 bg-sky-50 p-3">
-          <h3 className="text-sm font-semibold text-sky-900">
-            {t("Chờ anh/chị xác nhận", "waiting for you")} ({inboxPending.length})
+        <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-3">
+          <h3 className="text-sm font-bold text-amber-900">
+            🔔 {t("Chờ anh/chị duyệt", "waiting for you")} ({inboxPending.length})
           </h3>
           <ul className="mt-2 space-y-2">
             {inboxPending.map((h) => (
@@ -224,7 +222,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
                         : "bg-sky-100 text-sky-800")
                     }
                   >
-                    {h.kind === "advance" ? t("xin ứng tiền", "advance") : t("giao tiền", "hand over")}
+                    {h.kind === "advance" ? t("xin ứng", "advance") : t("giao tiền", "hand over")}
                   </span>
                   <span className="font-medium text-slate-900">{h.staffName}</span>
                   <span className="text-xs text-slate-500">{formatDateKeyVN(h.date)}</span>
@@ -247,8 +245,8 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
                     {inboxBusy === h.id
                       ? "Đang lưu…"
                       : h.kind === "advance"
-                        ? t("Đồng ý cho ứng", "approve")
-                        : t("Xác nhận đã nhận", "confirm")}
+                        ? t("Đồng ý", "approve")
+                        : t("Đã nhận", "confirm")}
                   </Button>
                   <Button
                     type="button"
@@ -268,11 +266,11 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
 
       {b && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Cell label={t("Thu hộ", "collected")} value={b.collected} />
-          <Cell label={t("Chi tại bãi", "spent on site")} value={-b.spent} />
-          <Cell label={t("Đã đưa", "handed over")} value={-(b.handedConfirmed + b.handedPending)} />
+          <Cell label={t("Thu hộ", "collected")} value={b.collected} tone="sky" />
+          <Cell label={t("Đã chi", "spent")} value={-b.spent} tone="slate" />
+          <Cell label={t("Đã nộp", "handed over")} value={-(b.handedConfirmed + b.handedPending)} tone="slate" />
           <Cell
-            label={t("Còn giữ", "still holding")}
+            label={t("Còn giữ", "holding")}
             value={b.holding}
             strong
             tone={b.holding > 0 ? "amber" : "emerald"}
@@ -282,34 +280,36 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
 
       {b && b.holding < 0 && (
         <p className="mt-2 text-xs text-emerald-700">
-          Số âm nghĩa là bạn đã chi và đưa nhiều hơn tiền thu hộ — phần {formatVND(-b.holding)} này công ty
-          hoàn lại cho bạn.
+          Số âm: công ty hoàn lại anh/chị {formatVND(-b.holding)}.
         </p>
       )}
       {b && b.handedPending > 0 && (
         <p className="mt-2 text-xs text-amber-700">
-          Trong đó {formatVND(b.handedPending)} đã trừ nhưng người nhận CHƯA xác nhận ({pendingCount} khoản).
+          {formatVND(b.handedPending)} chờ người nhận xác nhận ({pendingCount} khoản).
         </p>
       )}
       {b && b.handedRejected > 0 && (
         <p className="mt-1 text-xs text-rose-700">
-          {formatVND(b.handedRejected)} bị người nhận từ chối — đã cộng lại vào tiền đang giữ.
+          {formatVND(b.handedRejected)} bị từ chối — đã cộng lại.
         </p>
       )}
 
-      <div className="mt-4">
+      {/* ---------------------- Giao tiền ---------------------- */}
+      <div className="mt-5 rounded-xl border-2 border-sky-300 bg-sky-50/70 p-3">
+        <h3 className="text-sm font-bold text-sky-900">💵 {t("Nộp tiền", "hand over")}</h3>
+        <p className="mt-0.5 text-xs text-slate-600">
+          {t("Người nhận bấm xác nhận thì mới xong", "recipient confirms")}
+        </p>
+
+        <div className="mt-3">
         <Field
-          label={t("Giao tiền cho ai", "hand over to")}
-          hint={
-            data && data.recipients.length === 0
-              ? "Điểm bay này chưa có kế toán / điều phối / quản trị nào để nhận tiền"
-              : undefined
-          }
+          label={t("Nộp cho ai", "hand over to")}
+          hint={data && data.recipients.length === 0 ? "Chưa có ai để nhận tiền ở điểm này" : undefined}
         >
           <select
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
-            className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none focus:border-sky-500"
+            className="h-12 w-full rounded-xl border border-sky-300 bg-white px-3.5 text-slate-900 outline-none focus:border-sky-600"
           >
             {(data?.recipients ?? []).map((r) => (
               <option key={r.username} value={r.username}>
@@ -318,10 +318,10 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
             ))}
           </select>
         </Field>
-      </div>
+        </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label={t("Ngày đưa", "date")}>
+        <Field label={t("Ngày", "date")}>
           <TextInput type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </Field>
         <Field label={t("Số tiền", "amount")}>
@@ -375,34 +375,37 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         </div>
       )}
 
-      <Button type="button" className="mt-3 w-full" disabled={busy} onClick={submit}>
-        {busy ? "Đang ghi…" : t("Xác nhận đã đưa tiền", "confirm handed over")}
+      <Button
+        type="button"
+        className="mt-3 w-full bg-sky-600 hover:bg-sky-700"
+        disabled={busy}
+        onClick={submit}
+      >
+        {busy ? "Đang ghi…" : t("Đã nộp tiền", "sent")}
       </Button>
+      </div>
 
-      {/* ------------------------ Ứng tiền ------------------------ */}
-      <div className="mt-6 rounded-xl border border-violet-200 bg-violet-50/50 p-3">
-        <h3 className="text-sm font-semibold text-violet-900">{t("Xin ứng tiền", "cash advance")}</h3>
+      {/* ---------------------- Ứng tiền ---------------------- */}
+      <div className="mt-4 rounded-xl border-2 border-violet-300 bg-violet-50/70 p-3">
+        <h3 className="text-sm font-bold text-violet-900">🧾 {t("Xin ứng tiền", "advance")}</h3>
         <p className="mt-0.5 text-xs text-slate-600">
-          {t(
-            "Kế toán hoặc quản trị duyệt. Số đã duyệt cộng vào cột tiền ứng của anh/chị để trừ lương cuối tháng",
-            "approved advances are deducted from month-end pay",
-          )}
+          {t("Kế toán hoặc quản trị duyệt · trừ vào lương cuối tháng", "approved = deducted from pay")}
           {advanceApproved > 0 && (
             <>
               {" · "}
               <strong className="text-violet-900">
-                {t("đã ứng", "advanced so far")} {formatVND(advanceApproved)}
+                {t("đã ứng", "so far")} {formatVND(advanceApproved)}
               </strong>
             </>
           )}
         </p>
 
         <div className="mt-3">
-          <Field label={t("Nội dung ứng tiền", "reason")}>
+          <Field label={t("Ứng để làm gì", "reason")}>
             <TextInput
               value={advContent}
               onChange={(e) => setAdvContent(e.target.value)}
-              placeholder="VD: ứng tiền sửa dù"
+              placeholder="VD: sửa dù"
             />
           </Field>
         </div>
@@ -412,17 +415,13 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
             <MoneyInput value={advAmount} onChange={setAdvAmount} />
           </Field>
           <Field
-            label={t("Người xác nhận", "approver")}
-            hint={
-              data && data.approvers.length === 0
-                ? "Điểm bay này chưa có kế toán / quản trị để duyệt"
-                : undefined
-            }
+            label={t("Ai duyệt", "approver")}
+            hint={data && data.approvers.length === 0 ? "Chưa có ai duyệt được ở điểm này" : undefined}
           >
             <select
               value={advApprover}
               onChange={(e) => setAdvApprover(e.target.value)}
-              className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none focus:border-violet-500"
+              className="h-12 w-full rounded-xl border border-violet-300 bg-white px-3.5 text-slate-900 outline-none focus:border-violet-600"
             >
               {(data?.approvers ?? []).map((r) => (
                 <option key={r.username} value={r.username}>
@@ -441,8 +440,13 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
           </div>
         )}
 
-        <Button type="button" className="mt-3 w-full" disabled={advBusy} onClick={askAdvance}>
-          {advBusy ? "Đang gửi…" : t("Gửi yêu cầu ứng tiền", "send request")}
+        <Button
+          type="button"
+          className="mt-3 w-full bg-violet-600 hover:bg-violet-700"
+          disabled={advBusy}
+          onClick={askAdvance}
+        >
+          {advBusy ? "Đang gửi…" : t("Gửi yêu cầu", "send request")}
         </Button>
 
         {myAdvances.length > 0 && (
@@ -514,19 +518,20 @@ function Cell({
   label,
   value,
   strong,
-  tone,
+  tone = "slate",
 }: {
   label: string;
   value: number;
   strong?: boolean;
-  tone?: "amber" | "emerald";
+  tone?: "amber" | "emerald" | "sky" | "slate";
 }) {
-  const toneClass =
-    tone === "amber"
-      ? "border-amber-200 bg-amber-50 text-amber-900"
-      : tone === "emerald"
-        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-        : "border-slate-200 bg-slate-50 text-slate-900";
+  const toneClass = {
+    amber: "border-amber-300 bg-amber-100 text-amber-900",
+    emerald: "border-emerald-300 bg-emerald-100 text-emerald-900",
+    sky: "border-sky-200 bg-sky-50 text-sky-900",
+    slate: "border-slate-200 bg-white text-slate-900",
+  }[tone];
+
   return (
     <div className={"rounded-xl border px-3 py-2.5 " + toneClass}>
       <div className="text-xs opacity-70">{label}</div>

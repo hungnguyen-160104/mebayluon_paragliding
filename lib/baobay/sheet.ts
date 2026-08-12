@@ -73,17 +73,41 @@ export async function pushBaobayRow(
     return { ok: false, error: "Điểm bay này chưa khai bảng Google Sheets" };
   }
 
+  const payload = JSON.stringify({
+    secret: dest.secret,
+    kind,
+    // Tab tuỳ ý (thẻ riêng của từng phi công theo tháng), script tự tạo nếu chưa có.
+    sheet: sheetName || SHEET_NAME[kind],
+    row,
+  });
+
+  /**
+   * Gọi HAI lần nếu lần đầu hỏng.
+   *
+   * Apps Script lúc "nguội" (một hồi không ai gọi) thỉnh thoảng trả 404 kèm
+   * trang HTML thay vì chạy script — đo trên bảng Hà Nội: 1/3 lần đầu hỏng,
+   * gọi lại ngay sau đó thì được. Không phải lỗi cấu hình, chỉ là Google đánh
+   * thức chậm. Chỉ thử lại với lỗi TẠM THỜI: mã bảo vệ sai hay script báo lỗi
+   * nghiệp vụ thì gọi lại bao nhiêu lần cũng thế.
+   */
+  const attempt = await pushOnce(dest.url, payload);
+  if (attempt.ok || !attempt.retryable) return { ok: attempt.ok, error: attempt.error };
+
+  await new Promise((r) => setTimeout(r, 1_500));
+  const again = await pushOnce(dest.url, payload);
+  return { ok: again.ok, error: again.ok ? undefined : `${again.error} (đã thử lại 1 lần)` };
+}
+
+/** Một lần gọi. `retryable` = hỏng kiểu tạm thời, gọi lại có cơ may được. */
+async function pushOnce(
+  url: string,
+  payload: string,
+): Promise<{ ok: boolean; error?: string; retryable?: boolean }> {
   try {
-    const res = await fetch(dest.url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        secret: dest.secret,
-        kind,
-        // Tab tuỳ ý (thẻ riêng của từng phi công theo tháng), script tự tạo nếu chưa có.
-        sheet: sheetName || SHEET_NAME[kind],
-        row,
-      }),
+      body: payload,
       /**
        * 25 giây, không phải 15.
        *
@@ -96,7 +120,7 @@ export async function pushBaobayRow(
       signal: AbortSignal.timeout(25_000),
     });
 
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}`, retryable: true };
 
     /**
      * PHẢI đọc nội dung trả về, không được chỉ nhìn mã HTTP: Apps Script luôn
@@ -109,7 +133,8 @@ export async function pushBaobayRow(
     try {
       body = JSON.parse(text);
     } catch {
-      return { ok: false, error: `Trả về không phải JSON: ${text.slice(0, 120)}` };
+      // Trả về HTML = Google chặn/đánh thức chậm, không phải script báo lỗi
+      return { ok: false, error: `Trả về không phải JSON: ${text.slice(0, 120)}`, retryable: true };
     }
 
     if (body.ok !== true) {
@@ -122,6 +147,7 @@ export async function pushBaobayRow(
 
     return { ok: true };
   } catch (e: unknown) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    // Hết giờ chờ hoặc đứt mạng — đáng thử lại
+    return { ok: false, error: e instanceof Error ? e.message : String(e), retryable: true };
   }
 }
