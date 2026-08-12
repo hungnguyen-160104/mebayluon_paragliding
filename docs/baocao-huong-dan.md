@@ -314,7 +314,14 @@ lại của website:
   cùng một câu.
 - **Phiên tách hẳn khu admin website**: token mang `scope: "baobay"`; token khu
   admin không mở được dữ liệu báo cáo và ngược lại.
-- Đường cũ `/baobay` chuyển 308 sang `/baocao` để bookmark cũ không gãy.
+- Đường cũ `/baobay` đã **xoá hẳn** — trả 404 như trang không tồn tại, không
+  chuyển hướng, không hé lộ là từng có gì ở đó.
+- `/baocao` **cố ý không nằm trong robots.txt**: liệt kê ở đó là tự chỉ điểm,
+  và Disallow còn khiến bot không bao giờ đọc được lệnh noindex. Header
+  `X-Robots-Tag` (khai ở next.config.mjs, phủ cả trang lẫn API) mới là lớp chặn
+  index thật.
+- **Không tự xoá / tự khoá / tự hạ vai trò chính mình** — và không xoá được
+  quản trị cấp 1 đang hoạt động cuối cùng, để hệ thống không bao giờ tự khoá trái.
 
 **Rủi ro đã biết, chủ hệ thống chấp nhận**: mật khẩu được lưu thêm bản đọc được
 để quản trị tra lại. Lộ cơ sở dữ liệu là lộ mật khẩu. Trường này không bao giờ

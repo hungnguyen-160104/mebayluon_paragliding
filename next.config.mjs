@@ -79,6 +79,24 @@ const nextConfig = {
   // Headers for caching
   async headers() {
     return [
+      /**
+       * Khu báo cáo nội bộ: chặn index + không cache + chống nhúng khung.
+       *
+       * Khai ở ĐÂY chứ không chỉ trong middleware.ts: matcher của middleware
+       * loại trừ /api nên header khai bên đó không bao giờ chạm tới API. Khối
+       * này phủ cả ba prefix, middleware chỉ còn lo phần chuyển hướng đăng nhập.
+       */
+      ...['/baocao/:path*', '/baocao', '/api/baocao/:path*', '/api/admin/baocao/:path*'].map((source) => ({
+        source,
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+        ],
+      })),
       // Static images — cache 1 năm
       {
         source: '/images/:path*',

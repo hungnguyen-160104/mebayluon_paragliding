@@ -362,7 +362,7 @@ export type UpdateAccountInput = {
 export async function updateAccount(
   id: string,
   patch: UpdateAccountInput,
-  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
+  by?: { username: string; role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true; account: BaobayAccountDTO } | { ok: false; error: string }> {
   await connectDB();
 
@@ -373,14 +373,31 @@ export async function updateAccount(
    * mình — và cũng không tự phong ai lên quản trị. Nếu không chặn, cấp 2 chỉ
    * cần đổi vai trò một tài khoản thường thành "admin" là leo thang quyền.
    */
-  if (by && !isFullAdmin(by)) {
+  if (by) {
     const target = await BaobayAccount.findById(id).select("role username").lean<any>();
     if (!target) return { ok: false, error: "Không tìm thấy tài khoản" };
-    if (target.role === "admin") {
-      return { ok: false, error: "Quản trị cấp 2 không được sửa tài khoản quản trị" };
+
+    /**
+     * Với CHÍNH MÌNH: không tự khoá và không tự bỏ vai trò quản trị. Hai đường
+     * này đều kết thúc bằng cảnh không ai còn quyền vào sửa — đổi mật khẩu của
+     * mình thì vẫn được, làm ở trang riêng.
+     */
+    if (target.username === by.username) {
+      if (patch.isActive === false) {
+        return { ok: false, error: "Không thể tự khoá tài khoản của chính mình" };
+      }
+      if (patch.role !== undefined && patch.role !== "admin" && target.role === "admin") {
+        return { ok: false, error: "Không thể tự bỏ vai trò quản trị của chính mình" };
+      }
     }
-    if (patch.role === "admin") {
-      return { ok: false, error: "Quản trị cấp 2 không được phong người khác làm quản trị" };
+
+    if (!isFullAdmin(by)) {
+      if (target.role === "admin") {
+        return { ok: false, error: "Quản trị cấp 2 không được sửa tài khoản quản trị" };
+      }
+      if (patch.role === "admin") {
+        return { ok: false, error: "Quản trị cấp 2 không được phong người khác làm quản trị" };
+      }
     }
   }
 
@@ -436,7 +453,7 @@ export async function updateAccount(
 export async function deleteAccount(
   id: string,
   confirmUsername: string,
-  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
+  by?: { username: string; role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<
   | { ok: true; username: string; deleted: { pilot: number; dispatcher: number; cameraman: number } }
   | { ok: false; error: string }
@@ -448,8 +465,33 @@ export async function deleteAccount(
   const account = await BaobayAccount.findById(id).lean<AccountDoc | null>();
   if (!account) return { ok: false, error: "Không tìm thấy tài khoản" };
 
+  /**
+   * Không ai tự xoá được chính mình — kể cả quản trị cấp 1. Đã xảy ra thật:
+   * chủ hệ thống bấm nhầm và tự xoá tài khoản gốc, phải vào thẳng cơ sở dữ
+   * liệu dựng lại. Muốn xoá thì nhờ quản trị khác làm.
+   */
+  if (by && account.username === by.username) {
+    return { ok: false, error: "Không thể tự xoá tài khoản của chính mình — nhờ quản trị khác thao tác" };
+  }
+
   if (account.role === "admin" && by && !isFullAdmin(by)) {
     return { ok: false, error: "Quản trị cấp 2 không được xoá tài khoản quản trị" };
+  }
+
+  /**
+   * Không xoá quản trị CẤP 1 đang hoạt động cuối cùng: mất người này là không
+   * còn ai đổi được cấu hình hay lập quản trị mới — hệ thống tự khoá trái.
+   */
+  if (account.role === "admin" && account.adminLevel === 1) {
+    const otherFull = await BaobayAccount.countDocuments({
+      _id: { $ne: account._id },
+      role: "admin",
+      adminLevel: 1,
+      isActive: true,
+    });
+    if (!otherFull) {
+      return { ok: false, error: "Đây là quản trị cấp 1 cuối cùng — phải có người thay trước khi xoá" };
+    }
   }
 
   /**

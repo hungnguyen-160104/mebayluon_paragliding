@@ -4,17 +4,19 @@ User-agent: *
 Allow: /
 Allow: /manifest.json
 Disallow: /admin/
-Disallow: /baocao
-Disallow: /baobay
 Disallow: /api/
 Disallow: /*.json$
 
 # /booking va /pre-notice DA MO index tro lai — chi khu /admin bi chan.
 # Trang admin con duoc chan them bang header X-Robots-Tag trong middleware.ts
-# /baobay la khu nhap lieu noi bo cua phi cong va quay ve — chan ca trang goc
-# nen viet "Disallow: /baocao
-Disallow: /baobay" (khong co dau / o cuoi) de chan luon /baobay va
-# moi duong dan con.
+
+# Khu bao cao noi bo (/baocao) CO Y KHONG liet ke o day. Hai ly do:
+# 1. robots.txt ai cung doc duoc — ghi vao la tu chi diem "cho nay co gi hay".
+# 2. Disallow chi cam BOT DOC trang, khong cam Google index URL tran khi co
+#    link tro toi; ma da cam doc thi bot khong bao gio thay lenh noindex.
+# Trang va API cua khu do tu gui header "X-Robots-Tag: noindex" (next.config.mjs
+# + middleware.ts) — bot doc duoc, thay lenh cam, va khong index. Dung them
+# dong Disallow /baocao vao day.
 
 # Block bad bots
 User-agent: AhrefsBot

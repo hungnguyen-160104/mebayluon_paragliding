@@ -74,41 +74,25 @@ export function middleware(request: NextRequest) {
   }
 
   /**
-   * Đường cũ /baobay -> /baocao. Nhân sự đã lưu bookmark, và đường cũ từng chạy
-   * trên production nên phải giữ lối chuyển, đừng để ai gặp trang 404.
-   */
-  if (pathname === "/baobay" || pathname.startsWith("/baobay/")) {
-    const url = request.nextUrl.clone();
-    url.pathname = pathname.replace(/^\/baobay/, "/baocao");
-    return NextResponse.redirect(url, 308);
-  }
-
-  /**
-   * Khu báo cáo nội bộ (/baocao): phi công, điều phối, camera man và kế toán
-   * nhập số liệu hằng ngày. Dữ liệu ở đây là tiền và nhân sự — nhạy cảm hơn hẳn
-   * phần còn lại của website, nên siết thêm mấy lớp:
+   * Khu báo cáo nội bộ (/baocao): dữ liệu tiền và nhân sự.
    *
-   * - `noindex, nofollow` cho công cụ tìm kiếm (robots.txt và metadata trang là
-   *   hai lớp còn lại — bot nào bỏ qua robots.txt vẫn vướng header này).
-   * - `no-store`: máy ở quầy vé và điện thoại phi công dùng chung nhiều người,
-   *   không để trang có số liệu nằm lại trong bộ nhớ đệm trình duyệt hay CDN.
-   * - Cấm nhúng trong iframe (chống clickjacking) và không rò địa chỉ trang
-   *   sang site khác qua Referer.
-   * - Chưa có cookie phiên thì đưa thẳng về trang đăng nhập, khỏi nháy một nhịp
-   *   trang trắng rồi mới chuyển bằng JavaScript.
+   * Đường cũ /baobay đã XOÁ HẲN theo yêu cầu chủ hệ thống — không chuyển hướng,
+   * để 404 tự nhiên như mọi trang không tồn tại, không hé lộ là từng có gì ở đó.
+   *
+   * LƯU Ý matcher ở cuối tệp LOẠI TRỪ /api — nhánh này chỉ chạy cho TRANG.
+   * Header bảo mật cho /api/baocao/* nằm ở next.config.mjs (headers()), đừng
+   * thêm điều kiện /api vào đây rồi tưởng là xong: nó không bao giờ chạy.
    *
    * Ở đây CHỈ kiểm cookie có tồn tại hay không, KHÔNG xác thực chữ ký: Edge
    * runtime không chạy được jsonwebtoken. Cửa thật nằm ở các route handler
    * (middlewares/requireBaobay.ts) — cookie giả vào được trang nhưng không đọc
    * hay ghi được một dòng dữ liệu nào.
    */
-  if (pathname === "/baocao" || pathname.startsWith("/baocao/") || pathname.startsWith("/api/baocao/")) {
+  if (pathname === "/baocao" || pathname.startsWith("/baocao/")) {
     const isLoginPage = pathname === "/baocao" || pathname === "/baocao/";
-    const isApi = pathname.startsWith("/api/");
     const hasSession = Boolean(request.cookies.get(BAOBAY_COOKIE)?.value);
 
-    // API tự trả 401 gọn gàng; chỉ chuyển hướng phần TRANG
-    if (!isApi && !isLoginPage && !hasSession) {
+    if (!isLoginPage && !hasSession) {
       const url = request.nextUrl.clone();
       url.pathname = "/baocao";
       return internalHeaders(NextResponse.redirect(url));
