@@ -4,7 +4,7 @@ import mongoose, { Schema } from "mongoose";
 import { BAOBAY_ROLES, DEFAULT_SPOT, type BaobayRole } from "@/lib/baobay/roles";
 
 /**
- * Tài khoản đăng nhập trang báo bay (/baobay).
+ * Tài khoản đăng nhập trang báo bay (/baocao).
  *
  * Không dùng chung với models/User.model.ts: User là tài khoản quản trị
  * website (đăng bài, xem booking), còn đây là nhân sự vận hành điểm bay —
@@ -25,11 +25,19 @@ export interface IBaobayAccount {
    * Đây là quyết định nghiệp vụ có đánh đổi an toàn (lộ database là lộ mật
    * khẩu, nhân viên có thể dùng lại mật khẩu cá nhân) — đã nêu rủi ro và chủ
    * hệ thống chấp nhận. Trường này CHỈ được trả ra ở API quản trị
-   * (/api/admin/baobay/*), tuyệt đối không đi qua các API /api/baobay/*.
+   * (/api/admin/baocao/*), tuyệt đối không đi qua các API /api/baocao/*.
    */
   passwordPlain?: string;
   displayName: string;
   role: BaobayRole;
+  /**
+   * Cấp quản trị (chỉ dùng khi role = "admin"):
+   *   1 = toàn quyền — đổi cấu hình điểm bay và lập được tài khoản quản trị khác
+   *   2 = quản trị hạn chế — quản nhân sự thường, không đụng hai việc trên
+   * Mặc định 2: tài khoản quản trị mới sinh ra luôn là cấp 2, muốn nâng cấp 1
+   * phải sửa thẳng trong cơ sở dữ liệu.
+   */
+  adminLevel: 1 | 2;
   email?: string;
   phone?: string;
   /**
@@ -39,6 +47,10 @@ export interface IBaobayAccount {
    */
   spots: string[];
   isActive: boolean;
+  /** Số lần nhập sai mật khẩu LIÊN TIẾP; đăng nhập đúng là về 0. */
+  failedLogins: number;
+  /** Khoá tạm tới thời điểm này vì sai quá nhiều lần (chống dò mật khẩu). */
+  lockedUntil?: Date;
   mustChangePassword: boolean;
   lastLoginAt?: Date;
   note?: string;
@@ -60,10 +72,13 @@ const BaobayAccountSchema = new Schema<IBaobayAccount>(
     passwordPlain: String,
     displayName: { type: String, required: true, trim: true },
     role: { type: String, enum: BAOBAY_ROLES, required: true, index: true },
+    adminLevel: { type: Number, enum: [1, 2], default: 2 },
     email: { type: String, trim: true, lowercase: true },
     phone: { type: String, trim: true },
     spots: { type: [String], default: [DEFAULT_SPOT] },
     isActive: { type: Boolean, default: true, index: true },
+    failedLogins: { type: Number, default: 0 },
+    lockedUntil: Date,
     mustChangePassword: { type: Boolean, default: true },
     lastLoginAt: Date,
     note: String,

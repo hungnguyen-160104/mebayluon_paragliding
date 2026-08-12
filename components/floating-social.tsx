@@ -16,14 +16,14 @@ export function FloatingSocial() {
     useChatbot();
 
   /**
-   * Khu báo bay nội bộ (/baobay) không hiện cụm nút Zalo/chatbot.
+   * Khu báo bay nội bộ (/baocao) không hiện cụm nút Zalo/chatbot.
    *
    * Cụm này `fixed right-6 bottom-6 z-50`, đè lên nút "Lưu báo cáo" dính đáy
    * của form nhập liệu trên điện thoại. Người dùng ở đó là nhân viên, không
    * cần kênh nhắn tin dành cho khách.
    */
   const pathname = usePathname();
-  if (pathname?.startsWith("/baobay")) return null;
+  if (pathname?.startsWith("/baocao")) return null;
 
   // Các mạng xã hội sẵn có
   const socialLinks = [

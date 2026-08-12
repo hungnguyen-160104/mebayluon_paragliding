@@ -36,7 +36,7 @@ export function verifyToken(token: string): JwtPayload & TokenPayload {
   /**
    * Chặn token của khu khác dùng làm token admin.
    *
-   * Trang báo bay (/baobay) ký token bằng CÙNG JWT_SECRET và cũng có trường
+   * Trang báo bay (/baocao) ký token bằng CÙNG JWT_SECRET và cũng có trường
    * `username`, nên nếu không kiểm `scope` thì cookie của một phi công sẽ đi
    * qua requireAuth và mở được toàn bộ API admin. Token admin do signToken()
    * tạo ra không có `scope`, vì vậy chỉ cần từ chối mọi token CÓ scope khác

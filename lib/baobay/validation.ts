@@ -201,6 +201,8 @@ export const dailyCloseSchema = z.object({
 export const handoverSchema = z.object({
   spot: spotField,
   date: reportDate,
+  /** "handover" = đưa tiền · "advance" = xin ứng tiền. */
+  kind: z.enum(["handover", "advance"]).default("handover"),
   /** Tài khoản người nhận — bắt buộc chọn; máy chủ kiểm lại vai trò và điểm bay. */
   recipientUsername: z.string().trim().min(1, "Chưa chọn người nhận tiền"),
   amount: money.refine((v) => v > 0, "Chưa nhập số tiền"),

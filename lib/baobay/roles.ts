@@ -1,6 +1,6 @@
 // lib/baobay/roles.ts
 /**
- * Bốn nhóm nhân sự trong hệ thống báo bay (/baobay):
+ * Bốn nhóm nhân sự trong hệ thống báo bay (/baocao):
  *
  *  - pilot      : PHI CÔNG — số chuyến bay, mã vé đã bay, Camera360, chi tiêu
  *  - dispatcher : ĐIỀU PHỐI BAY — vé xuất/thu, tiền mặt, dịch vụ gia tăng, chi cho khách
@@ -33,12 +33,12 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
  * nhập số tổng và soát lệch, còn bảng tổng hợp là thứ xem theo kỳ.
  */
 export const ROLE_HOME: Record<BaobayRole, string> = {
-  pilot: "/baobay/phi-cong",
-  dispatcher: "/baobay/dieu-phoi",
-  cameraman: "/baobay/camera",
-  accountant: "/baobay/chot-ngay",
-  /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baobay. */
-  admin: "/baobay/admin",
+  pilot: "/baocao/phi-cong",
+  dispatcher: "/baocao/dieu-phoi",
+  cameraman: "/baocao/camera",
+  accountant: "/baocao/chot-ngay",
+  /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
+  admin: "/baocao/admin",
 };
 
 export function isBaobayRole(value: unknown): value is BaobayRole {

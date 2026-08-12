@@ -74,32 +74,47 @@ export function middleware(request: NextRequest) {
   }
 
   /**
-   * Khu báo bay nội bộ (/baobay): phi công và quầy vé nhập số liệu hằng ngày.
+   * Đường cũ /baobay -> /baocao. Nhân sự đã lưu bookmark, và đường cũ từng chạy
+   * trên production nên phải giữ lối chuyển, đừng để ai gặp trang 404.
+   */
+  if (pathname === "/baobay" || pathname.startsWith("/baobay/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/baobay/, "/baocao");
+    return NextResponse.redirect(url, 308);
+  }
+
+  /**
+   * Khu báo cáo nội bộ (/baocao): phi công, điều phối, camera man và kế toán
+   * nhập số liệu hằng ngày. Dữ liệu ở đây là tiền và nhân sự — nhạy cảm hơn hẳn
+   * phần còn lại của website, nên siết thêm mấy lớp:
    *
-   * - noindex như khu admin (robots.txt và metadata của trang là hai lớp còn lại).
-   * - Chưa có cookie phiên thì đưa thẳng về trang đăng nhập, khỏi phải nháy một
-   *   nhịp trang trắng rồi mới chuyển bằng JavaScript.
+   * - `noindex, nofollow` cho công cụ tìm kiếm (robots.txt và metadata trang là
+   *   hai lớp còn lại — bot nào bỏ qua robots.txt vẫn vướng header này).
+   * - `no-store`: máy ở quầy vé và điện thoại phi công dùng chung nhiều người,
+   *   không để trang có số liệu nằm lại trong bộ nhớ đệm trình duyệt hay CDN.
+   * - Cấm nhúng trong iframe (chống clickjacking) và không rò địa chỉ trang
+   *   sang site khác qua Referer.
+   * - Chưa có cookie phiên thì đưa thẳng về trang đăng nhập, khỏi nháy một nhịp
+   *   trang trắng rồi mới chuyển bằng JavaScript.
    *
    * Ở đây CHỈ kiểm cookie có tồn tại hay không, KHÔNG xác thực chữ ký: Edge
    * runtime không chạy được jsonwebtoken. Cửa thật nằm ở các route handler
    * (middlewares/requireBaobay.ts) — cookie giả vào được trang nhưng không đọc
    * hay ghi được một dòng dữ liệu nào.
    */
-  if (pathname === "/baobay" || pathname.startsWith("/baobay/")) {
-    const isLoginPage = pathname === "/baobay" || pathname === "/baobay/";
+  if (pathname === "/baocao" || pathname.startsWith("/baocao/") || pathname.startsWith("/api/baocao/")) {
+    const isLoginPage = pathname === "/baocao" || pathname === "/baocao/";
+    const isApi = pathname.startsWith("/api/");
     const hasSession = Boolean(request.cookies.get(BAOBAY_COOKIE)?.value);
 
-    if (!isLoginPage && !hasSession) {
+    // API tự trả 401 gọn gàng; chỉ chuyển hướng phần TRANG
+    if (!isApi && !isLoginPage && !hasSession) {
       const url = request.nextUrl.clone();
-      url.pathname = "/baobay";
-      const response = NextResponse.redirect(url);
-      response.headers.set("X-Robots-Tag", "noindex, nofollow");
-      return response;
+      url.pathname = "/baocao";
+      return internalHeaders(NextResponse.redirect(url));
     }
 
-    const response = NextResponse.next();
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    return response;
+    return internalHeaders(NextResponse.next());
   }
 
   const localeMatch = pathname.match(LOCALE_PREFIX);
@@ -186,3 +201,19 @@ export const config = {
    */
   matcher: ["/((?!api|_next/static|_next/image|favicon\\.ico|.*\\..*).*)"],
 };
+
+/**
+ * Bộ header cho khu nội bộ /baocao.
+ *
+ * Tách hàm vì phải gắn cho CẢ hai lối ra (chuyển hướng và đi tiếp) — quên một
+ * lối là rò đúng cái trang mình đang muốn giấu.
+ */
+function internalHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  return response;
+}

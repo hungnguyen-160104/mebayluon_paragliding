@@ -3,7 +3,7 @@
  * Đẩy báo cáo hằng ngày sang bảng Google Sheets của kế toán.
  *
  * Dùng lại cách của lib/pilot-sheet.ts: Apps Script webhook, không cần bật
- * Google API cũng không cần file khoá JSON. Xem docs/baobay-apps-script.md để
+ * Google API cũng không cần file khoá JSON. Xem docs/baocao-apps-script.md để
  * lấy script và cách deploy.
  *
  * Khác một điểm quan trọng: báo cáo báo bay được SỬA LẠI (phi công báo thiếu
@@ -16,7 +16,7 @@
  * `sheetSynced: false` kèm lý do trong `sheetError` để còn bù sau.
  */
 
-export type BaobaySheetKind = "pilot" | "dispatcher" | "cameraman" | "close" | "handover";
+export type BaobaySheetKind = "pilot" | "dispatcher" | "cameraman" | "close" | "handover" | "advance";
 
 /**
  * Tab mặc định cho từng loại báo cáo.
@@ -32,6 +32,7 @@ const SHEET_NAME: Record<BaobaySheetKind, string> = {
   cameraman: "Camera man",
   close: "Chốt ngày",
   handover: "Giao tiền",
+  advance: "Ứng tiền",
 };
 
 export type SheetPushResult = { ok: boolean; error?: string };

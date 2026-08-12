@@ -6,7 +6,7 @@ import mongoose, { Schema } from "mongoose";
  *
  * `submitDeadline` ("HH:mm", giờ Việt Nam): mốc phi công phải CHỐT báo cáo
  * trong ngày. Chốt lần đầu sau mốc này (và có chuyến bay) là bị ghi phạt
- * 200.000đ. Admin đổi giờ ở /admin/baobay và CÓ HIỆU LỰC NGAY: mỗi lần phi
+ * 200.000đ. Admin đổi giờ ở /admin/baocao và CÓ HIỆU LỰC NGAY: mỗi lần phi
  * công bấm chốt, máy chủ đọc giá trị mới nhất từ đây chứ không cache.
  *
  * Chỉ tính giờ CHỐT, không tính giờ sửa: đã chốt kịp giờ một lần thì sửa lại

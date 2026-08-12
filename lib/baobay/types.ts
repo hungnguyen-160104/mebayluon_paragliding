@@ -2,7 +2,7 @@
 /**
  * Kiểu dữ liệu đi qua API báo bay, dùng cho CẢ máy chủ và trình duyệt.
  *
- * File này cố ý không import mongoose: các trang trong app/baobay là client
+ * File này cố ý không import mongoose: các trang trong app/baocao là client
  * component, import gián tiếp vào model sẽ kéo cả driver MongoDB vào bundle.
  * Vì thế các kiểu dùng chung (dải mã vé, vé dời lịch, khoản chi) định nghĩa ở
  * ĐÂY, còn model trong models/ thì `import type` về dùng.
@@ -44,6 +44,8 @@ export type DiploEntryDTO = { codes: string[]; amount: number };
  */
 export type HandoverDTO = {
   id: string;
+  /** "handover" = đưa tiền cho quản lý · "advance" = xin ứng tiền. */
+  kind: "handover" | "advance";
   spot: string;
   date: string;
   username: string;
@@ -255,7 +257,12 @@ export type DailyRollupDTO = {
   dispatcherTransfer: number;
   dispatcherFlycam: number;
   cameramanFlycam: number;
+  /** Khách ngoại giao PHI CÔNG khai đã bay. */
   diplomaticGuests: number;
+  /** Số VÉ ngoại giao quầy xuất ra (điều phối khai) — số dùng để đối chiếu. */
+  diplomaticTickets: number;
+  /** Tiền THU ĐƯỢC từ khách ngoại giao (điều phối khai theo từng mã). */
+  diplomaticAmount: number;
   redFlag: number;
 
   /** Tổng chi tiêu mọi nhân sự khai trong ngày. */
@@ -281,6 +288,8 @@ export type PilotPeriodTotalDTO = {
   expenseTotal: number;
   /** Tổng phạt nộp muộn trong kỳ (200k/lần chốt muộn). */
   latePenalty: number;
+  /** Tiền đã ứng và ĐƯỢC DUYỆT trong kỳ — trừ vào lương cuối tháng. */
+  advanceTotal: number;
 };
 
 export type BaobaySummaryDTO = {
@@ -322,6 +331,8 @@ export type MonthlyTotalsDTO = {
   expenseTotal: number;
   /** Phạt nộp muộn (200k/lần chốt sau giờ quy định). */
   latePenalty: number;
+  /** Tiền ứng đã được duyệt trong tháng — trừ vào lương. */
+  advanceTotal: number;
 };
 
 export type MonthlyDayCellDTO = MonthlyTotalsDTO & {

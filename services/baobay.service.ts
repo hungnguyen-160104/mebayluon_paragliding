@@ -92,30 +92,71 @@ export function normalizeUsername(raw: unknown): string {
     .replace(/\s+/g, "");
 }
 
-export async function authenticateBaobay(
-  usernameRaw: string,
-  password: string,
-): Promise<AccountDoc | null> {
+/** Sai quá số lần này thì khoá tạm — đủ rộng cho người gõ nhầm, đủ chặt với máy dò. */
+const MAX_FAILED_LOGINS = 8;
+/** Khoá tạm bao lâu sau khi vượt ngưỡng. */
+const LOGIN_LOCK_MINUTES = 15;
+
+export type LoginResult =
+  | { ok: true; account: AccountDoc }
+  | { ok: false; reason: "wrong" }
+  | { ok: false; reason: "locked"; minutes: number };
+
+/**
+ * Kiểm tài khoản + mật khẩu, có chống dò mật khẩu.
+ *
+ * Đếm số lần sai LIÊN TIẾP trong cơ sở dữ liệu chứ không đếm trong bộ nhớ tiến
+ * trình: máy chủ chạy nhiều bản (serverless), đếm trong RAM thì kẻ dò chỉ cần
+ * gọi rải ra là thoát. Sai quá ngưỡng thì khoá tạm 15 phút; đăng nhập đúng là
+ * xoá sạch bộ đếm.
+ *
+ * Vẫn KHÔNG phân biệt "sai mật khẩu" với "không có tài khoản" ở tầng trên —
+ * tránh để người ngoài dò ra danh sách tài khoản.
+ */
+export async function authenticateBaobay(usernameRaw: string, password: string): Promise<LoginResult> {
   await connectDB();
 
   const username = normalizeUsername(usernameRaw);
-  if (!username || !password) return null;
+  if (!username || !password) return { ok: false, reason: "wrong" };
 
   const account = await BaobayAccount.findOne({ username }).lean<AccountDoc | null>();
-  if (!account) return null;
+  if (!account) return { ok: false, reason: "wrong" };
 
-  // Tài khoản bị khoá: coi như sai mật khẩu, không nói rõ lý do ở trang đăng nhập.
-  if (!account.isActive) return null;
+  // Tài khoản bị khoá hẳn: coi như sai mật khẩu, không nói rõ lý do.
+  if (!account.isActive) return { ok: false, reason: "wrong" };
+
+  const lockedUntil = account.lockedUntil ? new Date(account.lockedUntil) : null;
+  if (lockedUntil && lockedUntil > new Date()) {
+    return {
+      ok: false,
+      reason: "locked",
+      minutes: Math.max(1, Math.ceil((lockedUntil.getTime() - Date.now()) / 60_000)),
+    };
+  }
 
   const ok = await bcrypt.compare(password, account.passwordHash);
-  if (!ok) return null;
+
+  if (!ok) {
+    const failed = (account.failedLogins || 0) + 1;
+    const set: Record<string, unknown> = { failedLogins: failed };
+    if (failed >= MAX_FAILED_LOGINS) {
+      set.lockedUntil = new Date(Date.now() + LOGIN_LOCK_MINUTES * 60_000);
+      set.failedLogins = 0;
+    }
+    await BaobayAccount.updateOne({ _id: account._id }, { $set: set });
+
+    return failed >= MAX_FAILED_LOGINS
+      ? { ok: false, reason: "locked", minutes: LOGIN_LOCK_MINUTES }
+      : { ok: false, reason: "wrong" };
+  }
 
   // Không await: cập nhật lần đăng nhập cuối chỉ để tiện theo dõi.
-  BaobayAccount.updateOne({ _id: account._id }, { $set: { lastLoginAt: new Date() } }).catch((e) =>
-    console.warn("[baobay] không ghi được lastLoginAt:", e?.message),
-  );
+  BaobayAccount.updateOne(
+    { _id: account._id },
+    { $set: { lastLoginAt: new Date(), failedLogins: 0 }, $unset: { lockedUntil: "" } },
+  ).catch((e) => console.warn("[baobay] không ghi được lastLoginAt:", e?.message));
 
-  return account;
+  return { ok: true, account };
 }
 
 export function toSession(account: AccountDoc): BaobaySession {
@@ -127,7 +168,42 @@ export function toSession(account: AccountDoc): BaobaySession {
     role: account.role,
     // Chưa được chỉ định điểm nào thì cho điểm mặc định, khỏi kẹt cứng không làm được gì
     spots: spots.length ? spots : [DEFAULT_SPOT],
+    adminLevel: account.role === "admin" ? (account.adminLevel === 1 ? 1 : 2) : undefined,
   };
+}
+
+/* ================================================================== */
+/* Hai cấp quản trị                                                    */
+/* ================================================================== */
+
+/**
+ * Quản trị TOÀN QUYỀN hay không.
+ *
+ * Cấp 1 mới được đổi cấu hình điểm bay (giờ chốt, webhook Sheets) và lập/sửa/xoá
+ * tài khoản quản trị khác. Cấp 2 quản nhân sự thường là hết. Token quản trị
+ * WEBSITE (viaAdmin) coi như cấp 1: đó là chủ site.
+ *
+ * Mặc định của mọi chỗ nghi ngờ là KHÔNG toàn quyền.
+ */
+export function isFullAdmin(session: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean }): boolean {
+  if (session.viaAdmin) return true;
+  return session.role === "admin" && session.adminLevel === 1;
+}
+
+export class BaobayForbidden extends BaobayError {
+  constructor(message: string) {
+    super(message, 403);
+  }
+}
+
+/** Ném lỗi 403 nếu không phải quản trị cấp 1. */
+export function assertFullAdmin(
+  session: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
+  what: string,
+): void {
+  if (!isFullAdmin(session)) {
+    throw new BaobayForbidden(`Quản trị cấp 2 không được ${what} — việc này thuộc quản trị cấp 1`);
+  }
 }
 
 /**
@@ -204,8 +280,18 @@ function normalizeEmail(raw: unknown): { ok: true; email: string } | { ok: false
 
 export async function createAccount(
   input: CreateAccountInput,
+  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true; account: BaobayAccountDTO } | { ok: false; error: string }> {
   await connectDB();
+
+  /**
+   * Chỉ quản trị cấp 1 mới đẻ ra được tài khoản quản trị, và con đẻ ra luôn là
+   * CẤP 2. Muốn có thêm một người toàn quyền thì phải sửa thẳng cơ sở dữ liệu —
+   * cố ý làm khó, vì cấp 1 nắm cấu hình Sheets và toàn bộ nhân sự.
+   */
+  if (input.role === "admin" && by && !isFullAdmin(by)) {
+    return { ok: false, error: "Quản trị cấp 2 không được lập tài khoản quản trị khác" };
+  }
 
   const username = normalizeUsername(input.username);
   if (username.length < 3) return { ok: false, error: "Tên đăng nhập phải từ 3 ký tự" };
@@ -218,6 +304,7 @@ export async function createAccount(
   const existed = await BaobayAccount.exists({ username });
   if (existed) return { ok: false, error: `Tên đăng nhập “${username}” đã có người dùng` };
 
+
   const email = normalizeEmail(input.email);
   if (!email.ok) return { ok: false, error: email.error };
 
@@ -227,6 +314,8 @@ export async function createAccount(
     passwordPlain: input.password,
     displayName: input.displayName.trim(),
     role: input.role,
+    // Quản trị mới luôn là cấp 2; nâng lên cấp 1 phải sửa thẳng cơ sở dữ liệu
+    adminLevel: 2,
     email: email.email || undefined,
     phone: input.phone?.trim() || undefined,
     spots: normalizeSpotList(input.spots).length ? normalizeSpotList(input.spots) : [DEFAULT_SPOT],
@@ -238,10 +327,21 @@ export async function createAccount(
   return { ok: true, account: toAccountDTO(doc.toObject() as AccountDoc) };
 }
 
-export async function listAccounts(): Promise<BaobayAccountDTO[]> {
+export async function listAccounts(by?: {
+  role: BaobayRole;
+  adminLevel?: 1 | 2;
+  viaAdmin?: boolean;
+}): Promise<BaobayAccountDTO[]> {
   await connectDB();
   const docs = await BaobayAccount.find({}).sort({ role: 1, displayName: 1 }).lean<AccountDoc[]>();
-  return docs.map(toAccountDTO);
+  const full = !by || isFullAdmin(by);
+
+  return docs.map((doc) => {
+    const dto = toAccountDTO(doc);
+    // Cấp 2 thấy có tài khoản quản trị nào, nhưng KHÔNG thấy mật khẩu của họ
+    if (!full && doc.role === "admin") return { ...dto, password: "••••••" };
+    return dto;
+  });
 }
 
 export type UpdateAccountInput = {
@@ -259,10 +359,27 @@ export type UpdateAccountInput = {
 export async function updateAccount(
   id: string,
   patch: UpdateAccountInput,
+  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true; account: BaobayAccountDTO } | { ok: false; error: string }> {
   await connectDB();
 
   if (!mongoose.Types.ObjectId.isValid(id)) return { ok: false, error: "Mã tài khoản không hợp lệ" };
+
+  /**
+   * Quản trị cấp 2 không đụng được vào tài khoản quản trị nào — kể cả của chính
+   * mình — và cũng không tự phong ai lên quản trị. Nếu không chặn, cấp 2 chỉ
+   * cần đổi vai trò một tài khoản thường thành "admin" là leo thang quyền.
+   */
+  if (by && !isFullAdmin(by)) {
+    const target = await BaobayAccount.findById(id).select("role username").lean<any>();
+    if (!target) return { ok: false, error: "Không tìm thấy tài khoản" };
+    if (target.role === "admin") {
+      return { ok: false, error: "Quản trị cấp 2 không được sửa tài khoản quản trị" };
+    }
+    if (patch.role === "admin") {
+      return { ok: false, error: "Quản trị cấp 2 không được phong người khác làm quản trị" };
+    }
+  }
 
   const set: Record<string, unknown> = {};
   if (patch.displayName !== undefined) {
@@ -316,6 +433,7 @@ export async function updateAccount(
 export async function deleteAccount(
   id: string,
   confirmUsername: string,
+  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<
   | { ok: true; username: string; deleted: { pilot: number; dispatcher: number; cameraman: number } }
   | { ok: false; error: string }
@@ -326,6 +444,10 @@ export async function deleteAccount(
 
   const account = await BaobayAccount.findById(id).lean<AccountDoc | null>();
   if (!account) return { ok: false, error: "Không tìm thấy tài khoản" };
+
+  if (account.role === "admin" && by && !isFullAdmin(by)) {
+    return { ok: false, error: "Quản trị cấp 2 không được xoá tài khoản quản trị" };
+  }
 
   /**
    * So tên xác nhận TRƯỚC khi động vào bất cứ thứ gì: phép xoá này không hoàn
@@ -656,7 +778,17 @@ export async function updateSpotSetting(
   spot: string,
   patch: { submitDeadline?: string; sheetWebhookUrl?: string; sheetSecret?: string },
   updatedBy: string,
+  by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  /**
+   * Cấu hình điểm bay là chỗ nhạy nhất: đổi webhook là dữ liệu chảy sang bảng
+   * tính khác, đổi giờ chốt là ảnh hưởng tiền phạt của cả đội. Chỉ quản trị
+   * cấp 1.
+   */
+  if (by && !isFullAdmin(by)) {
+    return { ok: false, error: "Quản trị cấp 2 không được đổi cấu hình điểm bay" };
+  }
+
   const key = normalizeSpot(spot);
   const set: Record<string, unknown> = { updatedBy };
 
@@ -968,7 +1100,7 @@ async function pushPilotRow(doc: any) {
         : "",
       updatedAt: nowStampVN(),
     },
-    // Bảng tính chia thẻ theo từng phi công theo tháng (docs/baobay-apps-script.md)
+    // Bảng tính chia thẻ theo từng phi công theo tháng (docs/baocao-apps-script.md)
     `${doc.pilotName} ${doc.date.slice(0, 7)}`,
     await sheetTargetForSpot(doc.spot),
   );
@@ -1504,7 +1636,9 @@ function toCameramanDTO(doc: any): CameramanReportDTO {
 export type HandoverSaveInput = {
   spot: string;
   date: string;
-  /** Tài khoản người nhận tiền — nhân sự tự chọn khi khai. */
+  /** "handover" = đưa tiền cho quản lý · "advance" = xin ứng tiền. */
+  kind: "handover" | "advance";
+  /** Người nhận tiền (giao tiền) hoặc người duyệt (ứng tiền). */
   recipientUsername: string;
   amount: number;
   method: "cash" | "transfer";
@@ -1520,15 +1654,23 @@ export type HandoverSaveInput = {
  */
 const HANDOVER_RECIPIENT_ROLES: BaobayRole[] = ["admin", "accountant", "dispatcher"];
 
+/**
+ * Ai được duyệt ỨNG TIỀN: chỉ kế toán và quản trị — đây là tiền công ty chi ra,
+ * điều phối không có thẩm quyền đó.
+ */
+const ADVANCE_APPROVER_ROLES: BaobayRole[] = ["accountant", "admin"];
+
 export async function listHandoverRecipients(
   session: BaobaySession,
   spotRaw: string,
+  kind: "handover" | "advance" = "handover",
 ): Promise<Array<{ username: string; name: string; role: BaobayRole; roleLabel: string }>> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
+  const allowed = kind === "advance" ? ADVANCE_APPROVER_ROLES : HANDOVER_RECIPIENT_ROLES;
 
   const docs = await BaobayAccount.find({
-    role: { $in: HANDOVER_RECIPIENT_ROLES },
+    role: { $in: allowed },
     isActive: true,
     spots: spot,
     username: { $ne: session.username },
@@ -1536,7 +1678,7 @@ export async function listHandoverRecipients(
     .select("username displayName role")
     .lean<any[]>();
 
-  const rank = (r: BaobayRole) => HANDOVER_RECIPIENT_ROLES.indexOf(r);
+  const rank = (r: BaobayRole) => allowed.indexOf(r);
   return docs
     .map((d) => ({
       username: d.username,
@@ -1562,9 +1704,15 @@ export async function createHandover(
 
   if (input.amount <= 0) throw new BaobayError("Chưa nhập số tiền");
 
+  const isAdvance = input.kind === "advance";
+  if (isAdvance && !input.content.trim()) {
+    throw new BaobayError("Ứng tiền phải ghi rõ nội dung ứng");
+  }
+
   /**
-   * Người nhận phải là tài khoản thật, còn hoạt động, có mặt ở đúng điểm bay và
-   * không phải chính mình — kiểm ở máy chủ, không tin danh sách trình duyệt gửi.
+   * Người nhận/người duyệt phải là tài khoản thật, còn hoạt động, có mặt ở đúng
+   * điểm bay và không phải chính mình — kiểm ở máy chủ, không tin danh sách
+   * trình duyệt gửi lên.
    */
   const recipient = await BaobayAccount.findOne({
     username: normalizeUsername(input.recipientUsername),
@@ -1575,14 +1723,20 @@ export async function createHandover(
   if (!recipient) throw new BaobayError("Không tìm thấy người nhận tiền");
   if (!recipient.isActive) throw new BaobayError(`Tài khoản “${recipient.displayName}” đã bị khoá`);
   if (recipient.username === session.username) throw new BaobayError("Không thể tự giao tiền cho chính mình");
-  if (!HANDOVER_RECIPIENT_ROLES.includes(recipient.role)) {
-    throw new BaobayError(`“${recipient.displayName}” không phải người nhận tiền của điểm bay`);
+  const allowedRoles = isAdvance ? ADVANCE_APPROVER_ROLES : HANDOVER_RECIPIENT_ROLES;
+  if (!allowedRoles.includes(recipient.role)) {
+    throw new BaobayError(
+      isAdvance
+        ? `“${recipient.displayName}” không có quyền duyệt ứng tiền (chỉ kế toán hoặc quản trị)`
+        : `“${recipient.displayName}” không phải người nhận tiền của điểm bay`,
+    );
   }
   if (!normalizeSpotList(recipient.spots).includes(spot)) {
     throw new BaobayError(`“${recipient.displayName}” không làm ở ${spotName(spot)}`);
   }
 
   const doc = await BaobayHandover.create({
+    kind: isAdvance ? "advance" : "handover",
     spot,
     date: input.date,
     accountId: new mongoose.Types.ObjectId(session.id),
@@ -1735,7 +1889,7 @@ export async function confirmHandover(
 
 async function pushHandoverRow(doc: any) {
   return pushBaobayRow(
-    "handover",
+    doc.kind === "advance" ? "advance" : "handover",
     {
       key: String(doc._id),
       date: doc.date,
@@ -1762,6 +1916,7 @@ async function pushHandoverRow(doc: any) {
 function toHandoverDTO(doc: any): HandoverDTO {
   return {
     id: String(doc._id),
+    kind: doc.kind === "advance" ? "advance" : "handover",
     spot: doc.spot,
     date: doc.date,
     username: doc.username,
@@ -1857,7 +2012,16 @@ export async function getCashOnHand(
   // Kế toán và quản trị không có báo cáo ngày nên không có tiền thu hộ; họ vẫn
   // khai được khoản đưa tiền, số đang giữ khi đó chỉ là phần đã đưa (số âm).
 
-  const handovers = await BaobayHandover.find({ accountId, spot, ...dateFilter })
+  /**
+   * Chỉ tính lệnh GIAO TIỀN. Tiền ứng là công ty chi ra cho cá nhân, trừ vào
+   * lương cuối tháng — không liên quan tới số tiền đang cầm hộ công ty.
+   */
+  const handovers = await BaobayHandover.find({
+    accountId,
+    spot,
+    kind: { $ne: "advance" },
+    ...dateFilter,
+  })
     .select("amount confirmed rejected")
     .lean<any[]>();
 
@@ -2601,6 +2765,22 @@ export async function getReconcileForUser(
 /* Bảng tổng hợp theo kỳ                                               */
 /* ================================================================== */
 
+/**
+ * Tổng tiền ỨNG ĐÃ ĐƯỢC DUYỆT của từng người trong khoảng ngày.
+ *
+ * Chỉ cộng khoản đã duyệt: đang chờ hoặc bị từ chối thì công ty chưa chi đồng
+ * nào. KHÔNG lọc theo "ngày đã chốt" như số chuyến bay — tiền ứng là việc của
+ * quỹ, không phụ thuộc vào ngày bay đã soát xong hay chưa.
+ */
+async function advanceTotalsByUser(spot: string, from: string, to: string): Promise<Map<string, number>> {
+  const rows = await BaobayHandover.aggregate<{ _id: string; total: number }>([
+    { $match: { spot, kind: "advance", confirmed: true, date: { $gte: from, $lte: to } } },
+    { $group: { _id: "$username", total: { $sum: "$amount" } } },
+  ]);
+  return new Map(rows.map((r) => [r._id, r.total]));
+}
+
+
 const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked"> = {
   issueCount: 0,
   guestCount: 0,
@@ -2623,6 +2803,8 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked"> = {
   dispatcherFlycam: 0,
   cameramanFlycam: 0,
   diplomaticGuests: 0,
+  diplomaticTickets: 0,
+  diplomaticAmount: 0,
   redFlag: 0,
   expenseTotal: 0,
   pilotCount: 0,
@@ -2682,6 +2864,12 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     row.dispatcherCash += r.cashReceived;
     row.dispatcherTransfer += r.transferReceived;
     row.dispatcherFlycam += r.flycam;
+    /**
+     * Khách ngoại giao đếm theo SỐ VÉ quầy xuất và TIỀN thu được từ chính những
+     * vé đó — hai con số kế toán cần tách riêng khỏi doanh thu vé thường.
+     */
+    row.diplomaticTickets += r.diplomaticCodes.length || r.diplomaticGuests;
+    row.diplomaticAmount += r.diplomaticAmount;
     row.redFlag += r.redFlag;
     row.expenseTotal += dispatcherExpenseTotal(r);
     row.dispatcherCount += 1;
@@ -2759,6 +2947,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         diplomaticGuests: 0,
         expenseTotal: 0,
         latePenalty: 0,
+        advanceTotal: 0,
       };
     entry.days += 1;
     entry.flights += r.flightCount;
@@ -2770,6 +2959,35 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.expenseTotal += pilotExpenseTotal(r);
     entry.latePenalty += r.latePenalty;
     pilotMap.set(r.username, entry);
+  }
+
+  /**
+   * Tiền ứng gắn với CON NGƯỜI, không gắn với ngày bay đã chốt — nên cộng riêng,
+   * và vẫn phải hiện cả khi trong kỳ người đó chưa có ngày bay nào được chốt
+   * (ứng tiền rồi nghỉ ốm thì kế toán vẫn phải thấy khoản phải trừ lương).
+   */
+  const advances = await advanceTotalsByUser(spot, from, to);
+  for (const [username, total] of advances) {
+    const entry = pilotMap.get(username);
+    if (entry) {
+      entry.advanceTotal = total;
+      continue;
+    }
+    const known = pilotReports.find((r) => r.username === username);
+    pilotMap.set(username, {
+      username,
+      pilotName: known?.pilotName || username,
+      days: 0,
+      flights: 0,
+      flycam: 0,
+      video360: 0,
+      redFlag: 0,
+      flagFlight: 0,
+      diplomaticGuests: 0,
+      expenseTotal: 0,
+      latePenalty: 0,
+      advanceTotal: total,
+    });
   }
 
   return {
@@ -2934,6 +3152,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   otherExpense: 0,
   expenseTotal: 0,
   latePenalty: 0,
+  advanceTotal: 0,
 };
 
 function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
@@ -2987,11 +3206,13 @@ export async function getMonthlyReport(
   const filter: Record<string, unknown> = { spot, date: { $gte: from, $lte: to } };
   if (onlyUsername) filter.username = onlyUsername;
 
-  const [pilotDocs, closeDocs] = await Promise.all([
+  const [pilotDocs, closeDocs, advancesMonth, advancesToDate] = await Promise.all([
     PilotDailyReport.find(filter).sort({ date: 1, pilotName: 1 }).lean<any[]>(),
     AccountantDailyClose.find({ spot, date: { $gte: from, $lte: to } })
       .select("date status")
       .lean<any[]>(),
+    advanceTotalsByUser(spot, from, to),
+    advanceTotalsByUser(spot, from, isCurrentMonth ? today : to),
   ]);
 
   const closedDates = new Set(closeDocs.filter((c) => c.status === "closed").map((c) => c.date));
@@ -3042,6 +3263,10 @@ export async function getMonthlyReport(
 
         daily.push(cell);
       }
+
+      // Tiền ứng không rơi vào ô ngày nào cả — chỉ vào hai cột tổng
+      monthTotals.advanceTotal = advancesMonth.get(username) ?? 0;
+      toDate.advanceTotal = advancesToDate.get(username) ?? 0;
 
       return { username, pilotName: names.get(username) || username, daily, toDate, month: monthTotals, expenses };
     })

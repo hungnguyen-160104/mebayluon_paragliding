@@ -4,7 +4,7 @@ import mongoose, { Schema } from "mongoose";
 import { DEFAULT_SPOT } from "@/lib/baobay/roles";
 /**
  * Kiểu dùng chung định nghĩa ở lib/baobay/types.ts, không định nghĩa lại ở đây:
- * các trang trong app/baobay là client component nên không được import model
+ * các trang trong app/baocao là client component nên không được import model
  * (kéo cả driver MongoDB vào bundle), mà vẫn cần đúng những kiểu này.
  */
 import type { IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";

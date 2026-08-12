@@ -16,10 +16,20 @@ import { DEFAULT_SPOT } from "@/lib/baobay/spots";
  *    ngày đã chốt.
  *
  * Vòng đời: nhân sự bấm "Xác nhận đã đưa" -> bản ghi ở trạng thái chờ ->
- * admin thấy số đỏ ở /baobay/admin và bấm "Xác nhận" -> `confirmed: true`.
+ * admin thấy số đỏ ở /baocao/admin và bấm "Xác nhận" -> `confirmed: true`.
  * Không xoá bản ghi nào: đã khai là còn dấu vết, sai thì admin từ chối kèm lý do.
  */
+/**
+ * Hai loại lệnh tiền đi qua bảng này, cùng một vòng đời "gửi → người kia bấm
+ * đồng ý/từ chối" nên dùng chung một chỗ lưu:
+ *
+ *  - `handover`: nhân sự ĐƯA tiền cho quản lý/kế toán/điều phối.
+ *  - `advance` : nhân sự XIN ỨNG tiền, kế toán hoặc quản trị duyệt.
+ */
+export type BaobayMoneyKind = "handover" | "advance";
+
 export interface IBaobayHandover {
+  kind: BaobayMoneyKind;
   spot: string;
   /** Ngày đưa tiền, "YYYY-MM-DD" giờ Việt Nam — mặc định là hôm nay. */
   date: string;
@@ -30,7 +40,7 @@ export interface IBaobayHandover {
   role: BaobayRole;
 
   /**
-   * NGƯỜI NHẬN tiền — nhân sự tự chọn khi khai: giám đốc, kế toán hay điều phối.
+   * NGƯỜI NHẬN tiền (lệnh giao tiền) hoặc NGƯỜI DUYỆT (lệnh ứng tiền) — nhân sự tự chọn khi khai: giám đốc, kế toán hay điều phối.
    * Lệnh giao tiền chạy về đúng tài khoản này; chỉ người đó (hoặc quản trị) mới
    * xác nhận/từ chối được. Bản ghi cũ chưa có người nhận thì mặc định là quản trị.
    */
@@ -60,6 +70,7 @@ export interface IBaobayHandover {
 
 const BaobayHandoverSchema = new Schema<IBaobayHandover>(
   {
+    kind: { type: String, enum: ["handover", "advance"], default: "handover", index: true },
     spot: { type: String, default: DEFAULT_SPOT, index: true },
     date: { type: String, required: true, index: true },
 
