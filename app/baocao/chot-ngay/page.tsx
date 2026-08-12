@@ -27,6 +27,7 @@ import {
 import { HandoverBox } from "../components/HandoverBox";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
+import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
@@ -436,6 +437,9 @@ function DailyCloseInner() {
 
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
       <PilotReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
+
+      {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
+      <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
 
       {/* Phạt nộp muộn: khoản đã ghi (huỷ được) và khoản tạm tính (tự huỷ khi chốt) */}
       <PenaltyCard spot={spot} date={date} reloadKey={reloadKey} />

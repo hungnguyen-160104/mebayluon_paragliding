@@ -1366,6 +1366,65 @@ export async function upsertPilotReportByAccountant(
   return upsertPilotReport(toSession(target), input);
 }
 
+/**
+ * Kế toán sửa hộ báo cáo ĐIỀU PHỐI — cùng lý do với sửa hộ phi công: kế toán
+ * là quyền cao nhất về số liệu, không thể để một ô sai của quầy vé treo cả
+ * ngày trong khi người nhập đã về nhà. Đi cùng một đường lưu (cùng kiểm tra,
+ * cùng chặn ngày khoá, cùng đẩy bảng tính).
+ */
+export async function upsertDispatcherReportByAccountant(
+  accountant: BaobaySession,
+  targetUsername: string,
+  input: DispatcherReportSaveInput,
+): Promise<SaveResult<DispatcherReportDTO>> {
+  await connectDB();
+
+  const target = await BaobayAccount.findOne({ username: normalizeUsername(targetUsername) }).lean<AccountDoc | null>();
+  if (!target) throw new BaobayError(`Không tìm thấy tài khoản “${targetUsername}”`, 404);
+  if (target.role !== "dispatcher") {
+    throw new BaobayError(`“${target.displayName}” không phải điều phối`, 400);
+  }
+
+  assertSpotAllowed(accountant, input.spot);
+  return upsertDispatcherReport(toSession(target), input);
+}
+
+/** Kế toán sửa hộ báo cáo CAMERA MAN. */
+export async function upsertCameramanReportByAccountant(
+  accountant: BaobaySession,
+  targetUsername: string,
+  input: CameramanReportSaveInput,
+): Promise<SaveResult<CameramanReportDTO>> {
+  await connectDB();
+
+  const target = await BaobayAccount.findOne({ username: normalizeUsername(targetUsername) }).lean<AccountDoc | null>();
+  if (!target) throw new BaobayError(`Không tìm thấy tài khoản “${targetUsername}”`, 404);
+  if (target.role !== "cameraman") {
+    throw new BaobayError(`“${target.displayName}” không phải camera man`, 400);
+  }
+
+  assertSpotAllowed(accountant, input.spot);
+  return upsertCameramanReport(toSession(target), input);
+}
+
+/** Danh sách báo cáo điều phối của một ngày — cho khung sửa hộ của kế toán. */
+export async function listDispatcherReportsOfDate(spot: string, date: string): Promise<DispatcherReportDTO[]> {
+  await connectDB();
+  const docs = await DispatcherDailyReport.find({ spot: normalizeSpot(spot), date })
+    .sort({ staffName: 1 })
+    .lean<any[]>();
+  return docs.map(toDispatcherDTO);
+}
+
+/** Danh sách báo cáo camera man của một ngày — cho khung sửa hộ của kế toán. */
+export async function listCameramanReportsOfDate(spot: string, date: string): Promise<CameramanReportDTO[]> {
+  await connectDB();
+  const docs = await CameramanDailyReport.find({ spot: normalizeSpot(spot), date })
+    .sort({ cameramanName: 1 })
+    .lean<any[]>();
+  return docs.map(toCameramanDTO);
+}
+
 /* ================================================================== */
 /* Báo cáo điều phối bay                                               */
 /* ================================================================== */

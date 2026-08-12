@@ -8,6 +8,8 @@ import { dispatcherReportSchema, firstZodMessage } from "@/lib/baobay/validation
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
+  listDispatcherReportsOfDate,
+  upsertDispatcherReportByAccountant,
   getDispatcherReport,
   getReconcileForUser,
   isDayClosed,
@@ -27,13 +29,22 @@ export const maxDuration = 30;
  * GET  (không tham số)    -> 30 báo cáo gần nhất của chính mình
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "accountant"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
   if (spot instanceof NextResponse) return spot;
 
-  const date = new URL(req.url).searchParams.get("date");
+  const params = new URL(req.url).searchParams;
+  const date = params.get("date");
+
+  // Kế toán: danh sách báo cáo cả ngày để sửa trực tiếp trên trang Chốt ngày
+  if (auth.role === "accountant") {
+    if (!date || params.get("all") !== "1") {
+      return NextResponse.json({ message: "Kế toán dùng ?date=YYYY-MM-DD&all=1" }, { status: 400 });
+    }
+    return NextResponse.json({ reports: await listDispatcherReportsOfDate(spot, date) });
+  }
 
   if (date) {
     if (!isDateKey(date)) {
@@ -53,7 +64,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "accountant"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -66,6 +77,15 @@ export async function POST(req: Request) {
   }
 
   try {
+    if (auth.role === "accountant") {
+      const targetUsername = String(body?.targetUsername ?? "").trim();
+      if (!targetUsername) {
+        return NextResponse.json({ message: "Kế toán sửa hộ phải gửi kèm targetUsername" }, { status: 400 });
+      }
+      const { report, warnings } = await upsertDispatcherReportByAccountant(auth, targetUsername, parsed.data);
+      return NextResponse.json({ report, warnings });
+    }
+
     const { report, warnings } = await upsertDispatcherReport(auth, parsed.data);
     const check = await getReconcileForUser(spot, parsed.data.date, auth.username);
     return NextResponse.json({ report, warnings, check });
