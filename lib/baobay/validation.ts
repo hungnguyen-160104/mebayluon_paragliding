@@ -123,6 +123,10 @@ export const pilotReportSchema = z.object({
   siteFee: money,
   waterCost: money,
   guestCarCost: money,
+  /** Số LƯỢT đưa đón (phi công tự trả tiền, kế toán hoàn theo đơn giá ngoài app). */
+  pickupBigC: count(100),
+  pickupHotel: count(100),
+  mountainTrips: count(100),
   expenses: expenseList,
   note: text(2_000),
   /**

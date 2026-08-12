@@ -61,6 +61,9 @@ type FormState = {
   siteFee: number;
   waterCost: number;
   guestCarCost: number;
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
   expenses: ExpenseRow[];
   note: string;
 };
@@ -81,6 +84,9 @@ const EMPTY_FORM: FormState = {
   siteFee: 0,
   waterCost: 0,
   guestCarCost: 0,
+  pickupBigC: 0,
+  pickupHotel: 0,
+  mountainTrips: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
   note: "",
 };
@@ -147,6 +153,9 @@ export default function PilotReportPage() {
               siteFee: res.report.siteFee,
               waterCost: res.report.waterCost,
               guestCarCost: res.report.guestCarCost,
+              pickupBigC: res.report.pickupBigC,
+              pickupHotel: res.report.pickupHotel,
+              mountainTrips: res.report.mountainTrips,
               expenses: toExpenseRows(res.report.expenses),
               note: res.report.note,
             }
@@ -506,6 +515,27 @@ export default function PilotReportPage() {
             <Field label="Xe cho khách (Car for guests)">
               <MoneyInput value={form.guestCarCost} onChange={(v) => set("guestCarCost", v)} />
             </Field>
+          </div>
+
+          {/* Ba khoản đưa đón phi công TỰ TRẢ TIỀN — khai số LƯỢT, kế toán nhân đơn giá rồi hoàn */}
+          <div className="mt-4">
+            <Field
+              label="Đưa đón tự trả tiền — số lượt (Self-paid transfers — trips)"
+              hint="Phi công tự thanh toán khi đi bay, kế toán hoàn theo đơn giá (paid by pilot, reimbursed later)"
+            >
+              <div />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Đón khách từ BigC (Pickup from BigC)">
+                <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
+              </Field>
+              <Field label="Đón khách từ khách sạn (Pickup from hotel)">
+                <CountInput value={form.pickupHotel} onChange={(v) => set("pickupHotel", v)} max={100} />
+              </Field>
+              <Field label="Xe lên núi (Ride up the mountain)">
+                <CountInput value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
+              </Field>
+            </div>
           </div>
 
           <div className="mt-4">

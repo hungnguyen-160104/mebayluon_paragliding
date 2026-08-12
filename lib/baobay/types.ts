@@ -101,6 +101,10 @@ export type PilotReportDTO = {
   siteFee: number;
   waterCost: number;
   guestCarCost: number;
+  /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán nhân đơn giá rồi hoàn. */
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
   expenses: ExpenseDTO[];
   note: string;
   submitted: boolean;
@@ -290,6 +294,10 @@ export type PilotPeriodTotalDTO = {
   latePenalty: number;
   /** Tiền đã ứng và ĐƯỢC DUYỆT trong kỳ — trừ vào lương cuối tháng. */
   advanceTotal: number;
+  /** Số lượt đưa đón phi công tự trả — kế toán nhân đơn giá rồi hoàn. */
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
 };
 
 export type BaobaySummaryDTO = {
@@ -333,6 +341,9 @@ export type MonthlyTotalsDTO = {
   latePenalty: number;
   /** Tiền ứng đã được duyệt trong tháng — trừ vào lương. */
   advanceTotal: number;
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
 };
 
 export type MonthlyDayCellDTO = MonthlyTotalsDTO & {

@@ -60,7 +60,7 @@ Xong sẽ có đường dẫn dạng `https://script.google.com/macros/s/AKfy...
 ## 4. Kiểm tra nhanh
 
 Mở đường dẫn `.../exec` bằng trình duyệt, phải thấy JSON có `"ok":true` và
-`"version":"baobay-multispot-v9"`. Nếu thấy bản khác thì bản
+`"version":"baobay-multispot-v10"`. Nếu thấy bản khác thì bản
 đang chạy là bản cũ — xem ô cảnh báo ngay dưới đây về việc triển khai lại.
 
 > Đừng dùng `curl` để thử POST: Apps Script trả 302 sang

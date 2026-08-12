@@ -204,6 +204,18 @@ function PilotRow({
             </Field>
           </div>
 
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Đón BigC (lượt)">
+              <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
+            </Field>
+            <Field label="Đón khách sạn (lượt)">
+              <CountInput value={form.pickupHotel} onChange={(v) => set("pickupHotel", v)} max={100} />
+            </Field>
+            <Field label="Xe lên núi (lượt)">
+              <CountInput value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
+            </Field>
+          </div>
+
           <Field label="Ghi chú">
             <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />
           </Field>
@@ -233,17 +245,32 @@ function PilotRow({
   );
 }
 
+/**
+ * Gửi ĐỦ mọi trường của schema, kể cả những ô form này không cho sửa
+ * (flycam, cờ đỏ, kéo cờ, số lượt đưa đón): máy chủ kiểm đủ trường, thiếu là
+ * bị từ chối; mà gửi giá trị mặc định thay vì giá trị hiện có thì lại xoá
+ * nhầm số phi công đã khai.
+ */
 function toForm(r: PilotReportDTO) {
   return {
     flightCount: r.flightCount,
     ticketCodesText: r.ticketCodes.join(", "),
+    flycam: r.flycam,
+    flycamCodesText: r.flycamCodes.join(", "),
     video360: r.video360,
     video360CodesText: r.video360Codes.join(", "),
+    redFlag: r.redFlag,
+    redFlagCodesText: r.redFlagCodes.join(", "),
+    flagFlight: r.flagFlight,
+    flagFlightCodesText: r.flagFlightCodes.join(", "),
     diplomaticGuests: r.diplomaticGuests,
     diplomaticCodesText: r.diplomaticCodes.join(", "),
     siteFee: r.siteFee,
     waterCost: r.waterCost,
     guestCarCost: r.guestCarCost,
+    pickupBigC: r.pickupBigC,
+    pickupHotel: r.pickupHotel,
+    mountainTrips: r.mountainTrips,
     note: r.note,
   };
 }

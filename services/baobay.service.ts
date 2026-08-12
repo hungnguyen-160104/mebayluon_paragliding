@@ -880,6 +880,10 @@ export type PilotReportSaveInput = {
   siteFee: number;
   waterCost: number;
   guestCarCost: number;
+  /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
   expenses: Array<{ content: string; amount: number; note?: string }>;
   note: string;
   submit: boolean;
@@ -1066,6 +1070,9 @@ export async function upsertPilotReport(
         siteFee: input.siteFee,
         waterCost: input.waterCost,
         guestCarCost: input.guestCarCost,
+        pickupBigC: input.pickupBigC,
+        pickupHotel: input.pickupHotel,
+        mountainTrips: input.mountainTrips,
         expenses,
         note: input.note,
         submitted: input.submit,
@@ -1199,6 +1206,9 @@ function toPilotDTO(doc: any): PilotReportDTO {
     siteFee: doc.siteFee ?? 0,
     waterCost: doc.waterCost ?? 0,
     guestCarCost: doc.guestCarCost ?? 0,
+    pickupBigC: doc.pickupBigC ?? 0,
+    pickupHotel: doc.pickupHotel ?? 0,
+    mountainTrips: doc.mountainTrips ?? 0,
     expenses: doc.expenses ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
@@ -3317,6 +3327,9 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         expenseTotal: 0,
         latePenalty: 0,
         advanceTotal: 0,
+        pickupBigC: 0,
+        pickupHotel: 0,
+        mountainTrips: 0,
       };
     entry.days += 1;
     entry.flights += r.flightCount;
@@ -3327,6 +3340,9 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.diplomaticGuests += r.diplomaticGuests;
     entry.expenseTotal += pilotExpenseTotal(r);
     entry.latePenalty += r.latePenalty;
+    entry.pickupBigC += r.pickupBigC;
+    entry.pickupHotel += r.pickupHotel;
+    entry.mountainTrips += r.mountainTrips;
     pilotMap.set(r.username, entry);
   }
 
@@ -3356,6 +3372,9 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       expenseTotal: 0,
       latePenalty: 0,
       advanceTotal: total,
+      pickupBigC: 0,
+      pickupHotel: 0,
+      mountainTrips: 0,
     });
   }
 
@@ -3450,6 +3469,9 @@ export async function getMyPeriodSummary(
         { label: "Phí bãi bay (site fee)", value: sumOf((d) => d.siteFee), money: true },
         { label: "Nước cho khách (water)", value: sumOf((d) => d.waterCost), money: true },
         { label: "Xe cho khách (car)", value: sumOf((d) => d.guestCarCost), money: true },
+        { label: "Đón BigC (lượt)", value: sumOf((d) => d.pickupBigC) },
+        { label: "Đón khách sạn (lượt)", value: sumOf((d) => d.pickupHotel) },
+        { label: "Xe lên núi (lượt)", value: sumOf((d) => d.mountainTrips) },
         { label: "Chi khác (other)", value: sumOf((d) => expenseTotal(d.expenses)), money: true },
         { label: "Tổng chi (total expenses)", value: sumOf((d) => pilotExpenseTotal(d)), money: true },
         ...cashLines,
@@ -3522,6 +3544,9 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   expenseTotal: 0,
   latePenalty: 0,
   advanceTotal: 0,
+  pickupBigC: 0,
+  pickupHotel: 0,
+  mountainTrips: 0,
 };
 
 function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
@@ -3538,6 +3563,9 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.otherExpense += expenseTotal(r.expenses);
   acc.expenseTotal = acc.siteFee + acc.waterCost + acc.guestCarCost + acc.otherExpense;
   acc.latePenalty += r.latePenalty;
+  acc.pickupBigC += r.pickupBigC;
+  acc.pickupHotel += r.pickupHotel;
+  acc.mountainTrips += r.mountainTrips;
 }
 
 function daysInMonthOf(month: string): number {

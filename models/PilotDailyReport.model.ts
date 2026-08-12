@@ -57,6 +57,13 @@ export interface IPilotDailyReport {
   siteFee: number;
   waterCost: number;
   guestCarCost: number;
+  /**
+   * Ba khoản đi lại PHI CÔNG TỰ TRẢ TIỀN khi đi bay, khai theo SỐ LƯỢT — đơn
+   * giá do kế toán nhân bên ngoài (app không giữ đơn giá), cuối kỳ hoàn lại.
+   */
+  pickupBigC: number;
+  pickupHotel: number;
+  mountainTrips: number;
   /** Các khoản chi khác: nội dung – số tiền – ghi chú. */
   expenses: ExpenseDTO[];
 
@@ -128,6 +135,9 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     siteFee: { type: Number, default: 0, min: 0 },
     waterCost: { type: Number, default: 0, min: 0 },
     guestCarCost: { type: Number, default: 0, min: 0 },
+    pickupBigC: { type: Number, default: 0, min: 0 },
+    pickupHotel: { type: Number, default: 0, min: 0 },
+    mountainTrips: { type: Number, default: 0, min: 0 },
     expenses: { type: [ExpenseSchema], default: [] },
 
     note: String,
