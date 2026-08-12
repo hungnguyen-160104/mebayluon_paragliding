@@ -21,7 +21,14 @@ export type RescheduledDTO = { code: string; toDate: string; note?: string };
  * Một dòng thu/chi: nội dung – số tiền – thu hay chi – ghi chú.
  * `kind` mặc định "chi"; hiện chỉ camera man có tick THU (khách trả tiền tại bãi).
  */
-export type ExpenseDTO = { content: string; amount: number; kind?: "thu" | "chi"; note?: string };
+export type ExpenseDTO = {
+  content: string;
+  amount: number;
+  kind?: "thu" | "chi";
+  /** Tiền mặt hay chuyển khoản — sổ "Tiền trong ngày" của kế toán ghi rõ từng dòng. */
+  method?: "cash" | "transfer";
+  note?: string;
+};
 
 /** Vé huỷ theo nhóm: nhiều mã cùng đoàn – lý do – tên liên hệ. */
 export type CancelEntryDTO = { codes: string[]; reason: string; contactName: string };

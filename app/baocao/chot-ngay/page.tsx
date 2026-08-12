@@ -72,6 +72,7 @@ type CloseSuggestion = {
   cashTotal: number;
   transferTotal: number;
   dispatcherSpend: number;
+  dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   dispatcherNames: string[];
   flycam: number;
   video360: number;
@@ -655,47 +656,35 @@ function DailyCloseInner() {
         </Card>
 
         <Card
-          title="Sổ THU / CHI của kế toán"
-          hint="Nhận nhanh số điều phối báo, hoặc tự thêm dòng: nội dung – số tiền – tick Thu hoặc Chi (mua đồ, thu dịch vụ ngoài…)"
+          title="Tiền trong ngày"
+          hint="Sổ thu/chi của kế toán: nội dung – số tiền – Tiền mặt/CK – Thu/Chi. Bấm + để thêm dòng, hoặc lấy nguyên bộ từ báo cáo điều phối."
         >
-          {/* Điều phối báo gì thì nhận thẳng vào sổ — CHỈ tiền mặt, vì chuyển khoản
-              đã nằm trong tài khoản công ty, điều phối không hề cầm */}
-          {suggest?.dispatcher.hasData && !locked && (
-            <div className="mb-3 space-y-1.5">
-              {suggest.cashTotal > 0 && (
-                <LedgerSuggest
-                  label={`điều phối báo THU tiền mặt ${formatVND(suggest.cashTotal)}`}
-                  taken={form.ledger.some((e) => e.kind === "thu" && e.amount === suggest.cashTotal && e.content.includes("điều phối"))}
-                  onTake={() =>
-                    set("ledger", [
-                      ...form.ledger.filter((e) => e.content.trim() || e.amount),
-                      { content: "Nhận tiền mặt từ điều phối", amount: suggest.cashTotal, kind: "thu", note: "" },
-                    ])
-                  }
-                />
-              )}
-              {suggest.dispatcherSpend > 0 && (
-                <LedgerSuggest
-                  label={`điều phối báo CHI hộ khách ${formatVND(suggest.dispatcherSpend)}`}
-                  taken={form.ledger.some((e) => e.kind === "chi" && e.amount === suggest.dispatcherSpend && e.content.includes("điều phối"))}
-                  onTake={() =>
-                    set("ledger", [
-                      ...form.ledger.filter((e) => e.content.trim() || e.amount),
-                      { content: "Hoàn chi hộ khách (điều phối)", amount: suggest.dispatcherSpend, kind: "chi", note: "" },
-                    ])
-                  }
-                />
-              )}
+          {/* Từ dưới đẩy lên: điều phối báo gì, kế toán nhận nguyên bộ từng dòng
+              (thu đúng tiền mặt/CK, chi hộ khách) rồi sửa tay nếu cần */}
+          {suggest?.dispatcher.hasData && suggest.dispatcherLedger.length > 0 && !locked && (
+            <div className="mb-3">
+              <LedgerSuggest
+                label={`lấy ${suggest.dispatcherLedger.length} dòng thu chi từ ${reporterNames} — thu ${formatVND(suggest.cashTotal + suggest.transferTotal)} · chi ${formatVND(suggest.dispatcherSpend)}`}
+                taken={suggest.dispatcherLedger.every((d) =>
+                  form.ledger.some((e) => e.kind === d.kind && e.amount === d.amount && e.content === d.content),
+                )}
+                onTake={() => {
+                  const kept = form.ledger.filter((e) => e.content.trim() || e.amount);
+                  const fresh = suggest.dispatcherLedger
+                    .filter((d) => !kept.some((e) => e.kind === d.kind && e.amount === d.amount && e.content === d.content))
+                    .map((d) => ({ content: d.content, amount: d.amount, kind: d.kind, method: d.method, note: "" }));
+                  set("ledger", [...kept, ...fresh]);
+                }}
+              />
               {suggest.transferTotal > 0 && (
-                <p className="text-xs text-slate-500">
-                  Chuyển khoản {formatVND(suggest.transferTotal)} đã vào thẳng tài khoản công ty — điều phối
-                  không cầm nên không vào sổ này.
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Dòng CK là tiền vào thẳng tài khoản công ty — điều phối không cầm, ghi để sổ đủ bức tranh ngày.
                 </p>
               )}
             </div>
           )}
 
-          <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind />
+          <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind withMethod />
         </Card>
 
         <Card title="Mã vé đã xuất" hint="Vé năm nay là MBLxxxx — gõ tắt số cũng được. Nhiều cuốn thì thêm dòng">

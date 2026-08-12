@@ -768,7 +768,7 @@ function normalizeRescheduled(input: Array<{ code: string; toDate: string; note?
 
 /** Bỏ dòng trống, cắt khoảng trắng, cảnh báo dòng thiếu nội dung hoặc thiếu tiền. */
 function normalizeExpenses(
-  input: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>,
+  input: Array<{ content: string; amount: number; kind?: "thu" | "chi"; method?: "cash" | "transfer"; note?: string }>,
 ): {
   list: ExpenseDTO[];
   warnings: string[];
@@ -779,6 +779,7 @@ function normalizeExpenses(
       content: String(e?.content ?? "").trim(),
       amount: Number(e?.amount) || 0,
       kind: (e?.kind === "thu" ? "thu" : "chi") as "thu" | "chi",
+      method: e?.method === "transfer" ? ("transfer" as const) : e?.method === "cash" ? ("cash" as const) : undefined,
       note: e?.note?.trim() || undefined,
     }))
     .filter((e) => e.content || e.amount);
@@ -805,7 +806,7 @@ function formatExpenses(list: ExpenseDTO[] = []): string {
   return (list || [])
     .map(
       (e) =>
-        `${e.kind === "thu" ? "[THU] " : ""}${e.content}: ${(e.amount || 0).toLocaleString("vi-VN")}đ${e.note ? ` (${e.note})` : ""}`,
+        `${e.kind === "thu" ? "[THU] " : ""}${e.content}: ${(e.amount || 0).toLocaleString("vi-VN")}đ${e.method ? (e.method === "transfer" ? " CK" : " TM") : ""}${e.note ? ` (${e.note})` : ""}`,
     )
     .join(" | ");
 }
@@ -3004,6 +3005,11 @@ export type CloseSuggestionDTO = {
   transferTotal: number;
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
+  /**
+   * Sổ "Tiền trong ngày" dựng sẵn từ báo cáo điều phối: từng dòng thu đúng
+   * tiền mặt/CK + từng khoản chi hộ — kế toán bấm một nút là nhận cả cụm.
+   */
+  dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   /** Flycam lấy theo CAMERA MAN — nguồn chuẩn của dịch vụ này. */
   flycam: number;
   /** Camera 360 lấy theo PHI CÔNG — nguồn chuẩn của dịch vụ này. */
@@ -3067,6 +3073,36 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     cashTotal: sum(dispatchers, (d) => d.cashReceived),
     transferTotal: sum(dispatchers, (d) => d.transferReceived),
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
+    dispatcherLedger: dispatchers.flatMap((d) => {
+      /** Nhiều điều phối cùng ngày thì mỗi dòng ghi rõ của ai. */
+      const tag = dispatchers.length > 1 ? `${d.staffName}: ` : "";
+      const rows: CloseSuggestionDTO["dispatcherLedger"] = [];
+      // THU — ưu tiên từng dòng chi tiết; không có thì gom theo hai ô tổng
+      const entries = (d.revenueEntries ?? []) as Array<{ content?: string; amount?: number; method?: string }>;
+      if (entries.length) {
+        for (const e of entries) {
+          if (!(e.amount || 0) && !e.content) continue;
+          rows.push({
+            content: `${tag}${e.content || "Tiền thu"}`,
+            amount: e.amount || 0,
+            kind: "thu",
+            method: e.method === "transfer" ? "transfer" : "cash",
+          });
+        }
+      } else {
+        if (d.cashReceived > 0) rows.push({ content: `${tag}Tiền mặt thu trong ngày`, amount: d.cashReceived, kind: "thu", method: "cash" });
+        if (d.transferReceived > 0) rows.push({ content: `${tag}Khách chuyển khoản`, amount: d.transferReceived, kind: "thu", method: "transfer" });
+      }
+      // CHI hộ khách — ba khoản có tên + các khoản tự thêm (mặc định tiền mặt)
+      if (d.guestWaterCost > 0) rows.push({ content: `${tag}Nước cho khách`, amount: d.guestWaterCost, kind: "chi", method: "cash" });
+      if (d.mountainCarCost > 0) rows.push({ content: `${tag}Xe lên núi`, amount: d.mountainCarCost, kind: "chi", method: "cash" });
+      if (d.shuttleCarCost > 0) rows.push({ content: `${tag}Xe đưa đón khách`, amount: d.shuttleCarCost, kind: "chi", method: "cash" });
+      for (const e of (d.expenses ?? []) as ExpenseDTO[]) {
+        if (!e.content && !(e.amount || 0)) continue;
+        rows.push({ content: `${tag}${e.content}`, amount: e.amount || 0, kind: e.kind === "thu" ? "thu" : "chi", method: e.method === "transfer" ? "transfer" : "cash" });
+      }
+      return rows;
+    }),
     flycam: sum(cameramen, (c) => c.flycamFlights),
     video360: sum(pilots, (p) => p.video360),
     redFlag: sum(pilots, (p) => p.redFlag),
@@ -3096,8 +3132,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 /* ================================================================== */
 
 export type DailyCloseSaveInput = {
-  /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
-  ledger?: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
+  /** Sổ "Tiền trong ngày" của kế toán: nội dung – số tiền – tiền mặt/CK – thu/chi. */
+  ledger?: Array<{ content: string; amount: number; kind?: "thu" | "chi"; method?: "cash" | "transfer"; note?: string }>;
   /** Điểm bay của báo cáo — mỗi điểm là một hệ thống riêng. */
   spot: string;
   date: string;

@@ -48,7 +48,14 @@
       "Bash(node --import ./alias.mjs live.mjs)",
       "Bash(sed -i '' 's|await import\\(\"mongoose\"\\)|await import\\(\"/Users/dangvm/Desktop/mebayluon_paragliding/node_modules/mongoose/index.js\"\\)|' live.mjs)",
       "Bash(sed 's/varianceApproved: !!c.varianceApproved/varianceApproved: true/' live.mjs)",
-      "Bash(node --import ./alias.mjs live-approved.mjs)"
+      "Bash(node --import ./alias.mjs live-approved.mjs)",
+      "Bash(ps -p 72891 -o command=)",
+      "Bash(awk '{print $2, $11, $12, $13, $14}')",
+      "Bash(curl -s -c cj.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"dangvm\",\"password\":\"Iphone11\"}' -o /dev/null -w \"login:%{http_code} \")",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t8-kt\",\"password\":\"Test1234\",\"displayName\":\"T8 Ke Toan\",\"role\":\"accountant\"}' -o /dev/null -w 'acc:%{http_code} ')",
+      "Bash(curl -s -c cj8.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t8-kt\",\"password\":\"Test1234\"}' -o /dev/null -w \"login8:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cj8.txt -X POST http://localhost:8080/api/baocao/close?spot=khau-pha -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(awk 'NR>=3180 && NR<=3260 && \\(/pushSheet/ || /pushCloseRow/ || /runInBackground/\\)' services/baobay.service.ts)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

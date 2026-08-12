@@ -132,6 +132,8 @@ export const ExpenseSchema = new Schema<ExpenseDTO>(
     content: { type: String, required: true },
     amount: { type: Number, default: 0, min: 0 },
     kind: { type: String, enum: ["thu", "chi"], default: "chi" },
+    // Không default: dòng cũ chưa phân loại thì để trống, UI coi như tiền mặt
+    method: { type: String, enum: ["cash", "transfer"] },
     note: String,
   },
   { _id: false },

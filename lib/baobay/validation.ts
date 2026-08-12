@@ -82,6 +82,7 @@ const expenseInput = z.object({
   content: z.string().trim().max(200),
   amount: money,
   kind: z.enum(["thu", "chi"]).optional().default("chi"),
+  method: z.enum(["cash", "transfer"]).optional(),
   note: text(500),
 });
 

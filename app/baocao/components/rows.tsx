@@ -214,19 +214,29 @@ export function toRescheduleRows(list: RescheduledDTO[]): RescheduleRow[] {
 /* Chi tiêu khác                                                       */
 /* ------------------------------------------------------------------ */
 
-export type ExpenseRow = { content: string; amount: number; kind: "thu" | "chi"; note: string };
+export type ExpenseRow = {
+  content: string;
+  amount: number;
+  kind: "thu" | "chi";
+  /** Tiền mặt / chuyển khoản — chỉ sổ "Tiền trong ngày" của kế toán dùng. */
+  method?: "cash" | "transfer";
+  note: string;
+};
 
 export function ExpenseRows({
   rows,
   onChange,
   disabled,
   withKind,
+  withMethod,
 }: {
   rows: ExpenseRow[];
   onChange: (next: ExpenseRow[]) => void;
   disabled?: boolean;
   /** Hiện tick THU/CHI trên từng dòng — hiện chỉ camera man dùng (khách trả tiền tại bãi). */
   withKind?: boolean;
+  /** Hiện tick Tiền mặt/CK trên từng dòng — sổ "Tiền trong ngày" của kế toán. */
+  withMethod?: boolean;
 }) {
   const set = (index: number, patch: Partial<ExpenseRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -249,6 +259,32 @@ export function ExpenseRows({
               />
               <MoneyInput value={row.amount} onChange={(v) => set(i, { amount: v })} />
             </div>
+            {withMethod && !disabled && (
+              <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-300">
+                <button
+                  type="button"
+                  onClick={() => set(i, { method: "cash" })}
+                  className={
+                    row.method !== "transfer"
+                      ? "h-12 bg-sky-600 px-2.5 text-xs font-semibold text-white"
+                      : "h-12 bg-white px-2.5 text-xs font-medium text-slate-500"
+                  }
+                >
+                  TM
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set(i, { method: "transfer" })}
+                  className={
+                    row.method === "transfer"
+                      ? "h-12 bg-indigo-600 px-2.5 text-xs font-semibold text-white"
+                      : "h-12 bg-white px-2.5 text-xs font-medium text-slate-500"
+                  }
+                >
+                  CK
+                </button>
+              </div>
+            )}
             {withKind && !disabled && (
               <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-300">
                 <button
@@ -331,6 +367,7 @@ export function toExpenseRows(list: ExpenseDTO[]): ExpenseRow[] {
     content: e.content,
     amount: e.amount,
     kind: (e.kind === "thu" ? "thu" : "chi") as "thu" | "chi",
+    method: e.method,
     note: e.note || "",
   }));
   return rows.length ? rows : [{ content: "", amount: 0, kind: "chi" as const, note: "" }];
