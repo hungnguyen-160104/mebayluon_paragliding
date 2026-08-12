@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v11`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v12`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -124,6 +124,7 @@ const KINDS = {
     'Flycam': 'flycam',
     'Camera 360': 'video360',
     'Bay kéo cờ': 'flagFlight',
+    'Thu chi kế toán': 'ledgerDetail',
     'Đã duyệt chi': 'expensesApproved',
     'Đã duyệt lệch': 'varianceApproved',
     'Trạng thái': 'status',
@@ -237,7 +238,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v11',
+    version: 'baobay-multispot-v12',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

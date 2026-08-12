@@ -66,6 +66,8 @@ export interface IAccountantDailyClose {
   flagFlight: number;
 
   /** Kế toán đã xác nhận các khoản chi tiêu của nhân viên. */
+  /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
+  ledger: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
   expensesApproved: boolean;
   expensesApprovedNote?: string;
 
@@ -132,6 +134,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     video360: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
 
+    ledger: { type: [ExpenseSchema], default: [] },
     expensesApproved: { type: Boolean, default: false },
     expensesApprovedNote: String,
 

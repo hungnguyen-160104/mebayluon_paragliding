@@ -97,6 +97,13 @@ export function normalizeUsername(raw: unknown): string {
     .replace(/\s+/g, "");
 }
 
+/**
+ * ÂN HẠN PHẠT NỘP MUỘN: mọi ngày bay đến hết mốc này KHÔNG bị ghi phạt —
+ * lệnh chủ hệ thống 12/08/2026 (giai đoạn cả đội mới làm quen với app).
+ * Từ ngày 16/08 trở đi phạt chạy như thường.
+ */
+const LATE_PENALTY_GRACE_UNTIL = "2026-08-15";
+
 /** Sai quá số lần này thì khoá tạm — đủ rộng cho người gõ nhầm, đủ chặt với máy dò. */
 const MAX_FAILED_LOGINS = 8;
 /** Khoá tạm bao lâu sau khi vượt ngưỡng. */
@@ -1066,7 +1073,10 @@ export async function upsertPilotReport(
   const penaltySet: Record<string, unknown> = {};
   if (input.submit && !existing?.firstSubmittedAt) {
     const deadline = await getSubmitDeadline(spot);
-    const late = input.flightCount > 0 && isPastSubmitDeadline(input.date, deadline);
+    const late =
+      input.flightCount > 0 &&
+      input.date > LATE_PENALTY_GRACE_UNTIL &&
+      isPastSubmitDeadline(input.date, deadline);
     penaltySet.firstSubmittedAt = new Date();
     penaltySet.lateSubmit = late;
     penaltySet.latePenalty = late ? LATE_PENALTY_VND : 0;
@@ -1805,7 +1815,19 @@ export async function listHandoverRecipients(
 ): Promise<Array<{ username: string; name: string; role: BaobayRole; roleLabel: string }>> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  const allowed = kind === "advance" ? ADVANCE_APPROVER_ROLES : HANDOVER_RECIPIENT_ROLES;
+
+  /**
+   * Kế toán / quản trị GIAO TIỀN được cho MỌI nhân sự — đường chuyển lương,
+   * hoàn tiền chi hộ. Nhân sự thường vẫn chỉ nộp lên ba vai trò giữ quỹ.
+   * Người nhận vẫn phải bấm xác nhận trên trang mình như mọi lệnh khác.
+   */
+  const senderIsFinance = session.role === "accountant" || session.role === "admin";
+  const allowed: BaobayRole[] =
+    kind === "advance"
+      ? ADVANCE_APPROVER_ROLES
+      : senderIsFinance
+        ? ["admin", "accountant", "dispatcher", "pilot", "cameraman"]
+        : HANDOVER_RECIPIENT_ROLES;
 
   const docs = await BaobayAccount.find({
     role: { $in: allowed },
@@ -1861,7 +1883,12 @@ export async function createHandover(
   if (!recipient) throw new BaobayError("Không tìm thấy người nhận tiền");
   if (!recipient.isActive) throw new BaobayError(`Tài khoản “${recipient.displayName}” đã bị khoá`);
   if (recipient.username === session.username) throw new BaobayError("Không thể tự giao tiền cho chính mình");
-  const allowedRoles = isAdvance ? ADVANCE_APPROVER_ROLES : HANDOVER_RECIPIENT_ROLES;
+  const financeSender = session.role === "accountant" || session.role === "admin";
+  const allowedRoles: BaobayRole[] = isAdvance
+    ? ADVANCE_APPROVER_ROLES
+    : financeSender
+      ? ["admin", "accountant", "dispatcher", "pilot", "cameraman"]
+      : HANDOVER_RECIPIENT_ROLES;
   if (!allowedRoles.includes(recipient.role)) {
     throw new BaobayError(
       isAdvance
@@ -2189,40 +2216,56 @@ export async function getCashOnHand(
 /* Bảng kê của một phi công theo chu kỳ                                 */
 /* ================================================================== */
 
-export type PilotStatementDTO = {
+export type StaffStatementDTO = {
   spot: string;
   from: string;
   to: string;
   username: string;
+  /** Tên hiển thị + vai trò — bảng kê dựng theo đúng vai trò của người này. */
   pilotName: string;
+  role: BaobayRole;
   reports: PilotReportDTO[];
+  dispatcherReports: DispatcherReportDTO[];
+  cameramanReports: CameramanReportDTO[];
   /** Ngày đã được kế toán chốt — số của ngày đó mới là số trả tiền. */
   closedDates: string[];
-  /** Lệnh tiền của chính phi công trong kỳ: ứng tiền và giao tiền. */
+  /** Lệnh tiền của chính người này trong kỳ: ứng tiền và giao tiền. */
   money: HandoverDTO[];
 };
 
-/** Toàn bộ số liệu của MỘT phi công trong một khoảng ngày — nguồn cho bảng kê Excel. */
-export async function getPilotStatement(
+/**
+ * Toàn bộ số liệu của MỘT nhân sự trong một khoảng ngày — nguồn cho bảng kê
+ * Excel. Không riêng phi công: điều phối và camera man cũng có bảng kê của
+ * mình (mỗi vai trò một bộ cột riêng, dựng ở route).
+ */
+export async function getStaffStatement(
   spotRaw: string,
   usernameRaw: string,
   from: string,
   to: string,
-): Promise<PilotStatementDTO> {
+): Promise<StaffStatementDTO> {
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
   const username = normalizeUsername(usernameRaw);
   const range = { $gte: from, $lte: to };
 
-  const [account, docs, closes, money] = await Promise.all([
-    BaobayAccount.findOne({ username }).select("displayName").lean<any>(),
-    PilotDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>(),
+  const account = await BaobayAccount.findOne({ username }).select("displayName role").lean<any>();
+  if (!account) throw new BaobayError(`Không tìm thấy tài khoản “${usernameRaw}”`, 404);
+
+  const [pilotDocs, dispatcherDocs, cameramanDocs, closes, money] = await Promise.all([
+    account.role === "pilot"
+      ? PilotDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
+      : Promise.resolve([]),
+    account.role === "dispatcher"
+      ? DispatcherDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
+      : Promise.resolve([]),
+    account.role === "cameraman"
+      ? CameramanDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
+      : Promise.resolve([]),
     AccountantDailyClose.find({ spot, date: range, status: "closed" }).select("date").lean<any[]>(),
     BaobayHandover.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>(),
   ]);
-
-  if (!account) throw new BaobayError(`Không tìm thấy tài khoản “${usernameRaw}”`, 404);
 
   return {
     spot,
@@ -2230,7 +2273,10 @@ export async function getPilotStatement(
     to,
     username,
     pilotName: account.displayName,
-    reports: docs.map(toPilotDTO),
+    role: account.role as BaobayRole,
+    reports: pilotDocs.map(toPilotDTO),
+    dispatcherReports: dispatcherDocs.map(toDispatcherDTO),
+    cameramanReports: cameramanDocs.map(toCameramanDTO),
     closedDates: closes.map((c) => c.date),
     money: money.map(toHandoverDTO),
   };
@@ -2526,6 +2572,7 @@ export async function getLatePenaltyStatus(spotRaw: string, date: string): Promi
   ]);
 
   const pastDeadline = isPastSubmitDeadline(date, deadline);
+  const inGrace = date <= LATE_PENALTY_GRACE_UNTIL;
   const rows: PenaltyRowDTO[] = [];
 
   for (const r of reports) {
@@ -2543,7 +2590,7 @@ export async function getLatePenaltyStatus(spotRaw: string, date: string): Promi
     });
   }
 
-  if (pastDeadline && !dayClosed) {
+  if (pastDeadline && !dayClosed && !inGrace) {
     const reported = new Set(reports.filter((r) => r.submitted).map((r) => r.username));
     for (const acc of roster) {
       if (reported.has(acc.username)) continue;
@@ -2809,6 +2856,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 /* ================================================================== */
 
 export type DailyCloseSaveInput = {
+  /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
+  ledger?: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
   /** Điểm bay của báo cáo — mỗi điểm là một hệ thống riêng. */
   spot: string;
   date: string;
@@ -2856,6 +2905,10 @@ export async function upsertDailyClose(
   const { list: rescheduled, warnings: reWarnings } = normalizeRescheduled(input.rescheduled);
   warnings.push(...reWarnings);
 
+  /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
+  const { list: ledger, warnings: ledgerWarnings } = normalizeExpenses(input.ledger ?? []);
+  warnings.push(...ledgerWarnings);
+
   const doc = await AccountantDailyClose.findOneAndUpdate(
     { spot, date: input.date },
     {
@@ -2876,6 +2929,7 @@ export async function upsertDailyClose(
         flycam: input.flycam,
         video360: input.video360,
         flagFlight: input.flagFlight,
+        ledger,
         expensesApproved: input.expensesApproved,
         expensesApprovedNote: input.expensesApprovedNote,
         varianceApproved: input.varianceApproved,
@@ -2925,6 +2979,7 @@ async function pushCloseRow(doc: any) {
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
     flagFlight: doc.flagFlight ?? 0,
+    ledgerDetail: formatExpenses(doc.ledger ?? []),
     expensesApproved: doc.expensesApproved ? "x" : "",
     varianceApproved: doc.varianceApproved ? "x" : "",
     status: doc.status === "closed" ? "ĐÃ CHỐT" : "chưa chốt",
@@ -3190,6 +3245,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
     flagFlight: doc.flagFlight ?? 0,
+    ledger: doc.ledger ?? [],
     expensesApproved: Boolean(doc.expensesApproved),
     expensesApprovedNote: doc.expensesApprovedNote ?? "",
     varianceApproved: Boolean(doc.varianceApproved),
@@ -3412,6 +3468,19 @@ export async function getReconcile(
       expenseLines.push({ who: d.staffName, role: "dispatcher", content: e.content, amount: e.amount, note: e.note });
     }
   }
+  // Sổ THU/CHI riêng của kế toán — cũng phải nằm trong bảng chi tiết
+  if (close?.ledger?.length) {
+    for (const e of close.ledger) {
+      expenseLines.push({
+        who: close.accountantName || "Kế toán",
+        role: "accountant",
+        content: e.kind === "thu" ? `[THU] ${e.content}` : e.content,
+        amount: e.amount,
+        note: e.note,
+      });
+    }
+  }
+
   for (const c of cameramen) {
     for (const e of c.expenses ?? []) {
       expenseLines.push({

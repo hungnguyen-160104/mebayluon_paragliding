@@ -33,6 +33,8 @@ export default function SummaryPage() {
   const [to, setTo] = useState(today);
   const [tab, setTab] = useState<Tab>("days");
   const [data, setData] = useState<BaobaySummaryDTO | null>(null);
+  /** Người được chọn để tải bảng kê riêng. */
+  const [statementUser, setStatementUser] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resync, setResync] = useState<{ running: boolean; message: string | null }>({
@@ -93,6 +95,16 @@ export default function SummaryPage() {
       setResync({ running: false, message: err?.message || "Không đẩy lại được" });
     }
   }
+
+  /** Mọi nhân sự XUẤT HIỆN trong kỳ — phi công, điều phối, camera man — mỗi người một dòng. */
+  const staffOptions = (() => {
+    if (!data) return [] as Array<{ username: string; name: string; roleLabel: string }>;
+    const seen = new Map<string, { username: string; name: string; roleLabel: string }>();
+    for (const r of data.pilotReports) seen.set(r.username, { username: r.username, name: r.pilotName, roleLabel: "Phi công" });
+    for (const r of data.dispatcherReports) seen.set(r.username, { username: r.username, name: r.staffName, roleLabel: "Điều phối" });
+    for (const r of data.cameramanReports) seen.set(r.username, { username: r.username, name: r.cameramanName, roleLabel: "Camera man" });
+    return [...seen.values()].sort((a, b) => a.roleLabel.localeCompare(b.roleLabel) || a.name.localeCompare(b.name, "vi"));
+  })();
 
   return (
     <Shell
@@ -157,6 +169,39 @@ export default function SummaryPage() {
             {resync.running ? "Đang đẩy lại…" : "Đẩy lại Google Sheets"}
           </Button>
         </div>
+
+        {/* Bảng kê MỘT nhân sự bất kỳ theo đúng khoảng ngày đang chọn ở bộ lọc trên */}
+        {data && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <span className="text-sm font-medium text-slate-700">Bảng kê một nhân sự:</span>
+            <select
+              value={statementUser}
+              onChange={(e) => setStatementUser(e.target.value)}
+              className="h-11 min-w-56 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+            >
+              <option value="">— chọn người —</option>
+              {staffOptions.map((o) => (
+                <option key={o.username} value={o.username}>
+                  {o.name} — {o.roleLabel}
+                </option>
+              ))}
+            </select>
+            <a
+              href={statementUser ? `/api/baocao/statement?from=${from}&to=${to}&spot=${spot}&username=${statementUser}` : undefined}
+              aria-disabled={!statementUser}
+              className={
+                "inline-flex h-11 items-center rounded-xl px-4 text-sm font-semibold " +
+                (statementUser
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "pointer-events-none bg-slate-200 text-slate-400")
+              }
+              download
+            >
+              ⬇ Tải bảng kê {from} → {to}
+            </a>
+            <span className="text-xs text-slate-500">Đổi khoảng ngày ở bộ lọc phía trên — tuần, tháng hay tuỳ ý đều được.</span>
+          </div>
+        )}
 
         {resync.message && (
           <div className="mt-3">

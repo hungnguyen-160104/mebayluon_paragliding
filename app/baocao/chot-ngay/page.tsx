@@ -20,6 +20,9 @@ import {
   toRescheduleRows,
   type RangeRow,
   type RescheduleRow,
+  toExpenseRows,
+  ExpenseRows,
+  type ExpenseRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PenaltyCard } from "../components/PenaltyCard";
@@ -89,6 +92,7 @@ type FormState = {
   flycam: number;
   video360: number;
   flagFlight: number;
+  ledger: ExpenseRow[];
   expensesApproved: boolean;
   expensesApprovedNote: string;
   varianceApproved: boolean;
@@ -110,6 +114,7 @@ const EMPTY_FORM: FormState = {
   flycam: 0,
   video360: 0,
   flagFlight: 0,
+  ledger: [],
   expensesApproved: false,
   expensesApprovedNote: "",
   varianceApproved: false,
@@ -188,6 +193,7 @@ function DailyCloseInner() {
             flycam: res.close.flycam,
             video360: res.close.video360,
             flagFlight: res.close.flagFlight,
+            ledger: toExpenseRows(res.close.ledger).filter((e) => e.content || e.amount),
             expensesApproved: res.close.expensesApproved,
             expensesApprovedNote: res.close.expensesApprovedNote,
             varianceApproved: res.close.varianceApproved,
@@ -318,6 +324,7 @@ function DailyCloseInner() {
             ...form,
             issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
             rescheduled: rescheduledFilled,
+            ledger: form.ledger.filter((e) => e.content.trim() || e.amount),
           },
         );
         apply(res);
@@ -587,6 +594,13 @@ function DailyCloseInner() {
               }
             />
           </div>
+        </Card>
+
+        <Card
+          title="Sổ THU / CHI của kế toán"
+          hint="Khoản tiền kế toán trực tiếp thu hoặc chi trong ngày — mỗi dòng: nội dung – số tiền – tick Thu hoặc Chi"
+        >
+          <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind />
         </Card>
 
         <Card title="Mã vé đã xuất" hint="Nhiều cuốn khác tiền tố thì thêm dòng: A1234–A1256 và B1234–B1239">

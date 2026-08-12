@@ -212,6 +212,8 @@ export const dailyCloseSchema = z.object({
   flycam: count(1_000),
   video360: count(1_000),
   flagFlight: count(1_000),
+  /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
+  ledger: expenseList,
   expensesApproved: z.boolean().optional().default(false),
   expensesApprovedNote: text(1_000),
   varianceApproved: z.boolean().optional().default(false),

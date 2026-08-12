@@ -20,7 +20,8 @@
       "Bash(curl -sL --max-time 90 -A \"Mozilla/5.0\" \"https://web.archive.org/cdx/search/cdx?url=mebayluon.com*&output=text&fl=original,statuscode&collapse=urlkey&limit=3000\" -w \"\\\\nhttp=%{http_code}\\\\n\")",
       "WebFetch(domain:web.archive.org)",
       "WebSearch",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(python3 -c ' *)"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

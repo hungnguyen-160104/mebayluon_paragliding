@@ -99,6 +99,8 @@ export function PersonnelPanel() {
 
       {credentials.length > 0 && <CredentialBox items={credentials} onClear={() => setCredentials([])} />}
 
+      <StatementCard accounts={accounts} />
+
       <ShiftBoard api={api} authHeader={authHeader} />
 
       <SpotSettingsCard />
@@ -1190,5 +1192,82 @@ function AccountRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+
+/**
+ * Quản trị tải bảng kê Excel của MỘT nhân sự theo chu kỳ tuỳ ý — tuần, tháng
+ * hay từ ngày X đến ngày Y. Bộ cột theo vai trò người được chọn; kèm sheet ứng
+ * tiền & giao tiền. Kế toán có bản tương tự ở trang Tổng hợp.
+ */
+function StatementCard({ accounts }: { accounts: BaobayAccountDTO[] }) {
+  const today = todayInVN();
+  const [spot, setSpot] = useState<SpotId>("khau-pha");
+  const [from, setFrom] = useState(shiftDateKey(today, -29));
+  const [to, setTo] = useState(today);
+  const [who, setWho] = useState("");
+
+  const staff = accounts
+    .filter((a) => a.isActive && ["pilot", "dispatcher", "cameraman"].includes(a.role))
+    .filter((a) => a.spots.includes(spot))
+    .sort((a, b) => a.role.localeCompare(b.role) || a.displayName.localeCompare(b.displayName, "vi"));
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 className="font-semibold text-slate-900">⬇ Bảng kê nhân sự theo chu kỳ</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Excel của một người trong khoảng ngày tuỳ ý — tuần, tháng, hay từ ngày X đến ngày Y. Bộ cột theo
+        vai trò, kèm sheet ứng tiền &amp; giao tiền.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap gap-1">
+          {SPOTS.map((sp) => (
+            <button
+              key={sp.id}
+              type="button"
+              onClick={() => { setSpot(sp.id); setWho(""); }}
+              className={
+                "rounded-lg px-3 py-1.5 text-xs font-medium " +
+                (sp.id === spot ? "bg-sky-600 font-semibold text-white" : "border border-slate-300 bg-white text-slate-700")
+              }
+            >
+              {sp.name}
+            </button>
+          ))}
+        </div>
+
+        <select value={who} onChange={(e) => setWho(e.target.value)} className="h-10 min-w-52 rounded-lg border border-slate-300 bg-white px-2 text-sm">
+          <option value="">— chọn nhân sự —</option>
+          {staff.map((a) => (
+            <option key={a.username} value={a.username}>
+              {a.displayName} — {ROLE_LABEL[a.role]}
+            </option>
+          ))}
+        </select>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-slate-700">Từ ngày</span>
+          <Input type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} className="h-10" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-slate-700">Đến ngày</span>
+          <Input type="date" value={to} min={from} max={today} onChange={(e) => e.target.value && setTo(e.target.value)} className="h-10" />
+        </label>
+
+        <a
+          href={who ? `/api/baocao/statement?from=${from}&to=${to}&spot=${spot}&username=${who}` : undefined}
+          aria-disabled={!who}
+          className={
+            "inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold " +
+            (who ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-slate-200 text-slate-400")
+          }
+          download
+        >
+          Tải bảng kê
+        </a>
+      </div>
+    </section>
   );
 }

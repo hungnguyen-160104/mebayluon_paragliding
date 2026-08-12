@@ -205,6 +205,8 @@ export type DailyCloseDTO = {
   flycam: number;
   video360: number;
   flagFlight: number;
+  /** Sổ THU/CHI riêng của kế toán. */
+  ledger: ExpenseDTO[];
   expensesApproved: boolean;
   expensesApprovedNote: string;
   varianceApproved: boolean;

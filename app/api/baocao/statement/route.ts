@@ -7,23 +7,24 @@ import { spotName } from "@/lib/baobay/spots";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { buildXlsx, type SheetSpec } from "@/lib/baobay/xlsx";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { BaobayError, getPilotStatement } from "@/services/baobay.service";
+import { BaobayError, getStaffStatement } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Bảng kê Excel của MỘT phi công theo chu kỳ tự chọn.
+ * Bảng kê Excel của MỘT nhân sự theo chu kỳ tự chọn — 1 tuần, 1 tháng, hay từ
+ * ngày X đến ngày Y đều được. Bộ cột dựng theo VAI TRÒ của người đó (phi công /
+ * điều phối / camera man), kèm sheet ứng tiền & giao tiền.
  *
  * GET ?from=&to=&spot=&username=
  *
- * - Phi công: chỉ xuất được bảng của CHÍNH MÌNH, và chỉ trong 45 ngày gần
- *   nhất — quá hạn đó dữ liệu bị kế toán khoá tra cứu (khoảng ngày tự co lại,
- *   có ghi chú ngay trong file).
- * - Kế toán / quản trị: phi công nào cũng được, khoảng ngày nào cũng được.
+ * - Nhân sự thường: chỉ xuất được bảng của CHÍNH MÌNH, và chỉ trong 45 ngày
+ *   gần nhất (khoảng ngày tự co lại, có ghi chú ngay trong file).
+ * - Kế toán / quản trị: người nào cũng được, khoảng ngày nào cũng được.
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["pilot", "accountant", "admin"], allowAdmin: true });
+  const auth = requireBaobay(req, { allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -38,15 +39,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Khoảng ngày không hợp lệ" }, { status: 400 });
   }
 
-  // Phi công: ép về chính mình + cửa sổ 45 ngày. Kế toán/quản trị: tự chọn.
-  const isPilot = auth.role === "pilot" && !auth.viaAdmin;
-  const username = isPilot ? auth.username : (params.get("username") || "").trim();
+  // Nhân sự thường: ép về chính mình + cửa sổ 45 ngày. Kế toán/quản trị: tự chọn.
+  const isOverseer = auth.viaAdmin || auth.role === "accountant" || auth.role === "admin";
+  const username = isOverseer ? (params.get("username") || "").trim() : auth.username;
   if (!username) {
-    return NextResponse.json({ message: "Thiếu tài khoản phi công (?username=)" }, { status: 400 });
+    return NextResponse.json({ message: "Thiếu tài khoản nhân sự (?username=)" }, { status: 400 });
   }
 
   let clamped = false;
-  if (isPilot) {
+  if (!isOverseer) {
     const limit = shiftDateKey(today, -PILOT_VIEW_LIMIT_DAYS);
     if (from < limit) {
       from = limit;
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const st = await getPilotStatement(spot, username, from, to);
+    const st = await getStaffStatement(spot, username, from, to);
     const xlsx = buildXlsx(buildStatementSheets(st, clamped));
 
     const filename = `bang-ke-${st.username}-${from}-${to}.xlsx`;
@@ -76,9 +77,12 @@ export async function GET(req: Request) {
   }
 }
 
-type Statement = Awaited<ReturnType<typeof getPilotStatement>>;
+type Statement = Awaited<ReturnType<typeof getStaffStatement>>;
 
 function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
+  // Bộ cột theo vai trò — nhân sự nào bảng kê nấy
+  if (st.role === "dispatcher") return [dispatcherDaily(st), moneySheetOf(st)];
+  if (st.role === "cameraman") return [cameramanDaily(st), moneySheetOf(st)];
   const closed = new Set(st.closedDates);
   const isHanoi = st.spot === "ha-noi";
   const sum = (pick: (r: Statement["reports"][number]) => number) =>
@@ -147,10 +151,15 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
     ],
   };
 
+  return [daily, moneySheetOf(st)];
+}
+
+/** Sheet ứng tiền & giao tiền — chung cho mọi vai trò. */
+function moneySheetOf(st: Statement): SheetSpec {
   const advances = st.money.filter((m) => m.kind === "advance");
   const handovers = st.money.filter((m) => m.kind !== "advance");
 
-  const moneySheet: SheetSpec = {
+  return {
     name: "Ứng tiền & giao tiền",
     header: ["Ngày", "Loại", "Nội dung", "Người nhận/duyệt", "Số tiền", "Hình thức", "Trạng thái"],
     widths: [12, 12, 36, 24, 14, 12, 18],
@@ -169,6 +178,73 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
       ["TỔNG ĐÃ GIAO (xác nhận)", "", "", "", handovers.filter((m) => m.confirmed).reduce((a, m) => a + m.amount, 0), "", ""],
     ],
   };
+}
 
-  return [daily, moneySheet];
+/** Bảng kê ĐIỀU PHỐI theo ngày. */
+function dispatcherDaily(st: Statement): SheetSpec {
+  const closed = new Set(st.closedDates);
+  const list = st.dispatcherReports;
+  const sum = (pick: (r: (typeof list)[number]) => number) => list.reduce((a, r) => a + pick(r), 0);
+  const chi = (r: (typeof list)[number]) =>
+    r.guestWaterCost + r.mountainCarCost + r.shuttleCarCost +
+    r.expenses.reduce((a, e) => a + (e.kind === "thu" ? 0 : e.amount), 0);
+
+  return {
+    name: "Bảng kê theo ngày",
+    header: [
+      "Ngày", "Ngày đã chốt", "Khách", "Vé xuất", "Vé thu hồi", "Vé huỷ", "Vé dời",
+      "Flycam", "Camera 360", "Cờ đỏ", "Kéo cờ", "Vé ngoại giao", "Thu ngoại giao",
+      "Tiền mặt", "Chuyển khoản", "Chi tiết tiền thu", "Tổng chi hộ khách", "Ghi chú",
+    ],
+    widths: [12, 12, 8, 9, 11, 8, 8, 9, 11, 8, 8, 13, 14, 14, 14, 36, 16, 24],
+    rows: [
+      ...list.map((r) => [
+        r.date,
+        closed.has(r.date) ? "x" : "chưa",
+        r.guestCount, r.ticketsIssued, r.ticketsReturned, r.cancelledCount, r.rescheduledCount,
+        r.flycam, r.video360, r.redFlag, r.flagFlight,
+        r.diplomaticCodes.length || r.diplomaticGuests, r.diplomaticAmount,
+        r.cashReceived, r.transferReceived,
+        r.revenueEntries.map((e) => `${e.content || "?"}: ${(e.amount / 1000).toLocaleString("vi-VN")}k (${e.method === "transfer" ? "CK" : "TM"})`).join(" | "),
+        chi(r),
+        r.note,
+      ]),
+      [],
+      [
+        "TỔNG", "", sum((r) => r.guestCount), sum((r) => r.ticketsIssued), sum((r) => r.ticketsReturned),
+        sum((r) => r.cancelledCount), sum((r) => r.rescheduledCount),
+        sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.flagFlight),
+        sum((r) => r.diplomaticCodes.length || r.diplomaticGuests), sum((r) => r.diplomaticAmount),
+        sum((r) => r.cashReceived), sum((r) => r.transferReceived), "", sum(chi), "",
+      ],
+      [],
+      ["Bảng kê", `${st.pilotName} (${st.username}) · Điều phối · ${st.from} → ${st.to}`],
+    ],
+  };
+}
+
+/** Bảng kê CAMERA MAN theo ngày. */
+function cameramanDaily(st: Statement): SheetSpec {
+  const closed = new Set(st.closedDates);
+  const list = st.cameramanReports;
+  const sum = (pick: (r: (typeof list)[number]) => number) => list.reduce((a, r) => a + pick(r), 0);
+  const thu = (r: (typeof list)[number]) => r.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
+  const chi = (r: (typeof list)[number]) => r.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount : 0), 0);
+
+  return {
+    name: "Bảng kê theo ngày",
+    header: ["Ngày", "Ngày đã chốt", "Chuyến flycam", "Quay dù lượn", "Thu tại bãi", "Chi tiêu", "Ghi chú"],
+    widths: [12, 12, 13, 13, 14, 12, 30],
+    rows: [
+      ...list.map((r) => [
+        r.date,
+        closed.has(r.date) ? "x" : "chưa",
+        r.flycamFlights, r.paraglidingFlights, thu(r), chi(r), r.note,
+      ]),
+      [],
+      ["TỔNG", "", sum((r) => r.flycamFlights), sum((r) => r.paraglidingFlights), sum(thu), sum(chi), ""],
+      [],
+      ["Bảng kê", `${st.pilotName} (${st.username}) · Camera man · ${st.from} → ${st.to}`],
+    ],
+  };
 }
