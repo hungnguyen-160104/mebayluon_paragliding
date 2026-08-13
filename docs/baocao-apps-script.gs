@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v15`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v16`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -179,6 +179,7 @@ const KINDS = {
     'Nguồn': 'source',
     'Số booking': 'bookingCode',
     'Tên liên hệ': 'contactName',
+    'SĐT': 'phone',
     'Số khách': 'guestCount',
     'Flycam': 'flycam',
     'Camera 360': 'video360',
@@ -190,6 +191,7 @@ const KINDS = {
     'Còn lại phải thu': 'remaining',
     'Trạng thái': 'status',
     'Dời từ': 'rescheduledFrom',
+    'Giao cho': 'assignedTo',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
   },
@@ -263,7 +265,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v15',
+    version: 'baobay-multispot-v16',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

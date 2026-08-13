@@ -109,6 +109,9 @@ const rescheduledGuestList = z
       guests: count(100),
       toDate: z.string().refine((v) => v === "" || isDateKey(v), "Ngày dời tới không hợp lệ"),
       note: text(500),
+      phone: text(50),
+      /** id booking đã đẩy vào lịch ngày dời — giữ để không đẩy trùng. */
+      bookedId: text(50),
     }),
   )
   .max(200)
@@ -137,6 +140,7 @@ const rescheduleEntryInput = z.object({
 const diploEntryInput = z.object({
   codesText: text(2_000),
   amount: money,
+  note: text(500),
 });
 
 const expenseList = z.array(expenseInput).max(50, "Tối đa 50 khoản chi một ngày").default([]);
@@ -162,6 +166,7 @@ export const pilotReportSchema = z.object({
   diplomaticCodesText: text(20_000),
   /** Khách ngoại giao KHÔNG xuất vé (vẫn bay). */
   diplomaticNoTicket: count(300),
+  diplomaticNote: text(500),
   /** Phí bãi theo ĐẦU KHÁCH: bấm +/− số khách, kế toán nhân đơn giá ngoài app. */
   siteFeeGuests: count(500),
   waterCost: money,
@@ -269,6 +274,7 @@ export const bookingSchema = z.object({
   flightDate: z.string().refine(isDateKey, "Ngày bay không hợp lệ"),
   source: text(200),
   contactName: text(200),
+  phone: text(50),
   bookingCode: text(100),
   guestCount: count(100),
   flycam: count(100),
@@ -276,6 +282,12 @@ export const bookingSchema = z.object({
   redFlag: count(100),
   flagFlight: count(100),
   pickup: z.enum(["self", "bigc", "hotel", "other"]).default("self"),
+  /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, để hiện "dời từ dd/mm". */
+  rescheduledFrom: z
+    .string()
+    .refine((v) => v === "" || isDateKey(v), "Ngày dời từ không hợp lệ")
+    .optional()
+    .default(""),
   pickupNote: text(200),
   expectedTime: text(20),
   deposit: money,

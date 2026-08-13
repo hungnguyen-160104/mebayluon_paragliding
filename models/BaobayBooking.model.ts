@@ -34,6 +34,8 @@ export interface IBaobayBooking {
   /** Nguồn khách: FB / TikTok / Zalo / Klook / SEEK / GYG / KKday… — chữ tự do. */
   source: string;
   contactName: string;
+  /** SĐT khách — người được giao lịch gọi đón/tiếp. */
+  phone: string;
   /** Mã booking bên nguồn (số booking Klook, mã đơn…). */
   bookingCode: string;
 
@@ -55,6 +57,15 @@ export interface IBaobayBooking {
   /** Số tiền CÒN LẠI phải thu khi khách đến bay (VND). */
   remaining: number;
   note: string;
+
+  /**
+   * Điều phối GIAO lịch cho một nhân sự của điểm (phi công đón khách, tiếp
+   * khách…) — người được giao thấy booking trên trang của mình.
+   */
+  assignedToUsername?: string;
+  assignedToName?: string;
+  assignedBy?: string;
+  assignedAt?: Date;
 
   status: BookingStatus;
   /** Thời điểm + người bấm xác nhận cuối (đã bay hoặc huỷ). */
@@ -80,6 +91,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
 
     source: { type: String, default: "" },
     contactName: { type: String, default: "" },
+    phone: { type: String, default: "" },
     bookingCode: { type: String, default: "" },
 
     guestCount: { type: Number, default: 0, min: 0 },
@@ -94,6 +106,11 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     deposit: { type: Number, default: 0, min: 0 },
     remaining: { type: Number, default: 0, min: 0 },
     note: { type: String, default: "" },
+
+    assignedToUsername: String,
+    assignedToName: String,
+    assignedBy: String,
+    assignedAt: Date,
 
     status: { type: String, enum: ["open", "done", "cancelled"], default: "open" },
     doneAt: Date,

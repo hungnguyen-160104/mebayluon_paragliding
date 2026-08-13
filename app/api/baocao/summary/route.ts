@@ -107,7 +107,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     rows.push([
       "Ngày", "Điều phối", "Tài khoản", "Số khách", "Vé xuất", "Vé thu về", "Dải mã vé",
       "Vé huỷ", "Mã vé huỷ", "Vé dời lịch", "Mã vé dời lịch",
-      "Flycam", "Camera 360", "Cờ đỏ", "Bay kéo cờ", "Khách ngoại giao",
+      "Flycam", "Camera 360", "Cờ đỏ", "Bay kéo cờ/bánh", "Khách ngoại giao",
       "Tiền mặt", "Chuyển khoản", "Tổng thu",
       "Nước cho khách", "Xe lên núi", "Xe đưa đón", "Chi khác", "Chi tiết chi khác", "Tổng chi",
       "Ghi chú",
@@ -153,7 +153,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       "Ngày", "Trạng thái", "Lỗi đỏ",
       "Số khách", "Vé xuất", "Vé thu hồi", "Vé huỷ", "Vé dời lịch",
       "Tiền mặt", "Chuyển khoản", "Tổng thu",
-      "Flycam", "Camera 360", "Bay kéo cờ",
+      "Flycam", "Camera 360", "Bay kéo cờ/bánh",
       "Điều phối khai vé", "PC khai chuyến", "Số mã PC khai", "PC khai 360", "Camera man khai flycam",
       "Khách ngoại giao", "Cờ đỏ", "Tổng chi", "PC đã chốt",
     ]);

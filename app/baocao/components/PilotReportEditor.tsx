@@ -152,6 +152,7 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     diplomaticGuests: 0,
     diplomaticCodes: [],
     diplomaticNoTicket: 0,
+    diplomaticNote: "",
     siteFeeGuests: 0,
     waterCost: 0,
     guestCarCost: 0,
@@ -337,7 +338,7 @@ function PilotRow({
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
             </ServiceBox>
-            <ServiceBox tone="flagFlight" label="Bay kéo cờ">
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
             </ServiceBox>
           </div>
@@ -382,6 +383,14 @@ function PilotRow({
               />
             </Field>
           </div>
+
+          <Field label="Ghi chú khách ngoại giao">
+            <TextInput
+              value={form.diplomaticNote}
+              onChange={(e) => set("diplomaticNote", e.target.value)}
+              placeholder="Đoàn nào, có vé hay không vé…"
+            />
+          </Field>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {/* Phí bãi + nước: chỉ Hà Nội (Sa Pa, Khau Phạ miễn phí) */}
@@ -552,6 +561,7 @@ function toForm(r: PilotReportDTO) {
     diplomaticGuests: r.diplomaticGuests,
     diplomaticCodesText: r.diplomaticCodes.join(", "),
     diplomaticNoTicket: r.diplomaticNoTicket,
+    diplomaticNote: r.diplomaticNote,
     siteFeeGuests: r.siteFeeGuests,
     waterCost: r.waterCost,
     guestCarCost: r.guestCarCost,

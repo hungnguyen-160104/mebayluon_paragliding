@@ -503,7 +503,7 @@ export function computePilotFee(input: {
    * Nhận bay PPG kéo cờ trong lễ khai mạc.
    *
    * Đây mới là điều kiện được miễn phí combo, chứ không phải cứ bay dù máy
-   * là miễn. Phi công PPG không nhận bay kéo cờ thì vẫn đóng như mọi người.
+   * là miễn. Phi công PPG không nhận bay kéo cờ/bánh thì vẫn đóng như mọi người.
    */
   openingFlagFlight?: boolean;
 }): FeeResult {

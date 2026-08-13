@@ -38,19 +38,9 @@ import { PeriodSummary } from "../components/PeriodSummary";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
-import { SpotSwitcher, useSpot } from "../components/spot";
+import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import {
-  Banner,
-  Button,
-  Card,
-  CountInput,
-  Field,
-  MoneyInput,
-  Readout,
-  TextArea,
-  TextInput,
-} from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -99,8 +89,8 @@ const EMPTY_FORM: FormState = {
   cancelledEntries: [{ codesText: "", reason: "", contactName: "", note: "" }],
   rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }],
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
-  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "" }],
-  diplomaticEntries: [{ codesText: "", amount: 0 }],
+  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }],
+  diplomaticEntries: [{ codesText: "", amount: 0, note: "" }],
   flycam: 0,
   flycamCodesText: "",
   video360: 0,
@@ -142,9 +132,9 @@ function fromReport(r: DispatcherReportDTO): FormState {
       }))
     : r.rescheduled.map((e) => ({ codesText: e.code, toDate: e.toDate, reason: e.note || "", contactName: "", phone: "", note: "" }));
   const diplo: DiploRow[] = r.diplomaticEntries.length
-    ? r.diplomaticEntries.map((e) => ({ codesText: e.codes.join(", "), amount: e.amount }))
+    ? r.diplomaticEntries.map((e) => ({ codesText: e.codes.join(", "), amount: e.amount, note: e.note || "" }))
     : r.diplomaticCodes.length
-      ? [{ codesText: r.diplomaticCodes.join(", "), amount: 0 }]
+      ? [{ codesText: r.diplomaticCodes.join(", "), amount: 0, note: "" }]
       : [];
 
   return {
@@ -158,7 +148,7 @@ function fromReport(r: DispatcherReportDTO): FormState {
       ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
       : EMPTY_FORM.cancelledGuests,
     rescheduledGuests: r.rescheduledGuestEntries.length
-      ? r.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+      ? r.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "", phone: e.phone || "", bookedId: e.bookedId || "" }))
       : EMPTY_FORM.rescheduledGuests,
     diplomaticEntries: diplo.length ? diplo : EMPTY_FORM.diplomaticEntries,
     flycam: r.flycam,
@@ -265,29 +255,77 @@ export default function DispatcherReportPage() {
     setSaved(null);
     setSaving(true);
     try {
-      const res = await apiPost<{ report: DispatcherReportDTO; warnings: string[]; check: DayCheck }>(
-        `/api/baocao/reports/dispatcher?spot=${spot}`,
-        {
-          date,
-          ...form,
-          issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
-          cancelledEntries: form.cancelledEntries.filter(
-            (e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim() || e.note.trim(),
-          ),
-          rescheduledEntries: form.rescheduledEntries.filter((e) => e.codesText.trim() || e.toDate || e.note.trim()),
-          cancelledGuestEntries: form.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
-          rescheduledGuestEntries: form.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
-          diplomaticEntries: form.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount),
-          expenses: form.expenses.filter((x) => x.content.trim() || x.amount),
-        },
-      );
-      setExisting(res.report);
-      setCheck(res.check);
-      setForm(fromReport(res.report));
-      setSaved({ warnings: res.warnings || [] });
-      loadHistory();
+      await persist(form);
     } catch (err: any) {
       setError(err?.message || "Không lưu được báo cáo");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Lưu báo cáo với đúng bản form truyền vào — dùng cho cả nút Lưu lẫn "xác nhận dời". */
+  async function persist(f: FormState) {
+    const res = await apiPost<{ report: DispatcherReportDTO; warnings: string[]; check: DayCheck }>(
+      `/api/baocao/reports/dispatcher?spot=${spot}`,
+      {
+        date,
+        ...f,
+        issuedRanges: f.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
+        cancelledEntries: f.cancelledEntries.filter(
+          (e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim() || e.note.trim(),
+        ),
+        rescheduledEntries: f.rescheduledEntries.filter((e) => e.codesText.trim() || e.toDate || e.note.trim()),
+        cancelledGuestEntries: f.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
+        rescheduledGuestEntries: f.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
+        diplomaticEntries: f.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount || e.note.trim()),
+        expenses: f.expenses.filter((x) => x.content.trim() || x.amount),
+      },
+    );
+    setExisting(res.report);
+    setCheck(res.check);
+    setForm(fromReport(res.report));
+    setSaved({ warnings: res.warnings || [] });
+    loadHistory();
+  }
+
+  /**
+   * "Xác nhận dời": đẩy nhóm khách vào SỔ BOOKING của ngày dời — nhóm hiện
+   * trong "🛫 Booking bay ngày đó" kèm nhãn "dời từ hôm nay" + tên/SĐT/ghi chú.
+   * Xong tự lưu lại báo cáo để ghi nhớ đã đẩy (không đẩy trùng lần hai).
+   */
+  async function confirmMove(index: number) {
+    const row = form.rescheduledGuests[index];
+    if (!row || !row.toDate || !row.guests || row.bookedId) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await apiPost<{ booking: { id: string } }>(`/api/baocao/booking?spot=${spot}`, {
+        flightDate: row.toDate,
+        source: "Dời lịch",
+        contactName: row.name,
+        phone: row.phone,
+        bookingCode: "",
+        guestCount: row.guests,
+        flycam: 0,
+        video360: 0,
+        redFlag: 0,
+        flagFlight: 0,
+        pickup: "self",
+        pickupNote: "",
+        expectedTime: "",
+        deposit: 0,
+        remaining: 0,
+        note: `Khách dời từ ngày ${formatDateKeyVN(date)}${row.note ? ` — ${row.note}` : ""}`,
+        rescheduledFrom: date,
+      });
+      const next = {
+        ...form,
+        rescheduledGuests: form.rescheduledGuests.map((r, i) => (i === index ? { ...r, bookedId: res.booking.id } : r)),
+      };
+      setForm(next);
+      await persist(next);
+    } catch (err: any) {
+      setError(err?.message || "Không đẩy được vào lịch booking");
     } finally {
       setSaving(false);
     }
@@ -318,8 +356,6 @@ export default function DispatcherReportPage() {
       title="Báo cáo điều phối bay"
       subtitle="Cuối buổi nhập vé xuất/thu, tiền mặt, dịch vụ gia tăng và các khoản chi cho khách."
     >
-      <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
-
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
       <ReviewNotices spot={spot} date={date} />
 
@@ -353,6 +389,9 @@ export default function DispatcherReportPage() {
           max={today}
           min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
           loading={loadingDay}
+          spot={spot}
+          spotOptions={spotOptions}
+          onSpotChange={(v) => setSpot(v as never)}
         />
 
         <Card title={noTickets ? "Khách" : "Khách và vé"}>
@@ -443,6 +482,7 @@ export default function DispatcherReportPage() {
               onChange={(rows) => set("rescheduledGuests", rows)}
               minDate={shiftDateKey(date, 1)}
               disabled={locked}
+              onConfirmMove={confirmMove}
             />
           ) : (
             <RescheduleEntryRows
@@ -483,19 +523,20 @@ export default function DispatcherReportPage() {
           title="Dịch vụ gia tăng"
           hint="Flycam đối soát với camera man; 360, cờ đỏ, kéo cờ đối soát với phi công. Mã vé chỉ cần điền khi số lệch."
         >
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Field label="Flycam">
-              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
-            </Field>
-            <Field label="Camera 360">
-              <CountInput value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
-            </Field>
-            <Field label="Dù cờ đỏ">
-              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
-            </Field>
-            <Field label="Bay kéo cờ">
-              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
-            </Field>
+          {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — sát nhau không còn lẫn */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ServiceBox tone="flycam" label="Flycam">
+              <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="video360" label="Camera 360">
+              <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label="Dù cờ đỏ">
+              <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+              <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
+            </ServiceBox>
           </div>
 
           <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
@@ -503,7 +544,7 @@ export default function DispatcherReportPage() {
               Mã vé từng dịch vụ — không bắt buộc, điền khi cần soát lệch
             </summary>
             <div className="mt-3 space-y-3">
-              <Field label="Mã vé Flycam">
+              <ServiceBox tone="flycam" label="Mã vé Flycam">
                 <TextInput
                   value={form.flycamCodesText}
                   onChange={(e) => set("flycamCodesText", e.target.value.toUpperCase())}
@@ -511,8 +552,8 @@ export default function DispatcherReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé Camera 360">
+              </ServiceBox>
+              <ServiceBox tone="video360" label="Mã vé Camera 360">
                 <TextInput
                   value={form.video360CodesText}
                   onChange={(e) => set("video360CodesText", e.target.value.toUpperCase())}
@@ -520,8 +561,8 @@ export default function DispatcherReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé dù cờ đỏ">
+              </ServiceBox>
+              <ServiceBox tone="redFlag" label="Mã vé dù cờ đỏ">
                 <TextInput
                   value={form.redFlagCodesText}
                   onChange={(e) => set("redFlagCodesText", e.target.value.toUpperCase())}
@@ -529,8 +570,8 @@ export default function DispatcherReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé bay kéo cờ">
+              </ServiceBox>
+              <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ/bánh">
                 <TextInput
                   value={form.flagFlightCodesText}
                   onChange={(e) => set("flagFlightCodesText", e.target.value.toUpperCase())}
@@ -538,7 +579,7 @@ export default function DispatcherReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
+              </ServiceBox>
             </div>
           </details>
         </Card>

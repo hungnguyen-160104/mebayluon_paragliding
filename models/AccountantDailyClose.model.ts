@@ -158,6 +158,8 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
             guests: { type: Number, default: 0, min: 0 },
             toDate: { type: String, default: "" },
             note: { type: String, default: "" },
+            phone: { type: String, default: "" },
+            bookedId: { type: String, default: "" },
           },
           { _id: false },
         ),

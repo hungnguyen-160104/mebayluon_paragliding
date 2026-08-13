@@ -34,7 +34,7 @@ import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
-import { SpotSwitcher, useSpot } from "../components/spot";
+import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
 
@@ -69,7 +69,7 @@ type CloseSuggestion = {
   dispatcherSpend: number;
   registeredGuests: number;
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
+  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; bookedId?: string }>;
   dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   dispatcherNames: string[];
   flycam: number;
@@ -121,7 +121,7 @@ const EMPTY_FORM: FormState = {
   rescheduled: [{ code: "", toDate: "", note: "" }],
   registeredGuests: 0,
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
-  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "" }],
+  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }],
   cashTotal: 0,
   transferTotal: 0,
   flycam: 0,
@@ -230,7 +230,12 @@ function DailyCloseInner() {
               ? res.close.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
               : EMPTY_FORM.cancelledGuests,
             rescheduledGuests: res.close.rescheduledGuestEntries.length
-              ? res.close.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+              ? res.close.rescheduledGuestEntries.map((e) => ({
+                  ...e,
+                  note: e.note || "",
+                  phone: e.phone || "",
+                  bookedId: e.bookedId || "",
+                }))
               : EMPTY_FORM.rescheduledGuests,
             cashTotal: res.close.cashTotal,
             transferTotal: res.close.transferTotal,
@@ -470,14 +475,15 @@ function DailyCloseInner() {
       title="Chốt ngày"
       subtitle="Nhập số tổng của ngày, đối chiếu với báo cáo nhân viên, duyệt chi tiêu, rồi chốt để khoá số."
     >
-      <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
-
       <DateBar
         date={date}
         onChange={setDate}
         max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
       />
 
       <div>
@@ -650,7 +656,7 @@ function DailyCloseInner() {
               <Compare label="điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
             </ServiceBox>
-            <ServiceBox tone="flagFlight" label="Bay kéo cờ">
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
@@ -676,7 +682,7 @@ function DailyCloseInner() {
                   <option value="flycam">Flycam</option>
                   <option value="video360">Camera 360</option>
                   <option value="redFlag">Dù cờ đỏ</option>
-                  <option value="flagFlight">Bay kéo cờ</option>
+                  <option value="flagFlight">Bay kéo cờ/bánh</option>
                   <option value="general">Số liệu chung</option>
                 </select>
                 <input
@@ -901,7 +907,12 @@ function DailyCloseInner() {
                       label={`${reporterNames} báo ${suggest.rescheduledGuestEntries.length} nhóm khách dời · ${suggest.rescheduledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách`}
                       action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
                       onCopy={() => {
-                        const rows = suggest.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }));
+                        const rows = suggest.rescheduledGuestEntries.map((e) => ({
+                          ...e,
+                          note: e.note || "",
+                          phone: e.phone || "",
+                          bookedId: e.bookedId || "",
+                        }));
                         set("rescheduledGuests", rows);
                         set("rescheduledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
                       }}

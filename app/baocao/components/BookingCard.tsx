@@ -35,6 +35,7 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (withDate) parts.push(formatDateKeyVN(b.flightDate));
   parts.push([b.source, b.bookingCode && `#${b.bookingCode}`].filter(Boolean).join(" ") || "booking");
   if (b.contactName) parts.push(b.contactName);
+  if (b.phone) parts.push(`📞 ${b.phone}`);
   parts.push(`${b.guestCount} khách`);
   if (b.flycam) parts.push(`${b.flycam}×flycam`);
   if (b.video360) parts.push(`${b.video360}×cam360`);
@@ -62,6 +63,94 @@ function stampVN(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+/** Người được giao lịch — badge tím hiện ở mọi nơi booking xuất hiện. */
+function AssignedBadge({ b }: { b: BookingDTO }) {
+  if (!b.assignedToName) return null;
+  return (
+    <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-800">
+      → giao cho {b.assignedToName}
+    </span>
+  );
+}
+
+/**
+ * Nút "⇢ Chuyển": xổ danh sách nhân sự ĐANG LÀM VIỆC tại điểm, chọn một người
+ * rồi bấm chuyển — booking hiện lên trang của người đó (đón khách, tiếp khách,
+ * có SĐT để gọi).
+ */
+function AssignControl({ spot, booking, onDone }: { spot: string; booking: BookingDTO; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
+  const [pick, setPick] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function openList() {
+    setOpen(true);
+    setError(null);
+    if (staff.length) return;
+    try {
+      const r = await apiGet<{ recipients: Array<{ username: string; name: string; roleLabel: string }> }>(
+        `/api/baocao/handover?spot=${spot}`,
+      );
+      setStaff(r.recipients);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không tải được danh sách nhân sự");
+    }
+  }
+
+  async function send() {
+    if (!pick) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: booking.id, action: "assign", assignee: pick });
+      setOpen(false);
+      setPick("");
+      onDone();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không chuyển được");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={openList}
+        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
+      >
+        {booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
+      </button>
+    );
+  }
+  return (
+    <div className="flex w-full flex-wrap items-center gap-2">
+      <select
+        value={pick}
+        onChange={(e) => setPick(e.target.value)}
+        className="h-9 min-w-44 flex-1 rounded-lg border border-indigo-300 bg-white px-2 text-sm"
+      >
+        <option value="">— chọn nhân sự tiếp nhận —</option>
+        {staff.map((a) => (
+          <option key={a.username} value={a.username}>
+            {a.name} — {a.roleLabel}
+          </option>
+        ))}
+      </select>
+      <Button type="button" className="h-9 px-3 text-xs" disabled={busy || !pick} onClick={send}>
+        {busy ? "Đang chuyển…" : "✓ Chuyển"}
+      </Button>
+      <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={() => setOpen(false)}>
+        Thôi
+      </Button>
+      {error && <span className="w-full text-xs text-rose-600">{error}</span>}
+    </div>
+  );
 }
 
 /* ================================================================== */
@@ -130,6 +219,7 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
           <li key={b.id} className="rounded-lg bg-white px-3 py-2">
             <div className="min-w-0">
               <BookingSummary b={b} />
+              <AssignedBadge b={b} />
               {b.rescheduledFrom.length > 0 && (
                 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
                   dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
@@ -163,7 +253,8 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
                 </Button>
               </div>
             ) : (
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <AssignControl spot={spot} booking={b} onDone={load} />
                 <Button
                   type="button"
                   className="h-9 flex-1 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
@@ -214,6 +305,75 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
 }
 
 /* ================================================================== */
+/* Trang phi công / camera man: lịch ĐƯỢC GIAO cho mình                 */
+/* ================================================================== */
+
+/**
+ * Banner "lịch được giao cho bạn" — máy chủ tự lọc theo tài khoản đang đăng
+ * nhập (phi công/camera man chỉ thấy booking điều phối đã chuyển cho mình).
+ */
+export function AssignedBookings({ spot, date }: { spot: string; date: string }) {
+  const [forDate, setForDate] = useState<BookingDTO[]>([]);
+  const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      apiGet<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
+        .then((r) => {
+          if (!alive) return;
+          setForDate(r.forDate);
+          setUpcoming(r.upcoming.filter((b) => b.flightDate !== date));
+        })
+        .catch(() => {
+          /* chưa được giao lịch nào thì thôi */
+        });
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [spot, date]);
+
+  if (!forDate.length && !upcoming.length) return null;
+
+  return (
+    <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-4">
+      <h2 className="text-sm font-bold text-indigo-900">
+        🤝 Lịch điều phối giao cho bạn — ngày {formatDateKeyVN(date)} ({forDate.filter((b) => b.status === "open").length})
+      </h2>
+      <ul className="mt-2 space-y-2">
+        {forDate.map((b) => (
+          <li key={b.id} className={"rounded-lg bg-white px-3 py-2" + (b.status !== "open" ? " opacity-60" : "")}>
+            <BookingSummary b={b} />
+            {b.status === "done" && (
+              <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">đã bay ✓</span>
+            )}
+            {b.status === "cancelled" && (
+              <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">đã huỷ</span>
+            )}
+            <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
+          </li>
+        ))}
+      </ul>
+      {upcoming.length > 0 && (
+        <div className="mt-2">
+          <div className="text-[11px] font-semibold text-indigo-800">Sắp tới:</div>
+          <ul className="mt-1 space-y-1">
+            {upcoming.map((b) => (
+              <li key={b.id} className="rounded-lg bg-white/70 px-3 py-1.5">
+                <BookingSummary b={b} withDate />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================== */
 /* Thẻ nhập booking mới + danh sách sắp tới                            */
 /* ================================================================== */
 
@@ -229,6 +389,7 @@ type BookingForm = {
   flagFlight: number;
   pickup: BookingDTO["pickup"];
   pickupNote: string;
+  phone: string;
   expectedTime: string;
   deposit: number;
   remaining: number;
@@ -248,6 +409,7 @@ function emptyBooking(today: string): BookingForm {
     flagFlight: 0,
     pickup: "self",
     pickupNote: "",
+    phone: "",
     expectedTime: "",
     deposit: 0,
     remaining: 0,
@@ -354,6 +516,7 @@ export function BookingCard({
       flagFlight: b.flagFlight,
       pickup: b.pickup,
       pickupNote: b.pickupNote,
+      phone: b.phone,
       expectedTime: b.expectedTime,
       deposit: b.deposit,
       remaining: b.remaining,
@@ -429,9 +592,12 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid gap-3 sm:grid-cols-4">
         <Field label="Tên liên hệ">
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" />
+        </Field>
+        <Field label="SĐT">
+          <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" />
         </Field>
         <Field label="Số booking">
           <TextInput value={form.bookingCode} onChange={(e) => set("bookingCode", e.target.value)} placeholder="KLK12345…" />
@@ -452,7 +618,7 @@ export function BookingCard({
         <ServiceBox tone="redFlag" label="Dù cờ đỏ">
           <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={form.guestCount} />
         </ServiceBox>
-        <ServiceBox tone="flagFlight" label="Bay kéo cờ">
+        <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
           <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={form.guestCount} />
         </ServiceBox>
       </div>
@@ -555,11 +721,13 @@ export function BookingCard({
               <li key={b.id} className={"flex flex-wrap items-center gap-2 px-3 py-2" + (editingId === b.id ? " bg-sky-50" : "")}>
                 <div className="min-w-0 flex-1">
                   <BookingSummary b={b} withDate />
+                  <AssignedBadge b={b} />
                   <span className="ml-1 text-[11px] text-slate-400">
                     — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
                   </span>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  <AssignControl spot={bookSpot} booking={b} onDone={load} />
                   <button
                     type="button"
                     onClick={() => startEdit(b)}

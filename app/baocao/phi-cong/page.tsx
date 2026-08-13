@@ -12,13 +12,14 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
+import { AssignedBookings } from "../components/BookingCard";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
-import { SpotSwitcher, useSpot } from "../components/spot";
+import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput } from "../components/ui";
 
@@ -33,7 +34,7 @@ import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBo
  *     số chuyến bằng số mã. Kế toán chỉ chốt được ngày khi mọi phi công đã chốt.
  *  3. Kế toán chốt ngày rồi là khoá — form chuyển sang chỉ đọc.
  *
- * Phi công KHÔNG khai flycam (camera man khai) và không khai cờ đỏ / bay kéo cờ
+ * Phi công KHÔNG khai flycam (camera man khai) và không khai cờ đỏ / bay kéo cờ/bánh
  * (điều phối khai) — chỉ khai thứ mình nắm chắc.
  */
 
@@ -51,6 +52,7 @@ type FormState = {
   diplomaticGuests: number;
   diplomaticCodesText: string;
   diplomaticNoTicket: number;
+  diplomaticNote: string;
   siteFeeGuests: number;
   waterCost: number;
   guestCarCost: number;
@@ -78,6 +80,7 @@ const EMPTY_FORM: FormState = {
   diplomaticGuests: 0,
   diplomaticCodesText: "",
   diplomaticNoTicket: 0,
+  diplomaticNote: "",
   siteFeeGuests: 0,
   waterCost: 0,
   guestCarCost: 0,
@@ -161,6 +164,7 @@ export default function PilotReportPage() {
               diplomaticGuests: res.report.diplomaticGuests,
               diplomaticCodesText: res.report.diplomaticCodes.join(", "),
               diplomaticNoTicket: res.report.diplomaticNoTicket,
+              diplomaticNote: res.report.diplomaticNote,
               siteFeeGuests: res.report.siteFeeGuests,
               waterCost: res.report.waterCost,
               guestCarCost: res.report.guestCarCost,
@@ -273,13 +277,14 @@ export default function PilotReportPage() {
       title="Báo cáo ngày bay (Daily flight report)"
       subtitle="Bay xong nhập số liệu trong ngày, rồi bấm Chốt để kế toán soát (fill in after flying, then Submit). Chưa chốt vẫn sửa được (editable until submitted)."
     >
-      <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
-
       {/* Lịch bay do quản lý chấm — xem là chính, không khoá gì việc nhập số */}
       <MyShifts spot={spot} bilingual />
 
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
       <ReviewNotices spot={spot} date={date} />
+
+      {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
+      <AssignedBookings spot={spot} date={date} />
 
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (
@@ -348,6 +353,9 @@ export default function PilotReportPage() {
           max={today}
           min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
           loading={loadingDay}
+          spot={spot}
+          spotOptions={spotOptions}
+          onSpotChange={(v) => setSpot(v as never)}
         />
         <div className="space-y-3">
           {!loadingDay && existing && (
@@ -456,7 +464,7 @@ export default function PilotReportPage() {
             <ServiceBox tone="redFlag" label={bi("Dù cờ đỏ", "red flag")}>
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} />
             </ServiceBox>
-            <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ", "flag flight")}>
+            <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ/bánh", "flag flight")}>
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
             </ServiceBox>
           </div>
@@ -496,7 +504,7 @@ export default function PilotReportPage() {
                   disabled={locked}
                 />
               </ServiceBox>
-              <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ">
+              <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ/bánh">
                 <TextInput
                   value={form.flagFlightCodesText}
                   onChange={(e) => set("flagFlightCodesText", e.target.value.toUpperCase())}
@@ -536,6 +544,14 @@ export default function PilotReportPage() {
             </Field>
             <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
               <CountInput value={form.diplomaticNoTicket} onChange={(v) => set("diplomaticNoTicket", v)} />
+            </Field>
+            <Field label={bi("Ghi chú khách ngoại giao", "notes")}>
+              <TextInput
+                value={form.diplomaticNote}
+                onChange={(e) => set("diplomaticNote", e.target.value)}
+                placeholder="Đoàn nào, có vé hay không vé, ai duyệt…"
+                disabled={locked}
+              />
             </Field>
           </div>
         </Card>

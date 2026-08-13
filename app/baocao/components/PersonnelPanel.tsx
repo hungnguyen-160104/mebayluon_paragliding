@@ -687,7 +687,7 @@ function PeriodTotalsCard() {
             <Tile label="Chuyến bay" value={String(t.pilotFlights)} />
             <Tile label="Flycam" value={String(t.flycam)} />
             <Tile label="Camera 360" value={String(t.video360)} />
-            <Tile label="Bay kéo cờ" value={String(t.flagFlight)} />
+            <Tile label="Bay kéo cờ/bánh" value={String(t.flagFlight)} />
             <Tile label="Khách ngoại giao" value={String(t.diplomaticGuests)} />
             <Tile label="Tiền mặt" value={formatVND(t.cashTotal)} />
             <Tile label="Chuyển khoản" value={formatVND(t.transferTotal)} />

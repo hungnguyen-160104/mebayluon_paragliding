@@ -952,6 +952,7 @@ export type PilotReportSaveInput = {
   guestCarCost: number;
   /** Khách ngoại giao KHÔNG xuất vé (vẫn bay) — ghi chú tách khỏi phần có vé. */
   diplomaticNoTicket: number;
+  diplomaticNote?: string;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
   pickupBigC: number;
   pickupHotel: number;
@@ -1179,6 +1180,7 @@ export async function upsertPilotReport(
         diplomaticGuests: input.diplomaticGuests,
         diplomaticCodes: diplomatic.codes,
         diplomaticNoTicket: input.diplomaticNoTicket,
+        diplomaticNote: (input.diplomaticNote ?? "").trim(),
         // Phí bãi + nước: đặc thù RIÊNG Hà Nội (Sa Pa, Khau Phạ được miễn phí)
         siteFeeGuests: spot === "ha-noi" ? input.siteFeeGuests : 0,
         waterCost: spot === "ha-noi" ? input.waterCost : 0,
@@ -1250,7 +1252,9 @@ async function pushPilotRow(doc: any) {
       flagFlight: doc.flagFlight || 0,
       flagFlightCodes: (doc.flagFlightCodes || []).join(", "),
       diplomaticGuests: doc.diplomaticGuests || 0,
-      diplomaticCodes: (doc.diplomaticCodes || []).join(", "),
+      diplomaticCodes:
+        (doc.diplomaticCodes || []).join(", ") +
+        (doc.diplomaticNote ? `${(doc.diplomaticCodes || []).length ? " — " : ""}${doc.diplomaticNote}` : ""),
       siteFeeGuests: doc.siteFeeGuests || 0,
       waterCost: doc.waterCost || 0,
       guestCarCost: doc.guestCarCost || 0,
@@ -1328,6 +1332,7 @@ function toPilotDTO(doc: any): PilotReportDTO {
     diplomaticGuests: doc.diplomaticGuests ?? 0,
     diplomaticCodes: doc.diplomaticCodes ?? [],
     diplomaticNoTicket: doc.diplomaticNoTicket ?? 0,
+    diplomaticNote: doc.diplomaticNote ?? "",
     siteFeeGuests: doc.siteFeeGuests ?? 0,
     waterCost: doc.waterCost ?? 0,
     guestCarCost: doc.guestCarCost ?? 0,
@@ -1453,7 +1458,7 @@ export type DispatcherReportSaveInput = {
   cancelledEntries: Array<{ codesText: string; reason: string; contactName: string; note?: string }>;
   /** HÀ NỘI: nhóm KHÁCH huỷ/dời — điểm không vé thu thập theo khách. */
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; bookedId?: string }>;
   /** Dời lịch theo nhóm: nhiều mã một ô + ngày + lý do + liên hệ + sđt. */
   rescheduledEntries: Array<{
     codesText: string;
@@ -1464,7 +1469,7 @@ export type DispatcherReportSaveInput = {
     note?: string;
   }>;
   /** Khách ngoại giao: mã vé + tiền thu (nếu có). */
-  diplomaticEntries: Array<{ codesText: string; amount: number }>;
+  diplomaticEntries: Array<{ codesText: string; amount: number; note?: string }>;
   flycam: number;
   flycamCodesText: string;
   video360: number;
@@ -1575,8 +1580,9 @@ export async function upsertDispatcherReport(
   let diplomaticAmount = 0;
   for (const raw of input.diplomaticEntries) {
     const parsedCodes = parseTicketCodeList(raw.codesText);
-    if (!parsedCodes.codes.length && !raw.amount) continue;
-    diplomaticEntries.push({ codes: parsedCodes.codes, amount: raw.amount });
+    const dNote = (raw.note ?? "").trim();
+    if (!parsedCodes.codes.length && !raw.amount && !dNote) continue;
+    diplomaticEntries.push({ codes: parsedCodes.codes, amount: raw.amount, note: dNote });
     diplomaticFlat.push(...parsedCodes.codes);
     diplomaticAmount += raw.amount;
   }
@@ -1696,7 +1702,10 @@ async function pushDispatcherRow(doc: any) {
     rescheduledCodes: formatRescheduled(doc.rescheduled),
     rescheduledDetail:
       (doc.rescheduledGuestEntries || [])
-        .map((e: any) => `${e.name || "khách"} ×${e.guests} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.note ? ` — ${e.note}` : ""}`)
+        .map(
+          (e: any) =>
+            `${e.name || "khách"} ×${e.guests}${e.phone ? ` (${e.phone})` : ""} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.note ? ` — ${e.note}` : ""}`,
+        )
         .join(" | ") ||
       (doc.rescheduledEntries || [])
       .map(
@@ -2494,6 +2503,7 @@ export type BookingSaveInput = {
   flightDate: string;
   source: string;
   contactName: string;
+  phone: string;
   bookingCode: string;
   guestCount: number;
   flycam: number;
@@ -2506,6 +2516,8 @@ export type BookingSaveInput = {
   deposit: number;
   remaining: number;
   note: string;
+  /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
+  rescheduledFrom?: string;
 };
 
 /** "HH:MM" hiện tại theo giờ Việt Nam — chặn giờ dự kiến lùi về quá khứ. */
@@ -2541,7 +2553,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
-    ["Bay kéo cờ", input.flagFlight],
+    ["Bay kéo cờ/bánh", input.flagFlight],
   ];
   for (const [label, count] of services) {
     if (count > input.guestCount) {
@@ -2557,6 +2569,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       createdByName: session.name,
       source: input.source.trim(),
       contactName: input.contactName.trim(),
+      phone: input.phone.trim(),
       bookingCode: input.bookingCode.trim(),
       guestCount: input.guestCount,
       flycam: input.flycam,
@@ -2570,6 +2583,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       deposit: input.deposit,
       remaining: input.remaining,
       note: input.note.trim(),
+      rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       status: "open",
     })
   ).toObject();
@@ -2586,13 +2600,16 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
 export async function listBookings(
   spotRaw: string,
   date: string,
+  /** Chỉ lấy booking ĐÃ GIAO cho người này — trang phi công/camera man. */
+  assignedTo?: string,
 ): Promise<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
+  const extra = assignedTo ? { assignedToUsername: normalizeUsername(assignedTo) } : {};
 
   const [forDate, upcoming] = await Promise.all([
-    BaobayBooking.find({ spot, flightDate: date }).sort({ expectedTime: 1, createdAt: 1 }).lean<any[]>(),
-    BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() } })
+    BaobayBooking.find({ spot, flightDate: date, ...extra }).sort({ expectedTime: 1, createdAt: 1 }).lean<any[]>(),
+    BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() }, ...extra })
       .sort({ flightDate: 1, expectedTime: 1 })
       .limit(100)
       .lean<any[]>(),
@@ -2619,7 +2636,7 @@ export async function updateBookingInfo(
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
-    ["Bay kéo cờ", input.flagFlight],
+    ["Bay kéo cờ/bánh", input.flagFlight],
   ] as Array<[string, number]>) {
     if (count > input.guestCount) {
       throw new BaobayError(`${label} (${count}) vượt quá số khách (${input.guestCount})`, 400);
@@ -2634,6 +2651,7 @@ export async function updateBookingInfo(
       flightDate: input.flightDate,
       source: input.source.trim(),
       contactName: input.contactName.trim(),
+      phone: input.phone.trim(),
       bookingCode: input.bookingCode.trim(),
       guestCount: input.guestCount,
       flycam: input.flycam,
@@ -2672,6 +2690,45 @@ export async function deleteBooking(session: BaobaySession, spotRaw: string, id:
 
   await BaobayBooking.deleteOne({ _id: id, spot });
   runInBackground(() => pushBookingRow({ ...doc, status: "deleted" }).then(() => {}));
+}
+
+/**
+ * Điều phối GIAO booking cho một nhân sự đang làm việc tại điểm — người được
+ * giao thấy booking trên trang của mình (tên khách, SĐT, chỗ đón, giờ…).
+ */
+export async function assignBooking(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  assigneeRaw: string,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const assignee = await BaobayAccount.findOne({ username: normalizeUsername(assigneeRaw) })
+    .select("username displayName isActive spots")
+    .lean<any>();
+  if (!assignee || !assignee.isActive) throw new BaobayError("Không tìm thấy nhân sự tiếp nhận", 404);
+  if (!(assignee.spots ?? []).includes(spot)) {
+    throw new BaobayError(`“${assignee.displayName}” không làm ở điểm này`, 400);
+  }
+
+  const doc = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot, status: "open" },
+    {
+      $set: {
+        assignedToUsername: assignee.username,
+        assignedToName: assignee.displayName,
+        assignedBy: session.name,
+        assignedAt: new Date(),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+
+  pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
+  return toBookingDTO({ ...doc, sheetSynced: false });
 }
 
 export type BookingAction = "flown" | "cancel" | "move";
@@ -2738,6 +2795,7 @@ async function pushBookingRow(doc: any) {
       source: doc.source || "",
       bookingCode: doc.bookingCode || "",
       contactName: doc.contactName || "",
+      phone: doc.phone || "",
       guestCount: doc.guestCount ?? 0,
       flycam: doc.flycam ?? 0,
       video360: doc.video360 ?? 0,
@@ -2759,6 +2817,7 @@ async function pushBookingRow(doc: any) {
               ? "ĐÃ XOÁ"
               : "CHỜ BAY",
       rescheduledFrom: (doc.rescheduledFrom || []).map((d: string) => formatDateKeyVN(d)).join(", "),
+      assignedTo: doc.assignedToName || "",
       note: doc.note || "",
       updatedAt: nowStampVN(),
     },
@@ -2777,6 +2836,7 @@ function toBookingDTO(doc: any): BookingDTO {
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
     source: doc.source || "",
     contactName: doc.contactName || "",
+    phone: doc.phone || "",
     bookingCode: doc.bookingCode || "",
     guestCount: doc.guestCount ?? 0,
     flycam: doc.flycam ?? 0,
@@ -2794,6 +2854,9 @@ function toBookingDTO(doc: any): BookingDTO {
     doneAt: doc.doneAt ? new Date(doc.doneAt).toISOString() : undefined,
     doneBy: doc.doneBy || undefined,
     rescheduledFrom: doc.rescheduledFrom ?? [],
+    assignedToUsername: doc.assignedToUsername || undefined,
+    assignedToName: doc.assignedToName || undefined,
+    assignedBy: doc.assignedBy || undefined,
   };
 }
 
@@ -3521,8 +3584,8 @@ export type DailyCloseSaveInput = {
   cancelledNote: string;
   rescheduled: Array<{ code: string; toDate: string; note?: string }>;
   registeredGuests?: number;
-  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string }>;
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string; phone?: string; bookedId?: string }>;
   cashTotal: number;
   transferTotal: number;
   flycam: number;
@@ -4562,7 +4625,7 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
-        { label: "Bay kéo cờ (flag flight)", value: sumOf((d) => d.flagFlight) },
+        { label: "Bay kéo cờ/bánh (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
         // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
         ...(spot === "ha-noi"
@@ -4606,7 +4669,7 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Cờ đỏ", value: sumOf((d) => d.redFlag) },
-        { label: "Bay kéo cờ", value: sumOf((d) => d.flagFlight) },
+        { label: "Bay kéo cờ/bánh", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
         { label: "Tiền mặt", value: sumOf((d) => d.cashReceived), money: true },
         { label: "Chuyển khoản", value: sumOf((d) => d.transferReceived), money: true },

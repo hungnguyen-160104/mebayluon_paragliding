@@ -51,7 +51,7 @@ export interface IDispatcherDailyReport {
   /** Bản chi tiết theo nhóm đoàn: mã – lý do – tên liên hệ. */
   cancelledEntries: CancelEntryDTO[];
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; bookedId?: string }>;
   rescheduledCount: number;
   /** Bản phẳng {code, toDate} — bộ đối chiếu dùng bản này. */
   rescheduled: RescheduledDTO[];
@@ -182,6 +182,8 @@ const RescheduleGuestSchema = new Schema(
     guests: { type: Number, default: 0, min: 0 },
     toDate: { type: String, default: "" },
     note: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    bookedId: { type: String, default: "" },
   },
   { _id: false },
 );
@@ -190,6 +192,7 @@ const DiploEntrySchema = new Schema<DiploEntryDTO>(
   {
     codes: { type: [String], default: [] },
     amount: { type: Number, default: 0, min: 0 },
+    note: { type: String, default: "" },
   },
   { _id: false },
 );

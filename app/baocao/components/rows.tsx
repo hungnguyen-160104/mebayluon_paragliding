@@ -13,6 +13,7 @@
  * dòng mới, không phải bấm nút Thêm trước rồi mới gõ.
  */
 
+import { formatDateKeyVN } from "@/lib/baobay/date";
 import { countTicketRange } from "@/lib/baobay/ticket-code";
 import type { ExpenseDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 
@@ -633,7 +634,7 @@ export function CancelGuestRows({
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
-                  <CountInput value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                  <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
                 </div>
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Nguồn khách</div>
@@ -684,19 +685,30 @@ export function CancelGuestRows({
   );
 }
 
-export type RescheduleGuestRow = { name: string; guests: number; toDate: string; note: string };
+export type RescheduleGuestRow = {
+  name: string;
+  guests: number;
+  toDate: string;
+  note: string;
+  phone: string;
+  /** id booking đã đẩy vào lịch ngày dời — có rồi thì nút xác nhận chuyển sang "đã đẩy". */
+  bookedId: string;
+};
 
-/** Khách dời lịch: tên – số lượng – ngày dời – ghi chú. */
+/** Khách dời lịch: tên – số lượng – SĐT – ngày dời – ghi chú (+ nút đẩy vào lịch ngày mới). */
 export function RescheduleGuestRows({
   rows,
   onChange,
   minDate,
   disabled,
+  onConfirmMove,
 }: {
   rows: RescheduleGuestRow[];
   onChange: (next: RescheduleGuestRow[]) => void;
   minDate: string;
   disabled?: boolean;
+  /** Có truyền thì mỗi nhóm hiện nút "Xác nhận dời" — đẩy nhóm vào SỔ BOOKING của ngày dời. */
+  onConfirmMove?: (index: number) => void;
 }) {
   const set = (index: number, patch: Partial<RescheduleGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -707,23 +719,36 @@ export function RescheduleGuestRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
-              <div className="grid gap-2 sm:grid-cols-[1fr_8rem_11rem]">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <TextInput
                   value={row.name}
                   onChange={(e) => set(i, { name: e.target.value })}
                   placeholder="Tên khách / đoàn"
                   disabled={disabled}
                 />
-                <div>
-                  <CountInput value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
-                </div>
                 <TextInput
-                  type="date"
-                  value={row.toDate}
-                  min={minDate}
-                  onChange={(e) => set(i, { toDate: e.target.value })}
+                  value={row.phone}
+                  onChange={(e) => set(i, { phone: e.target.value })}
+                  placeholder="SĐT khách · 09xx…"
+                  inputMode="tel"
                   disabled={disabled}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số lượng khách</div>
+                  <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                </div>
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Dời sang ngày</div>
+                  <TextInput
+                    type="date"
+                    value={row.toDate}
+                    min={minDate}
+                    onChange={(e) => set(i, { toDate: e.target.value })}
+                    disabled={disabled}
+                  />
+                </div>
               </div>
               <TextInput
                 value={row.note}
@@ -731,6 +756,23 @@ export function RescheduleGuestRows({
                 placeholder="Ghi chú · lý do dời, hẹn giờ…"
                 disabled={disabled}
               />
+              {onConfirmMove &&
+                (row.bookedId ? (
+                  <div className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
+                    ✓ Đã đẩy vào lịch booking ngày {row.toDate ? formatDateKeyVN(row.toDate) : "?"} — nhóm sẽ hiện
+                    trong "🛫 Booking bay ngày đó" kèm ghi chú dời từ hôm nay.
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 w-full border border-sky-300 bg-sky-50 text-xs font-semibold text-sky-800"
+                    disabled={disabled || !row.toDate || !row.guests}
+                    onClick={() => onConfirmMove(i)}
+                  >
+                    ✓ Xác nhận dời — đẩy vào lịch booking ngày {row.toDate ? formatDateKeyVN(row.toDate) : "…"}
+                  </Button>
+                ))}
             </div>
             {rows.length > 1 && !disabled && (
               <button
@@ -751,7 +793,7 @@ export function RescheduleGuestRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { name: "", guests: 0, toDate: "", note: "" }])}
+          onClick={() => onChange([...rows, { name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }])}
         >
           + Thêm khách dời
         </Button>
@@ -760,7 +802,7 @@ export function RescheduleGuestRows({
   );
 }
 
-export type DiploRow = { codesText: string; amount: number };
+export type DiploRow = { codesText: string; amount: number; note: string };
 
 export function DiploEntryRows({
   rows,
@@ -778,16 +820,24 @@ export function DiploEntryRows({
     <div className="space-y-3">
       {rows.map((row, i) => (
         <div key={i} className="flex items-start gap-2">
-          <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_11rem]">
+          <div className="flex-1 space-y-2">
+            <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
+              <TextInput
+                value={row.codesText}
+                onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                placeholder="Mã vé ngoại giao · MBL0001"
+                autoCapitalize="characters"
+                spellCheck={false}
+                disabled={disabled}
+              />
+              <MoneyInput value={row.amount} onChange={(v) => set(i, { amount: v })} />
+            </div>
             <TextInput
-              value={row.codesText}
-              onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-              placeholder="Mã vé ngoại giao · MBL0001"
-              autoCapitalize="characters"
-              spellCheck={false}
+              value={row.note}
+              onChange={(e) => set(i, { note: e.target.value })}
+              placeholder="Ghi chú · đoàn nào, có vé/không vé…"
               disabled={disabled}
             />
-            <MoneyInput value={row.amount} onChange={(v) => set(i, { amount: v })} />
           </div>
           {rows.length > 1 && !disabled && (
             <button
@@ -807,7 +857,7 @@ export function DiploEntryRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { codesText: "", amount: 0 }])}
+          onClick={() => onChange([...rows, { codesText: "", amount: 0, note: "" }])}
         >
           + Thêm khách ngoại giao
         </Button>

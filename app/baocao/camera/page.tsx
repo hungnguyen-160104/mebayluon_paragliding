@@ -11,12 +11,13 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
+import { AssignedBookings } from "../components/BookingCard";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
-import { SpotSwitcher, useSpot } from "../components/spot";
+import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CountInput, Field, Readout, TextArea } from "../components/ui";
 
@@ -167,10 +168,11 @@ export default function CameramanReportPage() {
       title="Báo cáo camera man"
       subtitle="Nhập số chuyến đã quay flycam trong ngày rồi bấm Chốt để kế toán soát."
     >
-      <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
-
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
       <ReviewNotices spot={spot} date={date} />
+
+      {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
+      <AssignedBookings spot={spot} date={date} />
 
       {myReds.length > 0 && (
         <Banner tone="error">
@@ -206,6 +208,9 @@ export default function CameramanReportPage() {
           max={today}
           min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
           loading={loadingDay}
+          spot={spot}
+          spotOptions={spotOptions}
+          onSpotChange={(v) => setSpot(v as never)}
         />
         <div className="space-y-3">
           {!loadingDay && existing && (

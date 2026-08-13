@@ -7,6 +7,7 @@ import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
+  assignBooking,
   createBooking,
   deleteBooking,
   listBookings,
@@ -26,14 +27,15 @@ export const dynamic = "force-dynamic";
  *
  * GET   ?date=  -> { forDate, upcoming }
  * POST  {flightDate, source, contactName, bookingCode, guestCount, dịch vụ, pickup, expectedTime, deposit, note}
- * PATCH {id, action: "flown"|"cancel"|"move", toDate?} -> đã bay / huỷ / dời lịch
+ * PATCH {id, action: "flown"|"cancel"|"move"|"assign", toDate?, assignee?} -> đã bay / huỷ / dời / giao cho nhân sự
  * PUT    {id, ...các trường như POST}                    -> sửa thông tin booking
  * DELETE {id}                                            -> xoá booking nhập nhầm
  */
 const ROLES = ["dispatcher", "accountant", "admin"] as const;
 
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: [...ROLES], allowAdmin: true });
+  // Mọi vai trò xem được, nhưng phi công/camera man CHỈ thấy booking đã giao cho mình
+  const auth = requireBaobay(req, { allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -43,7 +45,8 @@ export async function GET(req: Request) {
   if (!isDateKey(date)) {
     return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   }
-  return NextResponse.json(await listBookings(spot, date));
+  const manager = auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role);
+  return NextResponse.json(await listBookings(spot, date, manager ? undefined : auth.username));
 }
 
 export async function POST(req: Request) {
@@ -134,7 +137,7 @@ export async function PATCH(req: Request) {
   const action = String(body?.action ?? "flown");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -142,6 +145,11 @@ export async function PATCH(req: Request) {
   }
 
   try {
+    if (action === "assign") {
+      const assignee = String(body?.assignee ?? "");
+      if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });
+      return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
+    }
     const booking = await updateBookingStatus(auth, spot, id, action as BookingAction, toDate || undefined);
     return NextResponse.json({ booking });
   } catch (err) {

@@ -54,6 +54,8 @@ export interface IPilotDailyReport {
   diplomaticCodes: string[];
   /** Khách ngoại giao KHÔNG xuất vé (vẫn bay) — ghi chú có vé / không vé. */
   diplomaticNoTicket: number;
+  /** Ghi chú khách ngoại giao — đoàn nào, có vé hay không vé, ai duyệt. */
+  diplomaticNote?: string;
 
   /** Tiền phi công đã bỏ ra trong ngày — để trống nếu không có. */
   /**
@@ -147,6 +149,7 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     diplomaticGuests: { type: Number, default: 0, min: 0 },
     diplomaticCodes: { type: [String], default: [] },
     diplomaticNoTicket: { type: Number, default: 0, min: 0 },
+    diplomaticNote: { type: String, default: "" },
 
     siteFeeGuests: { type: Number, default: 0, min: 0 },
     waterCost: { type: Number, default: 0, min: 0 },

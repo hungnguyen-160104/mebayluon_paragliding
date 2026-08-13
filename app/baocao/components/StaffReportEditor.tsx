@@ -294,6 +294,7 @@ function DispatcherRow({
           diplomaticEntries: report.diplomaticEntries.map((e) => ({
             codesText: e.codes.join(" "),
             amount: e.amount,
+            note: e.note || "",
           })),
           // Tổng lưu = tiền vé + các dòng thu có tên; gửi lại phần "tiền vé" = tổng − các dòng
           cashReceived:

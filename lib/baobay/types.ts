@@ -50,8 +50,8 @@ export type RescheduleEntryDTO = {
   note?: string;
 };
 
-/** Khách ngoại giao: mã vé – số tiền thu được (nếu có). */
-export type DiploEntryDTO = { codes: string[]; amount: number };
+/** Khách ngoại giao: mã vé – số tiền thu được (nếu có) – ghi chú (đoàn nào, có vé/không vé). */
+export type DiploEntryDTO = { codes: string[]; amount: number; note?: string };
 
 /**
  * Một lần nhân sự đưa tiền cho quản lý/giám đốc — mọi vai trò đều dùng.
@@ -117,6 +117,8 @@ export type PilotReportDTO = {
   diplomaticCodes: string[];
   /** Khách ngoại giao KHÔNG xuất vé (vẫn bay). */
   diplomaticNoTicket: number;
+  /** Ghi chú khách ngoại giao — đoàn nào, có vé/không vé. */
+  diplomaticNote: string;
   /** Phí bãi bay theo ĐẦU KHÁCH — số khách, không phải tiền. */
   siteFeeGuests: number;
   waterCost: number;
@@ -263,6 +265,8 @@ export type BookingDTO = {
   createdAt: string;
   source: string;
   contactName: string;
+  /** SĐT khách — để người được giao lịch gọi. */
+  phone: string;
   bookingCode: string;
   guestCount: number;
   flycam: number;
@@ -282,6 +286,10 @@ export type BookingDTO = {
   doneBy?: string;
   /** Ngày bay cũ nếu đã dời lịch — hiện "dời từ dd/mm" cho điều phối biết. */
   rescheduledFrom: string[];
+  /** Người được điều phối GIAO lịch (đón khách, tiếp khách…). */
+  assignedToUsername?: string;
+  assignedToName?: string;
+  assignedBy?: string;
 };
 
 /** HÀ NỘI: một nhóm khách huỷ hoàn tiền — điều phối nhập, kế toán xác nhận. */
@@ -294,8 +302,17 @@ export type CancelGuestDTO = {
   note?: string;
 };
 
-/** HÀ NỘI: một nhóm khách dời lịch trong sổ chốt ngày của kế toán. */
-export type RescheduleGuestDTO = { name: string; guests: number; toDate: string; note: string };
+/** HÀ NỘI: một nhóm khách dời lịch — tên, số lượng, SĐT, ngày dời, ghi chú. */
+export type RescheduleGuestDTO = {
+  name: string;
+  guests: number;
+  toDate: string;
+  note: string;
+  /** SĐT khách — theo nhóm sang lịch ngày mới để còn gọi. */
+  phone?: string;
+  /** id booking đã ĐẨY VÀO LỊCH ngày dời — có rồi thì khỏi đẩy lần hai. */
+  bookedId?: string;
+};
 
 /** Kết quả đối chiếu một ngày, dạng gửi qua API. */
 export type ReconcileDTO = {
