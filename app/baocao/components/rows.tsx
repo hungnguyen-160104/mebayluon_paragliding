@@ -341,10 +341,10 @@ export function ExpenseRows({
           <Button
             type="button"
             variant="ghost"
-            className="h-10 px-3 text-xs"
+            className="h-10 border border-sky-400 bg-sky-50 px-4 text-xs font-bold text-sky-800 hover:bg-sky-100"
             onClick={() => onChange([...rows, { content: "", amount: 0, kind: "chi", note: "" }])}
           >
-            {withKind ? "+ Thêm dòng thu/chi" : "+ Thêm khoản chi"}
+            ＋ {withKind ? "Thêm dòng thu/chi" : "Thêm khoản chi"}
           </Button>
           {hideTotals ? null : withKind ? (
             <>
