@@ -2152,6 +2152,16 @@ export async function createHandover(
     username: session.username,
     staffName: session.name,
     role: session.role,
+    /**
+     * Kế toán/quản trị CHUYỂN TIỀN xuống nhân sự thường (lương, hoàn phí…) là
+     * tiền cá nhân của người nhận — đánh dấu như lệnh tài chính lập để KHÔNG
+     * cộng vào "tiền giữ hộ công ty" của họ. Chuyển giữa những người giữ quỹ
+     * (nộp lên giám đốc/kế toán/điều phối) vẫn là dòng tiền quỹ như cũ.
+     */
+    createdBy:
+      !isAdvance && financeSender && !HANDOVER_RECIPIENT_ROLES.includes(recipient.role)
+        ? session.username
+        : undefined,
     recipientId: recipient._id,
     recipientUsername: recipient.username,
     recipientName: recipient.displayName,
@@ -2936,6 +2946,91 @@ function toBookingDTO(doc: any): BookingDTO {
     assignedToName: doc.assignedToName || undefined,
     assignedBy: doc.assignedBy || undefined,
   };
+}
+
+/* ================================================================== */
+/* Thu chi CÁ NHÂN theo ngày — hiện trong thẻ Tiền bạc                  */
+/* ================================================================== */
+
+export type MyMoneyDayDTO = {
+  date: string;
+  rows: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer"; note?: string }>;
+};
+
+/**
+ * Danh sách thu chi CỦA CHÍNH MÌNH gom theo ngày (mới nhất trước) — nguồn cho
+ * khối "Thu chi của tôi" trong thẻ Tiền bạc. Tối đa 45 ngày gần nhất, khớp
+ * hạn tự tra cứu của nhân sự.
+ */
+export async function getMyMoneyDays(session: BaobaySession, spotRaw: string, days = 45): Promise<MyMoneyDayDTO[]> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const from = shiftDateKey(todayInVN(), -(Math.min(Math.max(days, 1), 45) - 1));
+  const range = { $gte: from };
+  const byDay = new Map<string, MyMoneyDayDTO["rows"]>();
+  const push = (date: string, row: MyMoneyDayDTO["rows"][number]) => {
+    if (!row.amount && !row.content) return;
+    if (!byDay.has(date)) byDay.set(date, []);
+    byDay.get(date)!.push(row);
+  };
+  const entryRows = (date: string, expenses: ExpenseDTO[] = []) => {
+    for (const e of expenses) {
+      push(date, {
+        content: e.content,
+        amount: e.amount || 0,
+        kind: e.kind === "thu" ? "thu" : "chi",
+        method: e.method,
+        note: e.note,
+      });
+    }
+  };
+
+  if (session.role === "pilot") {
+    const docs = await PilotDailyReport.find({ spot, username: session.username, date: range })
+      .select("date waterCost guestCarCost expenses")
+      .lean<any[]>();
+    for (const d of docs) {
+      if (d.waterCost > 0) push(d.date, { content: "Nước cho khách", amount: d.waterCost, kind: "chi" });
+      if (d.guestCarCost > 0) push(d.date, { content: "Xe cho khách", amount: d.guestCarCost, kind: "chi" });
+      entryRows(d.date, d.expenses);
+    }
+  } else if (session.role === "dispatcher") {
+    const docs = await DispatcherDailyReport.find({ spot, username: session.username, date: range })
+      .select("date cashReceived transferReceived revenueEntries guestWaterCost mountainCarCost shuttleCarCost expenses")
+      .lean<any[]>();
+    for (const d of docs) {
+      for (const e of d.revenueEntries ?? []) {
+        push(d.date, { content: e.content || "Tiền thu", amount: e.amount || 0, kind: "thu", method: e.method });
+      }
+      const cashRest =
+        (d.cashReceived || 0) -
+        (d.revenueEntries ?? []).filter((e: any) => e.method === "cash").reduce((a: number, e: any) => a + (e.amount || 0), 0);
+      const transferRest =
+        (d.transferReceived || 0) -
+        (d.revenueEntries ?? []).filter((e: any) => e.method === "transfer").reduce((a: number, e: any) => a + (e.amount || 0), 0);
+      if (cashRest > 0) push(d.date, { content: "Tiền thu trong ngày", amount: cashRest, kind: "thu", method: "cash" });
+      if (transferRest > 0) push(d.date, { content: "Khách chuyển khoản", amount: transferRest, kind: "thu", method: "transfer" });
+      if (d.guestWaterCost > 0) push(d.date, { content: "Nước cho khách", amount: d.guestWaterCost, kind: "chi" });
+      if (d.mountainCarCost > 0) push(d.date, { content: "Xe lên núi", amount: d.mountainCarCost, kind: "chi" });
+      if (d.shuttleCarCost > 0) push(d.date, { content: "Xe đưa đón", amount: d.shuttleCarCost, kind: "chi" });
+      entryRows(d.date, d.expenses);
+    }
+  } else if (session.role === "cameraman") {
+    const docs = await CameramanDailyReport.find({ spot, username: session.username, date: range })
+      .select("date expenses")
+      .lean<any[]>();
+    for (const d of docs) entryRows(d.date, d.expenses);
+  } else {
+    // Kế toán / quản trị: sổ "Tiền trong ngày" của chính mình
+    const docs = await AccountantDailyClose.find({ spot, date: range, accountantId: new mongoose.Types.ObjectId(session.id) })
+      .select("date ledger")
+      .lean<any[]>();
+    for (const d of docs) entryRows(d.date, d.ledger);
+  }
+
+  return [...byDay.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([date, rows]) => ({ date, rows }));
 }
 
 /* ================================================================== */

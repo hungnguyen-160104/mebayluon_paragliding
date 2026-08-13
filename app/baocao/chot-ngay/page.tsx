@@ -25,7 +25,6 @@ import {
 import { DateBar } from "../components/DateBar";
 import { BookingCard } from "../components/BookingCard";
 import { HandoverBox } from "../components/HandoverBox";
-import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
@@ -1083,11 +1082,6 @@ function DailyCloseInner() {
           )}
         </div>
       </form>
-
-      {/* Kế toán chủ động lập lệnh chuyển lương / ứng / trả phí cho nhân sự */}
-      <div className="mt-4">
-        <MoneyOrderCard spot={spot} />
-      </div>
 
       {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
       <div className="mt-4">

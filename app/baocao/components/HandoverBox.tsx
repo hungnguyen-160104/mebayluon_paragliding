@@ -192,6 +192,25 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
     }
   }
 
+  /** Thu chi CỦA MÌNH theo ngày — tải một lần 45 ngày, "xem thêm" mở dần. */
+  const [moneyDays, setMoneyDays] = useState<
+    Array<{ date: string; rows: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: string; note?: string }> }>
+  >([]);
+  const [visibleDays, setVisibleDays] = useState(7);
+  useEffect(() => {
+    let alive = true;
+    apiGet<{ days: typeof moneyDays }>(`/api/baocao/my-money?spot=${spot}&days=45`)
+      .then((r) => {
+        if (alive) setMoneyDays(r.days);
+      })
+      .catch(() => {
+        /* danh sách chỉ để tham khảo */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [spot]);
+
   const b = data?.balance;
   const inboxPending = (data?.incoming ?? []).filter((h) => !h.confirmed && !h.rejected);
   const inboxPendingCount = inboxPending.length;
@@ -305,10 +324,71 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         </p>
       )}
 
+      {/* ---------------------- Thu chi CỦA TÔI theo ngày — sổ quan trọng nhất ---------------------- */}
+      {moneyDays.length > 0 && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+          <h3 className="text-sm font-bold text-slate-900">
+            📜 {t("Thu chi của tôi theo ngày", "my money by day")}
+            <span className="ml-1 text-xs font-normal text-slate-400">({t("tối đa 45 ngày", "45 days max")})</span>
+          </h3>
+          <div className="mt-2 space-y-3">
+            {moneyDays.slice(0, visibleDays).map((d) => {
+              const thu = d.rows.reduce((a, r) => a + (r.kind === "thu" ? r.amount : 0), 0);
+              const chi = d.rows.reduce((a, r) => a + (r.kind !== "thu" ? r.amount : 0), 0);
+              return (
+                <div key={d.date}>
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="font-semibold text-slate-700">{formatDateKeyVN(d.date)}</span>
+                    <span className="tabular-nums">
+                      {thu > 0 && <span className="font-semibold text-emerald-700">+{formatVND(thu)}</span>}
+                      {thu > 0 && chi > 0 && <span className="text-slate-300"> · </span>}
+                      {chi > 0 && <span className="font-semibold text-rose-700">−{formatVND(chi)}</span>}
+                    </span>
+                  </div>
+                  <ul className="mt-1 divide-y divide-slate-100 rounded-lg border border-slate-100">
+                    {d.rows.map((r, i) => (
+                      <li key={i} className="flex flex-wrap items-baseline gap-2 px-2.5 py-1.5 text-xs">
+                        <span className="flex-1 text-slate-800">
+                          {r.content}
+                          {r.note && <span className="ml-1 text-slate-400">— {r.note}</span>}
+                        </span>
+                        {r.method && (
+                          <span className="rounded bg-slate-100 px-1 text-[10px] text-slate-500">
+                            {r.method === "transfer" ? "CK" : "TM"}
+                          </span>
+                        )}
+                        <span
+                          className={
+                            "font-semibold tabular-nums " + (r.kind === "thu" ? "text-emerald-700" : "text-rose-700")
+                          }
+                        >
+                          {r.kind === "thu" ? "+" : "−"}
+                          {formatVND(r.amount)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+          {visibleDays < moneyDays.length && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 h-9 w-full border border-slate-300 text-xs"
+              onClick={() => setVisibleDays((v) => Math.min(v + 7, 45))}
+            >
+              {t("Xem thêm", "show more")} ({moneyDays.length - visibleDays} {t("ngày nữa", "more days")})
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* ---------------------- Giao tiền — ít dùng, gập mặc định ---------------------- */}
       <details className="group mt-5 rounded-xl border-2 border-sky-300 bg-sky-50/70 p-3">
         <summary className="cursor-pointer">
-          <h3 className="inline text-sm font-bold text-sky-900">💵 {t("Nộp tiền", "hand over")}</h3>
+          <h3 className="inline text-sm font-bold text-sky-900">💵 {t("Chuyển tiền", "transfer")}</h3>
           <span aria-hidden className="float-right text-sky-400 transition-transform group-open:rotate-180">▾</span>
         </summary>
         <p className="mt-0.5 text-xs text-slate-600">
@@ -317,7 +397,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
 
         <div className="mt-3">
         <Field
-          label={t("Nộp cho ai", "hand over to")}
+          label={t("Chuyển cho ai", "transfer to")}
           hint={data && data.recipients.length === 0 ? "Chưa có ai để nhận tiền ở điểm này" : undefined}
         >
           <select
@@ -395,7 +475,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         disabled={busy}
         onClick={submit}
       >
-        {busy ? "Đang ghi…" : t("Đã nộp tiền", "sent")}
+        {busy ? "Đang ghi…" : t("Đã chuyển tiền", "sent")}
       </Button>
       </details>
 
