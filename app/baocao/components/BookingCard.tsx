@@ -652,7 +652,7 @@ export function BookingCard({
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
-      <div className="grid gap-2 @md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         <Field label="Ngày bay">
           <TextInput
             type="date"
@@ -697,7 +697,7 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         <Field label="Tên liên hệ">
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
@@ -741,7 +741,7 @@ export function BookingCard({
         <p className="mt-0.5 text-[11px] leading-tight text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
       )}
 
-      <div className="mt-2 grid gap-2 @md:grid-cols-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         <Field label="Đưa đón">
           <select
             value={form.pickup}
@@ -790,7 +790,7 @@ export function BookingCard({
           <div className="text-xs font-bold text-emerald-900">
             💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — chỉ định người thu:
           </div>
-          <div className="mt-1.5 grid gap-2 @md:grid-cols-2">
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
             <select
               value={form.collectorUsername}
               onChange={(e) => set("collectorUsername", e.target.value)}
@@ -867,8 +867,10 @@ export function BookingCard({
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-            {upcoming.map((b) => (
+            {upcoming.map((b, i) => (
               <li key={b.id} className={"flex items-start gap-2 px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
+                {/* Số thứ tự đỏ — nhìn phát biết đang nói booking số mấy */}
+                <span className="mt-0.5 shrink-0 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
                   <BookingSummary b={b} withDate />
                   <AssignedBadge b={b} />
