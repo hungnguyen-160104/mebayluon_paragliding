@@ -126,7 +126,7 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
       <button
         type="button"
         onClick={openList}
-        className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
+        className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
       >
         {booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
       </button>
@@ -227,7 +227,7 @@ export function BookingTodayBanner({
       )}
       <ul className="mt-2 space-y-1.5">
         {open.map((b) => (
-          <li key={b.id} className="flex items-start gap-2 rounded-lg bg-white px-3 py-1.5">
+          <li key={b.id} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-1.5">
             <div className="min-w-0 flex-1">
               <BookingSummary b={b} />
               <AssignedBadge b={b} />
@@ -236,39 +236,39 @@ export function BookingTodayBanner({
                   dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
                 </span>
               )}
-              <div className="text-xs text-slate-400">
-                nhập {stampVN(b.createdAt)} bởi {b.createdByName}
-              </div>
+              <span className="ml-1 text-xs text-slate-400">
+                — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
+              </span>
             </div>
 
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
-              <div className="flex shrink-0 flex-col items-stretch gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <input
                   type="date"
                   value={moving.toDate}
                   min={shiftDateKey(todayInVN(), 1)}
                   onChange={(e) => setMoving({ id: b.id, toDate: e.target.value })}
-                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs"
                 />
                 <Button
                   type="button"
-                  className="h-8 px-2.5 text-xs"
+                  className="h-7 px-2 text-xs"
                   disabled={busy === b.id || !moving.toDate}
                   onClick={() => act(b, "move", moving.toDate)}
                 >
                   {busy === b.id ? "Đang lưu…" : "✓ Dời"}
                 </Button>
-                <Button type="button" variant="ghost" className="h-8 bg-white px-2.5 text-xs" onClick={() => setMoving(null)}>
+                <Button type="button" variant="ghost" className="h-7 bg-white px-2 text-xs" onClick={() => setMoving(null)}>
                   Thôi
                 </Button>
               </div>
             ) : (
               /* Nút chức năng nhỏ gọn, xếp MỘT CỘT sát mép phải — thông tin chiếm phần rộng */
-              <div className="flex shrink-0 flex-col items-stretch gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <Button
                   type="button"
-                  className="h-8 bg-emerald-600 px-2.5 text-xs hover:bg-emerald-700"
+                  className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
                   disabled={busy === b.id}
                   onClick={() => act(b, "flown")}
                 >
@@ -277,7 +277,7 @@ export function BookingTodayBanner({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 bg-white px-2.5 text-xs"
+                  className="h-7 bg-white px-2 text-xs"
                   disabled={busy === b.id}
                   onClick={() => setMoving({ id: b.id, toDate: "" })}
                 >
@@ -286,7 +286,7 @@ export function BookingTodayBanner({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 bg-white px-2.5 text-xs text-rose-700"
+                  className="h-7 bg-white px-2 text-xs text-rose-700"
                   disabled={busy === b.id}
                   onClick={() => act(b, "cancel")}
                 >
@@ -868,7 +868,7 @@ export function BookingCard({
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {upcoming.map((b) => (
-              <li key={b.id} className={"flex items-start gap-2 px-2.5 py-2" + (editingId === b.id ? " bg-sky-50" : "")}>
+              <li key={b.id} className={"flex items-start gap-2 px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
                 <div className="min-w-0 flex-1">
                   <BookingSummary b={b} withDate />
                   <AssignedBadge b={b} />
@@ -876,13 +876,13 @@ export function BookingCard({
                     — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
                   </span>
                 </div>
-                <div className="flex shrink-0 flex-col items-stretch gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <AssignControl spot={bookSpot} booking={b} onDone={load} />
                   <button
                     type="button"
                     onClick={() => startEdit(b)}
                     disabled={rowBusy === b.id}
-                    className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-sky-500 hover:text-sky-700"
+                    className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-sky-500 hover:text-sky-700"
                   >
                     {editingId === b.id ? "đang sửa…" : "Sửa"}
                   </button>
@@ -890,7 +890,7 @@ export function BookingCard({
                     type="button"
                     onClick={() => removeBooking(b)}
                     disabled={rowBusy === b.id}
-                    className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
+                    className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
                   >
                     {rowBusy === b.id ? "…" : "Xoá"}
                   </button>
