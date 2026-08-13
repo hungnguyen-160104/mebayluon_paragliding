@@ -521,7 +521,6 @@ function DailyCloseInner() {
       <DateBar
         date={date}
         onChange={setDate}
-        max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
         spot={spot}
@@ -1065,6 +1064,12 @@ function DailyCloseInner() {
           </Banner>
         )}
 
+        {date > today && (
+          <Banner tone="info">
+            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch, đến ngày mới nhập báo cáo được.
+          </Banner>
+        )}
+        {date <= today && (
         <div className="sticky bottom-3 z-10 flex gap-2">
           {locked ? (
             <Button
@@ -1098,6 +1103,7 @@ function DailyCloseInner() {
             </>
           )}
         </div>
+        )}
       </form>
       </div>
       </div>

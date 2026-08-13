@@ -341,31 +341,69 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 
   if (!forDate.length && !upcoming.length) return null;
 
+  // Nhắc trước 3 ngày: booking đã giao cho mình bay trong hôm nay + 3 ngày tới
+  const today = todayInVN();
+  const soonLimit = shiftDateKey(today, 3);
+  const soon = upcoming.filter((b) => b.flightDate <= soonLimit);
+  const later = upcoming.filter((b) => b.flightDate > soonLimit);
+  const soonByDate = soon.reduce<Record<string, BookingDTO[]>>((acc, b) => {
+    (acc[b.flightDate] ??= []).push(b);
+    return acc;
+  }, {});
+
   return (
-    <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-4 lg:[column-span:all]">
-      <h2 className="text-sm font-bold text-indigo-900">
-        🤝 Lịch điều phối giao cho bạn — ngày {formatDateKeyVN(date)} ({forDate.filter((b) => b.status === "open").length})
-      </h2>
-      <ul className="mt-2 space-y-2">
-        {forDate.map((b) => (
-          <li key={b.id} className={"rounded-lg bg-white px-3 py-2" + (b.status !== "open" ? " opacity-60" : "")}>
-            <BookingSummary b={b} />
-            {b.status === "done" && (
-              <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">đã bay ✓</span>
-            )}
-            {b.status === "cancelled" && (
-              <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">đã huỷ</span>
-            )}
-            <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
-          </li>
-        ))}
-      </ul>
-      {upcoming.length > 0 && (
+    <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-3 lg:[column-span:all]">
+      {forDate.length > 0 && (
+        <>
+          <h2 className="text-sm font-bold text-indigo-900">
+            🤝 Lịch điều phối giao cho bạn — ngày {formatDateKeyVN(date)} ({forDate.filter((b) => b.status === "open").length})
+          </h2>
+          <ul className="mt-2 space-y-1.5">
+            {forDate.map((b) => (
+              <li key={b.id} className={"rounded-lg bg-white px-3 py-1.5" + (b.status !== "open" ? " opacity-60" : "")}>
+                <BookingSummary b={b} />
+                {b.status === "done" && (
+                  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">đã bay ✓</span>
+                )}
+                {b.status === "cancelled" && (
+                  <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">đã huỷ</span>
+                )}
+                <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {soon.length > 0 && (
+        <div className={forDate.length > 0 ? "mt-2.5 border-t border-indigo-200 pt-2" : ""}>
+          <h2 className="text-sm font-bold text-indigo-900">🔔 Lịch bay tới đây của bạn — được giao khách:</h2>
+          <ul className="mt-1.5 space-y-1.5">
+            {Object.entries(soonByDate).map(([d, list]) => (
+              <li key={d} className="rounded-lg bg-white px-3 py-1.5">
+                <div className="text-xs font-bold text-indigo-800">
+                  ✈️ Ngày {formatDateKeyVN(d)}{d === today ? " (hôm nay)" : ""} — {list.reduce((t, b) => t + b.guestCount, 0)} khách:
+                </div>
+                <ul className="mt-0.5 space-y-0.5">
+                  {list.map((b) => (
+                    <li key={b.id}>
+                      <BookingSummary b={b} />
+                      <span className="ml-1 text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {later.length > 0 && (
         <div className="mt-2">
-          <div className="text-[11px] font-semibold text-indigo-800">Sắp tới:</div>
+          <div className="text-[11px] font-semibold text-indigo-800">Xa hơn:</div>
           <ul className="mt-1 space-y-1">
-            {upcoming.map((b) => (
-              <li key={b.id} className="rounded-lg bg-white/70 px-3 py-1.5">
+            {later.map((b) => (
+              <li key={b.id} className="rounded-lg bg-white/70 px-3 py-1">
                 <BookingSummary b={b} withDate />
               </li>
             ))}

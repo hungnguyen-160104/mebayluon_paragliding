@@ -386,7 +386,6 @@ export default function DispatcherReportPage() {
       <DateBar
         date={date}
         onChange={setDate}
-        max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
         spot={spot}
@@ -425,7 +424,6 @@ export default function DispatcherReportPage() {
       <DateBar
         date={date}
         onChange={setDate}
-        max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
         spot={spot}
@@ -593,7 +591,12 @@ export default function DispatcherReportPage() {
           </Banner>
         )}
 
-        {!locked && (
+        {date > today && (
+          <Banner tone="info">
+            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch booking, đến ngày mới nhập báo cáo được.
+          </Banner>
+        )}
+        {!locked && date <= today && (
           <div className="sticky bottom-3 z-10">
             <Button type="submit" disabled={saving || loadingDay} className="w-full shadow-lg">
               {saving ? "Đang lưu…" : existing ? "Cập nhật báo cáo" : "Lưu báo cáo"}

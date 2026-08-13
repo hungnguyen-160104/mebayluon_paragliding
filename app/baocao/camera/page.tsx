@@ -174,7 +174,6 @@ export default function CameramanReportPage() {
       <DateBar
         date={date}
         onChange={setDate}
-        max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
         spot={spot}
@@ -214,7 +213,6 @@ export default function CameramanReportPage() {
       <DateBar
         date={date}
         onChange={setDate}
-        max={today}
         min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
         loading={loadingDay}
         spot={spot}
@@ -299,7 +297,12 @@ export default function CameramanReportPage() {
           </Banner>
         )}
 
-        {!locked && (
+        {date > today && (
+          <Banner tone="info">
+            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch được giao, đến ngày mới nhập báo cáo được.
+          </Banner>
+        )}
+        {!locked && date <= today && (
           <div className="sticky bottom-3 z-10 flex gap-2">
             <Button
               type="submit"
