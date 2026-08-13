@@ -254,7 +254,7 @@ export function ExpenseRows({
       {rows.map((row, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
-            <div className="grid flex-1 gap-2 @md:grid-cols-[1fr_10rem]">
+            <div className="grid flex-1 gap-2 @md:grid-cols-[1.3fr_7.5rem_1fr]">
               <TextInput
                 value={row.content}
                 onChange={(e) => set(i, { content: e.target.value })}
@@ -262,6 +262,12 @@ export function ExpenseRows({
                 disabled={disabled}
               />
               <MoneyInput value={row.amount} onChange={(v) => set(i, { amount: v })} />
+              <TextInput
+                value={row.note}
+                onChange={(e) => set(i, { note: e.target.value })}
+                placeholder="Ghi chú…"
+                disabled={disabled}
+              />
             </div>
             {withMethod && !disabled && (
               <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-300">
@@ -326,13 +332,6 @@ export function ExpenseRows({
               </button>
             )}
           </div>
-          <TextInput
-            value={row.note}
-            onChange={(e) => set(i, { note: e.target.value })}
-            placeholder="Ghi chú (không bắt buộc)"
-            className="mt-2"
-            disabled={disabled}
-          />
         </div>
       ))}
 
@@ -677,7 +676,7 @@ export function CancelGuestRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2 @md:grid-cols-2 @2xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
@@ -691,7 +690,7 @@ export function CancelGuestRows({
                     disabled={disabled}
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1">
+                <div className="col-span-2 @md:col-span-1">
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
                   <MoneyInput value={row.refund} onChange={(v) => set(i, { refund: v })} />
                 </div>
@@ -801,7 +800,8 @@ export function RescheduleGuestRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              {/* 4 ô một hàng khi đủ rộng: số lượng – ngày dời – đón – giờ hẹn */}
+              <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số lượng khách</div>
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
@@ -816,9 +816,6 @@ export function RescheduleGuestRows({
                     disabled={disabled}
                   />
                 </div>
-              </div>
-              {/* Tự đến hay hẹn đón + giờ hẹn — theo nhóm sang booking của ngày dời */}
-              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Đưa đón</div>
                   <select
