@@ -4097,6 +4097,7 @@ async function pushCloseRow(doc: any) {
     revenueTotal: (doc.cashTotal ?? 0) + (doc.transferTotal ?? 0),
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
+    redFlag: doc.redFlag ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledgerDetail: formatExpenses(doc.ledger ?? []),
     expensesApproved: doc.expensesApproved ? "x" : "",

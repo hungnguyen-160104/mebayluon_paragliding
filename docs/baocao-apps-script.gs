@@ -125,6 +125,7 @@ const KINDS = {
     'Tổng thu': 'revenueTotal',
     'Flycam': 'flycam',
     'Camera 360': 'video360',
+    'Dù cờ đỏ': 'redFlag',
     'Bay kéo cờ': 'flagFlight',
     'Thu chi kế toán': 'ledgerDetail',
     'Đã duyệt chi': 'expensesApproved',
