@@ -394,11 +394,11 @@ export default function DispatcherReportPage() {
           onSpotChange={(v) => setSpot(v as never)}
         />
 
-        <Card title={noTickets ? "Khách" : "Khách và vé"}>
+        <Card title={noTickets ? "Tổng khách trong ngày" : "Tổng khách trong ngày & vé"}>
           <div className={noTickets ? "grid gap-4" : "grid gap-4 sm:grid-cols-3"}>
             {/* Ô quan trọng nhất của quầy — khung đỏ nổi bật, cụm đếm gọn */}
             <div className="max-w-60 rounded-xl border-2 border-rose-400 bg-rose-50 p-2.5">
-              <div className="mb-1.5 text-xs font-bold text-rose-800">Số khách</div>
+              <div className="mb-1.5 text-xs font-bold text-rose-800">Tổng khách trong ngày</div>
               <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
             </div>
             {/* Hà Nội không xuất vé giấy — các ô vé không tồn tại ở điểm này */}
