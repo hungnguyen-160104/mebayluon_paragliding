@@ -775,6 +775,14 @@ export function BookingCard({
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
       <div className="grid grid-cols-2 gap-2">
+        <Field label="Giờ dự kiến">
+          <TextInput
+            type="time"
+            value={form.expectedTime}
+            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
+            onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
+          />
+        </Field>
         <Field label="Ngày bay">
           <TextInput
             type="date"
@@ -847,14 +855,6 @@ export function BookingCard({
         </Field>
         <Field label="Số khách">
           <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
-        </Field>
-        <Field label="Giờ dự kiến">
-          <TextInput
-            type="time"
-            value={form.expectedTime}
-            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
-            onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
-          />
         </Field>
       </div>
 
