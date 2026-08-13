@@ -909,7 +909,9 @@ export default function PilotReportPage() {
                   <div>
                     <div className="font-medium text-slate-900">{formatDateKeyVN(r.date)}</div>
                     <div className="text-xs text-slate-500">
-                      {r.flightCount} chuyến · {r.ticketCodes.length} mã vé
+                      {/* Cộng cả PPG — phi công PPG bay 1 chuyến mà hiện "0 chuyến" là báo sai */}
+                      {r.flightCount + r.ppgFlights} chuyến · {r.ticketCodes.length + r.ppgCodes.length} mã vé
+                      {r.ppgFlights ? ` (${r.ppgFlights} PPG)` : ""}
                       {r.flycam ? ` · ${r.flycam} flycam` : ""}
                       {r.video360 ? ` · ${r.video360}×360` : ""}
                       {r.redFlag ? ` · ${r.redFlag} cờ đỏ` : ""}

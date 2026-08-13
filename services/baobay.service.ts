@@ -5130,7 +5130,8 @@ export async function getMyPeriodSummary(
       unclosedDays: docs.filter((d) => !closedDates.has(d.date)).length,
       lines: [
         { label: "Số ngày bay (days flown)", value: docs.length },
-        { label: "Tổng chuyến (flights)", value: sumOf((d) => d.flightCount) },
+        // Cộng cả PPG — dòng "Chuyến PPG" bên dưới là số tách riêng để đối chiếu
+        { label: "Tổng chuyến (flights)", value: sumOf((d) => (d.flightCount || 0) + (d.ppgFlights || 0)) },
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
