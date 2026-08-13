@@ -72,7 +72,7 @@ export function DateBar({
           min={min}
           max={max}
           onChange={(e) => e.target.value && onChange(e.target.value)}
-          className="ml-auto h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-sky-600"
+          className="ml-auto h-12 rounded-xl border-2 border-sky-400 bg-white px-3 text-base font-semibold text-slate-900 outline-none focus:border-sky-600"
         />
       </div>
     </div>
