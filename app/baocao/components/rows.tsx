@@ -15,7 +15,7 @@
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { countTicketRange } from "@/lib/baobay/ticket-code";
-import type { ExpenseDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
+import type { DispatcherReportDTO, ExpenseDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 
 import { Button, CountInput, MoneyInput, Readout, TextInput } from "./ui";
 
@@ -364,6 +364,34 @@ export function ExpenseRows({
       )}
     </div>
   );
+}
+
+/** Trải mọi nguồn tiền của báo cáo (cũ lẫn mới) thành sổ THU CHI một dòng một khoản. */
+export function dispatcherMoneyRows(r: DispatcherReportDTO): ExpenseRow[] {
+  const rows: ExpenseRow[] = [];
+  for (const e of r.revenueEntries) {
+    rows.push({ content: e.content, amount: e.amount, kind: "thu", method: e.method, note: "" });
+  }
+  const cashRest = r.cashReceived - r.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0);
+  const transferRest =
+    r.transferReceived - r.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0);
+  if (cashRest > 0) rows.push({ content: "Tiền thu trong ngày", amount: cashRest, kind: "thu", method: "cash", note: "" });
+  if (transferRest > 0)
+    rows.push({ content: "Khách chuyển khoản", amount: transferRest, kind: "thu", method: "transfer", note: "" });
+  if (r.guestWaterCost > 0) rows.push({ content: "Nước cho khách", amount: r.guestWaterCost, kind: "chi", method: "cash", note: "" });
+  if (r.mountainCarCost > 0) rows.push({ content: "Xe lên núi", amount: r.mountainCarCost, kind: "chi", method: "cash", note: "" });
+  if (r.shuttleCarCost > 0) rows.push({ content: "Xe đưa đón", amount: r.shuttleCarCost, kind: "chi", method: "cash", note: "" });
+  for (const e of r.expenses) {
+    if (!e.content && !e.amount) continue;
+    rows.push({
+      content: e.content,
+      amount: e.amount,
+      kind: e.kind === "thu" ? "thu" : "chi",
+      method: e.method,
+      note: e.note || "",
+    });
+  }
+  return rows.length ? rows : [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }];
 }
 
 export function toExpenseRows(list: ExpenseDTO[]): ExpenseRow[] {

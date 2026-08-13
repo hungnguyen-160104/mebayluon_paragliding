@@ -5,7 +5,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
-import { parseTicketCodeList, TICKET_CODE_HINT } from "@/lib/baobay/ticket-code";
 import type { DailyCloseDTO, ReconcileDTO } from "@/lib/baobay/types";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { ROLE_LABEL } from "@/lib/baobay/roles";
@@ -13,22 +12,18 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPatch, apiPost } from "../components/client-api";
 import {
-  RangeRows,
-  RescheduleRows,
-  rangeRowsTotal,
   toRangeRows,
   toRescheduleRows,
   type RangeRow,
   type RescheduleRow,
   toExpenseRows,
   ExpenseRows,
-  CancelGuestRows,
-  RescheduleGuestRows,
   type CancelGuestRow,
   type RescheduleGuestRow,
   type ExpenseRow,
 } from "../components/rows";
 import { DateBar } from "../components/DateBar";
+import { BookingCard } from "../components/BookingCard";
 import { HandoverBox } from "../components/HandoverBox";
 import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PenaltyCard } from "../components/PenaltyCard";
@@ -122,6 +117,8 @@ type FormState = {
   redFlag: number;
   flagFlight: number;
   ledger: ExpenseRow[];
+  /** Dấu duyệt/từ chối từng khoản nhân viên khai — khoá theo expenseLines.key. */
+  expenseReviews: Array<{ key: string; status: "ok" | "no"; reason?: string }>;
   expensesApproved: boolean;
   expensesApprovedNote: string;
   varianceApproved: boolean;
@@ -151,6 +148,7 @@ const EMPTY_FORM: FormState = {
   redFlag: 0,
   flagFlight: 0,
   ledger: [],
+  expenseReviews: [],
   expensesApproved: false,
   expensesApprovedNote: "",
   varianceApproved: false,
@@ -210,9 +208,7 @@ function DailyCloseInner() {
 
   /** Hà Nội không xuất vé — form chốt chạy theo KHÁCH thay vì mã vé. */
   const noTickets = spot === "ha-noi";
-  const cancelledGuestTotal = form.cancelledGuests.reduce((a, e) => a + (e.guests || 0), 0);
-  const rescheduledGuestTotal = form.rescheduledGuests.reduce((a, e) => a + (e.guests || 0), 0);
-  const rangeTotal = useMemo(() => rangeRowsTotal(form.issuedRanges), [form.issuedRanges]);
+
   /**
    * Tổng tiền mặt / chuyển khoản KHÔNG nhập tay nữa — tự cộng từ các dòng THU
    * trong sổ "Tiền trong ngày" theo tick TM/CK. Kế toán kê dòng nào thì tổng
@@ -227,7 +223,7 @@ function DailyCloseInner() {
     () => form.ledger.reduce((a, e) => a + (e.kind === "thu" && e.method === "transfer" ? e.amount || 0 : 0), 0),
     [form.ledger],
   );
-  const cancelled = useMemo(() => parseTicketCodeList(form.cancelledCodesText), [form.cancelledCodesText]);
+
   const rescheduledFilled = form.rescheduled.filter((r) => r.code.trim());
 
   const apply = useCallback((res: { close: DailyCloseDTO | null; reconcile: ReconcileDTO; suggest?: CloseSuggestion }) => {
@@ -274,6 +270,7 @@ function DailyCloseInner() {
             redFlag: res.close.redFlag,
             flagFlight: res.close.flagFlight,
             ledger: toExpenseRows(res.close.ledger).filter((e) => e.content || e.amount),
+            expenseReviews: res.close.expenseReviews.map((r) => ({ ...r })),
             expensesApproved: res.close.expensesApproved,
             expensesApprovedNote: res.close.expensesApprovedNote,
             varianceApproved: res.close.varianceApproved,
@@ -491,6 +488,23 @@ function DailyCloseInner() {
   const warns = (check?.issues || []).filter((i) => i.severity === "warn");
   /** Thu chi NHÂN VIÊN khai (sổ của kế toán sửa ngay bên dưới nên không lặp lại ở danh sách này). */
   const staffLines = (check?.expenseLines || []).filter((e) => e.role !== "accountant");
+  const reviewOf = (key: string) => form.expenseReviews.find((r) => r.key === key);
+  /** Đặt dấu duyệt/từ chối một khoản; từ chối thì đẩy lệnh soát lại về đúng vai trò. */
+  function markExpense(line: (typeof staffLines)[number], status: "ok" | "no", reason?: string) {
+    set("expenseReviews", [
+      ...form.expenseReviews.filter((r) => r.key !== line.key),
+      { key: line.key, status, reason: reason || "" },
+    ]);
+    if (status === "no") {
+      apiPost(`/api/baocao/review?spot=${spot}`, {
+        date,
+        topic: "general",
+        note: `Khoản "${line.content}" ${formatVND(line.amount)} của ${line.who} bị kế toán TỪ CHỐI${reason ? ` — ${reason}` : ""}. Sửa lại báo cáo ngày ${formatDateKeyVN(date)}.`,
+      }).catch(() => {
+        /* lệnh soát chỉ là kênh báo — dấu từ chối đã lưu trong form */
+      });
+    }
+  }
   const staffThu = staffLines.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
   const staffChi = staffLines.reduce((a, e) => a + (e.kind !== "thu" ? e.amount : 0), 0);
   /** Riêng tiền phi công cầm hộ/thu tại bãi — hiện cạnh tổng thu để kế toán soát. */
@@ -625,12 +639,12 @@ function DailyCloseInner() {
                 </Field>
                 <Field label="Số khách huỷ">
                   <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
-                  <Compare label="đếm theo danh sách khách huỷ" value={cancelledGuestTotal} mine={form.cancelledCount}
+                  <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
                 </Field>
                 <Field label="Số khách dời">
                   <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-                  <Compare label="đếm theo danh sách khách dời" value={rescheduledGuestTotal} mine={form.rescheduledCount}
+                  <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
                 </Field>
               </>
@@ -653,13 +667,13 @@ function DailyCloseInner() {
 
                 <Field label="Trong đó: vé huỷ hoàn tiền">
                   <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
-                  <Compare label="đếm theo mã đã liệt kê" value={cancelled.codes.length} mine={form.cancelledCount}
+                  <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
                 </Field>
 
                 <Field label="Trong đó: vé dời lịch">
                   <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-                  <Compare label="đếm theo mã đã liệt kê" value={rescheduledFilled.length} mine={form.rescheduledCount}
+                  <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
                 </Field>
               </>
@@ -789,25 +803,116 @@ function DailyCloseInner() {
               </span>
             </div>
             {staffLines.length > 0 ? (
-              <ul className="mb-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-                {staffLines.map((e, k) => (
-                  <li key={k} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm">
-                    <span className="text-xs text-slate-500">
-                      {e.who} · {ROLE_LABEL[e.role]}
-                    </span>
-                    <span className="flex-1 text-slate-900">{e.content}</span>
-                    {e.note && <span className="text-xs text-slate-500">{e.note}</span>}
-                    <span
-                      className={
-                        "font-semibold tabular-nums " + (e.kind === "thu" ? "text-emerald-700" : "text-rose-700")
-                      }
+              <>
+                {!locked && (
+                  <div className="mb-2 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-9 flex-1 border border-emerald-300 bg-emerald-50 text-xs font-semibold text-emerald-800"
+                      onClick={() => {
+                        set(
+                          "expenseReviews",
+                          staffLines.map((l) => ({ key: l.key, status: "ok" as const, reason: "" })),
+                        );
+                        set("expensesApproved", true);
+                      }}
                     >
-                      {e.kind === "thu" ? "+" : "−"}
-                      {formatVND(e.amount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                      ✓ Xác nhận toàn bộ
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-9 flex-1 border border-rose-300 bg-rose-50 text-xs font-semibold text-rose-800"
+                      onClick={() => {
+                        const reason = window.prompt("Từ chối TOÀN BỘ các khoản — lý do?") ?? "";
+                        if (!reason.trim()) return;
+                        set(
+                          "expenseReviews",
+                          staffLines.map((l) => ({ key: l.key, status: "no" as const, reason })),
+                        );
+                        set("expensesApproved", false);
+                        apiPost(`/api/baocao/review?spot=${spot}`, {
+                          date,
+                          topic: "general",
+                          note: `Kế toán TỪ CHỐI toàn bộ ${staffLines.length} khoản thu chi ngày ${formatDateKeyVN(date)} — ${reason}. Mọi người soát và sửa lại báo cáo.`,
+                        }).catch(() => {});
+                      }}
+                    >
+                      ✕ Từ chối toàn bộ
+                    </Button>
+                  </div>
+                )}
+                <ul className="mb-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                  {staffLines.map((e, k) => {
+                    const rv = reviewOf(e.key);
+                    return (
+                      <li
+                        key={k}
+                        className={
+                          "flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm" +
+                          (rv?.status === "ok" ? " bg-emerald-50/70" : rv?.status === "no" ? " bg-rose-50/80" : "")
+                        }
+                      >
+                        <span className="text-xs text-slate-500">
+                          {e.who} · {ROLE_LABEL[e.role]}
+                        </span>
+                        <span className="flex-1 text-slate-900">
+                          {e.content}
+                          {rv?.status === "no" && (
+                            <span className="ml-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+                              từ chối{rv.reason ? `: ${rv.reason}` : ""} — chờ sửa
+                            </span>
+                          )}
+                        </span>
+                        {e.note && <span className="text-xs text-slate-500">{e.note}</span>}
+                        <span
+                          className={
+                            "font-semibold tabular-nums " + (e.kind === "thu" ? "text-emerald-700" : "text-rose-700")
+                          }
+                        >
+                          {e.kind === "thu" ? "+" : "−"}
+                          {formatVND(e.amount)}
+                        </span>
+                        {!locked && (
+                          <span className="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              title="Xác nhận khoản này"
+                              onClick={() => markExpense(e, "ok")}
+                              className={
+                                "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                                (rv?.status === "ok"
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : "border-slate-300 bg-white text-emerald-700 hover:border-emerald-500")
+                              }
+                            >
+                              ✓
+                            </button>
+                            <button
+                              type="button"
+                              title="Từ chối — đẩy về người khai sửa lại"
+                              onClick={() => {
+                                const reason = window.prompt(`Từ chối "${e.content}" của ${e.who} — lý do?`) ?? "";
+                                if (!reason.trim()) return;
+                                markExpense(e, "no", reason);
+                              }}
+                              className={
+                                "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                                (rv?.status === "no"
+                                  ? "border-rose-500 bg-rose-500 text-white"
+                                  : "border-slate-300 bg-white text-rose-700 hover:border-rose-500")
+                              }
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             ) : (
               <p className="mb-3 text-sm text-slate-500">Hôm nay nhân viên chưa khai khoản thu chi nào.</p>
             )}
@@ -884,138 +989,9 @@ function DailyCloseInner() {
           </div>
         </Card>
 
-        {!noTickets && (
-        <Card title="Mã vé đã xuất" hint="Vé năm nay là MBLxxxx — gõ tắt số cũng được. Nhiều cuốn thì thêm dòng">
-          <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
-          {suggest && suggest.issuedRanges.length > 0 && !locked && (
-            <CopyLine
-              label={`điều phối khai ${suggest.issuedRanges.length} dải: ${suggest.issuedRanges.map((r) => `${r.from}→${r.to}`).join(" · ")}`}
-              onCopy={() => set("issuedRanges", suggest.issuedRanges.map((r) => ({ ...r })))}
-            />
-          )}
-          <div className="mt-3">
-            <Readout
-              label="Tổng theo dải mã (phải bằng số vé xuất ra)"
-              value={`${rangeTotal} / ${form.ticketsIssued}`}
-              tone={rangeTotal > 0 && rangeTotal !== form.ticketsIssued ? "warning" : "normal"}
-            />
-          </div>
-        </Card>
-        )}
+        {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
 
-        <Card title={noTickets ? "Khách huỷ và dời lịch" : "Vé huỷ và vé dời lịch"}>
-          {noTickets ? (
-            /* Hà Nội không xuất vé: theo dõi theo KHÁCH — tên, mã book, số khách, nguồn, tiền hoàn */
-            <>
-              <Field label="Khách huỷ hoàn tiền">
-                <div />
-              </Field>
-              {/* Điều phối đã nhập ở dưới — kế toán chỉ XÁC NHẬN, sai thì sửa tay từng ô */}
-              {suggest && suggest.cancelledGuestEntries.length > 0 && !locked && (
-                <div className="mb-2">
-                  <CopyLine
-                    label={`${reporterNames} báo ${suggest.cancelledGuestEntries.length} nhóm khách huỷ · ${suggest.cancelledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách · hoàn ${formatVND(suggest.cancelledGuestEntries.reduce((a, e) => a + e.refund, 0))}`}
-                    action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
-                    onCopy={() => {
-                      const rows = suggest.cancelledGuestEntries.map((e) => ({
-                        ...e,
-                        note: e.note || "",
-                        codesText: (e.codes ?? []).join(", "),
-                      }));
-                      set("cancelledGuests", rows);
-                      set("cancelledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
-                    }}
-                  />
-                </div>
-              )}
-              <CancelGuestRows
-                rows={form.cancelledGuests}
-                onChange={(rows) => set("cancelledGuests", rows)}
-                disabled={locked}
-              />
-
-              <div className="mt-4 border-t border-slate-100 pt-4">
-                <Field label="Khách dời lịch" hint="Dời sang ngày nào ghi rõ — booking của ngày đó sẽ thấy khách này">
-                  <div />
-                </Field>
-                {suggest && suggest.rescheduledGuestEntries.length > 0 && !locked && (
-                  <div className="mb-2">
-                    <CopyLine
-                      label={`${reporterNames} báo ${suggest.rescheduledGuestEntries.length} nhóm khách dời · ${suggest.rescheduledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách`}
-                      action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
-                      onCopy={() => {
-                        const rows = suggest.rescheduledGuestEntries.map((e) => ({
-                          ...e,
-                          note: e.note || "",
-                          phone: e.phone || "",
-                          pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
-                          pickupNote: e.pickupNote || "",
-                          expectedTime: e.expectedTime || "",
-                          codesText: (e.codes ?? []).join(", "),
-                          bookedId: e.bookedId || "",
-                        }));
-                        set("rescheduledGuests", rows);
-                        set("rescheduledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
-                      }}
-                    />
-                  </div>
-                )}
-                <RescheduleGuestRows
-                  rows={form.rescheduledGuests}
-                  onChange={(rows) => set("rescheduledGuests", rows)}
-                  minDate={shiftDateKey(date, 1)}
-                  disabled={locked}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-          <Field label="Mã vé huỷ hoàn tiền" hint={TICKET_CODE_HINT}>
-            <TextArea
-              value={form.cancelledCodesText}
-              onChange={(e) => set("cancelledCodesText", e.target.value)}
-              placeholder="MBL0005, MBL0012"
-              autoCapitalize="characters"
-              spellCheck={false}
-              className="min-h-16"
-              disabled={locked}
-            />
-            {suggest && suggest.cancelledCodesText && !locked && (
-              <CopyLine
-                label={`${reporterNames} báo mã huỷ: ${suggest.cancelledCodesText}`}
-                action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
-                onCopy={() => set("cancelledCodesText", suggest.cancelledCodesText)}
-              />
-            )}
-            <TextInput
-              value={form.cancelledNote}
-              onChange={(e) => set("cancelledNote", e.target.value)}
-              placeholder="Ghi chú vé huỷ · VD: khách ốm, hoàn 100% qua CK ngày mai"
-              className="mt-2"
-              disabled={locked}
-            />
-          </Field>
-
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <Field label="Vé dời lịch" hint="Dời sang ngày nào phải ghi rõ — ngày đó sẽ xuất vé mới cho khách">
-              <div />
-            </Field>
-            <RescheduleRows
-              rows={form.rescheduled}
-              onChange={(rows) => set("rescheduled", rows)}
-              minDate={shiftDateKey(date, 1)}
-              disabled={locked}
-            />
-            {suggest && suggest.rescheduled.length > 0 && !locked && (
-              <CopyLine
-                label={`điều phối khai ${suggest.rescheduled.length} vé dời: ${suggest.rescheduled.map((r) => `${r.code}→${formatDateKeyVN(r.toDate)}`).join(" · ")}`}
-                onCopy={() => set("rescheduled", suggest.rescheduled.map((r) => ({ ...r })))}
-              />
-            )}
-          </div>
-            </>
-          )}
-        </Card>
+        {/* Vé/khách huỷ & dời lịch do ĐIỀU PHỐI nhập — kế toán xác nhận số ở thẻ Số tổng, sai thì bấm "Sửa" báo cáo điều phối */}
 
         {/* Duyệt lệch: kế toán là người quyết định cuối cùng */}
         <Card
@@ -1114,6 +1090,11 @@ function DailyCloseInner() {
         <MoneyOrderCard spot={spot} />
       </div>
 
+      {/* Kế toán cũng nhập booking đặt trước được — gập mặc định */}
+      <div className="mt-4">
+        <BookingCard spot={spot} spotOptions={spotOptions} />
+      </div>
+
       {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
       <div className="mt-4">
         <HandoverBox spot={spot} />
@@ -1148,21 +1129,6 @@ function LedgerSuggest({ label, taken, onTake }: { label: string; taken: boolean
   );
 }
 
-/** Một dòng "điều phối khai: …" kèm nút chép — cho các trường mã vé, không phải ô số. */
-function CopyLine({ label, action, onCopy }: { label: string; action?: string; onCopy: () => void }) {
-  return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-slate-600">{label}</span>
-      <button
-        type="button"
-        onClick={onCopy}
-        className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 hover:bg-emerald-100"
-      >
-        {action ?? "⧉ chép để xác nhận"}
-      </button>
-    </div>
-  );
-}
 
 function Compare({
   label,

@@ -3,20 +3,33 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { shiftDateKey } from "@/lib/baobay/date";
 import type { CameramanReportDTO, DispatcherReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
-import { Banner, Button, Card, CountInput, Field, MoneyInput } from "./ui";
+import {
+  CancelGuestRows,
+  ExpenseRows,
+  RangeRows,
+  RescheduleGuestRows,
+  dispatcherMoneyRows,
+  toRangeRows,
+  toExpenseRows,
+  type CancelGuestRow,
+  type ExpenseRow,
+  type RangeRow,
+  type RescheduleGuestRow,
+} from "./rows";
+import { Banner, Button, Card, CountInput, Field, ServiceBox, TextInput } from "./ui";
 
 /**
- * Kế toán sửa hộ báo cáo ĐIỀU PHỐI và CAMERA MAN ngay trên trang Chốt ngày.
+ * Kế toán SỬA TRỰC TIẾP báo cáo ĐIỀU PHỐI và CAMERA MAN trên trang Chốt ngày.
  *
- * Sinh ra từ một ca kẹt thật: điều phối khai 0 vé xuất nhưng lại có 10 triệu
- * chuyển khoản — mọi phép đối chiếu đỏ rực mà kế toán nhập số của MÌNH đúng
- * bao nhiêu cũng không hết, vì bên sai là dữ liệu của nhân viên. Khung này cho
- * kế toán sửa thẳng các Ô SỐ hay lệch nhất; nhóm vé huỷ/dời lịch (có mã, lý do,
- * liên hệ) vẫn để chính điều phối sửa trên trang của họ cho khỏi mất chi tiết.
+ * Triết lý vận hành: nhân viên NHẬP, kế toán chỉ XÁC NHẬN — nên trang chốt
+ * không còn ô nhập vé/huỷ/dời riêng của kế toán nữa. Sai ở đâu thì kế toán mở
+ * khung "Sửa" này và chỉnh thẳng vào số của người nhập: dải mã vé xuất, sổ
+ * THU CHI, nhóm khách huỷ/dời (kèm mã vé ở điểm có vé), dịch vụ, ghi chú…
  *
  * Đi cùng một đường lưu với chính nhân viên: cùng kiểm tra, cùng chặn ngày
  * khoá, cùng đẩy bảng tính.
@@ -96,7 +109,7 @@ export function StaffReportEditor({
   return (
     <Card
       title={`Báo cáo điều phối & camera man trong ngày (${dispatchers.length + cameramen.length})`}
-      hint="Kế toán sửa trực tiếp các ô số; người chưa báo cáo thì chọn thêm rồi nhập hộ. Nhóm vé huỷ/dời lịch (có mã và lý do) vẫn nhờ chính điều phối sửa trên trang của họ."
+      hint="Nhân viên nhập — kế toán chỉ XÁC NHẬN. Sai ở đâu bấm Sửa: chỉnh được MỌI chi tiết (dải mã vé, thu chi, khách huỷ/dời, dịch vụ…) rồi lưu hộ; người chưa báo thì chọn thêm và nhập hộ."
     >
       {error && <Banner tone="error">{error}</Banner>}
 
@@ -229,6 +242,81 @@ function blankCameramanReport(username: string, cameramanName: string, date: str
 }
 
 /* ------------------------------------------------------------------ */
+/* Điều phối: kế toán sửa được MỌI chi tiết                            */
+/* ------------------------------------------------------------------ */
+
+type DispatcherEditForm = {
+  guestCount: number;
+  ticketsIssued: number;
+  ticketsReturned: number;
+  issuedRanges: RangeRow[];
+  flycam: number;
+  video360: number;
+  redFlag: number;
+  flagFlight: number;
+  money: ExpenseRow[];
+  cancelledGuests: CancelGuestRow[];
+  rescheduledGuests: RescheduleGuestRow[];
+  note: string;
+};
+
+function dispatcherEditForm(r: DispatcherReportDTO): DispatcherEditForm {
+  const cancelled: CancelGuestRow[] = r.cancelledGuestEntries.length
+    ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "", codesText: (e.codes ?? []).join(", ") }))
+    : r.cancelledEntries.length
+      ? r.cancelledEntries.map((e) => ({
+          name: e.contactName,
+          bookingCode: "",
+          guests: 0,
+          source: "",
+          refund: 0,
+          note: [e.reason, e.note].filter(Boolean).join(" — "),
+          codesText: e.codes.join(", "),
+        }))
+      : [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }];
+  const rescheduled: RescheduleGuestRow[] = r.rescheduledGuestEntries.length
+    ? r.rescheduledGuestEntries.map((e) => ({
+        ...e,
+        note: e.note || "",
+        phone: e.phone || "",
+        pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
+        pickupNote: e.pickupNote || "",
+        expectedTime: e.expectedTime || "",
+        codesText: (e.codes ?? []).join(", "),
+        bookedId: e.bookedId || "",
+      }))
+    : r.rescheduledEntries.length
+      ? r.rescheduledEntries.map((e) => ({
+          name: e.contactName,
+          guests: 0,
+          toDate: e.toDate,
+          note: [e.reason, e.note].filter(Boolean).join(" — "),
+          phone: e.phone,
+          pickup: "self" as const,
+          pickupNote: "",
+          expectedTime: "",
+          codesText: e.codes.join(", "),
+          bookedId: "",
+        }))
+      : [
+          { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
+        ];
+
+  return {
+    guestCount: r.guestCount,
+    ticketsIssued: r.ticketsIssued,
+    ticketsReturned: r.ticketsReturned,
+    issuedRanges: toRangeRows(r.issuedRanges),
+    flycam: r.flycam,
+    video360: r.video360,
+    redFlag: r.redFlag,
+    flagFlight: r.flagFlight,
+    money: dispatcherMoneyRows(r),
+    cancelledGuests: cancelled,
+    rescheduledGuests: rescheduled,
+    note: r.note,
+  };
+}
 
 function DispatcherRow({
   report,
@@ -250,78 +338,73 @@ function DispatcherRow({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [form, setForm] = useState(() => dispatcherForm(report));
+  const [form, setForm] = useState<DispatcherEditForm>(() => dispatcherEditForm(report));
   const [savedClean, setSavedClean] = useState(false);
+  const noTickets = spot === "ha-noi";
 
-  const set = <K extends keyof ReturnType<typeof dispatcherForm>>(key: K, value: number) => {
+  const set = <K extends keyof DispatcherEditForm>(key: K, value: DispatcherEditForm[K]) => {
     setSavedClean(false);
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
+  const expenseSum = form.money.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
 
   async function save() {
     setSaving(true);
     setError(null);
     setWarnings([]);
     try {
-      /**
-       * Gửi ĐỦ mọi trường: các nhóm huỷ/dời/ngoại giao/thu có tên và dải mã
-       * lấy nguyên từ bản đã lưu — khung này chỉ sửa Ô SỐ, không được làm mất
-       * chi tiết người nhập đã khai.
-       */
       const res = await apiPost<{ report: DispatcherReportDTO; warnings: string[] }>(
         `/api/baocao/reports/dispatcher?spot=${spot}`,
         {
           date,
           targetUsername: report.username,
-          ...form,
-          issuedRanges: report.issuedRanges.map((x) => ({ from: x.from, to: x.to })),
-          cancelledEntries: report.cancelledEntries.map((e) => ({
-            codesText: e.codes.join(" "),
-            reason: e.reason,
-            contactName: e.contactName,
-            note: e.note || "",
-          })),
-          rescheduledEntries: report.rescheduledEntries.map((e) => ({
-            codesText: e.codes.join(" "),
-            toDate: e.toDate,
-            reason: e.reason,
-            contactName: e.contactName,
-            phone: e.phone,
-            note: e.note || "",
-          })),
-          cancelledGuestEntries: report.cancelledGuestEntries.map((e) => ({
-            ...e,
-            note: e.note || "",
-            codesText: (e.codes ?? []).join(" "),
-          })),
-          rescheduledGuestEntries: report.rescheduledGuestEntries.map((e) => ({
-            ...e,
-            note: e.note || "",
-            codesText: (e.codes ?? []).join(" "),
-          })),
+          guestCount: form.guestCount,
+          ticketsIssued: form.ticketsIssued,
+          ticketsReturned: form.ticketsReturned,
+          issuedRanges: form.issuedRanges.filter((x) => x.from.trim() || x.to.trim()).map((x) => ({ from: x.from, to: x.to })),
+          cancelledEntries: [],
+          rescheduledEntries: [],
+          cancelledGuestEntries: form.cancelledGuests.filter(
+            (e) => e.name.trim() || e.guests || e.bookingCode.trim() || e.codesText.trim(),
+          ),
+          rescheduledGuestEntries: form.rescheduledGuests.filter(
+            (e) => e.name.trim() || e.guests || e.toDate || e.codesText.trim(),
+          ),
           diplomaticEntries: report.diplomaticEntries.map((e) => ({
             codesText: e.codes.join(" "),
             amount: e.amount,
             note: e.note || "",
           })),
-          // Tổng lưu = tiền vé + các dòng thu có tên; gửi lại phần "tiền vé" = tổng − các dòng
-          cashReceived:
-            form.cashReceived -
-            report.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0),
-          transferReceived:
-            form.transferReceived -
-            report.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0),
-          revenueEntries: report.revenueEntries,
-          flycamCodesText: "",
-          video360CodesText: "",
-          redFlagCodesText: "",
-          flagFlightCodesText: "",
-          expenses: report.expenses,
-          note: report.note,
+          flycam: form.flycam,
+          video360: form.video360,
+          redFlag: form.redFlag,
+          flagFlight: form.flagFlight,
+          // Giữ nguyên mã dịch vụ người nhập đã khai — khung này không sửa mã dịch vụ
+          flycamCodesText: report.flycamCodes.join(" "),
+          video360CodesText: report.video360ServiceCodes.join(" "),
+          redFlagCodesText: report.redFlagCodes.join(" "),
+          flagFlightCodesText: report.flagFlightCodes.join(" "),
+          // Sổ THU CHI: dòng thu thành khoản thu có tên (đúng TM/CK), dòng chi vào sổ chi
+          cashReceived: 0,
+          transferReceived: 0,
+          revenueEntries: form.money
+            .filter((e) => e.kind === "thu" && (e.content.trim() || e.amount))
+            .map((e) => ({
+              content: e.content.trim() || "Tiền thu",
+              method: e.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+              amount: e.amount,
+            })),
+          guestWaterCost: 0,
+          mountainCarCost: 0,
+          shuttleCarCost: 0,
+          expenses: form.money.filter((e) => e.kind !== "thu" && (e.content.trim() || e.amount)),
+          note: form.note,
         },
       );
       setWarnings(res.warnings || []);
-      setForm(dispatcherForm(res.report));
+      setForm(dispatcherEditForm(res.report));
       setSavedClean(true);
       onSaved();
     } catch (err: unknown) {
@@ -339,8 +422,8 @@ function DispatcherRow({
             {report.staffName} <span className="text-xs font-normal text-slate-500">— điều phối</span>
           </div>
           <div className="text-xs text-slate-500">
-            {report.guestCount} khách · {report.ticketsIssued} vé xuất · TM {formatVND(report.cashReceived)} · CK{" "}
-            {formatVND(report.transferReceived)}
+            {report.guestCount} khách{noTickets ? "" : ` · ${report.ticketsIssued} vé xuất`} · TM{" "}
+            {formatVND(report.cashReceived)} · CK {formatVND(report.transferReceived)}
           </div>
         </div>
         {!locked && (
@@ -356,8 +439,7 @@ function DispatcherRow({
             <Field label="Số khách">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
             </Field>
-            {/* Hà Nội không xuất vé giấy — hai ô vé không áp dụng */}
-            {spot !== "ha-noi" && (
+            {!noTickets && (
               <>
                 <Field label="Vé xuất ra">
                   <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
@@ -368,39 +450,56 @@ function DispatcherRow({
               </>
             )}
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Tiền mặt (tổng)">
-              <MoneyInput value={form.cashReceived} onChange={(v) => set("cashReceived", v)} />
-            </Field>
-            <Field label="Chuyển khoản (tổng)">
-              <MoneyInput value={form.transferReceived} onChange={(v) => set("transferReceived", v)} />
-            </Field>
+
+          {!noTickets && (
+            <div>
+              <div className="mb-1 text-xs font-semibold text-slate-700">Dải mã vé đã xuất</div>
+              <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <ServiceBox tone="flycam" label="Flycam">
+              <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="video360" label="Camera 360">
+              <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label="Dù cờ đỏ">
+              <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+              <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
+            </ServiceBox>
           </div>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <Field label="Flycam">
-              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
-            </Field>
-            <Field label="Camera 360">
-              <CountInput value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
-            </Field>
-            <Field label="Cờ đỏ">
-              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
-            </Field>
-            <Field label="Kéo cờ">
-              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
-            </Field>
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-700">THU CHI</div>
+            <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} withKind withMethod hideTotals />
+            <div className="mt-2 flex gap-3 text-sm font-semibold">
+              <span className="text-emerald-700">Tổng thu +{formatVND(revenue)}</span>
+              <span className="text-rose-700">Tổng chi −{formatVND(expenseSum)}</span>
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Nước cho khách">
-              <MoneyInput value={form.guestWaterCost} onChange={(v) => set("guestWaterCost", v)} />
-            </Field>
-            <Field label="Xe lên núi">
-              <MoneyInput value={form.mountainCarCost} onChange={(v) => set("mountainCarCost", v)} />
-            </Field>
-            <Field label="Xe đưa đón">
-              <MoneyInput value={form.shuttleCarCost} onChange={(v) => set("shuttleCarCost", v)} />
-            </Field>
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-700">Khách huỷ</div>
+            <CancelGuestRows rows={form.cancelledGuests} onChange={(rows) => set("cancelledGuests", rows)} withCodes={!noTickets} />
           </div>
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-700">Khách dời lịch</div>
+            <RescheduleGuestRows
+              rows={form.rescheduledGuests}
+              onChange={(rows) => set("rescheduledGuests", rows)}
+              minDate={shiftDateKey(date, 1)}
+              withCodes={!noTickets}
+            />
+          </div>
+
+          <Field label="Ghi chú">
+            <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />
+          </Field>
 
           {error && <Banner tone="error">{error}</Banner>}
           {warnings.length > 0 && (
@@ -423,23 +522,8 @@ function DispatcherRow({
   );
 }
 
-function dispatcherForm(r: DispatcherReportDTO) {
-  return {
-    guestCount: r.guestCount,
-    ticketsIssued: r.ticketsIssued,
-    ticketsReturned: r.ticketsReturned,
-    cashReceived: r.cashReceived,
-    transferReceived: r.transferReceived,
-    flycam: r.flycam,
-    video360: r.video360,
-    redFlag: r.redFlag,
-    flagFlight: r.flagFlight,
-    guestWaterCost: r.guestWaterCost,
-    mountainCarCost: r.mountainCarCost,
-    shuttleCarCost: r.shuttleCarCost,
-  };
-}
-
+/* ------------------------------------------------------------------ */
+/* Camera man: số chuyến + sổ THU CHI + ghi chú                        */
 /* ------------------------------------------------------------------ */
 
 function CameramanRow({
@@ -462,9 +546,13 @@ function CameramanRow({
   const [error, setError] = useState<string | null>(null);
   const [flycam, setFlycamRaw] = useState(report.flycamFlights);
   const [paragliding, setParaglidingRaw] = useState(report.paraglidingFlights);
+  const [money, setMoneyRaw] = useState<ExpenseRow[]>(() => toExpenseRows(report.expenses));
+  const [note, setNoteRaw] = useState(report.note);
   const [savedClean, setSavedClean] = useState(false);
   const setFlycam = (v: number) => { setSavedClean(false); setFlycamRaw(v); };
   const setParagliding = (v: number) => { setSavedClean(false); setParaglidingRaw(v); };
+  const setMoney = (rows: ExpenseRow[]) => { setSavedClean(false); setMoneyRaw(rows); };
+  const setNote = (v: string) => { setSavedClean(false); setNoteRaw(v); };
 
   async function save() {
     setSaving(true);
@@ -476,13 +564,15 @@ function CameramanRow({
         flycamFlights: flycam,
         flycamCodesText: report.flycamCodes.join(", "),
         paraglidingFlights: paragliding,
-        paraglidingCodesText: report.paraglidingCodes.join(", "),
-        expenses: report.expenses,
-        note: report.note,
+        paraglidingCodesText: "",
+        expenses: money.filter((e) => e.content.trim() || e.amount),
+        note,
         submit: report.submitted,
       });
       setFlycamRaw(res.report.flycamFlights);
       setParaglidingRaw(res.report.paraglidingFlights);
+      setMoneyRaw(toExpenseRows(res.report.expenses));
+      setNoteRaw(res.report.note);
       setSavedClean(true);
       onSaved();
     } catch (err: unknown) {
@@ -500,7 +590,7 @@ function CameramanRow({
             {report.cameramanName} <span className="text-xs font-normal text-slate-500">— camera man</span>
           </div>
           <div className="text-xs text-slate-500">
-            {report.flycamFlights} flycam · {report.paraglidingFlights} quay dù
+            {report.flycamFlights} quay dù · {report.paraglidingFlights} quay checkin
           </div>
         </div>
         {!locked && (
@@ -513,13 +603,23 @@ function CameramanRow({
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Số chuyến flycam">
+            <Field label="Số quay dù lượn (flycam)">
               <CountInput value={flycam} onChange={setFlycam} max={1000} />
             </Field>
-            <Field label="Số quay dù lượn">
+            <Field label="Số quay checkin">
               <CountInput value={paragliding} onChange={setParagliding} max={1000} />
             </Field>
           </div>
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-700">THU CHI</div>
+            <ExpenseRows rows={money} onChange={setMoney} withKind hideTotals />
+          </div>
+
+          <Field label="Ghi chú">
+            <TextInput value={note} onChange={(e) => setNote(e.target.value)} />
+          </Field>
+
           {error && <Banner tone="error">{error}</Banner>}
           {savedClean && <Banner tone="success">✓ Đã lưu thành công — sửa ô nào thì nút lưu bật lại.</Banner>}
           <Button type="button" className="h-10 w-full text-xs" disabled={saving || savedClean} onClick={save}>

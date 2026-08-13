@@ -267,6 +267,11 @@ export const dailyCloseSchema = z.object({
   flagFlight: count(1_000),
   /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
   ledger: expenseList,
+  /** Duyệt/từ chối từng khoản nhân viên khai. */
+  expenseReviews: z
+    .array(z.object({ key: text(300), status: z.enum(["ok", "no"]), reason: text(300) }))
+    .max(300)
+    .default([]),
   expensesApproved: z.boolean().optional().default(false),
   expensesApprovedNote: text(1_000),
   varianceApproved: z.boolean().optional().default(false),

@@ -7,6 +7,7 @@ import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
+import { ExpenseRows, toExpenseRows, type ExpenseRow } from "./rows";
 import { Banner, Button, Card, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
 
 /**
@@ -193,8 +194,14 @@ function PilotRow({
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [form, setForm] = useState(() => toForm(report));
+  /** Sổ THU CHI của phi công — kế toán sửa/nhập hộ được từng dòng. */
+  const [money, setMoneyRaw] = useState<ExpenseRow[]>(() => toExpenseRows(report.expenses));
   /** Đã lưu thành công và CHƯA sửa gì thêm — nút chuyển sang "✓ Đã lưu". */
   const [savedClean, setSavedClean] = useState(false);
+  const setMoney = (rows: ExpenseRow[]) => {
+    setSavedClean(false);
+    setMoneyRaw(rows);
+  };
 
   const set = <K extends keyof ReturnType<typeof toForm>>(key: K, value: any) => {
     setSavedClean(false);
@@ -208,10 +215,17 @@ function PilotRow({
     try {
       const res = await apiPost<{ report: PilotReportDTO; warnings: string[] }>(
         `/api/baocao/reports/pilot?spot=${spot}`,
-        { date, targetUsername: report.username, ...form, expenses: report.expenses, submit },
+        {
+          date,
+          targetUsername: report.username,
+          ...form,
+          expenses: money.filter((e) => e.content.trim() || e.amount),
+          submit,
+        },
       );
       setWarnings(res.warnings || []);
       setForm(toForm(res.report));
+      setMoneyRaw(toExpenseRows(res.report.expenses));
       setSavedClean(true);
       onSaved();
     } catch (err: any) {
@@ -405,6 +419,11 @@ function PilotRow({
             </Field>
           </div>
           )}
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-700">THU CHI</div>
+            <ExpenseRows rows={money} onChange={setMoney} withKind hideTotals />
+          </div>
 
           <Field label="Ghi chú">
             <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "./client-api";
+import { apiGet, apiPatch, apiPost } from "./client-api";
 import { Banner, Button, Card } from "./ui";
 
 /**
@@ -43,6 +43,9 @@ type PenaltyStatus = {
 };
 
 export function PenaltyCard({ spot, date, reloadKey }: { spot: string; date: string; reloadKey?: number }) {
+  /** Sửa giờ phạt của ĐIỂM này — kế toán tự đặt, không cần nhờ quản trị. */
+  const [editTime, setEditTime] = useState("");
+  const [savingTime, setSavingTime] = useState(false);
   const [data, setData] = useState<PenaltyStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +98,38 @@ export function PenaltyCard({ spot, date, reloadKey }: { spot: string; date: str
       hint={`Giờ chốt ${data.deadline} · nộp muộn là phạt, trừ khi kế toán huỷ`}
     >
       {error && <Banner tone="error">{error}</Banner>}
+
+      {/* Kế toán đặt giờ phạt cho riêng điểm này — mỗi điểm một giờ */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2">
+        <span className="text-xs font-medium text-slate-600">Giờ chốt phạt của điểm này:</span>
+        <input
+          type="time"
+          value={editTime || data.deadline}
+          onChange={(e) => setEditTime(e.target.value)}
+          className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-9 px-3 text-xs"
+          disabled={savingTime || !editTime || editTime === data.deadline}
+          onClick={async () => {
+            setSavingTime(true);
+            setError(null);
+            try {
+              await apiPatch(`/api/baocao/penalty?spot=${spot}`, { deadline: editTime });
+              setEditTime("");
+              load();
+            } catch (err: any) {
+              setError(err?.message || "Không đặt được giờ phạt");
+            } finally {
+              setSavingTime(false);
+            }
+          }}
+        >
+          {savingTime ? "Đang lưu…" : "✓ Đặt giờ"}
+        </Button>
+      </div>
 
       {recorded.length === 0 && pending.length === 0 && (
         <p className="text-sm text-slate-500">

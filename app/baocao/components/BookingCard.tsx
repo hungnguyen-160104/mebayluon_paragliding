@@ -8,7 +8,7 @@ import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, ServiceBox, TextInput } from "./ui";
+import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, ServiceBox, TextInput } from "./ui";
 
 /**
  * BOOKING đặt trước: khách chốt hôm nay nhưng bay ngày khác (qua Klook, FB,
@@ -546,10 +546,10 @@ export function BookingCard({
   }
 
   return (
-    <Card
+    <CollapseCard
       className="border-sky-200 bg-sky-50/40"
       title="📒 BOOKING MỚI"
-      hint="Khách đặt hôm nay cho ngày nào thì nhập luôn hôm nay — thời điểm nhập tự ghi. Đúng ngày bay, booking tự hiện lên đầu trang để điều phối bám theo."
+      hint="bấm để nhập khách đặt trước"
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Ngày bay">
@@ -751,6 +751,6 @@ export function BookingCard({
           </ul>
         </div>
       )}
-    </Card>
+    </CollapseCard>
   );
 }

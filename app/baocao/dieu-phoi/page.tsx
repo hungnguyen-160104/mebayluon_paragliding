@@ -27,6 +27,7 @@ import {
   type ExpenseRow,
   type RangeRow,
   type RescheduleEntryRow,
+  dispatcherMoneyRows,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
@@ -35,7 +36,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -183,38 +184,11 @@ function fromReport(r: DispatcherReportDTO): FormState {
      * khoản chi có tên) được trải phẳng thành từng dòng để sửa tiếp: phần tổng
      * chưa có tên thành dòng "Tiền thu trong ngày", nước/xe thành dòng chi.
      */
-    money: buildMoneyRows(r),
+    money: dispatcherMoneyRows(r),
     note: r.note,
   };
 }
 
-/** Trải mọi nguồn tiền của báo cáo (cũ lẫn mới) thành sổ THU CHI một dòng một khoản. */
-function buildMoneyRows(r: DispatcherReportDTO): ExpenseRow[] {
-  const rows: ExpenseRow[] = [];
-  for (const e of r.revenueEntries) {
-    rows.push({ content: e.content, amount: e.amount, kind: "thu", method: e.method, note: "" });
-  }
-  const cashRest = r.cashReceived - r.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0);
-  const transferRest =
-    r.transferReceived - r.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0);
-  if (cashRest > 0) rows.push({ content: "Tiền thu trong ngày", amount: cashRest, kind: "thu", method: "cash", note: "" });
-  if (transferRest > 0)
-    rows.push({ content: "Khách chuyển khoản", amount: transferRest, kind: "thu", method: "transfer", note: "" });
-  if (r.guestWaterCost > 0) rows.push({ content: "Nước cho khách", amount: r.guestWaterCost, kind: "chi", method: "cash", note: "" });
-  if (r.mountainCarCost > 0) rows.push({ content: "Xe lên núi", amount: r.mountainCarCost, kind: "chi", method: "cash", note: "" });
-  if (r.shuttleCarCost > 0) rows.push({ content: "Xe đưa đón", amount: r.shuttleCarCost, kind: "chi", method: "cash", note: "" });
-  for (const e of r.expenses) {
-    if (!e.content && !e.amount) continue;
-    rows.push({
-      content: e.content,
-      amount: e.amount,
-      kind: e.kind === "thu" ? "thu" : "chi",
-      method: e.method,
-      note: e.note || "",
-    });
-  }
-  return rows.length ? rows : [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }];
-}
 
 type DayCheck = { dayBlocked: boolean; myIssues: Issue[]; otherIssueCount: number };
 
@@ -496,65 +470,6 @@ export default function DispatcherReportPage() {
         </Card>
 
         <Card
-          title="Khách huỷ"
-          hint={
-            noTickets
-              ? "Mỗi nhóm khách huỷ một dòng: tên – mã book – số khách – nguồn – tiền hoàn – ghi chú. Kế toán sẽ bấm xác nhận đúng bộ số này."
-              : "Mỗi nhóm một dòng: MÃ VÉ (cùng đoàn ghi chung) – tên – mã book – số khách – nguồn – tiền hoàn – ghi chú."
-          }
-        >
-          <CancelGuestRows
-            rows={form.cancelledGuests}
-            onChange={(rows) => set("cancelledGuests", rows)}
-            disabled={locked}
-            withCodes={!noTickets}
-          />
-        </Card>
-
-        <Card
-          title="Khách dời lịch"
-          hint={
-            noTickets
-              ? "Mỗi nhóm khách dời một dòng: tên – SĐT – số lượng – ngày dời – đón – giờ hẹn – ghi chú."
-              : "Mỗi nhóm một dòng: MÃ VÉ – tên – SĐT – số lượng – ngày dời – đón – giờ hẹn. Vé dời coi như huỷ hôm nay, ngày mới xuất vé khác."
-          }
-        >
-          <RescheduleGuestRows
-            rows={form.rescheduledGuests}
-            onChange={(rows) => set("rescheduledGuests", rows)}
-            minDate={shiftDateKey(date, 1)}
-            disabled={locked}
-            onConfirmMove={confirmMove}
-            withCodes={!noTickets}
-          />
-
-          {!noTickets && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
-            <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
-          </div>
-          )}
-
-          {returnMismatch && !locked && (
-            <div className="mt-2">
-              <Banner tone="warning">
-                Số vé thu về ({form.ticketsReturned}) khác tổng huỷ + dời lịch ({returned}).
-                <div className="mt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-9 px-3 text-xs"
-                    onClick={() => set("ticketsReturned", returned)}
-                  >
-                    Lấy số vé thu về = {returned}
-                  </Button>
-                </div>
-              </Banner>
-            </div>
-          )}
-        </Card>
-
-        <Card
           title="Dịch vụ gia tăng"
           hint="Flycam đối soát với camera man; 360, cờ đỏ, kéo cờ đối soát với phi công. Mã vé chỉ cần điền khi số lệch."
         >
@@ -619,16 +534,9 @@ export default function DispatcherReportPage() {
           </details>
         </Card>
 
-        <Card
-          title="Khách ngoại giao"
-          hint="Vẫn xuất vé; có thu được tiền thì nhập số tiền, không thì để 0. Số khách tự đếm theo mã."
-        >
-          <DiploEntryRows
-            rows={form.diplomaticEntries}
-            onChange={(rows) => set("diplomaticEntries", rows)}
-            disabled={locked}
-          />
-        </Card>
+
+
+
 
         <Card
           title="THU CHI"
@@ -648,6 +556,77 @@ export default function DispatcherReportPage() {
             </div>
           </div>
         </Card>
+
+        {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
+        <CollapseCard
+          title="Khách huỷ"
+          hint={
+            noTickets
+              ? "Mỗi nhóm khách huỷ một dòng: tên – mã book – số khách – nguồn – tiền hoàn – ghi chú. Kế toán sẽ bấm xác nhận đúng bộ số này."
+              : "Mỗi nhóm một dòng: MÃ VÉ (cùng đoàn ghi chung) – tên – mã book – số khách – nguồn – tiền hoàn – ghi chú."
+          }
+        >
+          <CancelGuestRows
+            rows={form.cancelledGuests}
+            onChange={(rows) => set("cancelledGuests", rows)}
+            disabled={locked}
+            withCodes={!noTickets}
+          />
+        </CollapseCard>
+
+        <CollapseCard
+          title="Khách dời lịch"
+          hint={
+            noTickets
+              ? "Mỗi nhóm khách dời một dòng: tên – SĐT – số lượng – ngày dời – đón – giờ hẹn – ghi chú."
+              : "Mỗi nhóm một dòng: MÃ VÉ – tên – SĐT – số lượng – ngày dời – đón – giờ hẹn. Vé dời coi như huỷ hôm nay, ngày mới xuất vé khác."
+          }
+        >
+          <RescheduleGuestRows
+            rows={form.rescheduledGuests}
+            onChange={(rows) => set("rescheduledGuests", rows)}
+            minDate={shiftDateKey(date, 1)}
+            disabled={locked}
+            onConfirmMove={confirmMove}
+            withCodes={!noTickets}
+          />
+
+          {!noTickets && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
+            <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
+          </div>
+          )}
+
+          {returnMismatch && !locked && (
+            <div className="mt-2">
+              <Banner tone="warning">
+                Số vé thu về ({form.ticketsReturned}) khác tổng huỷ + dời lịch ({returned}).
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 px-3 text-xs"
+                    onClick={() => set("ticketsReturned", returned)}
+                  >
+                    Lấy số vé thu về = {returned}
+                  </Button>
+                </div>
+              </Banner>
+            </div>
+          )}
+        </CollapseCard>
+
+        <CollapseCard
+          title="Khách ngoại giao"
+          hint="Vẫn xuất vé; có thu được tiền thì nhập số tiền, không thì để 0. Số khách tự đếm theo mã."
+        >
+          <DiploEntryRows
+            rows={form.diplomaticEntries}
+            onChange={(rows) => set("diplomaticEntries", rows)}
+            disabled={locked}
+          />
+        </CollapseCard>
 
         <Card title="Ghi chú">
           <TextArea

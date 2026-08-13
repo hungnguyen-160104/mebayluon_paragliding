@@ -33,6 +33,37 @@ export function Card({
   );
 }
 
+/**
+ * Thẻ THU GỌN cho mục ít dùng (khách huỷ/dời, ngoại giao, nộp tiền…) — mặc định
+ * đóng, bấm tiêu đề mới xổ ra. Cùng khung với Card để không lệch nhịp trang.
+ */
+export function CollapseCard({
+  title,
+  hint,
+  children,
+  className,
+}: {
+  title: React.ReactNode;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <details className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
+      <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-4 py-3 sm:px-5">
+        <span>
+          <span className="text-base font-semibold text-slate-900">{title}</span>
+          {hint && <span className="ml-2 text-xs text-slate-400">{hint}</span>}
+        </span>
+        <span aria-hidden className="text-slate-400 transition-transform group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+      <div className="border-t border-slate-100 p-4 sm:p-5">{children}</div>
+    </details>
+  );
+}
+
 export function Field({
   label,
   hint,

@@ -654,16 +654,16 @@ export default function PilotReportPage() {
           <div className="mt-4">
             <Field
               label="THU CHI (money in & out)"
-              hint="Mỗi dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. VD: khách đưa tiền vé tại bãi — 1.800.000đ — Thu — TM"
+              hint="Mỗi dòng: nội dung – số tiền – THU/CHI – ghi chú. VD: khách đưa tiền vé tại bãi — 1.800.000đ — Thu"
             >
               <div />
             </Field>
+            {/* Phi công chi từ tiền túi — không cần phân tiền mặt/CK */}
             <ExpenseRows
               rows={form.expenses}
               onChange={(rows) => set("expenses", rows)}
               disabled={locked}
               withKind
-              withMethod
               hideTotals
             />
           </div>

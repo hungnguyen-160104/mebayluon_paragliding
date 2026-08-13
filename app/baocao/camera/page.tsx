@@ -71,7 +71,6 @@ export default function CameramanReportPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const codes = useMemo(() => parseTicketCodeList(form.flycamCodesText), [form.flycamCodesText]);
-  const paraCodes = useMemo(() => parseTicketCodeList(form.paraglidingCodesText), [form.paraglidingCodesText]);
 
   const loadDay = useCallback(async (targetDate: string) => {
     if (!spot) return;
@@ -134,7 +133,7 @@ export default function CameramanReportPage() {
           flycamFlights: form.flycamFlights,
           flycamCodesText: form.flycamCodesText,
           paraglidingFlights: form.paraglidingFlights,
-          paraglidingCodesText: form.paraglidingCodesText,
+          paraglidingCodesText: "",
           expenses: form.expenses.filter((e) => e.content.trim() || e.amount),
           note: form.note,
           submit,
@@ -225,7 +224,7 @@ export default function CameramanReportPage() {
           )}
         </div>
 
-        <Card title="Nội dung quay 1 · Flycam" hint="Số lượng chuyến đã quay flycam trong ngày + mã vé">
+        <Card title="QUAY DÙ LƯỢN" hint="Số lượng chuyến đã quay trong ngày + mã vé">
           <CountInput value={form.flycamFlights} onChange={(v) => set("flycamFlights", v)} max={1000} />
 
           <div className="mt-4">
@@ -256,43 +255,23 @@ export default function CameramanReportPage() {
           </div>
         </Card>
 
-        <Card title="Nội dung quay 2 · Quay dù lượn" hint="Số lượng + mã vé">
+        <Card
+          title="QUAY CHECKIN"
+          hint="Chỉ SỐ LƯỢNG — không có mã vé. Kế toán xác nhận hàng ngày, không đối chiếu với ai khác."
+        >
           <CountInput value={form.paraglidingFlights} onChange={(v) => set("paraglidingFlights", v)} max={1000} />
-          <div className="mt-4">
-            <Field label="Mã vé đã quay dù lượn">
-              <TextArea
-                value={form.paraglidingCodesText}
-                onChange={(e) => set("paraglidingCodesText", e.target.value)}
-                placeholder="MBL0003, MBL0004"
-                autoCapitalize="characters"
-                spellCheck={false}
-                className="min-h-16"
-                disabled={locked}
-              />
-            </Field>
-            {paraCodes.codes.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-3">
-                <Readout
-                  label="Số mã đã nhập"
-                  value={String(paraCodes.codes.length)}
-                  tone={paraCodes.codes.length !== form.paraglidingFlights ? "warning" : "normal"}
-                />
-                <Readout label="Số lượng đã khai" value={String(form.paraglidingFlights)} />
-              </div>
-            )}
-          </div>
         </Card>
 
         <Card
           title="THU CHI"
-          hint="Mỗi dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu — TM."
+          hint="Mỗi dòng: nội dung – số tiền – THU/CHI – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu."
         >
+          {/* Camera man chi từ tiền túi — không cần phân tiền mặt/CK */}
           <ExpenseRows
             rows={form.expenses}
             onChange={(rows) => set("expenses", rows)}
             disabled={locked}
             withKind
-            withMethod
             hideTotals
           />
           <div className="mt-3 grid grid-cols-2 gap-3">

@@ -879,6 +879,21 @@ export async function getSubmitDeadline(spot: string): Promise<string> {
   return (await getSpotSetting(spot)).submitDeadline;
 }
 
+/**
+ * Kế toán đặt GIỜ PHẠT NỘP MUỘN cho điểm mình phụ trách — chỉ mỗi giờ chốt,
+ * không đụng được webhook/mã bảo vệ (những thứ đó vẫn của quản trị cấp 1).
+ */
+export async function setSubmitDeadline(session: BaobaySession, spotRaw: string, deadline: string): Promise<string> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(deadline)) {
+    throw new BaobayError("Giờ chốt phải dạng HH:MM, ví dụ 19:30", 400);
+  }
+  // BaobaySetting khoá theo `key` = mã điểm bay
+  await BaobaySetting.updateOne({ key: spot }, { $set: { submitDeadline: deadline, updatedBy: session.username } }, { upsert: true });
+  return deadline;
+}
+
 /** Đích đẩy Sheets của một điểm bay (mỗi điểm một bảng riêng). */
 async function sheetTargetForSpot(spot: string): Promise<SheetTarget | null> {
   const setting = await getSpotSetting(spot);
@@ -3530,8 +3545,9 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     guestCount: sum(dispatchers, (d) => d.guestCount),
     ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
     ticketsReturned: sum(dispatchers, (d) => d.ticketsReturned),
-    cancelledCount: cancelledCodes.length,
-    rescheduledCount: rescheduled.length,
+    // Số đã lưu của điều phối: điểm vé đếm theo mã, Hà Nội đếm theo đầu khách
+    cancelledCount: sum(dispatchers, (d) => d.cancelledCount),
+    rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     issuedRanges: dispatchers.flatMap((d) =>
       (d.issuedRanges ?? []).map((r: any) => ({ from: r.from || "", to: r.to || "" })),
     ),
@@ -3604,6 +3620,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 export type DailyCloseSaveInput = {
   /** Sổ "Tiền trong ngày" của kế toán: nội dung – số tiền – tiền mặt/CK – thu/chi. */
   ledger?: Array<{ content: string; amount: number; kind?: "thu" | "chi"; method?: "cash" | "transfer"; note?: string }>;
+  /** Dấu duyệt/từ chối từng khoản nhân viên khai — khoá theo expenseLines.key. */
+  expenseReviews?: Array<{ key: string; status: "ok" | "no"; reason?: string }>;
   /** Điểm bay của báo cáo — mỗi điểm là một hệ thống riêng. */
   spot: string;
   date: string;
@@ -3693,6 +3711,7 @@ export async function upsertDailyClose(
         redFlag: input.redFlag,
         flagFlight: input.flagFlight,
         ledger,
+        expenseReviews: (input.expenseReviews ?? []).filter((r) => r.key && (r.status === "ok" || r.status === "no")),
         expensesApproved: input.expensesApproved,
         expensesApprovedNote: input.expensesApprovedNote,
         varianceApproved: input.varianceApproved,
@@ -4063,6 +4082,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     redFlag: doc.redFlag ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledger: doc.ledger ?? [],
+    expenseReviews: doc.expenseReviews ?? [],
     expensesApproved: Boolean(doc.expensesApproved),
     expensesApprovedNote: doc.expensesApprovedNote ?? "",
     varianceApproved: Boolean(doc.varianceApproved),
@@ -4261,42 +4281,88 @@ export async function getReconcile(
 
   const result = reconcileDay(input);
 
-  /** Danh sách từng khoản chi trong ngày để kế toán đọc rồi xác nhận. */
+  /** Danh sách từng khoản chi trong ngày để kế toán đọc rồi DUYỆT/TỪ CHỐI từng dòng. */
   const expenseLines: ReconcileDTO["expenseLines"] = [];
-  const pushNamed = (who: string, role: BaobayRole, content: string, amount: number) => {
-    if (amount > 0) expenseLines.push({ who, role, content, amount, kind: "chi" });
+  const lineKey = (role: BaobayRole, uname: string, content: string, amount: number, kind: string) =>
+    `${role}|${uname}|${content}|${amount}|${kind}`;
+  const pushNamed = (who: string, uname: string, role: BaobayRole, content: string, amount: number) => {
+    if (amount > 0)
+      expenseLines.push({
+        who,
+        username: uname,
+        role,
+        content,
+        amount,
+        kind: "chi",
+        key: lineKey(role, uname, content, amount, "chi"),
+      });
   };
   /** kind đi kèm từng dòng để giao diện tô màu thu xanh / chi đỏ, khỏi dán nhãn chữ. */
-  const pushEntry = (who: string, role: BaobayRole, e: ExpenseDTO) => {
+  const pushEntry = (who: string, uname: string, role: BaobayRole, e: ExpenseDTO) => {
+    const kind = e.kind === "thu" ? "thu" : "chi";
     expenseLines.push({
       who,
+      username: uname,
       role,
       content: e.content,
       amount: e.amount,
-      kind: e.kind === "thu" ? "thu" : "chi",
+      kind,
       note: e.note,
+      key: lineKey(role, uname, e.content, e.amount, kind),
     });
   };
 
   for (const p of pilots) {
-    pushNamed(p.pilotName, "pilot", "Nước cho khách", p.waterCost ?? 0);
-    pushNamed(p.pilotName, "pilot", "Xe cho khách", p.guestCarCost ?? 0);
+    pushNamed(p.pilotName, p.username, "pilot", "Nước cho khách", p.waterCost ?? 0);
+    pushNamed(p.pilotName, p.username, "pilot", "Xe cho khách", p.guestCarCost ?? 0);
     // Phi công thi thoảng cầm hộ tiền khách — dòng thu là tiền PHẢI THU VỀ
-    for (const e of p.expenses ?? []) pushEntry(p.pilotName, "pilot", e);
+    for (const e of p.expenses ?? []) pushEntry(p.pilotName, p.username, "pilot", e);
   }
   for (const d of dispatchers) {
-    pushNamed(d.staffName, "dispatcher", "Nước cho khách", d.guestWaterCost ?? 0);
-    pushNamed(d.staffName, "dispatcher", "Xe lên núi", d.mountainCarCost ?? 0);
-    pushNamed(d.staffName, "dispatcher", "Xe đưa đón", d.shuttleCarCost ?? 0);
-    for (const e of d.expenses ?? []) pushEntry(d.staffName, "dispatcher", e);
+    pushNamed(d.staffName, d.username, "dispatcher", "Nước cho khách", d.guestWaterCost ?? 0);
+    pushNamed(d.staffName, d.username, "dispatcher", "Xe lên núi", d.mountainCarCost ?? 0);
+    pushNamed(d.staffName, d.username, "dispatcher", "Xe đưa đón", d.shuttleCarCost ?? 0);
+    for (const e of d.expenses ?? []) pushEntry(d.staffName, d.username, "dispatcher", e);
   }
   // Sổ THU/CHI riêng của kế toán — cũng phải nằm trong bảng chi tiết
   if (close?.ledger?.length) {
-    for (const e of close.ledger) pushEntry(close.accountantName || "Kế toán", "accountant", e);
+    for (const e of close.ledger)
+      pushEntry(close.accountantName || "Kế toán", close.accountantName || "ketoan", "accountant", e);
   }
 
   for (const c of cameramen) {
-    for (const e of c.expenses ?? []) pushEntry(c.cameramanName, "cameraman", e);
+    for (const e of c.expenses ?? []) pushEntry(c.cameramanName, c.username, "cameraman", e);
+  }
+
+  /**
+   * Khoản bị kế toán TỪ CHỐI mà nhân viên chưa sửa (khoá vẫn khớp) → lỗi ĐỎ
+   * chặn chốt, trỏ đúng người phải sửa. Nhân viên sửa khoản là khoá đổi, dấu
+   * từ chối tự rơi và lỗi tan.
+   */
+  const rejected = (close?.expenseReviews ?? []).filter(
+    (r: { key: string; status: string }) => r.status === "no" && expenseLines.some((l) => l.key === r.key),
+  );
+  if (rejected.length) {
+    const names = [
+      ...new Set(
+        rejected.map((r: { key: string }) => expenseLines.find((l) => l.key === r.key)?.who).filter(Boolean),
+      ),
+    ];
+    const whoUsers = rejected
+      .map((r: { key: string }) => expenseLines.find((l) => l.key === r.key)?.username)
+      .filter((x: string | undefined): x is string => Boolean(x));
+    const issue = {
+      code: "CHUA_DUYET_CHI" as const,
+      severity: "red" as const,
+      message: `${rejected.length} khoản thu chi bị kế toán TỪ CHỐI — chờ ${names.join(", ")} sửa lại số liệu`,
+      who: whoUsers,
+    };
+    result.issues.push(issue);
+    for (const u of whoUsers) {
+      if (!result.byUser[u]) result.byUser[u] = [];
+      result.byUser[u].push(issue);
+    }
+    result.canClose = false;
   }
 
   return toReconcileDTO(result, expenseLines, username);

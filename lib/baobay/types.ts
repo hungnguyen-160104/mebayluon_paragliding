@@ -240,6 +240,8 @@ export type DailyCloseDTO = {
   flagFlight: number;
   /** Sổ THU/CHI riêng của kế toán. */
   ledger: ExpenseDTO[];
+  /** Dấu DUYỆT/TỪ CHỐI từng khoản thu chi nhân viên khai — khoá theo expenseLines.key. */
+  expenseReviews: Array<{ key: string; status: "ok" | "no"; reason?: string }>;
   expensesApproved: boolean;
   expensesApprovedNote: string;
   varianceApproved: boolean;
@@ -336,12 +338,19 @@ export type ReconcileDTO = {
   expenseTotal: number;
   expenseLines: Array<{
     who: string;
+    /** Tài khoản người khai — để lệnh từ chối trỏ đúng người. */
+    username: string;
     role: BaobayRole;
     content: string;
     amount: number;
     /** thu = tiền nhân viên cầm hộ/thu tại bãi (xanh) · chi = tiền đã chi (đỏ). */
     kind?: "thu" | "chi";
     note?: string;
+    /**
+     * Khoá định danh dòng: role|username|nội dung|tiền|thu-chi. Nhân viên sửa
+     * khoản là khoá đổi → dấu duyệt/từ chối cũ tự rơi về "chưa duyệt".
+     */
+    key: string;
   }>;
   /** Lỗi của riêng người đang đăng nhập. */
   myIssues?: Issue[];

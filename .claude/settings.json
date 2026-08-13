@@ -71,7 +71,10 @@
       "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t15-dp\",\"password\":\"Test1234\",\"displayName\":\"T15 DP\",\"role\":\"dispatcher\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc:%{http_code} ')",
       "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t15-kt\",\"password\":\"Test1234\",\"displayName\":\"T15 KT\",\"role\":\"accountant\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc2:%{http_code} ')",
       "Bash(curl -s -c cj15.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t15-dp\",\"password\":\"Test1234\"}' -o /dev/null -w \"dp:%{http_code} \")",
-      "Bash(curl -s -c cj15k.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t15-kt\",\"password\":\"Test1234\"}' -o /dev/null -w \"kt:%{http_code}\\\\n\")"
+      "Bash(curl -s -c cj15k.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t15-kt\",\"password\":\"Test1234\"}' -o /dev/null -w \"kt:%{http_code}\\\\n\")",
+      "Bash(grep -n \"Ứng tiền\\\\|</div>$\" app/baocao/components/HandoverBox.tsx)",
+      "Read(//dev/**)",
+      "Bash(sed -n '__CMDSUB_OUTPUT__,$p')"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

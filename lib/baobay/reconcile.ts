@@ -268,10 +268,17 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
 
   /* ---------------- Vé huỷ và vé dời lịch ---------------- */
 
+  /**
+   * Điều phối là NGƯỜI NHẬP huỷ/dời — kế toán chỉ xác nhận (sửa qua khung
+   * "Sửa" nếu sai). Kế toán có tự khai mã thì số kế toán mới là mốc.
+   */
   const cancelledSet = new Set(
-    close ? close.cancelledCodes : dispatchers.flatMap((d) => d.cancelledCodes),
+    close && close.cancelledCodes.length
+      ? close.cancelledCodes
+      : dispatchers.flatMap((d) => d.cancelledCodes),
   );
-  const rescheduledList = close ? close.rescheduled : dispatchers.flatMap((d) => d.rescheduled);
+  const rescheduledList =
+    close && close.rescheduled.length ? close.rescheduled : dispatchers.flatMap((d) => d.rescheduled);
   const rescheduledSet = new Set(rescheduledList.map((r) => r.code));
 
   for (const r of rescheduledList) {
@@ -371,12 +378,16 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     };
 
-    compareSets("HUỶ", close.cancelledCodes, dispatchers.flatMap((d) => d.cancelledCodes));
-    compareSets(
-      "DỜI LỊCH",
-      close.rescheduled.map((r) => r.code),
-      dispatchers.flatMap((d) => d.rescheduled.map((r) => r.code)),
-    );
+    if (close.cancelledCodes.length) {
+      compareSets("HUỶ", close.cancelledCodes, dispatchers.flatMap((d) => d.cancelledCodes));
+    }
+    if (close.rescheduled.length) {
+      compareSets(
+        "DỜI LỊCH",
+        close.rescheduled.map((r) => r.code),
+        dispatchers.flatMap((d) => d.rescheduled.map((r) => r.code)),
+      );
+    }
   }
 
   const bothCancelledAndMoved = [...cancelledSet].filter((c) => rescheduledSet.has(c));
@@ -786,7 +797,16 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (countsFollowCodes && close.cancelledCount !== close.cancelledCodes.length) {
+    // Số huỷ/dời của kế toán so với NGUỒN: mã kế toán tự khai (nếu có), không thì số điều phối
+    const dispatcherCancelled = new Set(dispatchers.flatMap((d) => d.cancelledCodes)).size;
+    const dispatcherRescheduled = dispatchers.flatMap((d) => d.rescheduled).length;
+    if (countsFollowCodes && !close.cancelledCodes.length && dispatchers.length) {
+      check("LECH_VE_THU_HOI", "Vé huỷ hoàn tiền", close.cancelledCount, dispatcherCancelled, dispatcherUsers);
+    }
+    if (countsFollowCodes && !close.rescheduled.length && dispatchers.length) {
+      check("LECH_VE_THU_HOI", "Vé dời lịch", close.rescheduledCount, dispatcherRescheduled, dispatcherUsers);
+    }
+    if (countsFollowCodes && close.cancelledCodes.length && close.cancelledCount !== close.cancelledCodes.length) {
       flag({
         code: "LECH_VE_THU_HOI",
         severity: "red",
@@ -795,7 +815,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (countsFollowCodes && close.rescheduledCount !== close.rescheduled.length) {
+    if (countsFollowCodes && close.rescheduled.length && close.rescheduledCount !== close.rescheduled.length) {
       flag({
         code: "LECH_VE_THU_HOI",
         severity: "red",
@@ -890,14 +910,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     }
   }
 
-  if (usingDispatcherRanges && dispatcherRanges.length) {
-    flag({
-      code: "THIEU_SO_KE_TOAN",
-      severity: "warn",
-      message: "Đang soát mã theo dải của điều phối vì kế toán chưa khai dải mã xuất",
-      who: [],
-    });
-  }
+  // Dải mã mặc định lấy của ĐIỀU PHỐI (kế toán không nhập vé nữa) — không cần nhắc.
 
   /**
    * Ngày mưa gió, không bán vé nào: kế toán khai 0 hết thì KHÔNG đòi báo cáo của

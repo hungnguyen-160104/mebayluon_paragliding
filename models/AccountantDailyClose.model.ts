@@ -74,6 +74,7 @@ export interface IAccountantDailyClose {
   /** Kế toán đã xác nhận các khoản chi tiêu của nhân viên. */
   /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
   ledger: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
+  expenseReviews?: Array<{ key: string; status: "ok" | "no"; reason?: string }>;
   expensesApproved: boolean;
   expensesApprovedNote?: string;
 
@@ -182,6 +183,19 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     flagFlight: { type: Number, default: 0, min: 0 },
 
     ledger: { type: [ExpenseSchema], default: [] },
+    expenseReviews: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            status: { type: String, enum: ["ok", "no"], required: true },
+            reason: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     expensesApproved: { type: Boolean, default: false },
     expensesApprovedNote: String,
 

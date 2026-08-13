@@ -304,9 +304,12 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         </p>
       )}
 
-      {/* ---------------------- Giao tiền ---------------------- */}
-      <div className="mt-5 rounded-xl border-2 border-sky-300 bg-sky-50/70 p-3">
-        <h3 className="text-sm font-bold text-sky-900">💵 {t("Nộp tiền", "hand over")}</h3>
+      {/* ---------------------- Giao tiền — ít dùng, gập mặc định ---------------------- */}
+      <details className="group mt-5 rounded-xl border-2 border-sky-300 bg-sky-50/70 p-3">
+        <summary className="cursor-pointer">
+          <h3 className="inline text-sm font-bold text-sky-900">💵 {t("Nộp tiền", "hand over")}</h3>
+          <span aria-hidden className="float-right text-sky-400 transition-transform group-open:rotate-180">▾</span>
+        </summary>
         <p className="mt-0.5 text-xs text-slate-600">
           {t("Người nhận bấm xác nhận thì mới xong", "recipient confirms")}
         </p>
@@ -393,11 +396,14 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
       >
         {busy ? "Đang ghi…" : t("Đã nộp tiền", "sent")}
       </Button>
-      </div>
+      </details>
 
-      {/* ---------------------- Ứng tiền ---------------------- */}
-      <div className="mt-4 rounded-xl border-2 border-violet-300 bg-violet-50/70 p-3">
-        <h3 className="text-sm font-bold text-violet-900">🧾 {t("Xin ứng tiền", "advance")}</h3>
+      {/* ---------------------- Ứng tiền — ít dùng, gập mặc định ---------------------- */}
+      <details className="group mt-4 rounded-xl border-2 border-violet-300 bg-violet-50/70 p-3">
+        <summary className="cursor-pointer">
+          <h3 className="inline text-sm font-bold text-violet-900">🧾 {t("Ứng tiền", "advance")}</h3>
+          <span aria-hidden className="float-right text-violet-400 transition-transform group-open:rotate-180">▾</span>
+        </summary>
         <p className="mt-0.5 text-xs text-slate-600">
           {t("Kế toán hoặc quản trị duyệt · trừ vào lương cuối tháng", "approved = deducted from pay")}
           {advanceApproved > 0 && (
@@ -488,7 +494,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
             ))}
           </ul>
         )}
-      </div>
+      </details>
 
       {(data?.handovers.filter((h) => h.kind !== "advance").length ?? 0) > 0 && (
         <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
