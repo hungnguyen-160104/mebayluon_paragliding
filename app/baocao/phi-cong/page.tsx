@@ -406,11 +406,10 @@ export default function PilotReportPage() {
         </Banner>
       )}
 
-      {myReds.length === 0 && check?.dayBlocked && (
+      {myReds.length === 0 && check?.dayBlocked && !locked && (
         <Banner tone="warning">
-          Số của anh/chị không có vấn đề (your report is clean), nhưng ngày {formatDateKeyVN(date)} vẫn đang
-          treo vì còn {check.otherIssueCount} chỗ chưa khớp ở nơi khác — của người khác hoặc ở số tổng của kế
-          toán. Kế toán sẽ liên hệ nếu cần soát lại.
+          Dữ liệu của bạn không có vấn đề, nhưng ngày {formatDateKeyVN(date)} vẫn đang treo do có{" "}
+          {check.otherIssueCount} chỗ chưa khớp. Kế toán sẽ liên hệ nếu cần đối soát lại.
         </Banner>
       )}
 
