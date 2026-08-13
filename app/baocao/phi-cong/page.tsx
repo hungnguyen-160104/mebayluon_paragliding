@@ -10,7 +10,7 @@ import type { PilotReportDTO } from "@/lib/baobay/types";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "../components/client-api";
+import { apiDelete, apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
 import { CollectInbox } from "../components/CollectBox";
@@ -359,6 +359,29 @@ export default function PilotReportPage() {
     ppgConsistent &&
     hasAnyFlights;
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
+
+  /** Báo nhầm ngày: xoá hẳn bản ghi ngày đó (0 chuyến thì không cần báo cáo). */
+  async function removeReport() {
+    if (!spot || !existing) return;
+    if (
+      !window.confirm(
+        `XOÁ báo cáo ngày ${formatDateKeyVN(date)} của bạn? Dùng khi báo nhầm ngày — ngày này sẽ trở về trắng, không hoàn tác được.`,
+      )
+    )
+      return;
+    setSaving("draft");
+    setError(null);
+    try {
+      await apiDelete(`/api/baocao/reports/pilot?date=${date}&spot=${spot}`);
+      setSaved(null);
+      await loadDay(date);
+      await loadHistory();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không xoá được báo cáo");
+    } finally {
+      setSaving(null);
+    }
+  }
   // Dòng THU (phi công cầm hộ tiền khách) không phải khoản chi — không cộng vào tổng chi
   const expenseSum =
     form.waterCost +
@@ -489,7 +512,9 @@ export default function PilotReportPage() {
         {flyPg && (
 <Card title="Số chuyến PG (Flights)" hint="phải ghi kèm mã vé từng chuyến để đối soát">
           <div className="space-y-3">
-            <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
+            <ServiceBox tone="guests" label={bi("Số chuyến PG", "flights")}>
+              <CountInput compact value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
+            </ServiceBox>
 
             <Field
               label={
@@ -656,14 +681,15 @@ export default function PilotReportPage() {
         <Card
           title="Số chuyến PPG (PPG flights)"
         >
-          <div className="grid gap-3 @md:grid-cols-2">
-            <Field label={bi("Số chuyến PPG", "PPG flights")}>
+          {/* Hai ô này trước đây trắng y hệt nhau nên rất dễ gõ nhầm — tô màu tách hẳn */}
+          <div className="grid grid-cols-2 gap-2">
+            <ServiceBox tone="tickets" label={bi("Số chuyến PPG", "PPG flights")}>
               {/* KHÔNG auto-nhảy ô "không vé" theo số chuyến — người nhập tự cân (mã + không vé = số chuyến) */}
-              <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
-            </Field>
-            <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
-              <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
-            </Field>
+              <CountInput compact value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
+            </ServiceBox>
+            <ServiceBox tone="returned" label={bi("Trong đó KHÔNG vé", "ticketless")}>
+              <CountInput compact value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
+            </ServiceBox>
           </div>
           {form.ppgFlights > 0 && (
             <div className="mt-3">
@@ -734,7 +760,7 @@ export default function PilotReportPage() {
                 canSubmit
                   ? undefined
                   : !hasAnyFlights
-                    ? "Khai số chuyến (PG hoặc PPG) rồi mới chốt được"
+                    ? "Khai số chuyến (PG hoặc PPG) rồi mới chốt được. Báo nhầm ngày thì bấm 'Xoá báo cáo ngày này' bên dưới."
                     : !ppgConsistent
                       ? "PPG: mã vé + không vé phải bằng số chuyến"
                       : requireCodes
@@ -744,6 +770,25 @@ export default function PilotReportPage() {
             >
               {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại (Re-submit)" : "Chốt báo cáo (Submit)"}
             </Button>
+          </div>
+        )}
+
+        {/* Báo NHẦM NGÀY: xoá hẳn bản ghi — đưa số về 0 rồi chốt là không được,
+            vì chốt đòi phải có chuyến, mà để nháp thì kế toán không chốt ngày được. */}
+        {!locked && date <= today && existing && (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 border-rose-300 bg-white px-3 text-xs text-rose-700"
+              disabled={saving !== null || loadingDay}
+              onClick={removeReport}
+            >
+              🗑 Xoá báo cáo ngày này
+            </Button>
+            <span className="text-[11px] leading-tight text-slate-500">
+              Dùng khi báo nhầm ngày — ngày đó trở về trắng, khỏi phải đưa số về 0.
+            </span>
           </div>
         )}
       </form>

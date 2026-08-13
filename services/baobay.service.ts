@@ -1287,6 +1287,73 @@ async function dayStatusLabel(spot: string, date: string): Promise<string> {
  * Dựng dòng + đẩy báo cáo phi công sang thẻ riêng của người đó theo tháng.
  * Tách riêng để hàm đẩy lại (resyncSheets) dùng chung, khỏi chép hai bản cột.
  */
+/**
+ * Phi công báo NHẦM NGÀY: xoá hẳn báo cáo của mình ở ngày đó.
+ *
+ * Trước đây không có đường ra: đưa hết số về 0 thì không chốt lại được (chốt
+ * đòi phải có chuyến), mà để nháp thì kế toán cũng không chốt ngày được. Xoá là
+ * cách đúng vì theo quy tắc "0 chuyến thì không cần báo cáo" — ngày đó phải
+ * TRẮNG chứ không phải có một bản ghi rỗng.
+ *
+ * Kế toán đã chốt ngày thì không cho xoá — phải nhờ gỡ khoá, y như khi sửa số.
+ * Dòng trên bảng tính được ghi đè thành "ĐÃ XOÁ" kèm số 0 để giữ dấu vết.
+ */
+export async function deleteMyPilotReport(
+  session: BaobaySession,
+  spotRaw: string,
+  date: string,
+): Promise<{ deleted: boolean }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  if (await isDayClosed(spot, date)) {
+    throw new BaobayError(`Ngày ${formatDateKeyVN(date)} đã được kế toán chốt — nhờ kế toán gỡ khoá rồi xoá.`, 409);
+  }
+
+  const doc = await PilotDailyReport.findOneAndDelete({
+    accountId: new mongoose.Types.ObjectId(session.id),
+    spot,
+    date,
+  }).lean<any>();
+  if (!doc) return { deleted: false };
+
+  // Bảng tính: ghi đè dòng cũ bằng số 0 + trạng thái ĐÃ XOÁ, không để số cũ nằm lại
+  runInBackground(() =>
+    pushPilotRow({
+      ...doc,
+      flightCount: 0,
+      ticketCodes: [],
+      flycam: 0,
+      flycamCodes: [],
+      video360: 0,
+      video360Codes: [],
+      redFlag: 0,
+      redFlagCodes: [],
+      sunset: 0,
+      sunsetCodes: [],
+      flagFlight: 0,
+      flagFlightCodes: [],
+      diplomaticGuests: 0,
+      diplomaticCodes: [],
+      ppgFlights: 0,
+      ppgCodes: [],
+      siteFeeGuests: 0,
+      waterCost: 0,
+      guestCarCost: 0,
+      pickupBigC: 0,
+      pickupHotel: 0,
+      mountainTrips: 0,
+      expenses: [],
+      latePenalty: 0,
+      note: `ĐÃ XOÁ (phi công báo nhầm ngày)${doc.note ? ` — ghi chú cũ: ${doc.note}` : ""}`,
+      submitted: false,
+      deletedRow: true,
+    }),
+  );
+  runInBackground(() => pushDaySummaryRow(spot, date));
+  return { deleted: true };
+}
+
 async function pushPilotRow(doc: any) {
   return pushBaobayRow(
     "pilot",
@@ -1321,7 +1388,7 @@ async function pushPilotRow(doc: any) {
       expenseDetail: formatExpenses(doc.expenses),
       expenseTotal: pilotExpenseTotal(doc),
       note: doc.note || "",
-      submitted: doc.submitted ? "ĐÃ CHỐT" : "còn nháp",
+      submitted: doc.deletedRow ? "ĐÃ XOÁ" : doc.submitted ? "ĐÃ CHỐT" : "còn nháp",
       dayStatus: await dayStatusLabel(doc.spot, doc.date),
       latePenalty: doc.latePenalty || 0,
       // Có dấu vết nộp muộn nhưng đã được kế toán (hoặc luật 0 chuyến) huỷ phạt

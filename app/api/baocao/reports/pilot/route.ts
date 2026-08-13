@@ -16,6 +16,7 @@ import {
   listPilotReportsOfAccount,
   listPilotReportsOfDate,
   listSpotStaffByRole,
+  deleteMyPilotReport,
   upsertPilotReport,
   upsertPilotReportByAccountant,
 } from "@/services/baobay.service";
@@ -135,5 +136,37 @@ export async function POST(req: Request) {
     }
     console.error("POST /api/baocao/reports/pilot error:", err);
     return NextResponse.json({ message: "Không lưu được báo cáo" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE ?date=&spot= — phi công XOÁ báo cáo của chính mình ở ngày báo nhầm.
+ *
+ * Không cho xoá khi kế toán đã chốt ngày (409) — phải nhờ gỡ khoá, giống lúc sửa.
+ */
+export async function DELETE(req: Request) {
+  const auth = requireBaobay(req, { roles: ["pilot"] });
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  const date = new URL(req.url).searchParams.get("date") || "";
+  if (!isDateKey(date)) {
+    return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
+  }
+
+  try {
+    const res = await deleteMyPilotReport(auth, spot, date);
+    if (!res.deleted) {
+      return NextResponse.json({ message: "Ngày này chưa có báo cáo nào của bạn" }, { status: 404 });
+    }
+    return NextResponse.json(res);
+  } catch (err) {
+    if (err instanceof BaobayError) {
+      return NextResponse.json({ message: err.message }, { status: err.status });
+    }
+    console.error("DELETE /api/baocao/reports/pilot error:", err);
+    return NextResponse.json({ message: "Không xoá được báo cáo" }, { status: 500 });
   }
 }

@@ -765,7 +765,7 @@ export function CancelGuestRows({
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
                 </div>
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Nguồn khách</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Nguồn khách</div>
                   <TextInput
                     value={row.source}
                     onChange={(e) => set(i, { source: e.target.value })}
@@ -774,7 +774,7 @@ export function CancelGuestRows({
                   />
                 </div>
                 <div className="col-span-2 @md:col-span-1">
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
                   <MoneyInput value={row.refund} onChange={(v) => set(i, { refund: v })} />
                 </div>
               </div>
@@ -883,14 +883,15 @@ export function RescheduleGuestRows({
                   disabled={disabled}
                 />
               </div>
-              {/* 4 ô một hàng khi đủ rộng: số lượng – ngày dời – đón – giờ hẹn */}
-              <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
+              {/* 4 ô một hàng chỉ khi thẻ thật rộng — khổ vừa giữ 2×2, nhãn ngắn
+                  lại để không đè lên ô bên cạnh. */}
+              <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số lượng khách</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Số khách</div>
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
                 </div>
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Dời sang ngày</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Dời sang</div>
                   <TextInput
                     type="date"
                     value={row.toDate}
@@ -900,7 +901,7 @@ export function RescheduleGuestRows({
                   />
                 </div>
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Đưa đón</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Đưa đón</div>
                   <select
                     value={row.pickup}
                     onChange={(e) => set(i, { pickup: e.target.value as "self" | "other", pickupNote: "" })}
@@ -912,7 +913,7 @@ export function RescheduleGuestRows({
                   </select>
                 </div>
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Giờ hẹn</div>
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Giờ hẹn</div>
                   <TextInput
                     type="time"
                     value={row.expectedTime}
