@@ -651,7 +651,8 @@ function DailyCloseInner() {
             </div>
           )}
 
-          <div className="grid gap-3 @md:grid-cols-2">
+          {/* 5 ô đếm xếp 3/hàng khi đủ rộng — gọn còn 2 hàng */}
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
               {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
