@@ -8,7 +8,7 @@ import type { HandoverDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
-import { Banner, Button, Card, Field, MoneyInput, TextInput } from "./ui";
+import { Banner, Button, Field, MoneyInput, TextInput, CollapseCard } from "./ui";
 
 /**
  * "Tiền đang giữ" + "Đưa tiền cho quản lý/giám đốc" — khung dùng chung cho cả
@@ -194,15 +194,16 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
 
   const b = data?.balance;
   const inboxPending = (data?.incoming ?? []).filter((h) => !h.confirmed && !h.rejected);
+  const inboxPendingCount = inboxPending.length;
   const mine = data?.handovers ?? [];
   const pendingCount = mine.filter((h) => h.kind !== "advance" && !h.confirmed && !h.rejected).length;
   const myAdvances = mine.filter((h) => h.kind === "advance");
   const advanceApproved = myAdvances.filter((h) => h.confirmed).reduce((sum, h) => sum + h.amount, 0);
 
   return (
-    <Card
+    <CollapseCard
       className="border-teal-200 bg-teal-50/40"
-      title={t("Tiền bạc", "Money")}
+      title={`${t("Tiền bạc", "Money")}${inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}`}
       hint={t("Máy tự cộng từ báo cáo của bạn", "auto-computed")}
     >
       {/* Có người giao tiền cho mình: việc cần bấm ngay, đặt trên cùng */}
@@ -526,7 +527,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
           ))}
         </ul>
       )}
-    </Card>
+    </CollapseCard>
   );
 }
 

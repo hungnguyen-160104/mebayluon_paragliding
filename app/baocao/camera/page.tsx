@@ -169,6 +169,18 @@ export default function CameramanReportPage() {
       subtitle="Nhập số chuyến đã quay flycam trong ngày rồi bấm Chốt để kế toán soát."
     >
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+      />
+
       <ReviewNotices spot={spot} date={date} />
 
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}

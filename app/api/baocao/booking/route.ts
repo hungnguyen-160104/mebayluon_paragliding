@@ -56,7 +56,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = requireBaobay(req, { roles: [...ROLES] });
+  // Phi công cũng tạo booking được — đường "xác nhận dời" đẩy khách sang ngày mới
+  const auth = requireBaobay(req, { roles: [...ROLES, "pilot"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

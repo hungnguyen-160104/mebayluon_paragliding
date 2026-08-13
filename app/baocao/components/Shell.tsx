@@ -43,6 +43,7 @@ export function Shell({
     user.role === "accountant"
       ? [
           { href: "/baocao/chot-ngay", label: "Chốt ngày" },
+          { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
           { href: "/baocao/tong-hop", label: "Tổng hợp" },
           { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
         ]

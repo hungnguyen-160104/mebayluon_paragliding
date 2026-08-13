@@ -36,7 +36,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
+import { Banner, Button, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -381,6 +381,18 @@ export default function DispatcherReportPage() {
       subtitle="Cuối buổi nhập vé xuất/thu, tiền mặt, dịch vụ gia tăng và các khoản chi cho khách."
     >
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+      />
+
       <ReviewNotices spot={spot} date={date} />
 
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
@@ -418,7 +430,7 @@ export default function DispatcherReportPage() {
           onSpotChange={(v) => setSpot(v as never)}
         />
 
-        <Card title={noTickets ? "Tổng khách trong ngày" : "Tổng khách trong ngày & vé"}>
+        <CollapseCard title={noTickets ? "Tổng khách trong ngày" : "Tổng khách trong ngày & vé"}>
           <div className={noTickets ? "grid gap-4" : "grid gap-4 sm:grid-cols-3"}>
             {/* Ô quan trọng nhất của quầy — khung đỏ nổi bật, cụm đếm gọn */}
             <div className="max-w-60 rounded-xl border-2 border-rose-400 bg-rose-50 p-2.5">
@@ -467,9 +479,9 @@ export default function DispatcherReportPage() {
               </Banner>
             </div>
           )}
-        </Card>
+        </CollapseCard>
 
-        <Card
+        <CollapseCard
           title="Dịch vụ gia tăng"
           hint="Flycam đối soát với camera man; 360, cờ đỏ, kéo cờ đối soát với phi công. Mã vé chỉ cần điền khi số lệch."
         >
@@ -532,13 +544,13 @@ export default function DispatcherReportPage() {
               </ServiceBox>
             </div>
           </details>
-        </Card>
+        </CollapseCard>
 
 
 
 
 
-        <Card
+        <CollapseCard
           title="THU CHI"
           hint="Mỗi khoản một dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. Bấm + để thêm. Chi hộ khách (nước, xe…) kế toán xác nhận rồi hoàn lại."
         >
@@ -555,7 +567,7 @@ export default function DispatcherReportPage() {
               <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
             </div>
           </div>
-        </Card>
+        </CollapseCard>
 
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
         <CollapseCard
@@ -628,14 +640,14 @@ export default function DispatcherReportPage() {
           />
         </CollapseCard>
 
-        <Card title="Ghi chú">
+        <CollapseCard title="Ghi chú">
           <TextArea
             value={form.note}
             onChange={(e) => set("note", e.target.value)}
             placeholder="Khách nợ, vé in lỗi, ca làm việc…"
             disabled={locked}
           />
-        </Card>
+        </CollapseCard>
 
         {error && <Banner tone="error">{error}</Banner>}
 
@@ -665,7 +677,7 @@ export default function DispatcherReportPage() {
 
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng từng nội dung mình đã báo" />
 
-      <Card title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
+      <CollapseCard title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
         {history.length === 0 ? (
           <p className="text-sm text-slate-500">Chưa có báo cáo nào.</p>
         ) : (
@@ -693,7 +705,7 @@ export default function DispatcherReportPage() {
             ))}
           </ul>
         )}
-      </Card>
+      </CollapseCard>
     </Shell>
   );
 }

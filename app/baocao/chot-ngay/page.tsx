@@ -26,13 +26,12 @@ import { DateBar } from "../components/DateBar";
 import { BookingCard } from "../components/BookingCard";
 import { HandoverBox } from "../components/HandoverBox";
 import { MoneyOrderCard } from "../components/MoneyOrderCard";
-import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
+import { Banner, Button, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
 
 /**
  * Kế toán tổng hợp chốt ngày.
@@ -530,6 +529,9 @@ function DailyCloseInner() {
         onSpotChange={(v) => setSpot(v as never)}
       />
 
+      {/* Booking đặt trước — thứ hai từ trên xuống, ngay dưới thẻ chọn điểm + ngày */}
+      <BookingCard spot={spot} spotOptions={spotOptions} />
+
       <div>
         {!loadingDay && (
           <div className="mt-1">
@@ -553,7 +555,7 @@ function DailyCloseInner() {
 
       {/* Danh sách lỗi: thứ kế toán cần đọc trước khi làm gì */}
       {(reds.length > 0 || warns.length > 0) && (
-        <Card title="Cần xử lý">
+        <CollapseCard title="Cần xử lý">
           <ul className="space-y-2">
             {reds.map((i, k) => (
               <li key={`r${k}`} className="flex gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
@@ -573,7 +575,7 @@ function DailyCloseInner() {
               </li>
             ))}
           </ul>
-        </Card>
+        </CollapseCard>
       )}
 
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
@@ -582,9 +584,6 @@ function DailyCloseInner() {
       {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
       <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
 
-      {/* Phạt nộp muộn: khoản đã ghi (huỷ được) và khoản tạm tính (tự huỷ khi chốt) */}
-      <PenaltyCard spot={spot} date={date} reloadKey={reloadKey} />
-
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -592,7 +591,7 @@ function DailyCloseInner() {
         }}
         className="space-y-4"
       >
-        <Card
+        <CollapseCard
           title="Số tổng trong ngày"
           hint="Kế toán tự gõ. Con số nhỏ bên dưới là số app cộng từ báo cáo nhân viên — để so, không phải để điền hộ."
         >
@@ -787,9 +786,9 @@ function DailyCloseInner() {
             />
           </div>
           )}
-        </Card>
+        </CollapseCard>
 
-        <Card
+        <CollapseCard
           title="Tiền trong ngày"
           hint="Trên: thu chi nhân viên khai — kế toán đọc rồi duyệt. Dưới: sổ của kế toán (nội dung – số tiền – TM/CK – Thu/Chi), tổng tiền mặt/CK tự cộng từ các dòng THU."
         >
@@ -987,14 +986,14 @@ function DailyCloseInner() {
               <Compare label="phi công báo (thu tại bãi)" value={staffPilotThu} mine={staffPilotThu} money />
             </div>
           </div>
-        </Card>
+        </CollapseCard>
 
         {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
 
         {/* Vé/khách huỷ & dời lịch do ĐIỀU PHỐI nhập — kế toán xác nhận số ở thẻ Số tổng, sai thì bấm "Sửa" báo cáo điều phối */}
 
         {/* Duyệt lệch: kế toán là người quyết định cuối cùng */}
-        <Card
+        <CollapseCard
           title="Duyệt lệch số liệu"
           hint="Số kế toán khai lệch với số nhân viên báo (tiền, khách, vé, dịch vụ) mà đúng thực tế thì tick duyệt — ngày chốt theo SỐ CỦA KẾ TOÁN. Sai ở phía nhân viên thì sửa trực tiếp báo cáo của họ ở các khung bên dưới."
         >
@@ -1027,16 +1026,16 @@ function DailyCloseInner() {
             className="mt-2"
             disabled={locked}
           />
-        </Card>
+        </CollapseCard>
 
-        <Card title="Ghi chú">
+        <CollapseCard title="Ghi chú">
           <TextArea
             value={form.note}
             onChange={(e) => set("note", e.target.value)}
             placeholder="Ghi chú của kế toán về ngày này…"
             disabled={locked}
           />
-        </Card>
+        </CollapseCard>
 
         {error && <Banner tone="error">{error}</Banner>}
         {message && <Banner tone="success" onClose={() => setMessage(null)}>{message}</Banner>}
@@ -1088,11 +1087,6 @@ function DailyCloseInner() {
       {/* Kế toán chủ động lập lệnh chuyển lương / ứng / trả phí cho nhân sự */}
       <div className="mt-4">
         <MoneyOrderCard spot={spot} />
-      </div>
-
-      {/* Kế toán cũng nhập booking đặt trước được — gập mặc định */}
-      <div className="mt-4">
-        <BookingCard spot={spot} spotOptions={spotOptions} />
       </div>
 
       {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}

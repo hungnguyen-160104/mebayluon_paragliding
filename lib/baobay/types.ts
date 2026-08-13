@@ -131,6 +131,9 @@ export type PilotReportDTO = {
   ppgFlights: number;
   ppgCodes: string[];
   ppgNoTicket: number;
+  /** Khách huỷ / dời lịch phi công báo — kênh phụ bên cạnh điều phối. */
+  cancelledGuestEntries: CancelGuestDTO[];
+  rescheduledGuestEntries: RescheduleGuestDTO[];
   expenses: ExpenseDTO[];
   note: string;
   submitted: boolean;
@@ -282,6 +285,8 @@ export type BookingDTO = {
   deposit: number;
   /** Còn lại phải thu khi khách đến bay. */
   remaining: number;
+  /** Mã chuyển khoản của khoản cọc (nếu khách CK). */
+  transferCode: string;
   note: string;
   status: "open" | "done" | "cancelled";
   doneAt?: string;

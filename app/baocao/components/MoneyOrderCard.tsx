@@ -8,7 +8,7 @@ import type { HandoverDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
-import { Banner, Button, Card, Field, MoneyInput, TextInput } from "./ui";
+import { Banner, Button, Field, MoneyInput, TextInput, CollapseCard } from "./ui";
 
 /**
  * Kế toán / quản trị chủ động LẬP LỆNH CHUYỂN TIỀN cho nhân sự: chuyển lương,
@@ -112,9 +112,9 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
   }
 
   return (
-    <Card
+    <CollapseCard
       className="border-cyan-200 bg-cyan-50/40"
-      title="💸 Tiền bạc — lập lệnh & xác nhận"
+      title={`💸 Tiền bạc — lập lệnh & xác nhận${incoming.length ? ` · ${incoming.length} chờ` : ""}`}
       hint="Chuyển lương / ứng / trả phí — nhân sự vào app bấm 'Đã nhận tiền' là xong. Loại ỨNG tự trừ vào lương người nhận."
     >
       {/* Khoản người khác gửi CHO MÌNH: nhân sự nộp tiền lên, xin ứng — bấm ngay tại đây */}
@@ -257,6 +257,6 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
           ))}
         </ul>
       )}
-    </Card>
+    </CollapseCard>
   );
 }

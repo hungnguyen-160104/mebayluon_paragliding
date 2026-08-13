@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 
 import { apiGet } from "./client-api";
-import { Banner, Button, Card, Field, TextInput } from "./ui";
+import { Banner, Button, Field, TextInput, CollapseCard } from "./ui";
 
 /**
  * Khung "Tổng theo chu kỳ" gắn vào trang phi công / điều phối / camera man.
@@ -75,7 +75,7 @@ export function PeriodSummary({
   };
 
   return (
-    <Card title={title} hint={hint}>
+    <CollapseCard title={title} hint={hint}>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Từ ngày">
           <TextInput type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} />
@@ -149,6 +149,6 @@ export function PeriodSummary({
           </p>
         </>
       )}
-    </Card>
+    </CollapseCard>
   );
 }

@@ -968,6 +968,9 @@ export type PilotReportSaveInput = {
   /** Khách ngoại giao KHÔNG xuất vé (vẫn bay) — ghi chú tách khỏi phần có vé. */
   diplomaticNoTicket: number;
   diplomaticNote?: string;
+  /** Khách huỷ/dời phi công báo — kênh phụ, kèm mã vé ở điểm có vé. */
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codesText?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; codesText?: string; bookedId?: string }>;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
   pickupBigC: number;
   pickupHotel: number;
@@ -1196,6 +1199,26 @@ export async function upsertPilotReport(
         diplomaticCodes: diplomatic.codes,
         diplomaticNoTicket: input.diplomaticNoTicket,
         diplomaticNote: (input.diplomaticNote ?? "").trim(),
+        // Khách huỷ/dời PHI CÔNG báo — kênh phụ; mã bung sẵn để đọc, KHÔNG vào bộ đối chiếu (điều phối là nguồn chính)
+        cancelledGuestEntries: (input.cancelledGuestEntries ?? [])
+          .map((e) => ({
+            name: e.name.trim(),
+            bookingCode: e.bookingCode.trim(),
+            guests: e.guests || 0,
+            source: e.source.trim(),
+            refund: e.refund || 0,
+            note: (e.note ?? "").trim(),
+            codes: parseTicketCodeList(spot === "ha-noi" ? "" : (e.codesText ?? "")).codes,
+          }))
+          .filter((e) => e.name || e.guests || e.bookingCode || e.codes.length),
+        rescheduledGuestEntries: (input.rescheduledGuestEntries ?? [])
+          .map((e) => ({
+            ...e,
+            name: e.name.trim(),
+            note: (e.note ?? "").trim(),
+            codes: parseTicketCodeList(spot === "ha-noi" ? "" : (e.codesText ?? "")).codes,
+          }))
+          .filter((e) => e.name || e.guests || e.toDate || e.codes.length),
         // Phí bãi + nước: đặc thù RIÊNG Hà Nội (Sa Pa, Khau Phạ được miễn phí)
         siteFeeGuests: spot === "ha-noi" ? input.siteFeeGuests : 0,
         waterCost: spot === "ha-noi" ? input.waterCost : 0,
@@ -1348,6 +1371,8 @@ function toPilotDTO(doc: any): PilotReportDTO {
     diplomaticCodes: doc.diplomaticCodes ?? [],
     diplomaticNoTicket: doc.diplomaticNoTicket ?? 0,
     diplomaticNote: doc.diplomaticNote ?? "",
+    cancelledGuestEntries: doc.cancelledGuestEntries ?? [],
+    rescheduledGuestEntries: doc.rescheduledGuestEntries ?? [],
     siteFeeGuests: doc.siteFeeGuests ?? 0,
     waterCost: doc.waterCost ?? 0,
     guestCarCost: doc.guestCarCost ?? 0,
@@ -2563,6 +2588,7 @@ export type BookingSaveInput = {
   expectedTime: string;
   deposit: number;
   remaining: number;
+  transferCode: string;
   note: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
@@ -2630,6 +2656,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
       remaining: input.remaining,
+      transferCode: input.transferCode.trim(),
       note: input.note.trim(),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       status: "open",
@@ -2711,6 +2738,7 @@ export async function updateBookingInfo(
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
       remaining: input.remaining,
+      transferCode: input.transferCode.trim(),
       note: input.note.trim(),
     },
   };
@@ -2856,6 +2884,7 @@ async function pushBookingRow(doc: any) {
       expectedTime: doc.expectedTime || "",
       deposit: doc.deposit ?? 0,
       remaining: doc.remaining ?? 0,
+      transferCode: doc.transferCode || "",
       status:
         doc.status === "done"
           ? "ĐÃ BAY"
@@ -2897,6 +2926,7 @@ function toBookingDTO(doc: any): BookingDTO {
     expectedTime: doc.expectedTime || "",
     deposit: doc.deposit ?? 0,
     remaining: doc.remaining ?? 0,
+    transferCode: doc.transferCode || "",
     note: doc.note || "",
     status: doc.status === "done" ? "done" : doc.status === "cancelled" ? "cancelled" : "open",
     doneAt: doc.doneAt ? new Date(doc.doneAt).toISOString() : undefined,

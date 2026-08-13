@@ -82,6 +82,9 @@ export interface IPilotDailyReport {
   ppgCodes: string[];
   ppgNoTicket: number;
   /** Các khoản chi khác: nội dung – số tiền – ghi chú. */
+  /** Khách huỷ / dời lịch PHI CÔNG báo (kèm mã vé ở điểm có vé) — kênh phụ, điều phối vẫn là nguồn chính. */
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codes?: string[] }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: string; pickupNote?: string; expectedTime?: string; codes?: string[]; bookedId?: string }>;
   expenses: ExpenseDTO[];
 
   note?: string;
@@ -160,6 +163,43 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     ppgFlights: { type: Number, default: 0, min: 0 },
     ppgCodes: { type: [String], default: [] },
     ppgNoTicket: { type: Number, default: 0, min: 0 },
+    cancelledGuestEntries: {
+      type: [
+        new Schema(
+          {
+            name: { type: String, default: "" },
+            bookingCode: { type: String, default: "" },
+            guests: { type: Number, default: 0, min: 0 },
+            source: { type: String, default: "" },
+            refund: { type: Number, default: 0, min: 0 },
+            note: { type: String, default: "" },
+            codes: { type: [String], default: [] },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    rescheduledGuestEntries: {
+      type: [
+        new Schema(
+          {
+            name: { type: String, default: "" },
+            guests: { type: Number, default: 0, min: 0 },
+            toDate: { type: String, default: "" },
+            note: { type: String, default: "" },
+            phone: { type: String, default: "" },
+            pickup: { type: String, enum: ["self", "other"], default: "self" },
+            pickupNote: { type: String, default: "" },
+            expectedTime: { type: String, default: "" },
+            codes: { type: [String], default: [] },
+            bookedId: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     expenses: { type: [ExpenseSchema], default: [] },
 
     note: String,

@@ -21,7 +21,7 @@ import {
   type RangeRow,
   type RescheduleGuestRow,
 } from "./rows";
-import { Banner, Button, Card, CountInput, Field, ServiceBox, TextInput } from "./ui";
+import { Banner, Button, CountInput, Field, ServiceBox, TextInput, CollapseCard } from "./ui";
 
 /**
  * Kế toán SỬA TRỰC TIẾP báo cáo ĐIỀU PHỐI và CAMERA MAN trên trang Chốt ngày.
@@ -107,7 +107,7 @@ export function StaffReportEditor({
   if (!dpRows.length && !cmRows.length && !missingDp.length && !missingCm.length) return null;
 
   return (
-    <Card
+    <CollapseCard
       title={`Báo cáo điều phối & camera man trong ngày (${dispatchers.length + cameramen.length})`}
       hint="Nhân viên nhập — kế toán chỉ XÁC NHẬN. Sai ở đâu bấm Sửa: chỉnh được MỌI chi tiết (dải mã vé, thu chi, khách huỷ/dời, dịch vụ…) rồi lưu hộ; người chưa báo thì chọn thêm và nhập hộ."
     >
@@ -132,7 +132,7 @@ export function StaffReportEditor({
           )}
         </div>
       )}
-    </Card>
+    </CollapseCard>
   );
 }
 

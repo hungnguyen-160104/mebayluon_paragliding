@@ -13,7 +13,15 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
-import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
+import {
+  ExpenseRows,
+  toExpenseRows,
+  type ExpenseRow,
+  CancelGuestRows,
+  RescheduleGuestRows,
+  type CancelGuestRow,
+  type RescheduleGuestRow,
+} from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
@@ -21,7 +29,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput } from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput, CollapseCard } from "../components/ui";
 
 /**
  * Phi công báo cáo một ngày bay.
@@ -63,6 +71,9 @@ type FormState = {
   ppgCodesText: string;
   ppgNoTicket: number;
   expenses: ExpenseRow[];
+  /** Khách huỷ / dời lịch phi công báo — kênh phụ bên cạnh điều phối. */
+  cancelledGuests: CancelGuestRow[];
+  rescheduledGuests: RescheduleGuestRow[];
   note: string;
 };
 
@@ -91,6 +102,10 @@ const EMPTY_FORM: FormState = {
   ppgCodesText: "",
   ppgNoTicket: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
+  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }],
+  rescheduledGuests: [
+    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
+  ],
   note: "",
 };
 
@@ -175,6 +190,25 @@ export default function PilotReportPage() {
               ppgCodesText: res.report.ppgCodes.join(", "),
               ppgNoTicket: res.report.ppgNoTicket,
               expenses: toExpenseRows(res.report.expenses),
+              cancelledGuests: res.report.cancelledGuestEntries.length
+                ? res.report.cancelledGuestEntries.map((e) => ({
+                    ...e,
+                    note: e.note || "",
+                    codesText: (e.codes ?? []).join(", "),
+                  }))
+                : EMPTY_FORM.cancelledGuests,
+              rescheduledGuests: res.report.rescheduledGuestEntries.length
+                ? res.report.rescheduledGuestEntries.map((e) => ({
+                    ...e,
+                    note: e.note || "",
+                    phone: e.phone || "",
+                    pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
+                    pickupNote: e.pickupNote || "",
+                    expectedTime: e.expectedTime || "",
+                    codesText: (e.codes ?? []).join(", "),
+                    bookedId: e.bookedId || "",
+                  }))
+                : EMPTY_FORM.rescheduledGuests,
               note: res.report.note,
             }
           : EMPTY_FORM,
@@ -215,6 +249,12 @@ export default function PilotReportPage() {
           date,
           ...form,
           expenses: form.expenses.filter((e) => e.content.trim() || e.amount),
+          cancelledGuestEntries: form.cancelledGuests.filter(
+            (e) => e.name.trim() || e.guests || e.bookingCode.trim() || e.codesText.trim(),
+          ),
+          rescheduledGuestEntries: form.rescheduledGuests.filter(
+            (e) => e.name.trim() || e.guests || e.toDate || e.codesText.trim(),
+          ),
           submit,
         },
       );
@@ -236,6 +276,48 @@ export default function PilotReportPage() {
       loadHistory();
     } catch (err: any) {
       setError(err?.message || "Không lưu được báo cáo");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  /**
+   * "Xác nhận dời" của PHI CÔNG — y hệt điều phối: đẩy nhóm khách vào SỔ
+   * BOOKING của ngày dời (hiện trong 🛫 Booking bay ngày đó), khoá chống đẩy
+   * trùng lưu ngay vào báo cáo.
+   */
+  async function confirmMove(index: number) {
+    const row = form.rescheduledGuests[index];
+    if (!row || !row.toDate || row.bookedId) return;
+    const codeCount = parseTicketCodeList(row.codesText).codes.length;
+    const guestTotal = row.guests || codeCount;
+    if (!guestTotal) return;
+    setError(null);
+    setSaving("draft");
+    try {
+      const res = await apiPost<{ booking: { id: string } }>(`/api/baocao/booking?spot=${spot}`, {
+        flightDate: row.toDate,
+        source: "Dời lịch",
+        contactName: row.name,
+        phone: row.phone,
+        bookingCode: "",
+        guestCount: guestTotal,
+        flycam: 0,
+        video360: 0,
+        redFlag: 0,
+        flagFlight: 0,
+        pickup: row.pickup === "other" ? "other" : "self",
+        pickupNote: row.pickup === "other" ? row.pickupNote : "",
+        expectedTime: row.expectedTime,
+        deposit: 0,
+        remaining: 0,
+        note: `Khách dời từ ngày ${formatDateKeyVN(date)} (phi công ${user?.name ?? ""} báo)${row.codesText.trim() ? ` — vé: ${row.codesText.trim()}` : ""}${row.note ? ` — ${row.note}` : ""}`,
+        rescheduledFrom: date,
+      });
+      set("rescheduledGuests", form.rescheduledGuests.map((r, i) => (i === index ? { ...r, bookedId: res.booking.id } : r)));
+      setSaved({ warnings: [`Đã đẩy nhóm khách vào lịch booking ngày ${formatDateKeyVN(row.toDate)} — nhớ bấm Lưu/Chốt báo cáo.`], submitted: existing?.submitted ?? false });
+    } catch (err: any) {
+      setError(err?.message || "Không đẩy được vào lịch booking");
     } finally {
       setSaving(null);
     }
@@ -281,6 +363,18 @@ export default function PilotReportPage() {
       <MyShifts spot={spot} bilingual />
 
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
+      {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+      />
+
       <ReviewNotices spot={spot} date={date} />
 
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
@@ -524,7 +618,7 @@ export default function PilotReportPage() {
           </details>
         </Card>
 
-        <Card
+        <CollapseCard
           title={bi("Khách ngoại giao", "complimentary guests")}
           hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
         >
@@ -554,7 +648,7 @@ export default function PilotReportPage() {
               />
             </Field>
           </div>
-        </Card>
+        </CollapseCard>
 
         {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
         {spot === "khau-pha" && (
@@ -612,7 +706,7 @@ export default function PilotReportPage() {
         </Card>
         )}
 
-        <Card title={bi("Thu / Chi trong ngày", "money in & out")} hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
+        <CollapseCard title={bi("Thu / Chi trong ngày", "money in & out")} hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
           {/* Phí bãi + nước: đặc thù RIÊNG Hà Nội — Sa Pa và Khau Phạ được miễn phí */}
           {spot === "ha-noi" && (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -679,7 +773,34 @@ export default function PilotReportPage() {
               <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
             </div>
           </div>
-        </Card>
+        </CollapseCard>
+
+        {/* Khách huỷ / dời — kênh phụ của phi công, gập mặc định như bên điều phối */}
+        <CollapseCard
+          title={bi("Khách huỷ", "cancellations")}
+          hint="tên – mã book – số khách – nguồn – tiền hoàn – ghi chú"
+        >
+          <CancelGuestRows
+            rows={form.cancelledGuests}
+            onChange={(rows) => set("cancelledGuests", rows)}
+            disabled={locked}
+            withCodes={spot !== "ha-noi"}
+          />
+        </CollapseCard>
+
+        <CollapseCard
+          title={bi("Khách dời lịch", "reschedules")}
+          hint="tên – SĐT – số lượng – ngày dời – đón – giờ hẹn"
+        >
+          <RescheduleGuestRows
+            rows={form.rescheduledGuests}
+            onChange={(rows) => set("rescheduledGuests", rows)}
+            minDate={shiftDateKey(date, 1)}
+            disabled={locked}
+            onConfirmMove={confirmMove}
+            withCodes={spot !== "ha-noi"}
+          />
+        </CollapseCard>
 
         <Card title="Ghi chú (Notes)">
           <TextArea

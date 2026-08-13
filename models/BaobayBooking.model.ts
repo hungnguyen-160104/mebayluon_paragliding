@@ -56,6 +56,8 @@ export interface IBaobayBooking {
   deposit: number;
   /** Số tiền CÒN LẠI phải thu khi khách đến bay (VND). */
   remaining: number;
+  /** Mã chuyển khoản của khoản cọc — soi lại sao kê ngân hàng. */
+  transferCode: string;
   note: string;
 
   /**
@@ -105,6 +107,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     expectedTime: { type: String, default: "" },
     deposit: { type: Number, default: 0, min: 0 },
     remaining: { type: Number, default: 0, min: 0 },
+    transferCode: { type: String, default: "" },
     note: { type: String, default: "" },
 
     assignedToUsername: String,

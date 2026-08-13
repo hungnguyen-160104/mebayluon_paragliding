@@ -185,6 +185,8 @@ export const pilotReportSchema = z.object({
   ppgFlights: count(300),
   ppgCodesText: text(20_000),
   ppgNoTicket: count(300),
+  cancelledGuestEntries: cancelledGuestList,
+  rescheduledGuestEntries: rescheduledGuestList,
   expenses: expenseList,
   note: text(2_000),
   /**
@@ -303,6 +305,7 @@ export const bookingSchema = z.object({
   expectedTime: text(20),
   deposit: money,
   remaining: money,
+  transferCode: text(100),
   note: text(1_000),
 });
 

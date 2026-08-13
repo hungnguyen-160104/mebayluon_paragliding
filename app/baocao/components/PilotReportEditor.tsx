@@ -8,7 +8,7 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "./rows";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
+import { Banner, Button, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput, CollapseCard } from "./ui";
 
 /**
  * Khung cho KẾ TOÁN sửa báo cáo phi công ngay trên trang chốt ngày.
@@ -74,7 +74,7 @@ export function PilotReportEditor({
   ];
 
   return (
-    <Card
+    <CollapseCard
       title={`Báo cáo phi công trong ngày (${reports.length})`}
       hint="Kế toán sửa trực tiếp được — lưu hộ đi cùng một đường kiểm tra với chính phi công. Phạt nộp muộn không bị tính lại khi sửa."
     >
@@ -128,7 +128,7 @@ export function PilotReportEditor({
           </Button>
         </div>
       )}
-    </Card>
+    </CollapseCard>
   );
 }
 
@@ -162,6 +162,8 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     ppgFlights: 0,
     ppgCodes: [],
     ppgNoTicket: 0,
+    cancelledGuestEntries: [],
+    rescheduledGuestEntries: [],
     expenses: [],
     note: "",
     submitted: false,
@@ -220,6 +222,16 @@ function PilotRow({
           targetUsername: report.username,
           ...form,
           expenses: money.filter((e) => e.content.trim() || e.amount),
+          cancelledGuestEntries: report.cancelledGuestEntries.map((e) => ({
+            ...e,
+            note: e.note || "",
+            codesText: (e.codes ?? []).join(" "),
+          })),
+          rescheduledGuestEntries: report.rescheduledGuestEntries.map((e) => ({
+            ...e,
+            note: e.note || "",
+            codesText: (e.codes ?? []).join(" "),
+          })),
           submit,
         },
       );
@@ -495,6 +507,13 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
   if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
   if (r.ppgFlights) add(`${r.ppgFlights}×PPG${r.ppgNoTicket ? ` (${r.ppgNoTicket} không vé)` : ""}`, "ppg");
   if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
+  // Nhóm khách huỷ/dời phi công báo — kế toán lướt là thấy, chi tiết xem báo cáo điều phối
+  {
+    const cancelled = r.cancelledGuestEntries.reduce((a, e) => a + (e.guests || (e.codes ?? []).length), 0);
+    const moved = r.rescheduledGuestEntries.reduce((a, e) => a + (e.guests || (e.codes ?? []).length), 0);
+    if (cancelled) add(`${cancelled} khách huỷ`, "cxl");
+    if (moved) add(`${moved} khách dời`, "mv");
+  }
   if (r.pickupBigC) add(`xe BigC ×${r.pickupBigC}`, "bigc");
   if (r.pickupHotel) add(`xe đón KS ×${r.pickupHotel}`, "hotel");
   if (r.mountainTrips) add(`xe lên núi ×${r.mountainTrips}`, "mount");
