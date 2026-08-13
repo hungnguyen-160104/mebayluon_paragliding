@@ -39,6 +39,8 @@ import {
   parseTicketCodeList,
   TICKET_CODE_HINT,
   TICKET_CODE_PATTERN,
+  parseTicketCode,
+  formatTicketCode,
 } from "@/lib/baobay/ticket-code";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
@@ -2728,7 +2730,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       deposit: input.deposit,
       remaining: input.remaining,
       transferCode: input.transferCode.trim(),
-      depositToCompany: Boolean(input.depositToCompany),
+      // Cọc thì 100% qua STK công ty — không cần tích tay nữa
+      depositToCompany: input.deposit > 0,
       note: input.note.trim(),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       status: "open",
@@ -2844,7 +2847,8 @@ export async function updateBookingInfo(
       deposit: input.deposit,
       remaining: input.remaining,
       transferCode: input.transferCode.trim(),
-      depositToCompany: Boolean(input.depositToCompany),
+      // Cọc thì 100% qua STK công ty — không cần tích tay nữa
+      depositToCompany: input.deposit > 0,
       note: input.note.trim(),
     },
   };
@@ -3875,13 +3879,48 @@ export async function resolveReviewRequest(
 /* Số nhân viên báo — cho kế toán XÁC NHẬN thay vì gõ lại              */
 /* ================================================================== */
 
+/**
+ * Dựng DẢI MÃ liên tục từ danh sách mã rời phi công báo về: "MBL0001, MBL0002,
+ * MBL0003, MBL0007" → [0001–0003, 0007–0007]. Kế toán khỏi dò tay từng mã.
+ */
+function rangesFromCodes(codes: string[]): Array<{ from: string; to: string }> {
+  const parsed = codes
+    .map((c) => parseTicketCode(c))
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+  // Gom theo tiền tố (MBL, KP-…) rồi xếp số tăng dần, bỏ mã trùng
+  const byPrefix = new Map<string, { num: number; width: number }[]>();
+  for (const p of parsed) {
+    const list = byPrefix.get(p.prefix) ?? [];
+    if (!list.some((x) => x.num === p.num)) list.push({ num: p.num, width: p.width });
+    byPrefix.set(p.prefix, list);
+  }
+  const ranges: Array<{ from: string; to: string }> = [];
+  for (const [prefix, list] of byPrefix) {
+    list.sort((a, b) => a.num - b.num);
+    let start = list[0];
+    let prev = list[0];
+    for (const cur of list.slice(1)) {
+      if (cur.num === prev.num + 1) {
+        prev = cur;
+        continue;
+      }
+      ranges.push({ from: formatTicketCode(prefix, start.num, start.width), to: formatTicketCode(prefix, prev.num, prev.width) });
+      start = prev = cur;
+    }
+    ranges.push({ from: formatTicketCode(prefix, start.num, start.width), to: formatTicketCode(prefix, prev.num, prev.width) });
+  }
+  return ranges;
+}
+
 export type CloseSuggestionDTO = {
   guestCount: number;
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
   rescheduledCount: number;
-  issuedRanges: Array<{ from: string; to: string }>;
+issuedRanges: Array<{ from: string; to: string }>;
+  /** Dải mã dựng TỰ ĐỘNG từ mã phi công báo đã bay (+PPG) — dùng khi quầy chưa nhập dải. */
+  pilotRanges: Array<{ from: string; to: string }>;
   cancelledCodesText: string;
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
@@ -3953,6 +3992,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     })),
   );
 
+  const pilotRanges = rangesFromCodes(
+    pilots.flatMap((p) => [...((p.ticketCodes ?? []) as string[]), ...((p.ppgCodes ?? []) as string[])]),
+  );
+
   return {
     guestCount: sum(dispatchers, (d) => d.guestCount),
     ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
@@ -3960,9 +4003,14 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     // Số đã lưu của điều phối: điểm vé đếm theo mã, Hà Nội đếm theo đầu khách
     cancelledCount: sum(dispatchers, (d) => d.cancelledCount),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
-    issuedRanges: dispatchers.flatMap((d) =>
-      (d.issuedRanges ?? []).map((r: any) => ({ from: r.from || "", to: r.to || "" })),
-    ),
+    // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
+    issuedRanges: (() => {
+      const fromDispatcher = dispatchers.flatMap((d) =>
+        (d.issuedRanges ?? []).map((r: any) => ({ from: r.from || "", to: r.to || "" })),
+      );
+      return fromDispatcher.length ? fromDispatcher : pilotRanges;
+    })(),
+    pilotRanges,
     cancelledCodesText: cancelledCodes.join(", "),
     rescheduled,
     cashTotal: sum(dispatchers, (d) => d.cashReceived),
@@ -4802,6 +4850,7 @@ function toReconcileDTO(
 ): ReconcileDTO {
   return {
     date: result.date,
+    empty: result.empty,
     canClose: result.canClose,
     issues: result.issues,
     totals: result.totals,

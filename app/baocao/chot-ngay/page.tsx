@@ -23,7 +23,7 @@ import {
   type ExpenseRow,
 } from "../components/rows";
 import { DateBar } from "../components/DateBar";
-import { BookingCard } from "../components/BookingCard";
+import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { HandoverBox } from "../components/HandoverBox";
 import { PilotReportEditor } from "../components/PilotReportEditor";
@@ -57,6 +57,8 @@ type CloseSuggestion = {
   cancelledCount: number;
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
+  /** Dải mã dựng tự động từ mã phi công báo đã bay (+PPG). */
+  pilotRanges: Array<{ from: string; to: string }>;
   cancelledCodesText: string;
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
@@ -364,9 +366,15 @@ function DailyCloseInner() {
       redFlag: suggest.pilot.redFlag,
       sunset: suggest.pilot.sunset,
       flagFlight: suggest.pilot.flagFlight,
+      // Dải mã dựng tự động từ mã phi công báo đã bay — quầy chưa nhập thì đỡ phải dò tay
+      issuedRanges: suggest.pilotRanges.length ? suggest.pilotRanges.map((r) => ({ ...r })) : prev.issuedRanges,
     }));
     setMessage(
-      `Đã lấy tổng PHI CÔNG báo (flycam/360/kéo cờ; tổng ${suggest.pilot.flights} chuyến) — khách, tiền và mã vé vẫn theo số đang nhập.`,
+      `Đã lấy tổng PHI CÔNG báo (flycam/360/kéo cờ; tổng ${suggest.pilot.flights} chuyến)` +
+        (suggest.pilotRanges.length
+          ? ` + dải mã ${suggest.pilotRanges.map((r) => `${r.from}–${r.to}`).join(", ")} dựng từ mã đã bay`
+          : "") +
+        ` — khách và tiền vẫn theo số đang nhập.`,
     );
   }
 
@@ -535,6 +543,9 @@ function DailyCloseInner() {
       />
 
       {/* Booking đặt trước — thứ hai từ trên xuống, ngay dưới thẻ chọn điểm + ngày */}
+      {/* Booking bay đúng ngày đang xem — bản GẬP cho kế toán, bấm tiêu đề mới xổ */}
+      <BookingTodayBanner spot={spot} date={date} collapsible />
+
       <BookingCard spot={spot} spotOptions={spotOptions} />
 
       {/* Lệnh thu tiền chờ mình xử lý */}
@@ -548,6 +559,11 @@ function DailyCloseInner() {
                 <strong>{close?.closedBy ? `${close.closedBy} đã chốt` : "Ngày này đã chốt"}</strong>
                 {close?.closedAt ? ` lúc ${new Date(close.closedAt).toLocaleString("vi-VN")}` : ""}. Số liệu đã
                 khoá với mọi nhân viên.
+              </Banner>
+            ) : check?.empty ? (
+              <Banner tone="info">
+                <strong>Chưa có dữ liệu.</strong> Ngày này chưa ai báo cáo gì — không phát sinh chuyến bay hay
+                thu chi thì không cần xử lý.
               </Banner>
             ) : reds.length ? (
               <Banner tone="error">
@@ -1174,10 +1190,11 @@ function Compare({
 
   return (
     <div className="mt-1.5 flex items-center gap-1.5 text-xs leading-none">
-      <span className={"flex min-w-0 flex-1 items-baseline gap-1 " + (same ? "text-emerald-700" : "text-amber-700")}>
+      {/* Số đứng SÁT nhãn — dồn hết sang phải làm mắt phải nhảy cả ô mới đọc được */}
+      <span className={"flex min-w-0 items-baseline gap-1 " + (same ? "text-emerald-700" : "text-amber-700")}>
         <span className="shrink-0">{same ? "✓" : "≠"}</span>
-        <span className="truncate">{label}</span>
-        <strong className="ml-auto shrink-0 tabular-nums">{shown}</strong>
+        <span className="truncate">{label}:</span>
+        <strong className="shrink-0 tabular-nums">{shown}</strong>
       </span>
       {!same && onTake && (
         <button

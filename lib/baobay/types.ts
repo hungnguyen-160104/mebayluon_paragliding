@@ -369,6 +369,8 @@ export type RescheduleGuestDTO = {
 /** Kết quả đối chiếu một ngày, dạng gửi qua API. */
 export type ReconcileDTO = {
   date: string;
+  /** Ngày trắng — không ai báo gì: hiện "Chưa có dữ liệu" thay vì "Cần xử lý". */
+  empty: boolean;
   canClose: boolean;
   issues: Issue[];
   totals: ReconcileTotals;

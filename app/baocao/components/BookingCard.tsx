@@ -53,7 +53,7 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (b.depositToCompany) parts.push("cọc → TK cty");
   if (b.note) parts.push(b.note);
 
-  return <span className="text-xs text-slate-600">{parts.filter(Boolean).join(" · ")}</span>;
+  return <span className="text-sm leading-snug text-slate-700">{parts.filter(Boolean).join(" · ")}</span>;
 }
 
 /** "HH:MM" hiện tại theo giờ Việt Nam — giờ dự kiến hôm nay không được sớm hơn. */
@@ -126,7 +126,7 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
       <button
         type="button"
         onClick={openList}
-        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
+        className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
       >
         {booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
       </button>
@@ -161,7 +161,16 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
 /* Banner đầu trang: booking bay đúng ngày đang xem                     */
 /* ================================================================== */
 
-export function BookingTodayBanner({ spot, date }: { spot: string; date: string }) {
+export function BookingTodayBanner({
+  spot,
+  date,
+  collapsible = false,
+}: {
+  spot: string;
+  date: string;
+  /** Trang kế toán: gập được — mở trang không bị choán chỗ, bấm tiêu đề mới xổ danh sách. */
+  collapsible?: boolean;
+}) {
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -204,11 +213,9 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
     }
   }
 
-  return (
-    <div className="rounded-2xl border-2 border-sky-400 bg-sky-50 p-4 lg:[column-span:all]">
-      <h2 className="text-sm font-bold text-sky-900">
-        🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} chờ bay)
-      </h2>
+  const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} chờ bay)</>;
+  const body = (
+    <>
       <p className="mt-0.5 text-[11px] text-sky-800/70">
         Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
         như thường, không cần khớp với danh sách này.
@@ -218,10 +225,10 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
           <Banner tone="error">{error}</Banner>
         </div>
       )}
-      <ul className="mt-2 space-y-2">
+      <ul className="mt-2 space-y-1.5">
         {open.map((b) => (
-          <li key={b.id} className="rounded-lg bg-white px-3 py-2">
-            <div className="min-w-0">
+          <li key={b.id} className="flex items-start gap-2 rounded-lg bg-white px-3 py-1.5">
+            <div className="min-w-0 flex-1">
               <BookingSummary b={b} />
               <AssignedBadge b={b} />
               {b.rescheduledFrom.length > 0 && (
@@ -229,39 +236,39 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
                   dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
                 </span>
               )}
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 nhập {stampVN(b.createdAt)} bởi {b.createdByName}
               </div>
             </div>
 
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="flex shrink-0 flex-col items-stretch gap-1">
                 <input
                   type="date"
                   value={moving.toDate}
                   min={shiftDateKey(todayInVN(), 1)}
                   onChange={(e) => setMoving({ id: b.id, toDate: e.target.value })}
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
                 />
                 <Button
                   type="button"
-                  className="h-9 px-3 text-xs"
+                  className="h-8 px-2.5 text-xs"
                   disabled={busy === b.id || !moving.toDate}
                   onClick={() => act(b, "move", moving.toDate)}
                 >
-                  {busy === b.id ? "Đang lưu…" : "✓ Dời sang ngày này"}
+                  {busy === b.id ? "Đang lưu…" : "✓ Dời"}
                 </Button>
-                <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={() => setMoving(null)}>
+                <Button type="button" variant="ghost" className="h-8 bg-white px-2.5 text-xs" onClick={() => setMoving(null)}>
                   Thôi
                 </Button>
               </div>
             ) : (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <AssignControl spot={spot} booking={b} onDone={load} />
+              /* Nút chức năng nhỏ gọn, xếp MỘT CỘT sát mép phải — thông tin chiếm phần rộng */
+              <div className="flex shrink-0 flex-col items-stretch gap-1">
                 <Button
                   type="button"
-                  className="h-9 flex-1 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
+                  className="h-8 bg-emerald-600 px-2.5 text-xs hover:bg-emerald-700"
                   disabled={busy === b.id}
                   onClick={() => act(b, "flown")}
                 >
@@ -270,7 +277,7 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-9 flex-1 bg-white px-3 text-xs"
+                  className="h-8 bg-white px-2.5 text-xs"
                   disabled={busy === b.id}
                   onClick={() => setMoving({ id: b.id, toDate: "" })}
                 >
@@ -279,12 +286,13 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-9 flex-1 bg-white px-3 text-xs text-rose-700"
+                  className="h-8 bg-white px-2.5 text-xs text-rose-700"
                   disabled={busy === b.id}
                   onClick={() => act(b, "cancel")}
                 >
                   ✕ Huỷ
                 </Button>
+                <AssignControl spot={spot} booking={b} onDone={load} />
               </div>
             )}
           </li>
@@ -304,6 +312,25 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
           </li>
         ))}
       </ul>
+    </>
+  );
+
+  if (collapsible) {
+    return (
+      <details className="group rounded-2xl border-2 border-sky-400 bg-sky-50 lg:[column-span:all]">
+        <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5">
+          <span className="text-sm font-bold text-sky-900">{title}</span>
+          <span aria-hidden className="text-sky-700 transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="border-t border-sky-200 px-3 pb-3">{body}</div>
+      </details>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border-2 border-sky-400 bg-sky-50 p-3 lg:[column-span:all]">
+      <h2 className="text-sm font-bold text-sky-900">{title}</h2>
+      {body}
     </div>
   );
 }
@@ -437,7 +464,6 @@ type BookingForm = {
   deposit: number;
   remaining: number;
   transferCode: string;
-  depositToCompany: boolean;
   /** Còn lại > 0: người được chỉ định thu trước khi bay + lời nhắn cho họ. */
   collectorUsername: string;
   collectorNote: string;
@@ -463,7 +489,6 @@ function emptyBooking(today: string): BookingForm {
     deposit: 0,
     remaining: 0,
     transferCode: "",
-    depositToCompany: false,
     collectorUsername: "",
     collectorNote: "",
     note: "",
@@ -591,7 +616,6 @@ export function BookingCard({
       deposit: b.deposit,
       remaining: b.remaining,
       transferCode: b.transferCode,
-      depositToCompany: b.depositToCompany,
       // Sửa booking KHÔNG lập lại lệnh thu — tránh gửi trùng lệnh cho người thu
       collectorUsername: "",
       collectorNote: "",
@@ -745,7 +769,7 @@ export function BookingCard({
           )}
         </Field>
         {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
-        <Field label="Đã cọc">
+        <Field label="Đã cọc vào TK công ty">
           <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
         </Field>
         <Field label="Còn lại (thu trước khi bay)">
@@ -793,20 +817,8 @@ export function BookingCard({
         </div>
       )}
 
-      {/* Cọc CK về thẳng tài khoản công ty — không ai cầm khoản này */}
-      <div className="mt-2 grid items-end gap-2 @md:grid-cols-2">
-      <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
-        <input
-          type="checkbox"
-          checked={form.depositToCompany}
-          onChange={(e) => set("depositToCompany", e.target.checked)}
-          className="h-5 w-5 rounded border-slate-300"
-        />
-        <span className="text-sm text-slate-800">
-          CK cọc vào <strong>TK Công ty</strong>
-        </span>
-      </label>
-
+      {/* Cọc thì 100% qua STK công ty — bỏ ô tích, máy chủ tự đánh dấu khi có cọc */}
+      <div className="mt-2">
       <Field label="Ghi chú">
           <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Khách Hàn, cần HDV tiếng Anh…" className="h-10 rounded-lg text-sm" />
       </Field>
@@ -856,21 +868,21 @@ export function BookingCard({
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {upcoming.map((b) => (
-              <li key={b.id} className={"flex flex-wrap items-center gap-1.5 px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
+              <li key={b.id} className={"flex items-start gap-2 px-2.5 py-2" + (editingId === b.id ? " bg-sky-50" : "")}>
                 <div className="min-w-0 flex-1">
                   <BookingSummary b={b} withDate />
                   <AssignedBadge b={b} />
-                  <span className="ml-1 text-[11px] text-slate-400">
+                  <span className="ml-1 text-xs text-slate-400">
                     — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
                   </span>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                <div className="flex shrink-0 flex-col items-stretch gap-1">
                   <AssignControl spot={bookSpot} booking={b} onDone={load} />
                   <button
                     type="button"
                     onClick={() => startEdit(b)}
                     disabled={rowBusy === b.id}
-                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-sky-500 hover:text-sky-700"
+                    className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-sky-500 hover:text-sky-700"
                   >
                     {editingId === b.id ? "đang sửa…" : "Sửa"}
                   </button>
@@ -878,7 +890,7 @@ export function BookingCard({
                     type="button"
                     onClick={() => removeBooking(b)}
                     disabled={rowBusy === b.id}
-                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
+                    className="h-8 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
                   >
                     {rowBusy === b.id ? "…" : "Xoá"}
                   </button>

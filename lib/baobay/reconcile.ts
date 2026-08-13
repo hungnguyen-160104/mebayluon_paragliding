@@ -199,6 +199,8 @@ export type ReconcileTotals = {
 
 export type ReconcileResult = {
   date: string;
+  /** Ngày TRẮNG: không ai báo gì, kế toán cũng chưa nhập — "chưa có dữ liệu", không phải "cần xử lý". */
+  empty: boolean;
   /** Không còn lỗi đỏ — điều kiện để kế toán chốt ngày. */
   canClose: boolean;
   issues: Issue[];
@@ -229,6 +231,12 @@ const sum = <T>(list: T[], pick: (item: T) => number): number =>
 export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const { date, spot, close, dispatchers, pilots, cameramen } = input;
   const requireCodes = input.requireCodes !== false;
+  /**
+   * Ngày không phát sinh chuyến bay: không ai báo, kế toán không nhập — đó là
+   * "CHƯA CÓ DỮ LIỆU", không phải 3 lỗi đỏ "cần xử lý". Chỉ cần MỘT bên có số
+   * là các phép soi thiếu/lệch bật lại như thường.
+   */
+  const emptyDay = !close && !dispatchers.length && !pilots.length && !cameramen.length;
   const issues: Issue[] = [];
   const byUser: Record<string, Issue[]> = {};
 
@@ -759,12 +767,14 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   /* ---------------- Số tổng: kế toán so với nhân viên ---------------- */
 
   if (!close) {
-    flag({
-      code: "THIEU_SO_KE_TOAN",
-      severity: "red",
-      message: `Kế toán chưa nhập số tổng ngày ${formatDateKeyVN(date)}`,
-      who: [],
-    });
+    if (!emptyDay) {
+      flag({
+        code: "THIEU_SO_KE_TOAN",
+        severity: "red",
+        message: `Kế toán chưa nhập số tổng ngày ${formatDateKeyVN(date)}`,
+        who: [],
+      });
+    }
   } else {
     const check = (
       code: IssueCode,
@@ -952,7 +962,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     !dispatchers.some((d) => d.ticketsIssued > 0) &&
     !pilots.some((p) => p.flightCount > 0);
 
-  if (!pilots.length && !nothingIssued) {
+  if (!pilots.length && !nothingIssued && !emptyDay) {
     flag({
       code: "PHI_CONG_CHUA_CHOT",
       severity: "red",
@@ -961,7 +971,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     });
   }
 
-  if (!dispatchers.length && !nothingIssued) {
+  if (!dispatchers.length && !nothingIssued && !emptyDay) {
     flag({
       code: "LECH_VE_XUAT",
       severity: "red",
@@ -972,6 +982,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
 
   return {
     date,
+    empty: emptyDay,
     canClose: !issues.some((i) => i.severity === "red"),
     issues,
     byUser,

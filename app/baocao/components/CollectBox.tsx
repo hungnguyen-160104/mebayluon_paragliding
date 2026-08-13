@@ -248,22 +248,20 @@ export function CollectCreate({ spot }: { spot: string }) {
         </Field>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      {/* Toggle TM|CK bé lại, chui lên cùng hàng với số người/số tiền — tiết kiệm một hàng */}
+      <div className="mt-2.5 grid grid-cols-2 gap-2.5 @md:grid-cols-3">
         <Field label="Số người">
           <CountInput compact value={form.guests} onChange={(v) => set("guests", v)} max={100} />
         </Field>
         <Field label="Số tiền">
           <MoneyInput value={form.amount} onChange={(v) => set("amount", v)} />
         </Field>
-      </div>
-
-      <div className="mt-3">
         <Field label="Khách trả bằng">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
                 ["cash", "Tiền mặt"],
-                ["transfer", "Chuyển khoản"],
+                ["transfer", "CK"],
               ] as Array<["cash" | "transfer", string]>
             ).map(([key, label]) => (
               <button
@@ -272,8 +270,8 @@ export function CollectCreate({ spot }: { spot: string }) {
                 onClick={() => set("method", key)}
                 className={
                   form.method === key
-                    ? "flex-1 bg-emerald-600 text-sm font-semibold text-white"
-                    : "flex-1 bg-white text-sm font-medium text-slate-500"
+                    ? "flex-1 bg-emerald-600 px-1 text-xs font-semibold text-white"
+                    : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
                 }
               >
                 {label}
@@ -284,12 +282,12 @@ export function CollectCreate({ spot }: { spot: string }) {
       </div>
 
       {form.method === "cash" ? (
-        <div className="mt-3">
+        <div className="mt-2.5 grid gap-2.5 @md:grid-cols-2">
           <Field label="Người thu">
             <select
               value={form.collectorUsername}
               onChange={(e) => set("collectorUsername", e.target.value)}
-              className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-slate-900 outline-none focus:border-emerald-600"
+              className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-600"
             >
               <option value="">✓ Chính tôi thu (mặc định)</option>
               {staff.map((a) => (
@@ -298,16 +296,29 @@ export function CollectCreate({ spot }: { spot: string }) {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] leading-tight text-slate-500">
               {form.collectorUsername
                 ? "Lệnh chạy về trang người được chọn — họ bấm \"Đã thu tiền\" mới xong."
-                : "Chính mình thu: tiền ghi thẳng vào TIỀN GIỮ HỘ CÔNG TY của bạn, không cần xác nhận."}
+                : "Chính mình thu: tiền vào thẳng TIỀN GIỮ HỘ CÔNG TY của bạn, khỏi xác nhận."}
             </p>
+          </Field>
+          <Field label="Ghi chú">
+            <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Bay ngày nào, hẹn gì thêm…" />
           </Field>
         </div>
       ) : (
-        <div className="mt-3 space-y-3">
-          <label className="flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2.5">
+        <div className="mt-2.5 grid gap-2.5 @md:grid-cols-2">
+          <Field label="Mã chuyển khoản">
+            <TextInput
+              value={form.transferCode}
+              onChange={(e) => set("transferCode", e.target.value)}
+              placeholder="Mã GD ngân hàng…"
+            />
+          </Field>
+          <Field label="Ghi chú">
+            <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Bay ngày nào, hẹn gì thêm…" />
+          </Field>
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 @md:col-span-2">
             <input
               type="checkbox"
               checked={form.toCompanyAccount}
@@ -318,21 +329,8 @@ export function CollectCreate({ spot }: { spot: string }) {
               TK công ty — tiền vào thẳng tài khoản công ty, không ai cầm
             </span>
           </label>
-          <Field label="Mã chuyển khoản">
-            <TextInput
-              value={form.transferCode}
-              onChange={(e) => set("transferCode", e.target.value)}
-              placeholder="Mã GD ngân hàng…"
-            />
-          </Field>
         </div>
       )}
-
-      <div className="mt-3">
-        <Field label="Ghi chú">
-          <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Bay ngày nào, hẹn gì thêm…" />
-        </Field>
-      </div>
 
       {error && (
         <div className="mt-3">
@@ -347,7 +345,7 @@ export function CollectCreate({ spot }: { spot: string }) {
         </div>
       )}
 
-      <Button type="button" className="mt-3 w-full bg-emerald-600 hover:bg-emerald-700" disabled={busy} onClick={send}>
+      <Button type="button" className="mt-2.5 h-10 w-full bg-emerald-600 hover:bg-emerald-700" disabled={busy} onClick={send}>
         {busy ? "Đang gửi…" : "✓ Xác nhận"}
       </Button>
 
