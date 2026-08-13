@@ -589,7 +589,7 @@ export default function PilotReportPage() {
               Mã vé từng dịch vụ — không bắt buộc (optional ticket codes)
             </summary>
             {/* Cùng bộ màu với cụm đếm phía trên — nhìn màu là biết đang gõ mã cho dịch vụ nào */}
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 grid grid-cols-2 gap-2 @md:grid-cols-3">
               <ServiceBox tone="flycam" label="Mã vé Flycam">
                 <TextInput
                   value={form.flycamCodesText}
