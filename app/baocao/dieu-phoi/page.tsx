@@ -22,15 +22,12 @@ import {
   ExpenseRows,
   RangeRows,
   RescheduleEntryRows,
-  RevenueRows,
   rangeRowsTotal,
-  toExpenseRows,
   toRangeRows,
   type CancelRow,
   type DiploRow,
   type ExpenseRow,
   type RangeRow,
-  type RevenueRow,
   type RescheduleEntryRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
@@ -40,7 +37,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -71,13 +68,8 @@ type FormState = {
   redFlagCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
-  cashReceived: number;
-  transferReceived: number;
-  revenueEntries: RevenueRow[];
-  guestWaterCost: number;
-  mountainCarCost: number;
-  shuttleCarCost: number;
-  expenses: ExpenseRow[];
+  /** Sổ THU CHI hợp nhất: nội dung – số tiền – thu/chi – TM/CK – ghi chú. */
+  money: ExpenseRow[];
   note: string;
 };
 
@@ -101,13 +93,7 @@ const EMPTY_FORM: FormState = {
   redFlagCodesText: "",
   flagFlight: 0,
   flagFlightCodesText: "",
-  cashReceived: 0,
-  transferReceived: 0,
-  revenueEntries: [],
-  guestWaterCost: 0,
-  mountainCarCost: 0,
-  shuttleCarCost: 0,
-  expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
+  money: [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }],
   note: "",
 };
 
@@ -170,23 +156,41 @@ function fromReport(r: DispatcherReportDTO): FormState {
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     /**
-     * Máy chủ lưu TỔNG đã gộp các khoản thu có tên — ô "Tiền mặt"/"Chuyển
-     * khoản" hiển thị phần còn lại sau khi trừ các dòng, để lưu lại không bị
-     * cộng đôi.
+     * Sổ THU CHI hợp nhất — báo cáo cũ (thời còn ô tổng tiền mặt/CK và ba
+     * khoản chi có tên) được trải phẳng thành từng dòng để sửa tiếp: phần tổng
+     * chưa có tên thành dòng "Tiền thu trong ngày", nước/xe thành dòng chi.
      */
-    cashReceived:
-      r.cashReceived -
-      r.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0),
-    transferReceived:
-      r.transferReceived -
-      r.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0),
-    revenueEntries: r.revenueEntries.length ? r.revenueEntries.map((e) => ({ ...e })) : [],
-    guestWaterCost: r.guestWaterCost,
-    mountainCarCost: r.mountainCarCost,
-    shuttleCarCost: r.shuttleCarCost,
-    expenses: toExpenseRows(r.expenses),
+    money: buildMoneyRows(r),
     note: r.note,
   };
+}
+
+/** Trải mọi nguồn tiền của báo cáo (cũ lẫn mới) thành sổ THU CHI một dòng một khoản. */
+function buildMoneyRows(r: DispatcherReportDTO): ExpenseRow[] {
+  const rows: ExpenseRow[] = [];
+  for (const e of r.revenueEntries) {
+    rows.push({ content: e.content, amount: e.amount, kind: "thu", method: e.method, note: "" });
+  }
+  const cashRest = r.cashReceived - r.revenueEntries.filter((e) => e.method === "cash").reduce((a, e) => a + e.amount, 0);
+  const transferRest =
+    r.transferReceived - r.revenueEntries.filter((e) => e.method === "transfer").reduce((a, e) => a + e.amount, 0);
+  if (cashRest > 0) rows.push({ content: "Tiền thu trong ngày", amount: cashRest, kind: "thu", method: "cash", note: "" });
+  if (transferRest > 0)
+    rows.push({ content: "Khách chuyển khoản", amount: transferRest, kind: "thu", method: "transfer", note: "" });
+  if (r.guestWaterCost > 0) rows.push({ content: "Nước cho khách", amount: r.guestWaterCost, kind: "chi", method: "cash", note: "" });
+  if (r.mountainCarCost > 0) rows.push({ content: "Xe lên núi", amount: r.mountainCarCost, kind: "chi", method: "cash", note: "" });
+  if (r.shuttleCarCost > 0) rows.push({ content: "Xe đưa đón", amount: r.shuttleCarCost, kind: "chi", method: "cash", note: "" });
+  for (const e of r.expenses) {
+    if (!e.content && !e.amount) continue;
+    rows.push({
+      content: e.content,
+      amount: e.amount,
+      kind: e.kind === "thu" ? "thu" : "chi",
+      method: e.method,
+      note: e.note || "",
+    });
+  }
+  return rows.length ? rows : [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }];
 }
 
 type DayCheck = { dayBlocked: boolean; myIssues: Issue[]; otherIssueCount: number };
@@ -280,6 +284,21 @@ export default function DispatcherReportPage() {
       {
         date,
         ...f,
+        // Sổ THU CHI tách hai ngả: dòng THU thành khoản thu có tên (đúng TM/CK),
+        // dòng CHI thành khoản chi — các ô tổng cũ về 0 để máy chủ tự cộng từ dòng
+        cashReceived: 0,
+        transferReceived: 0,
+        revenueEntries: f.money
+          .filter((e) => e.kind === "thu" && (e.content.trim() || e.amount))
+          .map((e) => ({
+            content: e.content.trim() || "Tiền thu",
+            method: e.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+            amount: e.amount,
+          })),
+        guestWaterCost: 0,
+        mountainCarCost: 0,
+        shuttleCarCost: 0,
+        expenses: f.money.filter((e) => e.kind !== "thu" && (e.content.trim() || e.amount)),
         issuedRanges: f.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
         cancelledEntries: f.cancelledEntries.filter(
           (e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim() || e.note.trim(),
@@ -288,7 +307,6 @@ export default function DispatcherReportPage() {
         cancelledGuestEntries: f.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
         rescheduledGuestEntries: f.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
         diplomaticEntries: f.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount || e.note.trim()),
-        expenses: f.expenses.filter((x) => x.content.trim() || x.amount),
       },
     );
     setExisting(res.report);
@@ -349,15 +367,8 @@ export default function DispatcherReportPage() {
   const noTickets = spot === "ha-noi";
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
-  const revenue =
-    form.cashReceived +
-    form.transferReceived +
-    form.revenueEntries.reduce((a, e) => a + (e.amount || 0), 0);
-  const expenseSum =
-    form.guestWaterCost +
-    form.mountainCarCost +
-    form.shuttleCarCost +
-    form.expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
+  const expenseSum = form.money.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
 
   return (
@@ -605,53 +616,22 @@ export default function DispatcherReportPage() {
           />
         </Card>
 
-        <Card title="Tiền thu về">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Tiền mặt">
-              <MoneyInput value={form.cashReceived} onChange={(v) => set("cashReceived", v)} />
-            </Field>
-            <Field label="Chuyển khoản">
-              <MoneyInput value={form.transferReceived} onChange={(v) => set("transferReceived", v)} />
-            </Field>
-          </div>
-          <div className="mt-4">
-            <Field label="Khoản thu khác" hint="Bấm + để thêm: nội dung – tiền mặt/CK – số tiền. Máy tự cộng vào tổng">
-              <div />
-            </Field>
-            <RevenueRows
-              rows={form.revenueEntries}
-              onChange={(rows) => set("revenueEntries", rows)}
-              disabled={locked}
-            />
-          </div>
+        <Card
+          title="THU CHI"
+          hint="Mỗi khoản một dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. Bấm + để thêm. Chi hộ khách (nước, xe…) kế toán xác nhận rồi hoàn lại."
+        >
+          <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} disabled={locked} withKind withMethod hideTotals />
 
-          <div className="mt-3">
-            <Readout label="Tổng thu trong ngày" value={formatVND(revenue)} />
-          </div>
-        </Card>
-
-        <Card title="Chi cho khách" hint="Tiền đã bỏ ra hộ khách, kế toán xác nhận rồi hoàn lại">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Nước cho khách">
-              <MoneyInput value={form.guestWaterCost} onChange={(v) => set("guestWaterCost", v)} />
-            </Field>
-            <Field label="Xe lên núi">
-              <MoneyInput value={form.mountainCarCost} onChange={(v) => set("mountainCarCost", v)} />
-            </Field>
-            <Field label="Xe đưa đón">
-              <MoneyInput value={form.shuttleCarCost} onChange={(v) => set("shuttleCarCost", v)} />
-            </Field>
-          </div>
-
-          <div className="mt-4">
-            <Field label="Khoản chi khác" hint="Mỗi khoản một dòng: nội dung – số tiền – ghi chú">
-              <div />
-            </Field>
-            <ExpenseRows rows={form.expenses} onChange={(rows) => set("expenses", rows)} disabled={locked} />
-          </div>
-
-          <div className="mt-3">
-            <Readout label="Tổng chi trong ngày" value={formatVND(expenseSum)} />
+          {/* Tổng chạy theo sổ: thu xanh dấu +, chi đỏ dấu − */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-emerald-800">Tổng thu</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">+{formatVND(revenue)}</div>
+            </div>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-rose-800">Tổng chi</div>
+              <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
+            </div>
           </div>
         </Card>
 

@@ -230,6 +230,7 @@ export function ExpenseRows({
   disabled,
   withKind,
   withMethod,
+  hideTotals,
 }: {
   rows: ExpenseRow[];
   onChange: (next: ExpenseRow[]) => void;
@@ -238,6 +239,8 @@ export function ExpenseRows({
   withKind?: boolean;
   /** Hiện tick Tiền mặt/CK trên từng dòng — sổ "Tiền trong ngày" của kế toán. */
   withMethod?: boolean;
+  /** Ẩn cặp tổng mặc định — nơi gọi tự vẽ tổng theo kiểu riêng. */
+  hideTotals?: boolean;
 }) {
   const set = (index: number, patch: Partial<ExpenseRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -343,7 +346,7 @@ export function ExpenseRows({
           >
             {withKind ? "+ Thêm dòng thu/chi" : "+ Thêm khoản chi"}
           </Button>
-          {withKind ? (
+          {hideTotals ? null : withKind ? (
             <>
               <div className="min-w-32 flex-1">
                 <Readout label="Tổng thu" value={`${totalThu.toLocaleString("vi-VN")}đ`} />
