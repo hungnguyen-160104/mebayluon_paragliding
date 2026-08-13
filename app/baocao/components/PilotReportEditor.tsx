@@ -147,6 +147,8 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     video360Codes: [],
     redFlag: 0,
     redFlagCodes: [],
+    sunset: 0,
+    sunsetCodes: [],
     flagFlight: 0,
     flagFlightCodes: [],
     diplomaticGuests: 0,
@@ -348,6 +350,9 @@ function PilotRow({
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
             </ServiceBox>
+            <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+              <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={300} />
+            </ServiceBox>
             <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
             </ServiceBox>
@@ -358,6 +363,14 @@ function PilotRow({
               <TextInput
                 value={form.flycamCodesText}
                 onChange={(e) => set("flycamCodesText", e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </ServiceBox>
+            <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+              <TextInput
+                value={form.sunsetCodesText}
+                onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
                 autoCapitalize="characters"
                 spellCheck={false}
               />
@@ -504,6 +517,7 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
   if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");
+  if (r.sunset) add(`${r.sunset}×hoàng hôn/mây`, "sunset");
   if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
   if (r.ppgFlights) add(`${r.ppgFlights}×PPG${r.ppgNoTicket ? ` (${r.ppgNoTicket} không vé)` : ""}`, "ppg");
   if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
@@ -573,6 +587,8 @@ function toForm(r: PilotReportDTO) {
     video360CodesText: r.video360Codes.join(", "),
     redFlag: r.redFlag,
     redFlagCodesText: r.redFlagCodes.join(", "),
+    sunset: r.sunset,
+    sunsetCodesText: r.sunsetCodes.join(", "),
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     diplomaticGuests: r.diplomaticGuests,

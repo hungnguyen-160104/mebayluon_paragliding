@@ -48,6 +48,7 @@ export type IssueCode =
   | "LECH_FLYCAM"
   | "LECH_360"
   | "LECH_CO_DO"
+  | "LECH_HOANG_HON"
   | "LECH_KEO_CO"
   | "THIEU_SO_KE_TOAN"
   | "CHUA_DUYET_CHI"
@@ -77,6 +78,8 @@ export type ReconcilePilot = {
   video360Codes: string[];
   redFlag: number;
   redFlagCodes: string[];
+  sunset: number;
+  sunsetCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -107,6 +110,8 @@ export type ReconcileDispatcher = {
   video360ServiceCodes: string[];
   redFlag: number;
   redFlagCodes: string[];
+  sunset: number;
+  sunsetCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -138,6 +143,7 @@ export type ReconcileClose = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   expensesApproved: boolean;
   varianceApproved: boolean;
@@ -170,6 +176,7 @@ export type ReconcileTotals = {
   dispatcherFlycam: number;
   dispatcher360: number;
   dispatcherRedFlag: number;
+  dispatcherSunset: number;
   dispatcherFlagFlight: number;
   dispatcherCash: number;
   dispatcherTransfer: number;
@@ -181,6 +188,7 @@ export type ReconcileTotals = {
   pilotFlycam: number;
   pilot360: number;
   pilotRedFlag: number;
+  pilotSunset: number;
   pilotFlagFlight: number;
   pilotDiplomatic: number;
   cameramanFlycam: number;
@@ -578,6 +586,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     dispatcherFlycam: sum(dispatchers, (d) => d.flycam),
     dispatcher360: sum(dispatchers, (d) => d.video360),
     dispatcherRedFlag: sum(dispatchers, (d) => d.redFlag),
+    dispatcherSunset: sum(dispatchers, (d) => d.sunset),
     dispatcherFlagFlight: sum(dispatchers, (d) => d.flagFlight),
     dispatcherCash: sum(dispatchers, (d) => d.cashReceived),
     dispatcherTransfer: sum(dispatchers, (d) => d.transferReceived),
@@ -588,6 +597,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     pilotFlycam: sum(pilots, (p) => p.flycam),
     pilot360: sum(pilots, (p) => p.video360),
     pilotRedFlag: sum(pilots, (p) => p.redFlag),
+    pilotSunset: sum(pilots, (p) => p.sunset),
     pilotFlagFlight: sum(pilots, (p) => p.flagFlight),
     pilotDiplomatic: sum(pilots, (p) => p.diplomaticGuests),
     cameramanFlycam: sum(cameramen, (c) => c.flycamFlights),
@@ -703,6 +713,14 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       dispatcherTotal: totals.dispatcherRedFlag,
       pilotCodes: pilots.flatMap((p) => p.redFlagCodes),
       dispatcherCodes: dispatchers.flatMap((d) => d.redFlagCodes),
+    },
+    {
+      code: "LECH_HOANG_HON",
+      label: "Bay hoàng hôn/săn mây",
+      pilotTotal: totals.pilotSunset,
+      dispatcherTotal: totals.dispatcherSunset,
+      pilotCodes: pilots.flatMap((p) => p.sunsetCodes),
+      dispatcherCodes: dispatchers.flatMap((d) => d.sunsetCodes),
     },
     {
       code: "LECH_KEO_CO",
@@ -892,6 +910,16 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
         code: "LECH_CO_DO",
         severity: varianceApproved ? "warn" : "red",
         message: `Dù cờ đỏ: kế toán khai ${close.redFlag}, phi công báo ${totals.pilotRedFlag}`,
+        who: [],
+      });
+    }
+
+    // Bay hoàng hôn/săn mây cùng khuôn: nguồn chuẩn là phi công, lệch thì duyệt được
+    if ((close.sunset ?? 0) !== totals.pilotSunset && pilots.length) {
+      flag({
+        code: "LECH_HOANG_HON",
+        severity: varianceApproved ? "warn" : "red",
+        message: `Bay hoàng hôn/săn mây: kế toán khai ${close.sunset}, phi công báo ${totals.pilotSunset}`,
         who: [],
       });
     }

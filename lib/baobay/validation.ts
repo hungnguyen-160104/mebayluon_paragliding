@@ -166,6 +166,8 @@ export const pilotReportSchema = z.object({
   video360CodesText: text(20_000),
   redFlag: count(300),
   redFlagCodesText: text(20_000),
+  sunset: count(300),
+  sunsetCodesText: text(20_000),
   flagFlight: count(300),
   flagFlightCodesText: text(20_000),
   diplomaticGuests: count(300),
@@ -215,6 +217,8 @@ export const dispatcherReportSchema = z.object({
   video360CodesText: text(20_000),
   redFlag: count(1_000),
   redFlagCodesText: text(20_000),
+  sunset: count(1_000),
+  sunsetCodesText: text(20_000),
   flagFlight: count(1_000),
   flagFlightCodesText: text(20_000),
   cashReceived: money,
@@ -266,6 +270,7 @@ export const dailyCloseSchema = z.object({
   flycam: count(1_000),
   video360: count(1_000),
   redFlag: count(1_000),
+  sunset: count(1_000),
   flagFlight: count(1_000),
   /** Sổ THU/CHI riêng của kế toán: nội dung – số tiền – tick thu/chi. */
   ledger: expenseList,
@@ -293,6 +298,7 @@ export const bookingSchema = z.object({
   flycam: count(100),
   video360: count(100),
   redFlag: count(100),
+  sunset: count(100),
   flagFlight: count(100),
   pickup: z.enum(["self", "bigc", "hotel", "other"]).default("self"),
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, để hiện "dời từ dd/mm". */

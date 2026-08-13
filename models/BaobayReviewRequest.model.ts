@@ -13,13 +13,14 @@ import { DEFAULT_SPOT } from "@/lib/baobay/spots";
  * hoặc tự tan khi ngày được chốt (chốt nghĩa là đã soát xong).
  */
 
-export type ReviewTopic = "flycam" | "video360" | "redFlag" | "flagFlight" | "general";
+export type ReviewTopic = "flycam" | "video360" | "redFlag" | "sunset" | "flagFlight" | "general";
 
 /** Vai trò phải soát lại theo từng chủ đề — trùng với cặp đối chiếu của từng dịch vụ. */
 export const REVIEW_TARGET_ROLES: Record<ReviewTopic, string[]> = {
   flycam: ["dispatcher", "cameraman"],
   video360: ["dispatcher", "pilot"],
   redFlag: ["dispatcher", "pilot"],
+  sunset: ["dispatcher", "pilot"],
   flagFlight: ["dispatcher", "pilot"],
   general: ["dispatcher", "pilot", "cameraman"],
 };
@@ -28,6 +29,7 @@ export const REVIEW_TOPIC_LABEL: Record<ReviewTopic, string> = {
   flycam: "Flycam",
   video360: "Camera 360",
   redFlag: "Dù cờ đỏ",
+  sunset: "Bay hoàng hôn/săn mây",
   flagFlight: "Bay kéo cờ",
   general: "Số liệu chung",
 };
@@ -50,7 +52,7 @@ const BaobayReviewRequestSchema = new Schema<IBaobayReviewRequest>(
     date: { type: String, required: true, index: true },
     topic: {
       type: String,
-      enum: ["flycam", "video360", "redFlag", "flagFlight", "general"],
+      enum: ["flycam", "video360", "redFlag", "sunset", "flagFlight", "general"],
       default: "general",
     },
     note: { type: String, default: "" },

@@ -14,7 +14,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TOPICS = new Set(["flycam", "video360", "redFlag", "flagFlight", "general"]);
+const TOPICS = new Set(["flycam", "video360", "redFlag", "sunset", "flagFlight", "general"]);
 
 /**
  * Lệnh "yêu cầu soát lại" — kế toán thấy hai nguồn lệch nhau thì gửi lệnh cho

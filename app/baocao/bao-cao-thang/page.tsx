@@ -31,6 +31,7 @@ type MetricKey = keyof Pick<
   | "ppgFlights"
   | "video360"
   | "redFlag"
+  | "sunset"
   | "flagFlight"
   | "siteFeeGuests"
   | "pickupBigC"
@@ -52,6 +53,7 @@ const BASE_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = 
   { key: "flights", label: "PG" },
   { key: "video360", label: "360" },
   { key: "redFlag", label: "Cờ" },
+  { key: "sunset", label: "Hoàng hôn/săn mây" },
   { key: "flagFlight", label: "Kéo cờ" },
 ];
 

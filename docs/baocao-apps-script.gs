@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v18`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v19`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -45,6 +45,8 @@ const KINDS = {
     'Mã vé 360': 'video360Codes',
     'Dù cờ đỏ': 'redFlag',
     'Mã vé cờ đỏ': 'redFlagCodes',
+    'Bay hoàng hôn/săn mây': 'sunset',
+    'Mã vé hoàng hôn/săn mây': 'sunsetCodes',
     'Bay kéo cờ': 'flagFlight',
     'Mã vé kéo cờ': 'flagFlightCodes',
     'Khách ngoại giao': 'diplomaticGuests',
@@ -87,6 +89,7 @@ const KINDS = {
     'Flycam': 'flycam',
     'Camera 360': 'video360',
     'Cờ đỏ': 'redFlag',
+    'Bay hoàng hôn/săn mây': 'sunset',
     'Bay kéo cờ': 'flagFlight',
     'Khách ngoại giao': 'diplomaticGuests',
     'Mã vé ngoại giao': 'diplomaticCodes',
@@ -126,6 +129,7 @@ const KINDS = {
     'Flycam': 'flycam',
     'Camera 360': 'video360',
     'Dù cờ đỏ': 'redFlag',
+    'Bay hoàng hôn/săn mây': 'sunset',
     'Bay kéo cờ': 'flagFlight',
     'Thu chi kế toán': 'ledgerDetail',
     'Đã duyệt chi': 'expensesApproved',
@@ -185,6 +189,7 @@ const KINDS = {
     'Flycam': 'flycam',
     'Camera 360': 'video360',
     'Dù cờ đỏ': 'redFlag',
+    'Bay hoàng hôn/săn mây': 'sunset',
     'Bay kéo cờ': 'flagFlight',
     'Đưa đón': 'pickup',
     'Giờ dự kiến': 'expectedTime',
@@ -239,6 +244,7 @@ const KINDS = {
     'Camera 360 (điều phối)': 'video360Dispatcher',
     'Camera 360 (phi công)': 'video360Pilot',
     'Dù cờ đỏ': 'redFlag',
+    'Bay hoàng hôn/săn mây': 'sunset',
     'Bay kéo cờ': 'flagFlight',
     'Vé ngoại giao': 'diplomaticTickets',
     'Thu ngoại giao': 'diplomaticAmount',
@@ -286,7 +292,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v18',
+    version: 'baobay-multispot-v19',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

@@ -66,6 +66,8 @@ type FormState = {
   video360CodesText: string;
   redFlag: number;
   redFlagCodesText: string;
+  sunset: number;
+  sunsetCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   /** Sổ THU CHI hợp nhất: nội dung – số tiền – thu/chi – TM/CK – ghi chú. */
@@ -91,6 +93,8 @@ const EMPTY_FORM: FormState = {
   video360CodesText: "",
   redFlag: 0,
   redFlagCodesText: "",
+  sunset: 0,
+  sunsetCodesText: "",
   flagFlight: 0,
   flagFlightCodesText: "",
   money: [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }],
@@ -178,6 +182,8 @@ function fromReport(r: DispatcherReportDTO): FormState {
     video360CodesText: r.video360ServiceCodes.join(", "),
     redFlag: r.redFlag,
     redFlagCodesText: r.redFlagCodes.join(", "),
+    sunset: r.sunset,
+    sunsetCodesText: r.sunsetCodes.join(", "),
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     /**
@@ -341,6 +347,7 @@ export default function DispatcherReportPage() {
         flycam: 0,
         video360: 0,
         redFlag: 0,
+        sunset: 0,
         flagFlight: 0,
         pickup: row.pickup === "other" ? "other" : "self",
         pickupNote: row.pickup === "other" ? row.pickupNote : "",
@@ -502,6 +509,11 @@ export default function DispatcherReportPage() {
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
             </ServiceBox>
+            {spot !== "sapa" && (
+            <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+              <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
+            </ServiceBox>
+            )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
             </ServiceBox>
@@ -539,6 +551,17 @@ export default function DispatcherReportPage() {
                   disabled={locked}
                 />
               </ServiceBox>
+              {spot !== "sapa" && (
+              <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+                <TextInput
+                  value={form.sunsetCodesText}
+                  onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={locked}
+                />
+              </ServiceBox>
+              )}
               <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ/bánh">
                 <TextInput
                   value={form.flagFlightCodesText}

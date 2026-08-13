@@ -78,6 +78,9 @@ export interface IDispatcherDailyReport {
   video360ServiceCodes: string[];
   redFlag: number;
   redFlagCodes: string[];
+  /** Bay hoàng hôn — Hà Nội & Khau Phạ (Mù Cang Chải). */
+  sunset: number;
+  sunsetCodes: string[];
   /** Số chuyến bay kéo cờ. */
   flagFlight: number;
   flagFlightCodes: string[];
@@ -236,6 +239,8 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
     video360ServiceCodes: { type: [String], default: [] },
     redFlag: { type: Number, default: 0, min: 0 },
     redFlagCodes: { type: [String], default: [] },
+    sunset: { type: Number, default: 0, min: 0 },
+    sunsetCodes: { type: [String], default: [] },
     flagFlight: { type: Number, default: 0, min: 0 },
     flagFlightCodes: { type: [String], default: [] },
 

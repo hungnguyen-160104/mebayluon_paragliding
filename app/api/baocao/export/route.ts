@@ -148,6 +148,7 @@ function buildSheets(
       "Flycam",
       "Camera 360",
       "Dù cờ đỏ",
+      "Bay hoàng hôn/săn mây",
       "Bay kéo cờ/bánh",
       "Khách ngoại giao",
       "Chi đã ứng (hoàn lại)",
@@ -165,6 +166,7 @@ function buildSheets(
         p.flycam,
         p.video360,
         p.redFlag,
+        p.sunset,
         p.flagFlight,
         p.diplomaticGuests,
         p.expenseTotal,
@@ -181,6 +183,7 @@ function buildSheets(
         summary.byPilot.reduce((s, p) => s + p.flycam, 0),
         summary.byPilot.reduce((s, p) => s + p.video360, 0),
         summary.byPilot.reduce((s, p) => s + p.redFlag, 0),
+        summary.byPilot.reduce((s, p) => s + p.sunset, 0),
         summary.byPilot.reduce((s, p) => s + p.flagFlight, 0),
         summary.byPilot.reduce((s, p) => s + p.diplomaticGuests, 0),
         summary.byPilot.reduce((s, p) => s + p.expenseTotal, 0),
@@ -231,7 +234,7 @@ function buildSheets(
   const pilotDaily: SheetSpec = {
     name: "Phi công theo ngày",
     header: [
-      "Ngày", "Phi công", "Đã chốt", "Chuyến", "Số mã vé", "Flycam", "360", "Cờ đỏ", "Kéo cờ",
+      "Ngày", "Phi công", "Đã chốt", "Chuyến", "Số mã vé", "Flycam", "360", "Cờ đỏ", "Hoàng hôn/săn mây", "Kéo cờ",
       "Ngoại giao", "Phí bãi (khách)", "Nước", "Xe cho khách",
       // Đưa đón tự trả là đặc thù riêng Hà Nội — điểm khác không có ba cột này
       ...(summary.spot === "ha-noi" ? ["Đón BigC (lượt)", "Đón KS (lượt)", "Xe lên núi (lượt)"] : []),
@@ -245,7 +248,7 @@ function buildSheets(
       const other = r.expenses.reduce((s, e) => s + (e.kind === "thu" ? 0 : e.amount), 0);
       return [
         formatDateKeyVN(r.date), r.pilotName, r.submitted ? "x" : "", r.flightCount, r.ticketCodes.length,
-        r.flycam, r.video360, r.redFlag, r.flagFlight, r.diplomaticGuests,
+        r.flycam, r.video360, r.redFlag, r.sunset, r.flagFlight, r.diplomaticGuests,
         r.siteFeeGuests, r.waterCost, r.guestCarCost,
         ...(summary.spot === "ha-noi" ? [r.pickupBigC, r.pickupHotel, r.mountainTrips] : []),
         other,
@@ -262,7 +265,7 @@ function buildSheets(
     name: "Điều phối",
     header: [
       "Ngày", "Nhân sự", "Khách", "Vé xuất", "Vé thu về", "Dải mã vé", "Vé huỷ", "Vé dời lịch",
-      "Flycam", "360", "Cờ đỏ", "Kéo cờ", "Ngoại giao", "Thu ngoại giao",
+      "Flycam", "360", "Cờ đỏ", "Hoàng hôn/săn mây", "Kéo cờ", "Ngoại giao", "Thu ngoại giao",
       "Tiền mặt", "Chuyển khoản", "Tổng thu", "Chi cho khách", "Ghi chú",
     ],
     widths: [12, 24, 10, 10, 11, 30, 10, 12, 9, 8, 9, 9, 11, 15, 14, 14, 14, 15, 24],
@@ -270,7 +273,7 @@ function buildSheets(
       r.date, r.staffName, r.guestCount, r.ticketsIssued, r.ticketsReturned,
       r.issuedRanges.map((x) => `${x.from}–${x.to} (${x.count})`).join(" | "),
       r.cancelledCount, r.rescheduledCount,
-      r.flycam, r.video360, r.redFlag, r.flagFlight, r.diplomaticGuests, r.diplomaticAmount,
+      r.flycam, r.video360, r.redFlag, r.sunset, r.flagFlight, r.diplomaticGuests, r.diplomaticAmount,
       r.cashReceived, r.transferReceived, r.cashReceived + r.transferReceived,
       r.guestWaterCost + r.mountainCarCost + r.shuttleCarCost + r.expenses.reduce((s, e) => s + (e.kind === "thu" ? 0 : e.amount), 0),
       r.note,

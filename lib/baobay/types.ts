@@ -113,6 +113,9 @@ export type PilotReportDTO = {
   video360Codes: string[];
   redFlag: number;
   redFlagCodes: string[];
+  /** Bay hoàng hôn — Hà Nội & Khau Phạ (Mù Cang Chải). */
+  sunset: number;
+  sunsetCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -179,6 +182,8 @@ export type DispatcherReportDTO = {
   video360ServiceCodes: string[];
   redFlag: number;
   redFlagCodes: string[];
+  sunset: number;
+  sunsetCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -242,6 +247,7 @@ export type DailyCloseDTO = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   /** Sổ THU/CHI riêng của kế toán. */
   ledger: ExpenseDTO[];
@@ -303,6 +309,7 @@ export type BookingDTO = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   pickup: "self" | "bigc" | "hotel" | "other";
   /** Đón tại đâu khi pickup = "other". */
@@ -434,6 +441,7 @@ export type DailyRollupDTO = {
   /** Tiền THU ĐƯỢC từ khách ngoại giao (điều phối khai theo từng mã). */
   diplomaticAmount: number;
   redFlag: number;
+  sunset: number;
 
   /** Tổng chi tiêu mọi nhân sự khai trong ngày. */
   expenseTotal: number;
@@ -453,6 +461,7 @@ export type PilotPeriodTotalDTO = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   diplomaticGuests: number;
   expenseTotal: number;
@@ -495,6 +504,7 @@ export type MonthlyTotalsDTO = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   diplomaticGuests: number;
   /** Phí bãi theo đầu khách (số khách). */

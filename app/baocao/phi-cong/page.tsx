@@ -56,6 +56,8 @@ type FormState = {
   video360CodesText: string;
   redFlag: number;
   redFlagCodesText: string;
+  sunset: number;
+  sunsetCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   diplomaticGuests: number;
@@ -87,6 +89,8 @@ const EMPTY_FORM: FormState = {
   video360CodesText: "",
   redFlag: 0,
   redFlagCodesText: "",
+  sunset: 0,
+  sunsetCodesText: "",
   flagFlight: 0,
   flagFlightCodesText: "",
   diplomaticGuests: 0,
@@ -175,6 +179,8 @@ export default function PilotReportPage() {
               video360CodesText: res.report.video360Codes.join(", "),
               redFlag: res.report.redFlag,
               redFlagCodesText: res.report.redFlagCodes.join(", "),
+              sunset: res.report.sunset,
+              sunsetCodesText: res.report.sunsetCodes.join(", "),
               flagFlight: res.report.flagFlight,
               flagFlightCodesText: res.report.flagFlightCodes.join(", "),
               diplomaticGuests: res.report.diplomaticGuests,
@@ -269,6 +275,7 @@ export default function PilotReportPage() {
         flycamCodesText: res.report.flycamCodes.join(", "),
         video360CodesText: res.report.video360Codes.join(", "),
         redFlagCodesText: res.report.redFlagCodes.join(", "),
+        sunsetCodesText: res.report.sunsetCodes.join(", "),
         flagFlightCodesText: res.report.flagFlightCodes.join(", "),
         diplomaticCodesText: res.report.diplomaticCodes.join(", "),
         expenses: toExpenseRows(res.report.expenses),
@@ -306,6 +313,7 @@ export default function PilotReportPage() {
         flycam: 0,
         video360: 0,
         redFlag: 0,
+        sunset: 0,
         flagFlight: 0,
         pickup: row.pickup === "other" ? "other" : "self",
         pickupNote: row.pickup === "other" ? row.pickupNote : "",
@@ -573,6 +581,11 @@ export default function PilotReportPage() {
             <ServiceBox tone="redFlag" label={bi("Dù cờ đỏ", "red flag")}>
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} />
             </ServiceBox>
+            {spot !== "sapa" && (
+            <ServiceBox tone="sunset" label={bi("Bay hoàng hôn/săn mây", "sunset/cloud-hunt flight")}>
+              <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} />
+            </ServiceBox>
+            )}
             <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ/bánh", "flag flight")}>
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
             </ServiceBox>
@@ -613,6 +626,17 @@ export default function PilotReportPage() {
                   disabled={locked}
                 />
               </ServiceBox>
+              {spot !== "sapa" && (
+              <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+                <TextInput
+                  value={form.sunsetCodesText}
+                  onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={locked}
+                />
+              </ServiceBox>
+              )}
               <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ/bánh">
                 <TextInput
                   value={form.flagFlightCodesText}
@@ -642,22 +666,8 @@ export default function PilotReportPage() {
         >
           <div className="grid gap-3 @md:grid-cols-2">
             <Field label={bi("Số chuyến PPG", "PPG flights")}>
-              <CountInput
-                value={form.ppgFlights}
-                onChange={(v) => {
-                  /**
-                   * PPG đa phần bay KHÔNG vé — chưa gõ mã nào thì ô "không vé"
-                   * tự chạy theo số chuyến, khỏi phải điền hai lần rồi thắc mắc
-                   * vì sao nút chốt xám. Đã có mã thì thôi, để người nhập tự cân.
-                   */
-                  setForm((prev) => ({
-                    ...prev,
-                    ppgFlights: v,
-                    ppgNoTicket: prev.ppgCodesText.trim() === "" ? v : prev.ppgNoTicket,
-                  }));
-                }}
-                max={300}
-              />
+              {/* KHÔNG auto-nhảy ô "không vé" theo số chuyến — người nhập tự cân (mã + không vé = số chuyến) */}
+              <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
             </Field>
             <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
               <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />

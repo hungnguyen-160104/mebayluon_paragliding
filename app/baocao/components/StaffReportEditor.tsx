@@ -204,6 +204,8 @@ function blankDispatcherReport(username: string, staffName: string, date: string
     video360ServiceCodes: [],
     redFlag: 0,
     redFlagCodes: [],
+    sunset: 0,
+    sunsetCodes: [],
     flagFlight: 0,
     flagFlightCodes: [],
     diplomaticGuests: 0,
@@ -253,6 +255,7 @@ type DispatcherEditForm = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   money: ExpenseRow[];
   cancelledGuests: CancelGuestRow[];
@@ -310,6 +313,7 @@ function dispatcherEditForm(r: DispatcherReportDTO): DispatcherEditForm {
     flycam: r.flycam,
     video360: r.video360,
     redFlag: r.redFlag,
+    sunset: r.sunset,
     flagFlight: r.flagFlight,
     money: dispatcherMoneyRows(r),
     cancelledGuests: cancelled,
@@ -380,11 +384,13 @@ function DispatcherRow({
           flycam: form.flycam,
           video360: form.video360,
           redFlag: form.redFlag,
+          sunset: form.sunset,
           flagFlight: form.flagFlight,
           // Giữ nguyên mã dịch vụ người nhập đã khai — khung này không sửa mã dịch vụ
           flycamCodesText: report.flycamCodes.join(" "),
           video360CodesText: report.video360ServiceCodes.join(" "),
           redFlagCodesText: report.redFlagCodes.join(" "),
+          sunsetCodesText: report.sunsetCodes.join(" "),
           flagFlightCodesText: report.flagFlightCodes.join(" "),
           // Sổ THU CHI: dòng thu thành khoản thu có tên (đúng TM/CK), dòng chi vào sổ chi
           cashReceived: 0,

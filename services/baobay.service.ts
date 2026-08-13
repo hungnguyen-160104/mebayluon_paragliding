@@ -966,6 +966,8 @@ export type PilotReportSaveInput = {
   video360CodesText: string;
   redFlag: number;
   redFlagCodesText: string;
+  sunset: number;
+  sunsetCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   diplomaticGuests: number;
@@ -1060,6 +1062,7 @@ export async function upsertPilotReport(
   const codesFlycam = parseTicketCodeList(input.flycamCodesText);
   const codes360 = parseTicketCodeList(input.video360CodesText);
   const codesRedFlag = parseTicketCodeList(input.redFlagCodesText);
+  const codesSunset = parseTicketCodeList(input.sunsetCodesText);
   const codesFlagFlight = parseTicketCodeList(input.flagFlightCodesText);
   const diplomatic = parseTicketCodeList(input.diplomaticCodesText);
 
@@ -1072,6 +1075,7 @@ export async function upsertPilotReport(
     { label: "Flycam", codes: codesFlycam.codes, count: input.flycam },
     { label: "Camera360", codes: codes360.codes, count: input.video360 },
     { label: "Cờ đỏ", codes: codesRedFlag.codes, count: input.redFlag },
+    { label: "Hoàng hôn/săn mây", codes: codesSunset.codes, count: input.sunset },
     { label: "Kéo cờ", codes: codesFlagFlight.codes, count: input.flagFlight },
   ];
 
@@ -1202,6 +1206,8 @@ export async function upsertPilotReport(
         video360Codes: codes360.codes,
         redFlag: input.redFlag,
         redFlagCodes: codesRedFlag.codes,
+        sunset: input.sunset,
+        sunsetCodes: codesSunset.codes,
         flagFlight: input.flagFlight,
         flagFlightCodes: codesFlagFlight.codes,
         diplomaticGuests: input.diplomaticGuests,
@@ -1296,6 +1302,8 @@ async function pushPilotRow(doc: any) {
       video360Codes: (doc.video360Codes || []).join(", "),
       redFlag: doc.redFlag || 0,
       redFlagCodes: (doc.redFlagCodes || []).join(", "),
+      sunset: doc.sunset || 0,
+      sunsetCodes: (doc.sunsetCodes || []).join(", "),
       flagFlight: doc.flagFlight || 0,
       flagFlightCodes: (doc.flagFlightCodes || []).join(", "),
       diplomaticGuests: doc.diplomaticGuests || 0,
@@ -1374,6 +1382,8 @@ function toPilotDTO(doc: any): PilotReportDTO {
     video360Codes: doc.video360Codes ?? [],
     redFlag: doc.redFlag ?? 0,
     redFlagCodes: doc.redFlagCodes ?? [],
+    sunset: doc.sunset ?? 0,
+    sunsetCodes: doc.sunsetCodes ?? [],
     flagFlight: doc.flagFlight ?? 0,
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
@@ -1525,6 +1535,8 @@ export type DispatcherReportSaveInput = {
   video360CodesText: string;
   redFlag: number;
   redFlagCodesText: string;
+  sunset: number;
+  sunsetCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   cashReceived: number;
@@ -1718,6 +1730,8 @@ export async function upsertDispatcherReport(
         video360ServiceCodes: parseTicketCodeList(input.video360CodesText).codes,
         redFlag: input.redFlag,
         redFlagCodes: parseTicketCodeList(input.redFlagCodesText).codes,
+        sunset: input.sunset,
+        sunsetCodes: parseTicketCodeList(input.sunsetCodesText).codes,
         flagFlight: input.flagFlight,
         flagFlightCodes: parseTicketCodeList(input.flagFlightCodesText).codes,
         diplomaticGuests: diplomaticCodesUnique.length,
@@ -1799,6 +1813,7 @@ async function pushDispatcherRow(doc: any) {
     flycam: doc.flycam,
     video360: doc.video360,
     redFlag: doc.redFlag,
+    sunset: doc.sunset || 0,
     flagFlight: doc.flagFlight,
     diplomaticGuests: doc.diplomaticGuests,
     diplomaticCodes: (doc.diplomaticCodes || []).join(", "),
@@ -1869,6 +1884,8 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     video360ServiceCodes: doc.video360ServiceCodes ?? [],
     redFlag: doc.redFlag ?? 0,
     redFlagCodes: doc.redFlagCodes ?? [],
+    sunset: doc.sunset ?? 0,
+    sunsetCodes: doc.sunsetCodes ?? [],
     flagFlight: doc.flagFlight ?? 0,
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
@@ -2612,6 +2629,7 @@ export type BookingSaveInput = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   pickup: "self" | "bigc" | "hotel" | "other";
   pickupNote: string;
@@ -2661,6 +2679,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
+    ["Bay hoàng hôn/săn mây", input.sunset],
     ["Bay kéo cờ/bánh", input.flagFlight],
   ];
   for (const [label, count] of services) {
@@ -2700,6 +2719,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       flycam: input.flycam,
       video360: input.video360,
       redFlag: input.redFlag,
+      sunset: input.sunset,
       flagFlight: input.flagFlight,
       // BigC chỉ có ở Hà Nội — điểm khác rơi về "tự đến"
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
@@ -2794,6 +2814,7 @@ export async function updateBookingInfo(
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
+    ["Bay hoàng hôn/săn mây", input.sunset],
     ["Bay kéo cờ/bánh", input.flagFlight],
   ] as Array<[string, number]>) {
     if (count > input.guestCount) {
@@ -2815,6 +2836,7 @@ export async function updateBookingInfo(
       flycam: input.flycam,
       video360: input.video360,
       redFlag: input.redFlag,
+      sunset: input.sunset,
       flagFlight: input.flagFlight,
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
@@ -2960,6 +2982,7 @@ async function pushBookingRow(doc: any) {
       flycam: doc.flycam ?? 0,
       video360: doc.video360 ?? 0,
       redFlag: doc.redFlag ?? 0,
+      sunset: doc.sunset ?? 0,
       flagFlight: doc.flagFlight ?? 0,
       pickup:
         doc.pickup === "other"
@@ -3004,6 +3027,7 @@ function toBookingDTO(doc: any): BookingDTO {
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
+    sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     pickup:
       doc.pickup === "bigc" ? "bigc" : doc.pickup === "hotel" ? "hotel" : doc.pickup === "other" ? "other" : "self",
@@ -3880,10 +3904,12 @@ export type CloseSuggestionDTO = {
   video360: number;
   /** Cờ đỏ lấy theo PHI CÔNG — nguồn chuẩn của dịch vụ này. */
   redFlag: number;
+  /** Bay hoàng hôn/săn mây lấy theo PHI CÔNG — như cờ đỏ. */
+  sunset: number;
   flagFlight: number;
   /** Tổng theo TỪNG PHÍA — cho hai nút "lấy số phi công" / "lấy số điều phối". */
-  pilot: { flights: number; flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
-  dispatcher: { flycam: number; video360: number; redFlag: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   /** Tên những điều phối/trực quầy đã báo — nút chấp nhận ghi rõ nhận số từ ai. */
   dispatcherNames: string[];
   /** Có báo cáo nào của nhân viên chưa — chưa có thì khỏi hiện nút chép. */
@@ -3978,12 +4004,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flycam: sum(cameramen, (c) => c.flycamFlights),
     video360: sum(pilots, (p) => p.video360),
     redFlag: sum(pilots, (p) => p.redFlag),
+    // Bay hoàng hôn/săn mây: nguồn chuẩn là PHI CÔNG (người bay chuyến đó), như cờ đỏ
+    sunset: sum(pilots, (p) => p.sunset),
     flagFlight: sum(dispatchers, (d) => d.flagFlight),
     pilot: {
       flights: sum(pilots, (p) => p.flightCount),
       flycam: sum(pilots, (p) => p.flycam),
       video360: sum(pilots, (p) => p.video360),
       redFlag: sum(pilots, (p) => p.redFlag),
+      sunset: sum(pilots, (p) => p.sunset),
       flagFlight: sum(pilots, (p) => p.flagFlight),
       hasData: pilots.length > 0,
     },
@@ -3991,6 +4020,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       flycam: sum(dispatchers, (d) => d.flycam),
       video360: sum(dispatchers, (d) => d.video360),
       redFlag: sum(dispatchers, (d) => d.redFlag),
+      sunset: sum(dispatchers, (d) => d.sunset),
       flagFlight: sum(dispatchers, (d) => d.flagFlight),
       hasData: dispatchers.length > 0,
     },
@@ -4028,6 +4058,7 @@ export type DailyCloseSaveInput = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   expensesApproved: boolean;
   expensesApprovedNote: string;
@@ -4095,6 +4126,7 @@ export async function upsertDailyClose(
         flycam: input.flycam,
         video360: input.video360,
         redFlag: input.redFlag,
+        sunset: input.sunset,
         flagFlight: input.flagFlight,
         ledger,
         expenseReviews: (input.expenseReviews ?? []).filter((r) => r.key && (r.status === "ok" || r.status === "no")),
@@ -4156,6 +4188,7 @@ async function pushCloseRow(doc: any) {
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
+    sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledgerDetail: formatExpenses(doc.ledger ?? []),
     expensesApproved: doc.expensesApproved ? "x" : "",
@@ -4284,6 +4317,7 @@ async function pushDaySummaryRow(spot: string, date: string): Promise<{ ok: bool
       video360Dispatcher: sum(dispatchers, (d) => d.video360),
       video360Pilot: sum(pilots, (p) => p.video360),
       redFlag: sum(dispatchers, (d) => d.redFlag),
+      sunset: sum(dispatchers, (d) => d.sunset),
       flagFlight: sum(dispatchers, (d) => d.flagFlight),
 
       diplomaticTickets: sum(dispatchers, (d) => (d.diplomaticCodes?.length ?? 0) || (d.diplomaticGuests ?? 0)),
@@ -4467,6 +4501,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     flycam: doc.flycam ?? 0,
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
+    sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledger: doc.ledger ?? [],
     expenseReviews: doc.expenseReviews ?? [],
@@ -4610,6 +4645,7 @@ export async function getReconcile(
           flycam: close.flycam ?? 0,
           video360: close.video360 ?? 0,
           redFlag: close.redFlag ?? 0,
+          sunset: close.sunset ?? 0,
           flagFlight: close.flagFlight ?? 0,
           expensesApproved: Boolean(close.expensesApproved),
           varianceApproved: Boolean(close.varianceApproved),
@@ -4630,6 +4666,8 @@ export async function getReconcile(
       video360ServiceCodes: d.video360ServiceCodes ?? [],
       redFlag: d.redFlag ?? 0,
       redFlagCodes: d.redFlagCodes ?? [],
+      sunset: d.sunset ?? 0,
+      sunsetCodes: d.sunsetCodes ?? [],
       flagFlight: d.flagFlight ?? 0,
       flagFlightCodes: d.flagFlightCodes ?? [],
       diplomaticGuests: d.diplomaticGuests ?? 0,
@@ -4648,6 +4686,8 @@ export async function getReconcile(
       video360Codes: p.video360Codes ?? [],
       redFlag: p.redFlag ?? 0,
       redFlagCodes: p.redFlagCodes ?? [],
+      sunset: p.sunset ?? 0,
+      sunsetCodes: p.sunsetCodes ?? [],
       flagFlight: p.flagFlight ?? 0,
       flagFlightCodes: p.flagFlightCodes ?? [],
       diplomaticGuests: p.diplomaticGuests ?? 0,
@@ -4846,6 +4886,7 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   diplomaticTickets: 0,
   diplomaticAmount: 0,
   redFlag: 0,
+  sunset: 0,
   expenseTotal: 0,
   pilotCount: 0,
   pilotSubmitted: 0,
@@ -4911,6 +4952,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     row.diplomaticTickets += r.diplomaticCodes.length || r.diplomaticGuests;
     row.diplomaticAmount += r.diplomaticAmount;
     row.redFlag += r.redFlag;
+    row.sunset += r.sunset;
     row.expenseTotal += dispatcherExpenseTotal(r);
     row.dispatcherCount += 1;
   }
@@ -4985,6 +5027,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         flycam: 0,
         video360: 0,
         redFlag: 0,
+        sunset: 0,
         flagFlight: 0,
         diplomaticGuests: 0,
         expenseTotal: 0,
@@ -4999,6 +5042,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.flycam += r.flycam;
     entry.video360 += r.video360;
     entry.redFlag += r.redFlag;
+    entry.sunset += r.sunset;
     entry.flagFlight += r.flagFlight;
     entry.diplomaticGuests += r.diplomaticGuests;
     entry.expenseTotal += pilotExpenseTotal(r);
@@ -5030,6 +5074,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       flycam: 0,
       video360: 0,
       redFlag: 0,
+      sunset: 0,
       flagFlight: 0,
       diplomaticGuests: 0,
       expenseTotal: 0,
@@ -5135,6 +5180,7 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
+        ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây (sunset)", value: sumOf((d) => d.sunset) }] : []),
         { label: "Bay kéo cờ/bánh (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
         // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
@@ -5179,6 +5225,7 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Cờ đỏ", value: sumOf((d) => d.redFlag) },
+        ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây", value: sumOf((d) => d.sunset) }] : []),
         { label: "Bay kéo cờ/bánh", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
         { label: "Tiền mặt", value: sumOf((d) => d.cashReceived), money: true },
@@ -5217,6 +5264,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   flycam: 0,
   video360: 0,
   redFlag: 0,
+  sunset: 0,
   flagFlight: 0,
   diplomaticGuests: 0,
   siteFeeGuests: 0,
@@ -5240,6 +5288,7 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.flycam += r.flycam;
   acc.video360 += r.video360;
   acc.redFlag += r.redFlag;
+  acc.sunset += r.sunset;
   acc.flagFlight += r.flagFlight;
   acc.diplomaticGuests += r.diplomaticGuests;
   acc.siteFeeGuests += r.siteFeeGuests;

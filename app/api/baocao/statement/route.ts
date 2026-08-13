@@ -98,7 +98,7 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
     header: [
       "Ngày", "Ngày đã chốt", "Số chuyến PG", "Số mã vé",
       ...(isKP ? ["Chuyến PPG", "PPG không vé"] : []),
-      "Flycam", "Camera 360", "Cờ đỏ", "Kéo cờ",
+      "Flycam", "Camera 360", "Cờ đỏ", "Hoàng hôn/săn mây", "Kéo cờ",
       "Ngoại giao", "Phí bãi (khách)", "Nước", "Xe cho khách",
       ...(isHanoi ? ["Đón BigC (lượt)", "Đón KS (lượt)", "Xe lên núi (lượt)"] : []),
       "Chi khác", "Tổng chi (hoàn lại)", "Thu hộ tại bãi", "Phạt nộp muộn", "Ghi chú",
@@ -114,6 +114,7 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
         r.flycam,
         r.video360,
         r.redFlag,
+        r.sunset,
         r.flagFlight,
         r.diplomaticGuests,
         r.siteFeeGuests,
@@ -130,7 +131,7 @@ function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
       [
         "TỔNG", "", sum((r) => r.flightCount), sum((r) => r.ticketCodes.length),
         ...(isKP ? [sum((r) => r.ppgFlights), sum((r) => r.ppgNoTicket)] : []),
-        sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.flagFlight),
+        sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.sunset), sum((r) => r.flagFlight),
         sum((r) => r.diplomaticGuests), sum((r) => r.siteFeeGuests), sum((r) => r.waterCost), sum((r) => r.guestCarCost),
         ...(isHanoi ? [sum((r) => r.pickupBigC), sum((r) => r.pickupHotel), sum((r) => r.mountainTrips)] : []),
         sum(chiKhac),
@@ -201,7 +202,7 @@ function dispatcherDaily(st: Statement): SheetSpec {
     name: "Bảng kê theo ngày",
     header: [
       "Ngày", "Ngày đã chốt", "Khách", "Vé xuất", "Vé thu hồi", "Vé huỷ", "Vé dời",
-      "Flycam", "Camera 360", "Cờ đỏ", "Kéo cờ", "Vé ngoại giao", "Thu ngoại giao",
+      "Flycam", "Camera 360", "Cờ đỏ", "Hoàng hôn/săn mây", "Kéo cờ", "Vé ngoại giao", "Thu ngoại giao",
       "Tiền mặt", "Chuyển khoản", "Chi tiết tiền thu", "Tổng chi hộ khách", "Ghi chú",
     ],
     widths: [12, 12, 8, 9, 11, 8, 8, 9, 11, 8, 8, 13, 14, 14, 14, 36, 16, 24],
@@ -210,7 +211,7 @@ function dispatcherDaily(st: Statement): SheetSpec {
         formatDateKeyVN(r.date),
         closed.has(r.date) ? "x" : "chưa",
         r.guestCount, r.ticketsIssued, r.ticketsReturned, r.cancelledCount, r.rescheduledCount,
-        r.flycam, r.video360, r.redFlag, r.flagFlight,
+        r.flycam, r.video360, r.redFlag, r.sunset, r.flagFlight,
         r.diplomaticCodes.length || r.diplomaticGuests, r.diplomaticAmount,
         r.cashReceived, r.transferReceived,
         r.revenueEntries.map((e) => `${e.content || "?"}: ${(e.amount / 1000).toLocaleString("vi-VN")}k (${e.method === "transfer" ? "CK" : "TM"})`).join(" | "),
@@ -221,7 +222,7 @@ function dispatcherDaily(st: Statement): SheetSpec {
       [
         "TỔNG", "", sum((r) => r.guestCount), sum((r) => r.ticketsIssued), sum((r) => r.ticketsReturned),
         sum((r) => r.cancelledCount), sum((r) => r.rescheduledCount),
-        sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.flagFlight),
+        sum((r) => r.flycam), sum((r) => r.video360), sum((r) => r.redFlag), sum((r) => r.sunset), sum((r) => r.flagFlight),
         sum((r) => r.diplomaticCodes.length || r.diplomaticGuests), sum((r) => r.diplomaticAmount),
         sum((r) => r.cashReceived), sum((r) => r.transferReceived), "", sum(chi), "",
       ],

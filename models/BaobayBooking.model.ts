@@ -44,6 +44,7 @@ export interface IBaobayBooking {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
 
   /** Đưa đón: tự đến / đón BigC (chỉ Hà Nội) / đón khách sạn / khác. */
@@ -102,6 +103,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     flycam: { type: Number, default: 0, min: 0 },
     video360: { type: Number, default: 0, min: 0 },
     redFlag: { type: Number, default: 0, min: 0 },
+    sunset: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
 
     pickup: { type: String, enum: ["self", "bigc", "hotel", "other"], default: "self" },

@@ -115,6 +115,7 @@ export const SERVICE_TONE = {
   flycam: { box: "border-sky-200 bg-sky-50/70", label: "text-sky-800" },
   video360: { box: "border-violet-200 bg-violet-50/70", label: "text-violet-800" },
   redFlag: { box: "border-rose-200 bg-rose-50/70", label: "text-rose-800" },
+  sunset: { box: "border-orange-200 bg-orange-50/70", label: "text-orange-800" },
   flagFlight: { box: "border-amber-200 bg-amber-50/70", label: "text-amber-800" },
 } as const;
 

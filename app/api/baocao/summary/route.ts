@@ -107,7 +107,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     rows.push([
       "Ngày", "Điều phối", "Tài khoản", "Số khách", "Vé xuất", "Vé thu về", "Dải mã vé",
       "Vé huỷ", "Mã vé huỷ", "Vé dời lịch", "Mã vé dời lịch",
-      "Flycam", "Camera 360", "Cờ đỏ", "Bay kéo cờ/bánh", "Khách ngoại giao",
+      "Flycam", "Camera 360", "Cờ đỏ", "Bay hoàng hôn/săn mây", "Bay kéo cờ/bánh", "Khách ngoại giao",
       "Tiền mặt", "Chuyển khoản", "Tổng thu",
       "Nước cho khách", "Xe lên núi", "Xe đưa đón", "Chi khác", "Chi tiết chi khác", "Tổng chi",
       "Ghi chú",
@@ -118,7 +118,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
         r.date, r.staffName, r.username, r.guestCount, r.ticketsIssued, r.ticketsReturned,
         rangesText(r.issuedRanges),
         r.cancelledCount, r.cancelledCodes.join(" "), r.rescheduledCount, rescheduledText(r.rescheduled),
-        r.flycam, r.video360, r.redFlag, r.flagFlight, r.diplomaticGuests,
+        r.flycam, r.video360, r.redFlag, r.sunset, r.flagFlight, r.diplomaticGuests,
         r.cashReceived, r.transferReceived, r.cashReceived + r.transferReceived,
         r.guestWaterCost, r.mountainCarCost, r.shuttleCarCost, other, expensesText(r.expenses),
         r.guestWaterCost + r.mountainCarCost + r.shuttleCarCost + other,
@@ -155,7 +155,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       "Tiền mặt", "Chuyển khoản", "Tổng thu",
       "Flycam", "Camera 360", "Bay kéo cờ/bánh",
       "Điều phối khai vé", "PC khai chuyến", "Số mã PC khai", "PC khai 360", "Camera man khai flycam",
-      "Khách ngoại giao", "Cờ đỏ", "Tổng chi", "PC đã chốt",
+      "Khách ngoại giao", "Cờ đỏ", "Hoàng hôn/săn mây", "Tổng chi", "PC đã chốt",
     ]);
     for (const d of summary.days) {
       rows.push([
@@ -164,7 +164,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
         d.cashTotal, d.transferTotal, d.revenueTotal,
         d.flycam, d.video360, d.flagFlight,
         d.dispatcherIssued, d.pilotFlights, d.pilotCodes, d.pilot360, d.cameramanFlycam,
-        d.diplomaticGuests, d.redFlag, d.expenseTotal, `${d.pilotSubmitted}/${d.pilotCount}`,
+        d.diplomaticGuests, d.redFlag, d.sunset, d.expenseTotal, `${d.pilotSubmitted}/${d.pilotCount}`,
       ]);
     }
     const t = summary.totals;
@@ -174,7 +174,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       t.cashTotal, t.transferTotal, t.revenueTotal,
       t.flycam, t.video360, t.flagFlight,
       t.dispatcherIssued, t.pilotFlights, t.pilotCodes, t.pilot360, t.cameramanFlycam,
-      t.diplomaticGuests, t.redFlag, t.expenseTotal, "",
+      t.diplomaticGuests, t.redFlag, t.sunset, t.expenseTotal, "",
     ]);
     if (summary.pendingDays.length) {
       rows.push([]);

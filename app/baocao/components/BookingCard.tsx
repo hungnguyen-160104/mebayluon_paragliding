@@ -40,6 +40,7 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (b.flycam) parts.push(`${b.flycam}×flycam`);
   if (b.video360) parts.push(`${b.video360}×cam360`);
   if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
+  if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/mây`);
   if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
   parts.push(
     [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
@@ -427,6 +428,7 @@ type BookingForm = {
   flycam: number;
   video360: number;
   redFlag: number;
+  sunset: number;
   flagFlight: number;
   pickup: BookingDTO["pickup"];
   pickupNote: string;
@@ -452,6 +454,7 @@ function emptyBooking(today: string): BookingForm {
     flycam: 0,
     video360: 0,
     redFlag: 0,
+    sunset: 0,
     flagFlight: 0,
     pickup: "self",
     pickupNote: "",
@@ -503,6 +506,7 @@ export function BookingCard({
         next.flycam = Math.min(next.flycam, cap);
         next.video360 = Math.min(next.video360, cap);
         next.redFlag = Math.min(next.redFlag, cap);
+        next.sunset = Math.min(next.sunset, cap);
         next.flagFlight = Math.min(next.flagFlight, cap);
       }
       return next;
@@ -578,6 +582,7 @@ export function BookingCard({
       flycam: b.flycam,
       video360: b.video360,
       redFlag: b.redFlag,
+      sunset: b.sunset,
       flagFlight: b.flagFlight,
       pickup: b.pickup,
       pickupNote: b.pickupNote,
@@ -702,6 +707,11 @@ export function BookingCard({
         <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
           <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={form.guestCount} />
         </ServiceBox>
+        {bookSpot !== "sapa" && (
+        <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+          <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={form.guestCount} />
+        </ServiceBox>
+        )}
       </div>
       {form.guestCount === 0 && (
         <p className="mt-0.5 text-[11px] leading-tight text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
