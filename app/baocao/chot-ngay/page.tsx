@@ -580,18 +580,29 @@ function DailyCloseInner() {
         </div>
       )}
 
+      {/* ==================== DESKTOP 2 CỘT CỐ ĐỊNH ====================
+          TRÁI: sổ của kế toán (số tổng, THU CHI, duyệt lệch, nút chốt)
+          PHẢI: báo cáo nhân viên để xác nhận/sửa + tiền bạc cá nhân
+          Điện thoại giữ một cột: báo cáo nhân viên lên trước như cũ. */}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-4 lg:order-2">
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
       <PilotReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
 
       {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
       <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
 
+      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
+      <HandoverBox spot={spot} />
+      </div>
+
+      <div className="lg:order-1">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           action("save");
         }}
-        className="space-y-4 lg:space-y-0 lg:contents"
+        className="space-y-4"
       >
         <CollapseCard
           title="Số tổng trong ngày"
@@ -620,7 +631,7 @@ function DailyCloseInner() {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @md:grid-cols-2">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
               {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
@@ -682,7 +693,7 @@ function DailyCloseInner() {
           </div>
 
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 @md:grid-cols-4">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
@@ -791,7 +802,7 @@ function DailyCloseInner() {
         </CollapseCard>
 
         <CollapseCard
-          title="Tiền trong ngày"
+          title="THU CHI — Tiền trong ngày"
           hint="Trên: thu chi nhân viên khai — kế toán đọc rồi duyệt. Dưới: sổ của kế toán (nội dung – số tiền – TM/CK – Thu/Chi), tổng tiền mặt/CK tự cộng từ các dòng THU."
         >
           {/* ===== Thu chi nhân viên khai — kế toán chỉ duyệt và ghi chú ===== */}
@@ -966,7 +977,7 @@ function DailyCloseInner() {
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind withMethod />
 
           {/* ===== Tổng tự cộng từ các dòng THU của sổ — so ngay với số nhân viên báo ===== */}
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 @md:grid-cols-3">
             <div>
               <Readout
                 label="Tổng tiền mặt thu về (tự cộng)"
@@ -1088,10 +1099,7 @@ function DailyCloseInner() {
           )}
         </div>
       </form>
-
-      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
-      <div className="mt-4">
-        <HandoverBox spot={spot} />
+      </div>
       </div>
 
     </Shell>

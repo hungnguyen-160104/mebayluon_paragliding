@@ -559,7 +559,7 @@ export function BookingCard({
       title="📒 BOOKING MỚI"
       hint="bấm để nhập khách đặt trước"
     >
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 @md:grid-cols-3">
         <Field label="Ngày bay">
           <TextInput
             type="date"
@@ -601,7 +601,7 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid gap-3 @md:grid-cols-4">
         <Field label="Tên liên hệ">
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" />
         </Field>
@@ -616,7 +616,7 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 @md:grid-cols-4">
         {/* Tối đa = số khách: 2 khách thì nhiều nhất 2 flycam, 2 cam360… */}
         <ServiceBox tone="flycam" label="Flycam">
           <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={form.guestCount} />
@@ -635,7 +635,7 @@ export function BookingCard({
         <p className="mt-1 text-[11px] text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
       )}
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 @md:grid-cols-2">
         <Field label="Đưa đón">
           <select
             value={form.pickup}
@@ -673,7 +673,7 @@ export function BookingCard({
       </div>
 
       {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-2 gap-3 @md:grid-cols-3">
         <Field label="Đã cọc">
           <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
         </Field>

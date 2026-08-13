@@ -216,7 +216,7 @@ export default function CameramanReportPage() {
           e.preventDefault();
           save(false);
         }}
-        className="space-y-4 lg:space-y-0 lg:contents"
+        className="space-y-4"
       >
         <DateBar
           date={date}
@@ -240,6 +240,9 @@ export default function CameramanReportPage() {
           )}
         </div>
 
+        {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH: TRÁI quay dù/checkin · PHẢI thu chi + ghi chú ============ */}
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+        <div className="space-y-4">
         <Card title="QUAY DÙ LƯỢN" hint="Số lượng chuyến đã quay trong ngày + mã vé">
           <CountInput value={form.flycamFlights} onChange={(v) => set("flycamFlights", v)} max={1000} />
 
@@ -277,6 +280,9 @@ export default function CameramanReportPage() {
         >
           <CountInput value={form.paraglidingFlights} onChange={(v) => set("paraglidingFlights", v)} max={1000} />
         </Card>
+        </div>
+
+        <div className="space-y-4">
 
         <Card
           title="THU CHI"
@@ -314,6 +320,8 @@ export default function CameramanReportPage() {
             disabled={locked}
           />
         </Card>
+        </div>
+        </div>
 
         {error && <Banner tone="error">{error}</Banner>}
 
@@ -354,8 +362,12 @@ export default function CameramanReportPage() {
         )}
       </form>
 
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-4">
       <HandoverBox spot={spot} />
+      </div>
 
+      <div className="space-y-4">
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng số chuyến flycam và chi tiêu" />
 
       <Card title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
@@ -392,6 +404,8 @@ export default function CameramanReportPage() {
           </ul>
         )}
       </Card>
+      </div>
+      </div>
     </Shell>
   );
 }

@@ -24,7 +24,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5", className)}>
+    <section className={cn("@container rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5", className)}>
       {title && <h2 className="mb-1 text-base font-semibold text-slate-900">{title}</h2>}
       {hint && <p className="mb-3 text-sm text-slate-500">{hint}</p>}
       {!hint && title && <div className="mb-3" />}
@@ -59,7 +59,7 @@ export function CollapseCard({
           ▾
         </span>
       </summary>
-      <div className="border-t border-slate-100 p-4 sm:p-5">{children}</div>
+      <div className="@container border-t border-slate-100 p-4 sm:p-5">{children}</div>
     </details>
   );
 }
@@ -78,7 +78,7 @@ export function Field({
   className?: string;
 }) {
   return (
-    <label className={cn("block", className)}>
+    <label className={cn("block min-w-0", className)}>
       <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
       {children}
       {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
@@ -129,7 +129,7 @@ export function ServiceBox({
 }) {
   const t = SERVICE_TONE[tone];
   return (
-    <div className={cn("rounded-xl border p-2.5", t.box)}>
+    <div className={cn("min-w-0 rounded-xl border p-2.5", t.box)}>
       <div className={cn("mb-1.5 text-xs font-semibold", t.label)}>{label}</div>
       {children}
     </div>

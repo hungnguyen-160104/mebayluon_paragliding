@@ -294,7 +294,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
       )}
 
       {b && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
           <Cell label={t("Thu hộ", "collected")} value={b.collected} tone="sky" />
           {b.received > 0 && <Cell label={t("Nhận từ nhân sự", "received")} value={b.received} tone="sky" />}
           <Cell label={t("Đã chi", "spent")} value={-b.spent} tone="slate" />
@@ -414,7 +414,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         </Field>
         </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 @md:grid-cols-2">
         <Field label={t("Ngày", "date")}>
           <TextInput type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </Field>
@@ -507,7 +507,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
           </Field>
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 @md:grid-cols-2">
           <Field label={t("Số tiền", "amount")}>
             <MoneyInput value={advAmount} onChange={setAdvAmount} />
           </Field>

@@ -279,7 +279,7 @@ function PilotRow({
 
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Số chuyến PG">
               <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
             </Field>
@@ -316,7 +316,7 @@ function PilotRow({
                 PPG (dù có động cơ) — mã vé PPG khai ở đây, đừng gộp vào ô mã PG phía trên. Quy tắc: mã +
                 không vé = số chuyến.
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 @md:grid-cols-2">
                 <Field label="Số chuyến PPG">
                   {/* Kế toán sửa TAY từng ô — không auto-nhảy "không vé" như trang phi công,
                       vì ở đây thường là chỉnh lại số phi công đã khai, nhảy theo là phá số cũ */}
@@ -353,7 +353,7 @@ function PilotRow({
             </ServiceBox>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 @md:grid-cols-3">
             <ServiceBox tone="flycam" label="Mã vé Flycam">
               <TextInput
                 value={form.flycamCodesText}
@@ -380,7 +380,7 @@ function PilotRow({
             </ServiceBox>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Khách ngoại giao">
               <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} max={300} />
             </Field>
@@ -402,7 +402,7 @@ function PilotRow({
             />
           </Field>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-3">
             {/* Phí bãi + nước: chỉ Hà Nội (Sa Pa, Khau Phạ miễn phí) */}
             {spot === "ha-noi" && (
               <>
@@ -419,7 +419,7 @@ function PilotRow({
 
           {/* Đưa đón tự trả — chỉ điểm Hà Nội */}
           {spot === "ha-noi" && (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-3">
             <Field label="Đón BigC (lượt)">
               <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
             </Field>

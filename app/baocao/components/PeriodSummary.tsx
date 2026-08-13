@@ -76,7 +76,7 @@ export function PeriodSummary({
 
   return (
     <CollapseCard title={title} hint={hint}>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 @md:grid-cols-2">
         <Field label="Từ ngày">
           <TextInput type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} />
         </Field>
@@ -127,7 +127,7 @@ export function PeriodSummary({
 
       {!busy && data && (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 @md:grid-cols-3">
             {data.lines.map((line) => (
               <div key={line.label} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                 <div className="text-xs text-slate-500">{line.label}</div>

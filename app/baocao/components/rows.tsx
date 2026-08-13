@@ -51,7 +51,7 @@ export function RangeRows({
         return (
           <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
             <div className="flex items-start gap-2">
-              <div className="grid flex-1 gap-2 sm:grid-cols-2">
+              <div className="grid flex-1 gap-2 @md:grid-cols-2">
                 <TextInput
                   value={row.from}
                   onChange={(e) => set(i, { from: e.target.value.toUpperCase() })}
@@ -154,7 +154,7 @@ export function RescheduleRows({
       {rows.map((row, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
-            <div className="grid flex-1 gap-2 sm:grid-cols-2">
+            <div className="grid flex-1 gap-2 @md:grid-cols-2">
               <TextInput
                 value={row.code}
                 onChange={(e) => set(i, { code: e.target.value.toUpperCase() })}
@@ -254,7 +254,7 @@ export function ExpenseRows({
       {rows.map((row, i) => (
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
-            <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_10rem]">
+            <div className="grid flex-1 gap-2 @md:grid-cols-[1fr_10rem]">
               <TextInput
                 value={row.content}
                 onChange={(e) => set(i, { content: e.target.value })}
@@ -457,7 +457,7 @@ export function CancelEntryRows({
                   disabled={disabled}
                 />
               )}
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 @md:grid-cols-2">
                 <TextInput
                   value={row.reason}
                   onChange={(e) => set(i, { reason: e.target.value })}
@@ -539,7 +539,7 @@ export function RescheduleEntryRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
-              <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
+              <div className="grid gap-2 @md:grid-cols-[1fr_11rem]">
                 {noTickets ? (
                   <TextInput
                     value={row.note}
@@ -565,7 +565,7 @@ export function RescheduleEntryRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 @md:grid-cols-3">
                 <TextInput
                   value={row.reason}
                   onChange={(e) => set(i, { reason: e.target.value })}
@@ -663,7 +663,7 @@ export function CancelGuestRows({
                   disabled={disabled}
                 />
               )}
-              <div className="grid gap-2 sm:grid-cols-[1fr_10rem]">
+              <div className="grid gap-2 @md:grid-cols-[1fr_10rem]">
                 <TextInput
                   value={row.name}
                   onChange={(e) => set(i, { name: e.target.value })}
@@ -677,7 +677,7 @@ export function CancelGuestRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
@@ -786,7 +786,7 @@ export function RescheduleGuestRows({
                   disabled={disabled}
                 />
               )}
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 @md:grid-cols-2">
                 <TextInput
                   value={row.name}
                   onChange={(e) => set(i, { name: e.target.value })}
@@ -925,7 +925,7 @@ export function DiploEntryRows({
       {rows.map((row, i) => (
         <div key={i} className="flex items-start gap-2">
           <div className="flex-1 space-y-2">
-            <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
+            <div className="grid gap-2 @md:grid-cols-[1fr_11rem]">
               <TextInput
                 value={row.codesText}
                 onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
@@ -997,7 +997,7 @@ export function RevenueRows({
     <div className="space-y-3">
       {rows.map((row, i) => (
         <div key={i} className="flex items-start gap-2">
-          <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_11rem]">
+          <div className="grid flex-1 gap-2 @md:grid-cols-[1fr_11rem]">
             <TextInput
               value={row.content}
               onChange={(e) => set(i, { content: e.target.value })}

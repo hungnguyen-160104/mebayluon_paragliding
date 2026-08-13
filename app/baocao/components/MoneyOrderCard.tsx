@@ -151,7 +151,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 @md:grid-cols-2">
         <Field label="Nhân sự nhận tiền">
           <select
             value={who}
@@ -180,7 +180,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
         </Field>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div className="mt-3 grid gap-3 @md:grid-cols-[1fr_auto]">
         <Field label="Số tiền">
           <MoneyInput value={amount} onChange={setAmount} />
         </Field>

@@ -435,7 +435,7 @@ function DispatcherRow({
 
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-3">
             <Field label="Số khách">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
             </Field>
@@ -458,7 +458,7 @@ function DispatcherRow({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
             </ServiceBox>
@@ -602,7 +602,7 @@ function CameramanRow({
 
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Số quay dù lượn (flycam)">
               <CountInput value={flycam} onChange={setFlycam} max={1000} />
             </Field>

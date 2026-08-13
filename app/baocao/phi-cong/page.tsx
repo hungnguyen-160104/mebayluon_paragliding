@@ -450,7 +450,7 @@ export default function PilotReportPage() {
           e.preventDefault();
           save(false);
         }}
-        className="space-y-4 lg:space-y-0 lg:contents"
+        className="space-y-4"
       >
         <DateBar
           date={date}
@@ -482,6 +482,10 @@ export default function PilotReportPage() {
           )}
         </div>
 
+        {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH ============
+            TRÁI: chuyến bay (PG, PPG) + dịch vụ · PHẢI: ngoại giao, thu chi, khách huỷ/dời, ghi chú */}
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+        <div className="space-y-4">
         {/* Phi công thuần PPG không có chuyến PG — ẩn cả khối */}
         {flyPg && (
 <Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
@@ -562,7 +566,7 @@ export default function PilotReportPage() {
           hint="Chỉ SỐ LƯỢNG là bắt buộc — mã vé để trống cũng được, chỉ cần điền khi kế toán báo lệch số với điều phối (quantity required; ticket codes optional)"
         >
           {/* Mỗi dịch vụ một khung màu riêng — các cụm đếm sát nhau không còn lẫn */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @md:grid-cols-4">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} />
             </ServiceBox>
@@ -632,37 +636,6 @@ export default function PilotReportPage() {
           </details>
         </Card>
 
-        <CollapseCard
-          title={bi("Khách ngoại giao", "complimentary guests")}
-          hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
-        >
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label={bi("Số khách ngoại giao", "guest count")}>
-              <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} />
-            </Field>
-            <Field label={bi("Mã vé — nếu CÓ vé", "codes if ticketed")}>
-              <TextInput
-                value={form.diplomaticCodesText}
-                onChange={(e) => set("diplomaticCodesText", e.target.value.toUpperCase())}
-                placeholder="MBL0001"
-                autoCapitalize="characters"
-                spellCheck={false}
-                disabled={locked}
-              />
-            </Field>
-            <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
-              <CountInput value={form.diplomaticNoTicket} onChange={(v) => set("diplomaticNoTicket", v)} />
-            </Field>
-            <Field label={bi("Ghi chú khách ngoại giao", "notes")}>
-              <TextInput
-                value={form.diplomaticNote}
-                onChange={(e) => set("diplomaticNote", e.target.value)}
-                placeholder="Đoàn nào, có vé hay không vé, ai duyệt…"
-                disabled={locked}
-              />
-            </Field>
-          </div>
-        </CollapseCard>
 
         {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
         {spot === "khau-pha" && flyPpg && (
@@ -670,7 +643,7 @@ export default function PilotReportPage() {
           title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
           hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @md:grid-cols-2">
             <Field label={bi("Số chuyến PPG", "PPG flights")}>
               <CountInput
                 value={form.ppgFlights}
@@ -720,10 +693,45 @@ export default function PilotReportPage() {
         </Card>
         )}
 
+        </div>
+
+        <div className="space-y-4">
+        <CollapseCard
+          title={bi("Khách ngoại giao", "complimentary guests")}
+          hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
+        >
+          <div className="grid gap-4 @md:grid-cols-3">
+            <Field label={bi("Số khách ngoại giao", "guest count")}>
+              <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} />
+            </Field>
+            <Field label={bi("Mã vé — nếu CÓ vé", "codes if ticketed")}>
+              <TextInput
+                value={form.diplomaticCodesText}
+                onChange={(e) => set("diplomaticCodesText", e.target.value.toUpperCase())}
+                placeholder="MBL0001"
+                autoCapitalize="characters"
+                spellCheck={false}
+                disabled={locked}
+              />
+            </Field>
+            <Field label={bi("Trong đó KHÔNG vé", "ticketless")}>
+              <CountInput value={form.diplomaticNoTicket} onChange={(v) => set("diplomaticNoTicket", v)} />
+            </Field>
+            <Field label={bi("Ghi chú khách ngoại giao", "notes")}>
+              <TextInput
+                value={form.diplomaticNote}
+                onChange={(e) => set("diplomaticNote", e.target.value)}
+                placeholder="Đoàn nào, có vé hay không vé, ai duyệt…"
+                disabled={locked}
+              />
+            </Field>
+          </div>
+        </CollapseCard>
+
         <CollapseCard title={bi("Thu / Chi trong ngày", "money in & out")} hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
           {/* Phí bãi + nước: đặc thù RIÊNG Hà Nội — Sa Pa và Khau Phạ được miễn phí */}
           {spot === "ha-noi" && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 @md:grid-cols-2">
               <Field
                 label={bi("Phí bãi — số khách", "site fee, per guest")}
                 hint="Tính theo đầu khách, bấm +/−"
@@ -745,7 +753,7 @@ export default function PilotReportPage() {
             >
               <div />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 @md:grid-cols-3">
               <Field label="Đón khách từ BigC">
                 <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
               </Field>
@@ -824,6 +832,8 @@ export default function PilotReportPage() {
             disabled={locked}
           />
         </Card>
+        </div>
+        </div>
 
         {error && <Banner tone="error">{error}</Banner>}
 
@@ -875,8 +885,12 @@ export default function PilotReportPage() {
         )}
       </form>
 
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-4">
       <HandoverBox spot={spot} bilingual />
+      </div>
 
+      <div className="space-y-4">
       <PeriodSummary
         statement
         spot={spot}
@@ -932,6 +946,8 @@ export default function PilotReportPage() {
           </ul>
         )}
       </Card>
+      </div>
+      </div>
     </Shell>
   );
 }

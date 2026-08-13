@@ -121,10 +121,7 @@ export function Shell({
         {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
       </div>
 
-      {/* Desktop: các THẺ tự xếp 2 cột (thẻ nguyên khối, không kéo giãn); form tan vào cột nhờ lg:contents */}
-      <div className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid [&>form>*]:lg:mb-5 [&>form>*]:lg:break-inside-avoid">
-        {children}
-      </div>
+      <div className="space-y-4">{children}</div>
 
       <footer className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
         Trang nội bộ Mê Bay Lượn · số liệu đã lưu sẽ tự chảy sang bảng tổng hợp của kế toán
