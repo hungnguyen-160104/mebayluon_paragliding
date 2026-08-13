@@ -558,27 +558,27 @@ function DailyCloseInner() {
 
       {/* Danh sách lỗi: thứ kế toán cần đọc trước khi làm gì */}
       {(reds.length > 0 || warns.length > 0) && (
-        <CollapseCard title="Cần xử lý">
-          <ul className="space-y-2">
+        {/* LUÔN HIỆN, không gập: đây là danh sách việc chặn chốt — khung gọn, dòng sát */}
+        <div className="rounded-2xl border-2 border-rose-300 bg-rose-50/60 px-4 py-2.5 lg:[column-span:all]">
+          <div className="text-sm font-bold text-rose-900">Cần xử lý ({reds.length + warns.length})</div>
+          <ul className="mt-1 space-y-0.5">
             {reds.map((i, k) => (
-              <li key={`r${k}`} className="flex gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
-                <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-rose-500" />
-                <div>
-                  <div className="text-rose-900">{i.message}</div>
-                  {i.who.length > 0 && (
-                    <div className="mt-0.5 text-xs text-rose-700">Liên quan: {i.who.join(", ")}</div>
-                  )}
-                </div>
+              <li key={`r${k}`} className="flex gap-1.5 text-sm leading-snug text-rose-900">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
+                <span>
+                  {i.message}
+                  {i.who.length > 0 && <span className="text-xs text-rose-600"> — {i.who.join(", ")}</span>}
+                </span>
               </li>
             ))}
             {warns.map((i, k) => (
-              <li key={`w${k}`} className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
-                <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
-                <div className="text-amber-900">{i.message}</div>
+              <li key={`w${k}`} className="flex gap-1.5 text-sm leading-snug text-amber-800">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                <span>{i.message}</span>
               </li>
             ))}
           </ul>
-        </CollapseCard>
+        </div>
       )}
 
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
