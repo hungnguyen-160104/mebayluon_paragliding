@@ -44,7 +44,7 @@ export function ReviewNotices({ spot, date }: { spot: string; date: string }) {
   if (!reviews.length) return null;
 
   return (
-    <div className="rounded-2xl border-2 border-orange-400 bg-orange-50 p-4">
+    <div className="rounded-2xl border-2 border-orange-400 bg-orange-50 p-4 lg:[column-span:all]">
       <h2 className="text-sm font-bold text-orange-900">
         📣 Kế toán yêu cầu soát lại — ngày {formatDateKeyVN(date)}
       </h2>

@@ -90,7 +90,7 @@ export function CollectInbox({ spot }: { spot: string }) {
   }
 
   return (
-    <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4">
+    <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 lg:[column-span:all]">
       <h2 className="text-sm font-bold text-amber-900">💰 Lệnh THU TIỀN chờ bạn ({assigned.length})</h2>
       {error && (
         <div className="mt-2">

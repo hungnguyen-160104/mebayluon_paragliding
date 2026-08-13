@@ -34,7 +34,7 @@ export function DateBar({
   const showSpots = Boolean(spot && spotOptions && onSpotChange);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm lg:[column-span:all]">
       {showSpots && (
         <div className="mb-2 border-b border-slate-100 pb-2">
           {spotOptions!.length > 1 ? (

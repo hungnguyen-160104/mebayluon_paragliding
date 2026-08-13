@@ -204,7 +204,7 @@ export function BookingTodayBanner({ spot, date }: { spot: string; date: string 
   }
 
   return (
-    <div className="rounded-2xl border-2 border-sky-400 bg-sky-50 p-4">
+    <div className="rounded-2xl border-2 border-sky-400 bg-sky-50 p-4 lg:[column-span:all]">
       <h2 className="text-sm font-bold text-sky-900">
         🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} chờ bay)
       </h2>
@@ -342,7 +342,7 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
   if (!forDate.length && !upcoming.length) return null;
 
   return (
-    <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-4">
+    <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-4 lg:[column-span:all]">
       <h2 className="text-sm font-bold text-indigo-900">
         🤝 Lịch điều phối giao cho bạn — ngày {formatDateKeyVN(date)} ({forDate.filter((b) => b.status === "open").length})
       </h2>

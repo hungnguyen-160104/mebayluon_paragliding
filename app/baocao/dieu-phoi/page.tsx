@@ -422,7 +422,7 @@ export default function DispatcherReportPage() {
         </Banner>
       )}
 
-      <form onSubmit={submit} className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid">
+      <form onSubmit={submit} className="space-y-4 lg:space-y-0 lg:contents">
         <DateBar
           date={date}
           onChange={setDate}
