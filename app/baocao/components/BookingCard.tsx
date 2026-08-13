@@ -226,7 +226,7 @@ export function BookingTodayBanner({
         </div>
       )}
       <ul className="mt-2 space-y-1.5">
-        {open.map((b) => (
+        {open.map((b, i) => (
           <li key={b.id} className="flow-root rounded-lg bg-white px-2.5 py-1.5">
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
@@ -283,6 +283,8 @@ export function BookingTodayBanner({
               </div>
             )}
             <div className="min-w-0">
+              {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
+              <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
               <BookingSummary b={b} />
               <AssignedBadge b={b} />
               {b.rescheduledFrom.length > 0 && (
