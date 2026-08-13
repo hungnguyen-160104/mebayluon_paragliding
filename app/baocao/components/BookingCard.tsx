@@ -436,6 +436,9 @@ type BookingForm = {
   remaining: number;
   transferCode: string;
   depositToCompany: boolean;
+  /** Còn lại > 0: người được chỉ định thu trước khi bay + lời nhắn cho họ. */
+  collectorUsername: string;
+  collectorNote: string;
   note: string;
 };
 
@@ -458,6 +461,8 @@ function emptyBooking(today: string): BookingForm {
     remaining: 0,
     transferCode: "",
     depositToCompany: false,
+    collectorUsername: "",
+    collectorNote: "",
     note: "",
   };
 }
@@ -479,6 +484,8 @@ export function BookingCard({
   const spots = spotOptions?.length ? spotOptions : [spot];
   const [form, setForm] = useState<BookingForm>(() => emptyBooking(today));
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
+  /** Nhân sự đang làm tại điểm — để chỉ định người thu số "còn lại". */
+  const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -503,8 +510,13 @@ export function BookingCard({
   };
 
   const load = useCallback(() => {
-    apiGet<{ upcoming: BookingDTO[] }>(`/api/baocao/booking?date=${todayInVN()}&spot=${bookSpot}`)
-      .then((r) => setUpcoming(r.upcoming))
+    apiGet<{ upcoming: BookingDTO[]; staff?: Array<{ username: string; name: string; roleLabel: string }> }>(
+      `/api/baocao/booking?date=${todayInVN()}&spot=${bookSpot}`,
+    )
+      .then((r) => {
+        setUpcoming(r.upcoming);
+        setStaff(r.staff ?? []);
+      })
       .catch(() => {
         /* danh sách chỉ để tham khảo */
       });
@@ -522,6 +534,10 @@ export function BookingCard({
       setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}).`);
       return;
     }
+    if (!editingId && form.remaining > 0 && staff.length > 0 && !form.collectorUsername) {
+      setError(`Còn ${form.remaining.toLocaleString("vi-VN")} đ phải thu — hãy chỉ định người thu bên dưới.`);
+      return;
+    }
     setSaving(true);
     try {
       if (editingId) {
@@ -529,8 +545,12 @@ export function BookingCard({
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
       } else {
         await apiPost(`/api/baocao/booking?spot=${bookSpot}`, form);
+        const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
-          `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Booking sẽ tự hiện trên đầu trang vào đúng ngày bay.`,
+          `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Lịch bay sẽ tự hiện đúng ngày.` +
+            (form.remaining > 0 && collectorName
+              ? ` 💰 Lệnh thu ${form.remaining.toLocaleString("vi-VN")} đ đã gửi tới ${collectorName}.`
+              : ""),
         );
       }
       setEditingId(null);
@@ -567,6 +587,9 @@ export function BookingCard({
       remaining: b.remaining,
       transferCode: b.transferCode,
       depositToCompany: b.depositToCompany,
+      // Sửa booking KHÔNG lập lại lệnh thu — tránh gửi trùng lệnh cho người thu
+      collectorUsername: "",
+      collectorNote: "",
       note: b.note,
     });
   }
@@ -726,6 +749,39 @@ export function BookingCard({
           />
         </Field>
       </div>
+
+      {/* Còn tiền phải thu: chỉ định người thu — lưu xong lệnh thu tự gửi tới người đó */}
+      {!editingId && form.remaining > 0 && staff.length > 0 && (
+        <div className="mt-2 rounded-lg border border-emerald-300 bg-emerald-50/70 p-2">
+          <div className="text-xs font-bold text-emerald-900">
+            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — chỉ định người thu:
+          </div>
+          <div className="mt-1.5 grid gap-2 @md:grid-cols-2">
+            <select
+              value={form.collectorUsername}
+              onChange={(e) => set("collectorUsername", e.target.value)}
+              className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-600"
+            >
+              <option value="">— Chọn người thu —</option>
+              {staff.map((a) => (
+                <option key={a.username} value={a.username}>
+                  {a.name} — {a.roleLabel}
+                </option>
+              ))}
+            </select>
+            <TextInput
+              value={form.collectorNote}
+              onChange={(e) => set("collectorNote", e.target.value)}
+              placeholder="Ghi chú cho người thu…"
+              className="h-10 rounded-lg text-sm"
+            />
+          </div>
+          <p className="mt-1 text-[11px] leading-tight text-emerald-800/80">
+            Lưu booking xong, LỆNH THU TIỀN hiện ngay trên trang của người này — khi cầm tiền họ bấm
+            &ldquo;Đã thu tiền&rdquo; là khoản vào tiền giữ hộ công ty của họ.
+          </p>
+        </div>
+      )}
 
       {/* Cọc CK về thẳng tài khoản công ty — không ai cầm khoản này */}
       <div className="mt-2 grid items-end gap-2 @md:grid-cols-2">

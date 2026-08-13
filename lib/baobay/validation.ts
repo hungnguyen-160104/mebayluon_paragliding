@@ -307,6 +307,9 @@ export const bookingSchema = z.object({
   remaining: money,
   transferCode: text(100),
   depositToCompany: z.boolean().optional().default(false),
+  /** Còn lại > 0: chỉ định người thu — máy chủ tự lập LỆNH THU TIỀN gửi người đó. */
+  collectorUsername: text(100),
+  collectorNote: text(500),
   note: text(1_000),
 });
 

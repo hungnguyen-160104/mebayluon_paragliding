@@ -2623,6 +2623,9 @@ export type BookingSaveInput = {
   note: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
+  /** Còn lại > 0: người được chỉ định thu — tự lập LỆNH THU TIỀN kèm booking. */
+  collectorUsername?: string;
+  collectorNote?: string;
 };
 
 /** "HH:MM" hiện tại theo giờ Việt Nam — chặn giờ dự kiến lùi về quá khứ. */
@@ -2666,6 +2669,23 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     }
   }
 
+  /**
+   * "Còn lại (thu trước khi bay)" + chỉ định người thu: kiểm tài khoản TRƯỚC
+   * khi tạo booking để lỗi chọn nhầm người không để lại booking mồ côi.
+   * Lệnh thu luôn ở trạng thái CHỜ (kể cả tự chỉ định mình) — tiền chưa thu,
+   * đến lúc cầm tiền người thu mới bấm "Đã thu tiền" cho vào tiền giữ hộ.
+   */
+  const collectorUsername = (input.collectorUsername ?? "").trim();
+  let collector: { username: string; displayName: string } | null = null;
+  if (input.remaining > 0 && collectorUsername) {
+    const doc = await BaobayAccount.findOne({ username: normalizeUsername(collectorUsername) })
+      .select("username displayName isActive spots")
+      .lean<any>();
+    if (!doc || !doc.isActive) throw new BaobayError("Không tìm thấy người thu", 404);
+    if (!(doc.spots ?? []).includes(spot)) throw new BaobayError(`“${doc.displayName}” không làm ở điểm này`, 400);
+    collector = doc;
+  }
+
   const saved = (
     await BaobayBooking.create({
       spot,
@@ -2696,6 +2716,37 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   ).toObject();
 
   pushSheetInBackground(() => pushBookingRow(saved), BaobayBooking, saved._id);
+
+  if (collector) {
+    const collectNote = [
+      `Thu trước khi bay ${formatDateKeyVN(input.flightDate)}`,
+      (input.collectorNote ?? "").trim(),
+    ]
+      .filter(Boolean)
+      .join(" — ");
+    const collectDoc = (
+      await BaobayCollect.create({
+        spot,
+        date: todayInVN(),
+        guestName: input.contactName.trim(),
+        bookingCode: input.bookingCode.trim(),
+        agency: input.source.trim(),
+        guests: input.guestCount,
+        amount: input.remaining,
+        method: "cash",
+        toCompanyAccount: false,
+        transferCode: "",
+        note: collectNote,
+        collectorUsername: collector.username,
+        collectorName: collector.displayName,
+        status: "pending",
+        createdByUsername: session.username,
+        createdByName: session.name,
+      })
+    ).toObject();
+    pushSheetInBackground(() => pushCollectRow(collectDoc), BaobayCollect, collectDoc._id);
+  }
+
   return toBookingDTO({ ...saved, sheetSynced: false });
 }
 
