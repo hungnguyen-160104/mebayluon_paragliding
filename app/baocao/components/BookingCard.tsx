@@ -225,9 +225,9 @@ export function BookingTodayBanner({
           <Banner tone="error">{error}</Banner>
         </div>
       )}
-      <ul className="mt-2 space-y-1.5">
+      <ul className={"mt-2" + (rows.length >= 8 ? " lg:columns-2 lg:gap-x-3" : "")}>
         {open.map((b, i) => (
-          <li key={b.id} className="flow-root rounded-lg bg-white px-2.5 py-1.5">
+          <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
               <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
@@ -299,7 +299,7 @@ export function BookingTodayBanner({
           </li>
         ))}
         {closed.map((b) => (
-          <li key={b.id} className="rounded-lg bg-white/60 px-3 py-2 opacity-60">
+          <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white/60 px-3 py-1.5 opacity-60">
             <BookingSummary b={b} />
             {b.status === "done" ? (
               <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
