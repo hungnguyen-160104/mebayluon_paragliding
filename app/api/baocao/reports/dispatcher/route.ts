@@ -13,7 +13,7 @@ import {
   upsertDispatcherReportByAccountant,
   getDispatcherReport,
   getReconcileForUser,
-  isDayClosed,
+  getDailyClose,
   listDispatcherReportsOfAccount,
   upsertDispatcherReport,
 } from "@/services/baobay.service";
@@ -56,13 +56,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
     }
 
-    const [report, locked, check] = await Promise.all([
+    const [report, close, check] = await Promise.all([
       getDispatcherReport(auth.id, spot, date),
-      isDayClosed(spot, date),
+      getDailyClose(spot, date),
       getReconcileForUser(spot, date, auth.username),
     ]);
 
-    return NextResponse.json({ spot, report, locked, check });
+    return NextResponse.json({
+      spot,
+      report,
+      locked: close?.status === "closed",
+      closedBy: close?.closedBy ?? "",
+      check,
+    });
   }
 
   return NextResponse.json({ reports: await listDispatcherReportsOfAccount(auth.id, spot) });

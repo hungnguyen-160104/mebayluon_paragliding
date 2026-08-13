@@ -61,6 +61,8 @@ export default function CameramanReportPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<CameramanReportDTO | null>(null);
   const [locked, setLocked] = useState(false);
+  /** Tên kế toán đã chốt ngày — hiện banner xanh cho mọi vai trò. */
+  const [closedBy, setClosedBy] = useState("");
   const [check, setCheck] = useState<DayCheck | null>(null);
   const [loadingDay, setLoadingDay] = useState(false);
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
@@ -79,11 +81,12 @@ export default function CameramanReportPage() {
     setError(null);
     setSaved(null);
     try {
-      const res = await apiGet<{ report: CameramanReportDTO | null; locked: boolean; check: DayCheck }>(
+      const res = await apiGet<{ report: CameramanReportDTO | null; locked: boolean; closedBy?: string; check: DayCheck }>(
         `/api/baocao/reports/cameraman?date=${targetDate}&spot=${spot}`,
       );
       setExisting(res.report);
       setLocked(res.locked);
+      setClosedBy(res.closedBy || "");
       setCheck(res.check);
       setForm(
         res.report
@@ -205,8 +208,8 @@ export default function CameramanReportPage() {
       )}
 
       {locked && (
-        <Banner tone="info">
-          Ngày {formatDateKeyVN(date)} <strong>đã được kế toán chốt</strong> — số liệu đã khoá, chỉ xem được.
+        <Banner tone="success">
+          ✅ <strong>{closedBy || "Kế toán"} đã chốt ngày {formatDateKeyVN(date)}</strong> — số liệu đã khoá, chỉ xem được.
         </Banner>
       )}
 

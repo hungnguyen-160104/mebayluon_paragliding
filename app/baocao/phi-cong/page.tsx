@@ -134,6 +134,8 @@ export default function PilotReportPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<PilotReportDTO | null>(null);
   const [locked, setLocked] = useState(false);
+  /** Tên kế toán đã chốt ngày — hiện banner xanh cho mọi vai trò. */
+  const [closedBy, setClosedBy] = useState("");
   const [check, setCheck] = useState<DayCheck | null>(null);
   const [deadline, setDeadline] = useState<{ time: string; past: boolean } | null>(null);
   const [loadingDay, setLoadingDay] = useState(false);
@@ -159,6 +161,7 @@ export default function PilotReportPage() {
       const res = await apiGet<{
         report: PilotReportDTO | null;
         locked: boolean;
+        closedBy?: string;
         check: DayCheck;
         submitDeadline: string;
         pastDeadline: boolean;
@@ -166,6 +169,7 @@ export default function PilotReportPage() {
 
       setExisting(res.report);
       setLocked(res.locked);
+      setClosedBy(res.closedBy || "");
       setCheck(res.check);
       setDeadline({ time: res.submitDeadline, past: res.pastDeadline });
       setForm(
@@ -421,9 +425,9 @@ export default function PilotReportPage() {
       )}
 
       {locked && (
-        <Banner tone="info">
-          Ngày {formatDateKeyVN(date)} <strong>đã được kế toán chốt</strong> — số liệu đã khoá, chỉ xem được.
-          Cần sửa thì nhờ kế toán gỡ khoá ngày.
+        <Banner tone="success">
+          ✅ <strong>{closedBy || "Kế toán"} đã chốt ngày {formatDateKeyVN(date)}</strong> — số liệu đã khoá, chỉ
+          xem được. Cần sửa thì nhờ kế toán gỡ khoá ngày.
         </Banner>
       )}
 

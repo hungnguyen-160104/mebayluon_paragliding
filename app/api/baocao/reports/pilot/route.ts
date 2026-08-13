@@ -91,6 +91,7 @@ export async function GET(req: Request) {
       report,
       locked: close?.status === "closed",
       closedAt: close?.closedAt ?? null,
+      closedBy: close?.closedBy ?? "",
       check,
       /** Giờ chốt hiện hành + đã quá mốc chưa — tính ở máy chủ, khỏi tin đồng hồ điện thoại. */
       submitDeadline: deadline,
