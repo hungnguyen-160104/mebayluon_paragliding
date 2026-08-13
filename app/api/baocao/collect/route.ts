@@ -1,0 +1,77 @@
+// app/api/baocao/collect/route.ts
+import { NextResponse } from "next/server";
+
+import { resolveSpot } from "@/lib/baobay/request-spot";
+import { collectSchema, firstZodMessage } from "@/lib/baobay/validation";
+import { requireBaobay } from "@/middlewares/requireBaobay";
+import { BaobayError, createCollect, listCollects, resolveCollect } from "@/services/baobay.service";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * LỆNH THU TIỀN — kế toán/điều phối chốt lịch với khách rồi:
+ *  - Tiền mặt: chỉ định NGƯỜI THU; người đó bấm "Đã thu tiền" / "Từ chối".
+ *  - Chuyển khoản: tích TK CÔNG TY + mã CK — ghi nhận xong ngay.
+ *
+ * GET          -> { assigned (chờ mình thu), created (mình đã lập) }
+ * POST         -> lập lệnh
+ * PATCH {id, collected, reason?} -> người thu xác nhận / từ chối
+ */
+export async function GET(req: Request) {
+  const auth = requireBaobay(req);
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  return NextResponse.json(await listCollects(auth, spot));
+}
+
+export async function POST(req: Request) {
+  const auth = requireBaobay(req, { roles: ["dispatcher", "accountant", "admin"] });
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  const body = await req.json().catch(() => ({}));
+  const parsed = collectSchema.safeParse({ ...body, spot });
+  if (!parsed.success) {
+    return NextResponse.json({ message: firstZodMessage(parsed.error) }, { status: 400 });
+  }
+
+  try {
+    const collect = await createCollect(auth, parsed.data);
+    return NextResponse.json({ collect }, { status: 201 });
+  } catch (err) {
+    if (err instanceof BaobayError) {
+      return NextResponse.json({ message: err.message }, { status: err.status });
+    }
+    console.error("POST /api/baocao/collect error:", err);
+    return NextResponse.json({ message: "Không lập được lệnh thu" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  const auth = requireBaobay(req);
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  const body = await req.json().catch(() => ({}));
+  const id = String(body?.id ?? "");
+  if (!id) return NextResponse.json({ message: "Thiếu id lệnh thu" }, { status: 400 });
+
+  try {
+    const collect = await resolveCollect(auth, spot, id, body?.collected !== false, String(body?.reason ?? ""));
+    return NextResponse.json({ collect });
+  } catch (err) {
+    if (err instanceof BaobayError) {
+      return NextResponse.json({ message: err.message }, { status: err.status });
+    }
+    console.error("PATCH /api/baocao/collect error:", err);
+    return NextResponse.json({ message: "Không xử lý được lệnh thu" }, { status: 500 });
+  }
+}

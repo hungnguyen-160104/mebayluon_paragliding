@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v16`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v18`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -189,9 +189,29 @@ const KINDS = {
     'Giờ dự kiến': 'expectedTime',
     'Đã cọc': 'deposit',
     'Còn lại phải thu': 'remaining',
+    'Mã chuyển khoản': 'transferCode',
+    'Cọc vào TK cty': 'depositToCompany',
     'Trạng thái': 'status',
     'Dời từ': 'rescheduledFrom',
     'Giao cho': 'assignedTo',
+    'Ghi chú': 'note',
+    'Cập nhật lúc': 'updatedAt',
+  },
+  collect: {
+    'Khoá': 'key',
+    'Ngày': 'date',
+    'Điểm bay': 'spot',
+    'Tên khách': 'guestName',
+    'Mã booking': 'bookingCode',
+    'Đại lý': 'agency',
+    'Số người': 'guests',
+    'Số tiền': 'amount',
+    'Hình thức': 'method',
+    'TK công ty': 'toCompanyAccount',
+    'Mã chuyển khoản': 'transferCode',
+    'Người thu': 'collector',
+    'Trạng thái': 'status',
+    'Người lập': 'createdBy',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
   },
@@ -265,7 +285,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v16',
+    version: 'baobay-multispot-v18',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

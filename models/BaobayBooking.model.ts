@@ -58,6 +58,8 @@ export interface IBaobayBooking {
   remaining: number;
   /** Mã chuyển khoản của khoản cọc — soi lại sao kê ngân hàng. */
   transferCode: string;
+  /** Cọc CK vào thẳng TK công ty. */
+  depositToCompany: boolean;
   note: string;
 
   /**
@@ -108,6 +110,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     deposit: { type: Number, default: 0, min: 0 },
     remaining: { type: Number, default: 0, min: 0 },
     transferCode: { type: String, default: "" },
+    depositToCompany: { type: Boolean, default: false },
     note: { type: String, default: "" },
 
     assignedToUsername: String,

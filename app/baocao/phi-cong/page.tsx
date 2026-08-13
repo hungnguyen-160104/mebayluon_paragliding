@@ -13,6 +13,7 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
+import { CollectInbox } from "../components/CollectBox";
 import {
   ExpenseRows,
   toExpenseRows,
@@ -380,6 +381,9 @@ export default function PilotReportPage() {
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
       <AssignedBookings spot={spot} date={date} />
 
+      {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
+      <CollectInbox spot={spot} />
+
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (
         <Banner tone="error">
@@ -439,7 +443,7 @@ export default function PilotReportPage() {
           e.preventDefault();
           save(false);
         }}
-        className="space-y-4"
+        className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid"
       >
         <DateBar
           date={date}

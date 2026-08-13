@@ -46,6 +46,7 @@ import type {
   BaobayAccountDTO,
   BaobaySummaryDTO,
   BookingDTO,
+  CollectDTO,
   CameramanReportDTO,
   CancelEntryDTO,
   DiploEntryDTO,
@@ -68,6 +69,7 @@ import type {
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
+import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
 import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
@@ -2530,7 +2532,7 @@ export async function getCashOnHand(
    * Chỉ tính lệnh GIAO TIỀN. Tiền ứng là công ty chi ra cho cá nhân, trừ vào
    * lương cuối tháng — không liên quan tới số tiền đang cầm hộ công ty.
    */
-  const [handovers, receivedDocs] = await Promise.all([
+  const [handovers, receivedDocs, collectDocs] = await Promise.all([
     BaobayHandover.find({
       accountId,
       spot,
@@ -2550,8 +2552,19 @@ export async function getCashOnHand(
     })
       .select("amount")
       .lean<any[]>(),
+    // Tiền LỆNH THU booking mình đã cầm (tiền mặt đã xác nhận thu) — cũng là tiền giữ hộ công ty
+    BaobayCollect.find({
+      spot,
+      collectorUsername: session.username,
+      status: "collected",
+      ...dateFilter,
+    })
+      .select("amount")
+      .lean<any[]>(),
   ]);
-  const received = receivedDocs.reduce((a, h) => a + (h.amount || 0), 0);
+  const received =
+    receivedDocs.reduce((a, h) => a + (h.amount || 0), 0) +
+    collectDocs.reduce((a, c) => a + (c.amount || 0), 0);
 
   let handedConfirmed = 0;
   let handedPending = 0;
@@ -2599,6 +2612,7 @@ export type BookingSaveInput = {
   deposit: number;
   remaining: number;
   transferCode: string;
+  depositToCompany?: boolean;
   note: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
@@ -2667,6 +2681,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       deposit: input.deposit,
       remaining: input.remaining,
       transferCode: input.transferCode.trim(),
+      depositToCompany: Boolean(input.depositToCompany),
       note: input.note.trim(),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       status: "open",
@@ -2749,6 +2764,7 @@ export async function updateBookingInfo(
       deposit: input.deposit,
       remaining: input.remaining,
       transferCode: input.transferCode.trim(),
+      depositToCompany: Boolean(input.depositToCompany),
       note: input.note.trim(),
     },
   };
@@ -2895,6 +2911,7 @@ async function pushBookingRow(doc: any) {
       deposit: doc.deposit ?? 0,
       remaining: doc.remaining ?? 0,
       transferCode: doc.transferCode || "",
+      depositToCompany: doc.depositToCompany ? "x" : "",
       status:
         doc.status === "done"
           ? "ĐÃ BAY"
@@ -2937,6 +2954,7 @@ function toBookingDTO(doc: any): BookingDTO {
     deposit: doc.deposit ?? 0,
     remaining: doc.remaining ?? 0,
     transferCode: doc.transferCode || "",
+    depositToCompany: Boolean(doc.depositToCompany),
     note: doc.note || "",
     status: doc.status === "done" ? "done" : doc.status === "cancelled" ? "cancelled" : "open",
     doneAt: doc.doneAt ? new Date(doc.doneAt).toISOString() : undefined,
@@ -2945,6 +2963,191 @@ function toBookingDTO(doc: any): BookingDTO {
     assignedToUsername: doc.assignedToUsername || undefined,
     assignedToName: doc.assignedToName || undefined,
     assignedBy: doc.assignedBy || undefined,
+  };
+}
+
+/* ================================================================== */
+/* Lệnh THU TIỀN — kế toán/điều phối chỉ định người thu hoặc ghi CK cty */
+/* ================================================================== */
+
+export type CollectSaveInput = {
+  spot: string;
+  guestName: string;
+  bookingCode: string;
+  agency: string;
+  guests: number;
+  amount: number;
+  method: "cash" | "transfer";
+  collectorUsername: string;
+  toCompanyAccount: boolean;
+  transferCode: string;
+  note: string;
+};
+
+/**
+ * Lập lệnh thu: TM phải chỉ định người thu (lệnh chạy về trang người đó chờ
+ * "Đã thu tiền"); CK tích TK công ty là ghi nhận xong ngay — tiền về thẳng
+ * tài khoản công ty, không ai cầm.
+ */
+export async function createCollect(session: BaobaySession, input: CollectSaveInput): Promise<CollectDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, input.spot);
+  if (!input.guestName.trim() && !input.bookingCode.trim()) {
+    throw new BaobayError("Lệnh thu phải có tên khách hoặc mã booking", 400);
+  }
+
+  let collector: { username: string; displayName: string } | null = null;
+  let selfCollect = false;
+  if (input.method === "cash") {
+    // Không chỉ định ai = CHÍNH MÌNH thu — tiền vào thẳng "tiền giữ hộ công ty" của mình, khỏi xác nhận
+    const target = input.collectorUsername.trim() || session.username;
+    selfCollect = normalizeUsername(target) === session.username;
+    const doc = await BaobayAccount.findOne({ username: normalizeUsername(target) })
+      .select("username displayName isActive spots")
+      .lean<any>();
+    if (!doc || !doc.isActive) throw new BaobayError("Không tìm thấy người thu", 404);
+    if (!(doc.spots ?? []).includes(spot)) throw new BaobayError(`“${doc.displayName}” không làm ở điểm này`, 400);
+    collector = doc;
+  } else if (!input.toCompanyAccount) {
+    throw new BaobayError("Chuyển khoản phải tích 'TK công ty'", 400);
+  }
+
+  const saved = (
+    await BaobayCollect.create({
+      spot,
+      date: todayInVN(),
+      guestName: input.guestName.trim(),
+      bookingCode: input.bookingCode.trim(),
+      agency: input.agency.trim(),
+      guests: input.guests,
+      amount: input.amount,
+      method: input.method,
+      toCompanyAccount: input.method === "transfer" && input.toCompanyAccount,
+      transferCode: input.transferCode.trim(),
+      note: input.note.trim(),
+      collectorUsername: collector?.username,
+      collectorName: collector?.displayName,
+      // Chính mình thu thì hoàn tất luôn — không ai phải xác nhận với chính mình
+      status: input.method !== "cash" ? "company" : selfCollect ? "collected" : "pending",
+      resolvedAt: selfCollect ? new Date() : undefined,
+      resolvedBy: selfCollect ? session.username : undefined,
+      createdByUsername: session.username,
+      createdByName: session.name,
+    })
+  ).toObject();
+
+  pushSheetInBackground(() => pushCollectRow(saved), BaobayCollect, saved._id);
+  return toCollectDTO({ ...saved, sheetSynced: false });
+}
+
+/** Lệnh CHỜ MÌNH thu + lệnh mình đã lập gần đây. */
+export async function listCollects(
+  session: BaobaySession,
+  spotRaw: string,
+): Promise<{ assigned: CollectDTO[]; created: CollectDTO[] }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const [assigned, created] = await Promise.all([
+    BaobayCollect.find({ spot, collectorUsername: session.username, status: "pending" })
+      .sort({ createdAt: -1 })
+      .lean<any[]>(),
+    BaobayCollect.find({ spot, createdByUsername: session.username }).sort({ createdAt: -1 }).limit(20).lean<any[]>(),
+  ]);
+  return { assigned: assigned.map(toCollectDTO), created: created.map(toCollectDTO) };
+}
+
+/** Người được chỉ định bấm "Đã thu tiền" / "Từ chối" — quản trị/kế toán bấm hộ được. */
+export async function resolveCollect(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  collected: boolean,
+  reason?: string,
+): Promise<CollectDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const current = await BaobayCollect.findOne({ _id: id, spot, status: "pending" }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy lệnh thu đang chờ", 404);
+  const manager = session.role === "accountant" || session.role === "admin";
+  if (current.collectorUsername !== session.username && !manager) {
+    throw new BaobayError("Chỉ người được chỉ định (hoặc kế toán/quản trị) mới xác nhận được", 403);
+  }
+  if (!collected && !(reason ?? "").trim()) throw new BaobayError("Từ chối phải ghi lý do", 400);
+
+  const doc = await BaobayCollect.findOneAndUpdate(
+    { _id: id, spot, status: "pending" },
+    {
+      $set: {
+        status: collected ? "collected" : "rejected",
+        rejectedReason: collected ? "" : (reason ?? "").trim(),
+        resolvedAt: new Date(),
+        resolvedBy: session.username,
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Lệnh vừa được người khác xử lý", 409);
+
+  pushSheetInBackground(() => pushCollectRow(doc), BaobayCollect, doc._id);
+  return toCollectDTO({ ...doc, sheetSynced: false });
+}
+
+async function pushCollectRow(doc: any) {
+  return pushBaobayRow(
+    "collect",
+    {
+      key: String(doc._id),
+      date: formatDateKeyVN(doc.date),
+      spot: doc.spot || "",
+      guestName: doc.guestName || "",
+      bookingCode: doc.bookingCode || "",
+      agency: doc.agency || "",
+      guests: doc.guests ?? 0,
+      amount: doc.amount ?? 0,
+      method: doc.method === "transfer" ? "Chuyển khoản" : "Tiền mặt",
+      toCompanyAccount: doc.toCompanyAccount ? "x" : "",
+      transferCode: doc.transferCode || "",
+      collector: doc.collectorName || "",
+      status:
+        doc.status === "collected"
+          ? "ĐÃ THU"
+          : doc.status === "rejected"
+            ? `TỪ CHỐI${doc.rejectedReason ? `: ${doc.rejectedReason}` : ""}`
+            : doc.status === "company"
+              ? "VỀ TK CÔNG TY"
+              : "chờ thu",
+      createdBy: doc.createdByName || "",
+      note: doc.note || "",
+      updatedAt: nowStampVN(),
+    },
+    undefined,
+    await sheetTargetForSpot(doc.spot),
+  );
+}
+
+function toCollectDTO(doc: any): CollectDTO {
+  return {
+    id: String(doc._id),
+    spot: doc.spot,
+    date: doc.date,
+    guestName: doc.guestName || "",
+    bookingCode: doc.bookingCode || "",
+    agency: doc.agency || "",
+    guests: doc.guests ?? 0,
+    amount: doc.amount ?? 0,
+    method: doc.method === "transfer" ? "transfer" : "cash",
+    toCompanyAccount: Boolean(doc.toCompanyAccount),
+    transferCode: doc.transferCode || "",
+    note: doc.note || "",
+    collectorUsername: doc.collectorUsername || undefined,
+    collectorName: doc.collectorName || undefined,
+    status: doc.status,
+    rejectedReason: doc.rejectedReason || undefined,
+    resolvedAt: doc.resolvedAt ? new Date(doc.resolvedAt).toISOString() : undefined,
+    createdByUsername: doc.createdByUsername,
+    createdByName: doc.createdByName,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
   };
 }
 

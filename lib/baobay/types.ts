@@ -258,6 +258,30 @@ export type DailyCloseDTO = {
   updatedAt: string;
 };
 
+/** Lệnh THU TIỀN: TM chỉ định người thu (xác nhận 2 chiều), CK ghi thẳng vào TK công ty. */
+export type CollectDTO = {
+  id: string;
+  spot: string;
+  date: string;
+  guestName: string;
+  bookingCode: string;
+  agency: string;
+  guests: number;
+  amount: number;
+  method: "cash" | "transfer";
+  toCompanyAccount: boolean;
+  transferCode: string;
+  note: string;
+  collectorUsername?: string;
+  collectorName?: string;
+  status: "pending" | "collected" | "rejected" | "company";
+  rejectedReason?: string;
+  resolvedAt?: string;
+  createdByUsername: string;
+  createdByName: string;
+  createdAt: string;
+};
+
 /** Booking đặt trước — khách chốt hôm nay, bay ngày khác. */
 export type BookingDTO = {
   id: string;
@@ -287,6 +311,8 @@ export type BookingDTO = {
   remaining: number;
   /** Mã chuyển khoản của khoản cọc (nếu khách CK). */
   transferCode: string;
+  /** Cọc CHUYỂN KHOẢN vào thẳng TK CÔNG TY — không ai cầm khoản này. */
+  depositToCompany: boolean;
   note: string;
   status: "open" | "done" | "cancelled";
   doneAt?: string;

@@ -48,6 +48,8 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   );
   if (b.deposit) parts.push(`cọc ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k`);
   if (b.remaining) parts.push(`còn thu ${Math.round(b.remaining / 1000).toLocaleString("vi-VN")}k`);
+  if (b.transferCode) parts.push(`CK #${b.transferCode}`);
+  if (b.depositToCompany) parts.push("cọc → TK cty");
   if (b.note) parts.push(b.note);
 
   return <span className="text-xs text-slate-600">{parts.filter(Boolean).join(" · ")}</span>;
@@ -394,6 +396,8 @@ type BookingForm = {
   expectedTime: string;
   deposit: number;
   remaining: number;
+  transferCode: string;
+  depositToCompany: boolean;
   note: string;
 };
 
@@ -414,6 +418,8 @@ function emptyBooking(today: string): BookingForm {
     expectedTime: "",
     deposit: 0,
     remaining: 0,
+    transferCode: "",
+    depositToCompany: false,
     note: "",
   };
 }
@@ -521,6 +527,8 @@ export function BookingCard({
       expectedTime: b.expectedTime,
       deposit: b.deposit,
       remaining: b.remaining,
+      transferCode: b.transferCode,
+      depositToCompany: b.depositToCompany,
       note: b.note,
     });
   }
@@ -664,15 +672,35 @@ export function BookingCard({
         </Field>
       </div>
 
-      {/* Tiền nong đứng cạnh nhau: đã cọc bao nhiêu — còn phải thu bao nhiêu */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Field label="Đã cọc">
           <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
         </Field>
         <Field label="Còn lại (thu trước khi bay)">
           <MoneyInput value={form.remaining} onChange={(v) => set("remaining", v)} />
         </Field>
+        <Field label="Mã chuyển khoản (cọc)">
+          <TextInput
+            value={form.transferCode}
+            onChange={(e) => set("transferCode", e.target.value)}
+            placeholder="Mã GD ngân hàng…"
+          />
+        </Field>
       </div>
+
+      {/* Cọc CK về thẳng tài khoản công ty — không ai cầm khoản này */}
+      <label className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+        <input
+          type="checkbox"
+          checked={form.depositToCompany}
+          onChange={(e) => set("depositToCompany", e.target.checked)}
+          className="h-5 w-5 rounded border-slate-300"
+        />
+        <span className="text-sm text-slate-800">
+          Cọc chuyển khoản vào <strong>TK công ty</strong>
+        </span>
+      </label>
 
       <div className="mt-3">
         <Field label="Ghi chú">

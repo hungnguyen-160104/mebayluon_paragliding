@@ -13,6 +13,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
+import { CollectInbox } from "../components/CollectBox";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
@@ -186,6 +187,9 @@ export default function CameramanReportPage() {
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
       <AssignedBookings spot={spot} date={date} />
 
+      {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
+      <CollectInbox spot={spot} />
+
       {myReds.length > 0 && (
         <Banner tone="error">
           <strong>Cần kiểm lại {myReds.length} chỗ:</strong>
@@ -212,7 +216,7 @@ export default function CameramanReportPage() {
           e.preventDefault();
           save(false);
         }}
-        className="space-y-4"
+        className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid"
       >
         <DateBar
           date={date}

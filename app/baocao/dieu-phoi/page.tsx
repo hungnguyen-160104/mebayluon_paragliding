@@ -32,6 +32,7 @@ import {
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
+import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
@@ -395,6 +396,9 @@ export default function DispatcherReportPage() {
 
       <ReviewNotices spot={spot} date={date} />
 
+      {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
+      <CollectInbox spot={spot} />
+
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
       <BookingTodayBanner spot={spot} date={date} />
 
@@ -418,7 +422,7 @@ export default function DispatcherReportPage() {
         </Banner>
       )}
 
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid">
         <DateBar
           date={date}
           onChange={setDate}
@@ -567,6 +571,9 @@ export default function DispatcherReportPage() {
             </div>
           </div>
         </CollapseCard>
+
+        {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
+        <CollectCreate spot={spot} />
 
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
         <CollapseCard

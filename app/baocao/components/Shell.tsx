@@ -59,7 +59,7 @@ export function Shell({
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:py-8">
+    <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:py-8 lg:max-w-6xl">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-sky-700">

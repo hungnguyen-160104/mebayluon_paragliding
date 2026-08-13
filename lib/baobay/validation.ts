@@ -306,7 +306,23 @@ export const bookingSchema = z.object({
   deposit: money,
   remaining: money,
   transferCode: text(100),
+  depositToCompany: z.boolean().optional().default(false),
   note: text(1_000),
+});
+
+/** Lệnh thu tiền: tên khách – mã booking – đại lý – số người – tiền – TM (người thu) | CK (TK cty + mã CK). */
+export const collectSchema = z.object({
+  spot: spotField,
+  guestName: text(200),
+  bookingCode: text(100),
+  agency: text(200),
+  guests: count(100),
+  amount: money.refine((v) => v > 0, "Chưa nhập số tiền"),
+  method: z.enum(["cash", "transfer"]).default("cash"),
+  collectorUsername: text(100),
+  toCompanyAccount: z.boolean().optional().default(false),
+  transferCode: text(100),
+  note: text(500),
 });
 
 /** Nhân sự đưa tiền cho quản lý/giám đốc. */

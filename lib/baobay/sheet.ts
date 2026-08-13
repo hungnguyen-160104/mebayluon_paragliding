@@ -24,7 +24,8 @@ export type BaobaySheetKind =
   | "handover"
   | "advance"
   | "daysummary"
-  | "booking";
+  | "booking"
+  | "collect";
 
 /**
  * Tab mặc định cho từng loại báo cáo.
@@ -43,6 +44,7 @@ const SHEET_NAME: Record<BaobaySheetKind, string> = {
   advance: "Ứng tiền",
   daysummary: "Tổng hợp ngày",
   booking: "Booking",
+  collect: "Lệnh thu tiền",
 };
 
 export type SheetPushResult = { ok: boolean; error?: string };

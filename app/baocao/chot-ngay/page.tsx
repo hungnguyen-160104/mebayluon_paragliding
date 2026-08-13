@@ -24,6 +24,7 @@ import {
 } from "../components/rows";
 import { DateBar } from "../components/DateBar";
 import { BookingCard } from "../components/BookingCard";
+import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { HandoverBox } from "../components/HandoverBox";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
@@ -531,6 +532,9 @@ function DailyCloseInner() {
       {/* Booking đặt trước — thứ hai từ trên xuống, ngay dưới thẻ chọn điểm + ngày */}
       <BookingCard spot={spot} spotOptions={spotOptions} />
 
+      {/* Lệnh thu tiền chờ mình xử lý */}
+      <CollectInbox spot={spot} />
+
       <div>
         {!loadingDay && (
           <div className="mt-1">
@@ -588,7 +592,7 @@ function DailyCloseInner() {
           e.preventDefault();
           action("save");
         }}
-        className="space-y-4"
+        className="space-y-4 lg:columns-2 lg:gap-5 lg:space-y-0 [&>*]:lg:mb-5 [&>*]:lg:break-inside-avoid"
       >
         <CollapseCard
           title="Số tổng trong ngày"
@@ -986,6 +990,9 @@ function DailyCloseInner() {
             </div>
           </div>
         </CollapseCard>
+
+        {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
+        <CollectCreate spot={spot} />
 
         {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
 
