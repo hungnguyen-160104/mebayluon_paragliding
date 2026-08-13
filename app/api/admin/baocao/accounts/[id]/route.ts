@@ -44,6 +44,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     spots: Array.isArray(body?.spots) ? body.spots.map(String) : undefined,
     note: body?.note !== undefined ? String(body.note) : undefined,
     isActive: typeof body?.isActive === "boolean" ? body.isActive : undefined,
+    pilotKind: ["pg", "ppg", "both"].includes(body?.pilotKind) ? body.pilotKind : undefined,
     newPassword,
   }, auth);
 

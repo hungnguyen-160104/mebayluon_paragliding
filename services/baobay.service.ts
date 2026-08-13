@@ -425,6 +425,8 @@ export type UpdateAccountInput = {
   spots?: string[];
   note?: string;
   isActive?: boolean;
+  /** Loại phi công: pg / ppg / both. */
+  pilotKind?: "pg" | "ppg" | "both";
   /** Quản trị đặt lại mật khẩu — người dùng sẽ bị buộc đổi ở lần đăng nhập sau. */
   newPassword?: string;
 };
@@ -484,6 +486,10 @@ export async function updateAccount(
     set.email = email.email;
   }
   if (patch.phone !== undefined) set.phone = patch.phone.trim();
+  if (patch.pilotKind !== undefined) {
+    if (!["pg", "ppg", "both"].includes(patch.pilotKind)) return { ok: false, error: "Loại phi công không hợp lệ" };
+    set.pilotKind = patch.pilotKind;
+  }
   if (patch.spots !== undefined) {
     const spots = normalizeSpotList(patch.spots);
     if (!spots.length) return { ok: false, error: "Phải chỉ định ít nhất một điểm bay" };
@@ -671,6 +677,7 @@ function toAccountDTO(doc: AccountDoc): BaobayAccountDTO {
     // Chỉ chảy ra API quản trị — mọi hàm dùng toAccountDTO đều nằm sau requireAuth admin.
     password: doc.passwordPlain || "",
     spots: normalizeSpotList(doc.spots).length ? normalizeSpotList(doc.spots) : [DEFAULT_SPOT],
+    pilotKind: doc.pilotKind === "ppg" ? "ppg" : doc.pilotKind === "both" ? "both" : "pg",
     isActive: doc.isActive !== false,
     mustChangePassword: Boolean(doc.mustChangePassword),
     lastLoginAt: doc.lastLoginAt ? new Date(doc.lastLoginAt).toISOString() : undefined,

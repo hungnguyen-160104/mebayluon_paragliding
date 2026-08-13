@@ -90,6 +90,8 @@ export type BaobayUserDTO = {
   role: BaobayRole;
   /** Điểm bay được chỉ định — trang nhập liệu cho chọn 1 trong số này. */
   spots: string[];
+  /** Loại phi công (pg/ppg/both) — trang phi công gate khối PPG theo đây. */
+  pilotKind?: "pg" | "ppg" | "both";
   mustChangePassword: boolean;
 };
 
@@ -565,6 +567,8 @@ export type BaobayAccountDTO = {
   password: string;
   /** Các điểm bay admin đã chỉ định cho người này. */
   spots: string[];
+  /** Loại phi công: pg / ppg / both — chỉ có nghĩa với role pilot. */
+  pilotKind: "pg" | "ppg" | "both";
   isActive: boolean;
   mustChangePassword: boolean;
   lastLoginAt?: string;

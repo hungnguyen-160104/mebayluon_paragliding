@@ -1084,6 +1084,19 @@ function AccountRow({
             </option>
           ))}
         </select>
+        {/* Phi công chia PG / PPG / cả hai — trang phi công chỉ hiện khối PPG cho người có PPG */}
+        {account.role === "pilot" && (
+          <select
+            value={account.pilotKind}
+            disabled={busy}
+            onChange={(e) => patch({ pilotKind: e.target.value })}
+            className="mt-1 block h-8 rounded border border-violet-300 bg-violet-50 px-2 text-xs text-violet-900"
+          >
+            <option value="pg">PG</option>
+            <option value="ppg">PPG</option>
+            <option value="both">PG & PPG</option>
+          </select>
+        )}
       </td>
       <td className="py-2 pr-3">
         {/* Điểm bay do admin chỉ định — tick nhiều điểm nếu người này làm nhiều nơi */}

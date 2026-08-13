@@ -354,6 +354,13 @@ export default function PilotReportPage() {
     form.expenses.reduce((s, e) => s + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
   const thuSum = form.expenses.reduce((s, e) => s + (e.kind === "thu" ? e.amount || 0 : 0), 0);
 
+  /**
+   * Loại phi công do quản trị gán: PG / PPG / cả hai. Khối PPG chỉ hiện cho
+   * người có PPG; người thuần PPG thì ẩn luôn khối chuyến PG cho gọn.
+   */
+  const flyPg = user.pilotKind !== "ppg";
+  const flyPpg = user.pilotKind === "ppg" || user.pilotKind === "both";
+
   return (
     <Shell
       user={user}
@@ -475,7 +482,9 @@ export default function PilotReportPage() {
           )}
         </div>
 
-        <Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
+        {/* Phi công thuần PPG không có chuyến PG — ẩn cả khối */}
+        {flyPg && (
+<Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
           <div className="space-y-3">
             <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
 
@@ -546,6 +555,7 @@ export default function PilotReportPage() {
             )}
           </div>
         </Card>
+        )}
 
         <Card
           title="Dịch vụ gia tăng (Add-on services)"
@@ -655,7 +665,7 @@ export default function PilotReportPage() {
         </CollapseCard>
 
         {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
-        {spot === "khau-pha" && (
+        {spot === "khau-pha" && flyPpg && (
         <Card
           title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
           hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"

@@ -46,6 +46,8 @@ export interface IBaobayAccount {
    * đúng điểm của ngày hôm đó.
    */
   spots: string[];
+  /** Loại phi công: PG / PPG / cả hai — chỉ dùng khi role = "pilot". */
+  pilotKind?: "pg" | "ppg" | "both";
   isActive: boolean;
   /** Số lần nhập sai mật khẩu LIÊN TIẾP; đăng nhập đúng là về 0. */
   failedLogins: number;
@@ -76,6 +78,7 @@ const BaobayAccountSchema = new Schema<IBaobayAccount>(
     email: { type: String, trim: true, lowercase: true },
     phone: { type: String, trim: true },
     spots: { type: [String], default: [DEFAULT_SPOT] },
+    pilotKind: { type: String, enum: ["pg", "ppg", "both"], default: "pg" },
     isActive: { type: Boolean, default: true, index: true },
     failedLogins: { type: Number, default: 0 },
     lockedUntil: Date,
