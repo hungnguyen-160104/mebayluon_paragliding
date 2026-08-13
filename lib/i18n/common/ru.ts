@@ -2,21 +2,22 @@ export type { CommonTranslation } from "./schema";
 import type { CommonTranslation } from "./schema";
 
 export const ru: CommonTranslation = {
+  // Nhãn menu để NGẮN cho thanh ngang khỏi tràn — tên đầy đủ vẫn dùng ở tiêu đề trang
   nav: {
     home: "Главная",
     about: "О нас",
-    spots: "Места полётов",
-    ppg: "Парамотор (PPG)",
+    spots: "Локации",
+    ppg: "Парамотор",
     pilots: "Пилоты",
     homestay: "Homestay & Café",
-    booking: "Забронировать полёт",
+    booking: "Бронирование",
     preNotice: "Перед полётом",
     contact: "Контакты",
     bookNow: "Забронировать",
     login: "Войти",
     blog: "Новости",
     store: "Магазин",
-    knowledge: "Обучение парапланеризму",
+    knowledge: "Обучение",
   },
 
   hero: {
