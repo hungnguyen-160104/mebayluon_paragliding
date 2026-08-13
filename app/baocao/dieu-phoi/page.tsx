@@ -430,27 +430,26 @@ export default function DispatcherReportPage() {
           onSpotChange={(v) => setSpot(v as never)}
         />
 
-        <CollapseCard title={noTickets ? "Tổng khách trong ngày" : "Tổng khách trong ngày & vé"}>
-          <div className={noTickets ? "grid gap-4" : "grid gap-4 sm:grid-cols-3"}>
-            {/* Ô quan trọng nhất của quầy — khung đỏ nổi bật, cụm đếm gọn */}
-            <div className="max-w-60 rounded-xl border-2 border-rose-400 bg-rose-50 p-2.5">
-              <div className="mb-1.5 text-xs font-bold text-rose-800">Tổng khách trong ngày</div>
-              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
-            </div>
-            {/* Hà Nội không xuất vé giấy — các ô vé không tồn tại ở điểm này */}
-            {!noTickets && (
-              <>
-                <Field label="Số vé xuất ra">
-                  <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-                </Field>
-                <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
-                  <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-                </Field>
-              </>
-            )}
+        {/* Ô quan trọng nhất của quầy — thanh ngang luôn mở: tiêu đề bên trái, cụm đếm bên phải */}
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
+          <span className="text-base font-bold text-rose-900">Tổng khách trong ngày</span>
+          <div className="ml-auto">
+            <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+          </div>
+        </div>
+
+        {/* Vé chỉ có ở điểm xuất vé giấy — vẫn gập cho gọn */}
+        {!noTickets && (
+        <CollapseCard title="Vé trong ngày" hint="vé xuất, vé thu về, dải mã">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Số vé xuất ra">
+              <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
+            </Field>
+            <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
+              <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+            </Field>
           </div>
 
-          {!noTickets && (
           <div className="mt-4">
             <Field
               label="Dải mã vé đã xuất"
@@ -460,7 +459,6 @@ export default function DispatcherReportPage() {
             </Field>
             <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
           </div>
-          )}
 
           {rangeMismatch && !locked && (
             <div className="mt-3">
@@ -480,6 +478,7 @@ export default function DispatcherReportPage() {
             </div>
           )}
         </CollapseCard>
+        )}
 
         <CollapseCard
           title="Dịch vụ gia tăng"
