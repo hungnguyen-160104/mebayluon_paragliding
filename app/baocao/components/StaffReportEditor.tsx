@@ -108,7 +108,7 @@ export function StaffReportEditor({
 
   return (
     <CollapseCard
-      title={`Báo cáo điều phối & camera man trong ngày (${dispatchers.length + cameramen.length})`}
+      title={`Báo cáo điều phối & camera man (${dispatchers.length + cameramen.length})`}
       hint="Nhân viên nhập — kế toán chỉ XÁC NHẬN. Sai ở đâu bấm Sửa: chỉnh được MỌI chi tiết (dải mã vé, thu chi, khách huỷ/dời, dịch vụ…) rồi lưu hộ; người chưa báo thì chọn thêm và nhập hộ."
     >
       {error && <Banner tone="error">{error}</Banner>}

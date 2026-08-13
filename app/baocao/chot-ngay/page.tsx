@@ -601,31 +601,44 @@ function DailyCloseInner() {
         </div>
       )}
 
-      {/* ==================== DESKTOP 2 CỘT CỐ ĐỊNH ====================
-          TRÁI: sổ của kế toán (số tổng, THU CHI, duyệt lệch, nút chốt)
-          PHẢI: báo cáo nhân viên để xác nhận/sửa + tiền bạc cá nhân
-          Điện thoại giữ một cột: báo cáo nhân viên lên trước như cũ. */}
-      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-      <div className="space-y-4 lg:order-2">
+      {/* ==================== BỐ CỤC HAI KHỔ ====================
+          DESKTOP: 2 cột cố định — TRÁI sổ kế toán (số tổng, THU CHI, duyệt lệch,
+          nút chốt) · PHẢI báo cáo nhân viên + tiền nong.
+
+          ĐIỆN THOẠI: một cột, nhưng thẻ xen kẽ giữa hai cột theo thứ tự làm việc
+          thật (số tổng → báo cáo phi công → báo cáo quầy → thu chi → tiền nong →
+          duyệt lệch → lệnh thu → ghi chú). Làm được nhờ `contents`: trên khổ hẹp
+          hai div cột (và cả <form>) biến mất khỏi bố cục nên các thẻ thành con
+          trực tiếp của lưới flex, xếp lại được bằng order-*. Lên lg thì hai div
+          trở lại thành cột như thường. */}
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+      <div className="contents lg:block lg:space-y-4 lg:order-2">
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
-      <PilotReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
-
-      {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
-      <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
-
-      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
-      <HandoverBox spot={spot} />
+      <div className="order-2 lg:order-none">
+        <PilotReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
       </div>
 
-      <div className="lg:order-1">
+      {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
+      <div className="order-3 lg:order-none">
+        <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
+      </div>
+
+      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
+      <div className="order-5 lg:order-none">
+        <HandoverBox spot={spot} />
+      </div>
+      </div>
+
+      <div className="contents lg:block lg:order-1">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           action("save");
         }}
-        className="space-y-4"
+        className="contents lg:block lg:space-y-4"
       >
         <CollapseCard
+          className="order-1 lg:order-none"
           title="Số tổng trong ngày"
         >
           {/* Nhân viên nhập, kế toán chỉ XÁC NHẬN: chép cả bảng rồi soát, sai chỗ nào sửa tay hoặc truy người nhập */}
@@ -833,7 +846,8 @@ function DailyCloseInner() {
         </CollapseCard>
 
         <CollapseCard
-          title="THU CHI — Tiền trong ngày"
+          className="order-4 lg:order-none"
+          title="THU CHI"
           hint="Trên: thu chi nhân viên khai — kế toán đọc rồi duyệt. Dưới: sổ của kế toán (nội dung – số tiền – TM/CK – Thu/Chi), tổng tiền mặt/CK tự cộng từ các dòng THU."
         >
           {/* ===== Thu chi nhân viên khai — kế toán chỉ duyệt và ghi chú ===== */}
@@ -1033,7 +1047,9 @@ function DailyCloseInner() {
         </CollapseCard>
 
         {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
-        <CollectCreate spot={spot} />
+        <div className="order-7 lg:order-none">
+          <CollectCreate spot={spot} />
+        </div>
 
         {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
 
@@ -1041,6 +1057,7 @@ function DailyCloseInner() {
 
         {/* Duyệt lệch: kế toán là người quyết định cuối cùng */}
         <CollapseCard
+          className="order-6 lg:order-none"
           title="Duyệt lệch số liệu"
           hint="Số kế toán khai lệch với số nhân viên báo (tiền, khách, vé, dịch vụ) mà đúng thực tế thì tick duyệt — ngày chốt theo SỐ CỦA KẾ TOÁN. Sai ở phía nhân viên thì sửa trực tiếp báo cáo của họ ở các khung bên dưới."
         >
@@ -1075,7 +1092,7 @@ function DailyCloseInner() {
           />
         </CollapseCard>
 
-        <CollapseCard title="Ghi chú">
+        <CollapseCard className="order-8 lg:order-none" title="Ghi chú">
           <TextArea
             value={form.note}
             onChange={(e) => set("note", e.target.value)}
@@ -1084,9 +1101,18 @@ function DailyCloseInner() {
           />
         </CollapseCard>
 
-        {error && <Banner tone="error">{error}</Banner>}
-        {message && <Banner tone="success" onClose={() => setMessage(null)}>{message}</Banner>}
+        {error && (
+          <div className="order-9 lg:order-none">
+            <Banner tone="error">{error}</Banner>
+          </div>
+        )}
+        {message && (
+          <div className="order-9 lg:order-none">
+            <Banner tone="success" onClose={() => setMessage(null)}>{message}</Banner>
+          </div>
+        )}
         {warnings.length > 0 && (
+          <div className="order-9 lg:order-none">
           <Banner tone="warning" onClose={() => setWarnings([])}>
             <ul className="list-inside list-disc space-y-0.5 text-xs">
               {warnings.map((w) => (
@@ -1094,15 +1120,18 @@ function DailyCloseInner() {
               ))}
             </ul>
           </Banner>
+          </div>
         )}
 
         {date > today && (
-          <Banner tone="info">
-            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch, đến ngày mới nhập báo cáo được.
-          </Banner>
+          <div className="order-9 lg:order-none">
+            <Banner tone="info">
+              📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch, đến ngày mới nhập báo cáo được.
+            </Banner>
+          </div>
         )}
         {date <= today && (
-        <div className="sticky bottom-3 z-10 flex gap-2">
+        <div className="sticky bottom-3 z-10 order-10 flex gap-2 lg:order-none">
           {locked ? (
             <Button
               type="button"

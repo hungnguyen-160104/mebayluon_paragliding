@@ -222,7 +222,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
   return (
     <CollapseCard
       className="border-teal-200 bg-teal-50/40"
-      title={`${t("Tiền bạc", "Money")}${inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}`}
+      title={`${t("Tiền nong", "Money")}${inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}`}
       hint={t("Máy tự cộng từ báo cáo của bạn", "auto-computed")}
     >
       {/* Có người giao tiền cho mình: việc cần bấm ngay, đặt trên cùng */}

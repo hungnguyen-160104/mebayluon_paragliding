@@ -75,7 +75,7 @@ export function PilotReportEditor({
 
   return (
     <CollapseCard
-      title={`Báo cáo phi công trong ngày (${reports.length})`}
+      title={`Báo cáo phi công (${reports.length})`}
       hint="Kế toán sửa trực tiếp được — lưu hộ đi cùng một đường kiểm tra với chính phi công. Phạt nộp muộn không bị tính lại khi sửa."
     >
       {error && <Banner tone="error">{error}</Banner>}
