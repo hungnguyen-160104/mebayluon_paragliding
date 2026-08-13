@@ -22,8 +22,13 @@ import {
   type RescheduleRow,
   toExpenseRows,
   ExpenseRows,
+  CancelGuestRows,
+  RescheduleGuestRows,
+  type CancelGuestRow,
+  type RescheduleGuestRow,
   type ExpenseRow,
 } from "../components/rows";
+import { DateBar } from "../components/DateBar";
 import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
@@ -31,17 +36,7 @@ import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import {
-  Banner,
-  Button,
-  Card,
-  CountInput,
-  Field,
-  MoneyInput,
-  Readout,
-  TextArea,
-  TextInput,
-} from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput, ServiceBox } from "../components/ui";
 
 /**
  * Kế toán tổng hợp chốt ngày.
@@ -72,6 +67,9 @@ type CloseSuggestion = {
   cashTotal: number;
   transferTotal: number;
   dispatcherSpend: number;
+  registeredGuests: number;
+  cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
   dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   dispatcherNames: string[];
   flycam: number;
@@ -91,7 +89,12 @@ type FormState = {
   rescheduledCount: number;
   issuedRanges: RangeRow[];
   cancelledCodesText: string;
+  cancelledNote: string;
   rescheduled: RescheduleRow[];
+  /** Hà Nội (không xuất vé): khách đăng ký + nhóm khách huỷ/dời. */
+  registeredGuests: number;
+  cancelledGuests: CancelGuestRow[];
+  rescheduledGuests: RescheduleGuestRow[];
   cashTotal: number;
   transferTotal: number;
   flycam: number;
@@ -114,7 +117,11 @@ const EMPTY_FORM: FormState = {
   rescheduledCount: 0,
   issuedRanges: [{ from: "", to: "" }],
   cancelledCodesText: "",
+  cancelledNote: "",
   rescheduled: [{ code: "", toDate: "", note: "" }],
+  registeredGuests: 0,
+  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
+  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "" }],
   cashTotal: 0,
   transferTotal: 0,
   flycam: 0,
@@ -169,13 +176,35 @@ function DailyCloseInner() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  /** Vừa lưu thành công và CHƯA sửa gì thêm — nút Lưu chuyển "✓ Đã lưu" cho tới khi sửa. */
+  const [savedClean, setSavedClean] = useState(false);
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setSavedClean(false);
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const locked = close?.status === "closed";
 
+  /** Hà Nội không xuất vé — form chốt chạy theo KHÁCH thay vì mã vé. */
+  const noTickets = spot === "ha-noi";
+  const cancelledGuestTotal = form.cancelledGuests.reduce((a, e) => a + (e.guests || 0), 0);
+  const rescheduledGuestTotal = form.rescheduledGuests.reduce((a, e) => a + (e.guests || 0), 0);
   const rangeTotal = useMemo(() => rangeRowsTotal(form.issuedRanges), [form.issuedRanges]);
+  /**
+   * Tổng tiền mặt / chuyển khoản KHÔNG nhập tay nữa — tự cộng từ các dòng THU
+   * trong sổ "Tiền trong ngày" theo tick TM/CK. Kế toán kê dòng nào thì tổng
+   * chạy theo dòng đó; CK cũng phải kê (tiền về tài khoản công ty vẫn là thu
+   * trong ngày của báo cáo).
+   */
+  const ledgerCash = useMemo(
+    () => form.ledger.reduce((a, e) => a + (e.kind === "thu" && e.method !== "transfer" ? e.amount || 0 : 0), 0),
+    [form.ledger],
+  );
+  const ledgerTransfer = useMemo(
+    () => form.ledger.reduce((a, e) => a + (e.kind === "thu" && e.method === "transfer" ? e.amount || 0 : 0), 0),
+    [form.ledger],
+  );
   const cancelled = useMemo(() => parseTicketCodeList(form.cancelledCodesText), [form.cancelledCodesText]);
   const rescheduledFilled = form.rescheduled.filter((r) => r.code.trim());
 
@@ -194,7 +223,15 @@ function DailyCloseInner() {
             rescheduledCount: res.close.rescheduledCount,
             issuedRanges: toRangeRows(res.close.issuedRanges),
             cancelledCodesText: res.close.cancelledCodes.join(", "),
+            cancelledNote: res.close.cancelledNote,
             rescheduled: toRescheduleRows(res.close.rescheduled),
+            registeredGuests: res.close.registeredGuests,
+            cancelledGuests: res.close.cancelledGuestEntries.length
+              ? res.close.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+              : EMPTY_FORM.cancelledGuests,
+            rescheduledGuests: res.close.rescheduledGuestEntries.length
+              ? res.close.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+              : EMPTY_FORM.rescheduledGuests,
             cashTotal: res.close.cashTotal,
             transferTotal: res.close.transferTotal,
             flycam: res.close.flycam,
@@ -219,6 +256,7 @@ function DailyCloseInner() {
       setError(null);
       setMessage(null);
       setWarnings([]);
+      setSavedClean(false);
       try {
         apply(
           await apiGet<{ close: DailyCloseDTO | null; reconcile: ReconcileDTO; suggest?: CloseSuggestion }>(
@@ -335,13 +373,18 @@ function DailyCloseInner() {
             action: "save",
             date,
             ...form,
+            cashTotal: ledgerCash,
+            transferTotal: ledgerTransfer,
             issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
             rescheduled: rescheduledFilled,
             ledger: form.ledger.filter((e) => e.content.trim() || e.amount),
+            cancelledGuestEntries: form.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
+            rescheduledGuestEntries: form.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
           },
         );
         apply(res);
         setWarnings(res.warnings || []);
+        setSavedClean(true);
         setMessage(`Đã lưu số chốt ngày ${formatDateKeyVN(date)} (chưa chốt).`);
         return;
       }
@@ -359,13 +402,18 @@ function DailyCloseInner() {
             action: "save",
             date,
             ...form,
+            cashTotal: ledgerCash,
+            transferTotal: ledgerTransfer,
             issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
             rescheduled: rescheduledFilled,
             ledger: form.ledger.filter((e) => e.content.trim() || e.amount),
+            cancelledGuestEntries: form.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
+            rescheduledGuestEntries: form.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
           },
         );
         apply(saved);
         setWarnings(saved.warnings || []);
+        setSavedClean(true);
         if (!saved.reconcile.canClose) {
           const reds = saved.reconcile.issues.filter((i) => i.severity === "red");
           setError(
@@ -406,6 +454,15 @@ function DailyCloseInner() {
   const t = check?.totals;
   const reds = (check?.issues || []).filter((i) => i.severity === "red");
   const warns = (check?.issues || []).filter((i) => i.severity === "warn");
+  /** Thu chi NHÂN VIÊN khai (sổ của kế toán sửa ngay bên dưới nên không lặp lại ở danh sách này). */
+  const staffLines = (check?.expenseLines || []).filter((e) => e.role !== "accountant");
+  const staffThu = staffLines.reduce((a, e) => a + (e.kind === "thu" ? e.amount : 0), 0);
+  const staffChi = staffLines.reduce((a, e) => a + (e.kind !== "thu" ? e.amount : 0), 0);
+  /** Riêng tiền phi công cầm hộ/thu tại bãi — hiện cạnh tổng thu để kế toán soát. */
+  const staffPilotThu = staffLines.reduce(
+    (a, e) => a + (e.role === "pilot" && e.kind === "thu" ? e.amount : 0),
+    0,
+  );
 
   return (
     <Shell
@@ -415,21 +472,17 @@ function DailyCloseInner() {
     >
       <SpotSwitcher spot={spot} options={spotOptions} onChange={setSpot} />
 
-      <Card title="Ngày chốt">
-        <Field label="Chọn ngày" hint={`Đang xem: ${formatDateKeyVN(date)}`}>
-          <TextInput
-            type="date"
-            value={date}
-            max={today}
-            min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-          />
-        </Field>
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+      />
 
-        {loadingDay && <p className="mt-2 text-xs text-slate-500">Đang tải…</p>}
-
+      <div>
         {!loadingDay && (
-          <div className="mt-3">
+          <div className="mt-1">
             {locked ? (
               <Banner tone="success">
                 <strong>{close?.closedBy ? `${close.closedBy} đã chốt` : "Ngày này đã chốt"}</strong>
@@ -446,7 +499,7 @@ function DailyCloseInner() {
             )}
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Danh sách lỗi: thứ kế toán cần đọc trước khi làm gì */}
       {(reds.length > 0 || warns.length > 0) && (
@@ -519,65 +572,91 @@ function DailyCloseInner() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+              {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (mỗi chuyến 1 khách) */}
               <Compare label="điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
+                onTake={locked ? undefined : (v) => set("guestCount", v)} />
+              <Compare label="phi công báo" value={t?.pilotFlights} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
             </Field>
 
-            <Field label="Số vé được xuất ra">
-              <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-              <Compare label="điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
-                onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
-            </Field>
+            {noTickets ? (
+              /* Hà Nội không xuất vé — theo dõi KHÁCH: đăng ký (từ sổ booking), huỷ, dời */
+              <>
+                <Field label="Số khách đăng ký">
+                  <CountInput value={form.registeredGuests} onChange={(v) => set("registeredGuests", v)} max={5000} />
+                  <Compare label="sổ booking" value={suggest?.registeredGuests} mine={form.registeredGuests}
+                    onTake={locked ? undefined : (v) => set("registeredGuests", v)} />
+                </Field>
+                <Field label="Số khách huỷ">
+                  <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
+                  <Compare label="đếm theo danh sách khách huỷ" value={cancelledGuestTotal} mine={form.cancelledCount}
+                    onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
+                </Field>
+                <Field label="Số khách dời">
+                  <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
+                  <Compare label="đếm theo danh sách khách dời" value={rescheduledGuestTotal} mine={form.rescheduledCount}
+                    onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
+                </Field>
+              </>
+            ) : (
+              <>
+                <Field label="Số vé được xuất ra">
+                  <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
+                  <Compare label="điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
+                    onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
+                </Field>
 
-            <Field label="Số vé thu hồi (huỷ + dời)">
-              <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-              <Compare label="điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
-                onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
-            </Field>
+                <Field label="Số vé thu hồi (huỷ + dời)">
+                  <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+                  <Compare label="điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
+                    onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
+                </Field>
 
-            <Field label="Trong đó: vé huỷ hoàn tiền">
-              <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
-              <Compare label="đếm theo mã đã liệt kê" value={cancelled.codes.length} mine={form.cancelledCount}
-                onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
-            </Field>
+                <Field label="Trong đó: vé huỷ hoàn tiền">
+                  <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
+                  <Compare label="đếm theo mã đã liệt kê" value={cancelled.codes.length} mine={form.cancelledCount}
+                    onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
+                </Field>
 
-            <Field label="Trong đó: vé dời lịch">
-              <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-              <Compare label="đếm theo mã đã liệt kê" value={rescheduledFilled.length} mine={form.rescheduledCount}
-                onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
-            </Field>
+                <Field label="Trong đó: vé dời lịch">
+                  <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
+                  <Compare label="đếm theo mã đã liệt kê" value={rescheduledFilled.length} mine={form.rescheduledCount}
+                    onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
+                </Field>
+              </>
+            )}
           </div>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            {/* Mỗi dịch vụ hiện CẢ HAI nguồn — kế toán chấp nhận nguồn nào thì bấm nguồn đó */}
-            <Field label="Số lượng flycam">
-              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
+          {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ServiceBox tone="flycam" label="Flycam">
+              <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
               <Compare label="điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
-            </Field>
-            <Field label="Số lượng Camera 360">
-              <CountInput value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="video360" label="Camera 360">
+              <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilot360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
               <Compare label="điều phối báo" value={t?.dispatcher360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
-            </Field>
-            <Field label="Số lượng dù cờ đỏ">
-              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label="Dù cờ đỏ">
+              <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
               <Compare label="điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
-            </Field>
-            <Field label="Số lượng bay kéo cờ">
-              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ">
+              <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
               <Compare label="điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
-            </Field>
+            </ServiceBox>
           </div>
 
           {/* Hai nguồn lệch mà chưa rõ ai đúng: gửi lệnh cho đúng các vai trò soát lại */}
@@ -634,6 +713,7 @@ function DailyCloseInner() {
             </div>
           )}
 
+          {!noTickets && (
           <div className="mt-4">
             <Readout
               label={
@@ -653,12 +733,66 @@ function DailyCloseInner() {
               }
             />
           </div>
+          )}
         </Card>
 
         <Card
           title="Tiền trong ngày"
-          hint="Sổ thu/chi của kế toán: nội dung – số tiền – Tiền mặt/CK – Thu/Chi. Bấm + để thêm dòng, hoặc lấy nguyên bộ từ báo cáo điều phối."
+          hint="Trên: thu chi nhân viên khai — kế toán đọc rồi duyệt. Dưới: sổ của kế toán (nội dung – số tiền – TM/CK – Thu/Chi), tổng tiền mặt/CK tự cộng từ các dòng THU."
         >
+          {/* ===== Thu chi nhân viên khai — kế toán chỉ duyệt và ghi chú ===== */}
+          <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <span className="text-sm font-bold text-slate-900">Thu chi nhân viên khai</span>
+              <span className="text-xs text-slate-600">
+                thu <strong className="text-emerald-700">{formatVND(staffThu)}</strong> · chi{" "}
+                <strong className="text-rose-700">{formatVND(staffChi)}</strong>
+              </span>
+            </div>
+            {staffLines.length > 0 ? (
+              <ul className="mb-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                {staffLines.map((e, k) => (
+                  <li key={k} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm">
+                    <span className="text-xs text-slate-500">
+                      {e.who} · {ROLE_LABEL[e.role]}
+                    </span>
+                    <span className="flex-1 text-slate-900">{e.content}</span>
+                    {e.note && <span className="text-xs text-slate-500">{e.note}</span>}
+                    <span
+                      className={
+                        "font-semibold tabular-nums " + (e.kind === "thu" ? "text-emerald-700" : "text-rose-700")
+                      }
+                    >
+                      {e.kind === "thu" ? "+" : "−"}
+                      {formatVND(e.amount)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-3 text-sm text-slate-500">Hôm nay nhân viên chưa khai khoản thu chi nào.</p>
+            )}
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={form.expensesApproved}
+                onChange={(e) => set("expensesApproved", e.target.checked)}
+                disabled={locked}
+                className="mt-1 h-5 w-5 rounded border-slate-300"
+              />
+              <span className="text-sm text-slate-800">
+                <strong>Tôi đã đọc và xác nhận các khoản thu chi trên.</strong>
+              </span>
+            </label>
+            <TextInput
+              value={form.expensesApprovedNote}
+              onChange={(e) => set("expensesApprovedNote", e.target.value)}
+              placeholder="Ghi chú duyệt (không bắt buộc)"
+              className="mt-2"
+              disabled={locked}
+            />
+          </div>
+
           {/* Từ dưới đẩy lên: điều phối báo gì, kế toán nhận nguyên bộ từng dòng
               (thu đúng tiền mặt/CK, chi hộ khách) rồi sửa tay nếu cần */}
           {suggest?.dispatcher.hasData && suggest.dispatcherLedger.length > 0 && !locked && (
@@ -685,8 +819,33 @@ function DailyCloseInner() {
           )}
 
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind withMethod />
+
+          {/* ===== Tổng tự cộng từ các dòng THU của sổ — so ngay với số nhân viên báo ===== */}
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div>
+              <Readout
+                label="Tổng tiền mặt thu về (tự cộng)"
+                value={formatVND(ledgerCash)}
+                tone={t && ledgerCash !== t.dispatcherCash ? "warning" : "normal"}
+              />
+              <Compare label="điều phối báo" value={t?.dispatcherCash} mine={ledgerCash} money />
+            </div>
+            <div>
+              <Readout
+                label="Tổng chuyển khoản (tự cộng)"
+                value={formatVND(ledgerTransfer)}
+                tone={t && ledgerTransfer !== t.dispatcherTransfer ? "warning" : "normal"}
+              />
+              <Compare label="điều phối báo" value={t?.dispatcherTransfer} mine={ledgerTransfer} money />
+            </div>
+            <div>
+              <Readout label="Tổng thu trong ngày" value={formatVND(ledgerCash + ledgerTransfer)} />
+              <Compare label="phi công báo (thu tại bãi)" value={staffPilotThu} mine={staffPilotThu} money />
+            </div>
+          </div>
         </Card>
 
+        {!noTickets && (
         <Card title="Mã vé đã xuất" hint="Vé năm nay là MBLxxxx — gõ tắt số cũng được. Nhiều cuốn thì thêm dòng">
           <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
           {suggest && suggest.issuedRanges.length > 0 && !locked && (
@@ -703,8 +862,62 @@ function DailyCloseInner() {
             />
           </div>
         </Card>
+        )}
 
-        <Card title="Vé huỷ và vé dời lịch">
+        <Card title={noTickets ? "Khách huỷ và dời lịch" : "Vé huỷ và vé dời lịch"}>
+          {noTickets ? (
+            /* Hà Nội không xuất vé: theo dõi theo KHÁCH — tên, mã book, số khách, nguồn, tiền hoàn */
+            <>
+              <Field label="Khách huỷ hoàn tiền">
+                <div />
+              </Field>
+              {/* Điều phối đã nhập ở dưới — kế toán chỉ XÁC NHẬN, sai thì sửa tay từng ô */}
+              {suggest && suggest.cancelledGuestEntries.length > 0 && !locked && (
+                <div className="mb-2">
+                  <CopyLine
+                    label={`${reporterNames} báo ${suggest.cancelledGuestEntries.length} nhóm khách huỷ · ${suggest.cancelledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách · hoàn ${formatVND(suggest.cancelledGuestEntries.reduce((a, e) => a + e.refund, 0))}`}
+                    action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
+                    onCopy={() => {
+                      const rows = suggest.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }));
+                      set("cancelledGuests", rows);
+                      set("cancelledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
+                    }}
+                  />
+                </div>
+              )}
+              <CancelGuestRows
+                rows={form.cancelledGuests}
+                onChange={(rows) => set("cancelledGuests", rows)}
+                disabled={locked}
+              />
+
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <Field label="Khách dời lịch" hint="Dời sang ngày nào ghi rõ — booking của ngày đó sẽ thấy khách này">
+                  <div />
+                </Field>
+                {suggest && suggest.rescheduledGuestEntries.length > 0 && !locked && (
+                  <div className="mb-2">
+                    <CopyLine
+                      label={`${reporterNames} báo ${suggest.rescheduledGuestEntries.length} nhóm khách dời · ${suggest.rescheduledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách`}
+                      action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
+                      onCopy={() => {
+                        const rows = suggest.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }));
+                        set("rescheduledGuests", rows);
+                        set("rescheduledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
+                      }}
+                    />
+                  </div>
+                )}
+                <RescheduleGuestRows
+                  rows={form.rescheduledGuests}
+                  onChange={(rows) => set("rescheduledGuests", rows)}
+                  minDate={shiftDateKey(date, 1)}
+                  disabled={locked}
+                />
+              </div>
+            </>
+          ) : (
+            <>
           <Field label="Mã vé huỷ hoàn tiền" hint={TICKET_CODE_HINT}>
             <TextArea
               value={form.cancelledCodesText}
@@ -722,6 +935,13 @@ function DailyCloseInner() {
                 onCopy={() => set("cancelledCodesText", suggest.cancelledCodesText)}
               />
             )}
+            <TextInput
+              value={form.cancelledNote}
+              onChange={(e) => set("cancelledNote", e.target.value)}
+              placeholder="Ghi chú vé huỷ · VD: khách ốm, hoàn 100% qua CK ngày mai"
+              className="mt-2"
+              disabled={locked}
+            />
           </Field>
 
           <div className="mt-4 border-t border-slate-100 pt-4">
@@ -741,67 +961,8 @@ function DailyCloseInner() {
               />
             )}
           </div>
-        </Card>
-
-        <Card title="Tiền trong ngày">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Tổng tiền mặt thu về">
-              <MoneyInput value={form.cashTotal} onChange={(v) => set("cashTotal", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherCash} mine={form.cashTotal} money
-                onTake={locked ? undefined : (v) => set("cashTotal", v)} />
-            </Field>
-            <Field label="Tổng chuyển khoản">
-              <MoneyInput value={form.transferTotal} onChange={(v) => set("transferTotal", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherTransfer} mine={form.transferTotal} money
-                onTake={locked ? undefined : (v) => set("transferTotal", v)} />
-            </Field>
-          </div>
-          <div className="mt-3">
-            <Readout label="Tổng thu" value={formatVND(form.cashTotal + form.transferTotal)} />
-          </div>
-        </Card>
-
-        {/* Xác nhận chi tiêu — liệt kê từng khoản để kế toán đọc rồi tick */}
-        <Card
-          title={`Chi tiêu nhân viên khai · ${formatVND(check?.expenseTotal ?? 0)}`}
-          hint="Kế toán đọc từng khoản rồi xác nhận. Có chi tiêu mà chưa xác nhận thì chưa chốt được ngày."
-        >
-          {check && check.expenseLines.length > 0 ? (
-            <ul className="mb-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
-              {check.expenseLines.map((e, k) => (
-                <li key={k} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm">
-                  <span className="text-xs text-slate-500">
-                    {e.who} · {ROLE_LABEL[e.role]}
-                  </span>
-                  <span className="flex-1 text-slate-900">{e.content}</span>
-                  {e.note && <span className="text-xs text-slate-500">{e.note}</span>}
-                  <span className="font-semibold tabular-nums text-slate-900">{formatVND(e.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mb-4 text-sm text-slate-500">Hôm nay không có khoản chi nào.</p>
+            </>
           )}
-
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={form.expensesApproved}
-              onChange={(e) => set("expensesApproved", e.target.checked)}
-              disabled={locked}
-              className="mt-1 h-5 w-5 rounded border-slate-300"
-            />
-            <span className="text-sm text-slate-800">
-              <strong>Tôi đã đọc và xác nhận các khoản chi trên.</strong>
-            </span>
-          </label>
-          <TextInput
-            value={form.expensesApprovedNote}
-            onChange={(e) => set("expensesApprovedNote", e.target.value)}
-            placeholder="Ghi chú duyệt chi (không bắt buộc)"
-            className="mt-2"
-            disabled={locked}
-          />
         </Card>
 
         {/* Duyệt lệch: kế toán là người quyết định cuối cùng */}
@@ -878,9 +1039,9 @@ function DailyCloseInner() {
                 type="submit"
                 variant="ghost"
                 className="flex-1 bg-white shadow-lg"
-                disabled={busy !== null || loadingDay}
+                disabled={busy !== null || loadingDay || savedClean}
               >
-                {busy === "save" ? "Đang lưu…" : "Lưu số (chưa chốt)"}
+                {busy === "save" ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu số (chưa chốt)"}
               </Button>
               <Button
                 type="button"

@@ -35,6 +35,12 @@ export function StaffReportEditor({
 }) {
   const [dispatchers, setDispatchers] = useState<DispatcherReportDTO[]>([]);
   const [cameramen, setCameramen] = useState<CameramanReportDTO[]>([]);
+  type StaffLite = { username: string; name: string };
+  const [dispatcherStaff, setDispatcherStaff] = useState<StaffLite[]>([]);
+  const [cameramanStaff, setCameramanStaff] = useState<StaffLite[]>([]);
+  /** Người CHƯA báo cáo được kế toán thêm tay để nhập hộ. */
+  const [addedDp, setAddedDp] = useState<string[]>([]);
+  const [addedCm, setAddedCm] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [reloadTick, setReloadTick] = useState(0);
@@ -43,13 +49,17 @@ export function StaffReportEditor({
   useEffect(() => {
     let alive = true;
     Promise.all([
-      apiGet<{ reports: DispatcherReportDTO[] }>(`/api/baocao/reports/dispatcher?date=${date}&all=1&spot=${spot}`),
-      apiGet<{ reports: CameramanReportDTO[] }>(`/api/baocao/reports/cameraman?date=${date}&all=1&spot=${spot}`),
+      apiGet<{ reports: DispatcherReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/dispatcher?date=${date}&all=1&spot=${spot}`),
+      apiGet<{ reports: CameramanReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/cameraman?date=${date}&all=1&spot=${spot}`),
     ])
       .then(([d, c]) => {
         if (!alive) return;
         setDispatchers(d.reports);
         setCameramen(c.reports);
+        setDispatcherStaff(d.staff ?? []);
+        setCameramanStaff(c.staff ?? []);
+        setAddedDp((prev) => prev.filter((u) => !d.reports.some((r) => r.username === u)));
+        setAddedCm((prev) => prev.filter((u) => !c.reports.some((r) => r.username === u)));
         setError(null);
       })
       .catch((err: unknown) => {
@@ -60,25 +70,162 @@ export function StaffReportEditor({
     };
   }, [date, spot, reloadTick]);
 
-  if (!dispatchers.length && !cameramen.length) return null;
+  const missingDp = dispatcherStaff.filter(
+    (a) => !dispatchers.some((r) => r.username === a.username) && !addedDp.includes(a.username),
+  );
+  const missingCm = cameramanStaff.filter(
+    (a) => !cameramen.some((r) => r.username === a.username) && !addedCm.includes(a.username),
+  );
+  const dpRows: DispatcherReportDTO[] = [
+    ...dispatchers,
+    ...addedDp
+      .map((u) => dispatcherStaff.find((a) => a.username === u))
+      .filter(Boolean)
+      .map((a) => blankDispatcherReport(a!.username, a!.name, date)),
+  ];
+  const cmRows: CameramanReportDTO[] = [
+    ...cameramen,
+    ...addedCm
+      .map((u) => cameramanStaff.find((a) => a.username === u))
+      .filter(Boolean)
+      .map((a) => blankCameramanReport(a!.username, a!.name, date)),
+  ];
+
+  if (!dpRows.length && !cmRows.length && !missingDp.length && !missingCm.length) return null;
 
   return (
     <Card
       title={`Báo cáo điều phối & camera man trong ngày (${dispatchers.length + cameramen.length})`}
-      hint="Kế toán sửa trực tiếp các ô số — nhóm vé huỷ/dời lịch (có mã và lý do) vẫn nhờ chính điều phối sửa trên trang của họ."
+      hint="Kế toán sửa trực tiếp các ô số; người chưa báo cáo thì chọn thêm rồi nhập hộ. Nhóm vé huỷ/dời lịch (có mã và lý do) vẫn nhờ chính điều phối sửa trên trang của họ."
     >
       {error && <Banner tone="error">{error}</Banner>}
 
       <ul className="divide-y divide-slate-100">
-        {dispatchers.map((r) => (
-          <DispatcherRow key={r.id} report={r} spot={spot} date={date} locked={locked} onSaved={() => { load(); onSaved(); }} />
+        {dpRows.map((r) => (
+          <DispatcherRow key={r.username} report={r} spot={spot} date={date} locked={locked} fresh={addedDp.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
         ))}
-        {cameramen.map((r) => (
-          <CameramanRow key={r.id} report={r} spot={spot} date={date} locked={locked} onSaved={() => { load(); onSaved(); }} />
+        {cmRows.map((r) => (
+          <CameramanRow key={r.username} report={r} spot={spot} date={date} locked={locked} fresh={addedCm.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
         ))}
       </ul>
+
+      {!locked && (missingDp.length > 0 || missingCm.length > 0) && (
+        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          {missingDp.length > 0 && (
+            <StaffPicker label="điều phối" options={missingDp} onAdd={(u) => setAddedDp((prev) => [...prev, u])} />
+          )}
+          {missingCm.length > 0 && (
+            <StaffPicker label="camera man" options={missingCm} onAdd={(u) => setAddedCm((prev) => [...prev, u])} />
+          )}
+        </div>
+      )}
     </Card>
   );
+}
+
+/** Ô chọn người CHƯA báo cáo + nút thêm — dùng chung cho điều phối và camera man. */
+function StaffPicker({
+  label,
+  options,
+  onAdd,
+}: {
+  label: string;
+  options: Array<{ username: string; name: string }>;
+  onAdd: (username: string) => void;
+}) {
+  const [pick, setPick] = useState("");
+  return (
+    <div className="flex gap-2">
+      <select
+        value={pick}
+        onChange={(e) => setPick(e.target.value)}
+        className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
+      >
+        <option value="">— chọn {label} chưa báo cáo ({options.length}) —</option>
+        {options.map((a) => (
+          <option key={a.username} value={a.username}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-11 px-4 text-xs"
+        disabled={!pick}
+        onClick={() => {
+          onAdd(pick);
+          setPick("");
+        }}
+      >
+        ＋ Thêm & nhập hộ
+      </Button>
+    </div>
+  );
+}
+
+/** Bản trắng cho điều phối chưa báo cáo — kế toán điền số rồi lưu là tạo báo cáo thật. */
+function blankDispatcherReport(username: string, staffName: string, date: string): DispatcherReportDTO {
+  return {
+    id: `new-${username}`,
+    date,
+    username,
+    staffName,
+    guestCount: 0,
+    ticketsIssued: 0,
+    ticketsReturned: 0,
+    issuedRanges: [],
+    cancelledCount: 0,
+    cancelledCodes: [],
+    cancelledEntries: [],
+    cancelledGuestEntries: [],
+    rescheduledGuestEntries: [],
+    rescheduledCount: 0,
+    rescheduled: [],
+    rescheduledEntries: [],
+    diplomaticEntries: [],
+    diplomaticAmount: 0,
+    flycam: 0,
+    flycamCodes: [],
+    video360: 0,
+    video360ServiceCodes: [],
+    redFlag: 0,
+    redFlagCodes: [],
+    flagFlight: 0,
+    flagFlightCodes: [],
+    diplomaticGuests: 0,
+    diplomaticCodes: [],
+    cashReceived: 0,
+    transferReceived: 0,
+    revenueEntries: [],
+    guestWaterCost: 0,
+    mountainCarCost: 0,
+    shuttleCarCost: 0,
+    expenses: [],
+    note: "",
+    submitted: false,
+    sheetSynced: false,
+    updatedAt: "",
+  } as unknown as DispatcherReportDTO;
+}
+
+/** Bản trắng cho camera man chưa báo cáo. */
+function blankCameramanReport(username: string, cameramanName: string, date: string): CameramanReportDTO {
+  return {
+    id: `new-${username}`,
+    date,
+    username,
+    cameramanName,
+    flycamFlights: 0,
+    flycamCodes: [],
+    paraglidingFlights: 0,
+    paraglidingCodes: [],
+    expenses: [],
+    note: "",
+    submitted: false,
+    sheetSynced: false,
+    updatedAt: "",
+  } as unknown as CameramanReportDTO;
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,21 +236,27 @@ function DispatcherRow({
   date,
   locked,
   onSaved,
+  fresh,
 }: {
   report: DispatcherReportDTO;
   spot: string;
   date: string;
   locked: boolean;
   onSaved: () => void;
+  /** true = dòng kế toán vừa thêm tay — mở sẵn form nhập. */
+  fresh?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(fresh));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [form, setForm] = useState(() => dispatcherForm(report));
+  const [savedClean, setSavedClean] = useState(false);
 
-  const set = <K extends keyof ReturnType<typeof dispatcherForm>>(key: K, value: number) =>
+  const set = <K extends keyof ReturnType<typeof dispatcherForm>>(key: K, value: number) => {
+    setSavedClean(false);
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   async function save() {
     setSaving(true);
@@ -126,6 +279,7 @@ function DispatcherRow({
             codesText: e.codes.join(" "),
             reason: e.reason,
             contactName: e.contactName,
+            note: e.note || "",
           })),
           rescheduledEntries: report.rescheduledEntries.map((e) => ({
             codesText: e.codes.join(" "),
@@ -133,7 +287,10 @@ function DispatcherRow({
             reason: e.reason,
             contactName: e.contactName,
             phone: e.phone,
+            note: e.note || "",
           })),
+          cancelledGuestEntries: report.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" })),
+          rescheduledGuestEntries: report.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" })),
           diplomaticEntries: report.diplomaticEntries.map((e) => ({
             codesText: e.codes.join(" "),
             amount: e.amount,
@@ -156,6 +313,7 @@ function DispatcherRow({
       );
       setWarnings(res.warnings || []);
       setForm(dispatcherForm(res.report));
+      setSavedClean(true);
       onSaved();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không lưu được");
@@ -189,12 +347,17 @@ function DispatcherRow({
             <Field label="Số khách">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
             </Field>
-            <Field label="Vé xuất ra">
-              <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-            </Field>
-            <Field label="Vé thu về">
-              <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-            </Field>
+            {/* Hà Nội không xuất vé giấy — hai ô vé không áp dụng */}
+            {spot !== "ha-noi" && (
+              <>
+                <Field label="Vé xuất ra">
+                  <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
+                </Field>
+                <Field label="Vé thu về">
+                  <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+                </Field>
+              </>
+            )}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Tiền mặt (tổng)">
@@ -241,8 +404,9 @@ function DispatcherRow({
             </Banner>
           )}
 
-          <Button type="button" className="h-10 w-full text-xs" disabled={saving} onClick={save}>
-            {saving ? "Đang lưu…" : "Lưu hộ điều phối"}
+          {savedClean && <Banner tone="success">✓ Đã lưu thành công — sửa ô nào thì nút lưu bật lại.</Banner>}
+          <Button type="button" className="h-10 w-full text-xs" disabled={saving || savedClean} onClick={save}>
+            {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu hộ điều phối"}
           </Button>
         </div>
       )}
@@ -275,18 +439,23 @@ function CameramanRow({
   date,
   locked,
   onSaved,
+  fresh,
 }: {
   report: CameramanReportDTO;
   spot: string;
   date: string;
   locked: boolean;
   onSaved: () => void;
+  fresh?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(fresh));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [flycam, setFlycam] = useState(report.flycamFlights);
-  const [paragliding, setParagliding] = useState(report.paraglidingFlights);
+  const [flycam, setFlycamRaw] = useState(report.flycamFlights);
+  const [paragliding, setParaglidingRaw] = useState(report.paraglidingFlights);
+  const [savedClean, setSavedClean] = useState(false);
+  const setFlycam = (v: number) => { setSavedClean(false); setFlycamRaw(v); };
+  const setParagliding = (v: number) => { setSavedClean(false); setParaglidingRaw(v); };
 
   async function save() {
     setSaving(true);
@@ -303,8 +472,9 @@ function CameramanRow({
         note: report.note,
         submit: report.submitted,
       });
-      setFlycam(res.report.flycamFlights);
-      setParagliding(res.report.paraglidingFlights);
+      setFlycamRaw(res.report.flycamFlights);
+      setParaglidingRaw(res.report.paraglidingFlights);
+      setSavedClean(true);
       onSaved();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không lưu được");
@@ -342,8 +512,9 @@ function CameramanRow({
             </Field>
           </div>
           {error && <Banner tone="error">{error}</Banner>}
-          <Button type="button" className="h-10 w-full text-xs" disabled={saving} onClick={save}>
-            {saving ? "Đang lưu…" : "Lưu hộ camera man"}
+          {savedClean && <Banner tone="success">✓ Đã lưu thành công — sửa ô nào thì nút lưu bật lại.</Banner>}
+          <Button type="button" className="h-10 w-full text-xs" disabled={saving || savedClean} onClick={save}>
+            {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu hộ camera man"}
           </Button>
         </div>
       )}

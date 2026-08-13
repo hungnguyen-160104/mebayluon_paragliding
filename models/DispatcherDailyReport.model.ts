@@ -50,6 +50,8 @@ export interface IDispatcherDailyReport {
   cancelledCodes: string[];
   /** Bản chi tiết theo nhóm đoàn: mã – lý do – tên liên hệ. */
   cancelledEntries: CancelEntryDTO[];
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string }>;
   rescheduledCount: number;
   /** Bản phẳng {code, toDate} — bộ đối chiếu dùng bản này. */
   rescheduled: RescheduledDTO[];
@@ -144,6 +146,7 @@ const CancelEntrySchema = new Schema<CancelEntryDTO>(
     codes: { type: [String], default: [] },
     reason: { type: String, default: "" },
     contactName: { type: String, default: "" },
+    note: { type: String, default: "" },
   },
   { _id: false },
 );
@@ -155,6 +158,30 @@ const RescheduleEntrySchema = new Schema<RescheduleEntryDTO>(
     reason: { type: String, default: "" },
     contactName: { type: String, default: "" },
     phone: { type: String, default: "" },
+    note: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
+/** HÀ NỘI: nhóm KHÁCH huỷ hoàn tiền / dời lịch — điểm này không có vé. */
+const CancelGuestSchema = new Schema(
+  {
+    name: { type: String, default: "" },
+    bookingCode: { type: String, default: "" },
+    guests: { type: Number, default: 0, min: 0 },
+    source: { type: String, default: "" },
+    refund: { type: Number, default: 0, min: 0 },
+    note: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
+const RescheduleGuestSchema = new Schema(
+  {
+    name: { type: String, default: "" },
+    guests: { type: Number, default: 0, min: 0 },
+    toDate: { type: String, default: "" },
+    note: { type: String, default: "" },
   },
   { _id: false },
 );
@@ -185,6 +212,8 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
     cancelledCount: { type: Number, default: 0, min: 0 },
     cancelledCodes: { type: [String], default: [] },
     cancelledEntries: { type: [CancelEntrySchema], default: [] },
+    cancelledGuestEntries: { type: [CancelGuestSchema], default: [] },
+    rescheduledGuestEntries: { type: [RescheduleGuestSchema], default: [] },
     rescheduledCount: { type: Number, default: 0, min: 0 },
     rescheduled: { type: [RescheduledSchema], default: [] },
     rescheduledEntries: { type: [RescheduleEntrySchema], default: [] },

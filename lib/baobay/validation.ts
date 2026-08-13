@@ -86,11 +86,41 @@ const expenseInput = z.object({
   note: text(500),
 });
 
+/** HÀ NỘI: nhóm KHÁCH huỷ hoàn tiền — tên, mã book, số khách, nguồn, tiền hoàn, ghi chú. */
+const cancelledGuestList = z
+  .array(
+    z.object({
+      name: text(200),
+      bookingCode: text(100),
+      guests: count(100),
+      source: text(200),
+      refund: money,
+      note: text(500),
+    }),
+  )
+  .max(200)
+  .default([]);
+
+/** HÀ NỘI: nhóm KHÁCH dời lịch — tên, số lượng, ngày dời, ghi chú. */
+const rescheduledGuestList = z
+  .array(
+    z.object({
+      name: text(200),
+      guests: count(100),
+      toDate: z.string().refine((v) => v === "" || isDateKey(v), "Ngày dời tới không hợp lệ"),
+      note: text(500),
+    }),
+  )
+  .max(200)
+  .default([]);
+
 /** Vé huỷ theo nhóm đoàn: nhiều mã một ô – lý do – tên liên hệ. */
 const cancelEntryInput = z.object({
   codesText: text(2_000),
   reason: text(200),
   contactName: text(200),
+  /** Điểm không xuất vé (Hà Nội): ghi chú nhóm khách thay ô mã. */
+  note: text(500),
 });
 
 /** Vé dời lịch theo nhóm: nhiều mã một ô – ngày dời – lý do – liên hệ – sđt. */
@@ -100,6 +130,7 @@ const rescheduleEntryInput = z.object({
   reason: text(200),
   contactName: text(200),
   phone: text(50),
+  note: text(500),
 });
 
 /** Khách ngoại giao: mã vé – số tiền thu (nếu có). */
@@ -161,6 +192,8 @@ export const dispatcherReportSchema = z.object({
   ticketsReturned: count(5_000),
   issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
   cancelledEntries: z.array(cancelEntryInput).max(200).default([]),
+  cancelledGuestEntries: cancelledGuestList,
+  rescheduledGuestEntries: rescheduledGuestList,
   rescheduledEntries: z.array(rescheduleEntryInput).max(200).default([]),
   diplomaticEntries: z.array(diploEntryInput).max(200).default([]),
   flycam: count(1_000),
@@ -209,7 +242,12 @@ export const dailyCloseSchema = z.object({
   rescheduledCount: count(5_000),
   issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
   cancelledCodesText: text(20_000),
+  cancelledNote: text(2_000),
   rescheduled: z.array(rescheduledInput).max(500).default([]),
+  /** Hà Nội (không xuất vé): khách đăng ký + nhóm khách huỷ/dời. */
+  registeredGuests: count(5_000).optional().default(0),
+  cancelledGuestEntries: cancelledGuestList,
+  rescheduledGuestEntries: rescheduledGuestList,
   cashTotal: money,
   transferTotal: money,
   flycam: count(1_000),
@@ -223,6 +261,26 @@ export const dailyCloseSchema = z.object({
   varianceApproved: z.boolean().optional().default(false),
   varianceNote: text(1_000),
   note: text(2_000),
+});
+
+/** Booking đặt trước: nguồn – liên hệ – số khách – dịch vụ – đón – cọc. */
+export const bookingSchema = z.object({
+  spot: spotField,
+  flightDate: z.string().refine(isDateKey, "Ngày bay không hợp lệ"),
+  source: text(200),
+  contactName: text(200),
+  bookingCode: text(100),
+  guestCount: count(100),
+  flycam: count(100),
+  video360: count(100),
+  redFlag: count(100),
+  flagFlight: count(100),
+  pickup: z.enum(["self", "bigc", "hotel", "other"]).default("self"),
+  pickupNote: text(200),
+  expectedTime: text(20),
+  deposit: money,
+  remaining: money,
+  note: text(1_000),
 });
 
 /** Nhân sự đưa tiền cho quản lý/giám đốc. */

@@ -10,6 +10,7 @@ import type { CameramanReportDTO } from "@/lib/baobay/types";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 
 import { apiGet, apiPost } from "../components/client-api";
+import { DateBar } from "../components/DateBar";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
@@ -17,7 +18,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, Readout, TextArea, TextInput } from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, Readout, TextArea } from "../components/ui";
 
 /**
  * Camera man báo cáo một ngày.
@@ -199,24 +200,16 @@ export default function CameramanReportPage() {
         }}
         className="space-y-4"
       >
-        <Card title="Ngày quay">
-          <Field
-            label="Chọn ngày"
-            hint={`Chỉ nhập được trong ${BACKDATE_LIMIT_DAYS} ngày gần đây. Đang xem: ${formatDateKeyVN(date)}`}
-          >
-            <TextInput
-              type="date"
-              value={date}
-              max={today}
-              min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-            />
-          </Field>
-
-          {loadingDay && <p className="mt-2 text-xs text-slate-500">Đang tải số liệu ngày này…</p>}
-
+        <DateBar
+          date={date}
+          onChange={setDate}
+          max={today}
+          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+          loading={loadingDay}
+        />
+        <div className="space-y-3">
           {!loadingDay && existing && (
-            <div className="mt-3">
+            <div>
               <Banner tone={existing.submitted ? "success" : "info"}>
                 {existing.submitted
                   ? `Đã chốt báo cáo ngày này (${existing.flycamFlights} chuyến flycam).`
@@ -224,7 +217,7 @@ export default function CameramanReportPage() {
               </Banner>
             </div>
           )}
-        </Card>
+        </div>
 
         <Card title="Nội dung quay 1 · Flycam" hint="Số lượng chuyến đã quay flycam trong ngày + mã vé">
           <CountInput value={form.flycamFlights} onChange={(v) => set("flycamFlights", v)} max={1000} />

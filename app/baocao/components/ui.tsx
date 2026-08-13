@@ -75,25 +75,61 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
  * Giá trị giữ dạng số, ô rỗng coi như 0. Không cho âm — báo cáo không có khái
  * niệm "âm hai chuyến".
  */
+/**
+ * Khung màu riêng cho từng DỊCH VỤ GIA TĂNG khi các cụm đếm nằm sát nhau —
+ * flycam xanh dương, Camera 360 tím, dù cờ đỏ hồng, kéo cờ vàng. Mắt bám theo
+ * màu là hết bấm nhầm cột bên cạnh.
+ */
+export const SERVICE_TONE = {
+  flycam: { box: "border-sky-200 bg-sky-50/70", label: "text-sky-800" },
+  video360: { box: "border-violet-200 bg-violet-50/70", label: "text-violet-800" },
+  redFlag: { box: "border-rose-200 bg-rose-50/70", label: "text-rose-800" },
+  flagFlight: { box: "border-amber-200 bg-amber-50/70", label: "text-amber-800" },
+} as const;
+
+export function ServiceBox({
+  tone,
+  label,
+  children,
+}: {
+  tone: keyof typeof SERVICE_TONE;
+  label: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const t = SERVICE_TONE[tone];
+  return (
+    <div className={cn("rounded-xl border p-2.5", t.box)}>
+      <div className={cn("mb-1.5 text-xs font-semibold", t.label)}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
 export function CountInput({
   value,
   onChange,
   max = 999,
   id,
+  compact,
 }: {
   value: number;
   onChange: (next: number) => void;
   max?: number;
   id?: string;
+  /** Bản nhỏ cho các cụm đếm nằm sát nhau (dịch vụ gia tăng) — đỡ bấm nhầm. */
+  compact?: boolean;
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(max, Math.trunc(n) || 0));
+  const btn = compact
+    ? "h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200"
+    : "h-12 w-12 shrink-0 rounded-xl border border-slate-300 bg-slate-50 text-xl font-semibold text-slate-600 active:bg-slate-200";
 
   return (
-    <div className="flex items-stretch gap-2">
+    <div className={compact ? "flex items-stretch gap-1.5" : "flex items-stretch gap-2"}>
       <button
         type="button"
         onClick={() => onChange(clamp(value - 1))}
-        className="h-12 w-12 shrink-0 rounded-xl border border-slate-300 bg-slate-50 text-xl font-semibold text-slate-600 active:bg-slate-200"
+        className={btn}
         aria-label="Giảm 1"
       >
         −
@@ -105,12 +141,15 @@ export function CountInput({
         value={String(value)}
         onChange={(e) => onChange(clamp(Number(e.target.value.replace(/[^\d]/g, ""))))}
         onFocus={(e) => e.currentTarget.select()}
-        className={cn(inputBase, "h-12 text-center text-lg font-semibold tabular-nums")}
+        className={cn(
+          inputBase,
+          compact ? "h-10 text-center text-base font-semibold tabular-nums" : "h-12 text-center text-lg font-semibold tabular-nums",
+        )}
       />
       <button
         type="button"
         onClick={() => onChange(clamp(value + 1))}
-        className="h-12 w-12 shrink-0 rounded-xl border border-slate-300 bg-slate-50 text-xl font-semibold text-slate-600 active:bg-slate-200"
+        className={btn}
         aria-label="Tăng 1"
       >
         +

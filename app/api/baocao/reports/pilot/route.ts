@@ -15,6 +15,7 @@ import {
   getSubmitDeadline,
   listPilotReportsOfAccount,
   listPilotReportsOfDate,
+  listSpotStaffByRole,
   upsertPilotReport,
   upsertPilotReportByAccountant,
 } from "@/services/baobay.service";
@@ -68,8 +69,13 @@ export async function GET(req: Request) {
     if (!date || params.get("all") !== "1") {
       return NextResponse.json({ message: "Kế toán dùng ?date=YYYY-MM-DD&all=1" }, { status: 400 });
     }
-    const [reports, close] = await Promise.all([listPilotReportsOfDate(spot, date), getDailyClose(spot, date)]);
-    return NextResponse.json({ spot, reports, locked: close?.status === "closed" });
+    const [reports, close, staff] = await Promise.all([
+      listPilotReportsOfDate(spot, date),
+      getDailyClose(spot, date),
+      // Toàn bộ phi công của điểm — kế toán thêm người CHƯA báo cáo rồi nhập hộ
+      listSpotStaffByRole(spot, "pilot"),
+    ]);
+    return NextResponse.json({ spot, reports, staff, locked: close?.status === "closed" });
   }
 
   if (date) {

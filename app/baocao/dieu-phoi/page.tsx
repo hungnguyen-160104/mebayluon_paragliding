@@ -11,8 +11,13 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "../components/client-api";
+import { DateBar } from "../components/DateBar";
 import {
   CancelEntryRows,
+  CancelGuestRows,
+  RescheduleGuestRows,
+  type CancelGuestRow,
+  type RescheduleGuestRow,
   DiploEntryRows,
   ExpenseRows,
   RangeRows,
@@ -30,6 +35,7 @@ import {
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { PeriodSummary } from "../components/PeriodSummary";
+import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
@@ -63,6 +69,9 @@ type FormState = {
   issuedRanges: RangeRow[];
   cancelledEntries: CancelRow[];
   rescheduledEntries: RescheduleEntryRow[];
+  /** HÀ NỘI: nhóm KHÁCH huỷ/dời — tên, mã book, số khách, nguồn, tiền hoàn/ngày dời. */
+  cancelledGuests: CancelGuestRow[];
+  rescheduledGuests: RescheduleGuestRow[];
   diplomaticEntries: DiploRow[];
   flycam: number;
   flycamCodesText: string;
@@ -87,8 +96,10 @@ const EMPTY_FORM: FormState = {
   ticketsIssued: 0,
   ticketsReturned: 0,
   issuedRanges: [{ from: "", to: "" }],
-  cancelledEntries: [{ codesText: "", reason: "", contactName: "" }],
-  rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "" }],
+  cancelledEntries: [{ codesText: "", reason: "", contactName: "", note: "" }],
+  rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }],
+  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
+  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "" }],
   diplomaticEntries: [{ codesText: "", amount: 0 }],
   flycam: 0,
   flycamCodesText: "",
@@ -111,9 +122,14 @@ const EMPTY_FORM: FormState = {
 /** Đọc lại form từ bản đã lưu — báo cáo cũ (trước bản nhóm đoàn) rơi về bản phẳng. */
 function fromReport(r: DispatcherReportDTO): FormState {
   const cancelled: CancelRow[] = r.cancelledEntries.length
-    ? r.cancelledEntries.map((e) => ({ codesText: e.codes.join(", "), reason: e.reason, contactName: e.contactName }))
+    ? r.cancelledEntries.map((e) => ({
+        codesText: e.codes.join(", "),
+        reason: e.reason,
+        contactName: e.contactName,
+        note: e.note || "",
+      }))
     : r.cancelledCodes.length
-      ? [{ codesText: r.cancelledCodes.join(", "), reason: "", contactName: "" }]
+      ? [{ codesText: r.cancelledCodes.join(", "), reason: "", contactName: "", note: "" }]
       : [];
   const rescheduled: RescheduleEntryRow[] = r.rescheduledEntries.length
     ? r.rescheduledEntries.map((e) => ({
@@ -122,8 +138,9 @@ function fromReport(r: DispatcherReportDTO): FormState {
         reason: e.reason,
         contactName: e.contactName,
         phone: e.phone,
+        note: e.note || "",
       }))
-    : r.rescheduled.map((e) => ({ codesText: e.code, toDate: e.toDate, reason: e.note || "", contactName: "", phone: "" }));
+    : r.rescheduled.map((e) => ({ codesText: e.code, toDate: e.toDate, reason: e.note || "", contactName: "", phone: "", note: "" }));
   const diplo: DiploRow[] = r.diplomaticEntries.length
     ? r.diplomaticEntries.map((e) => ({ codesText: e.codes.join(", "), amount: e.amount }))
     : r.diplomaticCodes.length
@@ -137,6 +154,12 @@ function fromReport(r: DispatcherReportDTO): FormState {
     issuedRanges: toRangeRows(r.issuedRanges),
     cancelledEntries: cancelled.length ? cancelled : EMPTY_FORM.cancelledEntries,
     rescheduledEntries: rescheduled.length ? rescheduled : EMPTY_FORM.rescheduledEntries,
+    cancelledGuests: r.cancelledGuestEntries.length
+      ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+      : EMPTY_FORM.cancelledGuests,
+    rescheduledGuests: r.rescheduledGuestEntries.length
+      ? r.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+      : EMPTY_FORM.rescheduledGuests,
     diplomaticEntries: diplo.length ? diplo : EMPTY_FORM.diplomaticEntries,
     flycam: r.flycam,
     flycamCodesText: r.flycamCodes.join(", "),
@@ -248,8 +271,12 @@ export default function DispatcherReportPage() {
           date,
           ...form,
           issuedRanges: form.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
-          cancelledEntries: form.cancelledEntries.filter((e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim()),
-          rescheduledEntries: form.rescheduledEntries.filter((e) => e.codesText.trim() || e.toDate),
+          cancelledEntries: form.cancelledEntries.filter(
+            (e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim() || e.note.trim(),
+          ),
+          rescheduledEntries: form.rescheduledEntries.filter((e) => e.codesText.trim() || e.toDate || e.note.trim()),
+          cancelledGuestEntries: form.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
+          rescheduledGuestEntries: form.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
           diplomaticEntries: form.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount),
           expenses: form.expenses.filter((x) => x.content.trim() || x.amount),
         },
@@ -270,8 +297,10 @@ export default function DispatcherReportPage() {
     return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
   }
 
-  const rangeMismatch = rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
-  const returnMismatch = form.ticketsReturned !== returned;
+  /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
+  const noTickets = spot === "ha-noi";
+  const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
+  const returnMismatch = !noTickets && form.ticketsReturned !== returned;
   const revenue =
     form.cashReceived +
     form.transferReceived +
@@ -294,6 +323,12 @@ export default function DispatcherReportPage() {
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
       <ReviewNotices spot={spot} date={date} />
 
+      {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
+      <BookingTodayBanner spot={spot} date={date} />
+
+      {/* Khách đặt trước: nhập ngay hôm khách chốt, tự hiện đúng ngày bay */}
+      <BookingCard spot={spot} spotOptions={spotOptions} />
+
       {myReds.length > 0 && (
         <Banner tone="error">
           <strong>Kế toán cần {myReds.length} chỗ được kiểm lại:</strong>
@@ -312,35 +347,35 @@ export default function DispatcherReportPage() {
       )}
 
       <form onSubmit={submit} className="space-y-4">
-        <Card title="Ngày làm việc">
-          <Field
-            label="Chọn ngày"
-            hint={`Chỉ nhập được trong ${BACKDATE_LIMIT_DAYS} ngày gần đây. Đang xem: ${formatDateKeyVN(date)}`}
-          >
-            <TextInput
-              type="date"
-              value={date}
-              max={today}
-              min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-            />
-          </Field>
-          {loadingDay && <p className="mt-2 text-xs text-slate-500">Đang tải số liệu ngày này…</p>}
-        </Card>
+        <DateBar
+          date={date}
+          onChange={setDate}
+          max={today}
+          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+          loading={loadingDay}
+        />
 
-        <Card title="Khách và vé">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Số khách">
-              <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
-            </Field>
-            <Field label="Số vé xuất ra">
-              <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-            </Field>
-            <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
-              <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-            </Field>
+        <Card title={noTickets ? "Khách" : "Khách và vé"}>
+          <div className={noTickets ? "grid gap-4" : "grid gap-4 sm:grid-cols-3"}>
+            {/* Ô quan trọng nhất của quầy — khung đỏ nổi bật, cụm đếm gọn */}
+            <div className="max-w-60 rounded-xl border-2 border-rose-400 bg-rose-50 p-2.5">
+              <div className="mb-1.5 text-xs font-bold text-rose-800">Số khách</div>
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+            </div>
+            {/* Hà Nội không xuất vé giấy — các ô vé không tồn tại ở điểm này */}
+            {!noTickets && (
+              <>
+                <Field label="Số vé xuất ra">
+                  <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
+                </Field>
+                <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
+                  <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+                </Field>
+              </>
+            )}
           </div>
 
+          {!noTickets && (
           <div className="mt-4">
             <Field
               label="Dải mã vé đã xuất"
@@ -350,6 +385,7 @@ export default function DispatcherReportPage() {
             </Field>
             <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
           </div>
+          )}
 
           {rangeMismatch && !locked && (
             <div className="mt-3">
@@ -371,31 +407,58 @@ export default function DispatcherReportPage() {
         </Card>
 
         <Card
-          title="Vé huỷ"
-          hint="Cùng đoàn thì ghi nhiều mã trong một ô. Mỗi nhóm: mã vé – lý do (đợi lâu / gió mưa / đến trễ) – tên liên hệ."
+          title={noTickets ? "Khách huỷ" : "Vé huỷ"}
+          hint={
+            noTickets
+              ? "Mỗi nhóm khách huỷ một dòng: tên – mã book – số khách – nguồn – tiền hoàn – ghi chú. Kế toán sẽ bấm xác nhận đúng bộ số này."
+              : "Cùng đoàn thì ghi nhiều mã trong một ô. Mỗi nhóm: mã vé – lý do (đợi lâu / gió mưa / đến trễ) – tên liên hệ."
+          }
         >
-          <CancelEntryRows
-            rows={form.cancelledEntries}
-            onChange={(rows) => set("cancelledEntries", rows)}
-            disabled={locked}
-          />
+          {noTickets ? (
+            <CancelGuestRows
+              rows={form.cancelledGuests}
+              onChange={(rows) => set("cancelledGuests", rows)}
+              disabled={locked}
+            />
+          ) : (
+            <CancelEntryRows
+              rows={form.cancelledEntries}
+              onChange={(rows) => set("cancelledEntries", rows)}
+              disabled={locked}
+            />
+          )}
         </Card>
 
         <Card
-          title="Vé dời lịch"
-          hint="Cùng đoàn ghi chung một nhóm: mã vé – dời sang ngày – lý do – tên liên hệ – sđt. Vé dời coi như huỷ hôm nay, ngày dời tới sẽ xuất vé mới."
+          title={noTickets ? "Khách dời lịch" : "Vé dời lịch"}
+          hint={
+            noTickets
+              ? "Mỗi nhóm khách dời một dòng: tên – số lượng – dời sang ngày – ghi chú."
+              : "Cùng đoàn ghi chung một nhóm: mã vé – dời sang ngày – lý do – tên liên hệ – sđt. Vé dời coi như huỷ hôm nay, ngày dời tới sẽ xuất vé mới."
+          }
         >
-          <RescheduleEntryRows
-            rows={form.rescheduledEntries}
-            onChange={(rows) => set("rescheduledEntries", rows)}
-            minDate={shiftDateKey(date, 1)}
-            disabled={locked}
-          />
+          {noTickets ? (
+            <RescheduleGuestRows
+              rows={form.rescheduledGuests}
+              onChange={(rows) => set("rescheduledGuests", rows)}
+              minDate={shiftDateKey(date, 1)}
+              disabled={locked}
+            />
+          ) : (
+            <RescheduleEntryRows
+              rows={form.rescheduledEntries}
+              onChange={(rows) => set("rescheduledEntries", rows)}
+              minDate={shiftDateKey(date, 1)}
+              disabled={locked}
+            />
+          )}
 
+          {!noTickets && (
           <div className="mt-4 grid grid-cols-2 gap-3">
             <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
             <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
           </div>
+          )}
 
           {returnMismatch && !locked && (
             <div className="mt-2">

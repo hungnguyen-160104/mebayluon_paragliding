@@ -45,6 +45,7 @@ import type { BaobaySession } from "@/lib/baobay/token";
 import type {
   BaobayAccountDTO,
   BaobaySummaryDTO,
+  BookingDTO,
   CameramanReportDTO,
   CancelEntryDTO,
   DiploEntryDTO,
@@ -66,6 +67,7 @@ import type {
 } from "@/lib/baobay/types";
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
+import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
 import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
@@ -1448,7 +1450,10 @@ export type DispatcherReportSaveInput = {
   ticketsReturned: number;
   issuedRanges: Array<{ from: string; to: string }>;
   /** Vé huỷ theo nhóm đoàn: nhiều mã một ô + lý do + tên liên hệ. */
-  cancelledEntries: Array<{ codesText: string; reason: string; contactName: string }>;
+  cancelledEntries: Array<{ codesText: string; reason: string; contactName: string; note?: string }>;
+  /** HÀ NỘI: nhóm KHÁCH huỷ/dời — điểm không vé thu thập theo khách. */
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string }>;
   /** Dời lịch theo nhóm: nhiều mã một ô + ngày + lý do + liên hệ + sđt. */
   rescheduledEntries: Array<{
     codesText: string;
@@ -1456,6 +1461,7 @@ export type DispatcherReportSaveInput = {
     reason: string;
     contactName: string;
     phone: string;
+    note?: string;
   }>;
   /** Khách ngoại giao: mã vé + tiền thu (nếu có). */
   diplomaticEntries: Array<{ codesText: string; amount: number }>;
@@ -1501,11 +1507,15 @@ export async function upsertDispatcherReport(
    * hệ). Máy chủ bung từng nhóm thành mã, giữ cả hai bản: bản nhóm để đọc lại
    * đúng như đã nhập, bản phẳng cho bộ đối chiếu và Sheets.
    */
+  /** Hà Nội không xuất vé giấy — các ô vé ép 0/rỗng, nhóm huỷ/dời ghi chú thay mã. */
+  const noTickets = spot === "ha-noi";
+
   const cancelledEntries: CancelEntryDTO[] = [];
   const cancelledFlat: string[] = [];
   for (const raw of input.cancelledEntries) {
-    const parsedCodes = parseTicketCodeList(raw.codesText);
-    if (!parsedCodes.codes.length && !raw.reason.trim() && !raw.contactName.trim()) continue;
+    const parsedCodes = parseTicketCodeList(noTickets ? "" : raw.codesText);
+    const note = (raw.note ?? "").trim();
+    if (!parsedCodes.codes.length && !raw.reason.trim() && !raw.contactName.trim() && !note) continue;
     if (parsedCodes.invalid.length) {
       warnings.push(`Vé huỷ: bỏ qua cụm không đọc được "${parsedCodes.invalid.slice(0, 3).join(", ")}"`);
     }
@@ -1513,6 +1523,7 @@ export async function upsertDispatcherReport(
       codes: parsedCodes.codes,
       reason: raw.reason.trim(),
       contactName: raw.contactName.trim(),
+      note,
     });
     cancelledFlat.push(...parsedCodes.codes);
   }
@@ -1520,20 +1531,39 @@ export async function upsertDispatcherReport(
   if (cancelledCodesUnique.length !== cancelledFlat.length) {
     warnings.push("Có mã vé huỷ xuất hiện ở hai nhóm — chỉ tính một lần.");
   }
-  const cancelledCount = cancelledCodesUnique.length;
+
+  /** HÀ NỘI: khách huỷ/dời nhập theo NHÓM KHÁCH (tên, mã book, số khách…) — điểm khác bỏ trống. */
+  const cancelledGuestEntries = noTickets
+    ? (input.cancelledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.bookingCode.trim())
+    : [];
+  const rescheduledGuestEntries = noTickets
+    ? (input.rescheduledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.toDate)
+    : [];
+  for (const e of rescheduledGuestEntries) {
+    if (!e.toDate) warnings.push(`Nhóm khách dời "${e.name || "?"}" chưa ghi dời sang ngày nào`);
+  }
+
+  // HN đếm theo đầu KHÁCH trong các nhóm; điểm có vé đếm theo mã
+  const cancelledCount = noTickets
+    ? cancelledGuestEntries.reduce((a, e) => a + (e.guests || 0), 0)
+    : cancelledCodesUnique.length;
 
   const rescheduledEntries: RescheduleEntryDTO[] = [];
   const rescheduled: RescheduledDTO[] = [];
   for (const raw of input.rescheduledEntries) {
-    const parsedCodes = parseTicketCodeList(raw.codesText);
-    if (!parsedCodes.codes.length && !raw.toDate && !raw.contactName.trim()) continue;
-    if (!raw.toDate) warnings.push(`Nhóm dời lịch "${raw.codesText.slice(0, 30)}" chưa ghi dời sang ngày nào`);
+    const parsedCodes = parseTicketCodeList(noTickets ? "" : raw.codesText);
+    const note = (raw.note ?? "").trim();
+    if (!parsedCodes.codes.length && !raw.toDate && !raw.contactName.trim() && !note) continue;
+    if (!raw.toDate) {
+      warnings.push(`Nhóm dời lịch "${(noTickets ? note : raw.codesText).slice(0, 30)}" chưa ghi dời sang ngày nào`);
+    }
     rescheduledEntries.push({
       codes: parsedCodes.codes,
       toDate: raw.toDate,
       reason: raw.reason.trim(),
       contactName: raw.contactName.trim(),
       phone: raw.phone.trim(),
+      note,
     });
     for (const code of parsedCodes.codes) {
       rescheduled.push({ code, toDate: raw.toDate, note: raw.reason.trim() || undefined });
@@ -1565,7 +1595,7 @@ export async function upsertDispatcherReport(
     .filter((e) => e.amount > 0 || e.content);
 
   const returned = cancelledCount + rescheduled.length;
-  if (input.ticketsReturned && input.ticketsReturned !== returned) {
+  if (!noTickets && input.ticketsReturned && input.ticketsReturned !== returned) {
     warnings.push(
       `Số vé thu về đã khai (${input.ticketsReturned}) khác tổng huỷ + dời lịch (${cancelledCount} + ${rescheduled.length} = ${returned}).`,
     );
@@ -1579,15 +1609,19 @@ export async function upsertDispatcherReport(
         staffName: session.name,
         spot,
         guestCount: input.guestCount,
-        ticketsIssued: input.ticketsIssued,
-        ticketsReturned: input.ticketsReturned,
-        issuedRanges: ranges,
+        ticketsIssued: noTickets ? 0 : input.ticketsIssued,
+        ticketsReturned: noTickets ? 0 : input.ticketsReturned,
+        issuedRanges: noTickets ? [] : ranges,
         cancelledCount,
         cancelledCodes: cancelledCodesUnique,
         cancelledEntries,
-        rescheduledCount: rescheduled.length,
+        cancelledGuestEntries,
+        rescheduledCount: noTickets
+          ? rescheduledGuestEntries.reduce((a, e) => a + (e.guests || 0), 0)
+          : rescheduled.length,
         rescheduled,
         rescheduledEntries,
+        rescheduledGuestEntries,
         diplomaticEntries,
         diplomaticAmount,
         flycam: input.flycam,
@@ -1645,15 +1679,29 @@ async function pushDispatcherRow(doc: any) {
     issuedRanges: formatRanges(doc.issuedRanges),
     cancelledCount: doc.cancelledCount,
     cancelledCodes: (doc.cancelledCodes || []).join(", "),
-    cancelledDetail: (doc.cancelledEntries || [])
-      .map((e: CancelEntryDTO) => `${e.codes.join(" ")} — ${e.reason || "?"}${e.contactName ? ` — ${e.contactName}` : ""}`)
-      .join(" | "),
+    cancelledDetail:
+      (doc.cancelledGuestEntries || [])
+        .map(
+          (e: any) =>
+            `${e.name || "khách"}${e.bookingCode ? ` (${e.bookingCode})` : ""} ×${e.guests}${e.source ? ` — ${e.source}` : ""}${e.refund ? ` — hoàn ${(e.refund || 0).toLocaleString("vi-VN")}đ` : ""}${e.note ? ` — ${e.note}` : ""}`,
+        )
+        .join(" | ") ||
+      (doc.cancelledEntries || [])
+        .map(
+          (e: CancelEntryDTO) =>
+            `${e.codes.length ? e.codes.join(" ") : e.note || "khách"} — ${e.reason || "?"}${e.contactName ? ` — ${e.contactName}` : ""}${e.codes.length && e.note ? ` (${e.note})` : ""}`,
+        )
+        .join(" | "),
     rescheduledCount: doc.rescheduledCount,
     rescheduledCodes: formatRescheduled(doc.rescheduled),
-    rescheduledDetail: (doc.rescheduledEntries || [])
+    rescheduledDetail:
+      (doc.rescheduledGuestEntries || [])
+        .map((e: any) => `${e.name || "khách"} ×${e.guests} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.note ? ` — ${e.note}` : ""}`)
+        .join(" | ") ||
+      (doc.rescheduledEntries || [])
       .map(
         (e: RescheduleEntryDTO) =>
-          `${e.codes.join(" ")} → ${e.toDate || "?"} — ${e.reason || "?"}${e.contactName ? ` — ${e.contactName}` : ""}${e.phone ? ` (${e.phone})` : ""}`,
+          `${e.codes.length ? e.codes.join(" ") : e.note || "khách"} → ${e.toDate || "?"} — ${e.reason || "?"}${e.contactName ? ` — ${e.contactName}` : ""}${e.phone ? ` (${e.phone})` : ""}${e.codes.length && e.note ? ` (${e.note})` : ""}`,
       )
       .join(" | "),
     diplomaticAmount: doc.diplomaticAmount || 0,
@@ -1717,6 +1765,8 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     cancelledCount: doc.cancelledCount ?? 0,
     cancelledCodes: doc.cancelledCodes ?? [],
     cancelledEntries: doc.cancelledEntries ?? [],
+    cancelledGuestEntries: doc.cancelledGuestEntries ?? [],
+    rescheduledGuestEntries: doc.rescheduledGuestEntries ?? [],
     rescheduledCount: doc.rescheduledCount ?? 0,
     rescheduled: doc.rescheduled ?? [],
     rescheduledEntries: doc.rescheduledEntries ?? [],
@@ -2436,6 +2486,318 @@ export async function getCashOnHand(
 }
 
 /* ================================================================== */
+/* Booking đặt trước — khách chốt hôm nay, bay ngày khác               */
+/* ================================================================== */
+
+export type BookingSaveInput = {
+  spot: string;
+  flightDate: string;
+  source: string;
+  contactName: string;
+  bookingCode: string;
+  guestCount: number;
+  flycam: number;
+  video360: number;
+  redFlag: number;
+  flagFlight: number;
+  pickup: "self" | "bigc" | "hotel" | "other";
+  pickupNote: string;
+  expectedTime: string;
+  deposit: number;
+  remaining: number;
+  note: string;
+};
+
+/** "HH:MM" hiện tại theo giờ Việt Nam — chặn giờ dự kiến lùi về quá khứ. */
+function nowHHMMVN(): string {
+  return new Date().toLocaleTimeString("en-GB", { hour12: false, timeZone: "Asia/Ho_Chi_Minh" }).slice(0, 5);
+}
+
+/** Booking phải nằm ở tương lai: ngày bay không lùi, giờ dự kiến hôm nay không sớm hơn bây giờ. */
+function assertBookingTime(flightDate: string, expectedTime: string) {
+  const today = todayInVN();
+  if (flightDate < today) throw new BaobayError("Ngày bay không thể ở quá khứ", 400);
+  if (flightDate === today && expectedTime && expectedTime < nowHHMMVN()) {
+    throw new BaobayError(`Giờ dự kiến ${expectedTime} đã qua (bây giờ là ${nowHHMMVN()})`, 400);
+  }
+}
+
+/**
+ * Điều phối nhập booking ngay hôm khách đặt — `createdAt` chính là thời điểm
+ * nhập liệu. Booking tự hiện trên trang điều phối vào đúng NGÀY BAY.
+ */
+export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, input.spot);
+
+  if (!input.contactName.trim() && !input.bookingCode.trim() && !input.source.trim()) {
+    throw new BaobayError("Booking phải có ít nhất nguồn, tên liên hệ hoặc số booking", 400);
+  }
+  if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
+  assertBookingTime(input.flightDate, input.expectedTime.trim());
+
+  /** Dịch vụ bám theo đầu khách: 2 khách thì tối đa 2 flycam, 2 cam360… */
+  const services: Array<[string, number]> = [
+    ["Flycam", input.flycam],
+    ["Camera 360", input.video360],
+    ["Dù cờ đỏ", input.redFlag],
+    ["Bay kéo cờ", input.flagFlight],
+  ];
+  for (const [label, count] of services) {
+    if (count > input.guestCount) {
+      throw new BaobayError(`${label} (${count}) vượt quá số khách (${input.guestCount})`, 400);
+    }
+  }
+
+  const saved = (
+    await BaobayBooking.create({
+      spot,
+      flightDate: input.flightDate,
+      createdByUsername: session.username,
+      createdByName: session.name,
+      source: input.source.trim(),
+      contactName: input.contactName.trim(),
+      bookingCode: input.bookingCode.trim(),
+      guestCount: input.guestCount,
+      flycam: input.flycam,
+      video360: input.video360,
+      redFlag: input.redFlag,
+      flagFlight: input.flagFlight,
+      // BigC chỉ có ở Hà Nội — điểm khác rơi về "tự đến"
+      pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
+      pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
+      expectedTime: input.expectedTime.trim(),
+      deposit: input.deposit,
+      remaining: input.remaining,
+      note: input.note.trim(),
+      status: "open",
+    })
+  ).toObject();
+
+  pushSheetInBackground(() => pushBookingRow(saved), BaobayBooking, saved._id);
+  return toBookingDTO({ ...saved, sheetSynced: false });
+}
+
+/**
+ * Booking cho trang điều phối: `forDate` = bay đúng ngày đang xem (banner đầu
+ * trang, gồm cả đã hoàn thành để hiện mờ), `upcoming` = đang chờ từ hôm nay
+ * trở đi (danh sách thống kê nhỏ dưới thẻ nhập).
+ */
+export async function listBookings(
+  spotRaw: string,
+  date: string,
+): Promise<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+
+  const [forDate, upcoming] = await Promise.all([
+    BaobayBooking.find({ spot, flightDate: date }).sort({ expectedTime: 1, createdAt: 1 }).lean<any[]>(),
+    BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() } })
+      .sort({ flightDate: 1, expectedTime: 1 })
+      .limit(100)
+      .lean<any[]>(),
+  ]);
+  return { forDate: forDate.map(toBookingDTO), upcoming: upcoming.map(toBookingDTO) };
+}
+
+/**
+ * Điều phối SỬA thông tin booking đang chờ (gõ nhầm tên, đổi dịch vụ, thêm
+ * cọc…). Đổi cả ngày bay được — ngày cũ lưu vào `rescheduledFrom` như lệnh dời.
+ */
+export async function updateBookingInfo(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: BookingSaveInput,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
+  assertBookingTime(input.flightDate, input.expectedTime.trim());
+  for (const [label, count] of [
+    ["Flycam", input.flycam],
+    ["Camera 360", input.video360],
+    ["Dù cờ đỏ", input.redFlag],
+    ["Bay kéo cờ", input.flagFlight],
+  ] as Array<[string, number]>) {
+    if (count > input.guestCount) {
+      throw new BaobayError(`${label} (${count}) vượt quá số khách (${input.guestCount})`, 400);
+    }
+  }
+
+  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+
+  const update: Record<string, unknown> = {
+    $set: {
+      flightDate: input.flightDate,
+      source: input.source.trim(),
+      contactName: input.contactName.trim(),
+      bookingCode: input.bookingCode.trim(),
+      guestCount: input.guestCount,
+      flycam: input.flycam,
+      video360: input.video360,
+      redFlag: input.redFlag,
+      flagFlight: input.flagFlight,
+      pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
+      pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
+      expectedTime: input.expectedTime.trim(),
+      deposit: input.deposit,
+      remaining: input.remaining,
+      note: input.note.trim(),
+    },
+  };
+  if (input.flightDate !== current.flightDate) {
+    update.$push = { rescheduledFrom: current.flightDate };
+  }
+
+  const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot, status: "open" }, update, { new: true }).lean<any>();
+  if (!doc) throw new BaobayError("Booking vừa được người khác cập nhật", 409);
+
+  pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
+  return toBookingDTO({ ...doc, sheetSynced: false });
+}
+
+/**
+ * XOÁ booking nhập nhầm — chỉ xoá được booking đang chờ. Trước khi xoá, đẩy
+ * dòng "ĐÃ XOÁ" sang bảng tính để bản sao ngoài DB không còn dòng mồ côi.
+ */
+export async function deleteBooking(session: BaobaySession, spotRaw: string, id: string): Promise<void> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const doc = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+
+  await BaobayBooking.deleteOne({ _id: id, spot });
+  runInBackground(() => pushBookingRow({ ...doc, status: "deleted" }).then(() => {}));
+}
+
+export type BookingAction = "flown" | "cancel" | "move";
+
+/**
+ * Ba xác nhận của điều phối với một booking đang chờ:
+ *  - "flown": khách ĐÃ BAY — ghi nhận chuyến vào đúng ngày bay, ẩn khỏi hàng chờ.
+ *  - "cancel": khách HUỶ — báo huỷ toàn hệ thống, không làm gì thêm.
+ *  - "move": khách DỜI — nhập ngày mới, booking tự chuyển sang ngày đó
+ *    (ngày cũ lưu vào `rescheduledFrom` để còn dấu vết).
+ * KHÔNG xoá bản ghi nào.
+ */
+export async function updateBookingStatus(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  action: BookingAction,
+  toDate?: string,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+
+  let update: Record<string, unknown>;
+  if (action === "move") {
+    if (!toDate) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
+    if (toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
+    update = {
+      $set: { flightDate: toDate },
+      $push: { rescheduledFrom: current.flightDate },
+    };
+  } else {
+    update = {
+      $set: {
+        status: action === "flown" ? "done" : "cancelled",
+        doneAt: new Date(),
+        doneBy: session.username,
+      },
+    };
+  }
+
+  const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot, status: "open" }, update, {
+    new: true,
+  }).lean<any>();
+  if (!doc) throw new BaobayError("Booking vừa được người khác cập nhật", 409);
+
+  pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
+  return toBookingDTO({ ...doc, sheetSynced: false });
+}
+
+const BOOKING_PICKUP_LABEL: Record<string, string> = { self: "Tự đến", bigc: "Đón BigC", hotel: "Đón khách sạn", other: "Đón" };
+
+async function pushBookingRow(doc: any) {
+  return pushBaobayRow(
+    "booking",
+    {
+      key: String(doc._id),
+      flightDate: formatDateKeyVN(doc.flightDate),
+      spot: doc.spot || "",
+      createdAt: doc.createdAt ? new Date(doc.createdAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) : "",
+      createdBy: doc.createdByName || doc.createdByUsername || "",
+      source: doc.source || "",
+      bookingCode: doc.bookingCode || "",
+      contactName: doc.contactName || "",
+      guestCount: doc.guestCount ?? 0,
+      flycam: doc.flycam ?? 0,
+      video360: doc.video360 ?? 0,
+      redFlag: doc.redFlag ?? 0,
+      flagFlight: doc.flagFlight ?? 0,
+      pickup:
+        doc.pickup === "other"
+          ? `Đón: ${doc.pickupNote || "?"}`
+          : BOOKING_PICKUP_LABEL[doc.pickup] || "Tự đến",
+      expectedTime: doc.expectedTime || "",
+      deposit: doc.deposit ?? 0,
+      remaining: doc.remaining ?? 0,
+      status:
+        doc.status === "done"
+          ? "ĐÃ BAY"
+          : doc.status === "cancelled"
+            ? "ĐÃ HUỶ"
+            : doc.status === "deleted"
+              ? "ĐÃ XOÁ"
+              : "CHỜ BAY",
+      rescheduledFrom: (doc.rescheduledFrom || []).map((d: string) => formatDateKeyVN(d)).join(", "),
+      note: doc.note || "",
+      updatedAt: nowStampVN(),
+    },
+    undefined,
+    await sheetTargetForSpot(doc.spot),
+  );
+}
+
+function toBookingDTO(doc: any): BookingDTO {
+  return {
+    id: String(doc._id),
+    spot: doc.spot,
+    flightDate: doc.flightDate,
+    createdByUsername: doc.createdByUsername,
+    createdByName: doc.createdByName,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
+    source: doc.source || "",
+    contactName: doc.contactName || "",
+    bookingCode: doc.bookingCode || "",
+    guestCount: doc.guestCount ?? 0,
+    flycam: doc.flycam ?? 0,
+    video360: doc.video360 ?? 0,
+    redFlag: doc.redFlag ?? 0,
+    flagFlight: doc.flagFlight ?? 0,
+    pickup:
+      doc.pickup === "bigc" ? "bigc" : doc.pickup === "hotel" ? "hotel" : doc.pickup === "other" ? "other" : "self",
+    pickupNote: doc.pickupNote || "",
+    expectedTime: doc.expectedTime || "",
+    deposit: doc.deposit ?? 0,
+    remaining: doc.remaining ?? 0,
+    note: doc.note || "",
+    status: doc.status === "done" ? "done" : doc.status === "cancelled" ? "cancelled" : "open",
+    doneAt: doc.doneAt ? new Date(doc.doneAt).toISOString() : undefined,
+    doneBy: doc.doneBy || undefined,
+    rescheduledFrom: doc.rescheduledFrom ?? [],
+  };
+}
+
+/* ================================================================== */
 /* Bảng kê của một phi công theo chu kỳ                                 */
 /* ================================================================== */
 
@@ -3005,6 +3367,11 @@ export type CloseSuggestionDTO = {
   transferTotal: number;
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
+  /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
+  registeredGuests: number;
+  /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
+  cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
   /**
    * Sổ "Tiền trong ngày" dựng sẵn từ báo cáo điều phối: từng dòng thu đúng
    * tiền mặt/CK + từng khoản chi hộ — kế toán bấm một nút là nhận cả cụm.
@@ -3042,10 +3409,14 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 
   const spot = normalizeSpot(spotRaw);
   const filter = { spot, date };
-  const [dispatchers, pilots, cameramen] = await Promise.all([
+  const [dispatchers, pilots, cameramen, bookings] = await Promise.all([
     DispatcherDailyReport.find(filter).lean<any[]>(),
     PilotDailyReport.find(filter).lean<any[]>(),
     CameramanDailyReport.find(filter).lean<any[]>(),
+    // Khách ĐĂNG KÝ trước của ngày (sổ booking, trừ nhóm đã huỷ) — cho ô "Số khách đăng ký" ở Hà Nội
+    BaobayBooking.find({ spot, flightDate: date, status: { $ne: "cancelled" } })
+      .select("guestCount")
+      .lean<any[]>(),
   ]);
 
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
@@ -3073,6 +3444,9 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     cashTotal: sum(dispatchers, (d) => d.cashReceived),
     transferTotal: sum(dispatchers, (d) => d.transferReceived),
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
+    registeredGuests: sum(bookings, (b) => b.guestCount),
+    cancelledGuestEntries: dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
+    rescheduledGuestEntries: dispatchers.flatMap((d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"]),
     dispatcherLedger: dispatchers.flatMap((d) => {
       /** Nhiều điều phối cùng ngày thì mỗi dòng ghi rõ của ai. */
       const tag = dispatchers.length > 1 ? `${d.staffName}: ` : "";
@@ -3144,7 +3518,11 @@ export type DailyCloseSaveInput = {
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
   cancelledCodesText: string;
+  cancelledNote: string;
   rescheduled: Array<{ code: string; toDate: string; note?: string }>;
+  registeredGuests?: number;
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
   flycam: number;
@@ -3194,12 +3572,23 @@ export async function upsertDailyClose(
         accountantName: session.name,
         spot,
         guestCount: input.guestCount,
-        ticketsIssued: input.ticketsIssued,
-        ticketsReturned: input.ticketsReturned,
+        // Hà Nội không xuất vé giấy — trường vé ép 0/rỗng, thay bằng khách đăng ký + nhóm khách huỷ/dời
+        ticketsIssued: spot === "ha-noi" ? 0 : input.ticketsIssued,
+        ticketsReturned: spot === "ha-noi" ? 0 : input.ticketsReturned,
         cancelledCount: input.cancelledCount,
         rescheduledCount: input.rescheduledCount,
-        issuedRanges: ranges,
-        cancelledCodes: cancelled.codes,
+        issuedRanges: spot === "ha-noi" ? [] : ranges,
+        cancelledCodes: spot === "ha-noi" ? [] : cancelled.codes,
+        cancelledNote: input.cancelledNote ?? "",
+        registeredGuests: spot === "ha-noi" ? (input.registeredGuests ?? 0) : 0,
+        cancelledGuestEntries:
+          spot === "ha-noi"
+            ? (input.cancelledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.bookingCode.trim())
+            : [],
+        rescheduledGuestEntries:
+          spot === "ha-noi"
+            ? (input.rescheduledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.toDate)
+            : [],
         rescheduled,
         cashTotal: input.cashTotal,
         transferTotal: input.transferTotal,
@@ -3243,9 +3632,22 @@ async function pushCloseRow(doc: any) {
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,
-    cancelledCodes: (doc.cancelledCodes || []).join(", "),
+    cancelledCodes:
+      (doc.cancelledCodes || []).join(", ") ||
+      (doc.cancelledGuestEntries || [])
+        .map(
+          (e: any) =>
+            `${e.name || "khách"}${e.bookingCode ? ` (${e.bookingCode})` : ""} ×${e.guests}${e.source ? ` — ${e.source}` : ""}${e.refund ? ` — hoàn ${(e.refund || 0).toLocaleString("vi-VN")}đ` : ""}`,
+        )
+        .join(" | "),
+    cancelledNote: doc.cancelledNote || "",
+    registeredGuests: doc.registeredGuests ?? 0,
     rescheduledCount: doc.rescheduledCount ?? 0,
-    rescheduledCodes: formatRescheduled(doc.rescheduled),
+    rescheduledCodes:
+      formatRescheduled(doc.rescheduled) ||
+      (doc.rescheduledGuestEntries || [])
+        .map((e: any) => `${e.name || "khách"} ×${e.guests} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.note ? ` — ${e.note}` : ""}`)
+        .join(" | "),
     issuedRanges: formatRanges(doc.issuedRanges),
     cashTotal: doc.cashTotal ?? 0,
     transferTotal: doc.transferTotal ?? 0,
@@ -3265,6 +3667,23 @@ async function pushCloseRow(doc: any) {
   undefined,
   await sheetTargetForSpot(doc.spot),
   );
+}
+
+/**
+ * Nhân sự ĐANG LÀM VIỆC của một điểm bay theo vai trò — cho kế toán chọn thêm
+ * người CHƯA báo cáo vào danh sách ngày rồi nhập hộ (người ốm, người quên app).
+ */
+export async function listSpotStaffByRole(
+  spotRaw: string,
+  role: BaobayRole,
+): Promise<Array<{ username: string; name: string }>> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const docs = await BaobayAccount.find({ role, isActive: true, spots: spot })
+    .select("username displayName")
+    .sort({ displayName: 1 })
+    .lean<any[]>();
+  return docs.map((d) => ({ username: d.username, name: d.displayName }));
 }
 
 export async function getDailyClose(spot: string, date: string): Promise<DailyCloseDTO | null> {
@@ -3514,7 +3933,11 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     rescheduledCount: doc.rescheduledCount ?? 0,
     issuedRanges: doc.issuedRanges ?? [],
     cancelledCodes: doc.cancelledCodes ?? [],
+    cancelledNote: doc.cancelledNote ?? "",
     rescheduled: doc.rescheduled ?? [],
+    registeredGuests: doc.registeredGuests ?? 0,
+    cancelledGuestEntries: doc.cancelledGuestEntries ?? [],
+    rescheduledGuestEntries: doc.rescheduledGuestEntries ?? [],
     cashTotal: doc.cashTotal ?? 0,
     transferTotal: doc.transferTotal ?? 0,
     flycam: doc.flycam ?? 0,
@@ -3644,6 +4067,7 @@ export async function getReconcile(
 
   const input: ReconcileInput = {
     date,
+    spot,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
     requireCodes: spot === "khau-pha",
     close: close
@@ -3721,54 +4145,39 @@ export async function getReconcile(
   /** Danh sách từng khoản chi trong ngày để kế toán đọc rồi xác nhận. */
   const expenseLines: ReconcileDTO["expenseLines"] = [];
   const pushNamed = (who: string, role: BaobayRole, content: string, amount: number) => {
-    if (amount > 0) expenseLines.push({ who, role, content, amount });
+    if (amount > 0) expenseLines.push({ who, role, content, amount, kind: "chi" });
+  };
+  /** kind đi kèm từng dòng để giao diện tô màu thu xanh / chi đỏ, khỏi dán nhãn chữ. */
+  const pushEntry = (who: string, role: BaobayRole, e: ExpenseDTO) => {
+    expenseLines.push({
+      who,
+      role,
+      content: e.content,
+      amount: e.amount,
+      kind: e.kind === "thu" ? "thu" : "chi",
+      note: e.note,
+    });
   };
 
   for (const p of pilots) {
     pushNamed(p.pilotName, "pilot", "Nước cho khách", p.waterCost ?? 0);
     pushNamed(p.pilotName, "pilot", "Xe cho khách", p.guestCarCost ?? 0);
-    for (const e of p.expenses ?? []) {
-      expenseLines.push({
-        who: p.pilotName,
-        role: "pilot",
-        // Phi công thi thoảng cầm hộ tiền khách — dán nhãn để kế toán biết đây là tiền PHẢI THU VỀ
-        content: e.kind === "thu" ? `[THU tại bãi] ${e.content}` : e.content,
-        amount: e.amount,
-        note: e.note,
-      });
-    }
+    // Phi công thi thoảng cầm hộ tiền khách — dòng thu là tiền PHẢI THU VỀ
+    for (const e of p.expenses ?? []) pushEntry(p.pilotName, "pilot", e);
   }
   for (const d of dispatchers) {
     pushNamed(d.staffName, "dispatcher", "Nước cho khách", d.guestWaterCost ?? 0);
     pushNamed(d.staffName, "dispatcher", "Xe lên núi", d.mountainCarCost ?? 0);
     pushNamed(d.staffName, "dispatcher", "Xe đưa đón", d.shuttleCarCost ?? 0);
-    for (const e of d.expenses ?? []) {
-      expenseLines.push({ who: d.staffName, role: "dispatcher", content: e.content, amount: e.amount, note: e.note });
-    }
+    for (const e of d.expenses ?? []) pushEntry(d.staffName, "dispatcher", e);
   }
   // Sổ THU/CHI riêng của kế toán — cũng phải nằm trong bảng chi tiết
   if (close?.ledger?.length) {
-    for (const e of close.ledger) {
-      expenseLines.push({
-        who: close.accountantName || "Kế toán",
-        role: "accountant",
-        content: e.kind === "thu" ? `[THU] ${e.content}` : e.content,
-        amount: e.amount,
-        note: e.note,
-      });
-    }
+    for (const e of close.ledger) pushEntry(close.accountantName || "Kế toán", "accountant", e);
   }
 
   for (const c of cameramen) {
-    for (const e of c.expenses ?? []) {
-      expenseLines.push({
-        who: c.cameramanName,
-        role: "cameraman",
-        content: e.kind === "thu" ? `[THU tại bãi] ${e.content}` : e.content,
-        amount: e.amount,
-        note: e.note,
-      });
-    }
+    for (const e of c.expenses ?? []) pushEntry(c.cameramanName, "cameraman", e);
   }
 
   return toReconcileDTO(result, expenseLines, username);

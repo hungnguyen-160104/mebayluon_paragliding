@@ -55,7 +55,23 @@
       "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t8-kt\",\"password\":\"Test1234\",\"displayName\":\"T8 Ke Toan\",\"role\":\"accountant\"}' -o /dev/null -w 'acc:%{http_code} ')",
       "Bash(curl -s -c cj8.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t8-kt\",\"password\":\"Test1234\"}' -o /dev/null -w \"login8:%{http_code}\\\\n\")",
       "Bash(curl -s -b cj8.txt -X POST http://localhost:8080/api/baocao/close?spot=khau-pha -H 'Content-Type: application/json' -d '{ *)",
-      "Bash(awk 'NR>=3180 && NR<=3260 && \\(/pushSheet/ || /pushCloseRow/ || /runInBackground/\\)' services/baobay.service.ts)"
+      "Bash(awk 'NR>=3180 && NR<=3260 && \\(/pushSheet/ || /pushCloseRow/ || /runInBackground/\\)' services/baobay.service.ts)",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t10-dp\",\"password\":\"Test1234\",\"displayName\":\"T10 Dieu Phoi\",\"role\":\"dispatcher\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc:%{http_code} ')",
+      "Bash(curl -s -c cj10.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t10-dp\",\"password\":\"Test1234\"}' -o /dev/null -w \"login10:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cj10.txt -X POST http://localhost:8080/api/baocao/reports/dispatcher?spot=ha-noi -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t11-dp\",\"password\":\"Test1234\",\"displayName\":\"T11 Dieu Phoi\",\"role\":\"dispatcher\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc:%{http_code} ')",
+      "Bash(curl -s -c cj11.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t11-dp\",\"password\":\"Test1234\"}' -o /dev/null -w \"login11:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cj11.txt -X POST http://localhost:8080/api/baocao/booking?spot=ha-noi -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(python3 -c \"import json;print\\(json.load\\(open\\('b1.json'\\)\\)['booking']['id']\\)\")",
+      "Bash(curl -s -b cj11.txt \"http://localhost:8080/api/baocao/booking?date=2026-08-20&spot=ha-noi\" -o g1.json -w \"get-flightday:%{http_code} \")",
+      "Bash(curl -s -b cj11.txt \"http://localhost:8080/api/baocao/booking?date=2026-08-13&spot=ha-noi\" -o g2.json -w \"get-today:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cj11.txt -X PATCH http://localhost:8080/api/baocao/booking?spot=ha-noi -H 'Content-Type: application/json' -d '{\"id\":\"__TRACKED_VAR__\"}' -o p1.json -w 'done:%{http_code}\\\\n')",
+      "Bash(curl -s -b cj13.txt -X POST http://localhost:8080/api/baocao/close?spot=ha-noi -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(node --import ./alias.mjs live-hn.mjs)",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t15-dp\",\"password\":\"Test1234\",\"displayName\":\"T15 DP\",\"role\":\"dispatcher\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc:%{http_code} ')",
+      "Bash(curl -s -b cj.txt -X POST http://localhost:8080/api/admin/baocao/accounts -H 'Content-Type: application/json' -d '{\"username\":\"t15-kt\",\"password\":\"Test1234\",\"displayName\":\"T15 KT\",\"role\":\"accountant\",\"spots\":[\"ha-noi\"]}' -o /dev/null -w 'acc2:%{http_code} ')",
+      "Bash(curl -s -c cj15.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t15-dp\",\"password\":\"Test1234\"}' -o /dev/null -w \"dp:%{http_code} \")",
+      "Bash(curl -s -c cj15k.txt -X POST http://localhost:8080/api/baocao/login -H 'Content-Type: application/json' -d '{\"username\":\"t15-kt\",\"password\":\"Test1234\"}' -o /dev/null -w \"kt:%{http_code}\\\\n\")"
     ],
     "additionalDirectories": [
       "/Users/dangvm/Desktop/mebayluon_paragliding/app/spots/[slug]"

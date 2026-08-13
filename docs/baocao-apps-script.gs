@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v13`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v15`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -114,7 +114,9 @@ const KINDS = {
     'Vé xuất ra': 'ticketsIssued',
     'Vé thu hồi': 'ticketsReturned',
     'Vé huỷ': 'cancelledCount',
+    'Khách đăng ký': 'registeredGuests',
     'Mã vé huỷ': 'cancelledCodes',
+    'Ghi chú vé huỷ': 'cancelledNote',
     'Vé dời lịch': 'rescheduledCount',
     'Mã vé dời lịch': 'rescheduledCodes',
     'Dải mã vé': 'issuedRanges',
@@ -166,6 +168,29 @@ const KINDS = {
     'Xác nhận lúc': 'confirmedAt',
     'Người xác nhận': 'confirmedBy',
     'Lý do từ chối': 'rejectedReason',
+    'Cập nhật lúc': 'updatedAt',
+  },
+  booking: {
+    'Khoá': 'key',
+    'Ngày bay': 'flightDate',
+    'Điểm bay': 'spot',
+    'Nhập lúc': 'createdAt',
+    'Người nhập': 'createdBy',
+    'Nguồn': 'source',
+    'Số booking': 'bookingCode',
+    'Tên liên hệ': 'contactName',
+    'Số khách': 'guestCount',
+    'Flycam': 'flycam',
+    'Camera 360': 'video360',
+    'Dù cờ đỏ': 'redFlag',
+    'Bay kéo cờ': 'flagFlight',
+    'Đưa đón': 'pickup',
+    'Giờ dự kiến': 'expectedTime',
+    'Đã cọc': 'deposit',
+    'Còn lại phải thu': 'remaining',
+    'Trạng thái': 'status',
+    'Dời từ': 'rescheduledFrom',
+    'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
   },
   daysummary: {
@@ -238,7 +263,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v13',
+    version: 'baobay-multispot-v15',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

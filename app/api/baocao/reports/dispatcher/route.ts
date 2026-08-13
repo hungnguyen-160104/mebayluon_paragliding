@@ -9,6 +9,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
   listDispatcherReportsOfDate,
+  listSpotStaffByRole,
   upsertDispatcherReportByAccountant,
   getDispatcherReport,
   getReconcileForUser,
@@ -43,7 +44,11 @@ export async function GET(req: Request) {
     if (!date || params.get("all") !== "1") {
       return NextResponse.json({ message: "Kế toán dùng ?date=YYYY-MM-DD&all=1" }, { status: 400 });
     }
-    return NextResponse.json({ reports: await listDispatcherReportsOfDate(spot, date) });
+    const [reports, staff] = await Promise.all([
+      listDispatcherReportsOfDate(spot, date),
+      listSpotStaffByRole(spot, "dispatcher"),
+    ]);
+    return NextResponse.json({ reports, staff });
   }
 
   if (date) {

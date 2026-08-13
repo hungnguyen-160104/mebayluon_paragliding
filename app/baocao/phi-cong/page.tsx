@@ -11,6 +11,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "../components/client-api";
+import { DateBar } from "../components/DateBar";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { MyShifts } from "../components/MyShifts";
@@ -19,17 +20,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import {
-  Banner,
-  Button,
-  Card,
-  CountInput,
-  Field,
-  MoneyInput,
-  Readout,
-  TextArea,
-  TextInput,
-} from "../components/ui";
+import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput } from "../components/ui";
 
 /**
  * Phi công báo cáo một ngày bay.
@@ -351,24 +342,16 @@ export default function PilotReportPage() {
         }}
         className="space-y-4"
       >
-        <Card title="Ngày bay (Flight date)">
-          <Field
-            label="Chọn ngày (Select date)"
-            hint={`Chỉ nhập được trong ${BACKDATE_LIMIT_DAYS} ngày gần đây. Đang xem: ${formatDateKeyVN(date)}`}
-          >
-            <TextInput
-              type="date"
-              value={date}
-              max={today}
-              min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-            />
-          </Field>
-
-          {loadingDay && <p className="mt-2 text-xs text-slate-500">Đang tải số liệu ngày này…</p>}
-
+        <DateBar
+          date={date}
+          onChange={setDate}
+          max={today}
+          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+          loading={loadingDay}
+        />
+        <div className="space-y-3">
           {!loadingDay && existing && (
-            <div className="mt-3">
+            <div>
               <Banner tone={existing.submitted ? "success" : "info"}>
                 {existing.submitted ? (
                   <>
@@ -384,7 +367,7 @@ export default function PilotReportPage() {
               </Banner>
             </div>
           )}
-        </Card>
+        </div>
 
         <Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
           <div className="space-y-3">
@@ -462,27 +445,29 @@ export default function PilotReportPage() {
           title="Dịch vụ gia tăng (Add-on services)"
           hint="Chỉ SỐ LƯỢNG là bắt buộc — mã vé để trống cũng được, chỉ cần điền khi kế toán báo lệch số với điều phối (quantity required; ticket codes optional)"
         >
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Field label="Flycam">
-              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} />
-            </Field>
-            <Field label="Camera 360">
-              <CountInput value={form.video360} onChange={(v) => set("video360", v)} />
-            </Field>
-            <Field label={bi("Dù cờ đỏ", "red flag")}>
-              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} />
-            </Field>
-            <Field label={bi("Bay kéo cờ", "flag flight")}>
-              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
-            </Field>
+          {/* Mỗi dịch vụ một khung màu riêng — các cụm đếm sát nhau không còn lẫn */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ServiceBox tone="flycam" label="Flycam">
+              <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} />
+            </ServiceBox>
+            <ServiceBox tone="video360" label="Camera 360">
+              <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} />
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label={bi("Dù cờ đỏ", "red flag")}>
+              <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} />
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ", "flag flight")}>
+              <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
+            </ServiceBox>
           </div>
 
           <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
             <summary className="cursor-pointer text-sm font-medium text-slate-700">
               Mã vé từng dịch vụ — không bắt buộc (optional ticket codes)
             </summary>
+            {/* Cùng bộ màu với cụm đếm phía trên — nhìn màu là biết đang gõ mã cho dịch vụ nào */}
             <div className="mt-3 space-y-3">
-              <Field label="Mã vé Flycam">
+              <ServiceBox tone="flycam" label="Mã vé Flycam">
                 <TextInput
                   value={form.flycamCodesText}
                   onChange={(e) => set("flycamCodesText", e.target.value.toUpperCase())}
@@ -491,8 +476,8 @@ export default function PilotReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé Camera 360">
+              </ServiceBox>
+              <ServiceBox tone="video360" label="Mã vé Camera 360">
                 <TextInput
                   value={form.video360CodesText}
                   onChange={(e) => set("video360CodesText", e.target.value.toUpperCase())}
@@ -501,8 +486,8 @@ export default function PilotReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé dù cờ đỏ">
+              </ServiceBox>
+              <ServiceBox tone="redFlag" label="Mã vé dù cờ đỏ">
                 <TextInput
                   value={form.redFlagCodesText}
                   onChange={(e) => set("redFlagCodesText", e.target.value.toUpperCase())}
@@ -510,8 +495,8 @@ export default function PilotReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
-              <Field label="Mã vé bay kéo cờ">
+              </ServiceBox>
+              <ServiceBox tone="flagFlight" label="Mã vé bay kéo cờ">
                 <TextInput
                   value={form.flagFlightCodesText}
                   onChange={(e) => set("flagFlightCodesText", e.target.value.toUpperCase())}
@@ -519,7 +504,7 @@ export default function PilotReportPage() {
                   spellCheck={false}
                   disabled={locked}
                 />
-              </Field>
+              </ServiceBox>
 
               {parsed360.codes.length > 0 && parsed360.codes.length !== form.video360 && (
                 <Banner tone="warning">

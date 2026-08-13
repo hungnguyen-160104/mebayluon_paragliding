@@ -31,7 +31,13 @@ export type ExpenseDTO = {
 };
 
 /** Vé huỷ theo nhóm: nhiều mã cùng đoàn – lý do – tên liên hệ. */
-export type CancelEntryDTO = { codes: string[]; reason: string; contactName: string };
+export type CancelEntryDTO = {
+  codes: string[];
+  reason: string;
+  contactName: string;
+  /** Điểm không xuất vé (Hà Nội): ghi chú nhóm khách thay cho ô mã vé. */
+  note?: string;
+};
 
 /** Vé dời lịch theo nhóm: nhiều mã cùng đoàn – ngày dời tới – lý do – liên hệ – sđt. */
 export type RescheduleEntryDTO = {
@@ -40,6 +46,8 @@ export type RescheduleEntryDTO = {
   reason: string;
   contactName: string;
   phone: string;
+  /** Điểm không xuất vé (Hà Nội): ghi chú nhóm khách thay cho ô mã vé. */
+  note?: string;
 };
 
 /** Khách ngoại giao: mã vé – số tiền thu được (nếu có). */
@@ -149,6 +157,9 @@ export type DispatcherReportDTO = {
   cancelledCount: number;
   cancelledCodes: string[];
   cancelledEntries: CancelEntryDTO[];
+  /** HÀ NỘI: nhóm KHÁCH huỷ/dời (tên, mã book, số khách…) — nguồn cho kế toán xác nhận. */
+  cancelledGuestEntries: CancelGuestDTO[];
+  rescheduledGuestEntries: RescheduleGuestDTO[];
   rescheduledCount: number;
   rescheduled: RescheduledDTO[];
   rescheduledEntries: RescheduleEntryDTO[];
@@ -210,7 +221,15 @@ export type DailyCloseDTO = {
   rescheduledCount: number;
   issuedRanges: IssuedRangeDTO[];
   cancelledCodes: string[];
+  /** Ghi chú cho nhóm vé huỷ hoàn tiền (lý do, ai duyệt hoàn…). */
+  cancelledNote: string;
   rescheduled: RescheduledDTO[];
+  /** HÀ NỘI (không xuất vé): số khách ĐĂNG KÝ trong ngày — thế chỗ "vé xuất ra". */
+  registeredGuests: number;
+  /** HÀ NỘI: từng nhóm khách HUỶ hoàn tiền — tên, mã book, số khách, nguồn, tiền hoàn. */
+  cancelledGuestEntries: CancelGuestDTO[];
+  /** HÀ NỘI: từng nhóm khách DỜI lịch — tên, số lượng, ngày dời, ghi chú. */
+  rescheduledGuestEntries: RescheduleGuestDTO[];
   cashTotal: number;
   transferTotal: number;
   flycam: number;
@@ -232,6 +251,52 @@ export type DailyCloseDTO = {
   updatedAt: string;
 };
 
+/** Booking đặt trước — khách chốt hôm nay, bay ngày khác. */
+export type BookingDTO = {
+  id: string;
+  spot: string;
+  /** Ngày khách bay — booking hiện trên trang điều phối đúng ngày này. */
+  flightDate: string;
+  createdByUsername: string;
+  createdByName: string;
+  /** Thời điểm điều phối NHẬP booking (ISO) — chính là lúc khách đặt. */
+  createdAt: string;
+  source: string;
+  contactName: string;
+  bookingCode: string;
+  guestCount: number;
+  flycam: number;
+  video360: number;
+  redFlag: number;
+  flagFlight: number;
+  pickup: "self" | "bigc" | "hotel" | "other";
+  /** Đón tại đâu khi pickup = "other". */
+  pickupNote: string;
+  expectedTime: string;
+  deposit: number;
+  /** Còn lại phải thu khi khách đến bay. */
+  remaining: number;
+  note: string;
+  status: "open" | "done" | "cancelled";
+  doneAt?: string;
+  doneBy?: string;
+  /** Ngày bay cũ nếu đã dời lịch — hiện "dời từ dd/mm" cho điều phối biết. */
+  rescheduledFrom: string[];
+};
+
+/** HÀ NỘI: một nhóm khách huỷ hoàn tiền — điều phối nhập, kế toán xác nhận. */
+export type CancelGuestDTO = {
+  name: string;
+  bookingCode: string;
+  guests: number;
+  source: string;
+  refund: number;
+  note?: string;
+};
+
+/** HÀ NỘI: một nhóm khách dời lịch trong sổ chốt ngày của kế toán. */
+export type RescheduleGuestDTO = { name: string; guests: number; toDate: string; note: string };
+
 /** Kết quả đối chiếu một ngày, dạng gửi qua API. */
 export type ReconcileDTO = {
   date: string;
@@ -242,7 +307,15 @@ export type ReconcileDTO = {
   duplicateCodes: Array<{ code: string; pilots: string[] }>;
   /** Tổng chi tiêu của cả ngày, để kế toán xác nhận. */
   expenseTotal: number;
-  expenseLines: Array<{ who: string; role: BaobayRole; content: string; amount: number; note?: string }>;
+  expenseLines: Array<{
+    who: string;
+    role: BaobayRole;
+    content: string;
+    amount: number;
+    /** thu = tiền nhân viên cầm hộ/thu tại bãi (xanh) · chi = tiền đã chi (đỏ). */
+    kind?: "thu" | "chi";
+    note?: string;
+  }>;
   /** Lỗi của riêng người đang đăng nhập. */
   myIssues?: Issue[];
 };

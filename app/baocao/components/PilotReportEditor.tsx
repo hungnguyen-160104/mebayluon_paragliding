@@ -8,7 +8,7 @@ import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, TextArea, TextInput } from "./ui";
+import { Banner, Button, Card, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
 
 /**
  * Khung cho KẾ TOÁN sửa báo cáo phi công ngay trên trang chốt ngày.
@@ -32,6 +32,10 @@ export function PilotReportEditor({
   onSaved: () => void;
 }) {
   const [reports, setReports] = useState<PilotReportDTO[]>([]);
+  const [staff, setStaff] = useState<Array<{ username: string; name: string }>>([]);
+  /** Phi công CHƯA báo cáo được kế toán chọn thêm vào danh sách để nhập hộ. */
+  const [added, setAdded] = useState<string[]>([]);
+  const [pick, setPick] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +43,13 @@ export function PilotReportEditor({
     setBusy(true);
     setError(null);
     try {
-      const res = await apiGet<{ reports: PilotReportDTO[] }>(
+      const res = await apiGet<{ reports: PilotReportDTO[]; staff?: Array<{ username: string; name: string }> }>(
         `/api/baocao/reports/pilot?date=${date}&all=1&spot=${spot}`,
       );
       setReports(res.reports);
+      setStaff(res.staff ?? []);
+      // Người đã có báo cáo thật thì khỏi giữ trong danh sách "thêm tay"
+      setAdded((prev) => prev.filter((u) => !res.reports.some((r) => r.username === u)));
     } catch (err: any) {
       setError(err?.message || "Không tải được báo cáo phi công");
     } finally {
@@ -54,6 +61,18 @@ export function PilotReportEditor({
     load();
   }, [load]);
 
+  /** Phi công của điểm chưa có báo cáo và chưa được thêm — nguồn cho ô chọn. */
+  const missing = staff.filter(
+    (a) => !reports.some((r) => r.username === a.username) && !added.includes(a.username),
+  );
+  const rows: PilotReportDTO[] = [
+    ...reports,
+    ...added
+      .map((u) => staff.find((a) => a.username === u))
+      .filter(Boolean)
+      .map((a) => blankPilotReport(a!.username, a!.name, date)),
+  ];
+
   return (
     <Card
       title={`Báo cáo phi công trong ngày (${reports.length})`}
@@ -62,17 +81,95 @@ export function PilotReportEditor({
       {error && <Banner tone="error">{error}</Banner>}
       {busy && <p className="text-sm text-slate-500">Đang tải…</p>}
 
-      {!busy && reports.length === 0 && (
-        <p className="text-sm text-slate-500">Chưa phi công nào báo cáo ngày này.</p>
+      {!busy && rows.length === 0 && (
+        <p className="text-sm text-slate-500">Chưa phi công nào báo cáo ngày này — thêm người bằng ô bên dưới.</p>
       )}
 
       <ul className="divide-y divide-slate-100">
-        {reports.map((r) => (
-          <PilotRow key={r.id} report={r} spot={spot} date={date} locked={locked} onSaved={() => { load(); onSaved(); }} />
+        {rows.map((r) => (
+          <PilotRow
+            key={r.username}
+            report={r}
+            spot={spot}
+            date={date}
+            locked={locked}
+            fresh={added.includes(r.username)}
+            onSaved={() => { load(); onSaved(); }}
+          />
         ))}
       </ul>
+
+      {/* Thêm phi công chưa báo cáo vào danh sách bay rồi nhập hộ */}
+      {!locked && missing.length > 0 && (
+        <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
+          <select
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
+          >
+            <option value="">— chọn phi công chưa báo cáo ({missing.length}) —</option>
+            {missing.map((a) => (
+              <option key={a.username} value={a.username}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-11 px-4 text-xs"
+            disabled={!pick}
+            onClick={() => {
+              setAdded((prev) => [...prev, pick]);
+              setPick("");
+            }}
+          >
+            ＋ Thêm & nhập hộ
+          </Button>
+        </div>
+      )}
     </Card>
   );
+}
+
+/** Bản trắng cho phi công CHƯA báo cáo — kế toán điền rồi lưu là tạo báo cáo thật. */
+function blankPilotReport(username: string, pilotName: string, date: string): PilotReportDTO {
+  return {
+    id: `new-${username}`,
+    date,
+    username,
+    pilotName,
+    flightCount: 0,
+    ticketCodes: [],
+    flycam: 0,
+    flycamCodes: [],
+    video360: 0,
+    video360Codes: [],
+    redFlag: 0,
+    redFlagCodes: [],
+    flagFlight: 0,
+    flagFlightCodes: [],
+    diplomaticGuests: 0,
+    diplomaticCodes: [],
+    diplomaticNoTicket: 0,
+    siteFeeGuests: 0,
+    waterCost: 0,
+    guestCarCost: 0,
+    pickupBigC: 0,
+    pickupHotel: 0,
+    mountainTrips: 0,
+    ppgFlights: 0,
+    ppgCodes: [],
+    ppgNoTicket: 0,
+    expenses: [],
+    note: "",
+    submitted: false,
+    lateSubmit: false,
+    latePenalty: 0,
+    latePenaltyWaived: false,
+    sheetSynced: false,
+    updatedAt: "",
+  };
 }
 
 function PilotRow({
@@ -80,22 +177,29 @@ function PilotRow({
   spot,
   date,
   locked,
+  fresh,
   onSaved,
 }: {
   report: PilotReportDTO;
   spot: string;
   date: string;
   locked: boolean;
+  /** true = dòng kế toán vừa thêm tay, chưa có báo cáo thật — mở sẵn form. */
+  fresh?: boolean;
   onSaved: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(fresh));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [form, setForm] = useState(() => toForm(report));
+  /** Đã lưu thành công và CHƯA sửa gì thêm — nút chuyển sang "✓ Đã lưu". */
+  const [savedClean, setSavedClean] = useState(false);
 
-  const set = <K extends keyof ReturnType<typeof toForm>>(key: K, value: any) =>
+  const set = <K extends keyof ReturnType<typeof toForm>>(key: K, value: any) => {
+    setSavedClean(false);
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   async function save(submit: boolean) {
     setSaving(true);
@@ -108,6 +212,7 @@ function PilotRow({
       );
       setWarnings(res.warnings || []);
       setForm(toForm(res.report));
+      setSavedClean(true);
       onSaved();
     } catch (err: any) {
       setError(err?.message || "Không lưu được");
@@ -158,12 +263,14 @@ function PilotRow({
           </div>
 
           <Field label="Mã vé đã bay (PG)">
+            {/* Ô gọn một dòng — cần dài thì tự giãn theo nội dung dán vào */}
             <TextArea
               value={form.ticketCodesText}
               onChange={(e) => set("ticketCodesText", e.target.value)}
               autoCapitalize="characters"
               spellCheck={false}
-              className="min-h-16"
+              className="min-h-0 !h-12 py-3"
+              rows={1}
             />
           </Field>
 
@@ -189,6 +296,7 @@ function PilotRow({
                     onChange={(v) => {
                       // Ô "không vé" tự chạy theo khi chưa liệt kê mã — giống trang phi công
                       const codes = countCodes(form.ppgCodesText);
+                      setSavedClean(false);
                       setForm((prev) => ({ ...prev, ppgFlights: v, ppgNoTicket: Math.max(0, v - codes) }));
                     }}
                     max={300}
@@ -205,6 +313,7 @@ function PilotRow({
                     onChange={(e) => {
                       const text = e.target.value.toUpperCase();
                       const codes = countCodes(text);
+                      setSavedClean(false);
                       setForm((prev) => ({
                         ...prev,
                         ppgCodesText: text,
@@ -220,43 +329,44 @@ function PilotRow({
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Flycam">
-              <CountInput value={form.flycam} onChange={(v) => set("flycam", v)} max={300} />
-            </Field>
-            <Field label="Dù cờ đỏ">
-              <CountInput value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
-            </Field>
-            <Field label="Bay kéo cờ">
-              <CountInput value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
-            </Field>
+          {/* Mỗi dịch vụ một khung màu — sát nhau không còn lẫn */}
+          <div className="grid grid-cols-3 gap-2">
+            <ServiceBox tone="flycam" label="Flycam">
+              <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={300} />
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label="Dù cờ đỏ">
+              <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ">
+              <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
+            </ServiceBox>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Mã vé Flycam">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ServiceBox tone="flycam" label="Mã vé Flycam">
               <TextInput
                 value={form.flycamCodesText}
                 onChange={(e) => set("flycamCodesText", e.target.value.toUpperCase())}
                 autoCapitalize="characters"
                 spellCheck={false}
               />
-            </Field>
-            <Field label="Mã vé cờ đỏ">
+            </ServiceBox>
+            <ServiceBox tone="redFlag" label="Mã vé cờ đỏ">
               <TextInput
                 value={form.redFlagCodesText}
                 onChange={(e) => set("redFlagCodesText", e.target.value.toUpperCase())}
                 autoCapitalize="characters"
                 spellCheck={false}
               />
-            </Field>
-            <Field label="Mã vé kéo cờ">
+            </ServiceBox>
+            <ServiceBox tone="flagFlight" label="Mã vé kéo cờ">
               <TextInput
                 value={form.flagFlightCodesText}
                 onChange={(e) => set("flagFlightCodesText", e.target.value.toUpperCase())}
                 autoCapitalize="characters"
                 spellCheck={false}
               />
-            </Field>
+            </ServiceBox>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -318,12 +428,21 @@ function PilotRow({
             </Banner>
           )}
 
+          {savedClean && (
+            <Banner tone="success">✓ Đã lưu thành công — sửa ô nào thì nút lưu bật lại.</Banner>
+          )}
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="h-10 flex-1 bg-white text-xs" disabled={saving} onClick={() => save(false)}>
-              {saving ? "Đang lưu…" : "Lưu (để nháp)"}
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 flex-1 bg-white text-xs"
+              disabled={saving || savedClean}
+              onClick={() => save(false)}
+            >
+              {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu (để nháp)"}
             </Button>
-            <Button type="button" className="h-10 flex-1 text-xs" disabled={saving} onClick={() => save(true)}>
-              {saving ? "Đang lưu…" : "Lưu và chốt hộ"}
+            <Button type="button" className="h-10 flex-1 text-xs" disabled={saving || savedClean} onClick={() => save(true)}>
+              {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu & chốt" : "Lưu và chốt hộ"}
             </Button>
           </div>
         </div>

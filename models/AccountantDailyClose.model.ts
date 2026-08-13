@@ -52,6 +52,10 @@ export interface IAccountantDailyClose {
   /** Các dải mã vé đã xuất, có thể nhiều cuốn khác tiền tố trong một ngày. */
   issuedRanges: IssuedRange[];
   cancelledCodes: string[];
+  cancelledNote?: string;
+  registeredGuests?: number;
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string }>;
   /** Vé dời lịch kèm ngày dời tới (vé cũ huỷ, ngày mới xuất vé khác). */
   rescheduled: RescheduledTicket[];
 
@@ -127,6 +131,39 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
 
     issuedRanges: { type: [IssuedRangeSchema], default: [] },
     cancelledCodes: { type: [String], default: [] },
+    cancelledNote: { type: String, default: "" },
+    // Hà Nội không xuất vé: khách đăng ký + nhóm khách huỷ/dời thay cho mã vé
+    registeredGuests: { type: Number, default: 0, min: 0 },
+    cancelledGuestEntries: {
+      type: [
+        new Schema(
+          {
+            name: { type: String, default: "" },
+            bookingCode: { type: String, default: "" },
+            guests: { type: Number, default: 0, min: 0 },
+            source: { type: String, default: "" },
+            refund: { type: Number, default: 0, min: 0 },
+            note: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    rescheduledGuestEntries: {
+      type: [
+        new Schema(
+          {
+            name: { type: String, default: "" },
+            guests: { type: Number, default: 0, min: 0 },
+            toDate: { type: String, default: "" },
+            note: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     rescheduled: { type: [RescheduledSchema], default: [] },
 
     cashTotal: { type: Number, default: 0, min: 0 },

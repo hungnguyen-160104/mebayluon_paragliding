@@ -143,6 +143,8 @@ export type ReconcileClose = {
 
 export type ReconcileInput = {
   date: string;
+  /** Điểm bay — Hà Nội không xuất vé nên vài phép soát theo mã được tắt. */
+  spot?: string;
   /**
    * Có bắt phi công khai MÃ VÉ từng chuyến không. Khau Phạ: có — đối chiếu tới
    * từng mã. Điểm khác: không — chỉ soát SỐ LƯỢNG; mã nào đã khai thì vẫn kiểm
@@ -213,7 +215,7 @@ const sum = <T>(list: T[], pick: (item: T) => number): number =>
   list.reduce((s, item) => s + (pick(item) || 0), 0);
 
 export function reconcileDay(input: ReconcileInput): ReconcileResult {
-  const { date, close, dispatchers, pilots, cameramen } = input;
+  const { date, spot, close, dispatchers, pilots, cameramen } = input;
   const requireCodes = input.requireCodes !== false;
   const issues: Issue[] = [];
   const byUser: Record<string, Issue[]> = {};
@@ -756,10 +758,15 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     };
 
     const dispatcherUsers = dispatchers.map((d) => d.username);
+    /** Hà Nội không quản lý bằng vé — các phép soát theo VÉ/MÃ tắt ở điểm này. */
+    const countsFollowCodes = spot !== "ha-noi";
 
     check("LECH_KHACH", "Số khách bay", close.guestCount, totals.dispatcherGuests, dispatcherUsers);
-    check("LECH_VE_XUAT", "Số vé xuất ra", close.ticketsIssued, totals.dispatcherIssued, dispatcherUsers);
-    check("LECH_VE_THU_HOI", "Số vé thu về", close.ticketsReturned, totals.dispatcherReturned, dispatcherUsers);
+    // Hà Nội KHÔNG xuất vé — khách book liên hệ rồi bay luôn, không có quầy vé: mọi phép so theo VÉ tắt hẳn
+    if (countsFollowCodes) {
+      check("LECH_VE_XUAT", "Số vé xuất ra", close.ticketsIssued, totals.dispatcherIssued, dispatcherUsers);
+      check("LECH_VE_THU_HOI", "Số vé thu về", close.ticketsReturned, totals.dispatcherReturned, dispatcherUsers);
+    }
     check("LECH_TIEN", "Tiền mặt", close.cashTotal, totals.dispatcherCash, dispatcherUsers, true);
     check("LECH_TIEN", "Chuyển khoản", close.transferTotal, totals.dispatcherTransfer, dispatcherUsers, true);
     // Kéo cờ: số chốt của kế toán so với điều phối (cặp phi công ↔ điều phối đã soát ở trên)
@@ -774,7 +781,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (close.cancelledCount !== close.cancelledCodes.length) {
+    if (countsFollowCodes && close.cancelledCount !== close.cancelledCodes.length) {
       flag({
         code: "LECH_VE_THU_HOI",
         severity: "red",
@@ -783,7 +790,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    if (close.rescheduledCount !== close.rescheduled.length) {
+    if (countsFollowCodes && close.rescheduledCount !== close.rescheduled.length) {
       flag({
         code: "LECH_VE_THU_HOI",
         severity: "red",
@@ -792,8 +799,8 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    /** Vé thu hồi = huỷ + dời lịch. Không có loại thứ ba. */
-    if (close.ticketsReturned !== close.cancelledCount + close.rescheduledCount) {
+    /** Vé thu hồi = huỷ + dời lịch. Không có loại thứ ba. (Hà Nội không có vé — bỏ qua.) */
+    if (countsFollowCodes && close.ticketsReturned !== close.cancelledCount + close.rescheduledCount) {
       flag({
         code: "LECH_VE_THU_HOI",
         severity: "red",
@@ -815,7 +822,8 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
      */
     const flownDistinct = requireCodes ? flownBy.size : totals.pilotFlights;
     const accounted = close.ticketsReturned + flownDistinct;
-    if (close.ticketsIssued !== accounted) {
+    // Hà Nội không xuất vé — cân bằng vé xuất/đã bay không tồn tại ở điểm này
+    if (countsFollowCodes && close.ticketsIssued !== accounted) {
       flag({
         code: "LECH_TONG_CHUYEN",
         severity: "red",

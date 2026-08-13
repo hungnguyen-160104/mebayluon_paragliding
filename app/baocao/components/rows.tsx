@@ -16,7 +16,7 @@
 import { countTicketRange } from "@/lib/baobay/ticket-code";
 import type { ExpenseDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 
-import { Button, MoneyInput, Readout, TextInput } from "./ui";
+import { Button, CountInput, MoneyInput, Readout, TextInput } from "./ui";
 
 /* ------------------------------------------------------------------ */
 /* Dải mã vé                                                           */
@@ -385,16 +385,19 @@ export function toExpenseRows(list: ExpenseDTO[]): ExpenseRow[] {
 /** Lý do gợi ý khi huỷ / dời lịch — vẫn gõ tự do được. */
 export const CANCEL_REASONS = ["Đợi lâu", "Gió/mưa", "Đến trễ"];
 
-export type CancelRow = { codesText: string; reason: string; contactName: string };
+export type CancelRow = { codesText: string; reason: string; contactName: string; note: string };
 
 export function CancelEntryRows({
   rows,
   onChange,
   disabled,
+  noTickets,
 }: {
   rows: CancelRow[];
   onChange: (next: CancelRow[]) => void;
   disabled?: boolean;
+  /** Điểm không xuất vé (Hà Nội): ô mã vé đổi thành ô ghi chú nhóm khách. */
+  noTickets?: boolean;
 }) {
   const set = (index: number, patch: Partial<CancelRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -405,14 +408,23 @@ export function CancelEntryRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
-              <TextInput
-                value={row.codesText}
-                onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-                placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
-                autoCapitalize="characters"
-                spellCheck={false}
-                disabled={disabled}
-              />
+              {noTickets ? (
+                <TextInput
+                  value={row.note}
+                  onChange={(e) => set(i, { note: e.target.value })}
+                  placeholder="Ghi chú · nhóm khách nào, mấy khách…"
+                  disabled={disabled}
+                />
+              ) : (
+                <TextInput
+                  value={row.codesText}
+                  onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={disabled}
+                />
+              )}
               <div className="grid gap-2 sm:grid-cols-2">
                 <TextInput
                   value={row.reason}
@@ -454,9 +466,9 @@ export function CancelEntryRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { codesText: "", reason: "", contactName: "" }])}
+          onClick={() => onChange([...rows, { codesText: "", reason: "", contactName: "", note: "" }])}
         >
-          + Thêm nhóm vé huỷ
+          {noTickets ? "+ Thêm nhóm khách huỷ" : "+ Thêm nhóm vé huỷ"}
         </Button>
       )}
     </div>
@@ -469,6 +481,7 @@ export type RescheduleEntryRow = {
   reason: string;
   contactName: string;
   phone: string;
+  note: string;
 };
 
 export function RescheduleEntryRows({
@@ -476,11 +489,14 @@ export function RescheduleEntryRows({
   onChange,
   minDate,
   disabled,
+  noTickets,
 }: {
   rows: RescheduleEntryRow[];
   onChange: (next: RescheduleEntryRow[]) => void;
   minDate: string;
   disabled?: boolean;
+  /** Điểm không xuất vé (Hà Nội): ô mã vé đổi thành ô ghi chú nhóm khách. */
+  noTickets?: boolean;
 }) {
   const set = (index: number, patch: Partial<RescheduleEntryRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -492,14 +508,23 @@ export function RescheduleEntryRows({
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
               <div className="grid gap-2 sm:grid-cols-[1fr_11rem]">
-                <TextInput
-                  value={row.codesText}
-                  onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0044 MBL0045"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  disabled={disabled}
-                />
+                {noTickets ? (
+                  <TextInput
+                    value={row.note}
+                    onChange={(e) => set(i, { note: e.target.value })}
+                    placeholder="Ghi chú · nhóm khách nào, mấy khách…"
+                    disabled={disabled}
+                  />
+                ) : (
+                  <TextInput
+                    value={row.codesText}
+                    onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                    placeholder="Mã vé (cùng đoàn ghi chung) · MBL0044 MBL0045"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    disabled={disabled}
+                  />
+                )}
                 <TextInput
                   type="date"
                   value={row.toDate}
@@ -550,9 +575,185 @@ export function RescheduleEntryRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { codesText: "", toDate: "", reason: "", contactName: "", phone: "" }])}
+          onClick={() => onChange([...rows, { codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }])}
         >
           + Thêm nhóm dời lịch
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* HÀ NỘI (không xuất vé): nhóm KHÁCH huỷ / dời của kế toán chốt ngày   */
+/* ------------------------------------------------------------------ */
+
+export type CancelGuestRow = {
+  name: string;
+  bookingCode: string;
+  guests: number;
+  source: string;
+  refund: number;
+  note: string;
+};
+
+/** Khách huỷ hoàn tiền: Tên – mã book – số khách – nguồn – tiền hoàn. */
+export function CancelGuestRows({
+  rows,
+  onChange,
+  disabled,
+}: {
+  rows: CancelGuestRow[];
+  onChange: (next: CancelGuestRow[]) => void;
+  disabled?: boolean;
+}) {
+  const set = (index: number, patch: Partial<CancelGuestRow>) =>
+    onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          <div className="flex items-start gap-2">
+            <div className="flex-1 space-y-2">
+              <div className="grid gap-2 sm:grid-cols-[1fr_10rem]">
+                <TextInput
+                  value={row.name}
+                  onChange={(e) => set(i, { name: e.target.value })}
+                  placeholder="Tên khách / đoàn"
+                  disabled={disabled}
+                />
+                <TextInput
+                  value={row.bookingCode}
+                  onChange={(e) => set(i, { bookingCode: e.target.value })}
+                  placeholder="Mã book"
+                  disabled={disabled}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
+                  <CountInput value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                </div>
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Nguồn khách</div>
+                  <TextInput
+                    value={row.source}
+                    onChange={(e) => set(i, { source: e.target.value })}
+                    placeholder="Klook / FB…"
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
+                  <MoneyInput value={row.refund} onChange={(v) => set(i, { refund: v })} />
+                </div>
+              </div>
+              <TextInput
+                value={row.note}
+                onChange={(e) => set(i, { note: e.target.value })}
+                placeholder="Ghi chú · lý do huỷ, hoàn qua đâu…"
+                disabled={disabled}
+              />
+            </div>
+            {rows.length > 1 && !disabled && (
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                aria-label="Bỏ nhóm này"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {!disabled && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 px-3 text-xs"
+          onClick={() => onChange([...rows, { name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }])}
+        >
+          + Thêm khách huỷ
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export type RescheduleGuestRow = { name: string; guests: number; toDate: string; note: string };
+
+/** Khách dời lịch: tên – số lượng – ngày dời – ghi chú. */
+export function RescheduleGuestRows({
+  rows,
+  onChange,
+  minDate,
+  disabled,
+}: {
+  rows: RescheduleGuestRow[];
+  onChange: (next: RescheduleGuestRow[]) => void;
+  minDate: string;
+  disabled?: boolean;
+}) {
+  const set = (index: number, patch: Partial<RescheduleGuestRow>) =>
+    onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          <div className="flex items-start gap-2">
+            <div className="flex-1 space-y-2">
+              <div className="grid gap-2 sm:grid-cols-[1fr_8rem_11rem]">
+                <TextInput
+                  value={row.name}
+                  onChange={(e) => set(i, { name: e.target.value })}
+                  placeholder="Tên khách / đoàn"
+                  disabled={disabled}
+                />
+                <div>
+                  <CountInput value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                </div>
+                <TextInput
+                  type="date"
+                  value={row.toDate}
+                  min={minDate}
+                  onChange={(e) => set(i, { toDate: e.target.value })}
+                  disabled={disabled}
+                />
+              </div>
+              <TextInput
+                value={row.note}
+                onChange={(e) => set(i, { note: e.target.value })}
+                placeholder="Ghi chú · lý do dời, hẹn giờ…"
+                disabled={disabled}
+              />
+            </div>
+            {rows.length > 1 && !disabled && (
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                aria-label="Bỏ nhóm này"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {!disabled && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 px-3 text-xs"
+          onClick={() => onChange([...rows, { name: "", guests: 0, toDate: "", note: "" }])}
+        >
+          + Thêm khách dời
         </Button>
       )}
     </div>
