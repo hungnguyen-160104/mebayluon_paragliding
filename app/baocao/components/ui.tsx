@@ -6,7 +6,7 @@
  *
  * Cố ý viết tay thay vì dùng components/ui (shadcn): người nhập là phi công
  * đứng ở bãi đáp, dùng điện thoại, nhiều khi đeo găng — nên ô nhập phải to
- * (h-12), số phải bật bàn phím số (inputMode="numeric") và có nút +/− bấm
+ * (h-10), số phải bật bàn phím số (inputMode="numeric") và có nút +/− bấm
  * được bằng ngón tay.
  */
 
@@ -24,9 +24,9 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={cn("@container rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5", className)}>
+    <section className={cn("@container rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4", className)}>
       {title && <h2 className="mb-1 text-base font-semibold text-slate-900">{title}</h2>}
-      {hint && <p className="mb-3 text-xs leading-snug text-slate-400">{hint}</p>}
+      {hint && <p className="mb-2 text-xs leading-snug text-slate-400">{hint}</p>}
       {!hint && title && <div className="mb-3" />}
       {children}
     </section>
@@ -50,7 +50,7 @@ export function CollapseCard({
 }) {
   return (
     <details className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
-      <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-4 py-3 sm:px-5">
+      <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 sm:px-4">
         <span className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-base font-semibold text-slate-900">{title}</span>
           {hint && <span className="truncate text-xs text-slate-400">{hint}</span>}
@@ -59,7 +59,7 @@ export function CollapseCard({
           ▾
         </span>
       </summary>
-      <div className="@container border-t border-slate-100 p-4 sm:p-5">{children}</div>
+      <div className="@container border-t border-slate-100 p-3 sm:p-4">{children}</div>
     </details>
   );
 }
@@ -79,7 +79,7 @@ export function Field({
 }) {
   return (
     <label className={cn("block min-w-0", className)}>
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block text-[13px] font-medium text-slate-700">{label}</span>
       {children}
       {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
       {error && <span className="mt-1 block text-xs font-medium text-rose-600">{error}</span>}
@@ -88,16 +88,16 @@ export function Field({
 }
 
 const inputBase =
-  "w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none " +
+  "w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none " +
   "placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 " +
   "disabled:bg-slate-100 disabled:text-slate-500";
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={cn(inputBase, "h-12", props.className)} />;
+  return <input {...props} className={cn(inputBase, "h-10 text-sm", props.className)} />;
 }
 
 export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={cn(inputBase, "min-h-24 py-3 leading-relaxed", props.className)} />;
+  return <textarea {...props} className={cn(inputBase, "min-h-20 py-2.5 text-sm leading-relaxed", props.className)} />;
 }
 
 /**
@@ -151,12 +151,13 @@ export function CountInput({
   compact?: boolean;
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(max, Math.trunc(n) || 0));
-  const btn = compact
-    ? "h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200"
-    : "h-12 w-12 shrink-0 rounded-xl border border-slate-300 bg-slate-50 text-xl font-semibold text-slate-600 active:bg-slate-200";
+  // Một cỡ duy nhất cho mọi cụm đếm — bản to cũ choán chỗ trên desktop.
+  void compact;
+  const btn =
+    "h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200";
 
   return (
-    <div className={compact ? "flex items-stretch gap-1.5" : "flex items-stretch gap-2"}>
+    <div className="flex items-stretch gap-1.5">
       <button
         type="button"
         onClick={() => onChange(clamp(value - 1))}
@@ -176,7 +177,7 @@ export function CountInput({
           inputBase,
           // co được trong flex nhưng không bóp mất ô số (tối thiểu 3rem)
           "min-w-12 flex-1",
-          compact ? "h-10 text-center text-base font-semibold tabular-nums" : "h-12 text-center text-lg font-semibold tabular-nums",
+          "h-10 rounded-lg text-center text-sm font-semibold tabular-nums",
         )}
       />
       <button
@@ -216,9 +217,9 @@ export function MoneyInput({
           const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 13);
           onChange(digits ? Number(digits) : 0);
         }}
-        className={cn(inputBase, "h-12 pr-12 text-right text-lg font-semibold tabular-nums")}
+        className={cn(inputBase, "h-10 rounded-lg pr-9 text-right text-sm font-semibold tabular-nums")}
       />
-      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">
         đ
       </span>
     </div>
@@ -240,7 +241,7 @@ export function Button({
     <button
       {...props}
       className={cn(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed",
         styles,
         className,
       )}
@@ -289,12 +290,12 @@ export function Readout({
   return (
     <div
       className={cn(
-        "rounded-xl border px-3.5 py-2.5",
+        "rounded-lg border px-3 py-2",
         tone === "warning" ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50",
       )}
     >
       <div className="text-xs text-slate-500">{label}</div>
-      <div className="text-lg font-semibold tabular-nums text-slate-900">{value}</div>
+      <div className="text-base font-semibold tabular-nums text-slate-900">{value}</div>
     </div>
   );
 }

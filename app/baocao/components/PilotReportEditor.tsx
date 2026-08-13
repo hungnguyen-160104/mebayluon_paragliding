@@ -295,7 +295,7 @@ function PilotRow({
               onChange={(e) => set("ticketCodesText", e.target.value)}
               autoCapitalize="characters"
               spellCheck={false}
-              className="min-h-0 !h-12 py-3"
+              className="min-h-0 !h-10 py-3"
               rows={1}
             />
           </Field>

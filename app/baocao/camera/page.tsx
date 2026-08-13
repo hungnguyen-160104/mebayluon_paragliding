@@ -223,7 +223,7 @@ export default function CameramanReportPage() {
         />
 
       {/* ============ MỘT lưới 2 cột độc lập ============ */}
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <div>
       <form
         onSubmit={(e) => {
@@ -322,7 +322,7 @@ export default function CameramanReportPage() {
       </form>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
 
         <Card
           title="THU CHI"

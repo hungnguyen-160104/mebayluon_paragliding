@@ -584,7 +584,7 @@ function DailyCloseInner() {
           TRÁI: sổ của kế toán (số tổng, THU CHI, duyệt lệch, nút chốt)
           PHẢI: báo cáo nhân viên để xác nhận/sửa + tiền bạc cá nhân
           Điện thoại giữ một cột: báo cáo nhân viên lên trước như cũ. */}
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <div className="space-y-4 lg:order-2">
       {/* Kế toán sửa báo cáo phi công ngay tại đây — sửa xong đối chiếu tự chạy lại */}
       <PilotReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
@@ -631,7 +631,7 @@ function DailyCloseInner() {
             </div>
           )}
 
-          <div className="grid gap-4 @md:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
               {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}

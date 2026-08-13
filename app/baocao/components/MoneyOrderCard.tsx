@@ -156,7 +156,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
           <select
             value={who}
             onChange={(e) => setWho(e.target.value)}
-            className="h-12 w-full rounded-xl border border-cyan-300 bg-white px-3.5 text-slate-900 outline-none focus:border-cyan-600"
+            className="h-10 w-full rounded-lg border border-cyan-300 bg-white px-3 text-slate-900 outline-none focus:border-cyan-600"
           >
             {staff.map((r) => (
               <option key={r.username} value={r.username}>
@@ -169,7 +169,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="h-12 w-full rounded-xl border border-cyan-300 bg-white px-3.5 text-slate-900 outline-none focus:border-cyan-600"
+            className="h-10 w-full rounded-lg border border-cyan-300 bg-white px-3 text-slate-900 outline-none focus:border-cyan-600"
           >
             {CATEGORIES.map((c) => (
               <option key={c.id} value={c.id}>
@@ -185,7 +185,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
           <MoneyInput value={amount} onChange={setAmount} />
         </Field>
         <Field label="Hình thức">
-          <div className="flex h-12 overflow-hidden rounded-xl border border-slate-300">
+          <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
                 ["transfer", "CK"],

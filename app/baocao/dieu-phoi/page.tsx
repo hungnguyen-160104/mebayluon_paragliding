@@ -434,11 +434,11 @@ export default function DispatcherReportPage() {
       />
 
       {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH — MỘT lưới duy nhất, hai cột độc lập ============
-          TRÁI: form nhập hằng ngày (khách, vé, dịch vụ, THU CHI, nút lưu)
-          PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + ghi chú + tiền bạc + lịch sử */}
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-      <div>
-      <form onSubmit={submit} className="space-y-4">
+          TRÁI: form nhập hằng ngày (khách, vé, dịch vụ, THU CHI, nút lưu) + ghi chú + tiền bạc
+          PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + lịch sử */}
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+      <div className="space-y-3">
+      <form onSubmit={submit} className="space-y-3">
         {/* Ô quan trọng nhất của quầy — thanh ngang luôn mở: tiêu đề bên trái, cụm đếm bên phải */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
           <span className="text-base font-bold text-rose-900">Tổng khách trong ngày</span>
@@ -450,7 +450,7 @@ export default function DispatcherReportPage() {
         {/* Vé chỉ có ở điểm xuất vé giấy — vẫn gập cho gọn */}
         {!noTickets && (
         <CollapseCard title="Vé trong ngày" hint="vé xuất, vé thu về, dải mã">
-          <div className="grid gap-4 @md:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Số vé xuất ra">
               <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
             </Field>
@@ -601,9 +601,20 @@ export default function DispatcherReportPage() {
           </div>
         )}
       </form>
+
+      <CollapseCard title="Ghi chú">
+        <TextArea
+          value={form.note}
+          onChange={(e) => set("note", e.target.value)}
+          placeholder="Khách nợ, vé in lỗi, ca làm việc…"
+          disabled={locked}
+        />
+      </CollapseCard>
+
+      <HandoverBox spot={spot} />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
         <CollectCreate spot={spot} />
 
@@ -677,17 +688,6 @@ export default function DispatcherReportPage() {
             disabled={locked}
           />
         </CollapseCard>
-
-        <CollapseCard title="Ghi chú">
-          <TextArea
-            value={form.note}
-            onChange={(e) => set("note", e.target.value)}
-            placeholder="Khách nợ, vé in lỗi, ca làm việc…"
-            disabled={locked}
-          />
-        </CollapseCard>
-
-      <HandoverBox spot={spot} />
 
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng từng nội dung mình đã báo" />
 

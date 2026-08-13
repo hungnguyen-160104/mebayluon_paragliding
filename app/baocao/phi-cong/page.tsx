@@ -456,7 +456,7 @@ export default function PilotReportPage() {
         />
 
       {/* ============ MỘT lưới 2 cột độc lập: TRÁI form bay/dịch vụ · PHẢI phần còn lại ============ */}
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <div>
       <form
         onSubmit={(e) => {
@@ -642,7 +642,7 @@ export default function PilotReportPage() {
           title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
           hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"
         >
-          <div className="grid gap-4 @md:grid-cols-2">
+          <div className="grid gap-3 @md:grid-cols-2">
             <Field label={bi("Số chuyến PPG", "PPG flights")}>
               <CountInput
                 value={form.ppgFlights}
@@ -744,12 +744,12 @@ export default function PilotReportPage() {
       </form>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <CollapseCard
           title={bi("Khách ngoại giao", "complimentary guests")}
           hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
         >
-          <div className="grid gap-4 @md:grid-cols-2 @2xl:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
             <Field label={bi("Số khách ngoại giao", "guest count")}>
               <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} />
             </Field>
@@ -780,12 +780,12 @@ export default function PilotReportPage() {
         <CollapseCard title={bi("Thu / Chi trong ngày", "money in & out")} hint="Tiền đã bỏ ra, và tiền cầm hộ của khách nếu có — không có thì để trống (money spent, and cash collected from guests if any)">
           {/* Phí bãi + nước: đặc thù RIÊNG Hà Nội — Sa Pa và Khau Phạ được miễn phí */}
           {spot === "ha-noi" && (
-            <div className="grid gap-4 @md:grid-cols-2">
+            <div className="grid gap-3 @md:grid-cols-2">
               <Field
                 label={bi("Phí bãi — số khách", "site fee, per guest")}
                 hint="Tính theo đầu khách, bấm +/−"
               >
-                <CountInput value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
+                <CountInput compact value={form.siteFeeGuests} onChange={(v) => set("siteFeeGuests", v)} max={500} />
               </Field>
               <Field label={bi("Nước cho khách", "water for guests")}>
                 <MoneyInput value={form.waterCost} onChange={(v) => set("waterCost", v)} />
@@ -802,15 +802,15 @@ export default function PilotReportPage() {
             >
               <div />
             </Field>
-            <div className="grid gap-4 @md:grid-cols-2 @2xl:grid-cols-3">
+            <div className="grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
               <Field label="Đón khách từ BigC">
-                <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
+                <CountInput compact value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
               </Field>
               <Field label="Đón khách từ khách sạn">
-                <CountInput value={form.pickupHotel} onChange={(v) => set("pickupHotel", v)} max={100} />
+                <CountInput compact value={form.pickupHotel} onChange={(v) => set("pickupHotel", v)} max={100} />
               </Field>
               <Field label={bi("Xe lên núi", "ride up the mountain")}>
-                <CountInput value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
+                <CountInput compact value={form.mountainTrips} onChange={(v) => set("mountainTrips", v)} max={100} />
               </Field>
             </div>
           </div>

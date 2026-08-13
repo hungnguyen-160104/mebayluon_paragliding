@@ -559,13 +559,16 @@ export function BookingCard({
       title="📒 BOOKING MỚI"
       hint="bấm để nhập khách đặt trước"
     >
-      <div className="grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
+      {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
+      <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
+      <div className="@container">
+      <div className="grid gap-2 @md:grid-cols-2">
         <Field label="Ngày bay">
           <TextInput
             type="date"
             value={form.flightDate}
             min={today}
-            onChange={(e) => e.target.value && set("flightDate", e.target.value)}
+            onChange={(e) => e.target.value && set("flightDate", e.target.value)} className="h-10 rounded-lg text-sm"
           />
         </Field>
         <Field label="Điểm bay">
@@ -577,7 +580,7 @@ export function BookingCard({
               setForm((prev) => ({ ...prev, pickup: "self", pickupNote: "" }));
             }}
             disabled={spots.length <= 1}
-            className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none focus:border-sky-600 disabled:bg-slate-50 disabled:text-slate-500"
+            className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600 disabled:bg-slate-50 disabled:text-slate-500"
           >
             {spots.map((id) => (
               <option key={id} value={id}>
@@ -591,7 +594,7 @@ export function BookingCard({
             value={form.source}
             onChange={(e) => set("source", e.target.value)}
             placeholder="Klook / FB / Zalo / GYG…"
-            list="booking-sources"
+            list="booking-sources" className="h-10 rounded-lg text-sm"
           />
           <datalist id="booking-sources">
             {BOOKING_SOURCES.map((sName) => (
@@ -599,24 +602,32 @@ export function BookingCard({
             ))}
           </datalist>
         </Field>
+        <Field label="Số booking">
+          <TextInput value={form.bookingCode} onChange={(e) => set("bookingCode", e.target.value)} placeholder="KLK12345…" className="h-10 rounded-lg text-sm" />
+        </Field>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 @md:grid-cols-2">
+      <div className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2">
         <Field label="Tên liên hệ">
-          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" />
+          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
         <Field label="SĐT">
-          <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" />
-        </Field>
-        <Field label="Số booking">
-          <TextInput value={form.bookingCode} onChange={(e) => set("bookingCode", e.target.value)} placeholder="KLK12345…" />
+          <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />
         </Field>
         <Field label="Số khách">
           <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
         </Field>
+        <Field label="Giờ dự kiến">
+          <TextInput
+            type="time"
+            value={form.expectedTime}
+            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
+            onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
+          />
+        </Field>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         {/* Tối đa = số khách: 2 khách thì nhiều nhất 2 flycam, 2 cam360… */}
         <ServiceBox tone="flycam" label="Flycam">
           <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={form.guestCount} />
@@ -632,15 +643,15 @@ export function BookingCard({
         </ServiceBox>
       </div>
       {form.guestCount === 0 && (
-        <p className="mt-1 text-[11px] text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
+        <p className="mt-0.5 text-[11px] leading-tight text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
       )}
 
-      <div className="mt-3 grid gap-3 @md:grid-cols-2">
+      <div className="mt-2 grid gap-2 @md:grid-cols-2">
         <Field label="Đưa đón">
           <select
             value={form.pickup}
             onChange={(e) => set("pickup", e.target.value as BookingDTO["pickup"])}
-            className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-slate-900 outline-none focus:border-sky-600"
+            className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
           >
             <option value="self">Tự đến</option>
             {/* Hà Nội có tuyến đón cố định; điểm khác (Khau Phạ, Sa Pa) chọn "Khác" rồi ghi chỗ đón */}
@@ -658,22 +669,11 @@ export function BookingCard({
               value={form.pickupNote}
               onChange={(e) => set("pickupNote", e.target.value)}
               placeholder="Đón tại đâu · VD: homestay Tú Lệ, ngã ba Lìm Mông…"
-              className="mt-2"
+              className="mt-2 h-10 rounded-lg text-sm"
             />
           )}
         </Field>
-        <Field label="Giờ dự kiến">
-          <TextInput
-            type="time"
-            value={form.expectedTime}
-            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
-            onChange={(e) => set("expectedTime", e.target.value)}
-          />
-        </Field>
-      </div>
-
-      {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
-      <div className="mt-3 grid grid-cols-2 gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
+        {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
         <Field label="Đã cọc">
           <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
         </Field>
@@ -684,13 +684,14 @@ export function BookingCard({
           <TextInput
             value={form.transferCode}
             onChange={(e) => set("transferCode", e.target.value)}
-            placeholder="Mã GD ngân hàng…"
+            placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
           />
         </Field>
       </div>
 
       {/* Cọc CK về thẳng tài khoản công ty — không ai cầm khoản này */}
-      <label className="mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <div className="mt-2 grid items-end gap-2 @md:grid-cols-2">
+      <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
         <input
           type="checkbox"
           checked={form.depositToCompany}
@@ -698,35 +699,34 @@ export function BookingCard({
           className="h-5 w-5 rounded border-slate-300"
         />
         <span className="text-sm text-slate-800">
-          Cọc chuyển khoản vào <strong>TK công ty</strong>
+          CK cọc vào <strong>TK Công ty</strong>
         </span>
       </label>
 
-      <div className="mt-3">
-        <Field label="Ghi chú">
-          <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Khách Hàn, cần HDV tiếng Anh…" />
-        </Field>
+      <Field label="Ghi chú">
+          <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Khách Hàn, cần HDV tiếng Anh…" className="h-10 rounded-lg text-sm" />
+      </Field>
       </div>
 
       {error && (
-        <div className="mt-3">
+        <div className="mt-2">
           <Banner tone="error">{error}</Banner>
         </div>
       )}
       {done && (
-        <div className="mt-3">
+        <div className="mt-2">
           <Banner tone="success" onClose={() => setDone(null)}>
             {done}
           </Banner>
         </div>
       )}
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-2.5 flex gap-2">
         {editingId && (
           <Button
             type="button"
             variant="ghost"
-            className="flex-1 bg-white"
+            className="h-11 flex-1 bg-white"
             disabled={saving}
             onClick={() => {
               setEditingId(null);
@@ -737,17 +737,22 @@ export function BookingCard({
             Thôi sửa
           </Button>
         )}
-        <Button type="button" className="flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
+        <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
         </Button>
       </div>
+      </div>
 
-      {upcoming.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-1 text-xs font-semibold text-slate-700">Booking sắp tới ({upcoming.length})</div>
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+      <div className="@container mt-4 @3xl:mt-0">
+        <div className="mb-1 text-xs font-semibold text-slate-700">🗓 Lịch bay & booking sắp tới ({upcoming.length})</div>
+        {upcoming.length === 0 ? (
+          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400">
+            Chưa có booking nào sắp tới.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {upcoming.map((b) => (
-              <li key={b.id} className={"flex flex-wrap items-center gap-2 px-3 py-2" + (editingId === b.id ? " bg-sky-50" : "")}>
+              <li key={b.id} className={"flex flex-wrap items-center gap-1.5 px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
                 <div className="min-w-0 flex-1">
                   <BookingSummary b={b} withDate />
                   <AssignedBadge b={b} />
@@ -777,8 +782,9 @@ export function BookingCard({
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
+      </div>
     </CollapseCard>
   );
 }

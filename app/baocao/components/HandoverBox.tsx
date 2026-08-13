@@ -403,7 +403,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
           <select
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
-            className="h-12 w-full rounded-xl border border-sky-300 bg-white px-3.5 text-slate-900 outline-none focus:border-sky-600"
+            className="h-10 w-full rounded-lg border border-sky-300 bg-white px-3 text-slate-900 outline-none focus:border-sky-600"
           >
             {(data?.recipients ?? []).map((r) => (
               <option key={r.username} value={r.username}>
@@ -518,7 +518,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
             <select
               value={advApprover}
               onChange={(e) => setAdvApprover(e.target.value)}
-              className="h-12 w-full rounded-xl border border-violet-300 bg-white px-3.5 text-slate-900 outline-none focus:border-violet-600"
+              className="h-10 w-full rounded-lg border border-violet-300 bg-white px-3 text-slate-900 outline-none focus:border-violet-600"
             >
               {(data?.approvers ?? []).map((r) => (
                 <option key={r.username} value={r.username}>

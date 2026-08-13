@@ -73,7 +73,7 @@ export function RangeRows({
                 <button
                   type="button"
                   onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                  className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                  className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                   aria-label="Bỏ dải này"
                 >
                   ×
@@ -175,7 +175,7 @@ export function RescheduleRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ dòng này"
               >
                 ×
@@ -270,8 +270,8 @@ export function ExpenseRows({
                   onClick={() => set(i, { method: "cash" })}
                   className={
                     row.method !== "transfer"
-                      ? "h-12 bg-sky-600 px-2.5 text-xs font-semibold text-white"
-                      : "h-12 bg-white px-2.5 text-xs font-medium text-slate-500"
+                      ? "h-10 bg-sky-600 px-2.5 text-xs font-semibold text-white"
+                      : "h-10 bg-white px-2.5 text-xs font-medium text-slate-500"
                   }
                 >
                   TM
@@ -281,8 +281,8 @@ export function ExpenseRows({
                   onClick={() => set(i, { method: "transfer" })}
                   className={
                     row.method === "transfer"
-                      ? "h-12 bg-indigo-600 px-2.5 text-xs font-semibold text-white"
-                      : "h-12 bg-white px-2.5 text-xs font-medium text-slate-500"
+                      ? "h-10 bg-indigo-600 px-2.5 text-xs font-semibold text-white"
+                      : "h-10 bg-white px-2.5 text-xs font-medium text-slate-500"
                   }
                 >
                   CK
@@ -296,8 +296,8 @@ export function ExpenseRows({
                   onClick={() => set(i, { kind: "thu" })}
                   className={
                     row.kind === "thu"
-                      ? "h-12 bg-emerald-600 px-3 text-xs font-semibold text-white"
-                      : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+                      ? "h-10 bg-emerald-600 px-3 text-xs font-semibold text-white"
+                      : "h-10 bg-white px-3 text-xs font-medium text-slate-500"
                   }
                 >
                   Thu
@@ -307,8 +307,8 @@ export function ExpenseRows({
                   onClick={() => set(i, { kind: "chi" })}
                   className={
                     row.kind !== "thu"
-                      ? "h-12 bg-rose-600 px-3 text-xs font-semibold text-white"
-                      : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+                      ? "h-10 bg-rose-600 px-3 text-xs font-semibold text-white"
+                      : "h-10 bg-white px-3 text-xs font-medium text-slate-500"
                   }
                 >
                   Chi
@@ -319,7 +319,7 @@ export function ExpenseRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ khoản này"
               >
                 ×
@@ -477,7 +477,7 @@ export function CancelEntryRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ nhóm này"
               >
                 ×
@@ -592,7 +592,7 @@ export function RescheduleEntryRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ nhóm này"
               >
                 ×
@@ -707,7 +707,7 @@ export function CancelGuestRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ nhóm này"
               >
                 ×
@@ -877,7 +877,7 @@ export function RescheduleGuestRows({
               <button
                 type="button"
                 onClick={() => onChange(rows.filter((_, k) => k !== i))}
-                className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ nhóm này"
               >
                 ×
@@ -947,7 +947,7 @@ export function DiploEntryRows({
             <button
               type="button"
               onClick={() => onChange(rows.filter((_, k) => k !== i))}
-              className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+              className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
               aria-label="Bỏ dòng này"
             >
               ×
@@ -1013,8 +1013,8 @@ export function RevenueRows({
               onClick={() => set(i, { method: "cash" })}
               className={
                 row.method === "cash"
-                  ? "h-12 bg-sky-600 px-3 text-xs font-semibold text-white"
-                  : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+                  ? "h-10 bg-sky-600 px-3 text-xs font-semibold text-white"
+                  : "h-10 bg-white px-3 text-xs font-medium text-slate-500"
               }
             >
               Tiền mặt
@@ -1025,8 +1025,8 @@ export function RevenueRows({
               onClick={() => set(i, { method: "transfer" })}
               className={
                 row.method === "transfer"
-                  ? "h-12 bg-sky-600 px-3 text-xs font-semibold text-white"
-                  : "h-12 bg-white px-3 text-xs font-medium text-slate-500"
+                  ? "h-10 bg-sky-600 px-3 text-xs font-semibold text-white"
+                  : "h-10 bg-white px-3 text-xs font-medium text-slate-500"
               }
             >
               CK
@@ -1036,7 +1036,7 @@ export function RevenueRows({
             <button
               type="button"
               onClick={() => onChange(rows.filter((_, k) => k !== i))}
-              className="h-12 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+              className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
               aria-label="Bỏ dòng này"
             >
               ×

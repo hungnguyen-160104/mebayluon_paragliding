@@ -155,13 +155,13 @@ export default function SummaryPage() {
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={`/api/baocao/export?from=${from}&to=${to}&spot=${spot}`}
-            className="inline-flex h-12 items-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+            className="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             Tải Excel cả kỳ (.xlsx)
           </a>
           <a
             href={`/api/baocao/export?month=${to.slice(0, 7)}&spot=${spot}`}
-            className="inline-flex h-12 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             Tải Excel tháng {to.slice(0, 7)}
           </a>

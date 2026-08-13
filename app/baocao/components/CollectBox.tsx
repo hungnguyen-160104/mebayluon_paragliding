@@ -259,7 +259,7 @@ export function CollectCreate({ spot }: { spot: string }) {
 
       <div className="mt-3">
         <Field label="Khách trả bằng">
-          <div className="flex h-12 overflow-hidden rounded-xl border border-slate-300">
+          <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
                 ["cash", "Tiền mặt"],
@@ -289,7 +289,7 @@ export function CollectCreate({ spot }: { spot: string }) {
             <select
               value={form.collectorUsername}
               onChange={(e) => set("collectorUsername", e.target.value)}
-              className="h-12 w-full rounded-xl border border-emerald-300 bg-white px-3.5 text-slate-900 outline-none focus:border-emerald-600"
+              className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-slate-900 outline-none focus:border-emerald-600"
             >
               <option value="">✓ Chính tôi thu (mặc định)</option>
               {staff.map((a) => (

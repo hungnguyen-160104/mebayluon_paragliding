@@ -121,7 +121,7 @@ export function Shell({
         {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
       </div>
 
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3">{children}</div>
 
       <footer className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
         Trang nội bộ Mê Bay Lượn · số liệu đã lưu sẽ tự chảy sang bảng tổng hợp của kế toán

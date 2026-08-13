@@ -128,13 +128,13 @@ export default function MonthlyReportPage() {
             <div className="flex flex-wrap gap-2">
               <a
                 href={`/api/baocao/export?month=${month}&spot=${spot}`}
-                className="inline-flex h-12 items-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+                className="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Tải Excel cả tháng (.xlsx)
               </a>
               <a
                 href={`/api/baocao/monthly?month=${month}&format=csv&spot=${spot}`}
-                className="inline-flex h-12 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 CSV
               </a>
