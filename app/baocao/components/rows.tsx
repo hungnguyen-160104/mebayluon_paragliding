@@ -565,7 +565,7 @@ export function RescheduleEntryRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid gap-2 @md:grid-cols-3">
+              <div className="grid gap-2 @md:grid-cols-2 @2xl:grid-cols-3">
                 <TextInput
                   value={row.reason}
                   onChange={(e) => set(i, { reason: e.target.value })}
@@ -677,7 +677,7 @@ export function CancelGuestRows({
                   disabled={disabled}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 @md:grid-cols-2 @2xl:grid-cols-3">
                 <div>
                   <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
                   <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />

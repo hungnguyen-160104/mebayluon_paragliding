@@ -211,6 +211,20 @@ export default function CameramanReportPage() {
         </Banner>
       )}
 
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+        />
+
+      {/* ============ MỘT lưới 2 cột độc lập ============ */}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -218,16 +232,6 @@ export default function CameramanReportPage() {
         }}
         className="space-y-4"
       >
-        <DateBar
-          date={date}
-          onChange={setDate}
-          max={today}
-          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-          loading={loadingDay}
-          spot={spot}
-          spotOptions={spotOptions}
-          onSpotChange={(v) => setSpot(v as never)}
-        />
         <div className="space-y-3">
           {!loadingDay && existing && (
             <div>
@@ -240,9 +244,6 @@ export default function CameramanReportPage() {
           )}
         </div>
 
-        {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH: TRÁI quay dù/checkin · PHẢI thu chi + ghi chú ============ */}
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-        <div className="space-y-4">
         <Card title="QUAY DÙ LƯỢN" hint="Số lượng chuyến đã quay trong ngày + mã vé">
           <CountInput value={form.flycamFlights} onChange={(v) => set("flycamFlights", v)} max={1000} />
 
@@ -280,48 +281,6 @@ export default function CameramanReportPage() {
         >
           <CountInput value={form.paraglidingFlights} onChange={(v) => set("paraglidingFlights", v)} max={1000} />
         </Card>
-        </div>
-
-        <div className="space-y-4">
-
-        <Card
-          title="THU CHI"
-          hint="Mỗi dòng: nội dung – số tiền – THU/CHI – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu."
-        >
-          {/* Camera man chi từ tiền túi — không cần phân tiền mặt/CK */}
-          <ExpenseRows
-            rows={form.expenses}
-            onChange={(rows) => set("expenses", rows)}
-            disabled={locked}
-            withKind
-            hideTotals
-          />
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-              <div className="text-xs font-medium text-emerald-800">Tổng thu</div>
-              <div className="text-lg font-bold tabular-nums text-emerald-700">
-                +{formatVND(form.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
-              <div className="text-xs font-medium text-rose-800">Tổng chi</div>
-              <div className="text-lg font-bold tabular-nums text-rose-700">
-                −{formatVND(form.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0))}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Ghi chú">
-          <TextArea
-            value={form.note}
-            onChange={(e) => set("note", e.target.value)}
-            placeholder="Khách đăng ký thêm tại bãi, hỏng thiết bị…"
-            disabled={locked}
-          />
-        </Card>
-        </div>
-        </div>
 
         {error && <Banner tone="error">{error}</Banner>}
 
@@ -361,13 +320,49 @@ export default function CameramanReportPage() {
           </div>
         )}
       </form>
-
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-      <div className="space-y-4">
-      <HandoverBox spot={spot} />
       </div>
 
       <div className="space-y-4">
+
+        <Card
+          title="THU CHI"
+          hint="Mỗi dòng: nội dung – số tiền – THU/CHI – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu."
+        >
+          {/* Camera man chi từ tiền túi — không cần phân tiền mặt/CK */}
+          <ExpenseRows
+            rows={form.expenses}
+            onChange={(rows) => set("expenses", rows)}
+            disabled={locked}
+            withKind
+            hideTotals
+          />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-emerald-800">Tổng thu</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">
+                +{formatVND(form.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-rose-800">Tổng chi</div>
+              <div className="text-lg font-bold tabular-nums text-rose-700">
+                −{formatVND(form.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Ghi chú">
+          <TextArea
+            value={form.note}
+            onChange={(e) => set("note", e.target.value)}
+            placeholder="Khách đăng ký thêm tại bãi, hỏng thiết bị…"
+            disabled={locked}
+          />
+        </Card>
+
+      <HandoverBox spot={spot} />
+
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng số chuyến flycam và chi tiêu" />
 
       <Card title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">

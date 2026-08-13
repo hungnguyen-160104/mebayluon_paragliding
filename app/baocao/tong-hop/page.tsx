@@ -230,7 +230,7 @@ export default function SummaryPage() {
 
       {t && (
         <Card title={`Tổng đã chốt · ${formatDateKeyVN(from)} – ${formatDateKeyVN(to)}`}>
-          <div className="grid grid-cols-2 gap-3 @md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <Stat label="Khách bay" value={String(t.guestCount)} />
             <Stat label="Vé xuất ra" value={String(t.ticketsIssued)} />
             <Stat label="Vé thu hồi" value={String(t.ticketsReturned)} />

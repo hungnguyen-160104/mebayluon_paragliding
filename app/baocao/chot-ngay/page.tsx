@@ -693,7 +693,7 @@ function DailyCloseInner() {
           </div>
 
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
-          <div className="mt-4 grid grid-cols-2 gap-3 @md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
@@ -977,7 +977,7 @@ function DailyCloseInner() {
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind withMethod />
 
           {/* ===== Tổng tự cộng từ các dòng THU của sổ — so ngay với số nhân viên báo ===== */}
-          <div className="mt-4 grid gap-3 @md:grid-cols-3">
+          <div className="mt-4 grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
             <div>
               <Readout
                 label="Tổng tiền mặt thu về (tự cộng)"
@@ -1151,17 +1151,20 @@ function Compare({
   const shown = money ? formatVND(value) : String(value);
 
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-      <span className={same ? "text-emerald-700" : "text-amber-700"}>
-        {same ? "✓" : "≠"} {label}: <strong className="tabular-nums">{shown}</strong>
+    <div className="mt-1.5 flex items-center gap-1.5 text-xs leading-none">
+      <span className={"flex min-w-0 flex-1 items-baseline gap-1 " + (same ? "text-emerald-700" : "text-amber-700")}>
+        <span className="shrink-0">{same ? "✓" : "≠"}</span>
+        <span className="truncate">{label}</span>
+        <strong className="ml-auto shrink-0 tabular-nums">{shown}</strong>
       </span>
       {!same && onTake && (
         <button
           type="button"
           onClick={() => onTake(value)}
-          className="rounded-md border border-slate-300 bg-white px-2 py-0.5 font-medium text-slate-700 hover:bg-slate-50"
+          title={`Lấy ${shown}`}
+          className="shrink-0 rounded-md border border-amber-300 bg-white px-1.5 py-0.5 font-semibold text-amber-800 hover:bg-amber-50"
         >
-          lấy số này
+          ⧉ lấy
         </button>
       )}
     </div>

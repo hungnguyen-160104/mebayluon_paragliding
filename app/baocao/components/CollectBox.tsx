@@ -236,7 +236,7 @@ export function CollectCreate({ spot }: { spot: string }) {
       title="💰 Lệnh thu tiền"
       hint="khách chốt lịch — TM chỉ định người thu, CK ghi vào TK công ty"
     >
-      <div className="grid gap-3 @md:grid-cols-3">
+      <div className="grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
         <Field label="Tên khách">
           <TextInput value={form.guestName} onChange={(e) => set("guestName", e.target.value)} placeholder="anh Tú…" />
         </Field>

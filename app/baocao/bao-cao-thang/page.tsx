@@ -157,7 +157,7 @@ export default function MonthlyReportPage() {
           )}
 
           <Card title={`Tổng cả đội tháng ${month}`}>
-            <div className="grid grid-cols-2 gap-3 @md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3">
               <Stat label="Chuyến đến hôm nay" value={String(data.grandToDate.flights)} />
               <Stat label="Chuyến cả tháng" value={String(data.grandMonth.flights)} strong />
               <Stat label="Camera 360 cả tháng" value={String(data.grandMonth.video360)} />

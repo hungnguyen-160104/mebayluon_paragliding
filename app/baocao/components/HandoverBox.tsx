@@ -294,7 +294,7 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
       )}
 
       {b && (
-        <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2">
           <Cell label={t("Thu hộ", "collected")} value={b.collected} tone="sky" />
           {b.received > 0 && <Cell label={t("Nhận từ nhân sự", "received")} value={b.received} tone="sky" />}
           <Cell label={t("Đã chi", "spent")} value={-b.spent} tone="slate" />

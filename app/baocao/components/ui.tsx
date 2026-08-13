@@ -26,7 +26,7 @@ export function Card({
   return (
     <section className={cn("@container rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5", className)}>
       {title && <h2 className="mb-1 text-base font-semibold text-slate-900">{title}</h2>}
-      {hint && <p className="mb-3 text-sm text-slate-500">{hint}</p>}
+      {hint && <p className="mb-3 text-xs leading-snug text-slate-400">{hint}</p>}
       {!hint && title && <div className="mb-3" />}
       {children}
     </section>
@@ -51,9 +51,9 @@ export function CollapseCard({
   return (
     <details className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
       <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-4 py-3 sm:px-5">
-        <span>
-          <span className="text-base font-semibold text-slate-900">{title}</span>
-          {hint && <span className="ml-2 text-xs text-slate-400">{hint}</span>}
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span className="shrink-0 text-base font-semibold text-slate-900">{title}</span>
+          {hint && <span className="truncate text-xs text-slate-400">{hint}</span>}
         </span>
         <span aria-hidden className="text-slate-400 transition-transform group-open:rotate-180">
           ▾
@@ -130,7 +130,7 @@ export function ServiceBox({
   const t = SERVICE_TONE[tone];
   return (
     <div className={cn("min-w-0 rounded-xl border p-2.5", t.box)}>
-      <div className={cn("mb-1.5 text-xs font-semibold", t.label)}>{label}</div>
+      <div className={cn("mb-1.5 text-xs font-semibold leading-tight", t.label)}>{label}</div>
       {children}
     </div>
   );
@@ -174,8 +174,8 @@ export function CountInput({
         onFocus={(e) => e.currentTarget.select()}
         className={cn(
           inputBase,
-          // min-w-0: ô số phải co được trong flex — không thì nút −/+ tràn ra ngoài mép thẻ
-          "min-w-0 flex-1",
+          // co được trong flex nhưng không bóp mất ô số (tối thiểu 3rem)
+          "min-w-12 flex-1",
           compact ? "h-10 text-center text-base font-semibold tabular-nums" : "h-12 text-center text-lg font-semibold tabular-nums",
         )}
       />

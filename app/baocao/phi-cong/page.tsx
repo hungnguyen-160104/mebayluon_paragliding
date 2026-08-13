@@ -444,6 +444,20 @@ export default function PilotReportPage() {
         </Banner>
       )}
 
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+        />
+
+      {/* ============ MỘT lưới 2 cột độc lập: TRÁI form bay/dịch vụ · PHẢI phần còn lại ============ */}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -451,16 +465,6 @@ export default function PilotReportPage() {
         }}
         className="space-y-4"
       >
-        <DateBar
-          date={date}
-          onChange={setDate}
-          max={today}
-          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-          loading={loadingDay}
-          spot={spot}
-          spotOptions={spotOptions}
-          onSpotChange={(v) => setSpot(v as never)}
-        />
         <div className="space-y-3">
           {!loadingDay && existing && (
             <div>
@@ -481,10 +485,6 @@ export default function PilotReportPage() {
           )}
         </div>
 
-        {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH ============
-            TRÁI: chuyến bay (PG, PPG) + dịch vụ · PHẢI: ngoại giao, thu chi, khách huỷ/dời, ghi chú */}
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-        <div className="space-y-4">
         {/* Phi công thuần PPG không có chuyến PG — ẩn cả khối */}
         {flyPg && (
 <Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
@@ -565,7 +565,7 @@ export default function PilotReportPage() {
           hint="Chỉ SỐ LƯỢNG là bắt buộc — mã vé để trống cũng được, chỉ cần điền khi kế toán báo lệch số với điều phối (quantity required; ticket codes optional)"
         >
           {/* Mỗi dịch vụ một khung màu riêng — các cụm đếm sát nhau không còn lẫn */}
-          <div className="grid grid-cols-2 gap-3 @md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} />
             </ServiceBox>
@@ -692,14 +692,64 @@ export default function PilotReportPage() {
         </Card>
         )}
 
-        </div>
 
-        <div className="space-y-4">
+        {error && <Banner tone="error">{error}</Banner>}
+
+        {saved && (
+          <Banner tone="success" onClose={() => setSaved(null)}>
+            <strong>
+              {saved.submitted ? "Đã chốt báo cáo" : "Đã lưu nháp"} ngày {formatDateKeyVN(date)}.
+            </strong>
+            {saved.warnings.length > 0 && (
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                {saved.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
+          </Banner>
+        )}
+
+        {!locked && (
+          <div className="sticky bottom-3 z-10 flex gap-2">
+            <Button
+              type="submit"
+              variant="ghost"
+              disabled={saving !== null || loadingDay}
+              className="flex-1 bg-white shadow-lg"
+            >
+              {saving === "draft" ? "Đang lưu…" : "Lưu nháp (Save draft)"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => save(true)}
+              disabled={saving !== null || loadingDay || !canSubmit}
+              className="flex-1 shadow-lg"
+              title={
+                canSubmit
+                  ? undefined
+                  : !hasAnyFlights
+                    ? "Khai số chuyến (PG hoặc PPG) rồi mới chốt được"
+                    : !ppgConsistent
+                      ? "PPG: mã vé + không vé phải bằng số chuyến"
+                      : requireCodes
+                        ? "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"
+                        : "Sửa mã sai dạng rồi mới chốt được"
+              }
+            >
+              {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại (Re-submit)" : "Chốt báo cáo (Submit)"}
+            </Button>
+          </div>
+        )}
+      </form>
+      </div>
+
+      <div className="space-y-4">
         <CollapseCard
           title={bi("Khách ngoại giao", "complimentary guests")}
           hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
         >
-          <div className="grid gap-4 @md:grid-cols-3">
+          <div className="grid gap-4 @md:grid-cols-2 @2xl:grid-cols-3">
             <Field label={bi("Số khách ngoại giao", "guest count")}>
               <CountInput value={form.diplomaticGuests} onChange={(v) => set("diplomaticGuests", v)} />
             </Field>
@@ -752,7 +802,7 @@ export default function PilotReportPage() {
             >
               <div />
             </Field>
-            <div className="grid gap-4 @md:grid-cols-3">
+            <div className="grid gap-4 @md:grid-cols-2 @2xl:grid-cols-3">
               <Field label="Đón khách từ BigC">
                 <CountInput value={form.pickupBigC} onChange={(v) => set("pickupBigC", v)} max={100} />
               </Field>
@@ -831,65 +881,9 @@ export default function PilotReportPage() {
             disabled={locked}
           />
         </Card>
-        </div>
-        </div>
 
-        {error && <Banner tone="error">{error}</Banner>}
-
-        {saved && (
-          <Banner tone="success" onClose={() => setSaved(null)}>
-            <strong>
-              {saved.submitted ? "Đã chốt báo cáo" : "Đã lưu nháp"} ngày {formatDateKeyVN(date)}.
-            </strong>
-            {saved.warnings.length > 0 && (
-              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
-                {saved.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            )}
-          </Banner>
-        )}
-
-        {!locked && (
-          <div className="sticky bottom-3 z-10 flex gap-2">
-            <Button
-              type="submit"
-              variant="ghost"
-              disabled={saving !== null || loadingDay}
-              className="flex-1 bg-white shadow-lg"
-            >
-              {saving === "draft" ? "Đang lưu…" : "Lưu nháp (Save draft)"}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => save(true)}
-              disabled={saving !== null || loadingDay || !canSubmit}
-              className="flex-1 shadow-lg"
-              title={
-                canSubmit
-                  ? undefined
-                  : !hasAnyFlights
-                    ? "Khai số chuyến (PG hoặc PPG) rồi mới chốt được"
-                    : !ppgConsistent
-                      ? "PPG: mã vé + không vé phải bằng số chuyến"
-                      : requireCodes
-                        ? "Sửa mã vé và số chuyến cho khớp rồi mới chốt được"
-                        : "Sửa mã sai dạng rồi mới chốt được"
-              }
-            >
-              {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại (Re-submit)" : "Chốt báo cáo (Submit)"}
-            </Button>
-          </div>
-        )}
-      </form>
-
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-      <div className="space-y-4">
       <HandoverBox spot={spot} bilingual />
-      </div>
 
-      <div className="space-y-4">
       <PeriodSummary
         statement
         spot={spot}

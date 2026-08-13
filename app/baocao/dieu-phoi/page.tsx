@@ -422,23 +422,23 @@ export default function DispatcherReportPage() {
         </Banner>
       )}
 
-      <form onSubmit={submit} className="space-y-4">
-        <DateBar
-          date={date}
-          onChange={setDate}
-          max={today}
-          min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-          loading={loadingDay}
-          spot={spot}
-          spotOptions={spotOptions}
-          onSpotChange={(v) => setSpot(v as never)}
-        />
+      <DateBar
+        date={date}
+        onChange={setDate}
+        max={today}
+        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
+        loading={loadingDay}
+        spot={spot}
+        spotOptions={spotOptions}
+        onSpotChange={(v) => setSpot(v as never)}
+      />
 
-        {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH ============
-            TRÁI: nhập hằng ngày (khách, vé, dịch vụ, THU CHI)
-            PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + ghi chú */}
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-        <div className="space-y-4">
+      {/* ============ DESKTOP 2 CỘT CỐ ĐỊNH — MỘT lưới duy nhất, hai cột độc lập ============
+          TRÁI: form nhập hằng ngày (khách, vé, dịch vụ, THU CHI, nút lưu)
+          PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + ghi chú + tiền bạc + lịch sử */}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+      <div>
+      <form onSubmit={submit} className="space-y-4">
         {/* Ô quan trọng nhất của quầy — thanh ngang luôn mở: tiêu đề bên trái, cụm đếm bên phải */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
           <span className="text-base font-bold text-rose-900">Tổng khách trong ngày</span>
@@ -494,7 +494,7 @@ export default function DispatcherReportPage() {
           hint="Flycam đối soát với camera man; 360, cờ đỏ, kéo cờ đối soát với phi công. Mã vé chỉ cần điền khi số lệch."
         >
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — sát nhau không còn lẫn */}
-          <div className="grid grid-cols-2 gap-3 @md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
             </ServiceBox>
@@ -577,9 +577,33 @@ export default function DispatcherReportPage() {
           </div>
         </CollapseCard>
 
-        </div>
 
-        <div className="space-y-4">
+        {error && <Banner tone="error">{error}</Banner>}
+
+        {saved && (
+          <Banner tone="success" onClose={() => setSaved(null)}>
+            <strong>Đã lưu báo cáo ngày {formatDateKeyVN(date)}.</strong>
+            {saved.warnings.length > 0 && (
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                {saved.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
+          </Banner>
+        )}
+
+        {!locked && (
+          <div className="sticky bottom-3 z-10">
+            <Button type="submit" disabled={saving || loadingDay} className="w-full shadow-lg">
+              {saving ? "Đang lưu…" : existing ? "Cập nhật báo cáo" : "Lưu báo cáo"}
+            </Button>
+          </div>
+        )}
+      </form>
+      </div>
+
+      <div className="space-y-4">
         {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
         <CollectCreate spot={spot} />
 
@@ -662,39 +686,9 @@ export default function DispatcherReportPage() {
             disabled={locked}
           />
         </CollapseCard>
-        </div>
-        </div>
 
-        {error && <Banner tone="error">{error}</Banner>}
-
-        {saved && (
-          <Banner tone="success" onClose={() => setSaved(null)}>
-            <strong>Đã lưu báo cáo ngày {formatDateKeyVN(date)}.</strong>
-            {saved.warnings.length > 0 && (
-              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
-                {saved.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            )}
-          </Banner>
-        )}
-
-        {!locked && (
-          <div className="sticky bottom-3 z-10">
-            <Button type="submit" disabled={saving || loadingDay} className="w-full shadow-lg">
-              {saving ? "Đang lưu…" : existing ? "Cập nhật báo cáo" : "Lưu báo cáo"}
-            </Button>
-          </div>
-        )}
-      </form>
-
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-      <div className="space-y-4">
       <HandoverBox spot={spot} />
-      </div>
 
-      <div className="space-y-4">
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng từng nội dung mình đã báo" />
 
       <CollapseCard title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">

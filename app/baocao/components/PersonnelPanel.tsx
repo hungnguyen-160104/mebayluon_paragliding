@@ -680,7 +680,7 @@ function PeriodTotalsCard() {
 
       {!busy && t && (
         <>
-          <div className="grid grid-cols-2 gap-3 @md:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
             <Tile label="Khách bay" value={String(t.guestCount)} />
             <Tile label="Vé xuất ra" value={String(t.ticketsIssued)} />
             <Tile label="Vé thu hồi" value={String(t.ticketsReturned)} />
