@@ -43,8 +43,23 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function apiGet<T>(url: string): Promise<T> {
-  return request<T>(url);
+/**
+ * Hạn chờ cho lệnh GET. Mạng 3G ở điểm bay hay treo giữa đường: fetch không tự
+ * bỏ cuộc, nên màn hình "đang kiểm tra…" đứng mãi. Có hạn chờ thì trang biết
+ * đường hiện lại form đăng nhập.
+ */
+function timeoutSignal(ms: number): AbortSignal | undefined {
+  const anyAbort = AbortSignal as unknown as { timeout?: (ms: number) => AbortSignal };
+  if (typeof anyAbort.timeout === "function") return anyAbort.timeout(ms);
+  if (typeof AbortController === "undefined") return undefined;
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
+
+export function apiGet<T>(url: string, opts?: { timeoutMs?: number }): Promise<T> {
+  const signal = opts?.timeoutMs ? timeoutSignal(opts.timeoutMs) : undefined;
+  return request<T>(url, signal ? { signal } : undefined);
 }
 
 export function apiPost<T>(url: string, body?: unknown): Promise<T> {

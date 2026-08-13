@@ -24,12 +24,16 @@ export function useBaobaySession(expectedRole?: BaobayRole) {
   useEffect(() => {
     let alive = true;
 
-    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me")
+    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
       .then(({ user: found }) => {
         if (!alive) return;
         if (expectedRole && found.role !== expectedRole) {
-          router.replace(ROLE_HOME[found.role]);
-          return;
+          // Không nhảy về chính trang này (vai trò lạ) — vòng lặp chuyển trang là treo máy
+          const home = ROLE_HOME[found.role];
+          if (home && home !== window.location.pathname) {
+            router.replace(home);
+            return;
+          }
         }
         setUser(found);
         setLoading(false);

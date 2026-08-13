@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { ROLE_HOME } from "@/lib/baobay/roles";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
-import { apiGet, apiPost } from "./components/client-api";
+import { ApiError, apiGet, apiPost } from "./components/client-api";
 import { Banner, Button, Field, TextInput } from "./components/ui";
 
 /**
@@ -28,12 +28,21 @@ export default function BaobayLoginPage() {
   // Còn phiên cũ thì vào thẳng, khỏi bắt đăng nhập lại.
   useEffect(() => {
     let alive = true;
-    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me")
+    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
       .then(({ user }) => {
-        if (alive) router.replace(ROLE_HOME[user.role]);
+        if (!alive) return;
+        const home = ROLE_HOME[user.role];
+        // Vai trò lạ (dữ liệu cũ) thì thà hiện form còn hơn đứng mãi ở màn chờ
+        if (home) router.replace(home);
+        else setChecking(false);
       })
-      .catch(() => {
-        if (alive) setChecking(false);
+      .catch((err: unknown) => {
+        if (!alive) return;
+        // 401 = chưa đăng nhập, chuyện thường. Còn lại là mạng/máy chủ — nói cho biết.
+        if (!(err instanceof ApiError) || err.status !== 401) {
+          setError("Không kiểm tra được phiên đăng nhập (mạng chậm hoặc mất kết nối). Cứ đăng nhập lại bên dưới.");
+        }
+        setChecking(false);
       });
     return () => {
       alive = false;
