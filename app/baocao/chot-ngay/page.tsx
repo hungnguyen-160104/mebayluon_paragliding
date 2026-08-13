@@ -31,7 +31,7 @@ import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
+import { Banner, Button, CountInput, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
 
 /**
  * Kế toán tổng hợp chốt ngày.
@@ -627,6 +627,12 @@ function DailyCloseInner() {
       <div className="order-5 lg:order-none">
         <HandoverBox spot={spot} />
       </div>
+
+      {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
+          Desktop: đứng cột phải cùng nhóm tiền · Điện thoại: vẫn ở vị trí thứ 7. */}
+      <div className="order-7 lg:order-none">
+        <CollectCreate spot={spot} />
+      </div>
       </div>
 
       <div className="contents lg:block lg:order-1">
@@ -666,62 +672,62 @@ function DailyCloseInner() {
 
           {/* 5 ô đếm xếp 3/hàng khi đủ rộng — gọn còn 2 hàng */}
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
-            <Field label="Số khách bay trong ngày">
-              <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+            <ServiceBox tone="guests" label="Số khách bay trong ngày">
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
               {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare label="điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-            </Field>
+            </ServiceBox>
 
             {noTickets ? (
               /* Hà Nội không xuất vé — theo dõi KHÁCH: đăng ký (từ sổ booking), huỷ, dời */
               <>
-                <Field label="Số khách đăng ký">
-                  <CountInput value={form.registeredGuests} onChange={(v) => set("registeredGuests", v)} max={5000} />
+                <ServiceBox tone="tickets" label="Số khách đăng ký">
+                  <CountInput compact value={form.registeredGuests} onChange={(v) => set("registeredGuests", v)} max={5000} />
                   <Compare label="sổ booking" value={suggest?.registeredGuests} mine={form.registeredGuests}
                     onTake={locked ? undefined : (v) => set("registeredGuests", v)} />
-                </Field>
-                <Field label="Số khách huỷ">
-                  <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
+                </ServiceBox>
+                <ServiceBox tone="cancelled" label="Số khách huỷ">
+                  <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
                   <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
-                </Field>
-                <Field label="Số khách dời">
-                  <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
+                </ServiceBox>
+                <ServiceBox tone="moved" label="Số khách dời">
+                  <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
-                </Field>
+                </ServiceBox>
               </>
             ) : (
               <>
-                <Field label="Số vé được xuất ra">
-                  <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
+                <ServiceBox tone="tickets" label="Số vé được xuất ra">
+                  <CountInput compact value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
                   <Compare label="điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
                     onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
                   {/* Tổng số MÃ VÉ phi công đã khai bay trong ngày (gồm cả vé PPG) */}
                   <Compare label="phi công báo" value={t?.pilotCodes} mine={form.ticketsIssued}
                     onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
-                </Field>
+                </ServiceBox>
 
-                <Field label="Số vé thu hồi (huỷ + dời)">
-                  <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+                <ServiceBox tone="returned" label="Số vé thu hồi (huỷ + dời)">
+                  <CountInput compact value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
                   <Compare label="điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
-                </Field>
+                </ServiceBox>
 
-                <Field label="Trong đó: vé huỷ hoàn tiền">
-                  <CountInput value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
+                <ServiceBox tone="cancelled" label="Trong đó: vé huỷ hoàn tiền">
+                  <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
                   <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
-                </Field>
+                </ServiceBox>
 
-                <Field label="Trong đó: vé dời lịch">
-                  <CountInput value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
+                <ServiceBox tone="moved" label="Trong đó: vé dời lịch">
+                  <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
-                </Field>
+                </ServiceBox>
               </>
             )}
           </div>
@@ -1025,7 +1031,7 @@ function DailyCloseInner() {
           <div className="mt-3 grid grid-cols-1 gap-2 @md:grid-cols-3">
             <div>
               <Readout
-                label="Tổng tiền mặt thu về (tự cộng)"
+                label="Tổng TM thu (tự cộng)"
                 value={formatVND(ledgerCash)}
                 tone={t && ledgerCash !== t.dispatcherCash ? "warning" : "normal"}
               />
@@ -1033,7 +1039,7 @@ function DailyCloseInner() {
             </div>
             <div>
               <Readout
-                label="Tổng chuyển khoản (tự cộng)"
+                label="Tổng CK (tự cộng)"
                 value={formatVND(ledgerTransfer)}
                 tone={t && ledgerTransfer !== t.dispatcherTransfer ? "warning" : "normal"}
               />
@@ -1046,11 +1052,6 @@ function DailyCloseInner() {
           </div>
         </CollapseCard>
 
-        {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
-        <div className="order-7 lg:order-none">
-          <CollectCreate spot={spot} />
-        </div>
-
         {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
 
         {/* Vé/khách huỷ & dời lịch do ĐIỀU PHỐI nhập — kế toán xác nhận số ở thẻ Số tổng, sai thì bấm "Sửa" báo cáo điều phối */}
@@ -1059,15 +1060,47 @@ function DailyCloseInner() {
         <CollapseCard
           className="order-6 lg:order-none"
           title="Duyệt lệch số liệu"
-          hint="Số kế toán khai lệch với số nhân viên báo (tiền, khách, vé, dịch vụ) mà đúng thực tế thì tick duyệt — ngày chốt theo SỐ CỦA KẾ TOÁN. Sai ở phía nhân viên thì sửa trực tiếp báo cáo của họ ở các khung bên dưới."
+          hint="Các nhân viên báo lệch nhau (điều phối · phi công · camera man). Đúng thực tế thì tick duyệt — ngày vẫn chốt theo SỐ CỦA KẾ TOÁN. Sai ở phía nhân viên thì bấm Sửa trong báo cáo của họ."
         >
-          <div className="mb-3 grid grid-cols-3 gap-3">
-            <Readout label="Flycam: camera man / điều phối" value={`${t?.cameramanFlycam ?? 0} / ${t?.dispatcherFlycam ?? 0}`}
-              tone={t && t.cameramanFlycam !== t.dispatcherFlycam ? "warning" : "normal"} />
-            <Readout label="360: phi công / điều phối" value={`${t?.pilot360 ?? 0} / ${t?.dispatcher360 ?? 0}`}
-              tone={t && t.pilot360 !== t.dispatcher360 ? "warning" : "normal"} />
-            <Readout label="Ngoại giao: phi công / điều phối" value={`${t?.pilotDiplomatic ?? 0} / ${t?.dispatcherDiplomatic ?? 0}`}
-              tone={t && t.pilotDiplomatic !== t.dispatcherDiplomatic ? "warning" : "normal"} />
+          {/* CHỈ kê lệch GIỮA CÁC NHÂN VIÊN với nhau (điều phối · phi công · camera
+              man). Không so với số kế toán: số kế toán là số ghi sổ, tự thắng —
+              so với chính mình thì chẳng có gì để duyệt. */}
+          <div className="mb-3 grid grid-cols-2 gap-2 @md:grid-cols-3">
+            {(
+              [
+                ["Khách: điều phối / phi công", t?.dispatcherGuests, t ? t.pilotFlights + t.pilotPpg : undefined],
+                ...(noTickets
+                  ? ([] as Array<[string, number | undefined, number | undefined]>)
+                  : ([
+                      ["Vé xuất: điều phối / mã phi công", t?.dispatcherIssued, t?.pilotCodes],
+                      [
+                        "Vé thu hồi: điều phối khai / huỷ+dời",
+                        t?.dispatcherReturned,
+                        suggest ? suggest.cancelledCount + suggest.rescheduledCount : undefined,
+                      ],
+                    ] as Array<[string, number | undefined, number | undefined]>)),
+                ["Flycam: camera man / điều phối", t?.cameramanFlycam, t?.dispatcherFlycam],
+                ["Cam 360: phi công / điều phối", t?.pilot360, t?.dispatcher360],
+                ["Cờ đỏ: phi công / điều phối", t?.pilotRedFlag, t?.dispatcherRedFlag],
+                ...(spot === "sapa"
+                  ? ([] as Array<[string, number | undefined, number | undefined]>)
+                  : ([["Hoàng hôn/săn mây: phi công / điều phối", t?.pilotSunset, t?.dispatcherSunset]] as Array<
+                      [string, number | undefined, number | undefined]
+                    >)),
+                ["Kéo cờ/bánh: phi công / điều phối", t?.pilotFlagFlight, t?.dispatcherFlagFlight],
+                ["Ngoại giao: phi công / điều phối", t?.pilotDiplomatic, t?.dispatcherDiplomatic],
+              ] as Array<[string, number | undefined, number | undefined]>
+            ).map(([label, a, b]) => {
+              const has = typeof a === "number" && typeof b === "number";
+              return (
+                <Readout
+                  key={label}
+                  label={label}
+                  value={has ? `${a} / ${b}` : "— / —"}
+                  tone={has && a !== b ? "warning" : "normal"}
+                />
+              );
+            })}
           </div>
 
           <label className="flex items-start gap-3">

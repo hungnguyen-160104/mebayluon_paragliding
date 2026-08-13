@@ -105,7 +105,7 @@ export function PilotReportEditor({
           <select
             value={pick}
             onChange={(e) => setPick(e.target.value)}
-            className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
           >
             <option value="">— chọn phi công chưa báo cáo ({missing.length}) —</option>
             {missing.map((a) => (
@@ -117,7 +117,7 @@ export function PilotReportEditor({
           <Button
             type="button"
             variant="ghost"
-            className="h-11 px-4 text-xs"
+            className="h-11 shrink-0 whitespace-nowrap px-3 text-xs"
             disabled={!pick}
             onClick={() => {
               setAdded((prev) => [...prev, pick]);
@@ -522,7 +522,7 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
   if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");
-  if (r.sunset) add(`${r.sunset}×hoàng hôn/mây`, "sunset");
+  if (r.sunset) add(`${r.sunset}×hoàng hôn/săn mây`, "sunset");
   if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
   if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
   // Nhóm khách huỷ/dời phi công báo — kế toán lướt là thấy, chi tiết xem báo cáo điều phối

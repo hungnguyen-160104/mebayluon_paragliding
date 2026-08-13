@@ -13,6 +13,8 @@
  * dòng mới, không phải bấm nút Thêm trước rồi mới gõ.
  */
 
+import { useState } from "react";
+
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { countTicketRange } from "@/lib/baobay/ticket-code";
 import type { DispatcherReportDTO, ExpenseDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
@@ -245,13 +247,74 @@ export function ExpenseRows({
   const set = (index: number, patch: Partial<ExpenseRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
 
+  /**
+   * Khoản đã XÁC NHẬN co lại thành một dòng chữ nhỏ — nhập mười khoản mà mỗi
+   * khoản một khung to thì cuộn mãi không hết. Khoản đang nhập (hoặc bấm Sửa)
+   * mới mở ô ra. Đây là trạng thái hiển thị thuần, không lưu vào máy chủ:
+   * khoản đọc từ báo cáo đã lưu mặc định coi như đã xác nhận.
+   */
+  const [openIdx, setOpenIdx] = useState<number[]>(() =>
+    rows.map((r, i) => (!r.content.trim() && !r.amount ? i : -1)).filter((i) => i >= 0),
+  );
+  const isOpen = (i: number) => openIdx.includes(i) || (!rows[i].content.trim() && !rows[i].amount);
+  const openRow = (i: number) => setOpenIdx((prev) => (prev.includes(i) ? prev : [...prev, i]));
+  const closeRow = (i: number) => setOpenIdx((prev) => prev.filter((k) => k !== i));
+  /** Xoá một dòng: chỉ số các dòng sau tụt một bậc, dấu "đang mở" phải tụt theo. */
+  const removeRow = (i: number) => {
+    onChange(rows.filter((_, k) => k !== i));
+    setOpenIdx((prev) => prev.filter((k) => k !== i).map((k) => (k > i ? k - 1 : k)));
+  };
+
   const totalChi = rows.reduce((s, r) => s + (r.kind !== "thu" ? r.amount || 0 : 0), 0);
   const totalThu = rows.reduce((s, r) => s + (r.kind === "thu" ? r.amount || 0 : 0), 0);
   const total = totalChi;
 
   return (
     <div className="space-y-3">
-      {rows.map((row, i) => (
+      {rows.map((row, i) =>
+        !isOpen(i) ? (
+          /* ĐÃ XÁC NHẬN — một dòng chữ nhỏ, kèm Sửa / Xoá */
+          <div
+            key={i}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
+          >
+            <span className="min-w-0 flex-1 text-sm leading-snug text-slate-700">
+              <span
+                className={
+                  row.kind === "thu"
+                    ? "mr-1 font-bold text-emerald-700"
+                    : "mr-1 font-bold text-rose-700"
+                }
+              >
+                {row.kind === "thu" ? "THU" : "CHI"}
+              </span>
+              {row.content || "(chưa ghi nội dung)"}
+              <strong className="ml-1 tabular-nums">{(row.amount || 0).toLocaleString("vi-VN")}đ</strong>
+              {withMethod && (
+                <span className="ml-1 text-xs text-slate-500">· {row.method === "transfer" ? "CK" : "TM"}</span>
+              )}
+              {row.note && <span className="ml-1 text-xs text-slate-400">· {row.note}</span>}
+            </span>
+            {!disabled && (
+              <span className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => openRow(i)}
+                  className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-sky-500 hover:text-sky-700"
+                >
+                  Sửa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeRow(i)}
+                  className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
+                >
+                  Xoá
+                </button>
+              </span>
+            )}
+          </div>
+        ) : (
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="grid flex-1 gap-2 @md:grid-cols-[1.3fr_7.5rem_1fr]">
@@ -324,7 +387,7 @@ export function ExpenseRows({
             {rows.length > 1 && !disabled && (
               <button
                 type="button"
-                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                onClick={() => removeRow(i)}
                 className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ khoản này"
               >
@@ -332,8 +395,25 @@ export function ExpenseRows({
               </button>
             )}
           </div>
+          {!disabled && (
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                type="button"
+                className="h-8 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
+                disabled={!row.content.trim() && !row.amount}
+                onClick={() => closeRow(i)}
+                title="Xác nhận khoản này — dòng sẽ co lại cho gọn, sửa lại được"
+              >
+                ✓ Xác nhận
+              </Button>
+              <span className="text-[11px] text-slate-400">
+                Xác nhận xong khoản này co lại một dòng, vẫn sửa/xoá được.
+              </span>
+            </div>
+          )}
         </div>
-      ))}
+        ),
+      )}
 
       {!disabled && (
         <div className="flex flex-wrap items-center gap-3">
@@ -341,7 +421,10 @@ export function ExpenseRows({
             type="button"
             variant="ghost"
             className="h-10 border border-sky-400 bg-sky-50 px-4 text-xs font-bold text-sky-800 hover:bg-sky-100"
-            onClick={() => onChange([...rows, { content: "", amount: 0, kind: "chi", note: "" }])}
+            onClick={() => {
+              onChange([...rows, { content: "", amount: 0, kind: "chi", note: "" }]);
+              openRow(rows.length);
+            }}
           >
             ＋ {withKind ? "Thêm dòng thu/chi" : "Thêm khoản chi"}
           </Button>

@@ -1,14 +1,37 @@
 // app/baocao/components/BookingCard.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
+import { shareBookingImage } from "./booking-image";
+import {
+  FLIGHT_KIND_LABEL,
+  SERVICE_PRICE,
+  SERVICE_PRICE_LABEL,
+  bookingTotal as computeBookingTotal,
+  flightUnitPrice,
+  peakDayReason,
+  servicesAmount,
+  type FlightKind,
+} from "@/lib/baobay/flight-price";
 import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, ServiceBox, TextInput } from "./ui";
+
+/**
+ * Bấm "Sửa" ở banner booking hôm nay thì thẻ 📒 BOOKING MỚI (ở dưới, có thể
+ * đang gập) phải mở ra và nạp đúng booking đó. Hai mảnh này là hai component
+ * đứng cạnh nhau, không cha con, nên nói với nhau bằng một sự kiện của trang —
+ * gọn hơn là kéo trạng thái lên tận trang rồi truyền xuống hai nhánh.
+ */
+const EDIT_EVENT = "baobay:edit-booking";
+
+function requestEditBooking(b: BookingDTO) {
+  window.dispatchEvent(new CustomEvent<BookingDTO>(EDIT_EVENT, { detail: b }));
+}
 
 /**
  * BOOKING đặt trước: khách chốt hôm nay nhưng bay ngày khác (qua Klook, FB,
@@ -40,13 +63,14 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (b.flycam) parts.push(`${b.flycam}×flycam`);
   if (b.video360) parts.push(`${b.video360}×cam360`);
   if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
-  if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/mây`);
+  if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/săn mây`);
   if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
   parts.push(
     [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
       .filter(Boolean)
       .join(" "),
   );
+  if (b.totalAmount) parts.push(`tổng ${Math.round(b.totalAmount / 1000).toLocaleString("vi-VN")}k`);
   if (b.deposit) parts.push(`cọc ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k`);
   if (b.remaining) parts.push(`còn thu ${Math.round(b.remaining / 1000).toLocaleString("vi-VN")}k`);
   if (b.transferCode) parts.push(`CK #${b.transferCode}`);
@@ -83,7 +107,18 @@ function AssignedBadge({ b }: { b: BookingDTO }) {
  * rồi bấm chuyển — booking hiện lên trang của người đó (đón khách, tiếp khách,
  * có SĐT để gọi).
  */
-function AssignControl({ spot, booking, onDone }: { spot: string; booking: BookingDTO; onDone: () => void }) {
+function AssignControl({
+  spot,
+  booking,
+  onDone,
+  buttonClassName,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: () => void;
+  /** Xếp nút vào đúng ô của lưới nút (vd. cột phải, dưới nút Sửa). */
+  buttonClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [pick, setPick] = useState("");
@@ -126,14 +161,17 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
       <button
         type="button"
         onClick={openList}
-        className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
+        className={
+          "h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700" +
+          (buttonClassName ? ` ${buttonClassName}` : "")
+        }
       >
         {booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
       </button>
     );
   }
   return (
-    <div className="col-span-2 flex w-full flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         value={pick}
         onChange={(e) => setPick(e.target.value)}
@@ -244,15 +282,17 @@ export function BookingTodayBanner({
                   disabled={busy === b.id || !moving.toDate}
                   onClick={() => act(b, "move", moving.toDate)}
                 >
-                  {busy === b.id ? "Đang lưu…" : "✓ Dời"}
+                  {busy === b.id ? "Đang lưu…" : "✓ Đổi"}
                 </Button>
                 <Button type="button" variant="ghost" className="h-7 bg-white px-2 text-xs" onClick={() => setMoving(null)}>
                   Thôi
                 </Button>
               </div>
             ) : (
-              /* 4 nút xếp 2×2 float góc phải — chữ từ dòng 2 tràn hết bề ngang */
-              <div className="float-right ml-2 grid grid-cols-2 gap-1">
+              /* Hai khối nút NỔI riêng: hàng trên Đã bay · Đổi lịch · Chuyển, hàng
+                 dưới Huỷ · Sửa (hẹp hơn) — chữ chảy quanh, tràn tới sát nút Huỷ. */
+              <>
+              <div className="float-right ml-2 flex items-center gap-1">
                 <Button
                   type="button"
                   className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
@@ -268,8 +308,11 @@ export function BookingTodayBanner({
                   disabled={busy === b.id}
                   onClick={() => setMoving({ id: b.id, toDate: "" })}
                 >
-                  ⇢ Dời
+                  ⇢ Đổi lịch
                 </Button>
+                <AssignControl spot={spot} booking={b} onDone={load} />
+              </div>
+              <div className="float-right clear-right ml-2 mt-1 flex items-center gap-1">
                 <Button
                   type="button"
                   variant="ghost"
@@ -279,8 +322,18 @@ export function BookingTodayBanner({
                 >
                   ✕ Huỷ
                 </Button>
-                <AssignControl spot={spot} booking={b} onDone={load} />
+                {/* Sửa dịch vụ / số tiền: mở thẻ BOOKING MỚI bên dưới với đúng booking này */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 bg-white px-2 text-xs"
+                  disabled={busy === b.id}
+                  onClick={() => requestEditBooking(b)}
+                >
+                  ✎ Sửa
+                </Button>
               </div>
+              </>
             )}
             <div className="min-w-0">
               {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
@@ -462,6 +515,13 @@ type BookingForm = {
   pickupNote: string;
   phone: string;
   expectedTime: string;
+  /** PG hay PPG — quyết định đơn giá theo ngày bay. */
+  flightKind: FlightKind;
+  /** Phí đưa đón thu của khách. */
+  pickupFee: number;
+  /** Đơn giá một khách (máy điền theo loại hình + ngày bay, sửa được). */
+  unitPrice: number;
+  discount: number;
   deposit: number;
   remaining: number;
   transferCode: string;
@@ -487,6 +547,10 @@ function emptyBooking(today: string): BookingForm {
     pickupNote: "",
     phone: "",
     expectedTime: "",
+    flightKind: "pg",
+    pickupFee: 0,
+    unitPrice: flightUnitPrice("pg", today),
+    discount: 0,
     deposit: 0,
     remaining: 0,
     transferCode: "",
@@ -520,10 +584,19 @@ export function BookingCard({
   const [done, setDone] = useState<string | null>(null);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
+  /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
+  const [remainingTouched, setRemainingTouched] = useState(false);
+  /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
+  const [priceTouched, setPriceTouched] = useState(false);
+  /** Bấm "Sửa" từ banner hôm nay thì thẻ này phải xổ ra dù đang gập. */
+  const [forceOpen, setForceOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
+    if (key === "remaining") setRemainingTouched(true);
+    if (key === "unitPrice") setPriceTouched(true);
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       // Dịch vụ bám theo đầu khách — giảm số khách thì các dịch vụ tự kẹp xuống
@@ -534,6 +607,23 @@ export function BookingCard({
         next.redFlag = Math.min(next.redFlag, cap);
         next.sunset = Math.min(next.sunset, cap);
         next.flagFlight = Math.min(next.flagFlight, cap);
+      }
+      /**
+       * Tổng tiền = đơn giá × số khách − giảm trừ (dịch vụ kèm không cộng tiền).
+       * "Còn phải thu" tự điền = tổng − đã cọc, nhưng người nhập gõ đè được:
+       * khách OTA trả trước hay khách nợ thì con số không theo công thức.
+       */
+      /** Đơn giá theo BẢNG GIÁ: đổi ngày bay hay loại hình là điền lại, trừ khi người nhập đã gõ đè. */
+      if (!priceTouched && (key === "flightDate" || key === "flightKind")) {
+        next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
+      }
+      const total = computeBookingTotal(next);
+      if (
+        !remainingTouched &&
+        ["unitPrice", "discount", "guestCount", "deposit", "flightDate", "flightKind", "pickupFee",
+         "flycam", "video360", "redFlag", "sunset", "flagFlight"].includes(key as string)
+      ) {
+        next.remaining = Math.max(0, total - (next.deposit || 0));
       }
       return next;
     });
@@ -556,6 +646,25 @@ export function BookingCard({
     load();
   }, [load]);
 
+  /** Nhận lệnh "Sửa" từ banner booking hôm nay: mở thẻ, nạp form, cuộn tới. */
+  useEffect(() => {
+    const onEdit = (e: Event) => {
+      const b = (e as CustomEvent<BookingDTO>).detail;
+      if (!b) return;
+      startEdit(b);
+      setForceOpen(true);
+      requestAnimationFrame(() => {
+        rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener(EDIT_EVENT, onEdit);
+    return () => window.removeEventListener(EDIT_EVENT, onEdit);
+  });
+
+  /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
+  const bookingTotal = computeBookingTotal(form);
+  const serviceMoney = servicesAmount(form);
+
   async function save() {
     setError(null);
     setDone(null);
@@ -570,11 +679,13 @@ export function BookingCard({
     }
     setSaving(true);
     try {
+      // Khách lẻ không có mã OTA: để trống thì lấy SĐT làm mã cho dễ tra
+      const payload = { ...form, bookingCode: form.bookingCode.trim() || form.phone.trim() };
       if (editingId) {
-        await apiPut(`/api/baocao/booking?spot=${bookSpot}`, { id: editingId, ...form });
+        await apiPut(`/api/baocao/booking?spot=${bookSpot}`, { id: editingId, ...payload });
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
       } else {
-        await apiPost(`/api/baocao/booking?spot=${bookSpot}`, form);
+        await apiPost(`/api/baocao/booking?spot=${bookSpot}`, payload);
         const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
           `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Lịch bay sẽ tự hiện đúng ngày.` +
@@ -585,6 +696,8 @@ export function BookingCard({
       }
       setEditingId(null);
       setForm(emptyBooking(today));
+      setRemainingTouched(false);
+      setPriceTouched(false);
       load();
       onChanged?.();
     } catch (err: unknown) {
@@ -597,6 +710,8 @@ export function BookingCard({
   /** Nạp booking vào form phía trên để sửa. */
   function startEdit(b: BookingDTO) {
     setEditingId(b.id);
+    setRemainingTouched(true); // booking cũ: giữ đúng số đã lưu, khỏi bị tính lại
+    setPriceTouched(true);
     setDone(null);
     setError(null);
     setForm({
@@ -614,6 +729,10 @@ export function BookingCard({
       pickupNote: b.pickupNote,
       phone: b.phone,
       expectedTime: b.expectedTime,
+      flightKind: b.flightKind,
+      pickupFee: b.pickupFee,
+      unitPrice: b.unitPrice,
+      discount: b.discount,
       deposit: b.deposit,
       remaining: b.remaining,
       transferCode: b.transferCode,
@@ -645,10 +764,12 @@ export function BookingCard({
   }
 
   return (
+    <div ref={rootRef}>
     <CollapseCard
       className="border-sky-200 bg-sky-50/40"
       title="📒 BOOKING MỚI"
       hint="bấm để nhập khách đặt trước"
+      open={forceOpen || undefined}
     >
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
@@ -661,6 +782,25 @@ export function BookingCard({
             min={today}
             onChange={(e) => e.target.value && set("flightDate", e.target.value)} className="h-10 rounded-lg text-sm"
           />
+        </Field>
+        <Field label="Loại hình bay">
+          <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
+            {(["pg", "ppg"] as FlightKind[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => set("flightKind", k)}
+                title={FLIGHT_KIND_LABEL[k]}
+                className={
+                  form.flightKind === k
+                    ? "flex-1 bg-sky-600 text-sm font-bold text-white"
+                    : "flex-1 bg-white text-sm font-medium text-slate-500"
+                }
+              >
+                {k.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </Field>
         <Field label="Điểm bay">
           <select
@@ -738,11 +878,18 @@ export function BookingCard({
         </ServiceBox>
         )}
       </div>
-      {form.guestCount === 0 && (
-        <p className="mt-0.5 text-[11px] leading-tight text-slate-500">Nhập số khách trước — dịch vụ tối đa bằng số khách.</p>
-      )}
+      <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+        {form.guestCount === 0 ? "Nhập số khách trước — dịch vụ tối đa bằng số khách. " : ""}
+        Đơn giá dịch vụ:{" "}
+        {SERVICE_PRICE_LABEL.map((x, i) => (
+          <span key={x.key}>
+            {i ? " · " : ""}
+            {x.label} {(SERVICE_PRICE[x.key] / 1000).toLocaleString("vi-VN")}k
+          </span>
+        ))}
+      </p>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label="Đưa đón">
           <select
             value={form.pickup}
@@ -769,7 +916,31 @@ export function BookingCard({
             />
           )}
         </Field>
-        {/* Tiền nong đứng cạnh nhau: đã cọc — còn phải thu — mã CK để soi sao kê */}
+        {/* Tiền nong: đơn giá × số khách − giảm trừ = tổng · cọc · còn thu · mã CK */}
+        <Field label="Đơn giá bay / khách">
+          <MoneyInput value={form.unitPrice} onChange={(v) => set("unitPrice", v)} />
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {form.flightKind.toUpperCase()} · {peakDayReason(form.flightDate)} → bảng giá{" "}
+            {(flightUnitPrice(form.flightKind, form.flightDate) / 1000).toLocaleString("vi-VN")}k
+          </p>
+        </Field>
+        <Field label="Phí đưa đón">
+          <MoneyInput value={form.pickupFee} onChange={(v) => set("pickupFee", v)} />
+        </Field>
+        <Field label="Giảm trừ (chiết khấu)">
+          <MoneyInput value={form.discount} onChange={(v) => set("discount", v)} />
+        </Field>
+        <Field label="Tổng tiền (tự tính)">
+          <div className="flex h-10 items-center justify-end rounded-lg border-2 border-sky-300 bg-sky-50 px-3 text-base font-bold tabular-nums text-sky-800">
+            {bookingTotal.toLocaleString("vi-VN")} đ
+          </div>
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {(form.unitPrice / 1000).toLocaleString("vi-VN")}k×{form.guestCount}
+            {serviceMoney ? ` + dịch vụ ${(serviceMoney / 1000).toLocaleString("vi-VN")}k` : ""}
+            {form.pickupFee ? ` + đón ${(form.pickupFee / 1000).toLocaleString("vi-VN")}k` : ""}
+            {form.discount ? ` − giảm ${(form.discount / 1000).toLocaleString("vi-VN")}k` : ""}
+          </p>
+        </Field>
         <Field label="Đã cọc vào TK công ty">
           <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
         </Field>
@@ -821,7 +992,7 @@ export function BookingCard({
       {/* Cọc thì 100% qua STK công ty — bỏ ô tích, máy chủ tự đánh dấu khi có cọc */}
       <div className="mt-2">
       <Field label="Ghi chú">
-          <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Khách Hàn, cần HDV tiếng Anh…" className="h-10 rounded-lg text-sm" />
+          <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Tên khách (nếu liên hệ là đại lý), khách Hàn cần HDV…" className="h-10 rounded-lg text-sm" />
       </Field>
       </div>
 
@@ -849,6 +1020,7 @@ export function BookingCard({
               setEditingId(null);
               setForm(emptyBooking(today));
               setError(null);
+              setForceOpen(false);
             }}
           >
             Thôi sửa
@@ -856,6 +1028,54 @@ export function BookingCard({
         )}
         <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
+        </Button>
+        {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-11 flex-1 bg-white"
+          disabled={saving || form.guestCount === 0}
+          title="Xuất phiếu booking thành ảnh để gửi khách"
+          onClick={async () => {
+            try {
+              await shareBookingImage({
+                spot: bookSpot,
+                flightDate: form.flightDate,
+                expectedTime: form.expectedTime,
+                contactName: form.contactName,
+                phone: form.phone,
+                bookingCode: form.bookingCode.trim() || form.phone.trim(),
+                source: form.source,
+                guestCount: form.guestCount,
+                flycam: form.flycam,
+                video360: form.video360,
+                redFlag: form.redFlag,
+                sunset: form.sunset,
+                flagFlight: form.flagFlight,
+                pickupLabel:
+                  form.pickup === "other"
+                    ? `Đón: ${form.pickupNote || "?"}`
+                    : form.pickup === "bigc"
+                      ? "Đón BigC"
+                      : form.pickup === "hotel"
+                        ? "Đón khách sạn"
+                        : "Tự đến",
+                flightKind: form.flightKind,
+                unitPrice: form.unitPrice,
+                serviceMoney,
+                pickupFee: form.pickupFee,
+                discount: form.discount,
+                total: bookingTotal,
+                deposit: form.deposit,
+                remaining: form.remaining,
+                note: form.note,
+              });
+            } catch (err: unknown) {
+              setError(err instanceof Error ? err.message : "Không xuất được ảnh phiếu");
+            }
+          }}
+        >
+          🖼 Xuất ảnh
         </Button>
       </div>
       </div>
@@ -904,5 +1124,6 @@ export function BookingCard({
       </div>
       </div>
     </CollapseCard>
+    </div>
   );
 }

@@ -46,6 +46,16 @@ export interface IBaobayBooking {
   redFlag: number;
   sunset: number;
   flagFlight: number;
+  /** Loại hình bay — quyết định đơn giá: "pg" dù lượn · "ppg" có động cơ. */
+  flightKind: "pg" | "ppg";
+  /** Phí đưa đón thu của khách (nếu có). */
+  pickupFee: number;
+  /** Đơn giá một khách theo loại hình + ngày bay (thường / cuối tuần & lễ). */
+  unitPrice: number;
+  /** Giảm trừ cả đoàn (chiết khấu đại lý, khuyến mãi…) — số tiền tuyệt đối. */
+  discount: number;
+  /** Tổng tiền chốt với khách — máy tự tính, lưu lại để đối chiếu về sau. */
+  totalAmount: number;
 
   /** Đưa đón: tự đến / đón BigC (chỉ Hà Nội) / đón khách sạn / khác. */
   pickup: BookingPickup;
@@ -105,6 +115,11 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     redFlag: { type: Number, default: 0, min: 0 },
     sunset: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
+    flightKind: { type: String, enum: ["pg", "ppg"], default: "pg" },
+    pickupFee: { type: Number, default: 0, min: 0 },
+    unitPrice: { type: Number, default: 0, min: 0 },
+    discount: { type: Number, default: 0, min: 0 },
+    totalAmount: { type: Number, default: 0, min: 0 },
 
     pickup: { type: String, enum: ["self", "bigc", "hotel", "other"], default: "self" },
     pickupNote: { type: String, default: "" },

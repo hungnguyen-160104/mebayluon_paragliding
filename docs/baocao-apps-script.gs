@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v19`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v21`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -193,6 +193,11 @@ const KINDS = {
     'Bay kéo cờ': 'flagFlight',
     'Đưa đón': 'pickup',
     'Giờ dự kiến': 'expectedTime',
+    'Loại hình': 'flightKind',
+    'Phí đưa đón': 'pickupFee',
+    'Đơn giá': 'unitPrice',
+    'Giảm trừ': 'discount',
+    'Tổng tiền': 'totalAmount',
     'Đã cọc': 'deposit',
     'Còn lại phải thu': 'remaining',
     'Mã chuyển khoản': 'transferCode',
@@ -292,7 +297,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v19',
+    version: 'baobay-multispot-v21',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

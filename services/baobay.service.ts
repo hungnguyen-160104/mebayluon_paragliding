@@ -42,6 +42,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
+import { bookingTotal } from "@/lib/baobay/flight-price";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type {
@@ -2636,6 +2637,10 @@ export type BookingSaveInput = {
   pickup: "self" | "bigc" | "hotel" | "other";
   pickupNote: string;
   expectedTime: string;
+  flightKind?: "pg" | "ppg";
+  pickupFee: number;
+  unitPrice: number;
+  discount: number;
   deposit: number;
   remaining: number;
   transferCode: string;
@@ -2723,6 +2728,12 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       redFlag: input.redFlag,
       sunset: input.sunset,
       flagFlight: input.flagFlight,
+      flightKind: input.flightKind === "ppg" ? "ppg" : "pg",
+      pickupFee: input.pickupFee,
+      unitPrice: input.unitPrice,
+      discount: input.discount,
+      // Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi
+      totalAmount: bookingTotal(input),
       // BigC chỉ có ở Hà Nội — điểm khác rơi về "tự đến"
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
@@ -2841,6 +2852,11 @@ export async function updateBookingInfo(
       redFlag: input.redFlag,
       sunset: input.sunset,
       flagFlight: input.flagFlight,
+      flightKind: input.flightKind === "ppg" ? "ppg" : "pg",
+      pickupFee: input.pickupFee,
+      unitPrice: input.unitPrice,
+      discount: input.discount,
+      totalAmount: bookingTotal(input),
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
@@ -2993,6 +3009,11 @@ async function pushBookingRow(doc: any) {
           ? `Đón: ${doc.pickupNote || "?"}`
           : BOOKING_PICKUP_LABEL[doc.pickup] || "Tự đến",
       expectedTime: doc.expectedTime || "",
+      flightKind: doc.flightKind === "ppg" ? "PPG" : "PG",
+      pickupFee: doc.pickupFee ?? 0,
+      unitPrice: doc.unitPrice ?? 0,
+      discount: doc.discount ?? 0,
+      totalAmount: doc.totalAmount ?? 0,
       deposit: doc.deposit ?? 0,
       remaining: doc.remaining ?? 0,
       transferCode: doc.transferCode || "",
@@ -3033,6 +3054,11 @@ function toBookingDTO(doc: any): BookingDTO {
     redFlag: doc.redFlag ?? 0,
     sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
+    flightKind: doc.flightKind === "ppg" ? "ppg" : "pg",
+    pickupFee: doc.pickupFee ?? 0,
+    unitPrice: doc.unitPrice ?? 0,
+    discount: doc.discount ?? 0,
+    totalAmount: doc.totalAmount ?? 0,
     pickup:
       doc.pickup === "bigc" ? "bigc" : doc.pickup === "hotel" ? "hotel" : doc.pickup === "other" ? "other" : "self",
     pickupNote: doc.pickupNote || "",

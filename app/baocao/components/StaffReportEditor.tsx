@@ -152,7 +152,7 @@ function StaffPicker({
       <select
         value={pick}
         onChange={(e) => setPick(e.target.value)}
-        className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
+        className="h-11 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
       >
         <option value="">— chọn {label} chưa báo cáo ({options.length}) —</option>
         {options.map((a) => (
@@ -164,7 +164,7 @@ function StaffPicker({
       <Button
         type="button"
         variant="ghost"
-        className="h-11 px-4 text-xs"
+        className="h-11 shrink-0 whitespace-nowrap px-3 text-xs"
         disabled={!pick}
         onClick={() => {
           onAdd(pick);

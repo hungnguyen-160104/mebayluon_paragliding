@@ -42,14 +42,17 @@ export function CollapseCard({
   hint,
   children,
   className,
+  open,
 }: {
   title: React.ReactNode;
   hint?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /** Bật để mở sẵn thẻ (vd. bấm "Sửa" ở danh sách khác thì thẻ nhập tự xổ ra). */
+  open?: boolean;
 }) {
   return (
-    <details className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
+    <details open={open} className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
       <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 sm:px-4">
         <span className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-base font-semibold text-slate-900">{title}</span>
@@ -117,6 +120,13 @@ export const SERVICE_TONE = {
   redFlag: { box: "border-rose-200 bg-rose-50/70", label: "text-rose-800" },
   sunset: { box: "border-orange-200 bg-orange-50/70", label: "text-orange-800" },
   flagFlight: { box: "border-amber-200 bg-amber-50/70", label: "text-amber-800" },
+  /* Năm ô đếm ở "Số tổng trong ngày" — trước đây trắng giống nhau nên rất dễ
+     gõ nhầm ô. Mỗi ô một màu riêng, khác hẳn bộ màu dịch vụ phía dưới. */
+  guests: { box: "border-emerald-300 bg-emerald-50", label: "text-emerald-900" },
+  tickets: { box: "border-sky-300 bg-sky-50", label: "text-sky-900" },
+  returned: { box: "border-slate-300 bg-slate-100", label: "text-slate-800" },
+  cancelled: { box: "border-rose-300 bg-rose-50", label: "text-rose-900" },
+  moved: { box: "border-indigo-300 bg-indigo-50", label: "text-indigo-900" },
 } as const;
 
 export function ServiceBox({
