@@ -64,16 +64,24 @@ export function DateBar({
         <span aria-hidden className="text-lg">
           📅
         </span>
-        <span className="text-lg font-bold text-slate-900">Dữ liệu ngày {formatDateKeyVN(date)}</span>
+        <span className="text-lg font-bold text-slate-900">Dữ liệu ngày</span>
+        {/* Chính con số NGÀY là lịch: bấm vào là mở chọn ngày — không còn ô date riêng.
+            Chữ hiện luôn dạng ngày/tháng/năm; input thật phủ trong suốt lên trên để nhận bấm. */}
+        <label className="relative inline-flex h-12 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-sky-400 bg-white px-3 focus-within:border-sky-600">
+          <span className="text-lg font-bold tabular-nums text-sky-700">{formatDateKeyVN(date)}</span>
+          <span aria-hidden className="text-sm text-sky-500">▾</span>
+          <input
+            type="date"
+            value={date}
+            min={min}
+            max={max}
+            onChange={(e) => e.target.value && onChange(e.target.value)}
+            onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            aria-label="Chọn ngày"
+          />
+        </label>
         {loading && <span className="text-xs text-slate-400">đang tải…</span>}
-        <input
-          type="date"
-          value={date}
-          min={min}
-          max={max}
-          onChange={(e) => e.target.value && onChange(e.target.value)}
-          className="ml-auto h-12 rounded-xl border-2 border-sky-400 bg-white px-3 text-base font-semibold text-slate-900 outline-none focus:border-sky-600"
-        />
       </div>
     </div>
   );
