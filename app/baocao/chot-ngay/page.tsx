@@ -1008,7 +1008,7 @@ function DailyCloseInner() {
           <ExpenseRows rows={form.ledger} onChange={(rows) => set("ledger", rows)} disabled={locked} withKind withMethod />
 
           {/* ===== Tổng tự cộng từ các dòng THU của sổ — so ngay với số nhân viên báo ===== */}
-          <div className="mt-4 grid gap-3 @md:grid-cols-2 @2xl:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 @md:grid-cols-3">
             <div>
               <Readout
                 label="Tổng tiền mặt thu về (tự cộng)"
