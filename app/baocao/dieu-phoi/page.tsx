@@ -470,7 +470,6 @@ export default function DispatcherReportPage() {
           <div className="mt-4">
             <Field
               label="Dải mã vé đã xuất"
-              hint="Nhiều cuốn khác tiền tố thì thêm dòng: A1234–A1256 và B1234–B1239"
             >
               <div />
             </Field>
@@ -499,10 +498,9 @@ export default function DispatcherReportPage() {
 
         <CollapseCard
           title="Dịch vụ gia tăng"
-          hint="Flycam đối soát với camera man; 360, cờ đỏ, kéo cờ đối soát với phi công. Mã vé chỉ cần điền khi số lệch."
         >
-          {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — sát nhau không còn lẫn */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Mỗi dịch vụ một khung màu riêng — 3 khung/hàng khi đủ rộng cho 5 dịch vụ nằm gọn 2 hàng */}
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
             </ServiceBox>
@@ -584,7 +582,6 @@ export default function DispatcherReportPage() {
 
         <CollapseCard
           title="THU CHI"
-          hint="Mỗi khoản một dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. Bấm + để thêm. Chi hộ khách (nước, xe…) kế toán xác nhận rồi hoàn lại."
         >
           <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} disabled={locked} withKind withMethod hideTotals />
 
@@ -650,11 +647,6 @@ export default function DispatcherReportPage() {
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
         <CollapseCard
           title="Khách huỷ"
-          hint={
-            noTickets
-              ? "Mỗi nhóm khách huỷ một dòng: tên – mã book – số khách – nguồn – tiền hoàn – ghi chú. Kế toán sẽ bấm xác nhận đúng bộ số này."
-              : "Mỗi nhóm một dòng: MÃ VÉ (cùng đoàn ghi chung) – tên – mã book – số khách – nguồn – tiền hoàn – ghi chú."
-          }
         >
           <CancelGuestRows
             rows={form.cancelledGuests}
@@ -666,11 +658,6 @@ export default function DispatcherReportPage() {
 
         <CollapseCard
           title="Khách dời lịch"
-          hint={
-            noTickets
-              ? "Mỗi nhóm khách dời một dòng: tên – SĐT – số lượng – ngày dời – đón – giờ hẹn – ghi chú."
-              : "Mỗi nhóm một dòng: MÃ VÉ – tên – SĐT – số lượng – ngày dời – đón – giờ hẹn. Vé dời coi như huỷ hôm nay, ngày mới xuất vé khác."
-          }
         >
           <RescheduleGuestRows
             rows={form.rescheduledGuests}
@@ -718,7 +705,7 @@ export default function DispatcherReportPage() {
           />
         </CollapseCard>
 
-      <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng từng nội dung mình đã báo" />
+      <PeriodSummary spot={spot} title="Tổng theo chu kỳ" />
 
       <CollapseCard title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
         {history.length === 0 ? (

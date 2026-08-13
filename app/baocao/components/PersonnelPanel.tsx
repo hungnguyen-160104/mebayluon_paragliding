@@ -1177,21 +1177,22 @@ function AccountRow({
         <div className="flex flex-wrap gap-1.5">
           {editing ? (
             <>
-              <Button size="sm" disabled={busy} onClick={saveEdit}>
+              <Button size="sm" className="h-7 px-2.5 text-xs" disabled={busy} onClick={saveEdit}>
                 Lưu
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs" onClick={() => setEditing(false)}>
                 Huỷ
               </Button>
             </>
           ) : (
             <>
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(true)}>
+              <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={busy} onClick={() => setEditing(true)}>
                 Sửa
               </Button>
               <Button
                 size="sm"
                 variant="outline"
+                className="h-7 px-2.5 text-xs"
                 disabled={busy}
                 onClick={() => {
                   if (confirm(`Đặt lại mật khẩu cho ${account.displayName}?`)) patch({ resetPassword: true });
@@ -1202,13 +1203,14 @@ function AccountRow({
               <Button
                 size="sm"
                 variant={account.isActive ? "secondary" : "outline"}
+                className="h-7 px-2.5 text-xs"
                 disabled={busy}
                 onClick={() => patch({ isActive: !account.isActive })}
                 title={account.isActive ? "Khoá: hết đăng nhập được, số liệu giữ nguyên" : "Mở lại tài khoản"}
               >
                 {account.isActive ? "Khoá" : "Mở lại"}
               </Button>
-              <Button size="sm" variant="destructive" disabled={busy} onClick={remove} title="Xoá vĩnh viễn kèm dữ liệu">
+              <Button size="sm" variant="destructive" className="h-7 px-2.5 text-xs" disabled={busy} onClick={remove} title="Xoá vĩnh viễn kèm dữ liệu">
                 Xoá
               </Button>
             </>

@@ -130,8 +130,8 @@ export function ServiceBox({
 }) {
   const t = SERVICE_TONE[tone];
   return (
-    <div className={cn("min-w-0 rounded-xl border p-2.5", t.box)}>
-      <div className={cn("mb-1.5 text-xs font-semibold leading-tight", t.label)}>{label}</div>
+    <div className={cn("min-w-0 rounded-lg border p-2", t.box)}>
+      <div className={cn("mb-1 text-xs font-semibold leading-tight", t.label)}>{label}</div>
       {children}
     </div>
   );

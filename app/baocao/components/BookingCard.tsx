@@ -133,7 +133,7 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
     );
   }
   return (
-    <div className="flex w-full flex-wrap items-center gap-2">
+    <div className="col-span-2 flex w-full flex-wrap items-center gap-2">
       <select
         value={pick}
         onChange={(e) => setPick(e.target.value)}
@@ -227,29 +227,16 @@ export function BookingTodayBanner({
       )}
       <ul className="mt-2 space-y-1.5">
         {open.map((b) => (
-          <li key={b.id} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-1.5">
-            <div className="min-w-0 flex-1">
-              <BookingSummary b={b} />
-              <AssignedBadge b={b} />
-              {b.rescheduledFrom.length > 0 && (
-                <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                  dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
-                </span>
-              )}
-              <span className="ml-1 text-xs text-slate-400">
-                — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
-              </span>
-            </div>
-
+          <li key={b.id} className="flow-root rounded-lg bg-white px-2.5 py-1.5">
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
                 <input
                   type="date"
                   value={moving.toDate}
                   min={shiftDateKey(todayInVN(), 1)}
                   onChange={(e) => setMoving({ id: b.id, toDate: e.target.value })}
-                  className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
                 />
                 <Button
                   type="button"
@@ -264,8 +251,8 @@ export function BookingTodayBanner({
                 </Button>
               </div>
             ) : (
-              /* Nút chức năng nhỏ gọn, xếp MỘT CỘT sát mép phải — thông tin chiếm phần rộng */
-              <div className="flex shrink-0 items-center gap-1">
+              /* 4 nút xếp 2×2 float góc phải — chữ từ dòng 2 tràn hết bề ngang */
+              <div className="float-right ml-2 grid grid-cols-2 gap-1">
                 <Button
                   type="button"
                   className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
@@ -295,6 +282,18 @@ export function BookingTodayBanner({
                 <AssignControl spot={spot} booking={b} onDone={load} />
               </div>
             )}
+            <div className="min-w-0">
+              <BookingSummary b={b} />
+              <AssignedBadge b={b} />
+              {b.rescheduledFrom.length > 0 && (
+                <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                  dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
+                </span>
+              )}
+              <span className="ml-1 text-xs text-slate-400">
+                — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
+              </span>
+            </div>
           </li>
         ))}
         {closed.map((b) => (
@@ -868,17 +867,9 @@ export function BookingCard({
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {upcoming.map((b, i) => (
-              <li key={b.id} className={"flex items-start gap-2 px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
-                {/* Số thứ tự đỏ — nhìn phát biết đang nói booking số mấy */}
-                <span className="mt-0.5 shrink-0 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
-                <div className="min-w-0 flex-1">
-                  <BookingSummary b={b} withDate />
-                  <AssignedBadge b={b} />
-                  <span className="ml-1 text-xs text-slate-400">
-                    — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
+              <li key={b.id} className={"flow-root px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
+                {/* Nút FLOAT góc phải — chữ dòng 1 né nút, từ dòng 2 tràn hết bề ngang */}
+                <div className="float-right ml-2 flex items-center gap-1">
                   <AssignControl spot={bookSpot} booking={b} onDone={load} />
                   <button
                     type="button"
@@ -897,6 +888,13 @@ export function BookingCard({
                     {rowBusy === b.id ? "…" : "Xoá"}
                   </button>
                 </div>
+                {/* Số thứ tự đỏ — nhìn phát biết đang nói booking số mấy */}
+                <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
+                <BookingSummary b={b} withDate />
+                <AssignedBadge b={b} />
+                <span className="ml-1 text-xs text-slate-400">
+                  — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
+                </span>
               </li>
             ))}
           </ul>

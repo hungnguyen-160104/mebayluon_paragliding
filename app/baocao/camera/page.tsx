@@ -369,7 +369,7 @@ export default function CameramanReportPage() {
 
       <HandoverBox spot={spot} />
 
-      <PeriodSummary spot={spot} title="Tổng theo chu kỳ" hint="Chọn khoảng ngày để xem tổng số chuyến flycam và chi tiêu" />
+      <PeriodSummary spot={spot} title="Tổng theo chu kỳ" />
 
       <Card title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
         {history.length === 0 ? (

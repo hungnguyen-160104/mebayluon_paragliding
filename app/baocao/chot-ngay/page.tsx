@@ -627,7 +627,6 @@ function DailyCloseInner() {
       >
         <CollapseCard
           title="Số tổng trong ngày"
-          hint="Kế toán tự gõ. Con số nhỏ bên dưới là số app cộng từ báo cáo nhân viên — để so, không phải để điền hộ."
         >
           {/* Nhân viên nhập, kế toán chỉ XÁC NHẬN: chép cả bảng rồi soát, sai chỗ nào sửa tay hoặc truy người nhập */}
           {suggest?.hasData && !locked && (

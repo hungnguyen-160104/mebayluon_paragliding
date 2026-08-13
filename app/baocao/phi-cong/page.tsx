@@ -383,7 +383,7 @@ export default function PilotReportPage() {
       <MyShifts spot={spot} bilingual />
 
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
-      {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
+      {/* Chọn NƠI LÀM VIỆC + NGÀY — một thanh duy nhất trên đầu trang */}
       <DateBar
         date={date}
         onChange={setDate}
@@ -455,16 +455,6 @@ export default function PilotReportPage() {
         </Banner>
       )}
 
-      <DateBar
-        date={date}
-        onChange={setDate}
-        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-        loading={loadingDay}
-        spot={spot}
-        spotOptions={spotOptions}
-        onSpotChange={(v) => setSpot(v as never)}
-        />
-
       {/* ============ MỘT lưới 2 cột độc lập: TRÁI form bay/dịch vụ · PHẢI phần còn lại ============ */}
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <div>
@@ -497,7 +487,7 @@ export default function PilotReportPage() {
 
         {/* Phi công thuần PPG không có chuyến PG — ẩn cả khối */}
         {flyPg && (
-<Card title="Số chuyến bay (Flights)" hint="Số chuyến dù đôi đã bay trong ngày, kèm mã vé từng chuyến (tandem flights today, with ticket codes)">
+<Card title="Số chuyến PG (Flights)" hint="phải ghi kèm mã vé từng chuyến để đối soát">
           <div className="space-y-3">
             <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
 
@@ -507,7 +497,7 @@ export default function PilotReportPage() {
                   ? "Mã vé đã bay (Ticket codes flown)"
                   : "Mã vé đã bay — không bắt buộc ở điểm này (Ticket codes — optional here)"
               }
-              hint="Vé năm nay là MBLxxxx — gõ tắt 4 số cuối cũng nhận: 1299 hay MBL1299 như nhau. Bay liền dải viết 1299..1305; cách nhau bằng khoảng trắng, phẩy hay gạch đều được"
+              hint="MBL1234 hoặc 1234. Bay liền dải viết 1299..1305; cách nhau bằng khoảng trắng, phẩy hay gạch đều được"
             >
               <TextArea
                 value={form.ticketCodesText}
@@ -572,10 +562,9 @@ export default function PilotReportPage() {
 
         <Card
           title="Dịch vụ gia tăng (Add-on services)"
-          hint="Chỉ SỐ LƯỢNG là bắt buộc — mã vé để trống cũng được, chỉ cần điền khi kế toán báo lệch số với điều phối (quantity required; ticket codes optional)"
         >
-          {/* Mỗi dịch vụ một khung màu riêng — các cụm đếm sát nhau không còn lẫn */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Mỗi dịch vụ một khung màu riêng — 3 khung/hàng khi đủ rộng cho 5 dịch vụ nằm gọn 2 hàng */}
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} />
             </ServiceBox>
@@ -665,8 +654,7 @@ export default function PilotReportPage() {
         {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
         {spot === "khau-pha" && flyPpg && (
         <Card
-          title="Chuyến PPG — có động cơ (PPG flights, engine-powered)"
-          hint="Các ô bên trên mặc định là PG. PPG không bắt buộc vé: có vé thì điền mã, không vé thì đếm vào ô 'không vé' (default above is PG; codes optional — count ticketless flights)"
+          title="Số chuyến PPG (PPG flights)"
         >
           <div className="grid gap-3 @md:grid-cols-2">
             <Field label={bi("Số chuyến PPG", "PPG flights")}>
@@ -905,7 +893,6 @@ export default function PilotReportPage() {
         statement
         spot={spot}
         title="Tổng theo chu kỳ (Period totals)"
-        hint="Chọn khoảng ngày để xem tổng từng nội dung của anh/chị (pick a date range to see your totals)"
       />
 
       <Card title="Đã báo gần đây (Recent reports)" hint="Bấm vào một ngày để mở lại và sửa (tap a day to reopen and edit)">
