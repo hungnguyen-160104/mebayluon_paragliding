@@ -92,10 +92,11 @@ function AssignControl({ spot, booking, onDone }: { spot: string; booking: Booki
     setError(null);
     if (staff.length) return;
     try {
-      const r = await apiGet<{ recipients: Array<{ username: string; name: string; roleLabel: string }> }>(
-        `/api/baocao/handover?spot=${spot}`,
+      // Danh sách TẤT CẢ nhân sự đang làm tại điểm (phi công, camera man, kế toán…)
+      const r = await apiGet<{ staff: Array<{ username: string; name: string; roleLabel: string }> }>(
+        `/api/baocao/booking?date=${todayInVN()}&spot=${spot}`,
       );
-      setStaff(r.recipients);
+      setStaff(r.staff ?? []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách nhân sự");
     }

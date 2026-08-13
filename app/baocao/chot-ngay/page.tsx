@@ -69,7 +69,17 @@ type CloseSuggestion = {
   dispatcherSpend: number;
   registeredGuests: number;
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; bookedId?: string }>;
+  rescheduledGuestEntries: Array<{
+    name: string;
+    guests: number;
+    toDate: string;
+    note?: string;
+    phone?: string;
+    pickup?: "self" | "other";
+    pickupNote?: string;
+    expectedTime?: string;
+    bookedId?: string;
+  }>;
   dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   dispatcherNames: string[];
   flycam: number;
@@ -121,7 +131,9 @@ const EMPTY_FORM: FormState = {
   rescheduled: [{ code: "", toDate: "", note: "" }],
   registeredGuests: 0,
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
-  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }],
+  rescheduledGuests: [
+    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+  ],
   cashTotal: 0,
   transferTotal: 0,
   flycam: 0,
@@ -234,6 +246,9 @@ function DailyCloseInner() {
                   ...e,
                   note: e.note || "",
                   phone: e.phone || "",
+                  pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
+                  pickupNote: e.pickupNote || "",
+                  expectedTime: e.expectedTime || "",
                   bookedId: e.bookedId || "",
                 }))
               : EMPTY_FORM.rescheduledGuests,
@@ -911,6 +926,9 @@ function DailyCloseInner() {
                           ...e,
                           note: e.note || "",
                           phone: e.phone || "",
+                          pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
+                          pickupNote: e.pickupNote || "",
+                          expectedTime: e.expectedTime || "",
                           bookedId: e.bookedId || "",
                         }));
                         set("rescheduledGuests", rows);

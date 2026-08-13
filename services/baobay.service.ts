@@ -1458,7 +1458,7 @@ export type DispatcherReportSaveInput = {
   cancelledEntries: Array<{ codesText: string; reason: string; contactName: string; note?: string }>;
   /** HÀ NỘI: nhóm KHÁCH huỷ/dời — điểm không vé thu thập theo khách. */
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; bookedId?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; bookedId?: string }>;
   /** Dời lịch theo nhóm: nhiều mã một ô + ngày + lý do + liên hệ + sđt. */
   rescheduledEntries: Array<{
     codesText: string;
@@ -1704,7 +1704,7 @@ async function pushDispatcherRow(doc: any) {
       (doc.rescheduledGuestEntries || [])
         .map(
           (e: any) =>
-            `${e.name || "khách"} ×${e.guests}${e.phone ? ` (${e.phone})` : ""} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.note ? ` — ${e.note}` : ""}`,
+            `${e.name || "khách"} ×${e.guests}${e.phone ? ` (${e.phone})` : ""} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.pickup === "other" ? ` — đón ${e.pickupNote || "?"}` : ""}${e.expectedTime ? ` ${e.expectedTime}` : ""}${e.note ? ` — ${e.note}` : ""}`,
         )
         .join(" | ") ||
       (doc.rescheduledEntries || [])
@@ -3585,7 +3585,7 @@ export type DailyCloseSaveInput = {
   rescheduled: Array<{ code: string; toDate: string; note?: string }>;
   registeredGuests?: number;
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string; phone?: string; bookedId?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; bookedId?: string }>;
   cashTotal: number;
   transferTotal: number;
   flycam: number;
@@ -3747,6 +3747,28 @@ export async function listSpotStaffByRole(
     .sort({ displayName: 1 })
     .lean<any[]>();
   return docs.map((d) => ({ username: d.username, name: d.displayName }));
+}
+
+/**
+ * MỌI nhân sự đang làm việc tại điểm — đủ mọi vai trò. Dùng cho "nhân sự tiếp
+ * nhận" khi điều phối chuyển booking: phi công, camera man, kế toán… ai cũng
+ * nhận lịch được, không như giao tiền (chỉ người giữ quỹ).
+ */
+export async function listSpotStaffAll(
+  spotRaw: string,
+): Promise<Array<{ username: string; name: string; role: BaobayRole; roleLabel: string }>> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const docs = await BaobayAccount.find({ isActive: true, spots: spot })
+    .select("username displayName role")
+    .sort({ role: 1, displayName: 1 })
+    .lean<any[]>();
+  return docs.map((d) => ({
+    username: d.username,
+    name: d.displayName,
+    role: d.role as BaobayRole,
+    roleLabel: ROLE_LABEL[d.role as BaobayRole] ?? d.role,
+  }));
 }
 
 export async function getDailyClose(spot: string, date: string): Promise<DailyCloseDTO | null> {

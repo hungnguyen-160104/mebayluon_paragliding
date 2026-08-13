@@ -110,6 +110,9 @@ const rescheduledGuestList = z
       toDate: z.string().refine((v) => v === "" || isDateKey(v), "Ngày dời tới không hợp lệ"),
       note: text(500),
       phone: text(50),
+      pickup: z.enum(["self", "other"]).optional().default("self"),
+      pickupNote: text(200),
+      expectedTime: text(20),
       /** id booking đã đẩy vào lịch ngày dời — giữ để không đẩy trùng. */
       bookedId: text(50),
     }),

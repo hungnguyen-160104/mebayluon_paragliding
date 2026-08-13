@@ -8,6 +8,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
   assignBooking,
+  listSpotStaffAll,
   createBooking,
   deleteBooking,
   listBookings,
@@ -46,7 +47,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   }
   const manager = auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role);
-  return NextResponse.json(await listBookings(spot, date, manager ? undefined : auth.username));
+  const [lists, staff] = await Promise.all([
+    listBookings(spot, date, manager ? undefined : auth.username),
+    // "Nhân sự tiếp nhận" khi chuyển booking: TẤT CẢ người đang làm tại điểm
+    manager ? listSpotStaffAll(spot) : Promise.resolve([]),
+  ]);
+  return NextResponse.json({ ...lists, staff });
 }
 
 export async function POST(req: Request) {

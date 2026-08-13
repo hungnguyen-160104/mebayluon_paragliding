@@ -691,6 +691,10 @@ export type RescheduleGuestRow = {
   toDate: string;
   note: string;
   phone: string;
+  /** Tự đến hay hẹn đón — theo nhóm sang booking của ngày dời. */
+  pickup: "self" | "other";
+  pickupNote: string;
+  expectedTime: string;
   /** id booking đã đẩy vào lịch ngày dời — có rồi thì nút xác nhận chuyển sang "đã đẩy". */
   bookedId: string;
 };
@@ -750,10 +754,42 @@ export function RescheduleGuestRows({
                   />
                 </div>
               </div>
+              {/* Tự đến hay hẹn đón + giờ hẹn — theo nhóm sang booking của ngày dời */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Đưa đón</div>
+                  <select
+                    value={row.pickup}
+                    onChange={(e) => set(i, { pickup: e.target.value as "self" | "other", pickupNote: "" })}
+                    disabled={disabled}
+                    className="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none focus:border-sky-600"
+                  >
+                    <option value="self">Tự đến</option>
+                    <option value="other">Hẹn đón — ghi chỗ</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">Giờ hẹn</div>
+                  <TextInput
+                    type="time"
+                    value={row.expectedTime}
+                    onChange={(e) => set(i, { expectedTime: e.target.value })}
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+              {row.pickup === "other" && (
+                <TextInput
+                  value={row.pickupNote}
+                  onChange={(e) => set(i, { pickupNote: e.target.value })}
+                  placeholder="Đón ở đâu · khách sạn, BigC, homestay…"
+                  disabled={disabled}
+                />
+              )}
               <TextInput
                 value={row.note}
                 onChange={(e) => set(i, { note: e.target.value })}
-                placeholder="Ghi chú · lý do dời, hẹn giờ…"
+                placeholder="Ghi chú · lý do dời…"
                 disabled={disabled}
               />
               {onConfirmMove &&
@@ -793,7 +829,12 @@ export function RescheduleGuestRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }])}
+          onClick={() =>
+            onChange([
+              ...rows,
+              { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+            ])
+          }
         >
           + Thêm khách dời
         </Button>

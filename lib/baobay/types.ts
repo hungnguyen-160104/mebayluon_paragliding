@@ -310,6 +310,12 @@ export type RescheduleGuestDTO = {
   note: string;
   /** SĐT khách — theo nhóm sang lịch ngày mới để còn gọi. */
   phone?: string;
+  /** Tự đến hay hẹn đón — theo nhóm sang booking của ngày dời. */
+  pickup?: "self" | "other";
+  /** Đón ở đâu khi chọn hẹn đón. */
+  pickupNote?: string;
+  /** Giờ hẹn "HH:MM". */
+  expectedTime?: string;
   /** id booking đã ĐẨY VÀO LỊCH ngày dời — có rồi thì khỏi đẩy lần hai. */
   bookedId?: string;
 };

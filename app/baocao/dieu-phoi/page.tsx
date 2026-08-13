@@ -89,7 +89,9 @@ const EMPTY_FORM: FormState = {
   cancelledEntries: [{ codesText: "", reason: "", contactName: "", note: "" }],
   rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }],
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
-  rescheduledGuests: [{ name: "", guests: 0, toDate: "", note: "", phone: "", bookedId: "" }],
+  rescheduledGuests: [
+    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+  ],
   diplomaticEntries: [{ codesText: "", amount: 0, note: "" }],
   flycam: 0,
   flycamCodesText: "",
@@ -148,7 +150,15 @@ function fromReport(r: DispatcherReportDTO): FormState {
       ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
       : EMPTY_FORM.cancelledGuests,
     rescheduledGuests: r.rescheduledGuestEntries.length
-      ? r.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "", phone: e.phone || "", bookedId: e.bookedId || "" }))
+      ? r.rescheduledGuestEntries.map((e) => ({
+          ...e,
+          note: e.note || "",
+          phone: e.phone || "",
+          pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
+          pickupNote: e.pickupNote || "",
+          expectedTime: e.expectedTime || "",
+          bookedId: e.bookedId || "",
+        }))
       : EMPTY_FORM.rescheduledGuests,
     diplomaticEntries: diplo.length ? diplo : EMPTY_FORM.diplomaticEntries,
     flycam: r.flycam,
@@ -310,9 +320,9 @@ export default function DispatcherReportPage() {
         video360: 0,
         redFlag: 0,
         flagFlight: 0,
-        pickup: "self",
-        pickupNote: "",
-        expectedTime: "",
+        pickup: row.pickup === "other" ? "other" : "self",
+        pickupNote: row.pickup === "other" ? row.pickupNote : "",
+        expectedTime: row.expectedTime,
         deposit: 0,
         remaining: 0,
         note: `Khách dời từ ngày ${formatDateKeyVN(date)}${row.note ? ` — ${row.note}` : ""}`,
