@@ -653,17 +653,31 @@ export default function PilotReportPage() {
 
           <div className="mt-4">
             <Field
-              label="Thu / chi khác (Other money in & out)"
-              hint="Mỗi dòng: nội dung – số tiền – tick Thu hoặc Chi – ghi chú. VD: khách đưa tiền vé tại bãi — 1.800.000đ — Thu (one line each: item – amount – In/Out – note)"
+              label="THU CHI (money in & out)"
+              hint="Mỗi dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. VD: khách đưa tiền vé tại bãi — 1.800.000đ — Thu — TM"
             >
               <div />
             </Field>
-            <ExpenseRows rows={form.expenses} onChange={(rows) => set("expenses", rows)} disabled={locked} withKind />
+            <ExpenseRows
+              rows={form.expenses}
+              onChange={(rows) => set("expenses", rows)}
+              disabled={locked}
+              withKind
+              withMethod
+              hideTotals
+            />
           </div>
 
+          {/* Tổng chạy theo sổ: thu xanh dấu +, chi đỏ dấu − — cùng mẫu mọi trang */}
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Readout label="Tổng chi trong ngày (total expenses)" value={formatVND(expenseSum)} />
-            <Readout label="Tổng thu hộ tại bãi (collected)" value={formatVND(thuSum)} />
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-emerald-800">Tổng thu (collected)</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">+{formatVND(thuSum)}</div>
+            </div>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-rose-800">Tổng chi (expenses)</div>
+              <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
+            </div>
           </div>
         </Card>
 

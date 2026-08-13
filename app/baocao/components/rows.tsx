@@ -599,6 +599,8 @@ export type CancelGuestRow = {
   source: string;
   refund: number;
   note: string;
+  /** Điểm có vé: mã vé của nhóm (nhiều mã một ô) — Hà Nội để trống. */
+  codesText: string;
 };
 
 /** Khách huỷ hoàn tiền: Tên – mã book – số khách – nguồn – tiền hoàn. */
@@ -606,10 +608,13 @@ export function CancelGuestRows({
   rows,
   onChange,
   disabled,
+  withCodes,
 }: {
   rows: CancelGuestRow[];
   onChange: (next: CancelGuestRow[]) => void;
   disabled?: boolean;
+  /** Điểm có vé (Khau Phạ, Sa Pa): hiện ô mã vé của nhóm. */
+  withCodes?: boolean;
 }) {
   const set = (index: number, patch: Partial<CancelGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -620,6 +625,16 @@ export function CancelGuestRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
+              {withCodes && (
+                <TextInput
+                  value={row.codesText}
+                  onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={disabled}
+                />
+              )}
               <div className="grid gap-2 sm:grid-cols-[1fr_10rem]">
                 <TextInput
                   value={row.name}
@@ -679,7 +694,9 @@ export function CancelGuestRows({
           type="button"
           variant="ghost"
           className="h-10 px-3 text-xs"
-          onClick={() => onChange([...rows, { name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }])}
+          onClick={() =>
+            onChange([...rows, { name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }])
+          }
         >
           + Thêm khách huỷ
         </Button>
@@ -694,6 +711,8 @@ export type RescheduleGuestRow = {
   toDate: string;
   note: string;
   phone: string;
+  /** Điểm có vé: mã vé của nhóm — Hà Nội để trống. */
+  codesText: string;
   /** Tự đến hay hẹn đón — theo nhóm sang booking của ngày dời. */
   pickup: "self" | "other";
   pickupNote: string;
@@ -709,6 +728,7 @@ export function RescheduleGuestRows({
   minDate,
   disabled,
   onConfirmMove,
+  withCodes,
 }: {
   rows: RescheduleGuestRow[];
   onChange: (next: RescheduleGuestRow[]) => void;
@@ -716,6 +736,8 @@ export function RescheduleGuestRows({
   disabled?: boolean;
   /** Có truyền thì mỗi nhóm hiện nút "Xác nhận dời" — đẩy nhóm vào SỔ BOOKING của ngày dời. */
   onConfirmMove?: (index: number) => void;
+  /** Điểm có vé: hiện ô mã vé của nhóm. */
+  withCodes?: boolean;
 }) {
   const set = (index: number, patch: Partial<RescheduleGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -726,6 +748,16 @@ export function RescheduleGuestRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
+              {withCodes && (
+                <TextInput
+                  value={row.codesText}
+                  onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0044 MBL0045"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={disabled}
+                />
+              )}
               <div className="grid gap-2 sm:grid-cols-2">
                 <TextInput
                   value={row.name}
@@ -806,7 +838,7 @@ export function RescheduleGuestRows({
                     type="button"
                     variant="ghost"
                     className="h-10 w-full border border-sky-300 bg-sky-50 text-xs font-semibold text-sky-800"
-                    disabled={disabled || !row.toDate || !row.guests}
+                    disabled={disabled || !row.toDate || (!row.guests && !row.codesText.trim())}
                     onClick={() => onConfirmMove(i)}
                   >
                     ✓ Xác nhận dời — đẩy vào lịch booking ngày {row.toDate ? formatDateKeyVN(row.toDate) : "…"}
@@ -835,7 +867,7 @@ export function RescheduleGuestRows({
           onClick={() =>
             onChange([
               ...rows,
-              { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+              { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
             ])
           }
         >

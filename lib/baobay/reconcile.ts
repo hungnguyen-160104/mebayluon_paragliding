@@ -86,6 +86,8 @@ export type ReconcilePilot = {
    * "mã đã xuất mà không ai bay" + "vé xuất khác tổng bay + thu hồi".
    */
   ppgCodes: string[];
+  /** Số chuyến PPG — cộng vào "khách phi công đã bay" khi so số khách với quầy. */
+  ppgFlights?: number;
   expenseTotal: number;
   submitted: boolean;
 };
@@ -173,6 +175,8 @@ export type ReconcileTotals = {
   dispatcherTransfer: number;
   dispatcherDiplomatic: number;
   pilotFlights: number;
+  /** Tổng chuyến PPG phi công báo — khách PPG cũng là khách bay trong ngày. */
+  pilotPpg: number;
   pilotCodes: number;
   pilotFlycam: number;
   pilot360: number;
@@ -568,6 +572,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     dispatcherTransfer: sum(dispatchers, (d) => d.transferReceived),
     dispatcherDiplomatic: sum(dispatchers, (d) => d.diplomaticGuests),
     pilotFlights: sum(pilots, (p) => p.flightCount),
+    pilotPpg: sum(pilots, (p) => p.ppgFlights ?? 0),
     pilotCodes: flownBy.size,
     pilotFlycam: sum(pilots, (p) => p.flycam),
     pilot360: sum(pilots, (p) => p.video360),

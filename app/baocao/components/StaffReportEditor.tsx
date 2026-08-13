@@ -289,8 +289,16 @@ function DispatcherRow({
             phone: e.phone,
             note: e.note || "",
           })),
-          cancelledGuestEntries: report.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" })),
-          rescheduledGuestEntries: report.rescheduledGuestEntries.map((e) => ({ ...e, note: e.note || "" })),
+          cancelledGuestEntries: report.cancelledGuestEntries.map((e) => ({
+            ...e,
+            note: e.note || "",
+            codesText: (e.codes ?? []).join(" "),
+          })),
+          rescheduledGuestEntries: report.rescheduledGuestEntries.map((e) => ({
+            ...e,
+            note: e.note || "",
+            codesText: (e.codes ?? []).join(" "),
+          })),
           diplomaticEntries: report.diplomaticEntries.map((e) => ({
             codesText: e.codes.join(" "),
             amount: e.amount,

@@ -29,6 +29,7 @@ import {
   type ExpenseRow,
 } from "../components/rows";
 import { DateBar } from "../components/DateBar";
+import { HandoverBox } from "../components/HandoverBox";
 import { MoneyOrderCard } from "../components/MoneyOrderCard";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
@@ -68,7 +69,15 @@ type CloseSuggestion = {
   transferTotal: number;
   dispatcherSpend: number;
   registeredGuests: number;
-  cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  cancelledGuestEntries: Array<{
+    name: string;
+    bookingCode: string;
+    guests: number;
+    source: string;
+    refund: number;
+    note?: string;
+    codes?: string[];
+  }>;
   rescheduledGuestEntries: Array<{
     name: string;
     guests: number;
@@ -78,6 +87,7 @@ type CloseSuggestion = {
     pickup?: "self" | "other";
     pickupNote?: string;
     expectedTime?: string;
+    codes?: string[];
     bookedId?: string;
   }>;
   dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
@@ -130,9 +140,9 @@ const EMPTY_FORM: FormState = {
   cancelledNote: "",
   rescheduled: [{ code: "", toDate: "", note: "" }],
   registeredGuests: 0,
-  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
+  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }],
   rescheduledGuests: [
-    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
   ],
   cashTotal: 0,
   transferTotal: 0,
@@ -239,7 +249,11 @@ function DailyCloseInner() {
             rescheduled: toRescheduleRows(res.close.rescheduled),
             registeredGuests: res.close.registeredGuests,
             cancelledGuests: res.close.cancelledGuestEntries.length
-              ? res.close.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
+              ? res.close.cancelledGuestEntries.map((e) => ({
+                  ...e,
+                  note: e.note || "",
+                  codesText: (e.codes ?? []).join(", "),
+                }))
               : EMPTY_FORM.cancelledGuests,
             rescheduledGuests: res.close.rescheduledGuestEntries.length
               ? res.close.rescheduledGuestEntries.map((e) => ({
@@ -249,6 +263,7 @@ function DailyCloseInner() {
                   pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
                   pickupNote: e.pickupNote || "",
                   expectedTime: e.expectedTime || "",
+                  codesText: (e.codes ?? []).join(", "),
                   bookedId: e.bookedId || "",
                 }))
               : EMPTY_FORM.rescheduledGuests,
@@ -593,10 +608,10 @@ function DailyCloseInner() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Số khách bay trong ngày">
               <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
-              {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (mỗi chuyến 1 khách) */}
+              {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare label="điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-              <Compare label="phi công báo" value={t?.pilotFlights} mine={form.guestCount}
+              <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
             </Field>
 
@@ -624,6 +639,9 @@ function DailyCloseInner() {
                 <Field label="Số vé được xuất ra">
                   <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
                   <Compare label="điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
+                    onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
+                  {/* Tổng số MÃ VÉ phi công đã khai bay trong ngày (gồm cả vé PPG) */}
+                  <Compare label="phi công báo" value={t?.pilotCodes} mine={form.ticketsIssued}
                     onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
                 </Field>
 
@@ -899,7 +917,11 @@ function DailyCloseInner() {
                     label={`${reporterNames} báo ${suggest.cancelledGuestEntries.length} nhóm khách huỷ · ${suggest.cancelledGuestEntries.reduce((a, e) => a + e.guests, 0)} khách · hoàn ${formatVND(suggest.cancelledGuestEntries.reduce((a, e) => a + e.refund, 0))}`}
                     action={`⧉ chấp nhận số liệu từ ${reporterNames}`}
                     onCopy={() => {
-                      const rows = suggest.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }));
+                      const rows = suggest.cancelledGuestEntries.map((e) => ({
+                        ...e,
+                        note: e.note || "",
+                        codesText: (e.codes ?? []).join(", "),
+                      }));
                       set("cancelledGuests", rows);
                       set("cancelledCount", rows.reduce((a, e) => a + (e.guests || 0), 0));
                     }}
@@ -929,6 +951,7 @@ function DailyCloseInner() {
                           pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
                           pickupNote: e.pickupNote || "",
                           expectedTime: e.expectedTime || "",
+                          codesText: (e.codes ?? []).join(", "),
                           bookedId: e.bookedId || "",
                         }));
                         set("rescheduledGuests", rows);
@@ -1089,6 +1112,11 @@ function DailyCloseInner() {
       {/* Kế toán chủ động lập lệnh chuyển lương / ứng / trả phí cho nhân sự */}
       <div className="mt-4">
         <MoneyOrderCard spot={spot} />
+      </div>
+
+      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
+      <div className="mt-4">
+        <HandoverBox spot={spot} />
       </div>
 
     </Shell>

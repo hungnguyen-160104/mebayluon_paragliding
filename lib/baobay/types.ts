@@ -300,6 +300,8 @@ export type CancelGuestDTO = {
   source: string;
   refund: number;
   note?: string;
+  /** Điểm CÓ VÉ (Khau Phạ, Sa Pa): mã vé của nhóm — Hà Nội để trống. */
+  codes?: string[];
 };
 
 /** HÀ NỘI: một nhóm khách dời lịch — tên, số lượng, SĐT, ngày dời, ghi chú. */
@@ -316,6 +318,8 @@ export type RescheduleGuestDTO = {
   pickupNote?: string;
   /** Giờ hẹn "HH:MM". */
   expectedTime?: string;
+  /** Điểm CÓ VÉ: mã vé của nhóm — Hà Nội để trống. */
+  codes?: string[];
   /** id booking đã ĐẨY VÀO LỊCH ngày dời — có rồi thì khỏi đẩy lần hai. */
   bookedId?: string;
 };

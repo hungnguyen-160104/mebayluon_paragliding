@@ -13,7 +13,6 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import {
-  CancelEntryRows,
   CancelGuestRows,
   RescheduleGuestRows,
   type CancelGuestRow,
@@ -21,7 +20,6 @@ import {
   DiploEntryRows,
   ExpenseRows,
   RangeRows,
-  RescheduleEntryRows,
   rangeRowsTotal,
   toRangeRows,
   type CancelRow,
@@ -80,9 +78,9 @@ const EMPTY_FORM: FormState = {
   issuedRanges: [{ from: "", to: "" }],
   cancelledEntries: [{ codesText: "", reason: "", contactName: "", note: "" }],
   rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }],
-  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "" }],
+  cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }],
   rescheduledGuests: [
-    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", bookedId: "" },
+    { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
   ],
   diplomaticEntries: [{ codesText: "", amount: 0, note: "" }],
   flycam: 0,
@@ -133,8 +131,19 @@ function fromReport(r: DispatcherReportDTO): FormState {
     cancelledEntries: cancelled.length ? cancelled : EMPTY_FORM.cancelledEntries,
     rescheduledEntries: rescheduled.length ? rescheduled : EMPTY_FORM.rescheduledEntries,
     cancelledGuests: r.cancelledGuestEntries.length
-      ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "" }))
-      : EMPTY_FORM.cancelledGuests,
+      ? r.cancelledGuestEntries.map((e) => ({ ...e, note: e.note || "", codesText: (e.codes ?? []).join(", ") }))
+      : cancelled.length
+        ? cancelled.map((e) => ({
+            // báo cáo thời còn nhóm vé cũ (mã – lý do – liên hệ): trải sang nhóm khách để sửa tiếp
+            name: e.contactName,
+            bookingCode: "",
+            guests: 0,
+            source: "",
+            refund: 0,
+            note: [e.reason, e.note].filter(Boolean).join(" — "),
+            codesText: e.codesText,
+          }))
+        : EMPTY_FORM.cancelledGuests,
     rescheduledGuests: r.rescheduledGuestEntries.length
       ? r.rescheduledGuestEntries.map((e) => ({
           ...e,
@@ -143,9 +152,23 @@ function fromReport(r: DispatcherReportDTO): FormState {
           pickup: e.pickup === "other" ? ("other" as const) : ("self" as const),
           pickupNote: e.pickupNote || "",
           expectedTime: e.expectedTime || "",
+          codesText: (e.codes ?? []).join(", "),
           bookedId: e.bookedId || "",
         }))
-      : EMPTY_FORM.rescheduledGuests,
+      : rescheduled.length
+        ? rescheduled.map((e) => ({
+            name: e.contactName,
+            guests: 0,
+            toDate: e.toDate,
+            note: [e.reason, e.note].filter(Boolean).join(" — "),
+            phone: e.phone,
+            pickup: "self" as const,
+            pickupNote: "",
+            expectedTime: "",
+            codesText: e.codesText,
+            bookedId: "",
+          }))
+        : EMPTY_FORM.rescheduledGuests,
     diplomaticEntries: diplo.length ? diplo : EMPTY_FORM.diplomaticEntries,
     flycam: r.flycam,
     flycamCodesText: r.flycamCodes.join(", "),
@@ -300,12 +323,15 @@ export default function DispatcherReportPage() {
         shuttleCarCost: 0,
         expenses: f.money.filter((e) => e.kind !== "thu" && (e.content.trim() || e.amount)),
         issuedRanges: f.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
-        cancelledEntries: f.cancelledEntries.filter(
-          (e) => e.codesText.trim() || e.reason.trim() || e.contactName.trim() || e.note.trim(),
+        // Nhóm vé kiểu cũ đã trải hết sang nhóm khách khi mở lại — gửi rỗng
+        cancelledEntries: [],
+        rescheduledEntries: [],
+        cancelledGuestEntries: f.cancelledGuests.filter(
+          (e) => e.name.trim() || e.guests || e.bookingCode.trim() || e.codesText.trim(),
         ),
-        rescheduledEntries: f.rescheduledEntries.filter((e) => e.codesText.trim() || e.toDate || e.note.trim()),
-        cancelledGuestEntries: f.cancelledGuests.filter((e) => e.name.trim() || e.guests || e.bookingCode.trim()),
-        rescheduledGuestEntries: f.rescheduledGuests.filter((e) => e.name.trim() || e.guests || e.toDate),
+        rescheduledGuestEntries: f.rescheduledGuests.filter(
+          (e) => e.name.trim() || e.guests || e.toDate || e.codesText.trim(),
+        ),
         diplomaticEntries: f.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount || e.note.trim()),
       },
     );
@@ -323,7 +349,10 @@ export default function DispatcherReportPage() {
    */
   async function confirmMove(index: number) {
     const row = form.rescheduledGuests[index];
-    if (!row || !row.toDate || !row.guests || row.bookedId) return;
+    if (!row || !row.toDate || row.bookedId) return;
+    const codeCount = parseTicketCodeList(row.codesText).codes.length;
+    const guestTotal = row.guests || codeCount;
+    if (!guestTotal) return;
     setError(null);
     setSaving(true);
     try {
@@ -333,7 +362,7 @@ export default function DispatcherReportPage() {
         contactName: row.name,
         phone: row.phone,
         bookingCode: "",
-        guestCount: row.guests,
+        guestCount: guestTotal,
         flycam: 0,
         video360: 0,
         redFlag: 0,
@@ -343,7 +372,7 @@ export default function DispatcherReportPage() {
         expectedTime: row.expectedTime,
         deposit: 0,
         remaining: 0,
-        note: `Khách dời từ ngày ${formatDateKeyVN(date)}${row.note ? ` — ${row.note}` : ""}`,
+        note: `Khách dời từ ngày ${formatDateKeyVN(date)}${row.codesText.trim() ? ` — vé: ${row.codesText.trim()}` : ""}${row.note ? ` — ${row.note}` : ""}`,
         rescheduledFrom: date,
       });
       const next = {
@@ -467,52 +496,37 @@ export default function DispatcherReportPage() {
         </Card>
 
         <Card
-          title={noTickets ? "Khách huỷ" : "Vé huỷ"}
+          title="Khách huỷ"
           hint={
             noTickets
               ? "Mỗi nhóm khách huỷ một dòng: tên – mã book – số khách – nguồn – tiền hoàn – ghi chú. Kế toán sẽ bấm xác nhận đúng bộ số này."
-              : "Cùng đoàn thì ghi nhiều mã trong một ô. Mỗi nhóm: mã vé – lý do (đợi lâu / gió mưa / đến trễ) – tên liên hệ."
+              : "Mỗi nhóm một dòng: MÃ VÉ (cùng đoàn ghi chung) – tên – mã book – số khách – nguồn – tiền hoàn – ghi chú."
           }
         >
-          {noTickets ? (
-            <CancelGuestRows
-              rows={form.cancelledGuests}
-              onChange={(rows) => set("cancelledGuests", rows)}
-              disabled={locked}
-            />
-          ) : (
-            <CancelEntryRows
-              rows={form.cancelledEntries}
-              onChange={(rows) => set("cancelledEntries", rows)}
-              disabled={locked}
-            />
-          )}
+          <CancelGuestRows
+            rows={form.cancelledGuests}
+            onChange={(rows) => set("cancelledGuests", rows)}
+            disabled={locked}
+            withCodes={!noTickets}
+          />
         </Card>
 
         <Card
-          title={noTickets ? "Khách dời lịch" : "Vé dời lịch"}
+          title="Khách dời lịch"
           hint={
             noTickets
-              ? "Mỗi nhóm khách dời một dòng: tên – số lượng – dời sang ngày – ghi chú."
-              : "Cùng đoàn ghi chung một nhóm: mã vé – dời sang ngày – lý do – tên liên hệ – sđt. Vé dời coi như huỷ hôm nay, ngày dời tới sẽ xuất vé mới."
+              ? "Mỗi nhóm khách dời một dòng: tên – SĐT – số lượng – ngày dời – đón – giờ hẹn – ghi chú."
+              : "Mỗi nhóm một dòng: MÃ VÉ – tên – SĐT – số lượng – ngày dời – đón – giờ hẹn. Vé dời coi như huỷ hôm nay, ngày mới xuất vé khác."
           }
         >
-          {noTickets ? (
-            <RescheduleGuestRows
-              rows={form.rescheduledGuests}
-              onChange={(rows) => set("rescheduledGuests", rows)}
-              minDate={shiftDateKey(date, 1)}
-              disabled={locked}
-              onConfirmMove={confirmMove}
-            />
-          ) : (
-            <RescheduleEntryRows
-              rows={form.rescheduledEntries}
-              onChange={(rows) => set("rescheduledEntries", rows)}
-              minDate={shiftDateKey(date, 1)}
-              disabled={locked}
-            />
-          )}
+          <RescheduleGuestRows
+            rows={form.rescheduledGuests}
+            onChange={(rows) => set("rescheduledGuests", rows)}
+            minDate={shiftDateKey(date, 1)}
+            disabled={locked}
+            onConfirmMove={confirmMove}
+            withCodes={!noTickets}
+          />
 
           {!noTickets && (
           <div className="mt-4 grid grid-cols-2 gap-3">

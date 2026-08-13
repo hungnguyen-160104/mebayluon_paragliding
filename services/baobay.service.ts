@@ -1457,8 +1457,8 @@ export type DispatcherReportSaveInput = {
   /** Vé huỷ theo nhóm đoàn: nhiều mã một ô + lý do + tên liên hệ. */
   cancelledEntries: Array<{ codesText: string; reason: string; contactName: string; note?: string }>;
   /** HÀ NỘI: nhóm KHÁCH huỷ/dời — điểm không vé thu thập theo khách. */
-  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; bookedId?: string }>;
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codesText?: string }>;
+  rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; codesText?: string; bookedId?: string }>;
   /** Dời lịch theo nhóm: nhiều mã một ô + ngày + lý do + liên hệ + sđt. */
   rescheduledEntries: Array<{
     codesText: string;
@@ -1532,18 +1532,45 @@ export async function upsertDispatcherReport(
     });
     cancelledFlat.push(...parsedCodes.codes);
   }
-  const cancelledCodesUnique = [...new Set(cancelledFlat)];
-  if (cancelledCodesUnique.length !== cancelledFlat.length) {
+
+
+  /**
+   * Nhóm KHÁCH huỷ/dời (tên, mã book, số khách, tiền hoàn…) chạy ở MỌI điểm —
+   * điểm có vé (Khau Phạ, Sa Pa) nhập thêm MÃ VÉ của nhóm, mã bung vào danh
+   * sách phẳng cho bộ đối chiếu như vé huỷ thường.
+   */
+  const cancelledGuestEntries = (input.cancelledGuestEntries ?? [])
+    .map((e) => {
+      const parsed = parseTicketCodeList(noTickets ? "" : (e.codesText ?? ""));
+      if (parsed.invalid.length) {
+        warnings.push(`Khách huỷ: bỏ qua cụm mã không đọc được "${parsed.invalid.slice(0, 3).join(", ")}"`);
+      }
+      return {
+        name: e.name.trim(),
+        bookingCode: e.bookingCode.trim(),
+        guests: e.guests || 0,
+        source: e.source.trim(),
+        refund: e.refund || 0,
+        note: (e.note ?? "").trim(),
+        codes: parsed.codes,
+      };
+    })
+    .filter((e) => e.name || e.guests || e.bookingCode || e.codes.length);
+  for (const e of cancelledGuestEntries) cancelledFlat.push(...e.codes);
+  const cancelledCodesAll = [...new Set(cancelledFlat)];
+  if (cancelledCodesAll.length !== cancelledFlat.length) {
     warnings.push("Có mã vé huỷ xuất hiện ở hai nhóm — chỉ tính một lần.");
   }
 
-  /** HÀ NỘI: khách huỷ/dời nhập theo NHÓM KHÁCH (tên, mã book, số khách…) — điểm khác bỏ trống. */
-  const cancelledGuestEntries = noTickets
-    ? (input.cancelledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.bookingCode.trim())
-    : [];
-  const rescheduledGuestEntries = noTickets
-    ? (input.rescheduledGuestEntries ?? []).filter((e) => e.name.trim() || e.guests || e.toDate)
-    : [];
+  const rescheduledGuestEntries = (input.rescheduledGuestEntries ?? [])
+    .map((e) => {
+      const parsed = parseTicketCodeList(noTickets ? "" : (e.codesText ?? ""));
+      if (parsed.invalid.length) {
+        warnings.push(`Khách dời: bỏ qua cụm mã không đọc được "${parsed.invalid.slice(0, 3).join(", ")}"`);
+      }
+      return { ...e, note: (e.note ?? "").trim(), codes: parsed.codes };
+    })
+    .filter((e) => e.name.trim() || e.guests || e.toDate || e.codes.length);
   for (const e of rescheduledGuestEntries) {
     if (!e.toDate) warnings.push(`Nhóm khách dời "${e.name || "?"}" chưa ghi dời sang ngày nào`);
   }
@@ -1551,7 +1578,7 @@ export async function upsertDispatcherReport(
   // HN đếm theo đầu KHÁCH trong các nhóm; điểm có vé đếm theo mã
   const cancelledCount = noTickets
     ? cancelledGuestEntries.reduce((a, e) => a + (e.guests || 0), 0)
-    : cancelledCodesUnique.length;
+    : cancelledCodesAll.length;
 
   const rescheduledEntries: RescheduleEntryDTO[] = [];
   const rescheduled: RescheduledDTO[] = [];
@@ -1572,6 +1599,12 @@ export async function upsertDispatcherReport(
     });
     for (const code of parsedCodes.codes) {
       rescheduled.push({ code, toDate: raw.toDate, note: raw.reason.trim() || undefined });
+    }
+  }
+  // Mã vé trong NHÓM KHÁCH dời (điểm có vé) cũng là vé dời — vào cùng danh sách phẳng
+  for (const e of rescheduledGuestEntries) {
+    for (const code of e.codes) {
+      rescheduled.push({ code, toDate: e.toDate, note: e.note || undefined });
     }
   }
 
@@ -1619,7 +1652,7 @@ export async function upsertDispatcherReport(
         ticketsReturned: noTickets ? 0 : input.ticketsReturned,
         issuedRanges: noTickets ? [] : ranges,
         cancelledCount,
-        cancelledCodes: cancelledCodesUnique,
+        cancelledCodes: cancelledCodesAll,
         cancelledEntries,
         cancelledGuestEntries,
         rescheduledCount: noTickets
@@ -1689,7 +1722,7 @@ async function pushDispatcherRow(doc: any) {
       (doc.cancelledGuestEntries || [])
         .map(
           (e: any) =>
-            `${e.name || "khách"}${e.bookingCode ? ` (${e.bookingCode})` : ""} ×${e.guests}${e.source ? ` — ${e.source}` : ""}${e.refund ? ` — hoàn ${(e.refund || 0).toLocaleString("vi-VN")}đ` : ""}${e.note ? ` — ${e.note}` : ""}`,
+            `${e.name || "khách"}${e.bookingCode ? ` (${e.bookingCode})` : ""} ×${e.guests}${(e.codes || []).length ? ` [${e.codes.join(" ")}]` : ""}${e.source ? ` — ${e.source}` : ""}${e.refund ? ` — hoàn ${(e.refund || 0).toLocaleString("vi-VN")}đ` : ""}${e.note ? ` — ${e.note}` : ""}`,
         )
         .join(" | ") ||
       (doc.cancelledEntries || [])
@@ -1704,7 +1737,7 @@ async function pushDispatcherRow(doc: any) {
       (doc.rescheduledGuestEntries || [])
         .map(
           (e: any) =>
-            `${e.name || "khách"} ×${e.guests}${e.phone ? ` (${e.phone})` : ""} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.pickup === "other" ? ` — đón ${e.pickupNote || "?"}` : ""}${e.expectedTime ? ` ${e.expectedTime}` : ""}${e.note ? ` — ${e.note}` : ""}`,
+            `${e.name || "khách"} ×${e.guests}${e.phone ? ` (${e.phone})` : ""}${(e.codes || []).length ? ` [${e.codes.join(" ")}]` : ""} → ${e.toDate ? formatDateKeyVN(e.toDate) : "?"}${e.pickup === "other" ? ` — đón ${e.pickupNote || "?"}` : ""}${e.expectedTime ? ` ${e.expectedTime}` : ""}${e.note ? ` — ${e.note}` : ""}`,
         )
         .join(" | ") ||
       (doc.rescheduledEntries || [])
@@ -3584,7 +3617,7 @@ export type DailyCloseSaveInput = {
   cancelledNote: string;
   rescheduled: Array<{ code: string; toDate: string; note?: string }>;
   registeredGuests?: number;
-  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codesText?: string }>;
   rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; bookedId?: string }>;
   cashTotal: number;
   transferTotal: number;
@@ -4212,6 +4245,7 @@ export async function getReconcile(
       flagFlightCodes: p.flagFlightCodes ?? [],
       diplomaticGuests: p.diplomaticGuests ?? 0,
       ppgCodes: p.ppgCodes ?? [],
+      ppgFlights: p.ppgFlights ?? 0,
       expenseTotal: pilotExpenseTotal(p),
       submitted: Boolean(p.submitted),
     })),

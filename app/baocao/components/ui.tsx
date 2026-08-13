@@ -143,6 +143,8 @@ export function CountInput({
         onFocus={(e) => e.currentTarget.select()}
         className={cn(
           inputBase,
+          // min-w-0: ô số phải co được trong flex — không thì nút −/+ tràn ra ngoài mép thẻ
+          "min-w-0 flex-1",
           compact ? "h-10 text-center text-base font-semibold tabular-nums" : "h-12 text-center text-lg font-semibold tabular-nums",
         )}
       />

@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { formatVND } from "@/lib/pricing";
 import type { Issue } from "@/lib/baobay/reconcile";
 import { parseTicketCodeList, TICKET_CODE_HINT } from "@/lib/baobay/ticket-code";
 import type { CameramanReportDTO } from "@/lib/baobay/types";
@@ -283,10 +284,31 @@ export default function CameramanReportPage() {
         </Card>
 
         <Card
-          title="Thu / Chi trong ngày"
-          hint="Mỗi dòng: nội dung – số tiền – tick Thu hoặc Chi – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu."
+          title="THU CHI"
+          hint="Mỗi dòng: nội dung – số tiền – THU/CHI – Tiền mặt/CK – ghi chú. VD: 3 khách trả tiền tại bãi — 1.200.000đ — Thu — TM."
         >
-          <ExpenseRows rows={form.expenses} onChange={(rows) => set("expenses", rows)} disabled={locked} withKind />
+          <ExpenseRows
+            rows={form.expenses}
+            onChange={(rows) => set("expenses", rows)}
+            disabled={locked}
+            withKind
+            withMethod
+            hideTotals
+          />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-emerald-800">Tổng thu</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">
+                +{formatVND(form.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <div className="text-xs font-medium text-rose-800">Tổng chi</div>
+              <div className="text-lg font-bold tabular-nums text-rose-700">
+                −{formatVND(form.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0))}
+              </div>
+            </div>
+          </div>
         </Card>
 
         <Card title="Ghi chú">

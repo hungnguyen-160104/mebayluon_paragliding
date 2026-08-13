@@ -172,6 +172,7 @@ const CancelGuestSchema = new Schema(
     source: { type: String, default: "" },
     refund: { type: Number, default: 0, min: 0 },
     note: { type: String, default: "" },
+    codes: { type: [String], default: [] },
   },
   { _id: false },
 );
@@ -186,6 +187,7 @@ const RescheduleGuestSchema = new Schema(
     pickup: { type: String, enum: ["self", "other"], default: "self" },
     pickupNote: { type: String, default: "" },
     expectedTime: { type: String, default: "" },
+    codes: { type: [String], default: [] },
     bookedId: { type: String, default: "" },
   },
   { _id: false },

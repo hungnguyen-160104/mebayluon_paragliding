@@ -96,6 +96,8 @@ const cancelledGuestList = z
       source: text(200),
       refund: money,
       note: text(500),
+      /** Điểm có vé: mã vé của nhóm (nhiều mã một ô). */
+      codesText: text(2_000),
     }),
   )
   .max(200)
@@ -113,6 +115,7 @@ const rescheduledGuestList = z
       pickup: z.enum(["self", "other"]).optional().default("self"),
       pickupNote: text(200),
       expectedTime: text(20),
+      codesText: text(2_000),
       /** id booking đã đẩy vào lịch ngày dời — giữ để không đẩy trùng. */
       bookedId: text(50),
     }),

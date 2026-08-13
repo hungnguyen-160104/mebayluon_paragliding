@@ -3,7 +3,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
@@ -288,20 +287,14 @@ function PilotRow({
           {spot === "khau-pha" && (
             <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-3">
               <div className="mb-2 text-xs font-semibold text-violet-900">
-                PPG (dù có động cơ) — mã vé PPG khai ở đây, đừng gộp vào ô mã PG phía trên
+                PPG (dù có động cơ) — mã vé PPG khai ở đây, đừng gộp vào ô mã PG phía trên. Quy tắc: mã +
+                không vé = số chuyến.
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Số chuyến PPG">
-                  <CountInput
-                    value={form.ppgFlights}
-                    onChange={(v) => {
-                      // Ô "không vé" tự chạy theo khi chưa liệt kê mã — giống trang phi công
-                      const codes = countCodes(form.ppgCodesText);
-                      setSavedClean(false);
-                      setForm((prev) => ({ ...prev, ppgFlights: v, ppgNoTicket: Math.max(0, v - codes) }));
-                    }}
-                    max={300}
-                  />
+                  {/* Kế toán sửa TAY từng ô — không auto-nhảy "không vé" như trang phi công,
+                      vì ở đây thường là chỉnh lại số phi công đã khai, nhảy theo là phá số cũ */}
+                  <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
                 </Field>
                 <Field label="PPG không vé">
                   <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
@@ -311,16 +304,7 @@ function PilotRow({
                 <Field label="Mã vé PPG">
                   <TextInput
                     value={form.ppgCodesText}
-                    onChange={(e) => {
-                      const text = e.target.value.toUpperCase();
-                      const codes = countCodes(text);
-                      setSavedClean(false);
-                      setForm((prev) => ({
-                        ...prev,
-                        ppgCodesText: text,
-                        ppgNoTicket: Math.max(0, prev.ppgFlights - codes),
-                      }));
-                    }}
+                    onChange={(e) => set("ppgCodesText", e.target.value.toUpperCase())}
                     autoCapitalize="characters"
                     spellCheck={false}
                     placeholder="MBL0001, MBL0002…"
@@ -458,11 +442,6 @@ function PilotRow({
       )}
     </li>
   );
-}
-
-/** Đếm mã hợp lệ trong ô nhập — cùng bộ phân tích với máy chủ, để ô "không vé" tự chạy đúng. */
-function countCodes(text: string): number {
-  return parseTicketCodeList(text).codes.length;
 }
 
 /** 500000 -> "500k", 1200000 -> "1.200k" — chữ k thay cho .000đ, đọc nhanh trên một dòng. */
