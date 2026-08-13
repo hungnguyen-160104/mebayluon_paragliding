@@ -512,14 +512,18 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
     );
 
   const totalFlights = r.flightCount + (r.ppgFlights || 0);
-  add(r.ppgFlights ? `${totalFlights} chuyến (${r.flightCount} PG + ${r.ppgFlights} PPG)` : `${r.flightCount} chuyến`, "fl");
+  add(
+    r.ppgFlights
+      ? `${totalFlights} chuyến (${r.flightCount} PG + ${r.ppgFlights} PPG${r.ppgNoTicket ? `, ${r.ppgNoTicket} không vé` : ""})`
+      : `${r.flightCount} chuyến`,
+    "fl",
+  );
   add(`${r.ticketCodes.length + (r.ppgCodes?.length || 0)} mã`, "codes");
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
   if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");
   if (r.sunset) add(`${r.sunset}×hoàng hôn/mây`, "sunset");
   if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
-  if (r.ppgFlights) add(`${r.ppgFlights}×PPG${r.ppgNoTicket ? ` (${r.ppgNoTicket} không vé)` : ""}`, "ppg");
   if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
   // Nhóm khách huỷ/dời phi công báo — kế toán lướt là thấy, chi tiết xem báo cáo điều phối
   {
