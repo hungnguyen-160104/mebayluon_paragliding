@@ -556,9 +556,8 @@ function DailyCloseInner() {
         )}
       </div>
 
-      {/* Danh sách lỗi: thứ kế toán cần đọc trước khi làm gì */}
+      {/* Danh sách lỗi LUÔN HIỆN, không gập — khung gọn, dòng sát nhau */}
       {(reds.length > 0 || warns.length > 0) && (
-        {/* LUÔN HIỆN, không gập: đây là danh sách việc chặn chốt — khung gọn, dòng sát */}
         <div className="rounded-2xl border-2 border-rose-300 bg-rose-50/60 px-4 py-2.5 lg:[column-span:all]">
           <div className="text-sm font-bold text-rose-900">Cần xử lý ({reds.length + warns.length})</div>
           <ul className="mt-1 space-y-0.5">
