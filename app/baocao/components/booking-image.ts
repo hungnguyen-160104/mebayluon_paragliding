@@ -29,8 +29,8 @@ export type BookingImageData = {
   sunset: number;
   flagFlight: number;
   pickupLabel: string;
-  /** PG hay PPG — in trên phiếu để khách khỏi nhầm loại hình. */
-  flightKind: "pg" | "ppg";
+  /** Nhãn loại hình in trên phiếu: PG · PPG · 650m · 850m. */
+  flightKindLabel: string;
   unitPrice: number;
   /** Tiền dịch vụ tuỳ chọn của cả nhóm. */
   serviceMoney: number;
@@ -62,7 +62,7 @@ export function drawBookingImage(d: BookingImageData): HTMLCanvasElement {
 
   const rows: Array<[string, string]> = [
     ["Ngày bay", formatDateKeyVN(d.flightDate) + (d.expectedTime ? ` · ${d.expectedTime}` : "")],
-    ["Điểm bay", `${spotName(d.spot)} · ${d.flightKind === "ppg" ? "PPG (có động cơ)" : "PG (dù lượn)"}`],
+    ["Điểm bay", `${spotName(d.spot)}${d.flightKindLabel ? ` · ${d.flightKindLabel}` : ""}`],
     ["Khách", `${d.contactName || "—"}${d.phone ? ` · ${d.phone}` : ""}`],
     ["Số khách", `${d.guestCount} người`],
   ];

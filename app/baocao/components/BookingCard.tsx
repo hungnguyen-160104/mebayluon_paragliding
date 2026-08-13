@@ -11,11 +11,14 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { shareBookingImage } from "./booking-image";
 import {
   FLIGHT_KIND_LABEL,
+  FLIGHT_KIND_SHORT,
   SERVICE_PRICE,
   SERVICE_PRICE_LABEL,
   bookingTotal as computeBookingTotal,
+  defaultFlightKind,
+  flightKindsOf,
   flightUnitPrice,
-  peakDayReason,
+  priceNote,
   servicesAmount,
   type FlightKind,
 } from "@/lib/baobay/flight-price";
@@ -64,6 +67,7 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (b.video360) parts.push(`${b.video360}×cam360`);
   if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
   if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/săn mây`);
+  if (b.flightKind && b.flightKind !== "pg") parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
   if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
   parts.push(
     [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
@@ -531,7 +535,7 @@ type BookingForm = {
   note: string;
 };
 
-function emptyBooking(today: string): BookingForm {
+function emptyBooking(today: string, spot: string): BookingForm {
   return {
     flightDate: today,
     source: "",
@@ -547,9 +551,9 @@ function emptyBooking(today: string): BookingForm {
     pickupNote: "",
     phone: "",
     expectedTime: "",
-    flightKind: "pg",
+    flightKind: defaultFlightKind(spot),
     pickupFee: 0,
-    unitPrice: flightUnitPrice("pg", today),
+    unitPrice: flightUnitPrice(defaultFlightKind(spot), today),
     discount: 0,
     deposit: 0,
     remaining: 0,
@@ -575,7 +579,7 @@ export function BookingCard({
   const [bookSpot, setBookSpot] = useState(spot);
   useEffect(() => setBookSpot(spot), [spot]);
   const spots = spotOptions?.length ? spotOptions : [spot];
-  const [form, setForm] = useState<BookingForm>(() => emptyBooking(today));
+  const [form, setForm] = useState<BookingForm>(() => emptyBooking(today, bookSpot));
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
   /** Nhân sự đang làm tại điểm — để chỉ định người thu số "còn lại". */
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
@@ -695,7 +699,7 @@ export function BookingCard({
         );
       }
       setEditingId(null);
-      setForm(emptyBooking(today));
+      setForm(emptyBooking(today, bookSpot));
       setRemainingTouched(false);
       setPriceTouched(false);
       load();
@@ -752,7 +756,7 @@ export function BookingCard({
       await apiDelete(`/api/baocao/booking?spot=${bookSpot}`, { id: b.id });
       if (editingId === b.id) {
         setEditingId(null);
-        setForm(emptyBooking(today));
+        setForm(emptyBooking(today, bookSpot));
       }
       load();
       onChanged?.();
@@ -793,7 +797,7 @@ export function BookingCard({
         </Field>
         <Field label="Loại hình bay">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
-            {(["pg", "ppg"] as FlightKind[]).map((k) => (
+            {flightKindsOf(bookSpot).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -805,7 +809,7 @@ export function BookingCard({
                     : "flex-1 bg-white text-sm font-medium text-slate-500"
                 }
               >
-                {k.toUpperCase()}
+                {FLIGHT_KIND_SHORT[k]}
               </button>
             ))}
           </div>
@@ -814,9 +818,22 @@ export function BookingCard({
           <select
             value={bookSpot}
             onChange={(e) => {
-              setBookSpot(e.target.value);
-              // đổi điểm thì lựa chọn đón kiểu HN không còn hợp lệ
-              setForm((prev) => ({ ...prev, pickup: "self", pickupNote: "" }));
+              const next = e.target.value;
+              setBookSpot(next);
+              // Đổi điểm: lựa chọn đón kiểu HN hết hợp lệ, và loại hình bay khác hẳn
+              // (Hà Nội 650m/850m đồng giá · Khau Phạ PG/PPG theo ngày) nên đặt lại.
+              setForm((prev) => {
+                const kind = flightKindsOf(next).includes(prev.flightKind)
+                  ? prev.flightKind
+                  : defaultFlightKind(next);
+                return {
+                  ...prev,
+                  pickup: "self",
+                  pickupNote: "",
+                  flightKind: kind,
+                  unitPrice: priceTouched ? prev.unitPrice : flightUnitPrice(kind, prev.flightDate),
+                };
+              });
             }}
             disabled={spots.length <= 1}
             className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600 disabled:bg-slate-50 disabled:text-slate-500"
@@ -920,7 +937,7 @@ export function BookingCard({
         <Field label="Đơn giá bay / khách">
           <MoneyInput value={form.unitPrice} onChange={(v) => set("unitPrice", v)} />
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-            {form.flightKind.toUpperCase()} · {peakDayReason(form.flightDate)} → bảng giá{" "}
+            {FLIGHT_KIND_SHORT[form.flightKind]} · {priceNote(form.flightKind, form.flightDate)} → bảng giá{" "}
             {(flightUnitPrice(form.flightKind, form.flightDate) / 1000).toLocaleString("vi-VN")}k
           </p>
         </Field>
@@ -1018,7 +1035,7 @@ export function BookingCard({
             disabled={saving}
             onClick={() => {
               setEditingId(null);
-              setForm(emptyBooking(today));
+              setForm(emptyBooking(today, bookSpot));
               setError(null);
               setForceOpen(false);
             }}
@@ -1060,7 +1077,7 @@ export function BookingCard({
                       : form.pickup === "hotel"
                         ? "Đón khách sạn"
                         : "Tự đến",
-                flightKind: form.flightKind,
+                flightKindLabel: FLIGHT_KIND_SHORT[form.flightKind],
                 unitPrice: form.unitPrice,
                 serviceMoney,
                 pickupFee: form.pickupFee,

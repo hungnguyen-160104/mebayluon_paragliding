@@ -312,7 +312,7 @@ export type BookingDTO = {
   sunset: number;
   flagFlight: number;
   /** Loại hình bay: "pg" dù lượn · "ppg" có động cơ — quyết định đơn giá. */
-  flightKind: "pg" | "ppg";
+  flightKind: "pg" | "ppg" | "m650" | "m850";
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Đơn giá một khách · giảm trừ cả đoàn · tổng tiền (máy tự tính). */

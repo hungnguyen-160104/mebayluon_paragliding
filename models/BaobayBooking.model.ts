@@ -47,7 +47,7 @@ export interface IBaobayBooking {
   sunset: number;
   flagFlight: number;
   /** Loại hình bay — quyết định đơn giá: "pg" dù lượn · "ppg" có động cơ. */
-  flightKind: "pg" | "ppg";
+  flightKind: "pg" | "ppg" | "m650" | "m850";
   /** Phí đưa đón thu của khách (nếu có). */
   pickupFee: number;
   /** Đơn giá một khách theo loại hình + ngày bay (thường / cuối tuần & lễ). */
@@ -115,7 +115,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     redFlag: { type: Number, default: 0, min: 0 },
     sunset: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
-    flightKind: { type: String, enum: ["pg", "ppg"], default: "pg" },
+    flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },
     pickupFee: { type: Number, default: 0, min: 0 },
     unitPrice: { type: Number, default: 0, min: 0 },
     discount: { type: Number, default: 0, min: 0 },

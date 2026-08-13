@@ -10,17 +10,45 @@
  * năm là sai, mà chẳng ai nhớ để sửa.
  */
 
-export type FlightKind = "pg" | "ppg";
+export type FlightKind = "pg" | "ppg" | "m650" | "m850";
 
 export const FLIGHT_KIND_LABEL: Record<FlightKind, string> = {
   pg: "PG — dù lượn",
   ppg: "PPG — dù lượn có động cơ",
+  m650: "Điểm xuất phát 650m",
+  m850: "Điểm xuất phát 850m",
 };
 
-/** Đơn giá một khách: [ngày thường, cuối tuần & lễ]. */
-export const FLIGHT_PRICE: Record<FlightKind, { weekday: number; peak: number }> = {
+/** Chữ ngắn hiện trên nút, trong phiếu ảnh và cột sheet. */
+export const FLIGHT_KIND_SHORT: Record<FlightKind, string> = {
+  pg: "PG",
+  ppg: "PPG",
+  m650: "650m",
+  m850: "850m",
+};
+
+/**
+ * Loại hình bay tuỳ ĐIỂM BAY: Khau Phạ (và Sa Pa) chọn PG hay PPG, còn Hà Nội
+ * không có PPG mà chọn theo độ cao điểm xuất phát — 650m hoặc 850m.
+ */
+export function flightKindsOf(spot: string): FlightKind[] {
+  return spot === "ha-noi" ? ["m650", "m850"] : ["pg", "ppg"];
+}
+
+export function defaultFlightKind(spot: string): FlightKind {
+  return flightKindsOf(spot)[0];
+}
+
+/** Đơn giá một khách theo ngày: [ngày thường, cuối tuần & lễ]. */
+export const FLIGHT_PRICE: Record<"pg" | "ppg", { weekday: number; peak: number }> = {
   pg: { weekday: 2_190_000, peak: 2_590_000 },
   ppg: { weekday: 2_390_000, peak: 2_590_000 },
+};
+
+/** Hà Nội ĐỒNG GIÁ mọi ngày, không phân biệt lễ hay cuối tuần. */
+export const FLAT_PRICE: Partial<Record<FlightKind, number>> = {
+  m650: 1_790_000,
+  m850: 2_090_000,
 };
 
 /** Đơn giá dịch vụ tuỳ chọn, tính theo từng suất khách. */
@@ -94,8 +122,16 @@ export function peakDayReason(date: string): string {
 
 /** Đơn giá một khách theo loại hình bay và ngày bay. */
 export function flightUnitPrice(kind: FlightKind, date: string): number {
-  const table = FLIGHT_PRICE[kind] ?? FLIGHT_PRICE.pg;
+  const flat = FLAT_PRICE[kind];
+  if (flat) return flat;
+  const table = FLIGHT_PRICE[kind === "ppg" ? "ppg" : "pg"];
   return isPeakDay(date) ? table.peak : table.weekday;
+}
+
+/** Câu giải thích đơn giá đang áp: đồng giá, hay theo ngày thường/lễ. */
+export function priceNote(kind: FlightKind, date: string): string {
+  if (FLAT_PRICE[kind]) return "đồng giá mọi ngày";
+  return peakDayReason(date);
 }
 
 /** Tiền dịch vụ tuỳ chọn của cả nhóm. */

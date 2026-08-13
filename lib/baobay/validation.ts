@@ -309,7 +309,7 @@ export const bookingSchema = z.object({
     .default(""),
   pickupNote: text(200),
   expectedTime: text(20),
-  flightKind: z.enum(["pg", "ppg"]).optional().default("pg"),
+  flightKind: z.enum(["pg", "ppg", "m650", "m850"]).optional().default("pg"),
   pickupFee: money,
   unitPrice: money,
   discount: money,
