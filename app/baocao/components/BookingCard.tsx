@@ -252,6 +252,8 @@ function CollectMoneyControl({
   onDone: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  /** "deposit" = thu cọc (gõ số tuỳ ý) · "full" = thu nốt toàn bộ còn phải thu. */
+  const [kind, setKind] = useState<"deposit" | "full">("full");
   const [amount, setAmount] = useState(booking.remaining || 0);
   const [method, setMethod] = useState<"cash" | "transfer">("cash");
   const [code, setCode] = useState("");
@@ -259,22 +261,26 @@ function CollectMoneyControl({
   const [error, setError] = useState<string | null>(null);
 
   async function send() {
-    if (amount <= 0) return setError("Chưa nhập số tiền");
+    if (kind === "deposit" && amount <= 0) return setError("Chưa nhập số tiền cọc");
+    if (kind === "full" && (booking.remaining || 0) <= 0) return setError("Booking này không còn phải thu");
     if (method === "transfer" && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
     setBusy(true);
     setError(null);
     try {
+      const paid = kind === "full" ? booking.remaining || 0 : amount;
       await apiPatch(`/api/baocao/booking?spot=${spot}`, {
         id: booking.id,
         action: "collect",
-        amount,
+        kind,
+        amount: paid,
         method,
         transferCode: code,
       });
+      const what = kind === "full" ? "Thu đủ" : "Thu cọc";
       onDone(
         method === "transfer"
-          ? `✓ Đã ghi nhận ${amount.toLocaleString("vi-VN")} đ chuyển khoản vào TK công ty.`
-          : `✓ Đã thu ${amount.toLocaleString("vi-VN")} đ tiền mặt — cộng vào tiền giữ hộ công ty của bạn.`,
+          ? `✓ ${what} ${paid.toLocaleString("vi-VN")} đ chuyển khoản vào TK công ty.`
+          : `✓ ${what} ${paid.toLocaleString("vi-VN")} đ tiền mặt — cộng vào tiền giữ hộ công ty của bạn.`,
       );
       setOpen(false);
       setCode("");
@@ -293,6 +299,7 @@ function CollectMoneyControl({
         className="h-7 bg-rose-600 px-2 text-xs font-bold text-white hover:bg-rose-700"
         title="Thu tiền cho booking này — tiền mặt tại bãi hoặc khách chuyển khoản trước"
         onClick={() => {
+          setKind("full");
           setAmount(booking.remaining || 0);
           setOpen(true);
           setError(null);
@@ -305,8 +312,38 @@ function CollectMoneyControl({
 
   return (
     <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
-      {/* Số tiền điền sẵn phần còn phải thu, sửa được: thu một phần cũng ghi nhận */}
-      <MoneyInput value={amount} onChange={setAmount} />
+      {/* Cọc = gõ số tuỳ ý · Thu đủ = lấy trọn phần còn phải thu, khỏi tự tính */}
+      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+        {(
+          [
+            ["deposit", "Cọc"],
+            ["full", "Thu đủ"],
+          ] as Array<["deposit" | "full", string]>
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => {
+              setKind(k);
+              if (k === "full") setAmount(booking.remaining || 0);
+            }}
+            className={
+              kind === k
+                ? "flex-1 bg-slate-800 px-1 text-xs font-semibold text-white"
+                : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {kind === "full" ? (
+        <div className="flex h-10 items-center justify-end rounded-lg border-2 border-slate-300 bg-white px-3 text-base font-bold tabular-nums text-slate-900">
+          {(booking.remaining || 0).toLocaleString("vi-VN")} đ
+        </div>
+      ) : (
+        <MoneyInput value={amount} onChange={setAmount} />
+      )}
       <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
         {(
           [
@@ -337,14 +374,17 @@ function CollectMoneyControl({
         />
       )}
       <div className="text-[11px] leading-tight text-slate-600">
-        {method === "transfer" ? "Tiền vào thẳng TK CÔNG TY." : "Tiền mặt cộng vào TIỀN GIỮ HỘ CÔNG TY của bạn."}
+        {kind === "full"
+          ? "Thu nốt: “đã cọc” cộng đủ, “còn thu” về 0."
+          : "Thu cọc: “đã cọc” tăng, “còn thu” trừ đi tương ứng."}{" "}
+        {method === "transfer" ? "Tiền vào thẳng TK CÔNG TY." : "Tiền mặt cộng vào TIỀN GIỮ HỘ của bạn."}
       </div>
       {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
       <div className="flex gap-1">
         <Button
           type="button"
           className="h-7 flex-1 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
-          disabled={busy || amount <= 0}
+          disabled={busy || (kind === "full" ? (booking.remaining || 0) <= 0 : amount <= 0)}
           onClick={send}
         >
           {busy ? "Đang lưu…" : "✓ Xác nhận"}

@@ -3030,15 +3030,30 @@ export async function collectForBooking(
   session: BaobaySession,
   spotRaw: string,
   id: string,
-  input: { amount: number; method: "cash" | "transfer"; transferCode?: string },
+  input: {
+    amount: number;
+    method: "cash" | "transfer";
+    transferCode?: string;
+    /** "deposit" = thu cọc một phần · "full" = thu nốt toàn bộ phần còn lại. */
+    kind?: "deposit" | "full";
+  },
 ): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
-  if (!input.amount || input.amount <= 0) throw new BaobayError("Chưa nhập số tiền thu", 400);
 
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  /**
+   * THU ĐỦ thì số tiền do máy chủ chốt bằng đúng phần còn phải thu — người bấm
+   * khỏi tự tính, và cũng không lệch được vì máy đọc số từ bản ghi.
+   */
+  const isFull = input.kind === "full";
+  const amount = isFull ? Math.max(0, booking.remaining ?? 0) : input.amount;
+  if (!amount || amount <= 0) {
+    throw new BaobayError(isFull ? "Booking này không còn phải thu" : "Chưa nhập số tiền thu", 400);
+  }
 
   const method = input.method === "transfer" ? "transfer" : "cash";
   const transferCode = (input.transferCode ?? "").trim();
@@ -3054,11 +3069,11 @@ export async function collectForBooking(
       bookingCode: booking.bookingCode || "",
       agency: booking.source || "",
       guests: booking.guestCount || 0,
-      amount: input.amount,
+      amount,
       method,
       toCompanyAccount: method === "transfer",
       transferCode,
-      note: `Thu cho booking bay ${formatDateKeyVN(booking.flightDate)}`,
+      note: `${isFull ? "Thu đủ" : "Cọc"} cho booking bay ${formatDateKeyVN(booking.flightDate)}`,
       collectorUsername: method === "cash" ? session.username : undefined,
       collectorName: method === "cash" ? session.name : undefined,
       // Tiền mặt: chính mình thu nên xong luôn, khỏi ai xác nhận với chính mình
@@ -3071,10 +3086,16 @@ export async function collectForBooking(
   ).toObject();
   pushSheetInBackground(() => pushCollectRow(saved), BaobayCollect, saved._id);
 
-  const remaining = Math.max(0, (booking.remaining ?? 0) - input.amount);
-  const set: Record<string, unknown> = { remaining };
+  /**
+   * Tiền đã nhận luôn cộng vào "đã cọc", phần "còn thu" trừ đi tương ứng — thu
+   * đủ thì về 0. Riêng dấu "cọc → TK công ty" chỉ bật khi CHUYỂN KHOẢN, vì tiền
+   * mặt là người thu đang cầm, chưa về tài khoản công ty.
+   */
+  const set: Record<string, unknown> = {
+    remaining: isFull ? 0 : Math.max(0, (booking.remaining ?? 0) - amount),
+    deposit: (booking.deposit ?? 0) + amount,
+  };
   if (method === "transfer") {
-    set.deposit = (booking.deposit ?? 0) + input.amount;
     set.depositToCompany = true;
     if (!booking.transferCode) set.transferCode = transferCode;
   }

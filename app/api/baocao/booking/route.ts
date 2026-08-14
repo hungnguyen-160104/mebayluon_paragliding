@@ -167,6 +167,7 @@ export async function PATCH(req: Request) {
         amount,
         method,
         transferCode: String(body?.transferCode ?? ""),
+        kind: body?.kind === "full" ? "full" : "deposit",
       });
       return NextResponse.json(res);
     }
