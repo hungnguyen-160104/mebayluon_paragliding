@@ -255,7 +255,13 @@ function CollectMoneyControl({
   /** "deposit" = thu cọc (gõ số tuỳ ý) · "full" = thu nốt toàn bộ còn phải thu. */
   const [kind, setKind] = useState<"deposit" | "full">("full");
   const [amount, setAmount] = useState(booking.remaining || 0);
-  const [method, setMethod] = useState<"cash" | "transfer">("cash");
+  /**
+   * Ngày bay KHÔNG phải hôm nay thì khách còn ở xa — trả tiền mặt là chuyện
+   * không thể, nên mặc định CHUYỂN KHOẢN. Đúng ngày bay (khách đã ở bãi) mới
+   * mặc định tiền mặt. Cả hai vẫn bấm đổi được.
+   */
+  const collectFromAfar = booking.flightDate !== todayInVN();
+  const [method, setMethod] = useState<"cash" | "transfer">(collectFromAfar ? "transfer" : "cash");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -301,6 +307,7 @@ function CollectMoneyControl({
         onClick={() => {
           setKind("full");
           setAmount(booking.remaining || 0);
+          setMethod(collectFromAfar ? "transfer" : "cash");
           setOpen(true);
           setError(null);
         }}
@@ -378,6 +385,7 @@ function CollectMoneyControl({
           ? "Thu nốt: “đã cọc” cộng đủ, “còn thu” về 0."
           : "Thu cọc: “đã cọc” tăng, “còn thu” trừ đi tương ứng."}{" "}
         {method === "transfer" ? "Tiền vào thẳng TK CÔNG TY." : "Tiền mặt cộng vào TIỀN GIỮ HỘ của bạn."}
+        {collectFromAfar && method === "cash" ? " Khách đặt trước, ở xa — chắc chắn thu được tiền mặt chứ?" : ""}
       </div>
       {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
       <div className="flex gap-1">
