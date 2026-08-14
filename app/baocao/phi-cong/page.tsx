@@ -724,7 +724,7 @@ export default function PilotReportPage() {
                 <TextInput
                   value={form.ppgCodesText}
                   onChange={(e) => set("ppgCodesText", e.target.value.toUpperCase())}
-                  placeholder="P1234, P1235 — không có vé thì để trống và đếm vào ô 'không vé'"
+                  placeholder="MBL1234, MBL1235 — không có vé thì để trống và đếm vào ô 'không vé'"
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={locked}
