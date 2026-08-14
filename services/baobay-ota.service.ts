@@ -15,7 +15,7 @@
  *    thư nằm lại trạng thái "cần soát" kèm nguyên văn, KHÔNG bao giờ bỏ im.
  */
 
-import { formatDateKeyVN, isDateKey } from "@/lib/baobay/date";
+import { formatDateKeyVN, isDateKey, todayInVN } from "@/lib/baobay/date";
 import { parseKlookEmail, pickupFromDeparture, spotFromProduct, type KlookBooking } from "@/lib/baobay/ota-klook";
 import { connectDB } from "@/lib/mongodb";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
@@ -167,6 +167,20 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
   if (!isDateKey(parsed.flightDate)) {
     await OtaEmail.create({ ...common, status: "review", result: `Ngày bay không đọc được: “${parsed.flightDate}”` });
     return { gmailId, action: "review", ref: parsed.ref, message: "Không đọc được ngày bay" };
+  }
+
+  /**
+   * Ngày bay ĐÃ QUA thì không đưa vào lịch. Hộp thư có sẵn hàng trăm thư cũ; lần
+   * chạy đầu mà nhận hết là danh sách chờ bay đầy chuyến của mấy tháng trước.
+   * Vẫn ghi vào sổ thư (trạng thái "bỏ qua") để biết máy đã đọc và cố tình bỏ.
+   */
+  if (parsed.flightDate < todayInVN()) {
+    await OtaEmail.create({
+      ...common,
+      status: "ignored",
+      result: `Ngày bay ${formatDateKeyVN(parsed.flightDate)} đã qua — không đưa vào lịch`,
+    });
+    return { gmailId, action: "ignored", ref: parsed.ref, message: "Ngày bay đã qua, bỏ qua" };
   }
 
   const { pickup, pickupNote } = pickupFromDeparture(parsed.departure);

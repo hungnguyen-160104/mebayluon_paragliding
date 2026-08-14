@@ -39,6 +39,16 @@ const DONE_LABEL = 'OTA/đã-vào-app';
 /** Mỗi lần chạy xử lý tối đa bao nhiêu thư (đỡ chạm giới hạn 6 phút của Apps Script). */
 const MAX_PER_RUN = 25;
 
+/**
+ * CHỈ QUÉT THƯ MỚI trong bao nhiêu ngày gần đây.
+ *
+ * Hộp thư đang có hàng trăm thư Klook cũ. Quét hết là gửi về app cả những chuyến
+ * đã bay từ mấy tháng trước — app có chặn (ngày bay đã qua thì bỏ), nhưng quét
+ * hết vẫn tốn hàng chục lượt chạy vô ích. Muốn lấy lại thư cũ hơn thì tạm nâng
+ * số này lên rồi hạ về sau.
+ */
+const CHI_QUET_TRONG = '14d';
+
 /* ======================= CHẠY ĐỊNH KỲ ======================= */
 
 function quetThuOta() {
@@ -53,14 +63,17 @@ function quetThuOta() {
       return;
     }
 
-    const threads = label.getThreads(0, 40);
+    /**
+     * Tìm theo câu lệnh thay vì lấy hết nhãn: bỏ sẵn thư đã gắn nhãn "đã vào app"
+     * và thư quá cũ, nên không phải lôi hàng trăm thư cũ ra mỗi lần chạy.
+     */
+    const query =
+      'label:"' + src.label + '" -label:"' + DONE_LABEL + '" newer_than:' + CHI_QUET_TRONG;
+    const threads = GmailApp.search(query, 0, 40);
     for (var t = 0; t < threads.length && daGui < MAX_PER_RUN; t++) {
       const messages = threads[t].getMessages();
       for (var m = 0; m < messages.length && daGui < MAX_PER_RUN; m++) {
-        const msg = messages[m];
-        if (daXuLy_(threads[t], DONE_LABEL)) continue;
-
-        const ok = guiVeApp_(src.ota, msg);
+        const ok = guiVeApp_(src.ota, messages[m]);
         if (ok) daGui++;
       }
       threads[t].addLabel(done);
@@ -73,10 +86,12 @@ function quetThuOta() {
 /** Bấm Run hàm này một lần để duyệt quyền, và để thử một thư mới nhất. */
 function chayThuMotThu() {
   const src = SOURCES[0];
-  const label = GmailApp.getUserLabelByName(src.label);
-  if (!label) throw new Error('Chưa có nhãn ' + src.label + ' trong Gmail');
-  const threads = label.getThreads(0, 1);
-  if (!threads.length) throw new Error('Nhãn ' + src.label + ' chưa có thư nào');
+  const threads = GmailApp.search('label:"' + src.label + '" newer_than:' + CHI_QUET_TRONG, 0, 1);
+  if (!threads.length) {
+    throw new Error(
+      'Không thấy thư nào trong nhãn ' + src.label + ' trong ' + CHI_QUET_TRONG + ' gần đây — nâng CHI_QUET_TRONG lên rồi thử lại',
+    );
+  }
   const msg = threads[0].getMessages()[0];
   Logger.log('Thử với thư: ' + msg.getSubject());
   guiVeApp_(src.ota, msg);
@@ -109,14 +124,6 @@ function guiVeApp_(ota, msg) {
     Logger.log('Lỗi gửi thư: ' + err);
     return false;
   }
-}
-
-function daXuLy_(thread, labelName) {
-  const labels = thread.getLabels();
-  for (var i = 0; i < labels.length; i++) {
-    if (labels[i].getName() === labelName) return true;
-  }
-  return false;
 }
 
 function layHoacTaoNhan_(name) {
