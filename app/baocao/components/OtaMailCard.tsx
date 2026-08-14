@@ -12,6 +12,7 @@ type OtaMail = {
   kind: string;
   ref: string;
   subject: string;
+  from: string;
   status: string;
   result: string;
   receivedAt: string;
@@ -19,6 +20,14 @@ type OtaMail = {
   intent?: string;
   spot?: string;
   draftDate?: string;
+  draftTime?: string;
+  draftGuests?: number;
+  draftName?: string;
+  draftPhone?: string;
+  draftWeights?: number[];
+  draftHotel?: string;
+  /** Nguyên văn thư (rút gọn) — để duyệt ngay trên app, khỏi mở Gmail. */
+  bodyExcerpt?: string;
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -56,6 +65,62 @@ function useOtaMails(spot: string) {
   return { mails, load };
 }
 
+function whenVN(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * PHẦN XỔ RA của một thư: các trường máy bóc được + nguyên văn thư.
+ *
+ * Người duyệt phải quyết được NGAY TẠI ĐÂY — dòng tóm tắt nhiều khi chỉ ra "?"
+ * (thư ghi nhãn kiểu lạ), mà bắt mở Gmail đối chiếu từng thư thì không ai duyệt
+ * nữa. Nguyên văn thư là nguồn sự thật cuối cùng.
+ */
+function MailDetail({ m }: { m: OtaMail }) {
+  const facts = [
+    m.draftDate ? `ngày bay ${m.draftDate.split("-").reverse().join("/")}` : "",
+    m.draftTime ? `giờ ${m.draftTime}` : "",
+    m.draftGuests ? `${m.draftGuests} khách` : "",
+    m.draftName,
+    m.draftPhone,
+    m.draftWeights?.length ? `cân nặng ${m.draftWeights.join("/")}kg` : "",
+    m.draftHotel ? `đón: ${m.draftHotel}` : "",
+  ].filter(Boolean);
+
+  return (
+    <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs leading-snug">
+      <div className="text-slate-500">
+        {whenVN(m.receivedAt)} · từ <span className="break-all">{m.from || "?"}</span>
+      </div>
+      <div className="mt-0.5 font-semibold text-slate-800">{m.subject}</div>
+      {facts.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {facts.map((f, i) => (
+            <span key={i} className="rounded bg-sky-100 px-1.5 py-0.5 font-semibold text-sky-900">
+              {f}
+            </span>
+          ))}
+        </div>
+      )}
+      {m.bodyExcerpt ? (
+        <pre className="mt-1.5 max-h-56 overflow-y-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-white p-2 font-sans text-[11px] text-slate-700">
+          {m.bodyExcerpt}
+        </pre>
+      ) : (
+        <div className="mt-1.5 text-slate-400">Thư không có phần chữ để hiện.</div>
+      )}
+    </div>
+  );
+}
+
 /**
  * CỜ ĐỎ ĐẦU TRANG: thư OTA đang chờ người duyệt.
  *
@@ -68,9 +133,14 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<Record<string, string>>({});
   const [dateFix, setDateFix] = useState<Record<string, string>>({});
+  const [openMail, setOpenMail] = useState<string | null>(null);
+  /** 18 thư cùng lúc là bức tường đỏ — hiện 5 thư đầu, còn lại nằm sau nút xổ. */
+  const [showAll, setShowAll] = useState(false);
 
   const pending = mails.filter((m) => m.status === "review");
   if (!pending.length) return null;
+  const shown = showAll ? pending : pending.slice(0, 5);
+  const hidden = pending.length - shown.length;
 
   const act = async (m: OtaMail, action: "approve" | "ignore") => {
     setBusy(m.id);
@@ -101,7 +171,7 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
         🚩 {pending.length} thư OTA chờ duyệt tay — lịch bay CHƯA đổi
       </div>
       <ul className="space-y-1.5">
-        {pending.map((m) => {
+        {shown.map((m) => {
           const intent = m.intent || (m.kind === "cancel" ? "cancel" : m.kind === "amend" ? "amend" : "create");
           const needDate = intent !== "cancel" && !m.draftDate;
           return (
@@ -114,6 +184,18 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                   {m.ref && <strong className="mr-1">#{m.ref}</strong>}
                   {m.result || m.subject}
                 </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className={
+                    "h-8 shrink-0 px-2 text-xs font-semibold " +
+                    (openMail === m.id ? "border-sky-400 bg-sky-50 text-sky-800" : "bg-white text-slate-600")
+                  }
+                  onClick={() => setOpenMail((prev) => (prev === m.id ? null : m.id))}
+                  title="Xem nguyên văn thư ngay tại đây — khỏi mở Gmail"
+                >
+                  ✉ Thư {openMail === m.id ? "▴" : "▾"}
+                </Button>
                 {needDate && (
                   <input
                     type="date"
@@ -143,10 +225,20 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                 </Button>
               </div>
               {error[m.id] && <div className="mt-1 text-xs font-semibold text-red-700">{error[m.id]}</div>}
+              {openMail === m.id && <MailDetail m={m} />}
             </li>
           );
         })}
       </ul>
+      {(hidden > 0 || showAll) && pending.length > 5 && (
+        <button
+          type="button"
+          className="mt-1.5 w-full rounded-lg border border-red-200 bg-white py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? "▴ Thu gọn, chỉ hiện 5 thư đầu" : `▾ Hiện thêm ${hidden} thư nữa`}
+        </button>
+      )}
     </div>
   );
 }
@@ -155,10 +247,11 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
  * Khay LỊCH SỬ thư OTA: thư máy đã đưa vào lịch, và thư người đã soát xong.
  *
  * Thư đang chờ duyệt không nằm ở đây mà nhảy lên cờ đỏ đầu trang — chỗ này chỉ để
- * tra lại "thư đó vào app chưa, ai duyệt".
+ * tra lại "thư đó vào app chưa, ai duyệt". Cũng xổ xem được nguyên văn.
  */
 export function OtaMailCard({ spot }: { spot: string }) {
   const { mails } = useOtaMails(spot);
+  const [openMail, setOpenMail] = useState<string | null>(null);
   const history = mails.filter((m) => m.status !== "review");
   if (!history.length) return null;
 
@@ -166,19 +259,30 @@ export function OtaMailCard({ spot }: { spot: string }) {
     <CollapseCard className="border-slate-200" title="📧 Thư OTA đã xử lý" hint={`${history.length} thư gần đây`}>
       <ul className="divide-y divide-slate-100">
         {history.map((m) => (
-          <li key={m.id} className="flex items-start gap-2 py-1.5">
-            <span
-              className={
-                "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold " +
-                (m.status === "applied" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600")
-              }
+          <li key={m.id} className="py-1.5">
+            <button
+              type="button"
+              className="flex w-full items-start gap-2 text-left"
+              onClick={() => setOpenMail((prev) => (prev === m.id ? null : m.id))}
+              title="Bấm để xem nguyên văn thư"
             >
-              {m.ota.toUpperCase()} · {KIND_LABEL[m.kind] ?? m.kind}
-            </span>
-            <span className="min-w-0 flex-1 text-sm leading-snug text-slate-700">
-              {m.ref && <strong className="mr-1">#{m.ref}</strong>}
-              {m.result || m.subject}
-            </span>
+              <span
+                className={
+                  "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold " +
+                  (m.status === "applied" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600")
+                }
+              >
+                {m.ota.toUpperCase()} · {KIND_LABEL[m.kind] ?? m.kind}
+              </span>
+              <span className="min-w-0 flex-1 text-sm leading-snug text-slate-700">
+                {m.ref && <strong className="mr-1">#{m.ref}</strong>}
+                {m.result || m.subject}
+              </span>
+              <span aria-hidden className="shrink-0 text-xs text-slate-400">
+                {openMail === m.id ? "▴" : "▾"}
+              </span>
+            </button>
+            {openMail === m.id && <MailDetail m={m} />}
           </li>
         ))}
       </ul>

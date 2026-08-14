@@ -18,8 +18,9 @@
 import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { parseKlookEmail, pickupFromDeparture, spotFromProduct, type KlookBooking } from "@/lib/baobay/ota-klook";
 import { OTA_CONFIG, isOtaKey, otaFromSender, readOtaMail, type OtaMailRead } from "@/lib/baobay/ota-parsers";
-import { parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
+import { htmlToText, parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
 import { connectDB } from "@/lib/mongodb";
+import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { OtaEmail } from "@/models/OtaEmail.model";
 
@@ -105,9 +106,15 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
       : { ota: "gyg", ...parseGenericOtaEmail(input.subject ?? "", input.body ?? "") };
     const label = isOtaKey(ota) ? OTA_CONFIG[ota].label : ota.toUpperCase();
 
-    // Thư OTP/quảng cáo lọt qua Apps Script: bỏ hẳn, đừng bắt người soát đọc rác
-    if (/verification code|\botp\b|newsletter|webinar|survey|password/.test(subject)) {
-      await OtaEmail.create({ ...base, kind: "unknown", status: "ignored", result: "Không phải thư đơn hàng — bỏ qua" });
+    /**
+     * Thư OTP/quảng cáo lọt qua Apps Script: bỏ hẳn, đừng bắt người soát đọc rác.
+     * OTA gửi quảng cáo cho ĐỐI TÁC bằng tên miền riêng (b2.viator.com,
+     * edm.kkday.com…) — đơn hàng thật không bao giờ đi từ mấy tên miền đó, nên
+     * chặn theo người gửi là an toàn.
+     */
+    const adsSender = /(b2\.viator\.com|edm\.kkday|newsletter@|marketing@|promo@)/i.test(from);
+    if (adsSender || /verification code|\botp\b|newsletter|webinar|survey|password/.test(subject)) {
+      await OtaEmail.create({ ...base, kind: "unknown", status: "ignored", result: "Thư quảng cáo / không phải đơn hàng — bỏ qua" });
       return { gmailId, action: "ignored", message: "Thư không phải đơn hàng, bỏ qua" };
     }
 
@@ -297,6 +304,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
   const created = await BaobayBooking.create({
     spot,
     flightDate: parsed.flightDate,
+    daySeq: await nextDaySeq(spot, parsed.flightDate),
     createdByUsername: `ota:${ota}`,
     createdByName: `${ota.toUpperCase()} (thư tự động)`,
     source: ota === "klook" ? "Klook" : ota.toUpperCase(),
@@ -397,6 +405,7 @@ export async function approveOtaEmail(
     };
     if (isDateKey(newDate) && newDate !== booking.flightDate) {
       set.flightDate = newDate;
+      set.daySeq = await nextDaySeq(booking.spot, newDate);
       set.rescheduledFrom = [...(booking.rescheduledFrom ?? []), booking.flightDate];
     }
     if (draft.expectedTime) set.expectedTime = draft.expectedTime;
@@ -422,6 +431,7 @@ export async function approveOtaEmail(
   const created = await BaobayBooking.create({
     spot,
     flightDate,
+    daySeq: await nextDaySeq(spot, flightDate),
     createdByUsername: `ota:${otaName}`,
     createdByName: `${otaName.toUpperCase()} (thư, ${by} duyệt)`,
     source: otaName.toUpperCase(),
@@ -468,24 +478,45 @@ export async function approveOtaEmail(
 }
 
 /** Thư OTA gần đây cho khay theo dõi trên trang điều phối / kế toán. */
-export async function listOtaEmails(spot?: string, limit = 20) {
+export async function listOtaEmails(spot?: string, limit = 60) {
   await connectDB();
   const where = spot ? { $or: [{ spot }, { spot: { $in: [null, ""] } }] } : {};
   const docs = await OtaEmail.find(where).sort({ createdAt: -1 }).limit(limit).lean<any[]>();
-  return docs.map((d) => ({
-    id: String(d._id),
-    ota: d.ota,
-    kind: d.kind,
-    ref: d.ref || "",
-    subject: d.subject || "",
-    status: d.status,
-    result: d.result || "",
-    receivedAt: d.receivedAt ? new Date(d.receivedAt).toISOString() : "",
-    /** Việc sẽ làm khi bấm duyệt: "cancel" · "amend" · "create". */
-    intent: String((d.draft as any)?.intent ?? ""),
-    spot: d.spot || "",
-    draftDate: String((d.draft as any)?.flightDate ?? ""),
-  }));
+  return docs.map((d) => {
+    const draft = (d.draft ?? {}) as Record<string, any>;
+
+    /**
+     * NGUYÊN VĂN thư (rút gọn) để người duyệt đọc ngay trên app — bắt họ mở
+     * Gmail đối chiếu từng thư thì chẳng ai duyệt nữa. Thư chỉ có HTML thì vứt
+     * thẻ lấy chữ; cắt 2.500 ký tự đầu là đủ phần thân đơn hàng.
+     */
+    let bodyText = String(d.body ?? "");
+    if (/<(html|body|table|div|p|br)[\s>]/i.test(bodyText)) bodyText = htmlToText(bodyText);
+    const bodyExcerpt = bodyText.replace(/\n{3,}/g, "\n\n").trim().slice(0, 2500);
+
+    return {
+      id: String(d._id),
+      ota: d.ota,
+      kind: d.kind,
+      ref: d.ref || "",
+      subject: d.subject || "",
+      from: d.from || "",
+      status: d.status,
+      result: d.result || "",
+      receivedAt: d.receivedAt ? new Date(d.receivedAt).toISOString() : "",
+      /** Việc sẽ làm khi bấm duyệt: "cancel" · "amend" · "create". */
+      intent: String(draft.intent ?? ""),
+      spot: d.spot || "",
+      draftDate: String(draft.flightDate ?? ""),
+      draftTime: String(draft.expectedTime ?? ""),
+      draftGuests: Number(draft.guestCount ?? 0) || 0,
+      draftName: String(draft.contactName ?? ""),
+      draftPhone: String(draft.phone ?? ""),
+      draftWeights: Array.isArray(draft.weights) ? (draft.weights as number[]) : [],
+      draftHotel: String(draft.hotel ?? ""),
+      bodyExcerpt,
+    };
+  });
 }
 
 /** Người soát bấm "đã xử lý" cho thư cần soát — bỏ khỏi khay. */

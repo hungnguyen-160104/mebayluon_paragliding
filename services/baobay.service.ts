@@ -2919,6 +2919,16 @@ function assertBookingTime(flightDate: string, expectedTime: string) {
  * Điều phối nhập booking ngay hôm khách đặt — `createdAt` chính là thời điểm
  * nhập liệu. Booking tự hiện trên trang điều phối vào đúng NGÀY BAY.
  */
+/**
+ * Số thứ tự kế tiếp của một ngày bay: max hiện có + 1. Số ĐÃ CẤP thì không bao
+ * giờ cấp lại — kể cả khách huỷ, số của họ vẫn đứng đó, nên lấy max chứ không
+ * đếm số dòng.
+ */
+export async function nextDaySeq(spot: string, flightDate: string): Promise<number> {
+  const top = await BaobayBooking.findOne({ spot, flightDate }).sort({ daySeq: -1 }).select("daySeq").lean<any>();
+  return (Number(top?.daySeq) || 0) + 1;
+}
+
 export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
@@ -2964,6 +2974,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     await BaobayBooking.create({
       spot,
       flightDate: input.flightDate,
+      daySeq: await nextDaySeq(spot, input.flightDate),
       createdByUsername: session.username,
       createdByName: session.name,
       source: input.source.trim(),
@@ -3316,7 +3327,15 @@ export async function collectForBooking(
     set.depositToCompany = true;
     if (!booking.transferCode) set.transferCode = transferCode;
   }
-  const updated = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, { $set: set }, { new: true }).lean<any>();
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: set,
+      // Vệt thu ghi thẳng lên booking — dòng "đã thu … - người thu" đọc từ đây
+      $push: { collectedLog: { amount, method, byName: session.name, at: new Date(), kind: isFull ? "full" : "deposit" } },
+    },
+    { new: true },
+  ).lean<any>();
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
@@ -3346,7 +3365,8 @@ export async function updateBookingStatus(
     if (!toDate) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
     if (toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
     update = {
-      $set: { flightDate: toDate },
+      // Sang ngày mới thì nhận SỐ THỨ TỰ MỚI của ngày đó — số cũ bỏ lại ngày cũ
+      $set: { flightDate: toDate, daySeq: await nextDaySeq(spot, toDate) },
       $push: { rescheduledFrom: current.flightDate },
     };
   } else if (action === "cancel") {
@@ -3443,6 +3463,14 @@ async function pushBookingRow(doc: any) {
 
 function toBookingDTO(doc: any): BookingDTO {
   return {
+    daySeq: Number(doc.daySeq) || 0,
+    collected: Array.isArray(doc.collectedLog)
+      ? doc.collectedLog.map((c: any) => ({
+          amount: Number(c.amount) || 0,
+          method: c.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+          byName: String(c.byName ?? ""),
+        }))
+      : [],
     id: String(doc._id),
     spot: doc.spot,
     flightDate: doc.flightDate,

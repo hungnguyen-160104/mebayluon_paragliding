@@ -30,22 +30,28 @@ export function FlownServicesHint({
   spot,
   date,
   onTake,
+  onData,
 }: {
   spot: string;
   date: string;
   /** Bấm "lấy số này" — nơi gọi tự quyết định điền vào ô nào. */
   onTake?: (s: FlownServices) => void;
+  /** Báo số liệu MỖI LẦN tải xong — cho ô "Tổng khách" tự cộng theo booking đã bay. */
+  onData?: (s: FlownServices) => void;
 }) {
   const [flown, setFlown] = useState<FlownServices | null>(null);
 
   const load = useCallback(() => {
     if (!spot) return;
     apiGet<{ flown: FlownServices }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
-      .then((r) => setFlown(r.flown ?? null))
+      .then((r) => {
+        setFlown(r.flown ?? null);
+        if (r.flown) onData?.(r.flown);
+      })
       .catch(() => {
         /* ngày chưa có booking nào thì thôi */
       });
-  }, [spot, date]);
+  }, [spot, date, onData]);
 
   useEffect(() => {
     load();

@@ -21,6 +21,7 @@ import { todayInVN } from "@/lib/baobay/date";
 import { normalizeSpot } from "@/lib/baobay/spots";
 import { isTestBooking } from "@/lib/baobay/test-booking";
 import { connectDB } from "@/lib/mongodb";
+import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { Booking } from "@/models/Booking.model";
 
@@ -319,6 +320,7 @@ export async function syncWebBookings(
 
       await BaobayBooking.create({
         ...mapped,
+        daySeq: await nextDaySeq(mapped.spot, mapped.flightDate),
         // Giữ đúng THỜI ĐIỂM KHÁCH ĐẶT để danh sách chờ xếp theo thứ tự đặt chỗ
         createdAt: doc.createdAt ?? new Date(),
         createdByUsername: "web",

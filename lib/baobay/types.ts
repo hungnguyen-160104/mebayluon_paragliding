@@ -294,6 +294,8 @@ export type CollectDTO = {
 export type BookingDTO = {
   id: string;
   spot: string;
+  /** Số thứ tự khách trong ngày (cấp theo lúc đặt, không đổi; dời ngày thì cấp số mới). */
+  daySeq: number;
   /** Ngày khách bay — booking hiện trên trang điều phối đúng ngày này. */
   flightDate: string;
   createdByUsername: string;
@@ -325,6 +327,8 @@ export type BookingDTO = {
   /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
+  /** Vệt thu tiền: từng lần thu — số tiền, TM/CK, người thu. */
+  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string }>;
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
   cancelledBy?: string;

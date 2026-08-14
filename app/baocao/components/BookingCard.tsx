@@ -47,7 +47,7 @@ function requestEditBooking(b: BookingDTO) {
  *  - `BookingCard`: thẻ nhập booking mới + danh sách chữ nhỏ các booking sắp tới.
  */
 
-export const BOOKING_SOURCES = ["Facebook", "TikTok", "Zalo", "Klook", "SEEK", "GYG", "KKday", "Walk-in"];
+export const BOOKING_SOURCES = ["TẠI CHỖ", "Facebook", "TikTok", "Zalo", "Klook", "SEEK", "GYG", "KKday"];
 
 const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
   self: "tự đến",
@@ -57,7 +57,7 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
 };
 
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
-function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) {
+function BookingSummary({ b, withDate, dim }: { b: BookingDTO; withDate?: boolean; dim?: boolean }) {
   /**
    * Ba thứ quầy phải đọc được ngay giữa một dòng dài: TÊN KHÁCH, SỐ ĐIỆN THOẠI
    * và CÒN THU. Tách khỏi chuỗi chữ xám để tô nền riêng, phần còn lại vẫn là
@@ -90,7 +90,11 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   if (b.note) tail.push(b.note);
 
   return (
-    <span className="text-sm leading-snug text-slate-700">
+    <span className={dim ? "text-xs leading-snug text-slate-500" : "text-sm leading-snug text-slate-700"}>
+      {/* SỐ THỨ TỰ trong ngày — đỏ đậm, đứng đầu, KHÔNG đổi kể cả đã bay/huỷ */}
+      {b.daySeq > 0 && (
+        <strong className="mr-1 rounded bg-red-600 px-1.5 font-bold text-white">{b.daySeq}</strong>
+      )}
       {head.filter(Boolean).join(" · ")}
       {b.contactName ? (
         <>
@@ -115,6 +119,13 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
         </>
       ) : null}
       {tail.length ? ` · ${tail.join(" · ")}` : ""}
+      {/* Vệt thu tiền — in ĐẬM vì đây là câu trả lời cho "tiền booking này đâu rồi" */}
+      {(b.collected ?? []).map((c, i) => (
+        <strong key={i} className="ml-1 whitespace-nowrap rounded bg-emerald-100 px-1 font-bold text-emerald-800">
+          đã thu {Math.round(c.amount / 1000).toLocaleString("vi-VN")}k {c.method === "cash" ? "TM" : "CK"}
+          {c.byName ? ` - ${c.byName}` : ""}
+        </strong>
+      ))}
     </span>
   );
 }
@@ -641,7 +652,12 @@ export function BookingTodayBanner({
     }
   }
 
-  const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} chờ bay)</>;
+  const title = (
+    <>
+      🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} booking - {open.reduce((t, b) => t + b.guestCount, 0)}{" "}
+      khách)
+    </>
+  );
   const body = (
     <>
       <p className="mt-0.5 text-[11px] text-sky-800/70">
@@ -788,13 +804,12 @@ export function BookingTodayBanner({
                 ✎ Sửa
               </Button>
             </div>
-            <BookingSummary b={b} />
             {b.status === "done" ? (
-              <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+              <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                 đã bay ✓
               </span>
             ) : (
-              <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">
+              <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
                 đã huỷ
                 {b.refundAmount
                   ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
@@ -802,6 +817,7 @@ export function BookingTodayBanner({
                 {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
               </span>
             )}
+            <BookingSummary b={b} dim={b.status === "done"} />
           </li>
         ))}
       </ul>
@@ -882,13 +898,13 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
           <ul className="mt-2 space-y-1.5">
             {forDate.map((b) => (
               <li key={b.id} className={"rounded-lg bg-white px-3 py-1.5" + (b.status !== "open" ? " opacity-60" : "")}>
-                <BookingSummary b={b} />
                 {b.status === "done" && (
-                  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">đã bay ✓</span>
+                  <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">đã bay ✓</span>
                 )}
                 {b.status === "cancelled" && (
-                  <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">đã huỷ</span>
+                  <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">đã huỷ</span>
                 )}
+                <BookingSummary b={b} dim={b.status === "done"} />
                 <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
               </li>
             ))}
@@ -1113,6 +1129,12 @@ export function BookingCard({
   const serviceMoney = servicesAmount(form);
 
   /** Kéo booking khách tự đặt trên mebayluon.com/booking vào danh sách chờ bay. */
+  /**
+   * Một nút kiểm CẢ HAI cửa khách đặt trước: website mebayluon.com (kéo về ngay)
+   * và thư OTA (thư do Gmail tự đẩy về ~10 phút/lần — ở đây chỉ ĐẾM xem có thư
+   * đang chờ duyệt không và nhắc người ta ngước lên cờ đỏ, chứ app không tự mở
+   * hộp thư của công ty được).
+   */
   async function syncFromWeb() {
     setSyncing(true);
     setError(null);
@@ -1125,15 +1147,26 @@ export function BookingCard({
         cancelled: number;
         skipped: number;
       }>(`/api/baocao/booking/sync-web?spot=${bookSpot}`);
-      setDone(
+      const webMsg =
         r.created + r.updated + r.merged + r.cancelled === 0
-          ? `✓ Đã kiểm tra website — không có booking mới (${r.skipped} đơn đã có sẵn).`
-          : `✓ Từ website: ${r.created} booking mới` +
+          ? `Web: không có booking mới (${r.skipped} đơn đã có sẵn)`
+          : `Web: ${r.created} booking mới` +
             (r.merged ? ` · ${r.merged} gộp vào booking đã nhập tay` : "") +
             (r.updated ? ` · ${r.updated} cập nhật` : "") +
-            (r.cancelled ? ` · ${r.cancelled} khách huỷ` : "") +
-            ".",
-      )
+            (r.cancelled ? ` · ${r.cancelled} khách huỷ` : "");
+
+      let otaMsg = "";
+      try {
+        const ota = await apiGet<{ emails: Array<{ status: string }> }>(`/api/baocao/ota/log?spot=${bookSpot}`);
+        const waiting = ota.emails.filter((m) => m.status === "review").length;
+        otaMsg = waiting
+          ? ` · OTA: ${waiting} thư chờ duyệt — xem cờ đỏ 🚩 đầu trang`
+          : " · OTA: không có thư chờ duyệt";
+      } catch {
+        /* chưa xem được sổ thư thì thôi, phần web vẫn báo */
+      }
+
+      setDone(`✓ ${webMsg}${otaMsg}.`);
       load();
       onChanged?.();
     } catch (err: unknown) {
@@ -1247,25 +1280,27 @@ export function BookingCard({
     <CollapseCard
       className="border-sky-300 bg-sky-50/40"
       headerClassName="bg-sky-600 text-white"
-      title="📒 BOOKING MỚI"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          📒 BOOKING MỚI
+          {/* Nút nằm trong <summary>: chặn toggle thẻ khi bấm */}
+          <button
+            type="button"
+            disabled={syncing}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void syncFromWeb();
+            }}
+            className="rounded-lg border border-white/50 bg-white/15 px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/25 disabled:opacity-60"
+            title="Kéo booking khách đặt trên mebayluon.com + kiểm thư OTA đang chờ duyệt"
+          >
+            {syncing ? "Đang kiểm…" : "🔄 Lấy book từ website & OTA"}
+          </button>
+        </span>
+      }
       open={forceOpen || undefined}
     >
-      {/* Khách tự đặt trên web: kéo về đây, khỏi gõ lại tay */}
-      <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50/70 px-2.5 py-1.5">
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-8 shrink-0 whitespace-nowrap border-indigo-300 bg-white px-2.5 text-xs font-semibold text-indigo-800"
-          disabled={syncing}
-          onClick={syncFromWeb}
-        >
-          {syncing ? "Đang đồng bộ…" : "🔄 Lấy booking từ website"}
-        </Button>
-        <span className="text-[11px] leading-tight text-indigo-900/80">
-          Khách đặt trên mebayluon.com tự chảy vào danh sách chờ bay; bấm đây để kéo lại nếu thiếu.
-        </span>
-      </div>
-
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
@@ -1348,9 +1383,6 @@ export function BookingCard({
               <option key={sName} value={sName} />
             ))}
           </datalist>
-        </Field>
-        <Field label="Số booking">
-          <TextInput value={form.bookingCode} onChange={(e) => set("bookingCode", e.target.value)} placeholder="KLK12345…" className="h-10 rounded-lg text-sm" />
         </Field>
       </div>
 

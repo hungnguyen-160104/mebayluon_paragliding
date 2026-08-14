@@ -1,7 +1,7 @@
 // app/baocao/dieu-phoi/page.tsx
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { Issue } from "@/lib/baobay/reconcile";
@@ -226,6 +226,17 @@ export default function DispatcherReportPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const rangeTotal = useMemo(() => rangeRowsTotal(form.issuedRanges), [form.issuedRanges]);
+
+  /**
+   * "TỔNG KHÁCH TRONG NGÀY" TỰ CỘNG theo bảng kê của chính người nhập:
+   *   - điểm có vé giấy (Khau Phạ, Sa Pa): theo DẢI MÃ VÉ đã xuất — mỗi vé một khách;
+   *   - Hà Nội (không vé giấy): theo số khách của các booking đã tích "đã bay".
+   *
+   * Chỉ tự điền khi ô đang 0 hoặc đang mang đúng số máy điền lần trước — người
+   * đã gõ tay số khác thì máy không giành: khách vãng lai không vé vẫn có thật.
+   */
+  const [flownGuests, setFlownGuests] = useState(0);
+  const lastAutoGuests = useRef<number | null>(null);
   const cancelledCodes = useMemo(
     () => [...new Set(form.cancelledEntries.flatMap((e) => parseTicketCodeList(e.codesText).codes))],
     [form.cancelledEntries],
@@ -384,6 +395,17 @@ export default function DispatcherReportPage() {
 
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
   const noTickets = spot === "ha-noi";
+
+  const autoGuests = noTickets ? flownGuests : rangeTotal;
+  useEffect(() => {
+    if (locked || autoGuests <= 0) return;
+    setForm((prev) => {
+      if (prev.guestCount !== 0 && prev.guestCount !== lastAutoGuests.current) return prev;
+      if (prev.guestCount === autoGuests) return prev;
+      lastAutoGuests.current = autoGuests;
+      return { ...prev, guestCount: autoGuests };
+    });
+  }, [autoGuests, locked]);
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
@@ -455,10 +477,29 @@ export default function DispatcherReportPage() {
       <div className="space-y-3">
       <form onSubmit={submit} className="space-y-3">
         {/* Ô quan trọng nhất của quầy — thanh ngang luôn mở: tiêu đề bên trái, cụm đếm bên phải */}
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
-          <span className="text-base font-bold text-rose-900">Tổng khách trong ngày</span>
-          <div className="ml-auto">
-            <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+        <div className="rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-base font-bold text-rose-900">Tổng khách trong ngày</span>
+            <div className="ml-auto">
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
+            </div>
+          </div>
+          <div className="mt-0.5 text-[11px] text-rose-900/60">
+            {noTickets
+              ? "Tự cộng theo booking đã tích “đã bay” — sửa tay được."
+              : "Tự cộng theo dải mã vé đã xuất — sửa tay được."}
+            {autoGuests > 0 && form.guestCount !== autoGuests && (
+              <button
+                type="button"
+                className="ml-2 font-semibold text-rose-800 underline"
+                onClick={() => {
+                  lastAutoGuests.current = autoGuests;
+                  set("guestCount", autoGuests);
+                }}
+              >
+                Lấy {autoGuests}
+              </button>
+            )}
           </div>
         </div>
 
@@ -510,6 +551,7 @@ export default function DispatcherReportPage() {
           <FlownServicesHint
             spot={spot}
             date={date}
+            onData={(f) => setFlownGuests(f.guests)}
             onTake={(f) =>
               setForm((prev) => ({
                 ...prev,
@@ -604,7 +646,7 @@ export default function DispatcherReportPage() {
 
 
         <CollapseCard
-          title="THU CHI"
+          title="THU CHI & TIỀN NONG"
         >
           <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} disabled={locked} withKind withMethod hideTotals />
 
@@ -619,6 +661,9 @@ export default function DispatcherReportPage() {
               <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
             </div>
           </div>
+
+          {/* Tiền nong (giao tiền, ứng, ai đang giữ bao nhiêu) — chung thẻ, mọi nút bên trong đều type="button" nên không đụng nút Lưu báo cáo */}
+          <HandoverBox spot={spot} boardDate={date} embedded />
         </CollapseCard>
 
 
@@ -660,7 +705,6 @@ export default function DispatcherReportPage() {
         />
       </CollapseCard>
 
-      <HandoverBox spot={spot} boardDate={date} />
 
       {/* Thư OTA máy đã đưa vào lịch + thư cần người soát */}
       <OtaMailCard spot={spot} />

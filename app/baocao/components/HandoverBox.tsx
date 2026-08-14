@@ -49,11 +49,17 @@ export function HandoverBox({
   spot,
   bilingual = false,
   boardDate,
+  embedded = false,
 }: {
   spot: string;
   bilingual?: boolean;
   /** Ngày đang xem trên trang — bảng "khách đã trả tiền" bám theo ngày này. */
   boardDate?: string;
+  /**
+   * Nhúng vào trong thẻ khác (khối THU CHI của điều phối): bỏ vỏ thẻ riêng,
+   * chỉ hiện tiêu đề con — hai khối tiền chung một chỗ cho đỡ phải nhảy thẻ.
+   */
+  embedded?: boolean;
 }) {
   const today = todayInVN();
   const [data, setData] = useState<Payload | null>(null);
@@ -255,12 +261,8 @@ export function HandoverBox({
 
   const myCash = board?.cashByPerson.find((p) => p.username === me);
 
-  return (
-    <CollapseCard
-      className="border-teal-200 bg-teal-50/40"
-      title={`${t("Tiền nong", "Money")}${inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}`}
-      hint={t("Máy tự cộng từ báo cáo của bạn", "auto-computed")}
-    >
+  const inner = (
+    <>
       {/* Có người giao tiền cho mình: việc cần bấm ngay, đặt trên cùng */}
       {inboxPending.length > 0 && (
         <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-3">
@@ -691,6 +693,31 @@ export function HandoverBox({
           ))}
         </ul>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="mt-4 border-t border-slate-200 pt-3">
+        <div className="mb-2 flex items-baseline gap-2">
+          <span className="text-sm font-bold text-teal-900">
+            💰 {t("Tiền nong", "Money")}
+            {inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}
+          </span>
+          <span className="text-xs text-slate-500">{t("máy tự cộng từ báo cáo của bạn", "auto-computed")}</span>
+        </div>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <CollapseCard
+      className="border-teal-200 bg-teal-50/40"
+      title={`${t("Tiền nong", "Money")}${inboxPendingCount ? ` · ${inboxPendingCount} chờ xác nhận` : ""}`}
+      hint={t("Máy tự cộng từ báo cáo của bạn", "auto-computed")}
+    >
+      {inner}
     </CollapseCard>
   );
 }
