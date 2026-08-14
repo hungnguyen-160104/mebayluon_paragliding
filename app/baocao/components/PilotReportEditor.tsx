@@ -319,15 +319,37 @@ function PilotRow({
                 không vé = số chuyến.
               </div>
               <div className="grid gap-3 @md:grid-cols-2">
-                <Field label="Số chuyến PPG">
-                  {/* Kế toán sửa TAY từng ô — không auto-nhảy "không vé" như trang phi công,
-                      vì ở đây thường là chỉnh lại số phi công đã khai, nhảy theo là phá số cũ */}
-                  <CountInput value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
-                </Field>
-                <Field label="PPG không vé">
-                  <CountInput value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
-                </Field>
+                {/* Cùng cách gọi với trang phi công: có vé + không vé = tổng.
+                    Trong máy vẫn lưu ppgFlights là TỔNG. */}
+                <ServiceBox tone="tickets" label="Chuyến PPG có vé">
+                  <CountInput
+                    compact
+                    value={Math.max(0, form.ppgFlights - form.ppgNoTicket)}
+                    onChange={(v) => set("ppgFlights", v + form.ppgNoTicket)}
+                    max={300}
+                  />
+                </ServiceBox>
+                <ServiceBox tone="returned" label="Chuyến PPG không vé">
+                  <CountInput
+                    compact
+                    value={form.ppgNoTicket}
+                    onChange={(v) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        ppgNoTicket: v,
+                        ppgFlights: Math.max(0, prev.ppgFlights - prev.ppgNoTicket) + v,
+                      }))
+                    }
+                    max={300}
+                  />
+                </ServiceBox>
               </div>
+              <p className="mt-1 text-xs font-semibold text-slate-700">
+                Tổng chuyến PPG: <strong className="tabular-nums text-sky-700">{form.ppgFlights}</strong>{" "}
+                <span className="font-normal text-slate-400">
+                  ({Math.max(0, form.ppgFlights - form.ppgNoTicket)} có vé + {form.ppgNoTicket} không vé)
+                </span>
+              </p>
               <div className="mt-3">
                 <Field label="Mã vé PPG">
                   <TextInput

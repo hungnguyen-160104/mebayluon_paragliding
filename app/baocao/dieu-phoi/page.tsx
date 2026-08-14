@@ -30,6 +30,7 @@ import {
   dispatcherMoneyRows,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
+import { IdScanCard } from "../components/IdScanCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
@@ -639,6 +640,9 @@ export default function DispatcherReportPage() {
       </CollapseCard>
 
       <HandoverBox spot={spot} />
+
+      {/* Quét giấy tờ khách để làm bảo hiểm bay */}
+      <IdScanCard />
       </div>
 
       <div className="space-y-3">

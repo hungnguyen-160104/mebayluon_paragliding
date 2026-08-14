@@ -2925,7 +2925,9 @@ export async function updateBookingInfo(
   const spot = assertSpotAllowed(session, spotRaw);
 
   if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
-  assertBookingTime(input.flightDate, input.expectedTime.trim());
+  const before = await BaobayBooking.findOne({ _id: id, spot }).select("status").lean<any>();
+  // Chuyến ĐÃ BAY: giờ bay nằm ở quá khứ là đương nhiên, đừng chặn như booking mới
+  if (before?.status === "open") assertBookingTime(input.flightDate, input.expectedTime.trim());
   for (const [label, count] of [
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
@@ -2938,8 +2940,13 @@ export async function updateBookingInfo(
     }
   }
 
-  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
-  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+  /**
+   * SỬA ĐƯỢC CẢ BOOKING ĐÃ BAY. Bay xong mới biết khách thêm flycam, thêm khách,
+   * hay số tiền phải sửa — mà tiền thu chi bám vào đúng chuyến đó. Chặn ở đây thì
+   * kế toán không còn đường nào ngoài gõ tay ra ngoài sổ, càng sai.
+   */
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking này", 404);
 
   const update: Record<string, unknown> = {
     $set: {
@@ -2975,7 +2982,7 @@ export async function updateBookingInfo(
     update.$push = { rescheduledFrom: current.flightDate };
   }
 
-  const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot, status: "open" }, update, { new: true }).lean<any>();
+  const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, update, { new: true }).lean<any>();
   if (!doc) throw new BaobayError("Booking vừa được người khác cập nhật", 409);
 
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);

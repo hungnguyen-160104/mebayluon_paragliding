@@ -26,6 +26,7 @@ import { DateBar } from "../components/DateBar";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { HandoverBox } from "../components/HandoverBox";
+import { IdScanCard } from "../components/IdScanCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
@@ -632,6 +633,11 @@ function DailyCloseInner() {
           Desktop: đứng cột phải cùng nhóm tiền · Điện thoại: vẫn ở vị trí thứ 7. */}
       <div className="order-7 lg:order-none">
         <CollectCreate spot={spot} />
+      </div>
+
+      {/* Quét giấy tờ khách để làm bảo hiểm bay */}
+      <div className="order-8 lg:order-none">
+        <IdScanCard />
       </div>
       </div>
 

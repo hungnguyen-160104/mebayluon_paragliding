@@ -767,7 +767,27 @@ export function BookingTodayBanner({
           </li>
         )}
         {closed.map((b) => (
-          <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white/60 px-3 py-1.5 opacity-60">
+          <li key={b.id} className="mb-1.5 flow-root break-inside-avoid rounded-lg bg-white/70 px-3 py-1.5">
+            {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
+                đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ. */}
+            <div className="float-right ml-2 flex items-center gap-1">
+              <CollectMoneyControl
+                spot={spot}
+                booking={b}
+                onDone={(msg) => {
+                  setCollectDone(msg);
+                  load();
+                }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 bg-white px-2 text-xs"
+                onClick={() => requestEditBooking(b)}
+              >
+                ✎ Sửa
+              </Button>
+            </div>
             <BookingSummary b={b} />
             {b.status === "done" ? (
               <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">

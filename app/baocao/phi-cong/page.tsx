@@ -151,6 +151,8 @@ export default function PilotReportPage() {
   const parsedCodes = useMemo(() => parseTicketCodeList(form.ticketCodesText), [form.ticketCodesText]);
   const parsed360 = useMemo(() => parseTicketCodeList(form.video360CodesText), [form.video360CodesText]);
   const parsedPpg = useMemo(() => parseTicketCodeList(form.ppgCodesText), [form.ppgCodesText]);
+  /** Chuyến PPG CÓ VÉ = tổng − không vé (trong máy chỉ lưu tổng + số không vé). */
+  const ppgWithTicket = Math.max(0, form.ppgFlights - form.ppgNoTicket);
 
   const loadDay = useCallback(async (targetDate: string) => {
     if (!spot) return;
@@ -681,21 +683,43 @@ export default function PilotReportPage() {
         <Card
           title="Số chuyến PPG (PPG flights)"
         >
-          {/* Hai ô này trước đây trắng y hệt nhau nên rất dễ gõ nhầm — tô màu tách hẳn */}
+          {/*
+            Khai theo cách phi công đếm thật: chuyến CÓ VÉ và chuyến KHÔNG VÉ là hai
+            con số rời, tổng mới là số chuyến PPG. Trong máy vẫn lưu `ppgFlights` =
+            TỔNG (mọi phép cộng, đối chiếu, bảng tính đang dựa vào nó), nên ô "có vé"
+            chỉ là tổng trừ đi số không vé.
+          */}
           <div className="grid grid-cols-2 gap-2">
-            <ServiceBox tone="tickets" label={bi("Số chuyến PPG", "PPG flights")}>
-              {/* KHÔNG auto-nhảy ô "không vé" theo số chuyến — người nhập tự cân (mã + không vé = số chuyến) */}
-              <CountInput compact value={form.ppgFlights} onChange={(v) => set("ppgFlights", v)} max={300} />
+            <ServiceBox tone="tickets" label="Chuyến PPG có vé">
+              <CountInput
+                compact
+                value={ppgWithTicket}
+                onChange={(v) => set("ppgFlights", v + form.ppgNoTicket)}
+                max={300}
+              />
             </ServiceBox>
-            <ServiceBox tone="returned" label={bi("Trong đó KHÔNG vé", "ticketless")}>
-              <CountInput compact value={form.ppgNoTicket} onChange={(v) => set("ppgNoTicket", v)} max={300} />
+            <ServiceBox tone="returned" label="Chuyến PPG không vé">
+              <CountInput
+                compact
+                value={form.ppgNoTicket}
+                onChange={(v) =>
+                  setForm((prev) => ({ ...prev, ppgNoTicket: v, ppgFlights: ppgWithTicket + v }))
+                }
+                max={300}
+              />
             </ServiceBox>
           </div>
+          <p className="mt-1 text-xs font-semibold text-slate-700">
+            Tổng chuyến PPG: <strong className="tabular-nums text-sky-700">{form.ppgFlights}</strong>{" "}
+            <span className="font-normal text-slate-400">
+              ({ppgWithTicket} có vé + {form.ppgNoTicket} không vé)
+            </span>
+          </p>
           {form.ppgFlights > 0 && (
             <div className="mt-3">
               <Field
                 label={bi("Mã vé PPG", "PPG codes")}
-                hint={`Chuyến có vé phải khai đủ mã: mã + không vé = số chuyến (${parsedPpg.codes.length} mã + ${form.ppgNoTicket} không vé / ${form.ppgFlights} chuyến)`}
+                hint={`Mỗi chuyến có vé một mã: ${parsedPpg.codes.length} mã / ${ppgWithTicket} chuyến có vé`}
               >
                 <TextInput
                   value={form.ppgCodesText}
