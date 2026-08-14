@@ -98,6 +98,16 @@ const cancelledGuestList = z
       note: text(500),
       /** Điểm có vé: mã vé của nhóm (nhiều mã một ô). */
       codesText: text(2_000),
+      /** Huỷ khi CHƯA XUẤT VÉ — nhóm này không có mã vé để thu hồi. */
+      noTicket: z.boolean().optional().default(false),
+      /**
+       * Tiền khách đã thanh toán trước đó. Bản ghi CŨ không có trường này, mà
+       * `money` là z.coerce nên undefined thành NaN rồi gãy cả form — phải cho
+       * phép trống và mặc định 0.
+       */
+      paid: money.optional().default(0),
+      /** Hoàn bằng gì: CK là tiền ra từ TK công ty · TM là nhân viên chi tại chỗ. */
+      refundMethod: z.enum(["cash", "transfer"]).optional().default("transfer"),
     }),
   )
   .max(200)

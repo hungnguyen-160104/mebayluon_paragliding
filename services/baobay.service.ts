@@ -983,7 +983,19 @@ export type PilotReportSaveInput = {
   diplomaticNoTicket: number;
   diplomaticNote?: string;
   /** Khách huỷ/dời phi công báo — kênh phụ, kèm mã vé ở điểm có vé. */
-  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codesText?: string }>;
+  cancelledGuestEntries?: Array<{
+    name: string;
+    bookingCode: string;
+    guests: number;
+    source: string;
+    refund: number;
+    note?: string;
+    codesText?: string;
+    /** Huỷ khi CHƯA XUẤT VÉ: không có mã vé, chỉ hoàn tiền. */
+    noTicket?: boolean;
+    paid?: number;
+    refundMethod?: "cash" | "transfer";
+  }>;
   rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; codesText?: string; bookedId?: string }>;
   /** Số LƯỢT đưa đón phi công tự trả tiền — kế toán hoàn theo đơn giá ngoài app. */
   pickupBigC: number;
@@ -1226,7 +1238,11 @@ export async function upsertPilotReport(
             source: e.source.trim(),
             refund: e.refund || 0,
             note: (e.note ?? "").trim(),
-            codes: parseTicketCodeList(spot === "ha-noi" ? "" : (e.codesText ?? "")).codes,
+            // Chưa xuất vé thì bỏ luôn mã vé — nhóm này không có gì để thu hồi
+            codes: e.noTicket ? [] : parseTicketCodeList(spot === "ha-noi" ? "" : (e.codesText ?? "")).codes,
+            noTicket: Boolean(e.noTicket),
+            paid: e.paid || 0,
+            refundMethod: e.refundMethod === "cash" ? "cash" : "transfer",
           }))
           .filter((e) => e.name || e.guests || e.bookingCode || e.codes.length),
         rescheduledGuestEntries: (input.rescheduledGuestEntries ?? [])
@@ -1586,7 +1602,19 @@ export type DispatcherReportSaveInput = {
   /** Vé huỷ theo nhóm đoàn: nhiều mã một ô + lý do + tên liên hệ. */
   cancelledEntries: Array<{ codesText: string; reason: string; contactName: string; note?: string }>;
   /** HÀ NỘI: nhóm KHÁCH huỷ/dời — điểm không vé thu thập theo khách. */
-  cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codesText?: string }>;
+  cancelledGuestEntries?: Array<{
+    name: string;
+    bookingCode: string;
+    guests: number;
+    source: string;
+    refund: number;
+    note?: string;
+    codesText?: string;
+    /** Huỷ khi CHƯA XUẤT VÉ: không có mã vé, chỉ hoàn tiền. */
+    noTicket?: boolean;
+    paid?: number;
+    refundMethod?: "cash" | "transfer";
+  }>;
   rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: "self" | "other"; pickupNote?: string; expectedTime?: string; codesText?: string; bookedId?: string }>;
   /** Dời lịch theo nhóm: nhiều mã một ô + ngày + lý do + liên hệ + sđt. */
   rescheduledEntries: Array<{
@@ -1672,7 +1700,8 @@ export async function upsertDispatcherReport(
    */
   const cancelledGuestEntries = (input.cancelledGuestEntries ?? [])
     .map((e) => {
-      const parsed = parseTicketCodeList(noTickets ? "" : (e.codesText ?? ""));
+      /** Huỷ khi CHƯA XUẤT VÉ: không có mã nào để thu hồi, nên không đọc mã. */
+      const parsed = parseTicketCodeList(noTickets || e.noTicket ? "" : (e.codesText ?? ""));
       if (parsed.invalid.length) {
         warnings.push(`Khách huỷ: bỏ qua cụm mã không đọc được "${parsed.invalid.slice(0, 3).join(", ")}"`);
       }
@@ -1684,6 +1713,9 @@ export async function upsertDispatcherReport(
         refund: e.refund || 0,
         note: (e.note ?? "").trim(),
         codes: parsed.codes,
+        noTicket: Boolean(e.noTicket),
+        paid: e.paid || 0,
+        refundMethod: e.refundMethod === "cash" ? "cash" : "transfer",
       };
     })
     .filter((e) => e.name || e.guests || e.bookingCode || e.codes.length);
@@ -3111,6 +3143,12 @@ export async function updateBookingStatus(
   id: string,
   action: BookingAction,
   toDate?: string,
+  /**
+   * HUỶ BAY khai thêm: đã xuất vé chưa (mã vé nào phải thu hồi) và hoàn cho khách
+   * bao nhiêu, hoàn bằng gì. Booking chưa phát sinh tiền thì bỏ trống hết — huỷ
+   * là xong, khỏi hỏi tiền.
+   */
+  cancel?: { ticketIssued?: boolean; ticketCodesText?: string; refund?: number; refundMethod?: "cash" | "transfer" },
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -3126,10 +3164,29 @@ export async function updateBookingStatus(
       $set: { flightDate: toDate },
       $push: { rescheduledFrom: current.flightDate },
     };
+  } else if (action === "cancel") {
+    const codes = cancel?.ticketIssued ? parseTicketCodeList(cancel.ticketCodesText ?? "").codes : [];
+    const refund = Math.max(0, Math.round(cancel?.refund || 0));
+    update = {
+      $set: {
+        status: "cancelled",
+        doneAt: new Date(),
+        doneBy: session.username,
+        cancelledAt: new Date(),
+        cancelledBy: session.username,
+        cancelTicketIssued: Boolean(cancel?.ticketIssued),
+        cancelTicketCodes: codes,
+        refundAmount: refund,
+        // Không hoàn đồng nào thì đừng ghi hình thức hoàn — đọc lại đỡ tưởng có tiền
+        refundMethod: refund > 0 ? (cancel?.refundMethod === "cash" ? "cash" : "transfer") : undefined,
+        // Huỷ rồi thì không còn gì phải thu nữa
+        remaining: 0,
+      },
+    };
   } else {
     update = {
       $set: {
-        status: action === "flown" ? "done" : "cancelled",
+        status: "done",
         doneAt: new Date(),
         doneBy: session.username,
       },
@@ -3220,6 +3277,11 @@ function toBookingDTO(doc: any): BookingDTO {
     flightKind: (doc.flightKind ?? "pg") as FlightKind,
     pickupFee: doc.pickupFee ?? 0,
     mountainCar: doc.mountainCar ?? 0,
+    cancelTicketIssued: doc.cancelTicketIssued,
+    cancelTicketCodes: doc.cancelTicketCodes ?? [],
+    refundAmount: doc.refundAmount ?? 0,
+    refundMethod: doc.refundMethod,
+    cancelledBy: doc.cancelledBy || "",
     unitPrice: doc.unitPrice ?? 0,
     discount: doc.discount ?? 0,
     totalAmount: doc.totalAmount ?? 0,

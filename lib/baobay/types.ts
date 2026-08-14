@@ -317,6 +317,12 @@ export type BookingDTO = {
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */
   mountainCar: number;
+  /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
+  cancelTicketIssued?: boolean;
+  cancelTicketCodes?: string[];
+  refundAmount?: number;
+  refundMethod?: "cash" | "transfer";
+  cancelledBy?: string;
   /** Đơn giá một khách · giảm trừ cả đoàn · tổng tiền (máy tự tính). */
   unitPrice: number;
   discount: number;
@@ -354,6 +360,12 @@ export type CancelGuestDTO = {
   note?: string;
   /** Điểm CÓ VÉ (Khau Phạ, Sa Pa): mã vé của nhóm — Hà Nội để trống. */
   codes?: string[];
+  /** Huỷ khi CHƯA XUẤT VÉ: không có mã vé thu hồi, chỉ hoàn tiền. */
+  noTicket?: boolean;
+  /** Tiền khách đã thanh toán trước khi huỷ. */
+  paid?: number;
+  /** Hoàn bằng CK (từ TK công ty) hay TM (nhân viên chi tại chỗ). */
+  refundMethod?: "cash" | "transfer";
 };
 
 /** HÀ NỘI: một nhóm khách dời lịch — tên, số lượng, SĐT, ngày dời, ghi chú. */

@@ -405,6 +405,180 @@ function CollectMoneyControl({
   );
 }
 
+
+/**
+ * Nút ✕ HUỶ BAY kèm luồng hỏi cho đủ:
+ *
+ *  - Điểm có vé (Khau Phạ, Sa Pa): hỏi ĐÃ XUẤT VÉ CHƯA. Đã xuất thì phải ghi mã
+ *    vé để thu hồi; chưa xuất thì bỏ qua phần mã.
+ *  - Đã phát sinh tiền (cọc hoặc đã thu) mới hỏi HOÀN bao nhiêu và hoàn bằng gì:
+ *    CK là tiền ra từ TK công ty, TM là nhân viên chi tại chỗ.
+ *  - Booking chưa thu đồng nào: không hỏi tiền, bấm xác nhận là huỷ.
+ */
+function CancelBookingControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  /** Số tiền khách đã trả cho booking này — mốc để đề xuất tiền hoàn. */
+  const paid = booking.deposit || Math.max(0, (booking.totalAmount || 0) - (booking.remaining || 0));
+  const hasTicketFlow = spot !== "ha-noi";
+
+  const [open, setOpen] = useState(false);
+  const [ticketIssued, setTicketIssued] = useState(false);
+  const [codes, setCodes] = useState("");
+  const [refund, setRefund] = useState(paid);
+  const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    if (hasTicketFlow && ticketIssued && !codes.trim()) return setError("Đã xuất vé thì phải ghi mã vé thu hồi");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "cancel",
+        ticketIssued: hasTicketFlow ? ticketIssued : false,
+        ticketCodesText: codes,
+        refund: paid > 0 ? refund : 0,
+        refundMethod,
+      });
+      onDone(
+        paid > 0 && refund > 0
+          ? `✓ Đã huỷ bay và hoàn ${refund.toLocaleString("vi-VN")} đ bằng ${refundMethod === "cash" ? "tiền mặt" : "chuyển khoản"}.`
+          : "✓ Đã huỷ bay (không phát sinh hoàn tiền).",
+      );
+      setOpen(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không huỷ được booking");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 bg-white px-2 text-xs text-rose-700"
+        onClick={() => {
+          setRefund(paid);
+          setTicketIssued(false);
+          setCodes("");
+          setRefundMethod("transfer");
+          setError(null);
+          setOpen(true);
+        }}
+      >
+        ✕ Huỷ
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
+      <div className="text-[11px] font-bold text-rose-900">Huỷ bay — {booking.contactName || "khách"}</div>
+
+      {hasTicketFlow && (
+        <>
+          <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+            {(
+              [
+                [false, "Chưa xuất vé"],
+                [true, "Đã xuất vé"],
+              ] as Array<[boolean, string]>
+            ).map(([v, label]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setTicketIssued(v)}
+                className={
+                  ticketIssued === v
+                    ? "flex-1 bg-slate-800 px-1 text-xs font-semibold text-white"
+                    : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {ticketIssued && (
+            <TextInput
+              value={codes}
+              onChange={(e) => setCodes(e.target.value.toUpperCase())}
+              placeholder="Mã vé thu hồi · MBL0005 MBL0006"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="h-8 rounded-lg text-xs"
+            />
+          )}
+        </>
+      )}
+
+      {paid > 0 ? (
+        <>
+          <div className="text-[11px] leading-tight text-slate-600">
+            Khách đã trả {paid.toLocaleString("vi-VN")} đ — hoàn lại:
+          </div>
+          <MoneyInput value={refund} onChange={setRefund} />
+          <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+            {(
+              [
+                ["transfer", "CK"],
+                ["cash", "TM"],
+              ] as Array<["transfer" | "cash", string]>
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setRefundMethod(k)}
+                className={
+                  refundMethod === k
+                    ? "flex-1 bg-emerald-600 px-1 text-xs font-semibold text-white"
+                    : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="text-[11px] leading-tight text-slate-600">
+            {refundMethod === "transfer"
+              ? "CK: tiền hoàn ra từ TK CÔNG TY."
+              : "TM: nhân viên chi tại chỗ — ghi thêm khoản chi này vào sổ THU CHI của mình."}
+          </div>
+        </>
+      ) : (
+        <div className="text-[11px] leading-tight text-slate-600">
+          Booking chưa phát sinh cọc hay thanh toán — không cần hoàn tiền.
+        </div>
+      )}
+
+      {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
+      <div className="flex gap-1">
+        <Button
+          type="button"
+          className="h-7 flex-1 bg-rose-600 px-2 text-xs hover:bg-rose-700"
+          disabled={busy}
+          onClick={send}
+        >
+          {busy ? "Đang huỷ…" : "✕ Xác nhận huỷ"}
+        </Button>
+        <Button type="button" variant="ghost" className="h-7 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /* ================================================================== */
 /* Banner đầu trang: booking bay đúng ngày đang xem                     */
 /* ================================================================== */
@@ -544,15 +718,14 @@ export function BookingTodayBanner({
                     load();
                   }}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-7 bg-white px-2 text-xs text-rose-700"
-                  disabled={busy === b.id}
-                  onClick={() => act(b, "cancel")}
-                >
-                  ✕ Huỷ
-                </Button>
+                <CancelBookingControl
+                  spot={spot}
+                  booking={b}
+                  onDone={(msg) => {
+                    setCollectDone(msg);
+                    load();
+                  }}
+                />
                 {/* Sửa dịch vụ / số tiền: mở thẻ BOOKING MỚI bên dưới với đúng booking này */}
                 <Button
                   type="button"
@@ -603,6 +776,10 @@ export function BookingTodayBanner({
             ) : (
               <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">
                 đã huỷ
+                {b.refundAmount
+                  ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
+                  : ""}
+                {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
               </span>
             )}
           </li>
@@ -1426,6 +1603,15 @@ export function BookingCard({
                     }}
                   />
                   <AssignControl spot={bookSpot} booking={b} onDone={load} />
+                  <CancelBookingControl
+                    spot={bookSpot}
+                    booking={b}
+                    onDone={(msg) => {
+                      setDone(msg);
+                      load();
+                      onChanged?.();
+                    }}
+                  />
                   <button
                     type="button"
                     onClick={() => startEdit(b)}

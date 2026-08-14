@@ -335,43 +335,14 @@ export async function syncWebBookings(
     }
 
     /**
-     * Bản ghi đã có: chỉ nhận lại phần TRANG KHÁCH làm chủ. Tiền cọc, người thu,
-     * người được giao, trạng thái bay là việc của nhân sự — giữ nguyên.
+     * Bản ghi ĐÃ CÓ thì thôi, không đụng vào nữa.
+     *
+     * Trang khách khoá đơn ngay khi khách bấm gửi — khách không sửa, không huỷ
+     * được — nên bên đó chẳng còn gì mới để nhận. Trong khi nhân sự thì liên tục
+     * sửa: thêm dịch vụ, ghi cọc, thu tiền, giao người. Đồng bộ mà ghi đè là xoá
+     * mất công của họ (thêm 1 flycam xong kéo lại là về 0), nên tuyệt đối không.
      */
-    const changed =
-      existing.flightDate !== mapped.flightDate ||
-      (existing.expectedTime || "") !== mapped.expectedTime ||
-      existing.guestCount !== mapped.guestCount ||
-      existing.flycam !== mapped.flycam ||
-      existing.video360 !== mapped.video360 ||
-      existing.sunset !== mapped.sunset ||
-      existing.flagFlight !== mapped.flagFlight ||
-      (existing.mountainCar ?? 0) !== mapped.mountainCar;
-
-    if (!changed) {
-      out.skipped += 1;
-      continue;
-    }
-
-    await BaobayBooking.updateOne(
-      { _id: existing._id },
-      {
-        $set: {
-          flightDate: mapped.flightDate,
-          expectedTime: mapped.expectedTime,
-          guestCount: mapped.guestCount,
-          flycam: mapped.flycam,
-          video360: mapped.video360,
-          sunset: mapped.sunset,
-          flagFlight: mapped.flagFlight,
-          mountainCar: mapped.mountainCar,
-          flightKind: mapped.flightKind,
-          webStatus: mapped.webStatus,
-          syncedAt: new Date(),
-        },
-      },
-    );
-    out.updated += 1;
+    out.skipped += 1;
   }
 
   return out;

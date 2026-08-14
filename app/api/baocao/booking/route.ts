@@ -171,7 +171,21 @@ export async function PATCH(req: Request) {
       });
       return NextResponse.json(res);
     }
-    const booking = await updateBookingStatus(auth, spot, id, action as BookingAction, toDate || undefined);
+    const booking = await updateBookingStatus(
+      auth,
+      spot,
+      id,
+      action as BookingAction,
+      toDate || undefined,
+      action === "cancel"
+        ? {
+            ticketIssued: body?.ticketIssued === true,
+            ticketCodesText: String(body?.ticketCodesText ?? ""),
+            refund: Math.max(0, Math.round(Number(body?.refund) || 0)),
+            refundMethod: body?.refundMethod === "cash" ? "cash" : "transfer",
+          }
+        : undefined,
+    );
     return NextResponse.json({ booking });
   } catch (err) {
     if (err instanceof BaobayError) {

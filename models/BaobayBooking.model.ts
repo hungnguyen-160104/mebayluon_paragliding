@@ -57,6 +57,13 @@ export interface IBaobayBooking {
   pickupFee: number;
   /** Số suất xe chuyên dụng lên núi (Hà Nội) — 150k/khách. */
   mountainCar: number;
+  /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
+  cancelTicketIssued?: boolean;
+  cancelTicketCodes?: string[];
+  refundAmount?: number;
+  refundMethod?: "cash" | "transfer";
+  cancelledAt?: Date;
+  cancelledBy?: string;
   /** Đơn giá một khách theo loại hình + ngày bay (thường / cuối tuần & lễ). */
   unitPrice: number;
   /** Giảm trừ cả đoàn (chiết khấu đại lý, khuyến mãi…) — số tiền tuyệt đối. */
@@ -128,6 +135,12 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },
     pickupFee: { type: Number, default: 0, min: 0 },
     mountainCar: { type: Number, default: 0, min: 0 },
+    cancelTicketIssued: Boolean,
+    cancelTicketCodes: { type: [String], default: [] },
+    refundAmount: { type: Number, default: 0, min: 0 },
+    refundMethod: { type: String, enum: ["cash", "transfer"] },
+    cancelledAt: Date,
+    cancelledBy: String,
     unitPrice: { type: Number, default: 0, min: 0 },
     discount: { type: Number, default: 0, min: 0 },
     totalAmount: { type: Number, default: 0, min: 0 },

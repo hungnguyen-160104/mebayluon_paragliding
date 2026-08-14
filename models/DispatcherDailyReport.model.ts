@@ -176,6 +176,10 @@ const CancelGuestSchema = new Schema(
     refund: { type: Number, default: 0, min: 0 },
     note: { type: String, default: "" },
     codes: { type: [String], default: [] },
+    /** Huỷ khi chưa xuất vé: không có mã vé, chỉ hoàn tiền. */
+    noTicket: { type: Boolean, default: false },
+    paid: { type: Number, default: 0, min: 0 },
+    refundMethod: { type: String, enum: ["cash", "transfer"], default: "transfer" },
   },
   { _id: false },
 );

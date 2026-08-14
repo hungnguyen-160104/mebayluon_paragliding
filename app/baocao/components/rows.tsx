@@ -711,6 +711,12 @@ export type CancelGuestRow = {
   note: string;
   /** Điểm có vé: mã vé của nhóm (nhiều mã một ô) — Hà Nội để trống. */
   codesText: string;
+  /** Huỷ khi CHƯA XUẤT VÉ — không có mã vé để thu hồi, chỉ hoàn tiền. */
+  noTicket?: boolean;
+  /** Tiền khách đã thanh toán trước đó. */
+  paid?: number;
+  /** Hoàn bằng CK (ra từ TK công ty) hay TM (nhân viên chi tại chỗ). */
+  refundMethod?: "cash" | "transfer";
 };
 
 /** Khách huỷ hoàn tiền: Tên – mã book – số khách – nguồn – tiền hoàn. */
@@ -735,15 +741,44 @@ export function CancelGuestRows({
         <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-2">
+              {/* Có nhóm huỷ TRƯỚC khi quầy kịp xuất vé — không có mã nào để thu hồi,
+                  chỉ có tiền đã thu phải hoàn lại. */}
               {withCodes && (
-                <TextInput
-                  value={row.codesText}
-                  onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
-                  placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  disabled={disabled}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex h-10 shrink-0 overflow-hidden rounded-lg border border-slate-300">
+                    {(
+                      [
+                        [false, "Đã xuất vé"],
+                        [true, "Chưa xuất vé"],
+                      ] as Array<[boolean, string]>
+                    ).map(([v, label]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => set(i, { noTicket: v, ...(v ? { codesText: "" } : {}) })}
+                        className={
+                          Boolean(row.noTicket) === v
+                            ? "bg-slate-800 px-2.5 text-xs font-semibold text-white"
+                            : "bg-white px-2.5 text-xs font-medium text-slate-500"
+                        }
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {!row.noTicket && (
+                    <TextInput
+                      value={row.codesText}
+                      onChange={(e) => set(i, { codesText: e.target.value.toUpperCase() })}
+                      placeholder="Mã vé (cùng đoàn ghi chung) · MBL0005 MBL0006"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      disabled={disabled}
+                      className="min-w-48 flex-1"
+                    />
+                  )}
+                </div>
               )}
               <div className="grid gap-2 @md:grid-cols-[1fr_10rem]">
                 <TextInput
@@ -777,7 +812,54 @@ export function CancelGuestRows({
                   <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
                   <MoneyInput value={row.refund} onChange={(v) => set(i, { refund: v })} />
                 </div>
+                {row.noTicket && (
+                  <>
+                    <div>
+                      <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Tiền đã thanh toán</div>
+                      <MoneyInput value={row.paid ?? 0} onChange={(v) => set(i, { paid: v })} />
+                    </div>
+                    <div>
+                      <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Hoàn bằng</div>
+                      <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
+                        {(
+                          [
+                            ["transfer", "CK"],
+                            ["cash", "TM"],
+                          ] as Array<["transfer" | "cash", string]>
+                        ).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => set(i, { refundMethod: k })}
+                            title={
+                              k === "transfer"
+                                ? "Tiền hoàn ra từ TK công ty"
+                                : "Nhân viên chi tiền mặt tại chỗ"
+                            }
+                            className={
+                              (row.refundMethod ?? "transfer") === k
+                                ? k === "transfer"
+                                  ? "flex-1 bg-indigo-600 text-xs font-semibold text-white"
+                                  : "flex-1 bg-sky-600 text-xs font-semibold text-white"
+                                : "flex-1 bg-white text-xs font-medium text-slate-500"
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
+              {row.noTicket && (
+                <p className="text-[11px] leading-tight text-slate-500">
+                  {(row.refundMethod ?? "transfer") === "transfer"
+                    ? "CK: tiền hoàn ra từ TK CÔNG TY."
+                    : "TM: nhân viên chi tại chỗ — nhớ ghi khoản chi này vào sổ THU CHI của mình."}
+                </p>
+              )}
               <TextInput
                 value={row.note}
                 onChange={(e) => set(i, { note: e.target.value })}
