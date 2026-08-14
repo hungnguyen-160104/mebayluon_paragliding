@@ -981,7 +981,12 @@ export default function PilotReportPage() {
                     <div className="text-xs text-slate-500">
                       {/* Cộng cả PPG — phi công PPG bay 1 chuyến mà hiện "0 chuyến" là báo sai */}
                       {r.flightCount + r.ppgFlights} chuyến · {r.ticketCodes.length + r.ppgCodes.length} mã vé
-                      {r.ppgFlights ? ` (${r.ppgFlights} PPG)` : ""}
+                      {/* Có PPG thì kê rõ CẢ HAI loại — ghi mỗi "(4 PPG)" dễ đọc nhầm thành cả 5 chuyến là PPG */}
+                      {r.ppgFlights
+                        ? ` (${[r.flightCount ? `${r.flightCount} PG` : "", `${r.ppgFlights} PPG`]
+                            .filter(Boolean)
+                            .join(" + ")})`
+                        : ""}
                       {r.flycam ? ` · ${r.flycam} flycam` : ""}
                       {r.video360 ? ` · ${r.video360}×360` : ""}
                       {r.redFlag ? ` · ${r.redFlag} cờ đỏ` : ""}
