@@ -35,55 +35,57 @@ export function DateBar({
 
   return (
     /**
-     * MỘT HÀNG duy nhất: [các điểm bay] · Dữ liệu ngày [dd/mm/yyyy ▾].
-     * Nút điểm bay không giãn hết chiều ngang nữa (trước đây flex-1 nên chiếm cả
-     * hàng, đẩy phần ngày xuống dòng dưới) — chỉ rộng bằng tên điểm.
+     * ĐÚNG MỘT HÀNG, thứ tự: Dữ liệu ngày [dd/mm/yyyy ▾] — [các điểm bay].
+     *
+     * `flex-nowrap` + cuộn ngang: máy hẹp thì kéo ngang chứ không gãy xuống dòng
+     * (gãy dòng làm thanh này cao gấp đôi, đẩy hết nội dung xuống).
      */
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:[column-span:all]">
+    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:[column-span:all]">
+      <span className="shrink-0 whitespace-nowrap text-base font-bold text-slate-900">Dữ liệu ngày</span>
+
+      {/* Chính con số NGÀY là lịch: bấm vào là mở chọn ngày, chữ luôn dạng dd/mm/yyyy */}
+      <label className="relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-sky-400 bg-white px-2.5 focus-within:border-sky-600">
+        <span className="whitespace-nowrap text-base font-bold tabular-nums text-sky-700">
+          {formatDateKeyVN(date)}
+        </span>
+        <span aria-hidden className="text-xs text-sky-500">▾</span>
+        <input
+          type="date"
+          value={date}
+          min={min}
+          max={max}
+          onChange={(e) => e.target.value && onChange(e.target.value)}
+          onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          aria-label="Chọn ngày"
+        />
+      </label>
+
+      {showSpots && <span aria-hidden className="shrink-0 text-slate-300">—</span>}
+
       {showSpots &&
         (spotOptions!.length > 1 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {spotOptions!.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => onSpotChange!(id)}
-                className={
-                  id === spot
-                    ? "h-10 whitespace-nowrap rounded-xl bg-sky-600 px-3 text-sm font-bold text-white"
-                    : "h-10 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                }
-              >
-                {spotName(id)}
-              </button>
-            ))}
-          </div>
+          spotOptions!.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSpotChange!(id)}
+              className={
+                id === spot
+                  ? "h-10 shrink-0 whitespace-nowrap rounded-xl bg-sky-600 px-3 text-sm font-bold text-white"
+                  : "h-10 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              }
+            >
+              {spotName(id)}
+            </button>
+          ))
         ) : (
-          <div className="whitespace-nowrap text-base font-bold text-slate-900">📍 {spotName(spot!)}</div>
+          <span className="shrink-0 whitespace-nowrap text-base font-bold text-slate-900">
+            📍 {spotName(spot!)}
+          </span>
         ))}
 
-      <div className="flex items-center gap-2">
-        <span className="whitespace-nowrap text-base font-bold text-slate-900">Dữ liệu ngày</span>
-        {/* Chính con số NGÀY là lịch: bấm vào là mở chọn ngày — không còn ô date riêng.
-            Chữ hiện luôn dạng ngày/tháng/năm; input thật phủ trong suốt lên trên để nhận bấm. */}
-        <label className="relative inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-sky-400 bg-white px-2.5 focus-within:border-sky-600">
-          <span className="whitespace-nowrap text-base font-bold tabular-nums text-sky-700">
-            {formatDateKeyVN(date)}
-          </span>
-          <span aria-hidden className="text-xs text-sky-500">▾</span>
-          <input
-            type="date"
-            value={date}
-            min={min}
-            max={max}
-            onChange={(e) => e.target.value && onChange(e.target.value)}
-            onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            aria-label="Chọn ngày"
-          />
-        </label>
-        {loading && <span className="text-xs text-slate-400">đang tải…</span>}
-      </div>
+      {loading && <span className="shrink-0 text-xs text-slate-400">đang tải…</span>}
     </div>
   );
 }
