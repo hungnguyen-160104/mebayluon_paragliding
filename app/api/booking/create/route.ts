@@ -5,6 +5,7 @@ import { Customer } from "@/models/Customer.model";
 import { Booking } from "@/models/Booking.model";
 import { postNotifyGmail } from "@/services/gmail.service";
 import { buildBookingMessage } from "@/services/telegram.service";
+import { syncOneWebBooking } from "@/services/baobay-web-sync.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -488,6 +489,13 @@ export async function POST(req: NextRequest) {
       }
 
       const bookingObjectId = booking._id.toString();
+
+      /**
+       * Đưa luôn đơn này vào sổ booking nội bộ (/baocao) để điều phối thấy trong
+       * danh sách chờ bay, khỏi phải gõ lại tay. Chạy nền và tự bắt lỗi bên
+       * trong: sổ nội bộ có sự cố cũng không được làm đơn của khách thất bại.
+       */
+      void syncOneWebBooking(bookingObjectId);
 
       // Payload dùng cho Telegram/Gmail
       const notifyPayload = {

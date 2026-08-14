@@ -42,23 +42,31 @@ export function CollapseCard({
   hint,
   children,
   className,
+  headerClassName,
   open,
 }: {
   title: React.ReactNode;
   hint?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /** Tô nền/chữ riêng cho DẢI TIÊU ĐỀ — dùng cho thẻ cần nổi bật hẳn. */
+  headerClassName?: string;
   /** Bật để mở sẵn thẻ (vd. bấm "Sửa" ở danh sách khác thì thẻ nhập tự xổ ra). */
   open?: boolean;
 }) {
   return (
-    <details open={open} className={cn("group rounded-2xl border border-slate-200 bg-white shadow-sm", className)}>
-      <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 sm:px-4">
+    <details open={open} className={cn("group rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm", className)}>
+      <summary
+        className={cn(
+          "flex cursor-pointer items-center justify-between gap-2 rounded-2xl px-3 py-2.5 sm:px-4",
+          headerClassName,
+        )}
+      >
         <span className="flex min-w-0 items-baseline gap-2">
-          <span className="shrink-0 text-base font-semibold text-slate-900">{title}</span>
-          {hint && <span className="truncate text-xs text-slate-400">{hint}</span>}
+          <span className="shrink-0 text-base font-semibold">{title}</span>
+          {hint && <span className="truncate text-xs opacity-70">{hint}</span>}
         </span>
-        <span aria-hidden className="text-slate-400 transition-transform group-open:rotate-180">
+        <span aria-hidden className="transition-transform group-open:rotate-180 opacity-60">
           ▾
         </span>
       </summary>
@@ -127,6 +135,8 @@ export const SERVICE_TONE = {
   returned: { box: "border-slate-300 bg-slate-100", label: "text-slate-800" },
   cancelled: { box: "border-rose-300 bg-rose-50", label: "text-rose-900" },
   moved: { box: "border-indigo-300 bg-indigo-50", label: "text-indigo-900" },
+  /** Xe chuyên dụng lên núi (Hà Nội) — màu riêng, không lẫn với dịch vụ bay. */
+  car: { box: "border-teal-300 bg-teal-50", label: "text-teal-900" },
 } as const;
 
 export function ServiceBox({

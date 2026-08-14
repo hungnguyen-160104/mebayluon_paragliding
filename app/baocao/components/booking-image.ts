@@ -35,6 +35,9 @@ export type BookingImageData = {
   /** Tiền dịch vụ tuỳ chọn của cả nhóm. */
   serviceMoney: number;
   pickupFee: number;
+  /** Xe lên núi: số suất + tiền (Hà Nội). */
+  mountainCar: number;
+  mountainCarMoney: number;
   discount: number;
   total: number;
   deposit: number;
@@ -71,6 +74,7 @@ export function drawBookingImage(d: BookingImageData): HTMLCanvasElement {
   rows.push(["Đưa đón", d.pickupLabel || "Tự đến"]);
   if (d.unitPrice) rows.push(["Đơn giá bay", `${money(d.unitPrice)} × ${d.guestCount} khách`]);
   if (d.serviceMoney) rows.push(["Tiền dịch vụ", money(d.serviceMoney)]);
+  if (d.mountainCar) rows.push([`Xe lên núi ×${d.mountainCar}`, money(d.mountainCarMoney)]);
   if (d.pickupFee) rows.push(["Phí đưa đón", money(d.pickupFee)]);
   if (d.discount) rows.push(["Giảm trừ", `− ${money(d.discount)}`]);
   rows.push(["TỔNG TIỀN", money(d.total)]);

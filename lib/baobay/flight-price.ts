@@ -51,6 +51,9 @@ export const FLAT_PRICE: Partial<Record<FlightKind, number>> = {
   m850: 2_090_000,
 };
 
+/** Xe chuyên dụng lên núi — Hà Nội, tính theo đầu khách. */
+export const MOUNTAIN_CAR_PRICE = 150_000;
+
 /** Đơn giá dịch vụ tuỳ chọn, tính theo từng suất khách. */
 export const SERVICE_PRICE = {
   flycam: 400_000,
@@ -153,6 +156,8 @@ export function servicesAmount(s: {
 
 export type BookingMoneyInput = {
   unitPrice?: number;
+  /** Số suất xe lên núi (Hà Nội) — 150k một khách. */
+  mountainCar?: number;
   guestCount?: number;
   flycam?: number;
   video360?: number;
@@ -169,7 +174,8 @@ export type BookingMoneyInput = {
  */
 export function bookingTotal(input: BookingMoneyInput): number {
   const base = (input.unitPrice || 0) * (input.guestCount || 0);
-  return Math.max(0, base + servicesAmount(input) + (input.pickupFee || 0) - (input.discount || 0));
+  const car = (input.mountainCar || 0) * MOUNTAIN_CAR_PRICE;
+  return Math.max(0, base + servicesAmount(input) + car + (input.pickupFee || 0) - (input.discount || 0));
 }
 
 /* ================================================================== */

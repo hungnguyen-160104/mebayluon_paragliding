@@ -4,6 +4,7 @@
  *
  *  - pilot      : PHI CÔNG — số chuyến bay, mã vé đã bay, Camera360, chi tiêu
  *  - dispatcher : ĐIỀU PHỐI BAY — vé xuất/thu, tiền mặt, dịch vụ gia tăng, chi cho khách
+ *  - counter    : QUẦY VÉ — y như điều phối, chỉ KHÔNG lập lệnh thu tiền
  *  - cameraman  : CAMERA MAN — số chuyến bay flycam trong ngày
  *  - accountant : KẾ TOÁN TỔNG HỢP — chốt số tổng, duyệt lệch và chi tiêu
  *  - admin      : QUẢN TRỊ — bổ nhiệm, thêm bớt nhân sự, active/deactive, mật khẩu
@@ -14,13 +15,14 @@
  * Thứ tự trong mảng cũng là thứ tự hiện ở trang quản trị tài khoản.
  */
 
-export const BAOBAY_ROLES = ["pilot", "dispatcher", "cameraman", "accountant", "admin"] as const;
+export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "admin"] as const;
 
 export type BaobayRole = (typeof BAOBAY_ROLES)[number];
 
 export const ROLE_LABEL: Record<BaobayRole, string> = {
   pilot: "Phi công",
   dispatcher: "Điều phối bay",
+  counter: "Quầy vé",
   cameraman: "Camera man",
   accountant: "Kế toán tổng hợp",
   admin: "Quản trị",
@@ -35,11 +37,24 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
 export const ROLE_HOME: Record<BaobayRole, string> = {
   pilot: "/baocao/phi-cong",
   dispatcher: "/baocao/dieu-phoi",
+  /** Quầy vé dùng CHUNG trang điều phối — chỉ ẩn thẻ lệnh thu tiền. */
+  counter: "/baocao/dieu-phoi",
   cameraman: "/baocao/camera",
   accountant: "/baocao/chot-ngay",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",
 };
+
+/**
+ * Điều phối và quầy vé nhập cùng một mẫu báo cáo (DispatcherDailyReport) nên
+ * mọi phép kiểm quyền, gom số, xuất bảng kê đều phải coi hai vai này như một.
+ * Dùng hàm này thay cho `role === "dispatcher"` rải rác khắp nơi.
+ */
+export const DISPATCHER_LIKE_ROLES = ["dispatcher", "counter"] as const;
+
+export function isDispatcherLike(role: unknown): boolean {
+  return role === "dispatcher" || role === "counter";
+}
 
 export function isBaobayRole(value: unknown): value is BaobayRole {
   return typeof value === "string" && (BAOBAY_ROLES as readonly string[]).includes(value);

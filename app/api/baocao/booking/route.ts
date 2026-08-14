@@ -8,6 +8,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
   assignBooking,
+  collectForBooking,
   listSpotStaffAll,
   createBooking,
   deleteBooking,
@@ -28,11 +29,12 @@ export const dynamic = "force-dynamic";
  *
  * GET   ?date=  -> { forDate, upcoming }
  * POST  {flightDate, source, contactName, bookingCode, guestCount, dịch vụ, pickup, expectedTime, deposit, note}
- * PATCH {id, action: "flown"|"cancel"|"move"|"assign", toDate?, assignee?} -> đã bay / huỷ / dời / giao cho nhân sự
+ * PATCH {id, action: "flown"|"cancel"|"move"|"assign"|"collect", toDate?, assignee?, amount?, method?, transferCode?}
+ *          -> đã bay / huỷ / dời / giao cho nhân sự / thu tiền
  * PUT    {id, ...các trường như POST}                    -> sửa thông tin booking
  * DELETE {id}                                            -> xoá booking nhập nhầm
  */
-const ROLES = ["dispatcher", "accountant", "admin"] as const;
+const ROLES = ["dispatcher", "counter", "accountant", "admin"] as const;
 
 export async function GET(req: Request) {
   // Mọi vai trò xem được, nhưng phi công/camera man CHỈ thấy booking đã giao cho mình
@@ -144,7 +146,7 @@ export async function PATCH(req: Request) {
   const action = String(body?.action ?? "flown");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -156,6 +158,17 @@ export async function PATCH(req: Request) {
       const assignee = String(body?.assignee ?? "");
       if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });
       return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
+    }
+    // THU TIỀN cho booking: CK về TK công ty · TM vào tiền giữ hộ của người bấm
+    if (action === "collect") {
+      const amount = Math.max(0, Math.round(Number(body?.amount) || 0));
+      const method = body?.method === "transfer" ? "transfer" : "cash";
+      const res = await collectForBooking(auth, spot, id, {
+        amount,
+        method,
+        transferCode: String(body?.transferCode ?? ""),
+      });
+      return NextResponse.json(res);
     }
     const booking = await updateBookingStatus(auth, spot, id, action as BookingAction, toDate || undefined);
     return NextResponse.json({ booking });

@@ -27,7 +27,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { formatDateKeyVN, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
-import { ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
+import { ROLE_LABEL, isDispatcherLike, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
@@ -1527,8 +1527,8 @@ export async function upsertDispatcherReportByAccountant(
 
   const target = await BaobayAccount.findOne({ username: normalizeUsername(targetUsername) }).lean<AccountDoc | null>();
   if (!target) throw new BaobayError(`Không tìm thấy tài khoản “${targetUsername}”`, 404);
-  if (target.role !== "dispatcher") {
-    throw new BaobayError(`“${target.displayName}” không phải điều phối`, 400);
+  if (!isDispatcherLike(target.role)) {
+    throw new BaobayError(`“${target.displayName}” không phải điều phối / quầy vé`, 400);
   }
 
   assertSpotAllowed(accountant, input.spot);
@@ -2166,7 +2166,7 @@ export async function listHandoverRecipients(
     kind === "advance"
       ? ADVANCE_APPROVER_ROLES
       : senderIsFinance
-        ? ["admin", "accountant", "dispatcher", "pilot", "cameraman"]
+        ? ["admin", "accountant", "dispatcher", "counter", "pilot", "cameraman"]
         : HANDOVER_RECIPIENT_ROLES;
 
   const docs = await BaobayAccount.find({
@@ -2227,7 +2227,7 @@ export async function createHandover(
   const allowedRoles: BaobayRole[] = isAdvance
     ? ADVANCE_APPROVER_ROLES
     : financeSender
-      ? ["admin", "accountant", "dispatcher", "pilot", "cameraman"]
+      ? ["admin", "accountant", "dispatcher", "counter", "pilot", "cameraman"]
       : HANDOVER_RECIPIENT_ROLES;
   if (!allowedRoles.includes(recipient.role)) {
     throw new BaobayError(
@@ -2605,7 +2605,7 @@ export async function getCashOnHand(
       collected += thuTotal(d.expenses);
       spent += pilotExpenseTotal(d);
     }
-  } else if (session.role === "dispatcher") {
+  } else if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
       // Chỉ TIỀN MẶT: khoản chuyển khoản vào thẳng tài khoản công ty, điều phối không cầm
@@ -2706,6 +2706,7 @@ export type BookingSaveInput = {
   expectedTime: string;
   flightKind?: "pg" | "ppg" | "m650" | "m850";
   pickupFee: number;
+  mountainCar: number;
   unitPrice: number;
   discount: number;
   deposit: number;
@@ -2797,6 +2798,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
       pickupFee: input.pickupFee,
+      mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
       discount: input.discount,
       // Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi
@@ -2867,7 +2869,8 @@ export async function listBookings(
   const extra = assignedTo ? { assignedToUsername: normalizeUsername(assignedTo) } : {};
 
   const [forDate, upcoming] = await Promise.all([
-    BaobayBooking.find({ spot, flightDate: date, ...extra }).sort({ expectedTime: 1, createdAt: 1 }).lean<any[]>(),
+    // Xếp theo thứ tự ĐẶT CHỖ: ai đặt trước đứng trước (đúng thứ tự nhận khách)
+    BaobayBooking.find({ spot, flightDate: date, ...extra }).sort({ createdAt: 1 }).lean<any[]>(),
     BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() }, ...extra })
       .sort({ flightDate: 1, expectedTime: 1 })
       .limit(100)
@@ -2921,6 +2924,7 @@ export async function updateBookingInfo(
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
       pickupFee: input.pickupFee,
+      mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
       discount: input.discount,
       totalAmount: bookingTotal(input),
@@ -3010,6 +3014,76 @@ export type BookingAction = "flown" | "cancel" | "move";
  *    (ngày cũ lưu vào `rescheduledFrom` để còn dấu vết).
  * KHÔNG xoá bản ghi nào.
  */
+/**
+ * THU TIỀN cho một booking ngay tại bãi.
+ *
+ * Hai đường tiền khác nhau hẳn nhau, nên không gộp làm một:
+ *  - CHUYỂN KHOẢN: tiền vào thẳng TK công ty, không ai cầm → ghi "đã cọc vào TK
+ *    công ty" của booking và lệnh thu ở trạng thái "company".
+ *  - TIỀN MẶT: chính người bấm đang cầm → lệnh thu ghi tên họ, hoàn tất luôn nên
+ *    khoản này chảy vào TIỀN GIỮ HỘ CÔNG TY của họ (getCashOnHand cộng vào), và
+ *    KHÔNG ghi vào "đã cọc" vì tiền chưa về công ty.
+ *
+ * Cả hai đều trừ ngay phần "còn phải thu" của booking để quầy không thu hai lần.
+ */
+export async function collectForBooking(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { amount: number; method: "cash" | "transfer"; transferCode?: string },
+): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
+  if (!input.amount || input.amount <= 0) throw new BaobayError("Chưa nhập số tiền thu", 400);
+
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const method = input.method === "transfer" ? "transfer" : "cash";
+  const transferCode = (input.transferCode ?? "").trim();
+  if (method === "transfer" && !transferCode) {
+    throw new BaobayError("Chuyển khoản phải ghi mã giao dịch", 400);
+  }
+
+  const saved = (
+    await BaobayCollect.create({
+      spot,
+      date: todayInVN(),
+      guestName: booking.contactName || "",
+      bookingCode: booking.bookingCode || "",
+      agency: booking.source || "",
+      guests: booking.guestCount || 0,
+      amount: input.amount,
+      method,
+      toCompanyAccount: method === "transfer",
+      transferCode,
+      note: `Thu cho booking bay ${formatDateKeyVN(booking.flightDate)}`,
+      collectorUsername: method === "cash" ? session.username : undefined,
+      collectorName: method === "cash" ? session.name : undefined,
+      // Tiền mặt: chính mình thu nên xong luôn, khỏi ai xác nhận với chính mình
+      status: method === "cash" ? "collected" : "company",
+      resolvedAt: method === "cash" ? new Date() : undefined,
+      resolvedBy: method === "cash" ? session.username : undefined,
+      createdByUsername: session.username,
+      createdByName: session.name,
+    })
+  ).toObject();
+  pushSheetInBackground(() => pushCollectRow(saved), BaobayCollect, saved._id);
+
+  const remaining = Math.max(0, (booking.remaining ?? 0) - input.amount);
+  const set: Record<string, unknown> = { remaining };
+  if (method === "transfer") {
+    set.deposit = (booking.deposit ?? 0) + input.amount;
+    set.depositToCompany = true;
+    if (!booking.transferCode) set.transferCode = transferCode;
+  }
+  const updated = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, { $set: set }, { new: true }).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+
+  return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
+}
+
 export async function updateBookingStatus(
   session: BaobaySession,
   spotRaw: string,
@@ -3078,6 +3152,7 @@ async function pushBookingRow(doc: any) {
       expectedTime: doc.expectedTime || "",
       flightKind: FLIGHT_KIND_SHORT[(doc.flightKind ?? "pg") as FlightKind] ?? "PG",
       pickupFee: doc.pickupFee ?? 0,
+      mountainCar: doc.mountainCar ?? 0,
       unitPrice: doc.unitPrice ?? 0,
       discount: doc.discount ?? 0,
       totalAmount: doc.totalAmount ?? 0,
@@ -3123,6 +3198,7 @@ function toBookingDTO(doc: any): BookingDTO {
     flagFlight: doc.flagFlight ?? 0,
     flightKind: (doc.flightKind ?? "pg") as FlightKind,
     pickupFee: doc.pickupFee ?? 0,
+    mountainCar: doc.mountainCar ?? 0,
     unitPrice: doc.unitPrice ?? 0,
     discount: doc.discount ?? 0,
     totalAmount: doc.totalAmount ?? 0,
@@ -3376,7 +3452,7 @@ export async function getMyMoneyDays(session: BaobaySession, spotRaw: string, da
       if (d.guestCarCost > 0) push(d.date, { content: "Xe cho khách", amount: d.guestCarCost, kind: "chi" });
       entryRows(d.date, d.expenses);
     }
-  } else if (session.role === "dispatcher") {
+  } else if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find({ spot, username: session.username, date: range })
       .select("date cashReceived transferReceived revenueEntries guestWaterCost mountainCarCost shuttleCarCost expenses")
       .lean<any[]>();
@@ -3460,7 +3536,7 @@ export async function getStaffStatement(
     account.role === "pilot"
       ? PilotDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
       : Promise.resolve([]),
-    account.role === "dispatcher"
+    isDispatcherLike(account.role)
       ? DispatcherDailyReport.find({ spot, username, date: range }).sort({ date: 1 }).lean<any[]>()
       : Promise.resolve([]),
     account.role === "cameraman"
@@ -4351,11 +4427,12 @@ async function pushCloseRow(doc: any) {
  */
 export async function listSpotStaffByRole(
   spotRaw: string,
-  role: BaobayRole,
+  role: BaobayRole | readonly BaobayRole[],
 ): Promise<Array<{ username: string; name: string }>> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
-  const docs = await BaobayAccount.find({ role, isActive: true, spots: spot })
+  const roleQuery = Array.isArray(role) ? { $in: [...role] } : role;
+  const docs = await BaobayAccount.find({ role: roleQuery, isActive: true, spots: spot })
     .select("username displayName")
     .sort({ displayName: 1 })
     .lean<any[]>();
@@ -5298,13 +5375,13 @@ export async function getMyPeriodSummary(
     getCashOnHand(session, spot),
   ]);
   const cashLines: PeriodLine[] = [
-    { label: "Thu hộ trong kỳ (collected)", value: inPeriod.collected, money: true },
+    { label: "Tổng thu hộ cty", value: inPeriod.collected, money: true },
     {
-      label: "Đã đưa quản lý trong kỳ (handed over)",
+      label: "Tổng đã nộp tiền về cty",
       value: inPeriod.handedConfirmed + inPeriod.handedPending,
       money: true,
     },
-    { label: "Đang giữ tới hôm nay (holding)", value: allTime.holding, money: true },
+    { label: "Đang giữ", value: allTime.holding, money: true },
   ];
 
   if (session.role === "pilot") {
@@ -5349,7 +5426,7 @@ export async function getMyPeriodSummary(
     };
   }
 
-  if (session.role === "dispatcher") {
+  if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find({ accountId, spot, date: range }).lean<any[]>();
     const sumOf = (pick: (d: any) => number) => docs.reduce((s, d) => s + (pick(d) || 0), 0);
     return {

@@ -16,7 +16,7 @@ import { apiGet } from "./client-api";
  * /api/baocao/me. Hỏi mỗi lần vào trang cũng có cái hay: quản trị khoá tài
  * khoản hoặc đổi vai trò là có tác dụng ngay, không đợi token hết hạn.
  */
-export function useBaobaySession(expectedRole?: BaobayRole) {
+export function useBaobaySession(expectedRole?: BaobayRole | readonly BaobayRole[]) {
   const router = useRouter();
   const [user, setUser] = useState<BaobayUserDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,12 @@ export function useBaobaySession(expectedRole?: BaobayRole) {
     apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
       .then(({ user: found }) => {
         if (!alive) return;
-        if (expectedRole && found.role !== expectedRole) {
+        const allowed = expectedRole
+          ? Array.isArray(expectedRole)
+            ? (expectedRole as readonly BaobayRole[])
+            : [expectedRole as BaobayRole]
+          : null;
+        if (allowed && !allowed.includes(found.role)) {
           // Không nhảy về chính trang này (vai trò lạ) — vòng lặp chuyển trang là treo máy
           const home = ROLE_HOME[found.role];
           if (home && home !== window.location.pathname) {
@@ -45,7 +50,8 @@ export function useBaobaySession(expectedRole?: BaobayRole) {
     return () => {
       alive = false;
     };
-  }, [expectedRole, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Array.isArray(expectedRole) ? expectedRole.join(",") : expectedRole, router]);
 
   return { user, loading, setUser };
 }

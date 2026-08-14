@@ -17,12 +17,12 @@ export type ReviewTopic = "flycam" | "video360" | "redFlag" | "sunset" | "flagFl
 
 /** Vai trò phải soát lại theo từng chủ đề — trùng với cặp đối chiếu của từng dịch vụ. */
 export const REVIEW_TARGET_ROLES: Record<ReviewTopic, string[]> = {
-  flycam: ["dispatcher", "cameraman"],
-  video360: ["dispatcher", "pilot"],
-  redFlag: ["dispatcher", "pilot"],
-  sunset: ["dispatcher", "pilot"],
-  flagFlight: ["dispatcher", "pilot"],
-  general: ["dispatcher", "pilot", "cameraman"],
+  flycam: ["dispatcher", "counter", "cameraman"],
+  video360: ["dispatcher", "counter", "pilot"],
+  redFlag: ["dispatcher", "counter", "pilot"],
+  sunset: ["dispatcher", "counter", "pilot"],
+  flagFlight: ["dispatcher", "counter", "pilot"],
+  general: ["dispatcher", "counter", "pilot", "cameraman"],
 };
 
 export const REVIEW_TOPIC_LABEL: Record<ReviewTopic, string> = {

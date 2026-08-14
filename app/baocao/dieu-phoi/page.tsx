@@ -35,6 +35,7 @@ import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
+import { DISPATCHER_LIKE_ROLES } from "@/lib/baobay/roles";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
 import { Banner, Button, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
@@ -200,7 +201,8 @@ function fromReport(r: DispatcherReportDTO): FormState {
 type DayCheck = { dayBlocked: boolean; myIssues: Issue[]; otherIssueCount: number };
 
 export default function DispatcherReportPage() {
-  const { user, loading } = useBaobaySession("dispatcher");
+  /** Quầy vé dùng chung trang này — chỉ khác: không có thẻ lệnh thu tiền. */
+  const { user, loading } = useBaobaySession(DISPATCHER_LIKE_ROLES);
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
@@ -389,7 +391,6 @@ export default function DispatcherReportPage() {
     <Shell
       user={user}
       title="Báo cáo điều phối bay"
-      subtitle="Cuối buổi nhập vé xuất/thu, tiền mặt, dịch vụ gia tăng và các khoản chi cho khách."
     >
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
       {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
@@ -406,7 +407,7 @@ export default function DispatcherReportPage() {
       <ReviewNotices spot={spot} date={date} />
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
-      <CollectInbox spot={spot} />
+      {user.role !== "counter" && <CollectInbox spot={spot} />}
 
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
       <BookingTodayBanner spot={spot} date={date} />
@@ -641,8 +642,9 @@ export default function DispatcherReportPage() {
       </div>
 
       <div className="space-y-3">
-        {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu */}
-        <CollectCreate spot={spot} />
+        {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
+            QUẦY VÉ không có chức năng này. */}
+        {user.role !== "counter" && <CollectCreate spot={spot} />}
 
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
         <CollapseCard

@@ -315,6 +315,8 @@ export type BookingDTO = {
   flightKind: "pg" | "ppg" | "m650" | "m850";
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
+  /** Số suất xe lên núi (Hà Nội) — 150k/khách. */
+  mountainCar: number;
   /** Đơn giá một khách · giảm trừ cả đoàn · tổng tiền (máy tự tính). */
   unitPrice: number;
   discount: number;

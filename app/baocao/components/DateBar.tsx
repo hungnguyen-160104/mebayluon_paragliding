@@ -34,42 +34,43 @@ export function DateBar({
   const showSpots = Boolean(spot && spotOptions && onSpotChange);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm lg:[column-span:all]">
-      {showSpots && (
-        <div className="mb-2 border-b border-slate-100 pb-2">
-          {spotOptions!.length > 1 ? (
-            <div className="flex flex-wrap gap-2">
-              {spotOptions!.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => onSpotChange!(id)}
-                  className={
-                    id === spot
-                      ? "flex-1 rounded-xl bg-sky-600 px-4 py-3 text-base font-bold text-white"
-                      : "flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-600 hover:bg-slate-50"
-                  }
-                >
-                  {spotName(id)}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-base font-bold text-slate-900">📍 {spotName(spot!)}</div>
-          )}
-        </div>
-      )}
+    /**
+     * MỘT HÀNG duy nhất: [các điểm bay] · Dữ liệu ngày [dd/mm/yyyy ▾].
+     * Nút điểm bay không giãn hết chiều ngang nữa (trước đây flex-1 nên chiếm cả
+     * hàng, đẩy phần ngày xuống dòng dưới) — chỉ rộng bằng tên điểm.
+     */
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:[column-span:all]">
+      {showSpots &&
+        (spotOptions!.length > 1 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {spotOptions!.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onSpotChange!(id)}
+                className={
+                  id === spot
+                    ? "h-10 whitespace-nowrap rounded-xl bg-sky-600 px-3 text-sm font-bold text-white"
+                    : "h-10 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                }
+              >
+                {spotName(id)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="whitespace-nowrap text-base font-bold text-slate-900">📍 {spotName(spot!)}</div>
+        ))}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span aria-hidden className="text-lg">
-          📅
-        </span>
-        <span className="text-lg font-bold text-slate-900">Dữ liệu ngày</span>
+      <div className="flex items-center gap-2">
+        <span className="whitespace-nowrap text-base font-bold text-slate-900">Dữ liệu ngày</span>
         {/* Chính con số NGÀY là lịch: bấm vào là mở chọn ngày — không còn ô date riêng.
             Chữ hiện luôn dạng ngày/tháng/năm; input thật phủ trong suốt lên trên để nhận bấm. */}
-        <label className="relative inline-flex h-12 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-sky-400 bg-white px-3 focus-within:border-sky-600">
-          <span className="text-lg font-bold tabular-nums text-sky-700">{formatDateKeyVN(date)}</span>
-          <span aria-hidden className="text-sm text-sky-500">▾</span>
+        <label className="relative inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-sky-400 bg-white px-2.5 focus-within:border-sky-600">
+          <span className="whitespace-nowrap text-base font-bold tabular-nums text-sky-700">
+            {formatDateKeyVN(date)}
+          </span>
+          <span aria-hidden className="text-xs text-sky-500">▾</span>
           <input
             type="date"
             value={date}

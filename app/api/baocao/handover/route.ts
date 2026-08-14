@@ -24,7 +24,7 @@ export const maxDuration = 30;
  * đọc danh sách người nhận từ chính GET này — thiếu admin là ô chọn nhân sự
  * trống trơn (lỗi đã xảy ra thật). Quản trị cũng giao/nhận tiền như mọi người.
  */
-const STAFF_ROLES = ["pilot", "dispatcher", "cameraman", "accountant", "admin"] as const;
+const STAFF_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "admin"] as const;
 
 /**
  * Nhân sự đưa tiền cho quản lý/giám đốc.

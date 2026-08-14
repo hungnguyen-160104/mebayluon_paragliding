@@ -30,7 +30,7 @@ export const maxDuration = 30;
  * GET  (không tham số)    -> 30 báo cáo gần nhất của chính mình
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "accountant"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     }
     const [reports, staff] = await Promise.all([
       listDispatcherReportsOfDate(spot, date),
-      listSpotStaffByRole(spot, "dispatcher"),
+      listSpotStaffByRole(spot, ["dispatcher", "counter"] as const),
     ]);
     return NextResponse.json({ reports, staff });
   }
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "accountant"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

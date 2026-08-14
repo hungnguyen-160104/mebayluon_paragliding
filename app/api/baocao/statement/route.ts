@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { isDispatcherLike } from "@/lib/baobay/roles";
 import { spotName } from "@/lib/baobay/spots";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { buildXlsx, type SheetSpec } from "@/lib/baobay/xlsx";
@@ -81,7 +82,7 @@ type Statement = Awaited<ReturnType<typeof getStaffStatement>>;
 
 function buildStatementSheets(st: Statement, clamped: boolean): SheetSpec[] {
   // Bộ cột theo vai trò — nhân sự nào bảng kê nấy
-  if (st.role === "dispatcher") return [dispatcherDaily(st), moneySheetOf(st)];
+  if (isDispatcherLike(st.role)) return [dispatcherDaily(st), moneySheetOf(st)];
   if (st.role === "cameraman") return [cameramanDaily(st), moneySheetOf(st)];
   const closed = new Set(st.closedDates);
   const isHanoi = st.spot === "ha-noi";

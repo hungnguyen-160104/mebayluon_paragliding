@@ -12,6 +12,7 @@ import { shareBookingImage } from "./booking-image";
 import {
   FLIGHT_KIND_LABEL,
   FLIGHT_KIND_SHORT,
+  MOUNTAIN_CAR_PRICE,
   SERVICE_PRICE,
   SERVICE_PRICE_LABEL,
   bookingTotal as computeBookingTotal,
@@ -57,16 +58,22 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
 
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
 function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) {
+  /**
+   * Ba thứ quầy phải đọc được ngay giữa một dòng dài: TÊN KHÁCH, SỐ ĐIỆN THOẠI
+   * và CÒN THU. Tách khỏi chuỗi chữ xám để tô nền riêng, phần còn lại vẫn là
+   * chữ nhỏ liền mạch cho gọn.
+   */
+  const head: string[] = [];
+  if (withDate) head.push(formatDateKeyVN(b.flightDate));
+  head.push([b.source, b.bookingCode && `#${b.bookingCode}`].filter(Boolean).join(" ") || "booking");
+
   const parts: string[] = [];
-  if (withDate) parts.push(formatDateKeyVN(b.flightDate));
-  parts.push([b.source, b.bookingCode && `#${b.bookingCode}`].filter(Boolean).join(" ") || "booking");
-  if (b.contactName) parts.push(b.contactName);
-  if (b.phone) parts.push(`📞 ${b.phone}`);
   parts.push(`${b.guestCount} khách`);
   if (b.flycam) parts.push(`${b.flycam}×flycam`);
   if (b.video360) parts.push(`${b.video360}×cam360`);
   if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
   if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/săn mây`);
+  if (b.mountainCar) parts.push(`${b.mountainCar}×xe núi`);
   if (b.flightKind && b.flightKind !== "pg") parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
   if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
   parts.push(
@@ -76,12 +83,40 @@ function BookingSummary({ b, withDate }: { b: BookingDTO; withDate?: boolean }) 
   );
   if (b.totalAmount) parts.push(`tổng ${Math.round(b.totalAmount / 1000).toLocaleString("vi-VN")}k`);
   if (b.deposit) parts.push(`cọc ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k`);
-  if (b.remaining) parts.push(`còn thu ${Math.round(b.remaining / 1000).toLocaleString("vi-VN")}k`);
-  if (b.transferCode) parts.push(`CK #${b.transferCode}`);
-  if (b.depositToCompany) parts.push("cọc → TK cty");
-  if (b.note) parts.push(b.note);
+  /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
+  const tail: string[] = [];
+  if (b.transferCode) tail.push(`CK #${b.transferCode}`);
+  if (b.depositToCompany) tail.push("cọc → TK cty");
+  if (b.note) tail.push(b.note);
 
-  return <span className="text-sm leading-snug text-slate-700">{parts.filter(Boolean).join(" · ")}</span>;
+  return (
+    <span className="text-sm leading-snug text-slate-700">
+      {head.filter(Boolean).join(" · ")}
+      {b.contactName ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-sky-100 px-1 font-bold text-sky-900">{b.contactName}</strong>
+        </>
+      ) : null}
+      {b.phone ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-amber-100 px-1 font-bold tabular-nums text-amber-900">📞 {b.phone}</strong>
+        </>
+      ) : null}
+      {" · "}
+      {parts.filter(Boolean).join(" · ")}
+      {b.remaining ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-rose-100 px-1 font-bold text-rose-700">
+            còn thu {Math.round(b.remaining / 1000).toLocaleString("vi-VN")}k
+          </strong>
+        </>
+      ) : null}
+      {tail.length ? ` · ${tail.join(" · ")}` : ""}
+    </span>
+  );
 }
 
 /** "HH:MM" hiện tại theo giờ Việt Nam — giờ dự kiến hôm nay không được sớm hơn. */
@@ -199,6 +234,129 @@ function AssignControl({
   );
 }
 
+
+/**
+ * Nút 💵 THU TIỀN dùng chung cho cả hai danh sách (chờ bay hôm nay + sắp tới).
+ *
+ * Thu được từ xa: khách chuyển khoản trước ngày bay thì điều phối/kế toán ghi
+ * nhận ngay, khỏi đợi tới bãi. Hai đường tiền vẫn tách bạch — CK về TK công ty,
+ * TM vào tiền giữ hộ của chính người bấm.
+ */
+function CollectMoneyControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(booking.remaining || 0);
+  const [method, setMethod] = useState<"cash" | "transfer">("cash");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    if (amount <= 0) return setError("Chưa nhập số tiền");
+    if (method === "transfer" && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "collect",
+        amount,
+        method,
+        transferCode: code,
+      });
+      onDone(
+        method === "transfer"
+          ? `✓ Đã ghi nhận ${amount.toLocaleString("vi-VN")} đ chuyển khoản vào TK công ty.`
+          : `✓ Đã thu ${amount.toLocaleString("vi-VN")} đ tiền mặt — cộng vào tiền giữ hộ công ty của bạn.`,
+      );
+      setOpen(false);
+      setCode("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không ghi nhận được khoản thu");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 bg-rose-600 px-2 text-xs font-bold text-white hover:bg-rose-700"
+        title="Thu tiền cho booking này — tiền mặt tại bãi hoặc khách chuyển khoản trước"
+        onClick={() => {
+          setAmount(booking.remaining || 0);
+          setOpen(true);
+          setError(null);
+        }}
+      >
+        💵 Thu tiền
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
+      {/* Số tiền điền sẵn phần còn phải thu, sửa được: thu một phần cũng ghi nhận */}
+      <MoneyInput value={amount} onChange={setAmount} />
+      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+        {(
+          [
+            ["cash", "Tiền mặt"],
+            ["transfer", "CK"],
+          ] as Array<["cash" | "transfer", string]>
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setMethod(k)}
+            className={
+              method === k
+                ? "flex-1 bg-emerald-600 px-1 text-xs font-semibold text-white"
+                : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {method === "transfer" && (
+        <TextInput
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Mã giao dịch ngân hàng…"
+          className="h-8 rounded-lg text-xs"
+        />
+      )}
+      <div className="text-[11px] leading-tight text-slate-600">
+        {method === "transfer" ? "Tiền vào thẳng TK CÔNG TY." : "Tiền mặt cộng vào TIỀN GIỮ HỘ CÔNG TY của bạn."}
+      </div>
+      {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
+      <div className="flex gap-1">
+        <Button
+          type="button"
+          className="h-7 flex-1 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
+          disabled={busy || amount <= 0}
+          onClick={send}
+        >
+          {busy ? "Đang lưu…" : "✓ Xác nhận"}
+        </Button>
+        <Button type="button" variant="ghost" className="h-7 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /* ================================================================== */
 /* Banner đầu trang: booking bay đúng ngày đang xem                     */
 /* ================================================================== */
@@ -216,8 +374,12 @@ export function BookingTodayBanner({
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Danh sách dài thì gập lại còn 10 dòng. */
+  const [showAll, setShowAll] = useState(false);
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. */
   const [moving, setMoving] = useState<{ id: string; toDate: string } | null>(null);
+  /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
+  const [collectDone, setCollectDone] = useState<string | null>(null);
 
   const load = useCallback(() => {
     apiGet<{ forDate: BookingDTO[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
@@ -236,6 +398,8 @@ export function BookingTodayBanner({
 
   const open = rows.filter((b) => b.status === "open");
   const closed = rows.filter((b) => b.status !== "open");
+  /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. */
+  const openShown = showAll ? open : open.slice(0, 10);
   if (!rows.length) return null;
 
   async function act(b: BookingDTO, action: "flown" | "cancel" | "move", toDate?: string) {
@@ -267,8 +431,15 @@ export function BookingTodayBanner({
           <Banner tone="error">{error}</Banner>
         </div>
       )}
+      {collectDone && (
+        <div className="mt-2">
+          <Banner tone="success" onClose={() => setCollectDone(null)}>
+            {collectDone}
+          </Banner>
+        </div>
+      )}
       <ul className={"mt-2" + (rows.length >= 8 ? " lg:columns-2 lg:gap-x-3" : "")}>
-        {open.map((b, i) => (
+        {openShown.map((b, i) => (
           <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
@@ -317,6 +488,14 @@ export function BookingTodayBanner({
                 <AssignControl spot={spot} booking={b} onDone={load} />
               </div>
               <div className="float-right clear-right ml-2 mt-1 flex items-center gap-1">
+                <CollectMoneyControl
+                  spot={spot}
+                  booking={b}
+                  onDone={(msg) => {
+                    setCollectDone(msg);
+                    load();
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -355,6 +534,17 @@ export function BookingTodayBanner({
             </div>
           </li>
         ))}
+        {open.length > 10 && (
+          <li className="mt-1">
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="w-full rounded-lg border border-sky-300 bg-white py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
+            >
+              {showAll ? "▴ Thu gọn danh sách" : `▾ Xem thêm ${open.length - 10} booking`}
+            </button>
+          </li>
+        )}
         {closed.map((b) => (
           <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white/60 px-3 py-1.5 opacity-60">
             <BookingSummary b={b} />
@@ -523,6 +713,8 @@ type BookingForm = {
   flightKind: FlightKind;
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
+  /** Số suất xe lên núi (chỉ Hà Nội) — 150k/khách. */
+  mountainCar: number;
   /** Đơn giá một khách (máy điền theo loại hình + ngày bay, sửa được). */
   unitPrice: number;
   discount: number;
@@ -553,6 +745,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     expectedTime: "",
     flightKind: defaultFlightKind(spot),
     pickupFee: 0,
+    mountainCar: 0,
     unitPrice: flightUnitPrice(defaultFlightKind(spot), today),
     discount: 0,
     deposit: 0,
@@ -592,9 +785,13 @@ export function BookingCard({
   const [remainingTouched, setRemainingTouched] = useState(false);
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
+  /** Danh sách sắp tới dài thì chỉ hiện 5 dòng gần nhất, bấm mới xổ hết. */
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   /** Bấm "Sửa" từ banner hôm nay thì thẻ này phải xổ ra dù đang gập. */
   const [forceOpen, setForceOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  /** Đang kéo booking khách tự đặt trên web về sổ nội bộ. */
+  const [syncing, setSyncing] = useState(false);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
@@ -610,6 +807,7 @@ export function BookingCard({
         next.video360 = Math.min(next.video360, cap);
         next.redFlag = Math.min(next.redFlag, cap);
         next.sunset = Math.min(next.sunset, cap);
+        next.mountainCar = Math.min(next.mountainCar, cap);
         next.flagFlight = Math.min(next.flagFlight, cap);
       }
       /**
@@ -625,7 +823,7 @@ export function BookingCard({
       if (
         !remainingTouched &&
         ["unitPrice", "discount", "guestCount", "deposit", "flightDate", "flightKind", "pickupFee",
-         "flycam", "video360", "redFlag", "sunset", "flagFlight"].includes(key as string)
+         "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"].includes(key as string)
       ) {
         next.remaining = Math.max(0, total - (next.deposit || 0));
       }
@@ -668,6 +866,37 @@ export function BookingCard({
   /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
   const bookingTotal = computeBookingTotal(form);
   const serviceMoney = servicesAmount(form);
+
+  /** Kéo booking khách tự đặt trên mebayluon.com/booking vào danh sách chờ bay. */
+  async function syncFromWeb() {
+    setSyncing(true);
+    setError(null);
+    setDone(null);
+    try {
+      const r = await apiPost<{
+        created: number;
+        updated: number;
+        merged: number;
+        cancelled: number;
+        skipped: number;
+      }>(`/api/baocao/booking/sync-web?spot=${bookSpot}`);
+      setDone(
+        r.created + r.updated + r.merged + r.cancelled === 0
+          ? `✓ Đã kiểm tra website — không có booking mới (${r.skipped} đơn đã có sẵn).`
+          : `✓ Từ website: ${r.created} booking mới` +
+            (r.merged ? ` · ${r.merged} gộp vào booking đã nhập tay` : "") +
+            (r.updated ? ` · ${r.updated} cập nhật` : "") +
+            (r.cancelled ? ` · ${r.cancelled} khách huỷ` : "") +
+            ".",
+      )
+      load();
+      onChanged?.();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không đồng bộ được booking từ website");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function save() {
     setError(null);
@@ -735,6 +964,7 @@ export function BookingCard({
       expectedTime: b.expectedTime,
       flightKind: b.flightKind,
       pickupFee: b.pickupFee,
+      mountainCar: b.mountainCar,
       unitPrice: b.unitPrice,
       discount: b.discount,
       deposit: b.deposit,
@@ -770,11 +1000,27 @@ export function BookingCard({
   return (
     <div ref={rootRef}>
     <CollapseCard
-      className="border-sky-200 bg-sky-50/40"
+      className="border-sky-300 bg-sky-50/40"
+      headerClassName="bg-sky-600 text-white"
       title="📒 BOOKING MỚI"
-      hint="bấm để nhập khách đặt trước"
       open={forceOpen || undefined}
     >
+      {/* Khách tự đặt trên web: kéo về đây, khỏi gõ lại tay */}
+      <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50/70 px-2.5 py-1.5">
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-8 shrink-0 whitespace-nowrap border-indigo-300 bg-white px-2.5 text-xs font-semibold text-indigo-800"
+          disabled={syncing}
+          onClick={syncFromWeb}
+        >
+          {syncing ? "Đang đồng bộ…" : "🔄 Lấy booking từ website"}
+        </Button>
+        <span className="text-[11px] leading-tight text-indigo-900/80">
+          Khách đặt trên mebayluon.com tự chảy vào danh sách chờ bay; bấm đây để kéo lại nếu thiếu.
+        </span>
+      </div>
+
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
@@ -894,6 +1140,12 @@ export function BookingCard({
           <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={form.guestCount} />
         </ServiceBox>
         )}
+        {/* Xe chuyên dụng lên núi — chỉ Hà Nội, 150k mỗi khách */}
+        {bookSpot === "ha-noi" && (
+        <ServiceBox tone="car" label="Xe lên núi">
+          <CountInput compact value={form.mountainCar} onChange={(v) => set("mountainCar", v)} max={form.guestCount} />
+        </ServiceBox>
+        )}
       </div>
       <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
         {form.guestCount === 0 ? "Nhập số khách trước — dịch vụ tối đa bằng số khách. " : ""}
@@ -904,6 +1156,7 @@ export function BookingCard({
             {x.label} {(SERVICE_PRICE[x.key] / 1000).toLocaleString("vi-VN")}k
           </span>
         ))}
+        {bookSpot === "ha-noi" ? ` · Xe lên núi ${(MOUNTAIN_CAR_PRICE / 1000).toLocaleString("vi-VN")}k/khách` : ""}
       </p>
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
@@ -954,6 +1207,9 @@ export function BookingCard({
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
             {(form.unitPrice / 1000).toLocaleString("vi-VN")}k×{form.guestCount}
             {serviceMoney ? ` + dịch vụ ${(serviceMoney / 1000).toLocaleString("vi-VN")}k` : ""}
+            {form.mountainCar
+              ? ` + xe núi ${((form.mountainCar * MOUNTAIN_CAR_PRICE) / 1000).toLocaleString("vi-VN")}k`
+              : ""}
             {form.pickupFee ? ` + đón ${(form.pickupFee / 1000).toLocaleString("vi-VN")}k` : ""}
             {form.discount ? ` − giảm ${(form.discount / 1000).toLocaleString("vi-VN")}k` : ""}
           </p>
@@ -1081,6 +1337,8 @@ export function BookingCard({
                 unitPrice: form.unitPrice,
                 serviceMoney,
                 pickupFee: form.pickupFee,
+                mountainCarMoney: form.mountainCar * MOUNTAIN_CAR_PRICE,
+                mountainCar: form.mountainCar,
                 discount: form.discount,
                 total: bookingTotal,
                 deposit: form.deposit,
@@ -1105,10 +1363,20 @@ export function BookingCard({
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-            {upcoming.map((b, i) => (
+            {(showAllUpcoming ? upcoming : upcoming.slice(0, 5)).map((b, i) => (
               <li key={b.id} className={"flow-root px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
                 {/* Nút FLOAT góc phải — chữ dòng 1 né nút, từ dòng 2 tràn hết bề ngang */}
-                <div className="float-right ml-2 flex items-center gap-1">
+                <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
+                  {/* Thu tiền TỪ XA: khách chuyển khoản trước ngày bay là ghi nhận được luôn */}
+                  <CollectMoneyControl
+                    spot={bookSpot}
+                    booking={b}
+                    onDone={(msg) => {
+                      setDone(msg);
+                      load();
+                      onChanged?.();
+                    }}
+                  />
                   <AssignControl spot={bookSpot} booking={b} onDone={load} />
                   <button
                     type="button"
@@ -1137,6 +1405,15 @@ export function BookingCard({
               </li>
             ))}
           </ul>
+        )}
+        {upcoming.length > 5 && (
+          <button
+            type="button"
+            onClick={() => setShowAllUpcoming((v) => !v)}
+            className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            {showAllUpcoming ? "▴ Thu gọn danh sách" : `▾ Xem thêm ${upcoming.length - 5} booking`}
+          </button>
         )}
       </div>
       </div>

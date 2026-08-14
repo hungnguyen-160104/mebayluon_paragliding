@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * và nhiều hơn.
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["pilot", "dispatcher", "cameraman"] });
+  const auth = requireBaobay(req, { roles: ["pilot", "dispatcher", "counter", "cameraman"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
