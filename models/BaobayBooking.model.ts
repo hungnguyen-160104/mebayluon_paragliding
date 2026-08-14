@@ -48,6 +48,11 @@ export interface IBaobayBooking {
   flagFlight: number;
   /** Booking gốc từ trang khách mebayluon.com/booking — khoá chống nhập trùng. */
   webBookingId?: string;
+  /** Booking từ THƯ OTA (Klook…): mã của OTA — khoá chống nhập trùng. */
+  otaRef?: string;
+  otaName?: string;
+  /** Hành khách kèm giấy tờ (OTA gửi sẵn) — dùng làm bảo hiểm, khỏi hỏi lại khách. */
+  otaGuests?: Array<{ fullName: string; birthday: string; gender: string; idNumber: string; nationality: string }>;
   /** Trạng thái bên trang khách lúc đồng bộ gần nhất. */
   webStatus?: string;
   syncedAt?: Date;
@@ -130,6 +135,23 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     sunset: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
     webBookingId: { type: String, index: true, sparse: true },
+    otaRef: { type: String, index: true, sparse: true },
+    otaName: String,
+    otaGuests: {
+      type: [
+        new Schema(
+          {
+            fullName: { type: String, default: "" },
+            birthday: { type: String, default: "" },
+            gender: { type: String, default: "" },
+            idNumber: { type: String, default: "" },
+            nationality: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     webStatus: String,
     syncedAt: Date,
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },

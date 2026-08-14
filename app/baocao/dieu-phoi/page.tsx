@@ -31,6 +31,7 @@ import {
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
+import { OtaMailCard } from "../components/OtaMailCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
@@ -640,6 +641,9 @@ export default function DispatcherReportPage() {
       </CollapseCard>
 
       <HandoverBox spot={spot} />
+
+      {/* Thư OTA máy đã đưa vào lịch + thư cần người soát */}
+      <OtaMailCard spot={spot} />
 
       {/* Quét giấy tờ khách để làm bảo hiểm bay */}
       <IdScanCard />

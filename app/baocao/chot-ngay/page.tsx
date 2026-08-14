@@ -27,6 +27,7 @@ import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
+import { OtaMailCard } from "../components/OtaMailCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
@@ -638,6 +639,11 @@ function DailyCloseInner() {
       {/* Quét giấy tờ khách để làm bảo hiểm bay */}
       <div className="order-8 lg:order-none">
         <IdScanCard />
+      </div>
+
+      {/* Thư OTA: máy đã đưa vào lịch những gì, thư nào cần soát */}
+      <div className="order-9 lg:order-none">
+        <OtaMailCard spot={spot} />
       </div>
       </div>
 

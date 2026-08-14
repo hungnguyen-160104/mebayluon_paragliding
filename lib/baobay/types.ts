@@ -317,6 +317,11 @@ export type BookingDTO = {
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */
   mountainCar: number;
+  /** Booking từ thư OTA: tên OTA + mã booking của họ. */
+  otaName?: string;
+  otaRef?: string;
+  /** Hành khách kèm giấy tờ do OTA gửi — dùng làm bảo hiểm. */
+  otaGuests?: Array<{ fullName: string; birthday: string; gender: string; idNumber: string; nationality: string }>;
   /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
