@@ -237,6 +237,20 @@ export default function DispatcherReportPage() {
    */
   const [flownGuests, setFlownGuests] = useState(0);
   const lastAutoGuests = useRef<number | null>(null);
+  /**
+   * Hook này phải nằm TRƯỚC mọi `return` sớm của component (màn "Đang tải…"),
+   * không thì số hook đổi giữa hai lần render và React sập cả trang.
+   */
+  const autoGuests = spot === "ha-noi" ? flownGuests : rangeTotal;
+  useEffect(() => {
+    if (locked || autoGuests <= 0) return;
+    setForm((prev) => {
+      if (prev.guestCount !== 0 && prev.guestCount !== lastAutoGuests.current) return prev;
+      if (prev.guestCount === autoGuests) return prev;
+      lastAutoGuests.current = autoGuests;
+      return { ...prev, guestCount: autoGuests };
+    });
+  }, [autoGuests, locked]);
   const cancelledCodes = useMemo(
     () => [...new Set(form.cancelledEntries.flatMap((e) => parseTicketCodeList(e.codesText).codes))],
     [form.cancelledEntries],
@@ -396,16 +410,6 @@ export default function DispatcherReportPage() {
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
   const noTickets = spot === "ha-noi";
 
-  const autoGuests = noTickets ? flownGuests : rangeTotal;
-  useEffect(() => {
-    if (locked || autoGuests <= 0) return;
-    setForm((prev) => {
-      if (prev.guestCount !== 0 && prev.guestCount !== lastAutoGuests.current) return prev;
-      if (prev.guestCount === autoGuests) return prev;
-      lastAutoGuests.current = autoGuests;
-      return { ...prev, guestCount: autoGuests };
-    });
-  }, [autoGuests, locked]);
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
