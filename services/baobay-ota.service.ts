@@ -69,10 +69,29 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     receivedAt,
   };
 
+  /**
+   * Nhãn OTA lẫn cả thư mã xác thực và thư quảng cáo. Mấy thư này KHÔNG phải đơn
+   * hàng nên bỏ qua hẳn, đừng đẩy vào khay soát — khay đầy rác thì người ta thôi
+   * đọc, rồi bỏ sót đúng cái thư cần soát.
+   */
+  const subject = (input.subject ?? "").toLowerCase();
+  const looksLikeJunk =
+    /verification code|\botp\b|newsletter|webinar|merchants support|password/.test(subject) ||
+    !/(order confirmed|order cancel|booking amendment)/.test(subject);
   const parsed = ota === "klook" ? parseKlookEmail(input.subject ?? "", input.body ?? "") : null;
+
   if (!parsed) {
-    await OtaEmail.create({ ...base, kind: "unknown", status: "review", result: "Chưa bóc được dữ liệu — cần soát tay" });
-    return { gmailId, action: "review", message: "Không bóc được thư, đã đưa vào khay cần soát" };
+    await OtaEmail.create({
+      ...base,
+      kind: "unknown",
+      status: looksLikeJunk ? "ignored" : "review",
+      result: looksLikeJunk ? "Không phải thư đơn hàng — bỏ qua" : "Chưa bóc được dữ liệu — cần soát tay",
+    });
+    return {
+      gmailId,
+      action: looksLikeJunk ? "ignored" : "review",
+      message: looksLikeJunk ? "Thư không phải đơn hàng, bỏ qua" : "Không bóc được thư, đã đưa vào khay cần soát",
+    };
   }
 
   const spot = spotFromProduct(parsed.productTitle) ?? spotFromProduct(input.subject ?? "");

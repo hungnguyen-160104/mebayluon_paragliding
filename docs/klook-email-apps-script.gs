@@ -47,7 +47,32 @@ const MAX_PER_RUN = 25;
  * hết vẫn tốn hàng chục lượt chạy vô ích. Muốn lấy lại thư cũ hơn thì tạm nâng
  * số này lên rồi hạ về sau.
  */
-const CHI_QUET_TRONG = '14d';
+const CHI_QUET_TRONG = '60d';
+
+/**
+ * Chỉ nhận THƯ ĐƠN HÀNG. Nhãn OTA/Klook đang lẫn cả thư mã xác thực
+ * ("Klook - Verification code") và thư quảng cáo của Merchants Support Team —
+ * gửi hết về app chỉ làm khay soát đầy rác.
+ */
+const SUBJECT_FILTER =
+  '(subject:"order confirmed" OR subject:"order canceled" OR subject:"order cancelled" OR subject:"booking amendment")';
+
+/** Chốt cửa thứ hai, xét từng thư: chuỗi nào thấy trong tiêu đề là BỎ. */
+const SUBJECT_BLOCK = ['verification code', 'otp', 'newsletter', 'webinar', 'merchants support'];
+
+/** Tiêu đề có phải thư đơn hàng không (dùng cho từng thư trong hội thoại). */
+function laThuDonHang_(subject) {
+  const s = String(subject || '').toLowerCase();
+  for (var i = 0; i < SUBJECT_BLOCK.length; i++) {
+    if (s.indexOf(SUBJECT_BLOCK[i]) >= 0) return false;
+  }
+  return (
+    s.indexOf('order confirmed') >= 0 ||
+    s.indexOf('order canceled') >= 0 ||
+    s.indexOf('order cancelled') >= 0 ||
+    s.indexOf('booking amendment') >= 0
+  );
+}
 
 /* ======================= CHẠY ĐỊNH KỲ ======================= */
 
@@ -64,19 +89,44 @@ function quetThuOta() {
     }
 
     /**
-     * Tìm theo câu lệnh thay vì lấy hết nhãn: bỏ sẵn thư đã gắn nhãn "đã vào app"
-     * và thư quá cũ, nên không phải lôi hàng trăm thư cũ ra mỗi lần chạy.
+     * Tìm theo câu lệnh thay vì lấy hết nhãn: bỏ sẵn thư đã gắn nhãn "đã vào app",
+     * thư quá cũ, và thư không phải đơn hàng.
      */
     const query =
-      'label:"' + src.label + '" -label:"' + DONE_LABEL + '" newer_than:' + CHI_QUET_TRONG;
+      'label:"' + src.label + '" -label:"' + DONE_LABEL + '" newer_than:' + CHI_QUET_TRONG + ' ' + SUBJECT_FILTER;
     const threads = GmailApp.search(query, 0, 40);
-    for (var t = 0; t < threads.length && daGui < MAX_PER_RUN; t++) {
+
+    for (var t = 0; t < threads.length; t++) {
+      // Hết hạn mức lượt này: DỪNG mà KHÔNG gắn nhãn, để lượt sau quét lại
+      if (daGui >= MAX_PER_RUN) break;
+
       const messages = threads[t].getMessages();
-      for (var m = 0; m < messages.length && daGui < MAX_PER_RUN; m++) {
-        const ok = guiVeApp_(src.ota, messages[m]);
-        if (ok) daGui++;
+      var tatCaXong = true;
+      var biCat = false;
+
+      for (var m = 0; m < messages.length; m++) {
+        if (daGui >= MAX_PER_RUN) {
+          biCat = true;
+          break;
+        }
+        const ketQua = guiVeApp_(src.ota, messages[m]);
+        if (ketQua === 'sent') daGui++;
+        else if (ketQua === 'fail') tatCaXong = false;
+        // 'skip' = thư không phải đơn hàng: bỏ qua có chủ ý, không tính là lỗi
       }
-      threads[t].addLabel(done);
+
+      /**
+       * CHỈ gắn nhãn "đã vào app" khi mọi thư trong hội thoại đã gửi xong.
+       * Gắn nhãn khi còn thư lỗi (hoặc bị cắt giữa vòng) là thư đó vĩnh viễn
+       * không được gửi lại — mất luôn booking mà chẳng ai biết.
+       */
+      if (tatCaXong && !biCat) {
+        threads[t].addLabel(done);
+      } else {
+        Logger.log(
+          'CHƯA gắn nhãn (còn thư chưa gửi được, lượt sau quét lại): ' + threads[t].getFirstMessageSubject(),
+        );
+      }
     }
   });
 
@@ -86,7 +136,11 @@ function quetThuOta() {
 /** Bấm Run hàm này một lần để duyệt quyền, và để thử một thư mới nhất. */
 function chayThuMotThu() {
   const src = SOURCES[0];
-  const threads = GmailApp.search('label:"' + src.label + '" newer_than:' + CHI_QUET_TRONG, 0, 1);
+  const threads = GmailApp.search(
+    'label:"' + src.label + '" newer_than:' + CHI_QUET_TRONG + ' ' + SUBJECT_FILTER,
+    0,
+    1,
+  );
   if (!threads.length) {
     throw new Error(
       'Không thấy thư nào trong nhãn ' + src.label + ' trong ' + CHI_QUET_TRONG + ' gần đây — nâng CHI_QUET_TRONG lên rồi thử lại',
@@ -99,7 +153,13 @@ function chayThuMotThu() {
 
 /* ======================= HÀM PHỤ ======================= */
 
+/** Trả 'sent' (đã gửi) · 'skip' (không phải đơn hàng) · 'fail' (gửi lỗi). */
 function guiVeApp_(ota, msg) {
+  if (!laThuDonHang_(msg.getSubject())) {
+    Logger.log('Bỏ qua (không phải thư đơn hàng): ' + msg.getSubject());
+    return 'skip';
+  }
+
   const payload = {
     ota: ota,
     gmailId: msg.getId(),
@@ -119,10 +179,10 @@ function guiVeApp_(ota, msg) {
     });
     const code = res.getResponseCode();
     Logger.log(msg.getSubject() + ' → ' + code + ' ' + res.getContentText().slice(0, 200));
-    return code >= 200 && code < 300;
+    return code >= 200 && code < 300 ? 'sent' : 'fail';
   } catch (err) {
     Logger.log('Lỗi gửi thư: ' + err);
-    return false;
+    return 'fail';
   }
 }
 
