@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import type { HandoverDTO } from "@/lib/baobay/types";
+import type { MoneyBoard } from "@/services/baobay.service";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
@@ -44,7 +45,16 @@ type Payload = {
   approvers: Recipient[];
 };
 
-export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingual?: boolean }) {
+export function HandoverBox({
+  spot,
+  bilingual = false,
+  boardDate,
+}: {
+  spot: string;
+  bilingual?: boolean;
+  /** Ngày đang xem trên trang — bảng "khách đã trả tiền" bám theo ngày này. */
+  boardDate?: string;
+}) {
   const today = todayInVN();
   const [data, setData] = useState<Payload | null>(null);
   const [date, setDate] = useState(today);
@@ -193,12 +203,18 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
   }
 
   /** Thu chi CỦA MÌNH theo ngày — tải một lần 45 ngày, "xem thêm" mở dần. */
+  /** Khách đã trả tiền trong ngày: phần tiền mặt CỦA MÌNH + phần chuyển khoản của điểm. */
+  const [board, setBoard] = useState<MoneyBoard | null>(null);
+  const [me, setMe] = useState<string>("");
   const [moneyDays, setMoneyDays] = useState<
     Array<{ date: string; rows: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: string; note?: string }> }>
   >([]);
   const [visibleDays, setVisibleDays] = useState(7);
   useEffect(() => {
     let alive = true;
+    apiGet<{ user: { username: string } }>("/api/baocao/me")
+      .then((r) => setMe(r.user.username))
+      .catch(() => {});
     apiGet<{ days: typeof moneyDays }>(`/api/baocao/my-money?spot=${spot}&days=45`)
       .then((r) => {
         if (alive) setMoneyDays(r.days);
@@ -218,6 +234,26 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
   const pendingCount = mine.filter((h) => h.kind !== "advance" && !h.confirmed && !h.rejected).length;
   const myAdvances = mine.filter((h) => h.kind === "advance");
   const advanceApproved = myAdvances.filter((h) => h.confirmed).reduce((sum, h) => sum + h.amount, 0);
+
+  const boardDay = boardDate || today;
+  useEffect(() => {
+    if (!spot) return;
+    let alive = true;
+    const load = () =>
+      apiGet<MoneyBoard>(`/api/baocao/money-board?spot=${spot}&date=${boardDay}`)
+        .then((r) => alive && setBoard(r))
+        .catch(() => {
+          /* chưa có khoản nào thì thôi */
+        });
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [spot, boardDay]);
+
+  const myCash = board?.cashByPerson.find((p) => p.username === me);
 
   return (
     <CollapseCard
@@ -322,6 +358,54 @@ export function HandoverBox({ spot, bilingual = false }: { spot: string; bilingu
         <p className="mt-1 text-xs text-rose-700">
           {formatVND(b.handedRejected)} bị từ chối — đã cộng lại.
         </p>
+      )}
+
+      {/* --------- KHÁCH ĐÃ TRẢ TIỀN TRONG NGÀY: mình cầm những khoản nào, ai chuyển khoản --------- */}
+      {(myCash || (board && board.transfer.items.length > 0)) && (
+        <div className="mt-4 space-y-2">
+          {myCash && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
+              <h3 className="text-sm font-bold text-sky-900">
+                💵 {t("Khách tôi đã thu tiền mặt", "cash I collected")} {formatDateKeyVN(boardDay)} —{" "}
+                <span className="tabular-nums">{formatVND(myCash.total)}</span>
+              </h3>
+              <ul className="mt-1 divide-y divide-sky-100">
+                {myCash.items.map((it, i) => (
+                  <li key={`${it.label}-${i}`} className="flex items-center gap-2 py-1 text-sm text-slate-700">
+                    <span className="min-w-0 flex-1 leading-snug">
+                      {it.label}
+                      {it.bookingCode ? <span className="text-slate-400"> · #{it.bookingCode}</span> : null}
+                      {it.guests ? <span className="text-slate-400"> · {it.guests} khách</span> : null}
+                      <span className="text-[11px] text-slate-400"> · {it.from}</span>
+                    </span>
+                    <strong className="shrink-0 tabular-nums text-slate-900">{formatVND(it.amount)}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {board && board.transfer.items.length > 0 && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-2.5">
+              <h3 className="text-sm font-bold text-indigo-900">
+                🏦 {t("Khách chuyển khoản vào TK công ty", "transfers to company")} —{" "}
+                <span className="tabular-nums">{formatVND(board.transfer.total)}</span>
+              </h3>
+              <ul className="mt-1 divide-y divide-indigo-100">
+                {board.transfer.items.map((it, i) => (
+                  <li key={`${it.label}-${i}`} className="flex items-center gap-2 py-1 text-sm text-slate-700">
+                    <span className="min-w-0 flex-1 leading-snug">
+                      {it.label}
+                      {it.bookingCode ? <span className="text-slate-400"> · #{it.bookingCode}</span> : null}
+                      {it.transferCode ? <span className="text-slate-400"> · CK #{it.transferCode}</span> : null}
+                    </span>
+                    <strong className="shrink-0 tabular-nums text-slate-900">{formatVND(it.amount)}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ---------------------- Thu chi CỦA TÔI theo ngày — sổ quan trọng nhất ---------------------- */}

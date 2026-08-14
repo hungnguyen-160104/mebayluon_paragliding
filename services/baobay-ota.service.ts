@@ -15,8 +15,10 @@
  *    thư nằm lại trạng thái "cần soát" kèm nguyên văn, KHÔNG bao giờ bỏ im.
  */
 
-import { formatDateKeyVN, isDateKey, todayInVN } from "@/lib/baobay/date";
+import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { parseKlookEmail, pickupFromDeparture, spotFromProduct, type KlookBooking } from "@/lib/baobay/ota-klook";
+import { OTA_CONFIG, isOtaKey, otaFromSender, readOtaMail, type OtaMailRead } from "@/lib/baobay/ota-parsers";
+import { parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
 import { connectDB } from "@/lib/mongodb";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { OtaEmail } from "@/models/OtaEmail.model";
@@ -26,6 +28,8 @@ export type OtaInbound = {
   gmailId: string;
   subject: string;
   body: string;
+  /** Địa chỉ người gửi — dùng để đoán OTA khi script không gửi kèm tên nguồn. */
+  from?: string;
   receivedAt?: string;
 };
 
@@ -59,13 +63,21 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     return { gmailId, action: "duplicate", ref: seen.ref, message: "Thư này đã xử lý trước đó" };
   }
 
-  const ota = (input.ota || "klook").toLowerCase();
+  /**
+   * Tên OTA: tin ĐỊA CHỈ NGƯỜI GỬI trước, rồi mới đến tên script gửi kèm.
+   * Mọi thư đều đổ về một hộp (mebayluon@gmail.com) nên tên miền gửi là dấu
+   * hiệu bền nhất — nhãn Gmail có thể gắn nhầm, script có thể khai thiếu nguồn.
+   */
+  const from = String(input.from ?? "").trim();
+  const claimed = (input.ota || "").toLowerCase();
+  const ota = otaFromSender(from) ?? (claimed || "klook");
   const receivedAt = input.receivedAt ? new Date(input.receivedAt) : new Date();
   const base = {
     ota,
     gmailId,
     subject: input.subject ?? "",
     body: (input.body ?? "").slice(0, 20_000),
+    from,
     receivedAt,
   };
 
@@ -79,6 +91,96 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     /verification code|\botp\b|newsletter|webinar|merchants support|password/.test(subject) ||
     !/(order confirmed|order cancel|booking amendment)/.test(subject);
   const parsed = ota === "klook" ? parseKlookEmail(input.subject ?? "", input.body ?? "") : null;
+
+  /**
+   * OTA chưa có bộ đọc riêng (GYG, KKday, Seek Sophie, Viator, Trip.com…): đọc
+   * theo bảng cấu hình rồi ĐỂ NGƯỜI DUYỆT quyết định — chưa có mẫu thư thật của
+   * họ nên chưa dám tự dựng booking. Nguồn LẠ hoàn toàn (OTA mới ký, sender chưa
+   * khai trong bảng) cũng đi lối này bằng bộ đọc chung: thư booking thật mà bị
+   * bỏ im như rác là mất khách không ai hay.
+   */
+  if (!parsed && ota !== "klook") {
+    const read: OtaMailRead = isOtaKey(ota)
+      ? readOtaMail(ota, input.subject ?? "", input.body ?? "")
+      : { ota: "gyg", ...parseGenericOtaEmail(input.subject ?? "", input.body ?? "") };
+    const label = isOtaKey(ota) ? OTA_CONFIG[ota].label : ota.toUpperCase();
+
+    // Thư OTP/quảng cáo lọt qua Apps Script: bỏ hẳn, đừng bắt người soát đọc rác
+    if (/verification code|\botp\b|newsletter|webinar|survey|password/.test(subject)) {
+      await OtaEmail.create({ ...base, kind: "unknown", status: "ignored", result: "Không phải thư đơn hàng — bỏ qua" });
+      return { gmailId, action: "ignored", message: "Thư không phải đơn hàng, bỏ qua" };
+    }
+
+    if (read.kind === "pending") {
+      await OtaEmail.create({
+        ...base,
+        kind: "pending",
+        ref: read.ref,
+        status: "ignored",
+        result: `${label}: mới hỏi giữ chỗ / chờ duyệt — chưa thành đơn, không đưa vào lịch`,
+      });
+      return { gmailId, action: "ignored", ref: read.ref, message: "Chưa thành đơn, không đưa vào lịch" };
+    }
+
+    /**
+     * Đơn ĐẶT MỚI mà ngày bay đã qua: thư cũ trong hộp, chuyến bay xong lâu rồi.
+     * Bỏ qua thay vì treo cờ đỏ — 60 ngày thư cũ mà dồn hết vào cờ đỏ thì người
+     * duyệt bỏ luôn thói quen đọc cờ. Huỷ/đổi lịch thì vẫn đưa vào duyệt.
+     */
+    if (read.kind === "new" && isDateKey(read.flightDate) && read.flightDate < todayInVN()) {
+      await OtaEmail.create({
+        ...base,
+        kind: "new",
+        ref: read.ref,
+        status: "ignored",
+        result: `${label}: ngày bay ${formatDateKeyVN(read.flightDate)} đã qua — không đưa vào lịch`,
+      });
+      return { gmailId, action: "ignored", ref: read.ref, message: "Ngày bay đã qua, bỏ qua" };
+    }
+
+    const known = read.ref ? await BaobayBooking.findOne({ otaRef: read.ref }).lean<any>() : null;
+    const spotGuess = spotFromProduct(input.subject ?? "") ?? spotFromProduct(input.body ?? "");
+
+    /**
+     * Ngày bay xa hơn ~13 tháng gần như chắc là bắt nhầm số trong thư (mã đơn,
+     * chân thư "© 2027"…) — thà bắt người duyệt chọn tay còn hơn ghi bừa.
+     */
+    if (isDateKey(read.flightDate) && read.flightDate > shiftDateKey(todayInVN(), 400)) read.flightDate = "";
+    const mo = read.flightDate && isDateKey(read.flightDate) ? formatDateKeyVN(read.flightDate) : "?";
+    const canNang = read.weights.length ? ` · cân nặng ${read.weights.join("/")}kg` : "";
+
+    const result =
+      read.kind === "cancel"
+        ? `${label}: khách xin HUỶ ${read.ref || "(chưa rõ mã)"} — bấm duyệt để huỷ trong lịch`
+        : read.kind === "amend"
+          ? `${label}: khách xin ĐỔI LỊCH ${read.ref || ""} → ${mo} — bấm duyệt để đổi`
+          : `${label}: đơn mới ${read.ref || ""} · ${mo} · ${read.guestCount} khách${read.contactName ? ` · ${read.contactName}` : ""}${canNang} — soát rồi bấm tạo`;
+
+    await OtaEmail.create({
+      ...base,
+      kind: read.kind,
+      ref: read.ref,
+      spot: spotGuess ?? undefined,
+      status: "review",
+      result,
+      bookingId: known?._id,
+      draft: {
+        intent: read.kind === "cancel" ? "cancel" : read.kind === "amend" ? "amend" : "create",
+        ota,
+        ref: read.ref,
+        flightDate: read.flightDate,
+        expectedTime: read.expectedTime,
+        guestCount: read.guestCount,
+        contactName: read.contactName,
+        phone: read.phone,
+        email: read.email,
+        weights: read.weights,
+        hotel: read.hotel,
+        highlights: read.highlights,
+      },
+    });
+    return { gmailId, action: "review", ref: read.ref, message: `${label}: đã đưa vào khay chờ duyệt` };
+  }
 
   if (!parsed) {
     await OtaEmail.create({
@@ -118,29 +220,19 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
       });
       return { gmailId, action: "review", ref: parsed.ref, message: "Huỷ nhưng không tìm thấy booking" };
     }
-    await BaobayBooking.updateOne(
-      { _id: existing._id },
-      {
-        $set: {
-          status: "cancelled",
-          cancelledAt: new Date(),
-          cancelledBy: `ota:${ota}`,
-          // OTA hoàn tiền cho khách, quầy không xuất tiền — để 0, nhân sự tự sửa nếu đã thu tại bãi
-          refundAmount: existing.refundAmount ?? 0,
-          remaining: 0,
-          note: [existing.note, `${ota.toUpperCase()} huỷ ${formatDateKeyVN(new Date().toISOString().slice(0, 10))}`]
-            .filter(Boolean)
-            .join(" · "),
-        },
-      },
-    );
+    /**
+     * KHÔNG tự huỷ. Điều phối thường đã gọi khách trước khi OTA gửi thư, nên máy
+     * tự đổi lịch là dẫm lên việc người ta vừa xử lý. Thư nằm chờ DUYỆT TAY,
+     * hiện cờ đỏ đầu trang điều phối và kế toán.
+     */
     await OtaEmail.create({
       ...common,
-      status: "applied",
-      result: `Đã chuyển booking ${parsed.ref} sang ĐÃ HUỶ`,
+      status: "review",
+      result: `Khách xin HUỶ booking ${parsed.ref} (bay ${formatDateKeyVN(existing.flightDate)}) — bấm duyệt để huỷ trong lịch`,
       bookingId: existing._id,
+      draft: { intent: "cancel", ref: parsed.ref },
     });
-    return { gmailId, action: "cancelled", ref: parsed.ref, message: "Đã huỷ booking theo thư OTA" };
+    return { gmailId, action: "review", ref: parsed.ref, message: "Thư huỷ — chờ người duyệt" };
   }
 
   /* ---------------- Thư ĐỔI LỊCH ---------------- */
@@ -153,24 +245,23 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
       });
       return { gmailId, action: "review", ref: parsed.ref, message: "Đổi lịch nhưng không tìm thấy booking" };
     }
-    const set: Record<string, unknown> = {
-      note: [existing.note, `${ota.toUpperCase()} xin đổi: ${parsed.previousDate ?? "?"} → ${parsed.flightDate}`, parsed.specialRequirements]
-        .filter(Boolean)
-        .join(" · "),
-    };
-    if (isDateKey(parsed.flightDate) && parsed.flightDate !== existing.flightDate) {
-      set.flightDate = parsed.flightDate;
-      set.rescheduledFrom = [...(existing.rescheduledFrom ?? []), existing.flightDate];
-    }
-    if (parsed.expectedTime) set.expectedTime = parsed.expectedTime;
-    await BaobayBooking.updateOne({ _id: existing._id }, { $set: set });
+    /** Cũng chờ DUYỆT TAY — xem quyết định ở nhánh huỷ phía trên. */
     await OtaEmail.create({
       ...common,
-      status: "applied",
-      result: `Đã đổi lịch booking ${parsed.ref}${set.flightDate ? ` sang ${parsed.flightDate}` : " (giữ nguyên ngày)"}`,
+      status: "review",
+      result:
+        `Khách xin ĐỔI LỊCH booking ${parsed.ref}: ${parsed.previousDate ?? formatDateKeyVN(existing.flightDate)} → ` +
+        `${parsed.flightDate}${parsed.expectedTime ? ` ${parsed.expectedTime}` : ""} — bấm duyệt để đổi trong lịch`,
       bookingId: existing._id,
+      draft: {
+        intent: "amend",
+        ref: parsed.ref,
+        flightDate: parsed.flightDate,
+        expectedTime: parsed.expectedTime,
+        note: parsed.specialRequirements,
+      },
     });
-    return { gmailId, action: "amended", ref: parsed.ref, message: "Đã cập nhật theo thư đổi lịch" };
+    return { gmailId, action: "review", ref: parsed.ref, message: "Thư đổi lịch — chờ người duyệt" };
   }
 
   /* ---------------- Thư ĐẶT MỚI ---------------- */
@@ -252,6 +343,130 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
   return { gmailId, action: "created", ref: parsed.ref, message: "Đã đưa booking vào lịch" };
 }
 
+/**
+ * NGƯỜI DUYỆT bấm nút: giờ mới đụng vào lịch bay.
+ *
+ * Máy chỉ đọc thư và đề xuất; huỷ hay đổi lịch đều phải có người xác nhận, vì
+ * điều phối thường đã gọi khách xong trước khi thư OTA tới — máy tự đổi là dẫm
+ * lên việc người ta vừa xử lý.
+ */
+export async function approveOtaEmail(
+  id: string,
+  by: string,
+  override?: { spot?: string; flightDate?: string; guestCount?: number; contactName?: string },
+): Promise<{ ok: boolean; message: string }> {
+  await connectDB();
+  const mail = await OtaEmail.findById(id).lean<any>();
+  if (!mail) return { ok: false, message: "Không tìm thấy thư" };
+  if (mail.status === "applied") return { ok: false, message: "Thư này đã xử lý rồi" };
+
+  const draft = (mail.draft ?? {}) as Record<string, any>;
+  const intent = String(draft.intent ?? (mail.kind === "cancel" ? "cancel" : mail.kind === "amend" ? "amend" : "create"));
+  const ref = String(draft.ref ?? mail.ref ?? "");
+  const booking = mail.bookingId
+    ? await BaobayBooking.findById(mail.bookingId).lean<any>()
+    : ref
+      ? await BaobayBooking.findOne({ otaRef: ref }).lean<any>()
+      : null;
+
+  if (intent === "cancel") {
+    if (!booking) return { ok: false, message: "Không tìm thấy booking để huỷ" };
+    await BaobayBooking.updateOne(
+      { _id: booking._id },
+      {
+        $set: {
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelledBy: by,
+          remaining: 0,
+          note: [booking.note, `${String(mail.ota).toUpperCase()} huỷ — ${by} duyệt`].filter(Boolean).join(" · "),
+        },
+      },
+    );
+    await OtaEmail.updateOne({ _id: id }, { $set: { status: "applied", result: `Đã huỷ booking ${ref} (${by} duyệt)` } });
+    return { ok: true, message: "Đã huỷ booking trong lịch" };
+  }
+
+  if (intent === "amend") {
+    if (!booking) return { ok: false, message: "Không tìm thấy booking để đổi lịch" };
+    const newDate = String(override?.flightDate || draft.flightDate || "");
+    const set: Record<string, unknown> = {
+      note: [booking.note, `${String(mail.ota).toUpperCase()} đổi lịch — ${by} duyệt`, draft.note]
+        .filter(Boolean)
+        .join(" · "),
+    };
+    if (isDateKey(newDate) && newDate !== booking.flightDate) {
+      set.flightDate = newDate;
+      set.rescheduledFrom = [...(booking.rescheduledFrom ?? []), booking.flightDate];
+    }
+    if (draft.expectedTime) set.expectedTime = draft.expectedTime;
+    await BaobayBooking.updateOne({ _id: booking._id }, { $set: set });
+    await OtaEmail.updateOne(
+      { _id: id },
+      { $set: { status: "applied", result: `Đã đổi lịch ${ref} sang ${newDate || booking.flightDate} (${by} duyệt)` } },
+    );
+    return { ok: true, message: "Đã đổi lịch booking" };
+  }
+
+  /* ---- Tạo booking mới từ thư mà máy chưa dám tự dựng ---- */
+  if (booking) {
+    await OtaEmail.updateOne({ _id: id }, { $set: { status: "applied", result: `Booking ${ref} đã có sẵn` } });
+    return { ok: true, message: "Booking đã có trong sổ" };
+  }
+  const spot = String(override?.spot || mail.spot || "");
+  const flightDate = String(override?.flightDate || draft.flightDate || "");
+  if (!spot) return { ok: false, message: "Chọn điểm bay giúp — thư không ghi rõ" };
+  if (!isDateKey(flightDate)) return { ok: false, message: "Chọn ngày bay giúp — thư không ghi rõ" };
+
+  const otaName = String(draft.ota ?? mail.ota ?? "ota");
+  const created = await BaobayBooking.create({
+    spot,
+    flightDate,
+    createdByUsername: `ota:${otaName}`,
+    createdByName: `${otaName.toUpperCase()} (thư, ${by} duyệt)`,
+    source: otaName.toUpperCase(),
+    contactName: String(override?.contactName || draft.contactName || "khách OTA"),
+    phone: String(draft.phone ?? ""),
+    bookingCode: ref,
+    otaRef: ref || undefined,
+    otaName,
+    guestCount: Math.max(1, Number(override?.guestCount ?? draft.guestCount ?? 1)),
+    flycam: 0,
+    video360: 0,
+    redFlag: 0,
+    sunset: 0,
+    flagFlight: 0,
+    mountainCar: 0,
+    flightKind: spot === "ha-noi" ? "m650" : "pg",
+    pickup: "self",
+    pickupNote: "",
+    expectedTime: String(draft.expectedTime ?? ""),
+    unitPrice: 0,
+    discount: 0,
+    pickupFee: 0,
+    totalAmount: 0,
+    deposit: 0,
+    remaining: 0,
+    depositToCompany: false,
+    transferCode: "",
+    note: [
+      Array.isArray(draft.weights) && draft.weights.length ? `cân nặng ${draft.weights.join("/")}kg` : "",
+      draft.hotel ? `đón: ${draft.hotel}` : "",
+      draft.email,
+      ...(Array.isArray(draft.highlights) ? draft.highlights.slice(0, 4) : []),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    status: "open",
+    rescheduledFrom: [],
+  });
+  await OtaEmail.updateOne(
+    { _id: id },
+    { $set: { status: "applied", spot, result: `Đã tạo booking ${ref} (${by} duyệt)`, bookingId: created._id } },
+  );
+  return { ok: true, message: "Đã đưa booking vào lịch" };
+}
+
 /** Thư OTA gần đây cho khay theo dõi trên trang điều phối / kế toán. */
 export async function listOtaEmails(spot?: string, limit = 20) {
   await connectDB();
@@ -266,6 +481,10 @@ export async function listOtaEmails(spot?: string, limit = 20) {
     status: d.status,
     result: d.result || "",
     receivedAt: d.receivedAt ? new Date(d.receivedAt).toISOString() : "",
+    /** Việc sẽ làm khi bấm duyệt: "cancel" · "amend" · "create". */
+    intent: String((d.draft as any)?.intent ?? ""),
+    spot: d.spot || "",
+    draftDate: String((d.draft as any)?.flightDate ?? ""),
   }));
 }
 

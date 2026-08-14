@@ -367,7 +367,7 @@ export default function CameramanReportPage() {
           />
         </Card>
 
-      <HandoverBox spot={spot} />
+      <HandoverBox spot={spot} boardDate={date} />
 
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" />
 

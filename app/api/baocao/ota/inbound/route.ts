@@ -15,7 +15,9 @@ export const maxDuration = 30;
  * Chưa khai biến thì cửa này ĐÓNG — thà không nhận còn hơn để ngỏ cho người lạ
  * ghi booking vào sổ.
  *
- * POST { ota, gmailId, subject, body, receivedAt } — header x-ota-secret.
+ * POST { ota, gmailId, subject, body, from, receivedAt } — header x-ota-secret.
+ * `from` là địa chỉ người gửi: app ưu tiên nó để nhận diện OTA, vì tên miền gửi
+ * thư bền hơn mọi nhãn hay cấu hình tay.
  */
 export async function POST(req: Request) {
   const secret = process.env.OTA_INBOUND_SECRET;
@@ -33,10 +35,11 @@ export async function POST(req: Request) {
 
   try {
     const result = await ingestOtaEmail({
-      ota: String(body.ota ?? "klook"),
+      ota: String(body.ota ?? ""),
       gmailId: String(body.gmailId),
       subject: String(body.subject ?? ""),
       body: String(body.body ?? ""),
+      from: body.from ? String(body.from) : undefined,
       receivedAt: body.receivedAt ? String(body.receivedAt) : undefined,
     });
     return NextResponse.json(result);

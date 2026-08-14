@@ -2615,6 +2615,154 @@ export type CashOnHandDTO = {
  * `from`/`to` bỏ trống thì cộng toàn bộ lịch sử — đó mới là số dư thật; truyền
  * khoảng ngày chỉ để xem phát sinh trong kỳ.
  */
+/* ================================================================== */
+/* BẢNG TIỀN TRONG NGÀY — ai đang cầm bao nhiêu, khách nào đã trả       */
+/* ================================================================== */
+
+export type MoneyBoardItem = {
+  /** Tên khách (lệnh thu) hoặc nội dung khoản (sổ THU CHI). */
+  label: string;
+  bookingCode: string;
+  guests: number;
+  amount: number;
+  /** Mã giao dịch ngân hàng — chỉ có ở khoản chuyển khoản. */
+  transferCode: string;
+  /** Nguồn số: "lệnh thu" hay "sổ thu chi" — để biết đường tìm lại. */
+  from: string;
+};
+
+export type MoneyBoardPerson = {
+  username: string;
+  name: string;
+  role: string;
+  total: number;
+  items: MoneyBoardItem[];
+};
+
+export type MoneyBoard = {
+  date: string;
+  /** Tiền khách chuyển thẳng vào TK công ty — không ai cầm. */
+  transfer: { total: number; items: MoneyBoardItem[] };
+  /** Tiền mặt trong ngày, tách theo từng người đang cầm. */
+  cashByPerson: MoneyBoardPerson[];
+  cashTotal: number;
+};
+
+/**
+ * Ai đang cầm bao nhiêu tiền mặt trong ngày, và khách nào đã chuyển khoản.
+ *
+ * Gom từ HAI nguồn, vì tiền vào tay nhân sự bằng hai đường khác nhau:
+ *  - LỆNH THU TIỀN (gồm cả nút "thu tiền" trên booking): có tên khách, mã booking.
+ *  - Sổ THU CHI trong báo cáo ngày: phi công/camera man thu tại bãi ghi ở đây.
+ *
+ * Chỉ tính khoản đã hoàn tất (lệnh thu trạng thái "collected") — lệnh còn chờ
+ * người ta xác nhận thì tiền chưa nằm trong tay ai.
+ */
+export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise<MoneyBoard> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+
+  const [collects, pilots, dispatchers, cameramen] = await Promise.all([
+    BaobayCollect.find({ spot, date }).lean<any[]>(),
+    PilotDailyReport.find({ spot, date }).select("username pilotName expenses").lean<any[]>(),
+    DispatcherDailyReport.find({ spot, date }).select("username staffName expenses").lean<any[]>(),
+    CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses").lean<any[]>(),
+  ]);
+
+  const transferItems: MoneyBoardItem[] = [];
+  const byPerson = new Map<string, MoneyBoardPerson>();
+  const roleOf = new Map<string, string>();
+
+  const personOf = (username: string, name: string, role: string): MoneyBoardPerson => {
+    const key = normalizeUsername(username || name);
+    let p = byPerson.get(key);
+    if (!p) {
+      p = { username: key, name: name || key, role, total: 0, items: [] };
+      byPerson.set(key, p);
+    }
+    if (!p.name && name) p.name = name;
+    return p;
+  };
+
+  for (const c of collects) {
+    const item: MoneyBoardItem = {
+      label: c.guestName || c.agency || "khách",
+      bookingCode: c.bookingCode || "",
+      guests: c.guests || 0,
+      amount: c.amount || 0,
+      transferCode: c.transferCode || "",
+      from: "lệnh thu",
+    };
+    if (c.method === "transfer") {
+      transferItems.push(item);
+      continue;
+    }
+    // Tiền mặt: chỉ tính khi người thu đã xác nhận cầm tiền
+    if (c.status !== "collected") continue;
+    const p = personOf(c.collectorUsername || c.createdByUsername, c.collectorName || c.createdByName, "");
+    p.items.push(item);
+    p.total += item.amount;
+  }
+
+  /** Dòng THU trong sổ thu chi = tiền khách trả tại bãi, người khai đang cầm. */
+  const addReportThu = (docs: any[], nameKey: string, role: string) => {
+    for (const d of docs) {
+      roleOf.set(normalizeUsername(d.username), role);
+      for (const e of d.expenses ?? []) {
+        if (e.kind !== "thu" || !(e.amount > 0)) continue;
+        // Khoản khai là CHUYỂN KHOẢN thì tiền không nằm trong tay ai
+        const item: MoneyBoardItem = {
+          label: e.content || "thu tại bãi",
+          bookingCode: "",
+          guests: 0,
+          amount: e.amount || 0,
+          transferCode: "",
+          from: "sổ thu chi",
+        };
+        if (e.method === "transfer") {
+          transferItems.push(item);
+          continue;
+        }
+        const p = personOf(d.username, d[nameKey], role);
+        p.items.push(item);
+        p.total += item.amount;
+      }
+    }
+  };
+  addReportThu(pilots, "pilotName", "pilot");
+  addReportThu(dispatchers, "staffName", "dispatcher");
+  addReportThu(cameramen, "cameramanName", "cameraman");
+
+  // Vai trò của người chỉ xuất hiện qua lệnh thu: tra trong danh bạ tài khoản
+  const missing = [...byPerson.values()].filter((p) => !p.role).map((p) => p.username);
+  if (missing.length) {
+    const accounts = await BaobayAccount.find({ username: { $in: missing } })
+      .select("username role displayName")
+      .lean<any[]>();
+    for (const a of accounts) {
+      const p = byPerson.get(a.username);
+      if (!p) continue;
+      p.role = a.role;
+      if (!p.name) p.name = a.displayName;
+    }
+  }
+  for (const [username, role] of roleOf) {
+    const p = byPerson.get(username);
+    if (p && !p.role) p.role = role;
+  }
+
+  const cashByPerson = [...byPerson.values()]
+    .filter((p) => p.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    date,
+    transfer: { total: transferItems.reduce((s, i) => s + i.amount, 0), items: transferItems },
+    cashByPerson,
+    cashTotal: cashByPerson.reduce((s, p) => s + p.total, 0),
+  };
+}
+
 export async function getCashOnHand(
   session: BaobaySession,
   spotRaw: string,
@@ -2890,12 +3038,24 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
  * trang, gồm cả đã hoàn thành để hiện mờ), `upcoming` = đang chờ từ hôm nay
  * trở đi (danh sách thống kê nhỏ dưới thẻ nhập).
  */
+/** Cộng dồn dịch vụ gia tăng của các booking ĐÃ BAY trong ngày. */
+export type FlownServices = {
+  bookings: number;
+  guests: number;
+  flycam: number;
+  video360: number;
+  redFlag: number;
+  sunset: number;
+  flagFlight: number;
+  mountainCar: number;
+};
+
 export async function listBookings(
   spotRaw: string,
   date: string,
   /** Chỉ lấy booking ĐÃ GIAO cho người này — trang phi công/camera man. */
   assignedTo?: string,
-): Promise<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }> {
+): Promise<{ forDate: BookingDTO[]; upcoming: BookingDTO[]; flown: FlownServices }> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
   const extra = assignedTo ? { assignedToUsername: normalizeUsername(assignedTo) } : {};
@@ -2908,7 +3068,25 @@ export async function listBookings(
       .limit(100)
       .lean<any[]>(),
   ]);
-  return { forDate: forDate.map(toBookingDTO), upcoming: upcoming.map(toBookingDTO) };
+  /**
+   * Tích "đã bay" cho khách nào thì dịch vụ đăng ký của khách đó được cộng vào
+   * đây — quầy khỏi đếm tay. Chỉ đếm booking ĐÃ BAY: khách còn chờ hoặc đã huỷ
+   * thì dịch vụ chưa thành hiện thực.
+   */
+  const done = forDate.filter((b) => b.status === "done");
+  const sum = (pick: (b: any) => number) => done.reduce((t, b) => t + (pick(b) || 0), 0);
+  const flown: FlownServices = {
+    bookings: done.length,
+    guests: sum((b) => b.guestCount),
+    flycam: sum((b) => b.flycam),
+    video360: sum((b) => b.video360),
+    redFlag: sum((b) => b.redFlag),
+    sunset: sum((b) => b.sunset),
+    flagFlight: sum((b) => b.flagFlight),
+    mountainCar: sum((b) => b.mountainCar),
+  };
+
+  return { forDate: forDate.map(toBookingDTO), upcoming: upcoming.map(toBookingDTO), flown };
 }
 
 /**

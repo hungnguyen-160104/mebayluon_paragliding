@@ -25,9 +25,11 @@ import {
 import { DateBar } from "../components/DateBar";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
+import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
+import { MoneyBoardCard } from "../components/MoneyBoardCard";
 import { IdScanCard } from "../components/IdScanCard";
-import { OtaMailCard } from "../components/OtaMailCard";
+import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
@@ -544,6 +546,9 @@ function DailyCloseInner() {
         onSpotChange={(v) => setSpot(v as never)}
       />
 
+      {/* Cờ đỏ: thư OTA huỷ/đổi lịch chờ duyệt tay — máy không tự sửa lịch */}
+      <OtaReviewFlag spot={spot} />
+
       {/* Booking đặt trước — thứ hai từ trên xuống, ngay dưới thẻ chọn điểm + ngày */}
       {/* Booking bay đúng ngày đang xem — bản GẬP cho kế toán, bấm tiêu đề mới xổ */}
       <BookingTodayBanner spot={spot} date={date} collapsible />
@@ -625,9 +630,14 @@ function DailyCloseInner() {
         <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
       </div>
 
+      {/* Ai đang cầm bao nhiêu tiền mặt, khách nào đã chuyển khoản về công ty */}
+      <div className="order-4 lg:order-none">
+        <MoneyBoardCard spot={spot} date={date} />
+      </div>
+
       {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
       <div className="order-5 lg:order-none">
-        <HandoverBox spot={spot} />
+        <HandoverBox spot={spot} boardDate={date} />
       </div>
 
       {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
@@ -743,6 +753,22 @@ function DailyCloseInner() {
               </>
             )}
           </div>
+
+          {/* Cộng dồn dịch vụ của khách đã tích "đã bay" trong sổ booking */}
+          <FlownServicesHint
+            spot={spot}
+            date={date}
+            onTake={(f) =>
+              setForm((prev) => ({
+                ...prev,
+                flycam: f.flycam,
+                video360: f.video360,
+                redFlag: f.redFlag,
+                sunset: f.sunset,
+                flagFlight: f.flagFlight,
+              }))
+            }
+          />
 
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
           <div className="mt-3 grid grid-cols-2 gap-2 @md:grid-cols-3">

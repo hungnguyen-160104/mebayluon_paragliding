@@ -956,7 +956,7 @@ export default function PilotReportPage() {
           />
         </Card>
 
-      <HandoverBox spot={spot} bilingual />
+      <HandoverBox spot={spot} bilingual boardDate={date} />
 
       <PeriodSummary
         statement

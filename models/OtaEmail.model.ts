@@ -15,6 +15,8 @@ export interface IOtaEmail {
   gmailId: string;
   subject: string;
   body: string;
+  /** Địa chỉ người gửi — để lần vết và để đoán OTA khi script không gửi kèm. */
+  from?: string;
   receivedAt?: Date;
   /** "new" | "cancel" | "amend" | "unknown" */
   kind: string;
@@ -26,6 +28,8 @@ export interface IOtaEmail {
   /** Việc app đã làm với thư này — hiện cho người soát đọc. */
   result?: string;
   bookingId?: mongoose.Types.ObjectId;
+  /** Bản nháp đã bóc (ngày mới, số khách…) — để người duyệt xem trước khi áp. */
+  draft?: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -36,6 +40,7 @@ const OtaEmailSchema = new Schema<IOtaEmail>(
     gmailId: { type: String, required: true, unique: true },
     subject: { type: String, default: "" },
     body: { type: String, default: "" },
+    from: String,
     receivedAt: Date,
     kind: { type: String, default: "unknown", index: true },
     ref: { type: String, index: true },
@@ -43,6 +48,7 @@ const OtaEmailSchema = new Schema<IOtaEmail>(
     status: { type: String, default: "review", index: true },
     result: String,
     bookingId: { type: Schema.Types.ObjectId, ref: "BaobayBooking" },
+    draft: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

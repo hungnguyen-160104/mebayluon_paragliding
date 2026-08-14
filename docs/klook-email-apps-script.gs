@@ -1,18 +1,24 @@
 /**
- * ĐƯA BOOKING KLOOK TỪ GMAIL VỀ APP — bản `ota-mail-v1`.
+ * ĐƯA BOOKING OTA TỪ GMAIL VỀ APP — bản `ota-mail-v3`.
+ * Nguồn: Klook · GetYourGuide · KKday · Seek Sophie · Viator · Trip.com.
+ *
+ * Chạy trên chính hộp thư mebayluon@gmail.com — hộp nhận booking của MỌI OTA.
+ * KHÔNG cần tạo nhãn hay filter cho từng OTA nữa: script tự quét theo ĐỊA CHỈ
+ * NGƯỜI GỬI (klook.com, getyourguide.com…), vì tên miền gửi thư của OTA gần như
+ * không bao giờ đổi, còn nhãn tay thì dễ gắn thiếu, gắn nhầm.
  *
  * Dán TOÀN BỘ tệp này vào một project Apps Script ĐỨNG RIÊNG (script.google.com →
- * New project), KHÔNG gắn vào bảng tính nào. Chạy trên chính hộp thư nhận thư OTA.
- *
- * Ba việc phải làm sau khi dán:
+ * New project), KHÔNG gắn vào bảng tính nào. Ba việc sau khi dán:
  *   1. Sửa hai dòng CẤU HÌNH bên dưới (địa chỉ app + mã bảo vệ).
  *   2. Bấm Run hàm `chayThuMotThu` một lần → Google hỏi quyền đọc Gmail, bấm cho phép.
  *   3. Trigger (biểu tượng đồng hồ) → Add trigger → hàm `quetThuOta`,
  *      Time-driven → Minutes timer → Every 10 minutes.
  *
- * Cách hoạt động: quét nhãn OTA/Klook, thư nào CHƯA gắn nhãn "OTA/đã-vào-app" thì
- * gửi nguyên văn về app rồi gắn nhãn đó lại. App khoá theo mã thư Gmail nên gửi
- * trùng cũng không tạo booking trùng.
+ * Cách hoạt động: thư nào của OTA mà CHƯA gắn nhãn "OTA/đã-vào-app" thì gửi
+ * nguyên văn về app (kèm địa chỉ người gửi) rồi gắn nhãn đó lại. App khoá theo
+ * mã thư Gmail nên gửi trùng cũng không tạo booking trùng. Chỉ thư ĐẶT MỚI của
+ * Klook (đã có bộ đọc riêng) vào thẳng lịch; mọi thư khác nằm ở CỜ ĐỎ đầu trang
+ * điều phối / kế toán chờ người duyệt.
  */
 
 /* ======================= CẤU HÌNH ======================= */
@@ -23,96 +29,106 @@ const APP_URL = 'https://www.mebayluon.com/api/baocao/ota/inbound';
 /** Phải GIỐNG HỆT biến OTA_INBOUND_SECRET khai trên Vercel. */
 const SECRET = 'DAN_MA_BAO_VE_OTA_VAO_DAY';
 
-/** Nhãn Gmail cần quét → tên OTA gửi kèm cho app. */
+/**
+ * Tên miền gửi thư của từng OTA. Thêm OTA mới = thêm một dòng ở đây — app tự
+ * nhận diện lại theo người gửi nên bên app không phải sửa gì.
+ */
 const SOURCES = [
-  { label: 'OTA/Klook', ota: 'klook' },
-  // Mở dần khi làm tiếp các bên khác:
-  // { label: 'OTA/GYG', ota: 'gyg' },
-  // { label: 'OTA/KKday', ota: 'kkday' },
-  // { label: 'OTA/Trip', ota: 'trip' },
-  // { label: 'OTA/SeekSophie', ota: 'seeksophie' },
+  { ota: 'klook', tuMien: 'klook.com' },
+  { ota: 'gyg', tuMien: 'getyourguide.com' },
+  { ota: 'kkday', tuMien: 'kkday.com' },
+  { ota: 'seeksophie', tuMien: 'seeksophie.com' },
+  // {a b} là cú pháp HOẶC của Gmail search — Viator gửi bằng cả hai tên miền
+  { ota: 'viator', tuMien: '{viator.com tripadvisor.com}' },
+  { ota: 'trip', tuMien: 'trip.com' },
 ];
 
 /** Nhãn đánh dấu "đã đưa vào app" — đừng đổi tên sau khi đã chạy. */
 const DONE_LABEL = 'OTA/đã-vào-app';
 
-/** Mỗi lần chạy xử lý tối đa bao nhiêu thư (đỡ chạm giới hạn 6 phút của Apps Script). */
-const MAX_PER_RUN = 25;
+/**
+ * HẠN MỨC RIÊNG TỪNG NGUỒN mỗi lượt chạy.
+ *
+ * Hạn mức chung thì nguồn nhiều thư nhất (Klook) ăn sạch, các bên khác không
+ * bao giờ tới lượt. Mỗi bên tối đa chừng này thư một lượt; tổng xấu nhất
+ * 6×8 = 48 thư vẫn nằm dưới trần 6 phút của Apps Script.
+ */
+const MAX_MOI_NGUON = 8;
+
+/**
+ * XOAY VÒNG thứ tự quét: lượt này bắt đầu từ Klook thì lượt sau bắt đầu từ GYG…
+ * Phòng khi một lượt chạy quá giờ bị Google cắt ngang: bên nào cũng có lượt
+ * đứng đầu, không bên nào vĩnh viễn bị cắt phần đuôi.
+ */
+const ROTATE_KEY = 'ota_rotate_index';
 
 /**
  * CHỈ QUÉT THƯ MỚI trong bao nhiêu ngày gần đây.
  *
- * Hộp thư đang có hàng trăm thư Klook cũ. Quét hết là gửi về app cả những chuyến
- * đã bay từ mấy tháng trước — app có chặn (ngày bay đã qua thì bỏ), nhưng quét
- * hết vẫn tốn hàng chục lượt chạy vô ích. Muốn lấy lại thư cũ hơn thì tạm nâng
- * số này lên rồi hạ về sau.
+ * Hộp thư có hàng trăm thư OTA cũ. Quét hết là gửi về app cả những chuyến đã
+ * bay từ mấy tháng trước — app có chặn (ngày bay đã qua thì bỏ), nhưng quét hết
+ * vẫn tốn hàng chục lượt chạy vô ích. Muốn lấy lại thư cũ hơn thì tạm nâng số
+ * này lên rồi hạ về sau.
  */
 const CHI_QUET_TRONG = '60d';
 
 /**
- * Chỉ nhận THƯ ĐƠN HÀNG. Nhãn OTA/Klook đang lẫn cả thư mã xác thực
- * ("Klook - Verification code") và thư quảng cáo của Merchants Support Team —
- * gửi hết về app chỉ làm khay soát đầy rác.
+ * Chuỗi nào thấy trong tiêu đề là BỎ HẲN, không gửi về app.
+ *
+ * CHỈ chặn thứ chắc chắn là rác (mã đăng nhập, khảo sát…). KHÔNG lọc "thư nào
+ * mới là đơn hàng" ở đây nữa — OTA đổi cách đặt tiêu đề bất kỳ lúc nào, lọc
+ * chặt ở phía script là có ngày lọc rớt đúng thư booking thật. Cứ gửi hết về,
+ * app tự phân loại: rác thì app bỏ, đơn thật thì vào lịch hoặc chờ duyệt.
  */
-const SUBJECT_FILTER =
-  '(subject:"order confirmed" OR subject:"order canceled" OR subject:"order cancelled" OR subject:"booking amendment")';
+const SUBJECT_BLOCK = ['verification code', 'otp', 'newsletter', 'webinar', 'merchants support', 'survey', 'unsubscribe'];
 
-/** Chốt cửa thứ hai, xét từng thư: chuỗi nào thấy trong tiêu đề là BỎ. */
-const SUBJECT_BLOCK = ['verification code', 'otp', 'newsletter', 'webinar', 'merchants support'];
-
-/** Tiêu đề có phải thư đơn hàng không (dùng cho từng thư trong hội thoại). */
-function laThuDonHang_(subject) {
+function biChan_(subject) {
   const s = String(subject || '').toLowerCase();
   for (var i = 0; i < SUBJECT_BLOCK.length; i++) {
-    if (s.indexOf(SUBJECT_BLOCK[i]) >= 0) return false;
+    if (s.indexOf(SUBJECT_BLOCK[i]) >= 0) return true;
   }
-  return (
-    s.indexOf('order confirmed') >= 0 ||
-    s.indexOf('order canceled') >= 0 ||
-    s.indexOf('order cancelled') >= 0 ||
-    s.indexOf('booking amendment') >= 0
-  );
+  return false;
 }
 
 /* ======================= CHẠY ĐỊNH KỲ ======================= */
 
 function quetThuOta() {
   const done = layHoacTaoNhan_(DONE_LABEL);
-  let daGui = 0;
+  const props = PropertiesService.getScriptProperties();
+  const batDau = Number(props.getProperty(ROTATE_KEY) || 0) % SOURCES.length;
+  // Lượt sau bắt đầu từ nguồn kế tiếp — ghi TRƯỚC khi quét, phòng lượt này bị cắt
+  props.setProperty(ROTATE_KEY, String((batDau + 1) % SOURCES.length));
 
-  SOURCES.forEach(function (src) {
-    if (daGui >= MAX_PER_RUN) return;
-    const label = GmailApp.getUserLabelByName(src.label);
-    if (!label) {
-      Logger.log('Chưa có nhãn ' + src.label + ' — bỏ qua');
-      return;
-    }
+  var tongDaGui = 0;
+
+  for (var i = 0; i < SOURCES.length; i++) {
+    const src = SOURCES[(batDau + i) % SOURCES.length];
 
     /**
-     * Tìm theo câu lệnh thay vì lấy hết nhãn: bỏ sẵn thư đã gắn nhãn "đã vào app",
-     * thư quá cũ, và thư không phải đơn hàng.
+     * Tìm theo NGƯỜI GỬI, bỏ sẵn thư đã gắn nhãn "đã vào app" và thư quá cũ.
+     * Không cần nhãn OTA/… nào tồn tại trước.
      */
-    const query =
-      'label:"' + src.label + '" -label:"' + DONE_LABEL + '" newer_than:' + CHI_QUET_TRONG + ' ' + SUBJECT_FILTER;
-    const threads = GmailApp.search(query, 0, 40);
+    const query = 'from:' + src.tuMien + ' -label:"' + DONE_LABEL + '" newer_than:' + CHI_QUET_TRONG;
+    const threads = GmailApp.search(query, 0, 30);
+    var daGui = 0;
 
     for (var t = 0; t < threads.length; t++) {
-      // Hết hạn mức lượt này: DỪNG mà KHÔNG gắn nhãn, để lượt sau quét lại
-      if (daGui >= MAX_PER_RUN) break;
+      // Hết hạn mức nguồn này: DỪNG mà KHÔNG gắn nhãn, để lượt sau quét lại
+      if (daGui >= MAX_MOI_NGUON) break;
 
       const messages = threads[t].getMessages();
       var tatCaXong = true;
       var biCat = false;
 
       for (var m = 0; m < messages.length; m++) {
-        if (daGui >= MAX_PER_RUN) {
+        if (daGui >= MAX_MOI_NGUON) {
           biCat = true;
           break;
         }
         const ketQua = guiVeApp_(src.ota, messages[m]);
         if (ketQua === 'sent') daGui++;
         else if (ketQua === 'fail') tatCaXong = false;
-        // 'skip' = thư không phải đơn hàng: bỏ qua có chủ ý, không tính là lỗi
+        // 'skip' = thư bị chặn tiêu đề: bỏ qua có chủ ý, không tính là lỗi
       }
 
       /**
@@ -128,22 +144,21 @@ function quetThuOta() {
         );
       }
     }
-  });
 
-  Logger.log('Đã gửi ' + daGui + ' thư về app');
+    tongDaGui += daGui;
+    Logger.log(src.ota + ': đã gửi ' + daGui + ' thư');
+  }
+
+  Logger.log('Tổng cộng đã gửi ' + tongDaGui + ' thư về app');
 }
 
-/** Bấm Run hàm này một lần để duyệt quyền, và để thử một thư mới nhất. */
+/** Bấm Run hàm này một lần để duyệt quyền, và để thử một thư mới nhất của Klook. */
 function chayThuMotThu() {
   const src = SOURCES[0];
-  const threads = GmailApp.search(
-    'label:"' + src.label + '" newer_than:' + CHI_QUET_TRONG + ' ' + SUBJECT_FILTER,
-    0,
-    1,
-  );
+  const threads = GmailApp.search('from:' + src.tuMien + ' newer_than:' + CHI_QUET_TRONG, 0, 1);
   if (!threads.length) {
     throw new Error(
-      'Không thấy thư nào trong nhãn ' + src.label + ' trong ' + CHI_QUET_TRONG + ' gần đây — nâng CHI_QUET_TRONG lên rồi thử lại',
+      'Không thấy thư nào từ ' + src.tuMien + ' trong ' + CHI_QUET_TRONG + ' gần đây — nâng CHI_QUET_TRONG lên rồi thử lại',
     );
   }
   const msg = threads[0].getMessages()[0];
@@ -153,19 +168,35 @@ function chayThuMotThu() {
 
 /* ======================= HÀM PHỤ ======================= */
 
-/** Trả 'sent' (đã gửi) · 'skip' (không phải đơn hàng) · 'fail' (gửi lỗi). */
+/** Trả 'sent' (đã gửi) · 'skip' (bị chặn tiêu đề) · 'fail' (gửi lỗi). */
 function guiVeApp_(ota, msg) {
-  if (!laThuDonHang_(msg.getSubject())) {
-    Logger.log('Bỏ qua (không phải thư đơn hàng): ' + msg.getSubject());
+  if (biChan_(msg.getSubject())) {
+    Logger.log('Bỏ qua (tiêu đề bị chặn): ' + msg.getSubject());
     return 'skip';
+  }
+
+  // Bản CHỮ trước; thư chỉ có HTML thì gửi HTML — app tự vứt thẻ lấy chữ
+  var body = '';
+  try {
+    body = msg.getPlainBody();
+  } catch (e) {
+    body = '';
+  }
+  if (!body || !body.trim()) {
+    try {
+      body = msg.getBody();
+    } catch (e) {
+      body = '';
+    }
   }
 
   const payload = {
     ota: ota,
     gmailId: msg.getId(),
     subject: msg.getSubject(),
-    // Lấy bản CHỮ: bản HTML nhiều rác, mà app bóc theo dòng "Nhãn: giá trị"
-    body: msg.getPlainBody(),
+    body: body,
+    // Địa chỉ người gửi: app ưu tiên nó để nhận diện OTA — bền hơn cấu hình tay
+    from: msg.getFrom(),
     receivedAt: msg.getDate().toISOString(),
   };
 

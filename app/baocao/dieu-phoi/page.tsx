@@ -29,9 +29,10 @@ import {
   type RescheduleEntryRow,
   dispatcherMoneyRows,
 } from "../components/rows";
+import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
-import { OtaMailCard } from "../components/OtaMailCard";
+import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
@@ -408,6 +409,9 @@ export default function DispatcherReportPage() {
 
       <ReviewNotices spot={spot} date={date} />
 
+      {/* Cờ đỏ: thư OTA huỷ/đổi lịch chờ duyệt tay — máy không tự sửa lịch */}
+      <OtaReviewFlag spot={spot} />
+
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       {user.role !== "counter" && <CollectInbox spot={spot} />}
 
@@ -502,6 +506,22 @@ export default function DispatcherReportPage() {
         <CollapseCard
           title="Dịch vụ gia tăng"
         >
+          {/* Cộng dồn dịch vụ của khách đã tích "đã bay" — bấm là điền vào ô */}
+          <FlownServicesHint
+            spot={spot}
+            date={date}
+            onTake={(f) =>
+              setForm((prev) => ({
+                ...prev,
+                flycam: f.flycam,
+                video360: f.video360,
+                redFlag: f.redFlag,
+                sunset: f.sunset,
+                flagFlight: f.flagFlight,
+              }))
+            }
+          />
+
           {/* Mỗi dịch vụ một khung màu riêng — 3 khung/hàng khi đủ rộng cho 5 dịch vụ nằm gọn 2 hàng */}
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="flycam" label="Flycam">
@@ -640,7 +660,7 @@ export default function DispatcherReportPage() {
         />
       </CollapseCard>
 
-      <HandoverBox spot={spot} />
+      <HandoverBox spot={spot} boardDate={date} />
 
       {/* Thư OTA máy đã đưa vào lịch + thư cần người soát */}
       <OtaMailCard spot={spot} />
