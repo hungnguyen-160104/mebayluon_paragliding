@@ -263,10 +263,13 @@ function CollectMoneyControl({
   spot,
   booking,
   onDone,
+  big,
 }: {
   spot: string;
   booking: BookingDTO;
   onDone: (message: string) => void;
+  /** Bản NÚT TO cho trang phi công — bấm giữa nắng, đeo găng, phải to mới trúng. */
+  big?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   /** "deposit" = thu cọc (gõ số tuỳ ý) · "full" = thu nốt toàn bộ còn phải thu. */
@@ -319,7 +322,11 @@ function CollectMoneyControl({
       <Button
         type="button"
         variant="ghost"
-        className="h-7 bg-rose-600 px-2 text-xs font-bold text-white hover:bg-rose-700"
+        className={
+          big
+            ? "h-11 w-full bg-rose-600 px-3 text-base font-bold text-white hover:bg-rose-700"
+            : "h-7 bg-rose-600 px-2 text-xs font-bold text-white hover:bg-rose-700"
+        }
         title="Thu tiền cho booking này — tiền mặt tại bãi hoặc khách chuyển khoản trước"
         onClick={() => {
           setKind("full");
@@ -329,7 +336,7 @@ function CollectMoneyControl({
           setError(null);
         }}
       >
-        💵 Thu tiền
+        {big ? "✅ ĐÃ THU — chọn tiền mặt / chuyển khoản" : "💵 Thu tiền"}
       </Button>
     );
   }
@@ -904,6 +911,9 @@ export function BookingTodayBanner({
 export function AssignedBookings({ spot, date }: { spot: string; date: string }) {
   const [forDate, setForDate] = useState<BookingDTO[]>([]);
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -923,7 +933,22 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
       alive = false;
       clearInterval(timer);
     };
-  }, [spot, date]);
+  }, [spot, date, tick]);
+
+  /** Bấm XÁC NHẬN: điều phối biết mình đã đọc lịch và nhận khách. */
+  async function accept(b: BookingDTO) {
+    setBusy(b.id);
+    setMsg(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "accept" });
+      setMsg(`✓ Đã xác nhận nhận khách ${b.contactName || b.bookingCode || ""}.`);
+      setTick((n) => n + 1);
+    } catch (err: unknown) {
+      setMsg(err instanceof Error ? err.message : "Không xác nhận được");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (!forDate.length && !upcoming.length) return null;
 
@@ -939,6 +964,11 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 
   return (
     <div className="rounded-2xl border-2 border-indigo-400 bg-indigo-50 p-3 lg:[column-span:all]">
+      {msg && (
+        <div className="mb-2 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-sm font-semibold text-emerald-800">
+          {msg}
+        </div>
+      )}
       {forDate.length > 0 && (
         <>
           <h2 className="text-sm font-bold text-indigo-900">
@@ -955,6 +985,50 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
                 )}
                 <BookingSummary b={b} dim={b.status === "done"} />
                 <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
+
+                {b.status === "open" && (
+                  <>
+                    {/* Chưa bấm nhận: nút TO — điều phối cần biết mình đã đọc lịch */}
+                    {!b.acceptedAt ? (
+                      <button
+                        type="button"
+                        disabled={busy === b.id}
+                        onClick={() => accept(b)}
+                        className="mt-1.5 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-base font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
+                      >
+                        {busy === b.id ? "Đang xác nhận…" : "🙋 Bạn được giao khách — BẤM XÁC NHẬN"}
+                      </button>
+                    ) : (
+                      <div className="mt-1 text-xs font-semibold text-emerald-700">
+                        ✓ Bạn đã nhận khách này{b.acceptedBy ? ` (${b.acceptedBy})` : ""}
+                      </div>
+                    )}
+
+                    {/* Còn phải thu: nhắc TO, kèm nút thu ngay tại đây */}
+                    {b.remaining > 0 && (
+                      <div className="mt-1.5 rounded-xl border-2 border-rose-400 bg-rose-50 px-3 py-2">
+                        <div className="text-base font-bold leading-snug text-rose-800">
+                          💰 Bạn nhớ thu tiền khách này: {b.remaining.toLocaleString("vi-VN")} đ
+                        </div>
+                        <p className="mt-0.5 text-[11px] leading-tight text-rose-900/70">
+                          Thu tiền mặt thì tiền tính vào phần bạn đang giữ · khách chuyển khoản vào TK công ty thì
+                          KHÔNG tính vào bạn (nhớ ghi mã giao dịch).
+                        </p>
+                        <div className="mt-1.5">
+                          <CollectMoneyControl
+                            spot={spot}
+                            booking={b}
+                            big
+                            onDone={(m) => {
+                              setMsg(m);
+                              setTick((n) => n + 1);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -975,6 +1049,20 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
                     <li key={b.id}>
                       <BookingSummary b={b} />
                       <span className="ml-1 text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</span>
+                      {/* Lịch mai/kia cũng xác nhận được ngay, khỏi đợi tới ngày bay */}
+                      {b.status === "open" &&
+                        (b.acceptedAt ? (
+                          <span className="ml-1 text-[11px] font-semibold text-emerald-700">✓ đã nhận</span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busy === b.id}
+                            onClick={() => accept(b)}
+                            className="ml-1 rounded-lg bg-indigo-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
+                          >
+                            {busy === b.id ? "…" : "🙋 Xác nhận nhận khách"}
+                          </button>
+                        ))}
                     </li>
                   ))}
                 </ul>

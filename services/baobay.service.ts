@@ -2629,6 +2629,8 @@ export type MoneyBoardItem = {
   transferCode: string;
   /** Nguồn số: "lệnh thu" hay "sổ thu chi" — để biết đường tìm lại. */
   from: string;
+  /** Người thu khoản này (chỉ có ở khoản tiền mặt) — để biết tiền đang ở tay ai. */
+  by?: string;
   /** Số thứ tự của booking trong ngày bay — 0 khi khoản không gắn với booking nào. */
   daySeq: number;
 };
@@ -2647,7 +2649,12 @@ export type MoneyBoard = {
   transfer: { total: number; items: MoneyBoardItem[] };
   /** Tiền mặt trong ngày, tách theo từng người đang cầm. */
   cashByPerson: MoneyBoardPerson[];
+  /** TỪNG KHOẢN tiền mặt khách đã trả — khách nào, ai thu (danh sách phẳng). */
+  cashItems: MoneyBoardItem[];
   cashTotal: number;
+  /** Tiền CHI trong ngày, tách theo từng người đứng ra chi. */
+  spendByPerson: MoneyBoardPerson[];
+  spendTotal: number;
 };
 
 /**
@@ -2696,19 +2703,27 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     0;
 
   const transferItems: MoneyBoardItem[] = [];
+  const cashItems: MoneyBoardItem[] = [];
   const byPerson = new Map<string, MoneyBoardPerson>();
+  const spendBy = new Map<string, MoneyBoardPerson>();
   const roleOf = new Map<string, string>();
 
-  const personOf = (username: string, name: string, role: string): MoneyBoardPerson => {
+  const from = (
+    store: Map<string, MoneyBoardPerson>,
+    username: string,
+    name: string,
+    role: string,
+  ): MoneyBoardPerson => {
     const key = normalizeUsername(username || name);
-    let p = byPerson.get(key);
+    let p = store.get(key);
     if (!p) {
       p = { username: key, name: name || key, role, total: 0, items: [] };
-      byPerson.set(key, p);
+      store.set(key, p);
     }
     if (!p.name && name) p.name = name;
     return p;
   };
+  const personOf = (username: string, name: string, role: string) => from(byPerson, username, name, role);
 
   for (const c of collects) {
     const item: MoneyBoardItem = {
@@ -2727,8 +2742,10 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     // Tiền mặt: chỉ tính khi người thu đã xác nhận cầm tiền
     if (c.status !== "collected") continue;
     const p = personOf(c.collectorUsername || c.createdByUsername, c.collectorName || c.createdByName, "");
+    item.by = p.name;
     p.items.push(item);
     p.total += item.amount;
+    cashItems.push(item);
   }
 
   /** Dòng THU trong sổ thu chi = tiền khách trả tại bãi, người khai đang cầm. */
@@ -2736,7 +2753,22 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     for (const d of docs) {
       roleOf.set(normalizeUsername(d.username), role);
       for (const e of d.expenses ?? []) {
-        if (e.kind !== "thu" || !(e.amount > 0)) continue;
+        if (!(e.amount > 0)) continue;
+        /** Dòng CHI: tiền nhân sự đã bỏ ra (nước, xe, chi khác) — kế toán phải hoàn. */
+        if (e.kind !== "thu") {
+          const sp = from(spendBy, d.username, d[nameKey], role);
+          sp.items.push({
+            label: e.content || "chi tại bãi",
+            bookingCode: "",
+            guests: 0,
+            amount: e.amount || 0,
+            transferCode: "",
+            from: "sổ thu chi",
+            daySeq: 0,
+          });
+          sp.total += e.amount || 0;
+          continue;
+        }
         // Khoản khai là CHUYỂN KHOẢN thì tiền không nằm trong tay ai
         const item: MoneyBoardItem = {
           label: e.content || "thu tại bãi",
@@ -2753,8 +2785,10 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
           continue;
         }
         const p = personOf(d.username, d[nameKey], role);
+        item.by = p.name;
         p.items.push(item);
         p.total += item.amount;
+        cashItems.push(item);
       }
     }
   };
@@ -2783,9 +2817,18 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   const cashByPerson = [...byPerson.values()]
     .filter((p) => p.total > 0)
     .sort((a, b) => b.total - a.total);
+  // Vai trò của người chỉ xuất hiện ở cột CHI: mượn lại từ bảng vai trò đã tra
+  for (const [username, role] of roleOf) {
+    const p = spendBy.get(username);
+    if (p && !p.role) p.role = role;
+  }
+  const spendByPerson = [...spendBy.values()].filter((p) => p.total > 0).sort((a, b) => b.total - a.total);
 
   return {
     date,
+    cashItems: cashItems.sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999)),
+    spendByPerson,
+    spendTotal: spendByPerson.reduce((s, p) => s + p.total, 0),
     transfer: { total: transferItems.reduce((s, i) => s + i.amount, 0), items: transferItems },
     cashByPerson,
     cashTotal: cashByPerson.reduce((s, p) => s + p.total, 0),
@@ -3341,6 +3384,16 @@ export async function collectForBooking(
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
 
   /**
+   * Phi công / camera man chỉ thu tiền của KHÁCH ĐƯỢC GIAO CHO MÌNH. Điều phối,
+   * quầy vé, kế toán thu của ai cũng được — họ đứng quầy.
+   */
+  if (session.role === "pilot" || session.role === "cameraman") {
+    if (normalizeUsername(booking.assignedToUsername || "") !== normalizeUsername(session.username)) {
+      throw new BaobayError("Chỉ thu được tiền của khách giao cho bạn", 403);
+    }
+  }
+
+  /**
    * THU ĐỦ thì số tiền do máy chủ chốt bằng đúng phần còn phải thu — người bấm
    * khỏi tự tính, và cũng không lệch được vì máy đọc số từ bản ghi.
    */
@@ -3407,6 +3460,30 @@ export async function collectForBooking(
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
+}
+
+/**
+ * PHI CÔNG / CAMERA MAN bấm XÁC NHẬN nhận khách được giao.
+ *
+ * Chỉ đúng người được giao mới xác nhận được: điều phối cần biết chắc người bay
+ * đã đọc lịch, chứ không phải ai đó bấm hộ rồi cả hai cùng tưởng đã xong.
+ */
+export async function acceptAssignedBooking(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+  if (normalizeUsername(current.assignedToUsername || "") !== normalizeUsername(session.username)) {
+    throw new BaobayError("Booking này không giao cho bạn", 403);
+  }
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    { $set: { acceptedAt: new Date(), acceptedBy: session.name || session.username } },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
 }
 
 /**
@@ -3547,6 +3624,7 @@ async function pushBookingRow(doc: any) {
               : "CHỜ BAY",
       rescheduledFrom: (doc.rescheduledFrom || []).map((d: string) => formatDateKeyVN(d)).join(", "),
       assignedTo: doc.assignedToName || "",
+      accepted: doc.acceptedAt ? `x (${doc.acceptedBy || ""})` : "",
       note: doc.note || "",
       updatedAt: nowStampVN(),
     },
@@ -3586,6 +3664,8 @@ function toBookingDTO(doc: any): BookingDTO {
     flightKind: (doc.flightKind ?? "pg") as FlightKind,
     ppgGuests: Number(doc.ppgGuests) || 0,
     comboDiscount: Number(doc.comboDiscount) || 0,
+    acceptedAt: doc.acceptedAt ? new Date(doc.acceptedAt).toISOString() : undefined,
+    acceptedBy: doc.acceptedBy || undefined,
     pickupFee: doc.pickupFee ?? 0,
     mountainCar: doc.mountainCar ?? 0,
     otaName: doc.otaName || "",

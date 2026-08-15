@@ -319,6 +319,9 @@ export type BookingDTO = {
   ppgGuests: number;
   /** Tiền giảm combo flycam+360 — máy điền sẵn, sửa tay được. */
   comboDiscount: number;
+  /** Người được giao đã bấm xác nhận nhận khách chưa (ISO), và tên người xác nhận. */
+  acceptedAt?: string;
+  acceptedBy?: string;
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */

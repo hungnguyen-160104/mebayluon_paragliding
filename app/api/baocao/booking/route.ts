@@ -8,6 +8,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
   assignBooking,
+  acceptAssignedBooking,
   collectForBooking,
   toggleBookingTicket,
   listSpotStaffAll,
@@ -136,18 +137,26 @@ export async function DELETE(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const auth = requireBaobay(req, { roles: [...ROLES] });
+  /**
+   * PHI CÔNG / CAMERA MAN vào được cửa này, nhưng CHỈ hai việc với khách được
+   * giao cho mình: bấm xác nhận nhận khách, và thu tiền. Quyền "khách này có
+   * phải của mình không" do tầng dịch vụ chốt, ở đây chỉ chặn loại việc.
+   */
+  const body = await req.json().catch(() => ({}));
+  const action = String(body?.action ?? "flown");
+  const crewAllowed = action === "accept" || action === "collect";
+  const auth = requireBaobay(req, {
+    roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
+  });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
   if (spot instanceof NextResponse) return spot;
 
-  const body = await req.json().catch(() => ({}));
   const id = String(body?.id ?? "");
-  const action = String(body?.action ?? "flown");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -159,6 +168,10 @@ export async function PATCH(req: Request) {
       const assignee = String(body?.assignee ?? "");
       if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });
       return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
+    }
+    // Phi công/camera man xác nhận đã nhận khách được giao
+    if (action === "accept") {
+      return NextResponse.json({ booking: await acceptAssignedBooking(auth, spot, id) });
     }
     // Tích/bỏ tích ĐÃ XUẤT VÉ — khách đến lấy vé rồi hay chưa
     if (action === "ticket") {

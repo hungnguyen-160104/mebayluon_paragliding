@@ -112,6 +112,9 @@ export interface IBaobayBooking {
   assignedToUsername?: string;
   assignedToName?: string;
   assignedBy?: string;
+  /** Người được giao ĐÃ BẤM XÁC NHẬN nhận khách — điều phối biết họ đã đọc lịch. */
+  acceptedAt?: Date;
+  acceptedBy?: string;
   assignedAt?: Date;
 
   status: BookingStatus;
@@ -215,6 +218,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     assignedToUsername: String,
     assignedToName: String,
     assignedBy: String,
+    acceptedAt: Date,
+    acceptedBy: String,
     assignedAt: Date,
 
     status: { type: String, enum: ["open", "done", "cancelled"], default: "open" },

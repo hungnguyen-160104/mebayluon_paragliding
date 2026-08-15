@@ -630,16 +630,6 @@ function DailyCloseInner() {
         <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
       </div>
 
-      {/* Ai đang cầm bao nhiêu tiền mặt, khách nào đã chuyển khoản về công ty */}
-      <div className="order-4 lg:order-none">
-        <MoneyBoardCard spot={spot} date={date} />
-      </div>
-
-      {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
-      <div className="order-5 lg:order-none">
-        <HandoverBox spot={spot} boardDate={date} />
-      </div>
-
       {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
           Desktop: đứng cột phải cùng nhóm tiền · Điện thoại: vẫn ở vị trí thứ 7. */}
       <div className="order-7 lg:order-none">
@@ -891,8 +881,8 @@ function DailyCloseInner() {
 
         <CollapseCard
           className="order-4 lg:order-none"
-          title="THU CHI"
-          hint="Trên: thu chi nhân viên khai — kế toán đọc rồi duyệt. Dưới: sổ của kế toán (nội dung – số tiền – TM/CK – Thu/Chi), tổng tiền mặt/CK tự cộng từ các dòng THU."
+          title="THU CHI & TIỀN NONG"
+          hint="Thu chi nhân viên khai · sổ của kế toán · bảng tiền trong ngày (ai giữ tiền mặt, ai đã chi, khách nào chuyển khoản) · nộp tiền / xin ứng."
         >
           {/* ===== Thu chi nhân viên khai — kế toán chỉ duyệt và ghi chú ===== */}
           <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
@@ -1088,6 +1078,12 @@ function DailyCloseInner() {
               <Compare label="phi công báo (thu tại bãi)" value={staffPilotThu} mine={staffPilotThu} money />
             </div>
           </div>
+
+          {/* Bảng tiền cả ngày: khách CK về công ty · ai giữ tiền mặt · ai đã chi */}
+          <MoneyBoardCard spot={spot} date={date} embedded />
+
+          {/* Kế toán cũng nộp tiền / xin ứng được như mọi nhân sự khác */}
+          <HandoverBox spot={spot} boardDate={date} embedded />
         </CollapseCard>
 
         {/* Dải mã vé do ĐIỀU PHỐI nhập — kế toán sửa qua khung "Sửa" bên dưới nếu sai */}
