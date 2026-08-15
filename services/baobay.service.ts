@@ -3485,6 +3485,7 @@ async function pushBookingRow(doc: any) {
     {
       key: String(doc._id),
       flightDate: formatDateKeyVN(doc.flightDate),
+      daySeq: doc.daySeq ?? "",
       spot: doc.spot || "",
       createdAt: doc.createdAt ? new Date(doc.createdAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) : "",
       createdBy: doc.createdByName || doc.createdByUsername || "",
@@ -3513,6 +3514,10 @@ async function pushBookingRow(doc: any) {
       remaining: doc.remaining ?? 0,
       transferCode: doc.transferCode || "",
       depositToCompany: doc.depositToCompany ? "x" : "",
+      ticketIssued: doc.ticketIssuedAt ? "x" : "",
+      collectedLog: (doc.collectedLog || [])
+        .map((c: any) => `${Math.round((c.amount || 0) / 1000)}k ${c.method === "cash" ? "TM" : "CK"} - ${c.byName || "?"}`)
+        .join(" · "),
       status:
         doc.status === "done"
           ? "ĐÃ BAY"
