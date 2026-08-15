@@ -174,7 +174,7 @@ export default function CameramanReportPage() {
       subtitle="Nhập số chuyến đã quay flycam trong ngày rồi bấm Chốt để kế toán soát."
     >
       {/* Lệnh soát lại của kế toán cho đúng ngày đang mở */}
-      {/* Chọn NƠI LÀM VIỆC + NGÀY ngay trên đầu — bản thứ hai nằm cạnh form bên dưới */}
+      {/* Chọn NƠI LÀM VIỆC + NGÀY — một thanh duy nhất trên đầu trang */}
       <DateBar
         date={date}
         onChange={setDate}
@@ -216,16 +216,6 @@ export default function CameramanReportPage() {
           ✅ <strong>{closedBy || "Kế toán"} đã chốt ngày {formatDateKeyVN(date)}</strong> — số liệu đã khoá, chỉ xem được.
         </Banner>
       )}
-
-      <DateBar
-        date={date}
-        onChange={setDate}
-        min={shiftDateKey(today, -BACKDATE_LIMIT_DAYS)}
-        loading={loadingDay}
-        spot={spot}
-        spotOptions={spotOptions}
-        onSpotChange={(v) => setSpot(v as never)}
-        />
 
       {/* ============ MỘT lưới 2 cột độc lập ============ */}
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">

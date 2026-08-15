@@ -169,12 +169,15 @@ function AssignControl({
   booking,
   onDone,
   buttonClassName,
+  label,
 }: {
   spot: string;
   booking: BookingDTO;
   onDone: () => void;
   /** Xếp nút vào đúng ô của lưới nút (vd. cột phải, dưới nút Sửa). */
   buttonClassName?: string;
+  /** Chữ trên nút khi chưa mở — menu gọn dùng "Giao PC". */
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
@@ -223,7 +226,7 @@ function AssignControl({
           (buttonClassName ? ` ${buttonClassName}` : "")
         }
       >
-        {booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
+        {label ? `⇢ ${label}` : booking.assignedToName ? "⇢ Chuyển người khác" : "⇢ Chuyển"}
       </button>
     );
   }
@@ -234,7 +237,7 @@ function AssignControl({
         onChange={(e) => setPick(e.target.value)}
         className="h-9 min-w-44 flex-1 rounded-lg border border-indigo-300 bg-white px-2 text-sm"
       >
-        <option value="">— chọn nhân sự tiếp nhận —</option>
+        <option value="">— người tiếp nhận —</option>
         {staff.map((a) => (
           <option key={a.username} value={a.username}>
             {a.name} — {a.roleLabel}
@@ -254,6 +257,162 @@ function AssignControl({
 
 
 /**
+ * BỎ BOOKING khỏi sổ: nhập nhầm hoặc nhập TRÙNG với một booking thật.
+ *
+ * Không xoá bản ghi — bỏ có lý do, có tên người bỏ, và lấy lại được. Trùng thì
+ * bắt chọn đích danh bản GIỮ LẠI: máy chuyển tiền đã thu sang bản đó, nên không
+ * ai bỏ booking để giấu tiền được (tiền chỉ đổi chỗ, tổng không đổi).
+ */
+function VoidBookingControl({
+  spot,
+  booking,
+  sameDay,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  /** Các booking khác cùng ngày — nguồn để chọn bản giữ lại khi gộp trùng. */
+  sameDay: BookingDTO[];
+  onDone: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<"mistake" | "duplicate">("mistake");
+  const [reason, setReason] = useState("");
+  const [keepId, setKeepId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const paid = booking.deposit > 0 || (booking.collected ?? []).length > 0;
+  /** Gợi ý bản trùng: cùng SĐT hoặc cùng tên, xếp lên đầu danh sách chọn. */
+  const others = sameDay
+    .filter((b) => b.id !== booking.id && b.status !== "voided")
+    .sort((a, b) => Number(isTwin(b, booking)) - Number(isTwin(a, booking)));
+
+  async function send() {
+    if (!reason.trim()) return setError("Ghi giúp lý do — sổ cần biết vì sao bỏ");
+    if (kind === "duplicate" && !keepId) return setError("Chọn booking GIỮ LẠI để gộp vào");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiDelete(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        kind,
+        reason,
+        keepId,
+      });
+      onDone(
+        kind === "duplicate"
+          ? "✓ Đã gộp booking trùng — tiền đã thu chuyển sang bản giữ lại."
+          : "✓ Đã bỏ booking khỏi sổ (nhập nhầm) — vẫn lấy lại được.",
+      );
+      setOpen(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không bỏ được booking");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 shrink-0 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-600"
+        onClick={() => {
+          setKind(paid ? "duplicate" : "mistake");
+          setReason("");
+          setKeepId("");
+          setError(null);
+          setOpen(true);
+        }}
+        title="Nhập nhầm hoặc nhập trùng — bỏ khỏi sổ, vẫn lấy lại được"
+      >
+        🗑 Nhập nhầm
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex w-full max-w-[17rem] flex-col gap-1 rounded-lg border border-slate-300 bg-slate-50 p-1.5">
+      <div className="text-[11px] font-bold text-slate-800">Bỏ khỏi sổ — {booking.contactName || "khách"}</div>
+      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+        {(
+          [
+            ["mistake", "Nhập nhầm"],
+            ["duplicate", "Nhập trùng"],
+          ] as Array<["mistake" | "duplicate", string]>
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setKind(v)}
+            className={
+              kind === v
+                ? "flex-1 bg-slate-800 px-1 text-xs font-bold text-white"
+                : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {kind === "duplicate" ? (
+        <>
+          <select
+            value={keepId}
+            onChange={(e) => setKeepId(e.target.value)}
+            className="h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs"
+          >
+            <option value="">— chọn booking GIỮ LẠI —</option>
+            {others.map((b) => (
+              <option key={b.id} value={b.id}>
+                #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+                {isTwin(b, booking) ? " · trùng SĐT/tên" : ""}
+              </option>
+            ))}
+          </select>
+          <p className="text-[10px] leading-tight text-slate-500">
+            Tiền đã thu của bản này sẽ chuyển sang bản giữ lại — không mất, không cộng hai lần.
+          </p>
+        </>
+      ) : (
+        paid && (
+          <p className="text-[10px] font-semibold leading-tight text-rose-700">
+            Booking này đã có tiền — nếu là trùng thì chọn “Nhập trùng”, còn khách bỏ bay thì dùng ✕ Huỷ booking.
+          </p>
+        )
+      )}
+
+      <TextInput
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Lý do · VD: gõ hai lần, khách gọi lại đặt mới…"
+        className="h-8 rounded-lg text-xs"
+      />
+      {error && <div className="text-[11px] font-semibold text-rose-700">{error}</div>}
+      <div className="flex gap-1">
+        <Button type="button" className="h-8 flex-1 bg-slate-800 px-2 text-xs hover:bg-slate-900" disabled={busy} onClick={send}>
+          {busy ? "Đang bỏ…" : kind === "duplicate" ? "✓ Gộp & bỏ bản này" : "✓ Bỏ khỏi sổ"}
+        </Button>
+        <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Hai booking nghi trùng nhau: cùng số điện thoại, hoặc cùng tên liên hệ. */
+function isTwin(a: BookingDTO, b: BookingDTO): boolean {
+  const phone = (p: string) => p.replace(/\D/g, "").slice(-9);
+  if (a.phone && b.phone && phone(a.phone) === phone(b.phone)) return true;
+  const name = (n: string) => n.trim().toLowerCase();
+  return Boolean(a.contactName && b.contactName && name(a.contactName) === name(b.contactName));
+}
+
+/**
  * CỤM NÚT ÍT DÙNG của một dòng booking — bấm "⋯ Thêm" mới xổ.
  *
  * Trước đây năm nút nằm phơi hết trên dòng, đọc thông tin khách phải len lỏi
@@ -263,12 +422,15 @@ function AssignControl({
 function RowMenu({
   spot,
   booking,
+  sameDay,
   onMove,
   onEdit,
   onDone,
 }: {
   spot: string;
   booking: BookingDTO;
+  /** Booking khác cùng ngày — để chọn bản giữ lại khi gộp trùng. */
+  sameDay: BookingDTO[];
   onMove: () => void;
   onEdit: () => void;
   onDone: (message?: string) => void;
@@ -291,44 +453,33 @@ function RowMenu({
     );
   }
 
+  /** Mọi mục chung một cỡ chữ, một hàng ngang — đọc lướt là thấy hết việc. */
+  const item = "shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50";
+
   return (
-    <div className="w-56 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
+    <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
       <button
         type="button"
-        className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100"
+        className={item}
         onClick={() => {
           onMove();
           setOpen(false);
         }}
       >
-        ⇢ Đổi lịch bay
+        ⇢ Đổi lịch
       </button>
-      <div className="px-1 py-0.5">
-        <AssignControl
-          spot={spot}
-          booking={booking}
-          onDone={() => {
-            onDone();
-            setOpen(false);
-          }}
-          buttonClassName="w-full justify-start"
-        />
-      </div>
-      {/* Chiết khấu chỉ có ở Khau Phạ — nơi khách đi theo đại lý / hướng dẫn viên */}
+      <AssignControl
+        spot={spot}
+        booking={booking}
+        onDone={() => {
+          onDone();
+          setOpen(false);
+        }}
+        label="Giao PC"
+      />
+      {/* CK đại lý chỉ có ở Khau Phạ — nơi khách đi theo đại lý / hướng dẫn viên */}
       {spot === "khau-pha" && (
-        <div className="px-1 py-0.5">
-          <CommissionControl
-            spot={spot}
-            booking={booking}
-            onDone={(m) => {
-              onDone(m);
-              setOpen(false);
-            }}
-          />
-        </div>
-      )}
-      <div className="px-1 py-0.5">
-        <CancelBookingControl
+        <CommissionControl
           spot={spot}
           booking={booking}
           onDone={(m) => {
@@ -336,23 +487,40 @@ function RowMenu({
             setOpen(false);
           }}
         />
-      </div>
+      )}
       <button
         type="button"
-        className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100"
+        className={item}
         onClick={() => {
           onEdit();
           setOpen(false);
         }}
       >
-        ✎ Sửa thông tin booking
+        ✎ Sửa booking
       </button>
+      <CancelBookingControl
+        spot={spot}
+        booking={booking}
+        onDone={(m) => {
+          onDone(m);
+          setOpen(false);
+        }}
+      />
+      <VoidBookingControl
+        spot={spot}
+        booking={booking}
+        sameDay={sameDay}
+        onDone={(m) => {
+          onDone(m);
+          setOpen(false);
+        }}
+      />
       <button
         type="button"
-        className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
+        className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
         onClick={() => setOpen(false)}
       >
-        Đóng
+        ✕
       </button>
     </div>
   );
@@ -396,8 +564,8 @@ function CommissionControl({
       });
       onDone(
         method === "cash"
-          ? `✓ Đã chi chiết khấu ${amount.toLocaleString("vi-VN")} đ tiền mặt — trừ vào tiền bạn đang giữ.`
-          : `✓ Đã ghi chiết khấu ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
+          ? `✓ Đã chi CK ĐL ${amount.toLocaleString("vi-VN")} đ TM — trừ vào tiền bạn đang giữ.`
+          : `✓ Đã ghi CK ĐL ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
       );
       setOpen(false);
     } catch (err: unknown) {
@@ -412,8 +580,8 @@ function CommissionControl({
       <button
         type="button"
         className={
-          "w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold " +
-          (paid ? "bg-violet-100 text-violet-900" : "text-slate-700 hover:bg-slate-100")
+          "shrink-0 rounded-lg border px-2 py-1 text-xs font-semibold " +
+          (paid ? "border-violet-400 bg-violet-100 text-violet-900" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50")
         }
         onClick={() => {
           setAmount(paid?.amount || booking.guestCount * COMMISSION_PER_GUEST);
@@ -424,8 +592,8 @@ function CommissionControl({
         }}
       >
         {paid
-          ? `🤝 CK đại lý: ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"} — sửa`
-          : "🤝 Chiết khấu đại lý"}
+          ? `🤝 CK ĐL ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"}`
+          : "🤝 CK đại lý"}
       </button>
     );
   }
@@ -433,9 +601,9 @@ function CommissionControl({
   return (
     <div className="rounded-lg border border-violet-300 bg-violet-50 p-2">
       <div className="text-[11px] font-bold text-violet-900">
-        Chiết khấu trả đại lý — {booking.guestCount} khách × {(COMMISSION_PER_GUEST / 1000).toLocaleString("vi-VN")}k
+        CK ĐL — {booking.guestCount} khách × {(COMMISSION_PER_GUEST / 1000).toLocaleString("vi-VN")}k
       </div>
-      <p className="mb-1 text-[10px] leading-tight text-violet-900/70">Khoản trả ngoài — không hiện trên phiếu khách.</p>
+      <p className="mb-1 text-[10px] leading-tight text-violet-900/70">Trả ngoài — không hiện ở phiếu khách.</p>
       <MoneyInput value={amount} onChange={setAmount} />
       <div className="mt-1 flex overflow-hidden rounded-lg border border-slate-300">
         {(["cash", "transfer"] as const).map((m) => (
@@ -449,7 +617,7 @@ function CommissionControl({
                 : "flex-1 bg-white py-1 text-xs font-medium text-slate-500"
             }
           >
-            {m === "cash" ? "Tiền mặt (trừ tiền tôi giữ)" : "CK từ TK công ty"}
+            {m === "cash" ? "TM (trừ tiền tôi giữ)" : "CK từ TK công ty"}
           </button>
         ))}
       </div>
@@ -736,7 +904,7 @@ function CancelBookingControl({
       <Button
         type="button"
         variant="ghost"
-        className="h-7 bg-white px-2 text-xs text-rose-700"
+        className="h-7 shrink-0 border-rose-300 bg-white px-2 text-xs font-semibold text-rose-700"
         onClick={() => {
           setRefund(paid);
           setScope("all");
@@ -748,13 +916,14 @@ function CancelBookingControl({
           setOpen(true);
         }}
       >
-        ✕ Huỷ
+        ✕ Huỷ booking
       </Button>
     );
   }
 
+  /* Khung xổ: rộng hết dòng trên khổ hẹp (trước đây cố định 15rem nên tràn ra ngoài viền) */
   return (
-    <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
+    <div className="flex w-full max-w-[15rem] flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
       <div className="text-[11px] font-bold text-rose-900">
         Huỷ bay — {booking.contactName || "khách"} ({booking.guestCount} khách)
       </div>
@@ -900,6 +1069,8 @@ export function BookingTodayBanner({
 }) {
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
+  /** Booking đã bỏ khỏi sổ hôm nay — mục nhỏ cuối danh sách, bấm lấy lại được. */
+  const [voided, setVoided] = useState<BookingDTO[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Danh sách dài thì gập lại còn 10 dòng. */
@@ -910,11 +1081,12 @@ export function BookingTodayBanner({
   const [collectDone, setCollectDone] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    apiGet<{ forDate: BookingDTO[]; moved?: { bookings: number; guests: number } }>(
+    apiGet<{ forDate: BookingDTO[]; voided?: BookingDTO[]; moved?: { bookings: number; guests: number } }>(
       `/api/baocao/booking?date=${date}&spot=${spot}`,
     )
       .then((r) => {
         setRows(r.forDate);
+        setVoided(r.voided ?? []);
         setMoved(r.moved ?? { bookings: 0, guests: 0 });
       })
       .catch(() => {
@@ -1099,7 +1271,7 @@ export function BookingTodayBanner({
               /* Hai khối nút NỔI riêng: hàng trên Đã bay · Đổi lịch · Chuyển, hàng
                  dưới Huỷ · Sửa (hẹp hơn) — chữ chảy quanh, tràn tới sát nút Huỷ. */
               <>
-              <div className="float-right ml-2 flex items-center gap-1">
+              <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
                 <Button
                   type="button"
                   className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
@@ -1111,6 +1283,7 @@ export function BookingTodayBanner({
                 <RowMenu
                   booking={b}
                   spot={spot}
+                  sameDay={rows}
                   onMove={() => setMoving({ id: b.id, toDate: "" })}
                   onEdit={() => requestEditBooking(b)}
                   onDone={(msg) => {
@@ -1175,6 +1348,39 @@ export function BookingTodayBanner({
             >
               {showAll ? "▴ Thu gọn danh sách" : `▾ Xem thêm ${open.length - 10} booking`}
             </button>
+          </li>
+        )}
+        {voided.length > 0 && (
+          <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:[column-span:all]">
+            <details>
+              <summary className="cursor-pointer text-[11px] font-semibold text-slate-500">
+                🗑 Đã bỏ khỏi sổ hôm nay ({voided.length}) — không tính vào thống kê
+              </summary>
+              <ul className="mt-1 space-y-1">
+                {voided.map((b) => (
+                  <li key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+                    <span className="rounded bg-slate-200 px-1.5 py-0.5 font-bold text-slate-700">
+                      {b.voidKind === "duplicate" ? "trùng — đã gộp" : "nhập nhầm"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+                      {b.voidReason ? ` · “${b.voidReason}”` : ""}
+                      {b.voidedBy ? ` · ${b.voidedBy} bỏ` : ""}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-6 shrink-0 bg-white px-2 text-[11px]"
+                      disabled={busy === b.id}
+                      onClick={() => restore(b)}
+                      title="Lấy lại booking này vào danh sách chờ bay"
+                    >
+                      ↩ Lấy lại
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </li>
         )}
         {closed.map((b) => (
@@ -1722,6 +1928,23 @@ export function BookingCard({
     window.addEventListener(EDIT_EVENT, onEdit);
     return () => window.removeEventListener(EDIT_EVENT, onEdit);
   });
+
+  /**
+   * CẢNH BÁO TRÙNG ngay lúc nhập: cùng SĐT (9 số cuối) hoặc cùng tên, cùng ngày
+   * bay, cùng điểm. Chặn được phần lớn ca nhập trùng từ gốc — rẻ hơn nhiều so
+   * với việc phát hiện sau khi khách đã trả tiền vào hai booking khác nhau.
+   */
+  const twin = editingId
+    ? null
+    : upcoming.find(
+        (b) =>
+          b.flightDate === form.flightDate &&
+          b.status !== "voided" &&
+          ((form.phone.replace(/\D/g, "").length >= 8 &&
+            b.phone.replace(/\D/g, "").slice(-9) === form.phone.replace(/\D/g, "").slice(-9)) ||
+            (form.contactName.trim().length >= 3 &&
+              b.contactName.trim().toLowerCase() === form.contactName.trim().toLowerCase())),
+      );
 
   /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
   const bookingTotal = totalOf(form);
@@ -2326,6 +2549,13 @@ export function BookingCard({
           <Banner tone="success" onClose={() => setDone(null)}>
             {done}
           </Banner>
+        </div>
+      )}
+
+      {twin && (
+        <div className="mt-2 rounded-lg border-2 border-amber-400 bg-amber-50 px-2.5 py-1.5 text-xs leading-snug text-amber-900">
+          ⚠ <strong>Có thể trùng:</strong> booking #{twin.daySeq} {twin.contactName || twin.phone} · {twin.guestCount} khách
+          {" "}đã đặt {formatDateKeyVN(twin.flightDate)} rồi. Nếu là cùng một khách thì sửa booking đó thay vì nhập mới.
         </div>
       )}
 

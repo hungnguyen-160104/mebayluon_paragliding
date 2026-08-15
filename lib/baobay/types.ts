@@ -326,6 +326,11 @@ export type BookingDTO = {
   acceptedBy?: string;
   /** Chiết khấu đã trả đại lý — KHÔNG lên phiếu gửi khách, chỉ nội bộ. */
   commission?: { amount: number; method: "cash" | "transfer"; transferCode?: string; byName: string; at: string };
+  /** Bỏ khỏi sổ (nhập nhầm / nhập trùng) — ai bỏ, vì sao, gộp vào booking nào. */
+  voidedBy?: string;
+  voidReason?: string;
+  voidKind?: "mistake" | "duplicate";
+  mergedInto?: string;
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */
@@ -362,7 +367,8 @@ export type BookingDTO = {
   /** Cọc CHUYỂN KHOẢN vào thẳng TK CÔNG TY — không ai cầm khoản này. */
   depositToCompany: boolean;
   note: string;
-  status: "open" | "done" | "cancelled";
+  /** "voided" = bỏ khỏi sổ vì nhập nhầm / nhập trùng — không tính vào thống kê. */
+  status: "open" | "done" | "cancelled" | "voided";
   doneAt?: string;
   doneBy?: string;
   /** Ngày bay cũ nếu đã dời lịch — hiện "dời từ dd/mm" cho điều phối biết. */

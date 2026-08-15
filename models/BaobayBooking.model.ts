@@ -20,7 +20,8 @@ import { DEFAULT_SPOT } from "@/lib/baobay/spots";
 /** "other" = đón chỗ khác — ghi rõ địa điểm vào pickupNote (Khau Phạ/Sa Pa dùng). */
 export type BookingPickup = "self" | "bigc" | "hotel" | "other";
 /** open = chờ bay · done = đã bay (ghi nhận vào ngày bay) · cancelled = khách huỷ. */
-export type BookingStatus = "open" | "done" | "cancelled";
+/** "voided" = bỏ khỏi sổ do nhập nhầm / nhập trùng (vẫn giữ bản ghi để lần vết). */
+export type BookingStatus = "open" | "done" | "cancelled" | "voided";
 
 export interface IBaobayBooking {
   spot: string;
@@ -131,6 +132,19 @@ export interface IBaobayBooking {
   /** Người được giao ĐÃ BẤM XÁC NHẬN nhận khách — điều phối biết họ đã đọc lịch. */
   acceptedAt?: Date;
   acceptedBy?: string;
+  /**
+   * BỎ KHỎI SỔ vì nhập nhầm hoặc nhập trùng.
+   *
+   * KHÔNG xoá bản ghi: xoá hẳn thì mất dấu, mà mất dấu là mở đường cho gian
+   * lận. Bản ghi ở lại, chỉ không tính vào thống kê và không lên lịch bay.
+   * `mergedInto` là booking được giữ lại khi gộp trùng — tiền đã thu chuyển hết
+   * sang đó, không mất đồng nào.
+   */
+  voidedAt?: Date;
+  voidedBy?: string;
+  voidReason?: string;
+  voidKind?: "mistake" | "duplicate";
+  mergedInto?: mongoose.Types.ObjectId;
   assignedAt?: Date;
 
   status: BookingStatus;
@@ -249,9 +263,14 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     assignedBy: String,
     acceptedAt: Date,
     acceptedBy: String,
+    voidedAt: Date,
+    voidedBy: String,
+    voidReason: String,
+    voidKind: { type: String, enum: ["mistake", "duplicate"] },
+    mergedInto: { type: Schema.Types.ObjectId, ref: "BaobayBooking" },
     assignedAt: Date,
 
-    status: { type: String, enum: ["open", "done", "cancelled"], default: "open" },
+    status: { type: String, enum: ["open", "done", "cancelled", "voided"], default: "open" },
     doneAt: Date,
     doneBy: String,
     rescheduledFrom: { type: [String], default: [] },

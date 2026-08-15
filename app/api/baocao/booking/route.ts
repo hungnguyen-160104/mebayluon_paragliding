@@ -16,7 +16,7 @@ import {
   toggleBookingTicket,
   listSpotStaffAll,
   createBooking,
-  deleteBooking,
+  voidBooking,
   listBookings,
   updateBookingInfo,
   updateBookingStatus,
@@ -131,8 +131,16 @@ export async function DELETE(req: Request) {
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
 
   try {
-    await deleteBooking(auth, spot, id);
-    return NextResponse.json({ ok: true });
+    /**
+     * "Xoá" giờ là BỎ KHỎI SỔ có lý do — bản ghi ở lại để lần vết. Trùng thì
+     * phải chỉ đích danh booking giữ lại, máy chuyển tiền sang đó.
+     */
+    const res = await voidBooking(auth, spot, id, {
+      kind: body?.kind === "duplicate" ? "duplicate" : "mistake",
+      reason: String(body?.reason ?? ""),
+      keepId: String(body?.keepId ?? ""),
+    });
+    return NextResponse.json({ ok: true, ...res });
   } catch (err) {
     if (err instanceof BaobayError) {
       return NextResponse.json({ message: err.message }, { status: err.status });

@@ -3213,6 +3213,8 @@ export async function listBookings(
   upcoming: BookingDTO[];
   flown: FlownServices;
   moved: { bookings: number; guests: number };
+  /** Booking đã bỏ khỏi sổ trong ngày — hiện mục riêng, có nút lấy lại. */
+  voided: BookingDTO[];
   /** Lần gần nhất chạy "Lấy book từ website & OTA" cho điểm này (ISO, "" nếu chưa từng). */
   webSyncAt: string;
 }> {
@@ -3237,10 +3239,13 @@ export async function listBookings(
   const crewShare = spot !== "khau-pha";
   const inCrew = me && crewShare ? await inCrewOfDay(spot, date, me) : false;
   const forDateWhere = me && !inCrew ? { spot, flightDate: date, ...extra } : { spot, flightDate: date };
+  /** Booking đã BỎ (nhập nhầm/trùng): tách riêng, không lẫn vào danh sách làm việc. */
+  const voidedWhere = { ...forDateWhere, status: "voided" };
 
-  const [forDate, upcoming, movedAway, setting] = await Promise.all([
+  const [forDate, voided, upcoming, movedAway, setting] = await Promise.all([
     // Xếp theo thứ tự ĐẶT CHỖ: ai đặt trước đứng trước (đúng thứ tự nhận khách)
-    BaobayBooking.find(forDateWhere).sort({ createdAt: 1 }).lean<any[]>(),
+    BaobayBooking.find({ ...forDateWhere, status: { $ne: "voided" } }).sort({ createdAt: 1 }).lean<any[]>(),
+    BaobayBooking.find(voidedWhere).sort({ voidedAt: -1 }).limit(30).lean<any[]>(),
     BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() }, ...extra })
       .sort({ flightDate: 1, expectedTime: 1 })
       .limit(100)
@@ -3286,6 +3291,7 @@ export async function listBookings(
 
   return {
     forDate: forDate.map(view),
+    voided: voided.map(view),
     upcoming: upcoming.map(view),
     flown,
     moved: { bookings: movedAway.length, guests: movedAway.reduce((t, b) => t + (b.guestCount || 0), 0) },
@@ -3382,15 +3388,104 @@ export async function updateBookingInfo(
  * XOÁ booking nhập nhầm — chỉ xoá được booking đang chờ. Trước khi xoá, đẩy
  * dòng "ĐÃ XOÁ" sang bảng tính để bản sao ngoài DB không còn dòng mồ côi.
  */
-export async function deleteBooking(session: BaobaySession, spotRaw: string, id: string): Promise<void> {
+/**
+ * BỎ BOOKING khỏi sổ vì NHẬP NHẦM hoặc NHẬP TRÙNG.
+ *
+ * Bản cũ xoá thẳng khỏi cơ sở dữ liệu — mất dấu hoàn toàn, chỉ còn một dòng
+ * "ĐÃ XOÁ" bên Google Sheet mà dòng đó cũng xoá tay được. Đó là cửa mở cho gian
+ * lận, nên giờ chỉ ĐÁNH DẤU: bản ghi ở lại sổ, không vào thống kê, không lên
+ * lịch bay, và luôn lấy lại được.
+ *
+ * Hai đường khác nhau:
+ *  - "mistake"   : booking chưa dính gì (chưa thu, chưa xuất vé, chưa bay).
+ *  - "duplicate" : trùng với một booking THẬT — phải chỉ đích danh bản giữ lại,
+ *                  máy chuyển hết tiền đã thu và dấu xuất vé sang bản đó. Tiền
+ *                  không mất, chỉ đổi chỗ đứng; tổng tiền mặt từng người đang
+ *                  giữ không đổi một đồng vì lệnh thu vẫn ghi đúng người thu.
+ */
+export async function voidBooking(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { kind: "mistake" | "duplicate"; reason: string; keepId?: string },
+): Promise<{ voided: BookingDTO; keep?: BookingDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
+  const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
+  if (doc.status === "voided") throw new BaobayError("Booking này đã được bỏ khỏi sổ", 400);
 
-  const doc = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
-  if (!doc) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+  const reason = (input.reason ?? "").trim();
+  if (!reason) throw new BaobayError("Ghi giúp lý do bỏ booking này", 400);
 
-  await BaobayBooking.deleteOne({ _id: id, spot });
-  runInBackground(() => pushBookingRow({ ...doc, status: "deleted" }).then(() => {}));
+  /** Ngày đã chốt sổ thì khoá — sửa sau lưng kế toán là hỏng đối soát. */
+  const closed = await AccountantDailyClose.findOne({ spot, date: doc.flightDate, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không bỏ booking được nữa", 400);
+
+  const paid = (doc.deposit ?? 0) > 0 || (doc.collectedLog ?? []).length > 0;
+
+  if (input.kind === "mistake") {
+    if (paid) throw new BaobayError("Booking đã phát sinh tiền — nếu trùng thì chọn “gộp”, còn lại phải dùng Huỷ khách", 400);
+    if (doc.ticketIssuedAt) throw new BaobayError("Booking đã xuất vé — thu hồi vé rồi mới bỏ được", 400);
+    if (doc.status === "done") throw new BaobayError("Booking đã bay — không bỏ được", 400);
+  }
+
+  let keep: any = null;
+  if (input.kind === "duplicate") {
+    if (!input.keepId || !mongoose.Types.ObjectId.isValid(input.keepId)) {
+      throw new BaobayError("Chọn booking GIỮ LẠI để gộp vào", 400);
+    }
+    if (String(input.keepId) === String(id)) throw new BaobayError("Không gộp một booking vào chính nó", 400);
+    keep = await BaobayBooking.findOne({ _id: input.keepId, spot }).lean<any>();
+    if (!keep) throw new BaobayError("Không tìm thấy booking giữ lại", 404);
+    if (keep.status === "voided") throw new BaobayError("Booking giữ lại cũng đã bị bỏ — chọn bản khác", 400);
+
+    /**
+     * Chuyển TIỀN sang bản giữ: lệnh thu chỉ đổi chỗ trỏ (giữ nguyên người thu,
+     * số tiền, hình thức) nên bảng tiền không xê dịch; cọc và vệt thu cộng dồn.
+     */
+    await BaobayCollect.updateMany(
+      { bookingId: doc._id },
+      { $set: { bookingId: keep._id, bookingCode: keep.bookingCode || "", guestName: keep.contactName || "" } },
+    );
+    const keepSet: Record<string, unknown> = {
+      deposit: (keep.deposit ?? 0) + (doc.deposit ?? 0),
+      collectedLog: [...(keep.collectedLog ?? []), ...(doc.collectedLog ?? [])],
+      note: [keep.note, `gộp booking trùng (${doc.contactName || doc.phone || "bản kia"})`].filter(Boolean).join(" · "),
+    };
+    // Dấu đã xuất vé và dịch vụ: bản nào có thì bản giữ có
+    if (!keep.ticketIssuedAt && doc.ticketIssuedAt) {
+      keepSet.ticketIssuedAt = doc.ticketIssuedAt;
+      keepSet.ticketIssuedBy = doc.ticketIssuedBy || "";
+    }
+    for (const f of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const) {
+      if ((keep[f] ?? 0) === 0 && (doc[f] ?? 0) > 0) keepSet[f] = doc[f];
+    }
+    keepSet.remaining = Math.max(0, (keep.totalAmount ?? 0) - (keepSet.deposit as number));
+    keep = await BaobayBooking.findOneAndUpdate({ _id: keep._id, spot }, { $set: keepSet }, { new: true }).lean<any>();
+    pushSheetInBackground(() => pushBookingRow(keep), BaobayBooking, keep._id);
+  }
+
+  const voided = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        status: "voided",
+        voidedAt: new Date(),
+        voidedBy: session.name || session.username,
+        voidReason: reason,
+        voidKind: input.kind,
+        mergedInto: keep?._id,
+        // Tiền đã dời sang bản giữ — để lại số cũ là cộng hai lần
+        ...(input.kind === "duplicate" ? { deposit: 0, remaining: 0, collectedLog: [] } : {}),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(voided), BaobayBooking, voided._id);
+  return { voided: toBookingDTO(voided), keep: keep ? toBookingDTO(keep) : undefined };
 }
 
 /**
@@ -3592,9 +3687,8 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking", 404);
   if (current.status === "open") throw new BaobayError("Booking này đang ở trạng thái chờ bay", 400);
-  if (current.status === "deleted") throw new BaobayError("Booking đã xoá, không hoàn tác được", 400);
 
-  const was = current.status === "done" ? "đã bay" : "đã huỷ";
+  const was = current.status === "done" ? "đã bay" : current.status === "voided" ? "đã bỏ khỏi sổ" : "đã huỷ";
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
     {
@@ -3605,6 +3699,11 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
       $unset: {
         doneAt: "",
         doneBy: "",
+        voidedAt: "",
+        voidedBy: "",
+        voidReason: "",
+        voidKind: "",
+        mergedInto: "",
         cancelledAt: "",
         cancelledBy: "",
         cancelTicketIssued: "",
@@ -3896,6 +3995,16 @@ export async function updateBookingStatus(
   const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
 
+  /**
+   * KHAU PHẠ bán VÉ GIẤY: khách phải qua quầy lấy vé rồi mới ra bãi bay. Tích
+   * "đã bay" cho người chưa lấy vé nghĩa là hoặc quầy quên tích, hoặc khách bay
+   * chui — cả hai đều phải chặn tại chỗ, vì cuối ngày đối chiếu vé xuất với
+   * chuyến bay mới phát hiện thì không lần ra nổi khách nào.
+   */
+  if (action === "flown" && spot === "khau-pha" && !current.ticketIssuedAt) {
+    throw new BaobayError("Chưa xuất vé, không thể tích đã bay — bấm 🎫 Xuất vé trước", 400);
+  }
+
   let update: Record<string, unknown>;
   if (action === "move") {
     if (!toDate) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
@@ -4097,7 +4206,18 @@ function toBookingDTO(doc: any): BookingDTO {
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
     note: doc.note || "",
-    status: doc.status === "done" ? "done" : doc.status === "cancelled" ? "cancelled" : "open",
+    status:
+      doc.status === "done"
+        ? "done"
+        : doc.status === "cancelled"
+          ? "cancelled"
+          : doc.status === "voided"
+            ? "voided"
+            : "open",
+    voidedBy: doc.voidedBy || undefined,
+    voidReason: doc.voidReason || undefined,
+    voidKind: doc.voidKind || undefined,
+    mergedInto: doc.mergedInto ? String(doc.mergedInto) : undefined,
     doneAt: doc.doneAt ? new Date(doc.doneAt).toISOString() : undefined,
     doneBy: doc.doneBy || undefined,
     rescheduledFrom: doc.rescheduledFrom ?? [],
@@ -5590,6 +5710,37 @@ export async function listFlycamCancels(spotRaw: string, date: string): Promise<
     .limit(50)
     .lean<any[]>();
   return docs.map(toFlycamCancelDTO);
+}
+
+/**
+ * ĐẾM BOOKING ĐÃ BỎ theo từng người trong khoảng ngày.
+ *
+ * Đây là lớp chống lạm dụng thật sự: không cấm ai bỏ booking, nhưng ai bỏ nhiều
+ * bất thường thì con số tự nói. Một người bỏ 1-2 cái/tháng là bình thường; bỏ
+ * mười mấy cái thì có chuyện phải hỏi.
+ */
+export async function voidStats(
+  spotRaw: string,
+  from: string,
+  to: string,
+): Promise<Array<{ name: string; mistake: number; duplicate: number; total: number; guests: number }>> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const rows = await BaobayBooking.find({ spot, status: "voided", flightDate: { $gte: from, $lte: to } })
+    .select("voidedBy voidKind guestCount")
+    .lean<any[]>();
+
+  const by = new Map<string, { name: string; mistake: number; duplicate: number; total: number; guests: number }>();
+  for (const r of rows) {
+    const name = r.voidedBy || "(không rõ)";
+    const p = by.get(name) ?? { name, mistake: 0, duplicate: 0, total: 0, guests: 0 };
+    if (r.voidKind === "duplicate") p.duplicate += 1;
+    else p.mistake += 1;
+    p.total += 1;
+    p.guests += r.guestCount || 0;
+    by.set(name, p);
+  }
+  return [...by.values()].sort((a, b) => b.total - a.total);
 }
 
 export async function getDailyClose(spot: string, date: string): Promise<DailyCloseDTO | null> {

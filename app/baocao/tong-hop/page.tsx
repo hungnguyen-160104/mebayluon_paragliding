@@ -32,7 +32,12 @@ export default function SummaryPage() {
   const [from, setFrom] = useState(shiftDateKey(today, -29));
   const [to, setTo] = useState(today);
   const [tab, setTab] = useState<Tab>("days");
-  const [data, setData] = useState<BaobaySummaryDTO | null>(null);
+  const [data, setData] = useState<
+    (BaobaySummaryDTO & {
+      /** Ai bỏ bao nhiêu booking trong kỳ — lớp soi lạm dụng, xem chú thích ở voidStats. */
+      voidedByPerson?: Array<{ name: string; mistake: number; duplicate: number; total: number; guests: number }>;
+    }) | null
+  >(null);
   /** Người được chọn để tải bảng kê riêng. */
   const [statementUser, setStatementUser] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,7 +52,7 @@ export default function SummaryPage() {
     setBusy(true);
     setError(null);
     try {
-      setData(await apiGet<BaobaySummaryDTO>(`/api/baocao/summary?from=${f}&to=${t}&spot=${spot}`));
+      setData(await apiGet(`/api/baocao/summary?from=${f}&to=${t}&spot=${spot}`));
     } catch (err: any) {
       setError(err?.message || "Không tải được bảng tổng hợp");
     } finally {
@@ -169,6 +174,29 @@ export default function SummaryPage() {
             {resync.running ? "Đang đẩy lại…" : "Đẩy lại Google Sheets"}
           </Button>
         </div>
+
+        {/* AI BỎ BOOKING trong kỳ — không cấm ai bỏ, nhưng bỏ nhiều bất thường thì thấy ngay */}
+        {(data?.voidedByPerson?.length ?? 0) > 0 && (
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/60 p-2.5">
+            <div className="text-sm font-bold text-amber-900">
+              🗑 Booking đã bỏ khỏi sổ trong kỳ ({data!.voidedByPerson!.reduce((t, p) => t + p.total, 0)})
+            </div>
+            <ul className="mt-1 space-y-0.5 text-xs text-slate-700">
+              {data!.voidedByPerson!.map((p) => (
+                <li key={p.name} className="flex gap-2">
+                  <span className="min-w-0 flex-1 truncate">
+                    <strong>{p.name}</strong>
+                    <span className="text-slate-500">
+                      {" "}
+                      · nhập nhầm {p.mistake} · trùng {p.duplicate} · {p.guests} khách
+                    </span>
+                  </span>
+                  <strong className="shrink-0 tabular-nums">{p.total}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Bảng kê MỘT nhân sự bất kỳ theo đúng khoảng ngày đang chọn ở bộ lọc trên */}
         {data && (

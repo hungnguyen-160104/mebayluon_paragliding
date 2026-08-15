@@ -6,7 +6,7 @@ import { firstZodMessage, summaryQuerySchema } from "@/lib/baobay/validation";
 import type { BaobaySummaryDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { getSummary } from "@/services/baobay.service";
+import { voidStats, getSummary } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +54,9 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json(summary);
+  /** Kèm bảng đếm booking đã bỏ theo người — lớp soi lạm dụng cho kế toán/chủ. */
+  const voided = await voidStats(spot, parsed.data.from, parsed.data.to);
+  return NextResponse.json({ ...summary, voidedByPerson: voided });
 }
 
 const STATUS_LABEL = {
