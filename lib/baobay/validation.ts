@@ -322,6 +322,8 @@ export const bookingSchema = z.object({
   flightKind: z.enum(["pg", "ppg", "m650", "m850"]).optional().default("pg"),
   // Khách PPG trong nhóm trộn PG+PPG — PHẢI optional+default, form cũ không gửi
   ppgGuests: count(100).optional().default(0),
+  // Không gửi (form cũ) thì để undefined cho máy chủ TỰ TÍNH theo flycam+360
+  comboDiscount: money.optional(),
   pickupFee: money,
   mountainCar: count(100),
   unitPrice: money,

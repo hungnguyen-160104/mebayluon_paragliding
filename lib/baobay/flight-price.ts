@@ -183,6 +183,8 @@ export type BookingMoneyInput = {
   sunset?: number;
   pickupFee?: number;
   discount?: number;
+  /** Tiền giảm combo đã CHỐT TAY — không khai thì máy tự tính min(flycam,360)×100k. */
+  comboDiscount?: number;
 };
 
 /**
@@ -201,7 +203,7 @@ export function bookingTotal(input: BookingMoneyInput): number {
       servicesAmount(input) +
       car +
       (input.pickupFee || 0) -
-      comboDiscount(input.flycam, input.video360) -
+      (input.comboDiscount ?? comboDiscount(input.flycam, input.video360)) -
       (input.discount || 0),
   );
 }

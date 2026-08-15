@@ -1004,6 +1004,25 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 /* Thẻ nhập booking mới + danh sách sắp tới                            */
 /* ================================================================== */
 
+/** Bộ đếm nhỏ cho hàng PG/PPG — vừa nửa hàng lưới, đứng cạnh ô Điểm bay. */
+function MiniCount({ value, onChange, max = 100 }: { value: number; onChange: (v: number) => void; max?: number }) {
+  const clamp = (n: number) => Math.max(0, Math.min(max, Math.trunc(n) || 0));
+  const btn = "h-8 w-6 shrink-0 rounded border border-slate-300 bg-white text-sm font-semibold text-slate-600 active:bg-slate-200";
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <button type="button" className={btn} aria-label="Giảm 1" onClick={() => onChange(clamp(value - 1))}>−</button>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(clamp(Number(e.target.value.replace(/\D/g, ""))))}
+        className="h-8 w-8 rounded border border-slate-300 bg-white text-center text-sm font-bold tabular-nums"
+      />
+      <button type="button" className={btn} aria-label="Thêm 1" onClick={() => onChange(clamp(value + 1))}>＋</button>
+    </span>
+  );
+}
+
 /** Tổng tiền của form: giá PG (ô đơn giá) × khách PG + bảng giá PPG × khách PPG − combo − giảm trừ. */
 function totalOf(f: {
   flightDate: string;
@@ -1019,6 +1038,7 @@ function totalOf(f: {
   sunset: number;
   pickupFee: number;
   discount: number;
+  comboDiscount: number;
 }): number {
   return computeBookingTotal({
     ...f,
@@ -1035,6 +1055,8 @@ type BookingForm = {
   guestCount: number;
   /** Khách PPG khi nhóm trộn PG + PPG (Khau Phạ) — 0 nếu cả nhóm một loại. */
   ppgGuests: number;
+  /** Tiền giảm combo flycam+360 — máy điền sẵn theo min(flycam,360)×100k, sửa tay được. */
+  comboDiscount: number;
   flycam: number;
   video360: number;
   redFlag: number;
@@ -1070,6 +1092,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     bookingCode: "",
     guestCount: 0,
     ppgGuests: 0,
+    comboDiscount: 0,
     flycam: 0,
     video360: 0,
     redFlag: 0,
@@ -1133,14 +1156,21 @@ export function BookingCard({
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   /** Ô NHẬP NHANH: dán một dòng chữ, máy bóc và điền form — người nhập soát rồi lưu. */
   const [quick, setQuick] = useState("");
+  /** Đã sửa tay ô giảm combo — máy thôi tự điền lại. */
+  const [comboTouched, setComboTouched] = useState(false);
   const [quickMsg, setQuickMsg] = useState<string | null>(null);
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
     if (key === "remaining") setRemainingTouched(true);
     if (key === "unitPrice") setPriceTouched(true);
+    if (key === "comboDiscount") setComboTouched(true);
     setForm((prev) => {
       const next = { ...prev, [key]: value };
+      // Combo flycam+360: máy điền lại mỗi khi hai dịch vụ này đổi, trừ khi đã sửa tay
+      if (!comboTouched && (key === "flycam" || key === "video360" || key === "guestCount")) {
+        next.comboDiscount = comboDiscount(next.flycam, next.video360);
+      }
       // Dịch vụ bám theo đầu khách — giảm số khách thì các dịch vụ tự kẹp xuống
       if (key === "guestCount") {
         const cap = Number(value) || 0;
@@ -1163,8 +1193,8 @@ export function BookingCard({
       const total = totalOf(next);
       if (
         !remainingTouched &&
-        ["unitPrice", "discount", "guestCount", "ppgGuests", "deposit", "flightDate", "flightKind", "pickupFee",
-         "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"].includes(key as string)
+        ["unitPrice", "discount", "comboDiscount", "guestCount", "ppgGuests", "deposit", "flightDate", "flightKind",
+         "pickupFee", "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"].includes(key as string)
       ) {
         next.remaining = Math.max(0, total - (next.deposit || 0));
       }
@@ -1210,7 +1240,7 @@ export function BookingCard({
   /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
   const bookingTotal = totalOf(form);
   const serviceMoney = servicesAmount(form);
-  const comboMoney = comboDiscount(form.flycam, form.video360);
+  const comboMoney = form.comboDiscount;
   /** Khách PG/PPG đang khai — nhóm thuần PPG lưu kiểu cũ (flightKind "ppg"). */
   const pgCount = form.flightKind === "ppg" ? 0 : Math.max(0, form.guestCount - form.ppgGuests);
   const ppgCount = form.flightKind === "ppg" ? form.guestCount : form.ppgGuests;
@@ -1254,6 +1284,7 @@ export function BookingCard({
         next.guestCount = r.guestCount;
       }
       next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
+      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
       next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
       return next;
     });
@@ -1299,6 +1330,7 @@ export function BookingCard({
       next.sunset = Math.min(next.sunset, guestCount);
       next.mountainCar = Math.min(next.mountainCar, guestCount);
       next.flagFlight = Math.min(next.flagFlight, guestCount);
+      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
       if (!remainingTouched) next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
       return next;
     });
@@ -1418,6 +1450,7 @@ export function BookingCard({
       expectedTime: b.expectedTime,
       flightKind: b.flightKind,
       ppgGuests: b.ppgGuests ?? 0,
+      comboDiscount: b.comboDiscount ?? 0,
       pickupFee: b.pickupFee,
       mountainCar: b.mountainCar,
       unitPrice: b.unitPrice,
@@ -1536,23 +1569,20 @@ export function BookingCard({
           />
         </Field>
         {bookSpot === "khau-pha" ? (
-          /* Khau Phạ: đặt PG và PPG CHUNG một booking — mỗi loại một ô số khách.
-             Chiếm TRỌN một hàng (col-span-2): hai cụm đếm đứng cạnh nhau quá rộng
-             cho nửa hàng, tràn đè lên ô Điểm bay. */
-          <div className="col-span-2">
-            <Field label="PG / PPG (số khách từng loại)">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <label className="flex items-center gap-1.5 text-sm font-semibold text-sky-800">
-                  PG
-                  <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
-                </label>
-                <label className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
-                  PPG
-                  <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
-                </label>
-              </div>
-            </Field>
-          </div>
+          /* Khau Phạ: đặt PG và PPG CHUNG một booking — bộ đếm MINI để cả hai
+             nằm gọn nửa hàng, cùng hàng với ô Điểm bay. */
+          <Field label="PG / PPG (số khách)">
+            <div className="flex h-10 flex-wrap items-center gap-x-2.5 gap-y-1">
+              <label className="flex items-center gap-1 text-xs font-bold text-sky-800">
+                PG
+                <MiniCount value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} />
+              </label>
+              <label className="flex items-center gap-1 text-xs font-bold text-violet-800">
+                PPG
+                <MiniCount value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} />
+              </label>
+            </div>
+          </Field>
         ) : (
         <Field label="Loại hình bay">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
@@ -1717,6 +1747,12 @@ export function BookingCard({
         <Field label="Phí đưa đón">
           <MoneyInput value={form.pickupFee} onChange={(v) => set("pickupFee", v)} />
         </Field>
+        <Field label="Giảm combo (flycam+360)">
+          <MoneyInput value={form.comboDiscount} onChange={(v) => set("comboDiscount", v)} />
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            Máy tính {`${Math.min(form.flycam, form.video360)}`} cặp ×100k — sửa được nếu chốt khác
+          </p>
+        </Field>
         <Field label="Giảm trừ (chiết khấu)">
           <MoneyInput value={form.discount} onChange={(v) => set("discount", v)} />
         </Field>
@@ -1817,9 +1853,36 @@ export function BookingCard({
               setForm(emptyBooking(today, bookSpot));
               setError(null);
               setForceOpen(false);
+              // Cờ "đã sửa tay" của lần sửa trước không được vắt sang booking mới
+              setRemainingTouched(false);
+              setPriceTouched(false);
+              setComboTouched(false);
             }}
           >
             Thôi sửa
+          </Button>
+        )}
+        {/* Nhập dở mà muốn làm lại từ đầu: xoá trắng form + các cờ "đã sửa tay" */}
+        {!editingId && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-11 shrink-0 border-rose-300 bg-white px-3 text-rose-700"
+            disabled={saving}
+            title="Xoá trắng toàn bộ ô nhập để làm lại từ đầu — không đụng booking đã lưu"
+            onClick={() => {
+              if (!window.confirm("Xoá hết dữ liệu đang nhập trên form để nhập lại từ đầu?")) return;
+              setForm(emptyBooking(today, bookSpot));
+              setQuick("");
+              setQuickMsg(null);
+              setError(null);
+              setDone(null);
+              setRemainingTouched(false);
+              setPriceTouched(false);
+              setComboTouched(false);
+            }}
+          >
+            🗑 Nhập lại
           </Button>
         )}
         <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>

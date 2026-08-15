@@ -42,7 +42,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, flightUnitPrice, type FlightKind } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, flightUnitPrice, type FlightKind } from "@/lib/baobay/flight-price";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type {
@@ -2915,6 +2915,7 @@ export type BookingSaveInput = {
   expectedTime: string;
   flightKind?: "pg" | "ppg" | "m650" | "m850";
   ppgGuests?: number;
+  comboDiscount?: number;
   pickupFee: number;
   mountainCar: number;
   unitPrice: number;
@@ -3019,6 +3020,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
       ppgGuests: input.ppgGuests ?? 0,
+      comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360),
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
@@ -3210,6 +3212,7 @@ export async function updateBookingInfo(
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
       ppgGuests: input.ppgGuests ?? 0,
+      comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360),
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
@@ -3582,6 +3585,7 @@ function toBookingDTO(doc: any): BookingDTO {
     flagFlight: doc.flagFlight ?? 0,
     flightKind: (doc.flightKind ?? "pg") as FlightKind,
     ppgGuests: Number(doc.ppgGuests) || 0,
+    comboDiscount: Number(doc.comboDiscount) || 0,
     pickupFee: doc.pickupFee ?? 0,
     mountainCar: doc.mountainCar ?? 0,
     otaName: doc.otaName || "",

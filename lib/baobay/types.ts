@@ -317,6 +317,8 @@ export type BookingDTO = {
   flightKind: "pg" | "ppg" | "m650" | "m850";
   /** Số khách PPG khi đặt PG + PPG chung booking (Khau Phạ); 0 = cả nhóm một loại. */
   ppgGuests: number;
+  /** Tiền giảm combo flycam+360 — máy điền sẵn, sửa tay được. */
+  comboDiscount: number;
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */

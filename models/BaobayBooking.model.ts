@@ -60,6 +60,8 @@ export interface IBaobayBooking {
   flightKind: "pg" | "ppg" | "m650" | "m850";
   /** Số khách bay PPG khi nhóm đặt PG + PPG chung một booking (Khau Phạ). */
   ppgGuests: number;
+  /** Tiền giảm combo flycam+360 — máy điền sẵn, quầy sửa được. */
+  comboDiscount: number;
   /** Phí đưa đón thu của khách (nếu có). */
   pickupFee: number;
   /** Số suất xe chuyên dụng lên núi (Hà Nội) — 150k/khách. */
@@ -173,6 +175,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     syncedAt: Date,
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },
     ppgGuests: { type: Number, default: 0, min: 0 },
+    comboDiscount: { type: Number, default: 0, min: 0 },
     pickupFee: { type: Number, default: 0, min: 0 },
     mountainCar: { type: Number, default: 0, min: 0 },
     cancelTicketIssued: Boolean,
