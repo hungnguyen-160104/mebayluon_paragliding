@@ -54,6 +54,15 @@ export const FLAT_PRICE: Partial<Record<FlightKind, number>> = {
 /** Xe chuyên dụng lên núi — Hà Nội, tính theo đầu khách. */
 export const MOUNTAIN_CAR_PRICE = 150_000;
 
+/**
+ * CHIẾT KHẤU trả đại lý / hướng dẫn viên: 150k một khách.
+ *
+ * Đây là khoản TRẢ NGOÀI — không nằm trong tổng tiền khách trả, không lên phiếu
+ * gửi khách. Máy chỉ điền sẵn số mặc định, người chi sửa được vì mỗi đại lý một
+ * mức thoả thuận.
+ */
+export const COMMISSION_PER_GUEST = 150_000;
+
 /** Đơn giá dịch vụ tuỳ chọn, tính theo từng suất khách. */
 export const SERVICE_PRICE = {
   flycam: 400_000,

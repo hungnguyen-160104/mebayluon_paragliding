@@ -10,6 +10,9 @@ import {
   assignBooking,
   acceptAssignedBooking,
   collectForBooking,
+  payCommission,
+  restoreBooking,
+  splitBooking,
   toggleBookingTicket,
   listSpotStaffAll,
   createBooking,
@@ -147,7 +150,7 @@ export async function PATCH(req: Request) {
    */
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action ?? "flown");
-  const crewAllowed = action === "accept" || action === "collect" || action === "assign";
+  const crewAllowed = action === "accept" || action === "collect" || action === "assign" || action === "commission";
   const auth = requireBaobay(req, {
     roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
   });
@@ -159,7 +162,7 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -171,6 +174,33 @@ export async function PATCH(req: Request) {
       const assignee = String(body?.assignee ?? "");
       if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });
       return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
+    }
+    // HOÀN TÁC: bấm nhầm "đã bay" / "huỷ" thì trả về chờ bay
+    if (action === "restore") {
+      return NextResponse.json({ booking: await restoreBooking(auth, spot, id) });
+    }
+    // TÁCH NHÓM: đoàn 10 khách chỉ bay 6, còn 4 huỷ hoặc dời sang ngày khác
+    if (action === "split") {
+      const res = await splitBooking(auth, spot, id, {
+        mode: body?.mode === "move" ? "move" : "cancel",
+        guests: Number(body?.guests) || 0,
+        toDate,
+        ticketIssued: Boolean(body?.ticketIssued),
+        ticketCodesText: String(body?.ticketCodesText ?? ""),
+        refund: Number(body?.refund) || 0,
+        refundMethod: body?.refundMethod === "cash" ? "cash" : "transfer",
+      });
+      return NextResponse.json(res);
+    }
+    // CHI CHIẾT KHẤU cho đại lý dẫn đoàn — trả ngoài, không lên phiếu khách
+    if (action === "commission") {
+      const booking = await payCommission(auth, spot, id, {
+        amount: Math.max(0, Math.round(Number(body?.amount) || 0)),
+        method: body?.method === "transfer" ? "transfer" : "cash",
+        transferCode: String(body?.transferCode ?? ""),
+        note: String(body?.note ?? ""),
+      });
+      return NextResponse.json({ booking });
     }
     // Phi công/camera man xác nhận đã nhận khách được giao
     if (action === "accept") {

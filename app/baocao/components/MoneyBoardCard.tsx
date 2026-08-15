@@ -96,7 +96,8 @@ export function MoneyBoardCard({
   }, [load]);
 
   if (!board) return null;
-  if (board.cashTotal === 0 && board.transfer.total === 0 && board.spendTotal === 0) return null;
+  if (board.cashTotal === 0 && board.transfer.total === 0 && board.spendTotal === 0 && board.companySpend.total === 0)
+    return null;
 
   const inner = (
     <div className="grid gap-2 @md:grid-cols-2">
@@ -163,6 +164,29 @@ export function MoneyBoardCard({
         </div>
         <PersonRows people={board.cashByPerson} tone="cash" />
       </div>
+
+      {/* Công ty chi thẳng từ TK — chiết khấu đại lý trả bằng chuyển khoản */}
+      {board.companySpend.total > 0 && (
+        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-2.5 @md:col-span-2">
+          <div className="text-xs font-semibold text-violet-900">🤝 Công ty chi từ TK (chiết khấu đại lý)</div>
+          <div className="text-xl font-bold tabular-nums text-violet-800">{formatVND(board.companySpend.total)}</div>
+          <ul className="mt-1.5 space-y-0.5 text-xs text-slate-700">
+            {board.companySpend.items.map((it, i) => (
+              <li key={`${it.label}-${i}`} className="flex gap-2">
+                <span className="min-w-0 flex-1 truncate">
+                  {it.daySeq > 0 && (
+                    <strong className="mr-1 rounded bg-red-600 px-1 font-bold text-white">{it.daySeq}</strong>
+                  )}
+                  {it.label}
+                  {it.transferCode ? ` · CK #${it.transferCode}` : ""}
+                  {it.by ? <span className="text-slate-400"> · {it.by} ghi</span> : null}
+                </span>
+                <strong className="shrink-0 tabular-nums">{formatVND(it.amount)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Tiền nhân sự đã bỏ ra tại bãi — kế toán phải hoàn lại */}
       {board.spendTotal > 0 && (

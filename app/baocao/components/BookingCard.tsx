@@ -11,6 +11,7 @@ import type { BookingDTO } from "@/lib/baobay/types";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { shareBookingImage } from "./booking-image";
 import {
+  COMMISSION_PER_GUEST,
   FLIGHT_KIND_LABEL,
   FLIGHT_KIND_SHORT,
   MOUNTAIN_CAR_PRICE,
@@ -253,6 +254,227 @@ function AssignControl({
 
 
 /**
+ * CỤM NÚT ÍT DÙNG của một dòng booking — bấm "⋯ Thêm" mới xổ.
+ *
+ * Trước đây năm nút nằm phơi hết trên dòng, đọc thông tin khách phải len lỏi
+ * giữa rừng nút. Việc làm thường xuyên (Đã bay · Thu tiền · Xuất vé) vẫn để
+ * ngoài; đổi lịch, chuyển người, huỷ, sửa, chiết khấu nằm trong này.
+ */
+function RowMenu({
+  spot,
+  booking,
+  onMove,
+  onEdit,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onMove: () => void;
+  onEdit: () => void;
+  onDone: (message?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 bg-white px-2 text-xs " + (booking.commission ? "border-violet-400 text-violet-800" : "")
+        }
+        onClick={() => setOpen(true)}
+        title="Đổi lịch · Chuyển người · Chiết khấu đại lý · Huỷ · Sửa"
+      >
+        ⋯ Thêm{booking.commission ? " 🤝" : ""}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-56 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
+      <button
+        type="button"
+        className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100"
+        onClick={() => {
+          onMove();
+          setOpen(false);
+        }}
+      >
+        ⇢ Đổi lịch bay
+      </button>
+      <div className="px-1 py-0.5">
+        <AssignControl
+          spot={spot}
+          booking={booking}
+          onDone={() => {
+            onDone();
+            setOpen(false);
+          }}
+          buttonClassName="w-full justify-start"
+        />
+      </div>
+      {/* Chiết khấu chỉ có ở Khau Phạ — nơi khách đi theo đại lý / hướng dẫn viên */}
+      {spot === "khau-pha" && (
+        <div className="px-1 py-0.5">
+          <CommissionControl
+            spot={spot}
+            booking={booking}
+            onDone={(m) => {
+              onDone(m);
+              setOpen(false);
+            }}
+          />
+        </div>
+      )}
+      <div className="px-1 py-0.5">
+        <CancelBookingControl
+          spot={spot}
+          booking={booking}
+          onDone={(m) => {
+            onDone(m);
+            setOpen(false);
+          }}
+        />
+      </div>
+      <button
+        type="button"
+        className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100"
+        onClick={() => {
+          onEdit();
+          setOpen(false);
+        }}
+      >
+        ✎ Sửa thông tin booking
+      </button>
+      <button
+        type="button"
+        className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
+        onClick={() => setOpen(false)}
+      >
+        Đóng
+      </button>
+    </div>
+  );
+}
+
+/**
+ * CHI CHIẾT KHẤU cho đại lý / hướng dẫn viên dẫn đoàn.
+ *
+ * Khoản TRẢ NGOÀI: không cộng vào tiền khách, KHÔNG lên phiếu gửi khách. Mặc
+ * định 150k/khách nhưng sửa được vì mỗi đại lý một mức thoả thuận.
+ */
+function CommissionControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  const paid = booking.commission;
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(paid?.amount || booking.guestCount * COMMISSION_PER_GUEST);
+  const [method, setMethod] = useState<"cash" | "transfer">(paid?.method ?? "cash");
+  const [code, setCode] = useState(paid?.transferCode ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    if (amount <= 0) return setError("Chưa nhập số tiền chiết khấu");
+    if (method === "transfer" && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "commission",
+        amount,
+        method,
+        transferCode: code,
+      });
+      onDone(
+        method === "cash"
+          ? `✓ Đã chi chiết khấu ${amount.toLocaleString("vi-VN")} đ tiền mặt — trừ vào tiền bạn đang giữ.`
+          : `✓ Đã ghi chiết khấu ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
+      );
+      setOpen(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không ghi nhận được khoản chi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className={
+          "w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold " +
+          (paid ? "bg-violet-100 text-violet-900" : "text-slate-700 hover:bg-slate-100")
+        }
+        onClick={() => {
+          setAmount(paid?.amount || booking.guestCount * COMMISSION_PER_GUEST);
+          setMethod(paid?.method ?? "cash");
+          setCode(paid?.transferCode ?? "");
+          setOpen(true);
+          setError(null);
+        }}
+      >
+        {paid
+          ? `🤝 CK đại lý: ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"} — sửa`
+          : "🤝 Chiết khấu đại lý"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-violet-300 bg-violet-50 p-2">
+      <div className="text-[11px] font-bold text-violet-900">
+        Chiết khấu trả đại lý — {booking.guestCount} khách × {(COMMISSION_PER_GUEST / 1000).toLocaleString("vi-VN")}k
+      </div>
+      <p className="mb-1 text-[10px] leading-tight text-violet-900/70">Khoản trả ngoài — không hiện trên phiếu khách.</p>
+      <MoneyInput value={amount} onChange={setAmount} />
+      <div className="mt-1 flex overflow-hidden rounded-lg border border-slate-300">
+        {(["cash", "transfer"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMethod(m)}
+            className={
+              method === m
+                ? "flex-1 bg-violet-600 py-1 text-xs font-bold text-white"
+                : "flex-1 bg-white py-1 text-xs font-medium text-slate-500"
+            }
+          >
+            {m === "cash" ? "Tiền mặt (trừ tiền tôi giữ)" : "CK từ TK công ty"}
+          </button>
+        ))}
+      </div>
+      {method === "transfer" && (
+        <TextInput
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Mã giao dịch CK"
+          className="mt-1 h-8 rounded-lg text-xs"
+        />
+      )}
+      {error && <div className="mt-1 text-[11px] font-semibold text-rose-700">{error}</div>}
+      <div className="mt-1.5 flex gap-1">
+        <Button type="button" className="h-8 flex-1 bg-violet-600 px-2 text-xs hover:bg-violet-700" disabled={busy} onClick={send}>
+          {busy ? "Đang ghi…" : "✓ Xác nhận chi"}
+        </Button>
+        <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Nút 💵 THU TIỀN dùng chung cho cả hai danh sách (chờ bay hôm nay + sắp tới).
  *
  * Thu được từ xa: khách chuyển khoản trước ngày bay thì điều phối/kế toán ghi
@@ -453,6 +675,9 @@ function CancelBookingControl({
   const hasTicketFlow = spot !== "ha-noi";
 
   const [open, setOpen] = useState(false);
+  /** Cả đoàn nghỉ bay, hay chỉ vài người trong đoàn? */
+  const [scope, setScope] = useState<"all" | "part">("all");
+  const [partGuests, setPartGuests] = useState(1);
   const [ticketIssued, setTicketIssued] = useState(false);
   const [codes, setCodes] = useState("");
   const [refund, setRefund] = useState(paid);
@@ -462,22 +687,42 @@ function CancelBookingControl({
 
   async function send() {
     if (hasTicketFlow && ticketIssued && !codes.trim()) return setError("Đã xuất vé thì phải ghi mã vé thu hồi");
+    if (scope === "part" && (partGuests < 1 || partGuests >= booking.guestCount)) {
+      return setError(`Số khách huỷ phải từ 1 đến ${booking.guestCount - 1} (huỷ hết thì chọn “cả đoàn”)`);
+    }
     setBusy(true);
     setError(null);
     try {
-      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
-        id: booking.id,
-        action: "cancel",
-        ticketIssued: hasTicketFlow ? ticketIssued : false,
-        ticketCodesText: codes,
-        refund: paid > 0 ? refund : 0,
-        refundMethod,
-      });
-      onDone(
-        paid > 0 && refund > 0
-          ? `✓ Đã huỷ bay và hoàn ${refund.toLocaleString("vi-VN")} đ bằng ${refundMethod === "cash" ? "tiền mặt" : "chuyển khoản"}.`
-          : "✓ Đã huỷ bay (không phát sinh hoàn tiền).",
-      );
+      if (scope === "part") {
+        await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+          id: booking.id,
+          action: "split",
+          mode: "cancel",
+          guests: partGuests,
+          ticketIssued: hasTicketFlow ? ticketIssued : false,
+          ticketCodesText: codes,
+          refund: paid > 0 ? refund : 0,
+          refundMethod,
+        });
+        onDone(
+          `✓ Đã huỷ ${partGuests} khách trong đoàn (còn ${booking.guestCount - partGuests} khách bay)` +
+            (refund > 0 ? `, hoàn ${refund.toLocaleString("vi-VN")} đ.` : "."),
+        );
+      } else {
+        await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+          id: booking.id,
+          action: "cancel",
+          ticketIssued: hasTicketFlow ? ticketIssued : false,
+          ticketCodesText: codes,
+          refund: paid > 0 ? refund : 0,
+          refundMethod,
+        });
+        onDone(
+          paid > 0 && refund > 0
+            ? `✓ Đã huỷ bay và hoàn ${refund.toLocaleString("vi-VN")} đ bằng ${refundMethod === "cash" ? "tiền mặt" : "chuyển khoản"}.`
+            : "✓ Đã huỷ bay (không phát sinh hoàn tiền).",
+        );
+      }
       setOpen(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không huỷ được booking");
@@ -494,6 +739,8 @@ function CancelBookingControl({
         className="h-7 bg-white px-2 text-xs text-rose-700"
         onClick={() => {
           setRefund(paid);
+          setScope("all");
+          setPartGuests(1);
           setTicketIssued(false);
           setCodes("");
           setRefundMethod("transfer");
@@ -508,7 +755,41 @@ function CancelBookingControl({
 
   return (
     <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
-      <div className="text-[11px] font-bold text-rose-900">Huỷ bay — {booking.contactName || "khách"}</div>
+      <div className="text-[11px] font-bold text-rose-900">
+        Huỷ bay — {booking.contactName || "khách"} ({booking.guestCount} khách)
+      </div>
+
+      {/* Đoàn 10 người bay được 6 là chuyện thường — huỷ được đúng phần không bay */}
+      {booking.guestCount > 1 && (
+        <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+          {(
+            [
+              ["all", "Huỷ cả đoàn"],
+              ["part", "Huỷ một phần"],
+            ] as Array<["all" | "part", string]>
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setScope(v)}
+              className={
+                scope === v
+                  ? "flex-1 bg-rose-600 px-1 text-xs font-bold text-white"
+                  : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {scope === "part" && (
+        <label className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-900">
+          Số khách huỷ:
+          <MiniCount value={partGuests} onChange={setPartGuests} max={Math.max(1, booking.guestCount - 1)} />
+          <span className="font-normal text-slate-500">còn {Math.max(0, booking.guestCount - partGuests)} khách bay</span>
+        </label>
+      )}
 
       {hasTicketFlow && (
         <>
@@ -623,8 +904,8 @@ export function BookingTodayBanner({
   const [error, setError] = useState<string | null>(null);
   /** Danh sách dài thì gập lại còn 10 dòng. */
   const [showAll, setShowAll] = useState(false);
-  /** id booking đang mở ô chọn ngày dời + ngày đã chọn. */
-  const [moving, setMoving] = useState<{ id: string; toDate: string } | null>(null);
+  /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
+  const [moving, setMoving] = useState<{ id: string; toDate: string; guests?: number } | null>(null);
   /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
   const [collectDone, setCollectDone] = useState<string | null>(null);
 
@@ -694,6 +975,49 @@ export function BookingTodayBanner({
     moved.guests ? `Dời ${moved.guests}k` : "",
     cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
   ].filter(Boolean);
+  /** Dời lịch: cả đoàn thì đổi ngày tại chỗ, một phần thì tách nhóm sang ngày mới. */
+  async function moveBooking(b: BookingDTO, m: { toDate: string; guests?: number }) {
+    const part = m.guests ?? 0;
+    if (part <= 0) return act(b, "move", m.toDate);
+    setBusy(b.id);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: b.id,
+        action: "split",
+        mode: "move",
+        guests: part,
+        toDate: m.toDate,
+      });
+      setMoving(null);
+      setCollectDone(
+        `✓ Đã dời ${part} khách sang ${formatDateKeyVN(m.toDate)} — còn ${b.guestCount - part} khách bay hôm nay.`,
+      );
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không dời được");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Hoàn tác: bấm nhầm "đã bay" hoặc "huỷ" thì trả booking về chờ bay. */
+  async function restore(b: BookingDTO) {
+    const what = b.status === "done" ? "về CHƯA BAY" : "về CHỜ BAY";
+    if (!window.confirm(`Hoàn tác booking ${b.contactName || ""} ${what}?`)) return;
+    setBusy(b.id);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "restore" });
+      setCollectDone("✓ Đã hoàn tác — booking trở lại danh sách chờ bay.");
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không hoàn tác được");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
   const body = (
     <>
@@ -717,20 +1041,53 @@ export function BookingTodayBanner({
         {openShown.map((b, i) => (
           <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
             {moving?.id === b.id ? (
-              /* Khách dời lịch: chọn ngày mới — booking tự chuyển sang ngày đó */
-              <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
+              /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
+              <div className="float-right ml-2 flex w-56 flex-wrap items-center justify-end gap-1 rounded-lg border border-amber-300 bg-amber-50/70 p-1.5">
+                {b.guestCount > 1 && (
+                  <div className="flex h-7 w-full overflow-hidden rounded-lg border border-slate-300">
+                    {(
+                      [
+                        [0, "Dời cả đoàn"],
+                        [1, "Dời một phần"],
+                      ] as Array<[number, string]>
+                    ).map(([v, label]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => setMoving({ ...moving, guests: v })}
+                        className={
+                          (moving.guests ?? 0) > 0 === (v > 0)
+                            ? "flex-1 bg-amber-600 px-1 text-[11px] font-bold text-white"
+                            : "flex-1 bg-white px-1 text-[11px] font-medium text-slate-500"
+                        }
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {(moving.guests ?? 0) > 0 && (
+                  <label className="flex w-full items-center gap-1.5 text-[11px] font-semibold text-amber-900">
+                    Số khách dời:
+                    <MiniCount
+                      value={moving.guests ?? 1}
+                      onChange={(v) => setMoving({ ...moving, guests: Math.min(v, b.guestCount - 1) })}
+                      max={Math.max(1, b.guestCount - 1)}
+                    />
+                  </label>
+                )}
                 <input
                   type="date"
                   value={moving.toDate}
                   min={shiftDateKey(todayInVN(), 1)}
-                  onChange={(e) => setMoving({ id: b.id, toDate: e.target.value })}
-                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  onChange={(e) => setMoving({ ...moving, toDate: e.target.value })}
+                  className="h-8 flex-1 rounded-lg border border-slate-300 bg-white px-2 text-xs"
                 />
                 <Button
                   type="button"
                   className="h-7 px-2 text-xs"
                   disabled={busy === b.id || !moving.toDate}
-                  onClick={() => act(b, "move", moving.toDate)}
+                  onClick={() => moveBooking(b, moving)}
                 >
                   {busy === b.id ? "Đang lưu…" : "✓ Đổi"}
                 </Button>
@@ -751,16 +1108,16 @@ export function BookingTodayBanner({
                 >
                   {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-7 bg-white px-2 text-xs"
-                  disabled={busy === b.id}
-                  onClick={() => setMoving({ id: b.id, toDate: "" })}
-                >
-                  ⇢ Đổi lịch
-                </Button>
-                <AssignControl spot={spot} booking={b} onDone={load} />
+                <RowMenu
+                  booking={b}
+                  spot={spot}
+                  onMove={() => setMoving({ id: b.id, toDate: "" })}
+                  onEdit={() => requestEditBooking(b)}
+                  onDone={(msg) => {
+                    if (msg) setCollectDone(msg);
+                    load();
+                  }}
+                />
               </div>
               <div className="float-right clear-right ml-2 mt-1 flex items-center gap-1">
                 <Button
@@ -790,24 +1147,6 @@ export function BookingTodayBanner({
                     load();
                   }}
                 />
-                <CancelBookingControl
-                  spot={spot}
-                  booking={b}
-                  onDone={(msg) => {
-                    setCollectDone(msg);
-                    load();
-                  }}
-                />
-                {/* Sửa dịch vụ / số tiền: mở thẻ BOOKING MỚI bên dưới với đúng booking này */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-7 bg-white px-2 text-xs"
-                  disabled={busy === b.id}
-                  onClick={() => requestEditBooking(b)}
-                >
-                  ✎ Sửa
-                </Button>
               </div>
               </>
             )}
@@ -860,6 +1199,17 @@ export function BookingTodayBanner({
                 ✎ Sửa
               </Button>
             </div>
+            {/* Bấm nhầm thì có đường lui — khỏi tạo booking mới để chữa (sổ đếm hai lần) */}
+            <Button
+              type="button"
+              variant="ghost"
+              className="float-right ml-2 h-7 bg-white px-2 text-xs font-semibold text-slate-600"
+              disabled={busy === b.id}
+              onClick={() => restore(b)}
+              title="Trả booking về danh sách chờ bay"
+            >
+              {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
+            </Button>
             {b.status === "done" ? (
               <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                 đã bay ✓
@@ -1700,8 +2050,9 @@ export function BookingCard({
         {bookSpot === "khau-pha" ? (
           /* Khau Phạ: đặt PG và PPG CHUNG một booking — bộ đếm MINI để cả hai
              nằm gọn nửa hàng, cùng hàng với ô Điểm bay. */
+          <div className="col-span-2 @md:col-span-1">
           <Field label="PG / PPG (số khách)">
-            <div className="flex h-10 flex-wrap items-center gap-x-2.5 gap-y-1">
+            <div className="flex min-h-10 flex-wrap items-center gap-x-2.5 gap-y-1">
               <label className="flex items-center gap-1 text-xs font-bold text-sky-800">
                 PG
                 <MiniCount value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} />
@@ -1712,6 +2063,7 @@ export function BookingCard({
               </label>
             </div>
           </Field>
+          </div>
         ) : (
         <Field label="Loại hình bay">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">

@@ -62,6 +62,22 @@ export interface IBaobayBooking {
   ppgGuests: number;
   /** Tiền giảm combo flycam+360 — máy điền sẵn, quầy sửa được. */
   comboDiscount: number;
+  /**
+   * CHIẾT KHẤU trả đại lý / hướng dẫn viên dẫn đoàn này.
+   *
+   * KHÔNG nằm trong tổng tiền khách trả và KHÔNG lên phiếu gửi khách — đây là
+   * khoản trả ngoài, chỉ nội bộ thấy. Trả tiền mặt thì trừ vào tiền người bấm
+   * đang giữ; trả chuyển khoản thì công ty chi từ TK, ghi mã giao dịch.
+   */
+  commission?: {
+    amount: number;
+    method: "cash" | "transfer";
+    transferCode?: string;
+    byUsername: string;
+    byName: string;
+    at: Date;
+    note?: string;
+  };
   /** Phí đưa đón thu của khách (nếu có). */
   pickupFee: number;
   /** Số suất xe chuyên dụng lên núi (Hà Nội) — 150k/khách. */
@@ -179,6 +195,19 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },
     ppgGuests: { type: Number, default: 0, min: 0 },
     comboDiscount: { type: Number, default: 0, min: 0 },
+    commission: {
+      type: {
+        amount: { type: Number, default: 0 },
+        method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+        transferCode: String,
+        byUsername: String,
+        byName: String,
+        at: Date,
+        note: String,
+        _id: false,
+      },
+      default: undefined,
+    },
     pickupFee: { type: Number, default: 0, min: 0 },
     mountainCar: { type: Number, default: 0, min: 0 },
     cancelTicketIssued: Boolean,

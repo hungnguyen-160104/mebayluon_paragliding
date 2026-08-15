@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   if (!auth.viaAdmin) {
     await connectDB();
     const account = await BaobayAccount.findById(auth.id)
-      .select("displayName role spots isActive mustChangePassword pilotKind")
+      .select("displayName role spots isActive mustChangePassword pilotKind extraRoles")
       .lean<any>();
 
     if (!account || account.isActive === false) {
@@ -36,6 +36,7 @@ export async function GET(req: Request) {
         role: account.role,
         spots: account.spots?.length ? account.spots : ["khau-pha"],
         pilotKind: account.pilotKind === "ppg" ? "ppg" : account.pilotKind === "both" ? "both" : "pg",
+        extraRoles: (account.extraRoles ?? []).filter((r: string) => r !== account.role),
         mustChangePassword: Boolean(account.mustChangePassword),
       },
       redirectTo: ROLE_HOME[account.role as keyof typeof ROLE_HOME],

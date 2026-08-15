@@ -39,6 +39,18 @@ export function Shell({
    * Kế toán có ba trang nên cần thanh chuyển; phi công và quầy vé chỉ có một
    * trang duy nhất, thêm thanh vào chỉ làm rối.
    */
+  /**
+   * Người KIÊM NHIỆM (vd. phi công kiêm camera man) có lối vào cả hai trang báo
+   * cáo — mỗi ngày họ làm việc nào thì mở trang việc ấy, khỏi đăng nhập hai tài
+   * khoản.
+   */
+  const wearing = [user.role, ...(user.extraRoles ?? [])];
+  const CREW_TAB: Record<string, { href: string; label: string }> = {
+    pilot: { href: "/baocao/phi-cong", label: "Báo cáo phi công" },
+    cameraman: { href: "/baocao/camera", label: "Báo cáo camera man" },
+    dispatcher: { href: "/baocao/dieu-phoi", label: "Báo cáo điều phối" },
+    counter: { href: "/baocao/dieu-phoi", label: "Báo cáo quầy vé" },
+  };
   const tabs =
     user.role === "accountant"
       ? [
@@ -47,7 +59,9 @@ export function Shell({
           { href: "/baocao/tong-hop", label: "Tổng hợp" },
           { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
         ]
-      : [];
+      : (user.extraRoles ?? []).length > 0
+        ? wearing.map((r) => CREW_TAB[r]).filter(Boolean)
+        : [];
 
   async function logout() {
     setLoggingOut(true);

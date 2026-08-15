@@ -25,7 +25,7 @@ import mongoose from "mongoose";
 import { after } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
-import { formatDateKeyVN, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isDispatcherLike, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
@@ -75,6 +75,7 @@ import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
 import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
+import { BaobayFlycamCancel } from "@/models/BaobayFlycamCancel.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
@@ -244,6 +245,7 @@ export function toSession(account: AccountDoc): BaobaySession {
     role: account.role,
     // Chưa được chỉ định điểm nào thì cho điểm mặc định, khỏi kẹt cứng không làm được gì
     spots: spots.length ? spots : [DEFAULT_SPOT],
+    extraRoles: (account.extraRoles ?? []).filter((r: string) => r !== account.role) as BaobayRole[],
     adminLevel: account.role === "admin" ? (account.adminLevel === 1 ? 1 : 2) : undefined,
   };
 }
@@ -2655,6 +2657,8 @@ export type MoneyBoard = {
   /** Tiền CHI trong ngày, tách theo từng người đứng ra chi. */
   spendByPerson: MoneyBoardPerson[];
   spendTotal: number;
+  /** Công ty CHI thẳng từ TK (chiết khấu trả đại lý bằng chuyển khoản). */
+  companySpend: { total: number; items: MoneyBoardItem[] };
 };
 
 /**
@@ -2671,11 +2675,17 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   await connectDB();
   const spot = normalizeSpot(spotRaw);
 
-  const [collects, pilots, dispatchers, cameramen] = await Promise.all([
+  const [collects, pilots, dispatchers, cameramen, commissionBookings, flycamRefunds] = await Promise.all([
     BaobayCollect.find({ spot, date }).lean<any[]>(),
     PilotDailyReport.find({ spot, date }).select("username pilotName expenses").lean<any[]>(),
     DispatcherDailyReport.find({ spot, date }).select("username staffName expenses").lean<any[]>(),
     CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses").lean<any[]>(),
+    // Chiết khấu đại lý đã chi cho các đoàn bay hôm nay
+    BaobayBooking.find({ spot, flightDate: date, "commission.amount": { $gt: 0 } })
+      .select("contactName bookingCode daySeq guestCount commission")
+      .lean<any[]>(),
+    // Hoàn tiền khách vì huỷ flycam
+    BaobayFlycamCancel.find({ spot, date, status: { $in: ["done", "paid"] } }).lean<any[]>(),
   ]);
 
   /**
@@ -2814,8 +2824,58 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     if (p && !p.role) p.role = role;
   }
 
+  /**
+   * CHIẾT KHẤU ĐẠI LÝ: tiền mặt thì TRỪ vào phần người đó đang giữ (họ rút ví ra
+   * đưa ngay tại bãi); chuyển khoản thì công ty chi từ TK, không ai phải nộp.
+   */
+  const companySpendItems: MoneyBoardItem[] = [];
+  for (const b of commissionBookings) {
+    const c = b.commission;
+    const item: MoneyBoardItem = {
+      label: `chiết khấu đại lý — ${b.contactName || b.bookingCode || "đoàn khách"}`,
+      bookingCode: b.bookingCode || "",
+      guests: b.guestCount || 0,
+      amount: Number(c.amount) || 0,
+      transferCode: c.transferCode || "",
+      from: "chiết khấu",
+      daySeq: Number(b.daySeq) || 0,
+      by: c.byName || "",
+    };
+    if (c.method === "transfer") {
+      companySpendItems.push(item);
+      continue;
+    }
+    const p = personOf(c.byUsername, c.byName, "");
+    p.items.push({ ...item, amount: -item.amount });
+    p.total -= item.amount;
+  }
+
+  /**
+   * HUỶ FLYCAM: tự hoàn tại bãi thì phi công bay kèm rút tiền đang giữ ra trả
+   * ⇒ trừ vào phần họ phải nộp. Công ty chuyển khoản thì tính vào chi từ TK.
+   */
+  for (const f of flycamRefunds) {
+    const item: MoneyBoardItem = {
+      label: `hoàn khách huỷ flycam ${f.ticketCode || ""}${f.bookingLabel ? ` — ${f.bookingLabel}` : ""}`,
+      bookingCode: f.ticketCode || "",
+      guests: 0,
+      amount: Number(f.amount) || 0,
+      transferCode: f.transferCode || "",
+      from: "huỷ flycam",
+      daySeq: 0,
+      by: f.pilotName || f.createdByName || "",
+    };
+    if (f.refundMode === "company") {
+      companySpendItems.push(item);
+      continue;
+    }
+    const p = personOf(f.pilotUsername, f.pilotName, "pilot");
+    p.items.push({ ...item, amount: -item.amount });
+    p.total -= item.amount;
+  }
+
   const cashByPerson = [...byPerson.values()]
-    .filter((p) => p.total > 0)
+    .filter((p) => p.total !== 0)
     .sort((a, b) => b.total - a.total);
   // Vai trò của người chỉ xuất hiện ở cột CHI: mượn lại từ bảng vai trò đã tra
   for (const [username, role] of roleOf) {
@@ -2826,6 +2886,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
 
   return {
     date,
+    companySpend: { total: companySpendItems.reduce((t, i) => t + i.amount, 0), items: companySpendItems },
     cashItems: cashItems.sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999)),
     spendByPerson,
     spendTotal: spendByPerson.reduce((s, p) => s + p.total, 0),
@@ -3501,6 +3562,239 @@ export async function collectForBooking(
 }
 
 /**
+ * HOÀN TÁC trạng thái booking về "đang chờ bay".
+ *
+ * Bấm nhầm "đã bay" hay "huỷ" là chuyện xảy ra thật giữa lúc đông khách. Không
+ * có đường lui thì người ta tạo booking mới để chữa, thành ra sổ đếm hai lần.
+ * Hoàn tác XOÁ luôn dấu huỷ/hoàn tiền cũ để lần sau khai lại từ đầu, nhưng
+ * KHÔNG đụng tiền đã thu (lệnh thu vẫn nguyên — tiền có thật trong két).
+ */
+export async function restoreBooking(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+  if (current.status === "open") throw new BaobayError("Booking này đang ở trạng thái chờ bay", 400);
+  if (current.status === "deleted") throw new BaobayError("Booking đã xoá, không hoàn tác được", 400);
+
+  const was = current.status === "done" ? "đã bay" : "đã huỷ";
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        status: "open",
+        note: [current.note, `hoàn tác “${was}” — ${session.name || session.username}`].filter(Boolean).join(" · "),
+      },
+      $unset: {
+        doneAt: "",
+        doneBy: "",
+        cancelledAt: "",
+        cancelledBy: "",
+        cancelTicketIssued: "",
+        cancelTicketCodes: "",
+        refundAmount: "",
+        refundMethod: "",
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
+}
+
+/**
+ * TÁCH MỘT PHẦN nhóm khách: đoàn 10 người bay được 6, còn 4 huỷ hoặc dời sang
+ * ngày khác.
+ *
+ * Cách làm: bớt số khách ở booking gốc rồi dựng một booking CON cho phần tách
+ * ra — huỷ thì con mang trạng thái đã huỷ kèm tiền hoàn, dời thì con là booking
+ * chờ bay của ngày mới. Giữ hai bản ghi thay vì sửa đè một bản: sổ ngày cũ vẫn
+ * thấy "4 khách huỷ", sổ ngày mới vẫn thấy "4 khách tới" — cộng số ngày nào ra
+ * số ngày ấy.
+ *
+ * Tiền của phần tách ra để 0: chỉ người xử lý mới biết khách trả trước bao
+ * nhiêu, chia ra sao. Máy đề xuất tiền hoàn, còn lại nhân sự gõ.
+ */
+export async function splitBooking(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: {
+    mode: "cancel" | "move";
+    guests: number;
+    toDate?: string;
+    ticketIssued?: boolean;
+    ticketCodesText?: string;
+    refund?: number;
+    refundMethod?: "cash" | "transfer";
+  },
+): Promise<{ origin: BookingDTO; part: BookingDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+
+  const guests = Math.max(0, Math.round(input.guests || 0));
+  if (guests <= 0) throw new BaobayError("Chưa chọn số khách tách ra", 400);
+  if (guests >= (current.guestCount || 0)) {
+    throw new BaobayError("Tách cả nhóm thì dùng huỷ/dời toàn bộ cho gọn", 400);
+  }
+  if (input.mode === "move") {
+    if (!isDateKey(input.toDate ?? "")) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
+    if (input.toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
+  }
+
+  /** Số khách còn lại ở booking gốc — dịch vụ bám đầu khách nên phải kẹp xuống. */
+  const left = (current.guestCount || 0) - guests;
+  const clamp = (n: number) => Math.min(Number(n) || 0, left);
+  const originSet: Record<string, unknown> = {
+    guestCount: left,
+    ppgGuests: Math.min(Number(current.ppgGuests) || 0, left),
+    flycam: clamp(current.flycam),
+    video360: clamp(current.video360),
+    redFlag: clamp(current.redFlag),
+    sunset: clamp(current.sunset),
+    flagFlight: clamp(current.flagFlight),
+    mountainCar: clamp(current.mountainCar),
+  };
+  const originTotal = bookingTotal({
+    ...current,
+    ...originSet,
+    ppgGuests: current.flightKind === "ppg" ? 0 : (originSet.ppgGuests as number),
+    ppgUnitPrice: flightUnitPrice("ppg", current.flightDate),
+  } as any);
+  originSet.totalAmount = originTotal;
+  originSet.remaining = Math.max(0, originTotal - (current.deposit || 0));
+  originSet.note = [
+    current.note,
+    input.mode === "cancel"
+      ? `${guests} khách huỷ (tách nhóm) — ${session.name || session.username}`
+      : `${guests} khách dời sang ${formatDateKeyVN(String(input.toDate))} — ${session.name || session.username}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const codes = input.ticketIssued ? parseTicketCodeList(input.ticketCodesText ?? "").codes : [];
+  const refund = Math.max(0, Math.round(input.refund || 0));
+  const partDate = input.mode === "move" ? String(input.toDate) : current.flightDate;
+
+  const part = await BaobayBooking.create({
+    spot,
+    flightDate: partDate,
+    daySeq: await nextDaySeq(spot, partDate),
+    createdByUsername: session.username,
+    createdByName: session.name,
+    source: current.source,
+    contactName: current.contactName,
+    phone: current.phone,
+    bookingCode: current.bookingCode,
+    otaRef: undefined,
+    otaName: current.otaName,
+    guestCount: guests,
+    flycam: 0,
+    video360: 0,
+    redFlag: 0,
+    sunset: 0,
+    flagFlight: 0,
+    mountainCar: 0,
+    flightKind: current.flightKind,
+    ppgGuests: 0,
+    pickup: current.pickup,
+    pickupNote: current.pickupNote,
+    expectedTime: input.mode === "move" ? "" : current.expectedTime,
+    unitPrice: current.unitPrice,
+    discount: 0,
+    comboDiscount: 0,
+    pickupFee: 0,
+    /** Dời: tiền để nhân sự chốt lại với khách · Huỷ: không còn gì phải thu. */
+    totalAmount: input.mode === "move" ? (current.unitPrice || 0) * guests : 0,
+    deposit: 0,
+    remaining: input.mode === "move" ? (current.unitPrice || 0) * guests : 0,
+    depositToCompany: false,
+    transferCode: "",
+    assignedToUsername: current.assignedToUsername,
+    assignedToName: current.assignedToName,
+    assignedBy: current.assignedBy,
+    note: `tách từ booking ${current.bookingCode || current.contactName || ""} ngày ${formatDateKeyVN(current.flightDate)}`,
+    status: input.mode === "cancel" ? "cancelled" : "open",
+    ...(input.mode === "cancel"
+      ? {
+          cancelledAt: new Date(),
+          cancelledBy: session.username,
+          cancelTicketIssued: Boolean(input.ticketIssued),
+          cancelTicketCodes: codes,
+          refundAmount: refund,
+          refundMethod: input.refundMethod === "cash" ? "cash" : "transfer",
+        }
+      : {}),
+    rescheduledFrom: input.mode === "move" ? [current.flightDate] : [],
+  });
+
+  const origin = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, { $set: originSet }, { new: true }).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(origin), BaobayBooking, origin._id);
+  pushSheetInBackground(() => pushBookingRow(part.toObject()), BaobayBooking, part._id);
+  return { origin: toBookingDTO(origin), part: toBookingDTO(part.toObject()) };
+}
+
+/**
+ * CHI CHIẾT KHẤU cho đại lý / hướng dẫn viên dẫn đoàn.
+ *
+ * Khoản này KHÔNG đụng vào tiền khách trả (tổng, còn thu đều giữ nguyên) và
+ * KHÔNG lên phiếu gửi khách — trả ngoài, chỉ nội bộ thấy. Hai đường tiền:
+ *  - TIỀN MẶT: người bấm rút từ tiền mình đang giữ ⇒ trừ vào phần họ phải nộp.
+ *  - CHUYỂN KHOẢN: công ty chi từ TK ⇒ vào mục "chi từ TK công ty" của kế toán.
+ *
+ * Ghi đè được (đại lý đòi thêm, gõ nhầm số) — lần ghi sau thay lần trước, luôn
+ * lưu ai bấm và lúc nào.
+ */
+export async function payCommission(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { amount: number; method: "cash" | "transfer"; transferCode?: string; note?: string },
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  // Phi công / camera man: chỉ chi cho đoàn trong ngày mình bay
+  if (session.role === "pilot" || session.role === "cameraman") {
+    if (!(await inCrewOfDay(spot, booking.flightDate, session.username))) {
+      throw new BaobayError("Bạn không có lịch bay ngày này", 403);
+    }
+  }
+
+  const amount = Math.max(0, Math.round(input.amount || 0));
+  if (amount <= 0) throw new BaobayError("Chưa nhập số tiền chiết khấu", 400);
+  const method = input.method === "transfer" ? "transfer" : "cash";
+  const transferCode = (input.transferCode ?? "").trim();
+  if (method === "transfer" && !transferCode) {
+    throw new BaobayError("Chuyển khoản phải ghi mã giao dịch", 400);
+  }
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        commission: {
+          amount,
+          method,
+          transferCode,
+          byUsername: normalizeUsername(session.username),
+          byName: session.name || session.username,
+          at: new Date(),
+          note: (input.note ?? "").trim(),
+        },
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
+}
+
+/**
  * PHI CÔNG / CAMERA MAN bấm XÁC NHẬN nhận khách được giao.
  *
  * Chỉ đúng người được giao mới xác nhận được: điều phối cần biết chắc người bay
@@ -3687,6 +3981,9 @@ async function pushBookingRow(doc: any) {
       rescheduledFrom: (doc.rescheduledFrom || []).map((d: string) => formatDateKeyVN(d)).join(", "),
       assignedTo: doc.assignedToName || "",
       accepted: doc.acceptedAt ? `x (${doc.acceptedBy || ""})` : "",
+      commission: doc.commission?.amount
+        ? `${doc.commission.amount} ${doc.commission.method === "cash" ? "TM" : "CK"}${doc.commission.transferCode ? ` #${doc.commission.transferCode}` : ""} - ${doc.commission.byName || ""}`
+        : "",
       note: doc.note || "",
       updatedAt: nowStampVN(),
     },
@@ -3728,6 +4025,15 @@ function toBookingDTO(doc: any): BookingDTO {
     comboDiscount: Number(doc.comboDiscount) || 0,
     acceptedAt: doc.acceptedAt ? new Date(doc.acceptedAt).toISOString() : undefined,
     acceptedBy: doc.acceptedBy || undefined,
+    commission: doc.commission?.amount
+      ? {
+          amount: Number(doc.commission.amount) || 0,
+          method: doc.commission.method === "transfer" ? "transfer" : "cash",
+          transferCode: doc.commission.transferCode || undefined,
+          byName: doc.commission.byName || "",
+          at: doc.commission.at ? new Date(doc.commission.at).toISOString() : "",
+        }
+      : undefined,
     pickupFee: doc.pickupFee ?? 0,
     mountainCar: doc.mountainCar ?? 0,
     otaName: doc.otaName || "",
@@ -4998,6 +5304,224 @@ export async function listSpotStaffAll(
     role: d.role as BaobayRole,
     roleLabel: ROLE_LABEL[d.role as BaobayRole] ?? d.role,
   }));
+}
+
+/* ================================================================== */
+/* Huỷ flycam vì lỗi vận hành                                          */
+/* ================================================================== */
+
+export type TicketLookup = {
+  code: string;
+  /** Ngày tìm thấy mã trong báo cáo phi công (nếu có). */
+  date?: string;
+  pilotUsername?: string;
+  pilotName?: string;
+  /** Mã nằm trong dải vé điều phối đã xuất ngày nào. */
+  issuedOn?: string;
+  /** Booking khả dĩ của ngày đó có đăng ký flycam — người dùng chọn tay. */
+  candidates: Array<{ id: string; label: string; daySeq: number; flycam: number; guestCount: number }>;
+};
+
+/**
+ * TRA MỘT MÃ VÉ xem thuộc chuyến nào.
+ *
+ * Vì sao phải dò nhiều nguồn: mã vé KHÔNG được ghi vào booking lúc đặt (khách
+ * đặt trước cả tuần, vé chỉ xé lúc khách tới quầy), nên không có đường nối
+ * thẳng mã ↔ booking. Ba manh mối lần ngược lại được:
+ *   1. Báo cáo phi công: ai khai đã bay mã này ⇒ ra NGÀY BAY và PHI CÔNG.
+ *   2. Dải mã điều phối xuất trong ngày ⇒ xác nhận mã có thật, thuộc ngày nào.
+ *   3. Booking của ngày đó CÓ ĐĂNG KÝ FLYCAM ⇒ danh sách ngắn để người dùng
+ *      chọn đúng đoàn (thường chỉ vài dòng, nhìn tên khách là biết).
+ *
+ * Trả về manh mối chứ không đoán bừa: gán nhầm đoàn còn tệ hơn để trống.
+ */
+export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promise<TicketLookup> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const code = String(codeRaw ?? "").trim().toUpperCase();
+  const out: TicketLookup = { code, candidates: [] };
+  if (!code) return out;
+
+  /** Phi công khai mã này ở ô mã đã bay, mã flycam, mã 360 hay mã PPG đều tính. */
+  const pilot = await PilotDailyReport.findOne({
+    spot,
+    $or: [
+      { ticketCodes: code },
+      { flycamCodes: code },
+      { video360Codes: code },
+      { ppgCodes: code },
+    ],
+  })
+    .sort({ date: -1 })
+    .select("date username pilotName")
+    .lean<any>();
+  if (pilot) {
+    out.date = pilot.date;
+    out.pilotUsername = pilot.username;
+    out.pilotName = pilot.pilotName;
+  }
+
+  if (!out.date) {
+    /** Chưa ai khai bay: dò trong dải mã điều phối đã xuất 60 ngày gần đây. */
+    const from = shiftDateKey(todayInVN(), -60);
+    const rows = await DispatcherDailyReport.find({ spot, date: { $gte: from } })
+      .select("date issuedRanges")
+      .lean<any[]>();
+    const num = Number(code.replace(/\D/g, ""));
+    for (const r of rows) {
+      const hit = (r.issuedRanges ?? []).some((g: any) => {
+        const a = Number(String(g.from ?? "").replace(/\D/g, ""));
+        const b = Number(String(g.to ?? "").replace(/\D/g, ""));
+        return a && b && num >= Math.min(a, b) && num <= Math.max(a, b);
+      });
+      if (hit) {
+        out.issuedOn = r.date;
+        break;
+      }
+    }
+  }
+
+  const day = out.date || out.issuedOn;
+  if (day) {
+    const bookings = await BaobayBooking.find({ spot, flightDate: day, flycam: { $gt: 0 } })
+      .select("contactName bookingCode daySeq flycam guestCount status")
+      .sort({ daySeq: 1 })
+      .lean<any[]>();
+    out.candidates = bookings.map((b) => ({
+      id: String(b._id),
+      label: `${b.contactName || b.bookingCode || "khách"}${b.status === "cancelled" ? " (đã huỷ)" : ""}`,
+      daySeq: Number(b.daySeq) || 0,
+      flycam: b.flycam || 0,
+      guestCount: b.guestCount || 0,
+    }));
+  }
+  return out;
+}
+
+export type FlycamCancelDTO = {
+  id: string;
+  date: string;
+  ticketCode: string;
+  pilotName: string;
+  reason: string;
+  refundMode: "self" | "company";
+  amount: number;
+  bankAccount?: string;
+  status: "done" | "pending" | "paid";
+  bookingLabel?: string;
+  createdByName: string;
+  transferCode?: string;
+  paidBy?: string;
+  createdAt: string;
+};
+
+function toFlycamCancelDTO(d: any): FlycamCancelDTO {
+  return {
+    id: String(d._id),
+    date: d.date,
+    ticketCode: d.ticketCode || "",
+    pilotName: d.pilotName || "",
+    reason: d.reason || "",
+    refundMode: d.refundMode === "self" ? "self" : "company",
+    amount: Number(d.amount) || 0,
+    bankAccount: d.bankAccount || undefined,
+    status: d.status,
+    bookingLabel: d.bookingLabel || undefined,
+    createdByName: d.createdByName || "",
+    transferCode: d.transferCode || undefined,
+    paidBy: d.paidBy || undefined,
+    createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
+  };
+}
+
+export async function createFlycamCancel(
+  session: BaobaySession,
+  spotRaw: string,
+  input: {
+    date: string;
+    ticketCode: string;
+    pilotUsername: string;
+    reason: string;
+    refundMode: "self" | "company";
+    amount: number;
+    bankAccount?: string;
+    bookingId?: string;
+  },
+): Promise<FlycamCancelDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!isDateKey(input.date)) throw new BaobayError("Ngày không hợp lệ", 400);
+  const amount = Math.max(0, Math.round(input.amount || 0));
+  if (amount <= 0) throw new BaobayError("Chưa nhập số tiền hoàn khách", 400);
+  if (!input.reason.trim()) throw new BaobayError("Ghi giúp lý do huỷ flycam", 400);
+
+  const pilot = input.pilotUsername
+    ? await BaobayAccount.findOne({ username: normalizeUsername(input.pilotUsername) })
+        .select("username displayName")
+        .lean<any>()
+    : null;
+  if (!pilot) throw new BaobayError("Chọn phi công bay kèm chuyến này", 400);
+  if (input.refundMode === "company" && !(input.bankAccount ?? "").trim()) {
+    throw new BaobayError("Công ty hoàn thì phải có số tài khoản của khách", 400);
+  }
+
+  let bookingLabel = "";
+  if (input.bookingId && mongoose.Types.ObjectId.isValid(input.bookingId)) {
+    const b = await BaobayBooking.findById(input.bookingId).select("contactName bookingCode daySeq").lean<any>();
+    if (b) bookingLabel = `${b.daySeq ? `#${b.daySeq} ` : ""}${b.contactName || b.bookingCode || ""}`.trim();
+  }
+
+  const doc = (
+    await BaobayFlycamCancel.create({
+      spot,
+      date: input.date,
+      ticketCode: String(input.ticketCode ?? "").trim().toUpperCase(),
+      pilotUsername: pilot.username,
+      pilotName: pilot.displayName,
+      bookingId: bookingLabel ? input.bookingId : undefined,
+      bookingLabel,
+      reason: input.reason.trim(),
+      refundMode: input.refundMode,
+      amount,
+      bankAccount: (input.bankAccount ?? "").trim(),
+      /** Tự hoàn là xong ngay tại bãi; nhờ công ty thì còn phải chờ kế toán chuyển. */
+      status: input.refundMode === "self" ? "done" : "pending",
+      createdByUsername: session.username,
+      createdByName: session.name,
+    })
+  ).toObject();
+  return toFlycamCancelDTO(doc);
+}
+
+/** Kế toán bấm "đã chuyển" cho lệnh hoàn — ghi mã giao dịch để đối soát. */
+export async function payFlycamRefund(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  transferCode: string,
+): Promise<FlycamCancelDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const code = String(transferCode ?? "").trim();
+  if (!code) throw new BaobayError("Ghi mã giao dịch đã chuyển cho khách", 400);
+  const doc = await BaobayFlycamCancel.findOneAndUpdate(
+    { _id: id, spot, status: "pending" },
+    { $set: { status: "paid", paidAt: new Date(), paidBy: session.name || session.username, transferCode: code } },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy lệnh hoàn đang chờ", 404);
+  return toFlycamCancelDTO(doc);
+}
+
+export async function listFlycamCancels(spotRaw: string, date: string): Promise<FlycamCancelDTO[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  /** Ngày đang xem + mọi lệnh CÒN CHỜ của các ngày trước — chờ mãi không ai thấy là mất tiền của khách. */
+  const docs = await BaobayFlycamCancel.find({ spot, $or: [{ date }, { status: "pending" }] })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean<any[]>();
+  return docs.map(toFlycamCancelDTO);
 }
 
 export async function getDailyClose(spot: string, date: string): Promise<DailyCloseDTO | null> {

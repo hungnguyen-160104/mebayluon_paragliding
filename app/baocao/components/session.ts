@@ -32,7 +32,9 @@ export function useBaobaySession(expectedRole?: BaobayRole | readonly BaobayRole
             ? (expectedRole as readonly BaobayRole[])
             : [expectedRole as BaobayRole]
           : null;
-        if (allowed && !allowed.includes(found.role)) {
+        /** Người kiêm nhiệm (phi công kiêm camera man) vào được trang của cả hai vai. */
+        const wearing = [found.role, ...(found.extraRoles ?? [])];
+        if (allowed && !allowed.some((r) => wearing.includes(r))) {
           // Không nhảy về chính trang này (vai trò lạ) — vòng lặp chuyển trang là treo máy
           const home = ROLE_HOME[found.role];
           if (home && home !== window.location.pathname) {

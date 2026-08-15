@@ -37,6 +37,8 @@ export type BaobaySession = {
   role: BaobayRole;
   /** Các điểm bay admin đã chỉ định — người này chỉ làm việc trong danh sách này. */
   spots: string[];
+  /** Vai trò KIÊM NHIỆM ngoài `role` — vào được cả trang của vai đó. */
+  extraRoles?: BaobayRole[];
   /**
    * Cấp quản trị, chỉ có nghĩa với vai trò "admin":
    *   1 = toàn quyền (đổi cấu hình điểm bay, lập tài khoản quản trị khác)
@@ -92,6 +94,8 @@ export function verifyBaobayToken(token: string): BaobaySession | null {
       name: String(p.name || p.username),
       role: p.role,
       spots,
+      // Vai kiêm nhiệm: lọc lại cho chắc, token cũ không có trường này thì rỗng
+      extraRoles: Array.isArray(p.extraRoles) ? p.extraRoles.filter(isBaobayRole) : [],
       adminLevel,
     };
   } catch {

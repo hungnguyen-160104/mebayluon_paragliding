@@ -48,6 +48,12 @@ export interface IBaobayAccount {
   spots: string[];
   /** Loại phi công: PG / PPG / cả hai — chỉ dùng khi role = "pilot". */
   pilotKind?: "pg" | "ppg" | "both";
+  /**
+   * VAI TRÒ KIÊM NHIỆM: người làm hai việc trong cùng một ngày (phi công hôm
+   * nay bay, hôm khác cầm flycam) — khai ở đây để họ dùng MỘT tài khoản, khỏi
+   * đăng xuất đăng nhập hai lần mỗi ngày. Vai chính vẫn là `role`.
+   */
+  extraRoles?: BaobayRole[];
   isActive: boolean;
   /** Số lần nhập sai mật khẩu LIÊN TIẾP; đăng nhập đúng là về 0. */
   failedLogins: number;
@@ -79,6 +85,7 @@ const BaobayAccountSchema = new Schema<IBaobayAccount>(
     phone: { type: String, trim: true },
     spots: { type: [String], default: [DEFAULT_SPOT] },
     pilotKind: { type: String, enum: ["pg", "ppg", "both"], default: "pg" },
+    extraRoles: { type: [String], enum: BAOBAY_ROLES, default: [] },
     isActive: { type: Boolean, default: true, index: true },
     failedLogins: { type: Number, default: 0 },
     lockedUntil: Date,

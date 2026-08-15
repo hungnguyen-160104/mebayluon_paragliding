@@ -92,6 +92,8 @@ export type BaobayUserDTO = {
   spots: string[];
   /** Loại phi công (pg/ppg/both) — trang phi công gate khối PPG theo đây. */
   pilotKind?: "pg" | "ppg" | "both";
+  /** Vai trò kiêm nhiệm — hiện thêm lối vào trang của vai đó trên thanh điều hướng. */
+  extraRoles?: BaobayRole[];
   mustChangePassword: boolean;
 };
 
@@ -322,6 +324,8 @@ export type BookingDTO = {
   /** Người được giao đã bấm xác nhận nhận khách chưa (ISO), và tên người xác nhận. */
   acceptedAt?: string;
   acceptedBy?: string;
+  /** Chiết khấu đã trả đại lý — KHÔNG lên phiếu gửi khách, chỉ nội bộ. */
+  commission?: { amount: number; method: "cash" | "transfer"; transferCode?: string; byName: string; at: string };
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */

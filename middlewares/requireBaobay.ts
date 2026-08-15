@@ -43,7 +43,9 @@ export function requireBaobay(req: Request, opts: Options = {}): BaobayAuth | Ne
    * Token quản trị WEBSITE (viaAdmin) đi qua mọi kiểm vai trò: chủ site vốn đã
    * là quyền cao nhất, tách vai trò chỉ để phân nhau giữa NHÂN SỰ báo bay.
    */
-  if (!session.viaAdmin && opts.roles?.length && !opts.roles.includes(session.role)) {
+  /** Người kiêm nhiệm (vd. phi công kiêm camera man) đi qua cửa của cả hai vai. */
+  const wearing = [session.role, ...(session.extraRoles ?? [])];
+  if (!session.viaAdmin && opts.roles?.length && !opts.roles.some((r) => wearing.includes(r))) {
     const allowed = opts.roles.map((r) => ROLE_LABEL[r]).join(", ");
     return NextResponse.json(
       { message: `Tài khoản ${ROLE_LABEL[session.role]} không có quyền ở đây (cần: ${allowed})` },

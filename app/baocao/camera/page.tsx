@@ -13,6 +13,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
+import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { CollectInbox } from "../components/CollectBox";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
@@ -188,6 +189,9 @@ export default function CameramanReportPage() {
 
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
       <AssignedBookings spot={spot} date={date} me={user.username} />
+
+      {/* Flycam hỏng giữa chuyến: ghi huỷ + lo đường hoàn tiền cho khách */}
+      <FlycamCancelCard spot={spot} date={date} />
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       <CollectInbox spot={spot} />
