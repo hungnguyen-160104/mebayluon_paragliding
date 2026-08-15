@@ -1536,19 +1536,23 @@ export function BookingCard({
           />
         </Field>
         {bookSpot === "khau-pha" ? (
-          /* Khau Phạ: đặt PG và PPG CHUNG một booking — mỗi loại một ô số khách */
-          <Field label="PG / PPG (số khách từng loại)">
-            <div className="flex h-10 items-center gap-3">
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-sky-800">
-                PG
-                <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
-              </label>
-              <label className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
-                PPG
-                <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
-              </label>
-            </div>
-          </Field>
+          /* Khau Phạ: đặt PG và PPG CHUNG một booking — mỗi loại một ô số khách.
+             Chiếm TRỌN một hàng (col-span-2): hai cụm đếm đứng cạnh nhau quá rộng
+             cho nửa hàng, tràn đè lên ô Điểm bay. */
+          <div className="col-span-2">
+            <Field label="PG / PPG (số khách từng loại)">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-sky-800">
+                  PG
+                  <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
+                </label>
+                <label className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
+                  PPG
+                  <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+                </label>
+              </div>
+            </Field>
+          </div>
         ) : (
         <Field label="Loại hình bay">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
