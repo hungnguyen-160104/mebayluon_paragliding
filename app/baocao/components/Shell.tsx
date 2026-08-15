@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { ROLE_LABEL } from "@/lib/baobay/roles";
+import { ROLE_LABEL, roleTabs, uniqueTabs } from "@/lib/baobay/roles";
 import { spotName } from "@/lib/baobay/spots";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
@@ -40,28 +40,19 @@ export function Shell({
    * trang duy nhất, thêm thanh vào chỉ làm rối.
    */
   /**
-   * Người KIÊM NHIỆM (vd. phi công kiêm camera man) có lối vào cả hai trang báo
-   * cáo — mỗi ngày họ làm việc nào thì mở trang việc ấy, khỏi đăng nhập hai tài
-   * khoản.
+   * Người KIÊM NHIỆM (vd. phi công kiêm camera man) có lối vào mọi trang của các
+   * vai mình mang — mỗi ngày làm việc nào thì mở trang việc ấy, khỏi đăng nhập
+   * hai tài khoản.
    */
   const wearing = [user.role, ...(user.extraRoles ?? [])];
-  const CREW_TAB: Record<string, { href: string; label: string }> = {
-    pilot: { href: "/baocao/phi-cong", label: "Báo cáo phi công" },
-    cameraman: { href: "/baocao/camera", label: "Báo cáo camera man" },
-    dispatcher: { href: "/baocao/dieu-phoi", label: "Báo cáo điều phối" },
-    counter: { href: "/baocao/dieu-phoi", label: "Báo cáo quầy vé" },
-  };
-  const tabs =
-    user.role === "accountant"
-      ? [
-          { href: "/baocao/chot-ngay", label: "Chốt ngày" },
-          { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
-          { href: "/baocao/tong-hop", label: "Tổng hợp" },
-          { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
-        ]
-      : (user.extraRoles ?? []).length > 0
-        ? wearing.map((r) => CREW_TAB[r]).filter(Boolean)
-        : [];
+  /** Vai đơn: chỉ kế toán mới cần thanh thẻ (4 trang). Kiêm nhiệm: đủ lối vào mọi vai. */
+  const tabs = uniqueTabs(
+    (user.extraRoles ?? []).length > 0
+      ? wearing.flatMap(roleTabs)
+      : user.role === "accountant"
+        ? roleTabs("accountant")
+        : [],
+  );
 
   async function logout() {
     setLoggingOut(true);

@@ -2,9 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ROLE_LABEL } from "@/lib/baobay/roles";
+import { ROLE_LABEL, roleTabs, uniqueTabs } from "@/lib/baobay/roles";
 import { spotName } from "@/lib/baobay/spots";
 
 import { apiPost } from "../components/client-api";
@@ -67,6 +68,26 @@ export default function BaobayAdminPage() {
           </button>
         </div>
       </header>
+
+      {/* Quản trị KIÊM NHIỆM (vừa quản trị vừa điều phối/phi công…): lối vào các
+          trang nghiệp vụ, vì trang này không dùng khung chung nên không có sẵn thanh thẻ */}
+      {(user.extraRoles ?? []).length > 0 && (
+        <nav className="mb-5 flex flex-wrap gap-2">
+          {uniqueTabs([user.role, ...(user.extraRoles ?? [])].flatMap(roleTabs)).map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={
+                t.href === "/baocao/admin"
+                  ? "rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white"
+                  : "rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              }
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {/* Admin tự đổi mật khẩu — cùng endpoint với mọi nhân sự (/api/baocao/password);
           bản đọc được cũng cập nhật về cột "Mật khẩu" trong bảng bên dưới */}

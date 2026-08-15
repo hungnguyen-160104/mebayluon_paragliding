@@ -34,6 +34,39 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
  * Kế toán vào thẳng "Chốt ngày" chứ không phải bảng tổng hợp: việc hằng ngày là
  * nhập số tổng và soát lệch, còn bảng tổng hợp là thứ xem theo kỳ.
  */
+/**
+ * Các trang một vai trò làm việc — dùng cho thanh điều hướng của người KIÊM
+ * NHIỆM (một tài khoản mang nhiều vai thì thấy đủ lối vào của từng vai).
+ */
+export function roleTabs(role: string): Array<{ href: string; label: string }> {
+  switch (role) {
+    case "pilot":
+      return [{ href: "/baocao/phi-cong", label: "Phi công" }];
+    case "cameraman":
+      return [{ href: "/baocao/camera", label: "Camera man" }];
+    case "dispatcher":
+    case "counter":
+      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }];
+    case "accountant":
+      return [
+        { href: "/baocao/chot-ngay", label: "Chốt ngày" },
+        { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
+        { href: "/baocao/tong-hop", label: "Tổng hợp" },
+        { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
+      ];
+    case "admin":
+      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }];
+    default:
+      return [];
+  }
+}
+
+/** Bỏ thẻ trùng đường dẫn (điều phối và quầy vé chung một trang). */
+export function uniqueTabs(tabs: Array<{ href: string; label: string }>) {
+  const seen = new Set<string>();
+  return tabs.filter((t) => (seen.has(t.href) ? false : (seen.add(t.href), true)));
+}
+
 export const ROLE_HOME: Record<BaobayRole, string> = {
   pilot: "/baocao/phi-cong",
   dispatcher: "/baocao/dieu-phoi",
