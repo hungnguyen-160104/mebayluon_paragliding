@@ -908,7 +908,16 @@ export function BookingTodayBanner({
  * Banner "lịch được giao cho bạn" — máy chủ tự lọc theo tài khoản đang đăng
  * nhập (phi công/camera man chỉ thấy booking điều phối đã chuyển cho mình).
  */
-export function AssignedBookings({ spot, date }: { spot: string; date: string }) {
+export function AssignedBookings({
+  spot,
+  date,
+  me,
+}: {
+  spot: string;
+  date: string;
+  /** Tài khoản đang đăng nhập — để tách "khách của tôi" khỏi "khách của nhóm". */
+  me?: string;
+}) {
   const [forDate, setForDate] = useState<BookingDTO[]>([]);
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -952,6 +961,11 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 
   if (!forDate.length && !upcoming.length) return null;
 
+  /** Khách của MÌNH đứng trước, khách của đồng đội xếp sau (vẫn xem/thu hộ được). */
+  const isMine = (b: BookingDTO) => Boolean(me) && b.assignedToUsername === me;
+  const mine = forDate.filter((b) => isMine(b) && b.status === "open");
+  const ordered = [...forDate].sort((a, b) => Number(isMine(b)) - Number(isMine(a)));
+
   // Nhắc trước 3 ngày: booking đã giao cho mình bay trong hôm nay + 3 ngày tới
   const today = todayInVN();
   const soonLimit = shiftDateKey(today, 3);
@@ -972,10 +986,13 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
       {forDate.length > 0 && (
         <>
           <h2 className="text-sm font-bold text-indigo-900">
-            🤝 Lịch điều phối giao cho bạn — ngày {formatDateKeyVN(date)} ({forDate.filter((b) => b.status === "open").length})
+            🤝 Khách bay ngày {formatDateKeyVN(date)} — của bạn {mine.length}/{forDate.filter((b) => b.status === "open").length} khách
           </h2>
+          <p className="text-[11px] leading-tight text-indigo-900/70">
+            Cả nhóm bay hôm nay nhìn chung một danh sách: chuyển khách cho nhau và thu tiền hộ nhau được.
+          </p>
           <ul className="mt-2 space-y-1.5">
-            {forDate.map((b) => (
+            {ordered.map((b) => (
               <li key={b.id} className={"rounded-lg bg-white px-3 py-1.5" + (b.status !== "open" ? " opacity-60" : "")}>
                 {b.status === "done" && (
                   <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">đã bay ✓</span>
@@ -983,13 +1000,24 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
                 {b.status === "cancelled" && (
                   <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">đã huỷ</span>
                 )}
+                {!isMine(b) && b.assignedToName && (
+                  <span className="mr-1.5 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                    khách của {b.assignedToName}
+                  </span>
+                )}
                 <BookingSummary b={b} dim={b.status === "done"} />
-                <div className="text-[11px] text-slate-400">giao bởi {b.assignedBy || "điều phối"}</div>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                  <span>giao bởi {b.assignedBy || "điều phối"}</span>
+                  {/* Nhóm tự san khách tại bãi — khỏi gọi điều phối mỗi lần đổi */}
+                  {b.status === "open" && (
+                    <AssignControl spot={spot} booking={b} onDone={() => setTick((n) => n + 1)} />
+                  )}
+                </div>
 
                 {b.status === "open" && (
                   <>
                     {/* Chưa bấm nhận: nút TO — điều phối cần biết mình đã đọc lịch */}
-                    {!b.acceptedAt ? (
+                    {!isMine(b) ? null : !b.acceptedAt ? (
                       <button
                         type="button"
                         disabled={busy === b.id}
@@ -1006,9 +1034,22 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 
                     {/* Còn phải thu: nhắc TO, kèm nút thu ngay tại đây */}
                     {b.remaining > 0 && (
-                      <div className="mt-1.5 rounded-xl border-2 border-rose-400 bg-rose-50 px-3 py-2">
-                        <div className="text-base font-bold leading-snug text-rose-800">
-                          💰 Bạn nhớ thu tiền khách này: {b.remaining.toLocaleString("vi-VN")} đ
+                      <div
+                        className={
+                          "mt-1.5 rounded-xl px-3 py-2 " +
+                          (isMine(b) ? "border-2 border-rose-400 bg-rose-50" : "border border-slate-300 bg-slate-50")
+                        }
+                      >
+                        <div
+                          className={
+                            isMine(b)
+                              ? "text-base font-bold leading-snug text-rose-800"
+                              : "text-sm font-semibold leading-snug text-slate-700"
+                          }
+                        >
+                          {isMine(b)
+                            ? `💰 Bạn nhớ thu tiền khách này: ${b.remaining.toLocaleString("vi-VN")} đ`
+                            : `💰 Khách của ${b.assignedToName || "đồng đội"} còn thu ${b.remaining.toLocaleString("vi-VN")} đ — thu hộ được`}
                         </div>
                         <p className="mt-0.5 text-[11px] leading-tight text-rose-900/70">
                           Thu tiền mặt thì tiền tính vào phần bạn đang giữ · khách chuyển khoản vào TK công ty thì
@@ -1018,7 +1059,7 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
                           <CollectMoneyControl
                             spot={spot}
                             booking={b}
-                            big
+                            big={isMine(b)}
                             onDone={(m) => {
                               setMsg(m);
                               setTick((n) => n + 1);

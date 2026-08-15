@@ -53,8 +53,11 @@ export async function GET(req: Request) {
   const manager = auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role);
   const [lists, staff] = await Promise.all([
     listBookings(spot, date, manager ? undefined : auth.username),
-    // "Nhân sự tiếp nhận" khi chuyển booking: TẤT CẢ người đang làm tại điểm
-    manager ? listSpotStaffAll(spot) : Promise.resolve([]),
+    /**
+     * "Nhân sự tiếp nhận" khi chuyển booking: quản lý thấy cả điểm; phi công /
+     * camera man cũng cần danh sách này để chuyển khách cho nhau tại bãi.
+     */
+    listSpotStaffAll(spot),
   ]);
   return NextResponse.json({ ...lists, staff });
 }
@@ -144,7 +147,7 @@ export async function PATCH(req: Request) {
    */
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action ?? "flown");
-  const crewAllowed = action === "accept" || action === "collect";
+  const crewAllowed = action === "accept" || action === "collect" || action === "assign";
   const auth = requireBaobay(req, {
     roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
   });

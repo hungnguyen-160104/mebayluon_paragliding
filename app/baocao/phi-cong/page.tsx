@@ -422,7 +422,7 @@ export default function PilotReportPage() {
       <ReviewNotices spot={spot} date={date} />
 
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
-      <AssignedBookings spot={spot} date={date} />
+      <AssignedBookings spot={spot} date={date} me={user.username} />
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       <CollectInbox spot={spot} />

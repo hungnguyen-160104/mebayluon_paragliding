@@ -3157,11 +3157,23 @@ export async function listBookings(
 }> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
-  const extra = assignedTo ? { assignedToUsername: normalizeUsername(assignedTo) } : {};
+  const me = assignedTo ? normalizeUsername(assignedTo) : "";
+  const extra = me ? { assignedToUsername: me } : {};
+
+  /**
+   * PHI CÔNG BAY THEO NHÓM: ai được giao ÍT NHẤT MỘT khách trong ngày thì thấy
+   * CẢ danh sách khách của ngày đó tại điểm đó — để chuyển khách cho nhau và
+   * thu tiền hộ nhau ngay tại bãi. Người không có lịch hôm đó vẫn không thấy gì.
+   *
+   * Lịch "sắp tới" thì vẫn CHỈ của riêng mình: xem lịch cá nhân mấy ngày tới là
+   * việc riêng, không cần biết ai bay cùng.
+   */
+  const inCrew = me ? await inCrewOfDay(spot, date, me) : false;
+  const forDateWhere = me && !inCrew ? { spot, flightDate: date, ...extra } : { spot, flightDate: date };
 
   const [forDate, upcoming, movedAway, setting] = await Promise.all([
     // Xếp theo thứ tự ĐẶT CHỖ: ai đặt trước đứng trước (đúng thứ tự nhận khách)
-    BaobayBooking.find({ spot, flightDate: date, ...extra }).sort({ createdAt: 1 }).lean<any[]>(),
+    BaobayBooking.find(forDateWhere).sort({ createdAt: 1 }).lean<any[]>(),
     BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() }, ...extra })
       .sort({ flightDate: 1, expectedTime: 1 })
       .limit(100)
@@ -3324,6 +3336,22 @@ export async function assignBooking(
     throw new BaobayError(`“${assignee.displayName}” không làm ở điểm này`, 400);
   }
 
+  /**
+   * PHI CÔNG / CAMERA MAN chuyển khách CHO NHAU được, miễn cả hai cùng có lịch
+   * bay ngày đó tại điểm đó — nhóm đứng cùng bãi tự san khách theo cân nặng,
+   * theo dù, theo lượt; bắt gọi điều phối mỗi lần đổi là chậm việc.
+   */
+  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+  if (session.role === "pilot" || session.role === "cameraman") {
+    if (!(await inCrewOfDay(spot, current.flightDate, session.username))) {
+      throw new BaobayError("Bạn không có lịch bay ngày này", 403);
+    }
+    if (!(await inCrewOfDay(spot, current.flightDate, assignee.username))) {
+      throw new BaobayError(`“${assignee.displayName}” không có lịch bay ngày này — nhờ điều phối chuyển giúp`, 400);
+    }
+  }
+
   const doc = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot, status: "open" },
     {
@@ -3332,6 +3360,9 @@ export async function assignBooking(
         assignedToName: assignee.displayName,
         assignedBy: session.name,
         assignedAt: new Date(),
+        // Người mới phải tự xác nhận lại — dấu nhận của người cũ không còn đúng
+        acceptedAt: null,
+        acceptedBy: "",
       },
     },
     { new: true },
@@ -3388,8 +3419,15 @@ export async function collectForBooking(
    * quầy vé, kế toán thu của ai cũng được — họ đứng quầy.
    */
   if (session.role === "pilot" || session.role === "cameraman") {
-    if (normalizeUsername(booking.assignedToUsername || "") !== normalizeUsername(session.username)) {
-      throw new BaobayError("Chỉ thu được tiền của khách giao cho bạn", 403);
+    const me = normalizeUsername(session.username);
+    const mine = normalizeUsername(booking.assignedToUsername || "") === me;
+    /**
+     * Phi công bay theo NHÓM: ai có lịch trong ngày đó tại điểm đó thì thu hộ
+     * nhau được — khách trả tiền cho ai cũng vào sổ đúng người ấy đang giữ.
+     * Người không bay hôm đó thì không đụng được vào tiền của ngày.
+     */
+    if (!mine && !(await inCrewOfDay(spot, booking.flightDate, me))) {
+      throw new BaobayError("Bạn không có lịch bay ngày này", 403);
     }
   }
 
@@ -3468,6 +3506,30 @@ export async function collectForBooking(
  * Chỉ đúng người được giao mới xác nhận được: điều phối cần biết chắc người bay
  * đã đọc lịch, chứ không phải ai đó bấm hộ rồi cả hai cùng tưởng đã xong.
  */
+/**
+ * Người có mặt trong NHÓM BAY của ngày đó — dùng để cho phép chuyển khách cho
+ * nhau và thu tiền hộ nhau.
+ *
+ * Hai nguồn, vì mỗi nguồn hụt một kiểu:
+ *  - LỊCH CHẤM CA (nguồn chính): ai đi làm hôm đó, kể cả chưa được giao khách nào.
+ *  - ĐANG ĐƯỢC GIAO khách hôm đó: phòng khi hôm ấy chưa chấm lịch mà vẫn phải bay.
+ *
+ * Nếu chỉ xét "đang được giao" thì người vừa chuyển đi khách CUỐI CÙNG sẽ mất
+ * quyền ngay giữa ngày — đứng cạnh nhau ở bãi mà hết thu hộ được. Đã gặp thật
+ * lúc kiểm thử.
+ */
+async function inCrewOfDay(spot: string, flightDate: string, username: string): Promise<boolean> {
+  const me = normalizeUsername(username);
+  if (await BaobayBooking.exists({ spot, flightDate, assignedToUsername: me })) return true;
+
+  const month = flightDate.slice(0, 7);
+  const day = Number(flightDate.slice(8, 10));
+  const shift = await BaobayShift.findOne({ spot, month }).select("assignments").lean<any>();
+  return (shift?.assignments ?? []).some(
+    (a: any) => normalizeUsername(a.username) === me && (a.days ?? []).includes(day),
+  );
+}
+
 export async function acceptAssignedBooking(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
