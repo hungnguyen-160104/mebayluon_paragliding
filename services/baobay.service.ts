@@ -5434,6 +5434,31 @@ function toFlycamCancelDTO(d: any): FlycamCancelDTO {
   };
 }
 
+/** Đẩy một lệnh huỷ flycam sang bảng tính — tab "Huỷ flycam". */
+async function pushFlycamCancelRow(doc: any) {
+  return pushBaobayRow(
+    "flycamcancel",
+    {
+      key: String(doc._id),
+      date: formatDateKeyVN(doc.date),
+      spot: doc.spot || "",
+      ticketCode: doc.ticketCode || "",
+      booking: doc.bookingLabel || "",
+      pilotName: doc.pilotName || "",
+      reason: doc.reason || "",
+      refundMode: doc.refundMode === "self" ? "Tự hoàn tại bãi" : "Công ty chuyển khoản",
+      amount: doc.amount ?? 0,
+      bankAccount: doc.bankAccount || "",
+      status: doc.status === "done" ? "ĐÃ HOÀN TẠI BÃI" : doc.status === "paid" ? "CÔNG TY ĐÃ CHUYỂN" : "CHỜ KẾ TOÁN",
+      transferCode: doc.transferCode || "",
+      paidBy: doc.paidBy || "",
+      createdBy: doc.createdByName || "",
+      updatedAt: nowStampVN(),
+    },
+    doc.spot,
+  );
+}
+
 export async function createFlycamCancel(
   session: BaobaySession,
   spotRaw: string,
@@ -5490,6 +5515,7 @@ export async function createFlycamCancel(
       createdByName: session.name,
     })
   ).toObject();
+  pushSheetInBackground(() => pushFlycamCancelRow(doc), BaobayFlycamCancel, doc._id);
   return toFlycamCancelDTO(doc);
 }
 
@@ -5510,6 +5536,7 @@ export async function payFlycamRefund(
     { new: true },
   ).lean<any>();
   if (!doc) throw new BaobayError("Không tìm thấy lệnh hoàn đang chờ", 404);
+  pushSheetInBackground(() => pushFlycamCancelRow(doc), BaobayFlycamCancel, doc._id);
   return toFlycamCancelDTO(doc);
 }
 

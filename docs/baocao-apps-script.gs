@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v25`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v26`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -232,6 +232,23 @@ const KINDS = {
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
   },
+  flycamcancel: {
+    'Khoá': 'key',
+    'Ngày bay': 'date',
+    'Điểm bay': 'spot',
+    'Mã vé huỷ': 'ticketCode',
+    'Đoàn khách': 'booking',
+    'Phi công bay kèm': 'pilotName',
+    'Lý do huỷ': 'reason',
+    'Cách hoàn': 'refundMode',
+    'Số tiền hoàn': 'amount',
+    'STK khách': 'bankAccount',
+    'Trạng thái': 'status',
+    'Mã chuyển khoản': 'transferCode',
+    'Người chuyển': 'paidBy',
+    'Người lập': 'createdBy',
+    'Cập nhật lúc': 'updatedAt',
+  },
   daysummary: {
     'Khoá': 'key',
     'Ngày': 'date',
@@ -303,7 +320,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v25',
+    version: 'baobay-multispot-v26',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

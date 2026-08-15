@@ -25,7 +25,8 @@ export type BaobaySheetKind =
   | "advance"
   | "daysummary"
   | "booking"
-  | "collect";
+  | "collect"
+  | "flycamcancel";
 
 /**
  * Tab mặc định cho từng loại báo cáo.
@@ -45,6 +46,7 @@ const SHEET_NAME: Record<BaobaySheetKind, string> = {
   daysummary: "Tổng hợp ngày",
   booking: "Booking",
   collect: "Lệnh thu tiền",
+  flycamcancel: "Huỷ flycam",
 };
 
 export type SheetPushResult = { ok: boolean; error?: string };
