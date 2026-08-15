@@ -22,6 +22,8 @@ export interface IBaobayCollect {
   date: string;
 
   guestName: string;
+  /** Booking sinh ra lệnh thu này (nếu thu qua nút trên booking) — để tra số thứ tự khách. */
+  bookingId?: mongoose.Types.ObjectId;
   bookingCode: string;
   /** Đại lý / nguồn khách: Klook, GYG, FB… */
   agency: string;
@@ -61,6 +63,7 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     date: { type: String, required: true },
 
     guestName: { type: String, default: "" },
+    bookingId: { type: Schema.Types.ObjectId, ref: "BaobayBooking" },
     bookingCode: { type: String, default: "" },
     agency: { type: String, default: "" },
     guests: { type: Number, default: 0, min: 0 },

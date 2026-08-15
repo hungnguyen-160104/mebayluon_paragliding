@@ -23,6 +23,7 @@ import { isTestBooking } from "@/lib/baobay/test-booking";
 import { connectDB } from "@/lib/mongodb";
 import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
+import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { Booking } from "@/models/Booking.model";
 
 /** Điểm bay của trang khách ↔ điểm bay trong app. Điểm nào không có ở đây (Đà Nẵng, Quản Bạ…) thì bỏ qua. */
@@ -243,6 +244,9 @@ export async function syncWebBookings(
   const webLocation = WEB_LOCATION_BY_SPOT[spot];
   const out: WebSyncResult = { created: 0, updated: 0, merged: 0, cancelled: 0, skipped: 0 };
   if (!webLocation) return out;
+
+  // Ghi mốc "check lần cuối" cho nút trên app — chạy tay hay chạy nền đều tính
+  await BaobaySetting.updateOne({ key: spot }, { $set: { webSyncAt: new Date() } }, { upsert: true });
 
   const fromDate = opts?.fromDate || todayInVN();
   const docs = (await Booking.find({ location: webLocation, dateISO: { $gte: fromDate } })

@@ -375,6 +375,9 @@ export function HandoverBox({
                 {myCash.items.map((it, i) => (
                   <li key={`${it.label}-${i}`} className="flex items-center gap-2 py-1 text-sm text-slate-700">
                     <span className="min-w-0 flex-1 leading-snug">
+                      {it.daySeq > 0 && (
+                        <strong className="mr-1 rounded bg-red-600 px-1.5 font-bold text-white">{it.daySeq}</strong>
+                      )}
                       {it.label}
                       {it.bookingCode ? <span className="text-slate-400"> · #{it.bookingCode}</span> : null}
                       {it.guests ? <span className="text-slate-400"> · {it.guests} khách</span> : null}
@@ -397,6 +400,9 @@ export function HandoverBox({
                 {board.transfer.items.map((it, i) => (
                   <li key={`${it.label}-${i}`} className="flex items-center gap-2 py-1 text-sm text-slate-700">
                     <span className="min-w-0 flex-1 leading-snug">
+                      {it.daySeq > 0 && (
+                        <strong className="mr-1 rounded bg-red-600 px-1.5 font-bold text-white">{it.daySeq}</strong>
+                      )}
                       {it.label}
                       {it.bookingCode ? <span className="text-slate-400"> · #{it.bookingCode}</span> : null}
                       {it.transferCode ? <span className="text-slate-400"> · CK #{it.transferCode}</span> : null}

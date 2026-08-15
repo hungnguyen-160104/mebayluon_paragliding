@@ -605,6 +605,7 @@ export function BookingTodayBanner({
   collapsible?: boolean;
 }) {
   const [rows, setRows] = useState<BookingDTO[]>([]);
+  const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Danh sách dài thì gập lại còn 10 dòng. */
@@ -615,8 +616,13 @@ export function BookingTodayBanner({
   const [collectDone, setCollectDone] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    apiGet<{ forDate: BookingDTO[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
-      .then((r) => setRows(r.forDate))
+    apiGet<{ forDate: BookingDTO[]; moved?: { bookings: number; guests: number } }>(
+      `/api/baocao/booking?date=${date}&spot=${spot}`,
+    )
+      .then((r) => {
+        setRows(r.forDate);
+        setMoved(r.moved ?? { bookings: 0, guests: 0 });
+      })
       .catch(() => {
         /* không có booking thì thôi */
       });
@@ -630,12 +636,14 @@ export function BookingTodayBanner({
   }, [load]);
 
   const open = rows.filter((b) => b.status === "open");
+  const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
+  const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
   const closed = rows.filter((b) => b.status !== "open");
   /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. */
   const openShown = showAll ? open : open.slice(0, 10);
   if (!rows.length) return null;
 
-  async function act(b: BookingDTO, action: "flown" | "cancel" | "move", toDate?: string) {
+  async function act(b: BookingDTO, action: "flown" | "cancel" | "move" | "ticket", toDate?: string) {
     const name = b.contactName || b.bookingCode || b.source;
     if (action === "flown" && !window.confirm(`Xác nhận khách ${name} ĐÃ BAY?`)) return;
     if (action === "cancel" && !window.confirm(`Xác nhận booking ${name} bị HUỶ? Hệ thống sẽ báo huỷ, không làm gì thêm.`)) return;
@@ -652,12 +660,28 @@ export function BookingTodayBanner({
     }
   }
 
-  const title = (
-    <>
-      🛫 Booking bay ngày {formatDateKeyVN(date)} ({open.length} booking - {open.reduce((t, b) => t + b.guestCount, 0)}{" "}
-      khách)
-    </>
-  );
+  /**
+   * Đếm CẢ ngày, không riêng nhóm chờ bay: xem lại ngày cũ thì đa số booking đã
+   * "đã bay" — chỉ đếm chờ bay sẽ ra "1 booking" trong khi danh sách có 10.
+   * Khách huỷ không tính (họ không bay), nhưng vẫn nằm trong danh sách bên dưới.
+   */
+  /**
+   * Thống kê CẢ NGÀY ngay trên tiêu đề: tổng book (kể cả huỷ + dời đi), tổng
+   * khách, rồi đã bay / dời / huỷ — nhìn một dòng là biết ngày đó chốt ra sao.
+   */
+  // Vé đã xuất = tổng KHÁCH của các booking đã tích 🎫 (khách huỷ không tính)
+  const issuedGuests = rows
+    .filter((b) => b.ticketIssued && b.status !== "cancelled")
+    .reduce((t, b) => t + b.guestCount, 0);
+  const stats = [
+    `${rows.length + moved.bookings} Book`,
+    `Tổng ${rows.reduce((t, b) => t + b.guestCount, 0) + moved.guests}k`,
+    issuedGuests ? `Đã xuất vé ${issuedGuests}k` : "",
+    doneGuestsAll ? `Đã bay ${doneGuestsAll}k` : "",
+    moved.guests ? `Dời ${moved.guests}k` : "",
+    cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
+  ].filter(Boolean);
+  const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
   const body = (
     <>
       <p className="mt-0.5 text-[11px] text-sky-800/70">
@@ -726,6 +750,25 @@ export function BookingTodayBanner({
                 <AssignControl spot={spot} booking={b} onDone={load} />
               </div>
               <div className="float-right clear-right ml-2 mt-1 flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className={
+                    "h-7 px-2 text-xs font-semibold " +
+                    (b.ticketIssued
+                      ? "border-amber-400 bg-amber-100 text-amber-900"
+                      : "bg-white text-slate-600")
+                  }
+                  disabled={busy === b.id}
+                  onClick={() => act(b, "ticket")}
+                  title={
+                    b.ticketIssued
+                      ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
+                      : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
+                  }
+                >
+                  {b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
+                </Button>
                 <CollectMoneyControl
                   spot={spot}
                   booking={b}
@@ -1053,6 +1096,8 @@ export function BookingCard({
   const rootRef = useRef<HTMLDivElement>(null);
   /** Đang kéo booking khách tự đặt trên web về sổ nội bộ. */
   const [syncing, setSyncing] = useState(false);
+  /** Lần check web & OTA gần nhất — hiện cạnh nút để biết còn phải bấm không. */
+  const [webSyncAt, setWebSyncAt] = useState("");
   const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
@@ -1093,12 +1138,15 @@ export function BookingCard({
   };
 
   const load = useCallback(() => {
-    apiGet<{ upcoming: BookingDTO[]; staff?: Array<{ username: string; name: string; roleLabel: string }> }>(
-      `/api/baocao/booking?date=${todayInVN()}&spot=${bookSpot}`,
-    )
+    apiGet<{
+      upcoming: BookingDTO[];
+      staff?: Array<{ username: string; name: string; roleLabel: string }>;
+      webSyncAt?: string;
+    }>(`/api/baocao/booking?date=${todayInVN()}&spot=${bookSpot}`)
       .then((r) => {
         setUpcoming(r.upcoming);
         setStaff(r.staff ?? []);
+        setWebSyncAt(r.webSyncAt ?? "");
       })
       .catch(() => {
         /* danh sách chỉ để tham khảo */
@@ -1297,6 +1345,17 @@ export function BookingCard({
           >
             {syncing ? "Đang kiểm…" : "🔄 Lấy book từ website & OTA"}
           </button>
+          {webSyncAt && (
+            <span className="text-[11px] font-normal text-white/80">
+              check lần cuối: {new Date(webSyncAt).toLocaleString("vi-VN", {
+                timeZone: "Asia/Ho_Chi_Minh",
+                hour: "2-digit",
+                minute: "2-digit",
+                day: "2-digit",
+                month: "2-digit",
+              })}
+            </span>
+          )}
         </span>
       }
       open={forceOpen || undefined}

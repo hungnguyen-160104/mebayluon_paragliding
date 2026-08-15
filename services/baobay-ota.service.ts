@@ -422,7 +422,7 @@ export async function approveOtaEmail(
     await OtaEmail.updateOne({ _id: id }, { $set: { status: "applied", result: `Booking ${ref} đã có sẵn` } });
     return { ok: true, message: "Booking đã có trong sổ" };
   }
-  const spot = String(override?.spot || mail.spot || "");
+  const spot = String(mail.spot || override?.spot || "");
   const flightDate = String(override?.flightDate || draft.flightDate || "");
   if (!spot) return { ok: false, message: "Chọn điểm bay giúp — thư không ghi rõ" };
   if (!isDateKey(flightDate)) return { ok: false, message: "Chọn ngày bay giúp — thư không ghi rõ" };
@@ -477,10 +477,21 @@ export async function approveOtaEmail(
   return { ok: true, message: "Đã đưa booking vào lịch" };
 }
 
-/** Thư OTA gần đây cho khay theo dõi trên trang điều phối / kế toán. */
-export async function listOtaEmails(spot?: string, limit = 60) {
+/**
+ * Thư OTA gần đây cho khay theo dõi trên trang điều phối / kế toán.
+ *
+ * KHÔNG lọc theo điểm bay: nhiều thư máy không đoán nổi điểm, mà thư huỷ của
+ * Khau Phạ biến mất chỉ vì người trực đang mở tab Hà Nội thì coi như mất thư.
+ * Ai trực cũng thấy đủ; thư của điểm nào thì đề tên điểm đó trên dòng.
+ */
+export async function listOtaEmails(_spot?: string, limit = 60) {
   await connectDB();
-  const where = spot ? { $or: [{ spot }, { spot: { $in: [null, ""] } }] } : {};
+  /**
+   * Thư rác (OTP, quảng cáo…) vẫn được LƯU để lần vết, nhưng không chiếm chỗ
+   * trong khay: cả hai lời phân loại của máy đều chứa cụm "không phải thư đơn
+   * hàng" nên lọc theo đó.
+   */
+  const where = { result: { $not: /không phải thư đơn hàng/i } };
   const docs = await OtaEmail.find(where).sort({ createdAt: -1 }).limit(limit).lean<any[]>();
   return docs.map((d) => {
     const draft = (d.draft ?? {}) as Record<string, any>;
@@ -504,6 +515,8 @@ export async function listOtaEmails(spot?: string, limit = 60) {
       status: d.status,
       result: d.result || "",
       receivedAt: d.receivedAt ? new Date(d.receivedAt).toISOString() : "",
+      /** Lúc APP nhận thư (khác receivedAt là lúc thư tới Gmail) — để biết đường thư còn sống. */
+      fetchedAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
       /** Việc sẽ làm khi bấm duyệt: "cancel" · "amend" · "create". */
       intent: String(draft.intent ?? ""),
       spot: d.spot || "",

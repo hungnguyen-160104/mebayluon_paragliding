@@ -25,6 +25,9 @@ export interface IBaobaySetting {
    */
   sheetWebhookUrl?: string;
   sheetSecret?: string;
+  /** Lần gần nhất bấm/chạy "Lấy book từ website & OTA" cho điểm này. */
+  webSyncAt?: Date;
+  webSyncBy?: string;
   updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +41,8 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
     submitDeadline: { type: String, default: DEFAULT_SUBMIT_DEADLINE },
     sheetWebhookUrl: String,
     sheetSecret: String,
+    webSyncAt: Date,
+    webSyncBy: String,
     updatedBy: String,
   },
   { timestamps: true },

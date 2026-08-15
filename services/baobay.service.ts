@@ -2629,6 +2629,8 @@ export type MoneyBoardItem = {
   transferCode: string;
   /** Nguồn số: "lệnh thu" hay "sổ thu chi" — để biết đường tìm lại. */
   from: string;
+  /** Số thứ tự của booking trong ngày bay — 0 khi khoản không gắn với booking nào. */
+  daySeq: number;
 };
 
 export type MoneyBoardPerson = {
@@ -2669,6 +2671,30 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses").lean<any[]>(),
   ]);
 
+  /**
+   * Tra SỐ THỨ TỰ booking cho từng khoản: ưu tiên bookingId (lệnh thu bấm từ
+   * booking), rồi mã booking / tên khách trong đúng ngày — lệnh thu cũ chưa lưu
+   * bookingId vẫn ra số.
+   */
+  const ids = collects.map((c) => c.bookingId).filter(Boolean);
+  const dayBookings = await BaobayBooking.find({
+    $or: [...(ids.length ? [{ _id: { $in: ids } }] : []), { spot, flightDate: date }],
+  })
+    .select("bookingCode contactName daySeq")
+    .lean<any[]>();
+  const seqById = new Map(dayBookings.map((b) => [String(b._id), Number(b.daySeq) || 0]));
+  const seqByCode = new Map<string, number>();
+  const seqByName = new Map<string, number>();
+  for (const b of dayBookings) {
+    if (b.bookingCode) seqByCode.set(String(b.bookingCode).trim().toLowerCase(), Number(b.daySeq) || 0);
+    if (b.contactName) seqByName.set(String(b.contactName).trim().toLowerCase(), Number(b.daySeq) || 0);
+  }
+  const seqOfCollect = (c: any): number =>
+    (c.bookingId && seqById.get(String(c.bookingId))) ||
+    (c.bookingCode && seqByCode.get(String(c.bookingCode).trim().toLowerCase())) ||
+    (c.guestName && seqByName.get(String(c.guestName).trim().toLowerCase())) ||
+    0;
+
   const transferItems: MoneyBoardItem[] = [];
   const byPerson = new Map<string, MoneyBoardPerson>();
   const roleOf = new Map<string, string>();
@@ -2692,6 +2718,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       amount: c.amount || 0,
       transferCode: c.transferCode || "",
       from: "lệnh thu",
+      daySeq: seqOfCollect(c),
     };
     if (c.method === "transfer") {
       transferItems.push(item);
@@ -2718,6 +2745,8 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
           amount: e.amount || 0,
           transferCode: "",
           from: "sổ thu chi",
+          // Khoản gõ tay trong sổ không gắn booking nào — không có số
+          daySeq: 0,
         };
         if (e.method === "transfer") {
           transferItems.push(item);
@@ -3066,18 +3095,34 @@ export async function listBookings(
   date: string,
   /** Chỉ lấy booking ĐÃ GIAO cho người này — trang phi công/camera man. */
   assignedTo?: string,
-): Promise<{ forDate: BookingDTO[]; upcoming: BookingDTO[]; flown: FlownServices }> {
+): Promise<{
+  forDate: BookingDTO[];
+  upcoming: BookingDTO[];
+  flown: FlownServices;
+  moved: { bookings: number; guests: number };
+  /** Lần gần nhất chạy "Lấy book từ website & OTA" cho điểm này (ISO, "" nếu chưa từng). */
+  webSyncAt: string;
+}> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
   const extra = assignedTo ? { assignedToUsername: normalizeUsername(assignedTo) } : {};
 
-  const [forDate, upcoming] = await Promise.all([
+  const [forDate, upcoming, movedAway, setting] = await Promise.all([
     // Xếp theo thứ tự ĐẶT CHỖ: ai đặt trước đứng trước (đúng thứ tự nhận khách)
     BaobayBooking.find({ spot, flightDate: date, ...extra }).sort({ createdAt: 1 }).lean<any[]>(),
     BaobayBooking.find({ spot, status: "open", flightDate: { $gte: todayInVN() }, ...extra })
       .sort({ flightDate: 1, expectedTime: 1 })
       .limit(100)
       .lean<any[]>(),
+    /**
+     * Booking đã DỜI KHỎI ngày này (rescheduledFrom còn ghi ngày cũ): chúng đã
+     * mang flightDate mới nên không nằm trong danh sách, nhưng dòng thống kê
+     * "Dời Nk" của ngày vẫn phải đếm được.
+     */
+    BaobayBooking.find({ spot, rescheduledFrom: date, flightDate: { $ne: date }, ...extra })
+      .select("guestCount")
+      .lean<any[]>(),
+    BaobaySetting.findOne({ key: spot }).select("webSyncAt").lean<any>(),
   ]);
   /**
    * Tích "đã bay" cho khách nào thì dịch vụ đăng ký của khách đó được cộng vào
@@ -3097,7 +3142,13 @@ export async function listBookings(
     mountainCar: sum((b) => b.mountainCar),
   };
 
-  return { forDate: forDate.map(toBookingDTO), upcoming: upcoming.map(toBookingDTO), flown };
+  return {
+    forDate: forDate.map(toBookingDTO),
+    upcoming: upcoming.map(toBookingDTO),
+    flown,
+    moved: { bookings: movedAway.length, guests: movedAway.reduce((t, b) => t + (b.guestCount || 0), 0) },
+    webSyncAt: setting?.webSyncAt ? new Date(setting.webSyncAt).toISOString() : "",
+  };
 }
 
 /**
@@ -3294,6 +3345,7 @@ export async function collectForBooking(
       spot,
       date: todayInVN(),
       guestName: booking.contactName || "",
+      bookingId: booking._id,
       bookingCode: booking.bookingCode || "",
       agency: booking.source || "",
       guests: booking.guestCount || 0,
@@ -3339,6 +3391,24 @@ export async function collectForBooking(
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
+}
+
+/**
+ * Quầy tích "ĐÃ XUẤT VÉ" cho booking (khách đã đến lấy vé) — bấm lại lần nữa
+ * để bỏ tích khi lỡ tay. Không đụng tiền, không đụng trạng thái bay.
+ */
+export async function toggleBookingTicket(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const set = current.ticketIssuedAt
+    ? { $unset: { ticketIssuedAt: "", ticketIssuedBy: "" } }
+    : { $set: { ticketIssuedAt: new Date(), ticketIssuedBy: session.name || session.username } };
+  const updated = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, set, { new: true }).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
 }
 
 export async function updateBookingStatus(
@@ -3464,6 +3534,8 @@ async function pushBookingRow(doc: any) {
 function toBookingDTO(doc: any): BookingDTO {
   return {
     daySeq: Number(doc.daySeq) || 0,
+    ticketIssued: Boolean(doc.ticketIssuedAt),
+    ticketIssuedBy: doc.ticketIssuedBy || undefined,
     collected: Array.isArray(doc.collectedLog)
       ? doc.collectedLog.map((c: any) => ({
           amount: Number(c.amount) || 0,

@@ -9,6 +9,7 @@ import {
   BaobayError,
   assignBooking,
   collectForBooking,
+  toggleBookingTicket,
   listSpotStaffAll,
   createBooking,
   deleteBooking,
@@ -146,7 +147,7 @@ export async function PATCH(req: Request) {
   const action = String(body?.action ?? "flown");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -158,6 +159,10 @@ export async function PATCH(req: Request) {
       const assignee = String(body?.assignee ?? "");
       if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });
       return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
+    }
+    // Tích/bỏ tích ĐÃ XUẤT VÉ — khách đến lấy vé rồi hay chưa
+    if (action === "ticket") {
+      return NextResponse.json({ booking: await toggleBookingTicket(auth, spot, id) });
     }
     // THU TIỀN cho booking: CK về TK công ty · TM vào tiền giữ hộ của người bấm
     if (action === "collect") {

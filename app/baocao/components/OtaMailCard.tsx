@@ -3,6 +3,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { spotName } from "@/lib/baobay/spots";
+
 import { apiGet, apiPatch } from "./client-api";
 import { Button, CollapseCard } from "./ui";
 
@@ -16,6 +18,8 @@ type OtaMail = {
   status: string;
   result: string;
   receivedAt: string;
+  /** Lúc app nhận thư từ Gmail. */
+  fetchedAt?: string;
   /** Việc sẽ làm khi bấm duyệt: cancel · amend · create. */
   intent?: string;
   spot?: string;
@@ -134,10 +138,17 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
   const [error, setError] = useState<Record<string, string>>({});
   const [dateFix, setDateFix] = useState<Record<string, string>>({});
   const [openMail, setOpenMail] = useState<string | null>(null);
+  /**
+   * Thư thiếu ngày bay: bấm "Đưa vào lịch" KHÔNG chạy ngay mà mở dải chọn ngày
+   * có nút "Thôi" — người bấm nhầm còn đường lui, không bị kẹt giữa chừng.
+   */
+  const [armed, setArmed] = useState<string | null>(null);
   /** 18 thư cùng lúc là bức tường đỏ — hiện 5 thư đầu, còn lại nằm sau nút xổ. */
   const [showAll, setShowAll] = useState(false);
 
   const pending = mails.filter((m) => m.status === "review");
+  /** Thư mới nhất APP nhận được (mọi trạng thái) — danh sách đã xếp mới trước. */
+  const lastFetch = mails[0]?.fetchedAt || "";
   if (!pending.length) return null;
   const shown = showAll ? pending : pending.slice(0, 5);
   const hidden = pending.length - shown.length;
@@ -167,8 +178,13 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
 
   return (
     <div className="mb-2 rounded-xl border-2 border-red-400 bg-red-50 p-2.5">
-      <div className="mb-1.5 text-sm font-bold text-red-800">
-        🚩 {pending.length} thư OTA chờ duyệt tay — lịch bay CHƯA đổi
+      <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-sm font-bold text-red-800">
+        <span>🚩 {pending.length} thư OTA chờ duyệt tay — lịch bay CHƯA đổi</span>
+        {lastFetch && (
+          <span className="text-[11px] font-medium text-red-900/60" title="Lần gần nhất Gmail đẩy được thư về app">
+            thư về gần nhất {whenVN(lastFetch)}
+          </span>
+        )}
       </div>
       <ul className="space-y-1.5">
         {shown.map((m) => {
@@ -180,6 +196,11 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                 <span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-900">
                   {m.ota.toUpperCase()} · {KIND_LABEL[m.kind] ?? m.kind}
                 </span>
+                {m.spot && (
+                  <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-bold text-sky-900">
+                    📍 {spotName(m.spot)}
+                  </span>
+                )}
                 <span className="min-w-[12rem] flex-1 text-sm leading-snug text-slate-800">
                   {m.ref && <strong className="mr-1">#{m.ref}</strong>}
                   {m.result || m.subject}
@@ -196,20 +217,15 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                 >
                   ✉ Thư {openMail === m.id ? "▴" : "▾"}
                 </Button>
-                {needDate && (
-                  <input
-                    type="date"
-                    className="h-8 shrink-0 rounded-lg border border-slate-300 px-1.5 text-sm"
-                    value={dateFix[m.id] ?? ""}
-                    onChange={(e) => setDateFix((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                    title="Thư không ghi rõ ngày bay — chọn giúp trước khi duyệt"
-                  />
-                )}
                 <Button
                   type="button"
                   className="h-8 shrink-0 bg-red-600 px-2.5 text-xs font-semibold text-white hover:bg-red-700"
                   disabled={busy === m.id}
-                  onClick={() => act(m, "approve")}
+                  onClick={() => {
+                    // Thiếu ngày bay: mở dải chọn ngày thay vì chạy luôn
+                    if (needDate && !dateFix[m.id]) setArmed(m.id);
+                    else void act(m, "approve");
+                  }}
                 >
                   ✓ {INTENT_LABEL[intent] ?? "Duyệt"}
                 </Button>
@@ -224,6 +240,42 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                   ✕ Bỏ qua
                 </Button>
               </div>
+              {armed === m.id && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50/60 px-2 py-1.5">
+                  <span className="text-xs font-semibold text-red-900">Thư không ghi ngày bay — chọn giúp:</span>
+                  <input
+                    type="date"
+                    className="h-8 shrink-0 rounded-lg border border-slate-300 bg-white px-1.5 text-sm"
+                    value={dateFix[m.id] ?? ""}
+                    onChange={(e) => setDateFix((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                  />
+                  <Button
+                    type="button"
+                    className="h-8 shrink-0 bg-red-600 px-2.5 text-xs font-semibold text-white hover:bg-red-700"
+                    disabled={busy === m.id || !dateFix[m.id]}
+                    onClick={async () => {
+                      await act(m, "approve");
+                      setArmed(null);
+                    }}
+                  >
+                    ✓ Xác nhận
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-8 shrink-0 bg-white px-2 text-xs"
+                    disabled={busy === m.id}
+                    onClick={() => {
+                      // Đường lui: bỏ ngày đã chọn + xoá lỗi, thư về nguyên trạng chờ duyệt
+                      setArmed(null);
+                      setDateFix((prev) => ({ ...prev, [m.id]: "" }));
+                      setError((prev) => ({ ...prev, [m.id]: "" }));
+                    }}
+                  >
+                    ↩ Thôi, để lại
+                  </Button>
+                </div>
+              )}
               {error[m.id] && <div className="mt-1 text-xs font-semibold text-red-700">{error[m.id]}</div>}
               {openMail === m.id && <MailDetail m={m} />}
             </li>

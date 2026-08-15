@@ -59,6 +59,9 @@ export function MoneyBoardCard({ spot, date }: { spot: string; date: string }) {
               {board.transfer.items.map((it, i) => (
                 <li key={`${it.label}-${i}`} className="flex gap-2">
                   <span className="min-w-0 flex-1 truncate">
+                    {it.daySeq > 0 && (
+                      <strong className="mr-1 rounded bg-red-600 px-1 font-bold text-white">{it.daySeq}</strong>
+                    )}
                     {it.label}
                     {it.transferCode ? ` · #${it.transferCode}` : ""}
                   </span>
@@ -99,6 +102,9 @@ export function MoneyBoardCard({ spot, date }: { spot: string; date: string }) {
                     {p.items.map((it, i) => (
                       <li key={`${it.label}-${i}`} className="flex gap-2">
                         <span className="min-w-0 flex-1 truncate">
+                          {it.daySeq > 0 && (
+                            <strong className="mr-1 rounded bg-red-600 px-1 font-bold text-white">{it.daySeq}</strong>
+                          )}
                           {it.label}
                           {it.bookingCode ? ` · #${it.bookingCode}` : ""}
                           <span className="text-slate-400"> · {it.from}</span>

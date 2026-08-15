@@ -329,6 +329,9 @@ export type BookingDTO = {
   cancelTicketCodes?: string[];
   /** Vệt thu tiền: từng lần thu — số tiền, TM/CK, người thu. */
   collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string }>;
+  /** Khách đã đến lấy vé chưa (quầy tích). */
+  ticketIssued: boolean;
+  ticketIssuedBy?: string;
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
   cancelledBy?: string;

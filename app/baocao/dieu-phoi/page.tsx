@@ -435,8 +435,9 @@ export default function DispatcherReportPage() {
 
       <ReviewNotices spot={spot} date={date} />
 
-      {/* Cờ đỏ: thư OTA huỷ/đổi lịch chờ duyệt tay — máy không tự sửa lịch */}
-      <OtaReviewFlag spot={spot} />
+      {/* Cờ đỏ: thư OTA huỷ/đổi lịch chờ duyệt tay — máy không tự sửa lịch.
+          QUẦY VÉ tạm thời không thấy mục thư OTA (cả cờ đỏ lẫn lịch sử). */}
+      {user.role !== "counter" && <OtaReviewFlag spot={spot} />}
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       {user.role !== "counter" && <CollectInbox spot={spot} />}
@@ -710,9 +711,6 @@ export default function DispatcherReportPage() {
       </CollapseCard>
 
 
-      {/* Thư OTA máy đã đưa vào lịch + thư cần người soát */}
-      <OtaMailCard spot={spot} />
-
       {/* Quét giấy tờ khách để làm bảo hiểm bay */}
       <IdScanCard />
       </div>
@@ -814,6 +812,9 @@ export default function DispatcherReportPage() {
           </ul>
         )}
       </CollapseCard>
+
+      {/* Lịch sử thư OTA — cột phải, và QUẦY VÉ không cần xem mục này */}
+      {user.role !== "counter" && <OtaMailCard spot={spot} />}
       </div>
       </div>
     </Shell>

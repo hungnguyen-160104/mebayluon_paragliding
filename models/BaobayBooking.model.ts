@@ -65,6 +65,9 @@ export interface IBaobayBooking {
   /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
+  /** Khách ĐÃ ĐẾN LẤY VÉ chưa — quầy tích để khỏi xuất trùng và đếm vé đã xuất. */
+  ticketIssuedAt?: Date;
+  ticketIssuedBy?: string;
   refundAmount?: number;
   /**
    * VỆT THU TIỀN của booking: ai thu, bao nhiêu, TM hay CK, lúc nào.
@@ -171,6 +174,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     mountainCar: { type: Number, default: 0, min: 0 },
     cancelTicketIssued: Boolean,
     cancelTicketCodes: { type: [String], default: [] },
+    ticketIssuedAt: Date,
+    ticketIssuedBy: String,
     refundAmount: { type: Number, default: 0, min: 0 },
     collectedLog: {
       type: [
