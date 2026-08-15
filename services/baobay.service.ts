@@ -3229,7 +3229,13 @@ export async function listBookings(
    * Lịch "sắp tới" thì vẫn CHỈ của riêng mình: xem lịch cá nhân mấy ngày tới là
    * việc riêng, không cần biết ai bay cùng.
    */
-  const inCrew = me ? await inCrewOfDay(spot, date, me) : false;
+  /**
+   * KHAU PHẠ: phi công CHỈ thấy khách giao cho mình. Điểm này bán vé giấy, quầy
+   * đứng thu tiền và điều phối chia khách — phi công không cần (và không nên)
+   * đọc cả sổ khách của ngày. Các điểm khác vẫn xem chung theo nhóm bay.
+   */
+  const crewShare = spot !== "khau-pha";
+  const inCrew = me && crewShare ? await inCrewOfDay(spot, date, me) : false;
   const forDateWhere = me && !inCrew ? { spot, flightDate: date, ...extra } : { spot, flightDate: date };
 
   const [forDate, upcoming, movedAway, setting] = await Promise.all([
@@ -3267,9 +3273,20 @@ export async function listBookings(
     mountainCar: sum((b) => b.mountainCar),
   };
 
+  /**
+   * CHE SỐ TIỀN với phi công / camera man: họ cần biết khách là ai, mấy người,
+   * dịch vụ gì, đón ở đâu và CÒN PHẢI THU bao nhiêu — chỉ vậy là đủ làm việc.
+   * Nguồn khách, tổng tiền, đã cọc, chiết khấu là chuyện giá cả và đối tác, để
+   * lọt ra bãi là sinh chuyện. Cắt ngay ở máy chủ, không gửi xuống máy họ.
+   *
+   * Riêng CÂN NẶNG trong ghi chú thì giữ lại: đó là thứ phi công buộc phải biết
+   * để chọn dù và xếp người bay.
+   */
+  const view = me ? maskForCrew : toBookingDTO;
+
   return {
-    forDate: forDate.map(toBookingDTO),
-    upcoming: upcoming.map(toBookingDTO),
+    forDate: forDate.map(view),
+    upcoming: upcoming.map(view),
     flown,
     moved: { bookings: movedAway.length, guests: movedAway.reduce((t, b) => t + (b.guestCount || 0), 0) },
     webSyncAt: setting?.webSyncAt ? new Date(setting.webSyncAt).toISOString() : "",
@@ -3990,6 +4007,30 @@ async function pushBookingRow(doc: any) {
     undefined,
     await sheetTargetForSpot(doc.spot),
   );
+}
+
+/** Bản rút gọn cho phi công/camera man — xem chú thích ở listBookings. */
+function maskForCrew(doc: any): BookingDTO {
+  const b = toBookingDTO(doc);
+  const weight = /c[âa]n n[ặa]ng[^·]*/i.exec(String(doc.note ?? ""))?.[0]?.trim() ?? "";
+  return {
+    ...b,
+    source: "",
+    bookingCode: "",
+    otaName: undefined,
+    otaRef: undefined,
+    otaGuests: undefined,
+    unitPrice: 0,
+    discount: 0,
+    comboDiscount: 0,
+    totalAmount: 0,
+    deposit: 0,
+    transferCode: "",
+    depositToCompany: false,
+    commission: undefined,
+    collected: [],
+    note: weight,
+  };
 }
 
 function toBookingDTO(doc: any): BookingDTO {

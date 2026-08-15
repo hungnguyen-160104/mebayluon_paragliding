@@ -1313,6 +1313,8 @@ export function AssignedBookings({
 
   /** Khách của MÌNH đứng trước, khách của đồng đội xếp sau (vẫn xem/thu hộ được). */
   const isMine = (b: BookingDTO) => Boolean(me) && b.assignedToUsername === me;
+  /** Máy chủ chỉ trả khách của mình ở Khau Phạ — nhận ra bằng chính dữ liệu nhận được. */
+  const crewView = forDate.some((b) => !isMine(b));
   const mine = forDate.filter((b) => isMine(b) && b.status === "open");
   const ordered = [...forDate].sort((a, b) => Number(isMine(b)) - Number(isMine(a)));
 
@@ -1336,10 +1338,15 @@ export function AssignedBookings({
       {forDate.length > 0 && (
         <>
           <h2 className="text-sm font-bold text-indigo-900">
-            🤝 Khách bay ngày {formatDateKeyVN(date)} — của bạn {mine.length}/{forDate.filter((b) => b.status === "open").length} khách
+            🤝 Khách bay ngày {formatDateKeyVN(date)} —{" "}
+            {crewView
+              ? `của bạn ${mine.length}/${forDate.filter((b) => b.status === "open").length} khách`
+              : `${mine.length} khách giao cho bạn`}
           </h2>
           <p className="text-[11px] leading-tight text-indigo-900/70">
-            Cả nhóm bay hôm nay nhìn chung một danh sách: chuyển khách cho nhau và thu tiền hộ nhau được.
+            {crewView
+              ? "Cả nhóm bay hôm nay nhìn chung một danh sách: chuyển khách cho nhau và thu tiền hộ nhau được."
+              : "Chỉ hiện khách điều phối giao cho bạn. Giá cả và nguồn khách do quầy giữ."}
           </p>
           <ul className="mt-2 space-y-1.5">
             {ordered.map((b) => (
