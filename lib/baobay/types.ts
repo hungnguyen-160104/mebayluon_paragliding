@@ -315,6 +315,8 @@ export type BookingDTO = {
   flagFlight: number;
   /** Loại hình bay: "pg" dù lượn · "ppg" có động cơ — quyết định đơn giá. */
   flightKind: "pg" | "ppg" | "m650" | "m850";
+  /** Số khách PPG khi đặt PG + PPG chung booking (Khau Phạ); 0 = cả nhóm một loại. */
+  ppgGuests: number;
   /** Phí đưa đón thu của khách. */
   pickupFee: number;
   /** Số suất xe lên núi (Hà Nội) — 150k/khách. */

@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
 
@@ -18,6 +19,7 @@ import {
   bookingTotal as computeBookingTotal,
   defaultFlightKind,
   flightKindsOf,
+  comboDiscount,
   flightUnitPrice,
   priceNote,
   servicesAmount,
@@ -74,7 +76,11 @@ function BookingSummary({ b, withDate, dim }: { b: BookingDTO; withDate?: boolea
   if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
   if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/săn mây`);
   if (b.mountainCar) parts.push(`${b.mountainCar}×xe núi`);
-  if (b.flightKind && b.flightKind !== "pg") parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
+  if ((b.ppgGuests ?? 0) > 0 && b.guestCount > (b.ppgGuests ?? 0)) {
+    parts.push(`${b.guestCount - (b.ppgGuests ?? 0)}PG + ${b.ppgGuests}PPG`);
+  } else if (b.flightKind && b.flightKind !== "pg") {
+    parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
+  }
   if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
   parts.push(
     [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
@@ -998,12 +1004,37 @@ export function AssignedBookings({ spot, date }: { spot: string; date: string })
 /* Thẻ nhập booking mới + danh sách sắp tới                            */
 /* ================================================================== */
 
+/** Tổng tiền của form: giá PG (ô đơn giá) × khách PG + bảng giá PPG × khách PPG − combo − giảm trừ. */
+function totalOf(f: {
+  flightDate: string;
+  flightKind: BookingDTO["flightKind"];
+  ppgGuests: number;
+  guestCount: number;
+  unitPrice: number;
+  mountainCar: number;
+  flycam: number;
+  video360: number;
+  redFlag: number;
+  flagFlight: number;
+  sunset: number;
+  pickupFee: number;
+  discount: number;
+}): number {
+  return computeBookingTotal({
+    ...f,
+    ppgGuests: f.flightKind === "ppg" ? 0 : f.ppgGuests,
+    ppgUnitPrice: flightUnitPrice("ppg", f.flightDate),
+  });
+}
+
 type BookingForm = {
   flightDate: string;
   source: string;
   contactName: string;
   bookingCode: string;
   guestCount: number;
+  /** Khách PPG khi nhóm trộn PG + PPG (Khau Phạ) — 0 nếu cả nhóm một loại. */
+  ppgGuests: number;
   flycam: number;
   video360: number;
   redFlag: number;
@@ -1038,6 +1069,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     contactName: "",
     bookingCode: "",
     guestCount: 0,
+    ppgGuests: 0,
     flycam: 0,
     video360: 0,
     redFlag: 0,
@@ -1099,6 +1131,9 @@ export function BookingCard({
   /** Lần check web & OTA gần nhất — hiện cạnh nút để biết còn phải bấm không. */
   const [webSyncAt, setWebSyncAt] = useState("");
   const [rowBusy, setRowBusy] = useState<string | null>(null);
+  /** Ô NHẬP NHANH: dán một dòng chữ, máy bóc và điền form — người nhập soát rồi lưu. */
+  const [quick, setQuick] = useState("");
+  const [quickMsg, setQuickMsg] = useState<string | null>(null);
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
@@ -1125,10 +1160,10 @@ export function BookingCard({
       if (!priceTouched && (key === "flightDate" || key === "flightKind")) {
         next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
       }
-      const total = computeBookingTotal(next);
+      const total = totalOf(next);
       if (
         !remainingTouched &&
-        ["unitPrice", "discount", "guestCount", "deposit", "flightDate", "flightKind", "pickupFee",
+        ["unitPrice", "discount", "guestCount", "ppgGuests", "deposit", "flightDate", "flightKind", "pickupFee",
          "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"].includes(key as string)
       ) {
         next.remaining = Math.max(0, total - (next.deposit || 0));
@@ -1173,8 +1208,101 @@ export function BookingCard({
   });
 
   /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
-  const bookingTotal = computeBookingTotal(form);
+  const bookingTotal = totalOf(form);
   const serviceMoney = servicesAmount(form);
+  const comboMoney = comboDiscount(form.flycam, form.video360);
+  /** Khách PG/PPG đang khai — nhóm thuần PPG lưu kiểu cũ (flightKind "ppg"). */
+  const pgCount = form.flightKind === "ppg" ? 0 : Math.max(0, form.guestCount - form.ppgGuests);
+  const ppgCount = form.flightKind === "ppg" ? form.guestCount : form.ppgGuests;
+  const ppgPrice = flightUnitPrice("ppg", form.flightDate);
+
+  /** Bóc dòng nhập nhanh và điền vào form — KHÔNG tự lưu, người nhập soát lại. */
+  function applyQuick() {
+    const r = parseQuickBooking(quick, today);
+    const targetSpot = r.spot && spots.includes(r.spot) ? r.spot : bookSpot;
+    if (targetSpot !== bookSpot) setBookSpot(targetSpot);
+    setDone(null);
+    setForm((prev) => {
+      const next = { ...prev };
+      if (r.flightDate && r.flightDate >= today) next.flightDate = r.flightDate;
+      if (r.contactName) next.contactName = r.contactName;
+      if (r.phone) next.phone = r.phone;
+      if (r.expectedTime) next.expectedTime = r.expectedTime;
+      if (r.source) next.source = r.source;
+      if (r.flycam !== undefined) next.flycam = r.flycam;
+      if (r.video360 !== undefined) next.video360 = r.video360;
+      if (r.redFlag !== undefined) next.redFlag = r.redFlag;
+      if (r.sunset !== undefined) next.sunset = r.sunset;
+      if (r.flagFlight !== undefined) next.flagFlight = r.flagFlight;
+      if (r.mountainCar !== undefined) next.mountainCar = r.mountainCar;
+      if (r.pickup) {
+        next.pickup = r.pickup;
+        next.pickupNote = r.pickupNote || "";
+      }
+      if (r.deposit !== undefined) next.deposit = r.deposit;
+      if (r.discount !== undefined) next.discount = r.discount;
+
+      // Khách + loại hình: Khau Phạ cho trộn PG/PPG, nơi khác chỉ tổng khách
+      if (targetSpot === "khau-pha" && (r.pgCount || r.ppgCount)) {
+        const pg = r.pgCount || 0;
+        const ppg = r.ppgCount || 0;
+        const purePpg = pg === 0 && ppg > 0;
+        next.flightKind = purePpg ? "ppg" : "pg";
+        next.guestCount = pg + ppg;
+        next.ppgGuests = purePpg ? 0 : ppg;
+      } else if (r.guestCount) {
+        next.guestCount = r.guestCount;
+      }
+      next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      return next;
+    });
+
+    const filled = [
+      r.flightDate && `ngày ${r.flightDate.split("-").reverse().slice(0, 2).join("/")}`,
+      r.contactName,
+      r.phone,
+      r.guestCount && `${r.guestCount} khách${r.ppgCount ? ` (${r.pgCount || 0}PG+${r.ppgCount}PPG)` : ""}`,
+      r.expectedTime && `giờ ${r.expectedTime}`,
+      r.deposit && `cọc ${(r.deposit / 1000).toLocaleString("vi-VN")}k`,
+      r.discount && `giảm ${(r.discount / 1000).toLocaleString("vi-VN")}k`,
+    ].filter(Boolean);
+    setQuickMsg(
+      filled.length
+        ? `✓ Đã điền: ${filled.join(" · ")} — soát lại rồi bấm Lưu.${r.leftover ? ` (chưa hiểu: “${r.leftover}”)` : ""}`
+        : "Chưa bóc được gì từ dòng này — nhập tay giúp.",
+    );
+  }
+
+  /**
+   * KHAU PHẠ đặt PG + PPG chung một booking: hai ô số khách, tổng khách tự cộng.
+   * Nhóm thuần PPG lưu kiểu cũ (flightKind "ppg", ppgGuests 0) — báo cáo và
+   * booking cũ không phải đổi cách đọc.
+   */
+  function setKindCounts(pg: number, ppg: number) {
+    setDone(null);
+    setForm((prev) => {
+      const purePpg = pg === 0 && ppg > 0;
+      const kind: BookingDTO["flightKind"] = purePpg ? "ppg" : "pg";
+      const guestCount = pg + ppg;
+      const next = {
+        ...prev,
+        flightKind: kind,
+        guestCount,
+        ppgGuests: purePpg ? 0 : ppg,
+        unitPrice: priceTouched ? prev.unitPrice : flightUnitPrice(kind, prev.flightDate),
+      };
+      // Dịch vụ bám theo đầu khách — giảm khách thì kẹp dịch vụ xuống
+      next.flycam = Math.min(next.flycam, guestCount);
+      next.video360 = Math.min(next.video360, guestCount);
+      next.redFlag = Math.min(next.redFlag, guestCount);
+      next.sunset = Math.min(next.sunset, guestCount);
+      next.mountainCar = Math.min(next.mountainCar, guestCount);
+      next.flagFlight = Math.min(next.flagFlight, guestCount);
+      if (!remainingTouched) next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      return next;
+    });
+  }
 
   /** Kéo booking khách tự đặt trên mebayluon.com/booking vào danh sách chờ bay. */
   /**
@@ -1289,6 +1417,7 @@ export function BookingCard({
       phone: b.phone,
       expectedTime: b.expectedTime,
       flightKind: b.flightKind,
+      ppgGuests: b.ppgGuests ?? 0,
       pickupFee: b.pickupFee,
       mountainCar: b.mountainCar,
       unitPrice: b.unitPrice,
@@ -1360,6 +1489,32 @@ export function BookingCard({
       }
       open={forceOpen || undefined}
     >
+      {/* NHẬP NHANH: dán một dòng "mcc 18.8 tên sđt PG 8h00…" là máy điền hộ */}
+      <div className="mb-2 rounded-lg border border-violet-200 bg-violet-50/60 p-2">
+        <div className="flex gap-2">
+          <TextInput
+            value={quick}
+            onChange={(e) => setQuick(e.target.value)}
+            placeholder="⚡ Nhập nhanh: mcc 18.8 nguyễn trang 0956778444 PG 8h00 đón tại bluehome 2k 2xflycam cọc 300k giảm 200k"
+            className="h-10 flex-1 rounded-lg bg-white text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (quick.trim()) applyQuick();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            className="h-10 shrink-0 bg-violet-600 px-3 text-sm font-semibold hover:bg-violet-700"
+            disabled={!quick.trim()}
+            onClick={applyQuick}
+          >
+            ⚡ Đọc & điền
+          </Button>
+        </div>
+        {quickMsg && <p className="mt-1 text-[11px] leading-snug text-violet-900">{quickMsg}</p>}
+      </div>
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
@@ -1380,6 +1535,21 @@ export function BookingCard({
             onChange={(e) => e.target.value && set("flightDate", e.target.value)} className="h-10 rounded-lg text-sm"
           />
         </Field>
+        {bookSpot === "khau-pha" ? (
+          /* Khau Phạ: đặt PG và PPG CHUNG một booking — mỗi loại một ô số khách */
+          <Field label="PG / PPG (số khách từng loại)">
+            <div className="flex h-10 items-center gap-3">
+              <label className="flex items-center gap-1.5 text-sm font-semibold text-sky-800">
+                PG
+                <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
+              </label>
+              <label className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
+                PPG
+                <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+              </label>
+            </div>
+          </Field>
+        ) : (
         <Field label="Loại hình bay">
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {flightKindsOf(bookSpot).map((k) => (
@@ -1399,6 +1569,7 @@ export function BookingCard({
             ))}
           </div>
         </Field>
+        )}
         <Field label="Điểm bay">
           <select
             value={bookSpot}
@@ -1452,8 +1623,17 @@ export function BookingCard({
         <Field label="SĐT">
           <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />
         </Field>
-        <Field label="Số khách">
+        <Field label={bookSpot === "khau-pha" ? "Số khách (tự cộng PG + PPG)" : "Số khách"}>
+          {bookSpot === "khau-pha" ? (
+            <div
+              className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
+              title="Tự cộng từ hai ô PG / PPG phía trên"
+            >
+              {form.guestCount}
+            </div>
+          ) : (
           <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+          )}
         </Field>
       </div>
 
@@ -1541,12 +1721,15 @@ export function BookingCard({
             {bookingTotal.toLocaleString("vi-VN")} đ
           </div>
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-            {(form.unitPrice / 1000).toLocaleString("vi-VN")}k×{form.guestCount}
+            {bookSpot === "khau-pha" && pgCount > 0 && ppgCount > 0
+              ? `PG ${(form.unitPrice / 1000).toLocaleString("vi-VN")}k×${pgCount} + PPG ${(ppgPrice / 1000).toLocaleString("vi-VN")}k×${ppgCount}`
+              : `${(form.unitPrice / 1000).toLocaleString("vi-VN")}k×${form.guestCount}`}
             {serviceMoney ? ` + dịch vụ ${(serviceMoney / 1000).toLocaleString("vi-VN")}k` : ""}
             {form.mountainCar
               ? ` + xe núi ${((form.mountainCar * MOUNTAIN_CAR_PRICE) / 1000).toLocaleString("vi-VN")}k`
               : ""}
             {form.pickupFee ? ` + đón ${(form.pickupFee / 1000).toLocaleString("vi-VN")}k` : ""}
+            {comboMoney ? ` − combo ${(comboMoney / 1000).toLocaleString("vi-VN")}k (giảm tiền combo)` : ""}
             {form.discount ? ` − giảm ${(form.discount / 1000).toLocaleString("vi-VN")}k` : ""}
           </p>
         </Field>

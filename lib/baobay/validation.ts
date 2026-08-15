@@ -320,6 +320,8 @@ export const bookingSchema = z.object({
   pickupNote: text(200),
   expectedTime: text(20),
   flightKind: z.enum(["pg", "ppg", "m650", "m850"]).optional().default("pg"),
+  // Khách PPG trong nhóm trộn PG+PPG — PHẢI optional+default, form cũ không gửi
+  ppgGuests: count(100).optional().default(0),
   pickupFee: money,
   mountainCar: count(100),
   unitPrice: money,

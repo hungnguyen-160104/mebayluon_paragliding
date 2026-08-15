@@ -40,6 +40,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: firstZodMessage(parsed.error) }, { status: 400 });
   }
 
-  const result = await resyncSheets(spot, parsed.data.from, parsed.data.to);
+  const result = await resyncSheets(spot, parsed.data.from, parsed.data.to, Boolean(body?.force));
   return NextResponse.json(result);
 }

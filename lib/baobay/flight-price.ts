@@ -154,11 +154,28 @@ export function servicesAmount(s: {
   );
 }
 
+/**
+ * COMBO flycam + camera 360: khách lấy CẢ HAI thì mỗi cặp bớt 100k.
+ * Số cặp = min(flycam, 360) — 3 flycam + 2 cam360 là 2 cặp, bớt 200k.
+ */
+export const COMBO_DISCOUNT = 100_000;
+
+export function comboDiscount(flycam?: number, video360?: number): number {
+  return Math.min(flycam || 0, video360 || 0) * COMBO_DISCOUNT;
+}
+
 export type BookingMoneyInput = {
   unitPrice?: number;
   /** Số suất xe lên núi (Hà Nội) — 150k một khách. */
   mountainCar?: number;
   guestCount?: number;
+  /**
+   * Số khách bay PPG trong nhóm (Khau Phạ cho đặt PG + PPG chung một booking).
+   * Phần này tính theo `ppgUnitPrice`; số còn lại (guestCount − ppgGuests) theo
+   * `unitPrice`. Không khai thì cả nhóm cùng một giá như cũ.
+   */
+  ppgGuests?: number;
+  ppgUnitPrice?: number;
   flycam?: number;
   video360?: number;
   redFlag?: number;
@@ -170,12 +187,23 @@ export type BookingMoneyInput = {
 
 /**
  * Tổng tiền chốt với khách:
- *      đơn giá × số khách  +  tiền dịch vụ  +  phí đưa đón  −  giảm trừ
+ *      đơn giá × khách PG  +  giá PPG × khách PPG  +  tiền dịch vụ  +  phí đưa đón
+ *      −  giảm combo (flycam+360)  −  giảm trừ gõ tay
  */
 export function bookingTotal(input: BookingMoneyInput): number {
-  const base = (input.unitPrice || 0) * (input.guestCount || 0);
+  const ppg = Math.min(input.ppgGuests || 0, input.guestCount || 0);
+  const base =
+    (input.unitPrice || 0) * ((input.guestCount || 0) - ppg) + (input.ppgUnitPrice || 0) * ppg;
   const car = (input.mountainCar || 0) * MOUNTAIN_CAR_PRICE;
-  return Math.max(0, base + servicesAmount(input) + car + (input.pickupFee || 0) - (input.discount || 0));
+  return Math.max(
+    0,
+    base +
+      servicesAmount(input) +
+      car +
+      (input.pickupFee || 0) -
+      comboDiscount(input.flycam, input.video360) -
+      (input.discount || 0),
+  );
 }
 
 /* ================================================================== */

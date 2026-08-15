@@ -42,7 +42,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, type FlightKind } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, bookingTotal, flightUnitPrice, type FlightKind } from "@/lib/baobay/flight-price";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type {
@@ -2914,6 +2914,7 @@ export type BookingSaveInput = {
   pickupNote: string;
   expectedTime: string;
   flightKind?: "pg" | "ppg" | "m650" | "m850";
+  ppgGuests?: number;
   pickupFee: number;
   mountainCar: number;
   unitPrice: number;
@@ -3017,12 +3018,18 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       sunset: input.sunset,
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
+      ppgGuests: input.ppgGuests ?? 0,
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
       discount: input.discount,
       // Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi
-      totalAmount: bookingTotal(input),
+      totalAmount: bookingTotal({
+        ...input,
+        // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
+        ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+        ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+      }),
       // BigC chỉ có ở Hà Nội — điểm khác rơi về "tự đến"
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
@@ -3202,11 +3209,17 @@ export async function updateBookingInfo(
       sunset: input.sunset,
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
+      ppgGuests: input.ppgGuests ?? 0,
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
       discount: input.discount,
-      totalAmount: bookingTotal(input),
+      totalAmount: bookingTotal({
+        ...input,
+        // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
+        ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+        ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+      }),
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
@@ -3504,7 +3517,10 @@ async function pushBookingRow(doc: any) {
           ? `Đón: ${doc.pickupNote || "?"}`
           : BOOKING_PICKUP_LABEL[doc.pickup] || "Tự đến",
       expectedTime: doc.expectedTime || "",
-      flightKind: FLIGHT_KIND_SHORT[(doc.flightKind ?? "pg") as FlightKind] ?? "PG",
+      flightKind:
+        (doc.ppgGuests ?? 0) > 0 && (doc.guestCount ?? 0) > (doc.ppgGuests ?? 0)
+          ? `PG×${(doc.guestCount ?? 0) - doc.ppgGuests} + PPG×${doc.ppgGuests}`
+          : FLIGHT_KIND_SHORT[(doc.flightKind ?? "pg") as FlightKind] ?? "PG",
       pickupFee: doc.pickupFee ?? 0,
       mountainCar: doc.mountainCar ?? 0,
       unitPrice: doc.unitPrice ?? 0,
@@ -3565,6 +3581,7 @@ function toBookingDTO(doc: any): BookingDTO {
     sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     flightKind: (doc.flightKind ?? "pg") as FlightKind,
+    ppgGuests: Number(doc.ppgGuests) || 0,
     pickupFee: doc.pickupFee ?? 0,
     mountainCar: doc.mountainCar ?? 0,
     otaName: doc.otaName || "",
@@ -5132,23 +5149,37 @@ export type ResyncResult = {
  * trong MongoDB nhưng bảng tính thiếu một dòng. Nút này là đường vá thủ công để
  * cuối kỳ không có dòng nào rơi rớt.
  */
-export async function resyncSheets(spotRaw: string, from: string, to: string): Promise<ResyncResult> {
+export async function resyncSheets(
+  spotRaw: string,
+  from: string,
+  to: string,
+  /**
+   * force = đẩy lại TẤT CẢ bản ghi trong khoảng ngày, kể cả dòng đã sang bảng —
+   * dùng khi bộ cột trên bảng đổi (thêm cột mới) và cần đổ lại toàn bộ dữ liệu.
+   * Bình thường chỉ đẩy dòng chưa sang được.
+   */
+  force = false,
+): Promise<ResyncResult> {
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
   const range = { $gte: from, $lte: to };
   const result: ResyncResult = { scanned: 0, pushed: 0, failed: [] };
+  const pending = force ? {} : { sheetSynced: { $ne: true } };
 
-  const [pilots, dispatchers, cameramen, closes, handovers] = await Promise.all([
-    PilotDailyReport.find({ spot, date: range, sheetSynced: { $ne: true } }).lean<any[]>(),
-    DispatcherDailyReport.find({ spot, date: range, sheetSynced: { $ne: true } }).lean<any[]>(),
-    CameramanDailyReport.find({ spot, date: range, sheetSynced: { $ne: true } }).lean<any[]>(),
-    AccountantDailyClose.find({ spot, date: range, sheetSynced: { $ne: true } }).lean<any[]>(),
-    BaobayHandover.find({ spot, date: range, sheetSynced: { $ne: true } }).lean<any[]>(),
+  const [pilots, dispatchers, cameramen, closes, handovers, bookings, collects] = await Promise.all([
+    PilotDailyReport.find({ spot, date: range, ...pending }).lean<any[]>(),
+    DispatcherDailyReport.find({ spot, date: range, ...pending }).lean<any[]>(),
+    CameramanDailyReport.find({ spot, date: range, ...pending }).lean<any[]>(),
+    AccountantDailyClose.find({ spot, date: range, ...pending }).lean<any[]>(),
+    BaobayHandover.find({ spot, date: range, ...pending }).lean<any[]>(),
+    BaobayBooking.find({ spot, flightDate: range, ...pending }).lean<any[]>(),
+    BaobayCollect.find({ spot, date: range, ...pending }).lean<any[]>(),
   ]);
 
   result.scanned =
-    pilots.length + dispatchers.length + cameramen.length + closes.length + handovers.length;
+    pilots.length + dispatchers.length + cameramen.length + closes.length + handovers.length +
+    bookings.length + collects.length;
 
   const record = async (
     kind: string,
@@ -5188,6 +5219,30 @@ export async function resyncSheets(spotRaw: string, from: string, to: string): P
     await record("Giao tiền", doc.date, doc.staffName, BaobayHandover, doc._id, () =>
       pushHandoverRow(doc),
     );
+  }
+  for (const doc of bookings) {
+    await record("Booking", doc.flightDate, doc.contactName || doc.bookingCode || "", BaobayBooking, doc._id, () =>
+      pushBookingRow(doc),
+    );
+  }
+  for (const doc of collects) {
+    await record("Lệnh thu", doc.date, doc.guestName || "", BaobayCollect, doc._id, () =>
+      pushCollectRow(doc),
+    );
+  }
+
+  /**
+   * Tab "Tổng hợp ngày" (daysummary): tính lại và đẩy cho từng ngày có chốt sổ —
+   * chỉ khi force, vì bản tổng hợp vốn được đẩy lại mỗi lần chốt.
+   */
+  if (force) {
+    const closedDates = [...new Set(closes.map((d) => d.date as string))].sort();
+    for (const d of closedDates) {
+      const sync = await pushDaySummaryRow(spot, d);
+      if (sync.ok) result.pushed += 1;
+      else result.failed.push({ kind: "Tổng hợp ngày", date: d, who: "", error: sync.error || "không rõ" });
+      result.scanned += 1;
+    }
   }
 
   return result;
