@@ -9,6 +9,7 @@ import {
   BaobayError,
   assignBooking,
   acceptAssignedBooking,
+  noteBookingContact,
   collectForBooking,
   payCommission,
   restoreBooking,
@@ -158,7 +159,8 @@ export async function PATCH(req: Request) {
    */
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action ?? "flown");
-  const crewAllowed = action === "accept" || action === "collect" || action === "assign" || action === "commission";
+  const crewAllowed =
+    action === "accept" || action === "collect" || action === "assign" || action === "commission" || action === "contact";
   const auth = requireBaobay(req, {
     roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
   });
@@ -170,7 +172,7 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -212,6 +214,15 @@ export async function PATCH(req: Request) {
         note: String(body?.note ?? ""),
       });
       return NextResponse.json({ booking });
+    }
+    // Ghi chú gọi khách + đánh dấu đã liên hệ
+    if (action === "contact") {
+      return NextResponse.json({
+        booking: await noteBookingContact(auth, spot, id, {
+          contactNote: body?.contactNote !== undefined ? String(body.contactNote) : undefined,
+          contacted: typeof body?.contacted === "boolean" ? body.contacted : undefined,
+        }),
+      });
     }
     // Phi công/camera man xác nhận đã nhận khách được giao
     if (action === "accept") {

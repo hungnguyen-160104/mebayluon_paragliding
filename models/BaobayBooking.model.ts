@@ -133,6 +133,15 @@ export interface IBaobayBooking {
   acceptedAt?: Date;
   acceptedBy?: string;
   /**
+   * TỜ GIẤY NHỚ của điều phối: gọi khách xong ghi lại đã hẹn giờ nào, khách dặn
+   * gì, đổi ý ra sao. Tách khỏi `note` (ghi chú chung, có cả chữ máy tự ghi) để
+   * lời người gọi không bị chìm giữa vệt hệ thống — và luôn hiện màu vàng.
+   */
+  contactNote?: string;
+  /** Đã gọi xác nhận với khách chưa — booking web/OTA phải gọi trước khi tới ngày. */
+  contactedAt?: Date;
+  contactedBy?: string;
+  /**
    * BỎ KHỎI SỔ vì nhập nhầm hoặc nhập trùng.
    *
    * KHÔNG xoá bản ghi: xoá hẳn thì mất dấu, mà mất dấu là mở đường cho gian
@@ -263,6 +272,9 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     assignedBy: String,
     acceptedAt: Date,
     acceptedBy: String,
+    contactNote: String,
+    contactedAt: Date,
+    contactedBy: String,
     voidedAt: Date,
     voidedBy: String,
     voidReason: String,

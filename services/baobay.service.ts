@@ -4125,6 +4125,46 @@ export async function editBookingCollect(
 }
 
 /**
+ * GHI CHÚ GỌI KHÁCH + đánh dấu ĐÃ LIÊN HỆ.
+ *
+ * Khách đặt qua web hay OTA chỉ có mấy dòng máy gửi về; điều phối phải gọi xác
+ * nhận, hẹn giờ, đôi khi đổi luôn lịch. Những gì nói qua điện thoại mà không
+ * ghi lại thì hôm sau không ai biết đã hẹn khách mấy giờ — nên có tờ giấy nhớ
+ * riêng, luôn hiện màu vàng trên dòng booking.
+ */
+export async function noteBookingContact(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { contactNote?: string; contacted?: boolean },
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, string> = {};
+  if (input.contactNote !== undefined) set.contactNote = String(input.contactNote).trim();
+  if (input.contacted === true) {
+    set.contactedAt = new Date();
+    set.contactedBy = session.name || session.username;
+  } else if (input.contacted === false) {
+    // Bấm lại lần nữa = bỏ dấu, phòng khi tích nhầm booking
+    unset.contactedAt = "";
+    unset.contactedBy = "";
+  }
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    { ...(Object.keys(set).length ? { $set: set } : {}), ...(Object.keys(unset).length ? { $unset: unset } : {}) },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
+}
+
+/**
  * HOÀN TÁC trạng thái booking về "đang chờ bay".
  *
  * Bấm nhầm "đã bay" hay "huỷ" là chuyện xảy ra thật giữa lúc đông khách. Không
@@ -4619,6 +4659,8 @@ async function pushBookingRow(doc: any) {
       rescheduledFrom: (doc.rescheduledFrom || []).map((d: string) => formatDateKeyVN(d)).join(", "),
       assignedTo: doc.assignedToName || "",
       accepted: doc.acceptedAt ? `x (${doc.acceptedBy || ""})` : "",
+      contacted: doc.contactedAt ? `x (${doc.contactedBy || ""})` : "",
+      contactNote: doc.contactNote || "",
       commission: doc.commission?.amount
         ? `${doc.commission.amount} ${doc.commission.method === "cash" ? "TM" : "CK"}${doc.commission.transferCode ? ` #${doc.commission.transferCode}` : ""} - ${doc.commission.byName || ""}`
         : "",
@@ -4687,6 +4729,9 @@ function toBookingDTO(doc: any): BookingDTO {
     comboDiscount: Number(doc.comboDiscount) || 0,
     acceptedAt: doc.acceptedAt ? new Date(doc.acceptedAt).toISOString() : undefined,
     acceptedBy: doc.acceptedBy || undefined,
+    contactNote: doc.contactNote || undefined,
+    contactedAt: doc.contactedAt ? new Date(doc.contactedAt).toISOString() : undefined,
+    contactedBy: doc.contactedBy || undefined,
     commission: doc.commission?.amount
       ? {
           amount: Number(doc.commission.amount) || 0,

@@ -26,7 +26,7 @@ import {
   servicesAmount,
   type FlightKind,
 } from "@/lib/baobay/flight-price";
-import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, ServiceBox, TextInput } from "./ui";
+import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
 
 /**
  * Bấm "Sửa" ở banner booking hôm nay thì thẻ 📒 BOOKING MỚI (ở dưới, có thể
@@ -126,6 +126,10 @@ function BookingSummary({ b, withDate, dim }: { b: BookingDTO; withDate?: boolea
         </>
       ) : null}
       {tail.length ? ` · ${tail.join(" · ")}` : ""}
+      {/* Ghi chú gọi khách hiện ngay trong dòng tóm tắt — chỗ nào có booking là thấy */}
+      {b.contactNote ? (
+        <span className="ml-1 rounded bg-amber-100 px-1 font-medium text-amber-900">📝 {b.contactNote}</span>
+      ) : null}
       {/* Vệt thu tiền — in ĐẬM vì đây là câu trả lời cho "tiền booking này đâu rồi" */}
       {(b.collected ?? []).map((c, i) => (
         <strong key={i} className="ml-1 whitespace-nowrap rounded bg-emerald-100 px-1 font-bold text-emerald-800">
@@ -565,6 +569,121 @@ function isTwin(a: BookingDTO, b: BookingDTO): boolean {
   if (a.phone && b.phone && phone(a.phone) === phone(b.phone)) return true;
   const name = (n: string) => n.trim().toLowerCase();
   return Boolean(a.contactName && b.contactName && name(a.contactName) === name(b.contactName));
+}
+
+/**
+ * TỜ GIẤY NHỚ + nút "Đã liên hệ" cho một booking.
+ *
+ * Khách đặt qua web/OTA chỉ có mấy dòng máy gửi về. Điều phối phải gọi xác
+ * nhận, hẹn giờ, có khi đổi luôn lịch — những gì nói qua điện thoại mà không
+ * ghi lại thì hôm sau chẳng ai biết đã hẹn khách mấy giờ. Nên ghi chú hiện
+ * NGAY TRÊN DÒNG, màu vàng như tờ giấy dán, không phải bấm vào mới thấy.
+ */
+function ContactNote({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(booking.contactNote ?? "");
+  const [busy, setBusy] = useState(false);
+
+  /** Khách tự đặt trên web/OTA thì BẮT BUỘC gọi xác nhận — nhắc bằng màu. */
+  const fromOnline = /web|klook|gyg|getyourguide|kkday|seek|viator|trip/i.test(booking.source || "");
+  const needCall = fromOnline && !booking.contactedAt && booking.status === "open";
+
+  async function save(contacted?: boolean) {
+    setBusy(true);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "contact",
+        contactNote: text,
+        ...(contacted === undefined ? {} : { contacted }),
+      });
+      setOpen(false);
+      onDone();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Tờ giấy nhớ — luôn hiện nếu đã ghi gì đó */}
+      {booking.contactNote && !open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-1 block w-full rounded-lg border border-amber-300 bg-amber-100/80 px-2 py-1 text-left text-xs leading-snug text-amber-900"
+          title="Bấm để sửa ghi chú"
+        >
+          📝 {booking.contactNote}
+          {booking.contactedBy && (
+            <span className="ml-1 font-semibold text-amber-700">— {booking.contactedBy} đã gọi</span>
+          )}
+        </button>
+      )}
+
+      {open && (
+        <div className="mt-1 rounded-lg border border-amber-400 bg-amber-50 p-1.5">
+          <TextArea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Gọi khách xong ghi lại · VD: đã hẹn 8h30, khách xin đón tại Bluehome, đi 3 người"
+            className="min-h-16 text-xs"
+          />
+          <div className="mt-1 flex gap-1">
+            <Button
+              type="button"
+              className="h-8 flex-1 bg-amber-600 px-2 text-xs hover:bg-amber-700"
+              disabled={busy}
+              onClick={() => save(true)}
+            >
+              ✓ Lưu & đánh dấu đã liên hệ
+            </Button>
+            <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" disabled={busy} onClick={() => save()}>
+              Chỉ lưu
+            </Button>
+            <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+              Thôi
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!open && (
+        <Button
+          type="button"
+          variant="ghost"
+          className={
+            "h-7 shrink-0 px-2 text-xs font-semibold " +
+            (booking.contactedAt
+              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+              : needCall
+                ? "border-amber-400 bg-amber-100 text-amber-900"
+                : "bg-white text-slate-600")
+          }
+          disabled={busy}
+          onClick={() => {
+            setText(booking.contactNote ?? "");
+            setOpen(true);
+          }}
+          title={
+            booking.contactedAt
+              ? `${booking.contactedBy} đã gọi xác nhận — bấm để ghi thêm`
+              : "Gọi xác nhận khách rồi ghi lại đã hẹn gì"
+          }
+        >
+          {booking.contactedAt ? "☎ Đã liên hệ ✓" : needCall ? "☎ Cần gọi xác nhận" : "📝 Ghi chú"}
+        </Button>
+      )}
+    </>
+  );
 }
 
 /**
@@ -1619,6 +1738,7 @@ export function BookingTodayBanner({
                 >
                   {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
                 </Button>
+                <ContactNote spot={spot} booking={b} onDone={load} />
                 <RowMenu
                   booking={b}
                   spot={spot}
@@ -1675,6 +1795,13 @@ export function BookingTodayBanner({
               <span className="ml-1 text-xs text-slate-400">
                 — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
               </span>
+              {/* Tờ giấy nhớ của điều phối — nằm ngay dưới dòng thông tin khách */}
+              {b.contactNote && (
+                <div className="mt-1 rounded-lg border border-amber-300 bg-amber-100/80 px-2 py-1 text-xs leading-snug text-amber-900">
+                  📝 {b.contactNote}
+                  {b.contactedBy && <span className="ml-1 font-semibold text-amber-700">— {b.contactedBy} đã gọi</span>}
+                </div>
+              )}
             </div>
           </li>
         ))}

@@ -324,6 +324,10 @@ export type BookingDTO = {
   /** Người được giao đã bấm xác nhận nhận khách chưa (ISO), và tên người xác nhận. */
   acceptedAt?: string;
   acceptedBy?: string;
+  /** Tờ giấy nhớ của điều phối sau khi gọi khách — hiện ô vàng trên dòng booking. */
+  contactNote?: string;
+  contactedAt?: string;
+  contactedBy?: string;
   /** Chiết khấu đã trả đại lý — KHÔNG lên phiếu gửi khách, chỉ nội bộ. */
   commission?: { amount: number; method: "cash" | "transfer"; transferCode?: string; byName: string; at: string };
   /** Bỏ khỏi sổ (nhập nhầm / nhập trùng) — ai bỏ, vì sao, gộp vào booking nào. */
