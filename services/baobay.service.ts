@@ -4028,6 +4028,125 @@ export async function listRefunds(spotRaw: string, date: string): Promise<Refund
   return docs.map(toRefundDTO);
 }
 
+/**
+ * HUỶ DỊCH VỤ TUỲ CHỌN đã đăng ký (flycam hỏng, khách đổi ý, không kịp quay).
+ *
+ * Bớt số lượng trong booking rồi tính lại tiền — kể cả combo: bỏ camera 360 thì
+ * cặp flycam+360 tan, phần bớt 100k cũng mất theo, nếu không thì tổng tiền sai
+ * mà chẳng ai soi ra.
+ *
+ * Số tiền lùi lại đi một trong hai đường, người xử lý chọn:
+ *  - "credit": trừ vào phần khách CÒN PHẢI THU — hay gặp nhất, khách chưa trả
+ *    hết thì cứ bớt vào chỗ chưa trả, không ai phải đếm tiền.
+ *  - "refund": khách đã trả rồi nên phải TRẢ LẠI — lập lệnh hoàn như mọi lệnh
+ *    hoàn khác (tiền mặt trừ vào người trực, chuyển khoản chờ kế toán).
+ */
+export async function removeBookingServices(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: {
+    remove: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; flagFlight?: number };
+    mode: "credit" | "refund";
+    refundMethod?: "cash" | "transfer";
+    bankAccount?: string;
+    reason?: string;
+  },
+): Promise<{ booking: BookingDTO; back: number; refunded: number }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const closed = await AccountantDailyClose.findOne({ spot, date: booking.flightDate, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa dịch vụ được nữa", 400);
+
+  const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  const label: Record<(typeof keys)[number], string> = {
+    flycam: "Flycam",
+    video360: "Camera 360",
+    redFlag: "Dù cờ đỏ",
+    sunset: "Bay hoàng hôn/săn mây",
+    flagFlight: "Bay kéo cờ/bánh",
+  };
+  const next: Record<string, number> = {};
+  let removedCount = 0;
+  for (const k of keys) {
+    const cut = Math.max(0, Math.round(input.remove[k] ?? 0));
+    if (cut > (booking[k] ?? 0)) {
+      throw new BaobayError(`${label[k]}: booking chỉ đăng ký ${booking[k] ?? 0}, không huỷ được ${cut}`, 400);
+    }
+    next[k] = (booking[k] ?? 0) - cut;
+    removedCount += cut;
+  }
+  if (removedCount <= 0) throw new BaobayError("Chưa chọn dịch vụ nào để huỷ", 400);
+
+  const merged = {
+    ...booking,
+    ...next,
+    comboDiscount: comboDiscount(next.flycam, next.video360),
+    ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
+    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
+  };
+  const newTotal = bookingTotal(merged as never);
+  /** Tiền lùi lại cho khách = tổng cũ − tổng mới (đã tính cả combo tan rã). */
+  const back = Math.max(0, (booking.totalAmount ?? 0) - newTotal);
+
+  const deposit = booking.deposit ?? 0;
+  const refunded = input.mode === "refund" ? Math.min(back, deposit) : 0;
+  const newDeposit = deposit - refunded;
+
+  const cutText = keys
+    .filter((k) => (input.remove[k] ?? 0) > 0)
+    .map((k) => `${input.remove[k]}×${label[k]}`)
+    .join(", ");
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        ...next,
+        comboDiscount: merged.comboDiscount,
+        totalAmount: newTotal,
+        deposit: newDeposit,
+        remaining: Math.max(0, newTotal - newDeposit),
+        note: [
+          booking.note,
+          `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ, ${
+            input.mode === "refund" ? "hoàn khách" : "trừ vào tiền còn thu"
+          }) — ${session.name || session.username}`,
+          input.reason?.trim(),
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+
+  if (refunded > 0) {
+    await createRefund(session, spot, {
+      date: booking.flightDate,
+      bookingId: String(booking._id),
+      guestName: booking.contactName || booking.phone || "khách",
+      bookingCode: booking.bookingCode || "",
+      guests: booking.guestCount || 0,
+      paid: deposit,
+      usedServices: "",
+      usedFee: 0,
+      amount: refunded,
+      method: input.refundMethod === "cash" ? "cash" : "transfer",
+      bankAccount: input.bankAccount ?? "",
+      reason: `huỷ dịch vụ: ${cutText}`,
+    });
+  }
+
+  return { booking: toBookingDTO(updated), back, refunded };
+}
+
 /** Các khoản đã thu của một booking — để điều phối/kế toán soát và sửa. */
 export async function listBookingCollects(spotRaw: string, bookingId: string): Promise<CollectDTO[]> {
   await connectDB();

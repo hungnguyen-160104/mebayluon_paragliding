@@ -12,7 +12,7 @@ import {
 import type { BookingDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "./client-api";
+import { apiGet, apiPatch, apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, Field, MoneyInput, TextInput } from "./ui";
 
 /** Bộ đếm nhỏ để 5 dịch vụ nằm gọn một hàng — CountInput thường quá cao. */
@@ -56,6 +56,15 @@ const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, 
  */
 export function AddServicesCard({ spot, date }: { spot: string; date: string }) {
   const [bookings, setBookings] = useState<BookingDTO[]>([]);
+  /**
+   * Cùng một thao tác "sửa dịch vụ của một booking", chỉ khác dấu cộng/trừ —
+   * nên hai chế độ chung một thẻ, khỏi bắt người dùng nhớ hai chỗ.
+   */
+  const [mode, setMode] = useState<"add" | "remove">("add");
+  /** Huỷ dịch vụ: tiền lùi lại trừ vào phần còn thu, hay trả lại khách. */
+  const [backMode, setBackMode] = useState<"credit" | "refund">("credit");
+  const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
+  const [bankAccount, setBankAccount] = useState("");
   const [pickId, setPickId] = useState("");
   const [add, setAdd] = useState<Record<ServiceKey, number>>({ ...EMPTY });
   const [discount, setDiscount] = useState(0);
@@ -94,8 +103,22 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const charge = Math.max(0, addAmount - comboGain - discount);
   const payTotal = cash + bills.reduce((t, b) => t + (b.amount || 0), 0);
 
-  /** Số khách của booking là trần: 2 khách thì tối đa 2 flycam, 2 cam360… */
-  const capOf = (k: ServiceKey) => (picked ? Math.max(0, picked.guestCount - (picked[k] as number)) : 0);
+  /**
+   * THÊM: trần là số khách còn trống (2 khách thì tối đa 2 flycam).
+   * HUỶ : trần là số đã đăng ký — không huỷ nhiều hơn thứ khách đã mua.
+   */
+  const capOf = (k: ServiceKey) =>
+    picked ? (mode === "add" ? Math.max(0, picked.guestCount - (picked[k] as number)) : (picked[k] as number)) : 0;
+
+  /** Tiền lùi lại khi huỷ = tiền dịch vụ bỏ đi + phần combo tan rã theo. */
+  const comboLost = picked
+    ? Math.max(
+        0,
+        comboDiscount(picked.flycam, picked.video360) -
+          comboDiscount(picked.flycam - add.flycam, picked.video360 - add.video360),
+      )
+    : 0;
+  const backAmount = Math.max(0, addAmount - comboLost);
 
   function reset() {
     setAdd({ ...EMPTY });
@@ -106,7 +129,37 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
     setError(null);
   }
 
+  async function submitRemove() {
+    if (!picked) return setError("Chọn khách đã đặt trước đã");
+    if (backMode === "refund" && refundMethod === "transfer" && !bankAccount.trim()) {
+      return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
+    }
+    setBusy(true);
+    setError(null);
+    setDone(null);
+    try {
+      const res = await apiPatch<{ back: number; refunded: number }>(
+        `/api/baocao/booking/add-services?spot=${spot}`,
+        { id: picked.id, remove: add, mode: backMode, refundMethod, bankAccount, reason: note },
+      );
+      setDone(
+        `✓ Đã huỷ dịch vụ cho ${picked.contactName || "khách"} — lùi lại ${formatVND(res.back)}` +
+          (res.refunded > 0
+            ? `, hoàn khách ${formatVND(res.refunded)} ${refundMethod === "cash" ? "tiền mặt" : "(chờ kế toán chuyển)"}.`
+            : " (trừ vào phần còn phải thu)."),
+      );
+      reset();
+      setPickId("");
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không huỷ được dịch vụ");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit() {
+    if (mode === "remove") return submitRemove();
     if (!picked) return setError("Chọn khách đã đặt trước đã");
     const used = bills.filter((b) => b.amount > 0);
     if (payNow && used.some((b) => !b.code.trim())) return setError("Mỗi bill chuyển khoản phải có mã giao dịch");
@@ -141,8 +194,8 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   return (
     <CollapseCard
       className="border-amber-300 bg-amber-50/30"
-      title="➕ ĐĂNG KÝ THÊM"
-      hint="khách mua thêm dịch vụ tại bãi — cộng vào booking sẵn có rồi thu tiền"
+      title="➕➖ DỊCH VỤ TUỲ CHỌN"
+      hint="khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"
     >
       {done && (
         <Banner tone="success" onClose={() => setDone(null)}>
@@ -150,6 +203,33 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
         </Banner>
       )}
       {error && <Banner tone="error">{error}</Banner>}
+
+      {/* Thêm hay huỷ dịch vụ — cùng một khung, chỉ khác dấu */}
+      <div className="mb-1.5 flex h-9 overflow-hidden rounded-lg border border-slate-300">
+        {(
+          [
+            ["add", "➕ Đăng ký thêm"],
+            ["remove", "➖ Huỷ dịch vụ"],
+          ] as Array<["add" | "remove", string]>
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => {
+              setMode(v);
+              setAdd({ ...EMPTY });
+              setError(null);
+            }}
+            className={
+              mode === v
+                ? "flex-1 bg-slate-800 text-xs font-bold text-white"
+                : "flex-1 bg-white text-xs font-medium text-slate-500"
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <Field label="Khách đã đặt trước">
         <select
@@ -195,6 +275,87 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             ))}
           </div>
 
+          {mode === "remove" ? (
+            <>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
+                <span className="text-slate-600">
+                  Tiền dịch vụ huỷ <strong className="tabular-nums text-slate-900">{formatVND(addAmount)}</strong>
+                </span>
+                {/* Bỏ một nửa cặp thì ưu đãi combo tan theo — khách nhận lại ít hơn giá dịch vụ */}
+                {comboLost > 0 && (
+                  <span className="text-rose-700">
+                    − mất ưu đãi combo <strong className="tabular-nums">{formatVND(comboLost)}</strong>
+                  </span>
+                )}
+                <span className="ml-auto text-sm">
+                  Lùi lại khách <strong className="tabular-nums text-emerald-700">{formatVND(backAmount)}</strong>
+                </span>
+              </div>
+
+              <div className="mt-1.5 flex h-8 overflow-hidden rounded-lg border border-slate-300">
+                {(
+                  [
+                    ["credit", "Trừ vào phần còn thu"],
+                    ["refund", "Hoàn tiền khách"],
+                  ] as Array<["credit" | "refund", string]>
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setBackMode(v)}
+                    className={
+                      backMode === v
+                        ? "flex-1 bg-emerald-600 text-xs font-bold text-white"
+                        : "flex-1 bg-white text-xs font-medium text-slate-500"
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {backMode === "refund" && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg border border-rose-200 bg-rose-50/60 p-2">
+                  <span className="text-xs font-semibold text-slate-700">Hoàn bằng</span>
+                  <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+                    {(
+                      [
+                        ["transfer", "CK"],
+                        ["cash", "TM"],
+                      ] as Array<["transfer" | "cash", string]>
+                    ).map(([m, label]) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setRefundMethod(m)}
+                        className={
+                          refundMethod === m
+                            ? "bg-emerald-600 px-2.5 text-xs font-bold text-white"
+                            : "bg-white px-2.5 text-xs font-medium text-slate-500"
+                        }
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {refundMethod === "transfer" ? (
+                    <TextInput
+                      value={bankAccount}
+                      onChange={(e) => setBankAccount(e.target.value)}
+                      placeholder="Số TK khách nhận…"
+                      className="h-8 min-w-40 flex-1 rounded-lg text-xs"
+                    />
+                  ) : (
+                    <span className="text-[11px] text-slate-500">Bạn trả tại chỗ — trừ vào tiền bạn đang giữ.</span>
+                  )}
+                  <span className="w-full text-[11px] text-slate-500">
+                    Khách đã trả {formatVND(picked.deposit)} → hoàn tối đa {formatVND(Math.min(backAmount, picked.deposit))}
+                    {refundMethod === "transfer" ? " · lệnh hoàn sẽ chờ kế toán chuyển khoản" : ""}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
             <span className="text-slate-600">
               Dịch vụ <strong className="tabular-nums text-slate-900">{formatVND(addAmount)}</strong>
@@ -215,6 +376,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
               Cần thu <strong className="tabular-nums text-rose-700">{formatVND(charge)}</strong>
             </span>
           </div>
+          )}
 
           <TextInput
             value={note}
@@ -224,6 +386,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
           />
 
           {/* Thu tiền ngay tại chỗ — hoặc để nợ vào "còn thu" của booking */}
+          {mode === "add" && (
           <div className="mt-1.5 flex h-8 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
@@ -249,7 +412,9 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             ))}
           </div>
 
-          {payNow && (
+          )}
+
+          {mode === "add" && payNow && (
             <div className="mt-1.5 space-y-1 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2">
               <label className="flex items-center gap-1.5">
                 <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
@@ -311,7 +476,15 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
           )}
 
           <Button type="button" className="mt-1.5 h-10 w-full" disabled={busy} onClick={submit}>
-            {busy ? "Đang lưu…" : payNow ? "✓ Xác nhận & thu tiền" : "✓ Xác nhận (ghi nợ)"}
+            {busy
+              ? "Đang lưu…"
+              : mode === "remove"
+                ? backMode === "refund"
+                  ? "✓ Huỷ dịch vụ & hoàn tiền"
+                  : "✓ Huỷ dịch vụ & trừ vào còn thu"
+                : payNow
+                  ? "✓ Xác nhận & thu tiền"
+                  : "✓ Xác nhận (ghi nợ)"}
           </Button>
         </>
       )}
