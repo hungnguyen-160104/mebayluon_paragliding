@@ -118,7 +118,13 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
           comboDiscount(picked.flycam - add.flycam, picked.video360 - add.video360),
       )
     : 0;
-  const backAmount = Math.max(0, addAmount - comboLost);
+  /**
+   * Huỷ dịch vụ hầu như luôn là lỗi bên mình, nên phần ưu đãi combo mất đi được
+   * CHIA ĐÔI: khách chịu một nửa, công ty chịu một nửa. Bỏ 1 camera 360 (400k)
+   * trong combo ⇒ khách nhận lại 350k chứ không phải 300k.
+   */
+  const comboCourtesy = Math.round(comboLost / 2);
+  const backAmount = Math.max(0, addAmount - (comboLost - comboCourtesy));
 
   function reset() {
     setAdd({ ...EMPTY });
@@ -281,10 +287,12 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                 <span className="text-slate-600">
                   Tiền dịch vụ huỷ <strong className="tabular-nums text-slate-900">{formatVND(addAmount)}</strong>
                 </span>
-                {/* Bỏ một nửa cặp thì ưu đãi combo tan theo — khách nhận lại ít hơn giá dịch vụ */}
+                {/* Ưu đãi combo mất đi chia đôi — công ty chịu một nửa vì lỗi thường ở bên mình */}
                 {comboLost > 0 && (
                   <span className="text-rose-700">
-                    − mất ưu đãi combo <strong className="tabular-nums">{formatVND(comboLost)}</strong>
+                    − combo mất {formatVND(comboLost)}, khách chịu{" "}
+                    <strong className="tabular-nums">{formatVND(comboLost - comboCourtesy)}</strong>
+                    <span className="text-slate-500"> (công ty chịu {formatVND(comboCourtesy)})</span>
                   </span>
                 )}
                 <span className="ml-auto text-sm">

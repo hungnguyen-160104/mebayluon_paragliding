@@ -4083,15 +4083,30 @@ export async function removeBookingServices(
   }
   if (removedCount <= 0) throw new BaobayError("Chưa chọn dịch vụ nào để huỷ", 400);
 
+  const newCombo = comboDiscount(next.flycam, next.video360);
+  /**
+   * BỎ MỘT NỬA CẶP thì ưu đãi combo tan rã. Nhưng huỷ dịch vụ hầu như luôn là
+   * lỗi bên mình (máy hỏng, người quay bận), nên KHÔNG bắt khách gánh trọn phần
+   * ưu đãi mất đi: công ty chịu một nửa.
+   *
+   * Ví dụ khách mua combo flycam + 360, huỷ 1 camera 360 (400k):
+   *   combo mất 100k → khách chịu 50k, công ty chịu 50k → khách nhận lại 350k.
+   *
+   * Phần công ty chịu ghi thành GIẢM TRỪ trên booking, để tổng tiền tụt đúng
+   * bằng số trả lại khách — không thì sổ lệch 50k mà chẳng ai lần ra.
+   */
+  const comboLost = Math.max(0, (booking.comboDiscount ?? 0) - newCombo);
+  const courtesy = Math.round(comboLost / 2);
   const merged = {
     ...booking,
     ...next,
-    comboDiscount: comboDiscount(next.flycam, next.video360),
+    comboDiscount: newCombo,
+    discount: (booking.discount ?? 0) + courtesy,
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
     ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
   };
   const newTotal = bookingTotal(merged as never);
-  /** Tiền lùi lại cho khách = tổng cũ − tổng mới (đã tính cả combo tan rã). */
+  /** Tiền lùi lại cho khách = tổng cũ − tổng mới (đã gồm phần công ty chịu). */
   const back = Math.max(0, (booking.totalAmount ?? 0) - newTotal);
 
   const deposit = booking.deposit ?? 0;
@@ -4109,6 +4124,7 @@ export async function removeBookingServices(
       $set: {
         ...next,
         comboDiscount: merged.comboDiscount,
+        discount: merged.discount,
         totalAmount: newTotal,
         deposit: newDeposit,
         remaining: Math.max(0, newTotal - newDeposit),
@@ -4116,7 +4132,9 @@ export async function removeBookingServices(
           booking.note,
           `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ, ${
             input.mode === "refund" ? "hoàn khách" : "trừ vào tiền còn thu"
-          }) — ${session.name || session.username}`,
+          }${courtesy > 0 ? `, công ty chịu ${courtesy.toLocaleString("vi-VN")} đ ưu đãi combo` : ""}) — ${
+            session.name || session.username
+          }`,
           input.reason?.trim(),
         ]
           .filter(Boolean)
