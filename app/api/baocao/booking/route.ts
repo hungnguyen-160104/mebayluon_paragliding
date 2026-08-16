@@ -221,12 +221,19 @@ export async function PATCH(req: Request) {
     // THU TIỀN cho booking: CK về TK công ty · TM vào tiền giữ hộ của người bấm
     if (action === "collect") {
       /** Khách trả một phần TM + một phần CK: gửi cả hai số, máy tách hai lệnh thu. */
-      const hasSplit = body?.cash !== undefined || body?.transfer !== undefined;
+      const hasSplit = body?.cash !== undefined || body?.transfer !== undefined || Array.isArray(body?.transfers);
       const res = await collectForBooking(auth, spot, id, {
         ...(hasSplit
           ? {
               cash: Math.max(0, Math.round(Number(body?.cash) || 0)),
               transfer: Math.max(0, Math.round(Number(body?.transfer) || 0)),
+              // Chia nhiều bill CK: mỗi bill một mã giao dịch riêng
+              transfers: Array.isArray(body?.transfers)
+                ? body.transfers.map((t: any) => ({
+                    amount: Math.max(0, Math.round(Number(t?.amount) || 0)),
+                    code: String(t?.code ?? ""),
+                  }))
+                : undefined,
             }
           : {
               amount: Math.max(0, Math.round(Number(body?.amount) || 0)),

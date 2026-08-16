@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { spotName } from "@/lib/baobay/spots";
-import type { BookingDTO } from "@/lib/baobay/types";
+import type { BookingDTO, CollectDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { shareBookingImage } from "./booking-image";
@@ -255,6 +255,161 @@ function AssignControl({
   );
 }
 
+
+/**
+ * SỬA CÁC KHOẢN ĐÃ THU của một booking — gõ nhầm số, nhầm TM/CK, nhầm mã.
+ *
+ * Chỉ điều phối / quầy vé / kế toán bấm được (máy chủ chốt lại quyền). Sửa xong
+ * "đã cọc / còn thu" của booking dựng lại từ chính các khoản thu, nên sửa mấy
+ * lần sổ vẫn khớp.
+ */
+function EditCollectsControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<CollectDTO[]>([]);
+  const [draft, setDraft] = useState<Record<string, { amount: number; method: "cash" | "transfer"; code: string }>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      const r = await apiGet<{ collects: CollectDTO[] }>(
+        `/api/baocao/booking/collect?spot=${spot}&booking=${booking.id}`,
+      );
+      setRows(r.collects);
+      setDraft(
+        Object.fromEntries(
+          r.collects.map((c) => [c.id, { amount: c.amount, method: c.method, code: c.transferCode || "" }]),
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không đọc được danh sách khoản thu");
+    }
+  }
+
+  async function save(c: CollectDTO, remove = false) {
+    const d = draft[c.id];
+    if (remove && !window.confirm(`Xoá khoản thu ${c.amount.toLocaleString("vi-VN")} đ khỏi booking này?`)) return;
+    setBusy(c.id);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking/collect?spot=${spot}`, {
+        id: c.id,
+        ...(remove ? { remove: true } : { amount: d.amount, method: d.method, transferCode: d.code }),
+      });
+      onDone(remove ? "✓ Đã xoá khoản thu — số còn thu tính lại." : "✓ Đã sửa khoản thu — số còn thu tính lại.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không sửa được khoản thu");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 shrink-0 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700"
+        onClick={() => {
+          setOpen(true);
+          setError(null);
+          void load();
+        }}
+        title="Sửa lại khoản đã thu nếu nhập nhầm"
+      >
+        ✎ Sửa tiền đã thu
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-[19rem] rounded-lg border border-emerald-300 bg-emerald-50/60 p-1.5">
+      <div className="mb-1 text-[11px] font-bold text-emerald-900">
+        Khoản đã thu — {booking.contactName || "khách"}
+      </div>
+      {rows.length === 0 && <div className="text-[11px] text-slate-500">Chưa có khoản thu nào qua nút Thu tiền.</div>}
+      <ul className="space-y-1.5">
+        {rows.map((c) => {
+          const d = draft[c.id] ?? { amount: c.amount, method: c.method, code: c.transferCode || "" };
+          return (
+            <li key={c.id} className="rounded-lg bg-white p-1.5">
+              <div className="mb-1 text-[10px] text-slate-500">
+                {c.collectorName || c.createdByName} · {formatDateKeyVN(c.date)}
+              </div>
+              <MoneyInput value={d.amount} onChange={(v) => setDraft((p) => ({ ...p, [c.id]: { ...d, amount: v } }))} />
+              <div className="mt-1 flex h-7 overflow-hidden rounded-lg border border-slate-300">
+                {(
+                  [
+                    ["cash", "TM"],
+                    ["transfer", "CK"],
+                  ] as Array<["cash" | "transfer", string]>
+                ).map(([m, label]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setDraft((p) => ({ ...p, [c.id]: { ...d, method: m } }))}
+                    className={
+                      d.method === m
+                        ? "flex-1 bg-emerald-600 text-[11px] font-bold text-white"
+                        : "flex-1 bg-white text-[11px] font-medium text-slate-500"
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {d.method === "transfer" && (
+                <TextInput
+                  value={d.code}
+                  onChange={(e) => setDraft((p) => ({ ...p, [c.id]: { ...d, code: e.target.value } }))}
+                  placeholder="Mã giao dịch…"
+                  className="mt-1 h-7 rounded-lg text-xs"
+                />
+              )}
+              <div className="mt-1 flex gap-1">
+                <Button
+                  type="button"
+                  className="h-7 flex-1 bg-emerald-600 px-2 text-[11px] hover:bg-emerald-700"
+                  disabled={busy === c.id}
+                  onClick={() => save(c)}
+                >
+                  ✓ Lưu sửa
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 bg-white px-2 text-[11px] text-rose-700"
+                  disabled={busy === c.id}
+                  onClick={() => save(c, true)}
+                >
+                  🗑 Xoá
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {error && <div className="mt-1 text-[11px] font-semibold text-rose-700">{error}</div>}
+      <Button
+        type="button"
+        variant="ghost"
+        className="mt-1 h-7 w-full bg-white px-2 text-[11px]"
+        onClick={() => setOpen(false)}
+      >
+        Đóng
+      </Button>
+    </div>
+  );
+}
 
 /**
  * BỎ BOOKING khỏi sổ: nhập nhầm hoặc nhập TRÙNG với một booking thật.
@@ -506,6 +661,17 @@ function RowMenu({
           setOpen(false);
         }}
       />
+      {/* Sửa khoản đã thu — chỉ hiện khi booking đã có tiền vào */}
+      {(booking.collected?.length ?? 0) > 0 && (
+        <EditCollectsControl
+          spot={spot}
+          booking={booking}
+          onDone={(m) => {
+            onDone(m);
+            setOpen(false);
+          }}
+        />
+      )}
       <VoidBookingControl
         spot={spot}
         booking={booking}
@@ -671,33 +837,40 @@ function CollectMoneyControl({
    */
   const collectFromAfar = booking.flightDate !== todayInVN();
   const [cash, setCash] = useState(0);
-  const [transfer, setTransfer] = useState(0);
-  const [code, setCode] = useState("");
+  /**
+   * Mỗi BILL chuyển khoản một dòng: khách hay chuyển làm 2-3 lần (vượt hạn mức
+   * chuyển, hoặc mấy người trong đoàn tự chuyển phần của mình), mỗi lần một mã
+   * giao dịch riêng — gộp một mã thì kế toán không dò được sao kê.
+   */
+  const [bills, setBills] = useState<Array<{ amount: number; code: string }>>([{ amount: 0, code: "" }]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const left = booking.remaining || 0;
+  const transfer = bills.reduce((t, b) => t + (b.amount || 0), 0);
   const total = cash + transfer;
+  const setBill = (i: number, patch: Partial<{ amount: number; code: string }>) =>
+    setBills((prev) => prev.map((b, k) => (k === i ? { ...b, ...patch } : b)));
 
   /** Mở bảng: mặc định dồn hết vào một đường theo tình huống, sửa lại được. */
   function reset() {
     setKind("full");
     if (collectFromAfar) {
-      setTransfer(left);
+      setBills([{ amount: left, code: "" }]);
       setCash(0);
     } else {
       setCash(left);
-      setTransfer(0);
+      setBills([{ amount: 0, code: "" }]);
     }
-    setCode("");
     setError(null);
   }
 
   async function send() {
     if (total <= 0) return setError("Chưa nhập số tiền thu");
-    if (transfer > 0 && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
-    if (kind === "full" && left <= 0) return setError("Booking này không còn phải thu");
-    if (total > left && !window.confirm(`Thu ${total.toLocaleString("vi-VN")} đ, nhiều hơn phần còn phải thu (${left.toLocaleString("vi-VN")} đ). Vẫn ghi?`)) return;
+    const used = bills.filter((b) => b.amount > 0);
+    if (used.some((b) => !b.code.trim())) return setError("Mỗi bill chuyển khoản phải có mã giao dịch riêng");
+    if (left <= 0 && total > 0 && !window.confirm("Booking này đã thu đủ. Vẫn ghi thêm khoản này?")) return;
+    if (total > left && left > 0 && !window.confirm(`Thu ${total.toLocaleString("vi-VN")} đ, nhiều hơn phần còn phải thu (${left.toLocaleString("vi-VN")} đ). Vẫn ghi?`)) return;
     setBusy(true);
     setError(null);
     try {
@@ -706,16 +879,16 @@ function CollectMoneyControl({
         action: "collect",
         kind,
         cash,
-        transfer,
-        transferCode: code,
+        transfers: used,
       });
       const parts = [
         cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
-        transfer > 0 ? `${transfer.toLocaleString("vi-VN")} đ CK (vào TK công ty)` : "",
+        transfer > 0
+          ? `${transfer.toLocaleString("vi-VN")} đ CK${used.length > 1 ? ` (${used.length} bill)` : ""} (vào TK công ty)`
+          : "",
       ].filter(Boolean);
-      onDone(`✓ ${kind === "full" ? "Thu đủ" : "Thu cọc"} ${total.toLocaleString("vi-VN")} đ — ${parts.join(" + ")}.`);
+      onDone(`✓ Thu ${total.toLocaleString("vi-VN")} đ — ${parts.join(" + ")}.`);
       setOpen(false);
-      setCode("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không ghi nhận được khoản thu");
     } finally {
@@ -792,20 +965,44 @@ function CollectMoneyControl({
           <MoneyInput value={cash} onChange={setCash} />
         </span>
       </label>
-      <label className="flex items-center gap-1.5">
-        <span className="w-8 shrink-0 text-xs font-bold text-indigo-800">CK</span>
-        <span className="min-w-0 flex-1">
-          <MoneyInput value={transfer} onChange={setTransfer} />
-        </span>
-      </label>
-      {transfer > 0 && (
-        <TextInput
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Mã giao dịch ngân hàng…"
-          className="h-8 rounded-lg text-xs"
-        />
-      )}
+      {/* Mỗi bill CK một dòng: số tiền + mã giao dịch riêng, đối soát sao kê được */}
+      {bills.map((b, i) => (
+        <div key={i} className="space-y-1">
+          <label className="flex items-center gap-1.5">
+            <span className="w-8 shrink-0 text-xs font-bold text-indigo-800">
+              CK{bills.length > 1 ? ` ${i + 1}` : ""}
+            </span>
+            <span className="min-w-0 flex-1">
+              <MoneyInput value={b.amount} onChange={(v) => setBill(i, { amount: v })} />
+            </span>
+            {bills.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setBills((prev) => prev.filter((_, k) => k !== i))}
+                className="h-8 w-7 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
+                aria-label="Bỏ bill này"
+              >
+                ×
+              </button>
+            )}
+          </label>
+          {b.amount > 0 && (
+            <TextInput
+              value={b.code}
+              onChange={(e) => setBill(i, { code: e.target.value })}
+              placeholder={bills.length > 1 ? `Mã giao dịch bill ${i + 1}…` : "Mã giao dịch ngân hàng…"}
+              className="h-8 rounded-lg text-xs"
+            />
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setBills((prev) => [...prev, { amount: Math.max(0, left - total), code: "" }])}
+        className="rounded-lg border border-dashed border-indigo-300 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50"
+      >
+        ＋ Chia bill CK (khách chuyển làm nhiều lần)
+      </button>
 
       <div
         className={

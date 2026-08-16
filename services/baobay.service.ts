@@ -3580,6 +3580,12 @@ export async function collectForBooking(
      */
     cash?: number;
     transfer?: number;
+    /**
+     * Khách chuyển làm NHIỀU BILL (mỗi bill một mã giao dịch riêng) — hay gặp
+     * khi vượt hạn mức chuyển một lần, hoặc mấy người trong đoàn tự chuyển phần
+     * của mình. Mỗi bill vào sổ một dòng để đối soát với sao kê ngân hàng.
+     */
+    transfers?: Array<{ amount: number; code: string }>;
     amount?: number;
     method?: "cash" | "transfer";
     transferCode?: string;
@@ -3618,14 +3624,26 @@ export async function collectForBooking(
   const isFull = input.kind === "full";
   const transferCode = (input.transferCode ?? "").trim();
 
-  /** Tách thành hai phần tiền; bản gọi cũ (một phương thức) quy về đây luôn. */
-  const split = input.cash !== undefined || input.transfer !== undefined;
+  /** Từng bill chuyển khoản — bản gọi cũ (một khoản) quy về một dòng. */
+  const bills = (input.transfers?.length
+    ? input.transfers
+    : input.transfer
+      ? [{ amount: input.transfer, code: transferCode }]
+      : []
+  )
+    .map((b) => ({ amount: Math.max(0, Math.round(b.amount || 0)), code: (b.code ?? "").trim() }))
+    .filter((b) => b.amount > 0);
+
+  /** Tách thành hai đường tiền; bản gọi cũ (một phương thức) quy về đây luôn. */
+  const split = input.cash !== undefined || input.transfer !== undefined || Boolean(input.transfers?.length);
   let cashPart = Math.max(0, Math.round(input.cash ?? 0));
-  let transferPart = Math.max(0, Math.round(input.transfer ?? 0));
+  let transferPart = bills.reduce((t, b) => t + b.amount, 0);
   if (!split) {
     const one = isFull ? Math.max(0, booking.remaining ?? 0) : Math.max(0, Math.round(input.amount ?? 0));
-    if (input.method === "transfer") transferPart = one;
-    else cashPart = one;
+    if (input.method === "transfer") {
+      transferPart = one;
+      bills.push({ amount: one, code: transferCode });
+    } else cashPart = one;
   } else if (isFull && !input.cash) {
     /** Thu đủ mà chia hai đường: phần còn lại sau khi trừ CK đi vào tiền mặt. */
     cashPart = Math.max(0, (booking.remaining ?? 0) - transferPart);
@@ -3635,8 +3653,8 @@ export async function collectForBooking(
   if (amount <= 0) {
     throw new BaobayError(isFull ? "Booking này không còn phải thu" : "Chưa nhập số tiền thu", 400);
   }
-  if (transferPart > 0 && !transferCode) {
-    throw new BaobayError("Chuyển khoản phải ghi mã giao dịch", 400);
+  if (bills.some((b) => !b.code)) {
+    throw new BaobayError("Chuyển khoản phải ghi mã giao dịch (mỗi bill một mã)", 400);
   }
 
   /**
@@ -3645,7 +3663,7 @@ export async function collectForBooking(
    * không biết ai phải nộp bao nhiêu.
    */
   const label = isFull ? "Thu đủ" : "Cọc";
-  const makeCollect = async (part: number, method: "cash" | "transfer") =>
+  const makeCollect = async (part: number, method: "cash" | "transfer", code = "") =>
     (
       await BaobayCollect.create({
         spot,
@@ -3658,7 +3676,7 @@ export async function collectForBooking(
         amount: part,
         method,
         toCompanyAccount: method === "transfer",
-        transferCode: method === "transfer" ? transferCode : "",
+        transferCode: method === "transfer" ? code : "",
         note:
           `${label} cho booking bay ${formatDateKeyVN(booking.flightDate)}` +
           (cashPart > 0 && transferPart > 0 ? " (khách trả một phần TM, một phần CK)" : ""),
@@ -3674,11 +3692,12 @@ export async function collectForBooking(
     ).toObject();
 
   const madeCash = cashPart > 0 ? await makeCollect(cashPart, "cash") : null;
-  const madeTransfer = transferPart > 0 ? await makeCollect(transferPart, "transfer") : null;
-  for (const doc of [madeCash, madeTransfer]) {
+  const madeBills = [];
+  for (const b of bills) madeBills.push(await makeCollect(b.amount, "transfer", b.code));
+  for (const doc of [madeCash, ...madeBills]) {
     if (doc) pushSheetInBackground(() => pushCollectRow(doc), BaobayCollect, doc._id);
   }
-  const saved = (madeCash ?? madeTransfer)!;
+  const saved = (madeCash ?? madeBills[0])!;
 
   /**
    * Tiền đã nhận luôn cộng vào "đã cọc", phần "còn thu" trừ đi tương ứng — thu
@@ -3699,7 +3718,9 @@ export async function collectForBooking(
   };
   if (transferPart > 0) {
     set.depositToCompany = true;
-    if (!booking.transferCode) set.transferCode = transferCode;
+    // Ô "mã CK" trên booking chỉ chứa được một mã — lấy bill đầu, các bill khác
+    // vẫn đầy đủ trong sổ lệnh thu
+    if (!booking.transferCode) set.transferCode = bills[0]?.code ?? "";
   }
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
@@ -3712,9 +3733,13 @@ export async function collectForBooking(
             ...(cashPart > 0
               ? [{ amount: cashPart, method: "cash", byName: session.name, at: new Date(), kind: isFull ? "full" : "deposit" }]
               : []),
-            ...(transferPart > 0
-              ? [{ amount: transferPart, method: "transfer", byName: session.name, at: new Date(), kind: isFull ? "full" : "deposit" }]
-              : []),
+            ...bills.map((b) => ({
+              amount: b.amount,
+              method: "transfer",
+              byName: session.name,
+              at: new Date(),
+              kind: isFull ? "full" : "deposit",
+            })),
           ],
         },
       },
@@ -3724,6 +3749,102 @@ export async function collectForBooking(
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
+}
+
+/** Các khoản đã thu của một booking — để điều phối/kế toán soát và sửa. */
+export async function listBookingCollects(spotRaw: string, bookingId: string): Promise<CollectDTO[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) return [];
+  const docs = await BaobayCollect.find({ spot, bookingId }).sort({ createdAt: 1 }).lean<any[]>();
+  return docs.map(toCollectDTO);
+}
+
+/**
+ * SỬA hoặc XOÁ một khoản đã thu (gõ nhầm số, nhầm TM/CK, nhầm mã giao dịch).
+ *
+ * Sửa xong dựng LẠI toàn bộ vệt thu và số "đã cọc / còn thu" của booking từ
+ * chính các lệnh thu — không cộng trừ chắp vá, nên sửa bao nhiêu lần sổ vẫn
+ * khớp. Phần cọc gõ tay lúc tạo booking (không có lệnh thu kèm) được giữ
+ * nguyên: lấy hiệu giữa "đã cọc" và tổng lệnh thu trước khi sửa.
+ */
+export async function editBookingCollect(
+  session: BaobaySession,
+  spotRaw: string,
+  collectId: string,
+  input: { amount?: number; method?: "cash" | "transfer"; transferCode?: string; remove?: boolean },
+): Promise<{ booking: BookingDTO; collects: CollectDTO[] }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const collect = await BaobayCollect.findOne({ _id: collectId, spot }).lean<any>();
+  if (!collect) throw new BaobayError("Không tìm thấy khoản thu", 404);
+  if (!collect.bookingId) throw new BaobayError("Khoản này không gắn với booking nào — sửa trong sổ lệnh thu", 400);
+
+  const booking = await BaobayBooking.findOne({ _id: collect.bookingId, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const closed = await AccountantDailyClose.findOne({ spot, date: booking.flightDate, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa khoản thu được nữa", 400);
+
+  const before = await BaobayCollect.find({ spot, bookingId: booking._id }).lean<any[]>();
+  const sumBefore = before.reduce((t, c) => t + (c.amount || 0), 0);
+  /** Cọc gõ tay lúc tạo booking, không có lệnh thu kèm — phải giữ lại. */
+  const manualBase = Math.max(0, (booking.deposit ?? 0) - sumBefore);
+
+  if (input.remove) {
+    await BaobayCollect.deleteOne({ _id: collectId, spot });
+  } else {
+    const amount = Math.max(0, Math.round(input.amount ?? collect.amount ?? 0));
+    if (amount <= 0) throw new BaobayError("Số tiền phải lớn hơn 0", 400);
+    const method = input.method === "transfer" ? "transfer" : input.method === "cash" ? "cash" : collect.method;
+    const code = (input.transferCode ?? collect.transferCode ?? "").trim();
+    if (method === "transfer" && !code) throw new BaobayError("Chuyển khoản phải ghi mã giao dịch", 400);
+    await BaobayCollect.updateOne(
+      { _id: collectId, spot },
+      {
+        $set: {
+          amount,
+          method,
+          transferCode: method === "transfer" ? code : "",
+          toCompanyAccount: method === "transfer",
+          /** Đổi sang tiền mặt thì người thu là người đang cầm tiền — chính người vừa sửa. */
+          collectorUsername: method === "cash" ? collect.collectorUsername || session.username : undefined,
+          collectorName: method === "cash" ? collect.collectorName || session.name : undefined,
+          status: method === "cash" ? "collected" : "company",
+          note: [collect.note, `sửa bởi ${session.name || session.username}`].filter(Boolean).join(" · "),
+        },
+      },
+    );
+  }
+
+  const after = await BaobayCollect.find({ spot, bookingId: booking._id }).sort({ createdAt: 1 }).lean<any[]>();
+  const sumAfter = after.reduce((t, c) => t + (c.amount || 0), 0);
+  const deposit = manualBase + sumAfter;
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: booking._id, spot },
+    {
+      $set: {
+        deposit,
+        remaining: Math.max(0, (booking.totalAmount ?? 0) - deposit),
+        depositToCompany: after.some((c) => c.method === "transfer"),
+        transferCode: after.find((c) => c.method === "transfer")?.transferCode || "",
+        collectedLog: after.map((c) => ({
+          amount: c.amount || 0,
+          method: c.method === "transfer" ? "transfer" : "cash",
+          byName: c.collectorName || c.createdByName || "",
+          at: c.createdAt ?? new Date(),
+          kind: "deposit",
+        })),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  for (const c of after) pushSheetInBackground(() => pushCollectRow(c), BaobayCollect, c._id);
+
+  return { booking: toBookingDTO(updated), collects: after.map(toCollectDTO) };
 }
 
 /**
