@@ -220,11 +220,18 @@ export async function PATCH(req: Request) {
     }
     // THU TIỀN cho booking: CK về TK công ty · TM vào tiền giữ hộ của người bấm
     if (action === "collect") {
-      const amount = Math.max(0, Math.round(Number(body?.amount) || 0));
-      const method = body?.method === "transfer" ? "transfer" : "cash";
+      /** Khách trả một phần TM + một phần CK: gửi cả hai số, máy tách hai lệnh thu. */
+      const hasSplit = body?.cash !== undefined || body?.transfer !== undefined;
       const res = await collectForBooking(auth, spot, id, {
-        amount,
-        method,
+        ...(hasSplit
+          ? {
+              cash: Math.max(0, Math.round(Number(body?.cash) || 0)),
+              transfer: Math.max(0, Math.round(Number(body?.transfer) || 0)),
+            }
+          : {
+              amount: Math.max(0, Math.round(Number(body?.amount) || 0)),
+              method: body?.method === "transfer" ? "transfer" : "cash",
+            }),
         transferCode: String(body?.transferCode ?? ""),
         kind: body?.kind === "full" ? "full" : "deposit",
       });

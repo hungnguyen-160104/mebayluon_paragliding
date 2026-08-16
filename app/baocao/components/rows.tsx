@@ -717,7 +717,62 @@ export type CancelGuestRow = {
   paid?: number;
   /** Hoàn bằng CK (ra từ TK công ty) hay TM (nhân viên chi tại chỗ). */
   refundMethod?: "cash" | "transfer";
+  /** Booking đã chọn từ danh sách chờ bay — để khỏi gõ lại tên và số khách. */
+  bookedId?: string;
 };
+
+/** Booking trong ngày để chọn — nơi gọi truyền vào, rỗng thì ô chọn tự ẩn. */
+export type BookingPick = {
+  id: string;
+  daySeq: number;
+  contactName: string;
+  phone: string;
+  guestCount: number;
+  source: string;
+  bookingCode: string;
+  deposit: number;
+  status: string;
+};
+
+/**
+ * CHỌN BOOKING rồi máy điền hộ tên / số khách / nguồn / tiền đã trả.
+ *
+ * Trước đây khách huỷ hay dời lịch đều phải gõ lại tay tên và số khách, trong
+ * khi booking đó đang nằm sẵn trong danh sách chờ bay của ngày — gõ lại là vừa
+ * mất công vừa lệch tên, đến lúc đối chiếu không biết là ai.
+ */
+function BookingPicker({
+  bookings,
+  value,
+  onPick,
+  disabled,
+  label,
+}: {
+  bookings: BookingPick[];
+  value: string;
+  onPick: (b: BookingPick | null) => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  if (!bookings.length) return null;
+  return (
+    <select
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onPick(bookings.find((b) => b.id === e.target.value) ?? null)}
+      className="h-10 w-full rounded-lg border border-sky-300 bg-sky-50/60 px-2 text-sm font-medium text-slate-800 outline-none focus:border-sky-600 disabled:bg-slate-50"
+    >
+      <option value="">— {label} (hoặc gõ tay bên dưới) —</option>
+      {bookings.map((b) => (
+        <option key={b.id} value={b.id}>
+          #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+          {b.source ? ` · ${b.source}` : ""}
+          {b.deposit ? ` · đã trả ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k` : ""}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 /** Khách huỷ hoàn tiền: Tên – mã book – số khách – nguồn – tiền hoàn. */
 export function CancelGuestRows({
@@ -725,15 +780,34 @@ export function CancelGuestRows({
   onChange,
   disabled,
   withCodes,
+  bookings,
 }: {
   rows: CancelGuestRow[];
   onChange: (next: CancelGuestRow[]) => void;
   disabled?: boolean;
   /** Điểm có vé (Khau Phạ, Sa Pa): hiện ô mã vé của nhóm. */
   withCodes?: boolean;
+  /** Booking đang chờ bay hôm nay — chọn thay vì gõ tay. */
+  bookings?: BookingPick[];
 }) {
   const set = (index: number, patch: Partial<CancelGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  /** Chọn booking: điền hộ tên, số khách, nguồn, mã book và tiền đã trả. */
+  const pick = (i: number, b: BookingPick | null) =>
+    set(i, {
+      bookedId: b?.id ?? "",
+      ...(b
+        ? {
+            name: b.contactName || b.phone || "",
+            guests: b.guestCount,
+            source: b.source,
+            bookingCode: b.bookingCode || b.phone || "",
+            paid: b.deposit,
+            refund: b.deposit,
+          }
+        : {}),
+    });
 
   return (
     <div className="space-y-3">
@@ -780,6 +854,13 @@ export function CancelGuestRows({
                   )}
                 </div>
               )}
+              <BookingPicker
+                bookings={bookings ?? []}
+                value={row.bookedId ?? ""}
+                onPick={(b) => pick(i, b)}
+                disabled={disabled}
+                label="chọn booking cần huỷ"
+              />
               <div className="grid gap-2 @md:grid-cols-[1fr_10rem]">
                 <TextInput
                   value={row.name}
@@ -921,6 +1002,7 @@ export function RescheduleGuestRows({
   disabled,
   onConfirmMove,
   withCodes,
+  bookings,
 }: {
   rows: RescheduleGuestRow[];
   onChange: (next: RescheduleGuestRow[]) => void;
@@ -930,9 +1012,21 @@ export function RescheduleGuestRows({
   onConfirmMove?: (index: number) => void;
   /** Điểm có vé: hiện ô mã vé của nhóm. */
   withCodes?: boolean;
+  /** Booking đang chờ bay hôm nay — chọn thay vì gõ tay. */
+  bookings?: BookingPick[];
 }) {
   const set = (index: number, patch: Partial<RescheduleGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  /**
+   * Chọn booking cần dời: điền hộ tên, số khách, SĐT.
+   *
+   * `bookedId` ở đây KHÁC nghĩa với lúc bấm "Xác nhận dời": chọn xong mới là
+   * đang chỉ định nhóm nào, còn bấm xác nhận mới thật sự đẩy sang ngày mới. Nên
+   * chọn xong vẫn hiện nút xác nhận như thường.
+   */
+  const pick = (i: number, b: BookingPick | null) =>
+    set(i, b ? { name: b.contactName || b.phone || "", guests: b.guestCount, phone: b.phone } : {});
 
   return (
     <div className="space-y-3">
@@ -950,6 +1044,13 @@ export function RescheduleGuestRows({
                   disabled={disabled}
                 />
               )}
+              <BookingPicker
+                bookings={bookings ?? []}
+                value=""
+                onPick={(b) => pick(i, b)}
+                disabled={disabled || Boolean(row.bookedId)}
+                label="chọn booking cần dời"
+              />
               <div className="grid gap-2 @md:grid-cols-2">
                 <TextInput
                   value={row.name}

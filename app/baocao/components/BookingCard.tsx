@@ -664,40 +664,56 @@ function CollectMoneyControl({
   const [open, setOpen] = useState(false);
   /** "deposit" = thu cọc (gõ số tuỳ ý) · "full" = thu nốt toàn bộ còn phải thu. */
   const [kind, setKind] = useState<"deposit" | "full">("full");
-  const [amount, setAmount] = useState(booking.remaining || 0);
   /**
-   * Ngày bay KHÔNG phải hôm nay thì khách còn ở xa — trả tiền mặt là chuyện
-   * không thể, nên mặc định CHUYỂN KHOẢN. Đúng ngày bay (khách đã ở bãi) mới
-   * mặc định tiền mặt. Cả hai vẫn bấm đổi được.
+   * HAI Ô TIỀN RIÊNG: khách hay trả một phần tiền mặt, phần còn lại chuyển
+   * khoản. Nhập cả hai trong một lần xác nhận; máy tách thành hai lệnh thu để
+   * tiền mặt vào phần người thu đang giữ, còn CK vào thẳng TK công ty.
    */
   const collectFromAfar = booking.flightDate !== todayInVN();
-  const [method, setMethod] = useState<"cash" | "transfer">(collectFromAfar ? "transfer" : "cash");
+  const [cash, setCash] = useState(0);
+  const [transfer, setTransfer] = useState(0);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const left = booking.remaining || 0;
+  const total = cash + transfer;
+
+  /** Mở bảng: mặc định dồn hết vào một đường theo tình huống, sửa lại được. */
+  function reset() {
+    setKind("full");
+    if (collectFromAfar) {
+      setTransfer(left);
+      setCash(0);
+    } else {
+      setCash(left);
+      setTransfer(0);
+    }
+    setCode("");
+    setError(null);
+  }
+
   async function send() {
-    if (kind === "deposit" && amount <= 0) return setError("Chưa nhập số tiền cọc");
-    if (kind === "full" && (booking.remaining || 0) <= 0) return setError("Booking này không còn phải thu");
-    if (method === "transfer" && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
+    if (total <= 0) return setError("Chưa nhập số tiền thu");
+    if (transfer > 0 && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
+    if (kind === "full" && left <= 0) return setError("Booking này không còn phải thu");
+    if (total > left && !window.confirm(`Thu ${total.toLocaleString("vi-VN")} đ, nhiều hơn phần còn phải thu (${left.toLocaleString("vi-VN")} đ). Vẫn ghi?`)) return;
     setBusy(true);
     setError(null);
     try {
-      const paid = kind === "full" ? booking.remaining || 0 : amount;
       await apiPatch(`/api/baocao/booking?spot=${spot}`, {
         id: booking.id,
         action: "collect",
         kind,
-        amount: paid,
-        method,
+        cash,
+        transfer,
         transferCode: code,
       });
-      const what = kind === "full" ? "Thu đủ" : "Thu cọc";
-      onDone(
-        method === "transfer"
-          ? `✓ ${what} ${paid.toLocaleString("vi-VN")} đ chuyển khoản vào TK công ty.`
-          : `✓ ${what} ${paid.toLocaleString("vi-VN")} đ tiền mặt — cộng vào tiền giữ hộ công ty của bạn.`,
-      );
+      const parts = [
+        cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
+        transfer > 0 ? `${transfer.toLocaleString("vi-VN")} đ CK (vào TK công ty)` : "",
+      ].filter(Boolean);
+      onDone(`✓ ${kind === "full" ? "Thu đủ" : "Thu cọc"} ${total.toLocaleString("vi-VN")} đ — ${parts.join(" + ")}.`);
       setOpen(false);
       setCode("");
     } catch (err: unknown) {
@@ -719,14 +735,11 @@ function CollectMoneyControl({
         }
         title="Thu tiền cho booking này — tiền mặt tại bãi hoặc khách chuyển khoản trước"
         onClick={() => {
-          setKind("full");
-          setAmount(booking.remaining || 0);
-          setMethod(collectFromAfar ? "transfer" : "cash");
+          reset();
           setOpen(true);
-          setError(null);
         }}
       >
-        {big ? "✅ ĐÃ THU — chọn tiền mặt / chuyển khoản" : "💵 Thu tiền"}
+        {big ? "✅ ĐÃ THU — nhập tiền mặt / chuyển khoản" : "💵 Thu tiền"}
       </Button>
     );
   }
@@ -746,7 +759,10 @@ function CollectMoneyControl({
             type="button"
             onClick={() => {
               setKind(k);
-              if (k === "full") setAmount(booking.remaining || 0);
+              if (k === "full") {
+                // Thu nốt: dồn phần còn thiếu vào ô tiền mặt, người thu tự chia lại
+                setCash(Math.max(0, left - transfer));
+              }
             }}
             className={
               kind === k
@@ -758,35 +774,31 @@ function CollectMoneyControl({
           </button>
         ))}
       </div>
-      {kind === "full" ? (
-        <div className="flex h-10 items-center justify-end rounded-lg border-2 border-slate-300 bg-white px-3 text-base font-bold tabular-nums text-slate-900">
-          {(booking.remaining || 0).toLocaleString("vi-VN")} đ
-        </div>
-      ) : (
-        <MoneyInput value={amount} onChange={setAmount} />
-      )}
-      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
-        {(
-          [
-            ["cash", "Tiền mặt"],
-            ["transfer", "CK"],
-          ] as Array<["cash" | "transfer", string]>
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setMethod(k)}
-            className={
-              method === k
-                ? "flex-1 bg-emerald-600 px-1 text-xs font-semibold text-white"
-                : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
-            }
-          >
-            {label}
-          </button>
-        ))}
+
+      {/* Khách trả một phần TM + một phần CK: nhập cả hai, xác nhận một lần.
+          Một booking thu được NHIỀU LẦN — mỗi lần một lệnh thu riêng. */}
+      <div className="text-[11px] font-semibold text-slate-700">
+        Còn phải thu: <span className="tabular-nums">{left.toLocaleString("vi-VN")} đ</span>
+        {booking.deposit > 0 && (
+          <span className="font-normal text-slate-500">
+            {" "}
+            · đã thanh toán {booking.deposit.toLocaleString("vi-VN")} đ
+          </span>
+        )}
       </div>
-      {method === "transfer" && (
+      <label className="flex items-center gap-1.5">
+        <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
+        <span className="min-w-0 flex-1">
+          <MoneyInput value={cash} onChange={setCash} />
+        </span>
+      </label>
+      <label className="flex items-center gap-1.5">
+        <span className="w-8 shrink-0 text-xs font-bold text-indigo-800">CK</span>
+        <span className="min-w-0 flex-1">
+          <MoneyInput value={transfer} onChange={setTransfer} />
+        </span>
+      </label>
+      {transfer > 0 && (
         <TextInput
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -794,19 +806,30 @@ function CollectMoneyControl({
           className="h-8 rounded-lg text-xs"
         />
       )}
+
+      <div
+        className={
+          "flex items-center justify-between rounded-lg border-2 px-2 py-1 " +
+          (total > left ? "border-amber-400 bg-amber-50" : "border-slate-300 bg-white")
+        }
+      >
+        <span className="text-xs font-semibold text-slate-600">Tổng thu lần này</span>
+        <strong className="text-base tabular-nums text-slate-900">{total.toLocaleString("vi-VN")} đ</strong>
+      </div>
+
       <div className="text-[11px] leading-tight text-slate-600">
-        {kind === "full"
-          ? "Thu nốt: “đã cọc” cộng đủ, “còn thu” về 0."
-          : "Thu cọc: “đã cọc” tăng, “còn thu” trừ đi tương ứng."}{" "}
-        {method === "transfer" ? "Tiền vào thẳng TK CÔNG TY." : "Tiền mặt cộng vào TIỀN GIỮ HỘ của bạn."}
-        {collectFromAfar && method === "cash" ? " Khách đặt trước, ở xa — chắc chắn thu được tiền mặt chứ?" : ""}
+        {cash > 0 ? "TM cộng vào TIỀN GIỮ HỘ của bạn. " : ""}
+        {transfer > 0 ? "CK vào thẳng TK CÔNG TY. " : ""}
+        {total > 0 && total < left ? `Thu xong còn lại ${(left - total).toLocaleString("vi-VN")} đ — thu tiếp lần sau được. ` : ""}
+        {total > left ? "⚠ Nhiều hơn phần còn phải thu." : ""}
+        {collectFromAfar && cash > 0 ? " Khách đặt trước, ở xa — chắc chắn thu được tiền mặt chứ?" : ""}
       </div>
       {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
       <div className="flex gap-1">
         <Button
           type="button"
           className="h-7 flex-1 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
-          disabled={busy || (kind === "full" ? (booking.remaining || 0) <= 0 : amount <= 0)}
+          disabled={busy || total <= 0}
           onClick={send}
         >
           {busy ? "Đang lưu…" : "✓ Xác nhận"}

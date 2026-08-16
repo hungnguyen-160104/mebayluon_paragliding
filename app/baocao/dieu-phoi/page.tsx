@@ -14,6 +14,7 @@ import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import {
   CancelGuestRows,
+  type BookingPick,
   RescheduleGuestRows,
   type CancelGuestRow,
   type RescheduleGuestRow,
@@ -220,6 +221,21 @@ export default function DispatcherReportPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ warnings: string[] } | null>(null);
+  /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
+  const [dayBookings, setDayBookings] = useState<BookingPick[]>([]);
+  useEffect(() => {
+    if (!spot) return;
+    let alive = true;
+    apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
+      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open")))
+      .catch(() => {
+        /* ngày chưa có booking thì thôi */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [spot, date]);
+
   const [history, setHistory] = useState<DispatcherReportDTO[]>([]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -725,6 +741,7 @@ export default function DispatcherReportPage() {
           title="Khách huỷ"
         >
           <CancelGuestRows
+            bookings={dayBookings}
             rows={form.cancelledGuests}
             onChange={(rows) => set("cancelledGuests", rows)}
             disabled={locked}
@@ -736,6 +753,7 @@ export default function DispatcherReportPage() {
           title="Khách dời lịch"
         >
           <RescheduleGuestRows
+            bookings={dayBookings}
             rows={form.rescheduledGuests}
             onChange={(rows) => set("rescheduledGuests", rows)}
             minDate={shiftDateKey(date, 1)}
