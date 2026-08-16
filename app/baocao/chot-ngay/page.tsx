@@ -711,7 +711,7 @@ function DailyCloseInner() {
               <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
-                Khách đăng ký đã xác nhận bay — không tính khách huỷ và khách dời sang ngày khác.
+                Khách đã bay - CHƯA tính khách huỷ/dời
               </p>
             </ServiceBox>
 
