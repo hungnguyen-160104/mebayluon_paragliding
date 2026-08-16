@@ -572,6 +572,105 @@ function isTwin(a: BookingDTO, b: BookingDTO): boolean {
 }
 
 /**
+ * BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé giấy.
+ *
+ * Bắt ghi lý do rồi mới đánh dấu được: bay không vé mà không ai giải thích thì
+ * đúng là chỗ tiền chảy ra ngoài. Ở Khau Phạ, dấu này cũng là đường duy nhất để
+ * tích "đã bay" khi quầy không xuất vé.
+ */
+function NoTicketControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState(booking.noTicketReason ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(on: boolean) {
+    if (on && !reason.trim()) return setError("Ghi giúp lý do bay không vé");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: booking.id, action: "noticket", on, reason });
+      onDone(on ? "✓ Đã đánh dấu bay không vé." : "✓ Đã bỏ dấu bay không vé.");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không đánh dấu được");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 shrink-0 px-2 text-xs font-semibold " +
+          (booking.noTicketFlight ? "border-orange-400 bg-orange-100 text-orange-900" : "bg-white text-slate-700")
+        }
+        onClick={() => {
+          setReason(booking.noTicketReason ?? "");
+          setError(null);
+          setOpen(true);
+        }}
+        title={
+          booking.noTicketFlight
+            ? `Bay không vé — ${booking.noTicketReason} (${booking.noTicketBy})`
+            : "Chuyến bay thật nhưng không xé vé — ghi lý do"
+        }
+      >
+        {booking.noTicketFlight ? "🎫✕ Bay không vé ✓" : "🎫✕ Bay không vé"}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-[17rem] rounded-lg border border-orange-300 bg-orange-50 p-1.5">
+      <div className="text-[11px] font-bold text-orange-900">Bay không vé — {booking.contactName || "khách"}</div>
+      <TextInput
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Lý do · khách ngoại giao, bay bù, quầy hết vé…"
+        className="mt-1 h-8 rounded-lg text-xs"
+      />
+      {error && <div className="mt-1 text-[11px] font-semibold text-rose-700">{error}</div>}
+      <div className="mt-1 flex gap-1">
+        <Button
+          type="button"
+          className="h-8 flex-1 bg-orange-600 px-2 text-xs hover:bg-orange-700"
+          disabled={busy}
+          onClick={() => save(true)}
+        >
+          ✓ Đánh dấu
+        </Button>
+        {booking.noTicketFlight && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 bg-white px-2 text-xs text-rose-700"
+            disabled={busy}
+            onClick={() => save(false)}
+          >
+            Bỏ dấu
+          </Button>
+        )}
+        <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * TỜ GIẤY NHỚ + nút "Đã liên hệ" cho một booking.
  *
  * Khách đặt qua web/OTA chỉ có mấy dòng máy gửi về. Điều phối phải gọi xác
@@ -773,6 +872,14 @@ function RowMenu({
         ✎ Sửa booking
       </button>
       <CancelBookingControl
+        spot={spot}
+        booking={booking}
+        onDone={(m) => {
+          onDone(m);
+          setOpen(false);
+        }}
+      />
+      <NoTicketControl
         spot={spot}
         booking={booking}
         onDone={(m) => {
@@ -1757,9 +1864,11 @@ export function BookingTodayBanner({
                   variant="ghost"
                   className={
                     "h-7 px-2 text-xs font-semibold " +
-                    (b.ticketIssued
-                      ? "border-amber-400 bg-amber-100 text-amber-900"
-                      : "bg-white text-slate-600")
+                    (b.noTicketFlight
+                      ? "border-orange-400 bg-orange-100 text-orange-900"
+                      : b.ticketIssued
+                        ? "border-amber-400 bg-amber-100 text-amber-900"
+                        : "bg-white text-slate-600")
                   }
                   disabled={busy === b.id}
                   onClick={() => act(b, "ticket")}
@@ -1769,7 +1878,7 @@ export function BookingTodayBanner({
                       : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
                   }
                 >
-                  {b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
+                  {b.noTicketFlight ? "🎫✕ Không vé" : b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
                 </Button>
                 <CollectMoneyControl
                   spot={spot}

@@ -9,6 +9,7 @@ import {
   BaobayError,
   assignBooking,
   acceptAssignedBooking,
+  markNoTicketFlight,
   noteBookingContact,
   collectForBooking,
   payCommission,
@@ -172,7 +173,7 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -214,6 +215,15 @@ export async function PATCH(req: Request) {
         note: String(body?.note ?? ""),
       });
       return NextResponse.json({ booking });
+    }
+    // Bay KHÔNG VÉ — chuyến có thật nhưng không xé vé, phải ghi lý do
+    if (action === "noticket") {
+      return NextResponse.json({
+        booking: await markNoTicketFlight(auth, spot, id, {
+          on: body?.on !== false,
+          reason: String(body?.reason ?? ""),
+        }),
+      });
     }
     // Ghi chú gọi khách + đánh dấu đã liên hệ
     if (action === "contact") {

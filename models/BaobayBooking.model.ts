@@ -89,6 +89,15 @@ export interface IBaobayBooking {
   /** Khách ĐÃ ĐẾN LẤY VÉ chưa — quầy tích để khỏi xuất trùng và đếm vé đã xuất. */
   ticketIssuedAt?: Date;
   ticketIssuedBy?: string;
+  /**
+   * BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé (khách ngoại giao, bay bù,
+   * quầy hết vé giấy…). Đánh dấu để đối chiếu cuối ngày không đòi mã vé, nhưng
+   * BẮT GHI LÝ DO: bay không vé mà không ai giải thích thì đúng là chỗ thất thoát.
+   */
+  noTicketFlight?: boolean;
+  noTicketReason?: string;
+  noTicketBy?: string;
+  noTicketAt?: Date;
   refundAmount?: number;
   /**
    * VỆT THU TIỀN của booking: ai thu, bao nhiêu, TM hay CK, lúc nào.
@@ -237,6 +246,10 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     cancelTicketCodes: { type: [String], default: [] },
     ticketIssuedAt: Date,
     ticketIssuedBy: String,
+    noTicketFlight: { type: Boolean, default: false },
+    noTicketReason: String,
+    noTicketBy: String,
+    noTicketAt: Date,
     refundAmount: { type: Number, default: 0, min: 0 },
     collectedLog: {
       type: [

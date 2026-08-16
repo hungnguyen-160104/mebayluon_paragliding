@@ -352,6 +352,10 @@ export type BookingDTO = {
   /** Khách đã đến lấy vé chưa (quầy tích). */
   ticketIssued: boolean;
   ticketIssuedBy?: string;
+  /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */
+  noTicketFlight?: boolean;
+  noTicketReason?: string;
+  noTicketBy?: string;
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
   cancelledBy?: string;

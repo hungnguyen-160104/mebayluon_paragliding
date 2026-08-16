@@ -4607,6 +4607,46 @@ export async function acceptAssignedBooking(session: BaobaySession, spotRaw: str
 }
 
 /**
+ * Đánh dấu BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé giấy.
+ *
+ * Vẫn xảy ra: khách ngoại giao, bay bù chuyến hỏng, quầy hết vé lúc cao điểm.
+ * Đánh dấu để đối chiếu cuối ngày không đòi mã vé cho chuyến này, nhưng BẮT
+ * GHI LÝ DO và lưu tên người đánh dấu — bay không vé mà không ai giải thích
+ * được thì đó đúng là chỗ tiền chảy ra ngoài.
+ */
+export async function markNoTicketFlight(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { on: boolean; reason?: string },
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const reason = (input.reason ?? "").trim();
+  if (input.on && !reason) throw new BaobayError("Ghi giúp lý do bay không vé", 400);
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    input.on
+      ? {
+          $set: {
+            noTicketFlight: true,
+            noTicketReason: reason,
+            noTicketBy: session.name || session.username,
+            noTicketAt: new Date(),
+          },
+        }
+      : { $set: { noTicketFlight: false }, $unset: { noTicketReason: "", noTicketBy: "", noTicketAt: "" } },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return toBookingDTO(updated);
+}
+
+/**
  * Quầy tích "ĐÃ XUẤT VÉ" cho booking (khách đã đến lấy vé) — bấm lại lần nữa
  * để bỏ tích khi lỡ tay. Không đụng tiền, không đụng trạng thái bay.
  */
@@ -4659,8 +4699,11 @@ export async function updateBookingStatus(
    * chui — cả hai đều phải chặn tại chỗ, vì cuối ngày đối chiếu vé xuất với
    * chuyến bay mới phát hiện thì không lần ra nổi khách nào.
    */
-  if (action === "flown" && spot === "khau-pha" && !current.ticketIssuedAt) {
-    throw new BaobayError("Chưa xuất vé, không thể tích đã bay — bấm 🎫 Xuất vé trước", 400);
+  if (action === "flown" && spot === "khau-pha" && !current.ticketIssuedAt && !current.noTicketFlight) {
+    throw new BaobayError(
+      "Chưa xuất vé, không thể tích đã bay — bấm 🎫 Xuất vé, hoặc đánh dấu “Bay không vé” kèm lý do",
+      400,
+    );
   }
 
   let update: Record<string, unknown>;
@@ -4797,6 +4840,7 @@ async function pushBookingRow(doc: any) {
       assignedTo: doc.assignedToName || "",
       accepted: doc.acceptedAt ? `x (${doc.acceptedBy || ""})` : "",
       contacted: doc.contactedAt ? `x (${doc.contactedBy || ""})` : "",
+      noTicketFlight: doc.noTicketFlight ? `x — ${doc.noTicketReason || ""} (${doc.noTicketBy || ""})` : "",
       contactNote: doc.contactNote || "",
       commission: doc.commission?.amount
         ? `${doc.commission.amount} ${doc.commission.method === "cash" ? "TM" : "CK"}${doc.commission.transferCode ? ` #${doc.commission.transferCode}` : ""} - ${doc.commission.byName || ""}`
@@ -4838,6 +4882,9 @@ function toBookingDTO(doc: any): BookingDTO {
     daySeq: Number(doc.daySeq) || 0,
     ticketIssued: Boolean(doc.ticketIssuedAt),
     ticketIssuedBy: doc.ticketIssuedBy || undefined,
+    noTicketFlight: Boolean(doc.noTicketFlight) || undefined,
+    noTicketReason: doc.noTicketReason || undefined,
+    noTicketBy: doc.noTicketBy || undefined,
     collected: Array.isArray(doc.collectedLog)
       ? doc.collectedLog.map((c: any) => ({
           amount: Number(c.amount) || 0,
