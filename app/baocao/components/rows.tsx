@@ -713,8 +713,12 @@ export type CancelGuestRow = {
   codesText: string;
   /** Huỷ khi CHƯA XUẤT VÉ — không có mã vé để thu hồi, chỉ hoàn tiền. */
   noTicket?: boolean;
+  /** Đã bấm "Xác nhận huỷ" — booking trong sổ đã chuyển sang đã huỷ. */
+  cancelledDone?: boolean;
   /** Tiền khách đã thanh toán trước đó. */
   paid?: number;
+  /** Phí dịch vụ khách đã dùng — trừ vào tiền hoàn (xe đón, flycam đã quay…). */
+  usedFee?: number;
   /** Hoàn bằng CK (ra từ TK công ty) hay TM (nhân viên chi tại chỗ). */
   refundMethod?: "cash" | "transfer";
   /** Booking đã chọn từ danh sách chờ bay — để khỏi gõ lại tên và số khách. */
@@ -732,6 +736,8 @@ export type BookingPick = {
   bookingCode: string;
   deposit: number;
   status: string;
+  /** Quầy đã tích 🎫 xuất vé cho đoàn này chưa — quyết định có mã vé để thu hồi. */
+  ticketIssued: boolean;
 };
 
 /**
@@ -768,6 +774,7 @@ function BookingPicker({
           #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
           {b.source ? ` · ${b.source}` : ""}
           {b.deposit ? ` · đã trả ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k` : ""}
+          {b.status === "done" ? " · đã bay" : ""}
         </option>
       ))}
     </select>
@@ -781,14 +788,21 @@ export function CancelGuestRows({
   disabled,
   withCodes,
   bookings,
+  onConfirmCancel,
 }: {
   rows: CancelGuestRow[];
   onChange: (next: CancelGuestRow[]) => void;
   disabled?: boolean;
   /** Điểm có vé (Khau Phạ, Sa Pa): hiện ô mã vé của nhóm. */
   withCodes?: boolean;
-  /** Booking đang chờ bay hôm nay — chọn thay vì gõ tay. */
+  /** Booking trong ngày — chọn thay vì gõ tay. */
   bookings?: BookingPick[];
+  /**
+   * Có truyền thì mỗi nhóm hiện nút "Xác nhận huỷ" — HUỶ THẬT booking đã chọn
+   * trong sổ (chuyển sang đã huỷ, ghi tiền hoàn, thu hồi mã vé). Không bấm thì
+   * dòng này chỉ là số liệu trong báo cáo ngày.
+   */
+  onConfirmCancel?: (index: number) => void;
 }) {
   const set = (index: number, patch: Partial<CancelGuestRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -805,6 +819,13 @@ export function CancelGuestRows({
             bookingCode: b.bookingCode || b.phone || "",
             paid: b.deposit,
             refund: b.deposit,
+            usedFee: 0,
+            /**
+             * Lấy luôn trạng thái VÉ từ sổ booking: quầy đã tích 🎫 xuất vé thì
+             * nhóm này có vé phải thu hồi, chưa tích thì không. Để người nhập tự
+             * chọn là thừa một bước và sai một cách vô nghĩa — sổ biết rồi.
+             */
+            noTicket: !b.ticketIssued,
           }
         : {}),
     });
@@ -841,6 +862,11 @@ export function CancelGuestRows({
                       </button>
                     ))}
                   </div>
+                  {row.bookedId && (
+                    <span className="text-[11px] text-slate-500">
+                      (lấy theo sổ booking — sửa được nếu sổ ghi nhầm)
+                    </span>
+                  )}
                   {!row.noTicket && (
                     <TextInput
                       value={row.codesText}
@@ -877,8 +903,21 @@ export function CancelGuestRows({
               </div>
               <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
                 <div>
-                  <div className="mb-1 text-[11px] font-medium text-slate-500">Số khách</div>
-                  <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                  <div className="mb-1 text-[11px] font-medium text-slate-500">
+                    Số khách{(() => {
+                      const b = bookings?.find((x) => x.id === row.bookedId);
+                      return b ? ` (tối đa ${b.guestCount})` : "";
+                    })()}
+                  </div>
+                  {/* Chọn booking rồi thì KHÔNG huỷ quá số khách của đoàn đó — huỷ 6
+                      người trong đoàn 1 người là số liệu vô nghĩa, mà lại lọt vào
+                      đối chiếu vé thu về. */}
+                  <CountInput
+                    compact
+                    value={row.guests}
+                    onChange={(v) => set(i, { guests: v })}
+                    max={bookings?.find((x) => x.id === row.bookedId)?.guestCount ?? 100}
+                  />
                 </div>
                 <div>
                   <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Nguồn khách</div>
@@ -893,11 +932,24 @@ export function CancelGuestRows({
                   <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Số tiền hoàn</div>
                   <MoneyInput value={row.refund} onChange={(v) => set(i, { refund: v })} />
                 </div>
-                {row.noTicket && (
+                {/* Hoàn tiền là chuyện của TIỀN, không liên quan đã xuất vé hay chưa —
+                    bản cũ chỉ hiện khi "chưa xuất vé" nên khách đã cầm vé mà đòi hoàn
+                    thì không ghi được bằng gì. */}
+                {
                   <>
                     <div>
                       <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Tiền đã thanh toán</div>
                       <MoneyInput value={row.paid ?? 0} onChange={(v) => set(i, { paid: v })} />
+                    </div>
+                    <div>
+                      <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Phí dịch vụ đã dùng</div>
+                      {/* Trừ vào tiền hoàn — khách huỷ nhưng đã dùng xe/flycam thì chịu phần đó */}
+                      <MoneyInput
+                        value={row.usedFee ?? 0}
+                        onChange={(v) =>
+                          set(i, { usedFee: v, refund: Math.max(0, (row.paid ?? 0) - v) })
+                        }
+                      />
                     </div>
                     <div>
                       <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Hoàn bằng</div>
@@ -932,9 +984,9 @@ export function CancelGuestRows({
                       </div>
                     </div>
                   </>
-                )}
+                }
               </div>
-              {row.noTicket && (
+              {row.refund > 0 && (
                 <p className="text-[11px] leading-tight text-slate-500">
                   {(row.refundMethod ?? "transfer") === "transfer"
                     ? "CK: tiền hoàn ra từ TK CÔNG TY."
@@ -947,6 +999,24 @@ export function CancelGuestRows({
                 placeholder="Ghi chú · lý do huỷ, hoàn qua đâu…"
                 disabled={disabled}
               />
+              {/* Huỷ THẬT trong sổ booking, không chỉ ghi số vào báo cáo ngày */}
+              {onConfirmCancel &&
+                (row.cancelledDone ? (
+                  <div className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
+                    ✓ Đã huỷ trong sổ booking — nhóm này chuyển sang “đã huỷ”, tiền hoàn đã ghi.
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 w-full border border-rose-300 bg-rose-50 text-xs font-semibold text-rose-800"
+                    disabled={disabled || !row.bookedId}
+                    onClick={() => onConfirmCancel(i)}
+                    title={row.bookedId ? "Huỷ booking đã chọn trong sổ" : "Chọn booking ở ô trên trước"}
+                  >
+                    {row.bookedId ? "✓ Xác nhận huỷ booking này trong sổ" : "Chọn booking ở ô trên rồi mới xác nhận huỷ được"}
+                  </Button>
+                ))}
             </div>
             {rows.length > 1 && !disabled && (
               <button
@@ -1026,7 +1096,11 @@ export function RescheduleGuestRows({
    * chọn xong vẫn hiện nút xác nhận như thường.
    */
   const pick = (i: number, b: BookingPick | null) =>
-    set(i, b ? { name: b.contactName || b.phone || "", guests: b.guestCount, phone: b.phone } : {});
+    set(i, b ? { name: b.contactName || b.phone || "", guests: b.guestCount, phone: b.phone, bookedId: "" } : {});
+
+  /** Dời không quá số khách của đoàn đã chọn — như bên huỷ. */
+  const capOf = (row: RescheduleGuestRow) =>
+    bookings?.find((b) => b.contactName === row.name || (row.phone && b.phone === row.phone))?.guestCount ?? 100;
 
   return (
     <div className="space-y-3">
@@ -1070,8 +1144,11 @@ export function RescheduleGuestRows({
                   lại để không đè lên ô bên cạnh. */}
               <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
                 <div>
-                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Số khách</div>
-                  <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={100} />
+                  <div className="mb-1 truncate text-[11px] font-medium text-slate-500">
+                    Số khách{capOf(row) < 100 ? ` (tối đa ${capOf(row)})` : ""}
+                  </div>
+                  {/* Không dời quá số khách của đoàn đã chọn — xem chú thích bên huỷ */}
+                  <CountInput compact value={row.guests} onChange={(v) => set(i, { guests: v })} max={capOf(row)} />
                 </div>
                 <div>
                   <div className="mb-1 truncate text-[11px] font-medium text-slate-500">Dời sang</div>

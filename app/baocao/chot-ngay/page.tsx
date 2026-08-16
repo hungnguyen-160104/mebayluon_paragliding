@@ -23,6 +23,7 @@ import {
   type ExpenseRow,
 } from "../components/rows";
 import { DateBar } from "../components/DateBar";
+import { AddServicesCard } from "../components/AddServicesCard";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { FlownServicesHint } from "../components/FlownServicesHint";
@@ -70,6 +71,8 @@ type CloseSuggestion = {
   transferTotal: number;
   dispatcherSpend: number;
   registeredGuests: number;
+  /** Khách đã xác nhận bay trong sổ booking — đăng ký trừ huỷ/dời. */
+  flownGuests: number;
   cancelledGuestEntries: Array<{
     name: string;
     bookingCode: string;
@@ -556,6 +559,7 @@ function DailyCloseInner() {
 
       <BookingCard spot={spot} spotOptions={spotOptions} />
 
+
       {/* Lệnh thu tiền chờ mình xử lý */}
       <CollectInbox spot={spot} />
 
@@ -690,13 +694,19 @@ function DailyCloseInner() {
 
           {/* 5 ô đếm xếp 3/hàng khi đủ rộng — gọn còn 2 hàng */}
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
-            <ServiceBox tone="guests" label="Số khách bay trong ngày">
+            <ServiceBox tone="guests" label="Số khách đã bay">
               <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
-              {/* Hai nguồn để đối chiếu: quầy đếm khách, phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
+              {/* Ba nguồn đối chiếu: sổ booking (đã tích đã bay), quầy đếm khách,
+                  phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
+              <Compare label="sổ booking (đã bay)" value={suggest?.flownGuests} mine={form.guestCount}
+                onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <Compare label="điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
+              <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                Khách đăng ký đã xác nhận bay — không tính khách huỷ và khách dời sang ngày khác.
+              </p>
             </ServiceBox>
 
             {noTickets ? (
@@ -884,6 +894,11 @@ function DailyCloseInner() {
           </div>
           )}
         </CollapseCard>
+
+        {/* Khách mua thêm dịch vụ tại bãi — ngay trên sổ THU CHI */}
+        <div className="order-4 lg:order-none">
+          <AddServicesCard spot={spot} date={date} />
+        </div>
 
         <CollapseCard
           className="order-4 lg:order-none"

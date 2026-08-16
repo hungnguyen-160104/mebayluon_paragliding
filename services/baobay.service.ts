@@ -3751,6 +3751,116 @@ export async function collectForBooking(
   return { booking: toBookingDTO(updated), collect: toCollectDTO({ ...saved, sheetSynced: false }) };
 }
 
+/**
+ * KHÁCH ĐĂNG KÝ THÊM DỊCH VỤ tại bãi (thấy người ta bay flycam đẹp quá nên mua
+ * thêm) — cộng vào đúng booking đang có, tính lại tiền, rồi thu luôn nếu khách
+ * trả ngay.
+ *
+ * Cộng dồn vào booking thay vì lập booking mới: khách vẫn là khách ấy, chuyến
+ * vẫn chuyến ấy. Lập bản mới thì đếm khách thành hai lần, mà đối chiếu cuối
+ * ngày lại lệch.
+ *
+ * Combo flycam + 360 tính LẠI TRÊN TỔNG sau khi cộng: khách đã có flycam, giờ
+ * mua thêm 360 thì thành một cặp và được bớt 100k — đúng như mua cùng lúc.
+ */
+export async function addBookingServices(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: {
+    add: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; flagFlight?: number };
+    /** Giảm trừ riêng cho lần đăng ký thêm này (cộng vào giảm trừ của booking). */
+    discount?: number;
+    note?: string;
+    /** Thu luôn: tiền mặt và/hoặc các bill chuyển khoản. */
+    pay?: { cash?: number; transfers?: Array<{ amount: number; code: string }> };
+  },
+): Promise<{ booking: BookingDTO; added: number; charge: number }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+  if (booking.status === "voided") throw new BaobayError("Booking này đã bỏ khỏi sổ", 400);
+
+  const closed = await AccountantDailyClose.findOne({ spot, date: booking.flightDate, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không thêm dịch vụ được nữa", 400);
+
+  const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  const add = Object.fromEntries(keys.map((k) => [k, Math.max(0, Math.round(input.add[k] ?? 0))])) as Record<
+    (typeof keys)[number],
+    number
+  >;
+  const addedCount = keys.reduce((t, k) => t + add[k], 0);
+  if (addedCount <= 0) throw new BaobayError("Chưa chọn dịch vụ nào để thêm", 400);
+
+  /** Dịch vụ bám theo đầu khách: 2 khách thì tối đa 2 flycam, 2 cam360… */
+  const next: Record<string, number> = {};
+  for (const k of keys) {
+    const sum = (booking[k] ?? 0) + add[k];
+    if (sum > (booking.guestCount ?? 0)) {
+      throw new BaobayError(
+        `${k === "video360" ? "Camera 360" : k === "flycam" ? "Flycam" : k === "redFlag" ? "Dù cờ đỏ" : k === "sunset" ? "Bay hoàng hôn/săn mây" : "Bay kéo cờ/bánh"} vượt số khách của booking (${booking.guestCount})`,
+        400,
+      );
+    }
+    next[k] = sum;
+  }
+
+  const discountAdd = Math.max(0, Math.round(input.discount ?? 0));
+  const merged = {
+    ...booking,
+    ...next,
+    discount: (booking.discount ?? 0) + discountAdd,
+    // Combo tính lại trên TỔNG sau khi cộng — thêm 360 vào flycam sẵn có là thành cặp
+    comboDiscount: comboDiscount(next.flycam, next.video360),
+    ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
+    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
+  };
+  const newTotal = bookingTotal(merged as never);
+  /** Tiền khách phải trả THÊM lần này = tổng mới − tổng cũ. */
+  const charge = Math.max(0, newTotal - (booking.totalAmount ?? 0));
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        ...next,
+        discount: merged.discount,
+        comboDiscount: merged.comboDiscount,
+        totalAmount: newTotal,
+        remaining: Math.max(0, newTotal - (booking.deposit ?? 0)),
+        note: [
+          booking.note,
+          `đăng ký thêm: ${keys
+            .filter((k) => add[k] > 0)
+            .map((k) => `${add[k]}×${k === "video360" ? "cam360" : k === "flycam" ? "flycam" : k === "redFlag" ? "cờ đỏ" : k === "sunset" ? "hoàng hôn" : "kéo cờ"}`)
+            .join(" ")} (${session.name || session.username})`,
+          input.note?.trim(),
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+
+  /** Khách trả ngay tại chỗ thì ghi luôn lệnh thu — khỏi bấm sang thẻ khác. */
+  const pay = input.pay;
+  const payTotal = (pay?.cash ?? 0) + (pay?.transfers ?? []).reduce((t, b) => t + (b.amount || 0), 0);
+  if (payTotal > 0) {
+    const res = await collectForBooking(session, spot, id, {
+      cash: pay?.cash ?? 0,
+      transfers: pay?.transfers ?? [],
+      kind: "deposit",
+    });
+    return { booking: res.booking, added: addedCount, charge };
+  }
+  return { booking: toBookingDTO(updated), added: addedCount, charge };
+}
+
 /** Các khoản đã thu của một booking — để điều phối/kế toán soát và sửa. */
 export async function listBookingCollects(spotRaw: string, bookingId: string): Promise<CollectDTO[]> {
   await connectDB();
@@ -5278,6 +5388,8 @@ issuedRanges: Array<{ from: string; to: string }>;
   dispatcherSpend: number;
   /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
   registeredGuests: number;
+  /** Khách đã xác nhận bay (booking tích "đã bay") — đăng ký trừ huỷ/dời. */
+  flownGuests: number;
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
   rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
@@ -5324,9 +5436,12 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     DispatcherDailyReport.find(filter).lean<any[]>(),
     PilotDailyReport.find(filter).lean<any[]>(),
     CameramanDailyReport.find(filter).lean<any[]>(),
-    // Khách ĐĂNG KÝ trước của ngày (sổ booking, trừ nhóm đã huỷ) — cho ô "Số khách đăng ký" ở Hà Nội
-    BaobayBooking.find({ spot, flightDate: date, status: { $ne: "cancelled" } })
-      .select("guestCount")
+    /**
+     * Khách ĐĂNG KÝ trước của ngày (sổ booking) — bỏ nhóm đã huỷ và nhóm bị bỏ
+     * khỏi sổ. Kèm trạng thái để tách riêng số khách ĐÃ XÁC NHẬN BAY.
+     */
+    BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
+      .select("guestCount status")
       .lean<any[]>(),
   ]);
 
@@ -5366,6 +5481,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     transferTotal: sum(dispatchers, (d) => d.transferReceived),
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
     registeredGuests: sum(bookings, (b) => b.guestCount),
+    /**
+     * Khách ĐÃ BAY THẬT: chỉ tính nhóm quầy đã tích "đã bay" — khách huỷ và
+     * khách dời sang ngày khác tự khắc không nằm trong đây, nên con số này
+     * chính là "đăng ký − huỷ − dời" mà kế toán cần.
+     */
+    flownGuests: sum(
+      bookings.filter((b) => b.status === "done"),
+      (b) => b.guestCount,
+    ),
     cancelledGuestEntries: dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
     rescheduledGuestEntries: dispatchers.flatMap((d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"]),
     dispatcherLedger: dispatchers.flatMap((d) => {

@@ -13,9 +13,7 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import {
-  CancelGuestRows,
   type BookingPick,
-  RescheduleGuestRows,
   type CancelGuestRow,
   type RescheduleGuestRow,
   DiploEntryRows,
@@ -35,6 +33,8 @@ import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { PeriodSummary } from "../components/PeriodSummary";
+import { AddServicesCard } from "../components/AddServicesCard";
+import { CancelMoveCard } from "../components/CancelMoveCard";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { ReviewNotices } from "../components/ReviewNotices";
@@ -227,7 +227,8 @@ export default function DispatcherReportPage() {
     if (!spot) return;
     let alive = true;
     apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
-      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open")))
+      /** Cả khách đã tích "đã bay" cũng hiện: huỷ/dời sau khi lỡ tích là chuyện có thật. */
+      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done")))
       .catch(() => {
         /* ngày chưa có booking thì thôi */
       });
@@ -377,47 +378,7 @@ export default function DispatcherReportPage() {
    * trong "🛫 Booking bay ngày đó" kèm nhãn "dời từ hôm nay" + tên/SĐT/ghi chú.
    * Xong tự lưu lại báo cáo để ghi nhớ đã đẩy (không đẩy trùng lần hai).
    */
-  async function confirmMove(index: number) {
-    const row = form.rescheduledGuests[index];
-    if (!row || !row.toDate || row.bookedId) return;
-    const codeCount = parseTicketCodeList(row.codesText).codes.length;
-    const guestTotal = row.guests || codeCount;
-    if (!guestTotal) return;
-    setError(null);
-    setSaving(true);
-    try {
-      const res = await apiPost<{ booking: { id: string } }>(`/api/baocao/booking?spot=${spot}`, {
-        flightDate: row.toDate,
-        source: "Dời lịch",
-        contactName: row.name,
-        phone: row.phone,
-        bookingCode: "",
-        guestCount: guestTotal,
-        flycam: 0,
-        video360: 0,
-        redFlag: 0,
-        sunset: 0,
-        flagFlight: 0,
-        pickup: row.pickup === "other" ? "other" : "self",
-        pickupNote: row.pickup === "other" ? row.pickupNote : "",
-        expectedTime: row.expectedTime,
-        deposit: 0,
-        remaining: 0,
-        note: `Khách dời từ ngày ${formatDateKeyVN(date)}${row.codesText.trim() ? ` — vé: ${row.codesText.trim()}` : ""}${row.note ? ` — ${row.note}` : ""}`,
-        rescheduledFrom: date,
-      });
-      const next = {
-        ...form,
-        rescheduledGuests: form.rescheduledGuests.map((r, i) => (i === index ? { ...r, bookedId: res.booking.id } : r)),
-      };
-      setForm(next);
-      await persist(next);
-    } catch (err: any) {
-      setError(err?.message || "Không đẩy được vào lịch booking");
-    } finally {
-      setSaving(false);
-    }
-  }
+
 
   if (loading || !user || !spot) {
     return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
@@ -463,6 +424,7 @@ export default function DispatcherReportPage() {
 
       {/* Khách đặt trước: nhập ngay hôm khách chốt, tự hiện đúng ngày bay */}
       <BookingCard spot={spot} spotOptions={spotOptions} />
+
 
       {myReds.length > 0 && (
         <Banner tone="error">
@@ -566,7 +528,7 @@ export default function DispatcherReportPage() {
         )}
 
         <CollapseCard
-          title="Dịch vụ gia tăng"
+          title="Thống kê dịch vụ tuỳ chọn"
         >
           {/* Cộng dồn dịch vụ của khách đã tích "đã bay" — bấm là điền vào ô */}
           <FlownServicesHint
@@ -666,6 +628,10 @@ export default function DispatcherReportPage() {
 
 
 
+        {/* Khách mua thêm dịch vụ tại bãi — đứng ngay trên sổ THU CHI vì tiền
+            thu ở đây chảy thẳng vào sổ đó */}
+        <AddServicesCard spot={spot} date={date} />
+
         <CollapseCard
           title="THU CHI & TIỀN NONG"
         >
@@ -737,29 +703,18 @@ export default function DispatcherReportPage() {
         {user.role !== "counter" && <CollectCreate spot={spot} />}
 
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
-        <CollapseCard
-          title="Khách huỷ"
-        >
-          <CancelGuestRows
+        <CollapseCard title="Khách huỷ / dời lịch">
+          <CancelMoveCard
+            spot={spot}
+            date={date}
             bookings={dayBookings}
-            rows={form.cancelledGuests}
-            onChange={(rows) => set("cancelledGuests", rows)}
-            disabled={locked}
+            cancelRows={form.cancelledGuests}
+            moveRows={form.rescheduledGuests}
+            onCancelRows={(rows) => set("cancelledGuests", rows)}
+            onMoveRows={(rows) => set("rescheduledGuests", rows)}
             withCodes={!noTickets}
-          />
-        </CollapseCard>
-
-        <CollapseCard
-          title="Khách dời lịch"
-        >
-          <RescheduleGuestRows
-            bookings={dayBookings}
-            rows={form.rescheduledGuests}
-            onChange={(rows) => set("rescheduledGuests", rows)}
-            minDate={shiftDateKey(date, 1)}
             disabled={locked}
-            onConfirmMove={confirmMove}
-            withCodes={!noTickets}
+            onChanged={() => loadDay(date)}
           />
 
           {!noTickets && (

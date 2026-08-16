@@ -13,14 +13,13 @@ import { formatVND } from "@/lib/pricing";
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
+import { CancelMoveCard } from "../components/CancelMoveCard";
 import { CollectInbox } from "../components/CollectBox";
 import {
   ExpenseRows,
   toExpenseRows,
   type ExpenseRow,
-  CancelGuestRows,
   type BookingPick,
-  RescheduleGuestRows,
   type CancelGuestRow,
   type RescheduleGuestRow,
 } from "../components/rows";
@@ -149,7 +148,8 @@ export default function PilotReportPage() {
     if (!spot) return;
     let alive = true;
     apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
-      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open")))
+      /** Cả khách đã tích "đã bay" cũng hiện: huỷ/dời sau khi lỡ tích là chuyện có thật. */
+      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done")))
       .catch(() => {
         /* ngày chưa có booking thì thôi */
       });
@@ -316,43 +316,7 @@ export default function PilotReportPage() {
    * BOOKING của ngày dời (hiện trong 🛫 Booking bay ngày đó), khoá chống đẩy
    * trùng lưu ngay vào báo cáo.
    */
-  async function confirmMove(index: number) {
-    const row = form.rescheduledGuests[index];
-    if (!row || !row.toDate || row.bookedId) return;
-    const codeCount = parseTicketCodeList(row.codesText).codes.length;
-    const guestTotal = row.guests || codeCount;
-    if (!guestTotal) return;
-    setError(null);
-    setSaving("draft");
-    try {
-      const res = await apiPost<{ booking: { id: string } }>(`/api/baocao/booking?spot=${spot}`, {
-        flightDate: row.toDate,
-        source: "Dời lịch",
-        contactName: row.name,
-        phone: row.phone,
-        bookingCode: "",
-        guestCount: guestTotal,
-        flycam: 0,
-        video360: 0,
-        redFlag: 0,
-        sunset: 0,
-        flagFlight: 0,
-        pickup: row.pickup === "other" ? "other" : "self",
-        pickupNote: row.pickup === "other" ? row.pickupNote : "",
-        expectedTime: row.expectedTime,
-        deposit: 0,
-        remaining: 0,
-        note: `Khách dời từ ngày ${formatDateKeyVN(date)} (phi công ${user?.name ?? ""} báo)${row.codesText.trim() ? ` — vé: ${row.codesText.trim()}` : ""}${row.note ? ` — ${row.note}` : ""}`,
-        rescheduledFrom: date,
-      });
-      set("rescheduledGuests", form.rescheduledGuests.map((r, i) => (i === index ? { ...r, bookedId: res.booking.id } : r)));
-      setSaved({ warnings: [`Đã đẩy nhóm khách vào lịch booking ngày ${formatDateKeyVN(row.toDate)} — nhớ bấm Lưu/Chốt báo cáo.`], submitted: existing?.submitted ?? false });
-    } catch (err: any) {
-      setError(err?.message || "Không đẩy được vào lịch booking");
-    } finally {
-      setSaving(null);
-    }
-  }
+
 
   if (loading || !user || !spot) {
     return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
@@ -604,7 +568,7 @@ export default function PilotReportPage() {
         )}
 
         <Card
-          title="Dịch vụ gia tăng (Add-on services)"
+          title="Thống kê dịch vụ tuỳ chọn (Optional services)"
         >
           {/* Mỗi dịch vụ một khung màu riêng — 3 khung/hàng khi đủ rộng cho 5 dịch vụ nằm gọn 2 hàng */}
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
@@ -936,32 +900,22 @@ export default function PilotReportPage() {
           </div>
         </CollapseCard>
 
-        {/* Khách huỷ / dời — kênh phụ của phi công, gập mặc định như bên điều phối */}
+        {/* Khách huỷ / dời — một thẻ chung, kênh phụ của phi công bên cạnh điều phối */}
         <CollapseCard
-          title={bi("Khách huỷ", "cancellations")}
-          hint="tên – mã book – số khách – nguồn – tiền hoàn – ghi chú"
+          title={bi("Khách huỷ / dời lịch", "cancel / reschedule")}
+          hint="chọn đoàn trong sổ booking · huỷ hoặc dời cả đoàn hay một phần"
         >
-          <CancelGuestRows
+          <CancelMoveCard
+            spot={spot}
+            date={date}
             bookings={dayBookings}
-            rows={form.cancelledGuests}
-            onChange={(rows) => set("cancelledGuests", rows)}
-            disabled={locked}
+            cancelRows={form.cancelledGuests}
+            moveRows={form.rescheduledGuests}
+            onCancelRows={(rows) => set("cancelledGuests", rows)}
+            onMoveRows={(rows) => set("rescheduledGuests", rows)}
             withCodes={spot !== "ha-noi"}
-          />
-        </CollapseCard>
-
-        <CollapseCard
-          title={bi("Khách dời lịch", "reschedules")}
-          hint="tên – SĐT – số lượng – ngày dời – đón – giờ hẹn"
-        >
-          <RescheduleGuestRows
-            bookings={dayBookings}
-            rows={form.rescheduledGuests}
-            onChange={(rows) => set("rescheduledGuests", rows)}
-            minDate={shiftDateKey(date, 1)}
             disabled={locked}
-            onConfirmMove={confirmMove}
-            withCodes={spot !== "ha-noi"}
+            onChanged={() => loadDay(date)}
           />
         </CollapseCard>
 
