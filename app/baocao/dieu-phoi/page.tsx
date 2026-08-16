@@ -32,6 +32,7 @@ import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
+import { RefundCard } from "../components/RefundCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { AddServicesCard } from "../components/AddServicesCard";
 import { CancelMoveCard } from "../components/CancelMoveCard";
@@ -703,6 +704,9 @@ export default function DispatcherReportPage() {
         {user.role !== "counter" && <CollectCreate spot={spot} />}
 
         {/* Các mục ít dùng — gập mặc định, bấm mới xổ */}
+        {/* Lệnh hoàn tiền mình đã lập — theo dõi kế toán chuyển tới đâu */}
+        <RefundCard spot={spot} date={date} />
+
         <CollapseCard title="Khách huỷ / dời lịch">
           <CancelMoveCard
             spot={spot}

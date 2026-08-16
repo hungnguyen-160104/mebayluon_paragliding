@@ -30,6 +30,7 @@ import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
 import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { MoneyBoardCard } from "../components/MoneyBoardCard";
+import { RefundCard } from "../components/RefundCard";
 import { IdScanCard } from "../components/IdScanCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { PilotReportEditor } from "../components/PilotReportEditor";
@@ -639,6 +640,11 @@ function DailyCloseInner() {
           Desktop: đứng cột phải cùng nhóm tiền · Điện thoại: vẫn ở vị trí thứ 7. */}
       <div className="order-7 lg:order-none">
         <CollectCreate spot={spot} />
+      </div>
+
+      {/* Lệnh hoàn tiền khách (huỷ bay) — kế toán chuyển khoản rồi xác nhận */}
+      <div className="order-6 lg:order-none">
+        <RefundCard spot={spot} date={date} canConfirm />
       </div>
 
       {/* Lệnh hoàn tiền khách do huỷ flycam — kế toán chuyển khoản rồi xác nhận */}

@@ -197,6 +197,9 @@ export async function PATCH(req: Request) {
         ticketCodesText: String(body?.ticketCodesText ?? ""),
         refund: Number(body?.refund) || 0,
         refundMethod: body?.refundMethod === "cash" ? "cash" : "transfer",
+        usedServices: String(body?.usedServices ?? ""),
+        usedFee: Number(body?.usedFee) || 0,
+        bankAccount: String(body?.bankAccount ?? ""),
       });
       return NextResponse.json(res);
     }
@@ -256,6 +259,10 @@ export async function PATCH(req: Request) {
             ticketCodesText: String(body?.ticketCodesText ?? ""),
             refund: Math.max(0, Math.round(Number(body?.refund) || 0)),
             refundMethod: body?.refundMethod === "cash" ? "cash" : "transfer",
+            usedServices: String(body?.usedServices ?? ""),
+            usedFee: Math.max(0, Math.round(Number(body?.usedFee) || 0)),
+            bankAccount: String(body?.bankAccount ?? ""),
+            note: String(body?.note ?? ""),
           }
         : undefined,
     );

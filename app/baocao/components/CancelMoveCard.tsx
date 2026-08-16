@@ -65,7 +65,19 @@ export function CancelMoveCard({
    * số cuối, không ai biết vì sao hoàn thiếu — giờ ghi rõ ra một ô.
    */
   const [usedFee, setUsedFee] = useState(0);
+  /** Khách đã dùng NHỮNG GÌ — ghi ra để sau còn giải thích vì sao thu/hoàn thế. */
+  const [usedServices, setUsedServices] = useState("");
   const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
+  /** Hoàn qua chuyển khoản thì phải có số tài khoản khách nhận. */
+  const [bankAccount, setBankAccount] = useState("");
+  /**
+   * DỜI LỊCH cũng phát sinh phí (xe đã chạy, flycam đã quay) nhưng KHÔNG hoàn —
+   * khách phải trả thêm phần đó. Thu ngay như mọi khoản thu khác: TM vào tiền
+   * người trực đang giữ, CK vào TK công ty kèm mã giao dịch.
+   */
+  const [feeCash, setFeeCash] = useState(0);
+  const [feeTransfer, setFeeTransfer] = useState(0);
+  const [feeCode, setFeeCode] = useState("");
   const [toDate, setToDate] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -74,6 +86,11 @@ export function CancelMoveCard({
 
   const picked = bookings.find((b) => b.id === pickId) ?? null;
   const whole = picked ? guests >= picked.guestCount : false;
+  /** Dòng nào đang mở bảng chi tiết để sửa. */
+  const [editing, setEditing] = useState<{ kind: "cancel" | "move"; index: number } | null>(null);
+  /** Chỉ liệt kê dòng ĐÃ CÓ SỐ LIỆU — dòng trống mặc định không tính. */
+  const usedCancel = cancelRows.map((row, i) => ({ row, i })).filter((x) => x.row.name.trim() || x.row.guests > 0);
+  const usedMove = moveRows.map((row, i) => ({ row, i })).filter((x) => x.row.name.trim() || x.row.guests > 0);
 
   function pick(id: string) {
     setPickId(id);
@@ -82,6 +99,11 @@ export function CancelMoveCard({
     // Mặc định hoàn ĐÚNG SỐ KHÁCH ĐÃ TRẢ; trừ phí dịch vụ đã dùng thì gõ ô dưới
     setRefund(b?.deposit ?? 0);
     setUsedFee(0);
+    setUsedServices("");
+    setBankAccount("");
+    setFeeCash(0);
+    setFeeTransfer(0);
+    setFeeCode("");
     setCodes("");
     setNote("");
     setError(null);
@@ -99,6 +121,11 @@ export function CancelMoveCard({
     setCodes("");
     setRefund(0);
     setUsedFee(0);
+    setUsedServices("");
+    setBankAccount("");
+    setFeeCash(0);
+    setFeeTransfer(0);
+    setFeeCode("");
     setToDate("");
     setNote("");
   }
@@ -108,6 +135,12 @@ export function CancelMoveCard({
     if (guests <= 0) return setError("Số khách phải lớn hơn 0");
     if (guests > picked.guestCount) return setError(`Đoàn này chỉ có ${picked.guestCount} khách`);
     if (kind === "move" && !toDate) return setError("Chọn ngày bay mới");
+    if (kind === "cancel" && refund > 0 && refundMethod === "transfer" && !bankAccount.trim()) {
+      return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
+    }
+    if (kind === "move" && feeTransfer > 0 && !feeCode.trim()) {
+      return setError("Thu phí bằng chuyển khoản phải ghi mã giao dịch");
+    }
     setBusy(true);
     setError(null);
     try {
@@ -126,6 +159,10 @@ export function CancelMoveCard({
                 ticketCodesText: codes,
                 refund,
                 refundMethod,
+                usedServices,
+                usedFee,
+                bankAccount,
+                note,
               }
             : { toDate }),
         });
@@ -136,8 +173,27 @@ export function CancelMoveCard({
           mode: kind,
           guests,
           ...(kind === "cancel"
-            ? { ticketIssued: Boolean(withCodes && picked.ticketIssued), ticketCodesText: codes, refund, refundMethod }
+            ? {
+                ticketIssued: Boolean(withCodes && picked.ticketIssued),
+                ticketCodesText: codes,
+                refund,
+                refundMethod,
+                usedServices,
+                usedFee,
+                bankAccount,
+              }
             : { toDate }),
+        });
+      }
+
+      /** Dời lịch có phí phát sinh: thu luôn vào booking (khách trả, không hoàn). */
+      if (kind === "move" && feeCash + feeTransfer > 0) {
+        await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+          id: picked.id,
+          action: "collect",
+          kind: "deposit",
+          cash: feeCash,
+          transfers: feeTransfer > 0 ? [{ amount: feeTransfer, code: feeCode }] : [],
         });
       }
 
@@ -192,7 +248,8 @@ export function CancelMoveCard({
       setDone(
         kind === "cancel"
           ? `✓ Đã huỷ ${whole ? "cả đoàn" : `${guests}/${picked.guestCount} khách`} — ${name}${refund > 0 ? `, hoàn ${formatVND(refund)}` : ""}.`
-          : `✓ Đã dời ${whole ? "cả đoàn" : `${guests}/${picked.guestCount} khách`} — ${name} sang ${formatDateKeyVN(toDate)}.`,
+          : `✓ Đã dời ${whole ? "cả đoàn" : `${guests}/${picked.guestCount} khách`} — ${name} sang ${formatDateKeyVN(toDate)}` +
+            (feeCash + feeTransfer > 0 ? `, thu phí phát sinh ${formatVND(feeCash + feeTransfer)}.` : "."),
       );
       reset();
       onChanged?.();
@@ -311,6 +368,15 @@ export function CancelMoveCard({
                 </div>
               ))}
 
+            {/* Khách đã dùng gì — dùng cho cả huỷ (trừ vào hoàn) lẫn dời (khách trả thêm) */}
+            <TextInput
+              value={usedServices}
+              onChange={(e) => setUsedServices(e.target.value)}
+              placeholder="Dịch vụ đã dùng · VD: xe đón 2 chiều, đã quay flycam 1 khách"
+              disabled={disabled}
+              className="mt-1.5 h-9 rounded-lg text-xs"
+            />
+
             {kind === "cancel" ? (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-slate-700">Phí dịch vụ đã dùng</span>
@@ -347,19 +413,70 @@ export function CancelMoveCard({
                   Khách đã trả {formatVND(picked.deposit)}
                   {usedFee > 0 ? ` − phí đã dùng ${formatVND(usedFee)}` : ""} → hoàn {formatVND(refund)}
                 </span>
+                {refund > 0 && refundMethod === "transfer" && (
+                  <>
+                    <TextInput
+                      value={bankAccount}
+                      onChange={(e) => setBankAccount(e.target.value)}
+                      placeholder="Số TK khách nhận · số TK – ngân hàng – tên chủ TK"
+                      disabled={disabled}
+                      className="h-9 w-full rounded-lg text-xs"
+                    />
+                    <span className="w-full text-[11px] font-medium text-rose-700">
+                      Lệnh hoàn sẽ nhảy sang trang KẾ TOÁN để chuyển khoản và xác nhận.
+                    </span>
+                  </>
+                )}
+                {refund > 0 && refundMethod === "cash" && (
+                  <span className="w-full text-[11px] text-slate-500">
+                    Bạn trả tiền mặt tại chỗ — số này trừ vào tiền bạn đang giữ.
+                  </span>
+                )}
               </div>
             ) : (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold text-slate-700">Bay lại ngày</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  min={shiftDateKey(date, 1)}
-                  disabled={disabled}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm"
-                />
-              </div>
+              <>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-700">Bay lại ngày</span>
+                  <input
+                    type="date"
+                    value={toDate}
+                    min={shiftDateKey(date, 1)}
+                    disabled={disabled}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                  />
+                </div>
+                {/* Dời lịch KHÔNG hoàn tiền, nhưng phí đã phát sinh thì khách trả */}
+                <div className="mt-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2">
+                  <div className="text-[11px] font-semibold text-emerald-900">
+                    Phí đã phát sinh — khách trả thêm (bỏ trống nếu không thu)
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-emerald-800">TM</span>
+                    <span className="w-28">
+                      <MoneyInput value={feeCash} onChange={setFeeCash} />
+                    </span>
+                    <span className="text-xs font-bold text-indigo-800">CK</span>
+                    <span className="w-28">
+                      <MoneyInput value={feeTransfer} onChange={setFeeTransfer} />
+                    </span>
+                    {feeTransfer > 0 && (
+                      <TextInput
+                        value={feeCode}
+                        onChange={(e) => setFeeCode(e.target.value)}
+                        placeholder="Mã giao dịch"
+                        disabled={disabled}
+                        className="h-8 w-36 rounded-lg text-xs"
+                      />
+                    )}
+                    {feeCash + feeTransfer > 0 && (
+                      <span className="text-[11px] font-semibold text-emerald-800">
+                        thu {formatVND(feeCash + feeTransfer)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             <TextInput
@@ -381,37 +498,92 @@ export function CancelMoveCard({
         )}
       </div>
 
-      {/* ---- Danh sách đã khai: vẫn sửa tay được, và ghi được nhóm không có trong sổ ---- */}
-      <details className="rounded-xl border border-slate-200 bg-white p-2">
-        <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-          Danh sách khách huỷ ({cancelRows.filter((r) => r.name.trim() || r.guests > 0).length}) — bấm để sửa tay
-        </summary>
-        <div className="mt-2">
-          <CancelGuestRows
-            rows={cancelRows}
-            onChange={onCancelRows}
-            disabled={disabled}
-            withCodes={withCodes}
-            bookings={bookings}
-          />
+      {/* ---- ĐÃ KHAI TRONG NGÀY: chỉ liệt kê một dòng, bấm Sửa mới mở bảng chi tiết ---- */}
+      {(usedCancel.length > 0 || usedMove.length > 0) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-2">
+          <div className="text-xs font-bold text-slate-700">Đã khai trong ngày</div>
+          <ul className="mt-1 divide-y divide-slate-100">
+            {usedCancel.map((r) => (
+              <li key={`c-${r.i}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1 text-xs">
+                <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 font-bold text-rose-900">huỷ</span>
+                <span className="min-w-0 flex-1 truncate text-slate-700">
+                  {r.row.name || "khách"} · {r.row.guests} khách
+                  {r.row.refund ? ` · hoàn ${formatVND(r.row.refund)} ${r.row.refundMethod === "cash" ? "TM" : "CK"}` : ""}
+                  {r.row.usedFee ? ` · trừ phí ${formatVND(r.row.usedFee)}` : ""}
+                  {r.row.codesText ? ` · vé ${r.row.codesText}` : ""}
+                  {r.row.note ? ` · ${r.row.note}` : ""}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 shrink-0 bg-white px-2 text-[11px]"
+                  disabled={disabled}
+                  onClick={() => setEditing({ kind: "cancel", index: r.i })}
+                >
+                  ✎ Sửa
+                </Button>
+              </li>
+            ))}
+            {usedMove.map((r) => (
+              <li key={`m-${r.i}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1 text-xs">
+                <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 font-bold text-amber-900">dời</span>
+                <span className="min-w-0 flex-1 truncate text-slate-700">
+                  {r.row.name || "khách"} · {r.row.guests} khách
+                  {r.row.toDate ? ` → ${formatDateKeyVN(r.row.toDate)}` : ""}
+                  {r.row.codesText ? ` · vé ${r.row.codesText}` : ""}
+                  {r.row.note ? ` · ${r.row.note}` : ""}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 shrink-0 bg-white px-2 text-[11px]"
+                  disabled={disabled}
+                  onClick={() => setEditing({ kind: "move", index: r.i })}
+                >
+                  ✎ Sửa
+                </Button>
+              </li>
+            ))}
+          </ul>
         </div>
-      </details>
+      )}
 
-      <details className="rounded-xl border border-slate-200 bg-white p-2">
-        <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-          Danh sách khách dời lịch ({moveRows.filter((r) => r.name.trim() || r.guests > 0).length}) — bấm để sửa tay
-        </summary>
-        <div className="mt-2">
-          <RescheduleGuestRows
-            rows={moveRows}
-            onChange={onMoveRows}
-            minDate={shiftDateKey(date, 1)}
-            disabled={disabled}
-            withCodes={withCodes}
-            bookings={bookings}
-          />
+      {/* Bấm Sửa mới hiện bảng chi tiết của ĐÚNG dòng đó — khỏi cuộn qua cả danh sách */}
+      {editing && (
+        <div className="rounded-xl border-2 border-sky-300 bg-sky-50/40 p-2">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs font-bold text-sky-900">
+              Sửa chi tiết — khách {editing.kind === "cancel" ? "huỷ" : "dời lịch"}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-7 bg-white px-2 text-[11px]"
+              onClick={() => setEditing(null)}
+            >
+              ✓ Xong
+            </Button>
+          </div>
+          {editing.kind === "cancel" ? (
+            <CancelGuestRows
+              rows={[cancelRows[editing.index]]}
+              onChange={(rows) => onCancelRows(cancelRows.map((r, i) => (i === editing.index ? rows[0] : r)))}
+              disabled={disabled}
+              withCodes={withCodes}
+              bookings={bookings}
+            />
+          ) : (
+            <RescheduleGuestRows
+              rows={[moveRows[editing.index]]}
+              onChange={(rows) => onMoveRows(moveRows.map((r, i) => (i === editing.index ? rows[0] : r)))}
+              minDate={shiftDateKey(date, 1)}
+              disabled={disabled}
+              withCodes={withCodes}
+              bookings={bookings}
+            />
+          )}
         </div>
-      </details>
+      )}
     </div>
   );
 }

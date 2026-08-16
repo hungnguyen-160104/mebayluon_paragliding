@@ -76,6 +76,7 @@ import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
 import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
 import { BaobayFlycamCancel } from "@/models/BaobayFlycamCancel.model";
+import { BaobayRefund } from "@/models/BaobayRefund.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
@@ -2675,7 +2676,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   await connectDB();
   const spot = normalizeSpot(spotRaw);
 
-  const [collects, pilots, dispatchers, cameramen, commissionBookings, flycamRefunds] = await Promise.all([
+  const [collects, pilots, dispatchers, cameramen, commissionBookings, flycamRefunds, refunds] = await Promise.all([
     BaobayCollect.find({ spot, date }).lean<any[]>(),
     PilotDailyReport.find({ spot, date }).select("username pilotName expenses").lean<any[]>(),
     DispatcherDailyReport.find({ spot, date }).select("username staffName expenses").lean<any[]>(),
@@ -2686,6 +2687,8 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       .lean<any[]>(),
     // Hoàn tiền khách vì huỷ flycam
     BaobayFlycamCancel.find({ spot, date, status: { $in: ["done", "paid"] } }).lean<any[]>(),
+    // Hoàn tiền khách (huỷ bay, huỷ dịch vụ) đã thực hiện xong
+    BaobayRefund.find({ spot, date, status: { $in: ["done", "paid"] } }).lean<any[]>(),
   ]);
 
   /**
@@ -2870,6 +2873,30 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       continue;
     }
     const p = personOf(f.pilotUsername, f.pilotName, "pilot");
+    p.items.push({ ...item, amount: -item.amount });
+    p.total -= item.amount;
+  }
+
+  /**
+   * HOÀN TIỀN KHÁCH: trả tiền mặt thì người trực rút từ tiền đang giữ ⇒ trừ
+   * vào phần họ phải nộp; chuyển khoản (kế toán đã chuyển) thì công ty chi.
+   */
+  for (const r of refunds) {
+    const item: MoneyBoardItem = {
+      label: `hoàn khách ${r.guestName || ""}${r.reason ? ` — ${r.reason}` : ""}`,
+      bookingCode: r.bookingCode || "",
+      guests: r.guests || 0,
+      amount: Number(r.amount) || 0,
+      transferCode: r.transferCode || "",
+      from: "hoàn tiền",
+      daySeq: 0,
+      by: r.createdByName || "",
+    };
+    if (r.method === "transfer") {
+      companySpendItems.push(item);
+      continue;
+    }
+    const p = personOf(r.createdByUsername, r.createdByName, "");
     p.items.push({ ...item, amount: -item.amount });
     p.total -= item.amount;
   }
@@ -3861,6 +3888,146 @@ export async function addBookingServices(
   return { booking: toBookingDTO(updated), added: addedCount, charge };
 }
 
+/* ================================================================== */
+/* Lệnh hoàn tiền cho khách                                            */
+/* ================================================================== */
+
+export type RefundDTO = {
+  id: string;
+  date: string;
+  guestName: string;
+  bookingCode?: string;
+  guests: number;
+  paid: number;
+  usedServices?: string;
+  usedFee: number;
+  amount: number;
+  method: "cash" | "transfer";
+  bankAccount?: string;
+  status: "done" | "pending" | "paid";
+  reason?: string;
+  note?: string;
+  createdByName: string;
+  paidBy?: string;
+  transferCode?: string;
+  createdAt: string;
+};
+
+function toRefundDTO(d: any): RefundDTO {
+  return {
+    id: String(d._id),
+    date: d.date,
+    guestName: d.guestName || "",
+    bookingCode: d.bookingCode || undefined,
+    guests: d.guests || 0,
+    paid: d.paid || 0,
+    usedServices: d.usedServices || undefined,
+    usedFee: d.usedFee || 0,
+    amount: d.amount || 0,
+    method: d.method === "cash" ? "cash" : "transfer",
+    bankAccount: d.bankAccount || undefined,
+    status: d.status,
+    reason: d.reason || undefined,
+    note: d.note || undefined,
+    createdByName: d.createdByName || "",
+    paidBy: d.paidBy || undefined,
+    transferCode: d.transferCode || undefined,
+    createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
+  };
+}
+
+/**
+ * Lập LỆNH HOÀN TIỀN. Tiền mặt xong ngay tại bãi; chuyển khoản thì nằm chờ kế
+ * toán — xem chú thích ở models/BaobayRefund.
+ */
+export async function createRefund(
+  session: BaobaySession,
+  spotRaw: string,
+  input: {
+    date: string;
+    bookingId?: string;
+    guestName: string;
+    bookingCode?: string;
+    guests?: number;
+    paid?: number;
+    usedServices?: string;
+    usedFee?: number;
+    amount: number;
+    method: "cash" | "transfer";
+    bankAccount?: string;
+    reason?: string;
+  },
+): Promise<RefundDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const amount = Math.max(0, Math.round(input.amount || 0));
+  if (amount <= 0) throw new BaobayError("Số tiền hoàn phải lớn hơn 0", 400);
+
+  const doc = (
+    await BaobayRefund.create({
+      spot,
+      date: isDateKey(input.date) ? input.date : todayInVN(),
+      bookingId: input.bookingId && mongoose.Types.ObjectId.isValid(input.bookingId) ? input.bookingId : undefined,
+      guestName: input.guestName || "",
+      bookingCode: input.bookingCode || "",
+      guests: Math.max(0, Math.round(input.guests ?? 0)),
+      paid: Math.max(0, Math.round(input.paid ?? 0)),
+      usedServices: (input.usedServices ?? "").trim(),
+      usedFee: Math.max(0, Math.round(input.usedFee ?? 0)),
+      amount,
+      method: input.method === "cash" ? "cash" : "transfer",
+      bankAccount: (input.bankAccount ?? "").trim(),
+      /** Tiền mặt là xong ngay; chuyển khoản phải qua tay kế toán. */
+      status: input.method === "cash" ? "done" : "pending",
+      reason: (input.reason ?? "").trim(),
+      createdByUsername: session.username,
+      createdByName: session.name,
+    })
+  ).toObject();
+  return toRefundDTO(doc);
+}
+
+/** Kế toán xác nhận đã chuyển tiền hoàn — sửa được số và ghi chú trước khi chốt. */
+export async function payRefund(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { amount?: number; transferCode: string; note?: string },
+): Promise<RefundDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const code = (input.transferCode ?? "").trim();
+  if (!code) throw new BaobayError("Ghi mã giao dịch đã chuyển cho khách", 400);
+
+  const set: Record<string, unknown> = {
+    status: "paid",
+    paidAt: new Date(),
+    paidBy: session.name || session.username,
+    transferCode: code,
+  };
+  if (input.amount !== undefined) {
+    const amount = Math.max(0, Math.round(input.amount));
+    if (amount <= 0) throw new BaobayError("Số tiền hoàn phải lớn hơn 0", 400);
+    set.amount = amount;
+  }
+  if (input.note !== undefined) set.note = String(input.note).trim();
+
+  const doc = await BaobayRefund.findOneAndUpdate({ _id: id, spot, status: "pending" }, { $set: set }, { new: true }).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy lệnh hoàn đang chờ", 404);
+  return toRefundDTO(doc);
+}
+
+export async function listRefunds(spotRaw: string, date: string): Promise<RefundDTO[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  /** Ngày đang xem + MỌI lệnh còn chờ của ngày trước — tiền của khách không được quên. */
+  const docs = await BaobayRefund.find({ spot, $or: [{ date }, { status: "pending" }] })
+    .sort({ createdAt: -1 })
+    .limit(60)
+    .lean<any[]>();
+  return docs.map(toRefundDTO);
+}
+
 /** Các khoản đã thu của một booking — để điều phối/kế toán soát và sửa. */
 export async function listBookingCollects(spotRaw: string, bookingId: string): Promise<CollectDTO[]> {
   await connectDB();
@@ -4027,6 +4194,9 @@ export async function splitBooking(
     ticketCodesText?: string;
     refund?: number;
     refundMethod?: "cash" | "transfer";
+    usedServices?: string;
+    usedFee?: number;
+    bankAccount?: string;
   },
 ): Promise<{ origin: BookingDTO; part: BookingDTO }> {
   await connectDB();
@@ -4129,6 +4299,23 @@ export async function splitBooking(
       : {}),
     rescheduledFrom: input.mode === "move" ? [current.flightDate] : [],
   });
+
+  if (input.mode === "cancel" && refund > 0) {
+    await createRefund(session, spot, {
+      date: current.flightDate,
+      bookingId: String(current._id),
+      guestName: current.contactName || current.phone || "khách",
+      bookingCode: current.bookingCode || "",
+      guests,
+      paid: current.deposit || 0,
+      usedServices: (input as any).usedServices ?? "",
+      usedFee: (input as any).usedFee ?? 0,
+      amount: refund,
+      method: input.refundMethod === "cash" ? "cash" : "transfer",
+      bankAccount: (input as any).bankAccount ?? "",
+      reason: `huỷ ${guests} khách trong đoàn`,
+    });
+  }
 
   const origin = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, { $set: originSet }, { new: true }).lean<any>();
   pushSheetInBackground(() => pushBookingRow(origin), BaobayBooking, origin._id);
@@ -4271,7 +4458,17 @@ export async function updateBookingStatus(
    * bao nhiêu, hoàn bằng gì. Booking chưa phát sinh tiền thì bỏ trống hết — huỷ
    * là xong, khỏi hỏi tiền.
    */
-  cancel?: { ticketIssued?: boolean; ticketCodesText?: string; refund?: number; refundMethod?: "cash" | "transfer" },
+  cancel?: {
+    ticketIssued?: boolean;
+    ticketCodesText?: string;
+    refund?: number;
+    refundMethod?: "cash" | "transfer";
+    /** Khách đã dùng dịch vụ gì và bị thu lại bao nhiêu — ghi để sau còn tra. */
+    usedServices?: string;
+    usedFee?: number;
+    bankAccount?: string;
+    note?: string;
+  },
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -4315,6 +4512,14 @@ export async function updateBookingStatus(
         refundMethod: refund > 0 ? (cancel?.refundMethod === "cash" ? "cash" : "transfer") : undefined,
         // Huỷ rồi thì không còn gì phải thu nữa
         remaining: 0,
+        note: [
+          current.note,
+          cancel?.usedServices?.trim() ? `đã dùng: ${cancel.usedServices.trim()}` : "",
+          (cancel?.usedFee ?? 0) > 0 ? `thu lại phí đã dùng ${(cancel!.usedFee as number).toLocaleString("vi-VN")} đ` : "",
+          cancel?.note?.trim(),
+        ]
+          .filter(Boolean)
+          .join(" · "),
       },
     };
   } else {
@@ -4327,10 +4532,33 @@ export async function updateBookingStatus(
     };
   }
 
+  const refundNow = action === "cancel" ? Math.max(0, Math.round(cancel?.refund || 0)) : 0;
   const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot, status: "open" }, update, {
     new: true,
   }).lean<any>();
   if (!doc) throw new BaobayError("Booking vừa được người khác cập nhật", 409);
+
+  /**
+   * Có hoàn tiền thì LẬP LỆNH HOÀN luôn: chuyển khoản sẽ nằm chờ ở trang kế
+   * toán cho tới khi chuyển xong, tiền mặt thì trừ ngay vào phần người trực
+   * đang giữ. Ghi số vào booking thôi là không đủ — không ai biết ai phải làm.
+   */
+  if (refundNow > 0) {
+    await createRefund(session, spot, {
+      date: doc.flightDate,
+      bookingId: String(doc._id),
+      guestName: doc.contactName || doc.phone || "khách",
+      bookingCode: doc.bookingCode || "",
+      guests: doc.guestCount || 0,
+      paid: doc.deposit || 0,
+      usedServices: cancel?.usedServices ?? "",
+      usedFee: cancel?.usedFee ?? 0,
+      amount: refundNow,
+      method: cancel?.refundMethod === "cash" ? "cash" : "transfer",
+      bankAccount: cancel?.bankAccount ?? "",
+      reason: "huỷ bay",
+    });
+  }
 
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });

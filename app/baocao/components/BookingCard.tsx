@@ -1070,6 +1070,11 @@ function CancelBookingControl({
   const [codes, setCodes] = useState("");
   const [refund, setRefund] = useState(paid);
   const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
+  /** Khách đã dùng gì và bị thu lại bao nhiêu — giống hệt thẻ Khách huỷ bên dưới. */
+  const [usedServices, setUsedServices] = useState("");
+  const [usedFee, setUsedFee] = useState(0);
+  const [bankAccount, setBankAccount] = useState("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1077,6 +1082,9 @@ function CancelBookingControl({
     if (hasTicketFlow && ticketIssued && !codes.trim()) return setError("Đã xuất vé thì phải ghi mã vé thu hồi");
     if (scope === "part" && (partGuests < 1 || partGuests >= booking.guestCount)) {
       return setError(`Số khách huỷ phải từ 1 đến ${booking.guestCount - 1} (huỷ hết thì chọn “cả đoàn”)`);
+    }
+    if (refund > 0 && refundMethod === "transfer" && !bankAccount.trim()) {
+      return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
     }
     setBusy(true);
     setError(null);
@@ -1091,6 +1099,10 @@ function CancelBookingControl({
           ticketCodesText: codes,
           refund: paid > 0 ? refund : 0,
           refundMethod,
+          usedServices,
+          usedFee,
+          bankAccount,
+          note,
         });
         onDone(
           `✓ Đã huỷ ${partGuests} khách trong đoàn (còn ${booking.guestCount - partGuests} khách bay)` +
@@ -1104,6 +1116,10 @@ function CancelBookingControl({
           ticketCodesText: codes,
           refund: paid > 0 ? refund : 0,
           refundMethod,
+          usedServices,
+          usedFee,
+          bankAccount,
+          note,
         });
         onDone(
           paid > 0 && refund > 0
@@ -1129,8 +1145,12 @@ function CancelBookingControl({
           setRefund(paid);
           setScope("all");
           setPartGuests(1);
-          setTicketIssued(false);
+          setTicketIssued(Boolean(booking.ticketIssued));
           setCodes("");
+          setUsedServices("");
+          setUsedFee(0);
+          setBankAccount("");
+          setNote("");
           setRefundMethod("transfer");
           setError(null);
           setOpen(true);
@@ -1216,12 +1236,35 @@ function CancelBookingControl({
         </>
       )}
 
+      <TextInput
+        value={usedServices}
+        onChange={(e) => setUsedServices(e.target.value)}
+        placeholder="Dịch vụ đã dùng · xe đón, flycam đã quay…"
+        className="h-8 rounded-lg text-xs"
+      />
       {paid > 0 ? (
         <>
           <div className="text-[11px] leading-tight text-slate-600">
-            Khách đã trả {paid.toLocaleString("vi-VN")} đ — hoàn lại:
+            Khách đã trả {paid.toLocaleString("vi-VN")} đ — trừ phí đã dùng rồi hoàn phần còn lại:
           </div>
-          <MoneyInput value={refund} onChange={setRefund} />
+          <div className="flex items-center gap-1">
+            <span className="w-10 shrink-0 text-[11px] font-semibold text-slate-600">Phí</span>
+            <span className="min-w-0 flex-1">
+              <MoneyInput
+                value={usedFee}
+                onChange={(v) => {
+                  setUsedFee(v);
+                  setRefund(Math.max(0, paid - v));
+                }}
+              />
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-10 shrink-0 text-[11px] font-semibold text-slate-600">Hoàn</span>
+            <span className="min-w-0 flex-1">
+              <MoneyInput value={refund} onChange={setRefund} />
+            </span>
+          </div>
           <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
@@ -1243,10 +1286,18 @@ function CancelBookingControl({
               </button>
             ))}
           </div>
+          {refund > 0 && refundMethod === "transfer" && (
+            <TextInput
+              value={bankAccount}
+              onChange={(e) => setBankAccount(e.target.value)}
+              placeholder="Số TK khách nhận…"
+              className="h-8 rounded-lg text-xs"
+            />
+          )}
           <div className="text-[11px] leading-tight text-slate-600">
             {refundMethod === "transfer"
-              ? "CK: tiền hoàn ra từ TK CÔNG TY."
-              : "TM: nhân viên chi tại chỗ — ghi thêm khoản chi này vào sổ THU CHI của mình."}
+              ? "CK: lệnh hoàn nhảy sang trang KẾ TOÁN để chuyển và xác nhận."
+              : "TM: bạn chi tại chỗ — số này trừ vào tiền bạn đang giữ."}
           </div>
         </>
       ) : (
@@ -1254,6 +1305,14 @@ function CancelBookingControl({
           Booking chưa phát sinh cọc hay thanh toán — không cần hoàn tiền.
         </div>
       )}
+
+      {/* Ghi chú: vì sao huỷ — thẻ bên dưới có, ở đây trước không có nên mất thông tin */}
+      <TextInput
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Ghi chú · lý do huỷ…"
+        className="h-8 rounded-lg text-xs"
+      />
 
       {error && <div className="text-[11px] font-medium leading-tight text-rose-700">{error}</div>}
       <div className="flex gap-1">
@@ -1296,7 +1355,16 @@ export function BookingTodayBanner({
   /** Danh sách dài thì gập lại còn 10 dòng. */
   const [showAll, setShowAll] = useState(false);
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
-  const [moving, setMoving] = useState<{ id: string; toDate: string; guests?: number } | null>(null);
+  const [moving, setMoving] = useState<{
+    id: string;
+    toDate: string;
+    guests?: number;
+    /** Phí đã phát sinh khi dời (xe đã chạy…) — khách TRẢ THÊM, không hoàn. */
+    feeCash?: number;
+    feeTransfer?: number;
+    feeCode?: string;
+    note?: string;
+  } | null>(null);
   /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
   const [collectDone, setCollectDone] = useState<string | null>(null);
 
@@ -1368,9 +1436,32 @@ export function BookingTodayBanner({
     cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
   ].filter(Boolean);
   /** Dời lịch: cả đoàn thì đổi ngày tại chỗ, một phần thì tách nhóm sang ngày mới. */
-  async function moveBooking(b: BookingDTO, m: { toDate: string; guests?: number }) {
+  async function moveBooking(
+    b: BookingDTO,
+    m: { toDate: string; guests?: number; feeCash?: number; feeTransfer?: number; feeCode?: string; note?: string },
+  ) {
     const part = m.guests ?? 0;
-    if (part <= 0) return act(b, "move", m.toDate);
+    const fee = (m.feeCash ?? 0) + (m.feeTransfer ?? 0);
+    if (fee > 0 && (m.feeTransfer ?? 0) > 0 && !m.feeCode?.trim()) {
+      setError("Thu phí bằng chuyển khoản phải ghi mã giao dịch");
+      return;
+    }
+    /** Thu phí phát sinh trước, rồi mới đổi ngày — thu xong booking mới đổi chỗ. */
+    const collectFee = async () => {
+      if (fee <= 0) return;
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: b.id,
+        action: "collect",
+        kind: "deposit",
+        cash: m.feeCash ?? 0,
+        transfers: (m.feeTransfer ?? 0) > 0 ? [{ amount: m.feeTransfer, code: m.feeCode }] : [],
+      });
+    };
+    if (part <= 0) {
+      await collectFee();
+      return act(b, "move", m.toDate);
+    }
+    await collectFee();
     setBusy(b.id);
     setError(null);
     try {
@@ -1474,6 +1565,34 @@ export function BookingTodayBanner({
                   min={shiftDateKey(todayInVN(), 1)}
                   onChange={(e) => setMoving({ ...moving, toDate: e.target.value })}
                   className="h-8 flex-1 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                />
+                {/* Dời lịch có thể phát sinh phí (xe đã chạy) — khách trả thêm, không hoàn */}
+                <div className="flex w-full flex-wrap items-center gap-1">
+                  <span className="text-[11px] font-semibold text-emerald-800">Phí TM</span>
+                  <span className="w-20">
+                    <MoneyInput value={moving.feeCash ?? 0} onChange={(v) => setMoving({ ...moving, feeCash: v })} />
+                  </span>
+                  <span className="text-[11px] font-semibold text-indigo-800">CK</span>
+                  <span className="w-20">
+                    <MoneyInput
+                      value={moving.feeTransfer ?? 0}
+                      onChange={(v) => setMoving({ ...moving, feeTransfer: v })}
+                    />
+                  </span>
+                </div>
+                {(moving.feeTransfer ?? 0) > 0 && (
+                  <TextInput
+                    value={moving.feeCode ?? ""}
+                    onChange={(e) => setMoving({ ...moving, feeCode: e.target.value })}
+                    placeholder="Mã giao dịch"
+                    className="h-7 w-full rounded-lg text-[11px]"
+                  />
+                )}
+                <TextInput
+                  value={moving.note ?? ""}
+                  onChange={(e) => setMoving({ ...moving, note: e.target.value })}
+                  placeholder="Ghi chú · lý do dời…"
+                  className="h-7 w-full rounded-lg text-[11px]"
                 />
                 <Button
                   type="button"
