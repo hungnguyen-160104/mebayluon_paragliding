@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { isDateKey } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { wearsRole } from "@/lib/baobay/roles";
 
 import { dispatcherReportSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
@@ -40,9 +41,17 @@ export async function GET(req: Request) {
   const date = params.get("date");
 
   // Kế toán: danh sách báo cáo cả ngày để sửa trực tiếp trên trang Chốt ngày
-  if (auth.role === "accountant") {
-    if (!date || params.get("all") !== "1") {
-      return NextResponse.json({ message: "Kế toán dùng ?date=YYYY-MM-DD&all=1" }, { status: 400 });
+  /**
+   * Rẽ nhánh theo YÊU CẦU (`all=1`) chứ không theo vai chính của người gọi:
+   * người KIÊM NHIỆM vừa là kế toán vừa là nhân sự nhập liệu, hỏi cả ngày thì
+   * trả cả ngày, hỏi báo cáo của mình thì trả báo cáo của mình.
+   */
+  if (params.get("all") === "1") {
+    if (!wearsRole(auth, "accountant")) {
+      return NextResponse.json({ message: "Chỉ kế toán xem được cả ngày" }, { status: 403 });
+    }
+    if (!date) {
+      return NextResponse.json({ message: "Xem cả ngày phải kèm ?date=YYYY-MM-DD" }, { status: 400 });
     }
     const [reports, staff] = await Promise.all([
       listDispatcherReportsOfDate(spot, date),
@@ -88,10 +97,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (auth.role === "accountant") {
-      const targetUsername = String(body?.targetUsername ?? "").trim();
-      if (!targetUsername) {
-        return NextResponse.json({ message: "Kế toán sửa hộ phải gửi kèm targetUsername" }, { status: 400 });
+    // Có targetUsername = sửa hộ người khác (chỉ kế toán); không có = báo cáo của chính mình
+    const targetUsername = String(body?.targetUsername ?? "").trim();
+    if (targetUsername) {
+      if (!wearsRole(auth, "accountant")) {
+        return NextResponse.json({ message: "Chỉ kế toán mới sửa hộ được" }, { status: 403 });
       }
       const { report, warnings } = await upsertDispatcherReportByAccountant(auth, targetUsername, parsed.data);
       return NextResponse.json({ report, warnings });

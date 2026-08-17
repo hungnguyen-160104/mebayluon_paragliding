@@ -67,12 +67,20 @@ export function StaffReportEditor({
     ])
       .then(([d, c]) => {
         if (!alive) return;
-        setDispatchers(d.reports);
-        setCameramen(c.reports);
+        /**
+         * Luôn rơi về mảng rỗng nếu máy chủ trả hình dạng khác: một lần API đổi
+         * nhánh theo vai (quản trị kiêm kế toán) là `reports` thành undefined,
+         * `.some()` nổ ngay giữa lúc dựng trang và cả trang Chốt ngày trắng bốc
+         * kèm "Application error". Trắng cả trang vì một ô dữ liệu thiếu là quá đắt.
+         */
+        const dReports = Array.isArray(d.reports) ? d.reports : [];
+        const cReports = Array.isArray(c.reports) ? c.reports : [];
+        setDispatchers(dReports);
+        setCameramen(cReports);
         setDispatcherStaff(d.staff ?? []);
         setCameramanStaff(c.staff ?? []);
-        setAddedDp((prev) => prev.filter((u) => !d.reports.some((r) => r.username === u)));
-        setAddedCm((prev) => prev.filter((u) => !c.reports.some((r) => r.username === u)));
+        setAddedDp((prev) => prev.filter((u) => !dReports.some((r) => r.username === u)));
+        setAddedCm((prev) => prev.filter((u) => !cReports.some((r) => r.username === u)));
         setError(null);
       })
       .catch((err: unknown) => {

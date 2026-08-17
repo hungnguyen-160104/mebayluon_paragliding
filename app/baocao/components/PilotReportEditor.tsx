@@ -46,10 +46,12 @@ export function PilotReportEditor({
       const res = await apiGet<{ reports: PilotReportDTO[]; staff?: Array<{ username: string; name: string }> }>(
         `/api/baocao/reports/pilot?date=${date}&all=1&spot=${spot}`,
       );
-      setReports(res.reports);
+      // Rơi về rỗng nếu hình dạng khác — xem ghi chú cùng loại trong StaffReportEditor
+      const list = Array.isArray(res.reports) ? res.reports : [];
+      setReports(list);
       setStaff(res.staff ?? []);
       // Người đã có báo cáo thật thì khỏi giữ trong danh sách "thêm tay"
-      setAdded((prev) => prev.filter((u) => !res.reports.some((r) => r.username === u)));
+      setAdded((prev) => prev.filter((u) => !list.some((r) => r.username === u)));
     } catch (err: any) {
       setError(err?.message || "Không tải được báo cáo phi công");
     } finally {

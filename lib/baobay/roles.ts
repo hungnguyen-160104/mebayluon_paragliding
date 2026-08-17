@@ -66,6 +66,21 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
   }
 }
 
+/**
+ * Người này có MANG vai đó không — tính cả vai kiêm nhiệm.
+ *
+ * Dùng thay cho `session.role === "accountant"`: quản trị kiêm kế toán (judy,
+ * dangvm) có role chính là "admin", nên phép so bằng vai chính đẩy họ sang
+ * nhánh dữ liệu của vai khác — trang Chốt ngày nhận sai hình dạng dữ liệu và
+ * không hiện gì. Đã xảy ra thật.
+ */
+export function wearsRole(
+  session: { role?: string; extraRoles?: readonly string[] | null },
+  role: BaobayRole,
+): boolean {
+  return session.role === role || (session.extraRoles ?? []).includes(role);
+}
+
 /** Bỏ thẻ trùng đường dẫn (điều phối và quầy vé chung một trang). */
 export function uniqueTabs(tabs: Array<{ href: string; label: string }>) {
   const seen = new Set<string>();
