@@ -4080,6 +4080,16 @@ export async function createRefund(
       createdByName: session.name,
     })
   ).toObject();
+
+  /**
+   * Cộng vào TỔNG ĐÃ HOÀN của booking — dòng tóm tắt cần con số này để kể đúng
+   * "đã thanh toán X · hoàn Y · còn thu Z". Trước đây tiền hoàn chỉ trừ vào ô
+   * "đã cọc", nên trên màn hiện "cọc 2.890k" — một con số không có thật, khách
+   * đã trả 3.290k rồi được hoàn 400k chứ chưa từng cọc đồng nào.
+   */
+  if (doc.bookingId) {
+    await BaobayBooking.updateOne({ _id: doc.bookingId }, { $inc: { refundedTotal: amount } });
+  }
   return toRefundDTO(doc);
 }
 
@@ -4108,8 +4118,14 @@ export async function payRefund(
   }
   if (input.note !== undefined) set.note = String(input.note).trim();
 
+  const before = await BaobayRefund.findOne({ _id: id, spot, status: "pending" }).select("amount bookingId").lean<any>();
   const doc = await BaobayRefund.findOneAndUpdate({ _id: id, spot, status: "pending" }, { $set: set }, { new: true }).lean<any>();
   if (!doc) throw new BaobayError("Không tìm thấy lệnh hoàn đang chờ", 404);
+  // Kế toán sửa số tiền lúc chuyển: tổng đã hoàn của booking phải chạy theo
+  const diff = (doc.amount ?? 0) - (before?.amount ?? 0);
+  if (diff !== 0 && doc.bookingId) {
+    await BaobayBooking.updateOne({ _id: doc.bookingId }, { $inc: { refundedTotal: diff } });
+  }
   return toRefundDTO(doc);
 }
 
@@ -4427,6 +4443,9 @@ export async function undoServiceChange(
         "Kế toán đã chuyển tiền hoàn cho khách — không sửa được nữa, phải lập lệnh thu lại nếu thu về",
         400,
       );
+    }
+    if (refund?.amount) {
+      await BaobayBooking.updateOne({ _id: change.bookingId }, { $inc: { refundedTotal: -refund.amount } });
     }
     await BaobayRefund.deleteOne({ _id: change.refundId });
   }
@@ -5237,6 +5256,7 @@ function toBookingDTO(doc: any): BookingDTO {
     cancelTicketIssued: doc.cancelTicketIssued,
     cancelTicketCodes: doc.cancelTicketCodes ?? [],
     refundAmount: doc.refundAmount ?? 0,
+    refunded: doc.refundedTotal ?? 0,
     refundMethod: doc.refundMethod,
     cancelledBy: doc.cancelledBy || "",
     unitPrice: doc.unitPrice ?? 0,

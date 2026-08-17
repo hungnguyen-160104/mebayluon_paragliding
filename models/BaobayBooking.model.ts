@@ -100,6 +100,13 @@ export interface IBaobayBooking {
   noTicketAt?: Date;
   refundAmount?: number;
   /**
+   * TỔNG đã hoàn lại cho khách của booking này (huỷ bay, huỷ dịch vụ, thu nhầm).
+   * Cộng dồn theo từng lệnh hoàn, để dòng tóm tắt kể đúng vệt tiền: đã thanh
+   * toán bao nhiêu, hoàn bao nhiêu, còn thu bao nhiêu — thay vì gộp hết vào
+   * "cọc" rồi hiện một con số không ai hiểu ở đâu ra.
+   */
+  refundedTotal?: number;
+  /**
    * VỆT THU TIỀN của booking: ai thu, bao nhiêu, TM hay CK, lúc nào.
    * Ghi thẳng lên booking để quầy nhìn một dòng là biết tiền nong tới đâu,
    * khỏi lật sổ lệnh thu.
@@ -251,6 +258,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     noTicketBy: String,
     noTicketAt: Date,
     refundAmount: { type: Number, default: 0, min: 0 },
+    refundedTotal: { type: Number, default: 0, min: 0 },
     collectedLog: {
       type: [
         {

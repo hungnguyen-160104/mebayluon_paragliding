@@ -101,7 +101,21 @@ function BookingSummary({
       .join(" "),
   );
   if (b.totalAmount) parts.push(`tổng ${Math.round(b.totalAmount / 1000).toLocaleString("vi-VN")}k`);
-  if (b.deposit) parts.push(`cọc ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k`);
+  /**
+   * VỆT TIỀN đọc đúng như đã xảy ra: cọc bao nhiêu → đã thanh toán bao nhiêu →
+   * hoàn lại bao nhiêu → còn thu bao nhiêu.
+   *
+   * Trước đây chỉ in mỗi "cọc {deposit}" — mà `deposit` là số ròng (cọc + đã thu
+   * − đã hoàn). Khách trả một lần 3.290k rồi được hoàn 400k thì màn hình ghi
+   * "cọc 2.890k": con số chưa từng xảy ra, đọc lại không ai lần ra tiền đi đâu.
+   */
+  const paidTotal = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
+  const refunded = b.refunded ?? 0;
+  /** Cọc GÕ TAY lúc nhận booking = số ròng − đã thu + đã hoàn. */
+  const depositBase = Math.max(0, (b.deposit || 0) - paidTotal + refunded);
+  const k = (n: number) => `${Math.round(n / 1000).toLocaleString("vi-VN")}k`;
+  if (depositBase) parts.push(`cọc ${k(depositBase)}`);
+  else if (paidTotal || refunded) parts.push("cọc 0");
   /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
   const tail: string[] = [];
   if (b.transferCode) tail.push(`CK #${b.transferCode}`);
@@ -129,6 +143,18 @@ function BookingSummary({
       ) : null}
       {" · "}
       {parts.filter(Boolean).join(" · ")}
+      {paidTotal > 0 ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800">đã tt {k(paidTotal)}</strong>
+        </>
+      ) : null}
+      {refunded > 0 ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-amber-100 px-1 font-bold text-amber-900">đã hoàn {k(refunded)}</strong>
+        </>
+      ) : null}
       {b.remaining ? (
         <>
           {" · "}

@@ -361,6 +361,8 @@ export type BookingDTO = {
   noTicketBy?: string;
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
+  /** Tổng đã hoàn lại khách của booking này — dòng tóm tắt cần để kể đúng vệt tiền. */
+  refunded: number;
   cancelledBy?: string;
   /** Đơn giá một khách · giảm trừ cả đoàn · tổng tiền (máy tự tính). */
   unitPrice: number;
