@@ -88,6 +88,9 @@ export async function PATCH(req: Request) {
       refundAmount: body?.refundAmount === undefined || body?.refundAmount === null
         ? undefined
         : Number(body.refundAmount) || 0,
+      backAmount: body?.backAmount === undefined || body?.backAmount === null
+        ? undefined
+        : Number(body.backAmount) || 0,
     });
     return NextResponse.json(res);
   } catch (err) {

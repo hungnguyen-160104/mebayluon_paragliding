@@ -10,9 +10,10 @@ import {
   comboDiscount,
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
+import type { ServiceChangeDTO } from "@/services/baobay.service";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPatch, apiPost } from "./client-api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "./client-api";
 import { PaymentQrButton } from "./PaymentQr";
 import { Banner, Button, CollapseCard, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
@@ -57,6 +58,8 @@ const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, 
  */
 export function AddServicesCard({ spot, date }: { spot: string; date: string }) {
   const [bookings, setBookings] = useState<BookingDTO[]>([]);
+  /** Sổ các lần thêm/huỷ trong ngày — bấm vào một dòng là sửa lại được. */
+  const [changes, setChanges] = useState<ServiceChangeDTO[]>([]);
   /**
    * Cùng một thao tác "sửa dịch vụ của một booking", chỉ khác dấu cộng/trừ —
    * nên hai chế độ chung một thẻ, khỏi bắt người dùng nhớ hai chỗ.
@@ -78,7 +81,9 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [justDone, flashDone] = useDoneFlag();
-  /** Tiền hoàn khi huỷ dịch vụ: bám theo số máy tính cho tới khi người dùng tự gõ. */
+  /** Tiền lùi lại và tiền hoàn khi huỷ dịch vụ: bám theo số máy tính cho tới khi tự gõ. */
+  const [backAmount, setBackAmount] = useState(0);
+  const [backTouched, setBackTouched] = useState(false);
   const [refundAmount, setRefundAmount] = useState(0);
   const [refundTouched, setRefundTouched] = useState(false);
 
@@ -89,7 +94,59 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
       .catch(() => {
         /* ngày chưa có booking thì thôi */
       });
+    apiGet<{ items: ServiceChangeDTO[] }>(`/api/baocao/booking/service-changes?date=${date}&spot=${spot}`)
+      .then((r) => setChanges(r.items))
+      .catch(() => {
+        /* chưa có thao tác nào thì thôi */
+      });
   }, [spot, date]);
+
+  /**
+   * Bấm "Sửa" một thao tác đã ghi = HOÀN TÁC nó rồi nạp lại đúng các số vào form
+   * để nhập lại. Sửa thẳng lên booking đã bị thao tác đó làm đổi tiền là cách
+   * chắc chắn sai — hoàn tác về ảnh chụp rồi làm lại mới khớp sổ.
+   */
+  const editChange = useCallback(
+    async (c: ServiceChangeDTO, prefill: boolean) => {
+      if (
+        !window.confirm(
+          prefill
+            ? "Hoàn tác thao tác này rồi nạp lại số cũ vào form để sửa?"
+            : "Bỏ hẳn thao tác này — số của booking trả về như trước khi làm?",
+        )
+      )
+        return;
+      setBusy(true);
+      setError(null);
+      try {
+        await apiDelete(`/api/baocao/booking/service-changes?id=${c.id}&spot=${spot}`);
+        if (prefill) {
+          setMode(c.kind);
+          setPickId(c.bookingId);
+          setAdd({ ...EMPTY, ...c.items });
+          setDiscount(c.discount);
+          setNote(c.reason);
+          if (c.kind === "remove") {
+            setBackMode(c.mode === "refund" ? "refund" : "credit");
+            setRefundMethod(c.refundMethod === "cash" ? "cash" : "transfer");
+            setBackTouched(true);
+            setBackAmount(c.back);
+            setRefundTouched(true);
+            setRefundAmount(c.refunded);
+          }
+          setDone("Đã hoàn tác — sửa lại số bên trên rồi bấm xác nhận.");
+        } else {
+          setDone("Đã bỏ thao tác — số của booking trả về như trước.");
+        }
+        load();
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Không hoàn tác được");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [spot, load],
+  );
 
   useEffect(() => {
     load();
@@ -129,9 +186,13 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
    * trong combo ⇒ khách nhận lại 350k chứ không phải 300k.
    */
   const comboCourtesy = Math.round(comboLost / 2);
-  const backAmount = Math.max(0, addAmount - (comboLost - comboCourtesy));
+  /** Số máy tính ra theo bảng giá — làm mặc định cho ô "lùi lại khách". */
+  const autoBack = Math.max(0, addAmount - (comboLost - comboCourtesy));
 
-  /** Chưa gõ tay thì ô tiền hoàn chạy theo số máy tính, gõ rồi thì để yên. */
+  /** Chưa gõ tay thì hai ô tiền chạy theo số máy tính, gõ rồi thì để yên. */
+  useEffect(() => {
+    if (!backTouched) setBackAmount(autoBack);
+  }, [autoBack, backTouched]);
   useEffect(() => {
     if (!refundTouched) setRefundAmount(backAmount);
   }, [backAmount, refundTouched]);
@@ -142,6 +203,8 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
     setNote("");
     setCash(0);
     setBills([{ amount: 0, code: "" }]);
+    setBackAmount(0);
+    setBackTouched(false);
     setRefundAmount(0);
     setRefundTouched(false);
     setError(null);
@@ -170,6 +233,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
           refundMethod,
           bankAccount,
           reason: note,
+          backAmount,
           ...(backMode === "refund" ? { refundAmount } : {}),
         },
       );
@@ -226,7 +290,9 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
 
   return (
     <CollapseCard
-      className="border-amber-300 bg-amber-50/30"
+      /* Nền đổi màu theo việc đang làm: THÊM dịch vụ nền xanh, HUỶ nền đỏ —
+         nhìn màu là biết mình đang cộng hay đang trừ, khỏi bấm nhầm chiều. */
+      className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : "border-emerald-400 bg-emerald-50/50"}
       title="➕➖ DỊCH VỤ TUỲ CHỌN"
       hint="khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"
     >
@@ -255,7 +321,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             }}
             className={
               mode === v
-                ? "flex-1 bg-slate-800 text-xs font-bold text-white"
+                ? `flex-1 text-xs font-bold text-white ${v === "remove" ? "bg-rose-600" : "bg-emerald-600"}`
                 : "flex-1 bg-white text-xs font-medium text-slate-500"
             }
           >
@@ -329,9 +395,24 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                     <span className="text-slate-500"> (công ty chịu {formatVND(comboCourtesy)})</span>
                   </span>
                 )}
-                <span className="ml-auto text-sm">
-                  Lùi lại khách <strong className="tabular-nums text-emerald-700">{formatVND(backAmount)}</strong>
-                </span>
+                {/* Số lùi lại SỬA ĐƯỢC: bảng giá là một chuyện, thoả thuận với
+                    khách lại là chuyện khác. Số này dùng cho cả hai đường bên dưới:
+                    trừ vào phần còn thu, hay trả lại tiền cho khách. */}
+                <label className="ml-auto flex items-center gap-1.5 text-sm">
+                  Lùi lại khách
+                  <span className="w-32">
+                    <MoneyInput value={backAmount} onChange={(v) => { setBackTouched(true); setBackAmount(v); }} />
+                  </span>
+                  {backTouched && backAmount !== autoBack && (
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-emerald-700 underline"
+                      onClick={() => { setBackTouched(false); setBackAmount(autoBack); }}
+                    >
+                      lấy lại {formatVND(autoBack)}
+                    </button>
+                  )}
+                </label>
               </div>
 
               <div className="mt-1.5 flex h-8 overflow-hidden rounded-lg border border-slate-300">
@@ -408,8 +489,9 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                     )}
                   </label>
                   <span className="w-full text-[11px] text-slate-500">
-                    Máy tính ra {formatVND(backAmount)} — sửa được. Khách đã trả {formatVND(picked.deposit)}, hoàn
-                    nhiều nhất bằng số đó
+                    Lùi lại {formatVND(backAmount)}
+                    {backAmount !== autoBack ? ` (bảng giá ${formatVND(autoBack)})` : ""} — khách đã trả{" "}
+                    {formatVND(picked.deposit)}, hoàn nhiều nhất bằng số đó
                     {refundAmount < backAmount
                       ? picked.remaining > 0
                         ? ` · phần dôi ${formatVND(backAmount - refundAmount)} trừ vào tiền còn thu`
@@ -548,7 +630,12 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
           )}
 
           <div className="mt-1.5 flex items-center gap-2">
-            <Button type="button" className="h-10 flex-1" disabled={busy} onClick={submit}>
+            <Button
+              type="button"
+              className={"h-10 flex-1 " + (mode === "remove" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700")}
+              disabled={busy}
+              onClick={submit}
+            >
               {busy
                 ? "Đang lưu…"
                 : mode === "remove"
@@ -562,6 +649,66 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             <DoneTag show={justDone}>{mode === "remove" ? "Đã huỷ" : "Đã ghi"}</DoneTag>
           </div>
         </>
+      )}
+
+      {/* ---- SỔ THÊM / HUỶ TRONG NGÀY: bấm Sửa là hoàn tác rồi nhập lại ---- */}
+      {changes.length > 0 && (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2">
+          <div className="text-xs font-bold text-slate-700">Đã ghi trong ngày</div>
+          <ul className="mt-1 divide-y divide-slate-100">
+            {changes.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-xs">
+                <span
+                  className={
+                    "shrink-0 rounded px-1.5 py-0.5 font-bold " +
+                    (c.undone
+                      ? "bg-slate-100 text-slate-500"
+                      : c.kind === "add"
+                        ? "bg-emerald-100 text-emerald-900"
+                        : "bg-rose-100 text-rose-900")
+                  }
+                >
+                  {c.undone ? "đã bỏ" : c.kind === "add" ? "thêm" : "huỷ"}
+                </span>
+                <span className={"min-w-0 flex-1 leading-snug " + (c.undone ? "text-slate-400 line-through" : "text-slate-700")}>
+                  {c.bookingLabel} ·{" "}
+                  {SERVICE_PRICE_LABEL.filter((x) => (c.items[x.key] ?? 0) > 0)
+                    .map((x) => `${c.items[x.key]}×${x.label}`)
+                    .join(" · ") || "—"}
+                  {c.kind === "add"
+                    ? ` · thu ${formatVND(c.charge)}${c.discount ? ` (giảm ${formatVND(c.discount)})` : ""}`
+                    : ` · lùi lại ${formatVND(c.back)}${c.refunded ? ` · hoàn ${formatVND(c.refunded)}` : " (trừ vào còn thu)"}`}
+                  {c.reason ? ` · ${c.reason}` : ""}
+                  <span className="text-slate-400"> — {c.by}</span>
+                </span>
+                {!c.undone && (
+                  <span className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => editChange(c, true)}
+                      className="rounded border border-sky-300 bg-white px-1.5 py-0.5 font-semibold text-sky-700 disabled:opacity-50"
+                    >
+                      ✎ Sửa
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => editChange(c, false)}
+                      className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-medium text-slate-500 disabled:opacity-50"
+                    >
+                      ✕ Bỏ
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] leading-tight text-slate-500">
+            “Sửa” = trả booking về đúng trước lúc làm thao tác đó rồi nạp số cũ lên form để nhập lại. Kế toán chốt
+            ngày rồi thì không sửa được nữa.
+          </p>
+        </div>
       )}
     </CollapseCard>
   );

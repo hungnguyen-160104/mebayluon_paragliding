@@ -73,6 +73,7 @@ import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
+import { BaobayServiceChange } from "@/models/BaobayServiceChange.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
 import { BaobayReviewRequest, REVIEW_TARGET_ROLES, REVIEW_TOPIC_LABEL, type ReviewTopic } from "@/models/BaobayReviewRequest.model";
 import { BaobayFlycamCancel } from "@/models/BaobayFlycamCancel.model";
@@ -3791,6 +3792,29 @@ export async function collectForBooking(
  * Combo flycam + 360 tính LẠI TRÊN TỔNG sau khi cộng: khách đã có flycam, giờ
  * mua thêm 360 thì thành một cặp và được bớt 100k — đúng như mua cùng lúc.
  */
+/** Ảnh chụp các số của booking trước khi sửa dịch vụ — nguồn để hoàn tác. */
+function serviceSnapshot(b: any) {
+  return {
+    flycam: b.flycam ?? 0,
+    video360: b.video360 ?? 0,
+    redFlag: b.redFlag ?? 0,
+    sunset: b.sunset ?? 0,
+    flagFlight: b.flagFlight ?? 0,
+    comboDiscount: b.comboDiscount ?? 0,
+    discount: b.discount ?? 0,
+    totalAmount: b.totalAmount ?? 0,
+    deposit: b.deposit ?? 0,
+    remaining: b.remaining ?? 0,
+    note: b.note ?? "",
+    collectedLog: b.collectedLog ?? [],
+  };
+}
+
+/** Nhãn đọc được của booking, giữ lại trong sổ phòng khi sau này đổi tên. */
+function bookingLabelOf(b: any): string {
+  return `#${b.daySeq ?? "?"} ${b.contactName || b.phone || "khách"}`;
+}
+
 export async function addBookingServices(
   session: BaobaySession,
   spotRaw: string,
@@ -3836,6 +3860,7 @@ export async function addBookingServices(
     next[k] = sum;
   }
 
+  const before = serviceSnapshot(booking);
   const discountAdd = Math.max(0, Math.round(input.discount ?? 0));
   const merged = {
     ...booking,
@@ -3878,15 +3903,43 @@ export async function addBookingServices(
   /** Khách trả ngay tại chỗ thì ghi luôn lệnh thu — khỏi bấm sang thẻ khác. */
   const pay = input.pay;
   const payTotal = (pay?.cash ?? 0) + (pay?.transfers ?? []).reduce((t, b) => t + (b.amount || 0), 0);
+  let result = toBookingDTO(updated);
+  let collectIds: mongoose.Types.ObjectId[] = [];
   if (payTotal > 0) {
+    const t0 = new Date();
     const res = await collectForBooking(session, spot, id, {
       cash: pay?.cash ?? 0,
       transfers: pay?.transfers ?? [],
       kind: "deposit",
     });
-    return { booking: res.booking, added: addedCount, charge };
+    result = res.booking;
+    // collectForBooking không trả về id, nên nhặt lại các lệnh vừa sinh ra
+    const made = await BaobayCollect.find({ spot, bookingId: booking._id, createdAt: { $gte: t0 } })
+      .select("_id")
+      .lean<any[]>();
+    collectIds = made.map((c) => c._id);
   }
-  return { booking: toBookingDTO(updated), added: addedCount, charge };
+
+  // Ghi vào sổ để sau còn sửa lại được (xem models/BaobayServiceChange.model.ts)
+  await BaobayServiceChange.create({
+    spot,
+    date: booking.flightDate,
+    bookingId: booking._id,
+    bookingLabel: bookingLabelOf(booking),
+    kind: "add",
+    items: add,
+    discount: discountAdd,
+    charge,
+    back: 0,
+    refunded: 0,
+    reason: input.note?.trim() || "",
+    before,
+    collectIds,
+    createdByUsername: session.username,
+    createdByName: session.name,
+  });
+
+  return { booking: result, added: addedCount, charge };
 }
 
 /* ================================================================== */
@@ -4058,6 +4111,11 @@ export async function removeBookingServices(
      * nên bù thêm, hoặc hai bên thoả thuận hoàn một phần.
      */
     refundAmount?: number;
+    /**
+     * Số LÙI LẠI cho khách (trước khi chọn trừ vào còn thu hay trả tiền) —
+     * cũng sửa tay được. Bỏ trống thì lấy số theo bảng giá.
+     */
+    backAmount?: number;
   },
 ): Promise<{ booking: BookingDTO; back: number; refunded: number }> {
   await connectDB();
@@ -4070,6 +4128,7 @@ export async function removeBookingServices(
     .lean<any>();
   if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa dịch vụ được nữa", 400);
 
+  const before = serviceSnapshot(booking);
   const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
   const label: Record<(typeof keys)[number], string> = {
     flycam: "Flycam",
@@ -4112,9 +4171,25 @@ export async function removeBookingServices(
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
     ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
   };
-  const newTotal = bookingTotal(merged as never);
-  /** Tiền lùi lại cho khách = tổng cũ − tổng mới (đã gồm phần công ty chịu). */
-  const back = Math.max(0, (booking.totalAmount ?? 0) - newTotal);
+  const naturalTotal = bookingTotal(merged as never);
+  const oldTotal = booking.totalAmount ?? 0;
+  /** Tiền lùi lại theo BẢNG GIÁ = tổng cũ − tổng mới (đã gồm phần công ty chịu). */
+  const autoBack = Math.max(0, oldTotal - naturalTotal);
+  /**
+   * Người huỷ sửa được số lùi lại. Trần là TỔNG TIỀN của booking — lùi nhiều
+   * hơn cả đơn hàng thì thành âm, vô nghĩa.
+   */
+  const back = Number.isFinite(input.backAmount as number)
+    ? Math.min(oldTotal, Math.max(0, Math.round(input.backAmount as number)))
+    : autoBack;
+  /**
+   * Chốt tổng mới theo đúng số lùi lại đã chọn. Lùi NHIỀU hơn bảng giá thì phần
+   * chênh ghi thành giảm trừ (để công thức đơn giá × khách − giảm trừ vẫn ra
+   * đúng con số này); lùi ÍT hơn thì giữ nguyên giảm trừ, tổng cao hơn mức
+   * bảng giá và ghi rõ trong ghi chú là sửa tay.
+   */
+  const newTotal = Math.max(0, oldTotal - back);
+  merged.discount = (merged.discount ?? 0) + Math.max(0, naturalTotal - newTotal);
 
   const deposit = booking.deposit ?? 0;
   /**
@@ -4152,7 +4227,9 @@ export async function removeBookingServices(
         remaining: Math.max(0, newTotal - newDeposit),
         note: [
           booking.note,
-          `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ, ${
+          `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ${
+            back !== autoBack ? ` (bảng giá ${autoBack.toLocaleString("vi-VN")} đ, sửa tay)` : ""
+          }, ${
             input.mode === "refund"
               ? `hoàn khách ${refunded.toLocaleString("vi-VN")} đ${
                   refunded !== back ? " (sửa tay)" : ""
@@ -4171,8 +4248,9 @@ export async function removeBookingServices(
   ).lean<any>();
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
+  let refundId: mongoose.Types.ObjectId | undefined;
   if (refunded > 0) {
-    await createRefund(session, spot, {
+    const made = await createRefund(session, spot, {
       date: booking.flightDate,
       bookingId: String(booking._id),
       guestName: booking.contactName || booking.phone || "khách",
@@ -4186,9 +4264,167 @@ export async function removeBookingServices(
       bankAccount: input.bankAccount ?? "",
       reason: `huỷ dịch vụ: ${cutText}`,
     });
+    refundId = new mongoose.Types.ObjectId(made.id);
   }
 
+  // Ghi vào sổ để sau còn sửa lại được (xem models/BaobayServiceChange.model.ts)
+  await BaobayServiceChange.create({
+    spot,
+    date: booking.flightDate,
+    bookingId: booking._id,
+    bookingLabel: bookingLabelOf(booking),
+    kind: "remove",
+    items: Object.fromEntries(keys.map((k) => [k, Math.max(0, Math.round(input.remove[k] ?? 0))])),
+    discount: 0,
+    charge: 0,
+    back,
+    refunded,
+    mode: input.mode,
+    refundMethod: input.refundMethod === "cash" ? "cash" : "transfer",
+    reason: input.reason?.trim() || "",
+    before,
+    collectIds: [],
+    refundId,
+    createdByUsername: session.username,
+    createdByName: session.name,
+  });
+
   return { booking: toBookingDTO(updated), back, refunded };
+}
+
+
+/* ================================================================== */
+/* Sổ THÊM / HUỶ dịch vụ — liệt kê và hoàn tác để nhập lại              */
+/* ================================================================== */
+
+export type ServiceChangeDTO = {
+  id: string;
+  date: string;
+  bookingId: string;
+  bookingLabel: string;
+  kind: "add" | "remove";
+  items: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
+  discount: number;
+  charge: number;
+  back: number;
+  refunded: number;
+  mode?: "credit" | "refund";
+  refundMethod?: "cash" | "transfer";
+  reason: string;
+  by: string;
+  at: string;
+  undone: boolean;
+};
+
+function toServiceChangeDTO(doc: any): ServiceChangeDTO {
+  return {
+    id: String(doc._id),
+    date: doc.date,
+    bookingId: String(doc.bookingId),
+    bookingLabel: doc.bookingLabel || "",
+    kind: doc.kind,
+    items: {
+      flycam: doc.items?.flycam ?? 0,
+      video360: doc.items?.video360 ?? 0,
+      redFlag: doc.items?.redFlag ?? 0,
+      sunset: doc.items?.sunset ?? 0,
+      flagFlight: doc.items?.flagFlight ?? 0,
+    },
+    discount: doc.discount ?? 0,
+    charge: doc.charge ?? 0,
+    back: doc.back ?? 0,
+    refunded: doc.refunded ?? 0,
+    mode: doc.mode,
+    refundMethod: doc.refundMethod,
+    reason: doc.reason || "",
+    by: doc.createdByName || doc.createdByUsername || "",
+    at: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
+    undone: Boolean(doc.undoneAt),
+  };
+}
+
+/** Các lần thêm/huỷ dịch vụ của một ngày bay — mới nhất lên đầu. */
+export async function listServiceChanges(spotRaw: string, date: string): Promise<ServiceChangeDTO[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const docs = await BaobayServiceChange.find({ spot, date }).sort({ createdAt: -1 }).limit(50).lean<any[]>();
+  return docs.map(toServiceChangeDTO);
+}
+
+/**
+ * HOÀN TÁC một lần thêm/huỷ dịch vụ — dùng cho nút "Sửa" (hoàn tác rồi nhập lại).
+ *
+ * Khôi phục đúng ẢNH CHỤP trước khi sửa thay vì cộng trừ ngược: sau lần sửa đó
+ * booking có thể đã thu thêm tiền, đổi giảm trừ… cộng ngược là sai. Ảnh chụp chỉ
+ * trả lại đúng các số của phần dịch vụ và tiền của lần đó.
+ *
+ * Chặn hai trường hợp không lùi được: ngày đã chốt, và lệnh hoàn tiền đã được
+ * kế toán chuyển đi (tiền ra khỏi tài khoản rồi thì phải lập lệnh thu lại, chứ
+ * không xoá lịch sử).
+ */
+export async function undoServiceChange(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+): Promise<{ ok: true }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const change = await BaobayServiceChange.findOne({ _id: id, spot }).lean<any>();
+  if (!change) throw new BaobayError("Không tìm thấy thao tác này", 404);
+  if (change.undoneAt) throw new BaobayError("Thao tác này đã được hoàn tác rồi", 400);
+
+  const closed = await AccountantDailyClose.findOne({ spot, date: change.date, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa được nữa", 400);
+
+  if (change.refundId) {
+    const refund = await BaobayRefund.findOne({ _id: change.refundId }).select("status amount").lean<any>();
+    if (refund && refund.status === "paid") {
+      throw new BaobayError(
+        "Kế toán đã chuyển tiền hoàn cho khách — không sửa được nữa, phải lập lệnh thu lại nếu thu về",
+        400,
+      );
+    }
+    await BaobayRefund.deleteOne({ _id: change.refundId });
+  }
+
+  // Lệnh thu sinh ra kèm lần đăng ký thêm: gỡ luôn, vì ảnh chụp đã trả lại
+  // "đã cọc / còn thu" của booking về trước lúc thu
+  if ((change.collectIds ?? []).length > 0) {
+    await BaobayCollect.deleteMany({ _id: { $in: change.collectIds } });
+  }
+
+  const b = change.before ?? {};
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: change.bookingId, spot },
+    {
+      $set: {
+        flycam: b.flycam ?? 0,
+        video360: b.video360 ?? 0,
+        redFlag: b.redFlag ?? 0,
+        sunset: b.sunset ?? 0,
+        flagFlight: b.flagFlight ?? 0,
+        comboDiscount: b.comboDiscount ?? 0,
+        discount: b.discount ?? 0,
+        totalAmount: b.totalAmount ?? 0,
+        deposit: b.deposit ?? 0,
+        remaining: b.remaining ?? 0,
+        note: b.note ?? "",
+        // Vệt thu tiền trả về đúng như trước, không thì lần thu vừa gỡ vẫn còn in trên dòng khách
+        collectedLog: b.collectedLog ?? [],
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!updated) throw new BaobayError("Không tìm thấy booking của thao tác này", 404);
+
+  await BaobayServiceChange.updateOne(
+    { _id: id },
+    { $set: { undoneAt: new Date(), undoneBy: session.username } },
+  );
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return { ok: true };
 }
 
 /** Các khoản đã thu của một booking — để điều phối/kế toán soát và sửa. */
