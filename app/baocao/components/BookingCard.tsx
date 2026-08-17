@@ -463,45 +463,26 @@ function EditCollectsControl({
 function VoidBookingControl({
   spot,
   booking,
-  sameDay,
   onDone,
 }: {
   spot: string;
   booking: BookingDTO;
-  /** Các booking khác cùng ngày — nguồn để chọn bản giữ lại khi gộp trùng. */
-  sameDay: BookingDTO[];
   onDone: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<"mistake" | "duplicate">("mistake");
   const [reason, setReason] = useState("");
-  const [keepId, setKeepId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const paid = booking.deposit > 0 || (booking.collected ?? []).length > 0;
-  /** Gợi ý bản trùng: cùng SĐT hoặc cùng tên, xếp lên đầu danh sách chọn. */
-  const others = sameDay
-    .filter((b) => b.id !== booking.id && b.status !== "voided")
-    .sort((a, b) => Number(isTwin(b, booking)) - Number(isTwin(a, booking)));
 
   async function send() {
     if (!reason.trim()) return setError("Ghi giúp lý do — sổ cần biết vì sao bỏ");
-    if (kind === "duplicate" && !keepId) return setError("Chọn booking GIỮ LẠI để gộp vào");
     setBusy(true);
     setError(null);
     try {
-      await apiDelete(`/api/baocao/booking?spot=${spot}`, {
-        id: booking.id,
-        kind,
-        reason,
-        keepId,
-      });
-      onDone(
-        kind === "duplicate"
-          ? "✓ Đã gộp booking trùng — tiền đã thu chuyển sang bản giữ lại."
-          : "✓ Đã bỏ booking khỏi sổ (nhập nhầm) — vẫn lấy lại được.",
-      );
+      await apiDelete(`/api/baocao/booking?spot=${spot}`, { id: booking.id, reason });
+      onDone("✓ Đã bỏ booking khỏi sổ (nhập nhầm) — không cộng vào số của ngày, vẫn lấy lại được.");
       setOpen(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không bỏ được booking");
@@ -517,13 +498,11 @@ function VoidBookingControl({
         variant="ghost"
         className="h-7 shrink-0 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-600"
         onClick={() => {
-          setKind(paid ? "duplicate" : "mistake");
           setReason("");
-          setKeepId("");
           setError(null);
           setOpen(true);
         }}
-        title="Nhập nhầm hoặc nhập trùng — bỏ khỏi sổ, vẫn lấy lại được"
+        title="Nhập nhầm — bỏ khỏi sổ, không cộng vào số của ngày, vẫn lấy lại được"
       >
         🗑 Nhập nhầm
       </Button>
@@ -532,54 +511,21 @@ function VoidBookingControl({
 
   return (
     <div className="flex w-full max-w-[17rem] flex-col gap-1 rounded-lg border border-slate-300 bg-slate-50 p-1.5">
-      <div className="text-[11px] font-bold text-slate-800">Bỏ khỏi sổ — {booking.contactName || "khách"}</div>
-      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
-        {(
-          [
-            ["mistake", "Nhập nhầm"],
-            ["duplicate", "Nhập trùng"],
-          ] as Array<["mistake" | "duplicate", string]>
-        ).map(([v, label]) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setKind(v)}
-            className={
-              kind === v
-                ? "flex-1 bg-slate-800 px-1 text-xs font-bold text-white"
-                : "flex-1 bg-white px-1 text-xs font-medium text-slate-500"
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {kind === "duplicate" ? (
-        <>
-          <select
-            value={keepId}
-            onChange={(e) => setKeepId(e.target.value)}
-            className="h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs"
-          >
-            <option value="">— chọn booking GIỮ LẠI —</option>
-            {others.map((b) => (
-              <option key={b.id} value={b.id}>
-                #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
-                {isTwin(b, booking) ? " · trùng SĐT/tên" : ""}
-              </option>
-            ))}
-          </select>
-          <p className="text-[10px] leading-tight text-slate-500">
-            Tiền đã thu của bản này sẽ chuyển sang bản giữ lại — không mất, không cộng hai lần.
-          </p>
-        </>
+      <div className="text-[11px] font-bold text-slate-800">Nhập nhầm — {booking.contactName || "khách"}</div>
+      {/**
+       * KHÔNG còn "gộp booking trùng". Gộp phải dời tiền ngầm giữa hai booking rồi
+       * tính lại "còn thu" — đã làm sai số tiền thu thật (cặp trùng SĐT ngày 16/08).
+       * Có tiền rồi thì sửa tiền trước, xong mới bỏ booking.
+       */}
+      {paid ? (
+        <p className="text-[10px] font-semibold leading-tight text-rose-700">
+          Booking này đã có tiền — mở ⋯ Thêm → “Sửa tiền đã thu” để xoá hoặc chuyển khoản thu sang booking đúng, rồi
+          mới bỏ được. Khách bỏ bay thì dùng ✕ Huỷ booking.
+        </p>
       ) : (
-        paid && (
-          <p className="text-[10px] font-semibold leading-tight text-rose-700">
-            Booking này đã có tiền — nếu là trùng thì chọn “Nhập trùng”, còn khách bỏ bay thì dùng ✕ Huỷ booking.
-          </p>
-        )
+        <p className="text-[10px] leading-tight text-slate-500">
+          Bỏ khỏi sổ: booking này không được cộng vào số khách, dịch vụ hay tiền của ngày. Vẫn lấy lại được.
+        </p>
       )}
 
       <TextInput
@@ -590,8 +536,13 @@ function VoidBookingControl({
       />
       {error && <div className="text-[11px] font-semibold text-rose-700">{error}</div>}
       <div className="flex gap-1">
-        <Button type="button" className="h-8 flex-1 bg-slate-800 px-2 text-xs hover:bg-slate-900" disabled={busy} onClick={send}>
-          {busy ? "Đang bỏ…" : kind === "duplicate" ? "✓ Gộp & bỏ bản này" : "✓ Bỏ khỏi sổ"}
+        <Button
+          type="button"
+          className="h-8 flex-1 bg-slate-800 px-2 text-xs hover:bg-slate-900"
+          disabled={busy || paid}
+          onClick={send}
+        >
+          {busy ? "Đang bỏ…" : "✓ Bỏ khỏi sổ"}
         </Button>
         <Button type="button" variant="ghost" className="h-8 bg-white px-2 text-xs" onClick={() => setOpen(false)}>
           Thôi
@@ -601,13 +552,6 @@ function VoidBookingControl({
   );
 }
 
-/** Hai booking nghi trùng nhau: cùng số điện thoại, hoặc cùng tên liên hệ. */
-function isTwin(a: BookingDTO, b: BookingDTO): boolean {
-  const phone = (p: string) => p.replace(/\D/g, "").slice(-9);
-  if (a.phone && b.phone && phone(a.phone) === phone(b.phone)) return true;
-  const name = (n: string) => n.trim().toLowerCase();
-  return Boolean(a.contactName && b.contactName && name(a.contactName) === name(b.contactName));
-}
 
 /**
  * BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé giấy.
@@ -823,15 +767,12 @@ function ContactNote({
 function RowMenu({
   spot,
   booking,
-  sameDay,
   onMove,
   onEdit,
   onDone,
 }: {
   spot: string;
   booking: BookingDTO;
-  /** Booking khác cùng ngày — để chọn bản giữ lại khi gộp trùng. */
-  sameDay: BookingDTO[];
   onMove: () => void;
   onEdit: () => void;
   onDone: (message?: string) => void;
@@ -929,7 +870,6 @@ function RowMenu({
       <VoidBookingControl
         spot={spot}
         booking={booking}
-        sameDay={sameDay}
         onDone={(m) => {
           onDone(m);
           setOpen(false);
@@ -1890,7 +1830,6 @@ export function BookingTodayBanner({
                 <RowMenu
                   booking={b}
                   spot={spot}
-                  sameDay={rows}
                   onMove={() => setMoving({ id: b.id, toDate: "" })}
                   onEdit={() => requestEditBooking(b)}
                   onDone={(msg) => {
@@ -1976,7 +1915,8 @@ export function BookingTodayBanner({
                 {voided.map((b) => (
                   <li key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
                     <span className="rounded bg-slate-200 px-1.5 py-0.5 font-bold text-slate-700">
-                      {b.voidKind === "duplicate" ? "trùng — đã gộp" : "nhập nhầm"}
+                      {/* "trùng — đã gộp" là dấu của các bản ghi CŨ, cách gộp đã bỏ */}
+                      {b.voidKind === "duplicate" ? "trùng — đã gộp (cách cũ)" : "nhập nhầm"}
                     </span>
                     <span className="min-w-0 flex-1 truncate">
                       #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách

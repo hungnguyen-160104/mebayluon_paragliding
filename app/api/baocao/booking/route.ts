@@ -143,14 +143,11 @@ export async function DELETE(req: Request) {
 
   try {
     /**
-     * "Xoá" giờ là BỎ KHỎI SỔ có lý do — bản ghi ở lại để lần vết. Trùng thì
-     * phải chỉ đích danh booking giữ lại, máy chuyển tiền sang đó.
+     * "Xoá" là BỎ KHỎI SỔ có lý do — bản ghi ở lại để lần vết, và không được cộng
+     * vào bất cứ con số nào của ngày. Cách "gộp booking trùng" đã bỏ hẳn: nó dời
+     * tiền ngầm giữa hai booking và đã làm sai số tiền thu thật.
      */
-    const res = await voidBooking(auth, spot, id, {
-      kind: body?.kind === "duplicate" ? "duplicate" : "mistake",
-      reason: String(body?.reason ?? ""),
-      keepId: String(body?.keepId ?? ""),
-    });
+    const res = await voidBooking(auth, spot, id, { reason: String(body?.reason ?? "") });
     return NextResponse.json({ ok: true, ...res });
   } catch (err) {
     if (err instanceof BaobayError) {

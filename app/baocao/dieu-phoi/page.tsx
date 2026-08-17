@@ -247,6 +247,8 @@ export default function DispatcherReportPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const rangeTotal = useMemo(() => rangeRowsTotal(form.issuedRanges), [form.issuedRanges]);
+  /** Hà Nội không xuất vé giấy — bản dùng được TRONG hook (biến `noTickets` bên dưới nằm sau return sớm). */
+  const noTicketSpot = spot === "ha-noi";
 
   /**
    * "TỔNG KHÁCH TRONG NGÀY" TỰ CỘNG theo bảng kê của chính người nhập:
@@ -272,6 +274,25 @@ export default function DispatcherReportPage() {
       return { ...prev, guestCount: autoGuests };
     });
   }, [autoGuests, locked]);
+  /**
+   * "SỐ VÉ XUẤT RA" TỰ ĐẾM theo DẢI MÃ VÉ — dải mã là thứ nhân viên bắt buộc
+   * khai, còn con số thì chỉ là phép đếm của dải đó. Bắt gõ tay lần nữa chỉ tạo
+   * thêm một chỗ lệch.
+   *
+   * Vẫn sửa được: gõ số khác thì máy thôi giành (đúng như ô "tổng khách" ngay
+   * trên). Cách nhận biết: ô đang 0, hoặc đang mang đúng số máy điền lần trước.
+   */
+  const lastAutoTickets = useRef<number | null>(null);
+  useEffect(() => {
+    if (locked || noTicketSpot || rangeTotal <= 0) return;
+    setForm((prev) => {
+      if (prev.ticketsIssued !== 0 && prev.ticketsIssued !== lastAutoTickets.current) return prev;
+      if (prev.ticketsIssued === rangeTotal) return prev;
+      lastAutoTickets.current = rangeTotal;
+      return { ...prev, ticketsIssued: rangeTotal };
+    });
+  }, [rangeTotal, locked, noTicketSpot]);
+
   const cancelledCodes = useMemo(
     () => [...new Set(form.cancelledEntries.flatMap((e) => parseTicketCodeList(e.codesText).codes))],
     [form.cancelledEntries],
@@ -505,7 +526,7 @@ export default function DispatcherReportPage() {
         {!noTickets && (
         <CollapseCard title="Vé trong ngày" hint="vé xuất, vé thu về, dải mã">
           <div className="grid gap-3 @md:grid-cols-2">
-            <Field label="Số vé xuất ra">
+            <Field label="Số vé xuất ra" hint="Tự đếm theo dải mã vé bên dưới — sửa tay được">
               <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
             </Field>
             <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
@@ -525,7 +546,7 @@ export default function DispatcherReportPage() {
           {rangeMismatch && !locked && (
             <div className="mt-3">
               <Banner tone="warning">
-                Các dải mã cho ra {rangeTotal} vé, khác số vé xuất đã khai ({form.ticketsIssued}).
+                Các dải mã cho ra {rangeTotal} vé, mà ô “số vé xuất ra” đang là {form.ticketsIssued} (đã sửa tay).
                 <div className="mt-2">
                   <Button
                     type="button"

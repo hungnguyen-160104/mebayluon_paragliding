@@ -3460,26 +3460,24 @@ export async function updateBookingInfo(
  * dòng "ĐÃ XOÁ" sang bảng tính để bản sao ngoài DB không còn dòng mồ côi.
  */
 /**
- * BỎ BOOKING khỏi sổ vì NHẬP NHẦM hoặc NHẬP TRÙNG.
+ * BỎ BOOKING khỏi sổ vì NHẬP NHẦM (gõ hai lần, gõ sai khách…).
  *
  * Bản cũ xoá thẳng khỏi cơ sở dữ liệu — mất dấu hoàn toàn, chỉ còn một dòng
  * "ĐÃ XOÁ" bên Google Sheet mà dòng đó cũng xoá tay được. Đó là cửa mở cho gian
- * lận, nên giờ chỉ ĐÁNH DẤU: bản ghi ở lại sổ, không vào thống kê, không lên
- * lịch bay, và luôn lấy lại được.
+ * lận, nên giờ chỉ ĐÁNH DẤU: bản ghi ở lại sổ, không cộng vào bất cứ con số nào
+ * của ngày (khách, dịch vụ, tiền), không lên lịch bay, và luôn lấy lại được.
  *
- * Hai đường khác nhau:
- *  - "mistake"   : booking chưa dính gì (chưa thu, chưa xuất vé, chưa bay).
- *  - "duplicate" : trùng với một booking THẬT — phải chỉ đích danh bản giữ lại,
- *                  máy chuyển hết tiền đã thu và dấu xuất vé sang bản đó. Tiền
- *                  không mất, chỉ đổi chỗ đứng; tổng tiền mặt từng người đang
- *                  giữ không đổi một đồng vì lệnh thu vẫn ghi đúng người thu.
+ * ĐÃ BỎ cách "gộp booking trùng": nó dời tiền ngầm từ bản này sang bản kia rồi
+ * tính lại "còn thu" — không ai soát được, và đã làm sai số tiền thu thật (cặp
+ * trùng SĐT 0345272046 ngày 16/08). Booking đã có tiền thì phải sửa tiền trước
+ * bằng thẻ "Sửa tiền đã thu", xong mới bỏ được.
  */
 export async function voidBooking(
   session: BaobaySession,
   spotRaw: string,
   id: string,
-  input: { kind: "mistake" | "duplicate"; reason: string; keepId?: string },
-): Promise<{ voided: BookingDTO; keep?: BookingDTO }> {
+  input: { reason: string },
+): Promise<{ voided: BookingDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
@@ -3497,47 +3495,23 @@ export async function voidBooking(
 
   const paid = (doc.deposit ?? 0) > 0 || (doc.collectedLog ?? []).length > 0;
 
-  if (input.kind === "mistake") {
-    if (paid) throw new BaobayError("Booking đã phát sinh tiền — nếu trùng thì chọn “gộp”, còn lại phải dùng Huỷ khách", 400);
-    if (doc.ticketIssuedAt) throw new BaobayError("Booking đã xuất vé — thu hồi vé rồi mới bỏ được", 400);
-    if (doc.status === "done") throw new BaobayError("Booking đã bay — không bỏ được", 400);
-  }
-
-  let keep: any = null;
-  if (input.kind === "duplicate") {
-    if (!input.keepId || !mongoose.Types.ObjectId.isValid(input.keepId)) {
-      throw new BaobayError("Chọn booking GIỮ LẠI để gộp vào", 400);
-    }
-    if (String(input.keepId) === String(id)) throw new BaobayError("Không gộp một booking vào chính nó", 400);
-    keep = await BaobayBooking.findOne({ _id: input.keepId, spot }).lean<any>();
-    if (!keep) throw new BaobayError("Không tìm thấy booking giữ lại", 404);
-    if (keep.status === "voided") throw new BaobayError("Booking giữ lại cũng đã bị bỏ — chọn bản khác", 400);
-
-    /**
-     * Chuyển TIỀN sang bản giữ: lệnh thu chỉ đổi chỗ trỏ (giữ nguyên người thu,
-     * số tiền, hình thức) nên bảng tiền không xê dịch; cọc và vệt thu cộng dồn.
-     */
-    await BaobayCollect.updateMany(
-      { bookingId: doc._id },
-      { $set: { bookingId: keep._id, bookingCode: keep.bookingCode || "", guestName: keep.contactName || "" } },
+  /**
+   * ĐÃ BỎ HẲN cách "gộp booking trùng".
+   *
+   * Gộp phải dời tiền từ bản này sang bản kia rồi tính lại "còn thu" — một phép
+   * cộng trừ ngầm mà không ai soát được, và nó đã làm sai số tiền thu thật (cặp
+   * trùng SĐT 0345272046 ngày 16/08: gộp xong "còn thu" về 0 trong khi khách vẫn
+   * còn nợ). Giờ chỉ còn MỘT đường: báo NHẬP NHẦM, booking đó không được cộng
+   * vào bất cứ con số nào của ngày, tiền thì sửa bằng chính thẻ "Sửa tiền đã thu".
+   */
+  if (paid) {
+    throw new BaobayError(
+      "Booking này đã có tiền — mở ⋯ Thêm → “Sửa tiền đã thu” để xoá hoặc chuyển khoản thu sang booking đúng, rồi mới báo nhập nhầm",
+      400,
     );
-    const keepSet: Record<string, unknown> = {
-      deposit: (keep.deposit ?? 0) + (doc.deposit ?? 0),
-      collectedLog: [...(keep.collectedLog ?? []), ...(doc.collectedLog ?? [])],
-      note: [keep.note, `gộp booking trùng (${doc.contactName || doc.phone || "bản kia"})`].filter(Boolean).join(" · "),
-    };
-    // Dấu đã xuất vé và dịch vụ: bản nào có thì bản giữ có
-    if (!keep.ticketIssuedAt && doc.ticketIssuedAt) {
-      keepSet.ticketIssuedAt = doc.ticketIssuedAt;
-      keepSet.ticketIssuedBy = doc.ticketIssuedBy || "";
-    }
-    for (const f of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const) {
-      if ((keep[f] ?? 0) === 0 && (doc[f] ?? 0) > 0) keepSet[f] = doc[f];
-    }
-    keepSet.remaining = Math.max(0, (keep.totalAmount ?? 0) - (keepSet.deposit as number));
-    keep = await BaobayBooking.findOneAndUpdate({ _id: keep._id, spot }, { $set: keepSet }, { new: true }).lean<any>();
-    pushSheetInBackground(() => pushBookingRow(keep), BaobayBooking, keep._id);
   }
+  if (doc.ticketIssuedAt) throw new BaobayError("Booking đã xuất vé — thu hồi vé rồi mới bỏ được", 400);
+  if (doc.status === "done") throw new BaobayError("Booking đã bay — không bỏ được", 400);
 
   const voided = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
@@ -3547,16 +3521,13 @@ export async function voidBooking(
         voidedAt: new Date(),
         voidedBy: session.name || session.username,
         voidReason: reason,
-        voidKind: input.kind,
-        mergedInto: keep?._id,
-        // Tiền đã dời sang bản giữ — để lại số cũ là cộng hai lần
-        ...(input.kind === "duplicate" ? { deposit: 0, remaining: 0, collectedLog: [] } : {}),
+        voidKind: "mistake",
       },
     },
     { new: true },
   ).lean<any>();
   pushSheetInBackground(() => pushBookingRow(voided), BaobayBooking, voided._id);
-  return { voided: toBookingDTO(voided), keep: keep ? toBookingDTO(keep) : undefined };
+  return { voided: toBookingDTO(voided) };
 }
 
 /**
