@@ -4344,6 +4344,107 @@ export async function removeBookingServices(
 }
 
 
+
+/* ================================================================== */
+/* Booking tự động từ web Sa Pa (paraglidingsapa.com)                  */
+/* ================================================================== */
+
+/**
+ * Ghi một booking từ web Sa Pa vào sổ điểm bay SAPA.
+ *
+ * Sa Pa CHƯA quản tiền nên chỉ nhận 9 thông tin cơ bản; mọi ô tiền để 0 để số
+ * của điểm này không lẫn vào các phép cộng tiền của Hà Nội và Khau Phạ.
+ *
+ * KHOÁ THEO MÃ BOOKING của web bên đó (`ref`): gửi lại cùng một mã thì SỬA bản
+ * đã có, không tạo bản thứ hai. Nhờ vậy bên web cứ gửi lại thoải mái khi khách
+ * đổi giờ hay đổi số người, và lần gửi lỗi mạng thử lại cũng không sinh trùng.
+ *
+ * KHÔNG tự huỷ booking: khách bỏ bay là việc người trực xác nhận trên sổ, máy
+ * không tự tay đóng dấu huỷ theo một cú POST.
+ */
+export async function ingestSapaWebBooking(input: {
+  ref: string;
+  flightDate: string;
+  pickupTime: string;
+  pickupPoint: string;
+  name: string;
+  phone: string;
+  guests: number;
+  source: string;
+  note: string;
+}): Promise<{ action: "created" | "updated"; id: string; ref: string }> {
+  await connectDB();
+  const spot = "sapa";
+  const ref = input.ref.trim();
+  if (!ref) throw new BaobayError("Thiếu mã booking (ref)", 400);
+  if (!isDateKey(input.flightDate)) throw new BaobayError("Ngày bay không hợp lệ (cần YYYY-MM-DD)", 400);
+
+  const guests = Math.max(0, Math.round(input.guests || 0));
+  if (guests <= 0) throw new BaobayError("Số lượng khách phải lớn hơn 0", 400);
+
+  /** Điểm đón là chữ tự do bên web nên xếp vào kiểu đón "other" (xem form Sa Pa). */
+  const fields = {
+    flightDate: input.flightDate,
+    source: input.source.trim() || "Web Sa Pa",
+    contactName: input.name.trim() || "khách web Sa Pa",
+    phone: input.phone.trim(),
+    guestCount: guests,
+    pickup: "other" as const,
+    pickupNote: input.pickupPoint.trim(),
+    expectedTime: input.pickupTime.trim(),
+    note: input.note.trim(),
+  };
+
+  const existing = await BaobayBooking.findOne({ spot, bookingCode: ref }).lean<any>();
+  if (existing) {
+    /** Đã huỷ hoặc đã bỏ khỏi sổ thì để yên — người trực đã quyết, máy không lật lại. */
+    if (existing.status === "cancelled" || existing.status === "voided") {
+      return { action: "updated", id: String(existing._id), ref };
+    }
+    const updated = await BaobayBooking.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: fields },
+      { new: true },
+    ).lean<any>();
+    pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+    return { action: "updated", id: String(updated._id), ref };
+  }
+
+  const created = (
+    await BaobayBooking.create({
+      spot,
+      ...fields,
+      daySeq: await nextDaySeq(spot, input.flightDate),
+      createdByUsername: "web:sapa",
+      createdByName: "Web Sa Pa (tự động)",
+      bookingCode: ref,
+      otaRef: ref,
+      otaName: "sapaweb",
+      flightKind: "pg",
+      ppgGuests: 0,
+      flycam: 0,
+      video360: 0,
+      redFlag: 0,
+      sunset: 0,
+      flagFlight: 0,
+      mountainCar: 0,
+      // Sa Pa chưa quản tiền — mọi ô tiền để 0
+      unitPrice: 0,
+      discount: 0,
+      comboDiscount: 0,
+      pickupFee: 0,
+      totalAmount: 0,
+      deposit: 0,
+      remaining: 0,
+      depositToCompany: false,
+      transferCode: "",
+      status: "open",
+    })
+  ).toObject();
+  pushSheetInBackground(() => pushBookingRow(created), BaobayBooking, created._id);
+  return { action: "created", id: String(created._id), ref };
+}
+
 /* ================================================================== */
 /* Sổ THÊM / HUỶ dịch vụ — liệt kê và hoàn tác để nhập lại              */
 /* ================================================================== */
