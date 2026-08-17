@@ -33,6 +33,16 @@ import { Input } from "@/components/ui/input";
 
 type NewCredential = { username: string; displayName: string; password: string; role: BaobayRole };
 
+/** Nhãn ngắn cho các chip "kiêm nhiệm" — bảng nhân sự hẹp, tên đầy đủ tràn dòng. */
+const SHORT_ROLE: Record<BaobayRole, string> = {
+  pilot: "Phi công",
+  dispatcher: "Điều phối",
+  counter: "Quầy vé",
+  cameraman: "Camera",
+  accountant: "Kế toán",
+  admin: "Quản trị",
+};
+
 type Filter = "active" | "inactive" | "all";
 
 const selectClass =
@@ -1084,6 +1094,40 @@ function AccountRow({
             </option>
           ))}
         </select>
+        {/**
+         * KIÊM NHIỆM: một người làm nhiều vai (quản trị kiêm kế toán, phi công
+         * kiêm camera man…). Bật vai nào thì trên thanh điều hướng của người đó
+         * hiện thêm lối vào trang của vai ấy — khỏi phải hai tài khoản.
+         *
+         * Không có "quản trị" trong danh sách: muốn ai làm quản trị thì đổi hẳn
+         * VAI CHÍNH, để đường phong quyền chỉ có một lối, dễ soát.
+         */}
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">kiêm</span>
+          {BAOBAY_ROLES.filter((r) => r !== "admin" && r !== account.role).map((r) => {
+            const on = (account.extraRoles ?? []).includes(r);
+            return (
+              <button
+                key={r}
+                type="button"
+                disabled={busy}
+                title={`Kiêm nhiệm ${ROLE_LABEL[r]}`}
+                onClick={() => {
+                  const cur = account.extraRoles ?? [];
+                  patch({ extraRoles: on ? cur.filter((x) => x !== r) : [...cur, r] });
+                }}
+                className={
+                  on
+                    ? "rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white"
+                    : "rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-500"
+                }
+              >
+                {SHORT_ROLE[r]}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Phi công chia PG / PPG / cả hai — trang phi công chỉ hiện khối PPG cho người có PPG */}
         {account.role === "pilot" && (
           <select

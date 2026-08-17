@@ -27,7 +27,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
-import { ROLE_LABEL, isDispatcherLike, type BaobayRole } from "@/lib/baobay/roles";
+import { ROLE_LABEL, isBaobayRole, isDispatcherLike, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
@@ -434,6 +434,8 @@ export type UpdateAccountInput = {
   isActive?: boolean;
   /** Loại phi công: pg / ppg / both. */
   pilotKind?: "pg" | "ppg" | "both";
+  /** Vai kiêm nhiệm — mảng vai trò ngoài vai chính. */
+  extraRoles?: string[];
   /** Quản trị đặt lại mật khẩu — người dùng sẽ bị buộc đổi ở lần đăng nhập sau. */
   newPassword?: string;
 };
@@ -501,6 +503,18 @@ export async function updateAccount(
     const spots = normalizeSpotList(patch.spots);
     if (!spots.length) return { ok: false, error: "Phải chỉ định ít nhất một điểm bay" };
     set.spots = spots;
+  }
+  /**
+   * KIÊM NHIỆM: chỉ nhận vai có thật, bỏ trùng, và bỏ luôn vai chính (kiêm chính
+   * mình thì vô nghĩa). KHÔNG cho kiêm "quản trị" — muốn ai làm quản trị thì đổi
+   * hẳn vai chính, để đường phong quyền chỉ có một lối, dễ soát.
+   */
+  if (patch.extraRoles !== undefined) {
+    const mainRole = (patch.role ?? (await BaobayAccount.findById(id).select("role").lean<any>())?.role) as string;
+    const list = [...new Set(patch.extraRoles.map(String))].filter(
+      (r) => isBaobayRole(r) && r !== "admin" && r !== mainRole,
+    );
+    set.extraRoles = list;
   }
   if (patch.note !== undefined) set.note = patch.note.trim();
   if (patch.isActive !== undefined) set.isActive = patch.isActive;
@@ -685,6 +699,7 @@ function toAccountDTO(doc: AccountDoc): BaobayAccountDTO {
     password: doc.passwordPlain || "",
     spots: normalizeSpotList(doc.spots).length ? normalizeSpotList(doc.spots) : [DEFAULT_SPOT],
     pilotKind: doc.pilotKind === "ppg" ? "ppg" : doc.pilotKind === "both" ? "both" : "pg",
+    extraRoles: ((doc as any).extraRoles ?? []).filter((r: string) => isBaobayRole(r)) as BaobayRole[],
     isActive: doc.isActive !== false,
     mustChangePassword: Boolean(doc.mustChangePassword),
     lastLoginAt: doc.lastLoginAt ? new Date(doc.lastLoginAt).toISOString() : undefined,

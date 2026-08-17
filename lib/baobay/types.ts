@@ -643,6 +643,8 @@ export type BaobayAccountDTO = {
   spots: string[];
   /** Loại phi công: pg / ppg / both — chỉ có nghĩa với role pilot. */
   pilotKind: "pg" | "ppg" | "both";
+  /** Vai KIÊM NHIỆM ngoài vai chính — người này thấy đủ lối vào các trang đó. */
+  extraRoles: BaobayRole[];
   isActive: boolean;
   mustChangePassword: boolean;
   lastLoginAt?: string;
