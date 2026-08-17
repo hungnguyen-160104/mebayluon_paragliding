@@ -3093,6 +3093,19 @@ function nowHHMMVN(): string {
   return new Date().toLocaleTimeString("en-GB", { hour12: false, timeZone: "Asia/Ho_Chi_Minh" }).slice(0, 5);
 }
 
+/**
+ * "CÒN LẠI PHẢI THU" = TỔNG TIỀN − ĐÃ THU. Máy chủ chốt lại con số này chứ không
+ * tin số máy khách gửi lên: mỗi nơi tự tính một kiểu là sinh ra cảnh "tổng
+ * 2.190.000 · còn lại 2.340.000" — hai con số chỏi nhau trên cùng một dòng.
+ *
+ * Ngoại lệ duy nhất: booking CHƯA CÓ tổng tiền (tổng = 0, thường là bản nhập từ
+ * thời chưa tính tiền trong app) thì giữ nguyên số đã khai — đó là công nợ thật,
+ * tính lại thành 0 là xoá mất nợ.
+ */
+function remainingOf(total: number, deposit: number, declared: number): number {
+  return total > 0 ? Math.max(0, total - Math.max(0, deposit)) : Math.max(0, declared);
+}
+
 /** Booking phải nằm ở tương lai: ngày bay không lùi, giờ dự kiến hôm nay không sớm hơn bây giờ. */
 function assertBookingTime(flightDate: string, expectedTime: string) {
   const today = todayInVN();
@@ -3160,6 +3173,14 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     collector = doc;
   }
 
+  /** Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi. */
+  const newTotal = bookingTotal({
+    ...input,
+    // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
+    ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+  });
+
   const saved = (
     await BaobayBooking.create({
       spot,
@@ -3185,18 +3206,13 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       unitPrice: input.unitPrice,
       discount: input.discount,
       // Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi
-      totalAmount: bookingTotal({
-        ...input,
-        // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
-        ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-        ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
-      }),
+      totalAmount: newTotal,
       // BigC chỉ có ở Hà Nội — điểm khác rơi về "tự đến"
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
-      remaining: input.remaining,
+      remaining: remainingOf(newTotal, input.deposit, input.remaining),
       transferCode: input.transferCode.trim(),
       // Cọc thì 100% qua STK công ty — không cần tích tay nữa
       depositToCompany: input.deposit > 0,
@@ -3411,6 +3427,13 @@ export async function updateBookingInfo(
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking này", 404);
 
+  /** Tổng tiền tính lại theo bảng giá — "còn lại" bám theo đúng con số này. */
+  const editedTotal = bookingTotal({
+    ...input,
+    ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+  });
+
   const update: Record<string, unknown> = {
     $set: {
       flightDate: input.flightDate,
@@ -3431,17 +3454,12 @@ export async function updateBookingInfo(
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
       discount: input.discount,
-      totalAmount: bookingTotal({
-        ...input,
-        // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
-        ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-        ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
-      }),
+      totalAmount: editedTotal,
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
-      remaining: input.remaining,
+      remaining: remainingOf(editedTotal, input.deposit, input.remaining),
       transferCode: input.transferCode.trim(),
       // Cọc thì 100% qua STK công ty — không cần tích tay nữa
       depositToCompany: input.deposit > 0,

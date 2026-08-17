@@ -2410,7 +2410,6 @@ export function BookingCard({
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
   /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
-  const [remainingTouched, setRemainingTouched] = useState(false);
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
   /** Danh sách sắp tới dài thì chỉ hiện 5 dòng gần nhất, bấm mới xổ hết. */
@@ -2438,7 +2437,6 @@ export function BookingCard({
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
-    if (key === "remaining") setRemainingTouched(true);
     if (key === "unitPrice") setPriceTouched(true);
     if (key === "comboDiscount") setComboTouched(true);
     setForm((prev) => {
@@ -2471,14 +2469,11 @@ export function BookingCard({
       if (!priceTouched && (key === "flightDate" || key === "flightKind")) {
         next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
       }
-      const total = totalOf(next);
-      if (
-        !remainingTouched &&
-        ["unitPrice", "discount", "comboDiscount", "guestCount", "ppgGuests", "deposit", "flightDate", "flightKind",
-         "pickupFee", "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"].includes(key as string)
-      ) {
-        next.remaining = Math.max(0, total - (next.deposit || 0));
-      }
+      /**
+       * "Còn lại" LUÔN tính lại theo luật tổng − cọc, không có ngoại lệ: ô đó chỉ
+       * đọc, và máy chủ cũng chốt lại đúng công thức này khi lưu.
+       */
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
       return next;
     });
   };
@@ -2631,7 +2626,7 @@ export function BookingCard({
         next.flagFlight = Math.min(next.flagFlight, guestCount);
       }
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
-      if (!remainingTouched) next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
       return next;
     });
   }
@@ -2764,7 +2759,16 @@ export function BookingCard({
   /** Nạp booking vào form phía trên để sửa. */
   function startEdit(b: BookingDTO) {
     setEditingId(b.id);
-    setRemainingTouched(true); // booking cũ: giữ đúng số đã lưu, khỏi bị tính lại
+    /**
+     * "CÒN LẠI" LUÔN BÁM LUẬT: còn lại = tổng tiền − đã cọc.
+     *
+     * Trước đây mở booking ra sửa là khoá luôn ô này ("giữ đúng số đã lưu"), nên
+     * đổi loại hình bay hay thêm phí đón thì TỔNG chạy mà CÒN LẠI đứng im — màn
+     * hình hiện "tổng 2.190.000 · còn lại 2.340.000", hai số chỏi nhau.
+     *
+     * Riêng booking cũ chưa có tổng tiền (tổng = 0) thì giữ nguyên số đã lưu —
+     * số đó là nợ thật, tính lại thành 0 là xoá mất công nợ.
+     */
     setPriceTouched(true);
     setDone(null);
     setError(null);
@@ -2791,7 +2795,25 @@ export function BookingCard({
       unitPrice: b.unitPrice,
       discount: b.discount,
       deposit: b.deposit,
-      remaining: b.remaining,
+      remaining: (() => {
+        const total = totalOf({
+          flightDate: b.flightDate,
+          flightKind: b.flightKind,
+          ppgGuests: b.ppgGuests ?? 0,
+          guestCount: b.guestCount,
+          unitPrice: b.unitPrice,
+          mountainCar: b.mountainCar,
+          flycam: b.flycam,
+          video360: b.video360,
+          redFlag: b.redFlag,
+          flagFlight: b.flagFlight,
+          sunset: b.sunset,
+          pickupFee: b.pickupFee,
+          discount: b.discount,
+          comboDiscount: b.comboDiscount ?? 0,
+        });
+        return total > 0 ? Math.max(0, total - (b.deposit || 0)) : b.remaining;
+      })(),
       transferCode: b.transferCode,
       // Sửa booking KHÔNG lập lại lệnh thu — tránh gửi trùng lệnh cho người thu
       collectorUsername: "",
@@ -2945,67 +2967,35 @@ export function BookingCard({
       {/* Bốn ô nhưng KHÔNG chia đều: Nguồn rộng bằng đúng một phần ba hàng, tức
           bằng ô Điểm bay ở hàng trên (tên nguồn dài — "Klook", "SEEK Sophie"…);
           ô Tổng khách chỉ đọc nên bóp nhỏ lại nhường chỗ. */}
-      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-[1.1fr_1.1fr_0.6fr_1.4fr]">
-        {bookSpot === "khau-pha" ? (
-          /* Khau Phạ đặt PG và PPG CHUNG một booking — hai ô riêng, tổng tự cộng */
-          <>
-            {/* PG xanh dương · PPG tím · tổng khách xanh lá — ba ô đứng liền nhau,
-                trắng giống nhau cả ba thì gõ nhầm ô là chuyện sớm muộn */}
-            <Field label={<span className="text-sky-700">PG (số khách)</span>}>
-              <div className="rounded-lg border-2 border-sky-400 bg-sky-50 p-0.5">
-                <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
-              </div>
-            </Field>
-            <Field label={<span className="text-violet-700">PPG (số khách)</span>}>
-              <div className="rounded-lg border-2 border-violet-400 bg-violet-50 p-0.5">
-                <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
-              </div>
-            </Field>
-            <Field label={<span className="text-emerald-700">Tổng khách</span>}>
-              {/* Ô chỉ đọc, chứa nhiều nhất 2-3 chữ số — hẹp một nửa để nhường
-                  chỗ cho hai cụm đếm PG/PPG bên cạnh. Tô xanh cho nổi: đây là
-                  con số mọi thứ khác bám theo (giá, trần dịch vụ, vé). */}
-              <div
-                className="flex h-10 w-1/2 min-w-16 items-center justify-center rounded-lg border-2 border-emerald-400 bg-emerald-50 px-2 text-base font-bold tabular-nums text-emerald-900"
-                title="Tự cộng từ hai ô PG / PPG bên cạnh"
-              >
-                {form.guestCount}
-              </div>
-            </Field>
-          </>
-        ) : (
-          <>
-            <div className="@md:col-span-2">
-              <Field label="Loại hình bay">
-                <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
-                  {flightKindsOf(bookSpot).map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => set("flightKind", k)}
-                      title={FLIGHT_KIND_LABEL[k]}
-                      className={
-                        form.flightKind === k
-                          ? "flex-1 bg-sky-600 text-sm font-bold text-white"
-                          : "flex-1 bg-white text-sm font-medium text-slate-500"
-                      }
-                    >
-                      {FLIGHT_KIND_SHORT[k]}
-                    </button>
-                  ))}
-                </div>
-              </Field>
+      {/**
+       * Hàng giữa: mỗi điểm bay một tỉ lệ cột riêng, vì số ô khác nhau.
+       *  - Khau Phạ: PG · PPG · tổng khách · nguồn (4 ô)
+       *  - Điểm khác: loại hình · số khách · nguồn (3 ô)
+       * Chia đều 4 cột thì ô "số khách" bị bóp còn 0.6fr, nút "+" tràn sang đè
+       * lên ô Nguồn — đúng lỗi đã gặp.
+       */}
+      {bookSpot === "khau-pha" ? (
+        <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-[1.1fr_1.1fr_0.6fr_1.4fr]">
+          {/* PG xanh dương · PPG tím · tổng khách xanh lá — ba ô đứng liền nhau,
+              trắng giống nhau cả ba thì gõ nhầm ô là chuyện sớm muộn */}
+          <Field label={<span className="text-sky-700">PG (số khách)</span>}>
+            <div className="rounded-lg border-2 border-sky-400 bg-sky-50 p-0.5">
+              <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
             </div>
-            <Field label={<span className="text-emerald-700">Số khách</span>}>
-              <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 p-0.5">
-                <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
-              </div>
-            </Field>
-          </>
-        )}
-        {/* NGUỒN và ĐIỂM BAY tô đỏ: hai ô này sai là sai cả chuyến — nguồn sai
-            thì lệch chiết khấu đại lý và đối soát OTA, điểm bay sai thì booking
-            rơi sang sổ của điểm khác, hôm đó không ai biết có khách. */}
+          </Field>
+          <Field label={<span className="text-violet-700">PPG (số khách)</span>}>
+            <div className="rounded-lg border-2 border-violet-400 bg-violet-50 p-0.5">
+              <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+            </div>
+          </Field>
+          <Field label={<span className="text-emerald-700">Tổng khách</span>}>
+            <div
+              className="flex h-10 w-full items-center justify-center rounded-lg border-2 border-emerald-400 bg-emerald-50 px-2 text-base font-bold tabular-nums text-emerald-900"
+              title="Tự cộng từ hai ô PG / PPG bên cạnh"
+            >
+              {form.guestCount}
+            </div>
+          </Field>
         <Field label={<span className="text-rose-700">Nguồn ★</span>}>
           <TextInput
             value={form.source}
@@ -3025,7 +3015,57 @@ export function BookingCard({
             ))}
           </datalist>
         </Field>
-      </div>
+        </div>
+      ) : (
+        <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-[0.62fr_0.95fr_0.93fr]">
+          {/* Hai nút 650m / 850m: chỉ là hai chữ ngắn nên bóp hẳn bề ngang lại
+              (còn ~1/4 hàng, và không nới quá 14rem), nhờ đó ô "số khách" dịch
+              sang trái theo, hết cảnh nút + đè lên ô Nguồn */}
+          <Field label="Loại hình bay">
+            <div className="flex h-10 max-w-56 overflow-hidden rounded-lg border border-slate-300">
+              {flightKindsOf(bookSpot).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => set("flightKind", k)}
+                  title={FLIGHT_KIND_LABEL[k]}
+                  className={
+                    form.flightKind === k
+                      ? "flex-1 bg-sky-600 text-sm font-bold text-white"
+                      : "flex-1 bg-white text-sm font-medium text-slate-500"
+                  }
+                >
+                  {FLIGHT_KIND_SHORT[k]}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label={<span className="text-emerald-700">Số khách</span>}>
+            <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 p-0.5">
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+            </div>
+          </Field>
+        <Field label={<span className="text-rose-700">Nguồn ★</span>}>
+          <TextInput
+            value={form.source}
+            onChange={(e) => set("source", e.target.value)}
+            placeholder="Klook / FB / Zalo / GYG…"
+            list="booking-sources"
+            className={
+              "h-10 rounded-lg text-sm font-semibold " +
+              (form.source.trim()
+                ? "border-2 border-rose-400 bg-rose-50/60 text-rose-900"
+                : "border-2 border-rose-300 bg-rose-50/40")
+            }
+          />
+          <datalist id="booking-sources">
+            {BOOKING_SOURCES.map((sName) => (
+              <option key={sName} value={sName} />
+            ))}
+          </datalist>
+        </Field>
+        </div>
+      )}
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label="Tên liên hệ">
@@ -3180,11 +3220,22 @@ export function BookingCard({
             placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
           />
         </Field>
-        {/* CÒN THU tô đỏ: đây là số quầy phải nhớ thu trước khi khách bay */}
-        <Field label={<span className="text-rose-700">Còn lại (thu trước khi bay) ★</span>}>
+        {/**
+         * CÒN THU: ô CHỈ ĐỌC, máy tự tính = tổng tiền − đã cọc.
+         *
+         * Trước đây gõ tay được, và mở booking cũ ra sửa thì nó bị khoá luôn số đã
+         * lưu — nên đổi loại hình bay hay thêm phí đón là TỔNG chạy mà CÒN LẠI đứng
+         * im, màn hình hiện "tổng 2.190.000 · còn lại 2.340.000". Máy chủ giờ cũng
+         * chốt lại con số này nên có gõ tay cũng không giữ được: bỏ ô nhập cho khỏi
+         * hứa hẹn sai. Muốn đổi số còn thu thì sửa "đã cọc" hoặc thu thêm tiền.
+         */}
+        <Field
+          label={<span className="text-rose-700">Còn lại (thu trước khi bay) ★</span>}
+          hint="Máy tự tính = tổng tiền − đã cọc"
+        >
           <div className="flex items-center gap-1">
-            <span className="min-w-0 flex-1 rounded-lg border-2 border-rose-400 bg-rose-50 p-0.5">
-              <MoneyInput value={form.remaining} onChange={(v) => set("remaining", v)} />
+            <span className="flex h-10 min-w-0 flex-1 items-center justify-end rounded-lg border-2 border-rose-400 bg-rose-50 px-3 text-base font-bold tabular-nums text-rose-800">
+              {form.remaining.toLocaleString("vi-VN")} đ
             </span>
             <PaymentQrButton
               amount={form.remaining}
@@ -3280,7 +3331,6 @@ export function BookingCard({
               setDone(null);
               setForceOpen(false);
               // Cờ "đã sửa tay" của lần sửa trước không được vắt sang booking mới
-              setRemainingTouched(false);
               setPriceTouched(false);
               setComboTouched(false);
             }}
@@ -3303,7 +3353,6 @@ export function BookingCard({
               setQuickMsg(null);
               setError(null);
               setDone(null);
-              setRemainingTouched(false);
               setPriceTouched(false);
               setComboTouched(false);
             }}
