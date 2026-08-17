@@ -676,6 +676,52 @@ export default function DispatcherReportPage() {
             thu ở đây chảy thẳng vào sổ đó */}
         <AddServicesCard spot={spot} date={date} />
 
+        {/* KHÁCH HUỶ / DỜI LỊCH nằm CỘT TRÁI, trên sổ THU CHI: huỷ hay dời là kéo
+            theo tiền hoàn và phí — phải đọc liền mạch với sổ tiền ngay bên dưới,
+            chứ không nằm lạc ở cột phải cùng mấy mục tra cứu. */}
+        <CollapseCard title="Khách huỷ / dời lịch">
+          <CancelMoveCard
+            spot={spot}
+            date={date}
+            bookings={dayBookings}
+            cancelled={cancelledBookings}
+            movedOut={movedOutBookings}
+            cancelRows={form.cancelledGuests}
+            moveRows={form.rescheduledGuests}
+            onCancelRows={(rows) => set("cancelledGuests", rows)}
+            onMoveRows={(rows) => set("rescheduledGuests", rows)}
+            withCodes={!noTickets}
+            disabled={locked}
+            onChanged={() => loadDay(date)}
+          />
+
+          {!noTickets && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
+            <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
+          </div>
+          )}
+
+          {returnMismatch && !locked && (
+            <div className="mt-2">
+              <Banner tone="warning">
+                Số vé thu về ({form.ticketsReturned}) khác tổng huỷ + dời lịch ({returned}).
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 px-3 text-xs"
+                    onClick={() => set("ticketsReturned", returned)}
+                  >
+                    Lấy số vé thu về = {returned}
+                  </Button>
+                </div>
+              </Banner>
+            </div>
+          )}
+        </CollapseCard>
+
+
         <CollapseCard
           title="THU CHI & TIỀN NONG"
         >
@@ -725,47 +771,6 @@ export default function DispatcherReportPage() {
         {/* Lệnh hoàn tiền mình đã lập — theo dõi kế toán chuyển tới đâu */}
         <RefundCard spot={spot} date={date} />
 
-        <CollapseCard title="Khách huỷ / dời lịch">
-          <CancelMoveCard
-            spot={spot}
-            date={date}
-            bookings={dayBookings}
-            cancelled={cancelledBookings}
-            movedOut={movedOutBookings}
-            cancelRows={form.cancelledGuests}
-            moveRows={form.rescheduledGuests}
-            onCancelRows={(rows) => set("cancelledGuests", rows)}
-            onMoveRows={(rows) => set("rescheduledGuests", rows)}
-            withCodes={!noTickets}
-            disabled={locked}
-            onChanged={() => loadDay(date)}
-          />
-
-          {!noTickets && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
-            <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
-          </div>
-          )}
-
-          {returnMismatch && !locked && (
-            <div className="mt-2">
-              <Banner tone="warning">
-                Số vé thu về ({form.ticketsReturned}) khác tổng huỷ + dời lịch ({returned}).
-                <div className="mt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-9 px-3 text-xs"
-                    onClick={() => set("ticketsReturned", returned)}
-                  >
-                    Lấy số vé thu về = {returned}
-                  </Button>
-                </div>
-              </Banner>
-            </div>
-          )}
-        </CollapseCard>
 
         <CollapseCard
           title="Khách ngoại giao"

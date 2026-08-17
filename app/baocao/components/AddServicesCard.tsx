@@ -60,6 +60,8 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const [bookings, setBookings] = useState<BookingDTO[]>([]);
   /** Sổ các lần thêm/huỷ trong ngày — bấm vào một dòng là sửa lại được. */
   const [changes, setChanges] = useState<ServiceChangeDTO[]>([]);
+  /** Mọi booking của ngày (kể cả đã huỷ) — để đọc lại các lần sửa dịch vụ CŨ ghi trong ghi chú. */
+  const [dayAll, setDayAll] = useState<BookingDTO[]>([]);
   /**
    * Cùng một thao tác "sửa dịch vụ của một booking", chỉ khác dấu cộng/trừ —
    * nên hai chế độ chung một thẻ, khỏi bắt người dùng nhớ hai chỗ.
@@ -90,7 +92,10 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const load = useCallback(() => {
     if (!spot) return;
     apiGet<{ forDate: BookingDTO[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
-      .then((r) => setBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done")))
+      .then((r) => {
+        setBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done"));
+        setDayAll(r.forDate);
+      })
       .catch(() => {
         /* ngày chưa có booking thì thôi */
       });
@@ -153,6 +158,30 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   }, [load]);
 
   const picked = bookings.find((b) => b.id === pickId) ?? null;
+
+  /**
+   * CÁC LẦN SỬA DỊCH VỤ CŨ — đọc lại từ GHI CHÚ của booking.
+   *
+   * Sổ thao tác (có nút Sửa/Bỏ) chỉ ghi từ lúc có tính năng đó; những lần thêm
+   * hoặc huỷ dịch vụ trước đó chỉ còn một dòng chữ trong ghi chú booking. Không
+   * đọc chỗ này thì thẻ trông như "hôm nay không ai sửa dịch vụ" — trong khi
+   * ngày 16/08 có khách huỷ cả dù cờ đỏ lẫn camera 360.
+   *
+   * Chỉ LIỆT KÊ, không có nút sửa: không có ảnh chụp trước-khi-sửa nên không hoàn
+   * tác được, chỉ dùng để soát.
+   */
+  const legacy = dayAll.flatMap((b) =>
+    (b.note ?? "")
+      .split("·")
+      .map((x) => x.trim())
+      .filter((x) => /^(đăng ký thêm|huỷ dịch vụ):/i.test(x))
+      .map((text) => ({
+        id: `${b.id}-${text.slice(0, 24)}`,
+        kind: /^huỷ/i.test(text) ? ("remove" as const) : ("add" as const),
+        label: `#${b.daySeq} ${b.contactName || b.phone || "khách"}`,
+        text,
+      })),
+  );
 
   /** Tiền dịch vụ thêm, phần combo được bớt thêm, và số cuối cùng phải thu. */
   const addAmount = (Object.keys(SERVICE_PRICE) as ServiceKey[]).reduce(
@@ -649,6 +678,34 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             <DoneTag show={justDone}>{mode === "remove" ? "Đã huỷ" : "Đã ghi"}</DoneTag>
           </div>
         </>
+      )}
+
+      {/* ---- CÁC LẦN SỬA DỊCH VỤ CŨ (đọc từ ghi chú booking) — chỉ để soát ---- */}
+      {legacy.length > 0 && (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/60 p-2">
+          <div className="text-xs font-bold text-slate-700">Đã sửa dịch vụ trong ngày ({legacy.length})</div>
+          <ul className="mt-1 divide-y divide-slate-100">
+            {legacy.map((x) => (
+              <li key={x.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1 text-xs">
+                <span
+                  className={
+                    "shrink-0 rounded px-1.5 py-0.5 font-bold " +
+                    (x.kind === "add" ? "bg-emerald-100 text-emerald-900" : "bg-rose-100 text-rose-900")
+                  }
+                >
+                  {x.kind === "add" ? "thêm" : "huỷ"}
+                </span>
+                <span className="min-w-0 flex-1 leading-snug text-slate-700">
+                  <strong>{x.label}</strong> · {x.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] leading-tight text-slate-500">
+            Đọc lại từ ghi chú booking nên chỉ xem được, không sửa được. Các lần sửa TỪ NAY nằm ở khối dưới, có nút
+            ✎ Sửa.
+          </p>
+        </div>
       )}
 
       {/* ---- SỔ THÊM / HUỶ TRONG NGÀY: bấm Sửa là hoàn tác rồi nhập lại ---- */}
