@@ -1,7 +1,7 @@
 // app/baocao/components/PaymentQr.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BANK_BIN, buildVietQrPayload, toAsciiNote } from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
@@ -152,6 +152,21 @@ export function PaymentQrButton({
   );
 }
 
+/**
+ * Các cửa chia sẻ hay dùng nhất. Mỗi app một kiểu:
+ *  - Zalo, Facebook, WhatsApp: có sẵn trang chia sẻ trên web, mở tab là xong.
+ *  - Messenger: không có cửa web dùng chung, nên chép link rồi mở Messenger để
+ *    dán — điện thoại thì thử mở thẳng app trước.
+ */
+const SHARE_APPS = [
+  { key: "zalo", label: "Zalo", icon: "💬" },
+  { key: "messenger", label: "Messenger", icon: "🟣" },
+  { key: "whatsapp", label: "WhatsApp", icon: "🟢" },
+  { key: "facebook", label: "Facebook", icon: "🔵" },
+] as const;
+
+type ShareApp = (typeof SHARE_APPS)[number];
+
 function PaymentQrModal({
   amount,
   note,
@@ -218,6 +233,52 @@ function PaymentQrModal({
     }
   }, [amount, asciiNote, purpose, url]);
 
+  /** Liên kết trang /qr — mở ra là thấy đúng mã này, gửi được cho mọi app. */
+  const shareLink = useMemo(() => {
+    const base = typeof window === "undefined" ? "" : window.location.origin;
+    const q = new URLSearchParams({ a: String(amount), n: asciiNote, p: purpose });
+    return `${base}/qr?${q.toString()}`;
+  }, [amount, asciiNote, purpose]);
+
+  const shareText = `${purpose}: ${formatVND(amount)} — ${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} (${PAY_ACCOUNT.accountName}), nội dung ${asciiNote}. Quét mã: ${shareLink}`;
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setMsg("Đã chép liên kết mã QR — dán vào khung chat gửi khách.");
+    } catch {
+      setError("Máy không cho chép tự động — bấm Chia sẻ ảnh rồi gửi tay.");
+    }
+  }, [shareLink]);
+
+  const sendTo = useCallback(
+    async (app: ShareApp) => {
+      setError(null);
+      const u = encodeURIComponent(shareLink);
+      if (app.key === "zalo") {
+        window.open(`https://sp.zalo.me/plugins/share?u=${u}`, "_blank", "noopener");
+        return;
+      }
+      if (app.key === "facebook") {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${u}`, "_blank", "noopener");
+        return;
+      }
+      if (app.key === "whatsapp") {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener");
+        return;
+      }
+      // Messenger: chép link trước đã, để dán được kể cả khi app không mở lên
+      try {
+        await navigator.clipboard.writeText(shareLink);
+        setMsg("Đã chép liên kết — dán vào khung chat Messenger gửi khách.");
+      } catch {
+        setMsg("Mở Messenger rồi dán liên kết bên dưới cho khách.");
+      }
+      window.open(`https://www.messenger.com/new`, "_blank", "noopener");
+    },
+    [shareLink, shareText],
+  );
+
   const copyInfo = useCallback(async () => {
     const text = `${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} — ${PAY_ACCOUNT.accountName}\nSố tiền: ${formatVND(amount)}\nNội dung: ${asciiNote}`;
     try {
@@ -273,12 +334,38 @@ function PaymentQrModal({
 
         <div className="mt-3 flex gap-2">
           <Button type="button" className="h-10 flex-1" disabled={!url} onClick={share}>
-            📤 Chia sẻ cho khách
+            📤 Chia sẻ ảnh mã QR
           </Button>
           <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={copyInfo}>
             Chép số TK
           </Button>
         </div>
+
+        {/**
+         * Gửi thẳng qua từng app. Zalo/Messenger/Facebook chỉ nhận LIÊN KẾT chứ
+         * không nhận ảnh dán từ web, nên các nút này gửi link trang /qr — khách
+         * bấm vào là thấy đúng mã QR, đúng số tiền, quét luôn.
+         */}
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {SHARE_APPS.map((app) => (
+            <button
+              key={app.key}
+              type="button"
+              onClick={() => sendTo(app)}
+              className="flex flex-col items-center gap-0.5 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 active:bg-slate-100"
+            >
+              <span aria-hidden className="text-base leading-none">{app.icon}</span>
+              {app.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={copyLink}
+          className="mt-1.5 w-full rounded-lg border border-dashed border-slate-300 py-1.5 text-[11px] font-semibold text-slate-600 active:bg-slate-100"
+        >
+          🔗 Chép liên kết mã QR — dán vào TikTok, Telegram, SMS…
+        </button>
         <p className="mt-1.5 text-center text-[11px] leading-tight text-slate-500">
           Khách trả xong vẫn phải bấm <strong>thu tiền</strong> trong app thì sổ mới ghi — mã QR chỉ để khách chuyển.
         </p>

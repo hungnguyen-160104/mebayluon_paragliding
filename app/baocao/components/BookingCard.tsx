@@ -2934,7 +2934,7 @@ export function BookingCard({
             onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
           />
         </Field>
-        <Field label="Điểm bay">
+        <Field label={<span className="text-rose-700">Điểm bay ★</span>}>
           <select
             value={bookSpot}
             onChange={(e) => {
@@ -2956,7 +2956,7 @@ export function BookingCard({
               });
             }}
             disabled={spots.length <= 1}
-            className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600 disabled:bg-slate-50 disabled:text-slate-500"
+            className="h-10 w-full rounded-lg border-2 border-rose-400 bg-rose-50/60 px-3 text-sm font-bold text-rose-900 outline-none focus:border-rose-600 disabled:bg-rose-50/40 disabled:text-rose-900/70"
           >
             {spots.map((id) => (
               <option key={id} value={id}>
@@ -3016,12 +3016,21 @@ export function BookingCard({
             </Field>
           </>
         )}
-        <Field label="Nguồn">
+        {/* NGUỒN và ĐIỂM BAY tô đỏ: hai ô này sai là sai cả chuyến — nguồn sai
+            thì lệch chiết khấu đại lý và đối soát OTA, điểm bay sai thì booking
+            rơi sang sổ của điểm khác, hôm đó không ai biết có khách. */}
+        <Field label={<span className="text-rose-700">Nguồn ★</span>}>
           <TextInput
             value={form.source}
             onChange={(e) => set("source", e.target.value)}
             placeholder="Klook / FB / Zalo / GYG…"
-            list="booking-sources" className="h-10 rounded-lg text-sm"
+            list="booking-sources"
+            className={
+              "h-10 rounded-lg text-sm font-semibold " +
+              (form.source.trim()
+                ? "border-2 border-rose-400 bg-rose-50/60 text-rose-900"
+                : "border-2 border-rose-300 bg-rose-50/40")
+            }
           />
           <datalist id="booking-sources">
             {BOOKING_SOURCES.map((sName) => (
