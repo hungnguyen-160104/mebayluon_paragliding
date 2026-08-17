@@ -2741,9 +2741,13 @@ export function BookingCard({
       setError(`${overService[0]}: ${overService[1]} suất nhưng chỉ có ${form.guestCount} khách.`);
       return;
     }
-    // Giờ dự kiến hôm nay không được lùi về quá khứ — máy chủ cũng chặn lại lần nữa
-    if (form.flightDate === todayInVN() && form.expectedTime && form.expectedTime < nowHHMMVN()) {
-      setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}).`);
+    /**
+     * Giờ dự kiến đã qua chỉ chặn khi NHẬP MỚI (gõ nhầm 07:00 thay vì 17:00).
+     * Đang SỬA booking cũ thì không chặn: khách đặt 07:00, trưa gọi lại đổi số
+     * khách là chuyện thường — cấm sửa đúng lúc cần sửa nhất thì vô lý.
+     */
+    if (!editingId && form.flightDate === todayInVN() && form.expectedTime && form.expectedTime < nowHHMMVN()) {
+      setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}) — sửa giờ rồi lưu.`);
       return;
     }
     /**

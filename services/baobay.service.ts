@@ -3357,9 +3357,36 @@ export async function updateBookingInfo(
   const spot = assertSpotAllowed(session, spotRaw);
 
   if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
-  const before = await BaobayBooking.findOne({ _id: id, spot }).select("status").lean<any>();
-  // Chuyến ĐÃ BAY: giờ bay nằm ở quá khứ là đương nhiên, đừng chặn như booking mới
-  if (before?.status === "open") assertBookingTime(input.flightDate, input.expectedTime.trim());
+  const before = await BaobayBooking.findOne({ _id: id, spot }).select("status flightDate").lean<any>();
+  if (!before) throw new BaobayError("Không tìm thấy booking", 404);
+  /**
+   * SỬA booking thì KHÔNG chặn theo giờ.
+   *
+   * Khách đặt 07:00, 11 giờ trưa mới gọi lại đổi số khách — chặn vì "giờ dự kiến
+   * đã qua" là cấm sửa đúng lúc cần sửa nhất. Booking bay hôm nay mà quá giờ
+   * vẫn là booking có thật, giờ chỉ là dự kiến.
+   *
+   * Cửa khoá duy nhất là KẾ TOÁN ĐÃ CHỐT NGÀY — chốt rồi thì số liệu đã lên sổ,
+   * sửa sau lưng bản chốt là sai lệch sổ sách. Chặn theo cả ngày cũ và ngày mới
+   * (dời sang một ngày đã chốt cũng không được).
+   */
+  const lockedDays = await AccountantDailyClose.find({
+    spot,
+    date: { $in: [...new Set([before.flightDate, input.flightDate])] },
+    status: "closed",
+  })
+    .select("date")
+    .lean<any[]>();
+  if (lockedDays.length) {
+    throw new BaobayError(
+      `Ngày ${formatDateKeyVN(lockedDays[0].date)} kế toán đã chốt — không sửa booking của ngày đó nữa`,
+      400,
+    );
+  }
+  // Ngày bay lùi về quá khứ vẫn chặn: đó là gõ nhầm năm/tháng, không phải sửa muộn
+  if (input.flightDate < todayInVN() && input.flightDate !== before.flightDate) {
+    throw new BaobayError("Ngày bay mới không thể ở quá khứ", 400);
+  }
   for (const [label, count] of [
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
