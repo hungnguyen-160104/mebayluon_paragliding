@@ -73,6 +73,12 @@ export function Shell({
             {ROLE_LABEL[user.role]}
             {user.spots?.length ? ` · ${user.spots.map(spotName).join(" + ")}` : ""}
           </div>
+          {/* Nói thẳng người này đang mang những vai nào — khỏi đoán qua thanh thẻ */}
+          {(user.extraRoles ?? []).length > 0 && (
+            <div className="truncate text-[11px] font-medium text-emerald-700">
+              kiêm {(user.extraRoles ?? []).map((r) => ROLE_LABEL[r]).join(" · ")}
+            </div>
+          )}
           <div className="truncate text-lg font-bold text-slate-900">{user.name}</div>
           <div className="truncate text-xs text-slate-500">@{user.username}</div>
         </div>

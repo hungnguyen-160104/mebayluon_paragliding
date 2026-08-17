@@ -47,6 +47,11 @@ export default function BaobayAdminPage() {
             {ROLE_LABEL[user.role]}
             {user.spots?.length ? ` · ${user.spots.map(spotName).join(" + ")}` : ""}
           </div>
+          {(user.extraRoles ?? []).length > 0 && (
+            <div className="text-[11px] font-medium text-emerald-700">
+              kiêm {(user.extraRoles ?? []).map((r) => ROLE_LABEL[r]).join(" · ")}
+            </div>
+          )}
           <div className="text-lg font-bold text-slate-900">{user.name}</div>
           <div className="text-xs text-slate-500">@{user.username}</div>
         </div>

@@ -48,8 +48,13 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
     case "counter":
       return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }];
     case "accountant":
+      /**
+       * Thẻ đầu mang chữ "KẾ TOÁN" hẳn ra: người kiêm nhiệm nhìn thanh thẻ toàn
+       * tên công việc (Chốt ngày, Tổng hợp…) thì tưởng mình chưa được gán vai
+       * kế toán — đã hỏi đúng câu đó hai lần.
+       */
       return [
-        { href: "/baocao/chot-ngay", label: "Chốt ngày" },
+        { href: "/baocao/chot-ngay", label: "Kế toán · Chốt ngày" },
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
