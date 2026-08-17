@@ -107,6 +107,16 @@ export interface IDispatcherDailyReport {
 
   note?: string;
 
+  /**
+   * Đã CHỐT hay còn NHÁP — giống báo cáo phi công / camera man.
+   *
+   * Quầy vé và điều phối nhập rải rác suốt ca (khách đến lúc nào ghi lúc đó),
+   * nên phải phân biệt "lưu tạm để khỏi mất" với "hết ca, số này là số cuối".
+   * Kế toán chỉ soát bản đã chốt; bản nháp thì biết là người ta còn đang nhập.
+   */
+  submitted: boolean;
+  submittedAt?: Date;
+
   sheetSynced: boolean;
   sheetError?: string;
 
@@ -273,6 +283,9 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
     expenses: { type: [ExpenseSchema], default: [] },
 
     note: String,
+
+    submitted: { type: Boolean, default: false },
+    submittedAt: Date,
 
     sheetSynced: { type: Boolean, default: false },
     sheetError: String,

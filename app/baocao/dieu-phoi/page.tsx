@@ -219,9 +219,10 @@ export default function DispatcherReportPage() {
   const [closedBy, setClosedBy] = useState("");
   const [check, setCheck] = useState<DayCheck | null>(null);
   const [loadingDay, setLoadingDay] = useState(false);
-  const [saving, setSaving] = useState(false);
+  /** null = rảnh · "draft" = đang lưu nháp · "submit" = đang chốt ca. */
+  const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<{ warnings: string[] } | null>(null);
+  const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean } | null>(null);
   /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
   const [dayBookings, setDayBookings] = useState<BookingPick[]>([]);
   useEffect(() => {
@@ -318,22 +319,31 @@ export default function DispatcherReportPage() {
     if (user && spot) loadHistory();
   }, [user, spot, loadHistory]);
 
+  /** Nút Lưu nháp (và phím Enter trong form) — giữ nguyên trạng thái chốt hiện có. */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    await save(false);
+  }
+
+  /**
+   * Lưu ca: `submitNow = false` là bản nháp (còn nhập tiếp), `true` là chốt ca
+   * cho kế toán soát. Chốt xong vẫn sửa và chốt lại được — y như phi công.
+   */
+  async function save(submitNow: boolean) {
     setError(null);
     setSaved(null);
-    setSaving(true);
+    setSaving(submitNow ? "submit" : "draft");
     try {
-      await persist(form);
+      await persist(form, submitNow);
     } catch (err: any) {
       setError(err?.message || "Không lưu được báo cáo");
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   }
 
   /** Lưu báo cáo với đúng bản form truyền vào — dùng cho cả nút Lưu lẫn "xác nhận dời". */
-  async function persist(f: FormState) {
+  async function persist(f: FormState, submitNow = false) {
     const res = await apiPost<{ report: DispatcherReportDTO; warnings: string[]; check: DayCheck }>(
       `/api/baocao/reports/dispatcher?spot=${spot}`,
       {
@@ -365,12 +375,13 @@ export default function DispatcherReportPage() {
           (e) => e.name.trim() || e.guests || e.toDate || e.codesText.trim(),
         ),
         diplomaticEntries: f.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount || e.note.trim()),
+        submit: submitNow,
       },
     );
     setExisting(res.report);
     setCheck(res.check);
     setForm(fromReport(res.report));
-    setSaved({ warnings: res.warnings || [] });
+    setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
     loadHistory();
   }
 
@@ -655,33 +666,8 @@ export default function DispatcherReportPage() {
         </CollapseCard>
 
 
-        {error && <Banner tone="error">{error}</Banner>}
-
-        {saved && (
-          <Banner tone="success" onClose={() => setSaved(null)}>
-            <strong>Đã lưu báo cáo ngày {formatDateKeyVN(date)}.</strong>
-            {saved.warnings.length > 0 && (
-              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
-                {saved.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            )}
-          </Banner>
-        )}
-
-        {date > today && (
-          <Banner tone="info">
-            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch booking, đến ngày mới nhập báo cáo được.
-          </Banner>
-        )}
-        {!locked && date <= today && (
-          <div className="sticky bottom-3 z-10">
-            <Button type="submit" disabled={saving || loadingDay} className="w-full shadow-lg">
-              {saving ? "Đang lưu…" : existing ? "Cập nhật báo cáo" : "Lưu báo cáo"}
-            </Button>
-          </div>
-        )}
+        {/* Nút lưu KHÔNG nằm ở đây nữa: cả hai nằm ở thanh cuối trang, sau khi
+            đã xem hết cả hai cột (khách huỷ/dời, ngoại giao cũng là số của ca). */}
       </form>
 
       <CollapseCard title="Ghi chú">
@@ -773,7 +759,17 @@ export default function DispatcherReportPage() {
                   className="flex w-full items-center justify-between gap-3 py-3 text-left hover:bg-slate-50"
                 >
                   <div>
-                    <div className="font-medium text-slate-900">{formatDateKeyVN(r.date)}</div>
+                    <div className="font-medium text-slate-900">
+                      {formatDateKeyVN(r.date)}
+                      <span
+                        className={
+                          "ml-2 rounded px-1.5 py-0.5 text-[11px] font-semibold " +
+                          (r.submitted ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900")
+                        }
+                      >
+                        {r.submitted ? "đã chốt" : "còn nháp"}
+                      </span>
+                    </div>
                     <div className="text-xs text-slate-500">
                       {r.guestCount} khách · {r.ticketsIssued} vé xuất · {r.ticketsReturned} thu về
                       {r.flycam ? ` · ${r.flycam} flycam` : ""}
@@ -793,6 +789,68 @@ export default function DispatcherReportPage() {
       {/* Lịch sử thư OTA — cột phải, và QUẦY VÉ không cần xem mục này */}
       {user.role !== "counter" && <OtaMailCard spot={spot} />}
       </div>
+      </div>
+
+      {/* ============ THANH LƯU — CUỐI TRANG, DƯỚI CẢ HAI CỘT ============
+          Trước đây thanh này nằm giữa trang (cuối cột trái) nên bấm lưu xong
+          vẫn còn khách huỷ/dời + ngoại giao ở cột phải chưa xem tới. Đưa xuống
+          đây thì thứ tự làm việc là: nhập hết → xem lại cả trang → lưu.
+
+          Hai nút y như phi công/camera man: LƯU NHÁP để khỏi mất số khi ca còn
+          dài, CHỐT BÁO CÁO khi hết ca — kế toán chỉ soát bản đã chốt. */}
+      <div className="mt-3 space-y-3">
+        {error && <Banner tone="error">{error}</Banner>}
+
+        {saved && (
+          <Banner tone="success" onClose={() => setSaved(null)}>
+            <strong>
+              {saved.submitted ? "Đã chốt báo cáo" : "Đã lưu nháp"} ngày {formatDateKeyVN(date)}.
+            </strong>
+            {saved.warnings.length > 0 && (
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                {saved.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
+          </Banner>
+        )}
+
+        {date > today && (
+          <Banner tone="info">
+            📅 Ngày {formatDateKeyVN(date)} ở tương lai — xem trước lịch booking, đến ngày mới nhập báo cáo được.
+          </Banner>
+        )}
+
+        {!locked && date <= today && existing && (
+          <p className={"text-center text-xs " + (existing.submitted ? "text-emerald-700" : "text-amber-700")}>
+            {existing.submitted
+              ? "✓ Ca này đã chốt — sửa tiếp thì nhớ bấm Chốt lại."
+              : "Đang là bản nháp — hết ca nhớ bấm Chốt báo cáo cho kế toán soát."}
+          </p>
+        )}
+
+        {!locked && date <= today && (
+          <div className="sticky bottom-3 z-10 flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => save(false)}
+              disabled={saving !== null || loadingDay}
+              className="flex-1 bg-white shadow-lg"
+            >
+              {saving === "draft" ? "Đang lưu…" : "Lưu nháp"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => save(true)}
+              disabled={saving !== null || loadingDay}
+              className="flex-1 shadow-lg"
+            >
+              {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại" : "Chốt báo cáo"}
+            </Button>
+          </div>
+        )}
       </div>
     </Shell>
   );

@@ -1649,6 +1649,8 @@ export type DispatcherReportSaveInput = {
   shuttleCarCost: number;
   expenses: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
   note: string;
+  /** true = chốt ca, false = lưu nháp. Chốt lại được, y như phi công. */
+  submit: boolean;
 };
 
 export async function upsertDispatcherReport(
@@ -1858,6 +1860,10 @@ export async function upsertDispatcherReport(
         shuttleCarCost: input.shuttleCarCost,
         expenses,
         note: input.note,
+        submitted: input.submit,
+        // null (không phải undefined) mới xoá được mốc chốt cũ khi quay về nháp —
+        // Mongoose bỏ qua undefined trong $set nên mốc cũ sẽ nằm lại.
+        submittedAt: input.submit ? new Date() : null,
       },
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },
@@ -1936,6 +1942,7 @@ async function pushDispatcherRow(doc: any) {
     expenseDetail: formatExpenses(doc.expenses),
     expenseTotal: dispatcherExpenseTotal(doc),
     note: doc.note || "",
+    submitted: doc.submitted ? "ĐÃ CHỐT" : "còn nháp",
     updatedAt: nowStampVN(),
   },
   undefined,
@@ -2007,6 +2014,8 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     shuttleCarCost: doc.shuttleCarCost ?? 0,
     expenses: doc.expenses ?? [],
     note: doc.note ?? "",
+    submitted: Boolean(doc.submitted),
+    submittedAt: doc.submittedAt ? new Date(doc.submittedAt).toISOString() : undefined,
     sheetSynced: Boolean(doc.sheetSynced),
     sheetError: doc.sheetError || undefined,
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : "",

@@ -407,6 +407,9 @@ function DispatcherRow({
           shuttleCarCost: 0,
           expenses: form.money.filter((e) => e.kind !== "thu" && (e.content.trim() || e.amount)),
           note: form.note,
+          // Kế toán sửa hộ thì GIỮ NGUYÊN trạng thái chốt/nháp của người nhập —
+          // không gửi thì mặc định false, hoá ra kế toán tự mở khoá bản đã chốt.
+          submit: report.submitted,
         },
       );
       setWarnings(res.warnings || []);
@@ -426,6 +429,14 @@ function DispatcherRow({
         <div>
           <div className="font-medium text-slate-900">
             {report.staffName} <span className="text-xs font-normal text-slate-500">— điều phối</span>
+            <span
+              className={
+                "ml-2 rounded px-1.5 py-0.5 text-[11px] font-semibold " +
+                (report.submitted ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900")
+              }
+            >
+              {report.submitted ? "đã chốt" : "còn nháp"}
+            </span>
           </div>
           <div className="text-xs text-slate-500">
             {report.guestCount} khách{noTickets ? "" : ` · ${report.ticketsIssued} vé xuất`} · TM{" "}

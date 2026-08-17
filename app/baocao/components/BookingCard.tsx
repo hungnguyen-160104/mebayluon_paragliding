@@ -2691,10 +2691,12 @@ export function BookingCard({
       setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}).`);
       return;
     }
-    if (!editingId && form.remaining > 0 && staff.length > 0 && !form.collectorUsername) {
-      setError(`Còn ${form.remaining.toLocaleString("vi-VN")} đ phải thu — hãy chỉ định người thu bên dưới.`);
-      return;
-    }
+    /**
+     * KHÔNG bắt chọn người thu. Lúc nhận booking thường chưa biết hôm đó ai
+     * trực, ai đón đoàn — bắt chọn thì nhân viên phải chọn bừa một cái tên.
+     * Để trống thì booking vẫn ghi "còn phải thu", ai thu cũng được: người thu
+     * bấm ngay trên dòng booking, hoặc lập lệnh thu sau khi đã rõ người.
+     */
     setSaving(true);
     try {
       // Khách lẻ không có mã OTA: để trống thì lấy SĐT làm mã cho dễ tra
@@ -2936,6 +2938,20 @@ export function BookingCard({
             ))}
           </select>
         </Field>
+        {/* SỐ KHÁCH đứng NGAY DƯỚI hai ô PG/PPG — ở Khau Phạ nó là tổng của hai ô
+            đó, để xa thì nhìn không ra vì sao số tự đổi. Nguồn sang cùng hàng bên phải. */}
+        <Field label={bookSpot === "khau-pha" ? "Số khách (tự cộng PG + PPG)" : "Số khách"}>
+          {bookSpot === "khau-pha" ? (
+            <div
+              className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
+              title="Tự cộng từ hai ô PG / PPG phía trên"
+            >
+              {form.guestCount}
+            </div>
+          ) : (
+          <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+          )}
+        </Field>
         <Field label="Nguồn">
           <TextInput
             value={form.source}
@@ -2951,28 +2967,17 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         <Field label="Tên liên hệ">
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
         <Field label="SĐT">
           <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />
         </Field>
-        <Field label={bookSpot === "khau-pha" ? "Số khách (tự cộng PG + PPG)" : "Số khách"}>
-          {bookSpot === "khau-pha" ? (
-            <div
-              className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
-              title="Tự cộng từ hai ô PG / PPG phía trên"
-            >
-              {form.guestCount}
-            </div>
-          ) : (
-          <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
-          )}
-        </Field>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      {/* Dịch vụ tuỳ chọn: 3 ô mỗi hàng khi đủ rộng — 5-6 dịch vụ gọn 2 hàng */}
+      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         {/* Tối đa = số khách: 2 khách thì nhiều nhất 2 flycam, 2 cam360… */}
         <ServiceBox tone="flycam" label="Flycam">
           <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={form.guestCount} />
@@ -3093,7 +3098,7 @@ export function BookingCard({
       {!editingId && form.remaining > 0 && staff.length > 0 && (
         <div className="mt-2 rounded-lg border border-emerald-300 bg-emerald-50/70 p-2">
           <div className="text-xs font-bold text-emerald-900">
-            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — chỉ định người thu:
+            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — giao ai thu (không bắt buộc):
           </div>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
             <select
@@ -3101,7 +3106,7 @@ export function BookingCard({
               onChange={(e) => set("collectorUsername", e.target.value)}
               className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-600"
             >
-              <option value="">— Chọn người thu —</option>
+              <option value="">— Chưa rõ ai thu, để sau —</option>
               {staff.map((a) => (
                 <option key={a.username} value={a.username}>
                   {a.name} — {a.roleLabel}
@@ -3116,8 +3121,9 @@ export function BookingCard({
             />
           </div>
           <p className="mt-1 text-[11px] leading-tight text-emerald-800/80">
-            Lưu booking xong, LỆNH THU TIỀN hiện ngay trên trang của người này — khi cầm tiền họ bấm
-            &ldquo;Đã thu tiền&rdquo; là khoản vào tiền giữ hộ công ty của họ.
+            Chọn người thì LỆNH THU TIỀN hiện ngay trên trang của người đó — khi cầm tiền họ bấm
+            &ldquo;Đã thu tiền&rdquo; là khoản vào tiền giữ hộ công ty của họ. Để trống cũng được: số
+            &ldquo;còn thu&rdquo; vẫn nằm trên dòng booking, đến hôm bay ai thu thì bấm thu ngay ở đó.
           </p>
         </div>
       )}

@@ -1,5 +1,5 @@
 /**
- * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v28`.
+ * Apps Script cho trang báo bay nội bộ — bản `baobay-multispot-v29`.
  *
  * Dán TOÀN BỘ tệp này vào Apps Script của bảng tính (Tiện ích mở rộng → Apps
  * Script), xoá hết nội dung cũ trước khi dán, rồi Triển khai → Tuỳ chọn triển
@@ -104,6 +104,7 @@ const KINDS = {
     'Chi khác': 'otherExpense',
     'Chi tiết chi khác': 'expenseDetail',
     'Tổng chi': 'expenseTotal',
+    'Trạng thái': 'submitted',
     'Trạng thái ngày': 'dayStatus',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
@@ -323,7 +324,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v28',
+    version: 'baobay-multispot-v29',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

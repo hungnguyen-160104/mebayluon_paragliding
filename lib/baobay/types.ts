@@ -199,6 +199,9 @@ export type DispatcherReportDTO = {
   shuttleCarCost: number;
   expenses: ExpenseDTO[];
   note: string;
+  /** Đã chốt ca hay còn nháp — xem models/DispatcherDailyReport.model.ts. */
+  submitted: boolean;
+  submittedAt?: string;
   sheetSynced: boolean;
   sheetError?: string;
   updatedAt: string;

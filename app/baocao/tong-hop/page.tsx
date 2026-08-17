@@ -563,6 +563,7 @@ function DispatcherTable({ data }: { data: BaobaySummaryDTO }) {
           <tr className="bg-slate-50">
             <th className={th}>Ngày</th>
             <th className={th}>Điều phối</th>
+            <th className={th}>Chốt</th>
             <th className={th}>Khách</th>
             <th className={th}>Vé xuất</th>
             <th className={th}>Thu về</th>
@@ -589,6 +590,9 @@ function DispatcherTable({ data }: { data: BaobaySummaryDTO }) {
               <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className={`${td} font-medium`}>{formatDateKeyVN(r.date)}</td>
                 <td className={td}>{r.staffName}</td>
+                <td className={td}>
+                  {r.submitted ? <span className="text-emerald-600">✓</span> : <span className="text-amber-600">nháp</span>}
+                </td>
                 <td className={td}>{r.guestCount}</td>
                 <td className={td}>{r.ticketsIssued}</td>
                 <td className={td}>{r.ticketsReturned}</td>

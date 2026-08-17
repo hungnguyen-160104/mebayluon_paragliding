@@ -243,6 +243,8 @@ export const dispatcherReportSchema = z.object({
   shuttleCarCost: money,
   expenses: expenseList,
   note: text(2_000),
+  /** false = lưu nháp (còn nhập tiếp), true = chốt ca. */
+  submit: z.boolean().optional().default(false),
 });
 
 /** CAMERA MAN: số chuyến quay flycam + chi tiêu. */
