@@ -3185,6 +3185,13 @@ export function BookingCard({
             />
           </div>
         </Field>
+        <Field label="Mã chuyển khoản (cọc)">
+          <TextInput
+            value={form.transferCode}
+            onChange={(e) => set("transferCode", e.target.value)}
+            placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
+          />
+        </Field>
         <Field label="Còn lại (thu trước khi bay)">
           <div className="flex items-center gap-1">
             <span className="min-w-0 flex-1">
@@ -3197,13 +3204,6 @@ export function BookingCard({
               label="QR"
             />
           </div>
-        </Field>
-        <Field label="Mã chuyển khoản (cọc)">
-          <TextInput
-            value={form.transferCode}
-            onChange={(e) => set("transferCode", e.target.value)}
-            placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
-          />
         </Field>
       </div>
 
