@@ -3404,7 +3404,12 @@ export function BookingCard({
           <Button
             type="button"
             variant="ghost"
-            className="h-11 flex-1 border-sky-300 bg-white font-semibold text-sky-700"
+            /**
+             * Chữ NGẮN và không cho gãy dòng: "＋ Nhập booking mới" trên vài máy
+             * điện thoại bị bẻ thành ba dòng rồi tràn ra khỏi nút. Nút này chỉ cần
+             * đủ hiểu là bắt đầu khách mới.
+             */
+            className="h-11 flex-1 whitespace-nowrap border-sky-300 bg-white px-2 text-sm font-semibold text-sky-700"
             disabled={saving}
             onClick={() => {
               setEditingId(null);
@@ -3417,7 +3422,7 @@ export function BookingCard({
               setComboTouched(false);
             }}
           >
-            ＋ Nhập booking mới
+            ＋ Book mới
           </Button>
         )}
         {/* Nhập dở mà muốn làm lại từ đầu: xoá trắng form + các cờ "đã sửa tay" */}
@@ -3425,7 +3430,7 @@ export function BookingCard({
           <Button
             type="button"
             variant="ghost"
-            className="h-11 shrink-0 border-rose-300 bg-white px-3 text-rose-700"
+            className="h-11 shrink-0 whitespace-nowrap border-rose-300 bg-white px-2 text-sm text-rose-700"
             disabled={saving}
             title="Xoá trắng toàn bộ ô nhập để làm lại từ đầu — không đụng booking đã lưu"
             onClick={() => {
@@ -3442,7 +3447,12 @@ export function BookingCard({
             🗑 Nhập lại
           </Button>
         )}
-        <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
+        <Button
+          type="button"
+          className="h-11 flex-[2] whitespace-nowrap bg-sky-600 px-2 text-sm hover:bg-sky-700"
+          disabled={saving}
+          onClick={save}
+        >
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
         </Button>
         {/* Dấu xong sát nút — form giữ nguyên số liệu nên đây là dấu hiệu duy
