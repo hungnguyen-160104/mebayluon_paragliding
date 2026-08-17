@@ -11,6 +11,7 @@
 /** Mã ngân hàng theo chuẩn NAPAS. */
 export const BANK_BIN = {
   techcombank: "970407",
+  bidv: "970418",
 } as const;
 
 /** Ghép một trường EMVCo: mã (2 ký tự) + độ dài (2 chữ số) + nội dung. */

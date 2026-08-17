@@ -26,6 +26,7 @@ import {
   servicesAmount,
   type FlightKind,
 } from "@/lib/baobay/flight-price";
+import { PaymentQrButton } from "./PaymentQr";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
 /**
@@ -1239,6 +1240,13 @@ function CollectMoneyControl({
       >
         <span className="text-xs font-semibold text-slate-600">Tổng thu lần này</span>
         <strong className="text-base tabular-nums text-slate-900">{total.toLocaleString("vi-VN")} đ</strong>
+        {/* Khách chuyển khoản: đưa mã QR cho quét tại chỗ, hoặc gửi Zalo trả sau.
+            Số tiền lấy đúng số vừa gõ, nội dung là mã booking để kế toán dò sao kê. */}
+        <PaymentQrButton
+          amount={total > 0 ? total : left}
+          note={booking.bookingCode || booking.phone || ""}
+          purpose={`Tiền bay — ${booking.contactName || booking.phone || "khách"}`}
+        />
       </div>
 
       <div className="text-[11px] leading-tight text-slate-600">
@@ -2208,6 +2216,16 @@ export function AssignedBookings({
                           Thu tiền mặt thì tiền tính vào phần bạn đang giữ · khách chuyển khoản vào TK công ty thì
                           KHÔNG tính vào bạn (nhớ ghi mã giao dịch).
                         </p>
+                        {/* Đưa mã QR cho khách quét ngay tại bãi — khỏi đọc số tài khoản */}
+                        <div className="mt-1.5">
+                          <PaymentQrButton
+                            amount={b.remaining}
+                            note={b.bookingCode || b.phone || ""}
+                            purpose={`Tiền bay — ${b.contactName || b.phone || "khách"}`}
+                            label="QR cho khách quét"
+                            className="h-9 w-full border-sky-300 bg-white text-sm font-bold text-sky-700"
+                          />
+                        </div>
                         <div className="mt-1.5">
                           <CollectMoneyControl
                             spot={spot}
@@ -3086,11 +3104,33 @@ export function BookingCard({
             {form.discount ? ` − giảm ${(form.discount / 1000).toLocaleString("vi-VN")}k` : ""}
           </p>
         </Field>
+        {/* Mỗi ô tiền một nút QR: khách đặt xa thì gửi mã cọc qua Zalo, khách
+            tới bãi thì đưa mã phần còn thu cho quét. Nội dung CK = mã booking. */}
         <Field label="Đã cọc vào TK công ty">
-          <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
+          <div className="flex items-center gap-1">
+            <span className="min-w-0 flex-1">
+              <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
+            </span>
+            <PaymentQrButton
+              amount={form.deposit}
+              note={form.bookingCode.trim() || form.phone.trim()}
+              purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
+              label="QR cọc"
+            />
+          </div>
         </Field>
         <Field label="Còn lại (thu trước khi bay)">
-          <MoneyInput value={form.remaining} onChange={(v) => set("remaining", v)} />
+          <div className="flex items-center gap-1">
+            <span className="min-w-0 flex-1">
+              <MoneyInput value={form.remaining} onChange={(v) => set("remaining", v)} />
+            </span>
+            <PaymentQrButton
+              amount={form.remaining}
+              note={form.bookingCode.trim() || form.phone.trim()}
+              purpose={`Tiền còn thu — ${form.contactName || form.phone || "khách"}`}
+              label="QR"
+            />
+          </div>
         </Field>
         <Field label="Mã chuyển khoản (cọc)">
           <TextInput

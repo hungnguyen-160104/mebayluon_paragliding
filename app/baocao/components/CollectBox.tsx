@@ -8,6 +8,7 @@ import type { CollectDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPatch, apiPost } from "./client-api";
+import { PaymentQrButton } from "./PaymentQr";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
@@ -351,6 +352,13 @@ export function CollectCreate({ spot }: { spot: string }) {
         <Button type="button" className="h-10 flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={busy} onClick={send}>
           {busy ? "Đang gửi…" : "✓ Xác nhận"}
         </Button>
+        {/* Lệnh thu CK: gửi luôn mã QR cho khách qua Zalo, khỏi đọc số tài khoản */}
+        <PaymentQrButton
+          amount={form.amount}
+          note={form.bookingCode || form.guestName}
+          purpose={`Tiền bay — ${form.guestName || "khách"}`}
+          className="h-10 shrink-0 border-sky-300 bg-white px-3 text-sm font-bold text-sky-700"
+        />
         <DoneTag show={justSent}>Đã gửi</DoneTag>
       </div>
 

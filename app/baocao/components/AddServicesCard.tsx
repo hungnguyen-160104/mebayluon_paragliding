@@ -13,6 +13,7 @@ import type { BookingDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPatch, apiPost } from "./client-api";
+import { PaymentQrButton } from "./PaymentQr";
 import { Banner, Button, CollapseCard, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /** Bộ đếm nhỏ để 5 dịch vụ nằm gọn một hàng — CountInput thường quá cao. */
@@ -437,8 +438,14 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                 <MoneyInput value={discount} onChange={setDiscount} />
               </span>
             </label>
-            <span className="ml-auto text-sm">
+            <span className="ml-auto flex items-center gap-1.5 text-sm">
               Cần thu <strong className="tabular-nums text-rose-700">{formatVND(charge)}</strong>
+              {/* Khách mua thêm tại bãi mà không mang tiền mặt: quét mã trả luôn */}
+              <PaymentQrButton
+                amount={charge}
+                note={picked.bookingCode || picked.phone || ""}
+                purpose={`Dịch vụ thêm — ${picked.contactName || picked.phone || "khách"}`}
+              />
             </span>
           </div>
           )}
