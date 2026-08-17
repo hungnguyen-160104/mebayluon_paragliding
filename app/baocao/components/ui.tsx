@@ -244,9 +244,18 @@ export function MoneyInput({
           const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 13);
           onChange(digits ? Number(digits) : 0);
         }}
-        className={cn(inputBase, "h-10 rounded-lg pr-9 text-right text-sm font-semibold tabular-nums")}
+        /**
+         * Số tiền dài (7-9 chữ số) trong ô hẹp thì bị cắt cụt — nhìn "7.500.(" mà
+         * tưởng đã nhập đủ. Từ 7 ký tự trở lên (1.000.000) tự rút cỡ chữ, và ô
+         * chừa lề phải hẹp hơn cho chữ "đ".
+         */
+        className={cn(
+          inputBase,
+          "h-10 rounded-lg pr-6 text-right font-semibold tabular-nums",
+          (value ? value.toLocaleString("vi-VN").length : 0) >= 9 ? "text-[11px]" : (value ? value.toLocaleString("vi-VN").length : 0) >= 7 ? "text-xs" : "text-sm",
+        )}
       />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">
+      <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
         đ
       </span>
     </div>

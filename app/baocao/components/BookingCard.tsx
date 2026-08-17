@@ -2760,7 +2760,15 @@ export function BookingCard({
         await apiPut(`/api/baocao/booking?spot=${bookSpot}`, { id: editingId, ...payload });
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
       } else {
-        await apiPost(`/api/baocao/booking?spot=${bookSpot}`, payload);
+        const created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, payload);
+        /**
+         * Lưu xong thì form CHUYỂN SANG CHẾ ĐỘ SỬA chính booking vừa tạo, không
+         * xoá trắng nữa: nhân viên hay phải sửa lại ngay (khách đọc thiếu số,
+         * đổi giờ, thêm dịch vụ) mà gõ lại từ đầu thì rất dễ sai. Chuyển sang
+         * chế độ sửa cũng chặn luôn cảnh bấm lưu lần nữa thành hai booking trùng.
+         * Muốn nhập khách mới thì bấm nút "Nhập booking mới" bên cạnh.
+         */
+        if (created?.booking?.id) setEditingId(created.booking.id);
         const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
           `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Lịch bay sẽ tự hiện đúng ngày.` +
@@ -2773,10 +2781,7 @@ export function BookingCard({
       }
       setJustSavedEdit(Boolean(editingId));
       flashSaved();
-      setEditingId(null);
-      setForm(emptyBooking(today, bookSpot));
-      setRemainingTouched(false);
-      setPriceTouched(false);
+      // Giữ nguyên số liệu đang hiện — xoá trắng là việc của nút "Nhập booking mới"
       load();
       onChanged?.();
     } catch (err: unknown) {
@@ -2967,7 +2972,10 @@ export function BookingCard({
         </Field>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-4">
+      {/* Bốn ô nhưng KHÔNG chia đều: Nguồn rộng bằng đúng một phần ba hàng, tức
+          bằng ô Điểm bay ở hàng trên (tên nguồn dài — "Klook", "SEEK Sophie"…);
+          ô Tổng khách chỉ đọc nên bóp nhỏ lại nhường chỗ. */}
+      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-[1.1fr_1.1fr_0.6fr_1.4fr]">
         {bookSpot === "khau-pha" ? (
           /* Khau Phạ đặt PG và PPG CHUNG một booking — hai ô riêng, tổng tự cộng */
           <>
@@ -2977,11 +2985,12 @@ export function BookingCard({
             <Field label="PPG (số khách)">
               <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
             </Field>
-            <Field label="Tổng khách">
+            <Field label={<span className="text-emerald-700">Tổng khách</span>}>
               {/* Ô chỉ đọc, chứa nhiều nhất 2-3 chữ số — hẹp một nửa để nhường
-                  chỗ cho hai cụm đếm PG/PPG bên cạnh */}
+                  chỗ cho hai cụm đếm PG/PPG bên cạnh. Tô xanh cho nổi: đây là
+                  con số mọi thứ khác bám theo (giá, trần dịch vụ, vé). */}
               <div
-                className="flex h-10 w-1/2 min-w-16 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-2 text-base font-bold tabular-nums text-slate-700"
+                className="flex h-10 w-1/2 min-w-16 items-center justify-center rounded-lg border-2 border-emerald-400 bg-emerald-50 px-2 text-base font-bold tabular-nums text-emerald-900"
                 title="Tự cộng từ hai ô PG / PPG bên cạnh"
               >
                 {form.guestCount}
@@ -3011,8 +3020,10 @@ export function BookingCard({
                 </div>
               </Field>
             </div>
-            <Field label="Số khách">
-              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+            <Field label={<span className="text-emerald-700">Số khách</span>}>
+              <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 p-0.5">
+                <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+              </div>
             </Field>
           </>
         )}
@@ -3177,11 +3188,13 @@ export function BookingCard({
             <span className="min-w-0 flex-1">
               <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
             </span>
+            {/* Chỉ biểu tượng: chữ "QR cọc" ăn mất chỗ, số 7 chữ số bị cắt cụt */}
             <PaymentQrButton
               amount={form.deposit}
               note={form.bookingCode.trim() || form.phone.trim()}
               purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
-              label="QR cọc"
+              label=""
+              className="h-10 w-9 shrink-0 border-sky-300 bg-white px-0 text-xs font-bold text-sky-700"
             />
           </div>
         </Field>
@@ -3201,7 +3214,8 @@ export function BookingCard({
               amount={form.remaining}
               note={form.bookingCode.trim() || form.phone.trim()}
               purpose={`Tiền còn thu — ${form.contactName || form.phone || "khách"}`}
-              label="QR"
+              label=""
+              className="h-10 w-9 shrink-0 border-sky-300 bg-white px-0 text-xs font-bold text-sky-700"
             />
           </div>
         </Field>
@@ -3271,16 +3285,24 @@ export function BookingCard({
       )}
 
       <div className="mt-2.5 flex gap-2">
+        {/**
+         * NHẬP BOOKING MỚI — lối duy nhất để xoá trắng form.
+         *
+         * Lưu xong form giữ nguyên số liệu và chuyển sang chế độ sửa chính
+         * booking vừa lưu, nên phải có nút này để bắt đầu khách tiếp theo.
+         * Cũng là nút "thôi sửa" khi đang mở một booking cũ ra chỉnh.
+         */}
         {editingId && (
           <Button
             type="button"
             variant="ghost"
-            className="h-11 flex-1 bg-white"
+            className="h-11 flex-1 border-sky-300 bg-white font-semibold text-sky-700"
             disabled={saving}
             onClick={() => {
               setEditingId(null);
               setForm(emptyBooking(today, bookSpot));
               setError(null);
+              setDone(null);
               setForceOpen(false);
               // Cờ "đã sửa tay" của lần sửa trước không được vắt sang booking mới
               setRemainingTouched(false);
@@ -3288,7 +3310,7 @@ export function BookingCard({
               setComboTouched(false);
             }}
           >
-            Thôi sửa
+            ＋ Nhập booking mới
           </Button>
         )}
         {/* Nhập dở mà muốn làm lại từ đầu: xoá trắng form + các cờ "đã sửa tay" */}
@@ -3317,8 +3339,8 @@ export function BookingCard({
         <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
         </Button>
-        {/* Dấu xong sát nút: form tự xoá trắng sau khi lưu, không có dấu này thì
-            người nhập không phân biệt được "đã lưu" với "bấm hụt, mất chữ" */}
+        {/* Dấu xong sát nút — form giữ nguyên số liệu nên đây là dấu hiệu duy
+            nhất cho biết máy chủ đã nhận */}
         <DoneTag show={justSaved}>{justSavedEdit ? "Đã cập nhật" : "Đã lưu"}</DoneTag>
         {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
         <Button

@@ -145,7 +145,7 @@ export function PaymentQrButton({
         title={amount > 0 ? `Tạo mã QR thu ${formatVND(amount)}` : "Chốt số tiền rồi mới tạo được mã QR"}
         onClick={() => setOpen(true)}
       >
-        ⬛ {label}
+        ⬛{label ? ` ${label}` : ""}
       </Button>
       {open && <PaymentQrModal amount={amount} note={note} purpose={purpose} onClose={() => setOpen(false)} />}
     </>
