@@ -3125,12 +3125,15 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   }
 
   /**
-   * "Còn lại (thu trước khi bay)" + chỉ định người thu: kiểm tài khoản TRƯỚC
-   * khi tạo booking để lỗi chọn nhầm người không để lại booking mồ côi.
-   * Lệnh thu luôn ở trạng thái CHỜ (kể cả tự chỉ định mình) — tiền chưa thu,
-   * đến lúc cầm tiền người thu mới bấm "Đã thu tiền" cho vào tiền giữ hộ.
+   * "Còn lại (thu trước khi bay)" + người thu: KHÔNG bắt buộc — lúc nhận
+   * booking thường chưa biết hôm đó ai trực, ai đón đoàn. Để trống thì booking
+   * vẫn ghi rõ "còn thu", đến hôm bay giao cho ai thì người đó lo thu.
+   *
+   * Có chọn thì kiểm tài khoản TRƯỚC khi tạo booking, để lỗi chọn nhầm người
+   * không để lại booking mồ côi.
    */
   const collectorUsername = (input.collectorUsername ?? "").trim();
+  const collectorNote = (input.collectorNote ?? "").trim();
   let collector: { username: string; displayName: string } | null = null;
   if (input.remaining > 0 && collectorUsername) {
     const doc = await BaobayAccount.findOne({ username: normalizeUsername(collectorUsername) })
@@ -3181,43 +3184,32 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       transferCode: input.transferCode.trim(),
       // Cọc thì 100% qua STK công ty — không cần tích tay nữa
       depositToCompany: input.deposit > 0,
-      note: input.note.trim(),
+      note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
+      /**
+       * "Người thu" của booking CHÍNH LÀ người được giao khách — không đẻ ra
+       * một lệnh thu riêng nữa.
+       *
+       * Trước đây hai thứ chạy hai đường: chọn người thu thì sinh LỆNH THU
+       * TIỀN, còn "Giao PC" thì gán khách cho phi công. Ai được giao khách thì
+       * đằng nào cũng là người cầm tiền của khách đó, nên hai đường ấy cùng
+       * nhắc một việc — và nếu thu bằng đường này thì đường kia vẫn nằm chờ
+       * mãi, sổ sách thành ra nhắc nợ khống. Giờ nhập một chỗ: người được giao
+       * thấy khách trên trang mình kèm nhắc "còn thu", ai khác vẫn thu hộ được.
+       */
+      ...(collector
+        ? {
+            assignedToUsername: collector.username,
+            assignedToName: collector.displayName,
+            assignedBy: session.name,
+            assignedAt: new Date(),
+          }
+        : {}),
       status: "open",
     })
   ).toObject();
 
   pushSheetInBackground(() => pushBookingRow(saved), BaobayBooking, saved._id);
-
-  if (collector) {
-    const collectNote = [
-      `Thu trước khi bay ${formatDateKeyVN(input.flightDate)}`,
-      (input.collectorNote ?? "").trim(),
-    ]
-      .filter(Boolean)
-      .join(" — ");
-    const collectDoc = (
-      await BaobayCollect.create({
-        spot,
-        date: todayInVN(),
-        guestName: input.contactName.trim(),
-        bookingCode: input.bookingCode.trim(),
-        agency: input.source.trim(),
-        guests: input.guestCount,
-        amount: input.remaining,
-        method: "cash",
-        toCompanyAccount: false,
-        transferCode: "",
-        note: collectNote,
-        collectorUsername: collector.username,
-        collectorName: collector.displayName,
-        status: "pending",
-        createdByUsername: session.username,
-        createdByName: session.name,
-      })
-    ).toObject();
-    pushSheetInBackground(() => pushCollectRow(collectDoc), BaobayCollect, collectDoc._id);
-  }
 
   return toBookingDTO({ ...saved, sheetSynced: false });
 }

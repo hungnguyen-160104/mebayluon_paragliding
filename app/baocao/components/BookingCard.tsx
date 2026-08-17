@@ -2710,8 +2710,10 @@ export function BookingCard({
         setDone(
           `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Lịch bay sẽ tự hiện đúng ngày.` +
             (form.remaining > 0 && collectorName
-              ? ` 💰 Lệnh thu ${form.remaining.toLocaleString("vi-VN")} đ đã gửi tới ${collectorName}.`
-              : ""),
+              ? ` 💰 Đã giao ${collectorName} thu ${form.remaining.toLocaleString("vi-VN")} đ — hiện trên trang của ${collectorName} hôm bay.`
+              : form.remaining > 0
+                ? ` 💰 Còn thu ${form.remaining.toLocaleString("vi-VN")} đ — chưa giao ai, hôm bay giao cho ai thì người đó thu.`
+                : ""),
         );
       }
       setEditingId(null);
@@ -3098,7 +3100,8 @@ export function BookingCard({
       {!editingId && form.remaining > 0 && staff.length > 0 && (
         <div className="mt-2 rounded-lg border border-emerald-300 bg-emerald-50/70 p-2">
           <div className="text-xs font-bold text-emerald-900">
-            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — giao ai thu (không bắt buộc):
+            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — giao ai thu{" "}
+            <span className="font-medium text-emerald-800/80">(không bắt buộc)</span>:
           </div>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
             <select
@@ -3106,7 +3109,7 @@ export function BookingCard({
               onChange={(e) => set("collectorUsername", e.target.value)}
               className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-600"
             >
-              <option value="">— Chưa rõ ai thu, để sau —</option>
+              <option value="">— Chưa biết ai thu, để sau —</option>
               {staff.map((a) => (
                 <option key={a.username} value={a.username}>
                   {a.name} — {a.roleLabel}
@@ -3121,9 +3124,10 @@ export function BookingCard({
             />
           </div>
           <p className="mt-1 text-[11px] leading-tight text-emerald-800/80">
-            Chọn người thì LỆNH THU TIỀN hiện ngay trên trang của người đó — khi cầm tiền họ bấm
-            &ldquo;Đã thu tiền&rdquo; là khoản vào tiền giữ hộ công ty của họ. Để trống cũng được: số
-            &ldquo;còn thu&rdquo; vẫn nằm trên dòng booking, đến hôm bay ai thu thì bấm thu ngay ở đó.
+            Chọn người ở đây tức là <strong>giao khách</strong> cho người đó (như nút &ldquo;Giao PC&rdquo;):
+            đến ngày bay khách hiện trên trang của họ kèm nhắc &ldquo;còn thu {form.remaining.toLocaleString("vi-VN")} đ&rdquo;,
+            thu xong bấm ĐÃ THU là tiền vào phần họ giữ hộ công ty. Người khác vẫn thu hộ được.
+            Để trống cũng được — hôm bay giao cho ai thì người đó lo thu.
           </p>
         </div>
       )}
