@@ -233,11 +233,12 @@ function PaymentQrModal({
     }
   }, [amount, asciiNote, purpose, url]);
 
-  /** Liên kết trang /qr — mở ra là thấy đúng mã này, gửi được cho mọi app. */
+  /** Liên kết trang /thanh-toan — mở ra là thấy đúng mã này, gửi được cho mọi app. */
   const shareLink = useMemo(() => {
     const base = typeof window === "undefined" ? "" : window.location.origin;
     const q = new URLSearchParams({ a: String(amount), n: asciiNote, p: purpose });
-    return `${base}/qr?${q.toString()}`;
+    // /thanh-toan chứ KHÔNG phải /qr — /qr là trang chào khách quét mã đi đặt bay
+    return `${base}/thanh-toan?${q.toString()}`;
   }, [amount, asciiNote, purpose]);
 
   const shareText = `${purpose}: ${formatVND(amount)} — ${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} (${PAY_ACCOUNT.accountName}), nội dung ${asciiNote}. Quét mã: ${shareLink}`;
@@ -343,7 +344,7 @@ function PaymentQrModal({
 
         {/**
          * Gửi thẳng qua từng app. Zalo/Messenger/Facebook chỉ nhận LIÊN KẾT chứ
-         * không nhận ảnh dán từ web, nên các nút này gửi link trang /qr — khách
+         * không nhận ảnh dán từ web, nên các nút này gửi link trang /thanh-toan — khách
          * bấm vào là thấy đúng mã QR, đúng số tiền, quét luôn.
          */}
         <div className="mt-2 grid grid-cols-4 gap-1.5">

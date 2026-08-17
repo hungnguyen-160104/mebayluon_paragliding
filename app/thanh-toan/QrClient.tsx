@@ -1,4 +1,4 @@
-// app/qr/QrClient.tsx
+// app/thanh-toan/QrClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
