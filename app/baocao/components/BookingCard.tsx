@@ -1860,14 +1860,17 @@ export function BookingTodayBanner({
                 >
                   {b.noTicketFlight ? "🎫✕ Không vé" : b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
                 </Button>
-                <CollectMoneyControl
-                  spot={spot}
-                  booking={b}
-                  onDone={(msg) => {
-                    setCollectDone(msg);
-                    load();
-                  }}
-                />
+                {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
+                {spot !== "sapa" && (
+                  <CollectMoneyControl
+                    spot={spot}
+                    booking={b}
+                    onDone={(msg) => {
+                      setCollectDone(msg);
+                      load();
+                    }}
+                  />
+                )}
               </div>
               </>
             )}
@@ -1944,14 +1947,16 @@ export function BookingTodayBanner({
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
                 đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ. */}
             <div className="float-right ml-2 flex items-center gap-1">
-              <CollectMoneyControl
-                spot={spot}
-                booking={b}
-                onDone={(msg) => {
-                  setCollectDone(msg);
-                  load();
-                }}
-              />
+              {spot !== "sapa" && (
+                <CollectMoneyControl
+                  spot={spot}
+                  booking={b}
+                  onDone={(msg) => {
+                    setCollectDone(msg);
+                    load();
+                  }}
+                />
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -2721,6 +2726,33 @@ export function BookingCard({
     try {
       // Khách lẻ không có mã OTA: để trống thì lấy SĐT làm mã cho dễ tra
       const payload = { ...form, bookingCode: form.bookingCode.trim() || form.phone.trim() };
+      /**
+       * SA PA chưa quản tiền: gửi lên toàn số 0 cho phần tiền và dịch vụ, và
+       * "điểm đón" là chữ tự do nên xếp vào kiểu đón "other". Có vậy dòng tóm tắt
+       * mới sạch (không in tổng/cọc/còn thu) và số của Sa Pa không lẫn vào các
+       * phép cộng tiền của hai điểm kia.
+       */
+      if (bookSpot === "sapa") {
+        Object.assign(payload, {
+          pickup: "other" as const,
+          flycam: 0,
+          video360: 0,
+          redFlag: 0,
+          sunset: 0,
+          flagFlight: 0,
+          mountainCar: 0,
+          unitPrice: 0,
+          discount: 0,
+          comboDiscount: 0,
+          pickupFee: 0,
+          totalAmount: 0,
+          deposit: 0,
+          remaining: 0,
+          transferCode: "",
+          collectorUsername: "",
+          collectorNote: "",
+        });
+      }
       if (editingId) {
         await apiPut(`/api/baocao/booking?spot=${bookSpot}`, { id: editingId, ...payload });
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
@@ -2923,7 +2955,7 @@ export function BookingCard({
             onChange={(e) => e.target.value && set("flightDate", e.target.value)} className="h-10 rounded-lg text-sm"
           />
         </Field>
-        <Field label="Giờ dự kiến">
+        <Field label={bookSpot === "sapa" ? "Giờ đón" : "Giờ dự kiến"}>
           <TextInput
             type="time"
             value={form.expectedTime}
@@ -2974,7 +3006,51 @@ export function BookingCard({
        * Chia đều 4 cột thì ô "số khách" bị bóp còn 0.6fr, nút "+" tràn sang đè
        * lên ô Nguồn — đúng lỗi đã gặp.
        */}
-      {bookSpot === "khau-pha" ? (
+      {bookSpot === "sapa" ? (
+        /**
+         * SA PA: bảng booking GỌN, CHƯA CÓ TIỀN.
+         *
+         * Điểm này hiện chỉ cần biết khách từ đâu tới, đón ở đâu, mấy người, và
+         * đã bay hay huỷ/dời — chưa quản tiền. Nên bỏ hết dịch vụ, đơn giá, cọc,
+         * còn thu: để ô trống mà không dùng thì chỉ tạo thêm chỗ nhập nhầm.
+         * Chín ô đúng như đã chốt: ngày bay · điểm đón · giờ đón · tên khách ·
+         * SĐT · số khách · nguồn · mã booking · ghi chú.
+         */
+        <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
+          <Field label="Điểm đón">
+            <TextInput
+              value={form.pickupNote}
+              onChange={(e) => set("pickupNote", e.target.value)}
+              placeholder="Khách sạn / bến xe / nhà thờ Sa Pa…"
+              className="h-10 rounded-lg text-sm"
+            />
+          </Field>
+          <Field label={<span className="text-emerald-700">Số lượng khách</span>}>
+            <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 p-0.5">
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+            </div>
+          </Field>
+          <Field label={<span className="text-rose-700">Nguồn ★</span>}>
+            <TextInput
+              value={form.source}
+              onChange={(e) => set("source", e.target.value)}
+              placeholder="Klook / FB / Zalo / khách sạn…"
+              list="booking-sources"
+              className={
+                "h-10 rounded-lg text-sm font-semibold " +
+                (form.source.trim()
+                  ? "border-2 border-rose-400 bg-rose-50/60 text-rose-900"
+                  : "border-2 border-rose-300 bg-rose-50/40")
+              }
+            />
+            <datalist id="booking-sources">
+              {BOOKING_SOURCES.map((sName) => (
+                <option key={sName} value={sName} />
+              ))}
+            </datalist>
+          </Field>
+        </div>
+      ) : bookSpot === "khau-pha" ? (
         <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-[1.1fr_1.1fr_0.6fr_1.4fr]">
           {/* PG xanh dương · PPG tím · tổng khách xanh lá — ba ô đứng liền nhau,
               trắng giống nhau cả ba thì gõ nhầm ô là chuyện sớm muộn */}
@@ -3068,7 +3144,7 @@ export function BookingCard({
       )}
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
-        <Field label="Tên liên hệ">
+        <Field label={bookSpot === "sapa" ? "Tên khách" : "Tên liên hệ"}>
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
         <Field label="SĐT">
@@ -3086,6 +3162,9 @@ export function BookingCard({
         </Field>
       </div>
 
+      {/* SA PA chưa quản tiền: cả khối dịch vụ, đơn giá, cọc, còn thu đều ẩn */}
+      {bookSpot !== "sapa" && (
+      <>
       {/* Dịch vụ tuỳ chọn: 3 ô mỗi hàng khi đủ rộng — 5-6 dịch vụ gọn 2 hàng */}
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         {/**
@@ -3281,6 +3360,9 @@ export function BookingCard({
             Để trống cũng được — hôm bay giao cho ai thì người đó lo thu.
           </p>
         </div>
+      )}
+
+      </>
       )}
 
       {/* Cọc thì 100% qua STK công ty — bỏ ô tích, máy chủ tự đánh dấu khi có cọc */}
