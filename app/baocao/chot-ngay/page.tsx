@@ -102,7 +102,7 @@ type CloseSuggestion = {
   redFlag: number;
   sunset: number;
   flagFlight: number;
-  pilot: { flights: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; ppg: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   hasData: boolean;
 };
@@ -373,6 +373,8 @@ function DailyCloseInner() {
     if (!suggest?.pilot.hasData) return;
     setForm((prev) => ({
       ...prev,
+      // Khách theo PHI CÔNG = tổng chuyến PG + PPG (khách PPG cũng là khách bay)
+      guestCount: suggest.pilot.flights + suggest.pilot.ppg,
       flycam: suggest.pilot.flycam,
       video360: suggest.pilot.video360,
       redFlag: suggest.pilot.redFlag,
@@ -684,26 +686,73 @@ function DailyCloseInner() {
           className="order-1 lg:order-none"
           title="Số tổng trong ngày"
         >
-          {/* Nhân viên nhập, kế toán chỉ XÁC NHẬN: chép cả bảng rồi soát, sai chỗ nào sửa tay hoặc truy người nhập */}
+          {/**
+           * HAI NGUỒN SỐ, ĐẶT CẠNH NHAU ĐỂ CHỌN.
+           *
+           * Kế toán không gõ số của mình từ đầu: quầy và phi công đều đã báo.
+           * Hiện thẳng số của từng bên rồi bấm lấy bên nào — lệch nhau thì nhìn
+           * là thấy ngay, khỏi mở hai trang so tay. Lấy xong vẫn sửa tay được.
+           */}
           {suggest?.hasData && !locked && (
-            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <span className="text-sm text-emerald-900">Nhân viên đã báo — đúng thì lấy, khỏi gõ lại:</span>
-              {suggest.dispatcher.hasData && (
-                <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={copyFromDispatcher}>
-                  ⧉ Chấp nhận số liệu từ {reporterNames}
-                </Button>
-              )}
-              {suggest.pilot.hasData && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-9 bg-white px-3 text-xs"
-                  onClick={copyFromPilots}
-                  title={`Tổng phi công: ${suggest.pilot.flights} chuyến · flycam ${suggest.pilot.flycam} · 360 ${suggest.pilot.video360} · kéo cờ ${suggest.pilot.flagFlight}`}
-                >
-                  ⧉ Lấy tổng PHI CÔNG báo
-                </Button>
-              )}
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+              <div className="text-sm font-semibold text-emerald-900">
+                Nhân viên đã báo — chọn lấy số của bên nào, khỏi gõ lại:
+              </div>
+              <div className="mt-2 grid gap-2 @md:grid-cols-2">
+                {suggest.dispatcher.hasData && (
+                  <div className="rounded-xl border border-slate-300 bg-white p-2.5">
+                    <div className="text-xs font-bold text-slate-800">
+                      Điều phối / quầy vé báo
+                      {reporterNames ? <span className="font-normal text-slate-500"> — {reporterNames}</span> : null}
+                    </div>
+                    <div className="mt-1 text-[11px] leading-snug text-slate-600">
+                      {suggest.guestCount} khách · {suggest.ticketsIssued} vé xuất · {suggest.ticketsReturned} vé thu về ·
+                      huỷ {suggest.cancelledCount} · dời {suggest.rescheduledCount}
+                      <br />
+                      TM {formatVND(suggest.cashTotal)} · CK {formatVND(suggest.transferTotal)}
+                      <br />
+                      flycam {suggest.dispatcher.flycam} · 360 {suggest.dispatcher.video360} · cờ đỏ{" "}
+                      {suggest.dispatcher.redFlag} · hoàng hôn {suggest.dispatcher.sunset} · kéo cờ{" "}
+                      {suggest.dispatcher.flagFlight}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-1.5 h-9 w-full border-emerald-400 bg-white text-xs font-semibold text-emerald-800"
+                      onClick={copyFromDispatcher}
+                    >
+                      ⧉ Lấy trọn bộ số ĐIỀU PHỐI
+                    </Button>
+                  </div>
+                )}
+                {suggest.pilot.hasData && (
+                  <div className="rounded-xl border border-slate-300 bg-white p-2.5">
+                    <div className="text-xs font-bold text-slate-800">Phi công báo</div>
+                    <div className="mt-1 text-[11px] leading-snug text-slate-600">
+                      {suggest.pilot.flights + suggest.pilot.ppg} khách ({suggest.pilot.flights} chuyến PG
+                      {suggest.pilot.ppg ? ` + ${suggest.pilot.ppg} PPG` : ""})
+                      <br />
+                      flycam {suggest.pilot.flycam} · 360 {suggest.pilot.video360} · cờ đỏ {suggest.pilot.redFlag} ·
+                      hoàng hôn {suggest.pilot.sunset} · kéo cờ {suggest.pilot.flagFlight}
+                      <br />
+                      <span className="text-slate-400">
+                        Phi công không nắm vé và tiền — hai phần đó giữ nguyên số đang có.
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-1.5 h-9 w-full border-sky-400 bg-white text-xs font-semibold text-sky-800"
+                      onClick={copyFromPilots}
+                    >
+                      ⧉ Lấy số PHI CÔNG (khách + dịch vụ)
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <p className="mt-1.5 text-[11px] leading-tight text-emerald-900/70">
+                Lấy xong vẫn sửa tay từng ô được — số chốt là số kế toán chịu trách nhiệm.
+              </p>
             </div>
           )}
 

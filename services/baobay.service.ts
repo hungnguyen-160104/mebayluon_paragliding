@@ -6169,7 +6169,17 @@ issuedRanges: Array<{ from: string; to: string }>;
   sunset: number;
   flagFlight: number;
   /** Tổng theo TỪNG PHÍA — cho hai nút "lấy số phi công" / "lấy số điều phối". */
-  pilot: { flights: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  pilot: {
+    flights: number;
+    /** Chuyến PPG — khách PPG cũng là khách bay, phải cộng vào "số khách" phía phi công. */
+    ppg: number;
+    flycam: number;
+    video360: number;
+    redFlag: number;
+    sunset: number;
+    flagFlight: number;
+    hasData: boolean;
+  };
   dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   /** Tên những điều phối/trực quầy đã báo — nút chấp nhận ghi rõ nhận số từ ai. */
   dispatcherNames: string[];
@@ -6291,6 +6301,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flagFlight: sum(dispatchers, (d) => d.flagFlight),
     pilot: {
       flights: sum(pilots, (p) => p.flightCount),
+      ppg: sum(pilots, (p) => p.ppgFlights ?? 0),
       flycam: sum(pilots, (p) => p.flycam),
       video360: sum(pilots, (p) => p.video360),
       redFlag: sum(pilots, (p) => p.redFlag),
