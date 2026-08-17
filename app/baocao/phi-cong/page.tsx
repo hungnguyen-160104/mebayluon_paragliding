@@ -147,7 +147,7 @@ export default function PilotReportPage() {
   useEffect(() => {
     if (!spot) return;
     let alive = true;
-    apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
+    apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}&as=crew`)
       /** Cả khách đã tích "đã bay" cũng hiện: huỷ/dời sau khi lỡ tích là chuyện có thật. */
       .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done")))
       .catch(() => {

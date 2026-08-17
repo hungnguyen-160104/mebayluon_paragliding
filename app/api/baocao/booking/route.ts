@@ -55,7 +55,16 @@ export async function GET(req: Request) {
   if (!isDateKey(date)) {
     return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   }
-  const manager = auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role);
+  /**
+   * `as=crew`: TRANG PHI CÔNG / CAMERA MAN tự khai mình đang xem với tư cách tổ
+   * bay, dù tài khoản có vai gì.
+   *
+   * Trước đây chỉ xét vai trò, nên tài khoản quản trị kiêm phi công mở trang phi
+   * công lại thấy TOÀN BỘ sổ khách kèm giá — đúng thứ trang đó phải giấu. Quyền
+   * xem thuộc về TRANG đang mở, không phải chức danh của người mở.
+   */
+  const asCrew = new URL(req.url).searchParams.get("as") === "crew";
+  const manager = !asCrew && (auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role));
   const [lists, staff] = await Promise.all([
     listBookings(spot, date, manager ? undefined : auth.username),
     /**

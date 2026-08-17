@@ -421,7 +421,7 @@ export default function DispatcherReportPage() {
       {user.role !== "counter" && <CollectInbox spot={spot} />}
 
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
-      <BookingTodayBanner spot={spot} date={date} />
+      <BookingTodayBanner spot={spot} date={date} collapsible defaultOpen />
 
       {/* Khách đặt trước: nhập ngay hôm khách chốt, tự hiện đúng ngày bay */}
       <BookingCard spot={spot} spotOptions={spotOptions} />

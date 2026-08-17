@@ -60,7 +60,18 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
 };
 
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
-function BookingSummary({ b, withDate, dim }: { b: BookingDTO; withDate?: boolean; dim?: boolean }) {
+function BookingSummary({
+  b,
+  withDate,
+  dim,
+  hideNote,
+}: {
+  b: BookingDTO;
+  withDate?: boolean;
+  dim?: boolean;
+  /** Nơi gọi đã tự vẽ khối ghi chú vàng riêng — đừng lặp lại trong dòng tóm tắt. */
+  hideNote?: boolean;
+}) {
   /**
    * Ba thứ quầy phải đọc được ngay giữa một dòng dài: TÊN KHÁCH, SỐ ĐIỆN THOẠI
    * và CÒN THU. Tách khỏi chuỗi chữ xám để tô nền riêng, phần còn lại vẫn là
@@ -127,7 +138,7 @@ function BookingSummary({ b, withDate, dim }: { b: BookingDTO; withDate?: boolea
       ) : null}
       {tail.length ? ` · ${tail.join(" · ")}` : ""}
       {/* Ghi chú gọi khách hiện ngay trong dòng tóm tắt — chỗ nào có booking là thấy */}
-      {b.contactNote ? (
+      {b.contactNote && !hideNote ? (
         <span className="ml-1 rounded bg-amber-100 px-1 font-medium text-amber-900">📝 {b.contactNote}</span>
       ) : null}
       {/* Vệt thu tiền — in ĐẬM vì đây là câu trả lời cho "tiền booking này đâu rồi" */}
@@ -711,23 +722,13 @@ function ContactNote({
     }
   }
 
+  /**
+   * Chỉ có NÚT ở đây; nội dung ghi chú do dòng booking tự hiện (khối vàng dưới
+   * phần chữ, hoặc nhãn trong dòng tóm tắt). Trước đây vẽ cả hai nên cùng một
+   * câu hiện hai lần trên một dòng.
+   */
   return (
     <>
-      {/* Tờ giấy nhớ — luôn hiện nếu đã ghi gì đó */}
-      {booking.contactNote && !open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-1 block w-full rounded-lg border border-amber-300 bg-amber-100/80 px-2 py-1 text-left text-xs leading-snug text-amber-900"
-          title="Bấm để sửa ghi chú"
-        >
-          📝 {booking.contactNote}
-          {booking.contactedBy && (
-            <span className="ml-1 font-semibold text-amber-700">— {booking.contactedBy} đã gọi</span>
-          )}
-        </button>
-      )}
-
       {open && (
         <div className="mt-1 rounded-lg border border-amber-400 bg-amber-50 p-1.5">
           <TextArea
@@ -1566,11 +1567,17 @@ export function BookingTodayBanner({
   spot,
   date,
   collapsible = false,
+  defaultOpen = false,
 }: {
   spot: string;
   date: string;
-  /** Trang kế toán: gập được — mở trang không bị choán chỗ, bấm tiêu đề mới xổ danh sách. */
+  /** Gập được — bấm tiêu đề là thu gọn/xổ ra. */
   collapsible?: boolean;
+  /**
+   * Mở sẵn khi vào trang. Điều phối cần nhìn thấy danh sách ngay (việc chính của
+   * họ), nhưng vẫn gập được khi muốn xem phần khác; kế toán thì để gập sẵn.
+   */
+  defaultOpen?: boolean;
 }) {
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
@@ -1894,7 +1901,7 @@ export function BookingTodayBanner({
             <div className="min-w-0">
               {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
               <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
-              <BookingSummary b={b} />
+              <BookingSummary b={b} hideNote />
               <AssignedBadge b={b} />
               {b.rescheduledFrom.length > 0 && (
                 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
@@ -2013,10 +2020,16 @@ export function BookingTodayBanner({
 
   if (collapsible) {
     return (
-      <details className="group rounded-2xl border-2 border-sky-400 bg-sky-50 lg:[column-span:all]">
+      <details
+        open={defaultOpen}
+        className="group rounded-2xl border-2 border-sky-400 bg-sky-50 lg:[column-span:all]"
+      >
         <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5">
           <span className="text-sm font-bold text-sky-900">{title}</span>
-          <span aria-hidden className="text-sky-700 transition-transform group-open:rotate-180">▾</span>
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-sky-700">
+            <span className="hidden sm:inline group-open:hidden">bấm để xem</span>
+            <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
+          </span>
         </summary>
         <div className="border-t border-sky-200 px-3 pb-3">{body}</div>
       </details>
@@ -2058,7 +2071,9 @@ export function AssignedBookings({
   useEffect(() => {
     let alive = true;
     const load = () =>
-      apiGet<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
+      apiGet<{ forDate: BookingDTO[]; upcoming: BookingDTO[] }>(
+        `/api/baocao/booking?date=${date}&spot=${spot}&as=crew`,
+      )
         .then((r) => {
           if (!alive) return;
           setForDate(r.forDate);
