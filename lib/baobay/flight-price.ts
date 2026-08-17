@@ -68,7 +68,7 @@ export const SERVICE_PRICE = {
   flycam: 400_000,
   video360: 400_000,
   redFlag: 100_000,
-  flagFlight: 50_000,
+  flagFlight: 100_000,
   sunset: 700_000,
 } as const;
 
