@@ -32,6 +32,8 @@ export function CancelMoveCard({
   spot,
   date,
   bookings,
+  cancelled = [],
+  movedOut = [],
   cancelRows,
   moveRows,
   onCancelRows,
@@ -43,6 +45,10 @@ export function CancelMoveCard({
   spot: string;
   date: string;
   bookings: BookingPick[];
+  /** Khách ĐÃ huỷ trong sổ booking của ngày — liệt kê để soát, không phải để nhập lại. */
+  cancelled?: BookingPick[];
+  /** Khách ĐÃ dời khỏi ngày này (sang ngày khác). */
+  movedOut?: BookingPick[];
   cancelRows: CancelGuestRow[];
   moveRows: RescheduleGuestRow[];
   onCancelRows: (rows: CancelGuestRow[]) => void;
@@ -519,6 +525,55 @@ export function CancelMoveCard({
           </>
         )}
       </div>
+
+      {/**
+       * DANH SÁCH KHÁCH ĐÃ HUỶ / ĐÃ DỜI theo SỔ BOOKING.
+       *
+       * Khác với "Đã khai trong ngày" bên dưới (là mấy dòng chính người này vừa
+       * gõ vào báo cáo): đây là sự thật trong sổ, gồm cả khách do người khác huỷ
+       * hoặc huỷ ngay trên dòng booking. Không có danh sách này thì lúc chốt phải
+       * mở lại cả trang booking để dò xem hôm nay ai huỷ, ai dời.
+       */}
+      {(cancelled.length > 0 || movedOut.length > 0) && (
+        <div className="rounded-xl border-2 border-slate-300 bg-white p-2">
+          <div className="text-xs font-bold text-slate-800">
+            Trong sổ booking hôm nay: {cancelled.length} khách huỷ · {movedOut.length} khách dời
+          </div>
+          <ul className="mt-1 divide-y divide-slate-100">
+            {cancelled.map((b) => (
+              <li key={`c-${b.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1 text-xs">
+                <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 font-bold text-rose-900">huỷ</span>
+                <span className="min-w-0 flex-1 leading-snug text-slate-700">
+                  #{b.daySeq} <strong>{b.contactName || b.phone || "khách"}</strong> · {b.guestCount} khách
+                  {b.source ? ` · ${b.source}` : ""}
+                  {(b.cancelTicketCodes ?? []).length ? ` · thu hồi ${(b.cancelTicketCodes ?? []).join(" ")}` : ""}
+                  {b.cancelledBy ? <span className="text-slate-400"> — {b.cancelledBy}</span> : null}
+                </span>
+                {(b.refundAmount ?? 0) > 0 ? (
+                  <strong className="shrink-0 tabular-nums text-rose-700">
+                    hoàn {formatVND(b.refundAmount ?? 0)} {b.refundMethod === "cash" ? "TM" : "CK"}
+                  </strong>
+                ) : (
+                  <span className="shrink-0 text-slate-400">không hoàn</span>
+                )}
+              </li>
+            ))}
+            {movedOut.map((b) => (
+              <li key={`m-${b.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1 text-xs">
+                <span className="shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 font-bold text-indigo-900">dời</span>
+                <span className="min-w-0 flex-1 leading-snug text-slate-700">
+                  <strong>{b.contactName || b.phone || "khách"}</strong> · {b.guestCount} khách → bay{" "}
+                  {b.flightDate ? formatDateKeyVN(b.flightDate) : "?"}
+                  {(b.remaining ?? 0) > 0 ? ` · còn thu ${formatVND(b.remaining ?? 0)}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] leading-tight text-slate-500">
+            Đây là số THẬT trong sổ. Muốn đưa vào báo cáo ngày thì khai bên trên (chọn booking → xác nhận).
+          </p>
+        </div>
+      )}
 
       {/* ---- ĐÃ KHAI TRONG NGÀY: chỉ liệt kê một dòng, bấm Sửa mới mở bảng chi tiết ---- */}
       {(usedCancel.length > 0 || usedMove.length > 0) && (

@@ -3257,6 +3257,8 @@ export async function listBookings(
   upcoming: BookingDTO[];
   flown: FlownServices;
   moved: { bookings: number; guests: number };
+  /** Danh sách khách đã DỜI KHỎI ngày này (đi sang ngày khác) — thẻ huỷ/dời cần đọc. */
+  movedOut: BookingDTO[];
   /** Booking đã bỏ khỏi sổ trong ngày — hiện mục riêng, có nút lấy lại. */
   voided: BookingDTO[];
   /** Lần gần nhất chạy "Lấy book từ website & OTA" cho điểm này (ISO, "" nếu chưa từng). */
@@ -3299,8 +3301,9 @@ export async function listBookings(
      * mang flightDate mới nên không nằm trong danh sách, nhưng dòng thống kê
      * "Dời Nk" của ngày vẫn phải đếm được.
      */
+    /** Lấy đủ trường: thẻ "Khách huỷ / dời lịch" liệt kê tên, số khách, ngày dời tới. */
     BaobayBooking.find({ spot, rescheduledFrom: date, flightDate: { $ne: date }, ...extra })
-      .select("guestCount")
+      .sort({ flightDate: 1 })
       .lean<any[]>(),
     BaobaySetting.findOne({ key: spot }).select("webSyncAt").lean<any>(),
   ]);
@@ -3339,6 +3342,7 @@ export async function listBookings(
     upcoming: upcoming.map(view),
     flown,
     moved: { bookings: movedAway.length, guests: movedAway.reduce((t, b) => t + (b.guestCount || 0), 0) },
+    movedOut: movedAway.map(view),
     webSyncAt: setting?.webSyncAt ? new Date(setting.webSyncAt).toISOString() : "",
   };
 }

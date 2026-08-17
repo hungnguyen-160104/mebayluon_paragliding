@@ -227,12 +227,20 @@ export default function DispatcherReportPage() {
   const [justSaved, flashSaved] = useDoneFlag();
   /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
   const [dayBookings, setDayBookings] = useState<BookingPick[]>([]);
+  /** Khách ĐÃ huỷ và khách ĐÃ dời khỏi ngày — liệt kê trong thẻ Khách huỷ / dời lịch. */
+  const [cancelledBookings, setCancelledBookings] = useState<BookingPick[]>([]);
+  const [movedOutBookings, setMovedOutBookings] = useState<BookingPick[]>([]);
   useEffect(() => {
     if (!spot) return;
     let alive = true;
-    apiGet<{ forDate: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
+    apiGet<{ forDate: BookingPick[]; movedOut?: BookingPick[] }>(`/api/baocao/booking?date=${date}&spot=${spot}`)
       /** Cả khách đã tích "đã bay" cũng hiện: huỷ/dời sau khi lỡ tích là chuyện có thật. */
-      .then((r) => alive && setDayBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done")))
+      .then((r) => {
+        if (!alive) return;
+        setDayBookings(r.forDate.filter((b) => b.status === "open" || b.status === "done"));
+        setCancelledBookings(r.forDate.filter((b) => b.status === "cancelled"));
+        setMovedOutBookings(r.movedOut ?? []);
+      })
       .catch(() => {
         /* ngày chưa có booking thì thôi */
       });
@@ -722,6 +730,8 @@ export default function DispatcherReportPage() {
             spot={spot}
             date={date}
             bookings={dayBookings}
+            cancelled={cancelledBookings}
+            movedOut={movedOutBookings}
             cancelRows={form.cancelledGuests}
             moveRows={form.rescheduledGuests}
             onCancelRows={(rows) => set("cancelledGuests", rows)}

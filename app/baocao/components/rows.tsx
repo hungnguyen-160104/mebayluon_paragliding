@@ -738,6 +738,15 @@ export type BookingPick = {
   status: string;
   /** Quầy đã tích 🎫 xuất vé cho đoàn này chưa — quyết định có mã vé để thu hồi. */
   ticketIssued: boolean;
+  /** Các trường chỉ dùng để LIỆT KÊ khách đã huỷ / đã dời trong thẻ huỷ-dời. */
+  flightDate?: string;
+  remaining?: number;
+  refunded?: number;
+  refundAmount?: number;
+  refundMethod?: "cash" | "transfer";
+  cancelTicketCodes?: string[];
+  cancelledBy?: string;
+  note?: string;
 };
 
 /**
