@@ -2463,6 +2463,13 @@ export function BookingCard({
   const [comboTouched, setComboTouched] = useState(false);
   const [quickMsg, setQuickMsg] = useState<string | null>(null);
 
+  /** Có đang chọn dịch vụ nào không — để nhắc "nhớ nhập số khách". */
+  const serviceTotalCount =
+    form.flycam + form.video360 + form.redFlag + form.sunset + form.flagFlight + form.mountainCar;
+
+  /** Trần cho mỗi ô dịch vụ: bằng số khách, chưa có số khách thì mở tạm 20. */
+  const serviceCap = form.guestCount > 0 ? form.guestCount : 20;
+
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
     if (key === "remaining") setRemainingTouched(true);
@@ -2474,8 +2481,13 @@ export function BookingCard({
       if (!comboTouched && (key === "flycam" || key === "video360" || key === "guestCount")) {
         next.comboDiscount = comboDiscount(next.flycam, next.video360);
       }
-      // Dịch vụ bám theo đầu khách — giảm số khách thì các dịch vụ tự kẹp xuống
-      if (key === "guestCount") {
+      /**
+       * Dịch vụ bám theo đầu khách — giảm số khách thì các dịch vụ tự kẹp xuống.
+       * CHƯA nhập số khách (0) thì KHÔNG kẹp: nhân viên nghe khách đọc "2 flycam"
+       * hay bấm ⚡ Đọc & điền trước khi biết đủ đầu người là chuyện thường, kẹp
+       * về 0 lúc đó là xoá mất thứ vừa nhập.
+       */
+      if (key === "guestCount" && (Number(value) || 0) > 0) {
         const cap = Number(value) || 0;
         next.flycam = Math.min(next.flycam, cap);
         next.video360 = Math.min(next.video360, cap);
@@ -2643,13 +2655,15 @@ export function BookingCard({
         ppgGuests: purePpg ? 0 : ppg,
         unitPrice: priceTouched ? prev.unitPrice : flightUnitPrice(kind, prev.flightDate),
       };
-      // Dịch vụ bám theo đầu khách — giảm khách thì kẹp dịch vụ xuống
-      next.flycam = Math.min(next.flycam, guestCount);
-      next.video360 = Math.min(next.video360, guestCount);
-      next.redFlag = Math.min(next.redFlag, guestCount);
-      next.sunset = Math.min(next.sunset, guestCount);
-      next.mountainCar = Math.min(next.mountainCar, guestCount);
-      next.flagFlight = Math.min(next.flagFlight, guestCount);
+      // Giảm khách thì kẹp dịch vụ xuống — nhưng về 0 khách thì để yên (xem set())
+      if (guestCount > 0) {
+        next.flycam = Math.min(next.flycam, guestCount);
+        next.video360 = Math.min(next.video360, guestCount);
+        next.redFlag = Math.min(next.redFlag, guestCount);
+        next.sunset = Math.min(next.sunset, guestCount);
+        next.mountainCar = Math.min(next.mountainCar, guestCount);
+        next.flagFlight = Math.min(next.flagFlight, guestCount);
+      }
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
       if (!remainingTouched) next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
       return next;
@@ -2707,6 +2721,26 @@ export function BookingCard({
   async function save() {
     setError(null);
     setDone(null);
+    /**
+     * Dịch vụ không được nhiều hơn số khách — máy chủ cũng chặn, nhưng báo ở đây
+     * thì người nhập sửa được ngay tại ô, khỏi mất công gửi đi rồi nhận lỗi.
+     */
+    if (form.guestCount === 0 && serviceTotalCount > 0) {
+      setError("Chưa nhập số khách — dịch vụ tối đa bằng số khách.");
+      return;
+    }
+    const overService = ([
+      ["Flycam", form.flycam],
+      ["Cam 360", form.video360],
+      ["Dù cờ đỏ", form.redFlag],
+      ["Bay hoàng hôn/săn mây", form.sunset],
+      ["Bay kéo cờ/bánh", form.flagFlight],
+      ["Xe lên núi", form.mountainCar],
+    ] as Array<[string, number]>).find(([, n]) => n > form.guestCount);
+    if (overService) {
+      setError(`${overService[0]}: ${overService[1]} suất nhưng chỉ có ${form.guestCount} khách.`);
+      return;
+    }
     // Giờ dự kiến hôm nay không được lùi về quá khứ — máy chủ cũng chặn lại lần nữa
     if (form.flightDate === todayInVN() && form.expectedTime && form.expectedTime < nowHHMMVN()) {
       setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}).`);
@@ -3003,33 +3037,41 @@ export function BookingCard({
 
       {/* Dịch vụ tuỳ chọn: 3 ô mỗi hàng khi đủ rộng — 5-6 dịch vụ gọn 2 hàng */}
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
-        {/* Tối đa = số khách: 2 khách thì nhiều nhất 2 flycam, 2 cam360… */}
+        {/**
+         * Trần dịch vụ = SỐ KHÁCH (2 khách thì nhiều nhất 2 flycam, 2 cam360…).
+         * Nhưng khi CHƯA nhập số khách thì mở tạm trần 20 để còn nhập được:
+         * khách đọc một lèo "3 người, 2 flycam" thì nhân viên gõ theo thứ tự nào
+         * cũng phải được. Điền số khách vào là dịch vụ tự kẹp lại cho đúng, và
+         * nút Lưu chặn nốt trường hợp quên nhập khách.
+         */}
         <ServiceBox tone="flycam" label="Flycam">
-          <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={form.guestCount} />
+          <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={serviceCap} />
         </ServiceBox>
         <ServiceBox tone="video360" label="Cam 360">
-          <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={form.guestCount} />
+          <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={serviceCap} />
         </ServiceBox>
         <ServiceBox tone="redFlag" label="Dù cờ đỏ">
-          <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={form.guestCount} />
+          <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={serviceCap} />
         </ServiceBox>
         <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
-          <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={form.guestCount} />
+          <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={serviceCap} />
         </ServiceBox>
         {bookSpot !== "sapa" && (
         <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
-          <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={form.guestCount} />
+          <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={serviceCap} />
         </ServiceBox>
         )}
         {/* Xe chuyên dụng lên núi — chỉ Hà Nội, 150k mỗi khách */}
         {bookSpot === "ha-noi" && (
         <ServiceBox tone="car" label="Xe lên núi">
-          <CountInput compact value={form.mountainCar} onChange={(v) => set("mountainCar", v)} max={form.guestCount} />
+          <CountInput compact value={form.mountainCar} onChange={(v) => set("mountainCar", v)} max={serviceCap} />
         </ServiceBox>
         )}
       </div>
       <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
-        {form.guestCount === 0 ? "Nhập số khách trước — dịch vụ tối đa bằng số khách. " : ""}
+        {form.guestCount === 0 && serviceTotalCount > 0
+          ? "⚠ Nhớ nhập số khách — dịch vụ không được nhiều hơn số khách. "
+          : ""}
         Đơn giá dịch vụ:{" "}
         {SERVICE_PRICE_LABEL.map((x, i) => (
           <span key={x.key}>

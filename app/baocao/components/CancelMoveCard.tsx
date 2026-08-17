@@ -14,6 +14,7 @@ import {
   type CancelGuestRow,
   type RescheduleGuestRow,
 } from "./rows";
+import { PaymentQrButton } from "./PaymentQr";
 import { Banner, Button, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
@@ -411,9 +412,18 @@ export function CancelMoveCard({
                     </button>
                   ))}
                 </div>
-                <span className="w-full text-[11px] text-slate-500">
+                <span className="flex w-full flex-wrap items-center gap-2 text-[11px] text-slate-500">
                   Khách đã trả {formatVND(picked.deposit)}
                   {usedFee > 0 ? ` − phí đã dùng ${formatVND(usedFee)}` : ""} → hoàn {formatVND(refund)}
+                  {/* Khách chưa trả đủ mà còn nợ phí đã dùng: đưa QR cho khách trả nốt */}
+                  {usedFee > picked.deposit && (
+                    <PaymentQrButton
+                      amount={usedFee - picked.deposit}
+                      note={picked.bookingCode || picked.phone || ""}
+                      purpose={`Phí dịch vụ đã dùng — ${picked.contactName || "khách"}`}
+                      label={`QR thu ${formatVND(usedFee - picked.deposit)}`}
+                    />
+                  )}
                 </span>
                 {refund > 0 && refundMethod === "transfer" && (
                   <>
@@ -476,6 +486,12 @@ export function CancelMoveCard({
                         thu {formatVND(feeCash + feeTransfer)}
                       </span>
                     )}
+                    {/* Khách trả phí dời lịch từ xa: gửi mã QR qua Zalo cho tiện */}
+                    <PaymentQrButton
+                      amount={feeCash + feeTransfer}
+                      note={picked?.bookingCode || picked?.phone || ""}
+                      purpose={`Phí dời lịch — ${picked?.contactName || "khách"}`}
+                    />
                   </div>
                 </div>
               </>
