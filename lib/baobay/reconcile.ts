@@ -1,6 +1,11 @@
 // lib/baobay/reconcile.ts
 /**
- * Đối chiếu số liệu một ngày bay: kế toán ↔ điều phối ↔ phi công ↔ camera man.
+ * Đối chiếu số liệu một ngày bay: kế toán ↔ quầy/điều phối ↔ phi công ↔ camera man.
+ *
+ * ĐIỀU PHỐI và QUẦY VÉ là hai vai NGANG CẤP: cùng một bản báo cáo ngày, ai trực
+ * thì người đó khai, số của họ cộng chung thành một bên khi đối chiếu. Trong mã
+ * nguồn gọi chung là `dispatchers` cho gọn, còn lời báo cho người đọc thì ghi
+ * "quầy/điều phối" để không ai tưởng quầy vé là cấp dưới.
  *
  * Đây là hàm THUẦN (không đọc cơ sở dữ liệu, không gọi mạng) để chạy được cả ở
  * máy chủ lẫn trình duyệt: trang kế toán và trang phi công đều cần thấy cùng
@@ -344,7 +349,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (onlyClose.length || onlyDispatcher.length) {
       const parts: string[] = [];
       if (onlyClose.length) parts.push(`chỉ kế toán có: ${short(onlyClose)}`);
-      if (onlyDispatcher.length) parts.push(`chỉ điều phối có: ${short(onlyDispatcher)}`);
+      if (onlyDispatcher.length) parts.push(`chỉ quầy/điều phối có: ${short(onlyDispatcher)}`);
       flag({
         code: "DAI_MA_SAI",
         severity: "red",
@@ -391,7 +396,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
 
       const parts: string[] = [];
       if (onlyClose.length) parts.push(`chỉ kế toán có: ${short(onlyClose)}`);
-      if (onlyDispatcher.length) parts.push(`chỉ điều phối có: ${short(onlyDispatcher)}`);
+      if (onlyDispatcher.length) parts.push(`chỉ quầy/điều phối có: ${short(onlyDispatcher)}`);
       flag({
         code: "LECH_VE_THU_HOI",
         /**
@@ -715,9 +720,9 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       code: "LECH_FLYCAM",
       severity: "warn",
       message:
-        `Flycam lệch: điều phối báo ${totals.dispatcherFlycam}, camera man báo ${totals.cameramanFlycam}. ` +
+        `Flycam lệch: quầy/điều phối báo ${totals.dispatcherFlycam}, camera man báo ${totals.cameramanFlycam}. ` +
         `Phi công báo tổng ${totals.pilotFlycam} — lấy làm căn cứ để xét bên nào đúng` +
-        codeHint("điều phối", dispatchers.flatMap((d) => d.flycamCodes), "camera man", cameramen.flatMap((c) => c.flycamCodes)) +
+        codeHint("quầy/điều phối", dispatchers.flatMap((d) => d.flycamCodes), "camera man", cameramen.flatMap((c) => c.flycamCodes)) +
         (varianceApproved ? " (kế toán đã duyệt lệch)" : ""),
       who: [...cameramen.map((c) => c.username), ...dispatchers.map((d) => d.username)],
     });
@@ -775,7 +780,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       severity: "warn",
       message:
         `${chk.label} lệch: điều phối báo ${chk.dispatcherTotal}, phi công báo tổng ${chk.pilotTotal}` +
-        codeHint("điều phối", chk.dispatcherCodes, "phi công", chk.pilotCodes) +
+        codeHint("quầy/điều phối", chk.dispatcherCodes, "phi công", chk.pilotCodes) +
         (varianceApproved ? " (kế toán đã duyệt lệch)" : ""),
       who: [...dispatcherUsernames, ...pilotsImplicated(chk.pilotCodes, chk.dispatcherCodes)],
     });
@@ -785,7 +790,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     flag({
       code: "LECH_KHACH",
       severity: "warn",
-      message: `Khách ngoại giao lệch: phi công báo ${totals.pilotDiplomatic}, điều phối báo ${totals.dispatcherDiplomatic}`,
+      message: `Khách ngoại giao lệch: phi công báo ${totals.pilotDiplomatic}, quầy/điều phối báo ${totals.dispatcherDiplomatic}`,
       who: [],
     });
   }
@@ -1001,7 +1006,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     flag({
       code: "LECH_VE_XUAT",
       severity: "warn",
-      message: `Chưa có báo cáo điều phối bay ngày ${formatDateKeyVN(date)}`,
+      message: `Chưa có báo cáo quầy/điều phối bay ngày ${formatDateKeyVN(date)}`,
       who: [],
     });
   }

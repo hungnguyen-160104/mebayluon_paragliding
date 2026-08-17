@@ -339,7 +339,8 @@ function DailyCloseInner() {
   }, [user, spot, date, reloadKey]);
 
   /**
-   * Lấy số ĐIỀU PHỐI báo: điều phối nắm quầy vé nên phía này cho được trọn bộ —
+   * Lấy số QUẦY/ĐIỀU PHỐI báo: hai vai NGANG CẤP, cùng một bản báo cáo ngày, ai
+   * trực thì người đó khai — phía này nắm mặt vé và tiền nên cho được trọn bộ:
    * khách, vé, dải mã, huỷ/dời, tiền, và cả ba dịch vụ theo con số quầy đếm.
    */
   function copyFromDispatcher() {
@@ -362,7 +363,7 @@ function DailyCloseInner() {
       sunset: suggest.dispatcher.sunset,
       flagFlight: suggest.dispatcher.flagFlight,
     }));
-    setMessage("Đã lấy số ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
+    setMessage("Đã lấy số QUẦY/ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
   }
 
   /**
@@ -702,7 +703,7 @@ function DailyCloseInner() {
                 {suggest.dispatcher.hasData && (
                   <div className="rounded-xl border border-slate-300 bg-white p-2.5">
                     <div className="text-xs font-bold text-slate-800">
-                      Điều phối / quầy vé báo
+                      Quầy vé / điều phối báo
                       {reporterNames ? <span className="font-normal text-slate-500"> — {reporterNames}</span> : null}
                     </div>
                     <div className="mt-1 text-[11px] leading-snug text-slate-600">
@@ -721,7 +722,7 @@ function DailyCloseInner() {
                       className="mt-1.5 h-9 w-full border-emerald-400 bg-white text-xs font-semibold text-emerald-800"
                       onClick={copyFromDispatcher}
                     >
-                      ⧉ Lấy trọn bộ số ĐIỀU PHỐI
+                      ⧉ Lấy trọn bộ số QUẦY/ĐIỀU PHỐI
                     </Button>
                   </div>
                 )}
@@ -764,7 +765,7 @@ function DailyCloseInner() {
                   phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare label="sổ booking (đã bay)" value={suggest?.flownGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
@@ -783,12 +784,12 @@ function DailyCloseInner() {
                 </ServiceBox>
                 <ServiceBox tone="cancelled" label="Số khách huỷ">
                   <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
-                  <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
+                  <Compare label="quầy/điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
                 </ServiceBox>
                 <ServiceBox tone="moved" label="Số khách dời">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-                  <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
+                  <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
                 </ServiceBox>
               </>
@@ -796,7 +797,7 @@ function DailyCloseInner() {
               <>
                 <ServiceBox tone="tickets" label="Số vé được xuất ra">
                   <CountInput compact value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-                  <Compare label="điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
+                  <Compare label="quầy/điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
                     onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
                   {/* Tổng số MÃ VÉ phi công đã khai bay trong ngày (gồm cả vé PPG) */}
                   <Compare label="phi công báo" value={t?.pilotCodes} mine={form.ticketsIssued}
@@ -805,19 +806,19 @@ function DailyCloseInner() {
 
                 <ServiceBox tone="returned" label="Số vé thu hồi (huỷ + dời)">
                   <CountInput compact value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-                  <Compare label="điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
+                  <Compare label="quầy/điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
                 </ServiceBox>
 
                 <ServiceBox tone="cancelled" label="Trong đó: vé huỷ hoàn tiền">
                   <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
-                  <Compare label="điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
+                  <Compare label="quầy/điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
                 </ServiceBox>
 
                 <ServiceBox tone="moved" label="Trong đó: vé dời lịch">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-                  <Compare label="điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
+                  <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
                 </ServiceBox>
               </>
@@ -846,21 +847,21 @@ function DailyCloseInner() {
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
             </ServiceBox>
             <ServiceBox tone="video360" label="Camera 360">
               <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilot360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcher360} mine={form.video360}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcher360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
             </ServiceBox>
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
             </ServiceBox>
             {spot !== "sapa" && (
@@ -868,7 +869,7 @@ function DailyCloseInner() {
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotSunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherSunset} mine={form.sunset}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherSunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
             </ServiceBox>
             )}
@@ -876,7 +877,7 @@ function DailyCloseInner() {
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
               <Compare label="phi công báo" value={t?.pilotFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
-              <Compare label="điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
             </ServiceBox>
           </div>
@@ -1148,7 +1149,7 @@ function DailyCloseInner() {
                 value={formatVND(ledgerCash)}
                 tone={t && ledgerCash !== t.dispatcherCash ? "warning" : "normal"}
               />
-              <Compare label="điều phối báo" value={t?.dispatcherCash} mine={ledgerCash} money />
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherCash} mine={ledgerCash} money />
             </div>
             <div>
               <Readout
@@ -1156,7 +1157,7 @@ function DailyCloseInner() {
                 value={formatVND(ledgerTransfer)}
                 tone={t && ledgerTransfer !== t.dispatcherTransfer ? "warning" : "normal"}
               />
-              <Compare label="điều phối báo" value={t?.dispatcherTransfer} mine={ledgerTransfer} money />
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherTransfer} mine={ledgerTransfer} money />
             </div>
             <div>
               <Readout label="Tổng thu trong ngày" value={formatVND(ledgerCash + ledgerTransfer)} />

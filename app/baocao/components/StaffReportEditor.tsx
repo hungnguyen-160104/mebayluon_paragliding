@@ -24,7 +24,10 @@ import {
 import { Banner, Button, CountInput, Field, ServiceBox, TextInput, CollapseCard } from "./ui";
 
 /**
- * Kế toán SỬA TRỰC TIẾP báo cáo ĐIỀU PHỐI và CAMERA MAN trên trang Chốt ngày.
+ * Kế toán SỬA TRỰC TIẾP báo cáo QUẦY VÉ / ĐIỀU PHỐI và CAMERA MAN trên trang Chốt ngày.
+ *
+ * Quầy vé và điều phối là hai vai NGANG CẤP, dùng chung một bản báo cáo ngày —
+ * trong mã gọi chung là "dispatcher" cho gọn.
  *
  * Triết lý vận hành: nhân viên NHẬP, kế toán chỉ XÁC NHẬN — nên trang chốt
  * không còn ô nhập vé/huỷ/dời riêng của kế toán nữa. Sai ở đâu thì kế toán mở
@@ -116,7 +119,7 @@ export function StaffReportEditor({
 
   return (
     <CollapseCard
-      title={`Báo cáo điều phối & camera man (${dispatchers.length + cameramen.length})`}
+      title={`Báo cáo quầy/điều phối & camera man (${dispatchers.length + cameramen.length})`}
       hint="Nhân viên nhập — kế toán chỉ XÁC NHẬN. Sai ở đâu bấm Sửa: chỉnh được MỌI chi tiết (dải mã vé, thu chi, khách huỷ/dời, dịch vụ…) rồi lưu hộ; người chưa báo thì chọn thêm và nhập hộ."
     >
       {error && <Banner tone="error">{error}</Banner>}
@@ -436,7 +439,7 @@ function DispatcherRow({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="font-medium text-slate-900">
-            {report.staffName} <span className="text-xs font-normal text-slate-500">— điều phối</span>
+            {report.staffName} <span className="text-xs font-normal text-slate-500">— quầy/điều phối</span>
             <span
               className={
                 "ml-2 rounded px-1.5 py-0.5 text-[11px] font-semibold " +
@@ -539,7 +542,7 @@ function DispatcherRow({
 
           {savedClean && <Banner tone="success">✓ Đã lưu thành công — sửa ô nào thì nút lưu bật lại.</Banner>}
           <Button type="button" className="h-10 w-full text-xs" disabled={saving || savedClean} onClick={save}>
-            {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu hộ điều phối"}
+            {saving ? "Đang lưu…" : savedClean ? "✓ Đã lưu" : "Lưu hộ quầy/điều phối"}
           </Button>
         </div>
       )}
