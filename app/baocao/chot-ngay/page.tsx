@@ -38,7 +38,7 @@ import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, CountInput, DoneTag, Readout, TextArea, TextInput, ServiceBox, CollapseCard, useDoneFlag } from "../components/ui";
+import { Banner, Button, CollapseCard, CountInput, DoneTag, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
 /**
  * Kế toán tổng hợp chốt ngày.
@@ -176,7 +176,7 @@ const EMPTY_FORM: FormState = {
 export default function DailyClosePage() {
   return (
     <Suspense
-      fallback={<div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>}
+      fallback={<PageLoading />}
     >
       <DailyCloseInner />
     </Suspense>
@@ -513,7 +513,7 @@ function DailyCloseInner() {
   }
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   const t = check?.totals;

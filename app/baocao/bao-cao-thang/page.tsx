@@ -11,7 +11,7 @@ import { apiGet } from "../components/client-api";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, Field, TextInput } from "../components/ui";
+import { Banner, Button, Card, Field, InlineLoading, PageLoading, TextInput } from "../components/ui";
 
 /**
  * Báo cáo tháng: mỗi tháng một bản, mỗi phi công một khối.
@@ -105,7 +105,7 @@ export default function MonthlyReportPage() {
   }, [user, spot, month, load]);
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   return (
@@ -146,7 +146,7 @@ export default function MonthlyReportPage() {
       </Card>
 
       {error && <Banner tone="error">{error}</Banner>}
-      {busy && <p className="text-sm text-slate-500">Đang tải…</p>}
+      {busy && <InlineLoading />}
 
       {!busy && data && (
         <>

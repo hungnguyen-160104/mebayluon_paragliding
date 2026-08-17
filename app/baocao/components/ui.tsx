@@ -323,6 +323,26 @@ export function useDoneFlag(ms = 4_000): [boolean, () => void] {
   return [on, flash];
 }
 
+/**
+ * Màn "Đang tải…" của cả khu báo bay — TO, ĐẬM, ĐỎ.
+ *
+ * Chữ xám nhỏ ở giữa màn trắng nhìn như trang hỏng: người trực đứng ngoài bãi,
+ * nắng chói, sóng 3G chập chờn, đợi mấy giây mà không thấy gì rõ ràng là bấm
+ * lại hoặc gọi điện báo lỗi. Đỏ và to thì biết ngay máy đang chạy chứ chưa treo.
+ */
+export function PageLoading({ label = "Đang tải…" }: { label?: string }) {
+  return (
+    <div className="flex min-h-dvh items-center justify-center px-4">
+      <p className="animate-pulse text-center text-2xl font-extrabold text-rose-600 sm:text-3xl">{label}</p>
+    </div>
+  );
+}
+
+/** Dòng "đang tải" NHỎ, đứng trong một thẻ đang mở — cũng đỏ đậm cho dễ thấy. */
+export function InlineLoading({ label = "Đang tải…" }: { label?: string }) {
+  return <p className="animate-pulse text-sm font-bold text-rose-600">{label}</p>;
+}
+
 export function Banner({
   tone,
   children,

@@ -22,7 +22,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, DoneTag, Field, Readout, TextArea, useDoneFlag } from "../components/ui";
+import { Banner, Button, Card, CountInput, DoneTag, Field, PageLoading, Readout, TextArea, useDoneFlag } from "../components/ui";
 
 /**
  * Camera man báo cáo một ngày.
@@ -164,7 +164,7 @@ export default function CameramanReportPage() {
   }
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");

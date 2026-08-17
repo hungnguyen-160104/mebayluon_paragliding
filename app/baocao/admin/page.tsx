@@ -11,6 +11,7 @@ import { spotName } from "@/lib/baobay/spots";
 import { apiPost } from "../components/client-api";
 import { PersonnelPanel } from "../components/PersonnelPanel";
 import { useBaobaySession } from "../components/session";
+import { PageLoading } from "../components/ui";
 import { ChangePasswordCard } from "../components/Shell";
 
 /**
@@ -27,7 +28,7 @@ export default function BaobayAdminPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   if (loading || !user) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   async function logout() {

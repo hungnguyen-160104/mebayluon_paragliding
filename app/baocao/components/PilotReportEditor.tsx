@@ -8,7 +8,7 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "./rows";
-import { Banner, Button, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput, CollapseCard } from "./ui";
+import { Banner, Button, CollapseCard, CountInput, Field, InlineLoading, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
 
 /**
  * Khung cho KẾ TOÁN sửa báo cáo phi công ngay trên trang chốt ngày.
@@ -81,7 +81,7 @@ export function PilotReportEditor({
       hint="Kế toán sửa trực tiếp được — lưu hộ đi cùng một đường kiểm tra với chính phi công. Phạt nộp muộn không bị tính lại khi sửa."
     >
       {error && <Banner tone="error">{error}</Banner>}
-      {busy && <p className="text-sm text-slate-500">Đang tải…</p>}
+      {busy && <InlineLoading />}
 
       {!busy && rows.length === 0 && (
         <p className="text-sm text-slate-500">Chưa phi công nào báo cáo ngày này — thêm người bằng ô bên dưới.</p>

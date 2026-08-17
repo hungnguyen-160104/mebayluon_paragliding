@@ -6216,9 +6216,55 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       .lean<any[]>(),
   ]);
 
+  /**
+   * KHÁCH HUỶ ghi ngay trên SỔ BOOKING (nút ✕ Huỷ booking) — nguồn thứ hai bên
+   * cạnh báo cáo điều phối.
+   *
+   * Huỷ trên dòng booking là đường nhanh nhất nên nhân viên hay dùng, mà kế
+   * toán lại không thấy gì: gợi ý chốt ngày chỉ đọc báo cáo điều phối nên vé
+   * huỷ và TIỀN HOÀN không hiện ra để chấp nhận. Đã bị bỏ sót đúng như vậy với
+   * vé MBL0356 ngày 16/08 (hoàn 2.990.000 đ CK).
+   */
+  const cancelledBookings = await BaobayBooking.find({ spot, flightDate: date, status: "cancelled" })
+    .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod")
+    .lean<any[]>();
+
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
 
-  const cancelledCodes = [...new Set(dispatchers.flatMap((d) => d.cancelledCodes ?? []))];
+  const dispatcherCancelledCodes = dispatchers.flatMap((d) => (d.cancelledCodes ?? []) as string[]);
+  const bookingCancelledCodes = cancelledBookings.flatMap((b) => (b.cancelTicketCodes ?? []) as string[]);
+  const cancelledCodes = [...new Set([...dispatcherCancelledCodes, ...bookingCancelledCodes])];
+
+  /**
+   * Nhóm khách huỷ lấy từ sổ booking — BỎ QUA nhóm điều phối đã khai rồi (trùng
+   * mã vé, hoặc trùng tên + số khách), để kế toán không nhận hai lần một khách.
+   */
+  const declaredCodes = new Set(dispatcherCancelledCodes.map((c) => String(c).toUpperCase()));
+  const declaredNames = new Set(
+    dispatchers
+      .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
+      .map((e) => `${(e.name || "").trim().toLowerCase()}|${e.guests || 0}`),
+  );
+  const bookingCancelEntries = cancelledBookings
+    .filter((b) => {
+      const codes = (b.cancelTicketCodes ?? []).map((c: string) => String(c).toUpperCase());
+      if (codes.some((c: string) => declaredCodes.has(c))) return false;
+      return !declaredNames.has(`${(b.contactName || "").trim().toLowerCase()}|${b.guestCount || 0}`);
+    })
+    .map((b) => ({
+      name: b.contactName || b.phone || "khách",
+      bookingCode: b.bookingCode || "",
+      guests: b.guestCount || 0,
+      source: b.source || "",
+      refund: b.refundAmount || 0,
+      note: [
+        (b.cancelTicketCodes ?? []).length ? `thu hồi ${(b.cancelTicketCodes ?? []).join(" ")}` : "",
+        b.refundAmount ? `hoàn ${b.refundMethod === "cash" ? "TM" : "CK"}` : "",
+        "huỷ trên sổ booking",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    }));
   const rescheduled = dispatchers.flatMap((d) =>
     (d.rescheduled ?? []).map((r: any) => ({
       code: r.code || "",
@@ -6236,7 +6282,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
     ticketsReturned: sum(dispatchers, (d) => d.ticketsReturned),
     // Số đã lưu của điều phối: điểm vé đếm theo mã, Hà Nội đếm theo đầu khách
-    cancelledCount: sum(dispatchers, (d) => d.cancelledCount),
+    /** Điều phối khai + nhóm huỷ trên sổ booking mà điều phối chưa khai. */
+    cancelledCount:
+      sum(dispatchers, (d) => d.cancelledCount) +
+      bookingCancelEntries.reduce((t, e) => t + (spot === "ha-noi" ? e.guests : (e.note.match(/thu hồi ([^·]+)/)?.[1] ?? "").trim().split(/\s+/).filter(Boolean).length), 0),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
     issuedRanges: (() => {
@@ -6261,7 +6310,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       bookings.filter((b) => b.status === "done"),
       (b) => b.guestCount,
     ),
-    cancelledGuestEntries: dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
+    cancelledGuestEntries: [
+      ...dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
+      ...bookingCancelEntries,
+    ],
     rescheduledGuestEntries: dispatchers.flatMap((d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"]),
     dispatcherLedger: dispatchers.flatMap((d) => {
       /** Nhiều điều phối cùng ngày thì mỗi dòng ghi rõ của ai. */
@@ -6292,7 +6344,21 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         rows.push({ content: `${tag}${e.content}`, amount: e.amount || 0, kind: e.kind === "thu" ? "thu" : "chi", method: e.method === "transfer" ? "transfer" : "cash" });
       }
       return rows;
-    }),
+    }).concat(
+      /**
+       * TIỀN HOÀN cho khách huỷ ghi trên sổ booking — cũng là tiền RA của ngày.
+       * Không đưa vào đây thì sổ "Tiền trong ngày" của kế toán thiếu đúng khoản
+       * chi to nhất hôm đó (vé MBL0356 hoàn 2.990.000 đ CK bị bỏ sót).
+       */
+      bookingCancelEntries
+        .filter((e) => e.refund > 0)
+        .map((e) => ({
+          content: `Hoàn tiền khách huỷ — ${e.name}${e.bookingCode ? ` (${e.bookingCode})` : ""}`,
+          amount: e.refund,
+          kind: "chi" as const,
+          method: /hoàn TM/.test(e.note) ? ("cash" as const) : ("transfer" as const),
+        })),
+    ),
     flycam: sum(cameramen, (c) => c.flycamFlights),
     video360: sum(pilots, (p) => p.video360),
     redFlag: sum(pilots, (p) => p.redFlag),

@@ -30,7 +30,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, DoneTag, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput, CollapseCard, useDoneFlag } from "../components/ui";
+import { Banner, Button, Card, CollapseCard, CountInput, DoneTag, Field, MoneyInput, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
 /**
  * Phi công báo cáo một ngày bay.
@@ -322,7 +322,7 @@ export default function PilotReportPage() {
 
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã) — điểm khác khai được thì tốt. */

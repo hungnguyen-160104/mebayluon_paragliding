@@ -14,7 +14,7 @@ import { DateBar } from "../components/DateBar";
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
-import { Banner, Card } from "../components/ui";
+import { Banner, Card, PageLoading } from "../components/ui";
 
 /**
  * TRANG NHÀ CỦA KẾ TOÁN.
@@ -82,7 +82,7 @@ export default function KeToanPage() {
   }, [user, spot, load]);
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   const cashHeld = board?.cashByPerson ?? [];

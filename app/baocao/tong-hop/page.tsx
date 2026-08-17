@@ -12,7 +12,7 @@ import { apiGet, apiPost } from "../components/client-api";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, Field, TextInput } from "../components/ui";
+import { Banner, Button, Card, Field, InlineLoading, PageLoading, TextInput } from "../components/ui";
 
 /**
  * Bảng tổng hợp theo kỳ cho kế toán.
@@ -65,7 +65,7 @@ export default function SummaryPage() {
   }, [user, spot, from, to, load]);
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   const preset = (days: number) => {
@@ -311,7 +311,7 @@ export default function SummaryPage() {
           </a>
         </div>
 
-        {busy && <p className="text-sm text-slate-500">Đang tải…</p>}
+        {busy && <InlineLoading />}
 
         {!busy && data && tab === "days" && <DaysTable data={data} />}
         {!busy && data && tab === "bypilot" && <ByPilotTable data={data} />}

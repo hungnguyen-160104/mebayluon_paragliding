@@ -9,6 +9,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { DateBar } from "../components/DateBar";
 import { PenaltyCard } from "../components/PenaltyCard";
 import { useBaobaySession } from "../components/session";
+import { PageLoading } from "../components/ui";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
 
@@ -25,7 +26,7 @@ export default function LatePenaltyPage() {
   const [date, setDate] = useState(today);
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   return (

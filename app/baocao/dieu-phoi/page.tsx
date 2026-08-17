@@ -43,7 +43,7 @@ import { useBaobaySession } from "../components/session";
 import { DISPATCHER_LIKE_ROLES } from "@/lib/baobay/roles";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, CountInput, DoneTag, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard, useDoneFlag } from "../components/ui";
+import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -396,7 +396,7 @@ export default function DispatcherReportPage() {
 
 
   if (loading || !user || !spot) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">Đang tải…</div>;
+    return <PageLoading />;
   }
 
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
