@@ -7222,9 +7222,24 @@ export async function getReconcile(
   const spot = normalizeSpot(spotRaw);
   const { close, dispatchers, pilots, cameramen } = await loadDay(spot, date);
 
+  /**
+   * Mã vé thu hồi ghi ngay trên SỔ BOOKING (nút ✕ Huỷ booking hỏi "đã xuất vé —
+   * mã nào"). Không đọc chỗ này thì bộ soát báo đỏ "mã đã xuất mà không ai khai"
+   * dù trong sổ đã ghi rõ thu hồi — đã bị báo lỗi oan đúng như vậy.
+   */
+  const cancelledBookings = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    cancelTicketCodes: { $exists: true, $ne: [] },
+  })
+    .select("cancelTicketCodes")
+    .lean<any[]>();
+  const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
+
   const input: ReconcileInput = {
     date,
     spot,
+    bookingCancelledCodes,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
     requireCodes: spot === "khau-pha",
     close: close

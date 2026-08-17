@@ -151,6 +151,13 @@ export type ReconcileClose = {
 
 export type ReconcileInput = {
   date: string;
+  /**
+   * Mã vé THU HỒI theo SỔ BOOKING: khách huỷ / dời ngay trên dòng booking, nhân
+   * viên gõ mã vé thu về ở đó. Những mã này đã có chủ (đã huỷ), nên không được
+   * tính là "mã bay đi đâu mất" nữa — trước đây bộ soát chỉ đọc mã huỷ trong
+   * BÁO CÁO ĐIỀU PHỐI nên cứ báo đỏ dù trong sổ đã ghi rõ thu hồi.
+   */
+  bookingCancelledCodes?: string[];
   /** Điểm bay — Hà Nội không xuất vé nên vài phép soát theo mã được tắt. */
   spot?: string;
   /**
@@ -562,8 +569,14 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     });
   }
 
+  /** Mã đã thu hồi ngay trên dòng booking (huỷ/dời) — cũng là mã có chủ. */
+  const bookingRecalled = new Set(
+    (input.bookingCancelledCodes ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean),
+  );
   const missingCodes = requireCodes
-    ? issuedCodes.filter((c) => !flownBy.has(c) && !cancelledSet.has(c) && !rescheduledSet.has(c))
+    ? issuedCodes.filter(
+        (c) => !flownBy.has(c) && !cancelledSet.has(c) && !rescheduledSet.has(c) && !bookingRecalled.has(c),
+      )
     : [];
 
   if (missingCodes.length) {
