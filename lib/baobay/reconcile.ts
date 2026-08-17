@@ -394,7 +394,12 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       if (onlyDispatcher.length) parts.push(`chỉ điều phối có: ${short(onlyDispatcher)}`);
       flag({
         code: "LECH_VE_THU_HOI",
-        severity: "red",
+        /**
+         * CẢNH BÁO, không phải lỗi đỏ. Kế toán là người chốt số: thấy hai bên
+         * khai khác nhau thì chọn số đúng rồi chốt, chứ không phải ngồi đợi nhân
+         * viên sửa cho khớp từng mã mới được đóng ngày.
+         */
+        severity: "warn",
         message: `Mã vé ${label} hai bên khai khác nhau — ${parts.join(" · ")}`,
         who: dispatchers.map((d) => d.username),
         codes: [...onlyClose, ...onlyDispatcher],
@@ -402,7 +407,15 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     };
 
     if (close.cancelledCodes.length) {
-      compareSets("HUỶ", close.cancelledCodes, dispatchers.flatMap((d) => d.cancelledCodes));
+      /**
+       * Mã huỷ ghi trên SỔ BOOKING cũng là mã điều phối đã khai — chỉ khác là
+       * khai bằng nút "✕ Huỷ booking" thay vì gõ vào báo cáo. Không tính vào đây
+       * thì kế toán chấp nhận số của quầy xong lại bị báo "chỉ kế toán có".
+       */
+      compareSets("HUỶ", close.cancelledCodes, [
+        ...dispatchers.flatMap((d) => d.cancelledCodes),
+        ...(input.bookingCancelledCodes ?? []),
+      ]);
     }
     if (close.rescheduled.length) {
       compareSets(
@@ -417,7 +430,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   if (bothCancelledAndMoved.length) {
     flag({
       code: "LECH_VE_THU_HOI",
-      severity: "red",
+      severity: "warn",
       message: `Vé vừa khai huỷ vừa khai dời lịch: ${short(bothCancelledAndMoved)}`,
       who: [],
       codes: bothCancelledAndMoved,
@@ -700,7 +713,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   if (cameramen.length && dispatchers.length && totals.cameramanFlycam !== totals.dispatcherFlycam) {
     flag({
       code: "LECH_FLYCAM",
-      severity: varianceApproved ? "warn" : "red",
+      severity: "warn",
       message:
         `Flycam lệch: điều phối báo ${totals.dispatcherFlycam}, camera man báo ${totals.cameramanFlycam}. ` +
         `Phi công báo tổng ${totals.pilotFlycam} — lấy làm căn cứ để xét bên nào đúng` +
@@ -759,7 +772,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
 
     flag({
       code: chk.code,
-      severity: varianceApproved ? "warn" : "red",
+      severity: "warn",
       message:
         `${chk.label} lệch: điều phối báo ${chk.dispatcherTotal}, phi công báo tổng ${chk.pilotTotal}` +
         codeHint("điều phối", chk.dispatcherCodes, "phi công", chk.pilotCodes) +
@@ -806,7 +819,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
        */
       flag({
         code,
-        severity: varianceApproved ? "warn" : "red",
+        severity: "warn",
         message:
           `${label}: kế toán khai ${fmt(mine)}, nhân viên báo tổng ${fmt(theirs)}` +
           (varianceApproved ? " (kế toán đã duyệt lệch — lấy số kế toán)" : ""),
@@ -832,7 +845,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (issuedCodes.length && close.ticketsIssued !== issuedCodes.length) {
       flag({
         code: "LECH_VE_XUAT",
-        severity: "red",
+        severity: "warn",
         message: `Kế toán khai xuất ${close.ticketsIssued} vé nhưng các dải mã cho ra ${issuedCodes.length} mã`,
         who: [],
       });
@@ -850,7 +863,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (countsFollowCodes && close.cancelledCodes.length && close.cancelledCount !== close.cancelledCodes.length) {
       flag({
         code: "LECH_VE_THU_HOI",
-        severity: "red",
+        severity: "warn",
         message: `Kế toán khai ${close.cancelledCount} vé huỷ nhưng liệt kê ${close.cancelledCodes.length} mã`,
         who: [],
       });
@@ -859,7 +872,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (countsFollowCodes && close.rescheduled.length && close.rescheduledCount !== close.rescheduled.length) {
       flag({
         code: "LECH_VE_THU_HOI",
-        severity: "red",
+        severity: "warn",
         message: `Kế toán khai ${close.rescheduledCount} vé dời lịch nhưng liệt kê ${close.rescheduled.length} mã`,
         who: [],
       });
@@ -869,7 +882,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (countsFollowCodes && close.ticketsReturned !== close.cancelledCount + close.rescheduledCount) {
       flag({
         code: "LECH_VE_THU_HOI",
-        severity: "red",
+        severity: "warn",
         message:
           `Vé thu hồi (${close.ticketsReturned}) khác tổng huỷ + dời lịch ` +
           `(${close.cancelledCount} + ${close.rescheduledCount} = ${close.cancelledCount + close.rescheduledCount})`,
@@ -892,7 +905,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (countsFollowCodes && close.ticketsIssued !== accounted) {
       flag({
         code: "LECH_TONG_CHUYEN",
-        severity: "red",
+        severity: "warn",
         message:
           `Vé xuất (${close.ticketsIssued}) khác tổng đã bay + thu hồi ` +
           `(${flownDistinct} + ${close.ticketsReturned} = ${accounted})` +
@@ -911,7 +924,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (close.flycam !== totals.cameramanFlycam && cameramen.length) {
       flag({
         code: "LECH_FLYCAM",
-        severity: varianceApproved ? "warn" : "red",
+        severity: "warn",
         message: `Flycam: kế toán khai ${close.flycam}, camera man báo ${totals.cameramanFlycam}`,
         who: cameramen.map((c) => c.username),
       });
@@ -920,7 +933,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (close.video360 !== totals.pilot360 && pilots.length) {
       flag({
         code: "LECH_360",
-        severity: varianceApproved ? "warn" : "red",
+        severity: "warn",
         message: `Camera360: kế toán khai ${close.video360}, phi công báo ${totals.pilot360}`,
         // Lệch với con số kế toán tự khai — không chỉ đích danh phi công nào được
         who: [],
@@ -931,7 +944,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if ((close.redFlag ?? 0) !== totals.pilotRedFlag && pilots.length) {
       flag({
         code: "LECH_CO_DO",
-        severity: varianceApproved ? "warn" : "red",
+        severity: "warn",
         message: `Dù cờ đỏ: kế toán khai ${close.redFlag}, phi công báo ${totals.pilotRedFlag}`,
         who: [],
       });
@@ -941,7 +954,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if ((close.sunset ?? 0) !== totals.pilotSunset && pilots.length) {
       flag({
         code: "LECH_HOANG_HON",
-        severity: varianceApproved ? "warn" : "red",
+        severity: "warn",
         message: `Bay hoàng hôn/săn mây: kế toán khai ${close.sunset}, phi công báo ${totals.pilotSunset}`,
         who: [],
       });
@@ -987,7 +1000,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   if (!dispatchers.length && !nothingIssued && !emptyDay) {
     flag({
       code: "LECH_VE_XUAT",
-      severity: "red",
+      severity: "warn",
       message: `Chưa có báo cáo điều phối bay ngày ${formatDateKeyVN(date)}`,
       who: [],
     });

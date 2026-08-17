@@ -2949,11 +2949,17 @@ export function BookingCard({
         {bookSpot === "khau-pha" ? (
           /* Khau Phạ đặt PG và PPG CHUNG một booking — hai ô riêng, tổng tự cộng */
           <>
-            <Field label="PG (số khách)">
-              <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
+            {/* PG xanh dương · PPG tím · tổng khách xanh lá — ba ô đứng liền nhau,
+                trắng giống nhau cả ba thì gõ nhầm ô là chuyện sớm muộn */}
+            <Field label={<span className="text-sky-700">PG (số khách)</span>}>
+              <div className="rounded-lg border-2 border-sky-400 bg-sky-50 p-0.5">
+                <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
+              </div>
             </Field>
-            <Field label="PPG (số khách)">
-              <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+            <Field label={<span className="text-violet-700">PPG (số khách)</span>}>
+              <div className="rounded-lg border-2 border-violet-400 bg-violet-50 p-0.5">
+                <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+              </div>
             </Field>
             <Field label={<span className="text-emerald-700">Tổng khách</span>}>
               {/* Ô chỉ đọc, chứa nhiều nhất 2-3 chữ số — hẹp một nửa để nhường
