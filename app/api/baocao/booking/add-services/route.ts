@@ -84,6 +84,10 @@ export async function PATCH(req: Request) {
       refundMethod: body?.refundMethod === "cash" ? "cash" : "transfer",
       bankAccount: String(body?.bankAccount ?? ""),
       reason: String(body?.reason ?? ""),
+      // Bỏ trống thì máy chủ tự lấy số nó tính ra
+      refundAmount: body?.refundAmount === undefined || body?.refundAmount === null
+        ? undefined
+        : Number(body.refundAmount) || 0,
     });
     return NextResponse.json(res);
   } catch (err) {

@@ -10,6 +10,8 @@
  * được bằng ngón tay.
  */
 
+import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 export function Card({
@@ -268,6 +270,44 @@ export function Button({
       )}
     />
   );
+}
+
+/**
+ * Dấu "xong" đứng NGAY CẠNH nút vừa bấm: ✓ Đã lưu · ✓ Đã xác nhận · ✓ Đã cập nhật.
+ *
+ * Băng thông báo ở cuối thẻ thì hay bị trôi khỏi màn hoặc lẫn với thẻ khác, nên
+ * người bấm không chắc lệnh đã ăn hay chưa và bấm thêm lần nữa. Dấu này nằm sát
+ * ngón tay vừa bấm, và tự tắt sau vài giây để không đọng lại thành thông tin cũ.
+ */
+export function DoneTag({ show, children = "Đã lưu" }: { show: boolean; children?: React.ReactNode }) {
+  if (!show) return null;
+  return (
+    <span
+      role="status"
+      className="inline-flex shrink-0 animate-pulse items-center gap-1 rounded-lg bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800"
+    >
+      ✓ {children}
+    </span>
+  );
+}
+
+/**
+ * Cờ báo "vừa xong" — bật lên rồi tự tắt sau `ms`. Dùng chung cho mọi nút hành
+ * động: `const [justDone, flashDone] = useDoneFlag()` rồi gọi `flashDone()` sau
+ * khi máy chủ trả về không lỗi.
+ */
+export function useDoneFlag(ms = 4_000): [boolean, () => void] {
+  const [on, setOn] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  const flash = React.useCallback(() => {
+    setOn(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setOn(false), ms);
+  }, [ms]);
+  return [on, flash];
 }
 
 export function Banner({

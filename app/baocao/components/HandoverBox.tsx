@@ -9,7 +9,7 @@ import type { MoneyBoard } from "@/services/baobay.service";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPost } from "./client-api";
-import { Banner, Button, Field, MoneyInput, TextInput, CollapseCard } from "./ui";
+import { Banner, Button, DoneTag, Field, MoneyInput, TextInput, CollapseCard, useDoneFlag } from "./ui";
 
 /**
  * "Tiền đang giữ" + "Đưa tiền cho quản lý/giám đốc" — khung dùng chung cho cả
@@ -78,6 +78,9 @@ export function HandoverBox({
   const [advDone, setAdvDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  /** Dấu "✓ Đã ghi / Đã gửi" cạnh nút — tiền nong thì phải chắc lệnh đã ăn. */
+  const [justSent, flashSent] = useDoneFlag();
+  const [justAsked, flashAsked] = useDoneFlag();
 
   const t = (vi: string, en: string) => (bilingual ? `${vi} (${en})` : vi);
 
@@ -128,6 +131,7 @@ export function HandoverBox({
         { kind: "handover", date, recipientUsername: recipient, amount, method, content },
       );
       setDone(`Đã ghi ${formatVND(res.handover.amount)} — chờ ${res.handover.recipientName} xác nhận.`);
+      flashSent();
       setAmount(0);
       setContent("");
       await load();
@@ -165,6 +169,7 @@ export function HandoverBox({
         content: advContent,
       });
       setAdvDone(`Đã gửi yêu cầu ứng ${formatVND(res.handover.amount)} — chờ ${res.handover.recipientName} duyệt.`);
+      flashAsked();
       setAdvAmount(0);
       setAdvContent("");
       await load();
@@ -561,14 +566,17 @@ export function HandoverBox({
         </div>
       )}
 
-      <Button
-        type="button"
-        className="mt-3 w-full bg-sky-600 hover:bg-sky-700"
-        disabled={busy}
-        onClick={submit}
-      >
-        {busy ? "Đang ghi…" : t("Đã chuyển tiền", "sent")}
-      </Button>
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          type="button"
+          className="flex-1 bg-sky-600 hover:bg-sky-700"
+          disabled={busy}
+          onClick={submit}
+        >
+          {busy ? "Đang ghi…" : t("Đã chuyển tiền", "sent")}
+        </Button>
+        <DoneTag show={justSent}>Đã ghi</DoneTag>
+      </div>
       </details>
 
       {/* ---------------------- Ứng tiền — ít dùng, gập mặc định ---------------------- */}
@@ -629,14 +637,17 @@ export function HandoverBox({
           </div>
         )}
 
-        <Button
-          type="button"
-          className="mt-3 w-full bg-violet-600 hover:bg-violet-700"
-          disabled={advBusy}
-          onClick={askAdvance}
-        >
-          {advBusy ? "Đang gửi…" : t("Gửi yêu cầu", "send request")}
-        </Button>
+        <div className="mt-3 flex items-center gap-2">
+          <Button
+            type="button"
+            className="flex-1 bg-violet-600 hover:bg-violet-700"
+            disabled={advBusy}
+            onClick={askAdvance}
+          >
+            {advBusy ? "Đang gửi…" : t("Gửi yêu cầu", "send request")}
+          </Button>
+          <DoneTag show={justAsked}>Đã gửi</DoneTag>
+        </div>
 
         {myAdvances.length > 0 && (
           <ul className="mt-3 divide-y divide-violet-100 rounded-xl border border-violet-200 bg-white">

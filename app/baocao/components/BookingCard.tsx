@@ -26,7 +26,7 @@ import {
   servicesAmount,
   type FlightKind,
 } from "@/lib/baobay/flight-price";
-import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
+import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
 /**
  * Bấm "Sửa" ở banner booking hôm nay thì thẻ 📒 BOOKING MỚI (ở dưới, có thể
@@ -2418,6 +2418,9 @@ export function BookingCard({
   /** Nhân sự đang làm tại điểm — để chỉ định người thu số "còn lại". */
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [saving, setSaving] = useState(false);
+  /** Dấu "✓ Đã lưu / Đã cập nhật" cạnh nút, tự tắt sau vài giây. */
+  const [justSaved, flashSaved] = useDoneFlag();
+  const [justSavedEdit, setJustSavedEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
@@ -2716,6 +2719,8 @@ export function BookingCard({
                 : ""),
         );
       }
+      setJustSavedEdit(Boolean(editingId));
+      flashSaved();
       setEditingId(null);
       setForm(emptyBooking(today, bookSpot));
       setRemainingTouched(false);
@@ -3206,6 +3211,9 @@ export function BookingCard({
         <Button type="button" className="h-11 flex-[2] bg-sky-600 hover:bg-sky-700" disabled={saving} onClick={save}>
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
         </Button>
+        {/* Dấu xong sát nút: form tự xoá trắng sau khi lưu, không có dấu này thì
+            người nhập không phân biệt được "đã lưu" với "bấm hụt, mất chữ" */}
+        <DoneTag show={justSaved}>{justSavedEdit ? "Đã cập nhật" : "Đã lưu"}</DoneTag>
         {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
         <Button
           type="button"

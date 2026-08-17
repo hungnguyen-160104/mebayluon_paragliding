@@ -14,7 +14,7 @@ import {
   type CancelGuestRow,
   type RescheduleGuestRow,
 } from "./rows";
-import { Banner, Button, MoneyInput, TextInput } from "./ui";
+import { Banner, Button, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
  * KHÁCH HUỶ / DỜI LỊCH — một thẻ chung.
@@ -83,6 +83,7 @@ export function CancelMoveCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [justDone, flashDone] = useDoneFlag();
 
   const picked = bookings.find((b) => b.id === pickId) ?? null;
   const whole = picked ? guests >= picked.guestCount : false;
@@ -252,6 +253,7 @@ export function CancelMoveCard({
             (feeCash + feeTransfer > 0 ? `, thu phí phát sinh ${formatVND(feeCash + feeTransfer)}.` : "."),
       );
       reset();
+      flashDone();
       onChanged?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không xử lý được");
@@ -487,13 +489,17 @@ export function CancelMoveCard({
               className="mt-1.5 h-9 rounded-lg text-xs"
             />
 
-            <Button type="button" className="mt-1.5 h-10 w-full" disabled={busy || disabled} onClick={submit}>
-              {busy
-                ? "Đang xử lý…"
-                : kind === "cancel"
-                  ? `✓ Xác nhận huỷ ${whole ? "cả đoàn" : `${guests} khách`}`
-                  : `✓ Xác nhận dời ${whole ? "cả đoàn" : `${guests} khách`}`}
-            </Button>
+            <div className="mt-1.5 flex items-center gap-2">
+              <Button type="button" className="h-10 flex-1" disabled={busy || disabled} onClick={submit}>
+                {busy
+                  ? "Đang xử lý…"
+                  : kind === "cancel"
+                    ? `✓ Xác nhận huỷ ${whole ? "cả đoàn" : `${guests} khách`}`
+                    : `✓ Xác nhận dời ${whole ? "cả đoàn" : `${guests} khách`}`}
+              </Button>
+              {/* Dấu xong ngay cạnh nút — xác nhận huỷ/dời là việc không ai muốn bấm hai lần */}
+              <DoneTag show={justDone}>Đã xác nhận</DoneTag>
+            </div>
           </>
         )}
       </div>

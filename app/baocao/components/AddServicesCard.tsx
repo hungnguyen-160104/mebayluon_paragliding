@@ -13,7 +13,7 @@ import type { BookingDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPatch, apiPost } from "./client-api";
-import { Banner, Button, CollapseCard, Field, MoneyInput, TextInput } from "./ui";
+import { Banner, Button, CollapseCard, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /** Bộ đếm nhỏ để 5 dịch vụ nằm gọn một hàng — CountInput thường quá cao. */
 function MiniCount({ value, onChange, max }: { value: number; onChange: (v: number) => void; max: number }) {
@@ -76,6 +76,10 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [justDone, flashDone] = useDoneFlag();
+  /** Tiền hoàn khi huỷ dịch vụ: bám theo số máy tính cho tới khi người dùng tự gõ. */
+  const [refundAmount, setRefundAmount] = useState(0);
+  const [refundTouched, setRefundTouched] = useState(false);
 
   const load = useCallback(() => {
     if (!spot) return;
@@ -126,12 +130,19 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
   const comboCourtesy = Math.round(comboLost / 2);
   const backAmount = Math.max(0, addAmount - (comboLost - comboCourtesy));
 
+  /** Chưa gõ tay thì ô tiền hoàn chạy theo số máy tính, gõ rồi thì để yên. */
+  useEffect(() => {
+    if (!refundTouched) setRefundAmount(backAmount);
+  }, [backAmount, refundTouched]);
+
   function reset() {
     setAdd({ ...EMPTY });
     setDiscount(0);
     setNote("");
     setCash(0);
     setBills([{ amount: 0, code: "" }]);
+    setRefundAmount(0);
+    setRefundTouched(false);
     setError(null);
   }
 
@@ -140,13 +151,26 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
     if (backMode === "refund" && refundMethod === "transfer" && !bankAccount.trim()) {
       return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
     }
+    if (backMode === "refund" && refundAmount > picked.deposit) {
+      return setError(
+        `Khách mới trả ${formatVND(picked.deposit)} — không hoàn được ${formatVND(refundAmount)}`,
+      );
+    }
     setBusy(true);
     setError(null);
     setDone(null);
     try {
       const res = await apiPatch<{ back: number; refunded: number }>(
         `/api/baocao/booking/add-services?spot=${spot}`,
-        { id: picked.id, remove: add, mode: backMode, refundMethod, bankAccount, reason: note },
+        {
+          id: picked.id,
+          remove: add,
+          mode: backMode,
+          refundMethod,
+          bankAccount,
+          reason: note,
+          ...(backMode === "refund" ? { refundAmount } : {}),
+        },
       );
       setDone(
         `✓ Đã huỷ dịch vụ cho ${picked.contactName || "khách"} — lùi lại ${formatVND(res.back)}` +
@@ -154,6 +178,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             ? `, hoàn khách ${formatVND(res.refunded)} ${refundMethod === "cash" ? "tiền mặt" : "(chờ kế toán chuyển)"}.`
             : " (trừ vào phần còn phải thu)."),
       );
+      flashDone();
       reset();
       setPickId("");
       load();
@@ -187,6 +212,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
         `✓ Đã thêm ${res.added} dịch vụ cho ${picked.contactName || "khách"} — phải thu ${formatVND(res.charge)}` +
           (payNow && payTotal > 0 ? `, đã thu ${formatVND(payTotal)}.` : " (chưa thu, còn nợ trong booking)."),
       );
+      flashDone();
       reset();
       setPickId("");
       load();
@@ -259,6 +285,13 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
 
       {picked && (
         <>
+          {/* Khách bay rồi mới biết flycam hỏng, thẻ nhớ lỗi… nên vẫn huỷ được
+              dịch vụ, chỉ khoá khi kế toán đã chốt ngày. */}
+          {picked.status === "done" && mode === "remove" && (
+            <p className="mt-1 text-[11px] font-medium leading-tight text-amber-700">
+              Khách đã bay — vẫn huỷ được dịch vụ chừng nào kế toán chưa chốt ngày.
+            </p>
+          )}
           <p className="mt-1 text-[11px] leading-tight text-slate-500">
             Đang có:{" "}
             {SERVICE_PRICE_LABEL.filter((s) => (picked[s.key] as number) > 0)
@@ -356,8 +389,32 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                   ) : (
                     <span className="text-[11px] text-slate-500">Bạn trả tại chỗ — trừ vào tiền bạn đang giữ.</span>
                   )}
+                  {/* Số hoàn SỬA ĐƯỢC: bảng giá là một chuyện, thoả thuận với
+                      khách là chuyện khác — hoàn bù thêm hay hoàn một phần đều có thật. */}
+                  <label className="flex w-full items-center gap-2 text-xs font-semibold text-slate-700">
+                    Tiền hoàn khách
+                    <span className="w-36">
+                      <MoneyInput value={refundAmount} onChange={(v) => { setRefundTouched(true); setRefundAmount(v); }} />
+                    </span>
+                    {refundTouched && refundAmount !== backAmount && (
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-emerald-700 underline"
+                        onClick={() => { setRefundTouched(false); setRefundAmount(backAmount); }}
+                      >
+                        lấy lại {formatVND(backAmount)}
+                      </button>
+                    )}
+                  </label>
                   <span className="w-full text-[11px] text-slate-500">
-                    Khách đã trả {formatVND(picked.deposit)} → hoàn tối đa {formatVND(Math.min(backAmount, picked.deposit))}
+                    Máy tính ra {formatVND(backAmount)} — sửa được. Khách đã trả {formatVND(picked.deposit)}, hoàn
+                    nhiều nhất bằng số đó
+                    {refundAmount < backAmount
+                      ? picked.remaining > 0
+                        ? ` · phần dôi ${formatVND(backAmount - refundAmount)} trừ vào tiền còn thu`
+                        : ` · khách đã trả đủ nên ${formatVND(backAmount - refundAmount)} còn lại coi như không hoàn`
+                      : ""}
+                    {refundAmount > backAmount ? ` · hoàn thừa ${formatVND(refundAmount - backAmount)} sẽ thành tiền khách còn nợ` : ""}
                     {refundMethod === "transfer" ? " · lệnh hoàn sẽ chờ kế toán chuyển khoản" : ""}
                   </span>
                 </div>
@@ -483,17 +540,20 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
             </div>
           )}
 
-          <Button type="button" className="mt-1.5 h-10 w-full" disabled={busy} onClick={submit}>
-            {busy
-              ? "Đang lưu…"
-              : mode === "remove"
-                ? backMode === "refund"
-                  ? "✓ Huỷ dịch vụ & hoàn tiền"
-                  : "✓ Huỷ dịch vụ & trừ vào còn thu"
-                : payNow
-                  ? "✓ Xác nhận & thu tiền"
-                  : "✓ Xác nhận (ghi nợ)"}
-          </Button>
+          <div className="mt-1.5 flex items-center gap-2">
+            <Button type="button" className="h-10 flex-1" disabled={busy} onClick={submit}>
+              {busy
+                ? "Đang lưu…"
+                : mode === "remove"
+                  ? backMode === "refund"
+                    ? "✓ Huỷ dịch vụ & hoàn tiền"
+                    : "✓ Huỷ dịch vụ & trừ vào còn thu"
+                  : payNow
+                    ? "✓ Xác nhận & thu tiền"
+                    : "✓ Xác nhận (ghi nợ)"}
+            </Button>
+            <DoneTag show={justDone}>{mode === "remove" ? "Đã huỷ" : "Đã ghi"}</DoneTag>
+          </div>
         </>
       )}
     </CollapseCard>

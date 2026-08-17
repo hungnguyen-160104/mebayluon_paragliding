@@ -43,7 +43,7 @@ import { useBaobaySession } from "../components/session";
 import { DISPATCHER_LIKE_ROLES } from "@/lib/baobay/roles";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, CountInput, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
+import { Banner, Button, CountInput, DoneTag, Field, Readout, TextArea, TextInput, ServiceBox, CollapseCard, useDoneFlag } from "../components/ui";
 
 /**
  * Điều phối bay báo cáo một ngày làm việc.
@@ -223,6 +223,8 @@ export default function DispatcherReportPage() {
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean } | null>(null);
+  /** Dấu "✓ Đã lưu / Đã chốt" nhấp nháy cạnh nút, tự tắt sau vài giây. */
+  const [justSaved, flashSaved] = useDoneFlag();
   /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
   const [dayBookings, setDayBookings] = useState<BookingPick[]>([]);
   useEffect(() => {
@@ -382,6 +384,7 @@ export default function DispatcherReportPage() {
     setCheck(res.check);
     setForm(fromReport(res.report));
     setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
+    flashSaved();
     loadHistory();
   }
 
@@ -831,7 +834,7 @@ export default function DispatcherReportPage() {
         )}
 
         {!locked && date <= today && (
-          <div className="sticky bottom-3 z-10 flex gap-2">
+          <div className="sticky bottom-3 z-10 flex items-center gap-2">
             <Button
               type="button"
               variant="ghost"
@@ -849,6 +852,8 @@ export default function DispatcherReportPage() {
             >
               {saving === "submit" ? "Đang chốt…" : existing?.submitted ? "Chốt lại" : "Chốt báo cáo"}
             </Button>
+            {/* Dấu xong ngay cạnh nút — băng thông báo bên dưới dễ trôi khỏi màn */}
+            <DoneTag show={justSaved}>{saved?.submitted ? "Đã chốt" : "Đã lưu"}</DoneTag>
           </div>
         )}
       </div>

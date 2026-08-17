@@ -8,7 +8,7 @@ import type { CollectDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
 import { apiGet, apiPatch, apiPost } from "./client-api";
-import { Banner, Button, CollapseCard, CountInput, Field, MoneyInput, TextInput } from "./ui";
+import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
  * LỆNH THU TIỀN — khách chốt lịch nhưng trả TIỀN MẶT tại hiện trường hoặc
@@ -176,6 +176,7 @@ export function CollectCreate({ spot }: { spot: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [justSent, flashSent] = useDoneFlag();
 
   const set = <K extends keyof CollectForm>(key: K, value: CollectForm[K]) => {
     setDone(null);
@@ -221,6 +222,7 @@ export function CollectCreate({ spot }: { spot: string }) {
             : "Đã ghi nhận bạn thu tiền — cộng vào tiền giữ hộ công ty của bạn."
           : "Đã ghi nhận khoản chuyển khoản vào TK công ty.",
       );
+      flashSent();
       setForm(EMPTY);
       load();
     } catch (err: unknown) {
@@ -345,9 +347,12 @@ export function CollectCreate({ spot }: { spot: string }) {
         </div>
       )}
 
-      <Button type="button" className="mt-2.5 h-10 w-full bg-emerald-600 hover:bg-emerald-700" disabled={busy} onClick={send}>
-        {busy ? "Đang gửi…" : "✓ Xác nhận"}
-      </Button>
+      <div className="mt-2.5 flex items-center gap-2">
+        <Button type="button" className="h-10 flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={busy} onClick={send}>
+          {busy ? "Đang gửi…" : "✓ Xác nhận"}
+        </Button>
+        <DoneTag show={justSent}>Đã gửi</DoneTag>
+      </div>
 
       {created.length > 0 && (
         <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">

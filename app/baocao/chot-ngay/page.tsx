@@ -38,7 +38,7 @@ import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, CountInput, Readout, TextArea, TextInput, ServiceBox, CollapseCard } from "../components/ui";
+import { Banner, Button, CountInput, DoneTag, Readout, TextArea, TextInput, ServiceBox, CollapseCard, useDoneFlag } from "../components/ui";
 
 /**
  * Kế toán tổng hợp chốt ngày.
@@ -206,6 +206,9 @@ function DailyCloseInner() {
   /** Tăng sau mỗi lần tải/lưu/chốt để bảng phạt nộp muộn tải lại theo. */
   const [reloadKey, setReloadKey] = useState(0);
   const [busy, setBusy] = useState<"save" | "close" | "reopen" | null>(null);
+  /** Dấu "✓ Đã lưu / Đã chốt / Đã gỡ khoá" cạnh nút vừa bấm. */
+  const [justDone, flashDone] = useDoneFlag();
+  const [doneWhat, setDoneWhat] = useState("Đã lưu");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -439,6 +442,8 @@ function DailyCloseInner() {
         apply(res);
         setWarnings(res.warnings || []);
         setSavedClean(true);
+        setDoneWhat("Đã lưu");
+        flashDone();
         setMessage(`Đã lưu số chốt ngày ${formatDateKeyVN(date)} (chưa chốt).`);
         return;
       }
@@ -480,6 +485,8 @@ function DailyCloseInner() {
           date,
         });
         apply(res);
+        setDoneWhat("Đã chốt");
+        flashDone();
         setMessage(`Đã CHỐT ngày ${formatDateKeyVN(date)}. Số liệu đã khoá và được tính vào tổng.`);
         return;
       }
@@ -493,6 +500,8 @@ function DailyCloseInner() {
         reason,
       });
       apply(res);
+      setDoneWhat("Đã gỡ khoá");
+      flashDone();
       setMessage(`Đã gỡ khoá ngày ${formatDateKeyVN(date)} — nhân viên sửa được số trở lại.`);
     } catch (err: any) {
       setError(err?.message || "Không thực hiện được");
@@ -1225,19 +1234,23 @@ function DailyCloseInner() {
           </div>
         )}
         {date <= today && (
-        <div className="sticky bottom-3 z-10 order-10 flex gap-2 lg:order-none">
+        <div className="sticky bottom-3 z-10 order-10 flex items-center gap-2 lg:order-none">
           {locked ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full bg-white shadow-lg"
-              disabled={busy !== null}
-              onClick={() => action("reopen")}
-            >
-              {busy === "reopen" ? "Đang gỡ khoá…" : "Gỡ khoá ngày để sửa"}
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1 bg-white shadow-lg"
+                disabled={busy !== null}
+                onClick={() => action("reopen")}
+              >
+                {busy === "reopen" ? "Đang gỡ khoá…" : "Gỡ khoá ngày để sửa"}
+              </Button>
+              <DoneTag show={justDone}>{doneWhat}</DoneTag>
+            </>
           ) : (
             <>
+              <DoneTag show={justDone}>{doneWhat}</DoneTag>
               <Button
                 type="submit"
                 variant="ghost"

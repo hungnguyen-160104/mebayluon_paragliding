@@ -30,7 +30,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput, CollapseCard } from "../components/ui";
+import { Banner, Button, Card, CountInput, DoneTag, Field, MoneyInput, Readout, ServiceBox, TextArea, TextInput, CollapseCard, useDoneFlag } from "../components/ui";
 
 /**
  * Phi công báo cáo một ngày bay.
@@ -142,6 +142,8 @@ export default function PilotReportPage() {
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean } | null>(null);
+  /** Dấu "✓ Đã lưu / Đã chốt" cạnh nút, tự tắt sau vài giây. */
+  const [justSaved, flashSaved] = useDoneFlag();
   /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
   const [dayBookings, setDayBookings] = useState<BookingPick[]>([]);
   useEffect(() => {
@@ -303,6 +305,7 @@ export default function PilotReportPage() {
         expenses: toExpenseRows(res.report.expenses),
       }));
       setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
+      flashSaved();
       loadHistory();
     } catch (err: any) {
       setError(err?.message || "Không lưu được báo cáo");
@@ -746,7 +749,9 @@ export default function PilotReportPage() {
           </Banner>
         )}
         {!locked && date <= today && (
-          <div className="sticky bottom-3 z-10 flex gap-2">
+          <div className="sticky bottom-3 z-10 flex items-center gap-2">
+            {/* Dấu xong sát nút — phi công đứng ngoài bãi, nắng chói, khó thấy băng báo dưới */}
+            <DoneTag show={justSaved}>{saved?.submitted ? "Đã chốt" : "Đã lưu"}</DoneTag>
             <Button
               type="submit"
               variant="ghost"

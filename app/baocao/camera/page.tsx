@@ -22,7 +22,7 @@ import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, Field, Readout, TextArea } from "../components/ui";
+import { Banner, Button, Card, CountInput, DoneTag, Field, Readout, TextArea, useDoneFlag } from "../components/ui";
 
 /**
  * Camera man báo cáo một ngày.
@@ -69,6 +69,7 @@ export default function CameramanReportPage() {
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean } | null>(null);
+  const [justSaved, flashSaved] = useDoneFlag();
   const [history, setHistory] = useState<CameramanReportDTO[]>([]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -153,6 +154,7 @@ export default function CameramanReportPage() {
         expenses: toExpenseRows(res.report.expenses),
       }));
       setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
+      flashSaved();
       loadHistory();
     } catch (err: any) {
       setError(err?.message || "Không lưu được báo cáo");
@@ -300,7 +302,8 @@ export default function CameramanReportPage() {
           </Banner>
         )}
         {!locked && date <= today && (
-          <div className="sticky bottom-3 z-10 flex gap-2">
+          <div className="sticky bottom-3 z-10 flex items-center gap-2">
+            <DoneTag show={justSaved}>{saved?.submitted ? "Đã chốt" : "Đã lưu"}</DoneTag>
             <Button
               type="submit"
               variant="ghost"

@@ -4052,6 +4052,12 @@ export async function removeBookingServices(
     refundMethod?: "cash" | "transfer";
     bankAccount?: string;
     reason?: string;
+    /**
+     * Số tiền hoàn THẬT — người huỷ sửa được. Bỏ trống thì lấy đúng số máy tính
+     * ra. Có sửa vì thực tế hay khác bảng giá: khách bay rồi mới hỏng flycam
+     * nên bù thêm, hoặc hai bên thoả thuận hoàn một phần.
+     */
+    refundAmount?: number;
   },
 ): Promise<{ booking: BookingDTO; back: number; refunded: number }> {
   await connectDB();
@@ -4111,7 +4117,22 @@ export async function removeBookingServices(
   const back = Math.max(0, (booking.totalAmount ?? 0) - newTotal);
 
   const deposit = booking.deposit ?? 0;
-  const refunded = input.mode === "refund" ? Math.min(back, deposit) : 0;
+  /**
+   * Số hoàn mặc định là số máy tính ra, nhưng người huỷ SỬA ĐƯỢC — chỉ chặn
+   * đúng một điều: không hoàn quá số khách đã trả, vì phần đó công ty chưa hề
+   * cầm. Hoàn ít hơn thì phần dôi trừ vào tiền còn thu; hoàn nhiều hơn số lùi
+   * lại thì khách hoá ra còn nợ, và số "còn thu" tự tăng đúng bằng chênh lệch.
+   */
+  const wanted = Number.isFinite(input.refundAmount as number)
+    ? Math.max(0, Math.round(input.refundAmount as number))
+    : back;
+  const refunded = input.mode === "refund" ? Math.min(wanted, deposit) : 0;
+  if (input.mode === "refund" && wanted > deposit) {
+    throw new BaobayError(
+      `Khách mới trả ${deposit.toLocaleString("vi-VN")} đ — không hoàn được ${wanted.toLocaleString("vi-VN")} đ`,
+      400,
+    );
+  }
   const newDeposit = deposit - refunded;
 
   const cutText = keys
@@ -4132,7 +4153,11 @@ export async function removeBookingServices(
         note: [
           booking.note,
           `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ, ${
-            input.mode === "refund" ? "hoàn khách" : "trừ vào tiền còn thu"
+            input.mode === "refund"
+              ? `hoàn khách ${refunded.toLocaleString("vi-VN")} đ${
+                  refunded !== back ? " (sửa tay)" : ""
+                }`
+              : "trừ vào tiền còn thu"
           }${courtesy > 0 ? `, công ty chịu ${courtesy.toLocaleString("vi-VN")} đ ưu đãi combo` : ""}) — ${
             session.name || session.username
           }`,
