@@ -4375,8 +4375,22 @@ export async function ingestSapaWebBooking(input: {
 }): Promise<{ action: "created" | "updated"; id: string; ref: string }> {
   await connectDB();
   const spot = "sapa";
-  const ref = input.ref.trim();
-  if (!ref) throw new BaobayError("Thiếu mã booking (ref)", 400);
+  const rawRef = input.ref.trim();
+  if (!rawRef) throw new BaobayError("Thiếu mã booking (ref)", 400);
+  /**
+   * MÃ BOOKING NÓI RÕ TỪ WEB NÀO — điểm Sa Pa bán trên cả hai web:
+   *    WebMBL…   đơn từ mebayluon.com   (xem mapWebBooking trong baobay-web-sync)
+   *    WebSapa…  đơn từ paraglidingsapa.com
+   *
+   * Mã gốc bên web Sa Pa là "DDMM + số điện thoại đủ mã nước" (vd
+   * 250884912345678) — dán nguyên vào sổ thì dòng khách dài ngoằng. Nên mã hiện
+   * trên sổ chỉ lấy 6 ký tự cuối, còn mã GỐC lưu ở `otaRef` để tra ngược.
+   *
+   * CHỐNG TRÙNG thì khoá theo mã GỐC (`otaRef`), không theo mã ngắn: hai khách
+   * khác nhau vẫn có thể trùng 6 số cuối, mà khoá theo mã ngắn thì đơn sau ghi
+   * đè đơn trước — mất hẳn một khách.
+   */
+  const digits = rawRef.replace(/\D/g, "") || rawRef.replace(/[^a-z0-9]/gi, "").toUpperCase();
   if (!isDateKey(input.flightDate)) throw new BaobayError("Ngày bay không hợp lệ (cần YYYY-MM-DD)", 400);
 
   const guests = Math.max(0, Math.round(input.guests || 0));
@@ -4395,7 +4409,32 @@ export async function ingestSapaWebBooking(input: {
     note: input.note.trim(),
   };
 
-  const existing = await BaobayBooking.findOne({ spot, bookingCode: ref }).lean<any>();
+  /**
+   * Tìm đơn cũ CHỈ theo mã GỐC. Trước có thử tìm cả theo mã ngắn — sai ngay:
+   * hai khách khác nhau trùng 6 số cuối là đơn sau ghi đè đơn trước, mất hẳn
+   * một khách (đã bắt được bằng phép thử).
+   */
+  const existing = await BaobayBooking.findOne({ spot, otaRef: rawRef }).lean<any>();
+
+  /**
+   * Mã hiện trên sổ: "WebSapa" + 6 số cuối cho ngắn gọn. Nếu 6 số cuối đó đã
+   * thuộc về một đơn KHÁC thì nới dần (8 số, rồi cả mã) — thà mã dài hơn chứ
+   * không để hai khách mang chung một mã.
+   */
+  let ref = `WebSapa${digits.slice(-6)}`;
+  if (!existing) {
+    for (const candidate of [digits.slice(-6), digits.slice(-8), digits]) {
+      const code = `WebSapa${candidate}`;
+      const taken = await BaobayBooking.exists({ spot, bookingCode: code, otaRef: { $ne: rawRef } });
+      if (!taken) {
+        ref = code;
+        break;
+      }
+      ref = `WebSapa${digits}`;
+    }
+  } else {
+    ref = existing.bookingCode || ref;
+  }
   if (existing) {
     /** Đã huỷ hoặc đã bỏ khỏi sổ thì để yên — người trực đã quyết, máy không lật lại. */
     if (existing.status === "cancelled" || existing.status === "voided") {
@@ -4403,7 +4442,7 @@ export async function ingestSapaWebBooking(input: {
     }
     const updated = await BaobayBooking.findOneAndUpdate(
       { _id: existing._id },
-      { $set: fields },
+      { $set: { ...fields, bookingCode: ref, otaRef: rawRef } },
       { new: true },
     ).lean<any>();
     pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
@@ -4418,7 +4457,8 @@ export async function ingestSapaWebBooking(input: {
       createdByUsername: "web:sapa",
       createdByName: "Web Sa Pa (tự động)",
       bookingCode: ref,
-      otaRef: ref,
+      // Mã GỐC bên web Sa Pa — để tra ngược đúng đơn trên trang đó
+      otaRef: rawRef,
       otaName: "sapaweb",
       flightKind: "pg",
       ppgGuests: 0,

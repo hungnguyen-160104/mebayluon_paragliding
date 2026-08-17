@@ -23,7 +23,20 @@ body (JSON):
 }
 ```
 
-Trả về `{ action: "created" | "updated", id, ref }`.
+Trả về `{ action: "created" | "updated", id, ref }` — `ref` là **mã hiện trên sổ**.
+
+## Mã booking nói rõ đơn của web nào
+
+Điểm Sa Pa được bán trên **cả hai** web nên mã phải phân biệt được nguồn:
+
+| Đơn từ | Mã trên sổ | Ghi chú |
+|---|---|---|
+| **mebayluon.com** | `WebMBL` + 6 ký tự | dựng lúc kéo booking web về sổ |
+| **paraglidingsapa.com** | `WebSapa` + 6 số cuối của mã gốc | mã GỐC (`DDMM` + số điện thoại) lưu ở `otaRef` để tra ngược |
+
+Chống trùng khoá theo **mã gốc**, không theo mã ngắn: hai khách khác nhau vẫn có
+thể trùng 6 số cuối. Trùng thì mã trên sổ tự nới ra (8 số, rồi cả mã) — thà mã
+dài hơn chứ không để hai khách mang chung một mã.
 
 **Gửi lại cùng một `ref` thì app SỬA bản đã có, không tạo bản thứ hai.** Nhờ vậy
 bên web cứ gửi lại thoải mái khi khách đổi giờ hay đổi số người, và lần gửi bị

@@ -175,7 +175,16 @@ function mapWebBooking(doc: WebDoc, spot: string) {
     source: "Website",
     contactName: (doc.guests ?? [])[0]?.fullName?.trim() || "khách web",
     phone: (doc.contact?.phone || "").replace(/\s+/g, ""),
-    bookingCode: `WEB${shortId}`,
+    /**
+     * MÃ BOOKING NÓI RÕ TỪ WEB NÀO.
+     *
+     * Điểm SA PA được bán trên CẢ HAI web: mebayluon.com và paraglidingsapa.com.
+     * Chung một tiền tố "WEB" thì mở sổ ra không biết đơn của web nào, mà hai web
+     * là hai đường khách và hai bộ đối soát khác nhau. Nên:
+     *    WebMBL…   đơn từ mebayluon.com   (chính chỗ này)
+     *    WebSapa…  đơn từ paraglidingsapa.com (xem ingestSapaWebBooking)
+     */
+    bookingCode: `WebMBL${shortId}`,
     guestCount: guests,
     flycam: serviceQty(doc, "flycam", guests),
     video360: serviceQty(doc, "video360", guests),
