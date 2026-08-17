@@ -2912,11 +2912,10 @@ export function BookingCard({
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
       {/**
-       * BỐ CỤC 3 CỘT — mỗi hàng một nhóm việc, đọc từ trên xuống là đúng thứ tự hỏi khách:
-       *    ngày bay · giờ · điểm bay
-       *    PG · PPG · tổng khách          (điểm khác: loại hình · số khách)
-       *    tên · SĐT · mã book
-       *    nguồn
+       * Mỗi hàng một nhóm việc, đọc từ trên xuống là đúng thứ tự hỏi khách.
+       * Hàng đầu và hàng cuối 3 ô, hàng giữa 4 ô — NGUỒN đứng cùng hàng với
+       * PG/PPG/tổng khách để phần "chuyến bay này là gì, của ai đưa tới" nằm
+       * gọn một dòng, không tụt xuống thành dòng lẻ loi.
        */}
       <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label="Ngày bay">
@@ -2966,6 +2965,9 @@ export function BookingCard({
             ))}
           </select>
         </Field>
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-4">
         {bookSpot === "khau-pha" ? (
           /* Khau Phạ đặt PG và PPG CHUNG một booking — hai ô riêng, tổng tự cộng */
           <>
@@ -3012,7 +3014,22 @@ export function BookingCard({
             </Field>
           </>
         )}
+        <Field label="Nguồn">
+          <TextInput
+            value={form.source}
+            onChange={(e) => set("source", e.target.value)}
+            placeholder="Klook / FB / Zalo / GYG…"
+            list="booking-sources" className="h-10 rounded-lg text-sm"
+          />
+          <datalist id="booking-sources">
+            {BOOKING_SOURCES.map((sName) => (
+              <option key={sName} value={sName} />
+            ))}
+          </datalist>
+        </Field>
+      </div>
 
+      <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label="Tên liên hệ">
           <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
@@ -3028,20 +3045,6 @@ export function BookingCard({
             placeholder={form.phone.trim() ? `tự lấy ${form.phone.trim()}` : "tự lấy SĐT"}
             className="h-10 rounded-lg text-sm"
           />
-        </Field>
-
-        <Field label="Nguồn">
-          <TextInput
-            value={form.source}
-            onChange={(e) => set("source", e.target.value)}
-            placeholder="Klook / FB / Zalo / GYG…"
-            list="booking-sources" className="h-10 rounded-lg text-sm"
-          />
-          <datalist id="booking-sources">
-            {BOOKING_SOURCES.map((sName) => (
-              <option key={sName} value={sName} />
-            ))}
-          </datalist>
         </Field>
       </div>
 
