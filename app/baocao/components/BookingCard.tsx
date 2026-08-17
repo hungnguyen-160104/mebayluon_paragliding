@@ -3164,13 +3164,12 @@ export function BookingCard({
             <span className="min-w-0 flex-1">
               <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
             </span>
-            {/* Chỉ biểu tượng: chữ "QR cọc" ăn mất chỗ, số 7 chữ số bị cắt cụt */}
+            {/* Chữ QR gọn: đủ hiểu mà không ăn hết chỗ của số tiền 7 chữ số */}
             <PaymentQrButton
               amount={form.deposit}
               note={form.bookingCode.trim() || form.phone.trim()}
               purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
-              label=""
-              className="h-10 w-9 shrink-0 border-sky-300 bg-white px-0 text-xs font-bold text-sky-700"
+              className="h-10 shrink-0 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
             />
           </div>
         </Field>
@@ -3181,17 +3180,17 @@ export function BookingCard({
             placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
           />
         </Field>
-        <Field label="Còn lại (thu trước khi bay)">
+        {/* CÒN THU tô đỏ: đây là số quầy phải nhớ thu trước khi khách bay */}
+        <Field label={<span className="text-rose-700">Còn lại (thu trước khi bay) ★</span>}>
           <div className="flex items-center gap-1">
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 flex-1 rounded-lg border-2 border-rose-400 bg-rose-50 p-0.5">
               <MoneyInput value={form.remaining} onChange={(v) => set("remaining", v)} />
             </span>
             <PaymentQrButton
               amount={form.remaining}
               note={form.bookingCode.trim() || form.phone.trim()}
               purpose={`Tiền còn thu — ${form.contactName || form.phone || "khách"}`}
-              label=""
-              className="h-10 w-9 shrink-0 border-sky-300 bg-white px-0 text-xs font-bold text-sky-700"
+              className="h-10 shrink-0 border-rose-400 bg-rose-50 px-2 text-xs font-bold text-rose-700"
             />
           </div>
         </Field>
