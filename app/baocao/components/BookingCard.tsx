@@ -2911,15 +2911,14 @@ export function BookingCard({
       {/* Desktop: trái = cửa sổ nhập booking, phải = lịch bay & booking sắp tới */}
       <div className="@3xl:grid @3xl:grid-cols-2 @3xl:items-start @3xl:gap-4">
       <div className="@container">
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Giờ dự kiến">
-          <TextInput
-            type="time"
-            value={form.expectedTime}
-            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
-            onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
-          />
-        </Field>
+      {/**
+       * BỐ CỤC 3 CỘT — mỗi hàng một nhóm việc, đọc từ trên xuống là đúng thứ tự hỏi khách:
+       *    ngày bay · giờ · điểm bay
+       *    PG · PPG · tổng khách          (điểm khác: loại hình · số khách)
+       *    tên · SĐT · mã book
+       *    nguồn
+       */}
+      <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label="Ngày bay">
           <TextInput
             type="date"
@@ -2928,44 +2927,14 @@ export function BookingCard({
             onChange={(e) => e.target.value && set("flightDate", e.target.value)} className="h-10 rounded-lg text-sm"
           />
         </Field>
-        {bookSpot === "khau-pha" ? (
-          /* Khau Phạ: đặt PG và PPG CHUNG một booking — bộ đếm MINI để cả hai
-             nằm gọn nửa hàng, cùng hàng với ô Điểm bay. */
-          <div className="col-span-2 @md:col-span-1">
-          <Field label="PG / PPG (số khách)">
-            <div className="flex min-h-10 flex-wrap items-center gap-x-2.5 gap-y-1">
-              <label className="flex items-center gap-1 text-xs font-bold text-sky-800">
-                PG
-                <MiniCount value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} />
-              </label>
-              <label className="flex items-center gap-1 text-xs font-bold text-violet-800">
-                PPG
-                <MiniCount value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} />
-              </label>
-            </div>
-          </Field>
-          </div>
-        ) : (
-        <Field label="Loại hình bay">
-          <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
-            {flightKindsOf(bookSpot).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => set("flightKind", k)}
-                title={FLIGHT_KIND_LABEL[k]}
-                className={
-                  form.flightKind === k
-                    ? "flex-1 bg-sky-600 text-sm font-bold text-white"
-                    : "flex-1 bg-white text-sm font-medium text-slate-500"
-                }
-              >
-                {FLIGHT_KIND_SHORT[k]}
-              </button>
-            ))}
-          </div>
+        <Field label="Giờ dự kiến">
+          <TextInput
+            type="time"
+            value={form.expectedTime}
+            min={form.flightDate === todayInVN() ? nowHHMMVN() : undefined}
+            onChange={(e) => set("expectedTime", e.target.value)} className="h-10 rounded-lg text-sm"
+          />
         </Field>
-        )}
         <Field label="Điểm bay">
           <select
             value={bookSpot}
@@ -2997,20 +2966,70 @@ export function BookingCard({
             ))}
           </select>
         </Field>
-        {/* SỐ KHÁCH đứng NGAY DƯỚI hai ô PG/PPG — ở Khau Phạ nó là tổng của hai ô
-            đó, để xa thì nhìn không ra vì sao số tự đổi. Nguồn sang cùng hàng bên phải. */}
-        <Field label={bookSpot === "khau-pha" ? "Số khách (tự cộng PG + PPG)" : "Số khách"}>
-          {bookSpot === "khau-pha" ? (
-            <div
-              className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
-              title="Tự cộng từ hai ô PG / PPG phía trên"
-            >
-              {form.guestCount}
+        {bookSpot === "khau-pha" ? (
+          /* Khau Phạ đặt PG và PPG CHUNG một booking — hai ô riêng, tổng tự cộng */
+          <>
+            <Field label="PG (số khách)">
+              <CountInput compact value={pgCount} onChange={(v) => setKindCounts(v, ppgCount)} max={100} />
+            </Field>
+            <Field label="PPG (số khách)">
+              <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
+            </Field>
+            <Field label="Tổng khách">
+              <div
+                className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
+                title="Tự cộng từ hai ô PG / PPG bên cạnh"
+              >
+                {form.guestCount}
+              </div>
+            </Field>
+          </>
+        ) : (
+          <>
+            <div className="@md:col-span-2">
+              <Field label="Loại hình bay">
+                <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
+                  {flightKindsOf(bookSpot).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => set("flightKind", k)}
+                      title={FLIGHT_KIND_LABEL[k]}
+                      className={
+                        form.flightKind === k
+                          ? "flex-1 bg-sky-600 text-sm font-bold text-white"
+                          : "flex-1 bg-white text-sm font-medium text-slate-500"
+                      }
+                    >
+                      {FLIGHT_KIND_SHORT[k]}
+                    </button>
+                  ))}
+                </div>
+              </Field>
             </div>
-          ) : (
-          <CountInput value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
-          )}
+            <Field label="Số khách">
+              <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={100} />
+            </Field>
+          </>
+        )}
+
+        <Field label="Tên liên hệ">
+          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
+        <Field label="SĐT">
+          <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />
+        </Field>
+        {/* Mã book: để trống là tự lấy SĐT làm mã — khách lẻ không có mã OTA thì
+            vẫn tra được, còn khách Klook/GYG thì dán mã của họ vào đây. */}
+        <Field label="Mã book">
+          <TextInput
+            value={form.bookingCode}
+            onChange={(e) => set("bookingCode", e.target.value)}
+            placeholder={form.phone.trim() ? `tự lấy ${form.phone.trim()}` : "tự lấy SĐT"}
+            className="h-10 rounded-lg text-sm"
+          />
+        </Field>
+
         <Field label="Nguồn">
           <TextInput
             value={form.source}
@@ -3023,15 +3042,6 @@ export function BookingCard({
               <option key={sName} value={sName} />
             ))}
           </datalist>
-        </Field>
-      </div>
-
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Field label="Tên liên hệ">
-          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
-        </Field>
-        <Field label="SĐT">
-          <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />
         </Field>
       </div>
 
