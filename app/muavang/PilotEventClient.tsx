@@ -413,6 +413,8 @@ export default function PilotEventClient() {
       companionCount,
       muaVangRegistered,
       openingFlagFlight,
+      // Chọn cỡ áo = muốn lấy áo. Qua hạn 15/8 thì khoản áo hiện thêm vào bảng phí
+      wantShirt: Boolean(shirtSize),
     });
   }, [
     period,
@@ -422,6 +424,7 @@ export default function PilotEventClient() {
     companionCount,
     muaVangRegistered,
     openingFlagFlight,
+    shirtSize,
   ]);
 
   // Chỉ ngày thường mới có phí điểm bay; hai đợt lễ hội không thu.

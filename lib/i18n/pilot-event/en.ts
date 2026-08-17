@@ -25,7 +25,7 @@ export const en: PilotDict = {
   },
   periodNote: {
     mua_vang:
-      "The all-inclusive package is required. Paramotor pilots join free of charge.",
+      "The all-inclusive package is required. Pilots flying the opening flag on a paramotor get 50% off.",
     le_hoi_com:
       "No site fee. Paraglider pilots cover their own food and lodging.",
     ngay_thuong: "Outside the festivals. Please register before you fly.",
@@ -55,7 +55,7 @@ export const en: PilotDict = {
     "Breakfast and lunch on 30 Aug",
     "Gala dinner on the night of 30 Aug",
     "Breakfast and lunch on 31 Aug",
-    "Event T-shirt (only for pilots who register before 15 Aug)",
+    "Event T-shirt — free if you register before 15 Aug, after that add 400,000 đ (pilots flying the opening flag already include it)",
     "16-seat shuttle up and down the mountain, running non-stop",
     "Drinking water at the site",
     "10 days free of site fees, 26 Aug to 4 Sep (once the event fee is paid)",
@@ -132,7 +132,7 @@ export const en: PilotDict = {
   kindParaDesc: "Free flight, no engine",
   ppgPerk: "FREE for paramotor pilots flying the opening display",
   flagFlight: "I will fly the opening flag display (paramotor)",
-  flagFlightNote: "Flying the flag display waives the whole event fee. Otherwise the normal fee applies.",
+  flagFlightNote: "Flying the flag display gives 50% off the event fee, shirt included. Otherwise the normal fee applies.",
 
   step2: "Pilot details",
   fFullName: "Full name",
@@ -155,7 +155,7 @@ export const en: PilotDict = {
     "e.g. vegetarian, sharing a room with a friend, arriving late on the 29th, need parking…",
 
   fShirt: "Event T-shirt size",
-  fShirtHint: "part of the Golden Season combo — only for pilots who register before 15 Aug",
+  fShirtHint: "shirt is part of the Golden Season combo — free if you register before 15 Aug, after that add 400,000 đ (pilots flying the opening flag already include the shirt)",
   fShirtPh: "Pick a size",
 
   step3: "Flying period",
@@ -211,7 +211,7 @@ export const en: PilotDict = {
   feeTitle: "Registration cost",
   feeTotal: "Total",
   feeFree: "Free",
-  feeFreePpg: "Free for PPG pilots",
+  feeFreePpg: "50% off — PPG flag flight",
   feeEmpty: "Choose what you fly and when to see the cost.",
   monthNotice: (from, to) => `You have the monthly pass — unlimited flying from ${from} to ${to}.`,
   payNotice: "Your registration is confirmed only once the fee has been transferred.",
@@ -271,6 +271,7 @@ export const en: PilotDict = {
 
   fee: {
     combo: () => "All-inclusive Golden Season 2026 Festival package",
+    shirtLate: () => "Event shirt (registered after 15 Aug)",
     companions: (n) => `Guests joining you × ${n}`,
     extraFree: (n) =>
       `${n} extra day${n > 1 ? "s" : ""} (within the 10 free days)`,
@@ -286,7 +287,7 @@ export const en: PilotDict = {
 
   note: {
     muaVangMotor:
-      "Paramotor pilots get the package free. Guests pay per head. 10 days free of site fees, 26 Aug to 4 Sep — for pilots who have registered and paid for the event.",
+      "Pilots flying the PPG flag at the opening get 50% off the combo, event shirt included. Accompanying family members pay per person. Free site fee for 10 days, 26 Aug–4 Sep — only for pilots who have registered and paid for the festival.",
     muaVangPara:
       "Sold as one package; individual items are not sold separately. 10 days free of site fees, 26 Aug to 4 Sep — for pilots who have registered and paid for the event.",
     com: "No fee during the Tu Le Green Rice Festival; pilots cover their own food, lodging and transport.",

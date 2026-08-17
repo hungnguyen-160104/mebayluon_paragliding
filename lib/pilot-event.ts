@@ -131,6 +131,46 @@ export const MUA_VANG_ZALO_GROUP =
 export const MUA_VANG_SHIRT_DEADLINE = "2026-08-15";
 export const MUA_VANG_SHIRT_DEADLINE_TEXT = "15/8";
 
+/**
+ * QUA HẠN ÁO thì vẫn đăng ký sự kiện bình thường, chỉ là áo không còn nằm trong
+ * combo nữa: muốn có áo thì đóng thêm khoản này. Xưởng in đã chốt số lượng theo
+ * hạn 15/8, in lẻ thêm vài chiếc đắt hơn hẳn nên không gánh vào combo được.
+ *
+ * Ngoại lệ: phi công nhận bay PPG kéo cờ khai mạc — giá nửa combo của họ ĐÃ GỒM
+ * áo, không thu thêm (xem computePilotFee).
+ */
+export const MUA_VANG_SHIRT_LATE_VND = 400_000;
+
+/** Sau ngày chốt áo chưa? Dùng ngày đăng ký, không phải ngày bay. */
+export function isAfterShirtDeadline(todayISO: string): boolean {
+  return todayISO > MUA_VANG_SHIRT_DEADLINE;
+}
+
+/**
+ * Hôm nay theo GIỜ VIỆT NAM, dạng "YYYY-MM-DD".
+ *
+ * Tự tính tại đây thay vì lấy giờ máy: máy chủ chạy theo UTC, mà tối muộn ở Việt
+ * Nam vẫn là "hôm trước" theo UTC — đúng ngày chốt áo mà lệch một ngày là thu
+ * sai tiền của phi công.
+ */
+export function todayKeyVN(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/**
+ * PPG KÉO CỜ KHAI MẠC được giảm NỬA combo (trước đây miễn hoàn toàn).
+ *
+ * Mở đầu lễ hội cần người kéo cờ, nên vẫn ưu đãi mạnh; nhưng miễn trọn gói thì
+ * ban tổ chức gánh cả ăn ở hai đêm — không cân được khi số phi công máy tăng.
+ * Nửa combo này ĐÃ GỒM ÁO, kể cả đăng ký sau hạn 15/8.
+ */
+export const MUA_VANG_FLAG_FLIGHT_DISCOUNT = 0.5;
+
 /** Cỡ áo sự kiện. */
 export const SHIRT_SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 export type ShirtSize = (typeof SHIRT_SIZES)[number];
@@ -141,7 +181,7 @@ export const MUA_VANG_COMBO_ITEMS = [
   "Ăn sáng và trưa ngày 30/8",
   "Gala dinner đêm 30/8",
   "Ăn sáng và trưa ngày 31/8",
-  `Áo sự kiện (chỉ dành cho phi công đăng ký trước ngày ${MUA_VANG_SHIRT_DEADLINE_TEXT})`,
+  `Áo sự kiện — miễn phí nếu đăng ký trước ${MUA_VANG_SHIRT_DEADLINE_TEXT}; đăng ký sau thì thêm ${MUA_VANG_SHIRT_LATE_VND.toLocaleString("vi-VN")} đ (phi công bay PPG kéo cờ khai mạc thì đã gồm áo)`,
   "Xe con thoi 16 chỗ lên xuống núi, chạy liên tục không giới hạn",
   "Nước uống tại điểm bay",
   "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 (sau khi hoàn tất thanh toán sự kiện)",
@@ -161,7 +201,7 @@ export const PERIODS: Record<PeriodKey, PeriodConfig> = {
     key: "mua_vang",
     name: "Bay trên Mùa Vàng 2026",
     dates: ["2026-08-29", "2026-08-30", "2026-08-31"],
-    note: "Bắt buộc đăng ký combo trọn gói. Phi công bay máy được miễn phí.",
+    note: "Bắt buộc đăng ký combo trọn gói. Phi công PPG nhận kéo cờ khai mạc được giảm 50%.",
   },
   le_hoi_com: {
     key: "le_hoi_com",
@@ -429,6 +469,7 @@ export const GUIDE_LINKS = [
  */
 export type FeeKey =
   | "combo"
+  | "shirtLate"
   | "companions"
   | "extraFree"
   | "extraPaid"
@@ -506,6 +547,10 @@ export function computePilotFee(input: {
    * là miễn. Phi công PPG không nhận bay kéo cờ/bánh thì vẫn đóng như mọi người.
    */
   openingFlagFlight?: boolean;
+  /** Có lấy áo sự kiện không (đã chọn cỡ áo). */
+  wantShirt?: boolean;
+  /** Ngày ĐĂNG KÝ (YYYY-MM-DD) — để biết đã qua hạn chốt áo chưa. */
+  todayISO?: string;
 }): FeeResult {
   const motor = hasMotor(input.kind);
   const dates = Array.isArray(input.dates) ? input.dates : [];
@@ -523,12 +568,27 @@ export function computePilotFee(input: {
       lines.push({
         key: "combo",
         label: comboLabel,
-        amount: 0,
-        free: true,
-        freeLabel: "Free cho pc PPG kéo cờ khai mạc",
+        amount: Math.round(MUA_VANG_COMBO_VND * (1 - MUA_VANG_FLAG_FLIGHT_DISCOUNT)),
+        freeLabel: "Giảm 50% cho pc PPG kéo cờ khai mạc (đã gồm áo)",
       });
     } else {
       lines.push({ key: "combo", label: comboLabel, amount: MUA_VANG_COMBO_VND });
+    }
+
+    /**
+     * ÁO SỰ KIỆN sau hạn chốt: thu thêm. Phi công PPG kéo cờ không thu — nửa
+     * combo của họ đã gồm áo.
+     */
+    const lateShirt =
+      Boolean(input.wantShirt) &&
+      !flagFlight &&
+      isAfterShirtDeadline(input.todayISO || todayKeyVN());
+    if (lateShirt) {
+      lines.push({
+        key: "shirtLate",
+        label: `Áo sự kiện (đăng ký sau ${MUA_VANG_SHIRT_DEADLINE_TEXT})`,
+        amount: MUA_VANG_SHIRT_LATE_VND,
+      });
     }
 
     // Người nhà đóng đủ kể cả khi phi công được miễn phí: suất ăn ở của họ
@@ -596,8 +656,12 @@ export function computePilotFee(input: {
         : {}),
       noteKey: flagFlight ? "muaVangMotor" : "muaVangPara",
       note: flagFlight
-        ? `Phi công nhận bay PPG kéo cờ khai mạc được miễn phí combo. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
-        : `Combo trọn gói, không tách lẻ và không nhận đặt lẻ từng mục. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`,
+        ? `Phi công nhận bay PPG kéo cờ khai mạc được giảm 50% combo, đã gồm áo sự kiện. Người nhà đi kèm đóng theo suất. ${MUA_VANG_FREE_SITE_FEE_TEXT}.`
+        : `Combo trọn gói, không tách lẻ và không nhận đặt lẻ từng mục.${
+            lateShirt
+              ? ` Hết hạn nhận áo miễn phí (${MUA_VANG_SHIRT_DEADLINE_TEXT}) — lấy áo thì thêm ${MUA_VANG_SHIRT_LATE_VND.toLocaleString("vi-VN")} đ.`
+              : ""
+          } ${MUA_VANG_FREE_SITE_FEE_TEXT}.`,
     };
   }
 

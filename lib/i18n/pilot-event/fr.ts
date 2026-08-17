@@ -25,7 +25,7 @@ export const fr: PilotDict = {
   },
   periodNote: {
     mua_vang:
-      "La formule tout compris est obligatoire. Les pilotes de paramoteur participent gratuitement.",
+      "La formule tout compris est obligatoire. Les pilotes qui portent le drapeau en paramoteur bénéficient de 50% de réduction.",
     le_hoi_com:
       "Pas de redevance de site. Les parapentistes prennent en charge leurs repas et leur hébergement.",
     ngay_thuong: "Hors périodes de fête. Merci de vous inscrire avant de voler.",
@@ -61,7 +61,7 @@ export const fr: PilotDict = {
     "Petit-déjeuner et déjeuner du 30 août",
     "Dîner de gala le soir du 30 août",
     "Petit-déjeuner et déjeuner du 31 août",
-    "T-shirt de l'événement (réservé aux pilotes inscrits avant le 15/08)",
+    "T-shirt de l'événement — gratuit avant le 15/08, ensuite 400 000 đ de plus (déjà inclus pour les pilotes du drapeau d'ouverture)",
     "Navette de 16 places entre la vallée et le sommet, en continu",
     "Eau potable sur le site",
     "10 jours sans redevance de site, du 26 août au 4 septembre (une fois les frais réglés)",
@@ -139,7 +139,7 @@ export const fr: PilotDict = {
   kindParaDesc: "Vol libre, sans moteur",
   ppgPerk: "GRATUIT pour les pilotes paramoteur du spectacle d'ouverture",
   flagFlight: "Je participe au vol du drapeau à l'ouverture (paramoteur)",
-  flagFlightNote: "Participer au vol du drapeau dispense de tous les frais de l'événement. Sinon, le tarif normal s'applique.",
+  flagFlightNote: "Porter le drapeau donne 50% de réduction sur les frais de l'événement, t-shirt inclus. Sinon, les frais normaux s'appliquent.",
 
   step2: "Informations du pilote",
   fFullName: "Nom complet",
@@ -162,7 +162,7 @@ export const fr: PilotDict = {
     "ex. végétarien, partage de chambre avec un ami, arrivée tardive le 29, besoin d'un parking…",
 
   fShirt: "Taille du T-shirt de l'événement",
-  fShirtHint: "inclus dans le forfait Saison Dorée — réservé aux pilotes inscrits avant le 15/08",
+  fShirtHint: "t-shirt inclus dans le combo Saison Dorée — gratuit si vous vous inscrivez avant le 15/08, ensuite ajoutez 400 000 đ (les pilotes du drapeau d'ouverture l'ont déjà inclus)",
   fShirtPh: "Choisir une taille",
 
   step3: "Période de vol",
@@ -226,7 +226,7 @@ export const fr: PilotDict = {
   feeTitle: "Coût de l'inscription",
   feeTotal: "Total",
   feeFree: "Gratuit",
-  feeFreePpg: "Gratuit pour les pilotes PPG",
+  feeFreePpg: "−50% — vol du drapeau PPG",
   feeEmpty:
     "Choisissez ce que vous pilotez et votre période pour voir le coût.",
   monthNotice: (from, to) =>
@@ -291,6 +291,7 @@ export const fr: PilotDict = {
 
   fee: {
     combo: () => "Formule tout compris du Festival Saison Dorée 2026",
+    shirtLate: () => "T-shirt de l'événement (inscription après le 15/08)",
     companions: (n) => `Accompagnants × ${n}`,
     extraFree: (n) =>
       `${n} jour${n > 1 ? "s" : ""} supplémentaire${n > 1 ? "s" : ""} (dans les 10 jours gratuits)`,
@@ -306,7 +307,7 @@ export const fr: PilotDict = {
 
   note: {
     muaVangMotor:
-      "Les pilotes de paramoteur bénéficient de la formule gratuitement. Les accompagnants paient par personne. 10 jours sans redevance de site, du 26 août au 4 septembre — pour les pilotes inscrits et ayant réglé l'événement.",
+      "Les pilotes qui portent le drapeau en PPG à la cérémonie d'ouverture bénéficient de 50% de réduction sur le combo, t-shirt inclus. Les accompagnants paient par personne. Frais de site offerts 10 jours, du 26/08 au 04/09 — réservé aux pilotes inscrits et ayant payé.",
     muaVangPara:
       "Vendu en formule complète ; les prestations ne sont pas vendues séparément. 10 jours sans redevance de site, du 26 août au 4 septembre — pour les pilotes inscrits et ayant réglé l'événement.",
     com: "Aucun frais pendant la Fête du riz vert de Tu Le ; les pilotes prennent en charge repas, hébergement et transport.",
