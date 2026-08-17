@@ -54,7 +54,8 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
        * kế toán — đã hỏi đúng câu đó hai lần.
        */
       return [
-        { href: "/baocao/chot-ngay", label: "Kế toán · Chốt ngày" },
+        { href: "/baocao/ke-toan", label: "Kế toán" },
+        { href: "/baocao/chot-ngay", label: "Chốt ngày" },
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
@@ -93,7 +94,7 @@ export const ROLE_HOME: Record<BaobayRole, string> = {
   /** Quầy vé dùng CHUNG trang điều phối — chỉ ẩn thẻ lệnh thu tiền. */
   counter: "/baocao/dieu-phoi",
   cameraman: "/baocao/camera",
-  accountant: "/baocao/chot-ngay",
+  accountant: "/baocao/ke-toan",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",
 };
