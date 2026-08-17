@@ -2978,8 +2978,10 @@ export function BookingCard({
               <CountInput compact value={ppgCount} onChange={(v) => setKindCounts(pgCount, v)} max={100} />
             </Field>
             <Field label="Tổng khách">
+              {/* Ô chỉ đọc, chứa nhiều nhất 2-3 chữ số — hẹp một nửa để nhường
+                  chỗ cho hai cụm đếm PG/PPG bên cạnh */}
               <div
-                className="flex h-10 items-center justify-end rounded-lg border border-slate-200 bg-slate-50 px-3 text-base font-bold tabular-nums text-slate-700"
+                className="flex h-10 w-1/2 min-w-16 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-2 text-base font-bold tabular-nums text-slate-700"
                 title="Tự cộng từ hai ô PG / PPG bên cạnh"
               >
                 {form.guestCount}

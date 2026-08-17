@@ -174,13 +174,17 @@ export function CountInput({
   compact?: boolean;
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(max, Math.trunc(n) || 0));
-  // Một cỡ duy nhất cho mọi cụm đếm — bản to cũ choán chỗ trên desktop.
-  void compact;
+  /**
+   * `compact` chỉ hẹp BỀ NGANG chứ không thấp đi: mấy cụm đếm đứng cạnh nhau
+   * (PG/PPG, dịch vụ) thì nút vuông 40px chen nhau tới mức nhìn như đè lên ô số.
+   * Chiều cao giữ nguyên 40px vì người bấm là phi công đeo găng ngoài bãi.
+   */
   const btn =
-    "h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200";
+    (compact ? "h-10 w-8 " : "h-10 w-10 ") +
+    "shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200";
 
   return (
-    <div className="flex items-stretch gap-1.5">
+    <div className={cn("flex items-stretch", compact ? "gap-1" : "gap-1.5")}>
       <button
         type="button"
         onClick={() => onChange(clamp(value - 1))}
@@ -198,8 +202,8 @@ export function CountInput({
         onFocus={(e) => e.currentTarget.select()}
         className={cn(
           inputBase,
-          // co được trong flex nhưng không bóp mất ô số (tối thiểu 3rem)
-          "min-w-12 flex-1",
+          // co được trong flex nhưng không bóp mất ô số
+          compact ? "min-w-9 flex-1" : "min-w-12 flex-1",
           "h-10 rounded-lg text-center text-sm font-semibold tabular-nums",
         )}
       />
