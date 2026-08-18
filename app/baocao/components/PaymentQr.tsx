@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { BANK_BIN, buildVietQrPayload, toAsciiNote } from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
@@ -148,7 +149,22 @@ export function PaymentQrButton({
         {/* Chữ "QR" hẳn ra — ô vuông đen không ai đoán được là nút gì */}
         {label || "QR"}
       </Button>
-      {open && <PaymentQrModal amount={amount} note={note} purpose={purpose} onClose={() => setOpen(false)} />}
+      {/**
+       * Bảng QR phải TREO THẲNG VÀO <body>, không nằm tại chỗ.
+       *
+       * Thẻ nhập booking bọc trong `@container` (container queries), mà
+       * `container-type` biến phần tử đó thành gốc toạ độ cho mọi con
+       * `position: fixed`. Bảng QR vì thế không phủ toàn màn hình mà bị nhốt
+       * trong khung thẻ, rồi các khối vẽ sau đè lên — bấm ✕ là trúng khối khác,
+       * không đóng được, phải tải lại trang mới thoát. Cổng (portal) đưa bảng ra
+       * ngoài mọi khung chứa nên chỗ nào gọi cũng phủ đúng cả màn hình.
+       */}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <PaymentQrModal amount={amount} note={note} purpose={purpose} onClose={() => setOpen(false)} />,
+          document.body,
+        )}
     </>
   );
 }
@@ -182,6 +198,23 @@ function PaymentQrModal({
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  /**
+   * Phím Esc đóng bảng, và nền không cuộn khi bảng đang mở — thêm một đường
+   * thoát nữa phòng khi nút ✕ bị che trên máy lạ.
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
   const asciiNote = toAsciiNote(note) || "MEBAYLUON";
 
   useEffect(() => {
@@ -307,7 +340,13 @@ function PaymentQrModal({
             <div className="text-sm font-bold text-slate-900">Khách quét mã để trả tiền</div>
             <div className="text-[11px] text-slate-500">{purpose}</div>
           </div>
-          <button type="button" onClick={onClose} className="text-2xl leading-none text-slate-400" aria-label="Đóng">
+          {/* Vùng bấm 40px: ngón tay trên điện thoại không trượt ra ngoài dấu × */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="-mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-slate-500 hover:bg-slate-100"
+            aria-label="Đóng"
+          >
             ×
           </button>
         </div>
@@ -371,6 +410,16 @@ function PaymentQrModal({
         <p className="mt-1.5 text-center text-[11px] leading-tight text-slate-500">
           Khách trả xong vẫn phải bấm <strong>thu tiền</strong> trong app thì sổ mới ghi — mã QR chỉ để khách chuyển.
         </p>
+        {/* Nút đóng RÕ RÀNG ở cuối: cuộn hết bảng là thấy ngay, khỏi vuốt ngược
+            lên tìm dấu × bé trên góc. */}
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 h-10 w-full bg-white text-sm font-semibold text-slate-700"
+          onClick={onClose}
+        >
+          Đóng
+        </Button>
       </div>
     </div>
   );
