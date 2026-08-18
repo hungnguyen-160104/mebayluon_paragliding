@@ -1786,7 +1786,15 @@ export function BookingTodayBanner({
       )}
       <ul className={"mt-2" + (rows.length >= 8 ? " lg:columns-2 lg:gap-x-3" : "")}>
         {openShown.map((b, i) => (
-          <li key={b.id} className="mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
+          <li
+            key={b.id}
+            /* Đã khoá = kế toán soát xong, không ai đụng nữa: cho mờ để mắt lướt
+               qua, dồn sự chú ý vào những dòng còn phải làm. */
+            className={
+              "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" + (b.locked ? " opacity-60" : "")
+            }
+            style={{ display: "flow-root" }}
+          >
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
               <div className="float-right ml-2 flex w-56 flex-wrap items-center justify-end gap-1 rounded-lg border border-amber-300 bg-amber-50/70 p-1.5">
@@ -1943,7 +1951,7 @@ export function BookingTodayBanner({
             <div className="min-w-0">
               {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
               <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
-              <BookingSummary b={b} hideNote />
+              <BookingSummary b={b} hideNote dim={b.locked} />
               <AssignedBadge b={b} />
               {b.rescheduledFrom.length > 0 && (
                 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
@@ -2009,7 +2017,12 @@ export function BookingTodayBanner({
           </li>
         )}
         {closed.map((b) => (
-          <li key={b.id} className="mb-1.5 flow-root break-inside-avoid rounded-lg bg-white/70 px-3 py-1.5">
+          <li
+            key={b.id}
+            className={
+              "mb-1.5 flow-root break-inside-avoid rounded-lg bg-white/70 px-3 py-1.5" + (b.locked ? " opacity-60" : "")
+            }
+          >
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
                 đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ.
                 Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
@@ -2062,7 +2075,7 @@ export function BookingTodayBanner({
                 {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
               </span>
             )}
-            <BookingSummary b={b} dim={b.status === "done"} />
+            <BookingSummary b={b} dim={b.status === "done" || b.locked} />
           </li>
         ))}
       </ul>
@@ -2197,7 +2210,7 @@ export function AssignedBookings({
           </p>
           <ul className="mt-2 space-y-1.5">
             {ordered.map((b) => (
-              <li key={b.id} className={"rounded-lg bg-white px-3 py-1.5" + (b.status !== "open" ? " opacity-60" : "")}>
+              <li key={b.id} className={"rounded-lg bg-white px-3 py-1.5" + (b.status !== "open" || b.locked ? " opacity-60" : "")}>
                 {b.status === "done" && (
                   <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">đã bay ✓</span>
                 )}
@@ -2209,7 +2222,7 @@ export function AssignedBookings({
                     khách của {b.assignedToName}
                   </span>
                 )}
-                <BookingSummary b={b} dim={b.status === "done"} />
+                <BookingSummary b={b} dim={b.status === "done" || b.locked} />
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
                   <span>giao bởi {b.assignedBy || "điều phối"}</span>
                   {/* Nhóm tự san khách tại bãi — khỏi gọi điều phối mỗi lần đổi */}
@@ -3669,7 +3682,14 @@ export function BookingCard({
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {(showAllUpcoming ? upcoming : upcoming.slice(0, 5)).map((b, i) => (
-              <li key={b.id} className={"flow-root px-2.5 py-1.5" + (editingId === b.id ? " bg-sky-50" : "")}>
+              <li
+                key={b.id}
+                className={
+                  "flow-root px-2.5 py-1.5" +
+                  (editingId === b.id ? " bg-sky-50" : "") +
+                  (b.locked ? " opacity-60" : "")
+                }
+              >
                 {/* Nút FLOAT góc phải — chữ dòng 1 né nút, từ dòng 2 tràn hết bề ngang */}
                 <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
                   {/* Thu tiền TỪ XA: khách chuyển khoản trước ngày bay là ghi nhận được luôn */}
@@ -3718,7 +3738,7 @@ export function BookingCard({
                     {spotName(b.spot || spot)}
                   </span>
                 )}
-                <BookingSummary b={b} withDate />
+                <BookingSummary b={b} withDate dim={b.locked} />
                 <AssignedBadge b={b} />
                 <span className="ml-1 text-xs text-slate-400">
                   — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
