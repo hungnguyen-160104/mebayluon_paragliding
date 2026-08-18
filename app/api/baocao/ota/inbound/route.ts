@@ -15,7 +15,11 @@ export const maxDuration = 30;
  * Chưa khai biến thì cửa này ĐÓNG — thà không nhận còn hơn để ngỏ cho người lạ
  * ghi booking vào sổ.
  *
- * POST { ota, gmailId, subject, body, from, receivedAt } — header x-ota-secret.
+ * POST { ota, gmailId, subject, body, from, receivedAt, spot } — header x-ota-secret.
+ *
+ * `spot` là ĐIỂM BAY CỦA CẢ HỘP THƯ: hộp sapa.paragliding@gmail.com chỉ nhận
+ * booking Sa Pa nên script của hộp đó khai "sapa", khỏi phải đoán theo tên sản
+ * phẩm. Hộp mebayluon nhận cả ba điểm nên để trống, app tự đoán như cũ.
  * `from` là địa chỉ người gửi: app ưu tiên nó để nhận diện OTA, vì tên miền gửi
  * thư bền hơn mọi nhãn hay cấu hình tay.
  */
@@ -41,6 +45,7 @@ export async function POST(req: Request) {
       body: String(body.body ?? ""),
       from: body.from ? String(body.from) : undefined,
       receivedAt: body.receivedAt ? String(body.receivedAt) : undefined,
+      spot: body.spot ? String(body.spot) : undefined,
     });
     return NextResponse.json(result);
   } catch (err) {

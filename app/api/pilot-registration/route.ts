@@ -163,6 +163,12 @@ export async function POST(req: Request) {
     siteFeeMode,
     companionCount,
     muaVangRegistered,
+    /**
+     * Chọn cỡ áo = muốn lấy áo. Máy chủ TỰ tính lại khoản áo muộn theo ngày hôm
+     * nay, không tin số máy khách gửi — nếu không thì sửa vài dòng trên trình
+     * duyệt là lấy áo mà không phải đóng thêm.
+     */
+    wantShirt: Boolean(shirtSize),
   });
 
   const code = buildCode(dates, phone);

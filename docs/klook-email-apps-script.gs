@@ -1,8 +1,12 @@
 /**
- * ĐƯA BOOKING OTA TỪ GMAIL VỀ APP — bản `ota-mail-v3`.
+ * ĐƯA BOOKING OTA TỪ GMAIL VỀ APP — bản `ota-mail-v4`.
  * Nguồn: Klook · GetYourGuide · KKday · Seek Sophie · Viator · Trip.com.
  *
- * Chạy trên chính hộp thư mebayluon@gmail.com — hộp nhận booking của MỌI OTA.
+ * Dùng cho CẢ HAI hộp thư nhận booking:
+ *    mebayluon@gmail.com        — nhận cả ba điểm bay, để MAILBOX_SPOT = ''
+ *    sapa.paragliding@gmail.com — chỉ nhận điểm Sa Pa, đặt MAILBOX_SPOT = 'sapa'
+ * Mỗi hộp một project Apps Script riêng (đăng nhập bằng chính hộp đó rồi dán
+ * tệp này), chỉ khác nhau đúng một dòng MAILBOX_SPOT.
  * KHÔNG cần tạo nhãn hay filter cho từng OTA nữa: script tự quét theo ĐỊA CHỈ
  * NGƯỜI GỬI (klook.com, getyourguide.com…), vì tên miền gửi thư của OTA gần như
  * không bao giờ đổi, còn nhãn tay thì dễ gắn thiếu, gắn nhầm.
@@ -28,6 +32,20 @@ const APP_URL = 'https://www.mebayluon.com/api/baocao/ota/inbound';
 
 /** Phải GIỐNG HỆT biến OTA_INBOUND_SECRET khai trên Vercel. */
 const SECRET = 'DAN_MA_BAO_VE_OTA_VAO_DAY';
+
+/**
+ * ĐIỂM BAY CỦA HỘP THƯ NÀY.
+ *
+ *   ''       — hộp nhận nhiều điểm (mebayluon@gmail.com): app tự đoán điểm bay
+ *              theo tên sản phẩm trong thư, như trước.
+ *   'sapa'   — hộp sapa.paragliding@gmail.com: mọi thư đều là booking Sa Pa.
+ *   'ha-noi' | 'khau-pha' — nếu sau này mở hộp riêng cho hai điểm kia.
+ *
+ * Vì sao cần: tên sản phẩm của OTA thường không có chữ "Sapa" (vd "Standard
+ * Paragliding Tour"), nên đoán theo tên sản phẩm là thư rơi vào khay "không rõ
+ * điểm bay" và người trực phải chọn tay từng cái.
+ */
+const MAILBOX_SPOT = '';
 
 /**
  * Tên miền gửi thư của từng OTA. Thêm OTA mới = thêm một dòng ở đây — app tự
@@ -198,6 +216,8 @@ function guiVeApp_(ota, msg) {
     // Địa chỉ người gửi: app ưu tiên nó để nhận diện OTA — bền hơn cấu hình tay
     from: msg.getFrom(),
     receivedAt: msg.getDate().toISOString(),
+    // Hộp thư riêng của một điểm bay thì nói luôn, app khỏi phải đoán
+    spot: MAILBOX_SPOT,
   };
 
   try {
