@@ -155,10 +155,37 @@ function parseGuests(text: string, nationalityFallback: string): OtaGuest[] {
 /** Điểm bay suy từ tên sản phẩm — tên lạ thì trả null để người soát tự chọn. */
 export function spotFromProduct(title: string): "ha-noi" | "khau-pha" | "sapa" | null {
   const t = title.toLowerCase();
-  if (/(khau pha|khau phạ|mu cang chai|mù cang chải|yen bai)/.test(t)) return "khau-pha";
-  if (/(sa pa|sapa|lao cai)/.test(t)) return "sapa";
-  if (/(ha noi|hanoi|hà nội|ba vi|doi bu|đồi bù|vien nam)/.test(t)) return "ha-noi";
+  if (RE_KHAU_PHA.test(t)) return "khau-pha";
+  if (RE_SAPA.test(t)) return "sapa";
+  if (RE_HA_NOI.test(t)) return "ha-noi";
   return null;
+}
+
+const RE_KHAU_PHA = /(khau pha|khau phạ|mu cang chai|mù cang chải|yen bai|yên bái)/;
+const RE_SAPA = /(sa pa|sapa|sa-pa|lao cai|lào cai|fansipan|muong hoa|mường hoa)/;
+const RE_HA_NOI = /(ha noi|hanoi|hà nội|ba vi|ba vì|doi bu|đồi bù|vien nam|viên nam)/;
+
+/**
+ * ĐIỂM BAY SUY TỪ CẢ THÂN THƯ — dùng khi tên sản phẩm không nói ra điểm.
+ *
+ * Vì sao cần: điểm Sa Pa được bán cả trên hộp thư mebayluon@gmail.com, mà tên
+ * sản phẩm của OTA nhiều khi chỉ ghi "Paragliding Tour in Vietnam" — chỗ duy
+ * nhất nhắc Sa Pa là trong thân thư ("Sapa Paragliding", "dù lượn Sa Pa", điểm
+ * đón ở Lào Cai…).
+ *
+ * Nhắc TỪ HAI ĐIỂM TRỞ LÊN thì trả null: chân thư quảng cáo hay thư gộp nhiều
+ * sản phẩm sẽ nhắc đủ cả ba điểm, đoán bừa là booking rơi sai sổ — thà để người
+ * duyệt chọn tay. Đó cũng là lý do không đoán bằng một cụm rời rạc: phải là
+ * NHẮC ĐÚNG MỘT điểm trong toàn bộ thư.
+ */
+export function spotFromEmailText(text: string): "ha-noi" | "khau-pha" | "sapa" | null {
+  const t = (text || "").toLowerCase();
+  const hit = [
+    RE_KHAU_PHA.test(t) ? ("khau-pha" as const) : null,
+    RE_SAPA.test(t) ? ("sapa" as const) : null,
+    RE_HA_NOI.test(t) ? ("ha-noi" as const) : null,
+  ].filter(Boolean) as Array<"ha-noi" | "khau-pha" | "sapa">;
+  return hit.length === 1 ? hit[0] : null;
 }
 
 export function parseKlookEmail(subject: string, bodyRaw: string): KlookBooking | null {

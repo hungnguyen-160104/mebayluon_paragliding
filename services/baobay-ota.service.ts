@@ -16,7 +16,13 @@
  */
 
 import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
-import { parseKlookEmail, pickupFromDeparture, spotFromProduct, type KlookBooking } from "@/lib/baobay/ota-klook";
+import {
+  parseKlookEmail,
+  pickupFromDeparture,
+  spotFromEmailText,
+  spotFromProduct,
+  type KlookBooking,
+} from "@/lib/baobay/ota-klook";
 import { OTA_CONFIG, isOtaKey, otaFromSender, readOtaMail, type OtaMailRead } from "@/lib/baobay/ota-parsers";
 import { htmlToText, parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
 import { isSpotId } from "@/lib/baobay/spots";
@@ -91,10 +97,25 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
    * nhánh nào là thư của hộp Sa Pa lại rơi về "chưa rõ điểm bay" ở nhánh đó.
    */
   const mailboxSpot = isSpotId(String(input.spot ?? "")) ? String(input.spot) : "";
+  /**
+   * ĐOÁN ĐIỂM BAY khi hộp thư không khai sẵn (hộp mebayluon nhận cả ba điểm).
+   *
+   * Thứ tự tin cậy: tên sản phẩm → tiêu đề → toàn bộ thân thư. Thân thư xếp cuối
+   * vì dễ nhắc nhiều điểm cùng lúc, nhưng KHÔNG THỂ bỏ: điểm Sa Pa bán qua hộp
+   * mebayluon thường chỉ lộ ra trong thân thư ("Sapa Paragliding", "dù lượn Sa
+   * Pa", chỗ đón ở Lào Cai) còn tên sản phẩm chỉ ghi chung "Paragliding Tour".
+   */
+  const guessSpot = (productTitle?: string) =>
+    mailboxSpot ||
+    (productTitle ? spotFromProduct(productTitle) : null) ||
+    spotFromProduct(input.subject ?? "") ||
+    spotFromEmailText(`${input.subject ?? ""}\n${input.body ?? ""}`);
   const receivedAt = input.receivedAt ? new Date(input.receivedAt) : new Date();
   const base = {
     ota,
     gmailId,
+    /** Hộp thư nào gửi về — khay Khau Phạ / Hà Nội không lấy thư của hộp Sa Pa. */
+    mailboxSpot: mailboxSpot || "",
     subject: input.subject ?? "",
     body: (input.body ?? "").slice(0, 20_000),
     from,
@@ -165,8 +186,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     }
 
     const known = read.ref ? await BaobayBooking.findOne({ otaRef: read.ref }).lean<any>() : null;
-    const spotGuess =
-      mailboxSpot || spotFromProduct(input.subject ?? "") || spotFromProduct(input.body ?? "");
+    const spotGuess = guessSpot();
 
     /**
      * Ngày bay xa hơn ~13 tháng gần như chắc là bắt nhầm số trong thư (mã đơn,
@@ -213,7 +233,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     await OtaEmail.create({
       ...base,
       kind: "unknown",
-      spot: mailboxSpot || undefined,
+      spot: guessSpot() || undefined,
       status: looksLikeJunk ? "ignored" : "review",
       result: looksLikeJunk ? "Không phải thư đơn hàng — bỏ qua" : "Chưa bóc được dữ liệu — cần soát tay",
     });
@@ -224,7 +244,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     };
   }
 
-  const spot = mailboxSpot || spotFromProduct(parsed.productTitle) || spotFromProduct(input.subject ?? "");
+  const spot = guessSpot(parsed.productTitle);
   const common = { ...base, kind: parsed.kind, ref: parsed.ref, spot: spot ?? undefined };
 
   if (!spot) {
@@ -501,18 +521,31 @@ export async function approveOtaEmail(
 /**
  * Thư OTA gần đây cho khay theo dõi trên trang điều phối / kế toán.
  *
- * KHÔNG lọc theo điểm bay: nhiều thư máy không đoán nổi điểm, mà thư huỷ của
- * Khau Phạ biến mất chỉ vì người trực đang mở tab Hà Nội thì coi như mất thư.
- * Ai trực cũng thấy đủ; thư của điểm nào thì đề tên điểm đó trên dòng.
+ * HAI ĐƯỜNG THƯ, chia theo điểm bay:
+ *  - Khau Phạ và Hà Nội: chỉ thư của hộp **mebayluon@gmail.com**. Trong đó vẫn
+ *    thấy CẢ thư máy chưa đoán được điểm và thư của điểm bạn — cố tình như vậy,
+ *    vì thư huỷ của Khau Phạ mà biến mất chỉ vì người trực đang mở tab Hà Nội
+ *    thì coi như mất thư. Thư của điểm nào thì đề tên điểm đó trên dòng.
+ *  - Sa Pa: thư của hộp **sapa.paragliding@gmail.com** (hộp riêng, script khai
+ *    sẵn `MAILBOX_SPOT = 'sapa'`) CỘNG thư hộp mebayluon mà nội dung nói tới Sa
+ *    Pa ("Sapa Paragliding", "dù lượn Sa Pa", Lào Cai…). Khay Sa Pa KHÔNG lấy
+ *    thư chưa rõ điểm: đó là thư của hộp chung, để hai điểm kia soát.
  */
-export async function listOtaEmails(_spot?: string, limit = 60) {
+export async function listOtaEmails(spot?: string, limit = 60) {
   await connectDB();
   /**
    * Thư rác (OTP, quảng cáo…) vẫn được LƯU để lần vết, nhưng không chiếm chỗ
    * trong khay: cả hai lời phân loại của máy đều chứa cụm "không phải thư đơn
    * hàng" nên lọc theo đó.
    */
-  const where = { result: { $not: /không phải thư đơn hàng/i } };
+  const where: Record<string, unknown> = { result: { $not: /không phải thư đơn hàng/i } };
+  if (spot === "sapa") {
+    where.spot = "sapa";
+  } else if (spot) {
+    // Thư hộp Sa Pa (và thư đã gắn điểm Sa Pa) không lọt sang khay hai điểm kia
+    where.spot = { $ne: "sapa" };
+    where.mailboxSpot = { $ne: "sapa" };
+  }
   const docs = await OtaEmail.find(where).sort({ createdAt: -1 }).limit(limit).lean<any[]>();
   return docs.map((d) => {
     const draft = (d.draft ?? {}) as Record<string, any>;

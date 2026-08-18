@@ -23,6 +23,12 @@ export interface IOtaEmail {
   /** Mã booking của OTA đọc được trong thư. */
   ref?: string;
   spot?: string;
+  /**
+   * Hộp thư đã gửi thư này về — "" là hộp chung mebayluon@gmail.com, "sapa" là
+   * hộp riêng sapa.paragliding@gmail.com. Khay của Khau Phạ / Hà Nội lọc theo
+   * đây để không bao giờ lẫn thư của hộp Sa Pa.
+   */
+  mailboxSpot?: string;
   /** "applied" đã vào lịch · "review" cần người soát · "ignored" bỏ qua. */
   status: string;
   /** Việc app đã làm với thư này — hiện cho người soát đọc. */
@@ -45,6 +51,7 @@ const OtaEmailSchema = new Schema<IOtaEmail>(
     kind: { type: String, default: "unknown", index: true },
     ref: { type: String, index: true },
     spot: String,
+    mailboxSpot: { type: String, default: "" },
     status: { type: String, default: "review", index: true },
     result: String,
     bookingId: { type: Schema.Types.ObjectId, ref: "BaobayBooking" },

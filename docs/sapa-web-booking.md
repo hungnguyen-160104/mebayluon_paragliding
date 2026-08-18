@@ -94,6 +94,24 @@ mebayluon, chỉ khác đúng một dòng cấu hình.
 6. Đồng hồ (Triggers) → **Add trigger** → hàm `quetThuOta` → Time-driven →
    Minutes timer → **Every 10 minutes**.
 
+### Thư Sa Pa nằm trong hộp chung mebayluon@gmail.com thì sao?
+
+Vẫn về đúng sổ Sa Pa. Khay thư chia theo điểm bay như sau:
+
+| Khay của | Lấy thư từ |
+|---|---|
+| **Khau Phạ**, **Hà Nội** | CHỈ hộp `mebayluon@gmail.com` — kể cả thư máy chưa đoán được điểm (để hai điểm này soát tay). Thư của hộp Sa Pa không bao giờ lọt sang đây. |
+| **Sa Pa** | hộp `sapa.paragliding@gmail.com` **cộng** thư hộp mebayluon mà nội dung nói tới Sa Pa: *Sapa Paragliding*, *dù lượn Sa Pa*, *bay dù lượn sapa*, Lào Cai, Fansipan, Mường Hoa… |
+
+Đoán điểm theo thứ tự tin cậy: **tên sản phẩm → tiêu đề thư → toàn bộ thân thư**.
+Thân thư xếp cuối vì dễ nhắc nhiều điểm cùng lúc, nhưng không thể bỏ: đơn Sa Pa
+bán qua hộp chung thường chỉ lộ tên điểm trong thân thư, còn tên sản phẩm chỉ ghi
+chung *"Paragliding Tour in Vietnam"*.
+
+Thư nhắc **từ hai điểm trở lên** (chân thư quảng cáo, thư gộp nhiều sản phẩm) thì
+để **chưa rõ điểm** cho người duyệt chọn tay — đoán bừa là booking rơi sai sổ.
+Thư chưa rõ điểm hiện ở khay Khau Phạ / Hà Nội, KHÔNG hiện ở khay Sa Pa.
+
 **Vì sao cần dòng `MAILBOX_SPOT`:** tên sản phẩm của OTA thường không có chữ
 "Sapa" (vd *Standard Paragliding Tour*), nên nếu để app đoán theo tên sản phẩm
 thì mọi thư rơi vào khay **🚩 chờ duyệt tay** với ghi chú *"không rõ điểm bay"* —
