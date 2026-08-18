@@ -210,7 +210,7 @@ export function FlycamCancelCard({
           />
         </Field>
 
-        <Field label="Cách hoàn tiền khách">
+        <Field label="Cách hoàn tiền khách" group>
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [

@@ -83,21 +83,40 @@ export function Field({
   error,
   children,
   className,
+  group,
 }: {
   label: React.ReactNode;
   hint?: React.ReactNode;
   error?: string;
   children: React.ReactNode;
   className?: string;
+  /**
+   * Ô này chỉ gồm CÁC NÚT BẤM (650m|850m, tiền mặt|chuyển khoản…) chứ không có
+   * ô nhập nào.
+   *
+   * Khi đó phải bọc bằng <div>, KHÔNG bọc <label>: <label> không có `for` thì
+   * bấm vào chữ nhãn là kích hoạt phần tử nhập đầu tiên bên trong — mà nút bấm
+   * cũng tính — nên đọc tên ô rồi bấm vào chữ là máy tự chọn hộ lựa chọn đầu
+   * tiên, người bấm không hề hay biết.
+   */
+  group?: boolean;
 }) {
-  return (
-    <label className={cn("block min-w-0", className)}>
+  const inner = (
+    <>
       <span className="mb-1 block text-[13px] font-medium text-slate-700">{label}</span>
       {children}
       {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
       {error && <span className="mt-1 block text-xs font-medium text-rose-600">{error}</span>}
-    </label>
+    </>
   );
+  if (group) {
+    return (
+      <div role="group" className={cn("block min-w-0", className)}>
+        {inner}
+      </div>
+    );
+  }
+  return <label className={cn("block min-w-0", className)}>{inner}</label>;
 }
 
 const inputBase =
@@ -183,16 +202,17 @@ export function CountInput({
     (compact ? "h-10 w-8 " : "h-10 w-10 ") +
     "shrink-0 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-600 active:bg-slate-200";
 
+  /**
+   * Ô SỐ ĐỨNG TRƯỚC trong mã, nút − đẩy sang trái bằng `order`.
+   *
+   * Vì sao phải lộn ngược thế này: <Field> bọc cả cụm trong một <label>, mà
+   * <label> không có `for` thì bấm vào CHỮ NHÃN sẽ kích hoạt phần tử nhập ĐẦU
+   * TIÊN bên trong — nút bấm cũng tính là phần tử nhập. Nên bấm vào chữ
+   * "PG (số khách)" là máy bấm hộ dấu −, số khách tự tụt xuống. Để ô số đứng
+   * đầu thì bấm nhãn chỉ đưa con trỏ vào ô số, còn nhìn vẫn là − [số] +.
+   */
   return (
     <div className={cn("flex items-stretch", compact ? "gap-1" : "gap-1.5")}>
-      <button
-        type="button"
-        onClick={() => onChange(clamp(value - 1))}
-        className={btn}
-        aria-label="Giảm 1"
-      >
-        −
-      </button>
       <input
         id={id}
         type="text"
@@ -204,13 +224,21 @@ export function CountInput({
           inputBase,
           // co được trong flex nhưng không bóp mất ô số
           compact ? "min-w-9 flex-1" : "min-w-12 flex-1",
-          "h-10 rounded-lg text-center text-sm font-semibold tabular-nums",
+          "order-2 h-10 rounded-lg text-center text-sm font-semibold tabular-nums",
         )}
       />
       <button
         type="button"
+        onClick={() => onChange(clamp(value - 1))}
+        className={cn(btn, "order-1")}
+        aria-label="Giảm 1"
+      >
+        −
+      </button>
+      <button
+        type="button"
         onClick={() => onChange(clamp(value + 1))}
-        className={btn}
+        className={cn(btn, "order-3")}
         aria-label="Tăng 1"
       >
         +

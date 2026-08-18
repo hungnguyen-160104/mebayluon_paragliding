@@ -259,7 +259,7 @@ export function CollectCreate({ spot }: { spot: string }) {
         <Field label="Số tiền">
           <MoneyInput value={form.amount} onChange={(v) => set("amount", v)} />
         </Field>
-        <Field label="Khách trả bằng">
+        <Field label="Khách trả bằng" group>
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [

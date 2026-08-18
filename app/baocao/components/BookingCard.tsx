@@ -2365,16 +2365,18 @@ function MiniCount({ value, onChange, max = 100 }: { value: number; onChange: (v
   const clamp = (n: number) => Math.max(0, Math.min(max, Math.trunc(n) || 0));
   const btn = "h-8 w-6 shrink-0 rounded border border-slate-300 bg-white text-sm font-semibold text-slate-600 active:bg-slate-200";
   return (
+    /* Ô số đứng trước trong mã, nút − đẩy sang trái bằng `order` — bấm vào chữ
+       nhãn của <Field> thì trúng ô số chứ không trúng dấu − (xem CountInput). */
     <span className="inline-flex items-center gap-0.5">
-      <button type="button" className={btn} aria-label="Giảm 1" onClick={() => onChange(clamp(value - 1))}>−</button>
       <input
         type="text"
         inputMode="numeric"
         value={value}
         onChange={(e) => onChange(clamp(Number(e.target.value.replace(/\D/g, ""))))}
-        className="h-8 w-8 rounded border border-slate-300 bg-white text-center text-sm font-bold tabular-nums"
+        className="order-2 h-8 w-8 rounded border border-slate-300 bg-white text-center text-sm font-bold tabular-nums"
       />
-      <button type="button" className={btn} aria-label="Thêm 1" onClick={() => onChange(clamp(value + 1))}>＋</button>
+      <button type="button" className={btn + " order-1"} aria-label="Giảm 1" onClick={() => onChange(clamp(value - 1))}>−</button>
+      <button type="button" className={btn + " order-3"} aria-label="Thêm 1" onClick={() => onChange(clamp(value + 1))}>＋</button>
     </span>
   );
 }
@@ -3228,7 +3230,7 @@ export function BookingCard({
           {/* Hai nút 650m / 850m: chỉ là hai chữ ngắn nên bóp hẳn bề ngang lại
               (còn ~1/4 hàng, và không nới quá 14rem), nhờ đó ô "số khách" dịch
               sang trái theo, hết cảnh nút + đè lên ô Nguồn */}
-          <Field label="Loại hình bay">
+          <Field label="Loại hình bay" group>
             <div className="flex h-10 max-w-56 overflow-hidden rounded-lg border border-slate-300">
               {flightKindsOf(bookSpot).map((k) => (
                 <button
@@ -3439,7 +3441,10 @@ export function BookingCard({
          * chốt lại con số này nên có gõ tay cũng không giữ được: bỏ ô nhập cho khỏi
          * hứa hẹn sai. Muốn đổi số còn thu thì sửa "đã cọc" hoặc thu thêm tiền.
          */}
+        {/* Ô này chỉ có số ĐỌC và nút QR — bọc <label> thì bấm vào chữ nhãn là
+            bật luôn bảng QR, nên dùng bản `group` (xem Field trong ui.tsx). */}
         <Field
+          group
           label={<span className="text-rose-700">Còn lại (thu trước khi bay) ★</span>}
           hint="Máy tự tính = tổng tiền − đã cọc"
         >

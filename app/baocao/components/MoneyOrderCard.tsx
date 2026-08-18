@@ -184,7 +184,7 @@ export function MoneyOrderCard({ spot }: { spot: string }) {
         <Field label="Số tiền">
           <MoneyInput value={amount} onChange={setAmount} />
         </Field>
-        <Field label="Hình thức">
+        <Field label="Hình thức" group>
           <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300">
             {(
               [
