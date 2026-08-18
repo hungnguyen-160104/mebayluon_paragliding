@@ -2476,6 +2476,13 @@ export function BookingCard({
   const spots = spotOptions?.length ? spotOptions : [spot];
   const [form, setForm] = useState<BookingForm>(() => emptyBooking(today, bookSpot));
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);
+  /**
+   * ĐIỂM NÀO ĐANG HIỆN trong danh sách "sắp tới" — mặc định đúng điểm của
+   * trang, bấm thêm để xem chồng nhiều điểm (người trực nhiều điểm muốn nhìn
+   * một lượt cả ba). Danh sách KHÔNG chạy theo ô "Điểm bay" của form nhập nữa.
+   */
+  const [listSpots, setListSpots] = useState<string[]>([spot]);
+  useEffect(() => setListSpots([spot]), [spot]);
   /** Nhân sự đang làm tại điểm — để chỉ định người thu số "còn lại". */
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [saving, setSaving] = useState(false);
@@ -2486,6 +2493,8 @@ export function BookingCard({
   const [done, setDone] = useState<string | null>(null);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
+  /** Booking đang sửa nằm ở sổ điểm nào — có thể khác điểm của trang khi xem chồng nhiều điểm. */
+  const [editingSpot, setEditingSpot] = useState<string>(spot);
   /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
@@ -2555,21 +2564,49 @@ export function BookingCard({
     });
   };
 
+  /**
+   * Danh sách "sắp tới" bám theo ĐIỂM CỦA TRANG, KHÔNG theo ô "Điểm bay" của
+   * form nhập.
+   *
+   * Ô "Điểm bay" chỉ nói booking SẮP NHẬP thuộc điểm nào (người làm nhiều điểm
+   * nhận điện thoại đặt hộ). Trước đây danh sách cũng chạy theo ô đó, nên chọn
+   * "Hà Nội" một lần để nhập hộ là trang Sa Pa hiện nguyên lịch Hà Nội — nhìn
+   * xong tưởng khách của mình, chia người bay là hỏng cả ngày.
+   */
+  const listKey = listSpots.join(",");
   const load = useCallback(() => {
-    apiGet<{
+    type Res = {
       upcoming: BookingDTO[];
       staff?: Array<{ username: string; name: string; roleLabel: string }>;
       webSyncAt?: string;
-    }>(`/api/baocao/booking?date=${todayInVN()}&spot=${bookSpot}`)
-      .then((r) => {
-        setUpcoming(r.upcoming);
-        setStaff(r.staff ?? []);
-        setWebSyncAt(r.webSyncAt ?? "");
-      })
-      .catch(() => {
-        /* danh sách chỉ để tham khảo */
-      });
-  }, [bookSpot]);
+    };
+    const wanted = listKey ? listKey.split(",") : [];
+    /**
+     * Luôn hỏi thêm ĐIỂM CỦA TRANG dù người dùng bỏ chọn nó: danh sách nhân sự
+     * (để giao người thu) và mốc "lấy book từ web lần cuối" là của trang này,
+     * không phải của mấy điểm xem ké.
+     */
+    const fetchSpots = Array.from(new Set([spot, ...wanted]));
+    Promise.all(
+      fetchSpots.map((s) =>
+        apiGet<Res>(`/api/baocao/booking?date=${todayInVN()}&spot=${s}`)
+          .then((r) => [s, r] as const)
+          .catch(() => [s, null] as const),
+      ),
+    ).then((pairs) => {
+      const bySpot = new Map(pairs);
+      const mine = bySpot.get(spot);
+      setStaff(mine?.staff ?? []);
+      setWebSyncAt(mine?.webSyncAt ?? "");
+      const rows = wanted.flatMap((s) => bySpot.get(s)?.upcoming ?? []);
+      // Nhiều điểm gộp lại thì xếp lại theo ngày bay rồi giờ bay, không theo điểm
+      rows.sort(
+        (a, b) =>
+          a.flightDate.localeCompare(b.flightDate) || (a.expectedTime || "").localeCompare(b.expectedTime || ""),
+      );
+      setUpcoming(rows);
+    });
+  }, [spot, listKey]);
 
   useEffect(() => {
     load();
@@ -2726,7 +2763,7 @@ export function BookingCard({
         merged: number;
         cancelled: number;
         skipped: number;
-      }>(`/api/baocao/booking/sync-web?spot=${bookSpot}`);
+      }>(`/api/baocao/booking/sync-web?spot=${spot}`);
       const webMsg =
         r.created + r.updated + r.merged + r.cancelled === 0
           ? `Web: không có booking mới (${r.skipped} đơn đã có sẵn)`
@@ -2737,7 +2774,7 @@ export function BookingCard({
 
       let otaMsg = "";
       try {
-        const ota = await apiGet<{ emails: Array<{ status: string }> }>(`/api/baocao/ota/log?spot=${bookSpot}`);
+        const ota = await apiGet<{ emails: Array<{ status: string }> }>(`/api/baocao/ota/log?spot=${spot}`);
         const waiting = ota.emails.filter((m) => m.status === "review").length;
         otaMsg = waiting
           ? ` · OTA: ${waiting} thư chờ duyệt — xem cờ đỏ 🚩 đầu trang`
@@ -2826,7 +2863,7 @@ export function BookingCard({
         });
       }
       if (editingId) {
-        await apiPut(`/api/baocao/booking?spot=${bookSpot}`, { id: editingId, ...payload });
+        await apiPut(`/api/baocao/booking?spot=${editingSpot || spot}`, { id: editingId, ...payload });
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
       } else {
         const created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, payload);
@@ -2837,10 +2874,16 @@ export function BookingCard({
          * chế độ sửa cũng chặn luôn cảnh bấm lưu lần nữa thành hai booking trùng.
          * Muốn nhập khách mới thì bấm nút "Nhập booking mới" bên cạnh.
          */
-        if (created?.booking?.id) setEditingId(created.booking.id);
+        if (created?.booking?.id) {
+          setEditingId(created.booking.id);
+          setEditingSpot(bookSpot);
+        }
         const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
-          `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}. Lịch bay sẽ tự hiện đúng ngày.` +
+          `✓ Đã lưu booking ${form.contactName || form.bookingCode || form.source} — bay ${formatDateKeyVN(form.flightDate)}.` +
+            (bookSpot !== spot
+              ? ` Booking này vào sổ điểm ${spotName(bookSpot)} — mở trang điểm đó mới thấy, danh sách dưới đây chỉ của ${spotName(spot)}.`
+              : " Lịch bay sẽ tự hiện đúng ngày.") +
             (form.remaining > 0 && collectorName
               ? ` 💰 Đã giao ${collectorName} thu ${form.remaining.toLocaleString("vi-VN")} đ — hiện trên trang của ${collectorName} hôm bay.`
               : form.remaining > 0
@@ -2863,6 +2906,8 @@ export function BookingCard({
   /** Nạp booking vào form phía trên để sửa. */
   function startEdit(b: BookingDTO) {
     setEditingId(b.id);
+    setEditingSpot(b.spot || spot);
+    if ((b.spot || spot) !== bookSpot) setBookSpot(b.spot || spot);
     /**
      * "CÒN LẠI" LUÔN BÁM LUẬT: còn lại = tổng tiền − đã cọc.
      *
@@ -2932,9 +2977,10 @@ export function BookingCard({
     setRowBusy(b.id);
     setError(null);
     try {
-      await apiDelete(`/api/baocao/booking?spot=${bookSpot}`, { id: b.id });
+      await apiDelete(`/api/baocao/booking?spot=${b.spot || spot}`, { id: b.id });
       if (editingId === b.id) {
         setEditingId(null);
+        setEditingSpot(bookSpot);
         setForm(emptyBooking(today, bookSpot));
       }
       load();
@@ -3485,6 +3531,7 @@ export function BookingCard({
             disabled={saving}
             onClick={() => {
               setEditingId(null);
+              setEditingSpot(bookSpot);
               setForm(emptyBooking(today, bookSpot));
               setError(null);
               setDone(null);
@@ -3584,10 +3631,40 @@ export function BookingCard({
       </div>
 
       <div className="@container mt-4 @3xl:mt-0">
-        <div className="mb-1 text-xs font-semibold text-slate-700">🗓 Lịch bay & booking sắp tới ({upcoming.length})</div>
+        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-700">
+          <span>🗓 Lịch bay & booking sắp tới ({upcoming.length})</span>
+          {/**
+           * BẤM ĐIỂM NÀO HIỆN ĐIỂM ĐÓ — bấm được cả ba cùng lúc. Người chỉ làm
+           * một điểm không thấy hàng nút này, danh sách vốn đã đúng điểm của họ.
+           */}
+          {spots.length > 1 && (
+            <span className="flex flex-wrap items-center gap-1">
+              {spots.map((id) => {
+                const on = listSpots.includes(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setListSpots((prev) => (on ? prev.filter((x) => x !== id) : [...prev, id]))}
+                    className={
+                      "h-6 rounded-full px-2 text-[11px] font-semibold " +
+                      (on
+                        ? "border border-sky-600 bg-sky-600 text-white"
+                        : "border border-slate-300 bg-white text-slate-500 hover:border-sky-400")
+                    }
+                    title={on ? `Đang hiện ${spotName(id)} — bấm để ẩn` : `Hiện thêm lịch ${spotName(id)}`}
+                  >
+                    {on ? "✓ " : ""}
+                    {spotName(id)}
+                  </button>
+                );
+              })}
+            </span>
+          )}
+        </div>
         {upcoming.length === 0 ? (
           <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400">
-            Chưa có booking nào sắp tới.
+            {listSpots.length === 0 ? "Chưa chọn điểm nào để hiện — bấm tên điểm ở trên." : "Chưa có booking nào sắp tới."}
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
@@ -3596,8 +3673,9 @@ export function BookingCard({
                 {/* Nút FLOAT góc phải — chữ dòng 1 né nút, từ dòng 2 tràn hết bề ngang */}
                 <div className="float-right ml-2 flex flex-wrap items-center justify-end gap-1">
                   {/* Thu tiền TỪ XA: khách chuyển khoản trước ngày bay là ghi nhận được luôn */}
+                  {/* Xem chồng nhiều điểm thì mỗi dòng phải sửa đúng sổ của nó */}
                   <CollectMoneyControl
-                    spot={bookSpot}
+                    spot={b.spot || spot}
                     booking={b}
                     onDone={(msg) => {
                       setDone(msg);
@@ -3605,9 +3683,9 @@ export function BookingCard({
                       onChanged?.();
                     }}
                   />
-                  <AssignControl spot={bookSpot} booking={b} onDone={load} />
+                  <AssignControl spot={b.spot || spot} booking={b} onDone={load} />
                   <CancelBookingControl
-                    spot={bookSpot}
+                    spot={b.spot || spot}
                     booking={b}
                     onDone={(msg) => {
                       setDone(msg);
@@ -3634,6 +3712,12 @@ export function BookingCard({
                 </div>
                 {/* Số thứ tự đỏ — nhìn phát biết đang nói booking số mấy */}
                 <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
+                {/* Gộp nhiều điểm thì phải biết dòng này của điểm nào */}
+                {listSpots.length > 1 && (
+                  <span className="mr-1 rounded bg-slate-700 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                    {spotName(b.spot || spot)}
+                  </span>
+                )}
                 <BookingSummary b={b} withDate />
                 <AssignedBadge b={b} />
                 <span className="ml-1 text-xs text-slate-400">
