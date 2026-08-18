@@ -68,6 +68,20 @@ export interface IBooking {
   // Status
   status?: "pending" | "confirmed" | "completed" | "cancelled"; // default "pending"
 
+  /**
+   * SỐ THỨ TỰ BAY trong ngày — sổ điều hành (/baocao) ghi ngược về đây.
+   *
+   * Là số ưu tiên khi xếp lượt bay: ai đặt trước có số nhỏ, số nhỏ bay trước.
+   * Số do sổ điều hành cấp (không phải trang khách tự sinh) nên chỉ có sau khi
+   * đơn được đồng bộ sang sổ, thường vài giây sau khi khách bấm gửi.
+   *
+   * `queueDate` đi kèm vì số chỉ có nghĩa trong đúng một ngày bay — khách dời
+   * lịch là nhận số mới của ngày mới.
+   */
+  queueNo?: number;
+  queueDate?: string; // "YYYY-MM-DD"
+  queueUpdatedAt?: Date;
+
   // Metadata
   createdAt?: Date;
   updatedAt?: Date;
@@ -193,6 +207,11 @@ const BookingSchema = new Schema<IBooking>(
       default: "pending",
       index: true,
     },
+
+    // Số thứ tự bay do sổ điều hành cấp — xem chú thích ở interface
+    queueNo: { type: Number },
+    queueDate: { type: String, trim: true },
+    queueUpdatedAt: { type: Date },
   },
   { timestamps: true }
 );

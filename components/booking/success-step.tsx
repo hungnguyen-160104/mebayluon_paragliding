@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBookingStore } from "@/store/booking-store";
 import { computePriceByLang, LOCATIONS } from "@/lib/booking/calculate-price";
 import { spotPageForBooking } from "@/lib/booking/spot-to-location";
@@ -46,6 +46,9 @@ const UI_TEXT: Record<
     guideSteps: string;
     spotMore: string;
     readyTitle: string;
+    queueTitle: string;
+    queueHint: string;
+    queueWaiting: string;
     flightAtLabel: string;
     passengerLabel: string;
     andOthers: (n: number) => string;
@@ -77,6 +80,9 @@ const UI_TEXT: Record<
     guideSteps: "Các bước khi đi bay dù lượn",
     spotMore: "Xem thêm thông tin về điểm bay",
     readyTitle: "Đặt lịch thành công — Sẵn sàng bay!",
+    queueTitle: "Số thứ tự bay của bạn",
+    queueHint: "Số nhỏ được bay trước — khách đặt trước giữ số nhỏ hơn.",
+    queueWaiting: "Đang cấp số… số thứ tự sẽ hiện ở đây trong giây lát.",
     flightAtLabel: "Giờ lên dù",
     passengerLabel: "Khách bay",
     andOthers: (n: number) => `và ${n} khách nữa`,
@@ -112,6 +118,9 @@ const UI_TEXT: Record<
     guideSteps: "How a paragliding flight goes",
     spotMore: "More about this flying site",
     readyTitle: "Booking confirmed — ready to fly!",
+    queueTitle: "Your flight queue number",
+    queueHint: "Lower number flies first — earlier bookings get lower numbers.",
+    queueWaiting: "Assigning your number… it will appear here in a moment.",
     flightAtLabel: "Boarding time",
     passengerLabel: "Passenger",
     andOthers: (n: number) => `and ${n} more`,
@@ -147,6 +156,9 @@ const UI_TEXT: Record<
     guideSteps: "Comment se déroule un vol",
     spotMore: "En savoir plus sur le site de vol",
     readyTitle: "Réservation confirmée — prêts à voler !",
+    queueTitle: "Votre numéro d\u2019ordre de vol",
+    queueHint: "Le plus petit numéro vole en premier — les réservations les plus anciennes ont les plus petits numéros.",
+    queueWaiting: "Attribution du numéro… il apparaîtra ici dans un instant.",
     flightAtLabel: "Heure d'embarquement",
     passengerLabel: "Passager",
     andOthers: (n: number) => `et ${n} de plus`,
@@ -182,6 +194,9 @@ const UI_TEXT: Record<
     guideSteps: "Как проходит полёт",
     spotMore: "Подробнее о площадке",
     readyTitle: "Бронирование принято — готовы к полёту!",
+    queueTitle: "Ваш номер очереди на полёт",
+    queueHint: "Меньший номер летит раньше — кто забронировал раньше, получает меньший номер.",
+    queueWaiting: "Номер присваивается… он появится здесь через мгновение.",
     flightAtLabel: "Время посадки",
     passengerLabel: "Пассажир",
     andOthers: (n: number) => `и ещё ${n}`,
@@ -217,6 +232,9 @@ const UI_TEXT: Record<
     guideSteps: "उड़ान कैसे होती है",
     spotMore: "उड़ान स्थल के बारे में और जानें",
     readyTitle: "बुकिंग सफल — उड़ान के लिए तैयार!",
+    queueTitle: "आपका उड़ान क्रमांक",
+    queueHint: "छोटा नंबर पहले उड़ता है — पहले बुक करने वालों को छोटा नंबर मिलता है।",
+    queueWaiting: "नंबर दिया जा रहा है… यह कुछ ही क्षण में यहाँ दिखेगा।",
     flightAtLabel: "बोर्डिंग समय",
     passengerLabel: "यात्री",
     andOthers: (n: number) => `और ${n} लोग`,
@@ -252,6 +270,9 @@ const UI_TEXT: Record<
     guideSteps: "一次飞行是怎样进行的",
     spotMore: "了解更多飞行点信息",
     readyTitle: "预订成功——准备起飞！",
+    queueTitle: "您的飞行排队号",
+    queueHint: "号码越小越先飞——预订越早，号码越小。",
+    queueWaiting: "正在分配号码……稍后将显示在这里。",
     flightAtLabel: "登伞时间",
     passengerLabel: "飞行乘客",
     andOthers: (n: number) => `等 ${n} 位`,
@@ -288,6 +309,56 @@ export default function SuccessStep() {
       addonsQty: bookingResult.addonsQty || data.addonsQty,
     };
   }, [data, bookingResult]);
+
+
+  /**
+   * SỐ THỨ TỰ BAY — số ưu tiên xếp lượt trong ngày: ai đặt trước có số nhỏ, số
+   * nhỏ bay trước. Số do SỔ ĐIỀU HÀNH cấp khi đơn chạy sang sổ (vài giây sau
+   * khi khách bấm gửi), nên lúc trang này vừa hiện thường chưa có — hỏi lại vài
+   * lần rồi thôi. Khách đóng trang sớm cũng không mất gì: đội trực đọc lại số
+   * cho khách khi gọi xác nhận lịch bay.
+   */
+  const bookingObjectId = String(bookingResult?._id ?? "");
+  const [queueNo, setQueueNo] = useState<number | null>(null);
+  const [queueWaiting, setQueueWaiting] = useState(false);
+
+  useEffect(() => {
+    if (!bookingObjectId) return;
+    let stopped = false;
+    let tries = 0;
+    setQueueWaiting(true);
+
+    const ask = async () => {
+      tries += 1;
+      try {
+        const res = await fetch(`/api/booking/queue?id=${encodeURIComponent(bookingObjectId)}`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        if (stopped) return;
+        if (typeof json?.queueNo === "number" && json.queueNo > 0) {
+          setQueueNo(json.queueNo);
+          setQueueWaiting(false);
+          return;
+        }
+      } catch {
+        // mạng chập chờn thì thử lại ở nhịp sau, không báo lỗi cho khách
+      }
+      if (stopped) return;
+      // Hỏi tối đa ~30 giây (10 nhịp 3 giây) rồi buông, khỏi gọi mãi
+      if (tries >= 10) {
+        setQueueWaiting(false);
+        return;
+      }
+      timer = setTimeout(ask, 3000);
+    };
+
+    let timer: ReturnType<typeof setTimeout> = setTimeout(ask, 0);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [bookingObjectId]);
 
   /**
    * LUÔN tính bằng VNĐ, kể cả khi khách xem bằng tiếng Anh.
@@ -550,6 +621,27 @@ export default function SuccessStep() {
               </div>
             </div>
           </div>
+
+          {/* SỐ THỨ TỰ BAY: số nhỏ bay trước, nên khách hỏi ngay khi đặt xong.
+              Chưa có số thì báo "đang cấp"; hết nhịp hỏi mà vẫn chưa có thì ẩn
+              hẳn khối này — thà không nói còn hơn để một ô trống lơ lửng. */}
+          {queueNo || queueWaiting ? (
+            <div className="mt-2 rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                {ui.queueTitle}
+              </div>
+              {queueNo ? (
+                <>
+                  <div className="mt-0.5 text-3xl font-black leading-none md:text-4xl">
+                    #{queueNo}
+                  </div>
+                  <div className="mt-1 text-xs font-medium text-white/85">{ui.queueHint}</div>
+                </>
+              ) : (
+                <div className="mt-1 text-sm font-medium text-white/85">{ui.queueWaiting}</div>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-5 bg-[#F5F7FA] p-4 md:p-6">

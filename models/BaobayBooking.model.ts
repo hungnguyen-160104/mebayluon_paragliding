@@ -87,6 +87,15 @@ export interface IBaobayBooking {
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
   /** Khách ĐÃ ĐẾN LẤY VÉ chưa — quầy tích để khỏi xuất trùng và đếm vé đã xuất. */
+  /**
+   * KHOÁ SỔ MỘT BOOKING — kế toán bấm 🔒 thì không ai sửa được nữa.
+   *
+   * Khác "kế toán chốt ngày" (khoá cả ngày): đây là khoá TỪNG dòng, dùng khi số
+   * của riêng khách đó đã đối soát xong, hoặc đang có tranh cãi và phải giữ
+   * nguyên hiện trạng để soi. Chỉ kế toán mở lại được.
+   */
+  lockedAt?: Date;
+  lockedBy?: string;
   ticketIssuedAt?: Date;
   ticketIssuedBy?: string;
   /**
@@ -251,6 +260,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     mountainCar: { type: Number, default: 0, min: 0 },
     cancelTicketIssued: Boolean,
     cancelTicketCodes: { type: [String], default: [] },
+    lockedAt: Date,
+    lockedBy: String,
     ticketIssuedAt: Date,
     ticketIssuedBy: String,
     noTicketFlight: { type: Boolean, default: false },

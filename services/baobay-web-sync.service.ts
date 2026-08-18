@@ -19,6 +19,7 @@ import mongoose from "mongoose";
 
 import { todayInVN } from "@/lib/baobay/date";
 import { normalizeSpot } from "@/lib/baobay/spots";
+import { pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { isTestBooking } from "@/lib/baobay/test-booking";
 import { connectDB } from "@/lib/mongodb";
 import { nextDaySeq } from "@/services/baobay.service";
@@ -237,6 +238,7 @@ export type WebSyncResult = {
   skipped: number;
 };
 
+
 /**
  * Đồng bộ booking web của MỘT điểm bay, từ `fromDate` (mặc định hôm nay) trở đi.
  *
@@ -327,13 +329,15 @@ export async function syncWebBookings(
         }
         if (mapped.note) fill.note = [twin.note, `web: ${mapped.note}`].filter(Boolean).join(" · ");
         await BaobayBooking.updateOne({ _id: twin._id }, { $set: fill });
+        await pushQueueNoToWeb(webId, twin.daySeq, twin.flightDate);
         out.merged += 1;
         continue;
       }
 
+      const daySeq = await nextDaySeq(mapped.spot, mapped.flightDate);
       await BaobayBooking.create({
         ...mapped,
-        daySeq: await nextDaySeq(mapped.spot, mapped.flightDate),
+        daySeq,
         // Giữ đúng THỜI ĐIỂM KHÁCH ĐẶT để danh sách chờ xếp theo thứ tự đặt chỗ
         createdAt: doc.createdAt ?? new Date(),
         createdByUsername: "web",
@@ -345,6 +349,7 @@ export async function syncWebBookings(
         status: "open",
         rescheduledFrom: [],
       });
+      await pushQueueNoToWeb(webId, daySeq, mapped.flightDate);
       out.created += 1;
       continue;
     }
@@ -357,6 +362,7 @@ export async function syncWebBookings(
      * sửa: thêm dịch vụ, ghi cọc, thu tiền, giao người. Đồng bộ mà ghi đè là xoá
      * mất công của họ (thêm 1 flycam xong kéo lại là về 0), nên tuyệt đối không.
      */
+    await pushQueueNoToWeb(webId, existing.daySeq, existing.flightDate);
     out.skipped += 1;
   }
 

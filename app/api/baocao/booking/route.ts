@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 
 import { isDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { wearsRole } from "@/lib/baobay/roles";
 import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
+  setBookingLock,
   assignBooking,
   acceptAssignedBooking,
   markNoTicketFlight,
@@ -179,7 +181,7 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -187,6 +189,16 @@ export async function PATCH(req: Request) {
   }
 
   try {
+    /**
+     * KHOÁ / MỞ KHOÁ một booking — CHỈ kế toán (và quản trị). Khoá rồi thì mọi
+     * cửa sửa booking đều trả lỗi, kể cả thu tiền và tích đã bay.
+     */
+    if (action === "lock" || action === "unlock") {
+      if (!wearsRole(auth, "accountant") && auth.role !== "admin" && !auth.viaAdmin) {
+        return NextResponse.json({ message: "Chỉ kế toán mới khoá / mở khoá booking" }, { status: 403 });
+      }
+      return NextResponse.json({ booking: await setBookingLock(auth, spot, id, action === "lock") });
+    }
     if (action === "assign") {
       const assignee = String(body?.assignee ?? "");
       if (!assignee) return NextResponse.json({ message: "Chưa chọn nhân sự tiếp nhận" }, { status: 400 });

@@ -9,6 +9,7 @@ import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO, CollectDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
+import { useBaobaySession } from "./session";
 import { shareBookingImage } from "./booking-image";
 import {
   COMMISSION_PER_GUEST,
@@ -127,6 +128,15 @@ function BookingSummary({
       {/* SỐ THỨ TỰ trong ngày — đỏ đậm, đứng đầu, KHÔNG đổi kể cả đã bay/huỷ */}
       {b.daySeq > 0 && (
         <strong className="mr-1 rounded bg-red-600 px-1.5 font-bold text-white">{b.daySeq}</strong>
+      )}
+      {/* Đã khoá: ai mở dòng ra cũng thấy ngay, khỏi bấm rồi mới biết bị chặn */}
+      {b.locked && (
+        <strong
+          className="mr-1 rounded bg-slate-800 px-1.5 font-bold text-white"
+          title={`Kế toán đã khoá${b.lockedBy ? ` (${b.lockedBy})` : ""} — không sửa được`}
+        >
+          🔒
+        </strong>
       )}
       {head.filter(Boolean).join(" · ")}
       {b.contactName ? (
@@ -1553,6 +1563,15 @@ export function BookingTodayBanner({
    */
   defaultOpen?: boolean;
 }) {
+  /**
+   * Ai được KHOÁ dòng: kế toán và quản trị. Hỏi phiên đăng nhập ngay tại đây
+   * thay vì truyền prop từ ba trang gọi vào — thẻ này nằm ở cả trang điều phối,
+   * kế toán và phi công.
+   */
+  const { user } = useBaobaySession();
+  const canLock = Boolean(
+    user && (user.role === "accountant" || user.role === "admin" || (user.extraRoles ?? []).includes("accountant")),
+  );
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
   /** Booking đã bỏ khỏi sổ hôm nay — mục nhỏ cuối danh sách, bấm lấy lại được. */
@@ -1604,8 +1623,13 @@ export function BookingTodayBanner({
   const openShown = showAll ? open : open.slice(0, 10);
   if (!rows.length) return null;
 
-  async function act(b: BookingDTO, action: "flown" | "cancel" | "move" | "ticket", toDate?: string) {
+  async function act(
+    b: BookingDTO,
+    action: "flown" | "cancel" | "move" | "ticket" | "lock" | "unlock",
+    toDate?: string,
+  ) {
     const name = b.contactName || b.bookingCode || b.source;
+    if (action === "lock" && !window.confirm(`KHOÁ booking ${name}? Khoá rồi thì không ai sửa, thu tiền hay tích đã bay được nữa — chỉ kế toán mở lại.`)) return;
     if (action === "flown" && !window.confirm(`Xác nhận khách ${name} ĐÃ BAY?`)) return;
     if (action === "cancel" && !window.confirm(`Xác nhận booking ${name} bị HUỶ? Hệ thống sẽ báo huỷ, không làm gì thêm.`)) return;
     setBusy(b.id);
@@ -1860,6 +1884,31 @@ export function BookingTodayBanner({
                 >
                   {b.noTicketFlight ? "🎫✕ Không vé" : b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
                 </Button>
+                {/**
+                 * KHOÁ DÒNG — chỉ kế toán (và quản trị) bấm được. Khoá rồi thì mọi
+                 * nút sửa của dòng này đều bị máy chủ chặn, kể cả thu tiền.
+                 */}
+                {canLock && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={
+                      "h-7 shrink-0 px-2 text-xs font-semibold " +
+                      (b.locked
+                        ? "border-slate-800 bg-slate-800 text-white"
+                        : "border-slate-300 bg-white text-slate-600")
+                    }
+                    disabled={busy === b.id}
+                    title={
+                      b.locked
+                        ? `Đã khoá${b.lockedBy ? ` bởi ${b.lockedBy}` : ""} — bấm để mở khoá`
+                        : "Khoá dòng này: không ai sửa, thu tiền hay tích đã bay được nữa"
+                    }
+                    onClick={() => act(b, b.locked ? "unlock" : "lock")}
+                  >
+                    {b.locked ? "🔒 Đã khoá" : "🔓 Khoá"}
+                  </Button>
+                )}
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
                 {spot !== "sapa" && (
                   <CollectMoneyControl
