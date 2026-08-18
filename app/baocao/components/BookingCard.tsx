@@ -1570,7 +1570,12 @@ export function BookingTodayBanner({
    */
   const { user } = useBaobaySession();
   const canLock = Boolean(
-    user && (user.role === "accountant" || user.role === "admin" || (user.extraRoles ?? []).includes("accountant")),
+    user &&
+      (user.role === "accountant" ||
+        user.role === "admin" ||
+        (user.extraRoles ?? []).includes("accountant") ||
+        // Quản trị đang "xem hộ" một tài khoản khác — máy chủ vẫn cho khoá
+        (user as { viaAdmin?: boolean }).viaAdmin),
   );
   const [rows, setRows] = useState<BookingDTO[]>([]);
   const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
@@ -1614,6 +1619,34 @@ export function BookingTodayBanner({
     const timer = setInterval(load, 30_000);
     return () => clearInterval(timer);
   }, [load]);
+
+  /**
+   * NÚT KHOÁ của một dòng — dùng cho CẢ dòng chờ bay và dòng đã bay/đã huỷ.
+   *
+   * Kế toán chỉ khoá SAU khi đã soát xong tiền của khách đó, mà lúc ấy khách
+   * thường đã bay rồi — nên nút chỉ có ở dòng chờ bay là vô dụng. Khoá rồi thì
+   * chính dòng đó không còn nút sửa nào nữa, chỉ còn nút mở khoá của kế toán.
+   */
+  const lockButton = (b: BookingDTO) =>
+    canLock ? (
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 shrink-0 px-2 text-xs font-semibold " +
+          (b.locked ? "border-slate-800 bg-slate-800 text-white" : "border-slate-300 bg-white text-slate-600")
+        }
+        disabled={busy === b.id}
+        title={
+          b.locked
+            ? `Đã khoá${b.lockedBy ? ` bởi ${b.lockedBy}` : ""} — bấm để mở khoá`
+            : "Khoá dòng này: không ai sửa, thu tiền hay tích đã bay được nữa"
+        }
+        onClick={() => act(b, b.locked ? "unlock" : "lock")}
+      >
+        {b.locked ? "🔒 Mở khoá" : "🔓 Khoá"}
+      </Button>
+    ) : null;
 
   const open = rows.filter((b) => b.status === "open");
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
@@ -1841,6 +1874,12 @@ export function BookingTodayBanner({
               /* Hai khối nút NỔI riêng: hàng trên Đã bay · Đổi lịch · Chuyển, hàng
                  dưới Huỷ · Sửa (hẹp hơn) — chữ chảy quanh, tràn tới sát nút Huỷ. */
               <>
+              {b.locked ? (
+                /* ĐÃ KHOÁ: cất hết nút sửa cho khỏi bấm rồi mới biết bị chặn —
+                   chỉ còn nút mở khoá của kế toán. */
+                <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
+              ) : (
+              <>
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
                 <Button
                   type="button"
@@ -1862,7 +1901,7 @@ export function BookingTodayBanner({
                   }}
                 />
               </div>
-              <div className="float-right clear-right ml-2 mt-1 flex items-center gap-1">
+              <div className="float-right clear-right ml-2 mt-1 flex max-w-full flex-wrap items-center justify-end gap-1">
                 <Button
                   type="button"
                   variant="ghost"
@@ -1884,31 +1923,7 @@ export function BookingTodayBanner({
                 >
                   {b.noTicketFlight ? "🎫✕ Không vé" : b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
                 </Button>
-                {/**
-                 * KHOÁ DÒNG — chỉ kế toán (và quản trị) bấm được. Khoá rồi thì mọi
-                 * nút sửa của dòng này đều bị máy chủ chặn, kể cả thu tiền.
-                 */}
-                {canLock && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className={
-                      "h-7 shrink-0 px-2 text-xs font-semibold " +
-                      (b.locked
-                        ? "border-slate-800 bg-slate-800 text-white"
-                        : "border-slate-300 bg-white text-slate-600")
-                    }
-                    disabled={busy === b.id}
-                    title={
-                      b.locked
-                        ? `Đã khoá${b.lockedBy ? ` bởi ${b.lockedBy}` : ""} — bấm để mở khoá`
-                        : "Khoá dòng này: không ai sửa, thu tiền hay tích đã bay được nữa"
-                    }
-                    onClick={() => act(b, b.locked ? "unlock" : "lock")}
-                  >
-                    {b.locked ? "🔒 Đã khoá" : "🔓 Khoá"}
-                  </Button>
-                )}
+                {lockButton(b)}
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
                 {spot !== "sapa" && (
                   <CollectMoneyControl
@@ -1921,6 +1936,8 @@ export function BookingTodayBanner({
                   />
                 )}
               </div>
+              </>
+              )}
               </>
             )}
             <div className="min-w-0">
@@ -1994,9 +2011,11 @@ export function BookingTodayBanner({
         {closed.map((b) => (
           <li key={b.id} className="mb-1.5 flow-root break-inside-avoid rounded-lg bg-white/70 px-3 py-1.5">
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
-                đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ. */}
-            <div className="float-right ml-2 flex items-center gap-1">
-              {spot !== "sapa" && (
+                đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ.
+                Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
+            <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
+              {lockButton(b)}
+              {!b.locked && spot !== "sapa" && (
                 <CollectMoneyControl
                   spot={spot}
                   booking={b}
@@ -2006,26 +2025,30 @@ export function BookingTodayBanner({
                   }}
                 />
               )}
+              {!b.locked && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 bg-white px-2 text-xs"
+                  onClick={() => requestEditBooking(b)}
+                >
+                  ✎ Sửa
+                </Button>
+              )}
+            </div>
+            {/* Bấm nhầm thì có đường lui — khỏi tạo booking mới để chữa (sổ đếm hai lần) */}
+            {!b.locked && (
               <Button
                 type="button"
                 variant="ghost"
-                className="h-7 bg-white px-2 text-xs"
-                onClick={() => requestEditBooking(b)}
+                className="float-right ml-2 h-7 bg-white px-2 text-xs font-semibold text-slate-600"
+                disabled={busy === b.id}
+                onClick={() => restore(b)}
+                title="Trả booking về danh sách chờ bay"
               >
-                ✎ Sửa
+                {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
               </Button>
-            </div>
-            {/* Bấm nhầm thì có đường lui — khỏi tạo booking mới để chữa (sổ đếm hai lần) */}
-            <Button
-              type="button"
-              variant="ghost"
-              className="float-right ml-2 h-7 bg-white px-2 text-xs font-semibold text-slate-600"
-              disabled={busy === b.id}
-              onClick={() => restore(b)}
-              title="Trả booking về danh sách chờ bay"
-            >
-              {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
-            </Button>
+            )}
             {b.status === "done" ? (
               <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                 đã bay ✓

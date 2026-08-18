@@ -4819,6 +4819,8 @@ export async function noteBookingContact(
 export async function restoreBooking(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
+  // Kéo dòng đã khoá về "chờ bay" là mở đường sửa lại mọi thứ — chặn luôn
+  await assertBookingUnlocked(spot, id);
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking", 404);
   if (current.status === "open") throw new BaobayError("Booking này đang ở trạng thái chờ bay", 400);
