@@ -73,3 +73,31 @@ curl -X POST https://www.mebayluon.com/api/baocao/booking/inbound-sapa \
 
 Booking hiện ngay trong "🛫 Booking bay ngày 22/08" của điểm **Sa Pa**, người nhập
 ghi là *Web Sa Pa (tự động)*. Xoá bản thử bằng nút **🗑 Nhập nhầm** trên dòng đó.
+
+## Booking OTA của điểm Sa Pa — hộp thư sapa.paragliding@gmail.com
+
+Đơn từ Klook · GetYourGuide · KKday · Seek Sophie · Viator · Trip.com cho điểm
+Sa Pa về hộp **sapa.paragliding@gmail.com**. Dùng CHUNG một tệp script với hộp
+mebayluon, chỉ khác đúng một dòng cấu hình.
+
+**Cách bật** (làm một lần):
+
+1. Đăng nhập Google bằng **chính hộp sapa.paragliding@gmail.com**.
+2. Mở [script.google.com](https://script.google.com) → **New project**.
+3. Dán toàn bộ `docs/klook-email-apps-script.gs` (bản `ota-mail-v4`).
+4. Sửa ba dòng cấu hình ở đầu tệp:
+   - `SECRET` = đúng chuỗi `OTA_INBOUND_SECRET` đã khai trên Vercel (giống hộp mebayluon).
+   - `MAILBOX_SPOT = 'sapa'` ← **dòng quan trọng nhất**, nói cho app biết mọi thư
+     của hộp này là booking Sa Pa.
+   - `APP_URL` giữ nguyên.
+5. Bấm **Run** hàm `chayThuMotThu` một lần → Google hỏi quyền đọc Gmail, cho phép.
+6. Đồng hồ (Triggers) → **Add trigger** → hàm `quetThuOta` → Time-driven →
+   Minutes timer → **Every 10 minutes**.
+
+**Vì sao cần dòng `MAILBOX_SPOT`:** tên sản phẩm của OTA thường không có chữ
+"Sapa" (vd *Standard Paragliding Tour*), nên nếu để app đoán theo tên sản phẩm
+thì mọi thư rơi vào khay **🚩 chờ duyệt tay** với ghi chú *"không rõ điểm bay"* —
+người trực phải chọn điểm cho từng thư. Khai sẵn thì app biết ngay.
+
+Hộp **mebayluon@gmail.com** giữ `MAILBOX_SPOT = ''` vì hộp đó nhận cả ba điểm và
+app vẫn đoán theo tên sản phẩm như trước.

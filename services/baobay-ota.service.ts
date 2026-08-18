@@ -19,6 +19,7 @@ import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baoba
 import { parseKlookEmail, pickupFromDeparture, spotFromProduct, type KlookBooking } from "@/lib/baobay/ota-klook";
 import { OTA_CONFIG, isOtaKey, otaFromSender, readOtaMail, type OtaMailRead } from "@/lib/baobay/ota-parsers";
 import { htmlToText, parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
+import { isSpotId } from "@/lib/baobay/spots";
 import { connectDB } from "@/lib/mongodb";
 import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
@@ -32,6 +33,17 @@ export type OtaInbound = {
   /** Địa chỉ người gửi — dùng để đoán OTA khi script không gửi kèm tên nguồn. */
   from?: string;
   receivedAt?: string;
+  /**
+   * ĐIỂM BAY CỦA CẢ HỘP THƯ.
+   *
+   * Hộp sapa.paragliding@gmail.com chỉ nhận booking điểm Sa Pa, mà tên sản phẩm
+   * của OTA thì thường không có chữ "Sapa" (vd "Standard Paragliding Tour") nên
+   * đoán theo tên sản phẩm là rơi vào khay "không rõ điểm bay" — người trực lại
+   * phải chọn tay từng thư. Script của hộp nào khai điểm bay của hộp đó là xong.
+   *
+   * Bỏ trống = đoán theo tên sản phẩm như cũ (hộp mebayluon nhận cả ba điểm).
+   */
+  spot?: string;
 };
 
 export type OtaIngestResult = {
@@ -72,6 +84,13 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
   const from = String(input.from ?? "").trim();
   const claimed = (input.ota || "").toLowerCase();
   const ota = otaFromSender(from) ?? (claimed || "klook");
+  /**
+   * ĐIỂM BAY CỦA CẢ HỘP THƯ — script của hộp sapa.paragliding@gmail.com khai
+   * "sapa". Tin nó trước mọi phép đoán, và dùng cho CẢ BA nhánh: bóc được bằng
+   * bộ đọc riêng, đưa vào khay chờ duyệt, và cả nhánh không bóc được. Thiếu ở
+   * nhánh nào là thư của hộp Sa Pa lại rơi về "chưa rõ điểm bay" ở nhánh đó.
+   */
+  const mailboxSpot = isSpotId(String(input.spot ?? "")) ? String(input.spot) : "";
   const receivedAt = input.receivedAt ? new Date(input.receivedAt) : new Date();
   const base = {
     ota,
@@ -146,7 +165,8 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     }
 
     const known = read.ref ? await BaobayBooking.findOne({ otaRef: read.ref }).lean<any>() : null;
-    const spotGuess = spotFromProduct(input.subject ?? "") ?? spotFromProduct(input.body ?? "");
+    const spotGuess =
+      mailboxSpot || spotFromProduct(input.subject ?? "") || spotFromProduct(input.body ?? "");
 
     /**
      * Ngày bay xa hơn ~13 tháng gần như chắc là bắt nhầm số trong thư (mã đơn,
@@ -193,6 +213,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     await OtaEmail.create({
       ...base,
       kind: "unknown",
+      spot: mailboxSpot || undefined,
       status: looksLikeJunk ? "ignored" : "review",
       result: looksLikeJunk ? "Không phải thư đơn hàng — bỏ qua" : "Chưa bóc được dữ liệu — cần soát tay",
     });
@@ -203,7 +224,7 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     };
   }
 
-  const spot = spotFromProduct(parsed.productTitle) ?? spotFromProduct(input.subject ?? "");
+  const spot = mailboxSpot || spotFromProduct(parsed.productTitle) || spotFromProduct(input.subject ?? "");
   const common = { ...base, kind: parsed.kind, ref: parsed.ref, spot: spot ?? undefined };
 
   if (!spot) {
