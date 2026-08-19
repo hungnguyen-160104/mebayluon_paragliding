@@ -355,6 +355,10 @@ export type BookingDTO = {
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
   lockedBy?: string;
+  /** Kế toán đã "Đã nhận" ĐỦ các khoản chuyển khoản của booking — hiện tích ✓CK. */
+  ckChecked?: boolean;
+  /** Đã nhận đủ các khoản tiền mặt — hiện tích ✓TM. */
+  tmChecked?: boolean;
   /** Khách đã đến lấy vé chưa (quầy tích). */
   ticketIssued: boolean;
   ticketIssuedBy?: string;

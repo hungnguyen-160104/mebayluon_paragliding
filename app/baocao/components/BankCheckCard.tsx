@@ -51,6 +51,19 @@ type AppTransferDTO = {
   spot: string;
   source: string;
   seen: boolean;
+  verified: boolean;
+  locked: boolean;
+};
+
+type AppCashDTO = {
+  refId: string;
+  bookingId?: string;
+  daySeq: number;
+  label: string;
+  amount: number;
+  by: string;
+  spot: string;
+  verified: boolean;
   locked: boolean;
 };
 
@@ -68,6 +81,7 @@ type Report = {
   lines: LineDTO[];
   pending: LineDTO[];
   appTransfers: AppTransferDTO[];
+  appCash: AppCashDTO[];
   groups: GroupDTO[];
   summary: {
     bankTotal: number;
@@ -135,20 +149,52 @@ export function BankCheckCard({ date }: { date: string }) {
   }
 
   /**
+   * "ĐÃ NHẬN" một khoản — lệnh QUYỀN CAO NHẤT của kế toán: khoản này coi như
+   * soát xong, khỏi cần sao kê xác nhận nữa. KHÔNG khoá booking (khách cọc
+   * cho ngày tương lai thì điều phối còn phải thao tác tiếp); khoá là nút riêng.
+   */
+  async function confirmItem(refId: string, on: boolean) {
+    if (!on && !window.confirm("Bỏ đánh dấu ĐÃ NHẬN khoản này?")) return;
+    setRowBusy(refId);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/bank-check`, { action: "confirm", refId, on });
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không đánh dấu được");
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  /**
    * "ĐÚNG — KHOÁ BOOKING": tiền đã soát khớp thì khoá sổ booking bằng đúng
    * cơ chế 🔒 sẵn có của kế toán — mọi cửa sửa (thu tiền, sửa số, tích bay)
    * đều bị chặn, trên trang điều phối booking hiện ✓🔒. Mở lại thì vào sổ
    * booking bấm "Mở khoá" như thường lệ.
    */
-  async function lockBooking(t: AppTransferDTO) {
+  async function lockBooking(t: { refId: string; bookingId?: string; label: string; spot: string }) {
     if (!t.bookingId) return;
-    if (!window.confirm(`Xác nhận số tiền của ${t.label} ĐÃ ĐÚNG và khoá booking? Không ai sửa được nữa (kế toán mở lại được).`)) {
-      return;
-    }
     setRowBusy(t.refId);
     setError(null);
     try {
-      await apiPatch(`/api/baocao/booking?spot=${t.spot}`, { id: t.bookingId, action: "lock" });
+      /**
+       * Máy chủ tự kiểm: ĐÃ BAY + hết nợ + mọi khoản đã "Đã nhận" → khoá NGAY
+       * không hỏi. Thiếu điều nào thì liệt kê ra và vẫn chừa đường
+       * "Tôi hiểu & vẫn khoá booking" — quyền quyết cuối cùng là của kế toán.
+       */
+      const r = await apiPatch<{ locked: boolean; warnings: string[] }>(`/api/baocao/bank-check`, {
+        action: "lock-booking",
+        bookingId: t.bookingId,
+      });
+      if (!r.locked) {
+        const msg =
+          `⚠ ${t.label} CHƯA ĐỦ CHUẨN ĐỂ KHOÁ:\n\n` +
+          r.warnings.map((w) => `• ${w}`).join("\n") +
+          `\n\nTôi hiểu & vẫn khoá booking?`;
+        if (!window.confirm(msg)) return;
+        await apiPatch(`/api/baocao/bank-check`, { action: "lock-booking", bookingId: t.bookingId, force: true });
+      }
       load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không khoá được booking");
@@ -403,22 +449,45 @@ export function BankCheckCard({ date }: { date: string }) {
                     sao kê chưa thấy — kiểm lại
                   </span>
                 )}
-                {/* Soát đúng rồi thì khoá sổ booking — người khác hết cửa sửa số tiền */}
+                {/* HAI NÚT TÁCH BẠCH: "Đã nhận" đánh dấu từng khoản (cọc trước cho
+                    ngày tương lai vẫn nhận được mà không khoá); "Khoá booking" là
+                    chuyện riêng, chỉ bấm khi booking đã xong xuôi hẳn. */}
+                {t.verified ? (
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => confirmItem(t.refId, false)}
+                    title="Kế toán đã nhận khoản này — bấm để bỏ đánh dấu"
+                    className="shrink-0 rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50"
+                  >
+                    ✓ đã nhận
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => confirmItem(t.refId, true)}
+                    className="shrink-0 rounded-lg border border-emerald-400 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    ✓ Đã nhận
+                  </button>
+                )}
                 {t.locked ? (
                   <span
                     className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white"
-                    title="Kế toán đã soát đúng & khoá — không sửa được nữa"
+                    title="Kế toán đã khoá — không sửa được nữa"
                   >
-                    ✓🔒 đã khoá
+                    🔒 đã khoá
                   </span>
                 ) : t.bookingId ? (
                   <button
                     type="button"
                     disabled={rowBusy === t.refId}
                     onClick={() => lockBooking(t)}
-                    className="shrink-0 rounded-lg border border-emerald-400 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                    title="Chỉ khoá khi booking đã xong hẳn — khoá rồi điều phối không thao tác được nữa"
+                    className="shrink-0 rounded-lg border border-slate-400 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
-                    ✓ Đúng — khoá booking
+                    🔒 Khoá booking
                   </button>
                 ) : null}
               </li>
@@ -426,8 +495,61 @@ export function BankCheckCard({ date }: { date: string }) {
           </ul>
           <p className="mt-1 text-[11px] leading-tight text-slate-500">
             “Sao kê chưa thấy” = app có ghi khoản CK này nhưng chưa dòng sao kê nào khớp về nó — có thể chưa dán
-            đủ sao kê, khách chưa chuyển, hoặc nhập nhầm.
+            đủ sao kê, khách chưa chuyển, hoặc nhập nhầm. Khoản đã bấm “Đã nhận” coi như soát xong, không đòi sao kê nữa.
           </p>
+        </div>
+      )}
+
+      {/* ---- TIỀN MẶT ghi nhận trong ngày: tích "Đã nhận" từng khoản (không tính vào đối chiếu sao kê) ---- */}
+      {(report?.appCash ?? []).length > 0 && (
+        <div className="mt-3">
+          <div className="text-xs font-bold text-slate-700">
+            💵 Tiền mặt ghi nhận trong ngày ({report!.appCash.length} khoản ={" "}
+            <span className="tabular-nums">{formatVND(report!.appCash.reduce((t, x) => t + x.amount, 0))}</span>)
+          </div>
+          <ul className="mt-1 divide-y divide-slate-100">
+            {report!.appCash.map((t) => (
+              <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-1 text-xs">
+                <span className="min-w-0 flex-1 text-slate-700">
+                  {t.label}
+                  <span className="text-slate-400"> · {t.by} đang giữ</span>
+                </span>
+                <strong className="shrink-0 tabular-nums text-slate-900">{formatVND(t.amount)}</strong>
+                {t.verified ? (
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => confirmItem(t.refId, false)}
+                    title="Đã nhận khoản tiền mặt này — bấm để bỏ đánh dấu"
+                    className="shrink-0 rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50"
+                  >
+                    ✓ đã nhận
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => confirmItem(t.refId, true)}
+                    className="shrink-0 rounded-lg border border-emerald-400 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    ✓ Đã nhận
+                  </button>
+                )}
+                {t.locked ? (
+                  <span className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒</span>
+                ) : t.bookingId ? (
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => lockBooking(t)}
+                    className="shrink-0 rounded-lg border border-slate-400 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    🔒 Khoá
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

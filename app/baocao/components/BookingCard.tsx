@@ -134,9 +134,9 @@ function BookingSummary({
       {b.locked && (
         <strong
           className="mr-1 rounded bg-slate-800 px-1.5 font-bold text-white"
-          title={`Kế toán đã soát đúng & khoá${b.lockedBy ? ` (${b.lockedBy})` : ""} — không sửa được`}
+          title={`Kế toán đã khoá${b.lockedBy ? ` (${b.lockedBy})` : ""} — không sửa được`}
         >
-          ✓🔒
+          🔒
         </strong>
       )}
       {head.filter(Boolean).join(" · ")}
@@ -158,6 +158,17 @@ function BookingSummary({
         <>
           {" · "}
           <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800">đã tt {k(paidTotal)}</strong>
+          {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
+          {b.ckChecked && (
+            <strong className="ml-0.5 rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">
+              ✓CK
+            </strong>
+          )}
+          {b.tmChecked && (
+            <strong className="ml-0.5 rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản TIỀN MẶT">
+              ✓TM
+            </strong>
+          )}
         </>
       ) : null}
       {refunded > 0 ? (

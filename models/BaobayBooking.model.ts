@@ -96,6 +96,17 @@ export interface IBaobayBooking {
    */
   lockedAt?: Date;
   lockedBy?: string;
+  /** Kế toán đã "ĐÃ NHẬN" phần cọc GÕ TAY (không qua lệnh thu) khi soát CK. */
+  depositVerifiedAt?: Date;
+  depositVerifiedBy?: string;
+  /**
+   * TÍCH XANH ĐẬM trên chi tiết booking: mọi khoản CK (lệnh thu CK + cọc gõ
+   * tay) đã được kế toán "Đã nhận" → ✓CK; mọi khoản TIỀN MẶT đã nhận → ✓TM.
+   * Số liệu gốc nằm ở từng lệnh thu (verifiedAt) — đây là bản dồn để dòng
+   * booking hiện tích mà không phải join; có khoản mới là cờ tự xoá.
+   */
+  ckCheckedAt?: Date;
+  tmCheckedAt?: Date;
   ticketIssuedAt?: Date;
   ticketIssuedBy?: string;
   /**
@@ -262,6 +273,10 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     cancelTicketCodes: { type: [String], default: [] },
     lockedAt: Date,
     lockedBy: String,
+    depositVerifiedAt: Date,
+    depositVerifiedBy: String,
+    ckCheckedAt: Date,
+    tmCheckedAt: Date,
     ticketIssuedAt: Date,
     ticketIssuedBy: String,
     noTicketFlight: { type: Boolean, default: false },

@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
 import {
+  confirmBankItem,
+  lockBookingChecked,
   deleteBankLine,
   getBankCheck,
   recheckBankPending,
@@ -22,6 +24,7 @@ export const dynamic = "force-dynamic";
  * GET   ?date=YYYY-MM-DD&spots=khau-pha -> bảng soát của ngày + khoản treo (spots bỏ trống = mọi điểm được phân)
  * POST  {date, text}                    -> dán sao kê, soát rồi lưu từng dòng
  * PATCH {action: "recheck", date}       -> soát lại mọi khoản treo
+ * PATCH {action: "confirm", refId, on}  -> kế toán "ĐÃ NHẬN" một khoản (quyền cao nhất, khỏi soát tiếp)
  * PATCH {action: "resolve", id, note}   -> kết luận tay một khoản treo
  * PATCH {action: "delete", id}          -> xoá dòng dán nhầm
  */
@@ -71,6 +74,15 @@ export async function PATCH(req: Request) {
     if (action === "recheck") {
       const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
       return NextResponse.json(await recheckBankPending(auth, String(body?.date ?? ""), spots));
+    }
+    if (action === "lock-booking") {
+      // Đủ chuẩn (đã bay + hết nợ + mọi khoản đã nhận) → khoá ngay; thiếu thì
+      // trả cảnh báo, bấm lại với force=true là "Tôi hiểu & vẫn khoá"
+      return NextResponse.json(await lockBookingChecked(auth, String(body?.bookingId ?? ""), body?.force === true));
+    }
+    if (action === "confirm") {
+      await confirmBankItem(auth, String(body?.refId ?? ""), body?.on !== false);
+      return NextResponse.json({ ok: true });
     }
     if (action === "resolve") {
       await resolveBankLine(auth, String(body?.id ?? ""), String(body?.note ?? ""));

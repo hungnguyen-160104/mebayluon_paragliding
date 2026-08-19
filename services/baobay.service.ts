@@ -3827,6 +3827,9 @@ export async function collectForBooking(
   const set: Record<string, unknown> = {
     remaining: Math.max(0, (booking.remaining ?? 0) - amount),
     deposit: (booking.deposit ?? 0) + amount,
+    // Có tiền MỚI về là booking coi như chưa soát lại — tích ✓CK/✓TM tự tắt
+    ...(transferPart > 0 ? { ckCheckedAt: null } : {}),
+    ...(cashPart > 0 ? { tmCheckedAt: null } : {}),
   };
   if (transferPart > 0) {
     set.depositToCompany = true;
@@ -5405,6 +5408,8 @@ function toBookingDTO(doc: any): BookingDTO {
     daySeq: Number(doc.daySeq) || 0,
     locked: Boolean(doc.lockedAt),
     lockedBy: doc.lockedBy || undefined,
+    ckChecked: Boolean(doc.ckCheckedAt) || undefined,
+    tmChecked: Boolean(doc.tmCheckedAt) || undefined,
     ticketIssued: Boolean(doc.ticketIssuedAt),
     ticketIssuedBy: doc.ticketIssuedBy || undefined,
     noTicketFlight: Boolean(doc.noTicketFlight) || undefined,

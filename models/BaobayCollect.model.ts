@@ -43,6 +43,9 @@ export interface IBaobayCollect {
 
   /** pending = chờ thu · collected = đã thu · rejected = từ chối · company = CK về TK công ty. */
   status: CollectStatus;
+  /** Kế toán bấm "ĐÃ NHẬN" khi soát: khoản này đã kiểm, tiền đã về đúng chỗ. */
+  verifiedAt?: Date;
+  verifiedBy?: string;
   rejectedReason?: string;
   resolvedAt?: Date;
   resolvedBy?: string;
@@ -78,6 +81,8 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     collectorName: String,
 
     status: { type: String, enum: ["pending", "collected", "rejected", "company"], default: "pending" },
+    verifiedAt: Date,
+    verifiedBy: String,
     rejectedReason: String,
     resolvedAt: Date,
     resolvedBy: String,

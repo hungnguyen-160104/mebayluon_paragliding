@@ -35,7 +35,7 @@ import { connectDB } from "@/lib/mongodb";
 import { BaobayBankLine } from "@/models/BaobayBankLine.model";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
-import { BaobayError } from "@/services/baobay.service";
+import { BaobayError, setBookingLock } from "@/services/baobay.service";
 
 /* ================================================================== */
 /* DTO cho trang kế toán                                               */
@@ -73,7 +73,23 @@ export type BankAppTransferDTO = {
   source: string;
   /** Đã có dòng sao kê nào khớp về khoản này chưa. */
   seen: boolean;
+  /** Kế toán đã bấm "ĐÃ NHẬN" khoản này. */
+  verified: boolean;
   /** Kế toán đã soát đúng và KHOÁ booking — không ai sửa được số tiền nữa. */
+  locked: boolean;
+};
+
+/** Khoản TIỀN MẶT ghi nhận trong ngày — kế toán tích "Đã nhận" để phân biệt khoản đã kiểm. */
+export type BankAppCashDTO = {
+  refId: string;
+  bookingId?: string;
+  daySeq: number;
+  label: string;
+  amount: number;
+  /** Ai đang giữ khoản tiền mặt này. */
+  by: string;
+  spot: string;
+  verified: boolean;
   locked: boolean;
 };
 
@@ -97,6 +113,8 @@ export type BankCheckReport = {
   /** Khoản treo của MỌI ngày còn chưa xử — kể cả ngày trước. */
   pending: BankLineDTO[];
   appTransfers: BankAppTransferDTO[];
+  /** Khoản TIỀN MẶT ghi nhận trong ngày — không tính vào đối chiếu sao kê. */
+  appCash: BankAppCashDTO[];
   /** Booking chia bill — mỗi dòng một công thức cộng. */
   groups: BankGroupDTO[];
   /**
@@ -550,13 +568,48 @@ export async function getBankCheck(
     .filter((g) => g.parts.length >= 2 || (g.expected > 0 && g.status !== "du"))
     .sort((a, b) => (a.status === "du" ? 1 : 0) - (b.status === "du" ? 1 : 0));
 
-  /** Booking nào kế toán đã khoá — hiện 🔒 thay nút "Đúng — khoá". */
+  /** Trạng thái từng khoản: đã "ĐÃ NHẬN" chưa (lệnh thu / cọc gõ tay) + booking đã khoá chưa. */
+  const collectIds = recorded.filter((c) => c.kind === "collect").map((c) => c.id.split(":")[1]);
+  const verifiedCollects = collectIds.length
+    ? await BaobayCollect.find({ _id: { $in: collectIds } })
+        .select("verifiedAt")
+        .lean<any[]>()
+    : [];
+  const verifiedSet = new Set(verifiedCollects.filter((d) => d.verifiedAt).map((d) => `collect:${String(d._id)}`));
   const lockDocs = bookingIds.length
     ? await BaobayBooking.find({ _id: { $in: bookingIds } })
-        .select("lockedAt")
+        .select("lockedAt depositVerifiedAt")
         .lean<any[]>()
     : [];
   const lockedSet = new Set(lockDocs.filter((d) => d.lockedAt).map((d) => String(d._id)));
+  for (const d of lockDocs) if (d.depositVerifiedAt) verifiedSet.add(`deposit:${String(d._id)}`);
+
+  /** Khoản TIỀN MẶT đã thu trong ngày — cho kế toán tích "Đã nhận" từng khoản. */
+  const cashDocs = await BaobayCollect.find({ spot: { $in: spots }, date, method: "cash", status: "collected" })
+    .lean<any[]>();
+  const cashBookingIds = cashDocs.map((c) => c.bookingId).filter(Boolean);
+  const cashBookings = cashBookingIds.length
+    ? await BaobayBooking.find({ _id: { $in: cashBookingIds } })
+        .select("daySeq contactName bookingCode phone flightDate spot lockedAt")
+        .lean<any[]>()
+    : [];
+  const cashBookingById = new Map(cashBookings.map((b) => [String(b._id), b]));
+  const appCash: BankAppCashDTO[] = cashDocs
+    .map((c) => {
+      const b = c.bookingId ? cashBookingById.get(String(c.bookingId)) : undefined;
+      return {
+        refId: `collect:${String(c._id)}`,
+        bookingId: c.bookingId ? String(c.bookingId) : undefined,
+        daySeq: Number(b?.daySeq) || 0,
+        label: b ? bookingLabel(b) : c.guestName || c.bookingCode || "khách",
+        amount: c.amount || 0,
+        by: c.collectorName || c.createdByName || "",
+        spot: c.spot,
+        verified: Boolean(c.verifiedAt),
+        locked: Boolean(b?.lockedAt),
+      };
+    })
+    .sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999) || a.label.localeCompare(b.label));
 
   /**
    * Đối chiếu tổng: tiền VÀO trên sao kê ↔ khoản CK app ghi nhận trong ngày.
@@ -572,7 +625,9 @@ export async function getBankCheck(
       code: c.codes[0] ?? "",
       spot: c.spot,
       source: c.kind === "collect" ? "lệnh thu CK" : "cọc lúc nhập booking",
-      seen: claimedRefs.has(c.id),
+      // "Đã nhận" bằng tay là lệnh QUYỀN CAO NHẤT — coi như đã soát, khỏi đòi sao kê
+      seen: claimedRefs.has(c.id) || verifiedSet.has(c.id),
+      verified: verifiedSet.has(c.id),
       locked: Boolean(c.bookingId && lockedSet.has(c.bookingId)),
     }))
     .sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999) || a.label.localeCompare(b.label));
@@ -585,6 +640,7 @@ export async function getBankCheck(
     lines: lineDocs.map(toLineDTO),
     pending: pendingDocs.map(toLineDTO),
     appTransfers,
+    appCash,
     groups,
     summary: {
       bankTotal,
@@ -645,6 +701,127 @@ export async function recheckBankPending(
   }
 
   return getBankCheck(session, date, spotsFilter);
+}
+
+/**
+ * KHOÁ BOOKING sau khi soát — máy tự kiểm ba điều kiện trước:
+ *  1. Booking đã tích ĐÃ BAY.
+ *  2. Thu đủ: cọc + các khoản thanh toán = tổng phải trả (hết nợ).
+ *  3. Mọi khoản tiền (CK, TM, cọc gõ tay) đều đã được "Đã nhận".
+ * Đủ cả ba thì khoá NGAY không hỏi lại. Thiếu điều nào trả về danh sách
+ * cảnh báo — kế toán vẫn được "Tôi hiểu & vẫn khoá" bằng cờ force.
+ */
+export async function lockBookingChecked(
+  session: BaobaySession,
+  bookingId: string,
+  force: boolean,
+): Promise<{ locked: boolean; warnings: string[] }> {
+  await connectDB();
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) throw new BaobayError("Booking không hợp lệ", 400);
+  const booking = await BaobayBooking.findById(bookingId).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+  if (booking.lockedAt) return { locked: true, warnings: [] };
+
+  const vnd = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
+  const collects = await BaobayCollect.find({ bookingId })
+    .select("method amount status transferCode collectorName verifiedAt")
+    .lean<any[]>();
+  const active = collects.filter((c) => c.status === "company" || c.status === "collected");
+
+  const warnings: string[] = [];
+  if (booking.status !== "done") {
+    warnings.push("Booking CHƯA tích ĐÃ BAY — còn chờ bay hoặc chưa ai tích");
+  }
+  if ((booking.remaining ?? 0) > 0) {
+    warnings.push(
+      `Thu tổng CHƯA ĐỦ: đã thu ${vnd(booking.deposit)} / cần ${vnd(booking.totalAmount)} — còn nợ ${vnd(booking.remaining)}`,
+    );
+  }
+  for (const c of active) {
+    if (c.verifiedAt) continue;
+    warnings.push(
+      c.method === "transfer"
+        ? `Khoản CK ${vnd(c.amount)}${c.transferCode ? ` (mã ${c.transferCode})` : ""} chưa được "Đã nhận"`
+        : `Khoản TM ${vnd(c.amount)}${c.collectorName ? ` (${c.collectorName} giữ)` : ""} chưa được "Đã nhận"`,
+    );
+  }
+  const manualDeposit = (booking.deposit || 0) - active.reduce((t, c) => t + (c.amount || 0), 0);
+  if (manualDeposit > 0 && !booking.depositVerifiedAt) {
+    warnings.push(`Cọc gõ tay ${vnd(manualDeposit)} chưa được "Đã nhận"`);
+  }
+
+  if (warnings.length > 0 && !force) return { locked: false, warnings };
+  await setBookingLock(session, booking.spot, bookingId, true);
+  return { locked: true, warnings: [] };
+}
+
+/**
+ * Kế toán bấm "ĐÃ NHẬN" (hoặc bỏ đánh dấu) một khoản tiền — lệnh thu
+ * ("collect:<id>") hay phần cọc gõ tay ("deposit:<bookingId>"). KHÔNG khoá
+ * booking: khách cọc trước cho ngày tương lai thì điều phối vẫn phải thao
+ * tác tiếp được; khoá là nút riêng.
+ */
+export async function confirmBankItem(session: BaobaySession, refId: string, on: boolean): Promise<void> {
+  await connectDB();
+  const [kind, id] = String(refId ?? "").split(":");
+  if (!mongoose.Types.ObjectId.isValid(id ?? "")) throw new BaobayError("Khoản không hợp lệ", 400);
+
+  let bookingId: string | undefined;
+  if (kind === "collect") {
+    const doc = await BaobayCollect.findByIdAndUpdate(
+      id,
+      on
+        ? { $set: { verifiedAt: new Date(), verifiedBy: session.name || session.username } }
+        : { $set: { verifiedAt: null, verifiedBy: "" } },
+      { new: true },
+    ).lean<any>();
+    if (!doc) throw new BaobayError("Không tìm thấy khoản này", 404);
+    bookingId = doc.bookingId ? String(doc.bookingId) : undefined;
+  } else if (kind === "deposit") {
+    const doc = await BaobayBooking.findByIdAndUpdate(
+      id,
+      on
+        ? { $set: { depositVerifiedAt: new Date(), depositVerifiedBy: session.name || session.username } }
+        : { $set: { depositVerifiedAt: null, depositVerifiedBy: "" } },
+      { new: true },
+    ).lean<any>();
+    if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
+    bookingId = String(doc._id);
+  } else {
+    throw new BaobayError("Khoản không hợp lệ", 400);
+  }
+
+  if (bookingId) await rollupBookingChecks(bookingId);
+}
+
+/**
+ * Dồn cờ TÍCH XANH của một booking từ các khoản đã "Đã nhận":
+ *  - ✓CK khi MỌI lệnh thu chuyển khoản đã nhận, và phần cọc gõ tay (nếu có)
+ *    cũng đã nhận.
+ *  - ✓TM khi có ít nhất một khoản tiền mặt và tất cả đều đã nhận.
+ * Gọi lại mỗi lần đánh dấu — cờ chỉ là bản dồn, sự thật nằm ở từng khoản.
+ */
+async function rollupBookingChecks(bookingId: string): Promise<void> {
+  const booking = await BaobayBooking.findById(bookingId).select("deposit depositVerifiedAt").lean<any>();
+  if (!booking) return;
+  const collects = await BaobayCollect.find({ bookingId })
+    .select("method amount status verifiedAt")
+    .lean<any[]>();
+  const tx = collects.filter((c) => c.method === "transfer" && c.status !== "rejected");
+  const cash = collects.filter((c) => c.method === "cash" && c.status === "collected");
+  // Cọc gõ tay = deposit trừ phần các lệnh thu đã đại diện (cùng cách tính với bảng soát)
+  const manualDeposit = (booking.deposit || 0) - collects.reduce((t, c) => t + (c.amount || 0), 0);
+
+  const ckDone =
+    (tx.length > 0 || manualDeposit > 0) &&
+    tx.every((c) => c.verifiedAt) &&
+    (manualDeposit <= 0 || Boolean(booking.depositVerifiedAt));
+  const tmDone = cash.length > 0 && cash.every((c) => c.verifiedAt);
+
+  await BaobayBooking.updateOne(
+    { _id: bookingId },
+    { $set: { ckCheckedAt: ckDone ? new Date() : null, tmCheckedAt: tmDone ? new Date() : null } },
+  );
 }
 
 /** Kế toán kết luận tay một khoản treo (đã kiểm sao kê/gọi khách xong). */
