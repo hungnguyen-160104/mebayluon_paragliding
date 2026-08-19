@@ -97,7 +97,13 @@ export function RefundCard({ spot, date, canConfirm = false }: { spot: string; d
                         : "bg-slate-100 text-slate-600")
                   }
                 >
-                  {r.status === "pending" ? "chờ chuyển" : r.status === "paid" ? "đã chuyển ✓" : "đã trả TM"}
+                  {r.status === "pending"
+                    ? "chờ chuyển"
+                    : r.status === "paid"
+                      ? "đã chuyển ✓"
+                      : r.status === "voided"
+                        ? "vô hiệu (bay lại)"
+                        : "đã trả TM"}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug text-slate-700">
                   {formatDateKeyVN(r.date)} · <strong>{r.guestName}</strong>

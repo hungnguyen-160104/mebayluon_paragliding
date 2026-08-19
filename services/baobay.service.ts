@@ -3854,6 +3854,8 @@ export async function collectForBooking(
               byName: session.name,
               at: new Date(),
               kind: isFull ? "full" : "deposit",
+              // MÃ GD đi theo từng bill — dòng booking hiện "GD #1234" cho kế toán đối soát
+              code: b.code,
             })),
           ],
         },
@@ -4045,7 +4047,7 @@ export type RefundDTO = {
   amount: number;
   method: "cash" | "transfer";
   bankAccount?: string;
-  status: "done" | "pending" | "paid";
+  status: "done" | "pending" | "paid" | "voided";
   reason?: string;
   note?: string;
   createdByName: string;
@@ -4829,6 +4831,25 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
   if (current.status === "open") throw new BaobayError("Booking này đang ở trạng thái chờ bay", 400);
 
   const was = current.status === "done" ? "đã bay" : current.status === "voided" ? "đã bỏ khỏi sổ" : "đã huỷ";
+
+  /**
+   * LỆNH HOÀN CÒN CHỜ của booking này phải CHẾT theo lần bay lại: tiền chưa
+   * rời két mà lệnh vẫn nằm trang kế toán thì (1) kế toán có thể chuyển nhầm,
+   * (2) huỷ lần sau lập thêm lệnh nữa là hoàn ĐÔI. Vô hiệu lệnh chờ và trả
+   * refundedTotal + cọc về như trước khi huỷ. Lệnh đã chuyển/đã chi (done,
+   * paid) thì giữ nguyên — tiền đã đi thật, sổ phải nhớ.
+   */
+  const pendingRefunds = await BaobayRefund.find({ bookingId: id, status: "pending" })
+    .select("amount")
+    .lean<any[]>();
+  const pendingSum = pendingRefunds.reduce((t, r) => t + (r.amount || 0), 0);
+  if (pendingSum > 0) {
+    await BaobayRefund.updateMany(
+      { bookingId: id, status: "pending" },
+      { $set: { status: "voided", note: `bị vô hiệu vì booking bay lại — ${session.name || session.username}` } },
+    );
+  }
+
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
     {
@@ -4836,6 +4857,8 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
         status: "open",
         note: [current.note, `hoàn tác “${was}” — ${session.name || session.username}`].filter(Boolean).join(" · "),
       },
+      // Lệnh hoàn chờ đã vô hiệu → cọc quay về, tổng đã hoàn rút xuống
+      ...(pendingSum > 0 ? { $inc: { refundedTotal: -pendingSum, deposit: pendingSum } } : {}),
       $unset: {
         doneAt: "",
         doneBy: "",
@@ -5228,7 +5251,7 @@ export async function updateBookingStatus(
     if (toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
     update = {
       // Sang ngày mới thì nhận SỐ THỨ TỰ MỚI của ngày đó — số cũ bỏ lại ngày cũ
-      $set: { flightDate: toDate, daySeq: await nextDaySeq(spot, toDate) },
+      $set: { flightDate: toDate, daySeq: await nextDaySeq(spot, toDate), movedBy: session.username, movedAt: new Date() },
       $push: { rescheduledFrom: current.flightDate },
     };
   } else if (action === "cancel") {
@@ -5246,6 +5269,13 @@ export async function updateBookingStatus(
         refundAmount: refund,
         // Không hoàn đồng nào thì đừng ghi hình thức hoàn — đọc lại đỡ tưởng có tiền
         refundMethod: refund > 0 ? (cancel?.refundMethod === "cash" ? "cash" : "transfer") : undefined,
+        /**
+         * HOÀN thì TRỪ THẲNG VÀO CỌC. Dòng tóm tắt tính "cọc gốc = deposit −
+         * đã thu + đã hoàn", nên hoàn mà chỉ cộng refundedTotal (createRefund
+         * làm) mà không trừ deposit là mỗi vòng huỷ→bay lại→huỷ cọc hiển thị
+         * phồng thêm đúng số hoàn — lỗi "cọc 500k thành 1.500k".
+         */
+        deposit: Math.max(0, (current.deposit ?? 0) - refund),
         // Huỷ rồi thì không còn gì phải thu nữa
         remaining: 0,
         note: [
@@ -5420,6 +5450,7 @@ function toBookingDTO(doc: any): BookingDTO {
           amount: Number(c.amount) || 0,
           method: c.method === "transfer" ? ("transfer" as const) : ("cash" as const),
           byName: String(c.byName ?? ""),
+          code: c.code ? String(c.code) : undefined,
         }))
       : [],
     id: String(doc._id),
@@ -5466,6 +5497,7 @@ function toBookingDTO(doc: any): BookingDTO {
     refunded: doc.refundedTotal ?? 0,
     refundMethod: doc.refundMethod,
     cancelledBy: doc.cancelledBy || "",
+    movedBy: doc.movedBy || undefined,
     unitPrice: doc.unitPrice ?? 0,
     discount: doc.discount ?? 0,
     totalAmount: doc.totalAmount ?? 0,
@@ -6931,7 +6963,7 @@ export type FlycamCancelDTO = {
   refundMode: "self" | "company";
   amount: number;
   bankAccount?: string;
-  status: "done" | "pending" | "paid";
+  status: "done" | "pending" | "paid" | "voided";
   bookingLabel?: string;
   createdByName: string;
   transferCode?: string;

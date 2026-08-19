@@ -131,7 +131,7 @@ export interface IBaobayBooking {
    * Ghi thẳng lên booking để quầy nhìn một dòng là biết tiền nong tới đâu,
    * khỏi lật sổ lệnh thu.
    */
-  collectedLog?: Array<{ amount: number; method: "cash" | "transfer"; byName: string; at: Date; kind: string }>;
+  collectedLog?: Array<{ amount: number; method: "cash" | "transfer"; byName: string; at: Date; kind: string; code?: string }>;
   refundMethod?: "cash" | "transfer";
   cancelledAt?: Date;
   cancelledBy?: string;
@@ -198,6 +198,9 @@ export interface IBaobayBooking {
   doneBy?: string;
   /** Các ngày bay CŨ nếu khách dời lịch — booking tự chuyển sang ngày mới. */
   rescheduledFrom: string[];
+  /** Người bấm dời lịch lần gần nhất — truy vết "dời by ai". */
+  movedBy?: string;
+  movedAt?: Date;
   /**
    * SỐ THỨ TỰ KHÁCH TRONG NGÀY, cấp theo thời điểm đặt và KHÔNG đổi nữa —
    * quầy gọi "khách số 4" là cả ngày ai cũng hiểu, kể cả khi khách đó đã bay
@@ -291,6 +294,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
           amount: { type: Number, default: 0 },
           method: { type: String, enum: ["cash", "transfer"], default: "cash" },
           byName: { type: String, default: "" },
+          code: String,
           at: Date,
           kind: { type: String, default: "" },
           _id: false,
@@ -333,6 +337,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     doneAt: Date,
     doneBy: String,
     rescheduledFrom: { type: [String], default: [] },
+    movedBy: String,
+    movedAt: Date,
     daySeq: { type: Number, default: 0 },
 
     sheetSynced: { type: Boolean, default: false },

@@ -351,7 +351,7 @@ export type BookingDTO = {
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
   /** Vệt thu tiền: từng lần thu — số tiền, TM/CK, người thu. */
-  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string }>;
+  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string; code?: string }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
   lockedBy?: string;
@@ -393,6 +393,8 @@ export type BookingDTO = {
   doneBy?: string;
   /** Ngày bay cũ nếu đã dời lịch — hiện "dời từ dd/mm" cho điều phối biết. */
   rescheduledFrom: string[];
+  /** Ai dời lịch lần gần nhất. */
+  movedBy?: string;
   /** Người được điều phối GIAO lịch (đón khách, tiếp khách…). */
   assignedToUsername?: string;
   assignedToName?: string;

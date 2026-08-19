@@ -120,7 +120,19 @@ function BookingSummary({
   else if (paidTotal || refunded) parts.push("cọc 0");
   /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
   const tail: string[] = [];
-  if (b.transferCode) tail.push(`CK #${b.transferCode}`);
+  /**
+   * MÃ GD hiện đủ TỪNG BILL: khách chia 2-3 lần chuyển thì mỗi lần một mã —
+   * kế toán nhìn dòng booking là đối được sao kê, khỏi mở từng lệnh thu.
+   * Bản ghi cũ chưa lưu mã theo bill thì rơi về mã trên booking như trước.
+   */
+  const gdCodes = [
+    ...new Set(
+      [...(b.collected ?? []).map((c) => (c.method === "transfer" ? c.code : "")), b.transferCode].filter(
+        (x): x is string => Boolean(x),
+      ),
+    ),
+  ];
+  if (gdCodes.length) tail.push(`GD ${gdCodes.map((c) => `#${c}`).join(", ")}`);
   if (b.depositToCompany) tail.push("cọc → TK cty");
   if (b.note) tail.push(b.note);
 
@@ -157,7 +169,19 @@ function BookingSummary({
       {paidTotal > 0 ? (
         <>
           {" · "}
-          <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800">đã tt {k(paidTotal)}</strong>
+          <strong
+            className="rounded bg-emerald-100 px-1 font-bold text-emerald-800"
+            title={(b.collected ?? [])
+              .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""} by ${c.byName || "?"}`)
+              .join(" · ")}
+          >
+            đã tt {k(paidTotal)}
+            {/* AI THU — truy vết từng đồng: nhiều người thì liệt kê đủ */}
+            {(() => {
+              const who = [...new Set((b.collected ?? []).map((c) => c.byName).filter(Boolean))];
+              return who.length ? ` by ${who.join(", ")}` : "";
+            })()}
+          </strong>
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
           {b.ckChecked && (
             <strong className="ml-0.5 rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">
@@ -217,8 +241,12 @@ function stampVN(iso: string): string {
 function AssignedBadge({ b }: { b: BookingDTO }) {
   if (!b.assignedToName) return null;
   return (
-    <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-800">
+    <span
+      className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-800"
+      title={b.assignedBy ? `Người giao: ${b.assignedBy}` : undefined}
+    >
       → giao cho {b.assignedToName}
+      {b.assignedBy ? ` by ${b.assignedBy}` : ""}
     </span>
   );
 }
@@ -1059,22 +1087,75 @@ function CollectMoneyControl({
    * giao dịch riêng — gộp một mã thì kế toán không dò được sao kê.
    */
   const [bills, setBills] = useState<Array<{ amount: number; code: string }>>([{ amount: 0, code: "" }]);
+  /**
+   * TÍCH CHỌN ĐƯỜNG TIỀN: bật TM là số còn thu nhảy vào ô TM, bật CK là nhảy
+   * vào ô CK — khỏi gõ lại số. Bật cả hai thì tự chia: gõ bên này, bên kia
+   * tự bù cho đủ. Mọi con số vẫn sửa tay được như thường.
+   */
+  const [pay, setPay] = useState<{ cash: boolean; transfer: boolean }>({ cash: true, transfer: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const left = booking.remaining || 0;
   const transfer = bills.reduce((t, b) => t + (b.amount || 0), 0);
   const total = cash + transfer;
+
+  /** Mục tiêu tự điền: thu đủ nhắm "còn phải thu"; thu cọc thì tổng hiện có. */
+  const target = () => (kind === "full" ? left : Math.max(left, total));
+
+  /** Bù phần còn thiếu vào MỘT bill (trừ bill đang gõ) — các số khác giữ nguyên. */
+  const balanced = (bs: Array<{ amount: number; code: string }>, cashNow: number, skip: number) => {
+    if (bs.length === 0) return bs;
+    let t = bs.length - 1;
+    if (t === skip) t = bs.length >= 2 ? bs.length - 2 : -1;
+    if (t < 0) return bs;
+    const others = bs.reduce((s, b, k) => (k === t ? s : s + (b.amount || 0)), 0);
+    const next = [...bs];
+    next[t] = { ...next[t], amount: Math.max(0, target() - cashNow - others) };
+    return next;
+  };
+
   const setBill = (i: number, patch: Partial<{ amount: number; code: string }>) =>
-    setBills((prev) => prev.map((b, k) => (k === i ? { ...b, ...patch } : b)));
+    setBills((prev) => {
+      const next = prev.map((b, k) => (k === i ? { ...b, ...patch } : b));
+      // Chia bill: gõ bill này thì bill kia tự nhận "số còn lại tương ứng"
+      return patch.amount !== undefined && kind === "full" && next.length > 1 ? balanced(next, cash, i) : next;
+    });
+
+  /** Gõ ô TM: đang bật cả CK thì phần còn lại tự chảy sang bill CK. */
+  const setCashSmart = (v: number) => {
+    setCash(v);
+    if (pay.transfer && kind === "full") setBills((prev) => balanced(prev, v, -1));
+  };
+
+  /** Bật/tắt TM·CK: dồn số còn thu vào đúng ô theo lựa chọn — không phải nhập lại. */
+  function setPayMode(next: { cash: boolean; transfer: boolean }) {
+    if (!next.cash && !next.transfer) return; // phải còn ít nhất một đường
+    setPay(next);
+    const amount = kind === "full" ? left : total || left;
+    if (next.cash && !next.transfer) {
+      setCash(amount);
+      setBills([{ amount: 0, code: "" }]);
+    } else if (!next.cash && next.transfer) {
+      setCash(0);
+      setBills((prev) =>
+        prev.length <= 1 ? [{ amount, code: prev[0]?.code ?? "" }] : balanced(prev, 0, -1),
+      );
+    } else {
+      // bật cả hai: giữ TM đang gõ, phần còn thiếu bù vào bill CK cuối
+      setBills((prev) => balanced(prev.length ? prev : [{ amount: 0, code: "" }], cash, -1));
+    }
+  }
 
   /** Mở bảng: mặc định dồn hết vào một đường theo tình huống, sửa lại được. */
   function reset() {
     setKind("full");
     if (collectFromAfar) {
+      setPay({ cash: false, transfer: true });
       setBills([{ amount: left, code: "" }]);
       setCash(0);
     } else {
+      setPay({ cash: true, transfer: false });
       setCash(left);
       setBills([{ amount: 0, code: "" }]);
     }
@@ -1149,8 +1230,10 @@ function CollectMoneyControl({
             onClick={() => {
               setKind(k);
               if (k === "full") {
-                // Thu nốt: dồn phần còn thiếu vào ô tiền mặt, người thu tự chia lại
-                setCash(Math.max(0, left - transfer));
+                // Thu nốt: dồn phần còn thiếu vào đúng đường đang bật
+                if (pay.cash && !pay.transfer) setCash(Math.max(0, left - transfer));
+                else if (!pay.cash && pay.transfer) setBills((prev) => balanced(prev, 0, -1));
+                else setBills((prev) => balanced(prev, cash, -1));
               }
             }}
             className={
@@ -1175,14 +1258,39 @@ function CollectMoneyControl({
           </span>
         )}
       </div>
-      <label className="flex items-center gap-1.5">
-        <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
-        <span className="min-w-0 flex-1">
-          <MoneyInput value={cash} onChange={setCash} />
-        </span>
-      </label>
+      {/* TÍCH ĐƯỜNG TIỀN: bật ô nào là số còn thu tự nhảy vào ô đó, khỏi gõ lại */}
+      <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
+        {(
+          [
+            ["cash", "TM — tiền mặt"],
+            ["transfer", "CK — chuyển khoản"],
+          ] as Array<["cash" | "transfer", string]>
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setPayMode({ ...pay, [key]: !pay[key] })}
+            className={
+              pay[key]
+                ? "flex-1 " + (key === "cash" ? "bg-emerald-600" : "bg-indigo-600") + " px-1 text-xs font-bold text-white"
+                : "flex-1 bg-white px-1 text-xs font-medium text-slate-400"
+            }
+          >
+            {pay[key] ? "✓ " : ""}
+            {label}
+          </button>
+        ))}
+      </div>
+      {pay.cash && (
+        <label className="flex items-center gap-1.5">
+          <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
+          <span className="min-w-0 flex-1">
+            <MoneyInput value={cash} onChange={setCashSmart} />
+          </span>
+        </label>
+      )}
       {/* Mỗi bill CK một dòng: số tiền + mã giao dịch riêng, đối soát sao kê được */}
-      {bills.map((b, i) => (
+      {pay.transfer && bills.map((b, i) => (
         <div key={i} className="space-y-1">
           <label className="flex items-center gap-1.5">
             <span className="w-8 shrink-0 text-xs font-bold text-indigo-800">
@@ -1231,13 +1339,15 @@ function CollectMoneyControl({
           )}
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => setBills((prev) => [...prev, { amount: Math.max(0, left - total), code: "" }])}
-        className="rounded-lg border border-dashed border-indigo-300 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50"
-      >
-        ＋ Chia bill CK (khách chuyển làm nhiều lần)
-      </button>
+      {pay.transfer && (
+        <button
+          type="button"
+          onClick={() => setBills((prev) => [...prev, { amount: Math.max(0, target() - total), code: "" }])}
+          className="rounded-lg border border-dashed border-indigo-300 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50"
+        >
+          ＋ Chia bill CK (khách chuyển làm nhiều lần)
+        </button>
+      )}
 
       <div
         className={
@@ -1970,7 +2080,11 @@ export function BookingTodayBanner({
                       : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
                   }
                 >
-                  {b.noTicketFlight ? "🎫✕ Không vé" : b.ticketIssued ? "🎫 Đã xuất vé ✓" : "🎫 Xuất vé"}
+                  {b.noTicketFlight
+                    ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
+                    : b.ticketIssued
+                      ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
+                      : "🎫 Xuất vé"}
                 </Button>
                 {lockButton(b)}
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
@@ -1997,6 +2111,7 @@ export function BookingTodayBanner({
               {b.rescheduledFrom.length > 0 && (
                 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
                   dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
+                  {b.movedBy ? ` by ${b.movedBy}` : ""}
                 </span>
               )}
               <span className="ml-1 text-xs text-slate-400">
@@ -2103,13 +2218,14 @@ export function BookingTodayBanner({
                 {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
               </Button>
             )}
+            {/* Ghi rõ AI bấm — "đã bay by judy", "huỷ by trucngoc": lệch số còn biết hỏi ai */}
             {b.status === "done" ? (
               <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                đã bay ✓
+                đã bay ✓{b.doneBy ? ` by ${b.doneBy}` : ""}
               </span>
             ) : (
               <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                đã huỷ
+                đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
                 {b.refundAmount
                   ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
                   : ""}

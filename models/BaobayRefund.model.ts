@@ -32,7 +32,7 @@ export interface IBaobayRefund {
   /** Số tài khoản khách nhận — chỉ cần khi hoàn chuyển khoản. */
   bankAccount?: string;
   /** "done" tự trả tiền mặt xong · "pending" chờ kế toán chuyển · "paid" đã chuyển. */
-  status: "done" | "pending" | "paid";
+  status: "done" | "pending" | "paid" | "voided";
   reason?: string;
   note?: string;
   createdByUsername: string;
@@ -60,7 +60,8 @@ const RefundSchema = new Schema<IBaobayRefund>(
     amount: { type: Number, default: 0, min: 0 },
     method: { type: String, enum: ["cash", "transfer"], required: true },
     bankAccount: String,
-    status: { type: String, enum: ["done", "pending", "paid"], default: "pending", index: true },
+    // "voided" = lệnh bị vô hiệu vì booking được "bay lại" trước khi kế toán chuyển
+    status: { type: String, enum: ["done", "pending", "paid", "voided"], default: "pending", index: true },
     reason: String,
     note: String,
     createdByUsername: { type: String, default: "" },
