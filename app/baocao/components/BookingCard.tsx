@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
+import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO, CollectDTO } from "@/lib/baobay/types";
 
@@ -133,9 +134,9 @@ function BookingSummary({
       {b.locked && (
         <strong
           className="mr-1 rounded bg-slate-800 px-1.5 font-bold text-white"
-          title={`Kế toán đã khoá${b.lockedBy ? ` (${b.lockedBy})` : ""} — không sửa được`}
+          title={`Kế toán đã soát đúng & khoá${b.lockedBy ? ` (${b.lockedBy})` : ""} — không sửa được`}
         >
-          🔒
+          ✓🔒
         </strong>
       )}
       {head.filter(Boolean).join(" · ")}
@@ -1191,12 +1192,31 @@ function CollectMoneyControl({
             )}
           </label>
           {b.amount > 0 && (
-            <TextInput
-              value={b.code}
-              onChange={(e) => setBill(i, { code: e.target.value })}
-              placeholder={bills.length > 1 ? `Mã giao dịch bill ${i + 1}…` : "Mã giao dịch ngân hàng…"}
-              className="h-8 rounded-lg text-xs"
-            />
+            <div className="flex items-center gap-1">
+              <span className="min-w-0 flex-1">
+                <TextInput
+                  value={b.code}
+                  onChange={(e) => setBill(i, { code: e.target.value })}
+                  placeholder={bills.length > 1 ? `Mã GD bill ${i + 1} — 4 số cuối là đủ…` : "Mã GD — 4 số cuối là đủ…"}
+                  className="h-8 rounded-lg text-xs"
+                />
+              </span>
+              {/* MỖI BILL MỘT MÃ QR: khách chuyển làm mấy lần thì gửi mấy mã, mỗi
+                  mã đúng số tiền của lần đó và nội dung có đuôi .1 .2 để kế toán
+                  dò được từng dòng sao kê. */}
+              <PaymentQrButton
+                amount={b.amount}
+                note={buildTransferNote({
+                  flightDate: booking.flightDate,
+                  daySeq: booking.daySeq,
+                  bookingCode: booking.bookingCode,
+                  phone: booking.phone,
+                  part: bills.length > 1 ? i + 1 : undefined,
+                })}
+                purpose={`Tiền bay${bills.length > 1 ? ` (bill ${i + 1}/${bills.length})` : ""} — ${booking.contactName || booking.phone || "khách"}`}
+                label={bills.length > 1 ? `QR ${i + 1}` : "QR"}
+              />
+            </div>
           )}
         </div>
       ))}
@@ -1216,13 +1236,23 @@ function CollectMoneyControl({
       >
         <span className="text-xs font-semibold text-slate-600">Tổng thu lần này</span>
         <strong className="text-base tabular-nums text-slate-900">{total.toLocaleString("vi-VN")} đ</strong>
-        {/* Khách chuyển khoản: đưa mã QR cho quét tại chỗ, hoặc gửi Zalo trả sau.
-            Số tiền lấy đúng số vừa gõ, nội dung là mã booking để kế toán dò sao kê. */}
-        <PaymentQrButton
-          amount={total > 0 ? total : left}
-          note={booking.bookingCode || booking.phone || ""}
-          purpose={`Tiền bay — ${booking.contactName || booking.phone || "khách"}`}
-        />
+        {/* Khách chuyển khoản một lần: đưa mã QR cho quét tại chỗ, hoặc gửi Zalo
+            trả sau. Số tiền lấy đúng số vừa gõ, nội dung là "ngày bay · STT ·
+            mã booking" để kế toán dò sao kê.
+            Đã CHIA BILL thì ẩn mã gộp này đi — mỗi bill có mã QR riêng ở trên,
+            đưa nhầm mã gộp là khách chuyển một cục, hỏng cả việc chia. */}
+        {bills.length <= 1 && (
+          <PaymentQrButton
+            amount={total > 0 ? total : left}
+            note={buildTransferNote({
+              flightDate: booking.flightDate,
+              daySeq: booking.daySeq,
+              bookingCode: booking.bookingCode,
+              phone: booking.phone,
+            })}
+            purpose={`Tiền bay — ${booking.contactName || booking.phone || "khách"}`}
+          />
+        )}
       </div>
 
       <div className="text-[11px] leading-tight text-slate-600">
@@ -2276,7 +2306,12 @@ export function AssignedBookings({
                         <div className="mt-1.5">
                           <PaymentQrButton
                             amount={b.remaining}
-                            note={b.bookingCode || b.phone || ""}
+                            note={buildTransferNote({
+                              flightDate: b.flightDate,
+                              daySeq: b.daySeq,
+                              bookingCode: b.bookingCode,
+                              phone: b.phone,
+                            })}
                             purpose={`Tiền bay — ${b.contactName || b.phone || "khách"}`}
                             label="QR cho khách quét"
                             className="h-9 w-full border-sky-300 bg-white text-sm font-bold text-sky-700"
@@ -2510,6 +2545,13 @@ export function BookingCard({
   const [editingId, setEditingId] = useState<string | null>(null);
   /** Booking đang sửa nằm ở sổ điểm nào — có thể khác điểm của trang khi xem chồng nhiều điểm. */
   const [editingSpot, setEditingSpot] = useState<string>(spot);
+  /**
+   * Số thứ tự trong ngày của booking đang sửa — chỉ dùng để ghép NỘI DUNG CK
+   * ("2508 k3 KLK123"). Booking mới chưa lưu thì máy chủ chưa cấp số, mã QR
+   * lúc đó chỉ có ngày bay + mã booking; lưu xong form tự chuyển sang chế độ
+   * sửa nên số thứ tự có ngay sau đó.
+   */
+  const [editingSeq, setEditingSeq] = useState(0);
   /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
@@ -2892,6 +2934,7 @@ export function BookingCard({
         if (created?.booking?.id) {
           setEditingId(created.booking.id);
           setEditingSpot(bookSpot);
+          setEditingSeq(created.booking.daySeq || 0);
         }
         const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
@@ -2921,6 +2964,7 @@ export function BookingCard({
   /** Nạp booking vào form phía trên để sửa. */
   function startEdit(b: BookingDTO) {
     setEditingId(b.id);
+    setEditingSeq(b.daySeq || 0);
     setEditingSpot(b.spot || spot);
     if ((b.spot || spot) !== bookSpot) setBookSpot(b.spot || spot);
     /**
@@ -2995,6 +3039,7 @@ export function BookingCard({
       await apiDelete(`/api/baocao/booking?spot=${b.spot || spot}`, { id: b.id });
       if (editingId === b.id) {
         setEditingId(null);
+        setEditingSeq(0);
         setEditingSpot(bookSpot);
         setForm(emptyBooking(today, bookSpot));
       }
@@ -3419,7 +3464,12 @@ export function BookingCard({
             {/* Chữ QR gọn: đủ hiểu mà không ăn hết chỗ của số tiền 7 chữ số */}
             <PaymentQrButton
               amount={form.deposit}
-              note={form.bookingCode.trim() || form.phone.trim()}
+              note={buildTransferNote({
+                flightDate: form.flightDate,
+                daySeq: editingSeq,
+                bookingCode: form.bookingCode,
+                phone: form.phone,
+              })}
               purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
               className="h-10 shrink-0 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
             />
@@ -3429,7 +3479,7 @@ export function BookingCard({
           <TextInput
             value={form.transferCode}
             onChange={(e) => set("transferCode", e.target.value)}
-            placeholder="Mã GD ngân hàng…" className="h-10 rounded-lg text-sm"
+            placeholder="Mã GD — 4 số cuối là đủ…" className="h-10 rounded-lg text-sm"
           />
         </Field>
         {/**
@@ -3454,7 +3504,12 @@ export function BookingCard({
             </span>
             <PaymentQrButton
               amount={form.remaining}
-              note={form.bookingCode.trim() || form.phone.trim()}
+              note={buildTransferNote({
+                flightDate: form.flightDate,
+                daySeq: editingSeq,
+                bookingCode: form.bookingCode,
+                phone: form.phone,
+              })}
               purpose={`Tiền còn thu — ${form.contactName || form.phone || "khách"}`}
               className="h-10 shrink-0 border-rose-400 bg-rose-50 px-2 text-xs font-bold text-rose-700"
             />
@@ -3549,6 +3604,7 @@ export function BookingCard({
             disabled={saving}
             onClick={() => {
               setEditingId(null);
+              setEditingSeq(0);
               setEditingSpot(bookSpot);
               setForm(emptyBooking(today, bookSpot));
               setError(null);

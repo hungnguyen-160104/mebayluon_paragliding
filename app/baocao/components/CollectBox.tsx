@@ -133,7 +133,7 @@ export function CollectInbox({ spot }: { spot: string }) {
         ))}
       </ul>
       <p className="mt-2 text-[11px] text-amber-800/80">
-        Bấm "Đã thu tiền" là khoản này tự cộng vào TIỀN GIỮ HỘ CÔNG TY của bạn — đừng ghi lại vào sổ THU CHI kẻo
+        Bấm “Đã thu tiền” là khoản này tự cộng vào TIỀN GIỮ HỘ CÔNG TY của bạn — đừng ghi lại vào sổ THU CHI kẻo
         đếm trùng.
       </p>
     </div>
@@ -315,7 +315,7 @@ export function CollectCreate({ spot }: { spot: string }) {
             <TextInput
               value={form.transferCode}
               onChange={(e) => set("transferCode", e.target.value)}
-              placeholder="Mã GD ngân hàng…"
+              placeholder="Mã GD — 4 số cuối là đủ…"
             />
           </Field>
           <Field label="Ghi chú">

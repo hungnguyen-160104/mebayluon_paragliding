@@ -15,6 +15,7 @@ import {
   type RescheduleGuestRow,
 } from "./rows";
 import { PaymentQrButton } from "./PaymentQr";
+import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { Banner, Button, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
@@ -425,7 +426,12 @@ export function CancelMoveCard({
                   {usedFee > picked.deposit && (
                     <PaymentQrButton
                       amount={usedFee - picked.deposit}
-                      note={picked.bookingCode || picked.phone || ""}
+                      note={buildTransferNote({
+                        flightDate: picked.flightDate,
+                        daySeq: picked.daySeq,
+                        bookingCode: picked.bookingCode,
+                        phone: picked.phone,
+                      })}
                       purpose={`Phí dịch vụ đã dùng — ${picked.contactName || "khách"}`}
                       label={`QR thu ${formatVND(usedFee - picked.deposit)}`}
                     />
@@ -495,7 +501,12 @@ export function CancelMoveCard({
                     {/* Khách trả phí dời lịch từ xa: gửi mã QR qua Zalo cho tiện */}
                     <PaymentQrButton
                       amount={feeCash + feeTransfer}
-                      note={picked?.bookingCode || picked?.phone || ""}
+                      note={buildTransferNote({
+                        flightDate: picked?.flightDate,
+                        daySeq: picked?.daySeq,
+                        bookingCode: picked?.bookingCode,
+                        phone: picked?.phone,
+                      })}
                       purpose={`Phí dời lịch — ${picked?.contactName || "khách"}`}
                     />
                   </div>

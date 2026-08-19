@@ -15,6 +15,7 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "./client-api";
 import { PaymentQrButton } from "./PaymentQr";
+import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { Banner, Button, CollapseCard, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /** Bộ đếm nhỏ để 5 dịch vụ nằm gọn một hàng — CountInput thường quá cao. */
@@ -554,7 +555,12 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
               {/* Khách mua thêm tại bãi mà không mang tiền mặt: quét mã trả luôn */}
               <PaymentQrButton
                 amount={charge}
-                note={picked.bookingCode || picked.phone || ""}
+                note={buildTransferNote({
+                  flightDate: picked.flightDate,
+                  daySeq: picked.daySeq,
+                  bookingCode: picked.bookingCode,
+                  phone: picked.phone,
+                })}
                 purpose={`Dịch vụ thêm — ${picked.contactName || picked.phone || "khách"}`}
               />
             </span>
@@ -629,12 +635,32 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
                     )}
                   </label>
                   {b.amount > 0 && (
-                    <TextInput
-                      value={b.code}
-                      onChange={(e) => setBills((p) => p.map((x, k) => (k === i ? { ...x, code: e.target.value } : x)))}
-                      placeholder="Mã giao dịch…"
-                      className="h-8 rounded-lg text-xs"
-                    />
+                    <div className="flex items-center gap-1">
+                      <span className="min-w-0 flex-1">
+                        <TextInput
+                          value={b.code}
+                          onChange={(e) =>
+                            setBills((p) => p.map((x, k) => (k === i ? { ...x, code: e.target.value } : x)))
+                          }
+                          placeholder={bills.length > 1 ? `Mã GD bill ${i + 1} — 4 số cuối là đủ…` : "Mã GD — 4 số cuối là đủ…"}
+                          className="h-8 rounded-lg text-xs"
+                        />
+                      </span>
+                      {/* Mỗi bill một mã QR riêng — nội dung có đuôi .1 .2 để kế
+                          toán dò được từng dòng sao kê của cùng một booking. */}
+                      <PaymentQrButton
+                        amount={b.amount}
+                        note={buildTransferNote({
+                          flightDate: picked.flightDate,
+                          daySeq: picked.daySeq,
+                          bookingCode: picked.bookingCode,
+                          phone: picked.phone,
+                          part: bills.length > 1 ? i + 1 : undefined,
+                        })}
+                        purpose={`Dịch vụ thêm${bills.length > 1 ? ` (bill ${i + 1}/${bills.length})` : ""} — ${picked.contactName || picked.phone || "khách"}`}
+                        label={bills.length > 1 ? `QR ${i + 1}` : "QR"}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
