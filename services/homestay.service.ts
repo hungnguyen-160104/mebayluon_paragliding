@@ -476,8 +476,8 @@ export async function createManualHomestayBooking(
 export async function actHomestayBooking(
   session: BaobaySession,
   id: string,
-  action: "assign-room" | "cancel" | "restore" | "confirm-review" | "collect" | "note" | "rename" | "delete",
-  payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string },
+  action: "assign-room" | "cancel" | "restore" | "confirm-review" | "collect" | "note" | "rename" | "quick-edit" | "delete",
+  payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string; phone?: string },
 ): Promise<void> {
   await connectDB();
   if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
@@ -524,6 +524,25 @@ export async function actHomestayBooking(
     const name = String(payload.guestName ?? "").trim();
     if (!name) throw new BaobayError("Tên không được để trống — muốn xoá thì dùng nút xoá", 400);
     doc.guestName = name;
+  } else if (action === "quick-edit") {
+    /**
+     * SỬA Ô GHI NHANH trên sổ phòng: tên khách + SĐT + CÒN THU — nhắc nhân
+     * viên phòng khi khách đến là thu tiền luôn. Chỉ cho bản ghi nhập tay;
+     * booking OTA/web sửa ở sổ đặt phòng.
+     */
+    if (doc.source !== "manual" && doc.source !== "b2b") {
+      throw new BaobayError("Chỉ sửa được ô ghi tay — booking OTA/web sửa ở sổ đặt phòng", 400);
+    }
+    const name = String(payload.guestName ?? "").trim();
+    if (name) doc.guestName = name;
+    if (payload.phone !== undefined) doc.phone = String(payload.phone).trim();
+    if (payload.amount !== undefined) {
+      const v = Math.max(0, Math.round(Number(payload.amount) || 0));
+      doc.amount = v;
+      doc.netAmount = v;
+      doc.collect = Math.max(0, v - (doc.collected ?? 0));
+      doc.prepaid = v <= 0;
+    }
   } else if (action === "delete") {
     // Chỉ cho xoá bản ghi khay soát / nhập nhầm — booking từ thư giữ lại làm vết
     if (doc.status !== "review" && doc.source !== "manual" && doc.source !== "b2b") {

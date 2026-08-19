@@ -279,7 +279,7 @@ export const vi: CommonTranslation = {
     callNow: "Gọi đặt phòng",
     viewLocation: "Xem vị trí",
     intro: {
-      title: "Chào Mừng Đến Với Clubhouse MEBAYLUON",
+      title: "Chào mừng đến với",
       description:
         "Tọa lạc tại Thôn Lìm Thái – Xã Tú Lệ – Tỉnh Lào Cai, cách Hà Nội khoảng 250 km (tầm 5 tiếng đi xe), khu homestay xinh xắn của chúng tôi nằm ngay chân đèo Khau Phạ – một trong “tứ đại đỉnh đèo” nổi tiếng của Việt Nam. Đây là điểm dừng chân lý tưởng cho những ai muốn nghỉ ngơi trước khi chinh phục hành trình hơn 40 km leo đèo Khau Phạ để khám phá trọn vẹn cung đường đèo Khau Phạ (Tú Lệ - Mù Cang Chải) hùng vĩ. Đặc biệt, homestay nằm trong bãi hạ cánh dù lượn, nên chỉ cần nhâm nhi tách cà phê là bạn đã có thể ngắm nhìn những cánh dù rực rỡ lướt trên bầu trời.",
       location: "Vị trí đắc địa",

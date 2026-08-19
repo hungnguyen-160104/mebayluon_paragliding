@@ -81,8 +81,8 @@ export const roomTypes: RoomType[] = [
   {
     id: "couple-attic-single",
     nameKey: "coupleAtticSingle",
-    price: 200000,
-    priceType: "per-guest",
+    price: 300000,
+    priceType: "per-room",
     capacity: { adults: 1, children: 1 },
     image: "/homestay/ap-mai.jpg",
     features: ["breakfast", "wifi", "attic-view", "handmade-tea"],
@@ -92,8 +92,8 @@ export const roomTypes: RoomType[] = [
   {
     id: "couple-attic-double",
     nameKey: "coupleAtticDouble",
-    price: 200000,
-    priceType: "per-guest",
+    price: 400000,
+    priceType: "per-room",
     capacity: { adults: 2, children: 1 },
     image: "/homestay/phong-ap-mai-doi.jpg",
     features: ["breakfast", "wifi", "attic-view", "handmade-tea"],

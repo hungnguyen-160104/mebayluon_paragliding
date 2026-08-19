@@ -257,7 +257,7 @@ export const zh: CommonTranslation = {
     callNow: "致电预订",
     viewLocation: "查看位置",
     intro: {
-      title: "欢迎来到 Clubhouse MEBAYLUON",
+      title: "欢迎来到",
       description:
         "我们的精致民宿位于 Lao Cai 省 Tu Le 社 Lim Thai 村，距离河内约250公里（车程约5小时），坐落在 Khau Pha 山口脚下——这里是越南著名的“四大山口”之一。对于想在挑战 Khau Pha 山口40多公里山路之前先行休息的旅客来说，这里是理想的停留之地，也能完整感受 Tu Le - Mu Cang Chai 路线的壮丽风景。更特别的是，民宿就位于滑翔伞降落区内，您只需一边品尝咖啡，一边就能欣赏五彩滑翔伞在天空中划过。",
       location: "优越位置",

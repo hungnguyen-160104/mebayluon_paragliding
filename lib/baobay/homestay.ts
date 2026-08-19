@@ -3,7 +3,7 @@
  * PHÒNG HOMESTAY (Clubhouse Mebayluon — Mù Cang Chải) cho máy quản phòng.
  *
  * Danh sách và ĐƠN GIÁ dưới đây lấy đúng theo BẢNG TÍNH QUẢN PHÒNG THÁNG 8
- * của chủ nhà (gác mái đơn 350k, gác mái to 500k, đơn 350k, đôi 650k, gia
+ * của chủ nhà (gác mái đơn 300k, gác mái to 400k, đơn 350k, đôi 650k, gia
  * đình 800k, sàn cộng đồng 200k/chỗ) — khác với phần chữ quảng bá trên trang
  * /homestay (lib/homestay-data.ts): bên đó là bài giới thiệu, bên này là tồn
  * kho để tính phòng trống và tính tiền. Giá tính theo ĐỒNG/PHÒNG/ĐÊM.
@@ -88,7 +88,7 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     // Gác mái đơn 1·2·3 (cặp đôi)
     id: "couple-attic-single",
     units: 3,
-    pricePerNight: 350_000,
+    pricePerNight: 300_000,
     beds: [{ kind: "single-mattress", count: 2 }],
     features: ["attic", "private-room", "shared-bathroom"],
     maxAdults: 2,
@@ -99,7 +99,7 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     // Phòng gác mái to
     id: "couple-attic-double",
     units: 1,
-    pricePerNight: 500_000,
+    pricePerNight: 400_000,
     beds: [{ kind: "single-mattress", count: 3 }],
     features: ["attic", "private-room", "shared-bathroom"],
     maxAdults: 3,

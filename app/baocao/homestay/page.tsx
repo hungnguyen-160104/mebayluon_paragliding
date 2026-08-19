@@ -1,7 +1,8 @@
 // app/baocao/homestay/page.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import {
@@ -209,7 +210,8 @@ function cellLabel(b: BookingDTO): string {
 }
 
 export default function HomestayPage() {
-  const { user, loading } = useBaobaySession("accountant");
+  // Kế toán, người kiêm nhiệm quản homestay, và admin đều vào được sổ phòng
+  const { user, loading } = useBaobaySession(["accountant", "homestay"] as const);
   const today = todayInVN();
   const [from, setFrom] = useState(today);
   /** Mốc cuối khung xem — mặc định một tháng; nút "Thêm 30 ngày" nối dài dần. */
@@ -260,45 +262,80 @@ export default function HomestayPage() {
   }
 
   /**
-   * GHI NHANH TỪ Ô SỔ PHÒNG — gõ chữ vào ô trống là phòng đó KÍN đêm đó:
-   * mỗi ô thành một booking nhập tay 1 đêm (tên = chữ vừa gõ), nên trang đặt
-   * phòng của khách cũng thấy kín ngay. Ô nhập tay sửa lại được, xoá chữ là
-   * trả phòng trống; ô từ thư OTA/web thì sửa ở sổ đặt phòng bên dưới.
+   * GHI NHANH TỪ Ô SỔ PHÒNG — bấm ô là mở bảng nhập nhỏ: TÊN KHÁCH + SĐT +
+   * CÒN THU. Mỗi ô thành một booking nhập tay 1 đêm nên trang đặt phòng của
+   * khách cũng thấy kín ngay; "còn thu" chảy vào sổ đặt phòng để nhắc nhân
+   * viên phòng: khách này đến là thu tiền luôn.
    */
-  async function quickCell(roomTypeId: string, date: string, text: string, existing?: BookingDTO) {
-    const name = text.trim();
+  async function saveCell(
+    roomTypeId: string,
+    date: string,
+    data: { name: string; phone: string; collect: number },
+    existing?: BookingDTO,
+  ) {
+    const name = data.name.trim();
     setBusy(true);
     setError(null);
     try {
       if (existing) {
-        if (!name) {
-          if (!window.confirm(`Trả trống ô "${existing.guestName || existing.ref}"?`)) return;
-          await apiPatch(`/api/baocao/homestay`, { action: "delete", id: existing.id });
-        } else if (name !== existing.guestName) {
-          await apiPatch(`/api/baocao/homestay`, { action: "rename", id: existing.id, guestName: name });
-        } else {
-          return;
-        }
+        if (!name) return; // xoá đi bằng nút "Trả trống" riêng, không xoá vì lỡ trống tên
+        await apiPatch(`/api/baocao/homestay`, {
+          action: "quick-edit",
+          id: existing.id,
+          guestName: name,
+          phone: data.phone.trim(),
+          amount: data.collect,
+        });
       } else {
         if (!name) return;
         await apiPost(`/api/baocao/homestay`, {
           source: "manual",
           ref: "",
           guestName: name,
-          phone: "",
+          phone: data.phone.trim(),
           lines: [{ roomTypeId, qty: 1 }],
           adults: 0,
           children: 0,
           checkIn: date,
           checkOut: shiftDateKey(date, 1),
-          amount: 0,
-          prepaid: true,
+          amount: data.collect,
+          prepaid: data.collect <= 0,
           note: "ghi nhanh từ sổ phòng",
         });
       }
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không ghi được vào ô");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** HUỶ booking từ ô lịch — khách huỷ là chuyện thường; huỷ xong phòng trống lại ngay. */
+  async function cancelCell(existing: BookingDTO) {
+    if (!window.confirm(`Huỷ booking của ${existing.guestName || existing.ref}? Phòng sẽ trống lại các đêm ${formatDateKeyVN(existing.checkIn)} → ${formatDateKeyVN(existing.checkOut)}.`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/homestay`, { action: "cancel", id: existing.id });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không huỷ được");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Trả trống một ô ghi tay — xoá bản ghi, phòng mở lại cho khách khác. */
+  async function clearCell(existing: BookingDTO) {
+    if (!window.confirm(`Trả trống ô "${existing.guestName || existing.ref}"?`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/homestay`, { action: "delete", id: existing.id });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không trả trống được");
     } finally {
       setBusy(false);
     }
@@ -383,7 +420,9 @@ export default function HomestayPage() {
         dates={data?.board.dates ?? []}
         bookings={data?.boardBookings ?? []}
         today={today}
-        onQuick={quickCell}
+        onSave={saveCell}
+        onClear={clearCell}
+        onCancel={cancelCell}
         onExtend={nightsCount < 180 ? () => setTo(shiftDateKey(to, 30)) : undefined}
       />
 
@@ -431,49 +470,39 @@ export default function HomestayPage() {
 /* BẢNG SỔ PHÒNG — bố cục y bảng tính cũ của nhà                        */
 /* ================================================================== */
 
+type CellTarget = { roomId: string; unit: number; date: string; booking?: BookingDTO };
+
 function BoardCard({
   dates,
   bookings,
   today,
-  onQuick,
+  onSave,
+  onClear,
+  onCancel,
   onExtend,
 }: {
   dates: string[];
   bookings: BookingDTO[];
   today: string;
-  onQuick: (roomTypeId: string, date: string, text: string, existing?: BookingDTO) => void;
+  onSave: (
+    roomTypeId: string,
+    date: string,
+    data: { name: string; phone: string; collect: number },
+    existing?: BookingDTO,
+  ) => Promise<void> | void;
+  onClear: (existing: BookingDTO) => Promise<void> | void;
+  /** Huỷ booking từ ô — dùng cho cả booking OTA/web (khách hay huỷ). */
+  onCancel: (existing: BookingDTO) => Promise<void> | void;
   /** Nối dài khung xem thêm 30 ngày — hết trần (180 đêm) thì không truyền. */
   onExtend?: () => void;
 }) {
   const { grid, wholeByDate, dormByDate, overbooked } = buildBoardGrid(dates, bookings);
-  /** Ô đang gõ — "roomId:unit:date"; mỗi lúc một ô cho nhẹ bảng. */
-  const [editing, setEditing] = useState<string | null>(null);
-  /** Bấm Esc thì bỏ, không lưu — cờ đặt trước khi blur chạy. */
-  const cancelRef = useRef(false);
+  /** Ô đang mở bảng nhập — mỗi lúc một ô. */
+  const [editing, setEditing] = useState<CellTarget | null>(null);
 
   /** Ô nhập tay được: trống, hoặc đang chứa bản ghi nhập tay/b2b. */
   const editable = (b?: BookingDTO) => !b || b.source === "manual" || b.source === "b2b";
 
-  const CellInput = ({ initial, onDone }: { initial: string; onDone: (text: string | null) => void }) => (
-    <input
-      autoFocus
-      defaultValue={initial}
-      onFocus={(e) => e.target.select()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        if (e.key === "Escape") {
-          cancelRef.current = true;
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      onBlur={(e) => {
-        const cancelled = cancelRef.current;
-        cancelRef.current = false;
-        onDone(cancelled ? null : e.target.value);
-      }}
-      className="w-full rounded border border-sky-400 bg-white px-0.5 py-0.5 text-[10px] font-semibold outline-none"
-    />
-  );
 
   /** Cột phẳng: mỗi phòng thật một cột, giữ thứ tự nhóm của bảng tính cũ. */
   const columns = BOARD_COLUMN_ORDER.flatMap((roomId) => {
@@ -582,32 +611,33 @@ function BoardCard({
                     if (c.roomId === "dormitory") {
                       const list = dormByDate.get(d) ?? [];
                       const taken = list.reduce((t, b) => t + Math.max(1, b.rooms || 1), 0);
-                      const key = `${c.roomId}:0:${d}`;
                       // Một khách nhập tay duy nhất thì cho sửa thẳng; đông hơn thì chỉ ghi thêm
                       const solo = list.length === 1 && editable(list[0]) ? list[0] : undefined;
+                      const dormCollect = list.reduce((t, b) => t + (b.collect || 0), 0);
                       return (
                         <td
                           key={`${c.roomId}:${c.u}`}
-                          onClick={() => setEditing(key)}
+                          onClick={() => setEditing({ roomId: "dormitory", unit: 0, date: d, booking: solo })}
                           className={
-                            "cursor-text truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold hover:outline hover:outline-1 hover:outline-sky-300 " +
+                            "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
                             (taken ? "bg-cyan-50 text-cyan-900" : weekend ? "bg-emerald-50/40" : "")
                           }
                           title={
-                            (list.map((b) => `${cellLabel(b)} (${b.rooms} chỗ)`).join(" · ") || "Sàn trống") +
-                            " · bấm để ghi"
+                            (list
+                              .map(
+                                (b) =>
+                                  `${cellLabel(b)} (${b.rooms} chỗ)` +
+                                  (b.phone ? ` · ${b.phone}` : "") +
+                                  (b.collect > 0 ? ` · CÒN THU ${formatVND(b.collect)}` : ""),
+                              )
+                              .join(" · ") || "Sàn trống") + " · bấm để ghi"
                           }
                         >
-                          {editing === key ? (
-                            <CellInput
-                              initial={solo ? solo.guestName || solo.ref : ""}
-                              onDone={(text) => {
-                                setEditing(null);
-                                if (text !== null) onQuick("dormitory", d, text, solo);
-                              }}
-                            />
-                          ) : taken > 0 ? (
-                            `${list.map(cellLabel).join(", ")} · ${taken}/${c.room.units}`
+                          {taken > 0 ? (
+                            <>
+                              {dormCollect > 0 && <span title={`Còn thu ${formatVND(dormCollect)}`}>💰</span>}
+                              {`${list.map(cellLabel).join(", ")} · ${taken}/${c.room.units}`}
+                            </>
                           ) : (
                             ""
                           )}
@@ -615,34 +645,29 @@ function BoardCard({
                       );
                     }
                     const b = at(c.roomId, c.u, d);
-                    const key = `${c.roomId}:${c.u}:${d}`;
                     return (
                       <td
                         key={`${c.roomId}:${c.u}`}
-                        onClick={() => editable(b) && setEditing(key)}
+                        onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: b })}
                         className={
-                          "truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
-                          (b ? cellColor(b.id) : weekend ? "bg-emerald-50/40 " : "") +
-                          (editable(b) ? " cursor-text hover:outline hover:outline-1 hover:outline-sky-300" : "")
+                          "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
+                          (b ? cellColor(b.id) : weekend ? "bg-emerald-50/40 " : "")
                         }
                         title={
                           b
                             ? `${cellLabel(b)} · ${formatDateKeyVN(b.checkIn)} → ${formatDateKeyVN(b.checkOut)}` +
-                              (b.prepaid ? "" : b.collect > 0 ? ` · còn thu ${formatVND(b.collect)}` : "") +
-                              (editable(b) ? " · bấm để sửa (xoá chữ = trả trống)" : " · booking OTA/web — sửa ở sổ bên dưới")
+                              (b.phone ? ` · ${b.phone}` : "") +
+                              (b.collect > 0 ? ` · CÒN THU ${formatVND(b.collect)}` : "") +
+                              (editable(b) ? " · bấm để sửa / huỷ" : " · bấm để xem / huỷ")
                             : `${roomUnitLabel(c.roomId, c.u)} trống đêm ${formatDateKeyVN(d)} — bấm để ghi`
                         }
                       >
-                        {editing === key ? (
-                          <CellInput
-                            initial={b ? b.guestName || b.ref : ""}
-                            onDone={(text) => {
-                              setEditing(null);
-                              if (text !== null) onQuick(c.roomId, d, text, b);
-                            }}
-                          />
-                        ) : b ? (
-                          cellLabel(b)
+                        {b ? (
+                          <>
+                            {/* 💰 = khách này đến là THU TIỀN — nhắc nhân viên phòng ngay trên ô */}
+                            {b.collect > 0 && <span title={`Còn thu ${formatVND(b.collect)}`}>💰</span>}
+                            {cellLabel(b)}
+                          </>
                         ) : (
                           ""
                         )}
@@ -660,6 +685,37 @@ function BoardCard({
           ＋ Thêm 30 ngày
         </Button>
       )}
+      {/* Bảng nhập ô treo THẲNG VÀO <body>: Card là @container nên fixed bị nhốt
+          trong khung thẻ (đúng cái bẫy của bảng QR trước đây) — portal thoát ra. */}
+      {editing &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <CellModal
+            target={editing}
+            onClose={() => setEditing(null)}
+            onSave={(data) => {
+              setEditing(null);
+              onSave(editing.roomId, editing.date, data, editing.booking);
+            }}
+            onClear={
+              editing.booking && editable(editing.booking)
+                ? () => {
+                    setEditing(null);
+                    onClear(editing.booking!);
+                  }
+                : undefined
+            }
+            onCancel={
+              editing.booking
+                ? () => {
+                    setEditing(null);
+                    onCancel(editing.booking!);
+                  }
+                : undefined
+            }
+          />,
+          document.body,
+        )}
       {overbooked.length > 0 && (
         <p className="mt-2 text-[11px] font-bold text-rose-700">
           ⚠ {overbooked.length} booking không xếp nổi vào phòng (trùng kỳ quá số phòng):{" "}
@@ -667,6 +723,135 @@ function BoardCard({
         </p>
       )}
     </Card>
+  );
+}
+
+/**
+ * BẢNG NHẬP MỘT Ô sổ phòng: tên khách + SĐT + CÒN THU. "Còn thu" chảy vào sổ
+ * đặt phòng và hiện 💰 trên ô — khách đến là nhân viên biết phải thu tiền.
+ */
+function CellModal({
+  target,
+  onSave,
+  onClear,
+  onCancel,
+  onClose,
+}: {
+  target: CellTarget;
+  onSave: (data: { name: string; phone: string; collect: number }) => void;
+  /** Chỉ có khi ô đang chứa bản ghi tay — bấm là trả trống phòng. */
+  onClear?: () => void;
+  /** Huỷ booking (kể cả OTA/web) — khách hay huỷ, huỷ xong phòng trống lại ngay. */
+  onCancel?: () => void;
+  onClose: () => void;
+}) {
+  const b = target.booking;
+  /** Booking OTA/web: KHÔNG sửa được dữ liệu gốc — chỉ xem và HUỶ. */
+  const readOnly = Boolean(b && b.source !== "manual" && b.source !== "b2b");
+  const [name, setName] = useState(b?.guestName ?? "");
+  const [phone, setPhone] = useState(b?.phone ?? "");
+  const [collect, setCollect] = useState(b?.collect ?? 0);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (readOnly && b) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3"
+        role="dialog"
+        aria-modal="true"
+        onClick={onClose}
+      >
+        <div className="w-full max-w-xs rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <SourceBadge source={b.source} />
+            <strong className="text-sm text-slate-900">{b.guestName || b.ref}</strong>
+          </div>
+          <div className="mt-1 text-xs text-slate-600">
+            {formatDateKeyVN(b.checkIn)} → {formatDateKeyVN(b.checkOut)} · {b.nights} đêm
+            {b.phone ? ` · ${b.phone}` : ""}
+          </div>
+          <div className="mt-0.5 text-xs text-slate-600">
+            {formatVND(b.amount)}
+            {b.prepaid ? " · OTA trả trước" : b.collect > 0 ? ` · còn thu ${formatVND(b.collect)}` : " · đã thu đủ"}
+          </div>
+          <p className="mt-1.5 text-[11px] leading-tight text-slate-500">
+            Booking từ {SOURCE_BADGE[b.source]?.label ?? b.source} — dữ liệu gốc không sửa tại ô; sửa chi tiết ở sổ
+            đặt phòng bên dưới. Khách báo huỷ thì bấm Huỷ, phòng trống lại ngay.
+          </p>
+          <div className="mt-3 flex gap-1.5">
+            {onCancel && (
+              <Button type="button" className="h-10 flex-1 bg-rose-600 hover:bg-rose-700" onClick={onCancel}>
+                ✕ Huỷ booking
+              </Button>
+            )}
+            <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={onClose}>
+              Thôi
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div className="w-full max-w-xs rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-sm font-bold text-slate-900">
+          {roomUnitLabel(target.roomId, target.unit)} · đêm {formatDateKeyVN(target.date)}
+        </div>
+        <div className="mt-0.5 text-[11px] text-slate-500">
+          {b ? "Sửa ô ghi tay — ô có chữ là phòng kín" : "Ghi vào ô là phòng kín đêm này"}
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <Field label="Tên khách ★">
+            <TextInput autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="anh Dũng…" />
+          </Field>
+          <Field label="SĐT khách">
+            <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="09xx…" />
+          </Field>
+          <Field label="Còn thu khi khách đến" hint="ghi số là ô hiện 💰 — khách đến nhớ thu tiền luôn">
+            <MoneyInput value={collect} onChange={setCollect} />
+          </Field>
+        </div>
+
+        <div className="mt-3 flex gap-1.5">
+          <Button
+            type="button"
+            className="h-10 flex-1 bg-emerald-600 hover:bg-emerald-700"
+            disabled={!name.trim()}
+            onClick={() => onSave({ name, phone, collect })}
+          >
+            ✓ Lưu
+          </Button>
+          {onClear && (
+            <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs text-rose-700" onClick={onClear}>
+              Trả trống
+            </Button>
+          )}
+          {b && !onClear && onCancel && (
+            <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs text-rose-700" onClick={onCancel}>
+              ✕ Huỷ
+            </Button>
+          )}
+          <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={onClose}>
+            Thôi
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

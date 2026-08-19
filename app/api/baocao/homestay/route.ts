@@ -24,7 +24,11 @@ export const maxDuration = 60;
  * PATCH {action, id, ...}          -> gán phòng / huỷ / duyệt khay soát / ghi thu / sửa ghi chú / xoá
  */
 
-const ROLES = { roles: ["accountant", "admin"] as ("accountant" | "admin")[], allowAdmin: true };
+const ROLES = {
+  // Kế toán + người kiêm nhiệm quản homestay (Duyên, Trúc Ngọc, Minh Ngọc…) + quản trị
+  roles: ["accountant", "homestay", "admin"] as ("accountant" | "homestay" | "admin")[],
+  allowAdmin: true,
+};
 
 function fail(err: unknown, fallback: string) {
   if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
@@ -84,7 +88,7 @@ export async function PATCH(req: Request) {
     if (action === "sync-mail") {
       return NextResponse.json({ sync: await syncHomestayMail() });
     }
-    const ACTIONS = ["assign-room", "cancel", "restore", "confirm-review", "collect", "note", "rename", "delete"] as const;
+    const ACTIONS = ["assign-room", "cancel", "restore", "confirm-review", "collect", "note", "rename", "quick-edit", "delete"] as const;
     if (!ACTIONS.includes(action as (typeof ACTIONS)[number])) {
       return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
     }
@@ -93,6 +97,7 @@ export async function PATCH(req: Request) {
       amount: body?.amount !== undefined ? Number(body.amount) : undefined,
       note: body?.note !== undefined ? String(body.note) : undefined,
       guestName: body?.guestName !== undefined ? String(body.guestName) : undefined,
+      phone: body?.phone !== undefined ? String(body.phone) : undefined,
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

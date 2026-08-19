@@ -7,6 +7,7 @@
  *  - counter    : QUẦY VÉ — y như điều phối, chỉ KHÔNG lập lệnh thu tiền
  *  - cameraman  : CAMERA MAN — số chuyến bay flycam trong ngày
  *  - accountant : KẾ TOÁN TỔNG HỢP — chốt số tổng, duyệt lệch và chi tiêu
+ *  - homestay   : QUẢN HOMESTAY — sổ phòng, nhập đặt phòng (thường là vai KIÊM NHIỆM)
  *  - admin      : QUẢN TRỊ — bổ nhiệm, thêm bớt nhân sự, active/deactive, mật khẩu
  *
  * Mỗi người một tài khoản riêng (không dùng chung), vì bảng tổng hợp phải biết
@@ -15,7 +16,7 @@
  * Thứ tự trong mảng cũng là thứ tự hiện ở trang quản trị tài khoản.
  */
 
-export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "admin"] as const;
+export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "homestay", "admin"] as const;
 
 export type BaobayRole = (typeof BAOBAY_ROLES)[number];
 
@@ -25,6 +26,7 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
   counter: "Quầy vé",
   cameraman: "Camera man",
   accountant: "Kế toán tổng hợp",
+  homestay: "Quản homestay",
   admin: "Quản trị",
 };
 
@@ -61,6 +63,8 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
       ];
+    case "homestay":
+      return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
       return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }];
     default:
@@ -96,6 +100,7 @@ export const ROLE_HOME: Record<BaobayRole, string> = {
   counter: "/baocao/dieu-phoi",
   cameraman: "/baocao/camera",
   accountant: "/baocao/ke-toan",
+  homestay: "/baocao/homestay",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",
 };

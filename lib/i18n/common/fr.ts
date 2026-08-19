@@ -282,7 +282,7 @@ export const fr: CommonTranslation = {
     callNow: "Appeler pour réserver",
     viewLocation: "Voir l’emplacement",
     intro: {
-      title: "Bienvenue au Clubhouse MEBAYLUON",
+      title: "Bienvenue au",
       description:
         "Situé dans le village de Lim Thai – commune de Tu Le – province de Lao Cai, à environ 250 km de Hanoï (environ 5 heures de route), notre charmant homestay se trouve juste au pied du col de Khau Pha – l’un des célèbres “quatre grands cols” du Vietnam. C’est l’étape idéale pour ceux qui souhaitent se reposer avant de parcourir les plus de 40 km de route de montagne du col de Khau Pha et découvrir pleinement la majestueuse route Tu Le - Mu Cang Chai. Le plus remarquable, c’est que l’homestay se situe dans la zone d’atterrissage du parapente : en dégustant simplement un café, vous pourrez admirer les voiles colorées glisser dans le ciel.",
       location: "Emplacement privilégié",

@@ -279,7 +279,7 @@ export const en: CommonTranslation = {
     callNow: "Call to Book",
     viewLocation: "View Location",
     intro: {
-      title: "Welcome to Clubhouse MEBAYLUON",
+      title: "Welcome to",
       description:
         "Located in Lim Thai Village – Tu Le Commune – Lao Cai Province, about 250 km from Hanoi (around 5 hours by car), our charming homestay sits right at the foot of Khau Pha Pass – one of Vietnam’s famous “four great mountain passes.” It is the perfect stop for those who want to rest before conquering the 40+ km mountain route of Khau Pha Pass and fully exploring the majestic Tu Le - Mu Cang Chai road. Most notably, the homestay is located within the paragliding landing zone, so while enjoying a cup of coffee, you can watch colorful paragliders glide across the sky.",
       location: "Prime Location",
