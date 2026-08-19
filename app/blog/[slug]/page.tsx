@@ -681,7 +681,20 @@ export default async function BlogPostPage({
     excludeSlug: post.slug,
   });
 
-  const relatedPosts = (relatedResp.items ?? []) as Post[];
+  /**
+   * XOAY VÒNG quanh bài đang đọc thay vì lấy mới nhất: xếp theo ngày thì bài
+   * nào cũng trỏ về đúng 8 bài mới nhất — bài cũ không nhận được liên kết nội
+   * bộ nào và Google bỏ crawl (nhóm "đã phát hiện – chưa lập chỉ mục" trong
+   * Search Console). Lấy các bài ĐỨNG CẠNH bài hiện tại theo vòng tròn thời
+   * gian thì mỗi bài trong blog đều được ~8 bài khác trỏ tới, và người đọc
+   * cũng được gợi ý bài cùng thời kỳ thay vì mãi một rổ bài mới.
+   */
+  const sorted = (relatedResp.items ?? []) as Post[];
+  const myTime = new Date(post.publishedAt || post.createdAt || 0).getTime();
+  // vị trí bài hiện tại nếu nó nằm trong danh sách (danh sách sắp mới → cũ)
+  let cut = sorted.findIndex((x) => new Date(x.publishedAt || x.createdAt || 0).getTime() <= myTime);
+  if (cut < 0) cut = sorted.length;
+  const relatedPosts = [...sorted.slice(cut), ...sorted.slice(0, cut)];
 
   const title = pickTitle(post, isVietnamese);
   const excerpt = pickExcerpt(post, isVietnamese);

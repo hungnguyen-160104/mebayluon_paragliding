@@ -6,7 +6,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
-import { Pilot } from "@/lib/pilots-data"
+import { getActivePilots, Pilot } from "@/lib/pilots-data"
 import Link from "next/link"
 import { ShareButtons } from "@/components/share-buttons"
 import { useLanguage, type Language } from "@/contexts/language-context"
@@ -62,6 +62,18 @@ const LABELS: Record<Language, {
     experience: "अनुभव और उपलब्धियाँ",
     personality: "व्यक्तित्व",
   },
+}
+
+/** Tiêu đề khối "các phi công khác" cuối trang — mỗi trang phi công trỏ tới
+ *  đồng đội để không trang nào thành ngõ cụt (Google bỏ crawl trang không có
+ *  liên kết nội bộ — nhóm "đã phát hiện – chưa lập chỉ mục" của Search Console). */
+const OTHERS_LABEL: Record<Language, string> = {
+  vi: "Các phi công khác",
+  en: "Other pilots",
+  fr: "Autres pilotes",
+  ru: "Другие пилоты",
+  zh: "其他飞行员",
+  hi: "अन्य पायलट",
 }
 
 const STORY_LABEL: Record<Language, string> = {
@@ -267,6 +279,25 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
               </div>
             </motion.div>
           </div>
+        </section>
+
+        {/* CÁC PHI CÔNG KHÁC — liên kết chéo giữa các trang phi công (SSR) */}
+        <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14">
+          <h2 className="mb-4 text-xl font-bold text-white/85">{OTHERS_LABEL[lang] ?? OTHERS_LABEL.vi}</h2>
+          <ul className="flex flex-wrap gap-2">
+            {getActivePilots()
+              .filter((p) => p.slug !== pilotData.slug)
+              .map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={`/pilots/${p.slug}`}
+                    className="block rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white/80 transition-colors hover:bg-white/25 hover:text-white"
+                  >
+                    {p.name}
+                  </Link>
+                </li>
+              ))}
+          </ul>
         </section>
       </main>
 

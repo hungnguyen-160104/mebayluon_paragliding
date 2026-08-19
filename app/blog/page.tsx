@@ -90,6 +90,7 @@ const UI: Record<
     createFirstPost: string;
     seeMore: string;
     loading: string;
+    allPostsTitle: string;
   }
 > = {
   vi: {
@@ -100,6 +101,7 @@ const UI: Record<
     emptyTitle: "Chưa có bài viết nào được xuất bản",
     createFirstPost: "Tạo bài viết đầu tiên",
     seeMore: "Xem thêm",
+    allPostsTitle: "Danh mục toàn bộ bài viết",
     loading: "Đang tải…",
   },
   en: {
@@ -110,6 +112,7 @@ const UI: Record<
     emptyTitle: "No published posts yet",
     createFirstPost: "Create the first post",
     seeMore: "See more",
+    allPostsTitle: "All articles",
     loading: "Loading…",
   },
   fr: {
@@ -120,6 +123,7 @@ const UI: Record<
     emptyTitle: "Aucun article publié",
     createFirstPost: "Créer le premier article",
     seeMore: "Voir plus",
+    allPostsTitle: "Tous les articles",
     loading: "Chargement…",
   },
   ru: {
@@ -130,6 +134,7 @@ const UI: Record<
     emptyTitle: "Пока нет опубликованных статей",
     createFirstPost: "Создать первую статью",
     seeMore: "Показать ещё",
+    allPostsTitle: "Все статьи",
     loading: "Загрузка…",
   },
   zh: {
@@ -140,6 +145,7 @@ const UI: Record<
     emptyTitle: "暂无已发布文章",
     createFirstPost: "创建第一篇文章",
     seeMore: "查看更多",
+    allPostsTitle: "全部文章",
     loading: "加载中…",
   },
   hi: {
@@ -150,6 +156,7 @@ const UI: Record<
     emptyTitle: "अभी तक कोई पोस्ट प्रकाशित नहीं हुई है",
     createFirstPost: "पहली पोस्ट बनाएं",
     seeMore: "और देखें",
+    allPostsTitle: "सभी लेख",
     loading: "लोड हो रहा है…",
   },
 };
@@ -485,6 +492,31 @@ export default async function BlogPage({
               </Link>
             </div>
           )}
+        </section>
+
+        {/**
+         * DANH MỤC TOÀN BỘ BÀI VIẾT — render THẲNG trong HTML máy chủ.
+         *
+         * Phần lưới phía trên chỉ đưa ~10 bài đầu vào HTML, phần còn lại nằm
+         * sau nút "Xem thêm" phía trình duyệt — Google không thấy liên kết tới
+         * ~40 bài cũ nên xếp chúng vào "đã phát hiện – chưa lập chỉ mục".
+         * Khối này bảo đảm MỌI bài đều có một liên kết nội bộ từ trang chuyên
+         * mục, người đọc thì có mục lục tra nhanh theo tên bài.
+         */}
+        <section className="mx-auto mt-14 max-w-5xl border-t border-white/10 pt-8">
+          <h2 className="mb-4 text-lg font-bold text-white/80">{ui.allPostsTitle}</h2>
+          <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+            {allPosts.map((post) => (
+              <li key={post.slug}>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="block truncate text-sm text-white/60 transition-colors hover:text-white"
+                >
+                  {(locale === "vi" ? post.titleVi || post.title : post.title || post.titleVi) || post.slug}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
       </main>
