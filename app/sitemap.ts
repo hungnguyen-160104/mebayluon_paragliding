@@ -162,6 +162,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: alts(`${BASE}/homestay`),
     },
     {
+      url: `${BASE}/homestay/dat-phong`,
+      lastModified: STATIC_CONTENT_UPDATED,
+      changeFrequency: "weekly",
+      priority: 0.7,
+      alternates: alts(`${BASE}/homestay/dat-phong`),
+    },
+    {
       url: `${BASE}/booking`,
       lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "weekly",

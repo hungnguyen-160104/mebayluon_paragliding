@@ -2,7 +2,7 @@
 import { PageBackground } from "@/components/page-background";
 
 import Image from "next/image";
-// import Link from "next/link"; // tạm ẩn cùng nút "Đặt phòng online"
+import Link from "next/link";
 import { useMemo } from "react";
 import {
   Phone,
@@ -258,9 +258,20 @@ export default function HomestayPage() {
                 {t.homestay.intro.title}
               </h2>
 
-              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-8 mt-8">
+              <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-4 mt-8">
                 {t.homestay.intro.title}
               </h1>
+
+              {/* Cửa vào ĐẶT PHÒNG ONLINE ngay đầu trang: có lịch phòng trống
+                  thật ở /homestay/dat-phong rồi, không bắt khách cuộn tới thẻ
+                  phòng mới thấy đường đặt. */}
+              <Button
+                size="lg"
+                className="mb-8 h-14 rounded-full bg-accent px-10 text-base font-bold text-white shadow-xl shadow-black/30 transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:text-lg"
+                asChild
+              >
+                <Link href="/homestay/dat-phong">🗓️ {t.homestay.cta.bookOnline}</Link>
+              </Button>
 
               {/* ===== Khung cho thuê xe máy — nổi bật đầu trang ===== */}
               {(() => {
@@ -407,11 +418,12 @@ export default function HomestayPage() {
                       ))}
                     </div>
 
+                    {/* Trước đây gọi điện; giờ có trang đặt phòng online với lịch trống thật */}
                     <Button
                       className="w-full mt-auto bg-accent hover:bg-accent/90"
                       asChild
                     >
-                      <a href={`tel:${locationInfo.phone}`}>
+                      <a href="/homestay/dat-phong">
                         {t.homestay.rooms.bookNow}
                       </a>
                     </Button>
@@ -731,17 +743,14 @@ export default function HomestayPage() {
                 </a>
               </Button>
 
-              {/* Nút "Đặt phòng online" tạm ẩn — chưa triển khai đặt phòng
-                  homestay online. Khi nào có tính năng thì mở lại:
+              {/* Đặt phòng online: lịch phòng trống thật, đặt xong vào thẳng sổ kế toán */}
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white/60 text-white hover:bg-white/20 bg-transparent"
+                className="h-14 rounded-full bg-white px-10 text-base font-bold text-slate-900 shadow-xl shadow-black/30 transition-transform hover:-translate-y-0.5 hover:bg-white/90 sm:h-16 sm:px-12 sm:text-lg"
                 asChild
               >
-                <Link href="/booking">{t.homestay.cta.bookOnline}</Link>
+                <Link href="/homestay/dat-phong">🗓️ {t.homestay.cta.bookOnline}</Link>
               </Button>
-              */}
             </div>
           </div>
         </section>

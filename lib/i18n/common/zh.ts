@@ -306,10 +306,15 @@ export const zh: CommonTranslation = {
         name: "家庭房",
         description: "一间大房，最多可住5人",
       },
+      wholeFloor: {
+        name: "整层包场（不含2间双人房）",
+        description:
+          "整个公共楼层、4间阁楼房和2间单人房（同一入口）。最多30人 · 建议24人（含儿童）。",
+      },
       wholeHomeLarge: {
         name: "整栋高脚屋",
         description:
-          "包括公共区域、双人房、单人房和阁楼房。最多可容纳35位客人",
+          "整个公共楼层、双人房、单人房及阁楼房。最多36人 · 建议30人（含儿童）。",
       },
     },
     features: {
@@ -327,6 +332,13 @@ export const zh: CommonTranslation = {
       "all-facilities": "设施齐全",
       "group-friendly": "适合团体",
       "large-group": "大型团队",
+      "big-family": "大家庭",
+      "company": "公司团建",
+      "karaoke": "卡拉OK",
+      "campfire-camp": "篝火露营",
+      "teambuilding": "团队建设",
+      "view-both": "滑翔伞与大溪景观",
+      "free-pool": "免费泳池",
     },
     cafe: {
       title: "咖啡与美食",

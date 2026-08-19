@@ -328,10 +328,15 @@ export const en: CommonTranslation = {
         name: "Family Room",
         description: "One large room for up to 5 people per room",
       },
+      wholeFloor: {
+        name: "Whole Floor (excl. 2 double rooms)",
+        description:
+          "The entire communal floor, 4 attic rooms and 2 single rooms (same entrance). Up to 30 guests · 24 recommended (incl. children).",
+      },
       wholeHomeLarge: {
         name: "Entire Stilt House",
         description:
-          "Includes the whole communal floor, double rooms, single rooms, and attic rooms. Capacity up to 35 guests",
+          "The entire communal floor, double, single and attic rooms. Up to 36 guests · 30 recommended (incl. children).",
       },
     },
     features: {
@@ -349,6 +354,13 @@ export const en: CommonTranslation = {
       "all-facilities": "Full Amenities",
       "group-friendly": "Group Friendly",
       "large-group": "Large Groups",
+      "big-family": "Big family",
+      "company": "Company retreat",
+      "karaoke": "Karaoke",
+      "campfire-camp": "Campfire & camping",
+      "teambuilding": "Teambuilding",
+      "view-both": "Paragliding & river view",
+      "free-pool": "Free pool",
     },
     cafe: {
       title: "Café & Cuisine",

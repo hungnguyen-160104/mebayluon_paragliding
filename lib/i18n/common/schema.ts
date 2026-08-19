@@ -197,6 +197,7 @@ export type CommonTranslation = {
       doubleRoom: { name: string; description: string };
       dormitory: { name: string; description: string };
       wholeHomeSmall: { name: string; description: string };
+      wholeFloor: { name: string; description: string };
       wholeHomeLarge: { name: string; description: string };
     };
 

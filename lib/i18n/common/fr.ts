@@ -331,10 +331,15 @@ export const fr: CommonTranslation = {
         name: "Chambre familiale",
         description: "Une grande chambre pouvant accueillir jusqu’à 5 personnes",
       },
+      wholeFloor: {
+        name: "Étage entier (hors 2 chambres doubles)",
+        description:
+          "Tout l’espace commun, 4 chambres mansardées et 2 chambres simples (même entrée). Jusqu’à 30 personnes · 24 recommandé (enfants inclus).",
+      },
       wholeHomeLarge: {
         name: "Maison sur pilotis entière",
         description:
-          "Comprend tout l’espace commun, les chambres doubles, simples et mansardées. Capacité jusqu’à 35 personnes",
+          "Tout l’espace commun, chambres doubles, simples et mansardées. Jusqu’à 36 personnes · 30 recommandé (enfants inclus).",
       },
     },
     features: {
@@ -352,6 +357,13 @@ export const fr: CommonTranslation = {
       "all-facilities": "Équipements complets",
       "group-friendly": "Adapté aux groupes",
       "large-group": "Grands groupes",
+      "big-family": "Grande famille",
+      "company": "Séminaire d’entreprise",
+      "karaoke": "Karaoké",
+      "campfire-camp": "Feu de camp & camping",
+      "teambuilding": "Teambuilding",
+      "view-both": "Vue parapentes & rivière",
+      "free-pool": "Piscine gratuite",
     },
     cafe: {
       title: "Café & Cuisine",

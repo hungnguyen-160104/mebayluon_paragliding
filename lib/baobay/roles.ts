@@ -55,6 +55,7 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
        */
       return [
         { href: "/baocao/ke-toan", label: "Kế toán" },
+        { href: "/baocao/homestay", label: "Homestay" },
         { href: "/baocao/chot-ngay", label: "Chốt ngày" },
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },

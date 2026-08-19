@@ -7,6 +7,7 @@ export type RoomKey =
   | "doubleRoom"
   | "dormitory"
   | "wholeHomeSmall"
+  | "wholeFloor"
   | "wholeHomeLarge";
 
 export type RoomFeatureKey =
@@ -23,7 +24,15 @@ export type RoomFeatureKey =
   | "all-facilities"
   | "group-friendly"
   | "large-group"
-  | "en-suite";
+  | "en-suite"
+  // Lựa chọn của gói NGUYÊN SÀN / NGUYÊN NHÀ SÀN
+  | "big-family"
+  | "company"
+  | "karaoke"
+  | "campfire-camp"
+  | "teambuilding"
+  | "view-both"
+  | "free-pool";
 
 export type AmenityKey =
   | "free-handmade-tea"
@@ -124,15 +133,27 @@ export const roomTypes: RoomType[] = [
       "1 phòng lớn - ở tối đa 5 người/phòng. Vệ sinh khép kín, phù hợp gia đình.",
   },
   {
+    // GÓI NGUYÊN SÀN (trừ 2 phòng đôi) — sàn cộng đồng + 4 áp mái + 2 phòng đơn, cùng một cửa
+    id: "whole-floor",
+    nameKey: "wholeFloor",
+    price: 3600000,
+    priceType: "whole-home",
+    capacity: { adults: 30 },
+    image: "/homestay/nguyen-san.png",
+    features: ["big-family", "company", "karaoke", "campfire-camp", "teambuilding", "view-both", "free-pool"],
+    description:
+      "Toàn bộ phần sàn cộng đồng, 4 áp mái, 2 phòng đơn (cùng cửa). Ở tối đa 30 người · khuyến cáo 24 người (gồm trẻ em).",
+  },
+  {
     id: "whole-home-large",
     nameKey: "wholeHomeLarge",
     price: 4500000,
     priceType: "whole-home",
-    capacity: { adults: 35 },
+    capacity: { adults: 36 },
     image: "/homestay/nguyen-can.jpg",
-    features: ["exclusive-use", "all-facilities", "large-group", "breakfast"],
+    features: ["big-family", "company", "karaoke", "campfire-camp", "teambuilding", "view-both", "free-pool"],
     description:
-      "Khách được sử dụng toàn bộ phần sàn cộng đồng, phòng đôi, phòng đơn và các phòng áp mái. Ở tối đa 35 khách. Miễn phí trẻ em dưới 5 tuổi.",
+      "Toàn bộ phần sàn cộng đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 36 khách · khuyến cáo 30 người (gồm trẻ em).",
   },
 ];
 

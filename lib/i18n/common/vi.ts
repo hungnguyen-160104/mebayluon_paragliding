@@ -325,9 +325,14 @@ export const vi: CommonTranslation = {
         name: "Phòng Gia Đình",
         description: "1 phòng lớn - ở tối đa 5 người/phòng",
       },
+      wholeFloor: {
+        name: "Nguyên Sàn (trừ 2 phòng đôi)",
+        description:
+          "Toàn bộ phần sàn cộng đồng, 4 áp mái, 2 phòng đơn (cùng cửa). Ở tối đa 30 người · khuyến cáo 24 người (gồm trẻ em).",
+      },
       wholeHomeLarge: {
         name: "Nguyên Nhà Sàn",
-        description: "Toàn bộ phần sàn cộng đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 35 khách",
+        description: "Toàn bộ phần sàn cộng đồng, phòng đôi, đơn, các phòng áp mái. Ở tối đa 36 khách · khuyến cáo 30 người (gồm trẻ em).",
       },
     },
     features: {
@@ -345,6 +350,13 @@ export const vi: CommonTranslation = {
       "all-facilities": "Đầy đủ tiện nghi",
       "group-friendly": "Phù hợp nhóm",
       "large-group": "Nhóm lớn",
+      "big-family": "Gia đình lớn",
+      "company": "Công ty",
+      "karaoke": "Karaoke",
+      "campfire-camp": "Đốt lửa & camp",
+      "teambuilding": "Teambuilding",
+      "view-both": "View dù lượn & suối lớn",
+      "free-pool": "Bể bơi miễn phí",
     },
     cafe: {
       title: "Cà phê & Ẩm thực",
