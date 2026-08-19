@@ -149,6 +149,38 @@ const SENDERS = ["agoda.com", "airbnb.com", "booking.com", "trip.com", "travelok
 
 const SYNC_KEY = "homestay-mail-sync";
 
+type Mailbox = { user: string; pass: string };
+
+/**
+ * CÁC HỘP THƯ được quét: hộp chính (EMAIL_USER/EMAIL_PASS — mebayluon@gmail.com)
+ * cộng các hộp khai thêm trong HOMESTAY_MAIL_ACCOUNTS, dạng:
+ *
+ *   HOMESTAY_MAIL_ACCOUNTS="judyparagliding85@gmail.com:abcd efgh ijkl mnop"
+ *
+ * (nhiều hộp thì ngăn nhau bằng dấu chấm phẩy; phần sau dấu hai chấm là MẬT
+ * KHẨU ỨNG DỤNG Google của hộp đó, khoảng trắng trang trí tự bỏ). Mỗi hộp một
+ * mốc UID riêng nên thêm/bớt hộp không làm hộp khác quét lại từ đầu.
+ */
+function mailboxes(): Mailbox[] {
+  const out: Mailbox[] = [];
+  const user = (process.env.EMAIL_USER ?? "").trim();
+  const pass = (process.env.EMAIL_PASS ?? "").trim().replace(/\s/g, "");
+  if (user && pass) out.push({ user, pass });
+  for (const entry of (process.env.HOMESTAY_MAIL_ACCOUNTS ?? "").split(";")) {
+    const idx = entry.indexOf(":");
+    if (idx <= 0) continue;
+    const u = entry.slice(0, idx).trim();
+    const p = entry.slice(idx + 1).trim().replace(/\s/g, "");
+    if (u && p && !out.some((m) => m.user === u)) out.push({ user: u, pass: p });
+  }
+  return out;
+}
+
+/** Mốc UID của một hộp — hộp chính giữ khoá cũ để không quét lại từ đầu. */
+function syncKeyOf(user: string): string {
+  return user === (process.env.EMAIL_USER ?? "").trim() ? SYNC_KEY : `${SYNC_KEY}:${user}`;
+}
+
 export type HomestaySyncResult = {
   scanned: number;
   created: number;
@@ -160,21 +192,16 @@ export type HomestaySyncResult = {
 };
 
 /**
- * Quét thư mới và ghi vào sổ đặt phòng. Chống trùng hai lớp:
- *  - Chỉ lấy UID LỚN HƠN lần quét trước (mốc lưu trong BaobaySetting).
- *  - `gmailId` (host hộp thư + UID) là khoá duy nhất trong bảng.
- * Lần đầu chưa có mốc thì quét lùi `days` ngày (mặc định 60).
+ * Quét thư mới trên MỌI hộp đã khai và ghi vào sổ đặt phòng. Chống trùng:
+ *  - Mỗi hộp một mốc UID riêng — chỉ lấy thư mới hơn lần quét trước.
+ *  - `gmailId` ("imap:<hộp>:<uid>") là khoá duy nhất trong bảng.
+ * Hộp lần đầu chưa có mốc thì quét lùi `days` ngày (mặc định 60).
  */
 export async function syncHomestayMail(days = 60): Promise<HomestaySyncResult> {
-  const user = (process.env.EMAIL_USER ?? "").trim();
-  // Mật khẩu ứng dụng Google hay dán kèm khoảng trắng trang trí — bỏ hết
-  const pass = (process.env.EMAIL_PASS ?? "").trim().replace(/\s/g, "");
-  if (!user || !pass) throw new BaobayError("Chưa khai EMAIL_USER / EMAIL_PASS trên máy chủ", 503);
+  const boxes = mailboxes();
+  if (!boxes.length) throw new BaobayError("Chưa khai EMAIL_USER / EMAIL_PASS trên máy chủ", 503);
 
   await connectDB();
-  const state = await HomestaySyncState.findOne({ key: SYNC_KEY }).lean<any>();
-  const sinceUid = Number(state?.lastUid) || 0;
-
   const out: HomestaySyncResult = {
     scanned: 0,
     created: 0,
@@ -182,11 +209,29 @@ export async function syncHomestayMail(days = 60): Promise<HomestaySyncResult> {
     review: 0,
     ignored: 0,
     errors: [],
-    lastUid: sinceUid,
+    lastUid: 0,
   };
 
+  for (const box of boxes) {
+    try {
+      await syncOneMailbox(box, days, out);
+    } catch (err) {
+      // Một hộp hỏng (đổi mật khẩu, chưa bật IMAP…) không được chặn hộp còn lại
+      out.errors.push(`Hộp ${box.user}: ${err instanceof Error ? err.message : "không kết nối được"}`);
+    }
+  }
+  return out;
+}
+
+/** Quét MỘT hộp thư, cộng dồn kết quả vào `out`; mốc UID riêng từng hộp. */
+async function syncOneMailbox(box: Mailbox, days: number, out: HomestaySyncResult): Promise<void> {
+  const key = syncKeyOf(box.user);
+  const state = await HomestaySyncState.findOne({ key }).lean<any>();
+  const sinceUid = Number(state?.lastUid) || 0;
+  let lastUid = sinceUid;
+
   const imap = new ImapLite();
-  await imap.connect("imap.gmail.com", user, pass);
+  await imap.connect("imap.gmail.com", box.user, box.pass);
   try {
     await imap.cmd("EXAMINE INBOX");
 
@@ -205,23 +250,23 @@ export async function syncHomestayMail(days = 60): Promise<HomestaySyncResult> {
         const raw = literalOf(await imap.cmd(`UID FETCH ${uid} (BODY.PEEK[])`));
         if (!raw) throw new Error("thư rỗng");
         const mail = decodeMail(raw);
-        const r = await ingestHomestayMail({ gmailId: `imap:${user}:${uid}`, ...mail });
+        const r = await ingestHomestayMail({ gmailId: `imap:${box.user}:${uid}`, ...mail });
         out[r.action === "created" ? "created" : r.action === "cancelled" ? "cancelled" : r.action === "review" ? "review" : "ignored"]++;
       } catch (err) {
-        out.errors.push(`UID ${uid}: ${err instanceof Error ? err.message : "lỗi lạ"}`);
+        out.errors.push(`${box.user} UID ${uid}: ${err instanceof Error ? err.message : "lỗi lạ"}`);
       }
-      out.lastUid = Math.max(out.lastUid, uid);
+      lastUid = Math.max(lastUid, uid);
     }
   } finally {
     imap.end();
   }
 
   await HomestaySyncState.updateOne(
-    { key: SYNC_KEY },
-    { $set: { lastUid: out.lastUid, lastRunAt: new Date() } },
+    { key },
+    { $set: { lastUid, lastRunAt: new Date() } },
     { upsert: true },
   );
-  return out;
+  out.lastUid = Math.max(out.lastUid, lastUid);
 }
 
 /**
@@ -259,6 +304,57 @@ export async function ingestHomestayMail(input: {
       raw: trimRaw(input),
     });
     return { action: "review" };
+  }
+
+  /**
+   * CHỐNG TRÙNG với sổ đã có — bảng tính cũ đã nạp khá nhiều booking Agoda/
+   * Airbnb bằng tay, và cùng một voucher có thể về HAI hộp thư:
+   *  1. Cùng MÃ ĐƠN (ref) đã có bản ghi → thư này là bản sao, bỏ qua.
+   *  2. Cùng NGÀY Ở + TÊN na ná bản ghi đã có (nhập tay/bảng tính không mã)
+   *     → KHÔNG tự vào lịch (kẻo giữ phòng đôi lần) mà nằm khay soát để kế
+   *     toán tự quyết giữ bản nào.
+   */
+  if (d.kind === "new") {
+    if (d.ref) {
+      const byRef = await HomestayBooking.findOne({ ref: d.ref, status: { $ne: "cancelled" } })
+        .select("_id")
+        .lean();
+      if (byRef) return { action: "duplicate" };
+    }
+    if (d.checkIn && d.checkOut) {
+      const norm = (x: string) =>
+        String(x ?? "")
+          .normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D")
+          .toLowerCase()
+          .replace(/[^a-z0-9 ]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      const sameStay = await HomestayBooking.find({
+        status: "confirmed",
+        checkIn: d.checkIn,
+        checkOut: d.checkOut,
+      })
+        .select("guestName roomTypeId source")
+        .lean<any[]>();
+      const mine = norm(d.guestName);
+      const twin = sameStay.find((x) => {
+        const other = norm(x.guestName);
+        return mine.length >= 4 && other.length >= 4 && (other.includes(mine) || mine.includes(other));
+      });
+      if (twin) {
+        await HomestayBooking.create({
+          ...draftFields(d),
+          gmailId: input.gmailId,
+          status: "review",
+          reviewReason: `Nghi TRÙNG với bản ghi sẵn có "${twin.guestName}" (${twin.source}) cùng ngày ở — giữ một bản thôi`,
+          raw: trimRaw(input),
+        });
+        return { action: "review" };
+      }
+    }
   }
 
   await HomestayBooking.create({

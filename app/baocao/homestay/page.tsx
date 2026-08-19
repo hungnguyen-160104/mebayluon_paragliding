@@ -415,6 +415,9 @@ export default function HomestayPage() {
         </span>
       </div>
 
+      {/* ---- NHẬP TAY — để đầu trang cho tiện thao tác nhất ---- */}
+      <ManualCard onSaved={load} />
+
       {/* ---- BẢNG SỔ PHÒNG: hàng = ngày, cột = từng phòng thật ---- */}
       <BoardCard
         dates={data?.board.dates ?? []}
@@ -442,9 +445,6 @@ export default function HomestayPage() {
           </ul>
         </CollapseCard>
       )}
-
-      {/* ---- NHẬP TAY ---- */}
-      <ManualCard onSaved={load} />
 
       {/* ---- SỔ ĐẶT PHÒNG — mở sẵn nhưng gập lại được, desktop hai cột ---- */}
       <CollapseCard
@@ -499,6 +499,12 @@ function BoardCard({
   const { grid, wholeByDate, dormByDate, overbooked } = buildBoardGrid(dates, bookings);
   /** Ô đang mở bảng nhập — mỗi lúc một ô. */
   const [editing, setEditing] = useState<CellTarget | null>(null);
+  /**
+   * COPY INFO: một khách lấy 3-4 phòng cùng lúc thì gõ một lần rồi bấm các ô
+   * còn lại để DÁN — khỏi nhập lại tên/SĐT từng phòng. "Còn thu" thường chỉ
+   * ghi ở một phòng cho khỏi cộng trùng, nên dán mặc định không mang số tiền.
+   */
+  const [clipboard, setClipboard] = useState<{ name: string; phone: string; collect: number } | null>(null);
 
   /** Ô nhập tay được: trống, hoặc đang chứa bản ghi nhập tay/b2b. */
   const editable = (b?: BookingDTO) => !b || b.source === "manual" || b.source === "b2b";
@@ -520,6 +526,21 @@ function BoardCard({
       title={`Sổ phòng ${dates.length} đêm`}
       hint="mỗi cột một phòng thật — ô ghi tên khách, trống là còn phòng · bao nguyên nhà sàn phủ đỏ cả hàng"
     >
+      {clipboard && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs">
+          <span className="min-w-0 flex-1 font-semibold text-sky-900">
+            📋 Đang giữ: {clipboard.name}
+            {clipboard.phone ? ` · ${clipboard.phone}` : ""} — bấm ô trống để dán
+          </span>
+          <button
+            type="button"
+            onClick={() => setClipboard(null)}
+            className="shrink-0 rounded border border-sky-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-sky-700"
+          >
+            Bỏ
+          </button>
+        </div>
+      )}
       {/* table-fixed + không đặt min-width: bảng CO cho lọt chiều ngang màn
           hình, khỏi kéo sang ngang — chữ dài thì cắt bớt, rê chuột đọc đủ. */}
       <div className="overflow-x-auto">
@@ -692,6 +713,11 @@ function BoardCard({
         createPortal(
           <CellModal
             target={editing}
+            clipboard={clipboard}
+            onCopy={(d) => {
+              setClipboard(d);
+              setEditing(null);
+            }}
             onClose={() => setEditing(null)}
             onSave={(data) => {
               setEditing(null);
@@ -732,12 +758,17 @@ function BoardCard({
  */
 function CellModal({
   target,
+  clipboard,
+  onCopy,
   onSave,
   onClear,
   onCancel,
   onClose,
 }: {
   target: CellTarget;
+  /** Info đang giữ để DÁN vào ô trống — khách lấy nhiều phòng gõ một lần. */
+  clipboard: { name: string; phone: string; collect: number } | null;
+  onCopy: (data: { name: string; phone: string; collect: number }) => void;
   onSave: (data: { name: string; phone: string; collect: number }) => void;
   /** Chỉ có khi ô đang chứa bản ghi tay — bấm là trả trống phòng. */
   onClear?: () => void;
@@ -791,6 +822,15 @@ function CellModal({
                 ✕ Huỷ booking
               </Button>
             )}
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 bg-white px-3 text-xs"
+              title="Giữ tên/SĐT để dán sang ô khác — khách lấy thêm phòng khỏi gõ lại"
+              onClick={() => onCopy({ name: b.guestName || b.ref, phone: b.phone, collect: 0 })}
+            >
+              📋 Copy
+            </Button>
             <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={onClose}>
               Thôi
             </Button>
@@ -814,6 +854,34 @@ function CellModal({
         <div className="mt-0.5 text-[11px] text-slate-500">
           {b ? "Sửa ô ghi tay — ô có chữ là phòng kín" : "Ghi vào ô là phòng kín đêm này"}
         </div>
+
+        {/* DÁN info đang giữ: điền form một phát, hoặc lưu luôn khỏi bấm thêm */}
+        {!b && clipboard && (
+          <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-sky-300 bg-sky-50 px-2 py-1.5">
+            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-sky-900">
+              📋 {clipboard.name}
+              {clipboard.phone ? ` · ${clipboard.phone}` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setName(clipboard.name);
+                setPhone(clipboard.phone);
+                setCollect(clipboard.collect);
+              }}
+              className="shrink-0 rounded border border-sky-400 bg-white px-2 py-0.5 text-[11px] font-bold text-sky-700"
+            >
+              Dán
+            </button>
+            <button
+              type="button"
+              onClick={() => onSave({ name: clipboard.name, phone: clipboard.phone, collect: clipboard.collect })}
+              className="shrink-0 rounded bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white"
+            >
+              Dán & lưu luôn
+            </button>
+          </div>
+        )}
 
         <div className="mt-3 space-y-2">
           <Field label="Tên khách ★">
@@ -844,6 +912,17 @@ function CellModal({
           {b && !onClear && onCancel && (
             <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs text-rose-700" onClick={onCancel}>
               ✕ Huỷ
+            </Button>
+          )}
+          {b && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 bg-white px-2.5 text-xs"
+              title="Giữ tên/SĐT để dán sang ô khác — khách lấy thêm phòng khỏi gõ lại"
+              onClick={() => onCopy({ name, phone, collect: 0 })}
+            >
+              📋
             </Button>
           )}
           <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={onClose}>
@@ -1103,7 +1182,12 @@ function ManualCard({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <CollapseCard title="＋ Nhập đặt phòng tay" hint="khách gọi điện, đoàn B2B, sự kiện — lấy được nhiều phòng một đơn">
+    <CollapseCard
+      className="border-sky-300 bg-sky-50/40"
+      headerClassName="bg-sky-600 text-white"
+      title="＋ Nhập đặt phòng tay"
+      hint="khách gọi điện, đoàn B2B, sự kiện — lấy được nhiều phòng một đơn"
+    >
       {/* GIỎ PHÒNG: mỗi hạng một dòng, bấm +/− lấy số lượng — như trang khách */}
       <div className="grid gap-1.5 @md:grid-cols-2 @2xl:grid-cols-3">
         {HOMESTAY_ROOMS.map((r) => {
