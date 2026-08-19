@@ -1,0 +1,87 @@
+// app/api/baocao/bank-check/route.ts
+import { NextResponse } from "next/server";
+
+import { requireBaobay } from "@/middlewares/requireBaobay";
+import { BaobayError } from "@/services/baobay.service";
+import {
+  deleteBankLine,
+  getBankCheck,
+  recheckBankPending,
+  resolveBankLine,
+  runBankCheck,
+} from "@/services/bank-check.service";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * SOÁT CHUYỂN KHOẢN của kế toán — dán SMS banking / sao kê, máy dò từng khoản
+ * về đúng booking. Chỉ kế toán (và quản trị) đụng được: đây là việc đối chiếu
+ * tiền của cả công ty, không theo điểm bay.
+ *
+ * GET   ?date=YYYY-MM-DD&spots=khau-pha -> bảng soát của ngày + khoản treo (spots bỏ trống = mọi điểm được phân)
+ * POST  {date, text}                    -> dán sao kê, soát rồi lưu từng dòng
+ * PATCH {action: "recheck", date}       -> soát lại mọi khoản treo
+ * PATCH {action: "resolve", id, note}   -> kết luận tay một khoản treo
+ * PATCH {action: "delete", id}          -> xoá dòng dán nhầm
+ */
+
+const ROLES = { roles: ["accountant", "admin"] as ("accountant" | "admin")[] };
+
+function fail(err: unknown, fallback: string) {
+  if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
+  console.error("bank-check error:", err);
+  return NextResponse.json({ message: fallback }, { status: 500 });
+}
+
+export async function GET(req: Request) {
+  const auth = requireBaobay(req, { ...ROLES, allowAdmin: true });
+  if (auth instanceof NextResponse) return auth;
+
+  const url = new URL(req.url);
+  const date = url.searchParams.get("date") ?? "";
+  const spots = (url.searchParams.get("spots") ?? "").split(",").filter(Boolean);
+  try {
+    return NextResponse.json(await getBankCheck(auth, date, spots));
+  } catch (err) {
+    return fail(err, "Không tải được bảng soát chuyển khoản");
+  }
+}
+
+export async function POST(req: Request) {
+  const auth = requireBaobay(req, { ...ROLES, allowAdmin: true });
+  if (auth instanceof NextResponse) return auth;
+
+  const body = await req.json().catch(() => ({}));
+  const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
+  try {
+    return NextResponse.json(await runBankCheck(auth, String(body?.date ?? ""), String(body?.text ?? ""), spots));
+  } catch (err) {
+    return fail(err, "Không soát được sao kê");
+  }
+}
+
+export async function PATCH(req: Request) {
+  const auth = requireBaobay(req, { ...ROLES, allowAdmin: true });
+  if (auth instanceof NextResponse) return auth;
+
+  const body = await req.json().catch(() => ({}));
+  const action = String(body?.action ?? "");
+  try {
+    if (action === "recheck") {
+      const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
+      return NextResponse.json(await recheckBankPending(auth, String(body?.date ?? ""), spots));
+    }
+    if (action === "resolve") {
+      await resolveBankLine(auth, String(body?.id ?? ""), String(body?.note ?? ""));
+      return NextResponse.json({ ok: true });
+    }
+    if (action === "delete") {
+      await deleteBankLine(String(body?.id ?? ""));
+      return NextResponse.json({ ok: true });
+    }
+    return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
+  } catch (err) {
+    return fail(err, "Không xử lý được khoản này");
+  }
+}

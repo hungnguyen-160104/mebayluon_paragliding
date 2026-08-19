@@ -10,6 +10,7 @@ import { formatVND } from "@/lib/pricing";
 import type { MoneyBoard, FlycamCancelDTO, RefundDTO } from "@/services/baobay.service";
 
 import { apiGet } from "../components/client-api";
+import { BankCheckCard } from "../components/BankCheckCard";
 import { DateBar } from "../components/DateBar";
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
@@ -214,6 +215,9 @@ export default function KeToanPage() {
         )}
       </Card>
 
+      {/* SOÁT CHUYỂN KHOẢN — dán sao kê / SMS banking, máy dò về đúng booking */}
+      <BankCheckCard date={date} />
+
       {/* VIỆC CẦN LÀM — mỗi dòng bấm được, dẫn tới đúng chỗ xử lý */}
       <Card title="Việc cần làm">
         {todos.length === 0 ? (
@@ -254,6 +258,7 @@ export default function KeToanPage() {
         <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
           {[
             { href: "/baocao/chot-ngay", label: "Chốt ngày", hint: "soát số một ngày rồi khoá" },
+            { href: "/baocao/homestay", label: "Homestay", hint: "lịch phòng & booking Agoda, web" },
             { href: "/baocao/tong-hop", label: "Tổng hợp", hint: "số theo chu kỳ, đẩy bảng tính" },
             { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng", hint: "doanh thu & lương tháng" },
             { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn", hint: "phi công chốt trễ giờ" },
