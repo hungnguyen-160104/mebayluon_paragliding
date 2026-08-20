@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 
 import { dataUrlToAttachment, sendSmtpMail } from "@/lib/mailer";
+import { requireBaobay } from "@/middlewares/requireBaobay";
 import { connectDB } from "@/lib/mongodb";
 import { KIND_LABEL, MOTOR_LABEL, PERIODS, formatVnDate, formatVnd } from "@/lib/pilot-event";
 import { WAIVER_VERSION } from "@/lib/pilot-waiver";
@@ -77,7 +78,9 @@ function regDto(reg: InstanceType<typeof PilotRegistration>) {
       (PERIODS as Record<string, { name: string }>)[reg.period]?.name ?? reg.period,
     dates: (reg.dates ?? []).map((d: string) => formatVnDate(d)),
     shirtSize: reg.shirtSize || "",
+    openingFlagFlight: reg.openingFlagFlight === true,
     feeTotal: reg.feeTotal ?? 0,
+    paidAmount: typeof reg.paidAmount === "number" ? reg.paidAmount : null,
     transferNote: reg.transferNote || "",
     paymentDeclaredAt: reg.paymentDeclaredAt ?? null,
     waiverSignedAt: reg.waiverSignedAt ?? null,
@@ -104,6 +107,36 @@ function waiverEmailHtml(reg: InstanceType<typeof PilotRegistration>, forAdmin: 
     </table>
     ${forAdmin ? "" : "<p>Hẹn gặp bạn tại Mebayluon Clubhouse. Chúc bạn bay an toàn và thật đẹp!</p>"}
   </div>`;
+}
+
+/**
+ * Kế toán/admin ghi SỐ TIỀN ĐÃ THỰC NHẬN của một đăng ký (đối chiếu sao kê
+ * xong mới ghi). Trang ký miễn trừ sẽ nhắc phi công "còn thiếu X" theo số này.
+ * PATCH {code, paidAmount}
+ */
+export async function PATCH(req: Request) {
+  const auth = requireBaobay(req, { roles: ["accountant", "admin"], allowAdmin: true });
+  if (auth instanceof NextResponse) return auth;
+
+  const body = await req.json().catch(() => ({}));
+  const code = String(body?.code ?? "").trim().toUpperCase();
+  const paidAmount = Number(body?.paidAmount);
+  if (!code || !Number.isFinite(paidAmount) || paidAmount < 0) {
+    return NextResponse.json({ ok: false, message: "Thiếu mã hoặc số tiền không hợp lệ" }, { status: 400 });
+  }
+  try {
+    await connectDB();
+    const reg = await PilotRegistration.findOneAndUpdate(
+      { code },
+      { $set: { paidAmount } },
+      { new: true },
+    );
+    if (!reg) return NextResponse.json({ ok: false, message: "Không tìm thấy đăng ký" }, { status: 404 });
+    return NextResponse.json({ ok: true, code: reg.code, paidAmount: reg.paidAmount, feeTotal: reg.feeTotal });
+  } catch (err) {
+    console.error("[waiver:set-paid]", err);
+    return NextResponse.json({ ok: false, message: "Có lỗi máy chủ" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

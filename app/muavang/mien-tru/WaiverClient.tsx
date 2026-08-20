@@ -42,14 +42,17 @@ type Registration = {
   periodName: string;
   dates: string[];
   shirtSize: string;
+  openingFlagFlight: boolean;
   feeTotal: number;
+  /** Số tiền BTC đã thực nhận (kế toán ghi) — null = chưa đối chiếu. */
+  paidAmount: number | null;
   transferNote: string;
   paymentDeclaredAt: string | null;
   waiverSignedAt: string | null;
   waiverEmail: string;
 };
 
-type Step = "lookup" | "pay" | "sign" | "done";
+type Step = "lookup" | "pay" | "ppg" | "sign" | "done";
 
 const inputClass =
   "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-[15px] text-slate-800 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
@@ -57,6 +60,9 @@ const btnPrimary =
   "inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-5 py-3.5 text-[15px] font-bold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50";
 const btnGhost =
   "inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50";
+
+/** Đầu mối BTC xác nhận thanh toán — mọi màn nhắc phí đều chỉ về đây. */
+const BTC_CONTACT = { name: "anh Mỹ", phone: "0964073555", display: "0964 073 555" };
 
 /** Bảng màu của vùng biên bản (inline-style cho html2canvas). */
 const D = {
@@ -110,8 +116,12 @@ export default function WaiverClient() {
       const r: Registration = json.registration;
       setReg(r);
       setEmail(r.waiverEmail || r.email || "");
-      // Chưa xác nhận chuyển phí sự kiện thì phải qua cửa thanh toán trước
-      setStep(r.feeTotal > 0 && !r.paymentDeclaredAt ? "pay" : "sign");
+      // CHỈ khoản kế toán ĐÃ THỰC NHẬN ĐỦ (paidAmount >= phí) mới đi thẳng vào
+      // ký — theo lệnh chủ: mọi phi công chưa thu phí đều phải thấy nhắc nhở,
+      // kể cả người tự khai "đã chuyển khoản" hay bản ghi phí đang là 0đ.
+      const settled = r.paidAmount !== null && r.paidAmount >= r.feeTotal;
+      // PPG kéo cờ khai mạc được miễn phí (có điều kiện) — báo riêng, cho bỏ qua
+      setStep(settled ? "sign" : r.openingFlagFlight ? "ppg" : "pay");
     } catch {
       setError("Mạng chập chờn, vui lòng thử lại");
     } finally {
@@ -119,15 +129,18 @@ export default function WaiverClient() {
     }
   };
 
-  /* ---------------- màn thanh toán: vẽ QR ---------------- */
+  /** Số còn phải thu = tổng phí trừ phần kế toán đã ghi nhận. */
+  const dueAmount = reg ? Math.max(0, reg.feeTotal - (reg.paidAmount ?? 0)) : 0;
+
+  /* ---------------- màn thanh toán: vẽ QR (đúng số CÒN THIẾU) ---------------- */
   useEffect(() => {
-    if (step !== "pay" || !reg || reg.feeTotal <= 0) return;
+    if (step !== "pay" || !reg || dueAmount <= 0) return;
     let alive = true;
     (async () => {
       const payload = buildVietQrPayload({
         bankBin: PAYMENT_ACCOUNT.bankBin,
         accountNumber: PAYMENT_ACCOUNT.accountNumber,
-        amount: reg.feeTotal,
+        amount: dueAmount,
         note: reg.transferNote,
       });
       const QRCode = (await import("qrcode")).default;
@@ -144,7 +157,7 @@ export default function WaiverClient() {
     return () => {
       alive = false;
     };
-  }, [step, reg]);
+  }, [step, reg, dueAmount]);
 
   const declarePaid = async () => {
     if (!reg) return;
@@ -376,11 +389,30 @@ export default function WaiverClient() {
         {/* ============ MÀN 2: CHẶN THANH TOÁN ============ */}
         {step === "pay" && reg ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-            <div className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold leading-relaxed text-red-700">
-              Bạn chưa thanh toán tiền đăng ký sự kiện. Vui lòng thanh toán và xác nhận thanh
-              toán trước khi tiếp tục ký biên bản.
-            </div>
+            {reg.feeTotal <= 0 ? (
+              <div className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold leading-relaxed text-red-700">
+                BTC chưa ghi nhận phí đăng ký sự kiện của bạn. Vui lòng liên hệ BTC —{" "}
+                {BTC_CONTACT.name}{" "}
+                <a className="underline" href={`tel:${BTC_CONTACT.phone}`}>
+                  {BTC_CONTACT.display}
+                </a>{" "}
+                — để xác nhận trước khi tiếp tục ký biên bản.
+              </div>
+            ) : reg.paidAmount !== null && reg.paidAmount > 0 ? (
+              <div className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold leading-relaxed text-red-700">
+                Phí đăng ký của bạn là {formatVnd(reg.feeTotal)}, bạn mới thanh toán{" "}
+                {formatVnd(reg.paidAmount)} — còn thiếu {formatVnd(dueAmount)}. Vui lòng thanh
+                toán nốt để tiếp tục ký biên bản.
+              </div>
+            ) : (
+              <div className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold leading-relaxed text-red-700">
+                Bạn chưa thanh toán phí đăng ký sự kiện — số tiền là{" "}
+                {formatVnd(reg.feeTotal)}. Vui lòng thanh toán và xác nhận thanh toán trước khi
+                tiếp tục ký biên bản.
+              </div>
+            )}
 
+            {dueAmount > 0 ? (
             <div className="mt-5 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <div className="w-56 shrink-0 rounded-xl border border-slate-200 bg-white p-2">
                 {qrDataUrl ? (
@@ -393,7 +425,12 @@ export default function WaiverClient() {
                 )}
               </div>
               <div className="w-full text-sm text-slate-700">
-                <p className="text-lg font-black text-slate-800">{formatVnd(reg.feeTotal)}</p>
+                <p className="text-lg font-black text-slate-800">{formatVnd(dueAmount)}</p>
+                {reg.paidAmount !== null && reg.paidAmount > 0 ? (
+                  <p className="text-xs text-slate-500">
+                    (tổng phí {formatVnd(reg.feeTotal)} − đã nhận {formatVnd(reg.paidAmount)})
+                  </p>
+                ) : null}
                 <p className="mt-2">
                   <span className="text-slate-500">Ngân hàng:</span>{" "}
                   <b>{PAYMENT_ACCOUNT.bankName}</b>
@@ -413,8 +450,70 @@ export default function WaiverClient() {
               </div>
             </div>
 
-            <button className={`${btnPrimary} mt-6`} onClick={declarePaid} disabled={busy}>
-              {busy ? "Đang ghi nhận…" : "✓ Tôi đã chuyển khoản — tiếp tục ký biên bản"}
+            ) : null}
+
+            <p className="mt-4 text-sm font-semibold text-slate-600">
+              Đã thanh toán hoặc cần xác nhận? Liên hệ BTC — {BTC_CONTACT.name}:{" "}
+              <a className="font-bold text-sky-700 underline" href={`tel:${BTC_CONTACT.phone}`}>
+                {BTC_CONTACT.display}
+              </a>
+            </p>
+
+            <button className={`${btnPrimary} mt-4`} onClick={declarePaid} disabled={busy}>
+              {busy
+                ? "Đang ghi nhận…"
+                : dueAmount > 0
+                  ? "✓ Tôi đã chuyển khoản — tiếp tục ký biên bản"
+                  : "✓ Tôi đã xác nhận với BTC — tiếp tục ký biên bản"}
+            </button>
+            <button className={`${btnGhost} mt-3 w-full`} onClick={() => setStep("lookup")}>
+              ← Quay lại
+            </button>
+          </div>
+        ) : null}
+
+        {/* ============ MÀN 2b: PPG KÉO CỜ KHAI MẠC — MIỄN PHÍ CÓ ĐIỀU KIỆN ============ */}
+        {step === "ppg" && reg ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="rounded-xl border-2 border-sky-400 bg-sky-50 px-4 py-3 text-sm font-bold leading-relaxed text-sky-800">
+              Bạn có đăng ký bay PPG biểu diễn trong lễ khai mạc — vui lòng xác nhận với BTC để
+              được xác nhận MIỄN PHÍ tham dự sự kiện.
+            </div>
+
+            <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+              <p className="font-bold text-slate-800">
+                Ghi chú — phi công được miễn phí sự kiện với điều kiện:
+              </p>
+              <ol className="mt-2 list-decimal space-y-1.5 pl-5">
+                <li>
+                  Tự túc máy PPG và có mặt đúng giờ để tham gia bay kéo cờ khai mạc sự kiện lúc{" "}
+                  <b>7h00 sáng ngày 30/8</b>;
+                </li>
+                <li>
+                  Phi công phải có kinh nghiệm bay PPG và từng bay biểu diễn trong các sự kiện
+                  trước đây;
+                </li>
+                <li>Phi công tự nguyện tham gia bay kéo cờ sáng 30/8.</li>
+              </ol>
+              <p className="mt-3">
+                Phi công bay <b>PPG FUN</b> (không tham gia bay kéo cờ biểu diễn) vui lòng đóng
+                góp phí sự kiện để BTC sắp xếp ăn ở theo đoàn. Xin trân trọng cảm ơn!
+              </p>
+            </div>
+
+            <p className="mt-4 text-sm font-semibold text-slate-600">
+              Xác nhận với BTC — {BTC_CONTACT.name}:{" "}
+              <a className="font-bold text-sky-700 underline" href={`tel:${BTC_CONTACT.phone}`}>
+                {BTC_CONTACT.display}
+              </a>
+              . Nếu đã xác nhận, vui lòng bỏ qua thông báo này.
+            </p>
+
+            <button className={`${btnPrimary} mt-4`} onClick={() => setStep("sign")}>
+              Bỏ qua — tiếp tục ký biên bản
+            </button>
+            <button className={`${btnGhost} mt-3 w-full`} onClick={() => setStep("pay")}>
+              Đóng góp phí sự kiện (chuyển khoản QR) — {formatVnd(dueAmount)}
             </button>
             <button className={`${btnGhost} mt-3 w-full`} onClick={() => setStep("lookup")}>
               ← Quay lại

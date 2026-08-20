@@ -51,6 +51,12 @@ export interface IPilotRegistration {
 
   /** Thời điểm phi công tự bấm "Tôi đã chuyển khoản cọc". */
   paymentDeclaredAt?: Date;
+  /**
+   * Số tiền BTC ĐÃ THỰC NHẬN (kế toán đối chiếu sao kê rồi ghi).
+   * Trang ký miễn trừ dựa vào đây để nhắc "còn thiếu X" — khác với
+   * paymentDeclaredAt chỉ là lời khai của phi công.
+   */
+  paidAmount?: number;
   transferNote?: string;
 
   note?: string;
@@ -110,6 +116,7 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     sheetError: String,
 
     paymentDeclaredAt: Date,
+    paidAmount: Number,
     transferNote: String,
 
     note: String,
