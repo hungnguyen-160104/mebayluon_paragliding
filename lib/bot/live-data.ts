@@ -56,9 +56,6 @@ const CACHE_MS = 60_000;
 /** "2026-08-22" -> "22/08". */
 const dm = (key: string) => formatDateKeyVN(key).slice(0, 5);
 
-  return runs.map((r) => (r.length > 1 ? `${dm(r[0])}-${dm(r[r.length - 1])}` : dm(r[0]))).join(", ");
-}
-
 /**
  * SỨC CHỨA nói bằng lời cho bot đọc. Viết tay từng phòng thay vì ghép máy móc
  * từ con số trần — khách hỏi "10 người ngủ được không" thì bot phải thấy ngay
