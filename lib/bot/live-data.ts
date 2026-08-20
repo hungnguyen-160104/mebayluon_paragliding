@@ -82,46 +82,52 @@ async function roomBlock(today: string): Promise<string> {
     .select("roomTypeId rooms checkIn checkOut status")
     .lean<OccupancyBooking[]>();
 
-  const dates: string[] = [];
-  for (let d = today; d < to; d = shiftDateKey(d, 1)) dates.push(d);
-
-  const lines: string[] = [];
-  for (const room of HOMESTAY_ROOMS) {
+  // 1) BẢNG PHÒNG: giá + sức chứa, KHÔNG kèm lịch — thông tin tĩnh đọc một lần
+  const infoLines = HOMESTAY_ROOMS.map((room) => {
     const label = (ROOM_SHORT_VI[room.id] ?? room.id).replace(" (chỗ)", "");
     const unitWord = room.id === "dormitory" ? "chỗ" : "phòng";
     const price = `${(room.pricePerNight / 1000).toLocaleString("vi-VN")}k/đêm`;
     const sleeps = SLEEPS_VI[room.id] ?? `tối đa ${room.maxAdults} người lớn`;
+    return `- ${label}: ${room.units} ${unitWord}, ${price}, ${sleeps}.`;
+  });
 
-    /**
-     * Gom ngày theo SỐ CÒN TRỐNG THẬT (0, 1, 2…) chứ không chỉ "kín / còn ít":
-     * khách hỏi "1/9 còn mấy phòng đôi" thì bot phải trả lời được con số, rồi
-     * mới nhân lên để đối chiếu với số người đi.
-     */
-    const byFree = new Map<number, string[]>();
-    for (const d of dates) {
+  /**
+   * 2) TÌNH TRẠNG XOAY THEO ĐÊM — mỗi đêm thiếu phòng là MỘT DÒNG ghi trọn
+   * trạng thái cả 8 hạng phòng của đêm đó.
+   *
+   * Đã thử hai đời cấu trúc xoay theo PHÒNG (dãy ngày gộp, rồi liệt kê từng
+   * ngày) — model nhỏ đều đọc trượt: khách hỏi một đêm mà máy phải dò đêm ấy
+   * trong 8 danh sách ~20 ngày là thế nào cũng sót. Xoay theo đêm thì câu hỏi
+   * của khách khớp thẳng vào MỘT dòng, không còn gì để suy luận.
+   */
+  const nightLines: string[] = [];
+  for (let d = today; d < to; d = shiftDateKey(d, 1)) {
+    const avail: string[] = [];
+    const full: string[] = [];
+    let anyShortage = false;
+    for (const room of HOMESTAY_ROOMS) {
+      const label = (ROOM_SHORT_VI[room.id] ?? room.id).replace(" (chỗ)", "");
+      const unitWord = room.id === "dormitory" ? "chỗ" : "phòng";
       const free = unitsFree(touching, room.id, d);
-      if (free >= room.units) continue; // đêm còn nguyên: gộp vào câu cuối
-      (byFree.get(free) ?? byFree.set(free, []).get(free)!).push(d);
+      if (free <= 0) {
+        full.push(label);
+        anyShortage = true;
+      } else {
+        avail.push(`${label} ${free} ${unitWord}`);
+        if (free < room.units) anyShortage = true;
+      }
     }
-
-    /**
-     * Liệt kê TỪNG ĐÊM, không gộp dãy "28/08-01/09": bot đã từng đọc trượt
-     * dãy và bảo khách "1/9 còn chỗ" trong khi 1/9 nằm giữa dãy HẾT. Danh
-     * sách dài hơn nhưng model chỉ cần dò đúng ngày, không phải suy luận
-     * khoảng — độ chính xác ăn đứt độ gọn.
-     */
-    const parts = [...byFree.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([free, ds]) =>
-        free === 0
-          ? `HẾT các đêm: ${ds.map(dm).join(", ")}`
-          : `chỉ còn ${free} ${unitWord} các đêm: ${ds.map(dm).join(", ")}`,
-      );
-    parts.push(`các đêm khác còn đủ ${room.units} ${unitWord}`);
-
-    lines.push(`- ${label} — ${room.units} ${unitWord}, ${price}, ${sleeps}. ${parts.join(" · ")}`);
+    if (!anyShortage) continue; // đêm còn nguyên vẹn: khỏi liệt kê
+    nightLines.push(
+      `- Đêm ${dm(d)}: CÒN ${avail.join(", ") || "(không còn gì)"}${full.length ? ` · HẾT ${full.join(", ")}` : ""}`,
+    );
   }
-  return lines.join("\n");
+
+  return (
+    infoLines.join("\n") +
+    "\n\nTÌNH TRẠNG PHÒNG THEO ĐÊM (chỉ liệt kê đêm có phòng đã kín; đêm KHÔNG có trong danh sách = mọi phòng còn đủ):\n" +
+    (nightLines.length ? nightLines.join("\n") : "- Mọi đêm trong 365 đêm tới đều còn đủ phòng.")
+  );
 }
 
 /** Nhãn độ đông theo SỐ BOOKING trong ngày — ngưỡng do chủ chốt. */
@@ -180,7 +186,7 @@ export async function buildLiveDataBlock(): Promise<string> {
       flights +
       "\n\nLUAT DUNG KHOI NAY:\n" +
       "- Phòng: trả lời còn/hết theo đúng số trên; khách muốn đặt thì gửi link https://www.mebayluon.com/homestay/dat-phong (đặt online, thanh toán khi nhận phòng).\n" +
-      "- CÁCH ĐỌC: mỗi dòng phòng liệt kê TỪNG ĐÊM cụ thể. Khách hỏi đêm nào thì DÒ ĐÚNG ĐÊM ĐÓ trong từng dòng: đêm có trong danh sách sau chữ HẾT = phòng đó hết; trong danh sách 'chỉ còn N' = còn đúng N; không xuất hiện = còn đủ. TUYỆT ĐỐI không nói còn phòng khi đêm khách hỏi nằm trong danh sách HẾT.\n" +
+      "- CÁCH ĐỌC: khách hỏi đêm nào thì tìm dòng 'Đêm dd/MM' của đúng đêm đó — dòng ấy ghi TRỌN trạng thái: sau chữ CÒN là các phòng còn trống kèm số lượng, sau chữ HẾT là các phòng đã kín. Đêm KHÔNG có dòng nào = mọi phòng còn đủ. CHỈ được dùng đúng dòng của đêm khách hỏi, TUYỆT ĐỐI không nói còn phòng nào nằm sau chữ HẾT của dòng đó.\n" +
       "- PHẢI ĐỐI CHIẾU SỐ NGƯỜI, đừng chỉ nói còn hay hết phòng: khách đi mấy người thì cộng sức chứa của các phòng CÒN TRỐNG đêm đó rồi so với số khách. Ví dụ khách 10 người mà 01/09 chỉ còn 2 phòng giường đôi thì trả lời: \"em còn 2 phòng giường đôi, mỗi phòng chỉ ngủ được 2 người lớn + 1 trẻ em, nên 10 người e rằng không đủ chỗ ạ\", rồi gợi ý phương án khác CÒN TRỐNG đêm đó (ghép thêm hạng phòng khác, chỗ nằm sàn cộng đồng, hoặc gói bao sàn / bao nguyên nhà sàn). Không đủ thì nói thật là không đủ — tuyệt đối không hứa liều rồi để khách đến nơi mới biết.\n" +
       `- TRẺ EM tính theo CÂN NẶNG: dưới ${CHILD_MAX_KG}kg (thường 5-10 tuổi) mới là trẻ em, nặng hơn tính như người lớn vì chiếm trọn một chỗ nằm. Trẻ nhỏ ngủ ghép cùng bố mẹ trong đúng sức chứa ghi trên.\n` +
 
