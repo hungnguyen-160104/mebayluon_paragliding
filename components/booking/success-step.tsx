@@ -336,6 +336,11 @@ export default function SuccessStep() {
         });
         const json = await res.json();
         if (stopped) return;
+        // Điểm/ngày này không hiển thị số thứ tự — thôi hỏi luôn, khỏi đợi 30 giây
+        if (json?.hidden === true) {
+          setQueueWaiting(false);
+          return;
+        }
         if (typeof json?.queueNo === "number" && json.queueNo > 0) {
           setQueueNo(json.queueNo);
           setQueueWaiting(false);
@@ -702,6 +707,7 @@ export default function SuccessStep() {
               }}
             >
               <BookingTicket
+                queueNo={queueNo}
                 booking={bookingData}
                 bookingResult={bookingResult}
                 totals={totals}

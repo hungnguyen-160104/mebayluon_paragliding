@@ -26,6 +26,8 @@ type Props = {
   totalsUSD?: ComputeResult;
   lang: LangCode;
   bookingResult?: any;
+  /** Số thứ tự bay trong ngày (daySeq sổ điều hành) — số nhỏ bay trước. */
+  queueNo?: number | null;
 };
 
 type PriceLine = {
@@ -322,6 +324,8 @@ function useTicketLabels(lang: LangCode) {
               ? zh("堆布山 | 员南飞行点", "堆布山 | 員南飛行點")
               : "Doi Bu | Vien Nam flying site",
     bookingRefLabel: isVI ? "Mã vé" : isFR ? "N° de billet" : isRU ? "Номер билета" : isHI ? "टिकट क्रमांक" : isZH || isZHTW ? zh("票号", "票號") : "Ticket no.",
+    queueLabel: isVI ? "Số thứ tự bay" : isFR ? "N° d’ordre de vol" : isRU ? "Номер очереди" : isHI ? "उड़ान क्रमांक" : isZH || isZHTW ? zh("飞行排队号", "飛行排隊號") : "Flight queue no.",
+    queueHint: isVI ? "Số nhỏ bay trước" : isFR ? "Les petits numéros volent en premier" : isRU ? "Меньший номер летит раньше" : isHI ? "छोटा नंबर पहले उड़ता है" : isZH || isZHTW ? zh("号码小先飞", "號碼小先飛") : "Lower numbers fly first",
     serviceDetails: isVI ? "Thông tin chuyến bay" : isFR ? "Détails du vol" : isRU ? "Детали полёта" : isHI ? "फ्लाइट विवरण" : isZH || isZHTW ? zh("飞行信息", "飛行資訊") : "Flight details",
     contactInfo: (t as any)?.labels?.contactInfo ?? "Contact information",
     passengersList: isVI ? "Danh sách khách bay" : isFR ? "Liste des passagers" : isRU ? "Список пассажиров" : isHI ? "यात्रियों की सूची" : isZH || isZHTW ? zh("乘客名单", "乘客名單") : "Passengers",
@@ -460,6 +464,7 @@ export default function BookingTicket({
   totalsUSD,
   lang,
   bookingResult,
+  queueNo,
 }: Props) {
   const cfg = LOCATIONS[booking.location];
   const labels = useTicketLabels(lang);
@@ -1207,6 +1212,51 @@ export default function BookingTicket({
             </div>
           ))}
         </div>
+
+        {/* SỐ THỨ TỰ BAY — khách xếp lượt theo số này như lấy số ở ngân hàng,
+            nên phải TO và bật hẳn khỏi nền xanh; chưa được cấp số thì ẩn cả dải. */}
+        {queueNo && queueNo > 0 ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              marginTop: 12,
+              background: C.orange,
+              borderRadius: 12,
+              padding: "10px 14px",
+            }}
+          >
+            <div style={{ textAlign: "right" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  fontWeight: 800,
+                  opacity: 0.95,
+                }}
+              >
+                {labels.queueLabel}
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.9 }}>
+                {labels.queueHint}
+              </div>
+            </div>
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 900,
+                lineHeight: 1,
+                letterSpacing: 0.5,
+                whiteSpace: "nowrap",
+              }}
+            >
+              #{queueNo}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* ============ THÂN VÉ ============

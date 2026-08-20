@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/mongodb";
 import { Booking } from "@/models/Booking.model";
+import { shouldShowQueueNo } from "@/lib/booking/queue-display";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,16 +27,22 @@ export async function GET(req: Request) {
     }
 
     await connectDB();
-    const doc = await Booking.findById(id).select("queueNo queueDate status").lean<any>();
+    const doc = await Booking.findById(id).select("queueNo queueDate status location dateISO").lean<any>();
     if (!doc) {
       return NextResponse.json({ ok: false, message: "Không tìm thấy đơn" }, { status: 404 });
     }
 
+    // Số chỉ HIỆN với Khau Phạ trong mùa đông khách (xem lib/booking/queue-display).
+    // hidden=true để trang cảm ơn thôi hỏi lại ngay thay vì đợi hết 30 giây.
+    const hidden = !shouldShowQueueNo(String(doc.location ?? ""), String(doc.queueDate || doc.dateISO || ""));
+
     return NextResponse.json(
       {
         ok: true,
-        queueNo: typeof doc.queueNo === "number" && doc.queueNo > 0 ? doc.queueNo : null,
+        queueNo:
+          !hidden && typeof doc.queueNo === "number" && doc.queueNo > 0 ? doc.queueNo : null,
         queueDate: doc.queueDate || null,
+        hidden,
         cancelled: doc.status === "cancelled",
       },
       { status: 200, headers: { "Cache-Control": "no-store" } },
