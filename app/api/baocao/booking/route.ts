@@ -1,5 +1,8 @@
 // app/api/baocao/booking/route.ts
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+
+import { schedulePushLiveData } from "@/lib/bot/live-data";
 
 import { isDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
@@ -79,6 +82,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   // Phi công cũng tạo booking được — đường "xác nhận dời" đẩy khách sang ngày mới
   const auth = requireBaobay(req, { roles: [...ROLES, "pilot"] });
   if (auth instanceof NextResponse) return auth;
@@ -105,6 +111,9 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   const auth = requireBaobay(req, { roles: [...ROLES] });
   if (auth instanceof NextResponse) return auth;
 
@@ -133,6 +142,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   const auth = requireBaobay(req, { roles: [...ROLES] });
   if (auth instanceof NextResponse) return auth;
 
@@ -161,6 +173,9 @@ export async function DELETE(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   /**
    * PHI CÔNG / CAMERA MAN vào được cửa này, nhưng CHỈ hai việc với khách được
    * giao cho mình: bấm xác nhận nhận khách, và thu tiền. Quyền "khách này có

@@ -1,5 +1,8 @@
 // app/api/chatbot/route.ts
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+
+import { schedulePushLiveData } from "@/lib/bot/live-data";
 import { randomUUID } from "node:crypto";
 
 import { askChatbot } from "@/services/chatbot.service";
@@ -7,6 +10,12 @@ import type { ChatHistoryItem } from "@/lib/chatbot/n8n-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/**
+ * Claude + nạp quy tắc từ Google Doc + lịch sử Mongo — đo thật có câu mất
+ * 10,7s, sát trần mặc định của Vercel. Không khai maxDuration thì câu chậm
+ * bị chém ngang, khách thấy "trợ lý gặp sự cố" lúc được lúc không.
+ */
+export const maxDuration = 30;
 
 const MAX_QUESTION_LENGTH = 1000;
 const MAX_HISTORY = 10;
@@ -68,6 +77,9 @@ function normalizeHistory(value: unknown): ChatHistoryItem[] {
 }
 
 export async function POST(req: Request) {
+  // Khách chat cũng là dịp làm tươi khối dữ liệu sống trong Doc (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   try {
     if (isRateLimited(getClientKey(req))) {
       return NextResponse.json(

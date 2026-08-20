@@ -73,6 +73,15 @@ export async function getKnowledge(): Promise<string> {
 /* ---------------------------------------------------------------------
  * Trạng thái hội thoại theo psid (sheet TrangThaiHoiThoai)
  * ------------------------------------------------------------------ */
+export async function setLiveDataInDoc(text: string): Promise<boolean> {
+  // Đẩy DỮ LIỆU SỐNG (lịch bay + phòng trống) vào Doc tri thức — Apps Script
+  // thay ruột giữa hai mốc [LIVE_DATA_START]/[LIVE_DATA_END]. Đẩy xong xoá
+  // cache tri thức trong tiến trình để lượt chat sau đọc bản mới ngay.
+  const data = await call<{ updated: boolean }>('setLiveData', { text });
+  if (data?.updated) knowledgeCache = null;
+  return data?.updated === true;
+}
+
 export async function getConversationState(psid: string) {
   return call<{ psid?: string; trang_thai?: string } | null>('getState', { psid });
 }

@@ -6,6 +6,8 @@
 
 import { SYSTEM_STATIC_TEMPLATE, EXTRA_RULES } from './rules';
 import { getKnowledge, getConversationState } from './google-bridge';
+import { buildLiveDataBlock, LIVE_DATA_START } from './live-data';
+import { formatDateKeyVN, todayInVN } from '@/lib/baobay/date';
 
 const MODEL = process.env.BOT_MODEL || 'claude-haiku-4-5';
 const MAX_TOKENS = 600;
@@ -20,6 +22,14 @@ export async function buildSystem(opts: {
   historyText: string;
 }): Promise<{ staticPart: string; dynamicPart: string }> {
   const knowledge = await getKnowledge();
+  // Doc tri thức đã có sẵn khối dữ liệu sống CỦA HÔM NAY (app tự đẩy sang,
+  // nằm trong phần TĨNH được cache) thì khỏi quét DB. Doc chưa có khối, hoặc
+  // khối từ hôm khác (ngày lặng không ai đụng booking) thì tự quét làm dự phòng
+  // — thà tốn một lượt quét còn hơn báo khách số liệu ôi.
+  const docStamp = knowledge.match(/Cap nhat luc: \d{2}:\d{2} (\d{2}\/\d{2}\/\d{4})/);
+  const docLiveFresh =
+    knowledge.includes(LIVE_DATA_START) && docStamp?.[1] === formatDateKeyVN(todayInVN());
+  const liveData = docLiveFresh ? '' : await buildLiveDataBlock();
 
   const staticPart =
     SYSTEM_STATIC_TEMPLATE.replace('{{KNOWLEDGE}}', knowledge) + EXTRA_RULES;
@@ -74,10 +84,13 @@ export async function buildSystem(opts: {
     '4. CHUA xuat khoi BOOKING_DATA thi TUYET DOI KHONG duoc noi cac cau nhu ' +
     '"da ghi nhan", "da chuyen toi doi bay", "da chot don" — thieu thong tin nao ' +
     'thi hoi dung thong tin do.\n' +
-    '5. Ban KHONG co kha nang xem lich trong/full. KHONG bao gio tu phan ' +
-    'ngay nao "da full" hay "con cho". Neu khach hoi lich con trong khong, tra loi: ' +
-    'em ghi nhan ngay khach muon, dieu phoi vien se goi xac nhan lich trong ngay.\n' +
+    '5. Ve LICH BAY: khong co gioi han cho, bay phu thuoc thoi tiet — KHONG bao gio ' +
+    'tu phan ngay bay nao "da full" hay tu choi khach vi dong; neu co khoi DU LIEU ' +
+    'TRUC TIEP thi chi dung so khach da dat de tu van (dong thi khuyen dat som), ' +
+    'con chot lich van do dieu phoi vien goi xac nhan trong ngay. Ve PHONG HOMESTAY: ' +
+    'neu co khoi DU LIEU TRUC TIEP thi tra loi con/het phong theo dung so trong do.\n' +
     '===== HET QUY TAC CHOT DON =====\n\n' +
+    liveData +
     (opts.historyText
       ? 'LICH SU HOI THOAI (cu nhat o tren, moi nhat o duoi):\n' + opts.historyText + '\n\n'
       : '') +

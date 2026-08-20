@@ -1,5 +1,8 @@
 // app/api/homestay/book/route.ts
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+
+import { schedulePushLiveData } from "@/lib/bot/live-data";
 
 import { BaobayError } from "@/services/baobay.service";
 import { createWebHomestayBooking } from "@/services/homestay.service";
@@ -15,6 +18,9 @@ export const dynamic = "force-dynamic";
  * lựa chọn. Đặt xong, mỗi dòng phòng thành một bản ghi chung mã trong sổ kế toán.
  */
 export async function POST(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ message: "Thiếu nội dung đặt phòng" }, { status: 400 });
 

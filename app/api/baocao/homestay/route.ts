@@ -1,5 +1,8 @@
 // app/api/baocao/homestay/route.ts
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+
+import { schedulePushLiveData } from "@/lib/bot/live-data";
 
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
@@ -50,6 +53,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   const auth = requireBaobay(req, ROLES);
   if (auth instanceof NextResponse) return auth;
   const body = await req.json().catch(() => ({}));
@@ -80,6 +86,9 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  // Booking đổi thì hẹn đẩy dữ liệu sống sang Doc tri thức của bot (chặn 2 phút/lần)
+  after(schedulePushLiveData);
+
   const auth = requireBaobay(req, ROLES);
   if (auth instanceof NextResponse) return auth;
   const body = await req.json().catch(() => ({}));
