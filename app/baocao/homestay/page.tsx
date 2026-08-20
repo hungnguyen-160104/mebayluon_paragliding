@@ -280,14 +280,16 @@ export default function HomestayPage() {
     setError(null);
     setMsg(null);
     try {
-      const r = await apiPatch<{ sync: { scanned: number; created: number; cancelled: number; review: number; errors: string[] } }>(
-        `/api/baocao/homestay`,
-        { action: "sync-mail" },
-      );
+      const r = await apiPatch<{
+        sync: { scanned: number; created: number; cancelled: number; review: number; errors: string[]; pending?: number };
+      }>(`/api/baocao/homestay`, { action: "sync-mail" });
       const s = r.sync;
       setMsg(
         `✓ Quét ${s.scanned} thư — thêm ${s.created} đặt phòng, ${s.cancelled} huỷ, ${s.review} cần soát.` +
-          (s.errors.length ? ` ${s.errors.length} thư lỗi.` : ""),
+          (s.errors.length ? ` ${s.errors.length} thư lỗi.` : "") +
+          // Hộp mới tồn nhiều thư thì mỗi lượt chỉ ăn một khúc — nói rõ để
+          // kế toán bấm tiếp chứ không tưởng là đã xong.
+          (s.pending ? ` Còn ${s.pending} thư chờ — bấm "Đồng bộ mail" lần nữa để quét tiếp.` : ""),
       );
       load();
     } catch (err) {

@@ -28,11 +28,21 @@ import { BaobayError } from "@/services/baobay.service";
 /* Máy khách IMAP tối giản                                             */
 /* ================================================================== */
 
+/** Hạn chờ cho MỘT lệnh IMAP — thư to nhất mới ~70KB nên 45 giây là rộng rãi. */
+const IMAP_CMD_TIMEOUT_MS = 45_000;
+
 class ImapLite {
   private sock!: tls.TLSSocket;
   private buf = "";
   private seq = 0;
   private waiters: Array<{ tag: string; resolve: (lines: string) => void; reject: (e: Error) => void }> = [];
+  /**
+   * Kết nối đã chết (quá giờ, lỗi, bị đóng). Trước đây không có cờ này: sau
+   * lần lỗi đầu, mọi lệnh sau vẫn ghi vào socket đã hỏng rồi CHỜ MÃI KHÔNG
+   * AI TRẢ LỜI — cả lần quét treo vĩnh viễn và mốc quét không bao giờ được
+   * lưu. Nay chết là mọi lệnh sau trả lỗi ngay để vòng quét thoát ra.
+   */
+  private dead: Error | null = null;
 
   async connect(host: string, user: string, pass: string): Promise<void> {
     await new Promise<void>((resolve, reject) => {
@@ -43,7 +53,13 @@ class ImapLite {
       });
       this.sock.on("error", reject);
     });
-    this.sock.on("data", (d) => this.onData(String(d)));
+    // ĐỌC THEO latin1 (1 byte = 1 ký tự), KHÔNG phải utf8: IMAP khai độ dài
+    // literal bằng SỐ BYTE, còn chuỗi utf8 gộp nhiều byte thành một ký tự nên
+    // độ dài lệch — thư có dấu tiếng Việt là bộ đọc chờ phần không bao giờ
+    // tới và treo vĩnh viễn. Giữ nguyên byte cũng đúng ý bộ giải mã MIME
+    // (mail-mime dùng charCodeAt & 0xff), phần chữ được đổi bảng mã sau theo
+    // charset khai trong chính lá thư.
+    this.sock.on("data", (d: Buffer) => this.onData(d.toString("latin1")));
     this.sock.on("error", (e) => this.failAll(e));
     this.sock.on("close", () => this.failAll(new Error("IMAP đóng kết nối")));
     // Chờ dòng chào "* OK" rồi mới đăng nhập
@@ -52,6 +68,7 @@ class ImapLite {
   }
 
   private failAll(e: Error) {
+    this.dead = e;
     for (const w of this.waiters.splice(0)) w.reject(e);
   }
 
@@ -102,9 +119,27 @@ class ImapLite {
   }
 
   cmd(command: string): Promise<string> {
+    if (this.dead) return Promise.reject(this.dead);
     const tag = `A${++this.seq}`;
     return new Promise((resolve, reject) => {
-      this.waiters.push({ tag, resolve, reject });
+      // Hạn giờ riêng từng lệnh: máy chủ im lặng thì lệnh này hỏng, không kéo
+      // theo cả lần quét đứng im.
+      const timer = setTimeout(() => {
+        const i = this.waiters.findIndex((w) => w.tag === tag);
+        if (i >= 0) this.waiters.splice(i, 1);
+        reject(new Error(`IMAP quá giờ chờ lệnh ${command.slice(0, 24)}`));
+      }, IMAP_CMD_TIMEOUT_MS);
+      this.waiters.push({
+        tag,
+        resolve: (lines) => {
+          clearTimeout(timer);
+          resolve(lines);
+        },
+        reject: (e) => {
+          clearTimeout(timer);
+          reject(e);
+        },
+      });
       this.sock.write(`${tag} ${command}\r\n`);
     });
   }
@@ -189,7 +224,20 @@ export type HomestaySyncResult = {
   ignored: number;
   errors: string[];
   lastUid: number;
+  /** Số thư còn tồn chưa kịp xử lý trong lượt này — bấm quét tiếp là chạy tiếp. */
+  pending: number;
 };
+
+/**
+ * SỐ THƯ TỐI ĐA MỖI LƯỢT QUÉT.
+ *
+ * Route chỉ được chạy 60 giây trên Vercel, mỗi thư mất ~0,4–1 giây (tải +
+ * bóc + ghi sổ). Hộp mới có thể tồn cả trăm thư, ôm hết là chắc chắn quá
+ * giờ — mà trước đây mốc quét chỉ lưu SAU KHI xong cả hộp, nên quá giờ là
+ * mất sạch tiến độ và lần bấm sau lại làm lại từ đầu: bấm mãi không bao giờ
+ * xong. Nay chia nhỏ, mỗi lượt ăn một khúc và mốc lưu ngay từng thư.
+ */
+const MAX_PER_RUN = 25;
 
 /**
  * Quét thư mới trên MỌI hộp đã khai và ghi vào sổ đặt phòng. Chống trùng:
@@ -210,6 +258,7 @@ export async function syncHomestayMail(days = 60): Promise<HomestaySyncResult> {
     ignored: 0,
     errors: [],
     lastUid: 0,
+    pending: 0,
   };
 
   for (const box of boxes) {
@@ -243,7 +292,11 @@ async function syncOneMailbox(box: Mailbox, days: number, out: HomestaySyncResul
       for (const u of uidsOf(res)) if (u > sinceUid) uids.add(u);
     }
 
-    for (const uid of [...uids].sort((a, b) => a - b)) {
+    const queue = [...uids].sort((a, b) => a - b);
+    const batch = queue.slice(0, MAX_PER_RUN);
+    out.pending += queue.length - batch.length;
+
+    for (const uid of batch) {
       out.scanned++;
       try {
         // BODY.PEEK: đọc mà không đánh dấu thư "đã đọc" của người trực hộp
@@ -254,8 +307,20 @@ async function syncOneMailbox(box: Mailbox, days: number, out: HomestaySyncResul
         out[r.action === "created" ? "created" : r.action === "cancelled" ? "cancelled" : r.action === "review" ? "review" : "ignored"]++;
       } catch (err) {
         out.errors.push(`${box.user} UID ${uid}: ${err instanceof Error ? err.message : "lỗi lạ"}`);
+        // Kết nối chết thì mọi thư sau cũng hỏng — dừng hộp này, giữ tiến độ
+        // đã lưu, để lượt bấm sau chạy tiếp từ đúng chỗ dừng.
+        if (err instanceof Error && /quá giờ|đóng kết nối|ECONN|socket/i.test(err.message)) {
+          out.pending += batch.length - batch.indexOf(uid) - 1;
+          break;
+        }
       }
+      // LƯU MỐC NGAY TỪNG THƯ: hết giờ giữa chừng cũng không mất tiến độ.
       lastUid = Math.max(lastUid, uid);
+      await HomestaySyncState.updateOne(
+        { key },
+        { $set: { lastUid, lastRunAt: new Date() } },
+        { upsert: true },
+      );
     }
   } finally {
     imap.end();
