@@ -552,9 +552,12 @@ export function BankCheckCard({ date }: { date: string }) {
                   {paidCk > 0 && <span className="text-sky-800">đã CK <strong>{formatVND(paidCk)}</strong></span>}
                   {paidTm > 0 && <span className="text-emerald-800">đã TM <strong>{formatVND(paidTm)}</strong></span>}
                   {row.agencyPaidAmount > 0 && (
-                    <span className="text-orange-700">
-                      đã TT đại lý <strong>{formatVND(row.agencyPaidAmount)}</strong>
-                      {row.agencyName ? ` (${row.agencyName})` : ""}
+                    <span
+                      className="rounded bg-orange-100 px-1 font-semibold text-orange-800"
+                      title="Đại lý THU HỘ tiền bay — tiền đang nằm ở đại lý, phải đòi về (không phải chiết khấu)"
+                    >
+                      ĐL đã thu <strong>{formatVND(row.agencyPaidAmount)}</strong>
+                      {row.agencyName ? ` (${row.agencyName})` : ""} — thu hộ
                     </span>
                   )}
                   {row.discount > 0 && <span className="text-violet-700">giảm trừ {formatVND(row.discount)}</span>}

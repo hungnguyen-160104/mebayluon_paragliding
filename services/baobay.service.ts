@@ -6626,6 +6626,9 @@ issuedRanges: Array<{ from: string; to: string }>;
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  /** ĐẠI LÝ THU HỘ tiền bay của khách ngày này — đại lý đang cầm, phải đòi về (KHÔNG phải chiết khấu). */
+  agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
+  agencyHeldTotal: number;
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
   /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
@@ -6735,6 +6738,25 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     .filter((c) => c.method === "transfer" && c.status === "company")
     .reduce((a, c) => a + (c.amount || 0), 0);
 
+  /** ĐẠI LÝ THU HỘ: khách bay hôm nay đã trả bên đại lý — tiền nằm ở đại lý, kế toán phải đòi. */
+  const agencyHeldBookings = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    agencyPaidAmount: { $gt: 0 },
+    status: { $nin: ["cancelled", "voided"] },
+  })
+    .select("agencyPaidAmount agencyName contactName daySeq")
+    .lean<any[]>();
+  const heldBy = new Map<string, { name: string; amount: number; bookings: string[] }>();
+  for (const b of agencyHeldBookings) {
+    const name = (b.agencyName || "").trim() || "(chưa ghi tên đại lý)";
+    const cur = heldBy.get(name) ?? { name, amount: 0, bookings: [] as string[] };
+    cur.amount += b.agencyPaidAmount || 0;
+    cur.bookings.push(`#${b.daySeq || "?"} ${b.contactName || ""}`);
+    heldBy.set(name, cur);
+  }
+  const agencyHeld = [...heldBy.values()].sort((a, b) => b.amount - a.amount);
+
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
 
   const dispatcherCancelledCodes = dispatchers.flatMap((d) => (d.cancelledCodes ?? []) as string[]);
@@ -6834,6 +6856,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      */
     cashTotal: sum(dispatchers, (d) => d.cashReceived) + collectCashOfDay,
     transferTotal: sum(dispatchers, (d) => d.transferReceived) + collectTransferOfDay,
+    agencyHeld,
+    agencyHeldTotal: agencyHeld.reduce((t, a) => t + a.amount, 0),
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
     registeredGuests: sum(bookings, (b) => b.guestCount),
     /**

@@ -156,7 +156,7 @@ export function MoneyBoardCard({
       {/* ĐẠI LÝ NỢ: khách trả một phần bên đại lý — đại lý phải chuyển về công ty */}
       {(board.agencyDebts ?? []).length > 0 && (
         <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-2.5">
-          <div className="text-xs font-semibold text-orange-900">🤝 Đại lý nợ (khách đã TT bên đại lý)</div>
+          <div className="text-xs font-semibold text-orange-900">🤝 Đại lý THU HỘ tiền bay — đang cầm, phải đòi về</div>
           <div className="text-xl font-bold tabular-nums text-orange-800">
             {formatVND(board.agencyDebts.reduce((t, a) => t + a.amount, 0))}
           </div>

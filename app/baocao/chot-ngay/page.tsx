@@ -71,6 +71,8 @@ type CloseSuggestion = {
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
+  agencyHeldTotal: number;
   dispatcherSpend: number;
   registeredGuests: number;
   /** Khách đã xác nhận bay trong sổ booking — đăng ký trừ huỷ/dời. */
@@ -1127,6 +1129,23 @@ function DailyCloseInner() {
               disabled={locked}
             />
           </div>
+
+          {/* ĐẠI LÝ THU HỘ: tiền bay của khách hôm nay đang nằm ở đại lý —
+              kế toán phải nhớ đòi, không phải chiết khấu chi ra */}
+          {(suggest?.agencyHeldTotal ?? 0) > 0 && (
+            <div className="mb-3 rounded-xl border-2 border-orange-300 bg-orange-50/70 px-3 py-2">
+              <div className="text-sm font-bold text-orange-900">
+                🤝 Đại lý đang cầm hộ {formatVND(suggest!.agencyHeldTotal)} tiền bay của ngày — nhớ yêu cầu chuyển về
+              </div>
+              <ul className="mt-1 space-y-0.5 text-xs text-orange-900/90">
+                {suggest!.agencyHeld.map((a) => (
+                  <li key={a.name}>
+                    <strong>{a.name}</strong> nợ {formatVND(a.amount)} — {a.bookings.join(" · ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Từ dưới đẩy lên: điều phối báo gì, kế toán nhận nguyên bộ từng dòng
               (thu đúng tiền mặt/CK, chi hộ khách) rồi sửa tay nếu cần */}

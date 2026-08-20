@@ -133,6 +133,9 @@ function BookingSummary({
   const k = (n: number) => `${Math.round(n / 1000).toLocaleString("vi-VN")}k`;
   if (depositBase) parts.push(`cọc ${k(depositBase)}`);
   else if (paidTotal || refunded) parts.push("cọc 0");
+  // Đại lý thu hộ: khách khỏi trả phần này, nhưng tiền đang ở ĐẠI LÝ — nói rõ
+  if ((b.agencyPaidAmount ?? 0) > 0)
+    parts.push(`ĐL thu ${k(b.agencyPaidAmount)}${b.agencyName ? ` (${b.agencyName})` : ""}`);
   /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
   const tail: string[] = [];
   /**
