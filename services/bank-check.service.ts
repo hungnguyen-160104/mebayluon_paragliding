@@ -105,6 +105,33 @@ export type BankGroupDTO = {
   status: "du" | "thieu" | "thua";
 };
 
+/**
+ * MỘT BOOKING = MỘT THẺ SOÁT: gom mọi dòng tiền (CK app ghi, TM đang giữ, dòng
+ * sao kê đã khớp, dòng sao kê NGHI là của nó) về đúng một chỗ — kế toán soát
+ * theo từng khách thay vì nhảy qua lại giữa ba danh sách.
+ */
+export type BankBookingRowDTO = {
+  bookingId: string;
+  daySeq: number;
+  spot: string;
+  label: string;
+  /** Tóm tắt dịch vụ: "3 khách PG · 1 PPG · 2×360 · 1×flycam". */
+  summary: string;
+  totalAmount: number;
+  remaining: number;
+  status: string;
+  flown: boolean;
+  ticketIssued: boolean;
+  noTicket: boolean;
+  locked: boolean;
+  transfers: BankAppTransferDTO[];
+  cash: BankAppCashDTO[];
+  /** Dòng sao kê ĐÃ khớp về booking này. */
+  lines: BankLineDTO[];
+  /** Dòng sao kê treo nhưng máy NGHI là của booking này — soát tay. */
+  suggests: BankLineDTO[];
+};
+
 export type BankCheckReport = {
   date: string;
   /** Điểm bay đang soát — rỗng nghĩa là cả ba. */
@@ -117,6 +144,8 @@ export type BankCheckReport = {
   appCash: BankAppCashDTO[];
   /** Booking chia bill — mỗi dòng một công thức cộng. */
   groups: BankGroupDTO[];
+  /** SỔ BOOKING & TIỀN TRONG NGÀY — mỗi booking một thẻ gom trọn dòng tiền. */
+  bookingRows: BankBookingRowDTO[];
   /**
    * ĐỐI CHIẾU TỔNG của ngày: tổng/số lượng tiền VỀ trên sao kê so với
    * tổng/số lượng khoản CK app đã ghi — lệch đồng nào khoản nào là thấy ngay.
@@ -643,14 +672,71 @@ export async function getBankCheck(
   const bankTotal = lineDocs.reduce((t, l) => t + (l.amount || 0), 0);
   const appTotal = appTransfers.reduce((t, x) => t + x.amount, 0);
 
+  /* ---------- SỔ BOOKING & TIỀN TRONG NGÀY ---------- */
+  const rowBookingIds = new Set<string>();
+  for (const t of appTransfers) if (t.bookingId) rowBookingIds.add(t.bookingId);
+  for (const c of appCash) if (c.bookingId) rowBookingIds.add(c.bookingId);
+  for (const l of lineDocs) if (l.bookingId) rowBookingIds.add(String(l.bookingId));
+
+  const rowBookings = rowBookingIds.size
+    ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
+        .select(
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining status ticketIssuedAt noTicketFlight lockedAt",
+        )
+        .lean<any[]>()
+    : [];
+
+  /** "3 khách PG · 1 PPG · 2×flycam · 1×360" — dòng tóm tắt kế toán liếc một giây. */
+  const summaryOf = (b: any): string => {
+    const parts: string[] = [];
+    const pg = (b.guestCount || 0) - (b.ppgGuests || 0);
+    if (pg > 0) parts.push(`${pg} khách ${b.flightKind === "pg" || b.flightKind === "ppg" ? "PG" : String(b.flightKind ?? "PG").toUpperCase()}`);
+    if (b.ppgGuests > 0) parts.push(`${b.ppgGuests} PPG`);
+    if (b.flycam > 0) parts.push(`${b.flycam}×flycam`);
+    if (b.video360 > 0) parts.push(`${b.video360}×360`);
+    if (b.redFlag > 0) parts.push(`${b.redFlag}×cờ đỏ`);
+    if (b.sunset > 0) parts.push(`${b.sunset}×hoàng hôn`);
+    if (b.flagFlight > 0) parts.push(`${b.flagFlight}×kéo cờ`);
+    return parts.join(" · ") || `${b.guestCount || 0} khách`;
+  };
+
+  const lineDTOs = lineDocs.map(toLineDTO);
+  const pendingToday = lineDTOs.filter((l) => l.status === "pending");
+  const bookingRows: BankBookingRowDTO[] = rowBookings
+    .map((b) => {
+      const id = String(b._id);
+      const label = bookingLabel(b);
+      return {
+        bookingId: id,
+        daySeq: Number(b.daySeq) || 0,
+        spot: b.spot,
+        label,
+        summary: summaryOf(b),
+        totalAmount: b.totalAmount || 0,
+        remaining: Math.max(0, b.remaining || 0),
+        status: b.status || "open",
+        flown: b.status === "done",
+        ticketIssued: Boolean(b.ticketIssuedAt),
+        noTicket: Boolean(b.noTicketFlight),
+        locked: Boolean(b.lockedAt),
+        transfers: appTransfers.filter((t) => t.bookingId === id),
+        cash: appCash.filter((c) => c.bookingId === id),
+        lines: lineDTOs.filter((l) => l.status !== "pending" && String((lineDocs.find((d) => String(d._id) === l.id) as any)?.bookingId ?? "") === id),
+        // Dòng treo mà danh sách nghi ngờ có nhắc đúng nhãn booking này
+        suggests: pendingToday.filter((l) => (l.candidates ?? []).some((c) => c.startsWith(label))),
+      };
+    })
+    .sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999) || a.label.localeCompare(b.label));
+
   return {
     date,
     spots,
-    lines: lineDocs.map(toLineDTO),
+    lines: lineDTOs,
     pending: pendingDocs.map(toLineDTO),
     appTransfers,
     appCash,
     groups,
+    bookingRows,
     summary: {
       bankTotal,
       bankCount: lineDocs.length,

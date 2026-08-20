@@ -75,6 +75,25 @@ type GroupDTO = {
   status: "du" | "thieu" | "thua";
 };
 
+type BookingRowDTO = {
+  bookingId: string;
+  daySeq: number;
+  spot: string;
+  label: string;
+  summary: string;
+  totalAmount: number;
+  remaining: number;
+  status: string;
+  flown: boolean;
+  ticketIssued: boolean;
+  noTicket: boolean;
+  locked: boolean;
+  transfers: AppTransferDTO[];
+  cash: AppCashDTO[];
+  lines: LineDTO[];
+  suggests: LineDTO[];
+};
+
 type Report = {
   date: string;
   spots: string[];
@@ -83,6 +102,7 @@ type Report = {
   appTransfers: AppTransferDTO[];
   appCash: AppCashDTO[];
   groups: GroupDTO[];
+  bookingRows: BookingRowDTO[];
   summary: {
     bankTotal: number;
     bankCount: number;
@@ -109,6 +129,8 @@ export function BankCheckCard({ date }: { date: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
+  /** Thẻ booking nào đang mở "Xem lại" (hiện nguyên văn SMS). */
+  const [expanded, setExpanded] = useState<string[]>([]);
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -203,6 +225,24 @@ export function BankCheckCard({ date }: { date: string }) {
     }
   }
 
+  /** "ĐÃ NHẬN ĐỦ": đánh dấu đã nhận MỌI khoản chưa tích của một booking. */
+  async function confirmAllOf(row: BookingRowDTO) {
+    const refs = [...row.transfers, ...row.cash].filter((x) => !x.verified).map((x) => x.refId);
+    if (!refs.length) return;
+    setRowBusy(row.bookingId);
+    setError(null);
+    try {
+      for (const refId of refs) {
+        await apiPatch(`/api/baocao/bank-check`, { action: "confirm", refId, on: true });
+      }
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không đánh dấu được");
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
   async function act(id: string, action: "resolve" | "delete") {
     let note = "";
     if (action === "resolve") {
@@ -227,7 +267,6 @@ export function BankCheckCard({ date }: { date: string }) {
   const matched = lines.filter((l) => l.status !== "pending");
   const unmatched = lines.filter((l) => l.status === "pending");
   const appTransfers = report?.appTransfers ?? [];
-  const unseen = appTransfers.filter((t) => !t.seen);
   const pendingOld = report?.pending ?? [];
 
   return (
@@ -358,50 +397,220 @@ export function BankCheckCard({ date }: { date: string }) {
         </div>
       )}
 
-      {/* ---- CÔNG THỨC CHIA BILL: booking nhận nhiều lần chuyển ---- */}
-      {(report?.groups ?? []).length > 0 && (
-        <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-2.5">
-          <div className="text-xs font-bold text-indigo-900">
-            🧮 {report!.groups.length} booking chia bill / tiền về chưa đủ
+      {/* ================= SỔ BOOKING & TIỀN TRONG NGÀY =================
+          Mỗi booking MỘT THẺ: tóm tắt dịch vụ + từng khoản TM/CK + các dòng
+          sao kê khớp (hoặc nghi) nằm ngay bên dưới — soát theo từng khách,
+          không phải nhảy qua lại giữa ba danh sách như trước. */}
+      {(report?.bookingRows ?? []).length > 0 && (
+        <div className="mt-3 space-y-2">
+          <div className="text-xs font-bold text-slate-700">
+            📒 Sổ booking &amp; tiền trong ngày ({report!.bookingRows.length} booking)
           </div>
-          <ul className="mt-1.5 space-y-1">
-            {report!.groups.map((g, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                <span className="min-w-0 flex-1 font-semibold text-slate-800">{g.label}</span>
-                {/* Một bill thì nói "mới ghi nhận", nhiều bill mới in công thức cộng */}
-                <span className="shrink-0 tabular-nums text-slate-600">
-                  {g.parts.length === 1
-                    ? "mới ghi nhận "
-                    : g.parts.map((n) => n.toLocaleString("vi-VN")).join(" + ") + " = "}
-                  <strong className="text-slate-900">{g.total.toLocaleString("vi-VN")} đ</strong>
-                </span>
-                {g.status === "du" ? (
-                  <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
-                    ✓ đủ {g.expected.toLocaleString("vi-VN")} đ
+          {report!.bookingRows.map((row) => {
+            const paidCk = row.transfers.reduce((t, x) => t + x.amount, 0);
+            const paidTm = row.cash.reduce((t, x) => t + x.amount, 0);
+            const allVerified =
+              [...row.transfers, ...row.cash].length > 0 &&
+              [...row.transfers, ...row.cash].every((x) => x.verified);
+            const open = expanded.includes(row.bookingId);
+            return (
+              <div
+                key={row.bookingId}
+                className={
+                  "rounded-xl border p-2.5 " +
+                  (row.locked
+                    ? "border-slate-300 bg-slate-50"
+                    : allVerified
+                      ? "border-emerald-300 bg-emerald-50/40"
+                      : "border-slate-200 bg-white")
+                }
+              >
+                {/* dòng tóm tắt: #6 · tên · ngày bay — dịch vụ — tiền */}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="min-w-0 font-bold text-slate-900">{row.label}</span>
+                  <span className="text-xs text-slate-500">{row.summary}</span>
+                  {row.flown && (
+                    <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">đã bay</span>
+                  )}
+                  {row.ticketIssued && (
+                    <span className="rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-bold text-white">đã xuất vé</span>
+                  )}
+                  {row.noTicket && (
+                    <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">không vé</span>
+                  )}
+                  {row.status === "cancelled" && (
+                    <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">đã huỷ</span>
+                  )}
+                  {row.locked && (
+                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒 đã khoá</span>
+                  )}
+                </div>
+                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs tabular-nums">
+                  {paidCk > 0 && <span className="text-sky-800">đã CK <strong>{formatVND(paidCk)}</strong></span>}
+                  {paidTm > 0 && <span className="text-emerald-800">đã TM <strong>{formatVND(paidTm)}</strong></span>}
+                  <span className={row.remaining > 0 ? "font-bold text-rose-700" : "text-emerald-700"}>
+                    {row.remaining > 0 ? `còn thu ${formatVND(row.remaining)}` : "✓ hết nợ"}
                   </span>
-                ) : g.status === "thieu" ? (
-                  <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
-                    còn thiếu {(g.expected - g.total).toLocaleString("vi-VN")} đ / cần {g.expected.toLocaleString("vi-VN")}
-                  </span>
-                ) : (
-                  <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                    dư {(g.total - g.expected).toLocaleString("vi-VN")} đ / cần {g.expected.toLocaleString("vi-VN")}
-                  </span>
+                  <span className="text-slate-400">tổng {formatVND(row.totalAmount)}</span>
+                </div>
+
+                {/* từng khoản tiền của booking */}
+                <ul className="mt-1.5 space-y-0.5">
+                  {row.transfers.map((t) => (
+                    <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                      {t.seen ? (
+                        <span className="shrink-0 font-bold text-emerald-600">✓</span>
+                      ) : (
+                        <span className="shrink-0 font-bold text-rose-600">✗</span>
+                      )}
+                      <span className="min-w-0 flex-1 text-slate-600">
+                        CK {t.source}
+                        {t.code ? ` · mã GD ${t.code}` : ""}
+                        {!t.seen && !t.verified && (
+                          <span className="ml-1 rounded bg-rose-100 px-1 py-0.5 text-[10px] font-semibold text-rose-800">
+                            sao kê chưa thấy
+                          </span>
+                        )}
+                      </span>
+                      <strong className="shrink-0 tabular-nums">{formatVND(t.amount)}</strong>
+                      <button
+                        type="button"
+                        disabled={rowBusy === t.refId}
+                        onClick={() => confirmItem(t.refId, !t.verified)}
+                        className={
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-50 " +
+                          (t.verified
+                            ? "bg-emerald-700 text-white"
+                            : "border border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-100")
+                        }
+                      >
+                        {t.verified ? "✓ đã nhận" : "Đã nhận"}
+                      </button>
+                    </li>
+                  ))}
+                  {row.cash.map((t) => (
+                    <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                      <span className="shrink-0">💵</span>
+                      <span className="min-w-0 flex-1 text-slate-600">TM · {t.by} đang giữ</span>
+                      <strong className="shrink-0 tabular-nums">{formatVND(t.amount)}</strong>
+                      <button
+                        type="button"
+                        disabled={rowBusy === t.refId}
+                        onClick={() => confirmItem(t.refId, !t.verified)}
+                        className={
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-50 " +
+                          (t.verified
+                            ? "bg-emerald-700 text-white"
+                            : "border border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-100")
+                        }
+                      >
+                        {t.verified ? "✓ đã nhận" : "Đã nhận"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* SMS khớp / nghi ngờ — nằm ngay dưới booking để soát hai luồng cạnh nhau */}
+                {(row.lines.length > 0 || row.suggests.length > 0) && (
+                  <ul className="mt-1.5 space-y-0.5 border-t border-slate-100 pt-1.5">
+                    {row.lines.map((l) => (
+                      <li key={l.id} className="text-[11px] text-emerald-800">
+                        🧾 +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
+                        {open && <div className="break-all font-mono text-[10px] text-slate-400">{l.raw}</div>}
+                      </li>
+                    ))}
+                    {row.suggests.map((l) => (
+                      <li key={l.id} className="rounded bg-amber-50 px-1.5 py-1 text-[11px] font-semibold text-amber-900">
+                        ❓ +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · máy NGHI của booking này — {l.matchWhy}
+                        <button
+                          type="button"
+                          disabled={rowBusy === l.id}
+                          onClick={() => act(l.id, "resolve")}
+                          className="ml-2 rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                        >
+                          ✓ Đã kiểm tay
+                        </button>
+                        {open && <div className="break-all font-mono text-[10px] font-normal text-slate-400">{l.raw}</div>}
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </li>
-            ))}
-          </ul>
+
+                {/* ba nút của thẻ */}
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {!allVerified && [...row.transfers, ...row.cash].length > 0 && (
+                    <button
+                      type="button"
+                      disabled={rowBusy === row.bookingId}
+                      onClick={() => confirmAllOf(row)}
+                      className="rounded-lg border border-emerald-500 bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      ✓ Đã nhận đủ
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded((p) =>
+                        p.includes(row.bookingId) ? p.filter((x) => x !== row.bookingId) : [...p, row.bookingId],
+                      )
+                    }
+                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    {open ? "Thu gọn" : "Xem lại"}
+                  </button>
+                  {!row.locked && (
+                    <button
+                      type="button"
+                      disabled={rowBusy === row.bookingId}
+                      onClick={() =>
+                        lockBooking({ refId: row.bookingId, bookingId: row.bookingId, label: row.label, spot: row.spot })
+                      }
+                      className="rounded-lg border border-slate-400 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      🔒 Khoá booking
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ---- TỪNG DÒNG SAO KÊ của ngày: xanh = khớp, đỏ = treo ---- */}
-      {lines.length > 0 && (
-        <ul className="mt-3 space-y-1.5">
-          {lines.map((l) => (
-            <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} />
-          ))}
-        </ul>
-      )}
+      {/* ---- SMS CHƯA KHỚP AI (không nghi cho booking nào ở trên) ---- */}
+      {(() => {
+        const suggestedIds = new Set((report?.bookingRows ?? []).flatMap((r) => r.suggests.map((l) => l.id)));
+        const orphanPending = unmatched.filter((l) => !suggestedIds.has(l.id));
+        const orphanMatched = matched.filter(
+          (l) => !(report?.bookingRows ?? []).some((r) => r.lines.some((x) => x.id === l.id)),
+        );
+        if (!orphanPending.length && !orphanMatched.length) return null;
+        return (
+          <div className="mt-3">
+            {orphanMatched.length > 0 && (
+              <>
+                <div className="text-xs font-bold text-slate-700">SMS đã khớp (khoản không gắn booking)</div>
+                <ul className="mt-1 space-y-1.5">
+                  {orphanMatched.map((l) => (
+                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} />
+                  ))}
+                </ul>
+              </>
+            )}
+            {orphanPending.length > 0 && (
+              <>
+                <div className="mt-2 text-xs font-bold text-rose-800">SMS chưa khớp ai — kiểm tay</div>
+                <ul className="mt-1 space-y-1.5">
+                  {orphanPending.map((l) => (
+                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ---- KHOẢN TREO các ngày trước — chưa tìm được chủ ---- */}
       {pendingOld.length > 0 && (
@@ -417,141 +626,38 @@ export function BankCheckCard({ date }: { date: string }) {
         </div>
       )}
 
-      {/* ---- ĐỐI CHIẾU NGƯỢC: app ghi CK mà sao kê chưa thấy ---- */}
-      {appTransfers.length > 0 && (
-        <div className="mt-3">
-          <div className="text-xs font-bold text-slate-700">
-            App ghi nhận {appTransfers.length} khoản CK trong ngày ={" "}
-            <span className="tabular-nums">{formatVND(appTransfers.reduce((t, x) => t + x.amount, 0))}</span>
-            {unseen.length > 0 && (
-              <span className="text-rose-700"> · {unseen.length} khoản sao kê chưa thấy</span>
-            )}
+      {/* ---- Khoản app ghi mà KHÔNG gắn booking nào (hiếm — lệnh thu gõ tay) ---- */}
+      {(() => {
+        const strayT = appTransfers.filter((t) => !t.bookingId);
+        const strayC = (report?.appCash ?? []).filter((t) => !t.bookingId);
+        if (!strayT.length && !strayC.length) return null;
+        return (
+          <div className="mt-3">
+            <div className="text-xs font-bold text-slate-700">Khoản không gắn booking</div>
+            <ul className="mt-1 divide-y divide-slate-100">
+              {[...strayT, ...strayC].map((t: any) => (
+                <li key={t.refId} className="flex flex-wrap items-center gap-x-2 py-1 text-xs">
+                  <span className="min-w-0 flex-1 text-slate-700">{t.label}</span>
+                  <strong className="shrink-0 tabular-nums">{formatVND(t.amount)}</strong>
+                  <button
+                    type="button"
+                    disabled={rowBusy === t.refId}
+                    onClick={() => confirmItem(t.refId, !t.verified)}
+                    className={
+                      "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-50 " +
+                      (t.verified
+                        ? "bg-emerald-700 text-white"
+                        : "border border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-100")
+                    }
+                  >
+                    {t.verified ? "✓ đã nhận" : "Đã nhận"}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="mt-1 divide-y divide-slate-100">
-            {appTransfers.map((t) => (
-              <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-1 text-xs">
-                {t.seen ? (
-                  <span className="shrink-0 font-bold text-emerald-600">✓</span>
-                ) : (
-                  <span className="shrink-0 font-bold text-rose-600">✗</span>
-                )}
-                <span className="min-w-0 flex-1 text-slate-700">
-                  {t.label}
-                  <span className="text-slate-400">
-                    {" "}
-                    · {t.source}
-                    {t.code ? ` · mã GD ${t.code}` : ""}
-                  </span>
-                </span>
-                <strong className="shrink-0 tabular-nums text-slate-900">{formatVND(t.amount)}</strong>
-                {!t.seen && (
-                  <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800">
-                    sao kê chưa thấy — kiểm lại
-                  </span>
-                )}
-                {/* HAI NÚT TÁCH BẠCH: "Đã nhận" đánh dấu từng khoản (cọc trước cho
-                    ngày tương lai vẫn nhận được mà không khoá); "Khoá booking" là
-                    chuyện riêng, chỉ bấm khi booking đã xong xuôi hẳn. */}
-                {t.verified ? (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => confirmItem(t.refId, false)}
-                    title="Kế toán đã nhận khoản này — bấm để bỏ đánh dấu"
-                    className="shrink-0 rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50"
-                  >
-                    ✓ đã nhận
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => confirmItem(t.refId, true)}
-                    className="shrink-0 rounded-lg border border-emerald-400 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
-                  >
-                    ✓ Đã nhận
-                  </button>
-                )}
-                {t.locked ? (
-                  <span
-                    className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white"
-                    title="Kế toán đã khoá — không sửa được nữa"
-                  >
-                    🔒 đã khoá
-                  </span>
-                ) : t.bookingId ? (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => lockBooking(t)}
-                    title="Chỉ khoá khi booking đã xong hẳn — khoá rồi điều phối không thao tác được nữa"
-                    className="shrink-0 rounded-lg border border-slate-400 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    🔒 Khoá booking
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 text-[11px] leading-tight text-slate-500">
-            “Sao kê chưa thấy” = app có ghi khoản CK này nhưng chưa dòng sao kê nào khớp về nó — có thể chưa dán
-            đủ sao kê, khách chưa chuyển, hoặc nhập nhầm. Khoản đã bấm “Đã nhận” coi như soát xong, không đòi sao kê nữa.
-          </p>
-        </div>
-      )}
-
-      {/* ---- TIỀN MẶT ghi nhận trong ngày: tích "Đã nhận" từng khoản (không tính vào đối chiếu sao kê) ---- */}
-      {(report?.appCash ?? []).length > 0 && (
-        <div className="mt-3">
-          <div className="text-xs font-bold text-slate-700">
-            💵 Tiền mặt ghi nhận trong ngày ({report!.appCash.length} khoản ={" "}
-            <span className="tabular-nums">{formatVND(report!.appCash.reduce((t, x) => t + x.amount, 0))}</span>)
-          </div>
-          <ul className="mt-1 divide-y divide-slate-100">
-            {report!.appCash.map((t) => (
-              <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-1 text-xs">
-                <span className="min-w-0 flex-1 text-slate-700">
-                  {t.label}
-                  <span className="text-slate-400"> · {t.by} đang giữ</span>
-                </span>
-                <strong className="shrink-0 tabular-nums text-slate-900">{formatVND(t.amount)}</strong>
-                {t.verified ? (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => confirmItem(t.refId, false)}
-                    title="Đã nhận khoản tiền mặt này — bấm để bỏ đánh dấu"
-                    className="shrink-0 rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50"
-                  >
-                    ✓ đã nhận
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => confirmItem(t.refId, true)}
-                    className="shrink-0 rounded-lg border border-emerald-400 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
-                  >
-                    ✓ Đã nhận
-                  </button>
-                )}
-                {t.locked ? (
-                  <span className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒</span>
-                ) : t.bookingId ? (
-                  <button
-                    type="button"
-                    disabled={rowBusy === t.refId}
-                    onClick={() => lockBooking(t)}
-                    className="shrink-0 rounded-lg border border-slate-400 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    🔒 Khoá
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        );
+      })()}
 
       {lines.length === 0 && pendingOld.length === 0 && appTransfers.length === 0 && (
         <p className="mt-2 text-xs text-slate-500">
