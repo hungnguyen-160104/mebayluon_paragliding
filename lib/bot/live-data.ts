@@ -56,14 +56,6 @@ const CACHE_MS = 60_000;
 /** "2026-08-22" -> "22/08". */
 const dm = (key: string) => formatDateKeyVN(key).slice(0, 5);
 
-/** Gom dãy ngày liền nhau thành "22/08-24/08" cho đỡ dài dòng. */
-function joinRuns(dates: string[]): string {
-  if (!dates.length) return "";
-  const runs: string[][] = [[dates[0]]];
-  for (let i = 1; i < dates.length; i++) {
-    if (shiftDateKey(dates[i - 1], 1) === dates[i]) runs[runs.length - 1].push(dates[i]);
-    else runs.push([dates[i]]);
-  }
   return runs.map((r) => (r.length > 1 ? `${dm(r[0])}-${dm(r[r.length - 1])}` : dm(r[0]))).join(", ");
 }
 
@@ -115,10 +107,18 @@ async function roomBlock(today: string): Promise<string> {
       (byFree.get(free) ?? byFree.set(free, []).get(free)!).push(d);
     }
 
+    /**
+     * Liệt kê TỪNG ĐÊM, không gộp dãy "28/08-01/09": bot đã từng đọc trượt
+     * dãy và bảo khách "1/9 còn chỗ" trong khi 1/9 nằm giữa dãy HẾT. Danh
+     * sách dài hơn nhưng model chỉ cần dò đúng ngày, không phải suy luận
+     * khoảng — độ chính xác ăn đứt độ gọn.
+     */
     const parts = [...byFree.entries()]
       .sort((a, b) => a[0] - b[0])
       .map(([free, ds]) =>
-        free === 0 ? `HẾT: ${joinRuns(ds)}` : `chỉ còn ${free} ${unitWord}: ${joinRuns(ds)}`,
+        free === 0
+          ? `HẾT các đêm: ${ds.map(dm).join(", ")}`
+          : `chỉ còn ${free} ${unitWord} các đêm: ${ds.map(dm).join(", ")}`,
       );
     parts.push(`các đêm khác còn đủ ${room.units} ${unitWord}`);
 
@@ -183,6 +183,7 @@ export async function buildLiveDataBlock(): Promise<string> {
       flights +
       "\n\nLUAT DUNG KHOI NAY:\n" +
       "- Phòng: trả lời còn/hết theo đúng số trên; khách muốn đặt thì gửi link https://www.mebayluon.com/homestay/dat-phong (đặt online, thanh toán khi nhận phòng).\n" +
+      "- CÁCH ĐỌC: mỗi dòng phòng liệt kê TỪNG ĐÊM cụ thể. Khách hỏi đêm nào thì DÒ ĐÚNG ĐÊM ĐÓ trong từng dòng: đêm có trong danh sách sau chữ HẾT = phòng đó hết; trong danh sách 'chỉ còn N' = còn đúng N; không xuất hiện = còn đủ. TUYỆT ĐỐI không nói còn phòng khi đêm khách hỏi nằm trong danh sách HẾT.\n" +
       "- PHẢI ĐỐI CHIẾU SỐ NGƯỜI, đừng chỉ nói còn hay hết phòng: khách đi mấy người thì cộng sức chứa của các phòng CÒN TRỐNG đêm đó rồi so với số khách. Ví dụ khách 10 người mà 01/09 chỉ còn 2 phòng giường đôi thì trả lời: \"em còn 2 phòng giường đôi, mỗi phòng chỉ ngủ được 2 người lớn + 1 trẻ em, nên 10 người e rằng không đủ chỗ ạ\", rồi gợi ý phương án khác CÒN TRỐNG đêm đó (ghép thêm hạng phòng khác, chỗ nằm sàn cộng đồng, hoặc gói bao sàn / bao nguyên nhà sàn). Không đủ thì nói thật là không đủ — tuyệt đối không hứa liều rồi để khách đến nơi mới biết.\n" +
       `- TRẺ EM tính theo CÂN NẶNG: dưới ${CHILD_MAX_KG}kg (thường 5-10 tuổi) mới là trẻ em, nặng hơn tính như người lớn vì chiếm trọn một chỗ nằm. Trẻ nhỏ ngủ ghép cùng bố mẹ trong đúng sức chứa ghi trên.\n` +
 
