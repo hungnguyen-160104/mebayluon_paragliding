@@ -3256,6 +3256,10 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
 export type FlownServices = {
   bookings: number;
   guests: number;
+  /** Trong số đã bay: khách của các booking đánh dấu BAY KHÔNG VÉ — vẫn là
+   *  chuyến bay thật, nhưng không nằm trong dải mã vé nên phép đếm theo vé
+   *  phải cộng bù nhóm này. */
+  noTicketGuests: number;
   flycam: number;
   video360: number;
   redFlag: number;
@@ -3334,6 +3338,7 @@ export async function listBookings(
   const flown: FlownServices = {
     bookings: done.length,
     guests: sum((b) => b.guestCount),
+    noTicketGuests: done.filter((b) => b.noTicketFlight).reduce((t, b) => t + (b.guestCount || 0), 0),
     flycam: sum((b) => b.flycam),
     video360: sum((b) => b.video360),
     redFlag: sum((b) => b.redFlag),
@@ -6396,6 +6401,8 @@ export type CloseSuggestionDTO = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  /** KHÁCH huỷ chưa thanh toán (không có hoàn) — đếm từ sổ booking + báo cáo điều phối. */
+  cancelledNoRefundCount: number;
   rescheduledCount: number;
 issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng TỰ ĐỘNG từ mã phi công báo đã bay (+PPG) — dùng khi quầy chưa nhập dải. */
@@ -6545,6 +6552,18 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     cancelledCount:
       sum(dispatchers, (d) => d.cancelledCount) +
       bookingCancelEntries.reduce((t, e) => t + (spot === "ha-noi" ? e.guests : (e.note.match(/thu hồi ([^·]+)/)?.[1] ?? "").trim().split(/\s+/).filter(Boolean).length), 0),
+    /**
+     * HUỶ KHÔNG CẦN HOÀN: khách huỷ mà chưa trả đồng nào — đếm theo ĐẦU KHÁCH
+     * (nhóm này thường chưa xuất vé nên không dính phép đếm vé thu hồi).
+     * Gom cả hai nguồn: điều phối khai nhóm huỷ với tiền hoàn 0, và booking
+     * huỷ trên sổ (đã lọc trùng) không ghi tiền hoàn.
+     */
+    cancelledNoRefundCount:
+      dispatchers
+        .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
+        .filter((e) => !(e.refund > 0))
+        .reduce((t, e) => t + (e.guests || 0), 0) +
+      bookingCancelEntries.filter((e) => !(e.refund > 0)).reduce((t, e) => t + (e.guests || 0), 0),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
     issuedRanges: (() => {
@@ -6663,6 +6682,7 @@ export type DailyCloseSaveInput = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledNoRefundCount?: number;
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
   cancelledCodesText: string;
@@ -6725,6 +6745,7 @@ export async function upsertDailyClose(
         ticketsIssued: spot === "ha-noi" ? 0 : input.ticketsIssued,
         ticketsReturned: spot === "ha-noi" ? 0 : input.ticketsReturned,
         cancelledCount: input.cancelledCount,
+        cancelledNoRefundCount: Math.max(0, Math.round(input.cancelledNoRefundCount ?? 0)),
         rescheduledCount: input.rescheduledCount,
         issuedRanges: spot === "ha-noi" ? [] : ranges,
         cancelledCodes: spot === "ha-noi" ? [] : cancelled.codes,
@@ -6783,6 +6804,7 @@ async function pushCloseRow(doc: any) {
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,
+    cancelledNoRefundCount: doc.cancelledNoRefundCount ?? 0,
     cancelledCodes:
       (doc.cancelledCodes || []).join(", ") ||
       (doc.cancelledGuestEntries || [])
@@ -7383,6 +7405,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,
+    cancelledNoRefundCount: doc.cancelledNoRefundCount ?? 0,
     rescheduledCount: doc.rescheduledCount ?? 0,
     issuedRanges: doc.issuedRanges ?? [],
     cancelledCodes: doc.cancelledCodes ?? [],

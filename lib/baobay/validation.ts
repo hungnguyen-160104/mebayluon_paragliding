@@ -268,6 +268,7 @@ export const dailyCloseSchema = z.object({
   ticketsIssued: count(5_000),
   ticketsReturned: count(5_000),
   cancelledCount: count(5_000),
+  cancelledNoRefundCount: count(5_000).optional().default(0),
   rescheduledCount: count(5_000),
   issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
   cancelledCodesText: text(20_000),

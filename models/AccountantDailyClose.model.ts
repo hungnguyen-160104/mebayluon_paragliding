@@ -47,6 +47,8 @@ export interface IAccountantDailyClose {
   ticketsReturned: number;
 
   cancelledCount: number;
+  /** KHÁCH huỷ nhưng CHƯA phát sinh thanh toán — không có lệnh hoàn nào phải theo. */
+  cancelledNoRefundCount: number;
   rescheduledCount: number;
 
   /** Các dải mã vé đã xuất, có thể nhiều cuốn khác tiền tố trong một ngày. */
@@ -130,6 +132,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     ticketsReturned: { type: Number, default: 0, min: 0 },
 
     cancelledCount: { type: Number, default: 0, min: 0 },
+    cancelledNoRefundCount: { type: Number, default: 0, min: 0 },
     rescheduledCount: { type: Number, default: 0, min: 0 },
 
     issuedRanges: { type: [IssuedRangeSchema], default: [] },

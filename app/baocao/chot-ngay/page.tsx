@@ -62,6 +62,7 @@ type CloseSuggestion = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledNoRefundCount: number;
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng tự động từ mã phi công báo đã bay (+PPG). */
@@ -112,6 +113,7 @@ type FormState = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledNoRefundCount: number;
   rescheduledCount: number;
   issuedRanges: RangeRow[];
   cancelledCodesText: string;
@@ -143,6 +145,7 @@ const EMPTY_FORM: FormState = {
   ticketsIssued: 0,
   ticketsReturned: 0,
   cancelledCount: 0,
+  cancelledNoRefundCount: 0,
   rescheduledCount: 0,
   issuedRanges: [{ from: "", to: "" }],
   cancelledCodesText: "",
@@ -254,6 +257,7 @@ function DailyCloseInner() {
             ticketsIssued: res.close.ticketsIssued,
             ticketsReturned: res.close.ticketsReturned,
             cancelledCount: res.close.cancelledCount,
+            cancelledNoRefundCount: res.close.cancelledNoRefundCount ?? 0,
             rescheduledCount: res.close.rescheduledCount,
             issuedRanges: toRangeRows(res.close.issuedRanges),
             cancelledCodesText: res.close.cancelledCodes.join(", "),
@@ -351,6 +355,7 @@ function DailyCloseInner() {
       ticketsIssued: suggest.ticketsIssued,
       ticketsReturned: suggest.ticketsReturned,
       cancelledCount: suggest.cancelledCount,
+      cancelledNoRefundCount: suggest.cancelledNoRefundCount ?? 0,
       rescheduledCount: suggest.rescheduledCount,
       issuedRanges: suggest.issuedRanges.length ? suggest.issuedRanges.map((r) => ({ ...r })) : prev.issuedRanges,
       cancelledCodesText: suggest.cancelledCodesText,
@@ -810,13 +815,22 @@ function DailyCloseInner() {
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
                 </ServiceBox>
 
-                <ServiceBox tone="cancelled" label="Trong đó: vé huỷ hoàn tiền">
+                <ServiceBox tone="cancelled" label="Huỷ hoàn tiền">
                   <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
                 </ServiceBox>
 
-                <ServiceBox tone="moved" label="Trong đó: vé dời lịch">
+                {/* Booking huỷ mà CHƯA thanh toán đồng nào — không có lệnh hoàn phải theo,
+                    nhưng vẫn phải đếm để tổng khách huỷ trong ngày không rơi mất. */}
+                <ServiceBox tone="cancelled" label="Huỷ không cần hoàn">
+                  <CountInput compact value={form.cancelledNoRefundCount} onChange={(v) => set("cancelledNoRefundCount", v)} max={5000} />
+                  <Compare label="sổ booking + điều phối" value={suggest?.cancelledNoRefundCount} mine={form.cancelledNoRefundCount}
+                    onTake={locked ? undefined : (v) => set("cancelledNoRefundCount", v)} />
+                  <p className="mt-0.5 text-[10px] leading-tight text-slate-500">Khách huỷ chưa thanh toán — không có lệnh hoàn</p>
+                </ServiceBox>
+
+                <ServiceBox tone="moved" label="Dời lịch">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />

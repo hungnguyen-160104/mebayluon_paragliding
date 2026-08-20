@@ -9,6 +9,8 @@ import { Button } from "./ui";
 export type FlownServices = {
   bookings: number;
   guests: number;
+  /** Khách của các booking BAY KHÔNG VÉ đã tích đã bay. */
+  noTicketGuests?: number;
   flycam: number;
   video360: number;
   redFlag: number;

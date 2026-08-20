@@ -235,6 +235,8 @@ export type DailyCloseDTO = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  /** Khách huỷ chưa thanh toán — không cần lệnh hoàn. */
+  cancelledNoRefundCount: number;
   rescheduledCount: number;
   issuedRanges: IssuedRangeDTO[];
   cancelledCodes: string[];

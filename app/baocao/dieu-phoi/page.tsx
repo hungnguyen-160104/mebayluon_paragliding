@@ -267,12 +267,20 @@ export default function DispatcherReportPage() {
    * đã gõ tay số khác thì máy không giành: khách vãng lai không vé vẫn có thật.
    */
   const [flownGuests, setFlownGuests] = useState(0);
+  /** Khách "bay không vé" đã tích đã bay — không nằm trong dải vé nên phải cộng bù. */
+  const [noTicketGuests, setNoTicketGuests] = useState(0);
   const lastAutoGuests = useRef<number | null>(null);
   /**
    * Hook này phải nằm TRƯỚC mọi `return` sớm của component (màn "Đang tải…"),
    * không thì số hook đổi giữa hai lần render và React sập cả trang.
    */
-  const autoGuests = spot === "ha-noi" ? flownGuests : rangeTotal;
+  /**
+   * Điểm vé: tổng khách = SỐ VÉ ĐÃ XUẤT + KHÁCH BAY KHÔNG VÉ. Chuyến đánh dấu
+   * "không vé" vẫn là chuyến bay thật (khách ngoại giao, bay bù, hết vé giấy)
+   * — chỉ đếm theo dải vé là hụt đúng nhóm này: 4 khách bay (2 vé + 2 không
+   * vé) mà ô tổng hiện 2.
+   */
+  const autoGuests = spot === "ha-noi" ? flownGuests : rangeTotal + noTicketGuests;
   useEffect(() => {
     if (locked || autoGuests <= 0) return;
     setForm((prev) => {
@@ -514,7 +522,10 @@ export default function DispatcherReportPage() {
           <div className="mt-0.5 text-[11px] text-rose-900/60">
             {noTickets
               ? "Tự cộng theo booking đã tích “đã bay” — sửa tay được."
-              : "Tự cộng theo dải mã vé đã xuất — sửa tay được."}
+              : "Tự cộng theo dải mã vé đã xuất + khách bay không vé — sửa tay được."}
+            {!noTickets && noTicketGuests > 0 && (
+              <span className="ml-1 font-semibold">(gồm {noTicketGuests} khách bay không vé)</span>
+            )}
             {autoGuests > 0 && form.guestCount !== autoGuests && (
               <button
                 type="button"
@@ -527,6 +538,24 @@ export default function DispatcherReportPage() {
                 Lấy {autoGuests}
               </button>
             )}
+            {/* Điểm vé đếm theo DẢI VÉ, nhưng sổ booking là nguồn thứ hai: tích
+                "đã bay" 4 booking mà ô này vẫn 2 nghĩa là dải vé nhập thiếu —
+                hiện số của sổ booking kèm nút lấy để khỏi ngồi đoán vì đâu lệch. */}
+            {!noTickets && flownGuests > 0 && form.guestCount !== flownGuests && (
+              <span className="ml-2">
+                · sổ booking đã tích “đã bay”: <strong>{flownGuests}</strong> khách
+                <button
+                  type="button"
+                  className="ml-1 font-semibold text-rose-800 underline"
+                  onClick={() => {
+                    lastAutoGuests.current = flownGuests;
+                    set("guestCount", flownGuests);
+                  }}
+                >
+                  Lấy {flownGuests}
+                </button>
+              </span>
+            )}
           </div>
         </div>
 
@@ -534,7 +563,7 @@ export default function DispatcherReportPage() {
         {!noTickets && (
         <CollapseCard title="Vé trong ngày" hint="vé xuất, vé thu về, dải mã">
           <div className="grid gap-3 @md:grid-cols-2">
-            <Field label="Số vé xuất ra" hint="Tự đếm theo dải mã vé bên dưới — sửa tay được">
+            <Field label="Số vé xuất ra" hint="Tự đếm theo dải mã vé bên dưới">
               <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
             </Field>
             <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
@@ -578,7 +607,10 @@ export default function DispatcherReportPage() {
           <FlownServicesHint
             spot={spot}
             date={date}
-            onData={(f) => setFlownGuests(f.guests)}
+            onData={(f) => {
+              setFlownGuests(f.guests);
+              setNoTicketGuests(f.noTicketGuests ?? 0);
+            }}
             onTake={(f) =>
               setForm((prev) => ({
                 ...prev,
