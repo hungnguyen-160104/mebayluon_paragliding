@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 
 import { isDateKey } from "@/lib/baobay/date";
+import { wearsRole } from "@/lib/baobay/roles";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError, listServiceChanges, undoServiceChange } from "@/services/baobay.service";
@@ -27,7 +28,17 @@ export async function GET(req: Request) {
   const date = new URL(req.url).searchParams.get("date") ?? "";
   if (!isDateKey(date)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
 
-  return NextResponse.json({ items: await listServiceChanges(spot, date) });
+  /**
+   * CAMERA MAN thuần (không kiêm điều phối/quầy/kế toán) chỉ được xem các lần
+   * thêm/bớt do CHÍNH MÌNH làm — sổ dịch vụ của người khác không phải việc
+   * của họ, lộ ra là lộ luôn giá và tiền nong từng khách.
+   */
+  const managerial =
+    auth.viaAdmin ||
+    ["dispatcher", "counter", "accountant", "admin"].some((r) => wearsRole(auth, r as never));
+  return NextResponse.json({
+    items: await listServiceChanges(spot, date, managerial ? undefined : auth.username),
+  });
 }
 
 export async function DELETE(req: Request) {

@@ -187,7 +187,12 @@ export function AddServicesCard({
    * Chỉ LIỆT KÊ, không có nút sửa: không có ảnh chụp trước-khi-sửa nên không hoàn
    * tác được, chỉ dùng để soát.
    */
-  const legacy = dayAll.flatMap((b) =>
+  /**
+   * Camera man KHÔNG được đọc sổ sửa-dịch-vụ móc từ ghi chú của mọi booking —
+   * đó là lịch sử thao tác (kèm tiền nong) của người khác. Chế độ flycam tắt
+   * hẳn nguồn này; sổ `changes` thì máy chủ đã lọc chỉ còn của chính mình.
+   */
+  const legacy = (onlyFlycam ? [] : dayAll).flatMap((b) =>
     (b.note ?? "")
       .split("·")
       .map((x) => x.trim())
@@ -339,7 +344,7 @@ export function AddServicesCard({
       /* Nền đổi màu theo việc đang làm: THÊM dịch vụ nền xanh, HUỶ nền đỏ —
          nhìn màu là biết mình đang cộng hay đang trừ, khỏi bấm nhầm chiều. */
       className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : "border-emerald-400 bg-emerald-50/50"}
-      title="➕➖ DỊCH VỤ TUỲ CHỌN"
+      title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
       hint="khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"
     >
       {done && (
@@ -753,7 +758,9 @@ export function AddServicesCard({
       {/* ---- SỔ THÊM / HUỶ TRONG NGÀY: bấm Sửa là hoàn tác rồi nhập lại ---- */}
       {changes.length > 0 && (
         <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2">
-          <div className="text-xs font-bold text-slate-700">Đã ghi trong ngày</div>
+          <div className="text-xs font-bold text-slate-700">
+            {onlyFlycam ? "Các lần BẠN đã thêm/huỷ flycam trong ngày" : "Đã ghi trong ngày"}
+          </div>
           <ul className="mt-1 divide-y divide-slate-100">
             {changes.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-xs">

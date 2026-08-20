@@ -4803,10 +4803,22 @@ function toServiceChangeDTO(doc: any): ServiceChangeDTO {
 }
 
 /** Các lần thêm/huỷ dịch vụ của một ngày bay — mới nhất lên đầu. */
-export async function listServiceChanges(spotRaw: string, date: string): Promise<ServiceChangeDTO[]> {
+export async function listServiceChanges(
+  spotRaw: string,
+  date: string,
+  /** Chỉ trả các lần do ĐÚNG người này thao tác — camera man không được xem sổ của người khác. */
+  onlyByUsername?: string,
+): Promise<ServiceChangeDTO[]> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
-  const docs = await BaobayServiceChange.find({ spot, date }).sort({ createdAt: -1 }).limit(50).lean<any[]>();
+  const docs = await BaobayServiceChange.find({
+    spot,
+    date,
+    ...(onlyByUsername ? { createdByUsername: onlyByUsername } : {}),
+  })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean<any[]>();
   return docs.map(toServiceChangeDTO);
 }
 
