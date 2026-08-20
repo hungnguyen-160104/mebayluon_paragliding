@@ -13,6 +13,12 @@
  */
 
 /** Giờ nhận/trả phòng cố định của nhà. */
+/**
+ * TRẺ EM tính theo CÂN NẶNG, không theo tuổi: dưới 35kg (thường 5–10 tuổi).
+ * Nặng hơn thì tính như người lớn vì chiếm trọn một chỗ nằm.
+ */
+export const CHILD_MAX_KG = 35;
+
 export const CHECK_IN_TIME = "13:00";
 export const CHECK_OUT_TIME = "11:00";
 
@@ -74,13 +80,13 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     webBookable: true,
   },
   {
-    // Phòng giường đơn view dù lượn
+    // Phòng giường đơn view dù lượn — 1 người lớn + 1 trẻ, hoặc 2 người lớn (hơi chật)
     id: "single-room",
     units: 2,
     pricePerNight: 350_000,
     beds: [{ kind: "single-bed", count: 1 }],
     features: ["stilt-house", "private-room", "shared-bathroom", "paragliding-view"],
-    maxAdults: 1,
+    maxAdults: 2,
     maxChildren: 1,
     webBookable: true,
   },
@@ -96,14 +102,14 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     webBookable: true,
   },
   {
-    // Phòng gác mái to
+    // Phòng gác mái to — 3 người lớn + 1 trẻ
     id: "couple-attic-double",
     units: 1,
     pricePerNight: 400_000,
     beds: [{ kind: "single-mattress", count: 3 }],
     features: ["attic", "private-room", "shared-bathroom"],
     maxAdults: 3,
-    maxChildren: 0,
+    maxChildren: 1,
     webBookable: true,
   },
   {
@@ -118,9 +124,10 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     webBookable: true,
   },
   {
-    // Sàn cộng đồng — 14 đệm tối đa, Ở TỐT NHẤT 10; bán theo CHỖ NẰM qua liên hệ/OTA
+    // Sàn cộng đồng — 12 đệm đơn, mỗi đệm 1 người lớn; ở TỐT NHẤT 10 người.
+    // Bán theo CHỖ NẰM qua liên hệ/OTA, không bán online.
     id: "dormitory",
-    units: 14,
+    units: 12,
     pricePerNight: 200_000,
     beds: [{ kind: "single-mattress", count: 1 }],
     features: ["stilt-house", "shared-bathroom"],

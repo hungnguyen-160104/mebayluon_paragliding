@@ -17,6 +17,7 @@ import { formatDateKeyVN, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baob
 import {
   CHECK_IN_TIME,
   CHECK_OUT_TIME,
+  CHILD_MAX_KG,
   HOMESTAY_ROOMS,
   ROOM_SHORT_VI,
   unitsFree,
@@ -66,6 +67,22 @@ function joinRuns(dates: string[]): string {
   return runs.map((r) => (r.length > 1 ? `${dm(r[0])}-${dm(r[r.length - 1])}` : dm(r[0]))).join(", ");
 }
 
+/**
+ * SỨC CHỨA nói bằng lời cho bot đọc. Viết tay từng phòng thay vì ghép máy móc
+ * từ con số trần — khách hỏi "10 người ngủ được không" thì bot phải thấy ngay
+ * mỗi phòng nằm được mấy người mà nhân lên.
+ */
+const SLEEPS_VI: Record<string, string> = {
+  "double-room": "mỗi phòng ngủ 2 người lớn + 1 trẻ em",
+  "single-room": "mỗi phòng ngủ 1 người lớn + 1 trẻ em, hoặc 2 người lớn nhưng hơi chật",
+  "couple-attic-single": "mỗi phòng ngủ tối đa 2 người lớn (một cặp đôi)",
+  "couple-attic-double": "ngủ 3 người lớn + 1 trẻ em",
+  "whole-home-small": "ngủ tối đa 5 người lớn, phòng khép kín",
+  dormitory: "mỗi chỗ là 1 đệm đơn cho 1 người lớn; sàn có tối đa 12 đệm, ở thoải mái nhất là 10 người",
+  "floor-combo": "cả gói chứa tối đa 30 người, thoải mái nhất 24 người",
+  "whole-home-large": "cả gói chứa tối đa 36 người, thoải mái nhất 30 người",
+};
+
 async function roomBlock(today: string): Promise<string> {
   const to = shiftDateKey(today, ROOM_NIGHTS);
   const touching = await HomestayBooking.find({
@@ -81,21 +98,31 @@ async function roomBlock(today: string): Promise<string> {
 
   const lines: string[] = [];
   for (const room of HOMESTAY_ROOMS) {
-    const price = `${(room.pricePerNight / 1000).toLocaleString("vi-VN")}k/đêm`;
-    const cap = room.comfort ? `tối đa ${room.maxAdults} người, nên ở ${room.comfort}` : `tối đa ${room.maxAdults} người lớn${room.maxChildren ? ` + ${room.maxChildren} trẻ <6 tuổi` : ""}`;
-    const full = dates.filter((d) => unitsFree(touching, room.id, d) === 0);
-    const low = dates.filter((d) => {
-      const f = unitsFree(touching, room.id, d);
-      return f > 0 && f < room.units;
-    });
-    const state =
-      full.length === 0 && low.length === 0
-        ? "trống suốt cả năm tới"
-        : [full.length ? `KÍN: ${joinRuns(full)}` : "", low.length ? `còn ít: ${joinRuns(low)}` : "", "các đêm khác trống"]
-            .filter(Boolean)
-            .join(" · ");
     const label = (ROOM_SHORT_VI[room.id] ?? room.id).replace(" (chỗ)", "");
-    lines.push(`- ${label} (${room.units} ${room.id === "dormitory" ? "chỗ" : "phòng"}, ${price}, ${cap}): ${state}`);
+    const unitWord = room.id === "dormitory" ? "chỗ" : "phòng";
+    const price = `${(room.pricePerNight / 1000).toLocaleString("vi-VN")}k/đêm`;
+    const sleeps = SLEEPS_VI[room.id] ?? `tối đa ${room.maxAdults} người lớn`;
+
+    /**
+     * Gom ngày theo SỐ CÒN TRỐNG THẬT (0, 1, 2…) chứ không chỉ "kín / còn ít":
+     * khách hỏi "1/9 còn mấy phòng đôi" thì bot phải trả lời được con số, rồi
+     * mới nhân lên để đối chiếu với số người đi.
+     */
+    const byFree = new Map<number, string[]>();
+    for (const d of dates) {
+      const free = unitsFree(touching, room.id, d);
+      if (free >= room.units) continue; // đêm còn nguyên: gộp vào câu cuối
+      (byFree.get(free) ?? byFree.set(free, []).get(free)!).push(d);
+    }
+
+    const parts = [...byFree.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([free, ds]) =>
+        free === 0 ? `HẾT: ${joinRuns(ds)}` : `chỉ còn ${free} ${unitWord}: ${joinRuns(ds)}`,
+      );
+    parts.push(`các đêm khác còn đủ ${room.units} ${unitWord}`);
+
+    lines.push(`- ${label} — ${room.units} ${unitWord}, ${price}, ${sleeps}. ${parts.join(" · ")}`);
   }
   return lines.join("\n");
 }
@@ -156,6 +183,9 @@ export async function buildLiveDataBlock(): Promise<string> {
       flights +
       "\n\nLUAT DUNG KHOI NAY:\n" +
       "- Phòng: trả lời còn/hết theo đúng số trên; khách muốn đặt thì gửi link https://www.mebayluon.com/homestay/dat-phong (đặt online, thanh toán khi nhận phòng).\n" +
+      "- PHẢI ĐỐI CHIẾU SỐ NGƯỜI, đừng chỉ nói còn hay hết phòng: khách đi mấy người thì cộng sức chứa của các phòng CÒN TRỐNG đêm đó rồi so với số khách. Ví dụ khách 10 người mà 01/09 chỉ còn 2 phòng giường đôi thì trả lời: \"em còn 2 phòng giường đôi, mỗi phòng chỉ ngủ được 2 người lớn + 1 trẻ em, nên 10 người e rằng không đủ chỗ ạ\", rồi gợi ý phương án khác CÒN TRỐNG đêm đó (ghép thêm hạng phòng khác, chỗ nằm sàn cộng đồng, hoặc gói bao sàn / bao nguyên nhà sàn). Không đủ thì nói thật là không đủ — tuyệt đối không hứa liều rồi để khách đến nơi mới biết.\n" +
+      `- TRẺ EM tính theo CÂN NẶNG: dưới ${CHILD_MAX_KG}kg (thường 5-10 tuổi) mới là trẻ em, nặng hơn tính như người lớn vì chiếm trọn một chỗ nằm. Trẻ nhỏ ngủ ghép cùng bố mẹ trong đúng sức chứa ghi trên.\n` +
+
       "- Bay: KHÔNG có giới hạn chỗ, TUYỆT ĐỐI không từ chối khách vì đông. Cơ chế như LẤY SỐ Ở NGÂN HÀNG: đặt trước thì được cấp số thứ tự, đến ngày bay gọi theo số — số càng nhỏ càng đỡ chờ. Khách hỏi ngày nào đó đông không / phải đợi lâu không: đọc số book của ngày đó ở trên, nói thật mức độ (ít / bình thường / ĐÔNG). CHỈ những ngày có ghi 'số kế tiếp #N' ở trên (Khau Phạ mùa đông khách) mới được nói số thứ tự họ sẽ nhận nếu đặt ngay; ngày/điểm không ghi số thì tuyệt đối không nhắc đến số thứ tự, chỉ nói mức độ đông. Ngày ĐÔNG thì khuyên đặt sớm để lấy số nhỏ, kèm trấn an: hoàn/huỷ/đổi lịch/đổi lựa chọn đều MIỄN PHÍ nên đặt trước không phải lo lắng gì.\n" +
       "- TUYỆT ĐỐI không nhắc tên, số điện thoại hay bất kỳ chi tiết nào của khách khác. Khách hỏi về booking CỦA HỌ thì mời gọi hotline để nhân viên tra giúp.\n" +
       "- Dữ liệu có thể trễ vài phút — chốt phòng cuối cùng vẫn theo hệ thống đặt phòng.\n" +
