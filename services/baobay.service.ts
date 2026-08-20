@@ -836,6 +836,18 @@ export function thuTotal(list: ExpenseDTO[] = []): number {
   return (list || []).reduce((s, e) => s + (e.kind === "thu" ? e.amount || 0 : 0), 0);
 }
 
+/**
+ * Tổng THU bằng TIỀN MẶT — dòng THU khai "CK" là tiền vào thẳng tài khoản
+ * công ty, người khai không cầm đồng nào; cộng nó vào "đang giữ" là bắt
+ * nhân viên nộp thứ tiền họ chưa từng cầm.
+ */
+function thuCashTotal(list: ExpenseDTO[] = []): number {
+  return (list || []).reduce(
+    (s, e) => s + (e.kind === "thu" && e.method !== "transfer" ? e.amount || 0 : 0),
+    0,
+  );
+}
+
 function formatExpenses(list: ExpenseDTO[] = []): string {
   return (list || [])
     .map(
@@ -2968,20 +2980,20 @@ export async function getCashOnHand(
   if (session.role === "pilot") {
     const docs = await PilotDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
-      collected += thuTotal(d.expenses);
+      collected += thuCashTotal(d.expenses);
       spent += pilotExpenseTotal(d);
     }
   } else if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
       // Chỉ TIỀN MẶT: khoản chuyển khoản vào thẳng tài khoản công ty, điều phối không cầm
-      collected += (d.cashReceived || 0) + thuTotal(d.expenses);
+      collected += (d.cashReceived || 0) + thuCashTotal(d.expenses);
       spent += dispatcherExpenseTotal(d);
     }
   } else if (session.role === "cameraman") {
     const docs = await CameramanDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
-      collected += thuTotal(d.expenses);
+      collected += thuCashTotal(d.expenses);
       spent += expenseTotal(d.expenses);
     }
   }
@@ -3022,9 +3034,15 @@ export async function getCashOnHand(
       .select("amount")
       .lean<any[]>(),
   ]);
-  const received =
-    receivedDocs.reduce((a, h) => a + (h.amount || 0), 0) +
-    collectDocs.reduce((a, c) => a + (c.amount || 0), 0);
+  /**
+   * Lệnh thu tiền mặt mình đã cầm là tiền MÌNH THU HỘ, không phải "được nộp
+   * lên" — cộng vào `collected` để dòng "Tổng thu hộ cty" trên trang nhân
+   * viên nói đúng sự thật (trước đây nó bằng 0 trong khi "đang giữ" thì có
+   * tiền, ai nhìn cũng tưởng máy tính sai). Tổng `holding` không đổi vì hai
+   * biến này cùng nằm một phía của phép cộng.
+   */
+  collected += collectDocs.reduce((a, c) => a + (c.amount || 0), 0);
+  const received = receivedDocs.reduce((a, h) => a + (h.amount || 0), 0);
 
   let handedConfirmed = 0;
   let handedPending = 0;
@@ -6540,6 +6558,21 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod")
     .lean<any[]>();
 
+  /** LỆNH THU của ngày — đường tiền chính từ 13/08 (thu ngay trên booking). */
+  const dayCollects = await BaobayCollect.find({
+    spot,
+    date,
+    status: { $in: ["collected", "company"] },
+  })
+    .select("method amount status")
+    .lean<any[]>();
+  const collectCashOfDay = dayCollects
+    .filter((c) => c.method === "cash" && c.status === "collected")
+    .reduce((a, c) => a + (c.amount || 0), 0);
+  const collectTransferOfDay = dayCollects
+    .filter((c) => c.method === "transfer" && c.status === "company")
+    .reduce((a, c) => a + (c.amount || 0), 0);
+
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
 
   const dispatcherCancelledCodes = dispatchers.flatMap((d) => (d.cancelledCodes ?? []) as string[]);
@@ -6620,8 +6653,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     pilotRanges,
     cancelledCodesText: cancelledCodes.join(", "),
     rescheduled,
-    cashTotal: sum(dispatchers, (d) => d.cashReceived),
-    transferTotal: sum(dispatchers, (d) => d.transferReceived),
+    /**
+     * Tiền của ngày = số điều phối gõ trong báo cáo (luồng cũ) + LỆNH THU trên
+     * booking (luồng mới, từ 13/08 là đường chính). Thiếu vế sau là cả kỳ báo
+     * doanh thu 0đ dù lệnh thu ghi hàng trăm triệu — chính là lỗi chủ đã bắt.
+     * (Hiện quầy không còn gõ tay nên không cộng trùng; nếu mai kia có người
+     * gõ cả hai nơi, bộ soát reconcile sẽ báo lệch cho kế toán thấy.)
+     */
+    cashTotal: sum(dispatchers, (d) => d.cashReceived) + collectCashOfDay,
+    transferTotal: sum(dispatchers, (d) => d.transferReceived) + collectTransferOfDay,
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
     registeredGuests: sum(bookings, (b) => b.guestCount),
     /**
@@ -7947,7 +7987,9 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
 
   for (const r of pilotReports) {
     const row = rowFor(r.date);
-    row.pilotFlights += r.flightCount;
+    // Cộng cả PPG — trang phi công tính "Tổng chuyến" gồm PPG, bảng kế toán
+    // mà bỏ thì hai bên vênh nhau (129 vs 115 đúng kỳ chủ soi ra).
+    row.pilotFlights += r.flightCount + (r.ppgFlights || 0);
     row.pilotCodes += r.ticketCodes.length;
     row.pilot360 += r.video360;
     row.diplomaticGuests += r.diplomaticGuests;
@@ -8020,6 +8062,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   const totals = closedDays.reduce<typeof EMPTY_ROLLUP>(
     (acc, row) => {
       for (const key of Object.keys(EMPTY_ROLLUP) as Array<keyof typeof EMPTY_ROLLUP>) {
+        if (key === "issueCount") continue; // số LỖI đỏ của từng ngày, không phải chỉ tiêu để cộng
         acc[key] += (row[key] as number) || 0;
       }
       return acc;
@@ -8055,7 +8098,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         mountainTrips: 0,
       };
     entry.days += 1;
-    entry.flights += r.flightCount;
+    entry.flights += r.flightCount + (r.ppgFlights || 0);
     entry.flycam += r.flycam;
     entry.video360 += r.video360;
     entry.redFlag += r.redFlag;
@@ -8227,6 +8270,29 @@ export async function getMyPeriodSummary(
   if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find({ accountId, spot, date: range }).lean<any[]>();
     const sumOf = (pick: (d: any) => number) => docs.reduce((s, d) => s + (pick(d) || 0), 0);
+
+    /**
+     * Từ 13/08 quầy thu tiền qua NÚT TRÊN BOOKING (lệnh thu) chứ không gõ vào
+     * báo cáo ngày nữa — hai ô cashReceived/transferReceived trong báo cáo
+     * toàn 0. Không cộng lệnh thu vào đây thì "Tiền mặt/Chuyển khoản" của kỳ
+     * báo 0đ trong khi người ta thu cả trăm triệu.
+     *  - TM: lệnh mình là NGƯỜI THU và đã bấm "đã thu".
+     *  - CK: lệnh mình LẬP, tiền vào thẳng TK công ty (status "company").
+     */
+    const collects = await BaobayCollect.find({
+      spot,
+      date: range,
+      $or: [
+        { method: "cash", collectorUsername: session.username, status: "collected" },
+        { method: "transfer", createdByUsername: session.username, status: "company" },
+      ],
+    })
+      .select("method amount")
+      .lean<any[]>();
+    const collectCash = collects.filter((c) => c.method === "cash").reduce((a, c) => a + (c.amount || 0), 0);
+    const collectTransfer = collects
+      .filter((c) => c.method === "transfer")
+      .reduce((a, c) => a + (c.amount || 0), 0);
     return {
       from,
       to,
@@ -8245,9 +8311,14 @@ export async function getMyPeriodSummary(
         ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây", value: sumOf((d) => d.sunset) }] : []),
         { label: "Bay kéo cờ/bánh", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
-        { label: "Tiền mặt", value: sumOf((d) => d.cashReceived), money: true },
-        { label: "Chuyển khoản", value: sumOf((d) => d.transferReceived), money: true },
-        { label: "Tổng thu", value: sumOf((d) => (d.cashReceived || 0) + (d.transferReceived || 0)), money: true },
+        { label: "Tiền mặt", value: sumOf((d) => d.cashReceived) + collectCash, money: true },
+        { label: "Chuyển khoản", value: sumOf((d) => d.transferReceived) + collectTransfer, money: true },
+        {
+          label: "Tổng thu",
+          value:
+            sumOf((d) => (d.cashReceived || 0) + (d.transferReceived || 0)) + collectCash + collectTransfer,
+          money: true,
+        },
         { label: "Tổng chi cho khách", value: sumOf((d) => dispatcherExpenseTotal(d)), money: true },
         ...cashLines,
       ],

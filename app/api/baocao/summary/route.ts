@@ -101,7 +101,8 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
         r.ticketCodes.join(" "),
         r.video360, r.video360Codes.join(" "), r.diplomaticGuests,
         r.siteFeeGuests, r.waterCost, r.guestCarCost, other, expensesText(r.expenses),
-        r.siteFeeGuests + r.waterCost + r.guestCarCost + other,
+        // Phí bãi khai theo SỐ KHÁCH — không phải tiền, không được cộng vào tổng chi
+        r.waterCost + r.guestCarCost + other,
         r.note,
       ]);
     }
