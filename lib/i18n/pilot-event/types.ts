@@ -109,6 +109,10 @@ export type PilotDict = {
   fRequestPh: string;
   /** Cỡ áo sự kiện — chỉ hiện với đợt Mùa Vàng. */
   fShirt: string;
+  /** Câu hỏi CÓ/KHÔNG đăng ký áo — có mới hỏi cỡ. */
+  fShirtAsk: string;
+  fShirtYes: string;
+  fShirtNo: string;
   fShirtHint: string;
   fShirtPh: string;
 
@@ -138,6 +142,9 @@ export type PilotDict = {
   companionTitle: string;
   companionDesc: (price: string) => string;
   companionNoRoom: string;
+  /** Người nhà CHỈ dự Gala dinner. */
+  galaTitle: string;
+  galaDesc: (price: string) => string;
   muaVangCheckbox: string;
   muaVangCheckboxNote: string;
 
@@ -173,7 +180,7 @@ export type PilotDict = {
 
   /* lỗi */
   err: Record<
-    "kind" | "period" | "name" | "id" | "phone" | "phoneBad" | "dates" | "motor",
+    "kind" | "period" | "name" | "id" | "phone" | "phoneBad" | "dates" | "motor" | "shirtSize",
     string
   >;
   errNetwork: string;

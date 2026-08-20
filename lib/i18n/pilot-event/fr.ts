@@ -61,7 +61,7 @@ export const fr: PilotDict = {
     "Petit-déjeuner et déjeuner du 30 août",
     "Dîner de gala le soir du 30 août",
     "Petit-déjeuner et déjeuner du 31 août",
-    "T-shirt de l'événement — gratuit avant le 15/08, ensuite 400 000 đ de plus (déjà inclus pour les pilotes du drapeau d'ouverture)",
+    "T-shirt de l'événement — gratuit uniquement avant le 17/08, ensuite 400 000 đ/t-shirt",
     "Navette de 16 places entre la vallée et le sommet, en continu",
     "Eau potable sur le site",
     "10 jours sans redevance de site, du 26 août au 4 septembre (une fois les frais réglés)",
@@ -139,7 +139,7 @@ export const fr: PilotDict = {
   kindParaDesc: "Vol libre, sans moteur",
   ppgPerk: "GRATUIT pour les pilotes paramoteur du spectacle d'ouverture",
   flagFlight: "Je participe au vol du drapeau à l'ouverture (paramoteur)",
-  flagFlightNote: "Porter le drapeau donne 50% de réduction sur les frais de l'événement, t-shirt inclus. Sinon, les frais normaux s'appliquent.",
+  flagFlightNote: "Inscrivez-vous pour que l'organisation planifie le vol du drapeau d'ouverture. Les frais sont identiques pour tous les pilotes.",
 
   step2: "Informations du pilote",
   fFullName: "Nom complet",
@@ -162,7 +162,10 @@ export const fr: PilotDict = {
     "ex. végétarien, partage de chambre avec un ami, arrivée tardive le 29, besoin d'un parking…",
 
   fShirt: "Taille du T-shirt de l'événement",
-  fShirtHint: "t-shirt inclus dans le combo Saison Dorée — gratuit si vous vous inscrivez avant le 15/08, ensuite ajoutez 400 000 đ (les pilotes du drapeau d'ouverture l'ont déjà inclus)",
+  fShirtAsk: "Réserver un T-shirt de l'événement ?",
+  fShirtYes: "Oui — 400 000 VND/T-shirt",
+  fShirtNo: "Non",
+  fShirtHint: "le t-shirt n'est gratuit que pour les pilotes inscrits avant le 17/08 — après, 400 000 đ/t-shirt ; choisissez Oui puis la taille",
   fShirtPh: "Choisir une taille",
 
   step3: "Période de vol",
@@ -209,6 +212,8 @@ export const fr: PilotDict = {
   companionTitle: "Proches qui vous accompagnent",
   companionDesc: (p) => `${p} par personne. Ils mangent et logent avec le groupe,`,
   companionNoRoom: "sans chambre privée",
+  galaTitle: "Accompagnants au dîner de gala uniquement",
+  galaDesc: (p) => `${p}/personne — dîner de gala seulement, sans hébergement ni programme complet`,
   muaVangCheckbox:
     "Je me suis inscrit et j'ai payé le Festival Saison Dorée 2026 — 10 jours sans redevance de site, du 26 août au 4 septembre.",
   muaVangCheckboxNote:
@@ -260,6 +265,7 @@ export const fr: PilotDict = {
     phoneBad: "Ce numéro de téléphone semble incorrect, merci de le vérifier",
     dates: "Merci de choisir au moins un jour de vol",
     motor: "Merci de choisir votre type de machine",
+    shirtSize: "Choisissez une taille (ou Non pour renoncer au t-shirt)",
   },
   errNetwork: "Connexion perdue, merci de réessayer",
   errSubmit: "Impossible d'envoyer votre inscription, merci de réessayer",
@@ -291,8 +297,9 @@ export const fr: PilotDict = {
 
   fee: {
     combo: () => "Formule tout compris du Festival Saison Dorée 2026",
-    shirtLate: () => "T-shirt de l'événement (inscription après le 15/08)",
-    companions: (n) => `Accompagnants × ${n}`,
+    shirtLate: () => "T-shirt de l'événement (gratuit uniquement avant le 17/08)",
+    companions: (n) => `Accompagnants programme complet × ${n}`,
+    galaCompanions: (n) => `Accompagnants dîner de gala uniquement × ${n}`,
     extraFree: (n) =>
       `${n} jour${n > 1 ? "s" : ""} supplémentaire${n > 1 ? "s" : ""} (dans les 10 jours gratuits)`,
     extraPaid: (n, u) =>

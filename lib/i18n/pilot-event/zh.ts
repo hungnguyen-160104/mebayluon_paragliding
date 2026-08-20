@@ -52,7 +52,7 @@ export const zh: PilotDict = {
     "8月30日早餐与午餐",
     "8月30日晚间晚宴",
     "8月31日早餐与午餐",
-    "活动纪念 T 恤——8月15日前报名免费，之后加收 400,000 đ（开幕式拉旗的动力伞飞行员已含）",
+    "活动纪念 T 恤——仅8月17日前报名免费，之后 400,000 đ/件",
     "16座接驳车上下山，全天不限次",
     "飞行点饮用水",
     "8月26日至9月4日共10天免飞行点费（完成活动缴费后）",
@@ -123,7 +123,7 @@ export const zh: PilotDict = {
   kindParaDesc: "无动力自由飞行",
   ppgPerk: "参与开幕表演的动力伞飞行员免费",
   flagFlight: "我参加开幕升旗飞行（动力伞）",
-  flagFlightNote: "承接拉旗飞行可享活动费五折，已含活动衫。不承接则按正常费用缴纳。",
+  flagFlightNote: "报名后主办方将安排开幕式拉旗飞行。活动费用与所有飞行员相同。",
 
   step2: "飞行员信息",
   fFullName: "姓名",
@@ -145,7 +145,10 @@ export const zh: PilotDict = {
   fRequestPh: "例如：素食、与朋友同住、29日晚到、需要停车位…",
 
   fShirt: "活动纪念T恤尺码",
-  fShirtHint: "活动衫含在黄金季套餐内——8月15日前报名免费，之后加收 400,000 đ（开幕式拉旗的动力伞飞行员已含活动衫）",
+  fShirtAsk: "是否报名活动T恤？",
+  fShirtYes: "是 — 400,000越南盾/件",
+  fShirtNo: "否",
+  fShirtHint: "活动衫仅对8月17日前报名的飞行员免费——之后报名需付 400,000 đ/件；选择\"是\"后再选尺码",
   fShirtPh: "选择尺码",
 
   step3: "飞行时段",
@@ -182,6 +185,8 @@ export const zh: PilotDict = {
   companionTitle: "随行家人朋友",
   companionDesc: (p) => `每位 ${p}。与团队同吃同住，`,
   companionNoRoom: "不含独立房间",
+  galaTitle: "仅参加晚宴的随行人员",
+  galaDesc: (p) => `${p}/人 — 仅参加晚宴，不含住宿与全程行程`,
   muaVangCheckbox:
     "我已报名并支付金色季节 2026 节庆——8月26日至9月4日共10天免飞行点费。",
   muaVangCheckboxNote: "抵达飞行点时主办方会核对。",
@@ -226,6 +231,7 @@ export const zh: PilotDict = {
     phoneBad: "电话号码似乎不正确，请检查",
     dates: "请至少选择一个飞行日",
     motor: "请选择机型",
+    shirtSize: "请选择尺码（或选择否放弃T恤）",
   },
   errNetwork: "连接中断，请重试",
   errSubmit: "报名发送失败，请重试",
@@ -253,8 +259,9 @@ export const zh: PilotDict = {
 
   fee: {
     combo: () => "金色季节 2026 节庆全包套餐",
-    shirtLate: () => "活动衫（8月15日后报名）",
-    companions: (n) => `随行人员 × ${n}`,
+    shirtLate: () => "活动衫（仅8月17日前报名免费）",
+    companions: (n) => `随行人员（全程）× ${n}`,
+    galaCompanions: (n) => `仅参加晚宴的随行人员 × ${n}`,
     extraFree: (n) => `加飞 ${n} 天（在 10 天免费期内）`,
     extraPaid: (n, u) => `飞行点费用 ${u} × ${n} 天（免费期之外）`,
     comFree: () => "秀丽绿米节期间飞行费",

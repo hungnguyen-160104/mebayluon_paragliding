@@ -52,7 +52,7 @@ export const vi: PilotDict = {
     "Ăn sáng và trưa ngày 30/8",
     "Gala dinner đêm 30/8",
     "Ăn sáng và trưa ngày 31/8",
-    "Áo sự kiện — miễn phí nếu đăng ký trước 15/8, sau đó thêm 400.000 đ (pc PPG kéo cờ khai mạc đã gồm áo)",
+    "Áo sự kiện — chỉ miễn phí cho phi công đăng ký trước 17/8, sau đó 400.000 đ/áo",
     "Xe con thoi 16 chỗ lên xuống núi, chạy liên tục không giới hạn",
     "Nước uống tại điểm bay",
     "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 (sau khi hoàn tất thanh toán sự kiện)",
@@ -129,7 +129,7 @@ export const vi: PilotDict = {
   kindParaDesc: "Dù không động cơ",
   ppgPerk: "FREE dành cho phi công PPG biểu diễn khai mạc",
   flagFlight: "Tôi nhận bay PPG kéo cờ trong lễ khai mạc",
-  flagFlightNote: "Nhận bay kéo cờ/bánh thì được giảm 50% phí sự kiện, đã gồm áo. Không nhận thì đóng phí như bình thường.",
+  flagFlightNote: "Đăng ký để ban tổ chức xếp lịch bay kéo cờ khai mạc. Phí sự kiện tính như mọi phi công.",
 
   step2: "Thông tin phi công",
   fFullName: "Họ và tên",
@@ -152,7 +152,10 @@ export const vi: PilotDict = {
     "Ví dụ: ăn chay, đi cùng bạn cùng phòng, tới muộn tối 29, cần chỗ để xe…",
 
   fShirt: "Cỡ áo sự kiện",
-  fShirtHint: "áo trong combo Mùa Vàng — miễn phí nếu đăng ký trước 15/8, sau đó thêm 400.000 đ (pc PPG kéo cờ khai mạc đã gồm áo)",
+  fShirtAsk: "Có đăng ký áo sự kiện không?",
+  fShirtYes: "Có — 400.000 đ/áo",
+  fShirtNo: "Không",
+  fShirtHint: "áo sự kiện chỉ miễn phí với phi công đăng ký trước 17/8 — đăng ký sau tính 400.000 đ/áo; chọn Có rồi chọn cỡ",
   fShirtPh: "Chọn cỡ áo",
 
   step3: "Đợt bay",
@@ -188,8 +191,10 @@ export const vi: PilotDict = {
   feeModeMonthDesc: "Bằng đúng 7 ngày lẻ, bay thoải mái cả tháng",
 
   companionTitle: "Người nhà đi kèm",
-  companionDesc: (p) => `${p}/người. Ăn ở cùng đoàn,`,
+  companionDesc: (p) => `${p}/người. Ăn ở cùng đoàn FULL lịch trình,`,
   companionNoRoom: "không có phòng riêng",
+  galaTitle: "Người nhà chỉ tham dự Gala dinner",
+  galaDesc: (p) => `${p}/người — chỉ dự tiệc Gala dinner, không ăn ở cùng đoàn theo lịch trình`,
   muaVangCheckbox:
     "Tôi đã đăng ký và thanh toán Festival Bay trên mùa vàng 2026 — được miễn phí điểm bay 10 ngày, từ 26/8 đến hết 4/9.",
   muaVangCheckboxNote: "Ban tổ chức đối chiếu lại khi bạn tới điểm bay.",
@@ -236,6 +241,7 @@ export const vi: PilotDict = {
     phoneBad: "Số điện thoại chưa đúng, vui lòng kiểm tra lại",
     dates: "Vui lòng chọn ít nhất một ngày bay",
     motor: "Vui lòng chọn loại máy",
+    shirtSize: "Chọn cỡ áo (hoặc bấm Không nếu thôi lấy áo)",
   },
   errNetwork: "Mất kết nối, vui lòng thử lại",
   errSubmit: "Không gửi được đăng ký, vui lòng thử lại",
@@ -264,8 +270,9 @@ export const vi: PilotDict = {
 
   fee: {
     combo: () => "Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói",
-    shirtLate: () => "Áo sự kiện (đăng ký sau 15/8)",
-    companions: (n) => `Người nhà đi kèm × ${n}`,
+    shirtLate: () => "Áo sự kiện (miễn phí chỉ áp dụng khi đăng ký trước 17/8)",
+    companions: (n) => `Người nhà đi kèm FULL lịch trình × ${n}`,
+    galaCompanions: (n) => `Người nhà chỉ dự Gala dinner × ${n}`,
     extraFree: (n) => `Bay thêm × ${n} ngày (trong 10 ngày miễn phí)`,
     extraPaid: (n, u) => `Phí điểm bay ${u} × ${n} ngày (ngoài khoảng miễn phí)`,
     comFree: () => "Phí bay trong Lễ hội Cốm Tú Lệ",

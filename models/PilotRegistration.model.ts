@@ -32,8 +32,10 @@ export interface IPilotRegistration {
   period: string;
   dates: string[];
   siteFeeMode?: string;
-  /** Người nhà đi kèm (chỉ đợt Mùa Vàng). */
+  /** Người nhà đi kèm FULL lịch trình (chỉ đợt Mùa Vàng). */
   companionCount?: number;
+  /** Người nhà CHỈ tham dự Gala dinner (chỉ đợt Mùa Vàng). */
+  galaCompanionCount?: number;
 
   feeLines?: Array<{ label: string; amount: number; free?: boolean }>;
   feeTotal: number;
@@ -72,6 +74,7 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     dates: [String],
     siteFeeMode: String,
     companionCount: { type: Number, default: 0 },
+    galaCompanionCount: { type: Number, default: 0 },
 
     feeLines: [
       {

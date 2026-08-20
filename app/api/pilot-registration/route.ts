@@ -123,6 +123,11 @@ export async function POST(req: Request) {
     MUA_VANG_MAX_COMPANIONS,
     Math.max(0, Math.floor(Number(raw.companionCount) || 0)),
   );
+  /** Người nhà CHỈ dự Gala dinner — suất riêng, rẻ hơn suất full lịch trình. */
+  const galaCompanionCount = Math.min(
+    MUA_VANG_MAX_COMPANIONS,
+    Math.max(0, Math.floor(Number(raw.galaCompanionCount) || 0)),
+  );
 
   const dates = Array.isArray(raw.dates)
     ? raw.dates.map(clean).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
@@ -162,6 +167,7 @@ export async function POST(req: Request) {
     dates,
     siteFeeMode,
     companionCount,
+    galaCompanionCount,
     muaVangRegistered,
     /**
      * Chọn cỡ áo = muốn lấy áo. Máy chủ TỰ tính lại khoản áo muộn theo ngày hôm
@@ -245,6 +251,7 @@ export async function POST(req: Request) {
           dates,
           siteFeeMode: emailInput.siteFeeMode,
           companionCount: period === "mua_vang" ? companionCount : 0,
+          galaCompanionCount: period === "mua_vang" ? galaCompanionCount : 0,
           transferNote,
           feeLines: fee.lines,
           feeTotal: fee.total,
@@ -281,6 +288,7 @@ export async function POST(req: Request) {
       dates,
       siteFeeMode: emailInput.siteFeeMode,
       companionCount: period === "mua_vang" ? companionCount : 0,
+      galaCompanionCount: period === "mua_vang" ? galaCompanionCount : 0,
       transferNote,
       feeLines: fee.lines,
       feeTotal: fee.total,

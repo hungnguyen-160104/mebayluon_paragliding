@@ -55,7 +55,7 @@ export const en: PilotDict = {
     "Breakfast and lunch on 30 Aug",
     "Gala dinner on the night of 30 Aug",
     "Breakfast and lunch on 31 Aug",
-    "Event T-shirt — free if you register before 15 Aug, after that add 400,000 đ (pilots flying the opening flag already include it)",
+    "Event T-shirt — free only for registrations before 17 Aug, afterwards 400,000 đ/shirt",
     "16-seat shuttle up and down the mountain, running non-stop",
     "Drinking water at the site",
     "10 days free of site fees, 26 Aug to 4 Sep (once the event fee is paid)",
@@ -132,7 +132,7 @@ export const en: PilotDict = {
   kindParaDesc: "Free flight, no engine",
   ppgPerk: "FREE for paramotor pilots flying the opening display",
   flagFlight: "I will fly the opening flag display (paramotor)",
-  flagFlightNote: "Flying the flag display gives 50% off the event fee, shirt included. Otherwise the normal fee applies.",
+  flagFlightNote: "Sign up so the organizers can schedule the opening flag flight. The event fee is the same for every pilot.",
 
   step2: "Pilot details",
   fFullName: "Full name",
@@ -155,7 +155,10 @@ export const en: PilotDict = {
     "e.g. vegetarian, sharing a room with a friend, arriving late on the 29th, need parking…",
 
   fShirt: "Event T-shirt size",
-  fShirtHint: "shirt is part of the Golden Season combo — free if you register before 15 Aug, after that add 400,000 đ (pilots flying the opening flag already include the shirt)",
+  fShirtAsk: "Register an event T-shirt?",
+  fShirtYes: "Yes — 400,000 VND/shirt",
+  fShirtNo: "No",
+  fShirtHint: "the event shirt is free only for pilots who registered before 17 Aug — later registrations pay 400,000 đ/shirt; choose Yes then pick a size",
   fShirtPh: "Pick a size",
 
   step3: "Flying period",
@@ -195,6 +198,8 @@ export const en: PilotDict = {
   companionTitle: "Family or friends joining you",
   companionDesc: (p) => `${p} per person. They eat and stay with the group,`,
   companionNoRoom: "no private room",
+  galaTitle: "Guests attending Gala dinner only",
+  galaDesc: (p) => `${p}/person — Gala dinner only, no accommodation or full itinerary`,
   muaVangCheckbox:
     "I have registered and paid for the Golden Season 2026 Festival — 10 days free of site fees, 26 Aug to 4 Sep.",
   muaVangCheckboxNote: "The organisers will confirm this when you arrive.",
@@ -240,6 +245,7 @@ export const en: PilotDict = {
     phoneBad: "That phone number does not look right, please check it",
     dates: "Please pick at least one flying day",
     motor: "Please choose your machine type",
+    shirtSize: "Pick a shirt size (or choose No to skip the shirt)",
   },
   errNetwork: "Connection lost, please try again",
   errSubmit: "Could not send your registration, please try again",
@@ -271,8 +277,9 @@ export const en: PilotDict = {
 
   fee: {
     combo: () => "All-inclusive Golden Season 2026 Festival package",
-    shirtLate: () => "Event shirt (registered after 15 Aug)",
-    companions: (n) => `Guests joining you × ${n}`,
+    shirtLate: () => "Event shirt (free only for registrations before 17 Aug)",
+    companions: (n) => `Guests joining full itinerary × ${n}`,
+    galaCompanions: (n) => `Guests attending Gala dinner only × ${n}`,
     extraFree: (n) =>
       `${n} extra day${n > 1 ? "s" : ""} (within the 10 free days)`,
     extraPaid: (n, u) =>

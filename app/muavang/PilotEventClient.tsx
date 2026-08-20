@@ -15,6 +15,7 @@ import {
   MUA_VANG_RADIO_FREQ,
   PAYMENT_ACCOUNT,
   COMPANION_VND,
+  GALA_COMPANION_VND,
   MUA_VANG_COMBO_VND,
   MUA_VANG_MAX_COMPANIONS,
   MUA_VANG_MAX_PILOTS,
@@ -185,6 +186,7 @@ const ERROR_ORDER = [
   "period",
   "dates",
   "motorType",
+  "shirtSize",
 ] as const;
 
 type ErrorKey = (typeof ERROR_ORDER)[number];
@@ -253,6 +255,8 @@ export default function PilotEventClient() {
   const [club, setClub] = useState("");
   const [specialRequest, setSpecialRequest] = useState("");
   const [shirtSize, setShirtSize] = useState<ShirtSize | "">("");
+  /** "Có đăng ký áo sự kiện không?" — CÓ mới hỏi cỡ; sau 17/8 áo tính 400k. */
+  const [wantShirt, setWantShirt] = useState(false);
   const [openingFlagFlight, setOpeningFlagFlight] = useState(false);
 
   const [period, setPeriod] = useState<PeriodKey | "">("");
@@ -263,6 +267,8 @@ export default function PilotEventClient() {
   const [wingClass, setWingClass] = useState<WingClass | "">("");
   const [siteFeeMode, setSiteFeeMode] = useState<SiteFeeMode>("day");
   const [companionCount, setCompanionCount] = useState(0);
+  /** Người nhà CHỈ dự Gala dinner — suất 400k, không ăn ở full lịch trình. */
+  const [galaCompanionCount, setGalaCompanionCount] = useState(0);
   const [muaVangRegistered, setMuaVangRegistered] = useState(false);
   /** Phi công Mùa Vàng muốn bay thêm ngày ngoài ba ngày lễ hội. */
   const [wantExtraDays, setWantExtraDays] = useState(false);
@@ -411,10 +417,11 @@ export default function PilotEventClient() {
       dates,
       siteFeeMode,
       companionCount,
+      galaCompanionCount,
       muaVangRegistered,
       openingFlagFlight,
-      // Chọn cỡ áo = muốn lấy áo. Qua hạn 15/8 thì khoản áo hiện thêm vào bảng phí
-      wantShirt: Boolean(shirtSize),
+      // Hỏi thẳng CÓ/KHÔNG — có áo thì sau hạn 17/8 tính 400k, không ngoại lệ
+      wantShirt,
     });
   }, [
     period,
@@ -422,9 +429,10 @@ export default function PilotEventClient() {
     dates,
     siteFeeMode,
     companionCount,
+    galaCompanionCount,
     muaVangRegistered,
     openingFlagFlight,
-    shirtSize,
+    wantShirt,
   ]);
 
   // Chỉ ngày thường mới có phí điểm bay; hai đợt lễ hội không thu.
@@ -441,8 +449,10 @@ export default function PilotEventClient() {
 
     if (!dates.length) next.dates = T.err.dates;
     if (motor && !motorType) next.motorType = T.err.motor;
+    // Bấm CÓ áo thì phải chọn cỡ — xưởng in không in được "cỡ gì cũng được"
+    if (period === "mua_vang" && wantShirt && !shirtSize) next.shirtSize = T.err.shirtSize;
     return next;
-  }, [fullName, idNumber, phone, dates.length, motor, motorType, T]);
+  }, [fullName, idNumber, phone, dates.length, motor, motorType, period, wantShirt, shirtSize, T]);
 
   const submit = async () => {
     setServerError("");
@@ -475,7 +485,7 @@ export default function PilotEventClient() {
           address: address.trim(),
           club: club.trim(),
           specialRequest: specialRequest.trim(),
-          shirtSize,
+          shirtSize: wantShirt ? shirtSize : "",
           openingFlagFlight,
           flyingKind,
           period,
@@ -484,6 +494,7 @@ export default function PilotEventClient() {
           wingClass,
           siteFeeMode,
           companionCount,
+          galaCompanionCount,
           muaVangRegistered,
           wantExtraDays,
           editCode,
@@ -1299,27 +1310,56 @@ export default function PilotEventClient() {
                     ô mới nhảy ra ở chỗ phi công vừa cuộn qua và gần như chắc
                     chắn bị bỏ sót. Điều kiện nói rõ ở dòng chú thích. */}
                 <div className="sm:col-span-2">
-                  <Field label={T.fShirt} hint={T.fShirtHint}>
+                  {/* HỎI CÓ/KHÔNG trước — CÓ mới hỏi cỡ. Sau 17/8 áo 400k, không ngoại lệ. */}
+                  <Field label={T.fShirtAsk} hint={T.fShirtHint} error={errors.shirtSize}>
                     <div className="flex flex-wrap gap-2">
-                      {SHIRT_SIZES.map((s) => {
-                        const on = shirtSize === s;
+                      {[
+                        [true, T.fShirtYes],
+                        [false, T.fShirtNo],
+                      ].map(([val, label]) => {
+                        const on = wantShirt === val;
                         return (
                           <button
-                            key={s}
+                            key={String(val)}
                             type="button"
-                            onClick={() => setShirtSize(on ? "" : s)}
+                            onClick={() => {
+                              setWantShirt(val as boolean);
+                              if (!val) setShirtSize("");
+                            }}
                             className={[
-                              "h-11 min-w-[62px] rounded-xl border px-4 text-sm font-bold transition",
+                              "h-11 rounded-xl border px-5 text-sm font-bold transition",
                               on
                                 ? "border-amber-400 bg-amber-400 text-black"
                                 : "border-white/25 bg-white/[0.12] text-white/85 hover:bg-white/20",
                             ].join(" ")}
                           >
-                            {s}
+                            {label as string}
                           </button>
                         );
                       })}
                     </div>
+                    {wantShirt && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {SHIRT_SIZES.map((s) => {
+                          const on = shirtSize === s;
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setShirtSize(on ? "" : s)}
+                              className={[
+                                "h-11 min-w-[62px] rounded-xl border px-4 text-sm font-bold transition",
+                                on
+                                  ? "border-amber-400 bg-amber-400 text-black"
+                                  : "border-white/25 bg-white/[0.12] text-white/85 hover:bg-white/20",
+                              ].join(" ")}
+                            >
+                              {s}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </Field>
                 </div>
 
@@ -1650,6 +1690,39 @@ export default function PilotEventClient() {
                         setCompanionCount((n) =>
                           Math.min(MUA_VANG_MAX_COMPANIONS, n + 1),
                         )
+                      }
+                      className="h-11 w-11 rounded-xl border border-white/25 bg-white/[0.12] text-xl font-bold text-white transition hover:bg-white/20"
+                      aria-label={T.plusOne}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Suất RIÊNG cho người nhà chỉ dự Gala dinner — rẻ hơn suất full */}
+                <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-white/10 pt-4">
+                  <div className="min-w-0">
+                    <div className="text-[15px] font-bold text-white">{T.galaTitle}</div>
+                    <p className="mt-1 max-w-md text-sm leading-relaxed text-white/60">
+                      {T.galaDesc(formatVnd(GALA_COMPANION_VND))}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setGalaCompanionCount((n) => Math.max(0, n - 1))}
+                      className="h-11 w-11 rounded-xl border border-white/25 bg-white/[0.12] text-xl font-bold text-white transition hover:bg-white/20"
+                      aria-label={T.minusOne}
+                    >
+                      −
+                    </button>
+                    <span className="w-10 text-center text-2xl font-extrabold text-amber-300">
+                      {galaCompanionCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setGalaCompanionCount((n) => Math.min(MUA_VANG_MAX_COMPANIONS, n + 1))
                       }
                       className="h-11 w-11 rounded-xl border border-white/25 bg-white/[0.12] text-xl font-bold text-white transition hover:bg-white/20"
                       aria-label={T.plusOne}
