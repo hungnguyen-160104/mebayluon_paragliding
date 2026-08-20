@@ -64,6 +64,7 @@ function regDto(reg: InstanceType<typeof PilotRegistration>) {
     nationality: reg.nationality,
     phone: reg.phone,
     emergencyPhone: reg.emergencyPhone || "",
+    emergencyName: reg.emergencyName || "",
     supportPilotName: reg.supportPilotName || "",
     supportPilotPhone: reg.supportPilotPhone || "",
     email: reg.email || "",
@@ -167,6 +168,25 @@ export async function POST(req: Request) {
       const email = String(body?.email ?? "").trim().toLowerCase();
       const signature = String(body?.signature ?? "");
       const pdf = String(body?.pdf ?? "");
+      /**
+       * NGƯỜI LIÊN HỆ KHẨN CẤP là bắt buộc TẠI CHỖ KÝ: phần lớn phi công đăng
+       * ký từ trước khi có ô này nên hồ sơ trống — check-in là dịp cuối cùng
+       * để lấy, và biên bản có nhắc tới nên không được để trống.
+       */
+      const emergencyPhone = String(body?.emergencyPhone ?? "").trim();
+      const emergencyName = String(body?.emergencyName ?? "").trim();
+      if (emergencyPhone.replace(/\D/g, "").length < 8) {
+        return NextResponse.json(
+          { ok: false, message: "Số điện thoại khẩn cấp chưa đúng" },
+          { status: 400 },
+        );
+      }
+      if (emergencyName.length < 2) {
+        return NextResponse.json(
+          { ok: false, message: "Vui lòng nhập TÊN người liên hệ khẩn cấp" },
+          { status: 400 },
+        );
+      }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return NextResponse.json(
@@ -196,6 +216,8 @@ export async function POST(req: Request) {
 
       // Ký lại thì thay bản cũ (vẫn là chính chủ — đã xác thực mã + SĐT),
       // email cũng gửi lại: hồ sơ cuối cùng luôn là bản mới nhất.
+      reg.emergencyPhone = emergencyPhone;
+      reg.emergencyName = emergencyName;
       reg.waiverSignedAt = new Date();
       reg.waiverEmail = email;
       reg.waiverSignature = signature;

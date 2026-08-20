@@ -58,17 +58,21 @@ export const PILOT_DISCOUNT_TEXT =
  */
 export const MUA_VANG_COMBO_VND = 1_500_000;
 
-/** Số phi công tối đa ban tổ chức nhận cho Festival Mùa Vàng. */
-export const MUA_VANG_MAX_PILOTS = 60;
+/** Số phi công tối đa ban tổ chức nhận cho Festival Mùa Vàng (21/08: mở thêm 1 suất). */
+export const MUA_VANG_MAX_PILOTS = 61;
 
 /**
  * Phi công nội bộ đã chắc suất, không đăng ký qua biểu mẫu.
  *
  * Cộng thẳng vào con số công bố để phi công ngoài nhìn đúng số chỗ thật sự
  * còn trống. KHÔNG lưu thành bản ghi giả trong cơ sở dữ liệu — làm vậy thì
- * danh sách công bố sẽ hiện 18 cái tên rỗng, và mọi thống kê sau này đều lệch.
+ * danh sách công bố sẽ hiện mấy cái tên rỗng, và mọi thống kê sau này đều lệch.
+ *
+ * 21/08: hạ 18 → 13. Trong số 18 người chắc suất ban đầu đã có 5 người TỰ ĐIỀN
+ * biểu mẫu, nên họ vừa nằm trong bản ghi vừa nằm trong con số cộng thêm — đếm
+ * đúp thành 61/60 (báo hết chỗ oan). Chỉ giữ phần CHƯA có bản ghi.
  */
-export const MUA_VANG_BASE_PILOTS = 18;
+export const MUA_VANG_BASE_PILOTS = 13;
 
 /**
  * Người nhà đi kèm phi công trong dịp Mùa Vàng.

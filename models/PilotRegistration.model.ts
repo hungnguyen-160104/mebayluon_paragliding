@@ -16,6 +16,8 @@ export interface IPilotRegistration {
   phone: string;
   /** SĐT người thân/bạn bay — gọi khi có sự cố. Bắt buộc với mọi phi công. */
   emergencyPhone?: string;
+  /** TÊN người cầm số khẩn cấp đó — gọi được rồi còn biết đang nói với ai. */
+  emergencyName?: string;
   /** Phi công/HLV local nhận hỗ trợ (phi công mới / diện giám sát bay). */
   supportPilotName?: string;
   supportPilotPhone?: string;
@@ -79,6 +81,7 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     nationality: { type: String, default: "Việt Nam" },
     phone: { type: String, required: true, index: true },
     emergencyPhone: { type: String, default: "" },
+    emergencyName: { type: String, default: "" },
     supportPilotName: { type: String, default: "" },
     supportPilotPhone: { type: String, default: "" },
     waiverSignedAt: Date,

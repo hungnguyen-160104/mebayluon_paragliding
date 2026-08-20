@@ -32,6 +32,7 @@ type Registration = {
   nationality: string;
   phone: string;
   emergencyPhone: string;
+  emergencyName: string;
   supportPilotName: string;
   supportPilotPhone: string;
   email: string;
@@ -80,6 +81,9 @@ export default function WaiverClient() {
   const [phone, setPhone] = useState("");
   const [reg, setReg] = useState<Registration | null>(null);
   const [email, setEmail] = useState("");
+  /** Người liên hệ khẩn cấp — bắt buộc điền trước khi ký (hồ sơ cũ thường trống). */
+  const [emgPhone, setEmgPhone] = useState("");
+  const [emgName, setEmgName] = useState("");
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -116,6 +120,8 @@ export default function WaiverClient() {
       const r: Registration = json.registration;
       setReg(r);
       setEmail(r.waiverEmail || r.email || "");
+      setEmgPhone(r.emergencyPhone || "");
+      setEmgName(r.emergencyName || "");
       // CHỈ khoản kế toán ĐÃ THỰC NHẬN ĐỦ (paidAmount >= phí) mới đi thẳng vào
       // ký — theo lệnh chủ: mọi phi công chưa thu phí đều phải thấy nhắc nhở,
       // kể cả người tự khai "đã chuyển khoản" hay bản ghi phí đang là 0đ.
@@ -253,6 +259,14 @@ export default function WaiverClient() {
       setError("Vui lòng nhập email hợp lệ để nhận biên bản đã ký");
       return;
     }
+    if (emgPhone.replace(/\D/g, "").length < 8) {
+      setError("Vui lòng nhập số điện thoại khẩn cấp");
+      return;
+    }
+    if (emgName.trim().length < 2) {
+      setError("Vui lòng nhập tên người liên hệ khẩn cấp");
+      return;
+    }
     if (!hasInk) {
       setError("Vui lòng ký tên vào ô chữ ký");
       return;
@@ -302,6 +316,8 @@ export default function WaiverClient() {
           code: reg.code,
           phone: phone.trim(),
           email: email.trim(),
+          emergencyPhone: emgPhone.trim(),
+          emergencyName: emgName.trim(),
           signature,
           pdf: pdfDataUrl,
         }),
@@ -338,8 +354,9 @@ export default function WaiverClient() {
   });
 
   /* =============================================================== */
+  // pt-24: thanh menu của site là `fixed` cao h-20 — thiếu lề trên là nó đè lên tiêu đề
   return (
-    <main className="min-h-screen bg-slate-100 px-3 py-8 sm:py-12">
+    <main className="min-h-screen bg-slate-100 px-3 pb-12 pt-24 sm:pb-16">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-6 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-600">
@@ -576,7 +593,7 @@ export default function WaiverClient() {
                     ["CCCD/Passport", reg.idNumber],
                     ["Quốc tịch", reg.nationality],
                     ["Số điện thoại", reg.phone],
-                    ["SĐT khẩn cấp", reg.emergencyPhone || "—"],
+                    ["Liên hệ khẩn cấp", [emgName.trim(), emgPhone.trim()].filter(Boolean).join(" — ") || "—"],
                     ["CLB / Hội", reg.club || "—"],
                     ["Loại hình bay", reg.flyingKindLabel + (reg.motorTypeLabel ? ` (${reg.motorTypeLabel})` : "")],
                     ["Đợt bay", reg.periodName],
@@ -679,6 +696,32 @@ export default function WaiverClient() {
                 <button className={btnGhost} onClick={clearSignature}>
                   ✕ Xoá chữ ký
                 </button>
+              </div>
+
+              {/* Liên hệ khẩn cấp: biên bản có điều khoản gọi số này khi có sự cố,
+                  nên phải điền đủ TÊN và SỐ trước khi đặt bút ký */}
+              <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/70 p-3">
+                <p className="text-sm font-bold text-amber-900">
+                  Người liên hệ khẩn cấp <span className="text-red-500">*</span>
+                </p>
+                <p className="mt-0.5 text-xs text-amber-800/80">
+                  BTC gọi số này nếu có sự cố xảy ra với bạn trong sự kiện.
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <input
+                    className={inputClass}
+                    value={emgName}
+                    onChange={(e) => setEmgName(e.target.value)}
+                    placeholder="Tên người liên hệ (vợ/chồng, người thân…)"
+                  />
+                  <input
+                    className={inputClass}
+                    value={emgPhone}
+                    inputMode="tel"
+                    onChange={(e) => setEmgPhone(e.target.value)}
+                    placeholder="Số điện thoại khẩn cấp"
+                  />
+                </div>
               </div>
 
               <label className="mb-1 mt-4 block text-sm font-bold text-slate-700">
