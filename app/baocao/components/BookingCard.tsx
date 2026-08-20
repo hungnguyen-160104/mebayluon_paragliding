@@ -2597,6 +2597,9 @@ type BookingForm = {
   discount: number;
   deposit: number;
   remaining: number;
+  /** Khách đã trả cho ĐẠI LÝ — trừ vào còn thu, đại lý nợ công ty. */
+  agencyPaidAmount: number;
+  agencyName: string;
   transferCode: string;
   /** Còn lại > 0: người được chỉ định thu trước khi bay + lời nhắn cho họ. */
   collectorUsername: string;
@@ -2629,6 +2632,8 @@ function emptyBooking(today: string, spot: string): BookingForm {
     discount: 0,
     deposit: 0,
     remaining: 0,
+    agencyPaidAmount: 0,
+    agencyName: "",
     transferCode: "",
     collectorUsername: "",
     collectorNote: "",
@@ -2743,7 +2748,7 @@ export function BookingCard({
        * "Còn lại" LUÔN tính lại theo luật tổng − cọc, không có ngoại lệ: ô đó chỉ
        * đọc, và máy chủ cũng chốt lại đúng công thức này khi lưu.
        */
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
   };
@@ -2876,7 +2881,7 @@ export function BookingCard({
       }
       next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
 
@@ -2924,7 +2929,7 @@ export function BookingCard({
         next.flagFlight = Math.min(next.flagFlight, guestCount);
       }
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0));
+      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
   }
@@ -3041,6 +3046,8 @@ export function BookingCard({
           totalAmount: 0,
           deposit: 0,
           remaining: 0,
+          agencyPaidAmount: 0,
+          agencyName: "",
           transferCode: "",
           collectorUsername: "",
           collectorNote: "",
@@ -3130,6 +3137,8 @@ export function BookingCard({
       unitPrice: b.unitPrice,
       discount: b.discount,
       deposit: b.deposit,
+      agencyPaidAmount: b.agencyPaidAmount ?? 0,
+      agencyName: b.agencyName ?? "",
       remaining: (() => {
         const total = totalOf({
           flightDate: b.flightDate,
@@ -3602,6 +3611,20 @@ export function BookingCard({
             />
           </div>
         </Field>
+        {/* Khách đặt qua đại lý và trả một phần bên đó: phần này khách khỏi trả,
+            đại lý nợ công ty — kế toán xem bảng công nợ đại lý cuối ngày */}
+        <Field label="Đã TT đại lý (nếu có)">
+          <MoneyInput value={form.agencyPaidAmount} onChange={(v) => set("agencyPaidAmount", v)} />
+        </Field>
+        {form.agencyPaidAmount > 0 && (
+          <Field label="Tên đại lý ★">
+            <TextInput
+              value={form.agencyName}
+              onChange={(e) => set("agencyName", e.target.value)}
+              placeholder="Klook, GYG, anh Tuấn tour…" className="h-10 rounded-lg text-sm"
+            />
+          </Field>
+        )}
         <Field label="Mã chuyển khoản (cọc)">
           <TextInput
             value={form.transferCode}

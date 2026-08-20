@@ -119,6 +119,17 @@ export type BankBookingRowDTO = {
   summary: string;
   totalAmount: number;
   remaining: number;
+  /** Giảm trừ đã áp cho booking (nếu có). */
+  discount: number;
+  /** Ghi chú điều phối ghi trên booking. */
+  note: string;
+  /** Khách đã trả bên đại lý + tên đại lý (đại lý nợ công ty). */
+  agencyPaidAmount: number;
+  agencyName: string;
+  /** Dữ liệu để tô sáng phần TRÙNG trong SMS: tên, SĐT, ngày+STT. */
+  contactName: string;
+  phone: string;
+  flightDate: string;
   status: string;
   flown: boolean;
   ticketIssued: boolean;
@@ -681,7 +692,7 @@ export async function getBankCheck(
   const rowBookings = rowBookingIds.size
     ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
         .select(
-          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining status ticketIssuedAt noTicketFlight lockedAt",
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName status ticketIssuedAt noTicketFlight lockedAt",
         )
         .lean<any[]>()
     : [];
@@ -714,6 +725,13 @@ export async function getBankCheck(
         summary: summaryOf(b),
         totalAmount: b.totalAmount || 0,
         remaining: Math.max(0, b.remaining || 0),
+        discount: b.discount || 0,
+        note: b.note || "",
+        agencyPaidAmount: b.agencyPaidAmount || 0,
+        agencyName: b.agencyName || "",
+        contactName: b.contactName || "",
+        phone: b.phone || "",
+        flightDate: b.flightDate || "",
         status: b.status || "open",
         flown: b.status === "done",
         ticketIssued: Boolean(b.ticketIssuedAt),
@@ -747,6 +765,62 @@ export async function getBankCheck(
     },
     skipped: [],
   };
+}
+
+/** Danh sách khoản của MỘT NGÀY để kế toán chỉ định tay dòng sao kê lạc chủ. */
+export async function listAssignOptions(
+  session: BaobaySession,
+  date: string,
+  spotsFilter?: string[],
+): Promise<Array<{ refId: string; label: string; amount: number }>> {
+  await connectDB();
+  if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
+  const spots = resolveSpots(session, spotsFilter);
+  const candidates = await candidatesForDate(spots, date);
+  return dedupeByBooking(candidates).map((c) => ({
+    refId: c.id,
+    label: `${c.label}${c.kind === "remaining" ? " · còn thu" : c.kind === "deposit" ? " · cọc" : " · lệnh thu"}`,
+    amount: c.amounts[0] ?? 0,
+  }));
+}
+
+/**
+ * KẾ TOÁN CHỈ ĐỊNH: dòng sao kê máy không khớp được thì người chỉ thẳng nó
+ * thuộc khoản nào (chọn ngày + chọn khoản). Ghi như một kết luận tay có địa
+ * chỉ — bảng soát và thẻ booking nhận ra ngay.
+ */
+export async function assignBankLine(
+  session: BaobaySession,
+  id: string,
+  refId: string,
+  date: string,
+): Promise<void> {
+  await connectDB();
+  if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
+  const spots = resolveSpots(session, undefined);
+  const candidates = await candidatesForDate(spots, date);
+  const hit = candidates.find((c) => c.id === refId);
+  if (!hit) throw new BaobayError("Không thấy khoản được chỉ định — kiểm lại ngày", 404);
+
+  const r = await BaobayBankLine.updateOne(
+    { _id: id },
+    {
+      $set: {
+        status: "manual",
+        matchLevel: "manual",
+        matchWhy: `kế toán chỉ định (${formatDateKeyVN(date)})`,
+        refId: hit.id,
+        bookingId: hit.bookingId && mongoose.Types.ObjectId.isValid(hit.bookingId) ? hit.bookingId : undefined,
+        matchSpot: hit.spot,
+        matchLabel: hit.label,
+        recorded: hit.recorded,
+        resolvedNote: `chỉ định: ${hit.label}`,
+        resolvedBy: session.name || session.username,
+        candidates: [],
+      },
+    },
+  );
+  if (!r.matchedCount) throw new BaobayError("Không thấy dòng sao kê này", 404);
 }
 
 /**

@@ -333,6 +333,9 @@ export const bookingSchema = z.object({
   discount: money,
   deposit: money,
   remaining: money,
+  /** Khách đã trả cho ĐẠI LÝ (đối tác giữ hộ) — trừ vào còn thu, đại lý nợ công ty. */
+  agencyPaidAmount: money,
+  agencyName: text(120),
   transferCode: text(100),
   depositToCompany: z.boolean().optional().default(false),
   /** Còn lại > 0: chỉ định người thu — máy chủ tự lập LỆNH THU TIỀN gửi người đó. */

@@ -384,6 +384,9 @@ export type BookingDTO = {
   deposit: number;
   /** Còn lại phải thu khi khách đến bay. */
   remaining: number;
+  /** Khách đã trả cho ĐẠI LÝ (đại lý nợ công ty) + tên đại lý. */
+  agencyPaidAmount: number;
+  agencyName: string;
   /** Mã chuyển khoản của khoản cọc (nếu khách CK). */
   transferCode: string;
   /** Cọc CHUYỂN KHOẢN vào thẳng TK CÔNG TY — không ai cầm khoản này. */

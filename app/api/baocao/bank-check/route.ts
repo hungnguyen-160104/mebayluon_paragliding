@@ -4,10 +4,12 @@ import { NextResponse } from "next/server";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
 import {
+  assignBankLine,
   confirmBankItem,
   lockBookingChecked,
   deleteBankLine,
   getBankCheck,
+  listAssignOptions,
   recheckBankPending,
   resolveBankLine,
   runBankCheck,
@@ -45,6 +47,10 @@ export async function GET(req: Request) {
   const date = url.searchParams.get("date") ?? "";
   const spots = (url.searchParams.get("spots") ?? "").split(",").filter(Boolean);
   try {
+    // ?options=1: danh sách khoản của ngày để kế toán CHỈ ĐỊNH dòng sao kê lạc chủ
+    if (url.searchParams.get("options") === "1") {
+      return NextResponse.json({ options: await listAssignOptions(auth, date, spots) });
+    }
     return NextResponse.json(await getBankCheck(auth, date, spots));
   } catch (err) {
     return fail(err, "Không tải được bảng soát chuyển khoản");
@@ -82,6 +88,11 @@ export async function PATCH(req: Request) {
     }
     if (action === "confirm") {
       await confirmBankItem(auth, String(body?.refId ?? ""), body?.on !== false);
+      return NextResponse.json({ ok: true });
+    }
+    if (action === "assign") {
+      // Kế toán chỉ định dòng sao kê thuộc khoản nào (chọn ngày + khoản)
+      await assignBankLine(auth, String(body?.id ?? ""), String(body?.refId ?? ""), String(body?.date ?? ""));
       return NextResponse.json({ ok: true });
     }
     if (action === "resolve") {

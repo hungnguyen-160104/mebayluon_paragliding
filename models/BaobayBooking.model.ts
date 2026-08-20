@@ -150,6 +150,14 @@ export interface IBaobayBooking {
   expectedTime: string;
   /** Tiền khách đã cọc (VND). */
   deposit: number;
+  /**
+   * Khách ĐÃ TRẢ CHO ĐẠI LÝ một phần (đặt qua Klook/đối tác...) — phần này
+   * khách khỏi trả nữa nhưng CÔNG TY CHƯA CẦM: đại lý đang nợ. Trừ vào "còn
+   * thu của khách", đồng thời cộng vào bảng công nợ đại lý của ngày.
+   */
+  agencyPaidAmount: number;
+  /** Tên đại lý giữ khoản đó — để báo cáo "đại lý ABC còn nợ X". */
+  agencyName: string;
   /** Số tiền CÒN LẠI phải thu khi khách đến bay (VND). */
   remaining: number;
   /** Mã chuyển khoản của khoản cọc — soi lại sao kê ngân hàng. */
@@ -314,6 +322,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     expectedTime: { type: String, default: "" },
     deposit: { type: Number, default: 0, min: 0 },
     remaining: { type: Number, default: 0, min: 0 },
+    agencyPaidAmount: { type: Number, default: 0, min: 0 },
+    agencyName: { type: String, default: "" },
     transferCode: { type: String, default: "" },
     depositToCompany: { type: Boolean, default: false },
     note: { type: String, default: "" },

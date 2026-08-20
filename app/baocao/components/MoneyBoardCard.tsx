@@ -153,6 +153,26 @@ export function MoneyBoardCard({
         </div>
       </div>
 
+      {/* ĐẠI LÝ NỢ: khách trả một phần bên đại lý — đại lý phải chuyển về công ty */}
+      {(board.agencyDebts ?? []).length > 0 && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-2.5">
+          <div className="text-xs font-semibold text-orange-900">🤝 Đại lý nợ (khách đã TT bên đại lý)</div>
+          <div className="text-xl font-bold tabular-nums text-orange-800">
+            {formatVND(board.agencyDebts.reduce((t, a) => t + a.amount, 0))}
+          </div>
+          <ul className="mt-1.5 space-y-0.5 text-xs text-slate-700">
+            {board.agencyDebts.map((a) => (
+              <li key={a.name} className="flex gap-2">
+                <span className="min-w-0 flex-1">
+                  <strong>{a.name}</strong> — {a.bookings.join(" · ")}
+                </span>
+                <strong className="shrink-0 tabular-nums">{formatVND(a.amount)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Khách trả TIỀN MẶT — từng khách, ai thu. Đối chiếu với sổ vé của quầy */}
       <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
         <div className="text-xs font-semibold text-sky-900">💵 Khách trả tiền mặt</div>

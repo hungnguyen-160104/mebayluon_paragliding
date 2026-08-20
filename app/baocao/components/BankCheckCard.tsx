@@ -1,7 +1,7 @@
 // app/baocao/components/BankCheckCard.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { SPOTS } from "@/lib/baobay/spots";
@@ -83,6 +83,13 @@ type BookingRowDTO = {
   summary: string;
   totalAmount: number;
   remaining: number;
+  discount: number;
+  note: string;
+  agencyPaidAmount: number;
+  agencyName: string;
+  contactName: string;
+  phone: string;
+  flightDate: string;
   status: string;
   flown: boolean;
   ticketIssued: boolean;
@@ -120,6 +127,73 @@ const LEVEL_BADGE: Record<string, { label: string; cls: string }> = {
   amount: { label: "số tiền", cls: "bg-amber-500 text-white" },
   manual: { label: "kiểm tay", cls: "bg-slate-500 text-white" },
 };
+
+/** Bỏ dấu + viết hoa để dò trùng — cùng công thức với máy khớp phía máy chủ. */
+function ascii(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toUpperCase();
+}
+
+/**
+ * TÔ SÁNG phần trùng trong dòng SMS: mã GD, "ddmm kN", tên khách, SĐT, số
+ * tiền — kế toán nhìn phát thấy ngay VÌ SAO máy nói khớp, khỏi tự dò.
+ */
+function HighlightSms({ raw, row }: { raw: string; row: BookingRowDTO }) {
+  const tokens: string[] = [];
+  for (const t of row.transfers) if (t.code && t.code.length >= 3) tokens.push(t.code);
+  if (row.flightDate && row.daySeq) {
+    const dd = row.flightDate.slice(8, 10);
+    const mm = row.flightDate.slice(5, 7);
+    tokens.push(`${dd}${mm} k${row.daySeq}`, `${dd}${mm}k${row.daySeq}`, `${dd}/${mm} k${row.daySeq}`);
+  }
+  if (row.contactName.trim().length >= 6) tokens.push(row.contactName);
+  const phoneTail = row.phone.replace(/\D/g, "").slice(-9);
+  if (phoneTail.length === 9) tokens.push(phoneTail);
+  for (const amt of [
+    ...row.transfers.map((t) => t.amount),
+    ...row.lines.map((l) => l.amount),
+    ...row.suggests.map((l) => l.amount),
+  ]) {
+    if (amt > 0) tokens.push(amt.toLocaleString("en-US"), amt.toLocaleString("vi-VN"), String(amt));
+  }
+
+  const hay = ascii(raw);
+  /** Các đoạn [from,to) cần tô — gộp chồng lấn để render một lượt. */
+  const spans: Array<[number, number]> = [];
+  for (const tok of tokens) {
+    const needle = ascii(tok);
+    if (needle.length < 3) continue;
+    let i = 0;
+    while ((i = hay.indexOf(needle, i)) >= 0) {
+      spans.push([i, i + needle.length]);
+      i += needle.length;
+    }
+  }
+  spans.sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const sp of spans) {
+    const last = merged[merged.length - 1];
+    if (last && sp[0] <= last[1]) last[1] = Math.max(last[1], sp[1]);
+    else merged.push([...sp] as [number, number]);
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  merged.forEach(([a, b], i) => {
+    if (a > cursor) parts.push(raw.slice(cursor, a));
+    parts.push(
+      <mark key={i} className="rounded bg-yellow-200 px-0.5 font-bold text-slate-900">
+        {raw.slice(a, b)}
+      </mark>,
+    );
+    cursor = b;
+  });
+  if (cursor < raw.length) parts.push(raw.slice(cursor));
+  return <span className="break-all font-mono text-xs leading-relaxed text-slate-600">{parts}</span>;
+}
 
 export function BankCheckCard({ date }: { date: string }) {
   const [text, setText] = useState("");
@@ -238,6 +312,20 @@ export function BankCheckCard({ date }: { date: string }) {
       load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không đánh dấu được");
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  /** Kế toán chỉ định dòng sao kê thuộc khoản nào — máy chịu thì người chỉ. */
+  async function assignLine(id: string, refId: string, d: string) {
+    setRowBusy(id);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/bank-check`, { action: "assign", id, refId, date: d });
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không chỉ định được");
     } finally {
       setRowBusy(null);
     }
@@ -412,7 +500,8 @@ export function BankCheckCard({ date }: { date: string }) {
             const allVerified =
               [...row.transfers, ...row.cash].length > 0 &&
               [...row.transfers, ...row.cash].every((x) => x.verified);
-            const open = expanded.includes(row.bookingId);
+            // Mặc định MỞ — SMS phải đập vào mắt; bấm Thu gọn thì chỉ còn dòng tóm tắt
+            const collapsed = expanded.includes(row.bookingId);
             return (
               <div
                 key={row.bookingId}
@@ -445,16 +534,33 @@ export function BankCheckCard({ date }: { date: string }) {
                     <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒 đã khoá</span>
                   )}
                 </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs tabular-nums">
+                <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums">
                   {paidCk > 0 && <span className="text-sky-800">đã CK <strong>{formatVND(paidCk)}</strong></span>}
                   {paidTm > 0 && <span className="text-emerald-800">đã TM <strong>{formatVND(paidTm)}</strong></span>}
+                  {row.agencyPaidAmount > 0 && (
+                    <span className="text-orange-700">
+                      đã TT đại lý <strong>{formatVND(row.agencyPaidAmount)}</strong>
+                      {row.agencyName ? ` (${row.agencyName})` : ""}
+                    </span>
+                  )}
+                  {row.discount > 0 && <span className="text-violet-700">giảm trừ {formatVND(row.discount)}</span>}
                   <span className={row.remaining > 0 ? "font-bold text-rose-700" : "text-emerald-700"}>
                     {row.remaining > 0 ? `còn thu ${formatVND(row.remaining)}` : "✓ hết nợ"}
                   </span>
                   <span className="text-slate-400">tổng {formatVND(row.totalAmount)}</span>
                 </div>
+                {/* Thu đủ toàn tiền mặt: nói thẳng để kế toán khỏi đợi sao kê nào cả */}
+                {row.remaining <= 0 && paidTm > 0 && row.transfers.length === 0 && (
+                  <div className="mt-1 w-fit rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                    💵 Đã thu đủ bằng TIỀN MẶT — không cần soát sao kê
+                  </div>
+                )}
+                {row.note && (
+                  <div className="mt-1 text-[11px] italic text-slate-500">📝 {row.note}</div>
+                )}
 
                 {/* từng khoản tiền của booking */}
+                {!collapsed && (
                 <ul className="mt-1.5 space-y-0.5">
                   {row.transfers.map((t) => (
                     <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
@@ -509,28 +615,37 @@ export function BankCheckCard({ date }: { date: string }) {
                     </li>
                   ))}
                 </ul>
+                )}
 
                 {/* SMS khớp / nghi ngờ — nằm ngay dưới booking để soát hai luồng cạnh nhau */}
-                {(row.lines.length > 0 || row.suggests.length > 0) && (
+                {!collapsed && (row.lines.length > 0 || row.suggests.length > 0) && (
                   <ul className="mt-1.5 space-y-0.5 border-t border-slate-100 pt-1.5">
                     {row.lines.map((l) => (
-                      <li key={l.id} className="text-[11px] text-emerald-800">
-                        🧾 +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
-                        {open && <div className="break-all font-mono text-[10px] text-slate-400">{l.raw}</div>}
+                      <li key={l.id} className="rounded bg-emerald-50/70 px-2 py-1.5">
+                        <div className="text-xs font-semibold text-emerald-800">
+                          🧾 +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
+                        </div>
+                        <div className="mt-0.5">
+                          <HighlightSms raw={l.raw} row={row} />
+                        </div>
                       </li>
                     ))}
                     {row.suggests.map((l) => (
-                      <li key={l.id} className="rounded bg-amber-50 px-1.5 py-1 text-[11px] font-semibold text-amber-900">
-                        ❓ +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · máy NGHI của booking này — {l.matchWhy}
-                        <button
-                          type="button"
-                          disabled={rowBusy === l.id}
-                          onClick={() => act(l.id, "resolve")}
-                          className="ml-2 rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
-                        >
-                          ✓ Đã kiểm tay
-                        </button>
-                        {open && <div className="break-all font-mono text-[10px] font-normal text-slate-400">{l.raw}</div>}
+                      <li key={l.id} className="rounded bg-amber-50 px-2 py-1.5">
+                        <div className="text-xs font-bold text-amber-900">
+                          ❓ +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · máy NGHI của booking này — {l.matchWhy}
+                          <button
+                            type="button"
+                            disabled={rowBusy === l.id}
+                            onClick={() => act(l.id, "resolve")}
+                            className="ml-2 rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                          >
+                            ✓ Đã kiểm tay
+                          </button>
+                        </div>
+                        <div className="mt-0.5">
+                          <HighlightSms raw={l.raw} row={row} />
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -557,7 +672,7 @@ export function BankCheckCard({ date }: { date: string }) {
                     }
                     className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
                   >
-                    {open ? "Thu gọn" : "Xem lại"}
+                    {collapsed ? "Xem lại" : "Thu gọn"}
                   </button>
                   {!row.locked && (
                     <button
@@ -593,7 +708,7 @@ export function BankCheckCard({ date }: { date: string }) {
                 <div className="text-xs font-bold text-slate-700">SMS đã khớp (khoản không gắn booking)</div>
                 <ul className="mt-1 space-y-1.5">
                   {orphanMatched.map((l) => (
-                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} />
+                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} />
                   ))}
                 </ul>
               </>
@@ -603,7 +718,7 @@ export function BankCheckCard({ date }: { date: string }) {
                 <div className="mt-2 text-xs font-bold text-rose-800">SMS chưa khớp ai — kiểm tay</div>
                 <ul className="mt-1 space-y-1.5">
                   {orphanPending.map((l) => (
-                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} />
+                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} />
                   ))}
                 </ul>
               </>
@@ -620,7 +735,7 @@ export function BankCheckCard({ date }: { date: string }) {
           </div>
           <ul className="mt-1.5 space-y-1.5">
             {pendingOld.map((l) => (
-              <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} showDate />
+              <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} showDate />
             ))}
           </ul>
         </div>
@@ -672,14 +787,33 @@ function BankLineRow({
   line,
   busy,
   onAct,
+  onAssign,
   showDate,
 }: {
   line: LineDTO;
   busy: boolean;
   onAct: (id: string, action: "resolve" | "delete") => void;
+  /** Kế toán chỉ định dòng này thuộc khoản nào (chọn ngày + khoản). */
+  onAssign?: (id: string, refId: string, date: string) => Promise<void>;
   showDate?: boolean;
 }) {
   const ok = line.status !== "pending";
+  /**
+   * PANEL CHỈ ĐỊNH: máy chịu thì người chỉ — chọn ngày, tải danh sách khoản
+   * của ngày đó rồi bấm khoản đúng. Chỉ mở khi kế toán bấm nút.
+   */
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignDate, setAssignDate] = useState(line.bankDate || line.checkDate);
+  const [options, setOptions] = useState<Array<{ refId: string; label: string; amount: number }> | null>(null);
+  useEffect(() => {
+    if (!assignOpen) return;
+    setOptions(null);
+    apiGet<{ options: Array<{ refId: string; label: string; amount: number }> }>(
+      `/api/baocao/bank-check?date=${assignDate}&options=1`,
+    )
+      .then((r) => setOptions(r.options))
+      .catch(() => setOptions([]));
+  }, [assignOpen, assignDate]);
   /** Dòng treo vì GỢI Ý tên giống — tô hổ phách cho khác dòng chưa khớp thường. */
   const isSuggest = !ok && /GIỐNG tên khách/.test(line.matchWhy ?? "");
   const badge = line.matchLevel ? LEVEL_BADGE[line.matchLevel] : null;
@@ -731,6 +865,18 @@ function BankLineRow({
             >
               ✓ Đã kiểm tay
             </Button>
+            {onAssign && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 bg-sky-50 px-2 text-[11px] text-sky-800"
+                disabled={busy}
+                onClick={() => setAssignOpen((v) => !v)}
+                title="Chỉ định dòng tiền này thuộc khoản thanh toán nào"
+              >
+                → Chỉ định khoản
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -763,6 +909,45 @@ function BankLineRow({
         >
           {line.matchWhy ? `${line.matchWhy}: ` : "Có thể là: "}
           {line.candidates!.join(" · ")}
+        </div>
+      )}
+      {assignOpen && onAssign && (
+        <div className="mt-1.5 rounded-lg border border-sky-200 bg-sky-50/60 p-2">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-semibold text-sky-900">Khoản này thuộc ngày:</span>
+            <input
+              type="date"
+              value={assignDate}
+              onChange={(e) => setAssignDate(e.target.value)}
+              className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+            />
+          </div>
+          <div className="mt-1.5 max-h-44 space-y-0.5 overflow-y-auto">
+            {options === null ? (
+              <p className="text-[11px] text-slate-500">Đang tải danh sách khoản…</p>
+            ) : options.length === 0 ? (
+              <p className="text-[11px] text-slate-500">Ngày này không có khoản nào — chọn ngày khác.</p>
+            ) : (
+              options.map((o) => (
+                <button
+                  key={o.refId}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onAssign(line.id, o.refId, assignDate).then(() => setAssignOpen(false))}
+                  className={
+                    "flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-xs hover:bg-white " +
+                    (o.amount === line.amount
+                      ? "border-emerald-400 bg-emerald-50 font-semibold"
+                      : "border-slate-200 bg-white/60")
+                  }
+                >
+                  <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                  <strong className="shrink-0 tabular-nums">{formatVND(o.amount)}</strong>
+                  {o.amount === line.amount && <span className="shrink-0 text-[10px] text-emerald-700">= số tiền</span>}
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
       <div className="mt-0.5 break-all font-mono text-[10px] leading-snug text-slate-400">{line.raw}</div>

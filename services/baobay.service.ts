@@ -2704,6 +2704,8 @@ export type MoneyBoard = {
    * khác) theo đúng cách chủ muốn nhìn: hai con số, hai câu hỏi khác nhau.
    */
   dayRevenue: { collected: number; totalValue: number; remaining: number };
+  /** ĐẠI LÝ NỢ: khách của ngày đã trả cho đại lý bao nhiêu — đại lý phải chuyển về. */
+  agencyDebts: Array<{ name: string; amount: number; bookings: string[] }>;
 };
 
 /**
@@ -2749,6 +2751,25 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     collected: 0,
   };
   dayRevenue.collected = Math.max(0, dayRevenue.totalValue - dayRevenue.remaining);
+
+  /** Công nợ ĐẠI LÝ của ngày: gom theo tên, kèm khách nào để đối chiếu. */
+  const agencyBookings = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    agencyPaidAmount: { $gt: 0 },
+    status: { $nin: ["cancelled", "voided"] },
+  })
+    .select("agencyPaidAmount agencyName contactName daySeq")
+    .lean<any[]>();
+  const debtByName = new Map<string, { name: string; amount: number; bookings: string[] }>();
+  for (const b of agencyBookings) {
+    const name = (b.agencyName || "").trim() || "(chưa ghi tên đại lý)";
+    const cur = debtByName.get(name) ?? { name, amount: 0, bookings: [] as string[] };
+    cur.amount += b.agencyPaidAmount || 0;
+    cur.bookings.push(`#${b.daySeq || "?"} ${b.contactName || ""} (${((b.agencyPaidAmount || 0) / 1000).toLocaleString("vi-VN")}k)`);
+    debtByName.set(name, cur);
+  }
+  const agencyDebts = [...debtByName.values()].sort((a, b) => b.amount - a.amount);
 
   /**
    * Tra SỐ THỨ TỰ booking cho từng khoản: ưu tiên bookingId (lệnh thu bấm từ
@@ -2973,6 +2994,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   return {
     date,
     dayRevenue,
+    agencyDebts,
     companySpend: { total: companySpendItems.reduce((t, i) => t + i.amount, 0), items: companySpendItems },
     cashItems: cashItems.sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999)),
     spendByPerson,
@@ -3118,6 +3140,8 @@ export type BookingSaveInput = {
   unitPrice: number;
   discount: number;
   deposit: number;
+  agencyPaidAmount?: number;
+  agencyName?: string;
   remaining: number;
   transferCode: string;
   depositToCompany?: boolean;
@@ -3143,8 +3167,11 @@ function nowHHMMVN(): string {
  * thời chưa tính tiền trong app) thì giữ nguyên số đã khai — đó là công nợ thật,
  * tính lại thành 0 là xoá mất nợ.
  */
-function remainingOf(total: number, deposit: number, declared: number): number {
-  return total > 0 ? Math.max(0, total - Math.max(0, deposit)) : Math.max(0, declared);
+function remainingOf(total: number, deposit: number, declared: number, agencyPaid = 0): number {
+  // Phần khách đã trả ĐẠI LÝ: khách khỏi trả nữa (đại lý nợ công ty phần đó)
+  return total > 0
+    ? Math.max(0, total - Math.max(0, deposit) - Math.max(0, agencyPaid))
+    : Math.max(0, declared);
 }
 
 /** Booking phải nằm ở tương lai: ngày bay không lùi, giờ dự kiến hôm nay không sớm hơn bây giờ. */
@@ -3253,7 +3280,9 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
-      remaining: remainingOf(newTotal, input.deposit, input.remaining),
+      agencyPaidAmount: input.agencyPaidAmount ?? 0,
+      agencyName: (input.agencyName ?? "").trim(),
+      remaining: remainingOf(newTotal, input.deposit, input.remaining, input.agencyPaidAmount ?? 0),
       transferCode: input.transferCode.trim(),
       // Cọc thì 100% qua STK công ty — không cần tích tay nữa
       depositToCompany: input.deposit > 0,
@@ -3506,7 +3535,9 @@ export async function updateBookingInfo(
       pickupNote: input.pickup === "other" ? input.pickupNote.trim() : "",
       expectedTime: input.expectedTime.trim(),
       deposit: input.deposit,
-      remaining: remainingOf(editedTotal, input.deposit, input.remaining),
+      agencyPaidAmount: input.agencyPaidAmount ?? 0,
+      agencyName: (input.agencyName ?? "").trim(),
+      remaining: remainingOf(editedTotal, input.deposit, input.remaining, input.agencyPaidAmount ?? 0),
       transferCode: input.transferCode.trim(),
       // Cọc thì 100% qua STK công ty — không cần tích tay nữa
       depositToCompany: input.deposit > 0,
@@ -4060,7 +4091,7 @@ export async function addBookingServices(
         discount: merged.discount,
         comboDiscount: merged.comboDiscount,
         totalAmount: newTotal,
-        remaining: Math.max(0, newTotal - (booking.deposit ?? 0)),
+        remaining: Math.max(0, newTotal - (booking.deposit ?? 0) - (booking.agencyPaidAmount ?? 0)),
         note: [
           booking.note,
           `đăng ký thêm: ${keys
@@ -4420,7 +4451,7 @@ export async function removeBookingServices(
         discount: merged.discount,
         totalAmount: newTotal,
         deposit: newDeposit,
-        remaining: Math.max(0, newTotal - newDeposit),
+        remaining: Math.max(0, newTotal - newDeposit - (booking.agencyPaidAmount ?? 0)),
         note: [
           booking.note,
           `huỷ dịch vụ: ${cutText} (−${back.toLocaleString("vi-VN")} đ${
@@ -4843,7 +4874,7 @@ export async function editBookingCollect(
     {
       $set: {
         deposit,
-        remaining: Math.max(0, (booking.totalAmount ?? 0) - deposit),
+        remaining: Math.max(0, (booking.totalAmount ?? 0) - deposit - (booking.agencyPaidAmount ?? 0)),
         depositToCompany: after.some((c) => c.method === "transfer"),
         transferCode: after.find((c) => c.method === "transfer")?.transferCode || "",
         collectedLog: after.map((c) => ({
@@ -5037,7 +5068,7 @@ export async function splitBooking(
     ppgUnitPrice: flightUnitPrice("ppg", current.flightDate),
   } as any);
   originSet.totalAmount = originTotal;
-  originSet.remaining = Math.max(0, originTotal - (current.deposit || 0));
+  originSet.remaining = Math.max(0, originTotal - (current.deposit || 0) - (current.agencyPaidAmount || 0));
   originSet.note = [
     current.note,
     input.mode === "cancel"
@@ -5597,6 +5628,8 @@ function toBookingDTO(doc: any): BookingDTO {
     expectedTime: doc.expectedTime || "",
     deposit: doc.deposit ?? 0,
     remaining: doc.remaining ?? 0,
+    agencyPaidAmount: doc.agencyPaidAmount ?? 0,
+    agencyName: doc.agencyName || "",
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
     note: doc.note || "",
