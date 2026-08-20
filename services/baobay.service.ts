@@ -7952,6 +7952,8 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   revenueTotal: 0,
   refundTotal: 0,
   agencySpendTotal: 0,
+  collectCash: 0,
+  collectTransfer: 0,
   flycam: 0,
   video360: 0,
   flagFlight: 0,
@@ -8027,6 +8029,20 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   for (const r of periodRefunds) rowFor(r.date).refundTotal += r.amount || 0;
   for (const f of periodFlycamCancels) rowFor(f.date).refundTotal += f.amount || 0;
   for (const b of periodCommissions) rowFor(b.flightDate).agencySpendTotal += b.commission?.amount || 0;
+
+  /** LỆNH THU theo ngày — để tổng CẢ KỲ tính được cả ngày chưa chốt. */
+  const periodCollects = await BaobayCollect.find({
+    spot,
+    date: { $gte: from, $lte: to },
+    status: { $in: ["collected", "company"] },
+  })
+    .select("date method amount status")
+    .lean<any[]>();
+  for (const c of periodCollects) {
+    const row = rowFor(c.date);
+    if (c.method === "cash" && c.status === "collected") row.collectCash += c.amount || 0;
+    else if (c.method === "transfer" && c.status === "company") row.collectTransfer += c.amount || 0;
+  }
 
   for (const r of pilotReports) {
     const row = rowFor(r.date);
@@ -8189,6 +8205,29 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     });
   }
 
+  /**
+   * TỔNG CẢ KỲ (tạm tính) — chủ nhìn "Tổng đã chốt" 135tr trong khi lệnh thu
+   * cả kỳ 245tr và kêu sai là phải: 19/25 ngày chưa chốt bị giấu sạch. Khối
+   * này cộng MỌI ngày: ngày đã chốt lấy số kế toán chốt, ngày chưa chốt lấy
+   * báo cáo nhân viên + lệnh thu (đúng nguồn mà gợi ý chốt sẽ dùng).
+   */
+  const allTotals = { ...EMPTY_ROLLUP };
+  for (const row of days) {
+    const closed = row.status === "closed";
+    for (const key of Object.keys(EMPTY_ROLLUP) as Array<keyof typeof EMPTY_ROLLUP>) {
+      if (key === "issueCount") continue;
+      allTotals[key] += (row[key] as number) || 0;
+    }
+    if (!closed) {
+      // Ngày chưa chốt: các ô "kế toán khai" đang bằng 0 — thế tạm bằng nguồn thật
+      allTotals.cashTotal += row.dispatcherCash + row.collectCash;
+      allTotals.transferTotal += row.dispatcherTransfer + row.collectTransfer;
+      allTotals.flycam += row.cameramanFlycam;
+      allTotals.video360 += row.pilot360;
+    }
+  }
+  allTotals.revenueTotal = allTotals.cashTotal + allTotals.transferTotal;
+
   return {
     spot,
     from,
@@ -8199,6 +8238,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     closes,
     days,
     totals,
+    allTotals,
     pendingDays: days.filter((d) => d.status !== "closed").map((d) => d.date),
     byPilot: [...pilotMap.values()].sort((a, b) => b.flights - a.flights),
   };

@@ -275,6 +275,28 @@ export default function SummaryPage() {
             <Stat label="Vé ngoại giao" value={String(t.diplomaticTickets)} />
             <Stat label="Thu từ khách ngoại giao" value={formatVND(t.diplomaticAmount)} />
           </div>
+
+          {/* TẠM TÍNH CẢ KỲ: kể cả ngày chưa chốt (báo cáo nhân viên + lệnh thu)
+              — chỉ nhìn "đã chốt" khi mới chốt 6/25 ngày là tưởng máy sai */}
+          {data.pendingDays.length > 0 && data.allTotals && (
+            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/60 p-3">
+              <p className="text-sm font-bold text-amber-900">
+                Tạm tính CẢ KỲ — gồm {data.pendingDays.length} ngày chưa chốt (lấy theo báo cáo
+                nhân viên + lệnh thu, có thể đổi khi kế toán chốt)
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <Stat label="Tiền mặt" value={formatVND(data.allTotals.cashTotal)} />
+                <Stat label="Chuyển khoản" value={formatVND(data.allTotals.transferTotal)} />
+                <Stat label="Tổng thu" value={formatVND(data.allTotals.revenueTotal)} strong />
+                <Stat
+                  label="Hoàn khách + chiết khấu"
+                  value={formatVND(data.allTotals.refundTotal + data.allTotals.agencySpendTotal)}
+                />
+                <Stat label="Chuyến bay (PC báo)" value={String(data.allTotals.pilotFlights)} />
+                <Stat label="Flycam" value={String(data.allTotals.flycam)} />
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

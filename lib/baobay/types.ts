@@ -495,6 +495,9 @@ export type DailyRollupDTO = {
   cashTotal: number;
   transferTotal: number;
   revenueTotal: number;
+  /** Lệnh thu TM/CK của ngày (đường tiền chính từ 13/08) — nguồn cho tổng cả kỳ. */
+  collectCash: number;
+  collectTransfer: number;
   flycam: number;
   video360: number;
   flagFlight: number;
@@ -569,6 +572,8 @@ export type BaobaySummaryDTO = {
   days: DailyRollupDTO[];
   /** Chỉ cộng những ngày đã chốt. */
   totals: Omit<DailyRollupDTO, "date" | "status" | "blocked">;
+  /** Cộng MỌI ngày trong kỳ (tạm tính) — ngày chưa chốt lấy báo cáo + lệnh thu. */
+  allTotals: Omit<DailyRollupDTO, "date" | "status" | "blocked">;
   /** Số ngày chưa chốt trong kỳ — nêu rõ để kế toán biết tổng còn thiếu gì. */
   pendingDays: string[];
   byPilot: PilotPeriodTotalDTO[];
