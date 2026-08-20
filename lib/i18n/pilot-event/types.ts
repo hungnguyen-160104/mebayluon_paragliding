@@ -98,6 +98,13 @@ export type PilotDict = {
   fNationality: string;
   fPhone: string;
   fPhonePh: string;
+  fEmergencyPhone: string;
+  fEmergencyPhonePh: string;
+  /** Phi công/HLV local nhận hỗ trợ — kèm lời giải thích cho phi công mới/diện giám sát. */
+  fSupportPilot: string;
+  fSupportPilotHint: string;
+  fSupportPilotPh: string;
+  fSupportPilotPhonePh: string;
   fEmail: string;
   fEmailPh: string;
   fAddress: string;
@@ -180,7 +187,7 @@ export type PilotDict = {
 
   /* lỗi */
   err: Record<
-    "kind" | "period" | "name" | "id" | "phone" | "phoneBad" | "dates" | "motor" | "shirtSize",
+    "kind" | "period" | "name" | "id" | "phone" | "phoneBad" | "emergencyPhone" | "dates" | "motor" | "shirtSize",
     string
   >;
   errNetwork: string;

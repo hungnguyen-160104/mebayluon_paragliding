@@ -14,6 +14,11 @@ export interface IPilotRegistration {
   idNumber: string;
   nationality: string;
   phone: string;
+  /** SĐT người thân/bạn bay — gọi khi có sự cố. Bắt buộc với mọi phi công. */
+  emergencyPhone?: string;
+  /** Phi công/HLV local nhận hỗ trợ (phi công mới / diện giám sát bay). */
+  supportPilotName?: string;
+  supportPilotPhone?: string;
   email?: string;
   address?: string;
   /** Câu lạc bộ / hội dù lượn mà phi công sinh hoạt. */
@@ -50,6 +55,14 @@ export interface IPilotRegistration {
 
   note?: string;
   status: "pending" | "confirmed" | "cancelled";
+
+  /** Biên bản miễn trừ trách nhiệm — ký điện tử tại /muavang/mien-tru. */
+  waiverSignedAt?: Date;
+  waiverEmail?: string;
+  /** Chữ ký vẽ tay, data URL PNG (nhỏ, vài chục KB). */
+  waiverSignature?: string;
+  /** Bản điều khoản phi công đã ký (WAIVER_VERSION lúc ký). */
+  waiverVersion?: string;
 }
 
 const PilotRegistrationSchema = new Schema<IPilotRegistration>(
@@ -59,6 +72,13 @@ const PilotRegistrationSchema = new Schema<IPilotRegistration>(
     idNumber: { type: String, required: true },
     nationality: { type: String, default: "Việt Nam" },
     phone: { type: String, required: true, index: true },
+    emergencyPhone: { type: String, default: "" },
+    supportPilotName: { type: String, default: "" },
+    supportPilotPhone: { type: String, default: "" },
+    waiverSignedAt: Date,
+    waiverEmail: String,
+    waiverSignature: String,
+    waiverVersion: String,
     email: String,
     address: String,
     club: String,

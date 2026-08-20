@@ -51,6 +51,9 @@ export type PilotEmailInput = {
   idNumber: string;
   nationality: string;
   phone: string;
+  emergencyPhone?: string;
+  supportPilotName?: string;
+  supportPilotPhone?: string;
   email?: string;
   address?: string;
   club?: string;
@@ -120,6 +123,13 @@ function infoRows(b: PilotEmailInput): string {
     row("CCCD/Passport", b.idNumber),
     row("Quốc tịch", b.nationality),
     row("Điện thoại", b.phone),
+    b.emergencyPhone ? row("SĐT khẩn cấp", b.emergencyPhone) : "",
+    b.supportPilotName
+      ? row(
+          "Phi công/HLV hỗ trợ",
+          b.supportPilotName + (b.supportPilotPhone ? ` — ${b.supportPilotPhone}` : ""),
+        )
+      : "",
     b.email ? row("Email", b.email) : "",
     b.address ? row("Địa chỉ", b.address) : "",
     b.club ? row("CLB / Hội", b.club) : "",

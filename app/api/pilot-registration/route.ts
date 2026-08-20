@@ -104,6 +104,9 @@ export async function POST(req: Request) {
   const idNumber = clean(raw.idNumber);
   const nationality = clean(raw.nationality) || "Việt Nam";
   const phone = clean(raw.phone);
+  const emergencyPhone = clean(raw.emergencyPhone);
+  const supportPilotName = clean(raw.supportPilotName).slice(0, 120);
+  const supportPilotPhone = clean(raw.supportPilotPhone);
   const email = clean(raw.email);
   const address = clean(raw.address);
   const club = clean(raw.club);
@@ -140,6 +143,7 @@ export async function POST(req: Request) {
   if (!fullName) errors.push("Chưa nhập họ tên");
   if (!idNumber) errors.push("Chưa nhập số CCCD/Passport");
   if (!phone) errors.push("Chưa nhập số điện thoại");
+  if (!emergencyPhone) errors.push("Chưa nhập số điện thoại khẩn cấp");
   if (!KINDS.includes(flyingKind)) errors.push("Chưa chọn loại hình bay");
   if (!PERIOD_KEYS.includes(period)) errors.push("Chưa chọn đợt bay");
   if (!dates.length) errors.push("Chưa chọn ngày bay");
@@ -193,6 +197,9 @@ export async function POST(req: Request) {
     idNumber,
     nationality,
     phone,
+    emergencyPhone,
+    supportPilotName: supportPilotName || undefined,
+    supportPilotPhone: supportPilotPhone || undefined,
     email: email || undefined,
     address: address || undefined,
     club: club || undefined,
@@ -238,6 +245,9 @@ export async function POST(req: Request) {
           idNumber,
           nationality,
           phone,
+          emergencyPhone,
+          supportPilotName: supportPilotName || undefined,
+          supportPilotPhone: supportPilotPhone || undefined,
           email: email || undefined,
           address: address || undefined,
           club: club || undefined,
@@ -275,6 +285,9 @@ export async function POST(req: Request) {
       idNumber,
       nationality,
       phone,
+      emergencyPhone,
+      supportPilotName: supportPilotName || undefined,
+      supportPilotPhone: supportPilotPhone || undefined,
       email: email || undefined,
       address: address || undefined,
       club: club || undefined,
@@ -315,6 +328,10 @@ export async function POST(req: Request) {
     idNumber,
     nationality,
     phone,
+    emergencyPhone,
+    supportPilot: supportPilotName
+      ? supportPilotName + (supportPilotPhone ? ` — ${supportPilotPhone}` : "")
+      : "",
     email,
     address,
     club,

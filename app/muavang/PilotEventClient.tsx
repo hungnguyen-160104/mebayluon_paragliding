@@ -183,6 +183,7 @@ const ERROR_ORDER = [
   "fullName",
   "idNumber",
   "phone",
+  "emergencyPhone",
   "period",
   "dates",
   "motorType",
@@ -250,6 +251,9 @@ export default function PilotEventClient() {
   const [nationality, setNationality] = useState("Việt Nam");
   const [nationalityTouched, setNationalityTouched] = useState(false);
   const [phone, setPhone] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [supportPilotName, setSupportPilotName] = useState("");
+  const [supportPilotPhone, setSupportPilotPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [club, setClub] = useState("");
@@ -447,12 +451,17 @@ export default function PilotEventClient() {
     if (!phone.trim()) next.phone = T.err.phone;
     else if (digits.length < 8) next.phone = T.err.phoneBad;
 
+    // SĐT khẩn cấp: bắt buộc với MỌI phi công — người nhà/bạn bay để gọi khi có sự cố
+    const emgDigits = emergencyPhone.replace(/\D/g, "");
+    if (!emergencyPhone.trim()) next.emergencyPhone = T.err.emergencyPhone;
+    else if (emgDigits.length < 8) next.emergencyPhone = T.err.phoneBad;
+
     if (!dates.length) next.dates = T.err.dates;
     if (motor && !motorType) next.motorType = T.err.motor;
     // Bấm CÓ áo thì phải chọn cỡ — xưởng in không in được "cỡ gì cũng được"
     if (period === "mua_vang" && wantShirt && !shirtSize) next.shirtSize = T.err.shirtSize;
     return next;
-  }, [fullName, idNumber, phone, dates.length, motor, motorType, period, wantShirt, shirtSize, T]);
+  }, [fullName, idNumber, phone, emergencyPhone, dates.length, motor, motorType, period, wantShirt, shirtSize, T]);
 
   const submit = async () => {
     setServerError("");
@@ -481,6 +490,9 @@ export default function PilotEventClient() {
           idNumber: idNumber.trim(),
           nationality: nationality.trim() || "Việt Nam",
           phone: phone.trim(),
+          emergencyPhone: emergencyPhone.trim(),
+          supportPilotName: supportPilotName.trim(),
+          supportPilotPhone: supportPilotPhone.trim(),
           email: email.trim(),
           address: address.trim(),
           club: club.trim(),
@@ -1267,6 +1279,48 @@ export default function PilotEventClient() {
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder={T.fPhonePh}
                     />
+                  </Field>
+                </div>
+
+                <div
+                  className="scroll-mt-24"
+                  ref={(el) => {
+                    fieldRefs.current.emergencyPhone = el;
+                  }}
+                >
+                  <Field label={T.fEmergencyPhone} required error={errors.emergencyPhone}>
+                    <input
+                      className={inputClass}
+                      value={emergencyPhone}
+                      inputMode="tel"
+                      onChange={(e) => setEmergencyPhone(e.target.value)}
+                      placeholder={T.fEmergencyPhonePh}
+                    />
+                  </Field>
+                </div>
+
+                {/* Phi công mới / diện giám sát bay khai người hỗ trợ tại đây —
+                    lời giải thích nằm ngay dưới nhãn nên không bắt buộc với người khác */}
+                <div className="sm:col-span-2">
+                  <Field label={T.fSupportPilot}>
+                    <p className="mb-2 text-xs leading-relaxed text-slate-500">
+                      {T.fSupportPilotHint}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        className={inputClass}
+                        value={supportPilotName}
+                        onChange={(e) => setSupportPilotName(e.target.value)}
+                        placeholder={T.fSupportPilotPh}
+                      />
+                      <input
+                        className={inputClass}
+                        value={supportPilotPhone}
+                        inputMode="tel"
+                        onChange={(e) => setSupportPilotPhone(e.target.value)}
+                        placeholder={T.fSupportPilotPhonePh}
+                      />
+                    </div>
                   </Field>
                 </div>
 

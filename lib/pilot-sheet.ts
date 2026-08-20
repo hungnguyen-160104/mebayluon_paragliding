@@ -31,6 +31,10 @@ export type PilotSheetRow = {
   idNumber: string;
   nationality: string;
   phone: string;
+  /** SĐT khẩn cấp — cột mới, script sheet tự báo missingColumns nếu bảng chưa có. */
+  emergencyPhone?: string;
+  /** "Tên — SĐT" phi công/HLV local hỗ trợ. */
+  supportPilot?: string;
   email: string;
   address: string;
   club: string;
