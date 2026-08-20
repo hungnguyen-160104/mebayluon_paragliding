@@ -574,6 +574,8 @@ function BankLineRow({
   showDate?: boolean;
 }) {
   const ok = line.status !== "pending";
+  /** Dòng treo vì GỢI Ý tên giống — tô hổ phách cho khác dòng chưa khớp thường. */
+  const isSuggest = !ok && /GIỐNG tên khách/.test(line.matchWhy ?? "");
   const badge = line.matchLevel ? LEVEL_BADGE[line.matchLevel] : null;
   return (
     <li
@@ -604,6 +606,10 @@ function BankLineRow({
             {line.matchSpot && line.status === "matched" && (
               <span className="font-normal text-slate-500"> · {spotName(line.matchSpot)}</span>
             )}
+          </span>
+        ) : isSuggest ? (
+          <span className="min-w-0 flex-1 text-xs font-bold text-amber-800">
+            Gợi ý — máy không tự nhận, soát tay
           </span>
         ) : (
           <span className="min-w-0 flex-1 text-xs font-bold text-rose-800">Chưa khớp — kiểm tay</span>
@@ -640,9 +646,15 @@ function BankLineRow({
       {ok && line.matchWhy && line.status === "matched" && (
         <div className="mt-0.5 text-[11px] text-slate-500">khớp vì: {line.matchWhy}</div>
       )}
-      {/* Phân vân: liệt kê các ứng viên để kế toán tự chọn bằng mắt */}
+      {/* Phân vân / gợi ý: liệt kê ứng viên NGAY TRONG DÒNG — hai luồng (sao kê
+          và booking nghi ngờ) nằm cạnh nhau cho kế toán đối soát bằng mắt */}
       {!ok && (line.candidates ?? []).length > 0 && (
-        <div className="mt-0.5 text-[11px] leading-snug text-rose-900/80">
+        <div
+          className={
+            "mt-0.5 rounded px-1.5 py-1 text-[11px] font-semibold leading-snug " +
+            (isSuggest ? "bg-amber-100 text-amber-900" : "text-rose-900/80")
+          }
+        >
           {line.matchWhy ? `${line.matchWhy}: ` : "Có thể là: "}
           {line.candidates!.join(" · ")}
         </div>

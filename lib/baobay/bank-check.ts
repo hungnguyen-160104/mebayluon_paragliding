@@ -156,6 +156,13 @@ export type BankMatch =
       why: string;
     }
   | { status: "multi"; hits: BankCandidate[]; why: string }
+  /**
+   * GỢI Ý soát tay — dấu hiệu yếu (tên giống nhau) nên máy KHÔNG tự nhận,
+   * chỉ đặt hai luồng cạnh nhau cho kế toán quyết. Bài học "TRAN THI THU
+   * HUYEN" khớp nhầm vào booking "Trần Thị Thu": tên chứa tên là chuyện
+   * thường, tiền của người này gắn sang booking người kia là mất dấu cả hai.
+   */
+  | { status: "suggest"; hits: BankCandidate[]; why: string }
   | { status: "none" };
 
 /** Chuỗi so khớp: bỏ dấu, viết hoa, dồn khoảng trắng — hai phía đều qua đây. */
@@ -239,7 +246,16 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
         return code.length >= 4 && runs.some((r) => r.endsWith(code));
       }),
     );
-    if (hits.length) return settle(hits, "code", "trùng mã giao dịch đã ghi (đuôi mã)", entry, hay);
+    if (hits.length) {
+      const m = settle(hits, "code", "trùng mã giao dịch đã ghi (đuôi mã)", entry, hay);
+      // Quy tắc của chủ: mã GD trùng RỒI kiểm số tiền — cả hai cùng đúng mới
+      // là "chuẩn"; mã đúng mà tiền lệch thì vẫn nhận (đuôi mã khó trùng ngẫu
+      // nhiên) nhưng phải nói to cho kế toán dòm lại.
+      if (m.status === "matched" && !m.hit.amounts.includes(entry.amount)) {
+        return { ...m, why: `${m.why} ⚠ số tiền KHÔNG khớp số đã ghi — kiểm lại` };
+      }
+      return m;
+    }
   }
 
   // ---- 2. NỘI DUNG chuyển khoản ----
@@ -276,14 +292,23 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
     if (hits.length) return settle(hits, "note", "nội dung có SĐT khách", entry, hay);
   }
 
-  // 2d. TÊN khách không dấu — ngân hàng tự điền "NGUYEN VAN A chuyen tien".
-  //     Đòi tên ≥ 2 chữ và ≥ 6 ký tự: "ANH", "THAO" trần trụi khớp lung tung.
+  // 2d. TÊN khách không dấu — "NGUYEN VAN A chuyen tien". Tên là dấu hiệu
+  //     YẾU ("TRAN THI THU" nằm gọn trong "TRAN THI THU HUYEN") nên KHÔNG
+  //     bao giờ tự nhận: chỉ khi số tiền cũng trùng số đang chờ thu thì đưa
+  //     ra GỢI Ý đặt cạnh booking cho kế toán tự quyết.
   {
-    const hits = candidates.filter((c) => {
+    const nameHits = candidates.filter((c) => {
       const name = ascii(c.contactName);
       return name.length >= 6 && name.includes(" ") && hay.includes(name);
     });
-    if (hits.length) return settle(hits, "note", "nội dung có tên khách", entry, hay);
+    const withAmount = dedupeByBooking(nameHits.filter((c) => c.amounts.includes(entry.amount)));
+    if (withAmount.length) {
+      return {
+        status: "suggest",
+        hits: withAmount,
+        why: "tên trên sao kê GIỐNG tên khách và trùng số tiền — máy không tự nhận, soát tay",
+      };
+    }
   }
 
   // ---- 3. SỐ TIỀN — chỉ khi đúng MỘT booking có số này ----

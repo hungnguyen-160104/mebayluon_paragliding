@@ -255,6 +255,13 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
   }
 
   for (const b of flyingToday) {
+    /**
+     * ĐÃ THU ĐỦ thì đứng ngoài vòng soát: không ai chuyển khoản sau khi trả
+     * đủ (nhất là trả đủ tiền mặt). Để lại là tên khách bị đem so với sao kê
+     * và rước nhầm tiền của người trùng tên (vụ Trần Thị Thu / TRAN THI THU
+     * HUYEN). Khoản CK ĐÃ GHI của booking vẫn soát qua ngả collect ở trên.
+     */
+    if (!(Number(b.remaining) > 0)) continue;
     // Số có thể về: phần còn thu, hoặc khách chuyển trọn tổng tiền một lần
     const amounts = [...new Set([b.remaining, b.totalAmount].filter((n) => n > 0))];
     out.push({
@@ -336,7 +343,9 @@ function matchFields(entry: BankEntry, candidates: BankCandidate[]) {
       candidates: [],
     };
   }
-  if (m.status === "multi") {
+  if (m.status === "multi" || m.status === "suggest") {
+    // "suggest" = dấu hiệu yếu (tên giống): treo lại nhưng ghi rõ nghi cho ai
+    // — giao diện in danh sách này ngay trong dòng nên hai luồng nằm cạnh nhau.
     return {
       status: "pending" as const,
       matchWhy: m.why,
