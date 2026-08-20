@@ -4319,6 +4319,88 @@ export async function listRefunds(spotRaw: string, date: string): Promise<Refund
  *  - "refund": khách đã trả rồi nên phải TRẢ LẠI — lập lệnh hoàn như mọi lệnh
  *    hoàn khác (tiền mặt trừ vào người trực, chuyển khoản chờ kế toán).
  */
+/**
+ * HUỶ BỚT KHÁCH — đăng ký 2 huỷ 1 thì booking VẪN LÀ MỘT DÒNG: số khách đang
+ * chạy giảm, ô `cancelledGuests` nhớ phần huỷ để in "2 khách (huỷ 1)" đỏ, và
+ * tiền tự trừ đúng đơn giá. Trước đây không có đường này nên quầy phải tạo
+ * booking trùng chỉ để ghi dấu huỷ (vụ Hà Văn Thận #2/#7 ngày 20/08).
+ */
+export async function cancelBookingGuests(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  count: number,
+  reason: string,
+  refundInput?: { amount: number; method: "cash" | "transfer"; bankAccount?: string },
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  await assertBookingUnlocked(spot, id);
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+  if (booking.status === "voided" || booking.status === "cancelled")
+    throw new BaobayError("Booking này đã huỷ/bỏ khỏi sổ rồi", 400);
+
+  const n = Math.max(0, Math.round(count));
+  if (n < 1) throw new BaobayError("Số khách huỷ phải từ 1 trở lên", 400);
+  if (n >= (booking.guestCount || 0))
+    throw new BaobayError("Huỷ hết khách thì dùng nút ✕ Huỷ booking (huỷ cả booking)", 400);
+
+  const closed = await AccountantDailyClose.findOne({ spot, date: booking.flightDate, status: "closed" })
+    .select("_id")
+    .lean<any>();
+  if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa được nữa", 400);
+
+  // Tiền bay của phần khách huỷ = đơn giá × số huỷ; dịch vụ muốn bớt thì dùng
+  // thẻ ➕➖ DỊCH VỤ (có đường hoàn tiền riêng), đây chỉ đụng tiền BAY.
+  const cut = (booking.unitPrice || 0) * n;
+  const newGuests = (booking.guestCount || 0) - n;
+  const newTotal = Math.max(0, (booking.totalAmount || 0) - cut);
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $inc: { cancelledGuests: n },
+      $set: {
+        guestCount: newGuests,
+        // PPG không được nhiều hơn tổng khách còn lại
+        ppgGuests: Math.min(booking.ppgGuests || 0, newGuests),
+        totalAmount: newTotal,
+        remaining: Math.max(0, newTotal - (booking.deposit || 0) - (booking.agencyPaidAmount || 0)),
+        note: [
+          booking.note,
+          `huỷ ${n} khách (−${cut.toLocaleString("vi-VN")} đ${reason ? `, ${reason}` : ""}) by ${
+            session.name || session.username
+          }`,
+        ]
+          .filter(Boolean)
+          .join(" — "),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+
+  /**
+   * Khách đã trả tiền cho phần huỷ thì lập LỆNH HOÀN đúng đường hoàn tiền
+   * chuẩn (TM xong ngay, CK chờ kế toán) — tiền hoàn hiện trong khay hoàn và
+   * money board như mọi khoản hoàn khác.
+   */
+  if (refundInput && refundInput.amount > 0) {
+    await createRefund(session, spot, {
+      date: todayInVN(),
+      bookingId: id,
+      guestName: booking.contactName || "",
+      bookingCode: booking.bookingCode || "",
+      guests: n,
+      amount: refundInput.amount,
+      method: refundInput.method,
+      bankAccount: refundInput.bankAccount ?? "",
+      reason: `huỷ ${n}/${booking.guestCount} khách${reason ? ` — ${reason}` : ""}`,
+    } as any);
+  }
+  return toBookingDTO(updated);
+}
+
 export async function removeBookingServices(
   session: BaobaySession,
   spotRaw: string,
@@ -4445,6 +4527,15 @@ export async function removeBookingServices(
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
     {
+      // Phần huỷ được NHỚ LẠI — dòng booking in "2×360 (huỷ 1)" đỏ thay vì
+      // số cứ teo đi không dấu vết
+      $inc: {
+        cancelledFlycam: input.remove.flycam ?? 0,
+        cancelledVideo360: input.remove.video360 ?? 0,
+        cancelledRedFlag: input.remove.redFlag ?? 0,
+        cancelledSunset: input.remove.sunset ?? 0,
+        cancelledFlagFlight: input.remove.flagFlight ?? 0,
+      },
       $set: {
         ...next,
         comboDiscount: merged.comboDiscount,
@@ -5630,6 +5721,12 @@ function toBookingDTO(doc: any): BookingDTO {
     remaining: doc.remaining ?? 0,
     agencyPaidAmount: doc.agencyPaidAmount ?? 0,
     agencyName: doc.agencyName || "",
+    cancelledGuests: doc.cancelledGuests ?? 0,
+    cancelledFlycam: doc.cancelledFlycam ?? 0,
+    cancelledVideo360: doc.cancelledVideo360 ?? 0,
+    cancelledRedFlag: doc.cancelledRedFlag ?? 0,
+    cancelledSunset: doc.cancelledSunset ?? 0,
+    cancelledFlagFlight: doc.cancelledFlagFlight ?? 0,
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
     note: doc.note || "",
@@ -6613,6 +6710,16 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod")
     .lean<any[]>();
 
+  /** HUỶ MỘT PHẦN: booking vẫn chạy nhưng đã huỷ bớt N khách — kế toán phải thấy N này trong mục huỷ. */
+  const partialCancelled = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    status: { $nin: ["cancelled", "voided"] },
+    cancelledGuests: { $gt: 0 },
+  })
+    .select("contactName phone bookingCode source cancelledGuests")
+    .lean<any[]>();
+
   /** LỆNH THU của ngày — đường tiền chính từ 13/08 (thu ngay trên booking). */
   const dayCollects = await BaobayCollect.find({
     spot,
@@ -6644,6 +6751,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
       .map((e) => `${(e.name || "").trim().toLowerCase()}|${e.guests || 0}`),
   );
+  const partialCancelEntries = partialCancelled.map((b) => ({
+    name: b.contactName || b.phone || "khách",
+    bookingCode: b.bookingCode || "",
+    guests: b.cancelledGuests || 0,
+    source: b.source || "",
+    refund: 0,
+    note: "huỷ MỘT PHẦN trên sổ booking (booking vẫn bay phần còn lại; hoàn tiền xem khay hoàn)",
+  }));
+
   const bookingCancelEntries = cancelledBookings
     .filter((b) => {
       const codes = (b.cancelTicketCodes ?? []).map((c: string) => String(c).toUpperCase());
@@ -6696,7 +6812,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
         .filter((e) => !(e.refund > 0))
         .reduce((t, e) => t + (e.guests || 0), 0) +
-      bookingCancelEntries.filter((e) => !(e.refund > 0)).reduce((t, e) => t + (e.guests || 0), 0),
+      bookingCancelEntries.filter((e) => !(e.refund > 0)).reduce((t, e) => t + (e.guests || 0), 0) +
+      partialCancelEntries.reduce((t, e) => t + (e.guests || 0), 0),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
     issuedRanges: (() => {
@@ -6731,6 +6848,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     cancelledGuestEntries: [
       ...dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
       ...bookingCancelEntries,
+      ...partialCancelEntries,
     ],
     rescheduledGuestEntries: dispatchers.flatMap((d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"]),
     dispatcherLedger: dispatchers.flatMap((d) => {

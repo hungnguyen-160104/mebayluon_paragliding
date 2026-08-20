@@ -387,6 +387,13 @@ export type BookingDTO = {
   /** Khách đã trả cho ĐẠI LÝ (đại lý nợ công ty) + tên đại lý. */
   agencyPaidAmount: number;
   agencyName: string;
+  /** Huỷ MỘT PHẦN: số khách/dịch vụ đã huỷ bớt — dòng booking in đỏ "huỷ x". */
+  cancelledGuests: number;
+  cancelledFlycam: number;
+  cancelledVideo360: number;
+  cancelledRedFlag: number;
+  cancelledSunset: number;
+  cancelledFlagFlight: number;
   /** Mã chuyển khoản của khoản cọc (nếu khách CK). */
   transferCode: string;
   /** Cọc CHUYỂN KHOẢN vào thẳng TK CÔNG TY — không ai cầm khoản này. */

@@ -10,6 +10,7 @@ import { wearsRole } from "@/lib/baobay/roles";
 import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
+  cancelBookingGuests,
   BaobayError,
   setBookingLock,
   assignBooking,
@@ -205,6 +206,31 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
+  if (action === "cancel-guests") {
+    // Huỷ BỚT khách (không huỷ cả booking) — giữ một dòng, in "huỷ N" đỏ
+    try {
+      const refundAmount = Math.max(0, Math.round(Number(body?.refund) || 0));
+      const booking = await cancelBookingGuests(
+        auth,
+        spot,
+        String(body?.id ?? ""),
+        Number(body?.count) || 0,
+        String(body?.reason ?? ""),
+        refundAmount > 0
+          ? {
+              amount: refundAmount,
+              method: body?.refundMethod === "cash" ? "cash" : "transfer",
+              bankAccount: String(body?.bankAccount ?? ""),
+            }
+          : undefined,
+      );
+      return NextResponse.json({ booking });
+    } catch (err) {
+      if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
+      console.error("PATCH cancel-guests error:", err);
+      return NextResponse.json({ message: "Không huỷ bớt được" }, { status: 500 });
+    }
+  }
   if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }

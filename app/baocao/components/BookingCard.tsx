@@ -85,18 +85,33 @@ function BookingSummary({
   head.push([b.source, b.bookingCode && `#${b.bookingCode}`].filter(Boolean).join(" ") || "booking");
 
   const parts: string[] = [];
-  parts.push(`${b.guestCount} khách`);
-  if (b.flycam) parts.push(`${b.flycam}×flycam`);
-  if (b.video360) parts.push(`${b.video360}×cam360`);
-  if (b.redFlag) parts.push(`${b.redFlag}×cờ đỏ`);
-  if (b.sunset) parts.push(`${b.sunset}×hoàng hôn/săn mây`);
+  /**
+   * SỐ GỐC = đang chạy + đã huỷ bớt: đăng ký 2 huỷ 1 thì dòng vẫn ghi
+   * "2 khách" — phần huỷ in ĐỎ ở cuối (khối huyBits), tiền thì đã trừ sẵn.
+   */
+  const cxlG = b.cancelledGuests ?? 0;
+  parts.push(`${b.guestCount + cxlG} khách`);
+  if (b.flycam + (b.cancelledFlycam ?? 0)) parts.push(`${b.flycam + (b.cancelledFlycam ?? 0)}×flycam`);
+  if (b.video360 + (b.cancelledVideo360 ?? 0)) parts.push(`${b.video360 + (b.cancelledVideo360 ?? 0)}×cam360`);
+  if (b.redFlag + (b.cancelledRedFlag ?? 0)) parts.push(`${b.redFlag + (b.cancelledRedFlag ?? 0)}×cờ đỏ`);
+  if (b.sunset + (b.cancelledSunset ?? 0)) parts.push(`${b.sunset + (b.cancelledSunset ?? 0)}×hoàng hôn/săn mây`);
   if (b.mountainCar) parts.push(`${b.mountainCar}×xe núi`);
   if ((b.ppgGuests ?? 0) > 0 && b.guestCount > (b.ppgGuests ?? 0)) {
     parts.push(`${b.guestCount - (b.ppgGuests ?? 0)}PG + ${b.ppgGuests}PPG`);
   } else if (b.flightKind && b.flightKind !== "pg") {
     parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
   }
-  if (b.flagFlight) parts.push(`${b.flagFlight}×kéo cờ`);
+  if (b.flagFlight + (b.cancelledFlagFlight ?? 0))
+    parts.push(`${b.flagFlight + (b.cancelledFlagFlight ?? 0)}×kéo cờ`);
+  /** Khối ĐỎ "huỷ …" — đứng ngay sau danh sách dịch vụ. */
+  const huyBits = [
+    cxlG ? `huỷ ${cxlG} khách` : "",
+    (b.cancelledFlycam ?? 0) ? `huỷ ${b.cancelledFlycam}×flycam` : "",
+    (b.cancelledVideo360 ?? 0) ? `huỷ ${b.cancelledVideo360}×cam360` : "",
+    (b.cancelledRedFlag ?? 0) ? `huỷ ${b.cancelledRedFlag}×cờ đỏ` : "",
+    (b.cancelledSunset ?? 0) ? `huỷ ${b.cancelledSunset}×hoàng hôn` : "",
+    (b.cancelledFlagFlight ?? 0) ? `huỷ ${b.cancelledFlagFlight}×kéo cờ` : "",
+  ].filter(Boolean);
   parts.push(
     [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
       .filter(Boolean)
@@ -166,6 +181,12 @@ function BookingSummary({
       ) : null}
       {" · "}
       {parts.filter(Boolean).join(" · ")}
+      {huyBits.length > 0 && (
+        <>
+          {" · "}
+          <strong className="rounded bg-rose-100 px-1 font-bold text-rose-700">{huyBits.join(" · ")}</strong>
+        </>
+      )}
       {paidTotal > 0 ? (
         <>
           {" · "}
@@ -1452,19 +1473,21 @@ function CancelBookingControl({
     setError(null);
     try {
       if (scope === "part") {
+        /**
+         * HUỶ MỘT PHẦN = MỘT DÒNG DUY NHẤT: trước đây đi đường "split" nên đẻ
+         * thêm một booking con đã-huỷ trùng tên trùng SĐT (vụ Hà Văn Thận
+         * #2/#7) — ai nhìn sổ cũng tưởng nhập trùng. Nay booking gốc giữ
+         * nguyên, in "N khách (huỷ M)" đỏ, tiền tự trừ, hoàn tiền đi đường
+         * lệnh hoàn chuẩn.
+         */
         await apiPatch(`/api/baocao/booking?spot=${spot}`, {
           id: booking.id,
-          action: "split",
-          mode: "cancel",
-          guests: partGuests,
-          ticketIssued: hasTicketFlow ? ticketIssued : false,
-          ticketCodesText: codes,
+          action: "cancel-guests",
+          count: partGuests,
+          reason: note,
           refund: paid > 0 ? refund : 0,
           refundMethod,
-          usedServices,
-          usedFee,
           bankAccount,
-          note,
         });
         onDone(
           `✓ Đã huỷ ${partGuests} khách trong đoàn (còn ${booking.guestCount - partGuests} khách bay)` +

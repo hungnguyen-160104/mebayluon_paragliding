@@ -47,6 +47,17 @@ export interface IBaobayBooking {
   redFlag: number;
   sunset: number;
   flagFlight: number;
+  /**
+   * HUỶ MỘT PHẦN: đăng ký 2 huỷ 1 thì số đang chạy giảm còn 1, các ô dưới đây
+   * NHỚ phần đã huỷ — dòng booking in "2 khách (huỷ 1 đỏ)" thay vì lặng lẽ
+   * thành 1 khách, và không ai phải tạo booking trùng chỉ để ghi dấu huỷ nữa.
+   */
+  cancelledGuests: number;
+  cancelledFlycam: number;
+  cancelledVideo360: number;
+  cancelledRedFlag: number;
+  cancelledSunset: number;
+  cancelledFlagFlight: number;
   /** Booking gốc từ trang khách mebayluon.com/booking — khoá chống nhập trùng. */
   webBookingId?: string;
   /** Booking từ THƯ OTA (Klook…): mã của OTA — khoá chống nhập trùng. */
@@ -242,6 +253,12 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     redFlag: { type: Number, default: 0, min: 0 },
     sunset: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
+    cancelledGuests: { type: Number, default: 0, min: 0 },
+    cancelledFlycam: { type: Number, default: 0, min: 0 },
+    cancelledVideo360: { type: Number, default: 0, min: 0 },
+    cancelledRedFlag: { type: Number, default: 0, min: 0 },
+    cancelledSunset: { type: Number, default: 0, min: 0 },
+    cancelledFlagFlight: { type: Number, default: 0, min: 0 },
     webBookingId: { type: String, index: true, sparse: true },
     otaRef: { type: String, index: true, sparse: true },
     otaName: String,
