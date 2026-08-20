@@ -89,6 +89,7 @@ type BookingRowDTO = {
   agencyName: string;
   contactName: string;
   phone: string;
+  bookingCode: string;
   flightDate: string;
   status: string;
   flown: boolean;
@@ -151,6 +152,7 @@ function HighlightSms({ raw, row }: { raw: string; row: BookingRowDTO }) {
     tokens.push(`${dd}${mm} k${row.daySeq}`, `${dd}${mm}k${row.daySeq}`, `${dd}/${mm} k${row.daySeq}`);
   }
   if (row.contactName.trim().length >= 6) tokens.push(row.contactName);
+  if (row.bookingCode.trim().length >= 4) tokens.push(row.bookingCode);
   const phoneTail = row.phone.replace(/\D/g, "").slice(-9);
   if (phoneTail.length === 9) tokens.push(phoneTail);
   for (const amt of [
@@ -517,6 +519,18 @@ export function BankCheckCard({ date }: { date: string }) {
                 {/* dòng tóm tắt: #6 · tên · ngày bay — dịch vụ — tiền */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="min-w-0 font-bold text-slate-900">{row.label}</span>
+                  {/* SĐT + mã booking đứng ngay đầu thẻ — hai thứ kế toán dò trong SMS */}
+                  {row.phone && (
+                    <strong className="rounded bg-amber-100 px-1 text-xs font-bold tabular-nums text-amber-900">
+                      📞 {row.phone}
+                    </strong>
+                  )}
+                  {/* Mã booking bỏ trống thì hệ lấy luôn SĐT làm mã — in đúp vô nghĩa */}
+                  {row.bookingCode && row.bookingCode !== row.phone && (
+                    <strong className="rounded bg-sky-100 px-1 text-xs font-bold text-sky-900">
+                      mã {row.bookingCode}
+                    </strong>
+                  )}
                   <span className="text-xs text-slate-500">{row.summary}</span>
                   {row.flown && (
                     <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">đã bay</span>
@@ -571,7 +585,14 @@ export function BankCheckCard({ date }: { date: string }) {
                       )}
                       <span className="min-w-0 flex-1 text-slate-600">
                         CK {t.source}
-                        {t.code ? ` · mã GD ${t.code}` : ""}
+                        {t.code ? (
+                          <>
+                            {" · mã GD "}
+                            <strong className="rounded bg-rose-100 px-0.5 font-bold text-rose-700">{t.code}</strong>
+                          </>
+                        ) : (
+                          ""
+                        )}
                         {!t.seen && !t.verified && (
                           <span className="ml-1 rounded bg-rose-100 px-1 py-0.5 text-[10px] font-semibold text-rose-800">
                             sao kê chưa thấy

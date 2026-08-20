@@ -126,9 +126,10 @@ export type BankBookingRowDTO = {
   /** Khách đã trả bên đại lý + tên đại lý (đại lý nợ công ty). */
   agencyPaidAmount: number;
   agencyName: string;
-  /** Dữ liệu để tô sáng phần TRÙNG trong SMS: tên, SĐT, ngày+STT. */
+  /** Dữ liệu để tô sáng phần TRÙNG trong SMS: tên, SĐT, mã booking, ngày+STT. */
   contactName: string;
   phone: string;
+  bookingCode: string;
   flightDate: string;
   status: string;
   flown: boolean;
@@ -731,6 +732,7 @@ export async function getBankCheck(
         agencyName: b.agencyName || "",
         contactName: b.contactName || "",
         phone: b.phone || "",
+        bookingCode: b.bookingCode || "",
         flightDate: b.flightDate || "",
         status: b.status || "open",
         flown: b.status === "done",
