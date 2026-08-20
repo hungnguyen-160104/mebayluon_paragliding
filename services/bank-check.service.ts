@@ -693,10 +693,45 @@ export async function getBankCheck(
   const rowBookings = rowBookingIds.size
     ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
         .select(
-          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName status ticketIssuedAt noTicketFlight lockedAt",
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
         )
         .lean<any[]>()
     : [];
+
+  /**
+   * TRỌN LỊCH SỬ THANH TOÁN của từng booking — mọi ngày, không chỉ ngày soát.
+   * Khách cọc 500k hôm kia + CK 2.390k hôm qua thì thẻ phải kể đủ hai khoản,
+   * kèm tích ✓ kế toán đã "nhận" từng khoản chưa. Trước đây thẻ chỉ nhìn
+   * khoản của đúng ngày soát nên booking trả tiền hôm khác trông như 0 đồng.
+   */
+  const histCollects = rowBookingIds.size
+    ? await BaobayCollect.find({
+        bookingId: { $in: [...rowBookingIds] },
+        status: { $in: ["collected", "company"] },
+      })
+        .select("bookingId method amount transferCode date spot collectorName createdByName verifiedAt")
+        .lean<any[]>()
+    : [];
+  const histRefIds = [
+    ...histCollects.map((c) => `collect:${String(c._id)}`),
+    ...[...rowBookingIds].map((id) => `deposit:${id}`),
+  ];
+  /** Dòng sao kê (bất kỳ ngày soát nào) đã trỏ về các khoản/booking này. */
+  const histSeenDocs = rowBookingIds.size
+    ? await BaobayBankLine.find({
+        status: { $ne: "pending" },
+        $or: [{ refId: { $in: histRefIds } }, { bookingId: { $in: [...rowBookingIds] } }],
+      })
+        .select("refId bookingId amount")
+        .lean<any[]>()
+    : [];
+  const histSeenRefs = new Set(histSeenDocs.map((d) => d.refId).filter(Boolean));
+  const histSeenByBooking = new Map<string, Set<number>>();
+  for (const d of histSeenDocs) {
+    if (!d.bookingId) continue;
+    const k = String(d.bookingId);
+    (histSeenByBooking.get(k) ?? histSeenByBooking.set(k, new Set()).get(k)!).add(d.amount || 0);
+  }
 
   /** "3 khách PG · 1 PPG · 2×flycam · 1×360" — dòng tóm tắt kế toán liếc một giây. */
   const summaryOf = (b: any): string => {
@@ -739,8 +774,61 @@ export async function getBankCheck(
         ticketIssued: Boolean(b.ticketIssuedAt),
         noTicket: Boolean(b.noTicketFlight),
         locked: Boolean(b.lockedAt),
-        transfers: appTransfers.filter((t) => t.bookingId === id),
-        cash: appCash.filter((c) => c.bookingId === id),
+        transfers: (() => {
+          const mine = histCollects.filter((c) => String(c.bookingId) === id);
+          const out: BankAppTransferDTO[] = mine
+            .filter((c) => c.method === "transfer")
+            .map((c) => ({
+              refId: `collect:${String(c._id)}`,
+              bookingId: id,
+              daySeq: Number(b.daySeq) || 0,
+              label,
+              amount: c.amount || 0,
+              code: c.transferCode || "",
+              spot: c.spot,
+              source: `lệnh thu CK · ${formatDateKeyVN(c.date)}`,
+              seen:
+                histSeenRefs.has(`collect:${String(c._id)}`) ||
+                (histSeenByBooking.get(id)?.has(c.amount || 0) ?? false) ||
+                Boolean(c.verifiedAt),
+              verified: Boolean(c.verifiedAt),
+              locked: Boolean(b.lockedAt),
+            }));
+          // Cọc GÕ TAY lúc nhập booking = deposit trừ phần các lệnh thu đã đại diện
+          const manualDeposit = (b.deposit || 0) - mine.reduce((t, c) => t + (c.amount || 0), 0);
+          if (manualDeposit > 0) {
+            out.unshift({
+              refId: `deposit:${id}`,
+              bookingId: id,
+              daySeq: Number(b.daySeq) || 0,
+              label,
+              amount: manualDeposit,
+              code: b.transferCode || "",
+              spot: b.spot,
+              source: "cọc lúc nhập booking",
+              seen:
+                histSeenRefs.has(`deposit:${id}`) ||
+                (histSeenByBooking.get(id)?.has(manualDeposit) ?? false) ||
+                Boolean(b.depositVerifiedAt),
+              verified: Boolean(b.depositVerifiedAt),
+              locked: Boolean(b.lockedAt),
+            });
+          }
+          return out;
+        })(),
+        cash: histCollects
+          .filter((c) => String(c.bookingId) === id && c.method === "cash")
+          .map((c) => ({
+            refId: `collect:${String(c._id)}`,
+            bookingId: id,
+            daySeq: Number(b.daySeq) || 0,
+            label,
+            amount: c.amount || 0,
+            by: `${c.collectorName || c.createdByName || ""} · ${formatDateKeyVN(c.date)}`,
+            spot: c.spot,
+            verified: Boolean(c.verifiedAt),
+            locked: Boolean(b.lockedAt),
+          })),
         lines: lineDTOs.filter((l) => l.status !== "pending" && String((lineDocs.find((d) => String(d._id) === l.id) as any)?.bookingId ?? "") === id),
         // Dòng treo mà danh sách nghi ngờ có nhắc đúng nhãn booking này
         suggests: pendingToday.filter((l) => (l.candidates ?? []).some((c) => c.startsWith(label))),
