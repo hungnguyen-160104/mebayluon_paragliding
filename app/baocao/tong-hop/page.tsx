@@ -267,6 +267,8 @@ export default function SummaryPage() {
             <Stat label="Chuyển khoản" value={formatVND(t.transferTotal)} />
             <Stat label="Tổng thu" value={formatVND(t.revenueTotal)} strong />
             <Stat label="Tổng chi nhân viên" value={formatVND(t.expenseTotal)} />
+            <Stat label="Hoàn khách (hoàn tiền + huỷ flycam)" value={formatVND(t.refundTotal)} />
+            <Stat label="Chiết khấu đại lý" value={formatVND(t.agencySpendTotal)} />
             <Stat label="Flycam" value={String(t.flycam)} />
             <Stat label="Camera 360" value={String(t.video360)} />
             <Stat label="Bay kéo cờ/bánh" value={String(t.flagFlight)} />

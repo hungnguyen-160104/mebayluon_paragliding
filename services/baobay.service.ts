@@ -2698,6 +2698,12 @@ export type MoneyBoard = {
   spendTotal: number;
   /** Công ty CHI thẳng từ TK (chiết khấu trả đại lý bằng chuyển khoản). */
   companySpend: { total: number; items: MoneyBoardItem[] };
+  /**
+   * DOANH SỐ CỦA NGÀY — tiền gắn với các booking BAY hôm nay, bất kể thu vào
+   * hôm nào. Đứng cạnh "hôm nay thu" (tiền về trong ngày, gồm cả cọc của ngày
+   * khác) theo đúng cách chủ muốn nhìn: hai con số, hai câu hỏi khác nhau.
+   */
+  dayRevenue: { collected: number; totalValue: number; remaining: number };
 };
 
 /**
@@ -2728,6 +2734,21 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     // Hoàn tiền khách (huỷ bay, huỷ dịch vụ) đã thực hiện xong
     BaobayRefund.find({ spot, date, status: { $in: ["done", "paid"] } }).lean<any[]>(),
   ]);
+
+  /** Doanh số ngày: tổng giá trị và phần đã thu của các booking bay hôm nay. */
+  const revenueBookings = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    status: { $in: ["open", "done"] },
+  })
+    .select("totalAmount remaining")
+    .lean<any[]>();
+  const dayRevenue = {
+    totalValue: revenueBookings.reduce((a, b) => a + (b.totalAmount || 0), 0),
+    remaining: revenueBookings.reduce((a, b) => a + Math.max(0, b.remaining || 0), 0),
+    collected: 0,
+  };
+  dayRevenue.collected = Math.max(0, dayRevenue.totalValue - dayRevenue.remaining);
 
   /**
    * Tra SỐ THỨ TỰ booking cho từng khoản: ưu tiên bookingId (lệnh thu bấm từ
@@ -2951,6 +2972,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
 
   return {
     date,
+    dayRevenue,
     companySpend: { total: companySpendItems.reduce((t, i) => t + i.amount, 0), items: companySpendItems },
     cashItems: cashItems.sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999)),
     spendByPerson,
@@ -7928,6 +7950,8 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   cashTotal: 0,
   transferTotal: 0,
   revenueTotal: 0,
+  refundTotal: 0,
+  agencySpendTotal: 0,
   flycam: 0,
   video360: 0,
   flagFlight: 0,
@@ -7984,6 +8008,25 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     byDate.set(date, fresh);
     return fresh;
   };
+
+  /**
+   * HOÀN TIỀN + HUỶ FLYCAM + CHIẾT KHẤU ĐẠI LÝ — trước đây chỉ money board của
+   * MỘT ngày thấy, tổng kỳ mù tịt (16-18/08 hoàn 14,8tr mà kỳ báo chi 0đ).
+   */
+  const [periodRefunds, periodFlycamCancels, periodCommissions] = await Promise.all([
+    BaobayRefund.find({ spot, date: { $gte: from, $lte: to }, status: { $in: ["done", "paid"] } })
+      .select("date amount")
+      .lean<any[]>(),
+    BaobayFlycamCancel.find({ spot, date: { $gte: from, $lte: to }, status: { $in: ["done", "paid"] } })
+      .select("date amount")
+      .lean<any[]>(),
+    BaobayBooking.find({ spot, flightDate: { $gte: from, $lte: to }, "commission.amount": { $gt: 0 } })
+      .select("flightDate commission.amount")
+      .lean<any[]>(),
+  ]);
+  for (const r of periodRefunds) rowFor(r.date).refundTotal += r.amount || 0;
+  for (const f of periodFlycamCancels) rowFor(f.date).refundTotal += f.amount || 0;
+  for (const b of periodCommissions) rowFor(b.flightDate).agencySpendTotal += b.commission?.amount || 0;
 
   for (const r of pilotReports) {
     const row = rowFor(r.date);

@@ -126,6 +126,33 @@ export function MoneyBoardCard({
         )}
       </div>
 
+      {/* HAI CON SỐ HAI CÂU HỎI: "hôm nay thu" = tiền về trong ngày (gồm cả cọc
+          của ngày bay khác) · "doanh số của ngày" = tiền của các booking BAY
+          hôm nay, bất kể thu hôm nào. */}
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5">
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <div>
+            <div className="text-xs font-semibold text-emerald-900">📥 Hôm nay thu</div>
+            <div className="text-xl font-bold tabular-nums text-emerald-800">
+              {formatVND(board.cashTotal + board.transfer.total)}
+            </div>
+            <div className="text-[11px] text-emerald-900/70">gồm cả tiền cọc của các ngày bay khác</div>
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-emerald-900">📊 Doanh số của ngày</div>
+            <div className="text-xl font-bold tabular-nums text-emerald-800">
+              {formatVND(board.dayRevenue?.collected ?? 0)}
+            </div>
+            <div className="text-[11px] text-emerald-900/70">
+              chỉ booking bay hôm nay · tổng giá trị {formatVND(board.dayRevenue?.totalValue ?? 0)}
+              {(board.dayRevenue?.remaining ?? 0) > 0
+                ? ` · còn phải thu ${formatVND(board.dayRevenue!.remaining)}`
+                : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Khách trả TIỀN MẶT — từng khách, ai thu. Đối chiếu với sổ vé của quầy */}
       <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
         <div className="text-xs font-semibold text-sky-900">💵 Khách trả tiền mặt</div>

@@ -502,6 +502,11 @@ export type DailyRollupDTO = {
   /** Ai bấm chốt ngày này — hiện cạnh nhãn ĐÃ CHỐT. */
   closedBy?: string;
 
+  /** Hoàn khách trong ngày (hoàn tiền + huỷ flycam, đã chi xong). */
+  refundTotal: number;
+  /** Chiết khấu đã chi cho đại lý của các đoàn bay ngày này. */
+  agencySpendTotal: number;
+
   /** Số cộng từ báo cáo nhân viên, để so với số kế toán khai. */
   pilotFlights: number;
   pilotCodes: number;

@@ -428,6 +428,18 @@ export function ExpenseRows({
           >
             ＋ {withKind ? "Thêm dòng thu/chi" : "Thêm khoản chi"}
           </Button>
+          {/* Chi trả đại lý hay bằng CK — nút điền sẵn cho khỏi gõ và khỏi quên chọn CK */}
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-10 border border-violet-300 bg-violet-50 px-3 text-xs font-bold text-violet-800 hover:bg-violet-100"
+            onClick={() => {
+              onChange([...rows, { content: "Chi đại lý", amount: 0, kind: "chi", method: "transfer", note: "" }]);
+              openRow(rows.length);
+            }}
+          >
+            ＋ Chi đại lý (CK)
+          </Button>
           {hideTotals ? null : withKind ? (
             <>
               <div className="min-w-32 flex-1">
