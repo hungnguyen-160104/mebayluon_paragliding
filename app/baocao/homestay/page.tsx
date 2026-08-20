@@ -69,6 +69,8 @@ type BookingDTO = {
   reviewReason?: string;
   raw?: string;
   note: string;
+  cancelledBy?: string;
+  cancelReason?: string;
   createdAt: string;
 };
 
@@ -122,10 +124,17 @@ function isWeekend(key: string): boolean {
 type BoardGrid = {
   /** grid[roomTypeId][unitIndex] = các booking đã xếp vào phòng đó. */
   grid: Map<string, BookingDTO[][]>;
+  /**
+   * Lưới RIÊNG cho booking ĐÃ HUỶ — hiện mờ + gạch đỏ làm vết, không giữ
+   * chỗ: khách mới book vào cùng ô thì chữ mới đứng chung với chữ gạch.
+   */
+  cancelledGrid: Map<string, BookingDTO[][]>;
   /** Đêm nào cả nhà bị khoá nguyên căn thì ghi booking đó vào đây. */
   wholeByDate: Map<string, BookingDTO>;
   /** Danh sách khách sàn cộng đồng theo đêm. */
   dormByDate: Map<string, BookingDTO[]>;
+  /** Khách sàn cộng đồng ĐÃ HUỶ theo đêm — chỉ để hiện gạch đỏ. */
+  cancelledDormByDate: Map<string, BookingDTO[]>;
   overbooked: BookingDTO[];
 };
 
@@ -134,23 +143,34 @@ function overlaps(b: BookingDTO, others: BookingDTO[]): boolean {
 }
 
 function buildBoardGrid(dates: string[], bookings: BookingDTO[]): BoardGrid {
-  const raw = bookings.filter((b) => b.status === "confirmed" && b.checkIn && b.checkOut);
   /**
    * COMBO (trừ nguyên khu — nó có dải đỏ riêng) bung thành các phòng THÀNH
    * PHẦN chiếm trọn: "Sàn + 4 gác mái" vẽ kín cột sàn lẫn bốn cột gác mái,
    * cùng một màu vì cùng id booking.
    */
-  const active = raw.flatMap((b) => {
-    if (!isComboRoom(b.roomTypeId) || b.roomTypeId === WHOLE_HOME_ID) return [b];
-    return COMBO_COMPONENTS[b.roomTypeId].map((id) => ({
-      ...b,
-      roomTypeId: id,
-      rooms: homestayRoom(id)?.units ?? 1,
-    }));
-  });
-  const grid = new Map<string, BookingDTO[][]>();
+  const expand = (list: BookingDTO[]) =>
+    list.flatMap((b) => {
+      if (!isComboRoom(b.roomTypeId) || b.roomTypeId === WHOLE_HOME_ID) return [b];
+      return COMBO_COMPONENTS[b.roomTypeId].map((id) => ({
+        ...b,
+        roomTypeId: id,
+        rooms: homestayRoom(id)?.units ?? 1,
+      }));
+    });
+  const active = expand(bookings.filter((b) => b.status === "confirmed" && b.checkIn && b.checkOut));
+  /** Booking ĐÃ HUỶ: chỉ để vẽ gạch đỏ — không giữ chỗ, không đè khách mới. */
+  const cancelled = expand(
+    bookings.filter((b) => b.status === "cancelled" && b.checkIn && b.checkOut),
+  ).flatMap((b) =>
+    // Nguyên khu huỷ không còn dải đỏ riêng — bung nốt thành từng cột để gạch
+    b.roomTypeId === WHOLE_HOME_ID
+      ? COMBO_COMPONENTS[WHOLE_HOME_ID].map((id) => ({ ...b, roomTypeId: id, rooms: homestayRoom(id)?.units ?? 1 }))
+      : [b],
+  );
+
   const wholeByDate = new Map<string, BookingDTO>();
   const dormByDate = new Map<string, BookingDTO[]>();
+  const cancelledDormByDate = new Map<string, BookingDTO[]>();
   const overbooked: BookingDTO[] = [];
 
   for (const b of active.filter((x) => x.roomTypeId === WHOLE_HOME_ID)) {
@@ -161,27 +181,43 @@ function buildBoardGrid(dates: string[], bookings: BookingDTO[]): BoardGrid {
       if (b.checkIn <= d && d < b.checkOut) (dormByDate.get(d) ?? dormByDate.set(d, []).get(d)!).push(b);
     }
   }
-
-  for (const roomId of BOARD_COLUMN_ORDER) {
-    if (roomId === "dormitory") continue;
-    const units = homestayRoom(roomId)?.units ?? 1;
-    const cols: BookingDTO[][] = Array.from({ length: units }, () => []);
-    const mine = active
-      .filter((b) => b.roomTypeId === roomId)
-      .sort((a, b) => a.checkIn.localeCompare(b.checkIn) || a.createdAt.localeCompare(b.createdAt));
-    for (const b of mine) {
-      let need = Math.max(1, b.rooms || 1);
-      for (let u = 0; u < units && need > 0; u++) {
-        if (!overlaps(b, cols[u])) {
-          cols[u].push(b);
-          need--;
-        }
-      }
-      if (need > 0) overbooked.push(b);
+  for (const b of cancelled.filter((x) => x.roomTypeId === "dormitory")) {
+    for (const d of dates) {
+      if (b.checkIn <= d && d < b.checkOut)
+        (cancelledDormByDate.get(d) ?? cancelledDormByDate.set(d, []).get(d)!).push(b);
     }
-    grid.set(roomId, cols);
   }
-  return { grid, wholeByDate, dormByDate, overbooked };
+
+  /** Xếp một danh sách booking vào các cột phòng — first-fit trọn kỳ ở. */
+  const allocate = (list: BookingDTO[], trackOverbook: boolean) => {
+    const out = new Map<string, BookingDTO[][]>();
+    for (const roomId of BOARD_COLUMN_ORDER) {
+      if (roomId === "dormitory") continue;
+      const units = homestayRoom(roomId)?.units ?? 1;
+      const cols: BookingDTO[][] = Array.from({ length: units }, () => []);
+      const mine = list
+        .filter((b) => b.roomTypeId === roomId)
+        .sort((a, b) => a.checkIn.localeCompare(b.checkIn) || a.createdAt.localeCompare(b.createdAt));
+      for (const b of mine) {
+        let need = Math.max(1, b.rooms || 1);
+        for (let u = 0; u < units && need > 0; u++) {
+          if (!overlaps(b, cols[u])) {
+            cols[u].push(b);
+            need--;
+          }
+        }
+        if (need > 0 && trackOverbook) overbooked.push(b);
+        // Huỷ nhiều quá không đủ cột thì nhét chồng vào cột đầu — vết vẫn còn
+        if (need > 0 && !trackOverbook) cols[0].push(b);
+      }
+      out.set(roomId, cols);
+    }
+    return out;
+  };
+
+  const grid = allocate(active, true);
+  const cancelledGrid = allocate(cancelled, false);
+  return { grid, cancelledGrid, wholeByDate, dormByDate, cancelledDormByDate, overbooked };
 }
 
 /** Mỗi booking một màu nhạt cố định (băm theo id) — nhìn khối màu là biết cùng một khách. */
@@ -311,13 +347,24 @@ export default function HomestayPage() {
     }
   }
 
-  /** HUỶ booking từ ô lịch — khách huỷ là chuyện thường; huỷ xong phòng trống lại ngay. */
+  /**
+   * HUỶ booking từ ô lịch — BẮT GHI LÝ DO và KHÔNG xoá hẳn: ô vẫn giữ chữ
+   * nhưng mờ đi + gạch đỏ, phòng trống lại ngay cho khách khác book chồng
+   * vào cùng ô. Đọc lại sổ vẫn biết ai huỷ, vì sao.
+   */
   async function cancelCell(existing: BookingDTO) {
-    if (!window.confirm(`Huỷ booking của ${existing.guestName || existing.ref}? Phòng sẽ trống lại các đêm ${formatDateKeyVN(existing.checkIn)} → ${formatDateKeyVN(existing.checkOut)}.`)) return;
+    const reason = window.prompt(
+      `Lý do huỷ booking của ${existing.guestName || existing.ref}? (bắt buộc)\nPhòng sẽ trống lại các đêm ${formatDateKeyVN(existing.checkIn)} → ${formatDateKeyVN(existing.checkOut)} — ô vẫn giữ chữ gạch đỏ làm vết.`,
+    );
+    if (reason === null) return;
+    if (!reason.trim()) {
+      setError("Huỷ phải ghi lý do — khách đổi ý, trùng lịch, OTA báo huỷ…");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await apiPatch(`/api/baocao/homestay`, { action: "cancel", id: existing.id });
+      await apiPatch(`/api/baocao/homestay`, { action: "cancel", id: existing.id, note: reason.trim() });
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không huỷ được");
@@ -496,7 +543,7 @@ function BoardCard({
   /** Nối dài khung xem thêm 30 ngày — hết trần (180 đêm) thì không truyền. */
   onExtend?: () => void;
 }) {
-  const { grid, wholeByDate, dormByDate, overbooked } = buildBoardGrid(dates, bookings);
+  const { grid, cancelledGrid, wholeByDate, dormByDate, cancelledDormByDate, overbooked } = buildBoardGrid(dates, bookings);
   /** Ô đang mở bảng nhập — mỗi lúc một ô. */
   const [editing, setEditing] = useState<CellTarget | null>(null);
   /**
@@ -520,6 +567,20 @@ function BoardCard({
   /** Tra booking đang nằm ở (phòng, đêm) — grid đã xếp sẵn theo cột. */
   const at = (roomId: string, u: number, d: string): BookingDTO | undefined =>
     grid.get(roomId)?.[u]?.find((b) => b.checkIn <= d && d < b.checkOut);
+
+  /** Các booking ĐÃ HUỶ nằm ở (phòng, đêm) — chỉ để vẽ chữ gạch đỏ làm vết. */
+  const cancelledAt = (roomId: string, u: number, d: string): BookingDTO[] =>
+    (cancelledGrid.get(roomId)?.[u] ?? []).filter((b) => b.checkIn <= d && d < b.checkOut);
+
+  /** Dòng chữ gạch đỏ của một booking đã huỷ — dùng chung cho ô thường và ô sàn. */
+  const CancelledLine = ({ b }: { b: BookingDTO }) => (
+    <div
+      className="truncate text-[10px] font-medium text-slate-400 line-through decoration-red-500 decoration-2 opacity-70"
+      title={`ĐÃ HUỶ: ${cellLabel(b)} · ${formatDateKeyVN(b.checkIn)} → ${formatDateKeyVN(b.checkOut)}${b.cancelReason ? ` · lý do: ${b.cancelReason}` : ""}${b.cancelledBy ? ` · huỷ by ${b.cancelledBy}` : ""}`}
+    >
+      {cellLabel(b)}
+    </div>
+  );
 
   return (
     <Card
@@ -654,6 +715,9 @@ function BoardCard({
                               .join(" · ") || "Sàn trống") + " · bấm để ghi"
                           }
                         >
+                          {(cancelledDormByDate.get(d) ?? []).map((cb) => (
+                            <CancelledLine key={cb.id + d} b={cb} />
+                          ))}
                           {taken > 0 ? (
                             <>
                               {dormCollect > 0 && <span title={`Còn thu ${formatVND(dormCollect)}`}>💰</span>}
@@ -683,6 +747,11 @@ function BoardCard({
                             : `${roomUnitLabel(c.roomId, c.u)} trống đêm ${formatDateKeyVN(d)} — bấm để ghi`
                         }
                       >
+                        {/* Booking ĐÃ HUỶ giữ vết trong ô: mờ + gạch đỏ; khách mới
+                            book vào cùng ô thì chữ mới đứng ngay bên dưới */}
+                        {cancelledAt(c.roomId, c.u, d).map((cb) => (
+                          <CancelledLine key={cb.id + d} b={cb} />
+                        ))}
                         {b ? (
                           <>
                             {/* 💰 = khách này đến là THU TIỀN — nhắc nhân viên phòng ngay trên ô */}

@@ -55,6 +55,8 @@ export type HomestayBookingDTO = {
   reviewReason?: string;
   raw?: string;
   note: string;
+  cancelledBy?: string;
+  cancelReason?: string;
   createdAt: string;
 };
 
@@ -95,14 +97,21 @@ function toDTO(d: any): HomestayBookingDTO {
     reviewReason: d.reviewReason,
     raw: d.raw,
     note: d.note ?? "",
+    cancelledBy: d.cancelledBy || undefined,
+    cancelReason: d.cancelReason || undefined,
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
   };
 }
 
-/** Booking CHẠM khoảng đêm [from, to): checkIn < to và checkOut > from. */
+/**
+ * Booking CHẠM khoảng đêm [from, to): checkIn < to và checkOut > from.
+ * Lấy CẢ booking đã huỷ: bảng sổ phòng hiện chúng mờ đi kèm gạch đỏ để còn
+ * dấu vết (không xoá hẳn), còn tồn phòng thì không bị ảnh hưởng — unitsTaken/
+ * unitsFree chỉ đếm booking "confirmed".
+ */
 async function bookingsTouching(from: string, to: string): Promise<any[]> {
   return HomestayBooking.find({
-    status: "confirmed",
+    status: { $in: ["confirmed", "cancelled"] },
     checkIn: { $lt: to },
     checkOut: { $gt: from },
   }).lean<any[]>();
@@ -492,6 +501,8 @@ export async function actHomestayBooking(
     doc.status = "cancelled";
     doc.cancelledAt = new Date();
     doc.cancelledBy = session.name;
+    // Lý do huỷ đi kèm — ô sổ phòng gạch đỏ nhưng chữ vẫn đọc được vì sao
+    if (payload.note !== undefined) doc.cancelReason = String(payload.note).trim();
   } else if (action === "restore") {
     doc.status = "confirmed";
     doc.cancelledAt = undefined;

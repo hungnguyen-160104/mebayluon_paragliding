@@ -64,6 +64,8 @@ export interface IHomestayBooking {
   note: string;
   cancelledAt?: Date;
   cancelledBy?: string;
+  /** Lý do huỷ — bắt ghi khi huỷ từ ô sổ phòng, đọc lại còn biết vì sao. */
+  cancelReason?: string;
 
   createdByUsername?: string;
   createdByName?: string;
@@ -105,6 +107,7 @@ const HomestayBookingSchema = new Schema<IHomestayBooking>(
     note: { type: String, default: "" },
     cancelledAt: Date,
     cancelledBy: String,
+    cancelReason: String,
 
     createdByUsername: String,
     createdByName: String,
