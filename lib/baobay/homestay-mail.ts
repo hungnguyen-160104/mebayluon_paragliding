@@ -233,9 +233,22 @@ export function parseHomestayMail(input: {
     return empty;
   }
 
-  // Thư TOUR BAY của Klook (dù lượn) đã có đường ống OTA bay riêng xử lý —
-  // máy quét PHÒNG bỏ qua, kẻo khay soát ngập đơn bay.
-  if (source === "klook" && /paragliding|tour|flight|bay du lượn|dù lượn/i.test(subject)) {
+  /**
+   * Thư TOUR BAY (dù lượn) đã có đường ống OTA bay riêng xử lý — máy quét
+   * PHÒNG bỏ qua, kẻo khay soát ngập đơn bay.
+   *
+   * Không riêng Klook: hộp mebayluon@gmail.com nhận CẢ đơn phòng lẫn đơn bay,
+   * mà đơn bay về từ Trip.com, Viator, GYG, KKday… chứ không chỉ Klook. Luật
+   * này vì thế áp cho MỌI nguồn, trừ Agoda/Booking/Airbnb (ba nguồn thuần
+   * phòng — tên khách sạn có chữ "tour" không được hiểu nhầm thành đơn bay).
+   * (Hộp sapa.paragliding chỉ có đơn bay và hộp judy chỉ có đơn phòng, nên hai
+   * hộp đó không cần luật này.)
+   */
+  const ROOM_ONLY_SOURCES = ["agoda", "booking", "airbnb"];
+  if (
+    !ROOM_ONLY_SOURCES.includes(source) &&
+    /paraglid|parachut|tour|flight|bay dù|dù lượn|zipline|trekking/i.test(subject)
+  ) {
     return empty;
   }
 
