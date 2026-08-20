@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * Cùng quyền với chính việc thêm/huỷ dịch vụ: điều phối, quầy vé, kế toán.
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"], allowAdmin: true });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"], allowAdmin: true });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

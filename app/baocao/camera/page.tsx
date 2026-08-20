@@ -12,6 +12,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 
 import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
+import { AddServicesCard } from "../components/AddServicesCard";
 import { AssignedBookings } from "../components/BookingCard";
 import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { CollectInbox } from "../components/CollectBox";
@@ -59,6 +60,14 @@ export default function CameramanReportPage() {
 
   const today = todayInVN();
   const [date, setDate] = useState(today);
+
+  /**
+   * Camera man bán thêm flycam ngay tại bãi nên được tự cộng vào booking, nhưng
+   * chỉ trong 3 ngày gần nhất (hôm kia, hôm qua, hôm nay) — sổ cũ hơn là việc
+   * của kế toán. Máy chủ chặn y hệt, đây chỉ là để khỏi bày nút bấm vô ích.
+   */
+  const oldestServiceDate = shiftDateKey(today, -2);
+  const canEditServices = date >= oldestServiceDate && date <= today;
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<CameramanReportDTO | null>(null);
   const [locked, setLocked] = useState(false);
@@ -191,6 +200,20 @@ export default function CameramanReportPage() {
 
       {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
       <AssignedBookings spot={spot} date={date} me={user.username} />
+
+      {/* Khách đòi mua thêm flycam ngay tại bãi — người quay chốt luôn, khỏi
+          chạy về quầy. Chỉ flycam và chỉ 3 ngày gần nhất. */}
+      {canEditServices ? (
+        <AddServicesCard spot={spot} date={date} onlyFlycam />
+      ) : (
+        <Card title="➕➖ DỊCH VỤ TUỲ CHỌN">
+          <p className="text-sm leading-relaxed text-slate-600">
+            Chỉ sửa được flycam của <strong>3 ngày gần nhất</strong> (từ{" "}
+            {formatDateKeyVN(oldestServiceDate)} đến {formatDateKeyVN(today)}). Ngày{" "}
+            {formatDateKeyVN(date)} đã quá hạn — nhờ quầy vé hoặc kế toán sửa giúp.
+          </p>
+        </Card>
+      )}
 
       {/* Flycam hỏng giữa chuyến: ghi huỷ + lo đường hoàn tiền cho khách */}
       <FlycamCancelCard spot={spot} date={date} />

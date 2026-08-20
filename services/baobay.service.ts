@@ -27,7 +27,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
-import { ROLE_LABEL, isBaobayRole, isDispatcherLike, type BaobayRole } from "@/lib/baobay/roles";
+import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
 import { clearQueueNoOnWeb, pushQueueNoToWeb } from "@/lib/baobay/web-queue";
@@ -3908,6 +3908,47 @@ function bookingLabelOf(b: any): string {
   return `#${b.daySeq ?? "?"} ${b.contactName || b.phone || "khách"}`;
 }
 
+/** Camera man được sửa dịch vụ trong bao nhiêu ngày gần đây (kể cả hôm nay). */
+export const CAMERAMAN_SERVICE_DAYS = 3;
+
+/**
+ * GIỚI HẠN CỦA CAMERA MAN khi tự thêm/bớt dịch vụ.
+ *
+ * Khách hay đòi mua flycam ngay tại bãi, người quay là người chốt — nên camera
+ * man được sửa booking, nhưng chỉ trong hai vạch:
+ *  1. CHỈ flycam (dịch vụ do chính họ làm), không đụng 360/cờ đỏ/hoàng hôn.
+ *  2. CHỈ ngày bay trong 3 ngày gần nhất (hôm kia, hôm qua, hôm nay) — sổ cũ
+ *     là việc của kế toán.
+ * Người kiêm điều phối/quầy/kế toán/admin không bị chặn.
+ */
+function assertCameramanServiceLimits(
+  // viaAdmin = token quản trị website, không nằm trong BaobaySession chuẩn
+  session: BaobaySession & { viaAdmin?: boolean },
+  qty: Record<string, number | undefined>,
+  flightDate: string,
+) {
+  const privileged =
+    session.viaAdmin ||
+    wearsRole(session, "admin") ||
+    wearsRole(session, "dispatcher") ||
+    wearsRole(session, "counter") ||
+    wearsRole(session, "accountant");
+  if (privileged || !wearsRole(session, "cameraman")) return;
+
+  const others = ["video360", "redFlag", "sunset", "flagFlight"] as const;
+  if (others.some((k) => (qty[k] ?? 0) > 0)) {
+    throw new BaobayError("Camera man chỉ được thêm hoặc bớt dịch vụ flycam", 403);
+  }
+
+  const oldest = shiftDateKey(todayInVN(), -(CAMERAMAN_SERVICE_DAYS - 1));
+  if (flightDate < oldest || flightDate > todayInVN()) {
+    throw new BaobayError(
+      `Camera man chỉ sửa được dịch vụ của ${CAMERAMAN_SERVICE_DAYS} ngày gần nhất (từ ${formatDateKeyVN(oldest)})`,
+      403,
+    );
+  }
+}
+
 export async function addBookingServices(
   session: BaobaySession,
   spotRaw: string,
@@ -3932,6 +3973,8 @@ export async function addBookingServices(
     .select("_id")
     .lean<any>();
   if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không thêm dịch vụ được nữa", 400);
+
+  assertCameramanServiceLimits(session, input.add, String(booking.flightDate ?? ""));
 
   const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
   const add = Object.fromEntries(keys.map((k) => [k, Math.max(0, Math.round(input.add[k] ?? 0))])) as Record<
@@ -4238,6 +4281,8 @@ export async function removeBookingServices(
     .select("_id")
     .lean<any>();
   if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không sửa dịch vụ được nữa", 400);
+
+  assertCameramanServiceLimits(session, input.remove, String(booking.flightDate ?? ""));
 
   const before = serviceSnapshot(booking);
   const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;

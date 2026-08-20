@@ -4,7 +4,7 @@ import { after } from "next/server";
 
 import { schedulePushLiveData } from "@/lib/bot/live-data";
 
-import { isDateKey, todayInVN } from "@/lib/baobay/date";
+import { isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { wearsRole } from "@/lib/baobay/roles";
 import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
@@ -69,7 +69,16 @@ export async function GET(req: Request) {
    * xem thuộc về TRANG đang mở, không phải chức danh của người mở.
    */
   const asCrew = new URL(req.url).searchParams.get("as") === "crew";
-  const manager = !asCrew && (auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role));
+  /**
+   * CAMERA MAN được xem CẢ SỔ của 3 ngày gần nhất (hôm kia · hôm qua · hôm nay)
+   * để bán thêm flycam tại bãi: khách đòi mua thường không phải khách đã giao
+   * cho họ, không tra được cả sổ thì không chọn nổi ai. Ngoài 3 ngày đó vẫn chỉ
+   * thấy khách của mình như cũ.
+   */
+  const cameramanWindow =
+    wearsRole(auth, "cameraman") && date >= shiftDateKey(todayInVN(), -2) && date <= todayInVN();
+  const manager =
+    !asCrew && (auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role) || cameramanWindow);
   const [lists, staff] = await Promise.all([
     listBookings(spot, date, manager ? undefined : auth.username),
     /**

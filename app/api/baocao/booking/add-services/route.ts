@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * Chỉ ĐIỀU PHỐI / QUẦY VÉ / KẾ TOÁN: người đứng quầy mới chốt giá và thu tiền.
  */
 export async function POST(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "admin"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "admin"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
  * phần còn phải thu hoặc hoàn lại cho khách.
  */
 export async function PATCH(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "admin"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "admin"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

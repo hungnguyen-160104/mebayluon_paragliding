@@ -57,7 +57,23 @@ const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, 
  * đã có flycam, mua thêm 360 là thành cặp, được bớt 100k) — nhưng số thu vẫn
  * sửa tay được, vì quầy đôi khi chốt giá khác với khách quen.
  */
-export function AddServicesCard({ spot, date }: { spot: string; date: string }) {
+export function AddServicesCard({
+  spot,
+  date,
+  onlyFlycam = false,
+}: {
+  spot: string;
+  date: string;
+  /**
+   * Camera man chỉ được đụng flycam (máy chủ cũng chặn) — bật cờ này thì thẻ
+   * chỉ hiện đúng ô flycam, khỏi bày ra thứ họ bấm vào cũng bị từ chối.
+   */
+  onlyFlycam?: boolean;
+}) {
+  /** Danh sách dịch vụ được phép sửa trong thẻ này. */
+  const serviceRows = onlyFlycam
+    ? SERVICE_PRICE_LABEL.filter((s) => s.key === "flycam")
+    : SERVICE_PRICE_LABEL;
   const [bookings, setBookings] = useState<BookingDTO[]>([]);
   /** Sổ các lần thêm/huỷ trong ngày — bấm vào một dòng là sửa lại được. */
   const [changes, setChanges] = useState<ServiceChangeDTO[]>([]);
@@ -398,7 +414,7 @@ export function AddServicesCard({ spot, date }: { spot: string; date: string }) 
 
           {/* 5 dịch vụ nằm một hàng ngang, bộ đếm nhỏ — cả thẻ gọn trong một màn */}
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1.5">
-            {SERVICE_PRICE_LABEL.map((s) => (
+            {serviceRows.map((s) => (
               <label key={s.key} className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">
                 {s.label}
                 <span className="font-normal text-slate-400">{(SERVICE_PRICE[s.key] / 1000).toLocaleString("vi-VN")}k</span>
