@@ -6689,6 +6689,15 @@ issuedRanges: Array<{ from: string; to: string }>;
    * hoàn trước khi chốt ngày.
    */
   overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
+  /** Dịch vụ đếm theo SỔ BOOKING (gồm mọi lệnh thêm/bớt tại bãi) — nguồn chuẩn cho tiền. */
+  booking: {
+    flycam: number;
+    video360: number;
+    redFlag: number;
+    sunset: number;
+    flagFlight: number;
+    hasData: boolean;
+  };
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
   /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
@@ -6756,7 +6765,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      * khỏi sổ. Kèm trạng thái để tách riêng số khách ĐÃ XÁC NHẬN BAY.
      */
     BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
-      .select("guestCount status")
+      .select("guestCount status flycam video360 redFlag sunset flagFlight")
       .lean<any[]>(),
   ]);
 
@@ -6896,6 +6905,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         .filter(Boolean)
         .join(" · "),
     }));
+  /** Cộng dịch vụ trên SỔ BOOKING của ngày — đã gồm mọi lệnh thêm/bớt/bỏ. */
+  const bookingServices = {
+    flycam: bookings.reduce((t, b) => t + (b.flycam || 0), 0),
+    video360: bookings.reduce((t, b) => t + (b.video360 || 0), 0),
+    redFlag: bookings.reduce((t, b) => t + (b.redFlag || 0), 0),
+    sunset: bookings.reduce((t, b) => t + (b.sunset || 0), 0),
+    flagFlight: bookings.reduce((t, b) => t + (b.flagFlight || 0), 0),
+  };
+
   const rescheduled = dispatchers.flatMap((d) =>
     (d.rescheduled ?? []).map((r: any) => ({
       code: r.code || "",
@@ -7014,12 +7032,22 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
           method: /hoàn TM/.test(e.note) ? ("cash" as const) : ("transfer" as const),
         })),
     ),
-    flycam: sum(cameramen, (c) => c.flycamFlights),
-    video360: sum(pilots, (p) => p.video360),
-    redFlag: sum(pilots, (p) => p.redFlag),
-    // Bay hoàng hôn/săn mây: nguồn chuẩn là PHI CÔNG (người bay chuyến đó), như cờ đỏ
-    sunset: sum(pilots, (p) => p.sunset),
-    flagFlight: sum(dispatchers, (d) => d.flagFlight),
+    /**
+     * DỊCH VỤ ĐẾM THEO SỔ BOOKING — không theo báo cáo nhân viên nữa.
+     *
+     * Mọi lệnh thêm/bớt dịch vụ tại bãi (và cả lệnh bị BỎ) đều ghi thẳng vào
+     * booking, còn báo cáo nhân viên thì khai một lần đầu ngày rồi đứng yên.
+     * Lấy theo báo cáo là kế toán chốt bằng con số đã cũ, tiền không khớp
+     * dịch vụ. Số của phi công/quầy/camera vẫn trả về ở các khối bên dưới để
+     * đối chiếu, nhưng con số ĐI VÀO SỔ là số của booking.
+     */
+    flycam: bookingServices.flycam,
+    video360: bookingServices.video360,
+    redFlag: bookingServices.redFlag,
+    sunset: bookingServices.sunset,
+    flagFlight: bookingServices.flagFlight,
+    /** Số dịch vụ theo sổ booking — để giao diện nói rõ nguồn và so với nhân viên. */
+    booking: { ...bookingServices, hasData: bookings.length > 0 },
     pilot: {
       flights: sum(pilots, (p) => p.flightCount),
       ppg: sum(pilots, (p) => p.ppgFlights ?? 0),

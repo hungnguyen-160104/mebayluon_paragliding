@@ -71,6 +71,14 @@ type CloseSuggestion = {
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  booking: {
+    flycam: number;
+    video360: number;
+    redFlag: number;
+    sunset: number;
+    flagFlight: number;
+    hasData: boolean;
+  };
   agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
   agencyHeldTotal: number;
   overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
@@ -372,6 +380,26 @@ function DailyCloseInner() {
       flagFlight: suggest.dispatcher.flagFlight,
     }));
     setMessage("Đã lấy số QUẦY/ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
+  }
+
+  /**
+   * Lấy số DỊCH VỤ THEO SỔ BOOKING — nguồn chuẩn để cân tiền.
+   *
+   * Sổ booking là nơi mọi lệnh thêm/bớt dịch vụ tại bãi ghi vào (kể cả lệnh
+   * bị bỏ), nên nó luôn khớp với số tiền đã thu; báo cáo nhân viên khai một
+   * lần rồi đứng yên. Chỉ đụng 5 ô dịch vụ, không đụng khách/vé/tiền.
+   */
+  function copyFromBookings() {
+    if (!suggest?.booking?.hasData) return;
+    setForm((prev) => ({
+      ...prev,
+      flycam: suggest.booking.flycam,
+      video360: suggest.booking.video360,
+      redFlag: suggest.booking.redFlag,
+      sunset: suggest.booking.sunset,
+      flagFlight: suggest.booking.flagFlight,
+    }));
+    setMessage("Đã lấy số dịch vụ theo SỔ BOOKING — số này khớp với tiền đã thu.");
   }
 
   /**
@@ -708,6 +736,28 @@ function DailyCloseInner() {
                 Nhân viên đã báo — chọn lấy số của bên nào, khỏi gõ lại:
               </div>
               <div className="mt-2 grid gap-2 @md:grid-cols-2">
+                {/* SỔ BOOKING đứng trước: đây là số ăn khớp với tiền, hai bên
+                    kia chỉ để đối chiếu (khai một lần đầu ngày rồi đứng yên) */}
+                {suggest.booking?.hasData && (
+                  <div className="rounded-xl border-2 border-emerald-400 bg-emerald-50/60 p-2.5 @md:col-span-2">
+                    <div className="text-xs font-bold text-emerald-900">
+                      📒 Sổ booking (đã gồm mọi lệnh thêm/bớt dịch vụ tại bãi) — khớp với tiền
+                    </div>
+                    <div className="mt-1 text-[11px] leading-snug text-emerald-900/80">
+                      flycam {suggest.booking.flycam} · 360 {suggest.booking.video360} · cờ đỏ{" "}
+                      {suggest.booking.redFlag} · hoàng hôn {suggest.booking.sunset} · kéo cờ{" "}
+                      {suggest.booking.flagFlight}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-1.5 h-9 w-full border-emerald-500 bg-white text-xs font-bold text-emerald-800"
+                      onClick={copyFromBookings}
+                    >
+                      ⧉ Lấy số DỊCH VỤ theo sổ booking (nên dùng)
+                    </Button>
+                  </div>
+                )}
                 {suggest.dispatcher.hasData && (
                   <div className="rounded-xl border border-slate-300 bg-white p-2.5">
                     <div className="text-xs font-bold text-slate-800">
