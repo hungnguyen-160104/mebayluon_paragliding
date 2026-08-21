@@ -1,8 +1,9 @@
 // app/baocao/components/PilotReportEditor.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
@@ -209,6 +210,33 @@ function PilotRow({
     setMoneyRaw(rows);
   };
 
+  /**
+   * TỔNG SỐ SỐNG của phi công — đếm lại mỗi lần gõ, kể cả số mã vé dán vào ô
+   * (đếm mã chứ không bắt tự đếm). Ô nào bằng 0 vẫn hiện nhưng mờ, để nhìn
+   * phát biết mình chưa khai gì.
+   */
+  const liveTotals = useMemo(() => {
+    const codes = (t: string) => parseTicketCodeList(t).codes.length;
+    const ppgWithTicket = Math.max(0, form.ppgFlights - form.ppgNoTicket);
+    const list: Array<{ label: string; value: number }> = [
+      { label: "PG", value: form.flightCount },
+      ...(spot === "khau-pha" ? [{ label: "PPG", value: form.ppgFlights }] : []),
+      { label: "vé", value: codes(form.ticketCodesText) + (spot === "khau-pha" ? codes(form.ppgCodesText) : 0) },
+      { label: "360", value: form.video360 },
+      { label: "flycam", value: form.flycam },
+      { label: "cờ đỏ", value: form.redFlag },
+      ...(spot !== "sapa" ? [{ label: "hoàng hôn", value: form.sunset }] : []),
+      { label: "kéo cờ", value: form.flagFlight },
+      { label: "ngoại giao", value: form.diplomaticGuests },
+    ];
+    // Chuyến PPG khai tách có vé / không vé — nói rõ ngay trên tổng
+    if (spot === "khau-pha" && form.ppgNoTicket > 0) {
+      list.splice(2, 0, { label: "PPG không vé", value: form.ppgNoTicket });
+      list.splice(2, 0, { label: "PPG có vé", value: ppgWithTicket });
+    }
+    return list;
+  }, [form, spot]);
+
   const set = <K extends keyof ReturnType<typeof toForm>>(key: K, value: any) => {
     setSavedClean(false);
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -283,6 +311,27 @@ function PilotRow({
 
       {open && !locked && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          {/* TỔNG SỐ CỦA MÌNH — chạy theo từng ô đang gõ, dính trên đầu form để
+              phi công lúc nào cũng thấy mình đang khai bao nhiêu, khỏi cuộn lên
+              cuộn xuống đếm lại. */}
+          <div className="sticky top-14 z-10 -mx-3 -mt-3 mb-1 rounded-t-xl border-b border-sky-200 bg-sky-50/95 px-3 py-2 backdrop-blur">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-sky-700">
+              Số của bạn hôm nay
+            </div>
+            <div className="mt-0.5 flex flex-wrap gap-x-2.5 gap-y-1 text-sm font-bold text-slate-800">
+              {liveTotals.map((t) => (
+                <span
+                  key={t.label}
+                  className={
+                    "whitespace-nowrap rounded px-1.5 py-0.5 " +
+                    (t.value > 0 ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")
+                  }
+                >
+                  {t.value}×{t.label}
+                </span>
+              ))}
+            </div>
+          </div>
           <div className="grid gap-3 @md:grid-cols-2">
             <Field label="Số chuyến PG">
               <CountInput value={form.flightCount} onChange={(v) => set("flightCount", v)} max={300} />
