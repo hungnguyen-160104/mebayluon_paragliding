@@ -190,6 +190,20 @@ function BookingSummary({
           <strong className="rounded bg-rose-100 px-1 font-bold text-rose-700">{huyBits.join(" · ")}</strong>
         </>
       )}
+      {/* LỆCH SỔ: các lệnh thu cộng lại nhiều hơn số booking đang ghi "đã trả"
+          — dấu hiệu thu nhầm sang booking khác rồi sửa tay ô cọc (ca #16/#17
+          ngày 21/08). Phải kêu lên, không thì tiền treo lơ lửng không ai biết. */}
+      {paidTotal > (b.deposit ?? 0) + refunded && (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-rose-600 px-1 font-bold text-white"
+            title="Tổng các lệnh thu đang lớn hơn số tiền booking ghi nhận — mở 'Sửa khoản đã thu' để soát, có thể có khoản thu nhầm của khách khác"
+          >
+            ⚠ LỆCH SỔ: lệnh thu {k(paidTotal)} ≠ booking ghi {k(b.deposit ?? 0)}
+          </strong>
+        </>
+      )}
       {/* LỆCH TIỀN: khách trả nhiều hơn tổng — hầu như luôn do sửa/bỏ lệnh dịch
           vụ sau khi đã thu. Kêu to ngay trên dòng để kế toán bù/hoàn. */}
       {(b.overpaid ?? 0) > 0 && (
@@ -1203,8 +1217,21 @@ function CollectMoneyControl({
     if (total <= 0) return setError("Chưa nhập số tiền thu");
     const used = bills.filter((b) => b.amount > 0);
     if (used.some((b) => !b.code.trim())) return setError("Mỗi bill chuyển khoản phải có mã giao dịch riêng");
-    if (left <= 0 && total > 0 && !window.confirm("Booking này đã thu đủ. Vẫn ghi thêm khoản này?")) return;
-    if (total > left && left > 0 && !window.confirm(`Thu ${total.toLocaleString("vi-VN")} đ, nhiều hơn phần còn phải thu (${left.toLocaleString("vi-VN")} đ). Vẫn ghi?`)) return;
+    const who = `#${booking.daySeq || "?"} ${booking.contactName || booking.phone || "khách"}`;
+    if (
+      left <= 0 &&
+      total > 0 &&
+      !window.confirm(`${who} ĐÃ THU ĐỦ rồi. Vẫn ghi thêm ${total.toLocaleString("vi-VN")} đ cho khách này?`)
+    )
+      return;
+    if (
+      total > left &&
+      left > 0 &&
+      !window.confirm(
+        `Thu ${total.toLocaleString("vi-VN")} đ cho ${who}, NHIỀU HƠN phần còn phải thu (${left.toLocaleString("vi-VN")} đ).\n\nKiểm lại xem có nhầm sang booking khác không. Vẫn ghi?`,
+      )
+    )
+      return;
     setBusy(true);
     setError(null);
     try {
@@ -1253,6 +1280,15 @@ function CollectMoneyControl({
 
   return (
     <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
+      {/* ĐANG THU CHO AI — bảng cũ chỉ có ô số tiền nên rất dễ gõ nhầm sang
+          booking bên cạnh (đã xảy ra: một mã CK vào hai booking). */}
+      <div className="rounded-lg bg-rose-600 px-2 py-1 text-[11px] font-bold leading-tight text-white">
+        Thu tiền cho #{booking.daySeq || "?"} · {booking.contactName || booking.phone || "khách"}
+        <span className="font-medium opacity-90">
+          {" "}
+          · còn thu {left.toLocaleString("vi-VN")} đ
+        </span>
+      </div>
       {/* Cọc = gõ số tuỳ ý · Thu đủ = lấy trọn phần còn phải thu, khỏi tự tính */}
       <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300">
         {(

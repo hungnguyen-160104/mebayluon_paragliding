@@ -3504,7 +3504,27 @@ export async function updateBookingInfo(
   if (!current) throw new BaobayError("Không tìm thấy booking này", 404);
 
   /** Tổng tiền tính lại theo bảng giá — "còn lại" bám theo đúng con số này. */
-  const editedTotal = bookingTotal({
+    /**
+   * Ô "đã cọc" KHÔNG được thấp hơn tiền đã có LỆNH THU.
+   *
+   * Nhân viên thu nhầm sang booking khác rồi vào đây sửa số cọc cho khớp là
+   * sổ vỡ ngay: booking ghi 2.890.000 trong khi hai lệnh thu cộng lại
+   * 8.670.000 (đúng ca #16 Thu Huyền ngày 21/08). Tiền đã vào sổ chỉ được sửa
+   * ở đúng nơi sinh ra nó — "Sửa khoản đã thu" trên dòng booking.
+   */
+  const collectedSoFar = (
+    await BaobayCollect.find({ spot, bookingId: id, status: { $in: ["collected", "company"] } })
+      .select("amount")
+      .lean<any[]>()
+  ).reduce((t, c) => t + (c.amount || 0), 0);
+  if (collectedSoFar > 0 && input.deposit < collectedSoFar) {
+    throw new BaobayError(
+      `Booking này đã có ${collectedSoFar.toLocaleString("vi-VN")} đ ghi bằng LỆNH THU — không hạ ô "đã cọc" xuống ${input.deposit.toLocaleString("vi-VN")} đ được. Thu nhầm thì bấm "Sửa khoản đã thu" trên dòng booking để sửa/xoá đúng khoản đó.`,
+      400,
+    );
+  }
+
+const editedTotal = bookingTotal({
     ...input,
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
     ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
