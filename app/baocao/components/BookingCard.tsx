@@ -1183,7 +1183,12 @@ function CollectMoneyControl({
   function setPayMode(next: { cash: boolean; transfer: boolean }) {
     if (!next.cash && !next.transfer) return; // phải còn ít nhất một đường
     setPay(next);
-    const amount = kind === "full" ? left : total || left;
+    /**
+     * Số tiền dồn sang đường mới = số ĐANG NHẬP (nếu có), không thì phần còn
+     * phải thu. Giữ số đang nhập để người vừa gõ 500k rồi đổi TM→CK không mất
+     * con số đó.
+     */
+    const amount = total > 0 ? total : left;
     if (next.cash && !next.transfer) {
       setCash(amount);
       setBills([{ amount: 0, code: "" }]);
@@ -1342,7 +1347,17 @@ function CollectMoneyControl({
           <button
             key={key}
             type="button"
-            onClick={() => setPayMode({ ...pay, [key]: !pay[key] })}
+            /**
+             * BẤM LÀ CHUYỂN HẲN, không phải bật/tắt.
+             *
+             * Bản cũ dùng kiểu bật/tắt: đang ở TM mà bấm CK thì thành "chia hai
+             * đường" — tiền vẫn nằm ở TM, ô CK về 0 nên nhân viên phải gõ lại
+             * số. Nay bấm ô nào là toàn bộ số tiền nhảy sang ô đó luôn (vẫn sửa
+             * tay được); muốn chia hai đường thì bấm nút "TM + CK" bên dưới.
+             */
+            onClick={() =>
+              setPayMode(key === "cash" ? { cash: true, transfer: false } : { cash: false, transfer: true })
+            }
             className={
               pay[key]
                 ? "flex-1 " + (key === "cash" ? "bg-emerald-600" : "bg-indigo-600") + " px-1 text-xs font-bold text-white"
@@ -1354,6 +1369,24 @@ function CollectMoneyControl({
           </button>
         ))}
       </div>
+      {/* Khách trả một phần TM + một phần CK — trường hợp ít gặp nên để riêng
+          một nút, khỏi làm hỏng thao tác một chạm ở trên */}
+      <button
+        type="button"
+        onClick={() =>
+          pay.cash && pay.transfer
+            ? setPayMode({ cash: true, transfer: false })
+            : setPayMode({ cash: true, transfer: true })
+        }
+        className={
+          "h-7 rounded-lg border text-[11px] font-semibold " +
+          (pay.cash && pay.transfer
+            ? "border-slate-700 bg-slate-800 text-white"
+            : "border-slate-300 bg-white text-slate-500")
+        }
+      >
+        {pay.cash && pay.transfer ? "✓ Đang chia TM + CK — bấm để bỏ" : "⇄ Khách trả cả TM lẫn CK"}
+      </button>
       {pay.cash && (
         <label className="flex items-center gap-1.5">
           <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
