@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { BaobayError, editBookingCollect, listBookingCollects } from "@/services/baobay.service";
+import {
+  BaobayError,
+  editBookingCollect,
+  listBookingCollects,
+  moveBookingCollect,
+} from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +21,9 @@ export const dynamic = "force-dynamic";
  *
  * GET   ?booking=   — liệt kê các khoản đã thu của booking
  * PATCH { id, amount?, method?, transferCode?, remove? }
+ * PATCH { id, moveTo }  — CHUYỂN khoản sang booking khác (chỉ kế toán): ghi
+ *                         nhầm tiền của khách này sang khách kia thì sửa bằng
+ *                         một thao tác, giữ nguyên mã GD và người thu.
  */
 const ROLES = ["dispatcher", "counter", "accountant", "admin"] as const;
 
@@ -42,6 +50,11 @@ export async function PATCH(req: Request) {
   if (!id) return NextResponse.json({ message: "Thiếu id khoản thu" }, { status: 400 });
 
   try {
+    // Ghi nhầm sang booking khác: CHUYỂN cả khoản sang đúng chủ (chỉ kế toán)
+    const moveTo = String(body?.moveTo ?? "").trim();
+    if (moveTo) {
+      return NextResponse.json(await moveBookingCollect(auth, spot, id, moveTo));
+    }
     const res = await editBookingCollect(auth, spot, id, {
       amount: body?.amount !== undefined ? Number(body.amount) : undefined,
       method: body?.method === "transfer" ? "transfer" : body?.method === "cash" ? "cash" : undefined,

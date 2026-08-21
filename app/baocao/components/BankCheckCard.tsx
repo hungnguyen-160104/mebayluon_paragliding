@@ -209,6 +209,8 @@ export function BankCheckCard({ date }: { date: string }) {
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   /** Thẻ booking nào đang mở "Xem lại" (hiện nguyên văn SMS). */
   const [expanded, setExpanded] = useState<string[]>([]);
+  /** Khoản thu đang chờ chọn booking để chuyển sang (ghi nhầm khách). */
+  const [moving, setMoving] = useState<{ refId: string; spot: string; label: string; amount: number } | null>(null);
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -330,6 +332,37 @@ export function BankCheckCard({ date }: { date: string }) {
       load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không chỉ định được");
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  /**
+   * SỬA / XOÁ / CHUYỂN một khoản thu ngay tại màn soát.
+   *
+   * Nhân viên ghi nhầm mã CK sang booking khác là chuyện xảy ra thật (21/08:
+   * một mã 9476 nằm ở hai booking). Trước đây kế toán phát hiện ở đây nhưng
+   * phải sang trang điều phối, tìm đúng dòng, mở menu ⋯ mới sửa được — nên
+   * hay để đó rồi quên. Nay xử ngay tại chỗ nhìn thấy lỗi.
+   */
+  async function editCollect(
+    refId: string,
+    /** Điểm bay của chính booking đó — KHÔNG dùng bộ lọc `spots` (có thể rỗng = mọi điểm). */
+    rowSpot: string,
+    patch: { amount?: number; transferCode?: string; remove?: boolean; moveTo?: string },
+  ) {
+    const collectId = refId.startsWith("collect:") ? refId.slice("collect:".length) : "";
+    if (!collectId) {
+      setError("Khoản cọc gõ tay lúc nhập booking — sửa trong sổ booking, không sửa ở đây");
+      return;
+    }
+    setRowBusy(refId);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking/collect?spot=${rowSpot}`, { id: collectId, ...patch });
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không sửa được khoản thu");
     } finally {
       setRowBusy(null);
     }
@@ -489,6 +522,53 @@ export function BankCheckCard({ date }: { date: string }) {
         </div>
       )}
 
+      {/* CHUYỂN KHOẢN THU SANG BOOKING KHÁC — chọn đúng chủ trong danh sách
+          booking của ngày; khoản tiền giữ nguyên mã GD và người thu. */}
+      {moving && (
+        <div className="mt-3 rounded-xl border-2 border-sky-400 bg-sky-50/70 p-3">
+          <div className="text-sm font-bold text-sky-900">
+            Chuyển {formatVND(moving.amount)} khỏi {moving.label} — chọn booking ĐÚNG:
+          </div>
+          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+            {(report?.bookingRows ?? [])
+              .filter((r) => r.bookingId !== (report?.bookingRows ?? []).find((x) => x.label === moving.label)?.bookingId)
+              .map((r) => (
+                <button
+                  key={r.bookingId}
+                  type="button"
+                  disabled={rowBusy === moving.refId}
+                  onClick={() => {
+                    if (!window.confirm(`Chuyển ${formatVND(moving.amount)} sang ${r.label}?`)) return;
+                    editCollect(moving.refId, moving.spot, { moveTo: r.bookingId });
+                    setMoving(null);
+                  }}
+                  className={
+                    "flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs hover:bg-white " +
+                    (r.remaining === moving.amount
+                      ? "border-emerald-400 bg-emerald-50 font-semibold"
+                      : "border-slate-200 bg-white/70")
+                  }
+                >
+                  <span className="min-w-0 flex-1 truncate">{r.label}</span>
+                  <span className="shrink-0 tabular-nums text-slate-500">
+                    còn thu {formatVND(r.remaining)}
+                  </span>
+                  {r.remaining === moving.amount && (
+                    <span className="shrink-0 text-[10px] font-bold text-emerald-700">= đúng số</span>
+                  )}
+                </button>
+              ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setMoving(null)}
+            className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
+          >
+            Thôi
+          </button>
+        </div>
+      )}
+
       {/* ================= SỔ BOOKING & TIỀN TRONG NGÀY =================
           Mỗi booking MỘT THẺ: tóm tắt dịch vụ + từng khoản TM/CK + các dòng
           sao kê khớp (hoặc nghi) nằm ngay bên dưới — soát theo từng khách,
@@ -630,6 +710,48 @@ export function BankCheckCard({ date }: { date: string }) {
                       >
                         {t.verified ? "✓ đã nhận" : "Đã nhận"}
                       </button>
+                      {/* SỬA ngay tại chỗ: đổi mã GD / số tiền, xoá, hoặc chuyển
+                          sang đúng booking nếu nhân viên ghi nhầm khách */}
+                      <span className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Sửa mã giao dịch hoặc số tiền"
+                          onClick={() => {
+                            const code = window.prompt("Mã giao dịch (để trống nếu không đổi):", t.code ?? "");
+                            if (code === null) return;
+                            const raw = window.prompt("Số tiền (đ):", String(t.amount));
+                            if (raw === null) return;
+                            const amount = Number(raw.replace(/\D/g, ""));
+                            if (!amount) return setError("Số tiền phải lớn hơn 0");
+                            editCollect(t.refId, row.spot, { amount, transferCode: code });
+                          }}
+                          className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 disabled:opacity-50"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Ghi nhầm sang khách này — chuyển khoản tiền sang đúng booking"
+                          onClick={() => setMoving({ refId: t.refId, spot: row.spot, label: row.label, amount: t.amount })}
+                          className="rounded border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 disabled:opacity-50"
+                        >
+                          ⇄
+                        </button>
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Xoá hẳn khoản thu này khỏi sổ"
+                          onClick={() => {
+                            if (!window.confirm(`Xoá khoản ${formatVND(t.amount)} khỏi ${row.label}?`)) return;
+                            editCollect(t.refId, row.spot, { remove: true });
+                          }}
+                          className="rounded border border-rose-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      </span>
                     </li>
                   ))}
                   {row.cash.map((t) => (
@@ -650,6 +772,46 @@ export function BankCheckCard({ date }: { date: string }) {
                       >
                         {t.verified ? "✓ đã nhận" : "Đã nhận"}
                       </button>
+                      {/* SỬA ngay tại chỗ: đổi mã GD / số tiền, xoá, hoặc chuyển
+                          sang đúng booking nếu nhân viên ghi nhầm khách */}
+                      <span className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Sửa mã giao dịch hoặc số tiền"
+                          onClick={() => {
+                            const raw = window.prompt("Số tiền tiền mặt (đ):", String(t.amount));
+                            if (raw === null) return;
+                            const amount = Number(raw.replace(/\D/g, ""));
+                            if (!amount) return setError("Số tiền phải lớn hơn 0");
+                            editCollect(t.refId, row.spot, { amount });
+                          }}
+                          className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 disabled:opacity-50"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Ghi nhầm sang khách này — chuyển khoản tiền sang đúng booking"
+                          onClick={() => setMoving({ refId: t.refId, spot: row.spot, label: row.label, amount: t.amount })}
+                          className="rounded border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 disabled:opacity-50"
+                        >
+                          ⇄
+                        </button>
+                        <button
+                          type="button"
+                          disabled={rowBusy === t.refId}
+                          title="Xoá hẳn khoản thu này khỏi sổ"
+                          onClick={() => {
+                            if (!window.confirm(`Xoá khoản ${formatVND(t.amount)} khỏi ${row.label}?`)) return;
+                            editCollect(t.refId, row.spot, { remove: true });
+                          }}
+                          className="rounded border border-rose-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      </span>
                     </li>
                   ))}
                 </ul>

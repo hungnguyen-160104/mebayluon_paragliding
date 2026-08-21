@@ -4990,6 +4990,164 @@ export async function listBookingCollects(spotRaw: string, bookingId: string): P
  * khớp. Phần cọc gõ tay lúc tạo booking (không có lệnh thu kèm) được giữ
  * nguyên: lấy hiệu giữa "đã cọc" và tổng lệnh thu trước khi sửa.
  */
+/**
+ * TÍNH LẠI TIỀN CỦA MỘT BOOKING theo đúng các lệnh thu đang gắn với nó.
+ *
+ * `deposit` = cọc gõ tay lúc nhập booking + tổng các lệnh thu. Tách ra dùng
+ * chung cho sửa/xoá/CHUYỂN khoản thu, để ba đường đi cùng một công thức —
+ * mỗi nơi tự cộng một kiểu là sổ lệch (đúng ca #16 Thu Huyền ngày 20/08).
+ */
+async function recomputeBookingMoney(spot: string, bookingId: string, manualBaseHint?: number) {
+  const booking = await BaobayBooking.findOne({ _id: bookingId, spot }).lean<any>();
+  if (!booking) return null;
+  const collects = await BaobayCollect.find({ spot, bookingId }).sort({ createdAt: 1 }).lean<any[]>();
+  const sum = collects.reduce((t, c) => t + (c.amount || 0), 0);
+  const manualBase =
+    manualBaseHint !== undefined ? Math.max(0, manualBaseHint) : Math.max(0, (booking.deposit ?? 0) - sum);
+  const deposit = manualBase + sum;
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: bookingId, spot },
+    {
+      $set: {
+        deposit,
+        remaining: Math.max(0, (booking.totalAmount ?? 0) - deposit - (booking.agencyPaidAmount ?? 0)),
+        depositToCompany: collects.some((c) => c.method === "transfer"),
+        transferCode: collects.find((c) => c.method === "transfer")?.transferCode || "",
+        collectedLog: collects.map((c) => ({
+          amount: c.amount || 0,
+          method: c.method === "transfer" ? "transfer" : "cash",
+          byName: c.collectorName || c.createdByName || "",
+          at: c.createdAt ?? new Date(),
+          kind: "deposit",
+        })),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (updated) pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return { booking: updated, collects };
+}
+
+/**
+ * CHUYỂN MỘT KHOẢN THU SANG BOOKING KHÁC — ghi nhầm tiền của khách này sang
+ * khách kia thì sửa bằng đúng một thao tác.
+ *
+ * Trước đây phải xoá bên nhầm rồi thu lại bên đúng: mất dấu ai thu, thu lúc
+ * nào, và giữa hai bước đó sổ đang sai. Nay khoản tiền giữ nguyên bản ghi (mã
+ * giao dịch, người thu, giờ thu), chỉ đổi chủ; cả hai booking đều được ghi vết.
+ *
+ * Chỉ KẾ TOÁN (và admin) làm được: đây là việc sửa sổ tiền của người khác.
+ */
+export async function moveBookingCollect(
+  session: BaobaySession & { viaAdmin?: boolean },
+  spotRaw: string,
+  collectId: string,
+  toBookingId: string,
+): Promise<{ from: BookingDTO | null; to: BookingDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!(session.viaAdmin || wearsRole(session, "accountant") || wearsRole(session, "admin"))) {
+    throw new BaobayError("Chỉ kế toán mới chuyển khoản thu sang booking khác", 403);
+  }
+  const collect = await BaobayCollect.findOne({ _id: collectId, spot }).lean<any>();
+  if (!collect) throw new BaobayError("Không tìm thấy khoản thu", 404);
+  const target = await BaobayBooking.findOne({ _id: toBookingId, spot }).lean<any>();
+  if (!target) throw new BaobayError("Không tìm thấy booking muốn chuyển sang", 404);
+  if (String(collect.bookingId ?? "") === String(toBookingId)) {
+    throw new BaobayError("Khoản này vốn đã thuộc booking đó rồi", 400);
+  }
+
+  const fromId = collect.bookingId ? String(collect.bookingId) : "";
+  const fromBooking = fromId ? await BaobayBooking.findOne({ _id: fromId, spot }).lean<any>() : null;
+  for (const b of [fromBooking, target]) {
+    if (!b) continue;
+    const closed = await AccountantDailyClose.findOne({ spot, date: b.flightDate, status: "closed" })
+      .select("_id")
+      .lean<any>();
+    if (closed) {
+      throw new BaobayError(
+        `Ngày ${formatDateKeyVN(b.flightDate)} kế toán đã chốt — gỡ khoá ngày rồi mới chuyển được`,
+        400,
+      );
+    }
+  }
+
+  /** Đo cọc GÕ TAY của hai bên TRƯỚC khi khoản tiền đổi chủ. */
+  const sumOf = async (bookingId: string) =>
+    (await BaobayCollect.find({ spot, bookingId }).select("amount").lean<any[]>()).reduce(
+      (t, c) => t + (c.amount || 0),
+      0,
+    );
+  const manualBaseFrom = fromBooking ? Math.max(0, (fromBooking.deposit ?? 0) - (await sumOf(fromId))) : 0;
+  const manualBaseTo = Math.max(0, (target.deposit ?? 0) - (await sumOf(toBookingId)));
+
+  const money = `${(collect.amount || 0).toLocaleString("vi-VN")} đ ${collect.method === "transfer" ? "CK" : "TM"}${
+    collect.transferCode ? ` mã ${collect.transferCode}` : ""
+  }`;
+  const who = session.name || session.username;
+  const stamp = nowStampVN();
+
+  await BaobayCollect.updateOne(
+    { _id: collectId },
+    {
+      $set: {
+        bookingId: toBookingId,
+        bookingCode: target.bookingCode || "",
+        guestName: target.contactName || "",
+        spot,
+        note: [collect.note, `chuyển từ ${bookingLabelShort(fromBooking)} sang ${bookingLabelShort(target)} by ${who}`]
+          .filter(Boolean)
+          .join(" · "),
+      },
+    },
+  );
+
+  // Ghi vết hai đầu: bên mất tiền và bên nhận tiền đều phải đọc ra được
+  if (fromBooking) {
+    await BaobayBooking.updateOne(
+      { _id: fromId },
+      {
+        $set: {
+          note: [fromBooking.note, `CHUYỂN ĐI ${money} sang ${bookingLabelShort(target)} (ghi nhầm) by ${who} lúc ${stamp}`]
+            .filter(Boolean)
+            .join(" — "),
+        },
+      },
+    );
+  }
+  await BaobayBooking.updateOne(
+    { _id: toBookingId },
+    {
+      $set: {
+        note: [target.note, `NHẬN ${money} chuyển từ ${bookingLabelShort(fromBooking)} by ${who} lúc ${stamp}`]
+          .filter(Boolean)
+          .join(" — "),
+      },
+    },
+  );
+
+  /**
+   * Tính lại tiền hai bên bằng CỌC GÕ TAY đo TRƯỚC khi chuyển.
+   *
+   * `deposit` = cọc gõ tay + tổng lệnh thu. Nếu đo cọc gõ tay SAU khi chuyển
+   * thì phần tiền vừa rời đi bị hiểu nhầm thành cọc gõ tay, và cả hai booking
+   * đứng im như chưa có gì xảy ra — đúng lỗi bắt được lúc thử.
+   */
+  const fromRes = fromId ? await recomputeBookingMoney(spot, fromId, manualBaseFrom) : null;
+  const toRes = await recomputeBookingMoney(spot, toBookingId, manualBaseTo);
+  if (!toRes?.booking) throw new BaobayError("Không cập nhật được booking nhận", 500);
+  return {
+    from: fromRes?.booking ? toBookingDTO(fromRes.booking) : null,
+    to: toBookingDTO(toRes.booking),
+  };
+}
+
+/** "#4 Triệu Ngọc Vi" — nhãn ngắn dùng trong ghi chú chuyển khoản thu. */
+function bookingLabelShort(b: any): string {
+  if (!b) return "khoản lẻ";
+  return `#${b.daySeq || "?"} ${b.contactName || b.phone || "khách"}`;
+}
+
 export async function editBookingCollect(
   session: BaobaySession,
   spotRaw: string,
