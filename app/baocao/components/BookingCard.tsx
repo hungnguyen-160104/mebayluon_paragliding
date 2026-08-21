@@ -1003,10 +1003,21 @@ function CommissionControl({
   onDone: (message: string) => void;
 }) {
   const paid = booking.commission;
+  /**
+   * SỐ TIỀN và TÊN ĐẠI LÝ tự điền sẵn, vẫn sửa tay được:
+   *  - tiền = số khách × đơn giá chiết khấu (đã chi rồi thì giữ số cũ)
+   *  - tên đại lý = đại lý khách đã đặt qua (ô "Đã TT đại lý" trên booking)
+   */
+  const suggestAmount = paid?.amount || booking.guestCount * COMMISSION_PER_GUEST;
+  const suggestAgency = paid?.agencyName || booking.agencyName || "";
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState(paid?.amount || booking.guestCount * COMMISSION_PER_GUEST);
+  const [amount, setAmount] = useState(suggestAmount);
   const [method, setMethod] = useState<"cash" | "transfer">(paid?.method ?? "cash");
   const [code, setCode] = useState(paid?.transferCode ?? "");
+  const [agency, setAgency] = useState(suggestAgency);
+  const [bankAccount, setBankAccount] = useState(paid?.bankAccount ?? "");
+  const [bankName, setBankName] = useState(paid?.bankAccountName ?? "");
+  const [note2, setNote2] = useState(paid?.note2 ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1022,6 +1033,10 @@ function CommissionControl({
         amount,
         method,
         transferCode: code,
+        agencyName: agency,
+        bankAccount,
+        bankAccountName: bankName,
+        note2,
       });
       onDone(
         method === "cash"
@@ -1045,15 +1060,19 @@ function CommissionControl({
           (paid ? "border-violet-400 bg-violet-100 text-violet-900" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50")
         }
         onClick={() => {
-          setAmount(paid?.amount || booking.guestCount * COMMISSION_PER_GUEST);
+          setAmount(suggestAmount);
           setMethod(paid?.method ?? "cash");
           setCode(paid?.transferCode ?? "");
+          setAgency(suggestAgency);
+          setBankAccount(paid?.bankAccount ?? "");
+          setBankName(paid?.bankAccountName ?? "");
+          setNote2(paid?.note2 ?? "");
           setOpen(true);
           setError(null);
         }}
       >
         {paid
-          ? `🤝 CK ĐL ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"}`
+          ? `🤝 CK ĐL ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"}${paid.agencyName ? ` · ${paid.agencyName}` : ""}`
           : "🤝 CK đại lý"}
       </button>
     );
@@ -1065,6 +1084,13 @@ function CommissionControl({
         CK ĐL — {booking.guestCount} khách × {(COMMISSION_PER_GUEST / 1000).toLocaleString("vi-VN")}k
       </div>
       <p className="mb-1 text-[10px] leading-tight text-violet-900/70">Trả ngoài — không hiện ở phiếu khách.</p>
+      {/* Tên đại lý điền sẵn theo đại lý khách đặt qua; sửa tay được */}
+      <TextInput
+        value={agency}
+        onChange={(e) => setAgency(e.target.value)}
+        placeholder="Tên đại lý nhận chiết khấu"
+        className="mb-1 h-8 rounded-lg text-xs"
+      />
       <MoneyInput value={amount} onChange={setAmount} />
       <div className="mt-1 flex overflow-hidden rounded-lg border border-slate-300">
         {(["cash", "transfer"] as const).map((m) => (
@@ -1083,13 +1109,34 @@ function CommissionControl({
         ))}
       </div>
       {method === "transfer" && (
-        <TextInput
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Mã giao dịch CK"
-          className="mt-1 h-8 rounded-lg text-xs"
-        />
+        <>
+          {/* Số tài khoản nhận tiền — lần sau chi cho đại lý này khỏi hỏi lại */}
+          <TextInput
+            value={bankAccount}
+            onChange={(e) => setBankAccount(e.target.value)}
+            placeholder="Số tài khoản nhận tiền"
+            className="mt-1 h-8 rounded-lg text-xs"
+          />
+          <TextInput
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            placeholder="Tên chủ tài khoản / ngân hàng"
+            className="mt-1 h-8 rounded-lg text-xs"
+          />
+          <TextInput
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Mã giao dịch CK"
+            className="mt-1 h-8 rounded-lg text-xs"
+          />
+        </>
       )}
+      <TextInput
+        value={note2}
+        onChange={(e) => setNote2(e.target.value)}
+        placeholder="Ghi chú (không bắt buộc)"
+        className="mt-1 h-8 rounded-lg text-xs"
+      />
       {error && <div className="mt-1 text-[11px] font-semibold text-rose-700">{error}</div>}
       <div className="mt-1.5 flex gap-1">
         <Button type="button" className="h-8 flex-1 bg-violet-600 px-2 text-xs hover:bg-violet-700" disabled={busy} onClick={send}>

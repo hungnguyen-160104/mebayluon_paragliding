@@ -85,6 +85,13 @@ export interface IBaobayBooking {
     amount: number;
     method: "cash" | "transfer";
     transferCode?: string;
+    /** Tên đại lý nhận chiết khấu — mặc định lấy tên đại lý khách đã đặt qua. */
+    agencyName?: string;
+    /** Số tài khoản và tên chủ tài khoản để chuyển tiền chiết khấu. */
+    bankAccount?: string;
+    bankAccountName?: string;
+    /** Ghi chú riêng của khoản chi này. */
+    note2?: string;
     byUsername: string;
     byName: string;
     at: Date;
@@ -287,6 +294,10 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
         amount: { type: Number, default: 0 },
         method: { type: String, enum: ["cash", "transfer"], default: "cash" },
         transferCode: String,
+        agencyName: String,
+        bankAccount: String,
+        bankAccountName: String,
+        note2: String,
         byUsername: String,
         byName: String,
         at: Date,

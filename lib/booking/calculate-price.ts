@@ -1322,11 +1322,17 @@ export function currencyOf(lang: LangCode): "VND" | "USD" {
   return lang === "vi" ? "VND" : "USD";
 }
 
-const GROUP_DISCOUNT = [
-  { min: 6, vnd: 150_000, usd: 6 },
-  { min: 4, vnd: 100_000, usd: 4 },
-  { min: 3, vnd: 70_000, usd: 3 },
-  { min: 2, vnd: 50_000, usd: 2 },
+/**
+ * GIẢM GIÁ THEO NHÓM (21/08/2026): nhóm 3 khách bớt 50k mỗi khách, nhóm từ 4
+ * khách trở lên bớt 70k mỗi khách. Đi 1–2 khách không giảm.
+ *
+ * Xếp từ mốc CAO xuống THẤP — vòng tìm lấy mốc đầu tiên khớp là dừng.
+ * XUẤT RA NGOÀI để giao diện đọc đúng bảng này; trước đây bảng bị chép tay
+ * lần hai trong select-flight-step nên sửa giá một nơi là hai nơi nói khác nhau.
+ */
+export const GROUP_DISCOUNT = [
+  { min: 4, vnd: 70_000, usd: 3 },
+  { min: 3, vnd: 50_000, usd: 2 },
 ] as const;
 
 type ComputeParams = {

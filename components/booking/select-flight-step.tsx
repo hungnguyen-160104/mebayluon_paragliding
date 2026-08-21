@@ -6,6 +6,7 @@ import {
   type ServiceSelection,
 } from "@/store/booking-store";
 import {
+  GROUP_DISCOUNT,
   LOCATIONS,
   computePriceByLang,
   type LocationKey,
@@ -2163,12 +2164,10 @@ export default function SelectFlightStep() {
 
                   <div className="border-t border-[#DCE7F3] px-3 py-2.5 text-[14px] text-[#5B6B7A]">
                     <div className="space-y-2">
-                      {[
-                        { min: 2, vnd: 50_000 },
-                        { min: 3, vnd: 70_000 },
-                        { min: 4, vnd: 100_000 },
-                        { min: 6, vnd: 150_000 },
-                      ].map((tier) => (
+                      {/* Đọc thẳng bảng giá gốc — không chép tay lại */}
+                      {[...GROUP_DISCOUNT]
+                        .sort((a, b) => a.min - b.min)
+                        .map((tier) => (
                         <div
                           key={tier.min}
                           className="flex items-center justify-between gap-3 border-b border-[#DCE7F3] pb-2 last:border-b-0 last:pb-0"

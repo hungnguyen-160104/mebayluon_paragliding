@@ -281,6 +281,10 @@ export async function PATCH(req: Request) {
         method: body?.method === "transfer" ? "transfer" : "cash",
         transferCode: String(body?.transferCode ?? ""),
         note: String(body?.note ?? ""),
+        agencyName: String(body?.agencyName ?? ""),
+        bankAccount: String(body?.bankAccount ?? ""),
+        bankAccountName: String(body?.bankAccountName ?? ""),
+        note2: String(body?.note2 ?? ""),
       });
       return NextResponse.json({ booking });
     }

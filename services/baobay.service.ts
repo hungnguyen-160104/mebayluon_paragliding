@@ -2915,7 +2915,12 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   for (const b of commissionBookings) {
     const c = b.commission;
     const item: MoneyBoardItem = {
-      label: `chiết khấu đại lý — ${b.contactName || b.bookingCode || "đoàn khách"}`,
+      // Ghi rõ ĐẠI LÝ NÀO và CHUYỂN VÀO ĐÂU — kế toán chuyển tiền khỏi phải mở
+      // từng booking ra tra số tài khoản
+      label:
+        `chiết khấu đại lý${c.agencyName ? ` ${c.agencyName}` : ""} — ${b.contactName || b.bookingCode || "đoàn khách"}` +
+        (c.bankAccount ? ` · STK ${c.bankAccount}${c.bankAccountName ? ` (${c.bankAccountName})` : ""}` : "") +
+        (c.note2 ? ` · ${c.note2}` : ""),
       bookingCode: b.bookingCode || "",
       guests: b.guestCount || 0,
       amount: Number(c.amount) || 0,
@@ -5328,7 +5333,17 @@ export async function payCommission(
   session: BaobaySession,
   spotRaw: string,
   id: string,
-  input: { amount: number; method: "cash" | "transfer"; transferCode?: string; note?: string },
+  input: {
+    amount: number;
+    method: "cash" | "transfer";
+    transferCode?: string;
+    note?: string;
+    /** Tên đại lý nhận chiết khấu + số tài khoản để chuyển tiền + ghi chú riêng. */
+    agencyName?: string;
+    bankAccount?: string;
+    bankAccountName?: string;
+    note2?: string;
+  },
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -5358,6 +5373,11 @@ export async function payCommission(
           amount,
           method,
           transferCode,
+          // Bỏ trống tên đại lý thì lấy luôn đại lý khách đã đặt qua
+          agencyName: (input.agencyName ?? "").trim() || (booking.agencyName ?? ""),
+          bankAccount: (input.bankAccount ?? "").trim(),
+          bankAccountName: (input.bankAccountName ?? "").trim(),
+          note2: (input.note2 ?? "").trim(),
           byUsername: normalizeUsername(session.username),
           byName: session.name || session.username,
           at: new Date(),
@@ -5759,6 +5779,10 @@ function toBookingDTO(doc: any): BookingDTO {
           amount: Number(doc.commission.amount) || 0,
           method: doc.commission.method === "transfer" ? "transfer" : "cash",
           transferCode: doc.commission.transferCode || undefined,
+          agencyName: doc.commission.agencyName || undefined,
+          bankAccount: doc.commission.bankAccount || undefined,
+          bankAccountName: doc.commission.bankAccountName || undefined,
+          note2: doc.commission.note2 || undefined,
           byName: doc.commission.byName || "",
           at: doc.commission.at ? new Date(doc.commission.at).toISOString() : "",
         }

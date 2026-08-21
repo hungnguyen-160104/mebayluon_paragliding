@@ -334,7 +334,18 @@ export type BookingDTO = {
   contactedAt?: string;
   contactedBy?: string;
   /** Chiết khấu đã trả đại lý — KHÔNG lên phiếu gửi khách, chỉ nội bộ. */
-  commission?: { amount: number; method: "cash" | "transfer"; transferCode?: string; byName: string; at: string };
+  commission?: {
+    amount: number;
+    method: "cash" | "transfer";
+    transferCode?: string;
+    /** Đại lý nhận chiết khấu + tài khoản nhận tiền + ghi chú của khoản chi. */
+    agencyName?: string;
+    bankAccount?: string;
+    bankAccountName?: string;
+    note2?: string;
+    byName: string;
+    at: string;
+  };
   /** Bỏ khỏi sổ (nhập nhầm / nhập trùng) — ai bỏ, vì sao, gộp vào booking nào. */
   voidedBy?: string;
   voidReason?: string;
