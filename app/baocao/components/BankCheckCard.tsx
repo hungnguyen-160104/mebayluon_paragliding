@@ -84,6 +84,8 @@ type BookingRowDTO = {
   totalAmount: number;
   remaining: number;
   discount: number;
+  overpaid: number;
+  undoneChanges: number;
   note: string;
   agencyPaidAmount: number;
   agencyName: string;
@@ -570,6 +572,18 @@ export function BankCheckCard({ date }: { date: string }) {
                 {row.remaining <= 0 && paidTm > 0 && row.transfers.length === 0 && (
                   <div className="mt-1 w-fit rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                     💵 Đã thu đủ bằng TIỀN MẶT — không cần soát sao kê
+                  </div>
+                )}
+                {/* LỆCH TIỀN sau khi ai đó sửa/bỏ lệnh dịch vụ — kế toán phải bù hoặc hoàn */}
+                {row.overpaid > 0 && (
+                  <div className="mt-1 rounded-lg border-2 border-rose-400 bg-rose-50 px-2 py-1 text-xs font-bold text-rose-800">
+                    ⚠ THU THỪA {formatVND(row.overpaid)} — khách đã trả nhiều hơn tổng phải trả. Kiểm lại lệnh
+                    thêm/bớt dịch vụ rồi bù hoặc hoàn cho khách.
+                  </div>
+                )}
+                {row.undoneChanges > 0 && (
+                  <div className="mt-1 text-[11px] font-semibold text-amber-700">
+                    🕵 Booking này có {row.undoneChanges} lệnh dịch vụ ĐÃ BỊ BỎ — xem ghi chú bên dưới để soát
                   </div>
                 )}
                 {row.note && (

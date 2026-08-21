@@ -33,6 +33,7 @@ import { SPOT_IDS, normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
 import { connectDB } from "@/lib/mongodb";
 import { BaobayBankLine } from "@/models/BaobayBankLine.model";
+import { BaobayServiceChange } from "@/models/BaobayServiceChange.model";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayError, setBookingLock } from "@/services/baobay.service";
@@ -121,6 +122,10 @@ export type BankBookingRowDTO = {
   remaining: number;
   /** Giảm trừ đã áp cho booking (nếu có). */
   discount: number;
+  /** THU THỪA (khách trả quá tổng) — dấu hiệu sửa/bỏ lệnh dịch vụ sau khi đã thu tiền. */
+  overpaid: number;
+  /** Số lệnh thêm/bớt dịch vụ ĐÃ BỊ BỎ của booking này — vết để soi gian lận. */
+  undoneChanges: number;
   /** Ghi chú điều phối ghi trên booking. */
   note: string;
   /** Khách đã trả bên đại lý + tên đại lý (đại lý nợ công ty). */
@@ -693,7 +698,7 @@ export async function getBankCheck(
   const rowBookings = rowBookingIds.size
     ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
         .select(
-          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit refundedTotal transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
         )
         .lean<any[]>()
     : [];
@@ -747,6 +752,15 @@ export async function getBankCheck(
     return parts.join(" · ") || `${b.guestCount || 0} khách`;
   };
 
+  /** Lệnh thêm/bớt dịch vụ ĐÃ BỊ BỎ — đếm theo booking để hiện vết trên thẻ soát. */
+  const undoneRows = rowBookingIds.size
+    ? await BaobayServiceChange.aggregate([
+        { $match: { bookingId: { $in: [...rowBookingIds].map((x) => new mongoose.Types.ObjectId(x)) }, undoneAt: { $ne: null } } },
+        { $group: { _id: "$bookingId", n: { $sum: 1 } } },
+      ])
+    : [];
+  const undoneByBooking = new Map<string, number>(undoneRows.map((r: any) => [String(r._id), Number(r.n) || 0]));
+
   const lineDTOs = lineDocs.map(toLineDTO);
   const pendingToday = lineDTOs.filter((l) => l.status === "pending");
   const bookingRows: BankBookingRowDTO[] = rowBookings
@@ -762,6 +776,11 @@ export async function getBankCheck(
         totalAmount: b.totalAmount || 0,
         remaining: Math.max(0, b.remaining || 0),
         discount: b.discount || 0,
+        overpaid: Math.max(
+          0,
+          (b.deposit || 0) + (b.agencyPaidAmount || 0) - (b.totalAmount || 0) - (b.refundedTotal || 0),
+        ),
+        undoneChanges: undoneByBooking.get(id) ?? 0,
         note: b.note || "",
         agencyPaidAmount: b.agencyPaidAmount || 0,
         agencyName: b.agencyName || "",

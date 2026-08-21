@@ -190,6 +190,19 @@ function BookingSummary({
           <strong className="rounded bg-rose-100 px-1 font-bold text-rose-700">{huyBits.join(" · ")}</strong>
         </>
       )}
+      {/* LỆCH TIỀN: khách trả nhiều hơn tổng — hầu như luôn do sửa/bỏ lệnh dịch
+          vụ sau khi đã thu. Kêu to ngay trên dòng để kế toán bù/hoàn. */}
+      {(b.overpaid ?? 0) > 0 && (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-rose-600 px-1 font-bold text-white"
+            title="Khách đã trả nhiều hơn tổng phải trả — kiểm lại lệnh thêm/bớt dịch vụ, bù hoặc hoàn cho khách"
+          >
+            ⚠ THU THỪA {k(b.overpaid ?? 0)} — kế toán xử lý
+          </strong>
+        </>
+      )}
       {paidTotal > 0 ? (
         <>
           {" · "}

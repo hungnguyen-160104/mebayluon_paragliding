@@ -4833,6 +4833,16 @@ export async function listServiceChanges(
  * kế toán chuyển đi (tiền ra khỏi tài khoản rồi thì phải lập lệnh thu lại, chứ
  * không xoá lịch sử).
  */
+/** Tên dịch vụ tiếng Việt cho dòng vết ghi vào booking. */
+const SERVICE_KEYS = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+const SERVICE_LABEL_VI: Record<(typeof SERVICE_KEYS)[number], string> = {
+  flycam: "flycam",
+  video360: "cam360",
+  redFlag: "cờ đỏ",
+  sunset: "hoàng hôn",
+  flagFlight: "kéo cờ",
+};
+
 export async function undoServiceChange(
   session: BaobaySession,
   spotRaw: string,
@@ -4851,9 +4861,9 @@ export async function undoServiceChange(
 
   if (change.refundId) {
     const refund = await BaobayRefund.findOne({ _id: change.refundId }).select("status amount").lean<any>();
-    if (refund && refund.status === "paid") {
+    if (refund && (refund.status === "paid" || refund.status === "done")) {
       throw new BaobayError(
-        "Kế toán đã chuyển tiền hoàn cho khách — không sửa được nữa, phải lập lệnh thu lại nếu thu về",
+        "Tiền hoàn đã trả cho khách rồi — không bỏ lệnh này được, phải lập lệnh thu lại nếu thu về",
         400,
       );
     }
@@ -4863,13 +4873,37 @@ export async function undoServiceChange(
     await BaobayRefund.deleteOne({ _id: change.refundId });
   }
 
-  // Lệnh thu sinh ra kèm lần đăng ký thêm: gỡ luôn, vì ảnh chụp đã trả lại
-  // "đã cọc / còn thu" của booking về trước lúc thu
-  if ((change.collectIds ?? []).length > 0) {
-    await BaobayCollect.deleteMany({ _id: { $in: change.collectIds } });
-  }
-
+  /**
+   * TIỀN ĐÃ THU THÌ Ở NGUYÊN — KHÔNG xoá theo lệnh.
+   *
+   * Bản cũ xoá luôn các lệnh thu sinh kèm và trả `deposit`/`collectedLog` về
+   * ảnh chụp trước đó: thu 400k của khách rồi bỏ lệnh là 400k biến mất khỏi
+   * sổ, không để lại vết nào — đúng cái kẽ hở gian lận chủ lo. Nay chỉ trả
+   * lại DỊCH VỤ và TỔNG TIỀN; tiền khách đã đưa vẫn nằm trong sổ, và booking
+   * lập tức lệch (thu thừa) để kế toán nhìn thấy mà xử lý bù/hoàn.
+   *
+   * Muốn sửa TIỀN thì có đường riêng: sổ khoản thu của booking (sửa/xoá từng
+   * khoản, có vết người sửa).
+   */
   const b = change.before ?? {};
+  const money = await BaobayCollect.find({ spot, bookingId: change.bookingId })
+    .select("amount")
+    .lean<any[]>();
+  const collectedSum = money.reduce((t, c) => t + (c.amount || 0), 0);
+  const bookingNow = await BaobayBooking.findOne({ _id: change.bookingId, spot })
+    .select("deposit note agencyPaidAmount")
+    .lean<any>();
+  const depositNow = bookingNow?.deposit ?? 0;
+  const newTotal = b.totalAmount ?? 0;
+
+  const items = SERVICE_KEYS.filter((k) => (change.items?.[k] ?? 0) > 0)
+    .map((k) => `${change.items[k]}×${SERVICE_LABEL_VI[k]}`)
+    .join(", ");
+  const trace =
+    `BỎ LỆNH ${change.kind === "add" ? "thêm" : "huỷ"} dịch vụ (${items || "—"}) ` +
+    `by ${session.name || session.username} lúc ${nowStampVN()}` +
+    (collectedSum > 0 ? ` — tiền đã thu ${collectedSum.toLocaleString("vi-VN")} đ GIỮ NGUYÊN trong sổ` : "");
+
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: change.bookingId, spot },
     {
@@ -4881,12 +4915,11 @@ export async function undoServiceChange(
         flagFlight: b.flagFlight ?? 0,
         comboDiscount: b.comboDiscount ?? 0,
         discount: b.discount ?? 0,
-        totalAmount: b.totalAmount ?? 0,
-        deposit: b.deposit ?? 0,
-        remaining: b.remaining ?? 0,
-        note: b.note ?? "",
-        // Vệt thu tiền trả về đúng như trước, không thì lần thu vừa gỡ vẫn còn in trên dòng khách
-        collectedLog: b.collectedLog ?? [],
+        totalAmount: newTotal,
+        // Tiền giữ nguyên ⇒ còn thu tính lại theo tổng mới
+        remaining: Math.max(0, newTotal - depositNow - (bookingNow?.agencyPaidAmount ?? 0)),
+        // KHÔNG khôi phục note cũ — làm thế là xoá sạch vết; nối thêm dòng bỏ lệnh
+        note: [bookingNow?.note, trace].filter(Boolean).join(" — "),
       },
     },
     { new: true },
@@ -5733,6 +5766,15 @@ function toBookingDTO(doc: any): BookingDTO {
     remaining: doc.remaining ?? 0,
     agencyPaidAmount: doc.agencyPaidAmount ?? 0,
     agencyName: doc.agencyName || "",
+    /**
+     * Đã trả (tiền khách + phần đại lý thu hộ) trừ đi tổng phải trả. Dương
+     * nghĩa là THU THỪA — dấu hiệu ai đó sửa/bỏ lệnh dịch vụ sau khi đã thu
+     * tiền, kế toán phải xử lý bù hoặc hoàn.
+     */
+    overpaid: Math.max(
+      0,
+      (doc.deposit ?? 0) + (doc.agencyPaidAmount ?? 0) - (doc.totalAmount ?? 0) - (doc.refundedTotal ?? 0),
+    ),
     cancelledGuests: doc.cancelledGuests ?? 0,
     cancelledFlycam: doc.cancelledFlycam ?? 0,
     cancelledVideo360: doc.cancelledVideo360 ?? 0,
@@ -6641,6 +6683,12 @@ issuedRanges: Array<{ from: string; to: string }>;
   /** ĐẠI LÝ THU HỘ tiền bay của khách ngày này — đại lý đang cầm, phải đòi về (KHÔNG phải chiết khấu). */
   agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
   agencyHeldTotal: number;
+  /**
+   * BOOKING LỆCH TIỀN: khách trả nhiều hơn tổng phải trả — gần như luôn do ai
+   * đó sửa/bỏ lệnh thêm-bớt dịch vụ SAU KHI đã thu tiền. Kế toán phải bù hoặc
+   * hoàn trước khi chốt ngày.
+   */
+  overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
   /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
@@ -6769,6 +6817,40 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
   }
   const agencyHeld = [...heldBy.values()].sort((a, b) => b.amount - a.amount);
 
+  /** Booking của ngày đang THU THỪA (trả > tổng) + số lệnh dịch vụ đã bị bỏ. */
+  const overpaidDocs = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    status: { $nin: ["voided"] },
+  })
+    .select("daySeq contactName phone deposit agencyPaidAmount totalAmount refundedTotal")
+    .lean<any[]>();
+  const overpaidRaw = overpaidDocs
+    .map((b) => ({
+      id: String(b._id),
+      label: `#${b.daySeq || "?"} ${b.contactName || b.phone || "khách"}`,
+      amount:
+        (b.deposit || 0) + (b.agencyPaidAmount || 0) - (b.totalAmount || 0) - (b.refundedTotal || 0),
+    }))
+    .filter((x) => x.amount > 0);
+  const undoneCounts = overpaidRaw.length
+    ? await BaobayServiceChange.aggregate([
+        {
+          $match: {
+            bookingId: { $in: overpaidRaw.map((x) => new mongoose.Types.ObjectId(x.id)) },
+            undoneAt: { $ne: null },
+          },
+        },
+        { $group: { _id: "$bookingId", n: { $sum: 1 } } },
+      ])
+    : [];
+  const undoneMap = new Map<string, number>(
+    undoneCounts.map((r: any) => [String(r._id), Number(r.n) || 0]),
+  );
+  const overpaidBookings = overpaidRaw
+    .map((x) => ({ label: x.label, amount: x.amount, undoneChanges: undoneMap.get(x.id) ?? 0 }))
+    .sort((a, b) => b.amount - a.amount);
+
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
 
   const dispatcherCancelledCodes = dispatchers.flatMap((d) => (d.cancelledCodes ?? []) as string[]);
@@ -6870,6 +6952,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     transferTotal: sum(dispatchers, (d) => d.transferReceived) + collectTransferOfDay,
     agencyHeld,
     agencyHeldTotal: agencyHeld.reduce((t, a) => t + a.amount, 0),
+    overpaidBookings,
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
     registeredGuests: sum(bookings, (b) => b.guestCount),
     /**

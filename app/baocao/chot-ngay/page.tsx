@@ -73,6 +73,7 @@ type CloseSuggestion = {
   transferTotal: number;
   agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
   agencyHeldTotal: number;
+  overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
   dispatcherSpend: number;
   registeredGuests: number;
   /** Khách đã xác nhận bay trong sổ booking — đăng ký trừ huỷ/dời. */
@@ -1129,6 +1130,24 @@ function DailyCloseInner() {
               disabled={locked}
             />
           </div>
+
+          {/* LỆCH TIỀN vì sửa/bỏ lệnh dịch vụ sau khi đã thu — phải xử lý trước khi chốt */}
+          {(suggest?.overpaidBookings ?? []).length > 0 && (
+            <div className="mb-3 rounded-xl border-2 border-rose-400 bg-rose-50/80 px-3 py-2">
+              <div className="text-sm font-bold text-rose-900">
+                ⚠ {suggest!.overpaidBookings.length} booking THU THỪA — khách trả nhiều hơn tổng phải trả, xử lý bù
+                hoặc hoàn trước khi chốt ngày
+              </div>
+              <ul className="mt-1 space-y-0.5 text-xs text-rose-900/90">
+                {suggest!.overpaidBookings.map((b) => (
+                  <li key={b.label}>
+                    <strong>{b.label}</strong> thừa {formatVND(b.amount)}
+                    {b.undoneChanges > 0 ? ` — có ${b.undoneChanges} lệnh dịch vụ đã bị bỏ, soát kỹ` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* ĐẠI LÝ THU HỘ: tiền bay của khách hôm nay đang nằm ở đại lý —
               kế toán phải nhớ đòi, không phải chiết khấu chi ra */}

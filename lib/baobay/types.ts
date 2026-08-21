@@ -387,6 +387,11 @@ export type BookingDTO = {
   /** Khách đã trả cho ĐẠI LÝ (đại lý nợ công ty) + tên đại lý. */
   agencyPaidAmount: number;
   agencyName: string;
+  /**
+   * THU THỪA: khách đã trả nhiều hơn tổng phải trả (thường do sửa/bỏ lệnh
+   * dịch vụ sau khi đã thu tiền) — kế toán phải bù hoặc hoàn cho khách.
+   */
+  overpaid: number;
   /** Huỷ MỘT PHẦN: số khách/dịch vụ đã huỷ bớt — dòng booking in đỏ "huỷ x". */
   cancelledGuests: number;
   cancelledFlycam: number;
