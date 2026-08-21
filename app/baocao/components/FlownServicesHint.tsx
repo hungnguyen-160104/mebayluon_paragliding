@@ -17,6 +17,17 @@ export type FlownServices = {
   sunset: number;
   flagFlight: number;
   mountainCar: number;
+  /** Ai đóng góp bao nhiêu vào từng loại dịch vụ (gồm cả lệnh thêm/bớt tại bãi). */
+  byPerson?: Record<string, Array<{ name: string; qty: number }>>;
+};
+
+/** Tên loại dịch vụ cho dòng tách theo người. */
+const SERVICE_LABEL: Record<string, string> = {
+  flycam: "flycam",
+  video360: "camera 360",
+  redFlag: "cờ đỏ",
+  sunset: "hoàng hôn/săn mây",
+  flagFlight: "kéo cờ/bánh",
 };
 
 /**
@@ -74,7 +85,8 @@ export function FlownServicesHint({
   ].filter(Boolean);
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50/70 px-2.5 py-1.5">
+    <div className="mb-2 rounded-lg border border-emerald-300 bg-emerald-50/70 px-2.5 py-1.5">
+      <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs leading-snug text-emerald-900">
         🛫 <strong>{flown.bookings} booking đã bay</strong> ({flown.guests} khách)
         {parts.length ? <> — đăng ký: <strong>{parts.join(" · ")}</strong></> : " — không đăng ký dịch vụ nào"}
@@ -89,6 +101,32 @@ export function FlownServicesHint({
         >
           ⧉ Lấy số này
         </Button>
+      )}
+      </div>
+
+      {/* AI NHẬP BAO NHIÊU — điều phối trực chỉ khai phần mình nắm, nên phải
+          thấy rõ phần của người khác (kế toán, điều phối ca khác, khách đặt
+          web) và cả phần thêm/bớt tại bãi thì tổng mới đúng. */}
+      {Object.keys(flown.byPerson ?? {}).length > 0 && (
+        <ul className="mt-1 space-y-0.5 border-t border-emerald-200 pt-1 text-[11px] leading-snug text-emerald-900/90">
+          {Object.entries(flown.byPerson!).map(([key, list]) => {
+            const total = list.reduce((t, x) => t + x.qty, 0);
+            if (!total && list.length < 2) return null;
+            return (
+              <li key={key}>
+                <strong>{SERVICE_LABEL[key] ?? key}</strong> ={" "}
+                {list.map((x, i) => (
+                  <span key={x.name}>
+                    {i > 0 && (x.qty < 0 ? " − " : " + ")}
+                    {x.name} {Math.abs(x.qty)}
+                    {i === 0 && x.qty < 0 ? " (trừ)" : ""}
+                  </span>
+                ))}{" "}
+                = <strong>{total}</strong>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

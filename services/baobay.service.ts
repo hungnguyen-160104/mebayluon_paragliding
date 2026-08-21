@@ -3408,6 +3408,14 @@ export type FlownServices = {
   sunset: number;
   flagFlight: number;
   mountainCar: number;
+  /**
+   * AI ĐÓNG GÓP BAO NHIÊU vào từng loại dịch vụ — "360: Duyên 13 · Đặng V.M 2
+   * · Trúc Ngọc 3 = 18". Cần vì cả điều phối lẫn kế toán đều lập booking và
+   * thêm/bớt dịch vụ được: điều phối trực chỉ khai phần mình nắm nên số báo
+   * cáo thiếu đúng phần người khác nhập (21/08: Duyên khai 16 flycam trong khi
+   * sổ có 18 — 2 cái của booking do Đặng V.M lập).
+   */
+  byPerson: Record<string, Array<{ name: string; qty: number }>>;
 };
 
 export async function listBookings(
@@ -3487,7 +3495,65 @@ export async function listBookings(
     sunset: sum((b) => b.sunset),
     flagFlight: sum((b) => b.flagFlight),
     mountainCar: sum((b) => b.mountainCar),
+    byPerson: {},
   };
+
+  /**
+   * TÁCH THEO NGƯỜI. Số dịch vụ trên booking hiện tại ĐÃ GỒM các lệnh thêm/bớt
+   * tại bãi, nên phải bóc ngược: phần lúc TẠO booking = số hiện tại − (đã thêm
+   * − đã bớt). Người tạo booking nhận phần lúc tạo, người lập lệnh nhận đúng
+   * phần mình cộng/trừ — cộng lại đúng bằng tổng, không đếm trùng.
+   */
+  const doneIds = done.map((b) => String(b._id));
+  const changes = doneIds.length
+    ? await BaobayServiceChange.find({
+        spot,
+        bookingId: { $in: doneIds },
+        undoneAt: null,
+      })
+        .select("bookingId kind items createdByName createdByUsername")
+        .lean<any[]>()
+    : [];
+
+  const KEYS = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  /** loại dịch vụ → tên người → số lượng */
+  const tally = new Map<string, Map<string, number>>();
+  const add = (key: string, name: string, qty: number) => {
+    if (!qty) return;
+    const per = tally.get(key) ?? new Map<string, number>();
+    per.set(name, (per.get(name) ?? 0) + qty);
+    tally.set(key, per);
+  };
+
+  const changeByBooking = new Map<string, any[]>();
+  for (const c of changes) {
+    const k = String(c.bookingId);
+    (changeByBooking.get(k) ?? changeByBooking.set(k, []).get(k)!).push(c);
+  }
+
+  for (const b of done) {
+    const mine = changeByBooking.get(String(b._id)) ?? [];
+    for (const key of KEYS) {
+      const delta = mine.reduce(
+        (t, c) => t + (c.kind === "add" ? 1 : -1) * (c.items?.[key] ?? 0),
+        0,
+      );
+      // Phần lúc tạo booking = số hiện tại trừ đi phần thêm/bớt sau đó
+      add(key, b.createdByName || b.createdBy || "không rõ", (b[key] || 0) - delta);
+      for (const c of mine) {
+        const qty = (c.items?.[key] ?? 0) * (c.kind === "add" ? 1 : -1);
+        add(key, c.createdByName || c.createdByUsername || "không rõ", qty);
+      }
+    }
+  }
+
+  for (const [key, per] of tally) {
+    const list = [...per.entries()]
+      .filter(([, qty]) => qty !== 0)
+      .map(([name, qty]) => ({ name, qty }))
+      .sort((a, b) => Math.abs(b.qty) - Math.abs(a.qty));
+    if (list.length) flown.byPerson[key] = list;
+  }
 
   /**
    * CHE SỐ TIỀN với phi công / camera man: họ cần biết khách là ai, mấy người,
