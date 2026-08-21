@@ -10,6 +10,7 @@ import { wearsRole } from "@/lib/baobay/roles";
 import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
+  lastAgencyBank,
   cancelBookingGuests,
   BaobayError,
   setBookingLock,
@@ -56,6 +57,12 @@ export async function GET(req: Request) {
 
   const spot = resolveSpot(req, auth);
   if (spot instanceof NextResponse) return spot;
+
+  // ?agencyBank=<tên đại lý>: tài khoản đã dùng lần gần nhất, để điền sẵn ô CK ĐL
+  const agencyBank = new URL(req.url).searchParams.get("agencyBank");
+  if (agencyBank !== null) {
+    return NextResponse.json({ bank: await lastAgencyBank(spot, agencyBank) });
+  }
 
   const date = new URL(req.url).searchParams.get("date") || todayInVN();
   if (!isDateKey(date)) {

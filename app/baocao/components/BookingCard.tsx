@@ -1021,6 +1021,31 @@ function CommissionControl({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * TỰ ĐIỀN SỐ TÀI KHOẢN của đại lý theo lần chi gần nhất — chỉ điền khi ô còn
+   * trống, không đè lên số người dùng vừa gõ.
+   */
+  useEffect(() => {
+    if (!open || method !== "transfer") return;
+    const name = agency.trim();
+    if (!name || bankAccount.trim()) return;
+    let alive = true;
+    apiGet<{ bank: { bankAccount: string; bankAccountName: string } | null }>(
+      `/api/baocao/booking?spot=${spot}&agencyBank=${encodeURIComponent(name)}`,
+    )
+      .then((r) => {
+        if (!alive || !r.bank) return;
+        setBankAccount((prev) => prev || r.bank!.bankAccount);
+        setBankName((prev) => prev || r.bank!.bankAccountName);
+      })
+      .catch(() => {
+        /* không tra được thì gõ tay, không phải lỗi */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, method, agency, bankAccount, spot]);
+
   async function send() {
     if (amount <= 0) return setError("Chưa nhập số tiền chiết khấu");
     if (method === "transfer" && !code.trim()) return setError("Chuyển khoản phải ghi mã giao dịch");
@@ -1110,23 +1135,28 @@ function CommissionControl({
       </div>
       {method === "transfer" && (
         <>
-          {/* Số tài khoản nhận tiền — lần sau chi cho đại lý này khỏi hỏi lại */}
-          <TextInput
-            value={bankAccount}
-            onChange={(e) => setBankAccount(e.target.value)}
-            placeholder="Số tài khoản nhận tiền"
-            className="mt-1 h-8 rounded-lg text-xs"
-          />
+          {/* STK + mã GD xếp CẶP cho hẹp bề ngang — thẻ này nổi cạnh dòng
+              booking, để mỗi ô một hàng là đẩy cả sổ giãn ra. Số tài khoản tự
+              điền theo lần chi gần nhất cho đại lý đó. */}
+          <div className="mt-1 grid grid-cols-2 gap-1">
+            <TextInput
+              value={bankAccount}
+              onChange={(e) => setBankAccount(e.target.value)}
+              placeholder="Số TK"
+              inputMode="numeric"
+              className="h-8 rounded-lg text-xs"
+            />
+            <TextInput
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Mã GD"
+              className="h-8 rounded-lg text-xs"
+            />
+          </div>
           <TextInput
             value={bankName}
             onChange={(e) => setBankName(e.target.value)}
-            placeholder="Tên chủ tài khoản / ngân hàng"
-            className="mt-1 h-8 rounded-lg text-xs"
-          />
-          <TextInput
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Mã giao dịch CK"
+            placeholder="Tên chủ TK / ngân hàng"
             className="mt-1 h-8 rounded-lg text-xs"
           />
         </>
@@ -2188,9 +2218,11 @@ export function BookingTodayBanner({
               /* Hai khối nút NỔI riêng: hàng trên Đã bay · Đổi lịch · Chuyển, hàng
                  dưới Huỷ · Sửa (hẹp hơn) — chữ chảy quanh, tràn tới sát nút Huỷ. */
               <>
-              {b.locked ? (
+              {b.locked && !canLock ? (
                 /* ĐÃ KHOÁ: cất hết nút sửa cho khỏi bấm rồi mới biết bị chặn —
-                   chỉ còn nút mở khoá của kế toán. */
+                   chỉ còn nút mở khoá của kế toán. KẾ TOÁN thì vẫn thấy đủ nút:
+                   lỗi cần sửa hay lộ ra đúng lúc soát, bắt mở khoá rồi khoá lại
+                   là ba bước cho một việc. */
                 <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
               ) : (
               <>
@@ -2339,7 +2371,7 @@ export function BookingTodayBanner({
                 Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
             <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
               {lockButton(b)}
-              {!b.locked && spot !== "sapa" && (
+              {(!b.locked || canLock) && spot !== "sapa" && (
                 <CollectMoneyControl
                   spot={spot}
                   booking={b}
@@ -2349,7 +2381,7 @@ export function BookingTodayBanner({
                   }}
                 />
               )}
-              {!b.locked && (
+              {(!b.locked || canLock) && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -2361,7 +2393,7 @@ export function BookingTodayBanner({
               )}
             </div>
             {/* Bấm nhầm thì có đường lui — khỏi tạo booking mới để chữa (sổ đếm hai lần) */}
-            {!b.locked && (
+            {(!b.locked || canLock) && (
               <Button
                 type="button"
                 variant="ghost"

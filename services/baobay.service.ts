@@ -3455,7 +3455,7 @@ export async function updateBookingInfo(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
 
   if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
   const before = await BaobayBooking.findOne({ _id: id, spot }).select("status flightDate").lean<any>();
@@ -3605,7 +3605,7 @@ export async function voidBooking(
 ): Promise<{ voided: BookingDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
   if (doc.status === "voided") throw new BaobayError("Booking này đã được bỏ khỏi sổ", 400);
@@ -3668,7 +3668,21 @@ export async function voidBooking(
  * TỪNG dòng, dùng khi số của riêng khách đó đã đối soát xong, hoặc đang có
  * tranh cãi và phải giữ nguyên hiện trạng để soi. Mở lại cũng chỉ kế toán.
  */
-async function assertBookingUnlocked(spot: string, id: string) {
+/**
+ * Booking bị KHOÁ thì không ai sửa — TRỪ KẾ TOÁN.
+ *
+ * Khoá là dấu "tiền của khách này đã soát xong", do chính kế toán bấm. Bắt kế
+ * toán mở khoá → sửa → khoá lại chỉ tổ ba bước cho một việc, mà lỗi cần sửa
+ * thường do nhân viên nhập sai, phát hiện lúc soát. Người khác vẫn bị chặn.
+ */
+async function assertBookingUnlocked(
+  spot: string,
+  id: string,
+  session?: BaobaySession & { viaAdmin?: boolean },
+) {
+  if (session && (session.viaAdmin || wearsRole(session, "accountant") || wearsRole(session, "admin"))) {
+    return;
+  }
   const doc = await BaobayBooking.findOne({ _id: id, spot }).select("lockedAt lockedBy").lean<any>();
   if (doc?.lockedAt) {
     throw new BaobayError(
@@ -3711,7 +3725,7 @@ export async function assignBooking(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
 
   const assignee = await BaobayAccount.findOne({ username: normalizeUsername(assigneeRaw) })
     .select("username displayName isActive spots")
@@ -3807,7 +3821,7 @@ export async function collectForBooking(
 ): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
 
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
@@ -4060,7 +4074,7 @@ export async function addBookingServices(
 ): Promise<{ booking: BookingDTO; added: number; charge: number }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
   if (booking.status === "voided") throw new BaobayError("Booking này đã bỏ khỏi sổ", 400);
@@ -4360,7 +4374,7 @@ export async function cancelBookingGuests(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
   if (booking.status === "voided" || booking.status === "cancelled")
@@ -4451,7 +4465,7 @@ export async function removeBookingServices(
 ): Promise<{ booking: BookingDTO; back: number; refunded: number }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
 
@@ -4987,6 +5001,7 @@ export async function editBookingCollect(
   const collect = await BaobayCollect.findOne({ _id: collectId, spot }).lean<any>();
   if (!collect) throw new BaobayError("Không tìm thấy khoản thu", 404);
   if (!collect.bookingId) throw new BaobayError("Khoản này không gắn với booking nào — sửa trong sổ lệnh thu", 400);
+  await assertBookingUnlocked(spot, String(collect.bookingId), session);
 
   const booking = await BaobayBooking.findOne({ _id: collect.bookingId, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
@@ -5107,7 +5122,7 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   // Kéo dòng đã khoá về "chờ bay" là mở đường sửa lại mọi thứ — chặn luôn
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking", 404);
   if (current.status === "open") throw new BaobayError("Booking này đang ở trạng thái chờ bay", 400);
@@ -5195,7 +5210,7 @@ export async function splitBooking(
 ): Promise<{ origin: BookingDTO; part: BookingDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
 
@@ -5329,6 +5344,36 @@ export async function splitBooking(
  * Ghi đè được (đại lý đòi thêm, gõ nhầm số) — lần ghi sau thay lần trước, luôn
  * lưu ai bấm và lúc nào.
  */
+/**
+ * TÀI KHOẢN NHẬN CHIẾT KHẤU đã dùng gần nhất của một đại lý.
+ *
+ * Chi cho cùng một đại lý mỗi tuần mấy lần mà lần nào cũng gõ lại số tài khoản
+ * thì vừa mất công vừa dễ gõ nhầm một chữ số. Lấy lần chi gần nhất làm gợi ý,
+ * người chi vẫn sửa được.
+ */
+export async function lastAgencyBank(
+  spotRaw: string,
+  agencyName: string,
+): Promise<{ bankAccount: string; bankAccountName: string } | null> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const name = agencyName.trim();
+  if (!name) return null;
+  const doc = await BaobayBooking.findOne({
+    spot,
+    "commission.agencyName": new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    "commission.bankAccount": { $nin: [null, ""] },
+  })
+    .sort({ "commission.at": -1 })
+    .select("commission.bankAccount commission.bankAccountName")
+    .lean<any>();
+  if (!doc?.commission?.bankAccount) return null;
+  return {
+    bankAccount: doc.commission.bankAccount,
+    bankAccountName: doc.commission.bankAccountName || "",
+  };
+}
+
 export async function payCommission(
   session: BaobaySession,
   spotRaw: string,
@@ -5347,6 +5392,8 @@ export async function payCommission(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
+  // Booking đã khoá thì chỉ kế toán đụng được (xem assertBookingUnlocked)
+  await assertBookingUnlocked(spot, id, session);
   const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
 
@@ -5455,7 +5502,7 @@ export async function markNoTicketFlight(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking", 404);
 
@@ -5487,7 +5534,7 @@ export async function markNoTicketFlight(
 export async function toggleBookingTicket(session: BaobaySession, spotRaw: string, id: string): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
   const current = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking", 404);
 
@@ -5524,7 +5571,7 @@ export async function updateBookingStatus(
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  await assertBookingUnlocked(spot, id);
+  await assertBookingUnlocked(spot, id, session);
 
   const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
   if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
