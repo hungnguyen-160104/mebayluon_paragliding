@@ -2,12 +2,14 @@
 import { NextResponse } from "next/server";
 
 import { isDateKey } from "@/lib/baobay/date";
+import { expandTicketRanges } from "@/lib/baobay/ticket-code";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { wearsRole } from "@/lib/baobay/roles";
 
 import { dispatcherReportSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
+  findDuplicateTicketCodes,
   BaobayError,
   listDispatcherReportsOfDate,
   listSpotStaffByRole,
@@ -30,6 +32,37 @@ export const maxDuration = 30;
  *                           và các lỗi đối chiếu mang tên mình
  * GET  (không tham số)    -> 30 báo cáo gần nhất của chính mình
  */
+/**
+ * DÒ MÃ VÉ TRÙNG — quầy vừa gõ dải mã là biết ngay có đụng seri của ngày khác
+ * không, khỏi đợi lưu xong mới lòi ra.
+ *
+ * PUT { date, ranges: [{from,to}] } -> { duplicates: [{code, usedOn, where}] }
+ */
+export async function PUT(req: Request) {
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"] });
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  const body = await req.json().catch(() => ({}));
+  const date = String(body?.date ?? "");
+  if (!isDateKey(date)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
+
+  const ranges = Array.isArray(body?.ranges) ? body.ranges : [];
+  const { codes } = expandTicketRanges(
+    ranges.map((r: any) => ({ from: String(r?.from ?? ""), to: String(r?.to ?? "") })),
+  );
+  if (!codes.length) return NextResponse.json({ duplicates: [] });
+
+  try {
+    return NextResponse.json({ duplicates: await findDuplicateTicketCodes(spot, date, codes) });
+  } catch (err) {
+    console.error("PUT /api/baocao/reports/dispatcher (dò mã trùng) error:", err);
+    return NextResponse.json({ message: "Không dò được mã trùng" }, { status: 500 });
+  }
+}
+
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant"] });
   if (auth instanceof NextResponse) return auth;

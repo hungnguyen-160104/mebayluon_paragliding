@@ -1682,6 +1682,64 @@ export type DispatcherReportSaveInput = {
   submit: boolean;
 };
 
+/**
+ * DÒ MÃ VÉ ĐÃ XUẤT Ở NGÀY KHÁC.
+ *
+ * Quầy hay gõ nhầm dải mã sang seri của ngày trước (21/08 có ca xuất trùng
+ * hẳn mã của ngày khác). Mã vé là giấy có seri — một mã chỉ được xuất MỘT
+ * LẦN, trùng nghĩa là hoặc gõ nhầm, hoặc vé bị dùng lại: cả hai đều phải kêu.
+ *
+ * Dò trong BA sổ: dải mã quầy đã khai, mã phi công báo đã bay, và mã ghi trên
+ * booking. Bỏ qua chính ngày đang khai (sửa lại báo cáo của mình không phải là
+ * trùng). Trả về từng mã kèm nơi đã dùng để người nhập biết đường lần.
+ */
+export async function findDuplicateTicketCodes(
+  spotRaw: string,
+  date: string,
+  codes: string[],
+): Promise<Array<{ code: string; usedOn: string; where: string }>> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const wanted = [...new Set(codes.map((c) => normalizeTicketCode(c)).filter(Boolean))];
+  if (!wanted.length) return [];
+
+  const [dispatchers, pilots] = await Promise.all([
+    DispatcherDailyReport.find({ spot, date: { $ne: date } })
+      .select("date staffName issuedRanges")
+      .lean<any[]>(),
+    PilotDailyReport.find({ spot, date: { $ne: date }, ticketCodes: { $in: wanted } })
+      .select("date pilotName ticketCodes")
+      .lean<any[]>(),
+  ]);
+
+  const hits = new Map<string, { code: string; usedOn: string; where: string }>();
+  const want = new Set(wanted);
+
+  for (const d of dispatchers) {
+    const { codes: issued } = expandTicketRanges(d.issuedRanges ?? []);
+    for (const c of issued) {
+      if (!want.has(c) || hits.has(c)) continue;
+      hits.set(c, {
+        code: c,
+        usedOn: d.date,
+        where: `quầy đã khai xuất${d.staffName ? ` (${d.staffName})` : ""}`,
+      });
+    }
+  }
+  for (const p of pilots) {
+    for (const c of p.ticketCodes ?? []) {
+      const code = normalizeTicketCode(c);
+      if (!want.has(code) || hits.has(code)) continue;
+      hits.set(code, {
+        code,
+        usedOn: p.date,
+        where: `phi công báo đã bay${p.pilotName ? ` (${p.pilotName})` : ""}`,
+      });
+    }
+  }
+  return [...hits.values()].sort((a, b) => a.code.localeCompare(b.code));
+}
+
 export async function upsertDispatcherReport(
   session: BaobaySession,
   input: DispatcherReportSaveInput,
@@ -1699,6 +1757,16 @@ export async function upsertDispatcherReport(
   if (rangeTotal && input.ticketsIssued && rangeTotal !== input.ticketsIssued) {
     warnings.push(`Các dải mã cho ra ${rangeTotal} vé, khác số vé đã xuất đã khai (${input.ticketsIssued}).`);
   }
+
+  /** MÃ TRÙNG NGÀY KHÁC — kêu ngay lúc lưu, không chặn (có thể là seri in lại). */
+  const { codes: issuedCodes } = expandTicketRanges(ranges);
+  const dupes = await findDuplicateTicketCodes(spot, input.date, issuedCodes);
+  for (const d of dupes.slice(0, 8)) {
+    warnings.push(
+      `⚠ Mã ${d.code} ĐÃ XUẤT ngày ${formatDateKeyVN(d.usedOn)} — ${d.where}. Kiểm lại dải mã của hôm nay.`,
+    );
+  }
+  if (dupes.length > 8) warnings.push(`… và ${dupes.length - 8} mã trùng nữa.`);
 
   /**
    * Vé huỷ / dời lịch nhập theo NHÓM ĐOÀN (nhiều mã một ô, chung lý do + liên

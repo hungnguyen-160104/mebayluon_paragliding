@@ -10,7 +10,7 @@ import type { DispatcherReportDTO } from "@/lib/baobay/types";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "../components/client-api";
+import { apiGet, apiPost, apiPut } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import {
   type BookingPick,
@@ -439,6 +439,39 @@ export default function DispatcherReportPage() {
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
   const noTickets = spot === "ha-noi";
 
+  /**
+   * DÒ MÃ VÉ TRÙNG NGÀY KHÁC — gõ xong dải mã là máy tự dò, khỏi đợi lưu.
+   * Mã vé là giấy có seri: một mã chỉ xuất một lần, trùng là gõ nhầm seri của
+   * ngày trước (đã xảy ra) hoặc vé bị dùng lại.
+   */
+  const [dupCodes, setDupCodes] = useState<Array<{ code: string; usedOn: string; where: string }>>([]);
+  const rangesKey = JSON.stringify(form.issuedRanges);
+  useEffect(() => {
+    const ranges = form.issuedRanges.filter((r) => r.from.trim() && r.to.trim());
+    if (noTickets || !ranges.length) {
+      setDupCodes([]);
+      return;
+    }
+    let alive = true;
+    const timer = setTimeout(() => {
+      apiPut<{ duplicates: Array<{ code: string; usedOn: string; where: string }> }>(
+        `/api/baocao/reports/dispatcher?spot=${spot}`,
+        { date, ranges },
+      )
+        .then((r) => {
+          if (alive) setDupCodes(r.duplicates ?? []);
+        })
+        .catch(() => {
+          /* dò hỏng thì thôi — lúc lưu máy chủ vẫn dò lại */
+        });
+    }, 700);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangesKey, date, spot, noTickets]);
+
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
@@ -579,6 +612,25 @@ export default function DispatcherReportPage() {
             </Field>
             <RangeRows rows={form.issuedRanges} onChange={(rows) => set("issuedRanges", rows)} disabled={locked} />
           </div>
+
+          {/* MÃ TRÙNG: đỏ đậm, đứng trước mọi cảnh báo khác — sai seri là sai cả
+              sổ vé của hai ngày */}
+          {dupCodes.length > 0 && !locked && (
+            <div className="mt-3 rounded-xl border-2 border-rose-400 bg-rose-50 p-3">
+              <div className="text-sm font-bold text-rose-900">
+                ⚠ {dupCodes.length} mã vé trong dải này ĐÃ XUẤT Ở NGÀY KHÁC — kiểm lại seri
+              </div>
+              <ul className="mt-1 space-y-0.5 text-xs text-rose-900/90">
+                {dupCodes.slice(0, 8).map((d) => (
+                  <li key={d.code}>
+                    <strong className="font-mono">{d.code}</strong> — đã dùng ngày{" "}
+                    {formatDateKeyVN(d.usedOn)} · {d.where}
+                  </li>
+                ))}
+                {dupCodes.length > 8 && <li>… và {dupCodes.length - 8} mã nữa.</li>}
+              </ul>
+            </div>
+          )}
 
           {rangeMismatch && !locked && (
             <div className="mt-3">
