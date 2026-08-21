@@ -90,9 +90,16 @@ export function middleware(request: NextRequest) {
    */
   if (pathname === "/baocao" || pathname.startsWith("/baocao/")) {
     const isLoginPage = pathname === "/baocao" || pathname === "/baocao/";
+    /**
+     * SỔ TAY HƯỚNG DẪN mở tự do: trang tĩnh, không đọc một dòng dữ liệu nào.
+     * Bắt đăng nhập ở đây chỉ tổ làm khó nhân viên mới — người cần đọc hướng
+     * dẫn nhất lại là người chưa quen đăng nhập. Vẫn noindex nên máy tìm kiếm
+     * không đưa ra ngoài.
+     */
+    const isPublicGuide = pathname === "/baocao/huong-dan" || pathname === "/baocao/huong-dan/";
     const hasSession = Boolean(request.cookies.get(BAOBAY_COOKIE)?.value);
 
-    if (!isLoginPage && !hasSession) {
+    if (!isLoginPage && !isPublicGuide && !hasSession) {
       const url = request.nextUrl.clone();
       url.pathname = "/baocao";
       return internalHeaders(NextResponse.redirect(url));
