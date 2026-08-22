@@ -294,6 +294,25 @@ export function InsuranceBox({
                       >
                         {g.cancelled ? "Bay lại" : "Huỷ"}
                       </button>
+                      {/*
+                        XOÁ HẲN — khác với "Huỷ". Huỷ là khách có thật nhưng
+                        không bay; xoá là dòng này KHÔNG NÊN TỒN TẠI (quét nhầm
+                        người, quét trùng, cần quét lại). Đã gửi bảo hiểm rồi
+                        thì máy chủ tự đẩy dòng "THU HỒI" sang bảng cho bên kia
+                        rút tên.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!window.confirm(`Xoá hẳn hồ sơ của người ${i + 1}${g.fullName ? ` (${g.fullName})` : ""}?\n\nDùng khi quét nhầm người hoặc cần quét lại. Khách có thật mà không bay thì bấm “Huỷ”.`)) return;
+                          setGuests((prev) => prev.filter((_, k) => k !== i));
+                          if (scanFor === i) setScanFor(null);
+                        }}
+                        className="h-7 rounded-lg border border-rose-300 bg-white px-2 text-[11px] font-bold text-rose-600"
+                        title="Quét nhầm người / quét trùng — xoá hẳn dòng này"
+                      >
+                        🗑 Xoá
+                      </button>
                     </div>
 
                     {scanFor === i && (
@@ -429,6 +448,11 @@ export function InsuranceBox({
                   : "Bảo hiểm sẽ TỰ GỬI khi quầy tích “Đã xuất vé” (hoặc đánh dấu “bay không vé”). Gửi sớm hơn mà trời xấu không bay được thì mất phí bảo hiểm."}
               </p>
 
+              {guests.length !== view.guests.length && (
+                <p className="mb-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                  Danh sách vừa đổi ({view.guests.length} → {guests.length} người) — bấm Lưu tạm hoặc Duyệt thì mới ghi.
+                </p>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 <Button
                   type="button"

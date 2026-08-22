@@ -355,6 +355,37 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
   }));
 
   /** Tab = tên điểm bay: mỗi điểm một tab riêng trong bảng bảo hiểm. */
+  /**
+   * DÒNG BIA MỘ cho người đã bị XOÁ khỏi hồ sơ.
+   *
+   * Nhân viên quét nhầm người rồi xoá đi thì danh sách ngắn lại, nhưng dòng cũ
+   * vẫn nằm trên bảng bảo hiểm với khoá "<booking>:<thứ tự>". Đẩy thêm mấy khoá
+   * đuôi đó với trạng thái THU HỒI để bên kia rút tên — không làm thì họ vẫn
+   * tính phí cho một người không hề tồn tại trong chuyến bay.
+   */
+  const maxRows = Math.max(Number(doc.insuranceMaxRows) || 0, guests.length);
+  for (let i = guests.length; i < maxRows; i++) {
+    rows.push({
+      key: `${String(doc._id)}:${i}`,
+      flightDate: String(doc.flightDate || ""),
+      daySeq: Number(doc.daySeq) || 0,
+      spotName: spotName(String(doc.spot || "")),
+      fullName: "(đã xoá khỏi hồ sơ)",
+      birthday: "",
+      gender: "",
+      idType: "",
+      idNumber: "",
+      nationality: "",
+      isChild: "",
+      bookingCode: String(doc.bookingCode || "").trim() || `${doc.flightDate || ""} #${doc.daySeq || "?"}`,
+      phone: "",
+      note: "nhân viên xoá dòng này",
+      status: "THU HỒI",
+      enteredBy: "APP tự động",
+      updatedAt: stamp,
+    });
+  }
+
   const res = await pushInsuranceRows(rows, spotName(String(doc.spot || "")));
   await BaobayBooking.updateOne(
     { _id: id, spot },
@@ -362,6 +393,7 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
       $set: {
         insuranceSheetAt: res.ok ? new Date() : doc.insuranceSheetAt,
         insuranceSheetError: res.ok ? "" : res.error || "Không rõ lỗi",
+        insuranceMaxRows: res.ok ? guests.length : maxRows,
       },
     },
   );

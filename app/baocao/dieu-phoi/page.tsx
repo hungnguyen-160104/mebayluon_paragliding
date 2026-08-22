@@ -476,6 +476,10 @@ export default function DispatcherReportPage() {
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
   const noTickets = spot === "ha-noi";
 
+  /** Tổng ĐẦU KHÁCH huỷ / dời — gõ từ thẻ "Khách huỷ / dời lịch" ngay trên. */
+  const cancelledGuestTotal = form.cancelledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
+  const movedGuestTotal = form.rescheduledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
+
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
@@ -783,8 +787,19 @@ export default function DispatcherReportPage() {
             onChanged={() => loadDay(date)}
           />
 
-          {!noTickets && (
+          {/*
+            ĐẾM THEO ĐẦU KHÁCH, đặt cạnh nhau cho dễ đối chiếu với kế toán —
+            bảng chốt ngày của kế toán cũng có đúng hai ô "Số khách huỷ" và
+            "Số khách dời". Trước đây chỗ này chỉ đếm VÉ, mà một booking bốn
+            khách huỷ vẫn chỉ là một dòng, nên hai bên hay lệch mà không rõ vì sao.
+          */}
           <div className="mt-4 grid grid-cols-2 gap-3">
+            <Readout label="Số khách huỷ" value={`${cancelledGuestTotal} khách`} tone={cancelledGuestTotal > 0 ? "warning" : "normal"} />
+            <Readout label="Số khách dời ngày" value={`${movedGuestTotal} khách`} tone={movedGuestTotal > 0 ? "warning" : "normal"} />
+          </div>
+
+          {!noTickets && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
             <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
           </div>

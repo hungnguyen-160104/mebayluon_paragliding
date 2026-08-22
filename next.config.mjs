@@ -94,7 +94,8 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
-          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+          // camera=(self): khu /baocao có chức năng quét CCCD — xem chú thích ở middleware.ts
+          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=(self)' },
         ],
       })),
       // Static images — cache 1 năm

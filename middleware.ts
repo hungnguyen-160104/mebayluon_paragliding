@@ -205,6 +205,16 @@ function internalHeaders(response: NextResponse): NextResponse {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "no-referrer");
-  response.headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  /**
+   * camera=(self) chứ KHÔNG phải camera=().
+   *
+   * Khu /baocao có chức năng QUÉT CCCD bằng camera để lấy thông tin bảo hiểm.
+   * Đặt camera=() là trình duyệt cấm luôn ở tầng trang: getUserMedia trượt
+   * ngay, và thông báo nó đưa ra là "không mở được camera — kiểm tra quyền",
+   * khiến ai cũng đi chỉnh quyền trong cài đặt máy mà không bao giờ chạy được.
+   * (self) chỉ mở cho chính trang này, trang nhúng bên thứ ba vẫn bị cấm, và
+   * trình duyệt vẫn hỏi người dùng như thường.
+   */
+  response.headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=(self)");
   return response;
 }

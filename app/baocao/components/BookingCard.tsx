@@ -1919,6 +1919,12 @@ export function BookingTodayBanner({
   const [moved, setMoved] = useState<{ bookings: number; guests: number }>({ bookings: 0, guests: 0 });
   /** Booking đã bỏ khỏi sổ hôm nay — mục nhỏ cuối danh sách, bấm lấy lại được. */
   const [voided, setVoided] = useState<BookingDTO[]>([]);
+  /**
+   * Khách ĐÃ DỜI KHỎI ngày này. Giữ lại một dòng vàng trong danh sách chứ không
+   * để booking biến mất: điều phối nhìn sổ hôm nay phải thấy "khách này có đăng
+   * ký nhưng đã dời sang 25/08", không thì tưởng nhập thiếu và nhập lại lần nữa.
+   */
+  const [movedOut, setMovedOut] = useState<BookingDTO[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Danh sách dài thì gập lại còn 10 dòng. */
@@ -1938,12 +1944,18 @@ export function BookingTodayBanner({
   const [collectDone, setCollectDone] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    apiGet<{ forDate: BookingDTO[]; voided?: BookingDTO[]; moved?: { bookings: number; guests: number } }>(
+    apiGet<{
+      forDate: BookingDTO[];
+      voided?: BookingDTO[];
+      movedOut?: BookingDTO[];
+      moved?: { bookings: number; guests: number };
+    }>(
       `/api/baocao/booking?date=${date}&spot=${spot}`,
     )
       .then((r) => {
         setRows(r.forDate);
         setVoided(r.voided ?? []);
+        setMovedOut(r.movedOut ?? []);
         setMoved(r.moved ?? { bookings: 0, guests: 0 });
       })
       .catch(() => {
@@ -2356,6 +2368,25 @@ export function BookingTodayBanner({
             </button>
           </li>
         )}
+
+        {/* ĐÃ DỜI SANG NGÀY KHÁC — tô VÀNG (huỷ thì tô ĐỎ). Booking đã nằm ở sổ
+            ngày mới rồi; dòng này chỉ là dấu vết để hôm nay không ai tưởng
+            khách bốc hơi. KHÔNG tính vào số tổng của ngày. */}
+        {movedOut.map((b) => (
+          <li
+            key={`moved-${b.id}`}
+            className="mb-1.5 break-inside-avoid rounded-lg border-2 border-amber-400 bg-amber-50 px-2.5 py-1.5"
+            style={{ display: "flow-root" }}
+          >
+            <span className="mr-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              ↪ ĐÃ DỜI sang {formatDateKeyVN(b.flightDate)}
+            </span>
+            <BookingSummary b={b} hideNote dim />
+            <span className="ml-1 text-[11px] text-amber-800">
+              {b.movedBy ? `— ${b.movedBy} dời` : ""} · không tính vào số hôm nay
+            </span>
+          </li>
+        ))}
         {voided.length > 0 && (
           <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:[column-span:all]">
             <details>
@@ -2393,8 +2424,13 @@ export function BookingTodayBanner({
         {closed.map((b) => (
           <li
             key={b.id}
+            /* HUỶ thì tô ĐỎ, dời thì tô VÀNG (khối bên trên) — hai việc khác hẳn
+               nhau về tiền nong nên phải phân biệt được từ xa, đừng bắt người
+               đọc dò chữ trong dòng. Đã bay thì để trắng như cũ. */
             className={
-              "mb-1.5 flow-root break-inside-avoid rounded-lg bg-white/70 px-3 py-1.5" + (b.locked ? " opacity-60" : "")
+              "mb-1.5 flow-root break-inside-avoid rounded-lg px-3 py-1.5" +
+              (b.status === "cancelled" ? " border-2 border-rose-400 bg-rose-50" : " bg-white/70") +
+              (b.locked ? " opacity-60" : "")
             }
           >
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào

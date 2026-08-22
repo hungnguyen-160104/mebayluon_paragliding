@@ -121,6 +121,15 @@ export interface IBaobayBooking {
   /** Lần đẩy sang Google Sheets bảo hiểm gần nhất và lỗi nếu có. */
   insuranceSheetAt?: Date;
   insuranceSheetError?: string;
+  /**
+   * SỐ DÒNG NHIỀU NHẤT đã từng đẩy sang bảng bảo hiểm.
+   *
+   * Khoá của mỗi dòng bên đó là "<mã booking>:<thứ tự người>". Xoá bớt một
+   * người là danh sách ngắn lại, những khoá đuôi không còn ai đại diện — không
+   * nhớ mốc này thì dòng thừa nằm lại trên bảng vĩnh viễn và bên bảo hiểm vẫn
+   * tính phí cho người đã bị xoá.
+   */
+  insuranceMaxRows?: number;
   /** Trạng thái bên trang khách lúc đồng bộ gần nhất. */
   webStatus?: string;
   syncedAt?: Date;
@@ -373,6 +382,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     insuranceRecallReason: String,
     insuranceSheetAt: Date,
     insuranceSheetError: String,
+    insuranceMaxRows: { type: Number, default: 0 },
     webStatus: String,
     syncedAt: Date,
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },

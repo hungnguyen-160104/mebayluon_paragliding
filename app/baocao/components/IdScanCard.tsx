@@ -211,8 +211,26 @@ export function IdScanCard({
           }
         }, 120);
       });
-    } catch {
-      setError("Không mở được camera — kiểm tra quyền camera của trình duyệt, hoặc dùng nút chụp ảnh.");
+    } catch (err: unknown) {
+      /**
+       * Nói ĐÚNG nguyên nhân. Bản trước lúc nào cũng đổ cho "quyền camera" nên
+       * ai gặp lỗi cũng đi chỉnh cài đặt máy — trong khi thủ phạm thật có thể
+       * là trang đang mở qua http (trình duyệt chỉ cho camera trên https), hay
+       * máy đang có ứng dụng khác giữ camera.
+       */
+      const name = err instanceof Error ? err.name : "";
+      const insecure = typeof window !== "undefined" && !window.isSecureContext;
+      setError(
+        insecure
+          ? "Trang đang mở qua http nên trình duyệt cấm camera. Vào bằng địa chỉ https://www.mebayluon.com rồi thử lại."
+          : name === "NotAllowedError"
+            ? "Bạn (hoặc trình duyệt) đã từ chối quyền camera. Bấm vào biểu tượng ổ khoá cạnh địa chỉ web → Quyền → Camera → Cho phép, rồi tải lại trang."
+            : name === "NotFoundError"
+              ? "Máy này không thấy camera nào. Dùng nút “CCCD từ ảnh có sẵn” để chọn ảnh chụp sẵn."
+              : name === "NotReadableError"
+                ? "Camera đang bị ứng dụng khác chiếm (Zalo, Camera…). Đóng ứng dụng đó rồi thử lại."
+                : `Không mở được camera${name ? ` (${name})` : ""} — thử nút “CCCD từ ảnh có sẵn”.`,
+      );
     }
   }
 
@@ -247,11 +265,16 @@ export function IdScanCard({
    */
   const body = (
     <>
+      {/*
+        KHÔNG dùng thuộc tính `capture`. Có `capture` là điện thoại/tablet mở
+        THẲNG camera, nút "CCCD từ ảnh" hoá ra lại là chụp ảnh — đúng thứ người
+        dùng không muốn khi đã có sẵn ảnh trong máy. Bỏ đi thì máy hiện khay
+        chọn có cả "Thư viện ảnh" lẫn "Chụp ảnh", ai cần gì chọn nấy.
+      */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0], "cccd")}
       />
@@ -259,7 +282,6 @@ export function IdScanCard({
         ref={passportRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0], "passport")}
       />
@@ -280,7 +302,7 @@ export function IdScanCard({
           disabled={busy !== "" || scanning}
           onClick={() => fileRef.current?.click()}
         >
-          {busy === "qr" ? "Đang đọc mã QR…" : "🖼 CCCD từ ảnh"}
+          {busy === "qr" ? "Đang đọc mã QR…" : "🖼 CCCD từ ảnh có sẵn"}
         </Button>
         <Button
           type="button"
@@ -289,7 +311,7 @@ export function IdScanCard({
           disabled={busy !== "" || scanning}
           onClick={() => passportRef.current?.click()}
         >
-          {busy === "ocr" ? "Đang đọc hộ chiếu…" : "🛂 Hộ chiếu (chụp dòng đáy)"}
+          {busy === "ocr" ? "Đang đọc hộ chiếu…" : "🛂 Hộ chiếu (ảnh dòng đáy)"}
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-slate-500">
