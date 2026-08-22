@@ -115,18 +115,27 @@ export function readBaobayCookie(req: Request): string | null {
   return null;
 }
 
-/** Tuỳ chọn cookie dùng chung cho lúc đăng nhập và đăng xuất. */
 /**
- * Cookie phiên: httpOnly (JavaScript không đọc được), secure trên production,
- * `sameSite: "strict"` — trang này không nhận điều hướng từ site khác, nên cắt
- * hẳn đường tấn công CSRF thay vì chỉ hạn chế như "lax". Phạm vi cũng thu về
- * đúng khu nội bộ: cookie không bị gửi kèm mọi yêu cầu của trang khách.
+ * Cookie phiên dùng chung cho đăng nhập và đăng xuất: httpOnly (JavaScript
+ * không đọc được), secure trên production.
  */
 export function baobayCookieOptions(maxAge: number) {
   return {
     name: BAOBAY_COOKIE,
     httpOnly: true,
-    sameSite: "strict" as const,
+    /**
+     * "lax" chứ KHÔNG phải "strict".
+     *
+     * Strict giữ cookie lại ở MỌI điều hướng đến từ trang khác — mở app bằng
+     * link trong Zalo/Messenger/Facebook (đúng cách nhân viên hay vào bằng điện
+     * thoại) là trình duyệt không gửi cookie, máy chủ tưởng chưa đăng nhập và
+     * đá về màn đăng nhập, đăng nhập xong bấm lại link vẫn thế.
+     *
+     * Lax vẫn chặn CSRF ở chỗ nguy hiểm: cookie KHÔNG đi kèm request POST/PUT/
+     * DELETE từ trang khác, chỉ đi kèm điều hướng GET cấp trang do người dùng
+     * tự bấm. Đây là mức chuẩn cho cookie phiên.
+     */
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge,
