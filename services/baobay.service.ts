@@ -7466,6 +7466,8 @@ export type DailyCloseSaveInput = {
   /** Điểm bay của báo cáo — mỗi điểm là một hệ thống riêng. */
   spot: string;
   date: string;
+  /** Khách bay KHÔNG VÉ (theo sổ booking) — vẫn tính là chuyến bay. */
+  noTicketGuests?: number;
   guestCount: number;
   ticketsIssued: number;
   ticketsReturned: number;
@@ -7521,6 +7523,30 @@ export async function upsertDailyClose(
   const { list: ledger, warnings: ledgerWarnings } = normalizeExpenses(input.ledger ?? []);
   warnings.push(...ledgerWarnings);
 
+  /**
+   * KHÁCH NHIỀU HƠN VÉ thì phần chênh phải là khách BAY KHÔNG VÉ — không thì
+   * hoặc quên xuất vé, hoặc quên tích "bay không vé" trên booking. 30 khách mà
+   * xuất 26 vé thì phải có đúng 4 chuyến không vé; lệch là kêu.
+   */
+  if (spot !== "ha-noi") {
+    const gap = Math.max(0, (input.guestCount || 0) - (input.ticketsIssued || 0));
+    const declared = Math.max(0, Math.round(input.noTicketGuests ?? 0));
+    const bookingNoTicket = (
+      await BaobayBooking.find({ spot, flightDate: input.date, status: "done", noTicketFlight: true })
+        .select("guestCount")
+        .lean<any[]>()
+    ).reduce((t, b) => t + (b.guestCount || 0), 0);
+    if (gap !== declared) {
+      warnings.push(
+        `⚠ Khách đã bay (${input.guestCount}) trừ vé xuất (${input.ticketsIssued}) = ${gap}, nhưng ô "khách bay KHÔNG VÉ" đang là ${declared}. Sổ booking có ${bookingNoTicket} khách tích không vé — kiểm lại.`,
+      );
+    } else if (declared !== bookingNoTicket) {
+      warnings.push(
+        `⚠ Ô "khách bay KHÔNG VÉ" là ${declared} nhưng sổ booking chỉ có ${bookingNoTicket} khách được tích "bay không vé" — nhắc quầy tích cho đủ.`,
+      );
+    }
+  }
+
   const doc = await AccountantDailyClose.findOneAndUpdate(
     { spot, date: input.date },
     {
@@ -7529,6 +7555,7 @@ export async function upsertDailyClose(
         accountantName: session.name,
         spot,
         guestCount: input.guestCount,
+        noTicketGuests: Math.max(0, Math.round(input.noTicketGuests ?? 0)),
         // Hà Nội không xuất vé giấy — trường vé ép 0/rỗng, thay bằng khách đăng ký + nhóm khách huỷ/dời
         ticketsIssued: spot === "ha-noi" ? 0 : input.ticketsIssued,
         ticketsReturned: spot === "ha-noi" ? 0 : input.ticketsReturned,
@@ -8190,6 +8217,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     date: doc.date,
     accountantName: doc.accountantName ?? "",
     guestCount: doc.guestCount ?? 0,
+    noTicketGuests: doc.noTicketGuests ?? 0,
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,

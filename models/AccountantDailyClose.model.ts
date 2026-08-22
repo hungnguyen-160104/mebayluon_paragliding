@@ -41,6 +41,8 @@ export interface IAccountantDailyClose {
 
   /** Số khách bay trong ngày. */
   guestCount: number;
+  /** Khách bay KHÔNG VÉ trong ngày (đếm theo sổ booking) — vẫn là chuyến bay. */
+  noTicketGuests: number;
   /** Số vé được xuất ra. */
   ticketsIssued: number;
   /** Số vé thu hồi (huỷ + dời lịch). */
@@ -128,6 +130,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     accountantName: { type: String, required: true },
 
     guestCount: { type: Number, default: 0, min: 0 },
+    noTicketGuests: { type: Number, default: 0, min: 0 },
     ticketsIssued: { type: Number, default: 0, min: 0 },
     ticketsReturned: { type: Number, default: 0, min: 0 },
 

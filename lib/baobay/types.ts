@@ -232,6 +232,8 @@ export type DailyCloseDTO = {
   date: string;
   accountantName: string;
   guestCount: number;
+  /** Khách bay KHÔNG VÉ trong ngày (theo sổ booking). */
+  noTicketGuests: number;
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;

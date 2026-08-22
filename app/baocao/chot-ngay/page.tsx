@@ -26,7 +26,7 @@ import { DateBar } from "../components/DateBar";
 import { AddServicesCard } from "../components/AddServicesCard";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
-import { FlownServicesHint } from "../components/FlownServicesHint";
+import { FlownServicesHint, type FlownServices } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
 import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { MoneyBoardCard } from "../components/MoneyBoardCard";
@@ -59,6 +59,8 @@ import { Banner, Button, CollapseCard, CountInput, DoneTag, PageLoading, Readout
 /** Số nhân viên báo, do máy chủ gom — nguồn cho nút "chép để xác nhận". */
 type CloseSuggestion = {
   guestCount: number;
+  /** Khách bay KHÔNG VÉ theo sổ booking. */
+  noTicketGuests: number;
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
@@ -120,6 +122,8 @@ type CloseSuggestion = {
 };
 
 type FormState = {
+  /** Khách bay KHÔNG VÉ theo sổ booking. */
+  noTicketGuests: number;
   guestCount: number;
   ticketsIssued: number;
   ticketsReturned: number;
@@ -153,6 +157,7 @@ type FormState = {
 
 const EMPTY_FORM: FormState = {
   guestCount: 0,
+  noTicketGuests: 0,
   ticketsIssued: 0,
   ticketsReturned: 0,
   cancelledCount: 0,
@@ -208,6 +213,8 @@ function DailyCloseInner() {
     return q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : today;
   });
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  /** Số cộng từ SỔ BOOKING (đã bay) — để đối chiếu và vẽ dòng "ai nhập bao nhiêu". */
+  const [flown, setFlown] = useState<FlownServices | null>(null);
   const [suggest, setSuggest] = useState<CloseSuggestion | null>(null);
   /** Khung "yêu cầu soát lại": chủ đề + lời nhắn + các lệnh đang treo. */
   const [reviewTopic, setReviewTopic] = useState("flycam");
@@ -265,6 +272,7 @@ function DailyCloseInner() {
       res.close
         ? {
             guestCount: res.close.guestCount,
+            noTicketGuests: res.close.noTicketGuests ?? 0,
             ticketsIssued: res.close.ticketsIssued,
             ticketsReturned: res.close.ticketsReturned,
             cancelledCount: res.close.cancelledCount,
@@ -832,6 +840,24 @@ function DailyCloseInner() {
               </p>
             </ServiceBox>
 
+            {/* KHÁCH BAY KHÔNG VÉ — đếm theo sổ booking (dòng nào tích "bay
+                không vé"). Vẫn là chuyến bay, chỉ không dùng vé giấy; số này
+                giải thích vì sao khách nhiều hơn vé xuất. */}
+            {!noTickets && (
+              <ServiceBox tone="guests" label="Khách bay KHÔNG VÉ">
+                <CountInput compact value={form.noTicketGuests} onChange={(v) => set("noTicketGuests", v)} max={5000} />
+                <Compare
+                  label="sổ booking (tích không vé)"
+                  value={flown?.noTicketGuests}
+                  mine={form.noTicketGuests}
+                  onTake={locked ? undefined : (v) => set("noTicketGuests", v)}
+                />
+                <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                  Bay thật nhưng không dùng vé giấy
+                </p>
+              </ServiceBox>
+            )}
+
             {noTickets ? (
               /* Hà Nội không xuất vé — theo dõi KHÁCH: đăng ký (từ sổ booking), huỷ, dời */
               <>
@@ -896,6 +922,7 @@ function DailyCloseInner() {
           <FlownServicesHint
             spot={spot}
             date={date}
+            onData={setFlown}
             onTake={(f) =>
               setForm((prev) => ({
                 ...prev,
@@ -916,6 +943,7 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
               <Compare label="quầy/điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
+              <ByPerson list={flown?.byPerson?.flycam} />
             </ServiceBox>
             <ServiceBox tone="video360" label="Camera 360">
               <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
@@ -923,6 +951,7 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("video360", v)} />
               <Compare label="quầy/điều phối báo" value={t?.dispatcher360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
+              <ByPerson list={flown?.byPerson?.video360} />
             </ServiceBox>
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
@@ -930,6 +959,7 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
               <Compare label="quầy/điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
+              <ByPerson list={flown?.byPerson?.redFlag} />
             </ServiceBox>
             {spot !== "sapa" && (
             <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
@@ -938,6 +968,7 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
               <Compare label="quầy/điều phối báo" value={t?.dispatcherSunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
+              <ByPerson list={flown?.byPerson?.sunset} />
             </ServiceBox>
             )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
@@ -946,6 +977,7 @@ function DailyCloseInner() {
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
               <Compare label="quầy/điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
+              <ByPerson list={flown?.byPerson?.flagFlight} />
             </ServiceBox>
           </div>
 
@@ -1457,6 +1489,28 @@ function LedgerSuggest({ label, taken, onTake }: { label: string; taken: boolean
   );
 }
 
+
+/**
+ * "camera 360 = Ms Duyên 19 + Đặng V.M 2 + web 1 = 22" — ai nhập bao nhiêu.
+ *
+ * Cả điều phối lẫn kế toán đều lập booking và thêm/bớt dịch vụ được, nên khi
+ * hai bên báo lệch, kế toán cần thấy ngay số nào từ đâu ra thay vì đi hỏi.
+ */
+function ByPerson({ list }: { list?: Array<{ name: string; qty: number }> }) {
+  if (!list?.length) return null;
+  const total = list.reduce((t, x) => t + x.qty, 0);
+  return (
+    <p className="mt-1 border-t border-slate-200/70 pt-1 text-[10px] leading-snug text-slate-600">
+      {list.map((x, i) => (
+        <span key={x.name}>
+          {i > 0 && (x.qty < 0 ? " − " : " + ")}
+          {x.name} {Math.abs(x.qty)}
+        </span>
+      ))}{" "}
+      = <strong className="text-slate-800">{total}</strong>
+    </p>
+  );
+}
 
 function Compare({
   label,

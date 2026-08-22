@@ -265,6 +265,8 @@ export const dailyCloseSchema = z.object({
   spot: spotField,
   date: reportDate,
   guestCount: count(5_000),
+  /** Khách bay KHÔNG VÉ — đếm theo sổ booking, vẫn tính là chuyến bay. */
+  noTicketGuests: count(5_000).optional().default(0),
   ticketsIssued: count(5_000),
   ticketsReturned: count(5_000),
   cancelledCount: count(5_000),
