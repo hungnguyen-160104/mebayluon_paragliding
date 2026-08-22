@@ -7072,6 +7072,14 @@ issuedRanges: Array<{ from: string; to: string }>;
    * hoàn trước khi chốt ngày.
    */
   overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
+  /**
+   * AI BÁO BAO NHIÊU theo báo cáo nhân viên — "Dũng 5 + Sơm 7 = 12".
+   *
+   * Khác `byPerson` của sổ booking (ai NHẬP dịch vụ): đây là ai LÀM và tự khai.
+   * Kế toán cần cả hai: số booking là tiền, số nhân viên là việc đã làm.
+   * flycam ← camera man · 360/cờ đỏ/hoàng hôn/kéo cờ ← phi công.
+   */
+  reportedBy: Record<string, Array<{ name: string; qty: number }>>;
   /** Dịch vụ đếm theo SỔ BOOKING (gồm mọi lệnh thêm/bớt tại bãi) — nguồn chuẩn cho tiền. */
   booking: {
     flycam: number;
@@ -7288,6 +7296,22 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         .filter(Boolean)
         .join(" · "),
     }));
+  /** Ai LÀM bao nhiêu theo báo cáo nhân viên — flycam của camera man, còn lại của phi công. */
+  const reportedBy: Record<string, Array<{ name: string; qty: number }>> = {};
+  const pushReport = (key: string, name: string, qty: number) => {
+    if (!qty) return;
+    (reportedBy[key] ??= []).push({ name: name || "không rõ", qty });
+  };
+  for (const c of cameramen) pushReport("flycam", c.cameramanName, c.flycamFlights || 0);
+  for (const p of pilots) {
+    pushReport("video360", p.pilotName, p.video360 || 0);
+    pushReport("redFlag", p.pilotName, p.redFlag || 0);
+    pushReport("sunset", p.pilotName, p.sunset || 0);
+    pushReport("flagFlight", p.pilotName, p.flagFlight || 0);
+    pushReport("pilotFlycam", p.pilotName, p.flycam || 0);
+  }
+  for (const key of Object.keys(reportedBy)) reportedBy[key].sort((a, b) => b.qty - a.qty);
+
   /** Cộng dịch vụ trên SỔ BOOKING của ngày — đã gồm mọi lệnh thêm/bớt/bỏ. */
   const bookingServices = {
     flycam: bookings.reduce((t, b) => t + (b.flycam || 0), 0),
@@ -7429,6 +7453,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     redFlag: bookingServices.redFlag,
     sunset: bookingServices.sunset,
     flagFlight: bookingServices.flagFlight,
+    reportedBy,
     /** Số dịch vụ theo sổ booking — để giao diện nói rõ nguồn và so với nhân viên. */
     booking: { ...bookingServices, hasData: bookings.length > 0 },
     pilot: {

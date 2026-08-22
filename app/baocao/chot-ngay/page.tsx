@@ -73,6 +73,7 @@ type CloseSuggestion = {
   rescheduled: Array<{ code: string; toDate: string; note: string }>;
   cashTotal: number;
   transferTotal: number;
+  reportedBy: Record<string, Array<{ name: string; qty: number }>>;
   booking: {
     flycam: number;
     video360: number;
@@ -937,47 +938,52 @@ function DailyCloseInner() {
 
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
           <div className="mt-3 grid grid-cols-2 gap-2 @md:grid-cols-3">
+            {/* Mỗi ô so ĐÚNG HAI nguồn: SỔ BOOKING (tiền khách trả) và người
+                THỰC LÀM (flycam ← camera man; 360/cờ đỏ/hoàng hôn/kéo cờ ←
+                phi công). Bỏ dòng "quầy/điều phối báo": quầy chỉ khai lại phần
+                mình nắm nên luôn thiếu phần người khác nhập — số booking đã là
+                nguồn chuẩn. Ai nhập bao nhiêu thì xem thẻ xanh phía trên. */}
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
+              <Compare label="số trên booking" value={flown?.flycam} mine={form.flycam}
+                onTake={locked ? undefined : (v) => set("flycam", v)} />
               <Compare label="camera man báo" value={t?.cameramanFlycam} mine={form.flycam}
                 onTake={locked ? undefined : (v) => set("flycam", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherFlycam} mine={form.flycam}
-                onTake={locked ? undefined : (v) => set("flycam", v)} />
-              <ByPerson list={flown?.byPerson?.flycam} />
+              <ByPerson list={suggest?.reportedBy?.flycam} prefix="camera man" />
             </ServiceBox>
             <ServiceBox tone="video360" label="Camera 360">
               <CountInput compact value={form.video360} onChange={(v) => set("video360", v)} max={1000} />
+              <Compare label="số trên booking" value={flown?.video360} mine={form.video360}
+                onTake={locked ? undefined : (v) => set("video360", v)} />
               <Compare label="phi công báo" value={t?.pilot360} mine={form.video360}
                 onTake={locked ? undefined : (v) => set("video360", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcher360} mine={form.video360}
-                onTake={locked ? undefined : (v) => set("video360", v)} />
-              <ByPerson list={flown?.byPerson?.video360} />
+              <ByPerson list={suggest?.reportedBy?.video360} prefix="phi công" />
             </ServiceBox>
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
+              <Compare label="số trên booking" value={flown?.redFlag} mine={form.redFlag}
+                onTake={locked ? undefined : (v) => set("redFlag", v)} />
               <Compare label="phi công báo" value={t?.pilotRedFlag} mine={form.redFlag}
                 onTake={locked ? undefined : (v) => set("redFlag", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherRedFlag} mine={form.redFlag}
-                onTake={locked ? undefined : (v) => set("redFlag", v)} />
-              <ByPerson list={flown?.byPerson?.redFlag} />
+              <ByPerson list={suggest?.reportedBy?.redFlag} prefix="phi công" />
             </ServiceBox>
             {spot !== "sapa" && (
             <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
+              <Compare label="số trên booking" value={flown?.sunset} mine={form.sunset}
+                onTake={locked ? undefined : (v) => set("sunset", v)} />
               <Compare label="phi công báo" value={t?.pilotSunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherSunset} mine={form.sunset}
-                onTake={locked ? undefined : (v) => set("sunset", v)} />
-              <ByPerson list={flown?.byPerson?.sunset} />
+              <ByPerson list={suggest?.reportedBy?.sunset} prefix="phi công" />
             </ServiceBox>
             )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
+              <Compare label="số trên booking" value={flown?.flagFlight} mine={form.flagFlight}
+                onTake={locked ? undefined : (v) => set("flagFlight", v)} />
               <Compare label="phi công báo" value={t?.pilotFlagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherFlagFlight} mine={form.flagFlight}
-                onTake={locked ? undefined : (v) => set("flagFlight", v)} />
-              <ByPerson list={flown?.byPerson?.flagFlight} />
+              <ByPerson list={suggest?.reportedBy?.flagFlight} prefix="phi công" />
             </ServiceBox>
           </div>
 
@@ -1496,11 +1502,19 @@ function LedgerSuggest({ label, taken, onTake }: { label: string; taken: boolean
  * Cả điều phối lẫn kế toán đều lập booking và thêm/bớt dịch vụ được, nên khi
  * hai bên báo lệch, kế toán cần thấy ngay số nào từ đâu ra thay vì đi hỏi.
  */
-function ByPerson({ list }: { list?: Array<{ name: string; qty: number }> }) {
+function ByPerson({
+  list,
+  prefix,
+}: {
+  list?: Array<{ name: string; qty: number }>;
+  /** "camera man" / "phi công" — nói rõ dòng này là AI LÀM, không phải ai nhập. */
+  prefix?: string;
+}) {
   if (!list?.length) return null;
   const total = list.reduce((t, x) => t + x.qty, 0);
   return (
     <p className="mt-1 border-t border-slate-200/70 pt-1 text-[10px] leading-snug text-slate-600">
+      {prefix ? <span className="text-slate-400">{prefix} báo: </span> : null}
       {list.map((x, i) => (
         <span key={x.name}>
           {i > 0 && (x.qty < 0 ? " − " : " + ")}
