@@ -66,7 +66,7 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
         slug: "le-hoi-du-luon-bay-tren-mua-vang-2026",
       title: {
         vi: "Lễ hội dù lượn Mùa Vàng 2026 tại đèo Khau Phạ",
-        en: "Paragliding Festival - Flying Over The Golden Season 2026",
+        en: "Golden Season Paragliding Festival 2026 at Khau Pha Pass",
       },
       },
       {

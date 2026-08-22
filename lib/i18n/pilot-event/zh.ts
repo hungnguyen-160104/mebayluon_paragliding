@@ -9,7 +9,7 @@ export const zh: PilotDict = {
   heroBadge: "🪂 飞行员专用页面",
   heroWelcome: "欢迎来到",
   heroPlace: "考帕 · 秀丽 · 木江界",
-  chipFestival: "金色季节飞行 · 8月29–31日",
+  chipFestival: "金色季节滑翔伞活动 · 8月29–31日",
   chipCom: "秀丽绿米节 · 8月21–23日",
   chipAltitude: "起飞高度 1,268 米",
   heroCta: "立即报名飞行",
@@ -19,7 +19,7 @@ export const zh: PilotDict = {
   periodsSubtitle:
     "两个节庆期间均不收取飞行点费用。飞行点费用仅适用于节庆之外的平日飞行。",
   periodName: {
-    mua_vang: "金色季节 2026 飞行",
+    mua_vang: "金色季节滑翔伞活动 2026",
     le_hoi_com: "秀丽绿米节",
     ngay_thuong: "平日飞行",
   },

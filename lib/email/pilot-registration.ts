@@ -194,7 +194,7 @@ function comboBox(b: PilotEmailInput): string {
   return `<tr><td style="padding-top:16px;">
     <div style="background:${C.goldBg};border:1px solid #FDE68A;border-radius:10px;padding:13px 15px;">
       <div style="font-size:15px;font-weight:800;color:${C.gold};margin-bottom:10px;">🎬 ${esc(OPENING_BY_PERIOD.mua_vang)}</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${C.gold};margin-bottom:6px;">Combo Festival Bay trên mùa vàng 2026 bao gồm</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${C.gold};margin-bottom:6px;">Combo Sự kiện dù lượn Mùa Vàng 2026 bao gồm</div>
       ${items}
     </div>
   </td></tr>`;

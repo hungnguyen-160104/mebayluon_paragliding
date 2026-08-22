@@ -9,7 +9,7 @@ export const fr: PilotDict = {
   heroBadge: "🪂 Réservé aux pilotes",
   heroWelcome: "Bienvenue à",
   heroPlace: "Khau Pha · Tu Le · Mu Cang Chai",
-  chipFestival: "Vol au-dessus de la saison dorée · 29–31 août",
+  chipFestival: "Événement parapente Saison Dorée · 29–31 août",
   chipCom: "Fête du riz vert de Tu Le · 21–23 août",
   chipAltitude: "Décollage à 1 268 m",
   heroCta: "S'inscrire pour voler",
@@ -19,7 +19,7 @@ export const fr: PilotDict = {
   periodsSubtitle:
     "Aucune des deux fêtes ne facture de redevance de site. Celle-ci ne s'applique qu'aux jours de vol ordinaires, hors de ces deux périodes.",
   periodName: {
-    mua_vang: "Vol au-dessus de la Saison Dorée 2026",
+    mua_vang: "Événement de parapente Saison Dorée 2026",
     le_hoi_com: "Fête du riz vert de Tu Le",
     ngay_thuong: "Jours ordinaires",
   },

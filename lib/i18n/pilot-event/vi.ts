@@ -9,7 +9,7 @@ export const vi: PilotDict = {
   heroBadge: "🪂 Trang dành riêng cho phi công",
   heroWelcome: "Chào mừng đến với",
   heroPlace: "Khau Phạ · Tú Lệ · Mù Cang Chải",
-  chipFestival: "Bay trên mùa vàng · 29–31/8",
+  chipFestival: "Sự kiện dù lượn Mùa Vàng · 29–31/8",
   chipCom: "Lễ hội Cốm Tú Lệ · 21–23/8",
   chipAltitude: "Cất cánh 1.268m",
   heroCta: "Đăng ký mùa vàng",
@@ -19,7 +19,7 @@ export const vi: PilotDict = {
   periodsSubtitle:
     "Hai đợt lễ hội không thu phí điểm bay. Phí điểm bay chỉ áp dụng cho những ngày bay thường ngoài hai đợt này.",
   periodName: {
-    mua_vang: "Bay trên Mùa Vàng 2026",
+    mua_vang: "Sự kiện dù lượn Mùa Vàng 2026",
     le_hoi_com: "Lễ hội Cốm Tú Lệ",
     ngay_thuong: "Bay ngày thường",
   },
@@ -44,7 +44,7 @@ export const vi: PilotDict = {
   ],
   discountText:
     "Phi công được giảm 20% mọi chi phí tại điểm bay (phòng ở, ăn uống).",
-  comboTitle: "Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói",
+  comboTitle: "Combo tham dự Sự kiện dù lượn Mùa Vàng 2026 trọn gói",
   comboSubtitle: "Ban tổ chức bao trọn từ chiều 29/8 đến trưa 31/8.",
   comboItems: [
     "Ngủ 2 đêm (29 và 30/8)",
@@ -203,7 +203,7 @@ export const vi: PilotDict = {
   galaTitle: "Người nhà chỉ tham dự Gala dinner",
   galaDesc: (p) => `${p}/người — chỉ dự tiệc Gala dinner, không ăn ở cùng đoàn theo lịch trình`,
   muaVangCheckbox:
-    "Tôi đã đăng ký và thanh toán Festival Bay trên mùa vàng 2026 — được miễn phí điểm bay 10 ngày, từ 26/8 đến hết 4/9.",
+    "Tôi đã đăng ký và thanh toán Sự kiện dù lượn Mùa Vàng 2026 — được miễn phí điểm bay 10 ngày, từ 26/8 đến hết 4/9.",
   muaVangCheckboxNote: "Ban tổ chức đối chiếu lại khi bạn tới điểm bay.",
 
   step5: "Phương tiện",
@@ -277,7 +277,7 @@ export const vi: PilotDict = {
   againBtn: "Đăng ký cho phi công khác",
 
   fee: {
-    combo: () => "Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói",
+    combo: () => "Combo tham dự Sự kiện dù lượn Mùa Vàng 2026 trọn gói",
     shirtLate: () => "Áo sự kiện (miễn phí chỉ áp dụng khi đăng ký trước 17/8)",
     companions: (n) => `Người nhà đi kèm FULL lịch trình × ${n}`,
     galaCompanions: (n) => `Người nhà chỉ dự Gala dinner × ${n}`,

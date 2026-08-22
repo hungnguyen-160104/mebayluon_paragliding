@@ -104,14 +104,14 @@ export const MUA_VANG_FREE_SITE_FEE = {
  */
 export const MUA_VANG_FREE_SITE_FEE_DAYS = 10;
 export const MUA_VANG_FREE_SITE_FEE_TEXT =
-  "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 — chỉ dành cho phi công đã đăng ký và thanh toán sự kiện Bay trên mùa vàng";
+  "Miễn phí phí điểm bay 10 ngày, từ 26/8 đến hết 4/9 — chỉ dành cho phi công đã đăng ký và thanh toán sự kiện dù lượn Mùa Vàng";
 
 export function isInFreeSiteFeeWindow(iso: string): boolean {
   return iso >= MUA_VANG_FREE_SITE_FEE.from && iso <= MUA_VANG_FREE_SITE_FEE.to;
 }
 
 /**
- * Nhóm Zalo điều phối riêng của Festival Bay trên mùa vàng.
+ * Nhóm Zalo điều phối riêng của Sự kiện dù lượn Mùa Vàng.
  *
  * Ba ngày sự kiện lịch bay đổi liên tục theo gió, ban tổ chức báo tin trong
  * nhóm này chứ không gọi từng người — nên phi công đăng ký Mùa Vàng phải vào
@@ -201,7 +201,7 @@ type PeriodConfig = {
 export const PERIODS: Record<PeriodKey, PeriodConfig> = {
   mua_vang: {
     key: "mua_vang",
-    name: "Bay trên Mùa Vàng 2026",
+    name: "Sự kiện dù lượn Mùa Vàng 2026",
     dates: ["2026-08-29", "2026-08-30", "2026-08-31"],
     note: "Bắt buộc đăng ký combo trọn gói. Phi công PPG nhận kéo cờ khai mạc được giảm 50%.",
   },
@@ -231,7 +231,7 @@ export const CLUBHOUSE_MAP = "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6";
 export const KHAU_PHA_TAKEOFF_MAP = "https://maps.app.goo.gl/Z9X6BnNV4eaUKTE29";
 
 /**
- * Ban điều hành sự kiện Bay trên mùa vàng.
+ * Ban điều hành Sự kiện dù lượn Mùa Vàng.
  *
  * `roleKey` để trang tra tên vai trò theo ngôn ngữ; tên người và số điện
  * thoại là dữ liệu thật nên giữ nguyên ở mọi ngôn ngữ.
@@ -564,7 +564,7 @@ export function computePilotFee(input: {
     const lines: FeeLine[] = [];
 
     const comboLabel =
-      "Combo tham dự Festival dù lượn Bay trên mùa vàng 2026 trọn gói";
+      "Combo tham dự Sự kiện dù lượn Mùa Vàng 2026 trọn gói";
 
     /**
      * BAY PPG KÉO CỜ KHAI MẠC không còn được giảm/miễn gì (đợt đầu miễn hết,

@@ -9,7 +9,7 @@ export const en: PilotDict = {
   heroBadge: "🪂 For pilots only",
   heroWelcome: "Welcome to",
   heroPlace: "Khau Pha · Tu Le · Mu Cang Chai",
-  chipFestival: "Flying over the golden season · 29–31 Aug",
+  chipFestival: "Golden Season Paragliding Event · 29–31 Aug",
   chipCom: "Tu Le Green Rice Festival · 21–23 Aug",
   chipAltitude: "Launch at 1,268 m",
   heroCta: "Register to fly",
@@ -19,7 +19,7 @@ export const en: PilotDict = {
   periodsSubtitle:
     "Neither festival charges a site fee. The site fee applies only to regular flying days outside those two periods.",
   periodName: {
-    mua_vang: "Flying over Golden Season 2026",
+    mua_vang: "Golden Season Paragliding Event 2026",
     le_hoi_com: "Tu Le Green Rice Festival",
     ngay_thuong: "Regular days",
   },
