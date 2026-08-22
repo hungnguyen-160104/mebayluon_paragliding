@@ -28,9 +28,20 @@ export default function BaobayLoginPage() {
   // Còn phiên cũ thì vào thẳng, khỏi bắt đăng nhập lại.
   useEffect(() => {
     let alive = true;
-    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
+    /**
+     * 3,5 giây thôi. Ngoài bãi sóng 3G chập chờn: chờ 8 giây thì người dùng
+     * nhìn màn "đang kiểm tra…" tưởng app chết rồi tắt đi (đúng cảnh báo lại
+     * hôm 22/08 trên Chrome điện thoại). Quá hạn thì hiện luôn form đăng nhập
+     * — đăng nhập lại chỉ mất mấy giây, đứng chờ mới mệt.
+     */
+    const backstop = setTimeout(() => {
+      if (alive) setChecking(false);
+    }, 3500);
+
+    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 3500 })
       .then(({ user }) => {
         if (!alive) return;
+        clearTimeout(backstop);
         const home = ROLE_HOME[user.role];
         // Vai trò lạ (dữ liệu cũ) thì thà hiện form còn hơn đứng mãi ở màn chờ
         if (home) router.replace(home);
@@ -38,6 +49,7 @@ export default function BaobayLoginPage() {
       })
       .catch((err: unknown) => {
         if (!alive) return;
+        clearTimeout(backstop);
         // 401 = chưa đăng nhập, chuyện thường. Còn lại là mạng/máy chủ — nói cho biết.
         if (!(err instanceof ApiError) || err.status !== 401) {
           setError("Không kiểm tra được phiên đăng nhập (mạng chậm hoặc mất kết nối). Cứ đăng nhập lại bên dưới.");
@@ -46,6 +58,7 @@ export default function BaobayLoginPage() {
       });
     return () => {
       alive = false;
+      clearTimeout(backstop);
     };
   }, [router]);
 
