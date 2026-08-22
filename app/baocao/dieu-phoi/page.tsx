@@ -432,23 +432,20 @@ export default function DispatcherReportPage() {
    */
 
 
-  if (loading || !user || !spot) {
-    return <PageLoading />;
-  }
-
-  /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
-  const noTickets = spot === "ha-noi";
-
   /**
    * DÒ MÃ VÉ TRÙNG NGÀY KHÁC — gõ xong dải mã là máy tự dò, khỏi đợi lưu.
    * Mã vé là giấy có seri: một mã chỉ xuất một lần, trùng là gõ nhầm seri của
    * ngày trước (đã xảy ra) hoặc vé bị dùng lại.
+   *
+   * ĐỂ TRÊN mọi lệnh `return` sớm: hook nằm dưới `return <PageLoading/>` thì
+   * lần vẽ đầu (đang tải) chạy ít hook hơn lần sau, React nổ "Rendered more
+   * hooks than during the previous render" và cả trang trắng.
    */
   const [dupCodes, setDupCodes] = useState<Array<{ code: string; usedOn: string; where: string }>>([]);
   const rangesKey = JSON.stringify(form.issuedRanges);
   useEffect(() => {
     const ranges = form.issuedRanges.filter((r) => r.from.trim() && r.to.trim());
-    if (noTickets || !ranges.length) {
+    if (spot === "ha-noi" || !ranges.length) {
       setDupCodes([]);
       return;
     }
@@ -470,7 +467,14 @@ export default function DispatcherReportPage() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rangesKey, date, spot, noTickets]);
+  }, [rangesKey, date, spot]);
+
+  if (loading || !user || !spot) {
+    return <PageLoading />;
+  }
+
+  /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
+  const noTickets = spot === "ha-noi";
 
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
   const returnMismatch = !noTickets && form.ticketsReturned !== returned;
