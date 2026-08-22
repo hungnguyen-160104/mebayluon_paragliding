@@ -3121,7 +3121,7 @@ export async function getCashOnHand(
    * Chỉ tính lệnh GIAO TIỀN. Tiền ứng là công ty chi ra cho cá nhân, trừ vào
    * lương cuối tháng — không liên quan tới số tiền đang cầm hộ công ty.
    */
-  const [handovers, receivedDocs, collectDocs] = await Promise.all([
+  const [handovers, receivedDocs, collectDocs, cashCommissions, cashRefunds, cashFlycamRefunds] = await Promise.all([
     BaobayHandover.find({
       accountId,
       spot,
@@ -3150,6 +3150,42 @@ export async function getCashOnHand(
     })
       .select("amount")
       .lean<any[]>(),
+    /**
+     * BA KHOẢN CHI TIỀN MẶT NGAY TẠI BÃI — người trực rút ví ra trả, nên phải
+     * TRỪ vào phần họ đang cầm hộ công ty.
+     *
+     * Trước đây chỉ "bảng tiền trong ngày" trừ ba khoản này, còn số "đang giữ"
+     * của cá nhân thì không — hai chỗ cùng nói về một túi tiền mà ra hai con
+     * số. Ms Duyên đếm tay 11.160.000 trong khi app đòi 12.060.000, lệch đúng
+     * 900.000 là ba khoản chiết khấu đại lý chị trả tiền mặt ngày 21–22/08.
+     *
+     * Chiết khấu/hoàn tiền trả bằng CHUYỂN KHOẢN thì công ty chi thẳng từ tài
+     * khoản, không ai phải rút ví, nên không tính ở đây.
+     */
+    BaobayBooking.find({
+      spot,
+      "commission.method": "cash",
+      "commission.byUsername": session.username,
+      ...(from && to ? { flightDate: { $gte: from, $lte: to } } : {}),
+    })
+      .select("commission")
+      .lean<any[]>(),
+    BaobayRefund.find({
+      spot,
+      method: "cash",
+      createdByUsername: session.username,
+      ...dateFilter,
+    })
+      .select("amount")
+      .lean<any[]>(),
+    BaobayFlycamCancel.find({
+      spot,
+      refundMode: { $ne: "company" },
+      pilotUsername: session.username,
+      ...dateFilter,
+    })
+      .select("amount")
+      .lean<any[]>(),
   ]);
   /**
    * Lệnh thu tiền mặt mình đã cầm là tiền MÌNH THU HỘ, không phải "được nộp
@@ -3160,6 +3196,11 @@ export async function getCashOnHand(
    */
   collected += collectDocs.reduce((a, c) => a + (c.amount || 0), 0);
   const received = receivedDocs.reduce((a, h) => a + (h.amount || 0), 0);
+
+  /** Tiền rút ví trả tại bãi: chiết khấu đại lý · hoàn khách · hoàn huỷ flycam. */
+  spent += cashCommissions.reduce((a: number, b: any) => a + (Number(b.commission?.amount) || 0), 0);
+  spent += cashRefunds.reduce((a: number, r: any) => a + (Number(r.amount) || 0), 0);
+  spent += cashFlycamRefunds.reduce((a: number, f: any) => a + (Number(f.amount) || 0), 0);
 
   let handedConfirmed = 0;
   let handedPending = 0;
