@@ -5835,9 +5835,9 @@ export async function markNoTicketFlight(
   {
     const ins = await import("@/services/baobay-insurance.service");
     const by = session.name || session.username;
-    if (input.on) await ins.sendInsurance(spot, String(updated._id), "bay không vé", by);
+    if (input.on) await ins.sendInsurance(spot, String(updated._id), "bay không vé", by, true);
     else if (current.insuranceSentReason === "bay không vé" && !updated.ticketIssuedAt) {
-      await ins.recallInsurance(spot, String(updated._id), "bỏ đánh dấu bay không vé", by);
+      await ins.recallInsurance(spot, String(updated._id), "bỏ đánh dấu bay không vé", by, true);
     }
   }
   return toBookingDTO(updated);
@@ -5869,8 +5869,8 @@ export async function toggleBookingTicket(session: BaobaySession, spotRaw: strin
   {
     const ins = await import("@/services/baobay-insurance.service");
     const by = session.name || session.username;
-    if (updated.ticketIssuedAt) await ins.sendInsurance(spot, String(updated._id), "xuất vé", by);
-    else await ins.recallInsurance(spot, String(updated._id), "bỏ tích xuất vé", by);
+    if (updated.ticketIssuedAt) await ins.sendInsurance(spot, String(updated._id), "xuất vé", by, true);
+    else await ins.recallInsurance(spot, String(updated._id), "bỏ tích xuất vé", by, true);
   }
   return toBookingDTO(updated);
 }
@@ -6009,10 +6009,10 @@ export async function updateBookingStatus(
       await ins.resyncInsuranceAfterMove(spot, String(doc._id));
     } else if (action === "cancel") {
       await ins.cancelInsuredGuests(spot, String(doc._id), (doc.insured ?? []).length, "huỷ cả booking");
-      await ins.recallInsurance(spot, String(doc._id), "khách huỷ bay", by);
+      await ins.recallInsurance(spot, String(doc._id), "khách huỷ bay", by, true);
     } else if (action === "flown" && !doc.insuranceSentAt) {
       /** Lưới an toàn: đã bay mà chưa gửi thì gửi ngay — muộn còn hơn không có. */
-      await ins.sendInsurance(spot, String(doc._id), "đã bay", by);
+      await ins.sendInsurance(spot, String(doc._id), "đã bay", by, true);
     }
   }
 

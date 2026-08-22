@@ -384,6 +384,15 @@ export async function sendInsurance(
   id: string,
   reason: string,
   byName: string,
+  /**
+   * ĐẨY BẢNG Ở NỀN. Apps Script mất 3–14 giây mỗi lượt, có lúc lâu hơn; quầy
+   * tích "Xuất vé" mà phải đứng chờ chừng đó là kiểu gì cũng có người bấm lại
+   * lần nữa. Mốc "đã gửi" vẫn ghi vào sổ NGAY nên dòng booking đổi màu tức thì,
+   * chỉ có việc chép sang bảng là chạy sau khi trả lời xong.
+   *
+   * Nút bấm tay của nhân viên thì để `false`: người ta đứng đó chờ kết quả.
+   */
+  deferPush = false,
 ): Promise<{ ok: boolean; error?: string }> {
   await connectDB();
   const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
@@ -415,7 +424,7 @@ export async function sendInsurance(
       },
     );
   }
-  return pushAndKeepGoing(spot, id);
+  return pushAndKeepGoing(spot, id, deferPush);
 }
 
 /**
@@ -430,6 +439,7 @@ export async function recallInsurance(
   id: string,
   reason: string,
   byName: string,
+  deferPush = false,
 ): Promise<{ ok: boolean; error?: string }> {
   await connectDB();
   const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
@@ -447,7 +457,7 @@ export async function recallInsurance(
       $unset: { insuranceSentAt: "", insuranceSentBy: "", insuranceSentReason: "" },
     },
   );
-  return pushAndKeepGoing(spot, id);
+  return pushAndKeepGoing(spot, id, deferPush);
 }
 
 /**
@@ -458,7 +468,17 @@ export async function recallInsurance(
  * vẫn tính là xong — lỗi nằm lại trong `insuranceSheetError` và giao diện
  * chuyển đỏ kèm nút "Đẩy lại", chứ không âm thầm bỏ qua.
  */
-async function pushAndKeepGoing(spot: string, id: string): Promise<{ ok: boolean; error?: string }> {
+async function pushAndKeepGoing(
+  spot: string,
+  id: string,
+  defer = false,
+): Promise<{ ok: boolean; error?: string }> {
+  if (defer) {
+    after(async () => {
+      await syncInsuranceToSheet(spot, id);
+    });
+    return { ok: true };
+  }
   const res = await syncInsuranceToSheet(spot, id);
   return { ok: true, error: res.ok ? undefined : res.error };
 }
