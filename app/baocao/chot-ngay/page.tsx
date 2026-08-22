@@ -82,6 +82,13 @@ type CloseSuggestion = {
     flagFlight: number;
     hasData: boolean;
   };
+  insurance: {
+    sent: number;
+    recalled: number;
+    active: number;
+    notSent: number;
+    notSentBookings: Array<{ label: string; guests: number; reason: string }>;
+  };
   agencyHeld: Array<{ name: string; amount: number; bookings: string[] }>;
   agencyHeldTotal: number;
   overpaidBookings: Array<{ label: string; amount: number; undoneChanges: number }>;
@@ -1234,6 +1241,43 @@ function DailyCloseInner() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* BẢO HIỂM CỦA NGÀY — đếm theo đầu người, không theo booking.
+              Kế toán chốt ngày phải nhìn thấy: đã đẩy bao nhiêu người sang bên
+              bảo hiểm, rút lại bao nhiêu, còn hiệu lực bao nhiêu. */}
+          {suggest && (suggest.insurance.sent > 0 || suggest.insurance.notSent > 0) && (
+            <div
+              className={
+                "mb-3 rounded-xl border-2 px-3 py-2 " +
+                (suggest.insurance.notSent > 0
+                  ? "border-rose-400 bg-rose-50"
+                  : "border-emerald-300 bg-emerald-50/70")
+              }
+            >
+              <div className="text-sm font-bold text-slate-800">
+                🛡 Bảo hiểm trong ngày:{" "}
+                <span className="tabular-nums">
+                  đã đẩy {suggest.insurance.sent} − thu hồi {suggest.insurance.recalled} ={" "}
+                  <span className="text-emerald-800">còn lại {suggest.insurance.active} người</span>
+                </span>
+              </div>
+              {suggest.insurance.notSent > 0 && (
+                <>
+                  <div className="mt-1 text-sm font-bold text-rose-800">
+                    ⚠ {suggest.insurance.notSent} khách đã bay/đã xuất vé mà CHƯA GỬI ĐƯỢC bảo hiểm — xử lý xong hãy chốt
+                    ngày:
+                  </div>
+                  <ul className="mt-0.5 space-y-0.5 text-xs text-rose-900">
+                    {suggest.insurance.notSentBookings.map((b, i) => (
+                      <li key={i}>
+                        <strong>{b.label}</strong> — {b.guests} khách ({b.reason})
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
 

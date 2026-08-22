@@ -7161,6 +7161,23 @@ issuedRanges: Array<{ from: string; to: string }>;
   };
   /** Tổng CHI của điều phối (nước, xe núi, xe đưa đón, chi khác) — để kế toán nhận vào sổ. */
   dispatcherSpend: number;
+  /**
+   * BẢO HIỂM CỦA NGÀY, đếm theo ĐẦU NGƯỜI chứ không theo booking.
+   *
+   *   đã đẩy  = mọi người từng được gửi sang bên bảo hiểm hôm nay
+   *   thu hồi = trong số đó đã bị rút (booking thu hồi, hoặc khách huỷ sau khi gửi)
+   *   còn lại = đang có hiệu lực = đã đẩy − thu hồi
+   *
+   * `chuaGui` không nằm trong phép trừ: đó là người ĐÃ XUẤT VÉ hoặc ĐÃ BAY mà
+   * hồ sơ vẫn chưa sang được bên bảo hiểm — số này phải bằng 0 khi chốt ngày.
+   */
+  insurance: {
+    sent: number;
+    recalled: number;
+    active: number;
+    notSent: number;
+    notSentBookings: Array<{ label: string; guests: number; reason: string }>;
+  };
   /** Tổng khách ĐĂNG KÝ trước trong sổ booking của ngày (trừ nhóm đã huỷ) — cho ô Hà Nội. */
   registeredGuests: number;
   /** Khách đã xác nhận bay (booking tích "đã bay") — đăng ký trừ huỷ/dời. */
@@ -7212,12 +7229,77 @@ issuedRanges: Array<{ from: string; to: string }>;
  * Mỗi dịch vụ lấy theo NGUỒN CHUẨN của nó: flycam theo camera man, Camera 360
  * theo phi công, còn lại theo điều phối — trùng với quy tắc của bộ đối chiếu.
  */
+/**
+ * ĐẾM BẢO HIỂM CỦA MỘT NGÀY theo ĐẦU NGƯỜI.
+ *
+ * Ba con số phải luôn khớp phép trừ "đã đẩy − thu hồi = còn lại", nên chúng được
+ * tính từ CÙNG một danh sách chứ không đếm rời:
+ *   - booking đã gửi (`insuranceSentAt`): người còn hiệu lực đếm vào `active`,
+ *     người đã huỷ trong đó đếm vào `recalled` (trên bảng họ mang trạng thái HUỶ);
+ *   - booking đã thu hồi (`insuranceRecalledAt` mà không còn `insuranceSentAt`):
+ *     cả nhóm vào `recalled`.
+ * `sent` là tổng hai phần — mọi người TỪNG được đẩy sang bên bảo hiểm hôm đó.
+ *
+ * `notSent` đứng riêng, KHÔNG nằm trong phép trừ: đó là khách đã xuất vé / đã
+ * bay / bay không vé mà hồ sơ vẫn chưa sang được. Chốt ngày mà số này khác 0 là
+ * có người đã bay không bảo hiểm — phải xử lý trước khi chốt.
+ */
+/**
+ * MỐC BẮT ĐẦU đòi hỏi hồ sơ bảo hiểm: 0h ngày 23/08/2026 (giờ Việt Nam).
+ *
+ * So theo LÚC XUẤT VÉ chứ không theo ngày bay, và lấy mốc là sáng hôm sau ngày
+ * tính năng lên: vé xuất trước đó thuộc thời kỳ bảo hiểm còn nhập tay ngoài app,
+ * booking nào cũng trống hồ sơ. Không chặn thì mở ngày cũ nào cũng thấy một dòng
+ * đỏ vu oan — mà cảnh báo kêu oan vài lần thì lần thứ ba người ta hết nhìn, đúng
+ * lúc nó kêu thật.
+ */
+const INSURANCE_START = new Date("2026-08-23T00:00:00+07:00");
+
+function insuranceTally(docs: any[]): CloseSuggestionDTO["insurance"] {
+  let active = 0;
+  let recalled = 0;
+  let notSent = 0;
+  const notSentBookings: CloseSuggestionDTO["insurance"]["notSentBookings"] = [];
+
+  for (const b of docs) {
+    const rows: any[] = Array.isArray(b.insured) ? b.insured : [];
+    if (b.insuranceSentAt) {
+      active += rows.filter((g) => !g.cancelled).length;
+      recalled += rows.filter((g) => g.cancelled).length;
+      continue;
+    }
+    if (b.insuranceRecalledAt) {
+      recalled += rows.length;
+      continue;
+    }
+
+    /**
+     * Chưa gửi: chỉ tính là THIẾU khi khách thật sự đã đi vào guồng bay, tức
+     * đã xuất vé hoặc đã đánh dấu bay không vé — hai việc đó đều có dấu thời
+     * gian, nên vừa biết "đã vào guồng" vừa biết "lúc nào".
+     */
+    if (b.status === "cancelled" || b.status === "voided") continue;
+    const at = b.ticketIssuedAt ?? (b.noTicketFlight ? b.noTicketAt : null);
+    if (!at || new Date(at) < INSURANCE_START) continue;
+    const guests = Number(b.guestCount) || 0;
+    if (guests <= 0) continue;
+    notSent += guests;
+    notSentBookings.push({
+      label: `#${b.daySeq || "?"} ${b.contactName || b.bookingCode || "khách"}`,
+      guests,
+      reason: b.ticketIssuedAt ? "đã xuất vé" : b.noTicketFlight ? "bay không vé" : "đã bay",
+    });
+  }
+
+  return { sent: active + recalled, recalled, active, notSent, notSentBookings };
+}
+
 export async function getCloseSuggestion(spotRaw: string, date: string): Promise<CloseSuggestionDTO> {
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
   const filter = { spot, date };
-  const [dispatchers, pilots, cameramen, bookings] = await Promise.all([
+  const [dispatchers, pilots, cameramen, bookings, insuranceBookings] = await Promise.all([
     DispatcherDailyReport.find(filter).lean<any[]>(),
     PilotDailyReport.find(filter).lean<any[]>(),
     CameramanDailyReport.find(filter).lean<any[]>(),
@@ -7227,6 +7309,17 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      */
     BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
       .select("guestCount status flycam video360 redFlag sunset flagFlight")
+      .lean<any[]>(),
+    /**
+     * Bảo hiểm đếm trên MỌI booking của ngày, KHÔNG lọc trạng thái: booking đã
+     * huỷ mới chính là nguồn của số "thu hồi" — lọc nó ra thì số thu hồi luôn
+     * bằng 0 và phép trừ không bao giờ khớp.
+     */
+    BaobayBooking.find({ spot, flightDate: date })
+      .select(
+        "guestCount status contactName bookingCode daySeq insured " +
+          "insuranceSentAt insuranceRecalledAt ticketIssuedAt noTicketFlight noTicketAt",
+      )
       .lean<any[]>(),
   ]);
 
@@ -7449,6 +7542,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     agencyHeldTotal: agencyHeld.reduce((t, a) => t + a.amount, 0),
     overpaidBookings,
     dispatcherSpend: sum(dispatchers, (d) => dispatcherExpenseTotal(d)),
+    insurance: insuranceTally(insuranceBookings),
     registeredGuests: sum(bookings, (b) => b.guestCount),
     /**
      * Khách ĐÃ BAY THẬT: chỉ tính nhóm quầy đã tích "đã bay" — khách huỷ và
