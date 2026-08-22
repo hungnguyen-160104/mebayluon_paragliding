@@ -3,7 +3,11 @@
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
+import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { shouldShowQueueNo } from "@/lib/booking/queue-display";
+import { buildVietQrPayload } from "@/lib/vietqr";
+
+import { PAY_ACCOUNT } from "./PaymentQr";
 
 /**
  * Vẽ PHIẾU BOOKING thành ảnh PNG để gửi khách qua Zalo/Messenger.
@@ -127,6 +131,41 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
  * Nạp logo. Hỏng thì trả null và phiếu vẫn vẽ được (chỉ thiếu logo) — không để
  * một cái ảnh làm chết cả nút xuất phiếu.
  */
+/**
+ * MÃ QR CHUYỂN KHOẢN dựng NGAY TRONG MÁY theo chuẩn EMVCo (lib/vietqr.ts), không
+ * gọi ảnh của img.vietqr.io: mã QR nằm giữa việc thu tiền, phụ thuộc dịch vụ
+ * ngoài nghĩa là hôm nào họ sập là cả ba điểm bay không thu được chuyển khoản.
+ *
+ * Ảnh dạng data URL nên vẽ vào canvas KHÔNG làm "nhiễm bẩn" canvas — vẫn xuất
+ * được PNG. Ảnh tải từ miền khác thì trình duyệt chặn luôn canvas.toBlob().
+ */
+async function loadPayQr(amount: number, note: string): Promise<HTMLImageElement | null> {
+  try {
+    const QRCode = (await import("qrcode")).default;
+    const payload = buildVietQrPayload({
+      bankBin: PAY_ACCOUNT.bankBin,
+      accountNumber: PAY_ACCOUNT.accountNumber,
+      amount,
+      note,
+    });
+    const url = await QRCode.toDataURL(payload, {
+      width: 560,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0F172A", light: "#FFFFFF" },
+    });
+    return await new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  } catch {
+    // Dựng mã hỏng thì phiếu vẫn ra, chỉ thiếu khối QR — không chặn cả nút xuất phiếu
+    return null;
+  }
+}
+
 function loadLogo(): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -188,7 +227,20 @@ function buildBlocks(d: BookingImageData): Block[] {
 }
 
 export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasElement> {
-  const logo = await loadLogo();
+  /**
+   * NỘI DUNG CHUYỂN KHOẢN theo đúng chuẩn sổ điều hành ("2508 k18 KP2508-5678")
+   * — kế toán dò sao kê bằng đúng dòng này, nên phiếu phải in ra để khách thấy
+   * và biết mà đừng sửa.
+   */
+  const payAmount = Math.max(0, Math.round(d.remaining || 0));
+  const payNote = buildTransferNote({
+    flightDate: d.flightDate,
+    daySeq: d.queueNo ?? undefined,
+    bookingCode: d.bookingCode,
+    phone: d.phone,
+  });
+
+  const [logo, payQr] = await Promise.all([loadLogo(), payAmount > 0 ? loadPayQr(payAmount, payNote) : Promise.resolve(null)]);
 
   /** Vẽ ở khổ gấp đôi rồi thu lại — chữ nét trên màn hình retina. */
   const S = 2;
@@ -207,11 +259,16 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   probe.font = f(17);
   const noteLines = blocks.find((b) => b.wrapLast) ? wrap(probe, blocks[blocks.length - 1].rows[0].value, W - pad * 2 - 28, 3) : [];
 
+  /** Khối QR: ô vuông mã + ba dòng dặn dò bên dưới. */
+  const qrSide = 216;
+  const payCardH = qrSide + 28;
+  const payH = payQr ? titleH + payCardH + 8 + 3 * 23 + blockGap : 0;
+
   let bodyH = 0;
   for (const b of blocks) {
     bodyH += titleH + (b.wrapLast ? noteLines.length * 26 + 10 : b.rows.length * rowH) + blockGap;
   }
-  const H = headerH + bodyH + footerH;
+  const H = headerH + bodyH + payH + footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W * S;
@@ -353,6 +410,97 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
       y += rowH;
     }
     y += blockGap;
+  }
+
+  /* ---- Khối QUÉT QR TRẢ TIỀN — chỉ khi còn phải thu ------------------ */
+  if (payQr) {
+    g.font = f(13, "bold");
+    g.fillStyle = C.sky;
+    g.fillText("QUÉT QR ĐỂ THANH TOÁN", pad, y);
+    const tw = g.measureText("QUÉT QR ĐỂ THANH TOÁN").width;
+    g.strokeStyle = C.line;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(pad + tw + 10, y - 4);
+    g.lineTo(W - pad, y - 4);
+    g.stroke();
+    y += titleH - 8;
+
+    // Nền khối
+    g.fillStyle = C.skySoft;
+    roundRect(g, pad, y - 8, W - pad * 2, payCardH, 12);
+    g.fill();
+    g.strokeStyle = "#BAE6FD";
+    g.lineWidth = 1.5;
+    roundRect(g, pad, y - 8, W - pad * 2, payCardH, 12);
+    g.stroke();
+
+    // Mã QR trên nền trắng cho máy quét bắt nét
+    const qx = pad + 14;
+    const qy = y + 6;
+    g.fillStyle = "#FFFFFF";
+    roundRect(g, qx - 6, qy - 6, qrSide + 12, qrSide + 12, 8);
+    g.fill();
+    g.drawImage(payQr, qx, qy, qrSide, qrSide);
+
+    // Cột phải: tài khoản · số tiền · nội dung
+    const cx = qx + qrSide + 22;
+    let cy = qy + 24;
+    g.font = f(13);
+    g.fillStyle = C.sub;
+    g.fillText("Tài khoản nhận", cx, cy);
+    cy += 24;
+    g.font = f(20, "bold");
+    g.fillStyle = C.ink;
+    g.fillText(`${PAY_ACCOUNT.bankName} · ${PAY_ACCOUNT.accountNumber}`, cx, cy);
+    cy += 22;
+    g.font = f(15);
+    g.fillStyle = C.sub;
+    g.fillText(PAY_ACCOUNT.accountName, cx, cy);
+
+    cy += 34;
+    g.font = f(13);
+    g.fillStyle = C.sub;
+    g.fillText("Số tiền", cx, cy);
+    cy += 30;
+    g.font = f(28, "bold");
+    g.fillStyle = C.orange;
+    g.fillText(money(payAmount), cx, cy);
+
+    cy += 26;
+    /**
+     * NỘI DUNG CHUYỂN KHOẢN in trong ô kẻ riêng, chữ to: khách nào dùng ngân
+     * hàng không tự điền nội dung thì còn chỗ đọc mà gõ tay cho đúng.
+     */
+    const boxW = W - pad - 14 - cx;
+    g.fillStyle = "#FFFFFF";
+    roundRect(g, cx, cy - 4, boxW, 50, 8);
+    g.fill();
+    g.strokeStyle = "#FDBA74";
+    g.setLineDash([5, 4]);
+    g.lineWidth = 1.5;
+    roundRect(g, cx, cy - 4, boxW, 50, 8);
+    g.stroke();
+    g.setLineDash([]);
+    g.font = f(12);
+    g.fillStyle = C.sub;
+    g.fillText("Nội dung chuyển khoản", cx + 10, cy + 14);
+    g.font = f(18, "bold");
+    g.fillStyle = C.orange;
+    g.fillText(payNote, cx + 10, cy + 38);
+
+    y += payCardH + 4;
+
+    // Ba dòng dặn dò
+    g.font = f(15, "bold");
+    g.fillStyle = C.ink;
+    g.fillText("Vui lòng quét QR để thanh toán.", pad, y + 14);
+    g.font = f(14);
+    g.fillStyle = C.orange;
+    g.fillText("Lưu ý: KHÔNG đổi nội dung chuyển khoản — để đối soát dễ hơn.", pad, y + 37);
+    g.fillStyle = C.sub;
+    g.fillText("Xin lưu ảnh thanh toán để đối chiếu tại quầy.", pad, y + 60);
+    y += 3 * 23 + blockGap;
   }
 
   // ---- Chân phiếu
