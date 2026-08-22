@@ -30,7 +30,11 @@ const SECRET = 'DAN_MA_BAO_VE_CUA_BAN_VAO_DAY';
 // Bảng đích. Để rỗng nghĩa là bảng đang gắn script này.
 const SPREADSHEET_ID = '1mk8q10xHVpr5NSi5ipvWvo-n5sM1x79kVIfJnpH9NAU';
 
-// Tên tab. Để rỗng thì dùng tab ĐẦU TIÊN của bảng.
+/**
+ * Tab dự phòng khi app không gửi kèm tên tab. Bình thường MỖI ĐIỂM BAY MỘT TAB
+ * và app gửi kèm tên tab ("Khau Phạ", "Hà Nội", "Sa Pa"…); tab chưa có thì
+ * script tự tạo kèm hàng tiêu đề. Để rỗng thì rơi về tab đầu tiên của bảng.
+ */
 const SHEET_NAME = '';
 
 /**
@@ -42,8 +46,8 @@ const SHEET_NAME = '';
  * cuối bằng tên đầu danh sách.
  */
 const FIELD_TITLES = {
-  key: ['Khoá', 'Khóa', 'Key', 'Ma dong'],
   flightDate: ['Ngày bay', 'Ngày', 'Date', 'Ngày sử dụng'],
+  daySeq: ['Số TT', 'STT', 'Số thứ tự', 'Số thứ tự bay'],
   spotName: ['Điểm bay', 'Địa điểm', 'Location', 'Nơi bay'],
   fullName: ['Họ và tên', 'Họ tên', 'Tên khách', 'Full name', 'Name'],
   birthday: ['Ngày sinh', 'Năm sinh', 'Date of birth', 'DOB'],
@@ -56,11 +60,23 @@ const FIELD_TITLES = {
   phone: ['SĐT', 'Số điện thoại', 'Điện thoại', 'Phone'],
   note: ['Ghi chú', 'Note'],
   status: ['Trạng thái', 'Status'],
+  enteredBy: ['Nguồn nhập', 'Nhập bởi', 'Nguồn'],
   updatedAt: ['Cập nhật lúc', 'Cập nhật', 'Updated'],
+  // Cột kỹ thuật, để cuối cùng cho khuất mắt: nhờ nó mà mỗi người chỉ có một dòng
+  key: ['Khoá', 'Khóa', 'Key', 'Ma dong'],
 };
 
-/** Những cột BẮT BUỘC phải có để script làm việc được. */
-const REQUIRED_FIELDS = ['key', 'flightDate', 'fullName', 'birthday', 'gender', 'idNumber', 'status'];
+/**
+ * Những cột BẮT BUỘC phải có để script làm việc được. Bảng chưa có thì script
+ * tự thêm vào cuối.
+ *
+ * `bookingCode` và `enteredBy` nằm trong đây vì đó là hai thứ người soát bảng
+ * cần nhất: dòng này thuộc booking nào, và ai đưa vào — APP đẩy sang hay nhân
+ * viên tự gõ. Không phân biệt được thì lúc lệch số không biết hỏi ai.
+ */
+const REQUIRED_FIELDS = [
+  'key', 'flightDate', 'daySeq', 'fullName', 'birthday', 'gender', 'idNumber', 'status', 'bookingCode', 'enteredBy',
+];
 
 /** Bỏ dấu, bỏ khoảng trắng thừa, chữ thường — để so tên cột. */
 function norm(s) {
@@ -77,14 +93,12 @@ function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function targetSheet() {
+function targetSheet(name) {
   const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
-  if (SHEET_NAME) {
-    const s = ss.getSheetByName(SHEET_NAME);
-    if (!s) throw new Error('không thấy tab "' + SHEET_NAME + '"');
-    return s;
-  }
-  return ss.getSheets()[0];
+  const want = String(name || SHEET_NAME || '').trim();
+  if (!want) return ss.getSheets()[0];
+  // Điểm bay mới mở là có tab mới ngay, khỏi phải vào kẻ tay trước
+  return ss.getSheetByName(want) || ss.insertSheet(want);
 }
 
 /**
@@ -92,6 +106,17 @@ function targetSheet() {
  * thêm cột mới vào cuối — thà thêm một cột còn hơn ghi lệch cột.
  */
 function mapColumns(sheet) {
+  /**
+   * BẢNG MỚI TINH: dựng sẵn cả hàng tiêu đề theo đúng thứ tự khai ở FIELD_TITLES,
+   * in đậm và ghim hàng 1. Không làm thế thì script chỉ thêm dần từng cột bắt
+   * buộc, bảng ra lộn xộn và thiếu các cột chỉ để đọc (điểm bay, quốc tịch…).
+   */
+  if (sheet.getLastRow() === 0) {
+    const titles = Object.keys(FIELD_TITLES).map(function (f) { return FIELD_TITLES[f][0]; });
+    sheet.getRange(1, 1, 1, titles.length).setValues([titles]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
   const lastCol = Math.max(1, sheet.getLastColumn());
   let headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const map = {};
@@ -168,6 +193,58 @@ function markDuplicates(sheet, map) {
   return dups;
 }
 
+/**
+ * NGÀY MỚI LÊN ĐẦU, ngày cũ tụt xuống dưới.
+ *
+ * Người soát bảng bảo hiểm chỉ quan tâm hôm nay và vài hôm tới; bắt họ kéo qua
+ * hàng nghìn dòng cũ mỗi lần mở bảng là kiểu gì cũng có ngày sót người.
+ *
+ * Sắp bằng cách sort cả vùng dữ liệu theo cột Ngày bay giảm dần — ngày ghi dạng
+ * "2026-08-25" (năm-tháng-ngày) nên xếp theo chữ cũng ra đúng thứ tự thời gian.
+ * Cùng ngày thì xếp theo mã booking để cả đoàn nằm liền nhau.
+ */
+function sortNewestFirst(sheet, map) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3 || !map.flightDate) return;
+  const rules = [{ column: map.flightDate, ascending: false }];
+  // Cùng ngày thì xếp theo SỐ THỨ TỰ BAY — đúng thứ tự quầy gọi khách lên bãi.
+  // Số TT ghi dạng SỐ nên xếp đúng 2 < 10, ghi dạng chữ thì "10" lại đứng trước "2".
+  if (map.daySeq) rules.push({ column: map.daySeq, ascending: true });
+  else if (map.bookingCode) rules.push({ column: map.bookingCode, ascending: true });
+  sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).sort(rules);
+}
+
+/**
+ * TÁCH NGÀY CHO DỄ ĐỌC: dòng đầu của mỗi ngày được IN ĐẬM ô ngày và kẻ một vạch
+ * đậm ngang phía trên, những dòng còn lại trong ngày để chữ thường.
+ *
+ * Không chèn dòng trống làm vách ngăn: dòng trống không có ngày nên lần sắp xếp
+ * sau sẽ dồn hết nó xuống đáy bảng, vách ngăn biến mất còn bảng thì thủng lỗ.
+ * Kẻ viền thì sắp lại bao nhiêu lần cũng vẽ lại đúng chỗ.
+ */
+function styleDateGroups(sheet, map) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2 || !map.flightDate) return;
+  const n = lastRow - 1;
+  const width = sheet.getLastColumn();
+
+  const dates = sheet.getRange(2, map.flightDate, n, 1).getDisplayValues();
+  // Xoá viền cũ của cả vùng rồi kẻ lại — không thì vạch của lần sắp xếp trước còn nằm đó
+  sheet.getRange(2, 1, n, width).setBorder(false, false, false, false, false, false);
+
+  const weights = [];
+  for (let i = 0; i < n; i++) {
+    const isFirst = i === 0 || dates[i][0] !== dates[i - 1][0];
+    weights.push([isFirst ? 'bold' : 'normal']);
+    if (isFirst && i > 0) {
+      sheet
+        .getRange(i + 2, 1, 1, width)
+        .setBorder(true, null, null, null, null, null, '#64748b', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    }
+  }
+  sheet.getRange(2, map.flightDate, n, 1).setFontWeights(weights);
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
@@ -176,7 +253,7 @@ function doPost(e) {
     const rows = body.rows || [];
     if (!rows.length) return json({ ok: true, written: 0, duplicates: [] });
 
-    const sheet = targetSheet();
+    const sheet = targetSheet(body.sheet);
     const info = mapColumns(sheet);
     const map = info.map;
 
@@ -219,6 +296,9 @@ function doPost(e) {
       written += 1;
     });
 
+    sortNewestFirst(sheet, map);
+    // Kẻ vạch và bôi màu SAU khi sắp xếp — làm trước thì bám nhầm dòng
+    styleDateGroups(sheet, map);
     const duplicates = markDuplicates(sheet, map);
     return json({ ok: true, written: written, duplicates: duplicates, addedColumns: info.added });
   } catch (err) {

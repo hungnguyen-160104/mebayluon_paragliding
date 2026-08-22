@@ -333,6 +333,7 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
   const rows: InsuranceSheetRow[] = guests.map((g, i) => ({
     key: `${String(doc._id)}:${i}`,
     flightDate: String(doc.flightDate || ""),
+    daySeq: Number(doc.daySeq) || 0,
     spotName: spotName(String(doc.spot || "")),
     fullName: g.fullName,
     birthday: birthdayVN(g.birthday),
@@ -341,14 +342,20 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
     idNumber: g.idNumber,
     nationality: g.nationality,
     isChild: g.isChild ? "Trẻ em" : "",
-    bookingCode: String(doc.bookingCode || "") || `#${doc.daySeq || ""}`,
+    /**
+     * MÃ BOOKING để người soát bảng lần ngược về sổ điều hành. Booking chưa có
+     * mã của đại lý thì ghi "ngày · khách số mấy" — vẫn tra ra đúng một dòng.
+     */
+    bookingCode: String(doc.bookingCode || "").trim() || `${doc.flightDate || ""} #${doc.daySeq || "?"}`,
     phone: String(doc.phone || ""),
     note: [g.note, g.replacedName ? `bay thay ${g.replacedName}` : "", moveNote].filter(Boolean).join("; "),
     status: recalled ? "THU HỒI" : g.cancelled ? "HUỶ" : "BAY",
+    enteredBy: "APP tự động",
     updatedAt: stamp,
   }));
 
-  const res = await pushInsuranceRows(rows);
+  /** Tab = tên điểm bay: mỗi điểm một tab riêng trong bảng bảo hiểm. */
+  const res = await pushInsuranceRows(rows, spotName(String(doc.spot || "")));
   await BaobayBooking.updateOne(
     { _id: id, spot },
     {

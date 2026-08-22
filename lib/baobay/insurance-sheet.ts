@@ -8,6 +8,9 @@
  * Vercel, và script chạy bằng chính tài khoản Google của công ty nên quyền có
  * sẵn. Xem docs/baohiem-apps-script.md để lấy script và cách dán vào bảng.
  *
+ * MỖI ĐIỂM BAY MỘT TAB, trong tab thì NGÀY MỚI NẰM TRÊN (script tự sắp lại sau
+ * mỗi lần ghi) — người soát chỉ quan tâm hôm nay và vài hôm tới.
+ *
  * MỘT NGƯỜI BAY = MỘT DÒNG, khoá là `bookingId:thứ tự` nên đẩy lại bao nhiêu
  * lần cũng chỉ ghi đè đúng dòng đó, không đẻ thêm dòng trùng. Khách huỷ thì
  * đẩy dòng mang trạng thái "HUỶ" chứ không xoá — bên bảo hiểm phải thấy mà rút
@@ -18,6 +21,12 @@ export type InsuranceSheetRow = {
   /** Khoá ghi đè: "<id booking>:<thứ tự người>" */
   key: string;
   flightDate: string;
+  /**
+   * SỐ THỨ TỰ KHÁCH TRONG NGÀY. Ở Khau Phạ mùa cao điểm đây là thứ cả bãi dùng
+   * để gọi nhau ("khách số 18"), nên bảng bảo hiểm phải có thì mới đối chiếu
+   * được với sổ điều hành. Ghi dạng SỐ để bảng xếp đúng 2 trước 10.
+   */
+  daySeq: number;
   spotName: string;
   fullName: string;
   birthday: string;
@@ -29,8 +38,13 @@ export type InsuranceSheetRow = {
   bookingCode: string;
   phone: string;
   note: string;
-  /** "BAY" hoặc "HUỶ". */
+  /** "BAY" · "HUỶ" · "THU HỒI". */
   status: string;
+  /**
+   * Dòng này do đâu mà có. App luôn ghi "APP tự động" để phân biệt với dòng
+   * nhân viên tự gõ tay trên bảng — lệch số thì còn biết hỏi ai.
+   */
+  enteredBy: string;
   updatedAt: string;
 };
 
@@ -44,7 +58,11 @@ export function isInsuranceSheetConfigured(): boolean {
  * Đẩy CẢ NHÓM của một booking trong một lần gọi: Apps Script chậm (3–14 giây
  * mỗi lượt), gọi từng người thì một đoàn 8 khách là hết giờ chờ của route.
  */
-export async function pushInsuranceRows(rows: InsuranceSheetRow[]): Promise<InsuranceSheetResult> {
+export async function pushInsuranceRows(
+  rows: InsuranceSheetRow[],
+  /** Tên tab = TÊN ĐIỂM BAY: mỗi điểm một tab riêng, tab chưa có thì script tự tạo. */
+  sheet: string,
+): Promise<InsuranceSheetResult> {
   const url = process.env.INSURANCE_SHEET_WEBHOOK_URL;
   if (!url) return { ok: false, error: "Chưa cấu hình INSURANCE_SHEET_WEBHOOK_URL" };
   if (!rows.length) return { ok: true };
@@ -52,6 +70,7 @@ export async function pushInsuranceRows(rows: InsuranceSheetRow[]): Promise<Insu
   const payload = JSON.stringify({
     secret: process.env.INSURANCE_SHEET_SECRET || "",
     kind: "insurance",
+    sheet,
     rows,
   });
 
