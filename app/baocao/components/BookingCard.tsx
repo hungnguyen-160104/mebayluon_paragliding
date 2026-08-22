@@ -12,6 +12,8 @@ import type { BookingDTO, CollectDTO } from "@/lib/baobay/types";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
 import { shareBookingImage } from "./booking-image";
+import { InsuranceBox } from "./InsuranceBox";
+import { insuranceState } from "@/lib/baobay/insurance";
 import {
   COMMISSION_PER_GUEST,
   FLIGHT_KIND_LABEL,
@@ -2001,6 +2003,18 @@ export function BookingTodayBanner({
     if (action === "lock" && !window.confirm(`KHOÁ booking ${name}? Khoá rồi thì không ai sửa, thu tiền hay tích đã bay được nữa — chỉ kế toán mở lại.`)) return;
     if (action === "flown" && !window.confirm(`Xác nhận khách ${name} ĐÃ BAY?`)) return;
     if (action === "cancel" && !window.confirm(`Xác nhận booking ${name} bị HUỶ? Hệ thống sẽ báo huỷ, không làm gì thêm.`)) return;
+    /**
+     * NHẮC BẢO HIỂM TRƯỚC KHI XUẤT VÉ. Quy trình chuẩn là duyệt hồ sơ bảo hiểm
+     * xong mới thu tiền và xuất vé; nhắc chứ KHÔNG chặn — khách đã đứng ở bãi
+     * mà app khoá vé thì quầy sẽ tìm đường lách, dữ liệu càng không có.
+     */
+    if (action === "ticket" && !b.ticketIssued) {
+      const st = insuranceState(b.insured, b.guestCount);
+      if (!st.ok && !window.confirm(
+        `Khách ${name} còn THIẾU hồ sơ bảo hiểm (mới đủ ${st.ready}/${st.need} người).\n\n` +
+          "Vẫn xuất vé chứ? Bấm Huỷ để quay ra nhập nốt giấy tờ.",
+      )) return;
+    }
     setBusy(b.id);
     setError(null);
     try {
@@ -2311,6 +2325,13 @@ export function BookingTodayBanner({
                   {b.contactedBy && <span className="ml-1 font-semibold text-amber-700">— {b.contactedBy} đã gọi</span>}
                 </div>
               )}
+              {/* Hồ sơ bảo hiểm từng người bay — checkin xong phải đủ mới cho bay */}
+              <InsuranceBox
+                spot={spot}
+                bookingId={b.id}
+                guestCount={b.guestCount}
+                preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+              />
             </div>
           </li>
         ))}
@@ -2567,6 +2588,13 @@ export function AssignedBookings({
                   </span>
                 )}
                 <BookingSummary b={b} dim={b.status === "done" || b.locked} />
+                {/* Phi công đứng ở bãi thường gặp khách trước quầy — nhập bảo hiểm được luôn */}
+                <InsuranceBox
+                  spot={spot}
+                  bookingId={b.id}
+                  guestCount={b.guestCount}
+                  preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+                />
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
                   <span>giao bởi {b.assignedBy || "điều phối"}</span>
                   {/* Nhóm tự san khách tại bãi — khỏi gọi điều phối mỗi lần đổi */}
@@ -4030,6 +4058,8 @@ export function BookingCard({
                 deposit: form.deposit,
                 remaining: form.remaining,
                 note: form.note,
+                /* Số thứ tự chỉ có sau khi booking đã vào sổ (daySeq của ngày) */
+                queueNo: editingSeq || null,
               });
             } catch (err: unknown) {
               setError(err instanceof Error ? err.message : "Không xuất được ảnh phiếu");
@@ -4141,6 +4171,13 @@ export function BookingCard({
                 <span className="ml-1 text-xs text-slate-400">
                   — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
                 </span>
+                {/* Khách đặt trước: soát giấy tờ từ hôm nay, khỏi dồn vào lúc checkin */}
+                <InsuranceBox
+                  spot={spot}
+                  bookingId={b.id}
+                  guestCount={b.guestCount}
+                  preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+                />
               </li>
             ))}
           </ul>

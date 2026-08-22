@@ -8,6 +8,7 @@
  * ĐÂY, còn model trong models/ thì `import type` về dùng.
  */
 
+import type { InsuredGuest } from "@/lib/baobay/insurance";
 import type { BaobayRole } from "@/lib/baobay/roles";
 import type { Issue, ReconcileTotals } from "@/lib/baobay/reconcile";
 
@@ -362,6 +363,13 @@ export type BookingDTO = {
   otaRef?: string;
   /** Hành khách kèm giấy tờ do OTA gửi — dùng làm bảo hiểm. */
   otaGuests?: Array<{ fullName: string; birthday: string; gender: string; idNumber: string; nationality: string }>;
+  /**
+   * HỒ SƠ BẢO HIỂM từng người bay — gửi kèm dòng booking để giao diện hiện ngay
+   * "đủ/thiếu" mà không phải gọi thêm một lượt cho mỗi dòng (ngày đông có mấy
+   * chục booking).
+   */
+  insured?: InsuredGuest[];
+  insuranceApprovedAt?: string;
   /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];

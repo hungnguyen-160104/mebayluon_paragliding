@@ -4571,6 +4571,16 @@ export async function cancelBookingGuests(
       reason: `huỷ ${n}/${booking.guestCount} khách${reason ? ` — ${reason}` : ""}`,
     } as any);
   }
+
+  /**
+   * Huỷ bớt người thì hồ sơ bảo hiểm cũng phải bớt theo — đánh dấu `n` dòng
+   * cuối là huỷ rồi đẩy lại bảng. Nạp động vì tệp kia có nạp ngược lại tệp này.
+   */
+  {
+    const ins = await import("@/services/baobay-insurance.service");
+    await ins.cancelInsuredGuests(spot, id, n, `huỷ ${n} khách${reason ? ` — ${reason}` : ""}`);
+  }
+
   return toBookingDTO(updated);
 }
 
@@ -5951,6 +5961,23 @@ export async function updateBookingStatus(
   }
 
   /**
+   * HỒ SƠ BẢO HIỂM ĐI THEO BOOKING. Dời ngày thì đẩy lại (dòng trên bảng bảo
+   * hiểm mang khoá cũ nên chỉ ghi đè ngày bay mới); huỷ cả booking thì đánh dấu
+   * toàn bộ người bay là huỷ để bên bảo hiểm rút tên — để nguyên là họ vẫn tính
+   * phí cho chuyến không hề bay.
+   *
+   * Nạp động: services/baobay-insurance.service.ts có nạp ngược lại tệp này,
+   * khai import thẳng ở đầu tệp là vòng tròn.
+   */
+  {
+    const ins = await import("@/services/baobay-insurance.service");
+    if (action === "move") await ins.resyncInsuranceAfterMove(spot, String(doc._id));
+    else if (action === "cancel") {
+      await ins.cancelInsuredGuests(spot, String(doc._id), (doc.insured ?? []).length, "huỷ cả booking");
+    }
+  }
+
+  /**
    * Có hoàn tiền thì LẬP LỆNH HOÀN luôn: chuyển khoản sẽ nằm chờ ở trang kế
    * toán cho tới khi chuyển xong, tiền mặt thì trừ ngay vào phần người trực
    * đang giữ. Ghi số vào booking thôi là không đủ — không ai biết ai phải làm.
@@ -6131,6 +6158,8 @@ function toBookingDTO(doc: any): BookingDTO {
     otaName: doc.otaName || "",
     otaRef: doc.otaRef || "",
     otaGuests: doc.otaGuests ?? [],
+    insured: doc.insured ?? [],
+    insuranceApprovedAt: doc.insuranceApprovedAt ? new Date(doc.insuranceApprovedAt).toISOString() : undefined,
     cancelTicketIssued: doc.cancelTicketIssued,
     cancelTicketCodes: doc.cancelTicketCodes ?? [],
     refundAmount: doc.refundAmount ?? 0,

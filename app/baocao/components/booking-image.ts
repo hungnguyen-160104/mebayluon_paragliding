@@ -3,13 +3,18 @@
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
+import { shouldShowQueueNo } from "@/lib/booking/queue-display";
 
 /**
  * Vẽ PHIẾU BOOKING thành ảnh PNG để gửi khách qua Zalo/Messenger.
  *
- * Vẽ tay bằng canvas thay vì kéo thêm thư viện chụp DOM: phiếu chỉ là mấy dòng
- * chữ, mà html2canvas kéo theo ~200KB và hay lệch phông trên máy khác. Vẽ tay
- * còn được chủ động cỡ chữ đủ to để đọc trên điện thoại.
+ * Vẽ tay bằng canvas thay vì kéo thêm thư viện chụp DOM: html2canvas kéo theo
+ * ~200KB và hay lệch phông trên máy khác, còn vẽ tay thì chủ động được cỡ chữ
+ * đủ to để đọc trên điện thoại.
+ *
+ * Bố cục chia KHỐI thay vì một mạch nhãn–giá trị như bản đầu: khách chỉ cần
+ * liếc là thấy ba thứ (bay ngày nào, hết bao nhiêu, còn phải trả bao nhiêu),
+ * còn nhân viên cần soát đủ dịch vụ và các khoản cộng trừ.
  *
  * Điện thoại: mở khay chia sẻ để gửi thẳng cho khách. Máy tính: tải file về.
  */
@@ -43,51 +48,170 @@ export type BookingImageData = {
   deposit: number;
   remaining: number;
   note: string;
+  /**
+   * SỐ THỨ TỰ BAY TRONG NGÀY (daySeq của sổ điều hành). Chỉ in ra khi điểm bay
+   * và ngày bay nằm trong khung được phép khoe số (xem lib/booking/queue-display):
+   * ngày vắng mà in số to thì gieo cảm giác phải xếp hàng.
+   */
+  queueNo?: number | null;
 };
 
 const money = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
 
+const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+const f = (size: number, weight: "" | "bold" = "") => `${weight ? weight + " " : ""}${size}px ${FONT}`;
+
+const C = {
+  ink: "#0F172A",
+  sub: "#64748B",
+  line: "#E2E8F0",
+  sky: "#0284C7",
+  skyLight: "#0EA5E9",
+  skySoft: "#F0F9FF",
+  orange: "#C2410C",
+  orangeSoft: "#FFF7ED",
+  green: "#15803D",
+  card: "#F8FAFC",
+};
+
 function serviceLine(d: BookingImageData): string {
   const parts: string[] = [];
-  if (d.flycam) parts.push(`${d.flycam} flycam`);
-  if (d.video360) parts.push(`${d.video360} camera 360`);
-  if (d.redFlag) parts.push(`${d.redFlag} dù cờ đỏ`);
-  if (d.sunset) parts.push(`${d.sunset} bay hoàng hôn/săn mây`);
-  if (d.flagFlight) parts.push(`${d.flagFlight} bay kéo cờ/bánh`);
+  if (d.flycam) parts.push(`${d.flycam} × flycam`);
+  if (d.video360) parts.push(`${d.video360} × camera 360`);
+  if (d.redFlag) parts.push(`${d.redFlag} × dù cờ đỏ`);
+  if (d.sunset) parts.push(`${d.sunset} × bay hoàng hôn/săn mây`);
+  if (d.flagFlight) parts.push(`${d.flagFlight} × bay kéo cờ/bánh`);
   return parts.join(" · ");
 }
 
-export function drawBookingImage(d: BookingImageData): HTMLCanvasElement {
+/** Cắt chuỗi dài thành nhiều dòng vừa bề ngang cho trước. */
+function wrap(g: CanvasRenderingContext2D, text: string, maxW: number, maxLines = 3): string[] {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (g.measureText(test).width <= maxW) {
+      cur = test;
+      continue;
+    }
+    if (cur) lines.push(cur);
+    cur = w;
+    if (lines.length === maxLines) break;
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  if (lines.length === maxLines && words.length) {
+    // Còn thừa chữ thì chấm lửng ở dòng cuối
+    let last = lines[maxLines - 1];
+    const joined = lines.join(" ");
+    if (joined.length < String(text).length) {
+      while (last.length > 4 && g.measureText(last + "…").width > maxW) last = last.slice(0, -1);
+      lines[maxLines - 1] = last + "…";
+    }
+  }
+  return lines.length ? lines : ["—"];
+}
+
+/** Hình chữ nhật bo góc — dùng cho các khối và ô số thứ tự. */
+function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+/**
+ * Nạp logo. Hỏng thì trả null và phiếu vẫn vẽ được (chỉ thiếu logo) — không để
+ * một cái ảnh làm chết cả nút xuất phiếu.
+ */
+function loadLogo(): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = "/logo-mbl.png";
+    // Ảnh nằm cùng miền, 2 giây là quá đủ; quá thì bỏ logo cho nhanh
+    setTimeout(() => resolve(img.complete && img.naturalWidth ? img : null), 2_000);
+  });
+}
+
+type Row = { label: string; value: string; tone?: "normal" | "muted" | "minus" | "strong" | "due" };
+type Block = { title: string; rows: Row[]; wrapLast?: boolean };
+
+function buildBlocks(d: BookingImageData): Block[] {
+  const blocks: Block[] = [];
+
+  blocks.push({
+    title: "CHUYẾN BAY",
+    rows: [
+      { label: "Ngày bay", value: formatDateKeyVN(d.flightDate) + (d.expectedTime ? ` · ${d.expectedTime}` : "") },
+      { label: "Điểm bay", value: `${spotName(d.spot)}${d.flightKindLabel ? ` · ${d.flightKindLabel}` : ""}` },
+      { label: "Số khách", value: `${d.guestCount} người` },
+    ],
+  });
+
+  const khach: Row[] = [
+    { label: "Khách", value: d.contactName || "—" },
+    { label: "Điện thoại", value: d.phone || "—" },
+  ];
+  if (d.bookingCode) khach.push({ label: "Mã booking", value: d.bookingCode });
+  if (d.source) khach.push({ label: "Nguồn đặt", value: d.source, tone: "muted" });
+  blocks.push({ title: "KHÁCH ĐẶT", rows: khach });
+
+  const svc = serviceLine(d);
+  const dv: Row[] = [];
+  if (svc) dv.push({ label: "Dịch vụ kèm", value: svc });
+  dv.push({ label: "Đưa đón", value: d.pickupLabel || "Tự đến" });
+  if (d.mountainCar) dv.push({ label: "Xe lên núi", value: `${d.mountainCar} suất` });
+  if (dv.length) blocks.push({ title: "DỊCH VỤ", rows: dv });
+
+  const tien: Row[] = [];
+  if (d.unitPrice) tien.push({ label: `Giá bay (${money(d.unitPrice)} × ${d.guestCount})`, value: money(d.unitPrice * d.guestCount) });
+  if (d.serviceMoney) tien.push({ label: "Tiền dịch vụ kèm", value: money(d.serviceMoney) });
+  if (d.mountainCarMoney) tien.push({ label: `Xe lên núi × ${d.mountainCar}`, value: money(d.mountainCarMoney) });
+  if (d.pickupFee) tien.push({ label: "Phí đưa đón", value: money(d.pickupFee) });
+  if (d.discount) tien.push({ label: "Giảm trừ", value: `− ${money(d.discount)}`, tone: "minus" });
+  tien.push({ label: "TỔNG TIỀN", value: money(d.total), tone: "strong" });
+  if (d.deposit) tien.push({ label: "Đã đặt cọc", value: `− ${money(d.deposit)}`, tone: "minus" });
+  tien.push({ label: "CÒN PHẢI THU", value: money(d.remaining), tone: "due" });
+  blocks.push({ title: "THANH TOÁN", rows: tien });
+
+  if (d.note.trim()) {
+    blocks.push({ title: "GHI CHÚ", rows: [{ label: "", value: d.note.trim() }], wrapLast: true });
+  }
+
+  return blocks;
+}
+
+export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasElement> {
+  const logo = await loadLogo();
+
   /** Vẽ ở khổ gấp đôi rồi thu lại — chữ nét trên màn hình retina. */
   const S = 2;
-  const W = 720;
-  const pad = 28;
+  const W = 760;
+  const pad = 30;
+  const headerH = 148;
+  const titleH = 30;
+  const rowH = 34;
+  const blockGap = 14;
+  const footerH = 62;
 
-  const rows: Array<[string, string]> = [
-    ["Ngày bay", formatDateKeyVN(d.flightDate) + (d.expectedTime ? ` · ${d.expectedTime}` : "")],
-    ["Điểm bay", `${spotName(d.spot)}${d.flightKindLabel ? ` · ${d.flightKindLabel}` : ""}`],
-    ["Khách", `${d.contactName || "—"}${d.phone ? ` · ${d.phone}` : ""}`],
-    ["Số khách", `${d.guestCount} người`],
-  ];
-  const svc = serviceLine(d);
-  if (svc) rows.push(["Dịch vụ kèm", svc]);
-  rows.push(["Đưa đón", d.pickupLabel || "Tự đến"]);
-  if (d.unitPrice) rows.push(["Đơn giá bay", `${money(d.unitPrice)} × ${d.guestCount} khách`]);
-  if (d.serviceMoney) rows.push(["Tiền dịch vụ", money(d.serviceMoney)]);
-  if (d.mountainCar) rows.push([`Xe lên núi ×${d.mountainCar}`, money(d.mountainCarMoney)]);
-  if (d.pickupFee) rows.push(["Phí đưa đón", money(d.pickupFee)]);
-  if (d.discount) rows.push(["Giảm trừ", `− ${money(d.discount)}`]);
-  rows.push(["TỔNG TIỀN", money(d.total)]);
-  rows.push(["Đã cọc", money(d.deposit)]);
-  rows.push(["Còn phải thu", money(d.remaining)]);
-  if (d.bookingCode) rows.push(["Mã booking", d.bookingCode]);
-  if (d.source) rows.push(["Nguồn", d.source]);
-  if (d.note) rows.push(["Ghi chú", d.note]);
+  const blocks = buildBlocks(d);
 
-  const headerH = 96;
-  const rowH = 42;
-  const footerH = 56;
-  const H = headerH + rows.length * rowH + footerH + pad;
+  // Đo trước để biết chiều cao: khối ghi chú xuống dòng nên phải vẽ thử
+  const probe = document.createElement("canvas").getContext("2d")!;
+  probe.font = f(17);
+  const noteLines = blocks.find((b) => b.wrapLast) ? wrap(probe, blocks[blocks.length - 1].rows[0].value, W - pad * 2 - 28, 3) : [];
+
+  let bodyH = 0;
+  for (const b of blocks) {
+    bodyH += titleH + (b.wrapLast ? noteLines.length * 26 + 10 : b.rows.length * rowH) + blockGap;
+  }
+  const H = headerH + bodyH + footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W * S;
@@ -95,70 +219,156 @@ export function drawBookingImage(d: BookingImageData): HTMLCanvasElement {
   const g = canvas.getContext("2d");
   if (!g) return canvas;
   g.scale(S, S);
+  g.textBaseline = "alphabetic";
 
-  // Nền
-  g.fillStyle = "#ffffff";
+  // ---- Nền
+  g.fillStyle = "#FFFFFF";
   g.fillRect(0, 0, W, H);
 
-  // Dải tiêu đề
-  g.fillStyle = "#0284c7";
+  // ---- Dải tiêu đề
+  const grad = g.createLinearGradient(0, 0, W, headerH);
+  grad.addColorStop(0, C.sky);
+  grad.addColorStop(1, C.skyLight);
+  g.fillStyle = grad;
   g.fillRect(0, 0, W, headerH);
-  g.fillStyle = "#ffffff";
-  g.font = "bold 30px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  g.fillText("PHIẾU BOOKING BAY DÙ LƯỢN", pad, 42);
-  g.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  g.fillStyle = "rgba(255,255,255,0.9)";
-  g.fillText("MEBAYLUON PARAGLIDING · mebayluon.com · 0964 073 555", pad, 72);
 
-  // Từng dòng: nhãn trái, giá trị phải
-  let y = headerH + 34;
-  for (const [label, value] of rows) {
-    const strong = label === "TỔNG TIỀN" || label === "Còn phải thu";
+  // Logo trong khuyên tròn trắng
+  const logoD = 86;
+  const logoX = pad;
+  const logoY = 30;
+  g.save();
+  g.beginPath();
+  g.arc(logoX + logoD / 2, logoY + logoD / 2, logoD / 2, 0, Math.PI * 2);
+  g.fillStyle = "#FFFFFF";
+  g.fill();
+  g.clip();
+  if (logo) g.drawImage(logo, logoX + 5, logoY + 5, logoD - 10, logoD - 10);
+  g.restore();
 
-    if (strong) {
-      g.fillStyle = label === "TỔNG TIỀN" ? "#f0f9ff" : "#fff7ed";
-      g.fillRect(pad - 10, y - 24, W - (pad - 10) * 2, rowH - 6);
-    }
+  const tx = logoX + logoD + 18;
+  g.fillStyle = "#FFFFFF";
+  g.font = f(27, "bold");
+  g.fillText("MEBAYLUON PARAGLIDING", tx, logoY + 26);
+  g.font = f(17, "bold");
+  g.fillStyle = "rgba(255,255,255,0.95)";
+  g.fillText("PHIẾU BOOKING BAY DÙ LƯỢN", tx, logoY + 52);
+  g.font = f(14);
+  g.fillStyle = "rgba(255,255,255,0.85)";
+  g.fillText("mebayluon.com · 0964 073 555", tx, logoY + 76);
 
-    g.font = `${strong ? "bold " : ""}17px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
-    g.fillStyle = strong ? "#0f172a" : "#64748b";
-    g.fillText(label, pad, y);
-
-    g.font = `${strong ? "bold 20px" : "17px"} -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
-    g.fillStyle = strong ? (label === "TỔNG TIỀN" ? "#0369a1" : "#c2410c") : "#0f172a";
-    const text = value;
-    const tw = g.measureText(text).width;
-    // Chữ dài (dịch vụ, ghi chú) thì cắt bớt cho khỏi tràn mép
-    if (tw > W - pad * 2 - 150) {
-      let cut = text;
-      while (cut.length > 8 && g.measureText(cut + "…").width > W - pad * 2 - 150) cut = cut.slice(0, -1);
-      g.fillText(cut + "…", W - pad - g.measureText(cut + "…").width, y);
-    } else {
-      g.fillText(text, W - pad - tw, y);
-    }
-
-    if (!strong) {
-      g.strokeStyle = "#f1f5f9";
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(pad, y + 12);
-      g.lineTo(W - pad, y + 12);
-      g.stroke();
-    }
-    y += rowH;
+  /**
+   * Ô SỐ THỨ TỰ — to như số thứ tự lấy ở ngân hàng, vì đó là thứ khách hỏi
+   * đầu tiên khi đến điểm bay đông. Ẩn ngoài khung cho phép (xem queue-display).
+   */
+  const showQueue = Boolean(d.queueNo) && shouldShowQueueNo(d.spot, d.flightDate);
+  if (showQueue) {
+    const bw = 158;
+    const bh = 108;
+    const bx = W - pad - bw;
+    const by = 20;
+    g.fillStyle = "#FFFFFF";
+    roundRect(g, bx, by, bw, bh, 16);
+    g.fill();
+    g.textAlign = "center";
+    g.font = f(13, "bold");
+    g.fillStyle = C.sky;
+    g.fillText("SỐ THỨ TỰ BAY", bx + bw / 2, by + 26);
+    g.font = f(56, "bold");
+    g.fillStyle = C.sky;
+    g.fillText(String(d.queueNo), bx + bw / 2, by + 80);
+    g.font = f(12);
+    g.fillStyle = C.sub;
+    g.fillText("trong ngày", bx + bw / 2, by + 98);
+    g.textAlign = "left";
   }
 
-  // Chân phiếu
-  g.font = "14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  g.fillStyle = "#94a3b8";
-  g.fillText("Vui lòng có mặt trước giờ bay 15 phút. Bay theo điều kiện thời tiết thực tế.", pad, y + 14);
+  // ---- Các khối
+  let y = headerH + 22;
+  for (const b of blocks) {
+    // Tiêu đề khối + gạch mảnh chạy hết bề ngang
+    g.font = f(13, "bold");
+    g.fillStyle = C.sky;
+    g.fillText(b.title, pad, y);
+    const tw = g.measureText(b.title).width;
+    g.strokeStyle = C.line;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(pad + tw + 10, y - 4);
+    g.lineTo(W - pad, y - 4);
+    g.stroke();
+    y += titleH - 8;
+
+    if (b.wrapLast) {
+      // Ghi chú: nền vàng nhạt, chữ xuống dòng
+      const h = noteLines.length * 26 + 16;
+      g.fillStyle = "#FFFBEB";
+      roundRect(g, pad, y - 8, W - pad * 2, h, 10);
+      g.fill();
+      g.font = f(17);
+      g.fillStyle = "#92400E";
+      let ny = y + 12;
+      for (const ln of noteLines) {
+        g.fillText(ln, pad + 14, ny);
+        ny += 26;
+      }
+      y += h + blockGap;
+      continue;
+    }
+
+    for (const r of b.rows) {
+      const isStrong = r.tone === "strong";
+      const isDue = r.tone === "due";
+
+      if (isStrong || isDue) {
+        g.fillStyle = isStrong ? C.skySoft : C.orangeSoft;
+        roundRect(g, pad - 8, y - 20, W - (pad - 8) * 2, rowH - 4, 8);
+        g.fill();
+      }
+
+      g.font = f(isStrong || isDue ? 17 : 16, isStrong || isDue ? "bold" : "");
+      g.fillStyle = isStrong ? C.ink : isDue ? C.orange : C.sub;
+      g.fillText(r.label, pad, y);
+
+      const valueFont = isStrong || isDue ? f(22, "bold") : f(17, r.tone === "muted" ? "" : "bold");
+      g.font = valueFont;
+      g.fillStyle = isStrong ? C.sky : isDue ? C.orange : r.tone === "minus" ? C.green : r.tone === "muted" ? C.sub : C.ink;
+
+      const labelW = g.measureText(r.label).width;
+      const maxValW = W - pad * 2 - Math.min(labelW, 220) - 24;
+      let text = r.value;
+      if (g.measureText(text).width > maxValW) {
+        while (text.length > 6 && g.measureText(text + "…").width > maxValW) text = text.slice(0, -1);
+        text += "…";
+      }
+      g.fillText(text, W - pad - g.measureText(text).width, y);
+
+      if (!isStrong && !isDue) {
+        g.strokeStyle = "#F1F5F9";
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(pad, y + 11);
+        g.lineTo(W - pad, y + 11);
+        g.stroke();
+      }
+      y += rowH;
+    }
+    y += blockGap;
+  }
+
+  // ---- Chân phiếu
+  g.fillStyle = C.card;
+  g.fillRect(0, H - footerH, W, footerH);
+  g.font = f(14);
+  g.fillStyle = C.sub;
+  g.fillText("Vui lòng có mặt trước giờ bay 15 phút · Bay theo điều kiện thời tiết thực tế.", pad, H - footerH + 26);
+  g.fillText("Mang theo CCCD/Passport để làm bảo hiểm chuyến bay.", pad, H - footerH + 47);
 
   return canvas;
 }
 
 /** Xuất phiếu: điện thoại mở khay chia sẻ, máy tính tải file PNG về. */
 export async function shareBookingImage(d: BookingImageData): Promise<void> {
-  const canvas = drawBookingImage(d);
+  const canvas = await drawBookingImage(d);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
   if (!blob) throw new Error("Không tạo được ảnh phiếu");
 

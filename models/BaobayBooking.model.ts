@@ -65,6 +65,41 @@ export interface IBaobayBooking {
   otaName?: string;
   /** Hành khách kèm giấy tờ (OTA gửi sẵn) — dùng làm bảo hiểm, khỏi hỏi lại khách. */
   otaGuests?: Array<{ fullName: string; birthday: string; gender: string; idNumber: string; nationality: string }>;
+  /**
+   * HỒ SƠ BẢO HIỂM — mỗi NGƯỜI BAY một dòng, không phải mỗi booking một dòng.
+   *
+   * Công ty bảo hiểm cần đủ: họ tên, ngày sinh, số giấy tờ, giới tính, ngày bay,
+   * điểm bay. Trẻ em chưa có CCCD thì điền SỐ ĐỊNH DANH do người nhà cung cấp
+   * (idType = "dinhdanh"); trẻ nước ngoài luôn có hộ chiếu.
+   *
+   * Khách huỷ thì GIỮ dòng lại và bật `cancelled` chứ không xoá: bảng bảo hiểm
+   * bên kia phải biết mà rút tên, xoá trắng ở đây là bên đó vẫn còn tên và vẫn
+   * mất phí. Đổi người bay (đăng ký A, đến nơi B đi thay) thì ghi tên cũ vào
+   * `replacedName` để đối chiếu.
+   */
+  insured?: Array<{
+    fullName: string;
+    /** Chuẩn hoá "yyyy-mm-dd". */
+    birthday: string;
+    gender: "nam" | "nu" | "";
+    idNumber: string;
+    idType: "cccd" | "passport" | "dinhdanh" | "";
+    nationality: string;
+    isChild: boolean;
+    note: string;
+    /** Dữ liệu đến từ đâu: web khách tự điền · OTA gửi · quét giấy tờ · gõ tay. */
+    source: "web" | "ota" | "scan" | "manual" | "";
+    cancelled?: boolean;
+    replacedName?: string;
+  }>;
+  insuranceUpdatedAt?: Date;
+  insuranceUpdatedBy?: string;
+  /** Nhân viên đã DUYỆT là đủ và đúng — mốc để đẩy sang bảng bảo hiểm. */
+  insuranceApprovedAt?: Date;
+  insuranceApprovedBy?: string;
+  /** Lần đẩy sang Google Sheets bảo hiểm gần nhất và lỗi nếu có. */
+  insuranceSheetAt?: Date;
+  insuranceSheetError?: string;
   /** Trạng thái bên trang khách lúc đồng bộ gần nhất. */
   webStatus?: string;
   syncedAt?: Date;
@@ -284,6 +319,33 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
       ],
       default: [],
     },
+    insured: {
+      type: [
+        new Schema(
+          {
+            fullName: { type: String, default: "" },
+            birthday: { type: String, default: "" },
+            gender: { type: String, enum: ["nam", "nu", ""], default: "" },
+            idNumber: { type: String, default: "" },
+            idType: { type: String, enum: ["cccd", "passport", "dinhdanh", ""], default: "" },
+            nationality: { type: String, default: "" },
+            isChild: { type: Boolean, default: false },
+            note: { type: String, default: "" },
+            source: { type: String, enum: ["web", "ota", "scan", "manual", ""], default: "" },
+            cancelled: { type: Boolean, default: false },
+            replacedName: { type: String, default: "" },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    insuranceUpdatedAt: Date,
+    insuranceUpdatedBy: String,
+    insuranceApprovedAt: Date,
+    insuranceApprovedBy: String,
+    insuranceSheetAt: Date,
+    insuranceSheetError: String,
     webStatus: String,
     syncedAt: Date,
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },

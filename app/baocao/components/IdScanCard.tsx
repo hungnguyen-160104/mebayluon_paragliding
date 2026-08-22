@@ -1,7 +1,7 @@
 // app/baocao/components/IdScanCard.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { parseCccdQr, parseMrz, type ScannedPerson } from "@/lib/baobay/id-scan";
 
@@ -19,7 +19,19 @@ import { Banner, Button, CollapseCard, TextInput } from "./ui";
  * Ảnh KHÔNG rời khỏi máy và KHÔNG được lưu ở đâu cả — chỉ giữ 5 trường vừa bóc,
  * đúng thứ cần cho bảo hiểm. Danh sách nằm trong bộ nhớ trang, đóng trang là hết.
  */
-export function IdScanCard() {
+export function IdScanCard({
+  onPick,
+  embedded = false,
+}: {
+  /**
+   * Có hàm này nghĩa là thẻ đang được NHÚNG vào hồ sơ bảo hiểm của một người
+   * bay cụ thể: quét xong bấm một nút là điền thẳng vào dòng người đó, không
+   * còn danh sách rời để chép tay nữa.
+   */
+  onPick?: (p: ScannedPerson) => void;
+  /** Bỏ vỏ thẻ tím (đã nằm trong khối khác rồi). */
+  embedded?: boolean;
+} = {}) {
   const [busy, setBusy] = useState<"" | "qr" | "ocr">("");
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState<ScannedPerson | null>(null);
@@ -228,13 +240,13 @@ export function IdScanCard() {
     }
   }
 
-  return (
-    <CollapseCard
-      className="border-violet-300"
-      headerClassName="bg-violet-600 text-white"
-      title="🪪 Quét CCCD / Hộ chiếu"
-      hint="lấy thông tin làm bảo hiểm"
-    >
+  /**
+   * Ruột thẻ tách ra biến, KHÔNG bọc bằng một component khai trong thân hàm:
+   * component khai lại mỗi lần vẽ là React coi như thẻ khác, dựng lại cả cây —
+   * khung camera đang quét bị tháo và ô đang gõ mất con trỏ.
+   */
+  const body = (
+    <>
       <input
         ref={fileRef}
         type="file"
@@ -343,12 +355,13 @@ export function IdScanCard() {
               type="button"
               className="h-9 flex-1 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
               onClick={() => {
-                setList((prev) => [...prev, current]);
+                if (onPick) onPick(current);
+                else setList((prev) => [...prev, current]);
                 setCurrent(null);
                 setCopied(false);
               }}
             >
-              ＋ Thêm vào danh sách bảo hiểm
+              {onPick ? "✓ Điền vào hồ sơ người này" : "＋ Thêm vào danh sách bảo hiểm"}
             </Button>
             <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={() => setCurrent(null)}>
               Bỏ
@@ -357,7 +370,7 @@ export function IdScanCard() {
         </div>
       )}
 
-      {list.length > 0 && (
+      {!onPick && list.length > 0 && (
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-slate-700">Danh sách bảo hiểm ({list.length})</span>
@@ -395,6 +408,18 @@ export function IdScanCard() {
           </ul>
         </div>
       )}
+    </>
+  );
+
+  if (embedded) return <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-2.5">{body}</div>;
+  return (
+    <CollapseCard
+      className="border-violet-300"
+      headerClassName="bg-violet-600 text-white"
+      title="🪪 Quét CCCD / Hộ chiếu"
+      hint="lấy thông tin làm bảo hiểm"
+    >
+      {body}
     </CollapseCard>
   );
 }
