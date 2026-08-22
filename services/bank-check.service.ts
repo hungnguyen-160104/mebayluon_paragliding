@@ -143,8 +143,18 @@ export type BankBookingRowDTO = {
   locked: boolean;
   transfers: BankAppTransferDTO[];
   cash: BankAppCashDTO[];
-  /** Dòng sao kê ĐÃ khớp về booking này. */
+  /**
+   * Dòng sao kê ĐÃ khớp về booking này — gom MỌI NGÀY, không riêng ngày đang
+   * xem: khách trả làm nhiều lần thì các lần đó rơi vào nhiều ngày sao kê khác
+   * nhau, chỉ lấy dòng của một ngày là cộng ra thiếu và tưởng khách còn nợ.
+   */
   lines: BankLineDTO[];
+  /** Tổng các dòng sao kê đã trỏ về booking này (tự cân nhiều lần chuyển). */
+  bankTotal: number;
+  /** Còn thiếu so với tổng tiền booking, đã trừ tiền mặt và tiền đại lý giữ hộ. */
+  bankShort: number;
+  /** Về DƯ so với tổng tiền booking. */
+  bankOver: number;
   /** Dòng sao kê treo nhưng máy NGHI là của booking này — soát tay. */
   suggests: BankLineDTO[];
 };
@@ -479,10 +489,15 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
   return out;
 }
 
-/** Gộp hai nguồn ứng viên, bỏ trùng theo khoá khoản. */
-function mergeCandidates(a: BankCandidate[], b: BankCandidate[]): BankCandidate[] {
-  const seen = new Set(a.map((c) => c.id));
-  return [...a, ...b.filter((c) => !seen.has(c.id))];
+/**
+ * Gộp hai nguồn ứng viên, bỏ trùng theo khoá khoản.
+ *
+ * Phần đến từ rổ rộng bị đánh dấu `wide` để bộ dò biết mà KHÔNG cho nó khớp
+ * bằng mỗi số tiền — xem chú thích ở BankCandidate.wide.
+ */
+function mergeCandidates(narrow: BankCandidate[], wide: BankCandidate[]): BankCandidate[] {
+  const seen = new Set(narrow.map((c) => c.id));
+  return [...narrow, ...wide.filter((c) => !seen.has(c.id)).map((c) => ({ ...c, wide: true }))];
 }
 
 /** Điểm bay tài khoản này được phân — kế toán thường quản cả ba. */
@@ -635,7 +650,12 @@ export async function runBankCheck(
       isDateKey(l.bankDate) ? l.bankDate : date,
     ),
   )) {
-    await allocateByCount(date, target, await forDate(target));
+    /**
+     * Ghép theo SỐ LƯỢNG chỉ được dùng ứng viên của ĐÚNG NGÀY. Đưa cả rổ rộng
+     * vào đây thì một dòng 900.000 sẽ bị ghép với một khoản 900.000 nào đó của
+     * người dưng cách đấy hai tuần — đã xảy ra đúng thế lúc chạy thử.
+     */
+    await allocateByCount(date, target, (await forDate(target)).filter((c) => !c.wide));
   }
 
   const report = await getBankCheck(session, date, spotsFilter);
@@ -924,6 +944,27 @@ export async function getBankCheck(
 
   const lineDTOs = lineDocs.map(toLineDTO);
   const pendingToday = lineDTOs.filter((l) => l.status === "pending");
+
+  /**
+   * MỌI DÒNG SAO KÊ của các booking đang hiện, bất kể ngày soát.
+   *
+   * Booking 5.000.000 mà khách chuyển bốn lần 900k + 500k + 2.000k + 1.500k —
+   * bốn lần đó thường rơi vào bốn ngày sao kê khác nhau. Chỉ đọc dòng của ngày
+   * đang xem thì cộng ra 900k và tưởng khách còn nợ 4.100.000.
+   */
+  const histLineDocs = rowBookingIds.size
+    ? await BaobayBankLine.find({
+        bookingId: { $in: [...rowBookingIds].map((x) => new mongoose.Types.ObjectId(x)) },
+        status: { $ne: "pending" },
+      })
+        .sort({ bankDate: 1, createdAt: 1 })
+        .lean<any[]>()
+    : [];
+  const histLinesByBooking = new Map<string, any[]>();
+  for (const l of histLineDocs) {
+    const k = String(l.bookingId);
+    (histLinesByBooking.get(k) ?? histLinesByBooking.set(k, []).get(k)!).push(l);
+  }
   const bookingRows: BankBookingRowDTO[] = rowBookings
     .map((b) => {
       const id = String(b._id);
@@ -1009,9 +1050,26 @@ export async function getBankCheck(
             verified: Boolean(c.verifiedAt),
             locked: Boolean(b.lockedAt),
           })),
-        lines: lineDTOs.filter((l) => l.status !== "pending" && String((lineDocs.find((d) => String(d._id) === l.id) as any)?.bookingId ?? "") === id),
+        lines: (histLinesByBooking.get(id) ?? []).map(toLineDTO),
         // Dòng treo mà danh sách nghi ngờ có nhắc đúng nhãn booking này
         suggests: pendingToday.filter((l) => (l.candidates ?? []).some((c) => c.startsWith(label))),
+        ...(() => {
+          /**
+           * TỰ CÂN: cộng mọi dòng sao kê đã trỏ về booking, so với tổng tiền
+           * booking sau khi trừ tiền mặt và phần đại lý đang giữ hộ. Ra ngay
+           * "đã về 4.900.000 / cần 5.000.000 · còn thiếu 100.000".
+           */
+          const bankTotal = (histLinesByBooking.get(id) ?? []).reduce((t, l) => t + (Number(l.amount) || 0), 0);
+          const paidCash = histCollects
+            .filter((c) => String(c.bookingId) === id && c.method === "cash" && c.status === "collected")
+            .reduce((t, c) => t + (c.amount || 0), 0);
+          const need = Math.max(0, (b.totalAmount || 0) - paidCash - (b.agencyPaidAmount || 0));
+          return {
+            bankTotal,
+            bankShort: Math.max(0, need - bankTotal),
+            bankOver: Math.max(0, bankTotal - need),
+          };
+        })(),
       };
     })
     .sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999) || a.label.localeCompare(b.label));

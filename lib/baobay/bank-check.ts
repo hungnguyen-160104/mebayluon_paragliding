@@ -147,6 +147,16 @@ export type BankCandidate = {
   recorded: boolean;
   /** Ngày LẬP booking "YYYY-MM-DD" — khách hay chuyển cọc ngay hôm đăng ký. */
   createdDate?: string;
+  /**
+   * Ứng viên đến từ RỔ RỘNG (mọi khoản còn treo, mọi ngày) chứ không phải từ
+   * đúng ngày của dòng sao kê.
+   *
+   * Rổ rộng chỉ được dùng cho các dấu hiệu ĐỊNH DANH (mã GD, nội dung, SĐT,
+   * tên). TUYỆT ĐỐI không cho khớp bằng mỗi SỐ TIỀN: trong vài trăm khoản đang
+   * treo thì số tiền tròn như 900.000 trùng nhau là chuyện thường, khớp bừa là
+   * tiền của khách này bị gán sang booking của người dưng.
+   */
+  wide?: boolean;
 };
 
 /* ================================================================== */
@@ -502,9 +512,33 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
     }
   }
 
+  /* ---- 2e. TRẢ MỘT PHẦN: tên khớp đúng một chỗ, tiền ít hơn số đang chờ ----
+   *
+   * Khách chuyển 900k cho booking 4.780.000 thì không luật nào ở trên bắt được:
+   * số tiền không khớp, mà tên thì máy không dám tự nhận. Nhưng nếu CHỈ MỘT
+   * booking mang tên đó và nó còn nợ nhiều hơn số vừa về thì đặt gợi ý ngay
+   * dưới thẻ booking — kế toán bấm một cái là gán, khỏi đi tìm.
+   */
+  {
+    const nameHits = dedupeByBooking(
+      candidates.filter((c) => {
+        const name = ascii(c.contactName);
+        return name.length >= 6 && name.includes(" ") && hay.includes(name);
+      }),
+    );
+    if (nameHits.length === 1 && entry.amount < Math.max(...nameHits[0].amounts, 0)) {
+      return {
+        status: "suggest",
+        hits: nameHits,
+        why: "tên trên sao kê trùng tên khách, số tiền NHỎ HƠN số đang chờ — nhiều khả năng khách trả một phần",
+      };
+    }
+  }
+
   // ---- 3. SỐ TIỀN — chỉ khi đúng MỘT booking có số này ----
+  // CHỈ xét ứng viên của ĐÚNG NGÀY (không lấy rổ rộng): xem chú thích ở `wide`.
   if (entry.amount > 0) {
-    const hits = dedupeByBooking(candidates.filter((c) => c.amounts.includes(entry.amount)));
+    const hits = dedupeByBooking(candidates.filter((c) => !c.wide && c.amounts.includes(entry.amount)));
     if (hits.length === 1) return { status: "matched", level: "amount", hit: hits[0], why: "trùng số tiền (duy nhất)" };
     if (hits.length > 1) return { status: "multi", hits, why: "nhiều booking cùng số tiền" };
   }

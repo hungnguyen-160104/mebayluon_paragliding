@@ -102,6 +102,9 @@ type BookingRowDTO = {
   cash: AppCashDTO[];
   lines: LineDTO[];
   suggests: LineDTO[];
+  bankTotal: number;
+  bankShort: number;
+  bankOver: number;
 };
 
 /** Một khoản CK còn chờ soát, gom từ MỌI ngày (không riêng ngày đang xem). */
@@ -752,6 +755,34 @@ export function BankCheckCard({ date }: { date: string }) {
                     <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒 đã khoá</span>
                   )}
                 </div>
+                {/* TỰ CÂN NHIỀU LẦN CHUYỂN: khách trả làm mấy lần thì cộng hết lại
+                    rồi đối chiếu với tổng tiền booking — kế toán khỏi bấm máy tính. */}
+                {row.lines.length > 0 && (
+                  <div
+                    className={
+                      "mt-1 rounded-lg px-2 py-1 text-xs leading-snug tabular-nums " +
+                      (row.bankShort > 0
+                        ? "bg-rose-50 text-rose-900"
+                        : row.bankOver > 0
+                          ? "bg-amber-50 text-amber-900"
+                          : "bg-emerald-50 text-emerald-900")
+                    }
+                  >
+                    🏦 Sao kê đã về{row.lines.length > 1 ? ` ${row.lines.length} lần` : ""}:{" "}
+                    {row.lines.length > 1 && (
+                      <span className="text-slate-600">{row.lines.map((l) => formatVND(l.amount)).join(" + ")} = </span>
+                    )}
+                    <strong>{formatVND(row.bankTotal)}</strong>
+                    {row.totalAmount > 0 && <span className="text-slate-600"> / cần {formatVND(row.totalAmount)}</span>}
+                    {row.bankShort > 0 ? (
+                      <strong> · còn thiếu {formatVND(row.bankShort)}</strong>
+                    ) : row.bankOver > 0 ? (
+                      <strong> · về DƯ {formatVND(row.bankOver)}</strong>
+                    ) : (
+                      <strong> · đủ ✓</strong>
+                    )}
+                  </div>
+                )}
                 <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums">
                   {paidCk > 0 && <span className="text-sky-800">đã CK <strong>{formatVND(paidCk)}</strong></span>}
                   {paidTm > 0 && <span className="text-emerald-800">đã TM <strong>{formatVND(paidTm)}</strong></span>}
