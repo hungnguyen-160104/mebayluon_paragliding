@@ -2004,17 +2004,22 @@ export function BookingTodayBanner({
     if (action === "flown" && !window.confirm(`Xác nhận khách ${name} ĐÃ BAY?`)) return;
     if (action === "cancel" && !window.confirm(`Xác nhận booking ${name} bị HUỶ? Hệ thống sẽ báo huỷ, không làm gì thêm.`)) return;
     /**
-     * NHẮC BẢO HIỂM TRƯỚC KHI XUẤT VÉ. Quy trình chuẩn là duyệt hồ sơ bảo hiểm
-     * xong mới thu tiền và xuất vé; nhắc chứ KHÔNG chặn — khách đã đứng ở bãi
-     * mà app khoá vé thì quầy sẽ tìm đường lách, dữ liệu càng không có.
+     * XUẤT VÉ = GỬI BẢO HIỂM. Hồ sơ thiếu thì máy KHÔNG gửi được, nghĩa là
+     * khách bay mà không có bảo hiểm — phải nói thẳng ra chứ không nhắc mơ hồ.
+     * Vẫn chỉ NHẮC, không chặn: khách đã đứng ở bãi mà app khoá vé thì quầy sẽ
+     * tìm đường lách, dữ liệu càng không có.
      */
     if (action === "ticket" && !b.ticketIssued) {
       const st = insuranceState(b.insured, b.guestCount);
       if (!st.ok && !window.confirm(
         `Khách ${name} còn THIẾU hồ sơ bảo hiểm (mới đủ ${st.ready}/${st.need} người).\n\n` +
+          "Xuất vé là lúc máy GỬI BẢO HIỂM — thiếu thế này thì KHÔNG GỬI ĐƯỢC, khách bay mà không có bảo hiểm.\n\n" +
           "Vẫn xuất vé chứ? Bấm Huỷ để quay ra nhập nốt giấy tờ.",
       )) return;
     }
+    /** Bỏ tích vé = thu hồi bảo hiểm, nói trước cho khỏi bấm hớ. */
+    if (action === "ticket" && b.ticketIssued && b.insuranceSentAt &&
+      !window.confirm(`Bỏ tích ĐÃ XUẤT VÉ của ${name}?\n\nBảo hiểm đã gửi sẽ bị THU HỒI theo.`)) return;
     setBusy(b.id);
     setError(null);
     try {
@@ -2330,7 +2335,12 @@ export function BookingTodayBanner({
                 spot={spot}
                 bookingId={b.id}
                 guestCount={b.guestCount}
-                preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+                preview={{
+                  guests: b.insured,
+                  approvedAt: b.insuranceApprovedAt,
+                  sentAt: b.insuranceSentAt,
+                  recalledAt: b.insuranceRecalledAt,
+                }}
               />
             </div>
           </li>
@@ -2593,7 +2603,12 @@ export function AssignedBookings({
                   spot={spot}
                   bookingId={b.id}
                   guestCount={b.guestCount}
-                  preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+                  preview={{
+                    guests: b.insured,
+                    approvedAt: b.insuranceApprovedAt,
+                    sentAt: b.insuranceSentAt,
+                    recalledAt: b.insuranceRecalledAt,
+                  }}
                 />
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
                   <span>giao bởi {b.assignedBy || "điều phối"}</span>
@@ -4176,7 +4191,12 @@ export function BookingCard({
                   spot={spot}
                   bookingId={b.id}
                   guestCount={b.guestCount}
-                  preview={{ guests: b.insured, approvedAt: b.insuranceApprovedAt }}
+                  preview={{
+                    guests: b.insured,
+                    approvedAt: b.insuranceApprovedAt,
+                    sentAt: b.insuranceSentAt,
+                    recalledAt: b.insuranceRecalledAt,
+                  }}
                 />
               </li>
             ))}

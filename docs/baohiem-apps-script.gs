@@ -143,7 +143,11 @@ function markDuplicates(sheet, map) {
   const keyOf = function (i) {
     const id = norm(ids[i][0]).replace(/\s/g, '');
     if (!id) return '';
-    if (statuses && norm(statuses[i][0]) === 'huy') return '';
+    // Dòng đã HUỶ hoặc đã THU HỒI thì không còn hiệu lực, đừng tính là trùng
+    if (statuses) {
+      const st = norm(statuses[i][0]);
+      if (st === 'huy' || st === 'thu hoi') return '';
+    }
     return (dates ? norm(dates[i][0]) : '') + '#' + id;
   };
 

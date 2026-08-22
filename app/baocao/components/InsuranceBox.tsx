@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { apiGet, apiPost, apiPut } from "./client-api";
+import { apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import {
   birthdayVN,
   emptyInsured,
@@ -42,6 +42,12 @@ type View = {
   approvedAt?: string;
   approvedBy?: string;
   updatedBy?: string;
+  sentAt?: string;
+  sentBy?: string;
+  sentReason?: string;
+  recalledAt?: string;
+  recalledBy?: string;
+  recallReason?: string;
   sheetAt?: string;
   sheetError?: string;
   sheetConfigured: boolean;
@@ -58,7 +64,7 @@ export function InsuranceBox({
   spot: string;
   bookingId: string;
   guestCount: number;
-  preview?: { guests?: InsuredGuest[]; approvedAt?: string };
+  preview?: { guests?: InsuredGuest[]; approvedAt?: string; sentAt?: string; recalledAt?: string };
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View | null>(null);
@@ -90,7 +96,41 @@ export function InsuranceBox({
   /** Số hiện trên dòng thu gọn: ưu tiên số máy chủ, chưa mở thì lấy tạm từ danh sách. */
   const shown = view ? view.guests : (preview?.guests ?? []);
   const st = insuranceState(shown, view ? view.guestCount : guestCount);
-  const approved = Boolean(view?.approvedAt ?? preview?.approvedAt);
+  /**
+   * ĐÃ GỬI hay chưa mới là điều đáng quan tâm nhất — duyệt hồ sơ chỉ là "sẵn
+   * sàng". Bảo hiểm rời đi lúc XUẤT VÉ: sớm hơn thì trời xấu không bay được là
+   * mất phí, muộn hơn thì sự cố trước lúc gửi coi như không có bảo hiểm.
+   */
+  const sentAt = view?.sentAt ?? preview?.sentAt;
+  const recalledAt = view?.recalledAt ?? preview?.recalledAt;
+  const sent = Boolean(sentAt);
+  const recalled = !sent && Boolean(recalledAt);
+  const hhmm = (iso?: string) =>
+    iso ? new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }) : "";
+
+  async function move(action: "send" | "recall") {
+    if (action === "recall" && !window.confirm("THU HỒI bảo hiểm của booking này? Bên bảo hiểm sẽ thấy dòng chuyển sang THU HỒI.")) return;
+    const reason =
+      action === "recall" ? (window.prompt("Thu hồi vì lý do gì? (bấm nhầm, khách huỷ, dời lịch…)") ?? "").trim() : "";
+    if (action === "recall" && !reason) return;
+    setBusy(true);
+    setError(null);
+    setDone(null);
+    try {
+      const r = await apiPatch<{ view: View }>(`/api/baocao/insurance?spot=${spot}`, {
+        id: bookingId,
+        action,
+        reason,
+      });
+      setView(r.view);
+      setGuests(r.view.guests);
+      setDone(action === "send" ? "✓ Đã gửi bảo hiểm" : "✓ Đã thu hồi bảo hiểm");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không thực hiện được");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const patch = (i: number, p: Partial<InsuredGuest>) =>
     setGuests((prev) => prev.map((g, k) => (k === i ? { ...g, ...p } : g)));
@@ -139,15 +179,34 @@ export function InsuranceBox({
   const dupHere = new Set(st.duplicateIds);
   const dupElse = new Map((view?.duplicateElsewhere ?? []).map((d) => [d.idNumber, d.where]));
 
-  const tone = st.need === 0 ? "slate" : st.ok ? (approved ? "emerald" : "sky") : "rose";
+  /**
+   * Bốn trạng thái, mỗi cái một màu để liếc là biết:
+   *   đỏ   — hồ sơ còn thiếu, chưa gửi được
+   *   hổ phách — đủ rồi nhưng CHƯA GỬI (chờ xuất vé)
+   *   xanh lá  — ĐÃ GỬI, người bay đã có bảo hiểm
+   *   xám  — đã thu hồi
+   */
+  const stuck = Boolean(view?.sheetError);
+  const tone =
+    st.need === 0 ? "slate" : stuck ? "rose" : recalled ? "slate" : sent ? "emerald" : st.ok ? "amber" : "rose";
   const toneClass =
     tone === "emerald"
-      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-      : tone === "sky"
-        ? "border-sky-300 bg-sky-50 text-sky-800"
+      ? "border-emerald-400 bg-emerald-50 text-emerald-800"
+      : tone === "amber"
+        ? "border-amber-400 bg-amber-50 text-amber-900"
         : tone === "rose"
           ? "border-rose-300 bg-rose-50 text-rose-800"
-          : "border-slate-200 bg-slate-50 text-slate-600";
+          : "border-slate-300 bg-slate-100 text-slate-600";
+
+  const headline = stuck && sent
+    ? `⚠ ĐÃ GỬI nhưng CHƯA SANG BẢNG bảo hiểm — ${view?.sheetError}`
+    : recalled
+    ? `Bảo hiểm ĐÃ THU HỒI${view?.recallReason ? ` — ${view.recallReason}` : ""}`
+    : sent
+      ? `✅ ĐÃ GỬI bảo hiểm ${hhmm(sentAt)}${view?.sentReason ? ` (${view.sentReason})` : ""}`
+      : st.ok
+        ? `Bảo hiểm đủ ${st.ready}/${st.need} — CHƯA GỬI, sẽ gửi khi xuất vé`
+        : insuranceLabel(st);
 
   return (
     <div className="mt-1.5">
@@ -158,8 +217,8 @@ export function InsuranceBox({
       >
         <span className="shrink-0">🛡</span>
         <span className="min-w-0 flex-1">
-          {approved && st.ok ? `Bảo hiểm ĐỦ ${st.ready}/${st.need} · đã duyệt` : insuranceLabel(st)}
-          {view?.sheetError ? " · ⚠ chưa sang bảng" : view?.sheetAt ? " · đã sang bảng" : ""}
+          {headline}
+          {view?.sheetError ? " · ⚠ chưa sang bảng" : ""}
         </span>
         <span className="shrink-0 rounded-md bg-white/70 px-1.5 py-0.5 text-[10px] font-bold">
           {open ? "Đóng" : st.ok ? "Xem" : "Thu thập dữ liệu bảo hiểm"}
@@ -186,6 +245,7 @@ export function InsuranceBox({
                 {view.spotLabel} · bay {view.flightDate} · {view.contactName || "khách"}
                 {view.phone ? ` · ${view.phone}` : ""} · cần đủ {view.guestCount} người.
                 {view.updatedBy ? ` Người nhập gần nhất: ${view.updatedBy}.` : ""}
+                {view.approvedBy ? ` Đã duyệt bởi ${view.approvedBy}.` : ""}
               </p>
 
               {guests.map((g, i) => {
@@ -362,7 +422,14 @@ export function InsuranceBox({
                 </p>
               )}
 
-              <div className="flex gap-1.5">
+              {/* Nhắc cho rõ mốc gửi — nhân viên hay tưởng duyệt xong là xong */}
+              <p className="mb-2 rounded-lg bg-slate-50 px-2 py-1 text-[11px] leading-tight text-slate-600">
+                {sent
+                  ? `Đã gửi sang bên bảo hiểm lúc ${hhmm(sentAt)}${view.sentBy ? ` — ${view.sentBy}` : ""}. Khách huỷ hay dời lịch thì bấm “Thu hồi”.`
+                  : "Bảo hiểm sẽ TỰ GỬI khi quầy tích “Đã xuất vé” (hoặc đánh dấu “bay không vé”). Gửi sớm hơn mà trời xấu không bay được thì mất phí bảo hiểm."}
+              </p>
+
+              <div className="flex flex-wrap gap-1.5">
                 <Button
                   type="button"
                   variant="ghost"
@@ -374,13 +441,35 @@ export function InsuranceBox({
                 </Button>
                 <Button
                   type="button"
-                  className="h-10 flex-1 bg-emerald-600 text-xs hover:bg-emerald-700"
+                  className="h-10 flex-1 bg-sky-600 text-xs hover:bg-sky-700"
                   disabled={busy}
                   onClick={() => save(true)}
-                  title="Xác nhận đủ và đúng — đẩy sang bảng bảo hiểm"
+                  title="Xác nhận hồ sơ đủ và đúng — CHƯA gửi đi"
                 >
-                  ✓ Duyệt & gửi bảo hiểm
+                  ✓ Duyệt hồ sơ
                 </Button>
+                {sent ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 flex-1 bg-white text-xs text-rose-700"
+                    disabled={busy}
+                    onClick={() => move("recall")}
+                    title="Bấm nhầm, khách huỷ, dời lịch — rút hồ sơ khỏi bên bảo hiểm"
+                  >
+                    ↩ Thu hồi bảo hiểm
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    className="h-10 flex-1 bg-emerald-600 text-xs hover:bg-emerald-700"
+                    disabled={busy || !st.ok}
+                    onClick={() => move("send")}
+                    title="Chắc chắn bay mà chưa xuất vé — gửi bảo hiểm ngay"
+                  >
+                    📤 Gửi bảo hiểm ngay
+                  </Button>
+                )}
               </div>
             </>
           )}

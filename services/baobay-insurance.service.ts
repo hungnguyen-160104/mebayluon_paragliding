@@ -57,6 +57,13 @@ export type InsuranceView = {
   approvedAt?: string;
   approvedBy?: string;
   updatedBy?: string;
+  /** Đã GỬI bảo hiểm chưa — mốc quyết định người bay có được bảo hiểm hay không. */
+  sentAt?: string;
+  sentBy?: string;
+  sentReason?: string;
+  recalledAt?: string;
+  recalledBy?: string;
+  recallReason?: string;
   sheetAt?: string;
   sheetError?: string;
   sheetConfigured: boolean;
@@ -205,6 +212,12 @@ async function buildView(doc: any): Promise<InsuranceView> {
     approvedAt: doc.insuranceApprovedAt ? new Date(doc.insuranceApprovedAt).toISOString() : undefined,
     approvedBy: doc.insuranceApprovedBy || undefined,
     updatedBy: doc.insuranceUpdatedBy || undefined,
+    sentAt: doc.insuranceSentAt ? new Date(doc.insuranceSentAt).toISOString() : undefined,
+    sentBy: doc.insuranceSentBy || undefined,
+    sentReason: doc.insuranceSentReason || undefined,
+    recalledAt: doc.insuranceRecalledAt ? new Date(doc.insuranceRecalledAt).toISOString() : undefined,
+    recalledBy: doc.insuranceRecalledBy || undefined,
+    recallReason: doc.insuranceRecallReason || undefined,
     sheetAt: doc.insuranceSheetAt ? new Date(doc.insuranceSheetAt).toISOString() : undefined,
     sheetError: doc.insuranceSheetError || undefined,
     sheetConfigured: isInsuranceSheetConfigured(),
@@ -272,8 +285,17 @@ export async function saveBookingInsurance(
 
   const saved = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, { $set: set }, { new: true }).lean<any>();
 
-  /** Đủ rồi thì đẩy sang bảng bảo hiểm ở nền — nhân viên không phải đứng chờ. */
-  if (state.ok || opts.approve) {
+  /**
+   * DUYỆT KHÔNG PHẢI LÀ GỬI.
+   *
+   * Hồ sơ duyệt xong chỉ nghĩa là "đủ và đúng, sẵn sàng"; nó chỉ rời sang bảng
+   * bảo hiểm lúc XUẤT VÉ (xem `sendInsurance`). Gửi sớm hơn thì hôm trời xấu
+   * không bay được là mất phí bảo hiểm.
+   *
+   * Riêng booking ĐÃ GỬI rồi mà nay sửa dữ liệu thì đẩy lại ngay — để bảng bên
+   * kia không giữ tên hay số giấy tờ đã cũ.
+   */
+  if (doc.insuranceSentAt && !doc.insuranceRecalledAt) {
     after(async () => {
       await syncInsuranceToSheet(spot, id);
     });
@@ -292,8 +314,20 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
   const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
   if (!doc) return { ok: false, error: "Không tìm thấy booking" };
 
+  /**
+   * CHƯA GỬI THÌ KHÔNG CÓ GÌ TRÊN BẢNG. Bảng bảo hiểm không phải chỗ chứa hồ sơ
+   * nháp: dòng nào nằm đó là bên bảo hiểm tính phí dòng đó.
+   */
+  if (!doc.insuranceSentAt && !doc.insuranceRecalledAt) return { ok: true };
+
   const guests: InsuredGuest[] = (doc.insured ?? []).map(normalizeInsured);
   if (!guests.length) return { ok: true };
+
+  /** Thu hồi thì CẢ NHÓM mang trạng thái thu hồi, kể cả dòng còn hiệu lực. */
+  const recalled = Boolean(doc.insuranceRecalledAt) && !doc.insuranceSentAt;
+  /** Khách dời lịch: ghi rõ dời từ ngày nào để bên bảo hiểm khỏi tưởng hai chuyến. */
+  const movedFrom: string[] = Array.isArray(doc.rescheduledFrom) ? doc.rescheduledFrom : [];
+  const moveNote = movedFrom.length ? `dời từ ${movedFrom[movedFrom.length - 1]}` : "";
 
   const stamp = new Date().toISOString();
   const rows: InsuranceSheetRow[] = guests.map((g, i) => ({
@@ -309,8 +343,8 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
     isChild: g.isChild ? "Trẻ em" : "",
     bookingCode: String(doc.bookingCode || "") || `#${doc.daySeq || ""}`,
     phone: String(doc.phone || ""),
-    note: [g.note, g.replacedName ? `bay thay ${g.replacedName}` : ""].filter(Boolean).join("; "),
-    status: g.cancelled ? "HUỶ" : "BAY",
+    note: [g.note, g.replacedName ? `bay thay ${g.replacedName}` : "", moveNote].filter(Boolean).join("; "),
+    status: recalled ? "THU HỒI" : g.cancelled ? "HUỶ" : "BAY",
     updatedAt: stamp,
   }));
 
@@ -325,6 +359,101 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
     },
   );
   return { ok: res.ok, error: res.error };
+}
+
+/**
+ * GỬI BẢO HIỂM — mốc duy nhất khiến hồ sơ rời sang bảng của bên bảo hiểm.
+ *
+ * Gọi từ ba chỗ: quầy tích "đã xuất vé" (mốc chuẩn), bấm "bay không vé" (chuyến
+ * có thật nhưng không xé vé), và nút "Gửi bảo hiểm ngay" khi nhân viên tự thấy
+ * cần. Ngoài ra có một lưới an toàn: tích "đã bay" mà chưa gửi thì gửi luôn —
+ * gửi muộn còn hơn không có.
+ *
+ * Hồ sơ CHƯA ĐỦ thì không gửi được, nhưng phải ghi lại lý do thật to để dòng
+ * booking chuyển đỏ, chứ không im lặng bỏ qua.
+ */
+export async function sendInsurance(
+  spot: string,
+  id: string,
+  reason: string,
+  byName: string,
+): Promise<{ ok: boolean; error?: string }> {
+  await connectDB();
+  const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!doc) return { ok: false, error: "Không tìm thấy booking" };
+
+  const guests: InsuredGuest[] = (doc.insured ?? []).map(normalizeInsured);
+  const state = insuranceState(guests, liveGuestCount(doc));
+  if (!state.ok) {
+    const err = state.duplicateIds.length
+      ? `Trùng số giấy tờ: ${state.duplicateIds.join(", ")} — chưa gửi được bảo hiểm`
+      : `Hồ sơ mới đủ ${state.ready}/${state.need} người — CHƯA GỬI ĐƯỢC BẢO HIỂM`;
+    await BaobayBooking.updateOne({ _id: id, spot }, { $set: { insuranceSheetError: err } });
+    return { ok: false, error: err };
+  }
+
+  /** Đã gửi rồi mà gọi lại (bấm hai lần): chỉ đẩy lại cho khớp, không đổi mốc. */
+  const already = Boolean(doc.insuranceSentAt) && !doc.insuranceRecalledAt;
+  if (!already) {
+    await BaobayBooking.updateOne(
+      { _id: id, spot },
+      {
+        $set: {
+          insuranceSentAt: new Date(),
+          insuranceSentBy: byName,
+          insuranceSentReason: reason,
+          insuranceSheetError: "",
+        },
+        $unset: { insuranceRecalledAt: "", insuranceRecalledBy: "", insuranceRecallReason: "" },
+      },
+    );
+  }
+  return pushAndKeepGoing(spot, id);
+}
+
+/**
+ * THU HỒI BẢO HIỂM — bấm nhầm, khách huỷ, khách dời lịch.
+ *
+ * Dòng trên bảng KHÔNG bị xoá mà chuyển sang "THU HỒI": bên bảo hiểm phải nhìn
+ * thấy mà rút, còn mình phải giữ dấu vết là hồ sơ từng được gửi. Chưa gửi lần
+ * nào thì chẳng có gì trên bảng — chỉ xoá mốc trong sổ.
+ */
+export async function recallInsurance(
+  spot: string,
+  id: string,
+  reason: string,
+  byName: string,
+): Promise<{ ok: boolean; error?: string }> {
+  await connectDB();
+  const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!doc) return { ok: false, error: "Không tìm thấy booking" };
+  if (!doc.insuranceSentAt) return { ok: true };
+
+  await BaobayBooking.updateOne(
+    { _id: id, spot },
+    {
+      $set: {
+        insuranceRecalledAt: new Date(),
+        insuranceRecalledBy: byName,
+        insuranceRecallReason: reason,
+      },
+      $unset: { insuranceSentAt: "", insuranceSentBy: "", insuranceSentReason: "" },
+    },
+  );
+  return pushAndKeepGoing(spot, id);
+}
+
+/**
+ * Đẩy sang bảng, nhưng KHÔNG để việc đẩy hỏng làm hỏng cả thao tác.
+ *
+ * Sổ (MongoDB) mới là nơi quyết định hồ sơ đã gửi hay đã thu hồi; bảng tính là
+ * bản sao cho bên bảo hiểm. Chưa khai bảng, hay Apps Script chập, thì thao tác
+ * vẫn tính là xong — lỗi nằm lại trong `insuranceSheetError` và giao diện
+ * chuyển đỏ kèm nút "Đẩy lại", chứ không âm thầm bỏ qua.
+ */
+async function pushAndKeepGoing(spot: string, id: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await syncInsuranceToSheet(spot, id);
+  return { ok: true, error: res.ok ? undefined : res.error };
 }
 
 /**
@@ -345,6 +474,7 @@ export async function cancelInsuredGuests(spot: string, id: string, count: numbe
     left -= 1;
   }
   await BaobayBooking.updateOne({ _id: id, spot }, { $set: { insured: guests } });
+  /** Chưa gửi thì chưa có gì trên bảng để mà sửa — syncInsuranceToSheet tự bỏ qua. */
   after(async () => {
     await syncInsuranceToSheet(spot, id);
   });

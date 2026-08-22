@@ -94,9 +94,30 @@ export interface IBaobayBooking {
   }>;
   insuranceUpdatedAt?: Date;
   insuranceUpdatedBy?: string;
-  /** Nhân viên đã DUYỆT là đủ và đúng — mốc để đẩy sang bảng bảo hiểm. */
+  /** Nhân viên đã DUYỆT là đủ và đúng — hồ sơ SẴN SÀNG, nhưng CHƯA gửi đi. */
   insuranceApprovedAt?: Date;
   insuranceApprovedBy?: string;
+  /**
+   * MỐC GỬI BẢO HIỂM — thứ quyết định người bay có được bảo hiểm hay không.
+   *
+   * Gửi ĐÚNG LÚC XUẤT VÉ, không sớm hơn cũng không muộn hơn:
+   *  - Sớm hơn (lúc duyệt hồ sơ): trời xấu không bay được là mất phí bảo hiểm.
+   *  - Muộn hơn (lúc tích "đã bay", thường cuối ngày): sự cố xảy ra trước khi
+   *    gửi thì hồ sơ vô nghĩa — đây là cái không được phép sai.
+   * Xuất vé nghĩa là 99% sẽ bay, nên đó là mốc đúng. Chuyến KHÔNG XÉ VÉ thì
+   * dùng nút "bay không vé" làm mốc thay thế.
+   */
+  insuranceSentAt?: Date;
+  insuranceSentBy?: string;
+  /** Vì sao gửi: "xuất vé" · "bay không vé" · "gửi tay" · "đã bay". */
+  insuranceSentReason?: string;
+  /**
+   * THU HỒI BẢO HIỂM: bấm nhầm, khách huỷ, dời lịch. Giữ mốc lại để còn biết
+   * hồ sơ từng được gửi và đã rút lúc nào — xoá trắng là mất dấu.
+   */
+  insuranceRecalledAt?: Date;
+  insuranceRecalledBy?: string;
+  insuranceRecallReason?: string;
   /** Lần đẩy sang Google Sheets bảo hiểm gần nhất và lỗi nếu có. */
   insuranceSheetAt?: Date;
   insuranceSheetError?: string;
@@ -344,6 +365,12 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     insuranceUpdatedBy: String,
     insuranceApprovedAt: Date,
     insuranceApprovedBy: String,
+    insuranceSentAt: Date,
+    insuranceSentBy: String,
+    insuranceSentReason: String,
+    insuranceRecalledAt: Date,
+    insuranceRecalledBy: String,
+    insuranceRecallReason: String,
     insuranceSheetAt: Date,
     insuranceSheetError: String,
     webStatus: String,

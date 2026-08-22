@@ -5826,6 +5826,20 @@ export async function markNoTicketFlight(
     { new: true },
   ).lean<any>();
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+
+  /**
+   * CHUYẾN KHÔNG XÉ VÉ vẫn là chuyến bay thật, nên nút này thay vé làm mốc gửi
+   * bảo hiểm. Bỏ đánh dấu thì chỉ thu hồi nếu chính nó là thứ đã gửi đi — bỏ
+   * "không vé" vì quầy xé vé bù thì bảo hiểm phải giữ nguyên.
+   */
+  {
+    const ins = await import("@/services/baobay-insurance.service");
+    const by = session.name || session.username;
+    if (input.on) await ins.sendInsurance(spot, String(updated._id), "bay không vé", by);
+    else if (current.insuranceSentReason === "bay không vé" && !updated.ticketIssuedAt) {
+      await ins.recallInsurance(spot, String(updated._id), "bỏ đánh dấu bay không vé", by);
+    }
+  }
   return toBookingDTO(updated);
 }
 
@@ -5845,6 +5859,19 @@ export async function toggleBookingTicket(session: BaobaySession, spotRaw: strin
     : { $set: { ticketIssuedAt: new Date(), ticketIssuedBy: session.name || session.username } };
   const updated = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, set, { new: true }).lean<any>();
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+
+  /**
+   * XUẤT VÉ LÀ MỐC GỬI BẢO HIỂM. Xuất vé nghĩa là 99% sẽ bay, nên đây là lúc
+   * đúng: sớm hơn thì trời xấu không bay được là mất phí, muộn hơn (đợi tích
+   * "đã bay", thường cuối ngày) thì sự cố trước lúc gửi là hồ sơ vô nghĩa.
+   * Bỏ tích vé = bấm nhầm hoặc thu hồi vé, nên thu hồi luôn bảo hiểm.
+   */
+  {
+    const ins = await import("@/services/baobay-insurance.service");
+    const by = session.name || session.username;
+    if (updated.ticketIssuedAt) await ins.sendInsurance(spot, String(updated._id), "xuất vé", by);
+    else await ins.recallInsurance(spot, String(updated._id), "bỏ tích xuất vé", by);
+  }
   return toBookingDTO(updated);
 }
 
@@ -5971,9 +5998,21 @@ export async function updateBookingStatus(
    */
   {
     const ins = await import("@/services/baobay-insurance.service");
-    if (action === "move") await ins.resyncInsuranceAfterMove(spot, String(doc._id));
-    else if (action === "cancel") {
+    const by = session.name || session.username;
+    if (action === "move") {
+      /**
+       * DỜI LỊCH: hồ sơ đi theo booking. Vẫn ĐÚNG MỘT DÒNG trên bảng (khoá là
+       * mã booking + thứ tự người), chỉ đổi ngày bay và ghi thêm "dời từ …" —
+       * thu hồi rồi gửi lại sẽ ghi đè lên chính dòng đó, bên bảo hiểm chẳng
+       * thấy động tác thu hồi mà mình lại tốn hai lượt gọi.
+       */
+      await ins.resyncInsuranceAfterMove(spot, String(doc._id));
+    } else if (action === "cancel") {
       await ins.cancelInsuredGuests(spot, String(doc._id), (doc.insured ?? []).length, "huỷ cả booking");
+      await ins.recallInsurance(spot, String(doc._id), "khách huỷ bay", by);
+    } else if (action === "flown" && !doc.insuranceSentAt) {
+      /** Lưới an toàn: đã bay mà chưa gửi thì gửi ngay — muộn còn hơn không có. */
+      await ins.sendInsurance(spot, String(doc._id), "đã bay", by);
     }
   }
 
@@ -6160,6 +6199,8 @@ function toBookingDTO(doc: any): BookingDTO {
     otaGuests: doc.otaGuests ?? [],
     insured: doc.insured ?? [],
     insuranceApprovedAt: doc.insuranceApprovedAt ? new Date(doc.insuranceApprovedAt).toISOString() : undefined,
+    insuranceSentAt: doc.insuranceSentAt ? new Date(doc.insuranceSentAt).toISOString() : undefined,
+    insuranceRecalledAt: doc.insuranceRecalledAt ? new Date(doc.insuranceRecalledAt).toISOString() : undefined,
     cancelTicketIssued: doc.cancelTicketIssued,
     cancelTicketCodes: doc.cancelTicketCodes ?? [],
     refundAmount: doc.refundAmount ?? 0,

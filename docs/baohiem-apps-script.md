@@ -61,8 +61,15 @@ Cột "Khoá" là thứ giữ cho mỗi người chỉ có một dòng — đừ
 
 - **Ghi đè, không đẻ dòng trùng**: khoá là `mã booking : thứ tự người`, đẩy lại
   bao nhiêu lần cũng chỉ sửa đúng dòng đó.
+- **Khi nào dòng xuất hiện trên bảng**: chỉ lúc quầy tích **"Đã xuất vé"** (hoặc
+  đánh dấu **"bay không vé"** với chuyến không xé vé). Hồ sơ nhập xong, duyệt
+  xong mà chưa xuất vé thì **chưa có gì trên bảng** — gửi sớm mà trời xấu không
+  bay được là mất phí bảo hiểm; gửi muộn (đợi tích "đã bay" cuối ngày) thì sự cố
+  trước lúc gửi coi như không có bảo hiểm.
 - **Khách huỷ**: dòng vẫn còn, cột Trạng thái chuyển thành `HUỶ` để bên bảo hiểm
   rút tên. Xoá trắng thì bên đó vẫn tính phí cho người không bay.
+- **Thu hồi** (bấm nhầm vé, khách huỷ cả booking): Trạng thái chuyển `THU HỒI`.
+  Dòng `HUỶ` và `THU HỒI` không bị tính là trùng giấy tờ.
 - **Khách dời ngày**: vẫn dòng cũ, chỉ đổi ngày bay.
 - **Trùng số giấy tờ trong cùng một ngày bay**: ô số giấy tờ bị **bôi đỏ**, kể cả
   khi trùng với dòng nhân viên gõ tay từ trước. Cùng một người bay hai ngày khác

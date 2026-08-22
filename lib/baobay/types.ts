@@ -370,6 +370,9 @@ export type BookingDTO = {
    */
   insured?: InsuredGuest[];
   insuranceApprovedAt?: string;
+  /** Mốc GỬI bảo hiểm (lúc xuất vé) — có mốc này thì người bay mới thực sự được bảo hiểm. */
+  insuranceSentAt?: string;
+  insuranceRecalledAt?: string;
   /** HUỶ BAY: đã xuất vé chưa · mã vé thu hồi · tiền hoàn và hoàn bằng gì. */
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
