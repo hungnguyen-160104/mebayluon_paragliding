@@ -28,7 +28,7 @@ import {
   type BankCandidate,
   type BankEntry,
 } from "@/lib/baobay/bank-check";
-import { formatDateKeyVN, isDateKey } from "@/lib/baobay/date";
+import { formatDateKeyVN, isDateKey, toDateKeyVN } from "@/lib/baobay/date";
 import { SPOT_IDS, normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
 import { connectDB } from "@/lib/mongodb";
@@ -177,6 +177,30 @@ export type BankCheckReport = {
   };
   /** Dòng dán vào nhưng không đọc được số tiền / là tiền CHI ra — chỉ báo, không lưu. */
   skipped: string[];
+  /**
+   * MỌI KHOẢN CHUYỂN KHOẢN CÒN CHƯA SOÁT, không phụ thuộc ngày đang xem:
+   * booking chưa khoá mà kế toán chưa tích "đã nhận". Đây là danh sách để soát
+   * tràn — làm hết là hết việc, thay vì phải nhớ mở lại từng ngày.
+   */
+  unchecked: BankUncheckedDTO[];
+};
+
+/** Một khoản CK còn chờ kế toán soát — gom từ mọi ngày. */
+export type BankUncheckedDTO = {
+  refId: string;
+  kind: "collect" | "deposit" | "remaining";
+  bookingId?: string;
+  spot: string;
+  label: string;
+  flightDate: string;
+  createdDate?: string;
+  amount: number;
+  /** Mã giao dịch nhân viên đã ghi — rỗng nghĩa là chưa ai ghi mã, phải dò bằng dấu hiệu khác. */
+  code: string;
+  /** App đã ghi khoản thu này chưa (false = mới chỉ là "còn phải thu"). */
+  recorded: boolean;
+  /** Dòng sao kê đã trỏ về khoản này (nếu có) — kế toán chỉ việc tích "đã nhận". */
+  matchedLine?: { id: string; raw: string; bankDate: string; why: string };
 };
 
 /* ================================================================== */
@@ -224,10 +248,10 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       deposit: { $gt: 0 },
       status: { $ne: "voided" },
     })
-      .select("spot daySeq flightDate contactName phone bookingCode deposit transferCode")
+      .select("spot daySeq flightDate contactName phone bookingCode deposit transferCode createdAt")
       .lean<any[]>(),
     BaobayBooking.find({ spot: { $in: spots }, flightDate: date, status: { $ne: "voided" } })
-      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode")
+      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt")
       .lean<any[]>(),
   ]);
 
@@ -235,7 +259,7 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
   const ids = collects.map((c) => c.bookingId).filter(Boolean);
   const linked = ids.length
     ? await BaobayBooking.find({ _id: { $in: ids } })
-        .select("spot daySeq flightDate contactName phone bookingCode")
+        .select("spot daySeq flightDate contactName phone bookingCode createdAt")
         .lean<any[]>()
     : [];
   const linkedById = new Map(linked.map((b) => [String(b._id), b]));
@@ -260,6 +284,7 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       codes: [c.transferCode].filter(Boolean),
       amounts: [c.amount].filter((n) => n > 0),
       recorded: true,
+      createdDate: b?.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
     });
   }
 
@@ -297,6 +322,7 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       codes: [b.transferCode].filter(Boolean),
       amounts: [manualDeposit],
       recorded: true,
+      createdDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
     });
   }
 
@@ -324,10 +350,139 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       codes: [b.transferCode].filter(Boolean),
       amounts,
       recorded: false,
+      createdDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
     });
   }
 
   return out;
+}
+
+/**
+ * MỌI CHỖ TIỀN CÒN CHỜ, KHÔNG THEO NGÀY.
+ *
+ * `candidatesForDate` chỉ gom booking LẬP trong ngày hoặc BAY trong ngày. Khách
+ * đặt hôm nay, bay tháng sau, chuyển tiền vào một hôm bất kỳ ở giữa thì dòng
+ * sao kê hôm đó chẳng có ứng viên nào để dò — treo lại, và kế toán phải nhớ.
+ *
+ * Danh sách này bù đúng khoảng trống ấy: mọi khoản chuyển khoản CHƯA được kế
+ * toán tích "đã nhận", và mọi booking CHƯA KHOÁ còn tiền phải thu — bất kể ngày
+ * nào. Đây cũng chính là thứ trả lời câu "cho tôi xem hết mã chưa soát".
+ */
+async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
+  const [collects, bookings] = await Promise.all([
+    BaobayCollect.find({
+      spot: { $in: spots },
+      method: "transfer",
+      status: { $ne: "rejected" },
+      $or: [{ verifiedAt: null }, { verifiedAt: { $exists: false } }],
+    })
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .lean<any[]>(),
+    BaobayBooking.find({
+      spot: { $in: spots },
+      status: { $nin: ["voided", "cancelled"] },
+      lockedAt: null,
+      $or: [
+        { remaining: { $gt: 0 } },
+        { deposit: { $gt: 0 }, depositVerifiedAt: null },
+      ],
+    })
+      .sort({ flightDate: -1 })
+      .limit(500)
+      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt")
+      .lean<any[]>(),
+  ]);
+
+  const ids = collects.map((c) => c.bookingId).filter(Boolean);
+  const linked = ids.length
+    ? await BaobayBooking.find({ _id: { $in: ids } })
+        .select("spot daySeq flightDate contactName phone bookingCode createdAt")
+        .lean<any[]>()
+    : [];
+  const byId = new Map(linked.map((b) => [String(b._id), b]));
+
+  const out: BankCandidate[] = [];
+
+  for (const c of collects) {
+    const b = c.bookingId ? byId.get(String(c.bookingId)) : undefined;
+    out.push({
+      id: `collect:${String(c._id)}`,
+      kind: "collect",
+      bookingId: c.bookingId ? String(c.bookingId) : undefined,
+      spot: c.spot,
+      label: b ? bookingLabel(b) : [c.guestName || c.bookingCode || "khách", spotName(c.spot)].filter(Boolean).join(" · "),
+      daySeq: Number(b?.daySeq) || 0,
+      flightDate: b?.flightDate || c.date || "",
+      bookingCode: c.bookingCode || b?.bookingCode || "",
+      phone: b?.phone || "",
+      contactName: c.guestName || b?.contactName || "",
+      codes: [c.transferCode].filter(Boolean),
+      amounts: [c.amount].filter((n) => n > 0),
+      recorded: true,
+      createdDate: b?.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
+    });
+  }
+
+  /** Cọc GÕ TAY (không qua lệnh thu) mới là khoản riêng cần soát — xem chú thích ở candidatesForDate. */
+  const bookIds = bookings.map((b) => b._id);
+  const linkedCollects = bookIds.length
+    ? await BaobayCollect.find({ bookingId: { $in: bookIds } }).select("bookingId amount").lean<any[]>()
+    : [];
+  const collectedBy = new Map<string, number>();
+  for (const c of linkedCollects) {
+    const k = String(c.bookingId);
+    collectedBy.set(k, (collectedBy.get(k) ?? 0) + (c.amount || 0));
+  }
+
+  for (const b of bookings) {
+    const created = b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined;
+    const manualDeposit = (b.deposit || 0) - (collectedBy.get(String(b._id)) ?? 0);
+    if (manualDeposit > 0 && !b.depositVerifiedAt) {
+      out.push({
+        id: `deposit:${String(b._id)}`,
+        kind: "deposit",
+        bookingId: String(b._id),
+        spot: b.spot,
+        label: `${bookingLabel(b)} · cọc`,
+        daySeq: Number(b.daySeq) || 0,
+        flightDate: b.flightDate || "",
+        bookingCode: b.bookingCode || "",
+        phone: b.phone || "",
+        contactName: b.contactName || "",
+        codes: [b.transferCode].filter(Boolean),
+        amounts: [manualDeposit],
+        recorded: true,
+        createdDate: created,
+      });
+    }
+    if (Number(b.remaining) > 0) {
+      out.push({
+        id: `remaining:${String(b._id)}`,
+        kind: "remaining",
+        bookingId: String(b._id),
+        spot: b.spot,
+        label: bookingLabel(b),
+        daySeq: Number(b.daySeq) || 0,
+        flightDate: b.flightDate || "",
+        bookingCode: b.bookingCode || "",
+        phone: b.phone || "",
+        contactName: b.contactName || "",
+        codes: [b.transferCode].filter(Boolean),
+        amounts: [...new Set([b.remaining, b.totalAmount].filter((n) => n > 0))],
+        recorded: false,
+        createdDate: created,
+      });
+    }
+  }
+
+  return out;
+}
+
+/** Gộp hai nguồn ứng viên, bỏ trùng theo khoá khoản. */
+function mergeCandidates(a: BankCandidate[], b: BankCandidate[]): BankCandidate[] {
+  const seen = new Set(a.map((c) => c.id));
+  return [...a, ...b.filter((c) => !seen.has(c.id))];
 }
 
 /** Điểm bay tài khoản này được phân — kế toán thường quản cả ba. */
@@ -419,12 +574,18 @@ export async function runBankCheck(
   const entries = parseBankStatement(text);
   const skipped: string[] = [];
 
-  /** Ứng viên theo từng ngày: dòng sao kê mang ngày khác thì dò theo ngày ấy. */
+  /**
+   * Ứng viên = khoản của ĐÚNG NGÀY dòng sao kê + MỌI khoản còn treo bất kể ngày.
+   *
+   * Chỉ dò theo ngày thì tiền khách chuyển trước ngày bay cả tuần không có chỗ
+   * nào để khớp: hôm chuyển tiền, booking đó vừa không được lập vừa không bay.
+   */
+  const openPool = await candidatesOpen(spots);
   const cache = new Map<string, BankCandidate[]>();
   const forDate = async (d: string) => {
     let c = cache.get(d);
     if (!c) {
-      c = await candidatesForDate(spots, d);
+      c = mergeCandidates(await candidatesForDate(spots, d), openPool);
       cache.set(d, c);
     }
     return c;
@@ -855,6 +1016,38 @@ export async function getBankCheck(
     })
     .sort((a, b) => (a.daySeq || 999) - (b.daySeq || 999) || a.label.localeCompare(b.label));
 
+  /**
+   * Danh sách SOÁT TRÀN: mọi khoản CK chưa được tích "đã nhận", bất kể ngày.
+   * Kèm dòng sao kê đã trỏ về khoản đó (nếu có) để kế toán khỏi phải đi tìm.
+   */
+  const openNow = await candidatesOpen(spots);
+  const matchedLines = await BaobayBankLine.find({
+    status: "matched",
+    refId: { $in: openNow.map((c) => c.id) },
+  })
+    .select("refId raw bankDate matchWhy")
+    .lean<any[]>();
+  const lineByRef = new Map(matchedLines.map((l) => [String(l.refId), l]));
+
+  const unchecked: BankUncheckedDTO[] = openNow.map((c) => {
+    const l = lineByRef.get(c.id);
+    return {
+      refId: c.id,
+      kind: c.kind,
+      bookingId: c.bookingId,
+      spot: c.spot,
+      label: c.label,
+      flightDate: c.flightDate,
+      createdDate: c.createdDate,
+      amount: Math.max(...c.amounts.filter((n) => n > 0), 0),
+      code: c.codes[0] ?? "",
+      recorded: c.recorded,
+      matchedLine: l
+        ? { id: String(l._id), raw: String(l.raw), bankDate: String(l.bankDate ?? ""), why: String(l.matchWhy ?? "") }
+        : undefined,
+    };
+  });
+
   return {
     date,
     spots,
@@ -864,6 +1057,7 @@ export async function getBankCheck(
     appCash,
     groups,
     bookingRows,
+    unchecked,
     summary: {
       bankTotal,
       bankCount: lineDocs.length,

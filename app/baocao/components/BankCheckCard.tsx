@@ -104,6 +104,21 @@ type BookingRowDTO = {
   suggests: LineDTO[];
 };
 
+/** Một khoản CK còn chờ soát, gom từ MỌI ngày (không riêng ngày đang xem). */
+type UncheckedDTO = {
+  refId: string;
+  kind: "collect" | "deposit" | "remaining";
+  bookingId?: string;
+  spot: string;
+  label: string;
+  flightDate: string;
+  createdDate?: string;
+  amount: number;
+  code: string;
+  recorded: boolean;
+  matchedLine?: { id: string; raw: string; bankDate: string; why: string };
+};
+
 type Report = {
   date: string;
   spots: string[];
@@ -113,6 +128,7 @@ type Report = {
   appCash: AppCashDTO[];
   groups: GroupDTO[];
   bookingRows: BookingRowDTO[];
+  unchecked: UncheckedDTO[];
   summary: {
     bankTotal: number;
     bankCount: number;
@@ -211,6 +227,13 @@ export function BankCheckCard({ date }: { date: string }) {
   const [expanded, setExpanded] = useState<string[]>([]);
   /** Khoản thu đang chờ chọn booking để chuyển sang (ghi nhầm khách). */
   const [moving, setMoving] = useState<{ refId: string; spot: string; label: string; amount: number } | null>(null);
+  /**
+   * SOÁT TRÀN — mọi mã CK chưa "đã nhận", bất kể ngày. Gập sẵn vì danh sách này
+   * dài (hàng trăm khoản); kế toán mở ra khi muốn làm cho hết chứ không phải
+   * thứ nhìn hằng ngày.
+   */
+  const [allOpen, setAllOpen] = useState(false);
+  const [allFilter, setAllFilter] = useState<"all" | "hasLine" | "noCode">("all");
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -573,6 +596,105 @@ export function BankCheckCard({ date }: { date: string }) {
           Mỗi booking MỘT THẺ: tóm tắt dịch vụ + từng khoản TM/CK + các dòng
           sao kê khớp (hoặc nghi) nằm ngay bên dưới — soát theo từng khách,
           không phải nhảy qua lại giữa ba danh sách như trước. */}
+      {/* SOÁT TRÀN: mọi mã CK của booking chưa khoá mà kế toán chưa tích "đã
+          nhận" — gom từ MỌI ngày. Làm hết danh sách này là hết việc đối soát,
+          thay vì phải nhớ mở lại từng ngày một. */}
+      {(report?.unchecked ?? []).length > 0 && (
+        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/60">
+          <button
+            type="button"
+            onClick={() => setAllOpen((v) => !v)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left"
+          >
+            <span className="text-xs font-bold text-amber-900">
+              📋 Mọi mã CK chưa soát ({report!.unchecked.length}) — không theo ngày
+            </span>
+            <span className="flex-1" />
+            <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-amber-900">
+              {allOpen ? "Thu gọn" : "Mở ra"}
+            </span>
+          </button>
+
+          {allOpen && (
+            <div className="px-3 pb-3">
+              <div className="mb-2 flex flex-wrap gap-1">
+                {(
+                  [
+                    ["all", `Tất cả (${report!.unchecked.length})`],
+                    ["hasLine", `Đã có dòng sao kê (${report!.unchecked.filter((u) => u.matchedLine).length})`],
+                    ["noCode", `Chưa ghi mã GD (${report!.unchecked.filter((u) => !u.code).length})`],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setAllFilter(k)}
+                    className={
+                      "rounded-lg border px-2 py-1 text-[11px] font-semibold " +
+                      (allFilter === k ? "border-amber-600 bg-amber-600 text-white" : "border-amber-300 bg-white text-amber-900")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <ul className="space-y-1">
+                {report!.unchecked
+                  .filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true))
+                  .slice(0, 80)
+                  .map((u) => (
+                    <li key={u.refId} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-xs font-semibold text-slate-800">{u.label}</span>
+                        <span className="text-[11px] text-slate-500">
+                          bay {u.flightDate || "—"}
+                          {u.createdDate ? ` · lập ${u.createdDate}` : ""}
+                        </span>
+                        <span className="text-xs font-bold tabular-nums text-slate-900">{formatVND(u.amount)}</span>
+                        {u.code ? (
+                          <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
+                            mã {u.code}
+                          </span>
+                        ) : (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">chưa ghi mã GD</span>
+                        )}
+                        {!u.recorded && (
+                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                            mới là “còn phải thu”
+                          </span>
+                        )}
+                        <span className="flex-1" />
+                        <button
+                          type="button"
+                          disabled={rowBusy === u.refId || !u.recorded}
+                          onClick={() => confirmItem(u.refId, true)}
+                          title={u.recorded ? "Đánh dấu đã nhận" : "Chưa có lệnh thu — không đánh dấu được"}
+                          className="h-7 shrink-0 rounded-lg border border-emerald-400 bg-white px-2 text-[11px] font-bold text-emerald-700 disabled:opacity-40"
+                        >
+                          Đã nhận
+                        </button>
+                      </div>
+                      {u.matchedLine && (
+                        <div className="mt-1 rounded bg-sky-50 px-2 py-1 text-[11px] leading-tight text-sky-900">
+                          ↳ sao kê {u.matchedLine.bankDate}: {u.matchedLine.raw.slice(0, 110)}
+                          {u.matchedLine.why ? ` — ${u.matchedLine.why}` : ""}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+              {report!.unchecked.filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true)).length >
+                80 && (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  … còn nữa, làm bớt rồi tải lại để xem tiếp (đang hiện 80 khoản đầu).
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {(report?.bookingRows ?? []).length > 0 && (
         <div className="mt-3 space-y-2">
           <div className="text-xs font-bold text-slate-700">

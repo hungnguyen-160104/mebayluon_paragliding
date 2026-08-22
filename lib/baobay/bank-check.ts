@@ -145,7 +145,89 @@ export type BankCandidate = {
   amounts: number[];
   /** App ĐÃ ghi nhận khoản CK này chưa — false nghĩa là khớp được thì phải nhắc "chưa ghi thu". */
   recorded: boolean;
+  /** Ngày LẬP booking "YYYY-MM-DD" — khách hay chuyển cọc ngay hôm đăng ký. */
+  createdDate?: string;
 };
+
+/* ================================================================== */
+/* CHẤM ĐIỂM NHIỀU DẤU HIỆU                                            */
+/*                                                                     */
+/* Chỉ so mã giao dịch là chưa đủ. Nhân viên gõ mã của booking này sang */
+/* booking kia mà hai bên cùng số tiền thì máy vẫn "khớp" ngon lành, và */
+/* tiền nằm nhầm sổ mà không ai biết. Nên mỗi ứng viên được soi bằng SÁU */
+/* dấu hiệu độc lập; nhiều dấu hiệu cùng chỉ về một chỗ mới là chắc, còn */
+/* mã GD một mình chỉ sang chỗ khác thì phải kêu lên cho kế toán nhìn.  */
+/* ================================================================== */
+
+export type BankSignals = {
+  /** Đuôi mã giao dịch đã ghi trong app nằm trong dòng sao kê. */
+  code: boolean;
+  /** Số tiền đúng bằng một trong các số đang chờ. */
+  amount: boolean;
+  /** Tên chủ tài khoản trên sao kê chứa tên khách. */
+  name: boolean;
+  /** 9 số cuối SĐT khách nằm trong dòng. */
+  phone: boolean;
+  /** Nội dung CK có mã booking, hoặc chuỗi "ddmm kN" của mã QR app tạo. */
+  note: boolean;
+  /** Ngày chuyển tiền trùng ngày bay hoặc ngày lập booking. */
+  date: boolean;
+};
+
+export const SIGNAL_LABEL: Record<keyof BankSignals, string> = {
+  code: "mã GD",
+  amount: "số tiền",
+  name: "tên chủ TK",
+  phone: "SĐT",
+  note: "nội dung",
+  date: "ngày CK",
+};
+
+export function signalNames(sg: BankSignals): string[] {
+  return (Object.keys(SIGNAL_LABEL) as Array<keyof BankSignals>).filter((k) => sg[k]).map((k) => SIGNAL_LABEL[k]);
+}
+
+export function signalCount(sg: BankSignals): number {
+  return signalNames(sg).length;
+}
+
+/** Sáu dấu hiệu của MỘT ứng viên so với MỘT dòng sao kê. */
+export function signalsFor(entry: BankEntry, c: BankCandidate, hayInput?: string): BankSignals {
+  const hay = hayInput ?? ascii(entry.raw);
+  const runs = hay.match(/[A-Z0-9]{4,}/g) ?? [];
+  const digitRuns = hay.match(/\d{9,12}/g) ?? [];
+
+  const code = c.codes.some((raw) => {
+    const k = ascii(raw).replace(/[^A-Z0-9]/g, "");
+    return k.length >= 4 && runs.some((r) => r.endsWith(k));
+  });
+
+  const name = (() => {
+    const n = ascii(c.contactName);
+    return n.length >= 6 && n.includes(" ") && hay.includes(n);
+  })();
+
+  const tail = c.phone.replace(/\D/g, "").slice(-9);
+  const phone = tail.length === 9 && digitRuns.some((r) => r.endsWith(tail));
+
+  const note = (() => {
+    const bc = ascii(c.bookingCode);
+    if (bc.length >= 4 && containsToken(hay, bc)) return true;
+    const dd = c.flightDate.slice(8, 10);
+    const mm = c.flightDate.slice(5, 7);
+    if (!dd || !mm || !c.daySeq) return false;
+    return new RegExp(`${dd}/?${mm}\\s*K\\s?${c.daySeq}(?:[^0-9]|$)`).test(hay);
+  })();
+
+  /**
+   * NGÀY CK là dấu hiệu YẾU (một ngày có hàng chục người chuyển) nên không bao
+   * giờ đứng một mình, nhưng nó loại được đúng cái nhầm hay gặp: mã gõ nhầm
+   * sang booking của ngày khác.
+   */
+  const date = Boolean(entry.bankDate) && (entry.bankDate === c.flightDate || entry.bankDate === c.createdDate);
+
+  return { code, amount: c.amounts.includes(entry.amount), name, phone, note, date };
+}
 
 export type BankMatch =
   | {
@@ -231,8 +313,117 @@ function settle(
   return { status: "multi", hits: uniq, why };
 }
 
+
+/**
+ * KHÁCH CHUYỂN GỘP NHIỀU BOOKING trong một lần.
+ *
+ * Người quen đặt liền 2-3 nhóm rồi chuyển một cục từ đúng một tài khoản, mà
+ * nhân viên thường không ghi mã giao dịch. Máy không tự gán được (một dòng tiền
+ * chỉ trỏ về một khoản) nhưng phải NÓI RA, không thì kế toán ngồi dò tay giữa
+ * mấy chục dòng mà chẳng hiểu vì sao không khớp số nào.
+ *
+ * Gom ứng viên theo NGƯỜI (9 số cuối SĐT, không có thì theo tên không dấu) rồi
+ * thử mọi tổ hợp 2-4 booking xem có cộng đúng số tiền không.
+ */
+function personKey(c: BankCandidate): string {
+  const tail = c.phone.replace(/\D/g, "").slice(-9);
+  if (tail.length === 9) return "sdt:" + tail;
+  const name = ascii(c.contactName);
+  return name.length >= 6 ? "ten:" + name : "";
+}
+
+export function combinedHint(entry: BankEntry, candidates: BankCandidate[], hay: string): BankCandidate[] | null {
+  if (entry.amount <= 0) return null;
+
+  const groups = new Map<string, BankCandidate[]>();
+  for (const c of dedupeByBooking(candidates)) {
+    const k = personKey(c);
+    if (!k) continue;
+    /** Chỉ xét người CÓ MẶT trong dòng sao kê — tên hoặc SĐT phải xuất hiện. */
+    const sg = signalsFor(entry, c, hay);
+    if (!sg.name && !sg.phone) continue;
+    groups.set(k, [...(groups.get(k) ?? []), c]);
+  }
+
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    const pool = list.slice(0, 6); // đủ dùng, khỏi nổ tổ hợp
+    const best = pickSubset(pool, entry.amount);
+    if (best) return best;
+  }
+  return null;
+}
+
+/** Tìm tổ hợp 2-4 booking cộng đúng `target` (mỗi booking lấy số tiền lớn nhất đang chờ). */
+function pickSubset(pool: BankCandidate[], target: number): BankCandidate[] | null {
+  const items = pool.map((c) => ({ c, v: Math.max(...c.amounts.filter((n) => n > 0), 0) })).filter((x) => x.v > 0);
+  const n = items.length;
+  for (let mask = 1; mask < 1 << n; mask++) {
+    const picked = items.filter((_, i) => mask & (1 << i));
+    if (picked.length < 2 || picked.length > 4) continue;
+    if (picked.reduce((a, x) => a + x.v, 0) === target) return picked.map((x) => x.c);
+  }
+  return null;
+}
+
 export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): BankMatch {
   const hay = ascii(entry.raw);
+
+  /* ---- 0. CHẤM ĐIỂM NHIỀU DẤU HIỆU ------------------------------------
+   *
+   * Chạy TRƯỚC bậc thang cũ vì nó xử được đúng cái bậc thang cũ chịu thua:
+   * nhân viên gõ mã giao dịch của booking này sang booking kia mà hai bên
+   * cùng số tiền. Bậc thang cũ thấy mã trùng là nhận ngay; ở đây mã chỉ là
+   * MỘT trong sáu dấu hiệu, chỗ nào gom được nhiều dấu hiệu hơn thì thắng,
+   * và nếu chỗ thua lại là chỗ mang mã GD thì nói thẳng "có thể gõ nhầm mã".
+   *
+   * Cần CÁCH BIỆT rõ mới dám kết luận: hoà điểm thì treo cho kế toán nhìn,
+   * vì đoán bừa giữa hai người là mất dấu tiền của cả hai.
+   */
+  const scored = candidates
+    .map((c) => {
+      const sg = signalsFor(entry, c, hay);
+      return { c, sg, n: signalCount(sg) };
+    })
+    /** Số tiền + ngày là hai dấu hiệu YẾU; phải có ít nhất một dấu hiệu định danh. */
+    .filter((s) => s.n >= 2 && (s.sg.code || s.sg.note || s.sg.phone || s.sg.name))
+    .sort((a, b) => b.n - a.n);
+
+  if (scored.length) {
+    const top = scored[0];
+    const rivals = scored.filter((s) => (s.c.bookingId || s.c.id) !== (top.c.bookingId || top.c.id));
+    const second = rivals[0];
+
+    if (!second || top.n > second.n) {
+      const level: "code" | "note" | "amount" = top.sg.code ? "code" : top.sg.note || top.sg.phone || top.sg.name ? "note" : "amount";
+      /** Kẻ thua mà lại đang giữ mã GD: gần như chắc là nhân viên gõ nhầm mã. */
+      const codeElsewhere = rivals.find((s) => s.sg.code && !top.sg.code);
+      const why =
+        `khớp ${top.n} dấu hiệu: ${signalNames(top.sg).join(" + ")}` +
+        (codeElsewhere
+          ? ` ⚠ mã GD lại đang ghi ở "${codeElsewhere.c.label}" — nhiều khả năng nhân viên gõ nhầm mã, kiểm lại cả hai`
+          : "");
+      return { status: "matched", level, hit: top.c, why };
+    }
+
+    if (top.n === second.n) {
+      const combo = combinedHint(entry, candidates, hay);
+      if (combo) {
+        return {
+          status: "suggest",
+          hits: combo,
+          why: `số tiền bằng TỔNG ${combo.length} booking của cùng một khách (${combo
+            .map((c) => c.label)
+            .join(" + ")}) — khách chuyển gộp, chia tay cho từng booking`,
+        };
+      }
+      return {
+        status: "multi",
+        hits: dedupeByBooking(scored.filter((s) => s.n === top.n).map((s) => s.c)),
+        why: `${scored.filter((s) => s.n === top.n).length} chỗ cùng khớp ${top.n} dấu hiệu (${signalNames(top.sg).join(" + ")}) — chọn tay`,
+      };
+    }
+  }
 
   // ---- 1. MÃ GIAO DỊCH đã ghi trong app ----
   // Nhân viên chỉ ghi 4-5 KÝ TỰ CUỐI của mã, nên so theo ĐUÔI: một dãy chữ-số
@@ -316,6 +507,20 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
     const hits = dedupeByBooking(candidates.filter((c) => c.amounts.includes(entry.amount)));
     if (hits.length === 1) return { status: "matched", level: "amount", hit: hits[0], why: "trùng số tiền (duy nhất)" };
     if (hits.length > 1) return { status: "multi", hits, why: "nhiều booking cùng số tiền" };
+  }
+
+  /** Bó tay theo từng khoản — thử nốt xem có phải khách chuyển gộp không. */
+  {
+    const combo = combinedHint(entry, candidates, hay);
+    if (combo) {
+      return {
+        status: "suggest",
+        hits: combo,
+        why: `số tiền bằng TỔNG ${combo.length} booking của cùng một khách (${combo
+          .map((c) => c.label)
+          .join(" + ")}) — khách chuyển gộp, chia tay cho từng booking`,
+      };
+    }
   }
 
   return { status: "none" };
