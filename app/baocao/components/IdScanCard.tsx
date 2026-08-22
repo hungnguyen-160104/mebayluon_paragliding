@@ -40,6 +40,7 @@ export function IdScanCard({
   const [scanning, setScanning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const passportRef = useRef<HTMLInputElement>(null);
+  const backRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const loopRef = useRef<number | null>(null);
@@ -104,9 +105,11 @@ export function IdScanCard({
       [W * 0.45, H * 0.4, W * 0.55, H * 0.6], // góc dưới phải
       [W * 0.25, H * 0.2, W * 0.5, H * 0.6], // giữa thẻ
       [0, 0, W * 0.55, H * 0.6], // góc trên trái
+      [0, H * 0.4, W * 0.55, H * 0.6], // góc dưới trái
     ];
     for (const [sx, sy, sw, sh] of attempts) {
-      const hit = tryPart(sx, sy, sw, sh);
+      // Phóng to hơn nữa cho mã in mờ: 900px trượt thì thử lại ở 1400px
+      const hit = tryPart(sx, sy, sw, sh) ?? tryPart(sx, sy, sw, sh, 1400);
       if (hit) return hit;
     }
     return null;
@@ -116,13 +119,13 @@ export function IdScanCard({
    * OCR chỉ chạy trên DẢI ĐÁY của ảnh — MRZ luôn nằm đó. Cắt bớt vừa nhanh gấp
    * mấy lần vừa đỡ đọc nhầm chữ ở phần trên hộ chiếu.
    */
-  async function readMrz(canvas: HTMLCanvasElement): Promise<string> {
+  async function ocrStrip(src: HTMLCanvasElement, fromRatio: number): Promise<string> {
     const strip = document.createElement("canvas");
-    strip.width = canvas.width;
-    strip.height = Math.round(canvas.height * 0.32);
+    strip.width = src.width;
+    strip.height = Math.round(src.height * (1 - fromRatio));
     strip
       .getContext("2d")
-      ?.drawImage(canvas, 0, canvas.height - strip.height, canvas.width, strip.height, 0, 0, strip.width, strip.height);
+      ?.drawImage(src, 0, Math.round(src.height * fromRatio), src.width, strip.height, 0, 0, strip.width, strip.height);
 
     const { default: Tesseract } = await import("tesseract.js");
     const { data } = await Tesseract.recognize(strip, "eng", {
@@ -130,6 +133,19 @@ export function IdScanCard({
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
     });
     return data.text ?? "";
+  }
+
+  /**
+   * Đọc dãy MRZ. Thử DẢI ĐÁY trước (MRZ luôn nằm đó, cắt bớt vừa nhanh vừa đỡ
+   * đọc nhầm chữ phía trên), trượt thì thử NỬA DƯỚI rồi cả ảnh — ảnh chụp lệch
+   * hay thẻ nằm nghiêng thì dải 32% có khi cắt mất một dòng.
+   */
+  async function readMrz(canvas: HTMLCanvasElement): Promise<string> {
+    for (const ratio of [0.68, 0.5, 0]) {
+      const text = await ocrStrip(canvas, ratio);
+      if (parseMrz(text)) return text;
+    }
+    return "";
   }
 
   /**
@@ -145,17 +161,30 @@ export function IdScanCard({
     setCopied(false);
     setCurrent(null);
     try {
-      const canvas = await toCanvas(file, kind === "cccd" ? 1400 : 1800);
+      const canvas = await toCanvas(file, 1800);
 
       if (kind === "cccd") {
         setBusy("qr");
         const qr = await readQr(canvas);
         const person = qr ? parseCccdQr(qr) : null;
         if (person) return setCurrent(person);
+
+        /**
+         * QR TRƯỢT THÌ ĐỌC CHỮ.
+         *
+         * Mã QR trên CCCD nhỏ, in mờ dần theo thời gian, gặp ánh sáng chéo là
+         * trượt — đó là lý do tỉ lệ quét ra thấp. Mặt sau thẻ có DÃY MRZ (ba
+         * dòng chữ máy in bằng phông riêng, có số kiểm tra) — thứ sinh ra để
+         * máy đọc, nên đọc chữ ở đó ăn đứt việc soi lại mã QR mờ.
+         */
+        setBusy("ocr");
+        const person2 = parseMrz(await readMrz(canvas));
+        if (person2) return setCurrent(person2);
+
         setError(
           qr
             ? "Đọc được mã QR nhưng không phải QR của CCCD gắn chip."
-            : "Chưa thấy mã QR. Chụp lại MẶT TRƯỚC thẻ, để mã QR (góc phải) rõ nét, không loá, không nghiêng — hoặc bấm “Quét bằng camera” cho nhanh.",
+            : "Chưa đọc được thẻ này. Cách chắc ăn nhất: chụp MẶT SAU thẻ, lấy trọn ba dòng chữ máy ở đáy (dòng có nhiều dấu <<<), để ngang, đủ sáng.",
         );
         return;
       }
@@ -285,6 +314,14 @@ export function IdScanCard({
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0], "passport")}
       />
+      {/* CCCD MẶT SAU đi thẳng đường đọc chữ máy — dùng chung bộ đọc MRZ với hộ chiếu */}
+      <input
+        ref={backRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0], "passport")}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -309,14 +346,26 @@ export function IdScanCard({
           variant="ghost"
           className="h-10 bg-white px-3 text-xs"
           disabled={busy !== "" || scanning}
+          onClick={() => backRef.current?.click()}
+          title="Ảnh mặt sau thẻ — máy đọc ba dòng chữ máy ở đáy, chắc ăn hơn soi mã QR mờ"
+        >
+          {busy === "ocr" ? "Đang đọc chữ…" : "🔤 CCCD MẶT SAU (đọc chữ)"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 bg-white px-3 text-xs"
+          disabled={busy !== "" || scanning}
           onClick={() => passportRef.current?.click()}
         >
           {busy === "ocr" ? "Đang đọc hộ chiếu…" : "🛂 Hộ chiếu (ảnh dòng đáy)"}
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-slate-500">
-        CCCD: soi mặt trước cho thấy mã QR — quét bằng camera là nhanh nhất, không phải chụp. Hộ chiếu: chụp trang
-        có ảnh, để ngang, thấy rõ hai dòng chữ máy ở đáy. Ảnh chỉ đọc trong máy, không gửi đi đâu, không lưu lại.
+        <strong>Mã QR mờ hay loá thì đừng cố:</strong> chụp <strong>MẶT SAU</strong> thẻ, lấy trọn ba dòng chữ máy ở
+        đáy (dòng nhiều dấu <code>&lt;&lt;&lt;</code>) — dãy đó sinh ra để máy đọc, có số kiểm tra nên đọc sai là báo
+        ngay. Quét QR mặt trước bằng camera vẫn nhanh nhất khi thẻ còn mới. Hộ chiếu: chụp trang có ảnh, để ngang,
+        thấy rõ hai dòng chữ máy ở đáy. Ảnh chỉ đọc trong máy, không gửi đi đâu, không lưu lại.
       </p>
 
       {scanning && (

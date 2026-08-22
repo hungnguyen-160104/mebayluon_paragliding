@@ -160,8 +160,69 @@ function birthYear(yy: number, thisYear = new Date().getFullYear()): number {
 }
 
 /**
- * Bóc hai dòng MRZ. Nhận cả chuỗi OCR nhiều dòng lẫn dính liền — tự tìm hai dòng
- * 44 ký tự bắt đầu bằng "P".
+ * MẶT SAU CCCD GẮN CHIP — ba dòng chữ máy 30 ký tự (chuẩn ICAO 9303 loại TD1).
+ *
+ * Vì sao cần: mã QR mặt trước in nhỏ, mờ dần theo thời gian, gặp ánh sáng chéo
+ * là trượt — đó là lý do quét mười thẻ ra được vài. Dãy MRZ mặt sau in bằng
+ * phông riêng cho máy đọc và có SỐ KIỂM TRA, nên đọc chữ ở đó vừa nhạy hơn vừa
+ * tự biết mình đọc sai.
+ *
+ *   dòng 1: I D V N M <9 số đầu><kt><3 số cuối của CCCD 12 số>…
+ *   dòng 2: <ngày sinh 6><kt><giới tính><hạn 6><kt><quốc tịch 3>…
+ *   dòng 3: HỌ<<TÊN ĐỆM<TÊN
+ */
+function parseMrzTd1(lines: string[]): ScannedPerson | null {
+  const pad = (s: string) => s.padEnd(30, "<").slice(0, 30);
+  const [l1, l2, l3] = [pad(lines[0]), pad(lines[1]), pad(lines[2])];
+
+  const warnings: string[] = [];
+
+  /**
+   * Số CCCD Việt Nam có 12 chữ số, dài hơn ô "số giấy tờ" 9 ký tự của TD1 nên
+   * ba số cuối tràn sang ô DỮ LIỆU TUỲ CHỌN ngay sau đó.
+   *
+   * Giữa hai phần còn chen một SỐ KIỂM TRA (vị trí 14). Gom hết chữ số của cả
+   * dòng rồi lấy 12 số đầu là nuốt luôn số kiểm tra vào giữa, ra một số CCCD
+   * sai một chữ — kiểu sai nguy hiểm nhất vì trông vẫn đủ 12 số.
+   */
+  const docNo = digitsOnly(l1.slice(5, 14)).replace(/\D/g, "");
+  const docCheck = digitsOnly(l1.slice(14, 15));
+  const tail = digitsOnly(l1.slice(15)).replace(/\D/g, "");
+  const idNumber = (docNo + tail).slice(0, 12);
+  if (docNo.length === 9 && String(icaoCheck(l1.slice(5, 14))) !== docCheck) {
+    warnings.push("Số CCCD đọc chưa chắc đúng — soát lại giúp");
+  }
+
+  const dob = digitsOnly(l2.slice(0, 6));
+  const dobCheck = digitsOnly(l2.slice(6, 7));
+  const sex = l2.slice(7, 8);
+  const nation = alphaOnly(l2.slice(15, 18));
+
+  const clean = (x: string) => x.replace(/</g, " ").replace(/\s+/g, " ").trim();
+  const [surname, given = ""] = l3.split("<<");
+  const fullName = `${clean(surname)} ${clean(given)}`.replace(/\s+/g, " ").trim();
+
+  if (String(icaoCheck(dob)) !== dobCheck) warnings.push("Ngày sinh đọc chưa chắc đúng — soát lại giúp");
+
+  /** Rác thì THÀ KHÔNG ĐỌC ĐƯỢC còn hơn bóc ra dữ liệu sai. */
+  if (!fullName || idNumber.length < 9 || !/^\d{6}$/.test(dob)) return null;
+
+  const yy = Number(dob.slice(0, 2));
+  return {
+    fullName,
+    birthday: `${dob.slice(4, 6)}/${dob.slice(2, 4)}/${birthYear(yy)}`,
+    gender: sex === "M" ? "Nam" : sex === "F" ? "Nữ" : "",
+    idNumber,
+    nationality: countryName(nation) || "Việt Nam",
+    source: "cccd",
+    warnings,
+  };
+}
+
+/**
+ * Bóc dãy MRZ. Nhận cả chuỗi OCR nhiều dòng lẫn dính liền:
+ *   - hộ chiếu TD3: hai dòng 44 ký tự, dòng đầu bắt đầu bằng "P";
+ *   - mặt sau CCCD TD1: ba dòng 30 ký tự, dòng đầu bắt đầu bằng "I".
  */
 export function parseMrz(rawText: string): ScannedPerson | null {
   const cleaned = String(rawText ?? "")
@@ -170,7 +231,17 @@ export function parseMrz(rawText: string): ScannedPerson | null {
   const lines = cleaned
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l.length >= 30);
+    .filter((l) => l.length >= 28);
+
+  /** TD1 (mặt sau CCCD): ba dòng ~30 ký tự, dòng đầu bắt đầu bằng I/ID. */
+  {
+    const short = lines.filter((l) => l.length >= 28 && l.length <= 36);
+    const start = short.findIndex((l) => l.startsWith("I"));
+    if (start >= 0 && short.length >= start + 3) {
+      const hit = parseMrzTd1(short.slice(start, start + 3));
+      if (hit) return hit;
+    }
+  }
 
   let l1 = lines.find((l) => l.startsWith("P"));
   let l2 = l1 ? lines[lines.indexOf(l1) + 1] : undefined;

@@ -430,6 +430,34 @@ export default function HomestayPage() {
         </span>
         {/* Chọn KHOẢNG thời gian xem — book đoàn hay hỏi lịch cách vài tháng */}
         <span className="ml-auto flex flex-wrap items-center gap-1 text-xs text-slate-600">
+          {/*
+            LÙI / TIẾN nguyên cửa sổ, giữ nguyên số đêm.
+            Trước đây muốn soi lại tháng trước phải tự gõ ngày vào ô "Xem từ",
+            mà gõ xong thì ô "đến" vẫn đứng nguyên nên bảng phình từ 30 lên 50-60
+            đêm, kéo mãi không hết. Hai nút này dịch cả hai đầu cùng lúc.
+          */}
+          <button
+            type="button"
+            onClick={() => {
+              setFrom(shiftDateKey(from, -nightsCount));
+              setTo(shiftDateKey(to, -nightsCount));
+            }}
+            title={`Lùi ${nightsCount} đêm — xem lại những ngày đã qua`}
+            className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+          >
+            ◀ {nightsCount} đêm trước
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFrom(shiftDateKey(from, nightsCount));
+              setTo(shiftDateKey(to, nightsCount));
+            }}
+            title={`Tiến ${nightsCount} đêm`}
+            className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+          >
+            {nightsCount} đêm sau ▶
+          </button>
           Xem từ
           <input
             type="date"
