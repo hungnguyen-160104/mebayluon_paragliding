@@ -45,16 +45,34 @@ export function parseCccdQr(raw: string): ScannedPerson | null {
   if (parts.length < 4) return null;
 
   const idNumber = parts.find((p) => /^\d{9,12}$/.test(p)) ?? "";
-  const dateIdx = parts.findIndex((p) => /^\d{8}$/.test(p));
+  /**
+   * Tìm ô NGÀY SINH: 8 chữ số VÀ phải là một ngày có thật (dd 1-31, mm 1-12).
+   * Đếm "8 chữ số" không thôi thì chuỗi rác "99999999" cũng thành ngày sinh
+   * 99/99/9999, và nếu ô ngày sinh hỏng thì máy vớ nhầm NGÀY CẤP ở cuối chuỗi —
+   * kéo theo "họ tên" thành địa chỉ (ô đứng trước ngày cấp). Cả hai đều đã bắt
+   * được khi chạy thử.
+   */
+  const dateIdx = parts.findIndex(
+    /**
+     * Chặn thêm theo VỊ TRÍ: ngày cấp luôn là Ô CUỐI của chuỗi QR, còn ngày
+     * sinh thì không bao giờ. Thiếu chốt này, hôm ô ngày sinh hỏng máy sẽ vớ
+     * ngày cấp làm ngày sinh và lấy ĐỊA CHỈ (ô đứng trước nó) làm họ tên.
+     */
+    (p, i) => i < parts.length - 1 && /^\d{8}$/.test(p) && ddmmyyyy(p) !== "",
+  );
   if (!idNumber || dateIdx < 0) return null;
 
   const warnings: string[] = [];
-  const fullName = parts[dateIdx - 1] ?? "";
+  let fullName = (parts[dateIdx - 1] ?? "").toUpperCase();
+  /** Ô đứng trước ngày sinh mà toàn chữ số = QR thiếu tên — đừng lấy số CCCD làm tên. */
+  if (!fullName || /^\d+$/.test(fullName)) {
+    fullName = "";
+    warnings.push("Không đọc được họ tên trong mã QR — gõ tay giúp");
+  }
   const gender = normalizeGender(parts[dateIdx + 1] ?? "");
-  if (!fullName) warnings.push("Không đọc được họ tên trong mã QR");
 
   return {
-    fullName: fullName.toUpperCase(),
+    fullName,
     birthday: ddmmyyyy(parts[dateIdx]),
     gender,
     idNumber,
@@ -64,9 +82,16 @@ export function parseCccdQr(raw: string): ScannedPerson | null {
   };
 }
 
+/** "01011990" → "01/01/1990" — chỉ nhận NGÀY CÓ THẬT, năm trong khoảng người còn sống. */
 function ddmmyyyy(raw: string): string {
   const m = /^(\d{2})(\d{2})(\d{4})$/.exec(raw);
-  return m ? `${m[1]}/${m[2]}/${m[3]}` : "";
+  if (!m) return "";
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  if (dd < 1 || dd > 31 || mm < 1 || mm > 12) return "";
+  if (yyyy < 1900 || yyyy > new Date().getFullYear()) return "";
+  return `${m[1]}/${m[2]}/${m[3]}`;
 }
 
 function normalizeGender(raw: string): string {

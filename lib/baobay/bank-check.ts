@@ -364,16 +364,36 @@ export function combinedHint(entry: BankEntry, candidates: BankCandidate[], hay:
   return null;
 }
 
-/** Tìm tổ hợp 2-4 booking cộng đúng `target` (mỗi booking lấy số tiền lớn nhất đang chờ). */
+/**
+ * Tìm tổ hợp 2-4 booking cộng đúng `target`. Mỗi booking THỬ TỪNG phương án số
+ * tiền của nó (số còn thu HOẶC tổng tiền): hai booking cùng còn thu 1,5tr mà
+ * chỉ lấy số lớn nhất (tổng 2tr) thì khách chuyển 3tr — đúng tổng hai khoản còn
+ * thu — lại bị bỏ sót. Đã xảy ra đúng thế lúc chạy thử.
+ */
 function pickSubset(pool: BankCandidate[], target: number): BankCandidate[] | null {
-  const items = pool.map((c) => ({ c, v: Math.max(...c.amounts.filter((n) => n > 0), 0) })).filter((x) => x.v > 0);
-  const n = items.length;
-  for (let mask = 1; mask < 1 << n; mask++) {
-    const picked = items.filter((_, i) => mask & (1 << i));
-    if (picked.length < 2 || picked.length > 4) continue;
-    if (picked.reduce((a, x) => a + x.v, 0) === target) return picked.map((x) => x.c);
-  }
-  return null;
+  const items = pool
+    .map((c) => ({ c, opts: [...new Set(c.amounts.filter((n) => n > 0))] }))
+    .filter((x) => x.opts.length > 0)
+    .slice(0, 6);
+
+  let best: BankCandidate[] | null = null;
+  const walk = (idx: number, sum: number, picked: BankCandidate[]) => {
+    if (best || sum > target || picked.length > 4) return;
+    if (sum === target && picked.length >= 2) {
+      best = [...picked];
+      return;
+    }
+    if (idx >= items.length) return;
+    for (const v of items[idx].opts) {
+      picked.push(items[idx].c);
+      walk(idx + 1, sum + v, picked);
+      picked.pop();
+      if (best) return;
+    }
+    walk(idx + 1, sum, picked); // bỏ qua booking này
+  };
+  walk(0, 0, []);
+  return best;
 }
 
 export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): BankMatch {
@@ -390,22 +410,46 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
    * Cần CÁCH BIỆT rõ mới dám kết luận: hoà điểm thì treo cho kế toán nhìn,
    * vì đoán bừa giữa hai người là mất dấu tiền của cả hai.
    */
+  /**
+   * Điểm có TRỌNG SỐ, không đếm đầu dấu hiệu: mã GD và chuỗi QR "2508 k3" là
+   * định danh CỐ Ý (nhân viên ghi / app in sẵn) nên nặng nhất; SĐT gần như
+   * không trùng ngẫu nhiên; còn TÊN thì "TRAN THI THU" nằm gọn trong "TRAN THI
+   * THU HUYEN" — đếm ngang nhau thì một cái tên tình cờ + số tiền sẽ đè được
+   * chuỗi QR thật, đúng cái đã xảy ra khi chạy thử.
+   */
+  const WEIGHT: Record<keyof BankSignals, number> = { code: 4, note: 4, phone: 3, name: 1, amount: 1, date: 1 };
+  const scoreOf = (sg: BankSignals) =>
+    (Object.keys(WEIGHT) as Array<keyof BankSignals>).reduce((t, k) => t + (sg[k] ? WEIGHT[k] : 0), 0);
+
   const scored = candidates
     .map((c) => {
       const sg = signalsFor(entry, c, hay);
-      return { c, sg, n: signalCount(sg) };
+      return { c, sg, n: signalCount(sg), score: scoreOf(sg) };
     })
     /** Số tiền + ngày là hai dấu hiệu YẾU; phải có ít nhất một dấu hiệu định danh. */
     .filter((s) => s.n >= 2 && (s.sg.code || s.sg.note || s.sg.phone || s.sg.name))
-    .sort((a, b) => b.n - a.n);
+    .sort((a, b) => b.score - a.score);
 
   if (scored.length) {
     const top = scored[0];
     const rivals = scored.filter((s) => (s.c.bookingId || s.c.id) !== (top.c.bookingId || top.c.id));
     const second = rivals[0];
 
-    if (!second || top.n > second.n) {
-      const level: "code" | "note" | "amount" = top.sg.code ? "code" : top.sg.note || top.sg.phone || top.sg.name ? "note" : "amount";
+    if (!second || top.score > second.score) {
+      /**
+       * TÊN KHÔNG BAO GIỜ ĐƯỢC TỰ NHẬN MỘT MÌNH — luật cũ, giữ nguyên trong
+       * đường mới. Định danh duy nhất là tên (không mã, không nội dung, không
+       * SĐT) thì chỉ GỢI Ý đặt cạnh booking cho kế toán quyết: bài học "TRAN
+       * THI THU HUYEN" khớp nhầm vào booking "Trần Thị Thu".
+       */
+      if (!top.sg.code && !top.sg.note && !top.sg.phone) {
+        return {
+          status: "suggest",
+          hits: [top.c],
+          why: `tên trên sao kê GIỐNG tên khách (${signalNames(top.sg).join(" + ")}) — máy không tự nhận, soát tay`,
+        };
+      }
+      const level: "code" | "note" | "amount" = top.sg.code ? "code" : "note";
       /** Kẻ thua mà lại đang giữ mã GD: gần như chắc là nhân viên gõ nhầm mã. */
       const codeElsewhere = rivals.find((s) => s.sg.code && !top.sg.code);
       const why =
@@ -416,7 +460,7 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
       return { status: "matched", level, hit: top.c, why };
     }
 
-    if (top.n === second.n) {
+    if (top.score === second.score) {
       const combo = combinedHint(entry, candidates, hay);
       if (combo) {
         return {
@@ -429,8 +473,8 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
       }
       return {
         status: "multi",
-        hits: dedupeByBooking(scored.filter((s) => s.n === top.n).map((s) => s.c)),
-        why: `${scored.filter((s) => s.n === top.n).length} chỗ cùng khớp ${top.n} dấu hiệu (${signalNames(top.sg).join(" + ")}) — chọn tay`,
+        hits: dedupeByBooking(scored.filter((s) => s.score === top.score).map((s) => s.c)),
+        why: `${scored.filter((s) => s.score === top.score).length} chỗ cùng khớp ${top.n} dấu hiệu (${signalNames(top.sg).join(" + ")}) — chọn tay`,
       };
     }
   }
