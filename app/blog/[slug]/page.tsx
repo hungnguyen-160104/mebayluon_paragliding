@@ -172,17 +172,29 @@ function slugifyHeading(text: string): string {
     .slice(0, 60);
 }
 
+function isExternalHref(href: string): boolean {
+  return (
+    /^https?:\/\//i.test(href) &&
+    !/^https?:\/\/(www\.)?mebayluon\.com(\/|$)/i.test(href)
+  );
+}
+
 function renderInlineFormat(text: string): React.ReactNode[] {
   const parts = String(text || "").split(
-    /(\[[^\]\n]+\]\(#[^)\s]+\)|\*\*[^*]+\*\*|\*[^*\n]+\*)/g
+    /(\[[^\]\n]+\]\((?:#|https:\/\/)[^)\s]+\)|\*\*[^*]+\*\*|\*[^*\n]+\*)/g
   );
   return parts.map((part, i) => {
-    const link = /^\[([^\]\n]+)\]\((#[^)\s]+)\)$/.exec(part);
+    const link = /^\[([^\]\n]+)\]\(((?:#|https:\/\/)[^)\s]+)\)$/.exec(part);
     if (link) {
+      const href = link[2];
+      const external = isExternalHref(href);
       return (
         <a
           key={i}
-          href={link[2]}
+          href={href}
+          {...(external
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
           className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
         >
           {link[1]}
@@ -383,17 +395,23 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
     case "divider":
       return <hr key={key} className="border-white/15" />;
 
-    case "cta":
+    case "cta": {
+      const ctaHref = String(data.link || "#");
+      const ctaExternal = isExternalHref(ctaHref);
       return data.text ? (
         <p key={key} className="not-prose">
           <a
-            href={data.link || "#"}
+            href={ctaHref}
+            {...(ctaExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
             className="cta-btn rounded-full bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition hover:bg-red-700"
           >
             {data.text}
           </a>
         </p>
       ) : null;
+    }
 
     case "embed": {
       const rawUrl = String(data.url || "").trim();
