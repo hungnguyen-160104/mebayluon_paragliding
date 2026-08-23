@@ -248,10 +248,11 @@ function BookingSummary({
             {(() => {
               const who = [...new Set((b.collected ?? []).map((c) => c.byName).filter(Boolean))];
               const methods = new Set((b.collected ?? []).map((c) => c.method));
+              const times = (b.collected ?? []).length > 1 ? ` (${(b.collected ?? []).length} lần)` : "";
               if (methods.size === 1 && methods.has("cash"))
-                return `${who.join(", ") || "?"} thu TM ${k(paidTotal)}`;
-              if (methods.size === 1 && methods.has("transfer")) return `đã CK ${k(paidTotal)}`;
-              return `đã tt ${k(paidTotal)}${who.length ? ` by ${who.join(", ")}` : ""}`;
+                return `${who.join(", ") || "?"} thu TM ${k(paidTotal)}${times}`;
+              if (methods.size === 1 && methods.has("transfer")) return `đã CK ${k(paidTotal)}${times}`;
+              return `đã tt ${k(paidTotal)}${who.length ? ` by ${who.join(", ")}` : ""}${times}`;
             })()}
           </strong>
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
@@ -265,6 +266,31 @@ function BookingSummary({
               ✓TM
             </strong>
           )}
+          {/*
+            ĐÃ SOÁT ĐỦ — mọi lệnh thu của booking này đã soát xong.
+            TIỀN MẶT tính là soát xong NGAY: tiền trao tay tại bãi, không có
+            sao kê nào để đối chiếu, người thu đã đứng tên trong sổ. Chỉ khoản
+            CHUYỂN KHOẢN mới phải dò sao kê, nên booking toàn tiền mặt là xanh
+            luôn, còn có CK thì đợi kế toán bấm "Đã nhận" đủ các khoản CK.
+          */}
+          {(() => {
+            const txs = (b.collected ?? []).filter((c) => c.method === "transfer");
+            const coCK = txs.length > 0 || (depositBase > 0 && b.depositToCompany);
+            const soatDu = coCK ? Boolean(b.ckChecked) : true;
+            if (!soatDu) return null;
+            return (
+              <strong
+                className="ml-0.5 rounded bg-sky-500 px-1 font-bold text-white"
+                title={
+                  coCK
+                    ? "Mọi khoản chuyển khoản của booking này kế toán đã soát và nhận đủ"
+                    : "Booking chỉ thu tiền mặt — tiền trao tay tại bãi, không cần đối soát sao kê"
+                }
+              >
+                ✓ Đã soát đủ
+              </strong>
+            );
+          })()}
         </>
       ) : null}
       {refunded > 0 ? (
@@ -312,13 +338,10 @@ function BookingSummary({
       {b.contactNote && !hideNote ? (
         <span className="ml-1 rounded bg-amber-100 px-1 font-medium text-amber-900">📝 {b.contactNote}</span>
       ) : null}
-      {/* Vệt thu tiền — in ĐẬM vì đây là câu trả lời cho "tiền booking này đâu rồi" */}
-      {(b.collected ?? []).map((c, i) => (
-        <strong key={i} className="ml-1 whitespace-nowrap rounded bg-emerald-100 px-1 font-bold text-emerald-800">
-          đã thu {Math.round(c.amount / 1000).toLocaleString("vi-VN")}k {c.method === "cash" ? "TM" : "CK"}
-          {c.byName ? ` - ${c.byName}` : ""}
-        </strong>
-      ))}
+      {/* Vệt thu tiền từng khoản ĐÃ BỎ: nó lặp y nguyên chip tổng ngay trên
+          ("đã tt 5.380k by Ms Duyên" rồi lại "đã thu 5.380k TM - Ms Duyên").
+          Chia nhiều lần thu thì chip tổng ghi "(N lần)" và rê chuột ra đủ từng
+          khoản kèm mã GD — đủ dùng mà không rác mắt. */}
     </span>
   );
 }
