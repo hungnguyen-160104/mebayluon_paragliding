@@ -46,6 +46,17 @@ export interface IBaobayCollect {
   /** Kế toán bấm "ĐÃ NHẬN" khi soát: khoản này đã kiểm, tiền đã về đúng chỗ. */
   verifiedAt?: Date;
   verifiedBy?: string;
+  /**
+   * BỎ QUA ĐỐI SOÁT — khoản này không cần dò sao kê nữa.
+   *
+   * Khác "đã nhận": đã nhận là ĐÃ THẤY tiền về; bỏ qua là kế toán quyết định
+   * KHÔNG soát khoản này (khách trả tay ba, tiền về tài khoản khác, khoản quá
+   * cũ không truy được…). Giữ lý do và người bấm để sau còn hỏi lại; bỏ qua
+   * rồi vẫn lấy lại được.
+   */
+  skipCheckAt?: Date;
+  skipCheckBy?: string;
+  skipCheckReason?: string;
   rejectedReason?: string;
   resolvedAt?: Date;
   resolvedBy?: string;
@@ -83,6 +94,9 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     status: { type: String, enum: ["pending", "collected", "rejected", "company"], default: "pending" },
     verifiedAt: Date,
     verifiedBy: String,
+    skipCheckAt: Date,
+    skipCheckBy: String,
+    skipCheckReason: String,
     rejectedReason: String,
     resolvedAt: Date,
     resolvedBy: String,

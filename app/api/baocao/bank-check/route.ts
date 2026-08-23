@@ -9,6 +9,7 @@ import {
   lockBookingChecked,
   deleteBankLine,
   detachBankLine,
+  skipBankItem,
   getBankCheck,
   listAssignOptions,
   recheckBankPending,
@@ -98,6 +99,11 @@ export async function PATCH(req: Request) {
     }
     if (action === "resolve") {
       await resolveBankLine(auth, String(body?.id ?? ""), String(body?.note ?? ""));
+      return NextResponse.json({ ok: true });
+    }
+    if (action === "skip") {
+      // Bỏ qua đối soát khoản này (hoặc lấy lại) — bắt buộc có lý do khi bỏ qua
+      await skipBankItem(auth, String(body?.refId ?? ""), body?.on !== false, String(body?.reason ?? ""));
       return NextResponse.json({ ok: true });
     }
     if (action === "detach") {

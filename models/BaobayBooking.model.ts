@@ -181,6 +181,10 @@ export interface IBaobayBooking {
   lockedBy?: string;
   /** Kế toán đã "ĐÃ NHẬN" phần cọc GÕ TAY (không qua lệnh thu) khi soát CK. */
   depositVerifiedAt?: Date;
+  /** BỎ QUA ĐỐI SOÁT phần cọc gõ tay — xem chú thích skipCheckAt ở BaobayCollect. */
+  depositSkipAt?: Date;
+  depositSkipBy?: string;
+  depositSkipReason?: string;
   depositVerifiedBy?: string;
   /**
    * TÍCH XANH ĐẬM trên chi tiết booking: mọi khoản CK (lệnh thu CK + cọc gõ
@@ -412,6 +416,9 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     lockedAt: Date,
     lockedBy: String,
     depositVerifiedAt: Date,
+    depositSkipAt: Date,
+    depositSkipBy: String,
+    depositSkipReason: String,
     depositVerifiedBy: String,
     ckCheckedAt: Date,
     tmCheckedAt: Date,

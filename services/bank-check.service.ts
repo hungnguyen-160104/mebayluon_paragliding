@@ -195,6 +195,21 @@ export type BankCheckReport = {
    * tràn — làm hết là hết việc, thay vì phải nhớ mở lại từng ngày.
    */
   unchecked: BankUncheckedDTO[];
+  /** Khoản kế toán đã BỎ QUA đối soát — gom một chỗ, lấy lại được. */
+  skipped_items: BankSkippedDTO[];
+};
+
+/** Một khoản thu bị bỏ qua đối soát. */
+export type BankSkippedDTO = {
+  refId: string;
+  label: string;
+  spot: string;
+  flightDate: string;
+  amount: number;
+  code: string;
+  reason: string;
+  by: string;
+  at: string;
 };
 
 /** Một khoản CK còn chờ kế toán soát — gom từ mọi ngày. */
@@ -268,7 +283,7 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       .select("spot daySeq flightDate contactName phone bookingCode deposit transferCode createdAt")
       .lean<any[]>(),
     BaobayBooking.find({ spot: { $in: spots }, flightDate: date, status: { $ne: "voided" } })
-      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt")
+      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt depositSkipAt")
       .lean<any[]>(),
   ]);
 
@@ -391,6 +406,8 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
       spot: { $in: spots },
       method: "transfer",
       status: { $ne: "rejected" },
+      // Khoản kế toán đã BỎ QUA thì rút khỏi vòng dò và khỏi bảng soát
+      skipCheckAt: null,
       $or: [{ verifiedAt: null }, { verifiedAt: { $exists: false } }],
     })
       .sort({ createdAt: -1 })
@@ -402,7 +419,7 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
       lockedAt: null,
       $or: [
         { remaining: { $gt: 0 } },
-        { deposit: { $gt: 0 }, depositVerifiedAt: null },
+        { deposit: { $gt: 0 }, depositVerifiedAt: null, depositSkipAt: null },
       ],
     })
       .sort({ flightDate: -1 })
@@ -455,7 +472,7 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
   for (const b of bookings) {
     const created = b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined;
     const manualDeposit = (b.deposit || 0) - (collectedBy.get(String(b._id)) ?? 0);
-    if (manualDeposit > 0 && !b.depositVerifiedAt) {
+    if (manualDeposit > 0 && !b.depositVerifiedAt && !b.depositSkipAt) {
       out.push({
         id: `deposit:${String(b._id)}`,
         kind: "deposit",
@@ -1190,9 +1207,47 @@ export async function getBankCheck(
     };
   });
 
+  /** Khoản đã bỏ qua — gom cả lệnh thu lẫn phần cọc gõ tay, mới bỏ xếp trước. */
+  const [skipCollects, skipDeposits] = await Promise.all([
+    BaobayCollect.find({ spot: { $in: spots }, skipCheckAt: { $ne: null } })
+      .sort({ skipCheckAt: -1 })
+      .limit(200)
+      .lean<any[]>(),
+    BaobayBooking.find({ spot: { $in: spots }, depositSkipAt: { $ne: null } })
+      .sort({ depositSkipAt: -1 })
+      .limit(200)
+      .select("spot daySeq flightDate contactName bookingCode phone deposit transferCode depositSkipAt depositSkipBy depositSkipReason")
+      .lean<any[]>(),
+  ]);
+  const skippedItems: BankSkippedDTO[] = [
+    ...skipCollects.map((c) => ({
+      refId: `collect:${String(c._id)}`,
+      label: [c.guestName || c.bookingCode || "khách", spotName(c.spot)].filter(Boolean).join(" · "),
+      spot: c.spot,
+      flightDate: c.date || "",
+      amount: Number(c.amount) || 0,
+      code: c.transferCode || "",
+      reason: c.skipCheckReason || "",
+      by: c.skipCheckBy || "",
+      at: c.skipCheckAt ? new Date(c.skipCheckAt).toISOString() : "",
+    })),
+    ...skipDeposits.map((b) => ({
+      refId: `deposit:${String(b._id)}`,
+      label: `${bookingLabel(b)} · cọc`,
+      spot: b.spot,
+      flightDate: b.flightDate || "",
+      amount: Number(b.deposit) || 0,
+      code: b.transferCode || "",
+      reason: b.depositSkipReason || "",
+      by: b.depositSkipBy || "",
+      at: b.depositSkipAt ? new Date(b.depositSkipAt).toISOString() : "",
+    })),
+  ].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+
   return {
     date,
     spots,
+    skipped_items: skippedItems,
     lines: lineDTOs,
     pending: pendingDocs.map(toLineDTO),
     appTransfers,
@@ -1456,6 +1511,49 @@ export async function resolveBankLine(session: BaobaySession, id: string, note: 
     },
   );
   if (!r.matchedCount) throw new BaobayError("Không tìm thấy khoản này", 404);
+}
+
+/**
+ * BỎ QUA ĐỐI SOÁT một khoản thu (hoặc lấy lại vào danh sách soát).
+ *
+ * Khác "Đã nhận": đã nhận là kế toán ĐÃ THẤY tiền về; bỏ qua là quyết định
+ * KHÔNG soát khoản này nữa (khách trả tay ba, tiền về tài khoản khác, khoản quá
+ * cũ không truy được). Bắt buộc ghi LÝ DO — bỏ qua không lý do thì sau không ai
+ * dám lấy lại, mà cũng không ai biết vì sao nó biến mất khỏi bảng soát.
+ */
+export async function skipBankItem(
+  session: BaobaySession,
+  refId: string,
+  on: boolean,
+  reason: string,
+): Promise<void> {
+  await connectDB();
+  const [kind, id] = String(refId ?? "").split(":");
+  if (!mongoose.Types.ObjectId.isValid(id ?? "")) throw new BaobayError("Khoản không hợp lệ", 400);
+  if (on && !String(reason ?? "").trim()) throw new BaobayError("Ghi giúp lý do bỏ qua khoản này", 400);
+
+  const by = session.name || session.username;
+  if (kind === "collect") {
+    const r = await BaobayCollect.updateOne(
+      { _id: id },
+      on
+        ? { $set: { skipCheckAt: new Date(), skipCheckBy: by, skipCheckReason: reason.trim() } }
+        : { $set: { skipCheckAt: null, skipCheckBy: "", skipCheckReason: "" } },
+    );
+    if (!r.matchedCount) throw new BaobayError("Không tìm thấy khoản này", 404);
+    return;
+  }
+  if (kind === "deposit") {
+    const r = await BaobayBooking.updateOne(
+      { _id: id },
+      on
+        ? { $set: { depositSkipAt: new Date(), depositSkipBy: by, depositSkipReason: reason.trim() } }
+        : { $set: { depositSkipAt: null, depositSkipBy: "", depositSkipReason: "" } },
+    );
+    if (!r.matchedCount) throw new BaobayError("Không tìm thấy booking", 404);
+    return;
+  }
+  throw new BaobayError("Chỉ bỏ qua được lệnh thu hoặc phần cọc", 400);
 }
 
 /**

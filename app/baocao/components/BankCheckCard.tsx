@@ -128,6 +128,19 @@ type UncheckedDTO = {
   matchedLine?: { id: string; raw: string; bankDate: string; why: string };
 };
 
+/** Khoản thu kế toán đã bỏ qua đối soát. */
+type SkippedItemDTO = {
+  refId: string;
+  label: string;
+  spot: string;
+  flightDate: string;
+  amount: number;
+  code: string;
+  reason: string;
+  by: string;
+  at: string;
+};
+
 type Report = {
   date: string;
   spots: string[];
@@ -138,6 +151,7 @@ type Report = {
   groups: GroupDTO[];
   bookingRows: BookingRowDTO[];
   unchecked: UncheckedDTO[];
+  skipped_items: SkippedItemDTO[];
   summary: {
     bankTotal: number;
     bankCount: number;
@@ -283,6 +297,7 @@ export function BankCheckCard({ date }: { date: string }) {
    */
   const [allOpen, setAllOpen] = useState(false);
   const [allFilter, setAllFilter] = useState<"all" | "hasLine" | "noLine" | "noCode">("all");
+  const [skipOpen, setSkipOpen] = useState(false);
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -327,6 +342,28 @@ export function BankCheckCard({ date }: { date: string }) {
    * soát xong, khỏi cần sao kê xác nhận nữa. KHÔNG khoá booking (khách cọc
    * cho ngày tương lai thì điều phối còn phải thao tác tiếp); khoá là nút riêng.
    */
+  /**
+   * BỎ QUA ĐỐI SOÁT — khác "Đã nhận" (đã thấy tiền về). Bỏ qua là quyết định
+   * không soát khoản này nữa, nên bắt buộc ghi lý do để sau còn hiểu.
+   */
+  async function skipItem(refId: string, on: boolean) {
+    let reason = "";
+    if (on) {
+      reason = window.prompt("Bỏ qua đối soát khoản này vì lý do gì? (khách trả tay ba, tiền về TK khác, khoản quá cũ…)") ?? "";
+      if (!reason.trim()) return;
+    } else if (!window.confirm("Lấy lại khoản này vào danh sách cần soát?")) return;
+    setRowBusy(refId);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/bank-check`, { action: "skip", refId, on, reason });
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không bỏ qua được khoản này");
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
   async function confirmItem(refId: string, on: boolean) {
     if (!on && !window.confirm("Bỏ đánh dấu ĐÃ NHẬN khoản này?")) return;
     setRowBusy(refId);
@@ -781,6 +818,16 @@ export function BankCheckCard({ date }: { date: string }) {
                           >
                             Đã nhận
                           </button>
+                          {/* Bỏ qua: khoản không cần soát nữa — rời khỏi bảng, vào danh sách bỏ qua */}
+                          <button
+                            type="button"
+                            disabled={rowBusy === u.refId || !u.recorded}
+                            onClick={() => skipItem(u.refId, true)}
+                            title="Không cần đối soát khoản này nữa — ghi lý do, sau lấy lại được"
+                            className="h-7 shrink-0 rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-500 disabled:opacity-40"
+                          >
+                            Bỏ qua
+                          </button>
                         </div>
                         {u.matchedLine && (
                           <div className="mt-1 rounded bg-sky-50 px-2 py-1 text-[11px] leading-relaxed text-sky-900">
@@ -814,6 +861,60 @@ export function BankCheckCard({ date }: { date: string }) {
                 </p>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ĐÃ BỎ QUA ĐỐI SOÁT — gập sẵn. Ở đây để kế toán biết mình đã bỏ những gì
+          và lấy lại được; bỏ qua mà không có chỗ xem lại thì thành mất dấu. */}
+      {(report?.skipped_items ?? []).length > 0 && (
+        <div className="mt-3 rounded-xl border border-slate-300 bg-slate-50">
+          <button
+            type="button"
+            onClick={() => setSkipOpen((v) => !v)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left"
+          >
+            <span className="text-xs font-bold text-slate-600">
+              🚫 Đã bỏ qua đối soát ({report!.skipped_items.length}) ·{" "}
+              {formatVND(report!.skipped_items.reduce((t, x) => t + x.amount, 0))}
+            </span>
+            <span className="flex-1" />
+            <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">
+              {skipOpen ? "Thu gọn" : "Mở ra"}
+            </span>
+          </button>
+          {skipOpen && (
+            <ul className="space-y-1 px-3 pb-3">
+              {report!.skipped_items.map((x) => (
+                <li key={x.refId} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-xs font-semibold text-slate-700">{x.label}</span>
+                    {x.flightDate && (
+                      <span className="text-[11px] text-slate-500">bay {formatDateKeyVN(x.flightDate)}</span>
+                    )}
+                    <span className="text-xs font-bold tabular-nums text-slate-800">{formatVND(x.amount)}</span>
+                    {x.code && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">mã {x.code}</span>
+                    )}
+                    <span className="flex-1" />
+                    <button
+                      type="button"
+                      disabled={rowBusy === x.refId}
+                      onClick={() => skipItem(x.refId, false)}
+                      title="Đưa khoản này trở lại danh sách cần soát"
+                      className="h-7 shrink-0 rounded-lg border border-sky-300 bg-white px-2 text-[11px] font-bold text-sky-700 disabled:opacity-40"
+                    >
+                      ↩ Soát lại
+                    </button>
+                  </div>
+                  <div className="mt-0.5 text-[11px] leading-tight text-slate-500">
+                    Lý do: {x.reason || "(không ghi)"}
+                    {x.by ? ` — ${x.by}` : ""}
+                    {x.at ? ` · ${formatDateKeyVN(x.at.slice(0, 10))}` : ""}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
