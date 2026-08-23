@@ -154,12 +154,41 @@ function pickBlocks(post: Post, isVietnamese: boolean): ContentBlock[] {
 
 /**
  * Đổi ký hiệu định dạng nhanh trong đoạn văn thành thẻ HTML:
- * **chữ đậm** -> <strong>, *chữ nghiêng* -> <em>.
- * Chỉ nhận 2 ký hiệu này — mọi thứ khác giữ nguyên là chữ thường.
+ * **chữ đậm** -> <strong>, *chữ nghiêng* -> <em>, [chữ](#neo) -> liên kết trong trang.
+ * Chỉ nhận 3 ký hiệu này — mọi thứ khác giữ nguyên là chữ thường.
+ *
+ * Liên kết chỉ nhận đích bắt đầu bằng "#" (neo trong cùng bài), không nhận URL
+ * ngoài — để nội dung biên tập nhập vào không chèn được link ra ngoài.
  */
+export function slugifyHeading(text: string): string {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
 function renderInlineFormat(text: string): React.ReactNode[] {
-  const parts = String(text || "").split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g);
+  const parts = String(text || "").split(
+    /(\[[^\]\n]+\]\(#[^)\s]+\)|\*\*[^*]+\*\*|\*[^*\n]+\*)/g
+  );
   return parts.map((part, i) => {
+    const link = /^\[([^\]\n]+)\]\((#[^)\s]+)\)$/.exec(part);
+    if (link) {
+      return (
+        <a
+          key={i}
+          href={link[2]}
+          className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
+        >
+          {link[1]}
+        </a>
+      );
+    }
     if (/^\*\*[^*]+\*\*$/.test(part)) {
       return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
     }
@@ -237,10 +266,11 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
     case "heading": {
       const level = Math.min(4, Math.max(1, Number(data.level || 2)));
       const text = data.text || "";
+      const anchorId = slugifyHeading(text);
 
       if (level === 1) {
         return (
-          <h1 key={key} className="text-2xl font-bold leading-tight text-white md:text-3xl">
+          <h1 key={key} id={anchorId} className="scroll-mt-24 mt-10! md:mt-12! text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl">
             {text}
           </h1>
         );
@@ -248,7 +278,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
       if (level === 2) {
         return (
-          <h2 key={key} className="text-xl font-bold leading-tight text-white md:text-2xl">
+          <h2 key={key} id={anchorId} className="scroll-mt-24 mt-10! md:mt-12! text-2xl font-bold leading-tight tracking-tight text-white md:text-3xl">
             {text}
           </h2>
         );
@@ -256,14 +286,14 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
       if (level === 3) {
         return (
-          <h3 key={key} className="text-lg font-semibold leading-snug text-white md:text-xl">
+          <h3 key={key} id={anchorId} className="scroll-mt-24 mt-7! text-xl font-semibold leading-snug text-white md:text-2xl">
             {text}
           </h3>
         );
       }
 
       return (
-        <h4 key={key} className="text-base font-semibold leading-snug text-white md:text-lg">
+        <h4 key={key} id={anchorId} className="scroll-mt-24 mt-6! text-lg font-semibold leading-snug text-white/95 md:text-xl">
           {text}
         </h4>
       );
@@ -858,9 +888,9 @@ export default async function BlogPostPage({
                 className="prose prose-invert max-w-none prose-sm md:prose-base
                   prose-p:leading-[1.85] prose-p:text-white/90 prose-p:font-light
                   prose-headings:text-white prose-headings:font-semibold
-                  prose-h2:text-xl prose-h2:font-bold
-                  prose-h3:text-lg prose-h3:font-semibold
-                  prose-h4:text-base prose-h4:font-semibold
+                  prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:font-bold prose-h2:tracking-tight
+                  prose-h3:text-xl md:prose-h3:text-2xl prose-h3:font-semibold
+                  prose-h4:text-lg md:prose-h4:text-xl prose-h4:font-semibold
                   prose-strong:text-white prose-a:text-sky-300
                   prose-img:rounded-lg prose-img:mx-auto
                   prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
