@@ -48,8 +48,17 @@ export async function connectDB() {
       .connect(getMongoUri(), {
         /** Không chờ mãi: 10 giây không chọn được máy chủ thì báo lỗi để thử lại. */
         serverSelectionTimeoutMS: 10_000,
-        /** Mỗi tiến trình serverless giữ ít kết nối — Atlas có trần số kết nối. */
-        maxPoolSize: 10,
+        /**
+         * 3 chứ KHÔNG phải 10. Atlas gói chia sẻ có TRẦN TỔNG SỐ KẾT NỐI cho cả
+         * cụm; giờ đông Vercel dựng hàng chục lambda, mỗi cái ôm 10 kết nối là
+         * chạm trần — Atlas từ chối thẳng ở bước bắt tay TLS ("tlsv1 alert
+         * internal error", bắt được thật 22-23/08), lambda mới đứng đủ 10 giây
+         * serverSelectionTimeout rồi 500, nhân viên thấy màn đăng nhập vô cớ.
+         * Một lambda xử lý MỘT request một lúc nên 3 kết nối là thừa đủ.
+         */
+        maxPoolSize: 3,
+        /** Thả kết nối ngủ quá 60s — lambda nguội trả chỗ cho lambda đang sống. */
+        maxIdleTimeMS: 60_000,
       })
       .then((m) => {
         console.log("✅ MongoDB connected");
