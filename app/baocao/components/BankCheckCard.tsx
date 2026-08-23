@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 
+import { tidyBankRaw } from "@/lib/baobay/bank-check";
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { SPOTS } from "@/lib/baobay/spots";
 import { spotName } from "@/lib/baobay/spots";
@@ -103,6 +104,7 @@ type BookingRowDTO = {
   lines: LineDTO[];
   suggests: LineDTO[];
   bankTotal: number;
+  bankNeed: number;
   bankShort: number;
   bankOver: number;
 };
@@ -206,7 +208,9 @@ function highlightRaw(raw: string, tokens: string[]): React.ReactNode[] {
   return parts;
 }
 
-function HighlightSms({ raw, row }: { raw: string; row: BookingRowDTO }) {
+function HighlightSms({ raw: rawInput, row }: { raw: string; row: BookingRowDTO }) {
+  /** Gọt "TK … tai BIDV" + "So du:…" TRƯỚC khi tô — vệt tô tính trên chuỗi đã gọt. */
+  const raw = tidyBankRaw(rawInput);
   const tokens: string[] = [];
   for (const t of row.transfers) if (t.code && t.code.length >= 3) tokens.push(t.code);
   if (row.flightDate && row.daySeq) {
@@ -781,7 +785,7 @@ export function BankCheckCard({ date }: { date: string }) {
                         {u.matchedLine && (
                           <div className="mt-1 rounded bg-sky-50 px-2 py-1 text-[11px] leading-relaxed text-sky-900">
                             ↳ sao kê {u.matchedLine.bankDate ? formatDateKeyVN(u.matchedLine.bankDate) : ""}:{" "}
-                            {highlightRaw(u.matchedLine.raw, [
+                            {highlightRaw(tidyBankRaw(u.matchedLine.raw), [
                               u.code,
                               u.contactName,
                               u.bookingCode,
@@ -889,13 +893,17 @@ export function BankCheckCard({ date }: { date: string }) {
                       <span className="text-slate-600">{row.lines.map((l) => formatVND(l.amount)).join(" + ")} = </span>
                     )}
                     <strong>{formatVND(row.bankTotal)}</strong>
-                    {row.totalAmount > 0 && <span className="text-slate-600"> / cần {formatVND(row.totalAmount)}</span>}
+                    {row.bankNeed > 0 && <span className="text-slate-600"> / cần {formatVND(row.bankNeed)}</span>}
                     {row.bankShort > 0 ? (
                       <strong> · còn thiếu {formatVND(row.bankShort)}</strong>
                     ) : row.bankOver > 0 ? (
                       <strong> · về DƯ {formatVND(row.bankOver)}</strong>
                     ) : (
-                      <strong> · đủ ✓</strong>
+                      /* Xác nhận to rõ cho kế toán: đủ tiền, kèm dấu vết chia bill */
+                      <strong>
+                        {" "}
+                        · ✓ ĐÃ NHẬN ĐỦ{row.lines.length > 1 ? ` (chia ${row.lines.length} bill CK)` : ""}
+                      </strong>
                     )}
                   </div>
                 )}
@@ -1333,31 +1341,36 @@ function BankLineRow({
             Gợi ý — máy không tự nhận, soát tay
           </span>
         ) : (
-          <span className="min-w-0 flex-1 text-xs font-bold text-rose-800">Chưa khớp — kiểm tay</span>
+          <span className="min-w-0 flex-1 text-xs font-bold text-rose-800">
+            Chưa khớp — bấm “Gán vào booking”, tiền không phải của khách bay thì “Kết luận khác”
+          </span>
         )}
         {!ok && (
           <span className="flex shrink-0 gap-1">
+            {/* Việc CHÍNH là gán tiền vào booking — nút xanh đứng trước.
+                "Kết luận khác" dành cho tiền KHÔNG phải của khách bay (đối tác
+                chuyển nhầm, tiền nội bộ…) — ghi rõ kết luận rồi đóng dòng. */}
+            {onAssign && (
+              <Button
+                type="button"
+                className="h-7 bg-sky-600 px-2 text-[11px] text-white hover:bg-sky-700"
+                disabled={busy}
+                onClick={() => setAssignOpen((v) => !v)}
+                title="Tiền này của khách/booking nào — chọn ngày rồi chọn khoản, gán xong dòng chuyển xanh"
+              >
+                → Gán vào booking
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"
               className="h-7 bg-white px-2 text-[11px]"
               disabled={busy}
               onClick={() => onAct(line.id, "resolve")}
+              title="Không phải tiền khách bay (đối tác, nội bộ, chuyển nhầm…) — ghi kết luận rồi đóng dòng"
             >
-              ✓ Đã kiểm tay
+              ✎ Kết luận khác
             </Button>
-            {onAssign && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-7 bg-sky-50 px-2 text-[11px] text-sky-800"
-                disabled={busy}
-                onClick={() => setAssignOpen((v) => !v)}
-                title="Chỉ định dòng tiền này thuộc khoản thanh toán nào"
-              >
-                → Chỉ định khoản
-              </Button>
-            )}
             <Button
               type="button"
               variant="ghost"
@@ -1431,7 +1444,7 @@ function BankLineRow({
           </div>
         </div>
       )}
-      <div className="mt-0.5 break-all font-mono text-[10px] leading-snug text-slate-400">{line.raw}</div>
+      <div className="mt-0.5 break-all font-mono text-[10px] leading-snug text-slate-400">{tidyBankRaw(line.raw)}</div>
     </li>
   );
 }

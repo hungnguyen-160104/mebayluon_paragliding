@@ -151,6 +151,8 @@ export type BankBookingRowDTO = {
   lines: BankLineDTO[];
   /** Tổng các dòng sao kê đã trỏ về booking này (tự cân nhiều lần chuyển). */
   bankTotal: number;
+  /** Số CẦN VỀ qua ngân hàng (tổng tiền − tiền mặt − đại lý giữ) — mẫu số của phép tự cân. */
+  bankNeed: number;
   /** Còn thiếu so với tổng tiền booking, đã trừ tiền mặt và tiền đại lý giữ hộ. */
   bankShort: number;
   /** Về DƯ so với tổng tiền booking. */
@@ -1132,9 +1134,18 @@ export async function getBankCheck(
           const paidCash = histCollects
             .filter((c) => String(c.bookingId) === id && c.method === "cash" && c.status === "collected")
             .reduce((t, c) => t + (c.amount || 0), 0);
-          const need = Math.max(0, (b.totalAmount || 0) - paidCash - (b.agencyPaidAmount || 0));
+          /**
+           * Booking cũ (trước bản tính tiền) không lưu totalAmount — lấy 0 làm
+           * tổng thì "cần 0đ" và mọi đồng về đều thành "về DƯ", kế toán hoảng
+           * oan (bắt được thật với #4 MILEKHINA 13/08: đủ 6.180.000 mà báo dư
+           * 6.180.000). Thiếu tổng thì ước bằng cọc + còn thu — cọc là tổng dồn
+           * các khoản đã ghi nên cọc + còn thu ≈ tổng tiền.
+           */
+          const totalNeed = (b.totalAmount || 0) > 0 ? b.totalAmount : (b.deposit || 0) + (b.remaining || 0);
+          const need = Math.max(0, totalNeed - paidCash - (b.agencyPaidAmount || 0));
           return {
             bankTotal,
+            bankNeed: need,
             bankShort: Math.max(0, need - bankTotal),
             bankOver: Math.max(0, bankTotal - need),
           };

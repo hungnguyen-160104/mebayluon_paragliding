@@ -97,6 +97,21 @@ function parseBankTime(text: string): string {
  * nào có SỐ TIỀN là mở một khoản mới, các dòng sau không có số tiền thì nối vào
  * khoản đang mở (thường là phần "ND: ..." bị xuống dòng).
  */
+/**
+ * GỌT chuỗi sao kê CHO NGƯỜI ĐỌC: bỏ hai mảnh không mang thông tin soát —
+ * "TK 887xxx9685 tai BIDV" (tài khoản của chính mình, dòng nào cũng có) và
+ * "So du:…VND" (số dư sau giao dịch, không liên quan tới khoản). CHỈ dùng khi
+ * hiển thị; khoá đối chiếu (lineKey) vẫn tính trên nguyên văn để dán lại không
+ * đẻ dòng trùng. "TKThe :…" của người gửi thì giữ — đó là dấu vết thật.
+ */
+export function tidyBankRaw(raw: string): string {
+  return String(raw ?? "")
+    .replace(/\bTK\s+[0-9xX*]+\s+tai\s+[A-Za-z]+\.?\s*/g, "")
+    .replace(/\bSo du\s*:\s*[\d.,]+\s*VND\.?\s*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function parseBankStatement(text: string): BankEntry[] {
   const groups: string[][] = [];
   for (const lineRaw of String(text ?? "").split(/\r?\n/)) {
