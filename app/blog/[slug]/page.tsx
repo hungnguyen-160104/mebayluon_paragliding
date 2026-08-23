@@ -160,7 +160,7 @@ function pickBlocks(post: Post, isVietnamese: boolean): ContentBlock[] {
  * Liên kết chỉ nhận đích bắt đầu bằng "#" (neo trong cùng bài), không nhận URL
  * ngoài — để nội dung biên tập nhập vào không chèn được link ra ngoài.
  */
-export function slugifyHeading(text: string): string {
+function slugifyHeading(text: string): string {
   return String(text || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
