@@ -235,31 +235,46 @@ function BookingSummary({
       ) : null}
       {paidTotal > 0 ? (
         <>
-          {" · "}
-          <strong
-            className="rounded bg-emerald-100 px-1 font-bold text-emerald-800"
-            title={(b.collected ?? [])
-              .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""} by ${c.byName || "?"}`)
-              .join(" · ")}
-          >
-            {/*
-              MỘT CHIP, TÁCH THEO ĐƯỜNG TIỀN: "Ms Duyên đã thu 8.200k CK + 900k TM".
-              Bản trước kể từng lệnh thu thành mấy chip rời ("đã thu 8.200k CK -
-              Ms Duyên" rồi "đã thu 900k CK - Ms Duyên") — dài mà vẫn phải tự cộng.
-              Gộp theo PHƯƠNG THỨC vì đó là thứ quyết định tiền đang nằm đâu: CK đã
-              về tài khoản công ty, TM còn trong tay người thu.
-            */}
-            {(() => {
-              const list = b.collected ?? [];
-              const who = [...new Set(list.map((c) => c.byName).filter(Boolean))];
-              const ck = list.filter((c) => c.method === "transfer").reduce((t, c) => t + (c.amount || 0), 0);
-              const tm = list.filter((c) => c.method === "cash").reduce((t, c) => t + (c.amount || 0), 0);
-              const bits = [ck > 0 ? `${k(ck)} CK` : "", tm > 0 ? `${k(tm)} TM` : ""].filter(Boolean);
-              /** Nhiều lần thu cùng một kiểu thì nói rõ, khỏi tưởng chỉ một lần. */
-              const times = list.length > bits.length ? ` (${list.length} lần)` : "";
-              return `${who.length ? `${who.join(", ")} ` : ""}đã thu ${bits.join(" + ") || k(paidTotal)}${times}`;
-            })()}
-          </strong>
+          {/*
+            MỘT CHIP CHO MỖI NGƯỜI THU, LIỆT KÊ ĐỦ TỪNG KHOẢN:
+                Ms Duyên đã thu 8.200k CK + 900k TM · Ms Thuỷ đã thu 500k TM
+
+            KHÔNG cộng gộp các khoản thành một số ("9.100k CK (2 lần)"): kế toán
+            phải đối được TỪNG con số với sao kê, thấy số tổng thì không soát nổi.
+            KHÔNG gộp tên người thu: ai thao tác thu khoản nào phải đứng tên
+            khoản đó, có chuyện còn biết hỏi ai.
+          */}
+          {(() => {
+            const list = b.collected ?? [];
+            /** Giữ nguyên thứ tự thu; mỗi người một chip, trong chip liệt kê từng khoản. */
+            const order: string[] = [];
+            const byPerson = new Map<string, typeof list>();
+            for (const c of list) {
+              const who = c.byName || "";
+              if (!byPerson.has(who)) {
+                byPerson.set(who, []);
+                order.push(who);
+              }
+              byPerson.get(who)!.push(c);
+            }
+            return order.map((who) => {
+              const mine = byPerson.get(who)!;
+              return (
+                <span key={who}>
+                  {" · "}
+                  <strong
+                    className="rounded bg-emerald-100 px-1 font-bold text-emerald-800"
+                    title={mine
+                      .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""}`)
+                      .join(" · ")}
+                  >
+                    {who ? `${who} ` : ""}đã thu{" "}
+                    {mine.map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}`).join(" + ")}
+                  </strong>
+                </span>
+              );
+            });
+          })()}
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
           {b.ckChecked && (
             <strong className="ml-0.5 rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">
