@@ -143,14 +143,17 @@ function BookingSummary({
    * kế toán nhìn dòng booking là đối được sao kê, khỏi mở từng lệnh thu.
    * Bản ghi cũ chưa lưu mã theo bill thì rơi về mã trên booking như trước.
    */
-  const gdCodes = [
-    ...new Set(
-      [...(b.collected ?? []).map((c) => (c.method === "transfer" ? c.code : "")), b.transferCode].filter(
-        (x): x is string => Boolean(x),
-      ),
-    ),
-  ];
-  if (gdCodes.length) tail.push(`GD ${gdCodes.map((c) => `#${c}`).join(", ")}`);
+  /**
+   * Mã GD của TỪNG LỆNH THU đã in ngay trong chip "… đã thu 8.200k CK #0610",
+   * nên ở đuôi dòng chỉ còn nhắc mã NÀO CHƯA ĐƯỢC NHẮC — thường là mã của khoản
+   * cọc gõ tay lúc nhập booking (không đi qua lệnh thu nào). In lại mã đã có
+   * thì dòng dài ra mà không thêm thông tin gì.
+   */
+  const inlineCodes = new Set(
+    (b.collected ?? []).filter((c) => c.method === "transfer" && c.code).map((c) => c.code as string),
+  );
+  const gdCodes = [b.transferCode].filter((x): x is string => Boolean(x) && !inlineCodes.has(x));
+  if (gdCodes.length) tail.push(`GD cọc ${gdCodes.map((c) => `#${c}`).join(", ")}`);
   // "cọc → TK cty" chỉ đáng nói khi CÒN phần cọc gõ tay; cọc 0 mà vẫn ghi là gây hỏi vô ích
   if (b.depositToCompany && depositBase > 0) tail.push("cọc → TK cty");
   if (b.note) tail.push(b.note);
@@ -268,8 +271,33 @@ function BookingSummary({
                       .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""}`)
                       .join(" · ")}
                   >
+                    {/*
+                      Khoản CHUYỂN KHOẢN luôn kèm MÃ GD ngay sau số tiền — không
+                      có mã thì nhìn dòng này chẳng đối được với sao kê, mà đối
+                      soát mới là việc chính của con số ấy. Khoản chưa ai ghi mã
+                      thì nói thẳng "chưa có mã" để biết đường đi hỏi.
+                      Tiền mặt không có mã GD nên không gắn gì.
+                    */}
                     {who ? `${who} ` : ""}đã thu{" "}
-                    {mine.map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}`).join(" + ")}
+                    {mine.map((c, i) => (
+                      <span key={i}>
+                        {i > 0 ? " + " : ""}
+                        {c.method === "cash"
+                          ? `${k(c.amount)} TM`
+                          : `${k(c.amount)} CK ${c.code ? `#${c.code}` : "(chưa có mã)"}`}
+                        {/*
+                          TÍCH XANH NGAY SAU TỪNG KHOẢN: kế toán bấm "Đã nhận"
+                          cho mã nào thì mã đó có tích — nhìn dòng là biết mã CK
+                          nào đã đối chiếu với sao kê, mã nào còn phải soát.
+                          Tích chung cho cả booking không nói được điều đó.
+                        */}
+                        {c.verified ? (
+                          <span className="ml-0.5 text-emerald-700" title="Kế toán đã soát sao kê và nhận khoản này">
+                            ✓
+                          </span>
+                        ) : null}
+                      </span>
+                    ))}
                   </strong>
                 </span>
               );

@@ -377,7 +377,8 @@ export type BookingDTO = {
   cancelTicketIssued?: boolean;
   cancelTicketCodes?: string[];
   /** Vệt thu tiền: từng lần thu — số tiền, TM/CK, người thu. */
-  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string; code?: string }>;
+  /** `verified` = kế toán đã bấm "Đã nhận" cho ĐÚNG khoản này khi soát sao kê. */
+  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string; code?: string; verified?: boolean }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
   lockedBy?: string;

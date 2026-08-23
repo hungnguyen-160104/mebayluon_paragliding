@@ -3608,13 +3608,51 @@ export async function listBookings(
    */
   const view = me ? maskForCrew : toBookingDTO;
 
+  /**
+   * GẮN TRẠNG THÁI ĐÃ SOÁT cho từng khoản thu.
+   *
+   * `collectedLog` trên booking chỉ là BẢN CHỤP (số tiền, kiểu, mã, người thu),
+   * không nối ngược về lệnh thu nên tự nó không biết kế toán đã bấm "Đã nhận"
+   * chưa. Lấy trạng thái từ nguồn thật là BaobayCollect rồi ghép lại theo
+   * (kiểu + số tiền + mã); mỗi lệnh thu chỉ ghép MỘT lần để hai khoản trùng số
+   * tiền không cùng ăn một dấu tích.
+   */
+  const allRows = [...forDate, ...voided, ...upcoming, ...movedAway];
+  const ids = [...new Set(allRows.map((b: any) => String(b._id)))];
+  const collectDocs = ids.length
+    ? await BaobayCollect.find({ bookingId: { $in: ids }, status: { $ne: "rejected" } })
+        .select("bookingId amount method transferCode verifiedAt")
+        .lean<any[]>()
+    : [];
+  const collectsByBooking = new Map<string, any[]>();
+  for (const c of collectDocs) {
+    const kb = String(c.bookingId);
+    (collectsByBooking.get(kb) ?? collectsByBooking.set(kb, []).get(kb)!).push(c);
+  }
+  const withVerified = (b: any): BookingDTO => {
+    const dto = view(b);
+    const pool = [...(collectsByBooking.get(String(b._id)) ?? [])];
+    dto.collected = (dto.collected ?? []).map((entry) => {
+      const i = pool.findIndex(
+        (c) =>
+          (c.method === "transfer" ? "transfer" : "cash") === entry.method &&
+          (Number(c.amount) || 0) === entry.amount &&
+          (entry.code ? String(c.transferCode ?? "") === entry.code : true),
+      );
+      if (i < 0) return entry;
+      const hit = pool.splice(i, 1)[0];
+      return { ...entry, verified: Boolean(hit.verifiedAt) };
+    });
+    return dto;
+  };
+
   return {
-    forDate: forDate.map(view),
-    voided: voided.map(view),
-    upcoming: upcoming.map(view),
+    forDate: forDate.map(withVerified),
+    voided: voided.map(withVerified),
+    upcoming: upcoming.map(withVerified),
     flown,
     moved: { bookings: movedAway.length, guests: movedAway.reduce((t, b) => t + (b.guestCount || 0), 0) },
-    movedOut: movedAway.map(view),
+    movedOut: movedAway.map(withVerified),
     webSyncAt: setting?.webSyncAt ? new Date(setting.webSyncAt).toISOString() : "",
   };
 }
