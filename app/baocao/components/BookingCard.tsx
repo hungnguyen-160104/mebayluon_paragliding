@@ -262,6 +262,32 @@ function BookingSummary({
           </strong>
         </>
       ) : null}
+      {/* BAY KHÔNG VÉ — chữ vàng ngay trên dòng: kế toán soát vé giấy phải thấy
+          từ xa, không phải mở từng booking ra dò. */}
+      {b.noTicketFlight ? (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-amber-400 px-1 font-bold text-amber-950"
+            title={b.noTicketReason ? `Lý do: ${b.noTicketReason}` : "Chuyến có thật nhưng không xé vé"}
+          >
+            🎫✕ không vé
+          </strong>
+        </>
+      ) : null}
+      {/* CHIẾT KHẤU ĐẠI LÝ — khoản trả ngoài, kế toán cần thấy để trừ sổ người chi */}
+      {(b.commission?.amount ?? 0) > 0 ? (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-violet-100 px-1 font-bold text-violet-800"
+            title={`Chiết khấu đại lý${b.commission!.agencyName ? ` ${b.commission!.agencyName}` : ""} — trả ${b.commission!.method === "cash" ? "tiền mặt" : "chuyển khoản"}${b.commission!.byName ? ` bởi ${b.commission!.byName}` : ""}`}
+          >
+            CKĐL {k(b.commission!.amount)}
+            {b.commission!.method === "cash" ? " TM" : " CK"}
+          </strong>
+        </>
+      ) : null}
       {tail.length ? ` · ${tail.join(" · ")}` : ""}
       {/* Ghi chú gọi khách hiện ngay trong dòng tóm tắt — chỗ nào có booking là thấy */}
       {b.contactNote && !hideNote ? (
