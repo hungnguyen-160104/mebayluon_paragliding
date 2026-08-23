@@ -388,10 +388,9 @@ function BookingSummary({
           {" · "}
           <strong
             className="rounded bg-violet-100 px-1 font-bold text-violet-800"
-            title={`Chiết khấu đại lý${b.commission!.agencyName ? ` ${b.commission!.agencyName}` : ""} — trả ${b.commission!.method === "cash" ? "tiền mặt" : "chuyển khoản"}${b.commission!.byName ? ` bởi ${b.commission!.byName}` : ""}`}
+            title={`Chiết khấu đại lý${b.commission!.agencyName ? ` ${b.commission!.agencyName}` : ""} — ${COMMISSION_WAY_TITLE[b.commission!.method] ?? "trả tiền mặt"}${b.commission!.byName ? ` bởi ${b.commission!.byName}` : ""}`}
           >
-            CKĐL {k(b.commission!.amount)}
-            {b.commission!.method === "cash" ? " TM" : " CK"}
+            CKĐL {k(b.commission!.amount)} {COMMISSION_WAY_CHIP[b.commission!.method] ?? "TM"}
           </strong>
         </>
       ) : null}
@@ -1120,6 +1119,37 @@ function RowMenu({
 }
 
 /**
+ * BA ĐƯỜNG TRẢ CHIẾT KHẤU ĐẠI LÝ — khác nhau ở chỗ tiền ra khỏi túi ai:
+ *  - TM: người bấm rút ví trả tại bãi, trừ vào phần họ đang giữ;
+ *  - CK: công ty chuyển từ tài khoản, phải có mã giao dịch;
+ *  - trừ vào tiền ĐL đang cầm: không ai chi, đại lý giữ lại rồi hoàn phần còn
+ *    lại — chỉ làm công nợ đại lý nhỏ đi.
+ */
+type CommissionWay = "cash" | "transfer" | "agency";
+
+const COMMISSION_WAYS: Array<{ key: CommissionWay; label: string; hint: string }> = [
+  { key: "cash", label: "TM (trừ tiền tôi giữ)", hint: "Rút ví trả ngay tại bãi" },
+  { key: "transfer", label: "CK từ TK công ty", hint: "Công ty chuyển khoản, phải ghi mã giao dịch" },
+  {
+    key: "agency",
+    label: "Trừ vào tiền ĐL đang cầm",
+    hint: "Đại lý giữ lại phần chiết khấu, chỉ hoàn công ty phần còn lại",
+  },
+];
+
+const COMMISSION_WAY_CHIP: Record<CommissionWay, string> = {
+  cash: "TM",
+  transfer: "CK",
+  agency: "trừ tiền ĐL cầm",
+};
+
+const COMMISSION_WAY_TITLE: Record<CommissionWay, string> = {
+  cash: "trả tiền mặt",
+  transfer: "trả chuyển khoản",
+  agency: "trừ vào tiền đại lý đang cầm",
+};
+
+/**
  * CHI CHIẾT KHẤU cho đại lý / hướng dẫn viên dẫn đoàn.
  *
  * Khoản TRẢ NGOÀI: không cộng vào tiền khách, KHÔNG lên phiếu gửi khách. Mặc
@@ -1138,13 +1168,15 @@ function CommissionControl({
   /**
    * SỐ TIỀN và TÊN ĐẠI LÝ tự điền sẵn, vẫn sửa tay được:
    *  - tiền = số khách × đơn giá chiết khấu (đã chi rồi thì giữ số cũ)
-   *  - tên đại lý = đại lý khách đã đặt qua (ô "Đã TT đại lý" trên booking)
+   *  - tên đại lý = đại lý khách đã đặt qua (ô "Đại lý đã thu" trên booking)
    */
   const suggestAmount = paid?.amount || booking.guestCount * COMMISSION_PER_GUEST;
   const suggestAgency = paid?.agencyName || booking.agencyName || "";
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(suggestAmount);
-  const [method, setMethod] = useState<"cash" | "transfer">(paid?.method ?? "cash");
+  const [method, setMethod] = useState<CommissionWay>(paid?.method ?? "cash");
+  /** Đại lý đang cầm bao nhiêu của booking này — có thì mới cấn trừ được. */
+  const agencyHolding = Math.max(0, booking.agencyPaidAmount || 0);
   const [code, setCode] = useState(paid?.transferCode ?? "");
   const [agency, setAgency] = useState(suggestAgency);
   const [bankAccount, setBankAccount] = useState(paid?.bankAccount ?? "");
@@ -1198,7 +1230,9 @@ function CommissionControl({
       onDone(
         method === "cash"
           ? `✓ Đã chi CK ĐL ${amount.toLocaleString("vi-VN")} đ TM — trừ vào tiền bạn đang giữ.`
-          : `✓ Đã ghi CK ĐL ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
+          : method === "agency"
+            ? `✓ CK ĐL ${amount.toLocaleString("vi-VN")} đ trừ vào tiền đại lý đang cầm — đại lý chỉ còn phải hoàn ${Math.max(0, agencyHolding - amount).toLocaleString("vi-VN")} đ.`
+            : `✓ Đã ghi CK ĐL ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
       );
       setOpen(false);
     } catch (err: unknown) {
@@ -1229,7 +1263,7 @@ function CommissionControl({
         }}
       >
         {paid
-          ? `🤝 CK ĐL ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${paid.method === "cash" ? "TM" : "CK"}${paid.agencyName ? ` · ${paid.agencyName}` : ""}`
+          ? `🤝 CK ĐL ${(paid.amount / 1000).toLocaleString("vi-VN")}k ${COMMISSION_WAY_CHIP[paid.method] ?? "TM"}${paid.agencyName ? ` · ${paid.agencyName}` : ""}`
           : "🤝 CK đại lý"}
       </button>
     );
@@ -1249,22 +1283,44 @@ function CommissionControl({
         className="mb-1 h-8 rounded-lg text-xs"
       />
       <MoneyInput value={amount} onChange={setAmount} />
-      <div className="mt-1 flex overflow-hidden rounded-lg border border-slate-300">
-        {(["cash", "transfer"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMethod(m)}
-            className={
-              method === m
-                ? "flex-1 bg-violet-600 py-1 text-xs font-bold text-white"
-                : "flex-1 bg-white py-1 text-xs font-medium text-slate-500"
-            }
-          >
-            {m === "cash" ? "TM (trừ tiền tôi giữ)" : "CK từ TK công ty"}
-          </button>
-        ))}
+      {/* BA ĐƯỜNG TRẢ — xếp dọc vì nhãn dài, bấm nhầm là sai sổ tiền của người khác */}
+      <div className="mt-1 overflow-hidden rounded-lg border border-slate-300">
+        {COMMISSION_WAYS.map((w) => {
+          const off = w.key === "agency" && !agencyHolding;
+          return (
+            <button
+              key={w.key}
+              type="button"
+              disabled={off}
+              onClick={() => setMethod(w.key)}
+              title={off ? "Booking này đại lý không cầm tiền nào để trừ" : w.hint}
+              className={
+                "block w-full border-b border-slate-200 px-2 py-1.5 text-left text-xs last:border-b-0 " +
+                (method === w.key
+                  ? "bg-violet-600 font-bold text-white"
+                  : off
+                    ? "bg-slate-50 font-medium text-slate-300"
+                    : "bg-white font-medium text-slate-600")
+              }
+            >
+              {w.label}
+              {w.key === "agency" && agencyHolding > 0 ? (
+                <span className={method === "agency" ? "text-violet-100" : "text-slate-400"}>
+                  {" "}
+                  — đang cầm {(agencyHolding / 1000).toLocaleString("vi-VN")}k
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
       </div>
+      {method === "agency" && (
+        <p className="mt-1 rounded bg-amber-100 px-1.5 py-1 text-[10px] leading-tight text-amber-900">
+          Không ai chi tiền: đại lý giữ lại {(amount / 1000).toLocaleString("vi-VN")}k trong khoản
+          đang cầm, chỉ hoàn công ty{" "}
+          <strong>{(Math.max(0, agencyHolding - amount) / 1000).toLocaleString("vi-VN")}k</strong>.
+        </p>
+      )}
       {method === "transfer" && (
         <>
           {/* STK + mã GD xếp CẶP cho hẹp bề ngang — thẻ này nổi cạnh dòng
@@ -4039,7 +4095,7 @@ export function BookingCard({
         </Field>
         {/* Khách đặt qua đại lý và trả một phần bên đó: phần này khách khỏi trả,
             đại lý nợ công ty — kế toán xem bảng công nợ đại lý cuối ngày */}
-        <Field label="Đã TT đại lý (nếu có)">
+        <Field label="Đại lý đã thu (nếu có)">
           <MoneyInput value={form.agencyPaidAmount} onChange={(v) => set("agencyPaidAmount", v)} />
         </Field>
         {form.agencyPaidAmount > 0 && (

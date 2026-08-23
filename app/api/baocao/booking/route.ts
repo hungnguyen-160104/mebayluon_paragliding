@@ -285,7 +285,8 @@ export async function PATCH(req: Request) {
     if (action === "commission") {
       const booking = await payCommission(auth, spot, id, {
         amount: Math.max(0, Math.round(Number(body?.amount) || 0)),
-        method: body?.method === "transfer" ? "transfer" : "cash",
+        method:
+          body?.method === "transfer" ? "transfer" : body?.method === "agency" ? "agency" : "cash",
         transferCode: String(body?.transferCode ?? ""),
         note: String(body?.note ?? ""),
         agencyName: String(body?.agencyName ?? ""),

@@ -403,7 +403,7 @@ const BODY = `<div class="wrap">
         <p>Thẻ nhập booking: tên, số điện thoại, số khách, loại bay (PG/PPG), dịch vụ kèm theo, điểm đón, giá và tiền cọc.</p>
         <ul>
           <li><strong>Đã cọc vào TK công ty</strong> — có nút QR gửi khách quét, nội dung chuyển khoản tự sinh.</li>
-          <li><strong>Đã TT đại lý</strong> — khách trả một phần bên đại lý; điền số tiền và <strong>tên đại lý</strong>. Phần này trừ vào tiền khách phải trả, và ghi vào công nợ đại lý để kế toán đòi.</li>
+          <li><strong>Đại lý đã thu</strong> — khách trả một phần bên đại lý; điền số tiền và <strong>tên đại lý</strong>. Phần này trừ vào tiền khách phải trả, và ghi vào công nợ đại lý để kế toán đòi. Đại lý sẽ hoàn công ty khoản này, trừ phần <strong>chiết khấu đại lý</strong> nếu hai bên cấn trừ.</li>
           <li>Booking khách tự đặt trên web và thư OTA (Klook, Agoda…) tự chảy về khay chờ duyệt.</li>
         </ul>
       </li>

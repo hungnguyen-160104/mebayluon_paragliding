@@ -339,7 +339,8 @@ export type BookingDTO = {
   /** Chiết khấu đã trả đại lý — KHÔNG lên phiếu gửi khách, chỉ nội bộ. */
   commission?: {
     amount: number;
-    method: "cash" | "transfer";
+    /** "cash" rút ví · "transfer" công ty chuyển · "agency" trừ vào tiền ĐL đang cầm. */
+    method: "cash" | "transfer" | "agency";
     transferCode?: string;
     /** Đại lý nhận chiết khấu + tài khoản nhận tiền + ghi chú của khoản chi. */
     agencyName?: string;

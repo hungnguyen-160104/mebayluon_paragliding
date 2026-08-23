@@ -143,12 +143,16 @@ export interface IBaobayBooking {
    * CHIẾT KHẤU trả đại lý / hướng dẫn viên dẫn đoàn này.
    *
    * KHÔNG nằm trong tổng tiền khách trả và KHÔNG lên phiếu gửi khách — đây là
-   * khoản trả ngoài, chỉ nội bộ thấy. Trả tiền mặt thì trừ vào tiền người bấm
-   * đang giữ; trả chuyển khoản thì công ty chi từ TK, ghi mã giao dịch.
+   * khoản trả ngoài, chỉ nội bộ thấy. Ba đường trả, KHÁC NHAU CHỖ TIỀN ĐI ĐÂU:
+   *  - "cash": rút ví trả ngay tại bãi → trừ vào tiền người bấm đang giữ.
+   *  - "transfer": công ty chuyển từ TK → ghi mã giao dịch, không ai nộp tiền.
+   *  - "agency": KHÔNG AI TRẢ GÌ CẢ — đại lý đang cầm tiền khách trả hộ, họ giữ
+   *    lại phần chiết khấu và chỉ hoàn công ty phần còn lại. Trừ thẳng vào công
+   *    nợ đại lý, không đụng tiền mặt của ai cũng không đụng TK công ty.
    */
   commission?: {
     amount: number;
-    method: "cash" | "transfer";
+    method: "cash" | "transfer" | "agency";
     transferCode?: string;
     /** Tên đại lý nhận chiết khấu — mặc định lấy tên đại lý khách đã đặt qua. */
     agencyName?: string;
@@ -407,7 +411,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     commission: {
       type: {
         amount: { type: Number, default: 0 },
-        method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+        method: { type: String, enum: ["cash", "transfer", "agency"], default: "cash" },
         transferCode: String,
         agencyName: String,
         bankAccount: String,

@@ -2820,25 +2820,41 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   };
   dayRevenue.collected = Math.max(0, dayRevenue.totalValue - dayRevenue.remaining);
 
-  /** Công nợ ĐẠI LÝ của ngày: gom theo tên, kèm khách nào để đối chiếu. */
+  /**
+   * Công nợ ĐẠI LÝ của ngày: gom theo tên, kèm khách nào để đối chiếu.
+   *
+   * Số phải đòi là số ĐẠI LÝ CÒN NỢ THẬT, không phải số khách đã trả họ: chiết
+   * khấu trả theo đường "trừ vào tiền đại lý đang cầm" thì đại lý giữ luôn phần
+   * đó, chỉ hoàn công ty phần còn lại. Không trừ ở đây là kế toán đi đòi thừa.
+   */
   const agencyBookings = await BaobayBooking.find({
     spot,
     flightDate: date,
     agencyPaidAmount: { $gt: 0 },
     status: { $nin: ["cancelled", "voided"] },
   })
-    .select("agencyPaidAmount agencyName contactName daySeq source")
+    .select("agencyPaidAmount agencyName contactName daySeq source commission")
     .lean<any[]>();
   const debtByName = new Map<string, { name: string; amount: number; bookings: string[] }>();
   for (const b of agencyBookings) {
     // Thiếu ô tên đại lý thì lấy NGUỒN ĐẶT — khách đặt qua đại lý nào thì nguồn là đại lý đó
     const name = (b.agencyName || "").trim() || (b.source || "").trim() || "(chưa ghi tên đại lý)";
+    const giuLai = agencyKeptCommission(b);
+    const conNo = Math.max(0, (b.agencyPaidAmount || 0) - giuLai);
     const cur = debtByName.get(name) ?? { name, amount: 0, bookings: [] as string[] };
-    cur.amount += b.agencyPaidAmount || 0;
-    cur.bookings.push(`#${b.daySeq || "?"} ${b.contactName || ""} (${((b.agencyPaidAmount || 0) / 1000).toLocaleString("vi-VN")}k)`);
+    cur.amount += conNo;
+    cur.bookings.push(
+      `#${b.daySeq || "?"} ${b.contactName || ""} (${(conNo / 1000).toLocaleString("vi-VN")}k` +
+        (giuLai > 0
+          ? `, đã giữ lại ${(giuLai / 1000).toLocaleString("vi-VN")}k chiết khấu`
+          : "") +
+        ")",
+    );
     debtByName.set(name, cur);
   }
-  const agencyDebts = [...debtByName.values()].sort((a, b) => b.amount - a.amount);
+  const agencyDebts = [...debtByName.values()]
+    .filter((a) => a.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
 
   /**
    * Tra SỐ THỨ TỰ booking cho từng khoản: ưu tiên bookingId (lệnh thu bấm từ
@@ -2977,8 +2993,11 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   }
 
   /**
-   * CHIẾT KHẤU ĐẠI LÝ: tiền mặt thì TRỪ vào phần người đó đang giữ (họ rút ví ra
-   * đưa ngay tại bãi); chuyển khoản thì công ty chi từ TK, không ai phải nộp.
+   * CHIẾT KHẤU ĐẠI LÝ — ba đường, tiền đi ba nơi khác nhau:
+   *  - tiền mặt: TRỪ vào phần người đó đang giữ (họ rút ví đưa ngay tại bãi);
+   *  - chuyển khoản: công ty chi từ TK, không ai phải nộp;
+   *  - trừ vào tiền đại lý đang cầm: KHÔNG AI CHI GÌ — đã trừ thẳng vào công nợ
+   *    đại lý ở trên, tính thêm một lần nữa ở đây là ghi khống một khoản chi.
    */
   const companySpendItems: MoneyBoardItem[] = [];
   for (const b of commissionBookings) {
@@ -2998,6 +3017,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       daySeq: Number(b.daySeq) || 0,
       by: c.byName || "",
     };
+    if (c.method === "agency") continue;
     if (c.method === "transfer") {
       companySpendItems.push(item);
       continue;
@@ -3284,6 +3304,26 @@ function nowHHMMVN(): string {
  * thời chưa tính tiền trong app) thì giữ nguyên số đã khai — đó là công nợ thật,
  * tính lại thành 0 là xoá mất nợ.
  */
+/**
+ * Phần chiết khấu ĐẠI LÝ TỰ GIỮ LẠI từ tiền khách trả họ (`method: "agency"`).
+ *
+ * Đại lý đang cầm tiền bay của khách; thay vì công ty chi chiết khấu rồi đại lý
+ * hoàn đủ, hai bên cấn trừ: đại lý giữ luôn phần chiết khấu, chỉ hoàn phần còn
+ * lại. Vì vậy khoản này KHÔNG phải tiền công ty chi ra — nó chỉ làm công nợ đại
+ * lý nhỏ đi. Mọi chỗ tính "đại lý còn nợ bao nhiêu" đều phải trừ qua đây, không
+ * thì kế toán đi đòi số tiền đại lý không còn cầm.
+ */
+/** Chữ ngắn cho đường trả chiết khấu — dùng ở dòng xuất bảng và sổ. */
+function commissionWayLabel(method?: string): string {
+  return method === "transfer" ? "CK" : method === "agency" ? "trừ tiền ĐL cầm" : "TM";
+}
+
+function agencyKeptCommission(booking: { commission?: { amount?: number; method?: string } | null }): number {
+  const c = booking?.commission;
+  if (!c || c.method !== "agency") return 0;
+  return Math.max(0, Math.round(Number(c.amount) || 0));
+}
+
 function remainingOf(total: number, deposit: number, declared: number, agencyPaid = 0): number {
   // Phần khách đã trả ĐẠI LÝ: khách khỏi trả nữa (đại lý nợ công ty phần đó)
   return total > 0
@@ -5858,7 +5898,7 @@ export async function payCommission(
   id: string,
   input: {
     amount: number;
-    method: "cash" | "transfer";
+    method: "cash" | "transfer" | "agency";
     transferCode?: string;
     note?: string;
     /** Tên đại lý nhận chiết khấu + số tài khoản để chuyển tiền + ghi chú riêng. */
@@ -5884,10 +5924,31 @@ export async function payCommission(
 
   const amount = Math.max(0, Math.round(input.amount || 0));
   if (amount <= 0) throw new BaobayError("Chưa nhập số tiền chiết khấu", 400);
-  const method = input.method === "transfer" ? "transfer" : "cash";
+  const method =
+    input.method === "transfer" ? "transfer" : input.method === "agency" ? "agency" : "cash";
   const transferCode = (input.transferCode ?? "").trim();
   if (method === "transfer" && !transferCode) {
     throw new BaobayError("Chuyển khoản phải ghi mã giao dịch", 400);
+  }
+  /**
+   * TRỪ VÀO TIỀN ĐẠI LÝ ĐANG CẦM: chỉ có nghĩa khi đại lý THẬT SỰ đang cầm tiền
+   * của booking này. Không có khoản "đại lý đã thu" thì chẳng có gì mà trừ —
+   * chặn ngay, đừng để sổ mọc ra khoản chiết khấu không ai trả.
+   */
+  const agencyHolding = Math.max(0, Number(booking.agencyPaidAmount) || 0);
+  if (method === "agency") {
+    if (agencyHolding <= 0) {
+      throw new BaobayError(
+        "Booking này đại lý không cầm tiền nào — không trừ vào tiền đại lý được",
+        400,
+      );
+    }
+    if (amount > agencyHolding) {
+      throw new BaobayError(
+        `Đại lý chỉ đang cầm ${agencyHolding.toLocaleString("vi-VN")} đ, không trừ được ${amount.toLocaleString("vi-VN")} đ`,
+        400,
+      );
+    }
   }
 
   const updated = await BaobayBooking.findOneAndUpdate(
@@ -6277,7 +6338,7 @@ async function pushBookingRow(doc: any) {
       noTicketFlight: doc.noTicketFlight ? `x — ${doc.noTicketReason || ""} (${doc.noTicketBy || ""})` : "",
       contactNote: doc.contactNote || "",
       commission: doc.commission?.amount
-        ? `${doc.commission.amount} ${doc.commission.method === "cash" ? "TM" : "CK"}${doc.commission.transferCode ? ` #${doc.commission.transferCode}` : ""} - ${doc.commission.byName || ""}`
+        ? `${doc.commission.amount} ${commissionWayLabel(doc.commission.method)}${doc.commission.transferCode ? ` #${doc.commission.transferCode}` : ""} - ${doc.commission.byName || ""}`
         : "",
       note: doc.note || "",
       updatedAt: nowStampVN(),
@@ -6358,7 +6419,12 @@ function toBookingDTO(doc: any): BookingDTO {
     commission: doc.commission?.amount
       ? {
           amount: Number(doc.commission.amount) || 0,
-          method: doc.commission.method === "transfer" ? "transfer" : "cash",
+          method:
+            doc.commission.method === "transfer"
+              ? "transfer"
+              : doc.commission.method === "agency"
+                ? "agency"
+                : "cash",
           transferCode: doc.commission.transferCode || undefined,
           agencyName: doc.commission.agencyName || undefined,
           bankAccount: doc.commission.bankAccount || undefined,
@@ -7545,17 +7611,19 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     agencyPaidAmount: { $gt: 0 },
     status: { $nin: ["cancelled", "voided"] },
   })
-    .select("agencyPaidAmount agencyName contactName daySeq")
+    .select("agencyPaidAmount agencyName contactName daySeq commission")
     .lean<any[]>();
   const heldBy = new Map<string, { name: string; amount: number; bookings: string[] }>();
   for (const b of agencyHeldBookings) {
     const name = (b.agencyName || "").trim() || "(chưa ghi tên đại lý)";
+    // Phần chiết khấu đại lý tự giữ lại thì công ty không đòi nữa — xem agencyKeptCommission
+    const conNo = Math.max(0, (b.agencyPaidAmount || 0) - agencyKeptCommission(b));
     const cur = heldBy.get(name) ?? { name, amount: 0, bookings: [] as string[] };
-    cur.amount += b.agencyPaidAmount || 0;
+    cur.amount += conNo;
     cur.bookings.push(`#${b.daySeq || "?"} ${b.contactName || ""}`);
     heldBy.set(name, cur);
   }
-  const agencyHeld = [...heldBy.values()].sort((a, b) => b.amount - a.amount);
+  const agencyHeld = [...heldBy.values()].filter((a) => a.amount > 0).sort((a, b) => b.amount - a.amount);
 
   /** Booking của ngày đang THU THỪA (trả > tổng) + số lệnh dịch vụ đã bị bỏ. */
   const overpaidDocs = await BaobayBooking.find({
