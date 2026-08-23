@@ -3433,6 +3433,11 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     })
   ).toObject();
 
+  /** Cọc tiền mặt: vào sổ tiền của người nhập ngay, xem chú thích cashDepositToCollect. */
+  if (input.depositMethod === "cash" && input.deposit > 0) {
+    await cashDepositToCollect(session, spot, saved, input.deposit);
+  }
+
   pushSheetInBackground(() => pushBookingRow(saved), BaobayBooking, saved._id);
 
   return toBookingDTO({ ...saved, sheetSynced: false });
@@ -3466,6 +3471,72 @@ export type FlownServices = {
    */
   byPerson: Record<string, Array<{ name: string; qty: number }>>;
 };
+
+/**
+ * CỌC TIỀN MẶT SINH LỆNH THU đứng tên NGƯỜI NHẬP BOOKING.
+ *
+ * Quy tắc của chủ: ai lập lệnh thu tiền mặt thì tiền đó cộng vào phần người ấy
+ * đang giữ. Cọc gõ tay lúc nhập booking trước đây KHÔNG sinh lệnh thu nào, nên
+ * tiền mặt ấy nằm ngoài mọi sổ: không vào "ai đang giữ", không lên bảng tiền
+ * trong ngày, cuối ngày không ai bị đòi nộp (16 khoản = 14.253.000đ tính tới
+ * 23/08).
+ *
+ * Sinh hẳn một lệnh thu là mọi thứ khác chạy theo đúng đường sẵn có — tiền giữ,
+ * bảng tiền ngày, giao nộp, đối soát — thay vì cộng tay ở một chỗ rồi quên chỗ
+ * khác (đúng cái bẫy đã gây lệch 900k của Ms Duyên hôm 22/08).
+ *
+ * `amount` là phần cọc CHƯA có lệnh thu nào đại diện; <= 0 thì không làm gì.
+ */
+async function cashDepositToCollect(
+  session: BaobaySession,
+  spot: string,
+  booking: any,
+  amount: number,
+): Promise<void> {
+  if (!(amount > 0)) return;
+  const doc = (
+    await BaobayCollect.create({
+      spot,
+      date: todayInVN(),
+      guestName: booking.contactName || "",
+      bookingId: booking._id,
+      bookingCode: booking.bookingCode || "",
+      agency: booking.source || "",
+      guests: booking.guestCount || 0,
+      amount,
+      method: "cash",
+      toCompanyAccount: false,
+      transferCode: "",
+      note: `Cọc TIỀN MẶT lúc nhập booking bay ${formatDateKeyVN(booking.flightDate)}`,
+      collectorUsername: session.username,
+      collectorName: session.name,
+      /** Chính mình cầm nên xong luôn — không phải chờ ai xác nhận với chính mình. */
+      status: "collected",
+      resolvedAt: new Date(),
+      resolvedBy: session.username,
+      createdByUsername: session.username,
+      createdByName: session.name,
+    })
+  ).toObject();
+
+  /** Ghi vào vệt thu tiền của booking để dòng booking hiện "… đã thu … TM". */
+  await BaobayBooking.updateOne(
+    { _id: booking._id },
+    {
+      $push: {
+        collectedLog: {
+          amount,
+          method: "cash",
+          byName: session.name,
+          at: new Date(),
+          kind: "deposit",
+          code: "",
+        },
+      },
+    },
+  );
+  void doc;
+}
 
 export async function listBookings(
   spotRaw: string,
@@ -3801,6 +3872,19 @@ const editedTotal = bookingTotal({
 
   const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, update, { new: true }).lean<any>();
   if (!doc) throw new BaobayError("Booking vừa được người khác cập nhật", 409);
+
+  /**
+   * SỬA booking mà cọc TIỀN MẶT tăng thêm: phần TĂNG cũng phải vào sổ tiền của
+   * người vừa sửa. Chỉ tính phần cọc CHƯA có lệnh thu nào đại diện, nếu không
+   * mỗi lần bấm Lưu lại đẻ thêm một lệnh thu ma.
+   */
+  if (input.depositMethod === "cash" && input.deposit > 0) {
+    const daCo = await BaobayCollect.find({ bookingId: doc._id, status: { $ne: "rejected" } })
+      .select("amount")
+      .lean<any[]>();
+    const dis = input.deposit - daCo.reduce((t, c) => t + (c.amount || 0), 0);
+    await cashDepositToCollect(session, spot, doc, dis);
+  }
 
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });

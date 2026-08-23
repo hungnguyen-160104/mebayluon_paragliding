@@ -340,6 +340,8 @@ export const bookingSchema = z.object({
   agencyName: text(120),
   transferCode: text(100),
   depositToCompany: z.boolean().optional().default(false),
+  /** Cọc gõ tay đi đường nào — quầy bấm TM/CK; rỗng = bản ghi cũ chưa hỏi. */
+  depositMethod: z.enum(["cash", "transfer", ""]).optional().default(""),
   /** Còn lại > 0: chỉ định người thu — máy chủ tự lập LỆNH THU TIỀN gửi người đó. */
   collectorUsername: text(100),
   collectorNote: text(500),
