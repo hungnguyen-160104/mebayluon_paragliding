@@ -133,29 +133,31 @@ function BookingSummary({
   /** Cọc GÕ TAY lúc nhận booking = số ròng − đã thu + đã hoàn. */
   const depositBase = Math.max(0, (b.deposit || 0) - paidTotal + refunded);
   const k = (n: number) => `${Math.round(n / 1000).toLocaleString("vi-VN")}k`;
-  if (depositBase) parts.push(`cọc ${k(depositBase)}`);
-  else if (paidTotal || refunded) parts.push("cọc 0");
-  // Đại lý thu hộ: chip đậm xanh riêng (khối JSX bên dưới) — không nằm trong chuỗi xám
-  /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
-  const tail: string[] = [];
   /**
-   * MÃ GD hiện đủ TỪNG BILL: khách chia 2-3 lần chuyển thì mỗi lần một mã —
-   * kế toán nhìn dòng booking là đối được sao kê, khỏi mở từng lệnh thu.
-   * Bản ghi cũ chưa lưu mã theo bill thì rơi về mã trên booking như trước.
-   */
-  /**
-   * Mã GD của TỪNG LỆNH THU đã in ngay trong chip "… đã thu 8.200k CK #0610",
-   * nên ở đuôi dòng chỉ còn nhắc mã NÀO CHƯA ĐƯỢC NHẮC — thường là mã của khoản
-   * cọc gõ tay lúc nhập booking (không đi qua lệnh thu nào). In lại mã đã có
-   * thì dòng dài ra mà không thêm thông tin gì.
+   * MÃ GD của TỪNG LỆNH THU đã in trong chip "… đã thu 8.200k CK #0610", nên mã
+   * còn lại trên booking chính là mã của KHOẢN CỌC GÕ TAY (không đi qua lệnh
+   * thu nào). Có mã tức là khoản cọc ấy đi bằng chuyển khoản.
    */
   const inlineCodes = new Set(
     (b.collected ?? []).filter((c) => c.method === "transfer" && c.code).map((c) => c.code as string),
   );
-  const gdCodes = [b.transferCode].filter((x): x is string => Boolean(x) && !inlineCodes.has(x));
-  if (gdCodes.length) tail.push(`GD cọc ${gdCodes.map((c) => `#${c}`).join(", ")}`);
-  // "cọc → TK cty" chỉ đáng nói khi CÒN phần cọc gõ tay; cọc 0 mà vẫn ghi là gây hỏi vô ích
-  if (b.depositToCompany && depositBase > 0) tail.push("cọc → TK cty");
+  const depositCode = b.transferCode && !inlineCodes.has(b.transferCode) ? b.transferCode : "";
+  /**
+   * Ghi thẳng ĐƯỜNG TIỀN vào ngay số cọc: "cọc 500k CK #1424…".
+   *
+   * Trước đây có một nhãn rời "cọc → TK cty" bật cho MỌI khoản cọc lúc tạo
+   * booking (chú thích trong mã: "cọc thì 100% qua STK công ty") — đếm trên sổ
+   * thì 29/93 booking mang nhãn đó mà thực ra thu tiền mặt hoặc không rõ. Nay
+   * chỉ dám nói "CK" khi có MÃ GIAO DỊCH thật của khoản cọc; không có mã thì để
+   * trống, ai cần biết thì mở lệnh thu ra xem, còn hơn nói sai.
+   */
+  if (depositBase) parts.push(`cọc ${k(depositBase)}${depositCode ? ` CK #${depositCode}` : ""}`);
+  else if (paidTotal || refunded) parts.push("cọc 0");
+  // Đại lý thu hộ: chip đậm xanh riêng (khối JSX bên dưới) — không nằm trong chuỗi xám
+  /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
+  const tail: string[] = [];
+  /** Mã cọc còn sót khi KHÔNG còn phần cọc gõ tay (đã thu hết qua lệnh thu). */
+  if (depositCode && !depositBase) tail.push(`GD cọc #${depositCode}`);
   if (b.note) tail.push(b.note);
 
   return (
@@ -323,7 +325,13 @@ function BookingSummary({
           */}
           {(() => {
             const txs = (b.collected ?? []).filter((c) => c.method === "transfer");
-            const coCK = txs.length > 0 || (depositBase > 0 && b.depositToCompany);
+            /**
+             * Cọc gõ tay chỉ tính là CHUYỂN KHOẢN khi có MÃ GIAO DỊCH thật —
+             * không dùng cờ `depositToCompany` nữa vì nó bật cho mọi khoản cọc
+             * (29/93 booking mang cờ đó mà thu tiền mặt hoặc không rõ), khiến
+             * booking cọc tiền mặt bị treo mãi không được "Đã soát đủ".
+             */
+            const coCK = txs.length > 0 || (depositBase > 0 && Boolean(depositCode));
             const soatDu = coCK ? Boolean(b.ckChecked) : true;
             if (!soatDu) return null;
             return (
