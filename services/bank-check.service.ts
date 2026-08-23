@@ -202,6 +202,11 @@ export type BankUncheckedDTO = {
   bookingId?: string;
   spot: string;
   label: string;
+  /** Các mảnh rời để giao diện tự xếp và TÔ VÀNG phần trùng với sao kê. */
+  daySeq: number;
+  contactName: string;
+  phone: string;
+  bookingCode: string;
   flightDate: string;
   createdDate?: string;
   amount: number;
@@ -1095,6 +1100,10 @@ export async function getBankCheck(
       bookingId: c.bookingId,
       spot: c.spot,
       label: c.label,
+      daySeq: c.daySeq || 0,
+      contactName: c.contactName || "",
+      phone: c.phone || "",
+      bookingCode: c.bookingCode || "",
       flightDate: c.flightDate,
       createdDate: c.createdDate,
       amount: Math.max(...c.amounts.filter((n) => n > 0), 0),

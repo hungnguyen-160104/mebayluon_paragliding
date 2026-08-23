@@ -114,6 +114,10 @@ type UncheckedDTO = {
   bookingId?: string;
   spot: string;
   label: string;
+  daySeq: number;
+  contactName: string;
+  phone: string;
+  bookingCode: string;
   flightDate: string;
   createdDate?: string;
   amount: number;
@@ -164,6 +168,44 @@ function ascii(s: string): string {
  * TÔ SÁNG phần trùng trong dòng SMS: mã GD, "ddmm kN", tên khách, SĐT, số
  * tiền — kế toán nhìn phát thấy ngay VÌ SAO máy nói khớp, khỏi tự dò.
  */
+/**
+ * TÔ VÀNG các đoạn của `raw` trùng với bất kỳ token nào — lõi dùng chung cho
+ * thẻ booking lẫn danh sách soát tràn. So sau khi bỏ dấu + viết hoa hai phía.
+ */
+function highlightRaw(raw: string, tokens: string[]): React.ReactNode[] {
+  const hay = ascii(raw);
+  const spans: Array<[number, number]> = [];
+  for (const tok of tokens) {
+    const needle = ascii(tok);
+    if (needle.length < 3) continue;
+    let i = 0;
+    while ((i = hay.indexOf(needle, i)) >= 0) {
+      spans.push([i, i + needle.length]);
+      i += needle.length;
+    }
+  }
+  spans.sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const sp of spans) {
+    const last = merged[merged.length - 1];
+    if (last && sp[0] <= last[1]) last[1] = Math.max(last[1], sp[1]);
+    else merged.push([...sp] as [number, number]);
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  merged.forEach(([a, b], i) => {
+    if (a > cursor) parts.push(raw.slice(cursor, a));
+    parts.push(
+      <mark key={i} className="rounded bg-yellow-200 px-0.5 font-bold text-slate-900">
+        {raw.slice(a, b)}
+      </mark>,
+    );
+    cursor = b;
+  });
+  if (cursor < raw.length) parts.push(raw.slice(cursor));
+  return parts;
+}
+
 function HighlightSms({ raw, row }: { raw: string; row: BookingRowDTO }) {
   const tokens: string[] = [];
   for (const t of row.transfers) if (t.code && t.code.length >= 3) tokens.push(t.code);
@@ -646,46 +688,108 @@ export function BankCheckCard({ date }: { date: string }) {
                 {report!.unchecked
                   .filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true))
                   .slice(0, 80)
-                  .map((u) => (
-                    <li key={u.refId} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="text-xs font-semibold text-slate-800">{u.label}</span>
-                        <span className="text-[11px] text-slate-500">
-                          bay {u.flightDate || "—"}
-                          {u.createdDate ? ` · lập ${u.createdDate}` : ""}
-                        </span>
-                        <span className="text-xs font-bold tabular-nums text-slate-900">{formatVND(u.amount)}</span>
-                        {u.code ? (
-                          <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
-                            mã {u.code}
+                  .map((u) => {
+                    /**
+                     * Bố cục theo yêu cầu kế toán: NGÀY LẬP đứng đầu → [mã book]
+                     * → tên khách → điểm/ngày bay → tiền → mã GD/ghi chú → SĐT.
+                     * Ngày kiểu Việt (17/08/2026), không lặp lại ngày bay hai lần.
+                     *
+                     * Dấu hiệu nào TRÙNG với dòng sao kê thì bôi VÀNG ở CẢ HAI
+                     * phía — mắt chỉ việc so hai vệt vàng thay vì dò từng chữ.
+                     */
+                    const raw = u.matchedLine?.raw ?? "";
+                    const hay = ascii(raw);
+                    const hit = (tok: string) => tok.length >= 3 && hay.includes(ascii(tok));
+                    const phoneTail = u.phone.replace(/\D/g, "").slice(-9);
+                    const mark = (on: boolean) => (on ? "bg-yellow-200 text-slate-900 " : "");
+                    /** Mã nhân viên ghi: đúng dạng mã GD, hay thực ra là dòng GHI CHÚ. */
+                    const codeIsRef = /^[A-Za-z0-9.\-]{3,14}$/.test(u.code.trim());
+                    const amountHit =
+                      raw !== "" &&
+                      [u.amount.toLocaleString("en-US"), u.amount.toLocaleString("vi-VN"), String(u.amount)].some((t) =>
+                        raw.includes(t),
+                      );
+                    return (
+                      <li key={u.refId} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {u.createdDate && (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600">
+                              lập {formatDateKeyVN(u.createdDate)}
+                            </span>
+                          )}
+                          {u.bookingCode && u.bookingCode !== u.phone && (
+                            <span className={"rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-bold text-sky-900 " + mark(hit(u.bookingCode))}>
+                              [{u.bookingCode}]
+                            </span>
+                          )}
+                          <span className={"rounded px-1 text-xs font-bold text-slate-900 " + mark(hit(u.contactName))}>
+                            {u.daySeq ? `#${u.daySeq} ` : ""}
+                            {u.contactName || "khách"}
                           </span>
-                        ) : (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">chưa ghi mã GD</span>
-                        )}
-                        {!u.recorded && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                            mới là “còn phải thu”
+                          <span className="text-[11px] text-slate-500">
+                            {spotName(u.spot)} · bay {u.flightDate ? formatDateKeyVN(u.flightDate) : "—"}
                           </span>
-                        )}
-                        <span className="flex-1" />
-                        <button
-                          type="button"
-                          disabled={rowBusy === u.refId || !u.recorded}
-                          onClick={() => confirmItem(u.refId, true)}
-                          title={u.recorded ? "Đánh dấu đã nhận" : "Chưa có lệnh thu — không đánh dấu được"}
-                          className="h-7 shrink-0 rounded-lg border border-emerald-400 bg-white px-2 text-[11px] font-bold text-emerald-700 disabled:opacity-40"
-                        >
-                          Đã nhận
-                        </button>
-                      </div>
-                      {u.matchedLine && (
-                        <div className="mt-1 rounded bg-sky-50 px-2 py-1 text-[11px] leading-tight text-sky-900">
-                          ↳ sao kê {u.matchedLine.bankDate}: {u.matchedLine.raw.slice(0, 110)}
-                          {u.matchedLine.why ? ` — ${u.matchedLine.why}` : ""}
+                          <span className={"rounded px-1 text-xs font-bold tabular-nums text-slate-900 " + mark(amountHit)}>
+                            {formatVND(u.amount)}
+                          </span>
+                          {u.code ? (
+                            <span
+                              className={
+                                "max-w-[16rem] truncate rounded px-1.5 py-0.5 text-[11px] font-bold " +
+                                (codeIsRef ? "bg-rose-100 text-rose-700 " : "bg-orange-50 text-orange-800 ") +
+                                mark(hit(u.code))
+                              }
+                              title={codeIsRef ? "Mã giao dịch nhân viên đã ghi" : "Nhân viên ghi dạng GHI CHÚ, không phải mã giao dịch thật — dò bằng tên/SĐT/số tiền"}
+                            >
+                              {codeIsRef ? `mã GD ${u.code}` : `ghi chú “${u.code}”`}
+                            </span>
+                          ) : (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">chưa ghi mã GD</span>
+                          )}
+                          {phoneTail.length === 9 && (
+                            <span className={"rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-900 " + mark(raw !== "" && (hay.match(/\d{9,12}/g) ?? []).some((r2) => r2.endsWith(phoneTail)))}>
+                              📞 {u.phone}
+                            </span>
+                          )}
+                          {!u.recorded && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                              mới là “còn phải thu”
+                            </span>
+                          )}
+                          <span className="flex-1" />
+                          <button
+                            type="button"
+                            disabled={rowBusy === u.refId || !u.recorded}
+                            onClick={() => confirmItem(u.refId, true)}
+                            title={u.recorded ? "Đánh dấu đã nhận" : "Chưa có lệnh thu — không đánh dấu được"}
+                            className="h-7 shrink-0 rounded-lg border border-emerald-400 bg-white px-2 text-[11px] font-bold text-emerald-700 disabled:opacity-40"
+                          >
+                            Đã nhận
+                          </button>
                         </div>
-                      )}
-                    </li>
-                  ))}
+                        {u.matchedLine && (
+                          <div className="mt-1 rounded bg-sky-50 px-2 py-1 text-[11px] leading-relaxed text-sky-900">
+                            ↳ sao kê {u.matchedLine.bankDate ? formatDateKeyVN(u.matchedLine.bankDate) : ""}:{" "}
+                            {highlightRaw(u.matchedLine.raw, [
+                              u.code,
+                              u.contactName,
+                              u.bookingCode,
+                              phoneTail,
+                              ...(u.flightDate && u.daySeq
+                                ? [
+                                    `${u.flightDate.slice(8, 10)}${u.flightDate.slice(5, 7)} k${u.daySeq}`,
+                                    `${u.flightDate.slice(8, 10)}${u.flightDate.slice(5, 7)}k${u.daySeq}`,
+                                  ]
+                                : []),
+                              u.amount.toLocaleString("en-US"),
+                              u.amount.toLocaleString("vi-VN"),
+                            ].filter(Boolean))}
+                            {u.matchedLine.why ? <span className="text-sky-700"> — {u.matchedLine.why}</span> : null}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
               {report!.unchecked.filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true)).length >
                 80 && (
