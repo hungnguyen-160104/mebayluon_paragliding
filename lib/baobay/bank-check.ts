@@ -204,8 +204,9 @@ export function signalCount(sg: BankSignals): number {
 /** Sáu dấu hiệu của MỘT ứng viên so với MỘT dòng sao kê. */
 export function signalsFor(entry: BankEntry, c: BankCandidate, hayInput?: string): BankSignals {
   const hay = hayInput ?? ascii(entry.raw);
-  const runs = hay.match(/[A-Z0-9]{4,}/g) ?? [];
-  const digitRuns = hay.match(/\d{9,12}/g) ?? [];
+  const masked = maskCompanyAccounts(hay);
+  const runs = masked.match(/[A-Z0-9]{4,}/g) ?? [];
+  const digitRuns = masked.match(/\d{9,12}/g) ?? [];
 
   const code = c.codes.some((raw) => {
     const k = ascii(raw).replace(/[^A-Z0-9]/g, "");
@@ -262,6 +263,33 @@ function ascii(s: string): string {
   return toAsciiNote(s).toUpperCase();
 }
 
+/**
+ * SỐ TÀI KHOẢN NHẬN TIỀN CỦA CÔNG TY — phải CHE ĐI trước khi dò mã giao dịch.
+ *
+ * Khách hay gõ số tài khoản nhận vào nội dung CK ("ND: 8875639685 TRAN LAN ANH
+ * chuyen tien"). Nhân viên ghi mã "39685" — tình cờ là ĐUÔI của chính số tài
+ * khoản — thế là MỌI dòng sao kê có gõ số TK đều "trùng đuôi mã" và bị hút về
+ * một booking: một booking dính 6 sao kê của 6 khách lạ, bắt được thật 23/08.
+ *
+ * Số này in công khai trên phiếu QR gửi khách nên không phải bí mật.
+ */
+export const COMPANY_BANK_ACCOUNTS = ["8875639685"];
+
+/**
+ * Che các số TK công ty trong chuỗi sao kê TRƯỚC KHI bóc dãy chữ-số để dò mã
+ * GD / SĐT. Khách gõ số TK có khi chen cách/chấm ("88756 39685") nên regex cho
+ * phép một ký tự ngăn giữa từng chữ số. Thay bằng "#" để dãy đứt hẳn, không
+ * dính vào dãy bên cạnh. Phần so TÊN và số tiền vẫn dùng chuỗi gốc.
+ */
+function maskCompanyAccounts(hay: string): string {
+  let out = hay;
+  for (const acc of COMPANY_BANK_ACCOUNTS) {
+    const re = new RegExp(acc.split("").join("[\\s.,:;-]?"), "g");
+    out = out.replace(re, "#");
+  }
+  return out;
+}
+
 /** `needle` đứng thành CỤM RIÊNG trong `hay` (hai đầu không dính chữ/số khác). */
 function containsToken(hay: string, needle: string): boolean {
   if (!needle) return false;
@@ -293,7 +321,7 @@ function noteHit(c: BankCandidate, hay: string): boolean {
   const name = ascii(c.contactName);
   if (name.length >= 6 && name.includes(" ") && hay.includes(name)) return true;
   const tail = c.phone.replace(/\D/g, "").slice(-9);
-  return tail.length === 9 && (hay.match(/\d{9,12}/g) ?? []).some((r) => r.endsWith(tail));
+  return tail.length === 9 && (maskCompanyAccounts(hay).match(/\d{9,12}/g) ?? []).some((r) => r.endsWith(tail));
 }
 
 /**
@@ -484,7 +512,7 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
   // nào đó trong sao kê (mã tham chiếu FT2623...3344) kết thúc bằng đúng đuôi
   // đã ghi là nhận. Ghi cả mã dài vẫn khớp — đuôi của chính nó.
   {
-    const runs = hay.match(/[A-Z0-9]{4,}/g) ?? [];
+    const runs = maskCompanyAccounts(hay).match(/[A-Z0-9]{4,}/g) ?? [];
     const hits = candidates.filter((c) =>
       c.codes.some((codeRaw) => {
         const code = ascii(codeRaw).replace(/[^A-Z0-9]/g, "");
@@ -529,7 +557,7 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
   // 2c. SĐT khách — so theo 9 số cuối với từng DÃY SỐ trọn vẹn trong sao kê
   //     (không tìm chuỗi con giữa dãy dài, kẻo số tài khoản/số dư khớp bậy)
   {
-    const runs = hay.match(/\d{9,12}/g) ?? [];
+    const runs = maskCompanyAccounts(hay).match(/\d{9,12}/g) ?? [];
     const hits = candidates.filter((c) => {
       const tail = c.phone.replace(/\D/g, "").slice(-9);
       return tail.length === 9 && runs.some((r) => r.endsWith(tail));

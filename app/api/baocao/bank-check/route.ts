@@ -8,6 +8,7 @@ import {
   confirmBankItem,
   lockBookingChecked,
   deleteBankLine,
+  detachBankLine,
   getBankCheck,
   listAssignOptions,
   recheckBankPending,
@@ -97,6 +98,11 @@ export async function PATCH(req: Request) {
     }
     if (action === "resolve") {
       await resolveBankLine(auth, String(body?.id ?? ""), String(body?.note ?? ""));
+      return NextResponse.json({ ok: true });
+    }
+    if (action === "detach") {
+      // Dòng tiền thật nhưng khớp nhầm booking: gỡ về trạng thái treo, không xoá
+      await detachBankLine(String(body?.id ?? ""));
       return NextResponse.json({ ok: true });
     }
     if (action === "delete") {

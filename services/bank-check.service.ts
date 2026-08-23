@@ -1382,6 +1382,26 @@ export async function resolveBankLine(session: BaobaySession, id: string, note: 
   if (!r.matchedCount) throw new BaobayError("Không tìm thấy khoản này", 404);
 }
 
+/**
+ * GỠ dòng sao kê khỏi khoản nó đang khớp — trả về trạng thái TREO để kế toán
+ * chỉ định lại (hoặc bấm "Soát lại" cho máy dò lại bằng luật mới).
+ *
+ * Khác deleteBankLine: dòng tiền là THẬT, chỉ khớp sai chỗ — xoá đi là mất dấu
+ * một khoản tiền đã về. Sinh ra từ vụ 6 sao kê của 6 khách lạ bị hút về một
+ * booking vì trùng đuôi số tài khoản công ty (23/08).
+ */
+export async function detachBankLine(id: string): Promise<void> {
+  await connectDB();
+  const r = await BaobayBankLine.updateOne(
+    { _id: id },
+    {
+      $set: { status: "pending", matchWhy: "kế toán gỡ khỏi khoản khớp nhầm", candidates: [] },
+      $unset: { matchLevel: "", refId: "", bookingId: "", matchSpot: "", matchLabel: "", recorded: "" },
+    },
+  );
+  if (!r.matchedCount) throw new BaobayError("Không tìm thấy dòng sao kê này", 404);
+}
+
 /** Xoá một dòng dán nhầm (không phải tiền khách, dán lộn tài khoản khác…). */
 export async function deleteBankLine(id: string): Promise<void> {
   await connectDB();

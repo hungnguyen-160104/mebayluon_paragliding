@@ -278,7 +278,7 @@ export function BankCheckCard({ date }: { date: string }) {
    * thứ nhìn hằng ngày.
    */
   const [allOpen, setAllOpen] = useState(false);
-  const [allFilter, setAllFilter] = useState<"all" | "hasLine" | "noCode">("all");
+  const [allFilter, setAllFilter] = useState<"all" | "hasLine" | "noLine" | "noCode">("all");
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -436,11 +436,13 @@ export function BankCheckCard({ date }: { date: string }) {
     }
   }
 
-  async function act(id: string, action: "resolve" | "delete") {
+  async function act(id: string, action: "resolve" | "delete" | "detach") {
     let note = "";
     if (action === "resolve") {
       note = window.prompt("Kết luận của bạn về khoản này (VD: tiền của đối tác X, không phải khách bay)") ?? "";
       if (!note.trim()) return;
+    } else if (action === "detach") {
+      if (!window.confirm("Gỡ dòng sao kê này khỏi booking? Dòng quay về danh sách TREO để chỉ định lại — không mất đi đâu.")) return;
     } else if (!window.confirm("Xoá dòng này khỏi bảng soát? (chỉ xoá dòng dán nhầm)")) {
       return;
     }
@@ -667,6 +669,7 @@ export function BankCheckCard({ date }: { date: string }) {
                   [
                     ["all", `Tất cả (${report!.unchecked.length})`],
                     ["hasLine", `Đã có dòng sao kê (${report!.unchecked.filter((u) => u.matchedLine).length})`],
+                    ["noLine", `Lệnh CK chưa khớp sao kê (${report!.unchecked.filter((u) => u.recorded && !u.matchedLine).length})`],
                     ["noCode", `Chưa ghi mã GD (${report!.unchecked.filter((u) => !u.code).length})`],
                   ] as const
                 ).map(([k, label]) => (
@@ -686,7 +689,15 @@ export function BankCheckCard({ date }: { date: string }) {
 
               <ul className="space-y-1">
                 {report!.unchecked
-                  .filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true))
+                  .filter((u) =>
+                    allFilter === "hasLine"
+                      ? u.matchedLine
+                      : allFilter === "noLine"
+                        ? u.recorded && !u.matchedLine
+                        : allFilter === "noCode"
+                          ? !u.code
+                          : true,
+                  )
                   .slice(0, 80)
                   .map((u) => {
                     /**
@@ -791,8 +802,9 @@ export function BankCheckCard({ date }: { date: string }) {
                     );
                   })}
               </ul>
-              {report!.unchecked.filter((u) => (allFilter === "hasLine" ? u.matchedLine : allFilter === "noCode" ? !u.code : true)).length >
-                80 && (
+              {report!.unchecked.filter((u) =>
+                allFilter === "hasLine" ? u.matchedLine : allFilter === "noLine" ? u.recorded && !u.matchedLine : allFilter === "noCode" ? !u.code : true,
+              ).length > 80 && (
                 <p className="mt-1 text-[11px] text-slate-500">
                   … còn nữa, làm bớt rồi tải lại để xem tiếp (đang hiện 80 khoản đầu).
                 </p>
@@ -1081,6 +1093,18 @@ export function BankCheckCard({ date }: { date: string }) {
                       <li key={l.id} className="rounded bg-emerald-50/70 px-2 py-1.5">
                         <div className="text-xs font-semibold text-emerald-800">
                           🧾 +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
+                          {/* Máy khớp nhầm (một mã hút nhiều sao kê): gỡ từng dòng
+                              về khay treo rồi chỉ định lại — dòng tiền là thật,
+                              KHÔNG xoá. */}
+                          <button
+                            type="button"
+                            disabled={rowBusy === l.id}
+                            title="Không phải tiền của booking này — gỡ về khay treo để chỉ định lại"
+                            onClick={() => act(l.id, "detach")}
+                            className="ml-2 rounded border border-rose-300 bg-white px-1.5 py-0.5 text-[10px] font-bold text-rose-700 disabled:opacity-50"
+                          >
+                            ✕ không phải của booking này
+                          </button>
                         </div>
                         <div className="mt-0.5">
                           <HighlightSms raw={l.raw} row={row} />
