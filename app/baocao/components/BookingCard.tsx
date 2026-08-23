@@ -242,17 +242,22 @@ function BookingSummary({
               .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""} by ${c.byName || "?"}`)
               .join(" · ")}
           >
-            {/* Nói đúng ĐƯỜNG TIỀN: toàn tiền mặt thì "Duyên thu TM 400k" (tiền
-                đang ở người thu), toàn CK thì "đã CK" (tiền đã về TK công ty),
-                lẫn cả hai mới dùng chữ chung "đã tt". */}
+            {/*
+              MỘT CHIP, TÁCH THEO ĐƯỜNG TIỀN: "Ms Duyên đã thu 8.200k CK + 900k TM".
+              Bản trước kể từng lệnh thu thành mấy chip rời ("đã thu 8.200k CK -
+              Ms Duyên" rồi "đã thu 900k CK - Ms Duyên") — dài mà vẫn phải tự cộng.
+              Gộp theo PHƯƠNG THỨC vì đó là thứ quyết định tiền đang nằm đâu: CK đã
+              về tài khoản công ty, TM còn trong tay người thu.
+            */}
             {(() => {
-              const who = [...new Set((b.collected ?? []).map((c) => c.byName).filter(Boolean))];
-              const methods = new Set((b.collected ?? []).map((c) => c.method));
-              const times = (b.collected ?? []).length > 1 ? ` (${(b.collected ?? []).length} lần)` : "";
-              if (methods.size === 1 && methods.has("cash"))
-                return `${who.join(", ") || "?"} thu TM ${k(paidTotal)}${times}`;
-              if (methods.size === 1 && methods.has("transfer")) return `đã CK ${k(paidTotal)}${times}`;
-              return `đã tt ${k(paidTotal)}${who.length ? ` by ${who.join(", ")}` : ""}${times}`;
+              const list = b.collected ?? [];
+              const who = [...new Set(list.map((c) => c.byName).filter(Boolean))];
+              const ck = list.filter((c) => c.method === "transfer").reduce((t, c) => t + (c.amount || 0), 0);
+              const tm = list.filter((c) => c.method === "cash").reduce((t, c) => t + (c.amount || 0), 0);
+              const bits = [ck > 0 ? `${k(ck)} CK` : "", tm > 0 ? `${k(tm)} TM` : ""].filter(Boolean);
+              /** Nhiều lần thu cùng một kiểu thì nói rõ, khỏi tưởng chỉ một lần. */
+              const times = list.length > bits.length ? ` (${list.length} lần)` : "";
+              return `${who.length ? `${who.join(", ")} ` : ""}đã thu ${bits.join(" + ") || k(paidTotal)}${times}`;
             })()}
           </strong>
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
