@@ -128,6 +128,24 @@ type UncheckedDTO = {
   matchedLine?: { id: string; raw: string; bankDate: string; why: string };
 };
 
+/** Một BOOKING để gán dòng sao kê vào — mỗi booking một dòng, kèm đã nhận/còn thiếu. */
+type AssignOptionDTO = {
+  refId: string;
+  bookingId?: string;
+  daySeq: number;
+  bookingCode: string;
+  contactName: string;
+  phone: string;
+  flightDate: string;
+  spot: string;
+  kind: "collect" | "deposit" | "remaining";
+  amount: number;
+  code: string;
+  received: number;
+  need: number;
+  done: boolean;
+};
+
 /** Khoản thu kế toán đã bỏ qua đối soát. */
 type SkippedItemDTO = {
   refId: string;
@@ -1394,11 +1412,11 @@ function BankLineRow({
    */
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignDate, setAssignDate] = useState(line.bankDate || line.checkDate);
-  const [options, setOptions] = useState<Array<{ refId: string; label: string; amount: number }> | null>(null);
+  const [options, setOptions] = useState<AssignOptionDTO[] | null>(null);
   useEffect(() => {
     if (!assignOpen) return;
     setOptions(null);
-    apiGet<{ options: Array<{ refId: string; label: string; amount: number }> }>(
+    apiGet<{ options: AssignOptionDTO[] }>(
       `/api/baocao/bank-check?date=${assignDate}&options=1`,
     )
       .then((r) => setOptions(r.options))
@@ -1523,24 +1541,67 @@ function BankLineRow({
             ) : options.length === 0 ? (
               <p className="text-[11px] text-slate-500">Ngày này không có khoản nào — chọn ngày khác.</p>
             ) : (
-              options.map((o) => (
-                <button
-                  key={o.refId}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => onAssign(line.id, o.refId, assignDate).then(() => setAssignOpen(false))}
-                  className={
-                    "flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-xs hover:bg-white " +
-                    (o.amount === line.amount
-                      ? "border-emerald-400 bg-emerald-50 font-semibold"
-                      : "border-slate-200 bg-white/60")
-                  }
-                >
-                  <span className="min-w-0 flex-1 truncate">{o.label}</span>
-                  <strong className="shrink-0 tabular-nums">{formatVND(o.amount)}</strong>
-                  {o.amount === line.amount && <span className="shrink-0 text-[10px] text-emerald-700">= số tiền</span>}
-                </button>
-              ))
+              options.map((o) => {
+                const short = Math.max(0, o.need - o.received);
+                return (
+                  <button
+                    key={o.refId}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onAssign(line.id, o.refId, assignDate).then(() => setAssignOpen(false))}
+                    className={
+                      "flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border px-2 py-1 text-left text-xs hover:bg-white " +
+                      /* Đã nhận đủ thì hiện MỜ — vẫn gán được (khách trả dư/chia lại)
+                         nhưng mắt không phải lướt qua nó nữa. */
+                      (o.done
+                        ? "border-slate-200 bg-white/40 opacity-45"
+                        : o.amount === line.amount
+                          ? "border-emerald-400 bg-emerald-50 font-semibold"
+                          : "border-slate-200 bg-white/60")
+                    }
+                  >
+                    {o.daySeq > 0 && (
+                      <strong className="shrink-0 rounded bg-red-600 px-1 text-[10px] font-bold text-white">
+                        {o.daySeq}
+                      </strong>
+                    )}
+                    {o.bookingCode && o.bookingCode !== o.phone && (
+                      <span className="shrink-0 rounded bg-sky-100 px-1 text-[11px] font-bold text-sky-900">
+                        {o.bookingCode}
+                      </span>
+                    )}
+                    <span className="shrink-0 font-semibold text-slate-800">{o.contactName || "khách"}</span>
+                    {o.phone && <span className="shrink-0 text-[11px] tabular-nums text-amber-800">{o.phone}</span>}
+                    <span className="shrink-0 text-[11px] text-slate-500">
+                      {/* Lệnh thu lẻ chưa gắn booking thì không có ngày bay — đừng in "bay —" */}
+                      {o.flightDate ? `bay ${formatDateKeyVN(o.flightDate)} · ` : ""}
+                      {o.kind === "deposit" ? "cọc" : o.kind === "collect" ? "lệnh thu" : "còn thu"}
+                    </span>
+                    <strong className="shrink-0 tabular-nums">{formatVND(o.amount)}</strong>
+                    {o.code && (
+                      <span className="shrink-0 rounded bg-rose-100 px-1 text-[10px] font-bold text-rose-700">
+                        {o.code.length > 16 ? `${o.code.slice(0, 16)}…` : o.code}
+                      </span>
+                    )}
+                    {o.amount === line.amount && !o.done && (
+                      <span className="shrink-0 text-[10px] font-bold text-emerald-700">= số tiền</span>
+                    )}
+                    {/* Đã nhận một phần: nói rõ còn thiếu bao nhiêu ngay trong dòng */}
+                    {o.received > 0 && (
+                      <span
+                        className={
+                          "shrink-0 rounded px-1 text-[10px] font-bold " +
+                          (short > 0 ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-800")
+                        }
+                      >
+                        {short > 0
+                          ? `mới nhận ${formatVND(o.received)} · còn thiếu ${formatVND(short)}`
+                          : `đã nhận đủ ${formatVND(o.received)}`}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>

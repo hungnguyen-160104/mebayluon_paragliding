@@ -1268,20 +1268,100 @@ export async function getBankCheck(
 }
 
 /** Danh sách khoản của MỘT NGÀY để kế toán chỉ định tay dòng sao kê lạc chủ. */
+/**
+ * DANH SÁCH BOOKING để kế toán gán dòng sao kê vào — MỘT BOOKING MỘT DÒNG.
+ *
+ * Bản cũ trả về từng KHOẢN nên cùng một khách hiện hai ba dòng ("Cao vân nhi ·
+ * lệnh thu 3.140.000" và "#10 · Cao vân nhi · cọc 3.140.000" là cùng một cục
+ * tiền kể hai lần) — nhìn vào không biết chọn cái nào.
+ *
+ * Mỗi dòng nay mang đủ thứ để nhận mặt khách (số thứ tự, mã booking, tên, SĐT,
+ * ngày bay, mã GD đã ghi) và quan trọng nhất: ĐÃ NHẬN BAO NHIÊU / CÒN THIẾU BAO
+ * NHIÊU — gán xong là biết ngay booking đủ tiền chưa, khỏi phải bấm xác nhận
+ * thêm lần nữa.
+ */
+export type BankAssignOptionDTO = {
+  refId: string;
+  bookingId?: string;
+  daySeq: number;
+  bookingCode: string;
+  contactName: string;
+  phone: string;
+  flightDate: string;
+  spot: string;
+  kind: "collect" | "deposit" | "remaining";
+  /** Số tiền của khoản này (cọc / còn thu / lệnh thu). */
+  amount: number;
+  /** Mã giao dịch (hoặc ghi chú) nhân viên đã ghi. */
+  code: string;
+  /** Tổng dòng sao kê ĐÃ trỏ về booking này. */
+  received: number;
+  /** Số cần về qua ngân hàng. */
+  need: number;
+  /** Đã nhận đủ — giao diện hiện MỜ, không cần soát nữa. */
+  done: boolean;
+};
+
 export async function listAssignOptions(
   session: BaobaySession,
   date: string,
   spotsFilter?: string[],
-): Promise<Array<{ refId: string; label: string; amount: number }>> {
+): Promise<BankAssignOptionDTO[]> {
   await connectDB();
   if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
   const spots = resolveSpots(session, spotsFilter);
-  const candidates = await candidatesForDate(spots, date);
-  return dedupeByBooking(candidates).map((c) => ({
-    refId: c.id,
-    label: `${c.label}${c.kind === "remaining" ? " · còn thu" : c.kind === "deposit" ? " · cọc" : " · lệnh thu"}`,
-    amount: c.amounts[0] ?? 0,
-  }));
+  const candidates = dedupeByBooking(await candidatesForDate(spots, date));
+
+  /** Tiền đã về theo booking: cộng mọi dòng sao kê đã trỏ về nó, bất kể ngày soát. */
+  const bookingIds = [...new Set(candidates.map((c) => c.bookingId).filter(Boolean))] as string[];
+  const [lines, bookings] = await Promise.all([
+    bookingIds.length
+      ? BaobayBankLine.find({
+          bookingId: { $in: bookingIds.map((x) => new mongoose.Types.ObjectId(x)) },
+          status: { $ne: "pending" },
+        })
+          .select("bookingId amount")
+          .lean<any[]>()
+      : Promise.resolve([]),
+    bookingIds.length
+      ? BaobayBooking.find({ _id: { $in: bookingIds } })
+          .select("totalAmount deposit remaining agencyPaidAmount")
+          .lean<any[]>()
+      : Promise.resolve([]),
+  ]);
+  const gotByBooking = new Map<string, number>();
+  for (const l of lines) {
+    const k = String(l.bookingId);
+    gotByBooking.set(k, (gotByBooking.get(k) ?? 0) + (Number(l.amount) || 0));
+  }
+  const bookById = new Map(bookings.map((b) => [String(b._id), b]));
+
+  return candidates
+    .map((c) => {
+      const b = c.bookingId ? bookById.get(c.bookingId) : undefined;
+      /** Thiếu totalAmount (booking cũ) thì ước bằng cọc + còn thu — xem chú thích ở bookingRows. */
+      const total = b ? ((b.totalAmount || 0) > 0 ? b.totalAmount : (b.deposit || 0) + (b.remaining || 0)) : c.amounts[0] ?? 0;
+      const need = Math.max(0, total - (b?.agencyPaidAmount || 0));
+      const received = c.bookingId ? (gotByBooking.get(c.bookingId) ?? 0) : 0;
+      return {
+        refId: c.id,
+        bookingId: c.bookingId,
+        daySeq: c.daySeq || 0,
+        bookingCode: c.bookingCode || "",
+        contactName: c.contactName || "",
+        phone: c.phone || "",
+        flightDate: c.flightDate || "",
+        spot: c.spot,
+        kind: c.kind,
+        amount: c.amounts[0] ?? 0,
+        code: c.codes[0] ?? "",
+        received,
+        need,
+        done: need > 0 && received >= need,
+      };
+    })
+    /** Chưa đủ tiền xếp lên trước; đủ rồi thì đẩy xuống cuối và hiện mờ. */
+    .sort((a, b) => Number(a.done) - Number(b.done) || (a.daySeq || 999) - (b.daySeq || 999));
 }
 
 /**
