@@ -600,12 +600,13 @@ export async function runBankCheck(
    * Chỉ dò theo ngày thì tiền khách chuyển trước ngày bay cả tuần không có chỗ
    * nào để khớp: hôm chuyển tiền, booking đó vừa không được lập vừa không bay.
    */
-  const openPool = await candidatesOpen(spots);
+  const [openPool, settled] = await Promise.all([candidatesOpen(spots), settledRefIds()]);
   const cache = new Map<string, BankCandidate[]>();
   const forDate = async (d: string) => {
     let c = cache.get(d);
     if (!c) {
-      c = mergeCandidates(await candidatesForDate(spots, d), openPool);
+      // Khoản đã chốt bị rút khỏi vòng dò — dòng MỚI không được gán vào nữa
+      c = stillOpen(mergeCandidates(await candidatesForDate(spots, d), openPool), settled);
       cache.set(d, c);
     }
     return c;
@@ -625,6 +626,32 @@ export async function runBankCheck(
     const existed = await BaobayBankLine.findOne({ key }).lean<any>();
     /** Đã khớp hoặc kế toán đã kết luận tay thì không đè — dán lại là chuyện thường. */
     if (existed && existed.status !== "pending") continue;
+
+    /**
+     * CÙNG MỘT GIAO DỊCH, KHÁC ĐỊNH DẠNG CHỮ. Hôm trước dán SMS, hôm sau dán
+     * bản sao kê xuất tháng: cùng khoản tiền nhưng câu chữ khác nên khoá nội
+     * dung khác nhau — thành hai dòng, tiền bị đếm hai lần. Cùng SỐ TIỀN + cùng
+     * NGÀY + cùng GIỜ PHÚT với một dòng đã chốt thì gần như chắc chắn là một
+     * giao dịch — bỏ qua và nói rõ, không lưu. Chỉ so khi cả hai bên có đủ
+     * ngày giờ; thiếu giờ thì không dám (một ngày hai khoản 500k là thường).
+     */
+    if (!existed && entry.bankDate && entry.bankTime) {
+      const twin = await BaobayBankLine.findOne({
+        key: { $ne: key },
+        amount: entry.amount,
+        bankDate: entry.bankDate,
+        bankTime: entry.bankTime,
+        status: { $ne: "pending" },
+      })
+        .select("matchLabel")
+        .lean<any>();
+      if (twin) {
+        skipped.push(
+          `Trùng giao dịch ĐÃ SOÁT (cùng ${entry.bankDate} ${entry.bankTime} · ${entry.amount.toLocaleString("vi-VN")}đ${twin.matchLabel ? ` — đã khớp ${twin.matchLabel}` : ""}), bỏ qua: "${entry.raw.slice(0, 90)}"`,
+        );
+        continue;
+      }
+    }
 
     const target = isDateKey(entry.bankDate) ? entry.bankDate : date;
     const fields = matchFields(entry, await forDate(target));
@@ -660,7 +687,7 @@ export async function runBankCheck(
      * vào đây thì một dòng 900.000 sẽ bị ghép với một khoản 900.000 nào đó của
      * người dưng cách đấy hai tuần — đã xảy ra đúng thế lúc chạy thử.
      */
-    await allocateByCount(date, target, (await forDate(target)).filter((c) => !c.wide));
+    await allocateByCount(date, target, (await forDate(target)).filter((c) => !c.wide), settled);
   }
 
   const report = await getBankCheck(session, date, spotsFilter);
@@ -672,9 +699,46 @@ export async function runBankCheck(
  * Chỉ ghép khi số dòng treo cùng mệnh giá ĐÚNG BẰNG số booking chưa nhận —
  * lệch một là để nguyên cho người soát, máy không đoán.
  */
-async function allocateByCount(checkDate: string, bankDate: string, candidates: BankCandidate[]): Promise<void> {
+/**
+ * Các khoản ĐÃ CHỐT — không được nhận thêm dòng sao kê MỚI nào nữa:
+ *  - khoản đã có dòng sao kê khớp (bất kể ngày soát nào);
+ *  - lệnh thu kế toán đã bấm "Đã nhận" (verifiedAt);
+ *  - phần cọc gõ tay đã xác nhận (depositVerifiedAt).
+ *
+ * Vì sao phải nhớ: một lệnh thu 2.590.000 đã khớp + xác nhận hôm trước, hôm sau
+ * dán tràng sao kê mới có một khoản 2.590.000 của KHÁCH KHÁC — không loại khoản
+ * cũ ra thì máy lại gán dòng mới vào đúng lệnh đã chốt, một lệnh ăn hai dòng
+ * tiền và tiền của khách sau mất dấu.
+ *
+ * Chỉ áp cho khoản "collect"/"deposit" (một khoản = một dòng tiền). Khoản
+ * "remaining" vẫn được nhận nhiều dòng — khách chia nhiều lần chuyển là hợp lệ,
+ * thẻ booking đã có phép cộng tự cân.
+ */
+async function settledRefIds(): Promise<Set<string>> {
+  const [lines, collects, deposits] = await Promise.all([
+    BaobayBankLine.find({ status: { $ne: "pending" }, refId: { $nin: [null, ""] } })
+      .select("refId")
+      .lean<any[]>(),
+    BaobayCollect.find({ verifiedAt: { $ne: null } }).select("_id").lean<any[]>(),
+    BaobayBooking.find({ depositVerifiedAt: { $ne: null } }).select("_id").lean<any[]>(),
+  ]);
+  const set = new Set<string>();
+  for (const l of lines) if (l.refId) set.add(String(l.refId));
+  for (const c of collects) set.add(`collect:${String(c._id)}`);
+  for (const b of deposits) set.add(`deposit:${String(b._id)}`);
+  return set;
+}
+
+/** Lọc ứng viên còn NHẬN ĐƯỢC dòng mới — xem chú thích settledRefIds. */
+function stillOpen(candidates: BankCandidate[], settled: Set<string>): BankCandidate[] {
+  return candidates.filter((c) => c.kind === "remaining" || !settled.has(c.id));
+}
+
+async function allocateByCount(checkDate: string, bankDate: string, candidates: BankCandidate[], settled?: Set<string>): Promise<void> {
   const dayLines = await BaobayBankLine.find({ checkDate }).sort({ bankTime: 1, createdAt: 1 }).lean<any[]>();
+  // Khoá trong ngày + khoá TOÀN CỤC (dòng của ngày soát khác đã trỏ về khoản đó)
   const claimed = new Set(dayLines.filter((l) => l.status !== "pending" && l.refId).map((l) => l.refId as string));
+  for (const r of settled ?? []) claimed.add(r);
 
   const pendingByAmount = new Map<number, any[]>();
   for (const l of dayLines) {
@@ -1205,13 +1269,14 @@ export async function recheckBankPending(
   await connectDB();
   const spots = resolveSpots(session, spotsFilter);
   const pending = await BaobayBankLine.find({ status: "pending" }).lean<any[]>();
+  const settled = await settledRefIds();
 
   const cache = new Map<string, BankCandidate[]>();
   for (const doc of pending) {
     const target = isDateKey(doc.bankDate) ? doc.bankDate : doc.checkDate;
     let candidates = cache.get(target);
     if (!candidates) {
-      candidates = await candidatesForDate(spots, target);
+      candidates = stillOpen(await candidatesForDate(spots, target), settled);
       cache.set(target, candidates);
     }
     const entry: BankEntry = {
@@ -1231,11 +1296,11 @@ export async function recheckBankPending(
   for (const target of dates) {
     let candidates = cache.get(target);
     if (!candidates) {
-      candidates = await candidatesForDate(spots, target);
+      candidates = stillOpen(await candidatesForDate(spots, target), settled);
       cache.set(target, candidates);
     }
     for (const cd of new Set(pending.filter((l) => (isDateKey(l.bankDate) ? l.bankDate : l.checkDate) === target).map((l) => l.checkDate))) {
-      await allocateByCount(cd, target, candidates);
+      await allocateByCount(cd, target, candidates, settled);
     }
   }
 
