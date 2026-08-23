@@ -379,7 +379,25 @@ export type BookingDTO = {
   cancelTicketCodes?: string[];
   /** Vệt thu tiền: từng lần thu — số tiền, TM/CK, người thu. */
   /** `verified` = kế toán đã bấm "Đã nhận" cho ĐÚNG khoản này khi soát sao kê. */
-  collected: Array<{ amount: number; method: "cash" | "transfer"; byName: string; code?: string; verified?: boolean }>;
+  /**
+   * TỪNG LẦN KHÁCH TRẢ, theo đúng thứ tự đã xảy ra — KHÔNG gộp.
+   *
+   * Ô `deposit` trên booking là số CỘNG DỒN (cọc lúc đặt + mọi lần thu sau đó),
+   * nên một mình nó không nói được khoản nào tiền mặt khoản nào chuyển khoản.
+   * Bóc ra đây để bảng chi tiết thanh toán kể đúng: lần nào, bao nhiêu, đường
+   * nào, ai thu, mã giao dịch gì, kế toán soát chưa.
+   */
+  collected: Array<{
+    amount: number;
+    method: "cash" | "transfer";
+    byName: string;
+    code?: string;
+    verified?: boolean;
+    /** Lúc thu (ISO) — bản ghi cũ có thể trống. */
+    at?: string;
+    /** "deposit" thu thêm một phần · "full" trả nốt · "" bản ghi cũ. */
+    kind?: string;
+  }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
   lockedBy?: string;

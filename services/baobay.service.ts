@@ -6390,6 +6390,8 @@ function toBookingDTO(doc: any): BookingDTO {
           method: c.method === "transfer" ? ("transfer" as const) : ("cash" as const),
           byName: String(c.byName ?? ""),
           code: c.code ? String(c.code) : undefined,
+          at: c.at ? new Date(c.at).toISOString() : undefined,
+          kind: c.kind ? String(c.kind) : undefined,
         }))
       : [],
     id: String(doc._id),

@@ -990,6 +990,167 @@ function ContactNote({
 }
 
 /**
+ * CHI TIẾT THANH TOÁN — bóc ô "cọc" cộng dồn ra thành từng lần trả.
+ *
+ * Ô `deposit` trên booking KHÔNG phải tiền cọc theo nghĩa thường: mỗi lệnh thu
+ * tại quầy đều cộng thẳng vào đó. Khách cọc 500k, trả tiếp 1.000k rồi 700k thì
+ * ô ấy ghi 2.200k — một con số chưa từng có ai đưa lần nào, và nhìn vào không
+ * biết khoản nào tiền mặt khoản nào chuyển khoản.
+ *
+ * Bảng này tách lại đúng như đã xảy ra: cọc lúc đặt đứng riêng, rồi từng lần
+ * thu kèm đường tiền, mã giao dịch, người thu và dấu đã soát sao kê.
+ */
+function PaymentBreakdown({ booking }: { booking: BookingDTO }) {
+  const [open, setOpen] = useState(false);
+  const lines = booking.collected ?? [];
+  const paidTotal = lines.reduce((t, c) => t + (c.amount || 0), 0);
+  const refunded = booking.refunded ?? 0;
+  /** Cọc GÕ TAY lúc nhận booking = số cộng dồn − đã thu qua lệnh thu + đã hoàn. */
+  const cocGoc = Math.max(0, (booking.deposit || 0) - paidTotal + refunded);
+  const cocWay =
+    booking.depositMethod === "cash"
+      ? "TM"
+      : booking.depositMethod === "transfer"
+        ? "CK"
+        : booking.transferCode
+          ? "CK"
+          : "";
+  const tm = lines.filter((c) => c.method === "cash").reduce((t, c) => t + c.amount, 0) + (cocWay === "TM" ? cocGoc : 0);
+  const ck = lines.filter((c) => c.method === "transfer").reduce((t, c) => t + c.amount, 0) + (cocWay === "CK" ? cocGoc : 0);
+  const mu = cocWay ? 0 : cocGoc;
+  const vnd = (n: number) => n.toLocaleString("vi-VN");
+  const gio = (iso?: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        onClick={() => setOpen(true)}
+        title="Bóc ô cọc cộng dồn thành từng lần trả: TM hay CK, ai thu, mã GD"
+      >
+        💰 Chi tiết thanh toán
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-full rounded-lg border border-slate-300 bg-slate-50 p-2">
+      <div className="mb-1 flex items-center justify-between">
+        <strong className="text-[11px] font-bold text-slate-800">
+          CHI TIẾT THANH TOÁN — {booking.contactName || booking.bookingCode || "khách"}
+        </strong>
+        <button type="button" className="px-1 text-xs text-slate-400 hover:text-slate-700" onClick={() => setOpen(false)}>
+          ✕
+        </button>
+      </div>
+      <table className="w-full border-collapse text-[11px]">
+        <thead>
+          <tr className="text-left text-slate-500">
+            <th className="py-0.5 pr-1 font-semibold">Lần</th>
+            <th className="py-0.5 pr-1 text-right font-semibold">Số tiền</th>
+            <th className="py-0.5 pr-1 font-semibold">Đường</th>
+            <th className="py-0.5 pr-1 font-semibold">Mã GD</th>
+            <th className="py-0.5 pr-1 font-semibold">Người thu</th>
+            <th className="py-0.5 font-semibold">Lúc</th>
+          </tr>
+        </thead>
+        <tbody className="tabular-nums">
+          {cocGoc > 0 && (
+            <tr className="border-t border-slate-200">
+              <td className="py-0.5 pr-1 font-semibold text-slate-700">Cọc lúc đặt</td>
+              <td className="py-0.5 pr-1 text-right font-bold">{vnd(cocGoc)}</td>
+              <td className="py-0.5 pr-1">
+                {cocWay ? (
+                  <span className={cocWay === "TM" ? "font-bold text-emerald-700" : "font-bold text-sky-700"}>{cocWay}</span>
+                ) : (
+                  <span className="font-bold text-amber-700" title="Bản ghi cũ chưa ai bấm TM hay CK — khoản này không nằm trong sổ tiền của ai">
+                    chưa rõ
+                  </span>
+                )}
+              </td>
+              <td className="py-0.5 pr-1 text-slate-600">{booking.transferCode || "—"}</td>
+              <td className="py-0.5 pr-1 text-slate-600">{booking.createdByName || "—"}</td>
+              <td className="py-0.5 text-slate-500">{gio(booking.createdAt)}</td>
+            </tr>
+          )}
+          {lines.map((c, i) => (
+            <tr key={i} className="border-t border-slate-200">
+              <td className="py-0.5 pr-1 text-slate-700">
+                Thu lần {i + 1}
+                {c.kind === "full" ? " (trả nốt)" : ""}
+              </td>
+              <td className="py-0.5 pr-1 text-right font-bold">{vnd(c.amount)}</td>
+              <td className="py-0.5 pr-1">
+                <span className={c.method === "cash" ? "font-bold text-emerald-700" : "font-bold text-sky-700"}>
+                  {c.method === "cash" ? "TM" : "CK"}
+                </span>
+                {c.method === "cash" ? (
+                  <span className="text-emerald-700" title="Tiền mặt trao tay — đã cộng vào tiền người thu đang giữ, không phải soát sao kê">
+                    {" "}
+                    ✓
+                  </span>
+                ) : c.verified ? (
+                  <span className="text-emerald-700" title="Kế toán đã soát sao kê và nhận khoản này">
+                    {" "}
+                    ✓
+                  </span>
+                ) : (
+                  <span className="text-rose-600" title="Chưa dò ra trong sao kê"> chưa soát</span>
+                )}
+              </td>
+              <td className="py-0.5 pr-1 text-slate-600">{c.method === "transfer" ? c.code || "—" : "—"}</td>
+              <td className="py-0.5 pr-1 text-slate-600">{c.byName || "—"}</td>
+              <td className="py-0.5 text-slate-500">{gio(c.at)}</td>
+            </tr>
+          ))}
+          {refunded > 0 && (
+            <tr className="border-t border-slate-200 text-amber-800">
+              <td className="py-0.5 pr-1 font-semibold">Đã hoàn khách</td>
+              <td className="py-0.5 pr-1 text-right font-bold">−{vnd(refunded)}</td>
+              <td className="py-0.5 pr-1" colSpan={4} />
+            </tr>
+          )}
+        </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-slate-300 font-bold">
+            <td className="py-1 pr-1">Cộng</td>
+            <td className="py-1 pr-1 text-right">{vnd(cocGoc + paidTotal - refunded)}</td>
+            <td className="py-1" colSpan={4}>
+              <span className="text-emerald-700">TM {vnd(tm)}</span>
+              {" · "}
+              <span className="text-sky-700">CK {vnd(ck)}</span>
+              {mu > 0 ? (
+                <>
+                  {" · "}
+                  <span className="text-amber-700">chưa rõ {vnd(mu)}</span>
+                </>
+              ) : null}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      {booking.agencyPaidAmount > 0 && (
+        <p className="mt-1 text-[10px] leading-tight text-slate-600">
+          Ngoài ra <strong className="text-emerald-700">{booking.agencyName || "đại lý"}</strong> đã thu hộ{" "}
+          <strong>{vnd(booking.agencyPaidAmount)}</strong> — tiền nằm ở đại lý, chưa về công ty.
+        </p>
+      )}
+      {mu > 0 && (
+        <p className="mt-1 rounded bg-amber-100 px-1.5 py-1 text-[10px] leading-tight text-amber-900">
+          Khoản cọc {vnd(mu)} là bản ghi cũ, chưa ai bấm TM hay CK nên không nằm trong sổ tiền mặt của
+          ai. Sửa booking rồi bấm TM/CK để đưa vào đúng sổ.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * CỤM NÚT ÍT DÙNG của một dòng booking — bấm "⋯ Thêm" mới xổ.
  *
  * Trước đây năm nút nằm phơi hết trên dòng, đọc thông tin khách phải len lỏi
@@ -1032,6 +1193,7 @@ function RowMenu({
 
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
+      <PaymentBreakdown booking={booking} />
       <button
         type="button"
         className={item}
@@ -3130,6 +3292,12 @@ export function BookingCard({
   const [done, setDone] = useState<string | null>(null);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
+  /**
+   * ĐÃ THU QUA LỆNH THU của booking đang sửa — ô "đã cọc" là số CỘNG DỒN (cọc
+   * lúc đặt + mọi lần thu), phải nói ra thì người sửa mới không gõ đè mất.
+   */
+  const [editedPaid, setEditedPaid] = useState(0);
+  const [editedPaidCount, setEditedPaidCount] = useState(0);
   /** Booking đang sửa nằm ở sổ điểm nào — có thể khác điểm của trang khi xem chồng nhiều điểm. */
   const [editingSpot, setEditingSpot] = useState<string>(spot);
   /**
@@ -3570,6 +3738,8 @@ export function BookingCard({
     setPriceTouched(true);
     setDone(null);
     setError(null);
+    setEditedPaid((b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0));
+    setEditedPaidCount(b.collected?.length ?? 0);
     setForm({
       flightDate: b.flightDate,
       source: b.source,
@@ -4049,7 +4219,7 @@ export function BookingCard({
         </Field>
         {/* Mỗi ô tiền một nút QR: khách đặt xa thì gửi mã cọc qua Zalo, khách
             tới bãi thì đưa mã phần còn thu cho quét. Nội dung CK = mã booking. */}
-        <Field label="Khách đã cọc">
+        <Field label={editingId && editedPaid > 0 ? "Khách đã trả (cọc + đã thu)" : "Khách đã cọc"}>
           <div className="flex items-center gap-1">
             <span className="min-w-0 flex-1">
               <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
@@ -4092,6 +4262,21 @@ export function BookingCard({
               className="h-10 shrink-0 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
             />
           </div>
+          {/*
+            Ô này là số CỘNG DỒN, không phải riêng tiền cọc: mỗi lệnh thu tại
+            quầy đều cộng thẳng vào. Không nói rõ thì người sửa tưởng máy ghi
+            nhầm rồi gõ lại đúng số cọc ban đầu — và thế là xoá mất dấu khách đã
+            trả nốt, booking mọc lại khoản "còn thu" vốn đã thu xong.
+          */}
+          {editingId && editedPaid > 0 && (
+            <p className="mt-0.5 rounded bg-amber-100 px-1.5 py-1 text-[11px] leading-tight text-amber-900">
+              Gồm cọc lúc đặt{" "}
+              <strong>{Math.max(0, form.deposit - editedPaid).toLocaleString("vi-VN")} đ</strong> +{" "}
+              {editedPaidCount} lần thu tại quầy{" "}
+              <strong>{editedPaid.toLocaleString("vi-VN")} đ</strong>. Gõ đè số này là xoá mất phần
+              đã thu — sửa từng lần thu thì dùng “⋯ Thêm → Sửa tiền đã thu”.
+            </p>
+          )}
         </Field>
         {/* Khách đặt qua đại lý và trả một phần bên đó: phần này khách khỏi trả,
             đại lý nợ công ty — kế toán xem bảng công nợ đại lý cuối ngày */}
