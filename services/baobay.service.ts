@@ -2827,11 +2827,12 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
     agencyPaidAmount: { $gt: 0 },
     status: { $nin: ["cancelled", "voided"] },
   })
-    .select("agencyPaidAmount agencyName contactName daySeq")
+    .select("agencyPaidAmount agencyName contactName daySeq source")
     .lean<any[]>();
   const debtByName = new Map<string, { name: string; amount: number; bookings: string[] }>();
   for (const b of agencyBookings) {
-    const name = (b.agencyName || "").trim() || "(chưa ghi tên đại lý)";
+    // Thiếu ô tên đại lý thì lấy NGUỒN ĐẶT — khách đặt qua đại lý nào thì nguồn là đại lý đó
+    const name = (b.agencyName || "").trim() || (b.source || "").trim() || "(chưa ghi tên đại lý)";
     const cur = debtByName.get(name) ?? { name, amount: 0, bookings: [] as string[] };
     cur.amount += b.agencyPaidAmount || 0;
     cur.bookings.push(`#${b.daySeq || "?"} ${b.contactName || ""} (${((b.agencyPaidAmount || 0) / 1000).toLocaleString("vi-VN")}k)`);

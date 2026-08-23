@@ -182,6 +182,23 @@ export default function KeToanPage() {
           <Stat label="Tổng chi" value={spend} tone="rose" />
         </div>
 
+        {/* ĐẠI LÝ GIỮ TIỀN BAY — khuôn câu thống nhất với bảng của quầy/điều phối */}
+        {(board?.agencyDebts ?? []).length > 0 && (
+          <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50/60 p-2.5">
+            <div className="text-xs font-bold text-orange-900">
+              🤝 Đại lý giữ tiền bay — {formatVND((board?.agencyDebts ?? []).reduce((t, a) => t + a.amount, 0))} phải đòi về
+            </div>
+            <ul className="mt-1 space-y-0.5 text-xs text-slate-700">
+              {(board?.agencyDebts ?? []).map((a) => (
+                <li key={a.name}>
+                  <strong className="uppercase text-emerald-700">{a.name}</strong> giữ tiền bay của khách{" "}
+                  {a.bookings.join(" · ")} ngày {formatDateKeyVN(date)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-3">
           <div className="text-xs font-bold text-slate-700">Ai đang giữ tiền mặt</div>
           {cashHeld.length === 0 ? (

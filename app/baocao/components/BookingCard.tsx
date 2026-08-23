@@ -135,9 +135,7 @@ function BookingSummary({
   const k = (n: number) => `${Math.round(n / 1000).toLocaleString("vi-VN")}k`;
   if (depositBase) parts.push(`cọc ${k(depositBase)}`);
   else if (paidTotal || refunded) parts.push("cọc 0");
-  // Đại lý thu hộ: khách khỏi trả phần này, nhưng tiền đang ở ĐẠI LÝ — nói rõ
-  if ((b.agencyPaidAmount ?? 0) > 0)
-    parts.push(`ĐL thu ${k(b.agencyPaidAmount)}${b.agencyName ? ` (${b.agencyName})` : ""}`);
+  // Đại lý thu hộ: chip đậm xanh riêng (khối JSX bên dưới) — không nằm trong chuỗi xám
   /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
   const tail: string[] = [];
   /**
@@ -153,7 +151,8 @@ function BookingSummary({
     ),
   ];
   if (gdCodes.length) tail.push(`GD ${gdCodes.map((c) => `#${c}`).join(", ")}`);
-  if (b.depositToCompany) tail.push("cọc → TK cty");
+  // "cọc → TK cty" chỉ đáng nói khi CÒN phần cọc gõ tay; cọc 0 mà vẫn ghi là gây hỏi vô ích
+  if (b.depositToCompany && depositBase > 0) tail.push("cọc → TK cty");
   if (b.note) tail.push(b.note);
 
   return (
@@ -219,6 +218,21 @@ function BookingSummary({
           </strong>
         </>
       )}
+      {/* ĐẠI LÝ THU HỘ — chip đậm xanh mang TÊN đại lý: tiền của chuyến đang nằm
+          bên đại lý, cuối kỳ phải đòi về. "ĐL thu" chung chung thì không biết đòi ai. */}
+      {(b.agencyPaidAmount ?? 0) > 0 ? (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-emerald-100 px-1 font-bold uppercase text-emerald-800"
+            title={`Khách đã trả ${(b.agencyPaidAmount ?? 0).toLocaleString("vi-VN")} đ bên đại lý${b.agencyName ? ` ${b.agencyName}` : ""} — đại lý đang giữ hộ, công ty phải đòi về`}
+          >
+            {/* Thiếu ô tên đại lý thì lấy NGUỒN ĐẶT: khách đặt qua đại lý nào
+                thì nguồn chính là đại lý đó (BLUEHOME, KHANGDUNG…) */}
+            {(b.agencyName || b.source || "Đại lý").toUpperCase()} thu {k(b.agencyPaidAmount ?? 0)}
+          </strong>
+        </>
+      ) : null}
       {paidTotal > 0 ? (
         <>
           {" · "}
@@ -228,11 +242,16 @@ function BookingSummary({
               .map((c) => `${k(c.amount)} ${c.method === "cash" ? "TM" : "CK"}${c.code ? ` #${c.code}` : ""} by ${c.byName || "?"}`)
               .join(" · ")}
           >
-            đã tt {k(paidTotal)}
-            {/* AI THU — truy vết từng đồng: nhiều người thì liệt kê đủ */}
+            {/* Nói đúng ĐƯỜNG TIỀN: toàn tiền mặt thì "Duyên thu TM 400k" (tiền
+                đang ở người thu), toàn CK thì "đã CK" (tiền đã về TK công ty),
+                lẫn cả hai mới dùng chữ chung "đã tt". */}
             {(() => {
               const who = [...new Set((b.collected ?? []).map((c) => c.byName).filter(Boolean))];
-              return who.length ? ` by ${who.join(", ")}` : "";
+              const methods = new Set((b.collected ?? []).map((c) => c.method));
+              if (methods.size === 1 && methods.has("cash"))
+                return `${who.join(", ") || "?"} thu TM ${k(paidTotal)}`;
+              if (methods.size === 1 && methods.has("transfer")) return `đã CK ${k(paidTotal)}`;
+              return `đã tt ${k(paidTotal)}${who.length ? ` by ${who.join(", ")}` : ""}`;
             })()}
           </strong>
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}

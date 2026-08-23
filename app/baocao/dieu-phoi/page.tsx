@@ -31,6 +31,7 @@ import {
 import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
 import { IdScanCard } from "../components/IdScanCard";
+import { MoneyBoardCard } from "../components/MoneyBoardCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { RefundCard } from "../components/RefundCard";
 import { PeriodSummary } from "../components/PeriodSummary";
@@ -511,6 +512,10 @@ export default function DispatcherReportPage() {
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       {user.role !== "counter" && <CollectInbox spot={spot} />}
+
+      {/* BẢNG TIỀN TRONG NGÀY — quầy/điều phối cũng phải thấy đại lý nào đang
+          giữ tiền bay của khách nào, không riêng kế toán. Gập sẵn cho gọn. */}
+      <MoneyBoardCard spot={spot} date={date} />
 
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
       <BookingTodayBanner spot={spot} date={date} collapsible defaultOpen />

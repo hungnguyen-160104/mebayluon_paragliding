@@ -161,12 +161,14 @@ export function MoneyBoardCard({
             {formatVND(board.agencyDebts.reduce((t, a) => t + a.amount, 0))}
           </div>
           <ul className="mt-1.5 space-y-0.5 text-xs text-slate-700">
+            {/* Khuôn câu kế toán yêu cầu: "[Đại lý] giữ tiền bay của khách #12 ngày 23/08/2026 — 2.590k" */}
             {board.agencyDebts.map((a) => (
               <li key={a.name} className="flex gap-2">
                 <span className="min-w-0 flex-1">
-                  <strong>{a.name}</strong> — {a.bookings.join(" · ")}
+                  <strong className="uppercase text-emerald-700">{a.name}</strong> giữ tiền bay của khách{" "}
+                  {a.bookings.join(" · ")} ngày {formatDateKeyVN(board.date)}
                 </span>
-                <strong className="shrink-0 tabular-nums">{formatVND(a.amount)}</strong>
+                <strong className="shrink-0 tabular-nums text-orange-800">{formatVND(a.amount)}</strong>
               </li>
             ))}
           </ul>
