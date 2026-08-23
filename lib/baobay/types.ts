@@ -428,6 +428,8 @@ export type BookingDTO = {
   transferCode: string;
   /** Cọc CHUYỂN KHOẢN vào thẳng TK CÔNG TY — không ai cầm khoản này. */
   depositToCompany: boolean;
+  /** Cọc gõ tay đi đường nào: "cash" | "transfer" | "" (bản ghi cũ chưa hỏi). */
+  depositMethod?: "cash" | "transfer" | "";
   note: string;
   /** "voided" = bỏ khỏi sổ vì nhập nhầm / nhập trùng — không tính vào thống kê. */
   status: "open" | "done" | "cancelled" | "voided";

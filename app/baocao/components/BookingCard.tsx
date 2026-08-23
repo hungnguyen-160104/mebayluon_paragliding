@@ -143,15 +143,19 @@ function BookingSummary({
   );
   const depositCode = b.transferCode && !inlineCodes.has(b.transferCode) ? b.transferCode : "";
   /**
-   * Ghi thẳng ĐƯỜNG TIỀN vào ngay số cọc: "cọc 500k CK #1424…".
+   * Ghi thẳng ĐƯỜNG TIỀN vào ngay số cọc:
+   *    cọc 500k TM            — khách đưa tiền mặt, nằm trong phần người lập
+   *                             booking đang giữ, KHÔNG phải soát sao kê
+   *    cọc 500k CK #1424…     — chuyển khoản, phải dò ra trong sao kê
+   *    cọc 500k               — bản ghi cũ chưa ai hỏi đường nào, không đoán bừa
    *
-   * Trước đây có một nhãn rời "cọc → TK cty" bật cho MỌI khoản cọc lúc tạo
-   * booking (chú thích trong mã: "cọc thì 100% qua STK công ty") — đếm trên sổ
-   * thì 29/93 booking mang nhãn đó mà thực ra thu tiền mặt hoặc không rõ. Nay
-   * chỉ dám nói "CK" khi có MÃ GIAO DỊCH thật của khoản cọc; không có mã thì để
-   * trống, ai cần biết thì mở lệnh thu ra xem, còn hơn nói sai.
+   * Ưu tiên `depositMethod` (quầy chọn tay), thiếu thì suy từ mã GD. Cờ cũ
+   * `depositToCompany` KHÔNG dùng nữa: nó bật cho mọi khoản cọc nên nói sai với
+   * 29/93 booking.
    */
-  if (depositBase) parts.push(`cọc ${k(depositBase)}${depositCode ? ` CK #${depositCode}` : ""}`);
+  const depositWay =
+    b.depositMethod === "cash" ? " TM" : b.depositMethod === "transfer" || depositCode ? ` CK${depositCode ? ` #${depositCode}` : ""}` : "";
+  if (depositBase) parts.push(`cọc ${k(depositBase)}${depositWay}`);
   else if (paidTotal || refunded) parts.push("cọc 0");
   // Đại lý thu hộ: chip đậm xanh riêng (khối JSX bên dưới) — không nằm trong chuỗi xám
   /** "còn thu" tách khỏi chuỗi để tô ĐỎ — đây là số quầy phải nhớ thu trước khi bay. */
@@ -326,12 +330,14 @@ function BookingSummary({
           {(() => {
             const txs = (b.collected ?? []).filter((c) => c.method === "transfer");
             /**
-             * Cọc gõ tay chỉ tính là CHUYỂN KHOẢN khi có MÃ GIAO DỊCH thật —
-             * không dùng cờ `depositToCompany` nữa vì nó bật cho mọi khoản cọc
-             * (29/93 booking mang cờ đó mà thu tiền mặt hoặc không rõ), khiến
-             * booking cọc tiền mặt bị treo mãi không được "Đã soát đủ".
+             * Cọc TIỀN MẶT không phải soát sao kê — tiền trao tay, đã nằm trong
+             * phần người lập booking đang giữ. Chỉ cọc CHUYỂN KHOẢN mới bắt đợi
+             * kế toán bấm "Đã nhận". Bản ghi cũ chưa ghi đường tiền và cũng
+             * không có mã GD thì coi như không có khoản CK nào phải soát — thà
+             * xanh sớm còn hơn treo vĩnh viễn 16 booking không ai gỡ được.
              */
-            const coCK = txs.length > 0 || (depositBase > 0 && Boolean(depositCode));
+            const cocLaCK = depositBase > 0 && (b.depositMethod === "transfer" || Boolean(depositCode));
+            const coCK = txs.length > 0 || cocLaCK;
             const soatDu = coCK ? Boolean(b.ckChecked) : true;
             if (!soatDu) return null;
             return (
@@ -2986,6 +2992,8 @@ type BookingForm = {
   unitPrice: number;
   discount: number;
   deposit: number;
+  /** Cọc gõ tay đi đường nào — quầy bấm TM/CK ngay cạnh ô tiền. */
+  depositMethod: "cash" | "transfer" | "";
   remaining: number;
   /** Khách đã trả cho ĐẠI LÝ — trừ vào còn thu, đại lý nợ công ty. */
   agencyPaidAmount: number;
@@ -3021,6 +3029,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     unitPrice: flightUnitPrice(defaultFlightKind(spot), today),
     discount: 0,
     deposit: 0,
+    depositMethod: "",
     remaining: 0,
     agencyPaidAmount: 0,
     agencyName: "",
@@ -3435,6 +3444,7 @@ export function BookingCard({
           pickupFee: 0,
           totalAmount: 0,
           deposit: 0,
+          depositMethod: "",
           remaining: 0,
           agencyPaidAmount: 0,
           agencyName: "",
@@ -3527,6 +3537,7 @@ export function BookingCard({
       unitPrice: b.unitPrice,
       discount: b.discount,
       deposit: b.deposit,
+      depositMethod: b.depositMethod ?? "",
       agencyPaidAmount: b.agencyPaidAmount ?? 0,
       agencyName: b.agencyName ?? "",
       remaining: (() => {
@@ -3982,11 +3993,36 @@ export function BookingCard({
         </Field>
         {/* Mỗi ô tiền một nút QR: khách đặt xa thì gửi mã cọc qua Zalo, khách
             tới bãi thì đưa mã phần còn thu cho quét. Nội dung CK = mã booking. */}
-        <Field label="Đã cọc vào TK công ty">
+        <Field label="Khách đã cọc">
           <div className="flex items-center gap-1">
             <span className="min-w-0 flex-1">
               <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
             </span>
+            {/*
+              HỎI THẲNG ĐƯỜNG TIỀN, không đoán. Cọc TM thì tiền nằm trong phần
+              người lập booking đang giữ và KHÔNG phải đối soát sao kê; cọc CK
+              thì phải dò ra trong sao kê ngân hàng. Bản cũ mặc định coi mọi
+              khoản cọc là chuyển khoản nên nói sai với 29/93 booking.
+            */}
+            {form.deposit > 0 &&
+              (["cash", "transfer"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => set("depositMethod", form.depositMethod === m ? "" : m)}
+                  title={m === "cash" ? "Khách đưa tiền mặt — tính vào tiền người lập booking đang giữ" : "Khách chuyển khoản về TK công ty — phải soát sao kê"}
+                  className={
+                    "h-10 shrink-0 rounded-lg border px-2 text-xs font-bold " +
+                    (form.depositMethod === m
+                      ? m === "cash"
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-sky-500 bg-sky-500 text-white"
+                      : "border-slate-300 bg-white text-slate-600")
+                  }
+                >
+                  {m === "cash" ? "TM" : "CK"}
+                </button>
+              ))}
             {/* Chữ QR gọn: đủ hiểu mà không ăn hết chỗ của số tiền 7 chữ số */}
             <PaymentQrButton
               amount={form.deposit}

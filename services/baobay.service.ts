@@ -3260,6 +3260,8 @@ export type BookingSaveInput = {
   remaining: number;
   transferCode: string;
   depositToCompany?: boolean;
+  /** Cọc gõ tay đi đường nào — quầy chọn TM/CK ngay khi nhập. */
+  depositMethod?: "cash" | "transfer" | "";
   note: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
@@ -3399,8 +3401,13 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       agencyName: (input.agencyName ?? "").trim(),
       remaining: remainingOf(newTotal, input.deposit, input.remaining, input.agencyPaidAmount ?? 0),
       transferCode: input.transferCode.trim(),
-      // Cọc thì 100% qua STK công ty — không cần tích tay nữa
+      /**
+       * `depositToCompany` giữ lại cho bản ghi cũ đọc được, nhưng KHÔNG còn là
+       * căn cứ hiển thị: nó bật cho mọi khoản cọc nên nói sai với 29/93 booking.
+       * Đường tiền thật nằm ở `depositMethod` — quầy chọn tay khi nhập.
+       */
       depositToCompany: input.deposit > 0,
+      depositMethod: input.depositMethod ?? "",
       note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       /**
@@ -3778,8 +3785,13 @@ const editedTotal = bookingTotal({
       agencyName: (input.agencyName ?? "").trim(),
       remaining: remainingOf(editedTotal, input.deposit, input.remaining, input.agencyPaidAmount ?? 0),
       transferCode: input.transferCode.trim(),
-      // Cọc thì 100% qua STK công ty — không cần tích tay nữa
+      /**
+       * `depositToCompany` giữ lại cho bản ghi cũ đọc được, nhưng KHÔNG còn là
+       * căn cứ hiển thị: nó bật cho mọi khoản cọc nên nói sai với 29/93 booking.
+       * Đường tiền thật nằm ở `depositMethod` — quầy chọn tay khi nhập.
+       */
       depositToCompany: input.deposit > 0,
+      depositMethod: input.depositMethod ?? "",
       note: input.note.trim(),
     },
   };
@@ -6316,6 +6328,7 @@ function toBookingDTO(doc: any): BookingDTO {
     cancelledFlagFlight: doc.cancelledFlagFlight ?? 0,
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
+    depositMethod: doc.depositMethod === "cash" || doc.depositMethod === "transfer" ? doc.depositMethod : "",
     note: doc.note || "",
     status:
       doc.status === "done"

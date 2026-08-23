@@ -251,6 +251,18 @@ export interface IBaobayBooking {
   transferCode: string;
   /** Cọc CK vào thẳng TK công ty. */
   depositToCompany: boolean;
+  /**
+   * KHOẢN CỌC GÕ TAY đi bằng đường nào — hỏi thẳng người nhập, không đoán.
+   *
+   * "cash": khách đưa tiền mặt cho người lập booking (tiền nằm trong phần người
+   * đó đang giữ, KHÔNG phải đối soát sao kê).
+   * "transfer": khách chuyển khoản về TK công ty (phải dò ra trong sao kê).
+   * "": bản ghi cũ chưa hỏi — giao diện không đoán bừa, để trống.
+   *
+   * Cờ `depositToCompany` cũ vô dụng vì bật cho mọi khoản cọc; đếm trên sổ có
+   * 29/93 booking mang cờ đó mà thực ra thu tiền mặt hoặc không rõ.
+   */
+  depositMethod?: "cash" | "transfer" | "";
   note: string;
 
   /**
@@ -460,6 +472,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     agencyName: { type: String, default: "" },
     transferCode: { type: String, default: "" },
     depositToCompany: { type: Boolean, default: false },
+    depositMethod: { type: String, enum: ["cash", "transfer", ""], default: "" },
     note: { type: String, default: "" },
 
     assignedToUsername: String,
