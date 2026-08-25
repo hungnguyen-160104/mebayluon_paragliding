@@ -1,7 +1,15 @@
 // utils/jwt.ts
 import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 
-export type TokenPayload = { username: string };
+/**
+ * `level` = mức quyền khu quản trị website (xem services/auth.service.ts).
+ * Token CŨ phát trước ngày tách quyền không có trường này — mọi chỗ đọc phải
+ * coi như "editor" (mức thấp), tuyệt đối đừng mặc định "owner": làm thế là
+ * token cũ của tài khoản biên tập vẫn mở được sổ tiền báo bay.
+ */
+export type AdminLevel = "owner" | "editor";
+
+export type TokenPayload = { username: string; level?: AdminLevel };
 
 // Ép SECRET thành string theo cách an toàn để TS hiểu
 const SECRET: string = (() => {
@@ -32,6 +40,9 @@ export function verifyToken(token: string): JwtPayload & TokenPayload {
   if (typeof decoded === "string" || !decoded || typeof (decoded as any).username !== "string") {
     throw new Error("Invalid token payload");
   }
+
+  /** Thiếu `level` (token phát trước ngày tách quyền) thì hạ về mức thấp nhất. */
+  if ((decoded as any).level !== "owner") (decoded as any).level = "editor";
 
   /**
    * Chặn token của khu khác dùng làm token admin.

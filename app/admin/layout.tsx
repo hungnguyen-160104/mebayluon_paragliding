@@ -10,9 +10,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  /**
+   * MỨC QUYỀN của phiên đang mở — "owner" thấy đủ thẻ, "editor" (tài khoản
+   * đăng bài) không thấy thẻ "Nhân sự báo bay".
+   *
+   * Hỏi thẳng máy chủ (/api/auth/me) thay vì bóc token ở trình duyệt: bóc token
+   * thì ai sửa localStorage cũng tự phong mình làm chủ. Ẩn thẻ ở đây chỉ là cho
+   * gọn mắt — chặn thật nằm ở requireBaobay phía máy chủ.
+   */
+  const [level, setLevel] = useState<"owner" | "editor" | null>(null);
 
   // Guard tất cả route admin trừ /admin/login
   useEffect(() => {
+    let alive = true;
     const checkAuth = async () => {
       if (pathname?.startsWith("/admin") && pathname !== "/admin/login") {
         const token = getToken();
@@ -20,10 +30,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           router.replace("/admin/login");
           return;
         }
+        try {
+          const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+          if (!res.ok) {
+            router.replace("/admin/login");
+            return;
+          }
+          const body = await res.json();
+          if (alive) setLevel(body?.user?.level === "owner" ? "owner" : "editor");
+        } catch {
+          // Mạng chập chờn thì đừng đá người ta ra ngoài — cứ coi là mức thấp
+          if (alive) setLevel("editor");
+        }
       }
-      setReady(true);
+      if (alive) setReady(true);
     };
     checkAuth();
+    return () => {
+      alive = false;
+    };
   }, [pathname, router]);
 
   if (!ready)
@@ -49,7 +74,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <NavLink href="/admin" currentPath={pathname}>Quản Lý</NavLink>
               <NavLink href="/admin/dashboard" currentPath={pathname}>Bài Viết</NavLink>
               <NavLink href="/admin/statistics" currentPath={pathname}>Thống kê</NavLink>
-              <NavLink href="/admin/baocao" currentPath={pathname}>Nhân sự báo bay</NavLink>
+              {/* Khu nhân sự báo bay chỉ dành cho tài khoản CHỦ — tài khoản đăng
+                  bài không thấy thẻ này, và máy chủ cũng không cho vào. */}
+              {level === "owner" && (
+                <NavLink href="/admin/baocao" currentPath={pathname}>Nhân sự báo bay</NavLink>
+              )}
             </div>
           </div>
         </nav>

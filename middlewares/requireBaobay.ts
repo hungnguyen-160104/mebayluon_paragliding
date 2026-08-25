@@ -77,6 +77,15 @@ function resolveSession(req: Request, allowAdmin: boolean): BaobayAuth | null {
 
   try {
     const payload = verifyToken(adminToken);
+    /**
+     * CHỈ TÀI KHOẢN CHỦ mới được mượn cửa này.
+     *
+     * Cờ `viaAdmin` bỏ qua mọi kiểm vai trò bên dưới, nên nó là chìa vạn năng
+     * của cả khu báo bay: sổ booking, sổ tiền, soát chuyển khoản, tài khoản
+     * nhân sự, sổ phòng homestay. Tài khoản BIÊN TẬP (điều phối vào đăng bài)
+     * không có việc gì ở đó — cho qua là lộ thông tin nhân sự và tiền bạc.
+     */
+    if (payload.level !== "owner") return null;
     return {
       id: "admin",
       username: payload.username,

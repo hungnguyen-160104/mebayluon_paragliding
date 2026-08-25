@@ -9,15 +9,15 @@ export async function login(req: Request, res: Response) {
       return res.status(400).json({ message: "Missing username or password" });
     }
 
-    const ok = await validateAdmin(username, password);
-    if (!ok) {
+    const level = await validateAdmin(username, password);
+    if (!level) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = signToken({ username });
+    const token = signToken({ username, level });
     return res.json({
       token,
-      user: { username },
+      user: { username, level },
       expiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
     });
   } catch (err) {

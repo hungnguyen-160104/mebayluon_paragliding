@@ -19,16 +19,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const ok = await validateAdmin(u, p);
-    if (!ok) {
+    const level = await validateAdmin(u, p);
+    if (!level) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = signToken({ username: u });
+    // Mức quyền đi THEO TOKEN — giao diện đọc để ẩn/hiện, máy chủ đọc để chặn
+    const token = signToken({ username: u, level });
 
     return NextResponse.json({
       token,
-      user: { username: u },
+      user: { username: u, level },
       expiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
     });
   } catch (err) {

@@ -7,6 +7,8 @@ const AUTH_COOKIE_NAME = AUTH_TOKEN_KEY;
 
 export type AuthUser = {
   username: string;
+  /** Mức quyền khu quản trị — token cũ không khai thì coi là "editor". */
+  level: "owner" | "editor";
   iat?: number;
   exp?: number;
 };
@@ -33,6 +35,7 @@ export function requireAuth(req: Request): AuthUser | NextResponse {
     const payload = verifyToken(token);
     const user: AuthUser = {
       username: (payload as any).username,
+      level: (payload as any).level === "owner" ? "owner" : "editor",
       iat: (payload as any).iat,
       exp: (payload as any).exp,
     };
