@@ -73,7 +73,16 @@ type Dict = {
   loading: string;
   perNight: string;
   maxLabel: (a: number, c: number) => string;
-  availLeft: (n: number) => string;
+  /** "Chỉ còn 1/2 phòng" — số còn trống trên TỔNG số phòng của hạng đó. */
+  availLeft: (free: number, units: number) => string;
+  /** Bản cho SÀN CỘNG ĐỒNG (bán theo chỗ nằm): "Chỉ còn 3/12 chỗ". */
+  availLeftBed: (free: number, units: number) => string;
+  /** Đơn vị giá của sàn cộng đồng — "đ/chỗ/đêm" thay cho "đ/phòng/đêm". */
+  perNightBed: string;
+  /** Sức chứa sàn cộng đồng: mỗi chỗ 1 người, cả sàn N chỗ, nên nằm M. */
+  dormCapacity: (units: number, comfort: number) => string;
+  /** Nhắc khi khách chưa chọn ngày: phòng chưa bấm được. */
+  pickRoomLocked: string;
   availNone: string;
   availOk: string;
   availSome: string;
@@ -94,9 +103,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "Homestay dưới chân điểm bay Khau Phạ — lịch phòng cập nhật trực tiếp",
     timeInfo: `Nhận phòng từ ${CHECK_IN_TIME} · Trả phòng trước ${CHECK_OUT_TIME}`,
     facilities: "4 nhà vệ sinh · 3 nhà tắm chung · 6 chậu rửa mặt",
-    pickRoom: "1 · Chọn phòng",
+    pickRoom: "2 · Chọn phòng",
     pickRoomHint: "Bấm vào phòng rồi chọn số lượng — gom được nhiều phòng một đơn",
-    pickDates: "2 · Chọn ngày nhận – trả phòng",
+    pickDates: "1 · Chọn ngày nhận – trả phòng",
     checkIn: "Nhận phòng",
     checkOut: "Trả phòng",
     nights: (n) => `${n} đêm`,
@@ -125,7 +134,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "Đang tải lịch phòng…",
     perNight: "đ/phòng/đêm",
     maxLabel: (a, c) => `Tối đa ${a} người lớn${c ? ` + ${c} trẻ dưới 6 tuổi` : ""}`,
-    availLeft: (n) => `Còn ${n} phòng cho ngày đã chọn`,
+    availLeft: (f, u) => (u > 1 ? `Chỉ còn ${f}/${u} phòng` : "Còn trống cho ngày đã chọn"),
+    availLeftBed: (f, u) => `Chỉ còn ${f}/${u} chỗ nằm`,
+    perNightBed: "đ/chỗ nằm/đêm",
+    dormCapacity: (u, c) => `1 người mỗi chỗ nằm · cả sàn ${u} chỗ, nằm thoải mái ${c} người`,
+    pickRoomLocked: "⤴ Chọn ngày ở bên trên trước — phòng còn trống sẽ sáng lên",
     availNone: "Hết phòng cho ngày đã chọn",
     availOk: "Còn phòng",
     availSome: "Kín một số đêm 2 tuần tới",
@@ -137,6 +150,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
     roomNames: {
       "double-room": "Phòng giường đôi view suối",
+      dormitory: "Chỗ nằm sàn cộng đồng",
       "single-room": "Phòng giường đơn view dù lượn",
       "couple-attic-single": "Phòng gác mái nhỏ",
       "couple-attic-double": "Phòng áp mái lớn",
@@ -168,9 +182,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "Homestay at the foot of Khau Pha flying site — live availability",
     timeInfo: `Check-in from ${CHECK_IN_TIME} · Check-out by ${CHECK_OUT_TIME}`,
     facilities: "4 toilets · 3 shared showers · 6 washbasins",
-    pickRoom: "1 · Choose rooms",
+    pickRoom: "2 · Choose rooms",
     pickRoomHint: "Tap a room, then set the quantity — mix several rooms in one booking",
-    pickDates: "2 · Pick check-in – check-out dates",
+    pickDates: "1 · Pick check-in – check-out dates",
     checkIn: "Check-in",
     checkOut: "Check-out",
     nights: (n) => `${n} night${n > 1 ? "s" : ""}`,
@@ -199,7 +213,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "Loading availability…",
     perNight: "VND/room/night",
     maxLabel: (a, c) => `Up to ${a} adult${a > 1 ? "s" : ""}${c ? ` + ${c} child under 6` : ""}`,
-    availLeft: (n) => `${n} left for your dates`,
+    availLeft: (f, u) => (u > 1 ? `Only ${f}/${u} left` : "Available for your dates"),
+    availLeftBed: (f, u) => `Only ${f}/${u} beds left`,
+    perNightBed: "VND/bed/night",
+    dormCapacity: (u, c) => `1 person per bed · ${u} beds on the floor, comfortable for ${c}`,
+    pickRoomLocked: "⤴ Pick your dates above first — available rooms will light up",
     availNone: "Sold out for your dates",
     availOk: "Available",
     availSome: "Some nights full (next 2 weeks)",
@@ -211,6 +229,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
     roomNames: {
       "double-room": "Double bed room — stream view",
+      dormitory: "Shared dorm bed",
       "single-room": "Single bed room — paragliding view",
       "couple-attic-single": "Small attic room",
       "couple-attic-double": "Large attic room",
@@ -242,9 +261,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "Homestay au pied du site de vol de Khau Pha — disponibilités en direct",
     timeInfo: `Arrivée à partir de ${CHECK_IN_TIME} · Départ avant ${CHECK_OUT_TIME}`,
     facilities: "4 WC · 3 douches communes · 6 lavabos",
-    pickRoom: "1 · Choisir les chambres",
+    pickRoom: "2 · Choisir les chambres",
     pickRoomHint: "Touchez une chambre puis choisissez la quantité — plusieurs chambres par réservation",
-    pickDates: "2 · Choisir les dates d'arrivée – départ",
+    pickDates: "1 · Choisir les dates d'arrivée – départ",
     checkIn: "Arrivée",
     checkOut: "Départ",
     nights: (n) => `${n} nuit${n > 1 ? "s" : ""}`,
@@ -273,7 +292,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "Chargement des disponibilités…",
     perNight: "VND/chambre/nuit",
     maxLabel: (a, c) => `Jusqu'à ${a} adulte${a > 1 ? "s" : ""}${c ? ` + ${c} enfant de moins de 6 ans` : ""}`,
-    availLeft: (n) => `${n} dispo pour vos dates`,
+    availLeft: (f, u) => (u > 1 ? `Plus que ${f}/${u}` : "Disponible pour vos dates"),
+    availLeftBed: (f, u) => `Plus que ${f}/${u} lits`,
+    perNightBed: "VND/lit/nuit",
+    dormCapacity: (u, c) => `1 personne par lit · ${u} lits au total, confortable pour ${c}`,
+    pickRoomLocked: "⤴ Choisissez d'abord vos dates ci-dessus — les chambres libres s'allumeront",
     availNone: "Complet pour vos dates",
     availOk: "Disponible",
     availSome: "Certaines nuits complètes (2 sem.)",
@@ -285,6 +308,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"],
     roomNames: {
       "double-room": "Chambre lit double — vue ruisseau",
+      dormitory: "Lit en dortoir",
       "single-room": "Chambre lit simple — vue parapentes",
       "couple-attic-single": "Petite chambre mansardée",
       "couple-attic-double": "Grande chambre mansardée",
@@ -316,9 +340,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "Хоумстей у подножия лётной точки Кхау Фа — доступность в реальном времени",
     timeInfo: `Заезд с ${CHECK_IN_TIME} · Выезд до ${CHECK_OUT_TIME}`,
     facilities: "4 туалета · 3 общих душа · 6 раковин",
-    pickRoom: "1 · Выберите номера",
+    pickRoom: "2 · Выберите номера",
     pickRoomHint: "Нажмите на номер и выберите количество — можно несколько номеров в одном заказе",
-    pickDates: "2 · Выберите даты заезда – выезда",
+    pickDates: "1 · Выберите даты заезда – выезда",
     checkIn: "Заезд",
     checkOut: "Выезд",
     nights: (n) => `${n} ноч.`,
@@ -347,7 +371,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "Загрузка календаря…",
     perNight: "VND/номер/ночь",
     maxLabel: (a, c) => `До ${a} взросл.${c ? ` + ${c} ребёнок до 6 лет` : ""}`,
-    availLeft: (n) => `Осталось ${n} на ваши даты`,
+    availLeft: (f, u) => (u > 1 ? `Осталось ${f}/${u}` : "Свободно на ваши даты"),
+    availLeftBed: (f, u) => `Осталось ${f}/${u} мест`,
+    perNightBed: "VND/место/ночь",
+    dormCapacity: (u, c) => `1 человек на место · всего ${u} мест, комфортно для ${c}`,
+    pickRoomLocked: "⤴ Сначала выберите даты выше — свободные номера подсветятся",
     availNone: "Нет мест на ваши даты",
     availOk: "Есть места",
     availSome: "Некоторые ночи заняты (2 нед.)",
@@ -359,6 +387,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
     roomNames: {
       "double-room": "Номер с двуспальной кроватью — вид на ручей",
+      dormitory: "Место в общем зале",
       "single-room": "Номер с односпальной кроватью — вид на парапланы",
       "couple-attic-single": "Малая мансарда",
       "couple-attic-double": "Большая мансарда",
@@ -390,9 +419,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "考帕飞行点山脚下的民宿 — 实时房态",
     timeInfo: `${CHECK_IN_TIME} 后入住 · ${CHECK_OUT_TIME} 前退房`,
     facilities: "4间卫生间 · 3间公共淋浴 · 6个洗手台",
-    pickRoom: "1 · 选择房间",
+    pickRoom: "2 · 选择房间",
     pickRoomHint: "点击房间后选择数量 — 一个订单可订多间房",
-    pickDates: "2 · 选择入住 – 退房日期",
+    pickDates: "1 · 选择入住 – 退房日期",
     checkIn: "入住",
     checkOut: "退房",
     nights: (n) => `${n} 晚`,
@@ -421,7 +450,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "正在加载房态…",
     perNight: "越南盾/间/晚",
     maxLabel: (a, c) => `最多 ${a} 名成人${c ? ` + ${c} 名6岁以下儿童` : ""}`,
-    availLeft: (n) => `所选日期剩 ${n} 间`,
+    availLeft: (f, u) => (u > 1 ? `仅剩 ${f}/${u} 间` : "所选日期有空房"),
+    availLeftBed: (f, u) => `仅剩 ${f}/${u} 个床位`,
+    perNightBed: "越南盾/床位/晚",
+    dormCapacity: (u, c) => `每个床位 1 人 · 全层共 ${u} 个床位，${c} 人最舒适`,
+    pickRoomLocked: "⤴ 请先在上方选择日期 — 可订房间会亮起",
     availNone: "所选日期已满",
     availOk: "有空房",
     availSome: "未来两周部分夜晚已满",
@@ -433,6 +466,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["一", "二", "三", "四", "五", "六", "日"],
     roomNames: {
       "double-room": "双人床房 — 溪流景观",
+      dormitory: "多人间床位",
       "single-room": "单人床房 — 滑翔伞景观",
       "couple-attic-single": "小阁楼房",
       "couple-attic-double": "大阁楼房",
@@ -464,9 +498,9 @@ const L: Record<HomestayLang, Dict> = {
     subtitle: "खाउ फा उड़ान स्थल की तलहटी में होमस्टे — लाइव उपलब्धता",
     timeInfo: `चेक-इन ${CHECK_IN_TIME} से · चेक-आउट ${CHECK_OUT_TIME} तक`,
     facilities: "4 शौचालय · 3 साझा स्नानघर · 6 वॉशबेसिन",
-    pickRoom: "1 · कमरे चुनें",
+    pickRoom: "2 · कमरे चुनें",
     pickRoomHint: "कमरे पर टैप करें फिर संख्या चुनें — एक बुकिंग में कई कमरे",
-    pickDates: "2 · चेक-इन – चेक-आउट तारीखें चुनें",
+    pickDates: "1 · चेक-इन – चेक-आउट तारीखें चुनें",
     checkIn: "चेक-इन",
     checkOut: "चेक-आउट",
     nights: (n) => `${n} रात`,
@@ -495,7 +529,11 @@ const L: Record<HomestayLang, Dict> = {
     loading: "उपलब्धता लोड हो रही है…",
     perNight: "VND/कमरा/रात",
     maxLabel: (a, c) => `अधिकतम ${a} वयस्क${c ? ` + ${c} बच्चा (6 वर्ष से कम)` : ""}`,
-    availLeft: (n) => `आपकी तारीखों के लिए ${n} शेष`,
+    availLeft: (f, u) => (u > 1 ? `केवल ${f}/${u} शेष` : "आपकी तारीखों के लिए उपलब्ध"),
+    availLeftBed: (f, u) => `केवल ${f}/${u} बेड शेष`,
+    perNightBed: "VND/बेड/रात",
+    dormCapacity: (u, c) => `प्रति बेड 1 व्यक्ति · कुल ${u} बेड, ${c} लोगों के लिए आरामदायक`,
+    pickRoomLocked: "⤴ पहले ऊपर तारीखें चुनें — उपलब्ध कमरे रोशन हो जाएंगे",
     availNone: "आपकी तारीखों के लिए पूर्ण",
     availOk: "उपलब्ध",
     availSome: "कुछ रातें पूर्ण (2 सप्ताह)",
@@ -507,6 +545,7 @@ const L: Record<HomestayLang, Dict> = {
     weekdays: ["सो", "मं", "बु", "गु", "शु", "श", "र"],
     roomNames: {
       "double-room": "डबल बेड कमरा — नदी का दृश्य",
+      dormitory: "डॉर्मिटरी बेड",
       "single-room": "सिंगल बेड कमरा — पैराग्लाइडिंग दृश्य",
       "couple-attic-single": "छोटा अटारी कमरा",
       "couple-attic-double": "बड़ा अटारी कमरा",
@@ -621,6 +660,8 @@ export default function DatPhongClient() {
     [qty],
   );
 
+  /** Đã chốt đủ ngày nhận + trả chưa — mốc mở khoá phần chọn phòng. */
+  const datesPicked = Boolean(checkIn && checkOut);
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
   const total = nights > 0 ? lines.reduce((t, l) => t + homestayPrice(l.room.id, nights, l.qty), 0) : 0;
   const totalPerNight = lines.reduce((t, l) => t + l.room.pricePerNight * l.qty, 0);
@@ -695,19 +736,33 @@ export default function DatPhongClient() {
     [rangeFree],
   );
 
-  /** Đêm này đủ chỗ cho CẢ GIỎ không — thiếu một hạng là coi như kín. */
+  /**
+   * Đêm này CÒN ĐẶT ĐƯỢC không.
+   *
+   * Khách chọn NGÀY TRƯỚC nên lúc bấm lịch giỏ thường còn rỗng — khi ấy đêm
+   * nào còn BẤT KỲ hạng phòng nào trống là bấm được (kín hết mọi hạng mới gạch
+   * đỏ). Giỏ đã có phòng rồi thì siết lại: phải đủ chỗ cho CẢ GIỎ, thiếu một
+   * hạng là coi như kín.
+   */
   const nightOk = useCallback(
     (d: string) => {
-      if (d < today || lines.length === 0) return false;
+      if (d < today) return false;
+      if (lines.length === 0) {
+        const known = WEB_ROOMS.some((r) => freeMap.get(r.id)?.has(d));
+        return known && WEB_ROOMS.some((r) => (freeMap.get(r.id)?.get(d) ?? 0) > 0);
+      }
       return lines.every((l) => (freeMap.get(l.room.id)?.get(d) ?? -1) >= l.qty);
     },
     [freeMap, lines, today],
   );
 
-  /** Đêm này còn dư mấy "suất giỏ" nữa — để nhắc vàng khi sắp hết. */
+  /**
+   * Đêm này còn dư mấy "suất giỏ" nữa — để nhắc vàng khi sắp hết. Giỏ còn rỗng
+   * thì chưa có "suất" nào để đếm, trả số lớn để khỏi nhắc oan.
+   */
   const slotsLeft = useCallback(
     (d: string) => {
-      if (lines.length === 0) return 0;
+      if (lines.length === 0) return 99;
       return Math.min(...lines.map((l) => Math.floor((freeMap.get(l.room.id)?.get(d) ?? 0) / l.qty)));
     },
     [freeMap, lines],
@@ -830,142 +885,13 @@ export default function DatPhongClient() {
           </span>
         </p>
 
-        {/* ---- 1. CHỌN PHÒNG + SỐ LƯỢNG ---- */}
-        <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.pickRoom}</h2>
-        <p className="text-hero-shadow-soft text-sm text-white/85">{s.pickRoomHint}</p>
-        <div className="mt-2 grid gap-2 md:grid-cols-2">
-          {WEB_ROOMS.map((r) => {
-            const n = qty[r.id] ?? 0;
-            const picked = n > 0;
-            /**
-             * TÌNH TRẠNG CÒN/HẾT ngay trên thẻ: đã chọn ngày thì đếm đúng số
-             * phòng còn cho khoảng đó (hết = thẻ mờ, không bấm được); chưa
-             * chọn ngày thì báo tổng quan 14 đêm tới.
-             */
-            const free = rangeFree(r.id);
-            const soldOut = free !== null && free <= 0;
-            const blocked = !picked && cartBlocked(r.id);
-            const locked = soldOut || blocked;
-            const status = free === null ? twoWeekStatus(r.id) : null;
-            return (
-              <div
-                key={r.id}
-                role="button"
-                tabIndex={0}
-                aria-disabled={locked}
-                onClick={() => !picked && !locked && setRoomQty(r.id, 1)}
-                onKeyDown={(e) => e.key === "Enter" && !picked && !locked && setRoomQty(r.id, 1)}
-                className={
-                  "rounded-2xl border-2 p-3 text-left transition " +
-                  (picked
-                    ? "border-accent bg-white shadow-lg"
-                    : locked
-                      ? "border-transparent bg-white/50 opacity-70"
-                      : "cursor-pointer border-transparent bg-white/85 hover:bg-white")
-                }
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold leading-tight text-slate-900">
-                      {s.roomNames[r.id] ?? r.id}
-                    </div>
-                    <div className="mt-0.5 text-xs font-semibold text-accent">
-                      {r.pricePerNight.toLocaleString("vi-VN")}{" "}
-                      <span className="font-normal text-slate-500">{s.perNight}</span>
-                    </div>
-                  </div>
-                  {/* Bộ đếm SỐ LƯỢNG hiện ngay trên thẻ khi đã chọn — bấm − về 0 là bỏ chọn */}
-                  {picked ? (
-                    <div
-                      className="flex shrink-0 items-center overflow-hidden rounded-xl border border-slate-300 bg-white"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setRoomQty(r.id, n - 1)}
-                        className="h-9 w-9 text-lg font-bold text-slate-500 hover:bg-slate-100"
-                        aria-label="bớt một phòng"
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center text-sm font-bold tabular-nums text-slate-900">{n}</span>
-                      <button
-                        type="button"
-                        onClick={() => setRoomQty(r.id, Math.min(capOf(r), n + 1))}
-                        disabled={n >= capOf(r)}
-                        className="h-9 w-9 text-lg font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30"
-                        aria-label="thêm một phòng"
-                      >
-                        +
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="shrink-0 rounded-full bg-slate-900/10 px-2 py-1 text-[11px] font-bold text-slate-600">
-                      ×{r.units}
-                    </span>
-                  )}
-                </div>
-                {/* Giường + tiện nghi + sức chứa — đúng lời chủ nhà khai */}
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {r.beds.map((b) => (
-                    <span key={b.kind} className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-900">
-                      🛏 {s.beds(b.kind, b.count)}
-                    </span>
-                  ))}
-                  {r.features.map((f) => (
-                    <span key={f} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
-                      {s.features[f]}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-1 text-[11px] font-medium text-slate-500">
-                  👥 {r.comfort ? s.maxGuests(r.maxAdults, r.comfort) : s.maxLabel(r.maxAdults, r.maxChildren)}
-                </div>
-                {/* CÒN / HẾT — theo ngày đã chọn, chưa chọn thì nhìn 14 đêm tới */}
-                <div className="mt-1.5">
-                  {blocked ? (
-                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                      ⊂ {s.availInCombo}
-                    </span>
-                  ) : free !== null ? (
-                    soldOut ? (
-                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                        ✕ {s.availNone}
-                      </span>
-                    ) : (
-                      <span
-                        className={
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold " +
-                          (free <= 1 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")
-                        }
-                      >
-                        ✓ {s.availLeft(free)}
-                      </span>
-                    )
-                  ) : status === "full" ? (
-                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                      ✕ {s.availFull}
-                    </span>
-                  ) : status === "some" ? (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                      ◐ {s.availSome}
-                    </span>
-                  ) : status === "ok" ? (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                      ✓ {s.availOk}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ---- 2. LỊCH (chỉ hiện khi giỏ đã có phòng) ---- */}
-        {lines.length > 0 && (
-          <>
-            <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.pickDates}</h2>
-            <div className="mt-2 rounded-3xl bg-white/95 p-4 shadow-xl">
+        {/* ---- 1. LỊCH — CHỌN NGÀY TRƯỚC ----
+            Khách chọn ngày trước rồi mới chọn phòng: chọn 1/9 thì phòng nào
+            còn trống sẽ sáng lên, phòng kín thì mờ đi và ghi "hết". Trước đây
+            ngược lại (chọn phòng rồi mới mở lịch) nên khách phải đoán xem
+            phòng mình thích có trống hôm đó không, chọn xong mới biết là kín. */}
+        <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.pickDates}</h2>
+        <div className="mt-2 rounded-3xl bg-white/95 p-4 shadow-xl">
               {!avail ? (
                 <p className="py-8 text-center text-sm text-slate-500">{s.loading}</p>
               ) : (
@@ -998,7 +924,11 @@ export default function DatPhongClient() {
                     ))}
                     {monthDays.map((d, i) => {
                       if (!d) return <div key={`x${i}`} />;
-                      const known = lines.every((l) => freeMap.get(l.room.id)?.has(d));
+                      /** Đã tải được số liệu của đêm này chưa (ngoài cửa sổ 62 đêm thì chưa). */
+                      const known =
+                        lines.length === 0
+                          ? WEB_ROOMS.some((r) => freeMap.get(r.id)?.has(d))
+                          : lines.every((l) => freeMap.get(l.room.id)?.has(d));
                       const ok = nightOk(d);
                       const inRange = checkIn && checkOut && checkIn <= d && d < checkOut;
                       const isIn = d === checkIn;
@@ -1053,9 +983,152 @@ export default function DatPhongClient() {
                   </div>
                 </>
               )}
-            </div>
-          </>
-        )}
+        </div>
+
+        {/* ---- 2. CHỌN PHÒNG + SỐ LƯỢNG (mở sau khi đã có ngày) ---- */}
+        <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.pickRoom}</h2>
+        <p className="text-hero-shadow-soft text-sm text-white/85">
+          {datesPicked ? s.pickRoomHint : s.pickRoomLocked}
+        </p>
+        <div className="mt-2 grid gap-2 md:grid-cols-2">
+          {WEB_ROOMS.map((r) => {
+            const n = qty[r.id] ?? 0;
+            const picked = n > 0;
+            /**
+             * TÌNH TRẠNG CÒN/HẾT ngay trên thẻ: đã chọn ngày thì đếm đúng số
+             * phòng còn cho khoảng đó (hết = thẻ mờ, không bấm được); chưa
+             * chọn ngày thì báo tổng quan 14 đêm tới.
+             */
+            const free = rangeFree(r.id);
+            const soldOut = free !== null && free <= 0;
+            const blocked = !picked && cartBlocked(r.id);
+            /** Chưa chọn ngày thì chưa biết phòng nào trống — không cho bấm. */
+            const locked = !datesPicked || soldOut || blocked;
+            const status = free === null ? twoWeekStatus(r.id) : null;
+            return (
+              <div
+                key={r.id}
+                role="button"
+                tabIndex={0}
+                aria-disabled={locked}
+                onClick={() => !picked && !locked && setRoomQty(r.id, 1)}
+                onKeyDown={(e) => e.key === "Enter" && !picked && !locked && setRoomQty(r.id, 1)}
+                className={
+                  "rounded-2xl border-2 p-3 text-left transition " +
+                  (picked
+                    ? "border-accent bg-white shadow-lg"
+                    : locked
+                      ? "border-transparent bg-white/50 opacity-70"
+                      : "cursor-pointer border-transparent bg-white/85 hover:bg-white")
+                }
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold leading-tight text-slate-900">
+                      {s.roomNames[r.id] ?? r.id}
+                    </div>
+                    <div className="mt-0.5 text-xs font-semibold text-accent">
+                      {r.pricePerNight.toLocaleString("vi-VN")}{" "}
+                      {/* Sàn cộng đồng bán theo CHỖ NẰM — in "đ/phòng/đêm" là khách
+                          tưởng 200k được cả sàn 12 đệm */}
+                      <span className="font-normal text-slate-500">{r.perBed ? s.perNightBed : s.perNight}</span>
+                    </div>
+                  </div>
+                  {/* Bộ đếm SỐ LƯỢNG hiện ngay trên thẻ khi đã chọn — bấm − về 0 là bỏ chọn */}
+                  {picked ? (
+                    <div
+                      className="flex shrink-0 items-center overflow-hidden rounded-xl border border-slate-300 bg-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setRoomQty(r.id, n - 1)}
+                        className="h-9 w-9 text-lg font-bold text-slate-500 hover:bg-slate-100"
+                        aria-label="bớt một phòng"
+                      >
+                        −
+                      </button>
+                      <span className="w-8 text-center text-sm font-bold tabular-nums text-slate-900">{n}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRoomQty(r.id, Math.min(capOf(r), n + 1))}
+                        disabled={n >= capOf(r)}
+                        className="h-9 w-9 text-lg font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                        aria-label="thêm một phòng"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-slate-900/10 px-2 py-1 text-[11px] font-bold text-slate-600">
+                      ×{r.units}
+                    </span>
+                  )}
+                </div>
+                {/* Giường + tiện nghi + sức chứa — đúng lời chủ nhà khai */}
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {r.beds.map((b) => (
+                    <span key={b.kind} className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-900">
+                      🛏 {s.beds(b.kind, b.count)}
+                    </span>
+                  ))}
+                  {r.features.map((f) => (
+                    <span key={f} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                      {s.features[f]}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-1 text-[11px] font-medium text-slate-500">
+                  {/* Sàn cộng đồng: maxAdults là sức chứa MỘT CHỖ còn comfort là
+                      của CẢ SÀN — in chung công thức phòng lẻ sẽ ra "tối đa 1
+                      người · khuyến cáo 10", đọc không hiểu gì. */}
+                  👥{" "}
+                  {r.perBed
+                    ? s.dormCapacity(r.units, r.comfort ?? r.units)
+                    : r.comfort
+                      ? s.maxGuests(r.maxAdults, r.comfort)
+                      : s.maxLabel(r.maxAdults, r.maxChildren)}
+                </div>
+                {/* CÒN / HẾT — theo ngày đã chọn, chưa chọn thì nhìn 14 đêm tới */}
+                <div className="mt-1.5">
+                  {blocked ? (
+                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                      ⊂ {s.availInCombo}
+                    </span>
+                  ) : free !== null ? (
+                    soldOut ? (
+                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                        ✕ {s.availNone}
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          /* Sắp hết (còn chưa tới nửa số phòng) thì vàng để khách biết mà nhanh tay */
+                          "rounded-full px-2 py-0.5 text-[10px] font-bold " +
+                          (free * 2 <= r.units ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")
+                        }
+                      >
+                        ✓ {r.perBed ? s.availLeftBed(free, r.units) : s.availLeft(free, r.units)}
+                      </span>
+                    )
+                  ) : status === "full" ? (
+                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                      ✕ {s.availFull}
+                    </span>
+                  ) : status === "some" ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                      ◐ {s.availSome}
+                    </span>
+                  ) : status === "ok" ? (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                      ✓ {s.availOk}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* ---- 3. KHÁCH + 4. LIÊN HỆ + TỔNG ---- */}
         {lines.length > 0 && checkIn && checkOut && (

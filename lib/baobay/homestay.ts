@@ -4,9 +4,13 @@
  *
  * Danh sách và ĐƠN GIÁ dưới đây lấy đúng theo BẢNG TÍNH QUẢN PHÒNG THÁNG 8
  * của chủ nhà (gác mái đơn 300k, gác mái to 400k, đơn 350k, đôi 650k, gia
- * đình 800k, sàn cộng đồng 200k/chỗ) — khác với phần chữ quảng bá trên trang
- * /homestay (lib/homestay-data.ts): bên đó là bài giới thiệu, bên này là tồn
- * kho để tính phòng trống và tính tiền. Giá tính theo ĐỒNG/PHÒNG/ĐÊM.
+ * đình 800k, sàn cộng đồng 180k/chỗ). Giá tính theo ĐỒNG/PHÒNG/ĐÊM.
+ *
+ * PHẢI KHỚP VỚI GIÁ CÔNG BỐ ở lib/homestay-data.ts (bài giới thiệu trang
+ * /homestay). Bên đó là chữ khách đọc trước khi bấm đặt, bên này là số máy
+ * tính tiền — lệch nhau thì khách thấy một giá rồi bị thu một giá khác. Sàn
+ * cộng đồng từng để 200k trong khi ngoài công bố 180k; đã sửa 26/08/2026 và
+ * hai bảng nay bằng nhau ở cả 8 hạng. Đổi giá lần sau phải sửa CẢ HAI.
  *
  * Toàn bộ là hàm thuần — trang kế toán, trang đặt phòng và bộ đọc thư dùng
  * chung một cách tính, không mỗi nơi một kiểu.
@@ -58,8 +62,17 @@ export type HomestayRoom = {
    * = tối đa cũng là mức tốt.
    */
   comfort?: number;
-  /** Cho khách tự đặt trên web không — phòng cộng đồng/nguyên căn thì liên hệ trực tiếp. */
+  /** Cho khách tự đặt trên web không. */
   webBookable: boolean;
+  /**
+   * BÁN THEO CHỖ NẰM chứ không theo phòng (sàn cộng đồng): `units` là số ĐỆM,
+   * `pricePerNight` là giá MỘT CHỖ, `maxAdults` là sức chứa MỘT CHỖ.
+   *
+   * Trang đặt phòng phải đọc cờ này để đổi chữ: "200.000đ/chỗ/đêm", "chỉ còn
+   * 3/12 chỗ" — in "tối đa 1 người" cho cả sàn 12 đệm thì khách tưởng nhà chỉ
+   * nhận một người.
+   */
+  perBed?: boolean;
 };
 
 /**
@@ -124,17 +137,23 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     webBookable: true,
   },
   {
-    // Sàn cộng đồng — 12 đệm đơn, mỗi đệm 1 người lớn; ở TỐT NHẤT 10 người.
-    // Bán theo CHỖ NẰM qua liên hệ/OTA, không bán online.
+    /**
+     * Sàn cộng đồng — 12 đệm đơn, mỗi đệm 1 người lớn; ở TỐT NHẤT 10 người.
+     * Bán theo CHỖ NẰM: khách lấy mấy đệm thì tính mấy lần 200k.
+     *
+     * Trước đây chỉ bán qua liên hệ/OTA (`webBookable: false`); chủ nhà mở bán
+     * online từ 26/08/2026 — khách tự chọn số chỗ trên /homestay/dat-phong.
+     */
     id: "dormitory",
     units: 12,
-    pricePerNight: 200_000,
+    pricePerNight: 180_000,
     beds: [{ kind: "single-mattress", count: 1 }],
     features: ["stilt-house", "shared-bathroom"],
     maxAdults: 1,
     maxChildren: 0,
     comfort: 10,
-    webBookable: false,
+    webBookable: true,
+    perBed: true,
   },
   {
     /**

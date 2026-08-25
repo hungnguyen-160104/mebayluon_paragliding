@@ -275,7 +275,10 @@ export async function createWebHomestayBooking(
   for (const [id, qty] of qtyByRoom) {
     const room = homestayRoom(id);
     if (!room || !room.webBookable) throw new BaobayError("Hạng phòng không hợp lệ", 400);
-    if (qty > room.units) throw new BaobayError(`Hạng phòng chỉ có ${room.units} phòng`, 400);
+    // Sàn cộng đồng bán theo CHỖ NẰM — báo "chỉ có 12 phòng" thì khách không hiểu
+    if (qty > room.units) {
+      throw new BaobayError(`Hạng này chỉ có ${room.units} ${room.perBed ? "chỗ nằm" : "phòng"}`, 400);
+    }
   }
   /**
    * GÓI nguyên sàn đã BAO các phòng thành phần: giỏ chứa gói thì không được
@@ -337,8 +340,9 @@ export async function createWebHomestayBooking(
   for (const [id, qty] of qtyByRoom) {
     for (let d = input.checkIn; d < input.checkOut; d = shiftDateKey(d, 1)) {
       if (unitsFree(occ, id, d) < qty) {
+        const room = homestayRoom(id);
         throw new BaobayError(
-          `Đêm ${d.split("-").reverse().slice(0, 2).join("/")} không còn đủ phòng — chọn ngày khác giúp mình nhé`,
+          `Đêm ${d.split("-").reverse().slice(0, 2).join("/")} không còn đủ ${room?.perBed ? "chỗ nằm" : "phòng"} — chọn ngày khác giúp mình nhé`,
           409,
         );
       }
