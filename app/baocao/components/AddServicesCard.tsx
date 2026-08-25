@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   COMBO_DISCOUNT,
-  SERVICE_PRICE,
   SERVICE_PRICE_LABEL,
+  servicePriceOf,
   comboDiscount,
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
@@ -205,11 +205,17 @@ export function AddServicesCard({
       })),
   );
 
+  /**
+   * Bảng giá dịch vụ của ĐÚNG booking đang chọn — Khau Phạ đổi giá dù cờ đỏ từ
+   * 26/08/2026 và giá neo vào LÚC BOOKING ĐƯỢC LẬP (xem servicePriceOf).
+   *
+   * Nên booking CŨ mua thêm cờ đỏ tại bãi hôm nay vẫn tính giá cũ: một booking
+   * chỉ mang một bảng giá, mà tổng của nó được máy chủ tính lại TRỌN GÓI chứ
+   * không cộng dồn từng lần — trộn hai giá là hoá đơn không ai đọc nổi.
+   */
+  const price = servicePriceOf(spot, picked?.createdAt);
   /** Tiền dịch vụ thêm, phần combo được bớt thêm, và số cuối cùng phải thu. */
-  const addAmount = (Object.keys(SERVICE_PRICE) as ServiceKey[]).reduce(
-    (t, k) => t + add[k] * SERVICE_PRICE[k],
-    0,
-  );
+  const addAmount = (Object.keys(price) as ServiceKey[]).reduce((t, k) => t + add[k] * price[k], 0);
   const comboBefore = picked ? comboDiscount(picked.flycam, picked.video360) : 0;
   const comboAfter = picked ? comboDiscount(picked.flycam + add.flycam, picked.video360 + add.video360) : 0;
   const comboGain = Math.max(0, comboAfter - comboBefore);
@@ -422,7 +428,7 @@ export function AddServicesCard({
             {serviceRows.map((s) => (
               <label key={s.key} className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">
                 {s.label}
-                <span className="font-normal text-slate-400">{(SERVICE_PRICE[s.key] / 1000).toLocaleString("vi-VN")}k</span>
+                <span className="font-normal text-slate-400">{(price[s.key] / 1000).toLocaleString("vi-VN")}k</span>
                 <MiniCount
                   value={add[s.key]}
                   onChange={(v) => setAdd((p) => ({ ...p, [s.key]: Math.min(v, capOf(s.key)) }))}

@@ -3401,6 +3401,10 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   /** Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi. */
   const newTotal = bookingTotal({
     ...input,
+    // Điểm bay + LÚC LẬP quyết bảng giá DỊCH VỤ (Khau Phạ đổi giá dù cờ đỏ từ
+    // 26/08/2026; booking lập từ giờ trở đi ăn giá mới) — xem servicePriceOf
+    spot,
+    createdAt: new Date(),
     // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
     ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
@@ -3816,9 +3820,17 @@ export async function updateBookingInfo(
       400,
     );
   }
-  // Ngày bay lùi về quá khứ vẫn chặn: đó là gõ nhầm năm/tháng, không phải sửa muộn
-  if (input.flightDate < todayInVN() && input.flightDate !== before.flightDate) {
-    throw new BaobayError("Ngày bay mới không thể ở quá khứ", 400);
+  /**
+   * Đổi ngày bay ở ô SỬA cũng là một kiểu dời lịch, nên theo đúng luật của
+   * `assertMoveDatesOpen`: lùi về ngày cũ hơn được (25 mưa thì bay 23), chỉ
+   * chặn khi lùi quá xa — dấu hiệu gõ nhầm tháng/năm chứ không phải sửa muộn.
+   * Ngày đã chốt thì đã bị khối kiểm tra ngay bên trên chặn rồi.
+   */
+  if (input.flightDate !== before.flightDate && input.flightDate < shiftDateKey(todayInVN(), -MOVE_BACK_LIMIT_DAYS)) {
+    throw new BaobayError(
+      `Ngày bay mới ${formatDateKeyVN(input.flightDate)} lùi quá ${MOVE_BACK_LIMIT_DAYS} ngày so với hôm nay — kiểm lại tháng/năm`,
+      400,
+    );
   }
   for (const [label, count] of [
     ["Flycam", input.flycam],
@@ -3863,6 +3875,13 @@ export async function updateBookingInfo(
 
 const editedTotal = bookingTotal({
     ...input,
+    spot,
+    /**
+     * SỬA booking thì GIỮ NGUYÊN bảng giá dịch vụ lúc nó được lập — booking cũ
+     * đã chốt giá cờ đỏ 100k với khách, sửa cái tên mà tổng nhảy thêm 300k là
+     * không giải thích được với ai.
+     */
+    createdAt: current.createdAt,
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
     ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
   });
@@ -5740,6 +5759,7 @@ export async function splitBooking(
   if (input.mode === "move") {
     if (!isDateKey(input.toDate ?? "")) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
     if (input.toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
+    await assertMoveDatesOpen(spot, current.flightDate, String(input.toDate));
   }
 
   /** Số khách còn lại ở booking gốc — dịch vụ bám đầu khách nên phải kẹp xuống. */
@@ -6112,6 +6132,49 @@ export async function toggleBookingTicket(session: BaobaySession, spotRaw: strin
   return toBookingDTO(updated);
 }
 
+/**
+ * DỜI LỊCH ĐƯỢC CẢ VỀ NGÀY CŨ HƠN.
+ *
+ * Book ngày 25 nhưng 25 dự báo mưa thì dời xuống 23 là chuyện thường; trước đây
+ * ô chọn ngày chặn cứng "phải sau ngày hiện tại" nên điều phối phải huỷ rồi lập
+ * lại booking mới — mất sạch dấu vết tiền đã cọc.
+ *
+ * Cửa duy nhất là KẾ TOÁN ĐÃ CHỐT NGÀY, và phải soát CẢ HAI đầu: ngày cũ mất
+ * một booking, ngày mới nhận thêm một booking, nên bảng tính của cả hai ngày
+ * đều đổi theo. Chốt rồi mà vẫn cho dời là số đã lên sổ bị rút ruột sau lưng
+ * bản chốt.
+ *
+ * Còn một chặn nữa: KHÔNG cho dời lùi quá `MOVE_BACK_LIMIT_DAYS` ngày. Ngày cũ
+ * lâu rồi thường chưa ai chốt (không có bản chốt để chặn), nên nếu bỏ trống thì
+ * gõ nhầm năm — "2025-08-23" thay vì "2026-08-23" — sẽ lẳng lặng ném booking về
+ * quá khứ xa, không ai nhìn thấy nữa.
+ */
+const MOVE_BACK_LIMIT_DAYS = 30;
+
+async function assertMoveDatesOpen(spot: string, fromDate: string, toDate: string): Promise<void> {
+  const floor = shiftDateKey(todayInVN(), -MOVE_BACK_LIMIT_DAYS);
+  if (toDate < floor) {
+    throw new BaobayError(
+      `Ngày dời ${formatDateKeyVN(toDate)} lùi quá ${MOVE_BACK_LIMIT_DAYS} ngày so với hôm nay — kiểm lại xem có gõ nhầm tháng/năm không`,
+      400,
+    );
+  }
+  const closed = await AccountantDailyClose.find({
+    spot,
+    date: { $in: [...new Set([fromDate, toDate])] },
+    status: "closed",
+  })
+    .select("date")
+    .lean<any[]>();
+  if (closed.length) {
+    const which = closed.map((c) => formatDateKeyVN(c.date)).join(" và ");
+    throw new BaobayError(
+      `Ngày ${which} kế toán đã chốt — dời lịch làm đổi bảng tính của cả ngày cũ lẫn ngày mới, nên phải nhờ kế toán gỡ khoá ngày rồi mới dời được.`,
+      400,
+    );
+  }
+}
+
 export async function updateBookingStatus(
   session: BaobaySession,
   spotRaw: string,
@@ -6159,6 +6222,7 @@ export async function updateBookingStatus(
   if (action === "move") {
     if (!toDate) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
     if (toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
+    await assertMoveDatesOpen(spot, current.flightDate, toDate);
     update = {
       // Sang ngày mới thì nhận SỐ THỨ TỰ MỚI của ngày đó — số cũ bỏ lại ngày cũ
       $set: { flightDate: toDate, daySeq: await nextDaySeq(spot, toDate), movedBy: session.username, movedAt: new Date() },

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 
-import { formatDateKeyVN, shiftDateKey } from "@/lib/baobay/date";
+import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { formatVND } from "@/lib/pricing";
 
 import { apiPatch } from "./client-api";
@@ -461,15 +461,23 @@ export function CancelMoveCard({
               <>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-slate-700">Bay lại ngày</span>
+                  {/* Bay lại SỚM hơn cũng được (ngày đang đặt dự báo mưa thì
+                      cho khách bay hôm trước) — máy chủ chỉ chặn ngày kế toán
+                      đã chốt; `min` ở đây chỉ để bắt lỗi gõ nhầm tháng/năm. */}
                   <input
                     type="date"
                     value={toDate}
-                    min={shiftDateKey(date, 1)}
+                    min={shiftDateKey(todayInVN(), -30)}
                     disabled={disabled}
                     onChange={(e) => setToDate(e.target.value)}
                     className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm"
                   />
                 </div>
+                {toDate && toDate < date && (
+                  <p className="mt-1 text-[11px] font-semibold text-amber-800">
+                    ⇠ Ngày mới SỚM hơn ngày đang đặt — được, miễn ngày đó chưa bị kế toán chốt.
+                  </p>
+                )}
                 {/* Dời lịch KHÔNG hoàn tiền, nhưng phí đã phát sinh thì khách trả */}
                 <div className="mt-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2">
                   <div className="text-[11px] font-semibold text-emerald-900">

@@ -19,8 +19,8 @@ import {
   FLIGHT_KIND_LABEL,
   FLIGHT_KIND_SHORT,
   MOUNTAIN_CAR_PRICE,
-  SERVICE_PRICE,
   SERVICE_PRICE_LABEL,
+  servicePriceOf,
   bookingTotal as computeBookingTotal,
   defaultFlightKind,
   flightKindsOf,
@@ -2546,13 +2546,22 @@ export function BookingTodayBanner({
                     />
                   </label>
                 )}
+                {/* Dời được cả VỀ NGÀY CŨ HƠN: 25 dự báo mưa thì cho khách bay
+                    23. Chặn duy nhất là ngày kế toán đã chốt (máy chủ soát cả
+                    ngày cũ lẫn ngày mới) — ở đây chỉ chặn lùi quá 30 ngày để
+                    bắt lỗi gõ nhầm tháng/năm. */}
                 <input
                   type="date"
                   value={moving.toDate}
-                  min={shiftDateKey(todayInVN(), 1)}
+                  min={shiftDateKey(todayInVN(), -30)}
                   onChange={(e) => setMoving({ ...moving, toDate: e.target.value })}
                   className="h-8 flex-1 rounded-lg border border-slate-300 bg-white px-2 text-xs"
                 />
+                {moving.toDate && moving.toDate < b.flightDate && (
+                  <span className="w-full text-[11px] font-semibold text-amber-800">
+                    ⇠ Dời SỚM hơn ngày đang đặt — được, miễn ngày {formatDateKeyVN(moving.toDate)} chưa bị kế toán chốt.
+                  </span>
+                )}
                 {/* Dời lịch có thể phát sinh phí (xe đã chạy) — khách trả thêm, không hoàn */}
                 <div className="flex w-full flex-wrap items-center gap-1">
                   <span className="text-[11px] font-semibold text-emerald-800">Phí TM</span>
@@ -3157,7 +3166,16 @@ function MiniCount({ value, onChange, max = 100 }: { value: number; onChange: (v
   );
 }
 
-/** Tổng tiền của form: giá PG (ô đơn giá) × khách PG + bảng giá PPG × khách PPG − combo − giảm trừ. */
+/**
+ * Tổng tiền của form: giá PG (ô đơn giá) × khách PG + bảng giá PPG × khách PPG
+ * − combo − giảm trừ.
+ *
+ * `spot` + `bookedAt` chỉ để tra BẢNG GIÁ DỊCH VỤ riêng của điểm (Khau Phạ đổi
+ * giá dù cờ đỏ từ 26/08/2026, booking cũ giữ giá cũ) — thiếu chúng thì máy dùng
+ * bảng chung và tổng trên form sẽ lệch với tổng máy chủ tính lại lúc lưu.
+ * Booking đang sửa thì truyền `createdAt` của chính nó; form lập mới thì truyền
+ * thời điểm hiện tại.
+ */
 function totalOf(f: {
   flightDate: string;
   flightKind: BookingDTO["flightKind"];
@@ -3173,9 +3191,11 @@ function totalOf(f: {
   pickupFee: number;
   discount: number;
   comboDiscount: number;
-}): number {
+}, spot?: string, bookedAt?: string | Date | null): number {
   return computeBookingTotal({
     ...f,
+    spot,
+    createdAt: bookedAt,
     ppgGuests: f.flightKind === "ppg" ? 0 : f.ppgGuests,
     ppgUnitPrice: flightUnitPrice("ppg", f.flightDate),
   });
@@ -3293,6 +3313,12 @@ export function BookingCard({
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
   /**
+   * LÚC BOOKING ĐANG SỬA ĐƯỢC LẬP — quyết bảng giá dịch vụ của nó (Khau Phạ đổi
+   * giá dù cờ đỏ từ 26/08/2026, booking cũ giữ giá cũ; xem servicePriceOf).
+   * Rỗng = đang lập booking MỚI, ăn bảng giá hiện hành.
+   */
+  const [editingCreatedAt, setEditingCreatedAt] = useState<string>("");
+  /**
    * ĐÃ THU QUA LỆNH THU của booking đang sửa — ô "đã cọc" là số CỘNG DỒN (cọc
    * lúc đặt + mọi lần thu), phải nói ra thì người sửa mới không gõ đè mất.
    */
@@ -3371,7 +3397,7 @@ export function BookingCard({
        * "Còn lại" LUÔN tính lại theo luật tổng − cọc, không có ngoại lệ: ô đó chỉ
        * đọc, và máy chủ cũng chốt lại đúng công thức này khi lưu.
        */
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
+      next.remaining = Math.max(0, totalOf(next, bookSpot, editingCreatedAt || new Date().toISOString()) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
   };
@@ -3457,8 +3483,10 @@ export function BookingCard({
       );
 
   /** Tổng tiền hiện trên form — máy chủ tính lại đúng công thức này khi lưu. */
-  const bookingTotal = totalOf(form);
-  const serviceMoney = servicesAmount(form);
+  /** Mốc bảng giá của form: booking đang sửa giữ giá lúc nó lập, form mới ăn giá hiện hành. */
+  const formPriceAt = editingCreatedAt || new Date().toISOString();
+  const bookingTotal = totalOf(form, bookSpot, formPriceAt);
+  const serviceMoney = servicesAmount({ ...form, spot: bookSpot, createdAt: formPriceAt });
   const comboMoney = form.comboDiscount;
   /** Khách PG/PPG đang khai — nhóm thuần PPG lưu kiểu cũ (flightKind "ppg"). */
   const pgCount = form.flightKind === "ppg" ? 0 : Math.max(0, form.guestCount - form.ppgGuests);
@@ -3504,7 +3532,7 @@ export function BookingCard({
       }
       next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
+      next.remaining = Math.max(0, totalOf(next, bookSpot, editingCreatedAt || new Date().toISOString()) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
 
@@ -3552,7 +3580,7 @@ export function BookingCard({
         next.flagFlight = Math.min(next.flagFlight, guestCount);
       }
       if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
-      next.remaining = Math.max(0, totalOf(next) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
+      next.remaining = Math.max(0, totalOf(next, bookSpot, editingCreatedAt || new Date().toISOString()) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
   }
@@ -3691,6 +3719,7 @@ export function BookingCard({
          */
         if (created?.booking?.id) {
           setEditingId(created.booking.id);
+          setEditingCreatedAt(created.booking.createdAt || "");
           setEditingSpot(bookSpot);
           setEditingSeq(created.booking.daySeq || 0);
         }
@@ -3722,6 +3751,7 @@ export function BookingCard({
   /** Nạp booking vào form phía trên để sửa. */
   function startEdit(b: BookingDTO) {
     setEditingId(b.id);
+    setEditingCreatedAt(b.createdAt || "");
     setEditingSeq(b.daySeq || 0);
     setEditingSpot(b.spot || spot);
     if ((b.spot || spot) !== bookSpot) setBookSpot(b.spot || spot);
@@ -3782,7 +3812,7 @@ export function BookingCard({
           pickupFee: b.pickupFee,
           discount: b.discount,
           comboDiscount: b.comboDiscount ?? 0,
-        });
+        }, b.spot || spot, b.createdAt);
         return total > 0 ? Math.max(0, total - (b.deposit || 0)) : b.remaining;
       })(),
       transferCode: b.transferCode,
@@ -3802,6 +3832,7 @@ export function BookingCard({
       await apiDelete(`/api/baocao/booking?spot=${b.spot || spot}`, { id: b.id });
       if (editingId === b.id) {
         setEditingId(null);
+        setEditingCreatedAt("");
         setEditingSeq(0);
         setEditingSpot(bookSpot);
         setForm(emptyBooking(today, bookSpot));
@@ -4147,7 +4178,7 @@ export function BookingCard({
         {SERVICE_PRICE_LABEL.map((x, i) => (
           <span key={x.key}>
             {i ? " · " : ""}
-            {x.label} {(SERVICE_PRICE[x.key] / 1000).toLocaleString("vi-VN")}k
+            {x.label} {(servicePriceOf(bookSpot, formPriceAt)[x.key] / 1000).toLocaleString("vi-VN")}k
           </span>
         ))}
         {bookSpot === "ha-noi" ? ` · Xe lên núi ${(MOUNTAIN_CAR_PRICE / 1000).toLocaleString("vi-VN")}k/khách` : ""}
@@ -4421,6 +4452,7 @@ export function BookingCard({
             disabled={saving}
             onClick={() => {
               setEditingId(null);
+              setEditingCreatedAt("");
               setEditingSeq(0);
               setEditingSpot(bookSpot);
               setForm(emptyBooking(today, bookSpot));

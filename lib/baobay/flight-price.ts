@@ -10,6 +10,8 @@
  * năm là sai, mà chẳng ai nhớ để sửa.
  */
 
+import { normalizeSpot, type SpotId } from "@/lib/baobay/spots";
+
 export type FlightKind = "pg" | "ppg" | "m650" | "m850";
 
 export const FLIGHT_KIND_LABEL: Record<FlightKind, string> = {
@@ -72,7 +74,57 @@ export const SERVICE_PRICE = {
   sunset: 700_000,
 } as const;
 
-export const SERVICE_PRICE_LABEL: Array<{ key: keyof typeof SERVICE_PRICE; label: string }> = [
+export type ServiceKey = keyof typeof SERVICE_PRICE;
+
+/**
+ * GIÁ RIÊNG THEO ĐIỂM BAY, NEO VÀO LÚC LẬP BOOKING.
+ *
+ * Khau Phạ nâng DÙ CỜ ĐỎ từ 100k lên 400k. Giá mới chỉ áp cho booking LẬP TỪ
+ * mốc `from` trở đi; booking cũ đã tích sẵn cờ đỏ giữ nguyên giá cũ tới lúc
+ * chết, kể cả khi chuyến bay còn ở tương lai.
+ *
+ * Vì sao neo vào LÚC LẬP chứ không phải ngày bay: `bookingTotal` tính lại tổng
+ * tiền MỖI LẦN ai đó mở booking ra sửa. Neo vào ngày bay thì một booking đặt
+ * tuần trước (đã chốt giá 100k với khách, khách đã cọc) mà bay tháng sau chỉ
+ * cần sửa tên khách là tổng tự nhảy thêm 300k — khách không hiểu vì sao đắt
+ * lên, sổ thì lệch mà chẳng ai lần ra.
+ *
+ * Hệ quả có chủ ý: booking CŨ mua thêm cờ đỏ tại bãi hôm nay vẫn tính 100k.
+ * Một booking chỉ được mang MỘT bảng giá — nửa nọ nửa kia là không ai đọc nổi
+ * hoá đơn, và tổng của nó vốn được tính lại trọn gói chứ không cộng dồn.
+ *
+ * Đổi giá lần sau: thêm một dòng mới (mốc mới) chứ đừng sửa mốc cũ.
+ */
+const SPOT_SERVICE_PRICE: ReadonlyArray<{
+  spot: SpotId;
+  key: ServiceKey;
+  /** Áp cho booking LẬP từ thời điểm này trở đi (mốc có giờ + múi giờ VN). */
+  from: string;
+  price: number;
+}> = [{ spot: "khau-pha", key: "redFlag", from: "2026-08-26T01:00:00+07:00", price: 400_000 }];
+
+/**
+ * Bảng giá dịch vụ của MỘT điểm bay cho MỘT booking, theo LÚC BOOKING ĐƯỢC LẬP
+ * (`bookedAt` = `createdAt` của booking; booking mới thì truyền thời điểm hiện
+ * tại).
+ *
+ * Thiếu điểm bay hoặc thiếu mốc thời gian thì trả BẢNG CHUNG (giá cũ) — không
+ * đoán: đoán nhầm là tính đắt thêm 300k cho một booking đáng lẽ giá cũ, mà
+ * hướng sai này khách nhìn thấy ngay còn hướng ngược lại thì chỉ mình chịu.
+ */
+export function servicePriceOf(spot?: string, bookedAt?: string | Date | null): Record<ServiceKey, number> {
+  const out: Record<ServiceKey, number> = { ...SERVICE_PRICE };
+  if (!spot || !bookedAt) return out;
+  const t = new Date(bookedAt).getTime();
+  if (!Number.isFinite(t)) return out;
+  const id = normalizeSpot(spot);
+  for (const r of SPOT_SERVICE_PRICE) {
+    if (r.spot === id && t >= Date.parse(r.from)) out[r.key] = r.price;
+  }
+  return out;
+}
+
+export const SERVICE_PRICE_LABEL: Array<{ key: ServiceKey; label: string }> = [
   { key: "flycam", label: "Flycam" },
   { key: "video360", label: "Camera 360" },
   { key: "redFlag", label: "Dù cờ đỏ" },
@@ -153,13 +205,17 @@ export function servicesAmount(s: {
   redFlag?: number;
   flagFlight?: number;
   sunset?: number;
+  /** Điểm bay + LÚC LẬP BOOKING — để lấy đúng bảng giá riêng (xem servicePriceOf). */
+  spot?: string;
+  createdAt?: string | Date | null;
 }): number {
+  const price = servicePriceOf(s.spot, s.createdAt);
   return (
-    (s.flycam || 0) * SERVICE_PRICE.flycam +
-    (s.video360 || 0) * SERVICE_PRICE.video360 +
-    (s.redFlag || 0) * SERVICE_PRICE.redFlag +
-    (s.flagFlight || 0) * SERVICE_PRICE.flagFlight +
-    (s.sunset || 0) * SERVICE_PRICE.sunset
+    (s.flycam || 0) * price.flycam +
+    (s.video360 || 0) * price.video360 +
+    (s.redFlag || 0) * price.redFlag +
+    (s.flagFlight || 0) * price.flagFlight +
+    (s.sunset || 0) * price.sunset
   );
 }
 
@@ -174,6 +230,13 @@ export function comboDiscount(flycam?: number, video360?: number): number {
 }
 
 export type BookingMoneyInput = {
+  /**
+   * Điểm bay + LÚC LẬP BOOKING — chỉ dùng để tra bảng giá dịch vụ riêng của
+   * điểm. Booking đã có trong sổ thì truyền `createdAt` của chính nó (giữ giá
+   * lúc chốt với khách); booking đang lập mới thì truyền thời điểm hiện tại.
+   */
+  spot?: string;
+  createdAt?: string | Date | null;
   unitPrice?: number;
   /** Số suất xe lên núi (Hà Nội) — 150k một khách. */
   mountainCar?: number;
