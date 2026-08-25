@@ -23,11 +23,14 @@ import mongoose from "mongoose";
 
 import {
   dedupeByBooking,
+  isExactHit,
   matchBankEntry,
   parseBankStatement,
+  tidyBankRaw,
   type BankCandidate,
   type BankEntry,
 } from "@/lib/baobay/bank-check";
+import { askAiBankMatch, type AiBankCandidate, type AiBankLine } from "@/lib/baobay/ai-bank-match";
 import { formatDateKeyVN, isDateKey, toDateKeyVN } from "@/lib/baobay/date";
 import { SPOT_IDS, normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
@@ -50,7 +53,9 @@ export type BankLineDTO = {
   bankTime: string;
   checkDate: string;
   status: "matched" | "pending" | "manual";
-  matchLevel?: "code" | "note" | "amount" | "manual";
+  matchLevel?: "code" | "note" | "amount" | "ai" | "manual";
+  /** Máy TỰ XÁC NHẬN (khớp tuyệt đối) — kế toán khỏi bấm "Đã nhận". */
+  autoConfirmed?: boolean;
   matchWhy?: string;
   matchLabel?: string;
   matchSpot?: string;
@@ -556,6 +561,7 @@ function toLineDTO(doc: any): BankLineDTO {
     checkDate: doc.checkDate,
     status: doc.status,
     matchLevel: doc.matchLevel,
+    autoConfirmed: Boolean(doc.autoConfirmed) || undefined,
     matchWhy: doc.matchWhy,
     matchLabel: doc.matchLabel,
     matchSpot: doc.matchSpot,
@@ -570,10 +576,19 @@ function toLineDTO(doc: any): BankLineDTO {
 function matchFields(entry: BankEntry, candidates: BankCandidate[]) {
   const m = matchBankEntry(entry, candidates);
   if (m.status === "matched") {
+    /**
+     * ĐỦ BỐN DẤU HIỆU thì máy tự nhận luôn — xem isExactHit. Cờ này đi kèm bản
+     * ghi để `autoConfirmSettled` bấm hộ nút "Đã nhận", kế toán khỏi soi lại
+     * những dòng chẳng còn gì để nghi.
+     */
+    const exact = isExactHit(entry, m.hit);
     return {
       status: "matched" as const,
       matchLevel: m.level,
-      matchWhy: m.why,
+      autoConfirmed: exact,
+      matchWhy: exact
+        ? `${m.why} — KHỚP TUYỆT ĐỐI (ngày bay + số thứ tự khách + mã booking + đúng số tiền), máy tự xác nhận`
+        : m.why,
       refId: m.hit.id,
       bookingId:
         m.hit.bookingId && mongoose.Types.ObjectId.isValid(m.hit.bookingId) ? m.hit.bookingId : undefined,
@@ -588,11 +603,12 @@ function matchFields(entry: BankEntry, candidates: BankCandidate[]) {
     // — giao diện in danh sách này ngay trong dòng nên hai luồng nằm cạnh nhau.
     return {
       status: "pending" as const,
+      autoConfirmed: false,
       matchWhy: m.why,
       candidates: m.hits.map((h) => `${h.label} (${h.amounts.map((n) => n.toLocaleString("vi-VN")).join("/")}đ)`),
     };
   }
-  return { status: "pending" as const, candidates: [] };
+  return { status: "pending" as const, autoConfirmed: false, candidates: [] };
 }
 
 /**
@@ -709,6 +725,10 @@ export async function runBankCheck(
     await allocateByCount(date, target, (await forDate(target)).filter((c) => !c.wide), settled);
   }
 
+  // Dòng nào khớp tuyệt đối thì máy nhận hộ luôn — xem autoConfirmSettled
+  const auto = await autoConfirmSettled();
+  if (auto > 0) skipped.push(`✓ Máy TỰ XÁC NHẬN ${auto} khoản khớp tuyệt đối (đủ ngày bay + số thứ tự + mã booking + đúng số tiền) — không cần bấm tay.`);
+
   const report = await getBankCheck(session, date, spotsFilter);
   return { ...report, skipped };
 }
@@ -792,6 +812,59 @@ async function allocateByCount(checkDate: string, bankDate: string, candidates: 
       );
     }
   }
+}
+
+/**
+ * MÁY BẤM HỘ NÚT "ĐÃ NHẬN" cho các dòng khớp tuyệt đối.
+ *
+ * Dòng nào `autoConfirmed` (nội dung CK có đủ ngày bay + số thứ tự + mã booking
+ * và số tiền đúng tuyệt đối) thì không còn gì để kế toán soi nữa — bắt bấm tay
+ * hàng trăm dòng như thế chỉ khiến người ta bấm cho xong, và khoản THẬT SỰ cần
+ * nhìn thì trôi lẫn vào đám đông.
+ *
+ * Chỉ nhận hộ khoản app ĐÃ GHI THU (lệnh thu CK / cọc gõ tay). Khoản
+ * "remaining" là tiền về mà app chưa ghi thu gì cả — không có gì để xác nhận,
+ * và phải để nó kêu lên cho người phụ trách vào bấm thu tiền.
+ *
+ * Không đè lên khoản kế toán đã tự bỏ đánh dấu: chỉ ghi khi `verifiedAt` đang
+ * trống.
+ */
+async function autoConfirmSettled(): Promise<number> {
+  const lines = await BaobayBankLine.find({
+    status: "matched",
+    autoConfirmed: true,
+    refId: { $nin: [null, ""] },
+  })
+    .select("refId bookingId")
+    .lean<any[]>();
+  if (!lines.length) return 0;
+
+  const by = "máy (khớp tuyệt đối)";
+  const touched = new Set<string>();
+  let n = 0;
+  for (const l of lines) {
+    const [kind, id] = String(l.refId).split(":");
+    if (!mongoose.Types.ObjectId.isValid(id ?? "")) continue;
+    if (kind === "collect") {
+      const r = await BaobayCollect.updateOne(
+        { _id: id, $or: [{ verifiedAt: null }, { verifiedAt: { $exists: false } }] },
+        { $set: { verifiedAt: new Date(), verifiedBy: by } },
+      );
+      if (r.modifiedCount) n++;
+    } else if (kind === "deposit") {
+      const r = await BaobayBooking.updateOne(
+        { _id: id, $or: [{ depositVerifiedAt: null }, { depositVerifiedAt: { $exists: false } }] },
+        { $set: { depositVerifiedAt: new Date(), depositVerifiedBy: by } },
+      );
+      if (r.modifiedCount) n++;
+    } else {
+      continue;
+    }
+    if (l.bookingId) touched.add(String(l.bookingId));
+    else if (kind === "deposit") touched.add(String(id));
+  }
+  for (const b of touched) await rollupBookingChecks(b);
+  return n;
 }
 
 /** Bảng soát của một ngày + mọi khoản còn treo + đối chiếu ngược với app. */
@@ -1302,15 +1375,53 @@ export type BankAssignOptionDTO = {
   done: boolean;
 };
 
+/**
+ * Lọc khoản theo chuỗi kế toán gõ: tên (có dấu hay không), SĐT, mã booking, số
+ * thứ tự ("#3" hay "k3"), hoặc số tiền ("2590000", "2.590.000", "2590k").
+ */
+function searchCandidates(list: BankCandidate[], needle: string): BankCandidate[] {
+  const flat = (x: string) =>
+    String(x ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/gi, "d")
+      .toLowerCase();
+  const q = flat(needle);
+  const digits = q.replace(/\D/g, "");
+  /** "2590k" / "2590" người ta hay gõ tắt — quy về đồng để so với số tiền. */
+  const asMoney = digits ? [Number(digits), Number(digits) * 1000] : [];
+
+  return list.filter((c) => {
+    const hay = flat([c.contactName, c.bookingCode, c.phone, c.label, c.codes.join(" ")].join(" "));
+    if (hay.includes(q)) return true;
+    if (digits.length >= 3 && flat(c.phone).replace(/\D/g, "").includes(digits)) return true;
+    if (asMoney.some((n) => c.amounts.includes(n))) return true;
+    // "#3" / "k3" — số thứ tự khách trong ngày
+    const seq = /^[#k]?(\d{1,3})$/.exec(q);
+    return Boolean(seq) && c.daySeq === Number(seq![1]);
+  });
+}
+
 export async function listAssignOptions(
   session: BaobaySession,
   date: string,
   spotsFilter?: string[],
+  /**
+   * TÌM XUYÊN NGÀY. Bắt kế toán chọn đúng ngày rồi mới thấy khoản là cách làm
+   * sai với đời thực: khách cọc hôm nay cho chuyến tháng sau, hoặc nhân viên
+   * bận nên hôm sau mới nhập booking — kế toán không đoán nổi khoản đó nằm ở
+   * ngày nào mà chọn. Gõ tên / SĐT / mã booking / số tiền vào đây là moi ra
+   * trong TOÀN BỘ khoản còn chờ, bất kể ngày.
+   */
+  q?: string,
 ): Promise<BankAssignOptionDTO[]> {
   await connectDB();
   if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
   const spots = resolveSpots(session, spotsFilter);
-  const candidates = dedupeByBooking(await candidatesForDate(spots, date));
+  const needle = String(q ?? "").trim().toLowerCase();
+  const candidates = needle
+    ? searchCandidates(dedupeByBooking(await candidatesOpen(spots)), needle).slice(0, 60)
+    : dedupeByBooking(await candidatesForDate(spots, date));
 
   /** Tiền đã về theo booking: cộng mọi dòng sao kê đã trỏ về nó, bất kể ngày soát. */
   const bookingIds = [...new Set(candidates.map((c) => c.bookingId).filter(Boolean))] as string[];
@@ -1378,9 +1489,15 @@ export async function assignBankLine(
   await connectDB();
   if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
   const spots = resolveSpots(session, undefined);
-  const candidates = await candidatesForDate(spots, date);
-  const hit = candidates.find((c) => c.id === refId);
-  if (!hit) throw new BaobayError("Không thấy khoản được chỉ định — kiểm lại ngày", 404);
+  /**
+   * Tìm ở ĐÚNG NGÀY trước, không thấy thì lục cả rổ mọi ngày: kế toán gán qua
+   * ô tìm kiếm xuyên ngày (xem listAssignOptions) thì khoản ấy chẳng thuộc ngày
+   * nào đang mở cả — chặn ở đây là nút tìm kiếm thành vô dụng.
+   */
+  const hit =
+    (await candidatesForDate(spots, date)).find((c) => c.id === refId) ??
+    (await candidatesOpen(spots)).find((c) => c.id === refId);
+  if (!hit) throw new BaobayError("Không thấy khoản được chỉ định — có thể vừa bị người khác xử lý, tải lại trang", 404);
 
   const r = await BaobayBankLine.updateOne(
     { _id: id },
@@ -1396,6 +1513,187 @@ export async function assignBankLine(
         recorded: hit.recorded,
         resolvedNote: `chỉ định: ${hit.label}`,
         resolvedBy: session.name || session.username,
+        candidates: [],
+      },
+    },
+  );
+  if (!r.matchedCount) throw new BaobayError("Không thấy dòng sao kê này", 404);
+}
+
+/* ================================================================== */
+/* NHỜ AI ĐỐI SOÁT — dành cho những dòng luật cứng chịu thua              */
+/* ================================================================== */
+
+/** Một đề xuất của AI, đã kèm sẵn nhãn khoản để giao diện in ra cho kế toán đọc. */
+export type AiProposalDTO = {
+  lineId: string;
+  /** Nguyên văn dòng sao kê (đã gọt) + số tiền, để kế toán soi ngay tại chỗ. */
+  raw: string;
+  amount: number;
+  bankDate: string;
+  bankTime: string;
+  /** Khoản AI đề xuất — rỗng nghĩa là AI cũng chịu, phải soát tay. */
+  refId: string;
+  label: string;
+  bookingCode: string;
+  phone: string;
+  flightDate: string;
+  spot: string;
+  /** Số tiền của khoản được đề xuất — lệch với số trên sao kê là dấu hiệu phải nhìn kỹ. */
+  refAmount: number;
+  confidence: "chac-chan" | "co-the" | "khong-biet";
+  why: string;
+};
+
+/** Mỗi lần hỏi AI gửi tối đa ngần này dòng / khoản — đủ dùng, khỏi phình chi phí. */
+const AI_MAX_LINES = 40;
+const AI_MAX_CANDIDATES = 250;
+
+/**
+ * ĐƯA CẢ HAI DANH SÁCH CHO AI GHÉP, KHÔNG GHI GÌ VÀO SỔ.
+ *
+ * Chỉ hỏi về dòng CÒN TREO (luật cứng đã chịu) và chỉ đưa khoản CHƯA CHỐT —
+ * đưa cả khoản đã xong thì AI có cơ hội gán tiền mới vào chỗ đã đủ tiền, đúng
+ * cái lỗi "một lệnh ăn hai dòng tiền" mà settledRefIds sinh ra để chặn.
+ *
+ * Kết quả trả về là ĐỀ XUẤT: kế toán nhìn rồi bấm gán từng dòng. Xem thêm chú
+ * thích đầu lib/baobay/ai-bank-match.ts.
+ */
+export async function aiMatchBankLines(
+  session: BaobaySession,
+  date: string,
+  spotsFilter?: string[],
+): Promise<{ proposals: AiProposalDTO[]; lineCount: number; candidateCount: number; note: string }> {
+  await connectDB();
+  if (!isDateKey(date)) throw new BaobayError("Ngày soát không hợp lệ", 400);
+  const spots = resolveSpots(session, spotsFilter);
+
+  /** Dòng treo của ngày đang xem đứng trước, rồi mới tới khoản treo cũ. */
+  const pendingDocs = await BaobayBankLine.find({ status: "pending" })
+    .sort({ checkDate: -1, bankDate: -1, createdAt: -1 })
+    .limit(AI_MAX_LINES)
+    .lean<any[]>();
+  if (!pendingDocs.length) {
+    return { proposals: [], lineCount: 0, candidateCount: 0, note: "Không còn dòng sao kê nào treo — chẳng có gì để nhờ AI." };
+  }
+
+  const settled = await settledRefIds();
+  const pool = stillOpen(await candidatesOpen(spots), settled).slice(0, AI_MAX_CANDIDATES);
+  if (!pool.length) {
+    return {
+      proposals: [],
+      lineCount: pendingDocs.length,
+      candidateCount: 0,
+      note: "Không còn khoản nào đang chờ tiền — mấy dòng treo này nhiều khả năng không phải tiền khách bay.",
+    };
+  }
+
+  const lines: AiBankLine[] = pendingDocs.map((l) => ({
+    id: String(l._id),
+    raw: tidyBankRaw(String(l.raw ?? "")),
+    amount: Number(l.amount) || 0,
+    bankDate: String(l.bankDate ?? ""),
+    bankTime: String(l.bankTime ?? ""),
+  }));
+  const cands: AiBankCandidate[] = pool.map((c) => ({
+    refId: c.id,
+    kind: c.kind,
+    daySeq: c.daySeq || 0,
+    contactName: c.contactName || "",
+    phone: c.phone || "",
+    bookingCode: c.bookingCode || "",
+    flightDate: c.flightDate || "",
+    createdDate: c.createdDate || "",
+    spot: spotName(c.spot),
+    amounts: c.amounts.filter((n) => n > 0),
+    code: c.codes[0] ?? "",
+  }));
+
+  let raw: Awaited<ReturnType<typeof askAiBankMatch>>;
+  try {
+    raw = await askAiBankMatch(lines, cands);
+  } catch (err) {
+    console.error("[bank-check] AI đối soát lỗi:", err);
+    throw new BaobayError(
+      `Không hỏi được AI: ${(err as Error).message}. Cứ soát tay như thường, dữ liệu không bị ảnh hưởng.`,
+      502,
+    );
+  }
+
+  const lineById = new Map(pendingDocs.map((l) => [String(l._id), l]));
+  const candById = new Map(pool.map((c) => [c.id, c]));
+  const CONF_RANK = { "chac-chan": 0, "co-the": 1, "khong-biet": 2 } as const;
+
+  const proposals: AiProposalDTO[] = raw
+    .map((r) => {
+      const l = lineById.get(r.lineId)!;
+      const c = r.refId ? candById.get(r.refId) : undefined;
+      return {
+        lineId: r.lineId,
+        raw: tidyBankRaw(String(l.raw ?? "")),
+        amount: Number(l.amount) || 0,
+        bankDate: String(l.bankDate ?? ""),
+        bankTime: String(l.bankTime ?? ""),
+        refId: c ? c.id : "",
+        label: c ? c.label : "",
+        bookingCode: c?.bookingCode ?? "",
+        phone: c?.phone ?? "",
+        flightDate: c?.flightDate ?? "",
+        spot: c?.spot ?? "",
+        refAmount: c ? Math.max(...c.amounts.filter((n) => n > 0), 0) : 0,
+        confidence: r.confidence,
+        why: r.why,
+      };
+    })
+    .sort((a, b) => CONF_RANK[a.confidence] - CONF_RANK[b.confidence] || b.amount - a.amount);
+
+  const sure = proposals.filter((p) => p.confidence === "chac-chan").length;
+  const maybe = proposals.filter((p) => p.confidence === "co-the").length;
+  return {
+    proposals,
+    lineCount: lines.length,
+    candidateCount: cands.length,
+    note: `AI đọc ${lines.length} dòng treo trên ${cands.length} khoản đang chờ: ${sure} dòng chắc chắn, ${maybe} dòng có thể, ${proposals.length - sure - maybe} dòng chịu. Máy KHÔNG tự gán — bấm từng dòng để chốt.`,
+  };
+}
+
+/**
+ * KẾ TOÁN ĐỒNG Ý một đề xuất của AI.
+ *
+ * Ghi y như một kết luận tay (status "manual") nhưng để lại dấu vết là AI gợi ý
+ * và AI ĐÃ NÓI GÌ — sau này soi lại còn biết khoản nào do máy đoán, khoản nào
+ * do người tự tìm. KHÔNG đánh dấu "đã nhận" hộ: xác nhận tiền là quyền của
+ * kế toán, AI chỉ chỉ chỗ.
+ */
+export async function applyAiBankMatch(
+  session: BaobaySession,
+  id: string,
+  refId: string,
+  why: string,
+): Promise<void> {
+  await connectDB();
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Dòng sao kê không hợp lệ", 400);
+  const spots = resolveSpots(session, undefined);
+  const hit = (await candidatesOpen(spots)).find((c) => c.id === refId);
+  if (!hit) throw new BaobayError("Khoản này vừa được xử lý xong — tải lại rồi hỏi AI lần nữa", 404);
+
+  const reason = String(why ?? "").trim().slice(0, 300);
+  const r = await BaobayBankLine.updateOne(
+    { _id: id },
+    {
+      $set: {
+        status: "manual",
+        matchLevel: "ai",
+        matchWhy: `AI đề xuất${reason ? `: ${reason}` : ""} — kế toán ${session.name || session.username} đồng ý`,
+        refId: hit.id,
+        bookingId: hit.bookingId && mongoose.Types.ObjectId.isValid(hit.bookingId) ? hit.bookingId : undefined,
+        matchSpot: hit.spot,
+        matchLabel: hit.label,
+        recorded: hit.recorded,
+        autoConfirmed: false,
+        resolvedNote: `AI gợi ý → ${hit.label}`,
+        resolvedBy: session.name || session.username,
+        resolvedAt: new Date(),
         candidates: [],
       },
     },
@@ -1450,7 +1748,11 @@ export async function recheckBankPending(
     }
   }
 
-  return getBankCheck(session, date, spotsFilter);
+  const auto = await autoConfirmSettled();
+  const report = await getBankCheck(session, date, spotsFilter);
+  return auto > 0
+    ? { ...report, skipped: [`✓ Máy TỰ XÁC NHẬN ${auto} khoản khớp tuyệt đối — không cần bấm tay.`] }
+    : report;
 }
 
 /**

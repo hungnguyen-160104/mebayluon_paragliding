@@ -33,8 +33,14 @@ export interface IBaobayBankLine {
 
   /** matched = máy khớp được · pending = treo chờ · manual = kế toán tự kết luận. */
   status: BankLineStatus;
-  /** Khớp bằng gì: mã GD > nội dung > số tiền > kế toán tự ghi. */
-  matchLevel?: "code" | "note" | "amount" | "manual";
+  /** Khớp bằng gì: mã GD > nội dung > số tiền > AI đề xuất > kế toán tự ghi. */
+  matchLevel?: "code" | "note" | "amount" | "ai" | "manual";
+  /**
+   * MÁY TỰ XÁC NHẬN khoản này — nội dung CK có đủ ngày bay + số thứ tự khách +
+   * mã booking VÀ số tiền đúng tuyệt đối (xem isExactHit). Kế toán không phải
+   * bấm "Đã nhận" nữa; giữ cờ lại để sau còn lọc ra xem máy đã tự nhận những gì.
+   */
+  autoConfirmed?: boolean;
   matchWhy?: string;
   /** Khoá ứng viên đã khớp: "collect:<id>" · "deposit:<id>" · "remaining:<id>". */
   refId?: string;
@@ -69,7 +75,8 @@ const BaobayBankLineSchema = new Schema<IBaobayBankLine>(
     bankTime: { type: String, default: "" },
 
     status: { type: String, enum: ["matched", "pending", "manual"], default: "pending", index: true },
-    matchLevel: { type: String, enum: ["code", "note", "amount", "manual"] },
+    matchLevel: { type: String, enum: ["code", "note", "amount", "ai", "manual"] },
+    autoConfirmed: Boolean,
     matchWhy: String,
     refId: String,
     bookingId: { type: Schema.Types.ObjectId, ref: "BaobayBooking" },

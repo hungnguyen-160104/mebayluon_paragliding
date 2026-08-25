@@ -255,6 +255,37 @@ export function signalsFor(entry: BankEntry, c: BankCandidate, hayInput?: string
   return { code, amount: c.amounts.includes(entry.amount), name, phone, note, date };
 }
 
+/**
+ * KHỚP TUYỆT ĐỐI — bốn dấu hiệu cùng chỉ về một chỗ, máy TỰ XÁC NHẬN luôn.
+ *
+ * Chủ điểm bay đặt luật: nội dung chuyển khoản có ĐỦ ngày bay (ddmm) + SỐ THỨ
+ * TỰ khách trong ngày + MÃ BOOKING, và SỐ TIỀN đúng bằng khoản đang chờ, thì
+ * không còn gì để người soát nghi ngờ nữa — khỏi bắt kế toán bấm tay từng dòng.
+ *
+ * Vì sao SỐ TIỀN phải đúng TUYỆT ĐỐI chứ không "gần đúng": khách trả 5tr chia
+ * làm 3 lệnh thì nhân viên cũng tách booking thành 3 khoản riêng, mỗi khoản một
+ * mã QR (".1" ".2"). Nên mỗi dòng sao kê luôn có đúng một khoản bằng đúng số
+ * tiền của nó; lệch đồng nào là có chuyện, phải để người nhìn.
+ *
+ * Chuỗi ngày+STT nhận cả hai kiểu gõ: "2508 k3" (mã QR app in sẵn) và "2508 3"
+ * (khách gõ tay bỏ chữ k). Mã booking nhận cả đuôi chia bill "KLK123.1".
+ */
+export function isExactHit(entry: BankEntry, c: BankCandidate): boolean {
+  if (!(entry.amount > 0) || !c.amounts.includes(entry.amount)) return false;
+
+  const dd = c.flightDate.slice(8, 10);
+  const mm = c.flightDate.slice(5, 7);
+  if (!dd || !mm || !c.daySeq) return false;
+
+  const hay = ascii(entry.raw);
+  // Ngày bay và số thứ tự phải ĐI LIỀN NHAU: rời nhau thì "2508" có thể là số
+  // tài khoản còn "3" là bất cứ con số nào trong câu — trùng vu vơ như thường.
+  if (!new RegExp(`${dd}/?${mm}\\s*K?\\s?${c.daySeq}(?:[^0-9]|$)`).test(hay)) return false;
+
+  const code = ascii(c.bookingCode).trim();
+  return code.length >= 4 && containsToken(hay, code);
+}
+
 export type BankMatch =
   | {
       status: "matched";

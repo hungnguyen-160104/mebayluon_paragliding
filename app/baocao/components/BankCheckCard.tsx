@@ -32,7 +32,9 @@ type LineDTO = {
   bankTime: string;
   checkDate: string;
   status: "matched" | "pending" | "manual";
-  matchLevel?: "code" | "note" | "amount" | "manual";
+  matchLevel?: "code" | "note" | "amount" | "ai" | "manual";
+  /** Máy tự xác nhận vì khớp tuyệt đối — kế toán không phải bấm gì. */
+  autoConfirmed?: boolean;
   matchWhy?: string;
   matchLabel?: string;
   matchSpot?: string;
@@ -159,6 +161,31 @@ type SkippedItemDTO = {
   at: string;
 };
 
+/** Một đề xuất của AI cho MỘT dòng sao kê treo. */
+type AiProposalDTO = {
+  lineId: string;
+  raw: string;
+  amount: number;
+  bankDate: string;
+  bankTime: string;
+  refId: string;
+  label: string;
+  bookingCode: string;
+  phone: string;
+  flightDate: string;
+  spot: string;
+  refAmount: number;
+  confidence: "chac-chan" | "co-the" | "khong-biet";
+  why: string;
+};
+
+type AiReport = {
+  proposals: AiProposalDTO[];
+  lineCount: number;
+  candidateCount: number;
+  note: string;
+};
+
 type Report = {
   date: string;
   spots: string[];
@@ -185,8 +212,30 @@ const LEVEL_BADGE: Record<string, { label: string; cls: string }> = {
   code: { label: "mã GD", cls: "bg-emerald-600 text-white" },
   note: { label: "nội dung", cls: "bg-emerald-500 text-white" },
   amount: { label: "số tiền", cls: "bg-amber-500 text-white" },
+  ai: { label: "AI gợi ý", cls: "bg-violet-600 text-white" },
   manual: { label: "kiểm tay", cls: "bg-slate-500 text-white" },
 };
+
+/**
+ * MỘT BOOKING COI NHƯ SOÁT XONG khi mọi khoản tiền của nó đã được "Đã nhận",
+ * tiền về không thiếu không dư, và không còn dòng sao kê nào nghi cho nó.
+ *
+ * Dùng để GẬP SẴN những thẻ ấy: bảng soát mỗi ngày có hàng trăm booking, phần
+ * lớn đã xong từ lâu — bày hết ra thì khoản THẬT SỰ phải nhìn trôi lẫn vào giữa
+ * và kế toán cuộn mãi không thấy. Gập rồi vẫn bấm mở lại được.
+ */
+function isRowSettled(r: BookingRowDTO): boolean {
+  if (r.locked) return true;
+  const money = [...r.transfers, ...r.cash];
+  return (
+    money.length > 0 &&
+    money.every((x) => x.verified) &&
+    r.bankShort <= 0 &&
+    r.overpaid <= 0 &&
+    r.remaining <= 0 &&
+    r.suggests.length === 0
+  );
+}
 
 /** Bỏ dấu + viết hoa để dò trùng — cùng công thức với máy khớp phía máy chủ. */
 function ascii(s: string): string {
@@ -316,6 +365,14 @@ export function BankCheckCard({ date }: { date: string }) {
   const [allOpen, setAllOpen] = useState(false);
   const [allFilter, setAllFilter] = useState<"all" | "hasLine" | "noLine" | "noCode">("all");
   const [skipOpen, setSkipOpen] = useState(false);
+  /**
+   * ĐỀ XUẤT CỦA AI cho các dòng còn treo. Chỉ nằm trong màn hình, KHÔNG ghi vào
+   * sổ — kế toán bấm từng dòng mới gán. Bấm "Nhờ AI" lần nữa là hỏi lại từ đầu.
+   */
+  const [ai, setAi] = useState<AiReport | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  /** Thẻ booking ĐÃ SOÁT XONG gập chung một chỗ — mở ra khi cần soi lại. */
+  const [doneOpen, setDoneOpen] = useState(false);
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -340,6 +397,39 @@ export function BankCheckCard({ date }: { date: string }) {
       setError(err instanceof Error ? err.message : "Không soát được sao kê");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * NHỜ AI ĐỌC các dòng treo. Máy chỉ TRẢ ĐỀ XUẤT — không dòng tiền nào đổi chủ
+   * cho tới khi kế toán bấm "Gán" trên đúng dòng đó.
+   */
+  async function askAi() {
+    setAiBusy(true);
+    setError(null);
+    try {
+      setAi(await apiPatch<AiReport>(`/api/baocao/bank-check`, { action: "ai-match", date, spots }));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không hỏi được AI");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  /** Kế toán đồng ý một đề xuất — ghi như kết luận tay, có ghi vết là AI gợi ý. */
+  async function applyAi(p: AiProposalDTO) {
+    if (!p.refId) return;
+    if (!window.confirm(`Gán ${formatVND(p.amount)} vào ${p.label}?\n\nAI nói: ${p.why}`)) return;
+    setRowBusy(p.lineId);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/bank-check`, { action: "ai-apply", id: p.lineId, refId: p.refId, why: p.why });
+      setAi((prev) => (prev ? { ...prev, proposals: prev.proposals.filter((x) => x.lineId !== p.lineId) } : prev));
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không gán được");
+    } finally {
+      setRowBusy(null);
     }
   }
 
@@ -518,6 +608,16 @@ export function BankCheckCard({ date }: { date: string }) {
   }
 
   const lines = report?.lines ?? [];
+  /**
+   * TÁCH VIỆC CÒN PHẢI LÀM RA KHỎI VIỆC ĐÃ XONG. Bảng soát một ngày đông khách
+   * có hàng trăm thẻ, phần lớn đã đủ tiền và đã tích "đã nhận" từ lâu — bày hết
+   * ra thì mấy thẻ thật sự có vấn đề trôi lẫn vào giữa. Mặc định chỉ hiện thẻ
+   * còn việc; nhóm đã xong nằm sau một nút, mở ra khi cần soi lại.
+   */
+  const rowsAll = report?.bookingRows ?? [];
+  const rowsDone = rowsAll.filter(isRowSettled);
+  const rowsTodo = rowsAll.filter((r) => !isRowSettled(r));
+  const shownRows = doneOpen ? [...rowsTodo, ...rowsDone] : rowsTodo;
   const matched = lines.filter((l) => l.status !== "pending");
   const unmatched = lines.filter((l) => l.status === "pending");
   const appTransfers = report?.appTransfers ?? [];
@@ -568,6 +668,18 @@ export function BankCheckCard({ date }: { date: string }) {
         >
           ↻ Soát lại khoản treo
         </Button>
+        {/* Luật cứng chịu thua (khách gõ nội dung kiểu riêng, chuyển hộ, lệch
+            ngày) thì nhờ AI đọc giúp — nó chỉ ĐỀ XUẤT, gán hay không là kế toán. */}
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 border-violet-300 bg-violet-50 px-3 text-sm text-violet-800 hover:bg-violet-100"
+          disabled={aiBusy || (unmatched.length === 0 && pendingOld.length === 0)}
+          onClick={askAi}
+          title="Đưa các dòng treo + mọi khoản đang chờ tiền cho AI ghép giúp. AI chỉ gợi ý, không tự ghi vào sổ."
+        >
+          {aiBusy ? "AI đang đọc…" : "🤖 Nhờ AI khớp"}
+        </Button>
         {lines.length > 0 && (
           <span className="text-xs font-semibold text-slate-600">
             Sao kê ngày {formatDateKeyVN(date)}: {lines.length} khoản ={" "}
@@ -591,6 +703,89 @@ export function BankCheckCard({ date }: { date: string }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* ---- ĐỀ XUẤT CỦA AI — máy gợi ý, kế toán quyết ---- */}
+      {ai && (
+        <div className="mt-3 rounded-xl border-2 border-violet-300 bg-violet-50/60 p-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-violet-900">🤖 AI đối soát</span>
+            <span className="min-w-0 flex-1 text-[11px] leading-tight text-violet-800">{ai.note}</span>
+            <button
+              type="button"
+              onClick={() => setAi(null)}
+              className="shrink-0 rounded-lg border border-violet-300 bg-white px-2 py-0.5 text-[11px] font-bold text-violet-700"
+            >
+              Đóng
+            </button>
+          </div>
+          {ai.proposals.length === 0 ? (
+            <p className="mt-1 text-[11px] text-violet-800">Không có đề xuất nào.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {ai.proposals.map((p) => {
+                const sure = p.confidence === "chac-chan";
+                const maybe = p.confidence === "co-the";
+                return (
+                  <li
+                    key={p.lineId}
+                    className={
+                      "rounded-lg border px-2 py-1.5 " +
+                      (sure
+                        ? "border-emerald-300 bg-emerald-50/70"
+                        : maybe
+                          ? "border-amber-300 bg-amber-50/70"
+                          : "border-slate-200 bg-white/70")
+                    }
+                  >
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <strong className="shrink-0 tabular-nums text-slate-900">+{formatVND(p.amount)}</strong>
+                      <span className="shrink-0 text-[11px] text-slate-500">
+                        {[p.bankDate ? formatDateKeyVN(p.bankDate) : "", p.bankTime].filter(Boolean).join(" ")}
+                      </span>
+                      <span
+                        className={
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold " +
+                          (sure
+                            ? "bg-emerald-600 text-white"
+                            : maybe
+                              ? "bg-amber-500 text-white"
+                              : "bg-slate-400 text-white")
+                        }
+                      >
+                        {sure ? "chắc chắn" : maybe ? "có thể" : "AI cũng chịu"}
+                      </span>
+                      <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800">
+                        {p.label || "— không đoán được, soát tay —"}
+                        {p.refAmount > 0 && p.refAmount !== p.amount && (
+                          <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-bold text-rose-700">
+                            khoản này {formatVND(p.refAmount)} — LỆCH số tiền
+                          </span>
+                        )}
+                      </span>
+                      {p.refId && (
+                        <button
+                          type="button"
+                          disabled={rowBusy === p.lineId}
+                          onClick={() => applyAi(p)}
+                          className="shrink-0 rounded-lg bg-violet-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-violet-700 disabled:opacity-50"
+                        >
+                          → Gán vào khoản này
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-[11px] leading-snug text-slate-600">AI: {p.why}</div>
+                    <div className="mt-0.5 break-all font-mono text-[10px] leading-snug text-slate-400">{p.raw}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="mt-1.5 text-[10px] leading-tight text-violet-700/80">
+            AI chỉ đọc và gợi ý — không khoản tiền nào đổi chủ cho tới khi bạn bấm “Gán”. Dòng nào AI chịu thì
+            soát tay như thường.
+          </p>
+        </div>
       )}
 
       {/* ---- ĐỐI CHIẾU TỔNG: sao kê ↔ app, lệch đồng nào khoản nào báo ngay ---- */}
@@ -937,19 +1132,42 @@ export function BankCheckCard({ date }: { date: string }) {
         </div>
       )}
 
-      {(report?.bookingRows ?? []).length > 0 && (
+      {rowsAll.length > 0 && (
         <div className="mt-3 space-y-2">
-          <div className="text-xs font-bold text-slate-700">
-            📒 Sổ booking &amp; tiền trong ngày ({report!.bookingRows.length} booking)
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-700">
+              📒 Sổ booking &amp; tiền trong ngày —{" "}
+              {rowsTodo.length > 0 ? (
+                <span className="text-rose-700">{rowsTodo.length} booking còn việc</span>
+              ) : (
+                <span className="text-emerald-700">xong hết {rowsAll.length} booking</span>
+              )}
+            </span>
+            {rowsDone.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDoneOpen((v) => !v)}
+                className="rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100"
+              >
+                {doneOpen ? `Ẩn ${rowsDone.length} booking đã soát xong` : `✓ ${rowsDone.length} booking đã soát xong — hiện ra`}
+              </button>
+            )}
           </div>
-          {report!.bookingRows.map((row) => {
+          {shownRows.map((row) => {
             const paidCk = row.transfers.reduce((t, x) => t + x.amount, 0);
             const paidTm = row.cash.reduce((t, x) => t + x.amount, 0);
             const allVerified =
               [...row.transfers, ...row.cash].length > 0 &&
               [...row.transfers, ...row.cash].every((x) => x.verified);
-            // Mặc định MỞ — SMS phải đập vào mắt; bấm Thu gọn thì chỉ còn dòng tóm tắt
-            const collapsed = expanded.includes(row.bookingId);
+            /**
+             * Thẻ CÒN VIỆC mặc định MỞ — SMS phải đập vào mắt. Thẻ ĐÃ SOÁT XONG
+             * mặc định GẬP, chỉ còn một dòng tóm tắt; bấm "Xem lại" mới xổ đủ
+             * mã GD, nguyên văn SMS và các nút sửa. `expanded` giữ danh sách
+             * booking đã bị người dùng LẬT NGƯỢC mặc định của nó.
+             */
+            const settled = isRowSettled(row);
+            const flipped = expanded.includes(row.bookingId);
+            const collapsed = flipped ? !settled : settled;
             return (
               <div
                 key={row.bookingId}
@@ -994,6 +1212,30 @@ export function BankCheckCard({ date }: { date: string }) {
                     <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-white">🔒 đã khoá</span>
                   )}
                 </div>
+                {/* GẬP LẠI thì chỉ còn ĐÚNG MỘT DÒNG: đã thu bao nhiêu, bằng gì,
+                    đã soát xong chưa. Muốn xem mã GD / nguyên văn SMS / các nút
+                    sửa thì bấm "Xem lại". */}
+                {collapsed ? (
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs tabular-nums">
+                    <span className="font-bold text-emerald-700">✓ đã soát xong</span>
+                    {paidCk > 0 && (
+                      <span className="text-sky-800">
+                        CK <strong>{formatVND(paidCk)}</strong>
+                        {row.transfers.length > 1 ? ` (${row.transfers.length} lần)` : ""}
+                      </span>
+                    )}
+                    {paidTm > 0 && (
+                      <span className="text-emerald-800">
+                        TM <strong>{formatVND(paidTm)}</strong>
+                      </span>
+                    )}
+                    {row.agencyPaidAmount > 0 && (
+                      <span className="text-orange-800">ĐL giữ {formatVND(row.agencyPaidAmount)}</span>
+                    )}
+                    <span className="text-slate-400">tổng {formatVND(row.totalAmount)}</span>
+                  </div>
+                ) : (
+                <>
                 {/* TỰ CÂN NHIỀU LẦN CHUYỂN: khách trả làm mấy lần thì cộng hết lại
                     rồi đối chiếu với tổng tiền booking — kế toán khỏi bấm máy tính. */}
                 {row.lines.length > 0 && (
@@ -1064,6 +1306,8 @@ export function BankCheckCard({ date }: { date: string }) {
                 )}
                 {row.note && (
                   <div className="mt-1 text-[11px] italic text-slate-500">📝 {row.note}</div>
+                )}
+                </>
                 )}
 
                 {/* từng khoản tiền của booking */}
@@ -1412,16 +1656,39 @@ function BankLineRow({
    */
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignDate, setAssignDate] = useState(line.bankDate || line.checkDate);
+  /**
+   * TÌM XUYÊN NGÀY. Chọn ngày rồi mới thấy khoản là cách làm sai với đời thực:
+   * khách cọc hôm nay cho chuyến tháng sau, hoặc nhân viên bận nên hôm sau mới
+   * nhập booking — kế toán không đoán nổi khoản đó nằm ở ngày nào. Gõ tên /
+   * SĐT / mã booking / số tiền vào đây là moi ra trong MỌI khoản còn chờ.
+   */
+  const [q, setQ] = useState("");
   const [options, setOptions] = useState<AssignOptionDTO[] | null>(null);
   useEffect(() => {
     if (!assignOpen) return;
-    setOptions(null);
-    apiGet<{ options: AssignOptionDTO[] }>(
-      `/api/baocao/bank-check?date=${assignDate}&options=1`,
-    )
-      .then((r) => setOptions(r.options))
-      .catch(() => setOptions([]));
-  }, [assignOpen, assignDate]);
+    const needle = q.trim();
+    /**
+     * Gõ tới đâu tìm tới đó, nhưng đợi 300ms cho người ta gõ xong đã. `alive`
+     * chặn kết quả của lượt gõ cũ về muộn đè lên lượt mới — gõ nhanh thì thứ tự
+     * trả lời không đảm bảo.
+     */
+    let alive = true;
+    const t = setTimeout(() => {
+      apiGet<{ options: AssignOptionDTO[] }>(
+        `/api/baocao/bank-check?date=${assignDate}&options=1${needle ? `&q=${encodeURIComponent(needle)}` : ""}`,
+      )
+        .then((r) => {
+          if (alive) setOptions(r.options);
+        })
+        .catch(() => {
+          if (alive) setOptions([]);
+        });
+    }, needle ? 300 : 0);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [assignOpen, assignDate, q]);
   /** Dòng treo vì GỢI Ý tên giống — tô hổ phách cho khác dòng chưa khớp thường. */
   const isSuggest = !ok && /GIỐNG tên khách/.test(line.matchWhy ?? "");
   const badge = line.matchLevel ? LEVEL_BADGE[line.matchLevel] : null;
@@ -1508,6 +1775,12 @@ function BankLineRow({
           ⚠ Tiền đã về đúng khách nhưng app CHƯA ghi thu khoản này — nhắc người phụ trách bấm thu tiền.
         </div>
       )}
+      {ok && line.autoConfirmed && (
+        <div className="mt-0.5 text-[11px] font-bold text-emerald-700">
+          ✓ Khớp tuyệt đối (ngày bay + số thứ tự khách + mã booking + đúng số tiền) — máy đã tự xác nhận, không
+          cần bấm tay.
+        </div>
+      )}
       {ok && line.matchWhy && line.status === "matched" && (
         <div className="mt-0.5 text-[11px] text-slate-500">khớp vì: {line.matchWhy}</div>
       )}
@@ -1531,15 +1804,43 @@ function BankLineRow({
             <input
               type="date"
               value={assignDate}
+              disabled={Boolean(q.trim())}
               onChange={(e) => setAssignDate(e.target.value)}
-              className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+              className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs disabled:bg-slate-100 disabled:text-slate-400"
             />
+            <span className="font-semibold text-sky-900">hoặc tìm mọi ngày:</span>
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="tên khách · SĐT · mã booking · số tiền"
+              className="h-8 min-w-44 flex-1 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+            />
+            {q.trim() && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-600"
+              >
+                ✕ bỏ tìm
+              </button>
+            )}
           </div>
+          {q.trim() && (
+            <p className="mt-1 text-[11px] font-medium text-sky-800">
+              Đang tìm trong MỌI khoản còn chờ tiền, không theo ngày — hợp với ca khách chuyển trước/sau ngày lập
+              booking.
+            </p>
+          )}
           <div className="mt-1.5 max-h-44 space-y-0.5 overflow-y-auto">
             {options === null ? (
               <p className="text-[11px] text-slate-500">Đang tải danh sách khoản…</p>
             ) : options.length === 0 ? (
-              <p className="text-[11px] text-slate-500">Ngày này không có khoản nào — chọn ngày khác.</p>
+              <p className="text-[11px] text-slate-500">
+                {q.trim()
+                  ? "Không có khoản nào khớp chữ vừa gõ — thử tên không dấu, 4 số cuối SĐT, hoặc số tiền."
+                  : "Ngày này không có khoản nào — chọn ngày khác, hoặc gõ vào ô tìm mọi ngày."}
+              </p>
             ) : (
               options.map((o) => {
                 const short = Math.max(0, o.need - o.received);

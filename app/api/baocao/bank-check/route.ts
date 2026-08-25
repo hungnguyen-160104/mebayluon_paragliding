@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
 import {
+  aiMatchBankLines,
+  applyAiBankMatch,
   assignBankLine,
   confirmBankItem,
   lockBookingChecked,
@@ -26,8 +28,11 @@ export const dynamic = "force-dynamic";
  * tiền của cả công ty, không theo điểm bay.
  *
  * GET   ?date=YYYY-MM-DD&spots=khau-pha -> bảng soát của ngày + khoản treo (spots bỏ trống = mọi điểm được phân)
+ * GET   ?options=1&q=thao               -> danh sách khoản để gán tay; có q thì tìm XUYÊN NGÀY
  * POST  {date, text}                    -> dán sao kê, soát rồi lưu từng dòng
  * PATCH {action: "recheck", date}       -> soát lại mọi khoản treo
+ * PATCH {action: "ai-match", date}       -> nhờ AI đọc các dòng treo, TRẢ ĐỀ XUẤT (không ghi gì)
+ * PATCH {action: "ai-apply", id, refId}  -> kế toán đồng ý một đề xuất của AI
  * PATCH {action: "confirm", refId, on}  -> kế toán "ĐÃ NHẬN" một khoản (quyền cao nhất, khỏi soát tiếp)
  * PATCH {action: "resolve", id, note}   -> kết luận tay một khoản treo
  * PATCH {action: "delete", id}          -> xoá dòng dán nhầm
@@ -51,7 +56,9 @@ export async function GET(req: Request) {
   try {
     // ?options=1: danh sách khoản của ngày để kế toán CHỈ ĐỊNH dòng sao kê lạc chủ
     if (url.searchParams.get("options") === "1") {
-      return NextResponse.json({ options: await listAssignOptions(auth, date, spots) });
+      // q = tìm xuyên ngày (khách cọc hôm nay, bay tháng sau) — xem listAssignOptions
+      const q = url.searchParams.get("q") ?? "";
+      return NextResponse.json({ options: await listAssignOptions(auth, date, spots, q) });
     }
     return NextResponse.json(await getBankCheck(auth, date, spots));
   } catch (err) {
@@ -82,6 +89,14 @@ export async function PATCH(req: Request) {
     if (action === "recheck") {
       const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
       return NextResponse.json(await recheckBankPending(auth, String(body?.date ?? ""), spots));
+    }
+    if (action === "ai-match") {
+      const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
+      return NextResponse.json(await aiMatchBankLines(auth, String(body?.date ?? ""), spots));
+    }
+    if (action === "ai-apply") {
+      await applyAiBankMatch(auth, String(body?.id ?? ""), String(body?.refId ?? ""), String(body?.why ?? ""));
+      return NextResponse.json({ ok: true });
     }
     if (action === "lock-booking") {
       // Đủ chuẩn (đã bay + hết nợ + mọi khoản đã nhận) → khoá ngay; thiếu thì
