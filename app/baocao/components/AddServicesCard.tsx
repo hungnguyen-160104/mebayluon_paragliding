@@ -583,6 +583,7 @@ export function AddServicesCard({
               <PaymentQrButton
                 amount={charge}
                 note={buildTransferNote({
+                  spot: spot,
                   flightDate: picked.flightDate,
                   daySeq: picked.daySeq,
                   bookingCode: picked.bookingCode,
@@ -678,6 +679,7 @@ export function AddServicesCard({
                       <PaymentQrButton
                         amount={b.amount}
                         note={buildTransferNote({
+                          spot: spot,
                           flightDate: picked.flightDate,
                           daySeq: picked.daySeq,
                           bookingCode: picked.bookingCode,

@@ -234,6 +234,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
    */
   const payAmount = Math.max(0, Math.round(d.remaining || 0));
   const payNote = buildTransferNote({
+    spot: d.spot,
     flightDate: d.flightDate,
     daySeq: d.queueNo ?? undefined,
     bookingCode: d.bookingCode,

@@ -427,6 +427,7 @@ export function CancelMoveCard({
                     <PaymentQrButton
                       amount={usedFee - picked.deposit}
                       note={buildTransferNote({
+                        spot: spot,
                         flightDate: picked.flightDate,
                         daySeq: picked.daySeq,
                         bookingCode: picked.bookingCode,
@@ -510,6 +511,7 @@ export function CancelMoveCard({
                     <PaymentQrButton
                       amount={feeCash + feeTransfer}
                       note={buildTransferNote({
+                        spot: spot,
                         flightDate: picked?.flightDate,
                         daySeq: picked?.daySeq,
                         bookingCode: picked?.bookingCode,

@@ -1859,6 +1859,7 @@ function CollectMoneyControl({
               <PaymentQrButton
                 amount={b.amount}
                 note={buildTransferNote({
+                  spot: booking.spot,
                   flightDate: booking.flightDate,
                   daySeq: booking.daySeq,
                   bookingCode: booking.bookingCode,
@@ -1899,6 +1900,7 @@ function CollectMoneyControl({
           <PaymentQrButton
             amount={total > 0 ? total : left}
             note={buildTransferNote({
+              spot: booking.spot,
               flightDate: booking.flightDate,
               daySeq: booking.daySeq,
               bookingCode: booking.bookingCode,
@@ -3057,6 +3059,7 @@ export function AssignedBookings({
                           <PaymentQrButton
                             amount={b.remaining}
                             note={buildTransferNote({
+                              spot: b.spot,
                               flightDate: b.flightDate,
                               daySeq: b.daySeq,
                               bookingCode: b.bookingCode,
@@ -4285,6 +4288,7 @@ export function BookingCard({
             <PaymentQrButton
               amount={form.deposit}
               note={buildTransferNote({
+                spot: bookSpot,
                 flightDate: form.flightDate,
                 daySeq: editingSeq,
                 bookingCode: form.bookingCode,
@@ -4354,6 +4358,7 @@ export function BookingCard({
             <PaymentQrButton
               amount={form.remaining}
               note={buildTransferNote({
+                spot: bookSpot,
                 flightDate: form.flightDate,
                 daySeq: editingSeq,
                 bookingCode: form.bookingCode,
