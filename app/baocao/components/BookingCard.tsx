@@ -3170,9 +3170,10 @@ function MiniCount({ value, onChange, max = 100 }: { value: number; onChange: (v
  * Tổng tiền của form: giá PG (ô đơn giá) × khách PG + bảng giá PPG × khách PPG
  * − combo − giảm trừ.
  *
- * `spot` + `bookedAt` chỉ để tra BẢNG GIÁ DỊCH VỤ riêng của điểm (Khau Phạ đổi
- * giá dù cờ đỏ từ 26/08/2026, booking cũ giữ giá cũ) — thiếu chúng thì máy dùng
- * bảng chung và tổng trên form sẽ lệch với tổng máy chủ tính lại lúc lưu.
+ * `spot` + `bookedAt` chỉ để tra BẢNG GIÁ DỊCH VỤ theo điểm + thời điểm (cả ba
+ * điểm đổi giá dù cờ đỏ trong ngày 26/08/2026, mỗi điểm một mốc giờ; booking cũ
+ * giữ giá cũ) — thiếu chúng thì máy dùng bảng chung và tổng trên form sẽ lệch
+ * với tổng máy chủ tính lại lúc lưu.
  * Booking đang sửa thì truyền `createdAt` của chính nó; form lập mới thì truyền
  * thời điểm hiện tại.
  */
@@ -3313,8 +3314,8 @@ export function BookingCard({
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
   /**
-   * LÚC BOOKING ĐANG SỬA ĐƯỢC LẬP — quyết bảng giá dịch vụ của nó (Khau Phạ đổi
-   * giá dù cờ đỏ từ 26/08/2026, booking cũ giữ giá cũ; xem servicePriceOf).
+   * LÚC BOOKING ĐANG SỬA ĐƯỢC LẬP — quyết bảng giá dịch vụ của nó (dù cờ đỏ đổi
+   * giá ngày 26/08/2026, booking cũ giữ giá cũ; xem servicePriceOf).
    * Rỗng = đang lập booking MỚI, ăn bảng giá hiện hành.
    */
   const [editingCreatedAt, setEditingCreatedAt] = useState<string>("");

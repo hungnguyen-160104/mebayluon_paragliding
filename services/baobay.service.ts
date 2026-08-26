@@ -3401,7 +3401,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   /** Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi. */
   const newTotal = bookingTotal({
     ...input,
-    // Điểm bay + LÚC LẬP quyết bảng giá DỊCH VỤ (Khau Phạ đổi giá dù cờ đỏ từ
+    // Điểm bay + LÚC LẬP quyết bảng giá DỊCH VỤ (dù cờ đỏ đổi giá ngày
     // 26/08/2026; booking lập từ giờ trở đi ăn giá mới) — xem servicePriceOf
     spot,
     createdAt: new Date(),

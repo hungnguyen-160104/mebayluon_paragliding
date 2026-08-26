@@ -206,7 +206,7 @@ export function AddServicesCard({
   );
 
   /**
-   * Bảng giá dịch vụ của ĐÚNG booking đang chọn — Khau Phạ đổi giá dù cờ đỏ từ
+   * Bảng giá dịch vụ của ĐÚNG booking đang chọn — dù cờ đỏ đổi giá ngày
    * 26/08/2026 và giá neo vào LÚC BOOKING ĐƯỢC LẬP (xem servicePriceOf).
    *
    * Nên booking CŨ mua thêm cờ đỏ tại bãi hôm nay vẫn tính giá cũ: một booking

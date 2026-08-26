@@ -79,9 +79,13 @@ export type ServiceKey = keyof typeof SERVICE_PRICE;
 /**
  * GIÁ RIÊNG THEO ĐIỂM BAY, NEO VÀO LÚC LẬP BOOKING.
  *
- * Khau Phạ nâng DÙ CỜ ĐỎ từ 100k lên 400k. Giá mới chỉ áp cho booking LẬP TỪ
- * mốc `from` trở đi; booking cũ đã tích sẵn cờ đỏ giữ nguyên giá cũ tới lúc
- * chết, kể cả khi chuyến bay còn ở tương lai.
+ * DÙ CỜ ĐỎ lên 400k ở CẢ BA ĐIỂM, nhưng mỗi điểm một MỐC RIÊNG vì chủ chốt
+ * vào những lúc khác nhau trong ngày 26/08/2026: Khau Phạ từ 01:00, Sa Pa và
+ * Hà Nội từ 08:20. Dùng chung một mốc sớm nhất là đội giá ngược mấy booking
+ * hai điểm kia đã lập trong sáng hôm đó — khách đã được báo giá cũ rồi.
+ *
+ * Giá mới chỉ áp cho booking LẬP TỪ mốc `from` trở đi; booking cũ đã tích sẵn
+ * cờ đỏ giữ nguyên giá cũ tới lúc chết, kể cả khi chuyến bay còn ở tương lai.
  *
  * Vì sao neo vào LÚC LẬP chứ không phải ngày bay: `bookingTotal` tính lại tổng
  * tiền MỖI LẦN ai đó mở booking ra sửa. Neo vào ngày bay thì một booking đặt
@@ -101,7 +105,11 @@ const SPOT_SERVICE_PRICE: ReadonlyArray<{
   /** Áp cho booking LẬP từ thời điểm này trở đi (mốc có giờ + múi giờ VN). */
   from: string;
   price: number;
-}> = [{ spot: "khau-pha", key: "redFlag", from: "2026-08-26T01:00:00+07:00", price: 400_000 }];
+}> = [
+  { spot: "khau-pha", key: "redFlag", from: "2026-08-26T01:00:00+07:00", price: 400_000 },
+  { spot: "sapa", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
+  { spot: "ha-noi", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
+];
 
 /**
  * Bảng giá dịch vụ của MỘT điểm bay cho MỘT booking, theo LÚC BOOKING ĐƯỢC LẬP
