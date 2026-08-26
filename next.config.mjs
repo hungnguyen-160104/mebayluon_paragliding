@@ -172,17 +172,37 @@ const nextConfig = {
     return [
       /* ===== /trip/* — trang điểm bay của web cũ ===== */
       { source: '/trip/muong-hoa-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
-      { source: '/trip/mu-cang-chai', destination: '/spots/khau-pha', permanent: true },
+      /**
+       * /trip/mu-cang-chai TỪNG trỏ về /spots/khau-pha. Nay đổ về BÀI PILLAR:
+       * URL cũ này là bài giới thiệu điểm đến của web WordPress, gần với bài
+       * viết dài hơn là trang điểm bay, và nó đang gánh backlink cũ — cho
+       * backlink ấy dồn vào bài đang muốn lên hạng cho "dù lượn Mù Cang Chải".
+       *
+       * LƯU Ý: việc này KHÔNG giải quyết chuyện hai trang tranh nhau từ khoá.
+       * /trip/mu-cang-chai vốn đã 301 từ lâu, không còn nội dung riêng; trang
+       * đang thật sự đá nhau với bài pillar là /spots/khau-pha (H1 "Dù lượn Mù
+       * Cang Chải", vẫn index, vẫn tự canonical). Muốn hết tranh nhau thì phải
+       * xử ở trang đó, không phải ở dòng này.
+       */
+      { source: '/trip/mu-cang-chai', destination: '/blog/du-luon-mu-cang-chai', permanent: true },
       { source: '/trip/ban-dao-son-tra', destination: '/spots/son-tra', permanent: true },
       { source: '/trip/diem-bay-doi-bu', destination: '/spots/doi-bu', permanent: true },
       { source: '/trip/trai-nghiem-bay-du-luon-lau-camping-phinh-ho', destination: '/spots/tram-tau', permanent: true },
-      { source: '/trip', destination: '/', permanent: true },
-      { source: '/trip/:path*', destination: '/', permanent: true },
+      /**
+       * Bắt hết phần còn lại về HUB ĐÚNG CHỦ ĐỀ, không về trang chủ.
+       *
+       * Đổ mọi URL cũ về "/" là kiểu Google gọi là soft 404: nó thấy hàng chục
+       * địa chỉ khác nhau cùng rơi vào một trang chẳng liên quan, nên thường
+       * KHÔNG chuyển sức mạnh của link cũ sang. Khách bấm link cũ cũng lạc —
+       * đang tìm một điểm bay thì bị ném ra trang chủ.
+       */
+      { source: '/trip', destination: '/spots', permanent: true },
+      { source: '/trip/:path*', destination: '/spots', permanent: true },
 
       /* ===== /destinations/* — trang tỉnh/thành của web cũ ===== */
       { source: '/destinations/sa-pa', destination: '/spots/muong-hoa-sapa', permanent: true },
       { source: '/destinations/yen-bai', destination: '/spots/khau-pha', permanent: true },
-      { source: '/destinations/:path*', destination: '/', permanent: true },
+      { source: '/destinations/:path*', destination: '/spots', permanent: true },
 
       /* ===== Bài viết WordPress cũ (URL theo ngày) =====
        * Ưu tiên trỏ vào BÀI BLOG MỚI cùng chủ đề (giữ được ý định tìm kiếm

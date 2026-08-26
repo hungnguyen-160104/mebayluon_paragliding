@@ -92,14 +92,44 @@ type SpotKey =
  * ("dù lượn Mù Cang Chải", "dù lượn Sapa"...). Đặt tại khối "Về điểm bay
  * này"; tiêu đề bay bổng ở hero ("Bay Trên Tứ Đại Đỉnh Đèo") hạ xuống H2.
  */
+/**
+ * BÀI CHỦ LỰC của từng điểm bay — nối link hai chiều với trang điểm bay.
+ *
+ * Trang điểm bay giữ ý ĐẶT BAY, bài viết giữ ý TÌM HIỂU (xem chú thích ở
+ * SPOT_H1["khau-pha"]). Nối link để Google hiểu hai trang bổ trợ nhau chứ
+ * không phải hai bản trùng nhau, và khách đang phân vân có chỗ đọc tiếp.
+ */
+const SPOT_PILLAR: Partial<Record<SpotKey, string>> = {
+  "khau-pha": "/blog/du-luon-mu-cang-chai",
+};
+
+const PILLAR_CTA: Record<Lang, string> = {
+  vi: "Đọc hướng dẫn đầy đủ về dù lượn Mù Cang Chải →",
+  en: "Read the full Mu Cang Chai paragliding guide →",
+  fr: "Lire le guide complet du parapente à Mu Cang Chai →",
+  ru: "Полное руководство по параплану в Мукангчае →",
+  zh: "阅读木江界滑翔伞完整指南 →",
+  hi: "मु कांग चाई पैराग्लाइडिंग की पूरी गाइड पढ़ें →",
+};
+
 const SPOT_H1: Partial<Record<SpotKey, Record<Lang, string>>> = {
+  /**
+   * KHAU PHẠ nhắm "Đèo Khau Phạ", KHÔNG nhắm "Mù Cang Chải".
+   *
+   * Cụm "dù lượn Mù Cang Chải" đã có bài pillar /blog/du-luon-mu-cang-chai
+   * nhắm tới. Hai trang cùng một cụm thì Google phải chọn một, và thường chia
+   * đôi sức mạnh cho cả hai cùng yếu. Nên tách ý định: trang điểm bay giữ ý
+   * ĐẶT BAY tại đèo (giá vé, lịch bay, đưa đón), bài viết giữ ý TÌM HIỂU về
+   * vùng Mù Cang Chải. "Đèo Khau Phạ" cũng là cụm khách tìm thật, không phải
+   * cụm chết.
+   */
   "khau-pha": {
-    vi: "Dù lượn Mù Cang Chải",
-    en: "Mu Cang Chai Paragliding",
-    fr: "Parapente à Mu Cang Chai",
-    ru: "Парапланеризм в Мукангчае",
-    zh: "木江界滑翔伞",
-    hi: "मु कांग चाई पैराग्लाइडिंग",
+    vi: "Dù lượn Đèo Khau Phạ",
+    en: "Khau Pha Pass Paragliding",
+    fr: "Parapente au col de Khau Pha",
+    ru: "Парапланеризм на перевале Кхау Фа",
+    zh: "考帕山口滑翔伞",
+    hi: "खाउ फ़ा दर्रा पैराग्लाइडिंग",
   },
   "doi-bu": {
     vi: "Dù lượn Hà Nội",
@@ -3440,6 +3470,8 @@ export function SpotDetailClient({
   // H1 SEO "Dù lượn <địa danh>"; điểm lạ không có trong bảng thì giữ
   // nhãn cũ "Về điểm bay này"
   const seoH1 = SPOT_H1[resolveSpotKey(spot.name)]?.[lang] ?? ui.aboutTitle;
+  /** Bài chủ lực của điểm này (nếu có) — nối link hai chiều, xem SPOT_PILLAR. */
+  const pillarHref = SPOT_PILLAR[resolveSpotKey(spot.name)];
   // Chữ nổi bật lấy chung một nguồn với thẻ ở trang chủ và trang /spots.
   const tagline =
     t?.spots?.locations?.[
@@ -3546,6 +3578,14 @@ export function SpotDetailClient({
                   <p className="text-amber-200/80 text-xs uppercase tracking-[0.25em] font-medium">
                     {ui.quickFacts}
                   </p>
+                  {pillarHref && (
+                    <Link
+                      href={pillarHref}
+                      className="mt-2 inline-block text-sm font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
+                    >
+                      {PILLAR_CTA[lang] ?? PILLAR_CTA.vi}
+                    </Link>
+                  )}
                 </motion.div>
 
                 {/* Quick Stats - 3 Columns (Compact) */}

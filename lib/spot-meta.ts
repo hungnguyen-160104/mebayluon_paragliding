@@ -13,13 +13,23 @@ import type { Locale } from "@/lib/site-config";
 
 /** Cụm từ khoá chính: "Dù lượn <địa danh>" — trùng với H1 của trang. */
 const SEO_NAME: Record<string, Record<Locale, string>> = {
+  /**
+   * KHAU PHẠ nhắm "Đèo Khau Phạ", KHÔNG nhắm "Mù Cang Chải".
+   *
+   * Cụm "dù lượn Mù Cang Chải" đã có bài pillar /blog/du-luon-mu-cang-chai
+   * nhắm tới. Hai trang cùng một cụm thì Google phải chọn một, và thường chia
+   * đôi sức mạnh cho cả hai cùng yếu. Nên tách ý định: trang điểm bay giữ ý
+   * ĐẶT BAY tại đèo (giá vé, lịch bay, đưa đón), bài viết giữ ý TÌM HIỂU về
+   * vùng Mù Cang Chải. "Đèo Khau Phạ" cũng là cụm khách tìm thật, không phải
+   * cụm chết.
+   */
   "khau-pha": {
-    vi: "Dù lượn Mù Cang Chải",
-    en: "Mu Cang Chai Paragliding",
-    fr: "Parapente à Mu Cang Chai",
-    ru: "Парапланеризм в Мукангчае",
-    zh: "木江界滑翔伞",
-    hi: "मु कांग चाई पैराग्लाइडिंग",
+    vi: "Dù lượn Đèo Khau Phạ",
+    en: "Khau Pha Pass Paragliding",
+    fr: "Parapente au col de Khau Pha",
+    ru: "Парапланеризм на перевале Кхау Фа",
+    zh: "考帕山口滑翔伞",
+    hi: "खाउ फ़ा दर्रा पैराग्लाइडिंग",
   },
   "doi-bu": {
     vi: "Dù lượn Hà Nội",
@@ -83,13 +93,15 @@ const SEO_NAME: Record<string, Record<Locale, string>> = {
  * Giữ dưới ~65 ký tự kể cả đuôi " | Mebayluon" để Google không cắt.
  */
 const SEO_TITLE: Record<string, Record<Locale, string>> = {
+  /* Ý ĐẶT BAY — xem chú thích ở SEO_NAME["khau-pha"]. Bỏ "Mù Cang Chải"
+     khỏi title để không đá bài pillar; thay bằng thứ người sắp đặt cần biết. */
   "khau-pha": {
-    vi: "Bay Dù Lượn Đèo Khau Phạ – Mù Cang Chải: Giá & Mùa Đẹp",
-    en: "Khau Pha Paragliding, Mu Cang Chai: Prices & Season",
-    fr: "Parapente au col de Khau Pha : prix & saison",
-    ru: "Параплан на перевале Кхау Фа, Мукангчай: цены и сезон",
-    zh: "考帕山口滑翔伞（木江界）：价格与最佳季节",
-    hi: "खाउ फ़ा दर्रा पैराग्लाइडिंग, मु कांग चाई: क़ीमत व मौसम",
+    vi: "Đặt Bay Dù Lượn Đèo Khau Phạ: Giá Vé, Lịch Bay, Đưa Đón",
+    en: "Book Khau Pha Pass Paragliding: Prices, Schedule, Pickup",
+    fr: "Réserver un parapente au col de Khau Pha : prix & horaires",
+    ru: "Полёт на параплане, перевал Кхау Фа: цены и расписание",
+    zh: "预订考帕山口滑翔伞：价格、飞行时间、接送",
+    hi: "खाउ फ़ा दर्रा पैराग्लाइडिंग बुकिंग: क़ीमत, समय, पिकअप",
   },
   "doi-bu": {
     vi: "Bay Dù Lượn Hà Nội – Đồi Bù: Giá Từ 1.790.000đ",
