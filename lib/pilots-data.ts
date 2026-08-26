@@ -17,7 +17,24 @@ export interface Pilot {
 
   avatar: string;
   hero: string;
+  /**
+   * Thư viện ảnh CHIA THEO VỊ TRÍ: 5 ảnh đầu ghép thành hero, 3 ảnh tiếp là
+   * ảnh nội dung. Thêm ảnh thứ 9 vào đây là nó KHÔNG hiện ra ở đâu cả — muốn
+   * thêm ảnh thì dùng `extraPhotos` bên dưới.
+   */
   gallery: string[];
+  /**
+   * ẢNH RỜI, mỗi ảnh mang ALT RIÊNG.
+   *
+   * Khác `gallery` ở hai điểm: không bị ràng vào bố cục hero/nội dung nên thêm
+   * bao nhiêu cũng được, và có chỗ đặt alt tử tế. Ảnh trong `gallery` dùng alt
+   * chung chung ("Phi công X selfie") vì bố cục cố định không biết ảnh nào là
+   * ảnh gì; ảnh ở đây thì người thêm tự mô tả, Google Images đọc được.
+   *
+   * Alt để MỘT chuỗi dùng chung cho cả 6 ngôn ngữ: đây là câu mô tả ảnh cho
+   * máy đọc, không phải chữ hiển thị trên trang.
+   */
+  extraPhotos?: Array<{ src: string; alt: string }>;
 
   specialties: Record<PilotLang, string[]>;
   certificates: Record<PilotLang, string[]>;
@@ -887,12 +904,12 @@ export const pilots: Pilot[] = [
       hi: "14 साल",
     },
     flights: {
-      vi: "5000+",
-      en: "5000+",
-      fr: "5000+",
-      ru: "5000+",
-      zh: "5000+",
-      hi: "5000+",
+      vi: "6000+",
+      en: "6000+",
+      fr: "6000+",
+      ru: "6000+",
+      zh: "6000+",
+      hi: "6000+",
     },
     hours: {
       vi: "Nhiều giờ",
@@ -961,32 +978,32 @@ export const pilots: Pilot[] = [
     },
     achievements: {
       vi: [
-        "Với 14 năm kinh nghiệm bay dù lượn và hơn 2.000 chuyến bay đôi an toàn, anh là một trong những phi công kỳ cựu và đáng tin cậy hàng đầu tại Việt Nam.",
+        "Với 14 năm kinh nghiệm bay dù lượn và hơn 6.000 chuyến bay đôi an toàn, anh là một trong những phi công kỳ cựu và đáng tin cậy hàng đầu tại Việt Nam.",
         "Là một trong Top 5 phi công đời đầu, anh đã góp phần đặt nền móng cho cộng đồng dù lượn trong nước.",
         "Năm 2023, anh cùng đồng đội xuất sắc giành giải Nhất nội dung Hạ Cánh Chính Xác tại giải đấu MCC, khẳng định kỹ năng chuyên môn và bản lĩnh thi đấu vững vàng.",
       ],
       en: [
-        "14 years of experience and 5,000+ safe tandem flights—one of Vietnam’s most reliable veteran pilots.",
+        "14 years of experience and 6,000+ safe tandem flights—one of Vietnam’s most reliable veteran pilots.",
         "Top 5 first-generation pilots—helped build the local paragliding community.",
         "Won 1st prize in Precision Landing at MCC 2023 with his team.",
       ],
       fr: [
-        "14 ans d'expérience et 5 000+ vols tandem sûrs—un vétéran fiable au Vietnam.",
+        "14 ans d'expérience et 6 000+ vols tandem sûrs—un vétéran fiable au Vietnam.",
         "Top 5 de la première génération—acteur fondateur de la communauté.",
         "1er prix Atterrissage de précision au MCC 2023 (avec l’équipe).",
       ],
       ru: [
-        "14 лет опыта и 5 000+ безопасных тандемных полётов — один из самых надёжных пилотов-ветеранов Вьетнама.",
+        "14 лет опыта и 6 000+ безопасных тандемных полётов — один из самых надёжных пилотов-ветеранов Вьетнама.",
         "Топ-5 пилотов первого поколения — помогал развивать сообщество.",
         "1-е место в дисциплине «Точность приземления» на MCC 2023 (в команде).",
       ],
       zh: [
-        "14 年经验、5,000+ 次安全双人飞行——越南最可靠的资深飞行员之一。",
+        "14 年经验、6,000+ 次安全双人飞行——越南最可靠的资深飞行员之一。",
         "“第一代飞行员”Top 5，参与奠定本土滑翔伞社群基础。",
         "2023 年 MCC 比赛精准降落项目与队友夺得冠军。",
       ],
       hi: [
-        "14 साल का अनुभव और 5,000+ सुरक्षित टैंडम उड़ानें—वियतनाम के भरोसेमंद वेटरन पायलट्स में से एक।",
+        "14 साल का अनुभव और 6,000+ सुरक्षित टैंडम उड़ानें—वियतनाम के भरोसेमंद वेटरन पायलट्स में से एक।",
         "पहली पीढ़ी के Top 5 पायलट—लोकल पैराग्लाइडिंग कम्युनिटी की नींव में योगदान।",
         "MCC 2023 में प्रिसिजन लैंडिंग में टीम के साथ 1st प्राइज़।",
       ],
@@ -1537,6 +1554,12 @@ export const pilots: Pilot[] = [
       "/pilots/alish-thapa/content-1.png",
       "/pilots/alish-thapa/content-2.png",
       "/pilots/alish-thapa/content-3.png",
+    ],
+    extraPhotos: [
+      {
+        src: "/pilots/alish-thapa/mua-vang-mu-cang-chai-2022.jpg",
+        alt: "Alish Thapa bay dù lượn trên mùa vàng Mù Cang Chải 2022",
+      },
     ],
     specialties: {
       vi: ["Huấn luyện APPI", "Nhảy dù (Skydive)"],
@@ -2167,12 +2190,12 @@ export const pilots: Pilot[] = [
       hi: ["जापान IPPI5"],
     },
     bio: {
-      vi: "10 năm kinh nghiệm, 1,000+ chuyến bay đơn, 6,000+ chuyến bay đôi. Anh là phi công Heli đầu tiên tại Việt Nam và là phi công nhảy dù (tumbling) đầu tiên & duy nhất tại Việt Nam. Anh hiện là phi công có số giờ bay cao nhất Việt Nam.",
-      en: "10 years of experience, 1,000+ solo flights, 6,000+ tandem flights. The first Heli pilot in Vietnam and the first & only tumbling pilot in Vietnam. He is currently the pilot with the most flight hours in Vietnam.",
-      fr: "10 ans d'expérience, 1 000+ vols solo, 6 000+ vols en tandem. Le premier pilote Heli au Vietnam et le premier & unique pilote de tumbling (voltige) au Vietnam. Il totalise aujourd'hui le plus grand nombre d'heures de vol au Vietnam.",
-      ru: "10 лет опыта, 1 000+ одиночных полётов, 6 000+ тандемных. Первый Heli-пилот во Вьетнаме и первый и единственный пилот по тамблингу (акробатика) во Вьетнаме. На сегодня он — пилот с наибольшим налётом во Вьетнаме.",
-      zh: "10 年经验，1,000+ 次单飞、6,000+ 次双人飞行。越南首位 Heli 飞行员，也是越南首位且唯一的 tumbling（绳索翻滚）飞行员。他目前是越南飞行时长最高的飞行员。",
-      hi: "10 साल का अनुभव, 1,000+ सोलो फ्लाइट्स, 6,000+ टैंडम फ्लाइट्स। वियतनाम के पहले Heli पायलट और पहले व इकलौते tumbling पायलट। वे वर्तमान में वियतनाम में सबसे अधिक उड़ान घंटे वाले पायलट हैं।",
+      vi: "10 năm kinh nghiệm, ~1.500 chuyến bay đơn, 6,000+ chuyến bay đôi. Anh là phi công Heli đầu tiên tại Việt Nam và là phi công nhảy dù (tumbling) đầu tiên & duy nhất tại Việt Nam. Anh hiện là phi công có số giờ bay cao nhất Việt Nam.",
+      en: "10 years of experience, ~1,500 solo flights, 6,000+ tandem flights. The first Heli pilot in Vietnam and the first & only tumbling pilot in Vietnam. He is currently the pilot with the most flight hours in Vietnam.",
+      fr: "10 ans d'expérience, ~1 500 vols solo, 6 000+ vols en tandem. Le premier pilote Heli au Vietnam et le premier & unique pilote de tumbling (voltige) au Vietnam. Il totalise aujourd'hui le plus grand nombre d'heures de vol au Vietnam.",
+      ru: "10 лет опыта, ~1 500 одиночных полётов, 6 000+ тандемных. Первый Heli-пилот во Вьетнаме и первый и единственный пилот по тамблингу (акробатика) во Вьетнаме. На сегодня он — пилот с наибольшим налётом во Вьетнаме.",
+      zh: "10 年经验，约 1,500 次单飞、6,000+ 次双人飞行。越南首位 Heli 飞行员，也是越南首位且唯一的 tumbling（绳索翻滚）飞行员。他目前是越南飞行时长最高的飞行员。",
+      hi: "10 साल का अनुभव, ~1,500 सोलो फ्लाइट्स, 6,000+ टैंडम फ्लाइट्स। वियतनाम के पहले Heli पायलट और पहले व इकलौते tumbling पायलट। वे वर्तमान में वियतनाम में सबसे अधिक उड़ान घंटे वाले पायलट हैं।",
     },
     funFacts: {
       vi: [
@@ -2196,7 +2219,7 @@ export const pilots: Pilot[] = [
     },
     achievements: {
       vi: [
-        "10 năm kinh nghiệm, 1,000+ chuyến bay đơn, 6,000+ chuyến bay đôi.",
+        "10 năm kinh nghiệm, ~1.500 chuyến bay đơn, 6,000+ chuyến bay đôi.",
         "Phi công Heli đầu tiên tại Việt Nam và Phi công nhảy dù (tumbling) đầu tiên & duy nhất tại Việt Nam. Anh có thể thực hiện các động tác mạnh với kỹ thuật cao và các động tác nhào lộn trên không hiếm có.",
         "Sở hữu kỹ năng bay dù lượn và dù lượn gắn động cơ.",
         "Dịch giả của hơn 1,000 trang sách chuyên sâu về dù lượn và là phi công nổi tiếng có kiến thức chuyên sâu về dù lượn. Anh sở hữu 04 đầu sách bán chạy nhất về dù lượn: Bay thermal, Bay đường trường, Làm chủ dù lượn và Làm chủ bầu trời.",
@@ -2204,7 +2227,7 @@ export const pilots: Pilot[] = [
         "Đang nắm giữ kỷ lục chuyến bay Tam giác khép kín lớn nhất tại Tây Nguyên 100+km và là phi công có nhiều giờ bay nhất Việt Nam.",
       ],
       en: [
-        "10 years of experience, 1,000+ solo flights, 6,000+ tandem flights.",
+        "10 years of experience, ~1,500 solo flights, 6,000+ tandem flights.",
         "First Heli pilot in Vietnam and the first & only tumbling pilot in Vietnam; capable of high-G maneuvers and rare aerial acrobatics.",
         "Skilled in both paragliding and powered paragliding.",
         "Translated 1,000+ pages of advanced paragliding books; author of 4 bestsellers: Thermal Flying, Cross-Country Flying, Mastering Paragliding, and Mastering the Sky.",
@@ -2212,7 +2235,7 @@ export const pilots: Pilot[] = [
         "Holds the record for the largest closed triangle flight in the Central Highlands (100+ km) and is among Vietnam’s highest flight-hour pilots.",
       ],
       fr: [
-        "10 ans d'expérience, 1 000+ vols solo, 6 000+ vols en tandem.",
+        "10 ans d'expérience, ~1 500 vols solo, 6 000+ vols en tandem.",
         "Premier pilote Heli au Vietnam et premier & unique pilote de tumbling ; manœuvres à forte charge et acrobaties rares.",
         "Compétent en parapente et paramoteur.",
         "A traduit 1 000+ pages d’ouvrages techniques ; auteur de 4 best-sellers : Vol thermique, Vol de distance, Maîtriser le parapente, Maîtriser le ciel.",
@@ -2220,7 +2243,7 @@ export const pilots: Pilot[] = [
         "Détient le record du plus grand triangle fermé aux Hauts Plateaux (100+ km) et fait partie des pilotes aux plus nombreuses heures de vol au Vietnam.",
       ],
       ru: [
-        "10 лет опыта, 1 000+ одиночных полётов, 6 000+ тандемных.",
+        "10 лет опыта, ~1 500 одиночных полётов, 6 000+ тандемных.",
         "Первый Heli-пилот во Вьетнаме и первый/единственный пилот по тамблингу; способен на манёвры с высокими перегрузками и редкую акробатику.",
         "Владеет парапланом и моторным парапланом.",
         "Перевёл 1 000+ страниц специализированных книг; автор 4 бестселлеров: Bay thermal, Bay đường trường, Làm chủ dù lượn, Làm chủ bầu trời.",
@@ -2228,7 +2251,7 @@ export const pilots: Pilot[] = [
         "Держит рекорд крупнейшего замкнутого треугольника на Центральном нагорье (100+ км) и входит в число пилотов с максимальным налётом во Вьетнаме.",
       ],
       zh: [
-        "10 年经验，1,000+ 次单飞，6,000+ 次双人飞行。",
+        "10 年经验，约 1,500 次单飞，6,000+ 次双人飞行。",
         "越南首位 Heli 飞行员、首位且唯一 tumbling 飞行员；可完成高 G 动作与罕见空中技巧。",
         "熟练掌握无动力与动力伞飞行。",
         "翻译 1,000+ 页专业书籍；著有 4 本热销书：热气流飞行、长距离飞行、掌握滑翔伞、驾驭天空。",
@@ -2236,7 +2259,7 @@ export const pilots: Pilot[] = [
         "保持西原地区 100+ km 最大闭合三角航线纪录，也是越南飞行时长最多的飞行员之一。",
       ],
       hi: [
-        "10 साल अनुभव, 1,000+ सोलो फ्लाइट्स, 6,000+ टैंडम फ्लाइट्स।",
+        "10 साल अनुभव, ~1,500 सोलो फ्लाइट्स, 6,000+ टैंडम फ्लाइट्स।",
         "वियतनाम के पहले Heli पायलट और पहले व इकलौते tumbling पायलट—हाई-G मैनूवर्स और दुर्लभ एरियल एक्रोबेटिक्स कर सकते हैं।",
         "पैराग्लाइडिंग और पावर्ड पैराग्लाइडिंग—दोनों में दक्ष।",
         "1,000+ पेज की एडवांस्ड पैराग्लाइडिंग पुस्तकों के अनुवादक; 4 बेस्टसेलर पुस्तकों के लेखक: Bay thermal, Bay đường trường, Làm chủ dù lượn, Làm chủ bầu trời।",

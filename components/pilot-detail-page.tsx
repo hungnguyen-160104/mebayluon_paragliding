@@ -281,6 +281,33 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
           </div>
         </section>
 
+        {/**
+         * ẢNH RỜI của phi công — mỗi ảnh mang ALT RIÊNG do người thêm tự mô tả
+         * (xem `extraPhotos` ở lib/pilots-data.ts). Khác khối ảnh phía trên:
+         * chỗ kia bố cục cố định 5+3 ảnh nên alt đành chung chung, ở đây thì
+         * mô tả đúng ảnh nên Google Images đọc được.
+         */}
+        {(pilotData.extraPhotos ?? []).length > 0 && (
+          <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(pilotData.extraPhotos ?? []).map((photo) => (
+                <figure key={photo.src} className="overflow-hidden rounded-2xl shadow-xl">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={1200}
+                    height={1500}
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    className="h-auto w-full"
+                    loading="lazy"
+                  />
+                  <figcaption className="bg-black/40 px-3 py-2 text-xs text-white/70">{photo.alt}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* CÁC PHI CÔNG KHÁC — liên kết chéo giữa các trang phi công (SSR) */}
         <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14">
           <h2 className="mb-4 text-xl font-bold text-white/85">{OTHERS_LABEL[lang] ?? OTHERS_LABEL.vi}</h2>
