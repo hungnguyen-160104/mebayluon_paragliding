@@ -21,6 +21,12 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/**
+ * Nhánh "ai-match" gọi sang Anthropic và đợi trả lời — chạy thật mất 60-170
+ * giây tuỳ số dòng treo. Không khai thì rơi vào trần mặc định của Vercel và
+ * đứt giữa chừng, người dùng chỉ thấy lỗi mạng không hiểu vì sao.
+ */
+export const maxDuration = 300;
 
 /**
  * SOÁT CHUYỂN KHOẢN của kế toán — dán SMS banking / sao kê, máy dò từng khoản

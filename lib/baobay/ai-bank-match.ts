@@ -242,7 +242,13 @@ export async function askAiBankMatch(
     json = await callAnthropic({
       ...base,
       thinking: { type: "adaptive" },
-      output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
+      /**
+       * effort "medium": chạy thật với 40 dòng treo trên 113 khoản, mức "high"
+       * mất 2 phút 48 giây — quá lâu cho một nút bấm, và sát trần thời gian
+       * chạy của máy chủ. Mức này cân giữa nhanh và tinh; muốn soi kỹ hơn thì
+       * nâng lại, nhưng nhớ ngó `maxDuration` bên route.
+       */
+      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
     });
   } catch (err) {
     /**

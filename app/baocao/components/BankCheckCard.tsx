@@ -188,6 +188,8 @@ type AiReport = {
 
 type Report = {
   date: string;
+  /** Mốc bắt đầu đối soát — khoản trước ngày này đã bị bỏ qua. */
+  reconcileFrom?: string;
   spots: string[];
   lines: LineDTO[];
   pending: LineDTO[];
@@ -206,6 +208,13 @@ type Report = {
     diffCount: number;
   };
   skipped: string[];
+  skipCounts?: {
+    settled: number;
+    tooOld: number;
+    tooOldAmount: number;
+    outgoing: number;
+    duplicate: number;
+  };
 };
 
 const LEVEL_BADGE: Record<string, { label: string; cls: string }> = {
@@ -373,6 +382,8 @@ export function BankCheckCard({ date }: { date: string }) {
   const [aiBusy, setAiBusy] = useState(false);
   /** Thẻ booking ĐÃ SOÁT XONG gập chung một chỗ — mở ra khi cần soi lại. */
   const [doneOpen, setDoneOpen] = useState(false);
+  /** Nhóm SMS ĐÃ KHỚP — gập sẵn, việc đã xong thì không cần bày ra. */
+  const [matchedOpen, setMatchedOpen] = useState(false);
 
   const load = useCallback(() => {
     apiGet<Report>(`/api/baocao/bank-check?date=${date}&spots=${spots.join(",")}`)
@@ -695,10 +706,31 @@ export function BankCheckCard({ date }: { date: string }) {
           <Banner tone="error">{error}</Banner>
         </div>
       )}
+      {/* MÁY TỰ BỎ QUA — chỉ đếm, KHÔNG liệt kê từng dòng. Dán một tràng vài
+          trăm khoản thì phần lớn là thứ đã soát hôm trước hoặc quá cũ; in hết
+          ra là đầu bảng thành bức tường chữ, mà khoản CẦN nhìn trôi mất. */}
+      {(() => {
+        const k = report?.skipCounts;
+        if (!k) return null;
+        const bits = [
+          k.settled > 0 ? `${k.settled} khoản đã soát trước đó` : "",
+          k.duplicate > 0 ? `${k.duplicate} khoản trùng giao dịch` : "",
+          k.tooOld > 0
+            ? `${k.tooOld} khoản trước ${formatDateKeyVN(report?.reconcileFrom ?? "")} (${formatVND(k.tooOldAmount)})`
+            : "",
+          k.outgoing > 0 ? `${k.outgoing} dòng tiền chi ra` : "",
+        ].filter(Boolean);
+        if (!bits.length) return null;
+        return (
+          <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] leading-snug text-slate-500">
+            ⤷ Tự bỏ qua {bits.join(" · ")} — không hiện ra để danh sách còn dễ soát.
+          </div>
+        );
+      })()}
       {(report?.skipped ?? []).length > 0 && (
-        <ul className="mt-2 space-y-0.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <ul className="mt-2 space-y-0.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
           {report!.skipped.map((s, i) => (
-            <li key={i} className="text-[11px] text-slate-500">
+            <li key={i} className="text-[11px] text-amber-900">
               ⤷ {s}
             </li>
           ))}
@@ -1555,14 +1587,30 @@ export function BankCheckCard({ date }: { date: string }) {
         if (!orphanPending.length && !orphanMatched.length) return null;
         return (
           <div className="mt-3">
+            {/* Đã khớp = việc đã xong. Gập sẵn, bấm mới xổ ra — chỗ này chỉ để
+                soi lại khi nghi ngờ, không phải thứ nhìn hằng ngày. */}
             {orphanMatched.length > 0 && (
               <>
-                <div className="text-xs font-bold text-slate-700">SMS đã khớp (khoản không gắn booking)</div>
-                <ul className="mt-1 space-y-1.5">
-                  {orphanMatched.map((l) => (
-                    <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} />
-                  ))}
-                </ul>
+                <button
+                  type="button"
+                  onClick={() => setMatchedOpen((v) => !v)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-1.5 text-left"
+                >
+                  <span className="text-xs font-bold text-emerald-800">
+                    ✓ {orphanMatched.length} SMS đã khớp (khoản không gắn booking)
+                  </span>
+                  <span className="flex-1" />
+                  <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                    {matchedOpen ? "Thu gọn" : "Xem"}
+                  </span>
+                </button>
+                {matchedOpen && (
+                  <ul className="mt-1 space-y-1.5">
+                    {orphanMatched.map((l) => (
+                      <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} />
+                    ))}
+                  </ul>
+                )}
               </>
             )}
             {orphanPending.length > 0 && (
@@ -1585,6 +1633,14 @@ export function BankCheckCard({ date }: { date: string }) {
           <div className="text-xs font-bold text-rose-900">
             ⚠ {pendingOld.length} khoản treo từ ngày khác — chưa biết của booking nào
           </div>
+          {/* Nói rõ vì sao khay này ngắn: khoản cũ đã bị bỏ khỏi vòng soát,
+              kẻo kế toán tưởng máy làm mất tiền của mấy ngày đầu. */}
+          {report?.reconcileFrom && (
+            <div className="text-[11px] leading-tight text-rose-800/80">
+              Chỉ soát từ {formatDateKeyVN(report.reconcileFrom)} trở đi — khoản trước đó bỏ qua vì hồi ấy app
+              chưa chạy đủ. Dữ liệu vẫn còn nguyên, chỉ thôi đòi soát.
+            </div>
+          )}
           <ul className="mt-1.5 space-y-1.5">
             {pendingOld.map((l) => (
               <BankLineRow key={l.id} line={l} busy={rowBusy === l.id} onAct={act} onAssign={assignLine} showDate />

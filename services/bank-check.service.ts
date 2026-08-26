@@ -166,8 +166,30 @@ export type BankBookingRowDTO = {
   suggests: BankLineDTO[];
 };
 
+/**
+ * ĐẾM những dòng máy TỰ BỎ QUA khi dán — chỉ trả CON SỐ, không liệt kê.
+ *
+ * Kế toán dán cả tràng vài trăm dòng; phần lớn là khoản đã soát hôm trước
+ * hoặc khoản trước mốc đối soát. In từng dòng ra thì đầu bảng thành một bức
+ * tường chữ, mà thứ THẬT SỰ cần nhìn (khoản chưa khớp) lại trôi xuống dưới.
+ */
+export type BankSkipCounts = {
+  /** Đã khớp / đã kết luận tay từ trước — dán lại không đổi gì. */
+  settled: number;
+  /** Trước mốc đối soát (RECONCILE_FROM). */
+  tooOld: number;
+  /** Tổng tiền phần quá cũ — nói ra để kế toán biết không có gì bị mất. */
+  tooOldAmount: number;
+  /** Dòng TRỪ tiền (chi ra), không phải tiền khách trả. */
+  outgoing: number;
+  /** Cùng giao dịch nhưng khác định dạng chữ với dòng đã soát. */
+  duplicate: number;
+};
+
 export type BankCheckReport = {
   date: string;
+  /** Mốc bắt đầu đối soát — khoản trước ngày này đã được bỏ qua. */
+  reconcileFrom: string;
   /** Điểm bay đang soát — rỗng nghĩa là cả ba. */
   spots: string[];
   lines: BankLineDTO[];
@@ -192,8 +214,13 @@ export type BankCheckReport = {
     diffAmount: number;
     diffCount: number;
   };
-  /** Dòng dán vào nhưng không đọc được số tiền / là tiền CHI ra — chỉ báo, không lưu. */
+  /**
+   * Dòng dán vào mà máy KHÔNG ĐỌC ĐƯỢC SỐ TIỀN — chỉ mấy dòng này mới đáng in
+   * ra: có thể là tiền thật mà bộ bóc tách chịu thua, phải có người nhìn.
+   * Mọi lý do bỏ qua khác chỉ đếm số ở `skipCounts`.
+   */
   skipped: string[];
+  skipCounts: BankSkipCounts;
   /**
    * MỌI KHOẢN CHUYỂN KHOẢN CÒN CHƯA SOÁT, không phụ thuộc ngày đang xem:
    * booking chưa khoá mà kế toán chưa tích "đã nhận". Đây là danh sách để soát
@@ -322,6 +349,9 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       amounts: [c.amount].filter((n) => n > 0),
       recorded: true,
       createdDate: b?.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
+      // Mốc cho luật khớp tuyệt đối rút gọn: NGÀY LẬP LỆNH THU, không phải
+      // ngày nhập booking — booking cũ vẫn đẻ lệnh thu mới hôm nay
+      recordedDate: c.date || undefined,
     });
   }
 
@@ -360,6 +390,8 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       amounts: [manualDeposit],
       recorded: true,
       createdDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
+      /** Cọc gõ tay sinh ra cùng lúc nhập booking — mốc chính là ngày ấy. */
+      recordedDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
     });
   }
 
@@ -460,6 +492,9 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
       amounts: [c.amount].filter((n) => n > 0),
       recorded: true,
       createdDate: b?.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
+      // Mốc cho luật khớp tuyệt đối rút gọn: NGÀY LẬP LỆNH THU, không phải
+      // ngày nhập booking — booking cũ vẫn đẻ lệnh thu mới hôm nay
+      recordedDate: c.date || undefined,
     });
   }
 
@@ -493,6 +528,7 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
         amounts: [manualDeposit],
         recorded: true,
         createdDate: created,
+        recordedDate: created,
       });
     }
     if (Number(b.remaining) > 0) {
@@ -547,6 +583,31 @@ function resolveSpots(session: BaobaySession, filter?: string[]): string[] {
 /* Chạy soát / đọc kết quả / xử khoản treo                             */
 /* ================================================================== */
 
+/**
+ * MỐC BẮT ĐẦU ĐỐI SOÁT — khoản tiền về TRƯỚC ngày này thì bỏ qua.
+ *
+ * Trước 12/08/2026 app chưa chạy đúng và sổ chưa nhập đủ, nên phần lớn dòng
+ * sao kê thời đó vĩnh viễn không có chỗ nào để khớp. Để chúng nằm trong khay
+ * treo thì mỗi ngày kế toán mở ra là thấy 48 khoản đỏ không bao giờ xử được
+ * (gần 101 triệu) — đúng kiểu cảnh báo mà người ta học cách phớt lờ, rồi phớt
+ * lờ luôn cả khoản mới có thật.
+ *
+ * Dữ liệu KHÔNG bị xoá, chỉ thôi đòi soát. Muốn xem lại thì hạ mốc này xuống.
+ */
+export const RECONCILE_FROM = "2026-08-12";
+
+/**
+ * Dòng sao kê này có nằm trước mốc đối soát không.
+ *
+ * Ưu tiên ngày ĐỌC ĐƯỢC TỪ SAO KÊ; không đọc được thì đành lấy ngày kế toán
+ * dán. Cả hai đều trống thì trả false — không rõ ngày thì cứ giữ lại mà soát,
+ * thà phiền còn hơn giấu mất một khoản tiền thật.
+ */
+function beforeReconcileStart(bankDate?: string, checkDate?: string): boolean {
+  const d = isDateKey(bankDate ?? "") ? bankDate! : isDateKey(checkDate ?? "") ? checkDate! : "";
+  return Boolean(d) && d < RECONCILE_FROM;
+}
+
 function lineKey(raw: string): string {
   return createHash("sha1").update(raw.replace(/\s+/g, " ").trim().toLowerCase()).digest("hex");
 }
@@ -581,13 +642,13 @@ function matchFields(entry: BankEntry, candidates: BankCandidate[]) {
      * ghi để `autoConfirmSettled` bấm hộ nút "Đã nhận", kế toán khỏi soi lại
      * những dòng chẳng còn gì để nghi.
      */
-    const exact = isExactHit(entry, m.hit);
+    const exact = isExactHit(entry, m.hit, candidates);
     return {
       status: "matched" as const,
       matchLevel: m.level,
       autoConfirmed: exact,
       matchWhy: exact
-        ? `${m.why} — KHỚP TUYỆT ĐỐI (ngày bay + số thứ tự khách + mã booking + đúng số tiền), máy tự xác nhận`
+        ? `${m.why} — KHỚP TUYỆT ĐỐI (ngày bay + số thứ tự khách + đúng số tiền, và có mã booking hoặc chuyển đúng lúc app ghi khoản), máy tự xác nhận`
         : m.why,
       refId: m.hit.id,
       bookingId:
@@ -627,7 +688,11 @@ export async function runBankCheck(
 
   const spots = resolveSpots(session, spotsFilter);
   const entries = parseBankStatement(text);
+  /** Chỉ liệt kê dòng không đọc được số tiền; các lý do khác chỉ đếm. */
   const skipped: string[] = [];
+  const skipCounts: BankSkipCounts = { settled: 0, tooOld: 0, tooOldAmount: 0, outgoing: 0, duplicate: 0 };
+  /** In tối đa ngần này dòng khó đọc — dài hơn thì gộp lại một câu. */
+  const MAX_LISTED = 10;
 
   /**
    * Ứng viên = khoản của ĐÚNG NGÀY dòng sao kê + MỌI khoản còn treo bất kể ngày.
@@ -649,18 +714,27 @@ export async function runBankCheck(
 
   for (const entry of entries) {
     if (entry.amount <= 0) {
-      skipped.push(`Không đọc được số tiền: "${entry.raw.slice(0, 120)}"`);
+      if (skipped.length < MAX_LISTED) skipped.push(`Không đọc được số tiền: "${entry.raw.slice(0, 120)}"`);
       continue;
     }
     if (entry.outgoing) {
-      skipped.push(`Tiền CHI ra, không soát: "${entry.raw.slice(0, 120)}"`);
+      skipCounts.outgoing++;
+      continue;
+    }
+    // Khoản trước mốc đối soát: đếm rồi bỏ, KHÔNG lưu và KHÔNG in ra từng dòng
+    if (beforeReconcileStart(entry.bankDate, date)) {
+      skipCounts.tooOld++;
+      skipCounts.tooOldAmount += entry.amount;
       continue;
     }
 
     const key = lineKey(entry.raw);
     const existed = await BaobayBankLine.findOne({ key }).lean<any>();
     /** Đã khớp hoặc kế toán đã kết luận tay thì không đè — dán lại là chuyện thường. */
-    if (existed && existed.status !== "pending") continue;
+    if (existed && existed.status !== "pending") {
+      skipCounts.settled++;
+      continue;
+    }
 
     /**
      * CÙNG MỘT GIAO DỊCH, KHÁC ĐỊNH DẠNG CHỮ. Hôm trước dán SMS, hôm sau dán
@@ -681,9 +755,7 @@ export async function runBankCheck(
         .select("matchLabel")
         .lean<any>();
       if (twin) {
-        skipped.push(
-          `Trùng giao dịch ĐÃ SOÁT (cùng ${entry.bankDate} ${entry.bankTime} · ${entry.amount.toLocaleString("vi-VN")}đ${twin.matchLabel ? ` — đã khớp ${twin.matchLabel}` : ""}), bỏ qua: "${entry.raw.slice(0, 90)}"`,
-        );
+        skipCounts.duplicate++;
         continue;
       }
     }
@@ -727,10 +799,16 @@ export async function runBankCheck(
 
   // Dòng nào khớp tuyệt đối thì máy nhận hộ luôn — xem autoConfirmSettled
   const auto = await autoConfirmSettled();
-  if (auto > 0) skipped.push(`✓ Máy TỰ XÁC NHẬN ${auto} khoản khớp tuyệt đối (đủ ngày bay + số thứ tự + mã booking + đúng số tiền) — không cần bấm tay.`);
+
+  if (skipped.length >= MAX_LISTED) {
+    skipped.push(`…và các dòng khó đọc khác — chỉ in ${MAX_LISTED} dòng đầu cho khỏi rối.`);
+  }
+  if (auto > 0) {
+    skipped.unshift(`✓ Máy TỰ XÁC NHẬN ${auto} khoản khớp tuyệt đối — không cần bấm tay.`);
+  }
 
   const report = await getBankCheck(session, date, spotsFilter);
-  return { ...report, skipped };
+  return { ...report, skipped, skipCounts };
 }
 
 /**
@@ -879,7 +957,15 @@ export async function getBankCheck(
   const spots = resolveSpots(session, spotsFilter);
   const [lineDocs, pendingDocs, candidates] = await Promise.all([
     BaobayBankLine.find({ checkDate: date }).sort({ createdAt: 1 }).lean<any[]>(),
-    BaobayBankLine.find({ status: "pending", checkDate: { $ne: date } })
+    /**
+     * Khay treo chỉ nhận khoản TỪ MỐC ĐỐI SOÁT trở đi — xem RECONCILE_FROM.
+     * Lọc ngay trong truy vấn để giới hạn 200 dòng không bị khoản cũ chiếm chỗ.
+     */
+    BaobayBankLine.find({
+      status: "pending",
+      checkDate: { $ne: date },
+      $or: [{ bankDate: { $gte: RECONCILE_FROM } }, { bankDate: { $in: ["", null] }, checkDate: { $gte: RECONCILE_FROM } }],
+    })
       .sort({ createdAt: -1 })
       .limit(200)
       .lean<any[]>(),
@@ -1319,6 +1405,7 @@ export async function getBankCheck(
 
   return {
     date,
+    reconcileFrom: RECONCILE_FROM,
     spots,
     skipped_items: skippedItems,
     lines: lineDTOs,
@@ -1337,6 +1424,7 @@ export async function getBankCheck(
       diffCount: lineDocs.length - appTransfers.length,
     },
     skipped: [],
+    skipCounts: { settled: 0, tooOld: 0, tooOldAmount: 0, outgoing: 0, duplicate: 0 },
   };
 }
 
@@ -1569,10 +1657,15 @@ export async function aiMatchBankLines(
   const spots = resolveSpots(session, spotsFilter);
 
   /** Dòng treo của ngày đang xem đứng trước, rồi mới tới khoản treo cũ. */
-  const pendingDocs = await BaobayBankLine.find({ status: "pending" })
-    .sort({ checkDate: -1, bankDate: -1, createdAt: -1 })
-    .limit(AI_MAX_LINES)
-    .lean<any[]>();
+  const pendingDocs = (
+    await BaobayBankLine.find({ status: "pending" })
+      .sort({ checkDate: -1, bankDate: -1, createdAt: -1 })
+      .limit(AI_MAX_LINES * 3)
+      .lean<any[]>()
+  )
+    // Khoản trước mốc đối soát không đưa cho AI: tốn tiền hỏi về thứ đã bỏ
+    .filter((l) => !beforeReconcileStart(l.bankDate, l.checkDate))
+    .slice(0, AI_MAX_LINES);
   if (!pendingDocs.length) {
     return { proposals: [], lineCount: 0, candidateCount: 0, note: "Không còn dòng sao kê nào treo — chẳng có gì để nhờ AI." };
   }
@@ -1712,7 +1805,9 @@ export async function recheckBankPending(
 ): Promise<BankCheckReport> {
   await connectDB();
   const spots = resolveSpots(session, spotsFilter);
-  const pending = await BaobayBankLine.find({ status: "pending" }).lean<any[]>();
+  const pending = (await BaobayBankLine.find({ status: "pending" }).lean<any[]>()).filter(
+    (l) => !beforeReconcileStart(l.bankDate, l.checkDate),
+  );
   const settled = await settledRefIds();
 
   const cache = new Map<string, BankCandidate[]>();
@@ -1753,6 +1848,7 @@ export async function recheckBankPending(
   return auto > 0
     ? { ...report, skipped: [`✓ Máy TỰ XÁC NHẬN ${auto} khoản khớp tuyệt đối — không cần bấm tay.`] }
     : report;
+
 }
 
 /**

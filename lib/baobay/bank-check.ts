@@ -163,6 +163,15 @@ export type BankCandidate = {
   /** Ngày LẬP booking "YYYY-MM-DD" — khách hay chuyển cọc ngay hôm đăng ký. */
   createdDate?: string;
   /**
+   * Ngày APP GHI NHẬN chính khoản này: ngày lập lệnh thu, hoặc ngày nhập
+   * booking với phần cọc gõ tay. Khác `createdDate` ở chỗ một booking cũ vẫn
+   * đẻ ra lệnh thu mới hôm nay.
+   *
+   * Dùng làm MỐC THỜI GIAN cho luật khớp tuyệt đối rút gọn — xem isExactHit.
+   * Khoản "còn thu" (app chưa ghi gì) thì bỏ trống.
+   */
+  recordedDate?: string;
+  /**
    * Ứng viên đến từ RỔ RỘNG (mọi khoản còn treo, mọi ngày) chứ không phải từ
    * đúng ngày của dòng sao kê.
    *
@@ -242,7 +251,7 @@ export function signalsFor(entry: BankEntry, c: BankCandidate, hayInput?: string
     const dd = c.flightDate.slice(8, 10);
     const mm = c.flightDate.slice(5, 7);
     if (!dd || !mm || !c.daySeq) return false;
-    return new RegExp(`${dd}/?${mm}\\s*K\\s?${c.daySeq}(?:[^0-9]|$)`).test(hay);
+    return new RegExp(stampSource(dd, mm, c.daySeq)).test(hay);
   })();
 
   /**
@@ -256,34 +265,140 @@ export function signalsFor(entry: BankEntry, c: BankCandidate, hayInput?: string
 }
 
 /**
- * KHỚP TUYỆT ĐỐI — bốn dấu hiệu cùng chỉ về một chỗ, máy TỰ XÁC NHẬN luôn.
+ * CHỮ ĐỨNG TRƯỚC SỐ THỨ TỰ KHÁCH, tuỳ điểm bay: Khau Phạ dùng "k3", Hà Nội
+ * dùng "HN3". Nhận thêm "SP" cho Sa Pa để khỏi phải sửa lại khi bên đó dùng.
  *
- * Chủ điểm bay đặt luật: nội dung chuyển khoản có ĐỦ ngày bay (ddmm) + SỐ THỨ
- * TỰ khách trong ngày + MÃ BOOKING, và SỐ TIỀN đúng bằng khoản đang chờ, thì
- * không còn gì để người soát nghi ngờ nữa — khỏi bắt kế toán bấm tay từng dòng.
- *
- * Vì sao SỐ TIỀN phải đúng TUYỆT ĐỐI chứ không "gần đúng": khách trả 5tr chia
- * làm 3 lệnh thì nhân viên cũng tách booking thành 3 khoản riêng, mỗi khoản một
- * mã QR (".1" ".2"). Nên mỗi dòng sao kê luôn có đúng một khoản bằng đúng số
- * tiền của nó; lệch đồng nào là có chuyện, phải để người nhìn.
- *
- * Chuỗi ngày+STT nhận cả hai kiểu gõ: "2508 k3" (mã QR app in sẵn) và "2508 3"
- * (khách gõ tay bỏ chữ k). Mã booking nhận cả đuôi chia bill "KLK123.1".
+ * Không nhận chữ khác: một chữ cái bất kỳ đứng trước con số thì "abc 3" cũng
+ * thành số thứ tự, mà chuỗi sao kê đầy chữ.
  */
-export function isExactHit(entry: BankEntry, c: BankCandidate): boolean {
-  if (!(entry.amount > 0) || !c.amounts.includes(entry.amount)) return false;
+const SEQ_PREFIX = "(?:K|HN|SP)";
 
+/**
+ * Chuỗi NGÀY BAY + SỐ THỨ TỰ KHÁCH trong dòng sao kê: "2108 k3", "2608 HN3",
+ * hay "2108 3" (khách gõ tay bỏ chữ).
+ *
+ * Giữa ngày và số phải có CHỮ ĐIỂM BAY hoặc KHOẢNG TRẮNG — dính liền thì
+ * "21083" chỉ là một dãy số, và dãy số thì sao kê nào chẳng có.
+ */
+function stampSource(dd: string, mm: string, seq: number | string): string {
+  return `${dd}/?${mm}(?:\\s*${SEQ_PREFIX}\\s?|\\s+)${seq}(?:[^0-9]|$)`;
+}
+
+function hasDayStamp(hay: string, c: BankCandidate): boolean {
   const dd = c.flightDate.slice(8, 10);
   const mm = c.flightDate.slice(5, 7);
   if (!dd || !mm || !c.daySeq) return false;
+  return new RegExp(stampSource(dd, mm, c.daySeq)).test(hay);
+}
 
-  const hay = ascii(entry.raw);
-  // Ngày bay và số thứ tự phải ĐI LIỀN NHAU: rời nhau thì "2508" có thể là số
-  // tài khoản còn "3" là bất cứ con số nào trong câu — trùng vu vơ như thường.
-  if (!new RegExp(`${dd}/?${mm}\\s*K?\\s?${c.daySeq}(?:[^0-9]|$)`).test(hay)) return false;
+/** Ngày bay (ddmm) đứng thành cụm riêng trong nội dung — không cần kèm số thứ tự. */
+function hasFlightDay(hay: string, c: BankCandidate): boolean {
+  const dd = c.flightDate.slice(8, 10);
+  const mm = c.flightDate.slice(5, 7);
+  if (!dd || !mm) return false;
+  return new RegExp(`(?:^|[^0-9])${dd}/?${mm}(?:[^0-9]|$)`).test(hay);
+}
 
+/**
+ * Số thứ tự khách đứng RIÊNG, bắt buộc có chữ điểm bay đi kèm ("k3", "HN3").
+ *
+ * Con số trần thì KHÔNG tính khi nó đứng một mình: sao kê đầy số, "3" ở đâu
+ * chẳng có. Dạng trần chỉ được công nhận khi bám ngay sau ngày bay — đó là
+ * việc của hasDayStamp.
+ */
+function hasSeqToken(hay: string, c: BankCandidate): boolean {
+  if (!c.daySeq) return false;
+  return new RegExp(`(?:^|[^A-Z0-9])${SEQ_PREFIX}\\s?${c.daySeq}(?:[^0-9]|$)`).test(hay);
+}
+
+/** Số ngày chênh giữa hai chuỗi "YYYY-MM-DD"; một bên trống thì trả vô cực. */
+function dayGap(a?: string, b?: string): number {
+  if (!a || !b) return Infinity;
+  const x = Date.parse(`${a}T00:00:00Z`);
+  const y = Date.parse(`${b}T00:00:00Z`);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return Infinity;
+  return Math.abs(x - y) / 86_400_000;
+}
+
+/**
+ * Cửa sổ ngày cho nhánh CHIA NHIỀU LẦN CHUYỂN.
+ *
+ * Chủ điểm bay: khách chuyển nốt "còn thu" hoặc chuyển "cọc" hầu như luôn rơi
+ * đúng lúc nhân viên bấm thu tiền trên app — hai mốc cùng ngày. Nới 1 ngày để
+ * ôm ca chuyển đêm khuya / nhân viên ghi sáng hôm sau. Lệch hơn nữa (nhân viên
+ * nhập muộn, khách chuyển muộn — hiếm) thì máy KHÔNG tự nhận, để người soát.
+ */
+const EXACT_DATE_WINDOW_DAYS = 1;
+
+/** Ba dấu hiệu định danh đọc được từ nội dung chuyển khoản. */
+type NoteMarks = {
+  /** Nội dung có NGÀY BAY (ddmm). */
+  day: boolean;
+  /** Nội dung có SỐ THỨ TỰ khách ("k3" / "HN3", hoặc số trần bám ngay sau ngày). */
+  seq: boolean;
+  /** Nội dung có MÃ BOOKING (thường chính là số điện thoại khách). */
+  code: boolean;
+};
+
+function noteMarks(hay: string, c: BankCandidate): NoteMarks {
+  const stamp = hasDayStamp(hay, c);
   const code = ascii(c.bookingCode).trim();
-  return code.length >= 4 && containsToken(hay, code);
+  return {
+    day: stamp || hasFlightDay(hay, c),
+    seq: stamp || hasSeqToken(hay, c),
+    code: code.length >= 4 && containsToken(hay, code),
+  };
+}
+
+/**
+ * KHỚP TUYỆT ĐỐI — máy TỰ XÁC NHẬN, kế toán khỏi bấm tay. Ba đường, do chủ
+ * điểm bay đặt theo đúng những gì gặp ngoài đời:
+ *
+ *  1. ĐÚNG SỐ TIỀN + hai trong ba dấu hiệu {ngày bay, số thứ tự, mã booking}.
+ *     Hai dấu hiệu định danh chồng lên nhau cùng chỉ một chỗ, lại đúng đến
+ *     từng đồng, thì không còn gì để nghi.
+ *
+ *     Vì sao phải chừa đường thiếu SỐ THỨ TỰ: lập booking mà chưa bấm lưu đã
+ *     xuất mã QR thu tiền thì booking chưa có số thứ tự, nội dung chỉ còn
+ *     "2608 1234567" (ngày + mã booking).
+ *
+ *     Vì sao phải chừa đường thiếu MÃ BOOKING: mã booking thường chính là số
+ *     điện thoại nên khách hay bỏ qua, chỉ gõ "2108 k3".
+ *
+ *  2. ĐỦ CẢ BA dấu hiệu + chuyển đúng lúc app ghi khoản, thì KHÔNG CẦN đúng
+ *     số tiền. Đây là khách chia nhiều lần chuyển: ba dấu hiệu định danh cùng
+ *     trỏ một chỗ mà lại cùng ngày lập lệnh thì không thể là tiền người khác;
+ *     số tiền lệch chỉ vì đây mới là một phần.
+ *
+ * Ở CẢ HAI đường đều đòi ứng viên DUY NHẤT mang chuỗi ngày+số thứ tự ấy (khi
+ * có `all` để đối chiếu): hai khoản cùng chuỗi thì phải để người soát, đoán
+ * bừa là tiền khách này chui vào sổ khách kia.
+ */
+export function isExactHit(entry: BankEntry, c: BankCandidate, all?: BankCandidate[]): boolean {
+  const hay = ascii(entry.raw);
+  const m = noteMarks(hay, c);
+  const marks = Number(m.day) + Number(m.seq) + Number(m.code);
+  if (marks < 2) return false;
+
+  /**
+   * Trùng chuỗi ngày+số thứ tự với một khoản khác thì dừng. Không truyền `all`
+   * (gọi lẻ khi thử) thì bỏ qua bước này.
+   */
+  if (all && m.seq) {
+    const rivals = all.filter(
+      (o) => (o.bookingId || o.id) !== (c.bookingId || c.id) && hasDayStamp(hay, o),
+    );
+    if (rivals.length > 0) return false;
+  }
+
+  // Đường 1: đúng số tiền + hai dấu hiệu
+  if (entry.amount > 0 && c.amounts.includes(entry.amount)) return true;
+
+  // Đường 2: đủ ba dấu hiệu + cùng ngày lập lệnh, tiền lệch vẫn nhận
+  if (marks === 3 && c.recordedDate) {
+    return dayGap(entry.bankDate, c.recordedDate) <= EXACT_DATE_WINDOW_DAYS;
+  }
+  return false;
 }
 
 export type BankMatch =
@@ -579,7 +694,7 @@ export function matchBankEntry(entry: BankEntry, candidates: BankCandidate[]): B
 
   // ---- 2. NỘI DUNG chuyển khoản ----
   // 2a. "2508 k3" — ngày bay + số thứ tự, chính là nội dung mã QR app tạo sẵn
-  for (const m of hay.matchAll(/(\d{2})\/?(\d{2})\s*K\s?(\d{1,3})\b/g)) {
+  for (const m of hay.matchAll(/(\d{2})\/?(\d{2})(?:\s*(?:K|HN|SP)\s?|\s+)(\d{1,3})\b/g)) {
     const [, dd, mm, seq] = m;
     if (Number(mm) < 1 || Number(mm) > 12) continue;
     const hits = candidates.filter(
