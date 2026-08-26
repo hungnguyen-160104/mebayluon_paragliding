@@ -581,8 +581,20 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         // giá mà sổ điều hành tính một giá khác.
         priceVND: 400_000,
         priceUSD: 16,
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
-        visibleForFlightTypes: ["paragliding", "paramotor"],
+        /**
+         * CHỈ DÙ LƯỢN THƯỜNG (PG) — Khau Phạ không có cánh dù cờ đỏ cho loại
+         * GẮN ĐỘNG CƠ (PPG), nên bày ra là bán thứ không giao được.
+         *
+         * Bỏ ở CẢ HAI bộ lọc: trang chọn chuyến xét cả gói lẫn loại hình
+         * (điều kiện VÀ, rớt một cái là ẩn), nhưng phiếu vé
+         * (components/booking/BookingTicket.tsx) chỉ xét theo GÓI — thiếu vế
+         * gói thì vé vẫn in ra dòng cờ đỏ cho khách bay PPG.
+         *
+         * Có dù cờ đỏ cho PPG rồi thì thêm lại "khau_pha_paramotor*" và
+         * "paramotor" vào hai danh sách này.
+         */
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
+        visibleForFlightTypes: ["paragliding"],
       },
       {
         key: "khau_pha_paramotor_2000m",
