@@ -179,15 +179,47 @@ function isExternalHref(href: string): boolean {
   );
 }
 
+/**
+ * ĐỊA CHỈ NÀO ĐƯỢC PHÉP trong link markdown của bài viết — DANH SÁCH TRẮNG:
+ *
+ *   #muc-1                  neo trong trang
+ *   /blog/bai-viet          đường dẫn nội bộ
+ *   https://… · http://…    trang ngoài
+ *
+ * Trước đây thiếu nhánh "/" nên link nội bộ hiện ra nguyên văn cả dấu ngoặc
+ * giữa bài, rất xấu — mà đây lại đúng là kiểu link hay dùng nhất (link nội bộ
+ * giữa các bài).
+ *
+ * "//" bị loại: "//trang-la.com" trông như đường dẫn nội bộ nhưng trình duyệt
+ * hiểu là sang hẳn tên miền khác.
+ *
+ * Phải là DANH SÁCH TRẮNG chứ không nhận mọi thứ: chữ trong bài đi thẳng vào
+ * href, mà "javascript:" trong href là chạy mã ngay trên trình duyệt người đọc.
+ */
+const MD_HREF = String.raw`(?:#|\/(?!\/)|https?:\/\/)`;
+
 function renderInlineFormat(text: string): React.ReactNode[] {
   const parts = String(text || "").split(
-    /(\[[^\]\n]+\]\((?:#|https:\/\/)[^)\s]+\)|\*\*[^*]+\*\*|\*[^*\n]+\*)/g
+    new RegExp(`(\\[[^\\]\\n]+\\]\\(${MD_HREF}[^)\\s]+\\)|\\*\\*[^*]+\\*\\*|\\*[^*\\n]+\\*)`, "g")
   );
+  const linkRe = new RegExp(`^\\[([^\\]\\n]+)\\]\\((${MD_HREF}[^)\\s]+)\\)$`);
   return parts.map((part, i) => {
-    const link = /^\[([^\]\n]+)\]\(((?:#|https:\/\/)[^)\s]+)\)$/.exec(part);
+    const link = linkRe.exec(part);
     if (link) {
       const href = link[2];
       const external = isExternalHref(href);
+      const cls = "font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200";
+      /**
+       * Link nội bộ đi qua <Link> để chuyển trang không phải tải lại cả trang;
+       * neo "#..." và trang ngoài thì <a> thường là đúng.
+       */
+      if (href.startsWith("/")) {
+        return (
+          <Link key={i} href={href} className={cls}>
+            {link[1]}
+          </Link>
+        );
+      }
       return (
         <a
           key={i}
@@ -195,7 +227,7 @@ function renderInlineFormat(text: string): React.ReactNode[] {
           {...(external
             ? { target: "_blank", rel: "noopener noreferrer" }
             : {})}
-          className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
+          className={cls}
         >
           {link[1]}
         </a>
