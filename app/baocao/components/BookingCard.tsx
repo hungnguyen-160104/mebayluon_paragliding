@@ -2833,17 +2833,53 @@ export function BookingTodayBanner({
             )}
             {/* Ghi rõ AI bấm — "đã bay by judy", "huỷ by trucngoc": lệch số còn biết hỏi ai */}
             {b.status === "done" ? (
-              <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                đã bay ✓{b.doneBy ? ` by ${b.doneBy}` : ""}
-              </span>
+              <>
+                <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                  đã bay ✓{b.doneBy ? ` by ${b.doneBy}` : ""}
+                </span>
+                {/* Chuyến bay THẬT nhưng không xé vé (hay gặp ở PPG) — phải nói
+                    ra, không thì cuối ngày đối chiếu "khách nhiều hơn vé xuất"
+                    mà chẳng ai lần ra vì sao. */}
+                {b.noTicketFlight && (
+                  <span
+                    className="mr-1.5 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-900"
+                    title={b.noTicketReason ? `Lý do: ${b.noTicketReason}` : undefined}
+                  >
+                    🎫✕ bay không vé{b.noTicketBy ? ` by ${b.noTicketBy}` : ""}
+                  </span>
+                )}
+              </>
             ) : (
-              <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
-                {b.refundAmount
-                  ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
-                  : ""}
-                {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
-              </span>
+              <>
+                <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
+                  đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
+                  {b.refundAmount
+                    ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
+                    : ""}
+                  {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
+                </span>
+                {/**
+                 * HUỶ RỒI THÌ CÓ VÉ PHẢI THU HỒI KHÔNG — hai chuyện khác hẳn nhau
+                 * mà nhìn dòng huỷ không phân biệt được.
+                 *
+                 * Đã xuất vé: còn một tờ vé ngoài kia phải đòi về, và nó nằm
+                 * trong phép tính "vé thu hồi = huỷ + dời". Chưa xuất vé: không
+                 * có gì để thu, cũng không tính vào phép ấy.
+                 *
+                 * Lấy cờ người huỷ tự khai (`cancelTicketIssued`); bản ghi cũ
+                 * chưa có cờ thì nhìn sang dấu đã xuất vé của chính booking —
+                 * thà báo "đã xuất vé" hơi thừa còn hơn để lọt một tờ vé.
+                 */}
+                {b.cancelTicketIssued || b.ticketIssued ? (
+                  <span className="mr-1.5 rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                    🎫 đã xuất vé
+                  </span>
+                ) : (
+                  <span className="mr-1.5 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                    🎫✕ chưa xuất vé
+                  </span>
+                )}
+              </>
             )}
             <BookingSummary b={b} dim={b.status === "done" || b.locked} />
           </li>
@@ -2984,8 +3020,24 @@ export function AssignedBookings({
                 {b.status === "done" && (
                   <span className="mr-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">đã bay ✓</span>
                 )}
+                {b.status === "done" && b.noTicketFlight && (
+                  <span className="mr-1.5 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-900">
+                    🎫✕ bay không vé
+                  </span>
+                )}
                 {b.status === "cancelled" && (
-                  <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">đã huỷ</span>
+                  <>
+                    <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">đã huỷ</span>
+                    {b.cancelTicketIssued || b.ticketIssued ? (
+                      <span className="mr-1.5 rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                        🎫 đã xuất vé
+                      </span>
+                    ) : (
+                      <span className="mr-1.5 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                        🎫✕ chưa xuất vé
+                      </span>
+                    )}
+                  </>
                 )}
                 {!isMine(b) && b.assignedToName && (
                   <span className="mr-1.5 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">
