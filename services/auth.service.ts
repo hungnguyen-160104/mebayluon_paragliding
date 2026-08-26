@@ -1,6 +1,8 @@
 // services/auth.service.ts
 import bcrypt from "bcryptjs";
 import { createLogger } from "@/lib/logger";
+import { connectDB } from "@/lib/mongodb";
+import { AdminCredential } from "@/models/AdminCredential.model";
 
 const logger = createLogger('AuthService');
 
@@ -87,6 +89,21 @@ export async function validateAdmin(username: string, password: string): Promise
 
   for (const slot of configured) {
     if (username !== slot.user) continue;
+
+    /**
+     * MẬT KHẨU CHỦ TỰ ĐỔI (nếu có) THẮNG mật khẩu trong biến môi trường.
+     *
+     * Không có luật này thì nút "Đổi mật khẩu" chẳng khoá được ai: mật khẩu cũ
+     * nằm trong biến môi trường vẫn vào được như thường. Xem chú thích ở
+     * models/AdminCredential.model.ts.
+     */
+    const saved = await savedHashOf(slot.user);
+    if (saved) {
+      const ok = await bcrypt.compare(password, saved).catch(() => false);
+      if (ok) logger.info('Admin authenticated (mật khẩu đã đổi)', { level: slot.level });
+      return ok ? slot.level : null;
+    }
+
     if (await passwordOk(slot, password)) {
       logger.info('Admin authenticated', { level: slot.level });
       return slot.level;
@@ -97,6 +114,28 @@ export async function validateAdmin(username: string, password: string): Promise
 
   logger.debug('Username not found in any admin slot');
   return null;
+}
+
+/**
+ * Mật khẩu đã đổi của một tài khoản, hoặc null nếu chưa từng đổi.
+ *
+ * CSDL hỏng/không nối được thì trả null để rơi về biến môi trường — thà đăng
+ * nhập bằng mật khẩu cũ còn hơn khoá cứng chủ site ra ngoài khu quản trị.
+ */
+async function savedHashOf(username: string): Promise<string | null> {
+  try {
+    await connectDB();
+    const doc = await AdminCredential.findOne({ username }).select("passwordHash").lean<any>();
+    return doc?.passwordHash ? String(doc.passwordHash) : null;
+  } catch (error) {
+    logger.error('Không đọc được mật khẩu đã đổi, tạm dùng biến môi trường', error as Error);
+    return null;
+  }
+}
+
+/** Mức quyền của một tên đăng nhập — dùng khi đổi mật khẩu, không cần mật khẩu. */
+export function levelOfUsername(username: string): AdminLevel | null {
+  return slots().find((s) => s.user && s.user === username)?.level ?? null;
 }
 
 /**

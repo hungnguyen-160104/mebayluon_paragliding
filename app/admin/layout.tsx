@@ -6,6 +6,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { getToken } from "@/lib/auth";
 import { useEffect, useState } from "react";
 
+import { AccountBar } from "./AccountBar";
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -19,6 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
    * gọn mắt — chặn thật nằm ở requireBaobay phía máy chủ.
    */
   const [level, setLevel] = useState<"owner" | "editor" | null>(null);
+  const [username, setUsername] = useState("");
 
   // Guard tất cả route admin trừ /admin/login
   useEffect(() => {
@@ -37,7 +40,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return;
           }
           const body = await res.json();
-          if (alive) setLevel(body?.user?.level === "owner" ? "owner" : "editor");
+          if (alive) {
+            setLevel(body?.user?.level === "owner" ? "owner" : "editor");
+            setUsername(String(body?.user?.username ?? ""));
+          }
         } catch {
           // Mạng chập chờn thì đừng đá người ta ra ngoài — cứ coi là mức thấp
           if (alive) setLevel("editor");
@@ -81,6 +87,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )}
             </div>
           </div>
+          {/* Góc tài khoản: đang là ai, đổi mật khẩu, đăng xuất */}
+          {level && <AccountBar username={username} level={level} />}
         </nav>
       </header>
 
