@@ -67,6 +67,8 @@ type CloseSuggestion = {
   cancelledRefundCount: number;
   cancelledNoRefundCount: number;
   rescheduledCount: number;
+  /** Số KHÁCH dời lịch — gom quầy khai + sổ booking, đếm theo đầu khách. */
+  rescheduledGuestCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng tự động từ mã phi công báo đã bay (+PPG). */
   pilotRanges: Array<{ from: string; to: string }>;
@@ -807,8 +809,16 @@ function DailyCloseInner() {
                       {reporterNames ? <span className="font-normal text-slate-500"> — {reporterNames}</span> : null}
                     </div>
                     <div className="mt-1 text-[11px] leading-snug text-slate-600">
-                      {suggest.guestCount} khách · {suggest.ticketsIssued} vé xuất · {suggest.ticketsReturned} vé thu về ·
-                      huỷ {suggest.cancelledCount} · dời {suggest.rescheduledCount}
+                      {/* Ghi rõ ĐĂNG KÝ: đây là số quầy đếm lúc nhận khách, chưa
+                          trừ ai huỷ — để cạnh "vé thu về" mà không nói rõ thì
+                          rất dễ đọc nhầm thành số khách đã bay. */}
+                      {suggest.guestCount} khách đăng ký · {suggest.ticketsIssued} vé xuất ·{" "}
+                      {suggest.ticketsReturned} vé thu về · huỷ {suggest.cancelledCount} · dời{" "}
+                      {suggest.rescheduledCount}
+                      {" → "}
+                      <strong className="text-slate-800">
+                        bay {Math.max(0, suggest.ticketsIssued - suggest.ticketsReturned)}
+                      </strong>
                       <br />
                       TM {formatVND(suggest.cashTotal)} · CK {formatVND(suggest.transferTotal)}
                       <br />
@@ -865,8 +875,34 @@ function DailyCloseInner() {
                   phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare label="sổ booking (đã bay)" value={suggest?.flownGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherGuests ?? suggest?.guestCount} mine={form.guestCount}
-                onTake={locked ? undefined : (v) => set("guestCount", v)} />
+              {/**
+               * SỐ QUẦY KHAI LÀ KHÁCH ĐĂNG KÝ, KHÔNG PHẢI KHÁCH ĐÃ BAY.
+               *
+               * Quầy gõ "Số khách" lúc nhận khách đầu ngày; khách huỷ giữa
+               * chừng thì con số ấy không lùi lại. Đem nguyên số đó so với ô
+               * "đã bay" là so hai thứ khác nhau — ngày 25/08 quầy khai 7
+               * trong khi chỉ 6 người bay, mà bên cạnh lại có sẵn nút "⧉ lấy".
+               *
+               * Nên quy về ĐÃ BAY bằng chính số quầy khai:
+               *  - Điểm có vé: vé xuất − vé thu hồi (7 − 1 = 6). Đúng luật
+               *    "vé thu hồi = huỷ + dời" mà bộ đối chiếu vẫn dùng.
+               *  - Hà Nội (không vé): khách − khách huỷ.
+               */}
+              <Compare
+                label="quầy/điều phối báo (đã trừ huỷ)"
+                value={(() => {
+                  if (noTickets) {
+                    const khach = t?.dispatcherGuests ?? suggest?.guestCount;
+                    if (khach === undefined) return undefined;
+                    return Math.max(0, khach - (suggest?.cancelledCount ?? 0));
+                  }
+                  const xuat = t?.dispatcherIssued ?? suggest?.ticketsIssued;
+                  const thuVe = t?.dispatcherReturned ?? suggest?.ticketsReturned ?? 0;
+                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe);
+                })()}
+                mine={form.guestCount}
+                onTake={locked ? undefined : (v) => set("guestCount", v)}
+              />
               <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : suggest?.pilot?.hasData ? suggest.pilot.flights + suggest.pilot.ppg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
@@ -932,6 +968,15 @@ function DailyCloseInner() {
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
+                  {/* Nhóm dời làm THẲNG TRÊN SỔ BOOKING thường chưa xuất vé nên
+                      không có mã nào để thu hồi — quầy cũng không khai. Hiện
+                      riêng theo đầu khách, kẻo màn hình báo "dời 0" trong khi
+                      hôm đó có nhóm chuyển sang ngày khác. */}
+                  {(suggest?.rescheduledGuestCount ?? 0) > 0 && (
+                    <p className="mt-0.5 text-[10px] font-semibold leading-tight text-amber-700">
+                      Sổ booking: {suggest!.rescheduledGuestCount} khách dời (xem bảng tóm tắt bên dưới)
+                    </p>
+                  )}
                 </ServiceBox>
 
                 {/* Ô này đếm theo VÉ và bị ràng vào phép tính "vé thu hồi =

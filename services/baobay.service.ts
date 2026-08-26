@@ -7436,6 +7436,14 @@ export type CloseSuggestionDTO = {
   cancelledRefundCount: number;
   /** KHÁCH huỷ chưa thanh toán (không có hoàn) — đếm từ sổ booking + báo cáo điều phối. */
   cancelledNoRefundCount: number;
+  /**
+   * SỐ KHÁCH dời lịch — gom cả quầy khai lẫn sổ booking, đếm theo ĐẦU KHÁCH.
+   *
+   * Đứng RIÊNG với `rescheduledCount`: cái kia đếm theo VÉ và bị ràng vào phép
+   * tính "vé thu hồi = huỷ + dời", mà nhóm dời trên sổ booking thường chưa
+   * xuất vé nên không có mã nào để thu hồi. Nhét chung là báo đỏ oan mỗi ngày.
+   */
+  rescheduledGuestCount: number;
   rescheduledCount: number;
 issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng TỰ ĐỘNG từ mã phi công báo đã bay (+PPG) — dùng khi quầy chưa nhập dải. */
@@ -7820,6 +7828,25 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     note: "huỷ MỘT PHẦN trên sổ booking (booking vẫn bay phần còn lại; hoàn tiền xem khay hoàn)",
   }));
 
+  /**
+   * BOOKING ĐÃ DỜI KHỎI NGÀY NÀY — đọc thẳng sổ booking.
+   *
+   * Trước đây khối gợi ý chỉ cộng số quầy TỰ KHAI, nên dời lịch làm trên sổ
+   * booking (điều phối bấm "⇢ Dời lịch") không được đếm: ngày 24/08 có nhóm
+   * Lê Thị Trang 2 khách sang 23/08 mà màn hình vẫn báo "dời 0".
+   *
+   * Cùng khoá tìm với danh sách "dời đi" ở listBookings: `rescheduledFrom`
+   * còn ghi ngày cũ, còn `flightDate` đã sang ngày mới.
+   */
+  const movedAwayBookings = await BaobayBooking.find({
+    spot,
+    rescheduledFrom: date,
+    flightDate: { $ne: date },
+    status: { $nin: ["voided"] },
+  })
+    .select("contactName phone bookingCode guestCount flightDate")
+    .lean<any[]>();
+
   const bookingCancelEntries = cancelledBookings
     .filter((b) => {
       const codes = (b.cancelTicketCodes ?? []).map((c: string) => String(c).toUpperCase());
@@ -7873,6 +7900,26 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     })),
   );
 
+  /**
+   * Nhóm dời lịch = quầy khai + sổ booking, BỎ TRÙNG theo tên + số khách
+   * (cùng cách chống trùng với nhóm huỷ ở trên).
+   */
+  const mergedRescheduleEntries = (() => {
+    const declared = dispatchers.flatMap(
+      (d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"],
+    );
+    const seen = new Set(declared.map((e) => `${(e.name || "").trim().toLowerCase()}|${e.guests || 0}`));
+    const fromBook = movedAwayBookings
+      .filter((b) => !seen.has(`${(b.contactName || "").trim().toLowerCase()}|${b.guestCount || 0}`))
+      .map((b) => ({
+        name: b.contactName || b.phone || "khách",
+        guests: b.guestCount || 0,
+        toDate: b.flightDate || "",
+        note: "dời trên sổ booking",
+      }));
+    return [...declared, ...fromBook];
+  })();
+
   const pilotRanges = rangesFromCodes(
     pilots.flatMap((p) => [...((p.ticketCodes ?? []) as string[]), ...((p.ppgCodes ?? []) as string[])]),
   );
@@ -7915,6 +7962,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       bookingCancelEntries.filter((e) => !(e.refund > 0)).reduce((t, e) => t + (e.guests || 0), 0) +
       partialCancelEntries.reduce((t, e) => t + (e.guests || 0), 0),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
+    rescheduledGuestCount: mergedRescheduleEntries.reduce((t, e) => t + (e.guests || 0), 0),
     // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
     issuedRanges: (() => {
       const fromDispatcher = dispatchers.flatMap((d) =>
@@ -7954,7 +8002,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       ...bookingCancelEntries,
       ...partialCancelEntries,
     ],
-    rescheduledGuestEntries: dispatchers.flatMap((d) => (d.rescheduledGuestEntries ?? []) as CloseSuggestionDTO["rescheduledGuestEntries"]),
+    rescheduledGuestEntries: mergedRescheduleEntries,
     dispatcherLedger: dispatchers.flatMap((d) => {
       /** Nhiều điều phối cùng ngày thì mỗi dòng ghi rõ của ai. */
       const tag = dispatchers.length > 1 ? `${d.staffName}: ` : "";
