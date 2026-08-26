@@ -575,8 +575,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         // Counter để chọn đúng số khách bay cùng cờ (checkbox cũ tính cả đoàn)
         controlType: "counter",
-        priceVND: 100_000,
-        priceUSD: 4,
+        // 100k -> 400k từ 26/08/2026, khớp với bảng giá nội bộ ở
+        // lib/baobay/flight-price.ts (SPOT_SERVICE_PRICE, khoá "redFlag").
+        // Đổi giá lần sau phải sửa CẢ HAI, không thì khách đặt trên web một
+        // giá mà sổ điều hành tính một giá khác.
+        priceVND: 400_000,
+        priceUSD: 16,
         visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paragliding", "paramotor"],
       },
