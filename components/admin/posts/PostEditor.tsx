@@ -521,6 +521,19 @@ export default function PostEditor({
   const [form, setForm] = useState<EditorForm>(EMPTY_FORM);
   const [blocksVi, setBlocksVi] = useState<ContentBlock[]>([initialPair.vi]);
   const [blocksEn, setBlocksEn] = useState<ContentBlock[]>([initialPair.en]);
+  /**
+   * CHẾ ĐỘ DÁN HTML — bỏ qua trình soạn khối, đưa thẳng HTML vào bài.
+   *
+   * Bài viết ở đây phần lớn do Claude soạn sẵn rồi dán vào; bắt bẻ từng khối
+   * một thì vừa lâu vừa mất định dạng. Trang bài đọc HTML sẵn rồi (xem
+   * `hasHtmlTag` ở app/blog/[slug]/page.tsx) nên chỉ thiếu đúng cái ô để dán.
+   *
+   * Blocks và HTML KHÔNG dùng chung được: trang bài ưu tiên blocks, có blocks
+   * là HTML bị bỏ qua. Nên lưu ở chế độ này phải XOÁ blocks đi.
+   */
+  const [htmlMode, setHtmlMode] = useState(false);
+  const [htmlVi, setHtmlVi] = useState("");
+  const [htmlEn, setHtmlEn] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -561,6 +574,19 @@ export default function PostEditor({
 
       setBlocksVi(synced.vi);
       setBlocksEn(synced.en);
+
+      /**
+       * Bài ĐÃ LƯU BẰNG HTML (không còn khối nào) thì mở thẳng chế độ HTML —
+       * mở ra trình soạn khối trống rỗng sẽ khiến người dùng tưởng mất bài.
+       */
+      const viHtml = post.contentVi || "";
+      const enHtml = post.content || "";
+      setHtmlVi(viHtml);
+      setHtmlEn(enHtml);
+      const noBlocks = !(post.contentBlocksVi?.length || post.contentBlocks?.length);
+      setHtmlMode(
+        post.contentMode === "html" || (post.contentMode !== "blocks" && noBlocks && Boolean(viHtml || enHtml)),
+      );
       return;
     }
 
@@ -570,6 +596,9 @@ export default function PostEditor({
     const pair = createParallelBlock("paragraph");
     setBlocksVi([pair.vi]);
     setBlocksEn([pair.en]);
+    setHtmlVi("");
+    setHtmlEn("");
+    setHtmlMode(false);
   }, [post]);
 
   const isKnowledge = form.category === "knowledge";
@@ -700,6 +729,22 @@ export default function PostEditor({
       el.focus();
       el.setSelectionRange(start + marker.length, end + marker.length);
     });
+  }
+
+  /**
+   * Chuyển qua lại giữa hai lối soạn.
+   *
+   * Sang HTML mà ô còn trống thì đổ sẵn HTML dựng từ các khối đang có — người
+   * dùng thấy đúng bài mình đang viết, không phải màn hình trắng. Chiều ngược
+   * lại KHÔNG tự bóc HTML thành khối: bóc ngược là đoán, mà đoán sai thì mất
+   * bài; chỉ cảnh báo trên màn hình rằng phần HTML sẽ bị bỏ khi lưu.
+   */
+  function switchHtmlMode(next: boolean) {
+    if (next && !htmlVi.trim() && !htmlEn.trim()) {
+      setHtmlVi(blocksToHtml(blocksVi));
+      setHtmlEn(blocksToHtml(blocksEn));
+    }
+    setHtmlMode(next);
   }
 
   function updateEnglishTitle(value: string) {
@@ -898,12 +943,16 @@ export default function PostEditor({
       if (!form.titleVi.trim()) nextErrors.titleVi = "Cần tiêu đề tiếng Việt";
       if (!form.category) nextErrors.category = "Cần chọn danh mục";
 
-      const hasContentVi = blocksVi.some((block) =>
-        JSON.stringify(block.data || {}).replace(/[{}\[\]",:\s]/g, "").length > 0
-      );
-      const hasContentEn = blocksEn.some((block) =>
-        JSON.stringify(block.data || {}).replace(/[{}\[\]",:\s]/g, "").length > 0
-      );
+      const hasContentVi = htmlMode
+        ? htmlVi.trim().length > 0
+        : blocksVi.some((block) =>
+            JSON.stringify(block.data || {}).replace(/[{}\[\]",:\s]/g, "").length > 0
+          );
+      const hasContentEn = htmlMode
+        ? htmlEn.trim().length > 0
+        : blocksEn.some((block) =>
+            JSON.stringify(block.data || {}).replace(/[{}\[\]",:\s]/g, "").length > 0
+          );
 
       if (!hasContentVi) nextErrors.contentVi = "Cần nội dung tiếng Việt";
       if (!hasContentEn) nextErrors.content = "Cần nội dung tiếng Anh";
@@ -942,11 +991,19 @@ export default function PostEditor({
       excerpt: form.excerpt.trim(),
       excerptVi: form.excerptVi.trim(),
 
-      contentBlocks: blocksEn,
-      contentBlocksVi: blocksVi,
+      /**
+       * Chế độ HTML thì XOÁ blocks: trang bài ưu tiên blocks, để sót lại là
+       * HTML vừa dán không bao giờ hiện ra mà chẳng ai hiểu vì sao.
+       */
+      // Máy chủ đọc cờ này để KHÔNG dựng lại nội dung từ khối — thiếu nó là
+      // HTML vừa dán bị stripHtml xoá sạch thẻ (xem services/post.service.ts)
+      contentMode: htmlMode ? "html" : "blocks",
 
-      content: blocksToHtml(blocksEn),
-      contentVi: blocksToHtml(blocksVi),
+      contentBlocks: htmlMode ? [] : blocksEn,
+      contentBlocksVi: htmlMode ? [] : blocksVi,
+
+      content: htmlMode ? htmlEn.trim() : blocksToHtml(blocksEn),
+      contentVi: htmlMode ? htmlVi.trim() : blocksToHtml(blocksVi),
 
       coverImage: form.coverImage.trim() || undefined,
 
@@ -1296,15 +1353,76 @@ export default function PostEditor({
           </section>
 
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-4">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Nội dung bài viết song ngữ</h3>
                 <p className="text-sm text-gray-500">
-                  Dán link YouTube hoặc Google Maps vào block “Nhúng link”
+                  {htmlMode
+                    ? "Dán thẳng HTML — trang bài hiện đúng như mã bạn dán"
+                    : "Dán link YouTube hoặc Google Maps vào block “Nhúng link”"}
                 </p>
+              </div>
+              {/* Hai lối soạn, chọn một. Bài do Claude viết sẵn thì dán HTML
+                  nhanh hơn nhiều so với chẻ ra từng khối. */}
+              <div className="flex h-9 overflow-hidden rounded-lg border border-gray-300">
+                {(
+                  [
+                    [false, "Soạn theo khối"],
+                    [true, "Dán HTML"],
+                  ] as Array<[boolean, string]>
+                ).map(([mode, label], i) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => switchHtmlMode(mode)}
+                    className={
+                      (i > 0 ? "border-l border-gray-300 " : "") +
+                      "px-3 text-xs font-semibold transition " +
+                      (htmlMode === mode ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
+            {htmlMode ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                  Mã dán vào đây hiện <strong>nguyên xi</strong> trên trang bài. Chỉ dán HTML bạn tự tạo hoặc tin
+                  tưởng — thẻ <code>&lt;script&gt;</code> lấy từ nguồn lạ chạy được trên trình duyệt người đọc.
+                  Chuyển về “Soạn theo khối” sẽ bỏ phần HTML này.
+                </div>
+                <div>
+                  <label className={labelClass}>Nội dung tiếng Việt (HTML) *</label>
+                  <textarea
+                    value={htmlVi}
+                    onChange={(e) => setHtmlVi(e.target.value)}
+                    rows={16}
+                    spellCheck={false}
+                    placeholder={'<h2>Tiêu đề mục</h2>\n<p>Đoạn văn…</p>\n<img src="https://…" alt="…" />'}
+                    className={`${inputClass} font-mono text-xs leading-relaxed`}
+                  />
+                  {errors.contentVi && <p className={errorClass}>{errors.contentVi}</p>}
+                  <p className="mt-1 text-xs text-gray-400">{htmlVi.length.toLocaleString("vi-VN")} ký tự</p>
+                </div>
+                <div>
+                  <label className={labelClass}>Content in English (HTML) *</label>
+                  <textarea
+                    value={htmlEn}
+                    onChange={(e) => setHtmlEn(e.target.value)}
+                    rows={16}
+                    spellCheck={false}
+                    placeholder={'<h2>Section heading</h2>\n<p>Paragraph…</p>'}
+                    className={`${inputClass} font-mono text-xs leading-relaxed`}
+                  />
+                  {errors.content && <p className={errorClass}>{errors.content}</p>}
+                  <p className="mt-1 text-xs text-gray-400">{htmlEn.length.toLocaleString("vi-VN")} ký tự</p>
+                </div>
+              </div>
+            ) : (
+            <>
             <div className="space-y-4">
               {blocksVi.map((block, index) => {
                 const blockEn = blocksEn[index] || block;
@@ -1872,8 +1990,10 @@ export default function PostEditor({
                 <span>Thêm block phía dưới</span>
               </button>
             </div>
+            </>
+            )}
 
-            {(errors.contentVi || errors.content) && (
+            {!htmlMode && (errors.contentVi || errors.content) && (
               <div className="mt-4 space-y-1">
                 {errors.contentVi && <p className={errorClass}>{errors.contentVi}</p>}
                 {errors.content && <p className={errorClass}>{errors.content}</p>}

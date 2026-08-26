@@ -46,6 +46,20 @@ export interface IPost {
   contentBlocks?: Array<Record<string, unknown>>;
   contentBlocksVi?: Array<Record<string, unknown>>;
 
+  /**
+   * Bài này soạn bằng gì:
+   *  - "blocks" (mặc định) — dựng từ trình soạn khối, `content` do máy chủ tự
+   *    sinh lại từ `contentBlocks` mỗi lần lưu.
+   *  - "html" — người dùng DÁN THẲNG HTML. `content`/`contentVi` là nguyên văn
+   *    và KHÔNG được dựng lại, `contentBlocks` để rỗng.
+   *
+   * Phải LƯU dấu này chứ không đoán: đường cập nhật luôn dựng lại content từ
+   * khối, mà `textToParagraphBlock` thì `stripHtml` — nên chỉ cần ai đó sửa
+   * mỗi cái tiêu đề là toàn bộ thẻ HTML của bài bay sạch, chữ dồn thành một
+   * cục. Có dấu này thì đường ấy được chặn lại.
+   */
+  contentMode?: "blocks" | "html";
+
   excerpt?: string;
   excerptVi?: string;
 
@@ -135,6 +149,7 @@ const PostSchema = new Schema<IPost>(
 
     contentBlocks: { type: [Schema.Types.Mixed], default: [] },
     contentBlocksVi: { type: [Schema.Types.Mixed], default: [] },
+    contentMode: { type: String, enum: ["blocks", "html"], default: "blocks" },
 
     excerpt: { type: String, default: "" },
     excerptVi: { type: String, default: "" },

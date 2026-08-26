@@ -13,6 +13,8 @@ export type PostInput = {
 
   contentBlocks?: ContentBlock[];
   contentBlocksVi?: ContentBlock[];
+  /** "html" = dán thẳng HTML, máy chủ giữ nguyên văn (xem models/Post.model.ts). */
+  contentMode?: "blocks" | "html";
 
   excerpt?: string;
   excerptVi?: string;
@@ -445,13 +447,30 @@ export async function createPost(data: PostInput, _auth?: any) {
   const fallbackContentEn = String(data.content || "").trim();
   const fallbackContentVi = String(data.contentVi || "").trim();
 
-  const normalizedBlocksEn = blocksEn.length ? blocksEn : textToParagraphBlock(fallbackContentEn);
-  const normalizedBlocksVi = blocksVi.length
-    ? blocksVi
-    : textToParagraphBlock(fallbackContentVi || fallbackContentEn);
+  /**
+   * DÁN THẲNG HTML: giữ nguyên văn, không đụng tới.
+   *
+   * Đường thường sẽ gói nội dung vào khối rồi dựng lại HTML từ khối, mà
+   * `textToParagraphBlock` chạy `stripHtml` — đi qua đó là bay sạch mọi thẻ,
+   * bài dồn thành một cục chữ.
+   */
+  const htmlMode = data.contentMode === "html";
 
-  const normalizedContent = blocksToHtml(normalizedBlocksEn);
-  const normalizedContentVi = blocksToHtml(normalizedBlocksVi);
+  const normalizedBlocksEn = htmlMode
+    ? []
+    : blocksEn.length
+      ? blocksEn
+      : textToParagraphBlock(fallbackContentEn);
+  const normalizedBlocksVi = htmlMode
+    ? []
+    : blocksVi.length
+      ? blocksVi
+      : textToParagraphBlock(fallbackContentVi || fallbackContentEn);
+
+  const normalizedContent = htmlMode ? fallbackContentEn : blocksToHtml(normalizedBlocksEn);
+  const normalizedContentVi = htmlMode
+    ? fallbackContentVi || fallbackContentEn
+    : blocksToHtml(normalizedBlocksVi);
 
   const slug =
     data.slug?.trim()
@@ -470,6 +489,7 @@ export async function createPost(data: PostInput, _auth?: any) {
 
     contentBlocks: normalizedBlocksEn,
     contentBlocksVi: normalizedBlocksVi,
+    contentMode: htmlMode ? "html" : "blocks",
 
     excerpt: data.excerpt?.trim() || autoExcerpt(normalizedContent),
     excerptVi: data.excerptVi?.trim() || autoExcerpt(normalizedContentVi),
@@ -560,16 +580,32 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
   const fallbackContentVi =
     typeof patch.contentVi === "string" ? patch.contentVi.trim() : current.contentVi;
 
-  const normalizedBlocksEn = blocksEn.length ? blocksEn : textToParagraphBlock(fallbackContentEn);
-  const normalizedBlocksVi = blocksVi.length
-    ? blocksVi
-    : textToParagraphBlock(fallbackContentVi || fallbackContentEn);
+  /**
+   * Kiểu soạn theo THỨ TỰ: cái người dùng vừa chọn, không khai thì giữ như bài
+   * đang lưu. Nhờ vậy sửa mỗi tiêu đề của một bài HTML cũng không làm bài bị
+   * dựng lại từ khối và mất sạch thẻ.
+   */
+  const htmlMode = (patch.contentMode ?? (current as any).contentMode) === "html";
 
-  patch.contentBlocks = normalizedBlocksEn;
-  patch.contentBlocksVi = normalizedBlocksVi;
+  if (htmlMode) {
+    patch.contentMode = "html";
+    patch.contentBlocks = [];
+    patch.contentBlocksVi = [];
+    patch.content = fallbackContentEn;
+    patch.contentVi = fallbackContentVi || fallbackContentEn;
+  } else {
+    const normalizedBlocksEn = blocksEn.length ? blocksEn : textToParagraphBlock(fallbackContentEn);
+    const normalizedBlocksVi = blocksVi.length
+      ? blocksVi
+      : textToParagraphBlock(fallbackContentVi || fallbackContentEn);
 
-  patch.content = blocksToHtml(normalizedBlocksEn);
-  patch.contentVi = blocksToHtml(normalizedBlocksVi);
+    patch.contentMode = "blocks";
+    patch.contentBlocks = normalizedBlocksEn;
+    patch.contentBlocksVi = normalizedBlocksVi;
+
+    patch.content = blocksToHtml(normalizedBlocksEn);
+    patch.contentVi = blocksToHtml(normalizedBlocksVi);
+  }
 
   if (typeof patch.excerpt !== "string" || !patch.excerpt.trim()) {
     patch.excerpt = autoExcerpt(patch.content);

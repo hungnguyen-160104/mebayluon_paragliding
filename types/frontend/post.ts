@@ -65,6 +65,8 @@ export type Post = {
 
   contentBlocks?: ContentBlock[];
   contentBlocksVi?: ContentBlock[];
+  /** "html" = bài dán thẳng HTML, máy chủ giữ nguyên văn, không dựng lại từ khối. */
+  contentMode?: "blocks" | "html";
 
   excerpt?: string;
   excerptVi?: string;
@@ -128,6 +130,8 @@ export type PostPayload = {
 
   contentBlocks?: ContentBlock[];
   contentBlocksVi?: ContentBlock[];
+  /** "html" = bài dán thẳng HTML, máy chủ giữ nguyên văn, không dựng lại từ khối. */
+  contentMode?: "blocks" | "html";
 
   coverImage?: string;
   tags?: string[];
