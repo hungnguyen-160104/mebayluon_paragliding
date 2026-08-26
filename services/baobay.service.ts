@@ -7432,6 +7432,8 @@ export type CloseSuggestionDTO = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  /** KHÁCH huỷ ĐÃ trả tiền (có lệnh hoàn) — đếm từ sổ booking + báo cáo điều phối. */
+  cancelledRefundCount: number;
   /** KHÁCH huỷ chưa thanh toán (không có hoàn) — đếm từ sổ booking + báo cáo điều phối. */
   cancelledNoRefundCount: number;
   rescheduledCount: number;
@@ -7822,6 +7824,21 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      * Gom cả hai nguồn: điều phối khai nhóm huỷ với tiền hoàn 0, và booking
      * huỷ trên sổ (đã lọc trùng) không ghi tiền hoàn.
      */
+    /**
+     * HUỶ CẦN HOÀN: khách huỷ ĐÃ trả tiền — đếm theo ĐẦU KHÁCH, cùng cách gom
+     * với `cancelledNoRefundCount` ngay dưới, chỉ khác điều kiện tiền hoàn.
+     * Hai số cộng lại đúng bằng tổng khách huỷ trong ngày.
+     *
+     * Nhóm huỷ MỘT PHẦN (`partialCancelEntries`) không có ở đây: tách bớt vài
+     * khách khỏi đoàn thì phần bị bớt chưa trả tiền riêng, nên nó nằm trọn ở
+     * vế "không cần hoàn".
+     */
+    cancelledRefundCount:
+      dispatchers
+        .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
+        .filter((e) => e.refund > 0)
+        .reduce((t, e) => t + (e.guests || 0), 0) +
+      bookingCancelEntries.filter((e) => e.refund > 0).reduce((t, e) => t + (e.guests || 0), 0),
     cancelledNoRefundCount:
       dispatchers
         .flatMap((d) => (d.cancelledGuestEntries ?? []) as any[])
@@ -7972,6 +7989,7 @@ export type DailyCloseSaveInput = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledRefundCount?: number;
   cancelledNoRefundCount?: number;
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
@@ -8060,6 +8078,7 @@ export async function upsertDailyClose(
         ticketsIssued: spot === "ha-noi" ? 0 : input.ticketsIssued,
         ticketsReturned: spot === "ha-noi" ? 0 : input.ticketsReturned,
         cancelledCount: input.cancelledCount,
+        cancelledRefundCount: Math.max(0, Math.round(input.cancelledRefundCount ?? 0)),
         cancelledNoRefundCount: Math.max(0, Math.round(input.cancelledNoRefundCount ?? 0)),
         rescheduledCount: input.rescheduledCount,
         issuedRanges: spot === "ha-noi" ? [] : ranges,
@@ -8119,6 +8138,7 @@ async function pushCloseRow(doc: any) {
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,
+    cancelledRefundCount: doc.cancelledRefundCount ?? 0,
     cancelledNoRefundCount: doc.cancelledNoRefundCount ?? 0,
     cancelledCodes:
       (doc.cancelledCodes || []).join(", ") ||
@@ -8721,6 +8741,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     ticketsIssued: doc.ticketsIssued ?? 0,
     ticketsReturned: doc.ticketsReturned ?? 0,
     cancelledCount: doc.cancelledCount ?? 0,
+    cancelledRefundCount: doc.cancelledRefundCount ?? 0,
     cancelledNoRefundCount: doc.cancelledNoRefundCount ?? 0,
     rescheduledCount: doc.rescheduledCount ?? 0,
     issuedRanges: doc.issuedRanges ?? [],

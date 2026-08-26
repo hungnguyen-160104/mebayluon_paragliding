@@ -64,6 +64,7 @@ type CloseSuggestion = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledRefundCount: number;
   cancelledNoRefundCount: number;
   rescheduledCount: number;
   issuedRanges: Array<{ from: string; to: string }>;
@@ -136,6 +137,7 @@ type FormState = {
   ticketsIssued: number;
   ticketsReturned: number;
   cancelledCount: number;
+  cancelledRefundCount: number;
   cancelledNoRefundCount: number;
   rescheduledCount: number;
   issuedRanges: RangeRow[];
@@ -169,6 +171,7 @@ const EMPTY_FORM: FormState = {
   ticketsIssued: 0,
   ticketsReturned: 0,
   cancelledCount: 0,
+  cancelledRefundCount: 0,
   cancelledNoRefundCount: 0,
   rescheduledCount: 0,
   issuedRanges: [{ from: "", to: "" }],
@@ -284,6 +287,7 @@ function DailyCloseInner() {
             ticketsIssued: res.close.ticketsIssued,
             ticketsReturned: res.close.ticketsReturned,
             cancelledCount: res.close.cancelledCount,
+            cancelledRefundCount: res.close.cancelledRefundCount ?? 0,
             cancelledNoRefundCount: res.close.cancelledNoRefundCount ?? 0,
             rescheduledCount: res.close.rescheduledCount,
             issuedRanges: toRangeRows(res.close.issuedRanges),
@@ -382,6 +386,7 @@ function DailyCloseInner() {
       ticketsIssued: suggest.ticketsIssued,
       ticketsReturned: suggest.ticketsReturned,
       cancelledCount: suggest.cancelledCount,
+      cancelledRefundCount: suggest.cancelledRefundCount ?? 0,
       cancelledNoRefundCount: suggest.cancelledNoRefundCount ?? 0,
       rescheduledCount: suggest.rescheduledCount,
       issuedRanges: suggest.issuedRanges.length ? suggest.issuedRanges.map((r) => ({ ...r })) : prev.issuedRanges,
@@ -902,10 +907,24 @@ function DailyCloseInner() {
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
                 </ServiceBox>
 
-                <ServiceBox tone="cancelled" label="Huỷ hoàn tiền">
+                {/* Ô này đếm theo VÉ và bị ràng vào phép tính "vé thu hồi =
+                    huỷ + dời" — KHÔNG phải cặp với hai ô đếm khách bên dưới,
+                    nên tên phải nói rõ đơn vị kẻo bị đem cộng nhầm. */}
+                <ServiceBox tone="cancelled" label="Vé huỷ">
                   <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />
+                  <p className="mt-0.5 text-[10px] leading-tight text-slate-500">Đếm theo VÉ — khớp danh sách mã vé huỷ</p>
+                </ServiceBox>
+
+                {/* Hai ô dưới đếm theo ĐẦU KHÁCH và là một CẶP: cộng lại đúng
+                    bằng tổng khách huỷ trong ngày. Tách ra vì bên cần hoàn thì
+                    có lệnh hoàn phải theo tới cùng, bên kia thì không. */}
+                <ServiceBox tone="cancelled" label="Huỷ CẦN hoàn">
+                  <CountInput compact value={form.cancelledRefundCount} onChange={(v) => set("cancelledRefundCount", v)} max={5000} />
+                  <Compare label="sổ booking + điều phối" value={suggest?.cancelledRefundCount} mine={form.cancelledRefundCount}
+                    onTake={locked ? undefined : (v) => set("cancelledRefundCount", v)} />
+                  <p className="mt-0.5 text-[10px] leading-tight text-slate-500">Khách huỷ ĐÃ trả tiền — có lệnh hoàn phải theo</p>
                 </ServiceBox>
 
                 {/* Booking huỷ mà CHƯA thanh toán đồng nào — không có lệnh hoàn phải theo,
@@ -916,6 +935,16 @@ function DailyCloseInner() {
                     onTake={locked ? undefined : (v) => set("cancelledNoRefundCount", v)} />
                   <p className="mt-0.5 text-[10px] leading-tight text-slate-500">Khách huỷ chưa thanh toán — không có lệnh hoàn</p>
                 </ServiceBox>
+
+                {/* Cộng sẵn tổng khách huỷ — kế toán khỏi nhẩm, và nhìn ra ngay
+                    khi một trong hai ô bị bỏ quên. */}
+                <div className="col-span-full -mt-1 text-[11px] font-semibold text-slate-600">
+                  Tổng khách huỷ hôm nay:{" "}
+                  <strong className="tabular-nums text-slate-900">
+                    {form.cancelledRefundCount + form.cancelledNoRefundCount}
+                  </strong>{" "}
+                  khách ({form.cancelledRefundCount} cần hoàn + {form.cancelledNoRefundCount} không cần hoàn)
+                </div>
 
                 <ServiceBox tone="moved" label="Dời lịch">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />

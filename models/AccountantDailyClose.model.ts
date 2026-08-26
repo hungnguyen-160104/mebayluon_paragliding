@@ -49,6 +49,16 @@ export interface IAccountantDailyClose {
   ticketsReturned: number;
 
   cancelledCount: number;
+  /**
+   * KHÁCH huỷ ĐÃ trả tiền — phải có lệnh hoàn đi theo.
+   *
+   * Đếm theo ĐẦU KHÁCH, cùng đơn vị với `cancelledNoRefundCount` để cộng hai
+   * số ra đúng tổng khách huỷ trong ngày. KHÁC HẲN `cancelledCount`: cái kia
+   * đếm theo VÉ và bị ràng vào phép tính "vé thu hồi = huỷ + dời", nên không
+   * dùng thay nhau được — một khách huỷ có thể chưa xuất vé, mà một vé huỷ
+   * cũng có thể của khách chưa trả đồng nào.
+   */
+  cancelledRefundCount: number;
   /** KHÁCH huỷ nhưng CHƯA phát sinh thanh toán — không có lệnh hoàn nào phải theo. */
   cancelledNoRefundCount: number;
   rescheduledCount: number;
@@ -135,6 +145,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     ticketsReturned: { type: Number, default: 0, min: 0 },
 
     cancelledCount: { type: Number, default: 0, min: 0 },
+    cancelledRefundCount: { type: Number, default: 0, min: 0 },
     cancelledNoRefundCount: { type: Number, default: 0, min: 0 },
     rescheduledCount: { type: Number, default: 0, min: 0 },
 
