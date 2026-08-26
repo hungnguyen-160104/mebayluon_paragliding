@@ -75,6 +75,8 @@ type CloseSuggestion = {
   cashTotal: number;
   transferTotal: number;
   reportedBy: Record<string, Array<{ name: string; qty: number }>>;
+  /** Tiền sổ booking ghi dưới tên từng người (TM theo người thu, CK theo người ghi). */
+  moneyByPerson: Array<{ name: string; cash: number; transfer: number; income: number; spend: number }>;
   booking: {
     flycam: number;
     video360: number;
@@ -98,6 +100,8 @@ type CloseSuggestion = {
   /** Khách đã xác nhận bay trong sổ booking — đăng ký trừ huỷ/dời. */
   flownGuests: number;
   cancelledGuestEntries: Array<{
+    /** Hoàn bằng CK (từ TK công ty) hay TM (nhân viên chi tại chỗ). */
+    refundMethod?: "cash" | "transfer";
     name: string;
     bookingCode: string;
     guests: number;
@@ -382,7 +386,18 @@ function DailyCloseInner() {
     if (!suggest?.dispatcher.hasData) return;
     setForm((prev) => ({
       ...prev,
-      guestCount: suggest.guestCount,
+      /**
+       * SỐ KHÁCH ĐÃ BAY lấy theo SỔ BOOKING (`flownGuests`), không lấy số quầy
+       * tự khai (`guestCount`).
+       *
+       * Quầy đếm đầu ngày rồi số đứng yên: khách huỷ giữa chừng, vé thu hồi
+       * lại, nhưng con số quầy khai vẫn là con số cũ. Ngày 25/08 xuất 7 vé,
+       * huỷ 1, bay thật 6 — quầy khai 7 còn sổ booking (đếm dòng đã tích "đã
+       * bay") ra đúng 6. Điền sẵn số quầy là kế toán chốt nhầm 7.
+       *
+       * Số quầy vẫn hiện ngay dưới ô để đối chiếu, bấm một cái là lấy lại.
+       */
+      guestCount: suggest.flownGuests ?? suggest.guestCount,
       ticketsIssued: suggest.ticketsIssued,
       ticketsReturned: suggest.ticketsReturned,
       cancelledCount: suggest.cancelledCount,
@@ -702,7 +717,13 @@ function DailyCloseInner() {
 
       {/* Và sửa hộ cả điều phối / camera man — chỗ hay kẹt nhất khi số quầy sai */}
       <div className="order-3 lg:order-none">
-        <StaffReportEditor spot={spot} date={date} locked={locked} onSaved={() => loadDay(date)} />
+        <StaffReportEditor
+          spot={spot}
+          date={date}
+          locked={locked}
+          moneyByPerson={suggest?.moneyByPerson}
+          onSaved={() => loadDay(date)}
+        />
       </div>
 
       {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
@@ -844,12 +865,12 @@ function DailyCloseInner() {
                   phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare label="sổ booking (đã bay)" value={suggest?.flownGuests} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-              <Compare label="quầy/điều phối báo" value={t?.dispatcherGuests} mine={form.guestCount}
+              <Compare label="quầy/điều phối báo" value={t?.dispatcherGuests ?? suggest?.guestCount} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
-              <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : undefined} mine={form.guestCount}
+              <Compare label="phi công báo" value={t ? t.pilotFlights + t.pilotPpg : suggest?.pilot?.hasData ? suggest.pilot.flights + suggest.pilot.ppg : undefined} mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)} />
               <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
-                Khách đã bay - CHƯA tính khách huỷ/dời
+                Khách bay THẬT — đã trừ khách huỷ/dời. Số điền sẵn lấy theo sổ booking.
               </p>
             </ServiceBox>
 
@@ -907,6 +928,12 @@ function DailyCloseInner() {
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
                 </ServiceBox>
 
+                <ServiceBox tone="moved" label="Dời lịch">
+                  <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
+                  <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
+                    onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
+                </ServiceBox>
+
                 {/* Ô này đếm theo VÉ và bị ràng vào phép tính "vé thu hồi =
                     huỷ + dời" — KHÔNG phải cặp với hai ô đếm khách bên dưới,
                     nên tên phải nói rõ đơn vị kẻo bị đem cộng nhầm. */}
@@ -946,14 +973,108 @@ function DailyCloseInner() {
                   khách ({form.cancelledRefundCount} cần hoàn + {form.cancelledNoRefundCount} không cần hoàn)
                 </div>
 
-                <ServiceBox tone="moved" label="Dời lịch">
-                  <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
-                  <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
-                    onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
-                </ServiceBox>
               </>
             )}
           </div>
+
+          {/**
+           * BỐN BẢNG TÓM TẮT — trả lời ngay tại chỗ mấy câu kế toán vẫn phải
+           * mở sang trang khác mới biết: dời ai sang ngày nào, huỷ những ai,
+           * hoàn bao nhiêu, và dải mã vé xuất/thu hồi.
+           *
+           * Số lấy từ SỔ BOOKING (khối gợi ý của máy), không phải số kế toán
+           * gõ vào mấy ô trên — đây là phần để ĐỐI CHIẾU, nên phải là số máy.
+           */}
+          {suggest?.hasData && (
+            <div className="mt-4 space-y-2">
+              {(() => {
+                const moved = suggest.rescheduledGuestEntries ?? [];
+                const cancels = suggest.cancelledGuestEntries ?? [];
+                const canHoan = cancels.filter((e) => (e.refund ?? 0) > 0);
+                const khongHoan = cancels.filter((e) => !((e.refund ?? 0) > 0));
+                const tongHoan = canHoan.reduce((a, e) => a + (e.refund ?? 0), 0);
+                const codes = (e: { codes?: string[] }) =>
+                  (e.codes ?? []).length ? ` · vé ${(e.codes ?? []).join(" ")}` : "";
+
+                const Box = ({ tone, title, children }: { tone: string; title: React.ReactNode; children: React.ReactNode }) => (
+                  <div className={`rounded-xl border px-3 py-2 ${tone}`}>
+                    <div className="text-xs font-bold">{title}</div>
+                    <ul className="mt-1 space-y-0.5 text-[11px] leading-snug">{children}</ul>
+                  </div>
+                );
+
+                return (
+                  <>
+                    {moved.length > 0 && (
+                      <Box tone="border-amber-300 bg-amber-50/70 text-amber-900" title={`⇢ Dời lịch — ${moved.length} nhóm`}>
+                        {moved.map((e, i) => (
+                          <li key={i}>
+                            <strong>{e.name || "khách"}</strong> · {e.guests} khách · sang{" "}
+                            <strong>{e.toDate ? formatDateKeyVN(e.toDate) : "?"}</strong>
+                            {codes(e)}
+                            {e.note ? ` · ${e.note}` : ""}
+                          </li>
+                        ))}
+                      </Box>
+                    )}
+
+                    {canHoan.length > 0 && (
+                      <Box
+                        tone="border-rose-300 bg-rose-50/70 text-rose-900"
+                        title={
+                          <>
+                            ✕ Huỷ CẦN hoàn — {canHoan.length} nhóm · tổng hoàn{" "}
+                            <span className="tabular-nums">{formatVND(tongHoan)}</span>
+                          </>
+                        }
+                      >
+                        {canHoan.map((e, i) => (
+                          <li key={i}>
+                            <strong>{e.name || "khách"}</strong> · {e.guests} khách · hoàn{" "}
+                            <strong className="tabular-nums">{formatVND(e.refund ?? 0)}</strong>
+                            {e.refundMethod ? ` (${e.refundMethod === "cash" ? "TM" : "CK"})` : ""}
+                            {codes(e)}
+                          </li>
+                        ))}
+                      </Box>
+                    )}
+
+                    {khongHoan.length > 0 && (
+                      <Box tone="border-slate-300 bg-slate-50 text-slate-700" title={`✕ Huỷ không cần hoàn — ${khongHoan.length} nhóm`}>
+                        {khongHoan.map((e, i) => (
+                          <li key={i}>
+                            <strong>{e.name || "khách"}</strong> · {e.guests} khách
+                            {codes(e)}
+                            {e.note ? ` · ${e.note}` : ""}
+                          </li>
+                        ))}
+                      </Box>
+                    )}
+
+                    {!noTickets && ((suggest.issuedRanges ?? []).length > 0 || suggest.cancelledCodesText) && (
+                      <Box tone="border-sky-300 bg-sky-50/70 text-sky-900" title="🎫 Mã vé">
+                        {(suggest.issuedRanges ?? []).length > 0 && (
+                          <li>
+                            Xuất ra:{" "}
+                            <strong>
+                              {(suggest.issuedRanges ?? [])
+                                .map((r) => (r.from === r.to ? r.from : `${r.from} → ${r.to}`))
+                                .join(" · ")}
+                            </strong>
+                          </li>
+                        )}
+                        {suggest.cancelledCodesText && (
+                          <li className="text-rose-800">
+                            Thu hồi: <strong>{suggest.cancelledCodesText}</strong>
+                          </li>
+                        )}
+                      </Box>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Cộng dồn dịch vụ của khách đã tích "đã bay" trong sổ booking */}
           <FlownServicesHint

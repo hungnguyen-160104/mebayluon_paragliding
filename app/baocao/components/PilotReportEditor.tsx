@@ -584,13 +584,17 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
       </span>,
     );
 
-  const totalFlights = r.flightCount + (r.ppgFlights || 0);
-  add(
-    r.ppgFlights
-      ? `${totalFlights} chuyến (${r.flightCount} PG + ${r.ppgFlights} PPG${r.ppgNoTicket ? `, ${r.ppgNoTicket} không vé` : ""})`
-      : `${r.flightCount} chuyến`,
-    "fl",
-  );
+  /**
+   * "2×PG · 1×PPG" thay cho "3 chuyến (2 PG + 1 PPG)".
+   *
+   * Cùng lối viết với dịch vụ ngay bên cạnh ("1×360", "2×cờ đỏ") nên mắt đọc
+   * một mạch; mà loại hình bay mới là thứ kế toán cần thấy, không phải con số
+   * tổng — hai loại tính tiền khác nhau.
+   */
+  add(`${r.flightCount}×PG`, "pg");
+  if (r.ppgFlights) {
+    add(`${r.ppgFlights}×PPG${r.ppgNoTicket ? ` (${r.ppgNoTicket} không vé)` : ""}`, "ppg");
+  }
   add(`${r.ticketCodes.length + (r.ppgCodes?.length || 0)} mã`, "codes");
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
@@ -602,8 +606,10 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
   {
     const cancelled = r.cancelledGuestEntries.reduce((a, e) => a + (e.guests || (e.codes ?? []).length), 0);
     const moved = r.rescheduledGuestEntries.reduce((a, e) => a + (e.guests || (e.codes ?? []).length), 0);
-    if (cancelled) add(`${cancelled} khách huỷ`, "cxl");
-    if (moved) add(`${moved} khách dời`, "mv");
+    // Huỷ tô ĐỎ, dời tô HỔ PHÁCH — cùng quy ước màu với tiền chi bên dưới,
+    // để lướt danh sách là mắt tự dừng lại đúng chỗ có chuyện
+    if (cancelled) add(<span className="font-semibold text-rose-700">huỷ {cancelled} khách</span>, "cxl");
+    if (moved) add(<span className="font-semibold text-amber-700">dời {moved} khách</span>, "mv");
   }
   if (r.pickupBigC) add(`xe BigC ×${r.pickupBigC}`, "bigc");
   if (r.pickupHotel) add(`xe đón KS ×${r.pickupHotel}`, "hotel");

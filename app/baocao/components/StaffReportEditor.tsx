@@ -43,11 +43,14 @@ export function StaffReportEditor({
   date,
   locked,
   onSaved,
+  moneyByPerson,
 }: {
   spot: string;
   date: string;
   locked: boolean;
   onSaved: () => void;
+  /** Tiền sổ booking ghi dưới tên từng người — trang chốt ngày truyền xuống. */
+  moneyByPerson?: PersonMoney[];
 }) {
   const [dispatchers, setDispatchers] = useState<DispatcherReportDTO[]>([]);
   const [cameramen, setCameramen] = useState<CameramanReportDTO[]>([]);
@@ -126,7 +129,17 @@ export function StaffReportEditor({
 
       <ul className="divide-y divide-slate-100">
         {dpRows.map((r) => (
-          <DispatcherRow key={r.username} report={r} spot={spot} date={date} locked={locked} fresh={addedDp.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
+          <DispatcherRow
+            key={r.username}
+            report={r}
+            spot={spot}
+            date={date}
+            locked={locked}
+            fresh={addedDp.includes(r.username)}
+            /* Khớp theo TÊN vì lệnh thu lưu tên người, không lưu tên đăng nhập */
+            money={(moneyByPerson ?? []).find((m) => m.name === r.staffName)}
+            onSaved={() => { load(); onSaved(); }}
+          />
         ))}
         {cmRows.map((r) => (
           <CameramanRow key={r.username} report={r} spot={spot} date={date} locked={locked} fresh={addedCm.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
@@ -333,6 +346,23 @@ function dispatcherEditForm(r: DispatcherReportDTO): DispatcherEditForm {
   };
 }
 
+/** Tiền ghi dưới tên một người trong sổ booking — xem moneyByPerson ở máy chủ. */
+export type PersonMoney = {
+  name: string;
+  /** Tiền khách trả — TM người này đang giữ, CK người này ghi nhận. */
+  cash: number;
+  transfer: number;
+  /** Khoản THU tại bãi người này tự liệt kê trong sổ thu chi. */
+  income: number;
+  /** Tổng CHI: nước, xe, khoản chi tự liệt kê, và hoa hồng đại lý trả bằng TM. */
+  spend: number;
+};
+
+/** "500.000" -> "500k" — dòng tóm tắt phải lướt được, không phải đọc từng số. */
+function kVND(amount: number): string {
+  return `${Math.round(amount / 1000).toLocaleString("vi-VN")}k`;
+}
+
 function DispatcherRow({
   report,
   spot,
@@ -340,8 +370,11 @@ function DispatcherRow({
   locked,
   onSaved,
   fresh,
+  money,
 }: {
   report: DispatcherReportDTO;
+  /** Tiền SỔ BOOKING ghi dưới tên người này — không phải số họ tự gõ. */
+  money?: PersonMoney;
   spot: string;
   date: string;
   locked: boolean;
@@ -449,9 +482,35 @@ function DispatcherRow({
               {report.submitted ? "đã chốt" : "còn nháp"}
             </span>
           </div>
+          {/**
+           * TIỀN LẤY TỪ SỔ BOOKING, không lấy hai ô người ta tự gõ.
+           *
+           * Ô tự gõ hay để trống — ngày 25/08 Ms Duyên bỏ trống cả hai nên dòng
+           * này hiện "TM 0đ · CK 0đ" trong khi ngày đó thu thật 5,48tr tiền mặt
+           * và 8,96tr chuyển khoản. Số cộng từ lệnh thu thì bám tiền thật.
+           */}
           <div className="text-xs text-slate-500">
-            {report.guestCount} khách{noTickets ? "" : ` · ${report.ticketsIssued} vé xuất`} · TM{" "}
-            {formatVND(report.cashReceived)} · CK {formatVND(report.transferReceived)}
+            {report.guestCount} khách{noTickets ? "" : ` · ${report.ticketsIssued} vé xuất`}
+            {!noTickets && report.cancelledCount > 0 && (
+              <span className="font-semibold text-rose-600"> · {report.cancelledCount} vé huỷ</span>
+            )}
+            {" · "}
+            <span className={money && money.cash > 0 ? "font-semibold text-emerald-700" : undefined}>
+              TM {formatVND(money?.cash ?? report.cashReceived)}
+            </span>
+            {" · "}
+            <span className={money && money.transfer > 0 ? "font-semibold text-emerald-700" : undefined}>
+              CK {formatVND(money?.transfer ?? report.transferReceived)}
+            </span>
+            {money && <span className="text-slate-400"> (theo sổ booking)</span>}
+            {/* THU xanh, CHI đỏ — cùng quy ước màu với dòng phi công. Khoản
+                bằng 0 không hiện cho đỡ rối. */}
+            {money && money.income > 0 && (
+              <span className="font-semibold text-emerald-700"> · Thu +{kVND(money.income)}</span>
+            )}
+            {money && money.spend > 0 && (
+              <span className="font-semibold text-rose-700"> · Chi −{kVND(money.spend)}</span>
+            )}
           </div>
         </div>
         {!locked && (

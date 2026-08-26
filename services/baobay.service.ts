@@ -7461,6 +7461,8 @@ issuedRanges: Array<{ from: string; to: string }>;
    * flycam ← camera man · 360/cờ đỏ/hoàng hôn/kéo cờ ← phi công.
    */
   reportedBy: Record<string, Array<{ name: string; qty: number }>>;
+  /** Tiền ghi dưới tên từng người trong sổ booking — xem moneyByPerson. */
+  moneyByPerson: Array<{ name: string; cash: number; transfer: number; income: number; spend: number }>;
   /** Dịch vụ đếm theo SỔ BOOKING (gồm mọi lệnh thêm/bớt tại bãi) — nguồn chuẩn cho tiền. */
   booking: {
     flycam: number;
@@ -7663,7 +7665,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     date,
     status: { $in: ["collected", "company"] },
   })
-    .select("method amount status")
+    .select("method amount status collectorName createdByName")
     .lean<any[]>();
   const collectCashOfDay = dayCollects
     .filter((c) => c.method === "cash" && c.status === "collected")
@@ -7671,6 +7673,72 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
   const collectTransferOfDay = dayCollects
     .filter((c) => c.method === "transfer" && c.status === "company")
     .reduce((a, c) => a + (c.amount || 0), 0);
+
+  /**
+   * TIỀN GHI DƯỚI TÊN TỪNG NGƯỜI trong sổ booking.
+   *
+   * Khác hẳn hai ô tiền người ta tự gõ vào báo cáo của mình: ô ấy hay để
+   * trống (ngày 25/08 Ms Duyên bỏ trống cả hai, màn hình hiện "TM 0đ · CK 0đ"
+   * trong khi ngày đó thu thật 5,48tr tiền mặt và 8,96tr chuyển khoản). Con số
+   * ở đây cộng từ LỆNH THU nên bám theo tiền thật, không phụ thuộc ai chịu gõ.
+   *
+   * TIỀN MẶT tính cho NGƯỜI THU (họ đang cầm tiền); CHUYỂN KHOẢN tính cho
+   * NGƯỜI GHI NHẬN (tiền vào thẳng tài khoản công ty, không ai cầm) — đó là
+   * hai câu hỏi khác nhau: "ai đang giữ tiền" và "ai đã ghi khoản này".
+   */
+  /** Hoa hồng đại lý đã CHI trong ngày, kèm tên người chi — xem moneyByPerson. */
+  const commissionDocs = await BaobayBooking.find({
+    spot,
+    flightDate: date,
+    "commission.amount": { $gt: 0 },
+    status: { $nin: ["voided"] },
+  })
+    .select("commission")
+    .lean<any[]>();
+
+  const moneyByPerson = (() => {
+    type Row = { name: string; cash: number; transfer: number; income: number; spend: number };
+    const m = new Map<string, Row>();
+    const row = (rawName: string): Row => {
+      const name = String(rawName || "").trim() || "không rõ";
+      const cur = m.get(name) ?? { name, cash: 0, transfer: 0, income: 0, spend: 0 };
+      m.set(name, cur);
+      return cur;
+    };
+
+    /* --- Tiền KHÁCH TRẢ, cộng từ lệnh thu --- */
+    for (const c of dayCollects) {
+      if (c.method === "cash" && c.status === "collected") row(c.collectorName || c.createdByName).cash += c.amount || 0;
+      else if (c.method === "transfer" && c.status === "company") row(c.createdByName).transfer += c.amount || 0;
+    }
+
+    /* --- THU / CHI ghi trong sổ thu chi của chính người đó --- */
+    for (const d of dispatchers) {
+      const r = row((d as any).staffName);
+      r.income += thuTotal((d as any).expenses);
+      r.spend += dispatcherExpenseTotal(d as any);
+    }
+
+    /**
+     * CHI HOA HỒNG ĐẠI LÝ tính vào người đứng ra chi.
+     *
+     * Khoản này KHÔNG nằm trong sổ thu chi của điều phối (nó ghi thẳng trên
+     * booking), nhưng tiền vẫn ra khỏi tay người ấy — bỏ sót là dòng "Chi"
+     * thiếu đúng phần to nhất trong ngày.
+     *
+     * Chỉ tính hoa hồng trả bằng TIỀN MẶT: trả bằng chuyển khoản thì tiền đi
+     * từ tài khoản công ty, còn "agency" là trừ vào tiền đại lý đang giữ —
+     * cả hai đều không phải tiền người này bỏ ra.
+     */
+    for (const b of commissionDocs) {
+      const c = b.commission || {};
+      if (c.method === "cash" && (c.amount || 0) > 0) row(c.byName).spend += c.amount;
+    }
+
+    return [...m.values()]
+      .filter((x) => x.cash > 0 || x.transfer > 0 || x.income > 0 || x.spend > 0)
+      .sort((a, b) => b.cash + b.transfer - (a.cash + a.transfer));
+  })();
 
   /** ĐẠI LÝ THU HỘ: khách bay hôm nay đã trả bên đại lý — tiền nằm ở đại lý, kế toán phải đòi. */
   const agencyHeldBookings = await BaobayBooking.find({
@@ -7946,6 +8014,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     sunset: bookingServices.sunset,
     flagFlight: bookingServices.flagFlight,
     reportedBy,
+    moneyByPerson,
     /** Số dịch vụ theo sổ booking — để giao diện nói rõ nguồn và so với nhân viên. */
     booking: { ...bookingServices, hasData: bookings.length > 0 },
     pilot: {
