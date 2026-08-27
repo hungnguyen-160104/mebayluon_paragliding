@@ -208,6 +208,37 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
                       </p>
 
                       <p className="mt-4 text-xl text-white/90">{bio}</p>
+
+                      {/**
+                       * ẢNH RỜI của phi công — nằm NGAY TRONG thẻ "Tôi là ai",
+                       * cạnh lời tự giới thiệu, chứ không thành một dải ảnh
+                       * trơ trọi cuối trang.
+                       *
+                       * Mỗi ảnh mang ALT RIÊNG do người thêm tự mô tả (xem
+                       * `extraPhotos` ở lib/pilots-data.ts). Khác dải ảnh bố
+                       * cục cố định 5+3 phía trên: chỗ kia alt đành chung
+                       * chung, ở đây tả đúng ảnh nên Google Images đọc được.
+                       */}
+                      {(pilotData.extraPhotos ?? []).length > 0 && (
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                          {(pilotData.extraPhotos ?? []).map((photo) => (
+                            <figure key={photo.src} className="overflow-hidden rounded-2xl shadow-xl">
+                              <Image
+                                src={photo.src}
+                                alt={photo.alt}
+                                width={1200}
+                                height={1500}
+                                sizes="(max-width: 640px) 100vw, 40vw"
+                                className="h-auto w-full"
+                                loading="lazy"
+                              />
+                              <figcaption className="bg-black/40 px-3 py-2 text-xs text-white/70">
+                                {photo.alt}
+                              </figcaption>
+                            </figure>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -280,33 +311,6 @@ export default function PilotDetailClientPage({ pilotData }: PilotDetailClientPa
             </motion.div>
           </div>
         </section>
-
-        {/**
-         * ẢNH RỜI của phi công — mỗi ảnh mang ALT RIÊNG do người thêm tự mô tả
-         * (xem `extraPhotos` ở lib/pilots-data.ts). Khác khối ảnh phía trên:
-         * chỗ kia bố cục cố định 5+3 ảnh nên alt đành chung chung, ở đây thì
-         * mô tả đúng ảnh nên Google Images đọc được.
-         */}
-        {(pilotData.extraPhotos ?? []).length > 0 && (
-          <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(pilotData.extraPhotos ?? []).map((photo) => (
-                <figure key={photo.src} className="overflow-hidden rounded-2xl shadow-xl">
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt}
-                    width={1200}
-                    height={1500}
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                    className="h-auto w-full"
-                    loading="lazy"
-                  />
-                  <figcaption className="bg-black/40 px-3 py-2 text-xs text-white/70">{photo.alt}</figcaption>
-                </figure>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* CÁC PHI CÔNG KHÁC — liên kết chéo giữa các trang phi công (SSR) */}
         <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14">

@@ -1555,12 +1555,6 @@ export const pilots: Pilot[] = [
       "/pilots/alish-thapa/content-2.png",
       "/pilots/alish-thapa/content-3.png",
     ],
-    extraPhotos: [
-      {
-        src: "/pilots/alish-thapa/mua-vang-mu-cang-chai-2022.jpg",
-        alt: "Alish Thapa bay dù lượn trên mùa vàng Mù Cang Chải 2022",
-      },
-    ],
     specialties: {
       vi: ["Huấn luyện APPI", "Nhảy dù (Skydive)"],
       en: ["APPI training", "Skydiving"],
