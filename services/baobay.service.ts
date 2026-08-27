@@ -176,23 +176,23 @@ function bookingSnapshot(doc: any): BookingSnapshot {
  *
  * Sửa xong lại quay về y như cũ thì dấu tự xoá — không còn gì để báo.
  */
-function markBookingChanged(before: any, after: any): void {
+async function markBookingChanged(before: any, after: any): Promise<Record<string, unknown> | null> {
   const base = bookingSnapshot(before);
   const now = bookingSnapshot(after);
-  if (diffBooking(base, now).length === 0) return;
+  const cu = (after?.notifyPendingBase ?? null) as BookingSnapshot | null;
 
-  runInBackground(async () => {
-    const doc = await BaobayBooking.findById(after._id).select("notifyPendingBase").lean<any>();
-    const cu = doc?.notifyPendingBase as BookingSnapshot | undefined;
-    if (cu) {
-      // Đã có dấu từ lượt trước: so với ảnh chụp GỐC, hết khác thì xoá dấu
-      if (diffBooking(cu, now).length === 0) {
-        await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: null } });
-      }
-      return;
+  if (cu) {
+    // Đã có dấu từ lượt trước: so với ảnh chụp GỐC, hết khác thì xoá dấu
+    if (diffBooking(cu, now).length === 0) {
+      await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: null } });
+      return null;
     }
-    await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: base } });
-  });
+    return cu as unknown as Record<string, unknown>;
+  }
+
+  if (diffBooking(base, now).length === 0) return null;
+  await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: base } });
+  return base as unknown as Record<string, unknown>;
 }
 
 /** Những thay đổi ĐANG CHỜ báo khách — dựng lại từ ảnh chụp gốc. */
@@ -4134,9 +4134,15 @@ const editedTotal = bookingTotal({
     await cashDepositToCollect(session, spot, doc, dis);
   }
 
-  markBookingChanged(current, doc);
+  /**
+   * Ghi dấu NGAY (không đẩy sang việc nền): người vừa bấm Lưu phải thấy nút
+   * "Gửi mail báo khách" hiện lên cùng lúc với lời báo đã lưu. Ghi ở nền thì
+   * màn hình trả về trước khi dấu kịp ghi, nút không hiện, và người ta đóng
+   * máy mà tưởng chẳng có gì phải báo.
+   */
+  const pendingBase = await markBookingChanged(current, doc);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
-  return toBookingDTO({ ...doc, sheetSynced: false });
+  return toBookingDTO({ ...doc, notifyPendingBase: pendingBase, sheetSynced: false });
 }
 
 /**
@@ -4769,7 +4775,8 @@ export async function addBookingServices(
     },
     { new: true },
   ).lean<any>();
-  markBookingChanged(booking, updated);
+  const pendingBase = await markBookingChanged(booking, updated);
+  updated.notifyPendingBase = pendingBase;
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   /** Khách trả ngay tại chỗ thì ghi luôn lệnh thu — khỏi bấm sang thẻ khác. */
@@ -5072,7 +5079,7 @@ export async function cancelBookingGuests(
     await ins.cancelInsuredGuests(spot, id, n, `huỷ ${n} khách${reason ? ` — ${reason}` : ""}`);
   }
 
-  markBookingChanged(booking, updated);
+  updated.notifyPendingBase = await markBookingChanged(booking, updated);
   return toBookingDTO(updated);
 }
 
@@ -5282,7 +5289,7 @@ export async function removeBookingServices(
     createdByName: session.name,
   });
 
-  markBookingChanged(booking, updated);
+  updated.notifyPendingBase = await markBookingChanged(booking, updated);
   return { booking: toBookingDTO(updated), back, refunded };
 }
 
@@ -6601,9 +6608,9 @@ export async function updateBookingStatus(
    * "Đã bay" KHÔNG tính là thay đổi cần báo: khách vừa bay xong, đang đứng
    * ngay đó. Dời lịch và huỷ thì có — đó đúng là hai việc khách cần biết.
    */
-  if (action !== "flown") markBookingChanged(current, doc);
+  const pendingBase = action !== "flown" ? await markBookingChanged(current, doc) : null;
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
-  return toBookingDTO({ ...doc, sheetSynced: false });
+  return toBookingDTO({ ...doc, notifyPendingBase: pendingBase, sheetSynced: false });
 }
 
 const BOOKING_PICKUP_LABEL: Record<string, string> = { self: "Tự đến", bigc: "Đón BigC", hotel: "Đón khách sạn", other: "Đón" };

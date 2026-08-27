@@ -2908,6 +2908,11 @@ export function BookingTodayBanner({
                   {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
                 </Button>
                 <ContactNote spot={spot} booking={b} onDone={load} />
+                {/* Nút gửi mail đứng NGAY trên dòng, không giấu trong "⋯ Thêm":
+                    sửa xong mà nút nằm sau một lần bấm nữa thì không ai nhớ
+                    bấm, khách chẳng bao giờ được báo. Tự ẩn khi không có gì
+                    phải báo nên dòng booking không dài thêm vô ích. */}
+                <NotifyGuestControl spot={spot} booking={b} onDone={load} />
                 <RowMenu
                   booking={b}
                   spot={spot}
@@ -3651,6 +3656,8 @@ export function BookingCard({
   const [justSavedEdit, setJustSavedEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  /** Booking vừa lưu xong VÀ còn thay đổi chưa báo khách — để bày nút gửi mail. */
+  const [needMail, setNeedMail] = useState<BookingDTO | null>(null);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
   /**
@@ -4047,8 +4054,20 @@ export function BookingCard({
         });
       }
       if (editingId) {
-        await apiPut(`/api/baocao/booking?spot=${editingSpot || spot}`, { id: editingId, ...payload });
+        const res = await apiPut<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${editingSpot || spot}`, {
+          id: editingId,
+          ...payload,
+        });
         setDone(`✓ Đã cập nhật booking ${form.contactName || form.bookingCode || form.source}.`);
+        /**
+         * Sửa xong mà có thay đổi khách cần biết thì bày NÚT GỬI MAIL ngay
+         * tại đây — đúng lúc người sửa còn nhớ mình vừa đổi gì và đã hẹn gì
+         * với khách. Bắt họ đóng form, tìm lại dòng booking rồi mới bấm là
+         * thêm ba bước cho một việc, và ba bước đó đủ để quên.
+         *
+         * Vẫn KHÔNG tự gửi: nhiều thay đổi chẳng cần báo ai.
+         */
+        setNeedMail((res?.booking?.pendingNotify?.length ?? 0) > 0 ? res.booking : null);
       } else {
         const created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, payload);
         /**
@@ -4789,6 +4808,34 @@ export function BookingCard({
           <Banner tone="success" onClose={() => setDone(null)}>
             {done}
           </Banner>
+        </div>
+      )}
+      {needMail && (
+        <div className="mt-2 rounded-xl border-2 border-amber-400 bg-amber-50 p-3">
+          <p className="text-sm font-bold text-amber-900">✉ Có thay đổi khách chưa biết</p>
+          <ul className="mt-1 list-disc pl-5 text-xs leading-snug text-amber-950">
+            {(needMail.pendingNotify ?? []).map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ul>
+          {needMail.email ? (
+            <NotifyGuestControl
+              spot={editingSpot || spot}
+              booking={needMail}
+              onDone={(m) => {
+                setDone(m ?? null);
+                setNeedMail(null);
+              }}
+            />
+          ) : (
+            <p className="mt-2 text-xs font-semibold text-amber-900">
+              Booking chưa có email khách — điền ô “Email khách” ở trên rồi Lưu lại thì nút gửi hiện ra.
+            </p>
+          )}
+          <p className="mt-2 text-[11px] leading-tight text-amber-800">
+            Không cần báo khách thì cứ bỏ qua — app không tự gửi. Nút này còn nằm trên dòng booking cho tới
+            khi gửi.
+          </p>
         </div>
       )}
 
