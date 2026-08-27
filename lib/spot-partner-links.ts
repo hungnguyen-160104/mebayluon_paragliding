@@ -87,6 +87,20 @@ const HA_NOI_GROUP: SpotLinkGroup = {
       kind: "reviews",
       brand: "tripadvisor",
     },
+    {
+      // Trang SẢN PHẨM tour bay Hà Nội (có đón trả tận điểm bay)
+      platform: "Tripadvisor",
+      url: "https://www.tripadvisor.com/Attraction_Review-g293924-d34094397-Reviews-Hanoi_Paragliding_Tour_With_Round_Trip_Transfer_to_the_Flying_Site_by_Mebayluon_.html",
+      kind: "paragliding",
+      brand: "tripadvisor",
+    },
+    {
+      // Khoá học 7 ngày cho người mới — hồ sơ riêng ở Tây Hồ, Hà Nội
+      platform: "Tripadvisor",
+      url: "https://www.tripadvisor.com/Attraction_Review-g21301834-d34117119-Reviews-7_day_Paragliding_Training_Course_in_Hanoi_Beginner_Level-Tay_Ho_Hanoi.html",
+      kind: "course",
+      brand: "tripadvisor",
+    },
   ],
   courses: SCHOOL_COURSES,
 };
@@ -115,11 +129,34 @@ export const SPOT_LINKS: Record<string, SpotLinkGroup> = {
         brand: "google",
       },
     ],
+    /**
+     * BA hồ sơ Tripadvisor cho cùng một điểm bay, cố ý giữ cả ba.
+     *
+     * Tripadvisor tách trang ĐÁNH GIÁ (Attraction_Review) khỏi trang SẢN PHẨM
+     * (AttractionProductReview), và điểm bay này còn nằm ở hai vùng địa lý của
+     * họ: Mù Cang Chải và Cao Phạ. Mỗi trang có đánh giá riêng, khách vào từ
+     * đường nào cũng phải tới được đúng trang ấy. `kind` khác nhau nên nút hiện
+     * ba dòng chữ khác nhau, không phải ba nút "Tripadvisor" giống hệt.
+     *
+     * Bong bóng đánh giá nổi lấy CÁI ĐẦU TIÊN — nên trang đánh giá đứng trước.
+     */
     partners: [
       {
         platform: "Tripadvisor",
         url: "https://www.tripadvisor.com/Attraction_Review-g8146384-d34094462-Reviews-Mu_Cang_Chai_Paragliding_Experience_with_Free_Accommodation-Mu_Cang_Chai_Lao_Ca.html",
         kind: "reviews",
+        brand: "tripadvisor",
+      },
+      {
+        platform: "Tripadvisor",
+        url: "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34108763-Mu_Cang_Chai_Paragliding_Experience_with_Free_Accommodation-Cao_Pha_Yen_Bai_Prov.html",
+        kind: "paragliding",
+        brand: "tripadvisor",
+      },
+      {
+        platform: "Tripadvisor",
+        url: "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34437796-Paramotor_Paragliding_Experience_in_Mu_Cang_Chai-Cao_Pha_Yen_Bai_Province.html",
+        kind: "paramotor",
         brand: "tripadvisor",
       },
     ],

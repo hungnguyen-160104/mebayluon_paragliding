@@ -73,8 +73,13 @@ export const PARAGLIDING_PARTNERS: PartnerLink[] = [
     brand: "tripadvisor",
   },
   {
-    name: "Tripadvisor (Yên Bái)",
-    url: "https://www.tripadvisor.com/Attraction_Review-g800616-d27969404-Reviews-Mebayluon_Paragliding-Yen_Bai_Yen_Bai_Province.html",
+    /**
+     * CÙNG một hồ sơ (d27969404), chỉ đổi vùng: Yên Bái sáp nhập vào Lào Cai
+     * nên Tripadvisor chuyển trang sang g737052. Giữ URL cũ thì Google phải đi
+     * qua một lần chuyển hướng, mà `sameAs` nên trỏ thẳng đích đến.
+     */
+    name: "Tripadvisor (Lào Cai)",
+    url: "https://www.tripadvisor.com/Attraction_Review-g737052-d27969404-Reviews-Mebayluon_Paragliding-Lao_Cai_Lao_Cai_Province.html",
     brand: "tripadvisor",
   },
   {
@@ -150,8 +155,8 @@ export const TRUST_LINKS: PartnerLink[] = [
     brand: "tripadvisor",
   },
   {
-    name: "Tripadvisor · Yên Bái",
-    url: "https://www.tripadvisor.com/Attraction_Review-g800616-d27969404-Reviews-Mebayluon_Paragliding-Yen_Bai_Yen_Bai_Province.html",
+    name: "Tripadvisor · Lào Cai",
+    url: "https://www.tripadvisor.com/Attraction_Review-g737052-d27969404-Reviews-Mebayluon_Paragliding-Lao_Cai_Lao_Cai_Province.html",
     brand: "tripadvisor",
   },
   {
