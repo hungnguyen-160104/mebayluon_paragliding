@@ -207,6 +207,28 @@ export const getSpotLinks = (slug?: string | null): SpotLinkGroup | null =>
  * Hồ sơ Tripadvisor của điểm bay — dùng cho bong bóng đánh giá nổi cạnh bong
  * bóng Google. Điểm bay chưa có hồ sơ thì trả null và bong bóng không hiện.
  */
+/**
+ * ĐIỂM TRIPADVISOR — GÕ TAY, khác hẳn điểm Google.
+ *
+ * Tripadvisor không mở API công khai cho điểm số (bộ Content API của họ chỉ
+ * cấp cho đối tác), nên không có đường nào lấy sống như Google. Con số ở đây
+ * là người đọc trang rồi gõ vào, và nó SẼ LỆCH DẦN.
+ *
+ * Vì vậy mỗi dòng phải kèm ngày soát: nhìn là biết số đã cũ bao lâu. Soát lại
+ * thì sửa cả `rating` lẫn `checkedOn`. Điểm bay nào không có dòng ở đây thì
+ * bong bóng chỉ hiện chữ "Tripadvisor", không hiện số — thà không có số còn
+ * hơn có một con số sai.
+ */
+export const SPOT_TRIPADVISOR_RATING: Record<
+  string,
+  { rating: number; checkedOn: string }
+> = {
+  "khau-pha": { rating: 5.0, checkedOn: "2026-08-28" },
+};
+
+export const getSpotTripadvisorRating = (slug?: string | null): number | null =>
+  (slug && SPOT_TRIPADVISOR_RATING[slug]?.rating) || null;
+
 export const getSpotTripadvisorUrl = (slug?: string | null): string | null =>
   getSpotLinks(slug)?.partners.find((p) => p.brand === "tripadvisor")?.url ??
   null;

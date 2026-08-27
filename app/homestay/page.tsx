@@ -31,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+import { getSpotReview } from "@/lib/google-reviews";
 import HomestayClient from "./HomestayClient";
 
 /**
@@ -38,7 +39,13 @@ import HomestayClient from "./HomestayClient";
  * hiểu Clubhouse là một cơ sở lưu trú riêng, không lẫn với công ty dù lượn
  * (LocalBusiness khai ở app/layout.tsx).
  */
-export default function HomestayPage() {
+export default async function HomestayPage() {
+  /**
+   * Điểm Google của Clubhouse lấy SỐNG như hai điểm bay, không gõ cứng trong
+   * giao diện nữa. Chưa có GOOGLE_PLACES_API_KEY thì hàm tự trả số dự phòng —
+   * trang vẫn chạy, chỉ là số không tự cập nhật.
+   */
+  const review = await getSpotReview("clubhouse");
   return (
     <>
       <script
@@ -47,7 +54,7 @@ export default function HomestayPage() {
           __html: JSON.stringify(generateLodgingSchema()).replace(/</g, "\\u003c"),
         }}
       />
-      <HomestayClient />
+      <HomestayClient rating={review.rating} reviewsCount={review.reviews} />
     </>
   );
 }

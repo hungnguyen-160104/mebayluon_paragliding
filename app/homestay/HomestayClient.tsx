@@ -95,14 +95,18 @@ function formatRating(rating: number, langKey: Lang) {
   }).format(rating);
 }
 
-function GoogleReviewBadge() {
+function GoogleReviewBadge({
+  rating,
+  reviewsCount,
+}: {
+  /** Điểm Google lấy sống ở máy chủ (xem lib/google-reviews.ts). */
+  rating: number;
+  reviewsCount: number | null;
+}) {
   const { language } = useLanguage();
   const langKey = (
     (language ?? "vi").toString().slice(0, 2).toLowerCase() as Lang
   );
-
-  const rating = 4.6;
-  const reviewsCount = 93;
 
   const i18n: Record<Lang, { reviews: string; open: string; onGoogle: string }> =
     {
@@ -177,11 +181,14 @@ function GoogleReviewBadge() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 text-sm text-neutral-700">
-          <span className="mx-1 w-px h-4 bg-neutral-300" />
-          <span className="font-medium">{reviewsCount}</span>
-          <span className="font-semibold">{text.reviews}</span>
-        </div>
+        {/* Google không trả số lượt thì ẩn hẳn cụm này — in "null đánh giá" còn tệ hơn không in */}
+        {typeof reviewsCount === "number" && reviewsCount > 0 && (
+          <div className="flex items-center gap-1 text-sm text-neutral-700">
+            <span className="mx-1 w-px h-4 bg-neutral-300" />
+            <span className="font-medium">{reviewsCount.toLocaleString(langKey === "vi" ? "vi-VN" : "en-US")}</span>
+            <span className="font-semibold">{text.reviews}</span>
+          </div>
+        )}
 
         <span className="ml-2 text-xs md:text-sm text-blue-600 underline decoration-from-font">
           {text.open} {text.onGoogle}
@@ -209,7 +216,14 @@ const MOTORBIKE_PHONE_DISPLAY = "(+84) 033 7632532";
 const MOTORBIKE_PHONE_TEL = "+84337632532";
 
 /* ================= Page ================= */
-export default function HomestayPage() {
+export default function HomestayPage({
+  rating,
+  reviewsCount,
+}: {
+  /** Điểm Google của Clubhouse, lấy sống ở máy chủ rồi truyền xuống. */
+  rating: number;
+  reviewsCount: number | null;
+}) {
   const { t, language } = useLanguage();
   const currentLocale = LOCALE_FOR_PRICE[String(language ?? "vi").slice(0,2).toLowerCase()] ?? "vi-VN";
 
@@ -766,7 +780,7 @@ export default function HomestayPage() {
           <Footer />
         </div>
       </div>
-      <GoogleReviewBadge />
+      <GoogleReviewBadge rating={rating} reviewsCount={reviewsCount} />
     </div>
   );
 }

@@ -16,7 +16,7 @@
  * dù có bao nhiêu lượt truy cập.
  */
 
-export type SpotReviewId = "sapa" | "khau-pha";
+export type SpotReviewId = "sapa" | "khau-pha" | "clubhouse";
 
 export type SpotReviewData = {
   rating: number;
@@ -53,6 +53,20 @@ const SPOTS: Record<SpotReviewId, SpotConfig> = {
     lng: 104.2655369,
     placeIdEnv: "GOOGLE_PLACE_ID_KHAU_PHA",
     fallback: { rating: 4.4, reviews: 1552 },
+  },
+  /**
+   * HOMESTAY CLUBHOUSE — hồ sơ Google RIÊNG, không phải điểm bay.
+   *
+   * Trước đây bong bóng đánh giá của trang /homestay gõ cứng 4,6 · 93 lượt
+   * ngay trong giao diện, nên nó KHÔNG chạy qua đường lấy điểm sống này và
+   * càng ngày càng lệch — đúng cái bệnh mà tệp này sinh ra để chữa.
+   */
+  clubhouse: {
+    query: "Clubhouse Mebayluon Paragliding",
+    lat: 21.7764187,
+    lng: 104.2636752,
+    placeIdEnv: "GOOGLE_PLACE_ID_CLUBHOUSE",
+    fallback: { rating: 4.6, reviews: 93 },
   },
 };
 

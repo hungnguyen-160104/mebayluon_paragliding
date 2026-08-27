@@ -50,12 +50,15 @@ export function SpotReviewBadges({
   googleSpot,
   rating,
   tripadvisorUrl,
+  tripadvisorRating,
   lang = "vi",
 }: {
   /** null khi điểm bay chưa có hồ sơ Google riêng. */
   googleSpot?: SpotId | null;
   rating?: number;
   tripadvisorUrl?: string | null;
+  /** Điểm Tripadvisor gõ tay; không có thì bong bóng chỉ hiện chữ. */
+  tripadvisorRating?: number | null;
   lang?: string;
 }) {
   const showGoogle = Boolean(googleSpot) && typeof rating === "number" && rating > 0;
@@ -92,8 +95,19 @@ export function SpotReviewBadges({
           "
         >
           <TripadvisorMark size={20} />
-          <span className="text-sm font-semibold leading-none">Tripadvisor</span>
-          <span className="hidden text-xs text-neutral-600 sm:inline">{t}</span>
+          {typeof tripadvisorRating === "number" && tripadvisorRating > 0 ? (
+            <span className="text-sm font-bold leading-none">
+              {tripadvisorRating.toLocaleString(safeLang(lang) === "vi" ? "vi-VN" : "en-US", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}
+            </span>
+          ) : (
+            <span className="text-sm font-semibold leading-none">Tripadvisor</span>
+          )}
+          <span className="hidden text-xs text-neutral-600 sm:inline">
+            {typeof tripadvisorRating === "number" && tripadvisorRating > 0 ? `Tripadvisor · ${t}` : t}
+          </span>
         </a>
       )}
     </div>

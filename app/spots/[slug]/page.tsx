@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotReviewBadges } from "@/components/reviews/SpotReviewBadges";
 import { getSpotReview } from "@/lib/google-reviews";
-import { getSpotTripadvisorUrl } from "@/lib/spot-partner-links";
+import { getSpotTripadvisorRating, getSpotTripadvisorUrl } from "@/lib/spot-partner-links";
 import {
   buildMetadata,
   generateSpotSchema,
@@ -690,6 +690,7 @@ export default async function SpotDetailPage({
         googleSpot={isSapa ? "sapa" : isKhauPha ? "khau-pha" : null}
         rating={isSapa ? sapaReview.rating : khauPhaReview.rating}
         tripadvisorUrl={getSpotTripadvisorUrl(canonicalSpotSlug(slug))}
+        tripadvisorRating={getSpotTripadvisorRating(canonicalSpotSlug(slug))}
         lang={spotLocale}
       />
 
