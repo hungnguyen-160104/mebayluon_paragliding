@@ -3428,12 +3428,31 @@ export type BookingSaveInput = {
   note: string;
   /** Email khách — app gửi thư báo mỗi khi booking thay đổi. Trống thì không gửi. */
   email?: string;
+  /** Ngày khách TRẢ cọc, khi khác ngày lập booking. Trống = đúng hôm lập. */
+  depositDate?: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
   /** Còn lại > 0: người được chỉ định thu — tự lập LỆNH THU TIỀN kèm booking. */
   collectorUsername?: string;
   collectorNote?: string;
 };
+
+/**
+ * LỌC NGÀY CỌC gõ trong form booking.
+ *
+ * Bỏ qua trong im lặng ba trường hợp, KHÔNG chặn cả booking vì chúng — đây là
+ * mốc đối soát, không phải số liệu của sổ:
+ *  - không có tiền cọc  → ngày cọc vô nghĩa;
+ *  - ngày rác / sai lịch → tin vào nó còn tệ hơn để trống;
+ *  - ngày TƯƠNG LAI → cọc là tiền đã trả rồi. Gõ nhầm năm mà lọt là khoản đó
+ *    biến khỏi mọi danh sách soát, không ai thấy nó nữa.
+ */
+function cleanDepositDate(raw: unknown, deposit: number): string {
+  const v = String(raw ?? "").trim();
+  if (!v || deposit <= 0) return "";
+  if (!isDateKey(v)) return "";
+  return v > todayInVN() ? "" : v;
+}
 
 /** "HH:MM" hiện tại theo giờ Việt Nam — chặn giờ dự kiến lùi về quá khứ. */
 function nowHHMMVN(): string {
@@ -3597,6 +3616,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
        */
       depositToCompany: input.deposit > 0,
       email: (input.email ?? "").trim().toLowerCase(),
+      depositDate: cleanDepositDate(input.depositDate, input.deposit),
       depositMethod: input.depositMethod ?? "",
       note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
@@ -4100,6 +4120,14 @@ const editedTotal = bookingTotal({
        * không phải sửa hoài mà địa chỉ cũ vẫn nằm đó gửi tiếp.
        */
       email: (input.email ?? "").trim().toLowerCase(),
+      /**
+       * Ngày cọc sửa được ngay trong form. Người nhập tự xoá đi thì về mặc
+       * định "đúng hôm lập booking" — không giữ lại ngày cũ sau lưng họ.
+       */
+      depositDate: cleanDepositDate(input.depositDate, input.deposit),
+      depositDateBy: cleanDepositDate(input.depositDate, input.deposit)
+        ? session.name || session.username
+        : "",
       note: input.note.trim(),
     },
   };

@@ -3577,6 +3577,8 @@ type BookingForm = {
   depositMethod: "cash" | "transfer" | "";
   /** Email khách — app gửi thư báo mỗi khi booking thay đổi. */
   email: string;
+  /** Ngày khách TRẢ cọc khi khác ngày lập booking. Trống = đúng hôm lập. */
+  depositDate: string;
   remaining: number;
   /** Khách đã trả cho ĐẠI LÝ — trừ vào còn thu, đại lý nợ công ty. */
   agencyPaidAmount: number;
@@ -3614,6 +3616,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     deposit: 0,
     depositMethod: "",
     email: "",
+    depositDate: "",
     remaining: 0,
     agencyPaidAmount: 0,
     agencyName: "",
@@ -4155,6 +4158,7 @@ export function BookingCard({
       deposit: b.deposit,
       depositMethod: b.depositMethod ?? "",
       email: b.email ?? "",
+      depositDate: b.depositDate ?? "",
       agencyPaidAmount: b.agencyPaidAmount ?? 0,
       agencyName: b.agencyName ?? "",
       remaining: (() => {
@@ -4611,9 +4615,19 @@ export function BookingCard({
         </Field>
         {/* Mỗi ô tiền một nút QR: khách đặt xa thì gửi mã cọc qua Zalo, khách
             tới bãi thì đưa mã phần còn thu cho quét. Nội dung CK = mã booking. */}
-        <Field label={editingId && editedPaid > 0 ? "Khách đã trả (cọc + đã thu)" : "Khách đã cọc"}>
-          <div className="flex items-center gap-1">
-            <span className="min-w-0 flex-1">
+        {/**
+         * Ô tiền cọc CHIẾM HAI CỘT.
+         *
+         * Trong một cột nó phải chia chỗ với hai nút TM/CK và nút QR, nên số
+         * bảy chữ số (2.190.000) bị bóp đến mức che mất chữ. Tiền là thứ dễ
+         * gõ nhầm nhất trên form này — không đọc lại được số vừa gõ là hỏng.
+         */}
+        <Field
+          className="col-span-2"
+          label={editingId && editedPaid > 0 ? "Khách đã trả (cọc + đã thu)" : "Khách đã cọc"}
+        >
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="min-w-[8rem] flex-1">
               <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
             </span>
             {/*
@@ -4671,9 +4685,35 @@ export function BookingCard({
             </p>
           )}
         </Field>
+        <Field label="Mã CK cọc">
+          <TextInput
+            value={form.transferCode}
+            onChange={(e) => set("transferCode", e.target.value)}
+            placeholder="Mã GD — 4 số cuối là đủ…" className="h-10 rounded-lg text-sm"
+          />
+        </Field>
+        {/**
+         * NGÀY CK CỌC — ngày khách THỰC SỰ chuyển tiền, không phải ngày gõ máy.
+         *
+         * Để trống là "đúng hôm nay" (hôm lập booking). Gõ vào khi khách trả
+         * hôm khác: khách chuyển hôm 20 mà quầy gõ hôm 23 thì dòng sao kê nằm ở
+         * ngày 20, khoản cọc nằm ở ngày 23 — kế toán soát ngày nào cũng không
+         * thấy khớp. Có ngày rồi thì khoản cọc hiện trong danh sách tiền CK về
+         * của đúng ngày ấy.
+         */}
+        <Field label="Ngày CK cọc" hint={form.depositDate ? "" : "Trống = trả hôm nay"}>
+          <input
+            type="date"
+            value={form.depositDate}
+            max={todayInVN()}
+            disabled={form.deposit <= 0}
+            onChange={(e) => set("depositDate", e.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-300 px-2 text-sm text-slate-900 outline-none focus:border-sky-600 disabled:bg-slate-100 disabled:text-slate-400"
+          />
+        </Field>
         {/* Khách đặt qua đại lý và trả một phần bên đó: phần này khách khỏi trả,
             đại lý nợ công ty — kế toán xem bảng công nợ đại lý cuối ngày */}
-        <Field label="Đại lý đã thu (nếu có)">
+        <Field label="Đại lý đã thu">
           <MoneyInput value={form.agencyPaidAmount} onChange={(v) => set("agencyPaidAmount", v)} />
         </Field>
         {form.agencyPaidAmount > 0 && (
@@ -4685,13 +4725,6 @@ export function BookingCard({
             />
           </Field>
         )}
-        <Field label="Mã chuyển khoản (cọc)">
-          <TextInput
-            value={form.transferCode}
-            onChange={(e) => set("transferCode", e.target.value)}
-            placeholder="Mã GD — 4 số cuối là đủ…" className="h-10 rounded-lg text-sm"
-          />
-        </Field>
         {/**
          * CÒN THU: ô CHỈ ĐỌC, máy tự tính = tổng tiền − đã cọc.
          *
@@ -4819,23 +4852,15 @@ export function BookingCard({
             ))}
           </ul>
           {needMail.email ? (
-            <NotifyGuestControl
-              spot={editingSpot || spot}
-              booking={needMail}
-              onDone={(m) => {
-                setDone(m ?? null);
-                setNeedMail(null);
-              }}
-            />
+            <p className="mt-2 text-[11px] leading-tight text-amber-800">
+              Bấm <strong>✉ Gửi mail báo khách</strong> cạnh nút Cập nhật ở cuối form. Không cần báo thì cứ
+              bỏ qua — app không tự gửi; nút vẫn nằm trên dòng booking cho tới khi gửi.
+            </p>
           ) : (
             <p className="mt-2 text-xs font-semibold text-amber-900">
               Booking chưa có email khách — điền ô “Email khách” ở trên rồi Lưu lại thì nút gửi hiện ra.
             </p>
           )}
-          <p className="mt-2 text-[11px] leading-tight text-amber-800">
-            Không cần báo khách thì cứ bỏ qua — app không tự gửi. Nút này còn nằm trên dòng booking cho tới
-            khi gửi.
-          </p>
         </div>
       )}
 
@@ -4915,6 +4940,26 @@ export function BookingCard({
         {/* Dấu xong sát nút — form giữ nguyên số liệu nên đây là dấu hiệu duy
             nhất cho biết máy chủ đã nhận */}
         <DoneTag show={justSaved}>{justSavedEdit ? "Đã cập nhật" : "Đã lưu"}</DoneTag>
+        {/**
+         * GỬI MAIL BÁO KHÁCH đứng NGAY CẠNH nút Cập nhật.
+         *
+         * Sửa xong là hai việc liền nhau: lưu, rồi báo khách. Để nút gửi ở chỗ
+         * khác thì người ta lưu xong đóng form, và khách không bao giờ được
+         * báo. Vẫn không tự gửi — nhiều thay đổi chẳng cần báo ai, nên đây là
+         * nút chứ không phải hệ quả của việc bấm Lưu.
+         *
+         * Tự ẩn khi không có gì phải báo.
+         */}
+        {needMail && (
+          <NotifyGuestControl
+            spot={editingSpot || spot}
+            booking={needMail}
+            onDone={(m) => {
+              setDone(m ?? null);
+              setNeedMail(null);
+            }}
+          />
+        )}
         {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
         <Button
           type="button"

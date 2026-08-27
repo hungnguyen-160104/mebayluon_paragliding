@@ -356,6 +356,12 @@ export const bookingSchema = z.object({
    * chỉ sai thì thư trả về và nhật ký báo "GỬI HỎNG" ngay trên dòng booking.
    */
   email: text(200),
+  /**
+   * NGÀY KHÁCH TRẢ CỌC ("YYYY-MM-DD"), khi khác ngày lập booking. Để trống là
+   * "trả đúng hôm lập booking". Máy chủ tự bỏ ngày rác / ngày tương lai chứ
+   * không từ chối cả booking — đây là mốc đối soát, không phải số liệu sổ.
+   */
+  depositDate: text(20),
 });
 
 /** Lệnh thu tiền: tên khách – mã booking – đại lý – số người – tiền – TM (người thu) | CK (TK cty + mã CK). */
