@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { spotName } from "@/lib/baobay/spots";
@@ -1927,6 +1927,18 @@ function CollectMoneyControl({
     setError(null);
   }
 
+  /**
+   * NGÀY KHÁCH CHUYỂN KHOẢN — mặc định hôm nay, bấm vào đổi được.
+   *
+   * Nhân viên hay bấm thu tiền sau khi tiền đã về mấy hôm (lúc nhớ ra, lúc
+   * rảnh tay). Ghi hôm nay thì lệnh thu nằm ở danh sách soát của hôm nay còn
+   * dòng sao kê nằm ở ngày tiền thật sự về — kế toán soát ngày nào cũng lệch.
+   *
+   * Chỉ hỏi cho phần CK. Tiền mặt luôn là hôm nay: nó vào túi người thu ngay
+   * lúc bấm.
+   */
+  const [ckDate, setCkDate] = useState(todayInVN());
+
   async function send() {
     if (total <= 0) return setError("Chưa nhập số tiền thu");
     const used = bills.filter((b) => b.amount > 0);
@@ -1955,6 +1967,7 @@ function CollectMoneyControl({
         kind,
         cash,
         transfers: used,
+        transferDate: ckDate,
       });
       const parts = [
         cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
@@ -2155,6 +2168,33 @@ function CollectMoneyControl({
           )}
         </div>
       ))}
+      {pay.transfer && (
+        <label
+          className={
+            "flex items-center gap-1.5 rounded-lg px-1.5 py-1 " +
+            (ckDate === todayInVN() ? "bg-slate-50" : "bg-amber-100")
+          }
+          title="Ngày tiền thật sự về tài khoản — để kế toán soát đúng ngày trên sao kê"
+        >
+          <span className="shrink-0 text-[11px] font-bold text-slate-700">Ngày thu</span>
+          <input
+            type="date"
+            value={ckDate}
+            max={todayInVN()}
+            onChange={(e) => setCkDate(e.target.value || todayInVN())}
+            className="h-8 min-w-0 flex-1 rounded-lg border border-slate-300 px-1.5 text-xs"
+          />
+          {ckDate !== todayInVN() && (
+            <button
+              type="button"
+              onClick={() => setCkDate(todayInVN())}
+              className="shrink-0 rounded px-1 text-[11px] font-bold text-amber-800 hover:underline"
+            >
+              hôm nay
+            </button>
+          )}
+        </label>
+      )}
       {pay.transfer && (
         <button
           type="button"
@@ -3616,7 +3656,12 @@ function emptyBooking(today: string, spot: string): BookingForm {
     deposit: 0,
     depositMethod: "",
     email: "",
-    depositDate: "",
+    /**
+     * Mặc định HÔM NAY chứ không để trống: gần như mọi khoản cọc đều trả đúng
+     * hôm lập booking, mà ô trống thì người nhập phải đoán xem trống nghĩa là
+     * gì. Bấm vào đổi sang ngày khác khi khách trả hôm trước.
+     */
+    depositDate: todayInVN(),
     remaining: 0,
     agencyPaidAmount: 0,
     agencyName: "",
@@ -4158,7 +4203,13 @@ export function BookingCard({
       deposit: b.deposit,
       depositMethod: b.depositMethod ?? "",
       email: b.email ?? "",
-      depositDate: b.depositDate ?? "",
+      /**
+       * Sửa booking CŨ thì lấy ngày cọc đang có; chưa gán thì lấy NGÀY LẬP
+       * booking — tuyệt đối không điền "hôm nay". Điền hôm nay là mở booking
+       * tháng trước ra sửa cái tên mà khoản cọc nhảy sang hôm nay, kế toán
+       * mất dấu nó ở ngày cũ.
+       */
+      depositDate: b.depositDate || (b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : todayInVN()),
       agencyPaidAmount: b.agencyPaidAmount ?? 0,
       agencyName: b.agencyName ?? "",
       remaining: (() => {

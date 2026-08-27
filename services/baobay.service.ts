@@ -4475,6 +4475,17 @@ export async function collectForBooking(
     transferCode?: string;
     /** "deposit" = thu cọc một phần · "full" = thu nốt toàn bộ phần còn lại. */
     kind?: "deposit" | "full";
+    /**
+     * NGÀY KHÁCH CHUYỂN KHOẢN, khi khác hôm nay.
+     *
+     * Nhân viên bấm thu tiền sau khi tiền đã về mấy hôm — lúc nhớ ra, lúc rảnh
+     * tay. Ghi ngày hôm nay thì lệnh thu nằm ở danh sách soát của hôm nay còn
+     * dòng sao kê nằm ở ngày tiền thật sự về, hai bên không gặp nhau.
+     *
+     * CHỈ áp cho phần CHUYỂN KHOẢN. Tiền mặt luôn là hôm nay: nó vào túi người
+     * thu ngay lúc bấm, và số "đang giữ" của người đó tính theo ngày ấy.
+     */
+    transferDate?: string;
   },
 ): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
   await connectDB();
@@ -4547,12 +4558,27 @@ export async function collectForBooking(
    * khoản ghi thẳng về tài khoản công ty. Gộp chung một dòng thì cuối ngày
    * không biết ai phải nộp bao nhiêu.
    */
+  /**
+   * Ngày ghi cho phần CHUYỂN KHOẢN. Ngày rác / ngày tương lai thì rơi về hôm
+   * nay, không chặn việc thu tiền vì một cái ngày gõ nhầm.
+   */
+  const ckDate = (() => {
+    const v = String(input.transferDate ?? "").trim();
+    if (!v || !isDateKey(v) || v > todayInVN()) return todayInVN();
+    return v;
+  })();
+  /**
+   * Đẩy tiền vào một ngày KẾ TOÁN ĐÃ CHỐT là làm sai lệch bản chốt đó — số của
+   * ngày ấy đã lên sổ rồi. Chỉ soát khi thật sự chọn ngày khác hôm nay.
+   */
+  if (ckDate !== todayInVN() && transferPart > 0) await assertDayOpen(spot, ckDate);
+
   const label = isFull ? "Thu đủ" : "Cọc";
   const makeCollect = async (part: number, method: "cash" | "transfer", code = "") =>
     (
       await BaobayCollect.create({
         spot,
-        date: todayInVN(),
+        date: method === "transfer" ? ckDate : todayInVN(),
         guestName: booking.contactName || "",
         bookingId: booking._id,
         bookingCode: booking.bookingCode || "",

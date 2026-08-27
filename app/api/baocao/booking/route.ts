@@ -373,6 +373,8 @@ export async function PATCH(req: Request) {
             }),
         transferCode: String(body?.transferCode ?? ""),
         kind: body?.kind === "full" ? "full" : "deposit",
+        // Ngày khách CK khi khác hôm nay — để lệnh thu nằm đúng ngày sao kê
+        transferDate: String(body?.transferDate ?? ""),
       });
       return NextResponse.json(res);
     }
