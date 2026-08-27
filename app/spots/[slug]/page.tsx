@@ -5,7 +5,8 @@ import Link from "next/link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotReviewBadges } from "@/components/reviews/SpotReviewBadges";
 import { getSpotReview } from "@/lib/google-reviews";
-import { getSpotTripadvisorRating, getSpotTripadvisorUrl } from "@/lib/spot-partner-links";
+import { getSpotTripadvisorUrl } from "@/lib/spot-partner-links";
+import { getTripadvisorReview } from "@/lib/tripadvisor-reviews";
 import {
   buildMetadata,
   generateSpotSchema,
@@ -545,9 +546,11 @@ export default async function SpotDetailPage({
 
   // Điểm sao + số đánh giá lấy trực tiếp từ Google (cache 6 tiếng); nếu chưa
   // khai GOOGLE_PLACES_API_KEY thì tự rơi về số dự phòng trong lib.
-  const [sapaReview, khauPhaReview] = await Promise.all([
+  const [sapaReview, khauPhaReview, taReview] = await Promise.all([
     isSapa ? getSpotReview("sapa") : Promise.resolve({ rating: 0, reviews: null, live: false }),
     isKhauPha ? getSpotReview("khau-pha") : Promise.resolve({ rating: 0, reviews: null, live: false }),
+    // Điểm Tripadvisor: lấy sống khi có TRIPADVISOR_API_KEY, không thì số gõ tay
+    getTripadvisorReview(canonicalSpotSlug(slug)),
   ]);
   const heading =
     SPOT_ARTICLES_HEADING[spotLocale] ?? SPOT_ARTICLES_HEADING.vi;
@@ -690,7 +693,7 @@ export default async function SpotDetailPage({
         googleSpot={isSapa ? "sapa" : isKhauPha ? "khau-pha" : null}
         rating={isSapa ? sapaReview.rating : khauPhaReview.rating}
         tripadvisorUrl={getSpotTripadvisorUrl(canonicalSpotSlug(slug))}
-        tripadvisorRating={getSpotTripadvisorRating(canonicalSpotSlug(slug))}
+        tripadvisorRating={taReview.rating}
         lang={spotLocale}
       />
 
