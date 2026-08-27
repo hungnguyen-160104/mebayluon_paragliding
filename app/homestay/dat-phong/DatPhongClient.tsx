@@ -1030,7 +1030,16 @@ export default function DatPhongClient() {
                       <button
                         type="button"
                         onClick={() => setHorizon((h) => Math.min(MAX_AHEAD, h + 30))}
-                        className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                        /**
+                         * Màu VÀNG ĐẬM, không phải xám nhạt như trước.
+                         *
+                         * Đây là cửa duy nhất dẫn ra ngoài 30 ngày đầu — khách
+                         * đặt trước nửa năm mà không thấy nút thì tưởng nhà chỉ
+                         * nhận đặt trong tháng. Xám lẫn vào nền trắng của thẻ,
+                         * mà quanh nó toàn ô xanh/hồng của lịch nên càng chìm.
+                         * Vàng không đụng màu nào đang có trên thẻ.
+                         */
+                        className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-amber-600"
                       >
                         {s.moreDays(30)}
                       </button>
