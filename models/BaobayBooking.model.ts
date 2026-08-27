@@ -242,6 +242,26 @@ export interface IBaobayBooking {
   /** Tiền khách đã cọc (VND). */
   deposit: number;
   /**
+   * NGÀY KHÁCH THỰC SỰ TRẢ CỌC ("YYYY-MM-DD") — không phải ngày nhập booking.
+   *
+   * Ba mốc này hay lệch nhau và trước đây sổ chỉ biết mốc thứ ba:
+   *   - ngày khách bấm chuyển khoản
+   *   - ngày quầy gõ số cọc vào app  (có khi vài hôm sau mới gõ)
+   *   - ngày lập booking
+   *
+   * Đối soát sao kê xếp tiền theo NGÀY TRÊN SAO KÊ. Khách chuyển hôm 20 mà
+   * quầy gõ hôm 23 thì khoản cọc nằm ở danh sách ngày 23, còn dòng sao kê nằm
+   * ở ngày 20 — hai bên không bao giờ gặp nhau, kế toán phải mò tay.
+   *
+   * Để TRỐNG nghĩa là "trả cọc đúng hôm lập booking" — bản ghi cũ và phần lớn
+   * booking bình thường rơi vào đây, không bắt ai gõ thêm. Chỉ khi lệch ngày
+   * thì quầy mới bấm "Ngày cọc" nhập lại. Đọc bằng `depositDayOf()` ở
+   * services/baobay.service.ts, đừng đọc thẳng trường này.
+   */
+  depositDate?: string;
+  /** Ai đặt lại ngày cọc — để sau còn hỏi khi số liệu vênh. */
+  depositDateBy?: string;
+  /**
    * Khách ĐÃ TRẢ CHO ĐẠI LÝ một phần (đặt qua Klook/đối tác...) — phần này
    * khách khỏi trả nữa nhưng CÔNG TY CHƯA CẦM: đại lý đang nợ. Trừ vào "còn
    * thu của khách", đồng thời cộng vào bảng công nợ đại lý của ngày.
@@ -471,6 +491,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     pickupNote: { type: String, default: "" },
     expectedTime: { type: String, default: "" },
     deposit: { type: Number, default: 0, min: 0 },
+    depositDate: { type: String, default: "" },
+    depositDateBy: { type: String, default: "" },
     remaining: { type: Number, default: 0, min: 0 },
     agencyPaidAmount: { type: Number, default: 0, min: 0 },
     agencyName: { type: String, default: "" },

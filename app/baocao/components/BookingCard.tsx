@@ -1000,7 +1000,15 @@ function ContactNote({
  * Bảng này tách lại đúng như đã xảy ra: cọc lúc đặt đứng riêng, rồi từng lần
  * thu kèm đường tiền, mã giao dịch, người thu và dấu đã soát sao kê.
  */
-function PaymentBreakdown({ booking }: { booking: BookingDTO }) {
+function PaymentBreakdown({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message?: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const lines = booking.collected ?? [];
   const paidTotal = lines.reduce((t, c) => t + (c.amount || 0), 0);
@@ -1075,7 +1083,25 @@ function PaymentBreakdown({ booking }: { booking: BookingDTO }) {
               </td>
               <td className="py-0.5 pr-1 text-slate-600">{booking.transferCode || "—"}</td>
               <td className="py-0.5 pr-1 text-slate-600">{booking.createdByName || "—"}</td>
-              <td className="py-0.5 text-slate-500">{gio(booking.createdAt)}</td>
+              {/**
+               * Cột "Lúc" của dòng cọc là NGÀY KHÁCH TRẢ, không phải giờ gõ máy.
+               * Quầy nhập ngày cọc thì lấy ngày ấy (in đậm cho thấy nó khác
+               * ngày lập booking); chưa nhập thì vẫn là giờ lập như cũ.
+               */}
+              <td className="py-0.5 text-slate-500">
+                {booking.depositDate ? (
+                  <span
+                    className="font-bold text-sky-700"
+                    title={`Khách trả cọc ngày ${formatDateKeyVN(booking.depositDate)}${
+                      booking.depositDateBy ? ` — ${booking.depositDateBy} nhập` : ""
+                    }. Booking lập lúc ${gio(booking.createdAt)}.`}
+                  >
+                    {formatDateKeyVN(booking.depositDate)}
+                  </span>
+                ) : (
+                  gio(booking.createdAt)
+                )}
+              </td>
             </tr>
           )}
           {lines.map((c, i) => (
@@ -1146,6 +1172,122 @@ function PaymentBreakdown({ booking }: { booking: BookingDTO }) {
           ai. Sửa booking rồi bấm TM/CK để đưa vào đúng sổ.
         </p>
       )}
+      {cocGoc > 0 && <DepositDateControl spot={spot} booking={booking} onDone={onDone} />}
+    </div>
+  );
+}
+
+/**
+ * NGÀY CỌC — khách trả cọc KHÔNG cùng hôm lập booking thì nhập ở đây.
+ *
+ * Vì sao đáng một ô riêng: đối soát sao kê xếp tiền theo ngày ghi trên sao kê.
+ * Khách chuyển hôm 20 mà quầy gõ vào app hôm 23 thì dòng sao kê nằm ở ngày 20,
+ * khoản cọc nằm ở ngày 23 — kế toán soát ngày 20 không thấy khoản nào để khớp,
+ * soát ngày 23 lại thấy một khoản không có tiền về. Nhập đúng ngày là hai bên
+ * gặp nhau, máy tự khớp.
+ *
+ * Mặc định KHÔNG bắt ai gõ: trống nghĩa là trả đúng hôm lập booking, đúng với
+ * phần lớn booking. Chỉ khi lệch ngày mới phải bấm.
+ */
+function DepositDateControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(booking.depositDate || "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(value: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "deposit-date",
+        depositDate: value,
+      });
+      onDone(value ? `✓ Ngày cọc: ${formatDateKeyVN(value)}` : "✓ Đã bỏ ngày cọc riêng.");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không lưu được ngày cọc");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={
+          "mt-1 w-full rounded px-1.5 py-1 text-left text-[10px] font-semibold leading-tight " +
+          (booking.depositDate
+            ? "bg-sky-100 text-sky-900 hover:bg-sky-200"
+            : "bg-slate-100 text-slate-600 hover:bg-slate-200")
+        }
+        title="Khách trả cọc hôm khác hôm lập booking thì nhập vào đây — đối soát sao kê mới xếp đúng ngày"
+      >
+        📅 Ngày cọc:{" "}
+        {booking.depositDate ? (
+          <>
+            <strong>{formatDateKeyVN(booking.depositDate)}</strong>
+            {booking.depositDateBy ? ` · ${booking.depositDateBy} nhập` : ""} — bấm để sửa
+          </>
+        ) : (
+          "đúng hôm lập booking — bấm nếu khách trả hôm khác"
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-1 rounded border border-sky-300 bg-sky-50 p-1.5">
+      <p className="text-[10px] leading-tight text-sky-900">
+        Khách <strong>thực sự trả cọc</strong> ngày nào? Không phải ngày gõ vào app.
+      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-1">
+        <input
+          type="date"
+          value={date}
+          max={todayInVN()}
+          onChange={(e) => setDate(e.target.value)}
+          className="h-7 rounded border border-slate-300 px-1.5 text-xs"
+        />
+        <Button
+          type="button"
+          disabled={busy || !date}
+          onClick={() => save(date)}
+          className="h-7 bg-sky-600 px-2 text-xs font-bold text-white hover:bg-sky-700"
+        >
+          {busy ? "…" : "Xác nhận"}
+        </Button>
+        {booking.depositDate && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => save("")}
+            className="h-7 rounded border border-slate-300 px-2 text-xs font-semibold text-slate-600 hover:bg-white"
+            title="Quay về mặc định: trả đúng hôm lập booking"
+          >
+            Bỏ ngày riêng
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="h-7 px-1.5 text-xs text-slate-500 hover:text-slate-800"
+        >
+          Thôi
+        </button>
+      </div>
+      {error && <p className="mt-1 text-[10px] font-semibold text-rose-700">{error}</p>}
     </div>
   );
 }
@@ -1193,7 +1335,7 @@ function RowMenu({
 
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
-      <PaymentBreakdown booking={booking} />
+      <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />
       <button
         type="button"
         className={item}

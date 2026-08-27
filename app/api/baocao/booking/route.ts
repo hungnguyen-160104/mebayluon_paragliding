@@ -14,6 +14,7 @@ import {
   cancelBookingGuests,
   BaobayError,
   setBookingLock,
+  setDepositDate,
   assignBooking,
   acceptAssignedBooking,
   markNoTicketFlight,
@@ -201,7 +202,13 @@ export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action ?? "flown");
   const crewAllowed =
-    action === "accept" || action === "collect" || action === "assign" || action === "commission" || action === "contact";
+    action === "accept" ||
+    action === "collect" ||
+    action === "assign" ||
+    action === "commission" ||
+    action === "contact" ||
+    // Người thu tiền mới biết khách trả cọc hôm nào — không bắt họ nhờ quầy gõ hộ
+    action === "deposit-date";
   const auth = requireBaobay(req, {
     roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
   });
@@ -238,7 +245,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Không huỷ bớt được" }, { status: 500 });
     }
   }
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -255,6 +262,16 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ message: "Chỉ kế toán mới khoá / mở khoá booking" }, { status: 403 });
       }
       return NextResponse.json({ booking: await setBookingLock(auth, spot, id, action === "lock") });
+    }
+    /**
+     * NGÀY CỌC — khách trả cọc hôm khác hôm lập booking thì nhập vào đây, đối
+     * soát sao kê mới xếp khoản cọc vào đúng ngày trên sao kê. Chuỗi rỗng là
+     * gỡ ngày đã nhập, quay về mặc định "trả đúng hôm lập booking".
+     */
+    if (action === "deposit-date") {
+      return NextResponse.json({
+        booking: await setDepositDate(auth, spot, id, String(body?.depositDate ?? "")),
+      });
     }
     if (action === "assign") {
       const assignee = String(body?.assignee ?? "");

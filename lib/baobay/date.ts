@@ -88,3 +88,18 @@ export function nowStampVN(): string {
     hour12: false,
   }).format(new Date());
 }
+
+/**
+ * NGÀY CỦA KHOẢN CỌC — mốc để đối soát sao kê xếp khoản cọc vào đúng ngày.
+ *
+ * Trả về `depositDate` nếu quầy đã nhập tay (khách trả cọc hôm khác hôm lập
+ * booking), không thì rơi về ngày LẬP BOOKING như trước. Mọi chỗ cần biết
+ * "khoản cọc này thuộc ngày nào" phải đi qua đây, đừng đọc thẳng `depositDate`
+ * — trống không có nghĩa là không có ngày, mà là "đúng hôm lập booking".
+ */
+export function depositDayOf(b: { depositDate?: string; createdAt?: Date | string | null }): string {
+  if (isDateKey(b.depositDate)) return b.depositDate as string;
+  if (!b.createdAt) return "";
+  const d = new Date(b.createdAt);
+  return Number.isFinite(d.getTime()) ? toDateKeyVN(d) : "";
+}

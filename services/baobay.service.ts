@@ -3873,6 +3873,32 @@ export async function updateBookingInfo(
     );
   }
 
+  /**
+   * CỌC GÕ TAY ĐÃ ĐỐI SOÁT THÌ KHÔNG HẠ XUỐNG ĐƯỢC NỮA.
+   *
+   * Lỗ hổng trước đây: khoản cọc CHUYỂN KHOẢN gõ tay không đẻ ra lệnh thu nào
+   * (chỉ cọc TIỀN MẶT mới đẻ), nên chốt chặn phía trên không với tới nó. Kế
+   * toán đã dò ra dòng sao kê và bấm "Đã nhận", vậy mà nhân viên vào sửa
+   * booking hạ ô cọc về 0 là khoản tiền biến mất khỏi sổ — trong khi cờ
+   * `depositVerifiedAt` vẫn còn nguyên và dòng sao kê vẫn trỏ vào đúng booking
+   * này. Kết quả: tiền thật đã về tài khoản công ty mà sổ ghi khách chưa cọc,
+   * lại không còn dấu vết nào cho thấy nó từng có.
+   *
+   * Muốn sửa thật thì kế toán phải BỎ XÁC NHẬN trước (nút trên trang soát sao
+   * kê) — tức là có người chịu trách nhiệm cho việc gỡ một khoản đã đối soát,
+   * chứ không phải sửa lặng lẽ trong ô nhập.
+   */
+  const manualNow = Math.max(0, (current.deposit ?? 0) - collectedSoFar);
+  const manualNext = Math.max(0, input.deposit - collectedSoFar);
+  if (current.depositVerifiedAt && manualNext < manualNow) {
+    throw new BaobayError(
+      `Khoản cọc ${manualNow.toLocaleString("vi-VN")} đ này kế toán ĐÃ ĐỐI SOÁT với sao kê (${
+        current.depositVerifiedBy || "kế toán"
+      } xác nhận) — không hạ xuống ${manualNext.toLocaleString("vi-VN")} đ được. Nếu khoản đó thật sự sai thì báo kế toán bỏ xác nhận ở trang soát sao kê rồi mới sửa.`,
+      400,
+    );
+  }
+
 const editedTotal = bookingTotal({
     ...input,
     spot,
@@ -3927,6 +3953,17 @@ const editedTotal = bookingTotal({
   };
   if (input.flightDate !== current.flightDate) {
     update.$push = { rescheduledFrom: current.flightDate };
+  }
+
+  /**
+   * Cọc gõ tay TĂNG thêm sau khi kế toán đã xác nhận: phần tăng là tiền MỚI,
+   * chưa ai dò ra nó trong sao kê. Xoá cờ để khoản này quay lại hàng chờ soát,
+   * không thì phần tăng thêm lọt sổ vĩnh viễn dưới cái tích của lần trước.
+   */
+  if (current.depositVerifiedAt && manualNext > manualNow) {
+    (update.$set as Record<string, unknown>).depositVerifiedAt = null;
+    (update.$set as Record<string, unknown>).depositVerifiedBy = "";
+    (update.$set as Record<string, unknown>).ckCheckedAt = null;
   }
 
   const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, update, { new: true }).lean<any>();
@@ -4059,6 +4096,55 @@ async function assertBookingUnlocked(
       409,
     );
   }
+}
+
+/**
+ * QUẦY NHẬP "NGÀY CỌC" khi khách trả cọc KHÔNG cùng hôm lập booking.
+ *
+ * Vì sao cần: đối soát sao kê xếp tiền theo ngày ghi trên sao kê, còn khoản
+ * cọc thì trước đây xếp theo ngày lập booking. Khách chuyển hôm 20, quầy gõ
+ * vào app hôm 23 — dòng sao kê nằm ở danh sách ngày 20, khoản cọc nằm ở danh
+ * sách ngày 23, hai bên không bao giờ gặp nhau và kế toán phải mò tay.
+ *
+ * Để TRỐNG (`date` rỗng) là gỡ ngày đã nhập, quay về "trả đúng hôm lập
+ * booking" — nhập nhầm thì sửa lại được, không phải nhờ ai.
+ *
+ * KHÔNG cho đặt ngày ở TƯƠNG LAI: cọc là tiền đã trả rồi, ngày mai chưa trả
+ * được. Gõ nhầm năm (2027 thay vì 2026) mà lọt là khoản đó biến mất khỏi mọi
+ * danh sách soát, không ai thấy nó nữa.
+ */
+export async function setDepositDate(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  date: string,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  await assertBookingUnlocked(spot, id, session);
+
+  const clean = String(date ?? "").trim();
+  if (clean && !isDateKey(clean)) throw new BaobayError("Ngày cọc không đúng dạng", 400);
+  if (clean && clean > todayInVN()) {
+    throw new BaobayError("Ngày cọc không thể ở tương lai — cọc là tiền khách đã trả rồi", 400);
+  }
+
+  const current = await BaobayBooking.findOne({ _id: id, spot })
+    .select("deposit createdAt depositDate")
+    .lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking", 404);
+  if ((current.deposit ?? 0) <= 0) {
+    throw new BaobayError("Booking này chưa ghi tiền cọc — nhập số cọc trước đã", 400);
+  }
+
+  const doc = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    { $set: { depositDate: clean, depositDateBy: clean ? session.name || session.username : "" } },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
+  pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
+  return toBookingDTO(doc);
 }
 
 /** Kế toán bấm khoá / mở khoá một booking. */
@@ -6545,6 +6631,9 @@ function toBookingDTO(doc: any): BookingDTO {
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
     depositMethod: doc.depositMethod === "cash" || doc.depositMethod === "transfer" ? doc.depositMethod : "",
+    depositDate: doc.depositDate || "",
+    depositDateBy: doc.depositDateBy || "",
+    depositVerified: Boolean(doc.depositVerifiedAt),
     note: doc.note || "",
     status:
       doc.status === "done"

@@ -451,6 +451,14 @@ export type BookingDTO = {
   depositToCompany: boolean;
   /** Cọc gõ tay đi đường nào: "cash" | "transfer" | "" (bản ghi cũ chưa hỏi). */
   depositMethod?: "cash" | "transfer" | "";
+  /**
+   * NGÀY KHÁCH TRẢ CỌC ("YYYY-MM-DD") khi nó KHÁC ngày lập booking. Trống =
+   * trả đúng hôm lập booking. Đối soát sao kê xếp khoản cọc theo ngày này.
+   */
+  depositDate?: string;
+  depositDateBy?: string;
+  /** Kế toán đã "Đã nhận" khoản cọc gõ tay — sửa hạ số cọc sẽ bị chặn. */
+  depositVerified?: boolean;
   note: string;
   /** "voided" = bỏ khỏi sổ vì nhập nhầm / nhập trùng — không tính vào thống kê. */
   status: "open" | "done" | "cancelled" | "voided";

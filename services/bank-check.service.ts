@@ -31,7 +31,7 @@ import {
   type BankEntry,
 } from "@/lib/baobay/bank-check";
 import { askAiBankMatch, type AiBankCandidate, type AiBankLine } from "@/lib/baobay/ai-bank-match";
-import { formatDateKeyVN, isDateKey, toDateKeyVN } from "@/lib/baobay/date";
+import { depositDayOf, formatDateKeyVN, isDateKey, toDateKeyVN } from "@/lib/baobay/date";
 import { SPOT_IDS, normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
 import { connectDB } from "@/lib/mongodb";
@@ -306,13 +306,25 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
 
   const [collects, createdToday, flyingToday] = await Promise.all([
     BaobayCollect.find({ spot: { $in: spots }, date, method: "transfer" }).lean<any[]>(),
+    /**
+     * Booking có tiền cọc THUỘC VỀ ngày này.
+     *
+     * Mốc là NGÀY CỌC chứ không phải ngày lập booking: khách chuyển hôm 20 mà
+     * quầy gõ hôm 23 thì khoản ấy phải nằm cùng chỗ với dòng sao kê ngày 20,
+     * không thì hai bên chẳng bao giờ gặp nhau. Quầy chưa nhập ngày cọc thì
+     * `depositDate` trống, nghĩa là "trả đúng hôm lập booking" — rơi về vế sau
+     * của $or, đúng như cách sổ chạy từ trước tới nay.
+     */
     BaobayBooking.find({
       spot: { $in: spots },
-      createdAt: { $gte: from, $lt: to },
       deposit: { $gt: 0 },
       status: { $ne: "voided" },
+      $or: [
+        { depositDate: date },
+        { depositDate: { $in: [null, ""] }, createdAt: { $gte: from, $lt: to } },
+      ],
     })
-      .select("spot daySeq flightDate contactName phone bookingCode deposit transferCode createdAt")
+      .select("spot daySeq flightDate contactName phone bookingCode deposit transferCode createdAt depositDate")
       .lean<any[]>(),
     BaobayBooking.find({ spot: { $in: spots }, flightDate: date, status: { $ne: "voided" } })
       .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt depositSkipAt")
@@ -390,8 +402,12 @@ async function candidatesForDate(spots: string[], date: string): Promise<BankCan
       amounts: [manualDeposit],
       recorded: true,
       createdDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
-      /** Cọc gõ tay sinh ra cùng lúc nhập booking — mốc chính là ngày ấy. */
-      recordedDate: b.createdAt ? toDateKeyVN(new Date(b.createdAt)) : undefined,
+      /**
+       * Mốc so ngày cho luật khớp tuyệt đối: NGÀY CỌC (quầy nhập khi khách trả
+       * lệch ngày), thiếu thì là ngày lập booking như cũ. Lấy nhầm ngày lập là
+       * cửa sổ "cùng ngày" trượt mất khoản khách chuyển trước đó mấy hôm.
+       */
+      recordedDate: depositDayOf(b) || undefined,
     });
   }
 
@@ -461,7 +477,7 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
     })
       .sort({ flightDate: -1 })
       .limit(500)
-      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt")
+      .select("spot daySeq flightDate contactName phone bookingCode deposit remaining totalAmount transferCode createdAt depositDate")
       .lean<any[]>(),
   ]);
 
@@ -528,7 +544,8 @@ async function candidatesOpen(spots: string[]): Promise<BankCandidate[]> {
         amounts: [manualDeposit],
         recorded: true,
         createdDate: created,
-        recordedDate: created,
+        /** Ngày cọc quầy nhập; trống thì rơi về ngày lập booking như cũ. */
+        recordedDate: depositDayOf(b) || created,
       });
     }
     if (Number(b.remaining) > 0) {
