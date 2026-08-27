@@ -4772,23 +4772,24 @@ export function BookingCard({
             value={form.agencyPaidAmount}
             onChange={(v) => {
               /**
-               * Vừa gõ số tiền là ĐIỀN LUÔN tên đại lý theo ô "Nguồn".
+               * PHẢI đi qua `set`, KHÔNG được gọi thẳng `setForm`.
                *
-               * Khoản này sinh ra công nợ "đại lý X còn nợ công ty", mà không
-               * có tên thì nó thành "đại lý ẩn danh còn nợ" — kế toán không
-               * biết đi đòi ai. Nguồn gần như luôn chính là tên đại lý, nên
-               * điền hộ; sửa đè được khi khách đặt qua một bên còn tiền trả
-               * cho bên khác.
-               *
-               * Chỉ điền khi tên đang TRỐNG — không đè lên chữ người ta đã gõ.
+               * `set` là chỗ duy nhất tính lại "Còn lại = tổng − đã cọc − đại
+               * lý đã thu". Ghi thẳng vào form thì số tiền vào đúng chỗ nhưng
+               * ô "Còn lại" đứng im, phải bấm tăng giảm một dịch vụ bất kỳ nó
+               * mới chịu cập nhật — đúng lỗi đã xảy ra.
                */
-              setForm((prev) => ({
-                ...prev,
-                agencyPaidAmount: v,
-                agencyName:
-                  v > 0 && !prev.agencyName.trim() ? prev.source.trim() : prev.agencyName,
-              }));
-              setDone(null);
+              set("agencyPaidAmount", v);
+              /**
+               * Rồi mới ĐIỀN TÊN ĐẠI LÝ theo ô "Nguồn".
+               *
+               * Khoản này sinh ra công nợ "đại lý X còn nợ công ty"; không có
+               * tên thì thành "đại lý ẩn danh còn nợ", kế toán không biết đi
+               * đòi ai. Chỉ điền khi tên đang TRỐNG — không đè chữ người ta đã gõ.
+               */
+              if (v > 0 && !form.agencyName.trim() && form.source.trim()) {
+                set("agencyName", form.source.trim());
+              }
             }}
           />
         </Field>
