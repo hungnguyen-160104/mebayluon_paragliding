@@ -4667,35 +4667,36 @@ export function BookingCard({
         {/* Mỗi ô tiền một nút QR: khách đặt xa thì gửi mã cọc qua Zalo, khách
             tới bãi thì đưa mã phần còn thu cho quét. Nội dung CK = mã booking. */}
         {/**
-         * Ô tiền cọc CHIẾM HAI CỘT.
+         * Ô TIỀN CHIẾM TRỌN BỀ NGANG của một cột, mấy nút xuống HÀNG DƯỚI.
          *
-         * Trong một cột nó phải chia chỗ với hai nút TM/CK và nút QR, nên số
-         * bảy chữ số (2.190.000) bị bóp đến mức che mất chữ. Tiền là thứ dễ
-         * gõ nhầm nhất trên form này — không đọc lại được số vừa gõ là hỏng.
+         * Trước đây số tiền phải chia chỗ với hai nút TM/CK và nút QR trên cùng
+         * một hàng, nên số bảy chữ số (2.190.000) bị bóp đến mức che mất chữ.
+         * Cho chiếm hai cột thì đọc được nhưng ô rộng huyếch so với mấy ô cạnh
+         * nó. Xuống hàng là xong cả hai: số đọc rõ, ô vẫn bằng các ô khác nên
+         * "Mã CK cọc" và "Ngày CK cọc" đứng cùng hàng với nó trên máy tính.
          */}
-        <Field
-          className="col-span-2"
-          label={editingId && editedPaid > 0 ? "Khách đã trả (cọc + đã thu)" : "Khách đã cọc"}
-        >
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="min-w-[8rem] flex-1">
-              <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
-            </span>
+        <Field label={editingId && editedPaid > 0 ? "Khách đã trả (cọc + đã thu)" : "Khách đã cọc"}>
+          <div className="flex flex-col gap-1">
+            <MoneyInput value={form.deposit} onChange={(v) => set("deposit", v)} />
+            {/* Chưa gõ số tiền thì hàng nút này vô nghĩa: chưa biết cọc bao
+                nhiêu thì mã QR không sinh được, mà TM/CK cũng chưa có gì để
+                phân đường. Ẩn đi cho form khỏi cao lên vô ích. */}
+            {form.deposit > 0 && (
+            <div className="flex items-center gap-1">
             {/*
               HỎI THẲNG ĐƯỜNG TIỀN, không đoán. Cọc TM thì tiền nằm trong phần
               người lập booking đang giữ và KHÔNG phải đối soát sao kê; cọc CK
               thì phải dò ra trong sao kê ngân hàng. Bản cũ mặc định coi mọi
               khoản cọc là chuyển khoản nên nói sai với 29/93 booking.
             */}
-            {form.deposit > 0 &&
-              (["cash", "transfer"] as const).map((m) => (
+            {(["cash", "transfer"] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => set("depositMethod", form.depositMethod === m ? "" : m)}
                   title={m === "cash" ? "Khách đưa tiền mặt — tính vào tiền người lập booking đang giữ" : "Khách chuyển khoản về TK công ty — phải soát sao kê"}
                   className={
-                    "h-10 shrink-0 rounded-lg border px-2 text-xs font-bold " +
+                    "h-9 flex-1 rounded-lg border px-2 text-xs font-bold " +
                     (form.depositMethod === m
                       ? m === "cash"
                         ? "border-emerald-500 bg-emerald-500 text-white"
@@ -4717,8 +4718,10 @@ export function BookingCard({
                 phone: form.phone,
               })}
               purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
-              className="h-10 shrink-0 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
+              className="h-9 flex-1 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
             />
+            </div>
+            )}
           </div>
           {/*
             Ô này là số CỘNG DỒN, không phải riêng tiền cọc: mỗi lệnh thu tại
@@ -4765,10 +4768,32 @@ export function BookingCard({
         {/* Khách đặt qua đại lý và trả một phần bên đó: phần này khách khỏi trả,
             đại lý nợ công ty — kế toán xem bảng công nợ đại lý cuối ngày */}
         <Field label="Đại lý đã thu">
-          <MoneyInput value={form.agencyPaidAmount} onChange={(v) => set("agencyPaidAmount", v)} />
+          <MoneyInput
+            value={form.agencyPaidAmount}
+            onChange={(v) => {
+              /**
+               * Vừa gõ số tiền là ĐIỀN LUÔN tên đại lý theo ô "Nguồn".
+               *
+               * Khoản này sinh ra công nợ "đại lý X còn nợ công ty", mà không
+               * có tên thì nó thành "đại lý ẩn danh còn nợ" — kế toán không
+               * biết đi đòi ai. Nguồn gần như luôn chính là tên đại lý, nên
+               * điền hộ; sửa đè được khi khách đặt qua một bên còn tiền trả
+               * cho bên khác.
+               *
+               * Chỉ điền khi tên đang TRỐNG — không đè lên chữ người ta đã gõ.
+               */
+              setForm((prev) => ({
+                ...prev,
+                agencyPaidAmount: v,
+                agencyName:
+                  v > 0 && !prev.agencyName.trim() ? prev.source.trim() : prev.agencyName,
+              }));
+              setDone(null);
+            }}
+          />
         </Field>
         {form.agencyPaidAmount > 0 && (
-          <Field label="Tên đại lý ★">
+          <Field label="Tên đại lý ★" hint="Tự điền theo ô Nguồn — sửa được">
             <TextInput
               value={form.agencyName}
               onChange={(e) => set("agencyName", e.target.value)}
