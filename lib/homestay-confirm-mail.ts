@@ -43,7 +43,12 @@ type Words = {
   rooms: string;
   guests: (a: number, c: number) => string;
   total: string;
-  payAtCheckIn: string;
+  /**
+   * Câu chốt cuối bảng: đơn đã nhận nhưng PHÒNG CHƯA GIỮ CHẮC cho tới khi có
+   * cọc. Nói thẳng ra ngay trong thư xác nhận, đừng để khách yên trí là xong
+   * rồi tới nơi mới biết phòng đã bán cho người đặt cọc trước.
+   */
+  holdNote: string;
   address: string;
   contact: string;
   changeNote: string;
@@ -61,7 +66,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "Phòng đã đặt",
     guests: (a, c) => `${a} người lớn${c ? ` · ${c} trẻ em` : ""}`,
     total: "Tổng tiền",
-    payAtCheckIn: "Thanh toán khi nhận phòng.",
+    holdNote: "Nhân viên của chúng tôi sẽ liên hệ với quý khách — vui lòng đặt cọc để giữ phòng.",
     address: "Địa chỉ",
     contact: "Liên hệ",
     changeNote: "Cần đổi ngày hoặc huỷ, xin nhắn giúp trước một ngày.",
@@ -77,7 +82,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "Rooms booked",
     guests: (a, c) => `${a} adult${a > 1 ? "s" : ""}${c ? ` · ${c} child${c > 1 ? "ren" : ""}` : ""}`,
     total: "Total",
-    payAtCheckIn: "Payment on arrival.",
+    holdNote: "Our staff will contact you shortly — please leave a deposit to hold your room.",
     address: "Address",
     contact: "Contact",
     changeNote: "To change dates or cancel, please let us know a day ahead.",
@@ -93,7 +98,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "Chambres réservées",
     guests: (a, c) => `${a} adulte${a > 1 ? "s" : ""}${c ? ` · ${c} enfant${c > 1 ? "s" : ""}` : ""}`,
     total: "Total",
-    payAtCheckIn: "Paiement à l’arrivée.",
+    holdNote: "Notre équipe vous contactera — merci de verser un acompte pour garder la chambre.",
     address: "Adresse",
     contact: "Contact",
     changeNote: "Pour modifier ou annuler, prévenez-nous un jour à l’avance.",
@@ -109,7 +114,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "Забронировано",
     guests: (a, c) => `${a} взрослых${c ? ` · ${c} детей` : ""}`,
     total: "Итого",
-    payAtCheckIn: "Оплата при заселении.",
+    holdNote: "Наш сотрудник свяжется с вами — внесите, пожалуйста, задаток, чтобы номер остался за вами.",
     address: "Адрес",
     contact: "Контакт",
     changeNote: "Изменить даты или отменить — сообщите за день.",
@@ -125,7 +130,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "已订房型",
     guests: (a, c) => `${a} 位成人${c ? ` · ${c} 位儿童` : ""}`,
     total: "总计",
-    payAtCheckIn: "入住时付款。",
+    holdNote: "我们的工作人员会尽快与您联系 — 请支付订金以保留房间。",
     address: "地址",
     contact: "联系方式",
     changeNote: "如需改期或取消，请提前一天告知。",
@@ -141,7 +146,7 @@ const W: Record<HomestayLang, Words> = {
     rooms: "बुक किए गए कमरे",
     guests: (a, c) => `${a} वयस्क${c ? ` · ${c} बच्चे` : ""}`,
     total: "कुल",
-    payAtCheckIn: "पहुँचने पर भुगतान।",
+    holdNote: "हमारा स्टाफ़ जल्द ही आपसे संपर्क करेगा — कमरा सुरक्षित रखने के लिए कृपया अग्रिम राशि जमा करें।",
     address: "पता",
     contact: "संपर्क",
     changeNote: "तारीख बदलने या रद्द करने के लिए एक दिन पहले बताएँ।",
@@ -187,7 +192,9 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
     `${w.rooms}:`,
     phong,
     `${w.guests(input.adults, input.children)}`,
-    `${w.total}: ${tien} — ${w.payAtCheckIn}`,
+    `${w.total}: ${tien}`,
+    "",
+    w.holdNote,
     "",
     `${w.address}: ${input.address}`,
     `${w.contact}: ${input.phone}`,
@@ -210,10 +217,13 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
     ${row(w.dates, `<strong>${esc(ngay)}</strong>`)}
     ${row(w.rooms, input.lines.map((l) => `${esc(roomNameOf(l.roomTypeId, input.lang))} × ${l.qty}`).join("<br>"))}
     ${row("", esc(w.guests(input.adults, input.children)))}
-    ${row(w.total, `<strong style="color:#b45309">${esc(tien)}</strong> — ${esc(w.payAtCheckIn)}`)}
+    ${row(w.total, `<strong style="color:#b45309">${esc(tien)}</strong>`)}
     ${row(w.address, esc(input.address))}
     ${row(w.contact, `<a href="tel:${esc(input.phone)}" style="color:#0369a1">${esc(input.phone)}</a>`)}
   </table>
+  <p style="margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#78350f;font-weight:600">${esc(
+    w.holdNote,
+  )}</p>
   <p style="margin:0 0 6px;color:#475569">${esc(w.changeNote)}</p>
   <p style="margin:0 0 16px;font-weight:600">${esc(w.bye)}</p>
   <p style="margin:0;color:#94a3b8;font-size:12px">mebayluon.com</p>
