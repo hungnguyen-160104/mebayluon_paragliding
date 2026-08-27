@@ -144,6 +144,24 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
   const canonicalUrl = canonicalUrlFor(basePath, locale, available);
 
   /**
+   * BẢN NGÔN NGỮ CHƯA DỊCH THÌ KHÔNG CHO INDEX.
+   *
+   * Bài chỉ có tiếng Việt + tiếng Anh nhưng /zh/blog/x vẫn mở được và trả về
+   * NỘI DUNG TIẾNG ANH, kèm `html lang="zh-CN"` và `index, follow`. Canonical
+   * có trỏ về bản tiếng Anh, nhưng canonical chỉ là GỢI Ý — Google vẫn index
+   * URL /zh/ rồi đem nó ra trả cho truy vấn tiếng Anh ("paragliding vietnam"
+   * ra URL /zh/). Người tìm bằng tiếng Anh bấm vào một địa chỉ /zh/ thì tưởng
+   * vào nhầm trang tiếng Trung.
+   *
+   * `follow` vẫn bật: trang không hiện trong kết quả tìm kiếm nhưng link bên
+   * trong nó vẫn dẫn Google đi tiếp, không chặn dòng chảy sang bản đúng.
+   *
+   * Trang KHÔNG khai `availableLocales` (trang tĩnh, đã dịch đủ) thì
+   * `available` rỗng — mọi thứ index như thường.
+   */
+  const indexable = !available || available.includes(locale);
+
+  /**
    * Trang tự truyền ảnh (bài viết, sản phẩm, hồ sơ phi công) thì dùng ảnh đó
    * vì nó sát nội dung hơn; còn lại lấy thẻ dựng sẵn của mục.
    */
@@ -208,7 +226,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
     },
 
     robots: {
-      index: true,
+      index: indexable,
       follow: true,
       // Khai cả ở thẻ robots chung, không riêng googleBot: web nhiều ảnh đẹp
       // nên cần ảnh xem trước cỡ lớn và snippet không giới hạn độ dài.
@@ -216,7 +234,7 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
       "max-snippet": -1,
       "max-video-preview": -1,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,

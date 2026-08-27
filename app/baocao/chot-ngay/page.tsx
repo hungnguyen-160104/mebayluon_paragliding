@@ -69,6 +69,8 @@ type CloseSuggestion = {
   rescheduledCount: number;
   /** Số KHÁCH dời lịch — gom quầy khai + sổ booking, đếm theo đầu khách. */
   rescheduledGuestCount: number;
+  /** Trong số đó, bao nhiêu khách ĐÃ cầm vé — vé của họ phải được thu hồi. */
+  rescheduledTicketGuests: number;
   issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng tự động từ mã phi công báo đã bay (+PPG). */
   pilotRanges: Array<{ from: string; to: string }>;
@@ -964,19 +966,49 @@ function DailyCloseInner() {
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
                 </ServiceBox>
 
-                <ServiceBox tone="moved" label="Dời lịch">
+                {/* Tên phải nói rõ ĐƠN VỊ: ô này đếm VÉ và nằm trong phép tính
+                    "vé thu hồi = huỷ + dời". Để trống chữ "vé" thì thấy số 0
+                    bên cạnh dòng "5 khách dời" là tưởng máy bỏ sót. */}
+                <ServiceBox tone="moved" label="Vé dời lịch">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
-                  {/* Nhóm dời làm THẲNG TRÊN SỔ BOOKING thường chưa xuất vé nên
-                      không có mã nào để thu hồi — quầy cũng không khai. Hiện
-                      riêng theo đầu khách, kẻo màn hình báo "dời 0" trong khi
-                      hôm đó có nhóm chuyển sang ngày khác. */}
-                  {(suggest?.rescheduledGuestCount ?? 0) > 0 && (
-                    <p className="mt-0.5 text-[10px] font-semibold leading-tight text-amber-700">
-                      Sổ booking: {suggest!.rescheduledGuestCount} khách dời (xem bảng tóm tắt bên dưới)
-                    </p>
-                  )}
+                  {(() => {
+                    const khach = suggest?.rescheduledGuestCount ?? 0;
+                    if (khach <= 0) {
+                      return (
+                        <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                          Đếm theo VÉ — vé thu về từ nhóm đổi sang ngày khác
+                        </p>
+                      );
+                    }
+                    const coVe = suggest?.rescheduledTicketGuests ?? 0;
+                    return (
+                      <>
+                        <p className="mt-0.5 text-[10px] font-semibold leading-tight text-amber-700">
+                          Sổ booking: {khach} khách dời (xem bảng tóm tắt bên dưới)
+                        </p>
+                        {/**
+                         * GIẢI THÍCH VÌ SAO Ô NÀY VẪN LÀ 0.
+                         *
+                         * Nhóm dời mà CHƯA xuất vé thì không có tờ vé nào để thu
+                         * hồi, nên ô đếm-theo-vé đứng im — đúng, nhưng nhìn vào
+                         * thì tưởng máy bỏ sót. Ngược lại nhóm ĐÃ cầm vé mà dời
+                         * thì vé của họ BẮT BUỘC phải nằm trong "vé thu hồi";
+                         * lúc ấy phải kêu lên.
+                         */}
+                        {coVe > 0 ? (
+                          <p className="mt-0.5 text-[10px] font-bold leading-tight text-rose-700">
+                            ⚠ {coVe} khách trong đó ĐÃ cầm vé — vé của họ phải được thu hồi và tính vào ô này
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                            Nhóm này CHƯA xuất vé nên không có vé nào để thu hồi — ô này để 0 là đúng
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </ServiceBox>
 
                 {/* Ô này đếm theo VÉ và bị ràng vào phép tính "vé thu hồi =

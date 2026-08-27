@@ -424,7 +424,16 @@ export async function addView(slug: string) {
   return Post.findOneAndUpdate(
     { slug },
     { $inc: { views: 1 } },
-    { new: true, upsert: false }
+    /**
+     * `timestamps: false` — ĐẾM LƯỢT XEM KHÔNG PHẢI LÀ SỬA BÀI.
+     *
+     * Mongoose mặc định đẩy `updatedAt` theo mọi findOneAndUpdate, nên để
+     * nguyên thì mỗi khách vào đọc là bài "vừa được cập nhật". Sitemap khai
+     * lastmod theo `updatedAt` (xem app/sitemap.ts) — hoá ra mọi bài lúc nào
+     * cũng lastmod = bây giờ, Google học được rằng tín hiệu này là nhiễu rồi
+     * bỏ qua luôn, đúng cái mà việc khai lastmod sinh ra để tránh.
+     */
+    { new: true, upsert: false, timestamps: false }
   );
 }
 

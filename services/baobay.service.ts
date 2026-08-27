@@ -7444,6 +7444,8 @@ export type CloseSuggestionDTO = {
    * xuất vé nên không có mã nào để thu hồi. Nhét chung là báo đỏ oan mỗi ngày.
    */
   rescheduledGuestCount: number;
+  /** Trong số khách dời, bao nhiêu người ĐÃ cầm vé — vé của họ phải được thu hồi. */
+  rescheduledTicketGuests: number;
   rescheduledCount: number;
 issuedRanges: Array<{ from: string; to: string }>;
   /** Dải mã dựng TỰ ĐỘNG từ mã phi công báo đã bay (+PPG) — dùng khi quầy chưa nhập dải. */
@@ -7844,7 +7846,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flightDate: { $ne: date },
     status: { $nin: ["voided"] },
   })
-    .select("contactName phone bookingCode guestCount flightDate")
+    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt")
     .lean<any[]>();
 
   const bookingCancelEntries = cancelledBookings
@@ -7916,6 +7918,13 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         guests: b.guestCount || 0,
         toDate: b.flightDate || "",
         note: "dời trên sổ booking",
+        /**
+         * Nhóm dời ĐÃ XUẤT VÉ hay chưa — quyết định nó có phải nằm trong "vé
+         * thu hồi" không. Chưa xuất vé thì không có tờ vé nào để thu, nên ô
+         * "Vé dời lịch" đứng im ở 0 là ĐÚNG; màn hình phải nói ra điều đó kẻo
+         * kế toán tưởng máy bỏ sót.
+         */
+        ticketIssued: Boolean(b.ticketIssuedAt),
       }));
     return [...declared, ...fromBook];
   })();
@@ -7963,6 +7972,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       partialCancelEntries.reduce((t, e) => t + (e.guests || 0), 0),
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     rescheduledGuestCount: mergedRescheduleEntries.reduce((t, e) => t + (e.guests || 0), 0),
+    rescheduledTicketGuests: mergedRescheduleEntries.reduce(
+      (t, e) => t + ((e as { ticketIssued?: boolean }).ticketIssued ? e.guests || 0 : 0),
+      0,
+    ),
     // Quầy chưa nhập dải thì tự dựng từ mã phi công báo — kế toán khỏi dò tay
     issuedRanges: (() => {
       const fromDispatcher = dispatchers.flatMap((d) =>

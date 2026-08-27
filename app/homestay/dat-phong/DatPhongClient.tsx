@@ -54,6 +54,17 @@ type Dict = {
   guests: string;
   adults: string;
   children: string;
+  /** Nhãn trên đầu lịch 30 ngày. */
+  next30: string;
+  /** Đủ chỗ cho số khách đang khai. */
+  capOk: (adults: number, children: number) => string;
+  /** Phòng đã chọn KHÔNG đủ chỗ — nói rõ thiếu bao nhiêu. */
+  capWarnAdults: (have: number, need: number) => string;
+  capWarnChildren: (have: number, need: number) => string;
+  /** Nhắc chọn phòng khi đã có ngày + số khách. */
+  capNoRoom: string;
+  /** Luật trẻ em riêng của sàn cộng đồng — hiện ngay trên thẻ phòng đó. */
+  dormChildNote: string;
   contact: string;
   name: string;
   phone: string;
@@ -113,7 +124,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `còn ${n}`,
     guests: "3 · Số khách",
     adults: "Người lớn",
-    children: "Trẻ em (< 6 tuổi)",
+    children: "Trẻ em (< 8 tuổi)",
+    next30: "30 ngày tới",
+    capOk: (a, c) => `Đủ chỗ cho ${a} người lớn${c ? ` + ${c} trẻ em` : ""}`,
+    capWarnAdults: (have, need) => `Phòng đã chọn chỉ chứa ${have} người lớn — bạn khai ${need}. Lấy thêm phòng nhé.`,
+    capWarnChildren: (have, need) => `Phòng đã chọn nhận ${have} trẻ em đi kèm — bạn khai ${need}.`,
+    capNoRoom: "Chọn phòng bên dưới — máy sẽ tự soát xem có đủ chỗ không.",
+    dormChildNote: "Trẻ nhỏ ngủ ghép được; trẻ trên 5 tuổi tính 1 chỗ nằm riêng.",
     contact: "4 · Thông tin liên hệ",
     name: "Họ tên",
     phone: "Số điện thoại (Zalo)",
@@ -192,7 +209,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `${n} left`,
     guests: "3 · Guests",
     adults: "Adults",
-    children: "Children (< 6)",
+    children: "Children (< 8)",
+    next30: "Next 30 days",
+    capOk: (a, c) => `Fits ${a} adult${a > 1 ? "s" : ""}${c ? ` + ${c} child${c > 1 ? "ren" : ""}` : ""}`,
+    capWarnAdults: (have, need) => `Selected rooms fit ${have} adults — you entered ${need}. Please add a room.`,
+    capWarnChildren: (have, need) => `Selected rooms take ${have} children — you entered ${need}.`,
+    capNoRoom: "Pick a room below — we'll check the capacity for you.",
+    dormChildNote: "Small children may share a bed; children over 5 need their own bed.",
     contact: "4 · Contact details",
     name: "Full name",
     phone: "Phone (WhatsApp/Zalo)",
@@ -271,7 +294,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `${n} rest.`,
     guests: "3 · Voyageurs",
     adults: "Adultes",
-    children: "Enfants (< 6 ans)",
+    children: "Enfants (< 8 ans)",
+    next30: "30 prochains jours",
+    capOk: (a, c) => `Convient à ${a} adulte${a > 1 ? "s" : ""}${c ? ` + ${c} enfant${c > 1 ? "s" : ""}` : ""}`,
+    capWarnAdults: (have, need) => `Les chambres choisies accueillent ${have} adultes — vous en indiquez ${need}. Ajoutez une chambre.`,
+    capWarnChildren: (have, need) => `Les chambres choisies acceptent ${have} enfants — vous en indiquez ${need}.`,
+    capNoRoom: "Choisissez une chambre ci-dessous — nous vérifions la capacité.",
+    dormChildNote: "Les tout-petits partagent un lit ; au-delà de 5 ans, un lit par enfant.",
     contact: "4 · Coordonnées",
     name: "Nom complet",
     phone: "Téléphone (WhatsApp/Zalo)",
@@ -350,7 +379,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `ост. ${n}`,
     guests: "3 · Гости",
     adults: "Взрослые",
-    children: "Дети (до 6 лет)",
+    children: "Дети (до 8 лет)",
+    next30: "Ближайшие 30 дней",
+    capOk: (a, c) => `Хватает мест: ${a} взрослых${c ? ` + ${c} детей` : ""}`,
+    capWarnAdults: (have, need) => `Выбранные номера вмещают ${have} взрослых — вы указали ${need}. Добавьте номер.`,
+    capWarnChildren: (have, need) => `Выбранные номера принимают ${have} детей — вы указали ${need}.`,
+    capNoRoom: "Выберите номер ниже — мы сами проверим вместимость.",
+    dormChildNote: "Малыши спят вместе со взрослым; детям старше 5 лет нужно отдельное место.",
     contact: "4 · Контакты",
     name: "Имя и фамилия",
     phone: "Телефон (WhatsApp/Zalo)",
@@ -429,7 +464,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `剩 ${n}`,
     guests: "3 · 客人",
     adults: "成人",
-    children: "儿童（6岁以下）",
+    children: "儿童（8岁以下）",
+    next30: "未来 30 天",
+    capOk: (a, c) => `可容纳 ${a} 位成人${c ? ` + ${c} 位儿童` : ""}`,
+    capWarnAdults: (have, need) => `所选房间只能住 ${have} 位成人，您填写了 ${need} 位，请再加一间房。`,
+    capWarnChildren: (have, need) => `所选房间可加 ${have} 位儿童，您填写了 ${need} 位。`,
+    capNoRoom: "请在下方选择房间 — 系统会自动核对是否够住。",
+    dormChildNote: "幼儿可与大人同睡；5 岁以上儿童需单独占一个床位。",
     contact: "4 · 联系方式",
     name: "姓名",
     phone: "电话（WhatsApp/Zalo）",
@@ -508,7 +549,13 @@ const L: Record<HomestayLang, Dict> = {
     left: (n) => `${n} शेष`,
     guests: "3 · मेहमान",
     adults: "वयस्क",
-    children: "बच्चे (6 वर्ष से कम)",
+    children: "बच्चे (8 वर्ष से कम)",
+    next30: "अगले 30 दिन",
+    capOk: (a, c) => `${a} वयस्क${c ? ` + ${c} बच्चे` : ""} के लिए पर्याप्त`,
+    capWarnAdults: (have, need) => `चुने गए कमरों में ${have} वयस्क आते हैं — आपने ${need} लिखा है। एक कमरा और जोड़ें।`,
+    capWarnChildren: (have, need) => `चुने गए कमरों में ${have} बच्चे आ सकते हैं — आपने ${need} लिखा है।`,
+    capNoRoom: "नीचे कमरा चुनें — क्षमता हम जाँच लेंगे।",
+    dormChildNote: "छोटे बच्चे साथ सो सकते हैं; 5 वर्ष से बड़े बच्चों के लिए अलग बेड चाहिए।",
     contact: "4 · संपर्क विवरण",
     name: "पूरा नाम",
     phone: "फ़ोन (WhatsApp/Zalo)",
@@ -617,8 +664,6 @@ export default function DatPhongClient() {
   const [qty, setQty] = useState<Record<string, number>>({});
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
-  /** Tháng đang xem trên lịch — "YYYY-MM-01". */
-  const [month, setMonth] = useState<string>(today.slice(0, 8) + "01");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [guestName, setGuestName] = useState("");
@@ -670,10 +715,28 @@ export default function DatPhongClient() {
   const capAdults = lines.reduce((t, l) => t + l.room.maxAdults * l.qty, 0);
   const capChildren = lines.reduce((t, l) => t + l.room.maxChildren * l.qty, 0);
 
-  useEffect(() => {
-    if (capAdults > 0 && adults > capAdults) setAdults(capAdults);
-    if (children > capChildren) setChildren(capChildren);
-  }, [capAdults, capChildren, adults, children]);
+  /**
+   * KHÔNG kẹp số khách theo sức chứa phòng nữa.
+   *
+   * Thứ tự nay là: chọn ngày + SỐ KHÁCH trước, rồi mới chọn phòng. Kẹp ngược
+   * lại thì khách gõ "2 người lớn" xong bấm nhầm phòng đơn là con số tự tụt
+   * về 1 mà không ai báo — đặt xong mới biết thiếu chỗ. Nay giữ nguyên số
+   * khách và CẢNH BÁO khi phòng không đủ chỗ (xem `thieuCho` bên dưới).
+   */
+  /**
+   * Giỏ có SÀN CỘNG ĐỒNG hay không — chỗ duy nhất áp luật "trẻ trên 5 tuổi
+   * tính một chỗ nằm riêng". Phòng riêng thì trẻ đi kèm theo sức chứa đã khai,
+   * không tính thêm, nên đừng đem dòng nhắc này rải sang các hạng phòng khác.
+   *
+   * Ô đếm trên trang chỉ có MỘT mốc "trẻ dưới 8 tuổi", mà luật lại cắt ở mốc
+   * 5 — máy không tự phân biệt được đứa 4 tuổi với đứa 6 tuổi. Nên chỗ nào
+   * khách sắp chốt tiền thì phải nói thẳng ra bằng chữ.
+   */
+  const coSanCongDong = lines.some((l) => l.room.perBed);
+
+  const thieuAdults = lines.length > 0 && adults > capAdults;
+  const thieuChildren = lines.length > 0 && children > capChildren;
+  const thieuCho = thieuAdults || thieuChildren;
 
   /**
    * PHÒNG CÒN BAO NHIÊU cho khoảng ngày ĐÃ CHỌN (đêm ít nhất quyết định) —
@@ -798,6 +861,9 @@ export default function DatPhongClient() {
     setError(null);
     if (lines.length === 0) return setError(s.errRooms);
     if (!checkIn || !checkOut) return setError(s.errDates);
+    // Máy chủ cũng chặn, nhưng chặn tại đây thì khách sửa được ngay tại chỗ
+    if (thieuAdults) return setError(s.capWarnAdults(capAdults, adults));
+    if (thieuChildren) return setError(s.capWarnChildren(capChildren, children));
     if (!guestName.trim()) return setError(s.errName);
     if (phone.replace(/\D/g, "").length < 8) return setError(s.errPhone);
     setBusy(true);
@@ -829,24 +895,19 @@ export default function DatPhongClient() {
   }
 
   /* ---------- lịch tháng ---------- */
-  const monthDays = useMemo(() => {
-    const first = new Date(`${month}T00:00:00Z`);
-    const days: Array<string | null> = [];
-    // Thứ 2 đứng đầu tuần: getUTCDay() 0=CN
-    const lead = (first.getUTCDay() + 6) % 7;
-    for (let i = 0; i < lead; i++) days.push(null);
-    const d = new Date(first);
-    while (d.getUTCMonth() === first.getUTCMonth()) {
-      days.push(d.toISOString().slice(0, 10));
-      d.setUTCDate(d.getUTCDate() + 1);
-    }
-    return days;
-  }, [month]);
-
-  const monthLabel = new Date(`${month}T00:00:00Z`).toLocaleDateString(
-    langKey === "vi" ? "vi-VN" : langKey === "zh" ? "zh-CN" : langKey === "ru" ? "ru-RU" : langKey === "fr" ? "fr-FR" : langKey === "hi" ? "hi-IN" : "en-US",
-    { month: "long", year: "numeric", timeZone: "UTC" },
+  /**
+   * LỊCH 30 NGÀY CUỐN CHIẾU, không phải lưới tháng.
+   *
+   * Khách đặt homestay hầu như chỉ nhìn vài tuần tới; lưới tháng thì nửa đầu
+   * là ngày đã qua (bấm không được) và muốn xem ngày 2/9 phải bấm sang trang
+   * tháng sau. Đếm thẳng từ hôm nay thì mọi ô đều bấm được.
+   */
+  const next30 = useMemo(
+    () => Array.from({ length: 30 }, (_, i) => shiftKey(today, i)),
+    [today],
   );
+
+
 
   if (done) {
     return (
@@ -896,34 +957,9 @@ export default function DatPhongClient() {
                 <p className="py-8 text-center text-sm text-slate-500">{s.loading}</p>
               ) : (
                 <>
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setMonth(shiftKey(month, -1).slice(0, 8) + "01")}
-                      disabled={month <= today.slice(0, 8) + "01"}
-                      className="h-9 w-9 rounded-full text-lg font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-30"
-                      aria-label="previous month"
-                    >
-                      {s.monthPrev}
-                    </button>
-                    <div className="text-sm font-bold capitalize text-slate-900">{monthLabel}</div>
-                    <button
-                      type="button"
-                      onClick={() => setMonth(shiftKey(month, 32).slice(0, 8) + "01")}
-                      className="h-9 w-9 rounded-full text-lg font-bold text-slate-600 hover:bg-slate-100"
-                      aria-label="next month"
-                    >
-                      {s.monthNext}
-                    </button>
-                  </div>
-                  <div className="mt-2 grid grid-cols-7 gap-1 text-center">
-                    {s.weekdays.map((w) => (
-                      <div key={w} className="py-1 text-[11px] font-bold text-slate-400">
-                        {w}
-                      </div>
-                    ))}
-                    {monthDays.map((d, i) => {
-                      if (!d) return <div key={`x${i}`} />;
+                  <div className="mb-2 text-sm font-bold text-slate-900">{s.next30}</div>
+                  <div className="grid grid-cols-5 gap-1 text-center sm:grid-cols-7">
+                    {next30.map((d) => {
                       /** Đã tải được số liệu của đêm này chưa (ngoài cửa sổ 62 đêm thì chưa). */
                       const known =
                         lines.length === 0
@@ -949,7 +985,7 @@ export default function DatPhongClient() {
                           disabled={!clickable}
                           onClick={() => pickDate(d)}
                           className={
-                            "flex h-11 flex-col items-center justify-center rounded-lg text-sm font-semibold transition " +
+                            "flex h-14 flex-col items-center justify-center rounded-lg text-sm font-semibold transition " +
                             (isIn || isOut
                               ? "bg-accent text-white shadow"
                               : inRange
@@ -961,7 +997,15 @@ export default function DatPhongClient() {
                                     : "bg-rose-50 text-rose-300 line-through")
                           }
                         >
-                          {Number(d.slice(8))}
+                          {/* Lịch cuốn chiếu không có hàng thứ ở đầu bảng, nên
+                              mỗi ô phải tự nói thứ mấy — không thì khách không
+                              nhận ra đâu là cuối tuần. */}
+                          <span className="text-[9px] font-bold uppercase leading-none text-slate-400">
+                            {s.weekdays[(new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7]}
+                          </span>
+                          <span className="leading-tight">
+                            {Number(d.slice(8))}/{Number(d.slice(5, 7))}
+                          </span>
                           {known && ok && left <= 1 && (
                             <span className="text-[9px] font-bold leading-none text-amber-600">{s.left(left)}</span>
                           )}
@@ -970,6 +1014,14 @@ export default function DatPhongClient() {
                       );
                     })}
                   </div>
+                  {/* SỐ KHÁCH đứng NGAY CẠNH LỊCH: khai người trước, chọn
+                      phòng sau — máy tự soát đủ chỗ hay không. Trước đây ô này
+                      nằm mãi dưới cùng, sau cả phần chọn phòng. */}
+                  <div className="mt-3 flex flex-wrap items-end gap-4 border-t border-slate-200 pt-3">
+                    <Counter label={s.adults} value={adults} min={1} max={30} onChange={setAdults} />
+                    <Counter label={s.children} value={children} min={0} max={20} onChange={setChildren} />
+                  </div>
+
                   <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
                     <span>
                       <strong>{s.checkIn}:</strong>{" "}
@@ -1078,6 +1130,11 @@ export default function DatPhongClient() {
                     </span>
                   ))}
                 </div>
+                {r.perBed && (
+                  <div className="mt-1 rounded bg-sky-50 px-1.5 py-1 text-[11px] font-medium leading-snug text-sky-900">
+                    👶 {s.dormChildNote}
+                  </div>
+                )}
                 <div className="mt-1 text-[11px] font-medium text-slate-500">
                   {/* Sàn cộng đồng: maxAdults là sức chứa MỘT CHỖ còn comfort là
                       của CẢ SÀN — in chung công thức phòng lẻ sẽ ra "tối đa 1
@@ -1130,17 +1187,44 @@ export default function DatPhongClient() {
           })}
         </div>
 
+        {/**
+         * SOÁT ĐỦ CHỖ — trả lời ngay câu "2 người lớn 1 trẻ mà lấy phòng đơn
+         * thì có ở được không". Trước đây câu trả lời chỉ đến sau khi bấm Đặt
+         * phòng và máy chủ trả lỗi.
+         */}
+        {datesPicked && (
+          <div
+            className={
+              "mt-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg " +
+              (lines.length === 0
+                ? "bg-white/85 text-slate-600"
+                : thieuCho
+                  ? "bg-rose-100 text-rose-900"
+                  : "bg-emerald-100 text-emerald-900")
+            }
+          >
+            {lines.length === 0 ? (
+              s.capNoRoom
+            ) : thieuCho ? (
+              <>
+                {thieuAdults && <div>⚠ {s.capWarnAdults(capAdults, adults)}</div>}
+                {thieuChildren && <div>⚠ {s.capWarnChildren(capChildren, children)}</div>}
+              </>
+            ) : (
+              <>
+                <div>✓ {s.capOk(adults, children)}</div>
+                {/* Đủ chỗ theo máy tính, nhưng sàn cộng đồng còn luật riêng về tuổi */}
+                {coSanCongDong && children > 0 && (
+                  <div className="mt-1 font-medium text-emerald-800">👶 {s.dormChildNote}</div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ---- 3. KHÁCH + 4. LIÊN HỆ + TỔNG ---- */}
         {lines.length > 0 && checkIn && checkOut && (
           <>
-            <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.guests}</h2>
-            <Card className="mt-2 border-none bg-white/95 shadow-xl">
-              <CardContent className="flex flex-wrap items-end gap-4 p-4">
-                <Counter label={s.adults} value={adults} min={1} max={Math.max(1, capAdults)} onChange={setAdults} />
-                <Counter label={s.children} value={children} min={0} max={capChildren} onChange={setChildren} />
-              </CardContent>
-            </Card>
-
             <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.contact}</h2>
             <Card className="mt-2 border-none bg-white/95 shadow-xl">
               <CardContent className="grid gap-3 p-4 md:grid-cols-2">

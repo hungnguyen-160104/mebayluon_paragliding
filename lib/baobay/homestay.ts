@@ -150,7 +150,17 @@ export const HOMESTAY_ROOMS: HomestayRoom[] = [
     beds: [{ kind: "single-mattress", count: 1 }],
     features: ["stilt-house", "shared-bathroom"],
     maxAdults: 1,
-    maxChildren: 0,
+    /**
+     * MỘT chỗ nằm cõng được MỘT trẻ nhỏ ngủ ghép.
+     *
+     * Sàn cộng đồng vẫn nhận trẻ em bình thường — trước đây khai 0 nên máy
+     * chặn thẳng, gia đình có con nhỏ không đặt online được.
+     *
+     * Trẻ TRÊN 5 TUỔI thì tính một chỗ nằm riêng (tức mua thêm một đệm), chứ
+     * không đi kèm theo suất người lớn — chỗ đặt phòng ghi rõ điều này cho
+     * khách biết trước khi trả tiền.
+     */
+    maxChildren: 1,
     comfort: 10,
     webBookable: true,
     perBed: true,

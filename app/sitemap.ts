@@ -92,7 +92,17 @@ async function loadVideosBySlug() {
  * link thì ĐỪNG đụng vào — nội dung không đổi thì không được báo là đổi.
  *
  * Bài viết và sản phẩm KHÔNG dùng mốc này: chúng đã có ngày thật trong cơ sở
- * dữ liệu (publishedAt / updatedAt).
+ * dữ liệu, và lấy theo `updatedAt` — NGÀY SỬA GẦN NHẤT, không phải ngày đăng.
+ *
+ * Trước đây ưu tiên `publishedAt`, nên sửa lại bài bao nhiêu lần thì lastmod
+ * vẫn đứng nguyên ở ngày xuất bản: Google không hề nhận được tín hiệu "trang
+ * này đổi rồi", nên hoãn việc quay lại đọc. Với site cập nhật liên tục thì đó
+ * là thứ làm chậm mọi nỗ lực SEO khác.
+ *
+ * Đi kèm điều kiện: `updatedAt` chỉ được đổi khi NỘI DUNG đổi. Vì thế
+ * `addView` (đếm lượt xem) phải chạy với `timestamps: false` — xem chú thích
+ * ở services/post.service.ts. Bỏ chỗ đó là mọi bài lastmod = bây giờ, tín
+ * hiệu thành nhiễu, còn tệ hơn lúc chưa sửa.
  */
 const STATIC_CONTENT_UPDATED = new Date("2026-08-10T00:00:00Z");
 
@@ -279,7 +289,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const url = `${BASE}/blog/${p.slug}`;
       return {
         url,
-        lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
+        lastModified: new Date(p.updatedAt ?? p.publishedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.7,
         alternates: alts(url, postLocales(p)),
@@ -291,7 +301,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const url = `${BASE}/blog/${p.slug}`;
       return {
         url,
-        lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
+        lastModified: new Date(p.updatedAt ?? p.publishedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.65,
         alternates: alts(url, postLocales(p)),
@@ -303,7 +313,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const url = `${BASE}/store/${p.storeCategory ?? "all"}/${p.slug}`;
       return {
         url,
-        lastModified: new Date(p.publishedAt ?? p.updatedAt ?? p.createdAt),
+        lastModified: new Date(p.updatedAt ?? p.publishedAt ?? p.createdAt),
         changeFrequency: "monthly" as const,
         priority: 0.55,
         alternates: alts(url, postLocales(p)),
