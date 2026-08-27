@@ -206,6 +206,15 @@ function mapWebBooking(doc: WebDoc, spot: string) {
      */
     totalAmount: total,
     note: noteOf(doc),
+    /**
+     * EMAIL KHÁCH thành một TRƯỜNG RIÊNG, không chỉ nằm lẫn trong ghi chú.
+     *
+     * Đặt qua web thì luôn có email — đó là chỗ app gửi thư báo khi booking
+     * thay đổi. Trước đây địa chỉ này chỉ được chép vào `note` cho người đọc,
+     * máy không dùng được, nên khách đặt web sửa lịch cũng chẳng ai báo.
+     * Vẫn giữ nguyên trong ghi chú: quầy quen đọc ở đó.
+     */
+    email: (doc.contact?.email || "").trim().toLowerCase(),
     webBookingId: String(doc._id),
     webStatus: doc.status || "pending",
     syncedAt: new Date(),
@@ -322,6 +331,8 @@ export async function syncWebBookings(
         if (!(twin.bookingCode || "").trim()) fill.bookingCode = mapped.bookingCode;
         if (!(twin.expectedTime || "").trim() && mapped.expectedTime) fill.expectedTime = mapped.expectedTime;
         if (!(twin.phone || "").trim() && mapped.phone) fill.phone = mapped.phone;
+        // Quầy gõ tay trước rồi đơn web mới về: điền email vào chỗ còn trống
+        if (!(twin.email || "").trim() && mapped.email) fill.email = mapped.email;
         if (!twin.unitPrice && mapped.unitPrice) fill.unitPrice = mapped.unitPrice;
         if (!twin.totalAmount && mapped.totalAmount) fill.totalAmount = mapped.totalAmount;
         for (const k of ["flycam", "video360", "sunset", "flagFlight", "mountainCar"] as const) {

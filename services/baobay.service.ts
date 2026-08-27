@@ -32,6 +32,11 @@ import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId }
 import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
 import { clearQueueNoOnWeb, pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
+import {
+  buildBookingChangeMail,
+  diffBooking,
+  type BookingSnapshot,
+} from "@/lib/baobay/booking-change-mail";
 import { sendSmtpMail } from "@/lib/mailer";
 import {
   countTicketRange,
@@ -126,6 +131,99 @@ function pushSheetInBackground(
   } catch {
     void job(); // gọi từ chỗ khác (script, test) thì chạy thẳng, không chặn ai
   }
+}
+
+/**
+ * ĐƯỜNG LIÊN HỆ in cuối thư báo khách. Đổi được bằng biến môi trường để khi
+ * công ty đổi số thì không phải sửa mã nguồn.
+ */
+const BOOKING_HOTLINE = process.env.BOOKING_HOTLINE || "0964.073.555 – 0385.907.789 (Zalo/WhatsApp)";
+
+/** Chỉ giữ những trường KHÁCH nhìn thấy — phần còn lại không phải việc của thư. */
+function bookingSnapshot(doc: any): BookingSnapshot {
+  return {
+    flightDate: doc?.flightDate || "",
+    expectedTime: doc?.expectedTime || "",
+    guestCount: doc?.guestCount ?? 0,
+    ppgGuests: doc?.ppgGuests ?? 0,
+    flycam: doc?.flycam ?? 0,
+    video360: doc?.video360 ?? 0,
+    redFlag: doc?.redFlag ?? 0,
+    sunset: doc?.sunset ?? 0,
+    flagFlight: doc?.flagFlight ?? 0,
+    mountainCar: doc?.mountainCar ?? 0,
+    pickup: doc?.pickup || "self",
+    pickupNote: doc?.pickupNote || "",
+    totalAmount: doc?.totalAmount ?? 0,
+    deposit: doc?.deposit ?? 0,
+    remaining: doc?.remaining ?? 0,
+    refundedTotal: doc?.refundedTotal ?? 0,
+    status: doc?.status || "open",
+  };
+}
+
+/**
+ * BÁO KHÁCH QUA EMAIL KHI BOOKING ĐỔI.
+ *
+ * Nhân viên sửa thẳng trên app (đổi giờ hẹn, thêm cờ bánh, dời lịch, huỷ…) rồi
+ * mới nhắn khách — mà đúng hôm đông thì không ai nhắn, khách vẫn ra theo giờ
+ * cũ. Nay hễ có thay đổi khách nhìn thấy được là app tự gửi thư kèm giá mới.
+ *
+ * Ba cửa im lặng, cố ý:
+ *  - booking KHÔNG có email  → sửa vẫn lưu bình thường, chỉ là không gửi được.
+ *    Không bao giờ chặn việc sửa vì thiếu email.
+ *  - diff RỖNG → không gửi. Bấm Lưu mà không đổi gì thật thì khách không cần
+ *    biết; gửi thư "booking của bạn vừa thay đổi" mà bên trong trống là làm
+ *    khách mất tin vào mọi thư sau đó.
+ *  - gửi HỎNG → ghi vào `notifyLog` với `ok: false` để trên app nhìn thấy, chứ
+ *    không nuốt lỗi rồi cả đội tưởng khách đã biết.
+ *
+ * Gửi ở NỀN (`after()` của Next, chạy sau khi đã trả lời): SMTP mất vài giây,
+ * bắt người đứng bãi ngồi chờ là quay lại đúng cái bệnh đã chữa ở phần đẩy
+ * Google Sheets.
+ */
+function notifyBookingChange(
+  session: BaobaySession,
+  spot: string,
+  before: any,
+  after: any,
+): void {
+  const to = String(after?.email || "").trim();
+  if (!to) return;
+
+  const changes = diffBooking(bookingSnapshot(before), bookingSnapshot(after));
+  if (changes.length === 0) return;
+
+  const mail = buildBookingChangeMail(
+    {
+      guestName: after?.contactName || "",
+      bookingCode: after?.bookingCode || "",
+      spotName: spotName(spot),
+      hotline: BOOKING_HOTLINE,
+    },
+    changes,
+    bookingSnapshot(after),
+  );
+  if (!mail) return;
+
+  runInBackground(async () => {
+    const entry: Record<string, unknown> = {
+      at: new Date(),
+      by: session?.name || session?.username || "",
+      to,
+      changes: changes.map((c) => c.vi),
+      ok: true,
+      error: "",
+    };
+    try {
+      await sendSmtpMail({ to, subject: mail.subject, html: mail.html, text: mail.text });
+    } catch (e: unknown) {
+      entry.ok = false;
+      entry.error = e instanceof Error ? e.message : String(e);
+      console.warn("[baocao] gửi thư báo khách hỏng:", entry.error);
+    }
+    await BaobayBooking.updateOne({ _id: after._id }, { $push: { notifyLog: entry } });
+  });
 }
 
 /** Việc nền không gắn với một bản ghi nào (đẩy lại cả ngày, dòng tổng hợp…). */
@@ -3283,6 +3381,8 @@ export type BookingSaveInput = {
   /** Cọc gõ tay đi đường nào — quầy chọn TM/CK ngay khi nhập. */
   depositMethod?: "cash" | "transfer" | "";
   note: string;
+  /** Email khách — app gửi thư báo mỗi khi booking thay đổi. Trống thì không gửi. */
+  email?: string;
   /** Booking sinh từ lệnh DỜI LỊCH — ngày bay cũ, hiện "dời từ dd/mm". */
   rescheduledFrom?: string;
   /** Còn lại > 0: người được chỉ định thu — tự lập LỆNH THU TIỀN kèm booking. */
@@ -3451,6 +3551,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
        * Đường tiền thật nằm ở `depositMethod` — quầy chọn tay khi nhập.
        */
       depositToCompany: input.deposit > 0,
+      email: (input.email ?? "").trim().toLowerCase(),
       depositMethod: input.depositMethod ?? "",
       note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
@@ -3948,6 +4049,12 @@ const editedTotal = bookingTotal({
        */
       depositToCompany: input.deposit > 0,
       depositMethod: input.depositMethod ?? "",
+      /**
+       * Email để TRỐNG trong form thì XOÁ email cũ — quầy cố ý bỏ đi (khách xin
+       * đừng gửi thư nữa, hoặc gõ nhầm hộp thư người khác) phải làm được, chứ
+       * không phải sửa hoài mà địa chỉ cũ vẫn nằm đó gửi tiếp.
+       */
+      email: (input.email ?? "").trim().toLowerCase(),
       note: input.note.trim(),
     },
   };
@@ -3982,6 +4089,7 @@ const editedTotal = bookingTotal({
     await cashDepositToCollect(session, spot, doc, dis);
   }
 
+  notifyBookingChange(session, spot, current, doc);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });
 }
@@ -4145,6 +4253,22 @@ export async function setDepositDate(
   if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO(doc);
+}
+
+/**
+ * Nhãn ngắn "đã báo khách lúc nào" cho dòng booking.
+ *
+ * Chỉ lấy lần GẦN NHẤT: cả nhật ký hiện lên dòng thì đọc không nổi, mà thứ cần
+ * biết lúc nhìn lướt chỉ là "báo rồi hay chưa, có hỏng không".
+ */
+function lastNotifyLabel(log?: Array<{ at?: Date; ok?: boolean; error?: string }>): string {
+  const last = (log ?? [])[(log ?? []).length - 1];
+  if (!last?.at) return "";
+  const d = new Date(last.at);
+  const khi = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(
+    d.getHours(),
+  ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return last.ok === false ? `${khi} · GỬI HỎNG: ${last.error || "không rõ"}` : `${khi} · đã gửi`;
 }
 
 /** Kế toán bấm khoá / mở khoá một booking. */
@@ -4600,6 +4724,7 @@ export async function addBookingServices(
     },
     { new: true },
   ).lean<any>();
+  notifyBookingChange(session, spot, booking, updated);
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   /** Khách trả ngay tại chỗ thì ghi luôn lệnh thu — khỏi bấm sang thẻ khác. */
@@ -4902,6 +5027,7 @@ export async function cancelBookingGuests(
     await ins.cancelInsuredGuests(spot, id, n, `huỷ ${n} khách${reason ? ` — ${reason}` : ""}`);
   }
 
+  notifyBookingChange(session, spot, booking, updated);
   return toBookingDTO(updated);
 }
 
@@ -5111,6 +5237,7 @@ export async function removeBookingServices(
     createdByName: session.name,
   });
 
+  notifyBookingChange(session, spot, booking, updated);
   return { booking: toBookingDTO(updated), back, refunded };
 }
 
@@ -6425,6 +6552,12 @@ export async function updateBookingStatus(
     });
   }
 
+  /**
+   * "Đã bay" KHÔNG gửi thư: khách vừa bay xong, đang đứng ngay đó, thư báo
+   * "booking của bạn vừa thay đổi" chỉ làm khách tưởng có chuyện. Dời lịch và
+   * huỷ thì phải báo — đó đúng là hai việc khách cần biết ngay.
+   */
+  if (action !== "flown") notifyBookingChange(session, spot, current, doc);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });
 }
@@ -6634,6 +6767,8 @@ function toBookingDTO(doc: any): BookingDTO {
     depositDate: doc.depositDate || "",
     depositDateBy: doc.depositDateBy || "",
     depositVerified: Boolean(doc.depositVerifiedAt),
+    email: doc.email || "",
+    lastNotify: lastNotifyLabel(doc.notifyLog),
     note: doc.note || "",
     status:
       doc.status === "done"

@@ -347,6 +347,15 @@ export const bookingSchema = z.object({
   collectorUsername: text(100),
   collectorNote: text(500),
   note: text(1_000),
+  /**
+   * EMAIL KHÁCH — nơi app gửi thư báo khi booking thay đổi.
+   *
+   * KHÔNG dùng `z.string().email()`: gõ sai một chữ là cả booking bị từ chối
+   * lưu, trong khi email chỉ là chỗ gửi thư, không phải số liệu của sổ. Chặn
+   * booking vì một cái email hỏng là đổi một việc nhỏ lấy một việc lớn. Địa
+   * chỉ sai thì thư trả về và nhật ký báo "GỬI HỎNG" ngay trên dòng booking.
+   */
+  email: text(200),
 });
 
 /** Lệnh thu tiền: tên khách – mã booking – đại lý – số người – tiền – TM (người thu) | CK (TK cty + mã CK). */

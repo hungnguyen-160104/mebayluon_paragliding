@@ -288,6 +288,35 @@ export interface IBaobayBooking {
    */
   depositMethod?: "cash" | "transfer" | "";
   note: string;
+  /**
+   * EMAIL KHÁCH — nơi app gửi thư báo mỗi khi booking có thay đổi.
+   *
+   * Khách đặt qua web thì luôn có sẵn (kéo từ `contact.email` lúc đồng bộ);
+   * khách gọi điện / đặt qua đại lý thì trống, quầy gõ tay vào ô "Email khách"
+   * cuối form khi cần báo cho khách.
+   *
+   * Trống thì mọi thay đổi vẫn ghi vào sổ như thường, chỉ là không gửi thư —
+   * KHÔNG chặn việc sửa booking vì thiếu email.
+   */
+  email?: string;
+  /**
+   * NHẬT KÝ THƯ ĐÃ BÁO KHÁCH — mỗi lần gửi một dòng.
+   *
+   * Giữ lại để trả lời được câu "đã báo khách chưa, báo lúc nào, báo gì": khách
+   * cãi "không ai báo tôi" thì có cái mà đối chiếu. Cũng để thấy thư nào GỬI
+   * HỎNG (hộp thư sai, SMTP chết) — hỏng mà im lặng thì cả đội tưởng khách đã
+   * biết.
+   */
+  notifyLog?: Array<{
+    at: Date;
+    /** Ai thao tác gây ra thay đổi này. */
+    by?: string;
+    to?: string;
+    /** Tóm tắt các thay đổi đã báo — mỗi dòng một mục. */
+    changes?: string[];
+    ok?: boolean;
+    error?: string;
+  }>;
 
   /**
    * Điều phối GIAO lịch cho một nhân sự của điểm (phi công đón khách, tiếp
@@ -499,6 +528,18 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     transferCode: { type: String, default: "" },
     depositToCompany: { type: Boolean, default: false },
     depositMethod: { type: String, enum: ["cash", "transfer", ""], default: "" },
+    email: { type: String, default: "", trim: true, lowercase: true },
+    notifyLog: [
+      {
+        _id: false,
+        at: Date,
+        by: String,
+        to: String,
+        changes: [String],
+        ok: Boolean,
+        error: String,
+      },
+    ],
     note: { type: String, default: "" },
 
     assignedToUsername: String,

@@ -382,6 +382,24 @@ function BookingSummary({
           </strong>
         </>
       ) : null}
+      {/**
+       * THƯ BÁO KHÁCH GỬI HỎNG — chỉ hiện khi HỎNG, không hiện khi gửi được.
+       *
+       * Gửi được là chuyện bình thường, in ra chỉ làm dòng booking dài thêm.
+       * Nhưng hỏng mà im lặng thì cả đội tưởng khách đã biết, khách thì vẫn ra
+       * theo giờ cũ — nên hỏng phải đập vào mắt.
+       */}
+      {b.lastNotify?.includes("GỬI HỎNG") ? (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-rose-600 px-1 font-bold text-white"
+            title={`${b.lastNotify} — khách CHƯA được báo, phải nhắn tay`}
+          >
+            ✉✕ thư hỏng
+          </strong>
+        </>
+      ) : null}
       {/* CHIẾT KHẤU ĐẠI LÝ — khoản trả ngoài, kế toán cần thấy để trừ sổ người chi */}
       {(b.commission?.amount ?? 0) > 0 ? (
         <>
@@ -1173,6 +1191,24 @@ function PaymentBreakdown({
         </p>
       )}
       {cocGoc > 0 && <DepositDateControl spot={spot} booking={booking} onDone={onDone} />}
+      {/* Đã báo khách chưa — trả lời được câu "sao không ai báo tôi" */}
+      {booking.email ? (
+        <p
+          className={
+            "mt-1 rounded px-1.5 py-1 text-[10px] leading-tight " +
+            (booking.lastNotify?.includes("GỬI HỎNG")
+              ? "bg-rose-100 font-semibold text-rose-900"
+              : "bg-slate-100 text-slate-600")
+          }
+        >
+          ✉ {booking.email}
+          {booking.lastNotify ? ` — ${booking.lastNotify}` : " — chưa gửi lần nào"}
+        </p>
+      ) : (
+        <p className="mt-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] leading-tight text-slate-500">
+          ✉ Chưa có email khách — sửa booking để điền, app sẽ tự báo khi có thay đổi.
+        </p>
+      )}
     </div>
   );
 }
@@ -3430,6 +3466,8 @@ type BookingForm = {
   deposit: number;
   /** Cọc gõ tay đi đường nào — quầy bấm TM/CK ngay cạnh ô tiền. */
   depositMethod: "cash" | "transfer" | "";
+  /** Email khách — app gửi thư báo mỗi khi booking thay đổi. */
+  email: string;
   remaining: number;
   /** Khách đã trả cho ĐẠI LÝ — trừ vào còn thu, đại lý nợ công ty. */
   agencyPaidAmount: number;
@@ -3466,6 +3504,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     discount: 0,
     deposit: 0,
     depositMethod: "",
+    email: "",
     remaining: 0,
     agencyPaidAmount: 0,
     agencyName: "",
@@ -3992,6 +4031,7 @@ export function BookingCard({
       discount: b.discount,
       deposit: b.deposit,
       depositMethod: b.depositMethod ?? "",
+      email: b.email ?? "",
       agencyPaidAmount: b.agencyPaidAmount ?? 0,
       agencyName: b.agencyName ?? "",
       remaining: (() => {
@@ -4609,6 +4649,30 @@ export function BookingCard({
       <Field label="Ghi chú">
           <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} placeholder="Tên khách (nếu liên hệ là đại lý), khách Hàn cần HDV…" className="h-10 rounded-lg text-sm" />
       </Field>
+      </div>
+
+      {/**
+       * EMAIL KHÁCH — mỗi lần sửa booking (đổi giờ, thêm dịch vụ, dời lịch,
+       * huỷ…) app tự gửi thư báo khách kèm giá mới về địa chỉ này.
+       *
+       * Khách đặt qua web thì ô này TỰ ĐIỀN sẵn. Khách gọi điện / qua đại lý
+       * thì trống — gõ vào khi cần báo, để trống cũng không sao: booking vẫn
+       * lưu bình thường, chỉ là không có thư.
+       */}
+      <div className="mt-2">
+      <Field label="Email khách (để app tự báo khi booking thay đổi)">
+          <TextInput
+            type="email"
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
+            placeholder="khach@email.com — để trống thì không gửi thư"
+            className="h-10 rounded-lg text-sm"
+          />
+      </Field>
+      <p className="mt-1 text-[11px] leading-tight text-slate-500">
+        Có email thì mỗi lần đổi giờ hẹn, thêm/bớt dịch vụ, dời lịch hay huỷ, app tự gửi thư báo khách
+        kèm giá mới. Không có thì mọi thứ vẫn lưu như thường, chỉ là phải nhắn tay.
+      </p>
       </div>
 
       {error && (

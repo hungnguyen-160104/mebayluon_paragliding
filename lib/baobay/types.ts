@@ -459,6 +459,10 @@ export type BookingDTO = {
   depositDateBy?: string;
   /** Kế toán đã "Đã nhận" khoản cọc gõ tay — sửa hạ số cọc sẽ bị chặn. */
   depositVerified?: boolean;
+  /** Email khách — nơi app gửi thư báo khi booking thay đổi. */
+  email?: string;
+  /** Lần báo thư gần nhất: "26/08 14:05 · đã gửi" hoặc lời báo hỏng. */
+  lastNotify?: string;
   note: string;
   /** "voided" = bỏ khỏi sổ vì nhập nhầm / nhập trùng — không tính vào thống kê. */
   status: "open" | "done" | "cancelled" | "voided";
