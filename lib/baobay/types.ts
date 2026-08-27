@@ -463,6 +463,11 @@ export type BookingDTO = {
   email?: string;
   /** Lần báo thư gần nhất: "26/08 14:05 · đã gửi" hoặc lời báo hỏng. */
   lastNotify?: string;
+  /**
+   * Những thay đổi CHƯA báo khách. App không tự gửi — nhân viên bấm nút mới
+   * gửi, nên chỗ này nói sẵn thư sắp gửi sẽ kể những gì.
+   */
+  pendingNotify?: string[];
   note: string;
   /** "voided" = bỏ khỏi sổ vì nhập nhầm / nhập trùng — không tính vào thống kê. */
   status: "open" | "done" | "cancelled" | "voided";

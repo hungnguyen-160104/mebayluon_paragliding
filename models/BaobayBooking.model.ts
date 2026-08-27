@@ -307,6 +307,17 @@ export interface IBaobayBooking {
    * HỎNG (hộp thư sai, SMTP chết) — hỏng mà im lặng thì cả đội tưởng khách đã
    * biết.
    */
+  /**
+   * ẢNH CHỤP BOOKING LÚC BẮT ĐẦU CÓ THAY ĐỔI CHƯA BÁO KHÁCH.
+   *
+   * App KHÔNG tự gửi thư — nhân viên bấm nút mới gửi. Giữa hai lần đó booking
+   * có thể bị sửa mấy lượt, nên chỗ này giữ ảnh chụp TRƯỚC lượt sửa đầu tiên
+   * rồi so với hiện tại: khách nhận một dòng "Giờ hẹn: 10:00 → 16:00" chứ
+   * không phải ba dòng kể lại từng lần nhân viên đổi ý.
+   *
+   * Trống = không có gì phải báo. Gửi xong thì xoá.
+   */
+  notifyPendingBase?: Record<string, unknown>;
   notifyLog?: Array<{
     at: Date;
     /** Ai thao tác gây ra thay đổi này. */
@@ -529,6 +540,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     depositToCompany: { type: Boolean, default: false },
     depositMethod: { type: String, enum: ["cash", "transfer", ""], default: "" },
     email: { type: String, default: "", trim: true, lowercase: true },
+    notifyPendingBase: { type: Schema.Types.Mixed, default: null },
     notifyLog: [
       {
         _id: false,

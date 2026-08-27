@@ -163,67 +163,112 @@ function bookingSnapshot(doc: any): BookingSnapshot {
 }
 
 /**
- * BÁO KHÁCH QUA EMAIL KHI BOOKING ĐỔI.
+ * ĐÁNH DẤU "BOOKING VỪA ĐỔI, CHƯA BÁO KHÁCH".
  *
- * Nhân viên sửa thẳng trên app (đổi giờ hẹn, thêm cờ bánh, dời lịch, huỷ…) rồi
- * mới nhắn khách — mà đúng hôm đông thì không ai nhắn, khách vẫn ra theo giờ
- * cũ. Nay hễ có thay đổi khách nhìn thấy được là app tự gửi thư kèm giá mới.
+ * KHÔNG tự gửi thư. Nhân viên bấm nút "Gửi mail báo khách" trên dòng booking
+ * mới gửi — vì người sửa mới biết thay đổi này đã chốt với khách hay còn đang
+ * trao đổi dở. Sửa tới sửa lui ba lượt rồi mới ngã ngũ là chuyện thường; tự
+ * gửi mỗi lượt một thư thì khách nhận ba thư đá nhau, chẳng biết tin thư nào.
  *
- * Ba cửa im lặng, cố ý:
- *  - booking KHÔNG có email  → sửa vẫn lưu bình thường, chỉ là không gửi được.
- *    Không bao giờ chặn việc sửa vì thiếu email.
- *  - diff RỖNG → không gửi. Bấm Lưu mà không đổi gì thật thì khách không cần
- *    biết; gửi thư "booking của bạn vừa thay đổi" mà bên trong trống là làm
- *    khách mất tin vào mọi thư sau đó.
- *  - gửi HỎNG → ghi vào `notifyLog` với `ok: false` để trên app nhìn thấy, chứ
- *    không nuốt lỗi rồi cả đội tưởng khách đã biết.
+ * Chỗ này chỉ ghi lại ẢNH CHỤP TRƯỚC lượt sửa ĐẦU TIÊN. Các lượt sau không
+ * đụng vào nữa, nên lúc bấm gửi khách đọc được một dòng "Giờ hẹn: 10:00 →
+ * 16:00" thay vì cả nhật ký nhân viên đổi ý.
  *
- * Gửi ở NỀN (`after()` của Next, chạy sau khi đã trả lời): SMTP mất vài giây,
- * bắt người đứng bãi ngồi chờ là quay lại đúng cái bệnh đã chữa ở phần đẩy
- * Google Sheets.
+ * Sửa xong lại quay về y như cũ thì dấu tự xoá — không còn gì để báo.
  */
-function notifyBookingChange(
-  session: BaobaySession,
-  spot: string,
-  before: any,
-  after: any,
-): void {
-  const to = String(after?.email || "").trim();
-  if (!to) return;
+function markBookingChanged(before: any, after: any): void {
+  const base = bookingSnapshot(before);
+  const now = bookingSnapshot(after);
+  if (diffBooking(base, now).length === 0) return;
 
-  const changes = diffBooking(bookingSnapshot(before), bookingSnapshot(after));
-  if (changes.length === 0) return;
+  runInBackground(async () => {
+    const doc = await BaobayBooking.findById(after._id).select("notifyPendingBase").lean<any>();
+    const cu = doc?.notifyPendingBase as BookingSnapshot | undefined;
+    if (cu) {
+      // Đã có dấu từ lượt trước: so với ảnh chụp GỐC, hết khác thì xoá dấu
+      if (diffBooking(cu, now).length === 0) {
+        await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: null } });
+      }
+      return;
+    }
+    await BaobayBooking.updateOne({ _id: after._id }, { $set: { notifyPendingBase: base } });
+  });
+}
+
+/** Những thay đổi ĐANG CHỜ báo khách — dựng lại từ ảnh chụp gốc. */
+function pendingChangesOf(doc: any) {
+  const base = doc?.notifyPendingBase as BookingSnapshot | undefined;
+  if (!base) return [];
+  return diffBooking(base, bookingSnapshot(doc));
+}
+
+/**
+ * NHÂN VIÊN BẤM GỬI THƯ BÁO KHÁCH.
+ *
+ * Gửi NGAY và CHỜ kết quả (khác phần đẩy Google Sheets chạy nền): người vừa
+ * bấm nút đang đứng đó nhìn màn hình, họ cần biết thư đã đi hay hộp thư sai —
+ * báo "đã gửi" rồi âm thầm hỏng là tệ nhất, vì cả đội tin là khách đã biết.
+ */
+export async function sendBookingChangeMail(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const to = String(doc.email || "").trim();
+  if (!to) throw new BaobayError('Booking chưa có email khách — sửa booking, điền ô "Email khách" rồi gửi', 400);
+
+  const changes = pendingChangesOf(doc);
+  if (changes.length === 0) {
+    throw new BaobayError("Booking này không có thay đổi nào chưa báo khách", 400);
+  }
 
   const mail = buildBookingChangeMail(
     {
-      guestName: after?.contactName || "",
-      bookingCode: after?.bookingCode || "",
+      guestName: doc.contactName || "",
+      bookingCode: doc.bookingCode || "",
       spotName: spotName(spot),
       hotline: BOOKING_HOTLINE,
     },
     changes,
-    bookingSnapshot(after),
+    bookingSnapshot(doc),
   );
-  if (!mail) return;
+  if (!mail) throw new BaobayError("Không dựng được nội dung thư", 400);
 
-  runInBackground(async () => {
-    const entry: Record<string, unknown> = {
-      at: new Date(),
-      by: session?.name || session?.username || "",
-      to,
-      changes: changes.map((c) => c.vi),
-      ok: true,
-      error: "",
-    };
-    try {
-      await sendSmtpMail({ to, subject: mail.subject, html: mail.html, text: mail.text });
-    } catch (e: unknown) {
-      entry.ok = false;
-      entry.error = e instanceof Error ? e.message : String(e);
-      console.warn("[baocao] gửi thư báo khách hỏng:", entry.error);
-    }
-    await BaobayBooking.updateOne({ _id: after._id }, { $push: { notifyLog: entry } });
-  });
+  const entry: Record<string, unknown> = {
+    at: new Date(),
+    by: session?.name || session?.username || "",
+    to,
+    changes: changes.map((c) => c.vi),
+    ok: true,
+    error: "",
+  };
+  try {
+    await sendSmtpMail({ to, subject: mail.subject, html: mail.html, text: mail.text });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    entry.ok = false;
+    entry.error = msg;
+    /**
+     * Gửi hỏng thì VẪN ghi nhật ký nhưng GIỮ NGUYÊN dấu chờ báo: thay đổi đó
+     * khách chưa biết, xoá dấu là nó biến mất khỏi màn hình và không ai nhớ
+     * phải nhắn tay nữa.
+     */
+    await BaobayBooking.updateOne({ _id: doc._id }, { $push: { notifyLog: entry } });
+    throw new BaobayError(`Không gửi được thư tới ${to}: ${msg}`, 502);
+  }
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: doc._id },
+    { $push: { notifyLog: entry }, $set: { notifyPendingBase: null } },
+    { new: true },
+  ).lean<any>();
+  return toBookingDTO(updated ?? doc);
 }
 
 /** Việc nền không gắn với một bản ghi nào (đẩy lại cả ngày, dòng tổng hợp…). */
@@ -4089,7 +4134,7 @@ const editedTotal = bookingTotal({
     await cashDepositToCollect(session, spot, doc, dis);
   }
 
-  notifyBookingChange(session, spot, current, doc);
+  markBookingChanged(current, doc);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });
 }
@@ -4724,7 +4769,7 @@ export async function addBookingServices(
     },
     { new: true },
   ).lean<any>();
-  notifyBookingChange(session, spot, booking, updated);
+  markBookingChanged(booking, updated);
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
 
   /** Khách trả ngay tại chỗ thì ghi luôn lệnh thu — khỏi bấm sang thẻ khác. */
@@ -5027,7 +5072,7 @@ export async function cancelBookingGuests(
     await ins.cancelInsuredGuests(spot, id, n, `huỷ ${n} khách${reason ? ` — ${reason}` : ""}`);
   }
 
-  notifyBookingChange(session, spot, booking, updated);
+  markBookingChanged(booking, updated);
   return toBookingDTO(updated);
 }
 
@@ -5237,7 +5282,7 @@ export async function removeBookingServices(
     createdByName: session.name,
   });
 
-  notifyBookingChange(session, spot, booking, updated);
+  markBookingChanged(booking, updated);
   return { booking: toBookingDTO(updated), back, refunded };
 }
 
@@ -6553,11 +6598,10 @@ export async function updateBookingStatus(
   }
 
   /**
-   * "Đã bay" KHÔNG gửi thư: khách vừa bay xong, đang đứng ngay đó, thư báo
-   * "booking của bạn vừa thay đổi" chỉ làm khách tưởng có chuyện. Dời lịch và
-   * huỷ thì phải báo — đó đúng là hai việc khách cần biết ngay.
+   * "Đã bay" KHÔNG tính là thay đổi cần báo: khách vừa bay xong, đang đứng
+   * ngay đó. Dời lịch và huỷ thì có — đó đúng là hai việc khách cần biết.
    */
-  if (action !== "flown") notifyBookingChange(session, spot, current, doc);
+  if (action !== "flown") markBookingChanged(current, doc);
   pushSheetInBackground(() => pushBookingRow(doc), BaobayBooking, doc._id);
   return toBookingDTO({ ...doc, sheetSynced: false });
 }
@@ -6769,6 +6813,8 @@ function toBookingDTO(doc: any): BookingDTO {
     depositVerified: Boolean(doc.depositVerifiedAt),
     email: doc.email || "",
     lastNotify: lastNotifyLabel(doc.notifyLog),
+    /** Thay đổi CHƯA báo khách — nút "Gửi mail báo khách" hiện khi mảng này có. */
+    pendingNotify: pendingChangesOf(doc).map((c) => c.vi),
     note: doc.note || "",
     status:
       doc.status === "done"

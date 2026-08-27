@@ -14,6 +14,7 @@ import {
   cancelBookingGuests,
   BaobayError,
   setBookingLock,
+  sendBookingChangeMail,
   setDepositDate,
   assignBooking,
   acceptAssignedBooking,
@@ -208,7 +209,9 @@ export async function PATCH(req: Request) {
     action === "commission" ||
     action === "contact" ||
     // Người thu tiền mới biết khách trả cọc hôm nào — không bắt họ nhờ quầy gõ hộ
-    action === "deposit-date";
+    action === "deposit-date" ||
+    // Người vừa sửa booking là người biết đã chốt với khách chưa — họ bấm gửi
+    action === "notify-guest";
   const auth = requireBaobay(req, {
     roles: crewAllowed ? [...ROLES, "pilot", "cameraman"] : [...ROLES],
   });
@@ -245,7 +248,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Không huỷ bớt được" }, { status: 500 });
     }
   }
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -272,6 +275,14 @@ export async function PATCH(req: Request) {
       return NextResponse.json({
         booking: await setDepositDate(auth, spot, id, String(body?.depositDate ?? "")),
       });
+    }
+    /**
+     * GỬI THƯ BÁO KHÁCH những thay đổi chưa báo. Cố ý là NÚT BẤM chứ không tự
+     * động: sửa tới sửa lui mấy lượt rồi mới ngã ngũ là chuyện thường, tự gửi
+     * mỗi lượt một thư thì khách nhận mấy thư đá nhau.
+     */
+    if (action === "notify-guest") {
+      return NextResponse.json({ booking: await sendBookingChangeMail(auth, spot, id) });
     }
     if (action === "assign") {
       const assignee = String(body?.assignee ?? "");

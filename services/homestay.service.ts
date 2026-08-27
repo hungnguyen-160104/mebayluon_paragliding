@@ -189,13 +189,19 @@ export type HomestayAvailability = {
   dates: string[];
 };
 
-/** Trang khách hỏi cả tháng một lần — giới hạn 62 đêm cho khỏi ai kéo quá đà. */
+/**
+ * Trần một lần hỏi: hơn một năm.
+ *
+ * Trước để 62 đêm, tưởng là chặn người kéo quá đà — hoá ra là chặn KHÁCH: ai
+ * muốn đặt trước nửa năm, một năm thì lịch không có ngày ấy để bấm. Một năm số
+ * liệu chỉ là vài nghìn con số, nhẹ hơn nhiều so với việc mất một đơn đặt sớm.
+ */
 export async function getHomestayAvailability(fromRaw: string, toRaw: string): Promise<HomestayAvailability> {
   await connectDB();
   const from = isDateKey(fromRaw) ? fromRaw : todayInVN();
   let to = isDateKey(toRaw) ? toRaw : shiftDateKey(from, 31);
   if (to <= from) to = shiftDateKey(from, 31);
-  if (nightsBetween(from, to) > 62) to = shiftDateKey(from, 62);
+  if (nightsBetween(from, to) > 370) to = shiftDateKey(from, 370);
 
   const touching = await bookingsTouching(from, to);
   const occ: OccupancyBooking[] = touching.map((b) => ({
@@ -243,6 +249,12 @@ export type WebHomestayBookingResult = {
   checkOut: string;
   nights: number;
   amount: number;
+  /** Phần dựng THƯ XÁC NHẬN — chỗ gọi gửi thư sau khi đã đóng phản hồi. */
+  guestName: string;
+  email: string;
+  adults: number;
+  children: number;
+  lines: Array<{ roomTypeId: string; qty: number }>;
 };
 
 /**
@@ -383,7 +395,22 @@ export async function createWebHomestayBooking(
     first = false;
   }
 
-  return { ref, checkIn: input.checkIn, checkOut: input.checkOut, nights, amount: total };
+  /**
+   * Trả kèm phần dựng THƯ XÁC NHẬN (tên khách, hộp thư, các dòng phòng): chỗ
+   * gọi gửi thư sau khi đã đóng phản hồi, khỏi bắt khách ngồi chờ SMTP.
+   */
+  return {
+    ref,
+    checkIn: input.checkIn,
+    checkOut: input.checkOut,
+    nights,
+    amount: total,
+    guestName,
+    email: String(input.email ?? "").trim(),
+    adults,
+    children,
+    lines: [...qtyByRoom].map(([roomTypeId, qty]) => ({ roomTypeId, qty })),
+  };
 }
 
 /* ================================================================== */

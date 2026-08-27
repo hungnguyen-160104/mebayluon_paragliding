@@ -383,20 +383,28 @@ function BookingSummary({
         </>
       ) : null}
       {/**
-       * THƯ BÁO KHÁCH GỬI HỎNG — chỉ hiện khi HỎNG, không hiện khi gửi được.
+       * CÓ THAY ĐỔI CHƯA BÁO KHÁCH.
        *
-       * Gửi được là chuyện bình thường, in ra chỉ làm dòng booking dài thêm.
-       * Nhưng hỏng mà im lặng thì cả đội tưởng khách đã biết, khách thì vẫn ra
-       * theo giờ cũ — nên hỏng phải đập vào mắt.
+       * App không tự gửi thư, nên phải có chỗ nhắc — không thì nhân viên sửa
+       * xong đóng máy, khách vẫn ra theo giờ cũ. Nút gửi nằm trong "⋯ Thêm".
+       *
+       * Gửi HỎNG cũng vào đây (dấu chờ báo giữ nguyên khi gửi hỏng), nhưng in
+       * đỏ đậm: người ta đã bấm gửi và tưởng xong rồi.
        */}
-      {b.lastNotify?.includes("GỬI HỎNG") ? (
+      {(b.pendingNotify?.length ?? 0) > 0 ? (
         <>
           {" · "}
           <strong
-            className="rounded bg-rose-600 px-1 font-bold text-white"
-            title={`${b.lastNotify} — khách CHƯA được báo, phải nhắn tay`}
+            className={
+              "rounded px-1 font-bold " +
+              (b.lastNotify?.includes("GỬI HỎNG") ? "bg-rose-600 text-white" : "bg-amber-400 text-amber-950")
+            }
+            title={
+              (b.lastNotify?.includes("GỬI HỎNG") ? `${b.lastNotify}\n\n` : "") +
+              `Chưa báo khách:\n${(b.pendingNotify ?? []).join("\n")}\n\nBấm "⋯ Thêm" → "Gửi mail báo khách"`
+            }
           >
-            ✉✕ thư hỏng
+            ✉ chưa báo khách ({b.pendingNotify!.length})
           </strong>
         </>
       ) : null}
@@ -810,6 +818,94 @@ function VoidBookingControl({
  * đúng là chỗ tiền chảy ra ngoài. Ở Khau Phạ, dấu này cũng là đường duy nhất để
  * tích "đã bay" khi quầy không xuất vé.
  */
+/**
+ * GỬI MAIL BÁO KHÁCH những thay đổi chưa báo.
+ *
+ * Cố ý là NÚT BẤM chứ không tự động: người vừa sửa mới biết thay đổi này đã
+ * chốt với khách hay còn đang trao đổi dở. Sửa tới sửa lui ba lượt rồi mới ngã
+ * ngũ là chuyện thường — tự gửi mỗi lượt một thư thì khách nhận ba thư đá nhau.
+ *
+ * Bấm lần đầu thì XEM TRƯỚC đúng những dòng khách sẽ đọc, rồi mới gửi thật.
+ */
+function NotifyGuestControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pending = booking.pendingNotify ?? [];
+
+  async function send() {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: booking.id, action: "notify-guest" });
+      onDone(`✓ Đã gửi thư báo khách tới ${booking.email}.`);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không gửi được thư");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Không có gì chưa báo thì không bày nút — menu đã dài sẵn
+  if (pending.length === 0) return null;
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 shrink-0 border-amber-400 bg-amber-50 px-2 text-xs font-semibold text-amber-900"
+        onClick={() => setOpen(true)}
+        title={`Chưa báo khách:\n${pending.join("\n")}`}
+      >
+        ✉ Gửi mail báo khách ({pending.length})
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-full rounded-lg border border-amber-300 bg-amber-50 p-2">
+      <p className="text-xs font-bold text-amber-900">Thư sẽ báo khách những thay đổi này:</p>
+      <ul className="mt-1 list-disc pl-4 text-[11px] leading-snug text-amber-950">
+        {pending.map((c, i) => (
+          <li key={i}>{c}</li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-amber-800">
+        Gửi tới: <strong>{booking.email || "chưa có email"}</strong>
+        {booking.email ? "" : " — sửa booking để điền email trước"}
+      </p>
+      {error && <p className="mt-1 text-[11px] font-bold text-rose-700">{error}</p>}
+      <div className="mt-2 flex gap-1">
+        <Button
+          type="button"
+          disabled={busy || !booking.email}
+          onClick={send}
+          className="h-7 bg-amber-600 px-2 text-xs font-bold text-white hover:bg-amber-700"
+        >
+          {busy ? "Đang gửi…" : "Gửi ngay"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="h-7 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+        >
+          Thôi
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function NoTicketControl({
   spot,
   booking,
@@ -1413,6 +1509,14 @@ function RowMenu({
         ✎ Sửa booking
       </button>
       <CancelBookingControl
+        spot={spot}
+        booking={booking}
+        onDone={(m) => {
+          onDone(m);
+          setOpen(false);
+        }}
+      />
+      <NotifyGuestControl
         spot={spot}
         booking={booking}
         onDone={(m) => {

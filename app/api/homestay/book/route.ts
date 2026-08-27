@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 
 import { schedulePushLiveData } from "@/lib/bot/live-data";
+import { CHECK_IN_TIME, CHECK_OUT_TIME } from "@/lib/baobay/homestay";
+import { locationInfo, type HomestayLang } from "@/lib/homestay-data";
+import { buildHomestayConfirmMail } from "@/lib/homestay-confirm-mail";
+import { sendSmtpMail } from "@/lib/mailer";
 
 import { BaobayError } from "@/services/baobay.service";
 import { createWebHomestayBooking } from "@/services/homestay.service";
@@ -41,8 +45,54 @@ export async function POST(req: Request) {
       email: String(body.email ?? ""),
       note: String(body.note ?? ""),
     });
-    // Trả về vừa đủ cho màn hình cảm ơn — không dội lại cả bản ghi nội bộ
-    return NextResponse.json(booking, { status: 201 });
+
+    /**
+     * THƯ XÁC NHẬN cho khách. Gửi SAU khi đã trả lời (`after`): SMTP mất vài
+     * giây, để khách ngồi nhìn nút quay là họ bấm lại lần nữa và thành hai đơn.
+     *
+     * Gửi hỏng thì CHỈ ghi log, KHÔNG làm hỏng đơn: phòng đã giữ, mã đơn đã
+     * hiện trên màn hình. Đổ đơn vì một cái hộp thư sai là đổi việc nhỏ lấy
+     * việc lớn.
+     */
+    if (booking.email) {
+      const lang = (["vi", "en", "fr", "ru", "zh", "hi"].includes(String(body.lang))
+        ? String(body.lang)
+        : "vi") as HomestayLang;
+      after(async () => {
+        try {
+          const mail = buildHomestayConfirmMail({
+            lang,
+            ref: booking.ref,
+            guestName: booking.guestName,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            nights: booking.nights,
+            adults: booking.adults,
+            children: booking.children,
+            lines: booking.lines,
+            amount: booking.amount,
+            checkInTime: CHECK_IN_TIME,
+            checkOutTime: CHECK_OUT_TIME,
+            address: locationInfo.address,
+            phone: locationInfo.phone,
+          });
+          await sendSmtpMail({ to: booking.email, subject: mail.subject, html: mail.html, text: mail.text });
+        } catch (e) {
+          console.error("Gửi thư xác nhận đặt phòng hỏng:", e);
+        }
+      });
+    }
+    // Trả về vừa đủ cho màn hình cảm ơn — phần dựng thư giữ lại trên máy chủ
+    return NextResponse.json(
+      {
+        ref: booking.ref,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        nights: booking.nights,
+        amount: booking.amount,
+      },
+      { status: 201 },
+    );
   } catch (err) {
     if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
     console.error("POST /api/homestay/book error:", err);

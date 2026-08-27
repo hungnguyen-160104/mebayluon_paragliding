@@ -35,6 +35,7 @@ import {
   type HomestayRoom,
 } from "@/lib/baobay/homestay";
 import { locationInfo, type HomestayLang } from "@/lib/homestay-data";
+import { ROOM_NAMES } from "@/lib/homestay-room-names";
 
 /* ================= i18n (đủ 6 ngôn ngữ của site) ================= */
 
@@ -55,7 +56,13 @@ type Dict = {
   adults: string;
   children: string;
   /** Nhãn trên đầu lịch 30 ngày. */
-  next30: string;
+  /** Tiêu đề lịch, đổi theo số ngày đang mở. */
+  daysAhead: (n: number) => string;
+  /** Nút mở thêm ngày. */
+  moreDays: (n: number) => string;
+  /** Nhảy thẳng tới một ngày xa (đặt trước nửa năm, một năm). */
+  jumpLabel: string;
+  jumpHint: string;
   /** Đủ chỗ cho số khách đang khai. */
   capOk: (adults: number, children: number) => string;
   /** Phòng đã chọn KHÔNG đủ chỗ — nói rõ thiếu bao nhiêu. */
@@ -125,10 +132,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · Số khách",
     adults: "Người lớn",
     children: "Trẻ em (< 8 tuổi)",
-    next30: "30 ngày tới",
+    daysAhead: (n) => `${n} ngày tới`,
+    moreDays: (n) => `Xem thêm ${n} ngày →`,
+    jumpLabel: "Đặt xa hơn? Chọn thẳng ngày nhận phòng",
+    jumpHint: "Nhận đặt trước tới 1 năm",
     capOk: (a, c) => `Đủ chỗ cho ${a} người lớn${c ? ` + ${c} trẻ em` : ""}`,
-    capWarnAdults: (have, need) => `Phòng đã chọn chỉ chứa ${have} người lớn — bạn khai ${need}. Lấy thêm phòng nhé.`,
-    capWarnChildren: (have, need) => `Phòng đã chọn nhận ${have} trẻ em đi kèm — bạn khai ${need}.`,
+    capWarnAdults: (have, need) => `Phòng đã chọn chỉ chứa được tối đa ${have} người lớn — bạn có ${need} người, cần đặt thêm phòng nhé.`,
+    capWarnChildren: (have, need) => `Phòng đã chọn nhận được tối đa ${have} trẻ em đi kèm — bạn có ${need} bé, cần đặt thêm phòng nhé.`,
     capNoRoom: "Chọn phòng bên dưới — máy sẽ tự soát xem có đủ chỗ không.",
     dormChildNote: "Trẻ nhỏ ngủ ghép được; trẻ trên 5 tuổi tính 1 chỗ nằm riêng.",
     contact: "4 · Thông tin liên hệ",
@@ -165,16 +175,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
-    roomNames: {
-      "double-room": "Phòng giường đôi view suối",
-      dormitory: "Chỗ nằm sàn cộng đồng",
-      "single-room": "Phòng giường đơn view dù lượn",
-      "couple-attic-single": "Phòng gác mái nhỏ",
-      "couple-attic-double": "Phòng áp mái lớn",
-      "whole-home-small": "Phòng gia đình",
-      "floor-combo": "Nguyên sàn (trừ 2 phòng đôi)",
-      "whole-home-large": "Nguyên nhà sàn",
-    },
+    roomNames: ROOM_NAMES.vi,
     features: {
       "stilt-house": "Nhà sàn",
       "private-room": "Phòng riêng",
@@ -210,10 +211,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · Guests",
     adults: "Adults",
     children: "Children (< 8)",
-    next30: "Next 30 days",
+    daysAhead: (n) => `Next ${n} days`,
+    moreDays: (n) => `Show ${n} more days →`,
+    jumpLabel: "Booking further ahead? Pick your check-in date",
+    jumpHint: "We take bookings up to 1 year ahead",
     capOk: (a, c) => `Fits ${a} adult${a > 1 ? "s" : ""}${c ? ` + ${c} child${c > 1 ? "ren" : ""}` : ""}`,
-    capWarnAdults: (have, need) => `Selected rooms fit ${have} adults — you entered ${need}. Please add a room.`,
-    capWarnChildren: (have, need) => `Selected rooms take ${have} children — you entered ${need}.`,
+    capWarnAdults: (have, need) => `The rooms you picked hold at most ${have} adults — you have ${need}, so please add another room.`,
+    capWarnChildren: (have, need) => `The rooms you picked take at most ${have} children — you have ${need}, so please add another room.`,
     capNoRoom: "Pick a room below — we'll check the capacity for you.",
     dormChildNote: "Small children may share a bed; children over 5 need their own bed.",
     contact: "4 · Contact details",
@@ -250,16 +254,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
-    roomNames: {
-      "double-room": "Double bed room — stream view",
-      dormitory: "Shared dorm bed",
-      "single-room": "Single bed room — paragliding view",
-      "couple-attic-single": "Small attic room",
-      "couple-attic-double": "Large attic room",
-      "whole-home-small": "Family room",
-      "floor-combo": "Whole floor (excl. 2 double rooms)",
-      "whole-home-large": "Entire stilt house",
-    },
+    roomNames: ROOM_NAMES.en,
     features: {
       "stilt-house": "Stilt house",
       "private-room": "Private room",
@@ -295,10 +290,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · Voyageurs",
     adults: "Adultes",
     children: "Enfants (< 8 ans)",
-    next30: "30 prochains jours",
+    daysAhead: (n) => `${n} prochains jours`,
+    moreDays: (n) => `Voir ${n} jours de plus →`,
+    jumpLabel: "Plus loin ? Choisissez la date d’arrivée",
+    jumpHint: "Réservations jusqu’à 1 an à l’avance",
     capOk: (a, c) => `Convient à ${a} adulte${a > 1 ? "s" : ""}${c ? ` + ${c} enfant${c > 1 ? "s" : ""}` : ""}`,
-    capWarnAdults: (have, need) => `Les chambres choisies accueillent ${have} adultes — vous en indiquez ${need}. Ajoutez une chambre.`,
-    capWarnChildren: (have, need) => `Les chambres choisies acceptent ${have} enfants — vous en indiquez ${need}.`,
+    capWarnAdults: (have, need) => `Les chambres choisies accueillent au maximum ${have} adultes — vous êtes ${need}, ajoutez une chambre.`,
+    capWarnChildren: (have, need) => `Les chambres choisies acceptent au maximum ${have} enfants — vous en avez ${need}, ajoutez une chambre.`,
     capNoRoom: "Choisissez une chambre ci-dessous — nous vérifions la capacité.",
     dormChildNote: "Les tout-petits partagent un lit ; au-delà de 5 ans, un lit par enfant.",
     contact: "4 · Coordonnées",
@@ -335,16 +333,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"],
-    roomNames: {
-      "double-room": "Chambre lit double — vue ruisseau",
-      dormitory: "Lit en dortoir",
-      "single-room": "Chambre lit simple — vue parapentes",
-      "couple-attic-single": "Petite chambre mansardée",
-      "couple-attic-double": "Grande chambre mansardée",
-      "whole-home-small": "Chambre familiale",
-      "floor-combo": "Étage entier (hors 2 ch. doubles)",
-      "whole-home-large": "Maison sur pilotis entière",
-    },
+    roomNames: ROOM_NAMES.fr,
     features: {
       "stilt-house": "Maison sur pilotis",
       "private-room": "Chambre privée",
@@ -380,10 +369,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · Гости",
     adults: "Взрослые",
     children: "Дети (до 8 лет)",
-    next30: "Ближайшие 30 дней",
+    daysAhead: (n) => `Ближайшие ${n} дней`,
+    moreDays: (n) => `Показать ещё ${n} дней →`,
+    jumpLabel: "Бронируете заранее? Выберите дату заезда",
+    jumpHint: "Принимаем брони до 1 года вперёд",
     capOk: (a, c) => `Хватает мест: ${a} взрослых${c ? ` + ${c} детей` : ""}`,
-    capWarnAdults: (have, need) => `Выбранные номера вмещают ${have} взрослых — вы указали ${need}. Добавьте номер.`,
-    capWarnChildren: (have, need) => `Выбранные номера принимают ${have} детей — вы указали ${need}.`,
+    capWarnAdults: (have, need) => `Выбранные номера вмещают максимум ${have} взрослых — вас ${need}, добавьте ещё номер.`,
+    capWarnChildren: (have, need) => `Выбранные номера принимают максимум ${have} детей — у вас ${need}, добавьте ещё номер.`,
     capNoRoom: "Выберите номер ниже — мы сами проверим вместимость.",
     dormChildNote: "Малыши спят вместе со взрослым; детям старше 5 лет нужно отдельное место.",
     contact: "4 · Контакты",
@@ -420,16 +412,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
-    roomNames: {
-      "double-room": "Номер с двуспальной кроватью — вид на ручей",
-      dormitory: "Место в общем зале",
-      "single-room": "Номер с односпальной кроватью — вид на парапланы",
-      "couple-attic-single": "Малая мансарда",
-      "couple-attic-double": "Большая мансарда",
-      "whole-home-small": "Семейный номер",
-      "floor-combo": "Весь этаж (кроме 2 двухместных)",
-      "whole-home-large": "Весь дом на сваях",
-    },
+    roomNames: ROOM_NAMES.ru,
     features: {
       "stilt-house": "Дом на сваях",
       "private-room": "Отдельная комната",
@@ -465,10 +448,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · 客人",
     adults: "成人",
     children: "儿童（8岁以下）",
-    next30: "未来 30 天",
+    daysAhead: (n) => `未来 ${n} 天`,
+    moreDays: (n) => `再看 ${n} 天 →`,
+    jumpLabel: "想订更远的日期？直接选入住日",
+    jumpHint: "可提前 1 年预订",
     capOk: (a, c) => `可容纳 ${a} 位成人${c ? ` + ${c} 位儿童` : ""}`,
-    capWarnAdults: (have, need) => `所选房间只能住 ${have} 位成人，您填写了 ${need} 位，请再加一间房。`,
-    capWarnChildren: (have, need) => `所选房间可加 ${have} 位儿童，您填写了 ${need} 位。`,
+    capWarnAdults: (have, need) => `所选房间最多住 ${have} 位成人，您一行有 ${need} 位，需要再加一间房。`,
+    capWarnChildren: (have, need) => `所选房间最多可加 ${have} 位儿童，您有 ${need} 位，需要再加一间房。`,
     capNoRoom: "请在下方选择房间 — 系统会自动核对是否够住。",
     dormChildNote: "幼儿可与大人同睡；5 岁以上儿童需单独占一个床位。",
     contact: "4 · 联系方式",
@@ -505,16 +491,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["一", "二", "三", "四", "五", "六", "日"],
-    roomNames: {
-      "double-room": "双人床房 — 溪流景观",
-      dormitory: "多人间床位",
-      "single-room": "单人床房 — 滑翔伞景观",
-      "couple-attic-single": "小阁楼房",
-      "couple-attic-double": "大阁楼房",
-      "whole-home-small": "家庭房",
-      "floor-combo": "整层包场（不含2间双人房）",
-      "whole-home-large": "整栋高脚屋",
-    },
+    roomNames: ROOM_NAMES.zh,
     features: {
       "stilt-house": "高脚屋",
       "private-room": "独立房间",
@@ -550,10 +527,13 @@ const L: Record<HomestayLang, Dict> = {
     guests: "3 · मेहमान",
     adults: "वयस्क",
     children: "बच्चे (8 वर्ष से कम)",
-    next30: "अगले 30 दिन",
+    daysAhead: (n) => `अगले ${n} दिन`,
+    moreDays: (n) => `${n} दिन और देखें →`,
+    jumpLabel: "और आगे की बुकिंग? चेक-इन तारीख चुनें",
+    jumpHint: "1 साल आगे तक बुकिंग",
     capOk: (a, c) => `${a} वयस्क${c ? ` + ${c} बच्चे` : ""} के लिए पर्याप्त`,
-    capWarnAdults: (have, need) => `चुने गए कमरों में ${have} वयस्क आते हैं — आपने ${need} लिखा है। एक कमरा और जोड़ें।`,
-    capWarnChildren: (have, need) => `चुने गए कमरों में ${have} बच्चे आ सकते हैं — आपने ${need} लिखा है।`,
+    capWarnAdults: (have, need) => `चुने गए कमरों में अधिकतम ${have} वयस्क आते हैं — आप ${need} लोग हैं, एक कमरा और जोड़ें।`,
+    capWarnChildren: (have, need) => `चुने गए कमरों में अधिकतम ${have} बच्चे आ सकते हैं — आपके ${need} बच्चे हैं, एक कमरा और जोड़ें।`,
     capNoRoom: "नीचे कमरा चुनें — क्षमता हम जाँच लेंगे।",
     dormChildNote: "छोटे बच्चे साथ सो सकते हैं; 5 वर्ष से बड़े बच्चों के लिए अलग बेड चाहिए।",
     contact: "4 · संपर्क विवरण",
@@ -590,16 +570,7 @@ const L: Record<HomestayLang, Dict> = {
     monthPrev: "‹",
     monthNext: "›",
     weekdays: ["सो", "मं", "बु", "गु", "शु", "श", "र"],
-    roomNames: {
-      "double-room": "डबल बेड कमरा — नदी का दृश्य",
-      dormitory: "डॉर्मिटरी बेड",
-      "single-room": "सिंगल बेड कमरा — पैराग्लाइडिंग दृश्य",
-      "couple-attic-single": "छोटा अटारी कमरा",
-      "couple-attic-double": "बड़ा अटारी कमरा",
-      "whole-home-small": "फ़ैमिली कमरा",
-      "floor-combo": "पूरी मंज़िल (2 डबल कमरों को छोड़कर)",
-      "whole-home-large": "पूरा स्टिल्ट हाउस",
-    },
+    roomNames: ROOM_NAMES.hi,
     features: {
       "stilt-house": "स्टिल्ट हाउस",
       "private-room": "निजी कमरा",
@@ -674,13 +645,24 @@ export default function DatPhongClient() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ ref: string } | null>(null);
 
-  /** Lịch trống 62 đêm từ hôm nay — đủ cho hai tháng khách hay xem. */
+  /**
+   * SỐ NGÀY LỊCH ĐANG MỞ.
+   *
+   * Mở sẵn 30 ngày vì gần như mọi khách chỉ nhìn vài tuần tới — bày cả năm ra
+   * ngay từ đầu thì phải cuộn mãi mới tới chỗ cần. Nhưng KHÔNG được dừng ở đó:
+   * khách đặt trước nửa năm, một năm là chuyện có thật, mà lịch cụt 30 ngày
+   * thì họ không có cửa nào để đặt. Bấm "Xem thêm" nối dài, hoặc chọn thẳng
+   * ngày ở ô bên dưới rồi lịch tự nối tới đó.
+   */
+  const [horizon, setHorizon] = useState(30);
+
+  /** Lịch trống theo đúng khoảng đang mở, thêm 2 đêm đệm cho ngày trả phòng. */
   const loadAvail = useCallback(() => {
-    fetch(`/api/homestay/availability?from=${today}&to=${shiftKey(today, 62)}`)
+    fetch(`/api/homestay/availability?from=${today}&to=${shiftKey(today, horizon + 2)}`)
       .then((r) => r.json())
       .then(setAvail)
       .catch(() => setError("Không tải được lịch phòng — tải lại trang giúp mình."));
-  }, [today]);
+  }, [today, horizon]);
 
   useEffect(() => {
     loadAvail();
@@ -881,6 +863,8 @@ export default function DatPhongClient() {
           phone,
           email,
           note,
+          // Gửi kèm NGÔN NGỮ khách đang đọc — thư xác nhận viết đúng thứ tiếng đó
+          lang: langKey,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -902,10 +886,30 @@ export default function DatPhongClient() {
    * là ngày đã qua (bấm không được) và muốn xem ngày 2/9 phải bấm sang trang
    * tháng sau. Đếm thẳng từ hôm nay thì mọi ô đều bấm được.
    */
-  const next30 = useMemo(
-    () => Array.from({ length: 30 }, (_, i) => shiftKey(today, i)),
-    [today],
+  const days = useMemo(
+    () => Array.from({ length: horizon }, (_, i) => shiftKey(today, i)),
+    [today, horizon],
   );
+
+  /** Trần đặt trước: 1 năm. Xa hơn nữa thì giá và lịch chưa ai chốt được. */
+  const MAX_AHEAD = 365;
+  const lastDay = shiftKey(today, MAX_AHEAD);
+
+  /**
+   * Chọn thẳng một ngày xa: NỐI LỊCH tới ngày đó rồi chọn luôn.
+   *
+   * Nối lịch chứ không nhảy riêng: chọn xong khách còn phải bấm ngày TRẢ
+   * phòng, mà ngày trả thì nằm ngay sau ngày nhận — không nối thì ngày nhận
+   * hiện lên còn ngày trả lại nằm ngoài lịch, bấm không được.
+   */
+  function jumpTo(d: string) {
+    if (!d || d < today || d > lastDay) return;
+    const need = Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000) + 3;
+    if (need > horizon) setHorizon(Math.min(MAX_AHEAD + 3, need));
+    setCheckIn(d);
+    setCheckOut("");
+    setError(null);
+  }
 
 
 
@@ -957,9 +961,9 @@ export default function DatPhongClient() {
                 <p className="py-8 text-center text-sm text-slate-500">{s.loading}</p>
               ) : (
                 <>
-                  <div className="mb-2 text-sm font-bold text-slate-900">{s.next30}</div>
+                  <div className="mb-2 text-sm font-bold text-slate-900">{s.daysAhead(horizon)}</div>
                   <div className="grid grid-cols-5 gap-1 text-center sm:grid-cols-7">
-                    {next30.map((d) => {
+                    {days.map((d) => {
                       /** Đã tải được số liệu của đêm này chưa (ngoài cửa sổ 62 đêm thì chưa). */
                       const known =
                         lines.length === 0
@@ -1014,6 +1018,37 @@ export default function DatPhongClient() {
                       );
                     })}
                   </div>
+                  {/**
+                   * NỐI LỊCH + CHỌN NGÀY XA.
+                   *
+                   * Hai đường cho hai kiểu khách: người đi gần thì bấm "Xem
+                   * thêm" vài lần; người đặt trước nửa năm thì gõ thẳng ngày,
+                   * khỏi bấm mười hai lần.
+                   */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-2">
+                    {horizon < MAX_AHEAD && (
+                      <button
+                        type="button"
+                        onClick={() => setHorizon((h) => Math.min(MAX_AHEAD, h + 30))}
+                        className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                      >
+                        {s.moreDays(30)}
+                      </button>
+                    )}
+                    <label className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <span className="font-semibold">{s.jumpLabel}</span>
+                      <input
+                        type="date"
+                        min={today}
+                        max={lastDay}
+                        value={checkIn && checkIn > days[days.length - 1] ? checkIn : ""}
+                        onChange={(e) => jumpTo(e.target.value)}
+                        className="h-8 rounded-lg border border-slate-300 px-2 text-xs"
+                      />
+                      <span className="text-slate-400">{s.jumpHint}</span>
+                    </label>
+                  </div>
+
                   {/* SỐ KHÁCH đứng NGAY CẠNH LỊCH: khai người trước, chọn
                       phòng sau — máy tự soát đủ chỗ hay không. Trước đây ô này
                       nằm mãi dưới cùng, sau cả phần chọn phòng. */}
