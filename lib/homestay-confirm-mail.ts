@@ -95,14 +95,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "Cần đổi ngày hoặc huỷ, xin nhắn giúp trước một ngày.",
     prepTitle: "Lưu ý chuẩn bị",
     prepItems: [
-      "Homestay KHÔNG có sẵn bàn chải đánh răng — đồ cá nhân vui lòng tự chuẩn bị (nhà hạn chế đồ nhựa dùng một lần).",
-      "Có sẵn: khăn tắm, dầu gội, sữa tắm, máy sấy tóc.",
-      "Dịch vụ giặt đồ: 30.000đ/kg.",
+      "Mang theo bàn chải đánh răng và đồ cá nhân — nhà không dùng đồ một lần để hạn chế rác thải.",
+      "Nhà có sẵn: khăn tắm, dầu gội, sữa tắm, máy sấy tóc.",
+      "Thời tiết trên núi lạnh hơn khu đô thị khoảng 3–5°C — hãy chuẩn bị quần áo phù hợp.",
+      "Cần giặt đồ: 30.000đ/kg.",
     ],
     stiltItems: [
-      "Nhà sàn gỗ rất nhạy tiếng ồn — vui lòng đi lại nhẹ nhàng, đi nhón chân, không chạy mạnh.",
-      "Nhà vệ sinh dùng chung.",
-      "Không hút thuốc trong nhà sàn; xin giữ gìn vệ sinh chung.",
+      "Phòng tắm/WC sử dụng chung.",
+      "Nhà sàn gỗ rất vọng tiếng — vui lòng đi lại nhẹ nhàng, không chạy mạnh.",
+      "Vui lòng giữ gìn vệ sinh chung và hút thuốc ngoài khu vực nhà sàn.",
     ],
     directionsTitle: "Đường tới nhà",
     directions: (phone) => [
@@ -127,14 +128,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "To change dates or cancel, please let us know a day ahead.",
     prepTitle: "Before you arrive",
     prepItems: [
-      "Toothbrushes are NOT provided — please bring your own toiletries (we avoid single-use plastics).",
+      "Please bring your own toothbrush and toiletries — we avoid single-use items to reduce waste.",
       "Provided: towels, shampoo, shower gel, hairdryer.",
+      "Mountain weather is about 3–5°C cooler than the lowlands — pack accordingly.",
       "Laundry service: 30,000₫/kg.",
     ],
     stiltItems: [
+      "Bathrooms/WC are shared.",
       "The wooden stilt house carries sound easily — please walk gently, no running.",
-      "Bathrooms are shared.",
-      "No smoking inside the house; please help keep shared spaces clean.",
+      "Please keep shared spaces clean and smoke outside the stilt house only.",
     ],
     directionsTitle: "Getting here",
     directions: (phone) => [
@@ -159,14 +161,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "Pour modifier ou annuler, prévenez-nous un jour à l’avance.",
     prepTitle: "Avant votre arrivée",
     prepItems: [
-      "Les brosses à dents ne sont PAS fournies — merci d’apporter vos affaires de toilette (nous évitons le plastique à usage unique).",
+      "Apportez votre brosse à dents et vos affaires de toilette — nous évitons les produits à usage unique pour limiter les déchets.",
       "Fournis : serviettes, shampoing, gel douche, sèche-cheveux.",
+      "En montagne il fait 3–5°C de moins qu’en ville — prévoyez des vêtements adaptés.",
       "Laverie : 30 000₫/kg.",
     ],
     stiltItems: [
+      "Salles de bain/WC partagés.",
       "La maison sur pilotis en bois transmet les sons — merci de marcher doucement, sans courir.",
-      "Salles de bain partagées.",
-      "Interdiction de fumer à l’intérieur ; merci de garder les lieux propres.",
+      "Merci de garder les lieux propres et de fumer uniquement à l’extérieur de la maison.",
     ],
     directionsTitle: "Comment venir",
     directions: (phone) => [
@@ -191,14 +194,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "Изменить даты или отменить — сообщите за день.",
     prepTitle: "Перед приездом",
     prepItems: [
-      "Зубные щётки НЕ предоставляются — возьмите свои принадлежности (мы избегаем одноразового пластика).",
+      "Возьмите свою зубную щётку и личные принадлежности — мы отказались от одноразовых вещей ради меньшего количества отходов.",
       "Есть: полотенца, шампунь, гель для душа, фен.",
+      "В горах на 3–5°C прохладнее, чем в городе — возьмите тёплую одежду.",
       "Стирка: 30 000₫/кг.",
     ],
     stiltItems: [
+      "Ванные/туалет общие.",
       "Деревянный дом на сваях хорошо проводит звук — ходите, пожалуйста, тихо, не бегайте.",
-      "Санузлы общие.",
-      "Внутри дома не курят; поддерживайте, пожалуйста, чистоту.",
+      "Поддерживайте чистоту; курить — только снаружи дома.",
     ],
     directionsTitle: "Как добраться",
     directions: (phone) => [
@@ -223,14 +227,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "如需改期或取消，请提前一天告知。",
     prepTitle: "入住前请注意",
     prepItems: [
-      "民宿不提供牙刷——个人洗漱用品请自备（我们不使用一次性塑料用品）。",
+      "请自备牙刷和个人洗漱用品——民宿不用一次性用品，以减少垃圾。",
       "备有：浴巾、洗发水、沐浴露、吹风机。",
+      "山上比城区低 3–5°C——请备好合适衣物。",
       "洗衣服务：30,000₫/公斤。",
     ],
     stiltItems: [
+      "浴室/卫生间为公用。",
       "木质高脚屋隔音较差——请轻声走动，勿奔跑。",
-      "卫生间为公用。",
-      "屋内禁烟；请保持公共卫生。",
+      "请保持公共卫生；吸烟请到高脚屋外。",
     ],
     directionsTitle: "到达方式",
     directions: (phone) => [
@@ -255,14 +260,15 @@ const W: Record<HomestayLang, Words> = {
     changeNote: "तारीख बदलने या रद्द करने के लिए एक दिन पहले बताएँ।",
     prepTitle: "आने से पहले ध्यान दें",
     prepItems: [
-      "टूथब्रश उपलब्ध नहीं है — कृपया निजी सामान साथ लाएँ (हम सिंगल-यूज़ प्लास्टिक से बचते हैं)।",
+      "अपना टूथब्रश और निजी सामान साथ लाएँ — कचरा कम करने के लिए हम सिंगल-यूज़ चीज़ें नहीं रखते।",
       "उपलब्ध: तौलिया, शैम्पू, बॉडी वॉश, हेयर ड्रायर।",
+      "पहाड़ों में शहर से 3–5°C ठंडा रहता है — उपयुक्त कपड़े लाएँ।",
       "लॉन्ड्री: 30,000₫/किग्रा।",
     ],
     stiltItems: [
+      "बाथरूम/शौचालय साझा हैं।",
       "लकड़ी का स्टिल्ट हाउस आवाज़ जल्दी फैलाता है — कृपया धीरे चलें, दौड़ें नहीं।",
-      "बाथरूम साझा हैं।",
-      "घर के अंदर धूम्रपान वर्जित; कृपया सफ़ाई बनाए रखें।",
+      "कृपया सफ़ाई बनाए रखें; धूम्रपान केवल घर के बाहर करें।",
     ],
     directionsTitle: "पहुँचने का रास्ता",
     directions: (phone) => [
