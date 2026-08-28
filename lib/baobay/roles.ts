@@ -65,9 +65,15 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
        * tên công việc (Chốt ngày, Tổng hợp…) thì tưởng mình chưa được gán vai
        * kế toán — đã hỏi đúng câu đó hai lần.
        */
+      /**
+       * Homestay KHÔNG còn là thẻ đương nhiên của kế toán. Trước đây role
+       * accountant tự có homestay, nên muốn RÚT quyền homestay của một kế
+       * toán (yêu cầu thật: Hà Vân) là không có cách nào ngoài đổi cả vai.
+       * Nay ai làm sổ phòng thì gán thêm vai kiêm nhiệm "homestay" — thẻ và
+       * quyền đi theo vai đó, thêm bớt từng người được.
+       */
       return [
         { href: "/baocao/ke-toan", label: "Kế toán" },
-        { href: "/baocao/homestay", label: "Homestay" },
         { href: "/baocao/chot-ngay", label: "Chốt ngày" },
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },

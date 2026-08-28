@@ -29,7 +29,12 @@ export const maxDuration = 60;
 
 const ROLES = {
   // Kế toán + người kiêm nhiệm quản homestay (Duyên, Trúc Ngọc, Minh Ngọc…) + quản trị
-  roles: ["accountant", "homestay", "admin"] as ("accountant" | "homestay" | "admin")[],
+  /**
+   * Chỉ vai "homestay" (kiêm nhiệm hoặc chính) và quản trị. Kế toán KHÔNG còn
+   * vào đương nhiên — xem chú thích ở roleTabs (lib/baobay/roles.ts): quyền sổ
+   * phòng phải gán được từng người, không ăn theo vai kế toán.
+   */
+  roles: ["homestay", "admin"] as ("homestay" | "admin")[],
   allowAdmin: true,
 };
 

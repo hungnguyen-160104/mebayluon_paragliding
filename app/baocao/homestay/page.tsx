@@ -250,7 +250,8 @@ function cellLabel(b: BookingDTO): string {
 
 export default function HomestayPage() {
   // Kế toán, người kiêm nhiệm quản homestay, và admin đều vào được sổ phòng
-  const { user, loading } = useBaobaySession(["accountant", "homestay"] as const);
+  // Kế toán không còn vào đương nhiên — cần vai kiêm nhiệm "homestay" (xem roles.ts)
+  const { user, loading } = useBaobaySession(["homestay", "admin"] as const);
   const today = todayInVN();
   const [from, setFrom] = useState(today);
   /** Mốc cuối khung xem — mặc định một tháng; nút "Thêm 30 ngày" nối dài dần. */
