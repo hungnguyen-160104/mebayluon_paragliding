@@ -53,6 +53,15 @@ type Words = {
   contact: string;
   changeNote: string;
   bye: string;
+  /** "Lưu ý chuẩn bị" — dặn trước khi khách lên đường, đỡ một cuộc gọi hỏi lại. */
+  prepTitle: string;
+  /** Dặn chung mọi đơn: bàn chải tự mang, nhà có sẵn gì, giá giặt đồ. */
+  prepItems: string[];
+  /**
+   * Dặn RIÊNG khách ở NHÀ SÀN (mọi hạng trừ phòng gia đình khép kín): sàn gỗ
+   * vọng tiếng, vệ sinh chung, không hút thuốc trong nhà.
+   */
+  stiltItems: string[];
 };
 
 const W: Record<HomestayLang, Words> = {
@@ -70,6 +79,17 @@ const W: Record<HomestayLang, Words> = {
     address: "Địa chỉ",
     contact: "Liên hệ",
     changeNote: "Cần đổi ngày hoặc huỷ, xin nhắn giúp trước một ngày.",
+    prepTitle: "Lưu ý chuẩn bị",
+    prepItems: [
+      "Homestay KHÔNG có sẵn bàn chải đánh răng — đồ cá nhân vui lòng tự chuẩn bị (nhà hạn chế đồ nhựa dùng một lần).",
+      "Có sẵn: khăn tắm, dầu gội, sữa tắm, máy sấy tóc.",
+      "Dịch vụ giặt đồ: 30.000đ/kg.",
+    ],
+    stiltItems: [
+      "Nhà sàn gỗ rất nhạy tiếng ồn — vui lòng đi lại nhẹ nhàng, đi nhón chân, không chạy mạnh.",
+      "Nhà vệ sinh dùng chung.",
+      "Không hút thuốc trong nhà sàn; xin giữ gìn vệ sinh chung.",
+    ],
     bye: "Hẹn gặp quý khách dưới chân đèo Khau Phạ!",
   },
   en: {
@@ -86,6 +106,17 @@ const W: Record<HomestayLang, Words> = {
     address: "Address",
     contact: "Contact",
     changeNote: "To change dates or cancel, please let us know a day ahead.",
+    prepTitle: "Before you arrive",
+    prepItems: [
+      "Toothbrushes are NOT provided — please bring your own toiletries (we avoid single-use plastics).",
+      "Provided: towels, shampoo, shower gel, hairdryer.",
+      "Laundry service: 30,000₫/kg.",
+    ],
+    stiltItems: [
+      "The wooden stilt house carries sound easily — please walk gently, no running.",
+      "Bathrooms are shared.",
+      "No smoking inside the house; please help keep shared spaces clean.",
+    ],
     bye: "See you at the foot of Khau Pha pass!",
   },
   fr: {
@@ -102,6 +133,17 @@ const W: Record<HomestayLang, Words> = {
     address: "Adresse",
     contact: "Contact",
     changeNote: "Pour modifier ou annuler, prévenez-nous un jour à l’avance.",
+    prepTitle: "Avant votre arrivée",
+    prepItems: [
+      "Les brosses à dents ne sont PAS fournies — merci d’apporter vos affaires de toilette (nous évitons le plastique à usage unique).",
+      "Fournis : serviettes, shampoing, gel douche, sèche-cheveux.",
+      "Laverie : 30 000₫/kg.",
+    ],
+    stiltItems: [
+      "La maison sur pilotis en bois transmet les sons — merci de marcher doucement, sans courir.",
+      "Salles de bain partagées.",
+      "Interdiction de fumer à l’intérieur ; merci de garder les lieux propres.",
+    ],
     bye: "À bientôt au pied du col de Khau Pha !",
   },
   ru: {
@@ -118,6 +160,17 @@ const W: Record<HomestayLang, Words> = {
     address: "Адрес",
     contact: "Контакт",
     changeNote: "Изменить даты или отменить — сообщите за день.",
+    prepTitle: "Перед приездом",
+    prepItems: [
+      "Зубные щётки НЕ предоставляются — возьмите свои принадлежности (мы избегаем одноразового пластика).",
+      "Есть: полотенца, шампунь, гель для душа, фен.",
+      "Стирка: 30 000₫/кг.",
+    ],
+    stiltItems: [
+      "Деревянный дом на сваях хорошо проводит звук — ходите, пожалуйста, тихо, не бегайте.",
+      "Санузлы общие.",
+      "Внутри дома не курят; поддерживайте, пожалуйста, чистоту.",
+    ],
     bye: "Ждём вас у перевала Кхау Фа!",
   },
   zh: {
@@ -134,6 +187,17 @@ const W: Record<HomestayLang, Words> = {
     address: "地址",
     contact: "联系方式",
     changeNote: "如需改期或取消，请提前一天告知。",
+    prepTitle: "入住前请注意",
+    prepItems: [
+      "民宿不提供牙刷——个人洗漱用品请自备（我们不使用一次性塑料用品）。",
+      "备有：浴巾、洗发水、沐浴露、吹风机。",
+      "洗衣服务：30,000₫/公斤。",
+    ],
+    stiltItems: [
+      "木质高脚屋隔音较差——请轻声走动，勿奔跑。",
+      "卫生间为公用。",
+      "屋内禁烟；请保持公共卫生。",
+    ],
     bye: "期待在克豪帕山口下与您相见！",
   },
   hi: {
@@ -150,6 +214,17 @@ const W: Record<HomestayLang, Words> = {
     address: "पता",
     contact: "संपर्क",
     changeNote: "तारीख बदलने या रद्द करने के लिए एक दिन पहले बताएँ।",
+    prepTitle: "आने से पहले ध्यान दें",
+    prepItems: [
+      "टूथब्रश उपलब्ध नहीं है — कृपया निजी सामान साथ लाएँ (हम सिंगल-यूज़ प्लास्टिक से बचते हैं)।",
+      "उपलब्ध: तौलिया, शैम्पू, बॉडी वॉश, हेयर ड्रायर।",
+      "लॉन्ड्री: 30,000₫/किग्रा।",
+    ],
+    stiltItems: [
+      "लकड़ी का स्टिल्ट हाउस आवाज़ जल्दी फैलाता है — कृपया धीरे चलें, दौड़ें नहीं।",
+      "बाथरूम साझा हैं।",
+      "घर के अंदर धूम्रपान वर्जित; कृपया सफ़ाई बनाए रखें।",
+    ],
     bye: "खाउ फा दर्रे के नीचे मिलते हैं!",
   },
 };
@@ -178,6 +253,14 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
   const phong = input.lines
     .map((l) => `${roomNameOf(l.roomTypeId, input.lang)} × ${l.qty}`)
     .join("\n");
+  /**
+   * Đơn có phòng NHÀ SÀN không — mọi hạng trừ "phòng gia đình" (whole-home-small,
+   * phòng khép kín duy nhất, có vệ sinh riêng). Chỉ đơn thuần phòng gia đình
+   * mới khỏi nghe dặn về sàn gỗ vọng tiếng và vệ sinh chung — dặn thừa với
+   * khách khép kín thì họ lại tưởng nhầm phòng mình cũng vệ sinh chung.
+   */
+  const coNhaSan = input.lines.some((l) => l.roomTypeId !== "whole-home-small");
+  const luuY = [...w.prepItems, ...(coNhaSan ? w.stiltItems : [])];
   const ngay = `${dmy(input.checkIn)} ${input.checkInTime} → ${dmy(input.checkOut)} ${input.checkOutTime} (${w.nights(
     input.nights,
   )})`;
@@ -195,6 +278,9 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
     `${w.total}: ${tien}`,
     "",
     w.holdNote,
+    "",
+    `${w.prepTitle.toUpperCase()}:`,
+    ...luuY.map((x) => `- ${x}`),
     "",
     `${w.address}: ${input.address}`,
     `${w.contact}: ${input.phone}`,
@@ -224,6 +310,12 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
   <p style="margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#78350f;font-weight:600">${esc(
     w.holdNote,
   )}</p>
+  <div style="margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd">
+    <p style="margin:0 0 6px;font-weight:700;color:#0c4a6e">${esc(w.prepTitle)}</p>
+    <ul style="margin:0;padding-left:18px;color:#0f172a;font-size:14px;line-height:1.6">
+      ${luuY.map((x) => `<li>${esc(x)}</li>`).join("")}
+    </ul>
+  </div>
   <p style="margin:0 0 6px;color:#475569">${esc(w.changeNote)}</p>
   <p style="margin:0 0 16px;font-weight:600">${esc(w.bye)}</p>
   <p style="margin:0;color:#94a3b8;font-size:12px">mebayluon.com</p>
