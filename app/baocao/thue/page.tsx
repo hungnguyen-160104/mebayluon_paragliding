@@ -92,6 +92,29 @@ export default function TaxPage() {
         <Button type="button" onClick={load} className="h-10 bg-slate-700 px-3 text-sm hover:bg-slate-800">
           Xem
         </Button>
+        {/* Chọn kỳ nhanh — kế toán thuế làm việc theo tháng là chính */}
+        <div className="flex gap-1">
+          {([-1, 0] as const).map((lech) => {
+            const d = new Date();
+            const thang = new Date(d.getFullYear(), d.getMonth() + lech, 1);
+            const y = thang.getFullYear();
+            const m = String(thang.getMonth() + 1).padStart(2, "0");
+            const cuoi = new Date(y, thang.getMonth() + 1, 0).getDate();
+            return (
+              <button
+                key={lech}
+                type="button"
+                onClick={() => {
+                  setFrom(`${y}-${m}-01`);
+                  setTo(lech === 0 ? todayInVN() : `${y}-${m}-${String(cuoi).padStart(2, "0")}`);
+                }}
+                className="h-10 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {lech === 0 ? "Tháng này" : "Tháng trước"}
+              </button>
+            );
+          })}
+        </div>
         {/**
          * Tải file bằng thẻ <a> thường — cookie phiên đi kèm, và trình duyệt tự
          * lưu file thay vì nuốt vào fetch. Chỉ hiện khi ĐÃ nhặt ít nhất một hồ
@@ -115,6 +138,77 @@ export default function TaxPage() {
           <span>Đã thu (gộp): <strong>{vnd(tong.gop)} đ</strong></span>
           <span>Chưa thuế: <strong className="text-emerald-300">{vnd(tong.net)} đ</strong></span>
           <span>Tiền thuế: <strong className="text-amber-300">{vnd(tong.vat)} đ</strong></span>
+        </div>
+      )}
+
+      {/**
+       * BẢNG THEO DÕI THEO NGÀY — các hồ sơ ĐÃ NHẶT trong kỳ, gộp theo ngày
+       * bay: mỗi ngày một dòng (số hồ sơ · đã thu · chưa thuế · tiền thuế),
+       * chân bảng là tổng cả kỳ. Muốn xem theo tháng thì bấm "Tháng này" /
+       * "Tháng trước" ở trên — kỳ chính là khoảng ngày đang chọn.
+       */}
+      {picked.length > 0 && (
+        <div className="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <p className="mb-1 text-sm font-bold text-slate-800">
+            Theo dõi xuất thuế theo ngày ({from.split("-").reverse().join("/")} → {to.split("-").reverse().join("/")})
+          </p>
+          <table className="w-full border-collapse text-sm tabular-nums">
+            <thead>
+              <tr className="border-b border-slate-300 text-left text-xs text-slate-500">
+                <th className="py-1 pr-2 font-semibold">Ngày bay</th>
+                <th className="py-1 pr-2 text-right font-semibold">Hồ sơ</th>
+                <th className="py-1 pr-2 text-right font-semibold">Đã thu (gộp)</th>
+                <th className="py-1 pr-2 text-right font-semibold">Chưa thuế</th>
+                <th className="py-1 pr-2 text-right font-semibold">Tiền thuế</th>
+                <th className="py-1 text-right font-semibold">Đã vào file</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...picked
+                .reduce((m, r) => {
+                  const k = r.record?.flightDate || r.flightDate;
+                  const cur = m.get(k) ?? { n: 0, gop: 0, net: 0, vat: 0, xuat: 0 };
+                  const sv = splitVat(r.record?.amount ?? 0, r.record?.vatRate ?? 8);
+                  cur.n += 1;
+                  cur.gop += Math.round(r.record?.amount ?? 0);
+                  cur.net += sv.net;
+                  cur.vat += sv.vat;
+                  if (r.record?.exportedAt) cur.xuat += 1;
+                  m.set(k, cur);
+                  return m;
+                }, new Map<string, { n: number; gop: number; net: number; vat: number; xuat: number }>())
+                .entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([ngay, t]) => (
+                  <tr key={ngay} className="border-b border-slate-100">
+                    <td className="py-1 pr-2 font-semibold">{formatDateKeyVN(ngay)}</td>
+                    <td className="py-1 pr-2 text-right">{t.n}</td>
+                    <td className="py-1 pr-2 text-right">{vnd(t.gop)}</td>
+                    <td className="py-1 pr-2 text-right font-semibold text-emerald-700">{vnd(t.net)}</td>
+                    <td className="py-1 pr-2 text-right font-semibold text-amber-700">{vnd(t.vat)}</td>
+                    <td className="py-1 text-right">
+                      {t.xuat === t.n ? (
+                        <span className="font-bold text-emerald-700">✓ {t.xuat}/{t.n}</span>
+                      ) : (
+                        <span className="font-bold text-rose-600">{t.xuat}/{t.n}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 font-bold">
+                <td className="py-1.5 pr-2">TỔNG KỲ</td>
+                <td className="py-1.5 pr-2 text-right">{picked.length}</td>
+                <td className="py-1.5 pr-2 text-right">{vnd(tong.gop)}</td>
+                <td className="py-1.5 pr-2 text-right text-emerald-700">{vnd(tong.net)}</td>
+                <td className="py-1.5 pr-2 text-right text-amber-700">{vnd(tong.vat)}</td>
+                <td className="py-1.5 text-right">
+                  {picked.filter((r) => r.record?.exportedAt).length}/{picked.length}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
 
@@ -185,7 +279,23 @@ function TaxRow({
         <strong>{row.contactName || "—"}</strong>
         <span className="text-slate-500">{row.bookingCode}</span>
         <span className="text-slate-500">{row.guestCount} khách</span>
-        <strong className="tabular-nums">{vnd(row.totalAmount)} đ</strong>
+        {r ? (
+          (() => {
+            /* Đã nhặt: hiện đúng con số SẼ LÊN HOÁ ĐƠN (gộp + tách thuế),
+               không phải số của sổ vận hành — hai số có thể khác khi kế toán
+               sửa tay số tiền xuất. */
+            const sv = splitVat(r.amount, r.vatRate);
+            return (
+              <span className="tabular-nums text-xs">
+                <strong className="text-sm">{vnd(r.amount)} đ</strong>
+                <span className="text-emerald-700"> · chưa thuế {vnd(sv.net)}</span>
+                <span className="text-amber-700"> · thuế {r.vatRate}% = {vnd(sv.vat)}</span>
+              </span>
+            );
+          })()
+        ) : (
+          <strong className="tabular-nums">{vnd(row.totalAmount)} đ</strong>
+        )}
         {row.status === "cancelled" && <span className="rounded bg-rose-100 px-1.5 text-xs font-bold text-rose-700">ĐÃ HUỶ</span>}
         {r?.exportedAt && (
           <span
