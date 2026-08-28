@@ -5038,7 +5038,7 @@ export function BookingCard({
             variant="ghost"
             disabled={saving || sendingMail}
             className="h-11 flex-1 whitespace-nowrap border-amber-400 bg-amber-50 px-2 text-sm font-bold text-amber-900"
-            title={`Lưu booking rồi gửi thư tới ${form.email} — có thay đổi chưa báo thì thư kể thay đổi, không thì gửi bản xác nhận đặt chỗ`}
+            title={`Lưu booking (lấy số thứ tự) rồi gửi thư tới ${form.email} — có thay đổi chưa báo thì thư kể thay đổi, không thì gửi bản xác nhận đặt chỗ theo đúng mẫu thư web`}
             onClick={async () => {
               setSendingMail(true);
               try {
@@ -5057,7 +5057,9 @@ export function BookingCard({
               }
             }}
           >
-            {sendingMail ? "Đang gửi…" : "✉ Gửi email"}
+            {/* Booking CHƯA lưu thì chưa có số thứ tự — bấm nút này là lưu
+                (lấy số) rồi gửi luôn, nên chữ phải nói rõ cả hai việc. */}
+            {sendingMail ? "Đang gửi…" : editingId ? "✉ Gửi email" : "✉ Lưu & gửi email"}
           </Button>
         )}
         {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}

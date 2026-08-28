@@ -27,6 +27,16 @@ export function normalizeEmailLang(raw: unknown): EmailLang {
 
 type Dict = {
   subject: (id: string) => string;
+  /** Thư CẬP NHẬT / HUỶ — cùng bố cục thư xác nhận, khác tiêu đề + lời mở. */
+  subjectUpdate: (id: string) => string;
+  subjectCancel: (id: string) => string;
+  introUpdate: string;
+  introCancel: string;
+  sectionChanges: string;
+  /** Đã thanh toán / còn lại — thư gửi từ app nội bộ có số này, thư web không. */
+  paidLabel: string;
+  balanceLabel: string;
+  fullyPaid: string;
   hello: (name: string) => string;
   intro: string;
   bookingRef: string;
@@ -80,6 +90,14 @@ type Dict = {
 const T: Record<EmailLang, Dict> = {
   vi: {
     subject: (id) => `Xác nhận đặt lịch bay dù lượn Mebayluon - ID: ${id}`,
+    subjectUpdate: (id) => `Cập nhật đặt chỗ bay dù lượn Mebayluon - ID: ${id}`,
+    subjectCancel: (id) => `Huỷ chuyến bay Mebayluon - ID: ${id}`,
+    introUpdate: "Đặt chỗ của bạn vừa được cập nhật. Những thay đổi và thông tin mới nhất ở dưới đây.",
+    introCancel: "Chuyến bay của bạn đã được huỷ. Chi tiết ở dưới đây — nếu có khoản hoàn, chúng tôi sẽ xử lý sớm nhất.",
+    sectionChanges: "Những thay đổi",
+    paidLabel: "Đã thanh toán",
+    balanceLabel: "Còn lại phải trả",
+    fullyPaid: "Đã thanh toán đủ",
     hello: (n) => `Chào ${n},`,
     intro:
       "Cảm ơn bạn đã đặt lịch bay dù lượn cùng Mebayluon Paragliding. Lịch bay của bạn được xác nhận, chi tiết như sau:",
@@ -133,6 +151,14 @@ const T: Record<EmailLang, Dict> = {
 
   en: {
     subject: (id) => `Mebayluon paragliding booking confirmation - ID: ${id}`,
+    subjectUpdate: (id) => `Mebayluon paragliding booking updated - ID: ${id}`,
+    subjectCancel: (id) => `Mebayluon flight cancelled - ID: ${id}`,
+    introUpdate: "Your booking has just been updated. The changes and the latest details are below.",
+    introCancel: "Your flight has been cancelled. Details below — any refund will be processed shortly.",
+    sectionChanges: "What changed",
+    paidLabel: "Paid",
+    balanceLabel: "Balance due",
+    fullyPaid: "Fully paid",
     hello: (n) => `Hello ${n},`,
     intro:
       "Thank you for booking a paragliding flight with Mebayluon Paragliding. Your flight is confirmed — here are the details:",
@@ -187,6 +213,14 @@ const T: Record<EmailLang, Dict> = {
 
   fr: {
     subject: (id) => `Confirmation de réservation parapente Mebayluon - ID : ${id}`,
+    subjectUpdate: (id) => `Mise à jour de votre réservation Mebayluon - ID : ${id}`,
+    subjectCancel: (id) => `Vol annulé Mebayluon - ID : ${id}`,
+    introUpdate: "Votre réservation vient d’être mise à jour. Les changements et les informations à jour sont ci-dessous.",
+    introCancel: "Votre vol a été annulé. Détails ci-dessous — tout remboursement sera traité rapidement.",
+    sectionChanges: "Ce qui a changé",
+    paidLabel: "Payé",
+    balanceLabel: "Reste à payer",
+    fullyPaid: "Entièrement payé",
     hello: (n) => `Bonjour ${n},`,
     intro:
       "Merci d'avoir réservé un vol en parapente avec Mebayluon Paragliding. Votre vol est confirmé, voici le détail :",
@@ -241,6 +275,14 @@ const T: Record<EmailLang, Dict> = {
 
   ru: {
     subject: (id) => `Подтверждение брони полёта Mebayluon - ID: ${id}`,
+    subjectUpdate: (id) => `Обновление брони Mebayluon - ID: ${id}`,
+    subjectCancel: (id) => `Полёт отменён Mebayluon - ID: ${id}`,
+    introUpdate: "Ваша бронь только что обновлена. Изменения и актуальные данные ниже.",
+    introCancel: "Ваш полёт отменён. Подробности ниже — возврат, если он положен, оформим в ближайшее время.",
+    sectionChanges: "Что изменилось",
+    paidLabel: "Оплачено",
+    balanceLabel: "Осталось оплатить",
+    fullyPaid: "Оплачено полностью",
     hello: (n) => `Здравствуйте, ${n}!`,
     intro:
       "Спасибо за бронирование полёта на параплане с Mebayluon Paragliding. Ваш полёт подтверждён, детали ниже:",
@@ -295,6 +337,14 @@ const T: Record<EmailLang, Dict> = {
 
   zh: {
     subject: (id) => `Mebayluon 滑翔伞预订确认 - ID: ${id}`,
+    subjectUpdate: (id) => `Mebayluon 预订更新 - ID: ${id}`,
+    subjectCancel: (id) => `Mebayluon 航程取消 - ID: ${id}`,
+    introUpdate: "您的预订刚刚更新，变更内容与最新信息如下。",
+    introCancel: "您的飞行已取消，详情如下——如有退款我们会尽快处理。",
+    sectionChanges: "变更内容",
+    paidLabel: "已付款",
+    balanceLabel: "待付余额",
+    fullyPaid: "已付清",
     hello: (n) => `${n} 您好，`,
     intro:
       "感谢您通过 Mebayluon Paragliding 预订滑翔伞飞行。您的飞行已确认，详情如下：",
@@ -347,6 +397,14 @@ const T: Record<EmailLang, Dict> = {
 
   hi: {
     subject: (id) => `Mebayluon पैराग्लाइडिंग बुकिंग पुष्टि - ID: ${id}`,
+    subjectUpdate: (id) => `Mebayluon बुकिंग अपडेट - ID: ${id}`,
+    subjectCancel: (id) => `Mebayluon उड़ान रद्द - ID: ${id}`,
+    introUpdate: "आपकी बुकिंग अभी अपडेट हुई है। बदलाव और नवीनतम विवरण नीचे हैं।",
+    introCancel: "आपकी उड़ान रद्द हो गई है। विवरण नीचे हैं — रिफ़ंड होने पर हम जल्द प्रोसेस करेंगे।",
+    sectionChanges: "क्या बदला",
+    paidLabel: "भुगतान किया",
+    balanceLabel: "बकाया राशि",
+    fullyPaid: "पूरा भुगतान हो चुका",
     hello: (n) => `नमस्ते ${n},`,
     intro:
       "Mebayluon Paragliding के साथ उड़ान बुक करने के लिए धन्यवाद। आपकी उड़ान पुष्ट हो गई है, विवरण नीचे है:",
@@ -499,6 +557,15 @@ export type CustomerEmailInput = {
   /** Có ảnh vé đính kèm hay không — quyết định hiện dòng nhắc trong thư. */
   hasTicketAttachment?: boolean;
   /**
+   * CHẾ ĐỘ THƯ CẬP NHẬT / HUỶ — app nội bộ dùng khi nhân viên sửa booking.
+   * Cùng bố cục thư xác nhận (khách quen một kiểu đọc), chỉ đổi tiêu đề, lời
+   * mở đầu và chèn khối "Những thay đổi" vàng ngay dưới lời chào.
+   */
+  update?: { changes: string[]; cancelled?: boolean };
+  /** Đã thanh toán / còn lại (VND) — thư từ app nội bộ có số này, thư web không. */
+  paid?: number;
+  balance?: number;
+  /**
    * Nguồn ảnh logo. Mặc định là "cid:mbl-logo" — logo được đính kèm ngay
    * trong thư nên hiện được cả khi khách chưa cho phép tải ảnh từ ngoài, và
    * không phụ thuộc vào việc www.mebayluon.com đã deploy tệp đó hay chưa.
@@ -523,7 +590,10 @@ export type CustomerEmailInput = {
 
 export function customerEmailSubject(input: CustomerEmailInput): string {
   const t = T[normalizeEmailLang(input.lang)];
-  return t.subject(String(input.bookingId || "—"));
+  const id = String(input.bookingId || "—");
+  if (input.update?.cancelled) return t.subjectCancel(id);
+  if (input.update) return t.subjectUpdate(id);
+  return t.subject(id);
 }
 
 export function customerEmailHtml(input: CustomerEmailInput): string {
@@ -745,8 +815,26 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
     <table width="100%" cellpadding="0" cellspacing="0">
 
       <tr><td style="font-size:16px;color:${C.ink};line-height:1.6;">
-        <strong>${esc(t.hello(contactName || ""))}</strong><br/>${esc(t.intro)}
+        <strong>${esc(t.hello(contactName || ""))}</strong><br/>${esc(
+          input.update ? (input.update.cancelled ? t.introCancel : t.introUpdate) : t.intro,
+        )}
       </td></tr>
+
+      ${
+        input.update && input.update.changes.length > 0
+          ? `${sectionTitle(t.sectionChanges)}
+      <tr><td>
+        <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:11px 14px;">
+          ${input.update.changes
+            .map(
+              (c) =>
+                `<div style="font-size:14px;font-weight:600;color:#78350F;line-height:1.7;">• ${esc(c)}</div>`,
+            )
+            .join("")}
+        </div>
+      </td></tr>`
+          : ""
+      }
 
       ${
         input.hasTicketAttachment
@@ -772,6 +860,22 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
             <td style="padding:12px 14px;font-size:20px;font-weight:800;color:#15803D;text-align:right;">${money(input.price?.total)}</td>
           </tr>
         </table>
+        ${
+          typeof input.paid === "number"
+            ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">
+                <tr>
+                  <td style="padding:4px 14px;font-size:13px;color:${C.soft};">${esc(t.paidLabel)}</td>
+                  <td style="padding:4px 14px;font-size:13px;font-weight:700;text-align:right;color:${C.ink};">${money(input.paid)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 14px;font-size:13px;color:${C.soft};">${esc(t.balanceLabel)}</td>
+                  <td style="padding:4px 14px;font-size:14px;font-weight:800;text-align:right;color:${(input.balance ?? 0) > 0 ? "#B91C1C" : "#15803D"};">${
+                    (input.balance ?? 0) > 0 ? money(input.balance) : esc(t.fullyPaid)
+                  }</td>
+                </tr>
+              </table>`
+            : ""
+        }
         <div style="margin-top:6px;font-size:12px;color:${C.soft};line-height:1.5;">${esc(t.paymentNote)}</div>
       </td></tr>
 

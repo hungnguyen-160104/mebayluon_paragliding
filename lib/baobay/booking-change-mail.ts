@@ -50,7 +50,7 @@ export function dmy(key?: string): string {
 }
 
 /** Tên dịch vụ trên thư — đúng chữ khách thấy lúc đặt. */
-const SERVICE_LABEL: Record<string, { vi: string; en: string }> = {
+export const SERVICE_LABEL: Record<string, { vi: string; en: string }> = {
   flycam: { vi: "Quay flycam", en: "Drone video" },
   video360: { vi: "Camera 360", en: "360° camera" },
   redFlag: { vi: "Dù cờ đỏ sao vàng", en: "Vietnam flag wing" },

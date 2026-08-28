@@ -36,8 +36,10 @@ import {
   buildBookingChangeMail,
   buildBookingConfirmMail,
   diffBooking,
+  SERVICE_LABEL,
   type BookingSnapshot,
 } from "@/lib/baobay/booking-change-mail";
+import { customerEmailHtml, customerEmailSubject } from "@/lib/email/customer-booking";
 import { sendSmtpMail } from "@/lib/mailer";
 import {
   countTicketRange,
@@ -237,11 +239,73 @@ export async function sendBookingChangeMail(
     spotName: spotName(spot),
     hotline: BOOKING_HOTLINE,
   };
+  /** Bản chữ thuần (text/plain) giữ SONG NGỮ như cũ — phòng máy khách chặn HTML. */
   const mail =
     changes.length > 0
       ? buildBookingChangeMail(info, changes, bookingSnapshot(doc))
       : buildBookingConfirmMail(info, bookingSnapshot(doc));
   if (!mail) throw new BaobayError("Không dựng được nội dung thư", 400);
+
+  /**
+   * PHẦN HTML dùng ĐÚNG MẪU thư xác nhận của website (lib/email/customer-booking)
+   * — khách đặt web đã nhận kiểu thư đó rồi, thư từ app phải cùng một bộ mặt,
+   * hai kiểu thư khác nhau từ cùng một công ty nhìn như lừa đảo.
+   *
+   * NGÔN NGỮ: sổ nội bộ không lưu ngôn ngữ khách nên phải đoán bằng dấu vết:
+   * booking từ OTA (Klook/Viator/GYG… — khách quốc tế đặt qua đó) hoặc khách
+   * trong hồ sơ bảo hiểm mang quốc tịch ngoài Việt Nam → tiếng Anh; còn lại
+   * tiếng Việt. Đoán sai vẫn còn bản text song ngữ đỡ phía dưới.
+   */
+  const nuocNgoai =
+    Boolean(doc.otaName) ||
+    /klook|viator|gyg|getyourguide|kkday|trip\.com|agoda|booking\.com/i.test(String(doc.source ?? "")) ||
+    (doc.insured ?? []).some(
+      (g: any) => g?.nationality && !/^(viet\s?nam|vi[eệ]t\s?nam|vn)$/i.test(String(g.nationality).trim()),
+    );
+  const mailLang = nuocNgoai ? "en" : "vi";
+
+  const dichVu = (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+    .map((k) => ({ k, qty: Math.max(0, Math.round(Number(doc[k]) || 0)) }))
+    .filter((x) => x.qty > 0)
+    .map((x) => ({ label: SERVICE_LABEL[x.k][mailLang], qty: x.qty }));
+
+  const daTra = Math.max(0, doc.deposit ?? 0);
+  const html = customerEmailHtml({
+    lang: mailLang,
+    bookingId: doc.bookingCode || String(doc._id).slice(-6).toUpperCase(),
+    locationName: spotName(spot),
+    dateISO: doc.flightDate || "",
+    timeSlot: doc.expectedTime || "",
+    guestsCount: doc.guestCount ?? 0,
+    name: doc.contactName || "",
+    contact: { phone: doc.phone || "", email: to },
+    guests: (doc.insured ?? [])
+      .filter((g: any) => !g?.cancelled && g?.fullName)
+      .map((g: any) => ({
+        fullName: g.fullName,
+        dob: g.birthday || "",
+        gender: g.gender === "nam" ? "Nam" : g.gender === "nu" ? "Nữ" : "",
+        nationality: g.nationality || "",
+        idNumber: g.idNumber || "",
+      })),
+    selectedServiceLines: dichVu,
+    price: { total: doc.totalAmount ?? 0 },
+    paid: daTra,
+    balance: Math.max(0, doc.remaining ?? 0),
+    update:
+      changes.length > 0
+        ? {
+            changes: changes.map((c) => (mailLang === "en" ? c.en : c.vi)),
+            cancelled: doc.status === "cancelled",
+          }
+        : undefined,
+    logoSrc: "https://www.mebayluon.com/logo-mbl.png",
+  });
+  const subject = customerEmailSubject({
+    lang: mailLang,
+    bookingId: doc.bookingCode || String(doc._id).slice(-6).toUpperCase(),
+    update: changes.length > 0 ? { changes: [], cancelled: doc.status === "cancelled" } : undefined,
+  });
 
   const entry: Record<string, unknown> = {
     at: new Date(),
@@ -252,7 +316,7 @@ export async function sendBookingChangeMail(
     error: "",
   };
   try {
-    await sendSmtpMail({ to, subject: mail.subject, html: mail.html, text: mail.text });
+    await sendSmtpMail({ to, subject, html, text: mail.text });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     entry.ok = false;
