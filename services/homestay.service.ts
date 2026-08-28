@@ -58,6 +58,9 @@ export type HomestayBookingDTO = {
   cancelledBy?: string;
   cancelReason?: string;
   createdAt: string;
+  /** Đã đóng phòng trên các trang OTA cho đơn này chưa — "" là CHƯA, cần nhắc. */
+  otaLockedAt: string;
+  otaLockedBy: string;
 };
 
 export type HomestayBoard = {
@@ -98,6 +101,8 @@ function toDTO(d: any): HomestayBookingDTO {
     raw: d.raw,
     note: d.note ?? "",
     cancelledBy: d.cancelledBy || undefined,
+    otaLockedAt: d.otaLockedAt ? new Date(d.otaLockedAt).toISOString() : "",
+    otaLockedBy: d.otaLockedBy || "",
     cancelReason: d.cancelReason || undefined,
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
   };
@@ -516,7 +521,7 @@ export async function createManualHomestayBooking(
 export async function actHomestayBooking(
   session: BaobaySession,
   id: string,
-  action: "assign-room" | "cancel" | "restore" | "confirm-review" | "collect" | "note" | "rename" | "quick-edit" | "delete",
+  action: "assign-room" | "cancel" | "restore" | "confirm-review" | "collect" | "note" | "rename" | "quick-edit" | "delete" | "ota-lock" | "ota-unlock",
   payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string; phone?: string },
 ): Promise<void> {
   await connectDB();
@@ -538,6 +543,19 @@ export async function actHomestayBooking(
     doc.status = "confirmed";
     doc.cancelledAt = undefined;
     doc.cancelledBy = undefined;
+  } else if (action === "ota-lock" || action === "ota-unlock") {
+    /**
+     * "Đã đóng phòng trên các OTA" — dấu NHẮC, không phải máy tự đóng được.
+     * Đóng theo MÃ ĐƠN chứ không theo từng dòng: một đơn nhiều hạng phòng là
+     * nhiều bản ghi chung ref, người ta đóng OTA cho cả đơn một lượt.
+     */
+    const who = action === "ota-lock" ? { otaLockedAt: new Date(), otaLockedBy: session.name || session.username } : { otaLockedAt: null, otaLockedBy: "" };
+    if (doc.ref) {
+      await HomestayBooking.updateMany({ ref: doc.ref }, { $set: who });
+    } else {
+      await HomestayBooking.updateOne({ _id: doc._id }, { $set: who });
+    }
+    return;
   } else if (action === "confirm-review") {
     // Duyệt thư trong khay soát: phải đủ ngày ở và hạng phòng mới lên lịch được
     if (!isDateKey(doc.checkIn) || !isDateKey(doc.checkOut)) {

@@ -72,6 +72,9 @@ type BookingDTO = {
   cancelledBy?: string;
   cancelReason?: string;
   createdAt: string;
+  /** Đã đóng phòng trên các OTA chưa — "" là CHƯA, phải nhắc. */
+  otaLockedAt?: string;
+  otaLockedBy?: string;
 };
 
 type Overview = {
@@ -505,6 +508,68 @@ export default function HomestayPage() {
         onCancel={cancelCell}
         onExtend={nightsCount < 180 ? () => setTo(shiftDateKey(to, 30)) : undefined}
       />
+
+      {/**
+       * NHẮC KHOÁ PHÒNG TRÊN OTA.
+       *
+       * Nhà bán phòng trên nhiều kênh (Agoda, Booking, Trip…) mà không có
+       * channel manager: mỗi đơn mới về là NGƯỜI phải vào từng trang OTA đóng
+       * phòng bằng tay, quên là hai khách trùng một giường — đã xảy ra. App
+       * không tự đóng hộ được, nên việc của nó là KHÔNG CHO QUÊN: đơn nào chưa
+       * bấm "Đã khoá" thì nằm lì trong khối đỏ này, đập vào mắt mỗi lần mở
+       * trang, cho tới khi có người đóng OTA thật rồi bấm xác nhận.
+       *
+       * Chỉ nhắc đơn còn hiệu lực và CHƯA trả phòng — đơn huỷ hay đã ở xong
+       * thì đóng OTA cũng chẳng để làm gì.
+       */}
+      {(() => {
+        const canLock = bookings.filter(
+          (b) => b.status === "confirmed" && !b.otaLockedAt && b.checkOut >= today,
+        );
+        /** Mỗi MÃ ĐƠN một dòng — đơn nhiều hạng phòng đóng OTA một lượt. */
+        const seen = new Set<string>();
+        const rows = canLock.filter((b) => {
+          const k = b.ref || b.id;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        if (rows.length === 0) return null;
+        return (
+          <CollapseCard
+            open
+            className="border-rose-400 bg-rose-50"
+            headerClassName="text-rose-900"
+            title={`🔒 ${rows.length} đơn CHƯA khoá phòng trên OTA`}
+            hint="vào Agoda/Booking/Trip đóng các đêm của đơn rồi bấm Đã khoá — quên là khách book trùng"
+          >
+            <ul className="grid gap-1.5 @2xl:grid-cols-2">
+              {rows.map((b) => (
+                <li
+                  key={b.id}
+                  className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-rose-200 bg-white px-2 py-1.5 text-sm"
+                >
+                  <SourceBadge source={b.source} />
+                  <strong>{b.guestName || b.ref || "khách"}</strong>
+                  <span className="text-slate-600">
+                    {formatDateKeyVN(b.checkIn)} → {formatDateKeyVN(b.checkOut)}
+                  </span>
+                  <span className="text-slate-500">{b.rooms > 1 ? `${b.rooms}×` : ""}{b.roomLabel || b.roomTypeId}</span>
+                  <Button
+                    type="button"
+                    disabled={busy}
+                    className="ml-auto h-7 bg-rose-600 px-2.5 text-xs font-bold hover:bg-rose-700"
+                    title="Xác nhận ĐÃ vào các trang OTA đóng phòng cho các đêm của đơn này"
+                    onClick={() => act(b.id, "ota-lock", {})}
+                  >
+                    {busy ? "…" : "✓ Đã khoá phòng OTA"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </CollapseCard>
+        );
+      })()}
 
       {/* ---- KHAY CẦN SOÁT — mở sẵn nhưng gập lại được, desktop hai cột ---- */}
       {review.length > 0 && (
@@ -1062,6 +1127,23 @@ function BookingRow({
           {b.roomLabel && b.roomLabel !== b.roomTypeId ? ` (${b.roomLabel})` : ""}
         </span>
         {staying && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800">đang ở</span>}
+        {/* Trạng thái đóng phòng trên các OTA — xanh là xong, đỏ là còn nợ việc */}
+        {b.status === "confirmed" &&
+          (b.otaLockedAt ? (
+            <span
+              className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800"
+              title={`Đã đóng phòng trên các OTA${b.otaLockedBy ? ` — ${b.otaLockedBy} xác nhận` : ""} (${formatDateKeyVN(b.otaLockedAt.slice(0, 10))}). Bấm nếu muốn gỡ dấu.`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onAct(b.id, "ota-unlock", {})}
+            >
+              🔒 đã đóng OTA
+            </span>
+          ) : b.checkOut >= todayInVN() ? (
+            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700" title="Chưa đóng phòng trên các trang OTA — xem khối nhắc đầu trang">
+              🔓 chưa đóng OTA
+            </span>
+          ) : null)}
         <span className="ml-auto text-right">
           <span className="block text-sm font-bold tabular-nums text-slate-900">{formatVND(b.amount)}</span>
           {b.prepaid ? (

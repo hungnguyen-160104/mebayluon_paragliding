@@ -97,7 +97,7 @@ export async function PATCH(req: Request) {
     if (action === "sync-mail") {
       return NextResponse.json({ sync: await syncHomestayMail() });
     }
-    const ACTIONS = ["assign-room", "cancel", "restore", "confirm-review", "collect", "note", "rename", "quick-edit", "delete"] as const;
+    const ACTIONS = ["assign-room", "cancel", "restore", "confirm-review", "collect", "note", "rename", "quick-edit", "delete", "ota-lock", "ota-unlock"] as const;
     if (!ACTIONS.includes(action as (typeof ACTIONS)[number])) {
       return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
     }

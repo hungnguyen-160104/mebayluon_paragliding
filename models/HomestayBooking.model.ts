@@ -70,6 +70,17 @@ export interface IHomestayBooking {
   createdByUsername?: string;
   createdByName?: string;
 
+  /**
+   * ĐÃ ĐÓNG PHÒNG TRÊN CÁC TRANG OTA cho các đêm của đơn này chưa.
+   *
+   * Nhà bán phòng trên nhiều kênh (Agoda, Booking, Trip…) mà không nối
+   * channel manager: mỗi đơn mới về là NGƯỜI phải vào từng trang OTA đóng
+   * phòng bằng tay, quên là hai khách trùng một giường. Cờ này không đóng hộ
+   * được — nó là cái NHẮC: đơn chưa đóng thì đập vào mắt trên trang sổ phòng,
+   * bấm "Đã khoá" mới thôi.
+   */
+  otaLockedAt?: Date;
+  otaLockedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -101,6 +112,8 @@ const HomestayBookingSchema = new Schema<IHomestayBooking>(
     collected: { type: Number, default: 0 },
 
     status: { type: String, enum: ["confirmed", "cancelled", "review"], default: "confirmed", index: true },
+    otaLockedAt: Date,
+    otaLockedBy: String,
     reviewReason: String,
     raw: String,
 

@@ -62,12 +62,13 @@ const dm = (key: string) => formatDateKeyVN(key).slice(0, 5);
  * mỗi phòng nằm được mấy người mà nhân lên.
  */
 const SLEEPS_VI: Record<string, string> = {
-  "double-room": "mỗi phòng ngủ 2 người lớn + 1 trẻ em",
-  "single-room": "mỗi phòng ngủ 1 người lớn + 1 trẻ em, hoặc 2 người lớn nhưng hơi chật",
+  "double-room": "mỗi phòng ngủ 2 người lớn + 1 trẻ em dưới 8 tuổi",
+  "single-room": "mỗi phòng ngủ 1 người lớn + 1 trẻ em dưới 8 tuổi, hoặc 2 người lớn nhưng hơi chật",
   "couple-attic-single": "mỗi phòng ngủ tối đa 2 người lớn (một cặp đôi)",
-  "couple-attic-double": "ngủ 3 người lớn + 1 trẻ em",
+  "couple-attic-double": "ngủ 3 người lớn + 1 trẻ em dưới 8 tuổi",
   "whole-home-small": "ngủ tối đa 5 người lớn, phòng khép kín",
-  dormitory: "mỗi chỗ là 1 đệm đơn cho 1 người lớn; sàn có tối đa 12 đệm, ở thoải mái nhất là 10 người",
+  dormitory:
+    "mỗi chỗ là 1 đệm đơn cho 1 người lớn; trẻ nhỏ tới 5 tuổi ngủ ghép được, trẻ TRÊN 5 tuổi phải lấy 1 đệm riêng; sàn có tối đa 12 đệm, ở thoải mái nhất là 10 người",
   "floor-combo": "cả gói chứa tối đa 30 người, thoải mái nhất 24 người",
   "whole-home-large": "cả gói chứa tối đa 36 người, thoải mái nhất 30 người",
 };
@@ -188,7 +189,8 @@ export async function buildLiveDataBlock(): Promise<string> {
       "- Phòng: trả lời còn/hết theo đúng số trên; khách muốn đặt thì gửi link https://www.mebayluon.com/homestay/dat-phong (đặt online, thanh toán khi nhận phòng).\n" +
       "- CÁCH ĐỌC: khách hỏi đêm nào thì tìm dòng 'Đêm dd/MM' của đúng đêm đó — dòng ấy ghi TRỌN trạng thái: sau chữ CÒN là các phòng còn trống kèm số lượng, sau chữ HẾT là các phòng đã kín. Đêm KHÔNG có dòng nào = mọi phòng còn đủ. CHỈ được dùng đúng dòng của đêm khách hỏi, TUYỆT ĐỐI không nói còn phòng nào nằm sau chữ HẾT của dòng đó.\n" +
       "- PHẢI ĐỐI CHIẾU SỐ NGƯỜI, đừng chỉ nói còn hay hết phòng: khách đi mấy người thì cộng sức chứa của các phòng CÒN TRỐNG đêm đó rồi so với số khách. Ví dụ khách 10 người mà 01/09 chỉ còn 2 phòng giường đôi thì trả lời: \"em còn 2 phòng giường đôi, mỗi phòng chỉ ngủ được 2 người lớn + 1 trẻ em, nên 10 người e rằng không đủ chỗ ạ\", rồi gợi ý phương án khác CÒN TRỐNG đêm đó (ghép thêm hạng phòng khác, chỗ nằm sàn cộng đồng, hoặc gói bao sàn / bao nguyên nhà sàn). Không đủ thì nói thật là không đủ — tuyệt đối không hứa liều rồi để khách đến nơi mới biết.\n" +
-      `- TRẺ EM tính theo CÂN NẶNG: dưới ${CHILD_MAX_KG}kg (thường 5-10 tuổi) mới là trẻ em, nặng hơn tính như người lớn vì chiếm trọn một chỗ nằm. Trẻ nhỏ ngủ ghép cùng bố mẹ trong đúng sức chứa ghi trên.\n` +
+      "- TRẺ EM Ở PHÒNG tính theo TUỔI: DƯỚI 8 TUỔI mới là trẻ em (ngủ ghép trong đúng sức chứa ghi trên); TỪ 8 TUỔI TRỞ LÊN tính như một NGƯỜI LỚN vì chiếm trọn một chỗ nằm. Ví dụ 2 người lớn + 1 con 17 tuổi là 3 NGƯỜI LỚN — một phòng đôi không đủ, phải tư vấn lấy thêm phòng hoặc hạng rộng hơn. Riêng sàn cộng đồng: trẻ TRÊN 5 tuổi phải mua 1 đệm riêng.\n" +
+      `- TRẺ EM ĐI BAY (khác luật phòng) tính theo CÂN NẶNG: dưới ${CHILD_MAX_KG}kg mới bay suất trẻ em, nặng hơn tính suất người lớn.\n` +
 
       "- Bay: KHÔNG có giới hạn chỗ, TUYỆT ĐỐI không từ chối khách vì đông. Cơ chế như LẤY SỐ Ở NGÂN HÀNG: đặt trước thì được cấp số thứ tự, đến ngày bay gọi theo số — số càng nhỏ càng đỡ chờ. Khách hỏi ngày nào đó đông không / phải đợi lâu không: đọc số book của ngày đó ở trên, nói thật mức độ (ít / bình thường / ĐÔNG). CHỈ những ngày có ghi 'số kế tiếp #N' ở trên (Khau Phạ mùa đông khách) mới được nói số thứ tự họ sẽ nhận nếu đặt ngay; ngày/điểm không ghi số thì tuyệt đối không nhắc đến số thứ tự, chỉ nói mức độ đông. Ngày ĐÔNG thì khuyên đặt sớm để lấy số nhỏ, kèm trấn an: hoàn/huỷ/đổi lịch/đổi lựa chọn đều MIỄN PHÍ nên đặt trước không phải lo lắng gì.\n" +
       "- TUYỆT ĐỐI không nhắc tên, số điện thoại hay bất kỳ chi tiết nào của khách khác. Khách hỏi về booking CỦA HỌ thì mời gọi hotline để nhân viên tra giúp.\n" +
