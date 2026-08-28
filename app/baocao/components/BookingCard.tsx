@@ -3706,6 +3706,7 @@ export function BookingCard({
   const [done, setDone] = useState<string | null>(null);
   /** Booking vừa lưu xong VÀ còn thay đổi chưa báo khách — để bày nút gửi mail. */
   const [needMail, setNeedMail] = useState<BookingDTO | null>(null);
+  const [sendingMail, setSendingMail] = useState(false);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
   /**
@@ -4029,7 +4030,8 @@ export function BookingCard({
     }
   }
 
-  async function save() {
+  /** Trả về id booking vừa lưu — nút "Gửi email" cần nó để gửi ngay sau khi lưu. */
+  async function save(): Promise<string | null> {
     setError(null);
     setDone(null);
     /**
@@ -4038,7 +4040,7 @@ export function BookingCard({
      */
     if (form.guestCount === 0 && serviceTotalCount > 0) {
       setError("Chưa nhập số khách — dịch vụ tối đa bằng số khách.");
-      return;
+      return null;
     }
     const overService = ([
       ["Flycam", form.flycam],
@@ -4050,7 +4052,7 @@ export function BookingCard({
     ] as Array<[string, number]>).find(([, n]) => n > form.guestCount);
     if (overService) {
       setError(`${overService[0]}: ${overService[1]} suất nhưng chỉ có ${form.guestCount} khách.`);
-      return;
+      return null;
     }
     /**
      * Giờ dự kiến đã qua chỉ chặn khi NHẬP MỚI (gõ nhầm 07:00 thay vì 17:00).
@@ -4059,7 +4061,7 @@ export function BookingCard({
      */
     if (!editingId && form.flightDate === todayInVN() && form.expectedTime && form.expectedTime < nowHHMMVN()) {
       setError(`Giờ dự kiến ${form.expectedTime} đã qua (bây giờ là ${nowHHMMVN()}) — sửa giờ rồi lưu.`);
-      return;
+      return null;
     }
     /**
      * KHÔNG bắt chọn người thu. Lúc nhận booking thường chưa biết hôm đó ai
@@ -4101,6 +4103,7 @@ export function BookingCard({
           collectorNote: "",
         });
       }
+      let savedId: string | null = editingId;
       if (editingId) {
         const res = await apiPut<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${editingSpot || spot}`, {
           id: editingId,
@@ -4126,6 +4129,7 @@ export function BookingCard({
          * Muốn nhập khách mới thì bấm nút "Nhập booking mới" bên cạnh.
          */
         if (created?.booking?.id) {
+          savedId = created.booking.id;
           setEditingId(created.booking.id);
           setEditingCreatedAt(created.booking.createdAt || "");
           setEditingSpot(bookSpot);
@@ -4149,8 +4153,10 @@ export function BookingCard({
       // Giữ nguyên số liệu đang hiện — xoá trắng là việc của nút "Nhập booking mới"
       load();
       onChanged?.();
+      return savedId;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không lưu được booking");
+      return null;
     } finally {
       setSaving(false);
     }
@@ -4930,8 +4936,8 @@ export function BookingCard({
           </ul>
           {needMail.email ? (
             <p className="mt-2 text-[11px] leading-tight text-amber-800">
-              Bấm <strong>✉ Gửi mail báo khách</strong> cạnh nút Cập nhật ở cuối form. Không cần báo thì cứ
-              bỏ qua — app không tự gửi; nút vẫn nằm trên dòng booking cho tới khi gửi.
+              Bấm <strong>✉ Gửi email</strong> cạnh nút Cập nhật ở cuối form. Không cần báo thì cứ bỏ qua —
+              app không tự gửi; nút vẫn nằm trên dòng booking cho tới khi gửi.
             </p>
           ) : (
             <p className="mt-2 text-xs font-semibold text-amber-900">
@@ -5018,24 +5024,41 @@ export function BookingCard({
             nhất cho biết máy chủ đã nhận */}
         <DoneTag show={justSaved}>{justSavedEdit ? "Đã cập nhật" : "Đã lưu"}</DoneTag>
         {/**
-         * GỬI MAIL BÁO KHÁCH đứng NGAY CẠNH nút Cập nhật.
+         * NÚT "GỬI EMAIL" đứng CẠNH nút Lưu/Cập nhật — LUÔN hiện khi ô email
+         * có địa chỉ, không chỉ khi có thay đổi chờ báo.
          *
-         * Sửa xong là hai việc liền nhau: lưu, rồi báo khách. Để nút gửi ở chỗ
-         * khác thì người ta lưu xong đóng form, và khách không bao giờ được
-         * báo. Vẫn không tự gửi — nhiều thay đổi chẳng cần báo ai, nên đây là
-         * nút chứ không phải hệ quả của việc bấm Lưu.
-         *
-         * Tự ẩn khi không có gì phải báo.
+         * Bấm là LƯU trước rồi GỬI: gửi bản chưa lưu thì thư kể trạng thái cũ.
+         * Booking có thay đổi chờ báo → thư kể các thay đổi; không có (vừa
+         * nhập xong, hoặc chỉ muốn gửi lại) → thư XÁC NHẬN toàn bộ đặt chỗ.
+         * Vẫn KHÔNG tự gửi — nhiều lần sửa chẳng cần báo ai.
          */}
-        {needMail && (
-          <NotifyGuestControl
-            spot={editingSpot || spot}
-            booking={needMail}
-            onDone={(m) => {
-              setDone(m ?? null);
-              setNeedMail(null);
+        {form.email.trim() !== "" && (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={saving || sendingMail}
+            className="h-11 flex-1 whitespace-nowrap border-amber-400 bg-amber-50 px-2 text-sm font-bold text-amber-900"
+            title={`Lưu booking rồi gửi thư tới ${form.email} — có thay đổi chưa báo thì thư kể thay đổi, không thì gửi bản xác nhận đặt chỗ`}
+            onClick={async () => {
+              setSendingMail(true);
+              try {
+                const id = await save();
+                if (!id) return; // lưu hỏng thì lỗi đã hiện, đừng gửi thư của bản cũ
+                await apiPatch(`/api/baocao/booking?spot=${editingSpot || bookSpot}`, {
+                  id,
+                  action: "notify-guest",
+                });
+                setNeedMail(null);
+                setDone(`✓ Đã lưu và gửi thư tới ${form.email}.`);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Không gửi được thư");
+              } finally {
+                setSendingMail(false);
+              }
             }}
-          />
+          >
+            {sendingMail ? "Đang gửi…" : "✉ Gửi email"}
+          </Button>
         )}
         {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
         <Button

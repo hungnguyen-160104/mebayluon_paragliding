@@ -351,6 +351,8 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     source: ota === "klook" ? "Klook" : ota.toUpperCase(),
     contactName: parsed.leadName || parsed.guests[0]?.fullName || "khách OTA",
     phone: parsed.leadPhone,
+    // Email khách Klook gửi kèm — app dùng để gửi thư báo khi booking thay đổi
+    email: String(parsed.leadEmail ?? "").trim().toLowerCase(),
     bookingCode: parsed.ref,
     otaRef: parsed.ref,
     otaName: ota,
@@ -500,6 +502,13 @@ export async function approveOtaEmail(
     remaining: 0,
     depositToCompany: false,
     transferCode: "",
+    /**
+     * Email khách từ thư OTA thành TRƯỜNG RIÊNG — chỗ app gửi thư báo khi
+     * booking thay đổi. Vẫn chép cả vào ghi chú như trước cho người đọc,
+     * nhưng nằm trong note thì máy không dùng được (đúng bài học của phần
+     * đồng bộ web, xem services/baobay-web-sync.service.ts).
+     */
+    email: String(draft.email ?? "").trim().toLowerCase(),
     note: [
       Array.isArray(draft.weights) && draft.weights.length ? `cân nặng ${draft.weights.join("/")}kg` : "",
       draft.hotel ? `đón: ${draft.hotel}` : "",

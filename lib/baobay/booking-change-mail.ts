@@ -278,6 +278,93 @@ export function buildBookingChangeMail(
   return { subject, html, text };
 }
 
+/**
+ * THƯ XÁC NHẬN ĐẶT CHỖ — gửi khi booking KHÔNG có thay đổi nào đang chờ báo.
+ *
+ * Nút "✉ Gửi email" đứng cạnh nút Lưu ở form booking: booking vừa nhập xong
+ * thì chưa có gì "thay đổi" để kể, nhưng khách vẫn cần một bản xác nhận cầm
+ * tay (nhất là khách đặt qua điện thoại — họ chưa nhận được gì bằng chữ).
+ * Cùng bảng hiện trạng với thư báo thay đổi, chỉ khác lời mở đầu và tiêu đề.
+ */
+export function buildBookingConfirmMail(info: BookingMailInfo, now: BookingSnapshot): BuiltMail {
+  const ngay = dmy(now.flightDate);
+  const subject = `Xác nhận đặt chỗ ${ngay}${info.bookingCode ? ` · ${info.bookingCode}` : ""} / Booking confirmation`;
+
+  const n = (v: unknown) => Math.max(0, Math.round(Number(v) || 0));
+  const vnd = (x: number) => `${Math.round(x).toLocaleString("vi-VN")} đ`;
+  const usdish = (x: number) => `${Math.round(x).toLocaleString("en-US")} VND`;
+  const conLai = n(now.remaining);
+  const dichVu = (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+    .filter((k) => n((now as Record<string, unknown>)[k]) > 0)
+    .map((k) => `${SERVICE_LABEL[k].vi} × ${n((now as Record<string, unknown>)[k])}`)
+    .join(", ");
+
+  const text = ([
+    `Kính gửi ${info.guestName || "quý khách"},`,
+    ``,
+    `Đặt chỗ bay dù lượn của quý khách tại ${info.spotName} đã được ghi nhận:`,
+    ``,
+    `Ngày bay: ${ngay}${now.expectedTime ? ` · giờ hẹn ${now.expectedTime}` : ""}`,
+    `Số khách: ${n(now.guestCount)}`,
+    dichVu ? `Dịch vụ kèm: ${dichVu}` : null,
+    `Tổng tiền: ${vnd(n(now.totalAmount))}`,
+    `Đã thanh toán: ${vnd(n(now.deposit))}`,
+    conLai > 0 ? `Còn lại phải trả: ${vnd(conLai)}` : `Đã thanh toán đủ.`,
+    ``,
+    `Nếu có chỗ nào chưa đúng, xin liên hệ ngay ${info.hotline}.`,
+    ``,
+    `— — — — —`,
+    ``,
+    `Dear ${info.guestName || "guest"},`,
+    ``,
+    `Your paragliding booking at ${info.spotName} is confirmed:`,
+    ``,
+    `Date: ${ngay}${now.expectedTime ? ` · meeting at ${now.expectedTime}` : ""}`,
+    `Guests: ${n(now.guestCount)}`,
+    `Total: ${usdish(n(now.totalAmount))}`,
+    `Paid: ${usdish(n(now.deposit))}`,
+    conLai > 0 ? `Balance due: ${usdish(conLai)}` : `Fully paid.`,
+    ``,
+    `If anything looks wrong, please contact us at ${info.hotline}.`,
+    ``,
+    `mebayluon.com`,
+  ] as Array<string | null>)
+    .filter((line): line is string => line !== null)
+    .join("\n");
+
+  const html = `
+<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#0f172a;max-width:560px">
+  <p style="margin:0 0 12px">Kính gửi <strong>${esc(info.guestName || "quý khách")}</strong>,</p>
+  <p style="margin:0 0 12px">Đặt chỗ bay dù lượn của quý khách tại <strong>${esc(info.spotName)}</strong> đã được ghi nhận.</p>
+  <table style="border-collapse:collapse;font-size:14px;margin:0 0 14px">
+    <tr><td style="padding:2px 12px 2px 0;color:#475569">Ngày bay</td><td style="padding:2px 0"><strong>${esc(ngay)}</strong>${
+      now.expectedTime ? ` · giờ hẹn <strong>${esc(now.expectedTime)}</strong>` : ""
+    }</td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#475569">Số khách</td><td style="padding:2px 0">${n(now.guestCount)}</td></tr>
+    ${dichVu ? `<tr><td style="padding:2px 12px 2px 0;color:#475569">Dịch vụ kèm</td><td style="padding:2px 0">${esc(dichVu)}</td></tr>` : ""}
+    <tr><td style="padding:2px 12px 2px 0;color:#475569">Tổng tiền</td><td style="padding:2px 0"><strong>${esc(vnd(n(now.totalAmount)))}</strong></td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#475569">Đã thanh toán</td><td style="padding:2px 0">${esc(vnd(n(now.deposit)))}</td></tr>
+    <tr><td style="padding:2px 12px 2px 0;color:#475569">Còn lại</td><td style="padding:2px 0">${
+      conLai > 0 ? `<strong style="color:#b91c1c">${esc(vnd(conLai))}</strong>` : "đã thanh toán đủ"
+    }</td></tr>
+  </table>
+  <p style="margin:0 0 16px;color:#475569">Nếu có chỗ nào chưa đúng, xin liên hệ ngay <strong>${esc(info.hotline)}</strong>.</p>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0">
+  <p style="margin:0 0 12px">Dear <strong>${esc(info.guestName || "guest")}</strong>,</p>
+  <p style="margin:0 0 8px">Your paragliding booking at <strong>${esc(info.spotName)}</strong> is confirmed.</p>
+  <p style="margin:0 0 4px;font-size:14px;color:#475569">Date <strong>${esc(ngay)}</strong>${
+    now.expectedTime ? ` · meeting at <strong>${esc(now.expectedTime)}</strong>` : ""
+  } · Guests <strong>${n(now.guestCount)}</strong></p>
+  <p style="margin:0 0 14px;font-size:14px;color:#475569">Total <strong>${esc(usdish(n(now.totalAmount)))}</strong> · Paid ${esc(
+    usdish(n(now.deposit)),
+  )} · ${conLai > 0 ? `Balance due <strong style="color:#b91c1c">${esc(usdish(conLai))}</strong>` : "fully paid"}</p>
+  <p style="margin:0 0 16px;color:#475569">If anything looks wrong, please contact us at <strong>${esc(info.hotline)}</strong>.</p>
+  <p style="margin:0;color:#94a3b8;font-size:12px">mebayluon.com</p>
+</div>`;
+
+  return { subject, html, text };
+}
+
 /** Chèn chữ của khách vào HTML thì phải rào — tên khách có thể chứa &, <, >. */
 function esc(s: string): string {
   return String(s ?? "")

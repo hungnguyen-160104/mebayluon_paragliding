@@ -34,6 +34,7 @@ import { clearQueueNoOnWeb, pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
 import {
   buildBookingChangeMail,
+  buildBookingConfirmMail,
   diffBooking,
   type BookingSnapshot,
 } from "@/lib/baobay/booking-change-mail";
@@ -223,28 +224,30 @@ export async function sendBookingChangeMail(
   const to = String(doc.email || "").trim();
   if (!to) throw new BaobayError('Booking chưa có email khách — sửa booking, điền ô "Email khách" rồi gửi', 400);
 
+  /**
+   * Có thay đổi chờ báo thì gửi thư THAY ĐỔI; không có thì gửi thư XÁC NHẬN
+   * toàn bộ booking. Trước đây không có gì chờ là báo lỗi — nghe hợp lý mà
+   * sai việc: booking VỪA NHẬP xong không có "thay đổi" nào, trong khi đó
+   * chính là lúc khách cần một bản xác nhận bằng chữ nhất.
+   */
   const changes = pendingChangesOf(doc);
-  if (changes.length === 0) {
-    throw new BaobayError("Booking này không có thay đổi nào chưa báo khách", 400);
-  }
-
-  const mail = buildBookingChangeMail(
-    {
-      guestName: doc.contactName || "",
-      bookingCode: doc.bookingCode || "",
-      spotName: spotName(spot),
-      hotline: BOOKING_HOTLINE,
-    },
-    changes,
-    bookingSnapshot(doc),
-  );
+  const info = {
+    guestName: doc.contactName || "",
+    bookingCode: doc.bookingCode || "",
+    spotName: spotName(spot),
+    hotline: BOOKING_HOTLINE,
+  };
+  const mail =
+    changes.length > 0
+      ? buildBookingChangeMail(info, changes, bookingSnapshot(doc))
+      : buildBookingConfirmMail(info, bookingSnapshot(doc));
   if (!mail) throw new BaobayError("Không dựng được nội dung thư", 400);
 
   const entry: Record<string, unknown> = {
     at: new Date(),
     by: session?.name || session?.username || "",
     to,
-    changes: changes.map((c) => c.vi),
+    changes: changes.length > 0 ? changes.map((c) => c.vi) : ["Thư xác nhận đặt chỗ (toàn bộ thông tin hiện tại)"],
     ok: true,
     error: "",
   };
