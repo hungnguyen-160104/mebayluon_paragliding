@@ -23,6 +23,9 @@ import { roomNameOf } from "@/lib/homestay-room-names";
 import { CLUBHOUSE_MAP_URL } from "@/lib/spot-partner-links";
 const HOMESTAY_MAP_URL = CLUBHOUSE_MAP_URL;
 
+/** Số A Mặc — người đón khách đêm ở ngã ba Bản Lìm, KHÁC hotline công ty. */
+const A_MAC_PHONE = "0337 632 532";
+
 export type HomestayConfirmInput = {
   lang: HomestayLang;
   ref: string;
@@ -302,7 +305,7 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
    */
   const coNhaSan = input.lines.some((l) => l.roomTypeId !== "whole-home-small");
   const luuY = [...w.prepItems, ...(coNhaSan ? w.stiltItems : [])];
-  const duong = w.directions(input.phone);
+  const duong = w.directions(A_MAC_PHONE);
   const ngay = `${dmy(input.checkIn)} ${input.checkInTime} → ${dmy(input.checkOut)} ${input.checkOutTime} (${w.nights(
     input.nights,
   )})`;

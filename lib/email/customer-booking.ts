@@ -635,20 +635,20 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
 
   const pickupNoteHtml = pickup.hasPickup
     ? `<tr><td style="padding:8px 0 0;">
-        <div style="background:#EAF4FE;border-radius:8px;padding:9px 12px;font-size:13px;color:${C.blueDark};line-height:1.5;">⏱️ ${esc(t.pickupNote)}</div>
+        <div style="background:#EAF4FE;border-radius:8px;padding:9px 12px;font-size:14px;color:${C.blueDark};line-height:1.5;">⏱️ ${esc(t.pickupNote)}</div>
       </td></tr>`
     : "";
 
   /* ---------- khách bay ---------- */
   const th = (label: string) =>
-    `<th align="left" style="padding:6px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${C.soft};border-bottom:1px solid ${C.line};">${esc(label)}</th>`;
+    `<th align="left" style="padding:6px 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${C.soft};border-bottom:1px solid ${C.line};">${esc(label)}</th>`;
   const td = (value: string, bold = false) =>
-    `<td style="padding:7px 8px;font-size:13px;color:${C.ink};border-bottom:1px solid ${C.line};${bold ? "font-weight:600;" : ""}">${esc(value || "—")}</td>`;
+    `<td style="padding:7px 8px;font-size:14px;color:${C.ink};border-bottom:1px solid ${C.line};${bold ? "font-weight:600;" : ""}">${esc(value || "—")}</td>`;
 
   const guestRows = guests
     .map(
       (g, i) => `<tr>
-        <td style="padding:7px 8px;font-size:13px;color:${C.blue};font-weight:700;border-bottom:1px solid ${C.line};">${i + 1}</td>
+        <td style="padding:7px 8px;font-size:14px;color:${C.blue};font-weight:700;border-bottom:1px solid ${C.line};">${i + 1}</td>
         ${td(g.fullName || "", true)}
         ${td(g.dob || "")}
         ${td(g.gender || "")}
@@ -871,11 +871,11 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
           typeof input.paid === "number"
             ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">
                 <tr>
-                  <td style="padding:4px 14px;font-size:13px;color:${C.soft};">${esc(t.paidLabel)}</td>
-                  <td style="padding:4px 14px;font-size:13px;font-weight:700;text-align:right;color:${C.ink};">${money(input.paid)}</td>
+                  <td style="padding:4px 14px;font-size:14px;color:${C.soft};">${esc(t.paidLabel)}</td>
+                  <td style="padding:4px 14px;font-size:14px;font-weight:700;text-align:right;color:${C.ink};">${money(input.paid)}</td>
                 </tr>
                 <tr>
-                  <td style="padding:4px 14px;font-size:13px;color:${C.soft};">${esc(t.balanceLabel)}</td>
+                  <td style="padding:4px 14px;font-size:14px;color:${C.soft};">${esc(t.balanceLabel)}</td>
                   <td style="padding:4px 14px;font-size:14px;font-weight:800;text-align:right;color:${(input.balance ?? 0) > 0 ? "#B91C1C" : "#15803D"};">${
                     (input.balance ?? 0) > 0 ? money(input.balance) : esc(t.fullyPaid)
                   }</td>
@@ -918,7 +918,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         <div style="background:${C.bg};border-radius:10px;padding:16px;text-align:center;">
           <div style="font-size:14px;color:${C.soft};">${esc(t.contactIntro)}</div>
           <div style="font-size:18px;font-weight:800;color:${C.orange};margin-top:6px;">0964.073.555 &nbsp;•&nbsp; 0385.907.789</div>
-          <div style="font-size:13px;color:${C.soft};margin-top:4px;">Zalo &nbsp;•&nbsp; WhatsApp &nbsp;•&nbsp; www.mebayluon.com</div>
+          <div style="font-size:14px;color:${C.soft};margin-top:4px;">Zalo &nbsp;•&nbsp; WhatsApp &nbsp;•&nbsp; www.mebayluon.com</div>
         </div>
       </td></tr>
 
