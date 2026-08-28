@@ -16,7 +16,16 @@
  * Thứ tự trong mảng cũng là thứ tự hiện ở trang quản trị tài khoản.
  */
 
-export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "homestay", "admin"] as const;
+/**
+ * "tax" — KẾ TOÁN THUẾ, cố ý TÁCH KHỎI "accountant".
+ *
+ * Kế toán tổng hợp lo số vận hành hằng ngày; kế toán thuế chọn lọc booking để
+ * xuất hoá đơn VAT — không phải khách nào cũng xuất, và bảng xuất mang CCCD /
+ * hộ chiếu / mã số thuế của khách. Gộp chung một vai là mọi kế toán vận hành
+ * đều đọc được chỗ giấy tờ đó, nên tách vai: trang /baocao/thue chỉ mở cho
+ * "tax" (và quản trị).
+ */
+export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "tax", "homestay", "admin"] as const;
 
 export type BaobayRole = (typeof BAOBAY_ROLES)[number];
 
@@ -26,6 +35,7 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
   counter: "Quầy vé",
   cameraman: "Camera man",
   accountant: "Kế toán tổng hợp",
+  tax: "Kế toán thuế",
   homestay: "Quản homestay",
   admin: "Quản trị",
 };
@@ -63,6 +73,8 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
       ];
+    case "tax":
+      return [{ href: "/baocao/thue", label: "Kế toán thuế" }];
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
@@ -100,6 +112,7 @@ export const ROLE_HOME: Record<BaobayRole, string> = {
   counter: "/baocao/dieu-phoi",
   cameraman: "/baocao/camera",
   accountant: "/baocao/ke-toan",
+  tax: "/baocao/thue",
   homestay: "/baocao/homestay",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",

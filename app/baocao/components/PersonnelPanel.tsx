@@ -40,6 +40,7 @@ const SHORT_ROLE: Record<BaobayRole, string> = {
   counter: "Quầy vé",
   cameraman: "Camera",
   accountant: "Kế toán",
+  tax: "KT thuế",
   homestay: "Homestay",
   admin: "Quản trị",
 };
