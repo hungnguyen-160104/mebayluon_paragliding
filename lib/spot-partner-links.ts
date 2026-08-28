@@ -55,7 +55,7 @@ const SCHOOL_COURSES: SpotCourseLink[] = [
   { href: "/blog/khoa-hoc-du-luon-1-kem-1", labelKey: "courseOneOnOne" },
 ];
 
-const CLUBHOUSE_MAP_URL =
+export const CLUBHOUSE_MAP_URL =
   "https://www.google.com/maps/place/Clubhouse+Mebayluon+Paragliding/@21.7764187,104.2636752,1008m/data=!3m1!1e3!4m11!3m10!1s0x3132d86a65a88495:0x69a2a48b9f14bb71!5m2!4m1!1i2!8m2!3d21.7764187!4d104.2636752!9m1!1b1!16s%2Fg%2F11dxdh48gt!17m2!4m1!1e3!18m1!1e1?entry=ttu";
 
 const KHAU_PHA_TAKEOFF_MAP_URL =

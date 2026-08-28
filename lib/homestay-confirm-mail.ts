@@ -15,6 +15,14 @@
 import type { HomestayLang } from "@/lib/homestay-data";
 import { roomNameOf } from "@/lib/homestay-room-names";
 
+/**
+ * Vị trí nhà trên Google Maps — dùng ĐÚNG link hồ sơ Clubhouse đang nhúng
+ * trên web (lib/spot-partner-links.ts), không tự chế link rút gọn: link bịa
+ * mà chết là khách lạc đường giữa đêm. Link dài thì dài, nhưng bấm là tới.
+ */
+import { CLUBHOUSE_MAP_URL } from "@/lib/spot-partner-links";
+const HOMESTAY_MAP_URL = CLUBHOUSE_MAP_URL;
+
 export type HomestayConfirmInput = {
   lang: HomestayLang;
   ref: string;
@@ -62,6 +70,9 @@ type Words = {
    * vọng tiếng, vệ sinh chung, không hút thuốc trong nhà.
    */
   stiltItems: string[];
+  /** "Đường tới nhà" — chỉ đường theo hai cách đi, kèm số gọi đón đêm. */
+  directionsTitle: string;
+  directions: (phone: string) => string[];
 };
 
 const W: Record<HomestayLang, Words> = {
@@ -90,6 +101,11 @@ const W: Record<HomestayLang, Words> = {
       "Nhà vệ sinh dùng chung.",
       "Không hút thuốc trong nhà sàn; xin giữ gìn vệ sinh chung.",
     ],
+    directionsTitle: "Đường tới nhà",
+    directions: (phone) => [
+      `Đi XE KHÁCH: xuống xe tại NGÃ BA BẢN LÌM. Cần đón lúc nửa đêm thì liên hệ A Mặc ${phone} — gọi TRƯỚC KHI xuất phát.`,
+      "XE TỰ LÁI: từ ngã ba Bản Lìm rẽ xuống, đi thêm 800m tới bãi hạ cánh dù lượn — chính là Mebayluon Homestay.",
+    ],
     bye: "Hẹn gặp quý khách dưới chân đèo Khau Phạ!",
   },
   en: {
@@ -116,6 +132,11 @@ const W: Record<HomestayLang, Words> = {
       "The wooden stilt house carries sound easily — please walk gently, no running.",
       "Bathrooms are shared.",
       "No smoking inside the house; please help keep shared spaces clean.",
+    ],
+    directionsTitle: "Getting here",
+    directions: (phone) => [
+      `By BUS: get off at BAN LIM JUNCTION (Ngã ba Bản Lìm). For a late-night pick-up, contact Mr. A Mac at ${phone} — please call BEFORE you set off.`,
+      "SELF-DRIVING: at Ban Lim junction take the small road down, 800 m to the paragliding landing field — that is Mebayluon Homestay.",
     ],
     bye: "See you at the foot of Khau Pha pass!",
   },
@@ -144,6 +165,11 @@ const W: Record<HomestayLang, Words> = {
       "Salles de bain partagées.",
       "Interdiction de fumer à l’intérieur ; merci de garder les lieux propres.",
     ],
+    directionsTitle: "Comment venir",
+    directions: (phone) => [
+      `En BUS : descendez au CARREFOUR DE BAN LIM (Ngã ba Bản Lìm). Pour un accueil tard la nuit, contactez A Mac au ${phone} — appelez AVANT de partir.`,
+      "En VOITURE : au carrefour de Ban Lim, prenez la petite route qui descend, 800 m jusqu’au terrain d’atterrissage des parapentes — c’est le Mebayluon Homestay.",
+    ],
     bye: "À bientôt au pied du col de Khau Pha !",
   },
   ru: {
@@ -170,6 +196,11 @@ const W: Record<HomestayLang, Words> = {
       "Деревянный дом на сваях хорошо проводит звук — ходите, пожалуйста, тихо, не бегайте.",
       "Санузлы общие.",
       "Внутри дома не курят; поддерживайте, пожалуйста, чистоту.",
+    ],
+    directionsTitle: "Как добраться",
+    directions: (phone) => [
+      `На АВТОБУСЕ: выходите на РАЗВИЛКЕ БАН ЛИМ (Ngã ba Bản Lìm). Нужна встреча поздно ночью — свяжитесь с А Маком: ${phone}, позвоните ДО выезда.`,
+      "На МАШИНЕ: на развилке Бан Лим сверните на дорожку вниз, через 800 м — посадочное поле парапланов, это и есть Mebayluon Homestay.",
     ],
     bye: "Ждём вас у перевала Кхау Фа!",
   },
@@ -198,6 +229,11 @@ const W: Record<HomestayLang, Words> = {
       "卫生间为公用。",
       "屋内禁烟；请保持公共卫生。",
     ],
+    directionsTitle: "到达方式",
+    directions: (phone) => [
+      `乘坐大巴：在 BẢN LÌM 三岔路口（Ngã ba Bản Lìm）下车。深夜需要接送请联系 A Mặc：${phone}，请在出发前先打电话。`,
+      "自驾：在 Bản Lìm 三岔路口拐下小路，行驶 800 米即到滑翔伞着陆场——那里就是 Mebayluon Homestay。",
+    ],
     bye: "期待在克豪帕山口下与您相见！",
   },
   hi: {
@@ -224,6 +260,11 @@ const W: Record<HomestayLang, Words> = {
       "लकड़ी का स्टिल्ट हाउस आवाज़ जल्दी फैलाता है — कृपया धीरे चलें, दौड़ें नहीं।",
       "बाथरूम साझा हैं।",
       "घर के अंदर धूम्रपान वर्जित; कृपया सफ़ाई बनाए रखें।",
+    ],
+    directionsTitle: "पहुँचने का रास्ता",
+    directions: (phone) => [
+      `बस से: BẢN LÌM तिराहे (Ngã ba Bản Lìm) पर उतरें। देर रात पिक-अप चाहिए तो A Mặc से संपर्क करें: ${phone} — निकलने से पहले फ़ोन करें।`,
+      "सेल्फ़-ड्राइव: Bản Lìm तिराहे से नीचे की सड़क लें, 800 मीटर पर पैराग्लाइडिंग लैंडिंग फ़ील्ड — वही Mebayluon Homestay है।",
     ],
     bye: "खाउ फा दर्रे के नीचे मिलते हैं!",
   },
@@ -261,6 +302,7 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
    */
   const coNhaSan = input.lines.some((l) => l.roomTypeId !== "whole-home-small");
   const luuY = [...w.prepItems, ...(coNhaSan ? w.stiltItems : [])];
+  const duong = w.directions(input.phone);
   const ngay = `${dmy(input.checkIn)} ${input.checkInTime} → ${dmy(input.checkOut)} ${input.checkOutTime} (${w.nights(
     input.nights,
   )})`;
@@ -281,6 +323,10 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
     "",
     `${w.prepTitle.toUpperCase()}:`,
     ...luuY.map((x) => `- ${x}`),
+    "",
+    `${w.directionsTitle.toUpperCase()}:`,
+    `- Google Maps: ${HOMESTAY_MAP_URL}`,
+    ...duong.map((x) => `- ${x}`),
     "",
     `${w.address}: ${input.address}`,
     `${w.contact}: ${input.phone}`,
@@ -314,6 +360,12 @@ export function buildHomestayConfirmMail(input: HomestayConfirmInput): {
     <p style="margin:0 0 6px;font-weight:700;color:#0c4a6e">${esc(w.prepTitle)}</p>
     <ul style="margin:0;padding-left:18px;color:#0f172a;font-size:14px;line-height:1.6">
       ${luuY.map((x) => `<li>${esc(x)}</li>`).join("")}
+    </ul>
+  </div>
+  <div style="margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0">
+    <p style="margin:0 0 6px;font-weight:700;color:#14532d">📍 ${esc(w.directionsTitle)} — <a href="${HOMESTAY_MAP_URL}" style="color:#0369a1">Google Maps</a></p>
+    <ul style="margin:0;padding-left:18px;color:#0f172a;font-size:14px;line-height:1.6">
+      ${duong.map((x) => `<li>${esc(x)}</li>`).join("")}
     </ul>
   </div>
   <p style="margin:0 0 6px;color:#475569">${esc(w.changeNote)}</p>
