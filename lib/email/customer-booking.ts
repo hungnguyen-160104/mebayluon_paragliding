@@ -824,11 +824,18 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         input.update && input.update.changes.length > 0
           ? `${sectionTitle(t.sectionChanges)}
       <tr><td>
-        <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:11px 14px;">
+        <div style="background:${input.update.cancelled ? "#FEF2F2" : "#FFFBEB"};border:1px solid ${
+          input.update.cancelled ? "#FCA5A5" : "#FCD34D"
+        };border-radius:8px;padding:11px 14px;">
           ${input.update.changes
-            .map(
-              (c) =>
-                `<div style="font-size:14px;font-weight:600;color:#78350F;line-height:1.7;">• ${esc(c)}</div>`,
+            .map((c) =>
+              /**
+               * Dòng báo HUỶ nổi đỏ đậm — đó là dòng duy nhất khách không được
+               * phép đọc lướt qua; các thay đổi thường giữ màu nâu vàng.
+               */
+              /HUỶ|HỦY|CANCEL|ANNUL|ОТМЕН|取消|रद्द/i.test(c)
+                ? `<div style="font-size:15px;font-weight:800;color:#FFFFFF;background:#DC2626;border-radius:6px;padding:6px 10px;margin:2px 0;line-height:1.5;">• ${esc(c)}</div>`
+                : `<div style="font-size:14px;font-weight:600;color:#78350F;line-height:1.7;">• ${esc(c)}</div>`,
             )
             .join("")}
         </div>
