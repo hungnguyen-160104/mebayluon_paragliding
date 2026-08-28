@@ -103,6 +103,8 @@ type CloseSuggestion = {
   registeredGuests: number;
   /** Khách đã xác nhận bay trong sổ booking — đăng ký trừ huỷ/dời. */
   flownGuests: number;
+  /** Chuyến PPG phi công khai thêm ngoài sổ booking — vẫn là khách bay thật. */
+  pilotExtraPpg?: number;
   cancelledGuestEntries: Array<{
     /** Hoàn bằng CK (từ TK công ty) hay TM (nhân viên chi tại chỗ). */
     refundMethod?: "cash" | "transfer";
@@ -133,7 +135,7 @@ type CloseSuggestion = {
   redFlag: number;
   sunset: number;
   flagFlight: number;
-  pilot: { flights: number; ppg: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; ppg: number; ppgNoTicket?: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
   hasData: boolean;
 };
@@ -401,7 +403,13 @@ function DailyCloseInner() {
        *
        * Số quầy vẫn hiện ngay dưới ô để đối chiếu, bấm một cái là lấy lại.
        */
-      guestCount: suggest.flownGuests ?? suggest.guestCount,
+      /**
+       * + PPG phi công khai NGOÀI sổ booking: PPG hay bay không kịp lập
+       * booking (khách tới bãi hỏi bay luôn), sổ booking không có dòng nào để
+       * tích — điều phối cũng không nắm hết. Phi công đã khai thì chuyến đó là
+       * khách bay thật, phải vào số tổng trong ngày.
+       */
+      guestCount: (suggest.flownGuests ?? suggest.guestCount) + (suggest.pilotExtraPpg ?? 0),
       ticketsIssued: suggest.ticketsIssued,
       ticketsReturned: suggest.ticketsReturned,
       cancelledCount: suggest.cancelledCount,
@@ -875,8 +883,23 @@ function DailyCloseInner() {
               <CountInput compact value={form.guestCount} onChange={(v) => set("guestCount", v)} max={5000} />
               {/* Ba nguồn đối chiếu: sổ booking (đã tích đã bay), quầy đếm khách,
                   phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
-              <Compare label="sổ booking (đã bay)" value={suggest?.flownGuests} mine={form.guestCount}
-                onTake={locked ? undefined : (v) => set("guestCount", v)} />
+              <Compare
+                label={(suggest?.pilotExtraPpg ?? 0) > 0 ? "sổ booking + PPG phi công khai thêm" : "sổ booking (đã bay)"}
+                value={
+                  suggest?.flownGuests === undefined
+                    ? undefined
+                    : suggest.flownGuests + (suggest.pilotExtraPpg ?? 0)
+                }
+                mine={form.guestCount}
+                onTake={locked ? undefined : (v) => set("guestCount", v)}
+              />
+              {(suggest?.pilotExtraPpg ?? 0) > 0 && (
+                <p className="mt-0.5 rounded bg-amber-100 px-1.5 py-1 text-[10px] leading-tight text-amber-900">
+                  Phi công khai <strong>{suggest!.pilotExtraPpg}</strong> chuyến PPG KHÔNG có trong sổ
+                  booking (điều phối không nắm hết chuyến PPG là chuyện thường). Máy đã cộng vào số điền
+                  sẵn — nếu thực ra chuyến đó có booking rồi thì trừ tay lại.
+                </p>
+              )}
               {/**
                * SỐ QUẦY KHAI LÀ KHÁCH ĐĂNG KÝ, KHÔNG PHẢI KHÁCH ĐÃ BAY.
                *
@@ -891,7 +914,7 @@ function DailyCloseInner() {
                *  - Hà Nội (không vé): khách − khách huỷ.
                */}
               <Compare
-                label="quầy/điều phối báo (đã trừ huỷ)"
+                label="quầy báo (vé − thu hồi + bay không vé)"
                 value={(() => {
                   if (noTickets) {
                     const khach = t?.dispatcherGuests ?? suggest?.guestCount;
@@ -900,7 +923,13 @@ function DailyCloseInner() {
                   }
                   const xuat = t?.dispatcherIssued ?? suggest?.ticketsIssued;
                   const thuVe = t?.dispatcherReturned ?? suggest?.ticketsReturned ?? 0;
-                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe);
+                  /**
+                   * + khách bay KHÔNG VÉ (PPG là chính): quầy đếm bằng vé nên
+                   * chuyến không xé vé nằm ngoài phép đếm của họ — không cộng
+                   * lại đây thì dòng này đỏ lệch giả mỗi ngày có PPG không vé.
+                   */
+                  const khongVe = flown?.noTicketGuests ?? 0;
+                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe) + khongVe;
                 })()}
                 mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)}
@@ -918,6 +947,12 @@ function DailyCloseInner() {
             {!noTickets && (
               <ServiceBox tone="guests" label="Khách bay KHÔNG VÉ">
                 <CountInput compact value={form.noTicketGuests} onChange={(v) => set("noTicketGuests", v)} max={5000} />
+                <Compare
+                  label="phi công báo (PPG không vé)"
+                  value={suggest?.pilot?.hasData ? suggest.pilot.ppgNoTicket ?? 0 : undefined}
+                  mine={form.noTicketGuests}
+                  onTake={locked ? undefined : (v) => set("noTicketGuests", v)}
+                />
                 <Compare
                   label="sổ booking (tích không vé)"
                   value={flown?.noTicketGuests}

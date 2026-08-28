@@ -7903,6 +7903,19 @@ issuedRanges: Array<{ from: string; to: string }>;
   registeredGuests: number;
   /** Khách đã xác nhận bay (booking tích "đã bay") — đăng ký trừ huỷ/dời. */
   flownGuests: number;
+  /**
+   * Chuyến PPG PHI CÔNG KHAI THÊM ngoài sổ booking.
+   *
+   * PPG hay bay ngoài sổ: khách tới bãi hỏi bay luôn, phi công chở đi mà quầy
+   * và điều phối không kịp lập booking — sổ booking không có dòng nào để tích
+   * "đã bay". Trước đây "số khách đã bay" điền theo sổ booking nên NHỮNG
+   * CHUYẾN ẤY MẤT TÍCH khỏi số tổng trong ngày dù phi công đã khai đàng hoàng.
+   *
+   * = max(0, tổng ppgFlights phi công khai − khách PPG đã bay theo sổ booking).
+   * Lấy hiệu chứ không cộng thẳng để chuyến PPG CÓ trong sổ không bị đếm hai
+   * lần (một lần ở flownGuests, một lần ở đây).
+   */
+  pilotExtraPpg: number;
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
   rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
@@ -7925,6 +7938,8 @@ issuedRanges: Array<{ from: string; to: string }>;
     flights: number;
     /** Chuyến PPG — khách PPG cũng là khách bay, phải cộng vào "số khách" phía phi công. */
     ppg: number;
+    /** Trong số PPG trên, bao nhiêu chuyến KHÔNG xé vé (phi công tự khai). */
+    ppgNoTicket: number;
     flycam: number;
     video360: number;
     redFlag: number;
@@ -8408,6 +8423,14 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       bookings.filter((b) => b.status === "done"),
       (b) => b.guestCount,
     ),
+    /** Xem chú thích ở kiểu dữ liệu: chuyến PPG phi công khai mà sổ booking không có. */
+    pilotExtraPpg: (() => {
+      const bookingPpg = sum(
+        bookings.filter((b) => b.status === "done"),
+        (b) => (b.flightKind === "ppg" ? b.guestCount || 0 : b.ppgGuests || 0),
+      );
+      return Math.max(0, sum(pilots, (p) => p.ppgFlights ?? 0) - bookingPpg);
+    })(),
     cancelledGuestEntries: [
       ...dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
       ...bookingCancelEntries,
@@ -8479,6 +8502,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     pilot: {
       flights: sum(pilots, (p) => p.flightCount),
       ppg: sum(pilots, (p) => p.ppgFlights ?? 0),
+      ppgNoTicket: sum(pilots, (p) => p.ppgNoTicket ?? 0),
       flycam: sum(pilots, (p) => p.flycam),
       video360: sum(pilots, (p) => p.video360),
       redFlag: sum(pilots, (p) => p.redFlag),
