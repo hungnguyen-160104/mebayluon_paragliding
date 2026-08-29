@@ -353,6 +353,25 @@ export default function WaiverClient() {
     hour12: false,
   });
 
+  /**
+   * ĐANG MỞ TRONG TRÌNH DUYỆT CỦA ZALO?
+   *
+   * Link biên bản được gửi cho phi công qua Zalo là chính, mà WebView trong
+   * Zalo hay vỡ ở trang này: nó cắt bớt tính năng (canvas ký tay, tải PDF,
+   * lưu cookie) và vướng cả lớp chặn của Vercel — phi công báo "cứ bị lỗi"
+   * đúng kiểu ấy. Máy không tự nhảy ra Safari/Chrome hộ được (Zalo không cho),
+   * nên việc làm được là NÓI TO ngay đầu trang kèm nút chép link, hướng dẫn
+   * đúng nút ba chấm của Zalo.
+   *
+   * Đọc userAgent trong useEffect chứ không lúc render — trang này dựng sẵn
+   * trên máy chủ, đọc lúc render là hai bên vẽ khác nhau (lỗi hydration).
+   */
+  const [inZalo, setInZalo] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (/zalo/i.test(navigator.userAgent)) setInZalo(true);
+  }, []);
+
   /* =============================================================== */
   // pt-24: thanh menu của site là `fixed` cao h-20 — thiếu lề trên là nó đè lên tiêu đề
   return (
@@ -369,6 +388,31 @@ export default function WaiverClient() {
             Mỗi phi công ký một lần khi check-in — nhập mã đăng ký và số điện thoại để bắt đầu.
           </p>
         </header>
+
+        {inZalo && (
+          <div className="mb-4 rounded-2xl border-2 border-amber-400 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">
+              ⚠ Bạn đang mở trong Zalo — trang ký hay bị lỗi ở đây.
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-900">
+              Hãy mở bằng trình duyệt ngoài: bấm nút <strong>⋮</strong> (góc trên bên phải màn hình
+              Zalo) → chọn <strong>“Mở bằng trình duyệt”</strong>. Hoặc chép link rồi dán vào
+              Safari/Chrome:
+            </p>
+            <button
+              type="button"
+              className="mt-2 w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white active:bg-amber-600"
+              onClick={() => {
+                navigator.clipboard
+                  ?.writeText("https://www.mebayluon.com/muavang/mien-tru")
+                  .then(() => setCopied(true))
+                  .catch(() => setCopied(false));
+              }}
+            >
+              {copied ? "✓ Đã chép link — dán vào Safari/Chrome" : "📋 Chép link trang này"}
+            </button>
+          </div>
+        )}
 
         {error ? (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
