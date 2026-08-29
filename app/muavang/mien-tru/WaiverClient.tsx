@@ -122,12 +122,18 @@ export default function WaiverClient() {
       setEmail(r.waiverEmail || r.email || "");
       setEmgPhone(r.emergencyPhone || "");
       setEmgName(r.emergencyName || "");
-      // CHỈ khoản kế toán ĐÃ THỰC NHẬN ĐỦ (paidAmount >= phí) mới đi thẳng vào
-      // ký — theo lệnh chủ: mọi phi công chưa thu phí đều phải thấy nhắc nhở,
-      // kể cả người tự khai "đã chuyển khoản" hay bản ghi phí đang là 0đ.
+      /**
+       * LỆNH CHỦ 29/08/2026: BỎ HẾT nhắc nộp phí — mọi phi công đã đóng đủ,
+       * tra cứu xong là vào thẳng màn ký. (Đảo lại đúng lệnh cũ "ai chưa thu
+       * đủ đều phải thấy nhắc" của kỳ thu tiền; hai màn "pay"/"ppg" vẫn nằm
+       * nguyên trong mã cho mùa sau — đổi cờ dưới đây là nhắc lại.)
+       */
+      const SKIP_PAYMENT_REMINDERS = true;
       const settled = r.paidAmount !== null && r.paidAmount >= r.feeTotal;
       // PPG kéo cờ khai mạc được miễn phí (có điều kiện) — báo riêng, cho bỏ qua
-      setStep(settled ? "sign" : r.openingFlagFlight ? "ppg" : "pay");
+      setStep(
+        SKIP_PAYMENT_REMINDERS || settled ? "sign" : r.openingFlagFlight ? "ppg" : "pay",
+      );
     } catch {
       setError("Mạng chập chờn, vui lòng thử lại");
     } finally {
