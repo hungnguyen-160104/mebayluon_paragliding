@@ -21,7 +21,17 @@ import { PILOT_ADMIN_EMAIL_DEFAULT } from "@/lib/pilot-event";
 export function pilotAdminRecipients(): string[] {
   const raw = process.env.PILOT_ADMIN_EMAILS;
   const list = parseAdminEmails(raw);
-  return list.length ? list : [PILOT_ADMIN_EMAIL_DEFAULT];
+  /**
+   * Hộp CHỦ luôn có mặt trong danh sách nhận.
+   *
+   * Sự cố thật (30/08/2026): 22 phi công ký miễn trừ, thư BTC đều về
+   * dangky.mebayluon@gmail.com theo mặc định — chủ mở mebayluon@gmail.com
+   * không thấy thư nào, tưởng hệ thống chết. Thư nghiệp vụ sự kiện có thể
+   * đổi hộp bằng PILOT_ADMIN_EMAILS, nhưng chủ thì phải thấy bất kể cấu hình.
+   */
+  const out = list.length ? list : [PILOT_ADMIN_EMAIL_DEFAULT];
+  if (!out.includes("mebayluon@gmail.com")) out.push("mebayluon@gmail.com");
+  return out;
 }
 
 export type PilotSheetRow = {
