@@ -9484,10 +9484,65 @@ export async function getReconcile(
     .lean<any[]>();
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
 
+  /**
+   * VÉ MANG SANG giữa hai ngày kề (chỉ điểm bắt mã vé): nạp thêm ngày hôm
+   * trước và hôm sau để bộ soát tự khớp — khách dời lịch cầm nguyên vé cũ đi
+   * bay là chuyện thật (30/08/2026 quá đông), nhân viên chỉ ghi được số lượng.
+   * Xem luật ở lib/baobay/reconcile.ts (prevDay / nextDayCarried).
+   */
+  let prevDay: ReconcileInput["prevDay"];
+  let nextDayCarried: string[] = [];
+  if (spot === "khau-pha") {
+    const [prev, next] = await Promise.all([
+      loadDay(spot, shiftDateKey(date, -1)),
+      loadDay(spot, shiftDateKey(date, 1)),
+    ]);
+
+    const prevRanges = prev.close?.issuedRanges?.length
+      ? prev.close.issuedRanges
+      : prev.dispatchers.flatMap((d: any) => d.issuedRanges ?? []);
+    if (prevRanges.length) {
+      const prevBookingCancelled = await BaobayBooking.find({
+        spot,
+        flightDate: shiftDateKey(date, -1),
+        cancelTicketCodes: { $exists: true, $ne: [] },
+      })
+        .select("cancelTicketCodes")
+        .lean<any[]>();
+      prevDay = {
+        date: shiftDateKey(date, -1),
+        issuedRanges: prevRanges,
+        // Mã hôm trước ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời có mã
+        usedCodes: [
+          ...prev.pilots.flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
+          ...(prev.close?.cancelledCodes ?? []),
+          ...prev.dispatchers.flatMap((d: any) => d.cancelledCodes ?? []),
+          ...(prev.close?.rescheduled ?? []).map((r: any) => r.code),
+          ...prev.dispatchers.flatMap((d: any) => (d.rescheduled ?? []).map((r: any) => r.code)),
+          ...prevBookingCancelled.flatMap((b) => b.cancelTicketCodes ?? []),
+        ],
+      };
+    }
+
+    // Mã CỦA NGÀY NÀY được phi công NGÀY SAU khai — để soát lại ngày cũ hết "mã thiếu"
+    const ownRanges = close?.issuedRanges?.length
+      ? close.issuedRanges
+      : dispatchers.flatMap((d: any) => d.issuedRanges ?? []);
+    if (ownRanges.length) {
+      const ownSet = new Set(expandTicketRanges(ownRanges).codes);
+      nextDayCarried = next.pilots
+        .flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])])
+        .map((c: any) => String(c).trim().toUpperCase())
+        .filter((c: string) => ownSet.has(c));
+    }
+  }
+
   const input: ReconcileInput = {
     date,
     spot,
     bookingCancelledCodes,
+    prevDay,
+    nextDayCarried,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
     requireCodes: spot === "khau-pha",
     close: close

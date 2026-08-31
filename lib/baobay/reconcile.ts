@@ -58,7 +58,9 @@ export type IssueCode =
   | "THIEU_SO_KE_TOAN"
   | "CHUA_DUYET_CHI"
   | "DAI_MA_SAI"
-  | "DOI_LICH_SAI_NGAY";
+  | "DOI_LICH_SAI_NGAY"
+  | "VE_MANG_SANG"
+  | "VE_MANG_SANG_SAI";
 
 export type Issue = {
   code: IssueCode;
@@ -172,6 +174,27 @@ export type ReconcileInput = {
    * Bỏ trống = true để không đổi hành vi các nơi gọi cũ.
    */
   requireCodes?: boolean;
+  /**
+   * VÉ MANG SANG NGÀY SAU — chuyện có thật ngày 30/08/2026: quá đông, khách
+   * dời sang hôm sau nhưng CẦM NGUYÊN VÉ hôm trước đi bay, nhân viên chỉ ghi
+   * được số lượng + tên chứ không biết mã nào. Hai trường dưới cho bộ soát
+   * nhìn được sang hai ngày kề để tự khớp mã:
+   *
+   * `prevDay`: dải vé NGÀY HÔM TRƯỚC + những mã hôm trước ĐÃ CÓ CHỦ (đã bay /
+   * đã huỷ / đã thu hồi). Phi công hôm nay khai một mã nằm trong dải hôm trước
+   * mà hôm trước chưa ai dùng → đó là VÉ MANG SANG hợp lệ, không phải "mã lạ".
+   */
+  prevDay?: {
+    date: string;
+    issuedRanges: TicketRangeInput[];
+    usedCodes: string[];
+  };
+  /**
+   * Mã CỦA NGÀY NÀY đã được phi công NGÀY HÔM SAU khai bay (vé mang sang).
+   * Soát lại ngày cũ sau khi ngày mới có báo cáo: các mã này không còn là
+   * "mã thiếu" nữa — chúng đã bay, chỉ là bay muộn một ngày.
+   */
+  nextDayCarried?: string[];
   /** null khi kế toán chưa nhập số chốt cho ngày đó. */
   close: ReconcileClose | null;
   dispatchers: ReconcileDispatcher[];
@@ -206,6 +229,10 @@ export type ReconcileTotals = {
   cameramanFlycam: number;
   cancelled: number;
   rescheduled: number;
+  /** Vé xuất NGÀY TRƯỚC được bay hôm nay (khách dời cầm vé cũ). */
+  carriedIn: number;
+  /** Vé của ngày này đã bay Ở NGÀY SAU. */
+  carriedNext: number;
   expenseTotal: number;
 };
 
@@ -551,11 +578,32 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const unknownByPilot = new Map<string, string[]>();
   const notFlyableByPilot = new Map<string, string[]>();
 
+  /** Vé NGÀY HÔM TRƯỚC bay hôm nay — xem chú thích `prevDay` ở ReconcileInput. */
+  const prevSet = new Set(expandTicketRanges(input.prevDay?.issuedRanges ?? []).codes);
+  const prevUsed = new Set(
+    (input.prevDay?.usedCodes ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean),
+  );
+  const carriedIn: string[] = [];
+  const carriedButUsed = new Map<string, string[]>();
+
   for (const [c, whoList] of flownBy) {
     // Mã sai dạng đã báo riêng, không báo thêm là "mã lạ" cho cùng một lỗi.
     if (!TICKET_CODE_PATTERN.test(c)) continue;
 
     if (issuedSet.size && !issuedSet.has(c)) {
+      /**
+       * Không nằm trong dải HÔM NAY nhưng nằm trong dải HÔM TRƯỚC: khách dời
+       * lịch cầm vé cũ. Hôm trước mã đó CHƯA ai dùng → vé mang sang hợp lệ;
+       * hôm trước ĐÃ bay/huỷ rồi → vé chết mà lại bay lần nữa, phải đỏ.
+       */
+      if (prevSet.has(c)) {
+        if (prevUsed.has(c)) {
+          for (const u of whoList) carriedButUsed.set(u, [...(carriedButUsed.get(u) || []), c]);
+        } else {
+          carriedIn.push(c);
+        }
+        continue;
+      }
       for (const u of whoList) unknownByPilot.set(u, [...(unknownByPilot.get(u) || []), c]);
       continue;
     }
@@ -563,6 +611,29 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     if (cancelledSet.has(c) || rescheduledSet.has(c)) {
       for (const u of whoList) notFlyableByPilot.set(u, [...(notFlyableByPilot.get(u) || []), c]);
     }
+  }
+
+  if (carriedIn.length) {
+    flag({
+      code: "VE_MANG_SANG",
+      // Nhắc để kế toán biết mà đối chiếu với số khách dời hôm trước — không chặn chốt
+      severity: "warn",
+      message:
+        `${carriedIn.length} vé xuất ${input.prevDay ? formatDateKeyVN(input.prevDay.date) : "hôm trước"} được bay hôm nay ` +
+        `(khách dời lịch cầm vé cũ): ${short(carriedIn)}. Máy đã soát: mã nằm trong dải hôm trước và hôm trước chưa ai dùng.`,
+      who: [],
+      codes: carriedIn,
+    });
+  }
+  for (const [u, codes] of carriedButUsed) {
+    const name = pilots.find((p) => p.username === u)?.pilotName || u;
+    flag({
+      code: "VE_MANG_SANG_SAI",
+      severity: "red",
+      message: `${name} khai bay vé hôm trước nhưng mã đó HÔM TRƯỚC ĐÃ CÓ CHỦ (đã bay hoặc đã huỷ/thu hồi): ${short(codes)}`,
+      who: [u],
+      codes,
+    });
   }
 
   for (const [u, codes] of unknownByPilot) {
@@ -591,11 +662,31 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const bookingRecalled = new Set(
     (input.bookingCancelledCodes ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean),
   );
-  const missingCodes = requireCodes
+  const rawMissing = requireCodes
     ? issuedCodes.filter(
         (c) => !flownBy.has(c) && !cancelledSet.has(c) && !rescheduledSet.has(c) && !bookingRecalled.has(c),
       )
     : [];
+
+  /**
+   * Mã của ngày này đã BAY Ở NGÀY SAU (phi công hôm sau khai — xem
+   * `nextDayCarried`): không còn là "mã thiếu", nó đã có chủ, chỉ bay muộn.
+   */
+  const nextCarriedSet = new Set(
+    (input.nextDayCarried ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean),
+  );
+  const flownNextDay = rawMissing.filter((c) => nextCarriedSet.has(c));
+  const missingCodes = rawMissing.filter((c) => !nextCarriedSet.has(c));
+
+  if (flownNextDay.length) {
+    flag({
+      code: "VE_MANG_SANG",
+      severity: "warn",
+      message: `${flownNextDay.length} vé xuất hôm nay đã bay Ở NGÀY HÔM SAU (khách dời lịch cầm vé đi): ${short(flownNextDay)} — hai ngày đã tự khớp mã.`,
+      who: [],
+      codes: flownNextDay,
+    });
+  }
 
   if (missingCodes.length) {
     /**
@@ -604,12 +695,23 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
      * mã làm mọi phi công còn lại đều thấy báo đỏ trong báo cáo của mình — sai
      * người. Đây là việc của kế toán: nhìn dải mã rồi hỏi đúng người.
      */
+    /**
+     * ĐƯỢC THA THEO SỐ KHÁCH DỜI LỊCH CHƯA THU VÉ: nhân viên chỉ ghi được "N
+     * khách dời, cầm vé đi" chứ không biết mã nào (chuyện thật 30/08). Số mã
+     * thiếu không vượt quá N thì hạ xuống mức nhắc — chúng sẽ tự khớp khi ngày
+     * mai phi công khai mã (nhánh `flownNextDay` ở trên). Thiếu NHIỀU HƠN số
+     * khách dời thì phần dôi ra vẫn là mã mất tích, giữ đỏ.
+     */
+    const carriedBudget = Math.max(0, (close?.rescheduledCount ?? 0) - rescheduledSet.size);
+    const pardonable = missingCodes.length <= carriedBudget;
     flag({
       code: "MA_THIEU",
-      severity: "red",
-      message:
-        `${missingCodes.length} mã đã xuất mà không phi công nào khai đã bay, cũng không khai huỷ hay dời lịch: ` +
-        short(missingCodes),
+      severity: pardonable ? "warn" : "red",
+      message: pardonable
+        ? `${missingCodes.length} mã đã xuất chưa ai khai bay — khớp với ${carriedBudget} khách dời lịch cầm vé sang ngày sau (${short(missingCodes)}). Ngày mai phi công khai mã là hai ngày tự đối chiếu.`
+        : `${missingCodes.length} mã đã xuất mà không phi công nào khai đã bay, cũng không khai huỷ hay dời lịch: ` +
+          short(missingCodes) +
+          (carriedBudget > 0 ? ` (đã trừ ${carriedBudget} suất khách dời cầm vé — vẫn dôi ra)` : ""),
       who: [],
       codes: missingCodes,
     });
@@ -641,6 +743,8 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     pilotDiplomatic: sum(pilots, (p) => p.diplomaticGuests),
     cameramanFlycam: sum(cameramen, (c) => c.flycamFlights),
     cancelled: cancelledSet.size,
+    carriedIn: carriedIn.length,
+    carriedNext: flownNextDay.length,
     rescheduled: rescheduledSet.size,
     expenseTotal:
       sum(pilots, (p) => p.expenseTotal) +

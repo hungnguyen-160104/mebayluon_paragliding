@@ -914,7 +914,11 @@ function DailyCloseInner() {
                *  - Hà Nội (không vé): khách − khách huỷ.
                */}
               <Compare
-                label="quầy báo (vé − thu hồi + bay không vé)"
+                label={
+                  (t?.carriedIn ?? 0) > 0
+                    ? `quầy báo (vé − thu hồi + không vé + ${t!.carriedIn} vé hôm trước mang sang)`
+                    : "quầy báo (vé − thu hồi + bay không vé)"
+                }
                 value={(() => {
                   if (noTickets) {
                     const khach = t?.dispatcherGuests ?? suggest?.guestCount;
@@ -929,7 +933,13 @@ function DailyCloseInner() {
                    * lại đây thì dòng này đỏ lệch giả mỗi ngày có PPG không vé.
                    */
                   const khongVe = flown?.noTicketGuests ?? 0;
-                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe) + khongVe;
+                  /**
+                   * + VÉ MANG SANG: khách dời lịch hôm trước cầm vé cũ bay hôm
+                   * nay — vé ấy xuất Ở NGÀY TRƯỚC nên "vé xuất hôm nay" không
+                   * đếm được họ (bộ soát đã xác minh từng mã, xem VE_MANG_SANG).
+                   */
+                  const mangSang = t?.carriedIn ?? 0;
+                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe) + khongVe + mangSang;
                 })()}
                 mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)}
@@ -1034,7 +1044,9 @@ function DailyCloseInner() {
                          */}
                         {coVe > 0 ? (
                           <p className="mt-0.5 text-[10px] font-bold leading-tight text-rose-700">
-                            ⚠ {coVe} khách trong đó ĐÃ cầm vé — vé của họ phải được thu hồi và tính vào ô này
+                            ⚠ {coVe} khách trong đó ĐÃ cầm vé — hoặc thu hồi vé và tính vào ô này, hoặc
+                            khách CẦM VÉ CŨ sang ngày mới bay (ngày đông): khi đó để nguyên, mai phi công
+                            khai mã là máy tự đối chiếu vé giữa hai ngày
                           </p>
                         ) : (
                           <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
