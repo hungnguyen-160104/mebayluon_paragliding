@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { parseCccdQr, parseMrz, type ScannedPerson } from "@/lib/baobay/id-scan";
 
+import { apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, TextInput } from "./ui";
 
 /**
@@ -16,8 +17,11 @@ import { Banner, Button, CollapseCard, TextInput } from "./ui";
  *  - Hộ chiếu → đọc hai dòng MRZ ở đáy trang bằng OCR, có số kiểm tra nên đọc
  *    sai là báo ngay chứ không ghi bừa.
  *
- * Ảnh KHÔNG rời khỏi máy và KHÔNG được lưu ở đâu cả — chỉ giữ 5 trường vừa bóc,
- * đúng thứ cần cho bảo hiểm. Danh sách nằm trong bộ nhớ trang, đóng trang là hết.
+ * Hai đường đọc ấy chạy NGAY TRONG MÁY, ảnh không rời trình duyệt. Chỉ khi CẢ
+ * HAI trượt (ảnh Zalo nén, chụp nghiêng, QR mờ — đúng lời than "quét từ ảnh
+ * rất kém") thì ảnh mới được gửi lên máy chủ cho AI đọc, đọc xong là bỏ,
+ * không lưu ở đâu. Kết quả AI luôn kèm cảnh báo soát lại bằng mắt.
+ * Danh sách đã quét nằm trong bộ nhớ trang, đóng trang là hết.
  */
 export function IdScanCard({
   onPick,
@@ -32,7 +36,7 @@ export function IdScanCard({
   /** Bỏ vỏ thẻ tím (đã nằm trong khối khác rồi). */
   embedded?: boolean;
 } = {}) {
-  const [busy, setBusy] = useState<"" | "qr" | "ocr">("");
+  const [busy, setBusy] = useState<"" | "qr" | "ocr" | "ai">("");
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState<ScannedPerson | null>(null);
   const [list, setList] = useState<ScannedPerson[]>([]);
@@ -149,6 +153,16 @@ export function IdScanCard({
   }
 
   /**
+   * ĐƯỜNG CUỐI: gửi ảnh (đã thu nhỏ) cho AI đọc — chỉ chạy khi QR lẫn OCR đều
+   * trượt. Nén về JPEG trước cho nhẹ đường truyền; máy chủ chặn ảnh quá nặng.
+   */
+  async function aiRead(canvas: HTMLCanvasElement): Promise<ScannedPerson> {
+    const image = canvas.toDataURL("image/jpeg", 0.85);
+    const res = await apiPost<{ person: ScannedPerson }>(`/api/baocao/id-scan`, { image });
+    return res.person;
+  }
+
+  /**
    * Đọc ảnh theo ĐÚNG LOẠI GIẤY TỜ người dùng chọn.
    *
    * Trước đây gộp một nút: QR trượt là tự rơi xuống OCR — chờ chục giây rồi bóc
@@ -181,19 +195,39 @@ export function IdScanCard({
         const person2 = parseMrz(await readMrz(canvas));
         if (person2) return setCurrent(person2);
 
-        setError(
-          qr
-            ? "Đọc được mã QR nhưng không phải QR của CCCD gắn chip."
-            : "Chưa đọc được thẻ này. Cách chắc ăn nhất: chụp MẶT SAU thẻ, lấy trọn ba dòng chữ máy ở đáy (dòng có nhiều dấu <<<), để ngang, đủ sáng.",
-        );
-        return;
+        /**
+         * QR trượt, chữ máy cũng trượt — đưa AI đọc cả ảnh. Đây chính là chỗ
+         * "quét từ ảnh rất kém" trước đây: ảnh Zalo nén, chụp nghiêng, loá đèn
+         * thì hai bộ đọc trong máy bó tay, còn mô hình nhìn ảnh đọc được như
+         * người. Kết quả luôn mang cảnh báo soát lại bằng mắt.
+         */
+        setBusy("ai");
+        try {
+          return setCurrent(await aiRead(canvas));
+        } catch (aiErr) {
+          setError(
+            (aiErr instanceof Error ? aiErr.message : "AI không đọc được ảnh này.") +
+              " Cách chắc ăn nhất: chụp MẶT SAU thẻ, lấy trọn ba dòng chữ máy ở đáy (dòng có nhiều dấu <<<), để ngang, đủ sáng.",
+          );
+          return;
+        }
       }
 
       setBusy("ocr");
       const text = await readMrz(canvas);
       const person = parseMrz(text);
       if (person) return setCurrent(person);
-      setError("Chưa đọc được hai dòng chữ máy. Chụp lại trang có ảnh, để NGANG, chụp sát phần đáy, đủ sáng.");
+      // Hộ chiếu cũng có đường lùi AI — dòng MRZ chụp thiếu sáng là OCR trượt ngay
+      setBusy("ai");
+      try {
+        return setCurrent(await aiRead(canvas));
+      } catch (aiErr) {
+        setError(
+          (aiErr instanceof Error ? aiErr.message : "AI không đọc được ảnh này.") +
+            " Chụp lại trang có ảnh, để NGANG, chụp sát phần đáy, đủ sáng.",
+        );
+        return;
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không đọc được ảnh giấy tờ");
     } finally {
@@ -339,7 +373,7 @@ export function IdScanCard({
           disabled={busy !== "" || scanning}
           onClick={() => fileRef.current?.click()}
         >
-          {busy === "qr" ? "Đang đọc mã QR…" : "🖼 CCCD từ ảnh có sẵn"}
+          {busy === "qr" ? "Đang đọc mã QR…" : busy === "ai" ? "AI đang đọc ảnh…" : "🖼 CCCD từ ảnh có sẵn"}
         </Button>
         <Button
           type="button"
@@ -349,7 +383,7 @@ export function IdScanCard({
           onClick={() => backRef.current?.click()}
           title="Ảnh mặt sau thẻ — máy đọc ba dòng chữ máy ở đáy, chắc ăn hơn soi mã QR mờ"
         >
-          {busy === "ocr" ? "Đang đọc chữ…" : "🔤 CCCD MẶT SAU (đọc chữ)"}
+          {busy === "ocr" ? "Đang đọc chữ…" : busy === "ai" ? "AI đang đọc ảnh…" : "🔤 CCCD MẶT SAU (đọc chữ)"}
         </Button>
         <Button
           type="button"
@@ -358,14 +392,14 @@ export function IdScanCard({
           disabled={busy !== "" || scanning}
           onClick={() => passportRef.current?.click()}
         >
-          {busy === "ocr" ? "Đang đọc hộ chiếu…" : "🛂 Hộ chiếu (ảnh dòng đáy)"}
+          {busy === "ocr" ? "Đang đọc hộ chiếu…" : busy === "ai" ? "AI đang đọc ảnh…" : "🛂 Hộ chiếu (ảnh dòng đáy)"}
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-slate-500">
         <strong>Mã QR mờ hay loá thì đừng cố:</strong> chụp <strong>MẶT SAU</strong> thẻ, lấy trọn ba dòng chữ máy ở
         đáy (dòng nhiều dấu <code>&lt;&lt;&lt;</code>) — dãy đó sinh ra để máy đọc, có số kiểm tra nên đọc sai là báo
         ngay. Quét QR mặt trước bằng camera vẫn nhanh nhất khi thẻ còn mới. Hộ chiếu: chụp trang có ảnh, để ngang,
-        thấy rõ hai dòng chữ máy ở đáy. Ảnh chỉ đọc trong máy, không gửi đi đâu, không lưu lại.
+        thấy rõ hai dòng chữ máy ở đáy. Ảnh đọc trong máy trước; máy chịu thua mới gửi cho AI đọc hộ (đọc xong là bỏ, không lưu).
       </p>
 
       {scanning && (
