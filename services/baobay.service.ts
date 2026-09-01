@@ -6804,9 +6804,20 @@ async function pushBookingRow(doc: any) {
 }
 
 /** Bản rút gọn cho phi công/camera man — xem chú thích ở listBookings. */
-function maskForCrew(doc: any): BookingDTO {
+export function maskForCrew(doc: any): BookingDTO {
   const b = toBookingDTO(doc);
   const weight = /c[âa]n n[ặa]ng[^·]*/i.exec(String(doc.note ?? ""))?.[0]?.trim() ?? "";
+  /**
+   * SỰ CỐ THẬT (30/08/2026): hàm che này viết trước, các trường mới thêm sau
+   * (dấu ✓CK "kế toán đã nhận đủ khoản chuyển khoản", đường tiền cọc, email
+   * khách, tiền đại lý thu hộ…) lọt qua nguyên vẹn — phi công mở trang của
+   * mình đọc được luôn danh sách khách nào CK vào tài khoản công ty.
+   *
+   * Bài học ghi vào đây cho người thêm trường sau: DTO booking mọc thêm trường
+   * nào dính TIỀN / ĐỐI TÁC / LIÊN LẠC là phải ghé qua hàm này cắt. Phi công
+   * chỉ cần: khách là ai, mấy người, dịch vụ gì, đón ở đâu, cân nặng, và CÒN
+   * PHẢI THU bao nhiêu.
+   */
   return {
     ...b,
     source: "",
@@ -6824,6 +6835,22 @@ function maskForCrew(doc: any): BookingDTO {
     commission: undefined,
     collected: [],
     note: weight,
+    // Đường tiền cọc + dấu đối soát của kế toán — chính là chỗ lộ "khách CK về TK công ty"
+    depositMethod: "",
+    depositDate: "",
+    depositDateBy: "",
+    depositVerified: undefined,
+    ckChecked: undefined,
+    tmChecked: undefined,
+    // Tiền đại lý thu hộ / hoàn / thu thừa — chuyện giá cả và đối tác
+    agencyPaidAmount: 0,
+    agencyName: "",
+    refunded: 0,
+    overpaid: 0,
+    // Liên lạc và nhật ký thư gửi khách — không phải việc của bãi
+    email: "",
+    lastNotify: "",
+    pendingNotify: [],
   };
 }
 
