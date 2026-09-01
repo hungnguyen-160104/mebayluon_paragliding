@@ -25,7 +25,7 @@
  * đều đọc được chỗ giấy tờ đó, nên tách vai: trang /baocao/thue chỉ mở cho
  * "tax" (và quản trị).
  */
-export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "tax", "homestay", "admin"] as const;
+export const BAOBAY_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "tax", "cafe", "homestay", "admin"] as const;
 
 export type BaobayRole = (typeof BAOBAY_ROLES)[number];
 
@@ -36,6 +36,7 @@ export const ROLE_LABEL: Record<BaobayRole, string> = {
   cameraman: "Camera man",
   accountant: "Kế toán tổng hợp",
   tax: "Kế toán thuế",
+  cafe: "Quầy cafe",
   homestay: "Quản homestay",
   admin: "Quản trị",
 };
@@ -81,6 +82,8 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
       ];
     case "tax":
       return [{ href: "/baocao/thue", label: "Kế toán thuế" }];
+    case "cafe":
+      return [{ href: "/baocao/cafe", label: "Quầy cafe" }];
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
@@ -119,6 +122,7 @@ export const ROLE_HOME: Record<BaobayRole, string> = {
   cameraman: "/baocao/camera",
   accountant: "/baocao/ke-toan",
   tax: "/baocao/thue",
+  cafe: "/baocao/cafe",
   homestay: "/baocao/homestay",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",
