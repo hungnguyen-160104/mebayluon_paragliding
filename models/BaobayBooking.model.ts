@@ -183,6 +183,15 @@ export interface IBaobayBooking {
    */
   lockedAt?: Date;
   lockedBy?: string;
+  /**
+   * KẾ TOÁN TÍCH "HIỆN TIỀN CHO PHI CÔNG" — theo booking, chỉ Khau Phạ cần.
+   *
+   * Luật KP: phi công không thấy tiền nong. Hai ngoại lệ: có LỆNH THU được
+   * chỉ định đích danh (tự mở "còn phải thu"), hoặc kế toán bật cờ này — khi
+   * đó phi công thấy đủ tổng/cọc/còn thu/các lần thu của đúng booking đó.
+   */
+  pilotMoneyAt?: Date;
+  pilotMoneyBy?: string;
   /** Kế toán đã "ĐÃ NHẬN" phần cọc GÕ TAY (không qua lệnh thu) khi soát CK. */
   depositVerifiedAt?: Date;
   /** BỎ QUA ĐỐI SOÁT phần cọc gõ tay — xem chú thích skipCheckAt ở BaobayCollect. */
@@ -491,6 +500,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     cancelTicketCodes: { type: [String], default: [] },
     lockedAt: Date,
     lockedBy: String,
+    pilotMoneyAt: Date,
+    pilotMoneyBy: String,
     depositVerifiedAt: Date,
     depositSkipAt: Date,
     depositSkipBy: String,

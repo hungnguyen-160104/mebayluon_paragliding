@@ -404,21 +404,13 @@ export default function PilotReportPage() {
 
       <ReviewNotices spot={spot} date={date} />
 
-      {/**
-       * KHAU PHẠ: phi công KHÔNG thấy sổ khách lẫn lệnh thu — quầy vé đứng thu
-       * tiền, điều phối chia khách theo số thứ tự, phi công chỉ việc bay (máy
-       * chủ cũng đã trả rỗng cho chắc, đây chỉ là dọn giao diện). Hà Nội /
-       * Sa Pa giữ nguyên: phi công ở đó nhận khách và thu tiền thật.
-       */}
-      {spot !== "khau-pha" && (
-        <>
-          {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT */}
-          <AssignedBookings spot={spot} date={date} me={user.username} />
+      {/* Booking điều phối chuyển cho mình: đón khách, tiếp khách, có SĐT.
+          KHAU PHẠ: máy chủ chỉ trả khách ĐÃ GIAO cho mình, và ẩn tiền trừ khi
+          có lệnh thu chỉ định hoặc kế toán tích "hiện tiền cho phi công". */}
+      <AssignedBookings spot={spot} date={date} me={user.username} />
 
-          {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
-          <CollectInbox spot={spot} />
-        </>
-      )}
+      {/* Lệnh thu tiền CHỈ ĐỊNH ĐÍCH DANH mình — việc phải làm ngay */}
+      <CollectInbox spot={spot} />
 
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (

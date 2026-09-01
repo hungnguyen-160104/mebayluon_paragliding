@@ -2670,6 +2670,42 @@ export function BookingTodayBanner({
       </Button>
     ) : null;
 
+  /**
+   * Van "HIỆN TIỀN CHO PHI CÔNG" — chỉ Khau Phạ cần (luật: phi công KP không
+   * thấy tiền; bật van này là phi công được giao khách ấy thấy đủ tổng/cọc/còn
+   * thu của ĐÚNG booking đó để thu hộ). Cùng người bấm với nút khoá: kế toán.
+   */
+  const pilotMoneyButton = (b: BookingDTO) =>
+    canLock && spot === "khau-pha" ? (
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 shrink-0 px-2 text-xs font-semibold " +
+          (b.pilotMoney ? "border-amber-500 bg-amber-400 text-amber-950" : "border-slate-300 bg-white text-slate-600")
+        }
+        disabled={busy === b.id}
+        title={
+          b.pilotMoney
+            ? `Phi công đang THẤY tiền booking này${b.pilotMoneyBy ? ` (${b.pilotMoneyBy} bật)` : ""} — bấm để ẩn lại`
+            : "Bật cho phi công được giao khách này thấy tổng/cọc/còn thu — dùng khi cần phi công thu hộ"
+        }
+        onClick={async () => {
+          setBusy(b.id);
+          try {
+            await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "pilot-money", on: !b.pilotMoney });
+            load();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Không đổi được");
+          } finally {
+            setBusy(null);
+          }
+        }}
+      >
+        {b.pilotMoney ? "👁 PC thấy tiền" : "👁̶ PC ẩn tiền"}
+      </Button>
+    ) : null;
+
   const open = rows.filter((b) => b.status === "open");
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
@@ -2991,6 +3027,7 @@ export function BookingTodayBanner({
                       : "🎫 Xuất vé"}
                 </Button>
                 {lockButton(b)}
+                {pilotMoneyButton(b)}
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
                 {spot !== "sapa" && (
                   <CollectMoneyControl

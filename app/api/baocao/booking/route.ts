@@ -16,6 +16,7 @@ import {
   setBookingLock,
   sendBookingChangeMail,
   setDepositDate,
+  setPilotMoney,
   assignBooking,
   acceptAssignedBooking,
   markNoTicketFlight,
@@ -89,33 +90,6 @@ export async function GET(req: Request) {
     wearsRole(auth, "cameraman") && date >= shiftDateKey(todayInVN(), -2) && date <= todayInVN();
   const manager =
     !asCrew && (auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role) || cameramanWindow);
-  /**
-   * KHAU PHẠ: PHI CÔNG KHÔNG THẤY SỔ KHÁCH — trả rỗng ngay tại cửa, kể cả
-   * khách đã giao cho họ. Lệnh chủ 30/08/2026: điểm này quầy vé đứng thu tiền,
-   * điều phối chia khách theo số thứ tự; phi công chỉ việc bay — danh sách
-   * khách và mọi dấu vết thu tiền (còn thu, đã thu, ✓CK…) không phải việc của
-   * họ, để lọt ra bãi là sinh chuyện.
-   *
-   * NGOẠI LỆ duy nhất: người kiêm CAMERA MAN vẫn thấy (cửa sổ 3 ngày ở trên)
-   * — bán thêm flycam tại bãi phải tra được cả sổ, tính năng đã có chủ đích
-   * từ trước. Điểm khác (Hà Nội, Sa Pa) giữ nguyên: phi công ở đó nhận khách
-   * và thu tiền thật.
-   */
-  const kpPilotBlind =
-    spot === "khau-pha" && asCrew && wearsRole(auth, "pilot") && !wearsRole(auth, "cameraman");
-  if (kpPilotBlind) {
-    return NextResponse.json({
-      forDate: [],
-      upcoming: [],
-      flown: null,
-      moved: { bookings: 0, guests: 0 },
-      movedOut: [],
-      voided: [],
-      webSyncAt: "",
-      staff: await listSpotStaffAll(spot),
-    });
-  }
-
   const [lists, staff] = await Promise.all([
     listBookings(spot, date, manager ? undefined : auth.username),
     /**
@@ -275,7 +249,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Không huỷ bớt được" }, { status: 500 });
     }
   }
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest"].includes(action)) {
+  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest", "pilot-money"].includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
@@ -287,6 +261,17 @@ export async function PATCH(req: Request) {
      * KHOÁ / MỞ KHOÁ một booking — CHỈ kế toán (và quản trị). Khoá rồi thì mọi
      * cửa sửa booking đều trả lỗi, kể cả thu tiền và tích đã bay.
      */
+    /**
+     * BẬT/TẮT "hiện tiền cho phi công" trên MỘT booking — chỉ kế toán/quản
+     * trị. Đây là cái van của luật "phi công KP không thấy tiền": mở đích
+     * danh từng booking khi cần phi công thu hộ, chứ không mở cả sổ.
+     */
+    if (action === "pilot-money") {
+      if (!wearsRole(auth, "accountant") && auth.role !== "admin" && !auth.viaAdmin) {
+        return NextResponse.json({ message: "Chỉ kế toán mới bật/tắt hiện tiền cho phi công" }, { status: 403 });
+      }
+      return NextResponse.json({ booking: await setPilotMoney(auth, spot, id, body?.on !== false) });
+    }
     if (action === "lock" || action === "unlock") {
       if (!wearsRole(auth, "accountant") && auth.role !== "admin" && !auth.viaAdmin) {
         return NextResponse.json({ message: "Chỉ kế toán mới khoá / mở khoá booking" }, { status: 403 });

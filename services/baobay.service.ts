@@ -3961,7 +3961,17 @@ export async function listBookings(
    * Riêng CÂN NẶNG trong ghi chú thì giữ lại: đó là thứ phi công buộc phải biết
    * để chọn dù và xếp người bay.
    */
-  const view = me ? maskForCrew : toBookingDTO;
+  /**
+   * MỨC TIỀN cho tổ bay, tính theo TỪNG booking (luật của chủ, 30/08/2026):
+   * Khau Phạ ẩn sạch; mở lại khi có lệnh thu CHỈ ĐỊNH ĐÍCH DANH người đang xem
+   * (chỉ "còn phải thu"), hoặc kế toán tích "hiện tiền cho phi công" (đủ bộ).
+   * Điểm khác giữ nguyên: thấy "còn phải thu" như trước nay.
+   */
+  const moneyLevelOf = (b: any, myPendingCollect: boolean): "none" | "remaining" | "full" => {
+    if (b.pilotMoneyAt) return "full";
+    if (spot !== "khau-pha") return "remaining";
+    return myPendingCollect ? "remaining" : "none";
+  };
 
   /**
    * GẮN TRẠNG THÁI ĐÃ SOÁT cho từng khoản thu.
@@ -3976,7 +3986,7 @@ export async function listBookings(
   const ids = [...new Set(allRows.map((b: any) => String(b._id)))];
   const collectDocs = ids.length
     ? await BaobayCollect.find({ bookingId: { $in: ids }, status: { $ne: "rejected" } })
-        .select("bookingId amount method transferCode verifiedAt")
+        .select("bookingId amount method transferCode verifiedAt collectorUsername status")
         .lean<any[]>()
     : [];
   const collectsByBooking = new Map<string, any[]>();
@@ -3985,8 +3995,10 @@ export async function listBookings(
     (collectsByBooking.get(kb) ?? collectsByBooking.set(kb, []).get(kb)!).push(c);
   }
   const withVerified = (b: any): BookingDTO => {
-    const dto = view(b);
     const pool = [...(collectsByBooking.get(String(b._id)) ?? [])];
+    const myPendingCollect =
+      Boolean(me) && pool.some((c) => normalizeUsername(c.collectorUsername ?? "") === me && c.status === "pending");
+    const dto = me ? maskForCrew(b, moneyLevelOf(b, myPendingCollect)) : toBookingDTO(b);
     dto.collected = (dto.collected ?? []).map((entry) => {
       const i = pool.findIndex(
         (c) =>
@@ -4415,6 +4427,30 @@ function lastNotifyLabel(log?: Array<{ at?: Date; ok?: boolean; error?: string }
     d.getHours(),
   ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return last.ok === false ? `${khi} · GỬI HỎNG: ${last.error || "không rõ"}` : `${khi} · đã gửi`;
+}
+
+/**
+ * KẾ TOÁN BẬT/TẮT "hiện tiền cho phi công" trên một booking (luật Khau Phạ:
+ * phi công không thấy tiền — đây là cái van mở đích danh từng booking khi cần
+ * phi công thu hộ; xem maskForCrew).
+ */
+export async function setPilotMoney(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  on: boolean,
+): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const doc = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    on
+      ? { $set: { pilotMoneyAt: new Date(), pilotMoneyBy: session.name || session.username } }
+      : { $set: { pilotMoneyAt: null, pilotMoneyBy: "" } },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Không tìm thấy booking", 404);
+  return toBookingDTO(doc);
 }
 
 /** Kế toán bấm khoá / mở khoá một booking. */
@@ -6804,7 +6840,16 @@ async function pushBookingRow(doc: any) {
 }
 
 /** Bản rút gọn cho phi công/camera man — xem chú thích ở listBookings. */
-export function maskForCrew(doc: any): BookingDTO {
+/**
+ * Mức tiền tổ bay được thấy trên MỘT booking:
+ *  - "none"      : Khau Phạ mặc định — cả "còn phải thu" cũng ẩn.
+ *  - "remaining" : như các điểm khác — chỉ thấy CÒN PHẢI THU (họ thu tại bãi),
+ *                  cũng là mức của phi công KP có LỆNH THU được chỉ định.
+ *  - "full"      : kế toán tích "hiện tiền cho phi công" — thấy tổng/cọc/còn
+ *                  thu/các lần thu của đúng booking đó (vẫn giấu nguồn khách,
+ *                  đại lý, email, dấu đối soát).
+ */
+export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "remaining"): BookingDTO {
   const b = toBookingDTO(doc);
   const weight = /c[âa]n n[ặa]ng[^·]*/i.exec(String(doc.note ?? ""))?.[0]?.trim() ?? "";
   /**
@@ -6851,6 +6896,12 @@ export function maskForCrew(doc: any): BookingDTO {
     email: "",
     lastNotify: "",
     pendingNotify: [],
+    // Khau Phạ mặc định: đến cả "còn phải thu" cũng không phải việc của phi công
+    ...(money === "none" ? { remaining: 0 } : {}),
+    // Kế toán đã tích "hiện cho phi công": trả lại phần tiền của ĐÚNG booking này
+    ...(money === "full"
+      ? { totalAmount: b.totalAmount, deposit: b.deposit, remaining: b.remaining, collected: b.collected }
+      : {}),
   };
 }
 
@@ -6966,6 +7017,8 @@ function toBookingDTO(doc: any): BookingDTO {
     depositDate: doc.depositDate || "",
     depositDateBy: doc.depositDateBy || "",
     depositVerified: Boolean(doc.depositVerifiedAt),
+    pilotMoney: Boolean(doc.pilotMoneyAt) || undefined,
+    pilotMoneyBy: doc.pilotMoneyBy || undefined,
     email: doc.email || "",
     lastNotify: lastNotifyLabel(doc.notifyLog),
     /** Thay đổi CHƯA báo khách — nút "Gửi mail báo khách" hiện khi mảng này có. */
