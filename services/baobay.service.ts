@@ -6187,8 +6187,14 @@ export async function splitBooking(
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   await assertBookingUnlocked(spot, id, session);
-  const current = await BaobayBooking.findOne({ _id: id, spot, status: "open" }).lean<any>();
-  if (!current) throw new BaobayError("Không tìm thấy booking đang chờ này", 404);
+  /**
+   * Tách được cả booking ĐÃ BAY — chuyện thật 31/08/2026: đoàn 5 khách PPG,
+   * quầy tích "đã bay" cả đoàn rồi mới vỡ ra chỉ 3 người bay, 2 người dời mai.
+   * Chặn ở "open" thì tình huống ấy hết đường chốt sổ: gốc giữ nguyên trạng
+   * thái (đã bay 3 người là thật), phần tách ra luôn là booking CHỜ ở ngày mới.
+   */
+  const current = await BaobayBooking.findOne({ _id: id, spot, status: { $in: ["open", "done"] } }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy booking này (đã huỷ/bỏ thì không tách được)", 404);
 
   const guests = Math.max(0, Math.round(input.guests || 0));
   if (guests <= 0) throw new BaobayError("Chưa chọn số khách tách ra", 400);
