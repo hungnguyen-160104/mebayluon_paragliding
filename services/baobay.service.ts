@@ -1245,6 +1245,12 @@ export type PilotReportSaveInput = {
   mountainTrips: number;
   /** Chuyến PPG: có vé thì khai mã, không vé thì đếm vào ppgNoTicket. */
   ppgFlights: number;
+  /** Suất ăn & xe trong ngày làm — thanh toán với bếp/đội xe theo ngày, tháng. */
+  mealBreakfast?: number;
+  mealLunch?: number;
+  mealDinner?: number;
+  motorbikeRides?: number;
+  carRides?: number;
   ppgCodesText: string;
   ppgNoTicket: number;
   expenses: Array<{ content: string; amount: number; note?: string }>;
@@ -1510,6 +1516,12 @@ export async function upsertPilotReport(
         ppgFlights: spot === "khau-pha" ? input.ppgFlights : 0,
         ppgCodes: spot === "khau-pha" ? ppg.codes : [],
         ppgNoTicket: spot === "khau-pha" ? input.ppgNoTicket : 0,
+        // Suất ăn & xe — thanh toán với bếp và đội xe theo ngày/tháng
+        mealBreakfast: input.mealBreakfast ?? 0,
+        mealLunch: input.mealLunch ?? 0,
+        mealDinner: input.mealDinner ?? 0,
+        motorbikeRides: input.motorbikeRides ?? 0,
+        carRides: input.carRides ?? 0,
         expenses,
         note: input.note,
         submitted: input.submit,
@@ -1729,6 +1741,11 @@ function toPilotDTO(doc: any): PilotReportDTO {
     ppgFlights: doc.ppgFlights ?? 0,
     ppgCodes: doc.ppgCodes ?? [],
     ppgNoTicket: doc.ppgNoTicket ?? 0,
+    mealBreakfast: doc.mealBreakfast ?? 0,
+    mealLunch: doc.mealLunch ?? 0,
+    mealDinner: doc.mealDinner ?? 0,
+    motorbikeRides: doc.motorbikeRides ?? 0,
+    carRides: doc.carRides ?? 0,
     expenses: doc.expenses ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
@@ -8863,8 +8880,18 @@ export type TicketLookup = {
   pilotName?: string;
   /** Mã nằm trong dải vé điều phối đã xuất ngày nào. */
   issuedOn?: string;
-  /** Booking khả dĩ của ngày đó có đăng ký flycam — người dùng chọn tay. */
-  candidates: Array<{ id: string; label: string; daySeq: number; flycam: number; guestCount: number }>;
+  /** Booking khả dĩ của ngày đó có đăng ký dịch vụ gia tăng — người dùng chọn tay. */
+  candidates: Array<{
+    id: string;
+    label: string;
+    daySeq: number;
+    flycam: number;
+    video360: number;
+    redFlag: number;
+    sunset: number;
+    flagFlight: number;
+    guestCount: number;
+  }>;
 };
 
 /**
@@ -8928,8 +8955,22 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
 
   const day = out.date || out.issuedOn;
   if (day) {
-    const bookings = await BaobayBooking.find({ spot, flightDate: day, flycam: { $gt: 0 } })
-      .select("contactName bookingCode daySeq flycam guestCount status")
+    /**
+     * Lấy các đoàn CÓ ĐĂNG KÝ ÍT NHẤT MỘT dịch vụ gia tăng — thẻ huỷ dịch vụ
+     * chọn loại nào thì lọc tiếp phía giao diện theo số của loại đó.
+     */
+    const bookings = await BaobayBooking.find({
+      spot,
+      flightDate: day,
+      $or: [
+        { flycam: { $gt: 0 } },
+        { video360: { $gt: 0 } },
+        { redFlag: { $gt: 0 } },
+        { sunset: { $gt: 0 } },
+        { flagFlight: { $gt: 0 } },
+      ],
+    })
+      .select("contactName bookingCode daySeq flycam video360 redFlag sunset flagFlight guestCount status")
       .sort({ daySeq: 1 })
       .lean<any[]>();
     out.candidates = bookings.map((b) => ({
@@ -8937,6 +8978,10 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
       label: `${b.contactName || b.bookingCode || "khách"}${b.status === "cancelled" ? " (đã huỷ)" : ""}`,
       daySeq: Number(b.daySeq) || 0,
       flycam: b.flycam || 0,
+      video360: b.video360 || 0,
+      redFlag: b.redFlag || 0,
+      sunset: b.sunset || 0,
+      flagFlight: b.flagFlight || 0,
       guestCount: b.guestCount || 0,
     }));
   }
@@ -8945,6 +8990,7 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
 
 export type FlycamCancelDTO = {
   id: string;
+  service: string;
   date: string;
   ticketCode: string;
   pilotName: string;
@@ -8963,6 +9009,7 @@ export type FlycamCancelDTO = {
 function toFlycamCancelDTO(d: any): FlycamCancelDTO {
   return {
     id: String(d._id),
+    service: d.service || "flycam",
     date: d.date,
     ticketCode: d.ticketCode || "",
     pilotName: d.pilotName || "",
@@ -9016,6 +9063,8 @@ export async function createFlycamCancel(
     amount: number;
     bankAccount?: string;
     bookingId?: string;
+    /** Dịch vụ bị huỷ — thiếu thì là flycam như thời chỉ có flycam. */
+    service?: string;
   },
 ): Promise<FlycamCancelDTO> {
   await connectDB();
@@ -9044,6 +9093,9 @@ export async function createFlycamCancel(
   const doc = (
     await BaobayFlycamCancel.create({
       spot,
+      service: ["flycam", "video360", "redFlag", "sunset", "flagFlight"].includes(String(input.service))
+        ? input.service
+        : "flycam",
       date: input.date,
       ticketCode: String(input.ticketCode ?? "").trim().toUpperCase(),
       pilotUsername: pilot.username,
@@ -10072,6 +10124,11 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         pickupBigC: 0,
         pickupHotel: 0,
         mountainTrips: 0,
+        mealBreakfast: 0,
+        mealLunch: 0,
+        mealDinner: 0,
+        motorbikeRides: 0,
+        carRides: 0,
       };
     entry.days += 1;
     entry.flights += r.flightCount + (r.ppgFlights || 0);
@@ -10086,6 +10143,11 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.pickupBigC += r.pickupBigC;
     entry.pickupHotel += r.pickupHotel;
     entry.mountainTrips += r.mountainTrips;
+    entry.mealBreakfast += r.mealBreakfast ?? 0;
+    entry.mealLunch += r.mealLunch ?? 0;
+    entry.mealDinner += r.mealDinner ?? 0;
+    entry.motorbikeRides += r.motorbikeRides ?? 0;
+    entry.carRides += r.carRides ?? 0;
     pilotMap.set(r.username, entry);
   }
 
@@ -10119,6 +10181,11 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       pickupBigC: 0,
       pickupHotel: 0,
       mountainTrips: 0,
+      mealBreakfast: 0,
+      mealLunch: 0,
+      mealDinner: 0,
+      motorbikeRides: 0,
+      carRides: 0,
     });
   }
 

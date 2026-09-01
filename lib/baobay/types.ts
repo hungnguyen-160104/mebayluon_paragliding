@@ -139,6 +139,12 @@ export type PilotReportDTO = {
   ppgFlights: number;
   ppgCodes: string[];
   ppgNoTicket: number;
+  /** Suất ăn & xe phi công khai — thanh toán với bếp và đội xe theo ngày/tháng. */
+  mealBreakfast: number;
+  mealLunch: number;
+  mealDinner: number;
+  motorbikeRides: number;
+  carRides: number;
   /** Khách huỷ / dời lịch phi công báo — kênh phụ bên cạnh điều phối. */
   cancelledGuestEntries: CancelGuestDTO[];
   rescheduledGuestEntries: RescheduleGuestDTO[];
@@ -641,6 +647,12 @@ export type PilotPeriodTotalDTO = {
   pickupBigC: number;
   pickupHotel: number;
   mountainTrips: number;
+  /** Suất ăn & xe phi công khai — thanh toán với bếp và đội xe theo kỳ. */
+  mealBreakfast: number;
+  mealLunch: number;
+  mealDinner: number;
+  motorbikeRides: number;
+  carRides: number;
 };
 
 export type BaobaySummaryDTO = {

@@ -12,6 +12,17 @@ import { Banner, Button, CollapseCard, Field, MoneyInput, TextInput } from "./ui
 
 type Pilot = { username: string; name: string };
 
+/** Các dịch vụ gia tăng huỷ được — nhãn hiện trên thẻ và trên phiếu lệnh. */
+const SERVICES = [
+  { id: "flycam", label: "Flycam" },
+  { id: "video360", label: "Camera 360" },
+  { id: "redFlag", label: "Dù cờ đỏ" },
+  { id: "sunset", label: "Hoàng hôn/săn mây" },
+  { id: "flagFlight", label: "Kéo cờ/bánh" },
+] as const;
+type ServiceId = (typeof SERVICES)[number]["id"];
+const serviceLabel = (id: string) => SERVICES.find((s) => s.id === id)?.label ?? id;
+
 /**
  * HUỶ FLYCAM vì lỗi vận hành (máy hỏng, gió to, hình không dùng được) và lệnh
  * hoàn tiền cho khách.
@@ -36,6 +47,7 @@ export function FlycamCancelCard({
   const [pilots, setPilots] = useState<Pilot[]>([]);
   const [lookup, setLookup] = useState<TicketLookup | null>(null);
 
+  const [service, setService] = useState<ServiceId>("flycam");
   const [code, setCode] = useState("");
   const [pilot, setPilot] = useState("");
   const [bookingId, setBookingId] = useState("");
@@ -86,6 +98,7 @@ export function FlycamCancelCard({
     setDone(null);
     try {
       await apiPost(`/api/baocao/flycam-cancel?spot=${spot}`, {
+        service,
         date: lookup?.date || date,
         ticketCode: code,
         pilotUsername: pilot,
@@ -97,7 +110,7 @@ export function FlycamCancelCard({
       });
       setDone(
         mode === "self"
-          ? `✓ Đã ghi huỷ flycam — trừ ${formatVND(amount)} vào tiền phi công đang giữ.`
+          ? `✓ Đã ghi huỷ ${serviceLabel(service)} — trừ ${formatVND(amount)} vào tiền phi công đang giữ.`
           : `✓ Đã gửi lệnh hoàn ${formatVND(amount)} cho kế toán chuyển khoản.`,
       );
       setCode("");
@@ -108,7 +121,7 @@ export function FlycamCancelCard({
       setLookup(null);
       load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Không lưu được lệnh huỷ flycam");
+      setError(err instanceof Error ? err.message : "Không lưu được lệnh huỷ dịch vụ");
     } finally {
       setBusy(false);
     }
@@ -135,15 +148,32 @@ export function FlycamCancelCard({
   return (
     <CollapseCard
       className={pending.length ? "border-amber-400" : "border-slate-200"}
-      title="🎥 Huỷ flycam & hoàn tiền khách"
+      title="🎥 Huỷ dịch vụ (flycam · 360 · cờ đỏ · hoàng hôn · kéo cờ) & hoàn tiền"
       hint={pending.length ? `${pending.length} lệnh hoàn đang chờ kế toán` : `${items.length} lệnh gần đây`}
       open={pending.length > 0 || undefined}
     >
       {done && <Banner tone="success" onClose={() => setDone(null)}>{done}</Banner>}
       {error && <Banner tone="error">{error}</Banner>}
 
+      {/* Chọn DỊCH VỤ bị huỷ trước — danh sách đoàn và chữ nghĩa chạy theo */}
+      <div className="mb-2 flex flex-wrap gap-1">
+        {SERVICES.map((sv) => (
+          <button
+            key={sv.id}
+            type="button"
+            onClick={() => setService(sv.id)}
+            className={
+              "h-9 rounded-lg px-3 text-xs font-bold " +
+              (service === sv.id ? "bg-violet-600 text-white" : "border border-slate-300 bg-white text-slate-600")
+            }
+          >
+            {sv.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-2 @md:grid-cols-2">
-        <Field label="Mã vé bị huỷ flycam">
+        <Field label={`Mã vé bị huỷ ${serviceLabel(service)}`}>
           <div className="flex gap-1">
             <TextInput
               value={code}
@@ -184,19 +214,21 @@ export function FlycamCancelCard({
           </select>
         </Field>
 
-        {(lookup?.candidates.length ?? 0) > 0 && (
-          <Field label="Đoàn khách (đoàn có đăng ký flycam hôm đó)">
+        {(lookup?.candidates.filter((c) => (c as any)[service] > 0).length ?? 0) > 0 && (
+          <Field label={`Đoàn khách (đoàn có đăng ký ${serviceLabel(service)} hôm đó)`}>
             <select
               value={bookingId}
               onChange={(e) => setBookingId(e.target.value)}
               className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-sky-600"
             >
               <option value="">— chưa rõ đoàn nào —</option>
-              {lookup!.candidates.map((c) => (
-                <option key={c.id} value={c.id}>
-                  #{c.daySeq} {c.label} · {c.guestCount} khách · {c.flycam}×flycam
-                </option>
-              ))}
+              {lookup!.candidates
+                .filter((c) => (c as any)[service] > 0)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    #{c.daySeq} {c.label} · {c.guestCount} khách · {(c as any)[service]}×{serviceLabel(service)}
+                  </option>
+                ))}
             </select>
           </Field>
         )}
@@ -256,7 +288,7 @@ export function FlycamCancelCard({
       </div>
 
       <Button type="button" className="mt-2.5 w-full" disabled={busy} onClick={submit}>
-        {busy ? "Đang lưu…" : mode === "self" ? "✓ Ghi huỷ flycam & đã hoàn tại bãi" : "✓ Gửi lệnh hoàn cho kế toán"}
+        {busy ? "Đang lưu…" : mode === "self" ? `✓ Ghi huỷ ${serviceLabel(service)} & đã hoàn TIỀN MẶT tại bãi` : "✓ Gửi lệnh hoàn CHUYỂN KHOẢN cho kế toán"}
       </Button>
 
       {items.length > 0 && (
@@ -277,7 +309,8 @@ export function FlycamCancelCard({
                   {it.status === "pending" ? "chờ kế toán chuyển" : it.status === "paid" ? "đã chuyển ✓" : "đã hoàn tại bãi"}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug text-slate-700">
-                  {formatDateKeyVN(it.date)} · <strong>{it.ticketCode || "không mã"}</strong>
+                  {formatDateKeyVN(it.date)} · <strong>{serviceLabel(it.service)}</strong> ·{" "}
+                  <strong>{it.ticketCode || "không mã"}</strong>
                   {it.bookingLabel ? ` · ${it.bookingLabel}` : ""} · PC {it.pilotName} · {it.reason}
                   {it.bankAccount ? ` · TK ${it.bankAccount}` : ""}
                   {it.transferCode ? ` · CK #${it.transferCode}` : ""}

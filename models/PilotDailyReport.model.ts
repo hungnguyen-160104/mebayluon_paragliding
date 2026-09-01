@@ -83,6 +83,16 @@ export interface IPilotDailyReport {
    */
   ppgFlights: number;
   ppgCodes: string[];
+  /**
+   * SUẤT ĂN & XE trong ngày làm — phi công tự khai để cuối ngày/tháng công ty
+   * thanh toán với nhà bếp và đội xe (lệnh chủ 31/08/2026: "5 xe ôm 3 ô tô").
+   * Suất ăn đếm THEO BỮA của chính phi công; xe đếm theo LƯỢT đi lên núi.
+   */
+  mealBreakfast: number;
+  mealLunch: number;
+  mealDinner: number;
+  motorbikeRides: number;
+  carRides: number;
   ppgNoTicket: number;
   /** Các khoản chi khác: nội dung – số tiền – ghi chú. */
   /** Khách huỷ / dời lịch PHI CÔNG báo (kèm mã vé ở điểm có vé) — kênh phụ, điều phối vẫn là nguồn chính. */
@@ -168,6 +178,11 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     ppgFlights: { type: Number, default: 0, min: 0 },
     ppgCodes: { type: [String], default: [] },
     ppgNoTicket: { type: Number, default: 0, min: 0 },
+    mealBreakfast: { type: Number, default: 0, min: 0 },
+    mealLunch: { type: Number, default: 0, min: 0 },
+    mealDinner: { type: Number, default: 0, min: 0 },
+    motorbikeRides: { type: Number, default: 0, min: 0 },
+    carRides: { type: Number, default: 0, min: 0 },
     cancelledGuestEntries: {
       type: [
         new Schema(

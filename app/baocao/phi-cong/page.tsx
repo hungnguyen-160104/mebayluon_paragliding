@@ -15,6 +15,7 @@ import { DateBar } from "../components/DateBar";
 import { AssignedBookings } from "../components/BookingCard";
 import { CancelMoveCard } from "../components/CancelMoveCard";
 import { CollectInbox } from "../components/CollectBox";
+import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import {
   ExpenseRows,
   toExpenseRows,
@@ -73,6 +74,12 @@ type FormState = {
   ppgFlights: number;
   ppgCodesText: string;
   ppgNoTicket: number;
+  /** Suất ăn & xe trong ngày làm — thanh toán với bếp và đội xe theo ngày/tháng. */
+  mealBreakfast: number;
+  mealLunch: number;
+  mealDinner: number;
+  motorbikeRides: number;
+  carRides: number;
   expenses: ExpenseRow[];
   /** Khách huỷ / dời lịch phi công báo — kênh phụ bên cạnh điều phối. */
   cancelledGuests: CancelGuestRow[];
@@ -106,6 +113,11 @@ const EMPTY_FORM: FormState = {
   ppgFlights: 0,
   ppgCodesText: "",
   ppgNoTicket: 0,
+  mealBreakfast: 0,
+  mealLunch: 0,
+  mealDinner: 0,
+  motorbikeRides: 0,
+  carRides: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }],
   rescheduledGuests: [
@@ -220,6 +232,11 @@ export default function PilotReportPage() {
               ppgFlights: res.report.ppgFlights,
               ppgCodesText: res.report.ppgCodes.join(", "),
               ppgNoTicket: res.report.ppgNoTicket,
+              mealBreakfast: res.report.mealBreakfast ?? 0,
+              mealLunch: res.report.mealLunch ?? 0,
+              mealDinner: res.report.mealDinner ?? 0,
+              motorbikeRides: res.report.motorbikeRides ?? 0,
+              carRides: res.report.carRides ?? 0,
               expenses: toExpenseRows(res.report.expenses),
               cancelledGuests: res.report.cancelledGuestEntries.length
                 ? res.report.cancelledGuestEntries.map((e) => ({
@@ -411,6 +428,16 @@ export default function PilotReportPage() {
 
       {/* Lệnh thu tiền CHỈ ĐỊNH ĐÍCH DANH mình — việc phải làm ngay */}
       <CollectInbox spot={spot} />
+
+      {/**
+       * HUỶ DỊCH VỤ & HOÀN TIỀN — phi công là người biết đầu tiên khi không
+       * cung cấp được (flycam hỏng, gió to không bay 360, hết dù cờ đỏ…).
+       * Thẻ này vốn có ở trang camera/kế toán mà quên gắn cho phi công —
+       * đúng lời chủ hỏi "hình như từng được tạo mà không thấy".
+       * Hoàn TIỀN MẶT = trừ vào tiền phi công đang giữ; hoàn CHUYỂN KHOẢN =
+       * gửi lệnh cho kế toán chuyển.
+       */}
+      <FlycamCancelCard spot={spot} date={date} />
 
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (
@@ -876,6 +903,34 @@ export default function PilotReportPage() {
             </div>
           </div>
           )}
+
+          {/**
+           * SUẤT ĂN & XE — phi công tự khai, công ty cuối ngày/tháng thanh toán
+           * với nhà bếp và đội xe ("31/8: 5 xe ôm, 3 ô tô"). Đếm theo BỮA của
+           * chính mình và LƯỢT xe mình đi; số chạy vào bảng tổng theo kỳ.
+           */}
+          <div className="mt-4">
+            <Field label="SUẤT ĂN & XE (meals & rides)" hint="tự khai theo ngày — kế toán cộng theo ngày/tháng để thanh toán bếp và đội xe">
+              <div />
+            </Field>
+            <div className="grid gap-3 @md:grid-cols-3 @2xl:grid-cols-5">
+              <Field label="Ăn sáng (bữa)">
+                <CountInput compact value={form.mealBreakfast} onChange={(v) => set("mealBreakfast", v)} max={50} />
+              </Field>
+              <Field label="Ăn trưa (bữa)">
+                <CountInput compact value={form.mealLunch} onChange={(v) => set("mealLunch", v)} max={50} />
+              </Field>
+              <Field label="Ăn tối (bữa)">
+                <CountInput compact value={form.mealDinner} onChange={(v) => set("mealDinner", v)} max={50} />
+              </Field>
+              <Field label="Xe ôm (lượt)">
+                <CountInput compact value={form.motorbikeRides} onChange={(v) => set("motorbikeRides", v)} max={50} />
+              </Field>
+              <Field label="Ô tô (lượt)">
+                <CountInput compact value={form.carRides} onChange={(v) => set("carRides", v)} max={50} />
+              </Field>
+            </div>
+          </div>
 
           <div className="mt-4">
             <Field

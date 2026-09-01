@@ -67,6 +67,8 @@ export async function POST(req: Request) {
       amount: Number(body?.amount) || 0,
       bankAccount: String(body?.bankAccount ?? ""),
       bookingId: String(body?.bookingId ?? ""),
+      // Dịch vụ bị huỷ (flycam/360/cờ đỏ/hoàng hôn/kéo cờ) — thiếu thì là flycam
+      service: String(body?.service ?? "flycam"),
     });
     return NextResponse.json({ item }, { status: 201 });
   } catch (err) {

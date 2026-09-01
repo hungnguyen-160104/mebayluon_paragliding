@@ -477,6 +477,10 @@ function ByPilotTable({ data }: { data: BaobaySummaryDTO }) {
             <th className={th}>Tổng chuyến</th>
             <th className={th}>Camera 360</th>
             <th className={th}>Khách ngoại giao</th>
+            {/* Suất ăn & xe phi công khai — thanh toán với bếp và đội xe theo kỳ */}
+            <th className={th}>Ăn S/T/T</th>
+            <th className={th}>Xe ôm</th>
+            <th className={th}>Ô tô</th>
             <th className={th}>Tổng chi</th>
             <th className={th}>Phạt nộp muộn</th>
             <th className={th}>Tiền ứng</th>
@@ -491,6 +495,13 @@ function ByPilotTable({ data }: { data: BaobaySummaryDTO }) {
               <td className={`${td} font-semibold`}>{p.flights}</td>
               <td className={td}>{p.video360}</td>
               <td className={td}>{p.diplomaticGuests}</td>
+              <td className={td}>
+                {p.mealBreakfast || p.mealLunch || p.mealDinner
+                  ? `${p.mealBreakfast}/${p.mealLunch}/${p.mealDinner}`
+                  : "—"}
+              </td>
+              <td className={td}>{p.motorbikeRides || "—"}</td>
+              <td className={td}>{p.carRides || "—"}</td>
               <td className={td}>{p.expenseTotal ? formatVND(p.expenseTotal) : "—"}</td>
               <td className={td}>
                 {p.latePenalty ? <span className="font-semibold text-rose-700">{formatVND(p.latePenalty)}</span> : "—"}

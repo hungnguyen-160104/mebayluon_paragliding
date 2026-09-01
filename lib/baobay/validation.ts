@@ -197,6 +197,12 @@ export const pilotReportSchema = z.object({
   ppgFlights: count(300),
   ppgCodesText: text(20_000),
   ppgNoTicket: count(300),
+  /** Suất ăn & xe trong ngày — số nhỏ, trần 50 là quá đủ cho một người/ngày. */
+  mealBreakfast: count(50),
+  mealLunch: count(50),
+  mealDinner: count(50),
+  motorbikeRides: count(50),
+  carRides: count(50),
   cancelledGuestEntries: cancelledGuestList,
   rescheduledGuestEntries: rescheduledGuestList,
   expenses: expenseList,

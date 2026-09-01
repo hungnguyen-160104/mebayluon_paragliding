@@ -16,6 +16,12 @@ import mongoose, { Schema } from "mongoose";
  */
 export interface IBaobayFlycamCancel {
   spot: string;
+  /**
+   * DỊCH VỤ bị huỷ — bảng sinh ra cho flycam, sau mở cho mọi dịch vụ gia tăng
+   * (lệnh chủ 31/08/2026: phi công báo huỷ được cả 360, cờ đỏ, hoàng hôn,
+   * kéo cờ/bánh). Bản ghi cũ không có trường này = "flycam".
+   */
+  service: "flycam" | "video360" | "redFlag" | "sunset" | "flagFlight";
   /** Ngày bay của chuyến bị huỷ flycam ("YYYY-MM-DD"). */
   date: string;
   /** Mã vé flycam bị huỷ — mối nối duy nhất về chuyến bay đã xảy ra. */
@@ -49,6 +55,7 @@ export interface IBaobayFlycamCancel {
 const FlycamCancelSchema = new Schema<IBaobayFlycamCancel>(
   {
     spot: { type: String, required: true, index: true },
+    service: { type: String, enum: ["flycam", "video360", "redFlag", "sunset", "flagFlight"], default: "flycam" },
     date: { type: String, required: true, index: true },
     ticketCode: { type: String, default: "", index: true },
     pilotUsername: { type: String, default: "", index: true },
