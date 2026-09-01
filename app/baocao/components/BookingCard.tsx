@@ -2766,11 +2766,20 @@ export function BookingTodayBanner({
   const issuedGuests = rows
     .filter((b) => b.ticketIssued && b.status !== "cancelled")
     .reduce((t, b) => t + b.guestCount, 0);
+  /**
+   * Số khách ĐANG CHỜ (chưa bay, chưa huỷ, chưa dời). Thiếu con số này thì
+   * dòng tiêu đề đọc như một phép cộng sai: "Tổng 106 - bay 93 - dời 4 - huỷ
+   * 5" — 4 khách còn lại đi đâu? Chính là 4 khách đang chờ, nhưng người đọc
+   * không có cách nào biết (chủ đã bắt đúng ca này ngày 01/09). Bày đủ bốn
+   * nhóm thì Tổng = bay + chờ + dời + huỷ, cộng nhẩm là khớp.
+   */
+  const openGuests = open.reduce((t, b) => t + b.guestCount, 0);
   const stats = [
     `${rows.length + moved.bookings} Book`,
     `Tổng ${rows.reduce((t, b) => t + b.guestCount, 0) + moved.guests}k`,
     issuedGuests ? `Đã xuất vé ${issuedGuests}k` : "",
     doneGuestsAll ? `Đã bay ${doneGuestsAll}k` : "",
+    openGuests ? `Chờ ${openGuests}k` : "",
     moved.guests ? `Dời ${moved.guests}k` : "",
     cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
   ].filter(Boolean);
