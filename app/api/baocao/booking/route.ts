@@ -89,6 +89,33 @@ export async function GET(req: Request) {
     wearsRole(auth, "cameraman") && date >= shiftDateKey(todayInVN(), -2) && date <= todayInVN();
   const manager =
     !asCrew && (auth.viaAdmin || (ROLES as readonly string[]).includes(auth.role) || cameramanWindow);
+  /**
+   * KHAU PHẠ: PHI CÔNG KHÔNG THẤY SỔ KHÁCH — trả rỗng ngay tại cửa, kể cả
+   * khách đã giao cho họ. Lệnh chủ 30/08/2026: điểm này quầy vé đứng thu tiền,
+   * điều phối chia khách theo số thứ tự; phi công chỉ việc bay — danh sách
+   * khách và mọi dấu vết thu tiền (còn thu, đã thu, ✓CK…) không phải việc của
+   * họ, để lọt ra bãi là sinh chuyện.
+   *
+   * NGOẠI LỆ duy nhất: người kiêm CAMERA MAN vẫn thấy (cửa sổ 3 ngày ở trên)
+   * — bán thêm flycam tại bãi phải tra được cả sổ, tính năng đã có chủ đích
+   * từ trước. Điểm khác (Hà Nội, Sa Pa) giữ nguyên: phi công ở đó nhận khách
+   * và thu tiền thật.
+   */
+  const kpPilotBlind =
+    spot === "khau-pha" && asCrew && wearsRole(auth, "pilot") && !wearsRole(auth, "cameraman");
+  if (kpPilotBlind) {
+    return NextResponse.json({
+      forDate: [],
+      upcoming: [],
+      flown: null,
+      moved: { bookings: 0, guests: 0 },
+      movedOut: [],
+      voided: [],
+      webSyncAt: "",
+      staff: await listSpotStaffAll(spot),
+    });
+  }
+
   const [lists, staff] = await Promise.all([
     listBookings(spot, date, manager ? undefined : auth.username),
     /**
