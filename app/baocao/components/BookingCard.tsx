@@ -2601,6 +2601,12 @@ export function BookingTodayBanner({
   const [error, setError] = useState<string | null>(null);
   /** Danh sách dài thì gập lại còn 10 dòng. */
   const [showAll, setShowAll] = useState(false);
+  /**
+   * Xếp thứ tự danh sách: theo số booking (mặc định), đưa "đã bay" lên trước,
+   * hay đưa "đã xuất vé" lên trước. Hai kiểu sau vẫn tie-break theo số booking
+   * để thứ tự ổn định, không nhảy lung tung mỗi lần tải lại.
+   */
+  const [sortBy, setSortBy] = useState<"seq" | "flown" | "ticket">("seq");
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
   const [moving, setMoving] = useState<{
     id: string;
@@ -2706,10 +2712,21 @@ export function BookingTodayBanner({
       </Button>
     ) : null;
 
-  const open = rows.filter((b) => b.status === "open");
+  const bookingCmp = (a: BookingDTO, b: BookingDTO) => {
+    if (sortBy === "flown") {
+      const d = Number(b.status === "done") - Number(a.status === "done");
+      if (d) return d;
+    }
+    if (sortBy === "ticket") {
+      const d = Number(Boolean(b.ticketIssued)) - Number(Boolean(a.ticketIssued));
+      if (d) return d;
+    }
+    return (a.daySeq || 0) - (b.daySeq || 0);
+  };
+  const open = rows.filter((b) => b.status === "open").sort(bookingCmp);
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
-  const closed = rows.filter((b) => b.status !== "open");
+  const closed = rows.filter((b) => b.status !== "open").sort(bookingCmp);
   /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. */
   const openShown = showAll ? open : open.slice(0, 10);
   if (!rows.length) return null;
@@ -2856,6 +2873,31 @@ export function BookingTodayBanner({
         Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
         như thường, không cần khớp với danh sách này.
       </p>
+      {rows.length > 1 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="text-sky-800/70">Xếp:</span>
+          {(
+            [
+              ["seq", "Số booking"],
+              ["flown", "Đã bay trước"],
+              ["ticket", "🎫 Đã xuất vé trước"],
+            ] as Array<["seq" | "flown" | "ticket", string]>
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSortBy(key)}
+              className={
+                sortBy === key
+                  ? "rounded-md bg-sky-600 px-2 py-0.5 font-semibold text-white"
+                  : "rounded-md border border-sky-300 bg-white px-2 py-0.5 font-medium text-sky-800 hover:bg-sky-50"
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <div className="mt-2">
           <Banner tone="error">{error}</Banner>

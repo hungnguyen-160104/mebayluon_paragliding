@@ -63,6 +63,8 @@ export function PersonnelPanel() {
   const [error, setError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<NewCredential[]>([]);
   const [filter, setFilter] = useState<Filter>("active");
+  /** Xếp danh sách theo tên A-Z hoặc gom theo chức danh; "none" = giữ thứ tự máy chủ trả về. */
+  const [sortBy, setSortBy] = useState<"none" | "name" | "role">("none");
   /** Cấp của CHÍNH tài khoản đang xem: 2 = quản trị hạn chế. */
   const [myLevel, setMyLevel] = useState<1 | 2>(2);
 
@@ -92,9 +94,19 @@ export function PersonnelPanel() {
     load();
   };
 
-  const shown = accounts.filter((a) =>
-    filter === "all" ? true : filter === "active" ? a.isActive : !a.isActive,
-  );
+  const byName = (a: BaobayAccountDTO, b: BaobayAccountDTO) =>
+    a.displayName.localeCompare(b.displayName, "vi", { sensitivity: "base" });
+  const shown = accounts
+    .filter((a) => (filter === "all" ? true : filter === "active" ? a.isActive : !a.isActive))
+    .sort((a, b) => {
+      if (sortBy === "name") return byName(a, b);
+      if (sortBy === "role") {
+        // Gom theo chức danh theo thứ tự khai trong BAOBAY_ROLES, trong nhóm thì xếp tên A-Z
+        const d = BAOBAY_ROLES.indexOf(a.role) - BAOBAY_ROLES.indexOf(b.role);
+        return d !== 0 ? d : byName(a, b);
+      }
+      return 0;
+    });
   const activeCount = accounts.filter((a) => a.isActive).length;
 
   return (
@@ -149,6 +161,27 @@ export function PersonnelPanel() {
                 className={
                   filter === key
                     ? "rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white"
+                    : "rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                }
+              >
+                {label}
+              </button>
+            ))}
+            <span className="ml-1 text-xs text-slate-500">Xếp:</span>
+            {(
+              [
+                ["name", "Tên A-Z"],
+                ["role", "Chức danh"],
+              ] as Array<["name" | "role", string]>
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                /* Bấm lần nữa vào nút đang chọn = bỏ xếp, về thứ tự gốc */
+                onClick={() => setSortBy(sortBy === key ? "none" : key)}
+                className={
+                  sortBy === key
+                    ? "rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
                     : "rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                 }
               >
