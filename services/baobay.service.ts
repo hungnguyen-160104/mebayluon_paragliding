@@ -6247,17 +6247,36 @@ export async function splitBooking(
    */
   const groupRemaining = Math.max(0, Math.round(current.remaining ?? 0));
   const debtTo: "origin" | "part" = input.debtTo === "origin" ? "origin" : "part";
+  /**
+   * TIỀN TRẢ TRƯỚC ĐI THEO KHÁCH DỜI (chiều ngược của nợ — chuyện thật 02/09:
+   * Đặng Nhã Uyên + Đặng Thành Gia CK đủ cho 2 người, 1 bay hôm nay 1 dời mai
+   * → gốc bị báo "thu thừa 3,39tr" còn booking ngày mai trắng tiền). Đoàn đã
+   * trả NHIỀU HƠN giá trị phần ở lại thì phần dôi chính là tiền của khách dời:
+   * chuyển sang booking mới làm "đã trả", gốc hết thừa, ngày mai khỏi thu lại.
+   */
+  const surplus =
+    input.mode === "move"
+      ? Math.min(
+          Math.max(0, (current.deposit || 0) + (current.agencyPaidAmount || 0) - originTotal),
+          current.deposit || 0,
+        )
+      : 0;
+  if (surplus > 0) originSet.deposit = (current.deposit || 0) - surplus;
   if (input.mode === "move") {
     originSet.remaining = debtTo === "origin" ? groupRemaining : 0;
   } else {
     originSet.remaining = Math.max(0, originTotal - (current.deposit || 0) - (current.agencyPaidAmount || 0));
   }
-  const debtNote =
+  const debtNote = [
     input.mode === "move" && groupRemaining > 0
       ? debtTo === "part"
         ? `nợ đoàn ${groupRemaining.toLocaleString("vi-VN")}đ chuyển theo phần dời`
         : `nợ đoàn ${groupRemaining.toLocaleString("vi-VN")}đ giữ lại đây`
-      : "";
+      : "",
+    surplus > 0 ? `tiền trả trước ${surplus.toLocaleString("vi-VN")}đ chuyển theo phần dời` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   originSet.note = [
     current.note,
     input.mode === "cancel"
@@ -6301,12 +6320,12 @@ export async function splitBooking(
     comboDiscount: 0,
     pickupFee: 0,
     /**
-     * Dời: phần dời chỉ mang đúng NỢ CÒN LẠI của đoàn (nếu được chọn gánh) —
-     * tiền đã trả nằm hết ở booking gốc, không tính lại giá từ đầu kẻo nợ bị
-     * đẻ đôi. Huỷ: không còn gì phải thu.
+     * Dời: phần dời mang đúng phần tiền CỦA NÓ — nợ còn lại của đoàn (nếu
+     * được chọn gánh) cộng tiền đoàn ĐÃ TRẢ TRƯỚC dôi ra khỏi phần ở lại.
+     * Không tính lại giá từ đầu kẻo nợ bị đẻ đôi. Huỷ: không còn gì phải thu.
      */
-    totalAmount: input.mode === "move" && debtTo === "part" ? groupRemaining : 0,
-    deposit: 0,
+    totalAmount: input.mode === "move" ? (debtTo === "part" ? groupRemaining : 0) + surplus : 0,
+    deposit: input.mode === "move" ? surplus : 0,
     remaining: input.mode === "move" && debtTo === "part" ? groupRemaining : 0,
     depositToCompany: false,
     transferCode: "",
@@ -6320,6 +6339,7 @@ export async function splitBooking(
           ? `mang theo nợ cả đoàn ${groupRemaining.toLocaleString("vi-VN")}đ`
           : "nợ đoàn tính ở booking gốc"
         : "",
+      surplus > 0 ? `mang theo ${surplus.toLocaleString("vi-VN")}đ đoàn đã trả trước — khỏi thu lại` : "",
     ]
       .filter(Boolean)
       .join(" · "),
