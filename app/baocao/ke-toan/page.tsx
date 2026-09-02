@@ -9,6 +9,7 @@ import type { DailyCloseDTO, HandoverDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 import type { MoneyBoard, FlycamCancelDTO, RefundDTO } from "@/services/baobay.service";
 
+import { AgencySummaryCard } from "../components/AgencySummaryCard";
 import { apiGet } from "../components/client-api";
 import { BankCheckCard } from "../components/BankCheckCard";
 import { DateBar } from "../components/DateBar";
@@ -234,6 +235,9 @@ export default function KeToanPage() {
 
       {/* SOÁT CHUYỂN KHOẢN — dán sao kê / SMS banking, máy dò về đúng booking */}
       <BankCheckCard date={date} />
+
+      {/* KHÁCH THEO ĐẠI LÝ — lọc theo tháng, quyết toán Klook/Agoda/BlueHome… */}
+      <AgencySummaryCard />
 
       {/* VIỆC CẦN LÀM — mỗi dòng bấm được, dẫn tới đúng chỗ xử lý */}
       <Card title="Việc cần làm">
