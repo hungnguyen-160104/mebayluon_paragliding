@@ -49,7 +49,14 @@ function PersonRows({ people, tone }: { people: MoneyBoardPerson[]; tone: "cash"
                     {it.bookingCode ? ` · #${it.bookingCode}` : ""}
                     <span className="text-slate-400"> · {it.from}</span>
                   </span>
-                  <strong className="shrink-0 tabular-nums">{formatVND(it.amount)}</strong>
+                  <strong
+                    className={
+                      "shrink-0 tabular-nums " + (it.amount >= 0 ? "text-emerald-700" : "text-rose-700")
+                    }
+                  >
+                    {it.amount >= 0 ? "+" : "−"}
+                    {formatVND(Math.abs(it.amount))}
+                  </strong>
                 </li>
               ))}
             </ul>
@@ -119,7 +126,12 @@ export function MoneyBoardCard({
                   {it.label}
                   {it.transferCode ? ` · #${it.transferCode}` : ""}
                 </span>
-                <strong className="shrink-0 tabular-nums">{formatVND(it.amount)}</strong>
+                <strong
+                  className={"shrink-0 tabular-nums " + (it.amount >= 0 ? "text-emerald-700" : "text-rose-700")}
+                >
+                  {it.amount >= 0 ? "+" : "−"}
+                  {formatVND(Math.abs(it.amount))}
+                </strong>
               </li>
             ))}
           </ul>

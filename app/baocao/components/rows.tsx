@@ -289,7 +289,16 @@ export function ExpenseRows({
                 {row.kind === "thu" ? "THU" : "CHI"}
               </span>
               {row.content || "(chưa ghi nội dung)"}
-              <strong className="ml-1 tabular-nums">{(row.amount || 0).toLocaleString("vi-VN")}đ</strong>
+              {/* Dấu + xanh / − đỏ ngay trên CON SỐ — chữ THU/CHI đứng đầu dòng
+                  dễ bị lướt qua khi dò cột tiền (lời chủ 02/09). */}
+              <strong
+                className={
+                  "ml-1 tabular-nums " + (row.kind === "thu" ? "text-emerald-700" : "text-rose-700")
+                }
+              >
+                {row.kind === "thu" ? "+" : "−"}
+                {(row.amount || 0).toLocaleString("vi-VN")}đ
+              </strong>
               {withMethod && (
                 <span className="ml-1 text-xs text-slate-500">· {row.method === "transfer" ? "CK" : "TM"}</span>
               )}
