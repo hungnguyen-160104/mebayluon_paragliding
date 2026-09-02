@@ -6182,6 +6182,11 @@ export async function splitBooking(
     usedServices?: string;
     usedFee?: number;
     bankAccount?: string;
+    /**
+     * Dời một phần: NỢ CÒN LẠI của cả đoàn tính vào bên nào — "part" (mặc
+     * định: thu nốt khi mấy khách dời tới bay) hay "origin" (nhóm ở lại trả).
+     */
+    debtTo?: "origin" | "part";
   },
 ): Promise<{ origin: BookingDTO; part: BookingDTO }> {
   await connectDB();
@@ -6227,12 +6232,33 @@ export async function splitBooking(
     ppgUnitPrice: flightUnitPrice("ppg", current.flightDate),
   } as any);
   originSet.totalAmount = originTotal;
-  originSet.remaining = Math.max(0, originTotal - (current.deposit || 0) - (current.agencyPaidAmount || 0));
+  /**
+   * NỢ CỦA CẢ ĐOÀN KHÔNG ĐƯỢC ĐẺ THÊM khi tách. `remaining` là số nợ SỐNG —
+   * đã trừ cọc, tiền đại lý và MỌI khoản thu trong ngày — nên khi dời một
+   * phần đoàn sang ngày khác, đúng số đó đi theo MỘT bên (người xử lý chọn),
+   * bên kia về 0. Trước đây gốc bị TÍNH LẠI từ đơn giá (quên các khoản đã
+   * thu) còn phần dời bị gán "đơn giá × số khách" — đoàn 5 PPG nợ 3,2tr tách
+   * 2 khách là hoá ra "còn thu 5tr": sai cả hai đầu (chuyện thật 01/09/2026).
+   */
+  const groupRemaining = Math.max(0, Math.round(current.remaining ?? 0));
+  const debtTo: "origin" | "part" = input.debtTo === "origin" ? "origin" : "part";
+  if (input.mode === "move") {
+    originSet.remaining = debtTo === "origin" ? groupRemaining : 0;
+  } else {
+    originSet.remaining = Math.max(0, originTotal - (current.deposit || 0) - (current.agencyPaidAmount || 0));
+  }
+  const debtNote =
+    input.mode === "move" && groupRemaining > 0
+      ? debtTo === "part"
+        ? `nợ đoàn ${groupRemaining.toLocaleString("vi-VN")}đ chuyển theo phần dời`
+        : `nợ đoàn ${groupRemaining.toLocaleString("vi-VN")}đ giữ lại đây`
+      : "";
   originSet.note = [
     current.note,
     input.mode === "cancel"
       ? `${guests} khách huỷ (tách nhóm) — ${session.name || session.username}`
       : `${guests} khách dời sang ${formatDateKeyVN(String(input.toDate))} — ${session.name || session.username}`,
+    debtNote,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -6269,16 +6295,29 @@ export async function splitBooking(
     discount: 0,
     comboDiscount: 0,
     pickupFee: 0,
-    /** Dời: tiền để nhân sự chốt lại với khách · Huỷ: không còn gì phải thu. */
-    totalAmount: input.mode === "move" ? (current.unitPrice || 0) * guests : 0,
+    /**
+     * Dời: phần dời chỉ mang đúng NỢ CÒN LẠI của đoàn (nếu được chọn gánh) —
+     * tiền đã trả nằm hết ở booking gốc, không tính lại giá từ đầu kẻo nợ bị
+     * đẻ đôi. Huỷ: không còn gì phải thu.
+     */
+    totalAmount: input.mode === "move" && debtTo === "part" ? groupRemaining : 0,
     deposit: 0,
-    remaining: input.mode === "move" ? (current.unitPrice || 0) * guests : 0,
+    remaining: input.mode === "move" && debtTo === "part" ? groupRemaining : 0,
     depositToCompany: false,
     transferCode: "",
     assignedToUsername: current.assignedToUsername,
     assignedToName: current.assignedToName,
     assignedBy: current.assignedBy,
-    note: `tách từ booking ${current.bookingCode || current.contactName || ""} ngày ${formatDateKeyVN(current.flightDate)}`,
+    note: [
+      `tách từ booking ${current.bookingCode || current.contactName || ""} ngày ${formatDateKeyVN(current.flightDate)}`,
+      input.mode === "move" && groupRemaining > 0
+        ? debtTo === "part"
+          ? `mang theo nợ cả đoàn ${groupRemaining.toLocaleString("vi-VN")}đ`
+          : "nợ đoàn tính ở booking gốc"
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · "),
     status: input.mode === "cancel" ? "cancelled" : "open",
     ...(input.mode === "cancel"
       ? {

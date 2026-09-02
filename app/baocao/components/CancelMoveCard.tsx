@@ -87,6 +87,8 @@ export function CancelMoveCard({
   const [feeTransfer, setFeeTransfer] = useState(0);
   const [feeCode, setFeeCode] = useState("");
   const [toDate, setToDate] = useState("");
+  /** Tách dời mà đoàn CÒN NỢ: nợ theo phần dời đi (mặc định) hay ở lại nhóm cũ. */
+  const [debtTo, setDebtTo] = useState<"origin" | "part">("part");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +138,7 @@ export function CancelMoveCard({
     setFeeTransfer(0);
     setFeeCode("");
     setToDate("");
+    setDebtTo("part");
     setNote("");
   }
 
@@ -191,7 +194,7 @@ export function CancelMoveCard({
                 usedFee,
                 bankAccount,
               }
-            : { toDate }),
+            : { toDate, debtTo }),
         });
       }
 
@@ -478,6 +481,37 @@ export function CancelMoveCard({
                   <p className="mt-1 text-[11px] font-semibold text-amber-800">
                     ⇠ Ngày mới SỚM hơn ngày đang đặt — được, miễn ngày đó chưa bị kế toán chốt.
                   </p>
+                )}
+                {/* Nợ là CỦA CẢ ĐOÀN: tách đôi thì chọn bên gánh — máy chuyển
+                    đúng số nợ sang một bên, bên kia về 0, không tính lại giá. */}
+                {!whole && guests > 0 && (picked.remaining ?? 0) > 0 && (
+                  <div className="mt-1.5 rounded-lg border border-rose-200 bg-rose-50/60 p-2">
+                    <div className="text-[11px] font-semibold text-rose-800">
+                      Đoàn còn nợ {formatVND(picked.remaining ?? 0)} — tính vào:
+                    </div>
+                    <div className="mt-1 flex h-8 w-56 overflow-hidden rounded-lg border border-slate-300">
+                      {(
+                        [
+                          ["part", "Phần dời đi"],
+                          ["origin", "Phần ở lại"],
+                        ] as Array<["part" | "origin", string]>
+                      ).map(([v, label]) => (
+                        <button
+                          key={v}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setDebtTo(v)}
+                          className={
+                            debtTo === v
+                              ? "flex-1 bg-rose-600 px-2 text-xs font-bold text-white"
+                              : "flex-1 bg-white px-2 text-xs font-medium text-slate-500"
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
                 {/* Dời lịch KHÔNG hoàn tiền, nhưng phí đã phát sinh thì khách trả */}
                 <div className="mt-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2">
