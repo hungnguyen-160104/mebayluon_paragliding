@@ -5,7 +5,7 @@ import { resolveSpot } from "@/lib/baobay/request-spot";
 import { collectSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { wearsRole } from "@/lib/baobay/roles";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { BaobayError, createCollect, editCollect, listCollects, resolveCollect } from "@/services/baobay.service";
+import { BaobayError, createCollect, editCollect, listCollects, removeCollect, resolveCollect } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +66,14 @@ export async function PATCH(req: Request) {
   if (!id) return NextResponse.json({ message: "Thiếu id lệnh thu" }, { status: 400 });
 
   try {
+    // KẾ TOÁN XOÁ khoản thu ghi TRÙNG/nhầm — xoá mềm, tiền booking trả về như chưa thu
+    if (body?.action === "remove") {
+      if (!(wearsRole(auth, "accountant") || wearsRole(auth, "admin") || (auth as { viaAdmin?: boolean }).viaAdmin)) {
+        return NextResponse.json({ message: "Chỉ kế toán/quản trị mới xoá được khoản thu" }, { status: 403 });
+      }
+      const collect = await removeCollect(auth, spot, id, String(body?.reason ?? ""));
+      return NextResponse.json({ collect });
+    }
     // KẾ TOÁN SỬA khoản thu (chia bill nhầm, đổi người thu, sai mã CK)
     if (body?.action === "edit") {
       if (!(wearsRole(auth, "accountant") || wearsRole(auth, "admin") || (auth as { viaAdmin?: boolean }).viaAdmin)) {

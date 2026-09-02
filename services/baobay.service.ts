@@ -7363,6 +7363,80 @@ export async function editCollect(
   return toCollectDTO({ ...doc, sheetSynced: false });
 }
 
+/**
+ * KẾ TOÁN XOÁ MỘT KHOẢN THU — nhân viên lỡ ghi thu HAI LẦN cho cùng một món
+ * (chuyện thật 02/09/2026). Xoá MỀM: lệnh chuyển sang "rejected" kèm lý do —
+ * mọi sổ (tiền cá nhân, soát CK, bảng ngày) vốn đã loại rejected, và vết còn
+ * nguyên để sau truy. Tiền booking được trả về như chưa từng thu khoản đó:
+ * "còn thu" cộng lại, "đã trả" trừ đi, dòng trong bản chụp thanh toán gỡ ra,
+ * tích ✓CK/✓TM rụng để kế toán soát lại.
+ */
+export async function removeCollect(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  reason?: string,
+): Promise<CollectDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const current = await BaobayCollect.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy lệnh thu", 404);
+  if (current.status === "rejected") throw new BaobayError("Lệnh này đã bị loại rồi", 400);
+
+  const amount = Number(current.amount) || 0;
+  const why = (reason ?? "").trim() || "thu trùng/ghi nhầm";
+  const doc = await BaobayCollect.findOneAndUpdate(
+    { _id: id, spot, status: current.status },
+    {
+      $set: {
+        status: "rejected",
+        rejectedReason: `kế toán xoá: ${why}`,
+        verifiedAt: null,
+        verifiedBy: "",
+        resolvedAt: new Date(),
+        resolvedBy: session.username,
+        note: [current.note, `XOÁ bởi ${session.name || session.username} ${formatDateKeyVN(todayInVN())}: ${why}`]
+          .filter(Boolean)
+          .join(" · "),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Lệnh vừa bị thay đổi, tải lại rồi xoá tiếp", 409);
+
+  if (current.bookingId) {
+    const booking = await BaobayBooking.findById(current.bookingId)
+      .select("remaining deposit collectedLog")
+      .lean<any>();
+    if (booking) {
+      const log = Array.isArray(booking.collectedLog) ? [...booking.collectedLog] : [];
+      const i = log.findIndex(
+        (e: any) =>
+          (Number(e.amount) || 0) === amount &&
+          (e.method === "transfer" ? "transfer" : "cash") === current.method &&
+          String(e.code ?? "") === String(current.transferCode ?? ""),
+      );
+      if (i >= 0) log.splice(i, 1);
+      await BaobayBooking.updateOne(
+        { _id: current.bookingId },
+        {
+          $set: {
+            collectedLog: log,
+            remaining: Math.max(0, (booking.remaining ?? 0) + amount),
+            deposit: Math.max(0, (booking.deposit ?? 0) - amount),
+            ckCheckedAt: null,
+            tmCheckedAt: null,
+          },
+        },
+      );
+    }
+  }
+
+  pushSheetInBackground(() => pushCollectRow(doc), BaobayCollect, doc._id);
+  return toCollectDTO({ ...doc, sheetSynced: false });
+}
+
 async function pushCollectRow(doc: any) {
   return pushBaobayRow(
     "collect",

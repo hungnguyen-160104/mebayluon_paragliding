@@ -1919,6 +1919,28 @@ function CollectFixControl({
     }
   }
 
+  /** Xoá khoản ghi TRÙNG/nhầm — xoá mềm (còn vết), tiền booking trả về như chưa thu. */
+  async function remove(c: NonNullable<BookingDTO["collected"]>[number]) {
+    const reason = window.prompt(
+      `XOÁ khoản thu ${(c.amount || 0).toLocaleString("vi-VN")}đ ${c.method === "transfer" ? "CK" : "TM"}?\n\n` +
+        `Dùng khi nhân viên lỡ ghi thu HAI LẦN hoặc ghi nhầm. Booking sẽ cộng lại "còn thu" đúng bằng số này; ` +
+        `lệnh chuyển sang mục từ chối (vẫn còn vết, không mất hẳn).\n\nGhi lý do:`,
+      "thu trùng",
+    );
+    if (reason === null) return;
+    setBusy(c.collectId!);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/collect?spot=${spot}`, { id: c.collectId, action: "remove", reason });
+      onDone("✓ Đã xoá khoản thu — tiền booking đã cộng lại phần còn thu, lệnh nằm ở mục từ chối để lần vết.");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xoá được khoản thu");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (!open) {
     return (
       <Button
@@ -2018,6 +2040,16 @@ function CollectFixControl({
                 onClick={() => verify(c, !c.verified)}
               >
                 {c.verified ? "↺ Bỏ nhận" : "✓ Nhận đủ"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="ml-auto h-6 border-rose-300 bg-white px-2 text-[11px] font-semibold text-rose-700"
+                disabled={busy === c.collectId}
+                title="Xoá khoản ghi trùng/nhầm — booking cộng lại còn thu, lệnh vào mục từ chối (còn vết)"
+                onClick={() => remove(c)}
+              >
+                🗑 Xoá
               </Button>
             </div>
           </div>
