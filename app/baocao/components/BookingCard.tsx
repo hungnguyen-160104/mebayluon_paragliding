@@ -3426,11 +3426,15 @@ export function BookingTodayBanner({
               </li>
             ))}
         {open.length > 10 && (
-          <li className="mt-1">
+          /* [column-span:all]: danh sách chia 2 cột trên desktop nên một <li>
+             thường bị dòng chảy cột nhét vào LƯNG CHỪNG cột phải — chủ tìm nút
+             "Xem thêm" không thấy, tưởng thẻ không có (chuyện thật 02/09).
+             Phá cột cho nút thành thanh ngang trọn chiều rộng. */
+          <li className="my-1.5 lg:[column-span:all]">
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="w-full rounded-lg border border-sky-300 bg-white py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
+              className="w-full rounded-lg border-2 border-sky-400 bg-white py-2 text-xs font-bold text-sky-800 hover:bg-sky-100"
             >
               {/* Ghi rõ SỐ KHÁCH đang gập: chủ cộng nhẩm "Tổng 62k" với các dòng
                   nhìn thấy mà không khớp là nghi sổ sai ngay (chuyện thật 02/09) —
