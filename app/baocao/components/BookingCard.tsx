@@ -3432,7 +3432,12 @@ export function BookingTodayBanner({
               onClick={() => setShowAll((v) => !v)}
               className="w-full rounded-lg border border-sky-300 bg-white py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50"
             >
-              {showAll ? "▴ Thu gọn danh sách" : `▾ Xem thêm ${open.length - 10} booking`}
+              {/* Ghi rõ SỐ KHÁCH đang gập: chủ cộng nhẩm "Tổng 62k" với các dòng
+                  nhìn thấy mà không khớp là nghi sổ sai ngay (chuyện thật 02/09) —
+                  nút phải tự khai nó đang giấu bao nhiêu khách. */}
+              {showAll
+                ? "▴ Thu gọn danh sách"
+                : `▾ Xem thêm ${open.length - 10} booking (${open.slice(10).reduce((t, b) => t + b.guestCount, 0)} khách đang gập)`}
             </button>
           </li>
         )}
