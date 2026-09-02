@@ -1230,7 +1230,7 @@ export function RescheduleGuestRows({
                 (row.bookedId ? (
                   <div className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
                     ✓ Đã đẩy vào lịch booking ngày {row.toDate ? formatDateKeyVN(row.toDate) : "?"} — nhóm sẽ hiện
-                    trong "🛫 Booking bay ngày đó" kèm ghi chú dời từ hôm nay.
+                    trong “🛫 Booking bay ngày đó” kèm ghi chú dời từ hôm nay.
                   </div>
                 ) : (
                   <Button
