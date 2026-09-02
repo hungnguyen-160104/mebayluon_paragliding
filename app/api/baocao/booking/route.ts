@@ -1,8 +1,10 @@
 // app/api/baocao/booking/route.ts
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 
 import { schedulePushLiveData } from "@/lib/bot/live-data";
+import { logBooking } from "@/models/BaobayBookingLog.model";
 
 import { isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
@@ -120,6 +122,16 @@ export async function POST(req: Request) {
 
   try {
     const booking = await createBooking(auth, parsed.data);
+    // Nhật ký ĐÍCH DANH: middleware model đã chụp phép ghi, dòng này trả lời "ai"
+    logBooking({
+      bookingId: new mongoose.Types.ObjectId(booking.id),
+      spot,
+      op: "api",
+      action: "create",
+      byUsername: auth.username,
+      byName: auth.name,
+      snap: { contactName: booking.contactName, flightDate: booking.flightDate, daySeq: booking.daySeq, status: booking.status, guestCount: booking.guestCount },
+    });
     return NextResponse.json({ booking }, { status: 201 });
   } catch (err) {
     if (err instanceof BaobayError) {
@@ -150,6 +162,14 @@ export async function PUT(req: Request) {
   }
 
   try {
+    logBooking({
+      bookingId: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : undefined,
+      spot,
+      op: "api",
+      action: "edit",
+      byUsername: auth.username,
+      byName: auth.name,
+    });
     const booking = await updateBookingInfo(auth, spot, id, parsed.data);
     return NextResponse.json({ booking });
   } catch (err) {
@@ -181,6 +201,15 @@ export async function DELETE(req: Request) {
      * vào bất cứ con số nào của ngày. Cách "gộp booking trùng" đã bỏ hẳn: nó dời
      * tiền ngầm giữa hai booking và đã làm sai số tiền thu thật.
      */
+    logBooking({
+      bookingId: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : undefined,
+      spot,
+      op: "api",
+      action: "void",
+      byUsername: auth.username,
+      byName: auth.name,
+      update: `lý do: ${String(body?.reason ?? "").slice(0, 200)}`,
+    });
     const res = await voidBooking(auth, spot, id, { reason: String(body?.reason ?? "") });
     return NextResponse.json({ ok: true, ...res });
   } catch (err) {
@@ -224,6 +253,20 @@ export async function PATCH(req: Request) {
   const id = String(body?.id ?? "");
   const toDate = String(body?.toDate ?? "");
   if (!id) return NextResponse.json({ message: "Thiếu id booking" }, { status: 400 });
+  /**
+   * Nhật ký ĐÍCH DANH cho mọi hành động PATCH (kể cả cancel-guests bên dưới):
+   * ghi "ai yêu cầu gì" ngay lúc nhận — middleware model chụp phép ghi thật,
+   * dòng này trả lời câu "ai bấm, lúc nào".
+   */
+  logBooking({
+    bookingId: mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : undefined,
+    spot,
+    op: "api",
+    action,
+    byUsername: auth.username,
+    byName: auth.name,
+    update: toDate ? `toDate: ${toDate}` : undefined,
+  });
   if (action === "cancel-guests") {
     // Huỷ BỚT khách (không huỷ cả booking) — giữ một dòng, in "huỷ N" đỏ
     try {

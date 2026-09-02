@@ -2,6 +2,7 @@
 import mongoose, { Schema } from "mongoose";
 
 import { DEFAULT_SPOT } from "@/lib/baobay/spots";
+import { logBooking, logJson } from "@/models/BaobayBookingLog.model";
 
 /**
  * Một BOOKING đặt trước: khách chốt hôm nay nhưng bay một ngày khác
@@ -596,6 +597,56 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
 
 // Trang điều phối hỏi "booking của ngày X" và "booking đang chờ" mỗi lần mở
 BaobayBookingSchema.index({ spot: 1, flightDate: 1, status: 1 });
+
+/**
+ * NHẬT KÝ MÁY MÓC — mọi phép ghi qua mongoose để lại một dòng ở
+ * BaobayBookingLog (xem lý do ở models/BaobayBookingLog.model.ts). Gắn ngay
+ * trên schema để tính năng viết SAU NÀY cũng tự được ghi, không ai phải nhớ.
+ * Ai bấm thì tầng route ghi bổ sung; ở đây chỉ chụp phép ghi chạm vào đâu,
+ * đổi cái gì. Ghi nuốt lỗi — nghiệp vụ chính không chết vì nhật ký.
+ */
+BaobayBookingSchema.pre("save", function () {
+  (this.$locals as { wasNew?: boolean }).wasNew = this.isNew;
+});
+BaobayBookingSchema.post("save", function () {
+  const doc = this as unknown as IBaobayBooking & { _id: mongoose.Types.ObjectId; $locals: { wasNew?: boolean } };
+  logBooking({
+    bookingId: doc._id,
+    spot: doc.spot || "",
+    op: doc.$locals?.wasNew ? "create" : "update",
+    update: doc.$locals?.wasNew ? logJson({ contactName: doc.contactName, source: doc.source, guestCount: doc.guestCount }) : "(save)",
+    snap: {
+      contactName: doc.contactName,
+      flightDate: doc.flightDate,
+      daySeq: doc.daySeq,
+      status: doc.status,
+      guestCount: doc.guestCount,
+    },
+  });
+});
+BaobayBookingSchema.pre(["updateOne", "updateMany", "findOneAndUpdate"], function () {
+  const q = this as mongoose.Query<unknown, unknown>;
+  const filter = q.getFilter() as { _id?: unknown };
+  logBooking({
+    bookingId: mongoose.Types.ObjectId.isValid(String(filter?._id ?? "")) ? new mongoose.Types.ObjectId(String(filter._id)) : undefined,
+    spot: String((filter as { spot?: string })?.spot ?? ""),
+    op: "update",
+    filter: logJson(filter, 800),
+    update: logJson(q.getUpdate()),
+  });
+});
+/** App KHÔNG có đường xoá booking — dòng "delete" xuất hiện là chuông báo động. */
+BaobayBookingSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], function () {
+  const q = this as mongoose.Query<unknown, unknown>;
+  const filter = q.getFilter() as { _id?: unknown };
+  logBooking({
+    bookingId: mongoose.Types.ObjectId.isValid(String(filter?._id ?? "")) ? new mongoose.Types.ObjectId(String(filter._id)) : undefined,
+    spot: String((filter as { spot?: string })?.spot ?? ""),
+    op: "delete",
+    filter: logJson(filter, 800),
+    update: "⚠ XOÁ CỨNG qua mongoose — app không có tính năng này, truy gấp",
+  });
+});
 
 export const BaobayBooking =
   mongoose.models.BaobayBooking || mongoose.model<IBaobayBooking>("BaobayBooking", BaobayBookingSchema);
