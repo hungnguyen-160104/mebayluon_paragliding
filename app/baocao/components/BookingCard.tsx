@@ -234,7 +234,7 @@ function BookingSummary({
           {" · "}
           <strong
             className="rounded bg-emerald-100 px-1 font-bold uppercase text-emerald-800"
-            title={`Khách đã trả ${(b.agencyPaidAmount ?? 0).toLocaleString("vi-VN")} đ bên đại lý${b.agencyName ? ` ${b.agencyName}` : ""} — đại lý đang giữ hộ, công ty phải đòi về`}
+            title={`Khách đã trả ${(b.agencyPaidAmount ?? 0).toLocaleString("vi-VN")} đ bên đại lý${b.agencyName ? ` ${b.agencyName}` : ""} — đại lý đang giữ hộ, công ty phải đòi về`}
           >
             {/* Thiếu ô tên đại lý thì lấy NGUỒN ĐẶT: khách đặt qua đại lý nào
                 thì nguồn chính là đại lý đó (BLUEHOME, KHANGDUNG…) */}
@@ -604,7 +604,7 @@ function EditCollectsControl({
 
   async function save(c: CollectDTO, remove = false) {
     const d = draft[c.id];
-    if (remove && !window.confirm(`Xoá khoản thu ${c.amount.toLocaleString("vi-VN")} đ khỏi booking này?`)) return;
+    if (remove && !window.confirm(`Xoá khoản thu ${c.amount.toLocaleString("vi-VN")} đ khỏi booking này?`)) return;
     setBusy(c.id);
     setError(null);
     try {
@@ -1681,10 +1681,10 @@ function CommissionControl({
       });
       onDone(
         method === "cash"
-          ? `✓ Đã chi CK ĐL ${amount.toLocaleString("vi-VN")} đ TM — trừ vào tiền bạn đang giữ.`
+          ? `✓ Đã chi CK ĐL ${amount.toLocaleString("vi-VN")} đ TM — trừ vào tiền bạn đang giữ.`
           : method === "agency"
-            ? `✓ CK ĐL ${amount.toLocaleString("vi-VN")} đ trừ vào tiền đại lý đang cầm — đại lý chỉ còn phải hoàn ${Math.max(0, agencyHolding - amount).toLocaleString("vi-VN")} đ.`
-            : `✓ Đã ghi CK ĐL ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
+            ? `✓ CK ĐL ${amount.toLocaleString("vi-VN")} đ trừ vào tiền đại lý đang cầm — đại lý chỉ còn phải hoàn ${Math.max(0, agencyHolding - amount).toLocaleString("vi-VN")} đ.`
+            : `✓ Đã ghi CK ĐL ${amount.toLocaleString("vi-VN")} đ chuyển khoản từ TK công ty (#${code}).`,
       );
       setOpen(false);
     } catch (err: unknown) {
@@ -2192,14 +2192,14 @@ function CollectMoneyControl({
     if (
       left <= 0 &&
       total > 0 &&
-      !window.confirm(`${who} ĐÃ THU ĐỦ rồi. Vẫn ghi thêm ${total.toLocaleString("vi-VN")} đ cho khách này?`)
+      !window.confirm(`${who} ĐÃ THU ĐỦ rồi. Vẫn ghi thêm ${total.toLocaleString("vi-VN")} đ cho khách này?`)
     )
       return;
     if (
       total > left &&
       left > 0 &&
       !window.confirm(
-        `Thu ${total.toLocaleString("vi-VN")} đ cho ${who}, NHIỀU HƠN phần còn phải thu (${left.toLocaleString("vi-VN")} đ).\n\nKiểm lại xem có nhầm sang booking khác không. Vẫn ghi?`,
+        `Thu ${total.toLocaleString("vi-VN")} đ cho ${who}, NHIỀU HƠN phần còn phải thu (${left.toLocaleString("vi-VN")} đ).\n\nKiểm lại xem có nhầm sang booking khác không. Vẫn ghi?`,
       )
     )
       return;
@@ -2215,12 +2215,12 @@ function CollectMoneyControl({
         transferDate: ckDate,
       });
       const parts = [
-        cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
+        cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
         transfer > 0
-          ? `${transfer.toLocaleString("vi-VN")} đ CK${used.length > 1 ? ` (${used.length} bill)` : ""} (vào TK công ty)`
+          ? `${transfer.toLocaleString("vi-VN")} đ CK${used.length > 1 ? ` (${used.length} bill)` : ""} (vào TK công ty)`
           : "",
       ].filter(Boolean);
-      onDone(`✓ Thu ${total.toLocaleString("vi-VN")} đ — ${parts.join(" + ")}.`);
+      onDone(`✓ Thu ${total.toLocaleString("vi-VN")} đ — ${parts.join(" + ")}.`);
       setOpen(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không ghi nhận được khoản thu");
@@ -2258,7 +2258,7 @@ function CollectMoneyControl({
         Thu tiền cho #{booking.daySeq || "?"} · {booking.contactName || booking.phone || "khách"}
         <span className="font-medium opacity-90">
           {" "}
-          · còn thu {left.toLocaleString("vi-VN")} đ
+          · còn thu {left.toLocaleString("vi-VN")} đ
         </span>
       </div>
       {/* Cọc = gõ số tuỳ ý · Thu đủ = lấy trọn phần còn phải thu, khỏi tự tính */}
@@ -2295,11 +2295,11 @@ function CollectMoneyControl({
       {/* Khách trả một phần TM + một phần CK: nhập cả hai, xác nhận một lần.
           Một booking thu được NHIỀU LẦN — mỗi lần một lệnh thu riêng. */}
       <div className="text-[11px] font-semibold text-slate-700">
-        Còn phải thu: <span className="tabular-nums">{left.toLocaleString("vi-VN")} đ</span>
+        Còn phải thu: <span className="tabular-nums">{left.toLocaleString("vi-VN")} đ</span>
         {booking.deposit > 0 && (
           <span className="font-normal text-slate-500">
             {" "}
-            · đã thanh toán {booking.deposit.toLocaleString("vi-VN")} đ
+            · đã thanh toán {booking.deposit.toLocaleString("vi-VN")} đ
           </span>
         )}
       </div>
@@ -2457,7 +2457,7 @@ function CollectMoneyControl({
         }
       >
         <span className="text-xs font-semibold text-slate-600">Tổng thu lần này</span>
-        <strong className="text-base tabular-nums text-slate-900">{total.toLocaleString("vi-VN")} đ</strong>
+        <strong className="text-base tabular-nums text-slate-900">{total.toLocaleString("vi-VN")} đ</strong>
         {/* Khách chuyển khoản một lần: đưa mã QR cho quét tại chỗ, hoặc gửi Zalo
             trả sau. Số tiền lấy đúng số vừa gõ, nội dung là "ngày bay · STT ·
             mã booking" để kế toán dò sao kê.
@@ -2481,7 +2481,7 @@ function CollectMoneyControl({
       <div className="text-[11px] leading-tight text-slate-600">
         {cash > 0 ? "TM cộng vào TIỀN GIỮ HỘ của bạn. " : ""}
         {transfer > 0 ? "CK vào thẳng TK CÔNG TY. " : ""}
-        {total > 0 && total < left ? `Thu xong còn lại ${(left - total).toLocaleString("vi-VN")} đ — thu tiếp lần sau được. ` : ""}
+        {total > 0 && total < left ? `Thu xong còn lại ${(left - total).toLocaleString("vi-VN")} đ — thu tiếp lần sau được. ` : ""}
         {total > left ? "⚠ Nhiều hơn phần còn phải thu." : ""}
         {collectFromAfar && cash > 0 ? " Khách đặt trước, ở xa — chắc chắn thu được tiền mặt chứ?" : ""}
       </div>
@@ -2572,7 +2572,7 @@ function CancelBookingControl({
         });
         onDone(
           `✓ Đã huỷ ${partGuests} khách trong đoàn (còn ${booking.guestCount - partGuests} khách bay)` +
-            (refund > 0 ? `, hoàn ${refund.toLocaleString("vi-VN")} đ.` : "."),
+            (refund > 0 ? `, hoàn ${refund.toLocaleString("vi-VN")} đ.` : "."),
         );
       } else {
         await apiPatch(`/api/baocao/booking?spot=${spot}`, {
@@ -2589,7 +2589,7 @@ function CancelBookingControl({
         });
         onDone(
           paid > 0 && refund > 0
-            ? `✓ Đã huỷ bay và hoàn ${refund.toLocaleString("vi-VN")} đ bằng ${refundMethod === "cash" ? "tiền mặt" : "chuyển khoản"}.`
+            ? `✓ Đã huỷ bay và hoàn ${refund.toLocaleString("vi-VN")} đ bằng ${refundMethod === "cash" ? "tiền mặt" : "chuyển khoản"}.`
             : "✓ Đã huỷ bay (không phát sinh hoàn tiền).",
         );
       }
@@ -2711,7 +2711,7 @@ function CancelBookingControl({
       {paid > 0 ? (
         <>
           <div className="text-[11px] leading-tight text-slate-600">
-            Khách đã trả {paid.toLocaleString("vi-VN")} đ — trừ phí đã dùng rồi hoàn phần còn lại:
+            Khách đã trả {paid.toLocaleString("vi-VN")} đ — trừ phí đã dùng rồi hoàn phần còn lại:
           </div>
           <div className="flex items-center gap-1">
             <span className="w-10 shrink-0 text-[11px] font-semibold text-slate-600">Phí</span>
@@ -2852,6 +2852,8 @@ export function BookingTodayBanner({
    * để thứ tự ổn định, không nhảy lung tung mỗi lần tải lại.
    */
   const [sortBy, setSortBy] = useState<"seq" | "flown" | "ticket">("seq");
+  /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
+  const [q, setQ] = useState("");
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
   const [moving, setMoving] = useState<{
     id: string;
@@ -2970,12 +2972,21 @@ export function BookingTodayBanner({
     }
     return (a.daySeq || 0) - (b.daySeq || 0);
   };
-  const open = rows.filter((b) => b.status === "open").sort(bookingCmp);
+  /** So khớp tìm kiếm KHÔNG DẤU: gõ "ngoc anh" phải ra "Ngọc Anh". */
+  const norm = (s: string) =>
+    (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+  const needle = norm(q.trim());
+  const matchQ = (b: BookingDTO) =>
+    !needle ||
+    norm(b.contactName).includes(needle) ||
+    norm(b.phone ?? "").includes(needle) ||
+    norm(b.bookingCode ?? "").includes(needle);
+  const open = rows.filter((b) => b.status === "open" && matchQ(b)).sort(bookingCmp);
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
-  const closed = rows.filter((b) => b.status !== "open").sort(bookingCmp);
-  /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. */
-  const openShown = showAll ? open : open.slice(0, 10);
+  const closed = rows.filter((b) => b.status !== "open" && matchQ(b)).sort(bookingCmp);
+  /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. ĐANG TÌM thì hiện hết kết quả. */
+  const openShown = showAll || needle ? open : open.slice(0, 10);
   if (!rows.length) return null;
 
   async function act(
@@ -3135,6 +3146,24 @@ export function BookingTodayBanner({
         Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
         như thường, không cần khớp với danh sách này.
       </p>
+      {rows.length > 1 && (
+        <div className="mt-1.5 flex items-center gap-2">
+          <TextInput
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="🔍 Tìm tên · SĐT · mã booking"
+            className="h-9 w-full rounded-lg text-sm sm:w-72"
+          />
+          {needle && (
+            <span className="shrink-0 text-xs font-semibold text-sky-800">
+              {open.length + closed.length} kết quả
+              <button type="button" className="ml-1.5 text-slate-500 underline" onClick={() => setQ("")}>
+                xoá
+              </button>
+            </span>
+          )}
+        </div>
+      )}
       {rows.length > 1 && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-sky-800/70">Xếp:</span>
@@ -3439,6 +3468,7 @@ export function BookingTodayBanner({
             vừa nhập tưởng máy nuốt mất (chuyện thật 02/09). Ghim một dòng báo
             trong 10 phút đầu để họ thấy ngay nó ĐÃ vào sổ và đang đứng số mấy. */}
         {!showAll &&
+          !needle &&
           open
             .slice(10)
             .filter((b) => b.createdAt && Date.now() - new Date(b.createdAt).getTime() < 10 * 60_000)
@@ -3457,7 +3487,7 @@ export function BookingTodayBanner({
                 </span>
               </li>
             ))}
-        {open.length > 10 && (
+        {open.length > 10 && !needle && (
           /* [column-span:all]: danh sách chia 2 cột trên desktop nên một <li>
              thường bị dòng chảy cột nhét vào LƯNG CHỪNG cột phải — chủ tìm nút
              "Xem thêm" không thấy, tưởng thẻ không có (chuyện thật 02/09).
@@ -3481,7 +3511,7 @@ export function BookingTodayBanner({
         {/* ĐÃ DỜI SANG NGÀY KHÁC — tô VÀNG (huỷ thì tô ĐỎ). Booking đã nằm ở sổ
             ngày mới rồi; dòng này chỉ là dấu vết để hôm nay không ai tưởng
             khách bốc hơi. KHÔNG tính vào số tổng của ngày. */}
-        {movedOut.map((b) => (
+        {movedOut.filter(matchQ).map((b) => (
           <li
             key={`moved-${b.id}`}
             className="mb-1.5 break-inside-avoid rounded-lg border-2 border-amber-400 bg-amber-50 px-2.5 py-1.5"
@@ -3859,8 +3889,8 @@ export function AssignedBookings({
                           }
                         >
                           {isMine(b)
-                            ? `💰 Bạn nhớ thu tiền khách này: ${b.remaining.toLocaleString("vi-VN")} đ`
-                            : `💰 Khách của ${b.assignedToName || "đồng đội"} còn thu ${b.remaining.toLocaleString("vi-VN")} đ — thu hộ được`}
+                            ? `💰 Bạn nhớ thu tiền khách này: ${b.remaining.toLocaleString("vi-VN")} đ`
+                            : `💰 Khách của ${b.assignedToName || "đồng đội"} còn thu ${b.remaining.toLocaleString("vi-VN")} đ — thu hộ được`}
                         </div>
                         <p className="mt-0.5 text-[11px] leading-tight text-rose-900/70">
                           Thu tiền mặt thì tiền tính vào phần bạn đang giữ · khách chuyển khoản vào TK công ty thì
@@ -4575,9 +4605,9 @@ export function BookingCard({
               ? ` Booking này vào sổ điểm ${spotName(bookSpot)} — mở trang điểm đó mới thấy, danh sách dưới đây chỉ của ${spotName(spot)}.`
               : " Lịch bay sẽ tự hiện đúng ngày.") +
             (form.remaining > 0 && collectorName
-              ? ` 💰 Đã giao ${collectorName} thu ${form.remaining.toLocaleString("vi-VN")} đ — hiện trên trang của ${collectorName} hôm bay.`
+              ? ` 💰 Đã giao ${collectorName} thu ${form.remaining.toLocaleString("vi-VN")} đ — hiện trên trang của ${collectorName} hôm bay.`
               : form.remaining > 0
-                ? ` 💰 Còn thu ${form.remaining.toLocaleString("vi-VN")} đ — chưa giao ai, hôm bay giao cho ai thì người đó thu.`
+                ? ` 💰 Còn thu ${form.remaining.toLocaleString("vi-VN")} đ — chưa giao ai, hôm bay giao cho ai thì người đó thu.`
                 : ""),
         );
       }
@@ -5088,7 +5118,7 @@ export function BookingCard({
         </Field>
         <Field label="Tổng tiền (tự tính)">
           <div className="flex h-10 items-center justify-end rounded-lg border-2 border-sky-300 bg-sky-50 px-3 text-base font-bold tabular-nums text-sky-800">
-            {bookingTotal.toLocaleString("vi-VN")} đ
+            {bookingTotal.toLocaleString("vi-VN")} đ
           </div>
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
             {bookSpot === "khau-pha" && pgCount > 0 && ppgCount > 0
@@ -5171,9 +5201,9 @@ export function BookingCard({
           {editingId && editedPaid > 0 && (
             <p className="mt-0.5 rounded bg-amber-100 px-1.5 py-1 text-[11px] leading-tight text-amber-900">
               Gồm cọc lúc đặt{" "}
-              <strong>{Math.max(0, form.deposit - editedPaid).toLocaleString("vi-VN")} đ</strong> +{" "}
+              <strong>{Math.max(0, form.deposit - editedPaid).toLocaleString("vi-VN")} đ</strong> +{" "}
               {editedPaidCount} lần thu tại quầy{" "}
-              <strong>{editedPaid.toLocaleString("vi-VN")} đ</strong>. Gõ đè số này là xoá mất phần
+              <strong>{editedPaid.toLocaleString("vi-VN")} đ</strong>. Gõ đè số này là xoá mất phần
               đã thu — sửa từng lần thu thì dùng “⋯ Thêm → Sửa tiền đã thu”.
             </p>
           )}
@@ -5259,7 +5289,7 @@ export function BookingCard({
         >
           <div className="flex items-center gap-1">
             <span className="flex h-10 min-w-0 flex-1 items-center justify-end rounded-lg border-2 border-rose-400 bg-rose-50 px-3 text-base font-bold tabular-nums text-rose-800">
-              {form.remaining.toLocaleString("vi-VN")} đ
+              {form.remaining.toLocaleString("vi-VN")} đ
             </span>
             <PaymentQrButton
               amount={form.remaining}
@@ -5281,7 +5311,7 @@ export function BookingCard({
       {!editingId && form.remaining > 0 && staff.length > 0 && (
         <div className="mt-2 rounded-lg border border-emerald-300 bg-emerald-50/70 p-2">
           <div className="text-xs font-bold text-emerald-900">
-            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — giao ai thu{" "}
+            💰 Còn {form.remaining.toLocaleString("vi-VN")} đ thu trước khi bay — giao ai thu{" "}
             <span className="font-medium text-emerald-800/80">(không bắt buộc)</span>:
           </div>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -5306,7 +5336,7 @@ export function BookingCard({
           </div>
           <p className="mt-1 text-[11px] leading-tight text-emerald-800/80">
             Chọn người ở đây tức là <strong>giao khách</strong> cho người đó (như nút &ldquo;Giao PC&rdquo;):
-            đến ngày bay khách hiện trên trang của họ kèm nhắc &ldquo;còn thu {form.remaining.toLocaleString("vi-VN")} đ&rdquo;,
+            đến ngày bay khách hiện trên trang của họ kèm nhắc &ldquo;còn thu {form.remaining.toLocaleString("vi-VN")} đ&rdquo;,
             thu xong bấm ĐÃ THU là tiền vào phần họ giữ hộ công ty. Người khác vẫn thu hộ được.
             Để trống cũng được — hôm bay giao cho ai thì người đó lo thu.
           </p>

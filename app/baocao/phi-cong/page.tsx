@@ -429,16 +429,6 @@ export default function PilotReportPage() {
       {/* Lệnh thu tiền CHỈ ĐỊNH ĐÍCH DANH mình — việc phải làm ngay */}
       <CollectInbox spot={spot} />
 
-      {/**
-       * HUỶ DỊCH VỤ & HOÀN TIỀN — phi công là người biết đầu tiên khi không
-       * cung cấp được (flycam hỏng, gió to không bay 360, hết dù cờ đỏ…).
-       * Thẻ này vốn có ở trang camera/kế toán mà quên gắn cho phi công —
-       * đúng lời chủ hỏi "hình như từng được tạo mà không thấy".
-       * Hoàn TIỀN MẶT = trừ vào tiền phi công đang giữ; hoàn CHUYỂN KHOẢN =
-       * gửi lệnh cho kế toán chuyển.
-       */}
-      <FlycamCancelCard spot={spot} date={date} />
-
       {/* Báo đỏ của riêng mình — thứ phải xử lý trước khi làm gì khác */}
       {myReds.length > 0 && (
         <Banner tone="error">
@@ -1055,6 +1045,15 @@ export default function PilotReportPage() {
       </Card>
       </div>
       </div>
+
+      {/**
+       * HUỶ DỊCH VỤ & HOÀN TIỀN — phi công là người biết đầu tiên khi không
+       * cung cấp được (flycam hỏng, gió to không bay 360, hết dù cờ đỏ…).
+       * Hoàn TIỀN MẶT = trừ vào tiền phi công đang giữ; hoàn CHUYỂN KHOẢN =
+       * gửi lệnh cho kế toán chuyển. Việc KHÔNG thường ngày nên nằm CUỐI
+       * trang (lời chủ 02/09) — đầu trang dành cho khách được giao và lệnh thu.
+       */}
+      <FlycamCancelCard spot={spot} date={date} />
     </Shell>
   );
 }

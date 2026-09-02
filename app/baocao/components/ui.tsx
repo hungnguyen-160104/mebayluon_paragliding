@@ -64,9 +64,11 @@ export function CollapseCard({
           headerClassName,
         )}
       >
-        <span className="flex min-w-0 items-baseline gap-2">
-          <span className="shrink-0 text-base font-semibold">{title}</span>
-          {hint && <span className="truncate text-xs opacity-70">{hint}</span>}
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {/* KHÔNG shrink-0: tiêu đề dài (VD "🎥 Huỷ dịch vụ (flycam · 360 · cờ
+              đỏ…)") trên mobile phải xuống dòng trong ô, không được tràn ra ngoài */}
+          <span className="min-w-0 text-base font-semibold leading-snug">{title}</span>
+          {hint && <span className="min-w-0 truncate text-xs opacity-70">{hint}</span>}
         </span>
         <span aria-hidden className="transition-transform group-open:rotate-180 opacity-60">
           ▾

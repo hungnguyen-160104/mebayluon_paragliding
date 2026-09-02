@@ -287,7 +287,9 @@ export function FlycamCancelCard({
         )}
       </div>
 
-      <Button type="button" className="mt-2.5 w-full" disabled={busy} onClick={submit}>
+      {/* Nhãn dài ("✓ Ghi huỷ Bay hoàng hôn/săn mây & đã hoàn…") trên mobile phải
+          được xuống dòng TRONG nút — chiều cao tự giãn, không tràn ô */}
+      <Button type="button" className="mt-2.5 h-auto min-h-10 w-full whitespace-normal py-2 leading-tight" disabled={busy} onClick={submit}>
         {busy ? "Đang lưu…" : mode === "self" ? `✓ Ghi huỷ ${serviceLabel(service)} & đã hoàn TIỀN MẶT tại bãi` : "✓ Gửi lệnh hoàn CHUYỂN KHOẢN cho kế toán"}
       </Button>
 

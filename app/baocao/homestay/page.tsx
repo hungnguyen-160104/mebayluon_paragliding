@@ -1194,7 +1194,7 @@ function BookingRow({
             className="h-7 bg-white px-2 text-[11px] font-bold text-emerald-700"
             disabled={busy}
             onClick={() => {
-              const raw = window.prompt(`Thu bao nhiêu? (còn ${b.collect.toLocaleString("vi-VN")} đ)`, String(b.collect));
+              const raw = window.prompt(`Thu bao nhiêu? (còn ${b.collect.toLocaleString("vi-VN")} đ)`, String(b.collect));
               const amount = Number((raw ?? "").replace(/\D/g, ""));
               if (amount > 0) onAct(b.id, "collect", { amount });
             }}
