@@ -4003,7 +4003,7 @@ export async function listBookings(
   const ids = [...new Set(allRows.map((b: any) => String(b._id)))];
   const collectDocs = ids.length
     ? await BaobayCollect.find({ bookingId: { $in: ids }, status: { $ne: "rejected" } })
-        .select("bookingId amount method transferCode verifiedAt collectorUsername status")
+        .select("bookingId amount method transferCode verifiedAt collectorUsername collectorName status")
         .lean<any[]>()
     : [];
   const collectsByBooking = new Map<string, any[]>();
@@ -4025,7 +4025,12 @@ export async function listBookings(
       );
       if (i < 0) return entry;
       const hit = pool.splice(i, 1)[0];
-      return { ...entry, verified: Boolean(hit.verifiedAt) };
+      return {
+        ...entry,
+        verified: Boolean(hit.verifiedAt),
+        collectId: String(hit._id),
+        collectorUsername: hit.collectorUsername || undefined,
+      };
     });
     return dto;
   };
@@ -7229,6 +7234,130 @@ export async function resolveCollect(
     { new: true },
   ).lean<any>();
   if (!doc) throw new BaobayError("Lệnh vừa được người khác xử lý", 409);
+
+  pushSheetInBackground(() => pushCollectRow(doc), BaobayCollect, doc._id);
+  return toCollectDTO({ ...doc, sheetSynced: false });
+}
+
+/**
+ * KẾ TOÁN SỬA MỘT KHOẢN THU — chia bill nhầm (TM/CK lộn số), gán nhầm người
+ * thu, gõ sai mã CK. Chỉ kế toán/quản trị (route chặn vai).
+ *
+ * Sửa xong máy tự:
+ *  - đắp lại tiền booking: còn thu/đã trả xê dịch đúng bằng chênh lệch số tiền;
+ *  - sửa bản chụp trong `collectedLog` cho khớp (bảng chi tiết đọc từ đây);
+ *  - XOÁ dấu "đã nhận" của khoản đó và tích ✓CK/✓TM của booking — số đã đổi
+ *    thì phải soát lại, không được thừa kế cái tích cũ;
+ *  - ghi vệt sửa vào note của lệnh (ai sửa, từ gì thành gì).
+ */
+export async function editCollect(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: {
+    amount?: number;
+    method?: "cash" | "transfer";
+    transferCode?: string;
+    collectorUsername?: string;
+  },
+): Promise<CollectDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+
+  const current = await BaobayCollect.findOne({ _id: id, spot }).lean<any>();
+  if (!current) throw new BaobayError("Không tìm thấy lệnh thu", 404);
+  if (current.status === "rejected") throw new BaobayError("Lệnh đã từ chối — lập lệnh mới thay vì sửa", 400);
+
+  const oldAmount = Number(current.amount) || 0;
+  const newAmount = input.amount == null ? oldAmount : Math.max(0, Math.round(Number(input.amount) || 0));
+  if (newAmount <= 0) throw new BaobayError("Số tiền phải lớn hơn 0", 400);
+  const newMethod: "cash" | "transfer" = input.method === "cash" || input.method === "transfer" ? input.method : current.method;
+  const newCode = newMethod === "transfer" ? String(input.transferCode ?? current.transferCode ?? "").trim() : "";
+
+  /** Đổi người thu (chỉ nghĩa với TM): tiền chuyển sổ sang người mới giữ. */
+  let collector: { username?: string; displayName?: string } = {
+    username: current.collectorUsername,
+    displayName: current.collectorName,
+  };
+  if (newMethod === "cash") {
+    const target = normalizeUsername(String(input.collectorUsername ?? current.collectorUsername ?? "").trim() || session.username);
+    if (target !== normalizeUsername(current.collectorUsername ?? "")) {
+      const doc = await BaobayAccount.findOne({ username: target }).select("username displayName isActive spots").lean<any>();
+      if (!doc || !doc.isActive) throw new BaobayError("Không tìm thấy người thu mới", 404);
+      if (!(doc.spots ?? []).includes(spot)) throw new BaobayError(`“${doc.displayName}” không làm ở điểm này`, 400);
+      collector = doc;
+    }
+  } else {
+    collector = {};
+  }
+
+  const label = (m: string, a: number, c?: string) =>
+    `${a.toLocaleString("vi-VN")}đ ${m === "transfer" ? `CK${c ? ` (${c})` : ""}` : "TM"}`;
+  const trail = `sửa bởi ${session.name || session.username} ${formatDateKeyVN(todayInVN())}: ${label(current.method, oldAmount, current.transferCode)} → ${label(newMethod, newAmount, newCode)}${
+    newMethod === "cash" && collector.username !== current.collectorUsername ? `, người thu → ${collector.displayName}` : ""
+  }`;
+
+  const doc = await BaobayCollect.findOneAndUpdate(
+    { _id: id, spot },
+    {
+      $set: {
+        amount: newAmount,
+        method: newMethod,
+        toCompanyAccount: newMethod === "transfer",
+        transferCode: newCode,
+        collectorUsername: collector.username ?? "",
+        collectorName: collector.displayName ?? "",
+        /**
+         * TM đổi từ CK (hoặc đổi người thu trên lệnh đã xong): coi là ĐÃ THU
+         * — kế toán đang nắn lại sổ của tiền đã cầm, không phải giao việc mới.
+         * Lệnh còn "chờ thu" thì giữ nguyên chờ, chỉ đổi đích.
+         */
+        status: newMethod === "transfer" ? "company" : current.status === "pending" ? "pending" : "collected",
+        verifiedAt: null,
+        verifiedBy: "",
+        note: [current.note, trail].filter(Boolean).join(" · "),
+      },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Lệnh vừa bị thay đổi, tải lại rồi sửa tiếp", 409);
+
+  if (current.bookingId) {
+    const booking = await BaobayBooking.findById(current.bookingId)
+      .select("remaining deposit collectedLog")
+      .lean<any>();
+    if (booking) {
+      const log = Array.isArray(booking.collectedLog) ? [...booking.collectedLog] : [];
+      const i = log.findIndex(
+        (e: any) =>
+          (Number(e.amount) || 0) === oldAmount &&
+          (e.method === "transfer" ? "transfer" : "cash") === current.method &&
+          String(e.code ?? "") === String(current.transferCode ?? ""),
+      );
+      if (i >= 0) {
+        log[i] = {
+          ...log[i],
+          amount: newAmount,
+          method: newMethod,
+          byName: newMethod === "cash" ? collector.displayName || log[i].byName : session.name || session.username,
+          code: newCode || undefined,
+        };
+      }
+      await BaobayBooking.updateOne(
+        { _id: current.bookingId },
+        {
+          $set: {
+            collectedLog: log,
+            remaining: Math.max(0, (booking.remaining ?? 0) + oldAmount - newAmount),
+            deposit: Math.max(0, (booking.deposit ?? 0) - oldAmount + newAmount),
+            // Số đã đổi — tích "nhận đủ" cũ hết giá trị, kế toán soát lại
+            ckCheckedAt: null,
+            tmCheckedAt: null,
+          },
+        },
+      );
+    }
+  }
 
   pushSheetInBackground(() => pushCollectRow(doc), BaobayCollect, doc._id);
   return toCollectDTO({ ...doc, sheetSynced: false });

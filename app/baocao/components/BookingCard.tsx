@@ -1827,6 +1827,211 @@ function CommissionControl({
  * nhận ngay, khỏi đợi tới bãi. Hai đường tiền vẫn tách bạch — CK về TK công ty,
  * TM vào tiền giữ hộ của chính người bấm.
  */
+/**
+ * KẾ TOÁN SỬA / TÍCH "ĐÃ NHẬN ĐỦ" TỪNG KHOẢN THU của một booking.
+ *
+ * Hai việc sổ sách quen thuộc:
+ *  - Chia bill nhầm (1,8tr TM + 3,2tr CK trong khi thực tế ngược lại), gán
+ *    nhầm người thu, gõ sai mã CK → sửa tại chỗ, máy tự đắp lại tiền booking
+ *    và bản chụp thanh toán; số đã đổi thì mọi tích soát cũ tự rụng.
+ *  - Soát xong một khoản (kể cả tiền mặt) → tích "Đã nhận" ngay trên booking,
+ *    khỏi mở bảng soát chuyển khoản dò lại từ đầu.
+ */
+function CollectFixControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
+  const [drafts, setDrafts] = useState<
+    Record<string, { amount: number; method: "cash" | "transfer"; code: string; collector: string }>
+  >({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const rows = (booking.collected ?? []).filter((c) => c.collectId);
+  const orphan = (booking.collected ?? []).length - rows.length;
+  if (!(booking.collected ?? []).length) return null;
+
+  const draftOf = (c: NonNullable<BookingDTO["collected"]>[number]) =>
+    drafts[c.collectId!] ?? {
+      amount: c.amount,
+      method: c.method,
+      code: c.code ?? "",
+      collector: c.collectorUsername ?? "",
+    };
+
+  async function openPanel() {
+    setOpen(true);
+    if (staff.length) return;
+    try {
+      const r = await apiGet<{ staff: Array<{ username: string; name: string; roleLabel: string }> }>(
+        `/api/baocao/booking?date=${todayInVN()}&spot=${spot}`,
+      );
+      setStaff(r.staff ?? []);
+    } catch {
+      /* không có danh sách thì vẫn sửa được tiền/mã */
+    }
+  }
+
+  async function save(c: NonNullable<BookingDTO["collected"]>[number]) {
+    const d = draftOf(c);
+    if (d.amount <= 0) return setError("Số tiền phải lớn hơn 0");
+    setBusy(c.collectId!);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/collect?spot=${spot}`, {
+        id: c.collectId,
+        action: "edit",
+        amount: d.amount,
+        method: d.method,
+        transferCode: d.method === "transfer" ? d.code : "",
+        collectorUsername: d.method === "cash" ? d.collector : "",
+      });
+      onDone("✓ Đã sửa khoản thu — tiền booking đã đắp lại, các tích soát cũ được gỡ để soát lại.");
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không sửa được khoản thu");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function verify(c: NonNullable<BookingDTO["collected"]>[number], on: boolean) {
+    setBusy(c.collectId!);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/bank-check?spot=${spot}`, {
+        action: "confirm",
+        refId: `collect:${c.collectId}`,
+        on,
+      });
+      onDone(on ? "✓ Đã tích NHẬN ĐỦ cho khoản thu." : "Đã bỏ tích nhận của khoản thu.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không đổi được trạng thái nhận");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 shrink-0 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-600"
+        title="Kế toán: sửa chia bill TM/CK, đổi người thu, tích 'đã nhận đủ' từng khoản"
+        onClick={openPanel}
+      >
+        🧾 Sửa thu
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-72 max-w-full rounded-lg border border-indigo-300 bg-indigo-50/70 p-1.5 text-left">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[11px] font-bold text-indigo-900">Khoản thu của booking</span>
+        <button type="button" className="text-xs text-slate-500" onClick={() => setOpen(false)}>
+          ✕ đóng
+        </button>
+      </div>
+      {error && <p className="mb-1 text-[11px] font-semibold text-rose-700">{error}</p>}
+      {rows.map((c) => {
+        const d = draftOf(c);
+        const set = (patch: Partial<typeof d>) => setDrafts((prev) => ({ ...prev, [c.collectId!]: { ...d, ...patch } }));
+        return (
+          <div key={c.collectId} className="mb-1.5 rounded-lg border border-slate-200 bg-white p-1.5">
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="w-24">
+                <MoneyInput value={d.amount} onChange={(v) => set({ amount: v })} />
+              </span>
+              <span className="flex h-7 overflow-hidden rounded-lg border border-slate-300">
+                {(
+                  [
+                    ["cash", "TM"],
+                    ["transfer", "CK"],
+                  ] as Array<["cash" | "transfer", string]>
+                ).map(([m, label]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => set({ method: m })}
+                    className={
+                      d.method === m
+                        ? "bg-indigo-600 px-2 text-[11px] font-bold text-white"
+                        : "bg-white px-2 text-[11px] font-medium text-slate-500"
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </span>
+              {c.verified ? (
+                <span className="rounded bg-sky-500 px-1 text-[11px] font-bold text-white">✓ đã nhận</span>
+              ) : null}
+            </div>
+            {d.method === "transfer" ? (
+              <TextInput
+                value={d.code}
+                onChange={(e) => set({ code: e.target.value })}
+                placeholder="Mã giao dịch CK"
+                className="mt-1 h-7 w-full rounded-lg text-[11px]"
+              />
+            ) : (
+              <select
+                value={d.collector}
+                onChange={(e) => set({ collector: e.target.value })}
+                className="mt-1 h-7 w-full rounded-lg border border-slate-300 bg-white px-1 text-[11px]"
+              >
+                <option value="">— người thu (giữ nguyên: {c.byName || "?"}) —</option>
+                {staff.map((a) => (
+                  <option key={a.username} value={a.username}>
+                    {a.name} ({a.roleLabel})
+                  </option>
+                ))}
+              </select>
+            )}
+            <div className="mt-1 flex items-center gap-1">
+              <Button
+                type="button"
+                className="h-6 px-2 text-[11px]"
+                disabled={busy === c.collectId}
+                onClick={() => save(c)}
+              >
+                Lưu sửa
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className={
+                  "h-6 px-2 text-[11px] font-semibold " +
+                  (c.verified ? "border-sky-500 bg-sky-100 text-sky-800" : "border-slate-300 bg-white text-slate-600")
+                }
+                disabled={busy === c.collectId}
+                title={c.verified ? "Bỏ tích đã nhận (soát lại)" : "Kế toán xác nhận khoản này ĐÃ NHẬN ĐỦ — tiền đã về đúng chỗ"}
+                onClick={() => verify(c, !c.verified)}
+              >
+                {c.verified ? "↺ Bỏ nhận" : "✓ Nhận đủ"}
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+      {orphan > 0 && (
+        <p className="text-[10px] text-slate-500">
+          {orphan} khoản cũ không nối được lệnh thu gốc — sửa qua chỗ Sửa booking nếu cần.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CollectMoneyControl({
   spot,
   booking,
@@ -3135,6 +3340,16 @@ export function BookingTodayBanner({
                 </Button>
                 {lockButton(b)}
                 {pilotMoneyButton(b)}
+                {canLock && !b.locked && (
+                  <CollectFixControl
+                    spot={spot}
+                    booking={b}
+                    onDone={(msg) => {
+                      setCollectDone(msg);
+                      load();
+                    }}
+                  />
+                )}
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
                 {spot !== "sapa" && (
                   <CollectMoneyControl
@@ -3268,6 +3483,16 @@ export function BookingTodayBanner({
                 Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
             <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
               {lockButton(b)}
+              {canLock && !b.locked && (
+                <CollectFixControl
+                  spot={spot}
+                  booking={b}
+                  onDone={(msg) => {
+                    setCollectDone(msg);
+                    load();
+                  }}
+                />
+              )}
               {(!b.locked || canLock) && spot !== "sapa" && (
                 <CollectMoneyControl
                   spot={spot}

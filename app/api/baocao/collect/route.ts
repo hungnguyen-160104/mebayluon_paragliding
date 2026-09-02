@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { collectSchema, firstZodMessage } from "@/lib/baobay/validation";
+import { wearsRole } from "@/lib/baobay/roles";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { BaobayError, createCollect, listCollects, resolveCollect } from "@/services/baobay.service";
+import { BaobayError, createCollect, editCollect, listCollects, resolveCollect } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +66,19 @@ export async function PATCH(req: Request) {
   if (!id) return NextResponse.json({ message: "Thiếu id lệnh thu" }, { status: 400 });
 
   try {
+    // KẾ TOÁN SỬA khoản thu (chia bill nhầm, đổi người thu, sai mã CK)
+    if (body?.action === "edit") {
+      if (!(wearsRole(auth, "accountant") || wearsRole(auth, "admin") || (auth as { viaAdmin?: boolean }).viaAdmin)) {
+        return NextResponse.json({ message: "Chỉ kế toán/quản trị mới sửa được khoản thu" }, { status: 403 });
+      }
+      const collect = await editCollect(auth, spot, id, {
+        amount: body?.amount == null ? undefined : Number(body.amount),
+        method: body?.method === "cash" || body?.method === "transfer" ? body.method : undefined,
+        transferCode: body?.transferCode == null ? undefined : String(body.transferCode),
+        collectorUsername: body?.collectorUsername == null ? undefined : String(body.collectorUsername),
+      });
+      return NextResponse.json({ collect });
+    }
     const collect = await resolveCollect(auth, spot, id, body?.collected !== false, String(body?.reason ?? ""));
     return NextResponse.json({ collect });
   } catch (err) {

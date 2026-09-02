@@ -405,6 +405,10 @@ export type BookingDTO = {
     at?: string;
     /** "deposit" thu thêm một phần · "full" trả nốt · "" bản ghi cũ. */
     kind?: string;
+    /** id lệnh thu gốc — kế toán sửa/tích "đã nhận" từng khoản qua id này. */
+    collectId?: string;
+    /** Người đang giữ tiền (lệnh TM) — kế toán đổi được khi chia bill nhầm. */
+    collectorUsername?: string;
   }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
