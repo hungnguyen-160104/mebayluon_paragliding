@@ -2864,8 +2864,6 @@ export function BookingTodayBanner({
     feeTransfer?: number;
     feeCode?: string;
     note?: string;
-    /** Dời MỘT PHẦN mà đoàn còn nợ: nợ tính vào phần dời (mặc định) hay phần ở lại. */
-    debtTo?: "origin" | "part";
   } | null>(null);
   /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
   const [collectDone, setCollectDone] = useState<string | null>(null);
@@ -3068,7 +3066,6 @@ export function BookingTodayBanner({
       feeTransfer?: number;
       feeCode?: string;
       note?: string;
-      debtTo?: "origin" | "part";
     },
   ) {
     const part = m.guests ?? 0;
@@ -3102,15 +3099,14 @@ export function BookingTodayBanner({
         mode: "move",
         guests: part,
         toDate: m.toDate,
-        debtTo: m.debtTo ?? "part",
       });
       setMoving(null);
       const no =
         (b.remaining ?? 0) > 0
-          ? (m.debtTo ?? "part") === "part"
-            ? ` Nợ đoàn ${Math.round((b.remaining ?? 0) / 1000).toLocaleString("vi-VN")}k chuyển theo phần dời.`
-            : ` Nợ đoàn ${Math.round((b.remaining ?? 0) / 1000).toLocaleString("vi-VN")}k giữ ở nhóm hôm nay.`
-          : "";
+          ? ` Nợ đoàn ${Math.round((b.remaining ?? 0) / 1000).toLocaleString("vi-VN")}k nối theo nhóm dời — thu khi khách đến.`
+          : (b.deposit ?? 0) > 0
+            ? " Tiền đoàn đã trả tự chia theo giá gộp — phần dư nối theo nhóm dời."
+            : "";
       setCollectDone(
         `✓ Đã dời ${part} khách sang ${formatDateKeyVN(m.toDate)} — còn ${b.guestCount - part} khách bay hôm nay.${no}`,
       );
@@ -3248,36 +3244,16 @@ export function BookingTodayBanner({
                     />
                   </label>
                 )}
-                {/* Đoàn còn nợ mà tách đôi: nợ là CỦA CẢ ĐOÀN, phải chọn bên gánh
-                    — máy chuyển đúng số nợ sang một bên, bên kia về 0, không tính
-                    lại giá từ đầu (kẻo 2 khách dời hoá "còn thu 5tr" như 01/09). */}
-                {(moving.guests ?? 0) > 0 && (b.remaining ?? 0) > 0 && (
-                  <div className="w-full rounded-lg border border-rose-200 bg-rose-50/70 p-1">
-                    <p className="text-[11px] font-semibold text-rose-800">
-                      Đoàn còn nợ {Math.round((b.remaining ?? 0) / 1000).toLocaleString("vi-VN")}k — tính vào:
-                    </p>
-                    <div className="mt-0.5 flex h-7 w-full overflow-hidden rounded-lg border border-slate-300">
-                      {(
-                        [
-                          ["part", "Phần dời đi"],
-                          ["origin", "Phần ở lại"],
-                        ] as Array<["part" | "origin", string]>
-                      ).map(([v, label]) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => setMoving({ ...moving, debtTo: v })}
-                          className={
-                            (moving.debtTo ?? "part") === v
-                              ? "flex-1 bg-rose-600 px-1 text-[11px] font-bold text-white"
-                              : "flex-1 bg-white px-1 text-[11px] font-medium text-slate-500"
-                          }
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {/* QUY TẮC TIỀN khi tách dời (tự động, không phải chọn): giá giữ
+                    theo GỘP ĐOÀN (bảo toàn chiết khấu); phần ở lại được trả trước
+                    từ tiền đoàn, phần còn lại — dư đã trả lẫn nợ — NỐI theo nhóm
+                    dời sang ngày mới. Báo trước cho người bấm biết. */}
+                {(moving.guests ?? 0) > 0 && ((b.remaining ?? 0) > 0 || (b.deposit ?? 0) > 0) && (
+                  <p className="w-full rounded-lg border border-sky-200 bg-sky-50/70 p-1 text-[11px] leading-snug text-sky-900">
+                    {(b.remaining ?? 0) > 0
+                      ? `Đoàn còn nợ ${Math.round((b.remaining ?? 0) / 1000).toLocaleString("vi-VN")}k — nợ sẽ NỐI theo nhóm dời, thu khi khách đến ngày mới.`
+                      : "Tiền đoàn đã trả sẽ tự chia: phần ở lại giữ đúng giá trị, phần dư nối theo nhóm dời — khỏi thu lại."}
+                  </p>
                 )}
                 {/* Dời được cả VỀ NGÀY CŨ HƠN: 25 dự báo mưa thì cho khách bay
                     23. Chặn duy nhất là ngày kế toán đã chốt (máy chủ soát cả

@@ -361,7 +361,6 @@ export async function PATCH(req: Request) {
         usedServices: String(body?.usedServices ?? ""),
         usedFee: Number(body?.usedFee) || 0,
         bankAccount: String(body?.bankAccount ?? ""),
-        debtTo: body?.debtTo === "origin" ? "origin" : "part",
       });
       return NextResponse.json(res);
     }
