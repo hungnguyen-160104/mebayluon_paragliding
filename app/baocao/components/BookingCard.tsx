@@ -3402,6 +3402,29 @@ export function BookingTodayBanner({
             </div>
           </li>
         ))}
+        {/* BOOKING VỪA NHẬP bị gập khuất: ngày đông chỉ hiện 10 dòng đầu theo số
+            thứ tự, booking mới mang số to nhất nên rơi sau nút "Xem thêm" — người
+            vừa nhập tưởng máy nuốt mất (chuyện thật 02/09). Ghim một dòng báo
+            trong 10 phút đầu để họ thấy ngay nó ĐÃ vào sổ và đang đứng số mấy. */}
+        {!showAll &&
+          open
+            .slice(10)
+            .filter((b) => b.createdAt && Date.now() - new Date(b.createdAt).getTime() < 10 * 60_000)
+            .map((b) => (
+              <li
+                key={`recent-${b.id}`}
+                className="mb-1.5 break-inside-avoid rounded-lg border-2 border-sky-400 bg-sky-50 px-2.5 py-1.5"
+              >
+                <span className="mr-1.5 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  ✦ VỪA NHẬP
+                </span>
+                <BookingSummary b={b} hideNote />
+                <span className="ml-1 text-[11px] text-sky-800">
+                  — đã vào sổ, đứng thứ {open.findIndex((x) => x.id === b.id) + 1}/{open.length} trong danh sách chờ;
+                  bấm “Xem thêm” để thao tác.
+                </span>
+              </li>
+            ))}
         {open.length > 10 && (
           <li className="mt-1">
             <button
