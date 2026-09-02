@@ -9800,41 +9800,79 @@ export async function getReconcile(
   let nextDayCarried: string[] = [];
   if (spot === "khau-pha") {
     /**
-     * CỬA SỔ NHIỀU NGÀY (02/09/2026): khách cầm vé không chỉ sang hôm sau —
-     * có người giữ 2-3 ngày mới bay. Nhìn 6 ngày mỗi chiều: mã hôm nay có thể
-     * thuộc dải của BẤT KỲ ngày nào trong 6 ngày trước, và mã hôm nay thiếu
-     * sẽ tự khớp khi xuất hiện ở BẤT KỲ ngày nào trong 6 ngày sau (phi công
-     * khai bay, hoặc quầy/booking ghi thu hồi muộn). Truy vấn gộp $in — một
-     * lượt mỗi collection, không phải 12 lượt loadDay.
+     * TRUY VẾT THEO ĐƯỜNG DỜI (02/09/2026): khách có thể giữ vé 2-3 ngày mới
+     * bay, nhưng KHÔNG được khớp mã bừa vào ngày bất kỳ — phi công gõ nhầm mã
+     * mà cũng "tự khớp" thì bộ soát mù. Luật của chủ: chỉ liên kết mã vé giữa
+     * ngày gốc và ngày đích khi CÓ VẾT DỜI THẬT nối hai ngày đó:
+     *  - booking của ngày đích có `rescheduledFrom` chứa ngày gốc (dời qua
+     *    app; dời nhiều chặng vẫn dính vì mảng giữ đủ các ngày đã qua);
+     *  - hoặc báo cáo ngày gốc (kế toán/quầy/phi công) ghi "dời sang <ngày đích>".
+     * Cửa sổ nhìn tối đa 6 ngày mỗi chiều; ngày nào không có vết dời nối tới
+     * thì mã của ngày đó vẫn là MÃ LẠ / MÃ THIẾU như thường.
      */
     const WINDOW = 6;
     const pastDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, -(i + 1)));
     const futureDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, i + 1));
-    const [pastCloses, pastDispatchers, pastPilots, pastCancelBookings, futPilots, futCloses, futDispatchers, futCancelBookings] =
-      await Promise.all([
-        AccountantDailyClose.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
-        DispatcherDailyReport.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
-        PilotDailyReport.find({ spot, date: { $in: pastDates } })
-          .select("date ticketCodes ppgCodes")
-          .lean<any[]>(),
-        BaobayBooking.find({ spot, flightDate: { $in: pastDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
-          .select("flightDate cancelTicketCodes")
-          .lean<any[]>(),
-        PilotDailyReport.find({ spot, date: { $in: futureDates } })
-          .select("ticketCodes ppgCodes")
-          .lean<any[]>(),
-        AccountantDailyClose.find({ spot, date: { $in: futureDates } })
-          .select("cancelledCodes rescheduled")
-          .lean<any[]>(),
-        DispatcherDailyReport.find({ spot, date: { $in: futureDates } })
-          .select("cancelledCodes rescheduled")
-          .lean<any[]>(),
-        BaobayBooking.find({ spot, flightDate: { $in: futureDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
-          .select("cancelTicketCodes")
-          .lean<any[]>(),
-      ]);
+    const [
+      pastCloses,
+      pastDispatchers,
+      pastPilots,
+      pastCancelBookings,
+      futPilots,
+      futCloses,
+      futDispatchers,
+      futCancelBookings,
+      arrivedToday,
+      futArrivals,
+    ] = await Promise.all([
+      AccountantDailyClose.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
+      DispatcherDailyReport.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
+      PilotDailyReport.find({ spot, date: { $in: pastDates } })
+        .select("date ticketCodes ppgCodes rescheduledGuestEntries")
+        .lean<any[]>(),
+      BaobayBooking.find({ spot, flightDate: { $in: pastDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
+        .select("flightDate cancelTicketCodes")
+        .lean<any[]>(),
+      PilotDailyReport.find({ spot, date: { $in: futureDates } })
+        .select("date ticketCodes ppgCodes")
+        .lean<any[]>(),
+      AccountantDailyClose.find({ spot, date: { $in: futureDates } })
+        .select("date cancelledCodes rescheduled")
+        .lean<any[]>(),
+      DispatcherDailyReport.find({ spot, date: { $in: futureDates } })
+        .select("date cancelledCodes rescheduled")
+        .lean<any[]>(),
+      BaobayBooking.find({ spot, flightDate: { $in: futureDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
+        .select("flightDate cancelTicketCodes rescheduledFrom")
+        .lean<any[]>(),
+      // Khách DỜI TỚI hôm nay — vết nối các ngày gốc → hôm nay
+      BaobayBooking.find({ spot, flightDate: date, rescheduledFrom: { $exists: true, $ne: [] } })
+        .select("rescheduledFrom")
+        .lean<any[]>(),
+      // Khách của các ngày sau mang vết dời — để nối hôm nay → ngày sau
+      BaobayBooking.find({ spot, flightDate: { $in: futureDates }, rescheduledFrom: { $exists: true, $ne: [] } })
+        .select("flightDate rescheduledFrom")
+        .lean<any[]>(),
+    ]);
+
+    /** Ngày gốc nào có khách dời TỚI hôm nay (booking hoặc báo cáo ngày gốc ghi). */
+    const linkedPast = new Set<string>(arrivedToday.flatMap((b: any) => b.rescheduledFrom ?? []));
+    const movesOf = (dayClose: any, dayDisp: any[], dayPilots: any[]) => [
+      ...((dayClose?.rescheduled ?? []) as any[]),
+      ...dayDisp.flatMap((x: any) => x.rescheduled ?? []),
+      ...dayPilots.flatMap((p: any) => (p.rescheduledGuestEntries ?? []).map((e: any) => ({ code: "", toDate: e.toDate }))),
+    ];
+    for (const d of pastDates) {
+      const ms = movesOf(
+        pastCloses.find((c: any) => c.date === d),
+        pastDispatchers.filter((x: any) => x.date === d),
+        pastPilots.filter((p: any) => p.date === d),
+      );
+      if (ms.some((m: any) => m.toDate === date)) linkedPast.add(d);
+    }
 
     prevDays = pastDates
+      .filter((d) => linkedPast.has(d))
       .map((d) => {
         const dayClose = pastCloses.find((c: any) => c.date === d);
         const dayDisp = pastDispatchers.filter((x: any) => x.date === d);
@@ -9842,33 +9880,47 @@ export async function getReconcile(
           ? dayClose.issuedRanges
           : dayDisp.flatMap((x: any) => x.issuedRanges ?? []);
         if (!ranges.length) return null;
+        /**
+         * Mã "dời CÓ ghi mã" tách hai ngả: dời sang ĐÚNG hôm nay → chính là vé
+         * đang truy vết, phải cho bay (không tính đã-có-chủ); dời sang ngày
+         * KHÁC → bay hôm nay là sai chỗ, giữ nguyên đã-có-chủ để báo đỏ.
+         */
+        const moved = [...((dayClose?.rescheduled ?? []) as any[]), ...dayDisp.flatMap((x: any) => x.rescheduled ?? [])];
         return {
           date: d,
           issuedRanges: ranges,
-          // Mã ngày đó ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời có mã
+          // Mã ngày đó ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời đi ngày khác
           usedCodes: [
             ...pastPilots.filter((p: any) => p.date === d).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
             ...(dayClose?.cancelledCodes ?? []),
             ...dayDisp.flatMap((x: any) => x.cancelledCodes ?? []),
-            ...(dayClose?.rescheduled ?? []).map((r: any) => r.code),
-            ...dayDisp.flatMap((x: any) => (x.rescheduled ?? []).map((r: any) => r.code)),
+            ...moved.filter((r: any) => r.toDate !== date).map((r: any) => r.code),
             ...pastCancelBookings.filter((b: any) => b.flightDate === d).flatMap((b: any) => b.cancelTicketCodes ?? []),
           ],
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
 
-    // Mã CỦA NGÀY NÀY đã có chủ ở các ngày sau — để soát lại ngày cũ hết "mã thiếu"
+    /** Ngày sau nào có vết dời TỪ hôm nay tới (booking ngày sau, hoặc báo cáo hôm nay ghi). */
+    const linkedFuture = new Set<string>(
+      futArrivals.filter((b: any) => (b.rescheduledFrom ?? []).includes(date)).map((b: any) => String(b.flightDate)),
+    );
+    for (const m of movesOf(close, dispatchers as any[], pilots as any[])) {
+      if (m.toDate && futureDates.includes(String(m.toDate))) linkedFuture.add(String(m.toDate));
+    }
+
+    // Mã CỦA NGÀY NÀY đã có chủ ở NGÀY ĐƯỢC DỜI TỚI — soát lại ngày cũ hết "mã thiếu"
     const ownRanges = close?.issuedRanges?.length
       ? close.issuedRanges
       : dispatchers.flatMap((d: any) => d.issuedRanges ?? []);
-    if (ownRanges.length) {
+    if (ownRanges.length && linkedFuture.size) {
       const ownSet = new Set(expandTicketRanges(ownRanges).codes);
+      const linked = (x: any) => linkedFuture.has(String(x.date ?? x.flightDate ?? ""));
       nextDayCarried = [
-        ...futPilots.flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
-        ...futCloses.flatMap((c: any) => [...(c.cancelledCodes ?? []), ...(c.rescheduled ?? []).map((r: any) => r.code)]),
-        ...futDispatchers.flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.rescheduled ?? []).map((r: any) => r.code)]),
-        ...futCancelBookings.flatMap((b: any) => b.cancelTicketCodes ?? []),
+        ...futPilots.filter(linked).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
+        ...futCloses.filter(linked).flatMap((c: any) => [...(c.cancelledCodes ?? []), ...(c.rescheduled ?? []).map((r: any) => r.code)]),
+        ...futDispatchers.filter(linked).flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.rescheduled ?? []).map((r: any) => r.code)]),
+        ...futCancelBookings.filter(linked).flatMap((b: any) => b.cancelTicketCodes ?? []),
       ]
         .map((c: any) => String(c ?? "").trim().toUpperCase())
         .filter((c: string) => ownSet.has(c));
