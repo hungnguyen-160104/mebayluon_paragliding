@@ -190,9 +190,19 @@ export type ReconcileInput = {
     usedCodes: string[];
   };
   /**
-   * Mã CỦA NGÀY NÀY đã được phi công NGÀY HÔM SAU khai bay (vé mang sang).
-   * Soát lại ngày cũ sau khi ngày mới có báo cáo: các mã này không còn là
-   * "mã thiếu" nữa — chúng đã bay, chỉ là bay muộn một ngày.
+   * NHIỀU ngày trước (khách có thể giữ vé vài ngày mới bay — không chỉ hôm
+   * qua). Mỗi phần tử cùng dạng `prevDay`; bộ soát dò mã lạ qua TỪNG ngày,
+   * ưu tiên ngày gần nhất. Dùng song song được với `prevDay` (gộp chung).
+   */
+  prevDays?: Array<{
+    date: string;
+    issuedRanges: TicketRangeInput[];
+    usedCodes: string[];
+  }>;
+  /**
+   * Mã CỦA NGÀY NÀY đã CÓ CHỦ Ở NHỮNG NGÀY SAU: phi công ngày sau khai bay
+   * (vé mang sang), hoặc quầy/booking ngày sau ghi thu hồi. Soát lại ngày cũ
+   * sau khi các ngày mới có báo cáo: các mã này không còn là "mã thiếu" nữa.
    */
   nextDayCarried?: string[];
   /** null khi kế toán chưa nhập số chốt cho ngày đó. */
@@ -578,12 +588,17 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const unknownByPilot = new Map<string, string[]>();
   const notFlyableByPilot = new Map<string, string[]>();
 
-  /** Vé NGÀY HÔM TRƯỚC bay hôm nay — xem chú thích `prevDay` ở ReconcileInput. */
-  const prevSet = new Set(expandTicketRanges(input.prevDay?.issuedRanges ?? []).codes);
-  const prevUsed = new Set(
-    (input.prevDay?.usedCodes ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean),
-  );
+  /** Vé NHỮNG NGÀY TRƯỚC bay hôm nay — xem `prevDay`/`prevDays` ở ReconcileInput. */
+  const prevList = [...(input.prevDays ?? []), ...(input.prevDay ? [input.prevDay] : [])]
+    .map((d) => ({
+      date: d.date,
+      set: new Set(expandTicketRanges(d.issuedRanges ?? []).codes),
+      used: new Set((d.usedCodes ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean)),
+    }))
+    // Ngày gần nhất soát trước — vé thường mang sang từ hôm liền kề
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
   const carriedIn: string[] = [];
+  const carriedInByDate = new Map<string, string[]>();
   const carriedButUsed = new Map<string, string[]>();
 
   for (const [c, whoList] of flownBy) {
@@ -592,15 +607,18 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
 
     if (issuedSet.size && !issuedSet.has(c)) {
       /**
-       * Không nằm trong dải HÔM NAY nhưng nằm trong dải HÔM TRƯỚC: khách dời
-       * lịch cầm vé cũ. Hôm trước mã đó CHƯA ai dùng → vé mang sang hợp lệ;
-       * hôm trước ĐÃ bay/huỷ rồi → vé chết mà lại bay lần nữa, phải đỏ.
+       * Không nằm trong dải HÔM NAY nhưng nằm trong dải MỘT NGÀY TRƯỚC ĐÓ:
+       * khách dời lịch cầm vé cũ (có khi giữ vé 2-3 ngày). Ngày xuất mã đó
+       * CHƯA ai dùng → vé mang sang hợp lệ; ngày xuất ĐÃ bay/huỷ rồi → vé
+       * chết mà lại bay lần nữa, phải đỏ.
        */
-      if (prevSet.has(c)) {
-        if (prevUsed.has(c)) {
+      const src = prevList.find((d) => d.set.has(c));
+      if (src) {
+        if (src.used.has(c)) {
           for (const u of whoList) carriedButUsed.set(u, [...(carriedButUsed.get(u) || []), c]);
         } else {
           carriedIn.push(c);
+          carriedInByDate.set(src.date, [...(carriedInByDate.get(src.date) || []), c]);
         }
         continue;
       }
@@ -614,13 +632,17 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   }
 
   if (carriedIn.length) {
+    const perDay = [...carriedInByDate.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([d, cs]) => `${short(cs)} (xuất ${formatDateKeyVN(d)})`)
+      .join(" · ");
     flag({
       code: "VE_MANG_SANG",
-      // Nhắc để kế toán biết mà đối chiếu với số khách dời hôm trước — không chặn chốt
+      // Nhắc để kế toán biết mà đối chiếu với số khách dời những hôm trước — không chặn chốt
       severity: "warn",
       message:
-        `${carriedIn.length} vé xuất ${input.prevDay ? formatDateKeyVN(input.prevDay.date) : "hôm trước"} được bay hôm nay ` +
-        `(khách dời lịch cầm vé cũ): ${short(carriedIn)}. Máy đã soát: mã nằm trong dải hôm trước và hôm trước chưa ai dùng.`,
+        `${carriedIn.length} vé xuất NGÀY TRƯỚC được bay hôm nay ` +
+        `(khách dời lịch cầm vé cũ): ${perDay}. Máy đã soát: mã nằm trong dải ngày xuất và ngày đó chưa ai dùng.`,
       who: [],
       codes: carriedIn,
     });
@@ -682,7 +704,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     flag({
       code: "VE_MANG_SANG",
       severity: "warn",
-      message: `${flownNextDay.length} vé xuất hôm nay đã bay Ở NGÀY HÔM SAU (khách dời lịch cầm vé đi): ${short(flownNextDay)} — hai ngày đã tự khớp mã.`,
+      message: `${flownNextDay.length} vé xuất hôm nay đã CÓ CHỦ Ở NGÀY SAU (khách cầm vé bay muộn, hoặc vé thu hồi muộn): ${short(flownNextDay)} — các ngày đã tự khớp mã.`,
       who: [],
       codes: flownNextDay,
     });

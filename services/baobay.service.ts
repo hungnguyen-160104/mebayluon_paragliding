@@ -9796,49 +9796,81 @@ export async function getReconcile(
    * bay là chuyện thật (30/08/2026 quá đông), nhân viên chỉ ghi được số lượng.
    * Xem luật ở lib/baobay/reconcile.ts (prevDay / nextDayCarried).
    */
-  let prevDay: ReconcileInput["prevDay"];
+  let prevDays: ReconcileInput["prevDays"];
   let nextDayCarried: string[] = [];
   if (spot === "khau-pha") {
-    const [prev, next] = await Promise.all([
-      loadDay(spot, shiftDateKey(date, -1)),
-      loadDay(spot, shiftDateKey(date, 1)),
-    ]);
+    /**
+     * CỬA SỔ NHIỀU NGÀY (02/09/2026): khách cầm vé không chỉ sang hôm sau —
+     * có người giữ 2-3 ngày mới bay. Nhìn 6 ngày mỗi chiều: mã hôm nay có thể
+     * thuộc dải của BẤT KỲ ngày nào trong 6 ngày trước, và mã hôm nay thiếu
+     * sẽ tự khớp khi xuất hiện ở BẤT KỲ ngày nào trong 6 ngày sau (phi công
+     * khai bay, hoặc quầy/booking ghi thu hồi muộn). Truy vấn gộp $in — một
+     * lượt mỗi collection, không phải 12 lượt loadDay.
+     */
+    const WINDOW = 6;
+    const pastDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, -(i + 1)));
+    const futureDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, i + 1));
+    const [pastCloses, pastDispatchers, pastPilots, pastCancelBookings, futPilots, futCloses, futDispatchers, futCancelBookings] =
+      await Promise.all([
+        AccountantDailyClose.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
+        DispatcherDailyReport.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
+        PilotDailyReport.find({ spot, date: { $in: pastDates } })
+          .select("date ticketCodes ppgCodes")
+          .lean<any[]>(),
+        BaobayBooking.find({ spot, flightDate: { $in: pastDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
+          .select("flightDate cancelTicketCodes")
+          .lean<any[]>(),
+        PilotDailyReport.find({ spot, date: { $in: futureDates } })
+          .select("ticketCodes ppgCodes")
+          .lean<any[]>(),
+        AccountantDailyClose.find({ spot, date: { $in: futureDates } })
+          .select("cancelledCodes rescheduled")
+          .lean<any[]>(),
+        DispatcherDailyReport.find({ spot, date: { $in: futureDates } })
+          .select("cancelledCodes rescheduled")
+          .lean<any[]>(),
+        BaobayBooking.find({ spot, flightDate: { $in: futureDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
+          .select("cancelTicketCodes")
+          .lean<any[]>(),
+      ]);
 
-    const prevRanges = prev.close?.issuedRanges?.length
-      ? prev.close.issuedRanges
-      : prev.dispatchers.flatMap((d: any) => d.issuedRanges ?? []);
-    if (prevRanges.length) {
-      const prevBookingCancelled = await BaobayBooking.find({
-        spot,
-        flightDate: shiftDateKey(date, -1),
-        cancelTicketCodes: { $exists: true, $ne: [] },
+    prevDays = pastDates
+      .map((d) => {
+        const dayClose = pastCloses.find((c: any) => c.date === d);
+        const dayDisp = pastDispatchers.filter((x: any) => x.date === d);
+        const ranges = dayClose?.issuedRanges?.length
+          ? dayClose.issuedRanges
+          : dayDisp.flatMap((x: any) => x.issuedRanges ?? []);
+        if (!ranges.length) return null;
+        return {
+          date: d,
+          issuedRanges: ranges,
+          // Mã ngày đó ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời có mã
+          usedCodes: [
+            ...pastPilots.filter((p: any) => p.date === d).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
+            ...(dayClose?.cancelledCodes ?? []),
+            ...dayDisp.flatMap((x: any) => x.cancelledCodes ?? []),
+            ...(dayClose?.rescheduled ?? []).map((r: any) => r.code),
+            ...dayDisp.flatMap((x: any) => (x.rescheduled ?? []).map((r: any) => r.code)),
+            ...pastCancelBookings.filter((b: any) => b.flightDate === d).flatMap((b: any) => b.cancelTicketCodes ?? []),
+          ],
+        };
       })
-        .select("cancelTicketCodes")
-        .lean<any[]>();
-      prevDay = {
-        date: shiftDateKey(date, -1),
-        issuedRanges: prevRanges,
-        // Mã hôm trước ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời có mã
-        usedCodes: [
-          ...prev.pilots.flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
-          ...(prev.close?.cancelledCodes ?? []),
-          ...prev.dispatchers.flatMap((d: any) => d.cancelledCodes ?? []),
-          ...(prev.close?.rescheduled ?? []).map((r: any) => r.code),
-          ...prev.dispatchers.flatMap((d: any) => (d.rescheduled ?? []).map((r: any) => r.code)),
-          ...prevBookingCancelled.flatMap((b) => b.cancelTicketCodes ?? []),
-        ],
-      };
-    }
+      .filter((x): x is NonNullable<typeof x> => x !== null);
 
-    // Mã CỦA NGÀY NÀY được phi công NGÀY SAU khai — để soát lại ngày cũ hết "mã thiếu"
+    // Mã CỦA NGÀY NÀY đã có chủ ở các ngày sau — để soát lại ngày cũ hết "mã thiếu"
     const ownRanges = close?.issuedRanges?.length
       ? close.issuedRanges
       : dispatchers.flatMap((d: any) => d.issuedRanges ?? []);
     if (ownRanges.length) {
       const ownSet = new Set(expandTicketRanges(ownRanges).codes);
-      nextDayCarried = next.pilots
-        .flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])])
-        .map((c: any) => String(c).trim().toUpperCase())
+      nextDayCarried = [
+        ...futPilots.flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
+        ...futCloses.flatMap((c: any) => [...(c.cancelledCodes ?? []), ...(c.rescheduled ?? []).map((r: any) => r.code)]),
+        ...futDispatchers.flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.rescheduled ?? []).map((r: any) => r.code)]),
+        ...futCancelBookings.flatMap((b: any) => b.cancelTicketCodes ?? []),
+      ]
+        .map((c: any) => String(c ?? "").trim().toUpperCase())
         .filter((c: string) => ownSet.has(c));
     }
   }
@@ -9847,7 +9879,7 @@ export async function getReconcile(
     date,
     spot,
     bookingCancelledCodes,
-    prevDay,
+    prevDays,
     nextDayCarried,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
     requireCodes: spot === "khau-pha",
