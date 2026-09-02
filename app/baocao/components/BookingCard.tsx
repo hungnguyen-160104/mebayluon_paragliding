@@ -311,7 +311,9 @@ function BookingSummary({
           })()}
           {/* TÍCH XANH ĐẬM của kế toán: đã "Đã nhận" đủ khoản CK / khoản TM của booking */}
           {b.ckChecked && (
-            <strong className="ml-0.5 rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">
+            /* Xanh DƯƠNG cùng tông với "Đã soát đủ": cả hai đều là dấu của kế
+               toán soát sao kê, khác với tích xanh lá "đã thu tiền" của quầy. */
+            <strong className="ml-0.5 rounded bg-sky-500 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">
               ✓CK
             </strong>
           )}
@@ -338,7 +340,13 @@ function BookingSummary({
              */
             const cocLaCK = depositBase > 0 && (b.depositMethod === "transfer" || Boolean(depositCode));
             const coCK = txs.length > 0 || cocLaCK;
-            const soatDu = coCK ? Boolean(b.ckChecked) : true;
+            /**
+             * "ĐỦ" nghĩa là đủ thật: booking còn "còn thu" thì mới trả một
+             * phần — dù các khoản ĐÃ chuyển đều soát xong cũng chưa được gọi
+             * là soát đủ, không thì kế toán nhìn tích mà bỏ qua phần chưa thu.
+             */
+            const conThu = (b.remaining ?? 0) > 0;
+            const soatDu = !conThu && (coCK ? Boolean(b.ckChecked) : true);
             if (!soatDu) return null;
             return (
               <strong
