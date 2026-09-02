@@ -92,6 +92,7 @@ import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.m
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
 import { PilotDailyReport } from "@/models/PilotDailyReport.model";
+import { sendPartnerFlightMail } from "@/services/baobay-partner.service";
 import { toSlug } from "@/utils/slug";
 
 const BCRYPT_ROUNDS = 10;
@@ -9636,6 +9637,8 @@ export async function closeDay(
    */
   pushSheetInBackground(() => pushCloseRow(doc), AccountantDailyClose, doc._id);
   runInBackground(() => pushDayToSheet(spot, date));
+  // Báo số chuyến (CHỈ số chuyến) của nhóm phi công Nha Trang cho đối tác chủ quản
+  runInBackground(() => sendPartnerFlightMail(spot, date));
 
   return { close: toCloseDTO({ ...doc, sheetSynced: false }), reconcile };
 }
