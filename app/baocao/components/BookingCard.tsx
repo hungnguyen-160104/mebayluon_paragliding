@@ -2867,6 +2867,12 @@ export function BookingTodayBanner({
    * để thứ tự ổn định, không nhảy lung tung mỗi lần tải lại.
    */
   const [sortBy, setSortBy] = useState<"seq" | "flown" | "ticket">("seq");
+  /**
+   * LỌC "CHƯA THU ĐỦ" cho kế toán truy thu (luật chủ 03/09): bật lên là danh
+   * sách chỉ còn booking còn nợ tiền — nhất là nhóm ĐÃ BAY mà chưa trả hết,
+   * phải đòi trước khi khách rời bãi/về nhà.
+   */
+  const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
   const [q, setQ] = useState("");
   /**
@@ -3037,13 +3043,15 @@ export function BookingTodayBanner({
     norm(b.contactName).includes(needle) ||
     norm(b.phone ?? "").includes(needle) ||
     norm(b.bookingCode ?? "").includes(needle);
+  /** Bộ lọc truy thu: chỉ giữ booking còn nợ (khách huỷ không tính — nợ của họ xử theo đường hoàn/huỷ). */
+  const unpaidOk = (b: BookingDTO) => !onlyUnpaid || ((b.remaining ?? 0) > 0 && b.status !== "cancelled");
   const open = rows
-    .filter((b) => b.status === "open" && matchQ(b))
+    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b))
     // BOOKING MỚI chưa ai thấy trên máy này: nổi LÊN ĐẦU, bất kể kiểu xếp
     .sort((a, b) => Number(isNewBooking(b)) - Number(isNewBooking(a)) || bookingCmp(a, b));
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
-  const closed = rows.filter((b) => b.status !== "open" && matchQ(b)).sort(bookingCmp);
+  const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b)).sort(bookingCmp);
   /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. ĐANG TÌM thì hiện hết kết quả. */
   const openShown = showAll || needle ? open : open.slice(0, 10);
   if (!rows.length) return null;
@@ -3269,6 +3277,27 @@ export function BookingTodayBanner({
               {label}
             </button>
           ))}
+          {/* LỌC TRUY THU — chỉ kế toán: booking còn nợ, nhất là ĐÃ BAY chưa trả hết */}
+          {canLock &&
+            (() => {
+              const unpaid = rows.filter((b) => (b.remaining ?? 0) > 0 && b.status !== "cancelled");
+              const owed = unpaid.reduce((t, b) => t + (b.remaining ?? 0), 0);
+              if (!unpaid.length && !onlyUnpaid) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setOnlyUnpaid((v) => !v)}
+                  className={
+                    onlyUnpaid
+                      ? "rounded-md bg-rose-600 px-2 py-0.5 font-bold text-white"
+                      : "rounded-md border border-rose-300 bg-white px-2 py-0.5 font-semibold text-rose-700 hover:bg-rose-50"
+                  }
+                  title="Chỉ hiện booking còn nợ tiền — truy thu trước khi khách rời bãi"
+                >
+                  💰 Chưa thu đủ ({unpaid.length} book · {Math.round(owed / 1000).toLocaleString("vi-VN")}k)
+                </button>
+              );
+            })()}
         </div>
       )}
       {error && (
