@@ -4129,14 +4129,23 @@ export async function updateBookingInfo(
    * 8.670.000 (đúng ca #16 Thu Huyền ngày 21/08). Tiền đã vào sổ chỉ được sửa
    * ở đúng nơi sinh ra nó — "Sửa khoản đã thu" trên dòng booking.
    */
+  /**
+   * KẾ TOÁN/QUẢN TRỊ được vượt hai chốt hạ-cọc bên dưới (luật chủ 03/09/2026):
+   * quầy thu nhầm/nhập nhầm thì kế toán phải hạ được về đúng số, kể cả về 0.
+   * Không lặng lẽ: mọi lần hạ đều tự ghi vệt vào ghi chú booking (ai, từ bao
+   * nhiêu xuống bao nhiêu, ngày nào) — chịu trách nhiệm bằng tên mình.
+   * Nhân viên thường vẫn bị chặn như cũ.
+   */
+  const canLowerDeposit =
+    wearsRole(session, "accountant") || wearsRole(session, "admin") || Boolean((session as { viaAdmin?: boolean }).viaAdmin);
   const collectedSoFar = (
     await BaobayCollect.find({ spot, bookingId: id, status: { $in: ["collected", "company"] } })
       .select("amount")
       .lean<any[]>()
   ).reduce((t, c) => t + (c.amount || 0), 0);
-  if (collectedSoFar > 0 && input.deposit < collectedSoFar) {
+  if (!canLowerDeposit && collectedSoFar > 0 && input.deposit < collectedSoFar) {
     throw new BaobayError(
-      `Booking này đã có ${collectedSoFar.toLocaleString("vi-VN")} đ ghi bằng LỆNH THU — không hạ ô "đã cọc" xuống ${input.deposit.toLocaleString("vi-VN")} đ được. Thu nhầm thì bấm "Sửa khoản đã thu" trên dòng booking để sửa/xoá đúng khoản đó.`,
+      `Booking này đã có ${collectedSoFar.toLocaleString("vi-VN")} đ ghi bằng LỆNH THU — không hạ ô "đã cọc" xuống ${input.deposit.toLocaleString("vi-VN")} đ được. Thu nhầm thì báo kế toán: kế toán sửa/xoá được từng khoản ở "🧾 Sửa thu" hoặc hạ thẳng ô cọc.`,
       400,
     );
   }
@@ -4158,11 +4167,11 @@ export async function updateBookingInfo(
    */
   const manualNow = Math.max(0, (current.deposit ?? 0) - collectedSoFar);
   const manualNext = Math.max(0, input.deposit - collectedSoFar);
-  if (current.depositVerifiedAt && manualNext < manualNow) {
+  if (!canLowerDeposit && current.depositVerifiedAt && manualNext < manualNow) {
     throw new BaobayError(
       `Khoản cọc ${manualNow.toLocaleString("vi-VN")} đ này kế toán ĐÃ ĐỐI SOÁT với sao kê (${
         current.depositVerifiedBy || "kế toán"
-      } xác nhận) — không hạ xuống ${manualNext.toLocaleString("vi-VN")} đ được. Nếu khoản đó thật sự sai thì báo kế toán bỏ xác nhận ở trang soát sao kê rồi mới sửa.`,
+      } xác nhận) — không hạ xuống ${manualNext.toLocaleString("vi-VN")} đ được. Nếu khoản đó thật sự sai thì báo kế toán sửa (kế toán hạ được, có ghi vệt).`,
       400,
     );
   }
@@ -4246,6 +4255,24 @@ const editedTotal = bookingTotal({
     (update.$set as Record<string, unknown>).depositVerifiedAt = null;
     (update.$set as Record<string, unknown>).depositVerifiedBy = "";
     (update.$set as Record<string, unknown>).ckCheckedAt = null;
+  }
+
+  /**
+   * KẾ TOÁN HẠ CỌC (quầy thu nhầm/nhập nhầm): ghi vệt vào ghi chú — ai hạ, từ
+   * bao nhiêu xuống bao nhiêu — và gỡ mọi tích đối soát cũ (số đã đổi thì tích
+   * cũ hết giá trị, khoản còn lại quay về hàng chờ soát).
+   */
+  if (canLowerDeposit && input.deposit < (current.deposit ?? 0)) {
+    (update.$set as Record<string, unknown>).note = [
+      input.note.trim(),
+      `kế toán ${session.name || session.username} hạ "đã cọc" ${(current.deposit ?? 0).toLocaleString("vi-VN")}đ → ${input.deposit.toLocaleString("vi-VN")}đ (${formatDateKeyVN(todayInVN())})`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    (update.$set as Record<string, unknown>).depositVerifiedAt = null;
+    (update.$set as Record<string, unknown>).depositVerifiedBy = "";
+    (update.$set as Record<string, unknown>).ckCheckedAt = null;
+    (update.$set as Record<string, unknown>).tmCheckedAt = null;
   }
 
   const doc = await BaobayBooking.findOneAndUpdate({ _id: id, spot }, update, { new: true }).lean<any>();
