@@ -3108,9 +3108,34 @@ export function BookingTodayBanner({
    * nhóm thì Tổng = bay + chờ + dời + huỷ, cộng nhẩm là khớp.
    */
   const openGuests = open.reduce((t, b) => t + b.guestCount, 0);
+  /**
+   * TÁCH TỔNG THEO LOẠI BAY (luật chủ 03/09): "Tổng 46k" phải kể rõ bao nhiêu
+   * PG bao nhiêu PPG — hai loại khác giá, khác phi công, khác cách chốt sổ.
+   * Booking PG có thể chở lẫn vài khách PPG (ppgGuests) nên đếm theo đầu khách
+   * chứ không theo booking. Cộng cả nhóm đã dời đi cho khớp con số Tổng.
+   */
+  const kindTotals = { pg: 0, ppg: 0, m650: 0, m850: 0 };
+  for (const b of [...rows, ...movedOut]) {
+    if (b.flightKind === "ppg") kindTotals.ppg += b.guestCount;
+    else if (b.flightKind === "m650") kindTotals.m650 += b.guestCount;
+    else if (b.flightKind === "m850") kindTotals.m850 += b.guestCount;
+    else {
+      const p = Math.min(b.guestCount, b.ppgGuests || 0);
+      kindTotals.ppg += p;
+      kindTotals.pg += b.guestCount - p;
+    }
+  }
+  const kindBits = [
+    kindTotals.pg ? `${kindTotals.pg}×PG` : "",
+    kindTotals.ppg ? `${kindTotals.ppg}×PPG` : "",
+    kindTotals.m650 ? `${kindTotals.m650}×M650` : "",
+    kindTotals.m850 ? `${kindTotals.m850}×M850` : "",
+  ]
+    .filter(Boolean)
+    .join(" + ");
   const stats = [
     `${rows.length + moved.bookings} Book`,
-    `Tổng ${rows.reduce((t, b) => t + b.guestCount, 0) + moved.guests}k`,
+    `Tổng ${rows.reduce((t, b) => t + b.guestCount, 0) + moved.guests}k${kindBits ? ` (${kindBits})` : ""}`,
     issuedGuests ? `Đã xuất vé ${issuedGuests}k` : "",
     doneGuestsAll ? `Đã bay ${doneGuestsAll}k` : "",
     openGuests ? `Chờ ${openGuests}k` : "",
