@@ -2873,6 +2873,8 @@ export function BookingTodayBanner({
    * phải đòi trước khi khách rời bãi/về nhà.
    */
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
+  /** LỌC PPG (luật chủ 03/09): PPG khác giá, khác phi công, phải soát riêng được. */
+  const [onlyPpg, setOnlyPpg] = useState(false);
   /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
   const [q, setQ] = useState("");
   /**
@@ -3045,13 +3047,16 @@ export function BookingTodayBanner({
     norm(b.bookingCode ?? "").includes(needle);
   /** Bộ lọc truy thu: chỉ giữ booking còn nợ (khách huỷ không tính — nợ của họ xử theo đường hoàn/huỷ). */
   const unpaidOk = (b: BookingDTO) => !onlyUnpaid || ((b.remaining ?? 0) > 0 && b.status !== "cancelled");
+  /** Booking dính PPG: cả đoàn PPG, hoặc đoàn PG chở lẫn vài khách PPG. */
+  const isPpgBooking = (b: BookingDTO) => b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0;
+  const ppgOk = (b: BookingDTO) => !onlyPpg || isPpgBooking(b);
   const open = rows
-    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b))
+    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b) && ppgOk(b))
     // BOOKING MỚI chưa ai thấy trên máy này: nổi LÊN ĐẦU, bất kể kiểu xếp
     .sort((a, b) => Number(isNewBooking(b)) - Number(isNewBooking(a)) || bookingCmp(a, b));
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
-  const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b)).sort(bookingCmp);
+  const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b) && ppgOk(b)).sort(bookingCmp);
   /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. ĐANG TÌM thì hiện hết kết quả. */
   const openShown = showAll || needle ? open : open.slice(0, 10);
   if (!rows.length) return null;
@@ -3277,6 +3282,29 @@ export function BookingTodayBanner({
               {label}
             </button>
           ))}
+          {/* LỌC PPG — mọi vai trò: PPG khác giá, khác phi công, soát riêng một phát ra hết */}
+          {(() => {
+            const ppgRows = rows.filter(isPpgBooking);
+            const ppgGuests = ppgRows.reduce(
+              (t, b) => t + (b.flightKind === "ppg" ? b.guestCount : Math.min(b.guestCount, b.ppgGuests || 0)),
+              0,
+            );
+            if (!ppgRows.length && !onlyPpg) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => setOnlyPpg((v) => !v)}
+                className={
+                  onlyPpg
+                    ? "rounded-md bg-indigo-600 px-2 py-0.5 font-bold text-white"
+                    : "rounded-md border border-indigo-300 bg-white px-2 py-0.5 font-semibold text-indigo-700 hover:bg-indigo-50"
+                }
+                title="Chỉ hiện booking có khách bay PPG (cả đoàn PPG lẫn đoàn PG chở kèm khách PPG)"
+              >
+                🪂 PPG ({ppgRows.length} book · {ppgGuests}k)
+              </button>
+            );
+          })()}
           {/* LỌC TRUY THU — chỉ kế toán: booking còn nợ, nhất là ĐÃ BAY chưa trả hết */}
           {canLock &&
             (() => {
