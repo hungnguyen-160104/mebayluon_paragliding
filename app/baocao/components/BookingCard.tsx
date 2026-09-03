@@ -2854,6 +2854,33 @@ export function BookingTodayBanner({
   const [sortBy, setSortBy] = useState<"seq" | "flown" | "ticket">("seq");
   /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
   const [q, setQ] = useState("");
+  /**
+   * BOOKING MỚI NỔI LÊN ĐẦU cho tới khi NGƯỜI XEM THẤY (luật chủ 03/09): máy
+   * này đã mở danh sách có booking đó một lần thì lần mở SAU badge tự ẩn.
+   * "Đã thấy" lưu localStorage theo TỪNG MÁY — điều phối và kế toán mỗi người
+   * đều được thấy badge ít nhất một lần; refresh 30s giữa chừng KHÔNG tính là
+   * "lần sau" (bộ nhớ đã-thấy chỉ nạp lúc mở trang). Chỉ tính booking nhập
+   * trong 24h để badge cũ không đeo bám mãi trên máy chưa từng mở.
+   */
+  const seenRef = useRef<Set<string>>(new Set());
+  const [seenLoaded, setSeenLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      seenRef.current = new Set(JSON.parse(localStorage.getItem("baobay-seen-bookings") ?? "[]"));
+    } catch {
+      /* máy chặn localStorage thì badge hiện mỗi lần — thà thừa còn hơn sót */
+    }
+    setSeenLoaded(true);
+  }, []);
+  const isNewBooking = useCallback(
+    (b: BookingDTO) =>
+      seenLoaded &&
+      b.status === "open" &&
+      Boolean(b.createdAt) &&
+      Date.now() - new Date(b.createdAt).getTime() < 24 * 3600_000 &&
+      !seenRef.current.has(b.id),
+    [seenLoaded],
+  );
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
   const [moving, setMoving] = useState<{
     id: string;
@@ -2894,6 +2921,22 @@ export function BookingTodayBanner({
     const timer = setInterval(load, 30_000);
     return () => clearInterval(timer);
   }, [load]);
+
+  /**
+   * ĐÁNH DẤU "ĐÃ THẤY" vào kho máy này ngay khi danh sách hiện ra — nhưng KHÔNG
+   * đụng seenRef của phiên đang mở, để badge còn nổi suốt lượt xem này; lần MỞ
+   * TRANG sau kho mới được nạp lại và badge tự ẩn. Giữ tối đa 500 id gần nhất.
+   */
+  useEffect(() => {
+    if (!seenLoaded || !rows.length) return;
+    try {
+      const stored: string[] = JSON.parse(localStorage.getItem("baobay-seen-bookings") ?? "[]");
+      const merged = [...new Set([...stored, ...rows.map((b) => b.id)])].slice(-500);
+      localStorage.setItem("baobay-seen-bookings", JSON.stringify(merged));
+    } catch {
+      /* không lưu được thì badge hiện lại lần sau — không sao */
+    }
+  }, [rows, seenLoaded]);
 
   /**
    * NÚT KHOÁ của một dòng — dùng cho CẢ dòng chờ bay và dòng đã bay/đã huỷ.
@@ -2979,7 +3022,10 @@ export function BookingTodayBanner({
     norm(b.contactName).includes(needle) ||
     norm(b.phone ?? "").includes(needle) ||
     norm(b.bookingCode ?? "").includes(needle);
-  const open = rows.filter((b) => b.status === "open" && matchQ(b)).sort(bookingCmp);
+  const open = rows
+    .filter((b) => b.status === "open" && matchQ(b))
+    // BOOKING MỚI chưa ai thấy trên máy này: nổi LÊN ĐẦU, bất kể kiểu xếp
+    .sort((a, b) => Number(isNewBooking(b)) - Number(isNewBooking(a)) || bookingCmp(a, b));
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
   const closed = rows.filter((b) => b.status !== "open" && matchQ(b)).sort(bookingCmp);
@@ -3197,14 +3243,21 @@ export function BookingTodayBanner({
           </Banner>
         </div>
       )}
-      <ul className={"mt-2" + (rows.length >= 8 ? " lg:columns-2 lg:gap-x-3" : "")}>
+      {/* GRID chứ không phải CSS columns: columns chảy theo CHIỀU CAO nên một
+          dòng nở ra (bấm "thêm"/thu tiền) là các dòng sau nhảy từ cột này sang
+          cột kia — người đang nhìn dễ bấm nhầm booking (chuyện thật 03/09).
+          Grid gán ô theo THỨ TỰ: dòng nở chỉ đẩy dọc, không ai đổi cột. */}
+      <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
         {openShown.map((b, i) => (
           <li
             key={b.id}
             /* Đã khoá = kế toán soát xong, không ai đụng nữa: cho mờ để mắt lướt
                qua, dồn sự chú ý vào những dòng còn phải làm. */
             className={
-              "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" + (b.locked ? " opacity-60" : "")
+              "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" +
+              (b.locked ? " opacity-60" : "") +
+              // BOOKING MỚI chưa thấy trên máy này: viền + nền nổi hẳn cho tới lần mở trang sau
+              (isNewBooking(b) ? " border-2 border-emerald-500 bg-emerald-50" : "")
             }
             style={{ display: "flow-root" }}
           >
@@ -3404,6 +3457,11 @@ export function BookingTodayBanner({
               </>
             )}
             <div className="min-w-0">
+              {isNewBooking(b) && (
+                <span className="mr-1.5 animate-pulse rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  ✦ BOOKING MỚI
+                </span>
+              )}
               {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
               <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
               <BookingSummary b={b} hideNote dim={b.locked} />
@@ -3439,36 +3497,14 @@ export function BookingTodayBanner({
             </div>
           </li>
         ))}
-        {/* BOOKING VỪA NHẬP bị gập khuất: ngày đông chỉ hiện 10 dòng đầu theo số
-            thứ tự, booking mới mang số to nhất nên rơi sau nút "Xem thêm" — người
-            vừa nhập tưởng máy nuốt mất (chuyện thật 02/09). Ghim một dòng báo
-            trong 10 phút đầu để họ thấy ngay nó ĐÃ vào sổ và đang đứng số mấy. */}
-        {!showAll &&
-          !needle &&
-          open
-            .slice(10)
-            .filter((b) => b.createdAt && Date.now() - new Date(b.createdAt).getTime() < 10 * 60_000)
-            .map((b) => (
-              <li
-                key={`recent-${b.id}`}
-                className="mb-1.5 break-inside-avoid rounded-lg border-2 border-sky-400 bg-sky-50 px-2.5 py-1.5"
-              >
-                <span className="mr-1.5 rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  ✦ VỪA NHẬP
-                </span>
-                <BookingSummary b={b} hideNote />
-                <span className="ml-1 text-[11px] text-sky-800">
-                  — đã vào sổ, đứng thứ {open.findIndex((x) => x.id === b.id) + 1}/{open.length} trong danh sách chờ;
-                  bấm “Xem thêm” để thao tác.
-                </span>
-              </li>
-            ))}
+        {/* Booking mới giờ NỔI LÊN ĐẦU danh sách kèm badge ✦ BOOKING MỚI (xem
+            isNewBooking) — không cần ghim phụ dưới này nữa. */}
         {open.length > 10 && !needle && (
           /* [column-span:all]: danh sách chia 2 cột trên desktop nên một <li>
              thường bị dòng chảy cột nhét vào LƯNG CHỪNG cột phải — chủ tìm nút
              "Xem thêm" không thấy, tưởng thẻ không có (chuyện thật 02/09).
              Phá cột cho nút thành thanh ngang trọn chiều rộng. */
-          <li className="my-1.5 lg:[column-span:all]">
+          <li className="my-1.5 lg:col-span-2">
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
@@ -3503,7 +3539,7 @@ export function BookingTodayBanner({
           </li>
         ))}
         {voided.length > 0 && (
-          <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:[column-span:all]">
+          <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:col-span-2">
             <details>
               <summary className="cursor-pointer text-[11px] font-semibold text-slate-500">
                 🗑 Đã bỏ khỏi sổ hôm nay ({voided.length}) — không tính vào thống kê
