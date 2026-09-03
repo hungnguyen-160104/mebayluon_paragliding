@@ -127,6 +127,7 @@ type CloseSuggestion = {
     expectedTime?: string;
     codes?: string[];
     bookedId?: string;
+    ticketIssued?: boolean;
   }>;
   dispatcherLedger: Array<{ content: string; amount: number; kind: "thu" | "chi"; method?: "cash" | "transfer" }>;
   dispatcherNames: string[];
@@ -1137,6 +1138,13 @@ function DailyCloseInner() {
                             <strong>{e.name || "khách"}</strong> · {e.guests} khách · sang{" "}
                             <strong>{e.toDate ? formatDateKeyVN(e.toDate) : "?"}</strong>
                             {codes(e)}
+                            {/* ĐÃ/CHƯA xuất vé — quyết định nhóm này có vé thu hồi
+                                hay vé mang sang ngày mới hay không (luật chủ 03/09) */}
+                            {(e.codes ?? []).length === 0 && typeof e.ticketIssued === "boolean" && (
+                              <strong className={e.ticketIssued ? " text-rose-700" : " text-slate-600"}>
+                                {e.ticketIssued ? " · 🎫 ĐÃ XUẤT VÉ (khách cầm vé đi)" : " · 🎫✕ chưa xuất vé"}
+                              </strong>
+                            )}
                             {e.note ? ` · ${e.note}` : ""}
                           </li>
                         ))}

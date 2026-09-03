@@ -8323,7 +8323,14 @@ issuedRanges: Array<{ from: string; to: string }>;
   pilotExtraPpg: number;
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
-  rescheduledGuestEntries: Array<{ name: string; guests: number; toDate: string; note?: string }>;
+  rescheduledGuestEntries: Array<{
+    name: string;
+    guests: number;
+    toDate: string;
+    note?: string;
+    /** Nhóm dời ĐÃ XUẤT VÉ chưa (lấy từ sổ booking) — quyết định có vé thu hồi hay không. */
+    ticketIssued?: boolean;
+  }>;
   /**
    * Sổ "Tiền trong ngày" dựng sẵn từ báo cáo điều phối: từng dòng thu đúng
    * tiền mặt/CK + từng khoản chi hộ — kế toán bấm một nút là nhận cả cụm.
