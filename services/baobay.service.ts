@@ -6240,9 +6240,24 @@ export async function splitBooking(
     await assertMoveDatesOpen(spot, current.flightDate, String(input.toDate));
   }
 
-  /** Số khách còn lại ở booking gốc — dịch vụ bám đầu khách nên phải kẹp xuống. */
+  /**
+   * Số khách còn lại ở booking gốc — dịch vụ bám đầu khách nên phải kẹp xuống,
+   * và PHẦN VƯỢT (dịch vụ của mấy khách dời) NỐI SANG BOOKING MỚI chứ không
+   * được bốc hơi. Chuyện thật 01-02/09: đoàn Gia Bảo tách 2 khách sang 2/9,
+   * dịch vụ bị kẹp ở gốc còn phần dời tạo với 0 dịch vụ → ngày 2/9 phi công
+   * quay 360 nhiều hơn sổ, ngày 1/9 sổ lại thừa — hai ngày cùng lệch.
+   */
   const left = (current.guestCount || 0) - guests;
   const clamp = (n: number) => Math.min(Number(n) || 0, left);
+  const carry = (n: number) => Math.max(0, (Number(n) || 0) - clamp(n));
+  const partServices = {
+    flycam: carry(current.flycam),
+    video360: carry(current.video360),
+    redFlag: carry(current.redFlag),
+    sunset: carry(current.sunset),
+    flagFlight: carry(current.flagFlight),
+    mountainCar: carry(current.mountainCar),
+  };
   const originSet: Record<string, unknown> = {
     guestCount: left,
     ppgGuests: Math.min(Number(current.ppgGuests) || 0, left),
@@ -6339,14 +6354,15 @@ export async function splitBooking(
     otaRef: undefined,
     otaName: current.otaName,
     guestCount: guests,
-    flycam: 0,
-    video360: 0,
-    redFlag: 0,
-    sunset: 0,
-    flagFlight: 0,
-    mountainCar: 0,
+    /** Dịch vụ VƯỢT quá số khách ở lại = dịch vụ của mấy khách dời — nối theo. */
+    flycam: partServices.flycam,
+    video360: partServices.video360,
+    redFlag: partServices.redFlag,
+    sunset: partServices.sunset,
+    flagFlight: partServices.flagFlight,
+    mountainCar: partServices.mountainCar,
     flightKind: current.flightKind,
-    ppgGuests: 0,
+    ppgGuests: Math.max(0, (Number(current.ppgGuests) || 0) - Math.min(Number(current.ppgGuests) || 0, left)),
     pickup: current.pickup,
     pickupNote: current.pickupNote,
     expectedTime: input.mode === "move" ? "" : current.expectedTime,
