@@ -9996,11 +9996,23 @@ export async function getReconcile(
      *  - booking của ngày đích có `rescheduledFrom` chứa ngày gốc (dời qua
      *    app; dời nhiều chặng vẫn dính vì mảng giữ đủ các ngày đã qua);
      *  - hoặc báo cáo ngày gốc (kế toán/quầy/phi công) ghi "dời sang <ngày đích>".
-     * Cửa sổ nhìn tối đa 6 ngày mỗi chiều; ngày nào không có vết dời nối tới
-     * thì mã của ngày đó vẫn là MÃ LẠ / MÃ THIẾU như thường.
+     * Cửa sổ mặc định 6 ngày mỗi chiều, NHƯNG chuỗi dời nhiều chặng kéo dài
+     * hơn thế (1→4→9, luật chủ 04/09) thì vết dời của booking hôm nay quyết
+     * định: mọi ngày gốc trong `rescheduledFrom` đều được nạp dải vé, xa mấy
+     * cũng truy — khách không có lệnh thu hồi dọc đường thì vẫn cầm vé của
+     * NGÀY ĐẦU TIÊN. Ngày không có vết dời nối tới vẫn là MÃ LẠ như thường.
      */
     const WINDOW = 6;
-    const pastDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, -(i + 1)));
+    // Vết dời tới hôm nay lấy TRƯỚC — nó quyết định phải nạp thêm ngày gốc nào ngoài cửa sổ
+    const arrivedToday = await BaobayBooking.find({ spot, flightDate: date, rescheduledFrom: { $exists: true, $ne: [] } })
+      .select("rescheduledFrom")
+      .lean<any[]>();
+    const trailDates = new Set<string>(
+      arrivedToday.flatMap((b: any) => (b.rescheduledFrom ?? []).filter((d: string) => isDateKey(d) && d < date)),
+    );
+    const pastDates = [
+      ...new Set([...Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, -(i + 1))), ...trailDates]),
+    ];
     const futureDates = Array.from({ length: WINDOW }, (_, i) => shiftDateKey(date, i + 1));
     const [
       pastCloses,
@@ -10011,7 +10023,6 @@ export async function getReconcile(
       futCloses,
       futDispatchers,
       futCancelBookings,
-      arrivedToday,
       futArrivals,
     ] = await Promise.all([
       AccountantDailyClose.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
@@ -10033,10 +10044,6 @@ export async function getReconcile(
         .lean<any[]>(),
       BaobayBooking.find({ spot, flightDate: { $in: futureDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
         .select("flightDate cancelTicketCodes rescheduledFrom")
-        .lean<any[]>(),
-      // Khách DỜI TỚI hôm nay — vết nối các ngày gốc → hôm nay
-      BaobayBooking.find({ spot, flightDate: date, rescheduledFrom: { $exists: true, $ne: [] } })
-        .select("rescheduledFrom")
         .lean<any[]>(),
       // Khách của các ngày sau mang vết dời — để nối hôm nay → ngày sau
       BaobayBooking.find({ spot, flightDate: { $in: futureDates }, rescheduledFrom: { $exists: true, $ne: [] } })
@@ -10060,6 +10067,19 @@ export async function getReconcile(
       if (ms.some((m: any) => m.toDate === date)) linkedPast.add(d);
     }
 
+    /**
+     * LỆNH THU HỒI TOÀN CỤC (luật chủ 04/09): vé bị thu hồi ở BẤT KỲ chặng nào
+     * trên đường dời (xuất ngày 1, thu hồi khi khách ghé ngày 4) thì khách
+     * không còn cầm nó — ngày 9 mà phi công khai mã đó là phải ĐỎ. Gom mọi mã
+     * thu hồi/huỷ của tất cả các ngày đã nạp rồi trộn vào "đã có chủ" của từng
+     * ngày gốc; KHÔNG trộn mã "dời sang đúng hôm nay" — đó là vé đang truy vết.
+     */
+    const globalRecalled = [
+      ...pastCloses.flatMap((c: any) => c.cancelledCodes ?? []),
+      ...pastDispatchers.flatMap((x: any) => x.cancelledCodes ?? []),
+      ...pastCancelBookings.flatMap((b: any) => b.cancelTicketCodes ?? []),
+    ];
+
     prevDays = pastDates
       .filter((d) => linkedPast.has(d))
       .map((d) => {
@@ -10078,13 +10098,15 @@ export async function getReconcile(
         return {
           date: d,
           issuedRanges: ranges,
-          // Mã ngày đó ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời đi ngày khác
+          // Mã ngày đó ĐÃ CÓ CHỦ: đã bay (PG lẫn PPG), đã huỷ, đã dời đi ngày
+          // khác, hoặc BỊ THU HỒI Ở BẤT KỲ CHẶNG NÀO trên đường dời
           usedCodes: [
             ...pastPilots.filter((p: any) => p.date === d).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
             ...(dayClose?.cancelledCodes ?? []),
             ...dayDisp.flatMap((x: any) => x.cancelledCodes ?? []),
             ...moved.filter((r: any) => r.toDate !== date).map((r: any) => r.code),
             ...pastCancelBookings.filter((b: any) => b.flightDate === d).flatMap((b: any) => b.cancelTicketCodes ?? []),
+            ...globalRecalled,
           ],
         };
       })
