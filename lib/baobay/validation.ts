@@ -197,12 +197,18 @@ export const pilotReportSchema = z.object({
   ppgFlights: count(300),
   ppgCodesText: text(20_000),
   ppgNoTicket: count(300),
-  /** Suất ăn & xe trong ngày — số nhỏ, trần 50 là quá đủ cho một người/ngày. */
-  mealBreakfast: count(50),
-  mealLunch: count(50),
-  mealDinner: count(50),
-  motorbikeRides: count(50),
-  carRides: count(50),
+  /**
+   * Suất ăn & xe trong ngày — số nhỏ, trần 50 là quá đủ cho một người/ngày.
+   * PHẢI optional + default 0: trường sinh sau, điện thoại phi công còn cache
+   * bản web cũ không gửi trường này — bắt buộc là "Expected number, received
+   * nan" chặn cả báo cáo (lỗi thật 03/09/2026). Trường thêm về sau luôn phải
+   * chịu được client cũ thiếu nó.
+   */
+  mealBreakfast: count(50).optional().default(0),
+  mealLunch: count(50).optional().default(0),
+  mealDinner: count(50).optional().default(0),
+  motorbikeRides: count(50).optional().default(0),
+  carRides: count(50).optional().default(0),
   cancelledGuestEntries: cancelledGuestList,
   rescheduledGuestEntries: rescheduledGuestList,
   expenses: expenseList,

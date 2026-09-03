@@ -692,6 +692,13 @@ function toForm(r: PilotReportDTO) {
     ppgFlights: r.ppgFlights,
     ppgCodesText: r.ppgCodes.join(", "),
     ppgNoTicket: r.ppgNoTicket,
+    /** Suất ăn & xe: phải nạp giá trị ĐANG CÓ — kế toán sửa hộ báo cáo mà
+        thiếu dòng này là lưu đè 0, xoá mất số phi công đã khai. */
+    mealBreakfast: r.mealBreakfast ?? 0,
+    mealLunch: r.mealLunch ?? 0,
+    mealDinner: r.mealDinner ?? 0,
+    motorbikeRides: r.motorbikeRides ?? 0,
+    carRides: r.carRides ?? 0,
     note: r.note,
   };
 }
