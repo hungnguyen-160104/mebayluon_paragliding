@@ -768,6 +768,12 @@ export type BookingPick = {
   cancelTicketCodes?: string[];
   cancelledBy?: string;
   note?: string;
+  /** Dịch vụ kèm — thẻ huỷ/dời cần để hỏi "mang theo bao nhiêu" khi tách nhóm. */
+  flycam?: number;
+  video360?: number;
+  redFlag?: number;
+  sunset?: number;
+  flagFlight?: number;
 };
 
 /**

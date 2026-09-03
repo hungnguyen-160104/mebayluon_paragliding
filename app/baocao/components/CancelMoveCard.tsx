@@ -16,7 +16,7 @@ import {
 } from "./rows";
 import { PaymentQrButton } from "./PaymentQr";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
-import { Banner, Button, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
+import { Banner, Button, CountInput, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
 /**
  * KHÁCH HUỶ / DỜI LỊCH — một thẻ chung.
@@ -87,6 +87,8 @@ export function CancelMoveCard({
   const [feeTransfer, setFeeTransfer] = useState(0);
   const [feeCode, setFeeCode] = useState("");
   const [toDate, setToDate] = useState("");
+  /** Tách dời: số DỊCH VỤ mang theo nhóm dời — chia đều thì máy tự chia, lệch thì bắt xác nhận. */
+  const [moveServices, setMoveServices] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +117,7 @@ export function CancelMoveCard({
     setFeeCode("");
     setCodes("");
     setNote("");
+    setMoveServices({});
     setError(null);
   }
 
@@ -136,6 +139,7 @@ export function CancelMoveCard({
     setFeeTransfer(0);
     setFeeCode("");
     setToDate("");
+    setMoveServices({});
     setNote("");
   }
 
@@ -191,7 +195,7 @@ export function CancelMoveCard({
                 usedFee,
                 bankAccount,
               }
-            : { toDate }),
+            : { toDate, services: moveServices }),
         });
       }
 
@@ -489,6 +493,73 @@ export function CancelMoveCard({
                       : "Tiền đoàn đã trả sẽ tự chia theo giá gộp: phần ở lại giữ đúng giá trị, phần dư nối theo nhóm dời — khỏi thu lại."}
                   </p>
                 )}
+                {/* DỊCH VỤ MANG THEO nhóm dời (luật chủ 04/09): chia đều (mỗi khách
+                    1 suất) → máy chia theo đầu khách dời; KHÔNG chia đều (3 khách
+                    2×360) → máy không đoán được của ai, tô vàng bắt xác nhận. */}
+                {!whole &&
+                  guests > 0 &&
+                  (
+                    [
+                      ["flycam", "Flycam"],
+                      ["video360", "Cam360"],
+                      ["redFlag", "Cờ đỏ"],
+                      ["sunset", "H.hôn"],
+                      ["flagFlight", "Kéo cờ"],
+                    ] as Array<[string, string]>
+                  ).some(([k]) => Number((picked as Record<string, unknown>)[k]) > 0) && (
+                    <div className="mt-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 p-2">
+                      <div className="text-[11px] font-semibold text-indigo-900">
+                        Dịch vụ mang theo nhóm dời ({guests}/{picked.guestCount} khách):
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {(
+                          [
+                            ["flycam", "Flycam"],
+                            ["video360", "Cam360"],
+                            ["redFlag", "Cờ đỏ"],
+                            ["sunset", "H.hôn"],
+                            ["flagFlight", "Kéo cờ"],
+                          ] as Array<[string, string]>
+                        )
+                          .filter(([k]) => Number((picked as Record<string, unknown>)[k]) > 0)
+                          .map(([k, label]) => {
+                            const have = Number((picked as Record<string, unknown>)[k]) || 0;
+                            const stay = picked.guestCount - guests;
+                            const min = Math.max(0, have - stay);
+                            const max = Math.min(have, guests);
+                            const even = have === picked.guestCount;
+                            const val = Math.min(max, Math.max(min, moveServices[k] ?? (even ? max : min)));
+                            const needsConfirm = !even && moveServices[k] === undefined;
+                            return (
+                              <label
+                                key={k}
+                                className={
+                                  "flex items-center gap-1 rounded px-1 text-xs font-medium " +
+                                  (needsConfirm ? "bg-amber-100 text-amber-900" : "text-indigo-900")
+                                }
+                                title={
+                                  even
+                                    ? "Mỗi khách 1 suất — máy chia theo đầu khách dời, sửa được"
+                                    : "Dịch vụ KHÔNG chia đều theo khách — xác nhận số mang theo"
+                                }
+                              >
+                                {needsConfirm ? "⚠ " : ""}
+                                {label}
+                                <span className="w-20">
+                                  <CountInput
+                                    compact
+                                    value={val}
+                                    onChange={(v) => setMoveServices({ ...moveServices, [k]: Math.min(max, Math.max(min, v)) })}
+                                    max={max}
+                                  />
+                                </span>
+                                <span className="text-slate-400">/{have}</span>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 {/* Dời lịch KHÔNG hoàn tiền, nhưng phí đã phát sinh thì khách trả */}
                 <div className="mt-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2">
                   <div className="text-[11px] font-semibold text-emerald-900">

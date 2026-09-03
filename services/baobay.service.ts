@@ -6215,6 +6215,13 @@ export async function splitBooking(
     usedServices?: string;
     usedFee?: number;
     bankAccount?: string;
+    /**
+     * Dời một phần: SỐ DỊCH VỤ MANG THEO nhóm dời (người bấm tích chọn — luật
+     * chủ 04/09). Bỏ trống thì máy tự lấy phần vượt quá số khách ở lại. Máy
+     * luôn kẹp trong khoảng hợp lệ: không ít hơn phần bắt buộc phải đi (gốc
+     * không chứa nổi), không nhiều hơn số đang có.
+     */
+    services?: Partial<Record<"flycam" | "video360" | "redFlag" | "sunset" | "flagFlight" | "mountainCar", number>>;
   },
 ): Promise<{ origin: BookingDTO; part: BookingDTO }> {
   await connectDB();
@@ -6248,25 +6255,43 @@ export async function splitBooking(
    * quay 360 nhiều hơn sổ, ngày 1/9 sổ lại thừa — hai ngày cùng lệch.
    */
   const left = (current.guestCount || 0) - guests;
-  const clamp = (n: number) => Math.min(Number(n) || 0, left);
-  const carry = (n: number) => Math.max(0, (Number(n) || 0) - clamp(n));
+  /**
+   * MANG THEO bao nhiêu dịch vụ: người bấm chọn (input.services), máy kẹp
+   * trong [phần gốc không chứa nổi … min(số đang có, số khách dời)]; không
+   * chọn thì mặc định đúng phần vượt. Gốc giữ phần còn lại.
+   */
+  const carryOf = (key: keyof NonNullable<typeof input.services>, cur: number): number => {
+    const have = Number(cur) || 0;
+    const minCarry = Math.max(0, have - left);
+    const maxCarry = Math.min(have, guests);
+    const asked = input.services?.[key];
+    /**
+     * Mặc định khi người bấm không chọn (luật chủ 04/09): dịch vụ CHIA ĐỀU
+     * (mỗi khách một suất — số dịch vụ = số khách) thì chia theo đầu khách
+     * dời; KHÔNG chia đều (3 khách 2×360) thì máy không đoán được của ai —
+     * giữ mức tối thiểu bắt buộc, giao diện bắt xác nhận số mang theo.
+     */
+    const fallback = have === (current.guestCount || 0) ? Math.min(guests, have) : minCarry;
+    const want = asked == null ? fallback : Math.round(Number(asked) || 0);
+    return Math.min(maxCarry, Math.max(minCarry, want));
+  };
   const partServices = {
-    flycam: carry(current.flycam),
-    video360: carry(current.video360),
-    redFlag: carry(current.redFlag),
-    sunset: carry(current.sunset),
-    flagFlight: carry(current.flagFlight),
-    mountainCar: carry(current.mountainCar),
+    flycam: carryOf("flycam", current.flycam),
+    video360: carryOf("video360", current.video360),
+    redFlag: carryOf("redFlag", current.redFlag),
+    sunset: carryOf("sunset", current.sunset),
+    flagFlight: carryOf("flagFlight", current.flagFlight),
+    mountainCar: carryOf("mountainCar", current.mountainCar),
   };
   const originSet: Record<string, unknown> = {
     guestCount: left,
     ppgGuests: Math.min(Number(current.ppgGuests) || 0, left),
-    flycam: clamp(current.flycam),
-    video360: clamp(current.video360),
-    redFlag: clamp(current.redFlag),
-    sunset: clamp(current.sunset),
-    flagFlight: clamp(current.flagFlight),
-    mountainCar: clamp(current.mountainCar),
+    flycam: (Number(current.flycam) || 0) - partServices.flycam,
+    video360: (Number(current.video360) || 0) - partServices.video360,
+    redFlag: (Number(current.redFlag) || 0) - partServices.redFlag,
+    sunset: (Number(current.sunset) || 0) - partServices.sunset,
+    flagFlight: (Number(current.flagFlight) || 0) - partServices.flagFlight,
+    mountainCar: (Number(current.mountainCar) || 0) - partServices.mountainCar,
   };
   const originTotal = bookingTotal({
     ...current,

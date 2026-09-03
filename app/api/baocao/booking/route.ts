@@ -361,6 +361,14 @@ export async function PATCH(req: Request) {
         usedServices: String(body?.usedServices ?? ""),
         usedFee: Number(body?.usedFee) || 0,
         bankAccount: String(body?.bankAccount ?? ""),
+        services:
+          body?.services && typeof body.services === "object"
+            ? Object.fromEntries(
+                (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+                  .filter((k) => body.services[k] != null)
+                  .map((k) => [k, Math.max(0, Math.round(Number(body.services[k]) || 0))]),
+              )
+            : undefined,
       });
       return NextResponse.json(res);
     }

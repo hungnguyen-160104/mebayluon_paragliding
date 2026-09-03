@@ -2914,6 +2914,8 @@ export function BookingTodayBanner({
     feeTransfer?: number;
     feeCode?: string;
     note?: string;
+    /** Dời một phần: số DỊCH VỤ mang theo nhóm dời (flycam/360/cờ…) người bấm chọn. */
+    services?: Record<string, number>;
   } | null>(null);
   /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
   const [collectDone, setCollectDone] = useState<string | null>(null);
@@ -3189,6 +3191,7 @@ export function BookingTodayBanner({
       feeTransfer?: number;
       feeCode?: string;
       note?: string;
+      services?: Record<string, number>;
     },
   ) {
     const part = m.guests ?? 0;
@@ -3222,6 +3225,7 @@ export function BookingTodayBanner({
         mode: "move",
         guests: part,
         toDate: m.toDate,
+        services: m.services,
       });
       setMoving(null);
       const no =
@@ -3429,6 +3433,74 @@ export function BookingTodayBanner({
                       : "Tiền đoàn đã trả sẽ tự chia: phần ở lại giữ đúng giá trị, phần dư nối theo nhóm dời — khỏi thu lại."}
                   </p>
                 )}
+                {/* DỊCH VỤ MANG THEO nhóm dời (luật chủ 04/09): chia đều (mỗi
+                    khách 1 suất) thì mặc định chia theo đầu khách dời; KHÔNG
+                    chia đều thì máy không đoán được của ai — tô vàng bắt xác
+                    nhận số lượng. */}
+                {(moving.guests ?? 0) > 0 &&
+                  (
+                    [
+                      ["flycam", "Flycam"],
+                      ["video360", "Cam360"],
+                      ["redFlag", "Cờ đỏ"],
+                      ["sunset", "H.hôn"],
+                      ["flagFlight", "Kéo cờ"],
+                    ] as Array<[keyof BookingDTO & string, string]>
+                  ).some(([k]) => Number(b[k]) > 0) && (
+                    <div className="w-full rounded-lg border border-indigo-200 bg-indigo-50/70 p-1">
+                      <p className="text-[11px] font-semibold text-indigo-900">Dịch vụ mang theo nhóm dời:</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        {(
+                          [
+                            ["flycam", "Flycam"],
+                            ["video360", "Cam360"],
+                            ["redFlag", "Cờ đỏ"],
+                            ["sunset", "H.hôn"],
+                            ["flagFlight", "Kéo cờ"],
+                          ] as Array<[keyof BookingDTO & string, string]>
+                        )
+                          .filter(([k]) => Number(b[k]) > 0)
+                          .map(([k, label]) => {
+                            const have = Number(b[k]) || 0;
+                            const part = moving.guests ?? 0;
+                            const stay = b.guestCount - part;
+                            const min = Math.max(0, have - stay);
+                            const max = Math.min(have, part);
+                            const even = have === b.guestCount;
+                            const val = Math.min(max, Math.max(min, moving.services?.[k] ?? (even ? max : min)));
+                            const needsConfirm = !even && moving.services?.[k] === undefined;
+                            return (
+                              <label
+                                key={k}
+                                className={
+                                  "flex items-center gap-1 rounded px-1 text-[11px] font-medium " +
+                                  (needsConfirm ? "bg-amber-100 text-amber-900" : "text-indigo-900")
+                                }
+                                title={
+                                  even
+                                    ? "Mỗi khách 1 suất — máy chia theo đầu khách dời, sửa được"
+                                    : "Dịch vụ KHÔNG chia đều theo khách — xác nhận số mang theo"
+                                }
+                              >
+                                {needsConfirm ? "⚠ " : ""}
+                                {label}
+                                <MiniCount
+                                  value={val}
+                                  onChange={(v) =>
+                                    setMoving({
+                                      ...moving,
+                                      services: { ...moving.services, [k]: Math.min(max, Math.max(min, v)) },
+                                    })
+                                  }
+                                  max={max}
+                                />
+                                <span className="text-slate-400">/{have}</span>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 {/* Dời được cả VỀ NGÀY CŨ HƠN: 25 dự báo mưa thì cho khách bay
                     23. Chặn duy nhất là ngày kế toán đã chốt (máy chủ soát cả
                     ngày cũ lẫn ngày mới) — ở đây chỉ chặn lùi quá 30 ngày để
