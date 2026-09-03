@@ -404,12 +404,12 @@ function DailyCloseInner() {
        * Số quầy vẫn hiện ngay dưới ô để đối chiếu, bấm một cái là lấy lại.
        */
       /**
-       * + PPG phi công khai NGOÀI sổ booking: PPG hay bay không kịp lập
-       * booking (khách tới bãi hỏi bay luôn), sổ booking không có dòng nào để
-       * tích — điều phối cũng không nắm hết. Phi công đã khai thì chuyến đó là
-       * khách bay thật, phải vào số tổng trong ngày.
+       * PPG khai NGOÀI sổ booking KHÔNG được cộng (luật chủ 03/09): bay PPG
+       * bắt buộc phải có booking — "bay không vé" chỉ là không xuất vé. Khai
+       * dư là số phải TRUY (bổ sung booking hoặc sửa báo cáo phi công), cảnh
+       * báo đỏ hiện ngay dưới ô số khách.
        */
-      guestCount: (suggest.flownGuests ?? suggest.guestCount) + (suggest.pilotExtraPpg ?? 0),
+      guestCount: suggest.flownGuests ?? suggest.guestCount,
       ticketsIssued: suggest.ticketsIssued,
       ticketsReturned: suggest.ticketsReturned,
       cancelledCount: suggest.cancelledCount,
@@ -884,20 +884,21 @@ function DailyCloseInner() {
               {/* Ba nguồn đối chiếu: sổ booking (đã tích đã bay), quầy đếm khách,
                   phi công đếm chuyến (PG + PPG, mỗi chuyến 1 khách) */}
               <Compare
-                label={(suggest?.pilotExtraPpg ?? 0) > 0 ? "sổ booking + PPG phi công khai thêm" : "sổ booking (đã bay)"}
-                value={
-                  suggest?.flownGuests === undefined
-                    ? undefined
-                    : suggest.flownGuests + (suggest.pilotExtraPpg ?? 0)
-                }
+                label="sổ booking (đã bay)"
+                value={suggest?.flownGuests}
                 mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)}
               />
+              {/* LUẬT CHỦ 03/09: bay PPG BẮT BUỘC phải có trong sổ booking —
+                  "bay không vé" chỉ là không xuất vé, khách vẫn phải có dòng
+                  booking. Phi công khai dư so với sổ là SỐ PHẢI TRUY, máy
+                  KHÔNG tự cộng vào số điền sẵn nữa. */}
               {(suggest?.pilotExtraPpg ?? 0) > 0 && (
-                <p className="mt-0.5 rounded bg-amber-100 px-1.5 py-1 text-[10px] leading-tight text-amber-900">
-                  Phi công khai <strong>{suggest!.pilotExtraPpg}</strong> chuyến PPG KHÔNG có trong sổ
-                  booking (điều phối không nắm hết chuyến PPG là chuyện thường). Máy đã cộng vào số điền
-                  sẵn — nếu thực ra chuyến đó có booking rồi thì trừ tay lại.
+                <p className="mt-0.5 rounded border border-rose-300 bg-rose-50 px-1.5 py-1 text-[10px] font-semibold leading-tight text-rose-800">
+                  ⚠ Phi công khai <strong>{suggest!.pilotExtraPpg}</strong> chuyến PPG KHÔNG có trong sổ
+                  booking. Luật: PPG bắt buộc phải có booking (bay không vé = chỉ không xuất vé). Truy điều
+                  phối bổ sung booking, hoặc phi công khai nhầm thì sửa báo cáo — máy KHÔNG cộng phần này
+                  vào số điền sẵn.
                 </p>
               )}
               {/**

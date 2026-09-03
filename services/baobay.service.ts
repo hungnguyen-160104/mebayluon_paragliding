@@ -8828,7 +8828,12 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       bookings.filter((b) => b.status === "done"),
       (b) => b.guestCount,
     ),
-    /** Xem chú thích ở kiểu dữ liệu: chuyến PPG phi công khai mà sổ booking không có. */
+    /**
+     * Chuyến PPG phi công khai mà sổ booking KHÔNG có — từ 03/09 đây là SỐ
+     * PHẢI TRUY chứ không cộng vào số điền sẵn nữa: luật chủ là bay PPG bắt
+     * buộc phải có booking ("bay không vé" chỉ là không xuất vé). Trang chốt
+     * ngày dùng số này để hiện cảnh báo đỏ.
+     */
     pilotExtraPpg: (() => {
       const bookingPpg = sum(
         bookings.filter((b) => b.status === "done"),
