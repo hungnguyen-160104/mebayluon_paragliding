@@ -67,6 +67,9 @@ export function StaffReportEditor({
 
   useEffect(() => {
     let alive = true;
+    // Đổi ngày thì danh sách "nhập hộ" của ngày cũ không được lôi theo
+    setAddedDp([]);
+    setAddedCm([]);
     Promise.all([
       apiGet<{ reports: DispatcherReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/dispatcher?date=${date}&all=1&spot=${spot}`),
       apiGet<{ reports: CameramanReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/cameraman?date=${date}&all=1&spot=${spot}`),
@@ -130,7 +133,7 @@ export function StaffReportEditor({
       <ul className="divide-y divide-slate-100">
         {dpRows.map((r) => (
           <DispatcherRow
-            key={r.username}
+            key={`${r.username}|${date}`}
             report={r}
             spot={spot}
             date={date}
@@ -142,7 +145,7 @@ export function StaffReportEditor({
           />
         ))}
         {cmRows.map((r) => (
-          <CameramanRow key={r.username} report={r} spot={spot} date={date} locked={locked} fresh={addedCm.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
+          <CameramanRow key={`${r.username}|${date}`} report={r} spot={spot} date={date} locked={locked} fresh={addedCm.includes(r.username)} onSaved={() => { load(); onSaved(); }} />
         ))}
       </ul>
 

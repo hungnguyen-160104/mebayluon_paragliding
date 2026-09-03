@@ -62,6 +62,8 @@ export function PilotReportEditor({
 
   useEffect(() => {
     load();
+    // Đổi ngày thì danh sách "nhập hộ" của ngày cũ không được lôi theo
+    setAdded([]);
   }, [load]);
 
   /** Phi công của điểm chưa có báo cáo và chưa được thêm — nguồn cho ô chọn. */
@@ -91,7 +93,7 @@ export function PilotReportEditor({
       <ul className="divide-y divide-slate-100">
         {rows.map((r) => (
           <PilotRow
-            key={r.username}
+            key={`${r.username}|${date}`}
             report={r}
             spot={spot}
             date={date}
