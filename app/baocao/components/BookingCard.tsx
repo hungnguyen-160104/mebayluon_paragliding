@@ -3152,7 +3152,31 @@ export function BookingTodayBanner({
     issuedGuests ? `Đã xuất vé ${issuedGuests}k` : "",
     doneGuestsAll ? `Đã bay ${doneGuestsAll}k` : "",
     openGuests ? `Chờ ${openGuests}k` : "",
-    moved.guests ? `Dời ${moved.guests}k` : "",
+    // Dời cũng tách loại bay (luật chủ 04/09): "Dời 2k" phải nói rõ 2×PPG hay 2×PG
+    moved.guests
+      ? (() => {
+          const mk = { pg: 0, ppg: 0, m650: 0, m850: 0 };
+          for (const b of movedOut) {
+            if (b.flightKind === "ppg") mk.ppg += b.guestCount;
+            else if (b.flightKind === "m650") mk.m650 += b.guestCount;
+            else if (b.flightKind === "m850") mk.m850 += b.guestCount;
+            else {
+              const p = Math.min(b.guestCount, b.ppgGuests || 0);
+              mk.ppg += p;
+              mk.pg += b.guestCount - p;
+            }
+          }
+          const bits = [
+            mk.pg ? `${mk.pg}×PG` : "",
+            mk.ppg ? `${mk.ppg}×PPG` : "",
+            mk.m650 ? `${mk.m650}×M650` : "",
+            mk.m850 ? `${mk.m850}×M850` : "",
+          ]
+            .filter(Boolean)
+            .join(" + ");
+          return `Dời ${moved.guests}k${bits ? ` (${bits})` : ""}`;
+        })()
+      : "",
     cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
   ].filter(Boolean);
   /** Dời lịch: cả đoàn thì đổi ngày tại chỗ, một phần thì tách nhóm sang ngày mới. */
