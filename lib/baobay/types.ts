@@ -490,6 +490,8 @@ export type BookingDTO = {
   rescheduledFrom: string[];
   /** Ai dời lịch lần gần nhất. */
   movedBy?: string;
+  /** Tiền đã trả nối sang booking tách-dời — mã CK vẫn ở đây, phần "của ai" đã đi theo khách. */
+  movedPaidOut?: number;
   /** Người được điều phối GIAO lịch (đón khách, tiếp khách…). */
   assignedToUsername?: string;
   assignedToName?: string;

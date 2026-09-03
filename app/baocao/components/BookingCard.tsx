@@ -202,8 +202,11 @@ function BookingSummary({
       )}
       {/* LỆCH SỔ: các lệnh thu cộng lại nhiều hơn số booking đang ghi "đã trả"
           — dấu hiệu thu nhầm sang booking khác rồi sửa tay ô cọc (ca #16/#17
-          ngày 21/08). Phải kêu lên, không thì tiền treo lơ lửng không ai biết. */}
-      {paidTotal > (b.deposit ?? 0) + refunded && (
+          ngày 21/08). Phải kêu lên, không thì tiền treo lơ lửng không ai biết.
+          TRỪ phần đã nối theo khách tách-dời (movedPaidOut): mã CK vẫn ở đây
+          nhưng "của ai" đã đi theo người — hai booking bản chất là MỘT đoàn,
+          không phải lệch (ca Nhã Uyên/Thành Gia 02-03/09). */}
+      {paidTotal > (b.deposit ?? 0) + refunded + (b.movedPaidOut ?? 0) && (
         <>
           {" · "}
           <strong
@@ -211,6 +214,18 @@ function BookingSummary({
             title="Tổng các lệnh thu đang lớn hơn số tiền booking ghi nhận — mở 'Sửa khoản đã thu' để soát, có thể có khoản thu nhầm của khách khác"
           >
             ⚠ LỆCH SỔ: lệnh thu {k(paidTotal)} ≠ booking ghi {k(b.deposit ?? 0)}
+          </strong>
+        </>
+      )}
+      {/* Đoàn tách-dời đã trả đủ: nói thẳng cho quầy — không phải lỗi gì cả */}
+      {(b.movedPaidOut ?? 0) > 0 && (
+        <>
+          {" · "}
+          <strong
+            className="rounded bg-emerald-100 px-1 font-bold text-emerald-800"
+            title="Lệnh thu/mã CK của cả đoàn nằm ở booking này; phần tiền của khách dời đã nối sang booking ngày mới — hai booking là một đoàn"
+          >
+            ✓ đã thanh toán đủ {k((b.deposit ?? 0) + (b.movedPaidOut ?? 0))} — {k(b.movedPaidOut ?? 0)} theo khách dời
           </strong>
         </>
       )}

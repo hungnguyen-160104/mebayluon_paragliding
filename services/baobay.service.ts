@@ -6263,11 +6263,22 @@ export async function splitBooking(
     originSet.deposit = (current.deposit || 0) - movedDeposit;
     // Nợ (nếu có) đã nối hết sang phần dời — gốc chốt sạch
     originSet.remaining = 0;
+    /**
+     * Ghi nhớ số tiền đã nối đi: lệnh thu/mã CK vẫn ở gốc nên tổng lệnh thu >
+     * "đã trả" của gốc là CHUYỆN ĐÚNG — phép soát LỆCH SỔ cộng số này vào để
+     * không kêu oan (bản chất hai booking vẫn là MỘT đoàn).
+     */
+    originSet.movedPaidOut = (Number(current.movedPaidOut) || 0) + movedDeposit;
   } else {
     originSet.remaining = Math.max(0, originTotal - (current.deposit || 0) - (current.agencyPaidAmount || 0));
   }
   const debtNote = [
-    movedDeposit > 0 ? `tiền trả trước ${movedDeposit.toLocaleString("vi-VN")}đ nối theo phần dời` : "",
+    // Đoàn trả đủ: nói thẳng "đã thanh toán đủ" chứ đừng nói kiểu kế toán — người đọc là quầy
+    input.mode === "move" && movedDeposit > 0 && partRemaining <= 0
+      ? `đã thanh toán đủ ${paidPool.toLocaleString("vi-VN")}đ — ${movedDeposit.toLocaleString("vi-VN")}đ tính theo ${guests} khách dời`
+      : movedDeposit > 0
+        ? `tiền trả trước ${movedDeposit.toLocaleString("vi-VN")}đ nối theo phần dời`
+        : "",
     input.mode === "move" && partRemaining > 0
       ? `nợ đoàn ${partRemaining.toLocaleString("vi-VN")}đ nối theo phần dời`
       : "",
@@ -6331,10 +6342,12 @@ export async function splitBooking(
     assignedToName: current.assignedToName,
     assignedBy: current.assignedBy,
     note: [
-      `tách từ booking ${current.bookingCode || current.contactName || ""} ngày ${formatDateKeyVN(current.flightDate)}`,
-      movedDeposit > 0
-        ? `mang theo ${movedDeposit.toLocaleString("vi-VN")}đ đoàn đã trả trước — khỏi thu lại phần này`
-        : "",
+      `${guests}/${current.guestCount} khách dời từ ${formatDateKeyVN(current.flightDate)} (booking ${current.bookingCode || current.contactName || ""})`,
+      input.mode === "move" && movedDeposit > 0 && partRemaining <= 0
+        ? `đoàn đã thu đủ ${paidPool.toLocaleString("vi-VN")}đ (lệnh thu ở booking gốc) — phần này ${movedDeposit.toLocaleString("vi-VN")}đ đã trả, khỏi thu lại`
+        : movedDeposit > 0
+          ? `mang theo ${movedDeposit.toLocaleString("vi-VN")}đ đoàn đã trả trước — khỏi thu lại phần này`
+          : "",
       input.mode === "move" && partRemaining > 0
         ? `mang theo nợ cả đoàn ${partRemaining.toLocaleString("vi-VN")}đ — thu khi khách đến`
         : "",
@@ -6972,11 +6985,12 @@ export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "re
     depositVerified: undefined,
     ckChecked: undefined,
     tmChecked: undefined,
-    // Tiền đại lý thu hộ / hoàn / thu thừa — chuyện giá cả và đối tác
+    // Tiền đại lý thu hộ / hoàn / thu thừa / tiền nối theo tách-dời — chuyện giá cả
     agencyPaidAmount: 0,
     agencyName: "",
     refunded: 0,
     overpaid: 0,
+    movedPaidOut: undefined,
     // Liên lạc và nhật ký thư gửi khách — không phải việc của bãi
     email: "",
     lastNotify: "",
@@ -7070,6 +7084,7 @@ function toBookingDTO(doc: any): BookingDTO {
     refundMethod: doc.refundMethod,
     cancelledBy: doc.cancelledBy || "",
     movedBy: doc.movedBy || undefined,
+    movedPaidOut: doc.movedPaidOut > 0 ? doc.movedPaidOut : undefined,
     unitPrice: doc.unitPrice ?? 0,
     discount: doc.discount ?? 0,
     totalAmount: doc.totalAmount ?? 0,

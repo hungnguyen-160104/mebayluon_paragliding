@@ -382,6 +382,8 @@ export interface IBaobayBooking {
   /** Người bấm dời lịch lần gần nhất — truy vết "dời by ai". */
   movedBy?: string;
   movedAt?: Date;
+  /** Tiền đã trả nối sang booking tách-dời — xem chú thích ở schema. */
+  movedPaidOut?: number;
   /**
    * SỐ THỨ TỰ KHÁCH TRONG NGÀY, cấp theo thời điểm đặt và KHÔNG đổi nữa —
    * quầy gọi "khách số 4" là cả ngày ai cũng hiểu, kể cả khi khách đó đã bay
@@ -587,6 +589,13 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     rescheduledFrom: { type: [String], default: [] },
     movedBy: String,
     movedAt: Date,
+    /**
+     * Tiền ĐÃ TRẢ được nối sang booking tách-dời (cộng dồn nếu tách nhiều
+     * lần). Lệnh thu/mã CK vẫn nằm ở đây (đúng nơi tiền về), nhưng "đã trả"
+     * của booking này đã bớt đi đúng bấy nhiêu — phép soát LỆCH SỔ phải cộng
+     * lại số này, không thì tách đoàn nào là báo lệch oan đoàn đó (03/09/2026).
+     */
+    movedPaidOut: { type: Number, default: 0 },
     daySeq: { type: Number, default: 0 },
 
     sheetSynced: { type: Boolean, default: false },
