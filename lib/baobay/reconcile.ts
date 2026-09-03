@@ -733,7 +733,8 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
         ? `${missingCodes.length} mã đã xuất chưa ai khai bay — khớp với ${carriedBudget} khách dời lịch cầm vé sang ngày sau (${short(missingCodes)}). Ngày mai phi công khai mã là hai ngày tự đối chiếu.`
         : `${missingCodes.length} mã đã xuất mà không phi công nào khai đã bay, cũng không khai huỷ hay dời lịch: ` +
           short(missingCodes) +
-          (carriedBudget > 0 ? ` (đã trừ ${carriedBudget} suất khách dời cầm vé — vẫn dôi ra)` : ""),
+          (carriedBudget > 0 ? ` (đã trừ ${carriedBudget} suất khách dời cầm vé — vẫn dôi ra)` : "") +
+          " — KHÔNG chặn chốt sổ (khách huỷ/dời cầm vé đi không hoàn là chuyện thật); đối chiếu cuống vé khi có dịp.",
       who: [],
       codes: missingCodes,
     });
@@ -1140,7 +1141,14 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   return {
     date,
     empty: emptyDay,
-    canClose: !issues.some((i) => i.severity === "red"),
+    /**
+     * MÃ THIẾU (MA_THIEU) vẫn đỏ để mắt phải nhìn, nhưng KHÔNG CHẶN chốt sổ
+     * (luật chủ 04/09): khách huỷ/dời cầm vé đi không hoàn lại là chuyện thật
+     * ngoài bãi — bắt kế toán đứng sổ vì mấy tờ vé khách mang về nhà là treo
+     * cả ngày. Các lỗi đỏ khác (mã trùng, mã lạ, vé chết bay lại, lệch tiền…)
+     * vẫn chặn như cũ.
+     */
+    canClose: !issues.some((i) => i.severity === "red" && i.code !== "MA_THIEU"),
     issues,
     byUser,
     totals,
