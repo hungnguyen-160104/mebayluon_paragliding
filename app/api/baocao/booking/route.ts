@@ -459,6 +459,8 @@ export async function PATCH(req: Request) {
             note: String(body?.note ?? ""),
           }
         : undefined,
+      // Dời cả đoàn đã xuất vé: mã vé khách mang theo
+      action === "move" ? String(body?.ticketCodesText ?? "") : undefined,
     );
     return NextResponse.json({ booking });
   } catch (err) {

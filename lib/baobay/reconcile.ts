@@ -165,6 +165,13 @@ export type ReconcileInput = {
    * BÁO CÁO ĐIỀU PHỐI nên cứ báo đỏ dù trong sổ đã ghi rõ thu hồi.
    */
   bookingCancelledCodes?: string[];
+  /**
+   * MÃ VÉ DỜI ghi ngay trên SỔ BOOKING (nút dời/tách hỏi "khách mang vé nào
+   * theo") — nguồn thứ hai bên cạnh dòng dời của quầy/kế toán. Trộn chung vào
+   * danh sách vé dời: không thành "mã thiếu", bay lại tại ngày cũ là sai, và
+   * ngày được dời tới tự khớp qua đường truy vết.
+   */
+  bookingMovedCodes?: Array<{ code: string; toDate: string }>;
   /** Điểm bay — Hà Nội không xuất vé nên vài phép soát theo mã được tắt. */
   spot?: string;
   /**
@@ -342,8 +349,11 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       ? close.cancelledCodes
       : dispatchers.flatMap((d) => d.cancelledCodes),
   );
-  const rescheduledList =
-    close && close.rescheduled.length ? close.rescheduled : dispatchers.flatMap((d) => d.rescheduled);
+  const rescheduledList = [
+    ...(close && close.rescheduled.length ? close.rescheduled : dispatchers.flatMap((d) => d.rescheduled)),
+    // Vé dời ghi trên sổ booking — cùng luật với vé dời quầy khai
+    ...(input.bookingMovedCodes ?? []),
+  ];
   const rescheduledSet = new Set(rescheduledList.map((r) => r.code));
 
   for (const r of rescheduledList) {

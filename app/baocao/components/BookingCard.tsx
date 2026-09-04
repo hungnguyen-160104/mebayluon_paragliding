@@ -98,9 +98,17 @@ function BookingSummary({
   if (b.redFlag + (b.cancelledRedFlag ?? 0)) parts.push(`${b.redFlag + (b.cancelledRedFlag ?? 0)}×cờ đỏ`);
   if (b.sunset + (b.cancelledSunset ?? 0)) parts.push(`${b.sunset + (b.cancelledSunset ?? 0)}×hoàng hôn/săn mây`);
   if (b.mountainCar) parts.push(`${b.mountainCar}×xe núi`);
-  if ((b.ppgGuests ?? 0) > 0 && b.guestCount > (b.ppgGuests ?? 0)) {
-    parts.push(`${b.guestCount - (b.ppgGuests ?? 0)}PG + ${b.ppgGuests}PPG`);
-  } else if (b.flightKind && b.flightKind !== "pg") {
+  /**
+   * PPG hiện thành CỜ NỔI riêng (luật chủ 04/09 — "tìm rất khó nhìn" khi lẫn
+   * trong chữ thường), không nhét vào parts nữa. M650/M850 vẫn là chữ thường.
+   */
+  const ppgBadge =
+    b.flightKind === "ppg"
+      ? `PPG ×${b.guestCount}`
+      : (b.ppgGuests ?? 0) > 0
+        ? `${b.guestCount - (b.ppgGuests ?? 0)}PG + ${b.ppgGuests}PPG`
+        : "";
+  if (!ppgBadge && b.flightKind && b.flightKind !== "pg") {
     parts.push(FLIGHT_KIND_SHORT[b.flightKind]);
   }
   if (b.flagFlight + (b.cancelledFlagFlight ?? 0))
@@ -190,6 +198,14 @@ function BookingSummary({
         <>
           {" · "}
           <strong className="rounded bg-amber-100 px-1 font-bold tabular-nums text-amber-900">📞 {b.phone}</strong>
+        </>
+      ) : null}
+      {ppgBadge ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-indigo-600 px-1.5 font-bold text-white" title="Đoàn có khách bay PPG (dù động cơ)">
+            🪂 {ppgBadge}
+          </strong>
         </>
       ) : null}
       {" · "}
@@ -2916,6 +2932,8 @@ export function BookingTodayBanner({
     note?: string;
     /** Dời một phần: số DỊCH VỤ mang theo nhóm dời (flycam/360/cờ…) người bấm chọn. */
     services?: Record<string, number>;
+    /** Đoàn ĐÃ XUẤT VÉ: mã vé khách dời mang theo — ngày mới tự khớp nhờ mã này. */
+    codes?: string;
   } | null>(null);
   /** Câu báo sau khi thu tiền xong — hiện trên đầu banner. */
   const [collectDone, setCollectDone] = useState<string | null>(null);
@@ -3192,8 +3210,19 @@ export function BookingTodayBanner({
       feeCode?: string;
       note?: string;
       services?: Record<string, number>;
+      codes?: string;
     },
   ) {
+    /** Đoàn đã xuất vé mà không ghi mã mang theo: cảnh báo trước khi cho qua. */
+    if (
+      b.ticketIssued &&
+      !(m.codes ?? "").trim() &&
+      !window.confirm(
+        "Đoàn ĐÃ XUẤT VÉ nhưng chưa ghi MÃ VÉ khách dời mang theo.\n\n" +
+          "Không có mã thì máy chỉ đếm được số lượng — ngày mới sẽ không tự khớp từng vé.\n\nVẫn dời mà không ghi mã?",
+      )
+    )
+      return;
     const part = m.guests ?? 0;
     const fee = (m.feeCash ?? 0) + (m.feeTransfer ?? 0);
     if (fee > 0 && (m.feeTransfer ?? 0) > 0 && !m.feeCode?.trim()) {
@@ -3212,8 +3241,26 @@ export function BookingTodayBanner({
       });
     };
     if (part <= 0) {
+      // Dời CẢ ĐOÀN — gửi kèm mã vé mang theo (act() không có chỗ cho mã)
       await collectFee();
-      return act(b, "move", m.toDate);
+      setBusy(b.id);
+      setError(null);
+      try {
+        await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+          id: b.id,
+          action: "move",
+          toDate: m.toDate,
+          ticketCodesText: m.codes ?? "",
+        });
+        setMoving(null);
+        setCollectDone(`✓ Đã dời cả đoàn sang ${formatDateKeyVN(m.toDate)}.`);
+        load();
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Không dời được");
+      } finally {
+        setBusy(null);
+      }
+      return;
     }
     await collectFee();
     setBusy(b.id);
@@ -3226,6 +3273,7 @@ export function BookingTodayBanner({
         guests: part,
         toDate: m.toDate,
         services: m.services,
+        ticketCodesText: m.codes ?? "",
       });
       setMoving(null);
       const no =
@@ -3269,13 +3317,15 @@ export function BookingTodayBanner({
         Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
         như thường, không cần khớp với danh sách này.
       </p>
+      {/* MỘT HÀNG gọn: ô tìm + xếp + các bộ lọc (luật chủ 04/09) — flex-wrap
+          nên màn hẹp tự xuống dòng, màn rộng nằm chung một dải. */}
       {rows.length > 1 && (
-        <div className="mt-1.5 flex items-center gap-2">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
           <TextInput
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="🔍 Tìm tên · SĐT · mã booking"
-            className="h-9 w-full rounded-lg text-sm sm:w-72"
+            className="h-8 w-full rounded-lg text-sm sm:w-60"
           />
           {needle && (
             <span className="shrink-0 text-xs font-semibold text-sky-800">
@@ -3285,10 +3335,6 @@ export function BookingTodayBanner({
               </button>
             </span>
           )}
-        </div>
-      )}
-      {rows.length > 1 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-sky-800/70">Xếp:</span>
           {(
             [
@@ -3501,6 +3547,24 @@ export function BookingTodayBanner({
                       </div>
                     </div>
                   )}
+                {/* ĐÃ XUẤT VÉ thì hỏi MÃ VÉ MANG THEO (luật chủ 04/09): huỷ là
+                    thu hồi mã, dời là vé đi theo khách — có mã thì ngày cũ đếm
+                    "vé dời", ngày mới tự khớp khi phi công khai đúng mã ấy. */}
+                {b.ticketIssued && (
+                  <div className="w-full rounded-lg border border-amber-300 bg-amber-100/70 p-1">
+                    <p className="text-[11px] font-semibold text-amber-900">
+                      🎫 Đoàn ĐÃ XUẤT VÉ — ghi mã vé khách dời mang theo:
+                    </p>
+                    <TextInput
+                      value={moving.codes ?? ""}
+                      onChange={(e) => setMoving({ ...moving, codes: e.target.value.toUpperCase() })}
+                      placeholder="MBL0123 MBL0124 — thiếu mã thì ngày mới không tự khớp vé"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      className="mt-0.5 h-7 w-full rounded-lg text-[11px]"
+                    />
+                  </div>
+                )}
                 {/* Dời được cả VỀ NGÀY CŨ HƠN: 25 dự báo mưa thì cho khách bay
                     23. Chặn duy nhất là ngày kế toán đã chốt (máy chủ soát cả
                     ngày cũ lẫn ngày mới) — ở đây chỉ chặn lùi quá 30 ngày để

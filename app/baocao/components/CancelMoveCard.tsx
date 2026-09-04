@@ -89,6 +89,8 @@ export function CancelMoveCard({
   const [toDate, setToDate] = useState("");
   /** Tách dời: số DỊCH VỤ mang theo nhóm dời — chia đều thì máy tự chia, lệch thì bắt xác nhận. */
   const [moveServices, setMoveServices] = useState<Record<string, number>>({});
+  /** Đoàn ĐÃ XUẤT VÉ dời lịch: mã vé khách MANG THEO — ngày mới tự khớp nhờ mã này. */
+  const [moveCodes, setMoveCodes] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +120,7 @@ export function CancelMoveCard({
     setCodes("");
     setNote("");
     setMoveServices({});
+    setMoveCodes("");
     setError(null);
   }
 
@@ -140,6 +143,7 @@ export function CancelMoveCard({
     setFeeCode("");
     setToDate("");
     setMoveServices({});
+    setMoveCodes("");
     setNote("");
   }
 
@@ -153,6 +157,26 @@ export function CancelMoveCard({
     }
     if (kind === "move" && feeTransfer > 0 && !feeCode.trim()) {
       return setError("Thu phí bằng chuyển khoản phải ghi mã giao dịch");
+    }
+    /**
+     * ĐÃ XUẤT VÉ (luật chủ 04/09): HUỶ = thu hồi vé — BẮT BUỘC ghi mã thu hồi.
+     * DỜI = vé đi theo khách — nhắc ghi mã mang theo (có mã thì ngày mới tự
+     * khớp từng vé); không biết mã thì xác nhận rồi máy đếm theo số lượng.
+     */
+    if (kind === "cancel" && withCodes && picked.ticketIssued && !codes.trim()) {
+      return setError("Đoàn ĐÃ XUẤT VÉ — huỷ là THU HỒI vé, phải ghi mã vé thu hồi");
+    }
+    if (
+      kind === "move" &&
+      withCodes &&
+      picked.ticketIssued &&
+      !moveCodes.trim() &&
+      !window.confirm(
+        "Đoàn ĐÃ XUẤT VÉ nhưng chưa ghi MÃ VÉ khách dời mang theo.\n\n" +
+          "Không có mã thì máy chỉ đếm được số lượng — ngày mới sẽ không tự khớp từng vé.\n\nVẫn dời mà không ghi mã?",
+      )
+    ) {
+      return;
     }
     setBusy(true);
     setError(null);
@@ -177,7 +201,7 @@ export function CancelMoveCard({
                 bankAccount,
                 note,
               }
-            : { toDate }),
+            : { toDate, ticketCodesText: moveCodes }),
         });
       } else {
         await apiPatch(`/api/baocao/booking?spot=${spot}`, {
@@ -195,7 +219,7 @@ export function CancelMoveCard({
                 usedFee,
                 bankAccount,
               }
-            : { toDate, services: moveServices }),
+            : { toDate, services: moveServices, ticketCodesText: moveCodes }),
         });
       }
 
@@ -482,6 +506,25 @@ export function CancelMoveCard({
                   <p className="mt-1 text-[11px] font-semibold text-amber-800">
                     ⇠ Ngày mới SỚM hơn ngày đang đặt — được, miễn ngày đó chưa bị kế toán chốt.
                   </p>
+                )}
+                {/* ĐÃ XUẤT VÉ thì hỏi MÃ VÉ MANG THEO (luật chủ 04/09): dời là vé
+                    đi theo khách — có mã thì ngày cũ đếm "vé dời có mã", ngày mới
+                    tự khớp khi phi công khai đúng mã ấy. */}
+                {withCodes && picked.ticketIssued && (
+                  <div className="mt-1.5 rounded-lg border border-amber-300 bg-amber-100/70 p-2">
+                    <div className="text-[11px] font-semibold text-amber-900">
+                      🎫 Đoàn ĐÃ XUẤT VÉ — ghi mã vé khách dời mang theo{whole ? "" : ` (${guests} khách dời)`}:
+                    </div>
+                    <TextInput
+                      value={moveCodes}
+                      onChange={(e) => setMoveCodes(e.target.value.toUpperCase())}
+                      placeholder="MBL0123 MBL0124 — thiếu mã thì ngày mới không tự khớp vé"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      disabled={disabled}
+                      className="mt-1 h-9 w-full rounded-lg text-xs"
+                    />
+                  </div>
                 )}
                 {/* QUY TẮC TIỀN khi tách dời (tự động): giá giữ theo GỘP ĐOÀN
                     (bảo toàn chiết khấu); phần ở lại được trả trước từ tiền đoàn,

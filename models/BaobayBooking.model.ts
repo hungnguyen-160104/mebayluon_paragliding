@@ -385,6 +385,12 @@ export interface IBaobayBooking {
   /** Tiền đã trả nối sang booking tách-dời — xem chú thích ở schema. */
   movedPaidOut?: number;
   /**
+   * MÃ VÉ khách dời MANG THEO (booking đã dời/phần tách ở ngày mới giữ mã).
+   * Ngày cũ nhờ nó biết "vé dời có mã" (không thành mã thiếu), ngày mới nhờ
+   * nó tự khớp khi phi công khai đúng mã đó (luật chủ 04/09).
+   */
+  movedTicketCodes?: string[];
+  /**
    * SỐ THỨ TỰ KHÁCH TRONG NGÀY, cấp theo thời điểm đặt và KHÔNG đổi nữa —
    * quầy gọi "khách số 4" là cả ngày ai cũng hiểu, kể cả khi khách đó đã bay
    * hay đã huỷ. Dời lịch sang ngày khác thì cấp số mới của ngày mới.
@@ -596,6 +602,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
      * lại số này, không thì tách đoàn nào là báo lệch oan đoàn đó (03/09/2026).
      */
     movedPaidOut: { type: Number, default: 0 },
+    movedTicketCodes: { type: [String], default: [] },
     daySeq: { type: Number, default: 0 },
 
     sheetSynced: { type: Boolean, default: false },

@@ -6363,6 +6363,8 @@ export async function splitBooking(
     .join(" · ");
 
   const codes = input.ticketIssued ? parseTicketCodeList(input.ticketCodesText ?? "").codes : [];
+  /** DỜI một phần: mã vé nhóm dời MANG THEO (nếu đã xuất vé) — ghi vào phần dời. */
+  const moveCodes = input.mode === "move" ? parseTicketCodeList(input.ticketCodesText ?? "").codes : [];
   const refund = Math.max(0, Math.round(input.refund || 0));
   const partDate = input.mode === "move" ? String(input.toDate) : current.flightDate;
 
@@ -6434,6 +6436,7 @@ export async function splitBooking(
         }
       : {}),
     rescheduledFrom: input.mode === "move" ? [current.flightDate] : [],
+    movedTicketCodes: moveCodes,
   });
 
   if (input.mode === "cancel" && refund > 0) {
@@ -6785,6 +6788,8 @@ export async function updateBookingStatus(
     bankAccount?: string;
     note?: string;
   },
+  /** DỜI CẢ ĐOÀN đã xuất vé: mã vé khách MANG THEO — ngày cũ đếm vé dời, ngày mới tự khớp. */
+  moveCodesText?: string,
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -6811,10 +6816,15 @@ export async function updateBookingStatus(
     if (!toDate) throw new BaobayError("Dời lịch phải chọn ngày mới", 400);
     if (toDate === current.flightDate) throw new BaobayError("Ngày dời trùng ngày bay hiện tại", 400);
     await assertMoveDatesOpen(spot, current.flightDate, toDate);
+    /** Mã vé khách dời mang theo (nếu đã xuất vé) — cộng dồn qua các chặng dời. */
+    const moveCodes = parseTicketCodeList(moveCodesText ?? "").codes;
     update = {
       // Sang ngày mới thì nhận SỐ THỨ TỰ MỚI của ngày đó — số cũ bỏ lại ngày cũ
       $set: { flightDate: toDate, daySeq: await nextDaySeq(spot, toDate), movedBy: session.username, movedAt: new Date() },
-      $push: { rescheduledFrom: current.flightDate },
+      $push: {
+        rescheduledFrom: current.flightDate,
+        ...(moveCodes.length ? { movedTicketCodes: { $each: moveCodes } } : {}),
+      },
     };
   } else if (action === "cancel") {
     const codes = cancel?.ticketIssued ? parseTicketCodeList(cancel.ticketCodesText ?? "").codes : [];
@@ -7153,6 +7163,7 @@ function toBookingDTO(doc: any): BookingDTO {
     cancelledBy: doc.cancelledBy || "",
     movedBy: doc.movedBy || undefined,
     movedPaidOut: doc.movedPaidOut > 0 ? doc.movedPaidOut : undefined,
+    movedTicketCodes: Array.isArray(doc.movedTicketCodes) && doc.movedTicketCodes.length ? doc.movedTicketCodes : undefined,
     unitPrice: doc.unitPrice ?? 0,
     discount: doc.discount ?? 0,
     totalAmount: doc.totalAmount ?? 0,
@@ -8721,7 +8732,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flightDate: { $ne: date },
     status: { $nin: ["voided"] },
   })
-    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests")
+    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests movedTicketCodes")
     .lean<any[]>();
 
   const bookingCancelEntries = cancelledBookings
@@ -8793,6 +8804,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         guests: b.guestCount || 0,
         toDate: b.flightDate || "",
         note: "dời trên sổ booking",
+        /** Mã vé nhóm dời mang theo (nút dời/tách hỏi từ 04/09) — hiện thẳng trên dòng. */
+        codes: (b.movedTicketCodes ?? []) as string[],
         /**
          * Nhóm dời ĐÃ XUẤT VÉ hay chưa — quyết định nó có phải nằm trong "vé
          * thu hồi" không. Chưa xuất vé thì không có tờ vé nào để thu, nên ô
@@ -10026,6 +10039,23 @@ export async function getReconcile(
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
 
   /**
+   * MÃ VÉ DỜI ghi trên SỔ BOOKING: booking đã dời khỏi ngày này mang theo mã
+   * (nút dời/tách hỏi từ 04/09). Ngày này coi các mã đó là "vé dời có mã" —
+   * không thành mã thiếu, bay lại tại đây là sai chỗ; ngày đích tự khớp.
+   */
+  const movedWithCodes = await BaobayBooking.find({
+    spot,
+    rescheduledFrom: date,
+    flightDate: { $ne: date },
+    "movedTicketCodes.0": { $exists: true },
+  })
+    .select("flightDate movedTicketCodes")
+    .lean<any[]>();
+  const bookingMovedCodes = movedWithCodes.flatMap((b) =>
+    (b.movedTicketCodes ?? []).map((c: string) => ({ code: String(c).toUpperCase(), toDate: String(b.flightDate) })),
+  );
+
+  /**
    * VÉ MANG SANG giữa hai ngày kề (chỉ điểm bắt mã vé): nạp thêm ngày hôm
    * trước và hôm sau để bộ soát tự khớp — khách dời lịch cầm nguyên vé cũ đi
    * bay là chuyện thật (30/08/2026 quá đông), nhân viên chỉ ghi được số lượng.
@@ -10070,6 +10100,7 @@ export async function getReconcile(
       futDispatchers,
       futCancelBookings,
       futArrivals,
+      pastMovedWithCodes,
     ] = await Promise.all([
       AccountantDailyClose.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
       DispatcherDailyReport.find({ spot, date: { $in: pastDates } }).lean<any[]>(),
@@ -10094,6 +10125,10 @@ export async function getReconcile(
       // Khách của các ngày sau mang vết dời — để nối hôm nay → ngày sau
       BaobayBooking.find({ spot, flightDate: { $in: futureDates }, rescheduledFrom: { $exists: true, $ne: [] } })
         .select("flightDate rescheduledFrom")
+        .lean<any[]>(),
+      // Mã vé dời ghi trên sổ booking, rời KHỎI các ngày gốc trong cửa sổ
+      BaobayBooking.find({ spot, rescheduledFrom: { $in: pastDates }, "movedTicketCodes.0": { $exists: true } })
+        .select("flightDate rescheduledFrom movedTicketCodes")
         .lean<any[]>(),
     ]);
 
@@ -10140,7 +10175,14 @@ export async function getReconcile(
          * đang truy vết, phải cho bay (không tính đã-có-chủ); dời sang ngày
          * KHÁC → bay hôm nay là sai chỗ, giữ nguyên đã-có-chủ để báo đỏ.
          */
-        const moved = [...((dayClose?.rescheduled ?? []) as any[]), ...dayDisp.flatMap((x: any) => x.rescheduled ?? [])];
+        const moved = [
+          ...((dayClose?.rescheduled ?? []) as any[]),
+          ...dayDisp.flatMap((x: any) => x.rescheduled ?? []),
+          // Mã vé dời ghi trên sổ booking rời khỏi ngày D — cùng luật hai ngả
+          ...pastMovedWithCodes
+            .filter((b: any) => (b.rescheduledFrom ?? []).includes(d))
+            .flatMap((b: any) => (b.movedTicketCodes ?? []).map((c: string) => ({ code: c, toDate: String(b.flightDate) }))),
+        ];
         return {
           date: d,
           issuedRanges: ranges,
@@ -10188,6 +10230,7 @@ export async function getReconcile(
     date,
     spot,
     bookingCancelledCodes,
+    bookingMovedCodes,
     prevDays,
     nextDayCarried,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã
