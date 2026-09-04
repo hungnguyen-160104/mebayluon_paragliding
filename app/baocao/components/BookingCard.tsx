@@ -2,6 +2,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
@@ -3336,7 +3337,13 @@ export function BookingTodayBanner({
       if (e.key === "Escape") setFullScreen(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Khoá cuộn trang phía sau — chỉ sổ booking cuộn, trang dưới đứng yên
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [fullScreen]);
   useEffect(() => {
     try {
@@ -4693,7 +4700,13 @@ export function BookingTodayBanner({
   );
 
   if (fullScreen) {
-    return (
+    /*
+     * Phải PORTAL ra <body>: sổ này nằm trong khối bố cục NHIỀU CỘT của trang
+     * (lg:columns / column-span) — Chrome cắt phần tử position:fixed theo hộp
+     * cột, nên lớp phủ hụt một dải ở đáy và lộ trang phía sau (chuyện thật 04/09).
+     * Ra ngoài body thì inset-0 phủ đúng cả cửa sổ.
+     */
+    return createPortal(
       <div className="fixed inset-0 z-[100] overflow-auto bg-sky-50 px-3 pb-3">
         {/* Thanh tiêu đề DÍNH TRÊN — cuộn xuống bao xa vẫn thấy nút co về */}
         <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 border-b border-sky-200 bg-sky-50 px-3 py-2">
@@ -4701,7 +4714,8 @@ export function BookingTodayBanner({
           {fullScreenButton}
         </div>
         {body}
-      </div>
+      </div>,
+      document.body,
     );
   }
 
