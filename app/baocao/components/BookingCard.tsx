@@ -3024,6 +3024,7 @@ function BookingDayTable({
             <Th col="seq" label="#" />
             <Th col="name" label="Khách" />
             <Th col="src" label="Nguồn" />
+            <th className="border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">Thao tác</th>
             <Th col="guests" label="SL" right />
             <Th col="kind" label="Loại" />
             <Th col="sv" label="Dịch vụ" />
@@ -3035,7 +3036,6 @@ function BookingDayTable({
             <Th col="bh" label="BH" />
             <Th col="status" label="TT" />
             <Th col="note" label="Ghi chú" />
-            <th className="border-b border-slate-300 bg-slate-100 px-2 py-1.5" />
           </tr>
         </thead>
         <tbody>
@@ -3084,6 +3084,42 @@ function BookingDayTable({
                   {b.createdByName && (
                     <div className="break-words text-[10px] text-slate-400" title={`nhập ${stampVN(b.createdAt)}`}>
                       nhập: {b.createdByName}
+                    </div>
+                  )}
+                </td>
+                <td className="border-b border-slate-100 px-1.5 py-1">
+                  {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
+                      Nút nhanh thu nhỏ, xếp 2 HÀNG CỐ ĐỊNH (luật chủ 04/09): hàng trên
+                      Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
+                  {!r.moved && (
+                    <div className="flex flex-col items-start gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      <div className="flex flex-nowrap items-center gap-1">
+                        {renderQuickMoney?.(b)}
+                        {renderMore?.(b) != null && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedId((cur) => (cur === b.id ? "" : b.id));
+                              setInsuranceId("");
+                            }}
+                            className={
+                              "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                              (expandedId === b.id
+                                ? "border-sky-600 bg-sky-600 text-white"
+                                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                            }
+                            title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
+                          >
+                            {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
+                          </button>
+                        )}
+                      </div>
+                      {renderQuickRest?.(b) != null && (
+                        <div className="flex flex-nowrap items-center gap-1">{renderQuickRest(b)}</div>
+                      )}
+                      {renderQuickContact?.(b) != null && (
+                        <div className="flex flex-nowrap items-center gap-1">{renderQuickContact(b)}</div>
+                      )}
                     </div>
                   )}
                 </td>
@@ -3284,42 +3320,7 @@ function BookingDayTable({
                     </div>
                   )}
                 </td>
-                <td className="border-b border-slate-100 px-1.5 py-1">
-                  {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
-                      Nút nhanh thu nhỏ, xếp 2 HÀNG CỐ ĐỊNH (luật chủ 04/09): hàng trên
-                      Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
-                  {!r.moved && (
-                    <div className="flex flex-col items-end gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
-                      <div className="flex flex-nowrap items-center gap-1">
-                        {renderQuickMoney?.(b)}
-                        {renderMore?.(b) != null && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedId((cur) => (cur === b.id ? "" : b.id));
-                              setInsuranceId("");
-                            }}
-                            className={
-                              "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
-                              (expandedId === b.id
-                                ? "border-sky-600 bg-sky-600 text-white"
-                                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
-                            }
-                            title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
-                          >
-                            {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
-                          </button>
-                        )}
-                      </div>
-                      {renderQuickRest?.(b) != null && (
-                        <div className="flex flex-nowrap items-center gap-1">{renderQuickRest(b)}</div>
-                      )}
-                      {renderQuickContact?.(b) != null && (
-                        <div className="flex flex-nowrap items-center gap-1">{renderQuickContact(b)}</div>
-                      )}
-                    </div>
-                  )}
-                </td>
+
               </tr>
               {/* DÒNG XỔ: các chức năng còn lại ngay dưới dòng — không lặp lại thông tin */}
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
