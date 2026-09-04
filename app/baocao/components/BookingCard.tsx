@@ -1,7 +1,7 @@
 // app/baocao/components/BookingCard.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
@@ -2857,8 +2857,25 @@ function CancelBookingControl({
  * bấm đầu cột để xếp theo cột đó (bấm lại đảo chiều). Dành cho lúc ngày đông
  * cần QUÉT MẮT; thao tác (thu tiền, dời, sửa…) vẫn ở chế độ thẻ.
  */
-function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; closed: BookingDTO[]; movedOut: BookingDTO[] }) {
+function BookingDayTable({
+  open,
+  closed,
+  movedOut,
+  renderCard,
+}: {
+  open: BookingDTO[];
+  closed: BookingDTO[];
+  movedOut: BookingDTO[];
+  /**
+   * Ruột thẻ đầy đủ của một booking (mọi nút: thu tiền, dời, sửa, xuất vé…) do
+   * BookingTodayBanner đưa xuống — bấm "⋯ Thêm" là xổ ra ngay dưới dòng, khỏi
+   * phải quay về chế độ thẻ (luật chủ 04/09: bảng phải đủ chức năng).
+   */
+  renderCard?: (b: BookingDTO, i: number) => ReactNode;
+}) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
+  /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
+  const [expandedId, setExpandedId] = useState<string>("");
   type R = { b: BookingDTO; moved: boolean };
   const all: R[] = [
     ...open.map((b) => ({ b, moved: false })),
@@ -2881,17 +2898,23 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
     b.ticketIssued && b.ticketIssuedAt
       ? new Date(b.ticketIssuedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })
       : "";
+  const donOf = (b: BookingDTO) =>
+    [b.pickup === "other" ? b.pickupNote || "?" : PICKUP_LABEL[b.pickup], b.expectedTime].filter(Boolean).join(" ");
   const val = (r: R, col: string): string | number => {
     switch (col) {
       case "seq": return r.b.daySeq || 0;
       case "name": return (r.b.contactName || "").toLowerCase();
+      case "src": return (r.b.source || r.b.bookingCode || "").toLowerCase();
       case "guests": return r.b.guestCount;
       case "kind": return ppgOf(r.b) > 0 ? 1 : 0;
       case "sv": return dichVu(r.b);
+      case "don": return donOf(r.b);
       case "ticket": return r.b.ticketIssuedAt ? Date.parse(r.b.ticketIssuedAt) : Number.MAX_SAFE_INTEGER;
       case "total": return r.b.totalAmount || 0;
       case "paid": return (r.b.deposit || 0) + (r.b.movedPaidOut ?? 0);
       case "remaining": return r.b.remaining || 0;
+      case "bh": return insuranceState(r.b.insured, r.b.guestCount).ready;
+      case "note": return (r.b.note || "").toLowerCase();
       case "status": return trangThai(r);
       default: return 0;
     }
@@ -2923,14 +2946,19 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
           <tr>
             <Th col="seq" label="#" />
             <Th col="name" label="Khách" />
+            <Th col="src" label="Nguồn" />
             <Th col="guests" label="SL" right />
             <Th col="kind" label="Loại" />
             <Th col="sv" label="Dịch vụ" />
+            <Th col="don" label="Đón" />
             <Th col="ticket" label="🎫 Xuất vé" />
             <Th col="total" label="Tổng" right />
             <Th col="paid" label="Đã trả" right />
             <Th col="remaining" label="Còn thu" right />
+            <Th col="bh" label="BH" />
             <Th col="status" label="TT" />
+            <Th col="note" label="Ghi chú" />
+            <th className="border-b border-slate-300 bg-slate-100 px-2 py-1.5" />
           </tr>
         </thead>
         <tbody>
@@ -2938,8 +2966,8 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
             const b = r.b;
             const tt = trangThai(r);
             return (
+              <Fragment key={`${b.id}-${r.moved ? "m" : ""}`}>
               <tr
-                key={`${b.id}-${r.moved ? "m" : ""}`}
                 className={
                   (i % 2 ? "bg-slate-50/60 " : "bg-white ") +
                   (tt === "huỷ" ? "text-rose-700 " : tt === "dời" ? "text-amber-700 " : "") +
@@ -2950,6 +2978,12 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
                   <div className="truncate font-semibold text-slate-900" title={b.contactName}>{b.contactName || "—"}</div>
                   {b.phone && <div className="text-[11px] tabular-nums text-slate-500">📞 {b.phone}</div>}
+                </td>
+                <td className="max-w-[110px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
+                  <div className="truncate" title={[b.source, b.bookingCode].filter(Boolean).join(" #")}>
+                    {b.source || "—"}
+                    {b.bookingCode ? <span className="tabular-nums"> #{b.bookingCode}</span> : ""}
+                  </div>
                 </td>
                 <td className="border-b border-slate-100 px-2 py-1 text-right tabular-nums">{b.guestCount}</td>
                 <td className="border-b border-slate-100 px-2 py-1">
@@ -2964,6 +2998,9 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
                   {dichVu(b) || "—"}
                 </td>
+                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]">
+                  <div className="truncate" title={donOf(b)}>{donOf(b) || "—"}</div>
+                </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 tabular-nums">
                   {gioVe(b) ? `🎫 ${gioVe(b)}` : b.noTicketFlight ? "🎫✕ không vé" : "—"}
                 </td>
@@ -2973,6 +3010,16 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums font-bold text-rose-700">
                   {(b.remaining || 0) > 0 ? k(b.remaining || 0) : "✓"}
+                </td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[11px]">
+                  {(() => {
+                    const st = insuranceState(b.insured, b.guestCount);
+                    return st.ok ? (
+                      <span className="font-bold text-emerald-700">✓ {st.ready}/{st.need}</span>
+                    ) : (
+                      <span className="font-bold text-amber-700">⚠ {st.ready}/{st.need}</span>
+                    );
+                  })()}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1">
                   <span
@@ -2992,13 +3039,45 @@ function BookingDayTable({ open, closed, movedOut }: { open: BookingDTO[]; close
                   </span>
                   {b.locked ? " 🔒" : ""}
                 </td>
+                <td className="max-w-[180px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
+                  <div className="truncate" title={b.note}>{b.note || "—"}</div>
+                </td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
+                  {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không xổ ở đây cho khỏi sửa nhầm */}
+                  {!r.moved && renderCard && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                      className={
+                        "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                        (expandedId === b.id
+                          ? "border-sky-600 bg-sky-600 text-white"
+                          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                      }
+                      title="Xổ đầy đủ chức năng: thu tiền, dời, huỷ, sửa, xuất vé, bảo hiểm…"
+                    >
+                      {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
+                    </button>
+                  )}
+                </td>
               </tr>
+              {/* DÒNG XỔ: ruột thẻ đầy đủ ngay dưới dòng bảng — mọi nút y hệt chế độ thẻ */}
+              {expandedId === b.id && !r.moved && renderCard && (
+                <tr>
+                  <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
+                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
+                      {renderCard(b, i)}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
       </table>
       <p className="border-t border-slate-100 px-3 py-1.5 text-[11px] text-slate-500">
-        Bấm đầu cột để xếp · thao tác (thu tiền, dời, sửa, xuất vé…) chuyển về chế độ ☰ Thẻ.
+        Bấm đầu cột để xếp · bấm ⋯ Thêm ở cuối dòng để xổ đủ chức năng (thu tiền, dời, huỷ, sửa, xuất vé, bảo hiểm…).
       </p>
     </div>
   );
@@ -3512,174 +3591,13 @@ export function BookingTodayBanner({
   }
 
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
-  const body = (
+  /**
+   * RUỘT THẺ một booking (đủ mọi nút: thu tiền, dời, huỷ, sửa, xuất vé, bảo
+   * hiểm…) tách thành hàm để dùng ở HAI nơi: chế độ ☰ Thẻ và dòng xổ ra khi
+   * bấm “⋯ Thêm” trong chế độ ▦ Bảng (luật chủ 04/09 — bảng phải đủ chức năng).
+   */
+  const renderOpenCard = (b: BookingDTO, i: number) => (
     <>
-      <p className="mt-0.5 text-[11px] text-sky-800/70">
-        Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
-        như thường, không cần khớp với danh sách này.
-      </p>
-      {/* MỘT HÀNG gọn: ô tìm + xếp + các bộ lọc (luật chủ 04/09) — flex-wrap
-          nên màn hẹp tự xuống dòng, màn rộng nằm chung một dải. */}
-      {rows.length > 1 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-          <TextInput
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="🔍 Tìm tên · SĐT · mã booking"
-            className="h-8 w-full rounded-lg text-sm sm:w-60"
-          />
-          {needle && (
-            <span className="shrink-0 text-xs font-semibold text-sky-800">
-              {open.length + closed.length} kết quả
-              <button type="button" className="ml-1.5 text-slate-500 underline" onClick={() => setQ("")}>
-                xoá
-              </button>
-            </span>
-          )}
-          {/* Chuyển kiểu xem: THẺ (đủ nút thao tác) ↔ BẢNG kiểu Excel (quét mắt, xếp theo cột) */}
-          <span className="flex h-7 overflow-hidden rounded-md border border-slate-300">
-            {(
-              [
-                ["cards", "☰ Thẻ"],
-                ["table", "▦ Bảng"],
-              ] as Array<["cards" | "table", string]>
-            ).map(([v, label]) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => switchView(v)}
-                className={
-                  viewMode === v
-                    ? "bg-slate-700 px-2 text-[11px] font-bold text-white"
-                    : "bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </span>
-          <span className="text-sky-800/70">Xếp:</span>
-          {(
-            [
-              ["seq", "Số booking"],
-              ["flown", "Đã bay trước"],
-              ["ticket", "🎫 Đã xuất vé trước"],
-            ] as Array<["seq" | "flown" | "ticket", string]>
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSortBy(key)}
-              className={
-                sortBy === key
-                  ? "rounded-md bg-sky-600 px-2 py-0.5 font-semibold text-white"
-                  : "rounded-md border border-sky-300 bg-white px-2 py-0.5 font-medium text-sky-800 hover:bg-sky-50"
-              }
-            >
-              {label}
-            </button>
-          ))}
-          {/* LỌC PPG — mọi vai trò: PPG khác giá, khác phi công, soát riêng một phát ra hết */}
-          {(() => {
-            const ppgRows = rows.filter(isPpgBooking);
-            const ppgGuests = ppgRows.reduce(
-              (t, b) => t + (b.flightKind === "ppg" ? b.guestCount : Math.min(b.guestCount, b.ppgGuests || 0)),
-              0,
-            );
-            if (!ppgRows.length && !onlyPpg) return null;
-            return (
-              <button
-                type="button"
-                onClick={() => setOnlyPpg((v) => !v)}
-                className={
-                  onlyPpg
-                    ? "rounded-md bg-indigo-600 px-2 py-0.5 font-bold text-white"
-                    : "rounded-md border border-indigo-300 bg-white px-2 py-0.5 font-semibold text-indigo-700 hover:bg-indigo-50"
-                }
-                title="Chỉ hiện booking có khách bay PPG (cả đoàn PPG lẫn đoàn PG chở kèm khách PPG)"
-              >
-                🪂 PPG ({ppgRows.length} book · {ppgGuests}k)
-              </button>
-            );
-          })()}
-          {/* LỌC ĐÃ XUẤT VÉ — bật là tự chuyển xếp theo giờ xuất = thứ tự khách đến */}
-          {(() => {
-            const n = rows.filter((b) => b.ticketIssued && b.status !== "cancelled").length;
-            if (!n && !onlyTicketed) return null;
-            return (
-              <button
-                type="button"
-                onClick={() => {
-                  setOnlyTicketed((v) => !v);
-                  if (!onlyTicketed) setSortBy("ticket");
-                }}
-                className={
-                  onlyTicketed
-                    ? "rounded-md bg-emerald-600 px-2 py-0.5 font-bold text-white"
-                    : "rounded-md border border-emerald-300 bg-white px-2 py-0.5 font-semibold text-emerald-700 hover:bg-emerald-50"
-                }
-                title="Chỉ hiện booking đã xuất vé, xếp theo giờ xuất — chính là thứ tự khách đến quầy"
-              >
-                🎫 Đã xuất vé ({n})
-              </button>
-            );
-          })()}
-          {/* LỌC TRUY THU — chỉ kế toán: booking còn nợ, nhất là ĐÃ BAY chưa trả hết */}
-          {canLock &&
-            (() => {
-              const unpaid = rows.filter((b) => (b.remaining ?? 0) > 0 && b.status !== "cancelled");
-              const owed = unpaid.reduce((t, b) => t + (b.remaining ?? 0), 0);
-              if (!unpaid.length && !onlyUnpaid) return null;
-              return (
-                <button
-                  type="button"
-                  onClick={() => setOnlyUnpaid((v) => !v)}
-                  className={
-                    onlyUnpaid
-                      ? "rounded-md bg-rose-600 px-2 py-0.5 font-bold text-white"
-                      : "rounded-md border border-rose-300 bg-white px-2 py-0.5 font-semibold text-rose-700 hover:bg-rose-50"
-                  }
-                  title="Chỉ hiện booking còn nợ tiền — truy thu trước khi khách rời bãi"
-                >
-                  💰 Chưa thu đủ ({unpaid.length} book · {Math.round(owed / 1000).toLocaleString("vi-VN")}k)
-                </button>
-              );
-            })()}
-        </div>
-      )}
-      {error && (
-        <div className="mt-2">
-          <Banner tone="error">{error}</Banner>
-        </div>
-      )}
-      {collectDone && (
-        <div className="mt-2">
-          <Banner tone="success" onClose={() => setCollectDone(null)}>
-            {collectDone}
-          </Banner>
-        </div>
-      )}
-      {/* GRID chứ không phải CSS columns: columns chảy theo CHIỀU CAO nên một
-          dòng nở ra (bấm "thêm"/thu tiền) là các dòng sau nhảy từ cột này sang
-          cột kia — người đang nhìn dễ bấm nhầm booking (chuyện thật 03/09).
-          Grid gán ô theo THỨ TỰ: dòng nở chỉ đẩy dọc, không ai đổi cột. */}
-      {viewMode === "table" ? (
-        <BookingDayTable open={open} closed={closed} movedOut={movedOut.filter(matchQ)} />
-      ) : (
-      <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
-        {openShown.map((b, i) => (
-          <li
-            key={b.id}
-            /* Đã khoá = kế toán soát xong, không ai đụng nữa: cho mờ để mắt lướt
-               qua, dồn sự chú ý vào những dòng còn phải làm. */
-            className={
-              "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" +
-              (b.locked ? " opacity-60" : "") +
-              // BOOKING MỚI chưa thấy trên máy này: viền + nền nổi hẳn cho tới lần mở trang sau
-              (isNewBooking(b) ? " border-2 border-emerald-500 bg-emerald-50" : "")
-            }
-            style={{ display: "flow-root" }}
-          >
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
               <div className="float-right ml-2 flex w-56 flex-wrap items-center justify-end gap-1 rounded-lg border border-amber-300 bg-amber-50/70 p-1.5">
@@ -4000,96 +3918,11 @@ export function BookingTodayBanner({
                 }}
               />
             </div>
-          </li>
-        ))}
-        {/* Booking mới giờ NỔI LÊN ĐẦU danh sách kèm badge ✦ BOOKING MỚI (xem
-            isNewBooking) — không cần ghim phụ dưới này nữa. */}
-        {open.length > 10 && !needle && (
-          /* [column-span:all]: danh sách chia 2 cột trên desktop nên một <li>
-             thường bị dòng chảy cột nhét vào LƯNG CHỪNG cột phải — chủ tìm nút
-             "Xem thêm" không thấy, tưởng thẻ không có (chuyện thật 02/09).
-             Phá cột cho nút thành thanh ngang trọn chiều rộng. */
-          <li className="my-1.5 lg:col-span-2">
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              className="w-full rounded-lg border-2 border-sky-400 bg-white py-2 text-xs font-bold text-sky-800 hover:bg-sky-100"
-            >
-              {/* Ghi rõ SỐ KHÁCH đang gập: chủ cộng nhẩm "Tổng 62k" với các dòng
-                  nhìn thấy mà không khớp là nghi sổ sai ngay (chuyện thật 02/09) —
-                  nút phải tự khai nó đang giấu bao nhiêu khách. */}
-              {showAll
-                ? "▴ Thu gọn danh sách"
-                : `▾ Xem thêm ${open.length - 10} booking (${open.slice(10).reduce((t, b) => t + b.guestCount, 0)} khách đang gập)`}
-            </button>
-          </li>
-        )}
-
-        {/* ĐÃ DỜI SANG NGÀY KHÁC — tô VÀNG (huỷ thì tô ĐỎ). Booking đã nằm ở sổ
-            ngày mới rồi; dòng này chỉ là dấu vết để hôm nay không ai tưởng
-            khách bốc hơi. KHÔNG tính vào số tổng của ngày. */}
-        {movedOut.filter(matchQ).map((b) => (
-          <li
-            key={`moved-${b.id}`}
-            className="mb-1.5 break-inside-avoid rounded-lg border-2 border-amber-400 bg-amber-50 px-2.5 py-1.5"
-            style={{ display: "flow-root" }}
-          >
-            <span className="mr-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-              ↪ ĐÃ DỜI sang {formatDateKeyVN(b.flightDate)}
-              {b.daySeq > 0 ? ` — bên đó là số #${b.daySeq}` : ""}
-            </span>
-            <BookingSummary b={b} hideNote hideSeq dim />
-            <span className="ml-1 text-[11px] text-amber-800">
-              {b.movedBy ? `— ${b.movedBy} dời` : ""} · không tính vào số hôm nay
-            </span>
-          </li>
-        ))}
-        {voided.length > 0 && (
-          <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:col-span-2">
-            <details>
-              <summary className="cursor-pointer text-[11px] font-semibold text-slate-500">
-                🗑 Đã bỏ khỏi sổ hôm nay ({voided.length}) — không tính vào thống kê
-              </summary>
-              <ul className="mt-1 space-y-1">
-                {voided.map((b) => (
-                  <li key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
-                    <span className="rounded bg-slate-200 px-1.5 py-0.5 font-bold text-slate-700">
-                      {/* "trùng — đã gộp" là dấu của các bản ghi CŨ, cách gộp đã bỏ */}
-                      {b.voidKind === "duplicate" ? "trùng — đã gộp (cách cũ)" : "nhập nhầm"}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">
-                      #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
-                      {b.voidReason ? ` · “${b.voidReason}”` : ""}
-                      {b.voidedBy ? ` · ${b.voidedBy} bỏ` : ""}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-6 shrink-0 bg-white px-2 text-[11px]"
-                      disabled={busy === b.id}
-                      onClick={() => restore(b)}
-                      title="Lấy lại booking này vào danh sách chờ bay"
-                    >
-                      ↩ Lấy lại
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </li>
-        )}
-        {closed.map((b) => (
-          <li
-            key={b.id}
-            /* HUỶ thì tô ĐỎ, dời thì tô VÀNG (khối bên trên) — hai việc khác hẳn
-               nhau về tiền nong nên phải phân biệt được từ xa, đừng bắt người
-               đọc dò chữ trong dòng. Đã bay thì để trắng như cũ. */
-            className={
-              "mb-1.5 flow-root break-inside-avoid rounded-lg px-3 py-1.5" +
-              (b.status === "cancelled" ? " border-2 border-rose-400 bg-rose-50" : " bg-white/70") +
-              (b.locked ? " opacity-60" : "")
-            }
-          >
+    </>
+  );
+  /** Ruột thẻ booking ĐÃ ĐÓNG (đã bay/huỷ) — vẫn sửa tiền, khoá, hoàn tác được. */
+  const renderClosedCard = (b: BookingDTO) => (
+    <>
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
                 đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ.
                 Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
@@ -4190,6 +4023,274 @@ export function BookingTodayBanner({
               </>
             )}
             <BookingSummary b={b} dim={b.status === "done" || b.locked} />
+    </>
+  );
+
+  const body = (
+    <>
+      <p className="mt-0.5 text-[11px] text-sky-800/70">
+        Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
+        như thường, không cần khớp với danh sách này.
+      </p>
+      {/* MỘT HÀNG gọn: ô tìm + xếp + các bộ lọc (luật chủ 04/09) — flex-wrap
+          nên màn hẹp tự xuống dòng, màn rộng nằm chung một dải. */}
+      {rows.length > 1 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+          <TextInput
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="🔍 Tìm tên · SĐT · mã booking"
+            className="h-8 w-full rounded-lg text-sm sm:w-60"
+          />
+          {needle && (
+            <span className="shrink-0 text-xs font-semibold text-sky-800">
+              {open.length + closed.length} kết quả
+              <button type="button" className="ml-1.5 text-slate-500 underline" onClick={() => setQ("")}>
+                xoá
+              </button>
+            </span>
+          )}
+          {/* Chuyển kiểu xem: THẺ (đủ nút thao tác) ↔ BẢNG kiểu Excel (quét mắt, xếp theo cột) */}
+          <span className="flex h-7 overflow-hidden rounded-md border border-slate-300">
+            {(
+              [
+                ["cards", "☰ Thẻ"],
+                ["table", "▦ Bảng"],
+              ] as Array<["cards" | "table", string]>
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => switchView(v)}
+                className={
+                  viewMode === v
+                    ? "bg-slate-700 px-2 text-[11px] font-bold text-white"
+                    : "bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+          <span className="text-sky-800/70">Xếp:</span>
+          {(
+            [
+              ["seq", "Số booking"],
+              ["flown", "Đã bay trước"],
+              ["ticket", "🎫 Đã xuất vé trước"],
+            ] as Array<["seq" | "flown" | "ticket", string]>
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSortBy(key)}
+              className={
+                sortBy === key
+                  ? "rounded-md bg-sky-600 px-2 py-0.5 font-semibold text-white"
+                  : "rounded-md border border-sky-300 bg-white px-2 py-0.5 font-medium text-sky-800 hover:bg-sky-50"
+              }
+            >
+              {label}
+            </button>
+          ))}
+          {/* LỌC PPG — mọi vai trò: PPG khác giá, khác phi công, soát riêng một phát ra hết */}
+          {(() => {
+            const ppgRows = rows.filter(isPpgBooking);
+            const ppgGuests = ppgRows.reduce(
+              (t, b) => t + (b.flightKind === "ppg" ? b.guestCount : Math.min(b.guestCount, b.ppgGuests || 0)),
+              0,
+            );
+            if (!ppgRows.length && !onlyPpg) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => setOnlyPpg((v) => !v)}
+                className={
+                  onlyPpg
+                    ? "rounded-md bg-indigo-600 px-2 py-0.5 font-bold text-white"
+                    : "rounded-md border border-indigo-300 bg-white px-2 py-0.5 font-semibold text-indigo-700 hover:bg-indigo-50"
+                }
+                title="Chỉ hiện booking có khách bay PPG (cả đoàn PPG lẫn đoàn PG chở kèm khách PPG)"
+              >
+                🪂 PPG ({ppgRows.length} book · {ppgGuests}k)
+              </button>
+            );
+          })()}
+          {/* LỌC ĐÃ XUẤT VÉ — bật là tự chuyển xếp theo giờ xuất = thứ tự khách đến */}
+          {(() => {
+            const n = rows.filter((b) => b.ticketIssued && b.status !== "cancelled").length;
+            if (!n && !onlyTicketed) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setOnlyTicketed((v) => !v);
+                  if (!onlyTicketed) setSortBy("ticket");
+                }}
+                className={
+                  onlyTicketed
+                    ? "rounded-md bg-emerald-600 px-2 py-0.5 font-bold text-white"
+                    : "rounded-md border border-emerald-300 bg-white px-2 py-0.5 font-semibold text-emerald-700 hover:bg-emerald-50"
+                }
+                title="Chỉ hiện booking đã xuất vé, xếp theo giờ xuất — chính là thứ tự khách đến quầy"
+              >
+                🎫 Đã xuất vé ({n})
+              </button>
+            );
+          })()}
+          {/* LỌC TRUY THU — chỉ kế toán: booking còn nợ, nhất là ĐÃ BAY chưa trả hết */}
+          {canLock &&
+            (() => {
+              const unpaid = rows.filter((b) => (b.remaining ?? 0) > 0 && b.status !== "cancelled");
+              const owed = unpaid.reduce((t, b) => t + (b.remaining ?? 0), 0);
+              if (!unpaid.length && !onlyUnpaid) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setOnlyUnpaid((v) => !v)}
+                  className={
+                    onlyUnpaid
+                      ? "rounded-md bg-rose-600 px-2 py-0.5 font-bold text-white"
+                      : "rounded-md border border-rose-300 bg-white px-2 py-0.5 font-semibold text-rose-700 hover:bg-rose-50"
+                  }
+                  title="Chỉ hiện booking còn nợ tiền — truy thu trước khi khách rời bãi"
+                >
+                  💰 Chưa thu đủ ({unpaid.length} book · {Math.round(owed / 1000).toLocaleString("vi-VN")}k)
+                </button>
+              );
+            })()}
+        </div>
+      )}
+      {error && (
+        <div className="mt-2">
+          <Banner tone="error">{error}</Banner>
+        </div>
+      )}
+      {collectDone && (
+        <div className="mt-2">
+          <Banner tone="success" onClose={() => setCollectDone(null)}>
+            {collectDone}
+          </Banner>
+        </div>
+      )}
+      {/* GRID chứ không phải CSS columns: columns chảy theo CHIỀU CAO nên một
+          dòng nở ra (bấm "thêm"/thu tiền) là các dòng sau nhảy từ cột này sang
+          cột kia — người đang nhìn dễ bấm nhầm booking (chuyện thật 03/09).
+          Grid gán ô theo THỨ TỰ: dòng nở chỉ đẩy dọc, không ai đổi cột. */}
+      {viewMode === "table" ? (
+        <BookingDayTable
+          open={open}
+          closed={closed}
+          movedOut={movedOut.filter(matchQ)}
+          renderCard={(b, i) => (b.status === "open" ? renderOpenCard(b, i) : renderClosedCard(b))}
+        />
+      ) : (
+      <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
+        {openShown.map((b, i) => (
+          <li
+            key={b.id}
+            /* Đã khoá = kế toán soát xong, không ai đụng nữa: cho mờ để mắt lướt
+               qua, dồn sự chú ý vào những dòng còn phải làm. */
+            className={
+              "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" +
+              (b.locked ? " opacity-60" : "") +
+              // BOOKING MỚI chưa thấy trên máy này: viền + nền nổi hẳn cho tới lần mở trang sau
+              (isNewBooking(b) ? " border-2 border-emerald-500 bg-emerald-50" : "")
+            }
+            style={{ display: "flow-root" }}
+          >
+            {renderOpenCard(b, i)}
+          </li>
+        ))}
+        {/* Booking mới giờ NỔI LÊN ĐẦU danh sách kèm badge ✦ BOOKING MỚI (xem
+            isNewBooking) — không cần ghim phụ dưới này nữa. */}
+        {open.length > 10 && !needle && (
+          /* [column-span:all]: danh sách chia 2 cột trên desktop nên một <li>
+             thường bị dòng chảy cột nhét vào LƯNG CHỪNG cột phải — chủ tìm nút
+             "Xem thêm" không thấy, tưởng thẻ không có (chuyện thật 02/09).
+             Phá cột cho nút thành thanh ngang trọn chiều rộng. */
+          <li className="my-1.5 lg:col-span-2">
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="w-full rounded-lg border-2 border-sky-400 bg-white py-2 text-xs font-bold text-sky-800 hover:bg-sky-100"
+            >
+              {/* Ghi rõ SỐ KHÁCH đang gập: chủ cộng nhẩm "Tổng 62k" với các dòng
+                  nhìn thấy mà không khớp là nghi sổ sai ngay (chuyện thật 02/09) —
+                  nút phải tự khai nó đang giấu bao nhiêu khách. */}
+              {showAll
+                ? "▴ Thu gọn danh sách"
+                : `▾ Xem thêm ${open.length - 10} booking (${open.slice(10).reduce((t, b) => t + b.guestCount, 0)} khách đang gập)`}
+            </button>
+          </li>
+        )}
+
+        {/* ĐÃ DỜI SANG NGÀY KHÁC — tô VÀNG (huỷ thì tô ĐỎ). Booking đã nằm ở sổ
+            ngày mới rồi; dòng này chỉ là dấu vết để hôm nay không ai tưởng
+            khách bốc hơi. KHÔNG tính vào số tổng của ngày. */}
+        {movedOut.filter(matchQ).map((b) => (
+          <li
+            key={`moved-${b.id}`}
+            className="mb-1.5 break-inside-avoid rounded-lg border-2 border-amber-400 bg-amber-50 px-2.5 py-1.5"
+            style={{ display: "flow-root" }}
+          >
+            <span className="mr-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              ↪ ĐÃ DỜI sang {formatDateKeyVN(b.flightDate)}
+              {b.daySeq > 0 ? ` — bên đó là số #${b.daySeq}` : ""}
+            </span>
+            <BookingSummary b={b} hideNote hideSeq dim />
+            <span className="ml-1 text-[11px] text-amber-800">
+              {b.movedBy ? `— ${b.movedBy} dời` : ""} · không tính vào số hôm nay
+            </span>
+          </li>
+        ))}
+        {voided.length > 0 && (
+          <li className="mt-1 rounded-lg border border-slate-200 bg-white/60 px-2 py-1.5 lg:col-span-2">
+            <details>
+              <summary className="cursor-pointer text-[11px] font-semibold text-slate-500">
+                🗑 Đã bỏ khỏi sổ hôm nay ({voided.length}) — không tính vào thống kê
+              </summary>
+              <ul className="mt-1 space-y-1">
+                {voided.map((b) => (
+                  <li key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+                    <span className="rounded bg-slate-200 px-1.5 py-0.5 font-bold text-slate-700">
+                      {/* "trùng — đã gộp" là dấu của các bản ghi CŨ, cách gộp đã bỏ */}
+                      {b.voidKind === "duplicate" ? "trùng — đã gộp (cách cũ)" : "nhập nhầm"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+                      {b.voidReason ? ` · “${b.voidReason}”` : ""}
+                      {b.voidedBy ? ` · ${b.voidedBy} bỏ` : ""}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-6 shrink-0 bg-white px-2 text-[11px]"
+                      disabled={busy === b.id}
+                      onClick={() => restore(b)}
+                      title="Lấy lại booking này vào danh sách chờ bay"
+                    >
+                      ↩ Lấy lại
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </li>
+        )}
+        {closed.map((b) => (
+          <li
+            key={b.id}
+            /* HUỶ thì tô ĐỎ, dời thì tô VÀNG (khối bên trên) — hai việc khác hẳn
+               nhau về tiền nong nên phải phân biệt được từ xa, đừng bắt người
+               đọc dò chữ trong dòng. Đã bay thì để trắng như cũ. */
+            className={
+              "mb-1.5 flow-root break-inside-avoid rounded-lg px-3 py-1.5" +
+              (b.status === "cancelled" ? " border-2 border-rose-400 bg-rose-50" : " bg-white/70") +
+              (b.locked ? " opacity-60" : "")
+            }
+          >
+            {renderClosedCard(b)}
           </li>
         ))}
       </ul>
