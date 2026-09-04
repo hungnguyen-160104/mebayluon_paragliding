@@ -2905,7 +2905,6 @@ function BookingDayTable({
             <Th col="kind" label="Loại" />
             <Th col="sv" label="Dịch vụ" />
             <Th col="don" label="Đón" />
-            <Th col="ticket" label="🎫 Xuất vé" />
             <Th col="total" label="Tổng" right />
             <Th col="paid" label="Đã trả" right />
             <Th col="remaining" label="Còn thu" right />
@@ -2940,6 +2939,12 @@ function BookingDayTable({
                   {b.ticketIssued && (
                     <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-900">
                       🎫 đã xuất vé{b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}
+                      {gioVe(b) ? ` ${gioVe(b)}` : ""}
+                    </div>
+                  )}
+                  {b.noTicketFlight && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-orange-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-orange-900">
+                      🎫✕ bay không vé{b.noTicketBy ? ` by ${b.noTicketBy}` : ""}
                     </div>
                   )}
                 </td>
@@ -3050,13 +3055,6 @@ function BookingDayTable({
                 </td>
                 <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]">
                   <div className="break-words">{donOf(b) || "—"}</div>
-                </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 tabular-nums">
-                  {gioVe(b) ? `🎫 ${gioVe(b)}` : b.noTicketFlight ? "🎫✕ không vé" : "—"}
-                  {/* Ai xuất vé / ai đánh dấu không vé — kèm ngay dưới giờ */}
-                  {(gioVe(b) && b.ticketIssuedBy) || (b.noTicketFlight && b.noTicketBy) ? (
-                    <div className="text-[10px] text-slate-400">by {b.noTicketFlight ? b.noTicketBy : b.ticketIssuedBy}</div>
-                  ) : null}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums">{k(b.totalAmount || 0)}</td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums">
@@ -3203,7 +3201,7 @@ function BookingDayTable({
               {/* DÒNG XỔ: các chức năng còn lại ngay dưới dòng — không lặp lại thông tin */}
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
-                  <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
+                  <td colSpan={14} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left" style={{ display: "flow-root" }}>
                       {renderMore(b, () => setExpandedId(""))}
                     </div>
@@ -3213,7 +3211,7 @@ function BookingDayTable({
               {/* DÒNG BẢO HIỂM: mở thẳng từ cột BH — nhập hồ sơ + quét giấy tờ */}
               {insuranceId === b.id && !r.moved && renderInsurance?.(b) != null && (
                 <tr>
-                  <td colSpan={15} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
+                  <td colSpan={14} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
                       {renderInsurance(b)}
                       <button
