@@ -5955,7 +5955,16 @@ export function BookingCard({
         <Field label="Đưa đón">
           <select
             value={form.pickup}
-            onChange={(e) => set("pickup", e.target.value as BookingDTO["pickup"])}
+            onChange={(e) => {
+              const v = e.target.value as BookingDTO["pickup"];
+              set("pickup", v);
+              /**
+               * GIÁ ĐÓN MẶC ĐỊNH HÀ NỘI (luật chủ 04/09): BigC 250k, khách sạn
+               * 500k — máy điền sẵn vào ô phí, vẫn sửa tay được; đổi về
+               * "tự đến" thì phí về 0 cho khỏi sót phí ma.
+               */
+              if (bookSpot === "ha-noi") set("pickupFee", v === "bigc" ? 250_000 : v === "hotel" ? 500_000 : 0);
+            }}
             className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
           >
             <option value="self">Tự đến</option>
@@ -5988,6 +5997,11 @@ export function BookingCard({
         </Field>
         <Field label="Phí đưa đón">
           <MoneyInput value={form.pickupFee} onChange={(v) => set("pickupFee", v)} />
+          {bookSpot === "ha-noi" && (
+            <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+              Mặc định: BigC 250k · khách sạn 500k — sửa được
+            </p>
+          )}
         </Field>
         <Field label="Giảm combo (flycam+360)">
           <MoneyInput value={form.comboDiscount} onChange={(v) => set("comboDiscount", v)} />
