@@ -61,6 +61,8 @@ export function StaffReportEditor({
   const [addedDp, setAddedDp] = useState<string[]>([]);
   const [addedCm, setAddedCm] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /** ĐÃ TẢI XONG cho ngày/điểm nào — chống vẽ thẻ với số của ngày cũ (cùng lỗi PilotReportEditor 04/09). */
+  const [loadedFor, setLoadedFor] = useState("");
 
   const [reloadTick, setReloadTick] = useState(0);
   const load = useCallback(() => setReloadTick((t) => t + 1), []);
@@ -90,6 +92,7 @@ export function StaffReportEditor({
         setCameramanStaff(c.staff ?? []);
         setAddedDp((prev) => prev.filter((u) => !dReports.some((r) => r.username === u)));
         setAddedCm((prev) => prev.filter((u) => !cReports.some((r) => r.username === u)));
+        setLoadedFor(`${spot}|${date}`);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -106,14 +109,16 @@ export function StaffReportEditor({
   const missingCm = cameramanStaff.filter(
     (a) => !cameramen.some((r) => r.username === a.username) && !addedCm.includes(a.username),
   );
-  const dpRows: DispatcherReportDTO[] = [
+  /** Dữ liệu trong tay có đúng ngày/điểm đang xem không — sai thì không vẽ thẻ. */
+  const ready = loadedFor === `${spot}|${date}`;
+  const dpRows: DispatcherReportDTO[] = !ready ? [] : [
     ...dispatchers,
     ...addedDp
       .map((u) => dispatcherStaff.find((a) => a.username === u))
       .filter(Boolean)
       .map((a) => blankDispatcherReport(a!.username, a!.name, date)),
   ];
-  const cmRows: CameramanReportDTO[] = [
+  const cmRows: CameramanReportDTO[] = !ready ? [] : [
     ...cameramen,
     ...addedCm
       .map((u) => cameramanStaff.find((a) => a.username === u))

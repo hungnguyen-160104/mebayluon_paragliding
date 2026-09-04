@@ -39,6 +39,14 @@ export function PilotReportEditor({
   const [pick, setPick] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * ĐÃ TẢI XONG cho ngày/điểm nào — chống hiện số ngày cũ dưới nhãn ngày mới:
+   * đổi ngày làm các thẻ remount NGAY với `reports` còn là dữ liệu ngày cũ
+   * (fetch chưa về); form của thẻ chụp state một lần lúc mount nên khi dữ liệu
+   * mới về cũng không nạp lại — kế toán sửa hộ trên số sai (lỗi thật 04/09).
+   * Chưa tải xong đúng ngày thì KHÔNG vẽ thẻ nào cả.
+   */
+  const [loadedFor, setLoadedFor] = useState("");
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -53,6 +61,7 @@ export function PilotReportEditor({
       setStaff(res.staff ?? []);
       // Người đã có báo cáo thật thì khỏi giữ trong danh sách "thêm tay"
       setAdded((prev) => prev.filter((u) => !list.some((r) => r.username === u)));
+      setLoadedFor(`${spot}|${date}`);
     } catch (err: any) {
       setError(err?.message || "Không tải được báo cáo phi công");
     } finally {
@@ -70,13 +79,17 @@ export function PilotReportEditor({
   const missing = staff.filter(
     (a) => !reports.some((r) => r.username === a.username) && !added.includes(a.username),
   );
-  const rows: PilotReportDTO[] = [
-    ...reports,
-    ...added
-      .map((u) => staff.find((a) => a.username === u))
-      .filter(Boolean)
-      .map((a) => blankPilotReport(a!.username, a!.name, date)),
-  ];
+  /** Dữ liệu trong tay có đúng của ngày/điểm đang xem không — sai thì không vẽ thẻ. */
+  const ready = loadedFor === `${spot}|${date}`;
+  const rows: PilotReportDTO[] = !ready
+    ? []
+    : [
+        ...reports,
+        ...added
+          .map((u) => staff.find((a) => a.username === u))
+          .filter(Boolean)
+          .map((a) => blankPilotReport(a!.username, a!.name, date)),
+      ];
 
   return (
     <CollapseCard
