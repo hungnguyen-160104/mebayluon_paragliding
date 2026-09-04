@@ -2819,8 +2819,6 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
   useEffect(() => {
     if (!open) return;
     let alive = true;
-    setHistory(null);
-    setHistoryError(null);
     apiGet<{ events: HistoryEvent[]; logCount: number }>(`/api/baocao/booking/history?spot=${spot}&id=${b.id}`)
       .then((r) => alive && setHistory(r))
       .catch((err) => alive && setHistoryError(err instanceof Error ? err.message : "Không tải được lịch sử"));
@@ -2941,7 +2939,12 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
         type="button"
         variant="ghost"
         className="h-7 shrink-0 bg-white px-2 text-xs font-semibold text-slate-600"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // Xoá kết quả lần trước ngay lúc bấm (không reset trong effect)
+          setHistory(null);
+          setHistoryError(null);
+          setOpen(true);
+        }}
         title="Xem bảng kê chi tiết booking như tờ vé: từng khoản, tổng, đã trả, còn thu"
       >
         📄 Chi tiết book
@@ -3201,6 +3204,25 @@ function BookingDayTable({
    */
   const thRef = useRef<Record<string, HTMLTableCellElement | null>>({});
   const tableRef = useRef<HTMLTableElement | null>(null);
+  /** Tâm từng cột (px, tính từ mép trái bảng) + bề rộng bảng — đo bằng ResizeObserver. */
+  const [colGeom, setColGeom] = useState<{ w: number; c: Record<string, number> }>({ w: 0, c: {} });
+  useEffect(() => {
+    const table = tableRef.current;
+    if (!table || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const c: Record<string, number> = {};
+      for (const [k, th] of Object.entries(thRef.current)) if (th) c[k] = th.offsetLeft + th.offsetWidth / 2;
+      setColGeom({ w: table.offsetWidth, c });
+    };
+    // Bảng đổi bề rộng hay cột Thao tác/BH đổi cỡ (dòng xổ làm cột nở) là đo lại
+    const ro = new ResizeObserver(measure);
+    ro.observe(table);
+    for (const k of ["actions", "bh"]) {
+      const th = thRef.current[k];
+      if (th) ro.observe(th);
+    }
+    return () => ro.disconnect();
+  }, []);
   /**
    * Đệm trái/phải cho ô colSpan để một hộp flex `justify-content: safe center`
    * bên trong có tâm trùng tâm cột: hộp đối xứng quanh tâm cột, cắt bớt phía
@@ -3208,11 +3230,9 @@ function BookingDayTable({
    * mép trái (mép trái trong khung cuộn là chỗ không kéo tới được).
    */
   const centerOn = (col: string): React.CSSProperties => {
-    const th = thRef.current[col];
-    const table = tableRef.current;
-    if (!th || !table) return {};
-    const c = th.offsetLeft + th.offsetWidth / 2;
-    const w = table.offsetWidth;
+    const c = colGeom.c[col];
+    const w = colGeom.w;
+    if (!c || !w) return {};
     return { paddingLeft: Math.max(0, 2 * c - w), paddingRight: Math.max(0, w - 2 * c), justifyContent: "safe center" };
   };
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
