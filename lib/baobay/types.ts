@@ -419,6 +419,8 @@ export type BookingDTO = {
   tmChecked?: boolean;
   /** Khách đã đến lấy vé chưa (quầy tích). */
   ticketIssued: boolean;
+  /** Giờ xuất vé (ISO) — biết khách đến lúc nào, xếp hàng theo giờ đến. */
+  ticketIssuedAt?: string;
   ticketIssuedBy?: string;
   /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */
   noTicketFlight?: boolean;

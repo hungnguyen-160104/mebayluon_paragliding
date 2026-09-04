@@ -208,6 +208,18 @@ function BookingSummary({
           </strong>
         </>
       ) : null}
+      {/* GIỜ XUẤT VÉ = giờ khách có mặt (luật chủ 04/09) — soát lại ai đến lúc nào */}
+      {b.ticketIssued && b.ticketIssuedAt ? (
+        <>
+          {" · "}
+          <span className="whitespace-nowrap text-slate-600">
+            🎫 xuất vé{" "}
+            <strong className="tabular-nums">
+              {new Date(b.ticketIssuedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
+            </strong>
+          </span>
+        </>
+      ) : null}
       {" · "}
       {parts.filter(Boolean).join(" · ")}
       {huyBits.length > 0 && (
@@ -2891,6 +2903,8 @@ export function BookingTodayBanner({
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   /** LỌC PPG (luật chủ 03/09): PPG khác giá, khác phi công, phải soát riêng được. */
   const [onlyPpg, setOnlyPpg] = useState(false);
+  /** LỌC ĐÃ XUẤT VÉ (luật chủ 04/09) — bật kèm xếp theo giờ xuất là ra thứ tự khách đến. */
+  const [onlyTicketed, setOnlyTicketed] = useState(false);
   /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
   const [q, setQ] = useState("");
   /**
@@ -3053,6 +3067,10 @@ export function BookingTodayBanner({
     if (sortBy === "ticket") {
       const d = Number(Boolean(b.ticketIssued)) - Number(Boolean(a.ticketIssued));
       if (d) return d;
+      // Cùng đã xuất vé thì xếp theo GIỜ XUẤT (= thứ tự khách đến) — luật chủ 04/09
+      const ta = a.ticketIssuedAt ? Date.parse(a.ticketIssuedAt) : Number.MAX_SAFE_INTEGER;
+      const tb = b.ticketIssuedAt ? Date.parse(b.ticketIssuedAt) : Number.MAX_SAFE_INTEGER;
+      if (ta !== tb) return ta - tb;
     }
     return (a.daySeq || 0) - (b.daySeq || 0);
   };
@@ -3070,13 +3088,14 @@ export function BookingTodayBanner({
   /** Booking dính PPG: cả đoàn PPG, hoặc đoàn PG chở lẫn vài khách PPG. */
   const isPpgBooking = (b: BookingDTO) => b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0;
   const ppgOk = (b: BookingDTO) => !onlyPpg || isPpgBooking(b);
+  const ticketedOk = (b: BookingDTO) => !onlyTicketed || b.ticketIssued;
   const open = rows
-    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b) && ppgOk(b))
+    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b) && ppgOk(b) && ticketedOk(b))
     // BOOKING MỚI chưa ai thấy trên máy này: nổi LÊN ĐẦU, bất kể kiểu xếp
     .sort((a, b) => Number(isNewBooking(b)) - Number(isNewBooking(a)) || bookingCmp(a, b));
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
-  const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b) && ppgOk(b)).sort(bookingCmp);
+  const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b) && ppgOk(b) && ticketedOk(b)).sort(bookingCmp);
   /** Ngày đông khách: chỉ hiện 10 dòng đầu, bấm mũi tên mới xổ hết. ĐANG TÌM thì hiện hết kết quả. */
   const openShown = showAll || needle ? open : open.slice(0, 10);
   if (!rows.length) return null;
@@ -3376,6 +3395,28 @@ export function BookingTodayBanner({
                 title="Chỉ hiện booking có khách bay PPG (cả đoàn PPG lẫn đoàn PG chở kèm khách PPG)"
               >
                 🪂 PPG ({ppgRows.length} book · {ppgGuests}k)
+              </button>
+            );
+          })()}
+          {/* LỌC ĐÃ XUẤT VÉ — bật là tự chuyển xếp theo giờ xuất = thứ tự khách đến */}
+          {(() => {
+            const n = rows.filter((b) => b.ticketIssued && b.status !== "cancelled").length;
+            if (!n && !onlyTicketed) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setOnlyTicketed((v) => !v);
+                  if (!onlyTicketed) setSortBy("ticket");
+                }}
+                className={
+                  onlyTicketed
+                    ? "rounded-md bg-emerald-600 px-2 py-0.5 font-bold text-white"
+                    : "rounded-md border border-emerald-300 bg-white px-2 py-0.5 font-semibold text-emerald-700 hover:bg-emerald-50"
+                }
+                title="Chỉ hiện booking đã xuất vé, xếp theo giờ xuất — chính là thứ tự khách đến quầy"
+              >
+                🎫 Đã xuất vé ({n})
               </button>
             );
           })()}

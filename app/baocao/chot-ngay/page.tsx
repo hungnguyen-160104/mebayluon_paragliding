@@ -107,7 +107,14 @@ type CloseSuggestion = {
   pilotExtraPpg?: number;
   /** Bảng cân đối sổ ↔ báo cáo theo từng mục (PG/PPG + dịch vụ) — xem service. */
   balance?: {
-    flights: Array<{ kind: "pg" | "ppg"; booked: number; cancelled: number; movedOut: number; reported: number }>;
+    flights: Array<{
+      kind: "pg" | "ppg";
+      booked: number;
+      cancelled: number;
+      movedOut: number;
+      reported: number;
+      ticketSplit?: { bookedTicketed: number; bookedNoTicket: number; reportedTicketed: number; reportedNoTicket: number };
+    }>;
     services: Array<{ key: string; label: string; booked: number; reported: number; source: string }>;
   };
   cancelledGuestEntries: Array<{
@@ -901,6 +908,17 @@ function DailyCloseInner() {
                     ? `Sổ booking ${dangKy}×${label}${tru} = ${f.booked} ≠ phi công báo ${f.reported}×${label}`
                     : `Sổ booking ${f.booked}×${label} ≠ phi công báo ${f.reported}×${label}`,
                 );
+              }
+              /* PPG tách CÓ VÉ / KHÔNG VÉ (luật chủ 04/09): "12×PPG = 1 có vé +
+                 11 không vé" — hai vế phải khớp cả khi TỔNG bằng nhau. */
+              const ppgF = suggest.balance.flights.find((f) => f.kind === "ppg");
+              if (ppgF?.ticketSplit) {
+                const s = ppgF.ticketSplit;
+                if (s.bookedTicketed !== s.reportedTicketed || s.bookedNoTicket !== s.reportedNoTicket) {
+                  lines.push(
+                    `PPG tách vé: sổ ${s.bookedTicketed} có vé + ${s.bookedNoTicket} không vé ≠ phi công khai ${s.reportedTicketed} mã + ${s.reportedNoTicket} không vé`,
+                  );
+                }
               }
               for (const s of suggest.balance.services) {
                 if (s.booked === s.reported) continue;

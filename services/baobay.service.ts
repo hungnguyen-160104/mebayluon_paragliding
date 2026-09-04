@@ -7090,6 +7090,7 @@ function toBookingDTO(doc: any): BookingDTO {
     ckChecked: Boolean(doc.ckCheckedAt) || undefined,
     tmChecked: Boolean(doc.tmCheckedAt) || undefined,
     ticketIssued: Boolean(doc.ticketIssuedAt),
+    ticketIssuedAt: doc.ticketIssuedAt ? new Date(doc.ticketIssuedAt).toISOString() : undefined,
     ticketIssuedBy: doc.ticketIssuedBy || undefined,
     noTicketFlight: Boolean(doc.noTicketFlight) || undefined,
     noTicketReason: doc.noTicketReason || undefined,
@@ -8379,7 +8380,19 @@ issuedRanges: Array<{ from: string; to: string }>;
    * Khách + dịch vụ dời TỚI hôm nay đã nằm trong sổ hôm nay nên tự đúng.
    */
   balance: {
-    flights: Array<{ kind: "pg" | "ppg"; booked: number; cancelled: number; movedOut: number; reported: number }>;
+    flights: Array<{
+      kind: "pg" | "ppg";
+      booked: number;
+      cancelled: number;
+      movedOut: number;
+      reported: number;
+      /**
+       * Riêng PPG tách thêm CÓ VÉ / KHÔNG VÉ (luật chủ 04/09: "12×PPG = 1 có
+       * vé + 11 không vé" phải khớp giữa sổ và báo cáo phi công). Sổ đếm theo
+       * cờ 🎫/bay-không-vé của booking; phi công đếm theo số mã + ô không vé.
+       */
+      ticketSplit?: { bookedTicketed: number; bookedNoTicket: number; reportedTicketed: number; reportedNoTicket: number };
+    }>;
     services: Array<{ key: string; label: string; booked: number; reported: number; source: string }>;
   };
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
@@ -8517,7 +8530,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      * khỏi sổ. Kèm trạng thái để tách riêng số khách ĐÃ XÁC NHẬN BAY.
      */
     BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
-      .select("guestCount status flycam video360 redFlag sunset flagFlight flightKind ppgGuests cancelledGuests")
+      .select("guestCount status flycam video360 redFlag sunset flagFlight flightKind ppgGuests cancelledGuests ticketIssuedAt noTicketFlight")
       .lean<any[]>(),
     /**
      * Bảo hiểm đếm trên MỌI booking của ngày, KHÔNG lọc trạng thái: booking đã
@@ -8843,10 +8856,35 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
   const bookedKind = tallyKind(bookings);
   const cancelledKind = tallyKind(cancelledBookings);
   const movedKind = tallyKind(movedAwayBookings);
+  /** PPG tách CÓ VÉ / KHÔNG VÉ theo cờ trên booking (xem chú thích ở kiểu). */
+  const ppgSplit = bookings.reduce(
+    (t, b: any) => {
+      const n = b.flightKind === "ppg" ? b.guestCount || 0 : Math.min(b.guestCount || 0, b.ppgGuests || 0);
+      if (!n) return t;
+      if (b.noTicketFlight) t.noTicket += n;
+      else if (b.ticketIssuedAt) t.ticketed += n;
+      else t.unknown += n;
+      return t;
+    },
+    { ticketed: 0, noTicket: 0, unknown: 0 },
+  );
   const balance: CloseSuggestionDTO["balance"] = {
     flights: [
       { kind: "pg", booked: bookedKind.pg, cancelled: cancelledKind.pg, movedOut: movedKind.pg, reported: sum(pilots, (p) => p.flightCount) },
-      { kind: "ppg", booked: bookedKind.ppg, cancelled: cancelledKind.ppg, movedOut: movedKind.ppg, reported: sum(pilots, (p) => p.ppgFlights ?? 0) },
+      {
+        kind: "ppg",
+        booked: bookedKind.ppg,
+        cancelled: cancelledKind.ppg,
+        movedOut: movedKind.ppg,
+        reported: sum(pilots, (p) => p.ppgFlights ?? 0),
+        ticketSplit: {
+          bookedTicketed: ppgSplit.ticketed,
+          // Booking chưa đánh dấu gì xếp tạm vào "không vé" — PPG đa số bay không vé
+          bookedNoTicket: ppgSplit.noTicket + ppgSplit.unknown,
+          reportedTicketed: sum(pilots, (p) => ((p.ppgCodes ?? []) as string[]).length),
+          reportedNoTicket: sum(pilots, (p) => p.ppgNoTicket ?? 0),
+        },
+      },
     ],
     services: [
       { key: "flycam", label: "Flycam", booked: bookingServices.flycam, reported: sum(cameramen, (c) => c.flycamFlights ?? 0), source: "camera man" },
