@@ -3015,7 +3015,15 @@ function BookingDayTable({
                       {renderQuickTicket?.(b) != null && (
                         <div className="flex flex-nowrap items-center gap-1">{renderQuickTicket(b)}</div>
                       )}
-                      <div className="flex flex-nowrap items-center gap-1">
+                      {/* Booking ĐÃ ĐÓNG (đã bay/huỷ) chỉ còn Chưa bay · Khoá · Thêm:
+                          xếp CỘT cho khỏi tốn bề ngang (luật chủ 04/09). */}
+                      <div
+                        className={
+                          b.status === "open"
+                            ? "flex flex-nowrap items-center gap-1"
+                            : "flex flex-col items-stretch gap-0.5 [&_button]:justify-center [&_button]:text-center"
+                        }
+                      >
                         {renderQuickMoney?.(b)}
                         {renderQuickFlown?.(b)}
                         {renderClosedQuick?.(b)}
@@ -3319,6 +3327,15 @@ export function BookingTodayBanner({
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   /** Toàn màn hình (desktop soát sổ): phủ kín cửa sổ, ✕ để quay lại trang. */
   const [fullScreen, setFullScreen] = useState(false);
+  /** Esc cũng co sổ về như cũ. */
+  useEffect(() => {
+    if (!fullScreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullScreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullScreen]);
   useEffect(() => {
     try {
       const v = localStorage.getItem("baobay-booking-view");
@@ -3829,6 +3846,31 @@ export function BookingTodayBanner({
   );
 
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
+  /**
+   * Nút phóng/thu sổ booking — đứng NGAY CẠNH TIÊU ĐỀ ở cả ba kiểu hiển thị
+   * (gập được, thẻ thường, đang toàn màn hình) cho dễ thấy; nằm trong dải công
+   * cụ như trước thì lẫn giữa tìm/xếp/lọc, chủ không tìm ra (04/09). Chỉ phóng
+   * đúng sổ/bảng này chứ không phải cả trang, và luôn có nút co về như cũ.
+   */
+  const fullScreenButton = (
+    <button
+      type="button"
+      onClick={(e) => {
+        // Trong <summary>: chặn bấm nút làm gập/xổ thẻ
+        e.preventDefault();
+        e.stopPropagation();
+        setFullScreen((v) => !v);
+      }}
+      className={
+        fullScreen
+          ? "shrink-0 rounded-lg border border-slate-400 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow hover:bg-slate-100"
+          : "shrink-0 rounded-md border border-sky-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-100"
+      }
+      title={fullScreen ? "Co sổ booking về chỗ cũ trong trang (Esc)" : "Phóng riêng sổ/bảng booking ra toàn màn hình"}
+    >
+      {fullScreen ? "🗗 Thu nhỏ về như cũ" : "⛶ Toàn màn hình"}
+    </button>
+  );
   /** HỘP DỜI LỊCH của một booking — hiện thay cụm nút khi đang chọn ngày dời. */
   const renderMovingDialog = (b: BookingDTO) => {
     /* Chỉ vẽ khi chính booking này đang dời — cũng là điều kiện để TS biết
@@ -4403,15 +4445,6 @@ export function BookingTodayBanner({
               </button>
             ))}
           </span>
-          {/* Phóng sổ booking chiếm trọn cửa sổ — soát bảng nhiều cột trên desktop */}
-          <button
-            type="button"
-            onClick={() => setFullScreen((v) => !v)}
-            className="h-7 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
-            title="Phóng sổ booking ra toàn màn hình"
-          >
-            {fullScreen ? "🗗 Thu nhỏ" : "⛶ Toàn màn hình"}
-          </button>
           <span className="text-sky-800/70">Xếp:</span>
           {(
             [
@@ -4683,16 +4716,11 @@ export function BookingTodayBanner({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-[100] overflow-auto bg-sky-50 p-3">
-        <div className="flex items-center justify-between gap-2">
+      <div className="fixed inset-0 z-[100] overflow-auto bg-sky-50 px-3 pb-3">
+        {/* Thanh tiêu đề DÍNH TRÊN — cuộn xuống bao xa vẫn thấy nút co về */}
+        <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 border-b border-sky-200 bg-sky-50 px-3 py-2">
           <h2 className="text-sm font-bold text-sky-900">{title}</h2>
-          <button
-            type="button"
-            onClick={() => setFullScreen(false)}
-            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100"
-          >
-            ✕ Thoát toàn màn hình
-          </button>
+          {fullScreenButton}
         </div>
         {body}
       </div>
@@ -4707,7 +4735,9 @@ export function BookingTodayBanner({
       >
         <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5">
           <span className="text-sm font-bold text-sky-900">{title}</span>
-          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-sky-700">
+          <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-sky-700">
+            {/* Chỉ hiện khi thẻ đang xổ — sổ đang gập thì phóng cái gì */}
+            <span className="hidden group-open:inline">{fullScreenButton}</span>
             <span className="hidden sm:inline group-open:hidden">bấm để xem</span>
             <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
           </span>
@@ -4719,7 +4749,10 @@ export function BookingTodayBanner({
 
   return (
     <div className="rounded-2xl border-2 border-sky-400 bg-sky-50 p-3 lg:[column-span:all]">
-      <h2 className="text-sm font-bold text-sky-900">{title}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-bold text-sky-900">{title}</h2>
+        {fullScreenButton}
+      </div>
       {body}
     </div>
   );
