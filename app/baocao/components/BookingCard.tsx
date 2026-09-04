@@ -3052,7 +3052,21 @@ function BookingDayTable({
                   (b.locked ? "opacity-60 " : "")
                 }
               >
-                <td className="border-b border-slate-100 px-2 py-1 font-bold tabular-nums text-rose-600">{b.daySeq || "?"}</td>
+                <td className="border-b border-slate-100 px-2 py-1 tabular-nums">
+                  <div className="font-bold text-rose-600">{b.daySeq || "?"}</div>
+                  {/* Dấu ĐÃ BAY / ĐÃ XUẤT VÉ gắn ngay dưới số, kèm truy vết ai bấm
+                      (luật chủ 04/09): "đã bay by Duyên" · "đã xuất vé by Hoàn" */}
+                  {b.status === "done" && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-emerald-800">
+                      ✈ đã bay{b.doneBy ? ` by ${b.doneBy}` : ""}
+                    </div>
+                  )}
+                  {b.ticketIssued && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-900">
+                      🎫 đã xuất vé{b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}
+                    </div>
+                  )}
+                </td>
                 {/* Ô CHỮ không che text (luật chủ 04/09): dài thì xuống dòng, hàng
                     tự cao lên — max-w chỉ giữ bề ngang cột, break-words bẻ dòng. */}
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
