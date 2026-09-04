@@ -105,6 +105,11 @@ type CloseSuggestion = {
   flownGuests: number;
   /** Chuyến PPG phi công khai thêm ngoài sổ booking — vẫn là khách bay thật. */
   pilotExtraPpg?: number;
+  /** Bảng cân đối sổ ↔ báo cáo theo từng mục (PG/PPG + dịch vụ) — xem service. */
+  balance?: {
+    flights: Array<{ kind: "pg" | "ppg"; booked: number; cancelled: number; movedOut: number; reported: number }>;
+    services: Array<{ key: string; label: string; booked: number; reported: number; source: string }>;
+  };
   cancelledGuestEntries: Array<{
     /** Hoàn bằng CK (từ TK công ty) hay TM (nhân viên chi tại chỗ). */
     refundMethod?: "cash" | "transfer";
@@ -878,6 +883,45 @@ function DailyCloseInner() {
             </div>
           )}
 
+          {/* ĐỐI CHIẾU SỔ ↔ BÁO CÁO theo TỪNG MỤC (luật chủ 04/09): mỗi dòng là
+              một phép cân "Sổ booking (đăng ký − huỷ − dời đi) ≠ phi công báo".
+              Khách + dịch vụ dời TỚI hôm nay đã nằm trong sổ hôm nay nên phép
+              trừ tự đúng; chỉ hiện mục nào LỆCH. */}
+          {suggest?.balance &&
+            (() => {
+              const lines: string[] = [];
+              for (const f of suggest.balance.flights) {
+                if (f.booked === f.reported) continue;
+                const dangKy = f.booked + f.cancelled + f.movedOut;
+                const label = f.kind.toUpperCase();
+                const tru =
+                  (f.cancelled ? ` − huỷ ${f.cancelled}` : "") + (f.movedOut ? ` − dời ${f.movedOut}` : "");
+                lines.push(
+                  tru
+                    ? `Sổ booking ${dangKy}×${label}${tru} = ${f.booked} ≠ phi công báo ${f.reported}×${label}`
+                    : `Sổ booking ${f.booked}×${label} ≠ phi công báo ${f.reported}×${label}`,
+                );
+              }
+              for (const s of suggest.balance.services) {
+                if (s.booked === s.reported) continue;
+                lines.push(`Sổ booking ${s.booked}×${s.label} ≠ ${s.source} báo ${s.reported}`);
+              }
+              if (!lines.length) return null;
+              return (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
+                  <div className="text-xs font-bold text-amber-900">⚠ ĐỐI CHIẾU SỔ ↔ BÁO CÁO — {lines.length} mục lệch</div>
+                  <ul className="mt-1 space-y-0.5 text-[11px] leading-snug text-amber-900">
+                    {lines.map((l, i) => (
+                      <li key={i}>{l}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 text-[10px] text-amber-800/80">
+                    Sổ đã trừ huỷ/dời đi và đã gồm khách + dịch vụ dời TỚI hôm nay. Lệch = phi công khai
+                    thiếu/dư, hoặc sổ booking chưa cập nhật (PPG bắt buộc có booking).
+                  </p>
+                </div>
+              );
+            })()}
           {/* 5 ô đếm xếp 3/hàng khi đủ rộng — gọn còn 2 hàng */}
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="guests" label="Số khách đã bay">
@@ -890,18 +934,7 @@ function DailyCloseInner() {
                 mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)}
               />
-              {/* LUẬT CHỦ 03/09: bay PPG BẮT BUỘC phải có trong sổ booking —
-                  "bay không vé" chỉ là không xuất vé, khách vẫn phải có dòng
-                  booking. Phi công khai dư so với sổ là SỐ PHẢI TRUY, máy
-                  KHÔNG tự cộng vào số điền sẵn nữa. */}
-              {(suggest?.pilotExtraPpg ?? 0) > 0 && (
-                <p className="mt-0.5 rounded border border-rose-300 bg-rose-50 px-1.5 py-1 text-[10px] font-semibold leading-tight text-rose-800">
-                  ⚠ Phi công khai <strong>{suggest!.pilotExtraPpg}</strong> chuyến PPG KHÔNG có trong sổ
-                  booking. Luật: PPG bắt buộc phải có booking (bay không vé = chỉ không xuất vé). Truy điều
-                  phối bổ sung booking, hoặc phi công khai nhầm thì sửa báo cáo — máy KHÔNG cộng phần này
-                  vào số điền sẵn.
-                </p>
-              )}
+              {/* Cân đối chi tiết PG/PPG + dịch vụ nằm ở hộp "ĐỐI CHIẾU SỔ ↔ BÁO CÁO" phía trên lưới. */}
               {/**
                * SỐ QUẦY KHAI LÀ KHÁCH ĐĂNG KÝ, KHÔNG PHẢI KHÁCH ĐÃ BAY.
                *
@@ -1000,11 +1033,29 @@ function DailyCloseInner() {
               <>
                 <ServiceBox tone="tickets" label="Số vé được xuất ra">
                   <CountInput compact value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
-                  <Compare label="quầy/điều phối báo" value={t?.dispatcherIssued} mine={form.ticketsIssued}
-                    onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
+                  {/* + VÉ MANG SANG (luật chủ 04/09): khách "đã xuất vé" dời từ
+                      ngày trước đương nhiên cầm vé đó sang — mã của phi công
+                      gồm cả vé ấy, còn quầy chỉ đếm vé XUẤT TRONG NGÀY. Cộng
+                      carriedIn vào vế quầy thì hai dòng mới so cùng một thứ. */}
+                  <Compare
+                    label={
+                      (t?.carriedIn ?? 0) > 0
+                        ? `quầy báo (xuất trong ngày + ${t!.carriedIn} vé khách dời mang sang)`
+                        : "quầy/điều phối báo"
+                    }
+                    value={t?.dispatcherIssued === undefined ? undefined : t.dispatcherIssued + (t?.carriedIn ?? 0)}
+                    mine={form.ticketsIssued}
+                    onTake={locked ? undefined : (v) => set("ticketsIssued", v)}
+                  />
                   {/* Tổng số MÃ VÉ phi công đã khai bay trong ngày (gồm cả vé PPG) */}
                   <Compare label="phi công báo" value={t?.pilotCodes} mine={form.ticketsIssued}
                     onTake={locked ? undefined : (v) => set("ticketsIssued", v)} />
+                  {(t?.carriedIn ?? 0) > 0 && (
+                    <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                      Vé xuất trong ngày {t!.dispatcherIssued} + {t!.carriedIn} vé khách dời mang sang ={" "}
+                      {t!.dispatcherIssued + t!.carriedIn} — bộ soát đã xác minh từng mã mang sang (VE_MANG_SANG).
+                    </p>
+                  )}
                 </ServiceBox>
 
                 <ServiceBox tone="returned" label="Số vé thu hồi (huỷ + dời)">

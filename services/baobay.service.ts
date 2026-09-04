@@ -8362,6 +8362,15 @@ issuedRanges: Array<{ from: string; to: string }>;
    * lần (một lần ở flownGuests, một lần ở đây).
    */
   pilotExtraPpg: number;
+  /**
+   * BẢNG CÂN ĐỐI SỔ ↔ BÁO CÁO theo từng mục (luật chủ 04/09): "Sổ booking
+   * (đăng ký − huỷ − dời đi) ≠ phi công báo" — tách PG/PPG và từng dịch vụ.
+   * Khách + dịch vụ dời TỚI hôm nay đã nằm trong sổ hôm nay nên tự đúng.
+   */
+  balance: {
+    flights: Array<{ kind: "pg" | "ppg"; booked: number; cancelled: number; movedOut: number; reported: number }>;
+    services: Array<{ key: string; label: string; booked: number; reported: number; source: string }>;
+  };
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
   rescheduledGuestEntries: Array<{
@@ -8497,7 +8506,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      * khỏi sổ. Kèm trạng thái để tách riêng số khách ĐÃ XÁC NHẬN BAY.
      */
     BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
-      .select("guestCount status flycam video360 redFlag sunset flagFlight")
+      .select("guestCount status flycam video360 redFlag sunset flagFlight flightKind ppgGuests cancelledGuests")
       .lean<any[]>(),
     /**
      * Bảo hiểm đếm trên MỌI booking của ngày, KHÔNG lọc trạng thái: booking đã
@@ -8522,7 +8531,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
    * vé MBL0356 ngày 16/08 (hoàn 2.990.000 đ CK).
    */
   const cancelledBookings = await BaobayBooking.find({ spot, flightDate: date, status: "cancelled" })
-    .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod")
+    .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod flightKind ppgGuests")
     .lean<any[]>();
 
   /** HUỶ MỘT PHẦN: booking vẫn chạy nhưng đã huỷ bớt N khách — kế toán phải thấy N này trong mục huỷ. */
@@ -8712,7 +8721,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flightDate: { $ne: date },
     status: { $nin: ["voided"] },
   })
-    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt")
+    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests")
     .lean<any[]>();
 
   const bookingCancelEntries = cancelledBookings
@@ -8799,7 +8808,44 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     pilots.flatMap((p) => [...((p.ticketCodes ?? []) as string[]), ...((p.ppgCodes ?? []) as string[])]),
   );
 
+  /**
+   * BẢNG CÂN ĐỐI SỔ ↔ BÁO CÁO (luật chủ 04/09) — xem chú thích ở kiểu dữ liệu.
+   * `bookings` là open+done (guestCount đã trừ huỷ bớt), huỷ và dời đi nằm
+   * hai danh sách riêng; khách/dịch vụ dời TỚI đã ở trong sổ hôm nay.
+   */
+  const kindGuests = (b: any) => {
+    const ppg = b.flightKind === "ppg" ? b.guestCount || 0 : Math.min(b.guestCount || 0, b.ppgGuests || 0);
+    return { ppg, pg: (b.guestCount || 0) - ppg };
+  };
+  const tallyKind = (list: any[]) =>
+    list.reduce(
+      (t, b) => {
+        const k = kindGuests(b);
+        t.pg += k.pg;
+        t.ppg += k.ppg;
+        return t;
+      },
+      { pg: 0, ppg: 0 },
+    );
+  const bookedKind = tallyKind(bookings);
+  const cancelledKind = tallyKind(cancelledBookings);
+  const movedKind = tallyKind(movedAwayBookings);
+  const balance: CloseSuggestionDTO["balance"] = {
+    flights: [
+      { kind: "pg", booked: bookedKind.pg, cancelled: cancelledKind.pg, movedOut: movedKind.pg, reported: sum(pilots, (p) => p.flightCount) },
+      { kind: "ppg", booked: bookedKind.ppg, cancelled: cancelledKind.ppg, movedOut: movedKind.ppg, reported: sum(pilots, (p) => p.ppgFlights ?? 0) },
+    ],
+    services: [
+      { key: "flycam", label: "Flycam", booked: bookingServices.flycam, reported: sum(cameramen, (c) => c.flycamFlights ?? 0), source: "camera man" },
+      { key: "video360", label: "Cam360", booked: bookingServices.video360, reported: sum(pilots, (p) => p.video360 ?? 0), source: "phi công" },
+      { key: "redFlag", label: "Cờ đỏ", booked: bookingServices.redFlag, reported: sum(pilots, (p) => p.redFlag ?? 0), source: "phi công" },
+      { key: "sunset", label: "Hoàng hôn", booked: bookingServices.sunset, reported: sum(pilots, (p) => p.sunset ?? 0), source: "phi công" },
+      { key: "flagFlight", label: "Kéo cờ", booked: bookingServices.flagFlight, reported: sum(pilots, (p) => p.flagFlight ?? 0), source: "phi công" },
+    ],
+  };
+
   return {
+    balance,
     guestCount: sum(dispatchers, (d) => d.guestCount),
     ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
     ticketsReturned: sum(dispatchers, (d) => d.ticketsReturned),
