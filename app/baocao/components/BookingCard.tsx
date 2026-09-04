@@ -3078,11 +3078,17 @@ function BookingDayTable({
                     <div className="whitespace-nowrap text-[10px] tabular-nums text-slate-500">📞 {b.phone}</div>
                   )}
                 </td>
-                <td className="max-w-[110px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
+                <td className="max-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
                   <div className="break-words">
                     {b.source || "—"}
                     {b.bookingCode ? <span className="tabular-nums"> #{b.bookingCode}</span> : ""}
                   </div>
+                  {/* Ai nhập booking — chung ô với Nguồn (luật chủ 04/09) */}
+                  {b.createdByName && (
+                    <div className="break-words text-[10px] text-slate-400" title={`nhập ${stampVN(b.createdAt)}`}>
+                      nhập: {b.createdByName}
+                    </div>
+                  )}
                 </td>
                 <td className="border-b border-slate-100 px-2 py-1 text-right tabular-nums">{b.guestCount}</td>
                 <td className="border-b border-slate-100 px-2 py-1">
@@ -3102,10 +3108,43 @@ function BookingDayTable({
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 tabular-nums">
                   {gioVe(b) ? `🎫 ${gioVe(b)}` : b.noTicketFlight ? "🎫✕ không vé" : "—"}
+                  {/* Ai xuất vé / ai đánh dấu không vé — kèm ngay dưới giờ */}
+                  {(gioVe(b) && b.ticketIssuedBy) || (b.noTicketFlight && b.noTicketBy) ? (
+                    <div className="text-[10px] text-slate-400">by {b.noTicketFlight ? b.noTicketBy : b.ticketIssuedBy}</div>
+                  ) : null}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums">{k(b.totalAmount || 0)}</td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums text-emerald-700">
                   {k((b.deposit || 0) + (b.movedPaidOut ?? 0))}
+                  {/* KỂ TỪNG KHOẢN, ai thu (luật chủ 04/09): "cọc 500k CK by Duyên",
+                      "TM 1.000k by Duyên", "CK 500k by Hoan" — cùng cách tính với
+                      BookingSummary: cọc gõ tay = số ròng − đã thu qua lệnh + đã hoàn. */}
+                  {(() => {
+                    const paidTotal = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
+                    const depositBase = Math.max(0, (b.deposit || 0) - paidTotal + (b.refunded ?? 0));
+                    const way = b.depositMethod === "cash" ? " TM" : b.depositMethod === "transfer" || b.transferCode ? " CK" : "";
+                    const depBy = b.depositDateBy || b.createdByName || "";
+                    return (
+                      <>
+                        {depositBase > 0 && (
+                          <div className="text-[10px] font-normal text-slate-500">
+                            cọc {k(depositBase)}
+                            {way}
+                            {depBy ? ` by ${depBy}` : ""}
+                          </div>
+                        )}
+                        {(b.collected ?? []).map((c, ci) => (
+                          <div key={c.collectId || ci} className="text-[10px] font-normal text-slate-500">
+                            {c.method === "cash" ? "TM" : "CK"} {k(c.amount)}
+                            {c.byName ? ` by ${c.byName}` : ""}
+                          </div>
+                        ))}
+                        {(b.refunded ?? 0) > 0 && (
+                          <div className="text-[10px] font-normal text-rose-500">hoàn {k(b.refunded ?? 0)}</div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums font-bold text-rose-700">
                   {(b.remaining || 0) > 0 ? k(b.remaining || 0) : "✓"}
