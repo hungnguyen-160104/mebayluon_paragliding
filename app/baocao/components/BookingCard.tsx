@@ -1347,6 +1347,7 @@ function RowMenu({
   onDone,
   alwaysOpen,
   extra,
+  onClose,
 }: {
   spot: string;
   booking: BookingDTO;
@@ -1364,6 +1365,8 @@ function RowMenu({
    * chúng là closure của BookingTodayBanner nên không dựng được ở đây.
    */
   extra?: ReactNode;
+  /** Chỉ dùng khi alwaysOpen: nút "✕ Đóng" đứng CÙNG HÀNG cuối dải (dòng bảng). */
+  onClose?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1484,7 +1487,8 @@ function RowMenu({
     /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
        04/09) — việc thường dùng đứng trước, huỷ bỏ đứng cuối. */
     return (
-      <div className="flex flex-wrap items-center justify-start gap-1">
+      /* mr-auto trên khung + justify-start: dải nút DỒN TRÁI kể cả khi khung cha canh khác */
+      <div className="mr-auto flex w-full flex-wrap items-center justify-start gap-1 text-left">
         {itPay}
         {itAssign}
         {itEdit}
@@ -1495,6 +1499,15 @@ function RowMenu({
         {itMove}
         {itCancel}
         {itVoid}
+        {onClose && (
+          <button
+            type="button"
+            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100"
+            onClick={onClose}
+          >
+            ✕ Đóng
+          </button>
+        )}
       </div>
     );
   }
@@ -2784,8 +2797,8 @@ function BookingDayTable({
   renderQuickFlown?: (b: BookingDTO) => ReactNode;
   /** Hàng 3: nút "☎ Đã liên hệ" — dài nên đứng một mình cho khỏi phá hàng. */
   renderQuickContact?: (b: BookingDTO) => ReactNode;
-  /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
-  renderMore?: (b: BookingDTO) => ReactNode;
+  /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng; `close` để nút "✕ Đóng" trong dải tự thu. */
+  renderMore?: (b: BookingDTO, close?: () => void) => ReactNode;
   /** Ô bảo hiểm (nhập + quét giấy tờ) — bấm thẳng số ở cột BH là xổ, không qua "Thêm". */
   renderInsurance?: (b: BookingDTO) => ReactNode;
 }) {
@@ -3191,15 +3204,8 @@ function BookingDayTable({
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
                   <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
-                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
-                      {renderMore(b)}
-                      <button
-                        type="button"
-                        className="mt-1 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
-                        onClick={() => setExpandedId("")}
-                      >
-                        ✕ Đóng
-                      </button>
+                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left" style={{ display: "flow-root" }}>
+                      {renderMore(b, () => setExpandedId(""))}
                     </div>
                   </td>
                 </tr>
@@ -3996,11 +4002,12 @@ export function BookingTodayBanner({
   /** Nút "☎ Đã liên hệ" — tách riêng: trong bảng nó chiếm chỗ nên nằm hàng 3 một mình. */
   const renderContactButton = (b: BookingDTO) => <ContactNote spot={spot} booking={b} onDone={load} />;
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
-  const renderMoreMenu = (b: BookingDTO, alwaysOpen = false) => (
+  const renderMoreMenu = (b: BookingDTO, alwaysOpen = false, onClose?: () => void) => (
                 <RowMenu
                   booking={b}
                   spot={spot}
                   alwaysOpen={alwaysOpen}
+                  onClose={onClose}
                   onMove={() => setMoving({ id: b.id, toDate: "" })}
                   onEdit={() => requestEditBooking(b)}
                   onDone={(msg) => {
@@ -4381,14 +4388,14 @@ export function BookingTodayBanner({
           renderQuickContact={(b) =>
             b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderContactButton(b)
           }
-          renderMore={(b) =>
+          renderMore={(b, close) =>
             b.status !== "open"
               ? renderClosedActions(b)
               : moving?.id === b.id
                 ? renderMovingDialog(b)
                 : b.locked && !canLock
                   ? null
-                  : renderMoreMenu(b, true)
+                  : renderMoreMenu(b, true, close)
           }
           renderInsurance={(b) =>
             b.status !== "open" ? null : (
