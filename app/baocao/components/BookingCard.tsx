@@ -1495,16 +1495,23 @@ function RowMenu({
   onMove,
   onEdit,
   onDone,
+  alwaysOpen,
 }: {
   spot: string;
   booking: BookingDTO;
   onMove: () => void;
   onEdit: () => void;
   onDone: (message?: string) => void;
+  /**
+   * Xổ sẵn mọi mục, không có nút bật/tắt — dùng trong dòng "⋯ Thêm" của chế độ
+   * ▦ Bảng: người dùng đã bấm "Thêm" một lần rồi, bắt bấm "Thêm" lần nữa bên
+   * trong là thừa (luật chủ 04/09).
+   */
+  alwaysOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
-  if (!open) {
+  if (!open && !alwaysOpen) {
     return (
       <Button
         type="button"
@@ -1524,7 +1531,12 @@ function RowMenu({
   const item = "shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50";
 
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
+    <div
+      className={
+        "flex flex-wrap items-center gap-1 rounded-xl bg-white " +
+        (alwaysOpen ? "" : "border border-slate-300 p-1.5 shadow-lg")
+      }
+    >
       <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />
       <button
         type="button"
@@ -1609,13 +1621,15 @@ function RowMenu({
           setOpen(false);
         }}
       />
-      <button
-        type="button"
-        className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
-        onClick={() => setOpen(false)}
-      >
-        ✕
-      </button>
+      {!alwaysOpen && (
+        <button
+          type="button"
+          className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
+          onClick={() => setOpen(false)}
+        >
+          ✕
+        </button>
+      )}
     </div>
   );
 }
@@ -3599,7 +3613,7 @@ export function BookingTodayBanner({
    * “⋯ Thêm” của chế độ ▦ Bảng (chỉ hiện NÚT, không lặp lại thông tin —
    * luật chủ 04/09).
    */
-  const renderOpenActions = (b: BookingDTO) => (
+  const renderOpenActions = (b: BookingDTO, flat = false) => (
     <>
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
@@ -3820,6 +3834,7 @@ export function BookingTodayBanner({
                 <RowMenu
                   booking={b}
                   spot={spot}
+                  alwaysOpen={flat}
                   onMove={() => setMoving({ id: b.id, toDate: "" })}
                   onEdit={() => requestEditBooking(b)}
                   onDone={(msg) => {
@@ -4202,7 +4217,7 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderActions={(b) => (b.status === "open" ? renderOpenActions(b) : renderClosedActions(b))}
+          renderActions={(b) => (b.status === "open" ? renderOpenActions(b, true) : renderClosedActions(b))}
         />
       ) : (
       <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
