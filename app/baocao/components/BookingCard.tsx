@@ -1496,6 +1496,7 @@ function RowMenu({
   onEdit,
   onDone,
   alwaysOpen,
+  extra,
 }: {
   spot: string;
   booking: BookingDTO;
@@ -1508,6 +1509,11 @@ function RowMenu({
    * trong là thừa (luật chủ 04/09).
    */
   alwaysOpen?: boolean;
+  /**
+   * Nút do NƠI GỌI nhét thêm vào panel (khoá, tiền PC báo, sửa khoản thu…) —
+   * chúng là closure của BookingTodayBanner nên không dựng được ở đây.
+   */
+  extra?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1621,6 +1627,7 @@ function RowMenu({
           setOpen(false);
         }}
       />
+      {extra}
       {!alwaysOpen && (
         <button
           type="button"
@@ -3805,8 +3812,9 @@ export function BookingTodayBanner({
                 </Button>
               </div>
             ) : (
-              /* Hai khối nút NỔI riêng: hàng trên Đã bay · Đổi lịch · Chuyển, hàng
-                 dưới Huỷ · Sửa (hẹp hơn) — chữ chảy quanh, tràn tới sát nút Huỷ. */
+              /* MỘT HÀNG nút thường dùng (luật chủ 04/09): Thu tiền · Xuất vé ·
+                 Đã bay · Ghi chú · ⋯ Thêm. Mọi nút khác (gửi mail, khoá, tiền
+                 PC báo, sửa khoản thu, đổi lịch, huỷ…) nằm TRONG "⋯ Thêm". */
               <>
               {b.locked && !canLock ? (
                 /* ĐÃ KHOÁ: cất hết nút sửa cho khỏi bấm rồi mới biết bị chặn —
@@ -3815,35 +3823,18 @@ export function BookingTodayBanner({
                    là ba bước cho một việc. */
                 <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
               ) : (
-              <>
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
-                <Button
-                  type="button"
-                  className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
-                  disabled={busy === b.id}
-                  onClick={() => act(b, "flown")}
-                >
-                  {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
-                </Button>
-                <ContactNote spot={spot} booking={b} onDone={load} />
-                {/* Nút gửi mail đứng NGAY trên dòng, không giấu trong "⋯ Thêm":
-                    sửa xong mà nút nằm sau một lần bấm nữa thì không ai nhớ
-                    bấm, khách chẳng bao giờ được báo. Tự ẩn khi không có gì
-                    phải báo nên dòng booking không dài thêm vô ích. */}
-                <NotifyGuestControl spot={spot} booking={b} onDone={load} />
-                <RowMenu
-                  booking={b}
-                  spot={spot}
-                  alwaysOpen={flat}
-                  onMove={() => setMoving({ id: b.id, toDate: "" })}
-                  onEdit={() => requestEditBooking(b)}
-                  onDone={(msg) => {
-                    if (msg) setCollectDone(msg);
-                    load();
-                  }}
-                />
-              </div>
-              <div className="float-right clear-right ml-2 mt-1 flex max-w-full flex-wrap items-center justify-end gap-1">
+                {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
+                {spot !== "sapa" && (
+                  <CollectMoneyControl
+                    spot={spot}
+                    booking={b}
+                    onDone={(msg) => {
+                      setCollectDone(msg);
+                      load();
+                    }}
+                  />
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -3869,31 +3860,46 @@ export function BookingTodayBanner({
                       ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
                       : "🎫 Xuất vé"}
                 </Button>
-                {lockButton(b)}
-                {pilotMoneyButton(b)}
-                {canLock && !b.locked && (
-                  <CollectFixControl
-                    spot={spot}
-                    booking={b}
-                    onDone={(msg) => {
-                      setCollectDone(msg);
-                      load();
-                    }}
-                  />
-                )}
-                {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
-                {spot !== "sapa" && (
-                  <CollectMoneyControl
-                    spot={spot}
-                    booking={b}
-                    onDone={(msg) => {
-                      setCollectDone(msg);
-                      load();
-                    }}
-                  />
-                )}
+                <Button
+                  type="button"
+                  className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
+                  disabled={busy === b.id}
+                  onClick={() => act(b, "flown")}
+                >
+                  {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
+                </Button>
+                <ContactNote spot={spot} booking={b} onDone={load} />
+                <RowMenu
+                  booking={b}
+                  spot={spot}
+                  alwaysOpen={flat}
+                  onMove={() => setMoving({ id: b.id, toDate: "" })}
+                  onEdit={() => requestEditBooking(b)}
+                  onDone={(msg) => {
+                    if (msg) setCollectDone(msg);
+                    load();
+                  }}
+                  extra={
+                    <>
+                      {/* Mail báo khách TỰ ẨN khi không có gì phải báo — RowMenu
+                          đã có sẵn một bản, bản extra này thay cho nút từng đứng
+                          ngoài dòng (luật chủ 04/09: ngoài chỉ giữ 5 nút). */}
+                      {lockButton(b)}
+                      {pilotMoneyButton(b)}
+                      {canLock && !b.locked && (
+                        <CollectFixControl
+                          spot={spot}
+                          booking={b}
+                          onDone={(msg) => {
+                            setCollectDone(msg);
+                            load();
+                          }}
+                        />
+                      )}
+                    </>
+                  }
+                />
               </div>
-              </>
               )}
               </>
             )}
