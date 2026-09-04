@@ -1063,7 +1063,7 @@ function PaymentBreakdown({
         onClick={() => setOpen(true)}
         title="Bóc ô cọc cộng dồn thành từng lần trả: TM hay CK, ai thu, mã GD"
       >
-        💰 Chi tiết thanh toán
+        💰 Chi tiết TT
       </button>
     );
   }
@@ -4026,6 +4026,54 @@ export function BookingTodayBanner({
                   }
                 />
   );
+  /**
+   * DẢI NÚT cho booking ĐÃ ĐÓNG (đã bay/huỷ) trong BẢNG (luật chủ 04/09):
+   * Đóng · Chi tiết TT · CK đại lý · Khoá · Sửa thu · Thu tiền (nếu còn thiếu)
+   * — một hàng dồn trái. Bản thẻ vẫn dùng renderClosedActions (bố cục nổi phải).
+   */
+  const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
+    <div className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left">
+      {close && (
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100"
+          onClick={close}
+        >
+          ✕ Đóng
+        </button>
+      )}
+      <PaymentBreakdown
+        spot={spot}
+        booking={b}
+        onDone={(m) => {
+          if (m) setCollectDone(m);
+          load();
+        }}
+      />
+      {spot === "khau-pha" && (
+        <CommissionControl
+          spot={spot}
+          booking={b}
+          onDone={(m) => {
+            if (m) setCollectDone(m);
+            load();
+          }}
+        />
+      )}
+      {lockButton(b)}
+      {canLock && !b.locked && (
+        <CollectFixControl
+          spot={spot}
+          booking={b}
+          onDone={(m) => {
+            setCollectDone(m);
+            load();
+          }}
+        />
+      )}
+      {(b.remaining ?? 0) > 0 && (!b.locked || canLock) && renderMoneyButton(b)}
+    </div>
+  );
   /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
   const renderOpenActions = (b: BookingDTO) => (
     <>
@@ -4381,7 +4429,7 @@ export function BookingTodayBanner({
           }
           renderMore={(b, close) =>
             b.status !== "open"
-              ? renderClosedActions(b)
+              ? renderClosedStrip(b, close)
               : moving?.id === b.id
                 ? renderMovingDialog(b)
                 : b.locked && !canLock
