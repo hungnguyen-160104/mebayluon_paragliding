@@ -1487,8 +1487,18 @@ function RowMenu({
     /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
        04/09) — việc thường dùng đứng trước, huỷ bỏ đứng cuối. */
     return (
-      /* mr-auto trên khung + justify-start: dải nút DỒN TRÁI kể cả khi khung cha canh khác */
-      <div className="mr-auto flex w-full flex-wrap items-center justify-start gap-1 text-left">
+      /* MỘT HÀNG duy nhất, dồn trái, "✕ Đóng" đứng ĐẦU (luật chủ 04/09);
+         hàng dài hơn khung thì cuộn ngang chứ không bẻ dòng */
+      <div className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left">
+        {onClose && (
+          <button
+            type="button"
+            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100"
+            onClick={onClose}
+          >
+            ✕ Đóng
+          </button>
+        )}
         {itPay}
         {itAssign}
         {itEdit}
@@ -1499,15 +1509,6 @@ function RowMenu({
         {itMove}
         {itCancel}
         {itVoid}
-        {onClose && (
-          <button
-            type="button"
-            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100"
-            onClick={onClose}
-          >
-            ✕ Đóng
-          </button>
-        )}
       </div>
     );
   }
@@ -3192,8 +3193,9 @@ function BookingDayTable({
               {/* DÒNG XỔ: các chức năng còn lại ngay dưới dòng — không lặp lại thông tin */}
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
-                  <td colSpan={13} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
-                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left" style={{ display: "flow-root" }}>
+                  {/* Tab xổ tô nền VÀNG NHẠT riêng — nhìn là biết dải chức năng của dòng nào */}
+                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-3 py-2">
+                    <div className="text-left" style={{ display: "flow-root" }}>
                       {renderMore(b, () => setExpandedId(""))}
                     </div>
                   </td>
