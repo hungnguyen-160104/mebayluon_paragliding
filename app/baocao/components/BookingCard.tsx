@@ -3163,12 +3163,12 @@ function BookingDayTable({
                     </div>
                   )}
                 </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
+                <td className="border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
-                      4 nút nhanh xếp MỘT HÀNG NGANG, chữ không được gãy đôi ("Thu/tiền") —
-                      cột tự nới, bảng cuộn ngang khi hẹp (ảnh chủ gửi 04/09). */}
+                      5 nút nhanh THU NHỎ và gói trong ~2 hàng (luật chủ 04/09): bề ngang
+                      cụm bị chặn max-w nên tự bẻ 3+2; từng nút vẫn cấm gãy chữ "Thu/tiền". */}
                   {!r.moved && (
-                    <div className="flex flex-nowrap items-center justify-end gap-1 [&_button]:whitespace-nowrap">
+                    <div className="flex max-w-[230px] flex-wrap items-center justify-end gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
                       {renderQuick?.(b)}
                       {renderMore?.(b) != null && (
                         <button
