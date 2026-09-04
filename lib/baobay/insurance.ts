@@ -77,8 +77,39 @@ export function normalizeBirthday(raw: string): string {
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
   if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
   const vn = /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/.exec(s);
-  if (vn) return `${vn[3]}-${vn[2].padStart(2, "0")}-${vn[1].padStart(2, "0")}`;
+  if (vn) return okDate(vn[3], vn[2], vn[1]);
+  /** dd/mm/yy gõ tay: "1/4/88" — năm 2 số đoán như khối liền bên dưới. */
+  const vn2 = /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2})$/.exec(s);
+  if (vn2) return okDate(guessYear(vn2[3]), vn2[2], vn2[1]);
+  /**
+   * GÕ LIỀN KHÔNG DẤU PHÂN CÁCH (luật chủ 05/09) — quầy nhập bảo hiểm cho cả
+   * đoàn, gõ "01041988" hay "010488" phải tự nhận:
+   *  - 8 số: ddmmyyyy
+   *  - 6 số: ddmmyy — năm 2 số: lớn hơn 2 số cuối của năm nay thì 19yy
+   *    (88 → 1988), không thì 20yy (15 → 2015; khách sơ sinh hiếm hơn cụ 100 tuổi)
+   */
+  const solid8 = /^(\d{2})(\d{2})(\d{4})$/.exec(s);
+  if (solid8) return okDate(solid8[3], solid8[2], solid8[1]);
+  const solid6 = /^(\d{2})(\d{2})(\d{2})$/.exec(s);
+  if (solid6) return okDate(guessYear(solid6[3]), solid6[2], solid6[1]);
   return "";
+}
+
+/** Năm 2 số → 4 số: 88 → 1988, 15 → 2015 (mốc = 2 số cuối năm hiện tại). */
+function guessYear(yy: string): string {
+  const now = new Date().getFullYear();
+  const n = Number(yy);
+  return String(n > now % 100 ? 1900 + n : 2000 + n);
+}
+
+/** Ráp yyyy-mm-dd và LOẠI ngày vô lý (32/13, năm 1899…) — trả "" để ô báo thiếu. */
+function okDate(y: string, m: string, d: string): string {
+  const yy = Number(y);
+  const mm = Number(m);
+  const dd = Number(d);
+  if (yy < 1900 || yy > new Date().getFullYear()) return "";
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return "";
+  return `${y}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
 }
 
 /** "1990-01-01" → "01/01/1990" để hiện cho người Việt đọc. */
