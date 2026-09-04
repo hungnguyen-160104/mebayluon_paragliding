@@ -2861,17 +2861,17 @@ function BookingDayTable({
   open,
   closed,
   movedOut,
-  renderCard,
+  renderActions,
 }: {
   open: BookingDTO[];
   closed: BookingDTO[];
   movedOut: BookingDTO[];
   /**
-   * Ruột thẻ đầy đủ của một booking (mọi nút: thu tiền, dời, sửa, xuất vé…) do
-   * BookingTodayBanner đưa xuống — bấm "⋯ Thêm" là xổ ra ngay dưới dòng, khỏi
-   * phải quay về chế độ thẻ (luật chủ 04/09: bảng phải đủ chức năng).
+   * CỤM NÚT chức năng của một booking (thu tiền, dời, huỷ, sửa, xuất vé…) do
+   * BookingTodayBanner đưa xuống — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. CHỈ
+   * nút, không lặp lại thông tin booking (đã có trên dòng bảng — luật chủ 04/09).
    */
-  renderCard?: (b: BookingDTO, i: number) => ReactNode;
+  renderActions?: (b: BookingDTO) => ReactNode;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
@@ -3046,7 +3046,7 @@ function BookingDayTable({
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không xổ ở đây cho khỏi sửa nhầm */}
-                  {!r.moved && renderCard && (
+                  {!r.moved && renderActions && (
                     <button
                       type="button"
                       onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
@@ -3063,12 +3063,12 @@ function BookingDayTable({
                   )}
                 </td>
               </tr>
-              {/* DÒNG XỔ: ruột thẻ đầy đủ ngay dưới dòng bảng — mọi nút y hệt chế độ thẻ */}
-              {expandedId === b.id && !r.moved && renderCard && (
+              {/* DÒNG XỔ: đủ cụm nút chức năng ngay dưới dòng — không lặp lại thông tin */}
+              {expandedId === b.id && !r.moved && renderActions && (
                 <tr>
                   <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
-                      {renderCard(b, i)}
+                      {renderActions(b)}
                     </div>
                   </td>
                 </tr>
@@ -3594,11 +3594,12 @@ export function BookingTodayBanner({
 
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
   /**
-   * RUỘT THẺ một booking (đủ mọi nút: thu tiền, dời, huỷ, sửa, xuất vé, bảo
-   * hiểm…) tách thành hàm để dùng ở HAI nơi: chế độ ☰ Thẻ và dòng xổ ra khi
-   * bấm “⋯ Thêm” trong chế độ ▦ Bảng (luật chủ 04/09 — bảng phải đủ chức năng).
+   * CỤM NÚT CHỨC NĂNG của một booking ĐANG CHỜ (đã bay, dời, huỷ, sửa, xuất
+   * vé, thu tiền, khoá…) — tách riêng vì dùng ở HAI nơi: trong thẻ, và dòng
+   * “⋯ Thêm” của chế độ ▦ Bảng (chỉ hiện NÚT, không lặp lại thông tin —
+   * luật chủ 04/09).
    */
-  const renderOpenCard = (b: BookingDTO, i: number) => (
+  const renderOpenActions = (b: BookingDTO) => (
     <>
             {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
@@ -3881,49 +3882,10 @@ export function BookingTodayBanner({
               )}
               </>
             )}
-            <div className="min-w-0">
-              {isNewBooking(b) && (
-                <span className="mr-1.5 animate-pulse rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  ✦ BOOKING MỚI
-                </span>
-              )}
-              {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
-              <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
-              <BookingSummary b={b} hideNote dim={b.locked} />
-              <AssignedBadge b={b} />
-              {b.rescheduledFrom.length > 0 && (
-                <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                  dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
-                  {b.movedBy ? ` by ${b.movedBy}` : ""}
-                </span>
-              )}
-              <span className="ml-1 text-xs text-slate-400">
-                — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
-              </span>
-              {/* Tờ giấy nhớ của điều phối — nằm ngay dưới dòng thông tin khách */}
-              {b.contactNote && (
-                <div className="mt-1 rounded-lg border border-amber-300 bg-amber-100/80 px-2 py-1 text-xs leading-snug text-amber-900">
-                  📝 {b.contactNote}
-                  {b.contactedBy && <span className="ml-1 font-semibold text-amber-700">— {b.contactedBy} đã gọi</span>}
-                </div>
-              )}
-              {/* Hồ sơ bảo hiểm từng người bay — checkin xong phải đủ mới cho bay */}
-              <InsuranceBox
-                spot={spot}
-                bookingId={b.id}
-                guestCount={b.guestCount}
-                preview={{
-                  guests: b.insured,
-                  approvedAt: b.insuranceApprovedAt,
-                  sentAt: b.insuranceSentAt,
-                  recalledAt: b.insuranceRecalledAt,
-                }}
-              />
-            </div>
     </>
   );
-  /** Ruột thẻ booking ĐÃ ĐÓNG (đã bay/huỷ) — vẫn sửa tiền, khoá, hoàn tác được. */
-  const renderClosedCard = (b: BookingDTO) => (
+  /** Cụm nút của booking ĐÃ ĐÓNG (đã bay/huỷ): sửa tiền, sửa, khoá, hoàn tác. */
+  const renderClosedActions = (b: BookingDTO) => (
     <>
             {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
                 đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ.
@@ -3974,6 +3936,62 @@ export function BookingTodayBanner({
                 {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
               </Button>
             )}
+    </>
+  );
+
+  /**
+   * RUỘT THẺ một booking (đủ mọi nút: thu tiền, dời, huỷ, sửa, xuất vé, bảo
+   * hiểm…) tách thành hàm để dùng ở HAI nơi: chế độ ☰ Thẻ và dòng xổ ra khi
+   * bấm “⋯ Thêm” trong chế độ ▦ Bảng (luật chủ 04/09 — bảng phải đủ chức năng).
+   */
+  const renderOpenCard = (b: BookingDTO, i: number) => (
+    <>
+            {renderOpenActions(b)}
+            <div className="min-w-0">
+              {isNewBooking(b) && (
+                <span className="mr-1.5 animate-pulse rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  ✦ BOOKING MỚI
+                </span>
+              )}
+              {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
+              <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
+              <BookingSummary b={b} hideNote dim={b.locked} />
+              <AssignedBadge b={b} />
+              {b.rescheduledFrom.length > 0 && (
+                <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                  dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
+                  {b.movedBy ? ` by ${b.movedBy}` : ""}
+                </span>
+              )}
+              <span className="ml-1 text-xs text-slate-400">
+                — nhập {stampVN(b.createdAt)} bởi {b.createdByName}
+              </span>
+              {/* Tờ giấy nhớ của điều phối — nằm ngay dưới dòng thông tin khách */}
+              {b.contactNote && (
+                <div className="mt-1 rounded-lg border border-amber-300 bg-amber-100/80 px-2 py-1 text-xs leading-snug text-amber-900">
+                  📝 {b.contactNote}
+                  {b.contactedBy && <span className="ml-1 font-semibold text-amber-700">— {b.contactedBy} đã gọi</span>}
+                </div>
+              )}
+              {/* Hồ sơ bảo hiểm từng người bay — checkin xong phải đủ mới cho bay */}
+              <InsuranceBox
+                spot={spot}
+                bookingId={b.id}
+                guestCount={b.guestCount}
+                preview={{
+                  guests: b.insured,
+                  approvedAt: b.insuranceApprovedAt,
+                  sentAt: b.insuranceSentAt,
+                  recalledAt: b.insuranceRecalledAt,
+                }}
+              />
+            </div>
+    </>
+  );
+  /** Ruột thẻ booking ĐÃ ĐÓNG (đã bay/huỷ) — vẫn sửa tiền, khoá, hoàn tác được. */
+  const renderClosedCard = (b: BookingDTO) => (
+    <>
+            {renderClosedActions(b)}
             {/* Ghi rõ AI bấm — "đã bay by judy", "huỷ by trucngoc": lệch số còn biết hỏi ai */}
             {b.status === "done" ? (
               <>
@@ -4184,7 +4202,7 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderCard={(b, i) => (b.status === "open" ? renderOpenCard(b, i) : renderClosedCard(b))}
+          renderActions={(b) => (b.status === "open" ? renderOpenActions(b) : renderClosedActions(b))}
         />
       ) : (
       <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
