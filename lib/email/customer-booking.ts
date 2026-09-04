@@ -15,6 +15,7 @@
  */
 
 import { resolvePickup } from "@/lib/booking/pickup";
+import { CLUBHOUSE_MAP_URL, KHAU_PHA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 
 export type EmailLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -85,6 +86,20 @@ type Dict = {
   attachmentNote: string;
   idMaskedNote: string;
   spotMore: (name: string) => string;
+  /**
+   * CHỈ ĐƯỜNG KHAU PHẠ theo loại bay (luật chủ 04/09): PPG đến thẳng
+   * Clubhouse; PG nhận cả toạ độ bãi cất cánh (check-in Quầy Vé đỉnh đèo nếu
+   * đến từ hướng Ngã Ba Kim) lẫn bãi hạ cánh (Tú Lệ/Cao Phạ qua đây làm thủ
+   * tục rồi xe trung chuyển). Kèm QR toạ độ cho khách quét.
+   */
+  dirTitle: string;
+  dirPpgTitle: string;
+  dirPpgNote: string;
+  dirTakeoffTitle: string;
+  dirTakeoffNote: string;
+  dirLandingTitle: string;
+  dirLandingNote: string;
+  dirOpenMap: string;
 };
 
 const T: Record<EmailLang, Dict> = {
@@ -147,6 +162,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 Vé bay của bạn được đính kèm trong email này.",
     idMaskedNote: "Số giấy tờ được ẩn bớt để bảo vệ thông tin cá nhân của bạn.",
     spotMore: (n) => `Vui lòng xem chi tiết thông tin điểm bay ${n}`,
+    dirTitle: "📍 Đường đến điểm bay Khau Phạ",
+    dirPpgTitle: "Điểm bay DÙ MÁY (PPG) — Mebayluon Clubhouse",
+    dirPpgNote: "Bạn bay dù máy (PPG): vui lòng đến thẳng điểm này (quét QR hoặc bấm mở bản đồ) để làm thủ tục và bay.",
+    dirTakeoffTitle: "Bãi CẤT CÁNH — đỉnh đèo Khau Phạ",
+    dirTakeoffNote: "Đây là điểm cất cánh. Nếu bạn đến từ hướng Ngã Ba Kim / Mù Cang Chải / Garrya: ghé QUẦY VÉ tại đỉnh đèo để check-in lấy vé bay.",
+    dirLandingTitle: "Bãi HẠ CÁNH — Mebayluon Clubhouse",
+    dirLandingNote: "Nếu bạn ở Tú Lệ hoặc Cao Phạ (cũ): qua bãi hạ cánh làm thủ tục trước, rồi đi xe trung chuyển lên bãi cất cánh.",
+    dirOpenMap: "Mở bản đồ",
   },
 
   en: {
@@ -209,6 +232,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 Your flight ticket is attached to this email.",
     idMaskedNote: "ID numbers are partly hidden to protect your personal data.",
     spotMore: (n) => `See full details about the ${n} flying site`,
+    dirTitle: "📍 Getting to the Khau Pha flying site",
+    dirPpgTitle: "PARAMOTOR (PPG) site — Mebayluon Clubhouse",
+    dirPpgNote: "You are flying paramotor (PPG): please come straight to this point (scan the QR or open the map) for check-in and your flight.",
+    dirTakeoffTitle: "TAKE-OFF site — Khau Pha pass summit",
+    dirTakeoffNote: "This is the take-off point. Coming from Nga Ba Kim / Mu Cang Chai / Garrya? Stop at the TICKET COUNTER on the pass summit to check in and collect your ticket.",
+    dirLandingTitle: "LANDING site — Mebayluon Clubhouse",
+    dirLandingNote: "Staying in Tu Le or Cao Pha? Check in at the landing site first, then take our shuttle up to the take-off site.",
+    dirOpenMap: "Open map",
   },
 
   fr: {
@@ -271,6 +302,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 Votre billet de vol est joint à cet e-mail.",
     idMaskedNote: "Les numéros de pièce d'identité sont partiellement masqués pour protéger vos données.",
     spotMore: (n) => `Voir toutes les informations sur le site de vol ${n}`,
+    dirTitle: "📍 Se rendre au site de vol de Khau Pha",
+    dirPpgTitle: "Site PARAMOTEUR (PPG) — Mebayluon Clubhouse",
+    dirPpgNote: "Vous volez en paramoteur (PPG) : rendez-vous directement à ce point (scannez le QR ou ouvrez la carte) pour l’enregistrement et le vol.",
+    dirTakeoffTitle: "Site de DÉCOLLAGE — sommet du col de Khau Pha",
+    dirTakeoffNote: "Ceci est le point de décollage. Vous arrivez de Nga Ba Kim / Mu Cang Chai / Garrya ? Passez au GUICHET au sommet du col pour l’enregistrement et votre billet.",
+    dirLandingTitle: "Site d’ATTERRISSAGE — Mebayluon Clubhouse",
+    dirLandingNote: "Vous logez à Tu Le ou Cao Pha ? Enregistrez-vous d’abord au site d’atterrissage, puis prenez la navette jusqu’au décollage.",
+    dirOpenMap: "Ouvrir la carte",
   },
 
   ru: {
@@ -333,6 +372,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 Ваш билет прикреплён к этому письму.",
     idMaskedNote: "Номера документов частично скрыты для защиты ваших данных.",
     spotMore: (n) => `Подробная информация о площадке ${n}`,
+    dirTitle: "📍 Как добраться до лётной площадки Кхау Фа",
+    dirPpgTitle: "Площадка ПАРАМОТОРА (PPG) — Mebayluon Clubhouse",
+    dirPpgNote: "Вы летите на парамоторе (PPG): приезжайте сразу в эту точку (отсканируйте QR или откройте карту) для регистрации и полёта.",
+    dirTakeoffTitle: "Площадка ВЗЛЁТА — вершина перевала Кхау Фа",
+    dirTakeoffNote: "Это точка взлёта. Едете со стороны Нга Ба Ким / Му Канг Чай / Garrya? Загляните в КАССУ на вершине перевала для регистрации и получения билета.",
+    dirLandingTitle: "Площадка ПОСАДКИ — Mebayluon Clubhouse",
+    dirLandingNote: "Вы в Ту Ле или Као Фа? Сначала пройдите регистрацию на площадке посадки, затем наш трансфер отвезёт вас к точке взлёта.",
+    dirOpenMap: "Открыть карту",
   },
 
   zh: {
@@ -393,6 +440,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 您的电子票已作为附件随本邮件发送。",
     idMaskedNote: "证件号码已部分隐藏，以保护您的个人信息。",
     spotMore: (n) => `查看飞行点 ${n} 的详细信息`,
+    dirTitle: "📍 如何前往 Khau Pha 飞行点",
+    dirPpgTitle: "动力伞（PPG）飞行点 — Mebayluon Clubhouse",
+    dirPpgNote: "您预订的是动力伞（PPG）：请直接前往此地点（扫描二维码或打开地图）办理登记并飞行。",
+    dirTakeoffTitle: "起飞场 — Khau Pha 垭口山顶",
+    dirTakeoffNote: "这里是起飞点。若您从 Nga Ba Kim / Mu Cang Chai / Garrya 方向前来，请先到垭口山顶的售票处办理登记并领取机票。",
+    dirLandingTitle: "降落场 — Mebayluon Clubhouse",
+    dirLandingNote: "若您住在 Tu Le 或 Cao Pha，请先到降落场办理手续，再乘坐接驳车前往起飞场。",
+    dirOpenMap: "打开地图",
   },
 
   hi: {
@@ -454,6 +509,14 @@ const T: Record<EmailLang, Dict> = {
     attachmentNote: "🎫 आपका उड़ान टिकट इस ईमेल के साथ संलग्न है।",
     idMaskedNote: "आपकी निजता की रक्षा के लिए आईडी नंबर आंशिक रूप से छिपाया गया है।",
     spotMore: (n) => `उड़ान स्थल ${n} की पूरी जानकारी देखें`,
+    dirTitle: "📍 खाउ फा उड़ान स्थल तक पहुँचना",
+    dirPpgTitle: "पैरामोटर (PPG) स्थल — Mebayluon Clubhouse",
+    dirPpgNote: "आप पैरामोटर (PPG) उड़ान भर रहे हैं: कृपया सीधे इस स्थान पर आएँ (QR स्कैन करें या नक्शा खोलें) — यहीं चेक-इन और उड़ान होगी।",
+    dirTakeoffTitle: "टेक-ऑफ़ स्थल — खाउ फा दर्रे की चोटी",
+    dirTakeoffNote: "यह टेक-ऑफ़ पॉइंट है। यदि आप Nga Ba Kim / Mu Cang Chai / Garrya की ओर से आ रहे हैं, तो दर्रे की चोटी पर टिकट काउंटर पर चेक-इन कर टिकट लें।",
+    dirLandingTitle: "लैंडिंग स्थल — Mebayluon Clubhouse",
+    dirLandingNote: "यदि आप Tu Le या Cao Pha में ठहरे हैं, तो पहले लैंडिंग स्थल पर औपचारिकताएँ पूरी करें, फिर शटल से टेक-ऑफ़ स्थल जाएँ।",
+    dirOpenMap: "नक्शा खोलें",
   },
 };
 
@@ -556,6 +619,11 @@ export type CustomerEmailInput = {
   spotPageUrl?: string;
   /** Có ảnh vé đính kèm hay không — quyết định hiện dòng nhắc trong thư. */
   hasTicketAttachment?: boolean;
+  /**
+   * Loại bay để chọn khối chỉ đường Khau Phạ: "pg" · "ppg" · "mixed" (đoàn
+   * lẫn nhận cả hai khối). Không truyền thì đoán từ flightTypeLabel.
+   */
+  flightKind?: string;
   /**
    * CHẾ ĐỘ THƯ CẬP NHẬT / HUỶ — app nội bộ dùng khi nhân viên sửa booking.
    * Cùng bố cục thư xác nhận (khách quen một kiểu đọc), chỉ đổi tiêu đề, lời
@@ -906,6 +974,44 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         <div>🎒 ${esc(t.guideBring)}</div>
         <div>🚫 ${esc(t.guideAvoid)}</div>
       </td></tr>
+
+      ${(() => {
+        /**
+         * CHỈ ĐƯỜNG KHAU PHẠ theo loại bay (luật chủ 04/09), kèm QR toạ độ:
+         *  - PPG: đến thẳng Mebayluon Clubhouse.
+         *  - PG: bãi cất cánh (check-in Quầy Vé đỉnh đèo nếu từ hướng Ngã Ba
+         *    Kim) + bãi hạ cánh (Tú Lệ/Cao Phạ qua đây rồi xe trung chuyển).
+         *  - Đoàn lẫn PG+PPG: nhận cả hai khối.
+         * QR vẽ bằng dịch vụ ảnh công cộng — thư là HTML tĩnh, khách chặn ảnh
+         * thì vẫn còn nút "Mở bản đồ".
+         */
+        const nơi = `${String(input.location ?? "")} ${String(input.locationName ?? "")}`.toLowerCase();
+        if (!/khau/.test(nơi)) return "";
+        const kind = String(input.flightKind ?? "").toLowerCase();
+        const nhãn = String(input.flightTypeLabel ?? "").toLowerCase();
+        const hasPpg = kind.includes("ppg") || kind === "mixed" || /ppg|paramotor|dù máy|du may|động cơ|dong co/.test(nhãn);
+        const hasPg = !hasPpg || kind === "mixed" || kind === "pg";
+        const qr = (url: string) =>
+          `<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(url)}" width="140" height="140" alt="QR" style="display:block;border:1px solid ${C.line};border-radius:8px;"/>`;
+        const card = (title: string, note: string, url: string) => `<tr><td style="padding-top:10px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.line};border-radius:10px;"><tr>
+            <td style="vertical-align:top;padding:12px;">
+              <div style="font-size:14px;font-weight:700;color:${C.ink};">${esc(title)}</div>
+              <div style="font-size:13px;color:${C.soft};margin-top:4px;line-height:1.6;">${esc(note)}</div>
+              <div style="margin-top:8px;"><a href="${esc(url)}" style="color:${C.blueDark};font-weight:700;">🗺 ${esc(t.dirOpenMap)}</a></div>
+            </td>
+            <td width="152" style="vertical-align:top;padding:12px 12px 12px 0;">${qr(url)}</td>
+          </tr></table>
+        </td></tr>`;
+        return (
+          sectionTitle(t.dirTitle) +
+          (hasPpg ? card(t.dirPpgTitle, t.dirPpgNote, CLUBHOUSE_MAP_URL) : "") +
+          (hasPg
+            ? card(t.dirTakeoffTitle, t.dirTakeoffNote, KHAU_PHA_TAKEOFF_MAP_URL) +
+              card(t.dirLandingTitle, t.dirLandingNote, CLUBHOUSE_MAP_URL)
+            : "")
+        );
+      })()}
 
       ${sectionTitle(t.sectionNext)}
       <tr><td style="padding-top:4px;">

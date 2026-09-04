@@ -275,6 +275,8 @@ export async function sendBookingChangeMail(
     lang: mailLang,
     bookingId: doc.bookingCode || String(doc._id).slice(-6).toUpperCase(),
     locationName: spotName(spot),
+    // Chỉ đường Khau Phạ theo loại bay: PPG → Clubhouse; PG → bãi cất/hạ cánh; đoàn lẫn → cả hai
+    flightKind: doc.flightKind === "ppg" ? "ppg" : (doc.ppgGuests ?? 0) > 0 ? "mixed" : "pg",
     dateISO: doc.flightDate || "",
     timeSlot: doc.expectedTime || "",
     guestsCount: doc.guestCount ?? 0,

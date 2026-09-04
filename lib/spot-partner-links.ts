@@ -58,7 +58,7 @@ const SCHOOL_COURSES: SpotCourseLink[] = [
 export const CLUBHOUSE_MAP_URL =
   "https://www.google.com/maps/place/Clubhouse+Mebayluon+Paragliding/@21.7764187,104.2636752,1008m/data=!3m1!1e3!4m11!3m10!1s0x3132d86a65a88495:0x69a2a48b9f14bb71!5m2!4m1!1i2!8m2!3d21.7764187!4d104.2636752!9m1!1b1!16s%2Fg%2F11dxdh48gt!17m2!4m1!1e3!18m1!1e1?entry=ttu";
 
-const KHAU_PHA_TAKEOFF_MAP_URL =
+export const KHAU_PHA_TAKEOFF_MAP_URL =
   "https://www.google.com/maps/place/%C4%90i%E1%BB%83m+Bay+D%C3%B9+L%C6%B0%E1%BB%A3n+Khau+Ph%E1%BA%A1/@21.7549587,104.2655369,922m/data=!3m1!1e3!4m8!3m7!1s0x3132d88af2212c0d:0x40d25338c1dac102!8m2!3d21.7549587!4d104.2655369!9m1!1b1!16s%2Fg%2F11fyzcp8gc!17m2!4m1!1e3!18m1!1e1?entry=ttu";
 
 const SAPA_TAKEOFF_MAP_URL =
