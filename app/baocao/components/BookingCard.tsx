@@ -4739,7 +4739,10 @@ export function BookingTodayBanner({
             ) : (
               /* CÙNG bộ nút với dòng bảng (renderOpenQuick); đã khoá mà không
                  phải kế toán thì chỉ còn nút mở khoá, không có ⋯ Thêm. */
-              <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
+              /* LƯỚI 3 CỘT → 6 nút gọn 2 hàng (luật chủ 05/09). Nút dài (Đã liên hệ by…)
+                 cắt đuôi bằng "…" chứ không phá hàng; bảng thu tiền / menu Thêm mở ra
+                 là div nên tự chiếm trọn 3 cột. */
+              <div className="float-right ml-2 grid w-[360px] max-w-full grid-cols-3 gap-1 [&>button]:w-full [&>button]:min-w-0 [&>button]:justify-center [&>button]:truncate [&>button]:px-1.5 [&>div]:col-span-3">
                 {renderOpenQuick(b)}
                 {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
