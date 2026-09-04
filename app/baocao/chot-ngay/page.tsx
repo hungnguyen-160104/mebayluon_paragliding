@@ -896,18 +896,29 @@ function DailyCloseInner() {
               trừ tự đúng; chỉ hiện mục nào LỆCH. */}
           {suggest?.balance &&
             (() => {
-              const lines: string[] = [];
+              /**
+               * Mức ĐỎ (luật chủ 05/09): phi công báo NHIỀU HƠN sổ — nghĩa là
+               * sổ booking nhập THIẾU (nhất là PPG: bắt buộc có booking). Đây
+               * chính là kiểu lệch gây "phi công 97 ≠ sổ 96" — kế toán phải
+               * truy bổ sung booking trước khi chốt. Phi công báo ÍT hơn sổ
+               * thì vàng: thường là khai sót, sửa báo cáo là xong.
+               */
+              const lines: Array<{ text: string; red: boolean }> = [];
               for (const f of suggest.balance.flights) {
                 if (f.booked === f.reported) continue;
                 const dangKy = f.booked + f.cancelled + f.movedOut;
                 const label = f.kind.toUpperCase();
                 const tru =
                   (f.cancelled ? ` − huỷ ${f.cancelled}` : "") + (f.movedOut ? ` − dời ${f.movedOut}` : "");
-                lines.push(
-                  tru
-                    ? `Sổ booking ${dangKy}×${label}${tru} = ${f.booked} ≠ phi công báo ${f.reported}×${label}`
-                    : `Sổ booking ${f.booked}×${label} ≠ phi công báo ${f.reported}×${label}`,
-                );
+                const red = f.reported > f.booked;
+                lines.push({
+                  red,
+                  text:
+                    (tru
+                      ? `Sổ booking ${dangKy}×${label}${tru} = ${f.booked} ≠ phi công báo ${f.reported}×${label}`
+                      : `Sổ booking ${f.booked}×${label} ≠ phi công báo ${f.reported}×${label}`) +
+                    (red ? ` — phi công báo DƯ ${f.reported - f.booked}: sổ booking có thể nhập thiếu, bổ sung trước khi chốt` : ""),
+                });
               }
               /* PPG tách CÓ VÉ / KHÔNG VÉ (luật chủ 04/09): "12×PPG = 1 có vé +
                  11 không vé" — hai vế phải khớp cả khi TỔNG bằng nhau. */
@@ -915,27 +926,34 @@ function DailyCloseInner() {
               if (ppgF?.ticketSplit) {
                 const s = ppgF.ticketSplit;
                 if (s.bookedTicketed !== s.reportedTicketed || s.bookedNoTicket !== s.reportedNoTicket) {
-                  lines.push(
-                    `PPG tách vé: sổ ${s.bookedTicketed} có vé + ${s.bookedNoTicket} không vé ≠ phi công khai ${s.reportedTicketed} mã + ${s.reportedNoTicket} không vé`,
-                  );
+                  lines.push({
+                    red: s.reportedTicketed > s.bookedTicketed || s.reportedNoTicket > s.bookedNoTicket,
+                    text: `PPG tách vé: sổ ${s.bookedTicketed} có vé + ${s.bookedNoTicket} không vé ≠ phi công khai ${s.reportedTicketed} mã + ${s.reportedNoTicket} không vé`,
+                  });
                 }
               }
               for (const s of suggest.balance.services) {
                 if (s.booked === s.reported) continue;
-                lines.push(`Sổ booking ${s.booked}×${s.label} ≠ ${s.source} báo ${s.reported}`);
+                lines.push({ red: s.reported > s.booked, text: `Sổ booking ${s.booked}×${s.label} ≠ ${s.source} báo ${s.reported}` });
               }
               if (!lines.length) return null;
+              const hasRed = lines.some((l) => l.red);
               return (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
-                  <div className="text-xs font-bold text-amber-900">⚠ ĐỐI CHIẾU SỔ ↔ BÁO CÁO — {lines.length} mục lệch</div>
-                  <ul className="mt-1 space-y-0.5 text-[11px] leading-snug text-amber-900">
+                <div className={hasRed ? "rounded-xl border-2 border-rose-400 bg-rose-50 px-3 py-2" : "rounded-xl border border-amber-300 bg-amber-50 px-3 py-2"}>
+                  <div className={hasRed ? "text-xs font-bold text-rose-900" : "text-xs font-bold text-amber-900"}>
+                    ⚠ ĐỐI CHIẾU SỔ ↔ BÁO CÁO — {lines.length} mục lệch{hasRed ? " · CÓ MỤC ĐỎ PHẢI TRUY" : ""}
+                  </div>
+                  <ul className="mt-1 space-y-0.5 text-[11px] leading-snug">
                     {lines.map((l, i) => (
-                      <li key={i}>{l}</li>
+                      <li key={i} className={l.red ? "font-semibold text-rose-800" : "text-amber-900"}>
+                        {l.red ? "🔴 " : ""}
+                        {l.text}
+                      </li>
                     ))}
                   </ul>
-                  <p className="mt-1 text-[10px] text-amber-800/80">
-                    Sổ đã trừ huỷ/dời đi và đã gồm khách + dịch vụ dời TỚI hôm nay. Lệch = phi công khai
-                    thiếu/dư, hoặc sổ booking chưa cập nhật (PPG bắt buộc có booking).
+                  <p className={"mt-1 text-[10px] " + (hasRed ? "text-rose-800/80" : "text-amber-800/80")}>
+                    Sổ đã trừ huỷ/dời đi và đã gồm khách + dịch vụ dời TỚI hôm nay. Đỏ = báo cáo NHIỀU hơn sổ
+                    (booking nhập thiếu — PPG bắt buộc có booking); vàng = báo cáo ít hơn sổ (khai sót).
                   </p>
                 </div>
               );
