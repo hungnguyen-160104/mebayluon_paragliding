@@ -7,7 +7,8 @@ import { createPortal } from "react-dom";
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
-import { spotName } from "@/lib/baobay/spots";
+import { normalizeSpot, spotName } from "@/lib/baobay/spots";
+import { DateBar } from "./DateBar";
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
@@ -3568,8 +3569,8 @@ function BookingDayTable({
 
 
 export function BookingTodayBanner({
-  spot,
-  date,
+  spot: spotProp,
+  date: dateProp,
   collapsible = false,
   defaultOpen = false,
 }: {
@@ -3635,13 +3636,28 @@ export function BookingTodayBanner({
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   /** Toàn màn hình (desktop soát sổ): phủ kín cửa sổ, ✕ để quay lại trang. */
   const [fullScreen, setFullScreen] = useState(false);
+  /**
+   * TOÀN MÀN HÌNH được chọn NGÀY và ĐIỂM BAY ngay trên sổ (luật chủ 04/09) —
+   * soát nhiều ngày liền mà không phải thoát ra đổi ở thanh ngày của trang.
+   * Chỉ là lựa chọn tạm trong lúc phóng to: thoát ra là về đúng ngày/điểm của
+   * trang, không đụng tới thanh ngày bên ngoài.
+   */
+  const [fsDate, setFsDate] = useState<string | null>(null);
+  const [fsSpot, setFsSpot] = useState<string | null>(null);
+  const date = fullScreen && fsDate ? fsDate : dateProp;
+  const spot = fullScreen && fsSpot ? fsSpot : spotProp;
+  const spotOptions = (user?.spots ?? []).map(normalizeSpot);
   /** Thẻ booking ĐÃ ĐÓNG đang xổ dải "⋯ Thêm" (chế độ ☰ Thẻ — cùng luật với bảng). */
   const [closedMoreId, setClosedMoreId] = useState<string>("");
   /** Esc cũng co sổ về như cũ. */
   useEffect(() => {
     if (!fullScreen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullScreen(false);
+      if (e.key === "Escape") {
+        setFullScreen(false);
+        setFsDate(null);
+        setFsSpot(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     // Khoá cuộn trang phía sau — chỉ sổ booking cuộn, trang dưới đứng yên
@@ -4184,6 +4200,9 @@ export function BookingTodayBanner({
         e.preventDefault();
         e.stopPropagation();
         setFullScreen((v) => !v);
+        // Thoát/vào đều bắt đầu lại từ ngày + điểm của trang
+        setFsDate(null);
+        setFsSpot(null);
       }}
       className={
         fullScreen
@@ -5035,9 +5054,21 @@ export function BookingTodayBanner({
     return createPortal(
       <div className="fixed inset-x-0 top-0 z-[100] h-[100dvh] overflow-auto bg-sky-50 px-3 pb-3">
         {/* Thanh tiêu đề DÍNH TRÊN — cuộn xuống bao xa vẫn thấy nút co về */}
-        <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 border-b border-sky-200 bg-sky-50 px-3 py-2">
-          <h2 className="text-sm font-bold text-sky-900">{title}</h2>
-          {fullScreenButton}
+        <div className="sticky top-0 z-10 -mx-3 border-b border-sky-200 bg-sky-50 px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-sky-900">{title}</h2>
+            {fullScreenButton}
+          </div>
+          {/* Chọn ngày + điểm bay ngay trong sổ — cùng thanh với trang cho quen tay */}
+          <div className="mt-1.5">
+            <DateBar
+              date={date}
+              onChange={(next) => setFsDate(next)}
+              spot={spot}
+              spotOptions={spotOptions.length ? spotOptions : [normalizeSpot(spot)]}
+              onSpotChange={(next) => setFsSpot(next)}
+            />
+          </div>
         </div>
         {body}
       </div>,
