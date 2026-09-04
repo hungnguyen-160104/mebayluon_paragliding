@@ -3102,6 +3102,7 @@ function BookingDayTable({
   renderMovedActions,
   renderMore,
   renderInsurance,
+  tall = false,
 }: {
   open: BookingDTO[];
   closed: BookingDTO[];
@@ -3120,6 +3121,8 @@ function BookingDayTable({
   renderMore?: (b: BookingDTO, close?: () => void) => ReactNode;
   /** Ô bảo hiểm (nhập + quét giấy tờ) — bấm thẳng số ở cột BH là xổ, không qua "Thêm". */
   renderInsurance?: (b: BookingDTO) => ReactNode;
+  /** Đang toàn màn hình — bảng ăn hết chiều cao cửa sổ thay vì cụt ở 72%. */
+  tall?: boolean;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
@@ -3212,7 +3215,15 @@ function BookingDayTable({
   );
   const k = (n: number) => (n ? `${Math.round(n / 1000).toLocaleString("vi-VN")}k` : "—");
   return (
-    <div className="mt-2 max-h-[72vh] overflow-auto rounded-xl border border-slate-200 bg-white">
+    <div
+      className={
+        "mt-2 overflow-auto rounded-xl border border-slate-200 bg-white " +
+        /* Trong trang: cao tối đa 72% màn hình, cuộn trong khung. Toàn màn hình:
+           ăn hết chiều cao còn lại (trừ tiêu đề + dải công cụ + chú thích đáy),
+           không thì bảng vẫn cụt ở 72% và đáy trống một dải (chuyện thật 04/09). */
+        (tall ? "max-h-[calc(100dvh-170px)]" : "max-h-[72vh]")
+      }
+    >
       <table className="min-w-full border-collapse text-[13px]">
         <thead className="sticky top-0 z-10">
           <tr>
@@ -4866,6 +4877,7 @@ export function BookingTodayBanner({
           Grid gán ô theo THỨ TỰ: dòng nở chỉ đẩy dọc, không ai đổi cột. */}
       {viewMode === "table" ? (
         <BookingDayTable
+          tall={fullScreen}
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
@@ -5021,7 +5033,7 @@ export function BookingTodayBanner({
      * Ra ngoài body thì inset-0 phủ đúng cả cửa sổ.
      */
     return createPortal(
-      <div className="fixed inset-0 z-[100] overflow-auto bg-sky-50 px-3 pb-3">
+      <div className="fixed inset-x-0 top-0 z-[100] h-[100dvh] overflow-auto bg-sky-50 px-3 pb-3">
         {/* Thanh tiêu đề DÍNH TRÊN — cuộn xuống bao xa vẫn thấy nút co về */}
         <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 border-b border-sky-200 bg-sky-50 px-3 py-2">
           <h2 className="text-sm font-bold text-sky-900">{title}</h2>
