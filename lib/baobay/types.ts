@@ -179,6 +179,8 @@ export type DispatcherReportDTO = {
   issuedRanges: IssuedRangeDTO[];
   cancelledCount: number;
   cancelledCodes: string[];
+  /** Mã vé thu hồi lẻ (ghi nhầm/vé trả ngoài nhóm). */
+  recalledCodes: string[];
   cancelledEntries: CancelEntryDTO[];
   /** HÀ NỘI: nhóm KHÁCH huỷ/dời (tên, mã book, số khách…) — nguồn cho kế toán xác nhận. */
   cancelledGuestEntries: CancelGuestDTO[];

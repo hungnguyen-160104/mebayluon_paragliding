@@ -60,6 +60,8 @@ type FormState = {
   guestCount: number;
   ticketsIssued: number;
   ticketsReturned: number;
+  /** Mã vé thu hồi LẺ: ghi nhầm seri, vé khách trả không thuộc nhóm huỷ/dời. */
+  recalledCodesText: string;
   issuedRanges: RangeRow[];
   cancelledEntries: CancelRow[];
   rescheduledEntries: RescheduleEntryRow[];
@@ -86,6 +88,7 @@ const EMPTY_FORM: FormState = {
   guestCount: 0,
   ticketsIssued: 0,
   ticketsReturned: 0,
+  recalledCodesText: "",
   issuedRanges: [{ from: "", to: "" }],
   cancelledEntries: [{ codesText: "", reason: "", contactName: "", note: "" }],
   rescheduledEntries: [{ codesText: "", toDate: "", reason: "", contactName: "", phone: "", note: "" }],
@@ -140,6 +143,7 @@ function fromReport(r: DispatcherReportDTO): FormState {
     guestCount: r.guestCount,
     ticketsIssued: r.ticketsIssued,
     ticketsReturned: r.ticketsReturned,
+    recalledCodesText: (r.recalledCodes ?? []).join(", "),
     issuedRanges: toRangeRows(r.issuedRanges),
     cancelledEntries: cancelled.length ? cancelled : EMPTY_FORM.cancelledEntries,
     rescheduledEntries: rescheduled.length ? rescheduled : EMPTY_FORM.rescheduledEntries,
@@ -314,11 +318,17 @@ export default function DispatcherReportPage() {
     () => [...new Set(form.cancelledEntries.flatMap((e) => parseTicketCodeList(e.codesText).codes))],
     [form.cancelledEntries],
   );
-  const rescheduledCodes = useMemo(
-    () => form.rescheduledEntries.flatMap((e) => parseTicketCodeList(e.codesText).codes),
-    [form.rescheduledEntries],
+  /** Mã vé nhóm dời = vé MANG THEO (đi cùng khách sang ngày mới) — không phải thu hồi. */
+
+  /**
+   * VÉ THU HỒI (luật chủ 04/09) = mã huỷ + mã thu hồi lẻ (ghi nhầm/vé trả).
+   * Vé khách dời MANG THEO không phải thu về — nó đi cùng khách sang ngày mới.
+   */
+  const recalledExtra = useMemo(
+    () => parseTicketCodeList(form.recalledCodesText).codes.filter((c) => !cancelledCodes.includes(c)),
+    [form.recalledCodesText, cancelledCodes],
   );
-  const returned = cancelledCodes.length + rescheduledCodes.length;
+  const returned = cancelledCodes.length + recalledExtra.length;
 
   const loadDay = useCallback(async (targetDate: string) => {
     if (!spot) return;
@@ -612,8 +622,25 @@ export default function DispatcherReportPage() {
             <Field label="Số vé xuất ra" hint="Tự đếm theo dải mã vé bên dưới">
               <CountInput value={form.ticketsIssued} onChange={(v) => set("ticketsIssued", v)} max={5000} />
             </Field>
-            <Field label="Số vé thu về" hint="Vé huỷ + vé dời lịch">
+            <Field label="Số vé thu về" hint="Vé ĐÃ XUẤT bị thu hồi: huỷ trả vé, ghi nhầm seri, dời trả vé. Vé khách dời MANG THEO không tính.">
               <CountInput value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
+            </Field>
+          </div>
+
+          <div className="mt-3">
+            <Field
+              label="Mã vé thu hồi lẻ"
+              hint="Ghi nhầm seri (VD 0727) hoặc khách trả vé ngoài nhóm huỷ/dời — nhập mã vào đây để bộ đếm loại vé đó"
+            >
+              <TextInput
+                value={form.recalledCodesText}
+                onChange={(e) => set("recalledCodesText", e.target.value.toUpperCase())}
+                placeholder="MBL0727 MBL0731…"
+                autoCapitalize="characters"
+                spellCheck={false}
+                disabled={locked}
+                className="h-10 rounded-lg text-sm"
+              />
             </Field>
           </div>
 
@@ -805,7 +832,7 @@ export default function DispatcherReportPage() {
 
           {!noTickets && (
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Readout label="Huỷ + dời lịch" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
+            <Readout label="Mã thu hồi (huỷ + lẻ)" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
             <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
           </div>
           )}
@@ -813,7 +840,7 @@ export default function DispatcherReportPage() {
           {returnMismatch && !locked && (
             <div className="mt-2">
               <Banner tone="warning">
-                Số vé thu về ({form.ticketsReturned}) khác tổng huỷ + dời lịch ({returned}).
+                Số vé thu về ({form.ticketsReturned}) khác tổng mã thu hồi ({cancelledCodes.length} mã huỷ + {recalledExtra.length} thu hồi lẻ = {returned}). Vé khách dời MANG THEO không tính là thu về.
                 <div className="mt-2">
                   <Button
                     type="button"

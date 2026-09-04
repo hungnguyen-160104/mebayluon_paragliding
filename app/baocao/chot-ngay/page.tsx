@@ -1076,7 +1076,9 @@ function DailyCloseInner() {
                   )}
                 </ServiceBox>
 
-                <ServiceBox tone="returned" label="Số vé thu hồi (huỷ + dời)">
+                {/* LUẬT CHỦ 04/09: thu hồi = vé ĐÃ XUẤT bị thu về (huỷ trả vé, ghi nhầm,
+                    dời trả vé) — vé khách dời MANG THEO không tính; đếm khách tách riêng. */}
+                <ServiceBox tone="returned" label="Số vé thu hồi (vé đã xuất bị thu về)">
                   <CountInput compact value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
@@ -1085,7 +1087,7 @@ function DailyCloseInner() {
                 {/* Tên phải nói rõ ĐƠN VỊ: ô này đếm VÉ và nằm trong phép tính
                     "vé thu hồi = huỷ + dời". Để trống chữ "vé" thì thấy số 0
                     bên cạnh dòng "5 khách dời" là tưởng máy bỏ sót. */}
-                <ServiceBox tone="moved" label="Vé dời lịch">
+                <ServiceBox tone="moved" label="Khách dời lịch">
                   <CountInput compact value={form.rescheduledCount} onChange={(v) => set("rescheduledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.rescheduledCount} mine={form.rescheduledCount}
                     onTake={locked ? undefined : (v) => set("rescheduledCount", v)} />
@@ -1132,7 +1134,7 @@ function DailyCloseInner() {
                 {/* Ô này đếm theo VÉ và bị ràng vào phép tính "vé thu hồi =
                     huỷ + dời" — KHÔNG phải cặp với hai ô đếm khách bên dưới,
                     nên tên phải nói rõ đơn vị kẻo bị đem cộng nhầm. */}
-                <ServiceBox tone="cancelled" label="Vé huỷ">
+                <ServiceBox tone="cancelled" label="Khách huỷ">
                   <CountInput compact value={form.cancelledCount} onChange={(v) => set("cancelledCount", v)} max={5000} />
                   <Compare label="quầy/điều phối báo" value={suggest?.cancelledCount} mine={form.cancelledCount}
                     onTake={locked ? undefined : (v) => set("cancelledCount", v)} />

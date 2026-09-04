@@ -227,6 +227,8 @@ export const dispatcherReportSchema = z.object({
   guestCount: count(5_000),
   ticketsIssued: count(5_000),
   ticketsReturned: count(5_000),
+  /** Mã vé thu hồi LẺ: ghi nhầm seri, vé trả không thuộc nhóm huỷ/dời nào. */
+  recalledCodesText: text(20_000),
   issuedRanges: z.array(rangeInput).max(20, "Tối đa 20 dải mã một ngày").default([]),
   cancelledEntries: z.array(cancelEntryInput).max(200).default([]),
   cancelledGuestEntries: cancelledGuestList,

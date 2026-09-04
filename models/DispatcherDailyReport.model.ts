@@ -48,6 +48,8 @@ export interface IDispatcherDailyReport {
   cancelledCount: number;
   /** Bản phẳng (mọi mã huỷ) — bộ đối chiếu và Sheets dùng bản này. */
   cancelledCodes: string[];
+  /** Mã vé thu hồi LẺ (ghi nhầm, vé trả ngoài nhóm) — cùng vai "đã có chủ" với mã huỷ. */
+  recalledCodes: string[];
   /** Bản chi tiết theo nhóm đoàn: mã – lý do – tên liên hệ. */
   cancelledEntries: CancelEntryDTO[];
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
@@ -236,6 +238,7 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
 
     cancelledCount: { type: Number, default: 0, min: 0 },
     cancelledCodes: { type: [String], default: [] },
+    recalledCodes: { type: [String], default: [] },
     cancelledEntries: { type: [CancelEntrySchema], default: [] },
     cancelledGuestEntries: { type: [CancelGuestSchema], default: [] },
     rescheduledGuestEntries: { type: [RescheduleGuestSchema], default: [] },

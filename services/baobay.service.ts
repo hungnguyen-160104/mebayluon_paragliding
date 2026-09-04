@@ -2111,10 +2111,21 @@ export async function upsertDispatcherReport(
     if (!e.toDate) warnings.push(`Nhóm khách dời "${e.name || "?"}" chưa ghi dời sang ngày nào`);
   }
 
-  // HN đếm theo đầu KHÁCH trong các nhóm; điểm có vé đếm theo mã
-  const cancelledCount = noTickets
-    ? cancelledGuestEntries.reduce((a, e) => a + (e.guests || 0), 0)
-    : cancelledCodesAll.length;
+  /**
+   * KHÁCH HUỶ đếm theo ĐẦU NGƯỜI ở mọi điểm (luật chủ 04/09): "Vé huỷ" đổi
+   * thành "Khách huỷ" — khách chưa xuất vé vẫn là khách huỷ. Nhóm chỉ khai
+   * theo mã (không ghi số khách) thì lấy số mã làm số khách gần đúng.
+   */
+  const cancelledCount =
+    cancelledGuestEntries.reduce((a, e) => a + Math.max(e.guests || 0, noTickets ? 0 : e.codes.length), 0) +
+    (noTickets ? 0 : cancelledEntries.reduce((a, e) => a + e.codes.length, 0));
+
+  /** Mã vé thu hồi LẺ: ghi nhầm seri, vé trả không thuộc nhóm huỷ/dời nào. */
+  const recalledParsed = parseTicketCodeList(noTickets ? "" : ((input as { recalledCodesText?: string }).recalledCodesText ?? ""));
+  if (recalledParsed.invalid.length) {
+    warnings.push(`Mã vé thu hồi: bỏ qua cụm không đọc được "${recalledParsed.invalid.slice(0, 3).join(", ")}"`);
+  }
+  const recalledCodes = [...new Set(recalledParsed.codes)].filter((c) => !cancelledCodesAll.includes(c));
 
   const rescheduledEntries: RescheduleEntryDTO[] = [];
   const rescheduled: RescheduledDTO[] = [];
@@ -2169,10 +2180,15 @@ export async function upsertDispatcherReport(
     }))
     .filter((e) => e.amount > 0 || e.content);
 
-  const returned = cancelledCount + rescheduled.length;
+  /**
+   * VÉ THU HỒI = mã huỷ có vé + mã thu hồi lẻ (ghi nhầm/vé trả). Vé khách dời
+   * MANG THEO không phải thu hồi — nó đi cùng khách sang ngày mới (luật chủ
+   * 04/09); khách dời TRẢ vé thì quầy ghi mã vào ô thu hồi lẻ.
+   */
+  const returned = cancelledCodesAll.length + recalledCodes.length;
   if (!noTickets && input.ticketsReturned && input.ticketsReturned !== returned) {
     warnings.push(
-      `Số vé thu về đã khai (${input.ticketsReturned}) khác tổng huỷ + dời lịch (${cancelledCount} + ${rescheduled.length} = ${returned}).`,
+      `Số vé thu về đã khai (${input.ticketsReturned}) khác tổng mã thu hồi (${cancelledCodesAll.length} mã huỷ + ${recalledCodes.length} mã thu hồi lẻ = ${returned}). Vé khách dời MANG THEO không tính là thu về.`,
     );
   }
 
@@ -2189,11 +2205,17 @@ export async function upsertDispatcherReport(
         issuedRanges: noTickets ? [] : ranges,
         cancelledCount,
         cancelledCodes: cancelledCodesAll,
+        recalledCodes,
         cancelledEntries,
         cancelledGuestEntries,
-        rescheduledCount: noTickets
-          ? rescheduledGuestEntries.reduce((a, e) => a + (e.guests || 0), 0)
-          : rescheduled.length,
+        /**
+         * KHÁCH DỜI đếm theo ĐẦU NGƯỜI (luật chủ 04/09): khách chưa xuất vé
+         * vẫn dời; khách có vé thường MANG THEO vé (không phải thu hồi).
+         * Nhóm chỉ khai mã thì lấy số mã làm số khách gần đúng.
+         */
+        rescheduledCount:
+          rescheduledGuestEntries.reduce((a, e) => a + Math.max(e.guests || 0, noTickets ? 0 : e.codes.length), 0) +
+          (noTickets ? 0 : rescheduledEntries.reduce((a, e) => a + e.codes.length, 0)),
         rescheduled,
         rescheduledEntries,
         rescheduledGuestEntries,
@@ -2350,6 +2372,7 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     issuedRanges: doc.issuedRanges ?? [],
     cancelledCount: doc.cancelledCount ?? 0,
     cancelledCodes: doc.cancelledCodes ?? [],
+    recalledCodes: doc.recalledCodes ?? [],
     cancelledEntries: doc.cancelledEntries ?? [],
     cancelledGuestEntries: doc.cancelledGuestEntries ?? [],
     rescheduledGuestEntries: doc.rescheduledGuestEntries ?? [],
@@ -8749,7 +8772,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 
   const sum = <T>(list: T[], pick: (x: T) => number) => list.reduce((a, x) => a + (pick(x) || 0), 0);
 
-  const dispatcherCancelledCodes = dispatchers.flatMap((d) => (d.cancelledCodes ?? []) as string[]);
+  // Mã thu hồi lẻ (ghi nhầm/vé trả) đi cùng mã huỷ vào ô "mã vé thu hồi" của bản chốt
+  const dispatcherCancelledCodes = dispatchers.flatMap((d) => [...((d.cancelledCodes ?? []) as string[]), ...((d.recalledCodes ?? []) as string[])]);
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => (b.cancelTicketCodes ?? []) as string[]);
   const cancelledCodes = [...new Set([...dispatcherCancelledCodes, ...bookingCancelledCodes])];
 
@@ -10195,10 +10219,10 @@ export async function getReconcile(
         .select("date ticketCodes ppgCodes")
         .lean<any[]>(),
       AccountantDailyClose.find({ spot, date: { $in: futureDates } })
-        .select("date cancelledCodes rescheduled")
+        .select("date cancelledCodes recalledCodes rescheduled")
         .lean<any[]>(),
       DispatcherDailyReport.find({ spot, date: { $in: futureDates } })
-        .select("date cancelledCodes rescheduled")
+        .select("date cancelledCodes recalledCodes rescheduled")
         .lean<any[]>(),
       BaobayBooking.find({ spot, flightDate: { $in: futureDates }, cancelTicketCodes: { $exists: true, $ne: [] } })
         .select("flightDate cancelTicketCodes rescheduledFrom")
@@ -10238,7 +10262,7 @@ export async function getReconcile(
      */
     const globalRecalled = [
       ...pastCloses.flatMap((c: any) => c.cancelledCodes ?? []),
-      ...pastDispatchers.flatMap((x: any) => x.cancelledCodes ?? []),
+      ...pastDispatchers.flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.recalledCodes ?? [])]),
       ...pastCancelBookings.flatMap((b: any) => b.cancelTicketCodes ?? []),
     ];
 
@@ -10272,7 +10296,7 @@ export async function getReconcile(
           usedCodes: [
             ...pastPilots.filter((p: any) => p.date === d).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
             ...(dayClose?.cancelledCodes ?? []),
-            ...dayDisp.flatMap((x: any) => x.cancelledCodes ?? []),
+            ...dayDisp.flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.recalledCodes ?? [])]),
             ...moved.filter((r: any) => r.toDate !== date).map((r: any) => r.code),
             ...pastCancelBookings.filter((b: any) => b.flightDate === d).flatMap((b: any) => b.cancelTicketCodes ?? []),
             ...globalRecalled,
@@ -10299,7 +10323,7 @@ export async function getReconcile(
       nextDayCarried = [
         ...futPilots.filter(linked).flatMap((p: any) => [...(p.ticketCodes ?? []), ...(p.ppgCodes ?? [])]),
         ...futCloses.filter(linked).flatMap((c: any) => [...(c.cancelledCodes ?? []), ...(c.rescheduled ?? []).map((r: any) => r.code)]),
-        ...futDispatchers.filter(linked).flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.rescheduled ?? []).map((r: any) => r.code)]),
+        ...futDispatchers.filter(linked).flatMap((x: any) => [...(x.cancelledCodes ?? []), ...(x.recalledCodes ?? []), ...(x.rescheduled ?? []).map((r: any) => r.code)]),
         ...futCancelBookings.filter(linked).flatMap((b: any) => b.cancelTicketCodes ?? []),
       ]
         .map((c: any) => String(c ?? "").trim().toUpperCase())
@@ -10344,7 +10368,8 @@ export async function getReconcile(
       ticketsIssued: d.ticketsIssued ?? 0,
       ticketsReturned: d.ticketsReturned ?? 0,
       issuedRanges: d.issuedRanges ?? [],
-      cancelledCodes: d.cancelledCodes ?? [],
+      // Mã thu hồi lẻ (ghi nhầm/vé trả) cùng vai với mã huỷ trong mọi phép soát
+      cancelledCodes: [...(d.cancelledCodes ?? []), ...(d.recalledCodes ?? [])],
       rescheduled: d.rescheduled ?? [],
       flycam: d.flycam ?? 0,
       flycamCodes: d.flycamCodes ?? [],
