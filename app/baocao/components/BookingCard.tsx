@@ -33,6 +33,7 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
+import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
 /**
@@ -2224,7 +2225,7 @@ function CollectMoneyControl({
   }
 
   return (
-    <div className="flex w-60 flex-col gap-1 rounded-lg border border-rose-300 bg-rose-50/60 p-1.5">
+    <div className="flex w-60 flex-col gap-1 whitespace-normal rounded-lg border border-rose-300 bg-rose-50/60 p-1.5 text-left">
       {/* ĐANG THU CHO AI — bảng cũ chỉ có ô số tiền nên rất dễ gõ nhầm sang
           booking bên cạnh (đã xảy ra: một mã CK vào hai booking). */}
       <div className="rounded-lg bg-rose-600 px-2 py-1 text-[11px] font-bold leading-tight text-white">
@@ -2800,6 +2801,13 @@ function moneyK(n: number): string {
  */
 function BookingDetailControl({ spot, booking: b }: { spot: string; booking: BookingDTO }) {
   const [open, setOpen] = useState(false);
+  /**
+   * TRUY VẾT (luật chủ 04/09): ai lập, ai sửa gì, thêm/bớt dịch vụ, ai thu
+   * TM/CK, tách nhóm, dời, huỷ, khoá… — máy chủ ghép bản ghi + nhật ký bất biến
+   * (lib/baobay/booking-history.ts). Tải khi mở phiếu, không tải sẵn cho cả sổ.
+   */
+  const [history, setHistory] = useState<{ events: HistoryEvent[]; logCount: number } | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2808,6 +2816,27 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    setHistory(null);
+    setHistoryError(null);
+    apiGet<{ events: HistoryEvent[]; logCount: number }>(`/api/baocao/booking/history?spot=${spot}&id=${b.id}`)
+      .then((r) => alive && setHistory(r))
+      .catch((err) => alive && setHistoryError(err instanceof Error ? err.message : "Không tải được lịch sử"));
+    return () => {
+      alive = false;
+    };
+  }, [open, spot, b.id]);
+  const TONE_DOT: Record<HistoryTone, string> = {
+    create: "bg-sky-500",
+    money: "bg-emerald-500",
+    service: "bg-indigo-500",
+    status: "bg-amber-500",
+    audit: "bg-violet-500",
+    info: "bg-slate-400",
+    warn: "bg-rose-500",
+  };
 
   type Line = { label: string; calc?: string; amount: number; tone?: "minus" | "muted" };
   const build = (): { lines: Line[]; computed: number } => {
@@ -3028,7 +3057,7 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
               </div>
 
               {/* Tiền đã trả · còn thu */}
-              <div className="rounded-b-2xl border-t border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-700">
+              <div className="border-t border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-700">
                 {(b.collected ?? []).length > 0 ? (
                   (b.collected ?? []).map((c, i) => (
                     <div key={i} className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5">
@@ -3085,6 +3114,38 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
                     {(b.overpaid || 0) > 0 ? moneyK(b.overpaid) : (b.remaining || 0) > 0 ? moneyK(b.remaining) : "✓ đã thu đủ"}
                   </span>
                 </div>
+              </div>
+
+              {/* TRUY VẾT — dòng thời gian: ai làm gì, lúc nào */}
+              <div className="rounded-b-2xl border-t border-slate-300 bg-white px-4 py-2 text-xs">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-bold text-slate-800">🕵 Truy vết</span>
+                  {history && (
+                    <span className="text-[10px] text-slate-400">
+                      {history.events.length} sự kiện
+                      {history.logCount === 0 ? " · nhật ký máy chỉ có từ 02/09/2026" : ""}
+                    </span>
+                  )}
+                </div>
+                {!history && !historyError && <div className="py-1 text-slate-400">đang tải…</div>}
+                {historyError && <div className="py-1 font-medium text-rose-700">{historyError}</div>}
+                {history && (
+                  <ol className="max-h-[38vh] overflow-auto">
+                    {history.events.map((e, i) => (
+                      <li key={i} className="grid grid-cols-[auto_1fr] gap-x-2 border-b border-dashed border-slate-100 py-1 last:border-0">
+                        <span className="flex items-start gap-1.5 whitespace-nowrap pt-0.5 tabular-nums text-slate-500">
+                          <span className={"mt-1 inline-block h-2 w-2 shrink-0 rounded-full " + TONE_DOT[e.tone]} />
+                          {e.at ? stampVN(e.at) : "không rõ giờ"}
+                        </span>
+                        <span className="min-w-0">
+                          <span className={"font-medium " + (e.tone === "warn" ? "text-rose-700" : "text-slate-800")}>{e.text}</span>
+                          {e.by && <span className="ml-1 font-semibold text-sky-700">— {e.by}</span>}
+                          {e.detail && <div className="break-words text-[11px] text-slate-500">{e.detail}</div>}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </div>
             </div>
           </div>,
@@ -3488,7 +3549,7 @@ function BookingDayTable({
                   })()}
                   {/* 💵 Thu tiền ngay dưới số còn thiếu — khỏi với sang cột thao tác */}
                   {!r.moved && renderMoneyCell?.(b) != null && (
-                    <div className="mt-0.5 flex justify-end [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                    <div className="mt-0.5 flex justify-end whitespace-normal [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
                       {renderMoneyCell(b)}
                     </div>
                   )}
