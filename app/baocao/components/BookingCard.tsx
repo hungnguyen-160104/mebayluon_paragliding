@@ -2959,8 +2959,11 @@ function BookingDayTable({
                     </div>
                   )}
                   {r.moved && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800">
-                      ↪ dời → {formatDateKeyVN(b.flightDate).slice(0, 5)}
+                    <div
+                      className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800"
+                      title={`Khách đã rời sổ hôm nay, booking hiện thuộc ngày ${formatDateKeyVN(b.flightDate)} — thao tác (sửa/thu/khoá) làm ở sổ ngày đó nên dòng này không có nút`}
+                    >
+                      ↪ ĐÃ DỜI ĐI, sang {formatDateKeyVN(b.flightDate).slice(0, 5)}
                     </div>
                   )}
                   {!r.moved && b.rescheduledFrom.length > 0 && (
