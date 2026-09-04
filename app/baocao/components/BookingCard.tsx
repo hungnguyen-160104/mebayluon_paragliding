@@ -2783,10 +2783,7 @@ function BookingDayTable({
   open,
   closed,
   movedOut,
-  renderQuickMoney,
-  renderQuickTicket,
-  renderQuickFlown,
-  renderQuickContact,
+  renderQuick,
   renderClosedQuick,
   renderMovedActions,
   renderMore,
@@ -2796,17 +2793,12 @@ function BookingDayTable({
   closed: BookingDTO[];
   movedOut: BookingDTO[];
   /**
-   * Nút nhanh trên TỪNG DÒNG bảng, xếp 2 hàng cố định (luật chủ 04/09):
-   * hàng trên Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ.
+   * Nút nhanh của booking CHƯA BAY — CÙNG một hàm với thẻ (luật chủ 04/09:
+   * bảng và thẻ chung nguyên lý nút): [Thu tiền nếu còn thu] · Xuất vé · Đã bay
+   * · Liên hệ, xổ hàng và tự xuống dòng giữa các nút, chữ trong nút không gãy.
    */
-  renderQuickMoney?: (b: BookingDTO) => ReactNode;
-  /** Hàng 1: nút Xuất vé (dài, kèm by ai) đứng một mình. */
-  renderQuickTicket?: (b: BookingDTO) => ReactNode;
-  /** Hàng 2 (cùng Thu tiền + ⋯ Thêm): nút Đã bay. */
-  renderQuickFlown?: (b: BookingDTO) => ReactNode;
-  /** Hàng 3: nút "☎ Đã liên hệ" — dài nên đứng một mình cho khỏi phá hàng. */
-  renderQuickContact?: (b: BookingDTO) => ReactNode;
-  /** Booking đã bay/huỷ: "↩ Chưa bay"/"↩ Bay lại" (+ Khoá) đứng cạnh ⋯ Thêm. */
+  renderQuick?: (b: BookingDTO) => ReactNode;
+  /** Booking đã bay/huỷ: [Thu tiền nếu còn thu] · "↩ Chưa bay" + Khoá / "↩ Bay lại" — xếp cột trước ⋯ Thêm. */
   renderClosedQuick?: (b: BookingDTO) => ReactNode;
   /** Dòng ĐÃ DỜI ĐI: nút hoàn tác kéo khách về lại sổ ngày này. */
   renderMovedActions?: (b: BookingDTO) => ReactNode;
@@ -3005,50 +2997,40 @@ function BookingDayTable({
                 </td>
                 <td className="border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
-                      Nút nhanh thu nhỏ, xếp 2 HÀNG CỐ ĐỊNH (luật chủ 04/09): hàng trên
-                      Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
+                      Nút nhanh thu nhỏ, CÙNG bộ nút và thứ tự với thẻ (luật chủ 04/09). */}
                   {r.moved ? (
                     <div className="[&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
                       {renderMovedActions?.(b)}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-start gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
-                      {renderQuickTicket?.(b) != null && (
-                        <div className="flex flex-nowrap items-center gap-1">{renderQuickTicket(b)}</div>
-                      )}
-                      {/* Booking ĐÃ ĐÓNG (đã bay/huỷ) chỉ còn Chưa bay · Khoá · Thêm:
-                          xếp CỘT cho khỏi tốn bề ngang (luật chủ 04/09). */}
-                      <div
-                        className={
-                          b.status === "open"
-                            ? "flex flex-nowrap items-center gap-1"
-                            : "flex flex-col items-stretch gap-0.5 [&_button]:justify-center [&_button]:text-center"
-                        }
-                      >
-                        {renderQuickMoney?.(b)}
-                        {renderQuickFlown?.(b)}
-                        {renderClosedQuick?.(b)}
-                        {renderMore?.(b) != null && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedId((cur) => (cur === b.id ? "" : b.id));
-                              setInsuranceId("");
-                            }}
-                            className={
-                              "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
-                              (expandedId === b.id
-                                ? "border-sky-600 bg-sky-600 text-white"
-                                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
-                            }
-                            title="Xổ các chức năng còn lại: dời, huỷ, sửa, chia bill, khoá…"
-                          >
-                            ⋯ Thêm
-                          </button>
-                        )}
-                      </div>
-                      {renderQuickContact?.(b) != null && (
-                        <div className="flex flex-nowrap items-center gap-1">{renderQuickContact(b)}</div>
+                    <div
+                      className={
+                        "gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px] " +
+                        (b.status === "open"
+                          ? /* CHƯA BAY: hàng tự xuống dòng, đúng thứ tự như thẻ */
+                            "flex max-w-[240px] flex-wrap items-center"
+                          : /* ĐÃ BAY/HUỶ: chỉ còn 2–3 nút → xếp CỘT cho khỏi tốn bề ngang */
+                            "flex flex-col items-stretch [&_button]:justify-center [&_button]:text-center")
+                      }
+                    >
+                      {b.status === "open" ? renderQuick?.(b) : renderClosedQuick?.(b)}
+                      {renderMore?.(b) != null && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedId((cur) => (cur === b.id ? "" : b.id));
+                            setInsuranceId("");
+                          }}
+                          className={
+                            "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                            (expandedId === b.id
+                              ? "border-sky-600 bg-sky-600 text-white"
+                              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                          }
+                          title="Xổ các chức năng còn lại: dời, huỷ, sửa, chia bill, khoá…"
+                        >
+                          ⋯ Thêm
+                        </button>
                       )}
                     </div>
                   )}
@@ -3816,7 +3798,7 @@ export function BookingTodayBanner({
       <>
         {/* Đã bay mà CÒN THU: nút Thu tiền đứng đầu cột cho nhân viên bấm ngay,
             khỏi phải xổ ⋯ Thêm (luật chủ 04/09). Cùng luật với dải Thêm. */}
-        {(b.remaining ?? 0) > 0 && (!b.locked || canLock) && renderMoneyButton(b)}
+        {moneyOutside(b) && (!b.locked || canLock) && renderMoneyButton(b)}
         {(!b.locked || canLock) && (
           <Button
             type="button"
@@ -4136,8 +4118,29 @@ export function BookingTodayBanner({
       {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
     </Button>
   );
-  /** Nút "☎ Đã liên hệ" — tách riêng: trong bảng nó chiếm chỗ nên nằm hàng 3 một mình. */
   const renderContactButton = (b: BookingDTO) => <ContactNote spot={spot} booking={b} onDone={load} />;
+  /**
+   * LUẬT NÚT THU TIỀN (luật chủ 04/09, chung cho thẻ + bảng, chưa bay lẫn đã bay):
+   * còn phải thu → 💵 Thu tiền ĐỎ đứng NGOÀI, đầu cụm nút; đã thu đủ → cất vào
+   * ⋯ Thêm (vẫn thu thêm/sửa được nhưng không chiếm chỗ, không bấm nhầm).
+   */
+  const moneyOutside = (b: BookingDTO) => (b.remaining ?? 0) > 0;
+  /**
+   * BỘ NÚT NHANH của booking CHƯA BAY — một hàm cho cả thẻ lẫn bảng nên hai bên
+   * không thể lệch nhau: [Thu tiền nếu còn thu] · Xuất vé · Đã bay · Liên hệ.
+   * Đã khoá mà không phải kế toán → chỉ còn nút mở khoá.
+   */
+  const renderOpenQuick = (b: BookingDTO) =>
+    b.locked && !canLock ? (
+      lockButton(b)
+    ) : (
+      <>
+        {moneyOutside(b) && renderMoneyButton(b)}
+        {renderTicketButton(b)}
+        {renderFlownButton(b)}
+        {renderContactButton(b)}
+      </>
+    );
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
   const renderMoreMenu = (b: BookingDTO, alwaysOpen = false, onClose?: () => void) => (
                 <RowMenu
@@ -4154,6 +4157,8 @@ export function BookingTodayBanner({
                   tail={lockButton(b)}
                   extra={
                     <>
+                      {/* Đã thu đủ thì Thu tiền cất vào đây (luật moneyOutside) */}
+                      {!moneyOutside(b) && renderMoneyButton(b)}
                       {/* Mail báo khách TỰ ẨN khi không có gì phải báo — RowMenu
                           đã có sẵn một bản, bản extra này thay cho nút từng đứng
                           ngoài dòng (luật chủ 04/09: ngoài chỉ giữ 5 nút). */}
@@ -4226,7 +4231,8 @@ export function BookingTodayBanner({
           }}
         />
       )}
-      {(b.remaining ?? 0) > 0 && (!b.locked || canLock) && renderMoneyButton(b)}
+      {/* Đã thu đủ thì Thu tiền nằm đây; còn thu thì nó đứng ngoài (luật moneyOutside) */}
+      {!moneyOutside(b) && (!b.locked || canLock) && renderMoneyButton(b)}
       {/* Khoá luôn chốt ĐUÔI dải (luật chủ 04/09) */}
       {lockButton(b)}
     </div>
@@ -4236,16 +4242,12 @@ export function BookingTodayBanner({
     <>
             {moving?.id === b.id ? (
               renderMovingDialog(b)
-            ) : b.locked && !canLock ? (
-              /* ĐÃ KHOÁ: chỉ còn nút mở khoá của kế toán — cất hết nút sửa. */
-              <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
             ) : (
+              /* CÙNG bộ nút với dòng bảng (renderOpenQuick); đã khoá mà không
+                 phải kế toán thì chỉ còn nút mở khoá, không có ⋯ Thêm. */
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
-                {renderMoneyButton(b)}
-                {renderTicketButton(b)}
-                {renderFlownButton(b)}
-                {renderContactButton(b)}
-                {renderMoreMenu(b)}
+                {renderOpenQuick(b)}
+                {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
             )}
     </>
@@ -4544,22 +4546,7 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderQuickMoney={(b) =>
-            b.status !== "open" || moving?.id === b.id
-              ? null
-              : b.locked && !canLock
-                ? lockButton(b)
-                : renderMoneyButton(b)
-          }
-          renderQuickTicket={(b) =>
-            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderTicketButton(b)
-          }
-          renderQuickFlown={(b) =>
-            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderFlownButton(b)
-          }
-          renderQuickContact={(b) =>
-            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderContactButton(b)
-          }
+          renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b))}
           renderClosedQuick={(b) => renderClosedQuick(b)}
           renderMovedActions={(b) => renderMovedActions(b)}
           renderMore={(b, close) =>
