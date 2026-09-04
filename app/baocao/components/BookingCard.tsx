@@ -3108,8 +3108,35 @@ function BookingDayTable({
                     <span className="text-slate-500">{FLIGHT_KIND_SHORT[b.flightKind] || "PG"}</span>
                   )}
                 </td>
-                <td className="max-w-[120px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
+                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
                   {dichVu(b) || "—"}
+                  {/* Dịch vụ THÊM/BỚT tại bãi (đã cộng vào số trên) — kể riêng kèm
+                      người lập để phân biệt với đăng ký gốc (luật chủ 04/09) */}
+                  {(b.serviceChanges ?? []).map((c, ci) => {
+                    const bits = [
+                      c.items.flycam ? `${c.items.flycam}×flycam` : "",
+                      c.items.video360 ? `${c.items.video360}×360` : "",
+                      c.items.redFlag ? `${c.items.redFlag}🚩` : "",
+                      c.items.sunset ? `${c.items.sunset}🌅` : "",
+                      c.items.flagFlight ? `${c.items.flagFlight}🎌` : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    if (!bits) return null;
+                    return (
+                      <div
+                        key={ci}
+                        className={
+                          "whitespace-nowrap text-[10px] font-semibold " +
+                          (c.kind === "add" ? "text-indigo-700" : "text-rose-600")
+                        }
+                      >
+                        {c.kind === "add" ? "+" : "−"}
+                        {bits}
+                        {c.byName ? ` by ${c.byName}` : ""}
+                      </div>
+                    );
+                  })}
                 </td>
                 <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]">
                   <div className="break-words">{donOf(b) || "—"}</div>

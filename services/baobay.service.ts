@@ -4140,6 +4140,22 @@ export async function listBookings(
     const kb = String(c.bookingId);
     (collectsByBooking.get(kb) ?? collectsByBooking.set(kb, []).get(kb)!).push(c);
   }
+  /**
+   * Lệnh THÊM/BỚT dịch vụ tại bãi (chưa hoàn tác) — số trên booking đã cộng
+   * sẵn, nhưng bảng booking cần kể riêng "+1×360 by Duyên" để phân biệt phần
+   * phát sinh với đăng ký gốc (luật chủ 04/09).
+   */
+  const svcDocs = ids.length
+    ? await BaobayServiceChange.find({ bookingId: { $in: ids }, undoneAt: null })
+        .select("bookingId kind items createdByName createdAt")
+        .sort({ createdAt: 1 })
+        .lean<any[]>()
+    : [];
+  const svcByBooking = new Map<string, any[]>();
+  for (const c of svcDocs) {
+    const kb = String(c.bookingId);
+    (svcByBooking.get(kb) ?? svcByBooking.set(kb, []).get(kb)!).push(c);
+  }
   const withVerified = (b: any): BookingDTO => {
     const pool = [...(collectsByBooking.get(String(b._id)) ?? [])];
     const myPendingCollect =
@@ -4161,6 +4177,17 @@ export async function listBookings(
         collectorUsername: hit.collectorUsername || undefined,
       };
     });
+    dto.serviceChanges = (svcByBooking.get(String(b._id)) ?? []).map((c) => ({
+      kind: c.kind === "remove" ? ("remove" as const) : ("add" as const),
+      items: {
+        flycam: c.items?.flycam ?? 0,
+        video360: c.items?.video360 ?? 0,
+        redFlag: c.items?.redFlag ?? 0,
+        sunset: c.items?.sunset ?? 0,
+        flagFlight: c.items?.flagFlight ?? 0,
+      },
+      byName: c.createdByName || "",
+    }));
     return dto;
   };
 

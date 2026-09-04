@@ -416,6 +416,16 @@ export type BookingDTO = {
     /** Người đang giữ tiền (lệnh TM) — kế toán đổi được khi chia bill nhầm. */
     collectorUsername?: string;
   }>;
+  /**
+   * Lệnh THÊM/BỚT dịch vụ tại bãi (chưa hoàn tác) — số flycam/360… trên booking
+   * ĐÃ cộng sẵn các lệnh này; bảng booking kể riêng "+1×360 by Duyên" để phân
+   * biệt phần phát sinh với đăng ký gốc.
+   */
+  serviceChanges?: Array<{
+    kind: "add" | "remove";
+    items: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
+    byName: string;
+  }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
   locked: boolean;
   lockedBy?: string;
