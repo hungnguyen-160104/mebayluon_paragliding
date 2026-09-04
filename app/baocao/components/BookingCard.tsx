@@ -2954,17 +2954,19 @@ function BookingDayTable({
   open,
   closed,
   movedOut,
-  renderQuick,
+  renderQuickMoney,
+  renderQuickRest,
   renderMore,
 }: {
   open: BookingDTO[];
   closed: BookingDTO[];
   movedOut: BookingDTO[];
   /**
-   * 4 nút thường dùng (Thu tiền · Xuất vé · Đã bay · Ghi chú) đứng THẲNG trên
-   * từng dòng bảng (luật chủ 04/09); phần còn lại nằm sau nút "⋯ Thêm".
+   * Nút nhanh trên TỪNG DÒNG bảng, xếp 2 hàng cố định (luật chủ 04/09):
+   * hàng trên Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ.
    */
-  renderQuick?: (b: BookingDTO) => ReactNode;
+  renderQuickMoney?: (b: BookingDTO) => ReactNode;
+  renderQuickRest?: (b: BookingDTO) => ReactNode;
   /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
   renderMore?: (b: BookingDTO) => ReactNode;
 }) {
@@ -3090,7 +3092,13 @@ function BookingDayTable({
                     </div>
                   )}
                 </td>
-                <td className="border-b border-slate-100 px-2 py-1 text-right tabular-nums">{b.guestCount}</td>
+                <td className="border-b border-slate-100 px-2 py-1 text-right tabular-nums">
+                  {b.guestCount}
+                  {/* Huỷ bớt một phần đoàn — phải thấy ngay trên bảng */}
+                  {(b.cancelledGuests ?? 0) > 0 && (
+                    <div className="whitespace-nowrap text-[10px] font-semibold text-rose-600">huỷ {b.cancelledGuests}</div>
+                  )}
+                </td>
                 <td className="border-b border-slate-100 px-2 py-1">
                   {ppgOf(b) > 0 ? (
                     <span className="rounded bg-indigo-600 px-1 text-[10px] font-bold text-white">
@@ -3146,8 +3154,15 @@ function BookingDayTable({
                     );
                   })()}
                 </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums font-bold text-rose-700">
-                  {(b.remaining || 0) > 0 ? k(b.remaining || 0) : "✓"}
+                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums text-[12px]">
+                  {/* Nói THẲNG đủ hay thiếu (luật chủ 04/09), đừng bắt đoán dấu ✓ */}
+                  {(b.remaining || 0) > 0 ? (
+                    <span className="font-bold text-rose-700">còn thu {k(b.remaining || 0)}</span>
+                  ) : (b.totalAmount || 0) > 0 ? (
+                    <span className="font-bold text-emerald-700">✓ đã thu đủ</span>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[11px]">
                   {(() => {
@@ -3189,6 +3204,14 @@ function BookingDayTable({
                     {r.moved ? ` → ${formatDateKeyVN(b.flightDate).slice(0, 5)}` : ""}
                   </span>
                   {b.locked ? " 🔒" : ""}
+                  {/* Khách DỜI TỚI từ ngày khác (cả tách nhóm — chi tiết "2/5 khách
+                      dời từ…" máy đã ghi sẵn ở ô Ghi chú) */}
+                  {!r.moved && b.rescheduledFrom.length > 0 && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[10px] font-semibold text-amber-800">
+                      dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}
+                      {b.movedBy ? ` by ${b.movedBy}` : ""}
+                    </div>
+                  )}
                 </td>
                 <td className="max-w-[220px] min-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
                   <div className="break-words">{b.note || "—"}</div>
@@ -3204,25 +3227,30 @@ function BookingDayTable({
                 </td>
                 <td className="border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
-                      5 nút nhanh THU NHỎ và gói trong ~2 hàng (luật chủ 04/09): bề ngang
-                      cụm bị chặn max-w nên tự bẻ 3+2; từng nút vẫn cấm gãy chữ "Thu/tiền". */}
+                      Nút nhanh thu nhỏ, xếp 2 HÀNG CỐ ĐỊNH (luật chủ 04/09): hàng trên
+                      Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
                   {!r.moved && (
-                    <div className="flex max-w-[230px] flex-wrap items-center justify-end gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
-                      {renderQuick?.(b)}
-                      {renderMore?.(b) != null && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
-                          className={
-                            "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
-                            (expandedId === b.id
-                              ? "border-sky-600 bg-sky-600 text-white"
-                              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
-                          }
-                          title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
-                        >
-                          {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
-                        </button>
+                    <div className="flex flex-col items-end gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      <div className="flex flex-nowrap items-center gap-1">
+                        {renderQuickMoney?.(b)}
+                        {renderMore?.(b) != null && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                            className={
+                              "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                              (expandedId === b.id
+                                ? "border-sky-600 bg-sky-600 text-white"
+                                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                            }
+                            title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
+                          >
+                            {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
+                          </button>
+                        )}
+                      </div>
+                      {renderQuickRest?.(b) != null && (
+                        <div className="flex flex-nowrap items-center gap-1">{renderQuickRest(b)}</div>
                       )}
                     </div>
                   )}
@@ -3960,19 +3988,21 @@ export function BookingTodayBanner({
    * 4 NÚT THƯỜNG DÙNG (luật chủ 04/09): Thu tiền · Xuất vé · Đã bay · Ghi chú
    * — đứng thẳng trên dòng ở CẢ chế độ thẻ lẫn từng dòng của chế độ bảng.
    */
+  /** Nút THU TIỀN — tách riêng để bảng xếp nó cùng hàng với "⋯ Thêm". */
+  const renderMoneyButton = (b: BookingDTO) =>
+    /* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */
+    spot === "sapa" ? null : (
+      <CollectMoneyControl
+        spot={spot}
+        booking={b}
+        onDone={(msg) => {
+          setCollectDone(msg);
+          load();
+        }}
+      />
+    );
   const renderQuickButtons = (b: BookingDTO) => (
     <>
-                {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
-                {spot !== "sapa" && (
-                  <CollectMoneyControl
-                    spot={spot}
-                    booking={b}
-                    onDone={(msg) => {
-                      setCollectDone(msg);
-                      load();
-                    }}
-                  />
-                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -4052,6 +4082,7 @@ export function BookingTodayBanner({
               <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
             ) : (
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
+                {renderMoneyButton(b)}
                 {renderQuickButtons(b)}
                 {renderMoreMenu(b)}
               </div>
@@ -4376,12 +4407,15 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderQuick={(b) =>
+          renderQuickMoney={(b) =>
             b.status !== "open" || moving?.id === b.id
               ? null
               : b.locked && !canLock
                 ? lockButton(b)
-                : renderQuickButtons(b)
+                : renderMoneyButton(b)
+          }
+          renderQuickRest={(b) =>
+            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderQuickButtons(b)
           }
           renderMore={(b) =>
             b.status !== "open"
