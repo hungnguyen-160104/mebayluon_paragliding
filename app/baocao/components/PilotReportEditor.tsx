@@ -7,7 +7,7 @@ import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 import type { PilotReportDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
-import { apiGet, apiPost } from "./client-api";
+import { apiGet, apiPatch, apiPost } from "./client-api";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "./rows";
 import { Banner, Button, CollapseCard, CountInput, Field, InlineLoading, MoneyInput, ServiceBox, TextArea, TextInput } from "./ui";
 
@@ -309,8 +309,51 @@ function PilotRow({
         <div className="flex items-center gap-2">
           {report.latePenalty > 0 && (
             <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-800">
-              phạt {formatVND(report.latePenalty)}
+              phạt muộn {formatVND(report.latePenalty)}
             </span>
+          )}
+          {(report.errorPenalty ?? 0) > 0 && (
+            <span
+              className="rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white"
+              title={`${report.errorPenaltyReason || "lỗi báo cáo"}${report.errorPenaltyBy ? ` — ${report.errorPenaltyBy} gắn` : ""}`}
+            >
+              ⚑ lỗi BC {formatVND(report.errorPenalty ?? 0)}
+            </span>
+          )}
+          {/* PHẠT LỖI BÁO CÁO 200k (luật chủ 04/09) — kế toán gắn cờ khi báo cáo
+              sai (trùng mã, sai mã, khai thiếu/dư); bắt buộc ghi lý do. */}
+          {!locked && report.id && !report.id.startsWith("new-") && (
+            <Button
+              type="button"
+              variant="ghost"
+              className={
+                "h-8 px-2 text-xs font-semibold " +
+                ((report.errorPenalty ?? 0) > 0 ? "border-rose-400 bg-rose-50 text-rose-700" : "border-slate-300 bg-white text-slate-600")
+              }
+              title={(report.errorPenalty ?? 0) > 0 ? "Gỡ cờ phạt lỗi báo cáo" : "Gắn phạt 200k vì lỗi báo cáo (trùng/sai mã, khai thiếu…)"}
+              onClick={async () => {
+                const on = !((report.errorPenalty ?? 0) > 0);
+                let reason = "";
+                if (on) {
+                  const r = window.prompt("Phạt 200k lỗi báo cáo — ghi rõ lý do (phi công sẽ thấy):", "");
+                  if (r === null || !r.trim()) return;
+                  reason = r.trim();
+                } else if (!window.confirm("Gỡ cờ phạt lỗi báo cáo của ngày này?")) return;
+                try {
+                  await apiPatch(`/api/baocao/reports/pilot?spot=${spot}`, {
+                    date,
+                    targetUsername: report.username,
+                    on,
+                    reason,
+                  });
+                  onSaved();
+                } catch (err) {
+                  window.alert(err instanceof Error ? err.message : "Không đổi được cờ phạt");
+                }
+              }}
+            >
+              {(report.errorPenalty ?? 0) > 0 ? "⚑ Gỡ phạt lỗi" : "⚑ Phạt lỗi 200k"}
+            </Button>
           )}
           <span
             className={

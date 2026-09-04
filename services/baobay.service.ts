@@ -1109,6 +1109,44 @@ function dispatcherExpenseTotal(doc: {
 
 /** Tiền phạt mỗi lần phi công chốt báo cáo sau giờ quy định. */
 export const LATE_PENALTY_VND = 200_000;
+/** Phạt LỖI BÁO CÁO — kế toán gắn cờ khi báo cáo sai (trùng mã, sai mã, khai thiếu/dư…). */
+export const ERROR_PENALTY_VND = 200_000;
+
+/**
+ * KẾ TOÁN GẮN/GỠ CỜ PHẠT LỖI BÁO CÁO 200k trên báo cáo một phi công (luật chủ
+ * 04/09). Độc lập với phạt nộp muộn; bắt buộc ghi lý do khi gắn — phi công mở
+ * app phải biết mình bị phạt vì cái gì. Ngày kế toán đã chốt thì thôi.
+ */
+export async function setPilotErrorPenalty(
+  session: BaobaySession,
+  spotRaw: string,
+  date: string,
+  targetUsername: string,
+  on: boolean,
+  reason?: string,
+): Promise<PilotReportDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (await isDayClosed(spot, date)) throw new BaobayError("Ngày này kế toán đã chốt — gỡ khoá ngày trước", 400);
+  if (on && !(reason ?? "").trim()) throw new BaobayError("Gắn phạt lỗi báo cáo phải ghi rõ lý do", 400);
+
+  const doc = await PilotDailyReport.findOneAndUpdate(
+    { spot, date, username: normalizeUsername(targetUsername) },
+    {
+      $set: on
+        ? {
+            errorPenalty: ERROR_PENALTY_VND,
+            errorPenaltyReason: (reason ?? "").trim(),
+            errorPenaltyBy: session.name || session.username,
+            errorPenaltyAt: new Date(),
+          }
+        : { errorPenalty: 0, errorPenaltyReason: "", errorPenaltyBy: "", errorPenaltyAt: null },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw new BaobayError("Phi công này chưa có báo cáo ngày đó", 404);
+  return toPilotDTO(doc);
+}
 
 /**
  * Cấu hình lưu THEO ĐIỂM BAY: `key` của BaobaySetting chính là mã điểm bay.
@@ -1755,6 +1793,9 @@ function toPilotDTO(doc: any): PilotReportDTO {
     submittedAt: doc.submittedAt ? new Date(doc.submittedAt).toISOString() : undefined,
     lateSubmit: Boolean(doc.lateSubmit),
     latePenalty: doc.latePenalty ?? 0,
+    errorPenalty: doc.errorPenalty || 0,
+    errorPenaltyReason: doc.errorPenaltyReason || undefined,
+    errorPenaltyBy: doc.errorPenaltyBy || undefined,
     latePenaltyWaived: Boolean(doc.latePenaltyWaived),
     latePenaltyWaivedBy: doc.latePenaltyWaivedBy || undefined,
     latePenaltyWaiveReason: doc.latePenaltyWaiveReason || undefined,
@@ -10718,6 +10759,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         diplomaticGuests: 0,
         expenseTotal: 0,
         latePenalty: 0,
+        errorPenalty: 0,
         advanceTotal: 0,
         pickupBigC: 0,
         pickupHotel: 0,
@@ -10738,6 +10780,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.diplomaticGuests += r.diplomaticGuests;
     entry.expenseTotal += pilotExpenseTotal(r);
     entry.latePenalty += r.latePenalty;
+    entry.errorPenalty += r.errorPenalty ?? 0;
     entry.pickupBigC += r.pickupBigC;
     entry.pickupHotel += r.pickupHotel;
     entry.mountainTrips += r.mountainTrips;
@@ -10775,6 +10818,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       diplomaticGuests: 0,
       expenseTotal: 0,
       latePenalty: 0,
+      errorPenalty: 0,
       advanceTotal: total,
       pickupBigC: 0,
       pickupHotel: 0,
@@ -11026,6 +11070,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   otherExpense: 0,
   expenseTotal: 0,
   latePenalty: 0,
+  errorPenalty: 0,
   advanceTotal: 0,
   pickupBigC: 0,
   pickupHotel: 0,
@@ -11051,6 +11096,7 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   // Phí bãi nay là SỐ KHÁCH, không cộng vào tổng tiền chi
   acc.expenseTotal = acc.waterCost + acc.guestCarCost + acc.otherExpense;
   acc.latePenalty += r.latePenalty;
+  acc.errorPenalty += r.errorPenalty ?? 0;
   acc.pickupBigC += r.pickupBigC;
   acc.pickupHotel += r.pickupHotel;
   acc.mountainTrips += r.mountainTrips;

@@ -159,6 +159,10 @@ export type PilotReportDTO = {
   latePenaltyWaived: boolean;
   latePenaltyWaivedBy?: string;
   latePenaltyWaiveReason?: string;
+  /** Phạt LỖI BÁO CÁO 200k (kế toán gắn cờ) — độc lập với phạt nộp muộn. */
+  errorPenalty?: number;
+  errorPenaltyReason?: string;
+  errorPenaltyBy?: string;
   sheetSynced: boolean;
   sheetError?: string;
   updatedAt: string;
@@ -651,6 +655,8 @@ export type PilotPeriodTotalDTO = {
   expenseTotal: number;
   /** Tổng phạt nộp muộn trong kỳ (200k/lần chốt muộn). */
   latePenalty: number;
+  /** Tổng phạt LỖI BÁO CÁO trong kỳ (kế toán gắn cờ 200k/lần). */
+  errorPenalty: number;
   /** Tiền đã ứng và ĐƯỢC DUYỆT trong kỳ — trừ vào lương cuối tháng. */
   advanceTotal: number;
   /** Số lượt đưa đón phi công tự trả — kế toán nhân đơn giá rồi hoàn. */
@@ -708,6 +714,8 @@ export type MonthlyTotalsDTO = {
   expenseTotal: number;
   /** Phạt nộp muộn (200k/lần chốt sau giờ quy định). */
   latePenalty: number;
+  /** Phạt lỗi báo cáo (kế toán gắn cờ 200k/lần). */
+  errorPenalty: number;
   /** Tiền ứng đã được duyệt trong tháng — trừ vào lương. */
   advanceTotal: number;
   pickupBigC: number;

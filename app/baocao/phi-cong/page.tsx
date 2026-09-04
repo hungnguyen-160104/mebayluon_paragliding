@@ -475,6 +475,16 @@ export default function PilotReportPage() {
         </Banner>
       )}
 
+      {/* PHẠT LỖI BÁO CÁO — kế toán gắn cờ, phi công phải thấy rõ lý do */}
+      {(existing?.errorPenalty ?? 0) > 0 && (
+        <Banner tone="error">
+          ⚑ Báo cáo ngày {formatDateKeyVN(date)} bị <strong>phạt lỗi báo cáo {(existing!.errorPenalty ?? 0).toLocaleString("vi-VN")}đ</strong>
+          {existing?.errorPenaltyReason ? <> — lý do: {existing.errorPenaltyReason}</> : null}
+          {existing?.errorPenaltyBy ? <> ({existing.errorPenaltyBy} gắn)</> : null}. Sửa lại báo cáo cho đúng rồi
+          báo kế toán gỡ cờ.
+        </Banner>
+      )}
+
       {existing?.latePenaltyWaived && (
         <Banner tone="success">
           Ngày {formatDateKeyVN(date)} nộp muộn nhưng <strong>kế toán đã huỷ lệnh phạt</strong> (fine waived)

@@ -133,6 +133,15 @@ export interface IPilotDailyReport {
   latePenaltyWaivedBy?: string;
   latePenaltyWaivedAt?: Date;
   latePenaltyWaiveReason?: string;
+  /**
+   * PHẠT LỖI BÁO CÁO (luật chủ 04/09): kế toán gắn cờ 200k khi báo cáo sai
+   * (khai trùng mã, sai mã, khai thiếu/dư chuyến…). Khác phạt nộp muộn — hai
+   * khoản độc lập, cùng trừ vào bảng lương.
+   */
+  errorPenalty?: number;
+  errorPenaltyReason?: string;
+  errorPenaltyBy?: string;
+  errorPenaltyAt?: Date;
 
   sheetSynced: boolean;
   sheetError?: string;
@@ -236,6 +245,10 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     latePenaltyWaivedBy: String,
     latePenaltyWaivedAt: Date,
     latePenaltyWaiveReason: String,
+    errorPenalty: { type: Number, default: 0, min: 0 },
+    errorPenaltyReason: String,
+    errorPenaltyBy: String,
+    errorPenaltyAt: Date,
 
     sheetSynced: { type: Boolean, default: false },
     sheetError: String,

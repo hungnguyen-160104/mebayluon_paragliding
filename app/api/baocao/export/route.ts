@@ -158,10 +158,11 @@ function buildSheets(
       "Ô tô (lượt)",
       "Chi đã ứng (hoàn lại)",
       "Phạt nộp muộn (trừ)",
+      "Phạt lỗi báo cáo (trừ)",
       "Tiền ứng (trừ)",
       "Còn lại sau chi, phạt & ứng",
     ],
-    widths: [26, 16, 12, 12, 10, 12, 10, 12, 16, 20, 9, 9, 9, 12, 12, 20, 20, 18, 24],
+    widths: [26, 16, 12, 12, 10, 12, 10, 12, 16, 20, 9, 9, 9, 12, 12, 20, 20, 20, 18, 24],
     rows: [
       ...summary.byPilot.map((p) => [
         p.pilotName,
@@ -181,8 +182,9 @@ function buildSheets(
         p.carRides,
         p.expenseTotal,
         p.latePenalty,
+        p.errorPenalty,
         p.advanceTotal,
-        p.expenseTotal - p.latePenalty - p.advanceTotal,
+        p.expenseTotal - p.latePenalty - p.errorPenalty - p.advanceTotal,
       ]),
       [],
       [
@@ -203,8 +205,9 @@ function buildSheets(
         summary.byPilot.reduce((s, p) => s + p.carRides, 0),
         summary.byPilot.reduce((s, p) => s + p.expenseTotal, 0),
         summary.byPilot.reduce((s, p) => s + p.latePenalty, 0),
+        summary.byPilot.reduce((s, p) => s + p.errorPenalty, 0),
         summary.byPilot.reduce((s, p) => s + p.advanceTotal, 0),
-        summary.byPilot.reduce((s, p) => s + p.expenseTotal - p.latePenalty - p.advanceTotal, 0),
+        summary.byPilot.reduce((s, p) => s + p.expenseTotal - p.latePenalty - p.errorPenalty - p.advanceTotal, 0),
       ],
       [],
       [

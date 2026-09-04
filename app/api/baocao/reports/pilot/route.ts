@@ -20,6 +20,7 @@ import {
   deleteMyPilotReport,
   upsertPilotReport,
   upsertPilotReportByAccountant,
+  setPilotErrorPenalty,
 } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
@@ -154,6 +155,32 @@ export async function POST(req: Request) {
  *
  * Không cho xoá khi kế toán đã chốt ngày (409) — phải nhờ gỡ khoá, giống lúc sửa.
  */
+/** KẾ TOÁN gắn/gỡ cờ PHẠT LỖI BÁO CÁO 200k — {date, targetUsername, on, reason}. */
+export async function PATCH(req: Request) {
+  const auth = requireBaobay(req, { roles: ["accountant"], allowAdmin: true });
+  if (auth instanceof NextResponse) return auth;
+
+  const spot = resolveSpot(req, auth);
+  if (spot instanceof NextResponse) return spot;
+
+  const body = await req.json().catch(() => ({}));
+  try {
+    const report = await setPilotErrorPenalty(
+      auth,
+      spot,
+      String(body?.date ?? ""),
+      String(body?.targetUsername ?? ""),
+      body?.on !== false,
+      String(body?.reason ?? ""),
+    );
+    return NextResponse.json({ report });
+  } catch (err) {
+    if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
+    console.error("PATCH /api/baocao/reports/pilot error:", err);
+    return NextResponse.json({ message: "Không đổi được cờ phạt" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   const auth = requireBaobay(req, { roles: ["pilot"] });
   if (auth instanceof NextResponse) return auth;
