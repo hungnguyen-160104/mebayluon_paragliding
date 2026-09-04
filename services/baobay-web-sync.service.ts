@@ -26,6 +26,7 @@ import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { Booking } from "@/models/Booking.model";
+import { LOCATIONS, type LocationKey } from "@/lib/booking/calculate-price";
 
 /** Điểm bay của trang khách ↔ điểm bay trong app. Điểm nào không có ở đây (Đà Nẵng, Quản Bạ…) thì bỏ qua. */
 const WEB_LOCATION_BY_SPOT: Record<string, string> = {
@@ -36,12 +37,21 @@ const WEB_LOCATION_BY_SPOT: Record<string, string> = {
 
 export const WEB_SYNC_SPOTS = Object.keys(WEB_LOCATION_BY_SPOT);
 
-/** Dịch vụ bên trang khách ↔ ô dịch vụ trong app. */
-const SERVICE_MAP: Array<{ match: RegExp; field: "flycam" | "video360" | "sunset" | "flagFlight" }> = [
+type WebServiceField = "flycam" | "video360" | "sunset" | "flagFlight" | "redFlag";
+
+/**
+ * Dịch vụ bên trang khách ↔ ô dịch vụ trong app. Xét THEO THỨ TỰ, khớp đầu tiên
+ * thắng: "keo_co" (bay kéo cờ 100k) phải đứng trước "flag" chung, vì
+ * `khau_pha_flag` trên web là "Bay DÙ CỜ ĐỎ sao vàng" (400k) = ô `redFlag`,
+ * không phải bay kéo cờ — trước 05/09 gán nhầm sang flagFlight, sổ ghi kéo cờ
+ * 100k cho khách mua dù cờ đỏ 400k.
+ */
+const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
   { match: /flycam/i, field: "flycam" },
   { match: /camera360|cam360/i, field: "video360" },
   { match: /sunset|hoang_hon/i, field: "sunset" },
-  { match: /flag|keo_co/i, field: "flagFlight" },
+  { match: /keo_co|flag_flight|flagflight/i, field: "flagFlight" },
+  { match: /flag|co_do|red_flag/i, field: "redFlag" },
 ];
 
 /** Khoá dịch vụ mang nghĩa ĐƯA ĐÓN — quyết định ô "đưa đón" chứ không phải dịch vụ bay. */
@@ -87,14 +97,34 @@ function toVND(amount: number | undefined, currency?: string): number {
   return (currency ?? "VND") === "VND" ? n : Math.round(n * USD_TO_VND);
 }
 
+/**
+ * Khách có THẬT SỰ CHỌN dịch vụ này không.
+ *
+ * Trang khách lưu MỌI dịch vụ của điểm bay kèm `qty` mặc định 1, kể cả những
+ * thứ khách không tích (`selected: false, qty: 1`). Nhìn qty mà đếm là sinh ra
+ * "flycam ma": WebMBLE4B182 (05/09) khách chỉ lấy cam360 + xe trung chuyển mà sổ
+ * ghi thêm 1 flycam, tổng nội bộ vênh 380k so với giá web đã hứa. Cờ `selected`
+ * là lời khách; chỉ bản ghi cũ không có cờ mới được nhìn qty.
+ */
+function chosen(v?: { selected?: boolean; qty?: number }): boolean {
+  if (!v) return false;
+  if (typeof v.selected === "boolean") return v.selected;
+  return (v.qty ?? 0) > 0;
+}
+
+/** Cấu hình dịch vụ trên trang khách (giá, kiểu đếm) theo điểm bay + khoá. */
+function webServiceConfig(spot: string, key: string) {
+  const loc = LOCATIONS[WEB_LOCATION_BY_SPOT[spot] as LocationKey];
+  return loc?.services?.find((s) => s.key === key);
+}
+
 /** Số lượng một dịch vụ khách đã chọn (gộp cả hai kiểu dữ liệu của trang khách). */
-function serviceQty(doc: WebDoc, field: "flycam" | "video360" | "sunset" | "flagFlight", guests: number): number {
+function serviceQty(doc: WebDoc, field: WebServiceField, guests: number): number {
   let qty = 0;
   for (const [key, value] of Object.entries(doc.services ?? {})) {
     if (PICKUP_KEYS.test(key)) continue;
     const hit = SERVICE_MAP.find((m) => m.match.test(key));
-    if (hit?.field !== field || !value) continue;
-    if (!value.selected && !value.qty) continue;
+    if (hit?.field !== field || !chosen(value)) continue;
     qty += value.qty && value.qty > 0 ? value.qty : guests;
   }
   // Bản đặt cũ dùng addonsQty (chỉ có flycam + camera360)
@@ -104,22 +134,54 @@ function serviceQty(doc: WebDoc, field: "flycam" | "video360" | "sunset" | "flag
   return Math.min(qty, Math.max(guests, 0) || qty);
 }
 
-/** Số suất "xe chuyên dụng lên núi" khách đã chọn (Hà Nội tính 150k/khách). */
-function mountainCarQty(doc: WebDoc, guests: number): number {
+/**
+ * Số suất "xe chuyên dụng lên núi" — CHỈ HÀ NỘI (150k/khách, cộng vào tổng nội
+ * bộ). Ở Khau Phạ / Sa Pa, "shuttle" là XE TRUNG CHUYỂN (Tú Lệ 70k…) — đó là
+ * đưa đón, đi vào `pickupFee` với đúng giá web (xem shuttleFee), không phải xe
+ * lên núi: gán nhầm là tổng nội bộ đội thêm 150k/khách so với giá khách đã thấy.
+ */
+function mountainCarQty(doc: WebDoc, guests: number, spot: string): number {
+  if (spot !== "ha-noi") return 0;
   for (const [key, value] of Object.entries(doc.services ?? {})) {
     if (!/shuttle|mountain/i.test(key)) continue;
-    if (!(value?.selected || (value?.qty ?? 0) > 0)) continue;
+    if (!chosen(value)) continue;
     return value?.qty && value.qty > 0 ? Math.min(value.qty, guests) : guests;
   }
   return 0;
 }
 
+/**
+ * Phí ĐƯA ĐÓN khách đã trả trên web cho các dịch vụ kiểu pickup/shuttle/garrya,
+ * tính y hệt phiếu của trang khách (components/booking/BookingTicket.tsx):
+ * dịch vụ đếm (counter) = giá × qty; dịch vụ tích = giá × số khách; xe Garrya =
+ * 500k × số xe (4 khách/xe) × số chiều; xe riêng Hà Nội = 1.4tr + 350k/khách từ
+ * khách thứ 4. Bản đặt cũ để giá trong addonsTotal.pickup — cộng cả hai không
+ * trùng vì hai kiểu dữ liệu không xuất hiện cùng lúc.
+ */
+function shuttleFee(doc: WebDoc, guests: number, spot: string): number {
+  let fee = 0;
+  for (const [key, value] of Object.entries(doc.services ?? {})) {
+    if (!PICKUP_KEYS.test(key) || !chosen(value)) continue;
+    const qty = Math.max(1, value?.qty || 1);
+    if (key === "khau_pha_garrya_pickup") {
+      fee += Math.ceil(guests / 4) * qty * 500_000;
+      continue;
+    }
+    if (key === "ha_noi_private_hotel_pickup") {
+      fee += 1_400_000 + Math.max(0, guests - 3) * 350_000;
+      continue;
+    }
+    const cfg = webServiceConfig(spot, key);
+    const unit = Number(cfg?.priceVND || 0);
+    fee += cfg?.controlType === "counter" ? unit * qty : unit * guests;
+  }
+  return fee;
+}
+
 /** Loại hình bay: Hà Nội theo gói 650m/850m, nơi khác theo có động cơ hay không. */
 function flightKindOf(doc: WebDoc, spot: string): "pg" | "ppg" | "m650" | "m850" {
   if (spot === "ha-noi") return doc.packageKey === "ha_noi_850m" ? "m850" : "m650";
-  const ppgByService = Object.entries(doc.services ?? {}).some(
-    ([k, v]) => /paramotor|ppg/i.test(k) && (v?.selected || (v?.qty ?? 0) > 0),
-  );
+  const ppgByService = Object.entries(doc.services ?? {}).some(([k, v]) => /paramotor|ppg/i.test(k) && chosen(v));
   return doc.flightTypeKey === "paramotor" || ppgByService ? "ppg" : "pg";
 }
 
@@ -127,7 +189,7 @@ function flightKindOf(doc: WebDoc, spot: string): "pg" | "ppg" | "m650" | "m850"
 function pickupOf(doc: WebDoc): { pickup: "self" | "bigc" | "hotel" | "other"; pickupNote: string } {
   const picked: string[] = [];
   for (const [key, value] of Object.entries(doc.services ?? {})) {
-    if (!PICKUP_KEYS.test(key) || !(value?.selected || (value?.qty ?? 0) > 0)) continue;
+    if (!PICKUP_KEYS.test(key) || !chosen(value)) continue;
     picked.push(key);
   }
   const labelOf = (key: string) =>
@@ -163,7 +225,7 @@ function noteOf(doc: WebDoc): string {
 }
 
 /** Dựng bộ trường của một booking web để ghi vào sổ nội bộ. */
-function mapWebBooking(doc: WebDoc, spot: string) {
+export function mapWebBooking(doc: WebDoc, spot: string) {
   const guests = Math.max(1, doc.guestsCount || (doc.guests ?? []).length || 1);
   const currency = doc.price?.currency ?? "VND";
   const total = toVND(doc.price?.total, currency);
@@ -189,15 +251,15 @@ function mapWebBooking(doc: WebDoc, spot: string) {
     guestCount: guests,
     flycam: serviceQty(doc, "flycam", guests),
     video360: serviceQty(doc, "video360", guests),
-    redFlag: 0,
+    redFlag: serviceQty(doc, "redFlag", guests),
     sunset: serviceQty(doc, "sunset", guests),
     flagFlight: serviceQty(doc, "flagFlight", guests),
     flightKind: flightKindOf(doc, spot),
     pickup,
     pickupNote,
     expectedTime: (doc.timeSlot || "").trim(),
-    pickupFee: toVND(doc.price?.addonsTotal?.pickup, currency),
-    mountainCar: mountainCarQty(doc, guests),
+    pickupFee: toVND(doc.price?.addonsTotal?.pickup, currency) + shuttleFee(doc, guests, spot),
+    mountainCar: mountainCarQty(doc, guests, spot),
     unitPrice: toVND(doc.price?.basePerPerson, currency),
     discount: toVND((doc.price?.discountPerPerson || 0) * guests, currency),
     /**
@@ -335,7 +397,7 @@ export async function syncWebBookings(
         if (!(twin.email || "").trim() && mapped.email) fill.email = mapped.email;
         if (!twin.unitPrice && mapped.unitPrice) fill.unitPrice = mapped.unitPrice;
         if (!twin.totalAmount && mapped.totalAmount) fill.totalAmount = mapped.totalAmount;
-        for (const k of ["flycam", "video360", "sunset", "flagFlight", "mountainCar"] as const) {
+        for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const) {
           if (!twin[k] && mapped[k]) fill[k] = mapped[k];
         }
         if (mapped.note) fill.note = [twin.note, `web: ${mapped.note}`].filter(Boolean).join(" · ");
