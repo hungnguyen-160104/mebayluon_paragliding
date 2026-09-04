@@ -4,6 +4,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
+import { CLUBHOUSE_MAP_URL, KHAU_PHA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 import { shouldShowQueueNo } from "@/lib/booking/queue-display";
 import { buildVietQrPayload } from "@/lib/vietqr";
 
@@ -58,6 +59,8 @@ export type BookingImageData = {
    * ngày vắng mà in số to thì gieo cảm giác phải xếp hàng.
    */
   queueNo?: number | null;
+  /** Số khách PPG trong đoàn PG lẫn — quyết định phiếu in chỉ đường nào (Khau Phạ). */
+  ppgGuests?: number;
 };
 
 const money = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
@@ -166,6 +169,27 @@ async function loadPayQr(amount: number, note: string): Promise<HTMLImageElement
   }
 }
 
+/** QR toạ độ Google Maps — cùng thư viện với QR trả tiền, hỏng thì bỏ khối. */
+async function loadMapQr(url: string): Promise<HTMLImageElement | null> {
+  try {
+    const QRCode = (await import("qrcode")).default;
+    const data = await QRCode.toDataURL(url, {
+      width: 320,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0F172A", light: "#FFFFFF" },
+    });
+    return await new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = data;
+    });
+  } catch {
+    return null;
+  }
+}
+
 function loadLogo(): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -241,7 +265,43 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     phone: d.phone,
   });
 
-  const [logo, payQr] = await Promise.all([loadLogo(), payAmount > 0 ? loadPayQr(payAmount, payNote) : Promise.resolve(null)]);
+  /**
+   * CHỈ ĐƯỜNG KHAU PHẠ theo loại bay (luật chủ 04/09) — in kèm QR toạ độ:
+   * PPG về thẳng Clubhouse; PG nhận bãi cất cánh (check-in Quầy Vé đỉnh đèo
+   * nếu từ hướng Ngã Ba Kim) + bãi hạ cánh (Tú Lệ/Cao Phạ qua đây rồi xe
+   * trung chuyển); đoàn lẫn in cả ba.
+   */
+  const dirPoints = (() => {
+    if (!/khau/.test(d.spot)) return [] as Array<{ title: string; note: string; url: string }>;
+    const labelPpg = /ppg/i.test(d.flightKindLabel || "");
+    const hasPpg = labelPpg || (d.ppgGuests ?? 0) > 0;
+    const pts: Array<{ title: string; note: string; url: string }> = [];
+    if (hasPpg)
+      pts.push({
+        title: "ĐIỂM BAY DÙ MÁY (PPG) — Mebayluon Clubhouse",
+        note: "Bay dù máy: quét QR, đến thẳng điểm này để làm thủ tục và bay.",
+        url: CLUBHOUSE_MAP_URL,
+      });
+    if (!labelPpg) {
+      pts.push({
+        title: "BÃI CẤT CÁNH — đỉnh đèo Khau Phạ",
+        note: "Từ hướng Ngã Ba Kim / Mù Cang Chải / Garrya: ghé QUẦY VÉ tại đỉnh đèo để check-in lấy vé bay.",
+        url: KHAU_PHA_TAKEOFF_MAP_URL,
+      });
+      pts.push({
+        title: "BÃI HẠ CÁNH — Mebayluon Clubhouse",
+        note: "Ở Tú Lệ / Cao Phạ (cũ): qua bãi hạ cánh làm thủ tục trước, rồi đi xe trung chuyển lên bãi cất cánh.",
+        url: CLUBHOUSE_MAP_URL,
+      });
+    }
+    return pts;
+  })();
+
+  const [logo, payQr, ...dirQrs] = await Promise.all([
+    loadLogo(),
+    payAmount > 0 ? loadPayQr(payAmount, payNote) : Promise.resolve(null),
+    ...dirPoints.map((p) => loadMapQr(p.url)),
+  ]);
 
   /** Vẽ ở khổ gấp đôi rồi thu lại — chữ nét trên màn hình retina. */
   const S = 2;
@@ -269,7 +329,14 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   for (const b of blocks) {
     bodyH += titleH + (b.wrapLast ? noteLines.length * 26 + 10 : b.rows.length * rowH) + blockGap;
   }
-  const H = headerH + bodyH + payH + footerH;
+
+  /** Khối chỉ đường: mỗi điểm một thẻ QR (trái) + tên & lời dặn (phải). */
+  probe.font = f(15);
+  const dirNoteLines = dirPoints.map((p) => wrap(probe, p.note, W - pad * 2 - 168, 3));
+  const dirCardHs = dirNoteLines.map((ls) => Math.max(140, 34 + ls.length * 22 + 16));
+  const dirH = dirPoints.length ? titleH + dirCardHs.reduce((a, b2) => a + b2 + 12, 0) + blockGap : 0;
+
+  const H = headerH + bodyH + payH + dirH + footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W * S;
@@ -502,6 +569,50 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     g.fillStyle = C.sub;
     g.fillText("Xin lưu ảnh thanh toán để đối chiếu tại quầy.", pad, y + 60);
     y += 3 * 23 + blockGap;
+  }
+
+  /* ---- Khối ĐƯỜNG ĐẾN ĐIỂM BAY (Khau Phạ, theo loại bay) -------------- */
+  if (dirPoints.length) {
+    g.font = f(13, "bold");
+    g.fillStyle = C.sky;
+    g.fillText("ĐƯỜNG ĐẾN ĐIỂM BAY — QUÉT QR MỞ BẢN ĐỒ", pad, y);
+    const tw2 = g.measureText("ĐƯỜNG ĐẾN ĐIỂM BAY — QUÉT QR MỞ BẢN ĐỒ").width;
+    g.strokeStyle = C.line;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(pad + tw2 + 10, y - 4);
+    g.lineTo(W - pad, y - 4);
+    g.stroke();
+    y += titleH - 8;
+
+    for (let i = 0; i < dirPoints.length; i++) {
+      const p = dirPoints[i];
+      const cardH = dirCardHs[i];
+      g.fillStyle = C.card;
+      roundRect(g, pad, y - 8, W - pad * 2, cardH, 10);
+      g.fill();
+      const qrSide2 = cardH - 24;
+      const qrImg = dirQrs[i];
+      if (qrImg) {
+        g.fillStyle = "#FFFFFF";
+        roundRect(g, pad + 12, y + 4, qrSide2, qrSide2, 8);
+        g.fill();
+        g.drawImage(qrImg, pad + 16, y + 8, qrSide2 - 8, qrSide2 - 8);
+      }
+      const tx = pad + 12 + qrSide2 + 16;
+      g.font = f(15, "bold");
+      g.fillStyle = C.ink;
+      g.fillText(p.title, tx, y + 18);
+      g.font = f(15);
+      g.fillStyle = C.sub;
+      let ny2 = y + 44;
+      for (const ln of dirNoteLines[i]) {
+        g.fillText(ln, tx, ny2);
+        ny2 += 22;
+      }
+      y += cardH + 12;
+    }
+    y += blockGap;
   }
 
   // ---- Chân phiếu

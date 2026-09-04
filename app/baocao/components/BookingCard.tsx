@@ -5867,6 +5867,7 @@ export function BookingCard({
                         ? "Đón khách sạn"
                         : "Tự đến",
                 flightKindLabel: FLIGHT_KIND_SHORT[form.flightKind],
+                ppgGuests: form.ppgGuests,
                 unitPrice: form.unitPrice,
                 serviceMoney,
                 pickupFee: form.pickupFee,
