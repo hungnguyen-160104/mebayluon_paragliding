@@ -3665,6 +3665,28 @@ function assertBookingTime(flightDate: string, expectedTime: string) {
  * đếm số dòng.
  */
 export async function nextDaySeq(spot: string, flightDate: string): Promise<number> {
+  /**
+   * KHO SỐ TRỐNG (luật chủ 04/09): booking bị bỏ khỏi sổ / dời đi / đổi ngày
+   * bay thì TRẢ SỐ về kho — booking mới của đúng ngày đó nhận lại số ấy để sổ
+   * không "nhảy số". Số của booking huỷ (vẫn nằm trong sổ ngày) KHÔNG trả.
+   */
+  try {
+    const freed = await mongoose.connection
+      .collection("baobaydayseqs")
+      .findOneAndUpdate(
+        { _id: `${spot}|${flightDate}` as unknown as mongoose.Types.ObjectId, "free.0": { $exists: true } },
+        { $pop: { free: -1 } },
+        { returnDocument: "before" },
+      );
+    const reuse = Number((freed as unknown as { free?: number[] } | null)?.free?.[0]);
+    if (Number.isFinite(reuse) && reuse > 0) {
+      /** Chỉ cấp lại khi thật sự KHÔNG còn ai giữ số này (phòng dữ liệu cũ lệch kho). */
+      const taken = await BaobayBooking.exists({ spot, flightDate, daySeq: reuse, status: { $ne: "voided" } });
+      if (!taken) return reuse;
+    }
+  } catch (err) {
+    console.error("nextDaySeq lấy số trống lỗi, cấp số mới:", err);
+  }
   const top = await BaobayBooking.findOne({ spot, flightDate }).sort({ daySeq: -1 }).select("daySeq").lean<any>();
   const seed = (Number(top?.daySeq) || 0) + 1;
   /**
@@ -3688,6 +3710,25 @@ export async function nextDaySeq(spot: string, flightDate: string): Promise<numb
     console.error("nextDaySeq counter failed, dùng max+1:", err);
   }
   return seed;
+}
+
+/**
+ * Trả một số thứ tự về kho của (điểm, ngày) khi booking rời khỏi sổ ngày đó:
+ * bỏ khỏi sổ (void), dời sang ngày khác, hoặc kế toán sửa lại ngày bay.
+ * $addToSet để lỡ trả trùng một số hai lần cũng không bị cấp đôi.
+ */
+export async function freeDaySeq(spot: string, flightDate: string, seq: number): Promise<void> {
+  const n = Math.round(Number(seq));
+  if (!Number.isFinite(n) || n <= 0) return;
+  try {
+    await mongoose.connection.collection("baobaydayseqs").updateOne(
+      { _id: `${spot}|${flightDate}` as unknown as mongoose.Types.ObjectId },
+      { $addToSet: { free: n } },
+      { upsert: true },
+    );
+  } catch (err) {
+    console.error("freeDaySeq lỗi (bỏ qua, chỉ mất tính liền số):", err);
+  }
 }
 
 export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
@@ -4331,6 +4372,13 @@ const editedTotal = bookingTotal({
   };
   if (input.flightDate !== current.flightDate) {
     update.$push = { rescheduledFrom: current.flightDate };
+    /**
+     * Đổi ngày bay = nhận SỐ MỚI của ngày mới, số cũ trả về kho ngày cũ.
+     * Trước đây giữ nguyên số cũ nên #1 của ngày này "nhập cảnh" sang ngày
+     * khác (vụ Trần Phương Thảo mang #1 vào 04/09 đã có #15–#23).
+     */
+    (update.$set as Record<string, unknown>).daySeq = await nextDaySeq(spot, input.flightDate);
+    await freeDaySeq(spot, current.flightDate, current.daySeq);
   }
 
   /**
@@ -4463,6 +4511,8 @@ export async function voidBooking(
   ).lean<any>();
   // Bỏ khỏi sổ thì số thứ tự bên trang khách cũng phải mất theo
   if (voided.webBookingId) await clearQueueNoOnWeb(voided.webBookingId);
+  // …và số được trả về kho để booking mới của ngày này nhận lại — sổ không nhảy số
+  await freeDaySeq(spot, voided.flightDate, voided.daySeq);
   pushSheetInBackground(() => pushBookingRow(voided), BaobayBooking, voided._id);
   return { voided: toBookingDTO(voided) };
 }
@@ -5684,11 +5734,15 @@ export async function ingestSapaWebBooking(input: {
     if (existing.status === "cancelled" || existing.status === "voided") {
       return { action: "updated", id: String(existing._id), ref };
     }
+    /** Đơn web đổi NGÀY BAY: nhận số mới của ngày mới, số cũ trả về kho ngày cũ. */
+    const dateChanged = fields.flightDate && fields.flightDate !== existing.flightDate;
+    const newSeq = dateChanged ? await nextDaySeq(spot, fields.flightDate) : 0;
     const updated = await BaobayBooking.findOneAndUpdate(
       { _id: existing._id },
-      { $set: { ...fields, bookingCode: ref, otaRef: rawRef } },
+      { $set: { ...fields, bookingCode: ref, otaRef: rawRef, ...(dateChanged ? { daySeq: newSeq } : {}) } },
       { new: true },
     ).lean<any>();
+    if (dateChanged) await freeDaySeq(spot, existing.flightDate, existing.daySeq);
     pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
     return { action: "updated", id: String(updated._id), ref };
   }
@@ -6972,6 +7026,9 @@ export async function updateBookingStatus(
     if (action === "move") await pushQueueNoToWeb(doc.webBookingId, doc.daySeq, doc.flightDate);
     else if (action === "cancel") await clearQueueNoOnWeb(doc.webBookingId);
   }
+
+  // Dời thành công thì số cũ trả về kho ngày cũ — booking mới của ngày ấy nhận lại
+  if (action === "move") await freeDaySeq(spot, current.flightDate, current.daySeq);
 
   /**
    * HỒ SƠ BẢO HIỂM ĐI THEO BOOKING. Dời ngày thì đẩy lại (dòng trên bảng bảo

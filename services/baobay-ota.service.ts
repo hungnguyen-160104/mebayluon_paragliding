@@ -27,7 +27,7 @@ import { OTA_CONFIG, isOtaKey, otaFromSender, readOtaMail, type OtaMailRead } fr
 import { htmlToText, parseGenericOtaEmail } from "@/lib/baobay/ota-generic";
 import { isSpotId } from "@/lib/baobay/spots";
 import { connectDB } from "@/lib/mongodb";
-import { nextDaySeq } from "@/services/baobay.service";
+import { freeDaySeq, nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { OtaEmail } from "@/models/OtaEmail.model";
 
@@ -450,6 +450,8 @@ export async function approveOtaEmail(
       set.flightDate = newDate;
       set.daySeq = await nextDaySeq(booking.spot, newDate);
       set.rescheduledFrom = [...(booking.rescheduledFrom ?? []), booking.flightDate];
+      // Số cũ trả về kho ngày cũ — sổ ngày ấy không bị nhảy số
+      await freeDaySeq(booking.spot, booking.flightDate, booking.daySeq);
     }
     if (draft.expectedTime) set.expectedTime = draft.expectedTime;
     await BaobayBooking.updateOne({ _id: booking._id }, { $set: set });

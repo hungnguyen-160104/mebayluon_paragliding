@@ -70,12 +70,19 @@ function BookingSummary({
   withDate,
   dim,
   hideNote,
+  hideSeq,
 }: {
   b: BookingDTO;
   withDate?: boolean;
   dim?: boolean;
   /** Nơi gọi đã tự vẽ khối ghi chú vàng riêng — đừng lặp lại trong dòng tóm tắt. */
   hideNote?: boolean;
+  /**
+   * Booking ĐÃ DỜI đi ngày khác: daySeq là số CỦA NGÀY MỚI. In số đỏ ở đây thì
+   * nhìn như trùng số với sổ hôm nay (vụ "hai số 1" 04/09) — nơi gọi tự ghi
+   * "bên đó là số #x" trong nhãn vàng, dòng tóm tắt giấu số đi.
+   */
+  hideSeq?: boolean;
 }) {
   /**
    * Ba thứ quầy phải đọc được ngay giữa một dòng dài: TÊN KHÁCH, SỐ ĐIỆN THOẠI
@@ -175,7 +182,7 @@ function BookingSummary({
   return (
     <span className={dim ? "text-xs leading-snug text-slate-500" : "text-sm leading-snug text-slate-700"}>
       {/* SỐ THỨ TỰ trong ngày — đỏ đậm, đứng đầu, KHÔNG đổi kể cả đã bay/huỷ */}
-      {b.daySeq > 0 && (
+      {b.daySeq > 0 && !hideSeq && (
         <strong className="mr-1 rounded bg-red-600 px-1.5 font-bold text-white">{b.daySeq}</strong>
       )}
       {/* Đã khoá: ai mở dòng ra cũng thấy ngay, khỏi bấm rồi mới biết bị chặn */}
@@ -4029,8 +4036,9 @@ export function BookingTodayBanner({
           >
             <span className="mr-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
               ↪ ĐÃ DỜI sang {formatDateKeyVN(b.flightDate)}
+              {b.daySeq > 0 ? ` — bên đó là số #${b.daySeq}` : ""}
             </span>
-            <BookingSummary b={b} hideNote dim />
+            <BookingSummary b={b} hideNote hideSeq dim />
             <span className="ml-1 text-[11px] text-amber-800">
               {b.movedBy ? `— ${b.movedBy} dời` : ""} · không tính vào số hôm nay
             </span>
