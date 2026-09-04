@@ -3103,6 +3103,8 @@ function BookingDayTable({
   renderMovedActions,
   renderMore,
   renderInsurance,
+  renderMoneyCell,
+  renderSourceExtra,
   tall = false,
 }: {
   open: BookingDTO[];
@@ -3122,6 +3124,10 @@ function BookingDayTable({
   renderMore?: (b: BookingDTO, close?: () => void) => ReactNode;
   /** Ô bảo hiểm (nhập + quét giấy tờ) — bấm thẳng số ở cột BH là xổ, không qua "Thêm". */
   renderInsurance?: (b: BookingDTO) => ReactNode;
+  /** Nút 💵 Thu tiền đứng NGAY TRONG Ô "Còn thu" (luật chủ 04/09) — nhìn số thiếu là bấm. */
+  renderMoneyCell?: (b: BookingDTO) => ReactNode;
+  /** Nút 📄 Chi tiết book ghép vào ô "Nguồn" (luật chủ 04/09) — cột thao tác gọn lại. */
+  renderSourceExtra?: (b: BookingDTO) => ReactNode;
   /** Đang toàn màn hình — bảng ăn hết chiều cao cửa sổ thay vì cụt ở 72%. */
   tall?: boolean;
 }) {
@@ -3320,6 +3326,11 @@ function BookingDayTable({
                       nhập: {b.createdByName === "Khách đặt trên web" ? "web" : b.createdByName}
                     </div>
                   )}
+                  {!r.moved && renderSourceExtra?.(b) != null && (
+                    <div className="mt-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      {renderSourceExtra(b)}
+                    </div>
+                  )}
                 </td>
                 <td className="border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
@@ -3475,6 +3486,12 @@ function BookingDayTable({
                       return <span className="font-bold text-emerald-700">✓ đã thu đủ</span>;
                     return <span className="text-slate-400">—</span>;
                   })()}
+                  {/* 💵 Thu tiền ngay dưới số còn thiếu — khỏi với sang cột thao tác */}
+                  {!r.moved && renderMoneyCell?.(b) != null && (
+                    <div className="mt-0.5 flex justify-end [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      {renderMoneyCell(b)}
+                    </div>
+                  )}
                   {/* Tích của kế toán y hệt thẻ: ✓CK xanh dương · ✓TM xanh lá đậm */}
                   {(b.ckChecked || b.tmChecked) && (
                     <div className="mt-0.5 flex justify-end gap-0.5 text-[10px]">
@@ -4134,12 +4151,13 @@ export function BookingTodayBanner({
    * [Thu tiền nếu còn thiếu] + "↩ Chưa bay" ĐỎ + Khoá đứng cạnh ⋯ Thêm; đã huỷ
    * thì "↩ Bay lại".
    */
-  const renderClosedQuick = (b: BookingDTO) =>
+  const renderClosedQuick = (b: BookingDTO, table = false) =>
     b.status === "done" ? (
       <>
         {/* Đã bay mà CÒN THU: nút Thu tiền đứng đầu cột cho nhân viên bấm ngay,
-            khỏi phải xổ ⋯ Thêm (luật chủ 04/09). Cùng luật với dải Thêm. */}
-        {moneyOutside(b) && (!b.locked || canLock) && renderMoneyButton(b)}
+            khỏi phải xổ ⋯ Thêm (luật chủ 04/09). Cùng luật với dải Thêm.
+            Trong BẢNG thì Thu tiền nằm ở ô "Còn thu", Chi tiết ở ô "Nguồn". */}
+        {!table && moneyOutside(b) && (!b.locked || canLock) && renderMoneyButton(b)}
         {(!b.locked || canLock) && (
           <Button
             type="button"
@@ -4152,7 +4170,7 @@ export function BookingTodayBanner({
           </Button>
         )}
         {lockButton(b)}
-        {detailButton(b)}
+        {!table && detailButton(b)}
       </>
     ) : b.status === "cancelled" ? (
       <>
@@ -4167,7 +4185,7 @@ export function BookingTodayBanner({
             ↩ Bay lại
           </Button>
         )}
-        {detailButton(b)}
+        {!table && detailButton(b)}
       </>
     ) : null;
 
@@ -4479,19 +4497,20 @@ export function BookingTodayBanner({
    * Đã khoá mà không phải kế toán → chỉ còn nút mở khoá.
    */
   const detailButton = (b: BookingDTO) => <BookingDetailControl spot={spot} booking={b} />;
-  const renderOpenQuick = (b: BookingDTO) =>
+  const renderOpenQuick = (b: BookingDTO, table = false) =>
     b.locked && !canLock ? (
       <>
         {lockButton(b)}
-        {detailButton(b)}
+        {!table && detailButton(b)}
       </>
     ) : (
       <>
-        {moneyOutside(b) && renderMoneyButton(b)}
+        {/* Trong BẢNG: Thu tiền nằm ở ô "Còn thu", Chi tiết ở ô "Nguồn" (luật chủ 04/09) */}
+        {!table && moneyOutside(b) && renderMoneyButton(b)}
         {renderTicketButton(b)}
         {renderFlownButton(b)}
         {renderContactButton(b)}
-        {detailButton(b)}
+        {!table && detailButton(b)}
       </>
     );
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
@@ -4900,8 +4919,15 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b))}
-          renderClosedQuick={(b) => renderClosedQuick(b)}
+          renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b, true))}
+          renderClosedQuick={(b) => renderClosedQuick(b, true)}
+          /* Cùng luật moneyOutside như thẻ: còn thu + được sửa → nút đỏ ngay ô "Còn thu" */
+          renderMoneyCell={(b) =>
+            moving?.id === b.id || b.status === "cancelled" || (b.locked && !canLock) || !moneyOutside(b)
+              ? null
+              : renderMoneyButton(b)
+          }
+          renderSourceExtra={(b) => detailButton(b)}
           renderMovedActions={(b) => renderMovedActions(b)}
           renderMore={(b, close) =>
             b.status !== "open"
