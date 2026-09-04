@@ -3807,12 +3807,16 @@ export function BookingTodayBanner({
   }
 
   /**
-   * Nút nhanh cho booking ĐÃ ĐÓNG trên dòng bảng (luật chủ 04/09): đã bay thì
-   * "↩ Chưa bay" ĐỎ + Khoá đứng cạnh ⋯ Thêm; đã huỷ thì "↩ Bay lại".
+   * Nút nhanh cho booking ĐÃ ĐÓNG (dòng bảng + thẻ, luật chủ 04/09): đã bay thì
+   * [Thu tiền nếu còn thiếu] + "↩ Chưa bay" ĐỎ + Khoá đứng cạnh ⋯ Thêm; đã huỷ
+   * thì "↩ Bay lại".
    */
   const renderClosedQuick = (b: BookingDTO) =>
     b.status === "done" ? (
       <>
+        {/* Đã bay mà CÒN THU: nút Thu tiền đứng đầu cột cho nhân viên bấm ngay,
+            khỏi phải xổ ⋯ Thêm (luật chủ 04/09). Cùng luật với dải Thêm. */}
+        {(b.remaining ?? 0) > 0 && (!b.locked || canLock) && renderMoneyButton(b)}
         {(!b.locked || canLock) && (
           <Button
             type="button"
