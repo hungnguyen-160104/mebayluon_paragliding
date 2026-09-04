@@ -2964,12 +2964,34 @@ function BookingDayTable({
     [
       b.flycam ? `${b.flycam}✈` : "",
       b.video360 ? `${b.video360}×360` : "",
-      b.redFlag ? `${b.redFlag}🚩` : "",
+      b.redFlag ? `${b.redFlag}🇻🇳` : "",
       b.sunset ? `${b.sunset}🌅` : "",
       b.flagFlight ? `${b.flagFlight}🎌` : "",
     ]
       .filter(Boolean)
       .join(" ");
+  /** Bản HIỆN của cột dịch vụ: ✈ flycam to + đỏ cho dễ thấy, cờ đỏ = 🇻🇳 (luật chủ 04/09). */
+  const dichVuView = (b: BookingDTO) => {
+    const parts: ReactNode[] = [];
+    if (b.flycam)
+      parts.push(
+        <span key="fly">
+          {b.flycam}
+          <span className="text-[16px] font-bold text-rose-600">✈</span>
+        </span>,
+      );
+    if (b.video360) parts.push(<span key="v360">{b.video360}×360</span>);
+    if (b.redFlag) parts.push(<span key="flag">{b.redFlag}🇻🇳</span>);
+    if (b.sunset) parts.push(<span key="sun">{b.sunset}🌅</span>);
+    if (b.flagFlight) parts.push(<span key="keo">{b.flagFlight}🎌</span>);
+    if (!parts.length) return null;
+    return parts.map((part, pi) => (
+      <span key={pi}>
+        {pi ? " " : ""}
+        {part}
+      </span>
+    ));
+  };
   const trangThai = (r: R) => (r.moved ? "dời" : r.b.status === "done" ? "đã bay" : r.b.status === "cancelled" ? "huỷ" : "chờ");
   const gioVe = (b: BookingDTO) =>
     b.ticketIssued && b.ticketIssuedAt
@@ -3140,15 +3162,15 @@ function BookingDayTable({
                     <span className="text-slate-500">{FLIGHT_KIND_SHORT[b.flightKind] || "PG"}</span>
                   )}
                 </td>
-                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
-                  {dichVu(b) || "—"}
+                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🇻🇳 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
+                  {dichVuView(b) ?? "—"}
                   {/* Dịch vụ THÊM/BỚT tại bãi (đã cộng vào số trên) — kể riêng kèm
                       người lập để phân biệt với đăng ký gốc (luật chủ 04/09) */}
                   {(b.serviceChanges ?? []).map((c, ci) => {
                     const bits = [
                       c.items.flycam ? `${c.items.flycam}×flycam` : "",
                       c.items.video360 ? `${c.items.video360}×360` : "",
-                      c.items.redFlag ? `${c.items.redFlag}🚩` : "",
+                      c.items.redFlag ? `${c.items.redFlag}🇻🇳` : "",
                       c.items.sunset ? `${c.items.sunset}🌅` : "",
                       c.items.flagFlight ? `${c.items.flagFlight}🎌` : "",
                     ]
