@@ -2909,7 +2909,6 @@ function BookingDayTable({
             <Th col="paid" label="Đã trả" right />
             <Th col="remaining" label="Còn thu" right />
             <Th col="bh" label="BH" />
-            <Th col="status" label="TT" />
             <Th col="note" label="Ghi chú" />
           </tr>
         </thead>
@@ -2947,6 +2946,24 @@ function BookingDayTable({
                       🎫✕ bay không vé{b.noTicketBy ? ` by ${b.noTicketBy}` : ""}
                     </div>
                   )}
+                  {/* Trạng thái còn lại cũng nằm hết ở cột đầu (bỏ cột TT riêng — luật chủ 04/09) */}
+                  {b.status === "cancelled" && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-rose-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-rose-700">
+                      ✕ đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
+                    </div>
+                  )}
+                  {r.moved && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800">
+                      ↪ dời → {formatDateKeyVN(b.flightDate).slice(0, 5)}
+                    </div>
+                  )}
+                  {!r.moved && b.rescheduledFrom.length > 0 && (
+                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800">
+                      dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}
+                      {b.movedBy ? ` by ${b.movedBy}` : ""}
+                    </div>
+                  )}
+                  {b.locked && <div className="mt-0.5 text-[10px]">🔒</div>}
                 </td>
                 {/* Ô CHỮ không che text (luật chủ 04/09): dài thì xuống dòng, hàng
                     tự cao lên — max-w chỉ giữ bề ngang cột, break-words bẻ dòng. */}
@@ -3158,32 +3175,6 @@ function BookingDayTable({
                     );
                   })()}
                 </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1">
-                  <span
-                    className={
-                      "rounded px-1.5 py-0.5 text-[10px] font-bold " +
-                      (tt === "đã bay"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : tt === "huỷ"
-                          ? "bg-rose-100 text-rose-700"
-                          : tt === "dời"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-sky-100 text-sky-800")
-                    }
-                  >
-                    {tt}
-                    {r.moved ? ` → ${formatDateKeyVN(b.flightDate).slice(0, 5)}` : ""}
-                  </span>
-                  {b.locked ? " 🔒" : ""}
-                  {/* Khách DỜI TỚI từ ngày khác (cả tách nhóm — chi tiết "2/5 khách
-                      dời từ…" máy đã ghi sẵn ở ô Ghi chú) */}
-                  {!r.moved && b.rescheduledFrom.length > 0 && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[10px] font-semibold text-amber-800">
-                      dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}
-                      {b.movedBy ? ` by ${b.movedBy}` : ""}
-                    </div>
-                  )}
-                </td>
                 <td className="max-w-[220px] min-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
                   <div className="break-words">{b.note || "—"}</div>
                   {/* Tờ giấy nhớ của điều phối ("đã hẹn khách 10h tới bãi hạ") phải
@@ -3201,7 +3192,7 @@ function BookingDayTable({
               {/* DÒNG XỔ: các chức năng còn lại ngay dưới dòng — không lặp lại thông tin */}
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
-                  <td colSpan={14} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
+                  <td colSpan={13} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left" style={{ display: "flow-root" }}>
                       {renderMore(b, () => setExpandedId(""))}
                     </div>
@@ -3211,7 +3202,7 @@ function BookingDayTable({
               {/* DÒNG BẢO HIỂM: mở thẳng từ cột BH — nhập hồ sơ + quét giấy tờ */}
               {insuranceId === b.id && !r.moved && renderInsurance?.(b) != null && (
                 <tr>
-                  <td colSpan={14} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
+                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
                       {renderInsurance(b)}
                       <button
