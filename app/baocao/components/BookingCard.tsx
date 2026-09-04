@@ -3167,16 +3167,18 @@ function BookingDayTable({
                     const depBy = b.depositDateBy || b.createdByName || "";
                     return (
                       <>
+                        {/* Chữ thường màu xám, riêng CON SỐ xanh lá đậm (luật chủ 04/09) */}
                         {depositBase > 0 && (
-                          <div className="text-[10px] font-semibold text-emerald-800">
-                            cọc {k(depositBase)}
+                          <div className="text-[10px] text-slate-500">
+                            cọc <span className="font-bold text-emerald-700">{k(depositBase)}</span>
                             {way}
                             {depBy ? ` by ${depBy}` : ""}
                           </div>
                         )}
                         {(b.collected ?? []).map((c, ci) => (
-                          <div key={c.collectId || ci} className="text-[10px] font-semibold text-emerald-800">
-                            {c.method === "cash" ? "TM" : "CK"} {k(c.amount)}
+                          <div key={c.collectId || ci} className="text-[10px] text-slate-500">
+                            {c.method === "cash" ? "TM" : "CK"}{" "}
+                            <span className="font-bold text-emerald-700">{k(c.amount)}</span>
                             {c.byName ? ` by ${c.byName}` : ""}
                             {c.verified ? (
                               <span className="ml-0.5 text-emerald-700" title="Kế toán đã soát sao kê và nhận khoản này">✓</span>
