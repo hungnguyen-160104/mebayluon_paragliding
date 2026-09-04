@@ -1348,6 +1348,7 @@ function RowMenu({
   alwaysOpen,
   extra,
   onClose,
+  tail,
 }: {
   spot: string;
   booking: BookingDTO;
@@ -1367,6 +1368,8 @@ function RowMenu({
   extra?: ReactNode;
   /** Chỉ dùng khi alwaysOpen: nút "✕ Đóng" đứng CÙNG HÀNG cuối dải (dòng bảng). */
   onClose?: () => void;
+  /** Nút đứng CUỐI CÙNG dải/panel — luật chủ 04/09: "Khoá" luôn chốt đuôi. */
+  tail?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1509,6 +1512,7 @@ function RowMenu({
         {itMove}
         {itCancel}
         {itVoid}
+        {tail}
       </div>
     );
   }
@@ -1525,6 +1529,7 @@ function RowMenu({
       {itMove}
       {itCancel}
       {itVoid}
+      {tail}
       <button
         type="button"
         className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
@@ -3297,6 +3302,8 @@ export function BookingTodayBanner({
    * khi ngày đông chi tiết. Ghi nhớ lựa chọn theo máy.
    */
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  /** Toàn màn hình (desktop soát sổ): phủ kín cửa sổ, ✕ để quay lại trang. */
+  const [fullScreen, setFullScreen] = useState(false);
   useEffect(() => {
     try {
       const v = localStorage.getItem("baobay-booking-view");
@@ -4005,12 +4012,12 @@ export function BookingTodayBanner({
                     if (msg) setCollectDone(msg);
                     load();
                   }}
+                  tail={lockButton(b)}
                   extra={
                     <>
                       {/* Mail báo khách TỰ ẨN khi không có gì phải báo — RowMenu
                           đã có sẵn một bản, bản extra này thay cho nút từng đứng
                           ngoài dòng (luật chủ 04/09: ngoài chỉ giữ 5 nút). */}
-                      {lockButton(b)}
                       {pilotMoneyButton(b)}
                       {canLock && !b.locked && (
                         <CollectFixControl
@@ -4060,7 +4067,6 @@ export function BookingTodayBanner({
           }}
         />
       )}
-      {lockButton(b)}
       {canLock && !b.locked && (
         <CollectFixControl
           spot={spot}
@@ -4072,6 +4078,8 @@ export function BookingTodayBanner({
         />
       )}
       {(b.remaining ?? 0) > 0 && (!b.locked || canLock) && renderMoneyButton(b)}
+      {/* Khoá luôn chốt ĐUÔI dải (luật chủ 04/09) */}
+      {lockButton(b)}
     </div>
   );
   /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
@@ -4301,6 +4309,15 @@ export function BookingTodayBanner({
               </button>
             ))}
           </span>
+          {/* Phóng sổ booking chiếm trọn cửa sổ — soát bảng nhiều cột trên desktop */}
+          <button
+            type="button"
+            onClick={() => setFullScreen((v) => !v)}
+            className="h-7 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
+            title="Phóng sổ booking ra toàn màn hình"
+          >
+            {fullScreen ? "🗗 Thu nhỏ" : "⛶ Toàn màn hình"}
+          </button>
           <span className="text-sky-800/70">Xếp:</span>
           {(
             [
@@ -4567,6 +4584,24 @@ export function BookingTodayBanner({
       )}
     </>
   );
+
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-[100] overflow-auto bg-sky-50 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-sky-900">{title}</h2>
+          <button
+            type="button"
+            onClick={() => setFullScreen(false)}
+            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100"
+          >
+            ✕ Thoát toàn màn hình
+          </button>
+        </div>
+        {body}
+      </div>
+    );
+  }
 
   if (collapsible) {
     return (
