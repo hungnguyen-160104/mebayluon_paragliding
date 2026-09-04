@@ -3193,6 +3193,28 @@ function BookingDayTable({
   tall?: boolean;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
+  /**
+   * Ô đầu cột "Thao tác" và "BH" — dòng xổ (⋯ Thêm, bảo hiểm) lấy CỘT ĐÓ LÀM
+   * TÂM (luật chủ 05/09) chứ không dồn trái cả bề ngang bảng. Đo vị trí đầu cột
+   * lúc dựng dòng xổ; đầu cột luôn có sẵn từ lượt vẽ trước vì dòng xổ chỉ hiện
+   * sau khi bấm.
+   */
+  const thRef = useRef<Record<string, HTMLTableCellElement | null>>({});
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  /**
+   * Đệm trái/phải cho ô colSpan để một hộp flex `justify-content: safe center`
+   * bên trong có tâm trùng tâm cột: hộp đối xứng quanh tâm cột, cắt bớt phía
+   * nào thừa. Nội dung rộng hơn hộp thì "safe" dồn về đầu, không tràn ra ngoài
+   * mép trái (mép trái trong khung cuộn là chỗ không kéo tới được).
+   */
+  const centerOn = (col: string): React.CSSProperties => {
+    const th = thRef.current[col];
+    const table = tableRef.current;
+    if (!th || !table) return {};
+    const c = th.offsetLeft + th.offsetWidth / 2;
+    const w = table.offsetWidth;
+    return { paddingLeft: Math.max(0, 2 * c - w), paddingRight: Math.max(0, w - 2 * c), justifyContent: "safe center" };
+  };
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
   const [expandedId, setExpandedId] = useState<string>("");
   /** id booking đang xổ Ô BẢO HIỂM (bấm số ở cột BH) — kênh riêng, không lẫn "Thêm". */
@@ -3270,6 +3292,9 @@ function BookingDayTable({
   });
   const Th = ({ col, label, right }: { col: string; label: string; right?: boolean }) => (
     <th
+      ref={(el) => {
+        thRef.current[col] = el;
+      }}
       onClick={() => setSort((s) => ({ col, dir: s.col === col ? ((s.dir * -1) as 1 | -1) : 1 }))}
       className={
         "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
@@ -3292,13 +3317,20 @@ function BookingDayTable({
         (tall ? "max-h-[calc(100dvh-170px)]" : "max-h-[72vh]")
       }
     >
-      <table className="min-w-full border-collapse text-[13px]">
+      <table ref={tableRef} className="min-w-full border-collapse text-[13px]">
         <thead className="sticky top-0 z-10">
           <tr>
             <Th col="seq" label="#" />
             <Th col="name" label="Khách" />
             <Th col="src" label="Nguồn" />
-            <th className="border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">Thao tác</th>
+            <th
+              ref={(el) => {
+                thRef.current.actions = el;
+              }}
+              className="border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-slate-600"
+            >
+              Thao tác
+            </th>
             <Th col="guests" label="SL" right />
             <Th col="kind" label="Loại" />
             <Th col="sv" label="Dịch vụ" />
@@ -3609,9 +3641,12 @@ function BookingDayTable({
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
                   {/* Tab xổ tô nền VÀNG NHẠT riêng — nhìn là biết dải chức năng của dòng nào */}
-                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-3 py-2">
-                    <div className="text-left" style={{ display: "flow-root" }}>
-                      {renderMore(b, () => setExpandedId(""))}
+                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-0 py-2">
+                    {/* Hộp đối xứng quanh cột Thao tác → dải nút có tâm đúng cột đó */}
+                    <div className="flex" style={centerOn("actions")}>
+                      <div className="w-fit max-w-full px-3 text-left" style={{ display: "flow-root" }}>
+                        {renderMore(b, () => setExpandedId(""))}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -3619,16 +3654,22 @@ function BookingDayTable({
               {/* DÒNG BẢO HIỂM: mở thẳng từ cột BH — nhập hồ sơ + quét giấy tờ */}
               {insuranceId === b.id && !r.moved && renderInsurance?.(b) != null && (
                 <tr>
-                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
-                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
-                      {renderInsurance(b)}
-                      <button
-                        type="button"
-                        className="mt-1 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
-                        onClick={() => setInsuranceId("")}
-                      >
-                        ✕ Đóng
-                      </button>
+                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50/40 px-0 py-2">
+                    {/* Hộp đối xứng quanh cột BH → khung bảo hiểm có tâm đúng cột đó;
+                        "✕ Đóng" đứng BÊN PHẢI thanh "Xem" (luật chủ 05/09) */}
+                    <div className="flex" style={centerOn("bh")}>
+                      <div className="mx-3 w-[640px] max-w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                        <div className="flex items-start gap-1.5">
+                          <div className="min-w-0 flex-1">{renderInsurance(b)}</div>
+                          <button
+                            type="button"
+                            className="mt-1.5 h-7 shrink-0 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
+                            onClick={() => setInsuranceId("")}
+                          >
+                            ✕ Đóng
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>
