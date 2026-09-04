@@ -3039,10 +3039,23 @@ function BookingDayTable({
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[11px]">
                   {(() => {
                     const st = insuranceState(b.insured, b.guestCount);
-                    return st.ok ? (
+                    const label = st.ok ? (
                       <span className="font-bold text-emerald-700">✓ {st.ready}/{st.need}</span>
                     ) : (
                       <span className="font-bold text-amber-700">⚠ {st.ready}/{st.need}</span>
+                    );
+                    /* Bấm vào số BH = xổ dòng chức năng (có ô bảo hiểm + quét giấy tờ) */
+                    return r.moved ? (
+                      label
+                    ) : (
+                      <button
+                        type="button"
+                        className="cursor-pointer underline decoration-dotted underline-offset-2"
+                        onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                        title="Bấm để nhập/sửa hồ sơ bảo hiểm — có quét giấy tờ tuỳ thân"
+                      >
+                        {label}
+                      </button>
                     );
                   })()}
                 </td>
@@ -4254,7 +4267,26 @@ export function BookingTodayBanner({
                 ? renderMovingDialog(b)
                 : b.locked && !canLock
                   ? null
-                  : renderMoreMenu(b, true)
+                  : (
+                      <>
+                        {renderMoreMenu(b, true)}
+                        {/* Ô BẢO HIỂM ngay trong bảng (luật chủ 04/09): nhập/sửa
+                            hồ sơ + quét giấy tờ tuỳ thân y hệt trong thẻ booking */}
+                        <div className="mt-1.5 clear-both">
+                          <InsuranceBox
+                            spot={spot}
+                            bookingId={b.id}
+                            guestCount={b.guestCount}
+                            preview={{
+                              guests: b.insured,
+                              approvedAt: b.insuranceApprovedAt,
+                              sentAt: b.insuranceSentAt,
+                              recalledAt: b.insuranceRecalledAt,
+                            }}
+                          />
+                        </div>
+                      </>
+                    )
           }
         />
       ) : (

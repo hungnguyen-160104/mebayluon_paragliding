@@ -60,14 +60,16 @@ export type OtaIngestResult = {
   message: string;
 };
 
-/** Ghi chú gộp cho booking — thứ điều phối cần đọc trước khi gọi khách. */
+/**
+ * Ghi chú gộp cho booking — CHỈ lời nhắn thật của khách (luật chủ 04/09).
+ *
+ * Trước đây nhét cả tên gói, email lẫn giấy tờ vào note nên điều phối phải đọc
+ * xuyên một rừng chữ mới thấy "we want to finish early…". Ba thứ kia đều đã có
+ * chỗ riêng: email nằm ở ô email của booking, giấy tờ nằm ở `otaGuests` và tự
+ * chảy vào hồ sơ bảo hiểm khi mở form, tên gói thì pickup/giờ đã bóc riêng.
+ */
 function noteOf(b: KlookBooking): string {
-  const parts = [b.packageLabel, b.specialRequirements, b.preferredTimeRaw ? `giờ khách muốn: ${b.preferredTimeRaw}` : ""];
-  if (b.leadEmail) parts.push(b.leadEmail);
-  const guests = b.guests
-    .map((g) => [g.fullName, g.birthday, g.idNumber].filter(Boolean).join(" "))
-    .filter(Boolean);
-  if (guests.length) parts.push(`giấy tờ: ${guests.join(" · ")}`);
+  const parts = [b.specialRequirements, b.preferredTimeRaw ? `giờ khách muốn: ${b.preferredTimeRaw}` : ""];
   return parts.filter(Boolean).join(" · ");
 }
 
