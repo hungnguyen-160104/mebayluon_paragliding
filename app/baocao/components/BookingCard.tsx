@@ -1533,58 +1533,40 @@ function RowMenu({
     );
   }
 
-  /** Mọi mục chung một cỡ chữ, một hàng ngang — đọc lướt là thấy hết việc. */
+  /** Mọi mục chung một cỡ chữ — đọc lướt là thấy hết việc. */
   const item = "shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50";
 
-  return (
-    <div
-      className={
-        "flex flex-wrap items-center gap-1 rounded-xl bg-white " +
-        (alwaysOpen ? "" : "border border-slate-300 p-1.5 shadow-lg")
-      }
+  /**
+   * Mỗi mục dựng MỘT LẦN rồi xếp theo hai bố cục: xổ tạm (thẻ) là một dải
+   * ngang; xổ sẵn (bảng) chia NHÓM có nhãn cho đỡ rối (luật chủ 04/09).
+   */
+  const itMove = (
+    <button
+      type="button"
+      className={item}
+      onClick={() => {
+        onMove();
+        setOpen(false);
+      }}
     >
-      <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />
-      <button
-        type="button"
-        className={item}
-        onClick={() => {
-          onMove();
-          setOpen(false);
-        }}
-      >
-        ⇢ Đổi lịch
-      </button>
-      <AssignControl
-        spot={spot}
-        booking={booking}
-        onDone={() => {
-          onDone();
-          setOpen(false);
-        }}
-        label="Giao PC"
-      />
-      {/* CK đại lý chỉ có ở Khau Phạ — nơi khách đi theo đại lý / hướng dẫn viên */}
-      {spot === "khau-pha" && (
-        <CommissionControl
-          spot={spot}
-          booking={booking}
-          onDone={(m) => {
-            onDone(m);
-            setOpen(false);
-          }}
-        />
-      )}
-      <button
-        type="button"
-        className={item}
-        onClick={() => {
-          onEdit();
-          setOpen(false);
-        }}
-      >
-        ✎ Sửa booking
-      </button>
-      <CancelBookingControl
+      ⇢ Đổi lịch
+    </button>
+  );
+  const itAssign = (
+    <AssignControl
+      spot={spot}
+      booking={booking}
+      onDone={() => {
+        onDone();
+        setOpen(false);
+      }}
+      label="Giao PC"
+    />
+  );
+  /* CK đại lý chỉ có ở Khau Phạ — nơi khách đi theo đại lý / hướng dẫn viên */
+  const itCommission =
+    spot === "khau-pha" ? (
+      <CommissionControl
         spot={spot}
         booking={booking}
         onDone={(m) => {
@@ -1592,7 +1574,53 @@ function RowMenu({
           setOpen(false);
         }}
       />
-      <NotifyGuestControl
+    ) : null;
+  const itEdit = (
+    <button
+      type="button"
+      className={item}
+      onClick={() => {
+        onEdit();
+        setOpen(false);
+      }}
+    >
+      ✎ Sửa booking
+    </button>
+  );
+  const itCancel = (
+    <CancelBookingControl
+      spot={spot}
+      booking={booking}
+      onDone={(m) => {
+        onDone(m);
+        setOpen(false);
+      }}
+    />
+  );
+  const itNotify = (
+    <NotifyGuestControl
+      spot={spot}
+      booking={booking}
+      onDone={(m) => {
+        onDone(m);
+        setOpen(false);
+      }}
+    />
+  );
+  const itNoTicket = (
+    <NoTicketControl
+      spot={spot}
+      booking={booking}
+      onDone={(m) => {
+        onDone(m);
+        setOpen(false);
+      }}
+    />
+  );
+  /* Sửa khoản đã thu — chỉ hiện khi booking đã có tiền vào */
+  const itEditCollects =
+    (booking.collected?.length ?? 0) > 0 ? (
+      <EditCollectsControl
         spot={spot}
         booking={booking}
         onDone={(m) => {
@@ -1600,43 +1628,87 @@ function RowMenu({
           setOpen(false);
         }}
       />
-      <NoTicketControl
-        spot={spot}
-        booking={booking}
-        onDone={(m) => {
-          onDone(m);
-          setOpen(false);
-        }}
-      />
-      {/* Sửa khoản đã thu — chỉ hiện khi booking đã có tiền vào */}
-      {(booking.collected?.length ?? 0) > 0 && (
-        <EditCollectsControl
-          spot={spot}
-          booking={booking}
-          onDone={(m) => {
-            onDone(m);
-            setOpen(false);
-          }}
-        />
-      )}
-      <VoidBookingControl
-        spot={spot}
-        booking={booking}
-        onDone={(m) => {
-          onDone(m);
-          setOpen(false);
-        }}
-      />
+    ) : null;
+  const itVoid = (
+    <VoidBookingControl
+      spot={spot}
+      booking={booking}
+      onDone={(m) => {
+        onDone(m);
+        setOpen(false);
+      }}
+    />
+  );
+  const itPay = <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />;
+
+  if (alwaysOpen) {
+    /* Hàm thường chứ KHÔNG phải component lồng trong render — kiểu component
+       mới mỗi lượt render sẽ làm React tháo/lắp lại con, mất form đang mở dở. */
+    const group = (label: string, children: ReactNode) => (
+      <div className="flex items-start gap-2">
+        <span className="mt-1.5 w-16 shrink-0 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
+          {label}
+        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-1">{children}</div>
+      </div>
+    );
+    return (
+      <div className="flex w-full flex-col gap-1.5">
+        {group(
+          "Lịch",
+          <>
+            {itMove}
+            {itAssign}
+            {itEdit}
+          </>,
+        )}
+        {group(
+          "Tiền · sổ",
+          <>
+            {itPay}
+            {itCommission}
+            {itEditCollects}
+            {extra}
+          </>,
+        )}
+        {group(
+          "Khách · vé",
+          <>
+            {itNotify}
+            {itNoTicket}
+          </>,
+        )}
+        {group(
+          "Huỷ bỏ",
+          <>
+            {itCancel}
+            {itVoid}
+          </>,
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
+      {itPay}
+      {itMove}
+      {itAssign}
+      {itCommission}
+      {itEdit}
+      {itCancel}
+      {itNotify}
+      {itNoTicket}
+      {itEditCollects}
+      {itVoid}
       {extra}
-      {!alwaysOpen && (
-        <button
-          type="button"
-          className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
-          onClick={() => setOpen(false)}
-        >
-          ✕
-        </button>
-      )}
+      <button
+        type="button"
+        className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
+        onClick={() => setOpen(false)}
+      >
+        ✕
+      </button>
     </div>
   );
 }
@@ -3079,12 +3151,22 @@ function BookingDayTable({
                 </td>
                 <td className="max-w-[220px] min-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
                   <div className="break-words">{b.note || "—"}</div>
+                  {/* Tờ giấy nhớ của điều phối ("đã hẹn khách 10h tới bãi hạ") phải
+                      ĐẬP VÀO MẮT ngay trên dòng — bắt bấm nút mới thấy là dễ sót
+                      (luật chủ 04/09). */}
+                  {b.contactNote && (
+                    <div className="mt-0.5 break-words rounded bg-amber-100 px-1 py-0.5 font-medium text-amber-900">
+                      📝 {b.contactNote}
+                      {b.contactedBy ? <span className="font-semibold text-amber-700"> — {b.contactedBy} đã gọi</span> : ""}
+                    </div>
+                  )}
                 </td>
-                <td className="border-b border-slate-100 px-1.5 py-1">
+                <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
-                      4 nút nhanh đứng thẳng trên dòng; "⋯ Thêm" xổ phần còn lại (luật chủ 04/09). */}
+                      4 nút nhanh xếp MỘT HÀNG NGANG, chữ không được gãy đôi ("Thu/tiền") —
+                      cột tự nới, bảng cuộn ngang khi hẹp (ảnh chủ gửi 04/09). */}
                   {!r.moved && (
-                    <div className="flex flex-wrap items-center justify-end gap-1">
+                    <div className="flex flex-nowrap items-center justify-end gap-1 [&_button]:whitespace-nowrap">
                       {renderQuick?.(b)}
                       {renderMore?.(b) != null && (
                         <button
