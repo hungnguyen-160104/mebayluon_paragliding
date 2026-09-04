@@ -2956,6 +2956,7 @@ function BookingDayTable({
   movedOut,
   renderQuickMoney,
   renderQuickRest,
+  renderQuickContact,
   renderMore,
 }: {
   open: BookingDTO[];
@@ -2967,6 +2968,8 @@ function BookingDayTable({
    */
   renderQuickMoney?: (b: BookingDTO) => ReactNode;
   renderQuickRest?: (b: BookingDTO) => ReactNode;
+  /** Hàng 3: nút "☎ Đã liên hệ" — dài nên đứng một mình cho khỏi phá hàng. */
+  renderQuickContact?: (b: BookingDTO) => ReactNode;
   /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
   renderMore?: (b: BookingDTO) => ReactNode;
 }) {
@@ -3128,7 +3131,8 @@ function BookingDayTable({
                       <div
                         key={ci}
                         className={
-                          "whitespace-nowrap text-[10px] font-semibold " +
+                          /* break-words chứ KHÔNG nowrap: ô hẹp mà cấm bẻ dòng là chữ đè sang cột Đón */
+                          "break-words text-[10px] font-semibold " +
                           (c.kind === "add" ? "text-indigo-700" : "text-rose-600")
                         }
                       >
@@ -3150,11 +3154,12 @@ function BookingDayTable({
                   ) : null}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums">{k(b.totalAmount || 0)}</td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums text-emerald-700">
-                  {k((b.deposit || 0) + (b.movedPaidOut ?? 0))}
+                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums">
+                  {/* Tiền ĐÃ THU: đậm, xanh lá — cùng tông chip "đã thu" trong thẻ */}
+                  <span className="font-bold text-emerald-800">{k((b.deposit || 0) + (b.movedPaidOut ?? 0))}</span>
                   {/* KỂ TỪNG KHOẢN, ai thu (luật chủ 04/09): "cọc 500k CK by Duyên",
-                      "TM 1.000k by Duyên", "CK 500k by Hoan" — cùng cách tính với
-                      BookingSummary: cọc gõ tay = số ròng − đã thu qua lệnh + đã hoàn. */}
+                      "TM 1.000k by Duyên ✓" — cùng cách tính + màu với BookingSummary;
+                      ✓ xanh sau khoản = kế toán đã soát sao kê nhận khoản đó. */}
                   {(() => {
                     const paidTotal = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
                     const depositBase = Math.max(0, (b.deposit || 0) - paidTotal + (b.refunded ?? 0));
@@ -3163,33 +3168,63 @@ function BookingDayTable({
                     return (
                       <>
                         {depositBase > 0 && (
-                          <div className="text-[10px] font-normal text-slate-500">
+                          <div className="text-[10px] font-semibold text-emerald-800">
                             cọc {k(depositBase)}
                             {way}
                             {depBy ? ` by ${depBy}` : ""}
                           </div>
                         )}
                         {(b.collected ?? []).map((c, ci) => (
-                          <div key={c.collectId || ci} className="text-[10px] font-normal text-slate-500">
+                          <div key={c.collectId || ci} className="text-[10px] font-semibold text-emerald-800">
                             {c.method === "cash" ? "TM" : "CK"} {k(c.amount)}
                             {c.byName ? ` by ${c.byName}` : ""}
+                            {c.verified ? (
+                              <span className="ml-0.5 text-emerald-700" title="Kế toán đã soát sao kê và nhận khoản này">✓</span>
+                            ) : null}
                           </div>
                         ))}
                         {(b.refunded ?? 0) > 0 && (
-                          <div className="text-[10px] font-normal text-rose-500">hoàn {k(b.refunded ?? 0)}</div>
+                          <div className="text-[10px] font-bold text-amber-900">đã hoàn {k(b.refunded ?? 0)}</div>
                         )}
                       </>
                     );
                   })()}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-right tabular-nums text-[12px]">
-                  {/* Nói THẲNG đủ hay thiếu (luật chủ 04/09), đừng bắt đoán dấu ✓ */}
-                  {(b.remaining || 0) > 0 ? (
-                    <span className="font-bold text-rose-700">còn thu {k(b.remaining || 0)}</span>
-                  ) : (b.totalAmount || 0) > 0 ? (
-                    <span className="font-bold text-emerald-700">✓ đã thu đủ</span>
-                  ) : (
-                    <span className="text-slate-400">—</span>
+                  {/* Nói THẲNG đủ hay thiếu — màu + tích Y HỆT trong thẻ (luật chủ
+                      04/09): "Đã soát đủ" là chip xanh DƯƠNG của kế toán (cùng luật
+                      với BookingSummary: hết còn thu + mọi khoản CK đã "Đã nhận";
+                      toàn tiền mặt thì xanh luôn), "đã thu đủ" xanh lá của quầy. */}
+                  {(() => {
+                    const paidTotal = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
+                    const depositBase = Math.max(0, (b.deposit || 0) - paidTotal + (b.refunded ?? 0));
+                    const inlineCodes = new Set(
+                      (b.collected ?? []).filter((c) => c.method === "transfer" && c.code).map((c) => c.code as string),
+                    );
+                    const depositCode = b.transferCode && !inlineCodes.has(b.transferCode) ? b.transferCode : "";
+                    const cocLaCK = depositBase > 0 && (b.depositMethod === "transfer" || Boolean(depositCode));
+                    const coCK = (b.collected ?? []).some((c) => c.method === "transfer") || cocLaCK;
+                    const conThu = (b.remaining ?? 0) > 0;
+                    if (conThu) return <span className="font-bold text-rose-700">còn thu {k(b.remaining || 0)}</span>;
+                    const daTien = paidTotal > 0 || depositBase > 0 || (b.deposit || 0) > 0;
+                    if (daTien && (coCK ? Boolean(b.ckChecked) : true))
+                      return (
+                        <span className="rounded bg-sky-500 px-1 py-0.5 font-bold text-white">✓ Đã soát đủ</span>
+                      );
+                    if (daTien || (b.totalAmount || 0) > 0)
+                      return <span className="font-bold text-emerald-700">✓ đã thu đủ</span>;
+                    return <span className="text-slate-400">—</span>;
+                  })()}
+                  {/* Tích của kế toán y hệt thẻ: ✓CK xanh dương · ✓TM xanh lá đậm */}
+                  {(b.ckChecked || b.tmChecked) && (
+                    <div className="mt-0.5 flex justify-end gap-0.5 text-[10px]">
+                      {b.ckChecked && (
+                        <span className="rounded bg-sky-500 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản CHUYỂN KHOẢN">✓CK</span>
+                      )}
+                      {b.tmChecked && (
+                        <span className="rounded bg-emerald-700 px-1 font-bold text-white" title="Kế toán đã nhận đủ các khoản TIỀN MẶT">✓TM</span>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[11px]">
@@ -3279,6 +3314,9 @@ function BookingDayTable({
                       </div>
                       {renderQuickRest?.(b) != null && (
                         <div className="flex flex-nowrap items-center gap-1">{renderQuickRest(b)}</div>
+                      )}
+                      {renderQuickContact?.(b) != null && (
+                        <div className="flex flex-nowrap items-center gap-1">{renderQuickContact(b)}</div>
                       )}
                     </div>
                   )}
@@ -4064,9 +4102,10 @@ export function BookingTodayBanner({
                 >
                   {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
                 </Button>
-                <ContactNote spot={spot} booking={b} onDone={load} />
     </>
   );
+  /** Nút "☎ Đã liên hệ" — tách riêng: trong bảng nó chiếm chỗ nên nằm hàng 3 một mình. */
+  const renderContactButton = (b: BookingDTO) => <ContactNote spot={spot} booking={b} onDone={load} />;
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
   const renderMoreMenu = (b: BookingDTO, alwaysOpen = false) => (
                 <RowMenu
@@ -4112,6 +4151,7 @@ export function BookingTodayBanner({
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
                 {renderMoneyButton(b)}
                 {renderQuickButtons(b)}
+                {renderContactButton(b)}
                 {renderMoreMenu(b)}
               </div>
             )}
@@ -4444,6 +4484,9 @@ export function BookingTodayBanner({
           }
           renderQuickRest={(b) =>
             b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderQuickButtons(b)
+          }
+          renderQuickContact={(b) =>
+            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderContactButton(b)
           }
           renderMore={(b) =>
             b.status !== "open"
