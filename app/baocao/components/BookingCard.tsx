@@ -1642,49 +1642,21 @@ function RowMenu({
   const itPay = <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />;
 
   if (alwaysOpen) {
-    /* Hàm thường chứ KHÔNG phải component lồng trong render — kiểu component
-       mới mỗi lượt render sẽ làm React tháo/lắp lại con, mất form đang mở dở. */
-    const group = (label: string, children: ReactNode) => (
-      <div className="flex items-start gap-2">
-        <span className="mt-1.5 w-16 shrink-0 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
-          {label}
-        </span>
-        <div className="flex min-w-0 flex-wrap items-center gap-1">{children}</div>
-      </div>
-    );
+    /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
+       04/09) — việc thường dùng đứng trước, huỷ bỏ đứng cuối. */
     return (
-      <div className="flex w-full flex-col gap-1.5">
-        {group(
-          "Lịch",
-          <>
-            {itMove}
-            {itAssign}
-            {itEdit}
-          </>,
-        )}
-        {group(
-          "Tiền · sổ",
-          <>
-            {itPay}
-            {itCommission}
-            {itEditCollects}
-            {extra}
-          </>,
-        )}
-        {group(
-          "Khách · vé",
-          <>
-            {itNotify}
-            {itNoTicket}
-          </>,
-        )}
-        {group(
-          "Huỷ bỏ",
-          <>
-            {itCancel}
-            {itVoid}
-          </>,
-        )}
+      <div className="flex flex-wrap items-center gap-1">
+        {itPay}
+        {itMove}
+        {itAssign}
+        {itEdit}
+        {itCommission}
+        {itEditCollects}
+        {extra}
+        {itNotify}
+        {itNoTicket}
+        {itCancel}
+        {itVoid}
       </div>
     );
   }
@@ -2958,6 +2930,7 @@ function BookingDayTable({
   renderQuickRest,
   renderQuickContact,
   renderMore,
+  renderInsurance,
 }: {
   open: BookingDTO[];
   closed: BookingDTO[];
@@ -2972,10 +2945,14 @@ function BookingDayTable({
   renderQuickContact?: (b: BookingDTO) => ReactNode;
   /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
   renderMore?: (b: BookingDTO) => ReactNode;
+  /** Ô bảo hiểm (nhập + quét giấy tờ) — bấm thẳng số ở cột BH là xổ, không qua "Thêm". */
+  renderInsurance?: (b: BookingDTO) => ReactNode;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
   const [expandedId, setExpandedId] = useState<string>("");
+  /** id booking đang xổ Ô BẢO HIỂM (bấm số ở cột BH) — kênh riêng, không lẫn "Thêm". */
+  const [insuranceId, setInsuranceId] = useState<string>("");
   type R = { b: BookingDTO; moved: boolean };
   const all: R[] = [
     ...open.map((b) => ({ b, moved: false })),
@@ -3237,14 +3214,17 @@ function BookingDayTable({
                     ) : (
                       <span className="font-bold text-amber-700">⚠ {st.ready}/{st.need}</span>
                     );
-                    /* Bấm vào số BH = xổ dòng chức năng (có ô bảo hiểm + quét giấy tờ) */
-                    return r.moved ? (
+                    /* Bấm vào số BH = mở THẲNG ô bảo hiểm (kênh riêng, không qua "Thêm") */
+                    return r.moved || renderInsurance?.(b) == null ? (
                       label
                     ) : (
                       <button
                         type="button"
                         className="cursor-pointer underline decoration-dotted underline-offset-2"
-                        onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                        onClick={() => {
+                          setInsuranceId((cur) => (cur === b.id ? "" : b.id));
+                          setExpandedId("");
+                        }}
                         title="Bấm để nhập/sửa hồ sơ bảo hiểm — có quét giấy tờ tuỳ thân"
                       >
                         {label}
@@ -3301,7 +3281,10 @@ function BookingDayTable({
                         {renderMore?.(b) != null && (
                           <button
                             type="button"
-                            onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                            onClick={() => {
+                              setExpandedId((cur) => (cur === b.id ? "" : b.id));
+                              setInsuranceId("");
+                            }}
                             className={
                               "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
                               (expandedId === b.id
@@ -3330,6 +3313,16 @@ function BookingDayTable({
                   <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
                       {renderMore(b)}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {/* DÒNG BẢO HIỂM: mở thẳng từ cột BH — nhập hồ sơ + quét giấy tờ */}
+              {insuranceId === b.id && !r.moved && renderInsurance?.(b) != null && (
+                <tr>
+                  <td colSpan={15} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
+                    <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
+                      {renderInsurance(b)}
                     </div>
                   </td>
                 </tr>
@@ -4497,26 +4490,24 @@ export function BookingTodayBanner({
                 ? renderMovingDialog(b)
                 : b.locked && !canLock
                   ? null
-                  : (
-                      <>
-                        {renderMoreMenu(b, true)}
-                        {/* Ô BẢO HIỂM ngay trong bảng (luật chủ 04/09): nhập/sửa
-                            hồ sơ + quét giấy tờ tuỳ thân y hệt trong thẻ booking */}
-                        <div className="mt-1.5 clear-both">
-                          <InsuranceBox
-                            spot={spot}
-                            bookingId={b.id}
-                            guestCount={b.guestCount}
-                            preview={{
-                              guests: b.insured,
-                              approvedAt: b.insuranceApprovedAt,
-                              sentAt: b.insuranceSentAt,
-                              recalledAt: b.insuranceRecalledAt,
-                            }}
-                          />
-                        </div>
-                      </>
-                    )
+                  : renderMoreMenu(b, true)
+          }
+          renderInsurance={(b) =>
+            b.status !== "open" ? null : (
+              /* Ô BẢO HIỂM mở THẲNG từ cột BH (luật chủ 04/09 — không ẩn trong
+                 "Thêm"): nhập/sửa hồ sơ + quét giấy tờ y hệt trong thẻ booking */
+              <InsuranceBox
+                spot={spot}
+                bookingId={b.id}
+                guestCount={b.guestCount}
+                preview={{
+                  guests: b.insured,
+                  approvedAt: b.insuranceApprovedAt,
+                  sentAt: b.insuranceSentAt,
+                  recalledAt: b.insuranceRecalledAt,
+                }}
+              />
+            )
           }
         />
       ) : (
