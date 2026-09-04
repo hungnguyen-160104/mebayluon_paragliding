@@ -3666,7 +3666,28 @@ function assertBookingTime(flightDate: string, expectedTime: string) {
  */
 export async function nextDaySeq(spot: string, flightDate: string): Promise<number> {
   const top = await BaobayBooking.findOne({ spot, flightDate }).sort({ daySeq: -1 }).select("daySeq").lean<any>();
-  return (Number(top?.daySeq) || 0) + 1;
+  const seed = (Number(top?.daySeq) || 0) + 1;
+  /**
+   * CHỐNG TRÙNG SỐ khi hai người tạo booking CÙNG LÚC (3 cặp trùng thật
+   * 30/08–01/09: hai lượt "max+1" đọc cùng một max). Bộ đếm nguyên tử theo
+   * (điểm, ngày): seq = max(seq cũ + 1, seed) trong MỘT phép ghi — hai lượt
+   * song song bị xếp hàng trên cùng một bản ghi đếm nên luôn ra số khác nhau.
+   * `seed` tự vá bộ đếm khi nó chưa có hoặc tụt sau sổ thật.
+   */
+  try {
+    const doc = await mongoose.connection
+      .collection("baobaydayseqs")
+      .findOneAndUpdate(
+        { _id: `${spot}|${flightDate}` as unknown as mongoose.Types.ObjectId },
+        [{ $set: { seq: { $max: [{ $add: [{ $ifNull: ["$seq", 0] }, 1] }, seed] } } }],
+        { upsert: true, returnDocument: "after" },
+      );
+    const seq = Number((doc as unknown as { seq?: number } | null)?.seq);
+    if (Number.isFinite(seq) && seq >= seed) return seq;
+  } catch (err) {
+    console.error("nextDaySeq counter failed, dùng max+1:", err);
+  }
+  return seed;
 }
 
 export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
