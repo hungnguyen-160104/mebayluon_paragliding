@@ -3327,6 +3327,8 @@ export function BookingTodayBanner({
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   /** Toàn màn hình (desktop soát sổ): phủ kín cửa sổ, ✕ để quay lại trang. */
   const [fullScreen, setFullScreen] = useState(false);
+  /** Thẻ booking ĐÃ ĐÓNG đang xổ dải "⋯ Thêm" (chế độ ☰ Thẻ — cùng luật với bảng). */
+  const [closedMoreId, setClosedMoreId] = useState<string>("");
   /** Esc cũng co sổ về như cũ. */
   useEffect(() => {
     if (!fullScreen) return;
@@ -4162,7 +4164,7 @@ export function BookingTodayBanner({
   /**
    * DẢI NÚT cho booking ĐÃ ĐÓNG (đã bay/huỷ) trong BẢNG (luật chủ 04/09):
    * Đóng · Chi tiết TT · CK đại lý · Khoá · Sửa thu · Thu tiền (nếu còn thiếu)
-   * — một hàng dồn trái. Bản thẻ vẫn dùng renderClosedActions (bố cục nổi phải).
+   * — một hàng dồn trái. Bản THẺ cũng xổ đúng dải này khi bấm ⋯ Thêm.
    */
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
     <div className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left">
@@ -4237,59 +4239,29 @@ export function BookingTodayBanner({
             )}
     </>
   );
-  /** Cụm nút của booking ĐÃ ĐÓNG (đã bay/huỷ): sửa tiền, sửa, khoá, hoàn tác. */
+  /**
+   * Cụm nút của THẺ booking ĐÃ ĐÓNG (đã bay/huỷ) — CÙNG thứ tự, loại nút và
+   * luật với dòng BẢNG (luật chủ 04/09): cột nổi phải gồm ↩ Chưa bay ĐỎ + Khoá
+   * (đã bay) hay ↩ Bay lại (đã huỷ), rồi ⋯ Thêm xổ dải renderClosedStrip ngay
+   * dưới thẻ (Chi tiết TT · CK đại lý · Sửa booking · Sửa thu · Thu tiền · Khoá).
+   */
   const renderClosedActions = (b: BookingDTO) => (
-    <>
-            {/* ĐÃ BAY / ĐÃ HUỶ vẫn sửa và thu tiền được: tiền của chuyến bám vào
-                đúng booking này, chặn lại là kế toán phải ghi tay ra ngoài sổ.
-                Soát xong thì kế toán bấm 🔓 Khoá — từ đó dòng này đông cứng. */}
-            <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
-              {lockButton(b)}
-              {canLock && !b.locked && (
-                <CollectFixControl
-                  spot={spot}
-                  booking={b}
-                  onDone={(msg) => {
-                    setCollectDone(msg);
-                    load();
-                  }}
-                />
-              )}
-              {(!b.locked || canLock) && spot !== "sapa" && (
-                <CollectMoneyControl
-                  spot={spot}
-                  booking={b}
-                  onDone={(msg) => {
-                    setCollectDone(msg);
-                    load();
-                  }}
-                />
-              )}
-              {(!b.locked || canLock) && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-7 bg-white px-2 text-xs"
-                  onClick={() => requestEditBooking(b)}
-                >
-                  ✎ Sửa
-                </Button>
-              )}
-            </div>
-            {/* Bấm nhầm thì có đường lui — khỏi tạo booking mới để chữa (sổ đếm hai lần) */}
-            {(!b.locked || canLock) && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="float-right ml-2 h-7 bg-white px-2 text-xs font-semibold text-slate-600"
-                disabled={busy === b.id}
-                onClick={() => restore(b)}
-                title="Trả booking về danh sách chờ bay"
-              >
-                {b.status === "done" ? "↩ Chưa bay" : "↩ Bay lại"}
-              </Button>
-            )}
-    </>
+    <div className="float-right ml-2 flex flex-col items-stretch gap-0.5 [&_button]:h-7 [&_button]:justify-center [&_button]:whitespace-nowrap [&_button]:text-center">
+      {renderClosedQuick(b)}
+      <button
+        type="button"
+        onClick={() => setClosedMoreId((cur) => (cur === b.id ? "" : b.id))}
+        className={
+          "rounded-lg border px-2 text-xs font-bold " +
+          (closedMoreId === b.id
+            ? "border-sky-600 bg-sky-600 text-white"
+            : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+        }
+        title="Xổ các chức năng còn lại: chi tiết thanh toán, sửa booking, sửa thu, thu tiền, khoá…"
+      >
+        ⋯ Thêm
+      </button>
+    </div>
   );
 
   /**
@@ -4396,6 +4368,12 @@ export function BookingTodayBanner({
               </>
             )}
             <BookingSummary b={b} dim={b.status === "done" || b.locked} />
+            {/* Dải ⋯ Thêm xổ ngay dưới thẻ — nền vàng nhạt như dòng xổ của bảng */}
+            {closedMoreId === b.id && (
+              <div className="clear-both mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5">
+                {renderClosedStrip(b, () => setClosedMoreId(""))}
+              </div>
+            )}
     </>
   );
 
