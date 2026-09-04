@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
   try {
     if (params.get("export") === "1") {
-      const { file, name } = await buildTaxXlsx(auth, from, to);
+      const { file, name } = await buildTaxXlsx(auth, from, to, params.get("spot") || undefined);
       return new Response(new Uint8Array(file), {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

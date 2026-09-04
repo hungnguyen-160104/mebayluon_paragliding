@@ -333,11 +333,13 @@ export async function buildTaxXlsx(
   _session: BaobaySession,
   from: string,
   to: string,
+  /** Lọc theo MỘT điểm bay (luật chủ 05/09) — mỗi điểm một sổ thuế, không trộn. */
+  spot?: string,
 ): Promise<{ file: Buffer; name: string; count: number }> {
   await connectDB();
   assertRange(from, to);
 
-  const records = await BaobayTaxRecord.find({ flightDate: { $gte: from, $lte: to } })
+  const records = await BaobayTaxRecord.find({ flightDate: { $gte: from, $lte: to }, ...(spot ? { spot } : {}) })
     .sort({ flightDate: 1, collectDate: 1 })
     .lean<any[]>();
 

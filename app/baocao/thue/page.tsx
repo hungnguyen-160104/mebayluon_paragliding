@@ -63,7 +63,26 @@ export default function TaxPage() {
     if (user) load();
   }, [user, load]);
 
-  const picked = useMemo(() => (rows ?? []).filter((r) => r.picked), [rows]);
+  /**
+   * PHÂN THEO ĐIỂM BAY (luật chủ 05/09): ba điểm chung một bảng thì hoá đơn
+   * Khau Phạ lẫn với Hà Nội — lọc theo điểm, số tổng và file Excel nhìn theo
+   * đúng điểm đang chọn.
+   */
+  const [spotFilter, setSpotFilter] = useState("all");
+  const spotChips = useMemo(() => {
+    const m = new Map<string, { label: string; count: number }>();
+    for (const r of rows ?? []) {
+      const cur = m.get(r.spot) ?? { label: r.spotLabel, count: 0 };
+      cur.count += 1;
+      m.set(r.spot, cur);
+    }
+    return [...m.entries()];
+  }, [rows]);
+  const viewRows = useMemo(
+    () => (rows ?? []).filter((r) => spotFilter === "all" || r.spot === spotFilter),
+    [rows, spotFilter],
+  );
+  const picked = useMemo(() => viewRows.filter((r) => r.picked), [viewRows]);
   const tong = useMemo(() => {
     let gop = 0, net = 0, vat = 0;
     for (const r of picked) {
@@ -115,6 +134,27 @@ export default function TaxPage() {
             );
           })}
         </div>
+        {/* Lọc theo ĐIỂM BAY — mỗi điểm một sổ thuế, đừng trộn */}
+        {spotChips.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1">
+            {[["all", `Tất cả (${(rows ?? []).length})`] as [string, string], ...spotChips.map(([id, x]) => [id, `${x.label} (${x.count})`] as [string, string])].map(
+              ([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSpotFilter(id)}
+                  className={
+                    spotFilter === id
+                      ? "h-10 rounded-lg bg-sky-600 px-3 text-xs font-bold text-white"
+                      : "h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  }
+                >
+                  {label}
+                </button>
+              ),
+            )}
+          </div>
+        )}
         {/**
          * Tải file bằng thẻ <a> thường — cookie phiên đi kèm, và trình duyệt tự
          * lưu file thay vì nuốt vào fetch. Chỉ hiện khi ĐÃ nhặt ít nhất một hồ
@@ -122,7 +162,7 @@ export default function TaxPage() {
          */}
         {picked.length > 0 && (
           <a
-            href={`/api/baocao/thue?from=${from}&to=${to}&export=1`}
+            href={`/api/baocao/thue?from=${from}&to=${to}&export=1${spotFilter !== "all" ? `&spot=${spotFilter}` : ""}`}
             className="ml-auto flex h-10 items-center rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white hover:bg-emerald-700"
             onClick={() => setNotice(`Đã tải file ${picked.length} hồ sơ — các hồ sơ này sẽ mang dấu "đã xuất".`)}
           >
@@ -218,11 +258,13 @@ export default function TaxPage() {
       {/* ---- Danh sách booking ---- */}
       {!rows ? (
         <PageLoading label="Đang tải danh sách booking…" />
-      ) : rows.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-slate-500">Không có booking nào trong khoảng ngày này.</p>
+      ) : viewRows.length === 0 ? (
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Không có booking nào trong khoảng ngày này{spotFilter !== "all" ? " ở điểm đang lọc" : ""}.
+        </p>
       ) : (
         <div className="mt-3 space-y-1.5">
-          {rows.map((r) => (
+          {viewRows.map((r) => (
             <TaxRow
               key={r.bookingId}
               row={r}
