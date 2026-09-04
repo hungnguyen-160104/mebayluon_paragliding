@@ -2786,6 +2786,8 @@ function BookingDayTable({
   renderQuickTicket,
   renderQuickFlown,
   renderQuickContact,
+  renderClosedQuick,
+  renderMovedActions,
   renderMore,
   renderInsurance,
 }: {
@@ -2803,6 +2805,10 @@ function BookingDayTable({
   renderQuickFlown?: (b: BookingDTO) => ReactNode;
   /** Hàng 3: nút "☎ Đã liên hệ" — dài nên đứng một mình cho khỏi phá hàng. */
   renderQuickContact?: (b: BookingDTO) => ReactNode;
+  /** Booking đã bay/huỷ: "↩ Chưa bay"/"↩ Bay lại" (+ Khoá) đứng cạnh ⋯ Thêm. */
+  renderClosedQuick?: (b: BookingDTO) => ReactNode;
+  /** Dòng ĐÃ DỜI ĐI: nút hoàn tác kéo khách về lại sổ ngày này. */
+  renderMovedActions?: (b: BookingDTO) => ReactNode;
   /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng; `close` để nút "✕ Đóng" trong dải tự thu. */
   renderMore?: (b: BookingDTO, close?: () => void) => ReactNode;
   /** Ô bảo hiểm (nhập + quét giấy tờ) — bấm thẳng số ở cột BH là xổ, không qua "Thêm". */
@@ -2964,6 +2970,7 @@ function BookingDayTable({
                       title={`Khách đã rời sổ hôm nay, booking hiện thuộc ngày ${formatDateKeyVN(b.flightDate)} — thao tác (sửa/thu/khoá) làm ở sổ ngày đó nên dòng này không có nút`}
                     >
                       ↪ ĐÃ DỜI ĐI, sang {formatDateKeyVN(b.flightDate).slice(0, 5)}
+                      {b.movedBy ? ` by ${b.movedBy}` : ""}
                     </div>
                   )}
                   {!r.moved && b.rescheduledFrom.length > 0 && (
@@ -2999,7 +3006,11 @@ function BookingDayTable({
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
                       Nút nhanh thu nhỏ, xếp 2 HÀNG CỐ ĐỊNH (luật chủ 04/09): hàng trên
                       Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
-                  {!r.moved && (
+                  {r.moved ? (
+                    <div className="[&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      {renderMovedActions?.(b)}
+                    </div>
+                  ) : (
                     <div className="flex flex-col items-start gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
                       {renderQuickTicket?.(b) != null && (
                         <div className="flex flex-nowrap items-center gap-1">{renderQuickTicket(b)}</div>
@@ -3007,6 +3018,7 @@ function BookingDayTable({
                       <div className="flex flex-nowrap items-center gap-1">
                         {renderQuickMoney?.(b)}
                         {renderQuickFlown?.(b)}
+                        {renderClosedQuick?.(b)}
                         {renderMore?.(b) != null && (
                           <button
                             type="button"
@@ -3747,6 +3759,75 @@ export function BookingTodayBanner({
     }
   }
 
+  /** Kéo booking ĐÃ DỜI ĐI về lại sổ ngày này — hoàn tác một lệnh dời nhầm. */
+  async function undoMove(b: BookingDTO) {
+    if (
+      !window.confirm(
+        `Đưa ${b.contactName || "khách"} từ ngày ${formatDateKeyVN(b.flightDate)} VỀ LẠI sổ ngày ${formatDateKeyVN(date)}?`,
+      )
+    )
+      return;
+    setBusy(b.id);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "move", toDate: date });
+      setCollectDone(`✓ Đã đưa ${b.contactName || "khách"} về lại sổ ngày ${formatDateKeyVN(date)}.`);
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không hoàn tác được — booking bên ngày mới có thể đã bay/khoá");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /**
+   * Nút nhanh cho booking ĐÃ ĐÓNG trên dòng bảng (luật chủ 04/09): đã bay thì
+   * "↩ Chưa bay" ĐỎ + Khoá đứng cạnh ⋯ Thêm; đã huỷ thì "↩ Bay lại".
+   */
+  const renderClosedQuick = (b: BookingDTO) =>
+    b.status === "done" ? (
+      <>
+        {(!b.locked || canLock) && (
+          <Button
+            type="button"
+            className="h-7 bg-rose-600 px-2 text-xs hover:bg-rose-700"
+            disabled={busy === b.id}
+            onClick={() => restore(b)}
+            title="Hoàn tác: trả booking về CHƯA BAY"
+          >
+            ↩ Chưa bay
+          </Button>
+        )}
+        {lockButton(b)}
+      </>
+    ) : b.status === "cancelled" ? (
+      (!b.locked || canLock) && (
+        <Button
+          type="button"
+          className="h-7 bg-rose-600 px-2 text-xs hover:bg-rose-700"
+          disabled={busy === b.id}
+          onClick={() => restore(b)}
+          title="Hoàn tác huỷ: trả booking về CHỜ BAY"
+        >
+          ↩ Bay lại
+        </Button>
+      )
+    ) : null;
+
+  /** Dòng ĐÃ DỜI ĐI: một nút hoàn tác kéo khách về lại sổ ngày này. */
+  const renderMovedActions = (b: BookingDTO) => (
+    <Button
+      type="button"
+      variant="ghost"
+      className="h-7 border-amber-400 bg-amber-50 px-2 text-xs font-semibold text-amber-900"
+      disabled={busy === b.id}
+      onClick={() => undoMove(b)}
+      title={`Booking đang thuộc ngày ${formatDateKeyVN(b.flightDate)} — bấm để kéo về lại sổ ngày này`}
+    >
+      ↩ Hoàn tác dời
+    </Button>
+  );
+
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
   /** HỘP DỜI LỊCH của một booking — hiện thay cụm nút khi đang chọn ngày dời. */
   const renderMovingDialog = (b: BookingDTO) => {
@@ -4447,6 +4528,8 @@ export function BookingTodayBanner({
           renderQuickContact={(b) =>
             b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderContactButton(b)
           }
+          renderClosedQuick={(b) => renderClosedQuick(b)}
+          renderMovedActions={(b) => renderMovedActions(b)}
           renderMore={(b, close) =>
             b.status !== "open"
               ? renderClosedStrip(b, close)
