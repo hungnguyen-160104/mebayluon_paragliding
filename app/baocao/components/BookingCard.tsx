@@ -1154,7 +1154,11 @@ function ContactNote({
               : "Gọi xác nhận khách rồi ghi lại đã hẹn gì"
           }
         >
-          {booking.contactedAt ? "☎ Đã liên hệ ✓" : needCall ? "☎ Cần gọi xác nhận" : "📝 Ghi chú"}
+          {booking.contactedAt
+            ? `☎ Đã liên hệ${booking.contactedBy ? ` by ${booking.contactedBy}` : ""} ✓`
+            : needCall
+              ? "☎ Cần gọi xác nhận"
+              : "📝 Ghi chú"}
         </Button>
       )}
     </>
