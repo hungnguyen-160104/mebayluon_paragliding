@@ -2975,12 +2975,14 @@ function BookingDayTable({
                 }
               >
                 <td className="border-b border-slate-100 px-2 py-1 font-bold tabular-nums text-rose-600">{b.daySeq || "?"}</td>
+                {/* Ô CHỮ không che text (luật chủ 04/09): dài thì xuống dòng, hàng
+                    tự cao lên — max-w chỉ giữ bề ngang cột, break-words bẻ dòng. */}
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
-                  <div className="truncate font-semibold text-slate-900" title={b.contactName}>{b.contactName || "—"}</div>
+                  <div className="break-words font-semibold text-slate-900">{b.contactName || "—"}</div>
                   {b.phone && <div className="text-[11px] tabular-nums text-slate-500">📞 {b.phone}</div>}
                 </td>
                 <td className="max-w-[110px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
-                  <div className="truncate" title={[b.source, b.bookingCode].filter(Boolean).join(" #")}>
+                  <div className="break-words">
                     {b.source || "—"}
                     {b.bookingCode ? <span className="tabular-nums"> #{b.bookingCode}</span> : ""}
                   </div>
@@ -2995,11 +2997,11 @@ function BookingDayTable({
                     <span className="text-slate-500">{FLIGHT_KIND_SHORT[b.flightKind] || "PG"}</span>
                   )}
                 </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
+                <td className="max-w-[120px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🚩 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
                   {dichVu(b) || "—"}
                 </td>
                 <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]">
-                  <div className="truncate" title={donOf(b)}>{donOf(b) || "—"}</div>
+                  <div className="break-words">{donOf(b) || "—"}</div>
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 tabular-nums">
                   {gioVe(b) ? `🎫 ${gioVe(b)}` : b.noTicketFlight ? "🎫✕ không vé" : "—"}
@@ -3039,8 +3041,8 @@ function BookingDayTable({
                   </span>
                   {b.locked ? " 🔒" : ""}
                 </td>
-                <td className="max-w-[180px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
-                  <div className="truncate" title={b.note}>{b.note || "—"}</div>
+                <td className="max-w-[220px] min-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
+                  <div className="break-words">{b.note || "—"}</div>
                 </td>
                 <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
                   {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không xổ ở đây cho khỏi sửa nhầm */}
