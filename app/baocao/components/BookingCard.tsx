@@ -2882,17 +2882,19 @@ function BookingDayTable({
   open,
   closed,
   movedOut,
-  renderActions,
+  renderQuick,
+  renderMore,
 }: {
   open: BookingDTO[];
   closed: BookingDTO[];
   movedOut: BookingDTO[];
   /**
-   * CỤM NÚT chức năng của một booking (thu tiền, dời, huỷ, sửa, xuất vé…) do
-   * BookingTodayBanner đưa xuống — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. CHỈ
-   * nút, không lặp lại thông tin booking (đã có trên dòng bảng — luật chủ 04/09).
+   * 4 nút thường dùng (Thu tiền · Xuất vé · Đã bay · Ghi chú) đứng THẲNG trên
+   * từng dòng bảng (luật chủ 04/09); phần còn lại nằm sau nút "⋯ Thêm".
    */
-  renderActions?: (b: BookingDTO) => ReactNode;
+  renderQuick?: (b: BookingDTO) => ReactNode;
+  /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
+  renderMore?: (b: BookingDTO) => ReactNode;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
@@ -3065,31 +3067,37 @@ function BookingDayTable({
                 <td className="max-w-[220px] min-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-600">
                   <div className="break-words">{b.note || "—"}</div>
                 </td>
-                <td className="whitespace-nowrap border-b border-slate-100 px-1.5 py-1">
-                  {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không xổ ở đây cho khỏi sửa nhầm */}
-                  {!r.moved && renderActions && (
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
-                      className={
-                        "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
-                        (expandedId === b.id
-                          ? "border-sky-600 bg-sky-600 text-white"
-                          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
-                      }
-                      title="Xổ đầy đủ chức năng: thu tiền, dời, huỷ, sửa, xuất vé, bảo hiểm…"
-                    >
-                      {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
-                    </button>
+                <td className="border-b border-slate-100 px-1.5 py-1">
+                  {/* Dòng ĐÃ DỜI thao tác ở sổ ngày mới — không hiện nút ở đây cho khỏi sửa nhầm.
+                      4 nút nhanh đứng thẳng trên dòng; "⋯ Thêm" xổ phần còn lại (luật chủ 04/09). */}
+                  {!r.moved && (
+                    <div className="flex flex-wrap items-center justify-end gap-1">
+                      {renderQuick?.(b)}
+                      {renderMore?.(b) != null && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedId((cur) => (cur === b.id ? "" : b.id))}
+                          className={
+                            "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                            (expandedId === b.id
+                              ? "border-sky-600 bg-sky-600 text-white"
+                              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                          }
+                          title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
+                        >
+                          {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>
-              {/* DÒNG XỔ: đủ cụm nút chức năng ngay dưới dòng — không lặp lại thông tin */}
-              {expandedId === b.id && !r.moved && renderActions && (
+              {/* DÒNG XỔ: các chức năng còn lại ngay dưới dòng — không lặp lại thông tin */}
+              {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
                   <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
-                      {renderActions(b)}
+                      {renderMore(b)}
                     </div>
                   </td>
                 </tr>
@@ -3614,15 +3622,13 @@ export function BookingTodayBanner({
   }
 
   const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
-  /**
-   * CỤM NÚT CHỨC NĂNG của một booking ĐANG CHỜ (đã bay, dời, huỷ, sửa, xuất
-   * vé, thu tiền, khoá…) — tách riêng vì dùng ở HAI nơi: trong thẻ, và dòng
-   * “⋯ Thêm” của chế độ ▦ Bảng (chỉ hiện NÚT, không lặp lại thông tin —
-   * luật chủ 04/09).
-   */
-  const renderOpenActions = (b: BookingDTO, flat = false) => (
+  /** HỘP DỜI LỊCH của một booking — hiện thay cụm nút khi đang chọn ngày dời. */
+  const renderMovingDialog = (b: BookingDTO) => {
+    /* Chỉ vẽ khi chính booking này đang dời — cũng là điều kiện để TS biết
+       `moving` không null trong toàn bộ khối bên dưới. */
+    if (!moving || moving.id !== b.id) return null;
+    return (
     <>
-            {moving?.id === b.id ? (
               /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
               <div className="float-right ml-2 flex w-56 flex-wrap items-center justify-end gap-1 rounded-lg border border-amber-300 bg-amber-50/70 p-1.5">
                 {b.guestCount > 1 && (
@@ -3811,19 +3817,15 @@ export function BookingTodayBanner({
                   Thôi
                 </Button>
               </div>
-            ) : (
-              /* MỘT HÀNG nút thường dùng (luật chủ 04/09): Thu tiền · Xuất vé ·
-                 Đã bay · Ghi chú · ⋯ Thêm. Mọi nút khác (gửi mail, khoá, tiền
-                 PC báo, sửa khoản thu, đổi lịch, huỷ…) nằm TRONG "⋯ Thêm". */
-              <>
-              {b.locked && !canLock ? (
-                /* ĐÃ KHOÁ: cất hết nút sửa cho khỏi bấm rồi mới biết bị chặn —
-                   chỉ còn nút mở khoá của kế toán. KẾ TOÁN thì vẫn thấy đủ nút:
-                   lỗi cần sửa hay lộ ra đúng lúc soát, bắt mở khoá rồi khoá lại
-                   là ba bước cho một việc. */
-                <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
-              ) : (
-              <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
+    </>
+    );
+  };
+  /**
+   * 4 NÚT THƯỜNG DÙNG (luật chủ 04/09): Thu tiền · Xuất vé · Đã bay · Ghi chú
+   * — đứng thẳng trên dòng ở CẢ chế độ thẻ lẫn từng dòng của chế độ bảng.
+   */
+  const renderQuickButtons = (b: BookingDTO) => (
+    <>
                 {/* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */}
                 {spot !== "sapa" && (
                   <CollectMoneyControl
@@ -3869,10 +3871,14 @@ export function BookingTodayBanner({
                   {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
                 </Button>
                 <ContactNote spot={spot} booking={b} onDone={load} />
+    </>
+  );
+  /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
+  const renderMoreMenu = (b: BookingDTO, alwaysOpen = false) => (
                 <RowMenu
                   booking={b}
                   spot={spot}
-                  alwaysOpen={flat}
+                  alwaysOpen={alwaysOpen}
                   onMove={() => setMoving({ id: b.id, toDate: "" })}
                   onEdit={() => requestEditBooking(b)}
                   onDone={(msg) => {
@@ -3899,9 +3905,20 @@ export function BookingTodayBanner({
                     </>
                   }
                 />
+  );
+  /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
+  const renderOpenActions = (b: BookingDTO) => (
+    <>
+            {moving?.id === b.id ? (
+              renderMovingDialog(b)
+            ) : b.locked && !canLock ? (
+              /* ĐÃ KHOÁ: chỉ còn nút mở khoá của kế toán — cất hết nút sửa. */
+              <div className="float-right ml-2 flex items-center gap-1">{lockButton(b)}</div>
+            ) : (
+              <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
+                {renderQuickButtons(b)}
+                {renderMoreMenu(b)}
               </div>
-              )}
-              </>
             )}
     </>
   );
@@ -4223,7 +4240,22 @@ export function BookingTodayBanner({
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
-          renderActions={(b) => (b.status === "open" ? renderOpenActions(b, true) : renderClosedActions(b))}
+          renderQuick={(b) =>
+            b.status !== "open" || moving?.id === b.id
+              ? null
+              : b.locked && !canLock
+                ? lockButton(b)
+                : renderQuickButtons(b)
+          }
+          renderMore={(b) =>
+            b.status !== "open"
+              ? renderClosedActions(b)
+              : moving?.id === b.id
+                ? renderMovingDialog(b)
+                : b.locked && !canLock
+                  ? null
+                  : renderMoreMenu(b, true)
+          }
         />
       ) : (
       <ul className={"mt-2" + (rows.length >= 8 ? " lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3" : "")}>
