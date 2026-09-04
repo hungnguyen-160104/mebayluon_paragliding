@@ -3083,7 +3083,8 @@ function BookingDayTable({
                   {/* Ai nhập booking — chung ô với Nguồn (luật chủ 04/09) */}
                   {b.createdByName && (
                     <div className="break-words text-[10px] text-slate-400" title={`nhập ${stampVN(b.createdAt)}`}>
-                      nhập: {b.createdByName}
+                      {/* Tên máy dài ("Khách đặt trên web") rút gọn cho vừa ô */}
+                      nhập: {b.createdByName === "Khách đặt trên web" ? "web" : b.createdByName}
                     </div>
                   )}
                 </td>
