@@ -3074,7 +3074,9 @@ function BookingDayTable({
                     tự cao lên — max-w chỉ giữ bề ngang cột, break-words bẻ dòng. */}
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
                   <div className="break-words font-semibold text-slate-900">{b.contactName || "—"}</div>
-                  {b.phone && <div className="text-[11px] tabular-nums text-slate-500">📞 {b.phone}</div>}
+                  {b.phone && (
+                    <div className="whitespace-nowrap text-[10px] tabular-nums text-slate-500">📞 {b.phone}</div>
+                  )}
                 </td>
                 <td className="max-w-[110px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
                   <div className="break-words">
