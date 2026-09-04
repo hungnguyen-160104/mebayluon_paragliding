@@ -4151,6 +4151,16 @@ export function BookingTodayBanner({
           }}
         />
       )}
+      {/* Sửa booking sau khi đã bay (luật chủ 04/09) — gõ nhầm tên/dịch vụ vẫn chữa được */}
+      {(!b.locked || canLock) && (
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          onClick={() => requestEditBooking(b)}
+        >
+          ✎ Sửa booking
+        </button>
+      )}
       {canLock && !b.locked && (
         <CollectFixControl
           spot={spot}
