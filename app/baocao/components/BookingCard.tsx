@@ -2779,6 +2779,320 @@ function CancelBookingControl({
  * bấm đầu cột để xếp theo cột đó (bấm lại đảo chiều). Dành cho lúc ngày đông
  * cần QUÉT MẮT; thao tác (thu tiền, dời, sửa…) vẫn ở chế độ thẻ.
  */
+/* ================================================================== */
+/* 📄 Chi tiết booking — bảng kê như tờ vé                              */
+/* ================================================================== */
+
+/** "2.190k" cho số chẵn nghìn, còn lại ghi đủ "2.190.500 đ"; số âm có dấu −. */
+function moneyK(n: number): string {
+  const abs = Math.abs(n);
+  const body = abs % 1000 === 0 ? `${(abs / 1000).toLocaleString("vi-VN")}k` : `${abs.toLocaleString("vi-VN")} đ`;
+  return (n < 0 ? "−" : "") + body;
+}
+
+/**
+ * Nút "📄 Chi tiết book" (luật chủ 04/09): bấm là hiện BẢNG KÊ như tờ vé —
+ * từng khoản "2×PG = 2.190k × 2 = 4.380k", dịch vụ, đưa đón, giảm combo, giảm
+ * trừ, tổng; rồi phần tiền đã trả từng lần và còn thu. CHỈ XEM, không sửa gì,
+ * nên booking đã khoá vẫn mở được. Treo qua portal ra <body> vì thẻ/bảng nằm
+ * trong khối nhiều cột (position:fixed bị cắt — xem chú thích toàn màn hình).
+ */
+function BookingDetailControl({ spot, booking: b }: { spot: string; booking: BookingDTO }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  type Line = { label: string; calc?: string; amount: number; tone?: "minus" | "muted" };
+  const build = (): { lines: Line[]; computed: number } => {
+    const price = servicePriceOf(spot, b.createdAt);
+    const ppg = b.flightKind === "ppg" ? 0 : Math.min(b.ppgGuests || 0, b.guestCount || 0);
+    const pg = (b.guestCount || 0) - ppg;
+    const ppgUnit = flightUnitPrice("ppg", b.flightDate);
+    const lines: Line[] = [];
+    if (pg > 0) {
+      lines.push({
+        label: `${pg}×${FLIGHT_KIND_SHORT[b.flightKind] || "PG"}`,
+        calc: `${moneyK(b.unitPrice || 0)} × ${pg}`,
+        amount: (b.unitPrice || 0) * pg,
+      });
+    }
+    if (ppg > 0) {
+      lines.push({ label: `${ppg}×PPG`, calc: `${moneyK(ppgUnit)} × ${ppg}`, amount: ppgUnit * ppg });
+    }
+    for (const { key, label } of SERVICE_PRICE_LABEL) {
+      const n = b[key] || 0;
+      if (n > 0) lines.push({ label: `${n}×${label}`, calc: `${moneyK(price[key])} × ${n}`, amount: price[key] * n });
+    }
+    if ((b.mountainCar || 0) > 0) {
+      lines.push({
+        label: `${b.mountainCar}×xe lên núi`,
+        calc: `${moneyK(MOUNTAIN_CAR_PRICE)} × ${b.mountainCar}`,
+        amount: MOUNTAIN_CAR_PRICE * b.mountainCar,
+      });
+    }
+    if ((b.pickupFee || 0) > 0) {
+      lines.push({
+        label: `1×${b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup] || "đưa đón"}`,
+        amount: b.pickupFee,
+      });
+    }
+    if ((b.comboDiscount || 0) > 0) {
+      const pairs = Math.min(b.flycam || 0, b.video360 || 0);
+      lines.push({
+        label: `${pairs || 1}×giảm combo flycam + 360`,
+        calc: pairs > 0 ? `${moneyK(b.comboDiscount / pairs)} × ${pairs}` : undefined,
+        amount: -b.comboDiscount,
+        tone: "minus",
+      });
+    }
+    if ((b.discount || 0) > 0) lines.push({ label: "Giảm trừ (discount)", amount: -b.discount, tone: "minus" });
+    const computed = Math.max(
+      0,
+      lines.reduce((t, l) => t + l.amount, 0),
+    );
+    return { lines, computed };
+  };
+
+  const { lines, computed } = open ? build() : { lines: [], computed: 0 };
+  const total = b.totalAmount || 0;
+  const paid = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
+  const cancelledBits = [
+    b.cancelledGuests ? `${b.cancelledGuests} khách` : "",
+    b.cancelledFlycam ? `${b.cancelledFlycam} flycam` : "",
+    b.cancelledVideo360 ? `${b.cancelledVideo360} cam360` : "",
+    b.cancelledRedFlag ? `${b.cancelledRedFlag} cờ đỏ` : "",
+    b.cancelledSunset ? `${b.cancelledSunset} hoàng hôn` : "",
+    b.cancelledFlagFlight ? `${b.cancelledFlagFlight} kéo cờ` : "",
+  ].filter(Boolean);
+  const changeText = (c: NonNullable<BookingDTO["serviceChanges"]>[number]) =>
+    (c.kind === "add" ? "+" : "−") +
+    [
+      c.items.flycam ? `${c.items.flycam} flycam` : "",
+      c.items.video360 ? `${c.items.video360} cam360` : "",
+      c.items.redFlag ? `${c.items.redFlag} cờ đỏ` : "",
+      c.items.sunset ? `${c.items.sunset} hoàng hôn` : "",
+      c.items.flagFlight ? `${c.items.flagFlight} kéo cờ` : "",
+    ]
+      .filter(Boolean)
+      .join(", ") +
+    ` by ${c.byName}`;
+  const status =
+    b.status === "done"
+      ? `✈ đã bay${b.doneBy ? ` by ${b.doneBy}` : ""}`
+      : b.status === "cancelled"
+        ? `✕ đã huỷ${b.cancelledBy ? ` by ${b.cancelledBy}` : ""}`
+        : b.status === "voided"
+          ? "bỏ khỏi sổ"
+          : "chờ bay";
+
+  const row = (l: Line, i: number) => (
+    <div
+      key={i}
+      className={
+        "grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 py-0.5 " +
+        (l.tone === "minus" ? "text-rose-700" : l.tone === "muted" ? "text-slate-500" : "text-slate-800")
+      }
+    >
+      <span className="font-medium">{l.label}</span>
+      <span className="text-right text-[11px] tabular-nums text-slate-500">{l.calc ? `= ${l.calc} =` : ""}</span>
+      <span className="text-right font-semibold tabular-nums">{moneyK(l.amount)}</span>
+    </div>
+  );
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 shrink-0 bg-white px-2 text-xs font-semibold text-slate-600"
+        onClick={() => setOpen(true)}
+        title="Xem bảng kê chi tiết booking như tờ vé: từng khoản, tổng, đã trả, còn thu"
+      >
+        📄 Chi tiết book
+      </Button>
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[120] flex items-start justify-center overflow-auto bg-slate-900/50 p-3 sm:items-center"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Đầu phiếu */}
+              <div className="flex items-start justify-between gap-2 rounded-t-2xl bg-sky-700 px-4 py-2.5 text-white">
+                <div className="min-w-0">
+                  <div className="text-sm font-bold">
+                    📄 Booking #{b.daySeq || "?"} · {b.contactName || "khách"}
+                  </div>
+                  <div className="text-[11px] opacity-90">
+                    {spotName(spot)} · bay {formatDateKeyVN(b.flightDate)}
+                    {b.expectedTime ? ` · ${b.expectedTime}` : ""} · {status}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="shrink-0 rounded-lg bg-white/15 px-2 py-0.5 text-sm font-bold hover:bg-white/25"
+                  title="Đóng (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Thông tin khách */}
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 border-b border-dashed border-slate-300 px-4 py-2 text-xs text-slate-700">
+                <dt className="text-slate-500">Nguồn</dt>
+                <dd className="font-medium">
+                  {b.source || "—"}
+                  {b.bookingCode ? ` · #${b.bookingCode}` : ""}
+                  {b.otaRef ? ` · ${b.otaName || "OTA"} ${b.otaRef}` : ""}
+                </dd>
+                <dt className="text-slate-500">SĐT</dt>
+                <dd className="font-medium tabular-nums">{b.phone || "—"}</dd>
+                {b.email && (
+                  <>
+                    <dt className="text-slate-500">Email</dt>
+                    <dd className="break-all font-medium">{b.email}</dd>
+                  </>
+                )}
+                <dt className="text-slate-500">Loại hình</dt>
+                <dd className="font-medium">
+                  {FLIGHT_KIND_LABEL[b.flightKind] || b.flightKind}
+                  {b.ppgGuests > 0 && b.flightKind !== "ppg" ? ` (${b.ppgGuests} khách bay PPG)` : ""}
+                </dd>
+                <dt className="text-slate-500">Đón</dt>
+                <dd className="font-medium">
+                  {b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup]}
+                  {b.expectedTime ? ` · ${b.expectedTime}` : ""}
+                </dd>
+                {b.agencyName && (
+                  <>
+                    <dt className="text-slate-500">Đại lý</dt>
+                    <dd className="font-medium">{b.agencyName}</dd>
+                  </>
+                )}
+                <dt className="text-slate-500">Nhập</dt>
+                <dd className="font-medium">
+                  {b.createdByName} · {stampVN(b.createdAt)}
+                </dd>
+                {b.rescheduledFrom.length > 0 && (
+                  <>
+                    <dt className="text-slate-500">Dời từ</dt>
+                    <dd className="font-medium">
+                      {b.rescheduledFrom.map((d) => formatDateKeyVN(d)).join(", ")}
+                      {b.movedBy ? ` by ${b.movedBy}` : ""}
+                    </dd>
+                  </>
+                )}
+                {b.note && (
+                  <>
+                    <dt className="text-slate-500">Ghi chú</dt>
+                    <dd className="whitespace-pre-wrap font-medium">{b.note}</dd>
+                  </>
+                )}
+              </dl>
+
+              {/* Bảng kê */}
+              <div className="px-4 py-2 text-[13px]">
+                {lines.length === 0 && <div className="py-1 text-xs text-slate-500">Booking chưa có khoản nào.</div>}
+                {lines.map(row)}
+                <div className="my-1 border-t-2 border-dashed border-slate-400" />
+                <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5 text-base">
+                  <span className="font-bold text-slate-900">Tổng</span>
+                  <span className="text-right font-extrabold tabular-nums text-slate-900">{moneyK(total)}</span>
+                </div>
+                {computed !== total && (
+                  <div className="mt-0.5 rounded-lg bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                    ⚠ Cộng từng dòng ra {moneyK(computed)}, lệch {moneyK(total - computed)} so với tổng đang lưu — có thể
+                    đơn giá đã được sửa tay hoặc giá dịch vụ đổi sau khi lập; mở ✎ Sửa để soát.
+                  </div>
+                )}
+                {cancelledBits.length > 0 && (
+                  <div className="mt-1 text-[11px] font-semibold text-rose-700">Huỷ bớt: {cancelledBits.join(" · ")}</div>
+                )}
+                {(b.serviceChanges ?? []).length > 0 && (
+                  <div className="mt-1 text-[11px] text-slate-600">
+                    Phát sinh tại bãi (đã cộng vào bảng kê): {(b.serviceChanges ?? []).map(changeText).join(" · ")}
+                  </div>
+                )}
+              </div>
+
+              {/* Tiền đã trả · còn thu */}
+              <div className="rounded-b-2xl border-t border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-700">
+                {(b.collected ?? []).length > 0 ? (
+                  (b.collected ?? []).map((c, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5">
+                      <span>
+                        {c.kind === "full" ? "Trả nốt" : "Cọc/thu"} {c.method === "cash" ? "TM" : "CK"}
+                        {c.code ? ` #${c.code}` : ""} · {c.byName}
+                        {c.at ? ` · ${stampVN(c.at)}` : ""}
+                        {c.verified ? " ✓" : ""}
+                      </span>
+                      <span className="text-right font-semibold tabular-nums text-emerald-700">−{moneyK(c.amount)}</span>
+                    </div>
+                  ))
+                ) : (b.deposit || 0) > 0 ? (
+                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5">
+                    <span>
+                      Cọc {b.depositMethod === "cash" ? "TM" : b.depositMethod === "transfer" ? "CK" : ""}
+                      {b.transferCode ? ` #${b.transferCode}` : ""}
+                    </span>
+                    <span className="text-right font-semibold tabular-nums text-emerald-700">−{moneyK(b.deposit)}</span>
+                  </div>
+                ) : (
+                  <div className="py-0.5 text-slate-500">Chưa trả khoản nào.</div>
+                )}
+                {(b.agencyPaidAmount || 0) > 0 && (
+                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5">
+                    <span>Khách đã trả đại lý{b.agencyName ? ` ${b.agencyName}` : ""}</span>
+                    <span className="text-right font-semibold tabular-nums text-emerald-700">−{moneyK(b.agencyPaidAmount)}</span>
+                  </div>
+                )}
+                {(b.refunded || 0) > 0 && (
+                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 py-0.5 text-rose-700">
+                    <span>Đã hoàn lại khách</span>
+                    <span className="text-right font-semibold tabular-nums">+{moneyK(b.refunded)}</span>
+                  </div>
+                )}
+                {paid > 0 && (b.collected ?? []).length > 1 && (
+                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-t border-slate-200 py-0.5 text-slate-500">
+                    <span>Đã trả cộng lại</span>
+                    <span className="text-right tabular-nums">{moneyK(paid)}</span>
+                  </div>
+                )}
+                <div className="mt-1 grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-t-2 border-slate-400 py-1 text-sm">
+                  <span className="font-bold">{(b.overpaid || 0) > 0 ? "Thu thừa" : "Còn thu"}</span>
+                  <span
+                    className={
+                      "text-right font-extrabold tabular-nums " +
+                      ((b.overpaid || 0) > 0
+                        ? "text-amber-700"
+                        : (b.remaining || 0) > 0
+                          ? "text-rose-600"
+                          : "text-emerald-700")
+                    }
+                  >
+                    {(b.overpaid || 0) > 0 ? moneyK(b.overpaid) : (b.remaining || 0) > 0 ? moneyK(b.remaining) : "✓ đã thu đủ"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 function BookingDayTable({
   open,
   closed,
@@ -3811,19 +4125,23 @@ export function BookingTodayBanner({
           </Button>
         )}
         {lockButton(b)}
+        {detailButton(b)}
       </>
     ) : b.status === "cancelled" ? (
-      (!b.locked || canLock) && (
-        <Button
-          type="button"
-          className="h-7 bg-rose-600 px-2 text-xs hover:bg-rose-700"
-          disabled={busy === b.id}
-          onClick={() => restore(b)}
-          title="Hoàn tác huỷ: trả booking về CHỜ BAY"
-        >
-          ↩ Bay lại
-        </Button>
-      )
+      <>
+        {(!b.locked || canLock) && (
+          <Button
+            type="button"
+            className="h-7 bg-rose-600 px-2 text-xs hover:bg-rose-700"
+            disabled={busy === b.id}
+            onClick={() => restore(b)}
+            title="Hoàn tác huỷ: trả booking về CHỜ BAY"
+          >
+            ↩ Bay lại
+          </Button>
+        )}
+        {detailButton(b)}
+      </>
     ) : null;
 
   /** Dòng ĐÃ DỜI ĐI: một nút hoàn tác kéo khách về lại sổ ngày này. */
@@ -4130,15 +4448,20 @@ export function BookingTodayBanner({
    * không thể lệch nhau: [Thu tiền nếu còn thu] · Xuất vé · Đã bay · Liên hệ.
    * Đã khoá mà không phải kế toán → chỉ còn nút mở khoá.
    */
+  const detailButton = (b: BookingDTO) => <BookingDetailControl spot={spot} booking={b} />;
   const renderOpenQuick = (b: BookingDTO) =>
     b.locked && !canLock ? (
-      lockButton(b)
+      <>
+        {lockButton(b)}
+        {detailButton(b)}
+      </>
     ) : (
       <>
         {moneyOutside(b) && renderMoneyButton(b)}
         {renderTicketButton(b)}
         {renderFlownButton(b)}
         {renderContactButton(b)}
+        {detailButton(b)}
       </>
     );
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
