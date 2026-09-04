@@ -7,7 +7,7 @@ import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/bao
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { spotName } from "@/lib/baobay/spots";
-import type { BookingDTO, CollectDTO } from "@/lib/baobay/types";
+import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
@@ -459,7 +459,7 @@ function BookingSummary({
             }
             title={
               (b.lastNotify?.includes("GỬI HỎNG") ? `${b.lastNotify}\n\n` : "") +
-              `Chưa báo khách:\n${(b.pendingNotify ?? []).join("\n")}\n\nBấm "⋯ Thêm" → "Gửi mail báo khách"`
+              `Chưa báo khách:\n${(b.pendingNotify ?? []).join("\n")}\n\nBấm "⋯ Thêm" → "mail khách"`
             }
           >
             ✉ chưa báo khách ({b.pendingNotify!.length})
@@ -614,160 +614,6 @@ function AssignControl({
 }
 
 
-/**
- * SỬA CÁC KHOẢN ĐÃ THU của một booking — gõ nhầm số, nhầm TM/CK, nhầm mã.
- *
- * Chỉ điều phối / quầy vé / kế toán bấm được (máy chủ chốt lại quyền). Sửa xong
- * "đã cọc / còn thu" của booking dựng lại từ chính các khoản thu, nên sửa mấy
- * lần sổ vẫn khớp.
- */
-function EditCollectsControl({
-  spot,
-  booking,
-  onDone,
-}: {
-  spot: string;
-  booking: BookingDTO;
-  onDone: (message: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<CollectDTO[]>([]);
-  const [draft, setDraft] = useState<Record<string, { amount: number; method: "cash" | "transfer"; code: string }>>({});
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    try {
-      const r = await apiGet<{ collects: CollectDTO[] }>(
-        `/api/baocao/booking/collect?spot=${spot}&booking=${booking.id}`,
-      );
-      setRows(r.collects);
-      setDraft(
-        Object.fromEntries(
-          r.collects.map((c) => [c.id, { amount: c.amount, method: c.method, code: c.transferCode || "" }]),
-        ),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không đọc được danh sách khoản thu");
-    }
-  }
-
-  async function save(c: CollectDTO, remove = false) {
-    const d = draft[c.id];
-    if (remove && !window.confirm(`Xoá khoản thu ${c.amount.toLocaleString("vi-VN")} đ khỏi booking này?`)) return;
-    setBusy(c.id);
-    setError(null);
-    try {
-      await apiPatch(`/api/baocao/booking/collect?spot=${spot}`, {
-        id: c.id,
-        ...(remove ? { remove: true } : { amount: d.amount, method: d.method, transferCode: d.code }),
-      });
-      onDone(remove ? "✓ Đã xoá khoản thu — số còn thu tính lại." : "✓ Đã sửa khoản thu — số còn thu tính lại.");
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không sửa được khoản thu");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  if (!open) {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        className="h-7 shrink-0 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700"
-        onClick={() => {
-          setOpen(true);
-          setError(null);
-          void load();
-        }}
-        title="Sửa lại khoản đã thu nếu nhập nhầm"
-      >
-        ✎ Sửa tiền đã thu
-      </Button>
-    );
-  }
-
-  return (
-    <div className="w-full max-w-[19rem] rounded-lg border border-emerald-300 bg-emerald-50/60 p-1.5">
-      <div className="mb-1 text-[11px] font-bold text-emerald-900">
-        Khoản đã thu — {booking.contactName || "khách"}
-      </div>
-      {rows.length === 0 && <div className="text-[11px] text-slate-500">Chưa có khoản thu nào qua nút Thu tiền.</div>}
-      <ul className="space-y-1.5">
-        {rows.map((c) => {
-          const d = draft[c.id] ?? { amount: c.amount, method: c.method, code: c.transferCode || "" };
-          return (
-            <li key={c.id} className="rounded-lg bg-white p-1.5">
-              <div className="mb-1 text-[10px] text-slate-500">
-                {c.collectorName || c.createdByName} · {formatDateKeyVN(c.date)}
-              </div>
-              <MoneyInput value={d.amount} onChange={(v) => setDraft((p) => ({ ...p, [c.id]: { ...d, amount: v } }))} />
-              <div className="mt-1 flex h-7 overflow-hidden rounded-lg border border-slate-300">
-                {(
-                  [
-                    ["cash", "TM"],
-                    ["transfer", "CK"],
-                  ] as Array<["cash" | "transfer", string]>
-                ).map(([m, label]) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setDraft((p) => ({ ...p, [c.id]: { ...d, method: m } }))}
-                    className={
-                      d.method === m
-                        ? "flex-1 bg-emerald-600 text-[11px] font-bold text-white"
-                        : "flex-1 bg-white text-[11px] font-medium text-slate-500"
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {d.method === "transfer" && (
-                <TextInput
-                  value={d.code}
-                  onChange={(e) => setDraft((p) => ({ ...p, [c.id]: { ...d, code: e.target.value } }))}
-                  placeholder="Mã giao dịch…"
-                  className="mt-1 h-7 rounded-lg text-xs"
-                />
-              )}
-              <div className="mt-1 flex gap-1">
-                <Button
-                  type="button"
-                  className="h-7 flex-1 bg-emerald-600 px-2 text-[11px] hover:bg-emerald-700"
-                  disabled={busy === c.id}
-                  onClick={() => save(c)}
-                >
-                  ✓ Lưu sửa
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-7 bg-white px-2 text-[11px] text-rose-700"
-                  disabled={busy === c.id}
-                  onClick={() => save(c, true)}
-                >
-                  🗑 Xoá
-                </Button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      {error && <div className="mt-1 text-[11px] font-semibold text-rose-700">{error}</div>}
-      <Button
-        type="button"
-        variant="ghost"
-        className="mt-1 h-7 w-full bg-white px-2 text-[11px]"
-        onClick={() => setOpen(false)}
-      >
-        Đóng
-      </Button>
-    </div>
-  );
-}
 
 /**
  * BỎ BOOKING khỏi sổ: nhập nhầm hoặc nhập TRÙNG với một booking thật.
@@ -835,7 +681,7 @@ function VoidBookingControl({
        */}
       {paid ? (
         <p className="text-[10px] font-semibold leading-tight text-rose-700">
-          Booking này đã có tiền — mở ⋯ Thêm → “Sửa tiền đã thu” để xoá hoặc chuyển khoản thu sang booking đúng, rồi
+          Booking này đã có tiền — mở ⋯ Thêm → “Sửa thu” để xoá hoặc chuyển khoản thu sang booking đúng, rồi
           mới bỏ được. Khách bỏ bay thì dùng ✕ Huỷ booking.
         </p>
       ) : (
@@ -925,7 +771,7 @@ function NotifyGuestControl({
         onClick={() => setOpen(true)}
         title={`Chưa báo khách:\n${pending.join("\n")}`}
       >
-        ✉ Gửi mail báo khách ({pending.length})
+        ✉ mail khách ({pending.length})
       </Button>
     );
   }
@@ -1544,16 +1390,17 @@ function RowMenu({
    * Mỗi mục dựng MỘT LẦN rồi xếp theo hai bố cục: xổ tạm (thẻ) là một dải
    * ngang; xổ sẵn (bảng) chia NHÓM có nhãn cho đỡ rối (luật chủ 04/09).
    */
+  /* "Dời" tô VÀNG đứng sát "Huỷ booking" (luật chủ 04/09) — cùng họ thay đổi lịch/số phận booking */
   const itMove = (
     <button
       type="button"
-      className={item}
+      className="shrink-0 rounded-lg border border-amber-400 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200"
       onClick={() => {
         onMove();
         setOpen(false);
       }}
     >
-      ⇢ Đổi lịch
+      ⇢ Dời
     </button>
   );
   const itAssign = (
@@ -1621,18 +1468,6 @@ function RowMenu({
       }}
     />
   );
-  /* Sửa khoản đã thu — chỉ hiện khi booking đã có tiền vào */
-  const itEditCollects =
-    (booking.collected?.length ?? 0) > 0 ? (
-      <EditCollectsControl
-        spot={spot}
-        booking={booking}
-        onDone={(m) => {
-          onDone(m);
-          setOpen(false);
-        }}
-      />
-    ) : null;
   const itVoid = (
     <VoidBookingControl
       spot={spot}
@@ -1649,16 +1484,15 @@ function RowMenu({
     /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
        04/09) — việc thường dùng đứng trước, huỷ bỏ đứng cuối. */
     return (
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex flex-wrap items-center justify-start gap-1">
         {itPay}
-        {itMove}
         {itAssign}
         {itEdit}
         {itCommission}
-        {itEditCollects}
         {extra}
         {itNotify}
         {itNoTicket}
+        {itMove}
         {itCancel}
         {itVoid}
       </div>
@@ -1668,16 +1502,15 @@ function RowMenu({
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
       {itPay}
-      {itMove}
       {itAssign}
       {itCommission}
       {itEdit}
-      {itCancel}
       {itNotify}
       {itNoTicket}
-      {itEditCollects}
-      {itVoid}
       {extra}
+      {itMove}
+      {itCancel}
+      {itVoid}
       <button
         type="button"
         className="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-50"
@@ -2931,7 +2764,8 @@ function BookingDayTable({
   closed,
   movedOut,
   renderQuickMoney,
-  renderQuickRest,
+  renderQuickTicket,
+  renderQuickFlown,
   renderQuickContact,
   renderMore,
   renderInsurance,
@@ -2944,7 +2778,10 @@ function BookingDayTable({
    * hàng trên Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ.
    */
   renderQuickMoney?: (b: BookingDTO) => ReactNode;
-  renderQuickRest?: (b: BookingDTO) => ReactNode;
+  /** Hàng 1: nút Xuất vé (dài, kèm by ai) đứng một mình. */
+  renderQuickTicket?: (b: BookingDTO) => ReactNode;
+  /** Hàng 2 (cùng Thu tiền + ⋯ Thêm): nút Đã bay. */
+  renderQuickFlown?: (b: BookingDTO) => ReactNode;
   /** Hàng 3: nút "☎ Đã liên hệ" — dài nên đứng một mình cho khỏi phá hàng. */
   renderQuickContact?: (b: BookingDTO) => ReactNode;
   /** Mọi chức năng còn lại — bấm "⋯ Thêm" là xổ ra ngay dưới dòng. */
@@ -3120,8 +2957,12 @@ function BookingDayTable({
                       Thu tiền + ⋯ Thêm, hàng dưới Xuất vé · Đã bay · Liên hệ; cấm gãy chữ. */}
                   {!r.moved && (
                     <div className="flex flex-col items-start gap-0.5 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px]">
+                      {renderQuickTicket?.(b) != null && (
+                        <div className="flex flex-nowrap items-center gap-1">{renderQuickTicket(b)}</div>
+                      )}
                       <div className="flex flex-nowrap items-center gap-1">
                         {renderQuickMoney?.(b)}
+                        {renderQuickFlown?.(b)}
                         {renderMore?.(b) != null && (
                           <button
                             type="button"
@@ -3135,15 +2976,12 @@ function BookingDayTable({
                                 ? "border-sky-600 bg-sky-600 text-white"
                                 : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
                             }
-                            title="Xổ các chức năng còn lại: đổi lịch, huỷ, sửa, chia bill, khoá…"
+                            title="Xổ các chức năng còn lại: dời, huỷ, sửa, chia bill, khoá…"
                           >
-                            {expandedId === b.id ? "▴ Đóng" : "⋯ Thêm"}
+                            ⋯ Thêm
                           </button>
                         )}
                       </div>
-                      {renderQuickRest?.(b) != null && (
-                        <div className="flex flex-nowrap items-center gap-1">{renderQuickRest(b)}</div>
-                      )}
                       {renderQuickContact?.(b) != null && (
                         <div className="flex flex-nowrap items-center gap-1">{renderQuickContact(b)}</div>
                       )}
@@ -3355,6 +3193,13 @@ function BookingDayTable({
                   <td colSpan={15} className="border-b-2 border-sky-300 bg-sky-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
                       {renderMore(b)}
+                      <button
+                        type="button"
+                        className="mt-1 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
+                        onClick={() => setExpandedId("")}
+                      >
+                        ✕ Đóng
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -3365,6 +3210,13 @@ function BookingDayTable({
                   <td colSpan={15} className="border-b-2 border-amber-300 bg-amber-50/40 px-3 py-2">
                     <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5" style={{ display: "flow-root" }}>
                       {renderInsurance(b)}
+                      <button
+                        type="button"
+                        className="mt-1 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
+                        onClick={() => setInsuranceId("")}
+                      >
+                        ✕ Đóng
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -4104,42 +3956,42 @@ export function BookingTodayBanner({
         }}
       />
     );
-  const renderQuickButtons = (b: BookingDTO) => (
-    <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className={
-                    "h-7 px-2 text-xs font-semibold " +
-                    (b.noTicketFlight
-                      ? "border-orange-400 bg-orange-100 text-orange-900"
-                      : b.ticketIssued
-                        ? "border-amber-400 bg-amber-100 text-amber-900"
-                        : "bg-white text-slate-600")
-                  }
-                  disabled={busy === b.id}
-                  onClick={() => act(b, "ticket")}
-                  title={
-                    b.ticketIssued
-                      ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
-                      : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
-                  }
-                >
-                  {b.noTicketFlight
-                    ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
-                    : b.ticketIssued
-                      ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
-                      : "🎫 Xuất vé"}
-                </Button>
-                <Button
-                  type="button"
-                  className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
-                  disabled={busy === b.id}
-                  onClick={() => act(b, "flown")}
-                >
-                  {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
-                </Button>
-    </>
+  const renderTicketButton = (b: BookingDTO) => (
+    <Button
+      type="button"
+      variant="ghost"
+      className={
+        "h-7 px-2 text-xs font-semibold " +
+        (b.noTicketFlight
+          ? "border-orange-400 bg-orange-100 text-orange-900"
+          : b.ticketIssued
+            ? "border-amber-400 bg-amber-100 text-amber-900"
+            : "bg-white text-slate-600")
+      }
+      disabled={busy === b.id}
+      onClick={() => act(b, "ticket")}
+      title={
+        b.ticketIssued
+          ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
+          : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
+      }
+    >
+      {b.noTicketFlight
+        ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
+        : b.ticketIssued
+          ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
+          : "🎫 Xuất vé"}
+    </Button>
+  );
+  const renderFlownButton = (b: BookingDTO) => (
+    <Button
+      type="button"
+      className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
+      disabled={busy === b.id}
+      onClick={() => act(b, "flown")}
+    >
+      {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
+    </Button>
   );
   /** Nút "☎ Đã liên hệ" — tách riêng: trong bảng nó chiếm chỗ nên nằm hàng 3 một mình. */
   const renderContactButton = (b: BookingDTO) => <ContactNote spot={spot} booking={b} onDone={load} />;
@@ -4187,7 +4039,8 @@ export function BookingTodayBanner({
             ) : (
               <div className="float-right ml-2 flex max-w-full flex-wrap items-center justify-end gap-1">
                 {renderMoneyButton(b)}
-                {renderQuickButtons(b)}
+                {renderTicketButton(b)}
+                {renderFlownButton(b)}
                 {renderContactButton(b)}
                 {renderMoreMenu(b)}
               </div>
@@ -4519,8 +4372,11 @@ export function BookingTodayBanner({
                 ? lockButton(b)
                 : renderMoneyButton(b)
           }
-          renderQuickRest={(b) =>
-            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderQuickButtons(b)
+          renderQuickTicket={(b) =>
+            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderTicketButton(b)
+          }
+          renderQuickFlown={(b) =>
+            b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderFlownButton(b)
           }
           renderQuickContact={(b) =>
             b.status !== "open" || moving?.id === b.id || (b.locked && !canLock) ? null : renderContactButton(b)
@@ -6206,7 +6062,7 @@ export function BookingCard({
               <strong>{Math.max(0, form.deposit - editedPaid).toLocaleString("vi-VN")} đ</strong> +{" "}
               {editedPaidCount} lần thu tại quầy{" "}
               <strong>{editedPaid.toLocaleString("vi-VN")} đ</strong>. Gõ đè số này là xoá mất phần
-              đã thu — sửa từng lần thu thì dùng “⋯ Thêm → Sửa tiền đã thu”.
+              đã thu — sửa từng lần thu thì dùng “⋯ Thêm → Sửa thu”.
             </p>
           )}
         </Field>
