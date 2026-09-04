@@ -3066,7 +3066,8 @@ function BookingDayTable({
               <Fragment key={`${b.id}-${r.moved ? "m" : ""}`}>
               <tr
                 className={
-                  (i % 2 ? "bg-slate-50/60 " : "bg-white ") +
+                  /* Vằn trắng — xám NHẬN RA ĐƯỢC (luật chủ 04/09): slate-50/60 cũ nhạt quá, nhìn như trắng hết */
+                  (i % 2 ? "bg-slate-100 " : "bg-white ") +
                   (tt === "huỷ" ? "text-rose-700 " : tt === "dời" ? "text-amber-700 " : "") +
                   (b.locked ? "opacity-60 " : "")
                 }
