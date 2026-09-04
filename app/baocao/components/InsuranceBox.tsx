@@ -254,7 +254,7 @@ export function InsuranceBox({
                   <div
                     key={i}
                     className={
-                      "mb-2 rounded-xl border p-2 " +
+                      "mb-1.5 rounded-xl border p-1.5 " +
                       (g.cancelled
                         ? "border-slate-200 bg-slate-50 opacity-70"
                         : dup
@@ -262,7 +262,9 @@ export function InsuranceBox({
                           : "border-slate-200 bg-slate-50/60")
                     }
                   >
-                    <div className="mb-1.5 flex items-center gap-2">
+                    {/* Hàng đầu tự xuống dòng khi màn hẹp; nút Quét và Xoá có NỀN MÀU cho dễ
+                        nhận, bỏ icon vì chiếm chỗ làm chữ tràn ra ngoài (luật chủ 04/09). */}
+                    <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="text-xs font-bold text-slate-700">
                         Người {i + 1}
                         {g.cancelled ? " · ĐÃ HUỶ" : ""}
@@ -278,18 +280,21 @@ export function InsuranceBox({
                                 : "nhập tay"}
                         </span>
                       )}
-                      <span className="flex-1" />
+                      <span className="ml-auto flex shrink-0 items-center gap-1">
                       <button
                         type="button"
                         onClick={() => setScanFor(scanFor === i ? null : i)}
-                        className="h-7 rounded-lg border border-violet-300 bg-white px-2 text-[11px] font-semibold text-violet-700"
+                        className={
+                          "h-7 whitespace-nowrap rounded-lg px-2 text-[11px] font-bold " +
+                          (scanFor === i ? "border border-violet-300 bg-white text-violet-700" : "bg-violet-600 text-white")
+                        }
                       >
-                        {scanFor === i ? "Đóng quét" : "🪪 Quét CCCD/HC"}
+                        {scanFor === i ? "Đóng quét" : "Quét CCCD/HC"}
                       </button>
                       <button
                         type="button"
                         onClick={() => patch(i, { cancelled: !g.cancelled })}
-                        className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-medium text-slate-500"
+                        className="h-7 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-medium text-slate-500"
                         title="Khách này không bay nữa — giữ dòng, đánh dấu huỷ để bên bảo hiểm rút tên"
                       >
                         {g.cancelled ? "Bay lại" : "Huỷ"}
@@ -308,11 +313,12 @@ export function InsuranceBox({
                           setGuests((prev) => prev.filter((_, k) => k !== i));
                           if (scanFor === i) setScanFor(null);
                         }}
-                        className="h-7 rounded-lg border border-rose-300 bg-white px-2 text-[11px] font-bold text-rose-600"
+                        className="h-7 whitespace-nowrap rounded-lg bg-rose-600 px-2 text-[11px] font-bold text-white"
                         title="Quét nhầm người / quét trùng — xoá hẳn dòng này"
                       >
-                        🗑 Xoá
+                        Xoá
                       </button>
+                      </span>
                     </div>
 
                     {scanFor === i && (
@@ -327,13 +333,15 @@ export function InsuranceBox({
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-1.5 @md:grid-cols-3">
-                      <label className="col-span-2 block @md:col-span-1">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Họ và tên đầy đủ</span>
-                        <TextInput value={g.fullName} onChange={(e) => patch(i, { fullName: e.target.value })} />
+                    {/* Lưới THẤP và CHẶT (luật chủ 04/09): điện thoại 2 cột, desktop 6 cột
+                        gói 8 ô vào 2 hàng; ô cao 32px thay vì 40px; nhãn đứng trong ô. */}
+                    <div className="grid grid-cols-2 gap-1 @md:grid-cols-6 [&_input]:h-8 [&_input]:text-xs [&_select]:h-8">
+                      <label className="col-span-2 block">
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Họ và tên đầy đủ</span>
+                        <TextInput value={g.fullName} placeholder="như trên giấy tờ" onChange={(e) => patch(i, { fullName: e.target.value })} />
                       </label>
                       <label className="block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Ngày sinh</span>
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Ngày sinh</span>
                         <TextInput
                           defaultValue={birthdayVN(g.birthday)}
                           placeholder="dd/mm/yyyy"
@@ -341,7 +349,7 @@ export function InsuranceBox({
                         />
                       </label>
                       <label className="block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Giới tính</span>
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Giới tính</span>
                         <div className="flex gap-1">
                           {(["nam", "nu"] as const).map((v) => (
                             <button
@@ -349,7 +357,7 @@ export function InsuranceBox({
                               type="button"
                               onClick={() => patch(i, { gender: v })}
                               className={
-                                "h-9 flex-1 rounded-lg border text-xs font-semibold " +
+                                "h-8 flex-1 rounded-lg border text-xs font-semibold " +
                                 (g.gender === v
                                   ? "border-sky-500 bg-sky-500 text-white"
                                   : "border-slate-300 bg-white text-slate-600")
@@ -361,45 +369,28 @@ export function InsuranceBox({
                         </div>
                       </label>
                       <label className="block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Loại giấy tờ</span>
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Giấy tờ</span>
                         <select
                           value={g.idType}
                           onChange={(e) => patch(i, { idType: e.target.value as InsuredGuest["idType"] })}
-                          className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                          className="h-8 w-full rounded-lg border border-slate-300 bg-white px-1.5 text-xs"
                         >
                           <option value="">— chọn —</option>
                           <option value="cccd">CCCD</option>
                           <option value="passport">Hộ chiếu</option>
-                          <option value="dinhdanh">Số định danh (trẻ chưa có CCCD)</option>
+                          <option value="dinhdanh">Số định danh (trẻ)</option>
                         </select>
                       </label>
                       <label className="block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Số giấy tờ</span>
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Số giấy tờ</span>
                         <TextInput value={g.idNumber} onChange={(e) => patch(i, { idNumber: e.target.value })} />
                       </label>
                       <label className="block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">Quốc tịch</span>
+                        <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Quốc tịch</span>
                         <TextInput value={g.nationality} onChange={(e) => patch(i, { nationality: e.target.value })} />
                       </label>
-                      <label className="col-span-2 flex items-center gap-2 pt-1 @md:col-span-1">
-                        <input
-                          type="checkbox"
-                          checked={g.isChild}
-                          onChange={(e) => patch(i, { isChild: e.target.checked })}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-[11px] font-medium text-slate-600">Trẻ em (dưới 35 kg)</span>
-                      </label>
-                      <label className="col-span-2 block">
-                        <span className="mb-0.5 block text-[10px] font-medium text-slate-500">
-                          Bay THAY cho ai (nếu đổi người)
-                        </span>
-                        <TextInput
-                          value={g.replacedName ?? ""}
-                          placeholder="tên người đăng ký ban đầu"
-                          onChange={(e) => patch(i, { replacedName: e.target.value })}
-                        />
-                      </label>
+                      {/* Ô "Trẻ em" và "Bay thay cho ai" đã bỏ khỏi biểu mẫu (luật chủ 04/09:
+                          thừa, không cần). Trường vẫn còn trong dữ liệu — bản ghi cũ giữ nguyên. */}
                     </div>
 
                     {dup && (
