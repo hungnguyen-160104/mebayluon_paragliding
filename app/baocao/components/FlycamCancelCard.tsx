@@ -37,11 +37,17 @@ export function FlycamCancelCard({
   spot,
   date,
   canConfirm = false,
+  selfPilot,
 }: {
   spot: string;
   date: string;
   /** Kế toán: hiện nút "đã chuyển tiền" cho các lệnh đang chờ. */
   canConfirm?: boolean;
+  /**
+   * Trang phi công: phi công khai huỷ cho CHÍNH MÌNH nên không có ô chọn
+   * "phi công bay kèm" — username đăng nhập được gắn thẳng vào lệnh.
+   */
+  selfPilot?: string;
 }) {
   const [items, setItems] = useState<FlycamCancelDTO[]>([]);
   const [pilots, setPilots] = useState<Pilot[]>([]);
@@ -49,7 +55,7 @@ export function FlycamCancelCard({
 
   const [service, setService] = useState<ServiceId>("flycam");
   const [code, setCode] = useState("");
-  const [pilot, setPilot] = useState("");
+  const [pilot, setPilot] = useState(selfPilot ?? "");
   const [bookingId, setBookingId] = useState("");
   const [reason, setReason] = useState("");
   const [mode, setMode] = useState<"self" | "company">("self");
@@ -85,7 +91,7 @@ export function FlycamCancelCard({
         `/api/baocao/flycam-cancel?spot=${spot}&date=${date}&code=${encodeURIComponent(code.trim())}`,
       );
       setLookup(r.lookup);
-      if (r.lookup?.pilotUsername) setPilot(r.lookup.pilotUsername);
+      if (!selfPilot && r.lookup?.pilotUsername) setPilot(r.lookup.pilotUsername);
       if (r.lookup?.candidates.length === 1) setBookingId(r.lookup.candidates[0].id);
     } catch {
       setError("Không tra được mã vé");
@@ -194,25 +200,29 @@ export function FlycamCancelCard({
                 ? `Phi công ${lookup.pilotName} khai đã bay mã này ngày ${formatDateKeyVN(lookup.date)}.`
                 : lookup.issuedOn
                   ? `Mã nằm trong dải vé xuất ngày ${formatDateKeyVN(lookup.issuedOn)} — chưa ai khai đã bay.`
-                  : "Chưa tra được mã này trong báo cáo nào — vẫn ghi được, chọn phi công giúp."}
+                  : selfPilot
+                    ? "Chưa tra được mã này trong báo cáo nào — vẫn ghi được."
+                    : "Chưa tra được mã này trong báo cáo nào — vẫn ghi được, chọn phi công giúp."}
             </p>
           )}
         </Field>
 
-        <Field label="Phi công bay kèm">
-          <select
-            value={pilot}
-            onChange={(e) => setPilot(e.target.value)}
-            className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-sky-600"
-          >
-            <option value="">— chọn phi công —</option>
-            {pilots.map((p) => (
-              <option key={p.username} value={p.username}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {!selfPilot && (
+          <Field label="Phi công bay kèm">
+            <select
+              value={pilot}
+              onChange={(e) => setPilot(e.target.value)}
+              className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-sky-600"
+            >
+              <option value="">— chọn phi công —</option>
+              {pilots.map((p) => (
+                <option key={p.username} value={p.username}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         {(lookup?.candidates.filter((c) => (c as any)[service] > 0).length ?? 0) > 0 && (
           <Field label={`Đoàn khách (đoàn có đăng ký ${serviceLabel(service)} hôm đó)`}>
@@ -266,7 +276,9 @@ export function FlycamCancelCard({
           </div>
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
             {mode === "self"
-              ? "Trừ thẳng vào tiền mặt phi công bay kèm đang giữ."
+              ? selfPilot
+                ? "Trừ thẳng vào tiền mặt bạn đang giữ."
+                : "Trừ thẳng vào tiền mặt phi công bay kèm đang giữ."
               : "Gửi lệnh cho kế toán chuyển khoản — kế toán xác nhận xong mới tính là đã hoàn."}
           </p>
         </Field>

@@ -1063,7 +1063,7 @@ export default function PilotReportPage() {
        * gửi lệnh cho kế toán chuyển. Việc KHÔNG thường ngày nên nằm CUỐI
        * trang (lời chủ 02/09) — đầu trang dành cho khách được giao và lệnh thu.
        */}
-      <FlycamCancelCard spot={spot} date={date} />
+      <FlycamCancelCard spot={spot} date={date} selfPilot={user.username} />
     </Shell>
   );
 }
