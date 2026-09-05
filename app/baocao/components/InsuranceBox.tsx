@@ -201,7 +201,7 @@ export function InsuranceBox({
    */
   const stuck = Boolean(view?.sheetError);
   const tone =
-    st.need === 0 ? "slate" : stuck ? "rose" : recalled ? "slate" : sent ? "emerald" : st.ok ? "amber" : "rose";
+    st.need === 0 ? "slate" : stuck ? "rose" : recalled ? "slate" : sent && !st.ok ? "amber" : sent ? "emerald" : st.ok ? "amber" : "rose";
   const toneClass =
     tone === "emerald"
       ? "border-emerald-400 bg-emerald-50 text-emerald-800"
@@ -215,6 +215,8 @@ export function InsuranceBox({
     ? `⚠ ĐÃ GỬI nhưng CHƯA SANG BẢNG bảo hiểm — ${view?.sheetError}`
     : recalled
     ? `Bảo hiểm ĐÃ THU HỒI${view?.recallReason ? ` — ${view.recallReason}` : ""}`
+    : sent && !st.ok
+      ? `⚠ ĐÃ GỬI ${hhmm(sentAt)} nhưng hồ sơ mới đủ ${st.ready}/${st.need} — bổ sung giấy tờ rồi Lưu để bảng cập nhật`
     : sent
       ? `✅ ĐÃ GỬI bảo hiểm ${hhmm(sentAt)}${view?.sentReason ? ` (${view.sentReason})` : ""}`
       : st.ok

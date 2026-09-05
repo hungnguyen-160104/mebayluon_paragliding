@@ -330,6 +330,14 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
   const moveNote = movedFrom.length ? `dời từ ${movedFrom[movedFrom.length - 1]}` : "";
 
   const stamp = new Date().toISOString();
+  /**
+   * TRẠNG THÁI theo HIỆU LỰC (luật chủ 05/09): booking đã bấm "đã bay" thì dòng
+   * ghi "ĐÃ BAY" — bên bảo hiểm nhìn cột này là biết ai đã thực sự bay; người
+   * còn thiếu giấy tờ ghi rõ "ĐÃ BAY · THIẾU HỒ SƠ" để bên mình bổ sung chứ
+   * không để trống. Chưa bay (gửi lúc xuất vé) vẫn là "BAY" như trước.
+   */
+  const flown = doc.status === "done";
+  const complete = (g: InsuredGuest) => insuranceState([g], 1).ok;
   const rows: InsuranceSheetRow[] = guests.map((g, i) => ({
     key: `${String(doc._id)}:${i}`,
     flightDate: String(doc.flightDate || ""),
@@ -349,7 +357,7 @@ export async function syncInsuranceToSheet(spot: string, id: string): Promise<{ 
     bookingCode: String(doc.bookingCode || "").trim() || `${doc.flightDate || ""} #${doc.daySeq || "?"}`,
     phone: String(doc.phone || ""),
     note: [g.note, g.replacedName ? `bay thay ${g.replacedName}` : "", moveNote].filter(Boolean).join("; "),
-    status: recalled ? "THU HỒI" : g.cancelled ? "HUỶ" : "BAY",
+    status: recalled ? "THU HỒI" : g.cancelled ? "HUỶ" : flown ? (complete(g) ? "ĐÃ BAY" : "ĐÃ BAY · THIẾU HỒ SƠ") : "BAY",
     enteredBy: "APP tự động",
     updatedAt: stamp,
   }));
@@ -457,6 +465,62 @@ export async function sendInsurance(
     );
   }
   return pushAndKeepGoing(spot, id, deferPush);
+}
+
+/**
+ * ĐÃ BAY → BẢNG BẢO HIỂM PHẢI CÓ (luật chủ 05/09: bảng tự cập nhật theo booking
+ * đã bay để bảo hiểm có hiệu lực).
+ *
+ * Khác `sendInsurance` (đòi đủ hồ sơ mới gửi — đúng cho lúc xuất vé, còn thời
+ * gian bổ sung): đã bay rồi thì KHÔNG CHỜ NỮA. Hồ sơ trống thì dựng từ dữ liệu
+ * sẵn có (khách tự khai trên web, thư OTA, tên người liên hệ), đẩy lên bảng
+ * ngay, người thiếu giấy tờ mang trạng thái "ĐÃ BAY · THIẾU HỒ SƠ" để bên mình
+ * thấy mà bổ sung — nhân viên lưu thêm là dòng tự cập nhật (saveBookingInsurance
+ * đã đẩy lại cho booking đã gửi). Trước 05/09: 303 booking đã bay ở Khau Phạ
+ * chỉ 115 có trên bảng, 183 booking không có hồ sơ nên lưới an toàn cũ im lặng.
+ *
+ * Gọi lại bao nhiêu lần cũng được: đã gửi thì chỉ đẩy lại (đổi trạng thái sang
+ * ĐÃ BAY), hồ sơ đã có thì không đụng.
+ */
+export async function pushFlownInsurance(
+  spot: string,
+  id: string,
+  byName: string,
+  deferPush = true,
+): Promise<{ ok: boolean; error?: string }> {
+  await connectDB();
+  const doc = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!doc) return { ok: false, error: "Không tìm thấy booking" };
+
+  const saved: InsuredGuest[] = (doc.insured ?? []).map(normalizeInsured);
+  const hasAny = saved.some((g) => !g.cancelled && (g.fullName || g.idNumber));
+  const guests = hasAny ? saved : await seedGuests(doc);
+
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, ""> = {};
+  if (!hasAny) {
+    set.insured = guests;
+    set.insuranceUpdatedAt = new Date();
+    set.insuranceUpdatedBy = "máy (đã bay)";
+  }
+  if (!doc.insuranceSentAt || doc.insuranceRecalledAt) {
+    set.insuranceSentAt = new Date();
+    set.insuranceSentBy = byName;
+    set.insuranceSentReason = "đã bay";
+    set.insuranceSheetError = "";
+    unset.insuranceRecalledAt = "";
+    unset.insuranceRecalledBy = "";
+    unset.insuranceRecallReason = "";
+  }
+  if (Object.keys(set).length) {
+    await BaobayBooking.updateOne({ _id: id, spot }, { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}) });
+  }
+  return pushAndKeepGoing(spot, id, deferPush);
+}
+
+/** Đẩy lại bảng ở nền (đã gửi mới có tác dụng) — dùng khi trạng thái booking đổi, ví dụ hoàn tác "đã bay". */
+export async function resyncInsuranceInBackground(spot: string, id: string): Promise<void> {
+  await pushAndKeepGoing(spot, id, true);
 }
 
 /**

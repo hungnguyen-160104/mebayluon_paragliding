@@ -6352,6 +6352,11 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
     { new: true },
   ).lean<any>();
   pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  /** Hoàn tác "đã bay": dòng trên bảng bảo hiểm đang ghi "ĐÃ BAY" phải quay về "BAY". */
+  if (updated.insuranceSentAt) {
+    const ins = await import("@/services/baobay-insurance.service");
+    await ins.resyncInsuranceInBackground(spot, String(updated._id));
+  }
   return toBookingDTO(updated);
 }
 
@@ -7080,9 +7085,13 @@ export async function updateBookingStatus(
     } else if (action === "cancel") {
       await ins.cancelInsuredGuests(spot, String(doc._id), (doc.insured ?? []).length, "huỷ cả booking");
       await ins.recallInsurance(spot, String(doc._id), "khách huỷ bay", by, true);
-    } else if (action === "flown" && !doc.insuranceSentAt) {
-      /** Lưới an toàn: đã bay mà chưa gửi thì gửi ngay — muộn còn hơn không có. */
-      await ins.sendInsurance(spot, String(doc._id), "đã bay", by, true);
+    } else if (action === "flown") {
+      /**
+       * ĐÃ BAY → bảng bảo hiểm phải có dòng (luật chủ 05/09): chưa gửi thì dựng
+       * hồ sơ từ dữ liệu sẵn có và gửi luôn kể cả còn thiếu giấy tờ; đã gửi thì
+       * đẩy lại để trạng thái trên bảng chuyển "ĐÃ BAY".
+       */
+      await ins.pushFlownInsurance(spot, String(doc._id), by, true);
     }
   }
 

@@ -118,3 +118,16 @@ trống và app **không bao giờ đụng vào**.
 Việc dò trùng chạy **trong từng tab**, tức trong từng điểm bay — một người bay ở
 hai điểm khác nhau trong cùng ngày thì bảng không bắt được (app vẫn cảnh báo khi
 trùng trong cùng điểm bay và cùng ngày).
+
+## Cột "Trạng thái" — đọc theo hiệu lực (từ 05/09/2026)
+
+| Giá trị | Nghĩa |
+| --- | --- |
+| `BAY` | đã gửi bảo hiểm (lúc xuất vé), khách chưa bay |
+| `ĐÃ BAY` | booking đã bấm "đã bay" — bảo hiểm phải có hiệu lực cho dòng này |
+| `ĐÃ BAY · THIẾU HỒ SƠ` | đã bay nhưng người này còn thiếu giấy tờ; nhân viên bổ sung trong app rồi Lưu là dòng tự cập nhật |
+| `HUỶ` | khách huỷ, bên bảo hiểm rút tên |
+| `THU HỒI` | rút cả hồ sơ (bấm nhầm, dời lịch chưa gửi lại) |
+
+Bấm "đã bay" trong app là bảng tự có dòng, kể cả booking chưa từng nhập hồ sơ:
+app dựng từ khách tự khai trên web / thư OTA / tên người liên hệ rồi đẩy lên.
