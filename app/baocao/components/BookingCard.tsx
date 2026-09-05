@@ -3231,16 +3231,19 @@ function BookingDayTable({
     return () => ro.disconnect();
   }, []);
   /**
-   * Đệm trái/phải cho ô colSpan để một hộp flex `justify-content: safe center`
-   * bên trong có tâm trùng tâm cột: hộp đối xứng quanh tâm cột, cắt bớt phía
-   * nào thừa. Nội dung rộng hơn hộp thì "safe" dồn về đầu, không tràn ra ngoài
-   * mép trái (mép trái trong khung cuộn là chỗ không kéo tới được).
+   * Hộp nội dung rộng `want` px (không quá bề rộng bảng) đặt sao cho tâm trùng
+   * tâm cột; sát mép thì KẸP lại trong lòng bảng. Bản đầu (05/09 sáng) đệm hai
+   * bên đối xứng quanh tâm cột — cột BH ở gần mép phải nên đệm trái gần bằng cả
+   * bảng, hộp bị đẩy lòi ra ngoài, bảng nở ngang, cột dịch, đo lại, nở tiếp:
+   * dòng dãn ra và chữ chạy khỏi khung (chuyện thật 05/09).
    */
-  const centerOn = (col: string): React.CSSProperties => {
+  const centerOn = (col: string, want: number): React.CSSProperties => {
     const c = colGeom.c[col];
     const w = colGeom.w;
-    if (!c || !w) return {};
-    return { paddingLeft: Math.max(0, 2 * c - w), paddingRight: Math.max(0, w - 2 * c), justifyContent: "safe center" };
+    const width = Math.min(want, Math.max(0, w - 24));
+    if (!c || !w) return { width: width || undefined, maxWidth: "100%" };
+    const left = Math.min(Math.max(0, c - width / 2), Math.max(0, w - width - 12));
+    return { marginLeft: left, width };
   };
   /** id booking đang xổ khối chức năng dưới dòng — mỗi lúc một dòng cho gọn. */
   const [expandedId, setExpandedId] = useState<string>("");
@@ -3669,11 +3672,9 @@ function BookingDayTable({
                 <tr>
                   {/* Tab xổ tô nền VÀNG NHẠT riêng — nhìn là biết dải chức năng của dòng nào */}
                   <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-0 py-2">
-                    {/* Hộp đối xứng quanh cột Thao tác → dải nút có tâm đúng cột đó */}
-                    <div className="flex" style={centerOn("actions")}>
-                      <div className="w-fit max-w-full px-3 text-left" style={{ display: "flow-root" }}>
-                        {renderMore(b, () => setExpandedId(""))}
-                      </div>
+                    {/* Hộp 900px lấy cột Thao tác làm tâm, kẹp trong lòng bảng; dải dài hơn thì cuộn ngang trong hộp */}
+                    <div className="px-3 text-left" style={{ display: "flow-root", ...centerOn("actions", 900) }}>
+                      {renderMore(b, () => setExpandedId(""))}
                     </div>
                   </td>
                 </tr>
@@ -3684,18 +3685,19 @@ function BookingDayTable({
                   <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50/40 px-0 py-2">
                     {/* Hộp đối xứng quanh cột BH → khung bảo hiểm có tâm đúng cột đó;
                         "✕ Đóng" đứng BÊN PHẢI thanh "Xem" (luật chủ 05/09) */}
-                    <div className="flex" style={centerOn("bh")}>
-                      <div className="mx-3 w-[640px] max-w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                        <div className="flex items-start gap-1.5">
-                          <div className="min-w-0 flex-1">{renderInsurance(b)}</div>
-                          <button
-                            type="button"
-                            className="mt-1.5 h-7 shrink-0 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
-                            onClick={() => setInsuranceId("")}
-                          >
-                            ✕ Đóng
-                          </button>
-                        </div>
+                    <div
+                      className="whitespace-normal rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left"
+                      style={centerOn("bh", 640)}
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <div className="min-w-0 flex-1">{renderInsurance(b)}</div>
+                        <button
+                          type="button"
+                          className="mt-1.5 h-7 shrink-0 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
+                          onClick={() => setInsuranceId("")}
+                        >
+                          ✕ Đóng
+                        </button>
                       </div>
                     </div>
                   </td>
