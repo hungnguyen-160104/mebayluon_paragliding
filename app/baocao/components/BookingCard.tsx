@@ -1541,18 +1541,19 @@ function RowMenu({
     /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
        04/09) — việc thường dùng đứng trước, huỷ bỏ đứng cuối. */
     return (
-      /* MỘT HÀNG duy nhất, dồn trái, "✕ Đóng" đứng ĐẦU (luật chủ 04/09);
-         hàng dài hơn khung thì cuộn ngang chứ không bẻ dòng */
+      /* Dồn trái, "✕ Đóng" đứng ĐẦU (luật chủ 04/09); dải dài hơn khung thì BẺ
+         DÒNG thành hai hàng (luật chủ 05/09 chiều) — trước cuộn ngang, mấy nút
+         cuối bị giấu sau thanh cuộn, phải gạt mới thấy. */
       <PanelGroup>
       <div
-      /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
+      /* Dải nút bẻ dòng; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
          lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
          bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09).
          Bảng con trải 40 hàng lưới nên KHÔNG dùng khe dọc (gap-y-0): 39 khe × 4px
          từng đội thêm ~160px trống dưới bảng con; nút cách nhau bằng mb-1. */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+      className="mr-auto flex w-full flex-wrap items-center justify-start gap-1 text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
         {onClose && (
           <button
             type="button"
@@ -3767,7 +3768,7 @@ function BookingDayTable({
                 <tr>
                   {/* Tab xổ tô nền VÀNG NHẠT riêng — nhìn là biết dải chức năng của dòng nào */}
                   <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-0 py-2">
-                    {/* Hộp 900px lấy cột Thao tác làm tâm, kẹp trong lòng bảng; dải dài hơn thì cuộn ngang trong hộp */}
+                    {/* Hộp 900px lấy cột Thao tác làm tâm, kẹp trong lòng bảng; dải dài hơn thì bẻ thành hai hàng */}
                     <div className="px-3 text-left" style={{ display: "flow-root", ...centerOn("actions", 900) }}>
                       {renderMore(b, () => setExpandedId(""))}
                     </div>
@@ -4783,14 +4784,14 @@ export function BookingTodayBanner({
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
     <PanelGroup>
     <div
-      /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
+      /* Dải nút bẻ dòng; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
          lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
          bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09).
          Bảng con trải 40 hàng lưới nên KHÔNG dùng khe dọc (gap-y-0): 39 khe × 4px
          từng đội thêm ~160px trống dưới bảng con; nút cách nhau bằng mb-1. */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+      className="mr-auto flex w-full flex-wrap items-center justify-start gap-1 text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
       {close && (
         <button
           type="button"
