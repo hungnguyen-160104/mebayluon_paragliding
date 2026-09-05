@@ -67,6 +67,18 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
   other: "đón",
 };
 
+/**
+ * Chữ ô "đón" cho gọn (luật chủ 05/09): web ghi "Xe trung chuyển xã Tú Lệ" →
+ * "Đón tại Tú Lệ"; chỗ khác giữ "đón <ghi chú>", BigC/KS như cũ.
+ */
+function pickupText(b: Pick<BookingDTO, "pickup" | "pickupNote">): string {
+  if (b.pickup !== "other") return PICKUP_LABEL[b.pickup];
+  const note = (b.pickupNote || "").trim();
+  const m = note.match(/^xe trung chuyển\s*(?:xã\s*)?(.+)$/i);
+  if (m) return `Đón tại ${m[1].trim()}`;
+  return `đón ${note || "?"}`;
+}
+
 /** Rút gọn tên cho vừa nút: "Minh Ngọc" → "M. Ngọc", "Mai Hoàn" → "M. Hoàn"; một chữ giữ nguyên. */
 function shortName(name: string): string {
   const w = name.trim().split(/\s+/).filter(Boolean);
@@ -140,7 +152,7 @@ function BookingSummary({
     (b.cancelledFlagFlight ?? 0) ? `huỷ ${b.cancelledFlagFlight}×kéo cờ` : "",
   ].filter(Boolean);
   parts.push(
-    [b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup], b.expectedTime]
+    [pickupText(b), b.expectedTime]
       .filter(Boolean)
       .join(" "),
   );
@@ -2873,7 +2885,7 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
     }
     if ((b.pickupFee || 0) > 0) {
       lines.push({
-        label: `1×${b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup] || "đưa đón"}`,
+        label: `1×${pickupText(b) || "đưa đón"}`,
         amount: b.pickupFee,
       });
     }
@@ -3011,7 +3023,7 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
                 </dd>
                 <dt className="text-slate-500">Đón</dt>
                 <dd className="font-medium">
-                  {b.pickup === "other" ? `đón ${b.pickupNote || "?"}` : PICKUP_LABEL[b.pickup]}
+                  {pickupText(b)}
                   {b.expectedTime ? ` · ${b.expectedTime}` : ""}
                 </dd>
                 {b.agencyName && (
@@ -3165,6 +3177,39 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
   );
 }
 
+/** Ô tiêu đề cột bấm để xếp — tách khỏi render của bảng để không bị dựng lại mỗi lượt vẽ. */
+function SortTh({
+  col,
+  label,
+  right,
+  sort,
+  onSort,
+  setRef,
+}: {
+  col: string;
+  label: string;
+  right?: boolean;
+  sort: { col: string; dir: 1 | -1 };
+  onSort: (f: (s: { col: string; dir: 1 | -1 }) => { col: string; dir: 1 | -1 }) => void;
+  /** Bảng giữ ref các ô đầu cột (đo tâm cột) — nhận qua hàm, không sửa thẳng prop. */
+  setRef: (col: string, el: HTMLTableCellElement | null) => void;
+}) {
+  return (
+    <th
+      ref={(el) => setRef(col, el)}
+      onClick={() => onSort((s) => ({ col, dir: s.col === col ? ((s.dir * -1) as 1 | -1) : 1 }))}
+      className={
+        "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
+        (right ? "text-right" : "text-left")
+      }
+      title="Bấm để xếp theo cột này — bấm lại để đảo chiều"
+    >
+      {label}
+      {sort.col === col ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
+    </th>
+  );
+}
+
 function BookingDayTable({
   open,
   closed,
@@ -3218,8 +3263,14 @@ function BookingDayTable({
     if (!table || typeof ResizeObserver === "undefined") return;
     const measure = () => {
       const c: Record<string, number> = {};
-      for (const [k, th] of Object.entries(thRef.current)) if (th) c[k] = th.offsetLeft + th.offsetWidth / 2;
-      setColGeom({ w: table.offsetWidth, c });
+      for (const [k, th] of Object.entries(thRef.current)) if (th) c[k] = Math.round(th.offsetLeft + th.offsetWidth / 2);
+      const w = Math.round(table.offsetWidth);
+      // Chỉ setState khi số đo THẬT SỰ đổi — không thì vẽ lại vô tận, bảng rung
+      setColGeom((prev) =>
+        prev.w === w && Object.keys(c).length === Object.keys(prev.c).length && Object.keys(c).every((k) => prev.c[k] === c[k])
+          ? prev
+          : { w, c },
+      );
     };
     // Bảng đổi bề rộng hay cột Thao tác/BH đổi cỡ (dòng xổ làm cột nở) là đo lại
     const ro = new ResizeObserver(measure);
@@ -3320,22 +3371,13 @@ function BookingDayTable({
     const c = typeof a === "number" && typeof b2 === "number" ? a - b2 : String(a).localeCompare(String(b2), "vi");
     return (c || (x.b.daySeq || 0) - (y.b.daySeq || 0)) * sort.dir;
   });
-  const Th = ({ col, label, right }: { col: string; label: string; right?: boolean }) => (
-    <th
-      ref={(el) => {
-        thRef.current[col] = el;
-      }}
-      onClick={() => setSort((s) => ({ col, dir: s.col === col ? ((s.dir * -1) as 1 | -1) : 1 }))}
-      className={
-        "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
-        (right ? "text-right" : "text-left")
-      }
-      title="Bấm để xếp theo cột này — bấm lại để đảo chiều"
-    >
-      {label}
-      {sort.col === col ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
-    </th>
-  );
+  /* Ô tiêu đề là component MODULE-LEVEL (SortTh) — bản cũ khai trong render nên mỗi
+     lượt vẽ React dựng lại cả hàng tiêu đề; cộng với ResizeObserver đo cột →
+     setState → vẽ → dựng lại → đo… là bảng "rung rung" không đọc nổi (05/09). */
+  const setThRef = useCallback((col: string, el: HTMLTableCellElement | null) => {
+    thRef.current[col] = el;
+  }, []);
+  const thProps = { sort, onSort: setSort, setRef: setThRef };
   const k = (n: number) => (n ? `${Math.round(n / 1000).toLocaleString("vi-VN")}k` : "—");
   return (
     <div
@@ -3350,9 +3392,9 @@ function BookingDayTable({
       <table ref={tableRef} className="min-w-full border-collapse text-[13px]">
         <thead className="sticky top-0 z-10">
           <tr>
-            <Th col="seq" label="#" />
-            <Th col="name" label="Khách" />
-            <Th col="src" label="Nguồn" />
+            <SortTh col="seq" label="#" {...thProps} />
+            <SortTh col="name" label="Khách" {...thProps} />
+            <SortTh col="src" label="Nguồn" {...thProps} />
             <th
               ref={(el) => {
                 thRef.current.actions = el;
@@ -3361,15 +3403,15 @@ function BookingDayTable({
             >
               Thao tác
             </th>
-            <Th col="guests" label="SL" right />
-            <Th col="kind" label="Loại" />
-            <Th col="sv" label="Dịch vụ" />
-            <Th col="don" label="Đón" />
-            <Th col="total" label="Tổng" right />
-            <Th col="paid" label="Đã trả" right />
-            <Th col="remaining" label="Còn thu" right />
-            <Th col="bh" label="BH" />
-            <Th col="note" label="Ghi chú" />
+            <SortTh col="guests" label="SL" right {...thProps} />
+            <SortTh col="kind" label="Loại" {...thProps} />
+            <SortTh col="sv" label="Dịch vụ" {...thProps} />
+            <SortTh col="don" label="Đón" {...thProps} />
+            <SortTh col="total" label="Tổng" right {...thProps} />
+            <SortTh col="paid" label="Đã trả" right {...thProps} />
+            <SortTh col="remaining" label="Còn thu" right {...thProps} />
+            <SortTh col="bh" label="BH" {...thProps} />
+            <SortTh col="note" label="Ghi chú" {...thProps} />
           </tr>
         </thead>
         <tbody>
@@ -3630,10 +3672,22 @@ function BookingDayTable({
                 <td className="whitespace-nowrap border-b border-slate-100 px-2 py-1 text-[11px]">
                   {(() => {
                     const st = insuranceState(b.insured, b.guestCount);
-                    const label = st.ok ? (
-                      <span className="font-bold text-emerald-700">✓ {st.ready}/{st.need}</span>
-                    ) : (
-                      <span className="font-bold text-amber-700">⚠ {st.ready}/{st.need}</span>
+                    /* Ô BH nói hết bằng MÀU + ICON (luật chủ 05/09): số xanh = đủ, số đỏ =
+                       thiếu; 📨 đã gửi bảo hiểm, ⏳ đủ mà chưa gửi, ↩ đã thu hồi. Bấm là xổ
+                       thẳng hồ sơ, không qua thanh "Xem". */
+                    const sent = Boolean(b.insuranceSentAt);
+                    const recalled = !sent && Boolean(b.insuranceRecalledAt);
+                    const icon = sent ? (
+                      <span title="ĐÃ GỬI bảo hiểm">📨</span>
+                    ) : recalled ? (
+                      <span title="Đã THU HỒI bảo hiểm">↩</span>
+                    ) : st.ok ? (
+                      <span title="Đủ hồ sơ — CHƯA GỬI, sẽ gửi khi xuất vé">⏳</span>
+                    ) : null;
+                    const label = (
+                      <span className={"font-bold " + (st.ok ? "text-emerald-700" : "text-rose-600")}>
+                        {st.ready}/{st.need} {icon}
+                      </span>
                     );
                     /* Bấm vào số BH = mở THẲNG ô bảo hiểm (kênh riêng, không qua "Thêm") */
                     return r.moved || renderInsurance?.(b) == null ? (
@@ -4748,10 +4802,10 @@ export function BookingTodayBanner({
             ) : (
               /* CÙNG bộ nút với dòng bảng (renderOpenQuick); đã khoá mà không
                  phải kế toán thì chỉ còn nút mở khoá, không có ⋯ Thêm. */
-              /* LƯỚI 3 CỘT → 6 nút gọn 2 hàng (luật chủ 05/09). Nút dài (Đã liên hệ by…)
-                 cắt đuôi bằng "…" chứ không phá hàng; bảng thu tiền / menu Thêm mở ra
-                 là div nên tự chiếm trọn 3 cột. */
-              <div className="float-right ml-2 grid w-[360px] max-w-full grid-cols-3 gap-1 [&>button]:w-full [&>button]:min-w-0 [&>button]:justify-center [&>button]:truncate [&>button]:px-1.5 [&>div]:col-span-3">
+              /* Nút CO THEO CHỮ, không cần đều nhau (luật chủ 05/09), gói trong bề
+                 ngang ~330px nên tự xuống 2 hàng; bảng thu tiền / menu Thêm mở ra là
+                 div → chiếm trọn hàng. */
+              <div className="float-right ml-2 flex max-w-[330px] flex-wrap justify-end gap-1 [&>button]:h-6 [&>button]:whitespace-nowrap [&>button]:px-1.5 [&>button]:text-[11px] [&>div]:basis-full">
                 {renderOpenQuick(b)}
                 {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
@@ -5077,6 +5131,7 @@ export function BookingTodayBanner({
               /* Ô BẢO HIỂM mở THẲNG từ cột BH (luật chủ 04/09 — không ẩn trong
                  "Thêm"): nhập/sửa hồ sơ + quét giấy tờ y hệt trong thẻ booking */
               <InsuranceBox
+                headless
                 spot={spot}
                 bookingId={b.id}
                 guestCount={b.guestCount}

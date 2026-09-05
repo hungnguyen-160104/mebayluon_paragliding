@@ -60,13 +60,20 @@ export function InsuranceBox({
   guestCount,
   /** Trạng thái đã tính sẵn từ danh sách booking — hiện ngay, khỏi chờ gọi máy chủ. */
   preview,
+  headless = false,
 }: {
   spot: string;
   bookingId: string;
   guestCount: number;
   preview?: { guests?: InsuredGuest[]; approvedAt?: string; sentAt?: string; recalledAt?: string };
+  /**
+   * KHÔNG có thanh trạng thái + nút Xem: mở thẳng hồ sơ (luật chủ 05/09 — trong
+   * BẢNG, ô BH đã nói đủ/thiếu và đã gửi/chưa bằng màu + icon, bấm số là xổ
+   * luôn hồ sơ, khỏi qua thêm một bước "Xem").
+   */
+  headless?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(headless);
   const [view, setView] = useState<View | null>(null);
   const [guests, setGuests] = useState<InsuredGuest[]>([]);
   const [busy, setBusy] = useState(false);
@@ -135,14 +142,20 @@ export function InsuranceBox({
   const patch = (i: number, p: Partial<InsuredGuest>) =>
     setGuests((prev) => prev.map((g, k) => (k === i ? { ...g, ...p } : g)));
 
-  async function save(approve: boolean) {
+  /**
+   * `list` = danh sách cần lưu, mặc định là state hiện tại. Quét giấy tờ xong
+   * truyền thẳng danh sách vừa điền để LƯU NGAY (luật chủ 05/09): quét hai
+   * người liền rồi mới bấm Lưu từng bị mất người trước — giờ mỗi lần quét xong
+   * là hồ sơ đã nằm trên máy chủ, Lưu tạm/Duyệt chỉ còn là chốt lại.
+   */
+  async function save(approve: boolean, list: InsuredGuest[] = guests) {
     setBusy(true);
     setError(null);
     setDone(null);
     try {
       const r = await apiPost<{ view: View }>(`/api/baocao/insurance?spot=${spot}`, {
         id: bookingId,
-        guests,
+        guests: list,
         approve,
       });
       setView(r.view);
@@ -209,7 +222,8 @@ export function InsuranceBox({
         : insuranceLabel(st);
 
   return (
-    <div className="mt-1.5">
+    <div className={headless ? "" : "mt-1.5"}>
+      {!headless && (
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -224,9 +238,12 @@ export function InsuranceBox({
           {open ? "Đóng" : st.ok ? "Xem" : "Thu thập dữ liệu bảo hiểm"}
         </span>
       </button>
+      )}
 
       {open && (
-        <div className="mt-1.5 rounded-xl border border-slate-200 bg-white p-2">
+        <div className={headless ? "" : "mt-1.5 rounded-xl border border-slate-200 bg-white p-2"}>
+          {/* Bản không thanh: vẫn nói một dòng đã gửi/chưa gửi ngay đầu hồ sơ */}
+          {headless && <p className={`mb-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${toneClass}`}>{headline}</p>}
           {busy && !view && <p className="text-xs text-slate-500">Đang tải…</p>}
           {error && (
             <div className="mb-2">
@@ -326,8 +343,11 @@ export function InsuranceBox({
                         <IdScanCard
                           embedded
                           onPick={(p: ScannedPerson) => {
-                            patch(i, fromScanned(p));
+                            const next = guests.map((g, k) => (k === i ? { ...g, ...fromScanned(p) } : g));
+                            setGuests(next);
                             setScanFor(null);
+                            // Lưu ngay — không chờ bấm Lưu (xem chú thích ở save)
+                            void save(false, next);
                           }}
                         />
                       </div>
