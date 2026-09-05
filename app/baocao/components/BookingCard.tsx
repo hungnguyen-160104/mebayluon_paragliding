@@ -1516,11 +1516,11 @@ function RowMenu({
          hàng dài hơn khung thì cuộn ngang chứ không bẻ dòng */
       <div
       /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
-         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì cả dải đổi sang
-         CỘT: bảng con nới rộng ~50% (288px → 420px, không hơn — chủ chê rộng quá),
-         các nút còn lại xếp dọc bên dưới, không còn kéo dài hàng ngang rồi bị ẩn
-         sau thanh cuộn (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:flex-col has-[>div]:items-start [&>div]:w-[420px] [&>div]:max-w-full">
+         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
+         LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
+         bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
+         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
         {onClose && (
           <button
             type="button"
@@ -4748,11 +4748,11 @@ export function BookingTodayBanner({
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
     <div
       /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
-         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì cả dải đổi sang
-         CỘT: bảng con nới rộng ~50% (288px → 420px, không hơn — chủ chê rộng quá),
-         các nút còn lại xếp dọc bên dưới, không còn kéo dài hàng ngang rồi bị ẩn
-         sau thanh cuộn (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:flex-col has-[>div]:items-start [&>div]:w-[420px] [&>div]:max-w-full">
+         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
+         LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
+         bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
+         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
       {close && (
         <button
           type="button"
