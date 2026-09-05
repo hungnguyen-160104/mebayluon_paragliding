@@ -1,7 +1,7 @@
 // app/baocao/components/BookingCard.tsx
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
@@ -43,6 +43,35 @@ import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, S
  * gọn hơn là kéo trạng thái lên tận trang rồi truyền xuống hai nhánh.
  */
 const EDIT_EVENT = "baobay:edit-booking";
+
+/**
+ * MỖI LÚC MỘT BẢNG CON (luật chủ 05/09): trong một dải nút (⋯ Thêm), bấm mở
+ * bảng con này là bảng con đang mở tự đóng — hai bảng cùng mở là đè lên nhau.
+ * Nhóm nào bọc <PanelGroup> thì các nút bên trong dùng chung một "ai đang mở";
+ * đứng ngoài nhóm thì mỗi nút tự giữ trạng thái như cũ.
+ */
+const PanelGroupContext = createContext<{ openId: string | null; setOpenId: (id: string | null) => void } | null>(null);
+
+function PanelGroup({ children }: { children: ReactNode }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  return <PanelGroupContext.Provider value={{ openId, setOpenId }}>{children}</PanelGroupContext.Provider>;
+}
+
+/** Thay cho useState(false) của từng nút: trong PanelGroup thì mở cái này là đóng cái kia. */
+function usePanelOpen(id: string): [boolean, (v: boolean) => void] {
+  const ctx = useContext(PanelGroupContext);
+  const [local, setLocal] = useState(false);
+  const setShared = useCallback(
+    (v: boolean) => {
+      if (!ctx) return;
+      if (v) ctx.setOpenId(id);
+      else if (ctx.openId === id) ctx.setOpenId(null);
+    },
+    [ctx, id],
+  );
+  if (!ctx) return [local, setLocal];
+  return [ctx.openId === id, setShared];
+}
 
 function requestEditBooking(b: BookingDTO) {
   window.dispatchEvent(new CustomEvent<BookingDTO>(EDIT_EVENT, { detail: b }));
@@ -559,7 +588,7 @@ function AssignControl({
   /** Chữ trên nút khi chưa mở — menu gọn dùng "Giao PC". */
   label?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("assign");
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [pick, setPick] = useState("");
   const [busy, setBusy] = useState(false);
@@ -653,7 +682,7 @@ function VoidBookingControl({
   booking: BookingDTO;
   onDone: (message: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("void");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -762,7 +791,7 @@ function NotifyGuestControl({
   booking: BookingDTO;
   onDone: (message?: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("notify");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = booking.pendingNotify ?? [];
@@ -841,7 +870,7 @@ function NoTicketControl({
   booking: BookingDTO;
   onDone: (message?: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("noticket");
   const [reason, setReason] = useState(booking.noTicketReason ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1053,7 +1082,7 @@ function PaymentBreakdown({
   booking: BookingDTO;
   onDone: (message?: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("pay");
   const lines = booking.collected ?? [];
   const paidTotal = lines.reduce((t, c) => t + (c.amount || 0), 0);
   const refunded = booking.refunded ?? 0;
@@ -1260,7 +1289,7 @@ function DepositDateControl({
   booking: BookingDTO;
   onDone: (message?: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("deposit-date");
   const [date, setDate] = useState(booking.depositDate || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1514,13 +1543,16 @@ function RowMenu({
     return (
       /* MỘT HÀNG duy nhất, dồn trái, "✕ Đóng" đứng ĐẦU (luật chủ 04/09);
          hàng dài hơn khung thì cuộn ngang chứ không bẻ dòng */
+      <PanelGroup>
       <div
       /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
          lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
-         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09).
+         Bảng con trải 40 hàng lưới nên KHÔNG dùng khe dọc (gap-y-0): 39 khe × 4px
+         từng đội thêm ~160px trống dưới bảng con; nút cách nhau bằng mb-1. */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
         {onClose && (
           <button
             type="button"
@@ -1542,10 +1574,12 @@ function RowMenu({
         {itVoid}
         {tail}
       </div>
+      </PanelGroup>
     );
   }
 
   return (
+    <PanelGroup>
     <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
       {itPay}
       {itAssign}
@@ -1566,6 +1600,7 @@ function RowMenu({
         ✕
       </button>
     </div>
+    </PanelGroup>
   );
 }
 
@@ -1623,7 +1658,7 @@ function CommissionControl({
    */
   const suggestAmount = paid?.amount || booking.guestCount * COMMISSION_PER_GUEST;
   const suggestAgency = paid?.agencyName || booking.agencyName || "";
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("commission");
   const [amount, setAmount] = useState(suggestAmount);
   const [method, setMethod] = useState<CommissionWay>(paid?.method ?? "cash");
   /** Đại lý đang cầm bao nhiêu của booking này — có thì mới cấn trừ được. */
@@ -1845,7 +1880,7 @@ function CollectFixControl({
   booking: BookingDTO;
   onDone: (message: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("fix");
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [drafts, setDrafts] = useState<
     Record<string, { amount: number; method: "cash" | "transfer"; code: string; collector: string }>
@@ -2075,7 +2110,7 @@ function CollectMoneyControl({
   /** Bản NÚT TO cho trang phi công — bấm giữa nắng, đeo găng, phải to mới trúng. */
   big?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("collect");
   /** "deposit" = thu cọc (gõ số tuỳ ý) · "full" = thu nốt toàn bộ còn phải thu. */
   const [kind, setKind] = useState<"deposit" | "full">("full");
   /**
@@ -2525,7 +2560,7 @@ function CancelBookingControl({
   const paid = booking.deposit || Math.max(0, (booking.totalAmount || 0) - (booking.remaining || 0));
   const hasTicketFlow = spot !== "ha-noi";
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePanelOpen("cancel");
   /** Cả đoàn nghỉ bay, hay chỉ vài người trong đoàn? */
   const [scope, setScope] = useState<"all" | "part">("all");
   const [partGuests, setPartGuests] = useState(1);
@@ -4746,13 +4781,16 @@ export function BookingTodayBanner({
    * — một hàng dồn trái. Bản THẺ cũng xổ đúng dải này khi bấm ⋯ Thêm.
    */
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
+    <PanelGroup>
     <div
       /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
          lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì dải đổi sang
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
-         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+         bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09).
+         Bảng con trải 40 hàng lưới nên KHÔNG dùng khe dọc (gap-y-0): 39 khe × 4px
+         từng đội thêm ~160px trống dưới bảng con; nút cách nhau bằng mb-1. */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 has-[>div]:gap-y-0 has-[>div]:[&>button]:mb-1 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
       {close && (
         <button
           type="button"
@@ -4805,6 +4843,7 @@ export function BookingTodayBanner({
       {/* Khoá luôn chốt ĐUÔI dải (luật chủ 04/09) */}
       {lockButton(b)}
     </div>
+    </PanelGroup>
   );
   /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
   const renderOpenActions = (b: BookingDTO) => (
