@@ -67,6 +67,13 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
   other: "đón",
 };
 
+/** Rút gọn tên cho vừa nút: "Minh Ngọc" → "M. Ngọc", "Mai Hoàn" → "M. Hoàn"; một chữ giữ nguyên. */
+function shortName(name: string): string {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  if (w.length < 2) return name.trim();
+  return `${w.slice(0, -1).map((x) => x[0].toUpperCase() + ".").join(" ")} ${w[w.length - 1]}`;
+}
+
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
 function BookingSummary({
   b,
@@ -1004,7 +1011,7 @@ function ContactNote({
           }
         >
           {booking.contactedAt
-            ? `☎ Đã liên hệ${booking.contactedBy ? ` by ${booking.contactedBy}` : ""} ✓`
+            ? `☎ Đã LH${booking.contactedBy ? ` by ${shortName(booking.contactedBy)}` : ""} ✓`
             : needCall
               ? "☎ Cần gọi xác nhận"
               : "📝 Ghi chú"}
