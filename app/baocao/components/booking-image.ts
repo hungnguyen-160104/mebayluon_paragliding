@@ -65,6 +65,28 @@ export type BookingImageData = {
 
 const money = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
 
+/**
+ * HƯỚNG DẪN NHANH in cuối phiếu (luật chủ 05/09) — y như vé trên website
+ * (components/booking/BookingTicket.tsx, bản tiếng Việt): mặc gì, mang gì,
+ * đừng mang gì. Khách đặt qua quầy/Zalo không đi qua web nên chưa từng thấy.
+ */
+const QUICK_GUIDE: Array<{ title: string; items: string[] }> = [
+  {
+    title: "TRANG PHỤC",
+    items: ["Quần áo dài tay, gọn gàng", "Giày thể thao hoặc giày leo núi", "Không mặc váy, không đi cao gót / dép lê"],
+  },
+  {
+    title: "NÊN MANG THEO",
+    items: [
+      "Giấy tờ tuỳ thân (CCCD / Hộ chiếu)",
+      "Kính râm, áo khoác mỏng",
+      "Túi nhỏ 1–2 kg cho đồ cá nhân",
+      "Điện thoại còn trống ~4GB để chép ảnh & video",
+    ],
+  },
+  { title: "KHÔNG NÊN MANG THEO", items: ["Vật sắc nhọn", "Đồ cồng kềnh", "Tư trang giá trị cao", "Đồ nặng"] },
+];
+
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 const f = (size: number, weight: "" | "bold" = "") => `${weight ? weight + " " : ""}${size}px ${FONT}`;
 
@@ -336,7 +358,17 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const dirCardHs = dirNoteLines.map((ls) => Math.max(140, 34 + ls.length * 22 + 16));
   const dirH = dirPoints.length ? titleH + dirCardHs.reduce((a, b2) => a + b2 + 12, 0) + blockGap : 0;
 
-  const H = headerH + bodyH + payH + dirH + footerH;
+  /** Khối hướng dẫn nhanh: ba cột (mặc · mang · đừng mang), mỗi mục một gạch đầu dòng. */
+  const guideColGap = 14;
+  const guideColW = (W - pad * 2 - 20 - guideColGap * 2) / 3;
+  probe.font = f(13);
+  const guideCols = QUICK_GUIDE.map((c) => c.items.flatMap((it) => wrap(probe, it, guideColW - 14, 2)));
+  const guideLineH = 18;
+  const guideMaxLines = Math.max(...guideCols.map((ls) => ls.length));
+  const guideCardH = 12 + 20 + guideMaxLines * guideLineH + 12;
+  const guideH = titleH + guideCardH + blockGap;
+
+  const H = headerH + bodyH + payH + dirH + guideH + footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W * S;
@@ -613,6 +645,46 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
       y += cardH + 12;
     }
     y += blockGap;
+  }
+
+  /* ---- Khối HƯỚNG DẪN NHANH: mặc gì · mang gì · đừng mang gì ------------ */
+  {
+    const title = "HƯỚNG DẪN NHANH KHI ĐI BAY";
+    g.font = f(13, "bold");
+    g.fillStyle = C.sky;
+    g.fillText(title, pad, y);
+    const tw3 = g.measureText(title).width;
+    g.strokeStyle = C.line;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(pad + tw3 + 10, y - 4);
+    g.lineTo(W - pad, y - 4);
+    g.stroke();
+    y += titleH - 8;
+
+    g.fillStyle = C.card;
+    roundRect(g, pad, y - 8, W - pad * 2, guideCardH, 10);
+    g.fill();
+
+    for (let i = 0; i < QUICK_GUIDE.length; i++) {
+      const cx = pad + 10 + i * (guideColW + guideColGap);
+      g.font = f(12, "bold");
+      g.fillStyle = i === 2 ? C.orange : C.sky;
+      g.fillText(QUICK_GUIDE[i].title, cx, y + 12);
+      g.font = f(13);
+      g.fillStyle = C.ink;
+      let ly = y + 12 + 20;
+      // Gạch đầu dòng cho dòng đầu của mỗi mục; dòng nối thụt vào
+      const items = QUICK_GUIDE[i].items;
+      for (const it of items) {
+        const ls = wrap(g, it, guideColW - 14, 2);
+        ls.forEach((ln, k) => {
+          g.fillText(k === 0 ? `• ${ln}` : `  ${ln}`, cx, ly);
+          ly += guideLineH;
+        });
+      }
+    }
+    y += guideCardH + blockGap;
   }
 
   // ---- Chân phiếu
