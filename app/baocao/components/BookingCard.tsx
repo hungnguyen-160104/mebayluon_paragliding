@@ -1514,7 +1514,12 @@ function RowMenu({
     return (
       /* MỘT HÀNG duy nhất, dồn trái, "✕ Đóng" đứng ĐẦU (luật chủ 04/09);
          hàng dài hơn khung thì cuộn ngang chứ không bẻ dòng */
-      <div className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left">
+      <div
+      /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
+         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì cả dải đổi sang
+         CỘT: bảng con nới rộng tới 560px, các nút còn lại xếp dọc bên dưới, không
+         còn kéo dài hàng ngang rồi bị ẩn sau thanh cuộn (luật chủ 05/09). */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:flex-col has-[>div]:items-start [&>div]:w-full [&>div]:max-w-[560px]">
         {onClose && (
           <button
             type="button"
@@ -4740,7 +4745,12 @@ export function BookingTodayBanner({
    * — một hàng dồn trái. Bản THẺ cũng xổ đúng dải này khi bấm ⋯ Thêm.
    */
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
-    <div className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left">
+    <div
+      /* Dải nút MỘT HÀNG; nhưng hễ một nút xổ BẢNG CON (Sửa thu, Chi tiết TT, CK đại
+         lý, Thu tiền… — lúc mở chúng là <div> thay vì <button>) thì cả dải đổi sang
+         CỘT: bảng con nới rộng tới 560px, các nút còn lại xếp dọc bên dưới, không
+         còn kéo dài hàng ngang rồi bị ẩn sau thanh cuộn (luật chủ 05/09). */
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:flex-col has-[>div]:items-start [&>div]:w-full [&>div]:max-w-[560px]">
       {close && (
         <button
           type="button"
