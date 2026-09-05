@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
+import { linkifyPhones, linkifyPhonesInHtml } from "@/lib/phone-link";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive, findPostByPreviousSlug } from "@/lib/posts-data";
@@ -239,7 +240,7 @@ function renderInlineFormat(text: string): React.ReactNode[] {
     if (/^\*[^*\n]+\*$/.test(part)) {
       return <em key={i}>{part.slice(1, -1)}</em>;
     }
-    return part;
+    return linkifyPhones(part, `p${i}`);
   });
 }
 
@@ -404,7 +405,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
           key={key}
           className="rounded-xl border-l-4 border-red-400/80 bg-white/5 px-5 py-4"
         >
-          <p className="text-lg italic text-white">{data.text || ""}</p>
+          <p className="text-lg italic text-white">{linkifyPhones(data.text || "")}</p>
           {data.author ? <cite className="mt-2 block text-sm text-white/70">— {data.author}</cite> : null}
         </blockquote>
       );
@@ -418,7 +419,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       return (
         <ul key={key} className="list-disc space-y-2 pl-6 text-white/95">
           {items.map((item, itemIndex) => (
-            <li key={`${key}-item-${itemIndex}`}>{item}</li>
+            <li key={`${key}-item-${itemIndex}`}>{linkifyPhones(item)}</li>
           ))}
         </ul>
       );
@@ -951,9 +952,9 @@ export default async function BlogPostPage({
                   </div>
                 ) : content ? (
                   hasHtmlTag(content) ? (
-                    <div dangerouslySetInnerHTML={{ __html: fillMissingImgAlt(content, title) }} />
+                    <div dangerouslySetInnerHTML={{ __html: linkifyPhonesInHtml(fillMissingImgAlt(content, title)) }} />
                   ) : (
-                    <div className="whitespace-pre-line">{content}</div>
+                    <div className="whitespace-pre-line">{linkifyPhones(content)}</div>
                   )
                 ) : (
                   <p>{ui.noContent}</p>
