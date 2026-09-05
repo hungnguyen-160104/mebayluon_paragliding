@@ -602,7 +602,7 @@ function AssignControl({
         type="button"
         onClick={openList}
         className={
-          "h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700" +
+          "h-7 shrink-0 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-700" +
           (buttonClassName ? ` ${buttonClassName}` : "")
         }
       >
@@ -1520,7 +1520,7 @@ function RowMenu({
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
          bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
         {onClose && (
           <button
             type="button"
@@ -4752,7 +4752,7 @@ export function BookingTodayBanner({
          LƯỚI HAI CỘT: các nút còn lại xếp thành một CỘT bên trái, bảng con đứng
          bên phải (rộng tới 420px, ~50% hơn trước) — không kéo dài hàng ngang rồi
          bị ẩn sau thanh cuộn, cũng không xếp dọc choán chỗ (luật chủ 05/09). */
-      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
+      className="mr-auto flex w-full flex-nowrap items-center justify-start gap-1 overflow-x-auto text-left has-[>div]:grid has-[>div]:grid-cols-[max-content_minmax(0,420px)] has-[>div]:items-start has-[>div]:gap-x-2 [&>button]:col-start-1 [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>div]:col-start-2 [&>div]:w-full [&>div]:[grid-row:1/span_40]">
       {close && (
         <button
           type="button"
