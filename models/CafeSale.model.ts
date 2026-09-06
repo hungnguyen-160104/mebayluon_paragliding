@@ -21,7 +21,7 @@ export interface ICafeSale {
   /** "YYYY-MM-DD" theo giờ VN, suy từ soldAt — mọi phép cộng ngày bám cột này. */
   date: string;
   kind: "sale" | "expense";
-  items: Array<{ id: string; name: string; price: number; qty: number }>;
+  items: Array<{ id: string; name: string; note?: string; price: number; qty: number }>;
   /** Tiền hàng TRƯỚC giảm giá — giữ lại để biết phiếu đáng lẽ thu bao nhiêu. */
   subtotal: number;
   /** Mức giảm đã bấm: "none" · "staff" (phi công/người nhà −20%) · "diplomatic" (−100%). */
@@ -48,7 +48,7 @@ const CafeSaleSchema = new Schema<ICafeSale>(
     counter: { type: String, required: true, index: true },
     date: { type: String, required: true, index: true },
     kind: { type: String, enum: ["sale", "expense"], required: true },
-    items: [{ _id: false, id: String, name: String, price: Number, qty: Number }],
+    items: [{ _id: false, id: String, name: String, note: String, price: Number, qty: Number }],
     subtotal: { type: Number, default: 0 },
     discountKind: { type: String, default: "none" },
     discountAmount: { type: Number, default: 0 },

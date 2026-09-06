@@ -237,8 +237,14 @@ export type CafeEntry = {
   clientId: string;
   counter: CafeCounterId;
   kind: "sale" | "expense";
-  /** kind "sale": các món trong phiếu. */
-  items: Array<{ id: string; name: string; price: number; qty: number }>;
+  /**
+   * kind "sale": các món trong phiếu.
+   *
+   * `note` là câu dặn của khách ("ít đá") — để RIÊNG chứ không ghép vào tên:
+   * ghép rồi thì lúc sửa lại đơn phải bóc chuỗi trong ngoặc ra đoán ngược, mà
+   * tên món cũng có thể vốn đã có ngoặc (Trà đậu biếc (Pealuna)).
+   */
+  items: Array<{ id: string; name: string; note?: string; price: number; qty: number }>;
   /** Tổng tiền phiếu (sale) hoặc số tiền chi (expense) — máy chủ tính lại. */
   total: number;
   /** Mức giảm đã bấm khi tính tiền: khách thường / phi công / ngoại giao. */

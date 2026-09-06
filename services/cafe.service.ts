@@ -66,6 +66,7 @@ export async function syncCafeEntries(
       .map((it) => ({
         id: String(it?.id ?? "").slice(0, 40),
         name: String(it?.name ?? "").slice(0, 100),
+        note: String(it?.note ?? "").slice(0, 120),
         price: Math.max(0, Math.round(Number(it?.price) || 0)),
         qty: Math.max(1, Math.round(Number(it?.qty) || 1)),
       }))
@@ -179,7 +180,7 @@ export type CafeDayDTO = {
     counterName: string;
     kind: string;
     label: string;
-    items: Array<{ name: string; qty: number; price: number }>;
+    items: Array<{ id: string; name: string; note: string; qty: number; price: number }>;
     subtotal: number;
     discountKind: string;
     discountLabel: string;
@@ -267,7 +268,13 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       counter: d.counter,
       counterName: counterName.get(d.counter) ?? d.counter,
       kind: d.kind,
-      items: (d.items ?? []).map((it: any) => ({ name: it.name, qty: it.qty || 0, price: it.price || 0 })),
+      items: (d.items ?? []).map((it: any) => ({
+        id: it.id || "",
+        name: it.name,
+        note: it.note || "",
+        qty: it.qty || 0,
+        price: it.price || 0,
+      })),
       subtotal: d.subtotal ?? d.total ?? 0,
       discountKind: d.discountKind || "none",
       discountLabel:
@@ -279,7 +286,9 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       label:
         d.kind === "expense"
           ? `CHI: ${d.note || "?"}`
-          : (d.items ?? []).map((it: any) => `${it.name}${it.qty > 1 ? ` ×${it.qty}` : ""}`).join(", ") +
+          : (d.items ?? [])
+              .map((it: any) => `${it.name}${it.note ? ` (${it.note})` : ""}${it.qty > 1 ? ` ×${it.qty}` : ""}`)
+              .join(", ") +
             (d.discountKind && d.discountKind !== "none"
               ? ` [${CAFE_DISCOUNTS.find((x) => x.id === d.discountKind)?.short ?? "giảm giá"}]`
               : ""),

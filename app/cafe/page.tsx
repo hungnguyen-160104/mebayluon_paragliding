@@ -66,7 +66,7 @@ type DayDTO = {
     counter: string;
     kind: string;
     label: string;
-    items?: Array<{ name: string; qty: number; price: number }>;
+    items?: Array<{ id: string; name: string; note: string; qty: number; price: number }>;
     discountKind?: string;
     total: number;
     method: string;
@@ -239,6 +239,10 @@ export default function CafePosPage() {
   /** Khách đưa bao nhiêu tiền mặt — máy tính tiền thối, khỏi nhẩm lúc đông. */
   const [tendered, setTendered] = useState(0);
   const [holds, setHolds] = useState<HeldOrder[]>([]);
+  /** Phiếu vừa bán — in lại được ngay, kể cả khi chưa kịp đẩy lên máy chủ. */
+  const [lastSold, setLastSold] = useState<CafeEntry | null>(null);
+  /** Mã phiếu ĐÃ BÁN đang sửa lại; bán lại là thay hẳn bản cũ. */
+  const [editingId, setEditingId] = useState<string | null>(null);
   /**
    * MENU ĐANG BÀY = menu trong mã, thay bằng bản máy chủ ngay khi tải được.
    * Bắt đầu bằng bản trong mã chứ không phải mảng rỗng: mở máy lúc mất mạng
@@ -385,6 +389,15 @@ export default function CafePosPage() {
 
   /* ---- ĐƠN ĐANG GIỮ: khách gọi lúc chờ bay, xuống mới trả ---- */
 
+  /** Tiền của một đơn đang giữ — quầy nhìn dải đơn là biết ai còn nợ bao nhiêu. */
+  const holdTotal = (h: HeldOrder) => {
+    const sub = h.lines.reduce((t, [id, n]) => {
+      const m = menu.find((x) => x.id === id);
+      return t + (m ? m.price * n : 0);
+    }, 0);
+    return sub - Math.round(sub * cafeDiscountRate(h.discount));
+  };
+
   function holdOrder() {
     if (!cartLines.length) return setError("Chưa chọn món nào để giữ");
     const name = window.prompt("Giữ đơn cho ai? (tên khách, số bàn…)", `Khách ${holds.length + 1}`);
@@ -422,6 +435,33 @@ export default function CafePosPage() {
     setMsg(`Đã lấy đơn “${h.name}” ra giỏ.`);
   }
 
+  /**
+   * SỬA MỘT ĐƠN ĐÃ BÁN: đổ ngược về giỏ để người bán chữa rồi lưu lại.
+   *
+   * Cần MẠNG vì bản cũ nằm trên máy chủ và phải xoá đi khi lưu bản mới; danh
+   * sách phiếu này cũng lấy từ máy chủ nên mất mạng vốn đã không thấy.
+   */
+  function editSold(r: DayDTO["recent"][number]) {
+    if (!(r.items?.length ?? 0)) return setError("Phiếu này không còn chi tiết món để sửa");
+    if (cartLines.length && !window.confirm("Giỏ đang có món — mở đơn này ra sửa sẽ thay giỏ hiện tại?")) return;
+    const c = new Map<string, number>();
+    const n = new Map<string, string>();
+    for (const it of r.items ?? []) {
+      if (!it.id) continue;
+      c.set(it.id, (c.get(it.id) ?? 0) + (it.qty || 0));
+      if (it.note) n.set(it.id, it.note);
+    }
+    if (c.size === 0) return setError("Phiếu cũ chưa lưu mã món nên không mở lại được — xoá rồi bán lại");
+    setCart(c);
+    setNotes(n);
+    setDiscount((r.discountKind ?? "none") as CafeDiscountId);
+    if (r.method === "cash" || r.method === "transfer") setMethod(r.method);
+    setTendered(0);
+    setEditingId(r.clientId);
+    setMsg("Đang sửa đơn đã bán — chữa xong bấm “LƯU SỬA”, bản cũ sẽ được thay.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function dropHold(h: HeldOrder) {
     if (!window.confirm(`Bỏ đơn đang giữ của “${h.name}”?`)) return;
     const next = holds.filter((x) => x.id !== h.id);
@@ -439,7 +479,10 @@ export default function CafePosPage() {
     const rows = entry.items
       .map(
         (it) =>
-          `<tr><td>${it.name}${it.qty > 1 ? ` ×${it.qty}` : ""}</td><td style="text-align:right">${it.price ? vnd(it.price * it.qty) : "FREE"}</td></tr>`,
+          `<tr><td>${it.name}${it.qty > 1 ? ` ×${it.qty}` : ""}` +
+          // Câu dặn xuống dòng, chữ nghiêng — người pha đọc phiếu là làm đúng ngay
+          `${it.note ? `<br><i style="font-size:11px">${it.note}</i>` : ""}` +
+          `</td><td style="text-align:right">${it.price ? vnd(it.price * it.qty) : "FREE"}</td></tr>`,
       )
       .join("");
     /** Phiếu in ghi rõ mức giảm — khách cầm phiếu thấy được vì sao rẻ hơn bảng giá. */
@@ -483,26 +526,37 @@ export default function CafePosPage() {
     void sync();
   }
 
-  function sell() {
+  /**
+   * BÁN = LƯU ĐƠN. IN LÀ VIỆC RIÊNG (luật chủ 06/09): khách quen không lấy
+   * phiếu thì in ra chỉ tốn giấy. Không in vẫn in lại được sau — phiếu vừa bán
+   * nhớ ngay trong máy nên mất mạng cũng in lại được.
+   */
+  function sell(print: boolean) {
     if (!cartLines.length) return setError("Chưa chọn món nào");
     const entry: CafeEntry = {
       clientId: crypto.randomUUID(),
       counter,
       kind: "sale",
-      /** Ghi chú dặn thêm ghép luôn vào TÊN MÓN: phiếu in ra và sổ bán đều đọc được. */
-      items: cartLines.map((l) => ({
-        id: l.id,
-        name: l.note ? `${l.name} (${l.note})` : l.name,
-        price: l.price,
-        qty: l.qty,
-      })),
+      items: cartLines.map((l) => ({ id: l.id, name: l.name, note: l.note, price: l.price, qty: l.qty })),
       total: cartTotal,
       discount,
       method: onlyFree || cartTotal === 0 ? "free" : method,
       note: "",
       soldAt: new Date().toISOString(),
     };
-    commit(entry, true);
+    commit(entry, print);
+    setLastSold(entry);
+    /**
+     * Đang SỬA một đơn đã bán: xoá bản cũ trên máy chủ sau khi bản mới đã vào
+     * hàng đợi. Sổ chỉ còn một bản đúng, không đọng hai bản lệch nhau.
+     */
+    if (editingId) {
+      const old = editingId;
+      setEditingId(null);
+      void apiDelete(`/api/baocao/cafe`, { clientId: old })
+        .then(loadDay)
+        .catch(() => setError("Đã ghi đơn sửa nhưng CHƯA xoá được bản cũ — kiểm lại danh sách phiếu"));
+    }
     setCart(new Map());
     setNotes(new Map());
     setTendered(0);
@@ -624,6 +678,7 @@ export default function CafePosPage() {
                   {h.name}
                   <span className="ml-1 font-normal text-slate-500">
                     {h.lines.reduce((t, [, n]) => t + n, 0)} món ·{" "}
+                    <strong className="text-slate-800">{vnd(holdTotal(h))} đ</strong> ·{" "}
                     {new Date(h.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </button>
@@ -861,9 +916,14 @@ export default function CafePosPage() {
           </Button>
 
           <div className="mt-2 flex gap-2">
-            <Button type="button" onClick={sell} className="h-12 flex-[2] bg-sky-600 text-base font-black hover:bg-sky-700">
-              🖨 BÁN & IN PHIẾU
+            <Button type="button" onClick={() => sell(false)} className="h-12 flex-1 bg-sky-600 text-base font-black hover:bg-sky-700">
+              {editingId ? "✓ LƯU SỬA" : "✓ BÁN"}
             </Button>
+            <Button type="button" onClick={() => sell(true)} className="h-12 flex-1 bg-slate-800 text-base font-black hover:bg-slate-900">
+              🖨 BÁN & IN
+            </Button>
+          </div>
+          <div className="mt-2 flex gap-2">
             <Button type="button" variant="ghost" onClick={holdOrder} className="h-12 flex-1 bg-white text-sm font-bold">
               🧾 Giữ đơn
             </Button>
@@ -874,13 +934,27 @@ export default function CafePosPage() {
                 setCart(new Map());
                 setNotes(new Map());
                 setTendered(0);
+                setEditingId(null);
               }}
               className="h-12 flex-1 bg-white"
             >
-              Xoá giỏ
+              {editingId ? "Bỏ sửa" : "Xoá giỏ"}
             </Button>
           </div>
         </div>
+      )}
+
+      {/* IN LẠI PHIẾU VỪA BÁN — bán xong mới thấy khách cần phiếu, hoặc máy in
+          kẹt giấy. Nhớ trong máy nên mất mạng vẫn in được, không như danh sách
+          phiếu ở dưới (danh sách đó lấy từ máy chủ). */}
+      {lastSold && (
+        <button
+          type="button"
+          onClick={() => printReceipt(lastSold)}
+          className="mt-2 w-full rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-600"
+        >
+          🖨 In lại phiếu vừa bán ({vnd(lastSold.total)} đ)
+        </button>
       )}
 
       {/* ---- Khoản chi ---- */}
@@ -930,8 +1004,11 @@ export default function CafePosPage() {
                 {day.recent.map((r) => (
                   <li key={r.clientId} className="flex items-center gap-2">
                     <span className="text-slate-400">{r.soldAt ? new Date(r.soldAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
-                    <span className="flex-1">{r.label}</span>
-                    <span className="tabular-nums">{r.kind === "expense" ? `−${vnd(r.total)}` : r.method === "free" ? "FREE" : vnd(r.total)}</span>
+                    <span className="min-w-0 flex-1">{r.label}</span>
+                    {/* Cột tiền BỀ RỘNG CỐ ĐỊNH để mọi dòng và hàng TỔNG thẳng cột */}
+                    <span className="w-20 shrink-0 text-right tabular-nums">
+                      {r.kind === "expense" ? `−${vnd(r.total)}` : r.method === "free" ? "FREE" : vnd(r.total)}
+                    </span>
                     {/* IN LẠI: khách làm mất phiếu, hoặc máy in kẹt giấy lúc bán */}
                     {r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
                       <button
@@ -941,7 +1018,7 @@ export default function CafePosPage() {
                             clientId: r.clientId,
                             counter: r.counter as CafeCounterId,
                             kind: "sale",
-                            items: (r.items ?? []).map((i) => ({ id: "", name: i.name, price: i.price, qty: i.qty })),
+                            items: (r.items ?? []).map((i) => ({ id: i.id, name: i.name, note: i.note, price: i.price, qty: i.qty })),
                             total: r.total,
                             discount: (r.discountKind ?? "none") as CafeDiscountId,
                             method: r.method as "cash" | "transfer" | "free",
@@ -954,9 +1031,33 @@ export default function CafePosPage() {
                         in lại
                       </button>
                     )}
+                    {r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
+                      <button type="button" onClick={() => editSold(r)} className="text-amber-600 hover:underline">
+                        sửa
+                      </button>
+                    )}
                     <button type="button" onClick={() => removeRecent(r.clientId)} className="text-rose-500 hover:underline">xoá</button>
                   </li>
                 ))}
+                {/* TỔNG của danh sách, thẳng CỘT TIỀN — hai ô cuối chừa chỗ cho nút sửa/xoá */}
+                <li className="flex items-center gap-2 border-t border-slate-300 pt-1 font-bold text-slate-900">
+                  <span className="text-slate-400">TỔNG</span>
+                  <span className="min-w-0 flex-1">
+                    {day.recent.filter((r) => r.kind === "sale").length} phiếu bán
+                    {day.recent.some((r) => r.kind === "expense")
+                      ? ` · ${day.recent.filter((r) => r.kind === "expense").length} khoản chi`
+                      : ""}
+                  </span>
+                  <span className="w-20 shrink-0 text-right tabular-nums">
+                    {vnd(
+                      day.recent.reduce(
+                        (t, r) => t + (r.kind === "expense" ? -(r.total || 0) : r.method === "free" ? 0 : r.total || 0),
+                        0,
+                      ),
+                    )}
+                  </span>
+                  <span className="w-[3.4rem] shrink-0" />
+                </li>
               </ul>
             </details>
           )}
