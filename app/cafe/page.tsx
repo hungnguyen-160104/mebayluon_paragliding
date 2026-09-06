@@ -1331,7 +1331,7 @@ function CustomerView({
               {/* Bề rộng CỐ ĐỊNH cho ô số lượng, để cột tiền của mọi dòng — và
                   của hàng TỔNG bên dưới — rơi đúng một đường dọc. */}
               <span className="w-12 shrink-0 text-right text-base text-slate-500">×{l.qty}</span>
-              <span className="w-28 shrink-0 text-right text-base font-semibold tabular-nums text-slate-900">
+              <span className="w-28 shrink-0 whitespace-nowrap text-right text-base font-semibold tabular-nums text-slate-900">
                 {l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}
               </span>
             </li>
@@ -1343,21 +1343,27 @@ function CustomerView({
             <div className="flex items-baseline gap-2 text-slate-500">
               <span className="min-w-0 flex-1">Tạm tính</span>
               <span className="w-12 shrink-0" />
-              <span className="w-28 shrink-0 text-right tabular-nums">{vnd(subtotal)} đ</span>
+              <span className="w-28 shrink-0 whitespace-nowrap text-right tabular-nums">{vnd(subtotal)} đ</span>
             </div>
             <div className="flex items-baseline gap-2 font-semibold text-amber-700">
               <span className="min-w-0 flex-1">Giảm{discountLabel ? ` · ${discountLabel}` : ""}</span>
               <span className="w-12 shrink-0" />
-              <span className="w-28 shrink-0 text-right tabular-nums">− {vnd(discountAmount)} đ</span>
+              <span className="w-28 shrink-0 whitespace-nowrap text-right tabular-nums">− {vnd(discountAmount)} đ</span>
             </div>
           </div>
         )}
 
-        {/* TỔNG thẳng đúng cột tiền của các món ở trên — không phải dò ngang */}
-        <div className="mt-3 flex items-baseline gap-2 rounded-2xl bg-slate-900 py-3 pl-4 pr-0 text-white">
+        {/*
+          TỔNG: nền ĐỎ cho khách nhìn phát ra ngay số phải trả.
+
+          Ô tiền KHÔNG đặt bề rộng cứng — chữ to gấp rưỡi các dòng trên nên
+          "1.250.000 đ" tràn khỏi 7rem rồi rớt chữ "đ" xuống hàng dưới (chuyện
+          thật 06/09). Để nó tự nở và cấm bẻ dòng; cột vẫn thẳng vì mọi dòng
+          đều dồn phải về CÙNG MỘT MÉP, bề rộng ô chỉ quyết định chỗ chữ bắt đầu.
+        */}
+        <div className="mt-3 flex items-baseline gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-white">
           <span className="min-w-0 flex-1 text-lg font-bold">TỔNG</span>
-          <span className="w-12 shrink-0" />
-          <span className="w-28 shrink-0 pr-4 text-right text-2xl font-black tabular-nums">
+          <span className="shrink-0 whitespace-nowrap text-right text-2xl font-black tabular-nums">
             {total > 0 ? `${vnd(total)} đ` : "MIỄN PHÍ"}
           </span>
         </div>
