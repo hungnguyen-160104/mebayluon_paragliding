@@ -843,15 +843,35 @@ export default function CafePosPage() {
             ))}
           </div>
 
+          {/*
+            TẠM TÍNH · GIẢM · TỔNG xếp THẲNG CỘT TIỀN của các dòng món ở trên.
+            Dòng món có bốn ô sau tên: [−] [số] [＋] [tiền w-24]; ở đây chừa
+            đúng bề rộng ba ô đầu cộng khe (6.5rem) rồi mới tới cột tiền, nên
+            con số nào cũng rơi vào một đường dọc — mắt chạy một mạch từ giá
+            từng món xuống tổng, không phải dò ngang.
+          */}
           {discountAmount > 0 && (
-            <div className="mt-1.5 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-1.5 text-sm text-amber-900">
-              <span>Tạm tính {vnd(cartSubtotal)} đ</span>
-              <strong>− {vnd(discountAmount)} đ</strong>
-            </div>
+            <>
+              <div className="mt-1.5 flex items-center gap-2 text-sm text-slate-500">
+                <span className="min-w-0 flex-1">Tạm tính</span>
+                <span className="w-[6.5rem] shrink-0" />
+                <span className="w-24 shrink-0 text-right tabular-nums">{vnd(cartSubtotal)} đ</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-amber-700">
+                <span className="min-w-0 flex-1">Giảm giá</span>
+                <span className="w-[6.5rem] shrink-0" />
+                <span className="w-24 shrink-0 text-right tabular-nums">− {vnd(discountAmount)} đ</span>
+              </div>
+            </>
           )}
 
+          <div className="mt-1 flex items-center gap-2 border-t border-slate-200 pt-1.5">
+            <span className="min-w-0 flex-1 text-lg font-black">TỔNG</span>
+            <span className="w-[6.5rem] shrink-0" />
+            <span className="w-24 shrink-0 text-right text-lg font-black tabular-nums">{vnd(cartTotal)} đ</span>
+          </div>
+
           <div className="mt-2 flex items-center gap-2">
-            <span className="text-lg font-black">TỔNG: {vnd(cartTotal)} đ</span>
             {!onlyFree && cartTotal > 0 && (
               <span className="ml-auto flex overflow-hidden rounded-xl border border-slate-300">
                 {(["cash", "transfer"] as const).map((m) => (
@@ -1308,8 +1328,10 @@ function CustomerView({
                     chưa trước khi trả tiền — đọc trên phiếu in ra thì muộn rồi. */}
                 {l.note && <span className="block text-sm italic text-sky-700">{l.note}</span>}
               </span>
-              <span className="text-base text-slate-500">×{l.qty}</span>
-              <span className="w-28 text-right text-base font-semibold tabular-nums text-slate-900">
+              {/* Bề rộng CỐ ĐỊNH cho ô số lượng, để cột tiền của mọi dòng — và
+                  của hàng TỔNG bên dưới — rơi đúng một đường dọc. */}
+              <span className="w-12 shrink-0 text-right text-base text-slate-500">×{l.qty}</span>
+              <span className="w-28 shrink-0 text-right text-base font-semibold tabular-nums text-slate-900">
                 {l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}
               </span>
             </li>
@@ -1318,20 +1340,26 @@ function CustomerView({
 
         {discountAmount > 0 && (
           <div className="mt-2 space-y-1 text-base">
-            <div className="flex justify-between text-slate-500">
-              <span>Tạm tính</span>
-              <span className="tabular-nums">{vnd(subtotal)} đ</span>
+            <div className="flex items-baseline gap-2 text-slate-500">
+              <span className="min-w-0 flex-1">Tạm tính</span>
+              <span className="w-12 shrink-0" />
+              <span className="w-28 shrink-0 text-right tabular-nums">{vnd(subtotal)} đ</span>
             </div>
-            <div className="flex justify-between font-semibold text-amber-700">
-              <span>Giảm{discountLabel ? ` · ${discountLabel}` : ""}</span>
-              <span className="tabular-nums">− {vnd(discountAmount)} đ</span>
+            <div className="flex items-baseline gap-2 font-semibold text-amber-700">
+              <span className="min-w-0 flex-1">Giảm{discountLabel ? ` · ${discountLabel}` : ""}</span>
+              <span className="w-12 shrink-0" />
+              <span className="w-28 shrink-0 text-right tabular-nums">− {vnd(discountAmount)} đ</span>
             </div>
           </div>
         )}
 
-        <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white">
-          <span className="text-lg font-bold">TỔNG</span>
-          <span className="text-3xl font-black tabular-nums">{total > 0 ? `${vnd(total)} đ` : "MIỄN PHÍ"}</span>
+        {/* TỔNG thẳng đúng cột tiền của các món ở trên — không phải dò ngang */}
+        <div className="mt-3 flex items-baseline gap-2 rounded-2xl bg-slate-900 py-3 pl-4 pr-0 text-white">
+          <span className="min-w-0 flex-1 text-lg font-bold">TỔNG</span>
+          <span className="w-12 shrink-0" />
+          <span className="w-28 shrink-0 pr-4 text-right text-2xl font-black tabular-nums">
+            {total > 0 ? `${vnd(total)} đ` : "MIỄN PHÍ"}
+          </span>
         </div>
 
         {total > 0 && (
