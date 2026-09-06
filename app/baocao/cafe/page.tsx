@@ -24,7 +24,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { CAFE_COUNTERS, CAFE_MENU, type CafeCounterId, type CafeEntry } from "@/lib/baobay/cafe";
+import { CAFE_COUNTERS, CAFE_GROUPS, CAFE_MENU, type CafeCounterId, type CafeEntry } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
@@ -377,23 +377,34 @@ export default function CafePosPage() {
         {myCounter ? <span className="ml-2 rounded bg-white/20 px-2 py-0.5 text-sm">hôm nay: {myCounter.freeTickets}</span> : null}
       </button>
 
-      {/* ---- Menu ---- */}
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-        {CAFE_MENU.filter((m) => !m.freeTicket).map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => addItem(m.id)}
-            className="rounded-2xl border border-slate-300 bg-white p-3 text-left shadow-sm active:bg-sky-50"
-          >
-            <span className="block text-sm font-bold text-slate-800">{m.name}</span>
-            <span className="block text-sm font-semibold text-sky-700">{vnd(m.price)} đ</span>
-            {(cart.get(m.id) ?? 0) > 0 && (
-              <span className="mt-1 inline-block rounded-full bg-sky-600 px-2 text-xs font-bold text-white">×{cart.get(m.id)}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ---- Menu: xếp theo KHỐI (cà phê · trà · đồ uống · ăn vặt) — 27 món dồn
+           một lưới thì quầy phải dò từng nút, chia khối là bấm theo phản xạ ---- */}
+      {CAFE_GROUPS.map((g) => {
+        const items = CAFE_MENU.filter((m) => !m.freeTicket && m.group === g.id);
+        if (items.length === 0) return null;
+        return (
+          <div key={g.id} className="mt-3">
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">{g.name}</h3>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {items.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => addItem(m.id)}
+                  className="rounded-2xl border border-slate-300 bg-white p-3 text-left shadow-sm active:bg-sky-50"
+                >
+                  <span className="block text-sm font-bold leading-tight text-slate-800">{m.name}</span>
+                  {m.en && <span className="block text-[11px] leading-tight text-slate-400">{m.en}</span>}
+                  <span className="mt-0.5 block text-sm font-semibold text-sky-700">{vnd(m.price)} đ</span>
+                  {(cart.get(m.id) ?? 0) > 0 && (
+                    <span className="mt-1 inline-block rounded-full bg-sky-600 px-2 text-xs font-bold text-white">×{cart.get(m.id)}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       {/* ---- Giỏ + bán ---- */}
       {cartLines.length > 0 && (
