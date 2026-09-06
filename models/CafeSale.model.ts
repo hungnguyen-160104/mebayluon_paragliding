@@ -22,6 +22,12 @@ export interface ICafeSale {
   date: string;
   kind: "sale" | "expense";
   items: Array<{ id: string; name: string; price: number; qty: number }>;
+  /** Tiền hàng TRƯỚC giảm giá — giữ lại để biết phiếu đáng lẽ thu bao nhiêu. */
+  subtotal: number;
+  /** Mức giảm đã bấm: "none" · "staff" (phi công/người nhà −20%) · "diplomatic" (−100%). */
+  discountKind: string;
+  discountAmount: number;
+  /** Tiền THỰC THU = subtotal − discountAmount. */
   total: number;
   method: "cash" | "transfer" | "free";
   /** Số phiếu nước miễn phí trong phiếu này — cột "số khách uống nước". */
@@ -43,6 +49,9 @@ const CafeSaleSchema = new Schema<ICafeSale>(
     date: { type: String, required: true, index: true },
     kind: { type: String, enum: ["sale", "expense"], required: true },
     items: [{ _id: false, id: String, name: String, price: Number, qty: Number }],
+    subtotal: { type: Number, default: 0 },
+    discountKind: { type: String, default: "none" },
+    discountAmount: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
     method: { type: String, enum: ["cash", "transfer", "free"], default: "cash" },
     freeTickets: { type: Number, default: 0 },

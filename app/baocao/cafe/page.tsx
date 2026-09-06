@@ -24,7 +24,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { CAFE_COUNTERS, CAFE_GROUPS, CAFE_MENU, type CafeCounterId, type CafeEntry } from "@/lib/baobay/cafe";
+import {
+  CAFE_COUNTERS,
+  CAFE_DISCOUNTS,
+  CAFE_GROUPS,
+  CAFE_MENU,
+  cafeDiscountRate,
+  type CafeCounterId,
+  type CafeDiscountId,
+  type CafeEntry,
+  type CafeMenuItem,
+} from "@/lib/baobay/cafe";
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
@@ -35,12 +45,15 @@ import { Shell } from "../components/Shell";
 const QUEUE_KEY = "cafe-queue-v1";
 const USER_KEY = "cafe-user-v1";
 const COUNTER_KEY = "cafe-counter-v1";
+/** Menu đã gộp (mã + món quầy tự thêm) cất trong máy — mất mạng vẫn bày đủ nút. */
+const MENU_KEY = "cafe-menu-v1";
 
 type DayDTO = {
   date: string;
   counters: Array<{ counter: string; counterName: string; cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number }>;
   totals: { cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number };
   recent: Array<{ clientId: string; counter: string; kind: string; label: string; total: number; method: string; soldAt: string; byName: string }>;
+  menu?: CafeMenuItem[];
 };
 
 const vnd = (n: number) => n.toLocaleString("vi-VN");
@@ -104,11 +117,18 @@ export default function CafePosPage() {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw-cafe.js").catch(() => {});
   }, []);
 
-  const [counter, setCounter] = useState<CafeCounterId>("cafe-1");
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(MENU_KEY) || "null");
+      if (Array.isArray(cached) && cached.length) setMenu(cached);
+    } catch { /* không đọc được menu đã cất — dùng bản trong mã */ }
+  }, []);
+
+  const [counter, setCounter] = useState<CafeCounterId>("bai-ha");
   useEffect(() => {
     try {
       const saved = localStorage.getItem(COUNTER_KEY);
-      if (saved === "cafe-1" || saved === "cafe-2") setCounter(saved);
+      if (saved === "bai-ha" || saved === "bai-cat") setCounter(saved);
     } catch { /* không nhớ được quầy thì mặc định quầy 1 */ }
   }, []);
   const pickCounter = (c: CafeCounterId) => {
@@ -120,6 +140,15 @@ export default function CafePosPage() {
 
   const [cart, setCart] = useState<Map<string, number>>(new Map());
   const [method, setMethod] = useState<"cash" | "transfer">("cash");
+  /**
+   * MENU ĐANG BÀY = menu trong mã, thay bằng bản máy chủ ngay khi tải được.
+   * Bắt đầu bằng bản trong mã chứ không phải mảng rỗng: mở máy lúc mất mạng
+   * vẫn phải bán được ngay, không chờ hỏi ai.
+   */
+  const [menu, setMenu] = useState<CafeMenuItem[]>(CAFE_MENU);
+  /** Mức giảm cho phiếu đang tính: khách thường · phi công/người nhà · ngoại giao. */
+  const [discount, setDiscount] = useState<CafeDiscountId>("none");
+  const [showAddItem, setShowAddItem] = useState(false);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
   const [day, setDay] = useState<DayDTO | null>(null);
@@ -132,7 +161,15 @@ export default function CafePosPage() {
 
   const loadDay = useCallback(() => {
     apiGet<DayDTO>(`/api/baocao/cafe?date=${todayInVN()}`)
-      .then(setDay)
+      .then((d) => {
+        setDay(d);
+        if (Array.isArray(d.menu) && d.menu.length) {
+          setMenu(d.menu);
+          try {
+            localStorage.setItem(MENU_KEY, JSON.stringify(d.menu));
+          } catch { /* hết chỗ cất — menu vẫn dùng được trong phiên này */ }
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -184,13 +221,16 @@ export default function CafePosPage() {
     () =>
       [...cart.entries()]
         .map(([id, qty]) => {
-          const m = CAFE_MENU.find((x) => x.id === id);
+          const m = menu.find((x) => x.id === id);
           return m ? { ...m, qty } : null;
         })
         .filter((x): x is NonNullable<typeof x> => Boolean(x)),
-    [cart],
+    [cart, menu],
   );
-  const cartTotal = cartLines.reduce((t, l) => t + l.price * l.qty, 0);
+  /** Tiền hàng trước giảm — máy chủ tính lại đúng công thức này khi nhận phiếu. */
+  const cartSubtotal = cartLines.reduce((t, l) => t + l.price * l.qty, 0);
+  const discountAmount = Math.round(cartSubtotal * cafeDiscountRate(discount));
+  const cartTotal = cartSubtotal - discountAmount;
   const onlyFree = cartLines.length > 0 && cartLines.every((l) => l.freeTicket);
 
   function addItem(id: string) {
@@ -221,6 +261,15 @@ export default function CafePosPage() {
           `<tr><td>${it.name}${it.qty > 1 ? ` ×${it.qty}` : ""}</td><td style="text-align:right">${it.price ? vnd(it.price * it.qty) : "FREE"}</td></tr>`,
       )
       .join("");
+    /** Phiếu in ghi rõ mức giảm — khách cầm phiếu thấy được vì sao rẻ hơn bảng giá. */
+    const sub = entry.items.reduce((t, it) => t + it.price * it.qty, 0);
+    const disc = CAFE_DISCOUNTS.find((d) => d.id === entry.discount);
+    const discRows =
+      disc && disc.rate > 0
+        ? `<tr><td>Tam tinh</td><td style="text-align:right">${vnd(sub)}</td></tr>` +
+          `<tr><td>Giam ${Math.round(disc.rate * 100)}% (${disc.id === "staff" ? "phi cong/nguoi nha" : "khach ngoai giao"})</td>` +
+          `<td style="text-align:right">-${vnd(Math.round(sub * disc.rate))}</td></tr>`
+        : "";
     doc.open();
     doc.write(`<!doctype html><html><head><meta charset="utf-8"><style>
       @page { size: 58mm auto; margin: 2mm; }
@@ -234,9 +283,9 @@ export default function CafePosPage() {
       <h1>MEBAYLUON CAFE</h1>
       <p>${counterName}</p>
       <p>${formatDateKeyVN(todayInVN())} ${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}</p>
-      <table>${rows}
+      <table>${rows}${discRows}
         <tr class="tong"><td>TONG</td><td style="text-align:right">${entry.method === "free" ? "MIEN PHI" : vnd(entry.total) + " d"}</td></tr>
-        <tr><td colspan="2" style="text-align:center">${entry.method === "transfer" ? "Chuyen khoan" : entry.method === "free" ? "Phieu nuoc khach bay" : "Tien mat"}</td></tr>
+        <tr><td colspan="2" style="text-align:center">${entry.method === "transfer" ? "Chuyen khoan" : entry.method === "free" ? (disc?.id === "diplomatic" ? "Khach ngoai giao - khong thu tien" : "Phieu nuoc khach bay") : "Tien mat"}</td></tr>
       </table>
       <p style="margin-top:6px">Cam on quy khach!</p>
     </body></html>`);
@@ -261,22 +310,28 @@ export default function CafePosPage() {
       kind: "sale",
       items: cartLines.map((l) => ({ id: l.id, name: l.name, price: l.price, qty: l.qty })),
       total: cartTotal,
-      method: onlyFree ? "free" : method,
+      discount,
+      method: onlyFree || cartTotal === 0 ? "free" : method,
       note: "",
       soldAt: new Date().toISOString(),
     };
     commit(entry, true);
     setCart(new Map());
+    const label = CAFE_DISCOUNTS.find((d) => d.id === discount)?.short;
     setMsg(
-      `✓ Đã bán ${entry.items.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")} — ${
-        entry.method === "free" ? "phiếu miễn phí" : `${vnd(entry.total)} đ ${entry.method === "cash" ? "TM" : "CK"}`
+      `✓ Đã bán ${entry.items.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")}${
+        label ? ` [${label}]` : ""
+      } — ${
+        entry.method === "free" ? "không thu tiền" : `${vnd(entry.total)} đ ${entry.method === "cash" ? "TM" : "CK"}`
       }.`,
     );
+    // Mức giảm KHÔNG dính sang phiếu sau: khách kế tiếp là khách thường
+    setDiscount("none");
   }
 
   /** Một chạm: một phiếu nước khách bay, in luôn. */
   function sellFreeTicket() {
-    const free = CAFE_MENU.find((m) => m.freeTicket)!;
+    const free = menu.find((m) => m.freeTicket) ?? CAFE_MENU.find((m) => m.freeTicket)!;
     commit(
       {
         clientId: crypto.randomUUID(),
@@ -380,7 +435,7 @@ export default function CafePosPage() {
       {/* ---- Menu: xếp theo KHỐI (cà phê · trà · đồ uống · ăn vặt) — 27 món dồn
            một lưới thì quầy phải dò từng nút, chia khối là bấm theo phản xạ ---- */}
       {CAFE_GROUPS.map((g) => {
-        const items = CAFE_MENU.filter((m) => !m.freeTicket && m.group === g.id);
+        const items = menu.filter((m) => !m.freeTicket && m.group === g.id);
         if (items.length === 0) return null;
         return (
           <div key={g.id} className="mt-3">
@@ -406,6 +461,24 @@ export default function CafePosPage() {
         );
       })}
 
+      {/* ---- Thêm món ngay tại quầy (cần mạng) ---- */}
+      {online && (
+        <AddItemBox
+          open={showAddItem}
+          onOpen={() => setShowAddItem(true)}
+          onClose={() => setShowAddItem(false)}
+          onSaved={(next) => {
+            setMenu(next);
+            try {
+              localStorage.setItem(MENU_KEY, JSON.stringify(next));
+            } catch { /* hết chỗ cất — menu vẫn dùng được trong phiên này */ }
+            setShowAddItem(false);
+            setMsg("✓ Đã thêm món vào menu.");
+          }}
+          onError={setError}
+        />
+      )}
+
       {/* ---- Giỏ + bán ---- */}
       {cartLines.length > 0 && (
         <div className="mt-3 rounded-2xl border-2 border-sky-400 bg-white p-3 shadow-lg">
@@ -418,9 +491,39 @@ export default function CafePosPage() {
               <span className="w-24 text-right tabular-nums">{l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}</span>
             </div>
           ))}
+          {/* GIẢM GIÁ — bấm trước khi bán. Phiếu giảm 100% vẫn là phiếu bán:
+              hàng đã rời kho nên phải vào bảng kiểm kê. */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {CAFE_DISCOUNTS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => setDiscount(d.id)}
+                className={
+                  "rounded-xl border px-3 py-1.5 text-xs font-bold " +
+                  (discount === d.id
+                    ? d.id === "none"
+                      ? "border-slate-700 bg-slate-800 text-white"
+                      : "border-amber-500 bg-amber-500 text-white"
+                    : "border-slate-300 bg-white text-slate-600")
+                }
+              >
+                {d.name}
+                {d.rate > 0 ? ` −${Math.round(d.rate * 100)}%` : ""}
+              </button>
+            ))}
+          </div>
+
+          {discountAmount > 0 && (
+            <div className="mt-1.5 flex items-center justify-between rounded-xl bg-amber-50 px-3 py-1.5 text-sm text-amber-900">
+              <span>Tạm tính {vnd(cartSubtotal)} đ</span>
+              <strong>− {vnd(discountAmount)} đ</strong>
+            </div>
+          )}
+
           <div className="mt-2 flex items-center gap-2">
             <span className="text-lg font-black">TỔNG: {vnd(cartTotal)} đ</span>
-            {!onlyFree && (
+            {!onlyFree && cartTotal > 0 && (
               <span className="ml-auto flex overflow-hidden rounded-xl border border-slate-300">
                 {(["cash", "transfer"] as const).map((m) => (
                   <button
@@ -511,5 +614,126 @@ export default function CafePosPage() {
         </div>
       )}
     </Shell>
+  );
+}
+
+/**
+ * "＋ THÊM MÓN" — quầy tự thêm món vào menu, không phải chờ sửa mã rồi deploy.
+ *
+ * Cần mạng: món mới phải về máy chủ thì máy quầy kia mới thấy. Nút chỉ hiện
+ * khi đang có mạng — bày ra lúc mất mạng chỉ tổ bấm rồi mất công gõ lại.
+ *
+ * Món trùng tên món cũ thì máy chủ coi là SỬA món đó (đổi giá) — đúng ý người
+ * bấm, và cũng là đường đổi giá nhanh nhất tại quầy.
+ */
+function AddItemBox({
+  open,
+  onOpen,
+  onClose,
+  onSaved,
+  onError,
+}: {
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onSaved: (menu: CafeMenuItem[]) => void;
+  onError: (msg: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [en, setEn] = useState("");
+  const [price, setPrice] = useState(0);
+  const [group, setGroup] = useState<string>("do-uong");
+  const [saving, setSaving] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-300 py-3 text-sm font-bold text-slate-500 active:bg-slate-50"
+      >
+        ＋ Thêm món vào menu
+      </button>
+    );
+  }
+
+  async function save() {
+    if (!name.trim()) return onError("Chưa đặt tên món");
+    setSaving(true);
+    try {
+      const res = await apiPost<{ menu: CafeMenuItem[] }>("/api/baocao/cafe", {
+        action: "product",
+        product: { name: name.trim(), en: en.trim(), price, group },
+      });
+      onSaved(res.menu);
+      setName("");
+      setEn("");
+      setPrice(0);
+    } catch (err: any) {
+      onError(err?.message || "Không thêm được món");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border-2 border-slate-300 bg-white p-3">
+      <p className="text-sm font-bold text-slate-800">Thêm món vào menu</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-0.5 block text-xs font-medium text-slate-500">Tên món</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Trà vải"
+            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-0.5 block text-xs font-medium text-slate-500">Tên tiếng Anh (để trống được)</span>
+          <input
+            value={en}
+            onChange={(e) => setEn(e.target.value)}
+            placeholder="Lychee tea"
+            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-0.5 block text-xs font-medium text-slate-500">Giá bán</span>
+          <input
+            value={price ? price.toLocaleString("vi-VN") : ""}
+            inputMode="numeric"
+            onChange={(e) => setPrice(Number(e.target.value.replace(/[^\d]/g, "").slice(0, 9)) || 0)}
+            placeholder="0"
+            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-right text-sm font-semibold tabular-nums"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-0.5 block text-xs font-medium text-slate-500">Xếp vào khối</span>
+          <select
+            value={group}
+            onChange={(e) => setGroup(e.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-300 px-2 text-sm"
+          >
+            {CAFE_GROUPS.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="mt-1.5 text-xs text-slate-500">
+        Định mức nguyên liệu (một ly rút bao nhiêu gam) khai ở trang Báo cáo quầy → khối KHO.
+      </p>
+      <div className="mt-2 flex gap-2">
+        <Button type="button" onClick={save} disabled={saving} className="flex-1">
+          {saving ? "Đang lưu…" : "Lưu món"}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onClose} className="flex-1 bg-white">
+          Đóng
+        </Button>
+      </div>
+    </div>
   );
 }

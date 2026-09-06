@@ -288,7 +288,7 @@ const stockRequestInput = z.object({
 export const cafeReportSchema = z.object({
   spot: spotField,
   date: reportDate,
-  counter: z.string().trim().max(40).optional().default("cafe-1"),
+  counter: z.string().trim().max(40).optional().default("bai-ha"),
   cashReceived: money,
   transferReceived: money,
   expenses: expenseList,

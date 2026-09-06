@@ -31,7 +31,7 @@ export interface ICafeDailyReport {
 
   /** Ngày trực, "YYYY-MM-DD" giờ Việt Nam. */
   date: string;
-  /** Quầy trực hôm đó — "cafe-1" / "cafe-2" (xem lib/baobay/cafe.ts). */
+  /** Quầy trực hôm đó — "bai-ha" (bãi hạ) / "bai-cat" (bãi cất), xem lib/baobay/cafe.ts. */
   counter: string;
 
   /**
@@ -88,7 +88,7 @@ const CafeDailyReportSchema = new Schema<ICafeDailyReport>(
     spot: { type: String, default: DEFAULT_SPOT },
 
     date: { type: String, required: true, index: true },
-    counter: { type: String, default: "cafe-1" },
+    counter: { type: String, default: "bai-ha" },
 
     cashReceived: { type: Number, default: 0, min: 0 },
     transferReceived: { type: Number, default: 0, min: 0 },
