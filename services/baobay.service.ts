@@ -25,6 +25,7 @@ import mongoose from "mongoose";
 import { after } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
+import { CAFE_COUNTERS } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
@@ -89,6 +90,7 @@ import { BaobayFlycamCancel } from "@/models/BaobayFlycamCancel.model";
 import { BaobayRefund } from "@/models/BaobayRefund.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
+import { CafeDailyReport } from "@/models/CafeDailyReport.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
 import { PilotDailyReport } from "@/models/PilotDailyReport.model";
@@ -929,7 +931,7 @@ function toAccountDTO(doc: AccountDoc): BaobayAccountDTO {
  * Ngày kế toán đã chốt thì mọi bản ghi của ngày đó đóng băng.
  * Gọi ở đầu MỌI hàm ghi số liệu — đây là chốt cửa duy nhất.
  */
-async function assertDayOpen(spot: string, date: string): Promise<void> {
+export async function assertDayOpen(spot: string, date: string): Promise<void> {
   const close = await AccountantDailyClose.findOne({ spot, date }).select("status").lean<any>();
   if (close?.status === "closed") {
     throw new BaobayError(
@@ -1014,7 +1016,7 @@ function normalizeRescheduled(input: Array<{ code: string; toDate: string; note?
 }
 
 /** Bỏ dòng trống, cắt khoảng trắng, cảnh báo dòng thiếu nội dung hoặc thiếu tiền. */
-function normalizeExpenses(
+export function normalizeExpenses(
   input: Array<{ content: string; amount: number; kind?: "thu" | "chi"; method?: "cash" | "transfer"; note?: string }>,
 ): {
   list: ExpenseDTO[];
@@ -1054,7 +1056,7 @@ export function thuTotal(list: ExpenseDTO[] = []): number {
  * công ty, người khai không cầm đồng nào; cộng nó vào "đang giữ" là bắt
  * nhân viên nộp thứ tiền họ chưa từng cầm.
  */
-function thuCashTotal(list: ExpenseDTO[] = []): number {
+export function thuCashTotal(list: ExpenseDTO[] = []): number {
   return (list || []).reduce(
     (s, e) => s + (e.kind === "thu" && e.method !== "transfer" ? e.amount || 0 : 0),
     0,
@@ -3084,11 +3086,15 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   await connectDB();
   const spot = normalizeSpot(spotRaw);
 
-  const [collects, pilots, dispatchers, cameramen, commissionBookings, flycamRefunds, refunds] = await Promise.all([
+  const [collects, pilots, dispatchers, cameramen, cafes, commissionBookings, flycamRefunds, refunds] = await Promise.all([
     BaobayCollect.find({ spot, date }).lean<any[]>(),
     PilotDailyReport.find({ spot, date }).select("username pilotName expenses").lean<any[]>(),
     DispatcherDailyReport.find({ spot, date }).select("username staffName expenses").lean<any[]>(),
     CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses").lean<any[]>(),
+    // Quầy cafe: tiền bán hàng trong ca + sổ thu chi tại quầy
+    CafeDailyReport.find({ spot, date })
+      .select("username staffName counter cashReceived transferReceived expenses")
+      .lean<any[]>(),
     // Chiết khấu đại lý đã chi cho các đoàn bay hôm nay
     BaobayBooking.find({ spot, flightDate: date, "commission.amount": { $gt: 0 } })
       .select("contactName bookingCode daySeq guestCount commission")
@@ -3267,6 +3273,45 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   addReportThu(pilots, "pilotName", "pilot");
   addReportThu(dispatchers, "staffName", "dispatcher");
   addReportThu(cameramen, "cameramanName", "cameraman");
+  addReportThu(cafes, "staffName", "cafe");
+
+  /**
+   * TIỀN BÁN HÀNG QUẦY CAFE — nguồn thứ ba, ngoài lệnh thu và sổ thu chi.
+   *
+   * Người trực quầy cầm đúng phần tiền mặt bán hàng của ca mình, nên nó phải
+   * nằm trong bảng "ai đang cầm bao nhiêu" y như tiền vé; phần khách quét mã
+   * chuyển khoản thì vào thẳng tài khoản công ty, không ai cầm.
+   */
+  for (const d of cafes) {
+    const counterName = CAFE_COUNTERS.find((c) => c.id === d.counter)?.name ?? "quầy cafe";
+    if (d.transferReceived > 0) {
+      transferItems.push({
+        label: `Bán hàng ${counterName}`,
+        bookingCode: "",
+        guests: 0,
+        amount: d.transferReceived || 0,
+        transferCode: "",
+        from: "báo cáo quầy cafe",
+        daySeq: 0,
+      });
+    }
+    if (d.cashReceived > 0) {
+      const p = personOf(d.username, d.staffName, "cafe");
+      const item: MoneyBoardItem = {
+        label: `Bán hàng ${counterName}`,
+        bookingCode: "",
+        guests: 0,
+        amount: d.cashReceived || 0,
+        transferCode: "",
+        from: "báo cáo quầy cafe",
+        by: p.name,
+        daySeq: 0,
+      };
+      p.items.push(item);
+      p.total += item.amount;
+      cashItems.push(item);
+    }
+  }
 
   // Vai trò của người chỉ xuất hiện qua lệnh thu: tra trong danh bạ tài khoản
   const missing = [...byPerson.values()].filter((p) => !p.role).map((p) => p.username);
@@ -3426,6 +3471,25 @@ export async function getCashOnHand(
     const docs = await CameramanDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
       collected += thuCashTotal(d.expenses);
+      spent += expenseTotal(d.expenses);
+    }
+  }
+
+  /**
+   * QUẦY CAFE cộng THÊM, không phải nhánh loại trừ như trên.
+   *
+   * Người trực quầy hay là người KIÊM NHIỆM (Ms Duyên vừa điều phối vừa đứng
+   * quầy): xét theo vai chính thì tiền bán cafe của họ rơi ra ngoài, cuối
+   * tháng đếm tiền là thiếu đúng phần đó. Chỉ ai có báo cáo quầy mới có số ở
+   * đây nên cộng thêm không thể đếm đôi.
+   *
+   * Tính TIỀN MẶT bán hàng thôi: khách quét mã chuyển khoản thì tiền vào thẳng
+   * tài khoản công ty, cộng vào đây là bắt người trực nộp thứ họ chưa từng cầm.
+   */
+  if (wearsRole(session, "cafe")) {
+    const docs = await CafeDailyReport.find(where).lean<any[]>();
+    for (const d of docs) {
+      collected += (d.cashReceived || 0) + thuCashTotal(d.expenses);
       spent += expenseTotal(d.expenses);
     }
   }

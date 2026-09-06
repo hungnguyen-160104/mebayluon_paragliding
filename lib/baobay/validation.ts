@@ -274,6 +274,29 @@ export const cameramanReportSchema = z.object({
   submit: z.boolean().optional().default(false),
 });
 
+/** Một dòng yêu cầu nhập hàng: tên hàng – số lượng (chữ, kèm đơn vị) – ghi chú. */
+const stockRequestInput = z.object({
+  /** Dòng cũ mang mã sẵn; dòng mới để trống, máy chủ sinh mã. */
+  id: text(64),
+  name: text(200),
+  qty: text(50),
+  note: text(500),
+  done: z.boolean().optional().default(false),
+});
+
+/** QUẦY CAFE: tiền bán trong ca, thu chi tại quầy, yêu cầu nhập hàng. */
+export const cafeReportSchema = z.object({
+  spot: spotField,
+  date: reportDate,
+  counter: z.string().trim().max(40).optional().default("cafe-1"),
+  cashReceived: money,
+  transferReceived: money,
+  expenses: expenseList,
+  stockRequests: z.array(stockRequestInput).max(50, "Tối đa 50 dòng nhập hàng một ngày").default([]),
+  note: text(2_000),
+  submit: z.boolean().optional().default(false),
+});
+
 /** KẾ TOÁN: số chốt ngày — mọi ô đều do kế toán tự gõ. */
 export const dailyCloseSchema = z.object({
   spot: spotField,

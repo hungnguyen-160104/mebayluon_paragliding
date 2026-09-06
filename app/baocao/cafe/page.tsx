@@ -501,6 +501,13 @@ export default function CafePosPage() {
               </ul>
             </details>
           )}
+          {/* Cuối ca thì sang trang báo cáo: chốt tiền, thu chi, nộp tiền, xin nhập hàng */}
+          <a
+            href="/baocao/cafe/bao-cao"
+            className="mt-2 block rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-center text-sm font-bold text-sky-800"
+          >
+            📋 Báo cáo cuối ca — chốt tiền · thu chi · nộp tiền · yêu cầu nhập hàng
+          </a>
         </div>
       )}
     </Shell>

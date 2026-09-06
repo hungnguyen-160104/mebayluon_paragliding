@@ -31,6 +31,40 @@ export type ExpenseDTO = {
   note?: string;
 };
 
+/**
+ * Một dòng YÊU CẦU NHẬP HÀNG của quầy cafe: tên hàng – số lượng – ghi chú.
+ *
+ * `qty` để dạng CHỮ chứ không phải số: quầy ghi "2 thùng", "5kg", "1 lốc" —
+ * bắt gõ số trần thì mất luôn đơn vị, người đi mua phải đoán.
+ */
+export type CafeStockRequestDTO = {
+  /** Mã dòng do máy chủ sinh — người nhập hàng bấm "đã nhập" theo mã này. */
+  id: string;
+  name: string;
+  qty: string;
+  note?: string;
+  done: boolean;
+  doneBy?: string;
+  doneAt?: string;
+};
+
+/** Báo cáo ngày của người trực quầy cafe. */
+export type CafeReportDTO = {
+  id: string;
+  date: string;
+  counter: string;
+  username: string;
+  staffName: string;
+  cashReceived: number;
+  transferReceived: number;
+  expenses: ExpenseDTO[];
+  stockRequests: CafeStockRequestDTO[];
+  note: string;
+  submitted: boolean;
+  submittedAt?: string;
+  updatedAt: string;
+};
+
 /** Vé huỷ theo nhóm: nhiều mã cùng đoàn – lý do – tên liên hệ. */
 export type CancelEntryDTO = {
   codes: string[];
