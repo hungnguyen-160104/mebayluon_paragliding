@@ -364,10 +364,26 @@ export function InsuranceBox({
                       </label>
                       <label className="block">
                         <span className="mb-0.5 block text-[10px] font-medium leading-none text-slate-500">Ngày sinh</span>
+                        {/* Ô KHÔNG KIỂM SOÁT (defaultValue) để gõ dở không bị cha vẽ đè; đổi
+                            lại phải TỰ GHI chữ đã chuẩn hoá vào ô — trước chỉ patch state, gõ
+                            "22021999" máy hiểu đúng nhưng ô vẫn trơ dãy số (chuyện thật 06/09). */}
                         <TextInput
                           defaultValue={birthdayVN(g.birthday)}
                           placeholder="dd/mm/yyyy"
-                          onBlur={(e) => patch(i, { birthday: normalizeBirthday(e.target.value) })}
+                          inputMode="numeric"
+                          onChange={(e) => {
+                            // Gõ liền đủ 8 số (ddmmyyyy) là nhận ngay, không chờ rời ô
+                            if (!/^\d{8}$/.test(e.target.value)) return;
+                            const iso = normalizeBirthday(e.target.value);
+                            if (!iso) return;
+                            e.target.value = birthdayVN(iso);
+                            patch(i, { birthday: iso });
+                          }}
+                          onBlur={(e) => {
+                            const iso = normalizeBirthday(e.target.value);
+                            if (iso) e.target.value = birthdayVN(iso);
+                            patch(i, { birthday: iso });
+                          }}
                         />
                       </label>
                       <label className="block">

@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { parseCccdQr, parseMrz, type ScannedPerson } from "@/lib/baobay/id-scan";
+import { birthdayVN, normalizeBirthday } from "@/lib/baobay/insurance";
 
 import { apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, TextInput } from "./ui";
@@ -440,7 +441,17 @@ export function IdScanCard({
             </label>
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium text-slate-500">Ngày sinh</span>
-              <TextInput value={current.birthday} onChange={(e) => set({ birthday: e.target.value })} placeholder="dd/mm/yyyy" />
+              <TextInput
+                value={current.birthday}
+                placeholder="dd/mm/yyyy"
+                inputMode="numeric"
+                onChange={(e) => {
+                  // Gõ liền "22021999" → "22/02/1999" ngay khi đủ 8 số (như ô bảo hiểm)
+                  const v = e.target.value;
+                  const iso = /^\d{8}$/.test(v) ? normalizeBirthday(v) : "";
+                  set({ birthday: iso ? birthdayVN(iso) : v });
+                }}
+              />
             </label>
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium text-slate-500">Giới tính</span>
