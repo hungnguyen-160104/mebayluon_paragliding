@@ -48,12 +48,32 @@ const USER_KEY = "cafe-user-v1";
 const COUNTER_KEY = "cafe-counter-v1";
 /** Menu đã gộp (mã + món quầy tự thêm) cất trong máy — mất mạng vẫn bày đủ nút. */
 const MENU_KEY = "cafe-menu-v1";
+/**
+ * ĐƠN ĐANG GIỮ — khách gọi nước lúc chờ bay, bay xong xuống mới trả tiền.
+ * Cất trong máy chứ không lên máy chủ: đơn chưa chốt thì chưa phải doanh thu,
+ * và quầy vẫn giữ đơn được lúc mất mạng như mọi việc khác của trang này.
+ */
+const HOLD_KEY = "cafe-hold-v1";
+
+/** Câu dặn hay gặp nhất ở quầy — bấm một chạm thay vì gõ. */
+const QUICK_NOTES = ["ít đá", "không đá", "ít đường", "không đường", "nóng", "mang đi"];
 
 type DayDTO = {
   date: string;
   counters: Array<{ counter: string; counterName: string; cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number }>;
   totals: { cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number };
-  recent: Array<{ clientId: string; counter: string; kind: string; label: string; total: number; method: string; soldAt: string; byName: string }>;
+  recent: Array<{
+    clientId: string;
+    counter: string;
+    kind: string;
+    label: string;
+    items?: Array<{ name: string; qty: number; price: number }>;
+    discountKind?: string;
+    total: number;
+    method: string;
+    soldAt: string;
+    byName: string;
+  }>;
   menu?: CafeMenuItem[];
 };
 
@@ -72,6 +92,43 @@ function writeQueue(q: CafeEntry[]) {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
   } catch {
     /* đầy bộ nhớ thì đành chịu — phiếu vẫn đã in */
+  }
+}
+
+/** Một đơn đang giữ: tên gọi (bàn/khách), các món, ghi chú, mức giảm. */
+type HeldOrder = {
+  id: string;
+  name: string;
+  at: string;
+  lines: Array<[string, number]>;
+  notes: Array<[string, string]>;
+  discount: CafeDiscountId;
+};
+
+/** Bỏ dấu + gộp khoảng trắng để so khớp lúc tìm món. */
+function deburr(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
+
+function readHolds(): HeldOrder[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HOLD_KEY) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+function writeHolds(list: HeldOrder[]) {
+  try {
+    localStorage.setItem(HOLD_KEY, JSON.stringify(list));
+  } catch {
+    /* đầy bộ nhớ — đơn giữ mất, nhưng chưa ai mất tiền */
   }
 }
 
@@ -147,6 +204,7 @@ export default function CafePosPage() {
       const cached = JSON.parse(localStorage.getItem(MENU_KEY) || "null");
       if (Array.isArray(cached) && cached.length) setMenu(cached);
     } catch { /* không đọc được menu đã cất — dùng bản trong mã */ }
+    setHolds(readHolds());
   }, []);
 
   const [counter, setCounter] = useState<CafeCounterId>("bai-ha");
@@ -164,7 +222,19 @@ export default function CafePosPage() {
   };
 
   const [cart, setCart] = useState<Map<string, number>>(new Map());
+  /**
+   * GHI CHÚ THEO MÓN ("ít đá", "không đường") — thứ quầy cafe cần nhất sau
+   * chính món, vì gần như đơn nào cũng có một câu dặn. Gắn theo MÃ MÓN nên
+   * cùng một món trong một đơn dùng chung một câu dặn; tách riêng từng ly là
+   * việc của quán lớn, quầy hai người ngoài bãi không cần.
+   */
+  const [notes, setNotes] = useState<Map<string, string>>(new Map());
   const [method, setMethod] = useState<"cash" | "transfer">("cash");
+  /** Ô tìm món — 27 món chia bốn khối vẫn phải cuộn, gõ hai chữ là ra ngay. */
+  const [q, setQ] = useState("");
+  /** Khách đưa bao nhiêu tiền mặt — máy tính tiền thối, khỏi nhẩm lúc đông. */
+  const [tendered, setTendered] = useState(0);
+  const [holds, setHolds] = useState<HeldOrder[]>([]);
   /**
    * MENU ĐANG BÀY = menu trong mã, thay bằng bản máy chủ ngay khi tải được.
    * Bắt đầu bằng bản trong mã chứ không phải mảng rỗng: mở máy lúc mất mạng
@@ -249,16 +319,43 @@ export default function CafePosPage() {
       [...cart.entries()]
         .map(([id, qty]) => {
           const m = menu.find((x) => x.id === id);
-          return m ? { ...m, qty } : null;
+          return m ? { ...m, qty, note: notes.get(id) ?? "" } : null;
         })
         .filter((x): x is NonNullable<typeof x> => Boolean(x)),
-    [cart, menu],
+    [cart, menu, notes],
   );
+  /**
+   * TÌM MÓN BỎ DẤU: quầy gõ vội "tra dao", "ca phe" không dấu là chuyện thường,
+   * mà bàn phím Sunmi gõ dấu còn chậm hơn. So khớp cả tên Việt lẫn tên Anh.
+   */
+  const found = useMemo(() => {
+    const key = deburr(q);
+    if (!key) return [];
+    return menu.filter(
+      (m) => !m.freeTicket && (deburr(m.name).includes(key) || deburr(m.en ?? "").includes(key)),
+    );
+  }, [q, menu]);
+
   /** Tiền hàng trước giảm — máy chủ tính lại đúng công thức này khi nhận phiếu. */
   const cartSubtotal = cartLines.reduce((t, l) => t + l.price * l.qty, 0);
   const discountAmount = Math.round(cartSubtotal * cafeDiscountRate(discount));
   const cartTotal = cartSubtotal - discountAmount;
   const onlyFree = cartLines.length > 0 && cartLines.every((l) => l.freeTicket);
+
+  const setNote = (id: string, v: string) =>
+    setNotes((n) => {
+      const m = new Map(n);
+      if (v.trim()) m.set(id, v.trim());
+      else m.delete(id);
+      return m;
+    });
+
+  /** Bật/tắt một chip dặn sẵn, giữ nguyên phần khách dặn kiểu khác. */
+  const toggleNote = (id: string, chip: string) => {
+    const cur = (notes.get(id) ?? "").split(", ").filter(Boolean);
+    const next = cur.includes(chip) ? cur.filter((x) => x !== chip) : [...cur, chip];
+    setNote(id, next.join(", "));
+  };
 
   function addItem(id: string) {
     setCart((p) => new Map(p).set(id, (p.get(id) ?? 0) + 1));
@@ -268,11 +365,64 @@ export default function CafePosPage() {
   function decItem(id: string) {
     setCart((p) => {
       const next = new Map(p);
-      const q = (next.get(id) ?? 0) - 1;
-      if (q <= 0) next.delete(id);
-      else next.set(id, q);
+      const left = (next.get(id) ?? 0) - 1;
+      if (left <= 0) {
+        next.delete(id);
+        // Món rời giỏ thì câu dặn của nó cũng đi theo, không dính sang lần sau
+        setNotes((n) => {
+          const m = new Map(n);
+          m.delete(id);
+          return m;
+        });
+      } else next.set(id, left);
       return next;
     });
+  }
+
+  /* ---- ĐƠN ĐANG GIỮ: khách gọi lúc chờ bay, xuống mới trả ---- */
+
+  function holdOrder() {
+    if (!cartLines.length) return setError("Chưa chọn món nào để giữ");
+    const name = window.prompt("Giữ đơn cho ai? (tên khách, số bàn…)", `Khách ${holds.length + 1}`);
+    if (name === null) return;
+    const next = [
+      ...holds,
+      {
+        id: crypto.randomUUID(),
+        name: name.trim() || `Khách ${holds.length + 1}`,
+        at: new Date().toISOString(),
+        lines: [...cart.entries()] as Array<[string, number]>,
+        notes: [...notes.entries()] as Array<[string, string]>,
+        discount,
+      },
+    ];
+    setHolds(next);
+    writeHolds(next);
+    setCart(new Map());
+    setNotes(new Map());
+    setTendered(0);
+    setDiscount("none");
+    setMsg(`✓ Đã giữ đơn “${name.trim() || "khách"}”. Bấm vào đơn để lấy lại và thu tiền.`);
+  }
+
+  /** Mở lại một đơn đã giữ: đổ về giỏ và BỎ khỏi danh sách giữ. */
+  function resumeHold(h: HeldOrder) {
+    if (cartLines.length && !window.confirm("Giỏ đang có món — lấy đơn này ra sẽ thay giỏ hiện tại?")) return;
+    setCart(new Map(h.lines));
+    setNotes(new Map(h.notes));
+    setDiscount(h.discount);
+    setTendered(0);
+    const next = holds.filter((x) => x.id !== h.id);
+    setHolds(next);
+    writeHolds(next);
+    setMsg(`Đã lấy đơn “${h.name}” ra giỏ.`);
+  }
+
+  function dropHold(h: HeldOrder) {
+    if (!window.confirm(`Bỏ đơn đang giữ của “${h.name}”?`)) return;
+    const next = holds.filter((x) => x.id !== h.id);
+    setHolds(next);
+    writeHolds(next);
   }
 
   /** In phiếu 58mm qua hộp in hệ thống — Sunmi tự đổ ra máy in nhiệt của nó. */
@@ -335,7 +485,13 @@ export default function CafePosPage() {
       clientId: crypto.randomUUID(),
       counter,
       kind: "sale",
-      items: cartLines.map((l) => ({ id: l.id, name: l.name, price: l.price, qty: l.qty })),
+      /** Ghi chú dặn thêm ghép luôn vào TÊN MÓN: phiếu in ra và sổ bán đều đọc được. */
+      items: cartLines.map((l) => ({
+        id: l.id,
+        name: l.note ? `${l.name} (${l.note})` : l.name,
+        price: l.price,
+        qty: l.qty,
+      })),
       total: cartTotal,
       discount,
       method: onlyFree || cartTotal === 0 ? "free" : method,
@@ -344,6 +500,8 @@ export default function CafePosPage() {
     };
     commit(entry, true);
     setCart(new Map());
+    setNotes(new Map());
+    setTendered(0);
     const label = CAFE_DISCOUNTS.find((d) => d.id === discount)?.short;
     setMsg(
       `✓ Đã bán ${entry.items.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")}${
@@ -412,7 +570,7 @@ export default function CafePosPage() {
   const myCounter = day?.counters.find((c) => c.counter === counter);
 
   return (
-    <Shell user={user} title="Quầy cafe" subtitle="Bấm món → Bán & in phiếu. Mất mạng vẫn bán được — phiếu tự đẩy lên khi có mạng lại.">
+    <Shell user={user} title="CAFE" subtitle="Bấm món → Bán & in phiếu. Mất mạng vẫn bán được — phiếu tự đẩy lên khi có mạng lại.">
       {/* iframe in phiếu — vô hình, chỉ để đổ nội dung 58mm rồi gọi hộp in */}
       <iframe ref={printRef} title="in-phieu" className="hidden" />
 
@@ -449,6 +607,48 @@ export default function CafePosPage() {
       {msg && <div className="mt-2"><Banner tone="success" onClose={() => setMsg(null)}>{msg}</Banner></div>}
       {error && <div className="mt-2"><Banner tone="error" onClose={() => setError(null)}>{error}</Banner></div>}
 
+      {/* ---- ĐƠN ĐANG GIỮ ---- */}
+      {holds.length > 0 && (
+        <div className="mt-2 rounded-2xl border-2 border-amber-300 bg-amber-50 p-2">
+          <p className="text-xs font-bold text-amber-900">🧾 Đơn đang giữ ({holds.length}) — bấm để lấy ra thu tiền</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {holds.map((h) => (
+              <span key={h.id} className="flex items-center overflow-hidden rounded-xl border border-amber-400 bg-white">
+                <button type="button" onClick={() => resumeHold(h)} className="px-2.5 py-1.5 text-left text-xs font-bold text-amber-900">
+                  {h.name}
+                  <span className="ml-1 font-normal text-slate-500">
+                    {h.lines.reduce((t, [, n]) => t + n, 0)} món ·{" "}
+                    {new Date(h.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </button>
+                <button type="button" onClick={() => dropHold(h)} className="border-l border-amber-300 px-2 py-1.5 text-xs font-bold text-rose-500">
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ---- TÌM MÓN ---- */}
+      <div className="relative mt-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="🔎 Tìm món: gõ “bia”, “cf”, “tra dao”…"
+          className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-10 text-sm"
+        />
+        {q && (
+          <button
+            type="button"
+            onClick={() => setQ("")}
+            className="absolute right-1 top-1 h-9 w-9 rounded-lg text-slate-400"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       {/* ---- PHIẾU NƯỚC KHÁCH BAY — nút to nhất trang ---- */}
       <button
         type="button"
@@ -461,8 +661,11 @@ export default function CafePosPage() {
 
       {/* ---- Menu: xếp theo KHỐI (cà phê · trà · đồ uống · ăn vặt) — 27 món dồn
            một lưới thì quầy phải dò từng nút, chia khối là bấm theo phản xạ ---- */}
-      {CAFE_GROUPS.map((g) => {
-        const items = menu.filter((m) => !m.freeTicket && m.group === g.id);
+      {(q.trim()
+        ? [{ id: "__tim", name: `Kết quả tìm “${q.trim()}”` }]
+        : CAFE_GROUPS
+      ).map((g) => {
+        const items = q.trim() ? found : menu.filter((m) => !m.freeTicket && m.group === g.id);
         if (items.length === 0) return null;
         return (
           <div key={g.id} className="mt-3">
@@ -493,6 +696,12 @@ export default function CafePosPage() {
         );
       })}
 
+      {q.trim() && found.length === 0 && (
+        <p className="mt-3 rounded-xl bg-slate-100 px-3 py-3 text-center text-sm text-slate-500">
+          Không có món nào khớp “{q.trim()}”.
+        </p>
+      )}
+
       {/* ---- Thêm món ngay tại quầy (cần mạng) ---- */}
       {online && (
         <AddItemBox
@@ -515,12 +724,39 @@ export default function CafePosPage() {
       {cartLines.length > 0 && (
         <div className="mt-3 rounded-2xl border-2 border-sky-400 bg-white p-3 shadow-lg">
           {cartLines.map((l) => (
-            <div key={l.id} className="flex items-center gap-2 border-b border-slate-100 py-1 text-sm">
-              <strong className="flex-1">{l.name}</strong>
-              <button type="button" onClick={() => decItem(l.id)} className="h-8 w-8 rounded-lg border border-slate-300 font-bold">−</button>
-              <span className="w-6 text-center font-bold">{l.qty}</span>
-              <button type="button" onClick={() => addItem(l.id)} className="h-8 w-8 rounded-lg border border-slate-300 font-bold">＋</button>
-              <span className="w-24 text-right tabular-nums">{l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}</span>
+            <div key={l.id} className="border-b border-slate-100 py-1 text-sm">
+              <div className="flex items-center gap-2">
+                <strong className="flex-1">{l.name}</strong>
+                <button type="button" onClick={() => decItem(l.id)} className="h-8 w-8 rounded-lg border border-slate-300 font-bold">−</button>
+                <span className="w-6 text-center font-bold">{l.qty}</span>
+                <button type="button" onClick={() => addItem(l.id)} className="h-8 w-8 rounded-lg border border-slate-300 font-bold">＋</button>
+                <span className="w-24 text-right tabular-nums">{l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}</span>
+              </div>
+              {/* DẶN THÊM: bấm một chip là xong, gõ tay khi khách dặn kiểu khác */}
+              <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                {QUICK_NOTES.map((n) => {
+                  const on = (l.note || "").split(", ").includes(n);
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => toggleNote(l.id, n)}
+                      className={
+                        "rounded-full border px-2 py-0.5 text-[11px] font-semibold " +
+                        (on ? "border-sky-500 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-500")
+                      }
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+                <input
+                  value={l.note}
+                  onChange={(e) => setNote(l.id, e.target.value)}
+                  placeholder="dặn thêm…"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-0.5 text-[11px]"
+                />
+              </div>
             </div>
           ))}
           {/* GIẢM GIÁ — bấm trước khi bán. Phiếu giảm 100% vẫn là phiếu bán:
@@ -570,6 +806,44 @@ export default function CafePosPage() {
               </span>
             )}
           </div>
+          {/* TIỀN THỐI: khách đưa bao nhiêu, máy trừ ra — lúc đông không ai nhẩm kịp */}
+          {method === "cash" && cartTotal > 0 && (
+            <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-bold text-emerald-900">Khách đưa</span>
+                {[50_000, 100_000, 200_000, 500_000].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setTendered(v)}
+                    className="rounded-lg border border-emerald-400 bg-white px-2 py-1 text-xs font-bold text-emerald-800"
+                  >
+                    {vnd(v)}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setTendered(cartTotal)}
+                  className="rounded-lg border border-emerald-400 bg-white px-2 py-1 text-xs font-bold text-emerald-800"
+                >
+                  Đủ tiền
+                </button>
+                <input
+                  value={tendered ? vnd(tendered) : ""}
+                  inputMode="numeric"
+                  placeholder="0"
+                  onChange={(e) => setTendered(Number(e.target.value.replace(/[^\d]/g, "").slice(0, 9)) || 0)}
+                  className="ml-auto h-8 w-28 rounded-lg border border-emerald-300 px-2 text-right text-sm font-bold tabular-nums"
+                />
+              </div>
+              {tendered > 0 && (
+                <p className={"mt-1 text-right text-sm font-black " + (tendered >= cartTotal ? "text-emerald-700" : "text-rose-600")}>
+                  {tendered >= cartTotal ? `THỐI LẠI: ${vnd(tendered - cartTotal)} đ` : `CÒN THIẾU: ${vnd(cartTotal - tendered)} đ`}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Xoay máy cho khách đọc đơn rồi quét mã — bấm được cả khi trả tiền mặt */}
           <Button
             type="button"
@@ -584,7 +858,19 @@ export default function CafePosPage() {
             <Button type="button" onClick={sell} className="h-12 flex-[2] bg-sky-600 text-base font-black hover:bg-sky-700">
               🖨 BÁN & IN PHIẾU
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setCart(new Map())} className="h-12 flex-1 bg-white">
+            <Button type="button" variant="ghost" onClick={holdOrder} className="h-12 flex-1 bg-white text-sm font-bold">
+              🧾 Giữ đơn
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setCart(new Map());
+                setNotes(new Map());
+                setTendered(0);
+              }}
+              className="h-12 flex-1 bg-white"
+            >
               Xoá giỏ
             </Button>
           </div>
@@ -640,6 +926,28 @@ export default function CafePosPage() {
                     <span className="text-slate-400">{r.soldAt ? new Date(r.soldAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
                     <span className="flex-1">{r.label}</span>
                     <span className="tabular-nums">{r.kind === "expense" ? `−${vnd(r.total)}` : r.method === "free" ? "FREE" : vnd(r.total)}</span>
+                    {/* IN LẠI: khách làm mất phiếu, hoặc máy in kẹt giấy lúc bán */}
+                    {r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          printReceipt({
+                            clientId: r.clientId,
+                            counter: r.counter as CafeCounterId,
+                            kind: "sale",
+                            items: (r.items ?? []).map((i) => ({ id: "", name: i.name, price: i.price, qty: i.qty })),
+                            total: r.total,
+                            discount: (r.discountKind ?? "none") as CafeDiscountId,
+                            method: r.method as "cash" | "transfer" | "free",
+                            note: "",
+                            soldAt: r.soldAt,
+                          })
+                        }
+                        className="text-sky-600 hover:underline"
+                      >
+                        in lại
+                      </button>
+                    )}
                     <button type="button" onClick={() => removeRecent(r.clientId)} className="text-rose-500 hover:underline">xoá</button>
                   </li>
                 ))}

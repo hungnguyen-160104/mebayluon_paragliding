@@ -84,7 +84,7 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
       return [{ href: "/baocao/thue", label: "Kế toán thuế" }];
     case "cafe":
       return [
-        { href: "/baocao/cafe", label: "Bán hàng" },
+        { href: "/baocao/cafe", label: "CAFE" },
         { href: "/baocao/cafe/bao-cao", label: "Báo cáo quầy" },
       ];
     case "homestay":
