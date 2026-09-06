@@ -56,6 +56,15 @@ export type CafeMenuItem = {
    * không phải khai tay trong danh sách dưới.
    */
   fixed?: boolean;
+  /**
+   * MÓN NẰM TRONG SUẤT NƯỚC MIỄN PHÍ CỦA KHÁCH BAY DÙ (luật chủ 06/09) — nút
+   * mang dấu ★ đỏ.
+   *
+   * Khách bay được một phần nước theo đầu vé, nhưng CHỈ trong danh sách này;
+   * matcha 55k hay cà phê muối không nằm trong suất. Không đánh dấu thì quầy
+   * phải nhớ thuộc lòng, và mỗi lần nhớ nhầm là công ty mất đúng chênh lệch.
+   */
+  freeForGuest?: boolean;
 };
 
 /** Khối nút trên máy bán — thứ tự này cũng là thứ tự hiện trên màn hình. */
@@ -89,28 +98,28 @@ export const CAFE_MENU: CafeMenuItem[] = [
   { id: "free-water", name: "Phiếu nước khách bay", price: 0, freeTicket: true },
 
   /* --- Cà phê --- */
-  { id: "ca-phe-den", name: "Cà phê đen", en: "Black coffee", price: 35_000, group: "ca-phe" },
-  { id: "ca-phe-sua", name: "Cà phê sữa", en: "Milk coffee", price: 35_000, group: "ca-phe" },
+  { id: "ca-phe-den", name: "Cà phê đen", en: "Black coffee", price: 35_000, group: "ca-phe", freeForGuest: true },
+  { id: "ca-phe-sua", name: "Cà phê sữa", en: "Milk coffee", price: 35_000, group: "ca-phe", freeForGuest: true },
   { id: "bac-xiu", name: "Cà phê bạc xỉu", en: "White coffee", price: 40_000, group: "ca-phe" },
   { id: "ca-phe-americano", name: "Cà phê Americano", en: "Americano", price: 40_000, group: "ca-phe" },
   { id: "ca-phe-cot-dua", name: "Cà phê cốt dừa", en: "Coconut coffee", price: 45_000, group: "ca-phe" },
   { id: "ca-phe-muoi", name: "Cà phê muối", en: "Salt coffee", price: 45_000, group: "ca-phe" },
 
   /* --- Trà --- */
-  { id: "tra-da", name: "Trà đá", en: "Iced tea", price: 15_000, group: "tra" },
-  { id: "tra-chanh", name: "Trà chanh", en: "Lemon tea", price: 30_000, group: "tra" },
+  { id: "tra-da", name: "Trà đá", en: "Iced tea", price: 15_000, group: "tra", freeForGuest: true },
+  { id: "tra-chanh", name: "Trà chanh", en: "Lemon tea", price: 30_000, group: "tra", freeForGuest: true },
   { id: "tra-gung", name: "Trà gừng", en: "Ginger tea", price: 30_000, group: "tra" },
-  { id: "tra-chanh-nha-dam", name: "Trà chanh nha đam", en: "Aloe lemon tea", price: 35_000, group: "tra" },
-  { id: "tra-dao", name: "Trà đào", en: "Peach tea", price: 35_000, group: "tra" },
+  { id: "tra-chanh-nha-dam", name: "Trà chanh nha đam", en: "Aloe lemon tea", price: 35_000, group: "tra", freeForGuest: true },
+  { id: "tra-dao", name: "Trà đào", en: "Peach tea", price: 35_000, group: "tra", freeForGuest: true },
   { id: "am-tra-man", name: "Ấm trà mạn / trà thảo mộc", en: "Pot of tea", price: 40_000, group: "tra" },
   { id: "tra-sua", name: "Trà sữa", en: "Milk tea", price: 50_000, group: "tra" },
   { id: "tra-dau-biec", name: "Trà đậu biếc", en: "Pealuna", price: 55_000, group: "tra" },
 
   /* --- Đồ uống khác --- */
-  { id: "nuoc-loc", name: "Nước khoáng Lavie", en: "Lavie mineral water", price: 10_000, group: "do-uong", uses: [{ key: "nuoc-loc", qty: 1 }] },
-  { id: "cocacola", name: "Cocacola", price: 20_000, group: "do-uong", uses: [{ key: "cocacola", qty: 1 }] },
-  { id: "bia-ha-noi", name: "Bia Sài Gòn (lon)", en: "Beer Saigon (can)", price: 25_000, group: "do-uong", uses: [{ key: "bia-ha-noi", qty: 1 }] },
-  { id: "bo-huc", name: "Bò húc", en: "Red Bull", price: 25_000, group: "do-uong", uses: [{ key: "bo-huc", qty: 1 }] },
+  { id: "nuoc-loc", name: "Nước khoáng Lavie", en: "Lavie mineral water", price: 10_000, group: "do-uong", uses: [{ key: "nuoc-loc", qty: 1 }], freeForGuest: true },
+  { id: "cocacola", name: "Cocacola", price: 20_000, group: "do-uong", uses: [{ key: "cocacola", qty: 1 }], freeForGuest: true },
+  { id: "bia-ha-noi", name: "Bia Sài Gòn (lon)", en: "Beer Saigon (can)", price: 25_000, group: "do-uong", uses: [{ key: "bia-ha-noi", qty: 1 }], freeForGuest: true },
+  { id: "bo-huc", name: "Bò húc", en: "Red Bull", price: 25_000, group: "do-uong", uses: [{ key: "bo-huc", qty: 1 }], freeForGuest: true },
   { id: "nuoc-chanh-tuoi", name: "Nước chanh tươi", en: "Fresh lemonade", price: 30_000, group: "do-uong" },
   { id: "dua-tuoi", name: "Dừa tươi", en: "Fresh coconut", price: 30_000, group: "do-uong" },
   { id: "sua-chua-danh-da", name: "Sữa chua đánh đá", en: "Iced yogurt", price: 35_000, group: "do-uong" },

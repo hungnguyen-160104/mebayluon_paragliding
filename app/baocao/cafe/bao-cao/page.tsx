@@ -50,7 +50,7 @@ import {
 } from "../../components/ui";
 
 /** Một dòng nhập hàng đang gõ trên trang — `id` rỗng là dòng mới chưa lưu. */
-type StockRow = { id: string; name: string; qty: string; note: string; done: boolean; doneBy?: string };
+type StockRow = { id: string; name: string; qty: string; note: string; sent: boolean; done: boolean; doneBy?: string };
 
 type FormState = {
   counter: CafeCounterId;
@@ -61,7 +61,7 @@ type FormState = {
   note: string;
 };
 
-const EMPTY_STOCK: StockRow = { id: "", name: "", qty: "", note: "", done: false };
+const EMPTY_STOCK: StockRow = { id: "", name: "", qty: "", note: "", sent: false, done: false };
 
 const EMPTY_FORM: FormState = {
   counter: "bai-ha",
@@ -73,7 +73,15 @@ const EMPTY_FORM: FormState = {
 };
 
 function toStockRows(list: CafeStockRequestDTO[]): StockRow[] {
-  const rows = list.map((r) => ({ id: r.id, name: r.name, qty: r.qty, note: r.note || "", done: r.done, doneBy: r.doneBy }));
+  const rows = list.map((r) => ({
+    id: r.id,
+    name: r.name,
+    qty: r.qty,
+    note: r.note || "",
+    sent: r.sent,
+    done: r.done,
+    doneBy: r.doneBy,
+  }));
   return rows.length ? rows : [{ ...EMPTY_STOCK }];
 }
 
@@ -146,6 +154,9 @@ export default function CafeReportPage() {
   const [day, setDay] = useState<CafeDay | null>(null);
   /** Lệnh nộp tiền / ứng tiền của chính mình trong ngày — kể đủ đường tiền. */
   const [handovers, setHandovers] = useState<MoneyOrder[]>([]);
+  /** Tên hàng đã từng yêu cầu nhập — gợi ý cho ô "Tên hàng", đỡ gõ lại. */
+  const [stockNames, setStockNames] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
   const [locked, setLocked] = useState(false);
   const [closedBy, setClosedBy] = useState("");
   const [loadingDay, setLoadingDay] = useState(false);
@@ -171,6 +182,7 @@ export default function CafeReportPage() {
           sales: DaySale[];
           day: CafeDay;
           handovers: MoneyOrder[];
+          stockNames: string[];
           locked: boolean;
           closedBy?: string;
         }>(`/api/baocao/reports/cafe?date=${targetDate}&spot=${spot}`);
@@ -178,6 +190,7 @@ export default function CafeReportPage() {
         setSales(res.sales || []);
         setDay(res.day ?? null);
         setHandovers(res.handovers ?? []);
+        setStockNames(res.stockNames ?? []);
         setLocked(res.locked);
         setClosedBy(res.closedBy || "");
         setForm(
@@ -219,6 +232,36 @@ export default function CafeReportPage() {
     if (user && spot) loadPending();
   }, [user, spot, loadPending]);
 
+  /**
+   * Gửi các dòng CHƯA GỬI tới quản trị và kế toán.
+   *
+   * Lưu báo cáo trước rồi mới gửi: dòng vừa gõ còn nằm trong trình duyệt, gửi
+   * ngay thì máy chủ không thấy gì để đánh dấu.
+   */
+  async function sendStock() {
+    setSending(true);
+    setError(null);
+    try {
+      await save(false);
+      const res = await apiPost<{ report: CafeReportDTO | null; sent: number; pending: PendingStock[] }>(
+        `/api/baocao/reports/cafe?spot=${spot}`,
+        { action: "stock-send", date },
+      );
+      if (res.report) {
+        setExisting(res.report);
+        setForm((prev) => ({ ...prev, stock: toStockRows(res.report!.stockRequests) }));
+      }
+      setPending(res.pending ?? []);
+      setSaved({ warnings: [], submitted: false });
+      setError(null);
+      window.alert(`Đã gửi ${res.sent} dòng tới quản trị và kế toán.`);
+    } catch (err: any) {
+      setError(err?.message || "Không gửi được yêu cầu");
+    } finally {
+      setSending(false);
+    }
+  }
+
   /** Bấm "đã nhập" cho một dòng: máy chủ trả lại bảng chờ mới, và mở lại ngày đang xem. */
   async function markDone(row: PendingStock) {
     try {
@@ -253,7 +296,7 @@ export default function CafeReportPage() {
           expenses: form.expenses.filter((e) => e.content.trim() || e.amount),
           stockRequests: form.stock
             .filter((r) => r.name.trim() || r.qty.trim() || r.note.trim())
-            .map((r) => ({ id: r.id, name: r.name, qty: r.qty, note: r.note, done: r.done })),
+            .map((r) => ({ id: r.id, name: r.name, qty: r.qty, note: r.note, sent: r.sent, done: r.done })),
           note: form.note,
           submit,
         },
@@ -424,7 +467,9 @@ export default function CafeReportPage() {
                 >
                   <div className="grid grid-cols-1 gap-2 @md:grid-cols-[1fr_7rem]">
                     <Field label="Tên hàng">
+                      {/* Gõ tay được, mà bấm vào cũng ra danh sách hàng đã từng xin nhập */}
                       <TextInput
+                        list="cafe-stock-names"
                         value={r.name}
                         disabled={locked || r.done}
                         placeholder="Sữa đặc, đá cây, cốc giấy…"
@@ -454,9 +499,13 @@ export default function CafeReportPage() {
                       <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white">
                         ĐÃ NHẬP{r.doneBy ? ` · ${r.doneBy}` : ""}
                       </span>
-                    ) : (
+                    ) : r.sent ? (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
-                        chờ nhập
+                        đã gửi · chờ nhập
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                        chưa gửi
                       </span>
                     )}
                     {!locked && !r.done && (
@@ -472,15 +521,36 @@ export default function CafeReportPage() {
                 </div>
               ))}
             </div>
+            <datalist id="cafe-stock-names">
+              {stockNames.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+
             {!locked && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="mt-2 w-full"
-                onClick={() => set("stock", [...form.stock, { ...EMPTY_STOCK }])}
-              >
-                ＋ Thêm hàng
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-2 w-full"
+                  onClick={() => set("stock", [...form.stock, { ...EMPTY_STOCK }])}
+                >
+                  ＋ Thêm hàng
+                </Button>
+                {/*
+                  GỬI YÊU CẦU là nút RIÊNG, không phải nút lưu báo cáo: quầy gõ dở
+                  suốt ca và lưu nháp mấy chục lần; bắn tin mỗi lần lưu thì người
+                  nhận tắt thông báo sau hai hôm. Bấm gửi mới là lời nhờ mua thật.
+                */}
+                <Button
+                  type="button"
+                  className="mt-2 w-full bg-amber-600 hover:bg-amber-700"
+                  disabled={sending || form.stock.every((r) => !r.name.trim() || r.sent)}
+                  onClick={sendStock}
+                >
+                  {sending ? "Đang gửi…" : "📨 Gửi yêu cầu tới quản trị & kế toán"}
+                </Button>
+              </>
             )}
           </Card>
 
@@ -568,8 +638,8 @@ export default function CafeReportPage() {
         )}
       </div>
 
-      {/* Nộp tiền cho quản lý + xin ứng tiền — khung dùng chung với phi công, điều phối */}
-      <HandoverBox spot={spot} boardDate={date} />
+      {/* Nộp tiền cho quản lý + xin ứng tiền — SỔ QUẦY, không dính tiền bán dù */}
+      <HandoverBox spot={spot} boardDate={date} scope="cafe" />
     </Shell>
   );
 }

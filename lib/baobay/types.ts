@@ -43,6 +43,9 @@ export type CafeStockRequestDTO = {
   name: string;
   qty: string;
   note?: string;
+  /** Đã BẤM GỬI tới quản trị/kế toán chưa — dòng chưa gửi là bản nháp của quầy. */
+  sent: boolean;
+  sentAt?: string;
   done: boolean;
   doneBy?: string;
   doneAt?: string;

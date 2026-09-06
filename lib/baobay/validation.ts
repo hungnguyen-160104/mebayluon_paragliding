@@ -295,6 +295,7 @@ const stockRequestInput = z.object({
   name: text(200),
   qty: text(50),
   note: text(500),
+  sent: z.boolean().optional().default(false),
   done: z.boolean().optional().default(false),
 });
 
@@ -436,6 +437,8 @@ export const handoverSchema = z.object({
   date: reportDate,
   /** "handover" = đưa tiền · "advance" = xin ứng tiền. */
   kind: z.enum(["handover", "advance"]).default("handover"),
+  /** Sổ tiền nào: dù lượn hay quầy cafe — hai bảng tính riêng hẳn. */
+  scope: z.enum(["flight", "cafe"]).optional().default("flight"),
   /** Tài khoản người nhận — bắt buộc chọn; máy chủ kiểm lại vai trò và điểm bay. */
   recipientUsername: z.string().trim().min(1, "Chưa chọn người nhận tiền"),
   amount: money.refine((v) => v > 0, "Chưa nhập số tiền"),

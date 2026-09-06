@@ -27,6 +27,7 @@ import { connectDB } from "@/lib/mongodb";
 import { CafeDailyReport } from "@/models/CafeDailyReport.model";
 import { CafeProduct } from "@/models/CafeProduct.model";
 import { CafeSale } from "@/models/CafeSale.model";
+import { sendTelegramToAll } from "@/services/telegram.service";
 import { CafeStockEntry } from "@/models/CafeStockEntry.model";
 import { CafeStockItemDoc } from "@/models/CafeStockItem.model";
 import {
@@ -358,6 +359,8 @@ function toCafeReportDTO(doc: any): CafeReportDTO {
       name: r.name,
       qty: r.qty || "",
       note: r.note || "",
+      sent: Boolean(r.sent),
+      sentAt: r.sentAt ? new Date(r.sentAt).toISOString() : undefined,
       done: Boolean(r.done),
       doneBy: r.doneBy || undefined,
       doneAt: r.doneAt ? new Date(r.doneAt).toISOString() : undefined,
@@ -425,6 +428,9 @@ export async function upsertCafeReport(
         name,
         qty,
         note,
+        /** Đã gửi rồi thì giữ dấu — lưu lại báo cáo không được biến nó về nháp. */
+        sent: prev ? Boolean(prev.sent) : false,
+        sentAt: prev?.sentAt,
         done: prev ? Boolean(prev.done) : false,
         doneBy: prev?.doneBy,
         doneAt: prev?.doneAt,
@@ -462,6 +468,57 @@ export async function upsertCafeReport(
   return { report: toCafeReportDTO(doc), warnings };
 }
 
+/**
+ * GỬI YÊU CẦU NHẬP HÀNG tới quản trị và kế toán.
+ *
+ * Tách khỏi nút lưu báo cáo (luật chủ 06/09): quầy gõ dở suốt ca, lưu nháp
+ * mấy chục lần; bắn tin mỗi lần lưu thì người nhận tắt thông báo sau hai hôm.
+ * Bấm GỬI mới là lời nhờ mua thật — từ lúc đó dòng mới hiện ở bảng "đang chờ
+ * nhập" của người đi mua.
+ *
+ * Dòng đã gửi trước đó KHÔNG bắn lại: chỉ báo phần mới thêm.
+ */
+export async function sendStockRequests(
+  session: BaobaySession,
+  spotRaw: string,
+  date: string,
+): Promise<{ report: CafeReportDTO | null; sent: number }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const doc = await CafeDailyReport.findOne({
+    accountId: new mongoose.Types.ObjectId(session.id),
+    spot,
+    date,
+  }).lean<any>();
+  if (!doc) throw new BaobayError("Chưa có dòng nhập hàng nào để gửi — nhập rồi bấm Lưu nháp trước", 400);
+
+  const fresh = (doc.stockRequests ?? []).filter((r: any) => r.name && !r.sent && !r.done);
+  if (!fresh.length) throw new BaobayError("Không có dòng mới nào để gửi", 400);
+
+  const now = new Date();
+  await CafeDailyReport.updateOne(
+    { _id: doc._id },
+    { $set: { "stockRequests.$[el].sent": true, "stockRequests.$[el].sentAt": now } },
+    { arrayFilters: [{ "el.sent": { $ne: true }, "el.name": { $ne: "" } }] },
+  );
+
+  /**
+   * Bắn tin SAU khi đã ghi dấu, và KHÔNG để lỗi gửi tin làm hỏng lệnh: quầy đã
+   * bấm gửi thì dòng phải nằm trong bảng chờ, dù Telegram có sập.
+   */
+  const lines = fresh.map((r: any) => `• ${r.name}${r.qty ? ` — ${r.qty}` : ""}${r.note ? ` (${r.note})` : ""}`);
+  const text =
+    `<b>🛒 QUẦY CAFE XIN NHẬP HÀNG</b>\n` +
+    `${session.name || session.username} · ${date}\n\n` +
+    lines.join("\n") +
+    `\n\nXem và đánh dấu đã nhập ở trang Báo cáo quầy cafe.`;
+  void sendTelegramToAll(text).catch(() => {
+    /* không có bot hoặc mạng lỗi — dòng vẫn nằm trong bảng chờ */
+  });
+
+  return { report: await getCafeReport(session.id, spot, date), sent: fresh.length };
+}
+
 /** Kế toán mở bảng ngày: mọi báo cáo quầy cafe của ngày đó. */
 export async function listCafeReportsOfDate(spot: string, date: string): Promise<CafeReportDTO[]> {
   await connectDB();
@@ -487,7 +544,8 @@ export async function listPendingStockRequests(
   const out: Array<any> = [];
   for (const d of docs) {
     for (const r of d.stockRequests ?? []) {
-      if (r.done) continue;
+      /** Dòng CHƯA BẤM GỬI là bản nháp của quầy — người đi mua chưa cần thấy. */
+      if (r.done || !r.sent) continue;
       out.push({
         reportId: String(d._id),
         date: d.date,
@@ -497,11 +555,44 @@ export async function listPendingStockRequests(
         name: r.name,
         qty: r.qty || "",
         note: r.note || "",
+        sent: true,
+        sentAt: r.sentAt ? new Date(r.sentAt).toISOString() : undefined,
         done: false,
       });
     }
   }
   return out;
+}
+
+/**
+ * DANH SÁCH TÊN HÀNG ĐÃ TỪNG YÊU CẦU NHẬP — để lần sau chọn thay vì gõ lại.
+ *
+ * Không dựng thêm một bảng danh mục riêng: hàng cần nhập vốn tạp (cốc giấy,
+ * ống hút, nước rửa bát, đá cây…) và đổi theo mùa, bắt khai danh mục trước rồi
+ * mới được yêu cầu thì quầy sẽ gõ đại vào ô ghi chú cho xong. Cách này TỰ HỌC:
+ * gõ tay lần đầu, từ lần sau nó nằm sẵn trong danh sách gợi ý.
+ *
+ * Gom cả tên trong DANH MỤC KHO (bia, cà phê bột…) vì đó là thứ hay phải nhập
+ * nhất, và gõ đúng tên thì người đi mua khỏi đoán.
+ */
+export async function listStockRequestNames(spot: string): Promise<string[]> {
+  await connectDB();
+  const from = new Date(Date.now() - 180 * 86_400_000).toISOString().slice(0, 10);
+  const [docs, catalogue] = await Promise.all([
+    CafeDailyReport.find({ spot, date: { $gte: from } }).select("stockRequests").lean<any[]>(),
+    getCafeStockCatalogue(),
+  ]);
+
+  /** Gộp không phân biệt hoa thường, nhưng GIỮ cách viết gặp gần nhất. */
+  const seen = new Map<string, string>();
+  for (const c of catalogue) seen.set(c.name.toLowerCase(), c.name);
+  for (const d of docs) {
+    for (const r of d.stockRequests ?? []) {
+      const name = String(r?.name ?? "").trim();
+      if (name) seen.set(name.toLowerCase(), name);
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, "vi"));
 }
 
 /**
@@ -642,6 +733,8 @@ export async function getCafeMenu(): Promise<CafeMenuItem[]> {
             price: over.price,
             group: (over.group || m.group) as CafeMenuItem["group"],
             uses: (over.uses ?? []).length ? over.uses : m.uses,
+            /** Dấu ★ do bảng giá gốc quyết định — bản đè giá không xoá được nó. */
+            freeForGuest: m.freeForGuest,
           }
         : { ...m, fixed: true },
     );

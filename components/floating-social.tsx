@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
+import { isInternalPath } from "@/lib/internal-paths";
+
 // ✅ chatbot import
 import { useChatbot } from "@/hooks/useChatbot";
 import { ChatbotButton, ChatbotWidget } from "@/components/ui/chatbot";
@@ -16,14 +18,15 @@ export function FloatingSocial() {
     useChatbot();
 
   /**
-   * Khu báo bay nội bộ (/baocao) không hiện cụm nút Zalo/chatbot.
+   * Khu nội bộ (/baocao, /cafe) không hiện cụm nút Zalo/chatbot: nó nổi ở góc
+   * dưới bên phải, đúng chỗ nút BÁN của máy bán hàng quầy cafe.
    *
    * Cụm này `fixed right-6 bottom-6 z-50`, đè lên nút "Lưu báo cáo" dính đáy
    * của form nhập liệu trên điện thoại. Người dùng ở đó là nhân viên, không
    * cần kênh nhắn tin dành cho khách.
    */
   const pathname = usePathname();
-  if (pathname?.startsWith("/baocao")) return null;
+  if (isInternalPath(pathname)) return null;
 
   // Các mạng xã hội sẵn có
   const socialLinks = [

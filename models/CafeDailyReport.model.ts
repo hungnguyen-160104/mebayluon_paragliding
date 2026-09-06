@@ -73,6 +73,8 @@ const CafeStockRequestSchema = new Schema<CafeStockRequestDTO>(
     name: { type: String, required: true },
     qty: { type: String, default: "" },
     note: { type: String, default: "" },
+    sent: { type: Boolean, default: false },
+    sentAt: Date,
     done: { type: Boolean, default: false },
     doneBy: String,
     doneAt: Date,

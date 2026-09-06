@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+
+import { isInternalPath } from "@/lib/internal-paths";
 import React, { useEffect, useState, useCallback } from "react";
 import { Menu, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -44,16 +46,20 @@ export function Navigation() {
   const [currentHash, setCurrentHash] = useState<string>("");
 
   /**
-   * Khu báo bay nội bộ (/baocao) không có thanh menu khách.
+   * Khu nội bộ (/baocao và /cafe) không có thanh menu khách.
    *
    * Thanh này là `fixed top-0` cao h-20 và được render ở app/layout.tsx cho
    * MỌI route. Phi công nhập liệu bằng điện thoại, giữ menu "Đặt bay / Điểm
    * bay" ở đó chỉ chiếm chỗ và dễ bấm nhầm ra trang khách giữa lúc nhập.
    * Khu /admin thì vẫn giữ (đã tự chừa pt-20 từ trước).
    *
+   * /cafe thêm vào 06/09: máy bán hàng quầy dọn sang địa chỉ riêng, không còn
+   * nằm dưới /baocao nên rơi ra ngoài luật này — thanh menu đè lên chữ đầu
+   * trang, và cụm nút nổi che đúng nút BÁN ở góc dưới.
+   *
    * Đặt SAU các hook: gọi hook có điều kiện là vi phạm quy tắc hook của React.
    */
-  const isInternalTool = pathname?.startsWith("/baocao") ?? false;
+  const isInternalTool = isInternalPath(pathname);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);

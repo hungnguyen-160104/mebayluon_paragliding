@@ -792,7 +792,11 @@ export default function CafePosPage() {
                   onClick={() => addItem(m.id)}
                   className="relative rounded-xl border border-slate-300 bg-white p-1.5 text-left shadow-sm active:bg-sky-50"
                 >
-                  <span className="block text-[13px] font-bold leading-tight text-slate-800">{m.name}</span>
+                  <span className="block text-[13px] font-bold leading-tight text-slate-800">
+                    {/* ★ ĐỎ = nằm trong suất nước miễn phí của khách bay dù */}
+                    {m.freeForGuest && <span className="mr-0.5 text-rose-600">★</span>}
+                    {m.name}
+                  </span>
                   {m.en && <span className="hidden text-[10px] leading-tight text-slate-400 sm:block">{m.en}</span>}
                   <span className="mt-0.5 block text-xs font-semibold text-sky-700">{vnd(m.price)}</span>
                   {(cart.get(m.id) ?? 0) > 0 && (
@@ -837,6 +841,10 @@ export default function CafePosPage() {
           Không có món nào khớp “{q.trim()}”.
         </p>
       )}
+
+      <p className="mt-2 text-center text-[11px] text-slate-500">
+        <span className="font-bold text-rose-600">★</span> = món nằm trong suất nước miễn phí của khách bay dù
+      </p>
 
       {/* ---- Thêm món ngay tại quầy (cần mạng) ---- */}
       {online && (
@@ -925,6 +933,22 @@ export default function CafePosPage() {
             con số nào cũng rơi vào một đường dọc — mắt chạy một mạch từ giá
             từng món xuống tổng, không phải dò ngang.
           */}
+          {/*
+            Tích "Khách bay dù" mà giỏ có món NGOÀI suất thì nhắc ngay: suất
+            miễn phí chỉ gồm các món ★, còn matcha hay cà phê muối thì không.
+            Không chặn — có lúc chủ cho thật; chỉ để người bán biết mình đang cho.
+          */}
+          {discount === "khach-bay" && cartLines.some((l) => !l.freeForGuest && !l.freeTicket) && (
+            <div className="mt-1.5 rounded-xl border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
+              ⚠ Ngoài suất miễn phí:{" "}
+              {cartLines
+                .filter((l) => !l.freeForGuest && !l.freeTicket)
+                .map((l) => l.name)
+                .join(", ")}
+              . Suất khách bay chỉ gồm các món ★.
+            </div>
+          )}
+
           {discountAmount > 0 && (
             <>
               <div className="mt-1.5 flex items-center gap-2 text-sm text-slate-500">
@@ -940,10 +964,14 @@ export default function CafePosPage() {
             </>
           )}
 
-          <div className="mt-1 flex items-center gap-2 border-t border-slate-200 pt-1.5">
+          {/* TỔNG tô ĐỎ ĐẬM (luật chủ 06/09): con số người bán đọc to cho khách,
+              đứng lẫn màu chữ thường thì phải dò giữa một cột toàn số đen. */}
+          <div className="mt-1 flex items-center gap-2 border-t border-slate-200 pt-1.5 text-rose-700">
             <span className="min-w-0 flex-1 text-lg font-black">TỔNG</span>
             <span className="w-[6.5rem] shrink-0" />
-            <span className="w-24 shrink-0 text-right text-lg font-black tabular-nums">{vnd(cartTotal)} đ</span>
+            <span className="w-24 shrink-0 whitespace-nowrap text-right text-lg font-black tabular-nums">
+              {vnd(cartTotal)} đ
+            </span>
           </div>
 
           <div className="mt-2 flex items-center gap-2">

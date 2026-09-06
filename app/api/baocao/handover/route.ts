@@ -51,15 +51,18 @@ export async function GET(req: Request) {
   const spot = resolveSpot(req, auth);
   if (spot instanceof NextResponse) return spot;
 
+  /** Sổ tiền nào: "cafe" cho trang quầy, mặc định là sổ dù lượn. */
+  const scope = new URL(req.url).searchParams.get("scope") === "cafe" ? "cafe" : "flight";
+
   try {
     const [balance, handovers, incoming, recipients, approvers] = await Promise.all([
-      getCashOnHand(auth, spot),
-      listMyHandovers(auth, spot),
+      getCashOnHand(auth, spot, undefined, undefined, scope),
+      listMyHandovers(auth, spot, 20, scope),
       listIncomingHandovers(auth, spot),
       listHandoverRecipients(auth, spot, "handover"),
       listHandoverRecipients(auth, spot, "advance"),
     ]);
-    return NextResponse.json({ spot, balance, handovers, incoming, recipients, approvers });
+    return NextResponse.json({ spot, scope, balance, handovers, incoming, recipients, approvers });
   } catch (err) {
     if (err instanceof BaobayError) {
       return NextResponse.json({ message: err.message }, { status: err.status });
@@ -85,7 +88,7 @@ export async function POST(req: Request) {
   try {
     const handover = await createHandover(auth, parsed.data);
     // Trả luôn số dư mới để màn hình trừ tiền ngay, khỏi gọi thêm một vòng
-    const balance = await getCashOnHand(auth, spot);
+    const balance = await getCashOnHand(auth, spot, undefined, undefined, parsed.data.scope);
     return NextResponse.json({ handover, balance });
   } catch (err) {
     if (err instanceof BaobayError) {

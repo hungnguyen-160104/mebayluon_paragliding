@@ -2718,6 +2718,8 @@ export type HandoverSaveInput = {
   date: string;
   /** "handover" = đưa tiền cho quản lý · "advance" = xin ứng tiền. */
   kind: "handover" | "advance";
+  /** Sổ tiền nào: "flight" (dù lượn, mặc định) hay "cafe" (quầy). */
+  scope?: "flight" | "cafe";
   /** Người nhận tiền (giao tiền) hoặc người duyệt (ứng tiền). */
   recipientUsername: string;
   amount: number;
@@ -2796,6 +2798,9 @@ export async function createHandover(
 
   if (input.amount <= 0) throw new BaobayError("Chưa nhập số tiền");
 
+  /** Lệnh lập từ trang quầy cafe rơi vào SỔ QUẦY, không lẫn vào tiền dù lượn. */
+  const scope = input.scope === "cafe" ? "cafe" : "flight";
+
   const isAdvance = input.kind === "advance";
   if (isAdvance && !input.content.trim()) {
     throw new BaobayError("Ứng tiền phải ghi rõ nội dung ứng");
@@ -2833,6 +2838,7 @@ export async function createHandover(
   }
 
   const doc = await BaobayHandover.create({
+    scope,
     kind: isAdvance ? "advance" : "handover",
     spot,
     date: input.date,
@@ -2965,11 +2971,14 @@ export async function listMyHandovers(
   session: BaobaySession,
   spot: string,
   limit = 20,
+  scope: "flight" | "cafe" = "flight",
 ): Promise<HandoverDTO[]> {
   await connectDB();
   const docs = await BaobayHandover.find({
     accountId: new mongoose.Types.ObjectId(session.id),
     spot: normalizeSpot(spot),
+    /** Lệnh cũ không có cột `scope` → thuộc sổ dù lượn, đúng thực tế trước 06/09. */
+    ...(scope === "cafe" ? { scope: "cafe" } : { scope: { $in: ["flight", null] } }),
   })
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -3658,11 +3667,99 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   };
 }
 
+/**
+ * @param scope SỔ TIỀN NÀO — "flight" (mặc định, tiền dù lượn) hay "cafe".
+ *
+ * HAI SỔ RIÊNG HẲN (luật chủ 06/09): tiền quầy cafe không dính gì tới tiền bán
+ * dù. Trước đây gộp làm một, nên người trực quầy mở thẻ Tiền nong ra thấy hai
+ * trăm triệu tiền vé của mình với tư cách khác, lẫn với 295k bán nước — không
+ * ai biết phải nộp bao nhiêu cho quầy.
+ */
+/**
+ * SỔ TIỀN QUẦY CAFE — bảng tính RIÊNG, không dính gì tới tiền bán dù.
+ *
+ * Vào:  bán hàng bằng TIỀN MẶT + khoản THU tiền mặt ghi tại máy bán + khoản
+ *       THU tiền mặt gõ tay trong báo cáo ngày.
+ * Ra:   khoản CHI tiền mặt (cả hai đường trên) + phần đã nộp cho quản lý.
+ * Không tính: mọi khoản CHUYỂN KHOẢN — khách quét mã, tiền vào thẳng TK công
+ *       ty, người trực không cầm đồng nào.
+ */
+async function getCafeCashOnHand(
+  session: BaobaySession,
+  spot: string,
+  from: string | undefined,
+  to: string | undefined,
+  scopeFilter: Record<string, unknown>,
+): Promise<CashOnHandDTO> {
+  const dateFilter = from && to ? { date: { $gte: from, $lte: to } } : {};
+
+  let collected = 0;
+  let spent = 0;
+
+  /** Phiếu máy bán, tính theo NGƯỜI BẤM. */
+  const tickets = await CafeSale.find({ byUsername: session.username, ...dateFilter })
+    .select("kind direction method total")
+    .lean<any[]>();
+  for (const t of tickets) {
+    if (t.method !== "cash") continue;
+    if (t.kind === "expense") {
+      if (t.direction === "thu") collected += t.total || 0;
+      else spent += t.total || 0;
+    } else collected += t.total || 0;
+  }
+
+  /** Sổ thu chi gõ tay trong báo cáo ngày của quầy. */
+  const reports = await CafeDailyReport.find({
+    accountId: new mongoose.Types.ObjectId(session.id),
+    spot,
+    ...dateFilter,
+  })
+    .select("expenses")
+    .lean<any[]>();
+  for (const d of reports) {
+    collected += thuCashTotal(d.expenses);
+    spent += expenseTotal(d.expenses);
+  }
+
+  const handovers = await BaobayHandover.find({
+    accountId: new mongoose.Types.ObjectId(session.id),
+    spot,
+    kind: { $ne: "advance" },
+    ...scopeFilter,
+    ...dateFilter,
+  })
+    .select("amount confirmed rejected")
+    .lean<any[]>();
+
+  let handedConfirmed = 0;
+  let handedPending = 0;
+  let handedRejected = 0;
+  for (const h of handovers) {
+    if (h.rejected) handedRejected += h.amount || 0;
+    else if (h.confirmed) handedConfirmed += h.amount || 0;
+    else handedPending += h.amount || 0;
+  }
+
+  return {
+    spot,
+    from: from ?? "",
+    to: to ?? "",
+    received: 0,
+    collected,
+    spent,
+    handedConfirmed,
+    handedPending,
+    handedRejected,
+    holding: collected - spent - handedConfirmed - handedPending,
+  };
+}
+
 export async function getCashOnHand(
   session: BaobaySession,
   spotRaw: string,
   from?: string,
   to?: string,
+  scope: "flight" | "cafe" = "flight",
 ): Promise<CashOnHandDTO> {
   await connectDB();
 
@@ -3670,6 +3767,13 @@ export async function getCashOnHand(
   const accountId = new mongoose.Types.ObjectId(session.id);
   const dateFilter = from && to ? { date: { $gte: from, $lte: to } } : {};
   const where = { accountId, spot, ...dateFilter };
+  /** Lệnh tiền cũ không có cột `scope` — coi như sổ dù lượn, đúng với thực tế trước 06/09. */
+  const scopeFilter =
+    scope === "cafe" ? { scope: "cafe" } : { scope: { $in: ["flight", null] as unknown[] } };
+
+  if (scope === "cafe") {
+    return getCafeCashOnHand(session, spot, from, to, scopeFilter);
+  }
 
   let collected = 0;
   let spent = 0;
@@ -3706,38 +3810,11 @@ export async function getCashOnHand(
    * Tính TIỀN MẶT bán hàng thôi: khách quét mã chuyển khoản thì tiền vào thẳng
    * tài khoản công ty, cộng vào đây là bắt người trực nộp thứ họ chưa từng cầm.
    */
-  if (wearsRole(session, "cafe")) {
-    /**
-     * QUẦY CAFE — LUẬT TIỀN (luật chủ 06/09):
-     *   bán hàng hoặc thu/chi bằng TIỀN MẶT → cộng trừ vào số NGƯỜI BẤM đang giữ;
-     *   CHUYỂN KHOẢN → khách quét mã, tiền vào thẳng TK công ty, không ai cầm.
-     *
-     * Đếm thẳng từ PHIẾU MÁY BÁN theo `byUsername`, KHÔNG lấy ô "tiền mặt"
-     * trong báo cáo ngày: ô đó là lời khai cuối ca dùng để đối chiếu, cộng cả
-     * hai là đếm đôi đúng một túi tiền. Bán xong là số đang giữ nhích lên
-     * ngay, không đợi ai chốt ca.
-     */
-    const dateWhere = from && to ? { date: { $gte: from, $lte: to } } : {};
-    const tickets = await CafeSale.find({ byUsername: session.username, ...dateWhere })
-      .select("kind direction method total")
-      .lean<any[]>();
-    for (const t of tickets) {
-      if (t.method !== "cash") continue;
-      if (t.kind === "expense") {
-        if (t.direction === "thu") collected += t.total || 0;
-        else spent += t.total || 0;
-      } else {
-        collected += t.total || 0;
-      }
-    }
-
-    /** Sổ thu chi GÕ TAY trong báo cáo ngày — khoản không đi qua máy bán. */
-    const docs = await CafeDailyReport.find(where).lean<any[]>();
-    for (const d of docs) {
-      collected += thuCashTotal(d.expenses);
-      spent += expenseTotal(d.expenses);
-    }
-  }
+  /**
+   * QUẦY CAFE KHÔNG nằm trong sổ này nữa — nó có bảng tính riêng, xem
+   * getCafeCashOnHand ngay dưới. Người kiêm nhiệm vừa điều phối vừa đứng quầy
+   * thì mỗi mảng một con số, không cộng chung.
+   */
   // Kế toán và quản trị không có báo cáo ngày nên không có tiền thu hộ; họ vẫn
   // khai được khoản đưa tiền, số đang giữ khi đó chỉ là phần đã đưa (số âm).
 
@@ -3750,6 +3827,7 @@ export async function getCashOnHand(
       accountId,
       spot,
       kind: { $ne: "advance" },
+      ...scopeFilter,
       ...dateFilter,
     })
       .select("amount confirmed rejected createdBy username")

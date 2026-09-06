@@ -12,7 +12,9 @@ import {
   getCafeReport,
   listCafeReportsOfDate,
   listPendingStockRequests,
+  listStockRequestNames,
   markStockRequestDone,
+  sendStockRequests,
   upsertCafeReport,
 } from "@/services/cafe.service";
 
@@ -60,12 +62,14 @@ export async function GET(req: Request) {
      * Kèm luôn số MÁY BÁN của ngày để trang tự điền hai ô tiền — bắt người trực
      * mở tab khác đọc số rồi gõ lại là chỗ sinh sai số.
      */
-    const [report, day, close, handovers] = await Promise.all([
+    const [report, day, close, handovers, stockNames] = await Promise.all([
       getCafeReport(auth.id, spot, date),
       getCafeDay(auth, date),
       getDailyClose(spot, date),
       /** Lệnh nộp tiền / ứng tiền của CHÍNH NGƯỜI NÀY trong ngày. */
       listMyMoneyOrdersOfDate(auth, spot, date),
+      /** Tên hàng đã từng yêu cầu nhập — gợi ý cho ô "Tên hàng". */
+      listStockRequestNames(spot),
     ]);
 
     return NextResponse.json({
@@ -75,6 +79,7 @@ export async function GET(req: Request) {
       /** Cả bảng ngày: tổng theo người bán + mọi đơn của ngày để dựng bảng tổng hợp. */
       day,
       handovers,
+      stockNames,
       locked: close?.status === "closed",
       closedBy: close?.closedBy ?? "",
     });
@@ -103,6 +108,12 @@ export async function POST(req: Request) {
         body?.done !== false,
       );
       return NextResponse.json({ pending: await listPendingStockRequests(spot) });
+    }
+
+    /** Gửi yêu cầu nhập hàng tới quản trị + kế toán — nút riêng, không phải nút lưu. */
+    if (body?.action === "stock-send") {
+      const res = await sendStockRequests(auth, spot, String(body?.date ?? ""));
+      return NextResponse.json({ ...res, pending: await listPendingStockRequests(spot) });
     }
 
     const parsed = cafeReportSchema.safeParse({ ...body, spot });

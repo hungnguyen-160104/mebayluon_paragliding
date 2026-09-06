@@ -50,8 +50,15 @@ export function HandoverBox({
   bilingual = false,
   boardDate,
   embedded = false,
+  scope = "flight",
 }: {
   spot: string;
+  /**
+   * SỔ TIỀN NÀO — "cafe" cho trang báo cáo quầy, mặc định là sổ dù lượn.
+   * Hai sổ riêng hẳn (luật chủ 06/09): tiền quầy không dính tiền bán dù, nên
+   * số "đang giữ", danh sách lệnh và bảng tiền ngày đều phải lọc theo sổ.
+   */
+  scope?: "flight" | "cafe";
   bilingual?: boolean;
   /** Ngày đang xem trên trang — bảng "khách đã trả tiền" bám theo ngày này. */
   boardDate?: string;
@@ -86,7 +93,7 @@ export function HandoverBox({
 
   const load = useCallback(async () => {
     try {
-      const res = await apiGet<Payload>(`/api/baocao/handover?spot=${spot}`);
+      const res = await apiGet<Payload>(`/api/baocao/handover?spot=${spot}&scope=${scope}`);
       setData(res);
       // Nhớ lựa chọn cũ nếu người đó vẫn còn trong danh sách
       setRecipient((prev) => (res.recipients.some((r) => r.username === prev) ? prev : res.recipients[0]?.username || ""));
@@ -94,7 +101,7 @@ export function HandoverBox({
     } catch (err: any) {
       setError(err?.message || "Không tải được tiền đang giữ");
     }
-  }, [spot]);
+  }, [spot, scope]);
 
   useEffect(() => {
     load();
@@ -128,7 +135,7 @@ export function HandoverBox({
     try {
       const res = await apiPost<{ handover: HandoverDTO; balance: CashOnHand }>(
         `/api/baocao/handover?spot=${spot}`,
-        { kind: "handover", date, recipientUsername: recipient, amount, method, content },
+        { scope, kind: "handover", date, recipientUsername: recipient, amount, method, content },
       );
       setDone(`Đã ghi ${formatVND(res.handover.amount)} — chờ ${res.handover.recipientName} xác nhận.`);
       flashSent();
@@ -161,6 +168,7 @@ export function HandoverBox({
     setAdvDone(null);
     try {
       const res = await apiPost<{ handover: HandoverDTO }>(`/api/baocao/handover?spot=${spot}`, {
+        scope,
         kind: "advance",
         date: today,
         recipientUsername: advApprover,
@@ -264,7 +272,19 @@ export function HandoverBox({
     };
   }, [spot, boardDay]);
 
-  const myCash = board?.cashByPerson.find((p) => p.username === me);
+  /**
+   * HAI SỔ RIÊNG: khối "khách tôi đã thu" cũng phải lọc theo sổ đang xem.
+   * Khoản của máy bán quầy mang nhãn nguồn "máy bán quầy cafe" — sổ quầy chỉ
+   * lấy đúng nhóm đó, sổ dù lượn thì loại nó ra.
+   */
+  const inScope = (from: string) => (scope === "cafe" ? from === "máy bán quầy cafe" : from !== "máy bán quầy cafe");
+  const myCashRaw = board?.cashByPerson.find((p) => p.username === me);
+  const myCash = myCashRaw
+    ? (() => {
+        const items = myCashRaw.items.filter((it) => inScope(it.from));
+        return { ...myCashRaw, items, total: items.reduce((t, it) => t + (it.amount || 0), 0) };
+      })()
+    : undefined;
   /**
    * KHOẢN CHUYỂN KHOẢN CỦA CHÍNH MÌNH (luật chủ 06/09).
    *
@@ -276,7 +296,9 @@ export function HandoverBox({
    * Khoản CŨ chưa ghi tài khoản phụ trách thì vẫn hiện: giấu đi là mất dấu
    * khoản có thật, còn tệ hơn là hiện thừa.
    */
-  const myTransfers = (board?.transfer.items ?? []).filter((it) => !it.byUsername || it.byUsername === me);
+  const myTransfers = (board?.transfer.items ?? []).filter(
+    (it) => (!it.byUsername || it.byUsername === me) && inScope(it.from),
+  );
   const myTransferTotal = myTransfers.reduce((t, it) => t + (it.amount || 0), 0);
 
   const inner = (
@@ -381,7 +403,7 @@ export function HandoverBox({
       )}
 
       {/* --------- KHÁCH ĐÃ TRẢ TIỀN TRONG NGÀY: mình cầm những khoản nào, ai chuyển khoản --------- */}
-      {(myCash || myTransfers.length > 0) && (
+      {((myCash && myCash.items.length > 0) || myTransfers.length > 0) && (
         <div className="mt-4 space-y-2">
           {myCash && (
             <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
@@ -435,7 +457,7 @@ export function HandoverBox({
       )}
 
       {/* ---------------------- Thu chi CỦA TÔI theo ngày — sổ quan trọng nhất ---------------------- */}
-      {moneyDays.length > 0 && (
+      {scope !== "cafe" && moneyDays.length > 0 && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
           <h3 className="text-sm font-bold text-slate-900">
             📜 {t("Thu chi của tôi theo ngày", "my money by day")}

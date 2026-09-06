@@ -28,8 +28,19 @@ import { DEFAULT_SPOT } from "@/lib/baobay/spots";
  */
 export type BaobayMoneyKind = "handover" | "advance";
 
+/**
+ * SỔ TIỀN NÀO — "flight" (dù lượn) hay "cafe" (quầy).
+ *
+ * Hai mảng việc là hai bảng tính RIÊNG HẲN (luật chủ 06/09): tiền quầy cafe
+ * không dính gì tới tiền bán dù. Trộn chung thì người trực quầy mở thẻ Tiền
+ * nong ra thấy hai trăm triệu tiền vé của mình với tư cách khác, không biết
+ * phải nộp bao nhiêu cho quầy.
+ */
+export type BaobayMoneyScope = "flight" | "cafe";
+
 export interface IBaobayHandover {
   kind: BaobayMoneyKind;
+  scope: BaobayMoneyScope;
   spot: string;
   /** Ngày đưa tiền, "YYYY-MM-DD" giờ Việt Nam — mặc định là hôm nay. */
   date: string;
@@ -78,6 +89,8 @@ export interface IBaobayHandover {
 const BaobayHandoverSchema = new Schema<IBaobayHandover>(
   {
     kind: { type: String, enum: ["handover", "advance"], default: "handover", index: true },
+    /** Lệnh cũ không có cột này → mặc định "flight", đúng với mọi bản ghi trước 06/09. */
+    scope: { type: String, enum: ["flight", "cafe"], default: "flight", index: true },
     spot: { type: String, default: DEFAULT_SPOT, index: true },
     date: { type: String, required: true, index: true },
 
