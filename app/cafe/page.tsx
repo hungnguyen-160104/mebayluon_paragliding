@@ -971,7 +971,7 @@ export default function CafePosPage() {
       )}
       {showCustomer && cartLines.length > 0 && (
         <CustomerView
-          lines={cartLines.map((l) => ({ id: l.id, name: l.name, price: l.price, qty: l.qty }))}
+          lines={cartLines.map((l) => ({ id: l.id, name: l.name, note: l.note, price: l.price, qty: l.qty }))}
           subtotal={cartSubtotal}
           discountAmount={discountAmount}
           total={cartTotal}
@@ -1132,7 +1132,7 @@ function CustomerView({
   counterName,
   onClose,
 }: {
-  lines: Array<{ id: string; name: string; price: number; qty: number }>;
+  lines: Array<{ id: string; name: string; note: string; price: number; qty: number }>;
   subtotal: number;
   discountAmount: number;
   total: number;
@@ -1201,7 +1201,12 @@ function CustomerView({
         <ul className="mt-3 divide-y divide-slate-200 border-y border-slate-200">
           {lines.map((l) => (
             <li key={l.id} className="flex items-baseline gap-2 py-2">
-              <span className="flex-1 text-base font-semibold text-slate-900">{l.name}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-slate-900">{l.name}</span>
+                {/* CÂU DẶN hiện ngay dưới tên món: khách soát lại "ít đá" đã bấm
+                    chưa trước khi trả tiền — đọc trên phiếu in ra thì muộn rồi. */}
+                {l.note && <span className="block text-sm italic text-sky-700">{l.note}</span>}
+              </span>
               <span className="text-base text-slate-500">×{l.qty}</span>
               <span className="w-28 text-right text-base font-semibold tabular-nums text-slate-900">
                 {l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}
