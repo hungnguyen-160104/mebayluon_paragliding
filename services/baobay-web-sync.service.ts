@@ -17,6 +17,7 @@
 
 import mongoose from "mongoose";
 
+import { comboDiscount } from "@/lib/baobay/flight-price";
 import { todayInVN } from "@/lib/baobay/date";
 import { normalizeSpot } from "@/lib/baobay/spots";
 import { pushQueueNoToWeb } from "@/lib/baobay/web-queue";
@@ -263,6 +264,24 @@ export function mapWebBooking(doc: WebDoc, spot: string) {
     unitPrice: toVND(doc.price?.basePerPerson, currency),
     discount: toVND((doc.price?.discountPerPerson || 0) * guests, currency),
     /**
+     * GIẢM COMBO flycam + cam360 — áp dụng cho booking web ở MỌI ĐIỂM BAY
+     * (luật chủ 06/09).
+     *
+     * Trang đặt đã trừ khoản này trong số báo giá cho khách (xem
+     * lib/booking/image-combo.ts), nhưng gói tiền web gửi sang không có ô riêng
+     * cho nó, nên trước đây sổ ghi 0. Hai hậu quả:
+     *  - Phiếu gửi khách in giá bay + dịch vụ cộng lại CAO HƠN dòng tổng, không
+     *    dòng nào giải thích chỗ chênh.
+     *  - Ai mở booking web ra sửa rồi lưu là máy tính lại tổng KHÔNG trừ combo,
+     *    giá tự tăng thêm 100k so với số đã hứa với khách.
+     * Ghi lại đúng công thức chung ở đây thì cả hai chỗ tự khớp; `totalAmount`
+     * vẫn lấy nguyên số web đã báo, không tính lại.
+     */
+    comboDiscount: comboDiscount(
+      serviceQty(doc, "flycam", guests),
+      serviceQty(doc, "video360", guests),
+    ),
+    /**
      * Tổng tiền lấy ĐÚNG số trang khách đã báo giá, không tính lại: khách nhìn
      * thấy con số nào thì quầy phải thu đúng con số ấy.
      */
@@ -399,6 +418,17 @@ export async function syncWebBookings(
         if (!twin.totalAmount && mapped.totalAmount) fill.totalAmount = mapped.totalAmount;
         for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const) {
           if (!twin[k] && mapped[k]) fill[k] = mapped[k];
+        }
+        /**
+         * Giảm combo tính theo SỐ LƯỢNG SAU KHI GỘP, không chép thẳng số của
+         * web: bản gõ tay có thể đã khai flycam/360 khác đơn web, chép nguyên
+         * là trừ combo cho cặp không tồn tại.
+         */
+        if (!twin.comboDiscount) {
+          const fly = (fill.flycam as number) ?? twin.flycam ?? 0;
+          const cam = (fill.video360 as number) ?? twin.video360 ?? 0;
+          const combo = comboDiscount(fly, cam);
+          if (combo > 0) fill.comboDiscount = combo;
         }
         if (mapped.note) fill.note = [twin.note, `web: ${mapped.note}`].filter(Boolean).join(" · ");
         await BaobayBooking.updateOne({ _id: twin._id }, { $set: fill });
