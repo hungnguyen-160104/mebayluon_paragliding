@@ -48,6 +48,15 @@ export type BookingImageData = {
   /** Xe lên núi: số suất + tiền (Hà Nội). */
   mountainCar: number;
   mountainCarMoney: number;
+  /**
+   * Giảm combo flycam + cam360 (mỗi cặp 100k).
+   *
+   * PHẢI in ra phiếu, không được lặng lẽ trừ vào tổng: khách cộng các dòng
+   * trên phiếu ra 3.390.000 mà dòng TỔNG ghi 3.290.000 thì phiếu tự mâu thuẫn,
+   * và người bán phải giải thích bằng miệng cái đáng lẽ nằm sẵn trên giấy
+   * (chuyện thật 06/09 — booking Phan Thư).
+   */
+  comboDiscount: number;
   discount: number;
   total: number;
   deposit: number;
@@ -259,6 +268,14 @@ function buildBlocks(d: BookingImageData): Block[] {
   if (d.serviceMoney) tien.push({ label: "Tiền dịch vụ kèm", value: money(d.serviceMoney) });
   if (d.mountainCarMoney) tien.push({ label: `Xe lên núi × ${d.mountainCar}`, value: money(d.mountainCarMoney) });
   if (d.pickupFee) tien.push({ label: "Phí đưa đón", value: money(d.pickupFee) });
+  if (d.comboDiscount) {
+    const pairs = Math.min(d.flycam || 0, d.video360 || 0);
+    tien.push({
+      label: pairs > 1 ? `Giảm combo flycam + 360 (${pairs} cặp)` : "Giảm combo flycam + 360",
+      value: `− ${money(d.comboDiscount)}`,
+      tone: "minus",
+    });
+  }
   if (d.discount) tien.push({ label: "Giảm trừ", value: `− ${money(d.discount)}`, tone: "minus" });
   tien.push({ label: "TỔNG TIỀN", value: money(d.total), tone: "strong" });
   if (d.deposit) tien.push({ label: "Đã đặt cọc", value: `− ${money(d.deposit)}`, tone: "minus" });

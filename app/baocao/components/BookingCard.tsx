@@ -7247,6 +7247,7 @@ export function BookingCard({
                 pickupFee: form.pickupFee,
                 mountainCarMoney: form.mountainCar * MOUNTAIN_CAR_PRICE,
                 mountainCar: form.mountainCar,
+                comboDiscount: form.comboDiscount,
                 discount: form.discount,
                 total: bookingTotal,
                 deposit: form.deposit,
