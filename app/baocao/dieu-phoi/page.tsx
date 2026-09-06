@@ -30,6 +30,7 @@ import {
 } from "../components/rows";
 import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
+import { MerchCard } from "../components/MerchCard";
 import { IdScanCard } from "../components/IdScanCard";
 import { MoneyBoardCard } from "../components/MoneyBoardCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
@@ -81,6 +82,10 @@ type FormState = {
   flagFlightCodesText: string;
   /** Sổ THU CHI hợp nhất: nội dung – số tiền – thu/chi – TM/CK – ghi chú. */
   money: ExpenseRow[];
+  /** Hàng bán thêm: mã hàng → số lượng bán hôm nay. */
+  merch: Record<string, number>;
+  /** Hàng bán thêm: mã hàng → trả tiền mặt hay chuyển khoản. */
+  merchMethod: Record<string, "cash" | "transfer">;
   note: string;
 };
 
@@ -108,6 +113,8 @@ const EMPTY_FORM: FormState = {
   flagFlight: 0,
   flagFlightCodesText: "",
   money: [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }],
+  merch: {},
+  merchMethod: {},
   note: "",
 };
 
@@ -203,6 +210,8 @@ function fromReport(r: DispatcherReportDTO): FormState {
      * chưa có tên thành dòng "Tiền thu trong ngày", nước/xe thành dòng chi.
      */
     money: dispatcherMoneyRows(r),
+    merch: Object.fromEntries((r.merchSales ?? []).map((m) => [m.key, m.qty])),
+    merchMethod: Object.fromEntries((r.merchSales ?? []).map((m) => [m.key, m.method])),
     note: r.note,
   };
 }
@@ -414,6 +423,10 @@ export default function DispatcherReportPage() {
         mountainCarCost: 0,
         shuttleCarCost: 0,
         expenses: f.money.filter((e) => e.kind !== "thu" && (e.content.trim() || e.amount)),
+        /** Chỉ gửi MÃ HÀNG + SỐ LƯỢNG — đơn giá do máy chủ tra từ danh mục. */
+        merchSales: Object.entries(f.merch)
+          .filter(([, qty]) => (qty || 0) > 0)
+          .map(([key, qty]) => ({ key, qty, method: f.merchMethod[key] === "transfer" ? ("transfer" as const) : ("cash" as const) })),
         issuedRanges: f.issuedRanges.filter((r) => r.from.trim() || r.to.trim()),
         // Nhóm vé kiểu cũ đã trải hết sang nhóm khách khi mở lại — gửi rỗng
         cancelledEntries: [],
@@ -565,7 +578,28 @@ export default function DispatcherReportPage() {
           TRÁI: form nhập hằng ngày (khách, vé, dịch vụ, THU CHI, nút lưu) + ghi chú + tiền bạc
           PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + lịch sử */}
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-      <div className="space-y-3">
+      {/*
+        HÀNG BÁN THÊM đứng ĐẦU DOM nhưng được XẾP CHỖ bằng lưới:
+          - máy tính: cột phải, hàng một → đầu cột bên phải;
+          - điện thoại: lưới tắt nên chảy theo DOM → nằm ngay dưới thẻ booking mới.
+        Đặt một bản duy nhất rồi xếp chỗ, không nhân đôi thẻ theo bề rộng màn:
+        hai bản là hai danh mục rời, thêm mặt hàng ở bản này thì bản kia không thấy.
+      */}
+      <div className="lg:col-start-2 lg:row-start-1">
+        <CollapseCard title="HÀNG BÁN THÊM" open>
+          <MerchCard
+            spot={spot}
+            qty={form.merch}
+            method={form.merchMethod}
+            onChange={(next) => set("merch", next)}
+            onMethodChange={(next) => set("merchMethod", next)}
+            disabled={locked}
+            onError={setError}
+          />
+        </CollapseCard>
+      </div>
+
+      <div className="space-y-3 lg:col-start-1 lg:row-start-1 lg:row-span-2">
       <form onSubmit={submit} className="space-y-3">
         {/* Ô quan trọng nhất của quầy — thanh ngang luôn mở: tiêu đề bên trái, cụm đếm bên phải */}
         <div className="rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 py-2.5 shadow-sm">
@@ -897,7 +931,7 @@ export default function DispatcherReportPage() {
       <IdScanCard />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:col-start-2 lg:row-start-2">
         {/* Khách chốt lịch trả TM tại bãi / CK về TK công ty — lập lệnh thu.
             QUẦY VÉ không có chức năng này. */}
         {user.role !== "counter" && <CollectCreate spot={spot} />}

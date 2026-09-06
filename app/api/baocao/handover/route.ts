@@ -24,7 +24,14 @@ export const maxDuration = 30;
  * đọc danh sách người nhận từ chính GET này — thiếu admin là ô chọn nhân sự
  * trống trơn (lỗi đã xảy ra thật). Quản trị cũng giao/nhận tiền như mọi người.
  */
-const STAFF_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "admin"] as const;
+/**
+ * Vai được LẬP LỆNH TIỀN (nộp tiền cho quản lý, xin ứng tiền).
+ *
+ * "cafe" thêm vào 06/09: người trực quầy cầm tiền mặt bán hàng cả ngày, đúng
+ * như điều phối cầm tiền vé — thiếu vai này thì khung nộp tiền trên trang báo
+ * cáo quầy hiện ra nhưng bấm vào là bị chặn 403.
+ */
+const STAFF_ROLES = ["pilot", "dispatcher", "counter", "cameraman", "cafe", "accountant", "admin"] as const;
 
 /**
  * Nhân sự đưa tiền cho quản lý/giám đốc.

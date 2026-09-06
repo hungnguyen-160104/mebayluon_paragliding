@@ -18,6 +18,7 @@ import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { CollectInbox } from "../components/CollectBox";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
+import { MerchCard } from "../components/MerchCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
@@ -40,6 +41,10 @@ type FormState = {
   paraglidingFlights: number;
   paraglidingCodesText: string;
   expenses: ExpenseRow[];
+  /** Hàng bán thêm: mã hàng → số lượng bán hôm nay. */
+  merch: Record<string, number>;
+  /** Hàng bán thêm: mã hàng → trả tiền mặt hay chuyển khoản. */
+  merchMethod: Record<string, "cash" | "transfer">;
   note: string;
 };
 
@@ -49,6 +54,8 @@ const EMPTY_FORM: FormState = {
   paraglidingFlights: 0,
   paraglidingCodesText: "",
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
+  merch: {},
+  merchMethod: {},
   note: "",
 };
 
@@ -107,6 +114,8 @@ export default function CameramanReportPage() {
               paraglidingFlights: res.report.paraglidingFlights,
               paraglidingCodesText: res.report.paraglidingCodes.join(", "),
               expenses: toExpenseRows(res.report.expenses),
+              merch: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.qty])),
+              merchMethod: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.method])),
               note: res.report.note,
             }
           : EMPTY_FORM,
@@ -150,6 +159,13 @@ export default function CameramanReportPage() {
           paraglidingFlights: form.paraglidingFlights,
           paraglidingCodesText: "",
           expenses: form.expenses.filter((e) => e.content.trim() || e.amount),
+          merchSales: Object.entries(form.merch)
+            .filter(([, qty]) => (qty || 0) > 0)
+            .map(([key, qty]) => ({
+              key,
+              qty,
+              method: form.merchMethod[key] === "transfer" ? ("transfer" as const) : ("cash" as const),
+            })),
           note: form.note,
           submit,
         },
@@ -161,6 +177,9 @@ export default function CameramanReportPage() {
         flycamCodesText: res.report.flycamCodes.join(", "),
         paraglidingCodesText: res.report.paraglidingCodes.join(", "),
         expenses: toExpenseRows(res.report.expenses),
+        // Lấy lại theo bản máy chủ: mặt hàng đã bị gỡ khỏi danh mục thì biến mất luôn
+        merch: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.qty])),
+        merchMethod: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.method])),
       }));
       setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
       flashSaved();
@@ -384,6 +403,18 @@ export default function CameramanReportPage() {
             onChange={(e) => set("note", e.target.value)}
             placeholder="Khách đăng ký thêm tại bãi, hỏng thiết bị…"
             disabled={locked}
+          />
+        </Card>
+
+        <Card title="HÀNG BÁN THÊM" hint="Áo, khăn, cốm… Tự tạo mặt hàng rồi khai số bán trong ngày.">
+          <MerchCard
+            spot={spot}
+            qty={form.merch}
+            method={form.merchMethod}
+            onChange={(next) => set("merch", next)}
+            onMethodChange={(next) => set("merchMethod", next)}
+            disabled={locked}
+            onError={setError}
           />
         </Card>
 

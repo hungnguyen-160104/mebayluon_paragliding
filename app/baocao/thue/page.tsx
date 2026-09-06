@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { SPOT_IDS, spotName } from "@/lib/baobay/spots";
 import type { TaxCandidateDTO, TaxRecordDTO } from "@/services/baobay-tax.service";
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
@@ -69,14 +70,23 @@ export default function TaxPage() {
    * đúng điểm đang chọn.
    */
   const [spotFilter, setSpotFilter] = useState("all");
+  /**
+   * BÀY ĐỦ BA ĐIỂM, kể cả điểm chưa có booking nào trong kỳ (luật chủ 06/09).
+   *
+   * Bản cũ chỉ dựng nút từ dữ liệu trả về, nên kỳ nào Sa Pa chưa có hồ sơ là
+   * Sa Pa biến mất khỏi hàng nút — kế toán tưởng trang không lọc được theo
+   * điểm, hoặc tệ hơn là tưởng mình đang xem cả ba trong khi chỉ có hai.
+   * Điểm không có hồ sơ vẫn bấm được và hiện "0", đó là một câu trả lời.
+   */
   const spotChips = useMemo(() => {
-    const m = new Map<string, { label: string; count: number }>();
-    for (const r of rows ?? []) {
-      const cur = m.get(r.spot) ?? { label: r.spotLabel, count: 0 };
-      cur.count += 1;
-      m.set(r.spot, cur);
-    }
-    return [...m.entries()];
+    const count = new Map<string, number>();
+    for (const r of rows ?? []) count.set(r.spot, (count.get(r.spot) ?? 0) + 1);
+    /** Điểm lạ trong dữ liệu (điểm cũ đã gỡ) vẫn hiện, không thì hồ sơ đó mất tăm. */
+    const extra = [...count.keys()].filter((id) => !SPOT_IDS.includes(id as never));
+    return [
+      ...SPOT_IDS.map((id) => [id, { label: spotName(id), count: count.get(id) ?? 0 }] as const),
+      ...extra.map((id) => [id, { label: id, count: count.get(id) ?? 0 }] as const),
+    ];
   }, [rows]);
   const viewRows = useMemo(
     () => (rows ?? []).filter((r) => spotFilter === "all" || r.spot === spotFilter),
@@ -135,24 +145,30 @@ export default function TaxPage() {
           })}
         </div>
         {/* Lọc theo ĐIỂM BAY — mỗi điểm một sổ thuế, đừng trộn */}
-        {spotChips.length > 1 && (
+        {spotChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-1">
-            {[["all", `Tất cả (${(rows ?? []).length})`] as [string, string], ...spotChips.map(([id, x]) => [id, `${x.label} (${x.count})`] as [string, string])].map(
-              ([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setSpotFilter(id)}
-                  className={
-                    spotFilter === id
-                      ? "h-10 rounded-lg bg-sky-600 px-3 text-xs font-bold text-white"
+            {(
+              [
+                ["all", `Tất cả (${(rows ?? []).length})`, (rows ?? []).length] as [string, string, number],
+                ...spotChips.map(([id, x]) => [id, `${x.label} (${x.count})`, x.count] as [string, string, number]),
+              ]
+            ).map(([id, label, n]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSpotFilter(id)}
+                className={
+                  spotFilter === id
+                    ? "h-10 rounded-lg bg-sky-600 px-3 text-xs font-bold text-white"
+                    : n === 0
+                      ? // Điểm không có hồ sơ trong kỳ: vẫn bấm được, chỉ mờ đi cho đỡ bắt mắt
+                        "h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-400 hover:bg-slate-50"
                       : "h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  }
-                >
-                  {label}
-                </button>
-              ),
-            )}
+                }
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
         {/**

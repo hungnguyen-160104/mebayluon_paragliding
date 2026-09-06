@@ -97,6 +97,17 @@ type DayOrder = {
   label: string;
 };
 
+type MoneyOrder = {
+  id: string;
+  kind: string;
+  amount: number;
+  method: string;
+  content: string;
+  recipientName: string;
+  confirmed: boolean;
+  rejected: boolean;
+};
+
 type CafeDay = {
   date: string;
   totals: { cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number; discountTotal: number };
@@ -133,6 +144,8 @@ export default function CafeReportPage() {
   const [sales, setSales] = useState<DaySale[]>([]);
   /** Bảng ngày đầy đủ — dựng khối "đơn bán hàng trong ngày" và phiếu nước từng người. */
   const [day, setDay] = useState<CafeDay | null>(null);
+  /** Lệnh nộp tiền / ứng tiền của chính mình trong ngày — kể đủ đường tiền. */
+  const [handovers, setHandovers] = useState<MoneyOrder[]>([]);
   const [locked, setLocked] = useState(false);
   const [closedBy, setClosedBy] = useState("");
   const [loadingDay, setLoadingDay] = useState(false);
@@ -157,12 +170,14 @@ export default function CafeReportPage() {
           report: CafeReportDTO | null;
           sales: DaySale[];
           day: CafeDay;
+          handovers: MoneyOrder[];
           locked: boolean;
           closedBy?: string;
         }>(`/api/baocao/reports/cafe?date=${targetDate}&spot=${spot}`);
         setExisting(res.report);
         setSales(res.sales || []);
         setDay(res.day ?? null);
+        setHandovers(res.handovers ?? []);
         setLocked(res.locked);
         setClosedBy(res.closedBy || "");
         setForm(
@@ -535,7 +550,7 @@ export default function CafeReportPage() {
       )}
 
       {/* TỔNG HỢP ĐƠN BÁN TRONG NGÀY — mọi đơn, ai bán, phiếu nước ai đang giữ */}
-      {day && <OrdersCard day={day} />}
+      {day && <OrdersCard day={day} handovers={handovers} />}
 
       {/* KIỂM KÊ KHO — nhập bao nhiêu, dùng hết bao nhiêu, còn bao nhiêu */}
       {/* Định mức là quyền QUẢN TRỊ — người trực quầy chỉ xem được kết quả kiểm kê */}
@@ -791,14 +806,20 @@ function StockCard({ onError }: { onError: (m: string) => void }) {
         </div>
       )}
 
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[34rem] text-sm">
+      {/*
+        BỎ HẲN CUỘN NGANG (luật chủ 06/09): bảng cũ đặt bề rộng tối thiểu 34rem
+        nên trên điện thoại phải gạt sang mới thấy cột "Còn" — đúng cột người
+        ta mở bảng ra để xem. Nay tên hàng và dòng "món nào rút" tự xuống dòng,
+        ba cột số co lại vừa đủ, cỡ chữ nhỏ hơn một nấc.
+      */}
+      <div className="mt-2">
+        <table className="w-full table-fixed text-xs">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-[11px] uppercase text-slate-500">
+            <tr className="border-b border-slate-200 text-left text-[10px] uppercase text-slate-500">
               <th className="py-1">Mặt hàng</th>
-              <th className="py-1 text-right">Nhập</th>
-              <th className="py-1 text-right">Dùng</th>
-              <th className="py-1 text-right">Còn</th>
+              <th className="w-[4.2rem] py-1 text-right">Nhập</th>
+              <th className="w-[4.2rem] py-1 text-right">Dùng</th>
+              <th className="w-[4.6rem] py-1 text-right">Còn</th>
             </tr>
           </thead>
           <tbody>
@@ -806,10 +827,10 @@ function StockCard({ onError }: { onError: (m: string) => void }) {
               .filter((r) => r.inUnits > 0 || r.usedUnits > 0)
               .map((r) => (
                 <tr key={r.key} className="border-b border-slate-100 align-top">
-                  <td className="py-1.5">
-                    <div className="font-semibold text-slate-900">{r.name}</div>
+                  <td className="py-1.5 pr-1">
+                    <div className="break-words font-semibold text-slate-900">{r.name}</div>
                     {r.usedBy.length > 0 && (
-                      <div className="text-[11px] text-slate-500">
+                      <div className="break-words text-[10px] leading-tight text-slate-500">
                         {r.usedBy
                           .slice(0, 3)
                           .map((u) => `${u.name} ${u.sold}×${u.qty}${r.unit}`)
@@ -817,7 +838,7 @@ function StockCard({ onError }: { onError: (m: string) => void }) {
                       </div>
                     )}
                     {r.usedDiscounted > 0 && (
-                      <div className="text-[11px] text-amber-700">
+                      <div className="break-words text-[10px] leading-tight text-amber-700">
                         trong đó {formatStockUnits(r.usedDiscounted, r.unit)} theo phiếu giảm giá
                       </div>
                     )}
@@ -1125,7 +1146,7 @@ function RecipeCard({ onError }: { onError: (m: string) => void }) {
  * số phiếu đang giữ với số vé đã xuất. Gom theo quầy thì hai người cùng trực
  * một quầy không tách được ai giữ bao nhiêu.
  */
-function OrdersCard({ day }: { day: CafeDay }) {
+function OrdersCard({ day, handovers }: { day: CafeDay; handovers: MoneyOrder[] }) {
   const [open, setOpen] = useState(false);
   const sales = day.recent.filter((r) => r.kind === "sale");
   const expenses = day.recent.filter((r) => r.kind === "expense");
@@ -1246,6 +1267,50 @@ function OrdersCard({ day }: { day: CafeDay }) {
           <p className="mt-2 text-[11px] text-slate-500">
             Trong đó {expenses.length} khoản chi ghi từ máy bán, tổng {formatVND(day.totals.expenseTotal)}.
           </p>
+        )}
+
+        {/* NỘP TIỀN / ỨNG TIỀN trong ngày — vế cuối của đường tiền, thiếu nó thì
+            nhìn số "đang giữ" nhỏ hơn tiền đã bán mà không hiểu vì sao. */}
+        {handovers.length > 0 && (
+          <div className="mt-3 border-t border-slate-200 pt-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="min-w-0 flex-1 font-bold text-slate-700">Đã nộp / ứng trong ngày</span>
+              <span className="whitespace-nowrap font-bold text-slate-900">
+                {formatVND(
+                  handovers
+                    .filter((h) => h.kind !== "advance" && !h.rejected)
+                    .reduce((t, h) => t + (h.amount || 0), 0),
+                )}
+              </span>
+            </div>
+            <ul className="mt-1 divide-y divide-slate-100">
+              {handovers.map((h) => (
+                <li key={h.id} className="flex items-center gap-2 py-1.5 text-xs">
+                  <span className="min-w-0 flex-1">
+                    <strong className="text-slate-800">{h.kind === "advance" ? "Xin ứng" : "Nộp"}</strong>{" "}
+                    {h.recipientName ? `cho ${h.recipientName}` : ""}
+                    {h.content ? ` · ${h.content}` : ""}
+                    <span className="text-slate-400"> · {h.method === "transfer" ? "CK" : "tiền mặt"}</span>
+                  </span>
+                  <span className="w-24 shrink-0 whitespace-nowrap text-right font-bold tabular-nums text-slate-900">
+                    {formatVND(h.amount)}
+                  </span>
+                  <span
+                    className={
+                      "shrink-0 rounded-full px-1.5 text-[10px] font-bold " +
+                      (h.rejected
+                        ? "bg-rose-100 text-rose-700"
+                        : h.confirmed
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800")
+                    }
+                  >
+                    {h.rejected ? "bị từ chối" : h.confirmed ? "đã nhận" : "chờ xác nhận"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </Card>
     </div>

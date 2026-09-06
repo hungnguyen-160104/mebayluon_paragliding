@@ -265,6 +265,19 @@ export function HandoverBox({
   }, [spot, boardDay]);
 
   const myCash = board?.cashByPerson.find((p) => p.username === me);
+  /**
+   * KHOẢN CHUYỂN KHOẢN CỦA CHÍNH MÌNH (luật chủ 06/09).
+   *
+   * Thẻ này là SỔ CÁ NHÂN — trước đây nó bày mọi khoản CK của cả điểm bay, hơn
+   * sáu chục triệu một ngày, người trực phải dò giữa đống không phải việc mình
+   * mới thấy khoản mình lập. Kế toán muốn xem toàn cảnh thì đã có bảng tiền
+   * trong ngày ở trang riêng.
+   *
+   * Khoản CŨ chưa ghi tài khoản phụ trách thì vẫn hiện: giấu đi là mất dấu
+   * khoản có thật, còn tệ hơn là hiện thừa.
+   */
+  const myTransfers = (board?.transfer.items ?? []).filter((it) => !it.byUsername || it.byUsername === me);
+  const myTransferTotal = myTransfers.reduce((t, it) => t + (it.amount || 0), 0);
 
   const inner = (
     <>
@@ -368,7 +381,7 @@ export function HandoverBox({
       )}
 
       {/* --------- KHÁCH ĐÃ TRẢ TIỀN TRONG NGÀY: mình cầm những khoản nào, ai chuyển khoản --------- */}
-      {(myCash || (board && board.transfer.items.length > 0)) && (
+      {(myCash || myTransfers.length > 0) && (
         <div className="mt-4 space-y-2">
           {myCash && (
             <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
@@ -395,14 +408,14 @@ export function HandoverBox({
             </div>
           )}
 
-          {board && board.transfer.items.length > 0 && (
+          {myTransfers.length > 0 && (
             <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-2.5">
               <h3 className="text-sm font-bold text-indigo-900">
-                🏦 {t("Khách chuyển khoản vào TK công ty", "transfers to company")} —{" "}
-                <span className="tabular-nums">{formatVND(board.transfer.total)}</span>
+                🏦 {t("Khách TÔI lập đã chuyển khoản vào TK công ty", "transfers to company I recorded")} —{" "}
+                <span className="tabular-nums">{formatVND(myTransferTotal)}</span>
               </h3>
               <ul className="mt-1 divide-y divide-indigo-100">
-                {board.transfer.items.map((it, i) => (
+                {myTransfers.map((it, i) => (
                   <li key={`${it.label}-${i}`} className="flex items-center gap-2 py-1 text-sm text-slate-700">
                     <span className="min-w-0 flex-1 leading-snug">
                       {it.daySeq > 0 && (

@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     /** Ẩn hoặc hiện lại một món. */
     if (body?.action === "product-active") {
       return NextResponse.json({
-        menu: await setCafeProductActive(String(body?.key ?? ""), body?.active !== false),
+        menu: await setCafeProductActive(auth, String(body?.key ?? ""), body?.active !== false),
       });
     }
 

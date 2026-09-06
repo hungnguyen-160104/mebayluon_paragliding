@@ -7,6 +7,7 @@ import type {
   DiploEntryDTO,
   ExpenseDTO,
   IssuedRangeDTO,
+  MerchSaleDTO,
   RescheduleEntryDTO,
   RescheduledDTO,
 } from "@/lib/baobay/types";
@@ -107,6 +108,13 @@ export interface IDispatcherDailyReport {
   /** Các khoản chi khác: nội dung – số tiền – ghi chú. */
   expenses: ExpenseDTO[];
 
+  /**
+   * HÀNG BÁN THÊM tại quầy (áo, khăn, cốm…): mỗi dòng một mặt hàng, kèm ĐƠN
+   * GIÁ LÚC BÁN. Chép giá lại chứ không tra ngược danh mục: sửa giá trong danh
+   * mục về sau không được làm sai doanh thu ngày cũ.
+   */
+  merchSales: MerchSaleDTO[];
+
   note?: string;
 
   /**
@@ -140,6 +148,19 @@ const RescheduledSchema = new Schema<RescheduledDTO>(
     code: { type: String, required: true },
     toDate: { type: String, required: true },
     note: String,
+  },
+  { _id: false },
+);
+
+/** Một dòng hàng bán thêm — giá chốt tại thời điểm khai, không tra ngược. */
+export const MerchSaleSchema = new Schema<MerchSaleDTO>(
+  {
+    key: { type: String, required: true },
+    name: { type: String, default: "" },
+    price: { type: Number, default: 0, min: 0 },
+    qty: { type: Number, default: 0, min: 0 },
+    method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+    amount: { type: Number, default: 0, min: 0 },
   },
   { _id: false },
 );
@@ -284,6 +305,7 @@ const DispatcherDailyReportSchema = new Schema<IDispatcherDailyReport>(
     mountainCarCost: { type: Number, default: 0, min: 0 },
     shuttleCarCost: { type: Number, default: 0, min: 0 },
     expenses: { type: [ExpenseSchema], default: [] },
+    merchSales: { type: [MerchSaleSchema], default: [] },
 
     note: String,
 

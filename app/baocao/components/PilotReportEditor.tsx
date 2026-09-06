@@ -190,6 +190,7 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     cancelledGuestEntries: [],
     rescheduledGuestEntries: [],
     expenses: [],
+    merchSales: [],
     note: "",
     submitted: false,
     lateSubmit: false,

@@ -59,12 +59,13 @@ const QUICK_NOTES = ["ít đá", "không đá", "ít đường", "không đườ
 
 type DayDTO = {
   date: string;
-  counters: Array<{ counter: string; counterName: string; cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number }>;
-  totals: { cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number };
+  counters: Array<{ counter: string; counterName: string; cashTotal: number; transferTotal: number; expenseTotal: number; otherIncomeTotal: number; freeTickets: number; saleCount: number }>;
+  totals: { cashTotal: number; transferTotal: number; expenseTotal: number; otherIncomeTotal: number; freeTickets: number; saleCount: number };
   recent: Array<{
     clientId: string;
     counter: string;
     kind: string;
+    direction?: string;
     label: string;
     items?: Array<{ id: string; name: string; note: string; qty: number; price: number }>;
     discountKind?: string;
@@ -259,6 +260,10 @@ export default function CafePosPage() {
   const [day, setDay] = useState<DayDTO | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Hai việc của quầy, hai tab: bán hàng và sổ thu chi (như báo cáo phi công). */
+  const [tab, setTab] = useState<"ban" | "thuchi">("ban");
+  const [expenseDir, setExpenseDir] = useState<"thu" | "chi">("chi");
+  const [expenseMethod, setExpenseMethod] = useState<"cash" | "transfer">("cash");
   const [expenseNote, setExpenseNote] = useState("");
   const [expenseAmount, setExpenseAmount] = useState(0);
   const printRef = useRef<HTMLIFrameElement>(null);
@@ -364,6 +369,25 @@ export default function CafePosPage() {
     const next = cur.includes(chip) ? cur.filter((x) => x !== chip) : [...cur, chip];
     setNote(id, next.join(", "));
   };
+
+  /** Gỡ một mặt hàng quầy tự thêm khỏi menu (ẩn đi, phiếu cũ vẫn tra được tên). */
+  async function removeItem(m: CafeMenuItem) {
+    if (!window.confirm(`Gỡ “${m.name}” khỏi menu? Phiếu đã bán vẫn giữ nguyên.`)) return;
+    try {
+      const res = await apiPost<{ menu: CafeMenuItem[] }>("/api/baocao/cafe", {
+        action: "product-active",
+        key: m.id,
+        active: false,
+      });
+      setMenu(res.menu);
+      try {
+        localStorage.setItem(MENU_KEY, JSON.stringify(res.menu));
+      } catch { /* hết chỗ cất — menu vẫn đúng trong phiên này */ }
+      setMsg(`✓ Đã gỡ “${m.name}” khỏi menu.`);
+    } catch (err: any) {
+      setError(err?.message || "Không gỡ được mặt hàng");
+    }
+  }
 
   function addItem(id: string) {
     setCart((p) => new Map(p).set(id, (p.get(id) ?? 0) + 1));
@@ -593,22 +617,24 @@ export default function CafePosPage() {
   }
 
   function addExpense() {
-    if (!expenseNote.trim()) return setError("Ghi nội dung khoản chi");
-    if (expenseAmount <= 0) return setError("Chưa nhập số tiền chi");
+    const la = expenseDir === "thu" ? "thu" : "chi";
+    if (!expenseNote.trim()) return setError(`Ghi nội dung khoản ${la}`);
+    if (expenseAmount <= 0) return setError(`Chưa nhập số tiền ${la}`);
     commit(
       {
         clientId: crypto.randomUUID(),
         counter,
         kind: "expense",
+        direction: expenseDir,
         items: [],
         total: expenseAmount,
-        method: "cash",
+        method: expenseMethod,
         note: expenseNote.trim(),
         soldAt: new Date().toISOString(),
       },
       false,
     );
-    setMsg(`✓ Đã ghi chi ${vnd(expenseAmount)} đ — ${expenseNote.trim()}.`);
+    setMsg(`✓ Đã ghi ${la} ${vnd(expenseAmount)} đ — ${expenseNote.trim()}.`);
     setExpenseNote("");
     setExpenseAmount(0);
   }
@@ -664,9 +690,33 @@ export default function CafePosPage() {
         )}
       </div>
 
+      {/* HAI THẺ: bán hàng và sổ thu chi — cùng lối với báo cáo phi công dù */}
+      <div className="mt-2 flex overflow-hidden rounded-xl border border-slate-300">
+        {(
+          [
+            ["ban", "☕ Bán hàng"],
+            ["thuchi", "💰 Thu chi"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={
+              "flex-1 py-2.5 text-sm font-black " +
+              (tab === id ? "bg-slate-800 text-white" : "bg-white text-slate-500")
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {msg && <div className="mt-2"><Banner tone="success" onClose={() => setMsg(null)}>{msg}</Banner></div>}
       {error && <div className="mt-2"><Banner tone="error" onClose={() => setError(null)}>{error}</Banner></div>}
 
+      {tab === "ban" && (
+      <>
       {/* ---- ĐƠN ĐANG GIỮ ---- */}
       {holds.length > 0 && (
         <div className="mt-2 rounded-2xl border-2 border-amber-300 bg-amber-50 p-2">
@@ -748,6 +798,31 @@ export default function CafePosPage() {
                   {(cart.get(m.id) ?? 0) > 0 && (
                     <span className="absolute right-1 top-1 rounded-full bg-sky-600 px-1.5 text-[11px] font-bold text-white">
                       {cart.get(m.id)}
+                    </span>
+                  )}
+                  {/*
+                    GỠ MÓN — chỉ món quầy TỰ THÊM (đồ lưu niệm) mới có nút này.
+                    Cà phê, trà, nước là bảng giá niêm yết: máy chủ chặn, nên
+                    bày nút ra chỉ tổ bấm rồi ăn thông báo từ chối.
+                  */}
+                  {!m.fixed && online && (cart.get(m.id) ?? 0) === 0 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeItem(m);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.stopPropagation();
+                          void removeItem(m);
+                        }
+                      }}
+                      className="absolute right-0.5 top-0.5 rounded px-1 text-[11px] font-bold text-slate-300 hover:text-rose-600"
+                      title="Gỡ mặt hàng khỏi menu"
+                    >
+                      ✕
                     </span>
                   )}
                 </button>
@@ -977,27 +1052,110 @@ export default function CafePosPage() {
         </button>
       )}
 
-      {/* ---- Khoản chi ---- */}
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
-        <strong className="text-sm text-slate-700">Ghi CHI:</strong>
-        <input
-          value={expenseNote}
-          onChange={(e) => setExpenseNote(e.target.value)}
-          placeholder="Mua đá, mua sữa…"
-          className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 px-2 text-sm"
-        />
-        <input
-          type="number"
-          min={0}
-          value={expenseAmount || ""}
-          onChange={(e) => setExpenseAmount(Math.max(0, Math.round(Number(e.target.value) || 0)))}
-          placeholder="Số tiền"
-          className="h-10 w-28 rounded-lg border border-slate-300 px-2 text-right text-sm tabular-nums"
-        />
-        <Button type="button" onClick={addExpense} className="h-10 bg-rose-600 px-3 text-sm hover:bg-rose-700">
-          Ghi chi
-        </Button>
-      </div>
+      </>
+      )}
+
+      {/* ---- SỔ THU CHI TẠI QUẦY ---- */}
+      {tab === "thuchi" && (
+        <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <p className="text-sm font-bold text-slate-800">Ghi một khoản tiền</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Tiền RA khỏi túi người trực (mua đá, mua sữa, trả ship) hoặc tiền VÀO ngoài bán hàng (khách trả nợ, tiền
+            lẻ gửi lại). Ghi ngay tại đây, khỏi đợi cuối ca nhớ lại.
+          </p>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="flex overflow-hidden rounded-xl border border-slate-300">
+              {(["chi", "thu"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setExpenseDir(d)}
+                  className={
+                    "flex-1 py-2 text-sm font-bold " +
+                    (expenseDir === d
+                      ? d === "thu"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-rose-600 text-white"
+                      : "bg-white text-slate-500")
+                  }
+                >
+                  {d === "thu" ? "＋ THU" : "− CHI"}
+                </button>
+              ))}
+            </div>
+            <div className="flex overflow-hidden rounded-xl border border-slate-300">
+              {(["cash", "transfer"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setExpenseMethod(m)}
+                  className={
+                    "flex-1 py-2 text-sm font-bold " +
+                    (expenseMethod === m ? "bg-slate-800 text-white" : "bg-white text-slate-500")
+                  }
+                >
+                  {m === "cash" ? "Tiền mặt" : "CK"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <input
+            value={expenseNote}
+            onChange={(e) => setExpenseNote(e.target.value)}
+            placeholder={expenseDir === "thu" ? "Khách trả nợ, tiền lẻ gửi lại…" : "Mua đá, mua sữa, trả ship…"}
+            className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+          />
+          <input
+            inputMode="numeric"
+            value={expenseAmount ? vnd(expenseAmount) : ""}
+            onChange={(e) => setExpenseAmount(Number(e.target.value.replace(/[^\d]/g, "").slice(0, 9)) || 0)}
+            placeholder="Số tiền"
+            className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-right text-lg font-bold tabular-nums"
+          />
+          <Button
+            type="button"
+            onClick={addExpense}
+            className={"mt-2 h-12 w-full text-base font-black " + (expenseDir === "thu" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700")}
+          >
+            {expenseDir === "thu" ? "＋ GHI THU" : "− GHI CHI"}
+          </Button>
+
+          {/* Các khoản đã ghi hôm nay — soát lại và xoá cái nhầm */}
+          {day && (
+            <div className="mt-3 border-t border-slate-200 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="min-w-0 flex-1 font-bold text-slate-700">Hôm nay</span>
+                <span className="whitespace-nowrap font-bold text-emerald-700">+{vnd(day.totals.otherIncomeTotal)}</span>
+                <span className="whitespace-nowrap font-bold text-rose-700">−{vnd(day.totals.expenseTotal)}</span>
+              </div>
+              <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
+                {day.recent
+                  .filter((r) => r.kind === "expense")
+                  .map((r) => (
+                    <li key={r.clientId} className="flex items-center gap-2">
+                      <span className="text-slate-400">
+                        {r.soldAt ? new Date(r.soldAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
+                      </span>
+                      <span className="min-w-0 flex-1">{r.label}</span>
+                      <span className={"w-20 shrink-0 text-right font-bold tabular-nums " + (r.direction === "thu" ? "text-emerald-700" : "text-rose-700")}>
+                        {r.direction === "thu" ? "+" : "−"}
+                        {vnd(r.total)}
+                      </span>
+                      <button type="button" onClick={() => removeRecent(r.clientId)} className="text-rose-500 hover:underline">
+                        xoá
+                      </button>
+                    </li>
+                  ))}
+                {day.recent.filter((r) => r.kind === "expense").length === 0 && (
+                  <li className="py-2 text-center text-slate-400">Hôm nay chưa ghi khoản nào.</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ---- Tổng ngày (cần mạng) ---- */}
       {day && (
@@ -1131,7 +1289,7 @@ function AddItemBox({
   const [name, setName] = useState("");
   const [en, setEn] = useState("");
   const [price, setPrice] = useState(0);
-  const [group, setGroup] = useState<string>("do-uong");
+  const [group, setGroup] = useState<string>("luu-niem");
   const [saving, setSaving] = useState(false);
 
   if (!open) {
@@ -1213,7 +1371,8 @@ function AddItemBox({
         </label>
       </div>
       <p className="mt-1.5 text-xs text-slate-500">
-        Định mức nguyên liệu (một ly rút bao nhiêu gam) khai ở trang Báo cáo quầy → khối KHO.
+        Quầy tự thêm bớt được <strong>đồ lưu niệm</strong> (áo, khăn, móc khoá…). Cà phê, trà, nước là bảng giá đã
+        niêm yết nên chỉ quản trị sửa. Định mức nguyên liệu khai ở trang Báo cáo quầy → khối KHO.
       </p>
       <div className="mt-2 flex gap-2">
         <Button type="button" onClick={save} disabled={saving} className="flex-1">

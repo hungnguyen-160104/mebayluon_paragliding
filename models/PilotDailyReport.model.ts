@@ -2,8 +2,8 @@
 import mongoose, { Schema } from "mongoose";
 
 import { DEFAULT_SPOT } from "@/lib/baobay/roles";
-import type { ExpenseDTO } from "@/lib/baobay/types";
-import { ExpenseSchema } from "@/models/DispatcherDailyReport.model";
+import type { ExpenseDTO, MerchSaleDTO } from "@/lib/baobay/types";
+import { ExpenseSchema, MerchSaleSchema } from "@/models/DispatcherDailyReport.model";
 
 /**
  * Báo cáo cuối ngày của MỘT phi công.
@@ -99,6 +99,8 @@ export interface IPilotDailyReport {
   cancelledGuestEntries?: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; codes?: string[] }>;
   rescheduledGuestEntries?: Array<{ name: string; guests: number; toDate: string; note?: string; phone?: string; pickup?: string; pickupNote?: string; expectedTime?: string; codes?: string[]; bookedId?: string }>;
   expenses: ExpenseDTO[];
+  /** Hàng bán thêm tại bãi (áo, khăn, cốm…) — xem models/BaobayMerchItem.model.ts. */
+  merchSales: MerchSaleDTO[];
 
   note?: string;
 
@@ -233,6 +235,7 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
       default: [],
     },
     expenses: { type: [ExpenseSchema], default: [] },
+    merchSales: { type: [MerchSaleSchema], default: [] },
 
     note: String,
 

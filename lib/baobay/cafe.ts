@@ -50,6 +50,12 @@ export type CafeMenuItem = {
    * — con số chủ cần thấy hằng ngày để đối chiếu với số khách bay.
    */
   freeTicket?: boolean;
+  /**
+   * MÓN CỐ ĐỊNH: nằm trong bảng giá niêm yết (cà phê, trà, nước…), quầy KHÔNG
+   * sửa và KHÔNG gỡ được — chỉ quản trị. Máy chủ tự gắn cờ này khi dựng menu,
+   * không phải khai tay trong danh sách dưới.
+   */
+  fixed?: boolean;
 };
 
 /** Khối nút trên máy bán — thứ tự này cũng là thứ tự hiện trên màn hình. */
@@ -58,6 +64,12 @@ export const CAFE_GROUPS = [
   { id: "tra", name: "Trà" },
   { id: "do-uong", name: "Đồ uống khác" },
   { id: "an-vat", name: "Đồ ăn vặt" },
+  /**
+   * ĐỒ LƯU NIỆM (áo, khăn, móc khoá…) — khối DUY NHẤT quầy tự thêm bớt được.
+   * Đồ uống là bảng giá đã niêm yết, sửa tại quầy thì mỗi máy một giá; hàng
+   * lưu niệm thì đổi theo mùa và theo lô nhập nên phải sửa được ngay tại chỗ.
+   */
+  { id: "luu-niem", name: "Đồ lưu niệm" },
 ] as const;
 
 export type CafeGroupId = (typeof CAFE_GROUPS)[number]["id"];
@@ -251,7 +263,13 @@ export type CafeEntry = {
   discount?: CafeDiscountId;
   /** sale: khách trả bằng gì. "free" = toàn phiếu nước miễn phí, không thu tiền. */
   method: "cash" | "transfer" | "free";
-  /** expense: nội dung khoản chi. */
+  /**
+   * kind "expense": THU hay CHI. Quầy không chỉ chi ra — khách trả nợ ly cà
+   * phê hôm qua, người nhà gửi lại tiền lẻ… đều là tiền vào tay người trực,
+   * phải ghi được ngay tại máy bán chứ không đợi cuối ca nhớ lại.
+   */
+  direction?: "thu" | "chi";
+  /** expense: nội dung khoản thu/chi. */
   note: string;
   /** Giờ bấm bán TẠI MÁY (ISO) — lúc mất mạng vẫn đúng giờ bán thật. */
   soldAt: string;

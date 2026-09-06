@@ -56,6 +56,7 @@ export async function syncCafeEntries(
     if (!/^[A-Za-z0-9-]{8,64}$/.test(clientId)) continue;
     if (!COUNTER_IDS.has(String(e?.counter))) continue;
     const kind = e?.kind === "expense" ? "expense" : "sale";
+    const direction = kind === "expense" && e?.direction === "thu" ? "thu" : "chi";
 
     const soldAt = new Date(e?.soldAt ?? "");
     // Giờ máy bán có thể sai lệch/rác — rác thì lấy giờ nhận, còn hơn mất phiếu
@@ -109,6 +110,7 @@ export async function syncCafeEntries(
           counter: e.counter,
           date: toDateKeyVN(at),
           kind,
+          direction,
           items,
           subtotal,
           discountKind: rate > 0 ? discountKind : "none",
@@ -147,6 +149,8 @@ export type CafeDayDTO = {
     cashTotal: number;
     transferTotal: number;
     expenseTotal: number;
+    /** Khoản THU ghi tay tại quầy (khách trả nợ, tiền lẻ gửi lại…). */
+    otherIncomeTotal: number;
     freeTickets: number;
     saleCount: number;
     /** Tiền đã giảm cho phi công/người nhà và khách ngoại giao trong ngày. */
@@ -156,6 +160,7 @@ export type CafeDayDTO = {
     cashTotal: number;
     transferTotal: number;
     expenseTotal: number;
+    otherIncomeTotal: number;
     freeTickets: number;
     saleCount: number;
     discountTotal: number;
@@ -179,6 +184,7 @@ export type CafeDayDTO = {
     counter: string;
     counterName: string;
     kind: string;
+    direction: string;
     label: string;
     items: Array<{ id: string; name: string; note: string; qty: number; price: number }>;
     subtotal: number;
@@ -198,14 +204,16 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
   const date = isDateKey(dateRaw ?? "") ? String(dateRaw) : todayInVN();
   const docs = await CafeSale.find({ date }).sort({ soldAt: -1 }).limit(1000).lean<any[]>();
 
-  type Tally = { cash: number; transfer: number; expense: number; free: number; sales: number; disc: number };
-  const zero = (): Tally => ({ cash: 0, transfer: 0, expense: 0, free: 0, sales: 0, disc: 0 });
+  type Tally = { cash: number; transfer: number; expense: number; income: number; free: number; sales: number; disc: number };
+  const zero = (): Tally => ({ cash: 0, transfer: 0, expense: 0, income: 0, free: 0, sales: 0, disc: 0 });
   const byCounter = new Map<string, Tally>();
   for (const c of CAFE_COUNTERS) byCounter.set(c.id, zero());
   for (const d of docs) {
     const t = byCounter.get(d.counter) ?? zero();
-    if (d.kind === "expense") t.expense += d.total || 0;
-    else {
+    if (d.kind === "expense") {
+      if (d.direction === "thu") t.income += d.total || 0;
+      else t.expense += d.total || 0;
+    } else {
       t.sales += 1;
       t.free += d.freeTickets || 0;
       t.disc += d.discountAmount || 0;
@@ -223,6 +231,7 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       cashTotal: t.cash,
       transferTotal: t.transfer,
       expenseTotal: t.expense,
+      otherIncomeTotal: t.income,
       freeTickets: t.free,
       saleCount: t.sales,
       discountTotal: t.disc,
@@ -233,11 +242,12 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       cashTotal: a.cashTotal + c.cashTotal,
       transferTotal: a.transferTotal + c.transferTotal,
       expenseTotal: a.expenseTotal + c.expenseTotal,
+      otherIncomeTotal: a.otherIncomeTotal + c.otherIncomeTotal,
       freeTickets: a.freeTickets + c.freeTickets,
       saleCount: a.saleCount + c.saleCount,
       discountTotal: a.discountTotal + c.discountTotal,
     }),
-    { cashTotal: 0, transferTotal: 0, expenseTotal: 0, freeTickets: 0, saleCount: 0, discountTotal: 0 },
+    { cashTotal: 0, transferTotal: 0, expenseTotal: 0, otherIncomeTotal: 0, freeTickets: 0, saleCount: 0, discountTotal: 0 },
   );
 
   /** Gom theo người bấm bán — phiếu nước và tiền mặt đều là thứ người đó đang giữ. */
@@ -268,6 +278,7 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       counter: d.counter,
       counterName: counterName.get(d.counter) ?? d.counter,
       kind: d.kind,
+      direction: d.direction || "chi",
       items: (d.items ?? []).map((it: any) => ({
         id: it.id || "",
         name: it.name,
@@ -285,7 +296,7 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       freeTickets: d.freeTickets || 0,
       label:
         d.kind === "expense"
-          ? `CHI: ${d.note || "?"}`
+          ? `${d.direction === "thu" ? "THU" : "CHI"}: ${d.note || "?"}`
           : (d.items ?? [])
               .map((it: any) => `${it.name}${it.note ? ` (${it.note})` : ""}${it.qty > 1 ? ` ×${it.qty}` : ""}`)
               .join(", ") +
@@ -624,6 +635,7 @@ export async function getCafeMenu(): Promise<CafeMenuItem[]> {
     merged.push(
       over
         ? {
+            fixed: true,
             ...m,
             name: over.name || m.name,
             en: over.en || m.en,
@@ -631,7 +643,7 @@ export async function getCafeMenu(): Promise<CafeMenuItem[]> {
             group: (over.group || m.group) as CafeMenuItem["group"],
             uses: (over.uses ?? []).length ? over.uses : m.uses,
           }
-        : m,
+        : { ...m, fixed: true },
     );
     byKey.delete(m.id);
   }
@@ -687,6 +699,20 @@ export async function upsertCafeProduct(
   if (!key) throw new BaobayError("Tên món phải có chữ hoặc số", 400);
 
   /**
+   * MÓN CỐ ĐỊNH CHỈ QUẢN TRỊ SỬA (luật chủ 06/09). Cà phê, trà, nước là bảng
+   * giá đã niêm yết với khách; sửa được tại quầy thì hai máy ra hai giá và
+   * không ai biết giá nào đúng. Quầy tự do với ĐỒ LƯU NIỆM — hàng đổi theo
+   * mùa, chờ quản trị thì hôm có lô mới là không bán được.
+   */
+  const isFixed = CAFE_MENU.some((m) => m.id === key);
+  if (isFixed && !wearsRole(session, "admin")) {
+    throw new BaobayError(
+      `“${CAFE_MENU.find((m) => m.id === key)?.name ?? key}” là món cố định trong bảng giá — chỉ quản trị sửa được. Đồ lưu niệm thì quầy tự thêm bớt thoải mái.`,
+      403,
+    );
+  }
+
+  /**
    * ĐỊNH MỨC LÀ QUYỀN QUẢN TRỊ (luật chủ 06/09). Người trực quầy thêm món và
    * đổi giá được, nhưng không sửa được "một ly rút bao nhiêu gam" — đó là con
    * số quyết định giá vốn và kết quả kiểm kê, sửa được tại quầy thì kho nói
@@ -735,9 +761,16 @@ export async function upsertCafeProduct(
 }
 
 /** Ẩn / hiện lại một món. Không xoá: phiếu cũ còn tra tên theo mã này. */
-export async function setCafeProductActive(key: string, active: boolean): Promise<CafeMenuItem[]> {
+export async function setCafeProductActive(
+  session: BaobaySession,
+  key: string,
+  active: boolean,
+): Promise<CafeMenuItem[]> {
   await connectDB();
   const base = CAFE_MENU.find((m) => m.id === key);
+  if (base && !wearsRole(session, "admin")) {
+    throw new BaobayError(`“${base.name}” là món cố định trong bảng giá — chỉ quản trị gỡ được`, 403);
+  }
   await CafeProduct.updateOne(
     { spot: CAFE_SPOT, key },
     {

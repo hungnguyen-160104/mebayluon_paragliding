@@ -70,6 +70,8 @@ import type {
   DispatcherReportDTO,
   ExpenseDTO,
   IssuedRangeDTO,
+  MerchItemDTO,
+  MerchSaleDTO,
   MonthlyDayCellDTO,
   MonthlyPilotDTO,
   MonthlyReportDTO,
@@ -90,7 +92,9 @@ import { BaobayFlycamCancel } from "@/models/BaobayFlycamCancel.model";
 import { BaobayRefund } from "@/models/BaobayRefund.model";
 import { BaobayShift } from "@/models/BaobayShift.model";
 import { BaobaySetting, DEFAULT_SUBMIT_DEADLINE } from "@/models/BaobaySetting.model";
+import { BaobayMerchItem } from "@/models/BaobayMerchItem.model";
 import { CafeDailyReport } from "@/models/CafeDailyReport.model";
+import { CafeSale } from "@/models/CafeSale.model";
 import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
 import { PilotDailyReport } from "@/models/PilotDailyReport.model";
@@ -1246,6 +1250,8 @@ export type PilotReportSaveInput = {
   /** Điểm bay của báo cáo — mỗi điểm là một hệ thống riêng. */
   spot: string;
   date: string;
+  /** Hàng bán thêm: mã hàng + số lượng; đơn giá do máy chủ tra từ danh mục. */
+  merchSales?: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>;
   flightCount: number;
   ticketCodesText: string;
   flycam: number;
@@ -1426,6 +1432,9 @@ export async function upsertPilotReport(
   const { list: expenses, warnings: expenseWarnings } = normalizeExpenses(input.expenses);
   warnings.push(...expenseWarnings);
 
+  const { list: merchSales, warnings: merchWarnings } = await buildMerchSales(spot, input.merchSales ?? []);
+  warnings.push(...merchWarnings);
+
   /**
    * Mã vé đã bay ở NGÀY KHÁC — bộ đối chiếu chỉ soi trong phạm vi một ngày nên
    * không thấy được chuyện này. Một vé chỉ bay đúng một lần: vé dời lịch bị huỷ
@@ -1566,6 +1575,7 @@ export async function upsertPilotReport(
         motorbikeRides: input.motorbikeRides ?? 0,
         carRides: input.carRides ?? 0,
         expenses,
+        merchSales,
         note: input.note,
         submitted: input.submit,
         ...(input.submit ? { submittedAt: new Date() } : { submittedAt: undefined }),
@@ -1790,6 +1800,7 @@ function toPilotDTO(doc: any): PilotReportDTO {
     motorbikeRides: doc.motorbikeRides ?? 0,
     carRides: doc.carRides ?? 0,
     expenses: doc.expenses ?? [],
+    merchSales: doc.merchSales ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
     submittedAt: doc.submittedAt ? new Date(doc.submittedAt).toISOString() : undefined,
@@ -1950,6 +1961,8 @@ export type DispatcherReportSaveInput = {
   mountainCarCost: number;
   shuttleCarCost: number;
   expenses: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
+  /** Hàng bán thêm: mã hàng + số lượng; đơn giá do máy chủ tra từ danh mục. */
+  merchSales?: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>;
   note: string;
   /** true = chốt ca, false = lưu nháp. Chốt lại được, y như phi công. */
   submit: boolean;
@@ -2011,6 +2024,137 @@ export async function findDuplicateTicketCodes(
     }
   }
   return [...hits.values()].sort((a, b) => a.code.localeCompare(b.code));
+}
+
+/**
+ * LỆNH TIỀN CỦA CHÍNH MÌNH TRONG MỘT NGÀY — nộp tiền và xin ứng.
+ *
+ * Báo cáo ngày phải kể đủ mọi đường tiền đi qua tay người trực: bán hàng, thu
+ * chi, và cả phần đã nộp lên. Thiếu vế nộp thì người ta nhìn số "đang giữ" nhỏ
+ * hơn tiền đã bán mà không hiểu vì sao.
+ */
+export async function listMyMoneyOrdersOfDate(
+  session: BaobaySession,
+  spotRaw: string,
+  date: string,
+): Promise<
+  Array<{ id: string; kind: string; amount: number; method: string; content: string; recipientName: string; confirmed: boolean; rejected: boolean }>
+> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const docs = await BaobayHandover.find({ accountId: new mongoose.Types.ObjectId(session.id), spot, date })
+    .sort({ createdAt: 1 })
+    .lean<any[]>();
+  return docs.map((d) => ({
+    id: String(d._id),
+    kind: d.kind || "handover",
+    amount: d.amount || 0,
+    method: d.method || "cash",
+    content: d.content || "",
+    recipientName: d.recipientName || "",
+    confirmed: Boolean(d.confirmed),
+    rejected: Boolean(d.rejected),
+  }));
+}
+
+/* ================================================================== */
+/* HÀNG BÁN THÊM tại quầy vé (áo, khăn, cốm…)                           */
+/* ================================================================== */
+
+/**
+ * Danh mục hàng đang bán của một điểm. Người trực TỰ TẠO được — hàng lưu niệm
+ * đổi theo mùa, chờ quản trị thì hôm có hàng mới là không khai được.
+ */
+export async function listMerchItems(spot: string): Promise<MerchItemDTO[]> {
+  await connectDB();
+  const docs = await BaobayMerchItem.find({ spot: normalizeSpot(spot), active: true })
+    .sort({ name: 1 })
+    .lean<any[]>();
+  return docs.map((d) => ({ key: d.key, name: d.name, price: d.price || 0, unit: d.unit || "chiếc", active: true }));
+}
+
+export async function upsertMerchItem(
+  session: BaobaySession,
+  spotRaw: string,
+  input: { key?: string; name: string; price: number; unit?: string; active?: boolean },
+): Promise<MerchItemDTO[]> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const name = String(input.name ?? "").trim();
+  if (!name) throw new BaobayError("Chưa đặt tên mặt hàng", 400);
+
+  /** Mã suy từ TÊN khi tạo mới; trùng mã nghĩa là đang sửa chính mặt hàng đó. */
+  const key = String(input.key ?? "").trim() || merchSlug(name);
+  if (!key) throw new BaobayError("Tên mặt hàng phải có chữ hoặc số", 400);
+
+  await BaobayMerchItem.updateOne(
+    { spot, key },
+    {
+      $set: {
+        name,
+        price: Math.max(0, Math.round(Number(input.price) || 0)),
+        unit: String(input.unit ?? "").trim() || "chiếc",
+        active: input.active !== false,
+      },
+      $setOnInsert: { createdByUsername: session.username, createdByName: session.name },
+    },
+    { upsert: true },
+  );
+  return listMerchItems(spot);
+}
+
+/** Bỏ dấu tiếng Việt rồi rút thành mã hàng. */
+function merchSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+}
+
+/**
+ * Dựng các dòng hàng bán thêm để LƯU: tra tên + đơn giá từ danh mục rồi chép
+ * lại vào báo cáo. Máy chủ tự nhân thành tiền — không nhận số tiền máy gửi.
+ */
+async function buildMerchSales(
+  spot: string,
+  input: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>,
+): Promise<{ list: MerchSaleDTO[]; warnings: string[] }> {
+  const rows = (input ?? []).filter((r) => r?.key && (Number(r.qty) || 0) > 0);
+  if (!rows.length) return { list: [], warnings: [] };
+
+  const docs = await BaobayMerchItem.find({ spot, key: { $in: rows.map((r) => String(r.key)) } }).lean<any[]>();
+  const byKey = new Map(docs.map((d) => [d.key, d]));
+  const warnings: string[] = [];
+  const list: MerchSaleDTO[] = [];
+
+  for (const r of rows) {
+    const item = byKey.get(String(r.key));
+    if (!item) {
+      warnings.push(`Mặt hàng "${r.key}" không còn trong danh mục — dòng này bị bỏ`);
+      continue;
+    }
+    const qty = Math.max(0, Math.round(Number(r.qty) || 0));
+    const price = Math.max(0, Math.round(item.price || 0));
+    list.push({
+      key: item.key,
+      name: item.name,
+      price,
+      qty,
+      method: r.method === "transfer" ? "transfer" : "cash",
+      amount: price * qty,
+    });
+  }
+  return { list, warnings };
+}
+
+/** Tổng tiền hàng bán thêm, lọc theo hình thức trả nếu cần. */
+export function merchTotal(list: MerchSaleDTO[] = [], method?: "cash" | "transfer"): number {
+  return (list ?? []).reduce((t, r) => t + (method && r.method !== method ? 0 : r.amount || 0), 0);
 }
 
 export async function upsertDispatcherReport(
@@ -2173,6 +2317,9 @@ export async function upsertDispatcherReport(
   const { list: expenses, warnings: expenseWarnings } = normalizeExpenses(input.expenses);
   warnings.push(...expenseWarnings);
 
+  const { list: merchSales, warnings: merchWarnings } = await buildMerchSales(spot, input.merchSales ?? []);
+  warnings.push(...merchWarnings);
+
   /** Khoản thu có tên: bỏ dòng trống, tiền phải dương. */
   const revenueEntries = (input.revenueEntries ?? [])
     .map((e) => ({
@@ -2251,6 +2398,7 @@ export async function upsertDispatcherReport(
         mountainCarCost: input.mountainCarCost,
         shuttleCarCost: input.shuttleCarCost,
         expenses,
+        merchSales,
         note: input.note,
         submitted: input.submit,
         // null (không phải undefined) mới xoá được mốc chốt cũ khi quay về nháp —
@@ -2406,6 +2554,7 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     mountainCarCost: doc.mountainCarCost ?? 0,
     shuttleCarCost: doc.shuttleCarCost ?? 0,
     expenses: doc.expenses ?? [],
+    merchSales: doc.merchSales ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
     submittedAt: doc.submittedAt ? new Date(doc.submittedAt).toISOString() : undefined,
@@ -2428,6 +2577,7 @@ export type CameramanReportSaveInput = {
   paraglidingFlights: number;
   paraglidingCodesText: string;
   expenses: Array<{ content: string; amount: number; kind?: "thu" | "chi"; note?: string }>;
+  merchSales?: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>;
   note: string;
   submit: boolean;
 };
@@ -2461,6 +2611,9 @@ export async function upsertCameramanReport(
   const { list: expenses, warnings: expenseWarnings } = normalizeExpenses(input.expenses);
   warnings.push(...expenseWarnings);
 
+  const { list: merchSales, warnings: merchWarnings } = await buildMerchSales(spot, input.merchSales ?? []);
+  warnings.push(...merchWarnings);
+
   const doc = await CameramanDailyReport.findOneAndUpdate(
     { accountId: new mongoose.Types.ObjectId(session.id), date: input.date, spot },
     {
@@ -2473,6 +2626,7 @@ export async function upsertCameramanReport(
         paraglidingFlights: input.paraglidingFlights,
         paraglidingCodes: paraCodes.codes,
         expenses,
+        merchSales,
         note: input.note,
         submitted: input.submit,
         ...(input.submit ? { submittedAt: new Date() } : { submittedAt: undefined }),
@@ -2545,6 +2699,7 @@ function toCameramanDTO(doc: any): CameramanReportDTO {
     paraglidingFlights: doc.paraglidingFlights ?? 0,
     paraglidingCodes: doc.paraglidingCodes ?? [],
     expenses: doc.expenses ?? [],
+    merchSales: doc.merchSales ?? [],
     note: doc.note ?? "",
     submitted: Boolean(doc.submitted),
     submittedAt: doc.submittedAt ? new Date(doc.submittedAt).toISOString() : undefined,
@@ -3036,6 +3191,14 @@ export type MoneyBoardItem = {
   from: string;
   /** Người thu khoản này (chỉ có ở khoản tiền mặt) — để biết tiền đang ở tay ai. */
   by?: string;
+  /**
+   * TÀI KHOẢN người phụ trách khoản này — có ở CẢ khoản chuyển khoản.
+   *
+   * Khoản CK không ai cầm tiền nên trước đây không ghi ai; nhưng thẻ "Tiền
+   * nong" của điều phối/quầy vé là sổ CÁ NHÂN, bày cả trăm khoản CK của mọi
+   * người vào đó thì người trực phải dò giữa đống không phải việc mình.
+   */
+  byUsername?: string;
   /** Số thứ tự của booking trong ngày bay — 0 khi khoản không gắn với booking nào. */
   daySeq: number;
 };
@@ -3088,9 +3251,9 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
 
   const [collects, pilots, dispatchers, cameramen, cafes, commissionBookings, flycamRefunds, refunds] = await Promise.all([
     BaobayCollect.find({ spot, date }).lean<any[]>(),
-    PilotDailyReport.find({ spot, date }).select("username pilotName expenses").lean<any[]>(),
-    DispatcherDailyReport.find({ spot, date }).select("username staffName expenses").lean<any[]>(),
-    CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses").lean<any[]>(),
+    PilotDailyReport.find({ spot, date }).select("username pilotName expenses merchSales").lean<any[]>(),
+    DispatcherDailyReport.find({ spot, date }).select("username staffName expenses merchSales").lean<any[]>(),
+    CameramanDailyReport.find({ spot, date }).select("username cameramanName expenses merchSales").lean<any[]>(),
     // Quầy cafe: tiền bán hàng trong ca + sổ thu chi tại quầy
     CafeDailyReport.find({ spot, date })
       .select("username staffName counter cashReceived transferReceived expenses")
@@ -3212,6 +3375,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       transferCode: c.transferCode || "",
       from: "lệnh thu",
       daySeq: seqOfCollect(c),
+      byUsername: normalizeUsername(c.collectorUsername || c.createdByUsername || ""),
     };
     if (c.method === "transfer") {
       transferItems.push(item);
@@ -3257,6 +3421,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
           from: "sổ thu chi",
           // Khoản gõ tay trong sổ không gắn booking nào — không có số
           daySeq: 0,
+          byUsername: normalizeUsername(d.username || ""),
         };
         if (e.method === "transfer") {
           transferItems.push(item);
@@ -3276,36 +3441,91 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
   addReportThu(cafes, "staffName", "cafe");
 
   /**
+   * HÀNG BÁN THÊM tại quầy vé (áo, khăn, cốm…) — tiền mặt nằm trong tay người
+   * trực y như tiền vé, nên phải có mặt ở bảng "ai đang cầm bao nhiêu"; phần
+   * khách chuyển khoản thì vào thẳng tài khoản công ty.
+   */
+  for (const d of [
+    ...dispatchers.map((x: any) => ({ ...x, name: x.staffName, role: "dispatcher" })),
+    ...pilots.map((x: any) => ({ ...x, name: x.pilotName, role: "pilot" })),
+    ...cameramen.map((x: any) => ({ ...x, name: x.cameramanName, role: "cameraman" })),
+  ]) {
+    for (const m of d.merchSales ?? []) {
+      if (!(m.amount > 0)) continue;
+      const item: MoneyBoardItem = {
+        label: `${m.name} ×${m.qty}`,
+        bookingCode: "",
+        guests: 0,
+        amount: m.amount || 0,
+        transferCode: "",
+        from: "hàng bán thêm",
+        daySeq: 0,
+        byUsername: normalizeUsername(d.username || ""),
+      };
+      if (m.method === "transfer") {
+        transferItems.push(item);
+        continue;
+      }
+      const p = personOf(d.username, d.name, d.role);
+      item.by = p.name;
+      p.items.push(item);
+      p.total += item.amount;
+      cashItems.push(item);
+    }
+  }
+
+  /**
    * TIỀN BÁN HÀNG QUẦY CAFE — nguồn thứ ba, ngoài lệnh thu và sổ thu chi.
    *
    * Người trực quầy cầm đúng phần tiền mặt bán hàng của ca mình, nên nó phải
    * nằm trong bảng "ai đang cầm bao nhiêu" y như tiền vé; phần khách quét mã
    * chuyển khoản thì vào thẳng tài khoản công ty, không ai cầm.
    */
-  for (const d of cafes) {
-    const counterName = CAFE_COUNTERS.find((c) => c.id === d.counter)?.name ?? "quầy cafe";
-    if (d.transferReceived > 0) {
+  /**
+   * QUẦY CAFE trên bảng tiền ngày: gom từ PHIẾU MÁY BÁN theo người bấm, không
+   * lấy ô khai trong báo cáo ngày — cùng một luật với số "đang giữ" của họ,
+   * nên hai chỗ không thể nói hai con số khác nhau.
+   */
+  const cafeTickets = await CafeSale.find({ date })
+    .select("kind direction method total counter byUsername byName")
+    .lean<any[]>();
+  const cafeAgg = new Map<string, { name: string; counter: string; cash: number; transfer: number }>();
+  for (const t of cafeTickets) {
+    const u = normalizeUsername(t.byUsername || "");
+    if (!u) continue;
+    /** Khoản CHI ở quầy không phải doanh thu — nó thuộc sổ thu chi, không cộng vào đây. */
+    if (t.kind === "expense" && t.direction !== "thu") continue;
+    const cur = cafeAgg.get(u) ?? { name: t.byName || u, counter: t.counter || "", cash: 0, transfer: 0 };
+    if (t.method === "cash") cur.cash += t.total || 0;
+    else if (t.method === "transfer") cur.transfer += t.total || 0;
+    cafeAgg.set(u, cur);
+  }
+  for (const [username, a] of cafeAgg) {
+    const counterName = CAFE_COUNTERS.find((c) => c.id === a.counter)?.name ?? "quầy cafe";
+    if (a.transfer > 0) {
       transferItems.push({
         label: `Bán hàng ${counterName}`,
         bookingCode: "",
         guests: 0,
-        amount: d.transferReceived || 0,
+        amount: a.transfer,
         transferCode: "",
-        from: "báo cáo quầy cafe",
+        from: "máy bán quầy cafe",
         daySeq: 0,
+        byUsername: username,
       });
     }
-    if (d.cashReceived > 0) {
-      const p = personOf(d.username, d.staffName, "cafe");
+    if (a.cash > 0) {
+      const p = personOf(username, a.name, "cafe");
       const item: MoneyBoardItem = {
         label: `Bán hàng ${counterName}`,
         bookingCode: "",
         guests: 0,
-        amount: d.cashReceived || 0,
+        amount: a.cash,
         transferCode: "",
-        from: "báo cáo quầy cafe",
+        from: "máy bán quầy cafe",
         by: p.name,
         daySeq: 0,
+        byUsername: username,
       };
       p.items.push(item);
       p.total += item.amount;
@@ -3457,20 +3677,20 @@ export async function getCashOnHand(
   if (session.role === "pilot") {
     const docs = await PilotDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
-      collected += thuCashTotal(d.expenses);
+      collected += thuCashTotal(d.expenses) + merchTotal(d.merchSales, "cash");
       spent += pilotExpenseTotal(d);
     }
   } else if (isDispatcherLike(session.role)) {
     const docs = await DispatcherDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
       // Chỉ TIỀN MẶT: khoản chuyển khoản vào thẳng tài khoản công ty, điều phối không cầm
-      collected += (d.cashReceived || 0) + thuCashTotal(d.expenses);
+      collected += (d.cashReceived || 0) + thuCashTotal(d.expenses) + merchTotal(d.merchSales, "cash");
       spent += dispatcherExpenseTotal(d);
     }
   } else if (session.role === "cameraman") {
     const docs = await CameramanDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
-      collected += thuCashTotal(d.expenses);
+      collected += thuCashTotal(d.expenses) + merchTotal(d.merchSales, "cash");
       spent += expenseTotal(d.expenses);
     }
   }
@@ -3487,9 +3707,34 @@ export async function getCashOnHand(
    * tài khoản công ty, cộng vào đây là bắt người trực nộp thứ họ chưa từng cầm.
    */
   if (wearsRole(session, "cafe")) {
+    /**
+     * QUẦY CAFE — LUẬT TIỀN (luật chủ 06/09):
+     *   bán hàng hoặc thu/chi bằng TIỀN MẶT → cộng trừ vào số NGƯỜI BẤM đang giữ;
+     *   CHUYỂN KHOẢN → khách quét mã, tiền vào thẳng TK công ty, không ai cầm.
+     *
+     * Đếm thẳng từ PHIẾU MÁY BÁN theo `byUsername`, KHÔNG lấy ô "tiền mặt"
+     * trong báo cáo ngày: ô đó là lời khai cuối ca dùng để đối chiếu, cộng cả
+     * hai là đếm đôi đúng một túi tiền. Bán xong là số đang giữ nhích lên
+     * ngay, không đợi ai chốt ca.
+     */
+    const dateWhere = from && to ? { date: { $gte: from, $lte: to } } : {};
+    const tickets = await CafeSale.find({ byUsername: session.username, ...dateWhere })
+      .select("kind direction method total")
+      .lean<any[]>();
+    for (const t of tickets) {
+      if (t.method !== "cash") continue;
+      if (t.kind === "expense") {
+        if (t.direction === "thu") collected += t.total || 0;
+        else spent += t.total || 0;
+      } else {
+        collected += t.total || 0;
+      }
+    }
+
+    /** Sổ thu chi GÕ TAY trong báo cáo ngày — khoản không đi qua máy bán. */
     const docs = await CafeDailyReport.find(where).lean<any[]>();
     for (const d of docs) {
-      collected += (d.cashReceived || 0) + thuCashTotal(d.expenses);
+      collected += thuCashTotal(d.expenses);
       spent += expenseTotal(d.expenses);
     }
   }
@@ -8640,6 +8885,7 @@ issuedRanges: Array<{ from: string; to: string }>;
     services: Array<{ key: string; label: string; booked: number; reported: number; source: string }>;
   };
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
+  merchSales?: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>;
   cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
   rescheduledGuestEntries: Array<{
     name: string;

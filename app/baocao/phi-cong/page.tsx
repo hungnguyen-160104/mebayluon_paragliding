@@ -25,6 +25,7 @@ import {
   type RescheduleGuestRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
+import { MerchCard } from "../components/MerchCard";
 import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
@@ -81,6 +82,10 @@ type FormState = {
   motorbikeRides: number;
   carRides: number;
   expenses: ExpenseRow[];
+  /** Hàng bán thêm: mã hàng → số lượng bán hôm nay. */
+  merch: Record<string, number>;
+  /** Hàng bán thêm: mã hàng → trả tiền mặt hay chuyển khoản. */
+  merchMethod: Record<string, "cash" | "transfer">;
   /** Khách huỷ / dời lịch phi công báo — kênh phụ bên cạnh điều phối. */
   cancelledGuests: CancelGuestRow[];
   rescheduledGuests: RescheduleGuestRow[];
@@ -119,6 +124,8 @@ const EMPTY_FORM: FormState = {
   motorbikeRides: 0,
   carRides: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
+  merch: {},
+  merchMethod: {},
   cancelledGuests: [{ name: "", bookingCode: "", guests: 0, source: "", refund: 0, note: "", codesText: "" }],
   rescheduledGuests: [
     { name: "", guests: 0, toDate: "", note: "", phone: "", pickup: "self", pickupNote: "", expectedTime: "", codesText: "", bookedId: "" },
@@ -238,6 +245,8 @@ export default function PilotReportPage() {
               motorbikeRides: res.report.motorbikeRides ?? 0,
               carRides: res.report.carRides ?? 0,
               expenses: toExpenseRows(res.report.expenses),
+              merch: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.qty])),
+              merchMethod: Object.fromEntries((res.report.merchSales ?? []).map((m) => [m.key, m.method])),
               cancelledGuests: res.report.cancelledGuestEntries.length
                 ? res.report.cancelledGuestEntries.map((e) => ({
                     ...e,
@@ -297,6 +306,13 @@ export default function PilotReportPage() {
           date,
           ...form,
           expenses: form.expenses.filter((e) => e.content.trim() || e.amount),
+          merchSales: Object.entries(form.merch)
+            .filter(([, qty]) => (qty || 0) > 0)
+            .map(([key, qty]) => ({
+              key,
+              qty,
+              method: form.merchMethod[key] === "transfer" ? ("transfer" as const) : ("cash" as const),
+            })),
           cancelledGuestEntries: form.cancelledGuests.filter(
             (e) => e.name.trim() || e.guests || e.bookingCode.trim() || e.codesText.trim(),
           ),
@@ -987,6 +1003,18 @@ export default function PilotReportPage() {
             onChange={(e) => set("note", e.target.value)}
             placeholder="Thời tiết, sự cố, vé khách huỷ giữa buổi…"
             disabled={locked}
+          />
+        </Card>
+
+        <Card title="HÀNG BÁN THÊM" hint="Áo, khăn, cốm… Tự tạo mặt hàng rồi khai số bán trong ngày.">
+          <MerchCard
+            spot={spot}
+            qty={form.merch}
+            method={form.merchMethod}
+            onChange={(next) => set("merch", next)}
+            onMethodChange={(next) => set("merchMethod", next)}
+            disabled={locked}
+            onError={setError}
           />
         </Card>
 

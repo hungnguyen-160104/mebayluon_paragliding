@@ -6,7 +6,7 @@ import { resolveSpot } from "@/lib/baobay/request-spot";
 import { wearsRole } from "@/lib/baobay/roles";
 import { cafeReportSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { BaobayError, getDailyClose } from "@/services/baobay.service";
+import { BaobayError, getDailyClose, listMyMoneyOrdersOfDate } from "@/services/baobay.service";
 import {
   getCafeDay,
   getCafeReport,
@@ -60,10 +60,12 @@ export async function GET(req: Request) {
      * Kèm luôn số MÁY BÁN của ngày để trang tự điền hai ô tiền — bắt người trực
      * mở tab khác đọc số rồi gõ lại là chỗ sinh sai số.
      */
-    const [report, day, close] = await Promise.all([
+    const [report, day, close, handovers] = await Promise.all([
       getCafeReport(auth.id, spot, date),
       getCafeDay(auth, date),
       getDailyClose(spot, date),
+      /** Lệnh nộp tiền / ứng tiền của CHÍNH NGƯỜI NÀY trong ngày. */
+      listMyMoneyOrdersOfDate(auth, spot, date),
     ]);
 
     return NextResponse.json({
@@ -72,6 +74,7 @@ export async function GET(req: Request) {
       sales: day.counters,
       /** Cả bảng ngày: tổng theo người bán + mọi đơn của ngày để dựng bảng tổng hợp. */
       day,
+      handovers,
       locked: close?.status === "closed",
       closedBy: close?.closedBy ?? "",
     });

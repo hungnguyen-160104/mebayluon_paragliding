@@ -65,6 +65,30 @@ export type CafeReportDTO = {
   updatedAt: string;
 };
 
+/** Một mặt hàng bán thêm trong danh mục quầy (áo, khăn, cốm…). */
+export type MerchItemDTO = {
+  key: string;
+  name: string;
+  price: number;
+  unit: string;
+  active: boolean;
+};
+
+/**
+ * Một dòng HÀNG BÁN THÊM trong báo cáo ngày: bán mấy cái, giá lúc bán bao nhiêu.
+ *
+ * `price` chép lại từ danh mục TẠI THỜI ĐIỂM KHAI, không tra ngược: sửa giá
+ * trong danh mục về sau không được làm sai doanh thu đã chốt của ngày cũ.
+ */
+export type MerchSaleDTO = {
+  key: string;
+  name: string;
+  price: number;
+  qty: number;
+  method: "cash" | "transfer";
+  amount: number;
+};
+
 /** Vé huỷ theo nhóm: nhiều mã cùng đoàn – lý do – tên liên hệ. */
 export type CancelEntryDTO = {
   codes: string[];
@@ -183,6 +207,8 @@ export type PilotReportDTO = {
   cancelledGuestEntries: CancelGuestDTO[];
   rescheduledGuestEntries: RescheduleGuestDTO[];
   expenses: ExpenseDTO[];
+  /** Hàng bán thêm tại bãi (áo, khăn, cốm…). */
+  merchSales: MerchSaleDTO[];
   note: string;
   submitted: boolean;
   submittedAt?: string;
@@ -245,6 +271,8 @@ export type DispatcherReportDTO = {
   mountainCarCost: number;
   shuttleCarCost: number;
   expenses: ExpenseDTO[];
+  /** Hàng bán thêm tại quầy: áo, khăn, cốm… */
+  merchSales: MerchSaleDTO[];
   note: string;
   /** Đã chốt ca hay còn nháp — xem models/DispatcherDailyReport.model.ts. */
   submitted: boolean;
@@ -265,6 +293,8 @@ export type CameramanReportDTO = {
   paraglidingFlights: number;
   paraglidingCodes: string[];
   expenses: ExpenseDTO[];
+  /** Hàng bán thêm tại bãi (áo, khăn, cốm…). */
+  merchSales: MerchSaleDTO[];
   note: string;
   submitted: boolean;
   submittedAt?: string;

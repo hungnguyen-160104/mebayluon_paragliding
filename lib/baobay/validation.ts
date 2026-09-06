@@ -161,6 +161,16 @@ const diploEntryInput = z.object({
 
 const expenseList = z.array(expenseInput).max(50, "Tối đa 50 khoản chi một ngày").default([]);
 
+/** Một dòng hàng bán thêm: mã hàng – số lượng – tiền mặt hay CK. */
+const merchSaleInput = z.object({
+  key: text(60),
+  qty: count(5_000),
+  method: z.enum(["cash", "transfer"]).optional().default("cash"),
+});
+
+const merchSaleList = z.array(merchSaleInput).max(50, "Tối đa 50 mặt hàng một ngày").default([]);
+
+
 /* ------------------------------------------------------------------ */
 
 /** PHI CÔNG: số chuyến, mã vé, Camera360, khách ngoại giao, chi tiêu. */
@@ -212,6 +222,7 @@ export const pilotReportSchema = z.object({
   cancelledGuestEntries: cancelledGuestList,
   rescheduledGuestEntries: rescheduledGuestList,
   expenses: expenseList,
+  merchSales: merchSaleList,
   note: text(2_000),
   /**
    * true = phi công bấm "Chốt báo cáo" (khẳng định số đã xong, soát được).
@@ -256,6 +267,8 @@ export const dispatcherReportSchema = z.object({
   mountainCarCost: money,
   shuttleCarCost: money,
   expenses: expenseList,
+  /** Hàng bán thêm tại quầy: áo, khăn, cốm… (xem models/BaobayMerchItem.model.ts). */
+  merchSales: merchSaleList,
   note: text(2_000),
   /** false = lưu nháp (còn nhập tiếp), true = chốt ca. */
   submit: z.boolean().optional().default(false),
@@ -270,6 +283,7 @@ export const cameramanReportSchema = z.object({
   paraglidingFlights: count(1_000),
   paraglidingCodesText: text(20_000),
   expenses: expenseList,
+  merchSales: merchSaleList,
   note: text(2_000),
   submit: z.boolean().optional().default(false),
 });

@@ -2,8 +2,8 @@
 import mongoose, { Schema } from "mongoose";
 
 import { DEFAULT_SPOT } from "@/lib/baobay/roles";
-import type { ExpenseDTO } from "@/lib/baobay/types";
-import { ExpenseSchema } from "@/models/DispatcherDailyReport.model";
+import type { ExpenseDTO, MerchSaleDTO } from "@/lib/baobay/types";
+import { ExpenseSchema, MerchSaleSchema } from "@/models/DispatcherDailyReport.model";
 
 /**
  * Báo cáo cuối ngày của MỘT camera man.
@@ -33,6 +33,8 @@ export interface ICameramanDailyReport {
   paraglidingCodes: string[];
 
   expenses: ExpenseDTO[];
+  /** Hàng bán thêm tại bãi (áo, khăn, cốm…) — xem models/BaobayMerchItem.model.ts. */
+  merchSales: MerchSaleDTO[];
   note?: string;
 
   submitted: boolean;
@@ -60,6 +62,7 @@ const CameramanDailyReportSchema = new Schema<ICameramanDailyReport>(
     paraglidingCodes: { type: [String], default: [] },
 
     expenses: { type: [ExpenseSchema], default: [] },
+    merchSales: { type: [MerchSaleSchema], default: [] },
     note: String,
 
     submitted: { type: Boolean, default: false },
