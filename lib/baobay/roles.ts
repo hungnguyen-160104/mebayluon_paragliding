@@ -84,7 +84,7 @@ export function roleTabs(role: string): Array<{ href: string; label: string }> {
       return [{ href: "/baocao/thue", label: "Kế toán thuế" }];
     case "cafe":
       return [
-        { href: "/baocao/cafe", label: "CAFE" },
+        { href: "/cafe", label: "CAFE" },
         { href: "/baocao/cafe/bao-cao", label: "Báo cáo quầy" },
       ];
     case "homestay":
@@ -125,7 +125,7 @@ export const ROLE_HOME: Record<BaobayRole, string> = {
   cameraman: "/baocao/camera",
   accountant: "/baocao/ke-toan",
   tax: "/baocao/thue",
-  cafe: "/baocao/cafe",
+  cafe: "/cafe",
   homestay: "/baocao/homestay",
   /** ADMIN quản lý nhân sự ngay trong khu báo bay — đăng nhập cùng cổng /baocao. */
   admin: "/baocao/admin",

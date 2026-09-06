@@ -88,6 +88,28 @@ export function middleware(request: NextRequest) {
    * (middlewares/requireBaobay.ts) — cookie giả vào được trang nhưng không đọc
    * hay ghi được một dòng dữ liệu nào.
    */
+  /**
+   * MÁY BÁN QUẦY CAFE (/cafe): cùng khu nội bộ nên vẫn gắn header noindex,
+   * NHƯNG không đá về /baocao khi chưa có phiên — trang tự bày ô đăng nhập.
+   * Máy Sunmi ngoài bãi là thiết bị một-việc, người trực chỉ biết địa chỉ này.
+   * Dữ liệu vẫn an toàn: mọi API đều tự kiểm phiên (middlewares/requireBaobay).
+   */
+  if (pathname === "/cafe" || pathname.startsWith("/cafe/")) {
+    return internalHeaders(NextResponse.next());
+  }
+
+  /**
+   * ĐỊA CHỈ CŨ của máy bán → /cafe. Phải chặn ở ĐÂY, trước nhánh /baocao bên
+   * dưới: người trực chưa đăng nhập mà mở biểu tượng cũ thì nhánh kia đá thẳng
+   * về cổng chung /baocao, trang chuyển hướng trong app/ không bao giờ chạy —
+   * và họ đứng giữa ca không biết đường về máy bán.
+   */
+  if (pathname === "/baocao/cafe" || pathname === "/baocao/cafe/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/cafe";
+    return internalHeaders(NextResponse.redirect(url));
+  }
+
   if (pathname === "/baocao" || pathname.startsWith("/baocao/")) {
     const isLoginPage = pathname === "/baocao" || pathname === "/baocao/";
     /**

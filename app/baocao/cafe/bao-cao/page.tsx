@@ -4,7 +4,7 @@
 /**
  * BÁO CÁO NGÀY CỦA NGƯỜI TRỰC QUẦY CAFE — cùng lối với điều phối bay.
  *
- * Cố ý TÁCH KHỎI trang máy bán (/baocao/cafe): trang bán hàng phải chạy được
+ * Cố ý TÁCH KHỎI trang máy bán (/cafe): trang bán hàng phải chạy được
  * lúc mất mạng và nhẹ hết mức, còn trang này gọi máy chủ liên tục (số đang
  * giữ, lệnh nộp tiền, yêu cầu nhập hàng). Nhét chung một trang là kéo cả phần
  * offline xuống theo.

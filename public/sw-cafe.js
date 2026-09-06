@@ -1,6 +1,6 @@
 // public/sw-cafe.js
 /**
- * Service worker cho TRANG BÁN HÀNG QUẦY CAFE (/baocao/cafe).
+ * Service worker cho TRANG BÁN HÀNG QUẦY CAFE (/cafe).
  *
  * Mục tiêu duy nhất: MẤT MẠNG VẪN MỞ ĐƯỢC trang bán để bấm bán + in phiếu;
  * phiếu xếp hàng trong máy, có mạng lại thì trang tự đẩy lên. Vì vậy chỉ đụng
@@ -8,17 +8,17 @@
  *
  *  - Tệp tĩnh /_next/static/*: bất biến theo tên (đã băm) → cache trước, hỏi
  *    mạng sau. Đây là phần làm trang "sống" được offline.
- *  - Trang /baocao/cafe: mạng trước (để nhận bản mới khi deploy), mất mạng thì
+ *  - Trang /cafe: mạng trước (để nhận bản mới khi deploy), mất mạng thì
  *    trả bản đã cất.
  *
  * KHÔNG cache API (/api/*): số liệu cũ mà tưởng là mới còn tệ hơn báo lỗi.
  */
 /** Đổi số này là bản cài cũ bị xoá sạch ở lần kích hoạt sau (xem activate). */
-const CACHE = "cafe-pos-v2";
+const CACHE = "cafe-pos-v3";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.add("/baocao/cafe").catch(() => {})));
+  e.waitUntil(caches.open(CACHE).then((c) => c.add("/cafe").catch(() => {})));
 });
 
 self.addEventListener("activate", (e) => {
@@ -47,14 +47,14 @@ self.addEventListener("fetch", (e) => {
   }
 
   // Trang bán hàng: mạng trước, offline thì bản đã cất
-  if (url.pathname === "/baocao/cafe") {
+  if (url.pathname === "/cafe") {
     e.respondWith(
       fetch(e.request)
         .then((res) => {
-          if (res.ok) caches.open(CACHE).then((c) => c.put("/baocao/cafe", res.clone()));
+          if (res.ok) caches.open(CACHE).then((c) => c.put("/cafe", res.clone()));
           return res;
         })
-        .catch(() => caches.match("/baocao/cafe").then((hit) => hit || Response.error())),
+        .catch(() => caches.match("/cafe").then((hit) => hit || Response.error())),
     );
   }
 });
