@@ -67,8 +67,11 @@ export type CafeGroupId = (typeof CAFE_GROUPS)[number]["id"];
  * ảnh chụp màn hình "Tất cả mặt hàng"). Giá ở đây PHẢI khớp máy bán ngoài
  * bãi: hai nơi lệch giá là phiếu in ra một đằng, tiền thu một nẻo.
  *
- * Giữ mỗi món một `id` ổn định (đừng đổi id khi đổi giá) vì phiếu đã bán lưu
- * theo tên + giá tại thời điểm bán, còn thống kê theo món thì bám id.
+ * Giữ mỗi món một `id` ổn định (đừng đổi id khi đổi giá HAY ĐỔI TÊN) vì phiếu
+ * đã bán lưu theo tên + giá tại thời điểm bán, còn thống kê theo món, số liệu
+ * kho và định mức đều bám id. Đổi tên thoải mái, đổi id là cắt đứt tất cả.
+ * Đã đổi tên: 06/09 Bia Hà Nội → Bia Sài Gòn (lon), Nước lọc → Nước khoáng
+ * Lavie; mã vẫn là "bia-ha-noi" và "nuoc-loc".
  */
 export const CAFE_MENU: CafeMenuItem[] = [
   { id: "free-water", name: "Phiếu nước khách bay", price: 0, freeTicket: true },
@@ -92,9 +95,9 @@ export const CAFE_MENU: CafeMenuItem[] = [
   { id: "tra-dau-biec", name: "Trà đậu biếc", en: "Pealuna", price: 55_000, group: "tra" },
 
   /* --- Đồ uống khác --- */
-  { id: "nuoc-loc", name: "Nước lọc", en: "Mineral water", price: 10_000, group: "do-uong", uses: [{ key: "nuoc-loc", qty: 1 }] },
+  { id: "nuoc-loc", name: "Nước khoáng Lavie", en: "Lavie mineral water", price: 10_000, group: "do-uong", uses: [{ key: "nuoc-loc", qty: 1 }] },
   { id: "cocacola", name: "Cocacola", price: 20_000, group: "do-uong", uses: [{ key: "cocacola", qty: 1 }] },
-  { id: "bia-ha-noi", name: "Bia Hà Nội", en: "Beer Hanoi", price: 25_000, group: "do-uong", uses: [{ key: "bia-ha-noi", qty: 1 }] },
+  { id: "bia-ha-noi", name: "Bia Sài Gòn (lon)", en: "Beer Saigon (can)", price: 25_000, group: "do-uong", uses: [{ key: "bia-ha-noi", qty: 1 }] },
   { id: "bo-huc", name: "Bò húc", en: "Red Bull", price: 25_000, group: "do-uong", uses: [{ key: "bo-huc", qty: 1 }] },
   { id: "nuoc-chanh-tuoi", name: "Nước chanh tươi", en: "Fresh lemonade", price: 30_000, group: "do-uong" },
   { id: "dua-tuoi", name: "Dừa tươi", en: "Fresh coconut", price: 30_000, group: "do-uong" },
@@ -188,10 +191,10 @@ export type CafeStockItem = {
 
 export const CAFE_STOCK_ITEMS: CafeStockItem[] = [
   /* --- Hàng đóng gói: đếm từng cái --- */
-  { key: "bia-ha-noi", name: "Bia Hà Nội", kind: "packaged", unit: "lon", packName: "thùng", packSize: 24 },
+  { key: "bia-ha-noi", name: "Bia Sài Gòn", kind: "packaged", unit: "lon", packName: "thùng", packSize: 24 },
   { key: "bo-huc", name: "Bò húc", kind: "packaged", unit: "lon", packName: "thùng", packSize: 24 },
   { key: "cocacola", name: "Cocacola", kind: "packaged", unit: "lon", packName: "thùng", packSize: 24 },
-  { key: "nuoc-loc", name: "Nước lọc", kind: "packaged", unit: "chai", packName: "thùng", packSize: 24 },
+  { key: "nuoc-loc", name: "Nước khoáng Lavie", kind: "packaged", unit: "chai", packName: "thùng", packSize: 24 },
   { key: "bong-ngo", name: "Bỏng ngô", kind: "packaged", unit: "gói", packName: "thùng", packSize: 20 },
   { key: "huong-duong", name: "Hướng dương", kind: "packaged", unit: "gói", packName: "thùng", packSize: 20 },
   { key: "kho-ga-heo", name: "Khô gà/heo", kind: "packaged", unit: "gói", packName: "thùng", packSize: 20 },
