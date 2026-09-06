@@ -114,9 +114,33 @@ export default function CafePosPage() {
     };
   }, [router]);
 
-  // Cất trang vào máy để mất mạng vẫn mở được
+  /**
+   * Cất trang vào máy để mất mạng vẫn mở được — NHƯNG CHỈ Ở BẢN CHẠY THẬT.
+   *
+   * Tệp sw-cafe.js nằm ở gốc nên phạm vi của nó là CẢ SITE, và nó bắt mọi yêu
+   * cầu /_next/static/* theo lối "có bản cũ thì trả bản cũ". Ở bản chạy thật
+   * điều đó đúng: tên tệp đã băm theo nội dung, đổi mã là đổi tên. Ở BẢN DEV
+   * thì tên tệp giữ nguyên trong khi nội dung đổi liên tục — máy đã mở trang
+   * này một lần là từ đó ăn mã cũ cho toàn bộ khu /baocao, sửa gì cũng không
+   * thấy (chuyện thật 06/09: chủ xuất ảnh phiếu trên điện thoại mãi không ra
+   * dòng giảm combo dù mã đã sửa).
+   *
+   * Nên ở bản dev: GỠ service worker đã cài và xoá sạch phần đã cất.
+   */
   useEffect(() => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw-cafe.js").catch(() => {});
+    if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV === "production") {
+      navigator.serviceWorker.register("/sw-cafe.js").catch(() => {});
+      return;
+    }
+    void navigator.serviceWorker
+      .getRegistrations()
+      .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+      .then(() => (typeof caches !== "undefined" ? caches.keys() : []))
+      .then((keys) => Promise.all([...keys].filter((k) => k.startsWith("cafe-pos")).map((k) => caches.delete(k))))
+      .catch(() => {
+        /* trình duyệt chặn — không sao, chỉ là bản dev có thể còn ăn mã cũ */
+      });
   }, []);
 
   useEffect(() => {

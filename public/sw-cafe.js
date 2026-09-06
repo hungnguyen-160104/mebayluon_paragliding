@@ -13,7 +13,8 @@
  *
  * KHÔNG cache API (/api/*): số liệu cũ mà tưởng là mới còn tệ hơn báo lỗi.
  */
-const CACHE = "cafe-pos-v1";
+/** Đổi số này là bản cài cũ bị xoá sạch ở lần kích hoạt sau (xem activate). */
+const CACHE = "cafe-pos-v2";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

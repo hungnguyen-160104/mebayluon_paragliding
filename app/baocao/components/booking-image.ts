@@ -269,9 +269,16 @@ function buildBlocks(d: BookingImageData): Block[] {
   if (d.mountainCarMoney) tien.push({ label: `Xe lên núi × ${d.mountainCar}`, value: money(d.mountainCarMoney) });
   if (d.pickupFee) tien.push({ label: "Phí đưa đón", value: money(d.pickupFee) });
   if (d.comboDiscount) {
+    /**
+     * IN CẢ PHÉP TÍNH, không chỉ số tiền — cùng lối với dòng "Giá bay
+     * (2.190.000 × 2)" ngay trên. Khách hỏi "giảm từ đâu ra" là chỉ vào phiếu
+     * đọc được luôn: 100.000 một cặp flycam kèm cam360, có mấy cặp thì mấy lần.
+     * Cặp lẻ (3 flycam + 1 cam360) chỉ tính 1 cặp — ghi rõ số cặp để khỏi cãi.
+     */
     const pairs = Math.min(d.flycam || 0, d.video360 || 0);
+    const each = pairs > 0 ? Math.round(d.comboDiscount / pairs) : d.comboDiscount;
     tien.push({
-      label: pairs > 1 ? `Giảm combo flycam + 360 (${pairs} cặp)` : "Giảm combo flycam + 360",
+      label: pairs > 0 ? `Giảm combo flycam + 360 (${money(each)} × ${pairs} cặp)` : "Giảm combo flycam + 360",
       value: `− ${money(d.comboDiscount)}`,
       tone: "minus",
     });
