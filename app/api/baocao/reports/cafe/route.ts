@@ -70,6 +70,8 @@ export async function GET(req: Request) {
       spot,
       report,
       sales: day.counters,
+      /** Cả bảng ngày: tổng theo người bán + mọi đơn của ngày để dựng bảng tổng hợp. */
+      day,
       locked: close?.status === "closed",
       closedBy: close?.closedBy ?? "",
     });

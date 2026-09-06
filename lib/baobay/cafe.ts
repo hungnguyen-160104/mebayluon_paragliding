@@ -118,9 +118,26 @@ export const CAFE_MENU: CafeMenuItem[] = [
  * khách ngoại giao — phiếu nước là quà kèm vé bay, còn đây là hàng bán.
  */
 export const CAFE_DISCOUNTS = [
-  { id: "none", name: "Khách thường", short: "", rate: 0 },
-  { id: "staff", name: "Phi công / người nhà", short: "PC −20%", rate: 0.2 },
-  { id: "diplomatic", name: "Khách ngoại giao", short: "NG −100%", rate: 1 },
+  { id: "none", name: "Khách thường", short: "", rate: 0, countsTicket: false },
+  { id: "staff", name: "Phi công / người nhà", short: "PC −20%", rate: 0.2, countsTicket: false },
+  {
+    /**
+     * KHÁCH BAY DÙ: nước miễn phí theo ĐẦU VÉ đã xuất — mỗi khách bay một
+     * phiếu. Khác hai mức trên ở chỗ nó ĐẾM PHIẾU: mỗi phần nước trong đơn là
+     * một phiếu trừ vào số vé đã xuất trong ngày, và cộng vào số phiếu người
+     * bán đang giữ.
+     *
+     * Dùng tích này thay cho nút "phiếu nước khách bay" khi khách lấy đồ uống
+     * có thật (trà đá, nước lọc): món ghi đúng tên nên VẪN TRỪ KHO, còn nút
+     * kia chỉ in một tờ phiếu trắng không nói được khách uống gì.
+     */
+    id: "khach-bay",
+    name: "Khách bay dù",
+    short: "BAY −100%",
+    rate: 1,
+    countsTicket: true,
+  },
+  { id: "diplomatic", name: "Khách ngoại giao", short: "NG −100%", rate: 1, countsTicket: false },
 ] as const;
 
 export type CafeDiscountId = (typeof CAFE_DISCOUNTS)[number]["id"];
@@ -128,6 +145,11 @@ export type CafeDiscountId = (typeof CAFE_DISCOUNTS)[number]["id"];
 /** Tỉ lệ giảm của một mức — mã lạ thì coi như không giảm. */
 export function cafeDiscountRate(id: string | undefined): number {
   return CAFE_DISCOUNTS.find((d) => d.id === id)?.rate ?? 0;
+}
+
+/** Mức này có đếm vào "số phiếu nước khách bay" không. */
+export function cafeDiscountCountsTicket(id: string | undefined): boolean {
+  return CAFE_DISCOUNTS.find((d) => d.id === id)?.countsTicket ?? false;
 }
 
 /** Một dòng định mức: bán một phần món thì rút `qty` đơn vị của hàng `key`. */

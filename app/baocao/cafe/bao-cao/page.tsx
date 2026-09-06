@@ -80,6 +80,38 @@ function toStockRows(list: CafeStockRequestDTO[]): StockRow[] {
 /** Một dòng nhập hàng còn chờ, kèm chỗ tìm lại nó (báo cáo nào, ngày nào). */
 type PendingStock = CafeStockRequestDTO & { reportId: string; date: string; counter: string; staffName: string };
 
+/** Một đơn đã bán trong ngày, kèm mức giảm và số phiếu nước. */
+type DayOrder = {
+  clientId: string;
+  counterName: string;
+  kind: string;
+  items: Array<{ name: string; qty: number; price: number }>;
+  subtotal: number;
+  discountLabel: string;
+  discountAmount: number;
+  freeTickets: number;
+  total: number;
+  method: string;
+  soldAt: string;
+  byName: string;
+  label: string;
+};
+
+type CafeDay = {
+  date: string;
+  totals: { cashTotal: number; transferTotal: number; expenseTotal: number; freeTickets: number; saleCount: number; discountTotal: number };
+  byStaff: Array<{
+    username: string;
+    name: string;
+    cashTotal: number;
+    transferTotal: number;
+    discountTotal: number;
+    freeTickets: number;
+    saleCount: number;
+  }>;
+  recent: DayOrder[];
+};
+
 /** Số máy bán của một quầy trong ngày — nguồn để tự điền hai ô tiền. */
 type DaySale = { counter: string; counterName: string; cashTotal: number; transferTotal: number; saleCount: number };
 
@@ -90,6 +122,8 @@ export default function CafeReportPage() {
    * Bày ra ô chọn rồi ai đó bấm sang Sa Pa là báo cáo rơi vào điểm không có quầy.
    */
   const spot = CAFE_SPOT;
+  /** Định mức nguyên liệu và danh mục kho: chỉ quản trị sửa (luật chủ 06/09). */
+  const isAdmin = Boolean(user && [user.role, ...(user.extraRoles ?? [])].includes("admin"));
 
   const today = todayInVN();
   const [date, setDate] = useState(today);
@@ -97,6 +131,8 @@ export default function CafeReportPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<CafeReportDTO | null>(null);
   const [sales, setSales] = useState<DaySale[]>([]);
+  /** Bảng ngày đầy đủ — dựng khối "đơn bán hàng trong ngày" và phiếu nước từng người. */
+  const [day, setDay] = useState<CafeDay | null>(null);
   const [locked, setLocked] = useState(false);
   const [closedBy, setClosedBy] = useState("");
   const [loadingDay, setLoadingDay] = useState(false);
@@ -120,11 +156,13 @@ export default function CafeReportPage() {
         const res = await apiGet<{
           report: CafeReportDTO | null;
           sales: DaySale[];
+          day: CafeDay;
           locked: boolean;
           closedBy?: string;
         }>(`/api/baocao/reports/cafe?date=${targetDate}&spot=${spot}`);
         setExisting(res.report);
         setSales(res.sales || []);
+        setDay(res.day ?? null);
         setLocked(res.locked);
         setClosedBy(res.closedBy || "");
         setForm(
@@ -496,10 +534,23 @@ export default function CafeReportPage() {
         </div>
       )}
 
+      {/* TỔNG HỢP ĐƠN BÁN TRONG NGÀY — mọi đơn, ai bán, phiếu nước ai đang giữ */}
+      {day && <OrdersCard day={day} />}
+
       {/* KIỂM KÊ KHO — nhập bao nhiêu, dùng hết bao nhiêu, còn bao nhiêu */}
+      {/* Định mức là quyền QUẢN TRỊ — người trực quầy chỉ xem được kết quả kiểm kê */}
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
         <StockCard onError={setError} />
-        <RecipeCard onError={setError} />
+        {isAdmin ? (
+          <RecipeCard onError={setError} />
+        ) : (
+          <Card title="ĐỊNH MỨC NGUYÊN LIỆU">
+            <p className="text-sm text-slate-500">
+              Một phần món rút bao nhiêu khỏi kho là do quản trị đặt. Thấy số kiểm kê sai thì báo quản trị sửa định
+              mức, đừng tự bù trừ vào bảng.
+            </p>
+          </Card>
+        )}
       </div>
 
       {/* Nộp tiền cho quản lý + xin ứng tiền — khung dùng chung với phi công, điều phối */}
@@ -1059,5 +1110,144 @@ function RecipeCard({ onError }: { onError: (m: string) => void }) {
         )}
       </div>
     </Card>
+  );
+}
+
+/* ================================================================== */
+/* TỔNG HỢP ĐƠN BÁN HÀNG TRONG NGÀY                                    */
+/* ================================================================== */
+
+/**
+ * Mọi đơn của ngày, kèm hai bảng tổng.
+ *
+ * Cột PHIẾU NƯỚC gom theo NGƯỜI BÁN chứ không chỉ theo quầy: khách bay được
+ * nước theo đầu vé, người trực thu phiếu về tay mình, cuối ca phải đối chiếu
+ * số phiếu đang giữ với số vé đã xuất. Gom theo quầy thì hai người cùng trực
+ * một quầy không tách được ai giữ bao nhiêu.
+ */
+function OrdersCard({ day }: { day: CafeDay }) {
+  const [open, setOpen] = useState(false);
+  const sales = day.recent.filter((r) => r.kind === "sale");
+  const expenses = day.recent.filter((r) => r.kind === "expense");
+  const hhmm = (iso: string) =>
+    iso ? new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
+
+  return (
+    <div className="mt-3">
+      <Card
+        title={`ĐƠN BÁN HÀNG TRONG NGÀY — ${sales.length} đơn`}
+        hint="Số của máy bán, không sửa được ở đây. Lệch với tiền đếm tay thì gõ số thật vào ô tiền phía trên."
+      >
+        <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2">
+            <div className="text-[11px] font-medium text-emerald-800">Tiền mặt</div>
+            <div className="text-base font-bold tabular-nums text-emerald-700">{formatVND(day.totals.cashTotal)}</div>
+          </div>
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2">
+            <div className="text-[11px] font-medium text-indigo-800">Chuyển khoản</div>
+            <div className="text-base font-bold tabular-nums text-indigo-700">{formatVND(day.totals.transferTotal)}</div>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
+            <div className="text-[11px] font-medium text-amber-800">Đã giảm giá</div>
+            <div className="text-base font-bold tabular-nums text-amber-700">{formatVND(day.totals.discountTotal)}</div>
+          </div>
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-2">
+            <div className="text-[11px] font-medium text-sky-800">🎫 Phiếu nước khách bay</div>
+            <div className="text-base font-bold tabular-nums text-sky-700">{day.totals.freeTickets}</div>
+          </div>
+        </div>
+
+        {day.byStaff.length > 0 && (
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[26rem] text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-[11px] uppercase text-slate-500">
+                  <th className="py-1">Người bán</th>
+                  <th className="py-1 text-right">Đơn</th>
+                  <th className="py-1 text-right">Tiền mặt</th>
+                  <th className="py-1 text-right">CK</th>
+                  <th className="py-1 text-right">🎫 Phiếu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {day.byStaff.map((p) => (
+                  <tr key={p.username} className="border-b border-slate-100">
+                    <td className="py-1.5 font-semibold text-slate-900">{p.name}</td>
+                    <td className="py-1.5 text-right tabular-nums text-slate-600">{p.saleCount}</td>
+                    <td className="py-1.5 text-right tabular-nums text-emerald-700">{formatVND(p.cashTotal)}</td>
+                    <td className="py-1.5 text-right tabular-nums text-indigo-700">{formatVND(p.transferTotal)}</td>
+                    <td className="py-1.5 text-right font-bold tabular-nums text-sky-700">{p.freeTickets}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Phiếu nước cộng vào người bấm bán — đối chiếu với số vé đã xuất trong ngày.
+            </p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-2 w-full rounded-xl border border-slate-300 py-2 text-xs font-bold text-slate-600"
+        >
+          {open ? "Ẩn danh sách đơn" : `Xem từng đơn (${day.recent.length})`}
+        </button>
+
+        {open && (
+          <ul className="mt-2 divide-y divide-slate-100">
+            {day.recent.map((r) => (
+              <li key={r.clientId} className="py-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-slate-400">{hhmm(r.soldAt)}</span>
+                  <span className="flex-1 text-sm font-semibold text-slate-900">
+                    {r.kind === "expense"
+                      ? r.label
+                      : r.items.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")}
+                  </span>
+                  <span
+                    className={
+                      "text-sm font-bold tabular-nums " +
+                      (r.kind === "expense"
+                        ? "text-rose-700"
+                        : r.method === "free"
+                          ? "text-slate-400"
+                          : r.method === "transfer"
+                            ? "text-indigo-700"
+                            : "text-emerald-700")
+                    }
+                  >
+                    {r.kind === "expense" ? `−${formatVND(r.total)}` : r.total > 0 ? formatVND(r.total) : "0"}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                  <span>{r.counterName}</span>
+                  <span>· {r.byName}</span>
+                  {r.kind === "sale" && (
+                    <span>· {r.method === "transfer" ? "CK" : r.method === "free" ? "không thu tiền" : "tiền mặt"}</span>
+                  )}
+                  {r.discountLabel && (
+                    <span className="rounded-full bg-amber-100 px-1.5 font-bold text-amber-800">
+                      {r.discountLabel} · −{formatVND(r.discountAmount)}
+                    </span>
+                  )}
+                  {r.freeTickets > 0 && (
+                    <span className="rounded-full bg-sky-100 px-1.5 font-bold text-sky-800">🎫 {r.freeTickets}</span>
+                  )}
+                </div>
+              </li>
+            ))}
+            {day.recent.length === 0 && <li className="py-3 text-center text-sm text-slate-500">Ngày này chưa có đơn nào.</li>}
+          </ul>
+        )}
+
+        {expenses.length > 0 && (
+          <p className="mt-2 text-[11px] text-slate-500">
+            Trong đó {expenses.length} khoản chi ghi từ máy bán, tổng {formatVND(day.totals.expenseTotal)}.
+          </p>
+        )}
+      </Card>
+    </div>
   );
 }

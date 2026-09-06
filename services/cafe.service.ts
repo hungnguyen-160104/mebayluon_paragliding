@@ -11,6 +11,7 @@ import {
   CAFE_MENU,
   CAFE_SPOT,
   CAFE_STOCK_ITEMS,
+  cafeDiscountCountsTicket,
   cafeDiscountRate,
   formatStockUnits,
   type CafeEntry,
@@ -19,6 +20,7 @@ import {
   type CafeStockKind,
 } from "@/lib/baobay/cafe";
 import { isDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { wearsRole } from "@/lib/baobay/roles";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type { CafeReportDTO, CafeStockRequestDTO } from "@/lib/baobay/types";
 import { connectDB } from "@/lib/mongodb";
@@ -82,8 +84,19 @@ export async function syncCafeEntries(
     const rate = kind === "sale" ? cafeDiscountRate(discountKind) : 0;
     const discountAmount = Math.round(subtotal * rate);
     const total = subtotal - discountAmount;
+    /**
+     * SỐ PHIẾU NƯỚC KHÁCH BAY của phiếu này — hai đường cùng đổ về một cột:
+     *  - nút "phiếu nước khách bay" (món free-water), và
+     *  - đơn tích "Khách bay dù": MỖI PHẦN NƯỚC LÀ MỘT PHIẾU, vì khách bay được
+     *    nước theo đầu vé. Ba khách đi cùng lấy ba ly là ba phiếu.
+     */
     const freeTickets =
-      kind === "sale" ? items.filter((it) => FREE_IDS.has(it.id)).reduce((t, it) => t + it.qty, 0) : 0;
+      kind === "sale"
+        ? items.filter((it) => FREE_IDS.has(it.id)).reduce((t, it) => t + it.qty, 0) +
+          (cafeDiscountCountsTicket(discountKind)
+            ? items.filter((it) => !FREE_IDS.has(it.id)).reduce((t, it) => t + it.qty, 0)
+            : 0)
+        : 0;
     if (kind === "sale" && !items.length) continue;
     if (kind === "expense" && total <= 0) continue;
 
@@ -146,12 +159,32 @@ export type CafeDayDTO = {
     saleCount: number;
     discountTotal: number;
   };
-  /** Các phiếu gần nhất của ngày — soát nhanh, mới nhất trước. */
+  /**
+   * TỔNG THEO NGƯỜI BÁN — chủ hỏi "phiếu nước ai đang giữ", và cuối ca người
+   * trực đối chiếu tiền mình cầm. Số phiếu cộng vào đúng người bấm bán.
+   */
+  byStaff: Array<{
+    username: string;
+    name: string;
+    cashTotal: number;
+    transferTotal: number;
+    discountTotal: number;
+    freeTickets: number;
+    saleCount: number;
+  }>;
+  /** MỌI đơn của ngày, mới nhất trước — bảng tổng hợp đơn bán hàng trong ngày. */
   recent: Array<{
     clientId: string;
     counter: string;
+    counterName: string;
     kind: string;
     label: string;
+    items: Array<{ name: string; qty: number; price: number }>;
+    subtotal: number;
+    discountKind: string;
+    discountLabel: string;
+    discountAmount: number;
+    freeTickets: number;
     total: number;
     method: string;
     soldAt: string;
@@ -206,14 +239,43 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
     { cashTotal: 0, transferTotal: 0, expenseTotal: 0, freeTickets: 0, saleCount: 0, discountTotal: 0 },
   );
 
+  /** Gom theo người bấm bán — phiếu nước và tiền mặt đều là thứ người đó đang giữ. */
+  const staff = new Map<string, CafeDayDTO["byStaff"][number]>();
+  for (const d of docs) {
+    const u = d.byUsername || "?";
+    const cur =
+      staff.get(u) ??
+      { username: u, name: d.byName || u, cashTotal: 0, transferTotal: 0, discountTotal: 0, freeTickets: 0, saleCount: 0 };
+    if (d.kind === "sale") {
+      cur.saleCount += 1;
+      cur.freeTickets += d.freeTickets || 0;
+      cur.discountTotal += d.discountAmount || 0;
+      if (d.method === "cash") cur.cashTotal += d.total || 0;
+      if (d.method === "transfer") cur.transferTotal += d.total || 0;
+    }
+    staff.set(u, cur);
+  }
+
+  const counterName = new Map(CAFE_COUNTERS.map((c) => [c.id as string, c.name as string]));
   return {
     date,
     counters,
     totals,
-    recent: docs.slice(0, 60).map((d) => ({
+    byStaff: [...staff.values()].sort((a, b) => b.freeTickets - a.freeTickets || b.cashTotal - a.cashTotal),
+    recent: docs.slice(0, 300).map((d) => ({
       clientId: d.clientId,
       counter: d.counter,
+      counterName: counterName.get(d.counter) ?? d.counter,
       kind: d.kind,
+      items: (d.items ?? []).map((it: any) => ({ name: it.name, qty: it.qty || 0, price: it.price || 0 })),
+      subtotal: d.subtotal ?? d.total ?? 0,
+      discountKind: d.discountKind || "none",
+      discountLabel:
+        d.discountKind && d.discountKind !== "none"
+          ? (CAFE_DISCOUNTS.find((x) => x.id === d.discountKind)?.short ?? "giảm giá")
+          : "",
+      discountAmount: d.discountAmount || 0,
+      freeTickets: d.freeTickets || 0,
       label:
         d.kind === "expense"
           ? `CHI: ${d.note || "?"}`
@@ -499,6 +561,10 @@ export async function upsertCafeStockItem(
   input: { key?: string; name: string; kind?: string; unit?: string; packName?: string; packSize?: number; active?: boolean },
 ): Promise<CafeStockItem[]> {
   await connectDB();
+  /** Danh mục kho đi liền với định mức — cùng là việc của quản trị. */
+  if (!wearsRole(session, "admin")) {
+    throw new BaobayError("Danh mục kho do quản trị đặt — quầy không sửa được", 403);
+  }
   const name = String(input.name ?? "").trim();
   if (!name) throw new BaobayError("Chưa đặt tên mặt hàng", 400);
   const key = String(input.key ?? "").trim() || slugify(name);
@@ -611,15 +677,34 @@ export async function upsertCafeProduct(
   const key = String(input.key ?? "").trim() || slugify(name);
   if (!key) throw new BaobayError("Tên món phải có chữ hoặc số", 400);
 
-  /** Định mức chỉ nhận mặt hàng CÓ THẬT trong kho — gõ nhầm mã là số kiểm kê rơi vào hư không. */
-  const catalogue = await getCafeStockCatalogue();
-  const uses = (input.uses ?? [])
-    .map((u) => ({ key: String(u?.key ?? "").trim(), qty: Math.max(0, Number(u?.qty) || 0) }))
-    .filter((u) => u.key && u.qty > 0);
-  for (const u of uses) {
-    if (!catalogue.some((c) => c.key === u.key)) {
-      throw new BaobayError(`Mặt hàng kho “${u.key}” không có trong danh mục`, 400);
+  /**
+   * ĐỊNH MỨC LÀ QUYỀN QUẢN TRỊ (luật chủ 06/09). Người trực quầy thêm món và
+   * đổi giá được, nhưng không sửa được "một ly rút bao nhiêu gam" — đó là con
+   * số quyết định giá vốn và kết quả kiểm kê, sửa được tại quầy thì kho nói
+   * gì cũng đúng.
+   *
+   * Người trực lưu món: GIỮ NGUYÊN định mức cũ, không xoá. Trước đây gửi thiếu
+   * `uses` là ghi đè thành rỗng — người trực đổi giá một món xong là định mức
+   * quản trị đã khai bốc hơi.
+   */
+  const isAdmin = wearsRole(session, "admin");
+  const prev = await CafeProduct.findOne({ spot: CAFE_SPOT, key }).select("uses").lean<any>();
+  const baseUses = CAFE_MENU.find((m) => m.id === key)?.uses ?? [];
+  let uses: Array<{ key: string; qty: number }> = prev?.uses ?? baseUses;
+
+  if (isAdmin && input.uses !== undefined) {
+    const catalogue = await getCafeStockCatalogue();
+    uses = input.uses
+      .map((u) => ({ key: String(u?.key ?? "").trim(), qty: Math.max(0, Number(u?.qty) || 0) }))
+      .filter((u) => u.key && u.qty > 0);
+    /** Định mức chỉ nhận mặt hàng CÓ THẬT — gõ nhầm mã là số kiểm kê rơi vào hư không. */
+    for (const u of uses) {
+      if (!catalogue.some((c) => c.key === u.key)) {
+        throw new BaobayError(`Mặt hàng kho “${u.key}” không có trong danh mục`, 400);
+      }
     }
+  } else if (!isAdmin && input.uses !== undefined) {
+    throw new BaobayError("Định mức nguyên liệu do quản trị đặt — quầy không sửa được", 403);
   }
 
   await CafeProduct.updateOne(

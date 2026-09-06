@@ -36,9 +36,11 @@ import {
   type CafeMenuItem,
 } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { buildVietQrPayload, toAsciiNote } from "@/lib/vietqr";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
+import { PAY_ACCOUNT } from "../components/PaymentQr";
 import { Banner, Button, PageLoading } from "../components/ui";
 import { Shell } from "../components/Shell";
 
@@ -149,6 +151,8 @@ export default function CafePosPage() {
   /** Mức giảm cho phiếu đang tính: khách thường · phi công/người nhà · ngoại giao. */
   const [discount, setDiscount] = useState<CafeDiscountId>("none");
   const [showAddItem, setShowAddItem] = useState(false);
+  /** Màn xoay cho khách xem: chi tiết đơn + mã QR chuyển khoản. */
+  const [showCustomer, setShowCustomer] = useState(false);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
   const [day, setDay] = useState<DayDTO | null>(null);
@@ -440,19 +444,24 @@ export default function CafePosPage() {
         return (
           <div key={g.id} className="mt-3">
             <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">{g.name}</h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {/* ĐIỆN THOẠI 3 NÚT MỘT HÀNG (luật chủ 06/09): nút gọn lại, tên
+                tiếng Anh giấu đi trên màn nhỏ — quầy bấm theo tên Việt, chữ Anh
+                chỉ tổ đẩy nút cao lên và phải cuộn nhiều hơn. */}
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5">
               {items.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => addItem(m.id)}
-                  className="rounded-2xl border border-slate-300 bg-white p-3 text-left shadow-sm active:bg-sky-50"
+                  className="relative rounded-xl border border-slate-300 bg-white p-1.5 text-left shadow-sm active:bg-sky-50"
                 >
-                  <span className="block text-sm font-bold leading-tight text-slate-800">{m.name}</span>
-                  {m.en && <span className="block text-[11px] leading-tight text-slate-400">{m.en}</span>}
-                  <span className="mt-0.5 block text-sm font-semibold text-sky-700">{vnd(m.price)} đ</span>
+                  <span className="block text-[13px] font-bold leading-tight text-slate-800">{m.name}</span>
+                  {m.en && <span className="hidden text-[10px] leading-tight text-slate-400 sm:block">{m.en}</span>}
+                  <span className="mt-0.5 block text-xs font-semibold text-sky-700">{vnd(m.price)}</span>
                   {(cart.get(m.id) ?? 0) > 0 && (
-                    <span className="mt-1 inline-block rounded-full bg-sky-600 px-2 text-xs font-bold text-white">×{cart.get(m.id)}</span>
+                    <span className="absolute right-1 top-1 rounded-full bg-sky-600 px-1.5 text-[11px] font-bold text-white">
+                      {cart.get(m.id)}
+                    </span>
                   )}
                 </button>
               ))}
@@ -538,6 +547,16 @@ export default function CafePosPage() {
               </span>
             )}
           </div>
+          {/* Xoay máy cho khách đọc đơn rồi quét mã — bấm được cả khi trả tiền mặt */}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowCustomer(true)}
+            className="mt-2 h-11 w-full border-slate-400 bg-white text-sm font-bold"
+          >
+            👀 CHO KHÁCH XEM{method === "transfer" && cartTotal > 0 ? " & QUÉT MÃ QR" : ""}
+          </Button>
+
           <div className="mt-2 flex gap-2">
             <Button type="button" onClick={sell} className="h-12 flex-[2] bg-sky-600 text-base font-black hover:bg-sky-700">
               🖨 BÁN & IN PHIẾU
@@ -612,6 +631,18 @@ export default function CafePosPage() {
             📋 Báo cáo cuối ca — chốt tiền · thu chi · nộp tiền · yêu cầu nhập hàng
           </a>
         </div>
+      )}
+      {showCustomer && cartLines.length > 0 && (
+        <CustomerView
+          lines={cartLines.map((l) => ({ id: l.id, name: l.name, price: l.price, qty: l.qty }))}
+          subtotal={cartSubtotal}
+          discountAmount={discountAmount}
+          total={cartTotal}
+          discountLabel={CAFE_DISCOUNTS.find((d) => d.id === discount && d.rate > 0)?.name}
+          method={cartTotal > 0 ? method : "cash"}
+          counterName={CAFE_COUNTERS.find((c) => c.id === counter)?.name ?? ""}
+          onClose={() => setShowCustomer(false)}
+        />
       )}
     </Shell>
   );
@@ -733,6 +764,163 @@ function AddItemBox({
         <Button type="button" variant="ghost" onClick={onClose} className="flex-1 bg-white">
           Đóng
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * MÀN CHO KHÁCH XEM — chi tiết đơn + mã QR chuyển khoản.
+ *
+ * Quầy xoay máy về phía khách, khách đọc từng món rồi quét luôn. Ba điều quyết
+ * định cách dựng màn này:
+ *
+ *  1. CHỮ TO, NỀN TRẮNG, che kín màn hình. Khách nhìn máy của người bán trong
+ *     nắng bãi cất — chữ nhỏ như bản của quầy là không đọc nổi.
+ *  2. MÃ QR VẼ TẠI MÁY từ chuỗi EMVCo (lib/vietqr.ts), không gọi ảnh dịch vụ
+ *     ngoài: hôm nào họ sập thì quầy vẫn thu được chuyển khoản.
+ *  3. NỘI DUNG CHUYỂN KHOẢN có sẵn tên quầy + giờ, để kế toán dò lại được
+ *     khoản nào của phiếu nào khi soát sao kê.
+ *
+ * Vẽ QR cần tải chunk `qrcode`; mất mạng lần đầu thì không có mã — vẫn hiện
+ * đủ số tài khoản và số tiền để khách gõ tay, chứ không bỏ trống màn hình.
+ */
+function CustomerView({
+  lines,
+  subtotal,
+  discountAmount,
+  total,
+  discountLabel,
+  method,
+  counterName,
+  onClose,
+}: {
+  lines: Array<{ id: string; name: string; price: number; qty: number }>;
+  subtotal: number;
+  discountAmount: number;
+  total: number;
+  discountLabel?: string;
+  method: "cash" | "transfer";
+  counterName: string;
+  onClose: () => void;
+}) {
+  const [qr, setQr] = useState<string>("");
+  const [qrError, setQrError] = useState(false);
+
+  /** Nội dung chuyển khoản: quầy nào, mấy giờ — kế toán dò sao kê theo chuỗi này. */
+  const note = useMemo(() => {
+    const d = new Date();
+    const p = (n: number) => String(n).padStart(2, "0");
+    return toAsciiNote(`CAFE ${counterName} ${p(d.getDate())}${p(d.getMonth() + 1)} ${p(d.getHours())}${p(d.getMinutes())}`);
+  }, [counterName]);
+
+  useEffect(() => {
+    if (method !== "transfer" || total <= 0) return;
+    let alive = true;
+    const payload = buildVietQrPayload({
+      bankBin: PAY_ACCOUNT.bankBin,
+      accountNumber: PAY_ACCOUNT.accountNumber,
+      amount: total,
+      note,
+    });
+    import("qrcode")
+      .then((m) =>
+        m.default.toDataURL(payload, { width: 640, margin: 1, errorCorrectionLevel: "M", color: { dark: "#0f172a", light: "#ffffff" } }),
+      )
+      .then((url) => {
+        if (alive) setQr(url);
+      })
+      .catch(() => {
+        if (alive) setQrError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [method, total, note]);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
+      <div className="mx-auto max-w-md px-4 py-4">
+        <div className="flex items-center gap-2">
+          <div>
+            <p className="text-lg font-black text-slate-900">MEBAYLUON CAFE</p>
+            <p className="text-xs text-slate-500">{counterName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold text-slate-600"
+          >
+            ✕ Đóng
+          </button>
+        </div>
+
+        <ul className="mt-3 divide-y divide-slate-200 border-y border-slate-200">
+          {lines.map((l) => (
+            <li key={l.id} className="flex items-baseline gap-2 py-2">
+              <span className="flex-1 text-base font-semibold text-slate-900">{l.name}</span>
+              <span className="text-base text-slate-500">×{l.qty}</span>
+              <span className="w-28 text-right text-base font-semibold tabular-nums text-slate-900">
+                {l.price ? `${vnd(l.price * l.qty)} đ` : "FREE"}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {discountAmount > 0 && (
+          <div className="mt-2 space-y-1 text-base">
+            <div className="flex justify-between text-slate-500">
+              <span>Tạm tính</span>
+              <span className="tabular-nums">{vnd(subtotal)} đ</span>
+            </div>
+            <div className="flex justify-between font-semibold text-amber-700">
+              <span>Giảm{discountLabel ? ` · ${discountLabel}` : ""}</span>
+              <span className="tabular-nums">− {vnd(discountAmount)} đ</span>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white">
+          <span className="text-lg font-bold">TỔNG</span>
+          <span className="text-3xl font-black tabular-nums">{total > 0 ? `${vnd(total)} đ` : "MIỄN PHÍ"}</span>
+        </div>
+
+        {method === "transfer" && total > 0 && (
+          <div className="mt-3 rounded-2xl border-2 border-sky-300 bg-sky-50 p-3 text-center">
+            <p className="text-sm font-bold text-sky-900">Quét mã để chuyển khoản</p>
+            {qr ? (
+              <img src={qr} alt="Mã QR chuyển khoản" className="mx-auto mt-2 w-full max-w-[17rem] rounded-xl bg-white p-2" />
+            ) : qrError ? (
+              <p className="mt-2 text-sm font-semibold text-rose-600">
+                Chưa vẽ được mã QR — khách chuyển tay theo số tài khoản dưới đây.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-sky-700">Đang tạo mã…</p>
+            )}
+            <div className="mt-2 text-left text-sm">
+              <p>
+                <span className="text-slate-500">Ngân hàng:</span>{" "}
+                <strong className="text-slate-900">{PAY_ACCOUNT.bankName}</strong>
+              </p>
+              <p>
+                <span className="text-slate-500">Số tài khoản:</span>{" "}
+                <strong className="text-lg tabular-nums text-slate-900">{PAY_ACCOUNT.accountNumber}</strong>
+              </p>
+              <p>
+                <span className="text-slate-500">Chủ tài khoản:</span>{" "}
+                <strong className="text-slate-900">{PAY_ACCOUNT.accountName}</strong>
+              </p>
+              <p>
+                <span className="text-slate-500">Nội dung:</span>{" "}
+                <strong className="text-slate-900">{note}</strong>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {method === "cash" && (
+          <p className="mt-3 text-center text-base font-semibold text-emerald-700">Thanh toán tiền mặt</p>
+        )}
       </div>
     </div>
   );
