@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { BANK_BIN, buildVietQrPayload, toAsciiNote } from "@/lib/vietqr";
+import { buildVietQrPayload, PAY_ACCOUNT_FLIGHT, toAsciiNote } from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
 
 import { Button } from "./ui";
@@ -23,13 +23,11 @@ import { Button } from "./ui";
  * thì vẫn còn chỗ để đọc mà gõ tay.
  */
 
-/** Tài khoản nhận tiền của công ty. */
-export const PAY_ACCOUNT = {
-  bankBin: BANK_BIN.bidv,
-  bankName: "BIDV",
-  accountNumber: "8875639685",
-  accountName: "Đặng Thị Thuỷ",
-} as const;
+/**
+ * Tài khoản nhận TIỀN BAY. Danh sách tài khoản nay nằm ở lib/vietqr.ts để mã
+ * máy chủ cũng dùng được; tên cũ giữ nguyên cho các nơi đang nhập.
+ */
+export const PAY_ACCOUNT = PAY_ACCOUNT_FLIGHT;
 
 async function qrDataUrl(payload: string, size = 720): Promise<string> {
   const QRCode = (await import("qrcode")).default;

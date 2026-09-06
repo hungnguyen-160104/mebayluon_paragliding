@@ -36,11 +36,10 @@ import {
   type CafeMenuItem,
 } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
-import { buildVietQrPayload, toAsciiNote } from "@/lib/vietqr";
+import { buildVietQrPayload, PAY_ACCOUNT_CAFE_HOMESTAY, toAsciiNote } from "@/lib/vietqr";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
-import { PAY_ACCOUNT } from "../components/PaymentQr";
 import { Banner, Button, PageLoading } from "../components/ui";
 import { Shell } from "../components/Shell";
 
@@ -578,7 +577,7 @@ export default function CafePosPage() {
             onClick={() => setShowCustomer(true)}
             className="mt-2 h-11 w-full border-slate-400 bg-white text-sm font-bold"
           >
-            👀 CHO KHÁCH XEM{method === "transfer" && cartTotal > 0 ? " & QUÉT MÃ QR" : ""}
+            👀 CHO KHÁCH XEM & QUÉT MÃ QR
           </Button>
 
           <div className="mt-2 flex gap-2">
@@ -838,12 +837,18 @@ function CustomerView({
     return toAsciiNote(`CAFE ${counterName} ${p(d.getDate())}${p(d.getMonth() + 1)} ${p(d.getHours())}${p(d.getMinutes())}`);
   }, [counterName]);
 
+  /**
+   * MÃ QR DỰNG SẴN, KHÔNG ĐỢI BẤM "CK" (luật chủ 06/09).
+   *
+   * Quầy xoay máy ra là khách quét luôn — khách quyết định trả cách nào lúc
+   * nhìn màn hình, chứ không phải người bán đoán trước rồi mới bày mã ra.
+   */
   useEffect(() => {
-    if (method !== "transfer" || total <= 0) return;
+    if (total <= 0) return;
     let alive = true;
     const payload = buildVietQrPayload({
-      bankBin: PAY_ACCOUNT.bankBin,
-      accountNumber: PAY_ACCOUNT.accountNumber,
+      bankBin: PAY_ACCOUNT_CAFE_HOMESTAY.bankBin,
+      accountNumber: PAY_ACCOUNT_CAFE_HOMESTAY.accountNumber,
       amount: total,
       note,
     });
@@ -860,7 +865,7 @@ function CustomerView({
     return () => {
       alive = false;
     };
-  }, [method, total, note]);
+  }, [total, note]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
@@ -909,9 +914,11 @@ function CustomerView({
           <span className="text-3xl font-black tabular-nums">{total > 0 ? `${vnd(total)} đ` : "MIỄN PHÍ"}</span>
         </div>
 
-        {method === "transfer" && total > 0 && (
+        {total > 0 && (
           <div className="mt-3 rounded-2xl border-2 border-sky-300 bg-sky-50 p-3 text-center">
-            <p className="text-sm font-bold text-sky-900">Quét mã để chuyển khoản</p>
+            <p className="text-sm font-bold text-sky-900">
+              {method === "transfer" ? "Quét mã để chuyển khoản" : "Hoặc quét mã để chuyển khoản"}
+            </p>
             {qr ? (
               <img src={qr} alt="Mã QR chuyển khoản" className="mx-auto mt-2 w-full max-w-[17rem] rounded-xl bg-white p-2" />
             ) : qrError ? (
@@ -924,15 +931,15 @@ function CustomerView({
             <div className="mt-2 text-left text-sm">
               <p>
                 <span className="text-slate-500">Ngân hàng:</span>{" "}
-                <strong className="text-slate-900">{PAY_ACCOUNT.bankName}</strong>
+                <strong className="text-slate-900">{PAY_ACCOUNT_CAFE_HOMESTAY.bankName}</strong>
               </p>
               <p>
                 <span className="text-slate-500">Số tài khoản:</span>{" "}
-                <strong className="text-lg tabular-nums text-slate-900">{PAY_ACCOUNT.accountNumber}</strong>
+                <strong className="text-lg tabular-nums text-slate-900">{PAY_ACCOUNT_CAFE_HOMESTAY.accountNumber}</strong>
               </p>
               <p>
                 <span className="text-slate-500">Chủ tài khoản:</span>{" "}
-                <strong className="text-slate-900">{PAY_ACCOUNT.accountName}</strong>
+                <strong className="text-slate-900">{PAY_ACCOUNT_CAFE_HOMESTAY.accountName}</strong>
               </p>
               <p>
                 <span className="text-slate-500">Nội dung:</span>{" "}
@@ -942,8 +949,8 @@ function CustomerView({
           </div>
         )}
 
-        {method === "cash" && (
-          <p className="mt-3 text-center text-base font-semibold text-emerald-700">Thanh toán tiền mặt</p>
+        {method === "cash" && total > 0 && (
+          <p className="mt-2 text-center text-base font-semibold text-emerald-700">Hoặc trả tiền mặt tại quầy</p>
         )}
       </div>
     </div>

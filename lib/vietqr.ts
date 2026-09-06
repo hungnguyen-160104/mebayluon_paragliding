@@ -12,6 +12,34 @@
 export const BANK_BIN = {
   techcombank: "970407",
   bidv: "970418",
+  vietcombank: "970436",
+} as const;
+
+/**
+ * CÁC TÀI KHOẢN NHẬN TIỀN — mỗi mảng việc một tài khoản riêng.
+ *
+ * Để ở đây (không phải trong component) vì cả mã chạy trên máy chủ lẫn trên
+ * trình duyệt đều cần: phiếu ảnh booking vẽ ở trình duyệt, còn thư xác nhận
+ * và các trang báo cáo dựng ở máy chủ. Nhét vào một tệp "use client" là mã máy
+ * chủ nhập vào sẽ vỡ.
+ *
+ * TÁCH HAI TÀI KHOẢN LÀ CỐ Ý: tiền bay và tiền quầy/phòng do hai người giữ và
+ * hai bộ sổ đối soát khác nhau. Gộp một tài khoản thì sao kê trộn lẫn, không
+ * bóc được doanh thu quầy.
+ */
+export const PAY_ACCOUNT_FLIGHT = {
+  bankBin: BANK_BIN.bidv,
+  bankName: "BIDV",
+  accountNumber: "8875639685",
+  accountName: "Đặng Thị Thuỷ",
+} as const;
+
+/** Quầy cafe + homestay — bảng QR đặt tại quầy (chủ gửi ảnh 06/09). */
+export const PAY_ACCOUNT_CAFE_HOMESTAY = {
+  bankBin: BANK_BIN.vietcombank,
+  bankName: "Vietcombank",
+  accountNumber: "0011004067204",
+  accountName: "NGUYEN THI THUY",
 } as const;
 
 /** Ghép một trường EMVCo: mã (2 ký tự) + độ dài (2 chữ số) + nội dung. */
