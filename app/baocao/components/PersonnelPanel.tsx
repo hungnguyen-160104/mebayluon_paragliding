@@ -65,6 +65,15 @@ export function PersonnelPanel() {
   const [filter, setFilter] = useState<Filter>("active");
   /** Xếp danh sách theo tên A-Z hoặc gom theo chức danh; "none" = giữ thứ tự máy chủ trả về. */
   const [sortBy, setSortBy] = useState<"none" | "name" | "role">("none");
+  /**
+   * LỌC THEO ĐIỂM BAY và CHỨC DANH (luật chủ 07/09).
+   *
+   * Danh sách gộp cả ba điểm nên muốn xem "phi công Khau Phạ" là phải cuộn dò
+   * bằng mắt. "none" = người CHƯA ĐƯỢC GÁN ĐIỂM NÀO — không phải nhóm cho vui:
+   * tài khoản không có điểm thì mọi trang đều chặn, nhìn thấy mới sửa được.
+   */
+  const [spotFilter, setSpotFilter] = useState<SpotId | "all" | "none">("all");
+  const [roleFilter, setRoleFilter] = useState<BaobayRole | "all">("all");
   /** Cấp của CHÍNH tài khoản đang xem: 2 = quản trị hạn chế. */
   const [myLevel, setMyLevel] = useState<1 | 2>(2);
 
@@ -96,8 +105,17 @@ export function PersonnelPanel() {
 
   const byName = (a: BaobayAccountDTO, b: BaobayAccountDTO) =>
     a.displayName.localeCompare(b.displayName, "vi", { sensitivity: "base" });
+
+  const matchSpot = (a: BaobayAccountDTO) =>
+    spotFilter === "all" ? true : spotFilter === "none" ? (a.spots ?? []).length === 0 : (a.spots ?? []).includes(spotFilter);
+  /** Tính CẢ vai kiêm nhiệm: người vừa điều phối vừa đứng quầy phải ra ở cả hai nhóm. */
+  const matchRole = (a: BaobayAccountDTO) =>
+    roleFilter === "all" ? true : a.role === roleFilter || (a.extraRoles ?? []).includes(roleFilter);
+
   const shown = accounts
     .filter((a) => (filter === "all" ? true : filter === "active" ? a.isActive : !a.isActive))
+    .filter(matchSpot)
+    .filter(matchRole)
     .sort((a, b) => {
       if (sortBy === "name") return byName(a, b);
       if (sortBy === "role") {
@@ -108,6 +126,17 @@ export function PersonnelPanel() {
       return 0;
     });
   const activeCount = accounts.filter((a) => a.isActive).length;
+
+  /**
+   * Số người mỗi nhóm, đếm trên phần ĐÃ LỌC TRẠNG THÁI nhưng chưa lọc nhóm kia
+   * — bấm vào nhóm nào cũng đúng con số vừa nhìn thấy, không ra danh sách rỗng.
+   */
+  const inStatus = accounts.filter((a) => (filter === "all" ? true : filter === "active" ? a.isActive : !a.isActive));
+  const spotCount = (id: SpotId | "none") =>
+    inStatus.filter((a) => (id === "none" ? (a.spots ?? []).length === 0 : (a.spots ?? []).includes(id))).filter(matchRole).length;
+  const roleCount = (r: BaobayRole) =>
+    inStatus.filter((a) => a.role === r || (a.extraRoles ?? []).includes(r)).filter(matchSpot).length;
+  const filtering = spotFilter !== "all" || roleFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -147,6 +176,49 @@ export function PersonnelPanel() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold text-slate-900">Danh sách nhân sự ({shown.length})</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {/* LỌC theo điểm bay và chức danh — dùng ô chọn chứ không phải dãy nút:
+                ba điểm cộng chín chức danh mà bày hết thành nút thì tràn hai hàng. */}
+            <select
+              value={spotFilter}
+              onChange={(e) => setSpotFilter(e.target.value as SpotId | "all" | "none")}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700"
+            >
+              <option value="all">Mọi điểm bay ({inStatus.length})</option>
+              {SPOTS.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.name} ({spotCount(sp.id)})
+                </option>
+              ))}
+              {/* Chưa gán điểm = không vào được trang nào; chỉ bày khi có người như vậy */}
+              {spotCount("none") > 0 && <option value="none">⚠ Chưa gán điểm ({spotCount("none")})</option>}
+            </select>
+
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as BaobayRole | "all")}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700"
+            >
+              <option value="all">Mọi chức danh ({inStatus.length})</option>
+              {BAOBAY_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]} ({roleCount(r)})
+                </option>
+              ))}
+            </select>
+
+            {filtering && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSpotFilter("all");
+                  setRoleFilter("all");
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50"
+              >
+                ✕ Bỏ lọc
+              </button>
+            )}
+
             {(
               [
                 ["active", `Làm việc (${activeCount})`],
@@ -198,7 +270,11 @@ export function PersonnelPanel() {
 
         {shown.length === 0 && !loading ? (
           <p className="text-sm text-slate-500">
-            {filter === "active" ? "Chưa có ai đang làm việc — tạo tài khoản bằng khung phía trên." : "Trống."}
+            {filtering
+              ? "Không ai khớp bộ lọc đang chọn — bấm “Bỏ lọc” để xem lại cả danh sách."
+              : filter === "active"
+                ? "Chưa có ai đang làm việc — tạo tài khoản bằng khung phía trên."
+                : "Trống."}
           </p>
         ) : (
           <div className="overflow-x-auto">
