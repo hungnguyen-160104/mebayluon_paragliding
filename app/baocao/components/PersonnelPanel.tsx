@@ -64,7 +64,7 @@ export function PersonnelPanel() {
   const [credentials, setCredentials] = useState<NewCredential[]>([]);
   const [filter, setFilter] = useState<Filter>("active");
   /** Xếp danh sách theo tên A-Z hoặc gom theo chức danh; "none" = giữ thứ tự máy chủ trả về. */
-  const [sortBy, setSortBy] = useState<"none" | "name" | "role">("none");
+  const [sortBy, setSortBy] = useState<"none" | "name" | "role" | "spot">("none");
   /**
    * LỌC THEO ĐIỂM BAY và CHỨC DANH (luật chủ 07/09).
    *
@@ -106,6 +106,19 @@ export function PersonnelPanel() {
   const byName = (a: BaobayAccountDTO, b: BaobayAccountDTO) =>
     a.displayName.localeCompare(b.displayName, "vi", { sensitivity: "base" });
 
+  /**
+   * Thứ hạng điểm bay của một người, để gom nhóm khi xếp theo điểm.
+   *
+   * Người được gán NHIỀU ĐIỂM xếp theo điểm ĐẦU TIÊN trong thứ tự SPOTS — mỗi
+   * người vẫn chỉ một dòng, không nhân bản ra từng điểm: đây là bảng SỬA tài
+   * khoản, một người hiện hai dòng thì sửa dòng nào cũng đúng mà nhìn như hai
+   * tài khoản khác nhau. Người chưa gán điểm dồn xuống cuối cho dễ thấy mà xử lý.
+   */
+  const spotRank = (a: BaobayAccountDTO) => {
+    const ranks = (a.spots ?? []).map((sp) => SPOTS.findIndex((x) => x.id === sp)).filter((i) => i >= 0);
+    return ranks.length ? Math.min(...ranks) : SPOTS.length;
+  };
+
   const matchSpot = (a: BaobayAccountDTO) =>
     spotFilter === "all" ? true : spotFilter === "none" ? (a.spots ?? []).length === 0 : (a.spots ?? []).includes(spotFilter);
   /** Tính CẢ vai kiêm nhiệm: người vừa điều phối vừa đứng quầy phải ra ở cả hai nhóm. */
@@ -121,6 +134,11 @@ export function PersonnelPanel() {
       if (sortBy === "role") {
         // Gom theo chức danh theo thứ tự khai trong BAOBAY_ROLES, trong nhóm thì xếp tên A-Z
         const d = BAOBAY_ROLES.indexOf(a.role) - BAOBAY_ROLES.indexOf(b.role);
+        return d !== 0 ? d : byName(a, b);
+      }
+      if (sortBy === "spot") {
+        // Gom theo ĐIỂM BAY theo thứ tự khai trong SPOTS; trong nhóm thì xếp tên A-Z
+        const d = spotRank(a) - spotRank(b);
         return d !== 0 ? d : byName(a, b);
       }
       return 0;
@@ -244,7 +262,8 @@ export function PersonnelPanel() {
               [
                 ["name", "Tên A-Z"],
                 ["role", "Chức danh"],
-              ] as Array<["name" | "role", string]>
+                ["spot", "Điểm bay"],
+              ] as Array<["name" | "role" | "spot", string]>
             ).map(([key, label]) => (
               <button
                 key={key}
@@ -281,10 +300,12 @@ export function PersonnelPanel() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs font-semibold text-slate-600">
-                  <th className="whitespace-nowrap py-2 pr-3">Tên</th>
+                  {/* Ba cột này BẤM ĐƯỢC để xếp — bấm lại lần nữa thì bỏ xếp,
+                      về đúng thứ tự máy chủ trả về. */}
+                  <SortableTh label="Tên" by="name" sortBy={sortBy} onSort={setSortBy} />
                   <th className="whitespace-nowrap py-2 pr-3">Tài khoản</th>
-                  <th className="whitespace-nowrap py-2 pr-3">Chức danh</th>
-                  <th className="whitespace-nowrap py-2 pr-3">Điểm bay</th>
+                  <SortableTh label="Chức danh" by="role" sortBy={sortBy} onSort={setSortBy} />
+                  <SortableTh label="Điểm bay" by="spot" sortBy={sortBy} onSort={setSortBy} />
                   <th className="whitespace-nowrap py-2 pr-3">Email / SĐT</th>
                   <th className="whitespace-nowrap py-2 pr-3">Mật khẩu</th>
                   <th className="whitespace-nowrap py-2 pr-3">Trạng thái</th>
@@ -1477,5 +1498,42 @@ function AdminMoneyOrder() {
       </div>
       <MoneyOrderCard spot={spot} />
     </div>
+  );
+}
+
+/**
+ * Ô tiêu đề cột BẤM ĐƯỢC ĐỂ XẾP.
+ *
+ * Bấm vào cột đang xếp lần nữa thì bỏ xếp, về thứ tự máy chủ trả về — giống
+ * hệt cụm nút "Xếp:" phía trên, hai lối vào cùng một trạng thái nên bấm chỗ
+ * nào thì chỗ kia cũng sáng theo.
+ */
+function SortableTh({
+  label,
+  by,
+  sortBy,
+  onSort,
+}: {
+  label: string;
+  by: "name" | "role" | "spot";
+  sortBy: "none" | "name" | "role" | "spot";
+  onSort: (v: "none" | "name" | "role" | "spot") => void;
+}) {
+  const on = sortBy === by;
+  return (
+    <th className="whitespace-nowrap py-2 pr-3">
+      <button
+        type="button"
+        onClick={() => onSort(on ? "none" : by)}
+        title={on ? `Bỏ xếp theo ${label.toLowerCase()}` : `Xếp theo ${label.toLowerCase()}`}
+        className={
+          "-mx-1 rounded px-1 py-0.5 font-semibold hover:bg-slate-100 " +
+          (on ? "text-emerald-700" : "text-slate-600")
+        }
+      >
+        {label}
+        <span className={"ml-1 " + (on ? "text-emerald-600" : "text-slate-300")}>{on ? "▼" : "↕"}</span>
+      </button>
+    </th>
   );
 }
