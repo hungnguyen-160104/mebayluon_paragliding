@@ -40,6 +40,7 @@ export async function GET(req: Request) {
       return {
         spot: s.spot,
         submitDeadline: s.submitDeadline,
+        requireTicketCodes: s.requireTicketCodes,
         sheetWebhookUrl: s.sheetWebhookUrl,
         /** Chỉ báo ĐÃ ĐẶT hay chưa — không trả mã bảo vệ ra ngoài. */
         hasSheetSecret: Boolean(s.sheetSecret),
@@ -73,6 +74,8 @@ export async function PUT(req: Request) {
       submitDeadline: body?.submitDeadline !== undefined ? String(body.submitDeadline) : undefined,
       sheetWebhookUrl: body?.sheetWebhookUrl !== undefined ? String(body.sheetWebhookUrl) : undefined,
       sheetSecret: body?.sheetSecret !== undefined ? String(body.sheetSecret) : undefined,
+      requireTicketCodes:
+        typeof body?.requireTicketCodes === "boolean" ? body.requireTicketCodes : undefined,
     },
     auth.username,
     auth,
@@ -84,6 +87,7 @@ export async function PUT(req: Request) {
   return NextResponse.json({
     spot: saved.spot,
     submitDeadline: saved.submitDeadline,
+    requireTicketCodes: saved.requireTicketCodes,
     sheetWebhookUrl: saved.sheetWebhookUrl,
     hasSheetSecret: Boolean(saved.sheetSecret),
   });

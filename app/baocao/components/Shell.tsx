@@ -113,7 +113,7 @@ export function Shell({
 
       {showPassword && (
         <div className="mb-5">
-          <ChangePasswordCard onDone={() => setShowPassword(false)} />
+          <ChangePasswordCard onDone={() => setShowPassword(false)} username={user.username} />
         </div>
       )}
 
@@ -165,13 +165,30 @@ export function Shell({
 }
 
 /** Khung tự đổi mật khẩu — export để trang /baocao/admin (không dùng Shell) dùng lại. */
-export function ChangePasswordCard({ onDone }: { onDone: () => void }) {
+/**
+ * ĐỔI MẬT KHẨU.
+ *
+ * HIỆN CHỮ MẶC ĐỊNH (luật chủ 07/09) — sửa lỗi "đổi xong không đăng nhập được".
+ * Máy chủ đổi đúng: đã chạy thử cả luồng, mật khẩu mới vào được, mật khẩu cũ bị
+ * chặn. Thủ phạm là trình duyệt: gặp ô `new-password` thì Chrome và Safari mời
+ * "dùng mật khẩu mạnh do trình duyệt tạo", chạm nhầm một cái là ô điền chuỗi
+ * ngẫu nhiên. Người dùng chỉ thấy một hàng chấm nên tin là mình vừa gõ mật khẩu
+ * của mình, lưu xong sang điện thoại khác thì không vào nổi.
+ *
+ * Ba lớp chặn: chữ hiện rõ để thấy mình đang lưu cái gì, ô tên đăng nhập ẩn để
+ * trình quản lý mật khẩu gắn đúng tài khoản, và màn báo xong nhắc lại đúng
+ * chuỗi vừa lưu.
+ */
+export function ChangePasswordCard({ onDone, username }: { onDone: () => void; username?: string }) {
   const [currentPassword, setCurrent] = useState("");
   const [newPassword, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
+  /** Mặc định HIỆN: thấy được mới biết trình duyệt có điền hộ hay không. */
+  const [show, setShow] = useState(true);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -185,12 +202,11 @@ export function ChangePasswordCard({ onDone }: { onDone: () => void }) {
     setSaving(true);
     try {
       await apiPost("/api/baocao/password", { currentPassword, newPassword });
+      setSaved(newPassword);
       setDone(true);
       setCurrent("");
       setNext("");
       setConfirm("");
-      // Đợi một nhịp cho người dùng đọc dòng thông báo rồi mới đóng.
-      setTimeout(onDone, 1500);
     } catch (err: any) {
       setError(err?.message || "Không đổi được mật khẩu");
     } finally {
@@ -201,13 +217,51 @@ export function ChangePasswordCard({ onDone }: { onDone: () => void }) {
   return (
     <Card title="Đổi mật khẩu">
       {done ? (
-        <Banner tone="success">Đã đổi mật khẩu. Lần sau đăng nhập bằng mật khẩu mới.</Banner>
+        <div className="space-y-2">
+          <Banner tone="success">Đã đổi mật khẩu. Lần sau đăng nhập bằng mật khẩu dưới đây.</Banner>
+          {/* Nhắc lại ĐÚNG chuỗi vừa lưu: nếu trình duyệt điền hộ một chuỗi lạ
+              thì đây là lúc người dùng nhìn ra, ngay khi còn sửa được. */}
+          <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2">
+            <div className="text-xs font-semibold text-emerald-800">Mật khẩu mới của anh/chị</div>
+            <div className="select-all break-all font-mono text-lg font-bold text-emerald-900">{saved}</div>
+            <div className="mt-1 text-xs text-emerald-800">
+              Ghi lại chỗ nào đó. Không phải chuỗi anh/chị vừa gõ? Bấm “Đổi lại” và tắt gợi ý mật khẩu của trình duyệt.
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setDone(false);
+                setSaved("");
+              }}
+            >
+              Đổi lại
+            </Button>
+            <Button type="button" onClick={onDone}>
+              Xong
+            </Button>
+          </div>
+        </div>
       ) : (
         <form onSubmit={submit} className="space-y-3">
           {error && <Banner tone="error">{error}</Banner>}
+
+          {/* Ô tên đăng nhập ẩn: trình quản lý mật khẩu cần biết đang đổi cho AI,
+              thiếu nó thì nó lưu nhầm sang tài khoản khác của cùng tên miền. */}
+          {username && (
+            <input type="text" name="username" autoComplete="username" value={username} readOnly hidden />
+          )}
+
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+            <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="h-4 w-4" />
+            Hiện mật khẩu (nên bật, để thấy rõ mình đang lưu chuỗi nào)
+          </label>
+
           <Field label="Mật khẩu hiện tại">
             <TextInput
-              type="password"
+              type={show ? "text" : "password"}
               autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrent(e.target.value)}
@@ -216,7 +270,7 @@ export function ChangePasswordCard({ onDone }: { onDone: () => void }) {
           </Field>
           <Field label="Mật khẩu mới" hint="Từ 8 ký tự">
             <TextInput
-              type="password"
+              type={show ? "text" : "password"}
               autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNext(e.target.value)}
@@ -226,7 +280,7 @@ export function ChangePasswordCard({ onDone }: { onDone: () => void }) {
           </Field>
           <Field label="Nhập lại mật khẩu mới">
             <TextInput
-              type="password"
+              type={show ? "text" : "password"}
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

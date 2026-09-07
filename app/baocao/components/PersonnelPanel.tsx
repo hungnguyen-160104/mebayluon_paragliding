@@ -336,6 +336,7 @@ export function PersonnelPanel() {
 }
 
 type SpotSettingDTO = {
+  requireTicketCodes: boolean;
   spot: SpotId;
   submitDeadline: string;
   sheetWebhookUrl: string;
@@ -379,6 +380,30 @@ function SpotSettingsCard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** Bật/tắt bắt buộc mã vé — lưu ngay, không đợi bấm nút Lưu của cả thẻ. */
+  async function saveRequireCodes(spot: SpotId, value: boolean) {
+    setBusy(spot);
+    setError(null);
+    setMessage(null);
+    try {
+      await api("/api/admin/baocao/settings?spot=" + spot, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ requireTicketCodes: value }),
+      });
+      setRows((prev) => prev.map((r) => (r.spot === spot ? { ...r, requireTicketCodes: value } : r)));
+      setMessage(
+        value
+          ? `${spotName(spot)}: từ giờ phi công BẮT BUỘC khai mã vé.`
+          : `${spotName(spot)}: phi công không bắt buộc khai mã vé.`,
+      );
+    } catch (err: any) {
+      setError(err?.message || "Không lưu được");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function save(spot: SpotId) {
     const d = draft[spot];
@@ -463,6 +488,30 @@ function SpotSettingsCard() {
         {rows.map((row) => (
           <div key={row.spot} className="rounded-lg border border-slate-200 p-4">
             <div className="mb-3 font-semibold text-slate-900">{spotName(row.spot)}</div>
+
+            {/*
+              BẮT BUỘC MÃ VÉ — công tắc theo điểm, bật/tắt là hiệu lực ngay cho
+              cả trang phi công lẫn phép kiểm lúc chốt. Sa Pa để TẮT tới hôm có
+              máy in vé; bắt khai mã khi chưa có vé là chặn phi công chốt báo
+              cáo bằng thứ họ không có.
+            */}
+            <label className="mb-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+              <input
+                type="checkbox"
+                disabled={!canEdit || busy === row.spot}
+                checked={row.requireTicketCodes}
+                onChange={(e) => saveRequireCodes(row.spot, e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0"
+              />
+              <span className="text-xs">
+                <span className="block font-semibold text-slate-800">Bắt buộc phi công khai mã vé</span>
+                <span className="block text-slate-500">
+                  {row.requireTicketCodes
+                    ? "Số mã phải bằng số chuyến mới chốt được."
+                    : "Điểm chưa phát vé in — phi công khai được thì tốt, không khai vẫn chốt."}
+                </span>
+              </span>
+            </label>
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-slate-700">Giờ chốt báo cáo</span>

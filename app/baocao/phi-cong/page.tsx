@@ -157,6 +157,7 @@ export default function PilotReportPage() {
   const [closedBy, setClosedBy] = useState("");
   const [check, setCheck] = useState<DayCheck | null>(null);
   const [deadline, setDeadline] = useState<{ time: string; past: boolean } | null>(null);
+  const [requireTicketCodes, setRequireCodes] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +205,7 @@ export default function PilotReportPage() {
         check: DayCheck;
         submitDeadline: string;
         pastDeadline: boolean;
+        requireTicketCodes: boolean;
       }>(`/api/baocao/reports/pilot?date=${targetDate}&spot=${spot}`);
 
       setExisting(res.report);
@@ -211,6 +213,7 @@ export default function PilotReportPage() {
       setClosedBy(res.closedBy || "");
       setCheck(res.check);
       setDeadline({ time: res.submitDeadline, past: res.pastDeadline });
+      setRequireCodes(Boolean(res.requireTicketCodes));
       setForm(
         res.report
           ? {
@@ -358,8 +361,12 @@ export default function PilotReportPage() {
     return <PageLoading />;
   }
 
-  /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã) — điểm khác khai được thì tốt. */
-  const requireCodes = spot === "khau-pha";
+  /**
+   * Máy chủ nói điểm này có bắt buộc mã vé không — quản trị bật/tắt được, không
+   * đóng cứng theo tên điểm nữa. Chưa tải xong thì coi như KHÔNG bắt buộc: thà
+   * để lọt một lần chốt thiếu mã còn hơn chặn phi công vì trang chưa kịp hỏi.
+   */
+  const requireCodes = requireTicketCodes;
   const codeCountMismatch = parsedCodes.codes.length !== form.flightCount;
   /**
    * Ngày CHỈ BAY PPG (0 chuyến PG) vẫn phải chốt được — trước đây nút chốt đòi

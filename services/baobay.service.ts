@@ -1163,6 +1163,7 @@ export async function getSpotSetting(spot: string): Promise<{
   submitDeadline: string;
   sheetWebhookUrl: string;
   sheetSecret: string;
+  requireTicketCodes: boolean;
 }> {
   await connectDB();
   const key = normalizeSpot(spot);
@@ -1172,7 +1173,20 @@ export async function getSpotSetting(spot: string): Promise<{
     submitDeadline: doc?.submitDeadline || DEFAULT_SUBMIT_DEADLINE,
     sheetWebhookUrl: doc?.sheetWebhookUrl || "",
     sheetSecret: doc?.sheetSecret || "",
+    requireTicketCodes: requireTicketCodesOf(key, doc?.requireTicketCodes),
   };
+}
+
+/**
+ * Điểm này có BẮT BUỘC phi công khai mã vé không.
+ *
+ * Chưa đặt thì giữ luật cũ: chỉ Khau Phạ, vì đó là điểm duy nhất có vé 3 liên
+ * in mã. Sa Pa chưa có máy in nên bắt khai mã là chặn phi công chốt báo cáo
+ * bằng thứ họ không có (luật chủ 07/09); hôm nào phát vé thì quản trị bật lên.
+ */
+export function requireTicketCodesOf(spot: string, stored: unknown): boolean {
+  if (typeof stored === "boolean") return stored;
+  return normalizeSpot(spot) === "khau-pha";
 }
 
 /** Giờ chốt của một điểm bay — đọc thẳng, admin đổi là hiệu lực ngay. */
@@ -1206,7 +1220,7 @@ async function sheetTargetForSpot(spot: string): Promise<SheetTarget | null> {
 
 export async function updateSpotSetting(
   spot: string,
-  patch: { submitDeadline?: string; sheetWebhookUrl?: string; sheetSecret?: string },
+  patch: { submitDeadline?: string; sheetWebhookUrl?: string; sheetSecret?: string; requireTicketCodes?: boolean },
   updatedBy: string,
   by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -1236,6 +1250,7 @@ export async function updateSpotSetting(
     set.sheetWebhookUrl = url;
   }
   if (patch.sheetSecret !== undefined) set.sheetSecret = patch.sheetSecret.trim();
+  if (patch.requireTicketCodes !== undefined) set.requireTicketCodes = Boolean(patch.requireTicketCodes);
 
   await connectDB();
   await BaobaySetting.updateOne({ key }, { $set: set }, { upsert: true });
@@ -1335,8 +1350,8 @@ export async function upsertPilotReport(
    * chặn kế toán chốt ngày chứ không chặn từng phi công, vì người này không thể
    * tự biết người kia khai gì.
    */
-  /** Mã vé chỉ BẮT BUỘC ở Khau Phạ (vé 3 liên in mã); điểm khác khai được thì tốt. */
-  const requireCodes = spot === "khau-pha";
+  /** Công tắc theo ĐIỂM BAY — quản trị bật/tắt, không phải sửa mã nguồn. */
+  const requireCodes = (await getSpotSetting(spot)).requireTicketCodes;
 
   if (input.submit) {
     if (parsed.malformed.length) {

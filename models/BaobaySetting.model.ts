@@ -25,6 +25,15 @@ export interface IBaobaySetting {
    */
   sheetWebhookUrl?: string;
   sheetSecret?: string;
+  /**
+   * BẮT BUỘC PHI CÔNG KHAI MÃ VÉ ở điểm này hay không.
+   *
+   * Chưa đặt (undefined) thì rơi về luật cũ: chỉ Khau Phạ bắt buộc, vì đó là
+   * điểm duy nhất có vé 3 liên in mã. Sa Pa sắp có máy in vé — đặt thành công
+   * tắc ở đây để hôm bắt đầu phát vé chỉ cần bật lên, không phải sửa mã nguồn
+   * rồi deploy lại (luật chủ 07/09).
+   */
+  requireTicketCodes?: boolean;
   /** Lần gần nhất bấm/chạy "Lấy book từ website & OTA" cho điểm này. */
   webSyncAt?: Date;
   webSyncBy?: string;
@@ -41,6 +50,7 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
     submitDeadline: { type: String, default: DEFAULT_SUBMIT_DEADLINE },
     sheetWebhookUrl: String,
     sheetSecret: String,
+    requireTicketCodes: { type: Boolean, default: undefined },
     webSyncAt: Date,
     webSyncBy: String,
     updatedBy: String,

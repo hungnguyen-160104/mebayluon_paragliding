@@ -13,7 +13,7 @@ import {
   getDailyClose,
   getPilotReport,
   getReconcileForUser,
-  getSubmitDeadline,
+  getSpotSetting,
   listPilotReportsOfAccount,
   listPilotReportsOfDate,
   listSpotStaffByRole,
@@ -90,12 +90,13 @@ export async function GET(req: Request) {
   }
 
   if (date) {
-    const [report, close, check, deadline] = await Promise.all([
+    const [report, close, check, setting] = await Promise.all([
       getPilotReport(auth.id, spot, date),
       getDailyClose(spot, date),
       getReconcileForUser(spot, date, auth.username),
-      getSubmitDeadline(spot),
+      getSpotSetting(spot),
     ]);
+    const deadline = setting.submitDeadline;
 
     return NextResponse.json({
       spot,
@@ -107,6 +108,8 @@ export async function GET(req: Request) {
       /** Giờ chốt hiện hành + đã quá mốc chưa — tính ở máy chủ, khỏi tin đồng hồ điện thoại. */
       submitDeadline: deadline,
       pastDeadline: isPastSubmitDeadline(date, deadline),
+      /** Điểm này có bắt buộc khai mã vé không — công tắc của quản trị. */
+      requireTicketCodes: setting.requireTicketCodes,
     });
   }
 
