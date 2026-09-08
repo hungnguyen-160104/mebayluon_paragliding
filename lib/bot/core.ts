@@ -8,6 +8,7 @@ import { SYSTEM_STATIC_TEMPLATE, EXTRA_RULES } from './rules';
 import { getKnowledge, getConversationState } from './google-bridge';
 import { buildLiveDataBlock, LIVE_DATA_START } from './live-data';
 import { formatDateKeyVN, todayInVN } from '@/lib/baobay/date';
+import { imageMenuForPrompt } from './images';
 
 const MODEL = process.env.BOT_MODEL || 'claude-haiku-4-5';
 const MAX_TOKENS = 600;
@@ -78,6 +79,7 @@ export async function buildSystem(opts: {
     'Lich su den tu viec tra loi dung thu khach can va noi ngan gon, ' +
     'KHONG den tu so luong tu dem.\n' +
     '===== HET GIONG DIEU =====\n\n' +
+    imageMenuForPrompt() +
     '===== QUY TAC CHOT DON (BAT BUOC, GHI DE MOI QUY TAC KHAC NEU MAU THUAN) =====\n' +
     '1. Thong tin BAT BUOC de chot don chi gom 3 muc: NGAY BAY DU KIEN, TEN khach, ' +
     'SO DIEN THOAI. Thieu muc nao thi hoi dung muc do.\n' +
