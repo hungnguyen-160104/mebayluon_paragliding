@@ -10,6 +10,7 @@ import {
   buildSystem, askClaude, cleanReply, extractBooking,
   getFacebookName, bookingEmailHtml,
 } from '@/lib/bot/core';
+import { extractImages, type BotImage } from '@/lib/bot/images';
 import { getMessengerHistory } from '@/lib/bot/memory';
 import { saveBooking } from '@/lib/bot/google-bridge';
 
@@ -84,7 +85,10 @@ async function handle(ev: any, pageId: string) {
   const { staticPart, dynamicPart } = await buildSystem({ psid, historyText });
 
   const rawReply = await askClaude(staticPart, dynamicPart, text);
-  let reply = cleanReply(rawReply);
+  const cleaned = cleanReply(rawReply);
+  const picked = extractImages(cleaned);
+  let reply = picked.text;
+  const images = picked.images;
 
   const booking = extractBooking(rawReply);
 
@@ -97,6 +101,7 @@ async function handle(ev: any, pageId: string) {
   }
 
   if (reply) await sendMessage(psid, reply);
+  for (const img of images) await sendImage(psid, img);
 
   if (booking) {
     booking.psid = psid;
@@ -104,6 +109,29 @@ async function handle(ev: any, pageId: string) {
     booking.thoi_gian_chot = new Date().toISOString();
     booking.trang_thai_booking = 'moi';
     await saveBooking(booking, bookingEmailHtml(booking, rawReply));
+  }
+}
+
+/** Gui mot anh. Facebook tai anh ve tu URL nen anh phai la link cong khai. */
+async function sendImage(psid: string, img: BotImage) {
+  try {
+    await fetch(`${GRAPH}/me/messages?access_token=${encodeURIComponent(PAGE_TOKEN)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: psid },
+        messaging_type: 'RESPONSE',
+        message: {
+          attachment: {
+            type: 'image',
+            payload: { url: img.url, is_reusable: true },
+          },
+        },
+      }),
+    });
+  } catch (err) {
+    // Anh hong thi thoi, tuyet doi khong de no lam hong ca luot tra loi.
+    console.error('[fb] gui anh that bai', img.url, err);
   }
 }
 
