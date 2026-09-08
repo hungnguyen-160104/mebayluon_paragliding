@@ -82,4 +82,12 @@ export function extractImages(text: string): { text: string; images: BotImage[] 
     if (hit && !seen.has(hit.url) && images.length < 4) {
       seen.add(hit.url);
       images.push({
-        url: hit.url.startsWith('http') ? hit.url : SITE
+        url: hit.url.startsWith('http') ? hit.url : SITE + hit.url,
+        caption: hit.caption,
+      });
+    }
+    return '';
+  });
+
+  return { text: cleaned.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(), images };
+}
