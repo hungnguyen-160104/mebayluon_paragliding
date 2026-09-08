@@ -6,10 +6,17 @@ export type ChatSide = "user" | "bot";
  */
 export type ChatAnswerSource = "n8n" | "fallback";
 
+export interface BotImage {
+  url: string;
+  caption: string;
+}
+
 export interface ChatMessage {
   id: string;
   side: ChatSide;
   text: string;
+  /** Ảnh bot gửi kèm (phòng, menu...). */
+  images?: BotImage[];
   score?: number | null;
   matchedQuestion?: string | null;
   source?: ChatAnswerSource;
@@ -23,6 +30,7 @@ export type ChatHistoryPayload = Array<{
 
 export interface ChatbotReply {
   answer: string;
+  images?: BotImage[];
   matchedQuestion: string | null;
   score: number | null;
   source?: ChatAnswerSource;
