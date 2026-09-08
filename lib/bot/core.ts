@@ -167,15 +167,67 @@ export async function askClaude(
 /* ---------------------------------------------------------------------
  * Làm sạch câu trả lời trước khi gửi khách
  *
- * Cắt bỏ khối BOOKING_DATA (dữ liệu nội bộ, khách không được thấy) và
- * gỡ markdown vì Messenger hiện ra dấu sao, dấu thăng lồ lộ.
+ * Gỡ khối BOOKING_DATA (dữ liệu nội bộ, khách không được thấy) và gỡ
+ * markdown vì Messenger hiện ra dấu sao, dấu thăng lồ lộ.
+ *
+ * BẢN CŨ CẮT NHẦM. Nó làm `t.split(marker)[0]` — vứt sạch mọi thứ đứng
+ * SAU marker. Nhưng bộ quy tắc bảo mô hình viết khối JSON rồi mới viết tin
+ * xác nhận cho khách, nên thứ tự thực tế là:
+ *
+ *     BOOKING_DATA: {...}
+ *     BOOKING_CONFIRMED
+ *     Dạ em cảm ơn anh/chị đã đặt dịch vụ...   <-- tin cho khách
+ *
+ * Cắt tại marker thì phần còn lại rỗng, bot-client thấy chuỗi rỗng và trả
+ * null, service rơi xuống câu "trợ lý đang tạm thời không phản hồi". Đó
+ * chính là lỗi khách gặp khi trả lời tên — vì tên là mẩu cuối cùng còn
+ * thiếu, đưa tên xong là đơn đủ điều kiện chốt và khối JSON được xuất ra.
+ *
+ * Bản này GỠ ĐÚNG KHỐI, giữ lại chữ ở cả hai phía.
  * ------------------------------------------------------------------ */
+
+/** Gỡ `BOOKING_DATA: {...}` bằng cách đếm ngoặc, giữ nguyên chữ hai bên. */
+function stripBookingBlock(input: string): string {
+  let t = input;
+  for (let guard = 0; guard < 5; guard++) {
+    const idx = t.search(/BOOKING[_ ]DATA/i);
+    if (idx === -1) break;
+
+    const open = t.indexOf('{', idx);
+    if (open === -1) {
+      // Có chữ BOOKING_DATA mà không có JSON — bỏ mỗi dòng đó.
+      t = t.slice(0, idx) + t.slice(t.indexOf('\n', idx) + 1 || t.length);
+      continue;
+    }
+
+    let depth = 0;
+    let close = -1;
+    for (let i = open; i < t.length; i++) {
+      if (t[i] === '{') depth++;
+      else if (t[i] === '}' && --depth === 0) { close = i; break; }
+    }
+    // JSON viết dở (mô hình bị cắt giữa chừng) thì bỏ từ marker tới hết.
+    t = close === -1 ? t.slice(0, idx) : t.slice(0, idx) + t.slice(close + 1);
+  }
+  return t;
+}
+
 export function cleanReply(text: string): string {
   let t = String(text);
 
-  for (const marker of ['BOOKING_DATA', 'BOOKING_CONFIRMED', 'BOOKING CONFIRMED', 'BOOKING DATA']) {
-    t = t.split(marker)[0];
-  }
+  // 1. Gỡ khối dữ liệu đặt lịch, giữ tin xác nhận viết sau nó.
+  t = stripBookingBlock(t);
+
+  // 2. Gỡ cờ BOOKING_CONFIRMED (chỉ là dấu hiệu nội bộ, không phải chữ).
+  t = t.replace(/BOOKING[_ ]CONFIRMED:?/gi, '');
+
+  // 3. Gỡ rào code markdown. Mô hình hay bọc JSON trong ```json ... ```;
+  //    bản cũ chỉ xoá dấu backtick nên khách nhận được đúng chữ "json"
+  //    lủng lẳng cuối tin — cái "chân chữ ký json" mà anh Mỹ thấy.
+  t = t
+    .replace(/```[a-zA-Z]*\s*/g, '')
+    .replace(/```/g, '')
+    .replace(/^[ \t]*json[ \t]*$/gim, '');
 
   return t
     .replace(/[*_`~]/g, '')
@@ -184,6 +236,7 @@ export function cleanReply(text: string): string {
     .filter((l) => !/^\s*[-=_]{3,}\s*$/.test(l))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
     .trim();
 }
 
