@@ -49,11 +49,21 @@ export function IdScanCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const loopRef = useRef<number | null>(null);
+  const [torch, setTorch] = useState(false);
+  /** Máy có đèn pin dùng được không — không thì giấu nút đi. */
+  const [torchOk, setTorchOk] = useState(false);
 
   // Rời thẻ mà quên tắt thì camera vẫn sáng — dọn khi tháo thành phần
   useEffect(() => () => stopCamera(), []);
 
-  /** Ảnh → canvas, thu nhỏ cạnh dài về 1600px cho OCR chạy nhanh mà vẫn đủ nét. */
+  /**
+   * Ảnh → canvas.
+   *
+   * 2400px cho đường QR, 1600px cho OCR. Mã QR của CCCD chứa hơn trăm ký tự nên
+   * là mã cỡ lớn (khoảng 57–69 ô mỗi cạnh); thu ảnh chụp 4000px về 1600px thì
+   * mỗi ô chỉ còn 2 điểm ảnh, dưới ngưỡng giải được. Đây chính là lý do quét
+   * hay trượt (luật chủ 08/09).
+   */
   async function toCanvas(file: File, maxSide = 1600): Promise<HTMLCanvasElement> {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
@@ -90,16 +100,47 @@ export function IdScanCard({
     if (native) return native;
 
     const { default: jsQR } = await import("jsqr");
+
+    /**
+     * Ép về ĐEN TRẮNG DỨT KHOÁT trước khi giải.
+     *
+     * Mặt CCCD in hoa văn chìm và bóng thẻ nhựa hắt sáng, nên ảnh gốc có chỗ mã
+     * xám nhờ chứ không đen hẳn — jsQR tự tìm ngưỡng trên cả khung nên hay chia
+     * nhầm. Tự đưa về xám rồi kéo giãn tương phản theo đúng vùng đã cắt thì mã
+     * bật hẳn lên khỏi nền.
+     */
+    const sharpen = (d: ImageData): ImageData => {
+      const a = d.data;
+      let lo = 255;
+      let hi = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const g = (a[i] * 299 + a[i + 1] * 587 + a[i + 2] * 114) / 1000;
+        a[i] = a[i + 1] = a[i + 2] = g;
+        if (g < lo) lo = g;
+        if (g > hi) hi = g;
+      }
+      const span = Math.max(1, hi - lo);
+      for (let i = 0; i < a.length; i += 4) {
+        const v = ((a[i] - lo) / span) * 255;
+        a[i] = a[i + 1] = a[i + 2] = v;
+      }
+      return d;
+    };
+
     const tryPart = (sx: number, sy: number, sw: number, sh: number, out = 900): string | null => {
       const c = document.createElement("canvas");
       const scale = out / Math.max(sw, sh);
       c.width = Math.round(sw * scale);
       c.height = Math.round(sh * scale);
-      const ctx = c.getContext("2d");
+      const ctx = c.getContext("2d", { willReadFrequently: true });
       if (!ctx) return null;
       ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
       const d = ctx.getImageData(0, 0, c.width, c.height);
-      return jsQR(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" })?.data ?? null;
+      const hit = jsQR(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" })?.data;
+      if (hit) return hit;
+      // Ảnh gốc trượt thì thử lại bản đã ép tương phản
+      const s2 = sharpen(ctx.getImageData(0, 0, c.width, c.height));
+      return jsQR(s2.data, s2.width, s2.height, { inversionAttempts: "attemptBoth" })?.data ?? null;
     };
 
     const W = canvas.width;
@@ -113,8 +154,13 @@ export function IdScanCard({
       [0, H * 0.4, W * 0.55, H * 0.6], // góc dưới trái
     ];
     for (const [sx, sy, sw, sh] of attempts) {
-      // Phóng to hơn nữa cho mã in mờ: 900px trượt thì thử lại ở 1400px
-      const hit = tryPart(sx, sy, sw, sh) ?? tryPart(sx, sy, sw, sh, 1400);
+      /**
+       * Ba mức phóng to. Mã CCCD cỡ lớn cần ~4 điểm ảnh mỗi ô mới giải nổi:
+       * 900px là đủ khi mã chiếm hết khung cắt, còn khi cắt rộng thì phải lên
+       * 1400–2000px mã mới đủ nét.
+       */
+      const hit =
+        tryPart(sx, sy, sw, sh) ?? tryPart(sx, sy, sw, sh, 1400) ?? tryPart(sx, sy, sw, sh, 2000);
       if (hit) return hit;
     }
     return null;
@@ -176,7 +222,14 @@ export function IdScanCard({
     setCopied(false);
     setCurrent(null);
     try {
-      const canvas = await toCanvas(file, 1800);
+      /**
+       * ẢNH CHO QR GIỮ 2400px, ảnh cho OCR 1800px là đủ.
+       *
+       * Điện thoại chụp ra 3000–4000px; ép cả hai đường về 1800 thì mỗi ô của
+       * mã QR chỉ còn 2 điểm ảnh, dưới ngưỡng giải. Giữ ảnh to hơn cho riêng
+       * đường QR, còn OCR thì 1800 vừa nhanh vừa đủ nét.
+       */
+      const canvas = await toCanvas(file, kind === "cccd" ? 2400 : 1800);
 
       if (kind === "cccd") {
         setBusy("qr");
@@ -243,16 +296,57 @@ export function IdScanCard({
    * máy đọc liên tục ~8 lần/giây và tự dừng ngay khi bắt được mã. Khỏi phải
    * chụp, khỏi chờ, khỏi lo ảnh mờ.
    */
+  /**
+   * BẬT/TẮT ĐÈN PIN của camera.
+   *
+   * Quầy vé hay ngồi chỗ râm, mà mặt CCCD là nhựa bóng: thiếu sáng thì ảnh
+   * nhiễu hạt, mã QR nhoè hẳn. Có đèn thì quét ăn ngay. Máy nào không hỗ trợ
+   * thì nút tự ẩn.
+   */
+  async function toggleTorch() {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    const next = !torch;
+    try {
+      // @ts-expect-error torch chưa có trong kiểu chuẩn, Android/Chrome hiểu
+      await track.applyConstraints({ advanced: [{ torch: next }] });
+      setTorch(next);
+    } catch {
+      setTorchOk(false);
+    }
+  }
+
   async function startCamera() {
     setError(null);
     setCurrent(null);
     setCopied(false);
     try {
+      /**
+       * XIN ĐỘ PHÂN GIẢI CAO NHẤT MÁY CHO (luật chủ 08/09) — đây là thứ quyết
+       * định quét nhạy hay không.
+       *
+       * Mã QR trên CCCD chứa hơn trăm ký tự nên có tới 57–69 ô mỗi cạnh, mà
+       * trên khung hình nó chỉ chiếm chừng một phần tám bề ngang. Ở 1280px thì
+       * mỗi ô chưa tới 2 điểm ảnh, không thư viện nào giải nổi; ở 2560px mới
+       * được 4 điểm ảnh, tức là ngưỡng đọc được.
+       *
+       * Kèm lấy nét liên tục: thẻ đưa vào rồi rút ra suốt, camera không tự lấy
+       * nét lại thì cầm bao lâu cũng mờ.
+       */
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 2560 },
+          height: { ideal: 1440 },
+          // @ts-expect-error focusMode chưa có trong kiểu chuẩn, máy Android hiểu
+          focusMode: "continuous",
+        },
         audio: false,
       });
       streamRef.current = stream;
+      setTorch(false);
+      const cap = stream.getVideoTracks()[0]?.getCapabilities?.() as { torch?: boolean } | undefined;
+      setTorchOk(Boolean(cap?.torch));
       setScanning(true);
       // Chờ React vẽ thẻ video ra rồi mới gắn luồng hình
       requestAnimationFrame(async () => {
@@ -260,20 +354,40 @@ export function IdScanCard({
         if (!video) return;
         video.srcObject = stream;
         await video.play().catch(() => {});
+        /**
+         * Vòng quét. Hai điều khác bản cũ:
+         *
+         * 1. Chụp Ở ĐÚNG ĐỘ PHÂN GIẢI CAMERA (chặn trên 1920) thay vì ép về
+         *    960 — bản cũ vứt đi hơn nửa số điểm ảnh vừa xin được, mã QR co lại
+         *    dưới ngưỡng giải, nên soi mãi không ăn.
+         * 2. Mỗi nhịp chỉ giải NHANH toàn khung; cứ bốn nhịp mới chạy một lượt
+         *    cắt góc + ép tương phản. Lượt đó nặng, chạy mỗi nhịp thì máy nghẽn
+         *    và hình đứng, hoá ra chậm hơn.
+         */
+        let tick = 0;
+        let working = false;
         loopRef.current = window.setInterval(async () => {
           const v = videoRef.current;
-          if (!v || v.readyState < 2) return;
-          const c = document.createElement("canvas");
-          c.width = 960;
-          c.height = Math.round((v.videoHeight / v.videoWidth) * 960) || 720;
-          c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
-          const raw = (await nativeQr(c)) ?? (await readQr(c));
-          const person = raw ? parseCccdQr(raw) : null;
-          if (person) {
-            stopCamera();
-            setCurrent(person);
+          if (!v || v.readyState < 2 || working) return;
+          working = true;
+          try {
+            const side = Math.min(1920, v.videoWidth || 1280);
+            const c = document.createElement("canvas");
+            c.width = side;
+            c.height = Math.round((v.videoHeight / v.videoWidth) * side) || 1080;
+            c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
+
+            tick += 1;
+            const raw = (await nativeQr(c)) ?? (tick % 4 === 0 ? await readQr(c) : null);
+            const person = raw ? parseCccdQr(raw) : null;
+            if (person) {
+              stopCamera();
+              setCurrent(person);
+            }
+          } finally {
+            working = false;
           }
-        }, 120);
+        }, 150);
       });
     } catch (err: unknown) {
       /**
@@ -407,9 +521,22 @@ export function IdScanCard({
         <div className="mt-2 overflow-hidden rounded-xl border-2 border-violet-400 bg-black">
           <video ref={videoRef} playsInline muted className="block max-h-72 w-full object-contain" />
           <div className="flex items-center justify-between gap-2 bg-violet-600 px-2.5 py-1.5">
-            <span className="text-xs font-semibold text-white">Đưa mã QR trên CCCD vào khung…</span>
+            <span className="min-w-0 flex-1 text-xs font-semibold text-white">
+              Đưa mã QR trên CCCD vào khung, cách ống kính chừng một gang tay…
+            </span>
+            {/* Đèn pin: quầy hay ngồi chỗ râm, mặt thẻ nhựa bóng thì thiếu sáng là nhoè mã */}
+            {torchOk && (
+              <Button
+                type="button"
+                variant="ghost"
+                className={"h-7 px-2.5 text-xs " + (torch ? "bg-amber-300 text-amber-900" : "bg-white")}
+                onClick={toggleTorch}
+              >
+                {torch ? "💡 Tắt đèn" : "💡 Bật đèn"}
+              </Button>
+            )}
             <Button type="button" variant="ghost" className="h-7 bg-white px-2.5 text-xs" onClick={stopCamera}>
-              Đóng camera
+              Đóng
             </Button>
           </div>
         </div>

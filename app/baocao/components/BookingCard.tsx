@@ -33,6 +33,7 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
+import { printBookingTickets } from "./TicketPrint";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
@@ -4674,32 +4675,56 @@ export function BookingTodayBanner({
         }}
       />
     );
+  /**
+   * NÚT VÉ. Chưa xuất thì là "IN VÉ": bấm một cái vừa mở cửa sổ in vừa đánh dấu
+   * đã xuất — hai việc đó ở quầy vốn là một, in ra đưa khách tức là đã xuất.
+   *
+   * Đã xuất rồi thì quay về nút cũ (bấm để bỏ tích nếu lỡ tay), và có thêm nút
+   * 🖨 nhỏ để in lại khi khách làm mất vé hay máy in kẹt giấy.
+   */
   const renderTicketButton = (b: BookingDTO) => (
-    <Button
-      type="button"
-      variant="ghost"
-      className={
-        "h-7 px-2 text-xs font-semibold " +
-        (b.noTicketFlight
-          ? "border-orange-400 bg-orange-100 text-orange-900"
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 px-2 text-xs font-semibold " +
+          (b.noTicketFlight
+            ? "border-orange-400 bg-orange-100 text-orange-900"
+            : b.ticketIssued
+              ? "border-amber-400 bg-amber-100 text-amber-900"
+              : "border-sky-400 bg-sky-50 text-sky-800")
+        }
+        disabled={busy === b.id}
+        onClick={() => {
+          // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
+          if (!b.noTicketFlight && !b.ticketIssued) printBookingTickets(b, spot);
+          void act(b, "ticket");
+        }}
+        title={
+          b.ticketIssued
+            ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
+            : `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} vé, ` : ""}mỗi vé 3 liên.`
+        }
+      >
+        {b.noTicketFlight
+          ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
           : b.ticketIssued
-            ? "border-amber-400 bg-amber-100 text-amber-900"
-            : "bg-white text-slate-600")
-      }
-      disabled={busy === b.id}
-      onClick={() => act(b, "ticket")}
-      title={
-        b.ticketIssued
-          ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
-          : "Khách đến lấy vé thì bấm — để cả quầy biết ai lấy vé rồi"
-      }
-    >
-      {b.noTicketFlight
-        ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
-        : b.ticketIssued
-          ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
-          : "🎫 Xuất vé"}
-    </Button>
+            ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
+            : "🖨 IN VÉ"}
+      </Button>
+      {b.ticketIssued && !b.noTicketFlight && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-7 bg-white px-2 text-xs font-semibold text-slate-600"
+          onClick={() => printBookingTickets(b, spot)}
+          title="In lại vé — khách làm mất, hoặc máy in kẹt giấy lúc nãy"
+        >
+          🖨
+        </Button>
+      )}
+    </>
   );
   const renderFlownButton = (b: BookingDTO) => (
     <Button
