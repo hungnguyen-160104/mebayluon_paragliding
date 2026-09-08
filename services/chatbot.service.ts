@@ -28,6 +28,8 @@ export type ChatAnswer = {
   /** Giữ để tương thích với client cũ — luôn null từ khi bỏ FAQ. */
   score: number | null;
   source?: ChatSource;
+  /** Ảnh gửi kèm (phòng, menu...). Widget hiển thị dưới câu trả lời. */
+  images?: Array<{ url: string; caption: string }>;
 };
 
 const HOTLINE = "0964 073 555";
@@ -60,7 +62,7 @@ function pick(dict: Record<string, string>, locale?: string): string {
 }
 
 function fallbackAnswer(message: string): ChatAnswer {
-  return { answer: message, matchedQuestion: null, score: null, source: "fallback" };
+  return { answer: message, matchedQuestion: null, score: null, source: "fallback", images: [] };
 }
 
 export type AskChatbotInput = {
@@ -93,7 +95,13 @@ export async function askChatbot(input: AskChatbotInput): Promise<ChatAnswer> {
     });
 
     if (answer) {
-      return { answer, matchedQuestion: null, score: null, source: "bot" };
+      return {
+        answer: answer.answer,
+        matchedQuestion: null,
+        score: null,
+        source: "bot",
+        images: answer.images,
+      };
     }
   }
 
