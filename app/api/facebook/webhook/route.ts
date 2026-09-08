@@ -84,11 +84,20 @@ async function handle(ev: any, pageId: string) {
   const { staticPart, dynamicPart } = await buildSystem({ psid, historyText });
 
   const rawReply = await askClaude(staticPart, dynamicPart, text);
-  const reply = cleanReply(rawReply);
+  let reply = cleanReply(rawReply);
+
+  const booking = extractBooking(rawReply);
+
+  // Mô hình chỉ xuất khối dữ liệu mà quên viết tin cho khách thì bản cũ IM
+  // LẶNG (`if (reply)` không chạy) — khách vừa đưa tên xong là bot tắt tiếng,
+  // đúng lúc quan trọng nhất. Tự dựng tin xác nhận thay.
+  if (!reply && booking) {
+    reply =
+      'Dạ em cảm ơn anh/chị đã đặt dịch vụ. Thông tin đặt lịch đã được chuyển tới điều phối bay, bạn ấy sẽ liên hệ lại để xác nhận chi tiết. Có gì cần hỗ trợ anh/chị cứ nhắn em nhé.';
+  }
 
   if (reply) await sendMessage(psid, reply);
 
-  const booking = extractBooking(rawReply);
   if (booking) {
     booking.psid = psid;
     booking.ten_facebook = await getFacebookName(psid, PAGE_TOKEN);
