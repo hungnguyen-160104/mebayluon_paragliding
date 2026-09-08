@@ -67,11 +67,23 @@ export async function askBot(input: AskInput): Promise<string | null> {
     });
 
     const rawReply = await askClaude(staticPart, dynamicPart, historyText + input.question);
-    const reply = cleanReply(rawReply);
+    let reply = cleanReply(rawReply);
 
     if (!reply) {
-      logger.warn("Claude trả về rỗng sau khi làm sạch", { sessionId: input.sessionId });
-      return null;
+      // Lưới an toàn: nếu mô hình chỉ xuất mỗi khối dữ liệu mà quên viết
+      // tin cho khách, TUYỆT ĐỐI không rơi xuống câu "trợ lý không phản
+      // hồi" — đây đúng là giây phút khách vừa chốt đơn, thấy câu đó là
+      // tưởng hỏng và bỏ đi. Tự viết tin xác nhận thay.
+      if (extractBooking(rawReply)) {
+        logger.warn("Chỉ có khối booking, tự dựng tin xác nhận", {
+          sessionId: input.sessionId,
+        });
+        reply =
+          "Dạ em cảm ơn anh/chị đã đặt dịch vụ. Thông tin đặt lịch đã được chuyển tới điều phối bay, bạn ấy sẽ liên hệ lại để xác nhận chi tiết. Có gì cần hỗ trợ anh/chị cứ nhắn em nhé.";
+      } else {
+        logger.warn("Claude trả về rỗng sau khi làm sạch", { sessionId: input.sessionId });
+        return null;
+      }
     }
 
     await saveWebTurn(key, input.question, reply);
