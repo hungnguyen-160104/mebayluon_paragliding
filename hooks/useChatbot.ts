@@ -110,6 +110,7 @@ export function useChatbot() {
             id: `b-${Date.now()}`,
             side: "bot",
             text: res.answer,
+            images: res.images,
             score: res.score,
             matchedQuestion: res.matchedQuestion,
             source: res.source,
