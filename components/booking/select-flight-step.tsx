@@ -190,7 +190,13 @@ const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   da_nang: 2_190_000,
 };
 
-const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
+// Điểm bay chưa mở lại — thẻ vẫn hiện nhưng không bấm chọn được, kèm nhãn
+// "tạm đóng". Xác nhận 07/09/2026: Sơn Trà (Đà Nẵng) và Quản Bạ (Hà Giang)
+// đều CHƯA mở. Mở lại điểm nào thì bỏ key đó ra khỏi tập này.
+const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>([
+  "da_nang",
+  "quan_ba",
+]);
 
 function clampInt(value: unknown, min: number, max: number) {
   const n = typeof value === "number" ? value : Number(value);
