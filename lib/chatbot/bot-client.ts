@@ -14,6 +14,7 @@ import { createLogger } from "@/lib/logger";
 import { buildSystem, askClaude, cleanReply, extractBooking, bookingEmailHtml } from "@/lib/bot/core";
 import { getWebHistory, saveWebTurn, formatWebHistory } from "@/lib/bot/memory";
 import { saveBooking } from "@/lib/bot/google-bridge";
+import { extractImages, type BotImage } from "@/lib/bot/images";
 
 const logger = createLogger("claude-chatbot");
 
@@ -51,7 +52,9 @@ export function isBotConfigured(): boolean {
  * Không ném lỗi ra ngoài: khách gặp sự cố kỹ thuật thì thấy câu mời gọi
  * hotline, tốt hơn nhiều so với màn hình lỗi.
  */
-export async function askBot(input: AskInput): Promise<string | null> {
+export type BotAnswer = { answer: string; images: BotImage[] };
+
+export async function askBot(input: AskInput): Promise<BotAnswer | null> {
   const key = `web-${input.sessionId}`;
 
   try {
@@ -67,7 +70,9 @@ export async function askBot(input: AskInput): Promise<string | null> {
     });
 
     const rawReply = await askClaude(staticPart, dynamicPart, historyText + input.question);
-    let reply = cleanReply(rawReply);
+    const picked = extractImages(cleanReply(rawReply));
+    let reply = picked.text;
+    const images = picked.images;
 
     if (!reply) {
       // Lưới an toàn: nếu mô hình chỉ xuất mỗi khối dữ liệu mà quên viết
@@ -104,7 +109,7 @@ export async function askBot(input: AskInput): Promise<string | null> {
       });
     }
 
-    return reply;
+    return { answer: reply, images };
   } catch (err) {
     logger.error(
       "Không gọi được bot Claude",
