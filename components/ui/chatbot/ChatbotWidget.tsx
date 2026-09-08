@@ -130,6 +130,30 @@ export default function ChatbotWidget({
                 ${m.side === "user" ? "bg-[#EAF4FE] text-[#1C2930]" : "bg-[#F5F7FA] text-[#1C2930]"}`}
             >
               {renderText(m.text)}
+
+              {/* Ảnh bot gửi kèm — phòng, menu. Bấm mở ảnh gốc tab mới. */}
+              {m.images && m.images.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 gap-1.5">
+                  {m.images.map((img) => (
+                    <a
+                      key={img.url}
+                      href={img.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={img.caption}
+                      className="block overflow-hidden rounded-lg border border-[#DCE7F3]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.url}
+                        alt={img.caption}
+                        loading="lazy"
+                        className="h-24 w-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
