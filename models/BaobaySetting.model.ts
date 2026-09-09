@@ -47,6 +47,28 @@ export interface IBaobaySetting {
    * rồi deploy lại (luật chủ 07/09).
    */
   requireTicketCodes?: boolean;
+  /**
+   * THỜI TIẾT của điểm: chỗ cất cánh thật và ngưỡng gió do chủ điểm đặt.
+   *
+   * Để trong cấu hình điểm chứ không đóng cứng trong mã nguồn vì hai lẽ: chỗ
+   * cất cánh có thể dời (Sa Pa còn đang chọn bãi), và ngưỡng an toàn là thứ
+   * chủ điểm chỉnh dần theo kinh nghiệm — mỗi lần chỉnh mà phải sửa mã rồi
+   * deploy lại thì chẳng ai chỉnh.
+   *
+   * `huongThuan` là cung hướng gió cất cánh được, [từ, đến] theo chiều kim
+   * đồng hồ; null = không xét hướng.
+   */
+  weather?: {
+    lat?: number;
+    lon?: number;
+    alt?: number;
+    ten?: string;
+    huongThuan?: [number, number] | null;
+    gioXanh?: number;
+    gioDo?: number;
+    giatDo?: number;
+    muaDo?: number;
+  };
   /** Lần gần nhất bấm/chạy "Lấy book từ website & OTA" cho điểm này. */
   webSyncAt?: Date;
   webSyncBy?: string;
@@ -66,6 +88,24 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
     bookSheetWebhookUrl: String,
     bookSheetSecret: String,
     requireTicketCodes: { type: Boolean, default: undefined },
+    /** `_id: false` — đây là một khối cấu hình, không phải bản ghi con. */
+    weather: {
+      type: new Schema(
+        {
+          lat: Number,
+          lon: Number,
+          alt: Number,
+          ten: String,
+          huongThuan: { type: [Number], default: undefined },
+          gioXanh: Number,
+          gioDo: Number,
+          giatDo: Number,
+          muaDo: Number,
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     webSyncAt: Date,
     webSyncBy: String,
     updatedBy: String,

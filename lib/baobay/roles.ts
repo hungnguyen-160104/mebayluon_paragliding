@@ -60,14 +60,20 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
    * cái sổ trống rỗng và không hiểu để làm gì.
    */
   const sapa = (spots ?? []).includes("sapa") ? [{ href: "/baocao/so-sapa", label: "Sổ Sa Pa" }] : [];
+  /**
+   * THỜI TIẾT hiện với mọi vai ĐỨNG Ở ĐIỂM BAY. Trời xấu không phải việc riêng
+   * của điều phối: quầy vé phải biết để dừng bán, phi công để khỏi lên đèo sớm.
+   * Kế toán và các vai ngồi văn phòng thì không cần — họ không quyết bay hay nghỉ.
+   */
+  const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết" }];
   switch (role) {
     case "pilot":
-      return [{ href: "/baocao/phi-cong", label: "Phi công" }];
+      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...troi];
     case "cameraman":
-      return [{ href: "/baocao/camera", label: "Camera man" }];
+      return [{ href: "/baocao/camera", label: "Camera man" }, ...troi];
     case "dispatcher":
     case "counter":
-      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }, ...sapa];
+      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }, ...sapa, ...troi];
     case "accountant":
       /**
        * Thẻ đầu mang chữ "KẾ TOÁN" hẳn ra: người kiêm nhiệm nhìn thanh thẻ toàn
@@ -99,7 +105,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
-      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa];
+      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...troi];
     default:
       return [];
   }

@@ -1,0 +1,433 @@
+// services/baobay-thoitiet.service.ts
+
+/**
+ * THỜI TIẾT ĐIỂM BAY — gọi mô hình khí tượng, chấm màu, và giữ sổ kinh nghiệm.
+ *
+ * NGUỒN SỐ — hai đường, tự chọn:
+ *
+ *  1. WINDY POINT FORECAST API, dùng khi có biến môi trường `WINDY_API_KEY`.
+ *     Số lấy thẳng từ windy.com nên khớp từng con với bản đồ nhúng bên cạnh —
+ *     không còn cảnh nhân viên đọc app một đằng, mở Windy thấy một nẻo.
+ *  2. OPEN-METEO chạy ECMWF IFS, khi chưa cắm khoá. Cũng là mô hình Windy hiển
+ *     thị mặc định nên số rất sát, và không cần khoá, không tính tiền.
+ *
+ * Đường 1 hỏng (hết lượt, khoá sai, Windy chậm) thì tự rơi xuống đường 2 chứ
+ * không để thẻ trống: điều phối cần con số ngay, thà lệch một hai km/h.
+ *
+ * KHOÁ, KHÔNG PHẢI TÀI KHOẢN: đây là khoá API lấy ở api.windy.com — khác với
+ * mật khẩu tài khoản Premium của windy.com, và không bao giờ nên đưa mật khẩu
+ * ấy vào mã nguồn hay biến môi trường.
+ */
+
+import { connectDB } from "@/lib/mongodb";
+import { todayInVN } from "@/lib/baobay/date";
+import { normalizeSpot, type SpotId } from "@/lib/baobay/spots";
+import {
+  chamGio,
+  gopNgay,
+  hocNguong,
+  nguongCuaDiem,
+  toaDoDiemBay,
+  type GioThoiTiet,
+  type LanCham,
+  type NgayThoiTiet,
+  type NguongBay,
+  type NguongHoc,
+  type ToaDoDiemBay,
+} from "@/lib/baobay/thoi-tiet";
+import { BaobaySetting } from "@/models/BaobaySetting.model";
+import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
+
+/* ================================================================== */
+/* Gọi mô hình                                                         */
+/* ================================================================== */
+
+const HOURLY = [
+  "temperature_2m",
+  "precipitation",
+  "cloud_cover",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "wind_gusts_10m",
+].join(",");
+
+/**
+ * BỘ NHỚ TẠM TRONG TIẾN TRÌNH, 20 phút.
+ *
+ * Mô hình ECMWF chỉ chạy 4 lần một ngày nên gọi lại sau mỗi lần bấm F5 là phí:
+ * số y hệt, mà mỗi lần chờ mạng lại thêm một giây trắng màn hình. 20 phút đủ
+ * ngắn để không ai xem phải số cũ của hôm trước, đủ dài để cả ca trực chỉ gọi
+ * vài lần. Máy chủ khởi động lại thì mất — không sao, gọi lại là có.
+ */
+const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string }>();
+const CACHE_MS = 20 * 60 * 1000;
+
+/* ------------------------------------------------------------------ */
+/* Đường 1: Windy Point Forecast API                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Windy trả GIÓ THEO HAI THÀNH PHẦN u (đông) và v (bắc), đơn vị m/s — phải tự
+ * đổi ra tốc độ và hướng. Hướng tính bằng `atan2` rồi cộng 180° vì quy ước khí
+ * tượng nói gió THỔI TỚI TỪ đâu, còn véc-tơ u/v chỉ hướng gió ĐI VỀ.
+ */
+function uvSangGio(u: number, v: number): { tocDo: number; huong: number } {
+  const tocDo = Math.sqrt(u * u + v * v) * 3.6; // m/s → km/h
+  const huong = (Math.atan2(-u, -v) * 180) / Math.PI;
+  return { tocDo, huong: ((huong % 360) + 360) % 360 };
+}
+
+/**
+ * Gọi Windy và trả về ĐÚNG hình dạng mà Open-Meteo trả, để phần chấm màu phía
+ * sau không cần biết số đến từ đâu.
+ */
+async function goiWindy(toaDo: ToaDoDiemBay, key: string): Promise<any> {
+  const res = await fetch("https://api.windy.com/api/point-forecast/v2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      lat: toaDo.lat,
+      lon: toaDo.lon,
+      model: "ecmwf",
+      parameters: ["wind", "gust", "precip", "temp", "lclouds", "mclouds", "hclouds"],
+      levels: ["surface"],
+      key,
+    }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`Windy trả ${res.status}`);
+  const w = await res.json();
+  const ts: number[] = w?.ts ?? [];
+  if (!ts.length) throw new Error("Windy không trả mốc thời gian");
+
+  const u: number[] = w["wind_u-surface"] ?? [];
+  const v: number[] = w["wind_v-surface"] ?? [];
+  const gust: number[] = w["gust-surface"] ?? [];
+  const precip: number[] = w["past3hprecip-surface"] ?? w["precip-surface"] ?? [];
+  const temp: number[] = w["temp-surface"] ?? [];
+  const may = (i: number) =>
+    Math.max(
+      Number(w["lclouds-surface"]?.[i] ?? 0),
+      Number(w["mclouds-surface"]?.[i] ?? 0),
+      Number(w["hclouds-surface"]?.[i] ?? 0),
+    );
+
+  const hourly: any = {
+    time: [],
+    wind_speed_10m: [],
+    wind_direction_10m: [],
+    wind_gusts_10m: [],
+    precipitation: [],
+    cloud_cover: [],
+    temperature_2m: [],
+  };
+  for (let i = 0; i < ts.length; i++) {
+    /**
+     * Windy trả mốc UTC; cả hệ này làm việc bằng giờ Việt Nam nên đổi ngay tại
+     * đây, không để lệch 7 tiếng chảy vào phần gộp theo ngày.
+     */
+    const d = new Date(ts[i] + 7 * 3600 * 1000);
+    hourly.time.push(d.toISOString().slice(0, 16));
+    const g = uvSangGio(Number(u[i] ?? 0), Number(v[i] ?? 0));
+    hourly.wind_speed_10m.push(g.tocDo);
+    hourly.wind_direction_10m.push(g.huong);
+    hourly.wind_gusts_10m.push(Number(gust[i] ?? 0) * 3.6);
+    /** Windy gộp mưa 3 giờ; chia ra để cùng thang "mm trong giờ" với Open-Meteo. */
+    hourly.precipitation.push(Math.max(0, Number(precip[i] ?? 0)) / 3);
+    hourly.cloud_cover.push(may(i));
+    hourly.temperature_2m.push(Number(temp[i] ?? 273.15) - 273.15); // Kelvin → °C
+  }
+  return { hourly };
+}
+
+async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string): Promise<any> {
+  const q = new URLSearchParams({
+    latitude: String(toaDo.lat),
+    longitude: String(toaDo.lon),
+    hourly: HOURLY,
+    forecast_days: String(soNgay),
+    timezone: "Asia/Bangkok",
+    wind_speed_unit: "kmh",
+  });
+  if (moHinh) q.set("models", moHinh);
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`, {
+    /** Next tự cache fetch phía máy chủ — tắt đi vì đã có bộ nhớ tạm ở trên. */
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`Open-Meteo trả ${res.status}`);
+  return res.json();
+}
+
+/** Đọc dự báo và chấm màu từng giờ, gộp theo ngày. */
+export async function duBaoDiemBay(
+  spot: string,
+  opts: { soNgay?: number; boCache?: boolean } = {},
+): Promise<{
+  spot: SpotId;
+  toaDo: ToaDoDiemBay;
+  nguong: NguongBay;
+  ngay: NgayThoiTiet[];
+  /** Mô hình thật sự dùng được — hiện dưới thẻ cho minh bạch. */
+  moHinh: string;
+  layLuc: string;
+}> {
+  const key = normalizeSpot(spot);
+  const { toaDo, nguong } = await cauHinhDiem(key);
+  const soNgay = Math.min(7, Math.max(1, opts.soNgay ?? 5));
+  const cacheKey = `${key}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
+
+  const cu = CACHE.get(cacheKey);
+  if (!opts.boCache && cu && Date.now() - cu.luc < CACHE_MS) {
+    return { spot: key, toaDo, nguong, ngay: cu.du, moHinh: cu.moHinh, layLuc: new Date(cu.luc).toISOString() };
+  }
+
+  let raw: any;
+  let moHinh = "ECMWF IFS (Open-Meteo)";
+  const khoaWindy = process.env.WINDY_API_KEY?.trim();
+  if (khoaWindy) {
+    try {
+      raw = await goiWindy(toaDo, khoaWindy);
+      moHinh = "Windy Point Forecast (ECMWF)";
+    } catch (e) {
+      /** Ghi lại rồi đi tiếp: hết lượt gọi trong ngày là chuyện thường, không phải sự cố. */
+      console.warn("Windy API không dùng được, rơi về Open-Meteo:", (e as Error)?.message);
+    }
+  }
+  if (!raw) {
+    try {
+      raw = await goiMoHinh(toaDo, soNgay, "ecmwf_ifs025");
+    } catch {
+      /** ECMWF hỏng thì lấy bản trộn — xem ghi chú đầu tệp. */
+      raw = await goiMoHinh(toaDo, soNgay);
+      moHinh = "Open-Meteo (trộn mô hình)";
+    }
+  }
+
+  const h = raw?.hourly;
+  if (!h?.time?.length) throw new Error("Mô hình không trả dữ liệu theo giờ");
+
+  const theoNgay = new Map<string, Array<GioThoiTiet & ReturnType<typeof chamGio>>>();
+  for (let i = 0; i < h.time.length; i++) {
+    const g: GioThoiTiet = {
+      gio: h.time[i],
+      gio10m: Number(h.wind_speed_10m?.[i] ?? 0),
+      giat: Number(h.wind_gusts_10m?.[i] ?? 0),
+      huong: Number(h.wind_direction_10m?.[i] ?? 0),
+      mua: Number(h.precipitation?.[i] ?? 0),
+      may: Number(h.cloud_cover?.[i] ?? 0),
+      nhietDo: Number(h.temperature_2m?.[i] ?? 0),
+    };
+    const ngay = g.gio.slice(0, 10);
+    if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
+    theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan) });
+  }
+
+  const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio)).slice(0, soNgay);
+  CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
+  return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+}
+
+/* ================================================================== */
+/* Cấu hình toạ độ + ngưỡng của điểm                                   */
+/* ================================================================== */
+
+export async function cauHinhDiem(spot: string): Promise<{ toaDo: ToaDoDiemBay; nguong: NguongBay }> {
+  await connectDB();
+  const key = normalizeSpot(spot);
+  const doc = await BaobaySetting.findOne({ key }).select("weather").lean<any>();
+  const w = doc?.weather ?? null;
+  return {
+    toaDo: toaDoDiemBay(key, w),
+    nguong: nguongCuaDiem(w),
+  };
+}
+
+export type LuuCauHinh = Partial<{
+  lat: number;
+  lon: number;
+  alt: number;
+  ten: string;
+  huongTu: number;
+  huongDen: number;
+  gioXanh: number;
+  gioDo: number;
+  giatDo: number;
+  muaDo: number;
+}>;
+
+export async function luuCauHinhDiem(
+  spot: string,
+  patch: LuuCauHinh,
+  boi: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = normalizeSpot(spot);
+  const set: Record<string, unknown> = {};
+
+  if (patch.lat !== undefined || patch.lon !== undefined) {
+    const lat = Number(patch.lat);
+    const lon = Number(patch.lon);
+    /** Chặn toạ độ vô lý ngay ở đây: sai một dấu là thẻ chỉ về giữa Thái Bình Dương. */
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return { ok: false, error: "Vĩ độ phải trong khoảng -90…90" };
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) return { ok: false, error: "Kinh độ phải trong khoảng -180…180" };
+    set["weather.lat"] = lat;
+    set["weather.lon"] = lon;
+  }
+  if (patch.alt !== undefined) set["weather.alt"] = Math.max(0, Math.round(Number(patch.alt) || 0));
+  if (patch.ten !== undefined) set["weather.ten"] = String(patch.ten).trim().slice(0, 80);
+
+  if (patch.huongTu !== undefined && patch.huongDen !== undefined) {
+    const tu = Number(patch.huongTu);
+    const den = Number(patch.huongDen);
+    /** Bỏ trống cả hai = không chấm hướng nữa (điểm bay xoay được nhiều phía). */
+    if (!Number.isFinite(tu) || !Number.isFinite(den)) set["weather.huongThuan"] = null;
+    else set["weather.huongThuan"] = [((tu % 360) + 360) % 360, ((den % 360) + 360) % 360];
+  }
+
+  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo"] as const) {
+    if (patch[k] === undefined) continue;
+    const v = Number(patch[k]);
+    if (!Number.isFinite(v) || v <= 0) return { ok: false, error: `Ngưỡng ${k} phải là số dương` };
+    set[`weather.${k}`] = v;
+  }
+
+  if (!Object.keys(set).length) return { ok: true };
+  set.updatedBy = boi;
+
+  await connectDB();
+  await BaobaySetting.updateOne({ key }, { $set: set }, { upsert: true });
+  /** Đổi toạ độ là số cũ vô nghĩa — xoá bộ nhớ tạm của điểm này ngay. */
+  for (const k of [...CACHE.keys()]) if (k.startsWith(`${key}:`)) CACHE.delete(k);
+  return { ok: true };
+}
+
+/* ================================================================== */
+/* Sổ kinh nghiệm: chấm ngày và học ngưỡng                             */
+/* ================================================================== */
+
+export async function chamNgay(
+  spot: string,
+  input: { date: string; verdict: "tot" | "han-che" | "nghi"; note?: string },
+  boi: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = normalizeSpot(spot);
+  const date = String(input.date || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
+  if (!["tot", "han-che", "nghi"].includes(input.verdict)) return { ok: false, error: "Kết luận không hợp lệ" };
+  /** Chấm ngày mai thì chấm cái gì? Chỉ nhận hôm nay trở về trước. */
+  if (date > todayInVN()) return { ok: false, error: "Chưa qua ngày thì chưa chấm được" };
+
+  /**
+   * CHỤP SỐ CỦA NGÀY ĐÓ ngay lúc chấm — xem ghi chú ở model. Ngày hôm nay thì
+   * lấy từ dự báo đang chạy; ngày đã qua thì hỏi kho lịch sử của Open-Meteo.
+   */
+  const so = await soCuaNgay(key, date);
+
+  await connectDB();
+  await BaobayWeatherMark.updateOne(
+    { spot: key, date },
+    {
+      $set: {
+        verdict: input.verdict,
+        note: String(input.note || "").trim().slice(0, 300),
+        markedBy: boi,
+        ...(so ?? {}),
+      },
+    },
+    { upsert: true },
+  );
+  return { ok: true };
+}
+
+/** Gió/giật/mưa lớn nhất trong khung giờ bay của một ngày — cho sổ kinh nghiệm. */
+async function soCuaNgay(
+  spot: SpotId,
+  date: string,
+): Promise<{ windMax: number; gustMax: number; rainTotal: number; windDir: number } | null> {
+  try {
+    const { toaDo } = await cauHinhDiem(spot);
+    const homNay = todayInVN();
+    const q = new URLSearchParams({
+      latitude: String(toaDo.lat),
+      longitude: String(toaDo.lon),
+      hourly: HOURLY,
+      timezone: "Asia/Bangkok",
+      wind_speed_unit: "kmh",
+      start_date: date,
+      end_date: date,
+    });
+    /**
+     * Ngày đã qua thì phải hỏi máy chủ LỊCH SỬ: máy chủ dự báo chỉ giữ vài ngày
+     * gần đây, hỏi ngày cũ nó trả rỗng chứ không báo lỗi — thẻ sẽ im lặng thiếu số.
+     */
+    const goc = date < homNay ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast";
+    const res = await fetch(`${goc}?${q}`, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
+    if (!res.ok) return null;
+    const h = (await res.json())?.hourly;
+    if (!h?.time?.length) return null;
+
+    let windMax = 0;
+    let gustMax = 0;
+    let rainTotal = 0;
+    let windDir = 0;
+    let dem = 0;
+    for (let i = 0; i < h.time.length; i++) {
+      const gio = Number(String(h.time[i]).slice(11, 13));
+      if (gio < 7 || gio > 17) continue;
+      windMax = Math.max(windMax, Number(h.wind_speed_10m?.[i] ?? 0));
+      gustMax = Math.max(gustMax, Number(h.wind_gusts_10m?.[i] ?? 0));
+      rainTotal += Number(h.precipitation?.[i] ?? 0);
+      windDir += Number(h.wind_direction_10m?.[i] ?? 0);
+      dem++;
+    }
+    if (!dem) return null;
+    return {
+      windMax: Math.round(windMax * 10) / 10,
+      gustMax: Math.round(gustMax * 10) / 10,
+      rainTotal: Math.round(rainTotal * 10) / 10,
+      windDir: Math.round(windDir / dem),
+    };
+  } catch {
+    /** Không lấy được số thì vẫn cho chấm — mất một dòng dữ liệu học, không mất việc. */
+    return null;
+  }
+}
+
+export type LichSuCham = {
+  date: string;
+  verdict: "tot" | "han-che" | "nghi";
+  note: string;
+  windMax?: number;
+  gustMax?: number;
+  rainTotal?: number;
+  markedBy: string;
+};
+
+export async function soKinhNghiem(
+  spot: string,
+  gioiHan = 120,
+): Promise<{ cham: LichSuCham[]; hoc: NguongHoc }> {
+  await connectDB();
+  const key = normalizeSpot(spot);
+  const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(gioiHan).lean<any[]>();
+  const cham: LichSuCham[] = docs.map((d) => ({
+    date: d.date,
+    verdict: d.verdict,
+    note: d.note ?? "",
+    windMax: d.windMax,
+    gustMax: d.gustMax,
+    rainTotal: d.rainTotal,
+    markedBy: d.markedBy ?? "",
+  }));
+  const lan: LanCham[] = cham
+    .filter((c) => Number.isFinite(c.windMax) && Number.isFinite(c.gustMax))
+    .map((c) => ({
+      ngay: c.date,
+      ket: c.verdict,
+      gioMax: Number(c.windMax),
+      giatMax: Number(c.gustMax),
+      muaTong: Number(c.rainTotal ?? 0),
+    }));
+  return { cham, hoc: hocNguong(lan) };
+}

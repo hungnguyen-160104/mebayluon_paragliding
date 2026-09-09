@@ -42,6 +42,7 @@ import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
+import { ThoiTietCard } from "../components/ThoiTietCard";
 import { DISPATCHER_LIKE_ROLES } from "@/lib/baobay/roles";
 import { useSpot } from "../components/spot";
 import { Shell } from "../components/Shell";
@@ -526,6 +527,17 @@ export default function DispatcherReportPage() {
         spotOptions={spotOptions}
         onSpotChange={(v) => setSpot(v as never)}
       />
+
+      {/**
+       * THỜI TIẾT ngay đầu trang, bản rút gọn: dải 5 ngày và một dòng kết luận.
+       *
+       * Đặt trên mọi thứ khác vì nó quyết định cả ngày làm việc — biết chiều
+       * gió lên thì gọi khách dồn lên sáng, chứ đừng để 15h mới phát hiện.
+       * Bản đầy đủ (bảng giờ, bản đồ Windy, chấm kinh nghiệm) ở /baocao/thoi-tiet.
+       */}
+      <div className="mt-2">
+        <ThoiTietCard spot={spot} homNay={today} gon />
+      </div>
 
       <ReviewNotices spot={spot} date={date} />
 
