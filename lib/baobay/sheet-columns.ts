@@ -118,9 +118,13 @@ function cotSapa(dests: SheetDest[], thang: boolean, keToan: boolean): SheetCol[
     { key: "unitPrice", label: "Đơn giá", edit: "unitPrice", kind: "money", w: 78, right: true, g1: "THÔNG TIN VÉ" },
     { key: "lineAmount", label: "Thành tiền", kind: "money", w: 82, right: true, g1: "THÔNG TIN VÉ" },
     { key: "flycam", label: "Fly", edit: "flycam", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Flycam — số suất" },
-    { key: "flycamMoney", label: "", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ", title: "Tiền flycam — máy tính" },
+    /**
+     * Có TÊN, dù trên bảng Google ô này trống (tiêu đề "Flycam" bị gộp trùm hai
+     * cột). Bắt chước cái trống đó lên app là một cột không ai biết là gì.
+     */
+    { key: "flycamMoney", label: "Tiền fly", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ", title: "Tiền flycam — máy tính" },
     { key: "video360", label: "360", edit: "video360", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Camera 360 — số suất" },
-    { key: "video360Money", label: "", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ", title: "Tiền cam 360 — máy tính" },
+    { key: "video360Money", label: "Tiền 360", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ", title: "Tiền cam 360 — máy tính" },
     { key: "extraFee", label: "Phụ thu", edit: "extraFee", kind: "money", w: 78, right: true, g1: "THÔNG TIN VÉ", title: "Phụ thu khác — gõ số ÂM nghĩa là giảm giá, đúng nếp sổ tay" },
     { key: "total", label: "TỔNG THU", kind: "money", w: 92, right: true, strong: true, g1: "THÔNG TIN VÉ" },
 

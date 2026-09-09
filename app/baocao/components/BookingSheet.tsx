@@ -59,7 +59,8 @@ function paidOf(b: BookingDTO): number {
   return Math.max(0, Math.max(0, (b.deposit || 0) - collected + refunded) + collected - refunded);
 }
 
-function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
+/** Mở ra để phép thử gọi thẳng — ô tiền máy tính từng trống mà không ai thấy. */
+export function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
   /**
    * GIÁ PPG chỉ hiện ở dòng CÓ khách PPG. Để trống nghĩa là "theo bảng giá",
    * nên hiện luôn số của bảng trong ngoặc — người soát khỏi phải nhớ, mà vẫn
@@ -81,6 +82,20 @@ function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
       return String(Math.max(0, (b.guestCount || 0) - (b.ppgGuests || 0)) || "");
     case "lineAmount":
       return vnd((b.unitPrice || 0) * (b.guestCount || 0));
+    /**
+     * Ba cột tiền MÁY TÍNH mà booking KHÔNG mang sẵn (lưới tháng của Sa Pa
+     * được máy chủ tính hộ, lưới ngày này nhận thẳng BookingDTO). Không tính
+     * ở đây thì ô trống dù Fly = 1 — đúng cái đã lộ trên ảnh chụp.
+     * Giá lấy theo LÚC LẬP booking (servicePriceOf), cùng luật với máy chủ.
+     */
+    case "flycamMoney":
+      return vnd((b.flycam || 0) * servicePriceOf(spot, b.createdAt).flycam);
+    case "video360Money":
+      return vnd((b.video360 || 0) * servicePriceOf(spot, b.createdAt).video360);
+    case "extraFee": {
+      const g = servicePriceOf(spot, b.createdAt);
+      return vnd((b.pickupFee || 0) + (b.redFlag || 0) * g.redFlag + (b.flagFlight || 0) * g.flagFlight - (b.discount || 0));
+    }
     case "total":
       return vnd(b.totalAmount || 0);
     case "paid":
@@ -99,8 +114,13 @@ function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
   return String(v ?? "");
 }
 
-function editValueOf(b: BookingDTO, col: SheetCol): string {
+function editValueOf(b: BookingDTO, col: SheetCol, spot: string): string {
   if (col.key === "guestNames") return guestNamesOf(b);
+  /** Ô "Phụ thu" gộp phí đón + dịch vụ lẻ − giảm — đưa đúng số gộp vào ô nhập. */
+  if (col.key === "extraFee") {
+    const n = Number(cellText(b, col, spot).replace(/\./g, "")) || 0;
+    return n ? String(n) : "";
+  }
   if (col.key === "pgGuests") return String(Math.max(0, (b.guestCount || 0) - (b.ppgGuests || 0)) || "");
   if (col.kind === "money" || col.kind === "num") {
     const n = Number((b as unknown as Record<string, unknown>)[col.key]) || 0;
@@ -201,7 +221,7 @@ export function BookingSheet({
       /** Giá PPG chỉ có nghĩa với booking CÓ khách PPG — dòng khác không gõ được. */
       if (col.key === "ppgUnitPrice" && !(b.ppgGuests ?? 0)) return;
       setSel({ r, c });
-      setDraft(editValueOf(b, col));
+      setDraft(editValueOf(b, col, spot));
       setEditing(true);
     },
     [rows, cols, canEdit, lockedFor],
@@ -236,7 +256,7 @@ export function BookingSheet({
     async (r: number, c: number, value: string) => {
       const b = rows[r];
       const col = cols[c];
-      if (!b || !col?.edit || value === editValueOf(b, col)) return;
+      if (!b || !col?.edit || value === editValueOf(b, col, spot)) return;
       const key = `${b.id}:${col.edit}`;
       setSaving(key);
       setError(null);
