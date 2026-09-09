@@ -83,16 +83,24 @@ export type SheetCol = {
   bgCell?: string;
 };
 
-/** Bảng màu của sổ tay Sa Pa (mã từ tệp .xlsx). */
+/**
+ * Bảng màu của sổ tay Sa Pa — CÙNG TÔNG với tệp .xlsx nhưng PHA NHẠT đi.
+ *
+ * Bảng tính gốc dùng màu nguyên (#FFFF00, #00FFFF, #FF0000): trên giấy và ở
+ * vài cột thì được, nhưng ba mươi cột nhìn cả ngày trên màn hình là chói mắt,
+ * chữ đen trên xanh ngọc đậm đọc mệt. Giữ đúng sắc (vàng vẫn vàng, ngọc vẫn
+ * ngọc) để ai quen sổ cũ vẫn nhận ra cột, chỉ pha trắng vào cho dịu.
+ * Mã gốc ghi cạnh để đối chiếu.
+ */
 export const MAU = {
-  nhanDang: "#CFE2F3", // xanh nhạt — nhóm nhận ra khách, chiết khấu, ghi chú
-  vang: "#FFFF00", //     đơn giá, số suất dịch vụ, phụ thu (tiêu đề) · Tháng/Ngày (dữ liệu)
-  vangNhat: "#FFE599", // ô số suất flycam / 360 (dữ liệu)
-  ngoc: "#00FFFF", //     Thành tiền, TỔNG THU — máy tính
-  la: "#D9EAD3", //       ĐẶT CỌC
-  cam: "#FCE5CD", //      NGƯỜI NHẬN TIỀN
-  xam: "#EFEFEF", //      POS
-  do: "#FF0000", //       Chi TM / Chi CK (tiêu đề)
+  nhanDang: "#E3EEF9", // gốc #CFE2F3 — xanh nhạt: nhóm nhận ra khách, chiết khấu, ghi chú
+  vang: "#FFF7B3", //     gốc #FFFF00 — đơn giá, số suất dịch vụ, phụ thu (tiêu đề) · Tháng/Ngày (dữ liệu)
+  vangNhat: "#FFF3CC", // gốc #FFE599 — ô số suất flycam / 360 (dữ liệu)
+  ngoc: "#CFF6F6", //     gốc #00FFFF — Thành tiền, TỔNG THU — máy tính
+  la: "#E7F3E2", //       gốc #D9EAD3 — ĐẶT CỌC
+  cam: "#FDF0E1", //      gốc #FCE5CD — NGƯỜI NHẬN TIỀN
+  xam: "#F3F3F3", //      gốc #EFEFEF — POS
+  do: "#F6C9C9", //       gốc #FF0000 — Chi TM / Chi CK (tiêu đề)
 } as const;
 
 export type SheetDest = { id: string; label: string };
@@ -120,7 +128,7 @@ const CUOI = (thang: boolean): SheetCol[] => [
     ? [{ key: "status", label: "T.thái", edit: "status", kind: "status" as const, w: 70, title: "Trạng thái: chờ bay / đã bay / đã huỷ" }]
     : []),
   { key: "note", label: "Ghi chú", edit: "note", kind: "text", w: 150, wrap: true },
-  { key: "contactNote", label: "GC gọi", edit: "contactNote", kind: "text", w: 130, wrap: true, title: "Ghi chú gọi khách" },
+  { key: "contactNote", label: "Điều phối Liên hệ", edit: "contactNote", kind: "text", w: 130, wrap: true, title: "Điều phối ghi lại khi liên hệ khách" },
 ];
 
 /** BỐ CỤC SA PA — bám đúng tab tháng, kể cả những cột app để trống. */

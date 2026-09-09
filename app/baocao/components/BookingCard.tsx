@@ -145,16 +145,22 @@ function NhanTrangThai({ b }: { b: BookingDTO }) {
       {/**
        * "CHỜ BAY" cũng là một nhãn — lưới Sheet đã bỏ cột T.thái, nên dòng
        * chưa bay mà ô mã booking trống trơn thì không biết là chờ hay là máy
-       * chưa vẽ xong. Chữ xám, không to: đây là trạng thái mặc định của mọi
-       * dòng, không phải mốc đáng chú ý như đã bay / bay không vé.
+       * chưa vẽ xong. Màu xanh da trời cho nổi khỏi nền trắng của ô, nhưng
+       * không to: đây là trạng thái mặc định của mọi dòng, không phải mốc
+       * đáng chú ý như đã bay / bay không vé.
+       *
+       * `wrap`: ô mã booking của lưới Sheet chỉ ~100px, "🎫✕ bay không vé" cỡ
+       * to không vừa một dòng — cắt cụt thì mất chữ "vé", tức mất luôn nghĩa.
+       * Cho bẻ dòng: cột chỉ có mấy nhãn ngắn nên không sợ phình như cột đầu
+       * bản Bảng.
        */}
-      {b.status === "open" && <Nhan tone="slate" label="⏳ chờ bay" />}
-      {b.status === "done" && <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big />}
+      {b.status === "open" && <Nhan tone="sky" label="⏳ chờ bay" wrap />}
+      {b.status === "done" && <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big wrap />}
       {b.ticketIssued && (
-        <Nhan tone="amber" label="🎫 đã xuất vé" by={[shortName(b.ticketIssuedBy ?? ""), gioXuatVe(b)].filter(Boolean).join(" ")} big />
+        <Nhan tone="amber" label="🎫 đã xuất vé" by={[shortName(b.ticketIssuedBy ?? ""), gioXuatVe(b)].filter(Boolean).join(" ")} big wrap />
       )}
-      {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big />}
-      {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} />}
+      {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big wrap />}
+      {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} wrap />}
     </>
   );
 }
@@ -3497,8 +3503,9 @@ function Nhan({
   by,
   big,
   title,
+  wrap,
 }: {
-  tone: "emerald" | "amber" | "orange" | "rose" | "slate";
+  tone: "emerald" | "amber" | "orange" | "rose" | "sky";
   label: string;
   /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
   by?: string;
@@ -3515,13 +3522,15 @@ function Nhan({
    */
   big?: boolean;
   title?: string;
+  /** Cho bẻ dòng thay vì cắt cụt — dùng ở ô hẹp mà chữ phải đọc được trọn. */
+  wrap?: boolean;
 }) {
   const mau = {
     emerald: "bg-emerald-100 text-emerald-800",
     amber: "bg-amber-100 text-amber-800",
     orange: "bg-orange-100 text-orange-900",
     rose: "bg-rose-100 text-rose-700",
-    slate: "bg-slate-100 text-slate-600",
+    sky: "bg-sky-100 text-sky-800",
   }[tone];
   return (
     <div
@@ -3536,8 +3545,8 @@ function Nhan({
        * nhãn thành bốn năm dòng và cả hàng cao vọt lên, sổ nhìn như bị xé.
        * Chữ đầy đủ nằm ở tooltip.
        */}
-      <div className={"truncate " + (big ? "text-[11px]" : "")}>{label}</div>
-      {by ? <div className="truncate font-medium opacity-75">by {by}</div> : null}
+      <div className={(wrap ? "whitespace-normal break-words " : "truncate ") + (big ? "text-[11px]" : "")}>{label}</div>
+      {by ? <div className={(wrap ? "whitespace-normal break-words " : "truncate ") + "font-medium opacity-75"}>by {by}</div> : null}
     </div>
   );
 }

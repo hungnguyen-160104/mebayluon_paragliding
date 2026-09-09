@@ -28,7 +28,7 @@ import { useFillHeight } from "./useFillHeight";
  *
  * CỘT THAO TÁC bày nút ra ngoài, xếp y như bên ▦ Bảng: chưa bay thì lưới hai
  * cột (thu tiền · in vé · đã bay · cần gọi · ⋯ Thêm) rộng 190px; đã bay/huỷ
- * chỉ còn ba nút (chưa bay · khoá · ⋯ Thêm) xếp MỘT HÀNG ba cột cho dòng thấp.
+ * chỉ còn ba nút: [chưa bay][khoá] một hàng, [⋯ Thêm] hàng dưới trải ngang.
  * Vị trí nút cố định nên tay bấm quen chỗ. Bấm ⋯ Thêm thì phần còn lại (bay
  * không vé · sửa thu · dời lịch · huỷ ·
  * khoá · bảo hiểm) xổ ra ngay dưới dòng, trải hết bề ngang.
@@ -539,7 +539,7 @@ export function BookingSheet({
                         /** Màu ô dữ liệu theo bảng gốc; ô đang gõ / đang lưu thì màu trạng thái thắng. */
                         style={{ ...freezeStyle(c), ...(col.bgCell && !isEditing && !busy ? { background: col.bgCell } : {}) }}
                         className={
-                          "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
+                          "border-b border-r border-slate-200 px-1 py-px align-middle leading-tight " +
                           (busy ? "bg-amber-100 " : col.edit && !tatPpg ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
                           (col.right ? "text-right tabular-nums " : "") +
                           (editable ? "cursor-text " : "") +
@@ -634,12 +634,12 @@ export function BookingSheet({
                    * Chưa bay thì LƯỚI HAI CỘT: [Thu tiền][In vé] · [Đã bay]
                    * [Cần gọi] · [⋯ Thêm]. Vị trí nút cố định nên tay bấm quen
                    * chỗ, khỏi nhìn. Đã bay/huỷ chỉ còn ba nút hoàn tác, hiếm khi
-                   * bấm — xếp một hàng ba cột để dòng xong việc thấp nhất.
+                   * bấm — hai hàng: [chưa bay][khoá] rồi [⋯ Thêm] trải ngang.
                    *
                    * Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời
                    * lịch · huỷ · khoá · bảo hiểm) xổ ra ngay dưới dòng.
                    */}
-                  <td className={"sticky right-0 z-10 border-b border-r border-slate-200 px-1 py-px align-top " + rowBg}>
+                  <td className={"sticky right-0 z-10 border-b border-r border-slate-200 px-1 py-px align-middle " + rowBg}>
                     <div
                       className={
                         /**
@@ -669,14 +669,13 @@ export function BookingSheet({
                          */
                         "gap-0.5 [&_button]:!h-auto [&_button]:!min-h-5 [&_button]:!flex-col [&_button]:!gap-0 [&_button]:!px-1 [&_button]:!py-0.5 [&_button]:!text-[9px] [&_button]:!leading-tight [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden " +
                         /**
-                         * ĐÃ BAY: chỉ còn ba nút (Chưa bay · Khoá · Thêm) —
-                         * xếp MỘT HÀNG ba cột cho dòng thấp bằng dòng chữ.
-                         * Bản trước xếp dọc trong 76px: ba nút chồng ba tầng,
-                         * dòng cao gấp ba chỉ để chứa ba chữ ngắn.
+                         * ĐÃ BAY: chỉ còn ba nút — [Chưa bay][Khoá] một hàng,
+                         * [⋯ Thêm] hàng dưới trải hết ngang. Cùng lưới hai cột
+                         * với dòng chưa bay nên nút Thêm luôn ở đáy ô, tay bấm
+                         * quen chỗ. Ba nút dàn một hàng thì chữ "Chưa bay" bị
+                         * bóp trong 60px; xếp dọc ba tầng thì dòng cao gấp ba.
                          */
-                        (done
-                          ? "grid grid-cols-3 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center"
-                          : "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center")
+                        "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center"
                       }
                     >
                       {/**
@@ -696,6 +695,7 @@ export function BookingSheet({
                         onClick={() => setStrip((x) => (x?.id === b.id ? null : { id: b.id, what: "more" }))}
                         className={
                           "h-5 rounded border px-1 text-[10px] font-bold " +
+                          (done ? "col-span-2 " : "") +
                           (strip?.id === b.id ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
                         }
                       >

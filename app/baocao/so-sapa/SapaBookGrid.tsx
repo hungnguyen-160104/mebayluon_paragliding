@@ -466,7 +466,7 @@ function DayBlock({
                   /** Màu ô dữ liệu theo bảng gốc; ô đang gõ / đang lưu thì màu trạng thái thắng. */
                   style={{ ...freezeStyle(c), ...(col.bgCell && !isEditing && !busy ? { background: col.bgCell } : {}) }}
                   className={
-                    "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
+                    "border-b border-r border-slate-200 px-1 py-px align-middle leading-tight " +
                     (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
                     (col.right ? "text-right tabular-nums " : "") +
                     (col.edit && !row.locked ? "cursor-text " : "") +
