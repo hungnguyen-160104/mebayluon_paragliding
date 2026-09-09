@@ -546,6 +546,8 @@ export type BookingDTO = {
   depositToCompany: boolean;
   /** Cọc gõ tay đi đường nào: "cash" | "transfer" | "" (bản ghi cũ chưa hỏi). */
   depositMethod?: "cash" | "transfer" | "";
+  /** Quỹ nhận khoản cọc gõ tay — xem lib/baobay/money-dest.ts. */
+  depositDest?: string;
   /**
    * NGÀY KHÁCH TRẢ CỌC ("YYYY-MM-DD") khi nó KHÁC ngày lập booking. Trống =
    * trả đúng hôm lập booking. Đối soát sao kê xếp khoản cọc theo ngày này.

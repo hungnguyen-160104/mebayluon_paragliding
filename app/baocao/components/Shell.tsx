@@ -48,10 +48,12 @@ export function Shell({
   /** Vai đơn: chỉ kế toán mới cần thanh thẻ (4 trang). Kiêm nhiệm: đủ lối vào mọi vai. */
   const tabs = uniqueTabs(
     (user.extraRoles ?? []).length > 0
-      ? wearing.flatMap(roleTabs)
+      ? wearing.flatMap((r) => roleTabs(r, user.spots))
       : user.role === "accountant"
-        ? roleTabs("accountant")
-        : [],
+        ? roleTabs("accountant", user.spots)
+        : roleTabs(user.role, user.spots).length > 1
+          ? roleTabs(user.role, user.spots)
+          : [],
   );
 
   async function logout() {

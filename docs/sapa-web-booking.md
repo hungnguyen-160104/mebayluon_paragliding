@@ -1,8 +1,14 @@
 # Lấy booking tự động từ web Sa Pa (paraglidingsapa.com)
 
-Sổ Sa Pa trong app **chưa quản tiền** — chỉ theo dõi: khách từ đâu tới, đón ở
-đâu, mấy người, đã bay hay huỷ/dời. Vì vậy cửa nhận tự động cũng chỉ lấy đúng 9
-thông tin đó, không lấy tiền.
+> **Cập nhật 09/09/2026 — Sa Pa ĐÃ quản tiền.** Sổ booking Sa Pa nay có đơn giá,
+> dịch vụ, cọc và còn thu như Khau Phạ, và nối hai chiều với sổ tay Google Sheets
+> của điểm. Xem [`sapa-so-booking-sheets.md`](sapa-so-booking-sheets.md).
+> Riêng **cửa nhận từ web Sa Pa dưới đây vẫn chỉ lấy 9 thông tin không tiền** —
+> bên web đó không gửi tiền sang; số tiền do quầy nhập trong app hoặc gõ trên
+> bảng tính.
+
+Cửa nhận tự động của web Sa Pa lấy đúng 9 thông tin: khách từ đâu tới, đón ở
+đâu, mấy người, đã bay hay huỷ/dời.
 
 ## Cửa nhận đã mở sẵn
 

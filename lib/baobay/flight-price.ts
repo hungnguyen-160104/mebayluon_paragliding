@@ -106,6 +106,14 @@ const SPOT_SERVICE_PRICE: ReadonlyArray<{
   from: string;
   price: number;
 }> = [
+  /**
+   * SA PA thu FLYCAM 300k và CAM 360 500k, khác hẳn hai điểm kia (400k/400k) —
+   * đọc ra từ chính sổ tay Sa Pa: 2 flycam = 600.000, 2 cam360 = 1.000.000.
+   * Mốc để rất sớm vì đây là giá Sa Pa vẫn thu từ trước tới nay, không phải
+   * một lần đổi giá; mọi booking Sa Pa đều phải ăn giá này.
+   */
+  { spot: "sapa", key: "flycam", from: "2020-01-01T00:00:00+07:00", price: 300_000 },
+  { spot: "sapa", key: "video360", from: "2020-01-01T00:00:00+07:00", price: 500_000 },
   { spot: "khau-pha", key: "redFlag", from: "2026-08-26T01:00:00+07:00", price: 400_000 },
   { spot: "sapa", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
   { spot: "ha-noi", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
@@ -192,8 +200,33 @@ export function peakDayReason(date: string): string {
   return "ngày lễ";
 }
 
-/** Đơn giá một khách theo loại hình bay và ngày bay. */
-export function flightUnitPrice(kind: FlightKind, date: string): number {
+/**
+ * GIÁ BAY RIÊNG CỦA MỘT ĐIỂM — SA PA ĐỒNG GIÁ MỌI NGÀY.
+ *
+ * Khau Phạ lên giá cuối tuần & lễ, Sa Pa thì không: đối chiếu sổ tay Sa Pa
+ * tháng 9/2026 thấy khách lẻ vẫn 2.190.000 cả ngày thường lẫn 02/09 (Quốc
+ * khánh). Dùng chung bảng Khau Phạ là mỗi cuối tuần lại đội thêm 400k cho một
+ * booking mà nhân viên đã báo giá cũ với khách.
+ *
+ * Đây chỉ là số MÁY ĐIỀN SẴN. Khách Klook/GYG có giá net riêng (1.940.000…) —
+ * người nhập sửa thẳng ô đơn giá, máy không ghi đè.
+ */
+const SPOT_FLIGHT_PRICE: Partial<Record<SpotId, Partial<Record<FlightKind, { weekday: number; peak: number }>>>> = {
+  sapa: {
+    pg: { weekday: 2_190_000, peak: 2_190_000 },
+    ppg: { weekday: 2_390_000, peak: 2_390_000 },
+  },
+};
+
+/**
+ * Đơn giá một khách theo loại hình bay và ngày bay.
+ *
+ * `spot` KHÔNG bắt buộc để bản ghi và nơi gọi cũ chạy nguyên; thiếu thì rơi về
+ * bảng giá chung (Khau Phạ). Truyền vào thì mới ăn giá riêng của điểm.
+ */
+export function flightUnitPrice(kind: FlightKind, date: string, spot?: string): number {
+  const own = spot ? SPOT_FLIGHT_PRICE[normalizeSpot(spot)]?.[kind] : undefined;
+  if (own) return isPeakDay(date) ? own.peak : own.weekday;
   const flat = FLAT_PRICE[kind];
   if (flat) return flat;
   const table = FLIGHT_PRICE[kind === "ppg" ? "ppg" : "pg"];
@@ -233,7 +266,14 @@ export function servicesAmount(s: {
  */
 export const COMBO_DISCOUNT = 100_000;
 
-export function comboDiscount(flycam?: number, video360?: number): number {
+export function comboDiscount(flycam?: number, video360?: number, spot?: string): number {
+  /**
+   * SA PA KHÔNG giảm combo. Sổ tay Sa Pa tính thẳng flycam 300k + 360 500k =
+   * 800k, không bớt đồng nào (kiểm 3 dòng ngày 01/09: 2.190.000 + 300.000 +
+   * 500.000 = 2.990.000 đúng bằng ô TỔNG THU). Bớt 100k ở đây là mỗi booking
+   * Sa Pa có flycam kèm 360 lại lệch sổ 100k mà không ai truy ra.
+   */
+  if (spot && normalizeSpot(spot) === "sapa") return 0;
   return Math.min(flycam || 0, video360 || 0) * COMBO_DISCOUNT;
 }
 
@@ -283,7 +323,7 @@ export function bookingTotal(input: BookingMoneyInput): number {
       servicesAmount(input) +
       car +
       (input.pickupFee || 0) -
-      (input.comboDiscount ?? comboDiscount(input.flycam, input.video360)) -
+      (input.comboDiscount ?? comboDiscount(input.flycam, input.video360, input.spot)) -
       (input.discount || 0),
   );
 }

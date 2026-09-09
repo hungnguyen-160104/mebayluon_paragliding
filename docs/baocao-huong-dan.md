@@ -127,6 +127,44 @@ thì điền mã, không vé thì đếm vào ô "không vé"). Số PPG lên th
 Sheets (cột "Chuyến PPG", "Mã vé PPG" — chuyến không vé ghi "không vé (N)"),
 bảng kê và báo cáo tháng.
 
+## Ba kiểu xem sổ booking
+
+Thẻ 📒 booking của ngày xem được theo ba kiểu, đổi ở dải nút ngay trên danh
+sách. Máy nhớ lựa chọn của bạn, và cả ba đều bật được **⛶ Toàn màn hình**.
+
+| Kiểu | Giải việc gì | Sửa thế nào |
+|---|---|---|
+| **☰ Thẻ** | làm việc với MỘT khách — đủ nút, đủ chỗ đọc, hợp lúc khách đứng trước mặt | mở thẻ ra sửa |
+| **▦ Bảng** | QUÉT MẮT cả ngày — bấm đầu cột để xếp, so số nhanh | phải mở thẻ |
+| **▤ Sheet** | GÕ cả ngày — bấm thẳng vào ô là sửa, chạy bằng bàn phím | sửa tại ô, lưu ngay |
+
+**Sheet** cho lúc nhập bù cuối ngày hoặc sửa một loạt sau khi đối chiếu: mười
+lăm dòng mỗi dòng một ô mà phải mở mười lăm cái thẻ là mười lăm lần mất chỗ
+đang nhìn.
+
+| Phím | Làm gì |
+|---|---|
+| bấm vào ô | sửa ô đó |
+| `Tab` / `Shift+Tab` | sang ô bên; hết dòng thì xuống dòng dưới |
+| `Enter`, `↑` `↓` | chạy dọc đúng một cột |
+| `Esc` | bỏ dở ô đang gõ, trả lại số cũ |
+
+Cột **Thao tác** cuối mỗi dòng mang **đúng những nút của thẻ**: thu tiền · xuất
+vé · đã bay · bay không vé · sửa thu · bảo hiểm · ⋯ Thêm. Không phải bản rút
+gọn — một lưới chỉ sửa được số mà không thu được tiền thì cuối cùng vẫn phải
+quay lại thẻ.
+
+Ô **nền trắng** sửa được, ô **nền xám** máy tự tính (thành tiền, TỔNG, còn thu)
+— muốn đổi thì sửa ô gốc. Cột hiện ra tuỳ điểm bay: Sa Pa không có "bay hoàng
+hôn", Hà Nội có "xe lên núi", Khau Phạ có cột PPG.
+
+Dòng kế toán đã **🔒 khoá** thì điều phối không sửa được; chính kế toán vẫn sửa
+(họ là người khoá và mở khoá).
+
+Riêng điểm **Sa Pa** còn có một lưới nữa ở `/baocao/so-sapa`: cả tháng một màn
+hình, bố cục cột dựng lại đúng sổ tay Google Sheets của điểm — xem
+[`sapa-so-booking-sheets.md`](sapa-so-booking-sheets.md).
+
 ## Quy tắc nhập liệu
 
 - **Mã vé chỉ BẮT BUỘC ở Khau Phạ** (vé 3 liên in mã, đối chiếu tới từng mã).

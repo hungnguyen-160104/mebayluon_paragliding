@@ -5,6 +5,7 @@ import { Fragment, createContext, useCallback, useContext, useEffect, useRef, us
 import { createPortal } from "react-dom";
 
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { moneyDestsOf } from "@/lib/baobay/money-dest";
 import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
@@ -15,6 +16,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
 import { shareBookingImage } from "./booking-image";
 import { InsuranceBox } from "./InsuranceBox";
+import { BookingSheet } from "./BookingSheet";
 import { insuranceState } from "@/lib/baobay/insurance";
 import {
   COMMISSION_PER_GUEST,
@@ -2220,6 +2222,19 @@ function CollectMoneyControl({
    */
   const [ckDate, setCkDate] = useState(todayInVN());
 
+  /**
+   * QUỸ NHẬN của từng đường tiền — chỉ hỏi ở điểm có khai danh sách quỹ.
+   *
+   * Cùng một lần thu có thể vừa đưa tiền mặt cho người này vừa chuyển vào tài
+   * khoản kia, nên hai ô riêng chứ không một. Bỏ trống thì máy chủ xếp vào quỹ
+   * đầu tiên cùng đường tiền — sổ vẫn đủ số, chỉ có thể nằm sai cột.
+   */
+  const dests = moneyDestsOf(spot);
+  const cashDests = dests.filter((d) => d.kind === "cash" || d.kind === "fx");
+  const ckDests = dests.filter((d) => d.kind !== "cash" && d.kind !== "fx");
+  const [cashDest, setCashDest] = useState("");
+  const [transferDest, setTransferDest] = useState("");
+
   async function send() {
     if (total <= 0) return setError("Chưa nhập số tiền thu");
     const used = bills.filter((b) => b.amount > 0);
@@ -2249,6 +2264,8 @@ function CollectMoneyControl({
         cash,
         transfers: used,
         transferDate: ckDate,
+        cashDest,
+        transferDest,
       });
       const parts = [
         cash > 0 ? `${cash.toLocaleString("vi-VN")} đ TM (vào tiền bạn giữ)` : "",
@@ -2449,6 +2466,55 @@ function CollectMoneyControl({
           )}
         </div>
       ))}
+      {/**
+       * TIỀN VỀ QUỸ NÀO — nửa còn lại của câu hỏi "tiền đi đâu".
+       *
+       * "Tiền mặt hay chuyển khoản" không nói được tiền mặt ấy AI ĐANG GIỮ và
+       * khoản chuyển khoản ấy về TÀI KHOẢN NÀO — mà sổ tay Sa Pa vốn chia
+       * thành từng cột theo đúng chuyện đó. Điểm chưa khai danh sách quỹ thì
+       * khối này không hiện, hai điểm kia không phải đổi cách nhập.
+       */}
+      {dests.length > 0 && (
+        <div className="rounded-lg border border-emerald-300 bg-emerald-50/70 px-1.5 py-1">
+          <div className="text-[11px] font-bold text-emerald-900">Tiền về quỹ nào</div>
+          {pay.cash && cashDests.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              <span className="self-center text-[10px] font-semibold text-emerald-800">TM</span>
+              {cashDests.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setCashDest(d.id)}
+                  className={
+                    "rounded border px-1.5 py-0.5 text-[11px] font-semibold " +
+                    (cashDest === d.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-300 bg-white text-emerald-900")
+                  }
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {pay.transfer && ckDests.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              <span className="self-center text-[10px] font-semibold text-emerald-800">CK</span>
+              {ckDests.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setTransferDest(d.id)}
+                  className={
+                    "rounded border px-1.5 py-0.5 text-[11px] font-semibold " +
+                    (transferDest === d.id ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-300 bg-white text-emerald-900")
+                  }
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {pay.transfer && (
         <label
           className={
@@ -2903,7 +2969,7 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
     const price = servicePriceOf(spot, b.createdAt);
     const ppg = b.flightKind === "ppg" ? 0 : Math.min(b.ppgGuests || 0, b.guestCount || 0);
     const pg = (b.guestCount || 0) - ppg;
-    const ppgUnit = flightUnitPrice("ppg", b.flightDate);
+    const ppgUnit = flightUnitPrice("ppg", b.flightDate, spot);
     const lines: Line[] = [];
     if (pg > 0) {
       lines.push({
@@ -3874,11 +3940,18 @@ export function BookingTodayBanner({
   /** LỌC ĐÃ XUẤT VÉ (luật chủ 04/09) — bật kèm xếp theo giờ xuất là ra thứ tự khách đến. */
   const [onlyTicketed, setOnlyTicketed] = useState(false);
   /**
-   * HAI KIỂU XEM (luật chủ 05/09): "thẻ" như cũ (đầy đủ nút thao tác) và
-   * "bảng" kiểu Excel — mỗi booking một dòng, bấm đầu cột để xếp, dễ quét mắt
-   * khi ngày đông chi tiết. Ghi nhớ lựa chọn theo máy.
+   * BA KIỂU XEM, mỗi kiểu giải một việc khác nhau (luật chủ 05/09, thêm Sheet
+   * 09/09). Ghi nhớ lựa chọn theo máy.
+   *
+   *   ☰ Thẻ   làm việc với MỘT khách — đủ nút, đủ chỗ đọc, hợp lúc khách đứng
+   *           trước mặt.
+   *   ▦ Bảng  QUÉT MẮT cả ngày — xếp theo cột, so số nhanh; sửa phải mở thẻ.
+   *   ▤ Sheet GÕ cả ngày — bấm thẳng vào ô là sửa, chạy bằng bàn phím, và vẫn
+   *           đủ nút thao tác ở cột cuối. Cho lúc nhập bù cuối ngày hoặc sửa
+   *           một loạt sau khi đối chiếu: mười lăm dòng mỗi dòng một ô mà phải
+   *           mở mười lăm cái thẻ là mười lăm lần mất chỗ đang nhìn.
    */
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "table" | "sheet">("cards");
   /** Toàn màn hình (desktop soát sổ): phủ kín cửa sổ, ✕ để quay lại trang. */
   const [fullScreen, setFullScreen] = useState(false);
   /**
@@ -3916,12 +3989,12 @@ export function BookingTodayBanner({
   useEffect(() => {
     try {
       const v = localStorage.getItem("baobay-booking-view");
-      if (v === "table") setViewMode("table");
+      if (v === "table" || v === "sheet") setViewMode(v);
     } catch {
       /* không đọc được thì mặc định thẻ */
     }
   }, []);
-  const switchView = (v: "cards" | "table") => {
+  const switchView = (v: "cards" | "table" | "sheet") => {
     setViewMode(v);
     try {
       localStorage.setItem("baobay-booking-view", v);
@@ -4663,18 +4736,17 @@ export function BookingTodayBanner({
    * — đứng thẳng trên dòng ở CẢ chế độ thẻ lẫn từng dòng của chế độ bảng.
    */
   /** Nút THU TIỀN — tách riêng để bảng xếp nó cùng hàng với "⋯ Thêm". */
-  const renderMoneyButton = (b: BookingDTO) =>
-    /* SA PA chưa quản tiền — không có nút thu tiền ở điểm này */
-    spot === "sapa" ? null : (
-      <CollectMoneyControl
-        spot={spot}
-        booking={b}
-        onDone={(msg) => {
-          setCollectDone(msg);
-          load();
-        }}
-      />
-    );
+  /** Cả ba điểm đều quản tiền — Sa Pa có nút thu tiền từ 09/09/2026. */
+  const renderMoneyButton = (b: BookingDTO) => (
+    <CollectMoneyControl
+      spot={spot}
+      booking={b}
+      onDone={(msg) => {
+        setCollectDone(msg);
+        load();
+      }}
+    />
+  );
   /**
    * NÚT VÉ. Chưa xuất thì là "IN VÉ": bấm một cái vừa mở cửa sổ in vừa đánh dấu
    * đã xuất — hai việc đó ở quầy vốn là một, in ra đưa khách tức là đã xuất.
@@ -5051,13 +5123,14 @@ export function BookingTodayBanner({
               </button>
             </span>
           )}
-          {/* Chuyển kiểu xem: THẺ (đủ nút thao tác) ↔ BẢNG kiểu Excel (quét mắt, xếp theo cột) */}
+          {/* THẺ (một khách, đủ nút) ↔ BẢNG (quét mắt) ↔ SHEET (gõ tại ô như bảng tính) */}
           <span className="flex h-7 overflow-hidden rounded-md border border-slate-300">
             {(
               [
                 ["cards", "☰ Thẻ"],
                 ["table", "▦ Bảng"],
-              ] as Array<["cards" | "table", string]>
+                ["sheet", "▤ Sheet"],
+              ] as Array<["cards" | "table" | "sheet", string]>
             ).map(([v, label]) => (
               <button
                 key={v}
@@ -5178,7 +5251,61 @@ export function BookingTodayBanner({
           dòng nở ra (bấm "thêm"/thu tiền) là các dòng sau nhảy từ cột này sang
           cột kia — người đang nhìn dễ bấm nhầm booking (chuyện thật 03/09).
           Grid gán ô theo THỨ TỰ: dòng nở chỉ đẩy dọc, không ai đổi cột. */}
-      {viewMode === "table" ? (
+      {viewMode === "sheet" ? (
+        /**
+         * SHEET — cùng những hàm render nút với thẻ và bảng, không phải bản rút
+         * gọn: một lưới sửa được số mà không thu được tiền thì cuối cùng vẫn
+         * phải quay lại thẻ, và không ai dùng nó.
+         */
+        <BookingSheet
+          spot={spot}
+          tall={fullScreen}
+          canEdit
+          canLock={canLock}
+          open={open}
+          closed={closed}
+          movedOut={movedOut.filter(matchQ)}
+          /**
+           * Máy chủ trả về dòng ĐÃ TÍNH LẠI — thay đúng dòng đó tại chỗ thay vì
+           * tải lại cả ngày. Tải lại thì lưới nhảy về đầu và người đang gõ mất
+           * chỗ; mà gõ liên tục thì mỗi ô một lần tải là không dùng nổi.
+           */
+          onSaved={(b) => setRows((prev) => prev.map((x) => (x.id === b.id ? b : x)))}
+          renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b, true))}
+          renderClosedQuick={(b) => renderClosedQuick(b, true)}
+          renderMoneyCell={(b) =>
+            moving?.id === b.id || b.status === "cancelled" || (b.locked && !canLock) || !moneyOutside(b)
+              ? null
+              : renderMoneyButton(b)
+          }
+          renderMovedActions={(b) => renderMovedActions(b)}
+          renderMore={(b, close) =>
+            b.status !== "open"
+              ? renderClosedStrip(b, close)
+              : moving?.id === b.id
+                ? renderMovingDialog(b)
+                : b.locked && !canLock
+                  ? null
+                  : renderMoreMenu(b, true, close)
+          }
+          renderInsurance={(b) =>
+            b.status !== "open" ? null : (
+              <InsuranceBox
+                headless
+                spot={spot}
+                bookingId={b.id}
+                guestCount={b.guestCount}
+                preview={{
+                  guests: b.insured,
+                  approvedAt: b.insuranceApprovedAt,
+                  sentAt: b.insuranceSentAt,
+                  recalledAt: b.insuranceRecalledAt,
+                }}
+              />
+            )
+          }
+        />
+      ) : viewMode === "table" ? (
         <BookingDayTable
           tall={fullScreen}
           open={open}
@@ -5738,7 +5865,7 @@ function totalOf(f: {
     spot,
     createdAt: bookedAt,
     ppgGuests: f.flightKind === "ppg" ? 0 : f.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", f.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", f.flightDate, spot),
   });
 }
 
@@ -5809,7 +5936,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     flightKind: defaultFlightKind(spot),
     pickupFee: 0,
     mountainCar: 0,
-    unitPrice: flightUnitPrice(defaultFlightKind(spot), today),
+    unitPrice: flightUnitPrice(defaultFlightKind(spot), today, spot),
     discount: 0,
     deposit: 0,
     depositMethod: "",
@@ -5898,6 +6025,10 @@ export function BookingCard({
   const rootRef = useRef<HTMLDivElement>(null);
   /** Đang kéo booking khách tự đặt trên web về sổ nội bộ. */
   const [syncing, setSyncing] = useState(false);
+  /** Chiều nào đang chạy ("pull"/"push") — để khoá đúng nút đó chứ không khoá cả hai. */
+  const [sheetSyncing, setSheetSyncing] = useState<"pull" | "push" | null>(null);
+  /** Dòng bảng tính có chuyện cần người nhìn: lệch TỔNG THU, app phải cấp lại số… */
+  const [sheetWarns, setSheetWarns] = useState<string[]>([]);
   /** Lần check web & OTA gần nhất — hiện cạnh nút để biết còn phải bấm không. */
   const [webSyncAt, setWebSyncAt] = useState("");
   const [rowBusy, setRowBusy] = useState<string | null>(null);
@@ -5922,7 +6053,7 @@ export function BookingCard({
       const next = { ...prev, [key]: value };
       // Combo flycam+360: máy điền lại mỗi khi hai dịch vụ này đổi, trừ khi đã sửa tay
       if (!comboTouched && (key === "flycam" || key === "video360" || key === "guestCount")) {
-        next.comboDiscount = comboDiscount(next.flycam, next.video360);
+        next.comboDiscount = comboDiscount(next.flycam, next.video360, bookSpot);
       }
       /**
        * Dịch vụ bám theo đầu khách — giảm số khách thì các dịch vụ tự kẹp xuống.
@@ -5946,7 +6077,7 @@ export function BookingCard({
        */
       /** Đơn giá theo BẢNG GIÁ: đổi ngày bay hay loại hình là điền lại, trừ khi người nhập đã gõ đè. */
       if (!priceTouched && (key === "flightDate" || key === "flightKind")) {
-        next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
+        next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate, bookSpot);
       }
       /**
        * "Còn lại" LUÔN tính lại theo luật tổng − cọc, không có ngoại lệ: ô đó chỉ
@@ -6046,7 +6177,7 @@ export function BookingCard({
   /** Khách PG/PPG đang khai — nhóm thuần PPG lưu kiểu cũ (flightKind "ppg"). */
   const pgCount = form.flightKind === "ppg" ? 0 : Math.max(0, form.guestCount - form.ppgGuests);
   const ppgCount = form.flightKind === "ppg" ? form.guestCount : form.ppgGuests;
-  const ppgPrice = flightUnitPrice("ppg", form.flightDate);
+  const ppgPrice = flightUnitPrice("ppg", form.flightDate, bookSpot);
 
   /** Bóc dòng nhập nhanh và điền vào form — KHÔNG tự lưu, người nhập soát lại. */
   function applyQuick() {
@@ -6085,8 +6216,8 @@ export function BookingCard({
       } else if (r.guestCount) {
         next.guestCount = r.guestCount;
       }
-      next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate);
-      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
+      next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate, bookSpot);
+      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360, bookSpot);
       next.remaining = Math.max(0, totalOf(next, bookSpot, editingCreatedAt || new Date().toISOString()) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
@@ -6134,7 +6265,7 @@ export function BookingCard({
         next.mountainCar = Math.min(next.mountainCar, guestCount);
         next.flagFlight = Math.min(next.flagFlight, guestCount);
       }
-      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360);
+      if (!comboTouched) next.comboDiscount = comboDiscount(next.flycam, next.video360, bookSpot);
       next.remaining = Math.max(0, totalOf(next, bookSpot, editingCreatedAt || new Date().toISOString()) - (next.deposit || 0) - (next.agencyPaidAmount || 0));
       return next;
     });
@@ -6188,6 +6319,42 @@ export function BookingCard({
     }
   }
 
+  /**
+   * NÚT TRAO ĐỔI VỚI SỔ TAY GOOGLE SHEETS CỦA SA PA — chỉ hiện ở điểm Sa Pa.
+   *
+   * Hai chiều KHÔNG cân nhau, và đó là chủ ý: "Lấy" chỉ đọc nên ai trực cũng
+   * bấm được, còn "Đẩy" ghi đè lên sổ của nhân viên Sa Pa nên nằm sau khoá
+   * SAPA_SHEET_WRITE và chỉ kế toán/quản trị bấm. Chưa mở khoá thì máy chủ vẫn
+   * trả lời tử tế ("đang ở chế độ chỉ đọc") chứ không ghi gì — nút vẫn bấm
+   * được để người ta thấy đúng câu đó thay vì đoán.
+   */
+  async function syncSheet(direction: "pull" | "push") {
+    setSheetSyncing(direction);
+    setError(null);
+    setDone(null);
+    try {
+      const r = await apiPost<{
+        message: string;
+        created: number;
+        updated: number;
+        pushed: number;
+        failed: number;
+        canWrite: boolean;
+        warns: string[];
+      }>(`/api/baocao/booking/sync-sheet?spot=${spot}`, { direction });
+      setSheetWarns(r.warns ?? []);
+      setDone(`✓ Bảng tính Sa Pa — ${r.message}`);
+      if (direction === "pull" && r.created + r.updated > 0) {
+        load();
+        onChanged?.();
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không trao đổi được dữ liệu với bảng tính");
+    } finally {
+      setSheetSyncing(null);
+    }
+  }
+
   /** Trả về id booking vừa lưu — nút "Gửi email" cần nó để gửi ngay sau khi lưu. */
   async function save(): Promise<string | null> {
     setError(null);
@@ -6232,33 +6399,23 @@ export function BookingCard({
       // Khách lẻ không có mã OTA: để trống thì lấy SĐT làm mã cho dễ tra
       const payload = { ...form, bookingCode: form.bookingCode.trim() || form.phone.trim() };
       /**
-       * SA PA chưa quản tiền: gửi lên toàn số 0 cho phần tiền và dịch vụ, và
-       * "điểm đón" là chữ tự do nên xếp vào kiểu đón "other". Có vậy dòng tóm tắt
-       * mới sạch (không in tổng/cọc/còn thu) và số của Sa Pa không lẫn vào các
-       * phép cộng tiền của hai điểm kia.
+       * SA PA: chỉ ép ba thứ điểm này KHÔNG CÓ, phần tiền giữ nguyên như hai
+       * điểm kia (từ 09/09/2026 Sa Pa quản tiền).
+       *
+       *  - "điểm đón" là chữ tự do (khách sạn / bến xe / nhà thờ) nên luôn xếp
+       *    vào kiểu đón "other";
+       *  - Sa Pa không bán bay hoàng hôn/săn mây và không có xe lên núi (chỉ
+       *    Hà Nội) — ô đã ẩn, nhưng vẫn ép 0 để form đang sửa dở của điểm khác
+       *    đổi sang Sa Pa không mang theo số cũ;
+       *  - KHÔNG ép giảm combo: comboDiscount(…, "sapa") vốn trả 0 vì Sa Pa
+       *    tính thẳng flycam 300k + 360 500k, không bớt cặp.
        */
       if (bookSpot === "sapa") {
         Object.assign(payload, {
           pickup: "other" as const,
-          flycam: 0,
-          video360: 0,
-          redFlag: 0,
           sunset: 0,
-          flagFlight: 0,
           mountainCar: 0,
-          unitPrice: 0,
-          discount: 0,
           comboDiscount: 0,
-          pickupFee: 0,
-          totalAmount: 0,
-          deposit: 0,
-          depositMethod: "",
-          remaining: 0,
-          agencyPaidAmount: 0,
-          agencyName: "",
-          transferCode: "",
-          collectorUsername: "",
-          collectorNote: "",
         });
       }
       let savedId: string | null = editingId;
@@ -6448,6 +6605,50 @@ export function BookingCard({
           >
             {syncing ? "Đang kiểm…" : "🔄 Lấy book từ website & OTA"}
           </button>
+          {/**
+           * SA PA có thêm sổ tay Google Sheets do một nhân viên gõ tay hằng
+           * ngày. Hai nút này là chỗ người ta chủ động khớp hai bên trước khi
+           * đóng máy, không phải đợi đồng hồ 5 phút.
+           */}
+          {spot === "sapa" && (
+            <>
+              {/* Lối vào lưới nhập liệu — chỗ gõ cả tháng như bảng tính */}
+              <a
+                href="/baocao/so-sapa"
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-lg border border-white/50 bg-white/25 px-2 py-0.5 text-xs font-bold text-white hover:bg-white/40"
+                title="Mở sổ Sa Pa dạng bảng — gõ cả tháng như Google Sheets"
+              >
+                ▦ Sổ Sa Pa (bảng)
+              </a>
+              <button
+                type="button"
+                disabled={sheetSyncing !== null}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void syncSheet("pull");
+                }}
+                className="rounded-lg border border-white/50 bg-white/15 px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/25 disabled:opacity-60"
+                title="Đọc sổ tay Google Sheets của Sa Pa (7 ngày trước → 30 ngày tới) và đưa vào sổ booking. Chỉ đọc, không ghi gì lên bảng."
+              >
+                {sheetSyncing === "pull" ? "Đang lấy…" : "⬇ Lấy từ bảng tính"}
+              </button>
+              <button
+                type="button"
+                disabled={sheetSyncing !== null}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void syncSheet("push");
+                }}
+                className="rounded-lg border border-white/50 bg-white/15 px-2 py-0.5 text-xs font-semibold text-white hover:bg-white/25 disabled:opacity-60"
+                title="Đẩy booking trong app lên sổ tay Google Sheets. Đang khoá cho tới khi chốt xong cách làm với nhân viên Sa Pa — bấm sẽ báo rõ."
+              >
+                {sheetSyncing === "push" ? "Đang đẩy…" : "⬆ Đẩy lên bảng tính"}
+              </button>
+            </>
+          )}
           {webSyncAt && (
             <span className="text-[11px] font-normal text-white/80">
               check lần cuối: {new Date(webSyncAt).toLocaleString("vi-VN", {
@@ -6532,7 +6733,7 @@ export function BookingCard({
                   pickup: "self",
                   pickupNote: "",
                   flightKind: kind,
-                  unitPrice: priceTouched ? prev.unitPrice : flightUnitPrice(kind, prev.flightDate),
+                  unitPrice: priceTouched ? prev.unitPrice : flightUnitPrice(kind, prev.flightDate, next),
                 };
               });
             }}
@@ -6714,8 +6915,12 @@ export function BookingCard({
         </Field>
       </div>
 
-      {/* SA PA chưa quản tiền: cả khối dịch vụ, đơn giá, cọc, còn thu đều ẩn */}
-      {bookSpot !== "sapa" && (
+      {/**
+       * DỊCH VỤ · ĐƠN GIÁ · CỌC · CÒN THU — CẢ BA ĐIỂM đều dùng, Sa Pa từ
+       * 09/09/2026 cũng quản tiền như Khau Phạ (sổ tay Sa Pa vốn đã ghi đơn
+       * giá, flycam, 360, tổng thu, đặt cọc — nay nhập thẳng vào app).
+       * Riêng "bay hoàng hôn/săn mây" Sa Pa không có nên vẫn ẩn (xem dưới).
+       */}
       <>
       {/* Dịch vụ tuỳ chọn: 3 ô mỗi hàng khi đủ rộng — 5-6 dịch vụ gọn 2 hàng */}
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
@@ -6765,6 +6970,13 @@ export function BookingCard({
       </p>
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
+        {/**
+         * SA PA không có ô "Đưa đón": điểm này chỉ có một kiểu đón (ghi rõ chỗ
+         * đón bằng chữ) và ô đó đã nằm ngay hàng trên tên là "Điểm đón". Bày
+         * thêm cái ô này nữa là hai ô hỏi cùng một chuyện, và ô dưới còn ghi đè
+         * ô trên.
+         */}
+        {bookSpot !== "sapa" && (
         <Field label="Đưa đón">
           <select
             value={form.pickup}
@@ -6800,12 +7012,13 @@ export function BookingCard({
             />
           )}
         </Field>
+        )}
         {/* Tiền nong: đơn giá × số khách − giảm trừ = tổng · cọc · còn thu · mã CK */}
         <Field label="Đơn giá bay / khách">
           <MoneyInput value={form.unitPrice} onChange={(v) => set("unitPrice", v)} />
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
             {FLIGHT_KIND_SHORT[form.flightKind]} · {priceNote(form.flightKind, form.flightDate)} → bảng giá{" "}
-            {(flightUnitPrice(form.flightKind, form.flightDate) / 1000).toLocaleString("vi-VN")}k
+            {(flightUnitPrice(form.flightKind, form.flightDate, bookSpot) / 1000).toLocaleString("vi-VN")}k
           </p>
         </Field>
         <Field label="Phí đưa đón">
@@ -6816,12 +7029,15 @@ export function BookingCard({
             </p>
           )}
         </Field>
+        {/* SA PA không giảm combo — sổ tay Sa Pa tính thẳng 300k + 500k, xem comboDiscount() */}
+        {bookSpot !== "sapa" && (
         <Field label="Giảm combo (flycam+360)">
           <MoneyInput value={form.comboDiscount} onChange={(v) => set("comboDiscount", v)} />
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
             Máy tính {`${Math.min(form.flycam, form.video360)}`} cặp ×100k — sửa được nếu chốt khác
           </p>
         </Field>
+        )}
         <Field label="Giảm trừ (chiết khấu)">
           <MoneyInput value={form.discount} onChange={(v) => set("discount", v)} />
         </Field>
@@ -7053,7 +7269,6 @@ export function BookingCard({
       )}
 
       </>
-      )}
 
       {/* Cọc thì 100% qua STK công ty — bỏ ô tích, máy chủ tự đánh dấu khi có cọc */}
       <div className="mt-2">
@@ -7096,6 +7311,30 @@ export function BookingCard({
           <Banner tone="success" onClose={() => setDone(null)}>
             {done}
           </Banner>
+        </div>
+      )}
+      {/**
+       * NHỮNG DÒNG BẢNG TÍNH CÓ CHUYỆN — hiện đầy đủ chứ không gộp thành một
+       * con số. "Lệch 300k ở dòng 47" mà chỉ báo "có 3 cảnh báo" thì không ai
+       * đi tìm; in thẳng ra thì người trực mở đúng dòng đó trên bảng mà soát.
+       */}
+      {sheetWarns.length > 0 && (
+        <div className="mt-2 rounded-xl border-2 border-amber-400 bg-amber-50 p-3">
+          <p className="text-sm font-bold text-amber-900">
+            ⚠ {sheetWarns.length} dòng trên bảng tính cần nhìn lại
+          </p>
+          <ul className="mt-1 max-h-48 list-disc overflow-y-auto pl-5 text-xs leading-snug text-amber-950">
+            {sheetWarns.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => setSheetWarns([])}
+            className="mt-2 rounded-lg border border-amber-500 px-2 py-0.5 text-[11px] font-semibold text-amber-900"
+          >
+            Đã xem
+          </button>
         </div>
       )}
       {needMail && (

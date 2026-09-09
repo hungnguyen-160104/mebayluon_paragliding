@@ -31,6 +31,15 @@ export interface IBaobayCollect {
   amount: number;
 
   method: "cash" | "transfer";
+  /**
+   * QUỸ NHẬN — tiền này rơi vào túi nào (TK Trường · TM c Yến · POS · TK Cty ·
+   * ngoại tệ). Xem `lib/baobay/money-dest.ts`.
+   *
+   * `method` chỉ nói tiền đi đường nào, không nói nó nằm ở đâu — mà "nằm ở
+   * đâu" mới là thứ kế toán Sa Pa vẫn chia thành bảy cột trên sổ tay. Điểm
+   * chưa khai danh sách quỹ thì trường này để trống, không ai phải nhập thêm.
+   */
+  dest?: string;
   /** CK: tiền vào thẳng TK CÔNG TY. */
   toCompanyAccount: boolean;
   /** Mã giao dịch chuyển khoản. */
@@ -84,6 +93,7 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     amount: { type: Number, default: 0, min: 0 },
 
     method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+    dest: { type: String, default: "" },
     toCompanyAccount: { type: Boolean, default: false },
     transferCode: { type: String, default: "" },
     note: { type: String, default: "" },

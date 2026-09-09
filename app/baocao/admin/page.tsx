@@ -79,7 +79,7 @@ export default function BaobayAdminPage() {
           trang nghiệp vụ, vì trang này không dùng khung chung nên không có sẵn thanh thẻ */}
       {(user.extraRoles ?? []).length > 0 && (
         <nav className="mb-5 flex flex-wrap gap-2">
-          {uniqueTabs([user.role, ...(user.extraRoles ?? [])].flatMap(roleTabs)).map((t) => (
+          {uniqueTabs([user.role, ...(user.extraRoles ?? [])].flatMap((r) => roleTabs(r, user.spots))).map((t) => (
             <Link
               key={t.href}
               href={t.href}

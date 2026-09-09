@@ -35,6 +35,7 @@ import {
   updateBookingInfo,
   updateBookingStatus,
   type BookingAction,
+  updateBookingCell,
 } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
@@ -414,6 +415,18 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ booking: await toggleBookingTicket(auth, spot, id) });
     }
     // THU TIỀN cho booking: CK về TK công ty · TM vào tiền giữ hộ của người bấm
+    /**
+     * SỬA MỘT Ô từ lưới kiểu bảng tính. Danh sách ô sửa được là danh sách ĐÓNG
+     * ở máy chủ (BOOKING_CELL_FIELDS) — tên lạ bị từ chối, không ghi bừa.
+     */
+    if (action === "cell") {
+      const res = await updateBookingCell(auth, spot, {
+        id,
+        field: String(body?.field ?? ""),
+        value: body?.value,
+      });
+      return NextResponse.json(res);
+    }
     if (action === "collect") {
       /** Khách trả một phần TM + một phần CK: gửi cả hai số, máy tách hai lệnh thu. */
       const hasSplit = body?.cash !== undefined || body?.transfer !== undefined || Array.isArray(body?.transfers);
@@ -438,6 +451,9 @@ export async function PATCH(req: Request) {
         kind: body?.kind === "full" ? "full" : "deposit",
         // Ngày khách CK khi khác hôm nay — để lệnh thu nằm đúng ngày sao kê
         transferDate: String(body?.transferDate ?? ""),
+        // Quỹ nhận của từng đường tiền (Sa Pa) — máy chủ tự soát mã có thuộc điểm không
+        cashDest: String(body?.cashDest ?? ""),
+        transferDest: String(body?.transferDest ?? ""),
       });
       return NextResponse.json(res);
     }

@@ -26,7 +26,15 @@ export type BaobaySheetKind =
   | "daysummary"
   | "booking"
   | "collect"
-  | "flycamcancel";
+  | "flycamcancel"
+  /**
+   * SỔ TAY SA PA — ghi thẳng vào TAB THÁNG của bảng "Bảng theo dõi chuyến bay"
+   * (T9-2026…), không phải một tab riêng do script tự tạo. Bố cục tab đó do
+   * người dựng: tiêu đề ở HÀNG 3, dữ liệu từ HÀNG 5, có cột công thức và ô gộp
+   * theo ngày — nên Apps Script xử lý loại này bằng một đường riêng, xem
+   * ghiDongSapa() trong docs/baocao-apps-script.gs.
+   */
+  | "sapabook";
 
 /**
  * Tab mặc định cho từng loại báo cáo.
@@ -47,9 +55,23 @@ const SHEET_NAME: Record<BaobaySheetKind, string> = {
   booking: "Booking",
   collect: "Lệnh thu tiền",
   flycamcancel: "Huỷ flycam",
+  /** Không bao giờ dùng tới: nơi gọi LUÔN truyền tên tab tháng ("T9-2026"). */
+  sapabook: "T-",
 };
 
-export type SheetPushResult = { ok: boolean; error?: string };
+export type SheetPushResult = {
+  ok: boolean;
+  error?: string;
+  /**
+   * "Không đẩy vì CỐ Ý không đẩy" — khác với "đẩy hỏng".
+   *
+   * Bảng Sa Pa đang ở chế độ chỉ đọc là một quyết định, không phải sự cố; mỗi
+   * lần sửa một ô mà nhật ký lại kêu một dòng cảnh báo thì log đầy tiếng ồn và
+   * lần sau có lỗi THẬT cũng không ai nhìn ra. Lý do vẫn ghi vào `sheetError`
+   * của bản ghi để sau còn đẩy bù.
+   */
+  quiet?: boolean;
+};
 
 export function isBaobaySheetConfigured(): boolean {
   return Boolean(process.env.BAOBAY_SHEET_WEBHOOK_URL);
@@ -110,6 +132,47 @@ export async function pushBaobayRow(
   await new Promise((r) => setTimeout(r, 1_500));
   const again = await pushOnce(dest.url, payload);
   return { ok: again.ok, error: again.ok ? undefined : `${again.error} (đã thử lại 1 lần)` };
+}
+
+/**
+ * GỌI APPS SCRIPT VÀ LẤY VỀ CẢ NỘI DUNG TRẢ LỜI.
+ *
+ * `pushBaobayRow` chỉ trả ok/lỗi vì nó chỉ cần biết bảng đã nhận hay chưa. Còn
+ * chiều BẢNG → APP ("Lấy từ bảng") thì chính nội dung trả lời mới là hàng —
+ * script gửi về danh sách dòng. Dùng chung phép thử lại và phép soi lỗi của
+ * `pushOnce`, nhưng KHÔNG đòi có `row` trong câu trả lời: đó là dấu hiệu của
+ * một lệnh GHI, còn đây có thể là lệnh ĐỌC.
+ */
+export async function callBaobaySheet<T = unknown>(
+  target: SheetTarget,
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; body?: T; error?: string }> {
+  const body = JSON.stringify({ ...payload, secret: target.secret });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 1_500));
+    try {
+      const res = await fetch(target.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (!res.ok) continue;
+      const text = await res.text();
+      let parsed: { ok?: boolean; error?: string } & Record<string, unknown>;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        // HTML = Google chặn hoặc đánh thức chậm, thử lại còn có cơ
+        continue;
+      }
+      if (parsed.ok !== true) return { ok: false, error: parsed.error || "Apps Script báo thất bại" };
+      return { ok: true, body: parsed as T };
+    } catch {
+      // hết giờ chờ / đứt mạng — vòng sau thử lại
+    }
+  }
+  return { ok: false, error: "Không gọi được Apps Script của bảng (đã thử 2 lần)" };
 }
 
 /** Một lần gọi. `retryable` = hỏng kiểu tạm thời, gọi lại có cơ may được. */

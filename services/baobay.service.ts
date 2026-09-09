@@ -30,7 +30,8 @@ import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDate
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
-import { pushBaobayRow, sheetTargetFromSetting, type SheetTarget } from "@/lib/baobay/sheet";
+import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
+import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
 import { clearQueueNoOnWeb, pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
 import {
@@ -52,7 +53,23 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, flightUnitPrice, type FlightKind } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, flightUnitPrice, servicePriceOf, type FlightKind } from "@/lib/baobay/flight-price";
+import {
+  SAPA_STATUS_TEXT,
+  isSapaSpot,
+  sapaGuestNames,
+  sapaMonthLabel,
+  sapaRowRef,
+  sapaSheetName,
+  sapaSheetWriteEnabled,
+  sapaStatusFromText,
+  sheetCount,
+  sheetDate,
+  sheetMoney,
+  sheetTime,
+  type SapaSheetInboundRow,
+  type SapaSheetRow,
+} from "@/lib/baobay/sapa-sheet";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type {
@@ -83,7 +100,7 @@ import type {
 } from "@/lib/baobay/types";
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
-import { BaobayBooking } from "@/models/BaobayBooking.model";
+import { BaobayBooking, type BookingStatus } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayServiceChange } from "@/models/BaobayServiceChange.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
@@ -116,7 +133,7 @@ const BCRYPT_ROUNDS = 10;
  * nút "Đẩy lại Google Sheets" quét lại được như trước.
  */
 function pushSheetInBackground(
-  push: () => Promise<{ ok: boolean; error?: string }>,
+  push: () => Promise<SheetPushResult>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: { updateOne: (filter: any, update: any) => unknown },
   id: unknown,
@@ -128,7 +145,7 @@ function pushSheetInBackground(
         { _id: id },
         { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } },
       );
-      if (!sync.ok) console.warn("[baocao] đẩy bảng tính thất bại:", sync.error);
+      if (!sync.ok && !sync.quiet) console.warn("[baocao] đẩy bảng tính thất bại:", sync.error);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       await model.updateOne({ _id: id }, { $set: { sheetSynced: false, sheetError: msg } });
@@ -1163,6 +1180,9 @@ export async function getSpotSetting(spot: string): Promise<{
   submitDeadline: string;
   sheetWebhookUrl: string;
   sheetSecret: string;
+  /** Bảng THỨ HAI: sổ tay nhân viên gõ tay (Sa Pa) — xem BaobaySetting. */
+  bookSheetWebhookUrl: string;
+  bookSheetSecret: string;
   requireTicketCodes: boolean;
 }> {
   await connectDB();
@@ -1173,6 +1193,8 @@ export async function getSpotSetting(spot: string): Promise<{
     submitDeadline: doc?.submitDeadline || DEFAULT_SUBMIT_DEADLINE,
     sheetWebhookUrl: doc?.sheetWebhookUrl || "",
     sheetSecret: doc?.sheetSecret || "",
+    bookSheetWebhookUrl: doc?.bookSheetWebhookUrl || "",
+    bookSheetSecret: doc?.bookSheetSecret || "",
     requireTicketCodes: requireTicketCodesOf(key, doc?.requireTicketCodes),
   };
 }
@@ -1220,7 +1242,15 @@ async function sheetTargetForSpot(spot: string): Promise<SheetTarget | null> {
 
 export async function updateSpotSetting(
   spot: string,
-  patch: { submitDeadline?: string; sheetWebhookUrl?: string; sheetSecret?: string; requireTicketCodes?: boolean },
+  patch: {
+    submitDeadline?: string;
+    sheetWebhookUrl?: string;
+    sheetSecret?: string;
+    /** Bảng THỨ HAI: sổ tay nhân viên gõ tay (Sa Pa) — đường riêng, xem BaobaySetting. */
+    bookSheetWebhookUrl?: string;
+    bookSheetSecret?: string;
+    requireTicketCodes?: boolean;
+  },
   updatedBy: string,
   by?: { role: BaobayRole; adminLevel?: 1 | 2; viaAdmin?: boolean },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -1250,6 +1280,22 @@ export async function updateSpotSetting(
     set.sheetWebhookUrl = url;
   }
   if (patch.sheetSecret !== undefined) set.sheetSecret = patch.sheetSecret.trim();
+  /**
+   * Bảng THỨ HAI (sổ tay gõ tay của Sa Pa) — kiểm y hệt ô trên, nhưng lưu vào
+   * chỗ riêng: dán đè lên `sheetWebhookUrl` là báo cáo phi công/điều phối/chốt
+   * ngày của cả điểm ngừng chảy sang bảng, mà không ai báo gì.
+   */
+  if (patch.bookSheetWebhookUrl !== undefined) {
+    const url = patch.bookSheetWebhookUrl.trim();
+    if (url && !/^https:\/\/script\.google\.com\//.test(url)) {
+      return { ok: false, error: "Đường dẫn sổ tay phải là webhook Apps Script (https://script.google.com/…)" };
+    }
+    if (url && url === (set.sheetWebhookUrl ?? "")) {
+      return { ok: false, error: "Sổ tay và bảng báo bay phải là HAI bảng khác nhau — đang dán trùng một địa chỉ" };
+    }
+    set.bookSheetWebhookUrl = url;
+  }
+  if (patch.bookSheetSecret !== undefined) set.bookSheetSecret = patch.bookSheetSecret.trim();
   if (patch.requireTicketCodes !== undefined) set.requireTicketCodes = Boolean(patch.requireTicketCodes);
 
   await connectDB();
@@ -3978,6 +4024,8 @@ export type BookingSaveInput = {
   depositToCompany?: boolean;
   /** Cọc gõ tay đi đường nào — quầy chọn TM/CK ngay khi nhập. */
   depositMethod?: "cash" | "transfer" | "";
+  /** Quỹ nhận khoản cọc gõ tay — xem lib/baobay/money-dest.ts. */
+  depositDest?: string;
   note: string;
   /** Email khách — app gửi thư báo mỗi khi booking thay đổi. Trống thì không gửi. */
   email?: string;
@@ -4186,7 +4234,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     createdAt: new Date(),
     // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate, spot),
   });
 
   const saved = (
@@ -4208,7 +4256,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       flagFlight: input.flagFlight,
       flightKind: input.flightKind ?? "pg",
       ppgGuests: input.ppgGuests ?? 0,
-      comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360),
+      comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360, spot),
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
@@ -4233,6 +4281,15 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       email: (input.email ?? "").trim().toLowerCase(),
       depositDate: cleanDepositDate(input.depositDate, input.deposit),
       depositMethod: input.depositMethod ?? "",
+      /**
+       * Quỹ nhận khoản cọc GÕ TAY. Chỉ ghi khi điểm có quản quỹ và thật sự có
+       * cọc — gán bừa cho booking chưa cọc là các cột "người nhận tiền" hiện
+       * số 0 của một khoản không tồn tại.
+       */
+      depositDest:
+        hasMoneyDests(spot) && (input.deposit ?? 0) > 0
+          ? normalizeMoneyDest(spot, input.depositDest, input.depositMethod || "transfer")
+          : "",
       note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       /**
@@ -4743,7 +4800,7 @@ const editedTotal = bookingTotal({
      */
     createdAt: current.createdAt,
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate, current.spot),
   });
 
   const update: Record<string, unknown> = {
@@ -4782,6 +4839,15 @@ const editedTotal = bookingTotal({
        */
       depositToCompany: input.deposit > 0,
       depositMethod: input.depositMethod ?? "",
+      /**
+       * Quỹ nhận khoản cọc GÕ TAY. Chỉ ghi khi điểm có quản quỹ và thật sự có
+       * cọc — gán bừa cho booking chưa cọc là các cột "người nhận tiền" hiện
+       * số 0 của một khoản không tồn tại.
+       */
+      depositDest:
+        hasMoneyDests(spot) && (input.deposit ?? 0) > 0
+          ? normalizeMoneyDest(spot, input.depositDest, input.depositMethod || "transfer")
+          : "",
       /**
        * Email để TRỐNG trong form thì XOÁ email cũ — quầy cố ý bỏ đi (khách xin
        * đừng gửi thư nữa, hoặc gõ nhầm hộp thư người khác) phải làm được, chứ
@@ -5205,6 +5271,14 @@ export async function collectForBooking(
      * thu ngay lúc bấm, và số "đang giữ" của người đó tính theo ngày ấy.
      */
     transferDate?: string;
+    /**
+     * QUỸ NHẬN của từng đường tiền (Sa Pa: TK Trường · TM c Yến · POS · TK
+     * Cty · ngoại tệ). Hai ô riêng vì một lần thu có thể vừa đưa tiền mặt cho
+     * người này vừa chuyển vào tài khoản kia. Bỏ trống thì máy tự chọn quỹ đầu
+     * tiên cùng đường tiền — xem defaultMoneyDest.
+     */
+    cashDest?: string;
+    transferDest?: string;
   },
 ): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
   await connectDB();
@@ -5292,6 +5366,14 @@ export async function collectForBooking(
    */
   if (ckDate !== todayInVN() && transferPart > 0) await assertDayOpen(spot, ckDate);
 
+  /**
+   * Quỹ nhận của mỗi đường tiền. Điểm chưa khai danh sách quỹ thì hai biến này
+   * là chuỗi rỗng và mọi thứ chạy y như trước — Khau Phạ và Hà Nội không phải
+   * đổi gì.
+   */
+  const cashDest = hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.cashDest, "cash") : "";
+  const transferDest = hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.transferDest, "transfer") : "";
+
   const label = isFull ? "Thu đủ" : "Cọc";
   const makeCollect = async (part: number, method: "cash" | "transfer", code = "") =>
     (
@@ -5305,6 +5387,7 @@ export async function collectForBooking(
         guests: booking.guestCount || 0,
         amount: part,
         method,
+        dest: method === "cash" ? cashDest : transferDest,
         toCompanyAccount: method === "transfer",
         transferCode: method === "transfer" ? code : "",
         note:
@@ -5364,11 +5447,12 @@ export async function collectForBooking(
         collectedLog: {
           $each: [
             ...(cashPart > 0
-              ? [{ amount: cashPart, method: "cash", byName: session.name, at: new Date(), kind: isFull ? "full" : "deposit" }]
+              ? [{ amount: cashPart, method: "cash", dest: cashDest, byName: session.name, at: new Date(), kind: isFull ? "full" : "deposit" }]
               : []),
             ...bills.map((b) => ({
               amount: b.amount,
               method: "transfer",
+              dest: transferDest,
               byName: session.name,
               at: new Date(),
               kind: isFull ? "full" : "deposit",
@@ -5517,9 +5601,9 @@ export async function addBookingServices(
     ...next,
     discount: (booking.discount ?? 0) + discountAdd,
     // Combo tính lại trên TỔNG sau khi cộng — thêm 360 vào flycam sẵn có là thành cặp
-    comboDiscount: comboDiscount(next.flycam, next.video360),
+    comboDiscount: comboDiscount(next.flycam, next.video360, booking.spot),
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
-    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate, booking.spot),
   };
   const newTotal = bookingTotal(merged as never);
   /** Tiền khách phải trả THÊM lần này = tổng mới − tổng cũ. */
@@ -5913,7 +5997,7 @@ export async function removeBookingServices(
   }
   if (removedCount <= 0) throw new BaobayError("Chưa chọn dịch vụ nào để huỷ", 400);
 
-  const newCombo = comboDiscount(next.flycam, next.video360);
+  const newCombo = comboDiscount(next.flycam, next.video360, booking.spot);
   /**
    * BỎ MỘT NỬA CẶP thì ưu đãi combo tan rã. Nhưng huỷ dịch vụ hầu như luôn là
    * lỗi bên mình (máy hỏng, người quay bận), nên KHÔNG bắt khách gánh trọn phần
@@ -5933,7 +6017,7 @@ export async function removeBookingServices(
     comboDiscount: newCombo,
     discount: (booking.discount ?? 0) + courtesy,
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
-    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate, booking.spot),
   };
   const naturalTotal = bookingTotal(merged as never);
   const oldTotal = booking.totalAmount ?? 0;
@@ -6210,6 +6294,1109 @@ export async function ingestSapaWebBooking(input: {
   ).toObject();
   pushSheetInBackground(() => pushBookingRow(created), BaobayBooking, created._id);
   return { action: "created", id: String(created._id), ref };
+}
+
+/* ================================================================== */
+/* LƯỚI SỔ SA PA — bảng nhập liệu trong app, bố cục y sổ tay           */
+/* ================================================================== */
+
+/**
+ * Một màn hình duy nhất thay cho việc gõ vào Google Sheets.
+ *
+ * Vì sao dựng lại đúng bố cục cột của sổ tay chứ không bày theo kiểu app: người
+ * đang giữ sổ đã quen mắt với thứ tự ấy suốt nhiều tháng. Đổi bố cục là bắt họ
+ * học lại, mà học lại thì họ quay về gõ bảng tính cho nhanh — và ta lại có hai
+ * sổ như cũ. Giống hệt thì đổi chỗ gõ mà không đổi cách nghĩ.
+ *
+ * Cột nào SỬA ĐƯỢC, cột nào MÁY TÍNH — ranh giới phải rõ, vì đó là khác biệt
+ * lớn nhất với bảng tính (ở đó gõ đè lên công thức lúc nào cũng được):
+ *   sửa được : nguồn · mã book · tên khách · số khách · đơn giá · flycam ·
+ *              360 · phụ thu · cọc · chiết khấu · SĐT · điểm đón · giờ đón ·
+ *              trạng thái · ghi chú
+ *   máy tính : thành tiền · tiền flycam · tiền 360 · TỔNG THU · đã thu ·
+ *              còn thu · các cột NGƯỜI NHẬN TIỀN
+ *
+ * Các cột "người nhận tiền" KHÔNG gõ tay ở đây: chúng là tổng của các lệnh thu
+ * đã ghi. Muốn đổi thì sửa chính lệnh thu — chứ gõ đè lên tổng thì sổ tiền và
+ * sổ booking nói hai chuyện khác nhau, đúng cái bệnh của bảng tính.
+ */
+
+/**
+ * Ô SỬA ĐƯỢC TỪ LƯỚI — máy chủ chỉ nhận đúng những tên này.
+ *
+ * Danh sách đóng, không mở: lưới gửi lên tên trường và máy chủ ghi thẳng, nên
+ * để lọt một tên lạ là mở đường ghi bừa vào bất cứ ô nào của bản ghi (kể cả
+ * `lockedAt`, `insuranceSentAt`). Thêm ô mới thì thêm vào đây VÀ thêm nhánh xử
+ * lý ở `updateBookingCell` — quên nhánh thì ô đó lặng lẽ không lưu.
+ */
+export const BOOKING_CELL_FIELDS = [
+  "source",
+  "bookingCode",
+  "guestNames",
+  "guestCount",
+  "unitPrice",
+  "flycam",
+  "video360",
+  "redFlag",
+  "sunset",
+  "flagFlight",
+  "mountainCar",
+  "ppgGuests",
+  "pickupFee",
+  "discount",
+  /** Gộp phí đưa đón + giảm giá vào MỘT ô, đúng nếp sổ tay Sa Pa (âm = giảm). */
+  "extraFee",
+  "deposit",
+  "commission",
+  "agencyName",
+  "agencyPaidAmount",
+  "transferCode",
+  "phone",
+  "email",
+  "pickupNote",
+  "expectedTime",
+  "status",
+  "note",
+  "contactNote",
+] as const;
+export type BookingCellField = (typeof BOOKING_CELL_FIELDS)[number];
+
+/** Tên cũ, giữ cho lưới sổ Sa Pa gọi tiếp — cùng một danh sách. */
+export const SAPA_BOOK_FIELDS = BOOKING_CELL_FIELDS;
+export type SapaBookField = BookingCellField;
+
+export type SapaBookRow = {
+  id: string;
+  flightDate: string;
+  daySeq: number;
+  source: string;
+  bookingCode: string;
+  /** Mỗi khách một dòng trong ô — đúng nếp sổ tay. */
+  guestNames: string;
+  guestCount: number;
+  unitPrice: number;
+  /** Máy tính: đơn giá × số khách. */
+  lineAmount: number;
+  flycam: number;
+  flycamMoney: number;
+  video360: number;
+  video360Money: number;
+  /** Phụ thu khác — gộp phí đưa đón, dù cờ đỏ, bay kéo cờ (bảng không có cột riêng). */
+  extraFee: number;
+  /** Máy tính: tổng chốt với khách. */
+  total: number;
+  deposit: number;
+  /** Tổng đã thu (đã trừ hoàn) và phần còn phải thu. */
+  paid: number;
+  remaining: number;
+  /** Cột NGƯỜI NHẬN TIỀN: mã quỹ → số tiền đã về quỹ đó. */
+  received: Record<string, number>;
+  commission: number;
+  phone: string;
+  pickupNote: string;
+  expectedTime: string;
+  status: BookingStatus;
+  note: string;
+  /** Kế toán đã khoá dòng — lưới hiện mờ và không cho sửa. */
+  locked: boolean;
+  /** Người/máy đã lập booking này ("Sổ tay Sa Pa", "Web Sa Pa (tự động)"…). */
+  createdBy: string;
+};
+
+export type SapaBookDay = {
+  date: string;
+  rows: SapaBookRow[];
+  guests: number;
+  total: number;
+  paid: number;
+};
+
+export type SapaBookView = {
+  /** "2026-09" */
+  month: string;
+  /** Danh sách quỹ nhận tiền của điểm — lưới vẽ mỗi quỹ một cột. */
+  dests: Array<{ id: string; label: string; kind: string }>;
+  days: SapaBookDay[];
+  totals: { guests: number; total: number; paid: number; received: Record<string, number> };
+};
+
+/**
+ * TIỀN ĐÃ VỀ TỪNG QUỸ của một booking.
+ *
+ * Hai nguồn, và phải cẩn thận không cộng chồng: khoản cọc GÕ TAY và các LỆNH
+ * THU là hai cách ghi cùng một dòng tiền (xem `bookingPaidTotal`). Nên phần
+ * cọc chỉ tính đúng cái còn dư ra sau khi trừ các lệnh thu.
+ *
+ * Đây là số THU VÀO của từng quỹ, KHÔNG trừ tiền hoàn — giống hệt cách sổ tay
+ * làm (bên đó tiền hoàn nằm ở các cột "Chi …" riêng). Vì vậy tổng các cột quỹ
+ * có thể lớn hơn ô "Đã thu" đúng bằng số đã hoàn khách.
+ */
+function receivedByDest(spot: string, doc: any): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!hasMoneyDests(spot)) return out;
+  const add = (dest: string, amount: number) => {
+    if (!dest || amount <= 0) return;
+    out[dest] = (out[dest] ?? 0) + amount;
+  };
+
+  let collected = 0;
+  for (const c of doc.collectedLog ?? []) {
+    const amount = Math.max(0, Math.round(c?.amount || 0));
+    collected += amount;
+    add(normalizeMoneyDest(spot, c?.dest, c?.method === "cash" ? "cash" : "transfer"), amount);
+  }
+
+  const depositLeft = Math.max(0, (doc.deposit ?? 0) - collected + (doc.refundedTotal ?? 0));
+  if (depositLeft > 0) {
+    add(normalizeMoneyDest(spot, doc.depositDest, doc.depositMethod === "cash" ? "cash" : "transfer"), depositLeft);
+  }
+  return out;
+}
+
+function toSapaBookRow(doc: any): SapaBookRow {
+  const spot = "sapa";
+  const price = servicePriceOf(spot, doc.createdAt);
+  const names = (doc.otaGuests ?? []).map((g: any) => String(g?.fullName || "").trim()).filter(Boolean);
+  const guestCount = doc.guestCount ?? 0;
+  return {
+    id: String(doc._id),
+    flightDate: doc.flightDate,
+    daySeq: doc.daySeq ?? 0,
+    source: doc.source || "",
+    bookingCode: doc.bookingCode || "",
+    guestNames: names.length ? names.join("\n") : doc.contactName || "",
+    guestCount,
+    unitPrice: doc.unitPrice ?? 0,
+    lineAmount: (doc.unitPrice ?? 0) * guestCount,
+    flycam: doc.flycam ?? 0,
+    flycamMoney: (doc.flycam ?? 0) * price.flycam,
+    video360: doc.video360 ?? 0,
+    video360Money: (doc.video360 ?? 0) * price.video360,
+    extraFee:
+      (doc.pickupFee ?? 0) +
+      (doc.redFlag ?? 0) * price.redFlag +
+      (doc.flagFlight ?? 0) * price.flagFlight -
+      (doc.discount ?? 0),
+    total: doc.totalAmount ?? 0,
+    deposit: doc.deposit ?? 0,
+    paid: bookingPaidTotal(doc),
+    remaining: doc.remaining ?? 0,
+    received: receivedByDest(spot, doc),
+    commission: doc.commission?.amount ?? 0,
+    phone: doc.phone || "",
+    pickupNote: doc.pickup === "other" ? doc.pickupNote || "" : BOOKING_PICKUP_LABEL[doc.pickup] || "",
+    expectedTime: doc.expectedTime || "",
+    status: (doc.status ?? "open") as BookingStatus,
+    note: doc.note || "",
+    locked: Boolean(doc.lockedAt),
+    createdBy: doc.createdByName || doc.createdByUsername || "",
+  };
+}
+
+/** Cả tháng, xếp theo ngày rồi theo số thứ tự khách — đúng cách sổ tay xếp. */
+export async function listSapaBook(session: BaobaySession, month: string): Promise<SapaBookView> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, "sapa");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new BaobayError("Tháng không hợp lệ (cần YYYY-MM)", 400);
+
+  const docs = await BaobayBooking.find({
+    spot,
+    flightDate: { $gte: `${month}-01`, $lte: `${month}-31` },
+    /** Dòng đã bỏ khỏi sổ không hiện: nó không phải khách, chỉ là vết nhập nhầm. */
+    status: { $ne: "voided" },
+  })
+    .sort({ flightDate: 1, daySeq: 1 })
+    .lean<any[]>();
+
+  const byDay = new Map<string, SapaBookRow[]>();
+  for (const d of docs) {
+    const row = toSapaBookRow(d);
+    if (!byDay.has(row.flightDate)) byDay.set(row.flightDate, []);
+    byDay.get(row.flightDate)!.push(row);
+  }
+
+  const totals = { guests: 0, total: 0, paid: 0, received: {} as Record<string, number> };
+  const days: SapaBookDay[] = [...byDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, rows]) => {
+      const day = {
+        date,
+        rows,
+        guests: rows.reduce((t, r) => t + r.guestCount, 0),
+        total: rows.reduce((t, r) => t + r.total, 0),
+        paid: rows.reduce((t, r) => t + r.paid, 0),
+      };
+      totals.guests += day.guests;
+      totals.total += day.total;
+      totals.paid += day.paid;
+      for (const r of rows) {
+        for (const [k, v] of Object.entries(r.received)) totals.received[k] = (totals.received[k] ?? 0) + v;
+      }
+      return day;
+    });
+
+  return {
+    month,
+    dests: moneyDestsOf(spot).map((d) => ({ id: d.id, label: d.label, kind: d.kind })),
+    days,
+    totals,
+  };
+}
+
+/**
+ * SỬA MỘT Ô của một booking — dùng chung cho mọi lưới, mọi điểm bay.
+ *
+ * Mỗi ô một lượt gọi, không gom cả dòng: người ta gõ tới đâu lưu tới đó, mất
+ * mạng giữa chừng thì chỉ hỏng đúng ô đang gõ.
+ *
+ * MÁY CHỦ LUÔN TÍNH LẠI TIỀN. Trình duyệt chỉ được nói "ô này thành số này";
+ * tổng tiền, giảm combo và phần còn thu do đây chốt theo bảng giá của điểm —
+ * tin số tiền máy khách gửi lên là mở đường sửa tổng bằng cách sửa DevTools.
+ */
+export async function updateBookingCell(
+  session: BaobaySession,
+  spotRaw: string,
+  input: { id: string; field: string; value: unknown },
+): Promise<{ booking: BookingDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(input.id)) throw new BaobayError("Dòng không hợp lệ", 400);
+  const field = String(input.field) as BookingCellField;
+  if (!(BOOKING_CELL_FIELDS as readonly string[]).includes(field)) {
+    throw new BaobayError(`Ô "${input.field}" không sửa được ở lưới này`, 400);
+  }
+  /** Dòng kế toán đã khoá, hoặc ngày đã chốt sổ — không ai sửa được nữa. */
+  await assertBookingUnlocked(spot, input.id, session);
+
+  const booking = await BaobayBooking.findOne({ _id: input.id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy dòng", 404);
+
+  const text = () => String(input.value ?? "").trim();
+  /** Đọc số: bỏ hết dấu chấm/phẩy phân cách, GIỮ dấu âm (ô phụ thu âm = giảm giá). */
+  const signed = () => Math.round(Number(String(input.value ?? "0").replace(/[^\d-]/g, "")) || 0);
+  const money = () => Math.max(0, signed());
+  const set: Record<string, unknown> = {};
+
+  switch (field) {
+    case "source":
+    case "bookingCode":
+    case "phone":
+    case "note":
+    case "contactNote":
+    case "agencyName":
+    case "transferCode":
+      set[field] = text();
+      break;
+    case "email":
+      set.email = text().toLowerCase();
+      break;
+    case "pickupNote":
+      /** Gõ chỗ đón nghĩa là "đón tại đây" — khỏi bắt chọn thêm kiểu đưa đón. */
+      set.pickup = "other";
+      set.pickupNote = text();
+      break;
+    case "expectedTime": {
+      const t = sheetTime(input.value);
+      if (text() && !t) throw new BaobayError("Giờ đón phải có dạng HH:MM", 400);
+      set.expectedTime = t;
+      break;
+    }
+    case "guestNames": {
+      /**
+       * Ô này giữ CẢ ĐOÀN, mỗi khách một dòng. Tên đầu là người liên hệ, cả
+       * danh sách vào `otaGuests` để hồ sơ bảo hiểm lấy ra điền sẵn — KHÔNG đổ
+       * thẳng vào `insured`: hồ sơ bảo hiểm còn cần ngày sinh và số giấy tờ,
+       * đổ mỗi cái tên vào đó là tạo hồ sơ dở dang mà người duyệt tưởng đã đủ.
+       */
+      const names = sapaGuestNames(input.value);
+      set.contactName = names[0] ?? "";
+      set.otaGuests = names.map((fullName) => ({
+        fullName,
+        birthday: "",
+        gender: "",
+        idNumber: "",
+        nationality: "",
+      }));
+      break;
+    }
+    case "guestCount": {
+      const n = money();
+      if (n > 100) throw new BaobayError("Số khách không hợp lý", 400);
+      set.guestCount = n;
+      /** Dịch vụ bám theo đầu khách — giảm khách thì kẹp mọi dịch vụ xuống theo. */
+      if (n > 0) {
+        for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar", "ppgGuests"] as const) {
+          set[k] = Math.min(booking[k] ?? 0, n);
+        }
+      }
+      break;
+    }
+    case "flycam":
+    case "video360":
+    case "redFlag":
+    case "sunset":
+    case "flagFlight":
+    case "mountainCar":
+    case "ppgGuests": {
+      const n = money();
+      const cap = booking.guestCount ?? 0;
+      if (cap > 0 && n > cap) throw new BaobayError(`Chỉ có ${cap} khách — không đặt được ${n} suất`, 400);
+      set[field] = n;
+      break;
+    }
+    case "unitPrice":
+    case "deposit":
+    case "pickupFee":
+    case "discount":
+    case "agencyPaidAmount":
+      set[field] = money();
+      break;
+    case "extraFee": {
+      /**
+       * Sổ tay Sa Pa không có cột "giảm trừ": số ÂM ở ô phụ thu chính là giảm
+       * giá. Giữ đúng nếp đó thay vì bắt người ta học thêm một ô mới.
+       */
+      const raw = signed();
+      set.pickupFee = Math.max(0, raw);
+      set.discount = raw < 0 ? -raw : 0;
+      break;
+    }
+    case "commission": {
+      const amount = money();
+      set.commission = amount
+        ? {
+            ...(booking.commission ?? {}),
+            amount,
+            method: booking.commission?.method ?? "agency",
+            agencyName: booking.commission?.agencyName || booking.agencyName || booking.source || "",
+            byUsername: session.username,
+            byName: session.name,
+            at: new Date(),
+          }
+        : undefined;
+      break;
+    }
+    case "status": {
+      const next = String(input.value ?? "");
+      if (!["open", "done", "cancelled"].includes(next)) throw new BaobayError("Trạng thái không hợp lệ", 400);
+      /** BỎ KHỎI SỔ không làm ở đây — đó là việc của nút "🗑 Nhập nhầm" có hỏi lý do. */
+      set.status = next;
+      if (next === "done") {
+        set.doneAt = new Date();
+        set.doneBy = session.name;
+      } else if (next === "cancelled") {
+        set.cancelledAt = new Date();
+        set.cancelledBy = session.name;
+      } else {
+        set.doneAt = null;
+        set.cancelledAt = null;
+      }
+      break;
+    }
+  }
+
+  /** Tổng tiền do MÁY CHỦ tính lại, mọi lần, theo bảng giá của chính điểm này. */
+  const merged = { ...booking, ...set };
+  const kind: FlightKind = merged.flightKind ?? "pg";
+  const total = bookingTotal({
+    ...merged,
+    spot,
+    /** Giữ giá LÚC BOOKING ĐƯỢC LẬP — xem chú thích servicePriceOf. */
+    createdAt: booking.createdAt,
+    comboDiscount: comboDiscount(merged.flycam, merged.video360, spot),
+    ppgGuests: kind === "ppg" ? 0 : (merged.ppgGuests ?? 0),
+    ppgUnitPrice: flightUnitPrice("ppg", merged.flightDate, spot),
+  } as never);
+  set.comboDiscount = comboDiscount(merged.flycam, merged.video360, spot);
+  set.totalAmount = total;
+  set.remaining = remainingOf(total, merged.deposit ?? 0, 0, merged.agencyPaidAmount ?? 0);
+
+  const updated = await BaobayBooking.findOneAndUpdate({ _id: input.id, spot }, { $set: set }, { new: true }).lean<any>();
+  pushSheetInBackground(() => pushBookingRow(updated), BaobayBooking, updated._id);
+  return { booking: toBookingDTO(updated) };
+}
+
+/** Bản cho LƯỚI SỔ SA PA — cùng một phép sửa, chỉ khác hình dạng dòng trả về. */
+export async function updateSapaBookCell(
+  session: BaobaySession,
+  input: { id: string; field: string; value: unknown },
+): Promise<{ row: SapaBookRow }> {
+  await updateBookingCell(session, "sapa", input);
+  const doc = await BaobayBooking.findById(input.id).lean<any>();
+  return { row: toSapaBookRow(doc) };
+}
+
+/**
+ * THÊM MỘT DÒNG cho một ngày — dòng trống cuối mỗi khối ngày trên lưới.
+ *
+ * Tạo NGAY một bản ghi rỗng thay vì đợi gõ xong cả dòng: có bản ghi thì mỗi ô
+ * gõ xong là lưu được luôn, đúng cảm giác bảng tính. Dòng rỗng chưa tên chưa
+ * khách không lọt vào báo cáo nào (mọi phép cộng đều theo số khách), và người
+ * nhập bỏ dở thì bấm "🗑 Nhập nhầm" như mọi booking khác.
+ */
+export async function createSapaBookRow(
+  session: BaobaySession,
+  input: { flightDate: string },
+): Promise<{ row: SapaBookRow }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, "sapa");
+  if (!isDateKey(input.flightDate)) throw new BaobayError("Ngày bay không hợp lệ", 400);
+  await assertDayOpen(spot, input.flightDate);
+
+  const created = (
+    await BaobayBooking.create({
+      spot,
+      flightDate: input.flightDate,
+      daySeq: await nextDaySeq(spot, input.flightDate),
+      createdByUsername: session.username,
+      createdByName: session.name,
+      source: "",
+      contactName: "",
+      phone: "",
+      bookingCode: "",
+      guestCount: 0,
+      flightKind: "pg",
+      ppgGuests: 0,
+      flycam: 0,
+      video360: 0,
+      redFlag: 0,
+      sunset: 0,
+      flagFlight: 0,
+      mountainCar: 0,
+      /** Đơn giá điền sẵn theo bảng giá Sa Pa — gõ đè được như mọi ô khác. */
+      unitPrice: flightUnitPrice("pg", input.flightDate, spot),
+      discount: 0,
+      comboDiscount: 0,
+      pickupFee: 0,
+      totalAmount: 0,
+      deposit: 0,
+      remaining: 0,
+      agencyPaidAmount: 0,
+      pickup: "other",
+      pickupNote: "",
+      expectedTime: "",
+      transferCode: "",
+      note: "",
+      status: "open",
+    })
+  ).toObject();
+
+  return { row: toSapaBookRow(created) };
+}
+
+/* ================================================================== */
+/* SỔ TAY GOOGLE SHEETS SA PA — nhận dòng nhân viên gõ tay             */
+/* ================================================================== */
+
+/**
+ * Tổng khách ĐÃ TRẢ của một booking, tính đúng luật hiện trên thẻ booking:
+ * số cọc gõ tay và các lệnh thu là HAI CÁCH GHI CÙNG MỘT DÒNG TIỀN, không
+ * được cộng chồng. Xem chú thích `depositBase` ở BookingCard.
+ */
+function bookingPaidTotal(doc: any): number {
+  const collected = (doc.collectedLog ?? []).reduce((t: number, c: any) => t + (c.amount || 0), 0);
+  const refunded = doc.refundedTotal ?? 0;
+  const depositLeft = Math.max(0, (doc.deposit ?? 0) - collected + refunded);
+  return Math.max(0, depositLeft + collected - refunded);
+}
+
+/** Dựng dòng bảng tính từ một booking Sa Pa. */
+function sapaRowFromBooking(doc: any): SapaSheetRow {
+  const flightDate = String(doc.flightDate || "");
+  const price = servicePriceOf("sapa", doc.createdAt);
+  const names = (doc.otaGuests ?? []).map((g: any) => String(g?.fullName || "").trim()).filter(Boolean);
+  const paid = bookingPaidTotal(doc);
+  return {
+    key: String(doc._id),
+    month: sapaMonthLabel(flightDate),
+    daySeq: doc.daySeq || "",
+    flightDate,
+    source: doc.source || "",
+    bookingCode: doc.bookingCode || "",
+    /** Ô "TÊN ĐĂNG KÝ" của bảng vốn ghi MỖI KHÁCH MỘT DÒNG — giữ đúng nếp đó. */
+    guestNames: names.length ? names.join("\n") : doc.contactName || "",
+    guestCount: doc.guestCount ?? 0,
+    unitPrice: doc.unitPrice ?? 0,
+    flycam: doc.flycam ?? 0,
+    flycamMoney: (doc.flycam ?? 0) * price.flycam,
+    video360: doc.video360 ?? 0,
+    video360Money: (doc.video360 ?? 0) * price.video360,
+    /**
+     * Ô "Phụ thu khác" gộp phí đưa đón và các dịch vụ bảng tính KHÔNG có cột
+     * riêng (dù cờ đỏ, bay kéo cờ). Bỏ qua là ô TỔNG THU của bảng thiếu tiền
+     * mà kế toán không hiểu vì sao lệch.
+     */
+    extraFee:
+      (doc.pickupFee ?? 0) +
+      (doc.redFlag ?? 0) * price.redFlag +
+      (doc.flagFlight ?? 0) * price.flagFlight -
+      (doc.discount ?? 0),
+    deposit: doc.deposit ?? 0,
+    commission: doc.commission?.amount ?? 0,
+    phone: doc.phone || "",
+    pickupNote: doc.pickup === "other" ? doc.pickupNote || "" : BOOKING_PICKUP_LABEL[doc.pickup] || "",
+    expectedTime: doc.expectedTime || "",
+    statusText: SAPA_STATUS_TEXT[doc.status] || "CHỜ BAY",
+    paidText: paid > 0 ? String(paid) : "",
+    /**
+     * CÁC CỘT "NGƯỜI NHẬN TIỀN" — mỗi quỹ một khoá `dest:<mã>`, Apps Script
+     * ánh xạ sang đúng tên cột trên sổ tay (TK Trường · TM c Yến · POS…).
+     * Từ khi app quản quỹ nhận tiền thì app cũng là nơi biết đúng nhất số
+     * nào vào cột nào — trước đây phần này để trắng vì app không biết.
+     */
+    ...Object.fromEntries(
+      moneyDestsOf("sapa").map((d) => [`dest:${d.id}`, receivedByDest("sapa", doc)[d.id] ?? ""]),
+    ),
+  };
+}
+
+/**
+ * ĐỊA CHỈ SỔ TAY GÕ TAY của Sa Pa — KHÁC bảng báo bay của điểm.
+ *
+ * `sheetTargetForSpot()` trả về bảng BÁO BAY (tab Phi công · Điều phối · Chốt
+ * ngày). Sổ tay "Bảng theo dõi chuyến bay" là một bảng tính khác hẳn, Apps
+ * Script khác, nên phải có ô cấu hình riêng. Lấy nhầm ô kia thì mọi lệnh đọc
+ * đều trả "không tìm thấy tab tháng", còn lệnh ghi thì ghi vào bảng báo bay —
+ * hỏng đúng cái bảng cả đội đang sống nhờ.
+ */
+async function sapaBookSheetTarget(): Promise<SheetTarget | null> {
+  const setting = await getSpotSetting("sapa");
+  const url = setting.bookSheetWebhookUrl?.trim() || process.env.SAPA_BOOK_SHEET_URL || "";
+  if (!url) return null;
+  const secret = setting.bookSheetWebhookUrl?.trim()
+    ? setting.bookSheetSecret || ""
+    : process.env.SAPA_BOOK_SHEET_SECRET || "";
+  return { url, secret };
+}
+
+async function pushSapaBookingRow(doc: any) {
+  /**
+   * CHẾ ĐỘ CHỈ ĐỌC (mặc định): KHÔNG gọi sang Apps Script.
+   *
+   * Bảng tính Sa Pa là sổ sống của một người đang làm việc thật trên đó. Chừng
+   * nào cách nhập trong app và thói quen của người đó chưa khớp, mọi phép ghi
+   * tự động đều là ghi đè lên công việc của người khác. Booking vẫn nằm đủ
+   * trong app; `sheetError` nói rõ vì sao chưa sang bảng để sau còn đẩy bù.
+   */
+  if (!sapaSheetWriteEnabled()) {
+    return { ok: false, quiet: true, error: "Bảng tính Sa Pa đang ở CHẾ ĐỘ CHỈ ĐỌC (chưa bật SAPA_SHEET_WRITE)" };
+  }
+  const flightDate = String(doc.flightDate || "");
+  if (!isDateKey(flightDate)) return { ok: false, error: `Ngày bay không hợp lệ: ${flightDate}` };
+  return pushBaobayRow(
+    "sapabook",
+    sapaRowFromBooking(doc) as unknown as Record<string, string | number>,
+    sapaSheetName(flightDate),
+    await sapaBookSheetTarget(),
+  );
+}
+
+export type SapaSheetResult = {
+  row: number;
+  key: string;
+  action: "created" | "updated" | "skipped" | "error";
+  /** Ô app muốn ghi đè lại lên bảng (tên trường trùng SapaSheetRow). */
+  write?: Partial<SapaSheetRow>;
+  /** Câu cảnh báo dán vào ô ghi chú của dòng — số lệch, cấp lại số… */
+  warn?: string;
+  error?: string;
+};
+
+/**
+ * NHẬN CÁC DÒNG NHÂN VIÊN GÕ THẲNG VÀO BẢNG TÍNH SA PA.
+ *
+ * Apps Script chỉ gửi lên những dòng THẬT SỰ ĐỔI kể từ lần khớp trước (nó giữ
+ * một cột dấu vân tay), nên mỗi dòng tới đây đều mang nghĩa "bên bảng tính vừa
+ * gõ sau" — theo luật đã chốt thì bảng tính thắng ở những ô nó gõ.
+ *
+ * TÌM ĐÚNG BOOKING theo ba nấc, đúng thứ tự tin cậy:
+ *   1. cột "Khoá app" — chắc chắn nhất, app tự ghi vào lúc khớp lần trước.
+ *   2. (ngày bay + STT ở cột B) — ĐÂY LÀ CÁCH CẤP SỐ ĐÃ THỐNG NHẤT: một cặp
+ *      (ngày, số) chỉ thuộc về một khách.
+ *   3. không ra thì TẠO MỚI và cấp số mới.
+ *
+ * Nấc 2 có bẫy: nhân viên gõ số 3 cho ngày 12/09 trong khi app đã có khách số
+ * 3 của ngày đó nhưng là NGƯỜI KHÁC. Ghi đè lúc ấy là xoá trắng một khách.
+ * Nên khi tên/SĐT/mã book đều lệch thì KHÔNG đè: app cấp một số mới, ghi ngược
+ * số đó lên bảng và kèm câu cảnh báo để người trực nhìn thấy.
+ */
+export async function ingestSapaSheetRows(input: {
+  sheet: string;
+  rows: SapaSheetInboundRow[];
+}): Promise<{ sheet: string; results: SapaSheetResult[] }> {
+  await connectDB();
+  const spot = "sapa";
+  const results: SapaSheetResult[] = [];
+  /** Năm suy từ tên tab ("T9-2026") — đỡ cho ô ngày gõ tay kiểu "12/09". */
+  const tabYear = input.sheet.match(/(20\d{2})/)?.[1];
+
+  for (const raw of Array.isArray(input.rows) ? input.rows : []) {
+    const rowNo = Number(raw?.row) || 0;
+    try {
+      const flightDate = sheetDate(raw.flightDate, tabYear);
+      if (!flightDate) {
+        results.push({ row: rowNo, key: "", action: "skipped", warn: "thiếu ngày bay" });
+        continue;
+      }
+
+      const guestNames = sapaGuestNames(raw.guestNames);
+      const guestCount = sheetCount(raw.guestCount) || guestNames.length;
+      const seqTyped = sheetCount(raw.daySeq);
+      const bookingCode = String(raw.bookingCode ?? "").trim();
+
+      /* ---- nấc 1 + 2: tìm booking đã có ---- */
+      const key = String(raw.key ?? "").trim();
+      let booking: any = null;
+      if (key && mongoose.Types.ObjectId.isValid(key)) {
+        booking = await BaobayBooking.findOne({ _id: key, spot }).lean<any>();
+      }
+
+      /**
+       * NẤC 1B — KHOÁ TÍNH TỪ NỘI DUNG DÒNG (`sheetRef`).
+       *
+       * Đây là nấc GÁNH TẤT CẢ khi app đang ở chế độ chỉ đọc: không ghi được
+       * cột "Khoá app" lên bảng thì dòng nào cũng quay lại không mang theo
+       * khoá, và mỗi lượt "Lấy từ bảng" sẽ đẻ thêm một khách y hệt.
+       *
+       * Dò CẢ BA dạng khoá cùng lúc, không chỉ dạng bền nhất: nhân viên hay bổ
+       * sung dần (lúc đầu mới có tên, lát sau mới điền số thứ tự). Dòng đó đã
+       * từng vào sổ dưới khoá "<ngày>~<tên>", nay khoá bền nhất đổi thành
+       * "<ngày>#<số>" — không dò dạng cũ thì đúng lúc nhân viên điền thêm số
+       * là sổ có hai khách trùng nhau.
+       */
+      const rowRefs = [
+        sapaRowRef({ flightDate, daySeq: seqTyped }),
+        sapaRowRef({ flightDate, bookingCode }),
+        sapaRowRef({ flightDate, guestName: guestNames[0] }),
+      ].filter(Boolean);
+      /** Khoá BỀN NHẤT hiện có trên dòng — đây là cái được lưu lại. */
+      const rowRef = rowRefs[0] ?? "";
+
+      /**
+       * "Bản ghi này với dòng đang xét có phải CÙNG MỘT KHÁCH không."
+       *
+       * Chỉ cần MỘT mốc nhận dạng khớp là đủ: nhân viên hay gõ tắt tên, bỏ
+       * trống SĐT, hoặc khách lẻ không có mã book — đòi khớp cả ba thì dòng
+       * nào cũng hoá "người khác" và sổ đầy booking trùng.
+       */
+      const sameGuest = (doc: any) =>
+        !guestNames.length ||
+        !doc.contactName ||
+        sameLoose(guestNames[0], doc.contactName) ||
+        (!!raw.phone && samePhone(String(raw.phone), doc.phone)) ||
+        (!!bookingCode && sameLoose(bookingCode, doc.bookingCode));
+
+      let renumbered = 0;
+      if (!booking && rowRefs.length) {
+        const cand = await BaobayBooking.findOne({ spot, sheetRef: { $in: rowRefs } }).lean<any>();
+        /**
+         * Khoá dạng "<ngày>#<số>" chỉ là một CHỖ NGỒI — hôm nay số 3 là anh A,
+         * anh A huỷ thì số 3 sang người khác. Nên khoá kiểu đó vẫn phải qua
+         * phép kiểm danh tính y như nấc tra theo số bên dưới; bỏ qua là dòng
+         * của khách mới ghi đè lên khách cũ (phép thử bắt được đúng cảnh này).
+         * Khoá theo mã book hay theo tên thì tự nó đã nói người nào, khỏi kiểm.
+         */
+        if (cand) {
+          if (!String(cand.sheetRef ?? "").includes("#") || sameGuest(cand)) booking = cand;
+          else renumbered = seqTyped;
+        }
+      }
+
+      if (!booking && !renumbered && seqTyped > 0) {
+        const bySeq = await BaobayBooking.findOne({ spot, flightDate, daySeq: seqTyped, status: { $ne: "voided" } }).lean<any>();
+        if (bySeq) {
+          if (sameGuest(bySeq)) booking = bySeq;
+          else renumbered = seqTyped;
+        }
+      }
+
+      /* ---- các ô bảng tính đang nắm ---- */
+      const flycam = sheetCount(raw.flycam);
+      const video360 = sheetCount(raw.video360);
+      const unitPrice = sheetMoney(raw.unitPrice);
+      const extraFee = sheetMoney(raw.extraFee);
+      const deposit = sheetMoney(raw.deposit);
+      const sheetTotal = sheetMoney(raw.total);
+      const statusFromSheet = sapaStatusFromText(raw.statusText);
+
+      const fields: Record<string, unknown> = {
+        flightDate,
+        source: String(raw.source ?? "").trim(),
+        bookingCode,
+        contactName: guestNames[0] ?? "",
+        guestCount,
+        flycam: Math.min(flycam, guestCount || flycam),
+        video360: Math.min(video360, guestCount || video360),
+        unitPrice,
+        pickupFee: Math.max(0, extraFee),
+        /** Bảng tính KHÔNG có cột giảm trừ; ô "Phụ thu khác" âm chính là giảm. */
+        discount: extraFee < 0 ? -extraFee : 0,
+        deposit,
+        phone: String(raw.phone ?? "").trim(),
+        pickup: "other",
+        pickupNote: String(raw.pickupNote ?? "").trim(),
+        expectedTime: sheetTime(raw.expectedTime),
+      };
+      /**
+       * Tên của khách thứ hai trở đi vào `otaGuests` — chỗ hồ sơ bảo hiểm lấy
+       * ra điền sẵn. KHÔNG ghi thẳng vào `insured`: hồ sơ bảo hiểm còn cần ngày
+       * sinh và số giấy tờ, đổ mỗi cái tên vào đó là tạo ra hồ sơ dở dang mà
+       * người duyệt tưởng đã đủ.
+       */
+      if (guestNames.length) {
+        fields.otaGuests = guestNames.map((fullName) => ({
+          fullName,
+          birthday: "",
+          gender: "",
+          idNumber: "",
+          nationality: "",
+        }));
+      }
+
+      const commissionAmount = sheetMoney(raw.commission);
+
+      /* ---- tổng tiền: MÁY CHỦ tính, rồi soát lại với ô TỔNG THU của bảng ---- */
+      const totalAmount = bookingTotal({
+        ...(fields as any),
+        spot,
+        createdAt: booking?.createdAt ?? new Date(),
+        redFlag: booking?.redFlag ?? 0,
+        flagFlight: booking?.flagFlight ?? 0,
+        sunset: 0,
+        mountainCar: 0,
+        comboDiscount: 0,
+      });
+      fields.totalAmount = totalAmount;
+      fields.remaining = Math.max(0, totalAmount - deposit - (booking?.agencyPaidAmount ?? 0));
+      /**
+       * LỆCH VỚI Ô "TỔNG THU": báo chứ KHÔNG tự bẻ số cho khớp. Bảng cộng
+       * =Thành tiền+Flycam+360+Phụ thu, app cộng theo bảng giá — hai bên lệch
+       * nghĩa là có ô ai đó gõ đè, và đó đúng là thứ kế toán cần nhìn thấy.
+       */
+      const warns: string[] = [];
+      if (sheetTotal > 0 && Math.abs(sheetTotal - totalAmount) >= 1000) {
+        warns.push(`TỔNG THU trên bảng ${sheetTotal.toLocaleString("vi-VN")}đ ≠ app tính ${totalAmount.toLocaleString("vi-VN")}đ`);
+      }
+
+      /* ---- ghi ---- */
+      if (booking) {
+        /** Đã bỏ khỏi sổ thì bảng tính không lật lại được — người trực đã quyết. */
+        if (booking.status === "voided") {
+          results.push({ row: rowNo, key: String(booking._id), action: "skipped", warn: "booking đã bỏ khỏi sổ" });
+          continue;
+        }
+        const set: Record<string, unknown> = { ...fields };
+        /** Cập nhật khoá dòng: nhân viên vừa điền thêm số thứ tự thì khoá bền lên. */
+        if (rowRef) set.sheetRef = rowRef;
+        /** Ngày bay đổi thì số của ngày cũ trả về kho, nhận số mới của ngày mới. */
+        const dateChanged = flightDate !== booking.flightDate;
+        if (dateChanged) set.daySeq = await nextDaySeq(spot, flightDate);
+        else if (seqTyped > 0 && seqTyped !== booking.daySeq && !renumbered) set.daySeq = booking.daySeq;
+        if (commissionAmount > 0) {
+          set.commission = {
+            ...(booking.commission ?? {}),
+            amount: commissionAmount,
+            method: booking.commission?.method ?? "agency",
+            byUsername: "sheet:sapa",
+            byName: "Sổ tay Sa Pa",
+            at: new Date(),
+          };
+        }
+        if (statusFromSheet && statusFromSheet !== booking.status) {
+          set.status = statusFromSheet;
+          if (statusFromSheet === "done") {
+            set.doneAt = new Date();
+            set.doneBy = "Sổ tay Sa Pa";
+          } else if (statusFromSheet === "cancelled") {
+            set.cancelledAt = new Date();
+            set.cancelledBy = "Sổ tay Sa Pa";
+          }
+        }
+        const updated = await BaobayBooking.findOneAndUpdate({ _id: booking._id }, { $set: set }, { new: true }).lean<any>();
+        if (dateChanged) await freeDaySeq(spot, booking.flightDate, booking.daySeq);
+        results.push({
+          row: rowNo,
+          key: String(updated._id),
+          action: "updated",
+          write: sapaRowFromBooking(updated),
+          warn: warns.join(" · ") || undefined,
+        });
+        continue;
+      }
+
+      /* ---- tạo mới ---- */
+      /**
+       * CẤP SỐ: nhân viên gõ sẵn số nào thì GIỮ số đó (miễn là chưa ai dùng) —
+       * bảng tính đang là nơi số ra đời trước. Chỉ khi số đã có chủ khác, hoặc
+       * ô để trống, app mới cấp số mới rồi ghi ngược lên bảng.
+       */
+      let daySeq = 0;
+      if (seqTyped > 0 && !renumbered) {
+        const taken = await BaobayBooking.exists({ spot, flightDate, daySeq: seqTyped, status: { $ne: "voided" } });
+        if (!taken) daySeq = seqTyped;
+      }
+      if (!daySeq) daySeq = await nextDaySeq(spot, flightDate);
+      if (renumbered) warns.push(`số ${renumbered} ngày này đã thuộc khách khác — app cấp số ${daySeq}`);
+      else if (seqTyped > 0 && daySeq !== seqTyped) warns.push(`số ${seqTyped} đã có chủ — app cấp số ${daySeq}`);
+
+      const created = (
+        await BaobayBooking.create({
+          spot,
+          ...fields,
+          daySeq,
+          sheetRef: sapaRowRef({ flightDate, daySeq, bookingCode, guestName: guestNames[0] }),
+          createdByUsername: "sheet:sapa",
+          createdByName: "Sổ tay Sa Pa (bảng tính)",
+          flightKind: "pg",
+          ppgGuests: 0,
+          redFlag: 0,
+          sunset: 0,
+          flagFlight: 0,
+          mountainCar: 0,
+          comboDiscount: 0,
+          agencyPaidAmount: 0,
+          depositToCompany: deposit > 0,
+          transferCode: "",
+          note: "",
+          status: statusFromSheet ?? "open",
+          ...(commissionAmount > 0
+            ? {
+                commission: {
+                  amount: commissionAmount,
+                  method: "agency",
+                  byUsername: "sheet:sapa",
+                  byName: "Sổ tay Sa Pa",
+                  at: new Date(),
+                },
+              }
+            : {}),
+        })
+      ).toObject();
+
+      results.push({
+        row: rowNo,
+        key: String(created._id),
+        action: "created",
+        write: sapaRowFromBooking(created),
+        warn: warns.join(" · ") || undefined,
+      });
+    } catch (err) {
+      console.error("ingestSapaSheetRows dòng", rowNo, err);
+      results.push({
+        row: rowNo,
+        key: String(raw?.key ?? ""),
+        action: "error",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return { sheet: input.sheet, results };
+}
+
+/**
+ * NÚT BẤM TAY: trao đổi dữ liệu với sổ tay Google Sheets của Sa Pa.
+ *
+ * Khác đường tự động (Apps Script chạy theo đồng hồ) ở chỗ NGƯỜI bấm và người
+ * đó thấy ngay kết quả — dùng lúc cuối ngày, hoặc khi vừa sửa một loạt và muốn
+ * chắc hai bên khớp nhau trước khi đóng máy.
+ *
+ * HAI CHIỀU KHÔNG CÂN NHAU, và đó là chủ ý:
+ *  - "Lấy từ bảng" luôn dùng được — đọc thì không làm hỏng gì của ai.
+ *  - "Đẩy lên bảng" nằm sau khoá `SAPA_SHEET_WRITE`, mặc định ĐÓNG. Bảng tính
+ *    là sổ sống của một nhân viên; chưa chốt được cách làm chung mà đã ghi đè
+ *    thì người ta chỉ biết khi số đã sai.
+ */
+export type SapaSyncResult = {
+  direction: "pull" | "push";
+  /** Khoảng ngày bay đã quét. */
+  from: string;
+  to: string;
+  /** Các tab tháng đã chạm tới ("T9-2026"). */
+  sheets: string[];
+  /** App có được phép ghi vào bảng không (chiều đẩy). */
+  canWrite: boolean;
+  created: number;
+  updated: number;
+  skipped: number;
+  pushed: number;
+  failed: number;
+  /** Câu tóm tắt hiện thẳng lên nút. */
+  message: string;
+  /** Dòng có chuyện cần người nhìn: lệch tổng thu, cấp lại số… */
+  warns: string[];
+};
+
+/** Các tab tháng phủ khoảng ngày — "2026-08-28"→"2026-09-03" là ["T8-2026","T9-2026"]. */
+function sapaSheetsBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  let y = fy;
+  let m = fm;
+  /** Trần 24 tháng: gõ nhầm năm không được biến thành hàng nghìn lượt gọi. */
+  for (let i = 0; i < 24 && (y < ty || (y === ty && m <= tm)); i++) {
+    out.push(`T${m}-${y}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+export async function syncSapaSheet(input: {
+  direction: "pull" | "push";
+  from: string;
+  to: string;
+  by: string;
+}): Promise<SapaSyncResult> {
+  await connectDB();
+  const spot = "sapa";
+  const { from, to, direction } = input;
+  if (!isDateKey(from) || !isDateKey(to)) throw new BaobayError("Khoảng ngày không hợp lệ", 400);
+  if (from > to) throw new BaobayError("Ngày đầu phải trước ngày cuối", 400);
+
+  const canWrite = sapaSheetWriteEnabled();
+  const sheets = sapaSheetsBetween(from, to);
+  const res: SapaSyncResult = {
+    direction,
+    from,
+    to,
+    sheets,
+    canWrite,
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    pushed: 0,
+    failed: 0,
+    message: "",
+    warns: [],
+  };
+
+  /**
+   * CÂU "CHỈ ĐỌC" ĐẾN TRƯỚC mọi thứ khác.
+   *
+   * Không đi hỏi bảng tính đã khai địa chỉ chưa, vì lượt này đằng nào cũng
+   * không ghi gì: báo "chưa khai bảng Google Sheets" lúc này là đổ lỗi sai chỗ
+   * và người ta sẽ đi cấu hình một thứ chưa cần tới.
+   */
+  if (direction === "push" && !canWrite) {
+    res.message =
+      "Đang ở CHẾ ĐỘ CHỈ ĐỌC — chưa ghi gì lên bảng tính. Bật bằng biến SAPA_SHEET_WRITE=1 (và SAPA_CHI_DOC=false trong Apps Script) khi đã chốt cách làm với nhân viên Sa Pa.";
+    return res;
+  }
+
+  const target = await sapaBookSheetTarget();
+  if (!target) {
+    throw new BaobayError(
+      'Chưa khai địa chỉ SỔ TAY của Sa Pa. Vào /baocao/admin → điểm Sa Pa → ô "Webhook sổ tay booking (bảng gõ tay)" — KHÔNG phải ô webhook bảng báo bay ở trên.',
+      400,
+    );
+  }
+
+  /* ------------------------- ĐẨY LÊN BẢNG ------------------------- */
+  if (direction === "push") {
+    const docs = await BaobayBooking.find({ spot, flightDate: { $gte: from, $lte: to }, status: { $ne: "voided" } })
+      .sort({ flightDate: 1, daySeq: 1 })
+      .lean<any[]>();
+    /**
+     * Gửi theo TỪNG TAB THÁNG và theo LÔ 40 dòng: Apps Script chỉ được chạy 6
+     * phút một lượt, mà ghi một dòng mất vài giây. Gửi cả tháng trong một lượt
+     * là bên đó hết giờ giữa chừng — ghi được nửa vời rồi báo lỗi, lần sau
+     * chạy lại vẫn đúng chỗ ấy chết.
+     */
+    const bySheet = new Map<string, any[]>();
+    for (const d of docs) {
+      const name = sapaSheetName(d.flightDate);
+      if (!bySheet.has(name)) bySheet.set(name, []);
+      bySheet.get(name)!.push(d);
+    }
+    for (const [name, list] of bySheet) {
+      for (let i = 0; i < list.length; i += 40) {
+        const lot = list.slice(i, i + 40);
+        const call = await callBaobaySheet<{ written?: number; errors?: string[] }>(target, {
+          kind: "sapabatch",
+          sheet: name,
+          rows: lot.map(sapaRowFromBooking),
+        });
+        if (!call.ok) {
+          res.failed += lot.length;
+          res.warns.push(`${name}: ${call.error}`);
+          continue;
+        }
+        res.pushed += call.body?.written ?? lot.length;
+        for (const e of call.body?.errors ?? []) res.warns.push(`${name}: ${e}`);
+        await BaobayBooking.updateMany(
+          { _id: { $in: lot.map((d) => d._id) } },
+          { $set: { sheetSynced: true, sheetError: "" } },
+        );
+      }
+    }
+    res.message = res.failed
+      ? `Đẩy ${res.pushed} dòng lên bảng, ${res.failed} dòng lỗi.`
+      : `Đã đẩy ${res.pushed} dòng lên bảng tính.`;
+    return res;
+  }
+
+  /* ------------------------- LẤY TỪ BẢNG ------------------------- */
+  for (const name of sheets) {
+    const call = await callBaobaySheet<{ rows?: SapaSheetInboundRow[] }>(target, {
+      kind: "sapapull",
+      sheet: name,
+      from,
+      to,
+    });
+    if (!call.ok) {
+      /**
+       * Thiếu hẳn tab tháng KHÔNG phải lỗi: đầu tháng nhân viên chưa nhân bản
+       * tab mới, hoặc khoảng ngày trải sang tháng chưa có gì. Nói một câu rồi
+       * đi tiếp, đừng để cả lượt lấy chết vì một tab trống.
+       */
+      res.warns.push(`${name}: ${call.error}`);
+      continue;
+    }
+    const rows = call.body?.rows ?? [];
+    for (let i = 0; i < rows.length; i += 50) {
+      const out = await ingestSapaSheetRows({ sheet: name, rows: rows.slice(i, i + 50) });
+      for (const r of out.results) {
+        if (r.action === "created") res.created++;
+        else if (r.action === "updated") res.updated++;
+        else res.skipped++;
+        if (r.warn) res.warns.push(`${name} dòng ${r.row}: ${r.warn}`);
+        if (r.error) res.warns.push(`${name} dòng ${r.row}: ${r.error}`);
+      }
+    }
+  }
+
+  res.message =
+    `Lấy về ${res.created} booking mới, cập nhật ${res.updated}` +
+    (res.skipped ? `, bỏ qua ${res.skipped}` : "") +
+    (canWrite ? "." : " — bảng tính KHÔNG bị ghi gì (chế độ chỉ đọc).");
+  return res;
+}
+
+/** So hai chuỗi kiểu "cùng người hay không": bỏ dấu, bỏ khoảng trắng thừa. */
+function sameLoose(a: string, b: string): boolean {
+  const flat = (s: string) =>
+    String(s ?? "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/đ/gi, "d")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+  const x = flat(a);
+  const y = flat(b);
+  return Boolean(x && y && (x === y || x.includes(y) || y.includes(x)));
+}
+
+/** So SĐT theo 9 số cuối — bỏ qua 0/84/+84 ở đầu. */
+function samePhone(a: string, b: string): boolean {
+  const tail = (s: string) => String(s ?? "").replace(/\D/g, "").slice(-9);
+  const x = tail(a);
+  const y = tail(b);
+  return Boolean(x.length === 9 && x === y);
 }
 
 /* ================================================================== */
@@ -6872,7 +8059,7 @@ export async function splitBooking(
     ...current,
     ...originSet,
     ppgGuests: current.flightKind === "ppg" ? 0 : (originSet.ppgGuests as number),
-    ppgUnitPrice: flightUnitPrice("ppg", current.flightDate),
+    ppgUnitPrice: flightUnitPrice("ppg", current.flightDate, current.spot),
   } as any);
   originSet.totalAmount = originTotal;
   /**
@@ -7531,6 +8718,12 @@ export async function updateBookingStatus(
 const BOOKING_PICKUP_LABEL: Record<string, string> = { self: "Tự đến", bigc: "Đón BigC", hotel: "Đón khách sạn", other: "Đón" };
 
 async function pushBookingRow(doc: any) {
+  /**
+   * SA PA ghi vào SỔ TAY sẵn có của điểm (tab tháng), không vào tab "Booking"
+   * chung — nhân viên Sa Pa vẫn đọc bảng cũ hằng ngày, đẻ thêm một tab nữa là
+   * hai bảng cùng kể một chuyện và không ai biết tin bảng nào.
+   */
+  if (isSapaSpot(doc.spot)) return pushSapaBookingRow(doc);
   return pushBaobayRow(
     "booking",
     {
@@ -7776,6 +8969,7 @@ function toBookingDTO(doc: any): BookingDTO {
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
     depositMethod: doc.depositMethod === "cash" || doc.depositMethod === "transfer" ? doc.depositMethod : "",
+    depositDest: doc.depositDest || "",
     depositDate: doc.depositDate || "",
     depositDateBy: doc.depositDateBy || "",
     depositVerified: Boolean(doc.depositVerifiedAt),
@@ -7819,6 +9013,8 @@ export type CollectSaveInput = {
   guests: number;
   amount: number;
   method: "cash" | "transfer";
+  /** Quỹ nhận — xem lib/baobay/money-dest.ts. Bỏ trống thì máy chọn quỹ mặc định. */
+  dest?: string;
   collectorUsername: string;
   toCompanyAccount: boolean;
   transferCode: string;
@@ -7863,6 +9059,7 @@ export async function createCollect(session: BaobaySession, input: CollectSaveIn
       guests: input.guests,
       amount: input.amount,
       method: input.method,
+      dest: hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.dest, input.method) : "",
       toCompanyAccount: input.method === "transfer" && input.toCompanyAccount,
       transferCode: input.transferCode.trim(),
       note: input.note.trim(),
@@ -10329,7 +11526,7 @@ async function pushDayToSheet(spot: string, date: string): Promise<void> {
     CameramanDailyReport.find(filter).lean<any[]>(),
   ]);
 
-  const jobs: Array<{ model: any; id: any; push: () => Promise<{ ok: boolean; error?: string }> }> = [
+  const jobs: Array<{ model: any; id: any; push: () => Promise<SheetPushResult> }> = [
     ...pilots.map((d) => ({ model: PilotDailyReport, id: d._id, push: () => pushPilotRow(d) })),
     ...dispatchers.map((d) => ({ model: DispatcherDailyReport, id: d._id, push: () => pushDispatcherRow(d) })),
     ...cameramen.map((d) => ({ model: CameramanDailyReport, id: d._id, push: () => pushCameramanRow(d) })),
@@ -10559,7 +11756,7 @@ export async function resyncSheets(
     who: string,
     model: { updateOne: (f: any, u: any) => any },
     id: any,
-    push: () => Promise<{ ok: boolean; error?: string }>,
+    push: () => Promise<SheetPushResult>,
   ) => {
     const sync = await push();
     await model.updateOne({ _id: id }, { $set: { sheetSynced: sync.ok, sheetError: sync.ok ? "" : sync.error || "" } });

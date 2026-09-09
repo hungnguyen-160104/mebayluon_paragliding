@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { moneyDestsOf } from "@/lib/baobay/money-dest";
 import type { CollectDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 
@@ -151,6 +152,8 @@ type CollectForm = {
   guests: number;
   amount: number;
   method: "cash" | "transfer";
+  /** Quỹ nhận — chỉ điểm có khai danh sách quỹ mới hỏi (hiện là Sa Pa). */
+  dest: string;
   collectorUsername: string;
   toCompanyAccount: boolean;
   transferCode: string;
@@ -164,6 +167,7 @@ const EMPTY: CollectForm = {
   guests: 0,
   amount: 0,
   method: "cash",
+  dest: "",
   collectorUsername: "",
   toCompanyAccount: true,
   transferCode: "",
@@ -171,6 +175,7 @@ const EMPTY: CollectForm = {
 };
 
 export function CollectCreate({ spot }: { spot: string }) {
+  const dests = moneyDestsOf(spot);
   const [form, setForm] = useState<CollectForm>(EMPTY);
   const [staff, setStaff] = useState<Array<{ username: string; name: string; roleLabel: string }>>([]);
   const [created, setCreated] = useState<CollectDTO[]>([]);
@@ -283,6 +288,43 @@ export function CollectCreate({ spot }: { spot: string }) {
           </div>
         </Field>
       </div>
+
+      {/**
+       * AI NHẬN TIỀN — nửa còn lại của câu hỏi "tiền đi đâu".
+       *
+       * "Tiền mặt hay chuyển khoản" không nói được tiền mặt ấy ai đang giữ,
+       * khoản chuyển khoản ấy về tài khoản nào — mà sổ tay Sa Pa vốn chia
+       * thành từng cột theo đúng chuyện đó. Điểm chưa khai danh sách quỹ thì
+       * khối này KHÔNG hiện: Khau Phạ và Hà Nội không phải đổi cách nhập.
+       */}
+      {dests.length > 0 && (
+        <div className="mt-2.5">
+          <Field label={<span className="text-emerald-800">Tiền về quỹ nào ★</span>}>
+            <div className="flex flex-wrap gap-1">
+              {dests
+                .filter((d) => (form.method === "cash" ? d.kind === "cash" || d.kind === "fx" : d.kind !== "cash" && d.kind !== "fx"))
+                .map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => set("dest", d.id)}
+                    className={
+                      "rounded-lg border-2 px-2.5 py-1 text-xs font-semibold " +
+                      (form.dest === d.id
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-emerald-300 bg-white text-emerald-900")
+                    }
+                  >
+                    {d.label}
+                  </button>
+                ))}
+            </div>
+            <p className="mt-1 text-[11px] leading-tight text-slate-500">
+              Không chọn thì máy xếp vào quỹ đầu tiên cùng đường tiền — sổ vẫn đủ số, chỉ là có thể nằm sai cột.
+            </p>
+          </Field>
+        </div>
+      )}
 
       {form.method === "cash" ? (
         <div className="mt-2.5 grid gap-2.5 @md:grid-cols-2">

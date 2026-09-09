@@ -42,6 +42,8 @@ export async function GET(req: Request) {
         submitDeadline: s.submitDeadline,
         requireTicketCodes: s.requireTicketCodes,
         sheetWebhookUrl: s.sheetWebhookUrl,
+        bookSheetWebhookUrl: s.bookSheetWebhookUrl ?? "",
+        hasBookSheetSecret: Boolean(s.bookSheetSecret),
         /** Chỉ báo ĐÃ ĐẶT hay chưa — không trả mã bảo vệ ra ngoài. */
         hasSheetSecret: Boolean(s.sheetSecret),
       };
@@ -74,6 +76,8 @@ export async function PUT(req: Request) {
       submitDeadline: body?.submitDeadline !== undefined ? String(body.submitDeadline) : undefined,
       sheetWebhookUrl: body?.sheetWebhookUrl !== undefined ? String(body.sheetWebhookUrl) : undefined,
       sheetSecret: body?.sheetSecret !== undefined ? String(body.sheetSecret) : undefined,
+      bookSheetWebhookUrl: body?.bookSheetWebhookUrl !== undefined ? String(body.bookSheetWebhookUrl) : undefined,
+      bookSheetSecret: body?.bookSheetSecret !== undefined ? String(body.bookSheetSecret) : undefined,
       requireTicketCodes:
         typeof body?.requireTicketCodes === "boolean" ? body.requireTicketCodes : undefined,
     },
@@ -90,5 +94,7 @@ export async function PUT(req: Request) {
     requireTicketCodes: saved.requireTicketCodes,
     sheetWebhookUrl: saved.sheetWebhookUrl,
     hasSheetSecret: Boolean(saved.sheetSecret),
+    bookSheetWebhookUrl: saved.bookSheetWebhookUrl ?? "",
+    hasBookSheetSecret: Boolean(saved.bookSheetSecret),
   });
 }

@@ -63,6 +63,18 @@ export interface IBaobayBooking {
   webBookingId?: string;
   /** Booking từ THƯ OTA (Klook…): mã của OTA — khoá chống nhập trùng. */
   otaRef?: string;
+  /**
+   * DÒNG NÀO TRÊN SỔ TAY GOOGLE SHEETS CỦA SA PA đã sinh ra booking này.
+   *
+   * KHÔNG phải số hàng (chèn một dòng là mọi số hàng dưới nó lệch hết), mà là
+   * khoá tính từ nội dung: "<ngày bay>#<số khách trong ngày>", hoặc
+   * "<ngày bay>@<mã OTA>", hoặc "<ngày bay>~<tên khách>" — xem `sapaRowRef()`.
+   *
+   * Đây là thứ DUY NHẤT chống nhập trùng khi app CHƯA được phép ghi vào bảng
+   * (chế độ chỉ đọc): không đặt được cột "Khoá app" lên dòng thì mỗi lượt "Lấy
+   * từ bảng" sẽ thấy dòng cũ như dòng mới. Lấy ba lần là ba khách y hệt nhau.
+   */
+  sheetRef?: string;
   otaName?: string;
   /** Hành khách kèm giấy tờ (OTA gửi sẵn) — dùng làm bảo hiểm, khỏi hỏi lại khách. */
   otaGuests?: Array<{ fullName: string; birthday: string; gender: string; idNumber: string; nationality: string }>;
@@ -232,7 +244,16 @@ export interface IBaobayBooking {
    * Ghi thẳng lên booking để quầy nhìn một dòng là biết tiền nong tới đâu,
    * khỏi lật sổ lệnh thu.
    */
-  collectedLog?: Array<{ amount: number; method: "cash" | "transfer"; byName: string; at: Date; kind: string; code?: string }>;
+  collectedLog?: Array<{
+    amount: number;
+    method: "cash" | "transfer";
+    /** Quỹ nhận — xem lib/baobay/money-dest.ts. Trống = điểm chưa quản quỹ. */
+    dest?: string;
+    byName: string;
+    at: Date;
+    kind: string;
+    code?: string;
+  }>;
   refundMethod?: "cash" | "transfer";
   cancelledAt?: Date;
   cancelledBy?: string;
@@ -297,6 +318,12 @@ export interface IBaobayBooking {
    * 29/93 booking mang cờ đó mà thực ra thu tiền mặt hoặc không rõ.
    */
   depositMethod?: "cash" | "transfer" | "";
+  /**
+   * QUỸ NHẬN khoản cọc GÕ TAY (không qua lệnh thu) — cùng bộ mã với
+   * `collectedLog[].dest`. Thiếu nó thì cọc gõ tay rơi khỏi các cột "người
+   * nhận tiền" và tổng cột không bao giờ bằng tổng đã thu.
+   */
+  depositDest?: string;
   note: string;
   /**
    * EMAIL KHÁCH — nơi app gửi thư báo mỗi khi booking có thay đổi.
@@ -431,6 +458,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     cancelledFlagFlight: { type: Number, default: 0, min: 0 },
     webBookingId: { type: String, index: true, sparse: true },
     otaRef: { type: String, index: true, sparse: true },
+    sheetRef: { type: String, index: true, sparse: true },
     otaName: String,
     otaGuests: {
       type: [
@@ -531,6 +559,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
         {
           amount: { type: Number, default: 0 },
           method: { type: String, enum: ["cash", "transfer"], default: "cash" },
+          dest: { type: String, default: "" },
           byName: { type: String, default: "" },
           code: String,
           at: Date,
@@ -559,6 +588,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     transferCode: { type: String, default: "" },
     depositToCompany: { type: Boolean, default: false },
     depositMethod: { type: String, enum: ["cash", "transfer", ""], default: "" },
+    depositDest: { type: String, default: "" },
     email: { type: String, default: "", trim: true, lowercase: true },
     notifyPendingBase: { type: Schema.Types.Mixed, default: null },
     notifyLog: [

@@ -26,6 +26,19 @@ export interface IBaobaySetting {
   sheetWebhookUrl?: string;
   sheetSecret?: string;
   /**
+   * BẢNG THỨ HAI của điểm: SỔ TAY do nhân viên gõ tay (Sa Pa —
+   * "Bảng theo dõi chuyến bay", mỗi tháng một tab T9-2026…).
+   *
+   * PHẢI tách khỏi `sheetWebhookUrl` chứ không dùng chung: ô kia đang trỏ vào
+   * bảng BÁO BAY của điểm (tab Phi công · Điều phối · Chốt ngày · thẻ từng phi
+   * công theo tháng). Dán đè địa chỉ sổ tay lên đó là báo cáo hằng ngày của cả
+   * điểm ngừng chảy — hai bảng, hai Apps Script, hai đường riêng.
+   *
+   * Để trống thì rơi về biến môi trường SAPA_BOOK_SHEET_URL / _SECRET.
+   */
+  bookSheetWebhookUrl?: string;
+  bookSheetSecret?: string;
+  /**
    * BẮT BUỘC PHI CÔNG KHAI MÃ VÉ ở điểm này hay không.
    *
    * Chưa đặt (undefined) thì rơi về luật cũ: chỉ Khau Phạ bắt buộc, vì đó là
@@ -50,6 +63,8 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
     submitDeadline: { type: String, default: DEFAULT_SUBMIT_DEADLINE },
     sheetWebhookUrl: String,
     sheetSecret: String,
+    bookSheetWebhookUrl: String,
+    bookSheetSecret: String,
     requireTicketCodes: { type: Boolean, default: undefined },
     webSyncAt: Date,
     webSyncBy: String,

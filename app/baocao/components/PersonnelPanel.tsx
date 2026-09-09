@@ -341,6 +341,9 @@ type SpotSettingDTO = {
   submitDeadline: string;
   sheetWebhookUrl: string;
   hasSheetSecret: boolean;
+  /** Bảng THỨ HAI: sổ tay nhân viên gõ tay (hiện chỉ Sa Pa dùng). */
+  bookSheetWebhookUrl: string;
+  hasBookSheetSecret: boolean;
 };
 
 /**
@@ -358,7 +361,12 @@ function SpotSettingsCard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Record<string, { submitDeadline: string; sheetWebhookUrl: string; sheetSecret: string }>>({});
+  const [draft, setDraft] = useState<
+    Record<
+      string,
+      { submitDeadline: string; sheetWebhookUrl: string; sheetSecret: string; bookSheetWebhookUrl: string; bookSheetSecret: string }
+    >
+  >({});
 
   const load = useCallback(async () => {
     try {
@@ -369,7 +377,16 @@ function SpotSettingsCard() {
       setCanEdit(r.canEdit !== false);
       setDraft(
         Object.fromEntries(
-          r.settings.map((x) => [x.spot, { submitDeadline: x.submitDeadline, sheetWebhookUrl: x.sheetWebhookUrl, sheetSecret: "" }]),
+          r.settings.map((x) => [
+            x.spot,
+            {
+              submitDeadline: x.submitDeadline,
+              sheetWebhookUrl: x.sheetWebhookUrl,
+              sheetSecret: "",
+              bookSheetWebhookUrl: x.bookSheetWebhookUrl ?? "",
+              bookSheetSecret: "",
+            },
+          ]),
         ),
       );
     } catch (e: any) {
@@ -418,8 +435,10 @@ function SpotSettingsCard() {
         body: JSON.stringify({
           submitDeadline: d.submitDeadline,
           sheetWebhookUrl: d.sheetWebhookUrl,
+          bookSheetWebhookUrl: d.bookSheetWebhookUrl,
           // Ô mã bảo vệ để trống = giữ nguyên mã cũ, không ghi đè bằng chuỗi rỗng
           ...(d.sheetSecret ? { sheetSecret: d.sheetSecret } : {}),
+          ...(d.bookSheetSecret ? { bookSheetSecret: d.bookSheetSecret } : {}),
         }),
       });
       setMessage(`Đã lưu cấu hình ${spotName(spot)}.`);
@@ -553,6 +572,53 @@ function SpotSettingsCard() {
                 className="h-9"
               />
             </label>
+
+            {/**
+             * SỔ TAY là BẢNG THỨ HAI, không phải ô webhook ở trên.
+             *
+             * Ô trên trỏ vào bảng BÁO BAY của điểm (Phi công · Điều phối · Chốt
+             * ngày · thẻ từng phi công). Dán địa chỉ sổ tay đè lên đó là báo cáo
+             * hằng ngày của cả điểm ngừng chảy — nên tách hẳn ra một khối viền
+             * riêng, nói rõ nó là bảng khác, và hiện đúng ở điểm đang dùng.
+             */}
+            {row.spot === "sapa" && (
+              <div className="mt-3 rounded-lg border-2 border-amber-300 bg-amber-50/60 p-2">
+                <p className="text-[11px] font-bold text-amber-900">
+                  Sổ tay booking gõ tay — BẢNG KHÁC với ô webhook ở trên
+                </p>
+                <p className="mt-0.5 text-[11px] leading-tight text-amber-800">
+                  Bảng &ldquo;Bảng theo dõi chuyến bay&rdquo; của Sa Pa (mỗi tháng một tab T9-2026…). Đây là
+                  Apps Script riêng của bảng đó — <strong>đừng dán vào ô webhook phía trên</strong>, ô kia
+                  đang chở báo cáo phi công / điều phối / chốt ngày.
+                </p>
+                <label className="mt-2 block">
+                  <span className="mb-1 block text-xs font-medium text-slate-700">Webhook sổ tay booking</span>
+                  <Input
+                    disabled={!canEdit}
+                    value={draft[row.spot]?.bookSheetWebhookUrl ?? ""}
+                    onChange={(e) =>
+                      setDraft((p) => ({ ...p, [row.spot]: { ...p[row.spot], bookSheetWebhookUrl: e.target.value } }))
+                    }
+                    placeholder="https://script.google.com/macros/s/…/exec"
+                    className="h-9"
+                  />
+                </label>
+                <label className="mt-2 block">
+                  <span className="mb-1 block text-xs font-medium text-slate-700">
+                    Mã bảo vệ sổ tay {row.hasBookSheetSecret ? "(đã đặt — để trống nếu giữ nguyên)" : ""}
+                  </span>
+                  <Input
+                    disabled={!canEdit}
+                    value={draft[row.spot]?.bookSheetSecret ?? ""}
+                    onChange={(e) =>
+                      setDraft((p) => ({ ...p, [row.spot]: { ...p[row.spot], bookSheetSecret: e.target.value } }))
+                    }
+                    placeholder={row.hasBookSheetSecret ? "••••••" : "chuỗi trong SECRET của Apps Script sổ tay"}
+                    className="h-9"
+                  />
+                </label>
+              </div>
+            )}
 
             <Button
               size="sm"
