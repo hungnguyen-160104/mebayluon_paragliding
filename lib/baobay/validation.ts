@@ -397,6 +397,8 @@ export const bookingSchema = z.object({
   depositMethod: z.enum(["cash", "transfer", ""]).optional().default(""),
   /** Quỹ nhận khoản cọc gõ tay — máy chủ tự soát mã có thuộc điểm không. */
   depositDest: z.string().trim().max(40).optional().default(""),
+  /** Đơn giá riêng phần khách PPG (Khau Phạ); 0 = theo bảng giá. */
+  ppgUnitPrice: money.optional(),
   /** Còn lại > 0: chỉ định người thu — máy chủ tự lập LỆNH THU TIỀN gửi người đó. */
   collectorUsername: text(100),
   collectorNote: text(500),

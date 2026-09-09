@@ -4026,6 +4026,8 @@ export type BookingSaveInput = {
   depositMethod?: "cash" | "transfer" | "";
   /** Quỹ nhận khoản cọc gõ tay — xem lib/baobay/money-dest.ts. */
   depositDest?: string;
+  /** Đơn giá riêng phần khách PPG; bỏ trống/0 = theo bảng giá. */
+  ppgUnitPrice?: number;
   note: string;
   /** Email khách — app gửi thư báo mỗi khi booking thay đổi. Trống thì không gửi. */
   email?: string;
@@ -4234,7 +4236,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     createdAt: new Date(),
     // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate, spot),
+    ppgUnitPrice: ppgPriceOf({ ppgUnitPrice: input.ppgUnitPrice, flightDate: input.flightDate }, spot),
   });
 
   const saved = (
@@ -4260,6 +4262,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
+      /** 0 = theo bảng giá; xem ppgPriceOf(). */
+      ppgUnitPrice: Math.max(0, Math.round(input.ppgUnitPrice ?? 0)),
       discount: input.discount,
       // Tổng tiền do MÁY CHỦ tính theo bảng giá chung, không tin số máy khách gửi
       totalAmount: newTotal,
@@ -4800,7 +4804,7 @@ const editedTotal = bookingTotal({
      */
     createdAt: current.createdAt,
     ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", input.flightDate, current.spot),
+    ppgUnitPrice: ppgPriceOf({ ppgUnitPrice: input.ppgUnitPrice, flightDate: input.flightDate }, current.spot),
   });
 
   const update: Record<string, unknown> = {
@@ -4822,6 +4826,8 @@ const editedTotal = bookingTotal({
       pickupFee: input.pickupFee,
       mountainCar: input.mountainCar,
       unitPrice: input.unitPrice,
+      /** 0 = theo bảng giá; xem ppgPriceOf(). */
+      ppgUnitPrice: Math.max(0, Math.round(input.ppgUnitPrice ?? 0)),
       discount: input.discount,
       totalAmount: editedTotal,
       pickup: input.pickup === "bigc" && spot !== "ha-noi" ? "self" : input.pickup,
@@ -5603,7 +5609,7 @@ export async function addBookingServices(
     // Combo tính lại trên TỔNG sau khi cộng — thêm 360 vào flycam sẵn có là thành cặp
     comboDiscount: comboDiscount(next.flycam, next.video360, booking.spot),
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
-    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate, booking.spot),
+    ppgUnitPrice: ppgPriceOf(booking),
   };
   const newTotal = bookingTotal(merged as never);
   /** Tiền khách phải trả THÊM lần này = tổng mới − tổng cũ. */
@@ -6017,7 +6023,7 @@ export async function removeBookingServices(
     comboDiscount: newCombo,
     discount: (booking.discount ?? 0) + courtesy,
     ppgGuests: booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0),
-    ppgUnitPrice: flightUnitPrice("ppg", booking.flightDate, booking.spot),
+    ppgUnitPrice: ppgPriceOf(booking),
   };
   const naturalTotal = bookingTotal(merged as never);
   const oldTotal = booking.totalAmount ?? 0;
@@ -6322,6 +6328,19 @@ export async function ingestSapaWebBooking(input: {
  */
 
 /**
+ * ĐƠN GIÁ PHẦN KHÁCH PPG của một booking.
+ *
+ * Có gõ tay thì theo số gõ tay; để trống thì theo bảng giá của điểm và ngày
+ * bay. MỌI nơi tính tiền phải đi qua đây — chỉ cần một chỗ còn tra thẳng bảng
+ * giá là tổng tiền của cùng một booking ra hai con số khác nhau tuỳ người bấm
+ * nút nào (sửa booking / thêm dịch vụ / huỷ dịch vụ / tách đoàn).
+ */
+function ppgPriceOf(b: { ppgUnitPrice?: number; flightDate?: string; spot?: string }, spot?: string): number {
+  const gõ = Math.max(0, Math.round(b.ppgUnitPrice ?? 0));
+  return gõ > 0 ? gõ : flightUnitPrice("ppg", String(b.flightDate ?? ""), spot ?? b.spot);
+}
+
+/**
  * Ô SỬA ĐƯỢC TỪ LƯỚI — máy chủ chỉ nhận đúng những tên này.
  *
  * Danh sách đóng, không mở: lưới gửi lên tên trường và máy chủ ghi thẳng, nên
@@ -6346,6 +6365,8 @@ export const BOOKING_CELL_FIELDS = [
    */
   "pgGuests",
   "unitPrice",
+  /** Đơn giá riêng phần khách PPG — Khau Phạ bán chung một booking cả PG lẫn PPG. */
+  "ppgUnitPrice",
   "flycam",
   "video360",
   "redFlag",
@@ -6681,6 +6702,7 @@ export async function updateBookingCell(
       break;
     }
     case "unitPrice":
+    case "ppgUnitPrice":
     case "deposit":
     case "pickupFee":
     case "discount":
@@ -6741,7 +6763,7 @@ export async function updateBookingCell(
     createdAt: booking.createdAt,
     comboDiscount: comboDiscount(merged.flycam, merged.video360, spot),
     ppgGuests: kind === "ppg" ? 0 : (merged.ppgGuests ?? 0),
-    ppgUnitPrice: flightUnitPrice("ppg", merged.flightDate, spot),
+    ppgUnitPrice: ppgPriceOf(merged, spot),
   } as never);
   set.comboDiscount = comboDiscount(merged.flycam, merged.video360, spot);
   set.totalAmount = total;
@@ -8206,7 +8228,7 @@ export async function splitBooking(
     ...current,
     ...originSet,
     ppgGuests: current.flightKind === "ppg" ? 0 : (originSet.ppgGuests as number),
-    ppgUnitPrice: flightUnitPrice("ppg", current.flightDate, current.spot),
+    ppgUnitPrice: ppgPriceOf(current),
   } as any);
   originSet.totalAmount = originTotal;
   /**
@@ -9014,6 +9036,7 @@ function toBookingDTO(doc: any): BookingDTO {
     ticketIssued: Boolean(doc.ticketIssuedAt),
     ticketIssuedAt: doc.ticketIssuedAt ? new Date(doc.ticketIssuedAt).toISOString() : undefined,
     ticketIssuedBy: doc.ticketIssuedBy || undefined,
+    ppgUnitPrice: doc.ppgUnitPrice ?? 0,
     ticketPrints: (doc.ticketPrints ?? []).map((x: any) => ({
       at: x?.at ? new Date(x.at).toISOString() : "",
       by: x?.by || "",

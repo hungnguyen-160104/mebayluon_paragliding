@@ -507,6 +507,8 @@ export type BookingDTO = {
   ticketIssuedBy?: string;
   /** Mỗi lần in vé một dòng — từ lần thứ hai bắt buộc có lý do. */
   ticketPrints?: Array<{ at: string; by: string; reason: string }>;
+  /** Đơn giá riêng phần khách PPG; 0 = theo bảng giá. Xem ppgPriceOf(). */
+  ppgUnitPrice?: number;
   /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */
   noTicketFlight?: boolean;
   noTicketReason?: string;

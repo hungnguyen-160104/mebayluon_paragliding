@@ -60,6 +60,15 @@ export type SheetCol = {
    * chiếu, nhưng ĐỂ TRỐNG chứ không bịa số: một con số không có nguồn thì tệ
    * hơn một ô trống.
    */
+  /**
+   * DÒNG NHỎ DƯỚI TÊN CỘT — đơn giá đang áp của dịch vụ đó ("300k").
+   *
+   * Người gõ sổ phải biết mỗi suất flycam/360/cờ đỏ bao nhiêu tiền mới soát
+   * được ô TỔNG THU, mà giá thì mỗi điểm một khác và có lúc đổi (dù cờ đỏ lên
+   * 400k ngày 26/08). Ghi ngay dưới tên cột thì khỏi phải nhớ, và khỏi mở bảng
+   * giá ra tra giữa lúc đang nhập.
+   */
+  hint?: string;
   ketToan?: boolean;
   /** Ô GỘP THEO NGÀY trên bảng tính — không thuộc về một khách nào. */
   theoNgay?: boolean;
@@ -168,7 +177,29 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
         ] as SheetCol[])
       : ([{ key: "guestCount", label: "SL", edit: "guestCount", kind: "num", w: 34, right: true, title: "Số khách" }] as SheetCol[])),
 
-    { key: "unitPrice", label: "Đơn giá", edit: "unitPrice", kind: "money", w: 78, right: true, g1: "THÔNG TIN VÉ" },
+    /**
+     * KHAU PHẠ: ĐƠN GIÁ PG VÀ PPG LÀ HAI Ô RIÊNG, vì hai loại khác giá nhau và
+     * bán chung một booking. Gộp một ô thì không biết con số đang là giá của
+     * loại nào — mà nhầm chỗ này là sai tiền cả đoàn.
+     *
+     * Ô PPG chỉ có nghĩa với booking CÓ khách PPG; dòng không có thì lưới để
+     * mờ và không cho gõ (xem `chiKhiCo` bên BookingSheet).
+     */
+    { key: "unitPrice", label: kp ? "Giá PG" : "Đơn giá", edit: "unitPrice", kind: "money", w: 78, right: true, g1: "THÔNG TIN VÉ" },
+    ...(kp
+      ? ([
+          {
+            key: "ppgUnitPrice",
+            label: "Giá PPG",
+            edit: "ppgUnitPrice",
+            kind: "money",
+            w: 78,
+            right: true,
+            g1: "THÔNG TIN VÉ",
+            title: "Đơn giá riêng phần khách PPG — để trống là theo bảng giá",
+          },
+        ] as SheetCol[])
+      : []),
     { key: "lineAmount", label: "Thành tiền", kind: "money", w: 82, right: true, g1: "THÔNG TIN VÉ" },
     { key: "flycam", label: "Fly", edit: "flycam", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Flycam" },
     { key: "video360", label: "360", edit: "video360", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Camera 360" },
@@ -195,11 +226,19 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
 export function sheetColumns(
   spot: string,
   dests: SheetDest[] = [],
-  opts: { thang?: boolean; keToan?: boolean } = {},
+  opts: { thang?: boolean; keToan?: boolean; gia?: Partial<Record<string, number>> } = {},
 ): SheetCol[] {
   const id = normalizeSpot(spot);
   const thang = opts.thang ?? false;
-  return id === "sapa" ? cotSapa(dests, thang, opts.keToan ?? false) : cotDiemKhac(id, dests, thang);
+  const cols = id === "sapa" ? cotSapa(dests, thang, opts.keToan ?? false) : cotDiemKhac(id, dests, thang);
+  /** Gắn đơn giá đang áp vào dòng nhỏ dưới tên cột dịch vụ. */
+  const gia = opts.gia;
+  if (!gia) return cols;
+  const k = (n?: number) => (n ? `${Math.round(n / 1000).toLocaleString("vi-VN")}k` : undefined);
+  return cols.map((c) => {
+    const g = k(gia[c.key]);
+    return g ? { ...c, hint: g } : c;
+  });
 }
 
 /**

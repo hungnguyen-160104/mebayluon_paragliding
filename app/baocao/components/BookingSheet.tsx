@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { MOUNTAIN_CAR_PRICE, flightUnitPrice, servicePriceOf } from "@/lib/baobay/flight-price";
 import { moneyDestsOf } from "@/lib/baobay/money-dest";
 import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { BookingDTO } from "@/lib/baobay/types";
@@ -58,7 +59,17 @@ function paidOf(b: BookingDTO): number {
   return Math.max(0, Math.max(0, (b.deposit || 0) - collected + refunded) + collected - refunded);
 }
 
-function cellText(b: BookingDTO, col: SheetCol): string {
+function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
+  /**
+   * GIÁ PPG chỉ hiện ở dòng CÓ khách PPG. Để trống nghĩa là "theo bảng giá",
+   * nên hiện luôn số của bảng trong ngoặc — người soát khỏi phải nhớ, mà vẫn
+   * phân biệt được đâu là giá gõ tay đâu là giá mặc định.
+   */
+  if (col.key === "ppgUnitPrice") {
+    if (!(b.ppgGuests ?? 0)) return "";
+    const go = b.ppgUnitPrice ?? 0;
+    return go ? vnd(go) : `(${vnd(flightUnitPrice("ppg", b.flightDate, spot))})`;
+  }
   switch (col.key) {
     case "monthLabel":
       return b.flightDate ? `thg ${Number(b.flightDate.slice(5, 7))}` : "";
@@ -139,7 +150,24 @@ export function BookingSheet({
   renderCodeExtra?: (b: BookingDTO) => ReactNode;
 }) {
   const dests = useMemo(() => moneyDestsOf(spot).map((d) => ({ id: d.id, label: d.label })), [spot]);
-  const cols = useMemo(() => sheetColumns(spot, dests, { thang: false }), [spot, dests]);
+  /**
+   * Đơn giá dịch vụ ĐANG ÁP của điểm, gắn thành dòng nhỏ dưới tên cột. Lấy giá
+   * của HÔM NAY vì đây là mốc để người gõ đối chiếu khi nhập; booking cũ có thể
+   * mang giá khác (giá neo vào lúc lập — xem servicePriceOf), nên đây là "căn
+   * cứ giá" chứ không phải số của từng dòng.
+   */
+  const gia = useMemo(() => {
+    const p = servicePriceOf(spot, new Date());
+    return {
+      flycam: p.flycam,
+      video360: p.video360,
+      redFlag: p.redFlag,
+      flagFlight: p.flagFlight,
+      sunset: p.sunset,
+      mountainCar: MOUNTAIN_CAR_PRICE,
+    } as Partial<Record<string, number>>;
+  }, [spot]);
+  const cols = useMemo(() => sheetColumns(spot, dests, { thang: false, gia }), [spot, dests, gia]);
   const editCols = useMemo(() => cols.map((c, i) => (c.edit ? i : -1)).filter((i) => i >= 0), [cols]);
   const froze = useMemo(() => frozenCount(cols), [cols]);
   const offs = useMemo(() => frozenOffsets(cols, froze), [cols, froze]);
@@ -168,6 +196,8 @@ export function BookingSheet({
       const b = rows[r];
       const col = cols[c];
       if (!b || !col?.edit || !canEdit || lockedFor(b)) return;
+      /** Giá PPG chỉ có nghĩa với booking CÓ khách PPG — dòng khác không gõ được. */
+      if (col.key === "ppgUnitPrice" && !(b.ppgGuests ?? 0)) return;
       setSel({ r, c });
       setDraft(editValueOf(b, col));
       setEditing(true);
@@ -383,6 +413,7 @@ export function BookingSheet({
                   }
                 >
                   {c.label}
+                  {c.hint ? <div className="font-normal opacity-60">{c.hint}</div> : null}
                 </th>
               ))}
             </tr>
@@ -414,7 +445,9 @@ export function BookingSheet({
                       void commit(r, c, draft);
                       setEditing(false);
                     };
-                    const editable = Boolean(col.edit) && !lockedFor(b);
+                    /** Giá PPG chỉ mở cho dòng CÓ khách PPG — dòng khác để mờ. */
+                    const tatPpg = col.key === "ppgUnitPrice" && !(b.ppgGuests ?? 0);
+                    const editable = Boolean(col.edit) && !lockedFor(b) && !tatPpg;
                     return (
                       <td
                         key={col.key}
@@ -422,7 +455,7 @@ export function BookingSheet({
                         style={freezeStyle(c)}
                         className={
                           "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
-                          (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
+                          (busy ? "bg-amber-100 " : col.edit && !tatPpg ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
                           (col.right ? "text-right tabular-nums " : "") +
                           (editable ? "cursor-text " : "") +
                           (col.strong ? "font-bold text-sky-900 " : "") +
@@ -480,7 +513,7 @@ export function BookingSheet({
                               (col.wrap || col.kind === "names" ? "whitespace-pre-line break-words" : "truncate")
                             }
                           >
-                            {cellText(b, col)}
+                            {cellText(b, col, spot)}
                             {/**
                              * NÚT 📄 CHI TIẾT ghép vào ô "Số booking" — đúng chỗ
                              * mắt đang tìm khi muốn tra một khách, khỏi phải mở

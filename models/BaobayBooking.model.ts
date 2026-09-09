@@ -273,6 +273,19 @@ export interface IBaobayBooking {
   cancelledBy?: string;
   /** Đơn giá một khách theo loại hình + ngày bay (thường / cuối tuần & lễ). */
   unitPrice: number;
+  /**
+   * ĐƠN GIÁ RIÊNG CHO PHẦN KHÁCH BAY PPG (Khau Phạ bán chung một booking cả
+   * PG lẫn PPG, mà hai loại KHÁC GIÁ nhau).
+   *
+   * Trước đây giá PPG luôn tra thẳng bảng giá, không lưu và không sửa được —
+   * trong khi giá PG (`unitPrice`) thì quầy gõ đè thoải mái. Hệ quả: đoàn nào
+   * thoả thuận giá riêng phần PPG là không nhập nổi, phải dồn chênh lệch vào
+   * ô "giảm trừ" và sổ mất dấu vì sao lệch.
+   *
+   * Để TRỐNG (0) nghĩa là "theo bảng giá" — bản ghi cũ và phần lớn booking rơi
+   * vào đây. Đọc bằng `ppgPriceOf()`, đừng đọc thẳng trường này.
+   */
+  ppgUnitPrice: number;
   /** Giảm trừ cả đoàn (chiết khấu đại lý, khuyến mãi…) — số tiền tuyệt đối. */
   discount: number;
   /** Tổng tiền chốt với khách — máy tự tính, lưu lại để đối chiếu về sau. */
@@ -596,6 +609,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     cancelledAt: Date,
     cancelledBy: String,
     unitPrice: { type: Number, default: 0, min: 0 },
+    ppgUnitPrice: { type: Number, default: 0, min: 0 },
     discount: { type: Number, default: 0, min: 0 },
     totalAmount: { type: Number, default: 0, min: 0 },
 
