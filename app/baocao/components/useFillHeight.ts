@@ -20,13 +20,31 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useFillHeight(bottomGap = 44, enabled = true) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [height, setHeight] = useState<number | null>(null);
+  /**
+   * BỀ NGANG THẬT của khung, đo cùng lúc với chiều cao.
+   *
+   * Lưới Sheet đóng băng bảy cột đầu (~460-510px) và dán cột thao tác (190px)
+   * vào mép phải. Trên máy tính còn dư chỗ để cuộn phần giữa; trên điện thoại
+   * rộng ~390px thì hai khối dán đã quá bề ngang màn hình — phần cuộn được
+   * còn số âm, bảng thành ra "cứng", không cách nào soi tới các cột tiền.
+   * Biết bề ngang thật thì bỏ dán khi chật (xem `hep` bên lưới).
+   *
+   * Không dùng `window.innerWidth`: lưới còn nằm trong khung toàn màn hình,
+   * trong thẻ có lề — chỉ chính nó biết nó rộng bao nhiêu.
+   */
+  const [width, setWidth] = useState<number | null>(null);
 
   const measure = useCallback(() => {
     const el = ref.current;
-    if (!el || !enabled) return setHeight(null);
-    const top = el.getBoundingClientRect().top;
+    if (!el) {
+      setWidth(null);
+      return setHeight(null);
+    }
+    const box = el.getBoundingClientRect();
+    setWidth(Math.round(box.width));
+    if (!enabled) return setHeight(null);
     /** Sàn 240px: cửa sổ quá thấp thì thà cuộn còn hơn lưới cụt còn hai dòng. */
-    setHeight(Math.max(240, Math.round(window.innerHeight - top - bottomGap)));
+    setHeight(Math.max(240, Math.round(window.innerHeight - box.top - bottomGap)));
   }, [bottomGap, enabled]);
 
   useEffect(() => {
@@ -38,7 +56,6 @@ export function useFillHeight(bottomGap = 44, enabled = true) {
      * trong effect thì React vẽ lại dây chuyền (eslint chặn đúng chỗ này).
      */
     const raf = requestAnimationFrame(measure);
-    if (!enabled) return () => cancelAnimationFrame(raf);
     window.addEventListener("resize", measure);
     /**
        Dải nút phía trên xuống dòng (gõ vào ô tìm kiếm, đổi bộ lọc) là đỉnh lưới
@@ -46,6 +63,8 @@ export function useFillHeight(bottomGap = 44, enabled = true) {
      */
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     if (ro && ref.current?.parentElement) ro.observe(ref.current.parentElement);
+    /** Xoay ngang điện thoại: bề ngang đổi mà đỉnh lưới không — phải theo dõi chính nó. */
+    if (ro && ref.current) ro.observe(ref.current);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", measure);
@@ -53,5 +72,5 @@ export function useFillHeight(bottomGap = 44, enabled = true) {
     };
   }, [measure, enabled]);
 
-  return { ref, height, remeasure: measure };
+  return { ref, height, width, remeasure: measure };
 }

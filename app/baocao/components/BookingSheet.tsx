@@ -206,7 +206,7 @@ export function BookingSheet({
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null);
 
   /** Toàn màn hình: lưới ăn hết chỗ còn lại — đo thật, không đoán bằng vh. */
-  const { ref: boxRef, height } = useFillHeight(30, Boolean(tall));
+  const { ref: boxRef, height, width: boxW } = useFillHeight(30, Boolean(tall));
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -347,13 +347,32 @@ export function BookingSheet({
     remaining: rows.reduce((t, b) => t + (b.remaining || 0), 0),
   };
 
+  /**
+   * MÀN HÌNH HẸP THÌ THÔI ĐÓNG BĂNG — không thì lưới "cứng", cuộn không ra cột.
+   *
+   * Khối đóng băng chiếm 448-512px tuỳ điểm bay, cột thao tác dán phải thêm
+   * 190px: cộng lại đã ~700px, hơn cả bề ngang điện thoại (~390px). Hai khối
+   * dán chồng lên nhau, cửa sổ nhìn phần cuộn còn số âm — kéo ngang bao nhiêu
+   * cũng chỉ thấy đúng mấy cột đầu, đúng như "bị cứng, không soi được hết cột".
+   *
+   * Chừa ít nhất 150px cho phần cuộn thì mới giữ dán; không đủ thì bảng cuộn
+   * tự do như mọi bảng khác — mất cột dính nhưng xem được hết, mà xem được
+   * mới là việc chính. Chưa đo xong (`boxW` null) thì cứ coi như rộng, để bản
+   * máy tính không nháy một nhịp mất cột dính lúc mới mở.
+   */
+  const frozeW = cols.slice(0, froze).reduce((t, c) => t + c.w, 0);
+  const hep = boxW != null && boxW < frozeW + 190 + 150;
   /** Ô đóng băng: dán trái + nền đục + gạch mép để thấy rõ chỗ giáp phần cuộn. */
   const freezeStyle = (c: number): React.CSSProperties =>
-    c < froze
+    c < froze && !hep
       ? { position: "sticky", left: offs[c], zIndex: 6, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
       : {};
   const headFreeze = (c: number): React.CSSProperties =>
-    c < froze ? { position: "sticky", left: offs[c], zIndex: 26, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined } : {};
+    c < froze && !hep
+      ? { position: "sticky", left: offs[c], zIndex: 26, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
+      : {};
+  /** Cột thao tác: dán mép phải khi còn chỗ, hẹp thì để nó cuộn theo bảng. */
+  const dinhPhai = hep ? "" : "sticky right-0 ";
   /** Bề ngang cả khối đóng băng — ô tiêu đề nhóm đầu tiên trùm đúng khối đó. */
   /** Bề ngang cả bảng = tổng số đã khai — để table-layout:fixed có mốc chắc chắn. */
   const totalW = cols.reduce((t, c) => t + c.w, 0) + 190;
@@ -406,7 +425,7 @@ export function BookingSheet({
 
       <div
         ref={boxRef}
-        className="overflow-auto rounded-lg border border-slate-300 bg-white"
+        className="overflow-auto overscroll-x-contain rounded-lg border border-slate-300 bg-white"
         style={{ maxHeight: height ? `${height}px` : "68vh" }}
       >
         {/**
@@ -453,7 +472,7 @@ export function BookingSheet({
               <th
                 rowSpan={hasG2 ? 3 : 2}
                 title="Thao tác"
-                className="sticky right-0 z-30 border-b border-r border-slate-300 bg-slate-700 px-1 text-[10px] font-bold text-white"
+                className={dinhPhai + "z-30 border-b border-r border-slate-300 bg-slate-700 px-1 text-[10px] font-bold text-white"}
               >
                 ⚙
               </th>
@@ -639,7 +658,7 @@ export function BookingSheet({
                    * Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời
                    * lịch · huỷ · khoá · bảo hiểm) xổ ra ngay dưới dòng.
                    */}
-                  <td className={"sticky right-0 z-10 border-b border-r border-slate-200 px-1 py-px align-middle " + rowBg}>
+                  <td className={dinhPhai + "z-10 border-b border-r border-slate-200 px-1 py-px align-middle " + rowBg}>
                     <div
                       className={
                         /**
@@ -754,7 +773,7 @@ export function BookingSheet({
                 <td colSpan={cols.length} className="border-b border-r border-slate-200 bg-amber-50 px-1 py-px leading-tight text-amber-900">
                   #{b.daySeq || "?"} {b.contactName || b.phone || "khách"} — <strong>đã dời sang ngày khác</strong>
                 </td>
-                <td className="sticky right-0 z-10 border-b border-r border-slate-200 bg-amber-50 px-0.5 py-px">{renderMovedActions?.(b)}</td>
+                <td className={dinhPhai + "z-10 border-b border-r border-slate-200 bg-amber-50 px-0.5 py-px"}>{renderMovedActions?.(b)}</td>
               </tr>
             ))}
 
@@ -805,7 +824,7 @@ export function BookingSheet({
                             : ""}
                   </td>
                 ))}
-                <td className="sticky right-0 z-10 border-b border-r border-slate-600 bg-slate-800" />
+                <td className={dinhPhai + "z-10 border-b border-r border-slate-600 bg-slate-800"} />
               </tr>
             </tfoot>
           )}

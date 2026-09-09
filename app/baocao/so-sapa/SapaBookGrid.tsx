@@ -102,7 +102,7 @@ export function SapaBookGrid({
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null);
-  const { ref: boxRef, height } = useFillHeight(tall ? 30 : 60, true);
+  const { ref: boxRef, height, width: boxW } = useFillHeight(tall ? 30 : 60, true);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -211,12 +211,19 @@ export function SapaBookGrid({
   const hasG2 = g2.some((x) => x.label);
   /** Bề ngang cả bảng = tổng số đã khai — để table-layout:fixed có mốc chắc chắn. */
   const totalW = cols.reduce((t, c) => t + c.w, 0) + 0;
+  /**
+   * MÀN HÌNH HẸP THÌ THÔI ĐÓNG BĂNG — xem giải thích ở BookingSheet.
+   * Khối dán trái ~500px, điện thoại rộng ~390px: giữ dán là lưới không cuộn
+   * ra được cột nào khác. Chừa 150px cho phần cuộn thì mới đáng dán.
+   */
+  const frozeW = cols.slice(0, froze).reduce((t, c) => t + c.w, 0);
+  const hep = boxW != null && boxW < frozeW + 150;
   const freezeStyle = (c: number): React.CSSProperties =>
-    c < froze
+    c < froze && !hep
       ? { position: "sticky", left: offs[c], zIndex: 6, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
       : {};
   const headFreeze = (c: number): React.CSSProperties =>
-    c < froze
+    c < froze && !hep
       ? { position: "sticky", left: offs[c], zIndex: 26, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
       : {};
 
@@ -241,7 +248,7 @@ export function SapaBookGrid({
 
       <div
         ref={boxRef}
-        className="overflow-auto rounded-lg border border-slate-300 bg-white"
+        className="overflow-auto overscroll-x-contain rounded-lg border border-slate-300 bg-white"
         style={{ maxHeight: height ? `${height}px` : "70vh" }}
       >
         {/**
