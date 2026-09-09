@@ -3287,10 +3287,55 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
 }
 
 /** Ô tiêu đề cột bấm để xếp — tách khỏi render của bảng để không bị dựng lại mỗi lượt vẽ. */
+/**
+ * NHÃN TRẠNG THÁI Ở CỘT ĐẦU của sổ dạng bảng — hai dòng, không kéo ngang.
+ *
+ * Dòng trên là VIỆC GÌ ("🎫 đã xuất vé"), dòng dưới là AI VÀ LÚC NÀO
+ * ("by Mai Hoàn 08:56"). Nhét chung một dòng thì cột đầu phải rộng bằng cái
+ * nhãn dài nhất, mà cột đầu chỉ cần đủ chỗ cho số thứ tự — phần bề ngang ấy
+ * lấy mất của cột Khách và cột Dịch vụ, là hai cột người ta thật sự phải đọc.
+ */
+function Nhan({
+  tone,
+  label,
+  by,
+  title,
+}: {
+  tone: "emerald" | "amber" | "orange" | "rose";
+  label: string;
+  /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
+  by?: string;
+  title?: string;
+}) {
+  const mau = {
+    emerald: "bg-emerald-100 text-emerald-800",
+    amber: "bg-amber-100 text-amber-800",
+    orange: "bg-orange-100 text-orange-900",
+    rose: "bg-rose-100 text-rose-700",
+  }[tone];
+  return (
+    <div
+      title={[label, by && `by ${by}`, title].filter(Boolean).join(" · ")}
+      className={"mt-0.5 rounded px-1 py-0.5 text-[9px] font-bold leading-tight " + mau}
+    >
+      {/**
+       * MỖI PHẦN ĐÚNG MỘT DÒNG, cắt bớt nếu dài — chứ không cho tự bẻ dòng.
+       *
+       * Cột đầu rộng 104px: vừa đủ "🎫 đã xuất vé" và "by Mai Hoàn 08:56" mỗi
+       * thứ một dòng. Để `break-words` thì tên dài đẩy nhãn thành bốn năm dòng
+       * và cả hàng cao vọt lên, sổ nhìn như bị xé. Chữ đầy đủ nằm ở tooltip.
+       */}
+      <div className="truncate">{label}</div>
+      {by ? <div className="truncate font-medium opacity-75">by {by}</div> : null}
+    </div>
+  );
+}
+
 function SortTh({
   col,
   label,
   right,
+  narrow,
   sort,
   onSort,
   setRef,
@@ -3298,6 +3343,8 @@ function SortTh({
   col: string;
   label: string;
   right?: boolean;
+  /** Cột hẹp (số thứ tự) — kẹp bề ngang lại thay vì để bảng tự chia. */
+  narrow?: boolean;
   sort: { col: string; dir: 1 | -1 };
   onSort: (f: (s: { col: string; dir: 1 | -1 }) => { col: string; dir: 1 | -1 }) => void;
   /** Bảng giữ ref các ô đầu cột (đo tâm cột) — nhận qua hàm, không sửa thẳng prop. */
@@ -3308,7 +3355,8 @@ function SortTh({
       ref={(el) => setRef(col, el)}
       onClick={() => onSort((s) => ({ col, dir: s.col === col ? ((s.dir * -1) as 1 | -1) : 1 }))}
       className={
-        "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
+        "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
+        (narrow ? "w-[104px] px-1.5 " : "px-2 ") +
         (right ? "text-right" : "text-left")
       }
       title="Bấm để xếp theo cột này — bấm lại để đảo chiều"
@@ -3501,7 +3549,7 @@ function BookingDayTable({
       <table ref={tableRef} className="min-w-full border-collapse text-[13px]">
         <thead className="sticky top-0 z-10">
           <tr>
-            <SortTh col="seq" label="#" {...thProps} />
+            <SortTh col="seq" label="#" narrow {...thProps} />
             <SortTh col="name" label="Khách" {...thProps} />
             <SortTh col="src" label="Nguồn" {...thProps} />
             <th
@@ -3537,46 +3585,45 @@ function BookingDayTable({
                   (b.locked ? "opacity-60 " : "")
                 }
               >
-                <td className="border-b border-slate-100 px-2 py-1 tabular-nums">
+                {/**
+                 * CỘT ĐẦU HẸP: chỉ số thứ tự + mấy nhãn trạng thái.
+                 *
+                 * Trước đây mỗi nhãn bị ép `whitespace-nowrap`, nên cả cột phải
+                 * nới rộng bằng dòng dài nhất — "🎫 đã xuất vé by Mai Hoàn 08:56"
+                 * một mình đẩy cột ra hơn 150px và ăn mất chỗ của cột Khách,
+                 * Nguồn, Dịch vụ. Giờ tách làm hai dòng: VIỆC GÌ ở trên, AI VÀ
+                 * LÚC NÀO ở dưới — vừa hẹp, vừa dễ đọc hơn vì mắt bắt cái nhãn
+                 * trước rồi mới soi người bấm.
+                 */}
+                <td className="w-[104px] max-w-[104px] border-b border-slate-100 px-1.5 py-1 tabular-nums">
                   <div className="font-bold text-rose-600">{b.daySeq || "?"}</div>
-                  {/* Dấu ĐÃ BAY / ĐÃ XUẤT VÉ gắn ngay dưới số, kèm truy vết ai bấm
-                      (luật chủ 04/09): "đã bay by Duyên" · "đã xuất vé by Hoàn" */}
                   {b.status === "done" && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-emerald-800">
-                      ✈ đã bay{b.doneBy ? ` by ${b.doneBy}` : ""}
-                    </div>
+                    <Nhan tone="emerald" label="✈ đã bay" by={b.doneBy} />
                   )}
                   {b.ticketIssued && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-900">
-                      🎫 đã xuất vé{b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}
-                      {gioVe(b) ? ` ${gioVe(b)}` : ""}
-                    </div>
+                    <Nhan
+                      tone="amber"
+                      label="🎫 đã xuất vé"
+                      by={[b.ticketIssuedBy, gioVe(b)].filter(Boolean).join(" ")}
+                    />
                   )}
-                  {b.noTicketFlight && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-orange-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-orange-900">
-                      🎫✕ bay không vé{b.noTicketBy ? ` by ${b.noTicketBy}` : ""}
-                    </div>
-                  )}
+                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={b.noTicketBy} />}
                   {/* Trạng thái còn lại cũng nằm hết ở cột đầu (bỏ cột TT riêng — luật chủ 04/09) */}
-                  {b.status === "cancelled" && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-rose-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-rose-700">
-                      ✕ đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
-                    </div>
-                  )}
+                  {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={b.cancelledBy} />}
                   {r.moved && (
-                    <div
-                      className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800"
+                    <Nhan
+                      tone="amber"
+                      label={`↪ ĐÃ DỜI, sang ${formatDateKeyVN(b.flightDate).slice(0, 5)}`}
+                      by={b.movedBy}
                       title={`Khách đã rời sổ hôm nay, booking hiện thuộc ngày ${formatDateKeyVN(b.flightDate)} — thao tác (sửa/thu/khoá) làm ở sổ ngày đó nên dòng này không có nút`}
-                    >
-                      ↪ ĐÃ DỜI ĐI, sang {formatDateKeyVN(b.flightDate).slice(0, 5)}
-                      {b.movedBy ? ` by ${b.movedBy}` : ""}
-                    </div>
+                    />
                   )}
                   {!r.moved && b.rescheduledFrom.length > 0 && (
-                    <div className="mt-0.5 whitespace-nowrap rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold leading-tight text-amber-800">
-                      dời từ {b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}
-                      {b.movedBy ? ` by ${b.movedBy}` : ""}
-                    </div>
+                    <Nhan
+                      tone="amber"
+                      label={`dời từ ${b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}`}
+                      by={b.movedBy}
+                    />
                   )}
                   {b.locked && <div className="mt-0.5 text-[10px]">🔒</div>}
                 </td>
@@ -3616,12 +3663,28 @@ function BookingDayTable({
                   ) : (
                     <div
                       className={
-                        "gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1.5 [&_button]:text-[11px] " +
+                        "gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1 [&_button]:text-[11px] " +
                         (b.status === "open"
-                          ? /* CHƯA BAY: hàng tự xuống dòng, đúng thứ tự như thẻ */
-                            "flex max-w-[240px] flex-wrap items-center"
-                          : /* ĐÃ BAY/HUỶ: chỉ còn 2–3 nút → xếp CỘT cho khỏi tốn bề ngang */
-                            "flex flex-col items-stretch [&_button]:justify-center [&_button]:text-center")
+                          ? /**
+                             * CHƯA BAY: LƯỚI HAI CỘT, không phải flex-wrap.
+                             *
+                             * flex-wrap bẻ dòng theo bề ngang thật của từng nút,
+                             * nên bốn nút khi thì nằm một hàng dài ngoẵng, khi
+                             * thì 3+1 tuỳ tên người và tên nút — cột Thao tác co
+                             * giãn theo từng dòng và cả bảng nhìn lộn xộn. Lưới
+                             * hai cột thì LUÔN là: [In vé][Đã bay] rồi
+                             * [Cần gọi][⋯ Thêm], mắt quen chỗ, tay bấm không nhìn.
+                             */
+                            "grid w-[168px] grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center"
+                          : /**
+                             * ĐÃ BAY / HUỶ: chỉ còn 2–3 nút, và HẸP BẰNG NỬA.
+                             *
+                             * Xếp cột mà để nút giãn hết bề ngang thì chúng nở
+                             * theo cột (cột rộng bằng dòng "chưa bay" rộng nhất)
+                             * — ba cái nút to đùng cho một dòng đã xong việc,
+                             * lấn chỗ của những dòng còn phải làm.
+                             */
+                            "flex w-[84px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center")
                       }
                     >
                       {b.status === "open" ? renderQuick?.(b) : renderClosedQuick?.(b)}
