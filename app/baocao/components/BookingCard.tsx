@@ -127,6 +127,31 @@ function shortName(name: string): string {
   return `${w.slice(0, -1).map((x) => x[0].toUpperCase() + ".").join("")}${w[w.length - 1]}`;
 }
 
+/** Giờ xuất vé "HH:MM" giờ Việt Nam — rỗng khi chưa xuất. */
+function gioXuatVe(b: BookingDTO): string {
+  return b.ticketIssued && b.ticketIssuedAt
+    ? new Date(b.ticketIssuedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })
+    : "";
+}
+
+/**
+ * NHÃN TRẠNG THÁI của một booking — cùng bộ với cột đầu bản ▦ Bảng, để lưới
+ * ▤ Sheet đặt vào ô mã booking. Một nơi vẽ, hai chỗ dùng: đổi màu hay chữ ở
+ * đây là cả hai bản đổi theo, không lệch nhau.
+ */
+function NhanTrangThai({ b }: { b: BookingDTO }) {
+  return (
+    <>
+      {b.status === "done" && <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big />}
+      {b.ticketIssued && (
+        <Nhan tone="amber" label="🎫 đã xuất vé" by={[shortName(b.ticketIssuedBy ?? ""), gioXuatVe(b)].filter(Boolean).join(" ")} big />
+      )}
+      {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big />}
+      {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} />}
+    </>
+  );
+}
+
 /**
  * ĐUÔI "by <người>" trong nhãn nút — chữ NHỎ HƠN và nhạt hơn phần chính.
  *
@@ -3686,10 +3711,7 @@ function BookingDayTable({
     ));
   };
   const trangThai = (r: R) => (r.moved ? "dời" : r.b.status === "done" ? "đã bay" : r.b.status === "cancelled" ? "huỷ" : "chờ");
-  const gioVe = (b: BookingDTO) =>
-    b.ticketIssued && b.ticketIssuedAt
-      ? new Date(b.ticketIssuedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })
-      : "";
+  const gioVe = gioXuatVe;
   const donOf = (b: BookingDTO) =>
     [b.pickup === "other" ? b.pickupNote || "?" : PICKUP_LABEL[b.pickup], b.expectedTime].filter(Boolean).join(" ");
   const val = (r: R, col: string): string | number => {
@@ -4838,7 +4860,7 @@ export function BookingTodayBanner({
     if (!moving || moving.id !== b.id) return null;
     return (
     <>
-              /* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */
+              {/* Khách dời lịch: chọn ngày mới — cả đoàn hoặc chỉ vài người */}
               <div className="float-right ml-2 flex w-56 flex-wrap items-center justify-end gap-1 rounded-lg border border-amber-300 bg-amber-50/70 p-1.5">
                 {b.guestCount > 1 && (
                   <div className="flex h-7 w-full overflow-hidden rounded-lg border border-slate-300">
@@ -5564,7 +5586,12 @@ export function BookingTodayBanner({
            * chỗ; mà gõ liên tục thì mỗi ô một lần tải là không dùng nổi.
            */
           onSaved={(b) => setRows((prev) => prev.map((x) => (x.id === b.id ? b : x)))}
-          renderCodeExtra={(b) => <BookingDetailControl spot={spot} booking={b} compact />}
+          renderCodeExtra={(b) => (
+            <>
+              <NhanTrangThai b={b} />
+              <BookingDetailControl spot={spot} booking={b} compact />
+            </>
+          )}
           renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b, true))}
           renderClosedQuick={(b) => renderClosedQuick(b, true)}
           renderMoneyCell={(b) =>

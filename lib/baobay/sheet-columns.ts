@@ -73,7 +73,27 @@ export type SheetCol = {
   /** Ô GỘP THEO NGÀY trên bảng tính — không thuộc về một khách nào. */
   theoNgay?: boolean;
   title?: string;
+  /**
+   * MÀU NỀN — chép đúng từ tab T9-2026 của bảng Google (đọc mã màu trong
+   * xl/styles.xml của tệp .xlsx, không đoán): `bg` cho ô tiêu đề, `bgCell` cho
+   * ô dữ liệu. Nhân viên đã quen mắt "ô xanh ngọc là máy tính, ô vàng là mình
+   * gõ, ô xanh lá là cọc" — giữ đúng thì nhìn app như nhìn bảng cũ.
+   */
+  bg?: string;
+  bgCell?: string;
 };
+
+/** Bảng màu của sổ tay Sa Pa (mã từ tệp .xlsx). */
+export const MAU = {
+  nhanDang: "#CFE2F3", // xanh nhạt — nhóm nhận ra khách, chiết khấu, ghi chú
+  vang: "#FFFF00", //     đơn giá, số suất dịch vụ, phụ thu (tiêu đề) · Tháng/Ngày (dữ liệu)
+  vangNhat: "#FFE599", // ô số suất flycam / 360 (dữ liệu)
+  ngoc: "#00FFFF", //     Thành tiền, TỔNG THU — máy tính
+  la: "#D9EAD3", //       ĐẶT CỌC
+  cam: "#FCE5CD", //      NGƯỜI NHẬN TIỀN
+  xam: "#EFEFEF", //      POS
+  do: "#FF0000", //       Chi TM / Chi CK (tiêu đề)
+} as const;
 
 export type SheetDest = { id: string; label: string };
 
@@ -241,7 +261,7 @@ export function sheetColumns(
 ): SheetCol[] {
   const id = normalizeSpot(spot);
   const thang = opts.thang ?? false;
-  const cols = id === "sapa" ? cotSapa(dests, thang, opts.keToan ?? false) : cotDiemKhac(id, dests, thang);
+  const cols = toMau(id === "sapa" ? cotSapa(dests, thang, opts.keToan ?? false) : cotDiemKhac(id, dests, thang));
   /** Gắn đơn giá đang áp vào dòng nhỏ dưới tên cột dịch vụ. */
   const gia = opts.gia;
   if (!gia) return cols;
@@ -278,6 +298,36 @@ export function shortPickup(text: unknown): string {
   /** Bỏ phần trong ngoặc (tên pháp nhân, ghi chú dài) — giữ tên chỗ đón. */
   const noParen = raw.replace(/\s*\([^)]*\)\s*/g, " ").trim();
   return noParen || raw;
+}
+
+/**
+ * TÔ MÀU theo VAI của cột — cùng một bảng màu cho mọi điểm, vì màu nói "cột này
+ * là gì" chứ không nói "đây là Sa Pa". Ánh xạ đúng từng ô của T9-2026:
+ *   A–G nhận dạng: tiêu đề xanh nhạt; Tháng & Ngày dữ liệu VÀNG
+ *   H Đơn giá · J/L số suất · N Phụ thu: tiêu đề vàng; số suất dữ liệu vàng nhạt
+ *   I Thành tiền · O TỔNG THU: xanh ngọc cả tiêu đề lẫn dữ liệu
+ *   P ĐẶT CỌC: xanh lá cả hai · Q–W người nhận tiền: tiêu đề cam (POS xám cả hai)
+ *   X–AA, AE–AF: tiêu đề xanh nhạt · AB/AC Chi TM/CK: tiêu đề ĐỎ
+ */
+function toMau(cols: SheetCol[]): SheetCol[] {
+  const nhanDang = new Set(["monthLabel", "daySeq", "flightDate", "source", "bookingCode", "guestNames", "guestCount", "pgGuests", "ppgGuests", "expectedTime"]);
+  const vang = new Set(["unitPrice", "ppgUnitPrice", "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar", "extraFee", "pickupFee", "discount"]);
+  const suat = new Set(["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"]);
+  const ngoc = new Set(["lineAmount", "total", "paid", "remaining", "flycamMoney", "video360Money"]);
+  const xanhNhat = new Set(["commission", "xeKhach", "chiFlycam", "chiKhac", "hinhThucTT", "nguoiThuTM", "phone", "pickupNote", "status", "note", "contactNote"]);
+  return cols.map((c) => {
+    if (c.key === "monthLabel" || c.key === "flightDate") return { ...c, bg: MAU.nhanDang, bgCell: MAU.vang };
+    if (nhanDang.has(c.key)) return { ...c, bg: MAU.nhanDang };
+    if (suat.has(c.key)) return { ...c, bg: MAU.vang, bgCell: MAU.vangNhat };
+    if (vang.has(c.key)) return { ...c, bg: MAU.vang };
+    if (ngoc.has(c.key)) return { ...c, bg: MAU.ngoc, bgCell: MAU.ngoc };
+    if (c.key === "deposit") return { ...c, bg: MAU.la, bgCell: MAU.la };
+    if (c.key === "dest:pos") return { ...c, bg: MAU.xam, bgCell: MAU.xam };
+    if (c.key.startsWith("dest:") || c.key === "usd" || c.key === "tkCty2") return { ...c, bg: MAU.cam };
+    if (c.key === "chiTM" || c.key === "chiCK") return { ...c, bg: MAU.do };
+    if (xanhNhat.has(c.key)) return { ...c, bg: MAU.nhanDang };
+    return c;
+  });
 }
 
 /**

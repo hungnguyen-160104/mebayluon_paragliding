@@ -27,9 +27,10 @@ import { useFillHeight } from "./useFillHeight";
  * và gõ nhầm dòng trên sổ tiền là mất tiền thật.
  *
  * CỘT THAO TÁC bày nút ra ngoài, xếp y như bên ▦ Bảng: chưa bay thì lưới hai
- * cột (thu tiền · in vé · đã bay · cần gọi · ⋯ Thêm) rộng 172px; đã bay/huỷ
- * thì nút nhỏ bằng nửa, xếp một cột 76px. Vị trí nút cố định nên tay bấm quen
- * chỗ. Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời lịch · huỷ ·
+ * cột (thu tiền · in vé · đã bay · cần gọi · ⋯ Thêm) rộng 190px; đã bay/huỷ
+ * chỉ còn ba nút (chưa bay · khoá · ⋯ Thêm) xếp MỘT HÀNG ba cột cho dòng thấp.
+ * Vị trí nút cố định nên tay bấm quen chỗ. Bấm ⋯ Thêm thì phần còn lại (bay
+ * không vé · sửa thu · dời lịch · huỷ ·
  * khoá · bảo hiểm) xổ ra ngay dưới dòng, trải hết bề ngang.
  *
  * BÀN PHÍM: Tab/Shift+Tab sang ô bên (hết dòng thì xuống dòng dưới) · Enter và
@@ -478,13 +479,17 @@ export function BookingSheet({
               {cols.map((c, i) => (
                 <th
                   key={c.key}
-                  style={headFreeze(i)}
                   title={c.title ?? (c.edit ? "Bấm vào ô để sửa" : "Máy tự tính — sửa ở ô gốc")}
                   className={
-                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold text-slate-800 " +
                     (c.right ? "text-right " : "text-left ") +
-                    (c.edit ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-500")
+                    (c.edit ? "bg-slate-100" : "bg-slate-200 text-slate-500")
                   }
+                  /**
+                   * Màu tiêu đề chép từ bảng Google gốc (sheet-columns.ts → MAU).
+                   * Đặt bằng style vì mã màu đến từ dữ liệu, không phải class có sẵn.
+                   */
+                  style={{ ...headFreeze(i), ...(c.bg ? { background: c.bg } : {}) }}
                 >
                   {c.label}
                   {c.hint ? <div className="font-normal opacity-60">{c.hint}</div> : null}
@@ -496,7 +501,12 @@ export function BookingSheet({
           <tbody>
             {rows.map((b, r) => {
               const done = b.status !== "open";
-              const rowBg = b.locked ? "bg-slate-100" : done ? "bg-slate-50" : "bg-white";
+              /**
+               * HÀNG XEN KẼ trắng / xám nhạt để mắt bám được một dòng khi lướt
+               * ngang ba mươi cột. Dòng đã bay tối hơn một bậc, dòng kế toán đã
+               * khoá tối hơn nữa — ba mức, vẫn phân biệt được từng hàng.
+               */
+              const rowBg = b.locked ? "bg-slate-200/70" : done ? (r % 2 ? "bg-slate-100" : "bg-slate-50") : r % 2 ? "bg-slate-50" : "bg-white";
               const moRong = strip?.id === b.id;
               return (
                 /**
@@ -526,7 +536,8 @@ export function BookingSheet({
                       <td
                         key={col.key}
                         onClick={() => col.edit && startEdit(r, c)}
-                        style={freezeStyle(c)}
+                        /** Màu ô dữ liệu theo bảng gốc; ô đang gõ / đang lưu thì màu trạng thái thắng. */
+                        style={{ ...freezeStyle(c), ...(col.bgCell && !isEditing && !busy ? { background: col.bgCell } : {}) }}
                         className={
                           "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
                           (busy ? "bg-amber-100 " : col.edit && !tatPpg ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
@@ -598,9 +609,15 @@ export function BookingSheet({
                              * xem chi tiết lại hoá ra đang gõ đè lên mã booking.
                              */}
                             {col.key === "bookingCode" && renderCodeExtra?.(b) ? (
+                              /**
+                               * NHÃN TRẠNG THÁI (đã xuất vé · đã bay · không vé) và
+                               * nút 📄 nằm NGAY DƯỚI mã booking — cùng ô với thứ
+                               * người ta đang tra, khỏi rê mắt sang cột thao tác.
+                               * Khối riêng, không nối đuôi mã cho khỏi tràn.
+                               */
                               <span
                                 onClick={(e) => e.stopPropagation()}
-                                className="ml-1 inline-block align-middle [&_button]:!h-4 [&_button]:!px-1 [&_button]:!text-[9px]"
+                                className="mt-0.5 block [&_button]:!h-4 [&_button]:!px-1 [&_button]:!text-[9px]"
                               >
                                 {renderCodeExtra(b)}
                               </span>
@@ -616,8 +633,8 @@ export function BookingSheet({
                    *
                    * Chưa bay thì LƯỚI HAI CỘT: [Thu tiền][In vé] · [Đã bay]
                    * [Cần gọi] · [⋯ Thêm]. Vị trí nút cố định nên tay bấm quen
-                   * chỗ, khỏi nhìn. Đã bay/huỷ thì nút nhỏ bằng nửa và xếp một
-                   * cột — dòng xong việc chỉ còn nút hoàn tác, hiếm khi bấm.
+                   * chỗ, khỏi nhìn. Đã bay/huỷ chỉ còn ba nút hoàn tác, hiếm khi
+                   * bấm — xếp một hàng ba cột để dòng xong việc thấp nhất.
                    *
                    * Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời
                    * lịch · huỷ · khoá · bảo hiểm) xổ ra ngay dưới dòng.
@@ -651,8 +668,14 @@ export function BookingSheet({
                          * `!gap-0` để hai dòng sát nhau, đừng hở như hai nút rời.
                          */
                         "gap-0.5 [&_button]:!h-auto [&_button]:!min-h-5 [&_button]:!flex-col [&_button]:!gap-0 [&_button]:!px-1 [&_button]:!py-0.5 [&_button]:!text-[9px] [&_button]:!leading-tight [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden " +
+                        /**
+                         * ĐÃ BAY: chỉ còn ba nút (Chưa bay · Khoá · Thêm) —
+                         * xếp MỘT HÀNG ba cột cho dòng thấp bằng dòng chữ.
+                         * Bản trước xếp dọc trong 76px: ba nút chồng ba tầng,
+                         * dòng cao gấp ba chỉ để chứa ba chữ ngắn.
+                         */
                         (done
-                          ? "flex w-[76px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center"
+                          ? "grid grid-cols-3 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center"
                           : "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center")
                       }
                     >

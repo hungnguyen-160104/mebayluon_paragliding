@@ -304,12 +304,13 @@ export function SapaBookGrid({
               {cols.map((c, i) => (
                 <th
                   key={c.key}
-                  style={headFreeze(i)}
+                  /** Màu tiêu đề chép từ bảng Google gốc (sheet-columns.ts → MAU). */
+                  style={{ ...headFreeze(i), ...(c.bg ? { background: c.bg } : {}) }}
                   title={c.title ?? (c.edit ? "Bấm vào ô để sửa" : "Máy tự tính — sửa ở ô gốc")}
                   className={
-                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold text-slate-800 " +
                     (c.right ? "text-right " : "text-left ") +
-                    (c.edit ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-500")
+                    (c.edit ? "bg-slate-100" : "bg-slate-200 text-slate-500")
                   }
                 >
                   {c.label}
@@ -449,7 +450,8 @@ function DayBlock({
 
       {dayRows.map((row, i) => {
         const r = base + i;
-        const rowBg = row.locked ? "bg-slate-100" : row.status !== "open" ? "bg-slate-50" : "bg-white";
+        /** Hàng xen kẽ trắng / xám nhạt — cùng luật với lưới ngày (BookingSheet). */
+        const rowBg = row.locked ? "bg-slate-200/70" : row.status !== "open" ? (i % 2 ? "bg-slate-100" : "bg-slate-50") : i % 2 ? "bg-slate-50" : "bg-white";
         return (
           <tr key={row.id}>
             {cols.map((col, c) => {
@@ -461,7 +463,8 @@ function DayBlock({
                 <td
                   key={col.key}
                   onClick={() => col.edit && startEdit(r, c)}
-                  style={freezeStyle(c)}
+                  /** Màu ô dữ liệu theo bảng gốc; ô đang gõ / đang lưu thì màu trạng thái thắng. */
+                  style={{ ...freezeStyle(c), ...(col.bgCell && !isEditing && !busy ? { background: col.bgCell } : {}) }}
                   className={
                     "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
                     (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
