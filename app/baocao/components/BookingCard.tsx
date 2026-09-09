@@ -139,7 +139,15 @@ function shortName(name: string): string {
  */
 function By({ name }: { name?: string }) {
   if (!name) return null;
-  return <span className="text-[0.82em] font-normal opacity-70"> by {shortName(name)}</span>;
+  /**
+   * DÒNG RIÊNG (`block`), không nối tiếp phía sau.
+   *
+   * Nối tiếp thì "🎫 Đã xuất vé by M.Hoàn" thành một chuỗi dài hơn ô ~86px của
+   * lưới Sheet, và dù đã cho bẻ dòng thì chỗ bẻ rơi vào đâu là tuỳ bề rộng —
+   * lúc "…vé by" / "M.Hoàn", lúc tràn hẳn ra ngoài. Ép xuống dòng thì luôn
+   * đúng hai dòng, dòng trên là việc, dòng dưới là người.
+   */
+  return <span className="block text-[0.82em] font-normal leading-tight opacity-70">by {shortName(name)}</span>;
 }
 
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
@@ -1189,11 +1197,16 @@ function ContactNote({
               : "Gọi xác nhận khách rồi ghi lại đã hẹn gì"
           }
         >
-          {booking.contactedAt
-            ? `☎ Đã LH${booking.contactedBy ? ` by ${shortName(booking.contactedBy)}` : ""} ✓`
-            : needCall
-              ? "☎ Cần gọi xác nhận"
-              : "📝 Ghi chú"}
+          {booking.contactedAt ? (
+            <>
+              ☎ Đã LH
+              <By name={booking.contactedBy} />
+            </>
+          ) : needCall ? (
+            "☎ Cần gọi xác nhận"
+          ) : (
+            "📝 Ghi chú"
+          )}
         </Button>
       )}
     </>
@@ -5023,7 +5036,7 @@ export function BookingTodayBanner({
           </>
         ) : b.ticketIssued ? (
           <>
-            🎫 Đã xuất vé ✓
+            🎫 Đã xuất vé
             <By name={b.ticketIssuedBy} />
           </>
         ) : (
