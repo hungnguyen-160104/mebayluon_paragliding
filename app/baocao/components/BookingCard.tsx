@@ -3307,11 +3307,15 @@ function Nhan({
   /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
   by?: string;
   /**
-   * CHỮ TO HƠN cho hai nhãn phải nhìn thấy từ xa: "đã bay" và "bay không vé".
+   * CHỮ TO HƠN cho ba nhãn phải nhìn thấy từ xa: "đã xuất vé", "đã bay",
+   * "bay không vé".
    *
-   * Hai cái này là kết luận của một chuyến — đã bay thì thôi không đụng nữa,
-   * còn bay không vé là chỗ phải soi. Mấy nhãn còn lại (xuất vé, đã huỷ, dời)
-   * chỉ để tra lại nên giữ 9px cho cột khỏi phình.
+   * Ba cái này là VỆT ĐI CỦA MỘT CHUYẾN — xuất vé rồi thì gần như chắc bay,
+   * đã bay thì thôi không đụng nữa, còn bay không vé là chỗ phải soi. Người
+   * trực lướt mắt dọc cột đầu là biết ngay dòng nào tới đâu.
+   *
+   * Mấy nhãn còn lại (đã huỷ, dời lịch) chỉ để tra lại nên giữ 9px cho cột
+   * khỏi phình.
    */
   big?: boolean;
   title?: string;
@@ -3615,6 +3619,7 @@ function BookingDayTable({
                       tone="amber"
                       label="🎫 đã xuất vé"
                       by={[b.ticketIssuedBy, gioVe(b)].filter(Boolean).join(" ")}
+                      big
                     />
                   )}
                   {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={b.noTicketBy} big />}
