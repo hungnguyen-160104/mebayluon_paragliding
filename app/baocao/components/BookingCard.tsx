@@ -4262,6 +4262,31 @@ export function BookingTodayBanner({
       /* không lưu được thì thôi */
     }
   };
+  /** THẺ (một khách, đủ nút) ↔ BẢNG (quét mắt) ↔ SHEET (gõ tại ô như bảng tính) — dùng ở hai chỗ. */
+  const viewSwitch = (
+        <span className="flex h-7 overflow-hidden rounded-md border border-slate-300">
+          {(
+            [
+              ["cards", "☰ Thẻ"],
+              ["table", "▦ Bảng"],
+              ["sheet", "▤ Sheet"],
+            ] as Array<["cards" | "table" | "sheet", string]>
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => switchView(v)}
+              className={
+                viewMode === v
+                  ? "bg-slate-700 px-2 text-[11px] font-bold text-white"
+                  : "bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </span>
+  );
   /** Ô TÌM KIẾM: gõ tên / SĐT / mã booking là lọc ngay — ngày 40+ booking không dò mắt nổi. */
   const [q, setQ] = useState("");
   /**
@@ -5369,6 +5394,17 @@ export function BookingTodayBanner({
         Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
         như thường, không cần khớp với danh sách này.
       </p>
+      {/**
+       * CỤM CHỌN KIỂU XEM luôn hiện, kể cả khi sổ chỉ có 0–1 booking.
+       *
+       * Trước nó nằm chung dải với ô tìm kiếm và bộ lọc — những thứ chỉ có nghĩa
+       * khi có từ 2 dòng — nên cả cụm bị giấu theo. Nhưng ▤ Sheet mang nút
+       * "+ Thêm hàng": đúng lúc sổ đang trống là lúc người ta cần nó nhất, mà
+       * lại không thấy nút để chuyển sang.
+       */}
+      {rows.length <= 1 && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">{viewSwitch}</div>
+      )}
       {/* MỘT HÀNG gọn: ô tìm + xếp + các bộ lọc (luật chủ 04/09) — flex-wrap
           nên màn hẹp tự xuống dòng, màn rộng nằm chung một dải. */}
       {rows.length > 1 && (
@@ -5387,29 +5423,7 @@ export function BookingTodayBanner({
               </button>
             </span>
           )}
-          {/* THẺ (một khách, đủ nút) ↔ BẢNG (quét mắt) ↔ SHEET (gõ tại ô như bảng tính) */}
-          <span className="flex h-7 overflow-hidden rounded-md border border-slate-300">
-            {(
-              [
-                ["cards", "☰ Thẻ"],
-                ["table", "▦ Bảng"],
-                ["sheet", "▤ Sheet"],
-              ] as Array<["cards" | "table" | "sheet", string]>
-            ).map(([v, label]) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => switchView(v)}
-                className={
-                  viewMode === v
-                    ? "bg-slate-700 px-2 text-[11px] font-bold text-white"
-                    : "bg-white px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </span>
+          {viewSwitch}
           <span className="text-sky-800/70">Xếp:</span>
           {(
             [
