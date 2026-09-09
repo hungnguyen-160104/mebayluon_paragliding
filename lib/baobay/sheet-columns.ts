@@ -97,7 +97,7 @@ function cotSapa(dests: SheetDest[], thang: boolean, keToan: boolean): SheetCol[
      * ngày nào cũng phải cuộn thêm.
      */
     { key: "source", label: "Code ĐL/lẻ", edit: "source", kind: "text", w: 76, wrap: true, title: "Code đại lý or lẻ" },
-    { key: "bookingCode", label: "Số book", edit: "bookingCode", kind: "text", w: 88, title: "Số booking" },
+    { key: "bookingCode", label: "Số book", edit: "bookingCode", kind: "text", w: 108, title: "Số booking — nút 📄 mở bảng kê chi tiết" },
     { key: "guestNames", label: "TÊN ĐĂNG KÝ", edit: "guestNames", kind: "names", w: 160, wrap: true, title: "Mỗi khách một dòng" },
     { key: "guestCount", label: "SL", edit: "guestCount", kind: "num", w: 34, right: true, title: "SL MCC — số khách" },
 
@@ -153,7 +153,7 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
     ...DAU(thang),
     /** Bóp sát nội dung thật (Klook · web · GYG · Zalo…); tên dài thì xuống dòng. */
     { key: "source", label: "Nguồn", edit: "source", kind: "text", w: 76, wrap: true },
-    { key: "bookingCode", label: "Mã book", edit: "bookingCode", kind: "text", w: 84 },
+    { key: "bookingCode", label: "Mã book", edit: "bookingCode", kind: "text", w: 104, title: "Mã booking — nút 📄 mở bảng kê chi tiết" },
     { key: "guestNames", label: "Tên khách", edit: "guestNames", kind: "names", w: 150, wrap: true, title: "Mỗi khách một dòng" },
     /**
      * KHAU PHẠ hỏi PG và PPG như form vẫn hỏi, còn TỔNG thì máy cộng.

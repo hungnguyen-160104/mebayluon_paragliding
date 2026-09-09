@@ -3075,7 +3075,20 @@ function moneyK(n: number): string {
  * nên booking đã khoá vẫn mở được. Treo qua portal ra <body> vì thẻ/bảng nằm
  * trong khối nhiều cột (position:fixed bị cắt — xem chú thích toàn màn hình).
  */
-function BookingDetailControl({ spot, booking: b }: { spot: string; booking: BookingDTO }) {
+function BookingDetailControl({
+  spot,
+  booking: b,
+  compact,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  /**
+   * Bản CHỈ BIỂU TƯỢNG cho lưới Sheet: nút nằm lọt trong ô "Số booking" rộng
+   * hơn trăm pixel một chút, chữ "Chi tiết book" vào đó là tràn. Ý nghĩa nằm ở
+   * tooltip — và ở chỗ đặt nút, ngay cạnh mã booking người ta đang tra.
+   */
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   /**
    * TRUY VẾT (luật chủ 04/09): ai lập, ai sửa gì, thêm/bớt dịch vụ, ai thu
@@ -3214,7 +3227,10 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
       <Button
         type="button"
         variant="ghost"
-        className="h-7 shrink-0 bg-white px-2 text-xs font-semibold text-slate-600"
+        className={
+          "shrink-0 bg-white font-semibold text-slate-600 " +
+          (compact ? "h-5 px-1 text-[10px]" : "h-7 px-2 text-xs")
+        }
         onClick={() => {
           // Xoá kết quả lần trước ngay lúc bấm (không reset trong effect)
           setHistory(null);
@@ -3223,7 +3239,7 @@ function BookingDetailControl({ spot, booking: b }: { spot: string; booking: Boo
         }}
         title="Xem bảng kê chi tiết booking như tờ vé: từng khoản, tổng, đã trả, còn thu"
       >
-        📄 Chi tiết book
+        {compact ? "📄" : "📄 Chi tiết book"}
       </Button>
       {open &&
         typeof document !== "undefined" &&
@@ -5521,6 +5537,7 @@ export function BookingTodayBanner({
            * chỗ; mà gõ liên tục thì mỗi ô một lần tải là không dùng nổi.
            */
           onSaved={(b) => setRows((prev) => prev.map((x) => (x.id === b.id ? b : x)))}
+          renderCodeExtra={(b) => <BookingDetailControl spot={spot} booking={b} compact />}
           renderQuick={(b) => (moving?.id === b.id ? null : renderOpenQuick(b, true))}
           renderClosedQuick={(b) => renderClosedQuick(b, true)}
           renderMoneyCell={(b) =>

@@ -115,6 +115,7 @@ export function BookingSheet({
   renderMore,
   renderInsurance,
   renderMoneyCell,
+  renderCodeExtra,
 }: {
   spot: string;
   /** Ngày đang xem — nút "thêm hàng" tạo booking trống cho đúng ngày này. */
@@ -134,6 +135,8 @@ export function BookingSheet({
   renderMore?: (b: BookingDTO, close?: () => void) => ReactNode;
   renderInsurance?: (b: BookingDTO) => ReactNode;
   renderMoneyCell?: (b: BookingDTO) => ReactNode;
+  /** Nút 📄 Chi tiết booking — ghép vào ô "Số booking", đúng chỗ mắt tìm mã. */
+  renderCodeExtra?: (b: BookingDTO) => ReactNode;
 }) {
   const dests = useMemo(() => moneyDestsOf(spot).map((d) => ({ id: d.id, label: d.label })), [spot]);
   const cols = useMemo(() => sheetColumns(spot, dests, { thang: false }), [spot, dests]);
@@ -478,6 +481,23 @@ export function BookingSheet({
                             }
                           >
                             {cellText(b, col)}
+                            {/**
+                             * NÚT 📄 CHI TIẾT ghép vào ô "Số booking" — đúng chỗ
+                             * mắt đang tìm khi muốn tra một khách, khỏi phải mở
+                             * "⋯ Thêm" rồi tìm tiếp.
+                             *
+                             * `stopPropagation` là bắt buộc: cả ô đang bắt sự
+                             * kiện bấm để vào chế độ sửa, không chặn thì bấm
+                             * xem chi tiết lại hoá ra đang gõ đè lên mã booking.
+                             */}
+                            {col.key === "bookingCode" && renderCodeExtra?.(b) ? (
+                              <span
+                                onClick={(e) => e.stopPropagation()}
+                                className="ml-1 inline-block align-middle [&_button]:!h-4 [&_button]:!px-1 [&_button]:!text-[9px]"
+                              >
+                                {renderCodeExtra(b)}
+                              </span>
+                            ) : null}
                           </span>
                         )}
                       </td>
