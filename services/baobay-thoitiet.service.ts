@@ -78,6 +78,23 @@ function uvSangGio(u: number, v: number): { tocDo: number; huong: number } {
 }
 
 /**
+ * MÔ HÌNH DÙNG Ở WINDY — mặc định GFS, KHÔNG PHẢI ECMWF.
+ *
+ * Windy KHÔNG bán ECMWF qua Point Forecast API ("not included due to licensing
+ * conditions") dù chính trang windy.com hiển thị nó. Những mô hình API ấy có —
+ * arome (Pháp), iconEu (châu Âu), nam và hrrr (Bắc Mỹ) — đều KHÔNG phủ Việt
+ * Nam; còn lại đúng một mô hình toàn cầu là GFS.
+ *
+ * Hệ quả cần biết trước khi trả tiền: đường Open-Meteo đang chạy miễn phí cấp
+ * ECMWF IFS, tức là MỊN HƠN và thường đúng hơn GFS ở địa hình núi. Cắm khoá
+ * Windy vào là đổi sang GFS — khớp tuyệt đối với vài lớp của Windy, nhưng
+ * không phải là nâng cấp về độ chính xác.
+ *
+ * Đặt `WINDY_MODEL` nếu sau này Windy mở thêm mô hình phủ Việt Nam.
+ */
+const WINDY_MODEL = process.env.WINDY_MODEL?.trim() || "gfs";
+
+/**
  * Gọi Windy và trả về ĐÚNG hình dạng mà Open-Meteo trả, để phần chấm màu phía
  * sau không cần biết số đến từ đâu.
  */
@@ -88,7 +105,7 @@ async function goiWindy(toaDo: ToaDoDiemBay, key: string): Promise<any> {
     body: JSON.stringify({
       lat: toaDo.lat,
       lon: toaDo.lon,
-      model: "ecmwf",
+      model: WINDY_MODEL,
       parameters: ["wind", "gust", "precip", "temp", "lclouds", "mclouds", "hclouds"],
       levels: ["surface"],
       key,
@@ -204,7 +221,7 @@ async function layVaCham(
   if (khoaWindy) {
     try {
       raw = await goiWindy(toaDo, khoaWindy);
-      moHinh = "Windy Point Forecast (ECMWF)";
+      moHinh = `Windy Point Forecast (${WINDY_MODEL.toUpperCase()})`;
     } catch (e) {
       /** Ghi lại rồi đi tiếp: hết lượt gọi trong ngày là chuyện thường, không phải sự cố. */
       console.warn("Windy API không dùng được, rơi về Open-Meteo:", (e as Error)?.message);
