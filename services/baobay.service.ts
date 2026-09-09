@@ -7251,6 +7251,29 @@ export async function ingestSapaSheetRows(input: {
         (!!raw.phone && samePhone(String(raw.phone), doc.phone)) ||
         (!!bookingCode && sameLoose(bookingCode, doc.bookingCode));
 
+      /**
+       * NẤC 1C — KHỚP THEO MÃ ĐẶT CHỖ, để KHÔNG nhân đôi booking đã vào sổ từ
+       * web hoặc thư OTA.
+       *
+       * Cùng một khách Klook nằm ở hai nơi: bên bảng tính nhân viên gõ mã vào
+       * cột "Số booking", còn trong app thì cửa nhận thư OTA đã tạo sẵn booking
+       * với đúng mã đó ở `bookingCode` (hoặc `otaRef`). Hai bản ghi không có
+       * `sheetRef` chung, số thứ tự trong ngày cũng khác nhau (app cấp theo thứ
+       * tự thư về, bảng đánh theo thứ tự khách tới) — nên không nấc nào ở trên
+       * bắt được, và mỗi lượt lấy về là sổ có hai lần cùng một khách.
+       *
+       * Mã OTA là khoá mạnh: Klook/GYG/KKday không phát trùng mã. Vẫn kẹp theo
+       * NGÀY BAY để một mã bị gõ nhầm sang ngày khác không kéo nhầm booking.
+       */
+      if (!booking && bookingCode) {
+        booking = await BaobayBooking.findOne({
+          spot,
+          flightDate,
+          status: { $ne: "voided" },
+          $or: [{ bookingCode }, { otaRef: bookingCode }],
+        }).lean<any>();
+      }
+
       let renumbered = 0;
       if (!booking && rowRefs.length) {
         const cand = await BaobayBooking.findOne({ spot, sheetRef: { $in: rowRefs } }).lean<any>();
