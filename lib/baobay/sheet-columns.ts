@@ -203,6 +203,34 @@ export function sheetColumns(
 }
 
 /**
+ * ĐIỂM ĐÓN VIẾT GỌN.
+ *
+ * Khách đặt trên web chọn "đến thẳng điểm bay" thì ô điểm đón nhận nguyên cái
+ * tên dài của bãi:
+ *
+ *   "Điểm bay dù lượn Mebayluon Paragliding (CTCP Du lịch & …)"
+ *
+ * Trên sổ thì câu đó vô nghĩa — ai cũng biết bãi ở đâu, và nó ngốn cả một cột.
+ * Điều người trực cần biết chỉ là: khách này KHÔNG cần xe đón. Nên rút về
+ * đúng hai chữ "Tự đến".
+ *
+ * Chỉ rút khi chắc chắn đó là TÊN BÃI (có "điểm bay" kèm tên công ty/thương
+ * hiệu). Một khách sạn tên "Điểm Bay Homestay" thì giữ nguyên — đoán sai ở đây
+ * là xe không tới đón khách.
+ */
+const TEN_BAI = /(điểm bay|diem bay)/i;
+const TEN_HANG = /(mebayluon|paragliding|ctcp|cổ phần|co phan|du lịch|du lich)/i;
+
+export function shortPickup(text: unknown): string {
+  const raw = String(text ?? "").trim();
+  if (!raw) return "";
+  if (TEN_BAI.test(raw) && TEN_HANG.test(raw)) return "Tự đến";
+  /** Bỏ phần trong ngoặc (tên pháp nhân, ghi chú dài) — giữ tên chỗ đón. */
+  const noParen = raw.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  return noParen || raw;
+}
+
+/**
  * SỐ CỘT ĐÓNG BĂNG bên trái — hết cột "số khách" thì thôi.
  *
  * Đúng bằng `xSplit="7"` của bảng tính khi lưới có cột Tháng; lưới một ngày

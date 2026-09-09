@@ -3678,7 +3678,16 @@ function BookingDayTable({
                   ) : (
                     <div
                       className={
-                        "gap-1 [&_button]:h-6 [&_button]:whitespace-nowrap [&_button]:px-1 [&_button]:text-[11px] " +
+                        /**
+                         * NÚT CHO XUỐNG DÒNG, không ép một hàng.
+                         *
+                         * Ô rộng 84px mà "☎ Cần gọi xác nhận" ở 11px đã hơn
+                         * 100px — `whitespace-nowrap` khiến chữ TRÀN RA NGOÀI
+                         * viền nút, đè lên cột bên cạnh. Cho bẻ dòng thì nút cao
+                         * lên một chút nhưng chữ nằm gọn trong hộp, và không
+                         * phải cắt cụt nhãn (nhãn nút mà cắt thì bấm bằng đoán).
+                         */
+                        "gap-1 [&_button]:min-h-6 [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden [&_button]:px-1 [&_button]:py-0.5 [&_button]:text-[11px] [&_button]:leading-tight " +
                         (b.status === "open"
                           ? /**
                              * CHƯA BAY: LƯỚI HAI CỘT, không phải flex-wrap.
@@ -3708,7 +3717,7 @@ function BookingDayTable({
                              * thì cái nào đứng sau trong tệp CSS thắng — tức là
                              * hên xui theo thứ tự Tailwind sinh ra.
                              */
-                            "flex w-[76px] flex-col items-stretch [&_button]:!h-5 [&_button]:!text-[10px] [&_button]:justify-center [&_button]:text-center")
+                            "flex w-[76px] flex-col items-stretch [&_button]:!min-h-5 [&_button]:!h-auto [&_button]:!text-[10px] [&_button]:justify-center [&_button]:text-center")
                       }
                     >
                       {b.status === "open" ? renderQuick?.(b) : renderClosedQuick?.(b)}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { frozenCount, frozenOffsets, groupSpans, sheetColumns, type SheetCol } from "@/lib/baobay/sheet-columns";
+import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { SapaBookRow, SapaBookView } from "@/services/baobay.service";
 
 import { apiPatch, apiPost } from "../components/client-api";
@@ -52,6 +52,8 @@ function cellText(row: SapaBookRow, col: SheetCol): string {
     default:
       break;
   }
+  /** Điểm đón: tên bãi dài dòng rút về "Tự đến" — xem shortPickup. */
+  if (col.key === "pickupNote") return shortPickup(row.pickupNote);
   /** Cột của kế toán bên bảng tính mà app chưa quản — để TRỐNG, không bịa số. */
   if (col.ketToan) return "";
   const v = (row as unknown as Record<string, unknown>)[col.key];
@@ -207,7 +209,8 @@ export function SapaBookGrid({
   const g1 = useMemo(() => groupSpans(cols, 1), [cols]);
   const g2 = useMemo(() => groupSpans(cols, 2), [cols]);
   const hasG2 = g2.some((x) => x.label);
-  const frozeW = offs.length ? offs[froze - 1] + cols[froze - 1].w : 0;
+  /** Bề ngang cả bảng = tổng số đã khai — để table-layout:fixed có mốc chắc chắn. */
+  const totalW = cols.reduce((t, c) => t + c.w, 0) + 0;
   const freezeStyle = (c: number): React.CSSProperties =>
     c < froze
       ? { position: "sticky", left: offs[c], zIndex: 6, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
@@ -241,7 +244,23 @@ export function SapaBookGrid({
         className="overflow-auto rounded-lg border border-slate-300 bg-white"
         style={{ maxHeight: height ? `${height}px` : "70vh" }}
       >
-        <table className="border-collapse text-[11px]" style={{ width: "max-content" }}>
+        {/**
+         * BỐ CỤC CỐ ĐỊNH + VIỀN TÁCH RỜI — hai thứ này quyết định cột đóng băng
+         * có đè lên nhau hay không.
+         *
+         * Mép dán của cột đóng băng (`left`) tính bằng TỔNG BỀ NGANG ĐÃ KHAI của
+         * các cột trước nó. Nên bề ngang THẬT phải đúng bằng số đã khai:
+         *  - `table-layout: fixed` để nội dung dài không nới cột ra (auto layout
+         *    thì một ô ghi chú dài là cả cột phình, mọi mép dán sau đó trượt);
+         *  - `border-separate` vì `border-collapse` cho hai ô KỀ NHAU dùng CHUNG
+         *    một đường viền, mỗi cột hụt đi nửa pixel và sai số dồn dần — tới
+         *    cột thứ bảy là lệch hẳn, cột dán đè lên cột cuộn.
+         * Viền vẽ ở cạnh PHẢI và DƯỚI của từng ô nên nhìn vẫn là lưới một nét.
+         */}
+        <table
+          className="text-[11px]"
+          style={{ tableLayout: "fixed", width: totalW, borderCollapse: "separate", borderSpacing: 0 }}
+        >
           <colgroup>
             {cols.map((c) => (
               <col key={c.key} style={{ width: c.w, minWidth: c.w, maxWidth: c.w }} />
@@ -254,9 +273,9 @@ export function SapaBookGrid({
                 <th
                   key={`g1-${i}`}
                   colSpan={g.span}
-                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                   className={
-                    "border border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
                     (g.label ? "bg-slate-700 text-white" : "bg-slate-400 text-slate-100")
                   }
                 >
@@ -270,9 +289,9 @@ export function SapaBookGrid({
                   <th
                     key={`g2-${i}`}
                     colSpan={g.span}
-                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                     className={
-                      "border border-slate-300 px-1 py-px text-[10px] font-semibold " +
+                      "border-b border-r border-slate-300 px-1 py-px text-[10px] font-semibold " +
                       (g.label ? "bg-slate-500 text-white" : "bg-slate-300 text-slate-600")
                     }
                   >
@@ -288,7 +307,7 @@ export function SapaBookGrid({
                   style={headFreeze(i)}
                   title={c.title ?? (c.edit ? "Bấm vào ô để sửa" : "Máy tự tính — sửa ở ô gốc")}
                   className={
-                    "border border-slate-300 px-1 py-px text-[10px] font-bold " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold " +
                     (c.right ? "text-right " : "text-left ") +
                     (c.edit ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-500")
                   }
@@ -343,7 +362,7 @@ export function SapaBookGrid({
                     key={c.key}
                     style={freezeStyle(i)}
                     className={
-                      "border border-slate-600 bg-slate-800 px-1 py-px font-bold text-white " + (c.right ? "text-right" : "")
+                      "border-b border-r border-slate-600 bg-slate-800 px-1 py-px font-bold text-white " + (c.right ? "text-right" : "")
                     }
                   >
                     {c.key === "daySeq"
@@ -418,7 +437,7 @@ function DayBlock({
       <tr>
         <td
           colSpan={cols.length}
-          className="sticky left-0 border border-slate-300 bg-sky-100 px-2 py-0.5"
+          className="sticky left-0 border-b border-r border-slate-300 bg-sky-100 px-2 py-0.5"
           style={{ zIndex: 5 }}
         >
           <span className="text-[12px] font-bold text-sky-900">{dayShort(day.date)}</span>
@@ -444,7 +463,7 @@ function DayBlock({
                   onClick={() => col.edit && startEdit(r, c)}
                   style={freezeStyle(c)}
                   className={
-                    "border border-slate-200 px-1 py-px align-top leading-tight " +
+                    "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
                     (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
                     (col.right ? "text-right tabular-nums " : "") +
                     (col.edit && !row.locked ? "cursor-text " : "") +
@@ -509,7 +528,7 @@ function DayBlock({
 
       {/* Dòng trống cuối khối ngày: chỗ gõ khách mới, đúng chỗ tay đang đặt */}
       <tr>
-        <td colSpan={cols.length} className="sticky left-0 border border-slate-200 bg-white px-1 py-0.5" style={{ zIndex: 5 }}>
+        <td colSpan={cols.length} className="sticky left-0 border-b border-r border-slate-200 bg-white px-1 py-0.5" style={{ zIndex: 5 }}>
           <button
             type="button"
             disabled={!canEdit || adding}

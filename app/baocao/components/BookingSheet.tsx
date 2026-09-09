@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { moneyDestsOf } from "@/lib/baobay/money-dest";
-import { frozenCount, frozenOffsets, groupSpans, sheetColumns, type SheetCol } from "@/lib/baobay/sheet-columns";
+import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiPatch, apiPost } from "./client-api";
@@ -77,6 +77,8 @@ function cellText(b: BookingDTO, col: SheetCol): string {
     default:
       break;
   }
+  /** Điểm đón: tên bãi dài dòng rút về "Tự đến" — xem shortPickup. */
+  if (col.key === "pickupNote") return shortPickup((b as unknown as Record<string, unknown>).pickupNote);
   /** Cột kế toán bên bảng tính mà app chưa quản — để TRỐNG, không bịa số. */
   if (col.ketToan) return "";
   const v = (b as unknown as Record<string, unknown>)[col.key];
@@ -280,7 +282,8 @@ export function BookingSheet({
   const headFreeze = (c: number): React.CSSProperties =>
     c < froze ? { position: "sticky", left: offs[c], zIndex: 26, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined } : {};
   /** Bề ngang cả khối đóng băng — ô tiêu đề nhóm đầu tiên trùm đúng khối đó. */
-  const frozeW = offs.length ? offs[froze - 1] + cols[froze - 1].w : 0;
+  /** Bề ngang cả bảng = tổng số đã khai — để table-layout:fixed có mốc chắc chắn. */
+  const totalW = cols.reduce((t, c) => t + c.w, 0) + 190;
 
   return (
     <div className="mt-2 space-y-1">
@@ -298,12 +301,29 @@ export function BookingSheet({
         className="overflow-auto rounded-lg border border-slate-300 bg-white"
         style={{ maxHeight: height ? `${height}px` : "68vh" }}
       >
-        <table className="border-collapse text-[11px]" style={{ width: "max-content" }}>
+        {/**
+         * BỐ CỤC CỐ ĐỊNH + VIỀN TÁCH RỜI — hai thứ này quyết định cột đóng băng
+         * có đè lên nhau hay không.
+         *
+         * Mép dán của cột đóng băng (`left`) tính bằng TỔNG BỀ NGANG ĐÃ KHAI của
+         * các cột trước nó. Nên bề ngang THẬT phải đúng bằng số đã khai:
+         *  - `table-layout: fixed` để nội dung dài không nới cột ra (auto layout
+         *    thì một ô ghi chú dài là cả cột phình, mọi mép dán sau đó trượt);
+         *  - `border-separate` vì `border-collapse` cho hai ô KỀ NHAU dùng CHUNG
+         *    một đường viền, mỗi cột hụt đi nửa pixel và sai số dồn dần — tới
+         *    cột thứ bảy là lệch hẳn, cột dán đè lên cột cuộn.
+         * Viền vẽ ở cạnh PHẢI và DƯỚI của từng ô nên nhìn vẫn là lưới một nét.
+         */}
+        <table
+          className="text-[11px]"
+          style={{ tableLayout: "fixed", width: totalW, borderCollapse: "separate", borderSpacing: 0 }}
+        >
           <colgroup>
             {cols.map((c) => (
               <col key={c.key} style={{ width: c.w, minWidth: c.w, maxWidth: c.w }} />
             ))}
-            <col style={{ width: 172 }} />
+            {/* Cột thao tác: 190px = hai ô ~94px, vừa cho nhãn dài nhất ở 9px. */}
+            <col style={{ width: 190 }} />
           </colgroup>
 
           <thead className="sticky top-0 z-20">
@@ -313,9 +333,9 @@ export function BookingSheet({
                 <th
                   key={`g1-${i}`}
                   colSpan={g.span}
-                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                   className={
-                    "border border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
                     (g.label ? "bg-slate-700 text-white" : "bg-slate-400 text-slate-100")
                   }
                 >
@@ -325,7 +345,7 @@ export function BookingSheet({
               <th
                 rowSpan={hasG2 ? 3 : 2}
                 title="Thao tác"
-                className="sticky right-0 z-30 border border-slate-300 bg-slate-700 px-1 text-[10px] font-bold text-white"
+                className="sticky right-0 z-30 border-b border-r border-slate-300 bg-slate-700 px-1 text-[10px] font-bold text-white"
               >
                 ⚙
               </th>
@@ -336,9 +356,9 @@ export function BookingSheet({
                   <th
                     key={`g2-${i}`}
                     colSpan={g.span}
-                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                     className={
-                      "border border-slate-300 px-1 py-px text-[10px] font-semibold " +
+                      "border-b border-r border-slate-300 px-1 py-px text-[10px] font-semibold " +
                       (g.label ? "bg-slate-500 text-white" : "bg-slate-300 text-slate-600")
                     }
                   >
@@ -354,7 +374,7 @@ export function BookingSheet({
                   style={headFreeze(i)}
                   title={c.title ?? (c.edit ? "Bấm vào ô để sửa" : "Máy tự tính — sửa ở ô gốc")}
                   className={
-                    "border border-slate-300 px-1 py-px text-[10px] font-bold " +
+                    "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold " +
                     (c.right ? "text-right " : "text-left ") +
                     (c.edit ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-500")
                   }
@@ -386,7 +406,7 @@ export function BookingSheet({
                         onClick={() => col.edit && startEdit(r, c)}
                         style={freezeStyle(c)}
                         className={
-                          "border border-slate-200 px-1 py-px align-top leading-tight " +
+                          "border-b border-r border-slate-200 px-1 py-px align-top leading-tight " +
                           (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
                           (col.right ? "text-right tabular-nums " : "") +
                           (editable ? "cursor-text " : "") +
@@ -463,10 +483,25 @@ export function BookingSheet({
                    * Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời
                    * lịch · huỷ · khoá · bảo hiểm) xổ ra ngay dưới dòng.
                    */}
-                  <td className={"sticky right-0 z-10 border border-slate-200 px-1 py-px align-top " + rowBg}>
+                  <td className={"sticky right-0 z-10 border-b border-r border-slate-200 px-1 py-px align-top " + rowBg}>
                     <div
                       className={
-                        "gap-0.5 [&_button]:!h-5 [&_button]:!px-1 [&_button]:!text-[10px] [&_button]:whitespace-nowrap " +
+                        /**
+                         * NÚT CHO XUỐNG DÒNG và CHỮ NHỎ 9px.
+                         *
+                         * Nhãn ở đây dài hơn người ta tưởng vì nó gánh cả vệt
+                         * truy vết: "🎫 đã xuất vé by Mai Hoàn 08:56",
+                         * "☎ Đã LH by Hoàn ✓", "☎ Cần gọi xác nhận". Ép một
+                         * hàng (`whitespace-nowrap`) là chữ tràn khỏi viền nút
+                         * và đè sang cột bên — đúng thứ đang thấy trên sổ.
+                         *
+                         * Ba thứ cùng lúc mới đủ: cho bẻ dòng, cho bẻ cả trong
+                         * từ (`break-words`, phòng tên dài không dấu cách), và
+                         * `overflow-hidden` chặn phần thừa nếu vẫn còn. Không
+                         * cắt cụt bằng `truncate`: nhãn nút mà cụt thì người ta
+                         * bấm bằng đoán.
+                         */
+                        "gap-0.5 [&_button]:!h-auto [&_button]:!min-h-5 [&_button]:!px-1 [&_button]:!py-0.5 [&_button]:!text-[9px] [&_button]:!leading-tight [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden " +
                         (done
                           ? "flex w-[76px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center"
                           : "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center")
@@ -504,7 +539,7 @@ export function BookingSheet({
             {rows.map((b) =>
               strip?.id === b.id ? (
                 <tr key={`s-${b.id}`}>
-                  <td colSpan={cols.length + 1} className="border border-slate-200 bg-sky-50/70 px-2 py-1.5">
+                  <td colSpan={cols.length + 1} className="border-b border-r border-slate-200 bg-sky-50/70 px-2 py-1.5">
                     <div className="mb-1 flex flex-wrap items-center gap-1">
                       <span className="mr-1 text-[11px] font-bold text-sky-900">
                         #{b.daySeq || "?"} {b.contactName || b.phone || "khách"}
@@ -540,17 +575,17 @@ export function BookingSheet({
 
             {movedOut.map((b) => (
               <tr key={`m-${b.id}`}>
-                <td colSpan={cols.length} className="border border-slate-200 bg-amber-50 px-1 py-px leading-tight text-amber-900">
+                <td colSpan={cols.length} className="border-b border-r border-slate-200 bg-amber-50 px-1 py-px leading-tight text-amber-900">
                   #{b.daySeq || "?"} {b.contactName || b.phone || "khách"} — <strong>đã dời sang ngày khác</strong>
                 </td>
-                <td className="sticky right-0 z-10 border border-slate-200 bg-amber-50 px-0.5 py-px">{renderMovedActions?.(b)}</td>
+                <td className="sticky right-0 z-10 border-b border-r border-slate-200 bg-amber-50 px-0.5 py-px">{renderMovedActions?.(b)}</td>
               </tr>
             ))}
 
             {/* THÊM HÀNG — dòng cuối, đúng chỗ tay đang đặt sau khi gõ xong dòng trên */}
             {canEdit && (
               <tr>
-                <td colSpan={cols.length + 1} className="border border-slate-200 bg-white px-1 py-0.5">
+                <td colSpan={cols.length + 1} className="border-b border-r border-slate-200 bg-white px-1 py-0.5">
                   <button
                     type="button"
                     disabled={adding}
@@ -580,7 +615,7 @@ export function BookingSheet({
                     key={c.key}
                     style={freezeStyle(i)}
                     className={
-                      "border border-slate-600 bg-slate-800 px-1 py-px font-bold text-white " + (c.right ? "text-right" : "")
+                      "border-b border-r border-slate-600 bg-slate-800 px-1 py-px font-bold text-white " + (c.right ? "text-right" : "")
                     }
                   >
                     {c.key === "daySeq"
@@ -594,7 +629,7 @@ export function BookingSheet({
                             : ""}
                   </td>
                 ))}
-                <td className="sticky right-0 z-10 border border-slate-600 bg-slate-800" />
+                <td className="sticky right-0 z-10 border-b border-r border-slate-600 bg-slate-800" />
               </tr>
             </tfoot>
           )}
