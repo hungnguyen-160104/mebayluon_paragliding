@@ -90,7 +90,13 @@ function cotSapa(dests: SheetDest[], thang: boolean, keToan: boolean): SheetCol[
   const G2 = ["TÀI KHOẢN", "TIỀN MẶT", "", "", "POS"];
   return [
     ...DAU(thang),
-    { key: "source", label: "Code ĐL/lẻ", edit: "source", kind: "text", w: 104, title: "Code đại lý or lẻ" },
+    /**
+     * Cột nguồn BÓP SÁT nội dung thật: "Klook", "web", "GYG", "kkday", "lẻ",
+     * "Huy TN" — dài nhất cũng chỉ trên dưới 60px. Chừa 104px là chừa cho một
+     * cái tên đại lý dài mà cả tháng mới gặp một lần, còn ba mươi cột kia thì
+     * ngày nào cũng phải cuộn thêm.
+     */
+    { key: "source", label: "Code ĐL/lẻ", edit: "source", kind: "text", w: 76, wrap: true, title: "Code đại lý or lẻ" },
     { key: "bookingCode", label: "Số book", edit: "bookingCode", kind: "text", w: 88, title: "Số booking" },
     { key: "guestNames", label: "TÊN ĐĂNG KÝ", edit: "guestNames", kind: "names", w: 160, wrap: true, title: "Mỗi khách một dòng" },
     { key: "guestCount", label: "SL", edit: "guestCount", kind: "num", w: 34, right: true, title: "SL MCC — số khách" },
@@ -145,7 +151,8 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
   const hn = spot === "ha-noi";
   return [
     ...DAU(thang),
-    { key: "source", label: "Nguồn", edit: "source", kind: "text", w: 92 },
+    /** Bóp sát nội dung thật (Klook · web · GYG · Zalo…); tên dài thì xuống dòng. */
+    { key: "source", label: "Nguồn", edit: "source", kind: "text", w: 76, wrap: true },
     { key: "bookingCode", label: "Mã book", edit: "bookingCode", kind: "text", w: 84 },
     { key: "guestNames", label: "Tên khách", edit: "guestNames", kind: "names", w: 150, wrap: true, title: "Mỗi khách một dòng" },
     /**

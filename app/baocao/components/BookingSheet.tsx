@@ -25,11 +25,11 @@ import { useFillHeight } from "./useFillHeight";
  * phải. Không có nó thì xem tới cột tiền là không biết đang nhìn dòng của ai —
  * và gõ nhầm dòng trên sổ tiền là mất tiền thật.
  *
- * CỘT THAO TÁC GỌN HẾT MỨC: đúng hai nút nhỏ (💵 thu tiền · ⋯), rộng 56px.
- * Bản đầu xổ cả dải nút ngay trên dòng nên chiếm gần nửa bề ngang lưới — mà
- * lưới sinh ra để NHÌN SỐ, nút chỉ cần với tới được. Bấm ⋯ thì cả dải thao tác
- * (xuất vé · đã bay · bay không vé · sửa thu · bảo hiểm · dời lịch) mở ra ngay
- * dưới dòng đó, trải hết bề ngang.
+ * CỘT THAO TÁC bày nút ra ngoài, xếp y như bên ▦ Bảng: chưa bay thì lưới hai
+ * cột (thu tiền · in vé · đã bay · cần gọi · ⋯ Thêm) rộng 172px; đã bay/huỷ
+ * thì nút nhỏ bằng nửa, xếp một cột 76px. Vị trí nút cố định nên tay bấm quen
+ * chỗ. Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời lịch · huỷ ·
+ * khoá · bảo hiểm) xổ ra ngay dưới dòng, trải hết bề ngang.
  *
  * BÀN PHÍM: Tab/Shift+Tab sang ô bên (hết dòng thì xuống dòng dưới) · Enter và
  * ↑↓ chạy dọc một cột · Esc bỏ dở. LƯU TỪNG Ô: máy chủ tính lại tổng tiền rồi
@@ -303,7 +303,7 @@ export function BookingSheet({
             {cols.map((c) => (
               <col key={c.key} style={{ width: c.w, minWidth: c.w, maxWidth: c.w }} />
             ))}
-            <col style={{ width: 56 }} />
+            <col style={{ width: 172 }} />
           </colgroup>
 
           <thead className="sticky top-0 z-20">
@@ -452,24 +452,47 @@ export function BookingSheet({
                     );
                   })}
 
-                  {/* THAO TÁC — 56px, đúng hai nút; mọi thứ còn lại nằm sau ⋯ */}
-                  <td className={"sticky right-0 z-10 border border-slate-200 px-0.5 py-px align-top " + rowBg}>
-                    <div className="flex items-center gap-0.5">
-                      {renderMoneyCell?.(b) ? (
-                        <span className="[&_button]:!h-5 [&_button]:!px-1 [&_button]:!text-[10px] [&_button]:!font-bold">
-                          {renderMoneyCell(b)}
-                        </span>
-                      ) : null}
+                  {/**
+                   * THAO TÁC — bày nút ra ngoài, xếp y như bên ▦ Bảng.
+                   *
+                   * Chưa bay thì LƯỚI HAI CỘT: [Thu tiền][In vé] · [Đã bay]
+                   * [Cần gọi] · [⋯ Thêm]. Vị trí nút cố định nên tay bấm quen
+                   * chỗ, khỏi nhìn. Đã bay/huỷ thì nút nhỏ bằng nửa và xếp một
+                   * cột — dòng xong việc chỉ còn nút hoàn tác, hiếm khi bấm.
+                   *
+                   * Bấm ⋯ Thêm thì phần còn lại (bay không vé · sửa thu · dời
+                   * lịch · huỷ · khoá · bảo hiểm) xổ ra ngay dưới dòng.
+                   */}
+                  <td className={"sticky right-0 z-10 border border-slate-200 px-1 py-px align-top " + rowBg}>
+                    <div
+                      className={
+                        "gap-0.5 [&_button]:!h-5 [&_button]:!px-1 [&_button]:!text-[10px] [&_button]:whitespace-nowrap " +
+                        (done
+                          ? "flex w-[76px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center"
+                          : "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center")
+                      }
+                    >
+                      {/**
+                       * Ô THU TIỀN luôn CHIẾM CHỖ dù không có nút.
+                       *
+                       * Booking thu đủ rồi thì nút biến mất; nếu để ô đó xẹp
+                       * theo thì ba nút còn lại dồn lên một bậc — dòng này
+                       * "In vé" nằm góc trái, dòng kia lại là "Đã bay", và tay
+                       * đang bấm nhanh thì bấm nhầm. Chừa ô trống 76px đắt hơn
+                       * một cú tích nhầm "đã bay".
+                       */}
+                      {done ? renderMoneyCell?.(b) : <span>{renderMoneyCell?.(b)}</span>}
+                      {done ? renderClosedQuick?.(b) : renderQuick?.(b)}
                       <button
                         type="button"
-                        title="Tất cả thao tác: xuất vé · đã bay · bay không vé · sửa thu · bảo hiểm · dời lịch"
+                        title="Các chức năng còn lại: bay không vé · sửa thu · dời lịch · huỷ · khoá · bảo hiểm"
                         onClick={() => setStrip((x) => (x?.id === b.id ? null : { id: b.id, what: "more" }))}
                         className={
                           "h-5 rounded border px-1 text-[10px] font-bold " +
                           (strip?.id === b.id ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
                         }
                       >
-                        ⋯
+                        ⋯ Thêm
                       </button>
                     </div>
                   </td>
@@ -486,7 +509,7 @@ export function BookingSheet({
                       <span className="mr-1 text-[11px] font-bold text-sky-900">
                         #{b.daySeq || "?"} {b.contactName || b.phone || "khách"}
                       </span>
-                      {b.status !== "open" ? renderClosedQuick?.(b) : renderQuick?.(b)}
+                      {/* Nút nhanh đã nằm ngoài dòng rồi — ở đây chỉ còn phần "thêm" */}
                       {renderInsurance && (
                         <button
                           type="button"
