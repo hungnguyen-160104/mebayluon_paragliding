@@ -3692,14 +3692,23 @@ function BookingDayTable({
                              */
                             "grid w-[168px] grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center"
                           : /**
-                             * ĐÃ BAY / HUỶ: chỉ còn 2–3 nút, và HẸP BẰNG NỬA.
+                             * ĐÃ BAY / HUỶ: nút NHỎ BẰNG NỬA dòng chưa bay.
                              *
-                             * Xếp cột mà để nút giãn hết bề ngang thì chúng nở
-                             * theo cột (cột rộng bằng dòng "chưa bay" rộng nhất)
-                             * — ba cái nút to đùng cho một dòng đã xong việc,
-                             * lấn chỗ của những dòng còn phải làm.
+                             * Dòng đã xong việc thì nút chỉ còn để hoàn tác —
+                             * hiếm khi bấm. Để nguyên cỡ như dòng đang làm thì
+                             * mắt cứ bị kéo về những dòng chẳng cần nhìn nữa.
+                             *
+                             * Bóp cả BA CHIỀU chứ không riêng bề ngang: rộng
+                             * 84px → 76px, cao 24px → 20px, chữ 11px → 10px.
+                             * Chỉ hẹp bề ngang mà nút vẫn cao bằng cũ thì hàng
+                             * không thấp đi và nhìn vẫn nặng như trước.
+                             *
+                             * Dấu `!` là cần: bộ class chung ở ngoài
+                             * (`[&_button]:h-6`) cùng độ ưu tiên, không có `!`
+                             * thì cái nào đứng sau trong tệp CSS thắng — tức là
+                             * hên xui theo thứ tự Tailwind sinh ra.
                              */
-                            "flex w-[84px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center")
+                            "flex w-[76px] flex-col items-stretch [&_button]:!h-5 [&_button]:!text-[10px] [&_button]:justify-center [&_button]:text-center")
                       }
                     >
                       {b.status === "open" ? renderQuick?.(b) : renderClosedQuick?.(b)}
