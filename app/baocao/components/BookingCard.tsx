@@ -3851,7 +3851,7 @@ function BookingDayTable({
                          * lên một chút nhưng chữ nằm gọn trong hộp, và không
                          * phải cắt cụt nhãn (nhãn nút mà cắt thì bấm bằng đoán).
                          */
-                        "gap-1 [&_button]:min-h-6 [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden [&_button]:px-1 [&_button]:py-0.5 [&_button]:text-[11px] [&_button]:leading-tight " +
+                        "gap-1 [&_button]:min-h-6 [&_button]:!flex-col [&_button]:!gap-0 [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden [&_button]:px-1 [&_button]:py-0.5 [&_button]:text-[11px] [&_button]:leading-tight " +
                         (b.status === "open"
                           ? /**
                              * CHƯA BAY: LƯỚI HAI CỘT, không phải flex-wrap.

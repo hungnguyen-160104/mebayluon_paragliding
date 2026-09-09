@@ -88,7 +88,6 @@ const DAU = (thang: boolean): SheetCol[] => [
 const CUOI: SheetCol[] = [
   { key: "phone", label: "SĐT", edit: "phone", kind: "text", w: 88, g1: "SỔ BOOKING" },
   { key: "pickupNote", label: "Điểm đón", edit: "pickupNote", kind: "text", w: 120, wrap: true },
-  { key: "expectedTime", label: "Giờ", edit: "expectedTime", kind: "time", w: 44, title: "Giờ đón" },
   { key: "status", label: "T.thái", edit: "status", kind: "status", w: 70, title: "Trạng thái: chờ bay / đã bay / đã huỷ" },
   { key: "note", label: "Ghi chú", edit: "note", kind: "text", w: 150, wrap: true },
   { key: "contactNote", label: "GC gọi", edit: "contactNote", kind: "text", w: 130, wrap: true, title: "Ghi chú gọi khách" },
@@ -109,6 +108,12 @@ function cotSapa(dests: SheetDest[], thang: boolean, keToan: boolean): SheetCol[
     { key: "bookingCode", label: "Số book", edit: "bookingCode", kind: "text", w: 108, title: "Số booking — nút 📄 mở bảng kê chi tiết" },
     { key: "guestNames", label: "TÊN ĐĂNG KÝ", edit: "guestNames", kind: "names", w: 160, wrap: true, title: "Mỗi khách một dòng" },
     { key: "guestCount", label: "SL", edit: "guestCount", kind: "num", w: 34, right: true, title: "SL MCC — số khách" },
+    /**
+     * GIỜ BAY đứng ngay cạnh thông tin khách, không nằm tít cuối sau ba mươi
+     * cột tiền. Điều phối xếp lịch cả ngày phải liếc được giờ cùng lúc với tên
+     * và số người — cuộn sang phải rồi cuộn về là mất mạch.
+     */
+    { key: "expectedTime", label: "Giờ bay", edit: "expectedTime", kind: "time", w: 52, title: "Giờ khách muốn bay (Sa Pa: cũng là giờ hẹn đón)" },
 
     { key: "unitPrice", label: "Đơn giá", edit: "unitPrice", kind: "money", w: 78, right: true, g1: "THÔNG TIN VÉ" },
     { key: "lineAmount", label: "Thành tiền", kind: "money", w: 82, right: true, g1: "THÔNG TIN VÉ" },
@@ -176,6 +181,8 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
           { key: "guestCount", label: "SL", kind: "num", w: 32, right: true, title: "Tổng khách — máy cộng PG + PPG" },
         ] as SheetCol[])
       : ([{ key: "guestCount", label: "SL", edit: "guestCount", kind: "num", w: 34, right: true, title: "Số khách" }] as SheetCol[])),
+    /** Giờ bay đứng cạnh thông tin khách — xem chú thích ở bố cục Sa Pa. */
+    { key: "expectedTime", label: "Giờ bay", edit: "expectedTime", kind: "time", w: 52, title: "Giờ khách muốn bay" },
 
     /**
      * KHAU PHẠ: ĐƠN GIÁ PG VÀ PPG LÀ HAI Ô RIÊNG, vì hai loại khác giá nhau và

@@ -32,6 +32,7 @@ import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole 
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
 import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
+import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { clearQueueNoOnWeb, pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { buildShiftEmail } from "@/lib/baobay/shift-email";
 import {
@@ -4116,7 +4117,46 @@ function assertBookingTime(flightDate: string, expectedTime: string) {
  * giờ cấp lại — kể cả khách huỷ, số của họ vẫn đứng đó, nên lấy max chứ không
  * đếm số dòng.
  */
-export async function nextDaySeq(spot: string, flightDate: string): Promise<number> {
+/**
+ * SỐ LỚN NHẤT CỦA NGÀY + 1 — không đụng tới kho số trống.
+ *
+ * Có bộ đếm nguyên tử theo (điểm, ngày) chống trùng khi hai người bấm CÙNG LÚC
+ * (đã bắt được 3 cặp trùng thật 30/08–01/09: hai lượt "max+1" đọc cùng một max).
+ */
+async function topDaySeq(spot: string, flightDate: string): Promise<number> {
+  const top = await BaobayBooking.findOne({ spot, flightDate }).sort({ daySeq: -1 }).select("daySeq").lean<any>();
+  const seed = (Number(top?.daySeq) || 0) + 1;
+  try {
+    const doc = await mongoose.connection
+      .collection("baobaydayseqs")
+      .findOneAndUpdate(
+        { _id: `${spot}|${flightDate}` as unknown as mongoose.Types.ObjectId },
+        [{ $set: { seq: { $max: [{ $add: [{ $ifNull: ["$seq", 0] }, 1] }, seed] } } }],
+        { upsert: true, returnDocument: "after" },
+      );
+    const seq = Number((doc as unknown as { seq?: number } | null)?.seq);
+    if (Number.isFinite(seq) && seq >= seed) return seq;
+  } catch (err) {
+    console.error("topDaySeq counter failed, dùng max+1:", err);
+  }
+  return seed;
+}
+
+export async function nextDaySeq(
+  spot: string,
+  flightDate: string,
+  opts: { reuse?: boolean } = {},
+): Promise<number> {
+  /**
+   * KHÔNG LẤY SỐ TRỐNG khi người ta bấm "+ Thêm hàng" ở cuối lưới.
+   *
+   * Kho số trống có ích cho booking nhập bình thường (sổ không nhảy số). Nhưng
+   * ở lưới thì SỐ CHÍNH LÀ THỨ TỰ HIỆN RA: cấp lại số 3 cho hàng vừa thêm là nó
+   * nhảy lên giữa sổ, người vừa bấm nhìn xuống cuối không thấy đâu và bấm thêm
+   * lần nữa. Hàng thêm tay luôn lấy số lớn nhất + 1 để nằm đúng cuối.
+   */
+  if (opts.reuse === false) return topDaySeq(spot, flightDate);
+
   /**
    * KHO SỐ TRỐNG (luật chủ 04/09): booking bị bỏ khỏi sổ / dời đi / đổi ngày
    * bay thì TRẢ SỐ về kho — booking mới của đúng ngày đó nhận lại số ấy để sổ
@@ -6853,54 +6893,109 @@ export async function updateSapaBookCell(
 export async function createBlankBookingRow(
   session: BaobaySession,
   spotRaw: string,
-  input: { flightDate: string },
-): Promise<{ booking: BookingDTO }> {
+  input: { flightDate: string; quick?: string },
+): Promise<{ booking: BookingDTO; hieu?: string; conLai?: string }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
-  if (!isDateKey(input.flightDate)) throw new BaobayError("Ngày bay không hợp lệ", 400);
+
+  /**
+   * NHẬP NHANH: dán một dòng, máy bóc ra điền sẵn.
+   *
+   *   "18.8 nguyễn trang 0956778444 2k 8h00 đón bluehome 2xflycam cọc 300k"
+   *
+   * Bóc Ở MÁY CHỦ chứ không ở trình duyệt: cùng một bộ luật với ô nhập nhanh
+   * của form, và quan trọng hơn — tạo xong là bản ghi ĐÃ CÓ ĐỦ SỐ, không phải
+   * gửi thêm chục lượt sửa từng ô (mất mạng giữa chừng là hàng dở dang).
+   *
+   * Máy KHÔNG đoán bừa: cụm nào không hiểu thì trả lại trong `conLai` để người
+   * nhập tự nhìn, chứ không nhét đại vào ghi chú.
+   */
+  const q = input.quick?.trim() ? parseQuickBooking(input.quick, todayInVN()) : null;
+  const flightDate = q?.flightDate && isDateKey(q.flightDate) ? q.flightDate : input.flightDate;
+  if (!isDateKey(flightDate)) throw new BaobayError("Ngày bay không hợp lệ", 400);
   /** Ngày kế toán đã chốt thì không ai thêm khách vào nữa. */
-  await assertDayOpen(spot, input.flightDate);
+  await assertDayOpen(spot, flightDate);
+  input = { ...input, flightDate };
 
   const kind = defaultFlightKind(spot);
+  /** Số khách: ưu tiên tổng, không có thì cộng PG + PPG máy bóc ra. */
+  const khach = Math.max(0, q?.guestCount ?? (q?.pgCount ?? 0) + (q?.ppgCount ?? 0));
+  const don = flightUnitPrice(kind, flightDate, spot);
+  const combo = comboDiscount(q?.flycam ?? 0, q?.video360 ?? 0, spot);
+  const tong = bookingTotal({
+    spot,
+    createdAt: new Date(),
+    unitPrice: don,
+    guestCount: khach,
+    ppgGuests: Math.min(q?.ppgCount ?? 0, khach),
+    ppgUnitPrice: flightUnitPrice("ppg", flightDate, spot),
+    flycam: q?.flycam ?? 0,
+    video360: q?.video360 ?? 0,
+    redFlag: q?.redFlag ?? 0,
+    sunset: q?.sunset ?? 0,
+    flagFlight: q?.flagFlight ?? 0,
+    mountainCar: q?.mountainCar ?? 0,
+    discount: q?.discount ?? 0,
+    comboDiscount: combo,
+  });
+  /** Câu tóm tắt "máy hiểu gì" — người nhập soát bằng mắt trước khi gõ tiếp. */
+  const hieu = [
+    q?.flightDate ? `ngày ${formatDateKeyVN(flightDate)}` : "",
+    q?.contactName ?? "",
+    q?.phone ?? "",
+    khach ? `${khach} khách` : "",
+    q?.expectedTime ? `${q.expectedTime}` : "",
+    q?.pickupNote ? `đón ${q.pickupNote}` : "",
+    q?.flycam ? `${q.flycam}×flycam` : "",
+    q?.video360 ? `${q.video360}×360` : "",
+    q?.deposit ? `cọc ${q.deposit.toLocaleString("vi-VN")}` : "",
+  ];
+
   const created = (
     await BaobayBooking.create({
       spot,
       flightDate: input.flightDate,
-      daySeq: await nextDaySeq(spot, input.flightDate),
+      /** Hàng thêm tay luôn nằm CUỐI sổ ngày — xem chú thích ở nextDaySeq. */
+      daySeq: await nextDaySeq(spot, input.flightDate, { reuse: false }),
       createdByUsername: session.username,
       createdByName: session.name,
-      source: "",
-      contactName: "",
-      phone: "",
+      source: q?.source ?? "",
+      contactName: q?.contactName ?? "",
+      phone: q?.phone ?? "",
       bookingCode: "",
-      guestCount: 0,
+      guestCount: khach,
       flightKind: kind,
-      ppgGuests: 0,
-      flycam: 0,
-      video360: 0,
-      redFlag: 0,
-      sunset: 0,
-      flagFlight: 0,
-      mountainCar: 0,
+      ppgGuests: Math.min(q?.ppgCount ?? 0, khach),
+      flycam: Math.min(q?.flycam ?? 0, khach || (q?.flycam ?? 0)),
+      video360: Math.min(q?.video360 ?? 0, khach || (q?.video360 ?? 0)),
+      redFlag: Math.min(q?.redFlag ?? 0, khach || (q?.redFlag ?? 0)),
+      sunset: Math.min(q?.sunset ?? 0, khach || (q?.sunset ?? 0)),
+      flagFlight: Math.min(q?.flagFlight ?? 0, khach || (q?.flagFlight ?? 0)),
+      mountainCar: Math.min(q?.mountainCar ?? 0, khach || (q?.mountainCar ?? 0)),
       /** Đơn giá điền sẵn theo bảng giá của điểm — gõ đè được như mọi ô khác. */
-      unitPrice: flightUnitPrice(kind, input.flightDate, spot),
-      discount: 0,
-      comboDiscount: 0,
+      unitPrice: don,
+      ppgUnitPrice: 0,
+      discount: q?.discount ?? 0,
+      comboDiscount: combo,
       pickupFee: 0,
-      totalAmount: 0,
-      deposit: 0,
-      remaining: 0,
+      totalAmount: tong,
+      deposit: q?.deposit ?? 0,
+      remaining: Math.max(0, tong - (q?.deposit ?? 0)),
       agencyPaidAmount: 0,
-      pickup: spot === "sapa" ? "other" : "self",
-      pickupNote: "",
-      expectedTime: "",
+      pickup: spot === "sapa" ? "other" : (q?.pickup ?? "self"),
+      pickupNote: q?.pickupNote ?? "",
+      expectedTime: q?.expectedTime ?? "",
       transferCode: "",
       note: "",
       status: "open",
     })
   ).toObject();
 
-  return { booking: toBookingDTO(created) };
+  return {
+    booking: toBookingDTO(created),
+    hieu: q ? hieu.filter(Boolean).join(" · ") : undefined,
+    conLai: q?.leftover?.trim() || undefined,
+  };
 }
 
 export async function createSapaBookRow(
@@ -6916,7 +7011,8 @@ export async function createSapaBookRow(
     await BaobayBooking.create({
       spot,
       flightDate: input.flightDate,
-      daySeq: await nextDaySeq(spot, input.flightDate),
+      /** Hàng thêm tay luôn nằm CUỐI sổ ngày — xem chú thích ở nextDaySeq. */
+      daySeq: await nextDaySeq(spot, input.flightDate, { reuse: false }),
       createdByUsername: session.username,
       createdByName: session.name,
       source: "",

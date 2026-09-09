@@ -30,7 +30,13 @@ export async function POST(req: Request) {
   if (!body?.flightDate) return NextResponse.json({ message: "Thiếu ngày bay" }, { status: 400 });
 
   try {
-    return NextResponse.json(await createBlankBookingRow(auth, spot, { flightDate: String(body.flightDate) }));
+    return NextResponse.json(
+      await createBlankBookingRow(auth, spot, {
+        flightDate: String(body.flightDate),
+        /** Dòng nhập nhanh (nếu có) — máy chủ tự bóc, xem createBlankBookingRow. */
+        quick: typeof body.quick === "string" ? body.quick : undefined,
+      }),
+    );
   } catch (err) {
     if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });
     console.error("POST /api/baocao/booking/blank error:", err);

@@ -179,6 +179,8 @@ export function BookingSheet({
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [quick, setQuick] = useState("");
+  const [quickMsg, setQuickMsg] = useState<string | null>(null);
   const [strip, setStrip] = useState<{ id: string; what: "more" | "bh" } | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null);
 
@@ -258,12 +260,29 @@ export function BookingSheet({
     [rows, cols, spot, onSaved],
   );
 
-  /** THÊM HÀNG — dựng ngay một booking trống của ngày này rồi gõ tiếp vào nó. */
-  async function addRow() {
+  /**
+   * THÊM HÀNG — dựng ngay một booking của ngày này rồi gõ tiếp vào nó.
+   *
+   * Có dòng NHẬP NHANH thì gửi kèm, máy chủ bóc ra điền sẵn (cùng bộ luật với
+   * ô nhập nhanh của form). Bóc ở máy chủ nên tạo xong là bản ghi ĐÃ ĐỦ SỐ,
+   * không phải gửi thêm chục lượt sửa từng ô.
+   */
+  async function addRow(text = "") {
     setAdding(true);
     setError(null);
+    setQuickMsg(null);
     try {
-      await apiPost(`/api/baocao/booking/blank?spot=${spot}`, { flightDate: date });
+      const r = await apiPost<{ hieu?: string; conLai?: string }>(`/api/baocao/booking/blank?spot=${spot}`, {
+        flightDate: date,
+        quick: text || undefined,
+      });
+      if (text) {
+        setQuick("");
+        setQuickMsg(
+          (r.hieu ? `Đã điền: ${r.hieu}` : "Chưa bóc được gì — gõ thẳng vào ô bên dưới") +
+            (r.conLai ? ` · máy KHÔNG hiểu: "${r.conLai}" — kiểm lại` : ""),
+        );
+      }
       onAdded();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Không thêm được hàng");
@@ -326,6 +345,41 @@ export function BookingSheet({
           <button type="button" onClick={() => setError(null)} className="ml-2 underline">
             bỏ qua
           </button>
+        </div>
+      )}
+
+      {/**
+       * NHẬP NHANH — dán một dòng, máy bóc ra thành một hàng đã điền sẵn.
+       *
+       * Ở lưới thì đây là lối nhập nhanh nhất: người trực nghe điện thoại, gõ
+       * một hơi rồi Enter, xong quay lại soát từng ô. Bắt gõ từng ô ngay từ đầu
+       * là vừa nghe vừa nhảy chuột qua mười cột.
+       */}
+      {canEdit && (
+        <div className="rounded-lg border border-violet-200 bg-violet-50/60 p-1.5">
+          <div className="flex gap-1.5">
+            <input
+              value={quick}
+              onChange={(e) => setQuick(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && quick.trim()) {
+                  e.preventDefault();
+                  void addRow(quick.trim());
+                }
+              }}
+              placeholder="⚡ Nhập nhanh rồi Enter: nguyễn trang 0956778444 2k 8h00 đón bluehome 2xflycam cọc 300k"
+              className="h-8 flex-1 rounded-lg border border-violet-300 bg-white px-2 text-xs outline-none focus:border-violet-500"
+            />
+            <button
+              type="button"
+              disabled={!quick.trim() || adding}
+              onClick={() => void addRow(quick.trim())}
+              className="h-8 shrink-0 rounded-lg bg-violet-600 px-2 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {adding ? "Đang thêm…" : "Thêm hàng"}
+            </button>
+          </div>
+          {quickMsg && <p className="mt-1 text-[11px] leading-tight text-violet-900">{quickMsg}</p>}
         </div>
       )}
 
@@ -566,22 +620,32 @@ export function BookingSheet({
                          * cắt cụt bằng `truncate`: nhãn nút mà cụt thì người ta
                          * bấm bằng đoán.
                          */
-                        "gap-0.5 [&_button]:!h-auto [&_button]:!min-h-5 [&_button]:!px-1 [&_button]:!py-0.5 [&_button]:!text-[9px] [&_button]:!leading-tight [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden " +
+                        /**
+                         * `!flex-col` là mấu chốt để "đã xuất vé" / "by M.Hoàn"
+                         * XUỐNG DÒNG được.
+                         *
+                         * Nút vốn là `inline-flex`, nên đặt `block` cho phần
+                         * "by …" cũng vô ích: nó thành một Ô FLEX nằm CẠNH chữ
+                         * chính, không phải dòng dưới. Phải đổi chính cái nút
+                         * sang xếp DỌC thì hai phần mới chồng lên nhau.
+                         * `!gap-0` để hai dòng sát nhau, đừng hở như hai nút rời.
+                         */
+                        "gap-0.5 [&_button]:!h-auto [&_button]:!min-h-5 [&_button]:!flex-col [&_button]:!gap-0 [&_button]:!px-1 [&_button]:!py-0.5 [&_button]:!text-[9px] [&_button]:!leading-tight [&_button]:whitespace-normal [&_button]:break-words [&_button]:overflow-hidden " +
                         (done
                           ? "flex w-[76px] flex-col items-stretch [&_button]:justify-center [&_button]:text-center"
                           : "grid grid-cols-2 items-start [&_button]:w-full [&_button]:justify-center [&_button]:text-center")
                       }
                     >
                       {/**
-                       * Ô THU TIỀN luôn CHIẾM CHỖ dù không có nút.
+                       * KHÔNG chừa ô trống khi booking đã thu đủ.
                        *
-                       * Booking thu đủ rồi thì nút biến mất; nếu để ô đó xẹp
-                       * theo thì ba nút còn lại dồn lên một bậc — dòng này
-                       * "In vé" nằm góc trái, dòng kia lại là "Đã bay", và tay
-                       * đang bấm nhanh thì bấm nhầm. Chừa ô trống 76px đắt hơn
-                       * một cú tích nhầm "đã bay".
+                       * Bản trước giữ một ô rỗng cho nút Thu tiền để vị trí các
+                       * nút không xê dịch. Nhưng lưới hai cột: bốn nút thật mà
+                       * thêm một ô rỗng là thành năm ô, tức BA HÀNG với một góc
+                       * trống — dòng cao thêm một bậc chỉ để giữ chỗ. Bỏ đi thì
+                       * bốn nút xếp cân hai hàng, năm nút mới thành ba hàng.
                        */}
-                      {done ? renderMoneyCell?.(b) : <span>{renderMoneyCell?.(b)}</span>}
+                      {renderMoneyCell?.(b)}
                       {done ? renderClosedQuick?.(b) : renderQuick?.(b)}
                       <button
                         type="button"
