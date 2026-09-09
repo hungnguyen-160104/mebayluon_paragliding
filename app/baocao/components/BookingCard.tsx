@@ -3546,6 +3546,7 @@ function SortTh({
 }
 
 function BookingDayTable({
+  spot,
   open,
   closed,
   movedOut,
@@ -3558,6 +3559,12 @@ function BookingDayTable({
   renderSourceExtra,
   tall = false,
 }: {
+  /**
+   * Điểm bay đang xem — quyết định có cột "Loại" hay không. Chỉ KHAU PHẠ bán
+   * lẫn PG và PPG trong một booking; Sa Pa và Hà Nội chỉ bay PG nên cột đó
+   * toàn một chữ "PG", chiếm chỗ mà không nói gì.
+   */
+  spot: string;
   open: BookingDTO[];
   closed: BookingDTO[];
   movedOut: BookingDTO[];
@@ -3583,6 +3590,10 @@ function BookingDayTable({
   tall?: boolean;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
+  /** Cột "Loại" (PG/PPG) chỉ có ở Khau Phạ — xem chú thích prop `spot`. */
+  const coCotLoai = spot === "khau-pha";
+  /** Tổng số cột của bảng — dòng xổ ngang phải trùm đúng bấy nhiêu, thiếu là lệch. */
+  const soCot = coCotLoai ? 13 : 12;
   /**
    * Ô đầu cột "Thao tác" và "BH" — dòng xổ (⋯ Thêm, bảo hiểm) lấy CỘT ĐÓ LÀM
    * TÂM (luật chủ 05/09) chứ không dồn trái cả bề ngang bảng. Đo vị trí đầu cột
@@ -3739,7 +3750,7 @@ function BookingDayTable({
               Thao tác
             </th>
             <SortTh col="guests" label="SL" right {...thProps} />
-            <SortTh col="kind" label="Loại" {...thProps} />
+            {coCotLoai && <SortTh col="kind" label="Loại" {...thProps} />}
             <SortTh col="sv" label="Dịch vụ" {...thProps} />
             <SortTh col="don" label="Đón" {...thProps} />
             <SortTh col="total" label="Tổng" right {...thProps} />
@@ -3913,6 +3924,7 @@ function BookingDayTable({
                     <div className="whitespace-nowrap text-[10px] font-semibold text-rose-600">huỷ {b.cancelledGuests}</div>
                   )}
                 </td>
+                {coCotLoai && (
                 <td className="border-b border-slate-100 px-2 py-1">
                   {ppgOf(b) > 0 ? (
                     <span className="rounded bg-indigo-600 px-1 text-[10px] font-bold text-white">
@@ -3922,6 +3934,7 @@ function BookingDayTable({
                     <span className="text-slate-500">{FLIGHT_KIND_SHORT[b.flightKind] || "PG"}</span>
                   )}
                 </td>
+                )}
                 <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🇻🇳 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
                   {dichVuView(b) ?? "—"}
                   {/* Dịch vụ THÊM/BỚT tại bãi (đã cộng vào số trên) — kể riêng kèm
@@ -4094,7 +4107,7 @@ function BookingDayTable({
               {expandedId === b.id && !r.moved && renderMore?.(b) != null && (
                 <tr>
                   {/* Tab xổ tô nền VÀNG NHẠT riêng — nhìn là biết dải chức năng của dòng nào */}
-                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50 px-0 py-2">
+                  <td colSpan={soCot} className="border-b-2 border-amber-300 bg-amber-50 px-0 py-2">
                     {/* Hộp 900px lấy cột Thao tác làm tâm, kẹp trong lòng bảng; dải dài hơn thì bẻ thành hai hàng */}
                     <div className="px-3 text-left" style={{ display: "flow-root", ...centerOn("actions", 900) }}>
                       {renderMore(b, () => setExpandedId(""))}
@@ -4105,7 +4118,7 @@ function BookingDayTable({
               {/* DÒNG BẢO HIỂM: mở thẳng từ cột BH — nhập hồ sơ + quét giấy tờ */}
               {insuranceId === b.id && !r.moved && renderInsurance?.(b) != null && (
                 <tr>
-                  <td colSpan={13} className="border-b-2 border-amber-300 bg-amber-50/40 px-0 py-2">
+                  <td colSpan={soCot} className="border-b-2 border-amber-300 bg-amber-50/40 px-0 py-2">
                     {/* Hộp đối xứng quanh cột BH → khung bảo hiểm có tâm đúng cột đó;
                         "✕ Đóng" đứng BÊN PHẢI thanh "Xem" (luật chủ 05/09) */}
                     <div
@@ -5588,6 +5601,7 @@ export function BookingTodayBanner({
         />
       ) : viewMode === "table" ? (
         <BookingDayTable
+          spot={spot}
           tall={fullScreen}
           open={open}
           closed={closed}
