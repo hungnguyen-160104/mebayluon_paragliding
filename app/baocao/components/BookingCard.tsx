@@ -3299,12 +3299,21 @@ function Nhan({
   tone,
   label,
   by,
+  big,
   title,
 }: {
   tone: "emerald" | "amber" | "orange" | "rose";
   label: string;
   /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
   by?: string;
+  /**
+   * CHỮ TO HƠN cho hai nhãn phải nhìn thấy từ xa: "đã bay" và "bay không vé".
+   *
+   * Hai cái này là kết luận của một chuyến — đã bay thì thôi không đụng nữa,
+   * còn bay không vé là chỗ phải soi. Mấy nhãn còn lại (xuất vé, đã huỷ, dời)
+   * chỉ để tra lại nên giữ 9px cho cột khỏi phình.
+   */
+  big?: boolean;
   title?: string;
 }) {
   const mau = {
@@ -3321,11 +3330,12 @@ function Nhan({
       {/**
        * MỖI PHẦN ĐÚNG MỘT DÒNG, cắt bớt nếu dài — chứ không cho tự bẻ dòng.
        *
-       * Cột đầu rộng 104px: vừa đủ "🎫 đã xuất vé" và "by Mai Hoàn 08:56" mỗi
-       * thứ một dòng. Để `break-words` thì tên dài đẩy nhãn thành bốn năm dòng
-       * và cả hàng cao vọt lên, sổ nhìn như bị xé. Chữ đầy đủ nằm ở tooltip.
+       * Cột đầu rộng 120px: vừa đủ "🎫✕ bay không vé" ở cỡ chữ to và
+       * "by Mai Hoàn 08:56" mỗi thứ một dòng. Để `break-words` thì tên dài đẩy
+       * nhãn thành bốn năm dòng và cả hàng cao vọt lên, sổ nhìn như bị xé.
+       * Chữ đầy đủ nằm ở tooltip.
        */}
-      <div className="truncate">{label}</div>
+      <div className={"truncate " + (big ? "text-[11px]" : "")}>{label}</div>
       {by ? <div className="truncate font-medium opacity-75">by {by}</div> : null}
     </div>
   );
@@ -3356,7 +3366,7 @@ function SortTh({
       onClick={() => onSort((s) => ({ col, dir: s.col === col ? ((s.dir * -1) as 1 | -1) : 1 }))}
       className={
         "cursor-pointer select-none whitespace-nowrap border-b border-slate-300 bg-slate-100 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-200 " +
-        (narrow ? "w-[104px] px-1.5 " : "px-2 ") +
+        (narrow ? "w-[120px] px-1.5 " : "px-2 ") +
         (right ? "text-right" : "text-left")
       }
       title="Bấm để xếp theo cột này — bấm lại để đảo chiều"
@@ -3595,10 +3605,10 @@ function BookingDayTable({
                  * LÚC NÀO ở dưới — vừa hẹp, vừa dễ đọc hơn vì mắt bắt cái nhãn
                  * trước rồi mới soi người bấm.
                  */}
-                <td className="w-[104px] max-w-[104px] border-b border-slate-100 px-1.5 py-1 tabular-nums">
+                <td className="w-[120px] max-w-[120px] border-b border-slate-100 px-1.5 py-1 tabular-nums">
                   <div className="font-bold text-rose-600">{b.daySeq || "?"}</div>
                   {b.status === "done" && (
-                    <Nhan tone="emerald" label="✈ đã bay" by={b.doneBy} />
+                    <Nhan tone="emerald" label="✈ đã bay" by={b.doneBy} big />
                   )}
                   {b.ticketIssued && (
                     <Nhan
@@ -3607,7 +3617,7 @@ function BookingDayTable({
                       by={[b.ticketIssuedBy, gioVe(b)].filter(Boolean).join(" ")}
                     />
                   )}
-                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={b.noTicketBy} />}
+                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={b.noTicketBy} big />}
                   {/* Trạng thái còn lại cũng nằm hết ở cột đầu (bỏ cột TT riêng — luật chủ 04/09) */}
                   {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={b.cancelledBy} />}
                   {r.moved && (
