@@ -6,6 +6,7 @@ export const hi: CommonTranslation = {
     home: "होम",
     about: "हमारे बारे में",
     spots: "उड़ान स्थल",
+    weather: "उड़ान का मौसम",
     ppg: "पैरामोटर (PPG)",
     pilots: "पायलट",
     homestay: "होमस्टे और कैफ़े",

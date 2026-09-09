@@ -32,8 +32,20 @@ export default function TrangThoiTiet() {
   /** Chấm kinh nghiệm là việc của người đứng điểm: điều phối và quản trị. */
   const laDieuPhoi = laQuanTri || wearsRole(user, "dispatcher") || wearsRole(user, "counter");
 
+  /**
+   * HIỆN MỌI ĐIỂM CÙNG LÚC, không bắt bấm chọn từng cái.
+   *
+   * Người kiêm nhiệm nhiều điểm (quản trị, kế toán, phi công bay cả hai nơi)
+   * cần so ngang: mai Khau Phạ gió to mà Sa Pa đẹp thì dồn khách sang Sa Pa.
+   * Bắt bấm qua lại là phải nhớ số của điểm vừa xem — nhớ sai thì điều nhầm.
+   *
+   * Điểm đang chọn (nút phía trên) xếp LÊN ĐẦU: đó là điểm người này làm hôm
+   * nay, mở trang ra phải thấy ngay, không phải cuộn tìm.
+   */
+  const dsDiem = spot ? [spot, ...options.filter((s) => s !== spot)] : options;
+
   return (
-    <Shell user={user} title="Thời tiết điểm bay" subtitle="Dự báo 5 ngày · gió, giật, mưa · sổ kinh nghiệm">
+    <Shell user={user} title="Thời tiết bay" subtitle="Dự báo 5 ngày · gió, giật, mưa · sổ kinh nghiệm">
       {options.length > 1 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {options.map((s) => (
@@ -45,6 +57,7 @@ export default function TrangThoiTiet() {
                 "rounded-lg border px-2 py-1 text-xs font-bold " +
                 (spot === s ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
               }
+              title="Đưa điểm này lên đầu trang"
             >
               {SPOTS.find((x) => x.id === s)?.name ?? s}
             </button>
@@ -52,8 +65,12 @@ export default function TrangThoiTiet() {
         </div>
       )}
 
-      {spot ? (
-        <ThoiTietCard spot={spot} homNay={todayInVN()} laQuanTri={laQuanTri} laDieuPhoi={laDieuPhoi} />
+      {dsDiem.length ? (
+        <div className="space-y-3">
+          {dsDiem.map((s) => (
+            <ThoiTietCard key={s} spot={s} homNay={todayInVN()} laQuanTri={laQuanTri} laDieuPhoi={laDieuPhoi} />
+          ))}
+        </div>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-500">
           Tài khoản chưa được chỉ định điểm bay nào.

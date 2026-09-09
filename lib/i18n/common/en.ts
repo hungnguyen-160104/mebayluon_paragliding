@@ -6,6 +6,7 @@ export const en: CommonTranslation = {
     home: "Home",
     about: "About Us",
     spots: "Flying Spots",
+    weather: "Flying Weather",
     ppg: "Paramotor (PPG)",
     pilots: "Pilots",
     homestay: "Homestay & Café",

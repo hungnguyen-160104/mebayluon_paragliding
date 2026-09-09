@@ -6,6 +6,7 @@ export const vi: CommonTranslation = {
     home: "Trang chủ",
     about: "Về chúng tôi",
     spots: "Điểm bay",
+    weather: "Thời tiết bay",
     ppg: "Dù máy (PPG)",
     pilots: "Phi công",
     homestay: "Homestay & Café",

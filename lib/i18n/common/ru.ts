@@ -7,6 +7,7 @@ export const ru: CommonTranslation = {
     home: "Главная",
     about: "О нас",
     spots: "Локации",
+    weather: "Погода для полётов",
     ppg: "Парамотор",
     pilots: "Пилоты",
     homestay: "Homestay & Café",

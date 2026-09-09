@@ -6,6 +6,7 @@ export const fr: CommonTranslation = {
     home: "Accueil",
     about: "À propos",
     spots: "Sites de vol",
+    weather: "Météo de vol",
     ppg: "Paramoteur (PPG)",
     pilots: "Pilotes",
     homestay: "Homestay & Café",

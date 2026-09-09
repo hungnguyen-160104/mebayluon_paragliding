@@ -9,6 +9,8 @@ import Link from "next/link";
 import { Mountain, Clock, Feather } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/language-context";
+import { SpotWeatherWidget } from "@/components/weather/SpotWeather";
+import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { bookingHrefForSpot } from "@/lib/booking/spot-to-location";
 import { ShareButtons } from "@/components/share-buttons";
 import { Footer } from "@/components/footer";
@@ -3913,6 +3915,22 @@ export function SpotDetailClient({
           </div>
         </div>
       </section>
+
+      {/**
+       * THỜI TIẾT BAY của chính điểm này — 5 ngày tới.
+       *
+       * Đặt ngay trước phần bài viết, tức sau khi khách đã xem ảnh, giá và
+       * lịch trình: đúng lúc câu hỏi "thế hôm ấy có bay được không" nảy ra.
+       * Điểm nào chưa có toạ độ trong danh sách thì khối tự ẩn, không để lại
+       * hộp trống giữa trang.
+       */}
+      {spotSlug && diemThoiTietTheoSlug(spotSlug) && (
+        <section className="relative z-10 py-10">
+          <div className="container mx-auto max-w-4xl px-4">
+            <SpotWeatherWidget slug={spotSlug} />
+          </div>
+        </section>
+      )}
 
       {/* Bài viết về điểm bay (server render, truyền qua slot) */}
       {articlesSlot}

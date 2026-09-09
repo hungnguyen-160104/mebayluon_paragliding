@@ -65,7 +65,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
    * của điều phối: quầy vé phải biết để dừng bán, phi công để khỏi lên đèo sớm.
    * Kế toán và các vai ngồi văn phòng thì không cần — họ không quyết bay hay nghỉ.
    */
-  const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết" }];
+  const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết bay" }];
   switch (role) {
     case "pilot":
       return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...troi];

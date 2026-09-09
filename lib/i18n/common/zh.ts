@@ -6,6 +6,7 @@ export const zh: CommonTranslation = {
     home: "首页",
     about: "关于我们",
     spots: "飞行点",
+    weather: "飞行天气",
     ppg: "动力伞 (PPG)",
     pilots: "飞行员",
     homestay: "民宿与咖啡馆",

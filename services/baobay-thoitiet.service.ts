@@ -183,6 +183,21 @@ export async function duBaoDiemBay(
     return { spot: key, toaDo, nguong, ngay: cu.du, moHinh: cu.moHinh, layLuc: new Date(cu.luc).toISOString() };
   }
 
+  const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong);
+  CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
+  return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+}
+
+/**
+ * Lấy số về rồi chấm màu — phần ruột dùng chung cho sổ nội bộ lẫn trang khách.
+ * Tách ra vì hai đường chỉ khác nhau ở chỗ LẤY CẤU HÌNH TỪ ĐÂU, còn cách gọi
+ * mô hình và cách chấm màu thì phải y hệt, không được lệch một luật nào.
+ */
+async function layVaCham(
+  toaDo: ToaDoDiemBay,
+  soNgay: number,
+  nguong: NguongBay,
+): Promise<{ ngay: NgayThoiTiet[]; moHinh: string }> {
   let raw: any;
   let moHinh = "ECMWF IFS (Open-Meteo)";
   const khoaWindy = process.env.WINDY_API_KEY?.trim();
@@ -225,8 +240,66 @@ export async function duBaoDiemBay(
   }
 
   const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio)).slice(0, soNgay);
+  return { ngay, moHinh };
+}
+
+/* ------------------------------------------------------------------ */
+/* Dự báo cho WEBSITE KHÁCH                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Dự báo một điểm bay trên trang khách.
+ *
+ * Điểm nào có sổ nội bộ thì mượn NGUYÊN cấu hình của sổ ấy — toạ độ chủ đã
+ * chỉnh đúng bãi cất cánh, và nhất là NGƯỠNG GIÓ đã học từ những ngày chủ chấm
+ * bay hay nghỉ. Nhờ vậy màu khách nhìn thấy trên web đúng bằng màu người trong
+ * nhà nhìn, không phải hai thước đo khác nhau cho cùng một ngọn núi.
+ *
+ * Điểm chưa có sổ (Sơn Trà, Hà Giang, Trạm Tấu…) thì dùng toạ độ trong danh
+ * sách và ngưỡng khởi điểm của bay đôi.
+ */
+export async function duBaoDiemCongKhai(diem: {
+  slug: string;
+  ten: string;
+  tinh: string;
+  lat: number;
+  lon: number;
+  spotNoiBo?: SpotId;
+}): Promise<{
+  slug: string;
+  ten: string;
+  tinh: string;
+  toaDo: ToaDoDiemBay;
+  nguong: NguongBay;
+  ngay: NgayThoiTiet[];
+  moHinh: string;
+  layLuc: string;
+}> {
+  if (diem.spotNoiBo) {
+    const du = await duBaoDiemBay(diem.spotNoiBo);
+    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du };
+  }
+
+  const toaDo: ToaDoDiemBay = { lat: diem.lat, lon: diem.lon, ten: diem.ten };
+  const nguong = nguongCuaDiem(null);
+  const cacheKey = `web:${diem.slug}:${diem.lat},${diem.lon}`;
+  const cu = CACHE.get(cacheKey);
+  if (cu && Date.now() - cu.luc < CACHE_MS) {
+    return {
+      slug: diem.slug,
+      ten: diem.ten,
+      tinh: diem.tinh,
+      toaDo,
+      nguong,
+      ngay: cu.du,
+      moHinh: cu.moHinh,
+      layLuc: new Date(cu.luc).toISOString(),
+    };
+  }
+
+  const { ngay, moHinh } = await layVaCham(toaDo, 5, nguong);
   CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
-  return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+  return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
 }
 
 /* ================================================================== */

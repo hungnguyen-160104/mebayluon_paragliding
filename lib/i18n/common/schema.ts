@@ -18,6 +18,8 @@ export type CommonTranslation = {
     home: string;
     about: string;
     spots: string;
+    /** Mục "Thời tiết bay" — trang /thoi-tiet-bay, dự báo 5 ngày mọi điểm bay. */
+    weather: string;
     ppg: string;
     pilots: string;
     homestay: string;
