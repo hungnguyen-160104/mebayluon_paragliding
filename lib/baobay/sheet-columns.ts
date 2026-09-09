@@ -104,11 +104,21 @@ const DAU = (thang: boolean): SheetCol[] => [
   { key: "flightDate", label: "Ngày", kind: "text", w: 50, title: "Ngày bay — dời lịch bằng nút Dời ở cột thao tác" },
 ];
 
-/** Cột riêng của app, xếp cuối — bảng tính không có nhưng sổ booking cần. */
-const CUOI: SheetCol[] = [
+/**
+ * Cột riêng của app, xếp cuối — bảng tính không có nhưng sổ booking cần.
+ *
+ * Cột T.THÁI CHỈ CÓ Ở LƯỚI THÁNG: bên đó không có cột thao tác nên ô chọn
+ * chờ bay / đã bay / đã huỷ là cách duy nhất đổi trạng thái. Sổ ngày thì đã có
+ * nút Đã bay · Huỷ ở cột thao tác, còn trạng thái hiện thành nhãn ngay trong ô
+ * mã booking ("⏳ chờ bay", "✈ đã bay by …") — thêm một cột nữa là nói hai lần
+ * cùng một điều, tốn 70px cho mỗi dòng.
+ */
+const CUOI = (thang: boolean): SheetCol[] => [
   { key: "phone", label: "SĐT", edit: "phone", kind: "text", w: 88, g1: "SỔ BOOKING" },
   { key: "pickupNote", label: "Điểm đón", edit: "pickupNote", kind: "text", w: 120, wrap: true },
-  { key: "status", label: "T.thái", edit: "status", kind: "status", w: 70, title: "Trạng thái: chờ bay / đã bay / đã huỷ" },
+  ...(thang
+    ? [{ key: "status", label: "T.thái", edit: "status", kind: "status" as const, w: 70, title: "Trạng thái: chờ bay / đã bay / đã huỷ" }]
+    : []),
   { key: "note", label: "Ghi chú", edit: "note", kind: "text", w: 150, wrap: true },
   { key: "contactNote", label: "GC gọi", edit: "contactNote", kind: "text", w: 130, wrap: true, title: "Ghi chú gọi khách" },
 ];
@@ -179,7 +189,7 @@ function cotSapa(dests: SheetDest[], thang: boolean, keToan: boolean): SheetCol[
         ] as SheetCol[])
       : []),
 
-    ...CUOI,
+    ...CUOI(thang),
   ];
 }
 
@@ -250,7 +260,7 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
     { key: "remaining", label: "Còn thu", kind: "money", w: 78, right: true, g1: "CỌC VÀ THU" },
     { key: "commission", label: "C.khấu", edit: "commission", kind: "money", w: 72, right: true, g1: "CỌC VÀ THU", title: "Chiết khấu đại lý" },
 
-    ...CUOI,
+    ...CUOI(thang),
   ];
 }
 

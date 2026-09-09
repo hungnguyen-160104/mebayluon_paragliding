@@ -142,6 +142,13 @@ function gioXuatVe(b: BookingDTO): string {
 function NhanTrangThai({ b }: { b: BookingDTO }) {
   return (
     <>
+      {/**
+       * "CHỜ BAY" cũng là một nhãn — lưới Sheet đã bỏ cột T.thái, nên dòng
+       * chưa bay mà ô mã booking trống trơn thì không biết là chờ hay là máy
+       * chưa vẽ xong. Chữ xám, không to: đây là trạng thái mặc định của mọi
+       * dòng, không phải mốc đáng chú ý như đã bay / bay không vé.
+       */}
+      {b.status === "open" && <Nhan tone="slate" label="⏳ chờ bay" />}
       {b.status === "done" && <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big />}
       {b.ticketIssued && (
         <Nhan tone="amber" label="🎫 đã xuất vé" by={[shortName(b.ticketIssuedBy ?? ""), gioXuatVe(b)].filter(Boolean).join(" ")} big />
@@ -3491,7 +3498,7 @@ function Nhan({
   big,
   title,
 }: {
-  tone: "emerald" | "amber" | "orange" | "rose";
+  tone: "emerald" | "amber" | "orange" | "rose" | "slate";
   label: string;
   /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
   by?: string;
@@ -3514,6 +3521,7 @@ function Nhan({
     amber: "bg-amber-100 text-amber-800",
     orange: "bg-orange-100 text-orange-900",
     rose: "bg-rose-100 text-rose-700",
+    slate: "bg-slate-100 text-slate-600",
   }[tone];
   return (
     <div
