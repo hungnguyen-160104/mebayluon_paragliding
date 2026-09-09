@@ -112,10 +112,34 @@ function pickupText(b: Pick<BookingDTO, "pickup" | "pickupNote">): string {
 }
 
 /** Rút gọn tên cho vừa nút: "Minh Ngọc" → "M. Ngọc", "Mai Hoàn" → "M. Hoàn"; một chữ giữ nguyên. */
+/**
+ * TÊN VIẾT TẮT: "Mai Hoàn" → "M.Hoàn", "Nguyễn Thị Duyên" → "N.T.Duyên".
+ *
+ * Tên người bấm đi kèm hầu hết nhãn truy vết ("đã xuất vé by …", "đã bay by
+ * …"), mà nhãn thì nằm trong nút và trong ô hẹp — tên đủ ba chữ là tràn hộp.
+ * Giữ nguyên TÊN GỌI (chữ cuối) vì đó là thứ mọi người dùng để gọi nhau; phần
+ * họ đệm rút thành chữ cái. KHÔNG chừa dấu cách sau dấu chấm: mỗi khoảng
+ * trắng là một chỗ để trình duyệt bẻ dòng giữa tên.
+ */
 function shortName(name: string): string {
-  const w = name.trim().split(/\s+/).filter(Boolean);
-  if (w.length < 2) return name.trim();
-  return `${w.slice(0, -1).map((x) => x[0].toUpperCase() + ".").join(" ")} ${w[w.length - 1]}`;
+  const w = String(name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (w.length < 2) return String(name ?? "").trim();
+  return `${w.slice(0, -1).map((x) => x[0].toUpperCase() + ".").join("")}${w[w.length - 1]}`;
+}
+
+/**
+ * ĐUÔI "by <người>" trong nhãn nút — chữ NHỎ HƠN và nhạt hơn phần chính.
+ *
+ * Nhãn nút gánh hai việc khác hạng nhau: VIỆC GÌ ("Đã xuất vé") là thứ mắt
+ * phải bắt ngay, còn AI BẤM chỉ để truy vết khi cần hỏi lại. Cho cùng cỡ chữ
+ * thì cái phụ át cái chính, mà nút lại dài gấp đôi.
+ *
+ * Cỡ tính bằng `em` chứ không phải px: cùng một nút hiện ở bảng (11px) lẫn ở
+ * lưới Sheet (9px), đóng cứng px là chỗ này to hơn chỗ kia.
+ */
+function By({ name }: { name?: string }) {
+  if (!name) return null;
+  return <span className="text-[0.82em] font-normal opacity-70"> by {shortName(name)}</span>;
 }
 
 /** "20/08 · Klook #KLK123 · anh Tú · 2 khách · 1×cam360 · đón KS 09:30 · cọc 500k" */
@@ -964,6 +988,117 @@ function NoTicketControl({
  * ghi lại thì hôm sau chẳng ai biết đã hẹn khách mấy giờ. Nên ghi chú hiện
  * NGAY TRÊN DÒNG, màu vàng như tờ giấy dán, không phải bấm vào mới thấy.
  */
+/**
+ * IN LẠI VÉ — bắt GIẢI TRÌNH rồi mới in.
+ *
+ * Vé 3 liên là giấy tờ tiền: một liên khách giữ, một liên phi công thu, một
+ * liên về kế toán. In bộ thứ hai nghĩa là có thêm một bộ liên trôi nổi — vô
+ * hại khi khách làm mất vé thật, nhưng cũng đúng là cách một người muốn gian
+ * lận sẽ làm: in thêm một bộ, đưa khách bay, tiền bỏ túi.
+ *
+ * Không cấm hẳn được vì khách mất vé là chuyện có thật. Nên đổi lại: bắt gõ lý
+ * do, ghi tên người bấm, đếm số lần, và để lại vết vĩnh viễn trên booking. Ai
+ * định gian phải nói dối bằng chữ, có tên mình ký dưới — và số lần in hiện
+ * ngay trên nút nên kế toán soi cuối ngày là thấy.
+ *
+ * Chốt thật nằm ở MÁY CHỦ (recordTicketPrint); hộp này chỉ là chỗ gõ.
+ */
+function ReprintTicket({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const soLan = booking.ticketPrints?.length ?? 0;
+
+  async function inLai() {
+    if (reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+        id: booking.id,
+        action: "ticket-print",
+        reason: reason.trim(),
+      });
+      printBookingTickets(booking, spot);
+      setOpen(false);
+      setReason("");
+      onDone();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Không ghi nhận được lần in lại");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className={
+          "h-7 px-2 text-xs font-semibold " +
+          (soLan > 1 ? "border-rose-400 bg-rose-50 text-rose-700" : "bg-white text-slate-600")
+        }
+        onClick={() => setOpen(true)}
+        title={
+          soLan > 1
+            ? `⚠ Vé này đã in ${soLan} lần:\n` +
+              (booking.ticketPrints ?? [])
+                .map((x, i) => `${i + 1}. ${x.by}${x.reason ? ` — ${x.reason}` : " (lần đầu)"}`)
+                .join("\n")
+            : "In lại vé — phải ghi lý do, vì mỗi bộ vé in thêm là một bộ liên trôi nổi"
+        }
+      >
+        🖨{soLan > 1 ? `×${soLan}` : ""}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="w-56 rounded-lg border-2 border-rose-300 bg-rose-50 p-1.5">
+      <p className="text-[11px] font-bold leading-tight text-rose-900">
+        In lại vé — vé đã in {soLan} lần
+      </p>
+      <p className="mt-0.5 text-[10px] leading-tight text-rose-800">
+        Mỗi bộ in thêm là một bộ liên trôi nổi. Ghi rõ vì sao để kế toán còn đối chiếu.
+      </p>
+      <TextInput
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="VD: khách làm mất vé, máy in kẹt giấy…"
+        className="mt-1 h-8 rounded-lg text-xs"
+        autoFocus
+      />
+      {error && <p className="mt-1 text-[10px] font-semibold text-rose-700">{error}</p>}
+      <div className="mt-1 flex gap-1">
+        <Button type="button" className="h-7 bg-rose-600 px-2 text-xs hover:bg-rose-700" disabled={busy} onClick={() => void inLai()}>
+          {busy ? "Đang ghi…" : "Xác nhận & in"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-7 bg-white px-2 text-xs"
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+          }}
+        >
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ContactNote({
   spot,
   booking,
@@ -3612,24 +3747,24 @@ function BookingDayTable({
                 <td className="w-[120px] max-w-[120px] border-b border-slate-100 px-1.5 py-1 tabular-nums">
                   <div className="font-bold text-rose-600">{b.daySeq || "?"}</div>
                   {b.status === "done" && (
-                    <Nhan tone="emerald" label="✈ đã bay" by={b.doneBy} big />
+                    <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big />
                   )}
                   {b.ticketIssued && (
                     <Nhan
                       tone="amber"
                       label="🎫 đã xuất vé"
-                      by={[b.ticketIssuedBy, gioVe(b)].filter(Boolean).join(" ")}
+                      by={[shortName(b.ticketIssuedBy ?? ""), gioVe(b)].filter(Boolean).join(" ")}
                       big
                     />
                   )}
-                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={b.noTicketBy} big />}
+                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big />}
                   {/* Trạng thái còn lại cũng nằm hết ở cột đầu (bỏ cột TT riêng — luật chủ 04/09) */}
-                  {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={b.cancelledBy} />}
+                  {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} />}
                   {r.moved && (
                     <Nhan
                       tone="amber"
                       label={`↪ ĐÃ DỜI, sang ${formatDateKeyVN(b.flightDate).slice(0, 5)}`}
-                      by={b.movedBy}
+                      by={shortName(b.movedBy ?? "")}
                       title={`Khách đã rời sổ hôm nay, booking hiện thuộc ngày ${formatDateKeyVN(b.flightDate)} — thao tác (sửa/thu/khoá) làm ở sổ ngày đó nên dòng này không có nút`}
                     />
                   )}
@@ -3637,7 +3772,7 @@ function BookingDayTable({
                     <Nhan
                       tone="amber"
                       label={`dời từ ${b.rescheduledFrom.map((d) => formatDateKeyVN(d).slice(0, 5)).join(", ")}`}
-                      by={b.movedBy}
+                      by={shortName(b.movedBy ?? "")}
                     />
                   )}
                   {b.locked && <div className="mt-0.5 text-[10px]">🔒</div>}
@@ -4866,7 +5001,13 @@ export function BookingTodayBanner({
         disabled={busy === b.id}
         onClick={() => {
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
-          if (!b.noTicketFlight && !b.ticketIssued) printBookingTickets(b, spot);
+          if (!b.noTicketFlight && !b.ticketIssued) {
+            printBookingTickets(b, spot);
+            /** Lần in ĐẦU không cần lý do — chỉ ghi vết ai in, lúc nào. */
+            void apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" }).catch(
+              () => {},
+            );
+          }
           void act(b, "ticket");
         }}
         title={
@@ -4875,23 +5016,21 @@ export function BookingTodayBanner({
             : `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} vé, ` : ""}mỗi vé 3 liên.`
         }
       >
-        {b.noTicketFlight
-          ? `🎫✕ Không vé${b.noTicketBy ? ` by ${b.noTicketBy}` : ""}`
-          : b.ticketIssued
-            ? `🎫 Đã xuất vé ✓${b.ticketIssuedBy ? ` by ${b.ticketIssuedBy}` : ""}`
-            : "🖨 IN VÉ"}
+        {b.noTicketFlight ? (
+          <>
+            🎫✕ Không vé
+            <By name={b.noTicketBy} />
+          </>
+        ) : b.ticketIssued ? (
+          <>
+            🎫 Đã xuất vé ✓
+            <By name={b.ticketIssuedBy} />
+          </>
+        ) : (
+          "🖨 IN VÉ"
+        )}
       </Button>
-      {b.ticketIssued && !b.noTicketFlight && (
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-7 bg-white px-2 text-xs font-semibold text-slate-600"
-          onClick={() => printBookingTickets(b, spot)}
-          title="In lại vé — khách làm mất, hoặc máy in kẹt giấy lúc nãy"
-        >
-          🖨
-        </Button>
-      )}
+      {b.ticketIssued && !b.noTicketFlight && <ReprintTicket spot={spot} booking={b} onDone={load} />}
     </>
   );
   const renderFlownButton = (b: BookingDTO) => (

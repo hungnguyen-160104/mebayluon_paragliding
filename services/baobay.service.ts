@@ -6752,6 +6752,56 @@ export async function updateBookingCell(
   return { booking: toBookingDTO(updated) };
 }
 
+/**
+ * GHI NHẬN MỘT LẦN IN VÉ — vé chỉ được in MỘT lần, in lại phải giải trình.
+ *
+ * Vé 3 liên là giấy tờ tiền. In lần hai nghĩa là có thêm một bộ liên trôi nổi:
+ * vô hại khi khách làm mất vé thật, nhưng cũng đúng là cách một người muốn gian
+ * lận sẽ làm — in thêm một bộ, đưa khách bay, tiền bỏ túi. Không chặn hẳn được
+ * (khách mất vé là chuyện có thật), nên đổi lại: BẮT GHI LÝ DO, ghi tên người
+ * bấm, và để lại vết vĩnh viễn.
+ *
+ * KIỂM Ở MÁY CHỦ chứ không chỉ ở nút bấm: nút thì ai cũng bỏ qua được bằng cách
+ * gọi thẳng API. Đây là chốt duy nhất thật sự chặn.
+ */
+export async function recordTicketPrint(
+  session: BaobaySession,
+  spotRaw: string,
+  id: string,
+  input: { reason?: string },
+): Promise<{ booking: BookingDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
+  await assertBookingUnlocked(spot, id, session);
+
+  const booking = await BaobayBooking.findOne({ _id: id, spot }).lean<any>();
+  if (!booking) throw new BaobayError("Không tìm thấy booking", 404);
+
+  const daIn = (booking.ticketPrints ?? []).length;
+  const reason = String(input.reason ?? "").trim();
+  if (daIn > 0 && reason.length < 5) {
+    throw new BaobayError(
+      `Vé này đã in ${daIn} lần. In lại phải ghi rõ LÝ DO (ít nhất 5 ký tự) — vé 3 liên là giấy tờ tiền, mỗi bộ in thêm phải giải trình được.`,
+      400,
+    );
+  }
+
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: id, spot },
+    { $push: { ticketPrints: { at: new Date(), by: session.name || session.username, reason } } },
+    { new: true },
+  ).lean<any>();
+
+  /**
+   * Không ghi thêm nhật ký riêng: chính mảng `ticketPrints` ĐÃ LÀ vết —
+   * lần thứ mấy, ai bấm, lúc nào, vì sao. Thêm một bản ghi nữa ở chỗ khác chỉ
+   * tạo ra hai nguồn cho cùng một sự việc, mà hai nguồn thì sớm muộn lệch nhau.
+   * Mọi phép ghi qua mongoose vẫn tự để lại dòng ở BaobayBookingLog.
+   */
+  return { booking: toBookingDTO(updated) };
+}
+
 /** Bản cho LƯỚI SỔ SA PA — cùng một phép sửa, chỉ khác hình dạng dòng trả về. */
 export async function updateSapaBookCell(
   session: BaobaySession,
@@ -8964,6 +9014,11 @@ function toBookingDTO(doc: any): BookingDTO {
     ticketIssued: Boolean(doc.ticketIssuedAt),
     ticketIssuedAt: doc.ticketIssuedAt ? new Date(doc.ticketIssuedAt).toISOString() : undefined,
     ticketIssuedBy: doc.ticketIssuedBy || undefined,
+    ticketPrints: (doc.ticketPrints ?? []).map((x: any) => ({
+      at: x?.at ? new Date(x.at).toISOString() : "",
+      by: x?.by || "",
+      reason: x?.reason || "",
+    })),
     noTicketFlight: Boolean(doc.noTicketFlight) || undefined,
     noTicketReason: doc.noTicketReason || undefined,
     noTicketBy: doc.noTicketBy || undefined,

@@ -223,6 +223,20 @@ export interface IBaobayBooking {
   ticketIssuedAt?: Date;
   ticketIssuedBy?: string;
   /**
+   * MỖI LẦN IN VÉ MỘT DÒNG — vé chỉ được in MỘT lần, in lại phải giải trình.
+   *
+   * Vé 3 liên là giấy tờ tiền: một liên khách giữ, một liên phi công thu, một
+   * liên về kế toán. In lần hai nghĩa là có thêm một bộ liên trôi nổi — vô hại
+   * khi khách làm mất vé thật, nhưng cũng đúng là cách một người muốn gian lận
+   * sẽ làm (in thêm một bộ, đưa khách bay, tiền bỏ túi). Không chặn được việc
+   * in lại (khách mất vé là chuyện có thật), nhưng BẮT GHI LÝ DO và để lại vết
+   * thì người định gian phải nói dối bằng chữ, có tên mình ký dưới.
+   *
+   * Lần đầu `reason` để trống. Từ lần thứ hai máy chủ BẮT BUỘC có lý do —
+   * kiểm ở máy chủ chứ không chỉ ở nút bấm, vì nút thì gọi thẳng API là qua.
+   */
+  ticketPrints?: Array<{ at: Date; by: string; reason: string }>;
+  /**
    * BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé (khách ngoại giao, bay bù,
    * quầy hết vé giấy…). Đánh dấu để đối chiếu cuối ngày không đòi mã vé, nhưng
    * BẮT GHI LÝ DO: bay không vé mà không ai giải thích thì đúng là chỗ thất thoát.
@@ -548,6 +562,15 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     tmCheckedAt: Date,
     ticketIssuedAt: Date,
     ticketIssuedBy: String,
+    ticketPrints: {
+      type: [
+        new Schema(
+          { at: Date, by: { type: String, default: "" }, reason: { type: String, default: "" } },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     noTicketFlight: { type: Boolean, default: false },
     noTicketReason: String,
     noTicketBy: String,

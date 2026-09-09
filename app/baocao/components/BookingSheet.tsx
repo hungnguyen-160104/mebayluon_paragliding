@@ -548,7 +548,12 @@ export function BookingSheet({
                 {/* Dải thao tác đầy đủ — trải hết bề ngang, NGAY DƯỚI dòng vừa bấm */}
                 {moRong && (
                 <tr>
-                  <td colSpan={cols.length + 1} className="border-b border-r border-slate-200 bg-sky-50/70 px-2 py-1.5">
+                  <td colSpan={cols.length + 1} /**
+                     * NỀN VÀNG NHẠT cho cả dải: nó xen ngang giữa các dòng dữ
+                     * liệu nên phải khác hẳn màu, không thì mắt trượt qua và
+                     * người ta tưởng đó cũng là một dòng khách.
+                     */
+                    className="border-b border-r border-amber-300 bg-amber-50 px-2 py-1.5">
                     <div className="mb-1 flex flex-wrap items-center gap-1">
                       <span className="mr-1 text-[11px] font-bold text-sky-900">
                         #{b.daySeq || "?"} {b.contactName || b.phone || "khách"}

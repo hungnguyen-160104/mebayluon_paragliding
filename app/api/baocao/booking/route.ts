@@ -36,6 +36,7 @@ import {
   updateBookingStatus,
   type BookingAction,
   updateBookingCell,
+  recordTicketPrint,
 } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
@@ -236,6 +237,7 @@ export async function PATCH(req: Request) {
   const crewAllowed =
     action === "accept" ||
     action === "collect" ||
+    action === "ticket-print" ||
     action === "assign" ||
     action === "commission" ||
     action === "contact" ||
@@ -419,6 +421,15 @@ export async function PATCH(req: Request) {
      * SỬA MỘT Ô từ lưới kiểu bảng tính. Danh sách ô sửa được là danh sách ĐÓNG
      * ở máy chủ (BOOKING_CELL_FIELDS) — tên lạ bị từ chối, không ghi bừa.
      */
+    /**
+     * GHI NHẬN MỘT LẦN IN VÉ. Lần đầu không cần lý do; từ lần hai máy chủ bắt
+     * buộc — xem recordTicketPrint. Cho quầy vé và phi công bấm được vì họ là
+     * người đứng máy in.
+     */
+    if (action === "ticket-print") {
+      const res = await recordTicketPrint(auth, spot, id, { reason: String(body?.reason ?? "") });
+      return NextResponse.json(res);
+    }
     if (action === "cell") {
       const res = await updateBookingCell(auth, spot, {
         id,

@@ -505,6 +505,8 @@ export type BookingDTO = {
   /** Giờ xuất vé (ISO) — biết khách đến lúc nào, xếp hàng theo giờ đến. */
   ticketIssuedAt?: string;
   ticketIssuedBy?: string;
+  /** Mỗi lần in vé một dòng — từ lần thứ hai bắt buộc có lý do. */
+  ticketPrints?: Array<{ at: string; by: string; reason: string }>;
   /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */
   noTicketFlight?: boolean;
   noTicketReason?: string;
