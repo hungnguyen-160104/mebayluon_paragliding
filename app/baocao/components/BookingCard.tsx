@@ -145,22 +145,22 @@ function NhanTrangThai({ b }: { b: BookingDTO }) {
       {/**
        * "CHỜ BAY" cũng là một nhãn — lưới Sheet đã bỏ cột T.thái, nên dòng
        * chưa bay mà ô mã booking trống trơn thì không biết là chờ hay là máy
-       * chưa vẽ xong. Màu xanh da trời cho nổi khỏi nền trắng của ô, nhưng
-       * không to: đây là trạng thái mặc định của mọi dòng, không phải mốc
-       * đáng chú ý như đã bay / bay không vé.
+       * chưa vẽ xong. ĐỎ = còn việc phải làm, XANH LÁ = xong — nhìn dọc cột là
+       * biết ngay còn mấy khách chưa bay. Nhãn huỷ chuyển sang XÁM để đỏ chỉ
+       * mang đúng một nghĩa; dòng huỷ là dòng chết, không cần bắt mắt.
        *
        * `wrap`: ô mã booking của lưới Sheet chỉ ~100px, "🎫✕ bay không vé" cỡ
        * to không vừa một dòng — cắt cụt thì mất chữ "vé", tức mất luôn nghĩa.
        * Cho bẻ dòng: cột chỉ có mấy nhãn ngắn nên không sợ phình như cột đầu
        * bản Bảng.
        */}
-      {b.status === "open" && <Nhan tone="sky" label="⏳ chờ bay" wrap />}
+      {b.status === "open" && <Nhan tone="do" label="⏳ chờ bay" wrap />}
       {b.status === "done" && <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big wrap />}
       {b.ticketIssued && (
         <Nhan tone="amber" label="🎫 đã xuất vé" by={[shortName(b.ticketIssuedBy ?? ""), gioXuatVe(b)].filter(Boolean).join(" ")} big wrap />
       )}
-      {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big wrap />}
-      {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} wrap />}
+      {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ Bay k.vé" by={shortName(b.noTicketBy ?? "")} big wrap />}
+      {b.status === "cancelled" && <Nhan tone="xam" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} wrap />}
     </>
   );
 }
@@ -3505,7 +3505,7 @@ function Nhan({
   title,
   wrap,
 }: {
-  tone: "emerald" | "amber" | "orange" | "rose" | "sky";
+  tone: "emerald" | "amber" | "orange" | "rose" | "do" | "xam";
   label: string;
   /** Người bấm (và giờ, nếu có) — xuống dòng riêng, chữ nhạt hơn. */
   by?: string;
@@ -3530,7 +3530,8 @@ function Nhan({
     amber: "bg-amber-100 text-amber-800",
     orange: "bg-orange-100 text-orange-900",
     rose: "bg-rose-100 text-rose-700",
-    sky: "bg-sky-100 text-sky-800",
+    do: "bg-red-100 text-red-700",
+    xam: "bg-slate-100 text-slate-500",
   }[tone];
   return (
     <div
@@ -3836,7 +3837,7 @@ function BookingDayTable({
                       big
                     />
                   )}
-                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ bay không vé" by={shortName(b.noTicketBy ?? "")} big />}
+                  {b.noTicketFlight && <Nhan tone="orange" label="🎫✕ Bay k.vé" by={shortName(b.noTicketBy ?? "")} big />}
                   {/* Trạng thái còn lại cũng nằm hết ở cột đầu (bỏ cột TT riêng — luật chủ 04/09) */}
                   {b.status === "cancelled" && <Nhan tone="rose" label="✕ đã huỷ" by={shortName(b.cancelledBy ?? "")} />}
                   {r.moved && (
