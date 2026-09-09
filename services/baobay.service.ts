@@ -7206,7 +7206,14 @@ export async function ingestSapaSheetRows(input: {
 
       const guestNames = sapaGuestNames(raw.guestNames);
       const guestCount = sheetCount(raw.guestCount) || guestNames.length;
-      const seqTyped = sheetCount(raw.daySeq);
+      /**
+       * Số thứ tự gõ tay chỉ tin khi nó TRÔNG NHƯ số thứ tự (1–200). Cột B của
+       * sổ tay tên là "Ghi chú" nên thỉnh thoảng nhận nhầm một mẩu số điện thoại
+       * hay số tiền — nhận tuốt là booking mang số 8910, và bộ đếm của ngày đó
+       * nhảy theo, mọi khách sau nhận số 8911, 8912… (đã xảy ra thật 09/09).
+       */
+      const seqRaw = sheetCount(raw.daySeq);
+      const seqTyped = seqRaw >= 1 && seqRaw <= 200 ? seqRaw : 0;
       const bookingCode = String(raw.bookingCode ?? "").trim();
 
       /* ---- nấc 1 + 2: tìm booking đã có ---- */
@@ -7229,13 +7236,13 @@ export async function ingestSapaSheetRows(input: {
        * "<ngày>#<số>" — không dò dạng cũ thì đúng lúc nhân viên điền thêm số
        * là sổ có hai khách trùng nhau.
        */
-      const rowRefs = [
-        sapaRowRef({ flightDate, daySeq: seqTyped }),
+      /** Khoá theo CHỖ NGỒI ("<ngày>#<số>") — bền nhất khi đúng là của dòng này. */
+      const slotRef = sapaRowRef({ flightDate, daySeq: seqTyped });
+      /** Khoá theo DANH TÍNH (mã đặt chỗ, rồi tên) — dùng khi chỗ ngồi thuộc người khác. */
+      const idRefs = [
         sapaRowRef({ flightDate, bookingCode }),
         sapaRowRef({ flightDate, guestName: guestNames[0] }),
       ].filter(Boolean);
-      /** Khoá BỀN NHẤT hiện có trên dòng — đây là cái được lưu lại. */
-      const rowRef = rowRefs[0] ?? "";
 
       /**
        * "Bản ghi này với dòng đang xét có phải CÙNG MỘT KHÁCH không."
@@ -7275,20 +7282,30 @@ export async function ingestSapaSheetRows(input: {
       }
 
       let renumbered = 0;
-      if (!booking && rowRefs.length) {
-        const cand = await BaobayBooking.findOne({ spot, sheetRef: { $in: rowRefs } }).lean<any>();
-        /**
-         * Khoá dạng "<ngày>#<số>" chỉ là một CHỖ NGỒI — hôm nay số 3 là anh A,
-         * anh A huỷ thì số 3 sang người khác. Nên khoá kiểu đó vẫn phải qua
-         * phép kiểm danh tính y như nấc tra theo số bên dưới; bỏ qua là dòng
-         * của khách mới ghi đè lên khách cũ (phép thử bắt được đúng cảnh này).
-         * Khoá theo mã book hay theo tên thì tự nó đã nói người nào, khỏi kiểm.
-         */
+      /**
+       * HAI BƯỚC TÁCH RỜI, không gộp vào một `$in`.
+       *
+       * Gộp thì `findOne` trả về bản ĐẦU TIÊN khớp bất kỳ khoá nào — thường là
+       * khoá "#1" của khách A. Thấy A không cùng người, bản trước dừng luôn và
+       * không bao giờ tìm tới khoá "~tên" của chính khách B đang xét → mỗi lượt
+       * lấy là B có thêm một bản trùng (63 cặp sau hai lượt lấy tháng 9).
+       *
+       * Bước 1 — khoá CHỖ NGỒI, phải qua kiểm danh tính: số 3 hôm nay là anh A,
+       * anh A huỷ thì số 3 sang người khác. Bước 2 — khoá DANH TÍNH, tự nó đã
+       * nói người nào nên không kiểm thêm.
+       */
+      if (!booking && slotRef) {
+        const cand = await BaobayBooking.findOne({ spot, sheetRef: slotRef }).lean<any>();
         if (cand) {
-          if (!String(cand.sheetRef ?? "").includes("#") || sameGuest(cand)) booking = cand;
+          if (sameGuest(cand)) booking = cand;
           else renumbered = seqTyped;
         }
       }
+      if (!booking && idRefs.length) {
+        booking = await BaobayBooking.findOne({ spot, sheetRef: { $in: idRefs } }).lean<any>();
+      }
+      /** Khoá sẽ LƯU: chỗ ngồi nếu đúng là của dòng này, không thì danh tính. */
+      const rowRef = !renumbered && slotRef ? slotRef : (idRefs[0] ?? "");
 
       if (!booking && !renumbered && seqTyped > 0) {
         const bySeq = await BaobayBooking.findOne({ spot, flightDate, daySeq: seqTyped, status: { $ne: "voided" } }).lean<any>();
@@ -7301,7 +7318,19 @@ export async function ingestSapaSheetRows(input: {
       /* ---- các ô bảng tính đang nắm ---- */
       const flycam = sheetCount(raw.flycam);
       const video360 = sheetCount(raw.video360);
-      const unitPrice = sheetMoney(raw.unitPrice);
+      /**
+       * ĐƠN GIÁ: lấy ô "Đơn giá" nếu có; KHÔNG có thì suy ngược từ ô "Thành
+       * tiền" chia số khách.
+       *
+       * Rất nhiều dòng trên sổ tay bỏ trống ô đơn giá và gõ thẳng thành tiền
+       * (giá thoả thuận, khách trả một phần cho phi công, đoàn gộp…). Chỉ đọc ô
+       * đơn giá thì những dòng ấy về app thành 0đ — mất trắng tiền của cả dòng
+       * mà nhìn sổ không thấy gì bất thường. Đo trên tab tháng 9: kiểu dòng này
+       * làm tổng tiền cả tháng hụt hơn một nửa.
+       */
+      const thanhTien = sheetMoney(raw.lineAmount);
+      const unitPrice =
+        sheetMoney(raw.unitPrice) || (guestCount > 0 && thanhTien > 0 ? Math.round(thanhTien / guestCount) : 0);
       const extraFee = sheetMoney(raw.extraFee);
       const deposit = sheetMoney(raw.deposit);
       const sheetTotal = sheetMoney(raw.total);
@@ -7374,8 +7403,12 @@ export async function ingestSapaSheetRows(input: {
           continue;
         }
         const set: Record<string, unknown> = { ...fields };
-        /** Cập nhật khoá dòng: nhân viên vừa điền thêm số thứ tự thì khoá bền lên. */
-        if (rowRef) set.sheetRef = rowRef;
+        /**
+         * Cập nhật khoá dòng khi nhân viên vừa điền thêm số thứ tự (khoá bền
+         * lên). KHÔNG đổi khi số gõ tay đang thuộc người khác — lúc đó "#n"
+         * là của người kia, ghi vào đây là hai booking chung một khoá.
+         */
+        if (rowRef && !renumbered) set.sheetRef = rowRef;
         /** Ngày bay đổi thì số của ngày cũ trả về kho, nhận số mới của ngày mới. */
         const dateChanged = flightDate !== booking.flightDate;
         if (dateChanged) set.daySeq = await nextDaySeq(spot, flightDate);
@@ -7432,7 +7465,17 @@ export async function ingestSapaSheetRows(input: {
           spot,
           ...fields,
           daySeq,
-          sheetRef: sapaRowRef({ flightDate, daySeq, bookingCode, guestName: guestNames[0] }),
+          /**
+           * KHOÁ DÒNG lưu theo số GÕ TRÊN BẢNG, không phải số app vừa cấp.
+           *
+           * Bảng gõ #1, app thấy #1 đã có chủ nên cấp #6. Nếu lưu "#6" thì lượt
+           * lấy sau dòng ấy vẫn mang #1 về, không khớp "#6", app lại tạo thêm
+           * một khách — mỗi lượt lấy là một bản trùng (đã xảy ra: 63 cặp trùng
+           * sau hai lượt lấy tháng 9). Nhưng "#1" cũng không phải của nó (số đã
+           * thuộc người khác), nên khi phải cấp lại thì khoá theo MÃ ĐẶT CHỖ hay
+           * TÊN — thứ thật sự nhận ra dòng ấy.
+           */
+          sheetRef: rowRef || sapaRowRef({ flightDate, daySeq, bookingCode, guestName: guestNames[0] }),
           createdByUsername: "sheet:sapa",
           createdByName: "Sổ tay Sa Pa (bảng tính)",
           flightKind: "pg",

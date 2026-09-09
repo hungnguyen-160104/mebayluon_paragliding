@@ -94,6 +94,8 @@ export type SapaSheetInboundRow = {
   guestNames?: string;
   guestCount?: number | string;
   unitPrice?: number | string;
+  /** Ô "Thành tiền" (cột I) — nhiều dòng gõ thẳng vào đây mà bỏ trống đơn giá. */
+  lineAmount?: number | string;
   flycam?: number | string;
   flycamMoney?: number | string;
   video360?: number | string;
