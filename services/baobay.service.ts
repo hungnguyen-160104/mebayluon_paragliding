@@ -53,7 +53,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, flightUnitPrice, servicePriceOf, type FlightKind } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind } from "@/lib/baobay/flight-price";
 import {
   SAPA_STATUS_TEXT,
   isSapaSpot,
@@ -6334,6 +6334,17 @@ export const BOOKING_CELL_FIELDS = [
   "bookingCode",
   "guestNames",
   "guestCount",
+  /**
+   * SỐ KHÁCH BAY PG (dù lượn thường) — ô ẢO, không có trong bản ghi.
+   *
+   * Khau Phạ bán chung một booking cả PG lẫn PPG, và bản ghi lưu TỔNG khách
+   * (`guestCount`) cộng phần PPG (`ppgGuests`). Trên lưới thì bày đúng cách
+   * form vẫn hỏi — hai ô PG và PPG — vì "3 PG + 1 PPG" là cách người ta nói,
+   * còn "tổng 4, trong đó PPG 1" thì phải tính nhẩm mới ra.
+   *
+   * Sửa PG hay PPG đều giữ nguyên ô kia và cộng lại thành tổng mới.
+   */
+  "pgGuests",
   "unitPrice",
   "flycam",
   "video360",
@@ -6397,6 +6408,8 @@ export type SapaBookRow = {
   expectedTime: string;
   status: BookingStatus;
   note: string;
+  /** Tờ giấy nhớ của điều phối (đã gọi khách, khách dặn gì). */
+  contactNote: string;
   /** Kế toán đã khoá dòng — lưới hiện mờ và không cho sửa. */
   locked: boolean;
   /** Người/máy đã lập booking này ("Sổ tay Sa Pa", "Web Sa Pa (tự động)"…). */
@@ -6488,6 +6501,7 @@ function toSapaBookRow(doc: any): SapaBookRow {
     expectedTime: doc.expectedTime || "",
     status: (doc.status ?? "open") as BookingStatus,
     note: doc.note || "",
+    contactNote: doc.contactNote || "",
     locked: Boolean(doc.lockedAt),
     createdBy: doc.createdByName || doc.createdByUsername || "",
   };
@@ -6619,6 +6633,15 @@ export async function updateBookingCell(
       }));
       break;
     }
+    case "pgGuests": {
+      /** PG mới + PPG đang có = tổng mới. */
+      const pg = money();
+      const ppg = booking.flightKind === "ppg" ? 0 : (booking.ppgGuests ?? 0);
+      const n = pg + ppg;
+      if (n > 100) throw new BaobayError("Số khách không hợp lý", 400);
+      set.guestCount = n;
+      break;
+    }
     case "guestCount": {
       const n = money();
       if (n > 100) throw new BaobayError("Số khách không hợp lý", 400);
@@ -6631,13 +6654,26 @@ export async function updateBookingCell(
       }
       break;
     }
+    case "ppgGuests": {
+      /**
+       * Đổi PPG thì GIỮ NGUYÊN phần PG và cộng lại thành tổng mới — đúng cách
+       * form Khau Phạ vẫn làm. Kẹp PPG vào tổng cũ (như các dịch vụ khác) thì
+       * gõ "2 PPG" trên một booking 2 khách PG lại hoá thành 2 khách PPG và
+       * mất trắng hai suất PG.
+       */
+      const ppg = money();
+      if (ppg > 100) throw new BaobayError("Số khách PPG không hợp lý", 400);
+      const pg = Math.max(0, (booking.guestCount ?? 0) - (booking.ppgGuests ?? 0));
+      set.ppgGuests = ppg;
+      set.guestCount = pg + ppg;
+      break;
+    }
     case "flycam":
     case "video360":
     case "redFlag":
     case "sunset":
     case "flagFlight":
-    case "mountainCar":
-    case "ppgGuests": {
+    case "mountainCar": {
       const n = money();
       const cap = booking.guestCount ?? 0;
       if (cap > 0 && n > cap) throw new BaobayError(`Chỉ có ${cap} khách — không đặt được ${n} suất`, 400);
@@ -6734,6 +6770,67 @@ export async function updateSapaBookCell(
  * khách không lọt vào báo cáo nào (mọi phép cộng đều theo số khách), và người
  * nhập bỏ dở thì bấm "🗑 Nhập nhầm" như mọi booking khác.
  */
+/**
+ * THÊM MỘT HÀNG TRỐNG cho một ngày — nút "+ Thêm hàng" ở cuối lưới.
+ *
+ * Tạo NGAY một bản ghi rỗng thay vì đợi gõ xong cả dòng: có bản ghi thì mỗi ô
+ * gõ xong là lưu được luôn, đúng cảm giác bảng tính. Dòng rỗng chưa tên chưa
+ * khách KHÔNG lọt vào báo cáo nào (mọi phép cộng đều đi theo số khách), và
+ * người nhập bỏ dở thì bấm "🗑 Nhập nhầm" như mọi booking khác.
+ */
+export async function createBlankBookingRow(
+  session: BaobaySession,
+  spotRaw: string,
+  input: { flightDate: string },
+): Promise<{ booking: BookingDTO }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!isDateKey(input.flightDate)) throw new BaobayError("Ngày bay không hợp lệ", 400);
+  /** Ngày kế toán đã chốt thì không ai thêm khách vào nữa. */
+  await assertDayOpen(spot, input.flightDate);
+
+  const kind = defaultFlightKind(spot);
+  const created = (
+    await BaobayBooking.create({
+      spot,
+      flightDate: input.flightDate,
+      daySeq: await nextDaySeq(spot, input.flightDate),
+      createdByUsername: session.username,
+      createdByName: session.name,
+      source: "",
+      contactName: "",
+      phone: "",
+      bookingCode: "",
+      guestCount: 0,
+      flightKind: kind,
+      ppgGuests: 0,
+      flycam: 0,
+      video360: 0,
+      redFlag: 0,
+      sunset: 0,
+      flagFlight: 0,
+      mountainCar: 0,
+      /** Đơn giá điền sẵn theo bảng giá của điểm — gõ đè được như mọi ô khác. */
+      unitPrice: flightUnitPrice(kind, input.flightDate, spot),
+      discount: 0,
+      comboDiscount: 0,
+      pickupFee: 0,
+      totalAmount: 0,
+      deposit: 0,
+      remaining: 0,
+      agencyPaidAmount: 0,
+      pickup: spot === "sapa" ? "other" : "self",
+      pickupNote: "",
+      expectedTime: "",
+      transferCode: "",
+      note: "",
+      status: "open",
+    })
+  ).toObject();
+
+  return { booking: toBookingDTO(created) };
+}
+
 export async function createSapaBookRow(
   session: BaobaySession,
   input: { flightDate: string },

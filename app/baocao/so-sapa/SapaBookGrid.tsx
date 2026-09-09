@@ -2,48 +2,31 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { frozenCount, frozenOffsets, groupSpans, sheetColumns, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { SapaBookRow, SapaBookView } from "@/services/baobay.service";
 
 import { apiPatch, apiPost } from "../components/client-api";
+import { useFillHeight } from "../components/useFillHeight";
 
 /**
- * LƯỚI SỔ SA PA — gõ như bảng tính, ngay trong app.
+ * LƯỚI SỔ SA PA — cả tháng một màn hình, gõ như bảng tính.
  *
- * Bố cục cột dựng lại ĐÚNG sổ tay Google Sheets của điểm, không bày lại theo
- * kiểu app: người đang giữ sổ đã quen mắt thứ tự ấy suốt nhiều tháng. Đổi bố
- * cục là bắt họ học lại, mà học lại thì họ quay về gõ bảng tính cho nhanh — và
- * ta lại có hai sổ như cũ.
+ * Bố cục cột dựng lại ĐÚNG tab tháng của bảng "Bảng theo dõi chuyến bay" (xem
+ * lib/baobay/sheet-columns.ts), kể cả hai hàng tiêu đề gộp ô, những cột kế toán
+ * app chưa quản, và phép ĐÓNG BĂNG 7 cột đầu mà chính bảng khai
+ * (`<pane xSplit="7" ySplit="4" state="frozen"/>`).
  *
- * BA THỨ QUYẾT ĐỊNH NÓ CÓ ĐƯỢC DÙNG HAY KHÔNG, và cả ba đều là bàn phím:
- *  - Tab / Shift+Tab chạy ngang, cuối dòng thì sang dòng dưới;
- *  - Enter và ↑↓ chạy dọc đúng một cột;
- *  - Esc bỏ dở ô đang gõ, trả lại số cũ.
- * Thiếu chúng thì đây chỉ là một cái bảng phải rê chuột, và không ai đổi thói
- * quen để dùng một thứ chậm hơn cái họ đang có.
+ * Vì sao bám sát đến thế: người đang giữ sổ đã quen mắt thứ tự ấy suốt nhiều
+ * tháng. Đổi bố cục là bắt họ học lại, mà học lại thì họ quay về gõ bảng tính
+ * cho nhanh — và ta lại có hai sổ như cũ.
  *
- * LƯU TỪNG Ô, KHÔNG GOM CẢ DÒNG: gõ xong một ô là nó bay đi ngay, ô kế bên gõ
- * tiếp không phải chờ. Hỏng mạng thì chỉ hỏng đúng ô đó — số cũ tự quay lại và
- * lưới nói rõ ô nào không lưu được.
+ * BÀN PHÍM: Tab/Shift+Tab sang ô bên (hết dòng thì xuống dòng dưới) · Enter và
+ * ↑↓ chạy dọc một cột · Shift+Enter xuống dòng trong ô ghi chú · Esc bỏ dở.
+ * LƯU TỪNG Ô: máy chủ tính lại tổng rồi trả CẢ DÒNG.
  */
 
-type CellKind = "text" | "num" | "money" | "time" | "status" | "names";
-
-type Col = {
-  key: string;
-  label: string;
-  /** Tên trường máy chủ nhận — có thì ô sửa được, không thì máy tính. */
-  edit?: string;
-  kind: CellKind;
-  /** Bề ngang cố định: cột nhảy qua nhảy lại mỗi lần gõ là không đọc nổi. */
-  w: string;
-  right?: boolean;
-  /** Đậm — dùng cho TỔNG THU. */
-  strong?: boolean;
-  head?: string;
-};
-
 const vnd = (n: number) => (n ? n.toLocaleString("vi-VN") : "");
-const dayLabel = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+const dayShort = (d: string) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : "");
 
 const STATUS_LABEL: Record<string, string> = {
   open: "CHỜ BAY",
@@ -52,49 +35,25 @@ const STATUS_LABEL: Record<string, string> = {
   voided: "BỎ SỔ",
 };
 
-/**
- * Cột cố định của lưới. Các cột "người nhận tiền" chèn thêm ở giữa theo danh
- * sách quỹ máy chủ gửi về (mỗi điểm một danh sách, xem lib/baobay/money-dest).
- */
-function buildCols(dests: SapaBookView["dests"]): Col[] {
-  return [
-    { key: "daySeq", label: "STT", kind: "num", w: "w-12", right: true },
-    { key: "source", label: "Code đại lý or lẻ", edit: "source", kind: "text", w: "w-36", head: "THÔNG TIN CHUYẾN BAY" },
-    { key: "bookingCode", label: "Số booking", edit: "bookingCode", kind: "text", w: "w-32" },
-    { key: "guestNames", label: "TÊN ĐĂNG KÝ", edit: "guestNames", kind: "names", w: "w-56" },
-    { key: "guestCount", label: "SL MCC", edit: "guestCount", kind: "num", w: "w-16", right: true },
-    { key: "unitPrice", label: "Đơn giá", edit: "unitPrice", kind: "money", w: "w-28", right: true, head: "THÔNG TIN VÉ" },
-    { key: "lineAmount", label: "Thành tiền", kind: "money", w: "w-28", right: true },
-    { key: "flycam", label: "Flycam", edit: "flycam", kind: "num", w: "w-16", right: true },
-    { key: "flycamMoney", label: "Tiền flycam", kind: "money", w: "w-24", right: true },
-    { key: "video360", label: "360", edit: "video360", kind: "num", w: "w-16", right: true },
-    { key: "video360Money", label: "Tiền 360", kind: "money", w: "w-24", right: true },
-    { key: "extraFee", label: "Phụ thu khác", edit: "extraFee", kind: "money", w: "w-28", right: true },
-    { key: "total", label: "TỔNG THU", kind: "money", w: "w-32", right: true, strong: true },
-    { key: "deposit", label: "ĐẶT CỌC", edit: "deposit", kind: "money", w: "w-28", right: true, head: "CỌC VÀ CK" },
-    ...dests.map(
-      (d, i): Col => ({
-        key: `dest:${d.id}`,
-        label: d.label,
-        kind: "money",
-        w: "w-28",
-        right: true,
-        head: i === 0 ? "NGƯỜI NHẬN TIỀN" : undefined,
-      }),
-    ),
-    { key: "paid", label: "Đã thu", kind: "money", w: "w-28", right: true },
-    { key: "remaining", label: "Còn thu", kind: "money", w: "w-28", right: true },
-    { key: "commission", label: "Chiết khấu đại lý", edit: "commission", kind: "money", w: "w-28", right: true, head: "KHOẢN PHỤ" },
-    { key: "phone", label: "SĐT", edit: "phone", kind: "text", w: "w-32", head: "ĐÓN KHÁCH" },
-    { key: "pickupNote", label: "Điểm đón", edit: "pickupNote", kind: "text", w: "w-44" },
-    { key: "expectedTime", label: "Giờ đón", edit: "expectedTime", kind: "time", w: "w-20" },
-    { key: "status", label: "Trạng thái", edit: "status", kind: "status", w: "w-28" },
-    { key: "note", label: "Ghi chú", edit: "note", kind: "text", w: "w-56" },
-  ];
-}
+/** POS quy sang USD — đúng công thức =POS/1,08 của bảng. */
+const USD_RATE = 1.08;
 
-function cellValue(row: SapaBookRow, col: Col): string {
+function cellText(row: SapaBookRow, col: SheetCol): string {
   if (col.key.startsWith("dest:")) return vnd(row.received[col.key.slice(5)] ?? 0);
+  switch (col.key) {
+    case "monthLabel":
+      return row.flightDate ? `thg ${Number(row.flightDate.slice(5, 7))}` : "";
+    case "flightDate":
+      return dayShort(row.flightDate);
+    case "usd": {
+      const pos = row.received["pos"] ?? 0;
+      return pos ? Math.round(pos / USD_RATE).toLocaleString("vi-VN") : "";
+    }
+    default:
+      break;
+  }
+  /** Cột của kế toán bên bảng tính mà app chưa quản — để TRỐNG, không bịa số. */
+  if (col.ketToan) return "";
   const v = (row as unknown as Record<string, unknown>)[col.key];
   if (col.kind === "money") return vnd(Number(v) || 0);
   if (col.kind === "num") return Number(v) ? String(v) : "";
@@ -102,8 +61,7 @@ function cellValue(row: SapaBookRow, col: Col): string {
   return String(v ?? "");
 }
 
-/** Giá trị đưa vào ô nhập khi bắt đầu sửa — số thì bỏ dấu chấm cho dễ gõ đè. */
-function editValue(row: SapaBookRow, col: Col): string {
+function editValueOf(row: SapaBookRow, col: SheetCol): string {
   if (col.kind === "money" || col.kind === "num") {
     const n = Number((row as unknown as Record<string, unknown>)[col.key]) || 0;
     return n ? String(n) : "";
@@ -115,15 +73,19 @@ export function SapaBookGrid({
   view,
   onReload,
   canEdit,
+  tall,
 }: {
   view: SapaBookView;
   onReload: () => void;
   canEdit: boolean;
+  /** Toàn màn hình — lưới ăn hết chỗ còn lại của cửa sổ. */
+  tall?: boolean;
 }) {
-  const cols = useMemo(() => buildCols(view.dests), [view.dests]);
+  const cols = useMemo(() => sheetColumns("sapa", view.dests, { thang: true, keToan: true }), [view.dests]);
   const editCols = useMemo(() => cols.map((c, i) => (c.edit ? i : -1)).filter((i) => i >= 0), [cols]);
+  const froze = useMemo(() => frozenCount(cols), [cols]);
+  const offs = useMemo(() => frozenOffsets(cols, froze), [cols, froze]);
 
-  /** Bản đang hiện — sửa xong một ô thì thay đúng dòng đó, khỏi tải lại cả tháng. */
   const [rows, setRows] = useState<SapaBookRow[]>([]);
   const [days, setDays] = useState<SapaBookView["days"]>(view.days);
   useEffect(() => {
@@ -131,17 +93,14 @@ export function SapaBookGrid({
     setRows(view.days.flatMap((d) => d.rows));
   }, [view]);
 
-  /** Ô đang chọn theo (thứ tự dòng phẳng, thứ tự cột) — null là không chọn gì. */
   const [sel, setSel] = useState<{ r: number; c: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
-
-  /** Dòng phẳng theo đúng thứ tự hiện trên màn hình — bàn phím chạy trên mảng này. */
-  const flat = rows;
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null);
+  const { ref: boxRef, height } = useFillHeight(tall ? 30 : 60, true);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -149,17 +108,16 @@ export function SapaBookGrid({
 
   const startEdit = useCallback(
     (r: number, c: number) => {
-      const row = flat[r];
+      const row = rows[r];
       const col = cols[c];
       if (!row || !col?.edit || row.locked || !canEdit) return;
       setSel({ r, c });
-      setDraft(editValue(row, col));
+      setDraft(editValueOf(row, col));
       setEditing(true);
     },
-    [flat, cols, canEdit],
+    [rows, cols, canEdit],
   );
 
-  /** Sang ô sửa được kế tiếp; hết dòng thì xuống dòng dưới (như bảng tính). */
   const move = useCallback(
     (dr: number, dc: number) => {
       setSel((cur) => {
@@ -177,59 +135,45 @@ export function SapaBookGrid({
           }
         }
         if (dr) r += dr;
-        if (r < 0 || r >= flat.length) return cur;
+        if (r < 0 || r >= rows.length) return cur;
         return { r, c: editCols[Math.max(0, Math.min(editCols.length - 1, ci))] };
       });
       setEditing(true);
     },
-    [editCols, flat.length],
+    [editCols, rows.length],
   );
 
-  /**
-   * LƯU MỘT Ô.
-   *
-   * Sửa ngay trên màn hình trước khi máy chủ trả lời (gõ mà phải chờ mạng thì
-   * không ai gõ nổi cả trăm dòng), nhưng máy chủ mới là nơi chốt: nó tính lại
-   * tổng tiền và còn thu rồi trả về CẢ DÒNG, mình thay nguyên dòng đó. Hỏng thì
-   * trả lại số cũ và nói rõ ô nào — im lặng nuốt lỗi ở đây là mất tiền thật.
-   */
   const commit = useCallback(
     async (r: number, c: number, value: string) => {
-      const row = flat[r];
+      const row = rows[r];
       const col = cols[c];
-      if (!row || !col?.edit) return;
-      if (value === editValue(row, col)) return;
-
+      if (!row || !col?.edit || value === editValueOf(row, col)) return;
       const key = `${row.id}:${col.edit}`;
       setSaving(key);
       setError(null);
       try {
-        const res = await apiPatch<{ row: SapaBookRow }>("/api/baocao/so-sapa", {
-          id: row.id,
-          field: col.edit,
-          value,
-        });
+        const res = await apiPatch<{ row: SapaBookRow }>("/api/baocao/so-sapa", { id: row.id, field: col.edit, value });
         setRows((prev) => prev.map((x) => (x.id === row.id ? res.row : x)));
       } catch (e: unknown) {
         setError(
-          `Dòng ${row.daySeq || "?"} ngày ${dayLabel(row.flightDate)}, ô "${col.label}": ` +
+          `Ngày ${dayShort(row.flightDate)} · dòng ${row.daySeq || "?"} · ô "${col.label || col.key}": ` +
             (e instanceof Error ? e.message : "không lưu được"),
         );
       } finally {
         setSaving((s) => (s === key ? null : s));
       }
     },
-    [flat, cols],
+    [rows, cols],
   );
 
   async function addRow(date: string) {
     setAdding(date);
     setError(null);
     try {
-      await apiPost<{ row: SapaBookRow }>("/api/baocao/so-sapa", { flightDate: date });
+      await apiPost("/api/baocao/so-sapa", { flightDate: date });
       onReload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Không thêm được dòng");
+      setError(e instanceof Error ? e.message : "Không thêm được hàng");
     } finally {
       setAdding(null);
     }
@@ -260,7 +204,20 @@ export function SapaBookGrid({
     }
   }
 
-  /** Chỉ số dòng phẳng của dòng đầu mỗi ngày — để bàn phím và màn hình cùng một trục. */
+  const g1 = useMemo(() => groupSpans(cols, 1), [cols]);
+  const g2 = useMemo(() => groupSpans(cols, 2), [cols]);
+  const hasG2 = g2.some((x) => x.label);
+  const frozeW = offs.length ? offs[froze - 1] + cols[froze - 1].w : 0;
+  const freezeStyle = (c: number): React.CSSProperties =>
+    c < froze
+      ? { position: "sticky", left: offs[c], zIndex: 6, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
+      : {};
+  const headFreeze = (c: number): React.CSSProperties =>
+    c < froze
+      ? { position: "sticky", left: offs[c], zIndex: 26, boxShadow: c === froze - 1 ? "2px 0 0 0 rgb(100 116 139)" : undefined }
+      : {};
+
+  /** Chỉ số dòng phẳng của dòng đầu mỗi ngày — bàn phím và màn hình cùng một trục. */
   let cursor = 0;
   const dayStart = days.map((d) => {
     const at = cursor;
@@ -269,9 +226,9 @@ export function SapaBookGrid({
   });
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {error && (
-        <div className="sticky top-0 z-30 rounded-lg border-2 border-rose-400 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
+        <div className="rounded-lg border-2 border-rose-400 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-800">
           ⚠ {error}
           <button type="button" onClick={() => setError(null)} className="ml-2 underline">
             bỏ qua
@@ -279,36 +236,62 @@ export function SapaBookGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-300 bg-white">
-        <table className="min-w-max border-collapse text-[12px]">
+      <div
+        ref={boxRef}
+        className="overflow-auto rounded-lg border border-slate-300 bg-white"
+        style={{ maxHeight: height ? `${height}px` : "70vh" }}
+      >
+        <table className="border-collapse text-[11px]" style={{ width: "max-content" }}>
+          <colgroup>
+            {cols.map((c) => (
+              <col key={c.key} style={{ width: c.w, minWidth: c.w, maxWidth: c.w }} />
+            ))}
+          </colgroup>
+
           <thead className="sticky top-0 z-20">
-            {/* Hàng gộp nhóm — y như hai hàng tiêu đề trên cùng của sổ tay */}
             <tr>
-              {cols.map((c, i) => {
-                if (!c.head) return null;
-                const span = cols.slice(i).findIndex((x, j) => j > 0 && x.head) ;
-                return (
-                  <th
-                    key={`h-${c.key}`}
-                    colSpan={span < 0 ? cols.length - i : span}
-                    className="border border-slate-300 bg-slate-700 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-white"
-                  >
-                    {c.head}
-                  </th>
-                );
-              })}
+              {g1.map((g, i) => (
+                <th
+                  key={`g1-${i}`}
+                  colSpan={g.span}
+                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                  className={
+                    "border border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
+                    (g.label ? "bg-slate-700 text-white" : "bg-slate-400 text-slate-100")
+                  }
+                >
+                  {g.label}
+                </th>
+              ))}
             </tr>
+            {hasG2 && (
+              <tr>
+                {g2.map((g, i) => (
+                  <th
+                    key={`g2-${i}`}
+                    colSpan={g.span}
+                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26, minWidth: frozeW } : undefined}
+                    className={
+                      "border border-slate-300 px-1 py-px text-[10px] font-semibold " +
+                      (g.label ? "bg-slate-500 text-white" : "bg-slate-300 text-slate-600")
+                    }
+                  >
+                    {g.label}
+                  </th>
+                ))}
+              </tr>
+            )}
             <tr>
-              {cols.map((c) => (
+              {cols.map((c, i) => (
                 <th
                   key={c.key}
+                  style={headFreeze(i)}
+                  title={c.title ?? (c.edit ? "Bấm vào ô để sửa" : "Máy tự tính — sửa ở ô gốc")}
                   className={
-                    "border border-slate-300 bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700 " +
-                    c.w +
-                    (c.right ? " text-right" : " text-left") +
-                    (c.edit ? "" : " bg-slate-200/80 text-slate-500")
+                    "border border-slate-300 px-1 py-px text-[10px] font-bold " +
+                    (c.right ? "text-right " : "text-left ") +
+                    (c.edit ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-500")
                   }
-                  title={c.edit ? "Sửa được" : "Máy tự tính — sửa ở ô gốc"}
                 >
                   {c.label}
                 </th>
@@ -339,6 +322,7 @@ export function SapaBookGrid({
                 }}
                 onAdd={() => addRow(day.date)}
                 adding={adding === day.date}
+                freezeStyle={freezeStyle}
               />
             ))}
 
@@ -353,9 +337,15 @@ export function SapaBookGrid({
 
           {days.length > 0 && (
             <tfoot className="sticky bottom-0 z-20">
-              <tr className="bg-slate-800 text-white">
-                {cols.map((c) => (
-                  <td key={c.key} className={"border border-slate-600 px-2 py-1 font-bold " + (c.right ? "text-right" : "")}>
+              <tr>
+                {cols.map((c, i) => (
+                  <td
+                    key={c.key}
+                    style={freezeStyle(i)}
+                    className={
+                      "border border-slate-600 bg-slate-800 px-1 py-px font-bold text-white " + (c.right ? "text-right" : "")
+                    }
+                  >
                     {c.key === "daySeq"
                       ? "Σ"
                       : c.key === "guestCount"
@@ -375,10 +365,10 @@ export function SapaBookGrid({
         </table>
       </div>
 
-      <p className="text-[11px] leading-tight text-slate-500">
-        Bấm vào ô để sửa · <strong>Tab</strong> sang ô bên, hết dòng thì xuống dòng dưới ·{" "}
-        <strong>Enter</strong> và <strong>↑ ↓</strong> chạy dọc một cột · <strong>Esc</strong> bỏ dở ô đang gõ.
-        Ô nền xám là máy tự tính. Ô <em>Phụ thu khác</em> gõ số âm nghĩa là giảm giá, đúng nếp sổ tay.
+      <p className="text-[10px] leading-tight text-slate-500">
+        Bấm ô để sửa · <strong>Tab</strong> sang ô bên · <strong>Enter</strong>/<strong>↑↓</strong> chạy dọc ·{" "}
+        <strong>Shift+Enter</strong> xuống dòng trong ô ghi chú · <strong>Esc</strong> bỏ dở. {froze} cột đầu đứng yên khi
+        cuộn ngang (đúng như bảng tính). Ô nền xám là máy tự tính; ô <em>Phụ thu khác</em> gõ số âm nghĩa là giảm giá.
       </p>
     </div>
   );
@@ -401,9 +391,10 @@ function DayBlock({
   onBlur,
   onAdd,
   adding,
+  freezeStyle,
 }: {
   day: SapaBookView["days"][number];
-  cols: Col[];
+  cols: SheetCol[];
   base: number;
   rows: SapaBookRow[];
   sel: { r: number; c: number } | null;
@@ -411,22 +402,27 @@ function DayBlock({
   draft: string;
   saving: string | null;
   canEdit: boolean;
-  inputRef: React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  inputRef: React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>;
   setDraft: (v: string) => void;
   startEdit: (r: number, c: number) => void;
   onKey: (e: React.KeyboardEvent, r: number, c: number) => void;
   onBlur: (r: number, c: number) => void;
   onAdd: () => void;
   adding: boolean;
+  freezeStyle: (c: number) => React.CSSProperties;
 }) {
   const dayRows = rows.slice(base, base + day.rows.length);
   return (
     <>
-      {/* Đầu khối ngày kèm số cộng của ngày — sổ tay cũng gạch ngang theo ngày */}
-      <tr className="bg-sky-100">
-        <td colSpan={cols.length} className="border border-slate-300 px-2 py-1">
-          <span className="text-sm font-bold text-sky-900">{dayLabel(day.date)}</span>
-          <span className="ml-3 text-[11px] text-sky-800">
+      {/* Đầu khối ngày kèm số cộng — sổ tay cũng gạch ngang theo ngày */}
+      <tr>
+        <td
+          colSpan={cols.length}
+          className="sticky left-0 border border-slate-300 bg-sky-100 px-2 py-0.5"
+          style={{ zIndex: 5 }}
+        >
+          <span className="text-[12px] font-bold text-sky-900">{dayShort(day.date)}</span>
+          <span className="ml-3 text-[10px] text-sky-800">
             {day.guests} khách · tổng {vnd(day.total)} đ · đã thu {vnd(day.paid)} đ
           </span>
         </td>
@@ -434,50 +430,53 @@ function DayBlock({
 
       {dayRows.map((row, i) => {
         const r = base + i;
+        const rowBg = row.locked ? "bg-slate-100" : row.status !== "open" ? "bg-slate-50" : "bg-white";
         return (
-          <tr key={row.id} className={row.locked ? "bg-slate-50 opacity-70" : "hover:bg-amber-50/40"}>
+          <tr key={row.id}>
             {cols.map((col, c) => {
               const active = sel?.r === r && sel?.c === c;
               const isEditing = active && editing && Boolean(col.edit);
               const busy = saving === `${row.id}:${col.edit}`;
+              const finish = () => onBlur(r, c);
               return (
                 <td
                   key={col.key}
                   onClick={() => col.edit && startEdit(r, c)}
+                  style={freezeStyle(c)}
                   className={
-                    "border border-slate-200 px-1 py-0.5 align-top " +
-                    col.w +
-                    (col.right ? " text-right tabular-nums" : "") +
-                    (col.edit ? " cursor-text" : " bg-slate-50 text-slate-500") +
-                    (col.strong ? " font-bold text-sky-900" : "") +
-                    (active ? " outline outline-2 outline-sky-500" : "") +
-                    (busy ? " bg-amber-100" : "")
+                    "border border-slate-200 px-1 py-px align-top leading-tight " +
+                    (busy ? "bg-amber-100 " : col.edit ? `${rowBg} ` : "bg-slate-50 text-slate-500 ") +
+                    (col.right ? "text-right tabular-nums " : "") +
+                    (col.edit && !row.locked ? "cursor-text " : "") +
+                    (col.strong ? "font-bold text-sky-900 " : "") +
+                    (active ? "outline outline-2 -outline-offset-1 outline-sky-500" : "")
                   }
                 >
                   {isEditing ? (
                     col.kind === "status" ? (
                       <select
-                        ref={inputRef as React.MutableRefObject<never>}
+                        ref={inputRef as React.MutableRefObject<HTMLSelectElement>}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => onKey(e, r, c)}
-                        onBlur={() => onBlur(r, c)}
-                        className="w-full bg-white text-[12px] outline-none"
+                        onBlur={finish}
+                        className="w-full bg-white text-[11px] outline-none"
                       >
                         <option value="open">CHỜ BAY</option>
                         <option value="done">ĐÃ BAY</option>
                         <option value="cancelled">ĐÃ HUỶ</option>
                       </select>
-                    ) : col.kind === "names" ? (
+                    ) : col.wrap || col.kind === "names" ? (
                       <textarea
                         ref={inputRef as React.MutableRefObject<HTMLTextAreaElement>}
                         value={draft}
-                        rows={Math.max(2, draft.split("\n").length)}
+                        rows={Math.min(6, Math.max(1, draft.split("\n").length))}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => onKey(e, r, c)}
-                        onBlur={() => onBlur(r, c)}
-                        placeholder="mỗi khách một dòng"
-                        className="w-full resize-none bg-white text-[12px] leading-tight outline-none"
+                        onBlur={finish}
+                        placeholder={col.kind === "names" ? "mỗi khách một dòng" : ""}
+                        title="Shift+Enter để xuống dòng · Enter là xong, sang dòng dưới"
+                        className="w-full resize-none bg-white text-[11px] leading-tight outline-none"
                       />
                     ) : (
                       <input
@@ -485,15 +484,20 @@ function DayBlock({
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => onKey(e, r, c)}
-                        onBlur={() => onBlur(r, c)}
+                        onBlur={finish}
                         inputMode={col.kind === "money" || col.kind === "num" ? "numeric" : undefined}
                         placeholder={col.kind === "time" ? "08:00" : ""}
-                        className={"w-full bg-white text-[12px] outline-none" + (col.right ? " text-right" : "")}
+                        className={"w-full bg-white text-[11px] outline-none" + (col.right ? " text-right" : "")}
                       />
                     )
                   ) : (
-                    <span className={"block min-h-[18px] whitespace-pre-line " + (col.kind === "names" ? "leading-tight" : "truncate")}>
-                      {cellValue(row, col)}
+                    <span
+                      className={
+                        "block min-h-[15px] " +
+                        (col.wrap || col.kind === "names" ? "whitespace-pre-line break-words" : "truncate")
+                      }
+                    >
+                      {cellText(row, col)}
                     </span>
                   )}
                 </td>
@@ -505,14 +509,14 @@ function DayBlock({
 
       {/* Dòng trống cuối khối ngày: chỗ gõ khách mới, đúng chỗ tay đang đặt */}
       <tr>
-        <td colSpan={cols.length} className="border border-slate-200 px-2 py-1">
+        <td colSpan={cols.length} className="sticky left-0 border border-slate-200 bg-white px-1 py-0.5" style={{ zIndex: 5 }}>
           <button
             type="button"
             disabled={!canEdit || adding}
             onClick={onAdd}
-            className="rounded-lg border border-dashed border-slate-400 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-sky-500 hover:text-sky-700 disabled:opacity-50"
+            className="rounded border border-dashed border-slate-400 px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:border-sky-500 hover:text-sky-700 disabled:opacity-50"
           >
-            {adding ? "Đang thêm…" : `+ thêm khách cho ngày ${dayLabel(day.date)}`}
+            {adding ? "Đang thêm…" : `+ Thêm hàng · ngày ${dayShort(day.date)}`}
           </button>
         </td>
       </tr>

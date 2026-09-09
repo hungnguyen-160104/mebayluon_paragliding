@@ -5259,9 +5259,11 @@ export function BookingTodayBanner({
          */
         <BookingSheet
           spot={spot}
+          date={date}
           tall={fullScreen}
           canEdit
           canLock={canLock}
+          onAdded={load}
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
