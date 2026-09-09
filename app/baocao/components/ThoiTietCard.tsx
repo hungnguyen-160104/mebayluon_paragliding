@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
-import { huongChu } from "@/lib/baobay/thoi-tiet";
+import { chanMay, chiSoBay, huongChu, NHAN_THERMAL } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
@@ -160,8 +160,11 @@ export function ThoiTietCard({
             ) : (
               <span className="text-rose-700">Hôm nay không có khung giờ đẹp</span>
             )}{" "}
-            · gió tối đa {Math.round(homNayCard.gioMax)} km/h · giật {Math.round(homNayCard.giatMax)}
-            {homNayCard.muaTong > 0.1 ? ` · mưa ${homNayCard.muaTong.toFixed(1)}mm` : ""}
+            · gió tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
+            {homNayCard.xacSuatMuaMax >= 0 ? ` · khả năng mưa ${homNayCard.xacSuatMuaMax}%` : ""}
+            {homNayCard.muaTong > 0.1 ? ` (${homNayCard.muaTong.toFixed(1)}mm)` : ""}
+            {homNayCard.xacSuatDongMax >= 20 ? ` · ⚡ dông ${homNayCard.xacSuatDongMax}%` : ""}
+            {homNayCard.tranMax ? ` · trần thermal ${homNayCard.tranMax}m` : ""}
           </div>
         </div>
         <button
@@ -191,12 +194,13 @@ export function ThoiTietCard({
               title={n.khungDep ? `Giờ đẹp ${n.khungDep}` : "Không có khung giờ đẹp"}
             >
               <div className="text-[10px] font-bold uppercase">{nhanNgay(n.ngay, homNay)}</div>
-              <div className="text-[11px] font-black leading-tight">{Math.round(n.gioMax)}</div>
-              <div className="text-[9px] leading-tight opacity-80">km/h</div>
+              <div className="text-[11px] font-black leading-tight">{n.gioMax.toFixed(1)}</div>
+              <div className="text-[9px] leading-tight opacity-80">m/s</div>
               <div className="text-[9px] leading-tight">
                 {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "nghỉ" : "hạn chế"}
               </div>
-              {n.muaTong > 0.5 && <div className="text-[9px] leading-tight">☔ {n.muaTong.toFixed(0)}mm</div>}
+              {n.xacSuatMuaMax >= 50 && <div className="text-[9px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
+              {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
               {daCham && (
                 <div className="text-[9px] font-bold leading-tight" title={`Đã chấm: ${daCham.note || "—"}`}>
                   ✓ đã chấm
@@ -289,14 +293,14 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Gió</th>
+            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Gió m/s</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
                 title={g.lyDo.join(" · ")}
                 className={"border-b border-white px-0.5 py-1 font-black " + MAU_O[g.muc]}
               >
-                {Math.round(g.gio10m)}
+                {g.gio10m.toFixed(1)}
               </td>
             ))}
           </tr>
@@ -304,7 +308,7 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
             <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Giật</th>
             {gio.map((g) => (
               <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5 text-slate-700">
-                {Math.round(g.giat)}
+                {g.giat.toFixed(1)}
               </td>
             ))}
           </tr>
@@ -317,7 +321,7 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Mưa</th>
+            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Mưa mm</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
@@ -326,6 +330,82 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
                 {g.mua > 0.05 ? g.mua.toFixed(1) : "–"}
               </td>
             ))}
+          </tr>
+          <tr>
+            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Xác suất mưa của mô hình">
+              K.năng mưa
+            </th>
+            {gio.map((g) => {
+              const p = g.xacSuatMua;
+              return (
+                <td
+                  key={g.gio}
+                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (p !== undefined && p >= 60 ? "font-bold text-sky-800" : "text-slate-500")}
+                >
+                  {p === undefined ? "–" : `${Math.round(p)}%`}
+                </td>
+              );
+            })}
+          </tr>
+          <tr>
+            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Nguy cơ dông — trên 40% là cấm bay">
+              ⚡ Dông
+            </th>
+            {gio.map((g) => {
+              const d = chiSoBay(g).xacSuatDong;
+              return (
+                <td
+                  key={g.gio}
+                  className={
+                    "border-b border-slate-200 px-0.5 py-0.5 " +
+                    (d >= 40 ? "bg-rose-200 font-bold text-rose-900" : d >= 20 ? "bg-amber-100 font-bold text-amber-900" : "text-slate-400")
+                  }
+                >
+                  {d > 0 ? `${d}%` : "–"}
+                </td>
+              );
+            })}
+          </tr>
+          <tr>
+            <th
+              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              title="Chân mây trên bãi cất cánh — thấp kèm mây thấp dày nghĩa là mù trùm bãi"
+            >
+              Chân mây
+            </th>
+            {gio.map((g) => {
+              const cm = chanMay(g.nhietDo, g.diemSuong);
+              const mu = cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50;
+              return (
+                <td
+                  key={g.gio}
+                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (mu ? "bg-slate-300 font-bold text-slate-900" : "text-slate-500")}
+                  title={g.mayThap !== undefined ? `mây thấp ${Math.round(g.mayThap)}%` : undefined}
+                >
+                  {cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}km` : `${cm}m`}
+                </td>
+              );
+            })}
+          </tr>
+          <tr>
+            <th
+              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              title="Sức bốc: thermal gắt thì dù xóc, khách dễ say"
+            >
+              Sức bốc
+            </th>
+            {gio.map((g) => {
+              const c = chiSoBay(g);
+              return (
+                <td
+                  key={g.gio}
+                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (c.thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500")}
+                  title={[c.onDinh, c.tran ? `trần ~${c.tran}m` : ""].filter(Boolean).join(" · ")}
+                >
+                  {NHAN_THERMAL[c.thermal]}
+                </td>
+              );
+            })}
           </tr>
           <tr>
             <th className="px-1 py-0.5 text-left font-bold text-slate-500">Mây</th>
@@ -338,7 +418,8 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
         </tbody>
       </table>
       <div className="mt-1 text-[10px] text-slate-500">
-        Số trong ô là gió trung bình (km/h) — màu ô đã tính cả giật, mưa và hướng. Rê chuột vào ô để xem lý do.
+        Số trong ô gió là gió trung bình (m/s) — màu ô đã tính cả giật, mưa, mù, dông và hướng. Rê chuột vào ô để
+        xem lý do; rê vào ô Sức bốc để xem độ ổn định không khí và trần thermal.
       </div>
     </div>
   );
@@ -517,8 +598,8 @@ function HocDuoc({
   return (
     <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/60 px-2 py-1.5 text-[11px] text-violet-950">
       <div className="font-bold">
-        🎓 Ngưỡng đang dùng: đẹp ≤ {nguong.gioXanh} · cấm &gt; {nguong.gioDo} km/h · giật &gt; {nguong.giatDo} · mưa &gt;{" "}
-        {nguong.muaDo} mm
+        🎓 Ngưỡng đang dùng: đẹp ≤ {nguong.gioXanh} · cấm &gt; {nguong.gioDo} m/s · giật &gt; {nguong.giatDo} m/s · mưa
+        &gt; {nguong.muaDo} mm · mù khi chân mây &lt; {nguong.chanMayDo}m
       </div>
       {hoc.giaiThich.map((g, i) => (
         <div key={i} className="mt-0.5 leading-tight">
@@ -565,6 +646,7 @@ function CaiDatDiem({
     gioDo: String(nguong.gioDo),
     giatDo: String(nguong.giatDo),
     muaDo: String(nguong.muaDo),
+    chanMayDo: String(nguong.chanMayDo),
   });
   const [dangLuu, setDangLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -584,6 +666,7 @@ function CaiDatDiem({
         gioDo: Number(f.gioDo),
         giatDo: Number(f.giatDo),
         muaDo: Number(f.muaDo),
+        chanMayDo: Number(f.chanMayDo),
       });
       xong();
     } catch (e: any) {
@@ -629,12 +712,17 @@ function CaiDatDiem({
         đỏ vì thổi ngược sườn.
       </div>
 
-      <div className="mt-2 text-[11px] font-bold text-slate-800">Ngưỡng gió (km/h)</div>
-      <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-4">
-        {o("gioXanh", "Đẹp khi ≤")}
-        {o("gioDo", "Cấm khi >")}
-        {o("giatDo", "Giật cấm khi >")}
+      <div className="mt-2 text-[11px] font-bold text-slate-800">Ngưỡng gió (m/s) và mù</div>
+      <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-5">
+        {o("gioXanh", "Đẹp khi ≤ (m/s)")}
+        {o("gioDo", "Cấm khi > (m/s)")}
+        {o("giatDo", "Giật cấm > (m/s)")}
         {o("muaDo", "Mưa cấm (mm)")}
+        {o("chanMayDo", "Mù khi chân mây < (m)")}
+      </div>
+      <div className="mt-1 text-[10px] text-slate-500">
+        Gió tính bằng m/s như máy đo tại bãi (4 m/s ≈ 14 km/h · 7 m/s ≈ 25 km/h). Chân mây là độ cao mây trên bãi cất
+        cánh — thấp hơn mức này mà mây thấp dày thì máy chấm mù, không bay.
       </div>
 
       {loi && <div className="mt-1 text-[11px] font-bold text-rose-700">{loi}</div>}

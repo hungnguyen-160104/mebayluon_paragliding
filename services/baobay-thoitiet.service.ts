@@ -42,14 +42,35 @@ import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
 /* Gọi mô hình                                                         */
 /* ================================================================== */
 
+/**
+ * Trường lấy từ mô hình CHÍNH (ECMWF): gió, mưa, và những thứ suy ra MÙ —
+ * điểm sương với nhiệt độ cho ra chân mây, mây thấp cho biết có mây ở tầng đó
+ * thật hay không.
+ */
 const HOURLY = [
   "temperature_2m",
+  "dew_point_2m",
+  "relative_humidity_2m",
   "precipitation",
+  "precipitation_probability",
   "cloud_cover",
+  "cloud_cover_low",
   "wind_speed_10m",
   "wind_direction_10m",
   "wind_gusts_10m",
+  "cape",
+  "shortwave_radiation",
 ].join(",");
+
+/**
+ * Trường lấy từ mô hình PHỤ (GFS) — ECMWF của Open-Meteo KHÔNG cấp mấy cái này.
+ *
+ * `lifted_index` (độ ổn định cả cột khí) và `boundary_layer_height` (trần
+ * thermal) là hai số quyết định trời êm hay xóc, và có mầm dông hay không.
+ * Thiếu chúng thì chỉ biết gió mạnh hay nhẹ, không biết KHÔNG KHÍ có động hay
+ * không — hai chuyện khác hẳn nhau với người bay.
+ */
+const HOURLY_PHU = ["lifted_index", "convective_inhibition", "boundary_layer_height"].join(",");
 
 /**
  * BỘ NHỚ TẠM TRONG TIẾN TRÌNH, 20 phút.
@@ -61,6 +82,16 @@ const HOURLY = [
  */
 const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string }>();
 const CACHE_MS = 20 * 60 * 1000;
+/**
+ * BẢN CŨ CÒN DÙNG ĐƯỢC TỚI 6 TIẾNG khi không gọi được mô hình.
+ *
+ * Mạng ngoài đèo rớt là chuyện thường, và nhà cung cấp cũng có lúc chậm. Lúc
+ * ấy thà đưa số của ba tiếng trước kèm dòng "lấy lúc …" còn hơn một hộp báo
+ * lỗi: dự báo ba tiếng trước vẫn cho biết chiều nay gió thế nào, còn hộp lỗi
+ * thì không cho biết gì. Quá 6 tiếng mới chịu thua — xa hơn nữa thì số cũ bắt
+ * đầu nói sai về buổi đang tới.
+ */
+const CACHE_CUU_MS = 6 * 60 * 60 * 1000;
 
 /* ------------------------------------------------------------------ */
 /* Đường 1: Windy Point Forecast API                                    */
@@ -72,7 +103,7 @@ const CACHE_MS = 20 * 60 * 1000;
  * tượng nói gió THỔI TỚI TỪ đâu, còn véc-tơ u/v chỉ hướng gió ĐI VỀ.
  */
 function uvSangGio(u: number, v: number): { tocDo: number; huong: number } {
-  const tocDo = Math.sqrt(u * u + v * v) * 3.6; // m/s → km/h
+  const tocDo = Math.sqrt(u * u + v * v); // Windy trả m/s, đúng đơn vị đang dùng
   const huong = (Math.atan2(-u, -v) * 180) / Math.PI;
   return { tocDo, huong: ((huong % 360) + 360) % 360 };
 }
@@ -149,7 +180,7 @@ async function goiWindy(toaDo: ToaDoDiemBay, key: string): Promise<any> {
     const g = uvSangGio(Number(u[i] ?? 0), Number(v[i] ?? 0));
     hourly.wind_speed_10m.push(g.tocDo);
     hourly.wind_direction_10m.push(g.huong);
-    hourly.wind_gusts_10m.push(Number(gust[i] ?? 0) * 3.6);
+    hourly.wind_gusts_10m.push(Number(gust[i] ?? 0));
     /** Windy gộp mưa 3 giờ; chia ra để cùng thang "mm trong giờ" với Open-Meteo. */
     hourly.precipitation.push(Math.max(0, Number(precip[i] ?? 0)) / 3);
     hourly.cloud_cover.push(may(i));
@@ -158,14 +189,15 @@ async function goiWindy(toaDo: ToaDoDiemBay, key: string): Promise<any> {
   return { hourly };
 }
 
-async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string): Promise<any> {
+async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string, truong = HOURLY): Promise<any> {
   const q = new URLSearchParams({
     latitude: String(toaDo.lat),
     longitude: String(toaDo.lon),
-    hourly: HOURLY,
+    hourly: truong,
     forecast_days: String(soNgay),
     timezone: "Asia/Bangkok",
-    wind_speed_unit: "kmh",
+    /** M/S — đơn vị phi công đọc trên máy đo gió tại bãi; xem ghi chú ở NGUONG_MAC_DINH. */
+    wind_speed_unit: "ms",
   });
   if (moHinh) q.set("models", moHinh);
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`, {
@@ -200,9 +232,24 @@ export async function duBaoDiemBay(
     return { spot: key, toaDo, nguong, ngay: cu.du, moHinh: cu.moHinh, layLuc: new Date(cu.luc).toISOString() };
   }
 
-  const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong);
-  CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
-  return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+  try {
+    const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong);
+    CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
+    return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+  } catch (e) {
+    /** Không gọi được thì đưa bản cũ, nếu còn trong hạn cứu — xem CACHE_CUU_MS. */
+    if (cu && Date.now() - cu.luc < CACHE_CUU_MS) {
+      return {
+        spot: key,
+        toaDo,
+        nguong,
+        ngay: cu.du,
+        moHinh: `${cu.moHinh} — số cũ, chưa lấy lại được`,
+        layLuc: new Date(cu.luc).toISOString(),
+      };
+    }
+    throw e;
+  }
 }
 
 /**
@@ -215,6 +262,19 @@ async function layVaCham(
   soNgay: number,
   nguong: NguongBay,
 ): Promise<{ ngay: NgayThoiTiet[]; moHinh: string }> {
+  /**
+   * KHỞI ĐỘNG MÔ HÌNH PHỤ NGAY, KHÔNG CHỜ MÔ HÌNH CHÍNH.
+   *
+   * Hai lần gọi mạng độc lập nhau, mỗi lần tới 12 giây. Chạy nối tiếp là 24
+   * giây — vượt giới hạn thời gian của route (25s) chỉ vì cộng dồn thời gian
+   * CHỜ, chứ không phải vì tính toán gì. Bắt đầu cả hai cùng lúc thì tổng chỉ
+   * bằng cái chậm hơn.
+   *
+   * `.catch` gắn NGAY tại đây: promise này bị await mãi sau, mà một promise
+   * hỏng chưa ai bắt sẽ bị Node coi là lỗi không xử lý.
+   */
+  const hen = goiMoHinh(toaDo, soNgay, "gfs_seamless", HOURLY_PHU).catch(() => null);
+
   let raw: any;
   let moHinh = "ECMWF IFS (Open-Meteo)";
   const khoaWindy = process.env.WINDY_API_KEY?.trim();
@@ -240,16 +300,49 @@ async function layVaCham(
   const h = raw?.hourly;
   if (!h?.time?.length) throw new Error("Mô hình không trả dữ liệu theo giờ");
 
+  /**
+   * Ghép mô hình PHỤ (đã chạy song song từ đầu hàm) theo mốc giờ. Hỏng thì bỏ
+   * qua: mất mấy chỉ số đối lưu chứ không mất bảng gió — thà thiếu một cột còn
+   * hơn trang trắng vì một máy chủ phụ chậm.
+   */
+  const phu = await hen;
+  const tra = new Map<string, number>();
+  const traCin = new Map<string, number>();
+  const traTran = new Map<string, number>();
+  if (phu?.hourly?.time?.length) {
+    phu.hourly.time.forEach((t: string, i: number) => {
+      const li = phu.hourly.lifted_index?.[i];
+      const cin = phu.hourly.convective_inhibition?.[i];
+      const tran = phu.hourly.boundary_layer_height?.[i];
+      if (li !== null && li !== undefined) tra.set(t, Number(li));
+      if (cin !== null && cin !== undefined) traCin.set(t, Number(cin));
+      if (tran !== null && tran !== undefined) traTran.set(t, Number(tran));
+    });
+  }
+
   const theoNgay = new Map<string, Array<GioThoiTiet & ReturnType<typeof chamGio>>>();
   for (let i = 0; i < h.time.length; i++) {
+    const t = h.time[i];
+    const so = (mang: unknown[] | undefined) => {
+      const v = mang?.[i];
+      return v === null || v === undefined ? undefined : Number(v);
+    };
     const g: GioThoiTiet = {
-      gio: h.time[i],
+      gio: t,
       gio10m: Number(h.wind_speed_10m?.[i] ?? 0),
       giat: Number(h.wind_gusts_10m?.[i] ?? 0),
       huong: Number(h.wind_direction_10m?.[i] ?? 0),
       mua: Number(h.precipitation?.[i] ?? 0),
       may: Number(h.cloud_cover?.[i] ?? 0),
       nhietDo: Number(h.temperature_2m?.[i] ?? 0),
+      diemSuong: so(h.dew_point_2m),
+      mayThap: so(h.cloud_cover_low),
+      am: so(h.relative_humidity_2m),
+      cape: so(h.cape),
+      xacSuatMua: so(h.precipitation_probability),
+      buXa: so(h.shortwave_radiation),
+      chiSoNang: tra.get(t),
+      tranThermal: traTran.get(t),
     };
     const ngay = g.gio.slice(0, 10);
     if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
@@ -314,9 +407,25 @@ export async function duBaoDiemCongKhai(diem: {
     };
   }
 
-  const { ngay, moHinh } = await layVaCham(toaDo, 5, nguong);
-  CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
-  return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+  try {
+    const { ngay, moHinh } = await layVaCham(toaDo, 5, nguong);
+    CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
+    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
+  } catch (e) {
+    if (cu && Date.now() - cu.luc < CACHE_CUU_MS) {
+      return {
+        slug: diem.slug,
+        ten: diem.ten,
+        tinh: diem.tinh,
+        toaDo,
+        nguong,
+        ngay: cu.du,
+        moHinh: cu.moHinh,
+        layLuc: new Date(cu.luc).toISOString(),
+      };
+    }
+    throw e;
+  }
 }
 
 /* ================================================================== */
@@ -345,6 +454,7 @@ export type LuuCauHinh = Partial<{
   gioDo: number;
   giatDo: number;
   muaDo: number;
+  chanMayDo: number;
 }>;
 
 export async function luuCauHinhDiem(
@@ -375,7 +485,7 @@ export async function luuCauHinhDiem(
     else set["weather.huongThuan"] = [((tu % 360) + 360) % 360, ((den % 360) + 360) % 360];
   }
 
-  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo"] as const) {
+  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "chanMayDo"] as const) {
     if (patch[k] === undefined) continue;
     const v = Number(patch[k]);
     if (!Number.isFinite(v) || v <= 0) return { ok: false, error: `Ngưỡng ${k} phải là số dương` };

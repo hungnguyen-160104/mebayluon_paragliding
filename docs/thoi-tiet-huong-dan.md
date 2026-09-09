@@ -98,15 +98,64 @@ cũng nghĩa là tiền khoá không sinh tác dụng, nên phải nhìn dòng n
 | `WINDY_API_KEY` | không | (trống) | Có thì lấy số từ Windy Point Forecast; không thì Open-Meteo |
 | `WINDY_MODEL` | không | `gfs` | Mô hình gọi ở Windy |
 
+## 5b. Máy chấm màu dựa vào những gì
+
+Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặng là cả giờ đó đỏ.
+
+| Yếu tố | Vàng (cân nhắc) | Đỏ (không bay) |
+|---|---|---|
+| Gió trung bình | > ngưỡng đẹp | > ngưỡng cấm |
+| Gió giật | > 80% ngưỡng giật | > ngưỡng giật |
+| **Gió rối** (giật trừ trung bình) | chênh > 4 m/s | chênh > 7 m/s và giật đã qua 70% ngưỡng |
+| **Mù / mây thấp** | chân mây < 2,5× ngưỡng, mây thấp ≥ 50% | chân mây < ngưỡng và mây thấp ≥ 50%; hoặc ẩm ≥ 98% với chân mây < 100 m |
+| Mưa | lác đác > 0,1 mm, hoặc khả năng mưa ≥ 70% | > ngưỡng mưa |
+| **Dông** | 20–39% | ≥ 40% |
+| **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
+| Hướng gió | — | ngoài cung hướng cất cánh (nếu đã khai) |
+
+Ba khái niệm mới, giải thích ngắn:
+
+- **Chân mây** = độ cao đáy mây tính từ bãi cất cánh, suy từ chênh lệch nhiệt
+  độ và điểm sương (khoảng 125 m cho mỗi 1°C chênh). Mô hình chỉ nói *bao nhiêu
+  phần trăm mây*, không nói mây ở độ cao nào — mà 80% mây ở 2.000 m là trời đẹp
+  có bóng râm, còn 80% mây ở 100 m là bãi chìm trong sương. Phải có **cả hai**
+  điều kiện (chân mây thấp **và** mây thấp dày) mới chấm mù: sáng sớm ở núi
+  chênh nhiệt độ luôn nhỏ, bắt mình nó thì ngày nào cũng đỏ.
+
+- **Dông** ghép từ hai số: **CAPE** (bao nhiêu "nhiên liệu" cho đối lưu) và
+  **chỉ số nâng / lifted index** (khí quyển có "mồi" để bốc không). Nhiều nhiên
+  liệu mà khí vẫn nén chặt thì dông không nổ; ít nhiên liệu mà cột khí bất ổn
+  sâu thì vẫn có ổ dông lẻ. Ngưỡng cấm để ở 40% vì trước khi mây dông tới, luồng
+  gió đổ xuống đã quét qua bãi làm gió đảo chiều và mạnh gấp mấy lần trong vài
+  phút.
+
+- **Sức bốc (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
+  ngày. Với bay đôi chở khách thì **êm mới là tốt**: thermal vừa đủ kéo dài
+  chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
+  ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
+
+Rê chuột vào ô bất kỳ trong bảng giờ để xem đúng lý do máy chấm màu đó.
+
+## 5c. Hai mô hình chạy song song
+
+- **ECMWF** (qua Open-Meteo) cho gió, mưa, mây, điểm sương, CAPE.
+- **GFS** cho ba số ECMWF không có: chỉ số nâng, lực kìm đối lưu, trần thermal.
+
+Hai lời gọi chạy **cùng lúc** rồi ghép theo mốc giờ. GFS hỏng thì mất mấy cột
+chỉ số, bảng gió vẫn nguyên. Cả hai hỏng (mất mạng) thì thẻ đưa **số cũ trong
+vòng 6 tiếng** kèm dòng "số cũ, chưa lấy lại được" — dự báo ba tiếng trước vẫn
+cho biết chiều nay gió thế nào, còn hộp báo lỗi thì không cho biết gì.
+
 ## 6. Muốn số CHẮC hơn thì làm gì (miễn phí)
 
 Cách nâng chất lượng thật sự không nằm ở việc mua thêm một mô hình, mà ở chỗ
 **đối chiếu nhiều mô hình**:
 
-- Gọi cùng lúc **ECMWF + ICON + GFS** (Open-Meteo cấp cả ba, miễn phí).
+- Đã có hai mô hình (xem mục 5c) nhưng chúng chia việc, chưa **đối chiếu** nhau.
+- Bước tiếp: cùng hỏi **ECMWF + ICON + GFS** một câu, rồi so.
 - Ba mô hình cùng nói gió êm → tin cậy cao, tô xanh đậm.
-- Ba mô hình cãi nhau (một cái 10 km/h, một cái 30 km/h) → hiện "dự báo chưa
-  chắc", nhắc điều phối gọi lại khách sát ngày thay vì chốt sớm.
+- Ba mô hình cãi nhau (một cái 3 m/s, một cái 8 m/s) → hiện "dự báo chưa chắc",
+  nhắc điều phối gọi lại khách sát ngày thay vì chốt sớm.
 
 Đó là thông tin mà cả Windy Premium lẫn Windy API đều không cho sẵn. Chưa làm —
 nói một tiếng là làm.
@@ -125,8 +174,11 @@ lấy tâm huyện.
 
 ## 8. Ngưỡng gió và việc máy học kinh nghiệm
 
-Ngưỡng khởi điểm (bay đôi chở khách): đẹp ≤ 15 km/h · cấm > 25 km/h · giật cấm
-> 35 km/h · mưa cấm > 0,5 mm.
+**Gió tính bằng m/s** — đúng đơn vị máy đo gió ở bãi, khỏi phải nhẩm đổi.
+
+Ngưỡng khởi điểm (bay đôi chở khách): đẹp ≤ 4 m/s · cấm > 7 m/s · giật cấm
+> 10 m/s · mưa cấm > 0,5 mm · mù khi chân mây < 150 m.
+(Quy đổi cho dễ hình dung: 4 m/s ≈ 14 km/h · 7 m/s ≈ 25 km/h · 10 m/s ≈ 36 km/h.)
 
 Mỗi ngày đã qua, vào `/baocao/thoi-tiet` chấm **Bay tốt / Hạn chế / Nghỉ**. Máy
 chụp lại số của đúng ngày đó; từ **8 ngày** trở lên nó dò mốc gió chia đúng

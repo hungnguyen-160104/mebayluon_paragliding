@@ -19,17 +19,26 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { chanMay, chiSoBay } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
 
 type Gio = {
   gio: string;
+  /** Gió trung bình, m/s — đơn vị phi công dùng tại bãi. */
   gio10m: number;
   giat: number;
   huong: number;
   mua: number;
   may: number;
   nhietDo: number;
+  diemSuong?: number;
+  mayThap?: number;
+  xacSuatMua?: number;
+  cape?: number;
+  chiSoNang?: number;
+  tranThermal?: number;
+  buXa?: number;
   muc: MucDo;
   lyDo: string[];
 };
@@ -46,6 +55,9 @@ type Ngay = {
   muaTong: number;
   nhietMin: number;
   nhietMax: number;
+  xacSuatMuaMax: number;
+  xacSuatDongMax: number;
+  tranMax: number | null;
   gio: Gio[];
 };
 
@@ -117,12 +129,13 @@ function DaiNgay({
             <div className="text-[10px] font-bold uppercase tracking-wide opacity-80">
               {nhanNgay(n.ngay, homNay, lang, t)}
             </div>
-            <div className="mt-0.5 text-lg font-black leading-none">{Math.round(n.gioMax)}</div>
-            <div className="text-[10px] opacity-70">km/h</div>
+            <div className="mt-0.5 text-lg font-black leading-none">{n.gioMax.toFixed(1)}</div>
+            <div className="text-[10px] opacity-70">{t.windUnit}</div>
             <div className="mt-0.5 text-[10px] font-semibold leading-tight">
               {n.gioXanh > 0 ? `${n.gioXanh} ${t.goodHours}` : nhanMuc(n.muc, t)}
             </div>
-            {n.muaTong > 0.5 && <div className="text-[10px] leading-tight">☔ {n.muaTong.toFixed(0)}mm</div>}
+            {n.xacSuatMuaMax >= 50 && <div className="text-[10px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
+            {n.xacSuatDongMax >= 20 && <div className="text-[10px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
           </>
         );
         const lop =
@@ -171,16 +184,50 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
         <tbody>
           {hang(t.hour, (g) => <span className="font-bold text-slate-800">{g.gio.slice(11, 13)}h</span>)}
           {hang(
-            t.wind,
-            (g) => <span className="font-black">{Math.round(g.gio10m)}</span>,
+            `${t.wind} ${t.windUnit}`,
+            (g) => <span className="font-black">{g.gio10m.toFixed(1)}</span>,
             (g) => "rounded " + DAC[g.muc],
           )}
-          {hang(t.gust, (g) => Math.round(g.giat))}
+          {hang(t.gust, (g) => g.giat.toFixed(1))}
           {hang(t.direction, (g) => huongTheoNgonNgu(g.huong, lang))}
+          {hang(
+            t.rainChance,
+            (g) => (g.xacSuatMua === undefined ? "–" : `${Math.round(g.xacSuatMua)}%`),
+            (g) => ((g.xacSuatMua ?? 0) >= 60 ? "font-bold text-sky-800" : "text-slate-500"),
+          )}
           {hang(
             t.rain,
             (g) => (g.mua > 0.05 ? g.mua.toFixed(1) : "–"),
             (g) => (g.mua > 0.5 ? "font-bold text-sky-700" : "text-slate-400"),
+          )}
+          {hang(
+            `⚡ ${t.storm}`,
+            (g) => {
+              const d = chiSoBay(g).xacSuatDong;
+              return d > 0 ? `${d}%` : "–";
+            },
+            (g) => {
+              const d = chiSoBay(g).xacSuatDong;
+              return d >= 40 ? "bg-rose-200 font-bold text-rose-900" : d >= 20 ? "bg-amber-100 font-bold text-amber-900" : "text-slate-400";
+            },
+          )}
+          {hang(
+            t.cloudBase,
+            (g) => {
+              const cm = chanMay(g.nhietDo, g.diemSuong);
+              return cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}km` : `${cm}m`;
+            },
+            (g) => {
+              const cm = chanMay(g.nhietDo, g.diemSuong);
+              return cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50
+                ? "bg-slate-300 font-bold text-slate-900"
+                : "text-slate-500";
+            },
+          )}
+          {hang(
+            t.thermal,
+            (g) => t.thermalLevels[chiSoBay(g).thermal],
+            (g) => (chiSoBay(g).thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500"),
           )}
           {hang(t.cloud, (g) => `${Math.round(g.may)}%`, () => "text-slate-500")}
         </tbody>
@@ -352,8 +399,9 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         ) : (
           <span className="text-rose-700">{t.noWindow}</span>
         )}{" "}
-        · {t.wind} {Math.round(homNay.gioMax)} km/h · {t.gust} {Math.round(homNay.giatMax)}
-        {homNay.muaTong > 0.1 ? ` · ${t.rain} ${homNay.muaTong.toFixed(1)}mm` : ""}
+        · {t.wind} {homNay.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {homNay.giatMax.toFixed(1)}
+        {homNay.xacSuatMuaMax >= 0 ? ` · ${t.rainChance} ${homNay.xacSuatMuaMax}%` : ""}
+        {homNay.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${homNay.xacSuatDongMax}%` : ""}
       </div>
 
       <DaiNgay ngay={diem.ngay} t={t} lang={lang} />

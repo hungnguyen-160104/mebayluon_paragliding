@@ -68,6 +68,7 @@ export interface IBaobaySetting {
     gioDo?: number;
     giatDo?: number;
     muaDo?: number;
+    chanMayDo?: number;
   };
   /** Lần gần nhất bấm/chạy "Lấy book từ website & OTA" cho điểm này. */
   webSyncAt?: Date;
@@ -101,6 +102,7 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
           gioDo: Number,
           giatDo: Number,
           muaDo: Number,
+          chanMayDo: Number,
         },
         { _id: false },
       ),

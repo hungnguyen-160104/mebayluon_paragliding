@@ -27,6 +27,20 @@ export type ThoiTietCopy = {
   direction: string;
   cloud: string;
   hour: string;
+  /** Đơn vị gió — m/s, đơn vị phi công dùng tại bãi. */
+  windUnit: string;
+  /** Xác suất mưa (%) của mô hình. */
+  rainChance: string;
+  /** Nguy cơ dông (%). */
+  storm: string;
+  /** Chân mây / mù. */
+  cloudBase: string;
+  /** Sức bốc (thermal). */
+  thermal: string;
+  /** Độ ổn định không khí. */
+  stability: string;
+  /** Năm mức thermal. */
+  thermalLevels: { khong: string; nhe: string; vua: string; manh: string; gat: string };
   today: string;
   bestWindow: string;
   noWindow: string;
@@ -64,6 +78,13 @@ const vi: ThoiTietCopy = {
   direction: "Hướng",
   cloud: "Mây",
   hour: "Giờ",
+  windUnit: "m/s",
+  rainChance: "Khả năng mưa",
+  storm: "Dông",
+  cloudBase: "Chân mây",
+  thermal: "Sức bốc",
+  stability: "Ổn định",
+  thermalLevels: { khong: "không", nhe: "nhẹ", vua: "vừa", manh: "mạnh", gat: "gắt" },
   today: "Hôm nay",
   bestWindow: "Giờ đẹp",
   noWindow: "Không có khung giờ đẹp",
@@ -100,6 +121,13 @@ const en: ThoiTietCopy = {
   direction: "Direction",
   cloud: "Cloud",
   hour: "Hour",
+  windUnit: "m/s",
+  rainChance: "Rain chance",
+  storm: "Storm",
+  cloudBase: "Cloud base",
+  thermal: "Thermals",
+  stability: "Stability",
+  thermalLevels: { khong: "none", nhe: "light", vua: "moderate", manh: "strong", gat: "rough" },
   today: "Today",
   bestWindow: "Best window",
   noWindow: "No good window",
@@ -136,6 +164,13 @@ const fr: ThoiTietCopy = {
   direction: "Direction",
   cloud: "Nuages",
   hour: "Heure",
+  windUnit: "m/s",
+  rainChance: "Risque de pluie",
+  storm: "Orage",
+  cloudBase: "Base des nuages",
+  thermal: "Thermiques",
+  stability: "Stabilité",
+  thermalLevels: { khong: "aucun", nhe: "légers", vua: "modérés", manh: "forts", gat: "turbulents" },
   today: "Aujourd’hui",
   bestWindow: "Meilleur créneau",
   noWindow: "Aucun bon créneau",
@@ -172,6 +207,13 @@ const ru: ThoiTietCopy = {
   direction: "Направление",
   cloud: "Облачность",
   hour: "Час",
+  windUnit: "м/с",
+  rainChance: "Вероятность дождя",
+  storm: "Гроза",
+  cloudBase: "Нижняя кромка облаков",
+  thermal: "Термики",
+  stability: "Устойчивость",
+  thermalLevels: { khong: "нет", nhe: "слабые", vua: "умеренные", manh: "сильные", gat: "резкие" },
   today: "Сегодня",
   bestWindow: "Лучшее время",
   noWindow: "Нет подходящего окна",
@@ -208,6 +250,13 @@ const zh: ThoiTietCopy = {
   direction: "风向",
   cloud: "云量",
   hour: "时间",
+  windUnit: "米/秒",
+  rainChance: "降雨概率",
+  storm: "雷暴",
+  cloudBase: "云底高度",
+  thermal: "热气流",
+  stability: "稳定度",
+  thermalLevels: { khong: "无", nhe: "弱", vua: "中等", manh: "强", gat: "颠簸" },
   today: "今天",
   bestWindow: "最佳时段",
   noWindow: "无合适时段",
@@ -243,6 +292,13 @@ const hi: ThoiTietCopy = {
   direction: "दिशा",
   cloud: "बादल",
   hour: "समय",
+  windUnit: "मी/से",
+  rainChance: "वर्षा की संभावना",
+  storm: "तूफ़ान",
+  cloudBase: "बादल की ऊँचाई",
+  thermal: "थर्मल",
+  stability: "स्थिरता",
+  thermalLevels: { khong: "नहीं", nhe: "हल्का", vua: "मध्यम", manh: "तेज़", gat: "झटकेदार" },
   today: "आज",
   bestWindow: "सर्वोत्तम समय",
   noWindow: "कोई अच्छा समय नहीं",

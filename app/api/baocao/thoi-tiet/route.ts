@@ -7,8 +7,11 @@ import { chamNgay, duBaoDiemBay, luuCauHinhDiem, soKinhNghiem } from "@/services
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Gọi mô hình khí tượng qua mạng — cho rộng thời gian hơn route đọc Mongo. */
-export const maxDuration = 25;
+/**
+ * Gọi hai mô hình khí tượng qua mạng — rộng hơn hẳn route đọc Mongo. Trang nội
+ * bộ mở ra là gọi cho cả ba điểm cùng lúc, mỗi điểm hai mô hình.
+ */
+export const maxDuration = 45;
 
 /**
  * THỜI TIẾT ĐIỂM BAY.
