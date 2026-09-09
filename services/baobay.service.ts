@@ -149,7 +149,19 @@ function pushSheetInBackground(
       if (!sync.ok && !sync.quiet) console.warn("[baocao] đẩy bảng tính thất bại:", sync.error);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      await model.updateOne({ _id: id }, { $set: { sheetSynced: false, sheetError: msg } });
+      /**
+       * Ghi dấu "chưa sang bảng" cũng có thể HỎNG — điển hình là kết nối Mongo
+       * đã đóng vì tiến trình gọi (script, phép thử) xong việc và ngắt trước
+       * khi việc nền chạy tới đây. Lỗi ở ngay trong catch thì không ai đỡ, nó
+       * thành unhandled rejection và giết cả tiến trình — trong khi việc chính
+       * (tạo lệnh tiền) đã xong từ lâu. Nuốt riêng phép ghi dấu này: mất một
+       * dấu "chưa đồng bộ" thì đẩy bù sau được, mất cả tiến trình thì không.
+       */
+      try {
+        await model.updateOne({ _id: id }, { $set: { sheetSynced: false, sheetError: msg } });
+      } catch (e2: unknown) {
+        console.warn("[baocao] không ghi được dấu chưa-sang-bảng:", e2 instanceof Error ? e2.message : String(e2));
+      }
       console.warn("[baocao] đẩy bảng tính lỗi:", msg);
     }
   };
