@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { moneyDestsOf } from "@/lib/baobay/money-dest";
 import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
@@ -389,8 +389,20 @@ export function BookingSheet({
             {rows.map((b, r) => {
               const done = b.status !== "open";
               const rowBg = b.locked ? "bg-slate-100" : done ? "bg-slate-50" : "bg-white";
+              const moRong = strip?.id === b.id;
               return (
-                <tr key={b.id}>
+                /**
+                 * MỘT DÒNG = <Fragment> gồm dòng dữ liệu + (nếu đang mở) dải
+                 * nút NGAY DƯỚI NÓ.
+                 *
+                 * Bản đầu vẽ hai vòng lặp riêng — một vòng cho các dòng, một
+                 * vòng cho các dải — nên dải nút rơi xuống TẬN ĐÁY bảng, cách
+                 * dòng vừa bấm hàng chục dòng. Bấm ⋯ Thêm xong không thấy gì,
+                 * phải cuộn xuống cuối mới gặp, mà lúc đó chẳng còn biết nó
+                 * thuộc về khách nào.
+                 */
+                <Fragment key={b.id}>
+                <tr>
                   {cols.map((col, c) => {
                     const active = sel?.r === r && sel?.c === c;
                     const isEditing = active && editing && Boolean(col.edit);
@@ -532,13 +544,10 @@ export function BookingSheet({
                     </div>
                   </td>
                 </tr>
-              );
-            })}
 
-            {/* Dải thao tác đầy đủ — trải hết bề ngang, ngay dưới đúng dòng vừa bấm */}
-            {rows.map((b) =>
-              strip?.id === b.id ? (
-                <tr key={`s-${b.id}`}>
+                {/* Dải thao tác đầy đủ — trải hết bề ngang, NGAY DƯỚI dòng vừa bấm */}
+                {moRong && (
+                <tr>
                   <td colSpan={cols.length + 1} className="border-b border-r border-slate-200 bg-sky-50/70 px-2 py-1.5">
                     <div className="mb-1 flex flex-wrap items-center gap-1">
                       <span className="mr-1 text-[11px] font-bold text-sky-900">
@@ -548,10 +557,10 @@ export function BookingSheet({
                       {renderInsurance && (
                         <button
                           type="button"
-                          onClick={() => setStrip({ id: b.id, what: strip.what === "bh" ? "more" : "bh" })}
+                          onClick={() => setStrip({ id: b.id, what: strip?.what === "bh" ? "more" : "bh" })}
                           className={
                             "h-7 rounded-lg border px-2 text-[11px] font-semibold " +
-                            (strip.what === "bh"
+                            (strip?.what === "bh"
                               ? "border-violet-600 bg-violet-600 text-white"
                               : "border-violet-300 bg-violet-50 text-violet-800")
                           }
@@ -567,11 +576,13 @@ export function BookingSheet({
                         ✕ Đóng
                       </button>
                     </div>
-                    {strip.what === "bh" ? renderInsurance?.(b) : renderMore?.(b, () => setStrip(null))}
+                    {strip?.what === "bh" ? renderInsurance?.(b) : renderMore?.(b, () => setStrip(null))}
                   </td>
                 </tr>
-              ) : null,
-            )}
+                )}
+                </Fragment>
+              );
+            })}
 
             {movedOut.map((b) => (
               <tr key={`m-${b.id}`}>
