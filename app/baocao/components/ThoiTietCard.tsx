@@ -684,8 +684,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
         Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
         mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
         <strong> 😊</strong> bay tốt · <strong>😐</strong> cân nhắc · <strong>😞</strong> không bay. Mũi tên chỉ chiều
-        gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi thuận sườn và{" "}
-        <span className="font-black text-rose-600">đỏ</span> khi ngược sườn hoặc luồn khe. Rê chuột vào ô bất kỳ để
+        gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi hướng gió tốt cho bãi và{" "}
+        <span className="font-black text-rose-600">đỏ</span> khi hướng xấu hoặc gió xiết. Rê chuột vào ô bất kỳ để
         xem lý do.
       </div>
     </div>
