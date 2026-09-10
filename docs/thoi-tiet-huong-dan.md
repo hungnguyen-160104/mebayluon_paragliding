@@ -130,7 +130,13 @@ không bay. Hai thang khác nhau và đều cần: một giờ có thể gió đ
 vì mưa.
 
 Hướng gió hiện bằng **mũi tên chỉ chiều gió thổi tới** — nhìn cả hàng ngang là
-thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở tooltip.
+thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở tooltip. Mũi tên tô
+**xanh** khi thuận sườn, **đỏ** khi ngược sườn hoặc luồn khe (gió xiết), **xám**
+ở điểm chưa khai luật hướng.
+
+Màu mũi tên trả lời câu khác hẳn màu ô gió: ô gió nói *mạnh cỡ nào*, mũi tên nói
+*thổi vào sườn hay thổi ngược*. Ở núi hai chuyện ấy độc lập — gió nhẹ mà ngược
+sườn vẫn không bay được — nên phải nhìn thấy cả hai.
 
 ### Bảng chấm màu
 

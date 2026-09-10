@@ -19,7 +19,16 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
-import { chiSoBay, muiTenGio, sucGiat, sucGio, tranMay, type SucGio } from "@/lib/baobay/thoi-tiet";
+import {
+  chiSoBay,
+  huongTheNao,
+  muiTenGio,
+  sucGiat,
+  sucGio,
+  tranMay,
+  type LuatHuong,
+  type SucGio,
+} from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
 
@@ -66,7 +75,7 @@ export type DiemDuBao = {
   slug: string;
   ten: string;
   tinh: string;
-  toaDo: { lat: number; lon: number; ten: string };
+  toaDo: { lat: number; lon: number; ten: string; luatHuong?: LuatHuong };
   ngay: Ngay[];
   moHinh: string;
   layLuc: string;
@@ -98,6 +107,13 @@ const MAU_GIO: Record<SucGio, string> = {
 };
 
 /** Giật chỉ đáng chú ý từ 14 m/s: dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
+/** Mũi tên: xanh thuận sườn · đỏ ngược sườn · xám khi điểm chưa khai luật hướng. */
+const MAU_MUI_TEN: Record<"tot" | "xau" | "thuong", string> = {
+  tot: "text-emerald-600",
+  xau: "text-rose-600",
+  thuong: "text-slate-600",
+};
+
 const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
   nhe: "text-slate-400",
   vua: "text-slate-500",
@@ -178,7 +194,7 @@ function DaiNgay({
 /* Bảng giờ                                                            */
 /* ------------------------------------------------------------------ */
 
-function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string }) {
+function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: string; luat?: LuatHuong }) {
   const gio = ngay.gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
     return h >= 6 && h <= 18;
@@ -218,7 +234,14 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
             */}
           {hang(
             t.direction,
-            (g) => <span className="text-base leading-none" title={huongTheoNgonNgu(g.huong, lang)}>{muiTenGio(g.huong)}</span>,
+            (g) => (
+              <span
+                className={"text-lg font-black leading-none " + MAU_MUI_TEN[huongTheNao(g.huong, g.gio10m, luat)]}
+                title={huongTheoNgonNgu(g.huong, lang)}
+              >
+                {muiTenGio(g.huong)}
+              </span>
+            ),
           )}
           {hang(
             t.rainChance,
@@ -379,7 +402,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         </div>
       )}
 
-      {ngayChon && <BangGio ngay={ngayChon} t={t} lang={lang} />}
+      {ngayChon && <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />}
 
       <button
         type="button"

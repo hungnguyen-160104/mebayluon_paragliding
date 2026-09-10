@@ -356,6 +356,27 @@ export function muiTenGio(do_: number): string {
   return MUI_TEN[Math.round(h / 22.5) % 16];
 }
 
+export type HuongTheNao = "tot" | "xau" | "thuong";
+
+/**
+ * HƯỚNG NÀY TỐT HAY XẤU cho điểm bay — để tô màu mũi tên.
+ *
+ * Màu ở đây trả lời một câu khác hẳn màu ô gió: ô gió nói "mạnh cỡ nào", mũi
+ * tên nói "thổi vào sườn hay thổi ngược". Ở núi thì hai chuyện ấy độc lập —
+ * gió nhẹ mà ngược sườn vẫn không bay được — nên phải nhìn thấy cả hai.
+ *
+ * Điểm chưa khai luật hướng thì trả "thường": thà để xám còn hơn tô xanh một
+ * hướng mà mình không biết có thuận sườn hay không.
+ */
+export function huongTheNao(huong: number, gio: number, luat?: LuatHuong): HuongTheNao {
+  if (!luat) return "thuong";
+  if (luat.xau && trongCung(huong, luat.xau)) return "xau";
+  const manh = gio > 6;
+  if (manh && luat.xiet?.some((h) => Math.abs(lechGoc(huong, h)) <= 22.5)) return "xau";
+  if (luat.tot && trongCung(huong, luat.tot)) return "tot";
+  return "thuong";
+}
+
 /** Hướng có nằm trong một cung không — cung cho phép vắt qua mốc bắc. */
 export function trongCung(huong: number, cung: [number, number]): boolean {
   const [tu, den] = cung;

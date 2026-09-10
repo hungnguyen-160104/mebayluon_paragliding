@@ -20,6 +20,7 @@ import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/
 import {
   chiSoBay,
   huongChu,
+  huongTheNao,
   muiTenGio,
   NHAN_SUC_GIAT,
   NHAN_SUC_GIO,
@@ -27,6 +28,7 @@ import {
   sucGiat,
   sucGio,
   tranMay,
+  type LuatHuong,
   type SucGio,
 } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
@@ -292,7 +294,7 @@ export function ThoiTietCard({
       ) : (
         <>
           {/* ---- bảng giờ của ngày đang chọn ---- */}
-          {ngayChon && <BangGio ngay={ngayChon} />}
+          {ngayChon && <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />}
 
           {/* ---- Windy nhúng ---- */}
           <div className="mt-2">
@@ -353,7 +355,14 @@ export function ThoiTietCard({
 /* Bảng giờ                                                            */
 /* ------------------------------------------------------------------ */
 
-function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
+/** Mũi tên tô theo hướng: xanh thuận sườn · đỏ ngược sườn hoặc luồn khe · xám chưa rõ. */
+const MAU_MUI_TEN: Record<"tot" | "xau" | "thuong", string> = {
+  tot: "text-emerald-600",
+  xau: "text-rose-600",
+  thuong: "text-slate-600",
+};
+
+function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
   /** Chỉ bày khung giờ bay: 0h–6h và tối thì trời thế nào cũng không dùng tới. */
   const gio = ngay.gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
@@ -419,10 +428,12 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
             {gio.map((g) => (
               <td
                 key={g.gio}
-                className="border-b border-slate-200 px-0.5 py-0.5 text-slate-700"
+                className="border-b border-slate-200 px-0.5 py-0.5"
                 title={`gió ${huongChu(g.huong)} (${Math.round(g.huong)}°) — mũi tên chỉ chiều gió thổi tới`}
               >
-                <span className="text-base leading-none">{muiTenGio(g.huong)}</span>
+                <span className={"text-lg font-black leading-none " + MAU_MUI_TEN[huongTheNao(g.huong, g.gio10m, luat)]}>
+                  {muiTenGio(g.huong)}
+                </span>
               </td>
             ))}
           </tr>
@@ -527,7 +538,9 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
         Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
         mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
         <strong> ✔</strong> bay tốt · <strong>⚠</strong> cân nhắc · <strong>✕</strong> không bay. Mũi tên chỉ chiều
-        gió thổi tới. Rê chuột vào ô bất kỳ để xem lý do.
+        gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi thuận sườn và{" "}
+        <span className="font-black text-rose-600">đỏ</span> khi ngược sườn hoặc luồn khe. Rê chuột vào ô bất kỳ để
+        xem lý do.
       </div>
     </div>
   );
