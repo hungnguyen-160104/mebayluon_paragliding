@@ -64,7 +64,9 @@ export default function WeatherPageClient() {
             😊 {t.good}
           </span>
           <span className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-amber-900">😐 {t.fair}</span>
-          <span className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-rose-900">😞 {t.bad}</span>
+          <span className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-rose-900" title={t.bad}>
+            😞
+          </span>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">

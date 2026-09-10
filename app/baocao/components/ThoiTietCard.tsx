@@ -143,7 +143,12 @@ const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
   ratManh: "font-bold text-rose-700",
 };
 
-const NHAN: Record<MucDo, string> = { xanh: "😊 BAY TỐT", vang: "😐 CÂN NHẮC", do: "😞 KHÔNG BAY" };
+/**
+ * Mức ĐỎ chỉ có mặt buồn, không có chữ (luật chủ 10/09): "KHÔNG BAY" là câu
+ * quá tuyệt đối — mưa có lúc ngớt, phi công vẫn có thể lên. Mặt buồn nói "hôm
+ * nay khó", chừa chỗ cho người ở bãi quyết.
+ */
+const NHAN: Record<MucDo, string> = { xanh: "😊 BAY TỐT", vang: "😐 CÂN NHẮC", do: "😞" };
 
 const THU = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -253,7 +258,8 @@ export function ThoiTietCard({
                 Giờ đẹp <strong className="text-emerald-700">{homNayCard.khungDep}</strong>
               </>
             ) : (
-              <span className="text-rose-700">Hôm nay không có khung giờ đẹp</span>
+              /* Không khung đẹp thì im, không tuyên bố "không có" — mưa có lúc ngớt, người ở bãi quyết. */
+              null
             )}{" "}
             · gió tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
             {/**
@@ -311,13 +317,13 @@ export function ThoiTietCard({
                 MAU_NEN[n.muc] +
                 (n.ngay === ngayChon?.ngay ? " ring-2 ring-sky-500" : "")
               }
-              title={n.khungDep ? `Giờ đẹp ${n.khungDep}` : "Không có khung giờ đẹp"}
+              title={n.khungDep ? `Giờ đẹp ${n.khungDep}` : undefined}
             >
               <div className="text-[10px] font-bold uppercase">{nhanNgay(n.ngay, homNay)}</div>
               <div className="text-[11px] font-black leading-tight">{n.gioMax.toFixed(1)}</div>
               <div className="text-[9px] leading-tight opacity-80">m/s</div>
               <div className="text-[9px] leading-tight">
-                {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "nghỉ" : "hạn chế"}
+                {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "😞" : "hạn chế"}
               </div>
               {n.gioMua > 0 && <div className="text-[9px] leading-tight" title={n.khungMua ?? ""}>☔ {n.gioMua}h</div>}
               {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
@@ -1022,6 +1028,8 @@ function CaiDatDiem({
     giatDo: String(nguong.giatDo),
     muaDo: String(nguong.muaDo),
     tranMayDo: String(nguong.tranMayDo),
+    gioBayTu: String(toaDo.gioBay?.[0] ?? 7),
+    gioBayDen: String(toaDo.gioBay?.[1] ?? 17),
   });
   const [dangLuu, setDangLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -1042,6 +1050,8 @@ function CaiDatDiem({
         giatDo: Number(f.giatDo),
         muaDo: Number(f.muaDo),
         tranMayDo: Number(f.tranMayDo),
+        gioBayTu: Number(f.gioBayTu),
+        gioBayDen: Number(f.gioBayDen),
       });
       xong();
     } catch (e: any) {
@@ -1085,6 +1095,16 @@ function CaiDatDiem({
       <div className="mt-1 text-[10px] text-slate-500">
         0 = bắc, 90 = đông, 180 = nam, 270 = tây. Ví dụ sườn hướng đông nam thì để 90 → 180: gió ngoài cung này máy chấm
         đỏ vì thổi ngược sườn.
+      </div>
+
+      <div className="mt-2 text-[11px] font-bold text-slate-800">Khung giờ bay của điểm</div>
+      <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-4">
+        {o("gioBayTu", "Bay từ (giờ)", "9")}
+        {o("gioBayDen", "Bay đến (giờ)", "16")}
+      </div>
+      <div className="mt-1 text-[10px] text-slate-500">
+        Mọi phép tính theo ngày (khung đẹp, số tiếng mưa, nhận định, điểm) chỉ nhìn trong khung này. Khau Phạ bay 9–16:
+        sáng sớm đèo còn mù, 7h đẹp trên giấy nhưng chẳng ai lên bãi.
       </div>
 
       <div className="mt-2 text-[11px] font-bold text-slate-800">Ngưỡng gió (m/s) và mù</div>

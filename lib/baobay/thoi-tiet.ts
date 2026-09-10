@@ -56,6 +56,13 @@ export type ToaDoDiemBay = {
   huongThuan?: [number, number];
   /** Luật hướng đầy đủ của điểm: gió tốt · gió xấu · hướng sinh gió xiết. */
   luatHuong?: LuatHuong;
+  /**
+   * KHUNG GIỜ BAY của điểm, [từ, đến] theo giờ trong ngày. Mọi phép tính theo
+   * ngày (khung đẹp, số tiếng mưa, nhận định, điểm chuyên gia) chỉ nhìn trong
+   * khung này. Chưa khai thì dùng 7–17. Khau Phạ bay 9–16: sáng sớm đèo còn
+   * mù và chưa có nắng đốt sườn, 7h đẹp trên giấy nhưng chẳng ai lên bãi.
+   */
+  gioBay?: [number, number];
 };
 
 /**
@@ -82,6 +89,7 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     alt: 1200,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
     luatHuong: { tot: [23, 112], xau: [113, 292], xiet: [0, 90, 270] },
+    gioBay: [9, 16],
   },
   sapa: { lat: 22.3364, lon: 103.8438, alt: 1500, ten: "Sa Pa (Lào Cai)" },
   /**
@@ -110,6 +118,7 @@ export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): 
     ten: luu.ten?.trim() || goc.ten,
     huongThuan: luu.huongThuan ?? goc.huongThuan,
     luatHuong: luu.luatHuong ?? goc.luatHuong,
+    gioBay: luu.gioBay ?? goc.gioBay,
   };
 }
 
@@ -688,7 +697,8 @@ export function chamGio(
     lyDo.push(`⚠ GIÓ XIẾT: hướng ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — luồn khe, tăng tốc ở mép bãi`);
     len("do");
   } else if (huongTot) {
-    lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — thuận sườn`);
+    /** Không thêm "— thuận sườn": người đọc thấy chữ đó không biết làm gì với nó (luật chủ 10/09). */
+    lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]}`);
   } else if (!huongThuanLoi(g.huong, huongThuan)) {
     lyDo.push(`gió hướng ${huongChu(g.huong)} — ngược sườn cất cánh`);
     len("do");
@@ -774,10 +784,15 @@ export type NgayThoiTiet = {
  * gió thì vẫn là ngày bay được, chỉ bay buổi sáng. Lấy trung bình thì ngày ấy
  * ra vàng, người đọc tưởng cả ngày dở và huỷ khách oan.
  */
-export function gopNgay(ngay: string, gio: Array<GioThoiTiet & ChamGio>): NgayThoiTiet {
+export function gopNgay(
+  ngay: string,
+  gio: Array<GioThoiTiet & ChamGio>,
+  /** Khung giờ bay của điểm — xem `ToaDoDiemBay.gioBay`. */
+  khung: [number, number] = [GIO_BAY_TU, GIO_BAY_DEN],
+): NgayThoiTiet {
   const trongKhung = gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
-    return h >= GIO_BAY_TU && h <= GIO_BAY_DEN;
+    return h >= khung[0] && h <= khung[1];
   });
   const dem = (m: MucDo) => trongKhung.filter((g) => g.muc === m).length;
 

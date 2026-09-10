@@ -133,8 +133,13 @@ const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
   ratManh: "font-bold text-rose-700",
 };
 
+/** Mức đỏ chỉ có mặt buồn — "KHÔNG BAY" quá tuyệt đối, mưa có lúc ngớt. Chữ để trong tooltip. */
 function nhanMuc(muc: MucDo, t: ThoiTietCopy): string {
-  return `${BIEU_TUONG_MUC[muc]} ${muc === "xanh" ? t.good : muc === "vang" ? t.fair : t.bad}`;
+  if (muc === "do") return BIEU_TUONG_MUC.do;
+  return `${BIEU_TUONG_MUC[muc]} ${muc === "xanh" ? t.good : t.fair}`;
+}
+function moTaMuc(muc: MucDo, t: ThoiTietCopy): string {
+  return muc === "xanh" ? t.good : muc === "vang" ? t.fair : t.bad;
 }
 
 /** "2026-09-10" → "T5 10/09" theo tiếng đang xem; hôm nay thì hiện "Hôm nay". */
@@ -455,7 +460,8 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
               {t.bestWindow}: <span className="text-emerald-700">{ngayChon.khungDep}</span>
             </>
           ) : (
-            <span className="text-rose-700">{t.noWindow}</span>
+            /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
+            null
           )}
         </div>
       )}
@@ -531,7 +537,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <div className={"rounded-lg border px-2 py-1 text-xs font-black " + VIEN[homNay.muc]}>
+        <div className={"rounded-lg border px-2 py-1 text-xs font-black " + VIEN[homNay.muc]} title={moTaMuc(homNay.muc, t)}>
           {nhanMuc(homNay.muc, t)}
         </div>
         <div className="leading-tight">
@@ -552,7 +558,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             {t.bestWindow} <strong className="text-emerald-700">{homNay.khungDep}</strong>
           </>
         ) : (
-          <span className="text-rose-700">{t.noWindow}</span>
+          /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
+            null
         )}{" "}
         · {t.wind} {homNay.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {homNay.giatMax.toFixed(1)}
         {homNay.gioMua > 0 ? ` · ${t.rain} ~${homNay.gioMua}h${homNay.khungMua ? ` (${homNay.khungMua})` : ""} · ${homNay.muaTong.toFixed(1)}mm` : ""}

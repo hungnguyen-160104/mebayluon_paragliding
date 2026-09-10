@@ -418,15 +418,26 @@ async function layVaCham(
     theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong) });
   }
 
-  const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio)).slice(0, soNgay);
+  const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio, toaDo.gioBay)).slice(0, soNgay);
   /**
    * Nhận định từng ngày, làm SAU khi có đủ cả dãy: ngày nào cũng cần ngày liền
    * trước để biết áp suất đang lên hay xuống — thứ báo front sớm nhất.
    */
   ngay.forEach((n, i) => {
-    n.nhanDinh = nhanDinhNgay(n, { ngayTruoc: i > 0 ? ngay[i - 1] : null, altBai: toaDo.alt, luatHuong: toaDo.luatHuong });
-    /** Điểm 0–100 của chuyên gia — cùng dữ liệu, cùng luật hướng và ngưỡng của điểm. */
-    n.chuyenGia = danhGiaNgay(n, nguong, { luatHuong: toaDo.luatHuong, altBai: toaDo.alt, thuTu: i, ngayTruoc: i > 0 ? ngay[i - 1] : null });
+    n.nhanDinh = nhanDinhNgay(n, {
+      ngayTruoc: i > 0 ? ngay[i - 1] : null,
+      altBai: toaDo.alt,
+      luatHuong: toaDo.luatHuong,
+      gioBay: toaDo.gioBay,
+    });
+    /** Điểm 0–100 của chuyên gia — cùng dữ liệu, cùng luật hướng, ngưỡng và khung giờ của điểm. */
+    n.chuyenGia = danhGiaNgay(n, nguong, {
+      luatHuong: toaDo.luatHuong,
+      altBai: toaDo.alt,
+      thuTu: i,
+      ngayTruoc: i > 0 ? ngay[i - 1] : null,
+      gioBay: toaDo.gioBay,
+    });
   });
   return { ngay, moHinh };
 }
@@ -523,8 +534,10 @@ export async function cauHinhDiem(spot: string): Promise<{ toaDo: ToaDoDiemBay; 
   const key = normalizeSpot(spot);
   const doc = await BaobaySetting.findOne({ key }).select("weather").lean<any>();
   const w = doc?.weather ?? null;
+  const gioBay: [number, number] | undefined =
+    w && Number.isFinite(w.gioBayTu) && Number.isFinite(w.gioBayDen) && w.gioBayTu < w.gioBayDen ? [Number(w.gioBayTu), Number(w.gioBayDen)] : undefined;
   return {
-    toaDo: toaDoDiemBay(key, w),
+    toaDo: toaDoDiemBay(key, w ? { ...w, gioBay } : null),
     nguong: nguongCuaDiem(w),
   };
 }
@@ -541,6 +554,8 @@ export type LuuCauHinh = Partial<{
   giatDo: number;
   muaDo: number;
   tranMayDo: number;
+  gioBayTu: number;
+  gioBayDen: number;
 }>;
 
 export async function luuCauHinhDiem(
@@ -576,6 +591,16 @@ export async function luuCauHinhDiem(
     const v = Number(patch[k]);
     if (!Number.isFinite(v) || v <= 0) return { ok: false, error: `Ngưỡng ${k} phải là số dương` };
     set[`weather.${k}`] = v;
+  }
+
+  if (patch.gioBayTu !== undefined || patch.gioBayDen !== undefined) {
+    const tu = Number(patch.gioBayTu);
+    const den = Number(patch.gioBayDen);
+    if (!Number.isInteger(tu) || !Number.isInteger(den) || tu < 4 || den > 20 || tu >= den) {
+      return { ok: false, error: "Khung giờ bay phải là hai số nguyên trong 4–20, giờ từ nhỏ hơn giờ đến (ví dụ 9 và 16)" };
+    }
+    set["weather.gioBayTu"] = tu;
+    set["weather.gioBayDen"] = den;
   }
 
   if (!Object.keys(set).length) return { ok: true };
@@ -633,6 +658,7 @@ async function soCuaNgay(
 ): Promise<{ windMax: number; gustMax: number; rainTotal: number; windDir: number } | null> {
   try {
     const { toaDo } = await cauHinhDiem(spot);
+    const [tuGio, denGio] = toaDo.gioBay ?? [7, 17];
     const homNay = todayInVN();
     const q = new URLSearchParams({
       latitude: String(toaDo.lat),
@@ -660,7 +686,7 @@ async function soCuaNgay(
     let dem = 0;
     for (let i = 0; i < h.time.length; i++) {
       const gio = Number(String(h.time[i]).slice(11, 13));
-      if (gio < 7 || gio > 17) continue;
+      if (gio < tuGio || gio > denGio) continue;
       windMax = Math.max(windMax, Number(h.wind_speed_10m?.[i] ?? 0));
       gustMax = Math.max(gustMax, Number(h.wind_gusts_10m?.[i] ?? 0));
       rainTotal += Number(h.precipitation?.[i] ?? 0);

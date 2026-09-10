@@ -11,7 +11,11 @@ Hệ thống **đang chạy được ngay, không cần khoá, không tốn ti�
   **ECMWF · GFS · ICON · ECMWF AI · Sóng**.
 
   **Chọn được cả LỚP xem** — "soi mây, soi mù" như trên windy.com:
-  **Gió · Gió giật · Mây · Mây thấp · Trần mây · Tầm nhìn/mù · Mưa · Độ ẩm**.
+  **Gió · Gió giật · Mây · Mây thấp · Trần mây · Sương mù · Tầm nhìn · Mưa · Độ ẩm**.
+  Mã lớp là mã của Windy, đã dò thật từng cái trên bản nhúng: lớp nào Windy
+  không nhận thì nó âm thầm rơi về "gió" — bản đầu ghi nhầm `cloudbase` nên
+  nút Trần mây không làm gì; mã đúng là `cbase`. Thêm lớp mới phải dò lại,
+  đừng đoán tên.
   Con số "mây thấp 80%" không nói được mây ấy ở độ cao nào so với bãi; lớp
   **Trần mây** vẽ thẳng độ cao đáy mây theo mét, lớp **Mây thấp** vẽ đúng thứ
   trùm sườn núi, lớp **Tầm nhìn** làm tối vùng sương mù dày — nhìn hình là biết
@@ -421,6 +425,21 @@ Sa Pa chưa khai luật hướng: nói cho tôi cung gió tốt/xấu là thêm 
 Lấy toạ độ: mở Google Maps, bấm giữ đúng chỗ cất cánh, chép hai số hiện ra.
 Ở núi lệch mươi cây số là gió khác hẳn, nên nhớ lấy tại **bãi cất cánh**, đừng
 lấy tâm huyện.
+
+## 7b. Khung giờ bay của điểm
+
+Mọi phép tính theo ngày — khung đẹp, số tiếng mưa, nhận định, điểm chuyên gia,
+số của sổ kinh nghiệm — chỉ nhìn **trong khung giờ bay của điểm**. Mặc định
+7–17; **Khau Phạ khai 9–16**: sáng sớm đèo còn mù và chưa có nắng đốt sườn, 7h
+đẹp trên giấy nhưng chẳng ai lên bãi. Sửa ở ⚙ → "Khung giờ bay của điểm".
+
+**Khung giờ thermal tốt nhất** là **đỉnh 4 giờ liên tiếp** có trần cao nhất,
+không phải cả dải giờ "có thermal" — cả dải thì ra "09:00–16:00", dài bằng cả
+ngày bay, chẳng chọn được gì.
+
+Mấy chữ đã bỏ theo ý chủ: "— thuận sườn" (người đọc không biết làm gì với nó),
+"KHÔNG BAY" (quá tuyệt đối — mưa có lúc ngớt; mức đỏ giờ chỉ còn 😞), "Không
+có khung giờ đẹp" (làm khách hoang mang; không có thì im).
 
 ## 8. Ngưỡng gió và việc máy học kinh nghiệm
 

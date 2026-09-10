@@ -37,13 +37,21 @@ export const WINDY_MODELS: WindyModel[] = [
  */
 export type LopWindy = { ma: string; ten: string; mo: string };
 
+/**
+ * MÃ LỚP LÀ MÃ CỦA WINDY, đã DÒ THẬT trên embed2.html từng cái một (đọc
+ * `W.store.get("overlay")` sau khi nạp): lớp nào Windy không nhận thì nó âm
+ * thầm rơi về "wind" — bấm mà không thấy gì đổi. Bản đầu ghi `cloudbase` (tên
+ * đoán theo tài liệu web) nên nút Trần mây chẳng làm gì; mã đúng là `cbase`.
+ * Thêm lớp mới thì phải dò lại như vậy, đừng đoán tên.
+ */
 export const LOP_WINDY: LopWindy[] = [
   { ma: "wind", ten: "Gió", mo: "Gió bề mặt — lớp mặc định" },
   { ma: "gust", ten: "Gió giật", mo: "Gió giật bề mặt" },
   { ma: "clouds", ten: "Mây", mo: "Mây tổng — khối mây đang ở đâu, đi hướng nào" },
-  { ma: "lclouds", ten: "Mây thấp", mo: "Mây tầng thấp — thứ trùm sườn núi và bịt bãi cất cánh" },
-  { ma: "cloudbase", ten: "Trần mây", mo: "Độ cao đáy mây (m) — so với độ cao bãi là biết bãi trong hay dưới mây" },
-  { ma: "visibility", ten: "Tầm nhìn / mù", mo: "Tầm nhìn ngang — vùng tối là sương mù dày" },
+  { ma: "lclouds", ten: "Mây thấp", mo: "Mây tầng thấp (FEW/SCT/BKN/OVC) — thứ trùm sườn núi và bịt bãi cất cánh" },
+  { ma: "cbase", ten: "Trần mây", mo: "Độ cao đáy mây (m) — so với độ cao bãi là biết bãi trong hay dưới mây" },
+  { ma: "fog", ten: "Sương mù", mo: "Vùng có sương mù / mù đóng băng — nhìn là biết sáng mai bãi có mù không" },
+  { ma: "visibility", ten: "Tầm nhìn", mo: "Tầm nhìn ngang (km) — vùng tối là mù dày" },
   { ma: "rain", ten: "Mưa", mo: "Mưa và dông" },
   { ma: "rh", ten: "Độ ẩm", mo: "Độ ẩm tương đối — ẩm cao ở núi là dấu hiệu mù" },
 ];

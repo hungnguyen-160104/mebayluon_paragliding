@@ -84,10 +84,10 @@ export function nhanMucNhanDinh(m: MucNhanDinh): string {
 /* Tiện ích số                                                         */
 /* ------------------------------------------------------------------ */
 
-const gioBay = (gio: GioThoiTiet[]) =>
+const gioBay = (gio: GioThoiTiet[], khung: [number, number] = [GIO_BAY_TU, GIO_BAY_DEN]) =>
   gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
-    return h >= GIO_BAY_TU && h <= GIO_BAY_DEN;
+    return h >= khung[0] && h <= khung[1];
   });
 
 const co = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -188,9 +188,12 @@ export function nhanDinhNgay(
     /** Độ cao bãi cất cánh (m trên mực biển) — để nói "gió trên bãi 300m" thay vì "mực 850hPa". */
     altBai?: number;
     luatHuong?: LuatHuong;
+    /** Khung giờ bay của điểm — mặc định 7–17. */
+    gioBay?: [number, number];
   } = {},
 ): NhanDinhNgay {
-  const gio = gioBay(ngay.gio);
+  const khung = opts.gioBay ?? [GIO_BAY_TU, GIO_BAY_DEN];
+  const gio = gioBay(ngay.gio, khung);
   const diem: DiemNhanDinh[] = [];
   const khuyenCao: string[] = [];
   /** Đếm mấy thứ "xấu" và "chú ý" để chốt mức cuối. */
@@ -227,7 +230,6 @@ export function nhanDinhNgay(
         noi += " — NGƯỢC SƯỜN";
         tong = "xau";
       } else if (opts.luatHuong?.tot && trongCung(huong, opts.luatHuong.tot)) {
-        noi += " — thuận sườn";
         tong = "tot";
       }
     }
@@ -242,7 +244,7 @@ export function nhanDinhNgay(
       icon: "🌬",
       ten: "Gió mặt đất",
       noiDung: noi,
-      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) ? " ngược sườn" : tong === "tot" ? " thuận sườn" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
+      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) ? " ngược sườn" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
       tong,
     });
   }
@@ -322,9 +324,20 @@ export function nhanDinhNgay(
     const cs = gio.map((g) => ({ g, c: chiSoBay(g) }));
     const tranMax = lonNhat(cs.map((x) => x.c.tran).filter(co));
     const capeMax = lonNhat(gio.map((g) => g.cape).filter(co));
-    const gioTotThermal = cs
-      .filter((x) => (x.c.thermal === "vua" || x.c.thermal === "manh") && (x.g.buXa ?? 0) > 300)
-      .map((x) => gioCua(x.g));
+    /**
+     * KHUNG THERMAL TỐT NHẤT = đỉnh 4 giờ liên tiếp có trần cao nhất, KHÔNG
+     * phải cả dải giờ "có thermal". Cả dải thì ra "09:00–16:00" — dài bằng
+     * cả ngày bay, chẳng chọn được gì. Một ngày thermal thật sự tốt chỉ 4–5
+     * tiếng quanh trưa; nói đúng khúc ấy mới có ích cho người xếp ca.
+     */
+    const coTran = cs.filter((x) => x.c.tran !== null && (x.g.buXa ?? 0) > 300);
+    let dinh = { tu: -1, tb: -1 };
+    const DAI = Math.min(4, coTran.length);
+    for (let i = 0; i + DAI - 1 < coTran.length; i++) {
+      const tb = coTran.slice(i, i + DAI).reduce((t, x) => t + (x.c.tran ?? 0), 0) / DAI;
+      if (tb > dinh.tb) dinh = { tu: i, tb };
+    }
+    const gioTotThermal = dinh.tu >= 0 && DAI > 0 ? [gioCua(coTran[dinh.tu].g), gioCua(coTran[dinh.tu + DAI - 1].g)] : [];
     const gat = cs.filter((x) => x.c.thermal === "gat").map((x) => gioCua(x.g));
     const manhNhat = cs.reduce((a, b) => ((b.c.tran ?? 0) > (a.c.tran ?? 0) ? b : a), cs[0]);
     let noi: string;
@@ -341,7 +354,7 @@ export function nhanDinhNgay(
       khuyenCao.push(`Thermal gắt từ ${gat[0]} — bay đôi chở khách nên xong trước ${gat[0]}; sau đó chỉ phi công cứng, chủ động bay tốc độ và né vùng thermal lõi.`);
     } else if ((tranMax ?? 0) >= 800) {
       noi = `tốt — trần ~${tranMax}m${capeMax !== null ? `, CAPE ${Math.round(capeMax)}` : ""}, mạnh nhất quanh ${gioCua(manhNhat.g)}${
-        gioTotThermal.length ? `; khung nâng tốt ${gioTotThermal[0]}–${gioTotThermal[gioTotThermal.length - 1]}` : ""
+        gioTotThermal.length ? `; khung giờ thermal tốt nhất ${gioTotThermal[0]}–${gioTotThermal[1]}` : ""
       }`;
       tong = "tot";
     } else {
@@ -438,7 +451,7 @@ export function nhanDinhNgay(
   /* ===== 7. ÁP SUẤT & FRONT ===== */
   {
     const ap = trungBinh(gio.map((g) => g.apSuat).filter(co));
-    const apTruoc = opts.ngayTruoc ? trungBinh(gioBay(opts.ngayTruoc.gio).map((g) => g.apSuat).filter(co)) : null;
+    const apTruoc = opts.ngayTruoc ? trungBinh(gioBay(opts.ngayTruoc.gio, khung).map((g) => g.apSuat).filter(co)) : null;
     if (ap !== null) {
       const doi = apTruoc !== null ? ap - apTruoc : null;
       const mayNhieu = (trungBinh(gio.map((g) => g.may)) ?? 0) >= 70;

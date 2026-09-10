@@ -90,7 +90,8 @@ export const NHAN_XEP_LOAI: Record<XepLoai, string> = {
   tot: "😊 TỐT",
   kha: "🙂 KHÁ",
   hanChe: "😐 HẠN CHẾ",
-  khongBay: "😞 KHÔNG BAY",
+  /** Chỉ mặt buồn — "KHÔNG BAY" quá tuyệt đối, mưa có lúc ngớt vẫn bay được (luật chủ 10/09). */
+  khongBay: "😞",
 };
 
 export function xepLoaiTheoDiem(diem: number): XepLoai {
@@ -154,7 +155,7 @@ export function danhGiaGio(
     ten: "Gió mặt đất",
     trongSo: 25,
     diem: duongCong(g.gio10m, cong),
-    ghiChu: `${g.gio10m.toFixed(1)} m/s${huongTot ? " (thuận sườn, nới ngưỡng)" : ""}`,
+    ghiChu: `${g.gio10m.toFixed(1)} m/s${huongTot ? " (nới ngưỡng theo hướng)" : ""}`,
     nguyHiem: g.gio10m > nguong.gioDo,
   });
 
@@ -191,7 +192,7 @@ export function danhGiaGio(
       ghi = `${huongChu(g.huong)} mạnh — GIÓ XIẾT luồn khe`;
     } else if (huongTot) {
       diem = 100;
-      ghi = `${huongChu(g.huong)} — thuận sườn`;
+      ghi = `${huongChu(g.huong)} — đúng hướng bãi`;
     } else if (luat?.tot) {
       diem = 55;
       ghi = `${huongChu(g.huong)} — chéo sườn`;
@@ -321,11 +322,14 @@ export function danhGiaNgay(
     thuTu?: number;
     /** Ngày liền trước — để xem áp suất có đang tụt (dự báo kém tin hơn). */
     ngayTruoc?: NgayThoiTiet | null;
+    /** Khung giờ bay của điểm — mặc định 7–17. */
+    gioBay?: [number, number];
   } = {},
 ): DanhGiaNgay {
+  const khung = opts.gioBay ?? [GIO_BAY_TU, GIO_BAY_DEN];
   const trongKhung = ngay.gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
-    return h >= GIO_BAY_TU && h <= GIO_BAY_DEN;
+    return h >= khung[0] && h <= khung[1];
   });
   const gio = trongKhung.map((g) => danhGiaGio(g, nguong, opts));
 

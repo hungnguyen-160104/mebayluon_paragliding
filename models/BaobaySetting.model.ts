@@ -69,6 +69,9 @@ export interface IBaobaySetting {
     giatDo?: number;
     muaDo?: number;
     tranMayDo?: number;
+    /** Khung giờ bay của điểm (giờ trong ngày) — Khau Phạ 9–16. */
+    gioBayTu?: number;
+    gioBayDen?: number;
   };
   /** Lần gần nhất bấm/chạy "Lấy book từ website & OTA" cho điểm này. */
   webSyncAt?: Date;
@@ -103,6 +106,8 @@ const BaobaySettingSchema = new Schema<IBaobaySetting>(
           giatDo: Number,
           muaDo: Number,
           tranMayDo: Number,
+          gioBayTu: Number,
+          gioBayDen: Number,
         },
         { _id: false },
       ),
