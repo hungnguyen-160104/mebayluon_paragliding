@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
 import {
+  bieuTuongTroi,
   chiSoBay,
   huongTheNao,
   muiTenGio,
@@ -282,7 +283,14 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
             (g) => t.thermalLevels[chiSoBay(g).thermal],
             (g) => (chiSoBay(g).thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500"),
           )}
-          {hang(t.cloud, (g) => `${Math.round(g.may)}%`, () => "text-slate-500")}
+          {hang(
+            t.sky,
+            (g) => (
+              <span className="text-base leading-none" title={`${Math.round(g.may)}%`}>
+                {bieuTuongTroi(g.may, g.mua, g.buXa)}
+              </span>
+            ),
+          )}
         </tbody>
       </table>
     </div>

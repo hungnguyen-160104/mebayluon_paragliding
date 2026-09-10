@@ -356,6 +356,24 @@ export function muiTenGio(do_: number): string {
   return MUI_TEN[Math.round(h / 22.5) % 16];
 }
 
+/**
+ * BIỂU TƯỢNG TRỜI — nắng, nắng một phần, âm u, mưa.
+ *
+ * Con số phần trăm mây đúng nhưng không gợi hình: "35%" phải nghĩ một nhịp mới
+ * ra "trời có nắng". Biểu tượng thì nhìn phát biết, và biết ngay có nắng để
+ * chụp ảnh cho khách hay không — thứ khách hỏi nhiều thứ hai sau "có bay được
+ * không".
+ */
+export function bieuTuongTroi(may: number, mua = 0, buXa?: number): string {
+  if (mua > 0.5) return "🌧";
+  if (mua > 0.1) return "🌦";
+  /** Chưa có nắng (sáng sớm, chiều muộn) thì đừng vẽ mặt trời. */
+  if (buXa !== undefined && buXa < 30) return may > 70 ? "☁️" : "🌥";
+  if (may < 30) return "☀️";
+  if (may < 70) return "⛅";
+  return "☁️";
+}
+
 export type HuongTheNao = "tot" | "xau" | "thuong";
 
 /**
@@ -534,8 +552,14 @@ export function chamGio(
     lyDo.push(`mưa ${g.mua.toFixed(1)} mm`);
     len("do");
   } else if (g.mua > 0.1) {
+    /**
+     * MƯA LÁC ĐÁC CHỈ LÀ GHI CHÚ, không hạ màu (luật chủ 10/09).
+     *
+     * Ở Tây Bắc mùa mưa, 0,1–0,5 mm mỗi giờ là mưa phùn rải rác — bay vẫn bay,
+     * mà nó chiếm tới hai phần ba số ô cảnh báo. Cảnh báo nào cũng bật thì
+     * người trực thôi đọc, rồi bỏ qua luôn cái cảnh báo thật.
+     */
     lyDo.push("mưa lác đác");
-    len("vang");
   }
 
   /**
@@ -598,7 +622,7 @@ export function chamGio(
 
   /** Khả năng mưa ĐÃ HIỆU CHỈNH theo lượng (xem xacSuatMuaThat) — thô thì lúc nào cũng 100%. */
   const pMua = xacSuatMuaThat(g.xacSuatMua, g.mua);
-  if (pMua >= 60 && g.mua <= nguong.muaDo) {
+  if (pMua >= 75 && g.mua <= nguong.muaDo) {
     lyDo.push(`khả năng mưa ${pMua}%`);
     len("vang");
   }

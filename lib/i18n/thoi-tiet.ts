@@ -26,6 +26,8 @@ export type ThoiTietCopy = {
   rain: string;
   direction: string;
   cloud: string;
+  /** Nhãn hàng biểu tượng trời (nắng / mây / mưa). */
+  sky: string;
   hour: string;
   /** Đơn vị gió — m/s, đơn vị phi công dùng tại bãi. */
   windUnit: string;
@@ -79,6 +81,7 @@ const vi: ThoiTietCopy = {
   rain: "Mưa",
   direction: "Hướng",
   cloud: "Mây",
+  sky: "Trời",
   hour: "Giờ",
   windUnit: "m/s",
   rainChance: "Khả năng mưa",
@@ -123,6 +126,7 @@ const en: ThoiTietCopy = {
   rain: "Rain",
   direction: "Direction",
   cloud: "Cloud",
+  sky: "Sky",
   hour: "Hour",
   windUnit: "m/s",
   rainChance: "Rain chance",
@@ -167,6 +171,7 @@ const fr: ThoiTietCopy = {
   rain: "Pluie",
   direction: "Direction",
   cloud: "Nuages",
+  sky: "Ciel",
   hour: "Heure",
   windUnit: "m/s",
   rainChance: "Risque de pluie",
@@ -211,6 +216,7 @@ const ru: ThoiTietCopy = {
   rain: "Дождь",
   direction: "Направление",
   cloud: "Облачность",
+  sky: "Небо",
   hour: "Час",
   windUnit: "м/с",
   rainChance: "Вероятность дождя",
@@ -255,6 +261,7 @@ const zh: ThoiTietCopy = {
   rain: "降雨",
   direction: "风向",
   cloud: "云量",
+  sky: "天气",
   hour: "时间",
   windUnit: "米/秒",
   rainChance: "降雨概率",
@@ -298,6 +305,7 @@ const hi: ThoiTietCopy = {
   rain: "वर्षा",
   direction: "दिशा",
   cloud: "बादल",
+  sky: "आसमान",
   hour: "समय",
   windUnit: "मी/से",
   rainChance: "वर्षा की संभावना",

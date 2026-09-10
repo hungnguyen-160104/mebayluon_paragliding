@@ -145,7 +145,7 @@ sườn vẫn không bay được — nên phải nhìn thấy cả hai.
 | Gió trung bình | > ngưỡng đẹp (nới tới 6 m/s khi **thuận sườn**) | > ngưỡng cấm |
 | Gió giật | 14 – 18 m/s (mạnh, nhiễu) | > 18 m/s |
 | **Mù / mây thấp** | trần mây < 2× ngưỡng, mây thấp ≥ 70% | trần mây < ngưỡng và mây thấp ≥ 70%; hoặc ẩm ≥ 98% kèm mây thấp dày |
-| Mưa | lác đác > 0,1 mm, hoặc khả năng mưa (đã hiệu chỉnh) ≥ 60% | > ngưỡng mưa |
+| Mưa | khả năng mưa (đã hiệu chỉnh) ≥ 75% | > ngưỡng mưa |
 | **Dông** | 20–39% | ≥ 40% |
 | **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
 | **Hướng gió xấu** | — | trong cung gió xấu của điểm, bất kể tốc độ |
@@ -182,6 +182,15 @@ Ba khái niệm mới, giải thích ngắn:
   ngày. Với bay đôi chở khách thì **êm mới là tốt**: thermal vừa đủ kéo dài
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
+
+**Mưa lác đác (0,1–0,5 mm/giờ) KHÔNG còn là cảnh báo** — chỉ ghi vào lý do. Ở
+Tây Bắc mùa mưa đó là mưa phùn rải rác, bay vẫn bay, mà nó từng chiếm hai phần
+ba số ô ⚠. Cảnh báo nào cũng bật thì người trực thôi đọc, rồi bỏ qua luôn cái
+cảnh báo thật. Sau khi siết: trên 165 ô của 3 điểm × 5 ngày còn **12 ô ⚠**
+(trước khoảng 50).
+
+Hàng **Trời** hiện biểu tượng thay số phần trăm mây: ☀️ nắng · ⛅ nắng một phần ·
+☁️ âm u · 🌦 mưa nhẹ · 🌧 mưa. Phần trăm mây vẫn xem được ở tooltip.
 
 Rê chuột vào ô bất kỳ trong bảng giờ để xem đúng lý do máy chấm màu đó.
 

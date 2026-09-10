@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
 import {
+  bieuTuongTroi,
   chiSoBay,
   huongChu,
   huongTheNao,
@@ -525,10 +526,12 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             })}
           </tr>
           <tr>
-            <th className="px-1 py-0.5 text-left font-bold text-slate-500">Mây</th>
+            <th className="px-1 py-0.5 text-left font-bold text-slate-500" title="Nắng · nắng một phần · âm u · mưa">
+              Trời
+            </th>
             {gio.map((g) => (
-              <td key={g.gio} className="px-0.5 py-0.5 text-slate-500">
-                {Math.round(g.may)}%
+              <td key={g.gio} className="px-0.5 py-0.5" title={`mây ${Math.round(g.may)}%`}>
+                <span className="text-base leading-none">{bieuTuongTroi(g.may, g.mua, g.buXa)}</span>
               </td>
             ))}
           </tr>
