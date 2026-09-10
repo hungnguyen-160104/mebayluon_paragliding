@@ -5105,7 +5105,15 @@ export function BookingTodayBanner({
         type="button"
         variant="ghost"
         className={
-          "h-7 px-2 text-xs font-semibold " +
+          /**
+           * `flex-col` khi đã có dấu vết người bấm: nút vốn là inline-flex nên
+           * "by M.Hoàn" nằm CẠNH chữ chính, kéo nút dài gấp đôi. Xếp dọc thì
+           * hai phần chồng lên nhau — dòng trên là việc, dòng dưới là người.
+           */
+          "px-2 text-xs font-semibold " +
+          ((b.ticketIssued && b.ticketIssuedBy) || (b.noTicketFlight && b.noTicketBy)
+            ? "h-auto min-h-7 !flex-col !gap-0 py-0.5 leading-tight "
+            : "h-7 ") +
           (b.noTicketFlight
             ? "border-orange-400 bg-orange-100 text-orange-900"
             : b.ticketIssued
@@ -5132,12 +5140,13 @@ export function BookingTodayBanner({
       >
         {b.noTicketFlight ? (
           <>
-            🎫✕ Không vé
+            <span>🎫✕ Không vé</span>
             <By name={b.noTicketBy} />
           </>
         ) : b.ticketIssued ? (
           <>
-            🎫 Đã xuất vé
+            {/* "Đã x.vé" khi có tên người bấm — hai dòng ngắn gọn hơn một dòng dài. */}
+            <span>{b.ticketIssuedBy ? "🎫 Đã x.vé" : "🎫 Đã xuất vé"}</span>
             <By name={b.ticketIssuedBy} />
           </>
         ) : (
@@ -5170,7 +5179,10 @@ export function BookingTodayBanner({
    * Đã khoá mà không phải kế toán → chỉ còn nút mở khoá.
    */
   const detailButton = (b: BookingDTO) => <BookingDetailControl spot={spot} booking={b} />;
-  const renderOpenQuick = (b: BookingDTO, table = false) =>
+  /**
+   * `tienRieng` = thẻ tự lo nút Thu tiền (đặt xuống hàng dưới), đừng render ở đây.
+   */
+  const renderOpenQuick = (b: BookingDTO, table = false, tienRieng = false) =>
     b.locked && !canLock ? (
       <>
         {lockButton(b)}
@@ -5179,7 +5191,7 @@ export function BookingTodayBanner({
     ) : (
       <>
         {/* Trong BẢNG: Thu tiền nằm ở ô "Còn thu", Chi tiết ở ô "Nguồn" (luật chủ 04/09) */}
-        {!table && moneyOutside(b) && renderMoneyButton(b)}
+        {!table && !tienRieng && moneyOutside(b) && renderMoneyButton(b)}
         {renderTicketButton(b)}
         {renderFlownButton(b)}
         {renderContactButton(b)}
@@ -5292,60 +5304,36 @@ export function BookingTodayBanner({
     </div>
     </PanelGroup>
   );
-  /**
-   * ĐẾM SỐ NÚT sẽ hiện ngoài thẻ — để chia lưới cho cân.
-   *
-   * Đếm bằng chính điều kiện đang dựng nút chứ không đếm phần tử React: mấy
-   * nút này nằm trong fragment, có cái là component tự quyết hiện gì, nên đọc
-   * ngược ra số lượng vừa mong manh vừa dễ sai khi thêm nút mới.
-   */
-  const soNutMo = (b: BookingDTO): number => {
-    if (b.locked && !canLock) return (canLock ? 1 : 0) + 1;
-    /** in vé · đã bay · đã LH · chi tiết · ⋯ Thêm, cộng Thu tiền khi còn phải thu. */
-    return 5 + (moneyOutside(b) ? 1 : 0);
-  };
-
   /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
-  const renderOpenActions = (b: BookingDTO) => {
-    /**
-     * CHIA LƯỚI CHO CÂN, không thả cho tự xuống dòng.
-     *
-     * Thả flex thì bề rộng chữ quyết định chỗ ngắt: năm nút thành 4 + 1, hàng
-     * dưới trơ một nút lệch hẳn sang phải — đúng thứ đang thấy trên sổ. Chia
-     * theo SỐ NÚT thì luôn cân: 5 nút → 3 + 2, 6 nút → 3 + 3, 4 nút → 2 + 2,
-     * còn ba nút trở xuống thì một hàng là vừa.
-     */
-    const n = soNutMo(b);
-    /**
-     * Tên lớp phải VIẾT NGUYÊN, không ghép chuỗi: Tailwind quét mã nguồn để
-     * sinh CSS, `grid-cols-${n}` thì nó không thấy và lớp ấy không tồn tại —
-     * lưới im lặng rơi về một cột.
-     */
-    const cot = n >= 5 ? "grid-cols-3" : n === 4 ? "grid-cols-2" : n === 3 ? "grid-cols-3" : n === 2 ? "grid-cols-2" : "grid-cols-1";
-    return (
-      <>
+  const renderOpenActions = (b: BookingDTO) => (
+    <>
             {moving?.id === b.id ? (
               renderMovingDialog(b)
             ) : (
-              /* CÙNG bộ nút với dòng bảng (renderOpenQuick); đã khoá mà không
-                 phải kế toán thì chỉ còn nút mở khoá, không có ⋯ Thêm. */
-              /* Ô lưới kéo nút bằng nhau nên bỏ `whitespace-nowrap`: nhãn dài
-                 ("☎ Đã LH by T.Ngọc") bẻ xuống dòng trong nút, thà cao thêm
-                 vài pixel còn hơn tràn ra ngoài viền. Bảng thu tiền / menu Thêm
-                 mở ra là div → chiếm trọn hàng lưới. */
-              <div
-                className={
-                  "float-right ml-2 grid w-[340px] max-w-full gap-1 [&>button]:h-auto [&>button]:min-h-6 [&>button]:px-1.5 [&>button]:text-[11px] [&>button]:leading-tight [&>div]:col-span-full " +
-                  cot
-                }
-              >
-                {renderOpenQuick(b)}
+              /**
+               * NÚT CO THEO CHỮ, KHÔNG chia lưới đều nhau (luật chủ 10/09).
+               *
+               * Lưới chia đều thì nút "✈ Đã bay" hai chữ cũng chiếm bằng nút
+               * "☎ Đã LH by M.Ngọc" — thừa chỗ ở nút ngắn mà vẫn chật ở nút
+               * dài. Thả cho mỗi nút rộng đúng bằng chữ của nó thì cùng một bề
+               * ngang chứa được nhiều nút hơn, thẻ gọn hơn hẳn.
+               *
+               * THU TIỀN xuống HÀNG DƯỚI: nó là nút ĐỎ, to nhất, và là việc
+               * làm sau cùng (thu xong mới đóng khách). Để đầu hàng trên thì
+               * mắt đập vào nó trước cả "IN VÉ" — thứ phải bấm trước. Ngắt dòng
+               * bằng một ô rỗng trải hết bề ngang, cách duy nhất ép xuống dòng
+               * trong flex-wrap mà không phải đo đạc gì.
+               */
+              <div className="float-right ml-2 flex max-w-[340px] flex-wrap justify-end gap-1 [&>button]:h-7 [&>button]:px-2 [&>button]:text-[11px] [&>div]:basis-full">
+                {renderOpenQuick(b, false, true)}
+                <div className="h-0 basis-full" />
+                {moneyOutside(b) && renderMoneyButton(b)}
                 {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
             )}
-      </>
-    );
-  };
+    </>
+  );
+
   /**
    * Cụm nút của THẺ booking ĐÃ ĐÓNG (đã bay/huỷ) — CÙNG thứ tự, loại nút và
    * luật với dòng BẢNG (luật chủ 04/09): cột nổi phải gồm ↩ Chưa bay ĐỎ + Khoá

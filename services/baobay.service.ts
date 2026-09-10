@@ -6932,6 +6932,25 @@ export async function createBlankBookingRow(
   const kind = defaultFlightKind(spot);
   /** Số khách: ưu tiên tổng, không có thì cộng PG + PPG máy bóc ra. */
   const khach = Math.max(0, q?.guestCount ?? (q?.pgCount ?? 0) + (q?.ppgCount ?? 0));
+
+  /**
+   * KHÔNG TẠO DÒNG RỖNG NỮA (luật chủ 10/09).
+   *
+   * Nút "thêm hàng" của lưới Sheet trước đây đẻ ra một dòng trắng để gõ dần
+   * như Excel. Nghe tiện, nhưng thứ nằm lại trong sổ là booking 0 khách không
+   * tên: quầy không biết phát vé cho ai, phi công không biết chở người nào,
+   * kế toán đối chiếu ra một dòng không chủ. Trong DB đã có ba dòng như vậy.
+   *
+   * Nay muốn thêm hàng thì phải gõ vào ô NHẬP NHANH ít nhất tên khách và số
+   * khách — cũng chỉ mất một dòng chữ, mà sổ không còn rác.
+   */
+  const ten = (q?.contactName ?? "").trim();
+  if (!ten || khach < 1) {
+    throw new BaobayError(
+      "Thêm hàng phải có TÊN KHÁCH và SỐ KHÁCH — gõ vào ô nhập nhanh, ví dụ: “nguyễn trang 0956778444 2 khách 8h00”",
+      400,
+    );
+  }
   const don = flightUnitPrice(kind, flightDate, spot);
   const combo = comboDiscount(q?.flycam ?? 0, q?.video360 ?? 0, spot);
   const tong = bookingTotal({

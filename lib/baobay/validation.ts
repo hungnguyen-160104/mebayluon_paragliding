@@ -359,10 +359,19 @@ export const bookingSchema = z.object({
   spot: spotField,
   flightDate: z.string().refine(isDateKey, "Ngày bay không hợp lệ"),
   source: text(200),
-  contactName: text(200),
+  /**
+   * TÊN KHÁCH BẮT BUỘC.
+   *
+   * Booking không tên thì cả ngày hôm sau không ai biết gọi ai: quầy không đọc
+   * được tên lúc phát vé, phi công không biết chở người nào, kế toán đối chiếu
+   * ra một dòng tiền không chủ. Thà bắt gõ một chữ lúc nhập còn hơn để dòng
+   * trống nằm trong sổ.
+   */
+  contactName: text(200).refine((v) => v.trim().length > 0, "Phải có tên khách"),
   phone: text(50),
   bookingCode: text(100),
-  guestCount: count(100),
+  /** ÍT NHẤT MỘT KHÁCH: booking 0 khách không phải booking, chỉ là dòng rác. */
+  guestCount: count(100).refine((v) => v >= 1, "Phải có ít nhất 1 khách"),
   flycam: count(100),
   video360: count(100),
   redFlag: count(100),
