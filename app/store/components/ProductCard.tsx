@@ -20,21 +20,34 @@ export default function ProductCard({ product }: { product: Post }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/20 bg-white/15 backdrop-blur-md transition-all hover:bg-white/25 hover:shadow-xl">
-      {/* ảnh — cao 188px, object-contain để ảnh co vừa khung, không bị cắt
-          mất phần thân sản phẩm; nền tối lấp hai bên khi ảnh không cùng tỉ lệ */}
-      <div className="relative h-47 w-full bg-black/25 p-2">
-        {isPixabay ? (
-          <Image src={imageUrl} alt={title} fill className="object-contain" unoptimized />
-        ) : (
-          <Image src={imageUrl} alt={title} fill className="object-contain" />
-        )}
-      </div>
+      {/**
+       * ẢNH VÀ TÊN SẢN PHẨM CŨNG LÀ LỐI VÀO (chủ 10/09).
+       *
+       * Trước đây chỉ nút "Chi tiết" mở được trang sản phẩm — mà phản xạ của
+       * ai cũng là bấm vào cái ảnh hoặc cái tên, bấm không ăn thì tưởng thẻ
+       * hỏng rồi bỏ đi. Nút vẫn giữ nguyên cho người quen bấm nút.
+       *
+       * Ảnh cao 188px, object-contain để ảnh co vừa khung, không bị cắt mất
+       * phần thân sản phẩm; nền tối lấp hai bên khi ảnh không cùng tỉ lệ.
+       */}
+      <Link href={detailHref} className="block" tabIndex={-1} aria-hidden>
+        <div className="relative h-47 w-full bg-black/25 p-2">
+          {isPixabay ? (
+            <Image src={imageUrl} alt={title} fill className="object-contain" unoptimized />
+          ) : (
+            <Image src={imageUrl} alt={title} fill className="object-contain" />
+          )}
+        </div>
+      </Link>
 
       {/* nội dung */}
       <div className="p-3">
-        <p className="mb-1 line-clamp-2 text-sm font-semibold leading-snug text-white">
+        <Link
+          href={detailHref}
+          className="mb-1 block line-clamp-2 text-sm font-semibold leading-snug text-white transition-colors hover:text-red-300"
+        >
           {title}
-        </p>
+        </Link>
 
         {typeof product.price === "number" && (
           <p className="mb-3 text-xs font-medium text-slate-200">

@@ -504,10 +504,40 @@ export default async function BlogPage({
          * mục, người đọc thì có mục lục tra nhanh theo tên bài.
          */}
         <section className="mx-auto mt-14 max-w-5xl border-t border-white/10 pt-8">
-          <h2 className="mb-4 text-lg font-bold text-white/80">{ui.allPostsTitle}</h2>
+          {/**
+           * GẤP LẠI, KHÔNG XOÁ (chủ 10/09: "phía dưới liệt kê một đống tiêu đề
+           * bài viết thừa").
+           *
+           * Với người đọc thì đúng là thừa: họ vừa lướt qua các thẻ bài ở trên,
+           * xuống dưới lại gặp nguyên danh sách tên bài trần trụi. Nhưng khối
+           * này KHÔNG phải để cho người đọc — nó là liên kết nội bộ tới ~40 bài
+           * nằm sau nút "Xem thêm"; bỏ đi là Google mất lối vào và xếp chúng
+           * lại vào "đã phát hiện – chưa lập chỉ mục" như trước.
+           *
+           * `<details>` giải được cả hai: nội dung vẫn nằm nguyên trong HTML máy
+           * chủ (máy tìm kiếm đọc bình thường), còn mắt người thì chỉ thấy một
+           * dòng cho tới khi họ thật sự muốn mở.
+           */}
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-bold text-white/80 hover:text-white">
+              <span className="text-sm transition-transform group-open:rotate-90">▸</span>
+              {ui.allPostsTitle}
+              <span className="text-sm font-normal text-white/50">({allPosts.length})</span>
+            </summary>
+            <div className="mt-4">
+          {/**
+           * `min-w-0` trên từng ô KHÔNG PHẢI làm đẹp — thiếu nó là vỡ cả trang
+           * trên điện thoại (chủ báo 10/09).
+           *
+           * Ô của lưới mặc định `min-width: auto`, tức là không được hẹp hơn bề
+           * ngang tối thiểu của nội dung. Mà `truncate` đặt `white-space: nowrap`,
+           * nên "bề ngang tối thiểu" của một tên bài dài thành nguyên cả dòng
+           * chữ — cột nở ra 731px trong khổ máy 390px, đẩy toàn trang rộng theo
+           * và trôi ngang. Cho phép ô hẹp lại thì `truncate` mới cắt được chữ.
+           */}
           <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {allPosts.map((post) => (
-              <li key={post.slug}>
+              <li key={post.slug} className="min-w-0">
                 <Link
                   href={`/blog/${post.slug}`}
                   className="block truncate text-sm text-white/60 transition-colors hover:text-white"
@@ -516,7 +546,9 @@ export default async function BlogPage({
                 </Link>
               </li>
             ))}
-          </ul>
+              </ul>
+            </div>
+          </details>
         </section>
 
       </main>

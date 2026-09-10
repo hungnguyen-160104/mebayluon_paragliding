@@ -47,7 +47,7 @@ import {
   type MucDo,
 } from "@/lib/baobay/thoi-tiet";
 
-import { useCuonTheoNgay } from "./cuon-ngay";
+import { useCuonTheoNgay, useManHinhHep } from "./cuon-ngay";
 import { chuTrenNen, mauGiat, mauGio } from "./mau-gio";
 import { WindArrow } from "./WindArrow";
 
@@ -89,10 +89,24 @@ export const NHAN_METEOGRAM_VI: NhanMeteogram = {
   vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
 };
 
-/** Bề ngang một cột giờ — rộng để số 11px và mũi tên 22px không chen nhau. */
-const W = 56;
+/**
+ * Bề ngang một cột giờ. Máy tính 56px — đủ chỗ cho số 12px và mũi tên 22px.
+ * ĐIỆN THOẠI 36px: cột 56 chỉ nhét vừa 6 giờ trong khổ 390, muốn xem hết một
+ * ngày phải vuốt ba lần (chủ báo 10/09). 36px vẫn đủ cho "2.4" và mũi tên 18px.
+ */
+const W_RONG = 56;
+/**
+ * 26px + CHỈ BÀY 7h–17h trên điện thoại: khổ 390 trừ lề thẻ còn ~286px cho
+ * phần vẽ, 11 giờ × 26 vừa đúng một màn — xem trọn hình dáng MỘT ngày rồi mới
+ * vuốt sang ngày sau, đúng thứ tự người ta cần (chủ báo 10/09). Bày cả 4h–21h
+ * như máy tính thì một ngày dài 648px, phải vuốt hai lần mới hết.
+ */
+const W_HEP = 26;
+/** Khung giờ bày trên điện thoại — đủ trọn ca bay của mọi điểm. */
+const GIO_HEP: [number, number] = [7, 17];
 /** Bề ngang cột nhãn trục trái (dính khi cuộn). */
-const W_NHAN = 54;
+const W_NHAN_RONG = 54;
+const W_NHAN_HEP = 36;
 /** Chiều cao khối mây/mưa/áp suất — phần "có hình" nhất. */
 const H_KHOI = 200;
 const H_NHIET = 36;
@@ -184,7 +198,7 @@ function dungCot(ngay: NgayVe[], tuGio: number, denGio: number): Cot[] {
 }
 
 /** Dải TIÊU ĐỀ NGÀY: nhãn dính trong ô ngày, chấm màu mức, tổng mưa, mọc/lặn. */
-function HangNgay({ cot, lang }: { cot: Cot[]; lang: string }) {
+function HangNgay({ cot, lang, W }: { cot: Cot[]; lang: string; W: number }) {
   const nhom: Array<{ ngay: NgayVe; n: number }> = [];
   for (const c of cot) {
     const cuoi = nhom[nhom.length - 1];
@@ -223,7 +237,7 @@ function HangNgay({ cot, lang }: { cot: Cot[]; lang: string }) {
 }
 
 /** Hàng GIỜ: số đậm mỗi 3 tiếng, nền tím khi đêm. */
-function HangGio({ cot }: { cot: Cot[] }) {
+function HangGio({ cot, W }: { cot: Cot[]; W: number }) {
   return (
     <div className="flex h-[22px] items-center">
       {cot.map((c) => (
@@ -231,7 +245,8 @@ function HangGio({ cot }: { cot: Cot[] }) {
           key={c.g.gio}
           style={{ width: W }}
           className={
-            "h-full shrink-0 pt-1 text-center text-[11px] font-bold " +
+            "h-full shrink-0 pt-1 text-center font-bold " +
+            (W <= 40 ? "text-[10px] " : "text-[11px] ") +
             (c.dem ? "bg-indigo-50 " : "") +
             (c.dau ? "border-l-2 border-slate-300 " : "") +
             (c.h % 3 === 0 ? "text-slate-800" : "text-slate-400")
@@ -250,11 +265,15 @@ function HangGioMuc({
   lay,
   layHuong,
   cao,
+  W,
+  hep,
 }: {
   cot: Cot[];
   lay: (g: GioVe) => number | undefined;
   layHuong: (g: GioVe) => number | undefined;
   cao: number;
+  W: number;
+  hep: boolean;
 }) {
   return (
     <div className="flex items-stretch" style={{ height: cao }}>
@@ -269,8 +288,8 @@ function HangGioMuc({
             className={"flex shrink-0 flex-col items-center justify-center " + (c.dau ? "border-l-2 border-slate-300" : "")}
             title={v === undefined ? undefined : `${v.toFixed(1)} m/s${hd !== undefined ? ` · ${huongChu(hd)}` : ""}`}
           >
-            {hd !== undefined && v !== undefined && <WindArrow deg={hd} className="h-[20px] w-[20px]" />}
-            <div className="text-[12px] font-black leading-tight">{v === undefined ? "–" : v.toFixed(1)}</div>
+            {hd !== undefined && v !== undefined && <WindArrow deg={hd} className={hep ? "h-[16px] w-[16px]" : "h-[20px] w-[20px]"} />}
+            <div className={(hep ? "text-[10px]" : "text-[12px]") + " font-black leading-tight"}>{v === undefined ? "–" : v.toFixed(1)}</div>
           </div>
         );
       })}
@@ -305,7 +324,10 @@ export function Meteogram({
   nhan?: NhanMeteogram;
   lang?: string;
 }) {
-  const cot = dungCot(ngay, tuGio, denGio);
+  const hep = useManHinhHep();
+  const W = hep ? W_HEP : W_RONG;
+  const W_NHAN = hep ? W_NHAN_HEP : W_NHAN_RONG;
+  const cot = dungCot(ngay, hep ? Math.max(tuGio, GIO_HEP[0]) : tuGio, hep ? Math.min(denGio, GIO_HEP[1]) : denGio);
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
   if (cot.length < 2) return null;
 
@@ -364,7 +386,7 @@ export function Meteogram({
     }
   }
 
-  const nhanTrai = "pt-1 text-[10px] font-bold text-slate-400";
+  const nhanTrai = "pt-1 font-bold text-slate-400 " + (hep ? "text-[9px] leading-tight" : "text-[10px]");
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-white">
@@ -389,8 +411,8 @@ export function Meteogram({
           </div>
 
           <div style={{ width: rong }}>
-            <HangNgay cot={cot} lang={lang} />
-            <HangGio cot={cot} />
+            <HangNgay cot={cot} lang={lang} W={W} />
+            <HangGio cot={cot} W={W} />
 
             {/* ---- Biểu tượng trời ---- */}
             <div className="flex h-[26px] items-center">
@@ -416,7 +438,11 @@ export function Meteogram({
               </svg>
               <div className="relative flex items-start" style={{ height: H_NHIET }}>
                 {cot.map((c) => (
-                  <div key={c.g.gio} style={{ width: W }} className="shrink-0 pt-1 text-center text-[13px] font-black text-slate-800">
+                  <div
+                    key={c.g.gio}
+                    style={{ width: W }}
+                    className={"shrink-0 pt-1 text-center font-black text-slate-800 " + (hep ? "text-[11px]" : "text-[13px]")}
+                  >
                     {Math.round(c.g.nhietDo)}°
                   </div>
                 ))}
@@ -424,7 +450,7 @@ export function Meteogram({
             </div>
 
             {/* ---- Gió mặt đất: mũi tên + tốc độ, nền chuyển dần ---- */}
-            <HangGioMuc cot={cot} lay={(g) => g.gio10m} layHuong={(g) => g.huong} cao={44} />
+            <HangGioMuc cot={cot} lay={(g) => g.gio10m} layHuong={(g) => g.huong} cao={hep ? 38 : 44} W={W} hep={hep} />
 
             {/* ---- Giật: hàng riêng như Windy, nền chuyển dần theo thang giật ---- */}
             <div className="flex h-[20px] items-stretch">
@@ -434,7 +460,11 @@ export function Meteogram({
                   <div
                     key={c.g.gio}
                     style={{ width: W, background: bg, color: chuTrenNen(bg) }}
-                    className={"shrink-0 pt-0.5 text-center text-[11px] font-bold leading-tight " + (c.dau ? "border-l-2 border-slate-300" : "")}
+                    className={
+                      "shrink-0 pt-0.5 text-center font-bold leading-tight " +
+                      (hep ? "text-[10px] " : "text-[11px] ") +
+                      (c.dau ? "border-l-2 border-slate-300" : "")
+                    }
                     title={`giật ${c.g.giat.toFixed(1)} m/s`}
                   >
                     {c.g.giat.toFixed(0)}
@@ -544,7 +574,8 @@ export function Meteogram({
                     style={{ width: W, background: mauTranMay(cm) }}
                     title={c.g.mayThap !== undefined ? `mây thấp ${Math.round(c.g.mayThap)}%${cm !== null ? ` · trần ~${cm}m trên bãi` : ""}` : undefined}
                     className={
-                      "h-full shrink-0 pt-1 text-center text-[11px] font-bold " +
+                      "h-full shrink-0 pt-1 text-center font-bold " +
+                      (hep ? "text-[9px] " : "text-[11px] ") +
                       (cm !== null && cm < 200 ? "text-fuchsia-900" : cm === null ? "text-slate-400" : "text-slate-800") +
                       (c.dau ? " border-l-2 border-slate-300" : "")
                     }
@@ -594,7 +625,10 @@ export function Airgram({
   nhan?: NhanMeteogram;
   lang?: string;
 }) {
-  const cot = dungCot(ngay, tuGio, denGio);
+  const hep = useManHinhHep();
+  const W = hep ? W_HEP : W_RONG;
+  const W_NHAN = hep ? W_NHAN_HEP : W_NHAN_RONG;
+  const cot = dungCot(ngay, hep ? Math.max(tuGio, GIO_HEP[0]) : tuGio, hep ? Math.min(denGio, GIO_HEP[1]) : denGio);
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
   if (cot.length < 2) return null;
   const rong = cot.length * W;
@@ -609,7 +643,7 @@ export function Airgram({
     { ten: nhan.matDat + (altBai ? ` ${altBai}m` : ""), lay: (g) => g.gio10m, layHuong: (g) => g.huong, t: (g) => g.nhietDo },
   ];
   const CAO = 46;
-  const nhanTrai = "pt-1 text-[10px] font-bold text-slate-400";
+  const nhanTrai = "pt-1 font-bold text-slate-400 " + (hep ? "text-[9px] leading-tight" : "text-[10px]");
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-white">
@@ -625,11 +659,11 @@ export function Airgram({
             ))}
           </div>
           <div style={{ width: rong }}>
-            <HangNgay cot={cot} lang={lang} />
-            <HangGio cot={cot} />
+            <HangNgay cot={cot} lang={lang} W={W} />
+            <HangGio cot={cot} W={W} />
             {muc.map((m) => (
               <div key={m.ten} className="relative border-t border-white">
-                <HangGioMuc cot={cot} lay={m.lay} layHuong={m.layHuong} cao={CAO} />
+                <HangGioMuc cot={cot} lay={m.lay} layHuong={m.layHuong} cao={CAO} W={W} hep={hep} />
                 {/* Nhiệt độ mực đó, chữ nhỏ góc phải mỗi ô — để thấy nghịch nhiệt (trên ấm hơn dưới). */}
                 <div className="pointer-events-none absolute inset-0 flex">
                   {cot.map((c) => {

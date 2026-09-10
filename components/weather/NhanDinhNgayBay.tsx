@@ -41,7 +41,13 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
       <button
         type="button"
         onClick={() => gon && setMo((x) => !x)}
-        className={"flex w-full items-start gap-2 text-left " + (gon ? "cursor-pointer" : "cursor-default")}
+        /**
+         * WRAP TRÊN ĐIỆN THOẠI (chủ báo 10/09): ba phần trên một hàng cứng thì
+         * hai huy hiệu chiếm gần hết bề ngang, câu tóm tắt bị ép thành cột hẹp
+         * cao bốn năm dòng — dưới hai huy hiệu hở một khoảng trắng đúng bằng
+         * phần chênh, nhìn như lỗi. Cho câu tóm tắt xuống dòng riêng, đủ rộng.
+         */
+        className={"flex w-full flex-wrap items-start gap-x-2 gap-y-1 text-left sm:flex-nowrap " + (gon ? "cursor-pointer" : "cursor-default")}
         title={gon ? "Bấm để xem chi tiết nhận định" : undefined}
       >
         <span className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-black tracking-wide ring-1 ring-current/30">
@@ -57,7 +63,7 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
             <span className="ml-1 font-semibold opacity-70">tin cậy {cg.doTinCay}%</span>
           </span>
         )}
-        <span className="min-w-0 flex-1 text-[12px] font-semibold leading-snug">
+        <span className="min-w-0 w-full flex-1 basis-full text-[12px] font-semibold leading-snug sm:w-auto sm:basis-auto">
           <span className="opacity-70">{tieuDe} · </span>
           {nd.tomTat.replace(/^[^—]*— /, "")}
         </span>

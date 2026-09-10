@@ -17,7 +17,7 @@
  * `data-truc`.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useCuonTheoNgay(ngayChon?: string | null, onNgayHien?: (ngay: string) => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -63,4 +63,27 @@ export function useCuonTheoNgay(ngayChon?: string | null, onNgayHien?: (ngay: st
   }, [onNgayHien]);
 
   return { ref, onScroll };
+}
+
+/**
+ * MÀN HÌNH HẸP (điện thoại) hay không.
+ *
+ * Biểu đồ thời tiết vẽ bằng px cố định nên không có class Tailwind nào co nó
+ * lại được: phải biết bề ngang thật rồi tự chọn số. Trên máy 390px, cột 56px
+ * chỉ nhét vừa 6 giờ — muốn xem hết một ngày phải vuốt ba lần, mà cái người ta
+ * cần đầu tiên là nhìn trọn hình dáng của MỘT ngày (chủ báo 10/09).
+ *
+ * Trả `false` ở lần dựng đầu (máy chủ không có `window`) rồi mới chỉnh lại —
+ * hai lần vẽ đầu chỉ khác bề rộng, không nhấp nháy nội dung.
+ */
+export function useManHinhHep(mocPx = 640): boolean {
+  const [hep, setHep] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${mocPx}px)`);
+    const doi = () => setHep(mq.matches);
+    doi();
+    mq.addEventListener("change", doi);
+    return () => mq.removeEventListener("change", doi);
+  }, [mocPx]);
+  return hep;
 }

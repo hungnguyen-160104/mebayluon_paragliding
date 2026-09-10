@@ -64,7 +64,11 @@ export default function SpotPartnerLinks({
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg lg:px-2.5 lg:text-[13px] ${BRAND_BUTTON_CLASS[link.brand]}`}
+                    /* KHÔNG bẻ dòng CHỈ TỪ 1024px: nhãn dài nhất ("Bãi cất cánh dù
+                       lượn gắn động cơ – Clubhouse Mebayluon") rộng 412px, ép một
+                       dòng trên máy 390px là tràn cả trang ra 11px và trôi ngang
+                       (chủ báo 10/09). Điện thoại cứ để nó xuống dòng. */
+                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg lg:whitespace-nowrap lg:px-2.5 lg:text-[13px] ${BRAND_BUTTON_CLASS[link.brand]}`}
                   >
                     <MapPin size={15} />
                     <span>

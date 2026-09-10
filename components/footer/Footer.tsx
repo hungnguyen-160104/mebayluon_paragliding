@@ -589,9 +589,11 @@ export default function Footer() {
                 {t.followUs}
               </h3>
 
-              {/* Lưới 3 cột: sáu kênh xếp gọn đúng hai hàng. Trước để trôi tự
-                  do nên số ô mỗi hàng đổi theo bề ngang cột, nhìn so le. */}
-              <div className="grid w-max grid-cols-3 gap-2">
+              {/* SÁU KÊNH MỘT HÀNG (chủ 10/09). Trước xếp lưới 3 cột nên trên
+                  điện thoại thành hai hàng ba nút, nhìn như hai nhóm riêng —
+                  trong khi chúng là một dãy. Ô 40px × 6 + khe 1.5 = 258px, vừa
+                  khổ 390 kể cả lề. */}
+              <div className="grid w-max grid-cols-6 gap-1.5 sm:gap-2">
                 {socialLinks.map((item) => (
                   <a
                     key={item.label}

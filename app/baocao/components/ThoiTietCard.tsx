@@ -39,7 +39,7 @@ import { spotName } from "@/lib/baobay/spots";
 
 import { Airgram, Meteogram } from "@/components/weather/Meteogram";
 import { styleGiat, styleGio } from "@/components/weather/mau-gio";
-import { useCuonTheoNgay } from "@/components/weather/cuon-ngay";
+import { useCuonTheoNgay, useManHinhHep } from "@/components/weather/cuon-ngay";
 import { DaiMua, dinhMua } from "@/components/weather/DaiMua";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
@@ -286,13 +286,6 @@ export function ThoiTietCard({
        * tới trưa. Bảng giờ phía dưới là bằng chứng; khối này là kết luận.
        * Bấm ngày khác trên dải thì khối đổi theo.
        */}
-      {/* Chọn mô hình + bật so sánh — chỉ ở bản đầy đủ; trang điều phối dùng mặc định cho gọn. */}
-      {!gon && (
-        <div className="mb-2">
-          <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nho />
-        </div>
-      )}
-
       {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
       {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
@@ -381,8 +374,22 @@ export function ThoiTietCard({
           )}
 
           {/* ---- chọn kiểu xem giờ: Basic · Meteogram · Airgram ---- */}
+          {/**
+           * CHỌN MÔ HÌNH nằm NGAY TRÊN bảng/biểu đồ (luật chủ 10/09).
+           *
+           * Trước đây nó ở đầu thẻ, cách chỗ nó tác động tới ba bốn khối —
+           * bấm sang GFS rồi phải cuộn xuống mới thấy số đổi, mà nhìn số đổi
+           * cũng không nhớ mình vừa bấm gì. Đặt cạnh hàng Basic/Meteogram/
+           * Airgram thì một chỗ trả lời đủ hai câu: xem KIỂU nào, của MÔ HÌNH nào.
+           */}
+          {!gon && ngayChon && (
+            <div className="mt-2">
+              <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nho />
+            </div>
+          )}
+
           {ngayChon && (
-            <div className="mt-2 flex gap-1">
+            <div className="mt-1.5 flex gap-1">
               {(
                 [
                   ["basic", "▦ Basic"],
@@ -533,11 +540,18 @@ function BangGio({
 }) {
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
 
-  /** Chỉ bày khung giờ bay: 0h–6h và tối thì trời thế nào cũng không dùng tới. */
+  /**
+   * Chỉ bày khung giờ bay: 0h–6h và tối thì trời thế nào cũng không dùng tới.
+   *
+   * ĐIỆN THOẠI hẹp lại còn 7h–17h: cả dải 6–18 thì một ngày dài 463px trong
+   * khung 286px, vuốt gần hai màn mới hết một ngày (chủ báo 10/09). Bỏ hai giờ
+   * đầu cuối không mất gì — ca bay của mọi điểm đều nằm trong 7–17.
+   */
+  const hep = useManHinhHep();
   const cot = ngay.flatMap((n) => {
     const trong = n.gio.filter((g) => {
       const h = Number(g.gio.slice(11, 13));
-      return h >= 6 && h <= 18;
+      return h >= (hep ? 7 : 6) && h <= (hep ? 17 : 18);
     });
     return trong.map((g, i) => ({ g, ngay: n, dau: i === 0 }));
   });

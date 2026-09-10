@@ -19,7 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
-import { useCuonTheoNgay } from "./cuon-ngay";
+import { useCuonTheoNgay, useManHinhHep } from "./cuon-ngay";
 import { DaiMua, dinhMua } from "./DaiMua";
 import { Airgram, Meteogram, NHAN_METEOGRAM_VI, type NhanMeteogram } from "./Meteogram";
 import { styleGiat, styleGio } from "./mau-gio";
@@ -368,10 +368,16 @@ function BangGio({
   luat?: LuatHuong;
 }) {
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
+  /**
+   * ĐIỆN THOẠI chỉ bày 7h–17h: cả dải 6–18 thì một ngày dài 463px trong khung
+   * 286px, vuốt gần hai màn mới hết một ngày (chủ báo 10/09). Ca bay của mọi
+   * điểm đều nằm trong 7–17 nên bỏ hai giờ đầu cuối không mất gì.
+   */
+  const hep = useManHinhHep();
   const cot = ngay.flatMap((n) => {
     const trong = n.gio.filter((g) => {
       const h = Number(g.gio.slice(11, 13));
-      return h >= 6 && h <= 18;
+      return h >= (hep ? 7 : 6) && h <= (hep ? 17 : 18);
     });
     return trong.map((g, i) => ({ g, ngay: n, dau: i === 0 }));
   });
@@ -679,10 +685,6 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
           <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
         ))}
 
-      <div className="mb-2">
-        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} />
-      </div>
-
       <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />
 
       <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
@@ -700,8 +702,13 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         </div>
       )}
 
+      {/** Chọn mô hình đứng NGAY TRÊN bảng/biểu đồ — xem ghi chú ở sổ nội bộ. */}
+      <div className="mt-2">
+        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} />
+      </div>
+
       {ngayChon && (
-        <div className="mt-2 flex gap-1">
+        <div className="mt-1.5 flex gap-1">
           {(
             [
               ["basic", "▦ Basic"],
