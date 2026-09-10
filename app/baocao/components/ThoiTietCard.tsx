@@ -35,6 +35,7 @@ import {
 } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
+import { Meteogram } from "@/components/weather/Meteogram";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
@@ -179,6 +180,8 @@ export function ThoiTietCard({
   /** Mô hình đang xem ở bảng chính, và có đang bật bảng so sánh không. */
   const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
   const [soSanh, setSoSanh] = useState(false);
+  /** Meteogram bật sẵn: nó là thứ nhìn một cái là hiểu cả ngày. */
+  const [moBieuDo, setMoBieuDo] = useState(true);
 
   const tai = useCallback(
     async (moi = false) => {
@@ -342,6 +345,20 @@ export function ThoiTietCard({
         </div>
       ) : (
         <>
+          {/* ---- meteogram: hình dáng cả ngày trong một cái liếc ---- */}
+          {ngayChon && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setMoBieuDo((x) => !x)}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-700"
+              >
+                {moBieuDo ? "▾ Ẩn biểu đồ" : "▸ Meteogram (biểu đồ giờ)"}
+              </button>
+              {moBieuDo && <Meteogram gio={ngayChon.gio} altBai={du.toaDo.alt ?? 0} />}
+            </div>
+          )}
+
           {/* ---- bảng giờ của ngày đang chọn ---- */}
           {ngayChon && <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />}
 

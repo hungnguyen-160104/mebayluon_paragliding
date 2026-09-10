@@ -19,6 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { Meteogram } from "./Meteogram";
 import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "./SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
@@ -86,7 +87,7 @@ export type DiemDuBao = {
   slug: string;
   ten: string;
   tinh: string;
-  toaDo: { lat: number; lon: number; ten: string; luatHuong?: LuatHuong };
+  toaDo: { lat: number; lon: number; ten: string; alt?: number; luatHuong?: LuatHuong };
   ngay: Ngay[];
   moHinh: string;
   layLuc: string;
@@ -456,6 +457,9 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
           )}
         </div>
       )}
+
+      {/* Meteogram — hình quen thuộc với ai từng xem Windy, đọc được ngay không cần học. */}
+      {ngayChon && <Meteogram gio={ngayChon.gio as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} />}
 
       {ngayChon && <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />}
 

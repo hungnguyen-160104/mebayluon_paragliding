@@ -215,6 +215,28 @@ Hàng **Trời** hiện biểu tượng thay số phần trăm mây: ☀️ nắ
 
 Rê chuột vào ô bất kỳ trong bảng giờ để xem đúng lý do máy chấm màu đó.
 
+## 5f. Meteogram — biểu đồ giờ kiểu Windy
+
+Bảng số nói chính xác từng ô, nhưng mắt phải đọc từng ô một. Meteogram nói
+**hình dáng của ngày** trong một cái liếc: mây dày lên lúc nào, mưa rơi vào khúc
+nào, gió mạnh dần hay dịu đi, áp suất đang lên hay xuống. Người bay quen nhìn
+hình này trên Windy nên đọc được ngay.
+
+Sáu tầng, xếp đúng thứ tự Windy: **giờ → biểu tượng trời → nhiệt độ → gió (mũi
+tên + tốc độ tô màu + giật) → khối mây/mưa/áp suất → trần mây**.
+
+Khối giữa là phần "có hình" nhất:
+
+- **Mây vẽ theo ĐỘ CAO THẬT** — tầng thấp 0–2 km, giữa 2–6 km, cao trên 6 km;
+  đậm nhạt theo phần trăm mây tầng đó. Vệt xám dày sát đáy là mây trùm núi.
+- **Vạch xanh là mặt bãi** (theo độ cao bãi cất cánh đã khai) — nhìn vệt mây nằm
+  trên hay dưới vạch là biết bãi có bị mây trùm không.
+- **Cột xanh là mưa** (mm), đậm khi ≥ 0,5 mm.
+- **Đường xám là áp suất** — dốc xuống là thời tiết đang chuyển.
+
+Vẽ bằng SVG chứ không dùng thư viện biểu đồ: chỉ mấy hình chữ nhật và một đường
+cong, mà thư viện thì kéo theo vài trăm KB và một cách nghĩ riêng về trục.
+
 ## 5d. Nhận định ngày bay — khối phía trên thẻ
 
 Bảng giờ nói "10h gió 3 m/s, mưa 0". Đúng, nhưng chưa trả lời câu người ta
