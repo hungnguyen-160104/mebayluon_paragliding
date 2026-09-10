@@ -180,8 +180,13 @@ export function ThoiTietCard({
   /** Mô hình đang xem ở bảng chính, và có đang bật bảng so sánh không. */
   const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
   const [soSanh, setSoSanh] = useState(false);
-  /** Meteogram bật sẵn: nó là thứ nhìn một cái là hiểu cả ngày. */
-  const [moBieuDo, setMoBieuDo] = useState(true);
+  /**
+   * KIỂU XEM giờ trong ngày: bảng số (Basic) hay biểu đồ (Meteogram) — như hai
+   * tab của Windy. Mặc định BASIC: bảng số đọc chính xác từng ô, và phần lớn
+   * người trực chỉ cần tra một giờ cụ thể. Ai muốn thấy hình dáng cả ngày thì
+   * bấm sang Meteogram.
+   */
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram">("basic");
 
   const tai = useCallback(
     async (moi = false) => {
@@ -345,22 +350,36 @@ export function ThoiTietCard({
         </div>
       ) : (
         <>
-          {/* ---- meteogram: hình dáng cả ngày trong một cái liếc ---- */}
+          {/* ---- chọn kiểu xem giờ: Basic (bảng số) hay Meteogram (biểu đồ) ---- */}
           {ngayChon && (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => setMoBieuDo((x) => !x)}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-700"
-              >
-                {moBieuDo ? "▾ Ẩn biểu đồ" : "▸ Meteogram (biểu đồ giờ)"}
-              </button>
-              {moBieuDo && <Meteogram gio={ngayChon.gio} altBai={du.toaDo.alt ?? 0} />}
+            <div className="mt-2 flex gap-1">
+              {(
+                [
+                  ["basic", "▦ Basic"],
+                  ["meteogram", "📊 Meteogram"],
+                ] as Array<["basic" | "meteogram", string]>
+              ).map(([v, nhan]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setKieuXem(v)}
+                  className={
+                    "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+                    (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+                  }
+                >
+                  {nhan}
+                </button>
+              ))}
             </div>
           )}
 
-          {/* ---- bảng giờ của ngày đang chọn ---- */}
-          {ngayChon && <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />}
+          {ngayChon &&
+            (kieuXem === "meteogram" ? (
+              <Meteogram gio={ngayChon.gio} altBai={du.toaDo.alt ?? 0} />
+            ) : (
+              <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />
+            ))}
 
           {/* ---- so sánh 2–3 mô hình cho ngày đang chọn ---- */}
           {soSanh && (

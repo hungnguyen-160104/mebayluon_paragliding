@@ -388,6 +388,8 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   const [moBanDo, setMoBanDo] = useState(false);
   const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
   const [soSanh, setSoSanh] = useState(false);
+  /** Basic (bảng số) hay Meteogram (biểu đồ) — như hai tab của Windy, mặc định Basic. */
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram">("basic");
 
   const tai = useCallback(async () => {
     setLoi(false);
@@ -458,10 +460,35 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* Meteogram — hình quen thuộc với ai từng xem Windy, đọc được ngay không cần học. */}
-      {ngayChon && <Meteogram gio={ngayChon.gio as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} />}
+      {ngayChon && (
+        <div className="mt-2 flex gap-1">
+          {(
+            [
+              ["basic", "▦ Basic"],
+              ["meteogram", "📊 Meteogram"],
+            ] as Array<["basic" | "meteogram", string]>
+          ).map(([v, nhan]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setKieuXem(v)}
+              className={
+                "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+              }
+            >
+              {nhan}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {ngayChon && <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />}
+      {ngayChon &&
+        (kieuXem === "meteogram" ? (
+          <Meteogram gio={ngayChon.gio as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} />
+        ) : (
+          <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
+        ))}
 
       {soSanh && (
         <SoSanhMoHinh

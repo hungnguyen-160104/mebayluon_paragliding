@@ -39,6 +39,19 @@ const MAU_GIO: Record<"nhe" | "vua" | "hoiManh" | "manh" | "ratManh", string> = 
   ratManh: "#f43f5e",
 };
 
+/**
+ * MÀU HÀNG TRẦN MÂY như Windy: trần cao thì xanh lá (bay thoải mái), thấp dần
+ * chuyển xanh nước rồi xám (mây sát bãi). Nhìn dải màu là biết khúc nào mở.
+ */
+function mauTranMay(cm: number | null, mu: boolean): string {
+  if (mu) return "#cbd5e1";
+  if (cm === null) return "transparent";
+  if (cm >= 2000) return "#bbf7d0";
+  if (cm >= 1000) return "#d9f99d";
+  if (cm >= 500) return "#e0f2fe";
+  return "#bae6fd";
+}
+
 /** Bề ngang một cột giờ. Hẹp thì cả ngày vừa màn hình, rộng thì đọc số dễ. */
 const W = 42;
 /** Chiều cao khối mây/mưa/áp suất — phần "có hình" nhất của meteogram. */
@@ -170,6 +183,14 @@ export function Meteogram({
           {/* ---- 5. Khối chính: mây theo độ cao + mưa + áp suất ---- */}
           <svg width={rong} height={H_KHOI} className="block">
             {/**
+             * NỀN ĐÊM tô tím nhạt như Windy: mắt tự tách ngày với đêm mà không
+             * cần đọc số giờ, và biết ngay khúc nào là khung bay được.
+             */}
+            {ds.map((g, i) => {
+              const h = Number(g.gio.slice(11, 13));
+              return h < 6 || h >= 18 ? <rect key={`d${g.gio}`} x={i * W} y={0} width={W} height={H_KHOI} fill="#eef2ff" /> : null;
+            })}
+            {/**
              * MÂY VẼ THEO ĐỘ CAO THẬT, mỗi tầng một dải:
              *   thấp 0–2km · giữa 2–6km · cao 6km trở lên (vẽ sát mép trên).
              * Đậm nhạt theo phần trăm mây tầng đó — đúng cách Windy vẽ, nên
@@ -185,7 +206,25 @@ export function Meteogram({
               return (
                 <g key={g.gio}>
                   {tang.map(([pt, y, h], k) =>
-                    pt > 5 ? <rect key={k} x={x} y={y} width={W} height={h} fill="#64748b" opacity={Math.min(0.75, pt / 130)} /> : null,
+                    pt > 5 ? (
+                      /**
+                       * Vẽ hai lớp: một dải mờ trùm cả tầng, một dải đậm hơn ở
+                       * GIỮA tầng. Windy vẽ mây thành đám có lõi đậm chứ không
+                       * phải khối chữ nhật phẳng — hai lớp là đủ gợi ra điều đó
+                       * mà không cần đến gradient hay bộ lọc làm mờ.
+                       */
+                      <g key={k}>
+                        <rect x={x} y={y} width={W} height={h} fill="#64748b" opacity={Math.min(0.5, pt / 200)} />
+                        <rect
+                          x={x}
+                          y={y + h * 0.25}
+                          width={W}
+                          height={h * 0.5}
+                          fill="#475569"
+                          opacity={Math.min(0.55, pt / 160)}
+                        />
+                      </g>
+                    ) : null,
                   )}
                 </g>
               );
@@ -195,8 +234,9 @@ export function Meteogram({
             {[1000, 2000, 3000, 4000, 5000].map((m) => (
               <g key={m}>
                 <line x1={0} y1={yCao(m)} x2={rong} y2={yCao(m)} stroke="#cbd5e1" strokeDasharray="3 4" strokeWidth="0.7" />
+                {/* Ghi cả feet như Windy — phi công đọc trần bay bằng feet quen hơn. */}
                 <text x={2} y={yCao(m) - 2} fill="#94a3b8" fontSize="8">
-                  {m / 1000}km
+                  {m / 1000}km {Math.round((m * 3.28) / 100) * 100}ft
                 </text>
               </g>
             ))}
@@ -247,11 +287,9 @@ export function Meteogram({
               return (
                 <div
                   key={g.gio}
-                  style={{ width: W }}
+                  style={{ width: W, background: mauTranMay(cm, mu) }}
                   title={g.mayThap !== undefined ? `mây thấp ${Math.round(g.mayThap)}%` : undefined}
-                  className={
-                    "shrink-0 text-center text-[9px] " + (mu ? "bg-slate-300 font-bold text-slate-900" : "text-slate-500")
-                  }
+                  className={"shrink-0 text-center text-[9px] " + (mu ? "font-bold text-slate-900" : "text-slate-600")}
                 >
                   {cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}k` : cm}
                 </div>

@@ -222,6 +222,11 @@ Bảng số nói chính xác từng ô, nhưng mắt phải đọc từng ô m�
 nào, gió mạnh dần hay dịu đi, áp suất đang lên hay xuống. Người bay quen nhìn
 hình này trên Windy nên đọc được ngay.
 
+Trên thẻ có hai nút **▦ Basic** và **📊 Meteogram** — như hai tab của Windy.
+**Mặc định là Basic** (bảng số): đọc chính xác từng ô, và phần lớn lúc người
+trực chỉ cần tra một giờ cụ thể. Bấm sang Meteogram khi muốn thấy hình dáng cả
+ngày.
+
 Sáu tầng, xếp đúng thứ tự Windy: **giờ → biểu tượng trời → nhiệt độ → gió (mũi
 tên + tốc độ tô màu + giật) → khối mây/mưa/áp suất → trần mây**.
 
@@ -233,6 +238,9 @@ Khối giữa là phần "có hình" nhất:
   trên hay dưới vạch là biết bãi có bị mây trùm không.
 - **Cột xanh là mưa** (mm), đậm khi ≥ 0,5 mm.
 - **Đường xám là áp suất** — dốc xuống là thời tiết đang chuyển.
+- **Nền tím nhạt là ban đêm** (trước 6h, sau 18h) — mắt tự tách ngày với đêm.
+- Vạch độ cao ghi cả **km và feet** như Windy; hàng trần mây tô màu theo độ cao
+  (xanh lá = trần cao, xanh nước = thấp dần, xám = mây sát bãi).
 
 Vẽ bằng SVG chứ không dùng thư viện biểu đồ: chỉ mấy hình chữ nhật và một đường
 cong, mà thư viện thì kéo theo vài trăm KB và một cách nghĩ riêng về trục.
