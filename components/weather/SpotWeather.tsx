@@ -19,6 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
 import { WindArrow } from "./WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
 import {
@@ -71,6 +72,7 @@ type Ngay = {
   xacSuatDongMax: number;
   tranMax: number | null;
   gio: Gio[];
+  nhanDinh?: unknown;
 };
 
 export type DiemDuBao = {
@@ -394,6 +396,13 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         </h3>
         <span className="text-xs text-slate-500">{t.widgetNote}</span>
       </div>
+
+      {/**
+       * Nhận định ngày bay — mới có bản TIẾNG VIỆT. Câu chữ sinh động theo số
+       * liệu (hàng chục mẫu câu), dịch sáu thứ tiếng là việc riêng; khách nước
+       * ngoài vẫn đọc được màu và bảng giờ phía dưới, không mất gì.
+       */}
+      {lang === "vi" && ngayChon && <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />}
 
       <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />
 

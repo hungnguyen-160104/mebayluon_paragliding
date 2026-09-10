@@ -197,6 +197,39 @@ Hàng **Trời** hiện biểu tượng thay số phần trăm mây: ☀️ nắ
 
 Rê chuột vào ô bất kỳ trong bảng giờ để xem đúng lý do máy chấm màu đó.
 
+## 5d. Nhận định ngày bay — khối phía trên thẻ
+
+Bảng giờ nói "10h gió 3 m/s, mưa 0". Đúng, nhưng chưa trả lời câu người ta
+thật sự hỏi trước khi lên đèo: **hôm nay là ngày kiểu gì**. Khối "Nhận định
+ngày bay" đọc cả ngày như một phi công dự báo và chốt một trong bốn mức:
+**NGÀY BAY TỐT · KHÁ · HẠN CHẾ · NÊN NGHỈ BAY**, kèm một câu tóm tắt, các mục
+nhận định có số, và khuyến cáo việc nên làm. Bấm ngày khác trên dải thì khối
+đổi theo.
+
+Mỗi mục đều nói **con số nó dựa vào** — "thermal mạnh" suông thì không kiểm
+được; "thermal mạnh — trần 1.800m, CAPE 900" thì phi công có kinh nghiệm tự đối
+chiếu được với cảm nhận của mình, và cái sai của máy lộ ra ngay.
+
+| Mục | Dựa vào | Nói gì |
+|---|---|---|
+| 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | thuận/ngược sườn; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
+| 🪁 Gió trên cao | gió mực 850/700 hPa (bãi cao) hoặc 925/850 (bãi thấp), độ cao mực trừ độ cao bãi | > 8 m/s ngay trên bãi: thermal bị xé, xóc, không lên cao; > 12: không bay; mặt đất lặng mà trên cao có gió: **cắt gió** |
+| ☀️ Nắng | `sunshine_duration` cộng trong khung 7–17h | số giờ nắng / 11; < 3h: âm u, thermal yếu |
+| 🔥 Thermal | trần lớp xáo trộn, CAPE, bức xạ | yếu · vừa · tốt · **gắt từ mấy giờ**; khung nâng tốt |
+| ⚖️ Ổn định | lifted index TB, ẩm, nhiệt, gió | ≥ 4: rất ổn định — kèm ẩm ≥ 75%, nóng ≥ 30°C, lặng gió là **ngày oi bức, ít thermal, mù khô**; ≤ −2: **bất ổn, dễ dông, xóc, nhiễu** |
+| 🧢 Nghịch nhiệt | nhiệt độ các mực 925/850/700, so hai mực kề | lapse > 0°C/km: **nghịch nhiệt**; > −2: lớp chặn — báo độ cao **tính từ bãi**; nắp < 600m: thermal bị chặn, mù tích dưới |
+| 🌡 Áp suất | `pressure_msl` TB, so với ngày trước | tụt ≥ 5 hPa/24h: **front/rãnh thấp đang tới**; ≥ 3: hệ thống xấu tiến tới; tăng ≥ 3: áp cao lấn, quang dần; < 1006 kèm mây nhiều: âm u |
+| ⛈ Front | áp giảm ≥ 3 **và** gió đổi hướng **và** mưa tăng > 1mm so hôm trước | dấu hiệu front đi qua — gió giật bất ngờ khi front tới |
+| 🌫 Mù | trần mây < 300m và mây thấp ≥ 70% | giờ trùm bãi, **tan từ mấy giờ** |
+| 🌧 ⚡ Mưa, dông | lượng mưa > 0,5 mm/giờ, xác suất dông | giờ mưa, tổng mm; dông tối đa |
+
+**Chốt mức không tự nâng**: bắt đầu từ màu của ngày (đã tính từng giờ), rồi chỉ
+hạ theo số mục xấu. Bảng giờ nói đỏ thì không câu chữ nào biến thành tốt được.
+
+Trên trang khách, khối này **mới có bản tiếng Việt** (câu chữ sinh động theo số
+liệu, dịch sáu thứ tiếng là việc riêng); khách nước ngoài vẫn đọc được màu và
+bảng giờ. Trang điều phối hiện một dòng, bấm mới xổ chi tiết.
+
 ## 5c. Hai mô hình chạy song song
 
 - **ECMWF** (qua Open-Meteo) cho gió, mưa, mây, điểm sương, CAPE.

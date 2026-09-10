@@ -33,6 +33,7 @@ import {
 } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
+import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { WindArrow } from "@/components/weather/WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
 
@@ -252,6 +253,17 @@ export function ThoiTietCard({
           ↻ Làm mới
         </button>
       </div>
+
+      {/**
+       * NHẬN ĐỊNH NGÀY BAY — nằm TRÊN dải ngày, cho ngày đang chọn.
+       *
+       * Đây là câu trả lời cho "hôm nay là ngày kiểu gì": oi ổn định ít thermal,
+       * bất ổn dễ dông chiều, gió trên cao xé thermal, hay nghịch nhiệt giữ mù
+       * tới trưa. Bảng giờ phía dưới là bằng chứng; khối này là kết luận.
+       * Bấm ngày khác trên dải thì khối đổi theo.
+       */}
+      {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
+      {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
       {/* ---- dải 7 ngày ---- */}
       {/* Bảy cột: ô hẹp hơn nhưng vẫn đủ số — hơn hẳn phải cuộn ngang tìm ngày. */}

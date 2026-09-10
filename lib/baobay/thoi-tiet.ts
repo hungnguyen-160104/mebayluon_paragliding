@@ -200,6 +200,27 @@ export type GioThoiTiet = {
   buXa?: number;
   /** Ô lưới mô hình cao hơn bãi cất cánh bao nhiêu mét — xem `tranMay`. */
   chenhDoCao?: number;
+
+  /* ---- Tầng cao và áp suất: cho bộ nhận định ngày bay ---- */
+  /** Áp suất quy về mực biển (hPa) — để xem xu hướng, không phải trị tuyệt đối. */
+  apSuat?: number;
+  /** Giây có nắng trong giờ (0–3600). */
+  giayNang?: number;
+  /** Gió ở ba mực khí áp (m/s): 925 ≈ 800m · 850 ≈ 1.500m · 700 ≈ 3.000m trên mực biển. */
+  gio925?: number;
+  gio850?: number;
+  gio700?: number;
+  huong850?: number;
+  /** Nhiệt độ ở bốn mực (°C) — so hai mực kề nhau để tìm lớp nghịch nhiệt. */
+  t1000?: number;
+  t925?: number;
+  t850?: number;
+  t700?: number;
+  /** Độ cao thật (m trên mực biển) của mực 925 và 850 — đổi ra "cách bãi bao nhiêu". */
+  h925?: number;
+  h850?: number;
+  mayGiua?: number;
+  mayCao?: number;
 };
 
 /* ------------------------------------------------------------------ */
@@ -701,6 +722,12 @@ export type NgayThoiTiet = {
   /** Trần thermal cao nhất (m) — thermal của ngày. */
   tranMax: number | null;
   gio: Array<GioThoiTiet & ChamGio>;
+  /**
+   * Bộ nhận định ngày bay — gắn ở service sau khi gộp xong cả dãy (cần ngày
+   * trước để xem xu hướng áp suất). Để `unknown` ở đây tránh vòng import với
+   * `nhan-dinh.ts`; nơi dùng ép về `NhanDinhNgay`.
+   */
+  nhanDinh?: unknown;
 };
 
 /**

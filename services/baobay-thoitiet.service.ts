@@ -41,6 +41,7 @@ import {
   type NguongHoc,
   type ToaDoDiemBay,
 } from "@/lib/baobay/thoi-tiet";
+import { nhanDinhNgay } from "@/lib/baobay/nhan-dinh";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
 
@@ -66,6 +67,21 @@ const HOURLY = [
   "wind_gusts_10m",
   "cape",
   "shortwave_radiation",
+  /* Cho bộ nhận định ngày bay: áp suất, nắng, gió và nhiệt độ tầng cao, mây tầng giữa/cao. */
+  "pressure_msl",
+  "sunshine_duration",
+  "wind_speed_925hPa",
+  "wind_speed_850hPa",
+  "wind_speed_700hPa",
+  "wind_direction_850hPa",
+  "temperature_1000hPa",
+  "temperature_925hPa",
+  "temperature_850hPa",
+  "temperature_700hPa",
+  "geopotential_height_925hPa",
+  "geopotential_height_850hPa",
+  "cloud_cover_mid",
+  "cloud_cover_high",
 ].join(",");
 
 /**
@@ -371,6 +387,20 @@ async function layVaCham(
       chiSoNang: tra.get(t),
       tranThermal: traTran.get(t),
       chenhDoCao,
+      apSuat: so(h.pressure_msl),
+      giayNang: so(h.sunshine_duration),
+      gio925: so(h.wind_speed_925hPa),
+      gio850: so(h.wind_speed_850hPa),
+      gio700: so(h.wind_speed_700hPa),
+      huong850: so(h.wind_direction_850hPa),
+      t1000: so(h.temperature_1000hPa),
+      t925: so(h.temperature_925hPa),
+      t850: so(h.temperature_850hPa),
+      t700: so(h.temperature_700hPa),
+      h925: so(h.geopotential_height_925hPa),
+      h850: so(h.geopotential_height_850hPa),
+      mayGiua: so(h.cloud_cover_mid),
+      mayCao: so(h.cloud_cover_high),
     };
     const ngay = g.gio.slice(0, 10);
     if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
@@ -378,6 +408,13 @@ async function layVaCham(
   }
 
   const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio)).slice(0, soNgay);
+  /**
+   * Nhận định từng ngày, làm SAU khi có đủ cả dãy: ngày nào cũng cần ngày liền
+   * trước để biết áp suất đang lên hay xuống — thứ báo front sớm nhất.
+   */
+  ngay.forEach((n, i) => {
+    n.nhanDinh = nhanDinhNgay(n, { ngayTruoc: i > 0 ? ngay[i - 1] : null, altBai: toaDo.alt, luatHuong: toaDo.luatHuong });
+  });
   return { ngay, moHinh };
 }
 
