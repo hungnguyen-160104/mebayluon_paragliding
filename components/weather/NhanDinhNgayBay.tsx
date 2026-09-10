@@ -68,9 +68,20 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
       {mo && nd.kieuNgay && <div className="mt-1 text-[12px] font-bold leading-snug">🧭 {nd.kieuNgay}</div>}
 
       {mo && (
-        <div className="mt-1.5 grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
+        /**
+         * CỘT CHẢY (`columns-2`) chứ không phải LƯỚI hai cột.
+         *
+         * Lưới xếp theo HÀNG: hai mục cùng hàng phải cao bằng nhau, nên mục
+         * ngắn ("Nắng: 11/11 giờ") đứng cạnh mục dài hai dòng ("Ổn định: BẤT
+         * ỔN ĐỊNH (LI −2,4) — thermal gắt…") thì dưới nó hở một khoảng trắng
+         * đúng bằng phần chênh. Cột chảy thì các mục nối tiếp nhau, hết cột
+         * này sang cột kia, không có hàng nên không có chỗ hở.
+         *
+         * `break-inside-avoid` để một mục không bị cắt đôi giữa hai cột.
+         */
+        <div className="mt-1.5 sm:columns-2 sm:gap-x-4">
           {nd.diem.map((d) => (
-            <div key={d.ten} className={"text-[11px] leading-snug " + MAU_TONG[d.tong]}>
+            <div key={d.ten} className={"mb-0.5 break-inside-avoid text-[11px] leading-snug " + MAU_TONG[d.tong]}>
               <span className="mr-1">{d.icon}</span>
               <span className="font-bold">{d.ten}:</span> {d.noiDung}
             </div>
