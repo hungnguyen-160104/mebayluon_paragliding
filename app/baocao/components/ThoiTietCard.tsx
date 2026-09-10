@@ -295,10 +295,10 @@ export function ThoiTietCard({
       {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
       {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
-      {/* ---- dải 8 ngày ---- */}
-      {/* BỐN Ô MỘT HÀNG, hai hàng đủ tám ngày (luật chủ 10/09): bảy cột thì ô hẹp
-          tới mức số chồng lên nhau, mà hàng cuối lại trơ ba ô lẻ. */}
-      <div className="grid grid-cols-4 gap-1">
+      {/* ---- dải 10 ngày ---- */}
+      {/* NĂM Ô MỘT HÀNG từ 640px: hai hàng đủ mười ngày, không hàng nào trơ ô lẻ.
+          Điện thoại để bốn ô cho chữ còn đọc được (luật chủ 10/09). */}
+      <div className="grid grid-cols-4 gap-1 sm:grid-cols-5">
         {du.ngay.map((n) => {
           const daCham = du.cham.find((c) => c.date === n.ngay);
           return (

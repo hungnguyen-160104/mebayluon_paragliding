@@ -20,7 +20,8 @@ Hệ thống **đang chạy được ngay, không cần khoá, không tốn ti�
   **Trần mây** vẽ thẳng độ cao đáy mây theo mét, lớp **Mây thấp** vẽ đúng thứ
   trùm sườn núi, lớp **Tầm nhìn** làm tối vùng sương mù dày — nhìn hình là biết
   sáng mai núi có bị trùm không.
-- Số ngày: **8 ngày tới** (dải ngày xếp 4 ô một hàng nên tám là vừa hai hàng).
+- Số ngày: **10 ngày tới** — đã dò thật: ECMWF và GFS đều trả đủ 240 giờ không
+  thủng lỗ nào. Dải ngày xếp 5 ô một hàng nên mười là vừa hai hàng.
 
 Không khai biến nào thì mọi thứ vẫn đủ: trang khách `/thoi-tiet-bay`, widget
 trong từng trang `/spots/…`, và trang nội bộ `/baocao/thoi-tiet`.
@@ -433,7 +434,7 @@ giờ, JMA thiếu giật và CAPE nên không bày.
 
 Nút **⇄ So sánh** mở bảng đặt 2–3 mô hình cạnh nhau:
 
-- **8 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
+- **10 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
   ngang là thấy ngày nào các mô hình cãi nhau. Bấm vào ngày để đổi ngày so.
 - **Bảng giờ của ngày đang chọn — SO NGANG BẢY YẾU TỐ**: ☀️ Trời · 🌬 Gió ·
   💨 Giật · 🧭 Hướng (mũi tên) · 🌧 Mưa · 🌫 Trần mây · ⚡ Dông. Mỗi yếu tố một

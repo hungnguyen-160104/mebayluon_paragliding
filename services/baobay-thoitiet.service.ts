@@ -99,7 +99,12 @@ const HOURLY = [
  * Thiếu chúng thì chỉ biết gió mạnh hay nhẹ, không biết KHÔNG KHÍ có động hay
  * không — hai chuyện khác hẳn nhau với người bay.
  */
-const HOURLY_PHU = ["lifted_index", "convective_inhibition", "boundary_layer_height"].join(",");
+/**
+ * Trường của MÔ HÌNH PHỤ (GFS). Ngoài ba chỉ số đối lưu, lấy thêm cặp
+ * `showers` + `precipitation` để biết BAO NHIÊU PHẦN lượng mưa là mưa
+ * rào/giông — xem `traTyLeRao` dưới.
+ */
+const HOURLY_PHU = ["lifted_index", "convective_inhibition", "boundary_layer_height", "showers", "precipitation"].join(",");
 
 /**
  * BỘ NHỚ TẠM TRONG TIẾN TRÌNH, 20 phút.
@@ -113,13 +118,17 @@ const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string 
 const CACHE_MS = 20 * 60 * 1000;
 
 /**
- * SỐ NGÀY DỰ BÁO — 8 ngày (luật chủ 10/09).
+ * SỐ NGÀY DỰ BÁO — 10 ngày (luật chủ 10/09).
  *
- * Tám chứ không phải bảy vì dải ngày xếp 4 ô một hàng: bảy ngày để hàng dưới
- * trơ ba ô, tám thì đủ hai hàng vuông vắn. Xa hơn nữa thì mô hình toàn cầu bắt
- * đầu đoán mò với địa hình núi, mà khách đặt bay cũng hiếm khi hỏi quá tuần.
+ * Đã dò thật trước khi nâng: ECMWF IFS025 và GFS đều trả đủ 240 giờ không
+ * thủng lỗ nào, kể cả chỉ số nâng của mô hình phụ. Mười là con số chẵn, dải
+ * ngày xếp 5 ô một hàng thì vừa đúng hai hàng.
+ *
+ * Đừng nâng tiếp: qua 10 ngày mô hình toàn cầu chỉ còn nói được xu thế lớn,
+ * mà ở địa hình đèo thì xu thế lớn không quyết định được ngày bay — bày ra chỉ
+ * khiến người ta tin vào một con số không có thật.
  */
-export const SO_NGAY = 8;
+export const SO_NGAY = 10;
 /**
  * BẢN CŨ CÒN DÙNG ĐƯỢC TỚI 6 TIẾNG khi không gọi được mô hình.
  *
@@ -371,6 +380,15 @@ async function layVaCham(
   const tra = new Map<string, number>();
   const traCin = new Map<string, number>();
   const traTran = new Map<string, number>();
+  /**
+   * TỈ LỆ MƯA RÀO/GIÔNG trong tổng lượng mưa của giờ đó (0–1).
+   *
+   * ECMWF — mô hình chính — KHÔNG mô hình hoá mưa rào riêng: hỏi `showers` nó
+   * trả 0 suốt (đã dò thật 10/09). GFS thì có. Nên lấy TỈ LỆ của GFS rồi áp lên
+   * lượng mưa của mô hình chính, thay vì bê thẳng số milimét của GFS sang —
+   * hai mô hình đoán lượng khác nhau, trộn số là ra cột mưa sai.
+   */
+  const traTyLeRao = new Map<string, number>();
   if (phu?.hourly?.time?.length) {
     phu.hourly.time.forEach((t: string, i: number) => {
       const li = phu.hourly.lifted_index?.[i];
@@ -379,6 +397,9 @@ async function layVaCham(
       if (li !== null && li !== undefined) tra.set(t, Number(li));
       if (cin !== null && cin !== undefined) traCin.set(t, Number(cin));
       if (tran !== null && tran !== undefined) traTran.set(t, Number(tran));
+      const tong = Number(phu.hourly.precipitation?.[i] ?? 0);
+      const rao = Number(phu.hourly.showers?.[i] ?? 0);
+      if (tong > 0.05) traTyLeRao.set(t, Math.max(0, Math.min(1, rao / tong)));
     });
   }
 
@@ -395,7 +416,14 @@ async function layVaCham(
       giat: Number(h.wind_gusts_10m?.[i] ?? 0),
       huong: Number(h.wind_direction_10m?.[i] ?? 0),
       mua: Number(h.precipitation?.[i] ?? 0),
-      muaRao: so(h.showers),
+      /** Mô hình chính có số của chính nó thì dùng; không thì suy theo tỉ lệ của mô hình phụ. */
+      muaRao: (() => {
+        const tong = Number(h.precipitation?.[i] ?? 0);
+        const rieng = so(h.showers);
+        if (rieng !== undefined && rieng > 0) return rieng;
+        const tyLe = traTyLeRao.get(t);
+        return tyLe === undefined || tong <= 0 ? undefined : Number((tong * tyLe).toFixed(2));
+      })(),
       may: Number(h.cloud_cover?.[i] ?? 0),
       nhietDo: Number(h.temperature_2m?.[i] ?? 0),
       diemSuong: so(h.dew_point_2m),

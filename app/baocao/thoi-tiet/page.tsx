@@ -45,7 +45,7 @@ export default function TrangThoiTiet() {
   const dsDiem = spot ? [spot, ...options.filter((s) => s !== spot)] : options;
 
   return (
-    <Shell user={user} title="Thời tiết bay" subtitle="Dự báo 8 ngày · gió, giật, mưa · sổ kinh nghiệm">
+    <Shell user={user} title="Thời tiết bay" subtitle="Dự báo 10 ngày · gió, giật, mưa · sổ kinh nghiệm">
       {options.length > 1 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {options.map((s) => (

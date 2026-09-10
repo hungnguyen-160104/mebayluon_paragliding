@@ -164,8 +164,9 @@ function DaiNgay({
 }) {
   const homNay = homNayVN();
   return (
-    /* Bốn ô một hàng, hai hàng đủ tám ngày — xem ghi chú ở SO_NGAY. */
-    <div className="grid grid-cols-4 gap-1.5">
+    /* Năm ô một hàng từ 640px — hai hàng đủ mười ngày; điện thoại bốn ô cho chữ
+       còn đọc được. Xem ghi chú ở SO_NGAY. */
+    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
       {/**
        * Ô NGÀY GỌN LẠI (chủ 10/09): trước đây mỗi ô xếp SÁU dòng chồng nhau —
        * ngày, số gió, đơn vị, số giờ đẹp, mưa, dông, điểm — cao gần bằng cả
