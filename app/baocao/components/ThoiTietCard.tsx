@@ -257,8 +257,10 @@ export function ThoiTietCard({
              * ai hiểu nhầm. Mưa từ 0,3 mm/giờ trở xuống không tính (vài hạt, không ướt).
              */}
             {homNayCard.gioMua > 0
-              ? ` · mưa ${suNangMua(homNayCard.muaTong)} ~${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTong.toFixed(1)}mm`
-              : " · không mưa"}
+              ? ` · mưa ${suNangMua(homNayCard.muaTongThat)} ~${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTongThat.toFixed(1)}mm`
+              : homNayCard.gioMuaBay > 0
+                ? ` · mưa bay${homNayCard.khungMuaBay ? ` ${homNayCard.khungMuaBay}` : ""} — bay vẫn bay`
+                : " · không mưa"}
             {homNayCard.xacSuatDongMax >= 20 ? ` · ⚡ dông ${homNayCard.xacSuatDongMax}%` : ""}
             {homNayCard.tranMax ? ` · trần thermal ${homNayCard.tranMax}m` : ""}
           </div>

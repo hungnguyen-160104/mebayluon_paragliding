@@ -30,7 +30,22 @@ export const dynamic = "force-dynamic";
  *   POST {…}             lưu nháp / chốt báo cáo
  *   POST {action:"stock-done", reportId, rowId, done}   đánh dấu đã nhập hàng
  */
-const ROLES = ["cafe", "accountant", "admin"] as ("cafe" | "accountant" | "admin")[];
+/**
+ * AI ĐỨNG QUẦY THÌ VÀO ĐƯỢC, không chỉ vai "cafe" (chủ báo 10/09).
+ *
+ * Ms Duyên là quầy vé nhưng bán cafe ngay trên bãi cất. Trước đây trang chốt
+ * ca của quầy chỉ mở cho vai "cafe", nên tiền cafe của chị không có chỗ chốt:
+ * không nộp được, không vào danh sách báo cáo cuối ngày, và số chị đang giữ
+ * không ai nhìn thấy. Điều phối / quầy vé nay vào được — mỗi người vẫn chỉ
+ * thấy và chốt phần của chính mình.
+ */
+const ROLES = ["cafe", "dispatcher", "counter", "accountant", "admin"] as (
+  | "cafe"
+  | "dispatcher"
+  | "counter"
+  | "accountant"
+  | "admin"
+)[];
 
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: ROLES, allowAdmin: true });

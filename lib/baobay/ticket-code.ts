@@ -193,11 +193,26 @@ export function parseTicketCodeList(text: unknown): TicketCodeListResult {
    * vỡ thành hai mã rời. Nên đổi mọi dạng dấu khoảng thành một ký tự riêng, cắt
    * xong mới xử lý.
    */
-  const marked = raw.replace(/\s*(?:\.{2,}|…|->|→|=>)\s*/g, RANGE_MARK);
+  let marked = raw.replace(/\s*(?:\.{2,}|…|->|→|=>)\s*/g, RANGE_MARK);
+  /**
+   * "1105-1106" là KHOẢNG MÃ, không phải một mã.
+   *
+   * Dấu gạch bình thường thuộc về mã ("KP-001234") nên không thể coi là dấu
+   * tách; nhưng SỐ-gạch-SỐ thì không mã nào có dạng ấy, chỉ có thể là "từ mã
+   * này tới mã kia". Đánh dấu trước khi cắt để nó đi tiếp vào nhánh khoảng mã.
+   */
+  marked = marked.replace(/(?<![A-Z])(\d{3,6})\s*-\s*(\d{3,6})(?![\d])/g, `$1${RANGE_MARK}$2`);
 
   const tokens = marked
-    // Dấu tách: khoảng trắng, phẩy, chấm phẩy, chấm, gạch chéo, gạch dọc, xuống dòng.
-    .split(/[\s,;.\/|\n\r]+/)
+    /**
+     * Dấu tách: khoảng trắng, phẩy, chấm phẩy, chấm, gạch chéo, gạch dọc,
+     * GẠCH DƯỚI, cộng, và, xuống dòng.
+     *
+     * Gạch dưới vào danh sách theo đúng lỗi thật: "1105_1106" gõ hôm 09/09 bị
+     * coi là MỘT mã sai dạng nên rơi mất cả hai vé (chủ báo 10/09). Không mã vé
+     * nào chứa gạch dưới nên cắt ở đó là an toàn.
+     */
+    .split(/[\s,;._+&\/|\n\r]+/)
     .map((t) => t.trim())
     .filter(Boolean);
 

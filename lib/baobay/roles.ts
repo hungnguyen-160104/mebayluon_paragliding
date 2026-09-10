@@ -79,7 +79,19 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
       return [{ href: "/baocao/camera", label: "Camera man" }, ...hang, ...troi];
     case "dispatcher":
     case "counter":
-      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }, ...sapa, ...hang, ...troi];
+      /**
+       * BÁO CÁO QUẦY CAFE cho điều phối / quầy vé: người đứng bãi cất bán cả
+       * cafe (Ms Duyên từ 10/09), phải có chỗ chốt ca và nộp tiền quầy — nếu
+       * không thì tiền cafe của họ không vào danh sách cuối ngày.
+       */
+      return [
+        { href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" },
+        ...sapa,
+        ...hang,
+        { href: "/cafe", label: "CAFE" },
+        { href: "/baocao/cafe/bao-cao", label: "Báo cáo quầy" },
+        ...troi,
+      ];
     case "accountant":
       /**
        * Thẻ đầu mang chữ "KẾ TOÁN" hẳn ra: người kiêm nhiệm nhìn thanh thẻ toàn

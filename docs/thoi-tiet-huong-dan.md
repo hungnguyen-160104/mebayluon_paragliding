@@ -119,23 +119,31 @@ Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặn
 
 | Gió trung bình | Mức | Màu ô |
 |---|---|---|
-| < 2 | nhẹ | xanh nhạt |
-| 2 – 4 | vừa | xanh |
+| < 4 | bình thường, tốt | xanh (dưới 2 thì xanh nhạt) |
 | 4 – 6 | hơi mạnh | vàng |
 | 6 – 8 | mạnh | cam |
 | > 8 | rất mạnh | đỏ |
 
-| Gió giật | Mức | Có chặn bay không |
-|---|---|---|
-| < 6 | nhẹ | không |
-| 6 – 14 | vừa | **không** — giật không quyết định bay |
-| 14 – 18 | mạnh, nhiễu | cảnh báo (vàng) |
-| > 18 | rất mạnh | không khuyến cáo bay (đỏ) |
+**Hà Nội (Đồi Bù) cấm ở 8 m/s**, không phải 7 như mặc định chung: theo thang
+trên thì chỉ "rất mạnh" mới là mức nghỉ. Khai trong `ToaDoDiemBay.nguong` —
+ngưỡng khởi điểm riêng của điểm; số chủ tự lưu ở ⚙ vẫn thắng.
 
-Giật nới xa như vậy vì mô hình chia ô ~25 km: ở địa hình đèo nó gần như luôn
-báo giật gấp ba bốn lần gió trung bình. Lấy con số ấy làm mốc cấm thì Khau Phạ
-đỏ quanh năm, còn phi công đứng ở bãi thì thấy trời hoàn toàn bay được — sai
-kiểu đó vài lần là không ai nhìn bảng nữa.
+| Gió giật | Có chặn bay không |
+|---|---|
+| tới 16 | **không** — giật không quyết định bay |
+| > 16 | cảnh báo "gust mạnh" ở đúng khung giờ đó (vàng) |
+| > 18 | không khuyến cáo bay (đỏ) |
+
+**Giật không phải là thước bay hay nghỉ** (luật chủ 10/09): gió 4 m/s mà giật
+12, thậm chí hơn, là chuyện thường ngày; gió to thì giật to theo. Mô hình chia
+ô ~25 km nên ở địa hình đèo nó gần như luôn báo giật gấp ba bốn lần gió trung
+bình — lấy con số ấy làm mốc cấm thì Khau Phạ đỏ quanh năm trong khi phi công
+đứng ở bãi thấy trời hoàn toàn bay được.
+
+Trên 16 thì nhận định nói RÕ KHUNG GIỜ: *"gust mạnh 13:00–15:00 (tới 17 m/s) —
+tránh cất/hạ cánh đúng mấy giờ đó"*. Bộ chấm điểm cũng bỏ luôn "hệ số giật"
+(giật ÷ gió nền): nó phạt đúng cái trường hợp nền 2 giật 9 mà chủ bảo là bình
+thường.
 
 Màu ô **Gió** nói *gió mạnh cỡ nào*; hàng **Bay?** ngay dưới mới là *kết luận
 cả giờ* (đã gộp mưa, mù, dông, hướng): **😊** bay tốt · **😐** cân nhắc · **😞**
@@ -155,10 +163,10 @@ sườn vẫn không bay được — nên phải nhìn thấy cả hai.
 
 | Yếu tố | Vàng (cân nhắc) | Đỏ (không bay) |
 |---|---|---|
-| Gió trung bình | > ngưỡng đẹp (nới tới 6 m/s khi **thuận sườn**) | > ngưỡng cấm |
-| Gió giật | 14 – 18 m/s (mạnh, nhiễu) | > 18 m/s |
+| Gió trung bình | > ngưỡng đẹp (nới tới 6 m/s khi hướng gió tốt cho bãi) | > ngưỡng cấm |
+| Gió giật | > 16 m/s (gust mạnh) | > 18 m/s |
 | **Mù / mây thấp** | trần mây < 2× ngưỡng, mây thấp ≥ 70% | trần mây < ngưỡng và mây thấp ≥ 70%; hoặc ẩm ≥ 98% kèm mây thấp dày |
-| Mưa | khả năng mưa (đã hiệu chỉnh) ≥ 75% | > ngưỡng mưa |
+| Mưa | — (phần trăm không còn hạ màu) | ≥ ngưỡng mưa (0,8 mm/giờ) |
 | **Dông** | 20–39% | ≥ 40% |
 | **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
 | **Hướng gió xấu** | — | trong cung gió xấu của điểm, bất kể tốc độ |
@@ -178,15 +186,30 @@ Ba khái niệm mới, giải thích ngắn:
   có mây. Và phải có **cả hai** (trần mây thấp **và** mây thấp ≥ 70%) mới chấm
   mù.
 
+- **BA MỨC MƯA** (luật chủ 10/09), thay cho một ngưỡng duy nhất:
+
+  | mm trong một giờ | Gọi là gì | Máy làm gì |
+  |---|---|---|
+  | ≤ 0,3 | không mưa | không ghi, không vẽ, không nhắc |
+  | 0,4 – 0,8 | **mưa bay** | ghi cho biết, **không** hạ màu, không đếm vào số tiếng mưa |
+  | ≥ 0,8 | mưa | đếm tiếng, chấm đỏ |
+
+  Ví dụ chủ đưa: 10h mưa 1,0 mm rồi 11h–13h mưa 0,6 mm → *"mưa 1 tiếng lúc
+  10:00, sau đó mưa bay tới 13:00"*, chứ không phải "mưa 4 tiếng".
+
+- **BỎ CẢNH BÁO THEO % MƯA.** Phần trăm của mô hình là "có mưa ở đâu đó trong ô
+  25 km" — hạ màu theo nó thì mùa mưa ngày nào cũng vàng trong khi bãi khô. Cả
+  hàng "% mưa" trong hai bảng giờ cũng bỏ; cột mưa mm nói thẳng giờ nào bao
+  nhiêu. (Hàm `xacSuatMuaThat` còn lại để bảng so sánh mô hình dùng.)
+
 - **Ở mức NGÀY nói SỐ TIẾNG MƯA, không nói phần trăm.** "Khả năng mưa 93%" bị
   đọc thành "mưa 93% thời gian trong ngày" — tức gần như cả ngày, trong khi thực
   ra nó là "xác suất có mưa ở đâu đó trong ô lưới". Nay ghi "mưa vừa ~3 tiếng
   (08:00–10:00), tổng 5,5mm". Phần trăm chỉ còn ở hàng **Mưa %/giờ** của bảng
   giờ, nơi nó đúng nghĩa: xác suất mưa trong chính giờ đó.
 
-  Chỉ đếm giờ có **mưa ≥ 0,5 mm** (`MUA_DANG_KE`, khớp ngưỡng cấm bay vì mưa):
-  0,1–0,4 mm là mưa phùn vài hạt, dù không ướt. Không lọc thì một ngày rả rích
-  4mm thành "mưa 11 tiếng" — đúng chữ nhưng sai ý.
+  Chỉ đếm giờ có **mưa ≥ 0,8 mm** (`MUA_DANG_KE`, khớp ngưỡng cấm bay vì mưa).
+  Không lọc thì một ngày rả rích 4mm thành "mưa 11 tiếng" — đúng chữ nhưng sai ý.
 
   Cường độ theo tổng lượng: **nhỏ** < 3mm · **vừa** 3–15mm · **to** > 15mm.
 
@@ -208,9 +231,8 @@ Ba khái niệm mới, giải thích ngắn:
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
 
-**Mưa lác đác (0,1–0,5 mm/giờ) KHÔNG còn là cảnh báo** — chỉ ghi vào lý do. Ở
-Tây Bắc mùa mưa đó là mưa phùn rải rác, bay vẫn bay, mà nó từng chiếm hai phần
-ba số ô ⚠. Cảnh báo nào cũng bật thì người trực thôi đọc, rồi bỏ qua luôn cái
+**Mưa bay (0,4–0,8 mm/giờ) KHÔNG phải cảnh báo** — chỉ ghi vào lý do. Ở Tây Bắc
+mùa mưa đó là mưa phùn rải rác, bay vẫn bay, mà nó từng chiếm hai phần ba số ô ⚠. Cảnh báo nào cũng bật thì người trực thôi đọc, rồi bỏ qua luôn cái
 cảnh báo thật. Sau khi siết: trên 165 ô của 3 điểm × 5 ngày còn **12 ô ⚠**
 (trước khoảng 50).
 
@@ -226,13 +248,19 @@ Bảng số nói chính xác từng ô, nhưng mắt phải đọc từng ô m�
 nào, gió mạnh dần hay dịu đi, áp suất đang lên hay xuống. Người bay quen nhìn
 hình này trên Windy nên đọc được ngay.
 
-Trên thẻ có hai nút **▦ Basic** và **📊 Meteogram** — như hai tab của Windy.
-**Mặc định là Basic** (bảng số): đọc chính xác từng ô, và phần lớn lúc người
-trực chỉ cần tra một giờ cụ thể. Bấm sang Meteogram khi muốn thấy hình dáng cả
-ngày.
+Trên thẻ có ba nút **▦ Basic** · **📊 Meteogram** · **🪂 Airgram** — như các tab
+của Windy. **Mặc định là Basic** (bảng số): đọc chính xác từng ô, và phần lớn
+lúc người trực chỉ cần tra một giờ cụ thể.
 
-Sáu tầng, xếp đúng thứ tự Windy: **giờ → biểu tượng trời → nhiệt độ → gió (mũi
-tên + tốc độ tô màu + giật) → khối mây/mưa/áp suất → trần mây**.
+**Biểu đồ vẽ NỐI LIỀN CẢ 7 NGÀY trên một dải cuộn ngang** (luật chủ 10/09).
+Trước đây mỗi lần chỉ vẽ một ngày, gạt ngang hết ngày là cụt — trong khi thứ
+người ta muốn thấy là "cơn mưa chiều nay có kéo sang sáng mai không". Hai chiều
+đồng bộ: bấm ngày ở dải phía trên thì biểu đồ trượt tới, gạt biểu đồ tới ngày
+nào thì dải phía trên sáng ngày ấy. Cột nhãn trục bên trái dính khi cuộn.
+
+Các tầng, xếp đúng thứ tự Windy: **tiêu đề ngày (chấm màu + tổng mưa + mọc/lặn)
+→ giờ → biểu tượng trời → nhiệt độ → gió (mũi tên + tốc độ) → giật → khối
+mây/mưa/áp suất → trần mây**.
 
 Khối giữa là phần "có hình" nhất:
 
@@ -240,14 +268,49 @@ Khối giữa là phần "có hình" nhất:
   đậm nhạt theo phần trăm mây tầng đó. Vệt xám dày sát đáy là mây trùm núi.
 - **Vạch xanh là mặt bãi** (theo độ cao bãi cất cánh đã khai) — nhìn vệt mây nằm
   trên hay dưới vạch là biết bãi có bị mây trùm không.
-- **Cột xanh là mưa** (mm), đậm khi ≥ 0,5 mm.
+- **Cột mưa từng giờ** (mm): xanh đậm là mưa thật (≥ 0,8 mm) và có ghi số, xanh
+  nhạt là mưa bay (0,4–0,8); từ 0,3 trở xuống không vẽ gì.
 - **Đường xám là áp suất** — dốc xuống là thời tiết đang chuyển.
-- **Nền tím nhạt là ban đêm** (trước 6h, sau 18h) — mắt tự tách ngày với đêm.
+- **Nền tím nhạt là ban đêm**, tô theo **giờ mặt trời mọc/lặn THẬT của từng
+  ngày** (mô hình cấp, đổi theo mùa) chứ không phải 6h/18h cứng — tháng 12 ở
+  Khau Phạ 6h vẫn còn tối.
 - Vạch độ cao ghi cả **km và feet** như Windy; hàng trần mây tô màu theo độ cao
   (xanh lá = trần cao, xanh nước = thấp dần, xám = mây sát bãi).
 
 Vẽ bằng SVG chứ không dùng thư viện biểu đồ: chỉ mấy hình chữ nhật và một đường
 cong, mà thư viện thì kéo theo vài trăm KB và một cách nghĩ riêng về trục.
+
+### Airgram — gió theo độ cao
+
+Mỗi hàng là một mực: **~3.000 m (700 hPa) · ~1.500 m (850 hPa) · ~750 m
+(925 hPa) · mặt đất**. Ô nào cũng có mũi tên hướng, tốc độ và nhiệt độ mực đó.
+Nhìn dọc một giờ là thấy ngay gió **tăng theo độ cao** hay **đổi hướng ở tầng
+nào** (đứt gió), và trên có ấm hơn dưới không (nghịch nhiệt) — thứ bảng mặt đất
+không bao giờ hiện.
+
+### Màu gió và giật chuyển dần
+
+Xanh → vàng → đỏ → đỏ thẫm (`components/weather/mau-gio.ts`), không nhảy bậc.
+Bậc rời cũ khiến 5,9 và 6,1 m/s nhảy hẳn hai màu dù chỉ chênh 0,2 — mắt bị đánh
+lừa rằng có một ngưỡng thật ở đó. Thang giật ngả vàng muộn hơn thang gió: 10
+mới chớm vàng, 14 đỏ dần, trên 16 đỏ, 18+ đỏ thẫm.
+
+### Vị trí và mặt trời mọc/lặn
+
+Ngay dưới dải ngày có dòng vị trí: tên bãi, toạ độ, độ cao, khung giờ bay của
+điểm, và **mặt trời mọc/lặn của NGÀY ĐANG CHỌN** kèm độ dài ngày. Lấy từ mô hình
+(`daily=sunrise,sunset`) nên tự đổi theo mùa: Khau Phạ tháng 6 lặn 18:40, tháng
+12 mới 17:30 — hơn một tiếng, đúng bằng khoảng quyết định còn kịp chuyến cuối
+hay không.
+
+### Bản đồ Windy chỉ có tab Basic
+
+Đã dò thật trên `embed2.html`: truyền `type=meteogram`, `type=airgram`,
+`detailType=…` đều bị bỏ qua, Windy vẫn vẽ bảng giờ. Meteogram và Airgram của
+Windy nằm sau trang đầy đủ, không nhúng được. Nên dưới bản đồ có hai nút mở
+**windy.com** ở tab mới để đối chiếu, còn biểu đồ dùng hằng ngày là hai tab tự
+vẽ ở trên — cùng số liệu, chú thích tiếng Việt, và có thêm mặt bãi với trần mây
+tính theo độ cao bãi, thứ Windy không biết.
 
 ## 5d. Nhận định ngày bay — khối phía trên thẻ
 

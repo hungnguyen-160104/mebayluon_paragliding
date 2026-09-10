@@ -800,6 +800,12 @@ export type NgayThoiTiet = {
    */
   /** Số giờ MƯA THẬT (≥ `MUA_DANG_KE`) trong khung bay. */
   gioMua: number;
+  /**
+   * Tổng mm CỦA RIÊNG NHỮNG GIỜ MƯA THẬT — khác `muaTong` (cộng cả mưa bay).
+   * Phải có hai số: đầu thẻ nói "mưa ~2 tiếng, tổng X" thì X đúng là mưa của
+   * hai tiếng ấy, chứ cộng thêm mưa bay vào là câu tự mâu thuẫn.
+   */
+  muaTongThat: number;
   khungMua: string | null;
   /** Số giờ MƯA BAY (0,4 – dưới 0,8 mm) — ghi cho biết, không phải mưa. */
   gioMuaBay: number;
@@ -883,6 +889,7 @@ export function gopNgay(
       ? Math.max(-1, ...trongKhung.map((g) => xacSuatMuaThat(g.xacSuatMua, g.mua)))
       : -1,
     gioMua: trongKhung.filter((g) => g.mua >= MUA_DANG_KE).length,
+    muaTongThat: trongKhung.filter((g) => g.mua >= MUA_DANG_KE).reduce((t, g) => t + g.mua, 0),
     khungMua: khungCua(trongKhung.filter((g) => g.mua >= MUA_DANG_KE)),
     gioMuaBay: trongKhung.filter((g) => g.mua >= MUA_BAY && g.mua < MUA_DANG_KE).length,
     khungMuaBay: khungCua(trongKhung.filter((g) => g.mua >= MUA_BAY && g.mua < MUA_DANG_KE)),

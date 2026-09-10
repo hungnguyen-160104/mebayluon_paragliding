@@ -10475,7 +10475,16 @@ issuedRanges: Array<{ from: string; to: string }>;
    */
   reportedBy: Record<string, Array<{ name: string; qty: number }>>;
   /** Tiền ghi dưới tên từng người trong sổ booking — xem moneyByPerson. */
-  moneyByPerson: Array<{ name: string; cash: number; transfer: number; income: number; spend: number }>;
+  moneyByPerson: Array<{
+    name: string;
+    cash: number;
+    transfer: number;
+    income: number;
+    spend: number;
+    spendOwn: number;
+    spendCommission: number;
+    commissionDetail: Array<{ label: string; amount: number }>;
+  }>;
   /** Dịch vụ đếm theo SỔ BOOKING (gồm mọi lệnh thêm/bớt tại bãi) — nguồn chuẩn cho tiền. */
   booking: {
     flycam: number;
@@ -10750,15 +10759,33 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     "commission.amount": { $gt: 0 },
     status: { $nin: ["voided"] },
   })
-    .select("commission")
+    .select("commission daySeq contactName agencyName")
     .lean<any[]>();
 
   const moneyByPerson = (() => {
-    type Row = { name: string; cash: number; transfer: number; income: number; spend: number };
+    type Row = {
+      name: string;
+      cash: number;
+      transfer: number;
+      income: number;
+      spend: number;
+      /** Phần chi NGƯỜI ĐÓ TỰ LIỆT KÊ trong sổ thu chi của báo cáo. */
+      spendOwn: number;
+      /**
+       * Phần chi KHÔNG nằm trong sổ thu chi: hoa hồng đại lý trả bằng tiền mặt,
+       * ghi thẳng trên booking. Tách riêng vì trước đây dòng tóm tắt hiện
+       * "Chi −300k" trong khi thẻ THU CHI của chính người ấy trống trơn — người
+       * đọc tưởng máy bịa hoặc mình quên ghi, rồi ghi thêm một lần nữa (chủ báo
+       * 10/09, báo cáo của Mai Hoàn).
+       */
+      spendCommission: number;
+      /** Từng khoản hoa hồng ấy, để nói rõ chi cho booking nào. */
+      commissionDetail: Array<{ label: string; amount: number }>;
+    };
     const m = new Map<string, Row>();
     const row = (rawName: string): Row => {
       const name = String(rawName || "").trim() || "không rõ";
-      const cur = m.get(name) ?? { name, cash: 0, transfer: 0, income: 0, spend: 0 };
+      const cur = m.get(name) ?? { name, cash: 0, transfer: 0, income: 0, spend: 0, spendOwn: 0, spendCommission: 0, commissionDetail: [] };
       m.set(name, cur);
       return cur;
     };
@@ -10773,7 +10800,9 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     for (const d of dispatchers) {
       const r = row((d as any).staffName);
       r.income += thuTotal((d as any).expenses);
-      r.spend += dispatcherExpenseTotal(d as any);
+      const tuGhi = dispatcherExpenseTotal(d as any);
+      r.spend += tuGhi;
+      r.spendOwn += tuGhi;
     }
 
     /**
@@ -10789,7 +10818,15 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      */
     for (const b of commissionDocs) {
       const c = b.commission || {};
-      if (c.method === "cash" && (c.amount || 0) > 0) row(c.byName).spend += c.amount;
+      if (c.method === "cash" && (c.amount || 0) > 0) {
+        const r = row(c.byName);
+        r.spend += c.amount;
+        r.spendCommission += c.amount;
+        r.commissionDetail.push({
+          label: `hoa hồng đại lý${b.agencyName ? ` ${b.agencyName}` : ""} — #${b.daySeq || "?"} ${b.contactName || ""}`.trim(),
+          amount: c.amount,
+        });
+      }
     }
 
     return [...m.values()]

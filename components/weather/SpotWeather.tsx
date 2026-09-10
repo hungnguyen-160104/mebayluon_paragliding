@@ -74,7 +74,10 @@ type Ngay = {
   nhietMax: number;
   xacSuatMuaMax: number;
   gioMua: number;
+  muaTongThat: number;
   khungMua: string | null;
+  gioMuaBay: number;
+  khungMuaBay: string | null;
   matTroi?: { moc: string; lan: string };
   xacSuatDongMax: number;
   tranMax: number | null;
@@ -634,7 +637,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             null
         )}{" "}
         · {t.wind} {homNay.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {homNay.giatMax.toFixed(1)}
-        {homNay.gioMua > 0 ? ` · ${t.rain} ~${homNay.gioMua}h${homNay.khungMua ? ` (${homNay.khungMua})` : ""} · ${homNay.muaTong.toFixed(1)}mm` : ""}
+        {homNay.gioMua > 0 ? ` · ${t.rain} ~${homNay.gioMua}h${homNay.khungMua ? ` (${homNay.khungMua})` : ""} · ${homNay.muaTongThat.toFixed(1)}mm` : ""}
         {homNay.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${homNay.xacSuatDongMax}%` : ""}
       </div>
 

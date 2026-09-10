@@ -559,7 +559,7 @@ export function nhanDinhNgay(
     const khung = (m: typeof gio) => (m.length === 1 ? `lúc ${gioCua(m[0])}` : `${gioCua(m[0])}–${gioCua(m[m.length - 1])}`);
     if (mua.length) {
       /** Nói SỐ TIẾNG mưa, không nói phần trăm: "khả năng mưa 93%" bị đọc thành "mưa gần cả ngày". */
-      const tongThat = mua.reduce((t, g) => t + g.mua, 0);
+      const tongThat = ngay.muaTongThat || mua.reduce((t, g) => t + g.mua, 0);
       let noi = `mưa ${suNangMua(tongThat)}, ${mua.length === 1 ? "1 tiếng" : `khoảng ${mua.length} tiếng`} (${khung(mua)}), tổng ${tongThat.toFixed(1)}mm`;
       if (muaBay.length) {
         const sau = muaBay.filter((g) => g.gio > mua[mua.length - 1].gio);

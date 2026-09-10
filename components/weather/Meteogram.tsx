@@ -395,7 +395,8 @@ export function Meteogram({
       for (let k = 0; k < CON; k++) {
         const f = (k + 0.5) / CON;
         const pt = pa + (pb - pa) * f;
-        if (pt > 8) oMay.push({ x: i * W + (k * W) / CON, y: t.y, h: t.h, pt });
+        /** Dưới 15% là trời gần như quang — vẽ vào chỉ làm nền xám đục cả ngày đẹp. */
+        if (pt > 15) oMay.push({ x: i * W + (k * W) / CON, y: t.y, h: t.h, pt });
       }
     }
   }
@@ -483,7 +484,9 @@ export function Meteogram({
             <svg width={rong} height={H_KHOI} className="block">
               <defs>
                 <filter id="mayMem" x="-5%" y="-5%" width="110%" height="110%">
-                  <feGaussianBlur stdDeviation="5" />
+                  {/* Mờ VỪA PHẢI: nhoè quá thì cả khối thành một mảng xám phẳng,
+                    không còn thấy đám mây dày mỏng chỗ nào — đúng chỗ Windy hơn hẳn. */}
+                <feGaussianBlur stdDeviation="3" />
                 </filter>
               </defs>
 
@@ -505,7 +508,7 @@ export function Meteogram({
 
               <g filter="url(#mayMem)">
                 {oMay.map((o, k) => (
-                  <rect key={k} x={o.x} y={o.y} width={W / CON + 0.6} height={o.h} fill="#64748b" opacity={Math.min(0.8, o.pt / 110)} />
+                  <rect key={k} x={o.x} y={o.y} width={W / CON + 0.6} height={o.h} fill="#475569" opacity={Math.min(0.92, (o.pt / 100) ** 0.75)} />
                 ))}
               </g>
 

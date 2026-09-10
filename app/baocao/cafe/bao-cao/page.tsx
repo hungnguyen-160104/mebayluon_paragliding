@@ -24,6 +24,7 @@ import {
   formatStockUnits,
   type CafeCounterId,
   type CafeMenuItem,
+  quayMacDinh,
 } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { CafeReportDTO, CafeStockRequestDTO } from "@/lib/baobay/types";
@@ -64,7 +65,7 @@ type FormState = {
 const EMPTY_STOCK: StockRow = { id: "", name: "", qty: "", note: "", sent: false, done: false };
 
 const EMPTY_FORM: FormState = {
-  counter: "bai-ha",
+  counter: "bai-ha",  // đổi theo vai ngay khi biết người đăng nhập — xem quayMacDinh
   cashReceived: 0,
   transferReceived: 0,
   expenses: [{ content: "", amount: 0, kind: "chi", note: "" }],
@@ -139,7 +140,8 @@ type CafeDay = {
 type DaySale = { counter: string; counterName: string; cashTotal: number; transferTotal: number; saleCount: number };
 
 export default function CafeReportPage() {
-  const { user, loading } = useBaobaySession(["cafe", "accountant", "admin"]);
+  /** Quầy vé / điều phối cũng bán cafe tại bãi cất — xem ghi chú ở API. */
+  const { user, loading } = useBaobaySession(["cafe", "dispatcher", "counter", "accountant", "admin"]);
   /**
    * KHÔNG có ô chọn điểm bay: quầy cafe chỉ có ở Khau Phạ (luật chủ 06/09).
    * Bày ra ô chọn rồi ai đó bấm sang Sa Pa là báo cáo rơi vào điểm không có quầy.
@@ -153,6 +155,9 @@ export default function CafeReportPage() {
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<CafeReportDTO | null>(null);
+  /** Tách ra hai biến đơn giản để đưa vào danh sách phụ thuộc mà không phải nhớ cả đối tượng `user`. */
+  const vaiChinh = user?.role;
+  const vaiKiem = user?.extraRoles;
   const [sales, setSales] = useState<DaySale[]>([]);
   /** Bảng ngày đầy đủ — dựng khối "đơn bán hàng trong ngày" và phiếu nước từng người. */
   const [day, setDay] = useState<CafeDay | null>(null);
@@ -200,14 +205,20 @@ export default function CafeReportPage() {
         setForm(
           res.report
             ? {
-                counter: (res.report.counter as CafeCounterId) || "bai-ha",
+                counter: (res.report.counter as CafeCounterId) || quayMacDinh(vaiChinh, vaiKiem),
                 cashReceived: res.report.cashReceived,
                 transferReceived: res.report.transferReceived,
                 expenses: toExpenseRows(res.report.expenses),
                 stock: toStockRows(res.report.stockRequests),
                 note: res.report.note,
               }
-            : EMPTY_FORM,
+            : /**
+               * CHƯA CÓ BÁO CÁO: mở sẵn quầy theo VAI — điều phối / quầy vé
+               * đứng trên bãi cất (Ms Duyên, Mai Hoàn) nên phải nhằm đúng
+               * "Quầy bãi cất"; chọn nhầm quầy thì ô "Tổng bán trong ca" ra 0đ
+               * và người ta tưởng máy mất tiền.
+               */
+              { ...EMPTY_FORM, counter: quayMacDinh(vaiChinh, vaiKiem) },
         );
       } catch (err: any) {
         setError(err?.message || "Không tải được số liệu ngày này");
@@ -215,7 +226,7 @@ export default function CafeReportPage() {
         setLoadingDay(false);
       }
     },
-    [spot],
+    [spot, vaiChinh, vaiKiem],
   );
 
   const loadPending = useCallback(async () => {

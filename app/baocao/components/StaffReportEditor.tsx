@@ -364,6 +364,11 @@ export type PersonMoney = {
   income: number;
   /** Tổng CHI: nước, xe, khoản chi tự liệt kê, và hoa hồng đại lý trả bằng TM. */
   spend: number;
+  /** Phần người đó tự liệt kê trong sổ thu chi. */
+  spendOwn?: number;
+  /** Phần hoa hồng đại lý trả bằng tiền mặt — ghi trên booking, KHÔNG có trong sổ thu chi. */
+  spendCommission?: number;
+  commissionDetail?: Array<{ label: string; amount: number }>;
 };
 
 /** "500.000" -> "500k" — dòng tóm tắt phải lướt được, không phải đọc từng số. */
@@ -517,7 +522,26 @@ function DispatcherRow({
               <span className="font-semibold text-emerald-700"> · Thu +{kVND(money.income)}</span>
             )}
             {money && money.spend > 0 && (
-              <span className="font-semibold text-rose-700"> · Chi −{kVND(money.spend)}</span>
+              /**
+               * NÓI RÕ KHOẢN CHI TỪ ĐÂU RA (chủ báo 10/09): hoa hồng đại lý trả
+               * bằng tiền mặt ghi thẳng trên booking, không nằm trong sổ thu chi
+               * — nên dòng này từng hiện "Chi −300k" trong khi thẻ THU CHI của
+               * người ấy trống, nhìn như máy bịa số. Nay ghi thẳng nguồn, và rê
+               * chuột thấy đúng booking nào.
+               */
+              <span
+                className="font-semibold text-rose-700"
+                title={(money.commissionDetail ?? []).map((c) => `${c.label}: ${formatVND(c.amount)}`).join("\n") || undefined}
+              >
+                {" "}· Chi −{kVND(money.spend)}
+                {(money.spendCommission ?? 0) > 0 && (
+                  <span className="font-normal text-rose-600">
+                    {" "}
+                    ({(money.spendOwn ?? 0) > 0 ? `sổ thu chi ${kVND(money.spendOwn ?? 0)} + ` : ""}
+                    hoa hồng đại lý {kVND(money.spendCommission ?? 0)})
+                  </span>
+                )}
+              </span>
             )}
           </div>
         </div>
