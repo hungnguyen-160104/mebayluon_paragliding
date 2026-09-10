@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
 import { useCuonTheoNgay } from "./cuon-ngay";
+import { DaiMua, dinhMua } from "./DaiMua";
 import { Airgram, Meteogram, NHAN_METEOGRAM_VI, type NhanMeteogram } from "./Meteogram";
 import { styleGiat, styleGio } from "./mau-gio";
 import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
@@ -47,6 +48,8 @@ type Gio = {
   giat: number;
   huong: number;
   mua: number;
+  /** Phần mưa rào / giông trong tổng lượng mưa — vẽ thành dải cam. */
+  muaRao?: number;
   may: number;
   nhietDo: number;
   diemSuong?: number;
@@ -466,10 +469,16 @@ function BangGio({
           )}
           {/** BỎ HÀNG "% MƯA" (luật chủ 10/09): số phần trăm của mô hình là "có mưa
            * đâu đó trong ô 25 km", khách đọc thành "mưa cả ngày". Hàng mm nói thẳng. */}
+          {/* DẢI NƯỚC dâng theo lượng mưa, kiểu bảng Basic của Windy — xem DaiMua. */}
           {hang(
             t.rain,
-            (g) => (g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"),
-            (g) => (g.mua >= MUA_DANG_KE ? "font-bold text-sky-700" : "text-slate-400"),
+            (g) => (
+              <>
+                <DaiMua mm={g.mua} rao={g.muaRao} max={dinhMua(gio)} />
+                <span className="relative">{g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"}</span>
+              </>
+            ),
+            (g) => "relative " + (g.mua >= MUA_DANG_KE ? "font-bold text-sky-900" : "text-slate-400"),
           )}
           {hang(
             `⚡ ${t.storm}`,

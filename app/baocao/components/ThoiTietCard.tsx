@@ -40,6 +40,7 @@ import { spotName } from "@/lib/baobay/spots";
 import { Airgram, Meteogram } from "@/components/weather/Meteogram";
 import { styleGiat, styleGio } from "@/components/weather/mau-gio";
 import { useCuonTheoNgay } from "@/components/weather/cuon-ngay";
+import { DaiMua, dinhMua } from "@/components/weather/DaiMua";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
@@ -701,10 +702,19 @@ function BangGio({
             {gio.map((g) => (
               <td
                 key={g.gio}
-                className={"border-b border-slate-200 px-0.5 py-0.5 " + (g.mua >= MUA_DANG_KE ? "font-bold text-sky-700" : "text-slate-400") + bd(g)}
-                title={g.mua >= MUA_DANG_KE ? "mưa" : g.mua >= MUA_BAY ? "mưa bay — bay vẫn bay" : "từ 0,3 mm trở xuống: coi như không mưa"}
+                className={
+                  "relative border-b border-slate-200 px-0.5 py-0.5 " +
+                  (g.mua >= MUA_DANG_KE ? "font-bold text-sky-900" : "text-slate-400") +
+                  bd(g)
+                }
+                title={
+                  (g.mua >= MUA_DANG_KE ? "mưa" : g.mua >= MUA_BAY ? "mưa bay — bay vẫn bay" : "từ 0,3 mm trở xuống: coi như không mưa") +
+                  ((g.muaRao ?? 0) > 0 ? ` · trong đó mưa giông ${(g.muaRao ?? 0).toFixed(1)}mm` : "")
+                }
               >
-                {g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"}
+                {/* Dải nước dâng theo lượng mưa, kiểu bảng Basic của Windy — xem DaiMua. */}
+                <DaiMua mm={g.mua} rao={g.muaRao} max={dinhMua(gio)} />
+                <span className="relative">{g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"}</span>
               </td>
             ))}
           </tr>
