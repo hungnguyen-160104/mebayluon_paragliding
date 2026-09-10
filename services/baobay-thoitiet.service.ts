@@ -76,6 +76,9 @@ const HOURLY = [
   "wind_speed_850hPa",
   "wind_speed_700hPa",
   "wind_direction_850hPa",
+  /** Hướng gió các mực còn lại — để vẽ airgram (mũi tên theo độ cao). */
+  "wind_direction_925hPa",
+  "wind_direction_700hPa",
   "temperature_1000hPa",
   "temperature_925hPa",
   "temperature_850hPa",
@@ -226,6 +229,8 @@ async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string, t
     latitude: String(toaDo.lat),
     longitude: String(toaDo.lon),
     hourly: truong,
+    /** Mọc/lặn từng ngày — đổi theo mùa; dùng để tô đêm trên biểu đồ và ghi ở đầu thẻ. */
+    daily: "sunrise,sunset",
     forecast_days: String(soNgay),
     timezone: "Asia/Bangkok",
     /** M/S — đơn vị phi công đọc trên máy đo gió tại bãi; xem ghi chú ở NGUONG_MAC_DINH. */
@@ -404,6 +409,8 @@ async function layVaCham(
       gio850: so(h.wind_speed_850hPa),
       gio700: so(h.wind_speed_700hPa),
       huong850: so(h.wind_direction_850hPa),
+      huong925: so(h.wind_direction_925hPa),
+      huong700: so(h.wind_direction_700hPa),
       t1000: so(h.temperature_1000hPa),
       t925: so(h.temperature_925hPa),
       t850: so(h.temperature_850hPa),
@@ -418,7 +425,17 @@ async function layVaCham(
     theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong) });
   }
 
-  const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio, toaDo.gioBay)).slice(0, soNgay);
+  /** Mọc/lặn theo ngày: Open-Meteo trả "YYYY-MM-DDTHH:mm" giờ địa phương. */
+  const matTroi = new Map<string, { moc: string; lan: string }>();
+  const dl = raw?.daily;
+  if (dl?.time?.length) {
+    dl.time.forEach((d: string, i: number) => {
+      const moc = String(dl.sunrise?.[i] ?? "").slice(11, 16);
+      const lan = String(dl.sunset?.[i] ?? "").slice(11, 16);
+      if (moc && lan) matTroi.set(d, { moc, lan });
+    });
+  }
+  const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio, toaDo.gioBay, matTroi.get(d))).slice(0, soNgay);
   /**
    * Nhận định từng ngày, làm SAU khi có đủ cả dãy: ngày nào cũng cần ngày liền
    * trước để biết áp suất đang lên hay xuống — thứ báo front sớm nhất.
@@ -536,10 +553,8 @@ export async function cauHinhDiem(spot: string): Promise<{ toaDo: ToaDoDiemBay; 
   const w = doc?.weather ?? null;
   const gioBay: [number, number] | undefined =
     w && Number.isFinite(w.gioBayTu) && Number.isFinite(w.gioBayDen) && w.gioBayTu < w.gioBayDen ? [Number(w.gioBayTu), Number(w.gioBayDen)] : undefined;
-  return {
-    toaDo: toaDoDiemBay(key, w ? { ...w, gioBay } : null),
-    nguong: nguongCuaDiem(w),
-  };
+  const toaDo = toaDoDiemBay(key, w ? { ...w, gioBay } : null);
+  return { toaDo, nguong: nguongCuaDiem(w, toaDo.nguong) };
 }
 
 export type LuuCauHinh = Partial<{

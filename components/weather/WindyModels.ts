@@ -83,3 +83,22 @@ export function windyEmbedUrl(lat: number, lon: number, product = "ecmwf", overl
   });
   return `https://embed.windy.com/embed2.html?${q}`;
 }
+
+/**
+ * LIÊN KẾT MỞ THẲNG WINDY.COM ở một tab chi tiết.
+ *
+ * Khung nhúng `embed2.html` CHỈ có bảng Basic — đã dò thật: truyền `type=
+ * meteogram`, `type=airgram`, `detailType=…` đều bị bỏ qua, Windy vẫn vẽ bảng
+ * giờ. Meteogram và Airgram của Windy nằm sau trang đầy đủ, không nhúng được.
+ *
+ * Nên trong app có hai đường: biểu đồ TỰ VẼ (tab Meteogram / Airgram, cùng số
+ * liệu Open-Meteo, chú thích tiếng Việt, có thêm mặt bãi và trần mây theo bãi
+ * — thứ Windy không biết), và nút này để mở bản Windy gốc ở tab mới cho ai
+ * muốn đối chiếu.
+ */
+export function windyPageUrl(lat: number, lon: number, kieu: "meteogram" | "airgram" | "map" = "meteogram"): string {
+  const toaDo = `${lat.toFixed(3)},${lon.toFixed(3)},11`;
+  return kieu === "map"
+    ? `https://www.windy.com/?${toaDo}`
+    : `https://www.windy.com/${lat.toFixed(3)}/${lon.toFixed(3)}/${kieu}?${toaDo}`;
+}

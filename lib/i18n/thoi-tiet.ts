@@ -58,6 +58,13 @@ export type ThoiTietCopy = {
   error: string;
   retry: string;
   seeSpot: string;
+  /** Nhãn hàng "mặt đất" trong airgram. */
+  ground: string;
+  /** Chú thích dưới biểu đồ nhiều ngày. */
+  swipeDays: string;
+  /** Mặt trời mọc / lặn — đổi theo mùa. */
+  sunrise: string;
+  sunset: string;
   bookNow: string;
   /** Widget trong trang điểm bay. */
   widgetTitle: string;
@@ -104,6 +111,10 @@ const vi: ThoiTietCopy = {
   error: "Chưa lấy được dự báo thời tiết",
   retry: "Thử lại",
   seeSpot: "Xem điểm bay",
+  ground: "mặt đất",
+  swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới",
+  sunrise: "Mặt trời mọc",
+  sunset: "lặn",
   bookNow: "Đặt bay",
   widgetTitle: "Thời tiết bay 7 ngày tới",
   widgetNote: "Dự báo cho đúng toạ độ bãi cất cánh",
@@ -150,6 +161,10 @@ const en: ThoiTietCopy = {
   error: "Could not load the weather forecast",
   retry: "Try again",
   seeSpot: "View site",
+  ground: "ground",
+  swipeDays: "Swipe sideways for the next days · tap a day above to jump there",
+  sunrise: "Sunrise",
+  sunset: "sunset",
   bookNow: "Book a flight",
   widgetTitle: "Flying weather, next 7 days",
   widgetNote: "Forecast for the exact take-off coordinates",
@@ -196,6 +211,10 @@ const fr: ThoiTietCopy = {
   error: "Impossible de charger les prévisions",
   retry: "Réessayer",
   seeSpot: "Voir le site",
+  ground: "sol",
+  swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus pour y aller",
+  sunrise: "Lever du soleil",
+  sunset: "coucher",
   bookNow: "Réserver un vol",
   widgetTitle: "Météo de vol, 7 prochains jours",
   widgetNote: "Prévisions aux coordonnées exactes du décollage",
@@ -242,6 +261,10 @@ const ru: ThoiTietCopy = {
   error: "Не удалось загрузить прогноз погоды",
   retry: "Повторить",
   seeSpot: "О площадке",
+  ground: "земля",
+  swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше, чтобы перейти",
+  sunrise: "Восход",
+  sunset: "закат",
   bookNow: "Забронировать полёт",
   widgetTitle: "Погода для полётов, ближайшие 7 дней",
   widgetNote: "Прогноз для точных координат старта",
@@ -288,6 +311,10 @@ const zh: ThoiTietCopy = {
   error: "无法获取天气预报",
   retry: "重试",
   seeSpot: "查看飞行点",
+  ground: "地面",
+  swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转",
+  sunrise: "日出",
+  sunset: "日落",
   bookNow: "预订飞行",
   widgetTitle: "未来 7 天飞行天气",
   widgetNote: "针对起飞场精确坐标的预报",
@@ -333,6 +360,10 @@ const hi: ThoiTietCopy = {
   error: "मौसम पूर्वानुमान नहीं मिल सका",
   retry: "फिर कोशिश करें",
   seeSpot: "स्थल देखें",
+  ground: "ज़मीन",
+  swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें",
+  sunrise: "सूर्योदय",
+  sunset: "सूर्यास्त",
   bookNow: "उड़ान बुक करें",
   widgetTitle: "अगले 7 दिन का उड़ान मौसम",
   widgetNote: "टेक-ऑफ़ की सटीक स्थिति का पूर्वानुमान",

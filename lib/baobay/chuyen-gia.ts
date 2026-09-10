@@ -27,10 +27,12 @@
 import { gioTaiDoCao } from "./nhan-dinh";
 import {
   chiSoBay,
+  GIAT_CANH_BAO,
   GIO_BAY_DEN,
   GIO_BAY_TU,
   huongChu,
   lechGoc,
+  MUA_BAY,
   tranMay,
   trongCung,
   xacSuatMuaThat,
@@ -160,18 +162,17 @@ export function danhGiaGio(
   });
 
   /* ---- 2. Gió giật (10) ----
-   * Theo thang chủ: dưới 14 gần như không trừ; 14–18 trừ mạnh; trên 18 là cấm.
-   * Thêm HỆ SỐ GIẬT (giật/gió nền): nền 2 mà giật 9 là từng đợt ập tới — xóc
-   * hơn nền 6 giật 9 dù con số giật bằng nhau. */
-  let diemGiat = duongCong(g.giat, [[0, 100], [6, 100], [10, 92], [14, 75], [18, 30], [nguong.giatDo + 0.1, 0]]);
-  const heSo = g.gio10m >= 1.5 ? g.giat / g.gio10m : 0;
-  if (heSo > 3 && g.giat >= 8) diemGiat -= 15;
+   * Luật chủ 10/09: giật KHÔNG quyết định bay hay nghỉ — gió 4 giật 12 hay hơn
+   * là chuyện thường, gió to thì giật to theo. Nên tới 16 gần như không trừ;
+   * 16–18 trừ dần (cảnh báo gust mạnh); trên 18 là cấm. Bỏ luôn "hệ số giật"
+   * (giật/gió nền) vì nó phạt đúng cái trường hợp chủ bảo là bình thường. */
+  const diemGiat = duongCong(g.giat, [[0, 100], [12, 100], [GIAT_CANH_BAO, 90], [18, 40], [nguong.giatDo + 0.1, 0]]);
   them({
     ma: "giat",
     ten: "Gió giật",
     trongSo: 10,
     diem: diemGiat,
-    ghiChu: `${g.giat.toFixed(1)} m/s${heSo > 3 && g.giat >= 8 ? ` — hệ số giật ${heSo.toFixed(1)}×, từng đợt` : ""}`,
+    ghiChu: `${g.giat.toFixed(1)} m/s${g.giat > GIAT_CANH_BAO ? " — gust mạnh" : ""}`,
     nguyHiem: g.giat > nguong.giatDo,
   });
 
@@ -278,15 +279,17 @@ export function danhGiaGio(
     let diem = 100;
     const ghi: string[] = [];
     let nguy = false;
-    if (g.mua > nguong.muaDo) {
+    if (g.mua >= nguong.muaDo) {
       diem = 0;
       nguy = true;
       ghi.push(`mưa ${g.mua.toFixed(1)} mm`);
-    } else if (g.mua > 0.1) {
-      diem = 70;
-      ghi.push("mưa lác đác");
-    } else if (pMua >= 75) {
-      diem = 60;
+    } else if (g.mua >= MUA_BAY) {
+      /** Mưa bay: có hạt, bay vẫn bay — trừ nhẹ cho biết. Dưới 0,3 coi như khô. */
+      diem = 85;
+      ghi.push("mưa bay");
+    } else if (pMua >= 60) {
+      /** Khô ráo nhưng mô hình vẫn nghi mưa: trừ nhẹ, KHÔNG cảnh báo (luật chủ 10/09). */
+      diem = 88;
       ghi.push(`khả năng mưa ${pMua}%`);
     }
     if (cs.xacSuatDong >= 40) {

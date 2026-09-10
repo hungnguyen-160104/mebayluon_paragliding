@@ -31,17 +31,19 @@ import {
   suNangMua,
   tranMay,
   type LuatHuong,
-  type SucGio,
+  MUA_BAY,
+  MUA_DANG_KE,
 } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
-import { Meteogram } from "@/components/weather/Meteogram";
+import { Airgram, Meteogram } from "@/components/weather/Meteogram";
+import { styleGiat, styleGio } from "@/components/weather/mau-gio";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import type { DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { WindArrow } from "@/components/weather/WindArrow";
-import { LOP_MAC_DINH, LOP_WINDY, WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
+import { LOP_MAC_DINH, LOP_WINDY, WINDY_MODELS, windyEmbedUrl, windyPageUrl } from "@/components/weather/WindyModels";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
 
@@ -126,22 +128,9 @@ const MAU_O: Record<MucDo, string> = {
  * — nhìn dọc hàng gió là thấy cả ngày gió lên xuống ra sao, kể cả khi giờ đó
  * đỏ vì mưa chứ không phải vì gió.
  */
-const MAU_GIO: Record<SucGio, string> = {
-  nhe: "bg-emerald-200 text-emerald-900",
-  vua: "bg-emerald-500 text-white",
-  hoiManh: "bg-amber-300 text-amber-950",
-  manh: "bg-orange-400 text-white",
-  ratManh: "bg-rose-500 text-white",
-};
 
 /** Giật: ba mức, dùng màu CHỮ chứ không tô nền — nền đã dành cho hàng gió. */
-/** Giật chỉ đáng chú ý từ 14 m/s: dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
-const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
-  nhe: "text-slate-400",
-  vua: "text-slate-500",
-  manh: "font-bold text-orange-700",
-  ratManh: "font-bold text-rose-700",
-};
+/** Giật chỉ đáng chú ý TRÊN 16 m/s (gust mạnh): dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
 
 /**
  * Mức ĐỎ chỉ có mặt buồn, không có chữ (luật chủ 10/09): "KHÔNG BAY" là câu
@@ -191,7 +180,7 @@ export function ThoiTietCard({
    * người trực chỉ cần tra một giờ cụ thể. Ai muốn thấy hình dáng cả ngày thì
    * bấm sang Meteogram.
    */
-  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram">("basic");
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
 
   const tai = useCallback(
     async (moi = false) => {
@@ -265,7 +254,7 @@ export function ThoiTietCard({
             {/**
              * SỐ TIẾNG MƯA, không phải phần trăm. "Khả năng mưa 93%" bị đọc
              * thành "mưa gần cả ngày"; "mưa ~2 tiếng (13:00–15:00)" thì không
-             * ai hiểu nhầm. Mưa dưới 0,3 mm/giờ không tính (lác đác vài hạt).
+             * ai hiểu nhầm. Mưa từ 0,3 mm/giờ trở xuống không tính (vài hạt, không ướt).
              */}
             {homNayCard.gioMua > 0
               ? ` · mưa ${suNangMua(homNayCard.muaTong)} ~${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTong.toFixed(1)}mm`
@@ -356,14 +345,44 @@ export function ThoiTietCard({
         </div>
       ) : (
         <>
-          {/* ---- chọn kiểu xem giờ: Basic (bảng số) hay Meteogram (biểu đồ) ---- */}
+          {/**
+           * KHỐI VỊ TRÍ — toạ độ bãi, độ cao, mặt trời mọc/lặn của NGÀY ĐANG
+           * CHỌN. Mọc/lặn đổi theo mùa (Khau Phạ tháng 6 lặn 18:40, tháng 12
+           * mới 17:30 — hơn một tiếng, đúng bằng khoảng còn kịp chuyến cuối hay
+           * không), nên lấy thẳng từ mô hình chứ không khai tay.
+           */}
+          {ngayChon && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
+              <span className="font-bold text-slate-800">📍 {du.toaDo.ten}</span>
+              <span className="tabular-nums">
+                {du.toaDo.lat.toFixed(4)}, {du.toaDo.lon.toFixed(4)}
+                {du.toaDo.alt ? ` · cao ${du.toaDo.alt}m` : ""}
+              </span>
+              <span className="tabular-nums">
+                khung bay {String(du.toaDo.gioBay?.[0] ?? 7).padStart(2, "0")}:00–{String(du.toaDo.gioBay?.[1] ?? 17).padStart(2, "0")}:00
+              </span>
+              {ngayChon.matTroi && (
+                <span className="font-semibold text-amber-700">
+                  ☀ mọc {ngayChon.matTroi.moc} · lặn {ngayChon.matTroi.lan}
+                  {(() => {
+                    const p = (x: string) => Number(x.slice(0, 2)) * 60 + Number(x.slice(3, 5));
+                    const m = p(ngayChon.matTroi.lan) - p(ngayChon.matTroi.moc);
+                    return m > 0 ? ` (ngày dài ${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")})` : "";
+                  })()}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* ---- chọn kiểu xem giờ: Basic · Meteogram · Airgram ---- */}
           {ngayChon && (
             <div className="mt-2 flex gap-1">
               {(
                 [
                   ["basic", "▦ Basic"],
                   ["meteogram", "📊 Meteogram"],
-                ] as Array<["basic" | "meteogram", string]>
+                  ["airgram", "🪂 Airgram"],
+                ] as Array<["basic" | "meteogram" | "airgram", string]>
               ).map(([v, nhan]) => (
                 <button
                   key={v}
@@ -380,9 +399,17 @@ export function ThoiTietCard({
             </div>
           )}
 
+          {/**
+           * Meteogram và Airgram nhận CẢ DÃY NGÀY và vẽ nối liền: gạt ngang là
+           * chạy tiếp sang ngày sau, không phải bấm ngày ở dải trên (luật chủ
+           * 10/09). Hai chiều đồng bộ: bấm dải trên thì biểu đồ trượt tới, gạt
+           * biểu đồ thì dải trên sáng theo.
+           */}
           {ngayChon &&
             (kieuXem === "meteogram" ? (
-              <Meteogram gio={ngayChon.gio} altBai={du.toaDo.alt ?? 0} />
+              <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
+            ) : kieuXem === "airgram" ? (
+              <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
             ) : (
               <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />
             ))}
@@ -509,7 +536,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
               <td
                 key={g.gio}
                 title={[NHAN_SUC_GIO[sucGio(g.gio10m)], ...g.lyDo].join(" · ")}
-                className={"border-b border-white px-0.5 py-1 font-black " + MAU_GIO[sucGio(g.gio10m)]}
+                style={styleGio(g.gio10m)}
+                className="border-b border-white px-0.5 py-1 font-black"
               >
                 {g.gio10m.toFixed(1)}
               </td>
@@ -570,7 +598,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
               <td
                 key={g.gio}
                 title={`giật ${NHAN_SUC_GIAT[sucGiat(g.giat)]}`}
-                className={"border-b border-slate-200 px-0.5 py-0.5 " + MAU_GIAT[sucGiat(g.giat)]}
+                style={styleGiat(g.giat)}
+                className="border-b border-slate-200 px-0.5 py-0.5 font-bold"
               >
                 {g.giat.toFixed(1)}
               </td>
@@ -593,31 +622,18 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             {gio.map((g) => (
               <td
                 key={g.gio}
-                className={"border-b border-slate-200 px-0.5 py-0.5 " + (g.mua > 0.5 ? "font-bold text-sky-700" : "text-slate-400")}
+                className={"border-b border-slate-200 px-0.5 py-0.5 " + (g.mua >= MUA_DANG_KE ? "font-bold text-sky-700" : "text-slate-400")}
+                title={g.mua >= MUA_DANG_KE ? "mưa" : g.mua >= MUA_BAY ? "mưa bay — bay vẫn bay" : "từ 0,3 mm trở xuống: coi như không mưa"}
               >
-                {g.mua > 0.05 ? g.mua.toFixed(1) : "–"}
+                {g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"}
               </td>
             ))}
           </tr>
-          <tr>
-            <th
-              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
-              title="Xác suất mưa TRONG GIỜ đó (đã hiệu chỉnh theo lượng mưa) — ở mức ngày thì xem số tiếng mưa, không xem phần trăm"
-            >
-              Mưa %/giờ
-            </th>
-            {gio.map((g) => {
-              const p = g.xacSuatMua;
-              return (
-                <td
-                  key={g.gio}
-                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (p !== undefined && p >= 60 ? "font-bold text-sky-800" : "text-slate-500")}
-                >
-                  {p === undefined ? "–" : `${Math.round(p)}%`}
-                </td>
-              );
-            })}
-          </tr>
+          {/**
+           * BỎ HÀNG "% MƯA" (luật chủ 10/09): phần trăm của mô hình là "có mưa ở
+           * đâu đó trong ô 25 km", ai đọc cũng hiểu thành "mưa cả ngày". Hàng
+           * Mưa mm ở trên nói thẳng: giờ nào, bao nhiêu milimét.
+           */}
           <tr>
             <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Nguy cơ dông — trên 40% là cấm bay">
               ⚡ Dông
@@ -681,8 +697,9 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
         </tbody>
       </table>
       <div className="mt-1 text-[10px] text-slate-500">
-        Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
-        mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
+        Ô <strong>Gió</strong> tô theo sức gió: xanh &lt;4 bình thường, tốt (nhạt là dưới 2) · vàng 4–6 hơi mạnh ·
+        cam 6–8 mạnh · đỏ &gt;8 rất mạnh. Giật không quyết định bay — chỉ đỏ chữ khi trên 16 (gust mạnh). Mưa: từ 0,3 mm trở xuống
+        coi như không mưa, 0,4–0,8 là mưa bay (ghi cho biết), từ 0,8 mới là mưa. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
         <strong> 😊</strong> bay tốt · <strong>😐</strong> cân nhắc · <strong>😞</strong> không bay. Mũi tên chỉ chiều
         gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi hướng gió tốt cho bãi và{" "}
         <span className="font-black text-rose-600">đỏ</span> khi hướng xấu hoặc gió xiết. Rê chuột vào ô bất kỳ để
@@ -763,6 +780,30 @@ function WindyNhung({ toaDo }: { toaDo: ToaDoDiemBay }) {
           className="h-[420px] w-full"
           loading="lazy"
         />
+      </div>
+      {/**
+       * MỞ WINDY GỐC: khung nhúng chỉ có bảng Basic (đã dò thật — mọi tham số
+       * meteogram/airgram đều bị bỏ qua). Ai muốn xem đúng bản Windy thì bấm
+       * ra tab mới; còn biểu đồ trong app nằm ở tab Meteogram / Airgram phía
+       * trên, vẽ từ cùng số liệu và có thêm mặt bãi, trần mây theo bãi.
+       */}
+      <div className="mt-1 flex flex-wrap gap-1">
+        {(
+          [
+            ["meteogram", "📊 Meteogram trên Windy ↗"],
+            ["airgram", "🪂 Airgram trên Windy ↗"],
+          ] as Array<["meteogram" | "airgram", string]>
+        ).map(([k, nhan]) => (
+          <a
+            key={k}
+            href={windyPageUrl(toaDo.lat, toaDo.lon, k)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800 hover:bg-violet-100"
+          >
+            {nhan}
+          </a>
+        ))}
       </div>
     </div>
   );

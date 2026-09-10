@@ -3780,7 +3780,9 @@ export function SpotDetailClient({
        */}
       {spotSlug && diemThoiTietTheoSlug(spotSlug) && (
         <section className="relative z-10 pt-10">
-          <div className="container mx-auto max-w-4xl space-y-4 px-4">
+          {/* Rộng bằng thẻ giới thiệu điểm bay phía trên (max-w-5xl) — chủ chốt
+              10/09: hai thẻ nằm chồng nhau mà lệch bề ngang thì trang gãy nhịp. */}
+          <div className="container mx-auto max-w-5xl space-y-4 px-4">
             <SpotWeatherWidget slug={spotSlug} />
             {/**
              * Trang "Hà Nội" thực ra là HAI BÃI: Đồi Bù và Viên Nam, cách nhau

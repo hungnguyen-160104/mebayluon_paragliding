@@ -24,6 +24,8 @@ import {
   GIO_BAY_TU,
   huongChu,
   lechGoc,
+  GIAT_CANH_BAO,
+  MUA_BAY,
   MUA_DANG_KE,
   NHAN_SUC_GIO,
   sucGio,
@@ -543,26 +545,74 @@ export function nhanDinhNgay(
     }
   }
 
-  /* ===== 9. MƯA · DÔNG ===== */
+  /* ===== 9. MƯA · MƯA BAY · DÔNG ===== */
   {
-    /** Dùng chung ngưỡng "mưa đáng kể" với phần gộp ngày — 0,1–0,2 mm là lác đác. */
+    /**
+     * Ba mức mưa (luật chủ 10/09): từ 0,8 mm/giờ là MƯA THẬT — đếm tiếng;
+     * 0,4–0,8 là MƯA BAY — nói cho biết, không tính là mưa; từ 0,3 trở xuống coi như
+     * không mưa. Ví dụ của chủ: 10h mưa 1,0, 11h–13h mưa 0,6 → "mưa lúc 10:00,
+     * sau đó mưa bay tới 13:00" chứ không phải "mưa 4 tiếng".
+     */
     const mua = gio.filter((g) => g.mua >= MUA_DANG_KE);
+    const muaBay = gio.filter((g) => g.mua >= MUA_BAY && g.mua < MUA_DANG_KE);
     const dongMax = lonNhat(gio.map((g) => chiSoBay(g).xacSuatDong)) ?? 0;
+    const khung = (m: typeof gio) => (m.length === 1 ? `lúc ${gioCua(m[0])}` : `${gioCua(m[0])}–${gioCua(m[m.length - 1])}`);
     if (mua.length) {
-      /**
-       * Nói SỐ TIẾNG mưa, không nói phần trăm: "khả năng mưa 93%" bị đọc thành
-       * "mưa gần cả ngày". Mưa dưới 0,3 mm/giờ đã bị loại từ trước (lác đác).
-       */
+      /** Nói SỐ TIẾNG mưa, không nói phần trăm: "khả năng mưa 93%" bị đọc thành "mưa gần cả ngày". */
+      const tongThat = mua.reduce((t, g) => t + g.mua, 0);
+      let noi = `mưa ${suNangMua(tongThat)}, ${mua.length === 1 ? "1 tiếng" : `khoảng ${mua.length} tiếng`} (${khung(mua)}), tổng ${tongThat.toFixed(1)}mm`;
+      if (muaBay.length) {
+        const sau = muaBay.filter((g) => g.gio > mua[mua.length - 1].gio);
+        noi += sau.length === muaBay.length && sau.length ? `; sau đó mưa bay tới ${gioCua(sau[sau.length - 1])}` : `; mưa bay ${khung(muaBay)}`;
+      }
       them({
         icon: "🌧",
         ten: "Mưa",
-        noiDung: `mưa ${suNangMua(ngay.muaTong)}, khoảng ${mua.length} tiếng (${gioCua(mua[0])}–${gioCua(mua[mua.length - 1])}), tổng ${ngay.muaTong.toFixed(1)}mm`,
-        ngan: `mưa ${suNangMua(ngay.muaTong)} ~${mua.length}h`,
+        noiDung: noi,
+        ngan: `mưa ${suNangMua(tongThat)} ~${mua.length}h`,
         tong: mua.length >= 4 ? "xau" : "chuY",
+      });
+    } else if (muaBay.length) {
+      them({
+        icon: "🌦",
+        ten: "Mưa bay",
+        noiDung: `mưa bay ${khung(muaBay)} (0,4–0,8 mm/giờ) — không phải mưa, bay vẫn bay; chờ ngớt là lên`,
+        ngan: "mưa bay",
+        tong: "thongTin",
       });
     }
     if (dongMax >= 20 && !diem.some((d) => d.ten === "Ổn định" && d.noiDung.includes("dông"))) {
       them({ icon: "⚡", ten: "Dông", noiDung: `nguy cơ dông tới ${dongMax}% trong ngày`, ngan: `dông ${dongMax}%`, tong: dongMax >= 40 ? "xau" : "chuY" });
+    }
+  }
+
+  /* ===== 9a. GUST MẠNH — cảnh báo theo khung giờ (luật chủ 10/09) =====
+   * Giật không quyết định bay hay nghỉ: gió 4 giật 12 là thường. Nhưng TRÊN
+   * 16 thì phải nói rõ mấy giờ nào, để người trực tránh cất/hạ cánh đúng lúc đó. */
+  {
+    const manh = gio.filter((g) => g.giat > GIAT_CANH_BAO);
+    if (manh.length) {
+      /** Gom thành từng dải giờ liền nhau: "13:00–15:00, 17:00". */
+      const dai: string[] = [];
+      let tu = manh[0];
+      let truoc = manh[0];
+      const h = (g: (typeof gio)[number]) => Number(g.gio.slice(11, 13));
+      for (const g of manh.slice(1).concat([null as never])) {
+        if (g && h(g) === h(truoc) + 1) {
+          truoc = g;
+          continue;
+        }
+        dai.push(tu === truoc ? gioCua(tu) : `${gioCua(tu)}–${gioCua(truoc)}`);
+        if (g) tu = truoc = g;
+      }
+      const max = lonNhat(manh.map((g) => g.giat)) ?? 0;
+      them({
+        icon: "💨",
+        ten: "Gust mạnh",
+        noiDung: `gust mạnh ${dai.join(", ")} (tới ${max.toFixed(0)} m/s) — tránh cất/hạ cánh đúng mấy giờ đó, giữ tốc độ khi bay`,
+        ngan: `gust mạnh ${dai[0]}${dai.length > 1 ? "…" : ""}`,
+        tong: max > 18 ? "xau" : "chuY",
+      });
     }
   }
 
@@ -571,8 +621,8 @@ export function nhanDinhNgay(
     const nguon: string[] = [];
     const gioGat = gio.filter((g) => chiSoBay(g).thermal === "gat").map(gioCua);
     if (gioGat.length) nguon.push(`thermal gắt ${gioGat[0]}–${gioGat[gioGat.length - 1]}`);
-    const giatManh = gio.filter((g) => g.giat >= 14).map(gioCua);
-    if (giatManh.length) nguon.push(`giật ≥14 m/s ${giatManh[0]}–${giatManh[giatManh.length - 1]}`);
+    const giatManh = gio.filter((g) => g.giat > GIAT_CANH_BAO).map(gioCua);
+    if (giatManh.length) nguon.push(`gust mạnh ${giatManh[0]}–${giatManh[giatManh.length - 1]}`);
     if (gioCaoManh) nguon.push("đứt gió với tầng cao");
     else if (catGio) nguon.push("đứt gió ngay trên bãi");
     const liTb = trungBinh(gio.map((g) => g.chiSoNang).filter(co));

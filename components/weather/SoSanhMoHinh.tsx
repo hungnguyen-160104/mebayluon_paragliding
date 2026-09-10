@@ -18,6 +18,8 @@ import {
   BIEU_TUONG_MUC,
   chiSoBay,
   huongChu,
+  GIAT_CANH_BAO,
+  MUA_BAY,
   MUA_DANG_KE,
 
   sucGio,
@@ -163,10 +165,10 @@ const YEU_TO: Array<{ ma: string; ten: string; mo: string; ve: (g: GioMin) => OS
   {
     ma: "giat",
     ten: "💨 Giật (m/s)",
-    mo: "Gió giật — trên 14 là nhiễu, trên 18 không khuyến cáo bay",
+    mo: "Gió giật — không quyết định bay; trên 16 cảnh báo gust mạnh, trên 18 không khuyến cáo",
     ve: (g) => ({
       noiDung: g.giat.toFixed(1),
-      cls: g.giat > 18 ? "bg-rose-200 font-bold text-rose-900" : g.giat >= 14 ? "bg-orange-100 font-bold text-orange-800" : "bg-white text-slate-600",
+      cls: g.giat > 18 ? "bg-rose-200 font-bold text-rose-900" : g.giat > GIAT_CANH_BAO ? "bg-orange-100 font-bold text-orange-800" : "bg-white text-slate-600",
     }),
   },
   {
@@ -185,7 +187,7 @@ const YEU_TO: Array<{ ma: string; ten: string; mo: string; ve: (g: GioMin) => OS
     mo: "Lượng mưa trong giờ — từ 0,5mm mới tính là có mưa",
     ve: (g) => ({
       noiDung: g.mua >= 0.05 ? g.mua.toFixed(1) : "–",
-      cls: g.mua >= MUA_DANG_KE ? "bg-sky-200 font-bold text-sky-900" : g.mua > 0.05 ? "bg-sky-50 text-sky-700" : "bg-white text-slate-300",
+      cls: g.mua >= MUA_DANG_KE ? "bg-sky-200 font-bold text-sky-900" : g.mua >= MUA_BAY ? "bg-sky-50 text-sky-700" : "bg-white text-slate-300",
       title: g.xacSuatMua !== undefined ? `khả năng ${Math.round(g.xacSuatMua)}%` : undefined,
     }),
   },

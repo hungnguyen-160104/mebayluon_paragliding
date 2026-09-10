@@ -63,6 +63,11 @@ export type ToaDoDiemBay = {
    * mù và chưa có nắng đốt sườn, 7h đẹp trên giấy nhưng chẳng ai lên bãi.
    */
   gioBay?: [number, number];
+  /**
+   * NGƯỠNG KHỞI ĐIỂM RIÊNG của điểm (đè lên NGUONG_MAC_DINH; chủ sửa ở ⚙ thì
+   * số đã lưu vẫn thắng). Chỉ khai phần khác, phần còn lại dùng chung.
+   */
+  nguong?: Partial<NguongBay>;
 };
 
 /**
@@ -105,6 +110,12 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     alt: 833,
     ten: "Đồi Bù (Chương Mỹ)",
     luatHuong: { tot: [247, 112], xau: [157, 246] },
+    /**
+     * Thang gió của chủ cho Hà Nội (10/09): dưới 4 bình thường (tốt) · 4–6 hơi
+     * mạnh · 6–8 mạnh · trên 8 rất mạnh. "Rất mạnh" mới là mức không bay, nên
+     * ngưỡng cấm đặt ở 8 chứ không phải 7 như mặc định chung.
+     */
+    nguong: { gioDo: 8 },
   },
 };
 
@@ -119,6 +130,7 @@ export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): 
     huongThuan: luu.huongThuan ?? goc.huongThuan,
     luatHuong: luu.luatHuong ?? goc.luatHuong,
     gioBay: luu.gioBay ?? goc.gioBay,
+    nguong: goc.nguong,
   };
 }
 
@@ -133,10 +145,14 @@ export type NguongBay = {
   gioDo: number;
   /**
    * Gió giật (m/s) vượt mức này thì KHÔNG KHUYẾN CÁO BAY. Mặc định 18 — giật
-   * dưới 14 không ảnh hưởng quyết định, 14–18 chỉ là cảnh báo nhiễu.
+   * KHÔNG quyết định bay hay nghỉ (luật chủ 10/09: gió 4 m/s giật 12 là chuyện
+   * thường); trên 16 chỉ là cảnh báo "gust mạnh" ở mấy khung giờ đó.
    */
   giatDo: number;
-  /** Mưa trong giờ (mm) vượt mức này là cấm. */
+  /**
+   * Mưa trong giờ (mm) TỪ mức này là mưa thật — cấm. Dưới đó tới `MUA_BAY` là
+   * "mưa bay" (ghi chú, không hạ màu); dưới `MUA_BAY` coi như không mưa.
+   */
   muaDo: number;
   /**
    * Trần mây (m TRÊN bãi cất cánh) thấp hơn mức này là cấm: mây đã trùm bãi,
@@ -156,10 +172,18 @@ export type NguongBay = {
  * thì cánh nặng hơn, cất cánh chậm hơn, và người ngồi trước không biết cách
  * xử lý khi dù bị gấp. Đây chỉ là chỗ BẮT ĐẦU — số thật do chủ chấm dần.
  */
-export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 18, muaDo: 0.5, tranMayDo: 150 };
+export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 18, muaDo: 0.8, tranMayDo: 150 };
 
-export function nguongCuaDiem(luu?: Partial<NguongBay> | null): NguongBay {
+/**
+ * @param luu    số chủ đã lưu ở ⚙ (thắng tất cả)
+ * @param rieng  ngưỡng khởi điểm riêng của điểm (`ToaDoDiemBay.nguong`), đè lên mặc định chung
+ */
+export function nguongCuaDiem(luu?: Partial<NguongBay> | null, rieng?: Partial<NguongBay> | null): NguongBay {
   const n = { ...NGUONG_MAC_DINH };
+  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "tranMayDo"] as const) {
+    const v = Number(rieng?.[k]);
+    if (Number.isFinite(v) && v > 0) n[k] = v;
+  }
   if (!luu) return n;
   for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "tranMayDo"] as const) {
     const v = Number(luu[k]);
@@ -220,6 +244,8 @@ export type GioThoiTiet = {
   gio850?: number;
   gio700?: number;
   huong850?: number;
+  huong925?: number;
+  huong700?: number;
   /** Nhiệt độ ở bốn mực (°C) — so hai mực kề nhau để tìm lớp nghịch nhiệt. */
   t1000?: number;
   t925?: number;
@@ -377,9 +403,17 @@ export type SucGiat = "nhe" | "vua" | "manh" | "ratManh";
  * Phạ đỏ quanh năm, còn phi công đứng ở bãi thì thấy trời hoàn toàn bay được —
  * cảnh báo sai kiểu đó vài lần là không ai nhìn bảng nữa.
  */
+/**
+ * THANG GIẬT (luật chủ 10/09): giật KHÔNG quyết định bay hay nghỉ — gió 4 m/s
+ * mà giật 12, thậm chí hơn, là chuyện thường; gió to thì giật to theo. Chỉ
+ * TRÊN 16 mới phải cảnh báo "gust mạnh" ở mấy khung giờ đó; trên 18 là quá
+ * mạnh (ngưỡng `giatDo`).
+ */
+export const GIAT_CANH_BAO = 16;
+
 export function sucGiat(v: number): SucGiat {
   if (v < 6) return "nhe";
-  if (v < 14) return "vua";
+  if (v <= GIAT_CANH_BAO) return "vua";
   if (v <= 18) return "manh";
   return "ratManh";
 }
@@ -387,7 +421,7 @@ export function sucGiat(v: number): SucGiat {
 export const NHAN_SUC_GIAT: Record<SucGiat, string> = {
   nhe: "nhẹ",
   vua: "vừa",
-  manh: "mạnh, nhiễu",
+  manh: "gust mạnh — cảnh báo",
   ratManh: "rất mạnh — không khuyến cáo bay",
 };
 
@@ -414,8 +448,8 @@ export function muiTenGio(do_: number): string {
  * không".
  */
 export function bieuTuongTroi(may: number, mua = 0, buXa?: number): string {
-  if (mua > 0.5) return "🌧";
-  if (mua > 0.1) return "🌦";
+  if (mua >= MUA_DANG_KE) return "🌧";
+  if (mua >= MUA_BAY) return "🌦";
   /** Chưa có nắng (sáng sớm, chiều muộn) thì đừng vẽ mặt trời. */
   if (buXa !== undefined && buXa < 30) return may > 70 ? "☁️" : "🌥";
   if (may < 30) return "☀️";
@@ -526,9 +560,9 @@ export function tranMay(
 export function xacSuatMuaThat(xacSuat?: number, luongMua = 0): number {
   if (xacSuat === undefined || !Number.isFinite(xacSuat)) return -1;
   const p = Math.max(0, Math.min(100, xacSuat));
-  if (luongMua >= 1) return Math.round(p);
-  if (luongMua >= 0.4) return Math.round(p * 0.8);
-  if (luongMua >= 0.1) return Math.round(p * 0.55);
+  if (luongMua >= MUA_DANG_KE) return Math.round(p);
+  /** Mưa bay: có hạt nhưng chưa phải cơn mưa — hạ bớt. */
+  if (luongMua >= MUA_BAY) return Math.round(p * 0.7);
   return Math.round(p * 0.3);
 }
 
@@ -572,18 +606,17 @@ export function chamGio(
   }
 
   /**
-   * GIẬT KHÔNG QUYẾT ĐỊNH BAY HAY NGHỈ, trừ khi quá mạnh (luật chủ 10/09).
-   *
-   * Dưới 14 m/s thì im lặng: mô hình ở đèo gần như luôn báo giật gấp mấy lần
-   * gió trung bình, nói ra mỗi giờ là thành tiếng ồn. 14–18 mới cảnh báo nhiễu,
-   * trên 18 mới là không khuyến cáo bay.
+   * GIẬT KHÔNG QUYẾT ĐỊNH BAY HAY NGHỈ (luật chủ 10/09): gió 4 m/s giật 12
+   * hoặc hơn là chuyện thường, gió to thì giật to theo. Tới 16 im lặng; TRÊN 16
+   * cảnh báo "gust mạnh" (vàng — để người trực để mắt mấy giờ đó); trên 18 mới
+   * là quá mạnh.
    */
   const gGiat = sucGiat(g.giat);
   if (g.giat > nguong.giatDo) {
     lyDo.push(`giật ${g.giat.toFixed(1)} m/s — quá mạnh, không khuyến cáo bay`);
     len("do");
   } else if (gGiat === "manh") {
-    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — mạnh, gió nhiễu`);
+    lyDo.push(`gust mạnh ${g.giat.toFixed(1)} m/s — cảnh báo`);
     len("vang");
   }
 
@@ -593,22 +626,21 @@ export function chamGio(
    * Trước đây chênh giữa giật và gió trung bình bị coi là dấu hiệu trời rối và
    * hạ màu xuống. Nhưng ở đèo, mô hình luôn báo giật gấp mấy lần gió nền, nên
    * chênh 8–10 m/s là chuyện của mọi giờ trong mọi ngày — luật ấy chỉ sinh ra
-   * cảnh báo mà không ai dùng. Nay giật đã có thang riêng (im dưới 14, cảnh báo
-   * 14–18, cấm trên 18) và thang đó nói đủ.
+   * cảnh báo mà không ai dùng. Nay giật đã có thang riêng (im tới 16, cảnh báo
+   * 16–18, cấm trên 18) và thang đó nói đủ.
    */
 
-  if (g.mua > nguong.muaDo) {
+  if (g.mua >= nguong.muaDo) {
     lyDo.push(`mưa ${g.mua.toFixed(1)} mm`);
     len("do");
-  } else if (g.mua > 0.1) {
+  } else if (g.mua >= MUA_BAY) {
     /**
-     * MƯA LÁC ĐÁC CHỈ LÀ GHI CHÚ, không hạ màu (luật chủ 10/09).
-     *
-     * Ở Tây Bắc mùa mưa, 0,1–0,5 mm mỗi giờ là mưa phùn rải rác — bay vẫn bay,
-     * mà nó chiếm tới hai phần ba số ô cảnh báo. Cảnh báo nào cũng bật thì
-     * người trực thôi đọc, rồi bỏ qua luôn cái cảnh báo thật.
+     * MƯA BAY (0,4 – dưới 0,8 mm/giờ) CHỈ LÀ GHI CHÚ, không hạ màu (luật chủ
+     * 10/09). Ở Tây Bắc mùa mưa đó là mưa phùn rải rác — bay vẫn bay, mà nó
+     * từng chiếm hai phần ba số ô cảnh báo. Từ 0,3 trở xuống coi như không
+     * mưa, không ghi gì cả.
      */
-    lyDo.push("mưa lác đác");
+    lyDo.push(`mưa bay ${g.mua.toFixed(1)} mm`);
   }
 
   /**
@@ -669,12 +701,15 @@ export function chamGio(
     len("vang");
   }
 
-  /** Khả năng mưa ĐÃ HIỆU CHỈNH theo lượng (xem xacSuatMuaThat) — thô thì lúc nào cũng 100%. */
-  const pMua = xacSuatMuaThat(g.xacSuatMua, g.mua);
-  if (pMua >= 75 && g.mua <= nguong.muaDo) {
-    lyDo.push(`khả năng mưa ${pMua}%`);
-    len("vang");
-  }
+  /**
+   * KHÔNG CÒN CẢNH BÁO THEO % MƯA (luật chủ 10/09).
+   *
+   * Mưa nay xét bằng MILIMÉT: từ 0,3 trở xuống coi như khô, 0,4–0,8 là mưa bay (vẫn
+   * bay), từ 0,8 là mưa thật (cấm). Phần trăm của mô hình là "có mưa ở đâu đó
+   * trong ô 25 km" — hạ màu theo nó thì mùa mưa ngày nào cũng vàng, trong khi
+   * ở bãi trời khô. Ai muốn xem phần trăm thì vẫn còn `xacSuatMuaThat` cho
+   * bảng so sánh mô hình.
+   */
 
   /**
    * HƯỚNG GIÓ — ở núi thì hướng quan trọng ngang tốc độ.
@@ -717,16 +752,19 @@ export const GIO_BAY_TU = 7;
 export const GIO_BAY_DEN = 17;
 
 /**
- * MƯA ĐÁNG KỂ (mm trong một giờ) — dưới mức này không gọi là "có mưa".
+ * BA MỨC MƯA (luật chủ 10/09):
+ *  - dưới `MUA_BAY` (0,4 mm/giờ): coi như KHÔNG mưa — không ghi, không vẽ.
+ *    Chủ chốt rõ 10/09: 0,2 và 0,3 mm là KHÔNG MƯA, đừng nhắc tới.
+ *  - từ 0,4 tới dưới `MUA_DANG_KE` (0,8): "MƯA BAY" — ghi chú cho biết, không
+ *    hạ màu, không đếm vào số tiếng mưa. Bay vẫn bay.
+ *  - từ `MUA_DANG_KE`: mưa thật — đếm tiếng, chấm đỏ (khớp `muaDo` mặc định).
  *
- * Mô hình hay trả 0,1–0,4 mm: đó là mưa phùn vài hạt, dù không ướt, khách
- * không để ý. Đếm nó vào "số giờ mưa" thì một ngày rả rích 4mm thành "mưa 11
- * tiếng" — đúng chữ nhưng sai ý, và người đọc thôi tin cả bảng.
- *
- * Lấy đúng 0,5 để khớp với ngưỡng CẤM BAY vì mưa (`muaDo`): thứ đáng đếm là
- * thứ đủ làm hoãn chuyến.
+ * Ví dụ chủ đưa: 10h mưa 1,0 mm, 11h–13h mưa 0,6 mm → "mưa lúc 10:00, sau đó
+ * mưa bay tới 13:00", chứ không phải "mưa 4 tiếng". Đếm cả mưa bay thì một
+ * ngày rả rích 4mm thành "mưa 11 tiếng" — đúng chữ nhưng sai ý.
  */
-export const MUA_DANG_KE = 0.5;
+export const MUA_BAY = 0.4;
+export const MUA_DANG_KE = 0.8;
 
 /** Mô tả cường độ mưa cả ngày theo TỔNG lượng — "nhỏ" 4mm khác hẳn "to" 30mm. */
 export function suNangMua(tongMm: number): string {
@@ -760,8 +798,14 @@ export type NgayThoiTiet = {
    * thành "mưa 93% thời gian trong ngày" — tức gần như cả ngày. Nói "mưa
    * khoảng 2 tiếng (13h–15h)" thì không ai hiểu nhầm được.
    */
+  /** Số giờ MƯA THẬT (≥ `MUA_DANG_KE`) trong khung bay. */
   gioMua: number;
   khungMua: string | null;
+  /** Số giờ MƯA BAY (0,4 – dưới 0,8 mm) — ghi cho biết, không phải mưa. */
+  gioMuaBay: number;
+  khungMuaBay: string | null;
+  /** Mặt trời mọc / lặn ("HH:mm" giờ Việt Nam) — đổi theo mùa, do mô hình cấp. */
+  matTroi?: { moc: string; lan: string };
   /** Xác suất dông cao nhất trong khung giờ bay (%). */
   xacSuatDongMax: number;
   /** Trần thermal cao nhất (m) — thermal của ngày. */
@@ -784,11 +828,19 @@ export type NgayThoiTiet = {
  * gió thì vẫn là ngày bay được, chỉ bay buổi sáng. Lấy trung bình thì ngày ấy
  * ra vàng, người đọc tưởng cả ngày dở và huỷ khách oan.
  */
+/** "10:00" hay "10:00–13:00" — chỉ nói đầu–cuối: mưa ngắt quãng vẫn là "khoảng ấy có mưa". */
+function khungCua(m: Array<{ gio: string }>): string | null {
+  if (!m.length) return null;
+  return m.length === 1 ? m[0].gio.slice(11, 16) : `${m[0].gio.slice(11, 16)}–${m[m.length - 1].gio.slice(11, 16)}`;
+}
+
 export function gopNgay(
   ngay: string,
   gio: Array<GioThoiTiet & ChamGio>,
   /** Khung giờ bay của điểm — xem `ToaDoDiemBay.gioBay`. */
   khung: [number, number] = [GIO_BAY_TU, GIO_BAY_DEN],
+  /** Giờ mặt trời mọc/lặn của ngày ("HH:mm"), nếu mô hình cấp. */
+  matTroi?: { moc: string; lan: string },
 ): NgayThoiTiet {
   const trongKhung = gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
@@ -831,18 +883,16 @@ export function gopNgay(
       ? Math.max(-1, ...trongKhung.map((g) => xacSuatMuaThat(g.xacSuatMua, g.mua)))
       : -1,
     gioMua: trongKhung.filter((g) => g.mua >= MUA_DANG_KE).length,
-    khungMua: (() => {
-      const m = trongKhung.filter((g) => g.mua >= MUA_DANG_KE);
-      if (!m.length) return null;
-      /** Chỉ nói khoảng đầu–cuối: mưa ngắt quãng thì vẫn là "khoảng ấy có mưa". */
-      return m.length === 1 ? m[0].gio.slice(11, 16) : `${m[0].gio.slice(11, 16)}–${m[m.length - 1].gio.slice(11, 16)}`;
-    })(),
+    khungMua: khungCua(trongKhung.filter((g) => g.mua >= MUA_DANG_KE)),
+    gioMuaBay: trongKhung.filter((g) => g.mua >= MUA_BAY && g.mua < MUA_DANG_KE).length,
+    khungMuaBay: khungCua(trongKhung.filter((g) => g.mua >= MUA_BAY && g.mua < MUA_DANG_KE)),
     xacSuatDongMax: trongKhung.length ? Math.max(0, ...trongKhung.map((g) => chiSoBay(g).xacSuatDong)) : 0,
     tranMax: (() => {
       const t = trongKhung.map((g) => chiSoBay(g).tran).filter((x): x is number => x !== null);
       return t.length ? Math.max(...t) : null;
     })(),
     gio,
+    matTroi,
   };
 }
 
