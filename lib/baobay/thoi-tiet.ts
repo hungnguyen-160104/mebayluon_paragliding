@@ -109,7 +109,10 @@ export type NguongBay = {
   gioXanh: number;
   /** Trên mức này là CẤM — giữa hai mức là vàng, cân nhắc. */
   gioDo: number;
-  /** Gió giật (m/s) vượt mức này là cấm, dù gió trung bình còn thấp. */
+  /**
+   * Gió giật (m/s) vượt mức này thì KHÔNG KHUYẾN CÁO BAY. Mặc định 18 — giật
+   * dưới 14 không ảnh hưởng quyết định, 14–18 chỉ là cảnh báo nhiễu.
+   */
   giatDo: number;
   /** Mưa trong giờ (mm) vượt mức này là cấm. */
   muaDo: number;
@@ -131,7 +134,7 @@ export type NguongBay = {
  * thì cánh nặng hơn, cất cánh chậm hơn, và người ngồi trước không biết cách
  * xử lý khi dù bị gấp. Đây chỉ là chỗ BẮT ĐẦU — số thật do chủ chấm dần.
  */
-export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 10, muaDo: 0.5, tranMayDo: 150 };
+export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 18, muaDo: 0.5, tranMayDo: 150 };
 
 export function nguongCuaDiem(luu?: Partial<NguongBay> | null): NguongBay {
   const n = { ...NGUONG_MAC_DINH };
@@ -311,16 +314,33 @@ export const NHAN_SUC_GIO: Record<SucGio, string> = {
   ratManh: "rất mạnh",
 };
 
-export type SucGiat = "nhe" | "vua" | "manh";
+export type SucGiat = "nhe" | "vua" | "manh" | "ratManh";
 
-/** Thang GIÓ GIẬT riêng: < 6 nhẹ · 6–10 vừa · > 10 mạnh. */
+/**
+ * Thang GIÓ GIẬT (luật chủ 10/09): **giật KHÔNG quyết định bay hay nghỉ** trừ
+ * khi quá mạnh.
+ *
+ *   < 6 nhẹ · 6–14 vừa (vẫn bay bình thường) · 14–18 mạnh, nhiễu (cảnh báo)
+ *   · > 18 không khuyến cáo bay
+ *
+ * Vì sao nới xa đến thế: mô hình chia ô ~25km, ở địa hình đèo nó gần như luôn
+ * báo giật gấp ba bốn lần gió trung bình. Lấy con số ấy làm mốc cấm thì Khau
+ * Phạ đỏ quanh năm, còn phi công đứng ở bãi thì thấy trời hoàn toàn bay được —
+ * cảnh báo sai kiểu đó vài lần là không ai nhìn bảng nữa.
+ */
 export function sucGiat(v: number): SucGiat {
   if (v < 6) return "nhe";
-  if (v <= 10) return "vua";
-  return "manh";
+  if (v < 14) return "vua";
+  if (v <= 18) return "manh";
+  return "ratManh";
 }
 
-export const NHAN_SUC_GIAT: Record<SucGiat, string> = { nhe: "nhẹ", vua: "vừa", manh: "mạnh" };
+export const NHAN_SUC_GIAT: Record<SucGiat, string> = {
+  nhe: "nhẹ",
+  vua: "vừa",
+  manh: "mạnh, nhiễu",
+  ratManh: "rất mạnh — không khuyến cáo bay",
+};
 
 /**
  * MŨI TÊN HƯỚNG GIÓ.
@@ -464,48 +484,30 @@ export function chamGio(
   }
 
   /**
-   * GIẬT theo thang của chủ: dưới 6 nhẹ · 6–10 vừa · trên 10 mạnh.
+   * GIẬT KHÔNG QUYẾT ĐỊNH BAY HAY NGHỈ, trừ khi quá mạnh (luật chủ 10/09).
    *
-   * Bỏ hẳn cảnh báo "gần ngưỡng" ở mức 80%: mô hình ở núi gần như luôn báo
-   * giật 8–10 m/s, nên câu đó hiện ở mọi giờ của mọi ngày và thành tiếng ồn.
-   * Giật trong khoảng "vừa" là chuyện thường ngày ở đèo, không đáng nói.
+   * Dưới 14 m/s thì im lặng: mô hình ở đèo gần như luôn báo giật gấp mấy lần
+   * gió trung bình, nói ra mỗi giờ là thành tiếng ồn. 14–18 mới cảnh báo nhiễu,
+   * trên 18 mới là không khuyến cáo bay.
    */
+  const gGiat = sucGiat(g.giat);
   if (g.giat > nguong.giatDo) {
-    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — mạnh, vượt ngưỡng ${nguong.giatDo}`);
+    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — quá mạnh, không khuyến cáo bay`);
     len("do");
+  } else if (gGiat === "manh") {
+    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — mạnh, gió nhiễu`);
+    len("vang");
   }
 
   /**
-   * CHÊNH GIÓ GIẬT là dấu hiệu trời RỐI, không phải trời mạnh.
+   * KHÔNG CÒN LUẬT "GIÓ RỐI" theo chênh giật (luật chủ 10/09).
    *
-   * Gió trung bình 12 km/h mà giật 30 km/h nghĩa là từng đợt ập tới rồi tắt —
-   * đúng kiểu làm dù gấp cánh lúc cất cánh. Chỉ nhìn con số trung bình thì ô
-   * này xanh mướt, nên phải xét riêng phần chênh.
+   * Trước đây chênh giữa giật và gió trung bình bị coi là dấu hiệu trời rối và
+   * hạ màu xuống. Nhưng ở đèo, mô hình luôn báo giật gấp mấy lần gió nền, nên
+   * chênh 8–10 m/s là chuyện của mọi giờ trong mọi ngày — luật ấy chỉ sinh ra
+   * cảnh báo mà không ai dùng. Nay giật đã có thang riêng (im dưới 14, cảnh báo
+   * 14–18, cấm trên 18) và thang đó nói đủ.
    */
-  const chenh = g.giat - g.gio10m;
-  /**
-   * Mốc nới rộng có chủ ý. Mô hình chia ô ~25km và lấy độ cao trung bình, nên
-   * ở núi nó gần như luôn báo giật gấp ba gió trung bình — bắt chặt thì Khau
-   * Phạ đỏ quanh năm, mà cảnh báo lúc nào cũng đỏ thì người trực bỏ qua hết,
-   * hỏng đúng cái việc nó sinh ra để làm. Chỉ gọi là RỐI khi chênh vừa lớn
-   * tuyệt đối vừa đủ mạnh để làm gấp cánh (giật qua 70% ngưỡng cấm).
-   */
-  /**
-   * Mốc chênh phải NẰM NGOÀI dải giật bình thường của đèo.
-   *
-   * Theo thang của chủ, giật tới 10 m/s vẫn là "vừa" — chuyện thường ngày ở
-   * Khau Phạ, giờ nào cũng gặp. Bắt chênh ở mức đó thì mọi giờ đều "gió không
-   * đều" và cả bảng vàng khè, đúng cái bẫy đã mắc một lần với ngưỡng cũ. Chỉ
-   * gọi tên khi giật ĐÃ SANG MỨC MẠNH, hoặc khi chênh lớn bất thường (gió nền
-   * gần như lặng mà từng đợt ập tới sát 10).
-   */
-  if (chenh > 7 && sucGiat(g.giat) === "manh") {
-    lyDo.push(`gió rối: giật hơn trung bình ${chenh.toFixed(1)} m/s`);
-    len("do");
-  } else if (chenh > 8) {
-    lyDo.push(`gió không đều (giật hơn trung bình ${chenh.toFixed(1)} m/s)`);
-    len("vang");
-  }
 
   if (g.mua > nguong.muaDo) {
     lyDo.push(`mưa ${g.mua.toFixed(1)} mm`);

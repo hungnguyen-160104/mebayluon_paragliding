@@ -97,10 +97,12 @@ const MAU_GIO: Record<SucGio, string> = {
   ratManh: "bg-rose-500 text-white",
 };
 
-const MAU_GIAT: Record<"nhe" | "vua" | "manh", string> = {
-  nhe: "text-slate-500",
-  vua: "text-slate-800",
-  manh: "font-bold text-rose-700",
+/** Giật chỉ đáng chú ý từ 14 m/s: dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
+const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
+  nhe: "text-slate-400",
+  vua: "text-slate-500",
+  manh: "font-bold text-orange-700",
+  ratManh: "font-bold text-rose-700",
 };
 
 function nhanMuc(muc: MucDo, t: ThoiTietCopy): string {
@@ -206,7 +208,7 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
           )}
           {hang(
             t.canFly,
-            (g) => (g.muc === "xanh" ? "✔" : g.muc === "vang" ? "!" : "✕"),
+            (g) => (g.muc === "xanh" ? "✔" : g.muc === "vang" ? "⚠" : "✕"),
             (g) => "rounded font-bold " + DAC[g.muc],
           )}
           {hang(t.gust, (g) => g.giat.toFixed(1), (g) => MAU_GIAT[sucGiat(g.giat)])}

@@ -123,10 +123,12 @@ const MAU_GIO: Record<SucGio, string> = {
 };
 
 /** Giật: ba mức, dùng màu CHỮ chứ không tô nền — nền đã dành cho hàng gió. */
-const MAU_GIAT: Record<"nhe" | "vua" | "manh", string> = {
-  nhe: "text-slate-500",
-  vua: "text-slate-800",
-  manh: "font-bold text-rose-700",
+/** Giật chỉ đáng chú ý từ 14 m/s: dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
+const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
+  nhe: "text-slate-400",
+  vua: "text-slate-500",
+  manh: "font-bold text-orange-700",
+  ratManh: "font-bold text-rose-700",
 };
 
 const NHAN: Record<MucDo, string> = { xanh: "BAY TỐT", vang: "CÂN NHẮC", do: "KHÔNG BAY" };
@@ -396,7 +398,7 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
                 title={g.lyDo.join(" · ")}
                 className={"border-b border-white px-0.5 py-0.5 text-[10px] font-bold " + MAU_O[g.muc]}
               >
-                {g.muc === "xanh" ? "✔" : g.muc === "vang" ? "!" : "✕"}
+                {g.muc === "xanh" ? "✔" : g.muc === "vang" ? "⚠" : "✕"}
               </td>
             ))}
           </tr>
@@ -523,8 +525,9 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
       </table>
       <div className="mt-1 text-[10px] text-slate-500">
         Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
-        mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> mới là kết luận cả giờ (đã tính mưa, mù, dông, hướng
-        gió). Mũi tên chỉ chiều gió thổi tới. Rê chuột vào ô bất kỳ để xem lý do.
+        mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
+        <strong> ✔</strong> bay tốt · <strong>⚠</strong> cân nhắc · <strong>✕</strong> không bay. Mũi tên chỉ chiều
+        gió thổi tới. Rê chuột vào ô bất kỳ để xem lý do.
       </div>
     </div>
   );

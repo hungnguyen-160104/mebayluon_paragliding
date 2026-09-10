@@ -112,15 +112,22 @@ Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặn
 | 6 – 8 | mạnh | cam |
 | > 8 | rất mạnh | đỏ |
 
-| Gió giật | Mức |
-|---|---|
-| < 6 | nhẹ |
-| 6 – 10 | vừa |
-| > 10 | mạnh |
+| Gió giật | Mức | Có chặn bay không |
+|---|---|---|
+| < 6 | nhẹ | không |
+| 6 – 14 | vừa | **không** — giật không quyết định bay |
+| 14 – 18 | mạnh, nhiễu | cảnh báo (vàng) |
+| > 18 | rất mạnh | không khuyến cáo bay (đỏ) |
+
+Giật nới xa như vậy vì mô hình chia ô ~25 km: ở địa hình đèo nó gần như luôn
+báo giật gấp ba bốn lần gió trung bình. Lấy con số ấy làm mốc cấm thì Khau Phạ
+đỏ quanh năm, còn phi công đứng ở bãi thì thấy trời hoàn toàn bay được — sai
+kiểu đó vài lần là không ai nhìn bảng nữa.
 
 Màu ô **Gió** nói *gió mạnh cỡ nào*; hàng **Bay?** ngay dưới mới là *kết luận
-cả giờ* (đã gộp mưa, mù, dông, hướng). Hai thang khác nhau và đều cần: một giờ
-có thể gió đẹp mà vẫn đỏ vì mưa.
+cả giờ* (đã gộp mưa, mù, dông, hướng): **✔** bay tốt · **⚠** cân nhắc · **✕**
+không bay. Hai thang khác nhau và đều cần: một giờ có thể gió đẹp mà vẫn đỏ
+vì mưa.
 
 Hướng gió hiện bằng **mũi tên chỉ chiều gió thổi tới** — nhìn cả hàng ngang là
 thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở tooltip.
@@ -130,8 +137,7 @@ thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở too
 | Yếu tố | Vàng (cân nhắc) | Đỏ (không bay) |
 |---|---|---|
 | Gió trung bình | > ngưỡng đẹp (nới tới 6 m/s khi **thuận sườn**) | > ngưỡng cấm |
-| Gió giật | — (mức "vừa" là chuyện thường ở đèo) | > ngưỡng giật, tức mức **mạnh** |
-| **Gió rối** (giật trừ trung bình) | chênh > 8 m/s | chênh > 7 m/s **và** giật đã sang mức mạnh |
+| Gió giật | 14 – 18 m/s (mạnh, nhiễu) | > 18 m/s |
 | **Mù / mây thấp** | trần mây < 2× ngưỡng, mây thấp ≥ 70% | trần mây < ngưỡng và mây thấp ≥ 70%; hoặc ẩm ≥ 98% kèm mây thấp dày |
 | Mưa | lác đác > 0,1 mm, hoặc khả năng mưa (đã hiệu chỉnh) ≥ 60% | > ngưỡng mưa |
 | **Dông** | 20–39% | ≥ 40% |

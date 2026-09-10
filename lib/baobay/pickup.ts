@@ -31,6 +31,20 @@ export const TU_DEN = "Tự đến điểm bay";
 /** Chỗ đón hay gặp thứ hai, viết gọn cho vừa ô sổ và dòng vé. */
 export const CLUBHOUSE_NGAN = "Mebayluon Clubhouse";
 
+/**
+ * NHỮNG CHỖ ĐÓN HAY GẶP, và tên gọn của chúng trong sổ.
+ *
+ * Chỗ khách đặt qua OTA gửi sang thường là cả một câu chỉ đường viết cho người
+ * lạ: "Sun Plaza Sapa Entrance - in Sapa center" (143 booking đang có). Người
+ * ngoài đọc thì cần chừng ấy chữ, nhưng điều phối ở Sa Pa chỉ cần hai chữ là
+ * biết đứng đâu — và cột điểm đón chỉ rộng chừng ấy.
+ *
+ * Bảng ánh xạ chứ không đoán bằng luật: đoán thì sớm muộn cũng cắt nhầm một
+ * cái tên khách sạn nào đó, mà cắt nhầm là xe tới sai chỗ. Gặp chỗ mới hay
+ * dùng thì thêm một dòng vào đây.
+ */
+const RUT_GON: Array<[RegExp, string]> = [[/sun\s*plaza/i, "Sun Plaza"]];
+
 export function shortPickup(text: unknown): string {
   const raw = String(text ?? "").trim();
   if (!raw) return "";
@@ -42,9 +56,17 @@ export function shortPickup(text: unknown): string {
    */
   if (CLUBHOUSE.test(raw)) return CLUBHOUSE_NGAN;
   if (TEN_BAI.test(raw) && TEN_HANG.test(raw)) return TU_DEN;
-  /** Bỏ phần trong ngoặc (tên pháp nhân, ghi chú dài) — giữ tên chỗ đón. */
-  const noParen = raw.replace(/\s*\([^)]*\)\s*/g, " ").trim();
-  return noParen || raw;
+  for (const [mau, ngan] of RUT_GON) if (mau.test(raw)) return ngan;
+  /**
+   * Chỗ chưa có trong bảng: bỏ phần trong ngoặc và phần chỉ đường sau dấu gạch
+   * ("Khách sạn X - đối diện chợ" → "Khách sạn X"). Giữ nguyên phần TÊN vì đó
+   * là thứ tài xế cần.
+   */
+  const goiY = raw
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .split(/\s+[-–|]\s+/)[0]
+    .trim();
+  return goiY || raw;
 }
 
 /** Chỗ đón này có phải là "khách tự tới bãi" không — để khỏi in thêm chữ "Đón:". */
