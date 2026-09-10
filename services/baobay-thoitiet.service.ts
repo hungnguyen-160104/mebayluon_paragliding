@@ -24,13 +24,18 @@ import { todayInVN } from "@/lib/baobay/date";
 import { normalizeSpot, type SpotId } from "@/lib/baobay/spots";
 import {
   chamGio,
+  doChinhXac,
   gopNgay,
   hocNguong,
+  ngayGiongNhau,
   nguongCuaDiem,
   toaDoDiemBay,
   type GioThoiTiet,
   type LanCham,
   type NgayThoiTiet,
+  type DoChinhXac,
+  type MucDo,
+  type NgayGiong,
   type NguongBay,
   type NguongHoc,
   type ToaDoDiemBay,
@@ -44,7 +49,7 @@ import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
 
 /**
  * Trường lấy từ mô hình CHÍNH (ECMWF): gió, mưa, và những thứ suy ra MÙ —
- * điểm sương với nhiệt độ cho ra chân mây, mây thấp cho biết có mây ở tầng đó
+ * điểm sương với nhiệt độ cho ra trần mây, mây thấp cho biết có mây ở tầng đó
  * thật hay không.
  */
 const HOURLY = [
@@ -454,7 +459,7 @@ export type LuuCauHinh = Partial<{
   gioDo: number;
   giatDo: number;
   muaDo: number;
-  chanMayDo: number;
+  tranMayDo: number;
 }>;
 
 export async function luuCauHinhDiem(
@@ -485,7 +490,7 @@ export async function luuCauHinhDiem(
     else set["weather.huongThuan"] = [((tu % 360) + 360) % 360, ((den % 360) + 360) % 360];
   }
 
-  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "chanMayDo"] as const) {
+  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "tranMayDo"] as const) {
     if (patch[k] === undefined) continue;
     const v = Number(patch[k]);
     if (!Number.isFinite(v) || v <= 0) return { ok: false, error: `Ngưỡng ${k} phải là số dương` };
@@ -594,10 +599,60 @@ async function soCuaNgay(
   }
 }
 
+/**
+ * CHỦ DỰ BÁO TRƯỚC cho một ngày sắp tới.
+ *
+ * Chụp lại luôn màu máy đang chấm ngày ấy: sau khi ngày qua và có chấm thực
+ * tế, ba con số (máy đoán · chủ đoán · thực tế) nằm cùng một dòng thì mới so
+ * được ai đúng hơn và máy lệch về phía nào.
+ */
+export async function duBaoCuaChu(
+  spot: string,
+  input: { date: string; forecast: "tot" | "han-che" | "nghi"; window?: string; note?: string },
+  boi: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = normalizeSpot(spot);
+  const date = String(input.date || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
+  if (!["tot", "han-che", "nghi"].includes(input.forecast)) return { ok: false, error: "Dự báo không hợp lệ" };
+  /** Dự báo là nói TRƯỚC. Ngày đã qua thì dùng nút chấm thực tế, không phải ô này. */
+  if (date < todayInVN()) return { ok: false, error: "Ngày đã qua — dùng nút chấm thực tế" };
+
+  let mayCham: MucDo | undefined;
+  try {
+    const du = await duBaoDiemBay(key);
+    mayCham = du.ngay.find((n) => n.ngay === date)?.muc;
+  } catch {
+    /** Không lấy được dự báo máy thì vẫn cho ghi — mất một cột đối chiếu thôi. */
+  }
+
+  await connectDB();
+  await BaobayWeatherMark.updateOne(
+    { spot: key, date },
+    {
+      $set: {
+        forecast: input.forecast,
+        forecastWindow: String(input.window || "").trim().slice(0, 40),
+        forecastNote: String(input.note || "").trim().slice(0, 300),
+        forecastBy: boi,
+        forecastAt: new Date(),
+        ...(mayCham ? { machineVerdict: mayCham } : {}),
+      },
+    },
+    { upsert: true },
+  );
+  return { ok: true };
+}
+
 export type LichSuCham = {
   date: string;
-  verdict: "tot" | "han-che" | "nghi";
+  verdict?: "tot" | "han-che" | "nghi";
   note: string;
+  forecast?: "tot" | "han-che" | "nghi";
+  forecastWindow?: string;
+  forecastNote?: string;
+  forecastBy?: string;
+  machineVerdict?: MucDo;
   windMax?: number;
   gustMax?: number;
   rainTotal?: number;
@@ -607,7 +662,14 @@ export type LichSuCham = {
 export async function soKinhNghiem(
   spot: string,
   gioiHan = 120,
-): Promise<{ cham: LichSuCham[]; hoc: NguongHoc }> {
+  /** Số của các ngày đang hiện trên thẻ — để tìm ngày cũ giống từng ngày. */
+  ngaySapToi: Array<{ ngay: string; gioMax: number; giatMax: number; muaTong: number }> = [],
+): Promise<{
+  cham: LichSuCham[];
+  hoc: NguongHoc;
+  chinhXac: DoChinhXac;
+  giong: Record<string, NgayGiong[]>;
+}> {
   await connectDB();
   const key = normalizeSpot(spot);
   const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(gioiHan).lean<any[]>();
@@ -615,19 +677,39 @@ export async function soKinhNghiem(
     date: d.date,
     verdict: d.verdict,
     note: d.note ?? "",
+    forecast: d.forecast,
+    forecastWindow: d.forecastWindow,
+    forecastNote: d.forecastNote,
+    forecastBy: d.forecastBy,
+    machineVerdict: d.machineVerdict,
     windMax: d.windMax,
     gustMax: d.gustMax,
     rainTotal: d.rainTotal,
     markedBy: d.markedBy ?? "",
   }));
+
+  /** Chỉ ngày ĐÃ CHẤM THỰC TẾ và có số mới dùng để học được. */
   const lan: LanCham[] = cham
-    .filter((c) => Number.isFinite(c.windMax) && Number.isFinite(c.gustMax))
+    .filter((c) => c.verdict && Number.isFinite(c.windMax) && Number.isFinite(c.gustMax))
     .map((c) => ({
       ngay: c.date,
-      ket: c.verdict,
+      ket: c.verdict!,
       gioMax: Number(c.windMax),
       giatMax: Number(c.gustMax),
       muaTong: Number(c.rainTotal ?? 0),
+      duBaoChu: c.forecast,
+      mayCham: c.machineVerdict,
+      ghiChu: c.note || c.forecastNote,
     }));
-  return { cham, hoc: hocNguong(lan) };
+
+  const giong: Record<string, NgayGiong[]> = {};
+  /**
+   * Cần ÍT NHẤT 5 ngày trong kho mới đi tìm ngày giống: với hai ba ngày thì
+   * "ngày giống nhất" chỉ là ngày duy nhất có sẵn, nói ra thành ra đánh lừa.
+   */
+  if (lan.length >= 5) {
+    for (const n of ngaySapToi) giong[n.ngay] = ngayGiongNhau(n, lan);
+  }
+
+  return { cham, hoc: hocNguong(lan), chinhXac: doChinhXac(lan), giong };
 }

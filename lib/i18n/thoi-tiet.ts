@@ -33,9 +33,9 @@ export type ThoiTietCopy = {
   rainChance: string;
   /** Nguy cơ dông (%). */
   storm: string;
-  /** Chân mây / mù. */
+  /** Trần mây / mù. */
   cloudBase: string;
-  /** Sức bốc (thermal). */
+  /** Sức nâng (thermal). */
   thermal: string;
   /** Độ ổn định không khí. */
   stability: string;
@@ -81,8 +81,8 @@ const vi: ThoiTietCopy = {
   windUnit: "m/s",
   rainChance: "Khả năng mưa",
   storm: "Dông",
-  cloudBase: "Chân mây",
-  thermal: "Sức bốc",
+  cloudBase: "Trần mây",
+  thermal: "Sức nâng",
   stability: "Ổn định",
   thermalLevels: { khong: "không", nhe: "nhẹ", vua: "vừa", manh: "mạnh", gat: "gắt" },
   today: "Hôm nay",

@@ -17,19 +17,50 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
-import { chanMay, chiSoBay, huongChu, NHAN_THERMAL } from "@/lib/baobay/thoi-tiet";
+import { tranMay, chiSoBay, huongChu, NHAN_THERMAL } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
 
 export type ChamNgay = {
   date: string;
-  verdict: "tot" | "han-che" | "nghi";
+  verdict?: "tot" | "han-che" | "nghi";
   note: string;
+  /** Dự báo chủ ghi TRƯỚC ngày đó — cái máy học nghề. */
+  forecast?: "tot" | "han-che" | "nghi";
+  forecastWindow?: string;
+  forecastNote?: string;
+  forecastBy?: string;
+  machineVerdict?: MucDo;
   windMax?: number;
   gustMax?: number;
   rainTotal?: number;
   markedBy: string;
+};
+
+export type NgayGiong = {
+  ngay: string;
+  ket: "tot" | "han-che" | "nghi";
+  ghiChu?: string;
+  gioMax: number;
+  giatMax: number;
+  muaTong: number;
+  khoangCach: number;
+};
+
+export type DoChinhXac = {
+  soNgay: number;
+  mayDung: number;
+  chuDung: number;
+  soNgayChuDuBao: number;
+  mayKhatKheHon: number;
+  cau: string[];
+};
+
+const NHAN_KET: Record<"tot" | "han-che" | "nghi", string> = {
+  tot: "bay tốt",
+  "han-che": "hạn chế",
+  nghi: "nghỉ bay",
 };
 
 export type DuLieuThoiTiet = {
@@ -41,6 +72,9 @@ export type DuLieuThoiTiet = {
   layLuc: string;
   cham: ChamNgay[];
   hoc: { du: boolean; soLan: number; goiY: Partial<NguongBay>; giaiThich: string[] };
+  chinhXac: DoChinhXac;
+  /** Ngày cũ giống từng ngày đang hiện, khoá theo "YYYY-MM-DD". */
+  giong: Record<string, NgayGiong[]>;
 };
 
 /* ------------------------------------------------------------------ */
@@ -235,19 +269,29 @@ export function ThoiTietCard({
             {moBanDo && <WindyNhung toaDo={du.toaDo} />}
           </div>
 
-          {/* ---- chấm kinh nghiệm ---- */}
+          {/* ---- ngày cũ giống ngày này ---- */}
+          {ngayChon && <NgayGiongNhau ds={du.giong?.[ngayChon.ngay] ?? []} />}
+
+          {/* ---- dự báo trước / chấm thực tế ---- */}
           {laDieuPhoi && ngayChon && (
             <ChamKinhNghiem
               spot={spot}
               ngay={ngayChon}
               homNay={homNay}
               daCham={du.cham.find((c) => c.date === ngayChon.ngay) ?? null}
-              xong={(moi) => setDu((cu) => (cu ? { ...cu, cham: moi.cham, hoc: moi.hoc } : cu))}
+              xong={(moi) => setDu((cu) => (cu ? { ...cu, cham: moi.cham, hoc: moi.hoc, chinhXac: moi.chinhXac } : cu))}
             />
           )}
 
           {/* ---- máy học được gì ---- */}
-          <HocDuoc hoc={du.hoc} nguong={du.nguong} spot={spot} laQuanTri={laQuanTri} taiLai={() => void tai(true)} />
+          <HocDuoc
+            hoc={du.hoc}
+            chinhXac={du.chinhXac}
+            nguong={du.nguong}
+            spot={spot}
+            laQuanTri={laQuanTri}
+            taiLai={() => void tai(true)}
+          />
 
           {/* ---- cài đặt toạ độ + ngưỡng ---- */}
           {laQuanTri && (
@@ -369,12 +413,12 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
           <tr>
             <th
               className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
-              title="Chân mây trên bãi cất cánh — thấp kèm mây thấp dày nghĩa là mù trùm bãi"
+              title="Trần mây trên bãi cất cánh — thấp kèm mây thấp dày nghĩa là mù trùm bãi"
             >
-              Chân mây
+              Trần mây
             </th>
             {gio.map((g) => {
-              const cm = chanMay(g.nhietDo, g.diemSuong);
+              const cm = tranMay(g.nhietDo, g.diemSuong);
               const mu = cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50;
               return (
                 <td
@@ -390,9 +434,9 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
           <tr>
             <th
               className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
-              title="Sức bốc: thermal gắt thì dù xóc, khách dễ say"
+              title="Sức nâng: thermal gắt thì dù xóc, khách dễ say"
             >
-              Sức bốc
+              Sức nâng
             </th>
             {gio.map((g) => {
               const c = chiSoBay(g);
@@ -419,7 +463,7 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
       </table>
       <div className="mt-1 text-[10px] text-slate-500">
         Số trong ô gió là gió trung bình (m/s) — màu ô đã tính cả giật, mưa, mù, dông và hướng. Rê chuột vào ô để
-        xem lý do; rê vào ô Sức bốc để xem độ ổn định không khí và trần thermal.
+        xem lý do; rê vào ô Sức nâng để xem độ ổn định không khí và trần thermal.
       </div>
     </div>
   );
@@ -493,32 +537,30 @@ function ChamKinhNghiem({
   ngay: NgayThoiTiet;
   homNay: string;
   daCham: ChamNgay | null;
-  xong: (moi: { cham: ChamNgay[]; hoc: DuLieuThoiTiet["hoc"] }) => void;
+  xong: (moi: { cham: ChamNgay[]; hoc: DuLieuThoiTiet["hoc"]; chinhXac: DoChinhXac }) => void;
 }) {
-  const [ghiChu, setGhiChu] = useState(daCham?.note ?? "");
+  /** Ngày chưa tới thì đang NÓI TRƯỚC; ngày đã qua thì đang CHẤM LẠI. */
+  const noiTruoc = ngay.ngay > homNay;
+  const [ghiChu, setGhiChu] = useState("");
+  const [khung, setKhung] = useState("");
   const [dangLuu, setDangLuu] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
 
-  useEffect(() => setGhiChu(daCham?.note ?? ""), [daCham?.note, ngay.ngay]);
+  useEffect(() => {
+    setGhiChu(noiTruoc ? (daCham?.forecastNote ?? "") : (daCham?.note ?? ""));
+    setKhung(daCham?.forecastWindow ?? "");
+  }, [daCham?.note, daCham?.forecastNote, daCham?.forecastWindow, ngay.ngay, noiTruoc]);
 
-  if (ngay.ngay > homNay) {
-    return (
-      <div className="mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-500">
-        Ngày chưa tới nên chưa chấm được. Qua ngày, vào đây chấm <strong>bay tốt / hạn chế / nghỉ</strong> —
-        máy dựa vào đó để học ngưỡng gió của riêng điểm này.
-      </div>
-    );
-  }
-
-  async function cham(verdict: "tot" | "han-che" | "nghi") {
-    setDangLuu(verdict);
+  async function gui(v: "tot" | "han-che" | "nghi") {
+    setDangLuu(v);
     setLoi(null);
     try {
-      const r = await apiPost<{ cham: ChamNgay[]; hoc: DuLieuThoiTiet["hoc"] }>(`/api/baocao/thoi-tiet?spot=${spot}`, {
-        date: ngay.ngay,
-        verdict,
-        note: ghiChu,
-      });
+      const r = await apiPost<{ cham: ChamNgay[]; hoc: DuLieuThoiTiet["hoc"]; chinhXac: DoChinhXac }>(
+        `/api/baocao/thoi-tiet?spot=${spot}`,
+        noiTruoc
+          ? { date: ngay.ngay, forecast: v, window: khung, note: ghiChu }
+          : { date: ngay.ngay, verdict: v, note: ghiChu },
+      );
       xong(r);
     } catch (e: any) {
       setLoi(e?.message || "Không lưu được");
@@ -533,35 +575,115 @@ function ChamKinhNghiem({
     { v: "nghi", nhan: "✕ Nghỉ bay", mau: "border-rose-600 bg-rose-600 text-white" },
   ];
 
+  const dangChon = noiTruoc ? daCham?.forecast : daCham?.verdict;
+
   return (
-    <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/60 px-2 py-1.5">
-      <div className="text-[11px] font-bold text-sky-900">
-        Ngày {ngay.ngay.slice(8, 10)}/{ngay.ngay.slice(5, 7)} thực tế thế nào?
-        {daCham && <span className="ml-1 font-normal text-slate-600">(đã chấm bởi {daCham.markedBy || "—"})</span>}
+    <div className={"mt-2 rounded-lg border px-2 py-1.5 " + (noiTruoc ? "border-violet-200 bg-violet-50/60" : "border-sky-200 bg-sky-50/60")}>
+      <div className={"text-[11px] font-bold " + (noiTruoc ? "text-violet-900" : "text-sky-900")}>
+        {noiTruoc ? (
+          <>
+            Ngày {ngay.ngay.slice(8, 10)}/{ngay.ngay.slice(5, 7)} — theo kinh nghiệm anh đoán thế nào?
+            {daCham?.forecast && (
+              <span className="ml-1 font-normal text-slate-600">(đã ghi bởi {daCham.forecastBy || "—"})</span>
+            )}
+          </>
+        ) : (
+          <>
+            Ngày {ngay.ngay.slice(8, 10)}/{ngay.ngay.slice(5, 7)} thực tế thế nào?
+            {daCham?.verdict && <span className="ml-1 font-normal text-slate-600">(đã chấm bởi {daCham.markedBy || "—"})</span>}
+          </>
+        )}
       </div>
+
+      {/**
+       * Nhắc lại DỰ BÁO ĐÃ GHI ngay lúc chấm thực tế: người chấm nhìn thấy hôm
+       * trước mình nghĩ gì, tự đối chiếu được. Đây cũng là chỗ máy lấy cặp
+       * (đoán · thật) để đo mình sai lệch ra sao.
+       */}
+      {!noiTruoc && daCham?.forecast && (
+        <div className="mt-0.5 text-[10px] text-slate-600">
+          Hôm trước anh đoán: <strong>{NHAN_KET[daCham.forecast]}</strong>
+          {daCham.forecastWindow ? ` (${daCham.forecastWindow})` : ""}
+          {daCham.forecastNote ? ` — “${daCham.forecastNote}”` : ""}
+        </div>
+      )}
+
       <div className="mt-1 flex flex-wrap gap-1">
         {nut.map((n) => (
           <button
             key={n.v}
             type="button"
             disabled={Boolean(dangLuu)}
-            onClick={() => void cham(n.v)}
+            onClick={() => void gui(n.v)}
             className={
               "rounded-lg border px-2 py-1 text-[11px] font-bold disabled:opacity-50 " +
-              (daCham?.verdict === n.v ? n.mau : "border-slate-300 bg-white text-slate-700")
+              (dangChon === n.v ? n.mau : "border-slate-300 bg-white text-slate-700")
             }
           >
             {dangLuu === n.v ? "…" : n.nhan}
           </button>
         ))}
+        {noiTruoc && (
+          <input
+            value={khung}
+            onChange={(e) => setKhung(e.target.value)}
+            placeholder="Khung giờ đẹp, vd 07:00-10:00"
+            className="h-7 w-[150px] rounded-lg border border-slate-300 px-2 text-[11px] outline-none focus:border-violet-500"
+          />
+        )}
         <input
           value={ghiChu}
           onChange={(e) => setGhiChu(e.target.value)}
-          placeholder="Ghi chú: gió xuôi sườn cả chiều, mây thấp…"
+          placeholder={noiTruoc ? "Vì sao anh đoán vậy: gió đông nam, mây cao…" : "Thực tế: gió xuôi sườn cả chiều, mây thấp…"}
           className="h-7 min-w-[180px] flex-1 rounded-lg border border-slate-300 px-2 text-[11px] outline-none focus:border-sky-500"
         />
       </div>
       {loi && <div className="mt-1 text-[11px] font-bold text-rose-700">{loi}</div>}
+      <div className="mt-1 text-[10px] text-slate-500">
+        {noiTruoc
+          ? "Anh đoán trước → qua ngày chấm lại thực tế. Máy giữ cả ba: máy đoán · anh đoán · thực tế, rồi tự đo mình lệch bao nhiêu và lệch về phía nào."
+          : "Chấm thực tế là dữ liệu học chắc nhất — máy dò lại ngưỡng gió của riêng điểm này từ đây."}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Ngày cũ giống ngày này                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * "NGÀY NHƯ THẾ NÀY, TRƯỚC ĐÂY BAY ĐƯỢC KHÔNG."
+ *
+ * Cách học hợp với dữ liệu ít và giải thích được: thay vì một con số máy tự
+ * tin, nó chìa ra mấy ngày cũ có số gần giống cùng kết quả thật và ghi chú của
+ * chính người chấm. Người đọc tự rút kết luận, và thấy rõ máy dựa vào đâu.
+ */
+function NgayGiongNhau({ ds }: { ds: NgayGiong[] }) {
+  if (!ds.length) return null;
+  const mau: Record<"tot" | "han-che" | "nghi", string> = {
+    tot: "bg-emerald-100 text-emerald-800",
+    "han-che": "bg-amber-100 text-amber-900",
+    nghi: "bg-rose-100 text-rose-800",
+  };
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
+      <div className="text-[11px] font-bold text-slate-700">📒 Ngày cũ giống ngày này</div>
+      <div className="mt-1 space-y-0.5">
+        {ds.map((n) => (
+          <div key={n.ngay} className="flex flex-wrap items-center gap-1 text-[10px] text-slate-600">
+            <span className="font-bold text-slate-800">
+              {n.ngay.slice(8, 10)}/{n.ngay.slice(5, 7)}
+            </span>
+            <span className={"rounded px-1 py-0.5 font-bold " + mau[n.ket]}>{NHAN_KET[n.ket]}</span>
+            <span>
+              gió {n.gioMax.toFixed(1)} · giật {n.giatMax.toFixed(1)} m/s
+              {n.muaTong > 0.1 ? ` · mưa ${n.muaTong.toFixed(1)}mm` : ""}
+            </span>
+            {n.ghiChu && <span className="italic">“{n.ghiChu}”</span>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -572,12 +694,14 @@ function ChamKinhNghiem({
 
 function HocDuoc({
   hoc,
+  chinhXac,
   nguong,
   spot,
   laQuanTri,
   taiLai,
 }: {
   hoc: DuLieuThoiTiet["hoc"];
+  chinhXac?: DoChinhXac;
   nguong: NguongBay;
   spot: string;
   laQuanTri?: boolean;
@@ -599,11 +723,16 @@ function HocDuoc({
     <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/60 px-2 py-1.5 text-[11px] text-violet-950">
       <div className="font-bold">
         🎓 Ngưỡng đang dùng: đẹp ≤ {nguong.gioXanh} · cấm &gt; {nguong.gioDo} m/s · giật &gt; {nguong.giatDo} m/s · mưa
-        &gt; {nguong.muaDo} mm · mù khi chân mây &lt; {nguong.chanMayDo}m
+        &gt; {nguong.muaDo} mm · mù khi trần mây &lt; {nguong.tranMayDo}m
       </div>
       {hoc.giaiThich.map((g, i) => (
         <div key={i} className="mt-0.5 leading-tight">
           • {g}
+        </div>
+      ))}
+      {chinhXac?.cau?.map((c, i) => (
+        <div key={`cx${i}`} className="mt-0.5 leading-tight font-semibold">
+          • {c}
         </div>
       ))}
       {hoc.du && laQuanTri && (
@@ -646,7 +775,7 @@ function CaiDatDiem({
     gioDo: String(nguong.gioDo),
     giatDo: String(nguong.giatDo),
     muaDo: String(nguong.muaDo),
-    chanMayDo: String(nguong.chanMayDo),
+    tranMayDo: String(nguong.tranMayDo),
   });
   const [dangLuu, setDangLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -666,7 +795,7 @@ function CaiDatDiem({
         gioDo: Number(f.gioDo),
         giatDo: Number(f.giatDo),
         muaDo: Number(f.muaDo),
-        chanMayDo: Number(f.chanMayDo),
+        tranMayDo: Number(f.tranMayDo),
       });
       xong();
     } catch (e: any) {
@@ -718,10 +847,10 @@ function CaiDatDiem({
         {o("gioDo", "Cấm khi > (m/s)")}
         {o("giatDo", "Giật cấm > (m/s)")}
         {o("muaDo", "Mưa cấm (mm)")}
-        {o("chanMayDo", "Mù khi chân mây < (m)")}
+        {o("tranMayDo", "Mù khi trần mây < (m)")}
       </div>
       <div className="mt-1 text-[10px] text-slate-500">
-        Gió tính bằng m/s như máy đo tại bãi (4 m/s ≈ 14 km/h · 7 m/s ≈ 25 km/h). Chân mây là độ cao mây trên bãi cất
+        Gió tính bằng m/s như máy đo tại bãi (4 m/s ≈ 14 km/h · 7 m/s ≈ 25 km/h). Trần mây là độ cao mây trên bãi cất
         cánh — thấp hơn mức này mà mây thấp dày thì máy chấm mù, không bay.
       </div>
 

@@ -19,7 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
-import { chanMay, chiSoBay } from "@/lib/baobay/thoi-tiet";
+import { tranMay, chiSoBay } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
 
@@ -214,11 +214,11 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
           {hang(
             t.cloudBase,
             (g) => {
-              const cm = chanMay(g.nhietDo, g.diemSuong);
+              const cm = tranMay(g.nhietDo, g.diemSuong);
               return cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}km` : `${cm}m`;
             },
             (g) => {
-              const cm = chanMay(g.nhietDo, g.diemSuong);
+              const cm = tranMay(g.nhietDo, g.diemSuong);
               return cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50
                 ? "bg-slate-300 font-bold text-slate-900"
                 : "text-slate-500";

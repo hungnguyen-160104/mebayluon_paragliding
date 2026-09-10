@@ -74,10 +74,10 @@ export type NguongBay = {
   /** Mưa trong giờ (mm) vượt mức này là cấm. */
   muaDo: number;
   /**
-   * Chân mây (m TRÊN bãi cất cánh) thấp hơn mức này là cấm: mây đã trùm bãi,
+   * Trần mây (m TRÊN bãi cất cánh) thấp hơn mức này là cấm: mây đã trùm bãi,
    * cất cánh vào trong mây thì không thấy sườn núi lẫn bãi đáp.
    */
-  chanMayDo: number;
+  tranMayDo: number;
 };
 
 /**
@@ -91,12 +91,12 @@ export type NguongBay = {
  * thì cánh nặng hơn, cất cánh chậm hơn, và người ngồi trước không biết cách
  * xử lý khi dù bị gấp. Đây chỉ là chỗ BẮT ĐẦU — số thật do chủ chấm dần.
  */
-export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 10, muaDo: 0.5, chanMayDo: 150 };
+export const NGUONG_MAC_DINH: NguongBay = { gioXanh: 4, gioDo: 7, giatDo: 10, muaDo: 0.5, tranMayDo: 150 };
 
 export function nguongCuaDiem(luu?: Partial<NguongBay> | null): NguongBay {
   const n = { ...NGUONG_MAC_DINH };
   if (!luu) return n;
-  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "chanMayDo"] as const) {
+  for (const k of ["gioXanh", "gioDo", "giatDo", "muaDo", "tranMayDo"] as const) {
     const v = Number(luu[k]);
     if (Number.isFinite(v) && v > 0) n[k] = v;
   }
@@ -120,14 +120,14 @@ export type GioThoiTiet = {
   mua: number;
   may: number;
   nhietDo: number;
-  /** Điểm sương (°C) — cùng với nhiệt độ suy ra chân mây, xem `chanMay()`. */
+  /** Điểm sương (°C) — cùng với nhiệt độ suy ra trần mây, xem `tranMay()`. */
   diemSuong?: number;
   /** Mây THẤP (%) — thứ trùm lên bãi cất cánh, khác mây tổng cộng. */
   mayThap?: number;
   /** Độ ẩm (%) — trên 97 kèm chênh nhiệt nhỏ là sương mù. */
   am?: number;
 
-  /* ---- Chỉ số đối lưu: sức bốc, độ ổn định, nguy cơ dông ---- */
+  /* ---- Chỉ số đối lưu: sức nâng, độ ổn định, nguy cơ dông ---- */
   /** CAPE (J/kg) — thế năng đối lưu: càng lớn không khí càng muốn bốc lên. */
   cape?: number;
   /**
@@ -152,7 +152,7 @@ export type SucThermal = "khong" | "nhe" | "vua" | "manh" | "gat";
 
 export type ChiSoBay = {
   /**
-   * SỨC BỐC trong ngày. Với bay đôi CHỞ KHÁCH thì "êm" mới là tốt: thermal vừa
+   * SỨC NÂNG trong ngày. Với bay đôi CHỞ KHÁCH thì "êm" mới là tốt: thermal vừa
    * đủ giúp kéo dài chuyến, còn thermal gắt làm dù xóc, khách say, và bãi đáp
    * nổi bụi gió xoáy. Ngược hẳn với bay solo đường dài — nên đừng đọc thang
    * này như thang của phi công thể thao.
@@ -255,7 +255,7 @@ export function huongChu(do_: number): string {
 }
 
 /**
- * CHÂN MÂY ước tính, mét TRÊN mặt đất — công thức phi công vẫn dùng ngoài bãi.
+ * TRẦN MÂY ước tính, mét TRÊN mặt đất — công thức phi công vẫn dùng ngoài bãi.
  *
  * Không khí bốc lên nguội đi khoảng 1°C mỗi 100m, còn điểm sương chỉ giảm
  * ~0,2°C, nên khoảng cách nhiệt độ và điểm sương khép lại sau chừng
@@ -266,7 +266,7 @@ export function huongChu(do_: number): string {
  * mây nằm ở độ cao nào. Ở núi, 80% mây nằm cao 2.000m là trời đẹp có bóng râm;
  * 80% mây nằm ở 100m là bãi cất cánh chìm trong sương, không thấy lối bay.
  */
-export function chanMay(nhietDo: number, diemSuong?: number): number | null {
+export function tranMay(nhietDo: number, diemSuong?: number): number | null {
   if (diemSuong === undefined || !Number.isFinite(diemSuong)) return null;
   return Math.max(0, Math.round((nhietDo - diemSuong) * 125));
 }
@@ -337,20 +337,20 @@ export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number,
    * sẵn một ô "hôm nay có mù không" để đọc, phải tự suy.
    *
    * Hai dấu hiệu, xét cùng lúc và phải cùng xuất hiện mới kết luận:
-   *  - CHÂN MÂY thấp hơn ngưỡng của điểm: mây nằm ngay trên hoặc dưới bãi.
+   *  - TRẦN MÂY thấp hơn ngưỡng của điểm: mây nằm ngay trên hoặc dưới bãi.
    *  - MÂY THẤP nhiều: có mây thật ở tầng đó, chứ không phải trời khô mà chênh
    *    nhiệt độ nhỏ.
    * Chỉ một trong hai thì chưa đủ: sáng sớm ở núi chênh nhiệt độ luôn nhỏ, bắt
-   * mình nó là ngày nào cũng đỏ; còn mây thấp 100% mà chân mây 1.500m là mây
+   * mình nó là ngày nào cũng đỏ; còn mây thấp 100% mà trần mây 1.500m là mây
    * lửng trên đầu, vẫn bay tốt.
    */
-  const cm = chanMay(g.nhietDo, g.diemSuong);
+  const cm = tranMay(g.nhietDo, g.diemSuong);
   const mayThap = g.mayThap ?? 0;
   if (cm !== null && mayThap >= 50) {
-    if (cm < nguong.chanMayDo) {
-      lyDo.push(`mù: mây trùm bãi (chân mây ~${cm}m, mây thấp ${Math.round(mayThap)}%)`);
+    if (cm < nguong.tranMayDo) {
+      lyDo.push(`mù: mây trùm bãi (trần mây ~${cm}m, mây thấp ${Math.round(mayThap)}%)`);
       len("do");
-    } else if (cm < nguong.chanMayDo * 2.5) {
+    } else if (cm < nguong.tranMayDo * 2.5) {
       lyDo.push(`mây thấp ~${cm}m — tầm nhìn hạn chế`);
       len("vang");
     }
@@ -431,7 +431,7 @@ export type NgayThoiTiet = {
   xacSuatMuaMax: number;
   /** Xác suất dông cao nhất trong khung giờ bay (%). */
   xacSuatDongMax: number;
-  /** Trần thermal cao nhất (m) — sức bốc của ngày. */
+  /** Trần thermal cao nhất (m) — sức nâng của ngày. */
   tranMax: number | null;
   gio: Array<GioThoiTiet & ChamGio>;
 };
@@ -501,6 +501,12 @@ export type LanCham = {
   gioMax: number;
   giatMax: number;
   muaTong: number;
+  /** Chủ dự báo TRƯỚC ngày đó thế nào (nếu có ghi). */
+  duBaoChu?: "tot" | "han-che" | "nghi";
+  /** Máy chấm ngày đó ra màu gì. */
+  mayCham?: MucDo;
+  /** Ghi chú của chủ — hiện lại khi gặp ngày có thời tiết tương tự. */
+  ghiChu?: string;
 };
 
 export type NguongHoc = {
@@ -526,6 +532,119 @@ export type NguongHoc = {
  *
  * KHÔNG tự áp: chỉ đề nghị. Đổi ngưỡng an toàn phải do người bấm.
  */
+/* ------------------------------------------------------------------ */
+/* Đối chiếu: máy đoán đúng bao nhiêu, chủ đoán đúng bao nhiêu           */
+/* ------------------------------------------------------------------ */
+
+export type DoChinhXac = {
+  /** Số ngày có đủ cặp để so. */
+  soNgay: number;
+  /** Phần trăm ngày máy chấm trùng thực tế. */
+  mayDung: number;
+  /** Phần trăm ngày chủ dự báo trùng thực tế (chỉ tính ngày chủ có dự báo trước). */
+  chuDung: number;
+  soNgayChuDuBao: number;
+  /**
+   * Máy lệch VỀ PHÍA NÀO: dương = máy khắt khe hơn chủ (máy cấm những ngày chủ
+   * vẫn bay), âm = máy dễ dãi hơn. Con số này quan trọng hơn tỉ lệ đúng: biết
+   * lệch phía nào thì biết nên nới hay siết ngưỡng.
+   */
+  mayKhatKheHon: number;
+  cau: string[];
+};
+
+/** Quy màu của máy về cùng thang ba mức với chủ, để so được với nhau. */
+function mucSangKet(m: MucDo): "tot" | "han-che" | "nghi" {
+  return m === "xanh" ? "tot" : m === "vang" ? "han-che" : "nghi";
+}
+
+const THU_TU: Record<"tot" | "han-che" | "nghi", number> = { tot: 0, "han-che": 1, nghi: 2 };
+
+/**
+ * MÁY ĐANG ĐỌC TRỜI GIỐNG CHỦ ĐẾN ĐÂU.
+ *
+ * Không chỉ đếm đúng/sai mà đo cả CHIỀU LỆCH. Một hệ cảnh báo lúc nào cũng
+ * khắt khe hơn người thật thì rồi sẽ bị bỏ qua hết, còn hệ dễ dãi hơn thì nguy
+ * hiểm — hai kiểu sai này phải chữa ngược nhau, nên phải phân biệt được.
+ */
+export function doChinhXac(cac: LanCham[]): DoChinhXac {
+  const coMay = cac.filter((c) => c.mayCham);
+  const coChu = cac.filter((c) => c.duBaoChu);
+  const cau: string[] = [];
+
+  const mayDung = coMay.length
+    ? Math.round((coMay.filter((c) => mucSangKet(c.mayCham!) === c.ket).length / coMay.length) * 100)
+    : 0;
+  const chuDung = coChu.length
+    ? Math.round((coChu.filter((c) => c.duBaoChu === c.ket).length / coChu.length) * 100)
+    : 0;
+
+  let lech = 0;
+  for (const c of coMay) lech += THU_TU[mucSangKet(c.mayCham!)] - THU_TU[c.ket];
+  const mayKhatKheHon = coMay.length ? Math.round((lech / coMay.length) * 100) / 100 : 0;
+
+  if (coMay.length) {
+    cau.push(`Máy chấm trùng thực tế ${mayDung}% trên ${coMay.length} ngày.`);
+    if (mayKhatKheHon > 0.25) cau.push("Máy đang KHẮT KHE hơn thực tế — cân nhắc nới ngưỡng gió lên.");
+    else if (mayKhatKheHon < -0.25) cau.push("Máy đang DỄ DÃI hơn thực tế — nên siết ngưỡng lại.");
+    else cau.push("Máy không thiên về bên nào — độ khắt khe đang vừa.");
+  }
+  if (coChu.length) {
+    cau.push(`Anh dự báo trước đúng ${chuDung}% trên ${coChu.length} ngày.`);
+  }
+
+  return { soNgay: coMay.length, mayDung, chuDung, soNgayChuDuBao: coChu.length, mayKhatKheHon, cau };
+}
+
+/* ------------------------------------------------------------------ */
+/* Tìm ngày cũ giống hệt ngày sắp tới                                   */
+/* ------------------------------------------------------------------ */
+
+export type NgayGiong = {
+  ngay: string;
+  ket: "tot" | "han-che" | "nghi";
+  ghiChu?: string;
+  gioMax: number;
+  giatMax: number;
+  muaTong: number;
+  /** Khác nhau bao nhiêu — càng nhỏ càng giống. */
+  khoangCach: number;
+};
+
+/**
+ * NHỮNG NGÀY CŨ CÓ SỐ GIỐNG NGÀY ĐANG XEM.
+ *
+ * Đây là cách học hợp với dữ liệu ÍT — vài chục ngày là dùng được, trong khi
+ * mọi mô hình huấn luyện tử tế đều cần hàng nghìn. Và nó GIẢI THÍCH ĐƯỢC: thay
+ * vì "máy nghĩ 73%", nó nói "ba ngày giống thế này thì hai ngày bay tốt, một
+ * ngày nghỉ — hôm ấy anh ghi: gió xuôi sườn từ trưa". Người đọc tự quyết được,
+ * và tự thấy máy dựa vào đâu.
+ *
+ * Khoảng cách chuẩn hoá theo thang thực tế của từng đại lượng: gió lệch 1 m/s
+ * đáng kể ngang mưa lệch 3mm, nên chia mỗi thứ cho biên độ riêng trước khi cộng.
+ */
+export function ngayGiongNhau(
+  ngay: { gioMax: number; giatMax: number; muaTong: number },
+  kho: LanCham[],
+  soLuong = 3,
+): NgayGiong[] {
+  return kho
+    .map((c) => ({
+      ngay: c.ngay,
+      ket: c.ket,
+      ghiChu: c.ghiChu,
+      gioMax: c.gioMax,
+      giatMax: c.giatMax,
+      muaTong: c.muaTong,
+      khoangCach:
+        Math.abs(c.gioMax - ngay.gioMax) / 3 +
+        Math.abs(c.giatMax - ngay.giatMax) / 5 +
+        Math.abs(c.muaTong - ngay.muaTong) / 10,
+    }))
+    .sort((a, b) => a.khoangCach - b.khoangCach)
+    .slice(0, soLuong);
+}
+
 export function hocNguong(cac: LanCham[], toiThieu = 8): NguongHoc {
   const sach = cac.filter((c) => Number.isFinite(c.gioMax) && Number.isFinite(c.giatMax));
   if (sach.length < toiThieu) {

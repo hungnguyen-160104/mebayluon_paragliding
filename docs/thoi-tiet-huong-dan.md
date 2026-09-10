@@ -107,7 +107,7 @@ Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặn
 | Gió trung bình | > ngưỡng đẹp | > ngưỡng cấm |
 | Gió giật | > 80% ngưỡng giật | > ngưỡng giật |
 | **Gió rối** (giật trừ trung bình) | chênh > 4 m/s | chênh > 7 m/s và giật đã qua 70% ngưỡng |
-| **Mù / mây thấp** | chân mây < 2,5× ngưỡng, mây thấp ≥ 50% | chân mây < ngưỡng và mây thấp ≥ 50%; hoặc ẩm ≥ 98% với chân mây < 100 m |
+| **Mù / mây thấp** | trần mây < 2,5× ngưỡng, mây thấp ≥ 50% | trần mây < ngưỡng và mây thấp ≥ 50%; hoặc ẩm ≥ 98% với trần mây < 100 m |
 | Mưa | lác đác > 0,1 mm, hoặc khả năng mưa ≥ 70% | > ngưỡng mưa |
 | **Dông** | 20–39% | ≥ 40% |
 | **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
@@ -115,11 +115,11 @@ Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặn
 
 Ba khái niệm mới, giải thích ngắn:
 
-- **Chân mây** = độ cao đáy mây tính từ bãi cất cánh, suy từ chênh lệch nhiệt
+- **Trần mây** = độ cao đáy mây tính từ bãi cất cánh, suy từ chênh lệch nhiệt
   độ và điểm sương (khoảng 125 m cho mỗi 1°C chênh). Mô hình chỉ nói *bao nhiêu
   phần trăm mây*, không nói mây ở độ cao nào — mà 80% mây ở 2.000 m là trời đẹp
   có bóng râm, còn 80% mây ở 100 m là bãi chìm trong sương. Phải có **cả hai**
-  điều kiện (chân mây thấp **và** mây thấp dày) mới chấm mù: sáng sớm ở núi
+  điều kiện (trần mây thấp **và** mây thấp dày) mới chấm mù: sáng sớm ở núi
   chênh nhiệt độ luôn nhỏ, bắt mình nó thì ngày nào cũng đỏ.
 
 - **Dông** ghép từ hai số: **CAPE** (bao nhiêu "nhiên liệu" cho đối lưu) và
@@ -129,7 +129,7 @@ Ba khái niệm mới, giải thích ngắn:
   gió đổ xuống đã quét qua bãi làm gió đảo chiều và mạnh gấp mấy lần trong vài
   phút.
 
-- **Sức bốc (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
+- **Sức nâng (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
   ngày. Với bay đôi chở khách thì **êm mới là tốt**: thermal vừa đủ kéo dài
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
@@ -177,13 +177,44 @@ lấy tâm huyện.
 **Gió tính bằng m/s** — đúng đơn vị máy đo gió ở bãi, khỏi phải nhẩm đổi.
 
 Ngưỡng khởi điểm (bay đôi chở khách): đẹp ≤ 4 m/s · cấm > 7 m/s · giật cấm
-> 10 m/s · mưa cấm > 0,5 mm · mù khi chân mây < 150 m.
+> 10 m/s · mưa cấm > 0,5 mm · mù khi trần mây < 150 m.
 (Quy đổi cho dễ hình dung: 4 m/s ≈ 14 km/h · 7 m/s ≈ 25 km/h · 10 m/s ≈ 36 km/h.)
 
-Mỗi ngày đã qua, vào `/baocao/thoi-tiet` chấm **Bay tốt / Hạn chế / Nghỉ**. Máy
-chụp lại số của đúng ngày đó; từ **8 ngày** trở lên nó dò mốc gió chia đúng
-nhất giữa ngày bay và ngày nghỉ rồi đề nghị. **Máy chỉ đề nghị — người bấm áp
-dụng.**
+### Ba cách dạy máy, làm cùng lúc
+
+**1. Dự báo TRƯỚC (quan trọng nhất).** Bấm vào một ngày *sắp tới* trên dải 5
+ngày → ô tím hiện ra: chọn **Bay tốt / Hạn chế / Nghỉ**, ghi khung giờ đẹp anh
+nghĩ (vd `07:00-10:00`) và **lý do** (“gió đông nam, mây cao, chiều thường
+lên”). Máy chụp lại luôn màu nó đang chấm ngày ấy.
+
+Đây là chỗ máy học nghề nhanh nhất: chấm sau chỉ nói *hôm ấy bay hay nghỉ*, còn
+dự báo trước nói **anh đọc trời thế nào khi mới có mỗi con số** — đúng việc máy
+đang phải làm.
+
+**2. Chấm THỰC TẾ sau khi qua ngày.** Ô xanh, cùng ba nút, kèm ghi chú thực tế.
+Lúc này màn hình nhắc lại dự báo anh ghi hôm trước để tự đối chiếu.
+
+**3. Máy tự đo mình.** Có đủ ba con số của cùng một ngày (máy đoán · anh đoán ·
+thực tế), máy tính và hiện trong khối tím 🎓:
+
+- *“Máy chấm trùng thực tế 78% trên 23 ngày.”*
+- *“Anh dự báo trước đúng 91% trên 11 ngày.”*
+- **Chiều lệch** — quan trọng hơn tỉ lệ đúng: *“Máy đang KHẮT KHE hơn thực tế —
+  cân nhắc nới ngưỡng gió lên”* hoặc *“Máy đang DỄ DÃI hơn — nên siết lại”*.
+  Một hệ cảnh báo lúc nào cũng khắt khe hơn người thật thì rồi bị bỏ qua hết;
+  dễ dãi hơn thì nguy hiểm. Hai kiểu sai chữa ngược nhau nên phải phân biệt.
+
+### Máy dùng kinh nghiệm ấy vào việc gì
+
+- **Dò lại ngưỡng gió** của riêng điểm: từ **8 ngày** chấm thực tế trở lên, máy
+  quét mốc 1–20 m/s (bước nửa m/s) tìm mốc chia đúng nhất giữa ngày anh bay và
+  ngày anh nghỉ, rồi đề nghị. **Máy chỉ đề nghị — người bấm áp dụng.**
+- **“Ngày cũ giống ngày này”**: từ **5 ngày** trở lên, mỗi ngày trên dải 5 ngày
+  được đối chiếu với kho ngày cũ, hiện ba ngày có số gần giống nhất kèm kết quả
+  thật và ghi chú của chính anh — *“12/08 · nghỉ bay · gió 5,5 giật 9,0 m/s —
+  ‘gió xuôi sườn từ trưa’”*. Cách học này hợp với dữ liệu ít (vài chục ngày là
+  dùng được, trong khi mô hình huấn luyện tử tế cần hàng nghìn) và **giải thích
+  được**: máy chìa ra bằng chứng chứ không phán một con số.
 
 Ngưỡng của ba điểm có sổ được dùng luôn cho trang khách, nên càng chấm nhiều
 thì màu khách nhìn thấy càng giống cách chủ điểm thật sự quyết định.
