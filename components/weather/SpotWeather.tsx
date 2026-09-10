@@ -75,6 +75,8 @@ type Ngay = {
   tranMax: number | null;
   gio: Gio[];
   nhanDinh?: unknown;
+  /** Điểm 0–100 của chuyên gia — { diem, xepLoai, doTinCay, khungTotNhat }. */
+  chuyenGia?: { diem: number; xepLoai: string; doTinCay: number; khungTotNhat: string | null };
 };
 
 export type DiemDuBao = {
@@ -176,6 +178,13 @@ function DaiNgay({
             </div>
             {n.xacSuatMuaMax >= 50 && <div className="text-[10px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
             {n.xacSuatDongMax >= 20 && <div className="text-[10px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
+            {/* Điểm 0–100 của chuyên gia: một con số để so ngày này với ngày kia. */}
+            {n.chuyenGia && (
+              <div className="mt-0.5 text-[10px] font-black leading-tight" title={`${t.score} ${n.chuyenGia.diem}/100`}>
+                {n.chuyenGia.diem}
+                <span className="font-normal opacity-60">/100</span>
+              </div>
+            )}
           </>
         );
         const lop =

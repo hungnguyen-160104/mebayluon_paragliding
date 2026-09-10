@@ -12,6 +12,7 @@ import { useState } from "react";
 
 import type { NgayThoiTiet } from "@/lib/baobay/thoi-tiet";
 import { nhanMucNhanDinh, type MucNhanDinh, type NhanDinhNgay } from "@/lib/baobay/nhan-dinh";
+import { NHAN_XEP_LOAI, type DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
 
 const MAU_MUC: Record<MucNhanDinh, string> = {
   tot: "border-emerald-300 bg-emerald-50 text-emerald-900",
@@ -30,6 +31,7 @@ const MAU_TONG: Record<"tot" | "chuY" | "xau" | "thongTin", string> = {
 export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon?: boolean }) {
   const [mo, setMo] = useState(!gon);
   const nd = ngay.nhanDinh as NhanDinhNgay | undefined;
+  const cg = ngay.chuyenGia as DanhGiaNgay | undefined;
   if (!nd) return null;
 
   const tieuDe = `${ngay.ngay.slice(8, 10)}/${ngay.ngay.slice(5, 7)}`;
@@ -45,6 +47,16 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
         <span className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-black tracking-wide ring-1 ring-current/30">
           {nhanMucNhanDinh(nd.muc)}
         </span>
+        {/* Điểm chuyên gia — cùng một ngày có hai thước: chữ (nhận định) và số (0–100). */}
+        {cg && (
+          <span
+            className="shrink-0 rounded bg-white/70 px-1.5 py-0.5 text-[11px] font-black ring-1 ring-current/20"
+            title={`${NHAN_XEP_LOAI[cg.xepLoai]} · ${cg.gioBayDuoc} giờ bay được${cg.khungTotNhat ? ` · đẹp nhất ${cg.khungTotNhat}` : ""} · tin cậy ${cg.doTinCay}%: ${cg.lyDoTinCay.join("; ")}`}
+          >
+            {cg.diem}<span className="font-normal opacity-60">/100</span>
+            <span className="ml-1 font-semibold opacity-70">tin cậy {cg.doTinCay}%</span>
+          </span>
+        )}
         <span className="min-w-0 flex-1 text-[12px] font-semibold leading-snug">
           <span className="opacity-70">{tieuDe} · </span>
           {nd.tomTat.replace(/^[^—]*— /, "")}

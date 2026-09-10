@@ -728,6 +728,8 @@ export type NgayThoiTiet = {
    * `nhan-dinh.ts`; nơi dùng ép về `NhanDinhNgay`.
    */
   nhanDinh?: unknown;
+  /** Điểm điều kiện bay 0–100 của chuyên gia (lib/baobay/chuyen-gia.ts) — gắn ở service. */
+  chuyenGia?: unknown;
 };
 
 /**

@@ -36,6 +36,7 @@ import { spotName } from "@/lib/baobay/spots";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
+import type { DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { WindArrow } from "@/components/weather/WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
 
@@ -304,6 +305,16 @@ export function ThoiTietCard({
               </div>
               {n.xacSuatMuaMax >= 50 && <div className="text-[9px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
               {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
+              {/* Điểm chuyên gia 0–100 — con số để so ngày với ngày, mô hình với mô hình. */}
+              {(() => {
+                const cg = n.chuyenGia as DanhGiaNgay | undefined;
+                return cg ? (
+                  <div className="text-[10px] font-black leading-tight" title={`Điểm điều kiện bay ${cg.diem}/100 · tin cậy ${cg.doTinCay}%`}>
+                    {cg.diem}
+                    <span className="font-normal opacity-60">/100</span>
+                  </div>
+                ) : null;
+              })()}
               {daCham && (
                 <div className="text-[9px] font-bold leading-tight" title={`Đã chấm: ${daCham.note || "—"}`}>
                   ✓ đã chấm
@@ -471,6 +482,38 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
               </td>
             ))}
           </tr>
+          {/**
+           * ĐIỂM 0–100 từng giờ của chuyên gia. Hàng "Bay?" là luật cấm (được
+           * phép hay không); hàng này là chất lượng (bay có ĐẸP không). Hai giờ
+           * cùng ✔ có thể là 95 và 58 — khách nên hẹn giờ nào, hàng này trả lời.
+           */}
+          {(() => {
+            const cg = ngay.chuyenGia as DanhGiaNgay | undefined;
+            if (!cg) return null;
+            const diemCua = (t: string) => cg.gio.find((x) => x.gio === t);
+            return (
+              <tr>
+                <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Điểm điều kiện bay 0–100: ≥75 tốt · 55–74 khá · 35–54 hạn chế · <35 không bay">
+                  Điểm
+                </th>
+                {gio.map((g) => {
+                  const d = diemCua(g.gio);
+                  const v = d?.diem;
+                  const mau =
+                    v === undefined ? "text-slate-300" : v >= 75 ? "text-emerald-700 font-bold" : v >= 55 ? "text-sky-700 font-bold" : v >= 35 ? "text-amber-700" : "text-rose-700 font-bold";
+                  return (
+                    <td
+                      key={g.gio}
+                      className={"border-b border-slate-200 px-0.5 py-0.5 " + mau}
+                      title={d ? [...d.nguyHiem, ...d.thanhPhan.map((t) => `${t.ten}: ${t.diem} (${t.ghiChu})`)].join(" · ") : undefined}
+                    >
+                      {v ?? "–"}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })()}
           <tr>
             <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Giật</th>
             {gio.map((g) => (

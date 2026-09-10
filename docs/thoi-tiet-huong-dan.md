@@ -249,6 +249,50 @@ Trên trang khách, khối này **mới có bản tiếng Việt** (câu chữ s
 liệu, dịch sáu thứ tiếng là việc riêng); khách nước ngoài vẫn đọc được màu và
 bảng giờ. Trang điều phối hiện một dòng, bấm mới xổ chi tiết.
 
+## 5e. Chuyên gia khí tượng — ĐIỂM ĐIỀU KIỆN BAY 0–100
+
+Ba thước trên cùng một ngày, mỗi thước trả lời một câu khác:
+
+| Thước | Trả lời | Ở đâu |
+|---|---|---|
+| Màu ✔ ⚠ ✕ (`chamGio`) | **được phép bay không** — luật cấm, một thứ quá ngưỡng là đỏ | hàng Bay? |
+| Nhận định (`nhanDinhNgay`) | **ngày kiểu gì, nên làm gì** — câu chữ cho người đọc | khối trên thẻ |
+| Điểm 0–100 (`chuyen-gia.ts`) | **bay có ĐẸP không, đẹp cỡ nào** — con số để so ngày với ngày, mô hình với mô hình, và đối chiếu với chấm thực tế | huy hiệu trên khối nhận định, ô ngày, hàng Điểm |
+
+**Cách chấm một giờ** — 7 yếu tố, mỗi yếu tố 0–100 theo đường cong của bay đôi
+chở khách (không phải bay thể thao), nhân trọng số rồi cộng:
+
+| Yếu tố | Trọng số | Đường cong (điểm theo số đo) |
+|---|---|---|
+| Gió mặt đất | 25 | 0 m/s → 65 · 1,5–4 → 100 · 6 → 55 · ngưỡng cấm → 25 · quá → 0. **Thuận sườn** thì 4–6 m/s vẫn 85–100 |
+| Gió giật | 10 | ≤ 6 → 100 · 10 → 92 · 14 → 75 · 18 → 30 · quá 18 → 0. **Hệ số giật** > 3× kèm giật ≥ 8: −15 ("từng đợt") |
+| Hướng gió | 15 | thuận sườn 100 · chéo sườn 55 · chưa khai luật 80 · **ngược sườn / gió xiết 0** |
+| Gió trên cao | 15 | mực 500m trên bãi: ≤ 5 → 100 · 8 → 65 · 12 → 15 · 14 → 0. **Cắt gió** (mặt đất lặng, 300m có gió): −20 |
+| Thermal / ổn định | 10 | trần 500–1500 m → 100 · 300 → 70 · 2200 → 65 · 3000 → 40. LI ≤ −2: −20 · ≤ −4: −35 · ≥ 6: −10 |
+| Trần mây / mù | 10 | trời quang 100 · mây thấp dày: trần < 150 m → 0 · 300 → 45 · 500 → 75 · 800 → 100 · **sương mù 0** |
+| Mưa / dông | 15 | không → 100 · lác đác 70 · khả năng ≥ 75% → 60 · mưa quá ngưỡng 0 · dông 20–39% → 50 · **≥ 40% → 0** |
+
+**Trần nguy hiểm**: yếu tố nào chạm mức cấm (in đậm ở bảng) thì điểm cả giờ
+**không vượt quá 20**, bất kể các yếu tố khác đẹp tới đâu. Trung bình có trọng số
+đơn thuần sẽ cho "gió 10 m/s nhưng nắng đẹp" ra 60 điểm — vô nghĩa và nguy hiểm.
+
+**Điểm ngày** = trung bình của (khung 3 giờ đẹp nhất, trung bình cả khung 7–17h),
+rồi **áp trần theo số giờ bay được** (giờ ≥ 55 điểm): ≤ 3 giờ → tối đa 69 (KHÁ),
+≤ 5 giờ → tối đa 84. Lấy riêng khung đẹp nhất thì ngày "sáng đẹp, mưa từ trưa"
+ra 90 TỐT — đứng cạnh câu nhận định "HẠN CHẾ, mưa 07–16h" là hai thứ cãi nhau.
+
+Xếp loại: **≥ 75 TỐT · 55–74 KHÁ · 35–54 HẠN CHẾ · < 35 KHÔNG BAY**.
+
+**Độ tin cậy** (0–100) trừ dần theo: dự báo xa (trước 3 ngày −15, 6 ngày −40),
+thiếu dữ liệu tầng cao / chỉ số ổn định / điểm sương (−10 mỗi thứ), áp suất tụt
+≥ 3 hPa so hôm trước (−15, thời tiết đang chuyển), trong ngày đẹp xen xấu chênh
+≥ 60 điểm (−10, khó đoán giờ). Rê chuột vào huy hiệu để xem lý do.
+
+Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — cắt gió (300m: 6,1, đất:
+0,8)") — người đọc kiểm được, và chỗ máy sai lộ ra ngay. Đường cong viết thành
+bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
+chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.
+
 ## 5c. Hai mô hình chạy song song
 
 - **ECMWF** (qua Open-Meteo) cho gió, mưa, mây, điểm sương, CAPE.

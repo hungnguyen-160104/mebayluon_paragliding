@@ -42,6 +42,7 @@ import {
   type ToaDoDiemBay,
 } from "@/lib/baobay/thoi-tiet";
 import { nhanDinhNgay } from "@/lib/baobay/nhan-dinh";
+import { danhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { moHinhTheoMa, MO_HINH_MAC_DINH, type MoHinh } from "@/lib/baobay/mo-hinh";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
@@ -424,6 +425,8 @@ async function layVaCham(
    */
   ngay.forEach((n, i) => {
     n.nhanDinh = nhanDinhNgay(n, { ngayTruoc: i > 0 ? ngay[i - 1] : null, altBai: toaDo.alt, luatHuong: toaDo.luatHuong });
+    /** Điểm 0–100 của chuyên gia — cùng dữ liệu, cùng luật hướng và ngưỡng của điểm. */
+    n.chuyenGia = danhGiaNgay(n, nguong, { luatHuong: toaDo.luatHuong, altBai: toaDo.alt, thuTu: i, ngayTruoc: i > 0 ? ngay[i - 1] : null });
   });
   return { ngay, moHinh };
 }
