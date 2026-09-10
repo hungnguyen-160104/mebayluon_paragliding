@@ -5292,24 +5292,60 @@ export function BookingTodayBanner({
     </div>
     </PanelGroup>
   );
+  /**
+   * ĐẾM SỐ NÚT sẽ hiện ngoài thẻ — để chia lưới cho cân.
+   *
+   * Đếm bằng chính điều kiện đang dựng nút chứ không đếm phần tử React: mấy
+   * nút này nằm trong fragment, có cái là component tự quyết hiện gì, nên đọc
+   * ngược ra số lượng vừa mong manh vừa dễ sai khi thêm nút mới.
+   */
+  const soNutMo = (b: BookingDTO): number => {
+    if (b.locked && !canLock) return (canLock ? 1 : 0) + 1;
+    /** in vé · đã bay · đã LH · chi tiết · ⋯ Thêm, cộng Thu tiền khi còn phải thu. */
+    return 5 + (moneyOutside(b) ? 1 : 0);
+  };
+
   /** Ruột cụm nút của thẻ: hộp dời lịch ⇄ (khoá ‖ 4 nút nhanh + ⋯ Thêm). */
-  const renderOpenActions = (b: BookingDTO) => (
-    <>
+  const renderOpenActions = (b: BookingDTO) => {
+    /**
+     * CHIA LƯỚI CHO CÂN, không thả cho tự xuống dòng.
+     *
+     * Thả flex thì bề rộng chữ quyết định chỗ ngắt: năm nút thành 4 + 1, hàng
+     * dưới trơ một nút lệch hẳn sang phải — đúng thứ đang thấy trên sổ. Chia
+     * theo SỐ NÚT thì luôn cân: 5 nút → 3 + 2, 6 nút → 3 + 3, 4 nút → 2 + 2,
+     * còn ba nút trở xuống thì một hàng là vừa.
+     */
+    const n = soNutMo(b);
+    /**
+     * Tên lớp phải VIẾT NGUYÊN, không ghép chuỗi: Tailwind quét mã nguồn để
+     * sinh CSS, `grid-cols-${n}` thì nó không thấy và lớp ấy không tồn tại —
+     * lưới im lặng rơi về một cột.
+     */
+    const cot = n >= 5 ? "grid-cols-3" : n === 4 ? "grid-cols-2" : n === 3 ? "grid-cols-3" : n === 2 ? "grid-cols-2" : "grid-cols-1";
+    return (
+      <>
             {moving?.id === b.id ? (
               renderMovingDialog(b)
             ) : (
               /* CÙNG bộ nút với dòng bảng (renderOpenQuick); đã khoá mà không
                  phải kế toán thì chỉ còn nút mở khoá, không có ⋯ Thêm. */
-              /* Nút CO THEO CHỮ, không cần đều nhau (luật chủ 05/09), gói trong bề
-                 ngang ~330px nên tự xuống 2 hàng; bảng thu tiền / menu Thêm mở ra là
-                 div → chiếm trọn hàng. */
-              <div className="float-right ml-2 flex max-w-[330px] flex-wrap justify-end gap-1 [&>button]:h-6 [&>button]:whitespace-nowrap [&>button]:px-1.5 [&>button]:text-[11px] [&>div]:basis-full">
+              /* Ô lưới kéo nút bằng nhau nên bỏ `whitespace-nowrap`: nhãn dài
+                 ("☎ Đã LH by T.Ngọc") bẻ xuống dòng trong nút, thà cao thêm
+                 vài pixel còn hơn tràn ra ngoài viền. Bảng thu tiền / menu Thêm
+                 mở ra là div → chiếm trọn hàng lưới. */
+              <div
+                className={
+                  "float-right ml-2 grid w-[340px] max-w-full gap-1 [&>button]:h-auto [&>button]:min-h-6 [&>button]:px-1.5 [&>button]:text-[11px] [&>button]:leading-tight [&>div]:col-span-full " +
+                  cot
+                }
+              >
                 {renderOpenQuick(b)}
                 {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
             )}
-    </>
-  );
+      </>
+    );
+  };
   /**
    * Cụm nút của THẺ booking ĐÃ ĐÓNG (đã bay/huỷ) — CÙNG thứ tự, loại nút và
    * luật với dòng BẢNG (luật chủ 04/09): cột nổi phải gồm ↩ Chưa bay ĐỎ + Khoá
