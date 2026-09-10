@@ -81,6 +81,16 @@ export interface IHomestayBooking {
    */
   otaLockedAt?: Date;
   otaLockedBy?: string;
+  /**
+   * ĐÃ LIÊN HỆ KHÁCH ĐẶT CỌC chưa — chỉ có nghĩa với đơn khách tự đặt trên web.
+   *
+   * Khách OTA đã trả tiền cho sàn, không cần cọc. Khách web thì mới chỉ điền
+   * form: chưa cọc là chưa chắc tới, mà phòng đã bị giữ. Nên đơn web nào cũng
+   * phải có người gọi/nhắn xin cọc trong ngày — cờ này là cái nhắc, bấm "đã
+   * liên hệ" mới thôi hiện.
+   */
+  depositContactedAt?: Date;
+  depositContactedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -114,6 +124,8 @@ const HomestayBookingSchema = new Schema<IHomestayBooking>(
     status: { type: String, enum: ["confirmed", "cancelled", "review"], default: "confirmed", index: true },
     otaLockedAt: Date,
     otaLockedBy: String,
+    depositContactedAt: Date,
+    depositContactedBy: String,
     reviewReason: String,
     raw: String,
 

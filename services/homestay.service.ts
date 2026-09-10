@@ -61,6 +61,9 @@ export type HomestayBookingDTO = {
   /** Đã đóng phòng trên các trang OTA cho đơn này chưa — "" là CHƯA, cần nhắc. */
   otaLockedAt: string;
   otaLockedBy: string;
+  /** Đã liên hệ khách web xin cọc chưa — "" là CHƯA (chỉ đơn web mới cần). */
+  depositContactedAt: string;
+  depositContactedBy: string;
 };
 
 export type HomestayBoard = {
@@ -103,6 +106,8 @@ function toDTO(d: any): HomestayBookingDTO {
     cancelledBy: d.cancelledBy || undefined,
     otaLockedAt: d.otaLockedAt ? new Date(d.otaLockedAt).toISOString() : "",
     otaLockedBy: d.otaLockedBy || "",
+    depositContactedAt: d.depositContactedAt ? new Date(d.depositContactedAt).toISOString() : "",
+    depositContactedBy: d.depositContactedBy || "",
     cancelReason: d.cancelReason || undefined,
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
   };
@@ -521,7 +526,20 @@ export async function createManualHomestayBooking(
 export async function actHomestayBooking(
   session: BaobaySession,
   id: string,
-  action: "assign-room" | "cancel" | "restore" | "confirm-review" | "collect" | "note" | "rename" | "quick-edit" | "delete" | "ota-lock" | "ota-unlock",
+  action:
+    | "assign-room"
+    | "cancel"
+    | "restore"
+    | "confirm-review"
+    | "collect"
+    | "note"
+    | "rename"
+    | "quick-edit"
+    | "delete"
+    | "ota-lock"
+    | "ota-unlock"
+    | "deposit-contacted"
+    | "deposit-uncontact",
   payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string; phone?: string },
 ): Promise<void> {
   await connectDB();
@@ -550,6 +568,21 @@ export async function actHomestayBooking(
      * nhiều bản ghi chung ref, người ta đóng OTA cho cả đơn một lượt.
      */
     const who = action === "ota-lock" ? { otaLockedAt: new Date(), otaLockedBy: session.name || session.username } : { otaLockedAt: null, otaLockedBy: "" };
+    if (doc.ref) {
+      await HomestayBooking.updateMany({ ref: doc.ref }, { $set: who });
+    } else {
+      await HomestayBooking.updateOne({ _id: doc._id }, { $set: who });
+    }
+    return;
+  } else if (action === "deposit-contacted" || action === "deposit-uncontact") {
+    /**
+     * "Đã liên hệ khách xin cọc" — dấu NHẮC như ota-lock, và cũng theo MÃ ĐƠN:
+     * một đơn nhiều hạng phòng thì gọi khách một lần, không phải mỗi dòng một cuộc.
+     */
+    const who =
+      action === "deposit-contacted"
+        ? { depositContactedAt: new Date(), depositContactedBy: session.name || session.username }
+        : { depositContactedAt: null, depositContactedBy: "" };
     if (doc.ref) {
       await HomestayBooking.updateMany({ ref: doc.ref }, { $set: who });
     } else {

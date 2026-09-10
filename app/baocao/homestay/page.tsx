@@ -75,7 +75,24 @@ type BookingDTO = {
   /** Đã đóng phòng trên các OTA chưa — "" là CHƯA, phải nhắc. */
   otaLockedAt?: string;
   otaLockedBy?: string;
+  /** Đã liên hệ khách web xin cọc chưa — chỉ đơn web mới cần. */
+  depositContactedAt?: string;
+  depositContactedBy?: string;
 };
+
+/**
+ * CÁC SÀN OTA nhà đang bán phòng — để nhắc "khoá trên NHỮNG SÀN KHÁC".
+ *
+ * Đơn về từ Agoda thì Agoda đã tự trừ phòng, việc còn lại là vào Booking, Trip…
+ * đóng tay. Nhắc chung chung "khoá OTA" thì người mới không biết vào đâu; ghi
+ * đích danh sàn phải vào thì làm được ngay, và bỏ sót là thấy.
+ */
+const OTA_KENH = ["agoda", "booking", "trip", "airbnb", "traveloka", "klook"] as const;
+function kenhPhaiKhoa(source: string): string[] {
+  return OTA_KENH.filter((k) => k !== source).map((k) => SOURCE_BADGE[k]?.label ?? k);
+}
+/** Khách web mới chỉ điền form — phải gọi xin cọc; khách OTA đã trả sàn, không cần. */
+const canCoc = (b: BookingDTO) => b.source === "web";
 
 type Overview = {
   board: { dates: string[]; rooms: Array<{ id: string; units: number; free: number[] }> };
@@ -511,60 +528,103 @@ export default function HomestayPage() {
       />
 
       {/**
-       * NHẮC KHOÁ PHÒNG TRÊN OTA.
+       * ĐƠN MỚI — VIỆC PHẢI LÀM (luật chủ 10/09).
        *
-       * Nhà bán phòng trên nhiều kênh (Agoda, Booking, Trip…) mà không có
-       * channel manager: mỗi đơn mới về là NGƯỜI phải vào từng trang OTA đóng
-       * phòng bằng tay, quên là hai khách trùng một giường — đã xảy ra. App
-       * không tự đóng hộ được, nên việc của nó là KHÔNG CHO QUÊN: đơn nào chưa
-       * bấm "Đã khoá" thì nằm lì trong khối đỏ này, đập vào mắt mỗi lần mở
-       * trang, cho tới khi có người đóng OTA thật rồi bấm xác nhận.
+       * Mỗi đơn mới về kéo theo hai việc mà app không tự làm hộ được, chỉ NHẮC
+       * cho tới khi có người bấm xác nhận:
+       *  1. LIÊN HỆ KHÁCH ĐẶT CỌC — chỉ đơn khách tự đặt trên web. Khách OTA
+       *     đã trả tiền cho sàn; khách web mới chỉ điền form, chưa cọc là chưa
+       *     chắc tới mà phòng đã bị giữ.
+       *  2. KHOÁ PHÒNG TRÊN CÁC SÀN KHÁC — nhà bán trên nhiều kênh mà không
+       *     nối channel manager: đơn Agoda về thì phải vào Booking, Trip… đóng
+       *     tay, quên là hai khách trùng một giường (đã xảy ra). Ghi đích danh
+       *     sàn phải vào, không nói chung chung.
        *
-       * Chỉ nhắc đơn còn hiệu lực và CHƯA trả phòng — đơn huỷ hay đã ở xong
-       * thì đóng OTA cũng chẳng để làm gì.
+       * Đơn nằm lì trong khối đỏ này cho tới khi xong cả hai việc áp dụng cho
+       * nó. Chỉ nhắc đơn còn hiệu lực và chưa trả phòng.
        */}
       {(() => {
-        const canLock = bookings.filter(
-          (b) => b.status === "confirmed" && !b.otaLockedAt && b.checkOut >= today,
+        const moi = bookings.filter(
+          (b) => b.status === "confirmed" && b.checkOut >= today && (!b.otaLockedAt || (canCoc(b) && !b.depositContactedAt)),
         );
-        /** Mỗi MÃ ĐƠN một dòng — đơn nhiều hạng phòng đóng OTA một lượt. */
+        /** Mỗi MÃ ĐƠN một dòng — đơn nhiều hạng phòng gọi khách và đóng OTA một lượt. */
         const seen = new Set<string>();
-        const rows = canLock.filter((b) => {
+        const rows = moi.filter((b) => {
           const k = b.ref || b.id;
           if (seen.has(k)) return false;
           seen.add(k);
           return true;
         });
         if (rows.length === 0) return null;
+        const chip = (xong: boolean, chuXong: string, chuChua: string, onXong: () => void, onGo: () => void, title: string) =>
+          xong ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onGo}
+              title={`${title} — bấm nếu muốn gỡ dấu`}
+              className="rounded-lg border border-emerald-300 bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-800"
+            >
+              {chuXong}
+            </button>
+          ) : (
+            <Button
+              type="button"
+              disabled={busy}
+              className="h-7 bg-rose-600 px-2.5 text-[11px] font-bold hover:bg-rose-700"
+              title={title}
+              onClick={onXong}
+            >
+              {busy ? "…" : chuChua}
+            </Button>
+          );
         return (
           <CollapseCard
             open
             className="border-rose-400 bg-rose-50"
             headerClassName="text-rose-900"
-            title={`🔒 ${rows.length} đơn CHƯA khoá phòng trên OTA`}
-            hint="vào Agoda/Booking/Trip đóng các đêm của đơn rồi bấm Đã khoá — quên là khách book trùng"
+            title={`🆕 ${rows.length} đơn mới — việc phải làm`}
+            hint="khách web: gọi xin cọc · mọi đơn: vào các sàn KHÁC đóng phòng — quên là khách book trùng"
           >
             <ul className="grid gap-1.5 @2xl:grid-cols-2">
               {rows.map((b) => (
-                <li
-                  key={b.id}
-                  className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-rose-200 bg-white px-2 py-1.5 text-sm"
-                >
-                  <SourceBadge source={b.source} />
-                  <strong>{b.guestName || b.ref || "khách"}</strong>
-                  <span className="text-slate-600">
-                    {formatDateKeyVN(b.checkIn)} → {formatDateKeyVN(b.checkOut)}
-                  </span>
-                  <span className="text-slate-500">{b.rooms > 1 ? `${b.rooms}×` : ""}{b.roomLabel || b.roomTypeId}</span>
-                  <Button
-                    type="button"
-                    disabled={busy}
-                    className="ml-auto h-7 bg-rose-600 px-2.5 text-xs font-bold hover:bg-rose-700"
-                    title="Xác nhận ĐÃ vào các trang OTA đóng phòng cho các đêm của đơn này"
-                    onClick={() => act(b.id, "ota-lock", {})}
-                  >
-                    {busy ? "…" : "✓ Đã khoá phòng OTA"}
-                  </Button>
+                <li key={b.id} className="rounded-lg border border-rose-200 bg-white px-2 py-1.5 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <SourceBadge source={b.source} />
+                    <strong>{b.guestName || b.ref || "khách"}</strong>
+                    <span className="text-slate-600">
+                      {formatDateKeyVN(b.checkIn)} → {formatDateKeyVN(b.checkOut)}
+                    </span>
+                    <span className="text-slate-500">
+                      {b.rooms > 1 ? `${b.rooms}×` : ""}
+                      {b.roomLabel || b.roomTypeId}
+                    </span>
+                    {/* Số điện thoại bấm gọi được — việc 1 là gọi, đừng bắt người ta đi tìm số */}
+                    {canCoc(b) && b.phone && (
+                      <a href={`tel:${b.phone}`} className="font-bold text-sky-700 underline">
+                        📞 {b.phone}
+                      </a>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {canCoc(b) &&
+                      chip(
+                        Boolean(b.depositContactedAt),
+                        `✓ đã liên hệ cọc${b.depositContactedBy ? ` — ${b.depositContactedBy}` : ""}`,
+                        "☎ 1. Đã liên hệ khách đặt cọc",
+                        () => act(b.id, "deposit-contacted", {}),
+                        () => act(b.id, "deposit-uncontact", {}),
+                        "Khách đặt trên web chưa cọc — gọi/nhắn xin cọc rồi bấm xác nhận",
+                      )}
+                    {chip(
+                      Boolean(b.otaLockedAt),
+                      `🔒 đã khoá OTA${b.otaLockedBy ? ` — ${b.otaLockedBy}` : ""}`,
+                      `🔒 ${canCoc(b) ? "2. " : ""}Đã khoá trên ${kenhPhaiKhoa(b.source).join(" · ")}`,
+                      () => act(b.id, "ota-lock", {}),
+                      () => act(b.id, "ota-unlock", {}),
+                      `Vào ${kenhPhaiKhoa(b.source).join(", ")} đóng các đêm ${formatDateKeyVN(b.checkIn)} → ${formatDateKeyVN(b.checkOut)} rồi bấm xác nhận`,
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -1128,6 +1188,24 @@ function BookingRow({
           {b.roomLabel && b.roomLabel !== b.roomTypeId ? ` (${b.roomLabel})` : ""}
         </span>
         {staying && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800">đang ở</span>}
+        {/* Đơn web: đã gọi xin cọc chưa — đỏ là còn nợ việc */}
+        {b.status === "confirmed" &&
+          canCoc(b) &&
+          (b.depositContactedAt ? (
+            <span
+              className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800"
+              title={`Đã liên hệ khách xin cọc${b.depositContactedBy ? ` — ${b.depositContactedBy}` : ""}. Bấm nếu muốn gỡ dấu.`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onAct(b.id, "deposit-uncontact", {})}
+            >
+              ☎ đã liên hệ cọc
+            </span>
+          ) : b.checkOut >= todayInVN() ? (
+            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700" title="Khách web chưa được gọi xin cọc — xem khối Đơn mới đầu trang">
+              ☎ chưa liên hệ cọc
+            </span>
+          ) : null)}
         {/* Trạng thái đóng phòng trên các OTA — xanh là xong, đỏ là còn nợ việc */}
         {b.status === "confirmed" &&
           (b.otaLockedAt ? (
