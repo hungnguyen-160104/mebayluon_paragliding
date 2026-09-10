@@ -5180,22 +5180,23 @@ export function BookingTodayBanner({
    */
   const detailButton = (b: BookingDTO) => <BookingDetailControl spot={spot} booking={b} />;
   /**
-   * `tienRieng` = thẻ tự lo nút Thu tiền (đặt xuống hàng dưới), đừng render ở đây.
+   * `hangDuoi` = THẺ tự lo hai nút Thu tiền và Chi tiết book — chúng thuộc hàng
+   * dưới cùng với ⋯ Thêm, nên đừng render ở đây.
    */
-  const renderOpenQuick = (b: BookingDTO, table = false, tienRieng = false) =>
+  const renderOpenQuick = (b: BookingDTO, table = false, hangDuoi = false) =>
     b.locked && !canLock ? (
       <>
         {lockButton(b)}
-        {!table && detailButton(b)}
+        {!table && !hangDuoi && detailButton(b)}
       </>
     ) : (
       <>
         {/* Trong BẢNG: Thu tiền nằm ở ô "Còn thu", Chi tiết ở ô "Nguồn" (luật chủ 04/09) */}
-        {!table && !tienRieng && moneyOutside(b) && renderMoneyButton(b)}
+        {!table && !hangDuoi && moneyOutside(b) && renderMoneyButton(b)}
         {renderTicketButton(b)}
         {renderFlownButton(b)}
         {renderContactButton(b)}
-        {!table && detailButton(b)}
+        {!table && !hangDuoi && detailButton(b)}
       </>
     );
   /** Nút “⋯ Thêm” + mọi chức năng còn lại; alwaysOpen = xổ sẵn (dòng bảng). */
@@ -5318,16 +5319,24 @@ export function BookingTodayBanner({
                * dài. Thả cho mỗi nút rộng đúng bằng chữ của nó thì cùng một bề
                * ngang chứa được nhiều nút hơn, thẻ gọn hơn hẳn.
                *
-               * THU TIỀN xuống HÀNG DƯỚI: nó là nút ĐỎ, to nhất, và là việc
-               * làm sau cùng (thu xong mới đóng khách). Để đầu hàng trên thì
-               * mắt đập vào nó trước cả "IN VÉ" — thứ phải bấm trước. Ngắt dòng
-               * bằng một ô rỗng trải hết bề ngang, cách duy nhất ép xuống dòng
-               * trong flex-wrap mà không phải đo đạc gì.
+               * HÀNG TRÊN là việc phải làm với khách: in vé · đã bay · đã gọi.
+               * HÀNG DƯỚI là việc phụ trợ: thu tiền · xem chi tiết · các chức
+               * năng còn lại.
+               *
+               * Thu tiền xuống dưới vì nó là nút ĐỎ, to nhất, và là việc làm
+               * sau cùng (thu xong mới đóng khách) — để đầu hàng trên thì mắt
+               * đập vào nó trước cả "IN VÉ", thứ phải bấm trước. Chi tiết book
+               * đi cùng vì nó chỉ để TRA, không phải để làm; xếp chung một
+               * hàng thì tay bấm quen chỗ, không phải tìm.
+               *
+               * Ngắt dòng bằng một ô rỗng trải hết bề ngang — cách duy nhất ép
+               * xuống dòng trong flex-wrap mà không phải đo đạc gì.
                */
               <div className="float-right ml-2 flex max-w-[340px] flex-wrap justify-end gap-1 [&>button]:h-7 [&>button]:px-2 [&>button]:text-[11px] [&>div]:basis-full">
                 {renderOpenQuick(b, false, true)}
                 <div className="h-0 basis-full" />
                 {moneyOutside(b) && renderMoneyButton(b)}
+                {detailButton(b)}
                 {!(b.locked && !canLock) && renderMoreMenu(b)}
               </div>
             )}
