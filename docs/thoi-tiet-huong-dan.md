@@ -20,7 +20,7 @@ Hệ thống **đang chạy được ngay, không cần khoá, không tốn ti�
   **Trần mây** vẽ thẳng độ cao đáy mây theo mét, lớp **Mây thấp** vẽ đúng thứ
   trùm sườn núi, lớp **Tầm nhìn** làm tối vùng sương mù dày — nhìn hình là biết
   sáng mai núi có bị trùm không.
-- Số ngày: **7 ngày tới**.
+- Số ngày: **8 ngày tới** (dải ngày xếp 4 ô một hàng nên tám là vừa hai hàng).
 
 Không khai biến nào thì mọi thứ vẫn đủ: trang khách `/thoi-tiet-bay`, widget
 trong từng trang `/spots/…`, và trang nội bộ `/baocao/thoi-tiet`.
@@ -178,7 +178,7 @@ Ba khái niệm mới, giải thích ngắn:
   nhiệt độ và điểm sương (khoảng 125 m cho mỗi 1°C chênh) **cộng thêm chênh độ
   cao giữa ô lưới mô hình và bãi thật**. Chỗ cộng thêm này rất quan trọng: mô
   hình chia ô ~25 km rồi lấy độ cao trung bình, ở Khau Phạ ô ấy cao 1.620 m
-  trong khi bãi ở 1.200 m — không cộng 420 m ấy thì báo "trần mây 87 m" trong
+  trong khi bãi ở 1.268 m — không cộng phần chênh ấy thì báo "trần mây 87 m" trong
   khi đứng ở bãi nhìn lên còn hơn nửa cây số nữa mới tới mây.
 
   Trời quang (mây thấp < 25%) thì **không báo trần mây** — công thức chỉ nói
@@ -252,7 +252,9 @@ Trên thẻ có ba nút **▦ Basic** · **📊 Meteogram** · **🪂 Airgram** 
 của Windy. **Mặc định là Basic** (bảng số): đọc chính xác từng ô, và phần lớn
 lúc người trực chỉ cần tra một giờ cụ thể.
 
-**Biểu đồ vẽ NỐI LIỀN CẢ 7 NGÀY trên một dải cuộn ngang** (luật chủ 10/09).
+**CẢ BA KIỂU XEM vẽ NỐI LIỀN CẢ DÃY NGÀY trên một dải cuộn ngang** (luật chủ 10/09
+— Basic lúc đầu chỉ vẽ một ngày trong khi Meteogram đã chạy thông, ba tab cùng
+một chỗ mà cư xử khác nhau).
 Trước đây mỗi lần chỉ vẽ một ngày, gạt ngang hết ngày là cụt — trong khi thứ
 người ta muốn thấy là "cơn mưa chiều nay có kéo sang sáng mai không". Hai chiều
 đồng bộ: bấm ngày ở dải phía trên thì biểu đồ trượt tới, gạt biểu đồ tới ngày
@@ -268,8 +270,12 @@ Khối giữa là phần "có hình" nhất:
   đậm nhạt theo phần trăm mây tầng đó. Vệt xám dày sát đáy là mây trùm núi.
 - **Vạch xanh là mặt bãi** (theo độ cao bãi cất cánh đã khai) — nhìn vệt mây nằm
   trên hay dưới vạch là biết bãi có bị mây trùm không.
-- **Cột mưa từng giờ** (mm): xanh đậm là mưa thật (≥ 0,8 mm) và có ghi số, xanh
-  nhạt là mưa bay (0,4–0,8); từ 0,3 trở xuống không vẽ gì.
+- **Cột mưa từng giờ, HAI MÀU** (mm): **xanh là mưa thường**, **cam là phần mưa
+  rào / giông** chồng lên trên (mô hình tách sẵn qua `showers`). Mưa 1,0mm cộng
+  giông 5,0mm ra cột 6,0mm nhưng nhìn là biết phần lớn nước đến từ ổ giông —
+  hai kiểu mưa quyết định khác hẳn nhau: mưa dầm thì chờ ngớt là bay, còn giông
+  thì gió đổ xuống quét qua bãi *trước khi* mưa tới. Cột nhạt là mưa bay
+  (0,4–0,8); từ 0,3 trở xuống không vẽ gì.
 - **Đường xám là áp suất** — dốc xuống là thời tiết đang chuyển.
 - **Nền tím nhạt là ban đêm**, tô theo **giờ mặt trời mọc/lặn THẬT của từng
   ngày** (mô hình cấp, đổi theo mùa) chứ không phải 6h/18h cứng — tháng 12 ở
@@ -427,7 +433,7 @@ giờ, JMA thiếu giật và CAPE nên không bày.
 
 Nút **⇄ So sánh** mở bảng đặt 2–3 mô hình cạnh nhau:
 
-- **7 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
+- **8 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
   ngang là thấy ngày nào các mô hình cãi nhau. Bấm vào ngày để đổi ngày so.
 - **Bảng giờ của ngày đang chọn — SO NGANG BẢY YẾU TỐ**: ☀️ Trời · 🌬 Gió ·
   💨 Giật · 🧭 Hướng (mũi tên) · 🌧 Mưa · 🌫 Trần mây · ⚡ Dông. Mỗi yếu tố một

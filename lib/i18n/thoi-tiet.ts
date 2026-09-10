@@ -65,6 +65,20 @@ export type ThoiTietCopy = {
   /** Mặt trời mọc / lặn — đổi theo mùa. */
   sunrise: string;
   sunset: string;
+  /** Khối tóm tắt đánh giá ngày bay (bản không phải tiếng Việt). */
+  assessment: string;
+  confidence: string;
+  /** "3h" — hậu tố số giờ. */
+  hourShort: string;
+  noRain: string;
+  /** Mưa bay 0,4–0,8 mm/giờ: có hạt nhưng bay vẫn bay. */
+  lightRain: string;
+  strongGusts: string;
+  cloudCover: string;
+  /** Câu chốt ngắn theo mức. */
+  verdictGood: string;
+  verdictFair: string;
+  verdictBad: string;
   bookNow: string;
   /** Widget trong trang điểm bay. */
   widgetTitle: string;
@@ -77,7 +91,7 @@ export type ThoiTietCopy = {
 const vi: ThoiTietCopy = {
   navLabel: "Thời tiết bay",
   pageTitle: "Thời tiết các điểm bay dù lượn",
-  pageSubtitle: "Dự báo 7 ngày tới cho từng điểm bay — gió, gió giật, mưa",
+  pageSubtitle: "Dự báo 8 ngày tới cho từng điểm bay — gió, gió giật, mưa",
   intro: [
     "Bay dù lượn phụ thuộc gần như hoàn toàn vào gió. Bảng dưới đây lấy dự báo của mô hình ECMWF (mô hình mà Windy hiển thị) cho đúng toạ độ bãi cất cánh của từng điểm bay, rồi chấm màu theo ngưỡng an toàn của bay đôi chở khách.",
     "Xanh là gió đẹp, vàng là bay được nhưng phải cân nhắc, đỏ là nên nghỉ. Dự báo chỉ để bạn chuẩn bị lịch trình — quyết định cuối cùng vẫn là của phi công tại bãi vào đúng buổi bay, vì thời tiết núi đổi rất nhanh.",
@@ -112,11 +126,21 @@ const vi: ThoiTietCopy = {
   retry: "Thử lại",
   seeSpot: "Xem điểm bay",
   ground: "mặt đất",
-  swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới",
+  swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
   sunrise: "Mặt trời mọc",
   sunset: "lặn",
+  assessment: "Đánh giá ngày bay",
+  confidence: "độ tin cậy",
+  hourShort: "giờ",
+  noRain: "Không mưa",
+  lightRain: "Mưa bay — bay vẫn bay",
+  strongGusts: "Gust mạnh",
+  cloudCover: "Mây phủ",
+  verdictGood: "Điều kiện tốt cho bay đôi.",
+  verdictFair: "Bay được nhưng hạn chế — hỏi lại phi công trước khi lên bãi.",
+  verdictBad: "Hôm nay khó bay; phi công quyết tại bãi, trời ngớt vẫn có thể bay.",
   bookNow: "Đặt bay",
-  widgetTitle: "Thời tiết bay 7 ngày tới",
+  widgetTitle: "Thời tiết bay 8 ngày tới",
   widgetNote: "Dự báo cho đúng toạ độ bãi cất cánh",
   mapToggleOpen: "Xem bản đồ gió Windy",
   mapToggleClose: "Ẩn bản đồ gió",
@@ -127,7 +151,7 @@ const vi: ThoiTietCopy = {
 const en: ThoiTietCopy = {
   navLabel: "Flying Weather",
   pageTitle: "Paragliding weather at our flying sites",
-  pageSubtitle: "7-day forecast for every site — wind, gusts, rain",
+  pageSubtitle: "8-day forecast for every site — wind, gusts, rain",
   intro: [
     "Paragliding depends almost entirely on the wind. The table below takes the ECMWF forecast (the model Windy shows) for the exact take-off coordinates of each site, then colours it against the safety limits used for tandem flights with passengers.",
     "Green means good wind, amber means flyable but think twice, red means stay on the ground. Use it to plan your trip — the final call always belongs to the pilot at the take-off on the day, because mountain weather changes fast.",
@@ -162,11 +186,21 @@ const en: ThoiTietCopy = {
   retry: "Try again",
   seeSpot: "View site",
   ground: "ground",
-  swipeDays: "Swipe sideways for the next days · tap a day above to jump there",
+  swipeDays: "Swipe sideways for the next days · tap a day above to jump there · rain bars: blue = rain, orange = thundery showers",
   sunrise: "Sunrise",
   sunset: "sunset",
+  assessment: "Flying-day assessment",
+  confidence: "confidence",
+  hourShort: "h",
+  noRain: "No rain",
+  lightRain: "Light drizzle — still flyable",
+  strongGusts: "Strong gusts",
+  cloudCover: "Cloud cover",
+  verdictGood: "Good conditions for tandem flights.",
+  verdictFair: "Flyable but limited — check with the pilot before heading up.",
+  verdictBad: "A hard day to fly; the pilot decides at launch, and a break in the weather can still open a window.",
   bookNow: "Book a flight",
-  widgetTitle: "Flying weather, next 7 days",
+  widgetTitle: "Flying weather, next 8 days",
   widgetNote: "Forecast for the exact take-off coordinates",
   mapToggleOpen: "Open Windy wind map",
   mapToggleClose: "Hide wind map",
@@ -177,7 +211,7 @@ const en: ThoiTietCopy = {
 const fr: ThoiTietCopy = {
   navLabel: "Météo de vol",
   pageTitle: "Météo des sites de parapente",
-  pageSubtitle: "Prévisions à 7 jours pour chaque site — vent, rafales, pluie",
+  pageSubtitle: "Prévisions à 8 jours pour chaque site — vent, rafales, pluie",
   intro: [
     "Le parapente dépend presque entièrement du vent. Le tableau ci-dessous reprend les prévisions ECMWF (le modèle affiché par Windy) aux coordonnées exactes du décollage de chaque site, puis les colore selon les limites de sécurité du vol biplace avec passager.",
     "Vert : vent favorable. Orange : volable mais à réfléchir. Rouge : rester au sol. Servez-vous-en pour organiser votre voyage — la décision finale revient toujours au pilote sur le site le jour même, car la météo de montagne change vite.",
@@ -212,11 +246,21 @@ const fr: ThoiTietCopy = {
   retry: "Réessayer",
   seeSpot: "Voir le site",
   ground: "sol",
-  swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus pour y aller",
+  swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus · barres de pluie : bleu = pluie, orange = averses orageuses",
   sunrise: "Lever du soleil",
   sunset: "coucher",
+  assessment: "Évaluation de la journée de vol",
+  confidence: "fiabilité",
+  hourShort: "h",
+  noRain: "Pas de pluie",
+  lightRain: "Bruine légère — vol possible",
+  strongGusts: "Rafales fortes",
+  cloudCover: "Couverture nuageuse",
+  verdictGood: "Bonnes conditions pour un biplace.",
+  verdictFair: "Volable mais limité — demandez au pilote avant de monter.",
+  verdictBad: "Journée difficile ; le pilote décide au décollage, une accalmie peut ouvrir un créneau.",
   bookNow: "Réserver un vol",
-  widgetTitle: "Météo de vol, 7 prochains jours",
+  widgetTitle: "Météo de vol, 8 prochains jours",
   widgetNote: "Prévisions aux coordonnées exactes du décollage",
   mapToggleOpen: "Ouvrir la carte des vents Windy",
   mapToggleClose: "Masquer la carte des vents",
@@ -227,7 +271,7 @@ const fr: ThoiTietCopy = {
 const ru: ThoiTietCopy = {
   navLabel: "Погода для полётов",
   pageTitle: "Погода на наших площадках для парапланеризма",
-  pageSubtitle: "Прогноз на 7 дней для каждой площадки — ветер, порывы, дождь",
+  pageSubtitle: "Прогноз на 8 дней для каждой площадки — ветер, порывы, дождь",
   intro: [
     "Полёт на параплане почти полностью зависит от ветра. В таблице ниже — прогноз ECMWF (модель, которую показывает Windy) для точных координат старта каждой площадки, раскрашенный по пределам безопасности для тандемных полётов с пассажиром.",
     "Зелёный — хороший ветер, жёлтый — летать можно, но стоит подумать, красный — лучше остаться на земле. Используйте для планирования поездки: окончательное решение всегда за пилотом на старте в этот день, погода в горах меняется быстро.",
@@ -262,11 +306,21 @@ const ru: ThoiTietCopy = {
   retry: "Повторить",
   seeSpot: "О площадке",
   ground: "земля",
-  swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше, чтобы перейти",
+  swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше · столбики осадков: синий — дождь, оранжевый — ливни с грозой",
   sunrise: "Восход",
   sunset: "закат",
+  assessment: "Оценка лётного дня",
+  confidence: "достоверность",
+  hourShort: "ч",
+  noRain: "Без дождя",
+  lightRain: "Морось — летать можно",
+  strongGusts: "Сильные порывы",
+  cloudCover: "Облачность",
+  verdictGood: "Хорошие условия для полёта вдвоём.",
+  verdictFair: "Летать можно, но с ограничениями — уточните у пилота.",
+  verdictBad: "Сложный день; решение принимает пилот на старте, при прояснении окно возможно.",
   bookNow: "Забронировать полёт",
-  widgetTitle: "Погода для полётов, ближайшие 7 дней",
+  widgetTitle: "Погода для полётов, ближайшие 8 дней",
   widgetNote: "Прогноз для точных координат старта",
   mapToggleOpen: "Открыть карту ветра Windy",
   mapToggleClose: "Скрыть карту ветра",
@@ -277,7 +331,7 @@ const ru: ThoiTietCopy = {
 const zh: ThoiTietCopy = {
   navLabel: "飞行天气",
   pageTitle: "各滑翔伞飞行点天气",
-  pageSubtitle: "各飞行点未来 7 天预报 — 风速、阵风、降雨",
+  pageSubtitle: "各飞行点未来 8 天预报 — 风速、阵风、降雨",
   intro: [
     "滑翔伞几乎完全取决于风。下表采用 ECMWF 模式（Windy 所显示的模式）针对各飞行点起飞场的精确坐标进行预报，并按双人载客飞行的安全标准标色。",
     "绿色代表风况良好，黄色表示可飞但需谨慎，红色则建议停飞。此表供您安排行程参考——最终是否起飞，仍由当天在起飞场的飞行员决定，因为山区天气变化很快。",
@@ -312,11 +366,21 @@ const zh: ThoiTietCopy = {
   retry: "重试",
   seeSpot: "查看飞行点",
   ground: "地面",
-  swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转",
+  swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转 · 降雨柱：蓝色为降雨，橙色为雷阵雨",
   sunrise: "日出",
   sunset: "日落",
+  assessment: "当日飞行评估",
+  confidence: "可信度",
+  hourShort: "小时",
+  noRain: "无雨",
+  lightRain: "毛毛雨 — 仍可飞行",
+  strongGusts: "强阵风",
+  cloudCover: "云量",
+  verdictGood: "双人飞行条件良好。",
+  verdictFair: "可飞但受限 — 上山前请先问飞行员。",
+  verdictBad: "今天较难飞；由飞行员在起飞场决定，天气转好仍有机会。",
   bookNow: "预订飞行",
-  widgetTitle: "未来 7 天飞行天气",
+  widgetTitle: "未来 8 天飞行天气",
   widgetNote: "针对起飞场精确坐标的预报",
   mapToggleOpen: "查看 Windy 风场图",
   mapToggleClose: "隐藏风场图",
@@ -326,7 +390,7 @@ const zh: ThoiTietCopy = {
 const hi: ThoiTietCopy = {
   navLabel: "उड़ान का मौसम",
   pageTitle: "हमारे पैराग्लाइडिंग स्थलों का मौसम",
-  pageSubtitle: "हर स्थल के लिए 7 दिन का पूर्वानुमान — हवा, झोंके, वर्षा",
+  pageSubtitle: "हर स्थल के लिए 8 दिन का पूर्वानुमान — हवा, झोंके, वर्षा",
   intro: [
     "पैराग्लाइडिंग लगभग पूरी तरह हवा पर निर्भर है। नीचे दी गई तालिका हर स्थल के टेक-ऑफ़ की सटीक स्थिति के लिए ECMWF पूर्वानुमान (वही मॉडल जो Windy दिखाता है) लेती है, और उसे यात्री के साथ टैंडम उड़ान की सुरक्षा सीमाओं के अनुसार रंग देती है।",
     "हरा मतलब अच्छी हवा, पीला मतलब उड़ान संभव पर सोच-समझकर, लाल मतलब ज़मीन पर ही रहें। इसे यात्रा की योजना के लिए इस्तेमाल करें — अंतिम निर्णय हमेशा उस दिन टेक-ऑफ़ पर मौजूद पायलट का होता है, क्योंकि पहाड़ी मौसम तेज़ी से बदलता है।",
@@ -361,11 +425,21 @@ const hi: ThoiTietCopy = {
   retry: "फिर कोशिश करें",
   seeSpot: "स्थल देखें",
   ground: "ज़मीन",
-  swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें",
+  swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें · वर्षा स्तंभ: नीला = वर्षा, नारंगी = गरज के साथ बौछार",
   sunrise: "सूर्योदय",
   sunset: "सूर्यास्त",
+  assessment: "उड़ान दिवस का आकलन",
+  confidence: "विश्वसनीयता",
+  hourShort: "घं",
+  noRain: "वर्षा नहीं",
+  lightRain: "हल्की बूंदाबांदी — उड़ान संभव",
+  strongGusts: "तेज़ झोंके",
+  cloudCover: "बादल",
+  verdictGood: "टैंडम उड़ान के लिए अच्छी परिस्थितियाँ।",
+  verdictFair: "उड़ान संभव पर सीमित — ऊपर जाने से पहले पायलट से पूछें।",
+  verdictBad: "आज उड़ना कठिन है; पायलट लॉन्च पर तय करेंगे, मौसम खुलने पर मौका बन सकता है।",
   bookNow: "उड़ान बुक करें",
-  widgetTitle: "अगले 7 दिन का उड़ान मौसम",
+  widgetTitle: "अगले 8 दिन का उड़ान मौसम",
   widgetNote: "टेक-ऑफ़ की सटीक स्थिति का पूर्वानुमान",
   mapToggleOpen: "Windy पवन मानचित्र देखें",
   mapToggleClose: "पवन मानचित्र छिपाएँ",

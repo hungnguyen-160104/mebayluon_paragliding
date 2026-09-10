@@ -91,7 +91,8 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
   "khau-pha": {
     lat: 21.7546,
     lon: 104.1279,
-    alt: 1200,
+    /** 1.268 m — số chủ đo tại bãi cất cánh (10/09), không phải 1.200 làm tròn. */
+    alt: 1268,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
     luatHuong: { tot: [23, 112], xau: [113, 292], xiet: [0, 90, 270] },
     gioBay: [9, 16],
@@ -207,6 +208,13 @@ export type GioThoiTiet = {
   /** Hướng gió THỔI TỚI TỪ đâu, độ (0 = từ bắc). */
   huong: number;
   mua: number;
+  /**
+   * Phần mưa RÀO / GIÔNG trong tổng lượng mưa (mm) — mô hình tách riêng
+   * (`showers`, mưa đối lưu). Mưa dầm 1mm và mưa giông 5mm rơi rất khác nhau:
+   * mưa dầm thì chờ ngớt là bay, còn ổ giông kéo theo gió đổ xuống đảo chiều
+   * ngay trước khi mưa tới. Vẽ thành hai màu chồng nhau trên cùng một cột.
+   */
+  muaRao?: number;
   may: number;
   nhietDo: number;
   /** Điểm sương (°C) — cùng với nhiệt độ suy ra trần mây, xem `tranMay()`. */

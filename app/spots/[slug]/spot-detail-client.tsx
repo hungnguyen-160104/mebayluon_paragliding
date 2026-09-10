@@ -3804,7 +3804,9 @@ export function SpotDetailClient({
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="container mx-auto max-w-3xl rounded-2xl border border-white/20 bg-black/25 px-6 py-8 text-center shadow-lg backdrop-blur-xl"
+          /* Rộng bằng thẻ giới thiệu và thẻ thời tiết phía trên (max-w-5xl) —
+             ba thẻ xếp chồng mà lệch bề ngang thì trang gãy nhịp (chủ 10/09). */
+          className="container mx-auto max-w-5xl rounded-2xl border border-white/20 bg-black/25 px-6 py-8 text-center shadow-lg backdrop-blur-xl"
         >
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
@@ -3837,9 +3839,10 @@ export function SpotDetailClient({
               Trước đây cả trang chỉ có đúng một link "/spots", nên các trang
               điểm bay không hề trỏ sang nhau — Google coi chúng là nhánh cụt
               và để nguyên trong nhóm "đã phát hiện, chưa lập chỉ mục". */}
-          {/* Xếp lưới 2 cột trên điện thoại, 3 cột từ 640px — trước đây để trôi
-              tự do nên mỗi hàng một hai nút dài ngắn so le, nhìn rối. */}
-          <ul className="mx-auto mt-5 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
+          {/* 2 cột trên điện thoại, 3 cột từ 640px, và TỪ 1024px thì CẢ NĂM ĐIỂM
+              nằm gọn một hàng (chủ 10/09) — thẻ đã rộng ra thì không có lý gì để
+              hàng cuối trơ hai nút lẻ. */}
+          <ul className="mx-auto mt-5 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3 lg:max-w-none lg:grid-cols-5">
             {SPOTS_LIST.filter((item) => item.slug !== spotSlug).map((item) => (
               <li key={item.slug}>
                 <Link

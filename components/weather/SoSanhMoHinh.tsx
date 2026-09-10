@@ -311,7 +311,7 @@ export function SoSanhMoHinh({
         {dangTai && <span className="text-slate-500">đang lấy…</span>}
       </div>
 
-      {/* ---- 7 ngày × mô hình: nhìn ngày nào các mô hình cãi nhau ---- */}
+      {/* ---- 8 ngày × mô hình: nhìn ngày nào các mô hình cãi nhau ---- */}
       {ds.length > 0 && (
         <div className="mt-2 overflow-x-auto overscroll-x-contain">
           <table className="border-separate border-spacing-0.5 text-center text-[10px]">

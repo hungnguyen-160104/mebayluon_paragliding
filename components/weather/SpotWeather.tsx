@@ -19,6 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { useCuonTheoNgay } from "./cuon-ngay";
 import { Airgram, Meteogram, NHAN_METEOGRAM_VI, type NhanMeteogram } from "./Meteogram";
 import { styleGiat, styleGio } from "./mau-gio";
 import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
@@ -163,31 +164,38 @@ function DaiNgay({
 }) {
   const homNay = homNayVN();
   return (
-    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
-      {ngay.slice(0, 7).map((n) => {
+    /* Bốn ô một hàng, hai hàng đủ tám ngày — xem ghi chú ở SO_NGAY. */
+    <div className="grid grid-cols-4 gap-1.5">
+      {/**
+       * Ô NGÀY GỌN LẠI (chủ 10/09): trước đây mỗi ô xếp SÁU dòng chồng nhau —
+       * ngày, số gió, đơn vị, số giờ đẹp, mưa, dông, điểm — cao gần bằng cả
+       * bảng giờ bên dưới, mà người ta chỉ liếc để chọn ngày. Nay gộp lại: một
+       * dòng ngày, một dòng "gió · điểm", một dòng mưa/dông chỉ hiện khi có.
+       */}
+      {ngay.map((n) => {
         const noiDung = (
           <>
-            <div className="text-[10px] font-bold uppercase tracking-wide opacity-80">
+            <div className="text-[11px] font-bold uppercase tracking-wide opacity-80">
               {nhanNgay(n.ngay, homNay, lang, t)}
             </div>
-            <div className="mt-0.5 text-lg font-black leading-none">{n.gioMax.toFixed(1)}</div>
-            <div className="text-[10px] opacity-70">{t.windUnit}</div>
-            <div className="mt-0.5 text-[10px] font-semibold leading-tight">
-              {n.gioXanh > 0 ? `${n.gioXanh} ${t.goodHours}` : nhanMuc(n.muc, t)}
+            <div className="mt-0.5 flex items-baseline justify-center gap-1 leading-none">
+              <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>
+              <span className="text-[10px] opacity-70">{t.windUnit}</span>
+              {n.chuyenGia && (
+                <span className="text-[11px] font-black opacity-90" title={`${t.score} ${n.chuyenGia.diem}/100`}>
+                  · {n.chuyenGia.diem}
+                </span>
+              )}
             </div>
-            {n.gioMua > 0 && <div className="text-[10px] leading-tight">☔ {n.gioMua}h</div>}
-            {n.xacSuatDongMax >= 20 && <div className="text-[10px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
-            {/* Điểm 0–100 của chuyên gia: một con số để so ngày này với ngày kia. */}
-            {n.chuyenGia && (
-              <div className="mt-0.5 text-[10px] font-black leading-tight" title={`${t.score} ${n.chuyenGia.diem}/100`}>
-                {n.chuyenGia.diem}
-                <span className="font-normal opacity-60">/100</span>
-              </div>
-            )}
+            <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[11px] font-semibold leading-tight">
+              <span>{n.gioXanh > 0 ? `${n.gioXanh} ${t.goodHours}` : nhanMuc(n.muc, t)}</span>
+              {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
+              {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
+            </div>
           </>
         );
         const lop =
-          "rounded-xl border px-1 py-2 text-center transition " +
+          "rounded-xl border px-1 py-1.5 text-center transition " +
           VIEN[n.muc] +
           (chon === n.ngay ? " ring-2 ring-sky-500" : "");
         return onChon ? (
@@ -220,7 +228,7 @@ function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten:
     return m > 0 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : null;
   })();
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-600">
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
       <span className="font-bold text-slate-800">📍 {toaDo.ten}</span>
       <span className="tabular-nums">
         {toaDo.lat.toFixed(4)}, {toaDo.lon.toFixed(4)}
@@ -232,6 +240,82 @@ function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten:
           {daiNgay ? ` (${daiNgay})` : ""}
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * TÓM TẮT ĐÁNH GIÁ NGÀY BAY cho các thứ tiếng KHÔNG PHẢI tiếng Việt.
+ *
+ * Khối nhận định tiếng Việt (`NhanDinhNgayBay`) sinh câu chữ chuyên môn theo
+ * hàng chục mẫu — dịch cả bộ ấy sang năm thứ tiếng là việc riêng, mà để trống
+ * thì khách nước ngoài mở trang ra chỉ thấy bảng số, không có lấy một câu kết
+ * luận (chủ báo 10/09). Khối này rút cùng những con số ấy thành mấy dòng nhãn
+ * — số thì ngôn ngữ nào cũng đọc được, còn nhãn đã có sẵn trong bộ dịch.
+ *
+ * Cố ý KHÔNG dịch máy phần câu chữ: câu khuyến cáo bay sai một chữ là chuyện
+ * an toàn, thà nói ít mà chắc.
+ */
+function TomTatNgay({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string }) {
+  const cg = ngay.chuyenGia;
+  const chot = ngay.muc === "xanh" ? t.verdictGood : ngay.muc === "vang" ? t.verdictFair : t.verdictBad;
+  const gioTb = ngay.gio.length ? ngay.gio.reduce((a, g) => a + g.gio10m, 0) / ngay.gio.length : 0;
+  const mayTb = ngay.gio.length ? Math.round(ngay.gio.reduce((a, g) => a + g.may, 0) / ngay.gio.length) : 0;
+  /** Khung giờ giật trên 16 m/s — thứ duy nhất của gió giật đáng nói ra. */
+  const gust = ngay.gio.filter((g) => g.giat > 16);
+  const khungGust = gust.length
+    ? gust.length === 1
+      ? gust[0].gio.slice(11, 16)
+      : `${gust[0].gio.slice(11, 16)}–${gust[gust.length - 1].gio.slice(11, 16)}`
+    : null;
+
+  const dong: Array<{ icon: string; nhan: string; giaTri: string }> = [
+    {
+      icon: "🌬",
+      nhan: `${t.wind} ${t.windUnit}`,
+      giaTri: `${gioTb.toFixed(1)} → ${ngay.gioMax.toFixed(1)}${ngay.gio.length ? ` ${huongTheoNgonNgu(ngay.gio[Math.floor(ngay.gio.length / 2)].huong, lang)}` : ""}`,
+    },
+  ];
+  if (khungGust) dong.push({ icon: "💨", nhan: t.strongGusts, giaTri: `${khungGust} · ${ngay.giatMax.toFixed(0)} ${t.windUnit}` });
+  dong.push({
+    icon: ngay.gioMua > 0 ? "🌧" : ngay.gioMuaBay > 0 ? "🌦" : "☀️",
+    nhan: t.rain,
+    giaTri:
+      ngay.gioMua > 0
+        ? `${ngay.gioMua}${t.hourShort}${ngay.khungMua ? ` (${ngay.khungMua})` : ""} · ${ngay.muaTongThat.toFixed(1)}mm`
+        : ngay.gioMuaBay > 0
+          ? `${t.lightRain}${ngay.khungMuaBay ? ` · ${ngay.khungMuaBay}` : ""}`
+          : t.noRain,
+  });
+  if (ngay.xacSuatDongMax >= 20) dong.push({ icon: "⚡", nhan: t.storm, giaTri: `${ngay.xacSuatDongMax}%` });
+  if (ngay.tranMax) dong.push({ icon: "🔥", nhan: t.thermal, giaTri: `~${ngay.tranMax} m` });
+  dong.push({ icon: "☁️", nhan: t.cloudCover, giaTri: `${mayTb}%` });
+
+  return (
+    <div className={"mt-2 rounded-xl border p-2.5 " + VIEN[ngay.muc]}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-black">{nhanMuc(ngay.muc, t)}</span>
+        {cg && (
+          <span className="rounded-lg bg-white/70 px-1.5 py-0.5 text-xs font-bold text-slate-700">
+            {cg.diem}/100 · {t.confidence} {cg.doTinCay}%
+          </span>
+        )}
+        {ngay.khungDep && (
+          <span className="text-xs font-semibold">
+            {t.bestWindow}: <strong>{ngay.khungDep}</strong>
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-xs leading-snug text-slate-700">{chot}</p>
+      <ul className="mt-1.5 grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs text-slate-700 sm:grid-cols-2">
+        {dong.map((d) => (
+          <li key={d.nhan} className="flex items-baseline gap-1">
+            <span aria-hidden>{d.icon}</span>
+            <span className="text-slate-500">{d.nhan}:</span>
+            <strong className="font-semibold">{d.giaTri}</strong>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -256,11 +340,41 @@ function nhanBieuDo(t: ThoiTietCopy): NhanMeteogram {
 /* Bảng giờ                                                            */
 /* ------------------------------------------------------------------ */
 
-function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: string; luat?: LuatHuong }) {
-  const gio = ngay.gio.filter((g) => {
-    const h = Number(g.gio.slice(11, 13));
-    return h >= 6 && h <= 18;
+/**
+ * BẢNG GIỜ (Basic) — NỐI LIỀN CẢ DÃY NGÀY, y như hai biểu đồ.
+ *
+ * Trước đây bảng chỉ vẽ ngày đang chọn nên vuốt hết ngày là cụt, trong khi
+ * Meteogram thì chạy tiếp — ba tab cùng một chỗ mà cư xử khác nhau (chủ báo
+ * 10/09). Nay bấm ngày ở dải trên thì bảng trượt tới, gạt bảng tới ngày nào
+ * thì dải trên sáng ngày ấy.
+ */
+function BangGio({
+  ngay,
+  ngayChon,
+  onNgayHien,
+  t,
+  lang,
+  luat,
+}: {
+  ngay: Ngay[];
+  ngayChon?: string | null;
+  onNgayHien?: (ngay: string) => void;
+  t: ThoiTietCopy;
+  lang: string;
+  luat?: LuatHuong;
+}) {
+  const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
+  const cot = ngay.flatMap((n) => {
+    const trong = n.gio.filter((g) => {
+      const h = Number(g.gio.slice(11, 13));
+      return h >= 6 && h <= 18;
+    });
+    return trong.map((g, i) => ({ g, ngay: n, dau: i === 0 }));
   });
+  const gio = cot.map((c) => c.g);
+  const dauNgay = new Set(cot.filter((c) => c.dau).map((c) => c.g.gio));
+  /** Vạch đứng ở ô mở đầu mỗi ngày — mắt cần biết chỗ nào sang ngày mới. */
+  const bd = (g: Gio) => (dauNgay.has(g.gio) ? " border-l-2 border-l-slate-300" : "");
   if (!gio.length) return null;
 
   const hang = (
@@ -271,9 +385,10 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
     styleO?: (g: Gio) => { background: string; color: string },
   ) => (
     <tr>
-      <th className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-[11px] font-bold text-slate-500">{nhan}</th>
+      {/* Chữ trong bảng nhích lên 12px: 11px trên điện thoại ngoài nắng là đọc không ra (chủ 10/09). */}
+      <th data-truc className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-xs font-bold text-slate-500">{nhan}</th>
       {gio.map((g) => (
-        <td key={g.gio} style={styleO?.(g)} className={"px-1 py-1 text-center text-[11px] " + (lopO?.(g) ?? (styleO ? "" : "text-slate-700"))}>
+        <td key={g.gio} style={styleO?.(g)} className={"px-1 py-1 text-center text-xs " + (lopO?.(g) ?? (styleO ? "" : "text-slate-700")) + bd(g)}>
           {ve(g)}
         </td>
       ))}
@@ -281,9 +396,40 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
   );
 
   return (
-    <div className="mt-3 overflow-x-auto overscroll-x-contain rounded-xl border border-slate-200">
+    <div ref={ref} onScroll={onScroll} className="mt-3 overflow-x-auto overscroll-x-contain rounded-xl border border-slate-200">
       <table className="w-full min-w-[600px] border-collapse">
         <tbody>
+          {/* Dải TÊN NGÀY — mốc để dải ngày phía trên và bảng bám theo nhau. */}
+          <tr>
+            <th data-truc className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-xs font-bold text-slate-400" />
+            {cot.map(({ ngay: n, dau }, i) =>
+              dau ? (
+                <td
+                  key={`ngay-${n.ngay}`}
+                  data-ngay={n.ngay}
+                  colSpan={cot.filter((c) => c.ngay.ngay === n.ngay).length}
+                  className={
+                    "bg-slate-50 px-2 py-1 text-left text-xs font-bold text-slate-700" +
+                    (i > 0 ? " border-l-2 border-l-slate-300" : "")
+                  }
+                >
+                  <span className="sticky left-14 inline-flex items-center gap-1 whitespace-nowrap">
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ background: n.muc === "xanh" ? "#16a34a" : n.muc === "vang" ? "#eab308" : "#e11d48" }}
+                      aria-hidden
+                    />
+                    {nhanNgay(n.ngay, homNayVN(), lang, t)}
+                    {n.matTroi && (
+                      <span className="font-medium text-amber-700">
+                        ☀ {n.matTroi.moc}–{n.matTroi.lan}
+                      </span>
+                    )}
+                  </span>
+                </td>
+              ) : null,
+            )}
+          </tr>
           {hang(t.hour, (g) => <span className="font-bold text-slate-800">{g.gio.slice(11, 13)}h</span>)}
           {hang(
             t.sky,
@@ -434,7 +580,7 @@ function BanDoWindy({ lat, lon, ten }: { lat: number; lon: number; ten: string }
             href={windyPageUrl(lat, lon, k)}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-lg border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800 hover:bg-violet-100"
+            className="rounded-lg border border-violet-300 bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-800 hover:bg-violet-100"
           >
             {nhan}
           </a>
@@ -511,7 +657,17 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
        * liệu (hàng chục mẫu câu), dịch sáu thứ tiếng là việc riêng; khách nước
        * ngoài vẫn đọc được màu và bảng giờ phía dưới, không mất gì.
        */}
-      {lang === "vi" && ngayChon && <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />}
+      {/**
+       * Tiếng Việt: khối nhận định đầy đủ (câu chữ chuyên môn theo hàng chục
+       * mẫu). Thứ tiếng khác: bản TÓM TẮT rút từ cùng những con số ấy — trước
+       * đây khách nước ngoài mở ra không có lấy một câu kết luận (chủ 10/09).
+       */}
+      {ngayChon &&
+        (lang === "vi" ? (
+          <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
+        ) : (
+          <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
+        ))}
 
       <div className="mb-2">
         <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} />
@@ -568,7 +724,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         ) : kieuXem === "airgram" ? (
           <Airgram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
         ) : (
-          <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
+          <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
         ))}
 
       {soSanh && (
@@ -595,8 +751,8 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
       {moBanDo && <BanDoWindy lat={du.toaDo.lat} lon={du.toaDo.lon} ten={du.toaDo.ten} />}
 
       {/** Nguồn xuống DÒNG RIÊNG: nó là chú thích kỹ thuật, không phải phần tiếp của câu miễn trừ. */}
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{t.disclaimer}</p>
-      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-2 text-xs leading-relaxed text-slate-500">{t.disclaimer}</p>
+      <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
         {t.source}: {du.moHinh}
       </p>
     </section>

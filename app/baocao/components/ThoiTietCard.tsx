@@ -30,6 +30,7 @@ import {
   sucGio,
   suNangMua,
   tranMay,
+  type GioThoiTiet,
   type LuatHuong,
   MUA_BAY,
   MUA_DANG_KE,
@@ -38,6 +39,7 @@ import { spotName } from "@/lib/baobay/spots";
 
 import { Airgram, Meteogram } from "@/components/weather/Meteogram";
 import { styleGiat, styleGio } from "@/components/weather/mau-gio";
+import { useCuonTheoNgay } from "@/components/weather/cuon-ngay";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
@@ -293,9 +295,10 @@ export function ThoiTietCard({
       {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
       {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
-      {/* ---- dải 7 ngày ---- */}
-      {/* Bảy cột: ô hẹp hơn nhưng vẫn đủ số — hơn hẳn phải cuộn ngang tìm ngày. */}
-      <div className="grid grid-cols-4 gap-1 sm:grid-cols-7">
+      {/* ---- dải 8 ngày ---- */}
+      {/* BỐN Ô MỘT HÀNG, hai hàng đủ tám ngày (luật chủ 10/09): bảy cột thì ô hẹp
+          tới mức số chồng lên nhau, mà hàng cuối lại trơ ba ô lẻ. */}
+      <div className="grid grid-cols-4 gap-1">
         {du.ngay.map((n) => {
           const daCham = du.cham.find((c) => c.date === n.ngay);
           return (
@@ -413,7 +416,7 @@ export function ThoiTietCard({
             ) : kieuXem === "airgram" ? (
               <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
             ) : (
-              <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />
+              <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} homNay={homNay} luat={du.toaDo.luatHuong} />
             ))}
 
           {/* ---- so sánh 2–3 mô hình cho ngày đang chọn ---- */}
@@ -502,38 +505,105 @@ function mauMuiTen(the: "tot" | "xau" | "thuong", muc: MucDo): string {
   return muc === "do" ? "text-rose-600" : muc === "vang" ? "text-amber-500" : "text-emerald-600";
 }
 
-function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
+/**
+ * BẢNG GIỜ (Basic) — NỐI LIỀN CẢ DÃY NGÀY trên một dải cuộn ngang.
+ *
+ * Trước đây bảng chỉ vẽ ngày đang chọn: vuốt hết ngày là cụt, muốn xem ngày mai
+ * phải ngước lên dải ngày bấm (chủ báo 10/09 — meteogram vuốt thông ngày mà
+ * Basic thì không). Nay cả ba kiểu xem cư xử như nhau: vuốt là chạy tiếp, bấm
+ * ngày ở dải trên thì trượt tới, gạt tới ngày nào thì dải trên sáng ngày ấy.
+ *
+ * Vẫn là `<table>` chứ không đổi sang lưới: mỗi hàng một loại số, mắt dò theo
+ * hàng ngang — đó là thứ bảng số làm tốt hơn biểu đồ.
+ */
+function BangGio({
+  ngay,
+  ngayChon,
+  onNgayHien,
+  homNay,
+  luat,
+}: {
+  /** CẢ DÃY NGÀY — vẽ liền nhau, ngăn bằng vạch đứng. */
+  ngay: NgayThoiTiet[];
+  ngayChon?: string | null;
+  onNgayHien?: (ngay: string) => void;
+  homNay: string;
+  luat?: LuatHuong;
+}) {
+  const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
+
   /** Chỉ bày khung giờ bay: 0h–6h và tối thì trời thế nào cũng không dùng tới. */
-  const gio = ngay.gio.filter((g) => {
-    const h = Number(g.gio.slice(11, 13));
-    return h >= 6 && h <= 18;
+  const cot = ngay.flatMap((n) => {
+    const trong = n.gio.filter((g) => {
+      const h = Number(g.gio.slice(11, 13));
+      return h >= 6 && h <= 18;
+    });
+    return trong.map((g, i) => ({ g, ngay: n, dau: i === 0 }));
   });
+  const gio = cot.map((c) => c.g);
+  /** Giờ ĐẦU của mỗi ngày — chỗ kẻ vạch phân ngày. */
+  const dauNgay = new Set(cot.filter((c) => c.dau).map((c) => c.g.gio));
+  /** Lớp vạch đứng cho ô mở đầu một ngày; Tailwind cần tên lớp tĩnh nên viết sẵn. */
+  const bd = (g: GioThoiTiet) => (dauNgay.has(g.gio) ? " border-l-2 border-l-slate-300" : "");
   if (!gio.length) return null;
 
   return (
-    <div className="mt-2 overflow-x-auto overscroll-x-contain">
+    <div ref={ref} onScroll={onScroll} className="mt-2 overflow-x-auto overscroll-x-contain">
       <table className="w-full min-w-[560px] border-collapse text-center text-[10px]">
         <tbody>
+          {/* Dải TÊN NGÀY: nhãn dính trong ô ngày nên vuốt tới đâu vẫn biết đang ở ngày nào. */}
           <tr>
-            <th className="w-14 border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Giờ</th>
+            <th data-truc className="sticky left-0 z-10 w-14 bg-white px-1 py-0.5 text-left font-bold text-slate-400">
+              Ngày
+            </th>
+            {cot.map(({ ngay: n, dau }, i) =>
+              dau ? (
+                <td
+                  key={`ngay-${n.ngay}`}
+                  data-ngay={n.ngay}
+                  colSpan={cot.filter((c) => c.ngay.ngay === n.ngay).length}
+                  className={
+                    "bg-slate-50 px-1 py-0.5 text-left text-[11px] font-bold text-slate-700" +
+                    (i > 0 ? " border-l-2 border-l-slate-300" : "")
+                  }
+                >
+                  <span className="sticky left-14 inline-flex items-center gap-1 whitespace-nowrap">
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ background: n.muc === "xanh" ? "#16a34a" : n.muc === "vang" ? "#eab308" : "#e11d48" }}
+                      aria-hidden
+                    />
+                    {nhanNgay(n.ngay, homNay)}
+                    {n.matTroi && (
+                      <span className="font-medium text-amber-700">
+                        ☀ {n.matTroi.moc}–{n.matTroi.lan}
+                      </span>
+                    )}
+                  </span>
+                </td>
+              ) : null,
+            )}
+          </tr>
+          <tr>
+            <th data-truc className="sticky left-0 z-10 w-14 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500">Giờ</th>
             {gio.map((g) => (
-              <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5 font-bold text-slate-700">
+              <td key={g.gio} className={"border-b border-slate-200 px-0.5 py-0.5 font-bold text-slate-700" + bd(g)}>
                 {g.gio.slice(11, 13)}h
               </td>
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Nắng · nắng một phần · âm u · mưa">
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500" title="Nắng · nắng một phần · âm u · mưa">
               Trời
             </th>
             {gio.map((g) => (
-              <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5" title={`mây ${Math.round(g.may)}%`}>
+              <td key={g.gio} className={"border-b border-slate-200 px-0.5 py-0.5" + bd(g)} title={`mây ${Math.round(g.may)}%`}>
                 <span className="text-base leading-none">{bieuTuongTroi(g.may, g.mua, g.buXa)}</span>
               </td>
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Gió m/s</th>
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500">Gió m/s</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
@@ -547,7 +617,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
           </tr>
           <tr>
             <th
-              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              data-truc
+              className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500"
               title="Kết luận cả giờ: đã tính mưa, mù, dông, hướng gió"
             >
               Bay?
@@ -568,12 +639,18 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
            * cùng ✔ có thể là 95 và 58 — khách nên hẹn giờ nào, hàng này trả lời.
            */}
           {(() => {
-            const cg = ngay.chuyenGia as DanhGiaNgay | undefined;
-            if (!cg) return null;
-            const diemCua = (t: string) => cg.gio.find((x) => x.gio === t);
+            /**
+             * Bảng nay trải nhiều ngày nên điểm phải tra theo NGÀY CỦA CHÍNH GIỜ
+             * ĐÓ — lấy điểm của một ngày rồi dò cho cả dải là mọi giờ ngày khác
+             * hiện dấu gạch.
+             */
+            const bangDiem = new Map<string, DanhGiaNgay>();
+            for (const n of ngay) if (n.chuyenGia) bangDiem.set(n.ngay, n.chuyenGia as DanhGiaNgay);
+            if (!bangDiem.size) return null;
+            const diemCua = (t: string) => bangDiem.get(t.slice(0, 10))?.gio.find((x) => x.gio === t);
             return (
               <tr>
-                <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Điểm điều kiện bay 0–100: ≥75 tốt · 55–74 khá · 35–54 hạn chế · <35 không bay">
+                <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500" title="Điểm điều kiện bay 0–100: ≥75 tốt · 55–74 khá · 35–54 hạn chế · <35 không bay">
                   Điểm
                 </th>
                 {gio.map((g) => {
@@ -584,7 +661,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
                   return (
                     <td
                       key={g.gio}
-                      className={"border-b border-slate-200 px-0.5 py-0.5 " + mau}
+                      className={"border-b border-slate-200 px-0.5 py-0.5 " + mau + bd(g)}
                       title={d ? [...d.nguyHiem, ...d.thanhPhan.map((t) => `${t.ten}: ${t.diem} (${t.ghiChu})`)].join(" · ") : undefined}
                     >
                       {v ?? "–"}
@@ -595,7 +672,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             );
           })()}
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Giật</th>
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500">Giật</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
@@ -608,7 +685,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Hướng</th>
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500">Hướng</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
@@ -620,11 +697,11 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Mưa mm</th>
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500">Mưa mm</th>
             {gio.map((g) => (
               <td
                 key={g.gio}
-                className={"border-b border-slate-200 px-0.5 py-0.5 " + (g.mua >= MUA_DANG_KE ? "font-bold text-sky-700" : "text-slate-400")}
+                className={"border-b border-slate-200 px-0.5 py-0.5 " + (g.mua >= MUA_DANG_KE ? "font-bold text-sky-700" : "text-slate-400") + bd(g)}
                 title={g.mua >= MUA_DANG_KE ? "mưa" : g.mua >= MUA_BAY ? "mưa bay — bay vẫn bay" : "từ 0,3 mm trở xuống: coi như không mưa"}
               >
                 {g.mua >= MUA_BAY ? g.mua.toFixed(1) : "–"}
@@ -637,7 +714,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
            * Mưa mm ở trên nói thẳng: giờ nào, bao nhiêu milimét.
            */}
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Nguy cơ dông — trên 40% là cấm bay">
+            <th data-truc className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500" title="Nguy cơ dông — trên 40% là cấm bay">
               ⚡ Dông
             </th>
             {gio.map((g) => {
@@ -657,7 +734,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
           </tr>
           <tr>
             <th
-              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              data-truc
+              className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500"
               title="Trần mây trên bãi cất cánh — thấp kèm mây thấp dày nghĩa là mù trùm bãi"
             >
               Trần mây
@@ -668,7 +746,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
               return (
                 <td
                   key={g.gio}
-                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (mu ? "bg-slate-300 font-bold text-slate-900" : "text-slate-500")}
+                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (mu ? "bg-slate-300 font-bold text-slate-900" : "text-slate-500") + bd(g)}
                   title={g.mayThap !== undefined ? `mây thấp ${Math.round(g.mayThap)}%` : undefined}
                 >
                   {cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}km` : `${cm}m`}
@@ -678,7 +756,8 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
           </tr>
           <tr>
             <th
-              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              data-truc
+              className="sticky left-0 z-10 border-b border-slate-200 bg-white px-1 py-0.5 text-left font-bold text-slate-500"
               title="Thermal: thermal gắt thì dù xóc, khách dễ say"
             >
               Thermal
@@ -688,7 +767,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
               return (
                 <td
                   key={g.gio}
-                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (c.thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500")}
+                  className={"border-b border-slate-200 px-0.5 py-0.5 " + (c.thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500") + bd(g)}
                   title={[c.onDinh, c.tran ? `trần ~${c.tran}m` : ""].filter(Boolean).join(" · ")}
                 >
                   {NHAN_THERMAL[c.thermal]}

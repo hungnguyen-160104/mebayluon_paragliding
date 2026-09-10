@@ -61,6 +61,8 @@ const HOURLY = [
   "dew_point_2m",
   "relative_humidity_2m",
   "precipitation",
+  /** Phần mưa rào / đối lưu — để tách "mưa" với "mưa giông" trên biểu đồ. */
+  "showers",
   "precipitation_probability",
   "cloud_cover",
   "cloud_cover_low",
@@ -111,12 +113,13 @@ const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string 
 const CACHE_MS = 20 * 60 * 1000;
 
 /**
- * SỐ NGÀY DỰ BÁO — 7 ngày (luật chủ 10/09).
+ * SỐ NGÀY DỰ BÁO — 8 ngày (luật chủ 10/09).
  *
- * Xa hơn nữa thì mô hình toàn cầu bắt đầu đoán mò với địa hình núi, mà khách
- * đặt bay cũng hiếm khi hỏi quá một tuần.
+ * Tám chứ không phải bảy vì dải ngày xếp 4 ô một hàng: bảy ngày để hàng dưới
+ * trơ ba ô, tám thì đủ hai hàng vuông vắn. Xa hơn nữa thì mô hình toàn cầu bắt
+ * đầu đoán mò với địa hình núi, mà khách đặt bay cũng hiếm khi hỏi quá tuần.
  */
-export const SO_NGAY = 7;
+export const SO_NGAY = 8;
 /**
  * BẢN CŨ CÒN DÙNG ĐƯỢC TỚI 6 TIẾNG khi không gọi được mô hình.
  *
@@ -392,6 +395,7 @@ async function layVaCham(
       giat: Number(h.wind_gusts_10m?.[i] ?? 0),
       huong: Number(h.wind_direction_10m?.[i] ?? 0),
       mua: Number(h.precipitation?.[i] ?? 0),
+      muaRao: so(h.showers),
       may: Number(h.cloud_cover?.[i] ?? 0),
       nhietDo: Number(h.temperature_2m?.[i] ?? 0),
       diemSuong: so(h.dew_point_2m),

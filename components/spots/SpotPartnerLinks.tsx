@@ -41,23 +41,30 @@ export default function SpotPartnerLinks({
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="container mx-auto max-w-4xl rounded-2xl border border-white/20 bg-black/25 px-6 py-7 shadow-lg backdrop-blur-xl"
+        /* Cùng bề ngang với thẻ giới thiệu, thẻ thời tiết và thẻ đặt bay ở trên
+           (max-w-5xl) — bốn thẻ xếp chồng phải thẳng mép (chủ 10/09). Rộng thêm
+           cũng vừa đủ để ba nút bản đồ nằm một hàng thay vì gãy xuống dòng. */
+        className="container mx-auto max-w-5xl rounded-2xl border border-white/20 bg-black/25 px-6 py-7 text-center shadow-lg backdrop-blur-xl"
       >
         {group.maps.length > 0 && (
           <div className="mb-6">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
+            <h3 className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
               <MapPin size={16} className="text-accent" />
               {L.mapsTitle}
             </h3>
 
-            <ul className="flex flex-wrap gap-2">
+            {/* BA NÚT BẢN ĐỒ MỘT HÀNG từ 1024px (chủ 10/09): ba cái là một bộ —
+                bãi cất, bãi cất động cơ, bãi hạ — đứng chung hàng thì đọc ra
+                ngay là ba chỗ khác nhau, chứ rơi xuống dòng trông như hai nhóm
+                rời. Điện thoại vẫn xuống dòng, ép một hàng thì chữ bé không đọc nổi. */}
+            <ul className="flex flex-wrap justify-center gap-2 lg:flex-nowrap">
               {group.maps.map((link) => (
-                <li key={link.url + link.kind}>
+                <li key={link.url + link.kind} className="lg:shrink-0">
                   <a
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg ${BRAND_BUTTON_CLASS[link.brand]}`}
+                    className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg lg:px-2.5 lg:text-[13px] ${BRAND_BUTTON_CLASS[link.brand]}`}
                   >
                     <MapPin size={15} />
                     <span>
@@ -74,12 +81,12 @@ export default function SpotPartnerLinks({
         {/* Điểm bay này cũng là trường dạy dù — dẫn thẳng sang bài khoá học. */}
         {courses.length > 0 && (
           <div className="mb-6">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
+            <h3 className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
               <GraduationCap size={16} className="text-accent" />
               {L.coursesTitle}
             </h3>
 
-            <ul className="flex flex-wrap gap-2">
+            <ul className="flex flex-wrap justify-center gap-2">
               {courses.map((course) => (
                 <li key={course.href}>
                   <Link
@@ -96,12 +103,12 @@ export default function SpotPartnerLinks({
 
         {group.partners.length > 0 && (
           <div>
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
+            <h3 className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-200">
               <ExternalLink size={16} className="text-accent" />
               {L.partnersTitle}
             </h3>
 
-            <ul className="flex flex-wrap gap-2">
+            <ul className="flex flex-wrap justify-center gap-2">
               {group.partners.map((link) => (
                 <li key={link.url}>
                   <a

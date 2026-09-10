@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * METEOGRAM — biểu đồ nhiều tầng theo giờ, vẽ theo lối Windy, NỐI LIỀN 7 NGÀY.
+ * METEOGRAM — biểu đồ nhiều tầng theo giờ, vẽ theo lối Windy, NỐI LIỀN CẢ DÃY NGÀY.
  *
  * Bảng số nói chính xác từng ô, nhưng mắt phải đọc từng ô một. Meteogram nói
  * HÌNH DÁNG CỦA NGÀY trong một cái liếc: mây dày lên lúc nào, mưa rơi vào khúc
@@ -37,8 +37,6 @@
  * Vẫn SVG thuần, không thư viện.
  */
 
-import { useCallback, useEffect, useRef } from "react";
-
 import {
   bieuTuongTroi,
   huongChu,
@@ -49,6 +47,7 @@ import {
   type MucDo,
 } from "@/lib/baobay/thoi-tiet";
 
+import { useCuonTheoNgay } from "./cuon-ngay";
 import { chuTrenNen, mauGiat, mauGio } from "./mau-gio";
 import { WindArrow } from "./WindArrow";
 
@@ -87,7 +86,7 @@ export const NHAN_METEOGRAM_VI: NhanMeteogram = {
   ap: "áp hPa",
   tran: "Trần m",
   matDat: "mặt đất",
-  vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới",
+  vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
 };
 
 /** Bề ngang một cột giờ — rộng để số 11px và mũi tên 22px không chen nhau. */
@@ -184,43 +183,6 @@ function dungCot(ngay: NgayVe[], tuGio: number, denGio: number): Cot[] {
   return cot;
 }
 
-/**
- * KHUNG CUỘN dùng chung cho meteogram và airgram: cột nhãn trái dính, dải cột
- * cuộn ngang, đồng bộ hai chiều với ngày đang chọn ở dải phía trên.
- */
-function useCuonTheoNgay(cot: Cot[], ngayChon: string | null | undefined, onNgayHien?: (ngay: string) => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  /** Ngày cuối cùng CHÍNH MÌNH báo lên do người gạt — để không cuộn ngược lại nó. */
-  const daBao = useRef<string | null>(null);
-  const khung = useRef<number | null>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !ngayChon || ngayChon === daBao.current) return;
-    const i = cot.findIndex((c) => c.ngay.ngay === ngayChon);
-    if (i < 0) return;
-    el.scrollTo({ left: i * W, behavior: "smooth" });
-  }, [ngayChon, cot]);
-
-  const onScroll = useCallback(() => {
-    const el = ref.current;
-    if (!el || !onNgayHien || !cot.length) return;
-    if (khung.current !== null) return;
-    khung.current = requestAnimationFrame(() => {
-      khung.current = null;
-      /** Ngày "đang xem" = ngày của cột nằm ở mép trái (cộng nửa cột cho khỏi nhấp nháy ở ranh giới). */
-      const i = Math.max(0, Math.min(cot.length - 1, Math.floor((el.scrollLeft + W / 2) / W)));
-      const d = cot[i].ngay.ngay;
-      if (d !== daBao.current) {
-        daBao.current = d;
-        onNgayHien(d);
-      }
-    });
-  }, [cot, onNgayHien]);
-
-  return { ref, onScroll };
-}
-
 /** Dải TIÊU ĐỀ NGÀY: nhãn dính trong ô ngày, chấm màu mức, tổng mưa, mọc/lặn. */
 function HangNgay({ cot, lang }: { cot: Cot[]; lang: string }) {
   const nhom: Array<{ ngay: NgayVe; n: number }> = [];
@@ -236,6 +198,7 @@ function HangNgay({ cot, lang }: { cot: Cot[]; lang: string }) {
         return (
           <div
             key={ngay.ngay}
+            data-ngay={ngay.ngay}
             style={{ width: n * W }}
             className={"relative h-full shrink-0 overflow-hidden " + (k > 0 ? "border-l-2 border-slate-300" : "")}
           >
@@ -343,7 +306,7 @@ export function Meteogram({
   lang?: string;
 }) {
   const cot = dungCot(ngay, tuGio, denGio);
-  const { ref, onScroll } = useCuonTheoNgay(cot, ngayChon, onNgayHien);
+  const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
   if (cot.length < 2) return null;
 
   const rong = cot.length * W;
@@ -408,7 +371,7 @@ export function Meteogram({
       <div ref={ref} onScroll={onScroll} className="overflow-x-auto overscroll-x-contain">
         <div className="flex" style={{ width: W_NHAN + rong }}>
           {/* ---- Cột nhãn trục trái — DÍNH khi cuộn ---- */}
-          <div className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: W_NHAN }}>
+          <div data-truc className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: W_NHAN }}>
             <div className="h-[22px] border-b border-slate-200 bg-slate-50" />
             <div className={"h-[22px] " + nhanTrai}>{nhan.gio}</div>
             <div className={"h-[26px] " + nhanTrai}>{nhan.troi}</div>
@@ -525,33 +488,41 @@ export function Meteogram({
                 </g>
               )}
 
-              {/* Cột mưa từng giờ — xanh đậm là mưa thật (≥ 0,8), nhạt là mưa bay (0,4–0,8); từ 0,3 trở xuống không vẽ. */}
-              {cot.map((c, i) =>
-                c.g.mua >= MUA_BAY ? (
+              {/**
+               * CỘT MƯA HAI MÀU (luật chủ 10/09): XANH là mưa thường, CAM là
+               * phần MƯA RÀO / GIÔNG chồng lên trên. Mưa 1,0mm cộng giông 5,0mm
+               * ra cột 6,0mm nhưng nhìn là biết ngay phần lớn nước đến từ ổ
+               * giông — hai kiểu mưa ấy quyết định khác hẳn nhau: mưa dầm thì
+               * chờ ngớt là bay, còn giông thì gió đổ xuống quét qua bãi trước
+               * khi mưa tới, không ai cất cánh.
+               *
+               * Cột nhạt hơn là mưa bay (0,4–0,8mm); từ 0,3 trở xuống không vẽ.
+               */}
+              {cot.map((c, i) => {
+                const tong = c.g.mua;
+                if (tong < MUA_BAY) return null;
+                const cao = (mm: number) => (mm / muaMax) * (H_KHOI * 0.45);
+                const rao = Math.min(tong, Math.max(0, c.g.muaRao ?? 0));
+                const thuong = Math.max(0, tong - rao);
+                const x = i * W + W * 0.34;
+                const rong = W * 0.32;
+                const that = tong >= MUA_DANG_KE;
+                return (
                   <g key={`m${c.g.gio}`}>
-                    <rect
-                      x={i * W + W * 0.34}
-                      y={H_KHOI - (c.g.mua / muaMax) * (H_KHOI * 0.45)}
-                      width={W * 0.32}
-                      height={(c.g.mua / muaMax) * (H_KHOI * 0.45)}
-                      fill={c.g.mua >= MUA_DANG_KE ? "#2563eb" : "#93c5fd"}
-                      rx="2"
-                    />
-                    {c.g.mua >= MUA_DANG_KE && (
-                      <text
-                        x={xGiua(i)}
-                        y={H_KHOI - (c.g.mua / muaMax) * (H_KHOI * 0.45) - 3}
-                        fill="#1d4ed8"
-                        fontSize="10"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                      >
-                        {c.g.mua.toFixed(1)}mm
+                    {thuong > 0 && (
+                      <rect x={x} y={H_KHOI - cao(thuong)} width={rong} height={cao(thuong)} fill={that ? "#2563eb" : "#93c5fd"} rx="2" />
+                    )}
+                    {rao > 0 && (
+                      <rect x={x} y={H_KHOI - cao(tong)} width={rong} height={cao(rao)} fill={that ? "#f97316" : "#fdba74"} rx="2" />
+                    )}
+                    {that && (
+                      <text x={xGiua(i)} y={H_KHOI - cao(tong) - 3} fill={rao > thuong ? "#c2410c" : "#1d4ed8"} fontSize="10" fontWeight="bold" textAnchor="middle">
+                        {tong.toFixed(1)}mm
                       </text>
                     )}
                   </g>
-                ) : null,
-              )}
+                );
+              })}
 
               {duongAp && <path d={duongAp} fill="none" stroke="#475569" strokeWidth="1.4" opacity="0.85" strokeLinejoin="round" />}
               {nhanAp.map((n, k) => (
@@ -624,7 +595,7 @@ export function Airgram({
   lang?: string;
 }) {
   const cot = dungCot(ngay, tuGio, denGio);
-  const { ref, onScroll } = useCuonTheoNgay(cot, ngayChon, onNgayHien);
+  const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
   if (cot.length < 2) return null;
   const rong = cot.length * W;
 
@@ -644,7 +615,7 @@ export function Airgram({
     <div className="mt-2 rounded-xl border border-slate-200 bg-white">
       <div ref={ref} onScroll={onScroll} className="overflow-x-auto overscroll-x-contain">
         <div className="flex" style={{ width: W_NHAN + rong }}>
-          <div className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: W_NHAN }}>
+          <div data-truc className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: W_NHAN }}>
             <div className="h-[22px] border-b border-slate-200 bg-slate-50" />
             <div className={"h-[22px] " + nhanTrai}>{nhan.gio}</div>
             {muc.map((m) => (
