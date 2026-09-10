@@ -22,7 +22,6 @@ import {
   chiSoBay,
   huongChu,
   huongTheNao,
-  muiTenGio,
   NHAN_SUC_GIAT,
   NHAN_SUC_GIO,
   NHAN_THERMAL,
@@ -33,6 +32,8 @@ import {
   type SucGio,
 } from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
+
+import { WindArrow } from "@/components/weather/WindArrow";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
 
@@ -356,12 +357,19 @@ export function ThoiTietCard({
 /* Bảng giờ                                                            */
 /* ------------------------------------------------------------------ */
 
-/** Mũi tên tô theo hướng: xanh thuận sườn · đỏ ngược sườn hoặc luồn khe · xám chưa rõ. */
-const MAU_MUI_TEN: Record<"tot" | "xau" | "thuong", string> = {
-  tot: "text-emerald-600",
-  xau: "text-rose-600",
-  thuong: "text-slate-600",
-};
+/**
+ * MŨI TÊN CHỈ HAI MÀU: xanh là bay được, đỏ là không.
+ *
+ * Điểm ĐÃ khai luật hướng (Khau Phạ) thì màu nói về SƯỜN: xanh khi gió thổi
+ * vào sườn, đỏ khi ngược sườn hoặc luồn khe. Điểm CHƯA khai luật (Sa Pa, Đồi
+ * Bù) thì không có gì để nói về sườn, nên mượn kết luận của chính giờ đó — vẫn
+ * đúng nghĩa "xanh bay được, đỏ thì không", chỉ là căn cứ khác.
+ */
+function mauMuiTen(the: "tot" | "xau" | "thuong", muc: MucDo): string {
+  if (the === "tot") return "text-emerald-600";
+  if (the === "xau") return "text-rose-600";
+  return muc === "do" ? "text-rose-600" : muc === "vang" ? "text-amber-500" : "text-emerald-600";
+}
 
 function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
   /** Chỉ bày khung giờ bay: 0h–6h và tối thì trời thế nào cũng không dùng tới. */
@@ -380,6 +388,16 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             {gio.map((g) => (
               <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5 font-bold text-slate-700">
                 {g.gio.slice(11, 13)}h
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Nắng · nắng một phần · âm u · mưa">
+              Trời
+            </th>
+            {gio.map((g) => (
+              <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5" title={`mây ${Math.round(g.may)}%`}>
+                <span className="text-base leading-none">{bieuTuongTroi(g.may, g.mua, g.buXa)}</span>
               </td>
             ))}
           </tr>
@@ -432,9 +450,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
                 className="border-b border-slate-200 px-0.5 py-0.5"
                 title={`gió ${huongChu(g.huong)} (${Math.round(g.huong)}°) — mũi tên chỉ chiều gió thổi tới`}
               >
-                <span className={"text-lg font-black leading-none " + MAU_MUI_TEN[huongTheNao(g.huong, g.gio10m, luat)]}>
-                  {muiTenGio(g.huong)}
-                </span>
+                <WindArrow deg={g.huong} className={mauMuiTen(huongTheNao(g.huong, g.gio10m, luat), g.muc)} />
               </td>
             ))}
           </tr>
@@ -524,16 +540,6 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
                 </td>
               );
             })}
-          </tr>
-          <tr>
-            <th className="px-1 py-0.5 text-left font-bold text-slate-500" title="Nắng · nắng một phần · âm u · mưa">
-              Trời
-            </th>
-            {gio.map((g) => (
-              <td key={g.gio} className="px-0.5 py-0.5" title={`mây ${Math.round(g.may)}%`}>
-                <span className="text-base leading-none">{bieuTuongTroi(g.may, g.mua, g.buXa)}</span>
-              </td>
-            ))}
           </tr>
         </tbody>
       </table>

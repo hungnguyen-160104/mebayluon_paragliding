@@ -19,11 +19,11 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { WindArrow } from "./WindArrow";
 import {
   bieuTuongTroi,
   chiSoBay,
   huongTheNao,
-  muiTenGio,
   sucGiat,
   sucGio,
   tranMay,
@@ -108,12 +108,12 @@ const MAU_GIO: Record<SucGio, string> = {
 };
 
 /** Giật chỉ đáng chú ý từ 14 m/s: dưới đó để chữ mờ cho khỏi bắt mắt vô ích. */
-/** Mũi tên: xanh thuận sườn · đỏ ngược sườn · xám khi điểm chưa khai luật hướng. */
-const MAU_MUI_TEN: Record<"tot" | "xau" | "thuong", string> = {
-  tot: "text-emerald-600",
-  xau: "text-rose-600",
-  thuong: "text-slate-600",
-};
+/** Mũi tên chỉ hai màu — xanh bay được, đỏ thì không. Xem ghi chú ở sổ nội bộ. */
+function mauMuiTen(the: "tot" | "xau" | "thuong", muc: MucDo): string {
+  if (the === "tot") return "text-emerald-600";
+  if (the === "xau") return "text-rose-600";
+  return muc === "do" ? "text-rose-600" : muc === "vang" ? "text-amber-500" : "text-emerald-600";
+}
 
 const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
   nhe: "text-slate-400",
@@ -219,6 +219,14 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
         <tbody>
           {hang(t.hour, (g) => <span className="font-bold text-slate-800">{g.gio.slice(11, 13)}h</span>)}
           {hang(
+            t.sky,
+            (g) => (
+              <span className="text-base leading-none" title={`${Math.round(g.may)}%`}>
+                {bieuTuongTroi(g.may, g.mua, g.buXa)}
+              </span>
+            ),
+          )}
+          {hang(
             `${t.wind} ${t.windUnit}`,
             (g) => <span className="font-black">{g.gio10m.toFixed(1)}</span>,
             (g) => "rounded " + MAU_GIO[sucGio(g.gio10m)],
@@ -236,11 +244,8 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
           {hang(
             t.direction,
             (g) => (
-              <span
-                className={"text-lg font-black leading-none " + MAU_MUI_TEN[huongTheNao(g.huong, g.gio10m, luat)]}
-                title={huongTheoNgonNgu(g.huong, lang)}
-              >
-                {muiTenGio(g.huong)}
+              <span title={huongTheoNgonNgu(g.huong, lang)}>
+                <WindArrow deg={g.huong} className={mauMuiTen(huongTheNao(g.huong, g.gio10m, luat), g.muc)} />
               </span>
             ),
           )}
@@ -282,14 +287,6 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
             t.thermal,
             (g) => t.thermalLevels[chiSoBay(g).thermal],
             (g) => (chiSoBay(g).thermal === "gat" ? "font-bold text-orange-700" : "text-slate-500"),
-          )}
-          {hang(
-            t.sky,
-            (g) => (
-              <span className="text-base leading-none" title={`${Math.round(g.may)}%`}>
-                {bieuTuongTroi(g.may, g.mua, g.buXa)}
-              </span>
-            ),
           )}
         </tbody>
       </table>
