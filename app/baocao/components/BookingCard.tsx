@@ -5332,12 +5332,28 @@ export function BookingTodayBanner({
                * Ngắt dòng bằng một ô rỗng trải hết bề ngang — cách duy nhất ép
                * xuống dòng trong flex-wrap mà không phải đo đạc gì.
                */
-              <div className="float-right ml-2 flex max-w-[340px] flex-wrap justify-end gap-1 [&>button]:h-7 [&>button]:px-2 [&>button]:text-[11px] [&>div]:basis-full">
-                {renderOpenQuick(b, false, true)}
-                <div className="h-0 basis-full" />
-                {moneyOutside(b) && renderMoneyButton(b)}
-                {detailButton(b)}
-                {!(b.locked && !canLock) && renderMoreMenu(b)}
+              <div className="float-right ml-2 flex max-w-[340px] flex-col items-end gap-1 [&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
+                {/**
+                 * HAI HÀNG RIÊNG, mỗi hàng CO THEO CHỮ của chính nó.
+                 *
+                 * Bản trước gộp một khối rồi ngắt dòng bằng ô rỗng trải hết bề
+                 * ngang — hệ quả là khối LUÔN rộng đúng 340px kể cả khi chỉ có
+                 * hai nút, mà khối này thả nổi (float) nên nó lấn chỗ của phần
+                 * chữ: tên khách bị bó lại xuống dòng sớm, còn bên phải thì hở
+                 * một mảng trắng to. Tách hai hàng thì khối chỉ rộng bằng hàng
+                 * rộng nhất, chữ được trả lại chỗ.
+                 */}
+                <div className="flex flex-wrap justify-end gap-1">{renderOpenQuick(b, false, true)}</div>
+                {/**
+                 * Bảng xổ ra của "⋯ Thêm" (và ô thu tiền) là `div` — cho nó
+                 * trải hết hàng, và nới sàn 300px: hàng dưới vốn chỉ rộng bằng
+                 * ba nút, bảng chức năng nhét vào đó thì mỗi mục một dòng.
+                 */}
+                <div className="flex flex-wrap justify-end gap-1 [&>div]:w-full [&>div]:min-w-[300px]">
+                  {moneyOutside(b) && renderMoneyButton(b)}
+                  {detailButton(b)}
+                  {!(b.locked && !canLock) && renderMoreMenu(b)}
+                </div>
               </div>
             )}
     </>
