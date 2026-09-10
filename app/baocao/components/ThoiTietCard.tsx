@@ -28,6 +28,7 @@ import {
   NHAN_THERMAL,
   sucGiat,
   sucGio,
+  suNangMua,
   tranMay,
   type LuatHuong,
   type SucGio,
@@ -247,8 +248,14 @@ export function ThoiTietCard({
               <span className="text-rose-700">Hôm nay không có khung giờ đẹp</span>
             )}{" "}
             · gió tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
-            {homNayCard.xacSuatMuaMax >= 0 ? ` · khả năng mưa ${homNayCard.xacSuatMuaMax}%` : ""}
-            {homNayCard.muaTong > 0.1 ? ` (${homNayCard.muaTong.toFixed(1)}mm)` : ""}
+            {/**
+             * SỐ TIẾNG MƯA, không phải phần trăm. "Khả năng mưa 93%" bị đọc
+             * thành "mưa gần cả ngày"; "mưa ~2 tiếng (13:00–15:00)" thì không
+             * ai hiểu nhầm. Mưa dưới 0,3 mm/giờ không tính (lác đác vài hạt).
+             */}
+            {homNayCard.gioMua > 0
+              ? ` · mưa ${suNangMua(homNayCard.muaTong)} ~${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTong.toFixed(1)}mm`
+              : " · không mưa"}
             {homNayCard.xacSuatDongMax >= 20 ? ` · ⚡ dông ${homNayCard.xacSuatDongMax}%` : ""}
             {homNayCard.tranMax ? ` · trần thermal ${homNayCard.tranMax}m` : ""}
           </div>
@@ -304,7 +311,7 @@ export function ThoiTietCard({
               <div className="text-[9px] leading-tight">
                 {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "nghỉ" : "hạn chế"}
               </div>
-              {n.xacSuatMuaMax >= 50 && <div className="text-[9px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
+              {n.gioMua > 0 && <div className="text-[9px] leading-tight" title={n.khungMua ?? ""}>☔ {n.gioMua}h</div>}
               {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
               {/* Điểm chuyên gia 0–100 — con số để so ngày với ngày, mô hình với mô hình. */}
               {(() => {
@@ -551,8 +558,11 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
             ))}
           </tr>
           <tr>
-            <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500" title="Xác suất mưa của mô hình">
-              K.năng mưa
+            <th
+              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              title="Xác suất mưa TRONG GIỜ đó (đã hiệu chỉnh theo lượng mưa) — ở mức ngày thì xem số tiếng mưa, không xem phần trăm"
+            >
+              Mưa %/giờ
             </th>
             {gio.map((g) => {
               const p = g.xacSuatMua;

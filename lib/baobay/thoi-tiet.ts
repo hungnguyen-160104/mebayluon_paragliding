@@ -706,6 +706,25 @@ export function chamGio(
 export const GIO_BAY_TU = 7;
 export const GIO_BAY_DEN = 17;
 
+/**
+ * MƯA ĐÁNG KỂ (mm trong một giờ) — dưới mức này không gọi là "có mưa".
+ *
+ * Mô hình hay trả 0,1–0,4 mm: đó là mưa phùn vài hạt, dù không ướt, khách
+ * không để ý. Đếm nó vào "số giờ mưa" thì một ngày rả rích 4mm thành "mưa 11
+ * tiếng" — đúng chữ nhưng sai ý, và người đọc thôi tin cả bảng.
+ *
+ * Lấy đúng 0,5 để khớp với ngưỡng CẤM BAY vì mưa (`muaDo`): thứ đáng đếm là
+ * thứ đủ làm hoãn chuyến.
+ */
+export const MUA_DANG_KE = 0.5;
+
+/** Mô tả cường độ mưa cả ngày theo TỔNG lượng — "nhỏ" 4mm khác hẳn "to" 30mm. */
+export function suNangMua(tongMm: number): string {
+  if (tongMm < 3) return "nhỏ";
+  if (tongMm < 15) return "vừa";
+  return "to";
+}
+
 export type NgayThoiTiet = {
   /** "YYYY-MM-DD". */
   ngay: string;
@@ -723,6 +742,16 @@ export type NgayThoiTiet = {
   nhietMax: number;
   /** Xác suất mưa cao nhất trong khung giờ bay (%), -1 khi mô hình không cấp. */
   xacSuatMuaMax: number;
+  /**
+   * SỐ GIỜ CÓ MƯA ĐÁNG KỂ trong khung bay, và khung giờ mưa.
+   *
+   * Thay cho "khả năng mưa 93%" ở mức NGÀY: con số phần trăm ấy là xác suất
+   * "có mưa ở đâu đó trong ô lưới, lúc nào đó trong giờ", nhưng người đọc hiểu
+   * thành "mưa 93% thời gian trong ngày" — tức gần như cả ngày. Nói "mưa
+   * khoảng 2 tiếng (13h–15h)" thì không ai hiểu nhầm được.
+   */
+  gioMua: number;
+  khungMua: string | null;
   /** Xác suất dông cao nhất trong khung giờ bay (%). */
   xacSuatDongMax: number;
   /** Trần thermal cao nhất (m) — thermal của ngày. */
@@ -786,6 +815,13 @@ export function gopNgay(ngay: string, gio: Array<GioThoiTiet & ChamGio>): NgayTh
     xacSuatMuaMax: trongKhung.length
       ? Math.max(-1, ...trongKhung.map((g) => xacSuatMuaThat(g.xacSuatMua, g.mua)))
       : -1,
+    gioMua: trongKhung.filter((g) => g.mua >= MUA_DANG_KE).length,
+    khungMua: (() => {
+      const m = trongKhung.filter((g) => g.mua >= MUA_DANG_KE);
+      if (!m.length) return null;
+      /** Chỉ nói khoảng đầu–cuối: mưa ngắt quãng thì vẫn là "khoảng ấy có mưa". */
+      return m.length === 1 ? m[0].gio.slice(11, 16) : `${m[0].gio.slice(11, 16)}–${m[m.length - 1].gio.slice(11, 16)}`;
+    })(),
     xacSuatDongMax: trongKhung.length ? Math.max(0, ...trongKhung.map((g) => chiSoBay(g).xacSuatDong)) : 0,
     tranMax: (() => {
       const t = trongKhung.map((g) => chiSoBay(g).tran).filter((x): x is number => x !== null);

@@ -168,7 +168,19 @@ Ba khái niệm mới, giải thích ngắn:
   có mây. Và phải có **cả hai** (trần mây thấp **và** mây thấp ≥ 70%) mới chấm
   mù.
 
-- **Khả năng mưa** hiển thị là con số **đã hiệu chỉnh theo lượng mưa**. Mô hình
+- **Ở mức NGÀY nói SỐ TIẾNG MƯA, không nói phần trăm.** "Khả năng mưa 93%" bị
+  đọc thành "mưa 93% thời gian trong ngày" — tức gần như cả ngày, trong khi thực
+  ra nó là "xác suất có mưa ở đâu đó trong ô lưới". Nay ghi "mưa vừa ~3 tiếng
+  (08:00–10:00), tổng 5,5mm". Phần trăm chỉ còn ở hàng **Mưa %/giờ** của bảng
+  giờ, nơi nó đúng nghĩa: xác suất mưa trong chính giờ đó.
+
+  Chỉ đếm giờ có **mưa ≥ 0,5 mm** (`MUA_DANG_KE`, khớp ngưỡng cấm bay vì mưa):
+  0,1–0,4 mm là mưa phùn vài hạt, dù không ướt. Không lọc thì một ngày rả rích
+  4mm thành "mưa 11 tiếng" — đúng chữ nhưng sai ý.
+
+  Cường độ theo tổng lượng: **nhỏ** < 3mm · **vừa** 3–15mm · **to** > 15mm.
+
+- **Khả năng mưa từng giờ** vẫn là con số **đã hiệu chỉnh theo lượng mưa**. Mô hình
   ở vùng nhiệt đới mùa mưa gần như luôn báo 90–100%, vì nó tính "có mưa ở đâu
   đó trong ô 25 km" — mà ô ấy trùm cả vùng núi rộng. Người xếp lịch cần biết
   "có mưa **ở bãi**, đủ ướt để hoãn không", nên xác suất được hạ khi lượng mưa

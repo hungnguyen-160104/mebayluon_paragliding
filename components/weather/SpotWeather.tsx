@@ -72,6 +72,8 @@ type Ngay = {
   nhietMin: number;
   nhietMax: number;
   xacSuatMuaMax: number;
+  gioMua: number;
+  khungMua: string | null;
   xacSuatDongMax: number;
   tranMax: number | null;
   gio: Gio[];
@@ -177,7 +179,7 @@ function DaiNgay({
             <div className="mt-0.5 text-[10px] font-semibold leading-tight">
               {n.gioXanh > 0 ? `${n.gioXanh} ${t.goodHours}` : nhanMuc(n.muc, t)}
             </div>
-            {n.xacSuatMuaMax >= 50 && <div className="text-[10px] leading-tight">☔ {n.xacSuatMuaMax}%</div>}
+            {n.gioMua > 0 && <div className="text-[10px] leading-tight">☔ {n.gioMua}h</div>}
             {n.xacSuatDongMax >= 20 && <div className="text-[10px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
             {/* Điểm 0–100 của chuyên gia: một con số để so ngày này với ngày kia. */}
             {n.chuyenGia && (
@@ -502,7 +504,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
           <span className="text-rose-700">{t.noWindow}</span>
         )}{" "}
         · {t.wind} {homNay.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {homNay.giatMax.toFixed(1)}
-        {homNay.xacSuatMuaMax >= 0 ? ` · ${t.rainChance} ${homNay.xacSuatMuaMax}%` : ""}
+        {homNay.gioMua > 0 ? ` · ${t.rain} ~${homNay.gioMua}h${homNay.khungMua ? ` (${homNay.khungMua})` : ""} · ${homNay.muaTong.toFixed(1)}mm` : ""}
         {homNay.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${homNay.xacSuatDongMax}%` : ""}
       </div>
 
