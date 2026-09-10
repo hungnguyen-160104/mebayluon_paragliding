@@ -15,6 +15,7 @@
  * lệch mươi cây số là gió khác hẳn.
  */
 
+import type { LuatHuong } from "./baobay/thoi-tiet";
 import type { SpotId } from "./baobay/spots";
 
 export type DiemThoiTiet = {
@@ -27,6 +28,17 @@ export type DiemThoiTiet = {
   lon: number;
   /** Điểm bay nội bộ tương ứng — có thì dùng toạ độ và ngưỡng đã học của nó. */
   spotNoiBo?: SpotId;
+  /** Luật hướng gió riêng của chỗ cất cánh này. */
+  luatHuong?: LuatHuong;
+  /**
+   * Những chỗ cất cánh KHÁC phải hiện KÈM trên cùng trang.
+   *
+   * "Hà Nội" trên web là một trang nhưng thực ra hai bãi: Đồi Bù và Viên Nam,
+   * cách nhau hàng chục cây số và quay về hai phía khác nhau — gió tốt cho bãi
+   * này lại là gió xấu cho bãi kia. Một bảng thời tiết chung cho cả hai là sai
+   * ở nửa số ngày, nên phải bày đủ hai bảng.
+   */
+  kem?: string[];
 };
 
 export const DIEM_THOI_TIET: DiemThoiTiet[] = [
@@ -38,8 +50,33 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     lon: 104.1279,
     spotNoiBo: "khau-pha",
   },
-  { slug: "doi-bu", ten: "Đồi Bù", tinh: "Hà Nội", lat: 20.8386, lon: 105.5561, spotNoiBo: "ha-noi" },
-  { slug: "vien-nam", ten: "Núi Viên Nam", tinh: "Hoà Bình", lat: 20.9497, lon: 105.4206 },
+  /**
+   * ĐỒI BÙ — chủ điểm bay: tốt với gió ĐÔNG, BẮC, TÂY; xấu với NAM và TÂY NAM.
+   * Cung tốt vắt qua mốc bắc (247°→112°), cung xấu là góc tây nam–nam.
+   */
+  {
+    slug: "doi-bu",
+    ten: "Đồi Bù",
+    tinh: "Hà Nội",
+    lat: 20.8386,
+    lon: 105.5561,
+    spotNoiBo: "ha-noi",
+    luatHuong: { tot: [247, 112], xau: [157, 246] },
+    kem: ["vien-nam"],
+  },
+  /**
+   * VIÊN NAM — NGƯỢC HẲN Đồi Bù: tốt với ĐÔNG, NAM, TÂY (cung 68°→292°), xấu
+   * với BẮC, ĐÔNG BẮC, TÂY BẮC. Hai bãi cách nhau chừng 20km mà quay hai phía,
+   * nên cùng một ngày gió bắc thì Đồi Bù bay được còn Viên Nam thì không.
+   */
+  {
+    slug: "vien-nam",
+    ten: "Núi Viên Nam",
+    tinh: "Hoà Bình",
+    lat: 20.9497,
+    lon: 105.4206,
+    luatHuong: { tot: [68, 292], xau: [293, 67] },
+  },
   { slug: "muong-hoa-sapa", ten: "Mường Hoa – Sa Pa", tinh: "Lào Cai", lat: 22.3364, lon: 103.8438, spotNoiBo: "sapa" },
   { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.1094, lon: 108.2789 },
   { slug: "ha-giang", ten: "Bắc Sum – Quản Bạ", tinh: "Hà Giang", lat: 22.9214, lon: 104.9731 },
@@ -53,10 +90,10 @@ export function diemThoiTietTheoSlug(slug: string): DiemThoiTiet | null {
 }
 
 /**
- * Các điểm hiện trên trang "Thời tiết bay" — cùng thứ tự với trang /spots.
- * Đà Lạt và Viên Nam không nằm trong danh sách chính nên chỉ hiện ở trang riêng
- * của chúng, khỏi bày một điểm chưa mở lại ra giữa trang thời tiết.
+ * Các điểm hiện trên trang "Thời tiết bay".
+ *
+ * CÓ cả Viên Nam dù trang /spots gộp nó vào thẻ "Hà Nội": hai bãi quay hai phía
+ * nên cùng một ngày gió bắc thì Đồi Bù bay được còn Viên Nam thì không — gộp
+ * một bảng là nói sai cho một trong hai. Chỉ bỏ Đà Lạt vì điểm đó chưa mở lại.
  */
-export const DIEM_TRANG_THOI_TIET = DIEM_THOI_TIET.filter(
-  (d) => !["dalat", "vien-nam"].includes(d.slug),
-);
+export const DIEM_TRANG_THOI_TIET = DIEM_THOI_TIET.filter((d) => d.slug !== "dalat");

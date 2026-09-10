@@ -529,7 +529,7 @@ export default function DispatcherReportPage() {
       />
 
       {/**
-       * THỜI TIẾT ngay đầu trang, bản rút gọn: dải 5 ngày và một dòng kết luận.
+       * THỜI TIẾT ngay đầu trang, bản rút gọn: dải 7 ngày và một dòng kết luận.
        *
        * Đặt trên mọi thứ khác vì nó quyết định cả ngày làm việc — biết chiều
        * gió lên thì gọi khách dồn lên sáng, chứ đừng để 15h mới phát hiện.

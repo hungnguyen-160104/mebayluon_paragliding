@@ -7,7 +7,10 @@ Hệ thống **đang chạy được ngay, không cần khoá, không tốn ti�
 - Nguồn số: **Open-Meteo** chạy mô hình **ECMWF IFS** — đúng mô hình mà
   windy.com hiển thị mặc định.
 - Bản đồ gió: **iframe của Windy** (`embed.windy.com`) — bản nhúng mở, không
-  cần khoá, không cần đăng nhập.
+  cần khoá, không cần đăng nhập. Bấm chọn được mô hình ngay trên bản đồ:
+  **ECMWF · GFS · ICON · ECMWF AI · Sóng**. Chỗ các mô hình KHÔNG đồng ý với
+  nhau chính là chỗ dự báo còn mong manh.
+- Số ngày: **7 ngày tới**.
 
 Không khai biến nào thì mọi thứ vẫn đủ: trang khách `/thoi-tiet-bay`, widget
 trong từng trang `/spots/…`, và trang nội bộ `/baocao/thoi-tiet`.
@@ -235,8 +238,16 @@ hướng khai riêng từng điểm, không có mặc định chung.
 Vì gió Đông vừa là hướng tốt vừa là hướng sinh xiết: nhẹ và vừa thì đẹp, mạnh
 thì thành cảnh báo — máy xét gió xiết **trước** khi kết luận thuận sườn.
 
-Sa Pa và Đồi Bù chưa khai luật hướng: nói cho tôi cung gió tốt/xấu của hai điểm
-ấy là thêm được ngay.
+**Đồi Bù** (Hà Nội): tốt với gió **Đông, Bắc, Tây** (cung 247°→112°, vắt qua
+bắc); xấu với **Nam, Tây Nam** (157°–246°).
+
+**Viên Nam** (Hoà Bình): **ngược hẳn** Đồi Bù — tốt với **Đông, Nam, Tây**
+(68°–292°), xấu với **Bắc, Đông Bắc, Tây Bắc**. Hai bãi cách nhau chừng 20 km mà
+quay hai phía, nên cùng một ngày gió bắc thì Đồi Bù bay được còn Viên Nam thì
+không. Vì thế trang "Hà Nội" trên web hiện **hai bảng thời tiết riêng**, và trang
+"Thời tiết bay" liệt kê cả hai bãi.
+
+Sa Pa chưa khai luật hướng: nói cho tôi cung gió tốt/xấu là thêm được ngay.
 
 ## 7. Toạ độ điểm bay
 

@@ -84,7 +84,20 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     luatHuong: { tot: [23, 112], xau: [113, 292], xiet: [0, 90, 270] },
   },
   sapa: { lat: 22.3364, lon: 103.8438, alt: 1500, ten: "Sa Pa (Lào Cai)" },
-  "ha-noi": { lat: 20.8386, lon: 105.5561, alt: 833, ten: "Đồi Bù (Chương Mỹ)" },
+  /**
+   * HÀ NỘI = bãi ĐỒI BÙ (điểm chính). Luật hướng của chủ: tốt với đông, bắc,
+   * tây; xấu với nam và tây nam.
+   *
+   * Bãi VIÊN NAM cách đây chừng 20km và quay NGƯỢC phía nên có luật riêng —
+   * xem `lib/weather-spots.ts`, nơi hai bãi được bày thành hai bảng.
+   */
+  "ha-noi": {
+    lat: 20.8386,
+    lon: 105.5561,
+    alt: 833,
+    ten: "Đồi Bù (Chương Mỹ)",
+    luatHuong: { tot: [247, 112], xau: [157, 246] },
+  },
 };
 
 export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): ToaDoDiemBay {

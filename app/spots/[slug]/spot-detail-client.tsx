@@ -3770,6 +3770,31 @@ export function SpotDetailClient({
         </div>
       </section>
 
+      {/**
+       * THỜI TIẾT BAY của chính điểm này, đặt NGAY TRÊN nút "Đặt bay ngay tại…".
+       *
+       * Đây là chỗ khách sắp bấm đặt: câu hỏi cuối cùng trước khi chốt luôn là
+       * "hôm ấy có bay được không". Trả lời ngay tại đó thì họ tự chọn được ngày
+       * đẹp, thay vì đặt bừa rồi gọi hỏi — hoặc bỏ đi tìm Windy rồi không quay
+       * lại. Điểm nào chưa có toạ độ trong danh sách thì khối tự ẩn.
+       */}
+      {spotSlug && diemThoiTietTheoSlug(spotSlug) && (
+        <section className="relative z-10 pt-10">
+          <div className="container mx-auto max-w-4xl space-y-4 px-4">
+            <SpotWeatherWidget slug={spotSlug} />
+            {/**
+             * Trang "Hà Nội" thực ra là HAI BÃI: Đồi Bù và Viên Nam, cách nhau
+             * hàng chục cây số và quay về hai phía — gió tốt cho bãi này là gió
+             * xấu cho bãi kia. Một bảng chung sẽ sai ở nửa số ngày, nên bày đủ
+             * hai bảng, mỗi bảng một luật hướng riêng.
+             */}
+            {(diemThoiTietTheoSlug(spotSlug)?.kem ?? []).map((k) => (
+              <SpotWeatherWidget key={k} slug={k} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Hai nút hành động: đặt bay tại điểm này + xem điểm bay khác.
           Đặt trên phần "Khoảnh khắc tại đây" để khách quyết định sớm. */}
       <section className="relative z-10 py-12">
@@ -3915,22 +3940,6 @@ export function SpotDetailClient({
           </div>
         </div>
       </section>
-
-      {/**
-       * THỜI TIẾT BAY của chính điểm này — 5 ngày tới.
-       *
-       * Đặt ngay trước phần bài viết, tức sau khi khách đã xem ảnh, giá và
-       * lịch trình: đúng lúc câu hỏi "thế hôm ấy có bay được không" nảy ra.
-       * Điểm nào chưa có toạ độ trong danh sách thì khối tự ẩn, không để lại
-       * hộp trống giữa trang.
-       */}
-      {spotSlug && diemThoiTietTheoSlug(spotSlug) && (
-        <section className="relative z-10 py-10">
-          <div className="container mx-auto max-w-4xl px-4">
-            <SpotWeatherWidget slug={spotSlug} />
-          </div>
-        </section>
-      )}
 
       {/* Bài viết về điểm bay (server render, truyền qua slot) */}
       {articlesSlot}

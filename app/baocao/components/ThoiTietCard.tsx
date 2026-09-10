@@ -34,6 +34,7 @@ import {
 import { spotName } from "@/lib/baobay/spots";
 
 import { WindArrow } from "@/components/weather/WindArrow";
+import { WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
 
@@ -154,7 +155,7 @@ export function ThoiTietCard({
   homNay,
   laQuanTri,
   laDieuPhoi,
-  /** `gon` = bản rút gọn cho trang điều phối: chỉ dải 5 ngày + dòng tóm tắt. */
+  /** `gon` = bản rút gọn cho trang điều phối: chỉ dải 7 ngày + dòng tóm tắt. */
   gon = false,
 }: {
   spot: string;
@@ -252,8 +253,9 @@ export function ThoiTietCard({
         </button>
       </div>
 
-      {/* ---- dải 5 ngày ---- */}
-      <div className="grid grid-cols-5 gap-1">
+      {/* ---- dải 7 ngày ---- */}
+      {/* Bảy cột: ô hẹp hơn nhưng vẫn đủ số — hơn hẳn phải cuộn ngang tìm ngày. */}
+      <div className="grid grid-cols-4 gap-1 sm:grid-cols-7">
         {du.ngay.map((n) => {
           const daCham = du.cham.find((c) => c.date === n.ngay);
           return (
@@ -568,36 +570,42 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
  * mạng của máy ngoài đèo.
  */
 function WindyNhung({ toaDo }: { toaDo: ToaDoDiemBay }) {
-  const q = new URLSearchParams({
-    lat: String(toaDo.lat),
-    lon: String(toaDo.lon),
-    detailLat: String(toaDo.lat),
-    detailLon: String(toaDo.lon),
-    zoom: "10",
-    level: "surface",
-    overlay: "wind",
-    product: "ecmwf",
-    menu: "",
-    message: "true",
-    marker: "true",
-    calendar: "now",
-    pressure: "",
-    type: "map",
-    location: "coordinates",
-    detail: "true",
-    metricWind: "km/h",
-    metricTemp: "°C",
-    radarRange: "-1",
-  });
+  /**
+   * CHỌN MÔ HÌNH ngay trên bản đồ.
+   *
+   * Mỗi mô hình đoán khác nhau ở địa hình núi, và chỗ chúng KHÔNG đồng ý với
+   * nhau chính là chỗ dự báo còn mong manh. Bấm qua lại hai ba mô hình cho cùng
+   * một ngày là cách nhanh nhất biết nên tin đến đâu.
+   */
+  const [moHinh, setMoHinh] = useState("ecmwf");
   return (
-    <div className="mt-1 overflow-hidden rounded-lg border border-slate-300">
-      <iframe
-        title={`Windy — ${toaDo.ten}`}
-        src={`https://embed.windy.com/embed2.html?${q}`}
-        className="h-[420px] w-full"
-        loading="lazy"
-        frameBorder="0"
-      />
+    <div className="mt-1">
+      <div className="mb-1 flex flex-wrap gap-1">
+        {WINDY_MODELS.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMoHinh(m.id)}
+            title={m.mo}
+            className={
+              "rounded-lg border px-2 py-0.5 text-[11px] font-bold " +
+              (moHinh === m.id ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {m.ten}
+          </button>
+        ))}
+      </div>
+      <div className="overflow-hidden rounded-lg border border-slate-300">
+        <iframe
+          /** Đổi `key` theo mô hình để iframe nạp lại — Windy không đọc lại src khi chỉ đổi query. */
+          key={moHinh}
+          title={`Windy — ${toaDo.ten} (${moHinh})`}
+          src={windyEmbedUrl(toaDo.lat, toaDo.lon, moHinh)}
+          className="h-[420px] w-full"
+          loading="lazy"
+        />
+      </div>
     </div>
   );
 }

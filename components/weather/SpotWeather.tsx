@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
 import { WindArrow } from "./WindArrow";
+import { WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
 import {
   bieuTuongTroi,
   chiSoBay,
@@ -157,8 +158,8 @@ function DaiNgay({
 }) {
   const homNay = homNayVN();
   return (
-    <div className="grid grid-cols-5 gap-1.5">
-      {ngay.slice(0, 5).map((n) => {
+    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+      {ngay.slice(0, 7).map((n) => {
         const noiDung = (
           <>
             <div className="text-[10px] font-bold uppercase tracking-wide opacity-80">
@@ -304,35 +305,35 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
  * tốc độ tụt mà phần lớn khách không mở tới.
  */
 function BanDoWindy({ lat, lon, ten }: { lat: number; lon: number; ten: string }) {
-  const q = new URLSearchParams({
-    lat: String(lat),
-    lon: String(lon),
-    detailLat: String(lat),
-    detailLon: String(lon),
-    zoom: "10",
-    level: "surface",
-    overlay: "wind",
-    product: "ecmwf",
-    menu: "",
-    message: "true",
-    marker: "true",
-    calendar: "now",
-    pressure: "",
-    type: "map",
-    location: "coordinates",
-    detail: "true",
-    metricWind: "km/h",
-    metricTemp: "°C",
-    radarRange: "-1",
-  });
+  /** Cho khách đổi mô hình luôn — người bay quen Windy sẽ tìm đúng cái họ hay xem. */
+  const [moHinh, setMoHinh] = useState("ecmwf");
   return (
-    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200">
-      <iframe
-        title={`Windy — ${ten}`}
-        src={`https://embed.windy.com/embed2.html?${q}`}
-        className="h-[400px] w-full"
-        loading="lazy"
-      />
+    <div className="mt-2">
+      <div className="mb-1 flex flex-wrap gap-1">
+        {WINDY_MODELS.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMoHinh(m.id)}
+            title={m.mo}
+            className={
+              "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+              (moHinh === m.id ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {m.ten}
+          </button>
+        ))}
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-200">
+        <iframe
+          key={moHinh}
+          title={`Windy — ${ten} (${moHinh})`}
+          src={windyEmbedUrl(lat, lon, moHinh)}
+          className="h-[400px] w-full"
+          loading="lazy"
+        />
+      </div>
     </div>
   );
 }
@@ -387,10 +388,11 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-base font-bold text-slate-900">⛅ {t.widgetTitle}</h3>
-        <span className="text-xs text-slate-500">
-          {du.toaDo.ten} · {t.widgetNote}
-        </span>
+        {/** Tên bãi nằm ngay trong tiêu đề: trang Hà Nội có hai bảng cạnh nhau, không được lẫn. */}
+        <h3 className="text-base font-bold text-slate-900">
+          ⛅ {t.widgetTitle} — {du.ten}
+        </h3>
+        <span className="text-xs text-slate-500">{t.widgetNote}</span>
       </div>
 
       <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />

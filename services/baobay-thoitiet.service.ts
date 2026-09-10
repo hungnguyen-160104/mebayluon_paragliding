@@ -34,6 +34,7 @@ import {
   type LanCham,
   type NgayThoiTiet,
   type DoChinhXac,
+  type LuatHuong,
   type MucDo,
   type NgayGiong,
   type NguongBay,
@@ -87,6 +88,14 @@ const HOURLY_PHU = ["lifted_index", "convective_inhibition", "boundary_layer_hei
  */
 const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string }>();
 const CACHE_MS = 20 * 60 * 1000;
+
+/**
+ * SỐ NGÀY DỰ BÁO — 7 ngày (luật chủ 10/09).
+ *
+ * Xa hơn nữa thì mô hình toàn cầu bắt đầu đoán mò với địa hình núi, mà khách
+ * đặt bay cũng hiếm khi hỏi quá một tuần.
+ */
+export const SO_NGAY = 7;
 /**
  * BẢN CŨ CÒN DÙNG ĐƯỢC TỚI 6 TIẾNG khi không gọi được mô hình.
  *
@@ -229,7 +238,7 @@ export async function duBaoDiemBay(
 }> {
   const key = normalizeSpot(spot);
   const { toaDo, nguong } = await cauHinhDiem(key);
-  const soNgay = Math.min(7, Math.max(1, opts.soNgay ?? 5));
+  const soNgay = Math.min(10, Math.max(1, opts.soNgay ?? SO_NGAY));
   const cacheKey = `${key}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
 
   const cu = CACHE.get(cacheKey);
@@ -394,6 +403,7 @@ export async function duBaoDiemCongKhai(diem: {
   lat: number;
   lon: number;
   spotNoiBo?: SpotId;
+  luatHuong?: LuatHuong;
 }): Promise<{
   slug: string;
   ten: string;
@@ -404,14 +414,20 @@ export async function duBaoDiemCongKhai(diem: {
   moHinh: string;
   layLuc: string;
 }> {
+  /**
+   * Điểm có sổ nội bộ vẫn ưu tiên cấu hình của sổ, NHƯNG luật hướng khai trong
+   * danh sách công khai thì đè lên: Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"
+   * mà hai bãi quay hai phía, nên luật hướng phải theo từng bãi.
+   */
   if (diem.spotNoiBo) {
     const du = await duBaoDiemBay(diem.spotNoiBo);
-    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du };
+    const toaDo = diem.luatHuong ? { ...du.toaDo, luatHuong: diem.luatHuong } : du.toaDo;
+    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
   }
 
-  const toaDo: ToaDoDiemBay = { lat: diem.lat, lon: diem.lon, ten: diem.ten };
+  const toaDo: ToaDoDiemBay = { lat: diem.lat, lon: diem.lon, ten: diem.ten, luatHuong: diem.luatHuong };
   const nguong = nguongCuaDiem(null);
-  const cacheKey = `web:${diem.slug}:${diem.lat},${diem.lon}`;
+  const cacheKey = `web:${diem.slug}:${SO_NGAY}:${diem.lat},${diem.lon}`;
   const cu = CACHE.get(cacheKey);
   if (cu && Date.now() - cu.luc < CACHE_MS) {
     return {
@@ -427,7 +443,7 @@ export async function duBaoDiemCongKhai(diem: {
   }
 
   try {
-    const { ngay, moHinh } = await layVaCham(toaDo, 5, nguong);
+    const { ngay, moHinh } = await layVaCham(toaDo, SO_NGAY, nguong);
     CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
   } catch (e) {

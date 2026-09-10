@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { chamNgay, duBaoCuaChu, duBaoDiemBay, luuCauHinhDiem, soKinhNghiem } from "@/services/baobay-thoitiet.service";
+import {
+  chamNgay,
+  duBaoCuaChu,
+  duBaoDiemBay,
+  luuCauHinhDiem,
+  soKinhNghiem,
+  SO_NGAY,
+} from "@/services/baobay-thoitiet.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,11 +41,11 @@ export async function GET(req: Request) {
   if (spot instanceof NextResponse) return spot;
 
   const url = new URL(req.url);
-  const days = Number(url.searchParams.get("days") || 5);
+  const days = Number(url.searchParams.get("days") || SO_NGAY);
 
   try {
     const duBao = await duBaoDiemBay(spot, {
-      soNgay: Number.isFinite(days) ? days : 5,
+      soNgay: Number.isFinite(days) ? days : SO_NGAY,
       boCache: url.searchParams.get("moi") === "1",
     });
     /**
