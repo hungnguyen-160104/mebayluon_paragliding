@@ -8,8 +8,14 @@ Hệ thống **đang chạy được ngay, không cần khoá, không tốn ti�
   windy.com hiển thị mặc định.
 - Bản đồ gió: **iframe của Windy** (`embed.windy.com`) — bản nhúng mở, không
   cần khoá, không cần đăng nhập. Bấm chọn được mô hình ngay trên bản đồ:
-  **ECMWF · GFS · ICON · ECMWF AI · Sóng**. Chỗ các mô hình KHÔNG đồng ý với
-  nhau chính là chỗ dự báo còn mong manh.
+  **ECMWF · GFS · ICON · ECMWF AI · Sóng**.
+
+  **Chọn được cả LỚP xem** — "soi mây, soi mù" như trên windy.com:
+  **Gió · Gió giật · Mây · Mây thấp · Trần mây · Tầm nhìn/mù · Mưa · Độ ẩm**.
+  Con số "mây thấp 80%" không nói được mây ấy ở độ cao nào so với bãi; lớp
+  **Trần mây** vẽ thẳng độ cao đáy mây theo mét, lớp **Mây thấp** vẽ đúng thứ
+  trùm sườn núi, lớp **Tầm nhìn** làm tối vùng sương mù dày — nhìn hình là biết
+  sáng mai núi có bị trùm không.
 - Số ngày: **7 ngày tới**.
 
 Không khai biến nào thì mọi thứ vẫn đủ: trang khách `/thoi-tiet-bay`, widget
@@ -325,8 +331,12 @@ giờ, JMA thiếu giật và CAPE nên không bày.
 Nút **⇄ So sánh** mở bảng đặt 2–3 mô hình cạnh nhau:
 
 - **7 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
-  ngang là thấy ngày nào các mô hình cãi nhau.
-- **Bảng giờ của ngày đang chọn**: mỗi mô hình một hàng, ô tô màu ✔/⚠/✕ kèm gió.
+  ngang là thấy ngày nào các mô hình cãi nhau. Bấm vào ngày để đổi ngày so.
+- **Bảng giờ của ngày đang chọn — SO NGANG BẢY YẾU TỐ**: ☀️ Trời · 🌬 Gió ·
+  💨 Giật · 🧭 Hướng (mũi tên) · 🌧 Mưa · 🌫 Trần mây · ⚡ Dông. Mỗi yếu tố một
+  khối, trong khối là các mô hình xếp chồng — đọc dọc một cột là thấy ngay mô
+  hình nào nói khác ở giờ đó. Xếp ngược lại (mỗi mô hình một khối) thì phải nhớ
+  số của khối trên khi đọc khối dưới, mà mắt không nhớ nổi 13 con số.
 - Hàng **Đồng thuận**: mọi mô hình cùng kết luận thì hiện màu đó; khác nhau thì
   hiện **?** — giờ ấy chưa chắc.
 - Câu kết: *"3 mô hình đồng thuận cả 13 giờ — chốt lịch được"* / *"lệch nhau 2

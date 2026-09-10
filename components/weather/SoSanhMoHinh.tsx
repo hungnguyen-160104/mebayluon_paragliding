@@ -10,13 +10,52 @@
  * đợi. Hàng "Đồng thuận" ở cuối bảng nói đúng điều đó cho từng giờ.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { MO_HINH, MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
-import { BIEU_TUONG_MUC, type MucDo } from "@/lib/baobay/thoi-tiet";
+import {
+  bieuTuongTroi,
+  BIEU_TUONG_MUC,
+  chiSoBay,
+  huongChu,
+  MUA_DANG_KE,
 
-type GioMin = { gio: string; gio10m: number; giat: number; mua: number; muc: MucDo; lyDo?: string[] };
-type NgayMin = { ngay: string; muc: MucDo; gioMax: number; giatMax: number; muaTong: number; khungDep: string | null; gio: GioMin[] };
+  sucGio,
+  tranMay,
+  type MucDo,
+} from "@/lib/baobay/thoi-tiet";
+import { WindArrow } from "./WindArrow";
+
+type GioMin = {
+  gio: string;
+  gio10m: number;
+  giat: number;
+  huong: number;
+  mua: number;
+  may: number;
+  nhietDo: number;
+  diemSuong?: number;
+  mayThap?: number;
+  buXa?: number;
+  xacSuatMua?: number;
+  chenhDoCao?: number;
+  cape?: number;
+  chiSoNang?: number;
+  tranThermal?: number;
+  muc: MucDo;
+  lyDo?: string[];
+};
+type NgayMin = {
+  ngay: string;
+  muc: MucDo;
+  gioMax: number;
+  giatMax: number;
+  muaTong: number;
+  gioMua: number;
+  khungMua: string | null;
+  khungDep: string | null;
+  gio: GioMin[];
+};
 
 export type KetQuaMoHinh = { ma: string; ten: string; nhan: string; ngay: NgayMin[] };
 
@@ -24,6 +63,15 @@ const MAU_O: Record<MucDo, string> = {
   xanh: "bg-emerald-400 text-emerald-950",
   vang: "bg-amber-300 text-amber-950",
   do: "bg-rose-400 text-white",
+};
+
+/** Cùng bộ màu sức gió với bảng giờ chính — hai bảng phải đọc như nhau. */
+const MAU_GIO: Record<"nhe" | "vua" | "hoiManh" | "manh" | "ratManh", string> = {
+  nhe: "bg-emerald-200 text-emerald-900",
+  vua: "bg-emerald-500 text-white",
+  hoiManh: "bg-amber-300 text-amber-950",
+  manh: "bg-orange-400 text-white",
+  ratManh: "bg-rose-500 text-white",
 };
 
 const MAU_NGAY: Record<MucDo, string> = {
@@ -85,6 +133,89 @@ export function ChonMoHinh({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Các yếu tố đem ra so                                                */
+/* ------------------------------------------------------------------ */
+
+type OSo = { noiDung: React.ReactNode; cls: string; title?: string };
+
+/**
+ * DANH SÁCH YẾU TỐ SO NGANG.
+ *
+ * Chỉ những thứ QUYẾT ĐỊNH BAY, và mỗi thứ vẽ theo cách dễ so nhất bằng mắt:
+ * số cho thứ đo được, mũi tên cho hướng, biểu tượng cho trời. Thêm nhiệt độ và
+ * mây tổng thì bảng dài gấp rưỡi mà chẳng ai đổi quyết định vì chúng.
+ */
+const YEU_TO: Array<{ ma: string; ten: string; mo: string; ve: (g: GioMin) => OSo }> = [
+  {
+    ma: "troi",
+    ten: "☀️ Trời",
+    mo: "Nắng · nắng một phần · âm u · mưa",
+    ve: (g) => ({ noiDung: bieuTuongTroi(g.may, g.mua, g.buXa), cls: "bg-white", title: `mây ${Math.round(g.may)}%` }),
+  },
+  {
+    ma: "gio",
+    ten: "🌬 Gió (m/s)",
+    mo: "Gió trung bình — màu theo thang sức gió",
+    ve: (g) => ({ noiDung: <span className="font-black">{g.gio10m.toFixed(1)}</span>, cls: "rounded " + MAU_GIO[sucGio(g.gio10m)] }),
+  },
+  {
+    ma: "giat",
+    ten: "💨 Giật (m/s)",
+    mo: "Gió giật — trên 14 là nhiễu, trên 18 không khuyến cáo bay",
+    ve: (g) => ({
+      noiDung: g.giat.toFixed(1),
+      cls: g.giat > 18 ? "bg-rose-200 font-bold text-rose-900" : g.giat >= 14 ? "bg-orange-100 font-bold text-orange-800" : "bg-white text-slate-600",
+    }),
+  },
+  {
+    ma: "huong",
+    ten: "🧭 Hướng",
+    mo: "Mũi tên chỉ chiều gió thổi tới",
+    ve: (g) => ({
+      noiDung: <WindArrow deg={g.huong} className="text-slate-700" />,
+      cls: "bg-white",
+      title: `${huongChu(g.huong)} (${Math.round(g.huong)}°)`,
+    }),
+  },
+  {
+    ma: "mua",
+    ten: "🌧 Mưa (mm)",
+    mo: "Lượng mưa trong giờ — từ 0,5mm mới tính là có mưa",
+    ve: (g) => ({
+      noiDung: g.mua >= 0.05 ? g.mua.toFixed(1) : "–",
+      cls: g.mua >= MUA_DANG_KE ? "bg-sky-200 font-bold text-sky-900" : g.mua > 0.05 ? "bg-sky-50 text-sky-700" : "bg-white text-slate-300",
+      title: g.xacSuatMua !== undefined ? `khả năng ${Math.round(g.xacSuatMua)}%` : undefined,
+    }),
+  },
+  {
+    ma: "tranMay",
+    ten: "🌫 Trần mây (m)",
+    mo: "Đáy mây trên bãi cất cánh — thấp kèm mây thấp dày là mù trùm bãi",
+    ve: (g) => {
+      const cm = tranMay(g.nhietDo, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0);
+      const mu = cm !== null && cm < 400 && (g.mayThap ?? 0) >= 70;
+      return {
+        noiDung: cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}k` : String(cm),
+        cls: mu ? "bg-slate-300 font-bold text-slate-900" : "bg-white text-slate-600",
+        title: g.mayThap !== undefined ? `mây thấp ${Math.round(g.mayThap)}%` : undefined,
+      };
+    },
+  },
+  {
+    ma: "dong",
+    ten: "⚡ Dông (%)",
+    mo: "Nguy cơ dông — từ 40% là cấm bay",
+    ve: (g) => {
+      const d = chiSoBay(g).xacSuatDong;
+      return {
+        noiDung: d > 0 ? String(d) : "–",
+        cls: d >= 40 ? "bg-rose-200 font-bold text-rose-900" : d >= 20 ? "bg-amber-100 font-bold text-amber-900" : "bg-white text-slate-300",
+      };
+    },
+  },
+];
 
 /* ------------------------------------------------------------------ */
 /* Bảng so sánh                                                        */
@@ -208,7 +339,11 @@ export function SoSanhMoHinh({
                     const n = m.ngay.find((x) => x.ngay === n0.ngay);
                     return (
                       <td key={n0.ngay} className={"rounded px-1 py-0.5 font-bold " + (n ? MAU_NGAY[n.muc] : "bg-slate-100 text-slate-400")}
-                        title={n ? `gió ${n.gioMax.toFixed(1)} · giật ${n.giatMax.toFixed(1)} m/s · mưa ${n.muaTong.toFixed(1)}mm${n.khungDep ? ` · đẹp ${n.khungDep}` : ""}` : "không có"}>
+                        title={
+                          n
+                            ? `gió ${n.gioMax.toFixed(1)} · giật ${n.giatMax.toFixed(1)} m/s · ${n.gioMua > 0 ? `mưa ~${n.gioMua}h (${n.khungMua}) ${n.muaTong.toFixed(1)}mm` : "không mưa"}${n.khungDep ? ` · đẹp ${n.khungDep}` : ""}`
+                            : "không có"
+                        }>
                         {n ? n.gioMax.toFixed(1) : "–"}
                       </td>
                     );
@@ -220,13 +355,13 @@ export function SoSanhMoHinh({
         </div>
       )}
 
-      {/* ---- Bảng giờ của ngày đang chọn ---- */}
+      {/* ---- Bảng giờ của ngày đang chọn: SO NGANG mọi yếu tố ---- */}
       {ngayChon && gioBang.length > 0 && (
         <div className="mt-2 overflow-x-auto overscroll-x-contain">
-          <table className="w-full min-w-[520px] border-separate border-spacing-0.5 text-center text-[10px]">
+          <table className="w-full min-w-[560px] border-separate border-spacing-0.5 text-center text-[10px]">
             <thead>
               <tr>
-                <th className="pr-1 text-left font-bold text-slate-500">
+                <th className="sticky left-0 z-10 bg-violet-50 pr-1 text-left font-bold text-slate-500">
                   {ngayChon.slice(8, 10)}/{ngayChon.slice(5, 7)}
                 </th>
                 {gioBang.map((g) => (
@@ -237,25 +372,49 @@ export function SoSanhMoHinh({
               </tr>
             </thead>
             <tbody>
-              {ds.map((m) => (
-                <tr key={m.ma}>
-                  <th className="pr-1 text-left font-bold text-slate-700">{m.ten}</th>
-                  {gioBang.map((g0) => {
-                    const g = oCua(m, g0.gio);
-                    return (
-                      <td
-                        key={g0.gio}
-                        title={g ? [`gió ${g.gio10m.toFixed(1)} · giật ${g.giat.toFixed(1)} m/s`, g.mua > 0.1 ? `mưa ${g.mua.toFixed(1)}mm` : "", ...(g.lyDo ?? [])].filter(Boolean).join(" · ") : "không có"}
-                        className={"rounded px-0.5 py-1 font-black " + (g ? MAU_O[g.muc] : "bg-slate-100 text-slate-400")}
-                      >
-                        {g ? g.gio10m.toFixed(1) : "–"}
-                      </td>
-                    );
-                  })}
-                </tr>
+              {/**
+               * MỖI YẾU TỐ MỘT KHỐI, trong khối là các mô hình xếp chồng — đọc
+               * dọc một cột là thấy ngay mô hình nào nói khác ở giờ đó. Xếp
+               * ngược lại (mỗi mô hình một khối) thì phải nhớ số của khối trên
+               * khi đọc khối dưới, mà mắt không nhớ nổi 13 con số.
+               */}
+              {YEU_TO.map((yt) => (
+                <Fragment key={yt.ma}>
+                  <tr>
+                    <th
+                      colSpan={gioBang.length + 1}
+                      className="sticky left-0 bg-violet-100/60 px-1 py-0.5 text-left text-[10px] font-black text-violet-900"
+                      title={yt.mo}
+                    >
+                      {yt.ten}
+                    </th>
+                  </tr>
+                  {ds.map((m) => (
+                    <tr key={`${yt.ma}:${m.ma}`}>
+                      <th className="sticky left-0 z-10 bg-violet-50 pr-1 text-left font-semibold text-slate-600" title={m.nhan}>
+                        {m.ten}
+                      </th>
+                      {gioBang.map((g0) => {
+                        const g = oCua(m, g0.gio);
+                        const o = g ? yt.ve(g) : null;
+                        return (
+                          <td
+                            key={g0.gio}
+                            title={o?.title}
+                            className={"rounded px-0.5 py-0.5 " + (o?.cls ?? "bg-slate-100 text-slate-400")}
+                          >
+                            {o?.noiDung ?? "–"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
+
+              {/* ---- Đồng thuận: dòng chốt của cả bảng ---- */}
               <tr>
-                <th className="pr-1 text-left font-bold text-violet-900" title="Các mô hình có cùng kết luận cho giờ này không">
+                <th className="sticky left-0 z-10 bg-violet-50 pr-1 text-left font-black text-violet-900" title="Các mô hình có cùng kết luận cho giờ này không">
                   Đồng thuận
                 </th>
                 {gioBang.map((g) => {
@@ -263,10 +422,7 @@ export function SoSanhMoHinh({
                   return (
                     <td
                       key={g.gio}
-                      className={
-                        "rounded px-0.5 py-0.5 font-black " +
-                        (dt === "lech" ? "bg-violet-200 text-violet-900" : MAU_O[dt])
-                      }
+                      className={"rounded px-0.5 py-0.5 font-black " + (dt === "lech" ? "bg-violet-200 text-violet-900" : MAU_O[dt])}
                       title={dt === "lech" ? "Các mô hình KHÔNG đồng ý — giờ này chưa chắc" : "Mọi mô hình cùng kết luận"}
                     >
                       {dt === "lech" ? "?" : BIEU_TUONG_MUC[dt]}

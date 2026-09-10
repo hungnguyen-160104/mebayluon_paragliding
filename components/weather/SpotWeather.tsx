@@ -23,7 +23,7 @@ import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "./SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import { WindArrow } from "./WindArrow";
-import { WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
+import { LOP_MAC_DINH, LOP_WINDY, WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
 import {
   bieuTuongTroi,
   BIEU_TUONG_MUC,
@@ -323,8 +323,26 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
 function BanDoWindy({ lat, lon, ten }: { lat: number; lon: number; ten: string }) {
   /** Cho khách đổi mô hình luôn — người bay quen Windy sẽ tìm đúng cái họ hay xem. */
   const [moHinh, setMoHinh] = useState("ecmwf");
+  const [lop, setLop] = useState(LOP_MAC_DINH);
   return (
     <div className="mt-2">
+      {/* Lớp mây / mù — nhìn hình là biết sáng mai núi có bị trùm mây không. */}
+      <div className="mb-1 flex flex-wrap items-center gap-1">
+        {LOP_WINDY.map((l) => (
+          <button
+            key={l.ma}
+            type="button"
+            title={l.mo}
+            onClick={() => setLop(l.ma)}
+            className={
+              "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+              (lop === l.ma ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {l.ten}
+          </button>
+        ))}
+      </div>
       <div className="mb-1 flex flex-wrap gap-1">
         {WINDY_MODELS.map((m) => (
           <button
@@ -343,9 +361,9 @@ function BanDoWindy({ lat, lon, ten }: { lat: number; lon: number; ten: string }
       </div>
       <div className="overflow-hidden rounded-xl border border-slate-200">
         <iframe
-          key={moHinh}
-          title={`Windy — ${ten} (${moHinh})`}
-          src={windyEmbedUrl(lat, lon, moHinh)}
+          key={`${moHinh}:${lop}`}
+          title={`Windy — ${ten} (${moHinh}, ${lop})`}
+          src={windyEmbedUrl(lat, lon, moHinh, lop)}
           className="h-[400px] w-full"
           loading="lazy"
         />
@@ -464,8 +482,10 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
       </button>
       {moBanDo && <BanDoWindy lat={du.toaDo.lat} lon={du.toaDo.lon} ten={du.toaDo.ten} />}
 
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-        {t.disclaimer} · {t.source}: {du.moHinh}
+      {/** Nguồn xuống DÒNG RIÊNG: nó là chú thích kỹ thuật, không phải phần tiếp của câu miễn trừ. */}
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{t.disclaimer}</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+        {t.source}: {du.moHinh}
       </p>
     </section>
   );

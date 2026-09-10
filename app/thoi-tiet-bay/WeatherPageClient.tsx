@@ -84,9 +84,12 @@ export default function WeatherPageClient() {
         </div>
 
         {diem?.length ? (
-          <p className="mt-4 text-xs leading-relaxed text-white/85">
-            {t.disclaimer} · {t.source}: {diem[0].moHinh}
-          </p>
+          <>
+            <p className="mt-4 text-xs leading-relaxed text-white/85">{t.disclaimer}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-white/70">
+              {t.source}: {diem[0].moHinh}
+            </p>
+          </>
         ) : null}
 
         <div className="mt-6">

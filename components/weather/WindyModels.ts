@@ -22,8 +22,36 @@ export const WINDY_MODELS: WindyModel[] = [
   { id: "gfsWave", ten: "Sóng", mo: "Sóng biển — dùng cho Sơn Trà" },
 ];
 
-/** Dựng địa chỉ nhúng Windy cho một toạ độ và một mô hình. */
-export function windyEmbedUrl(lat: number, lon: number, product = "ecmwf"): string {
+/**
+ * CÁC LỚP XEM ĐƯỢC trên bản đồ Windy (`overlay=`).
+ *
+ * "Soi mây / soi mù" là thứ dân bay hay dùng nhất sau gió: nhìn hình là biết
+ * sáng mai núi có bị mây trùm không, mà con số "mây thấp 80%" không nói được
+ * mây ấy nằm ở độ cao nào so với bãi.
+ *
+ *  - `clouds` vẽ mây tổng: thấy khối mây đang ở đâu, đi hướng nào.
+ *  - `lclouds` vẽ MÂY THẤP — đúng thứ trùm sườn núi và bịt bãi cất cánh.
+ *  - `cloudbase` vẽ TRẦN MÂY theo mét: soi thẳng "mây đáy 800m" trên bản đồ,
+ *    so với độ cao bãi là biết bãi nằm trên hay trong mây.
+ *  - `visibility` vẽ tầm nhìn — sương mù dày thì vùng đó tối lại.
+ */
+export type LopWindy = { ma: string; ten: string; mo: string };
+
+export const LOP_WINDY: LopWindy[] = [
+  { ma: "wind", ten: "Gió", mo: "Gió bề mặt — lớp mặc định" },
+  { ma: "gust", ten: "Gió giật", mo: "Gió giật bề mặt" },
+  { ma: "clouds", ten: "Mây", mo: "Mây tổng — khối mây đang ở đâu, đi hướng nào" },
+  { ma: "lclouds", ten: "Mây thấp", mo: "Mây tầng thấp — thứ trùm sườn núi và bịt bãi cất cánh" },
+  { ma: "cloudbase", ten: "Trần mây", mo: "Độ cao đáy mây (m) — so với độ cao bãi là biết bãi trong hay dưới mây" },
+  { ma: "visibility", ten: "Tầm nhìn / mù", mo: "Tầm nhìn ngang — vùng tối là sương mù dày" },
+  { ma: "rain", ten: "Mưa", mo: "Mưa và dông" },
+  { ma: "rh", ten: "Độ ẩm", mo: "Độ ẩm tương đối — ẩm cao ở núi là dấu hiệu mù" },
+];
+
+export const LOP_MAC_DINH = "wind";
+
+/** Dựng địa chỉ nhúng Windy cho một toạ độ, một mô hình và một lớp. */
+export function windyEmbedUrl(lat: number, lon: number, product = "ecmwf", overlay = LOP_MAC_DINH): string {
   const q = new URLSearchParams({
     lat: String(lat),
     lon: String(lon),
@@ -31,7 +59,7 @@ export function windyEmbedUrl(lat: number, lon: number, product = "ecmwf"): stri
     detailLon: String(lon),
     zoom: "10",
     level: "surface",
-    overlay: "wind",
+    overlay,
     product,
     menu: "",
     message: "true",

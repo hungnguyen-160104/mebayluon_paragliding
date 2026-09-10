@@ -40,7 +40,7 @@ import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import type { DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { WindArrow } from "@/components/weather/WindArrow";
-import { WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
+import { LOP_MAC_DINH, LOP_WINDY, WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
 
@@ -671,8 +671,31 @@ function WindyNhung({ toaDo }: { toaDo: ToaDoDiemBay }) {
    * một ngày là cách nhanh nhất biết nên tin đến đâu.
    */
   const [moHinh, setMoHinh] = useState("ecmwf");
+  const [lop, setLop] = useState(LOP_MAC_DINH);
   return (
     <div className="mt-1">
+      {/**
+       * CHỌN LỚP — "soi mây, soi mù" là thứ dân bay dùng nhiều thứ hai sau gió.
+       * Con số "mây thấp 80%" không nói được mây ấy ở độ cao nào so với bãi;
+       * lớp Trần mây và Tầm nhìn thì nhìn hình là biết sáng mai núi có bị trùm.
+       */}
+      <div className="mb-1 flex flex-wrap items-center gap-1">
+        <span className="text-[10px] font-bold text-slate-500">Lớp:</span>
+        {LOP_WINDY.map((l) => (
+          <button
+            key={l.ma}
+            type="button"
+            title={l.mo}
+            onClick={() => setLop(l.ma)}
+            className={
+              "rounded-lg border px-1.5 py-0.5 text-[10px] font-bold " +
+              (lop === l.ma ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {l.ten}
+          </button>
+        ))}
+      </div>
       <div className="mb-1 flex flex-wrap gap-1">
         {WINDY_MODELS.map((m) => (
           <button
@@ -692,9 +715,9 @@ function WindyNhung({ toaDo }: { toaDo: ToaDoDiemBay }) {
       <div className="overflow-hidden rounded-lg border border-slate-300">
         <iframe
           /** Đổi `key` theo mô hình để iframe nạp lại — Windy không đọc lại src khi chỉ đổi query. */
-          key={moHinh}
-          title={`Windy — ${toaDo.ten} (${moHinh})`}
-          src={windyEmbedUrl(toaDo.lat, toaDo.lon, moHinh)}
+          key={`${moHinh}:${lop}`}
+          title={`Windy — ${toaDo.ten} (${moHinh}, ${lop})`}
+          src={windyEmbedUrl(toaDo.lat, toaDo.lon, moHinh, lop)}
           className="h-[420px] w-full"
           loading="lazy"
         />
