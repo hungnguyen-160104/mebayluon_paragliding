@@ -210,7 +210,7 @@ export function danhGiaGio(
       let ghi = `mực 500m ${v500.toFixed(1)} m/s`;
       if (v300 !== null && v300 - g.gio10m > 4) {
         diem -= 20;
-        ghi += ` — cắt gió (300m: ${v300.toFixed(1)}, đất: ${g.gio10m.toFixed(1)})`;
+        ghi += ` — đứt gió (300m: ${v300.toFixed(1)}, đất: ${g.gio10m.toFixed(1)})`;
       }
       them({ ma: "gioCao", ten: "Gió trên cao", trongSo: 15, diem, ghiChu: ghi, nguyHiem: v500 > 12 });
     } else {

@@ -275,18 +275,18 @@ export function nhanDinhNgay(
         gioCaoManh = true;
         khuyenCao.push(`Gió mực 500m mạnh${tuGio ? ` từ ${gioCua(tuGio)}` : ""} — không leo quá 300m, giữ tốc độ, tránh bay xa sườn.`);
       } else if (v1000 !== null && v1000 > 12) {
-        noi = `Gió mực 1000m mạnh (${v1000.toFixed(0)} m/s) — có lớp cắt gió phía trên, leo vào là nhiễu động; giữ dưới 500m. ${soLieu}`;
+        noi = `Gió mực 1000m mạnh (${v1000.toFixed(0)} m/s) — có lớp đứt gió phía trên, leo vào là nhiễu động; giữ dưới 500m. ${soLieu}`;
         ngan = `gió mực 1000m mạnh (${v1000.toFixed(0)} m/s)`;
         tong = "chuY";
-        khuyenCao.push(`Không leo quá 500m — gió mực 1000m ${v1000.toFixed(0)} m/s, vào lớp cắt gió là xóc mạnh.`);
+        khuyenCao.push(`Không leo quá 500m — gió mực 1000m ${v1000.toFixed(0)} m/s, vào lớp đứt gió là xóc mạnh.`);
       } else if (v300 !== null && v300 - gioTb > 4) {
-        noi = `CẮT GIÓ (wind shear): mặt đất ${gioTb.toFixed(1)} m/s nhưng mực 300m đã ${v300.toFixed(0)} m/s — đọc gió ở bãi không tin được, nhiễu động ngay khi rời sườn. ${soLieu}`;
-        ngan = "cắt gió ngay trên bãi";
+        noi = `ĐỨT GIÓ (wind shear): mặt đất ${gioTb.toFixed(1)} m/s nhưng mực 300m đã ${v300.toFixed(0)} m/s — đọc gió ở bãi không tin được, nhiễu động ngay khi rời sườn. ${soLieu}`;
+        ngan = "đứt gió ngay trên bãi";
         tong = "chuY";
         catGio = true;
         khuyenCao.push(`Cắt gió trên bãi (mặt đất ${gioTb.toFixed(1)}, mực 300m ${v300.toFixed(0)} m/s) — thả cờ gió cao, cất cánh dứt khoát, giữ tốc độ ngay khi rời sườn.`);
       } else if (v500 <= 5) {
-        noi = `Gió các mực êm — ${soLieu}: không cắt gió, leo thoải mái`;
+        noi = `Gió các mực êm — ${soLieu}: không đứt gió, leo thoải mái`;
         ngan = "gió mực cao êm";
         tong = "tot";
       } else {
@@ -308,10 +308,10 @@ export function nhanDinhNgay(
       them({
         icon: gioNang >= 6 ? "☀️" : gioNang >= 3 ? "⛅" : "☁️",
         ten: "Nắng",
-        noiDung: `${gioNang.toFixed(1)}/${gio.length} giờ có nắng, mây trung bình ${Math.round(may)}%${
+        noiDung: `${Math.round(gioNang)} giờ nắng, tỉ lệ mây phủ ${Math.round(may)}%${
           gioNang < 3 ? " — ngày âm u, ít nắng đốt đất nên thermal yếu" : may >= 85 && gioNang >= 6 ? " — nắng xuyên mây mỏng" : ""
         }`,
-        ngan: gioNang >= 6 ? `nắng ${gioNang.toFixed(0)}/${gio.length}h` : gioNang >= 3 ? `nắng nửa ngày` : "âm u",
+        ngan: gioNang >= 6 ? `${Math.round(gioNang)} giờ nắng` : gioNang >= 3 ? "nắng nửa ngày" : "âm u",
         tong,
       });
     }
@@ -473,7 +473,7 @@ export function nhanDinhNgay(
        */
       const sut = gioApSut(ngay.gio, opts.ngayTruoc?.gio ?? null);
       if (sut) {
-        noi += `. ÁP SUẤT SỤT TỪ ${sut.luc} (${sut.toc.toFixed(1)} hPa/3h) — ổ dông hoặc rãnh đang tới`;
+        noi += `. ÁP SUẤT SỤT TỪ ${sut.luc} (${sut.toc.toFixed(1)} hPa/3h) — dông hoặc rãnh áp thấp xuất hiện`;
         if (tong !== "xau") tong = "chuY";
         const gioHa = Math.max(GIO_BAY_TU, Number(sut.luc.slice(0, 2)) - 1);
         khuyenCao.push(`Áp suất sụt từ ${sut.luc} — có thể có dông; hạ cánh xong trước ${String(gioHa).padStart(2, "0")}:00, sau đó không cất cánh.`);
@@ -560,8 +560,8 @@ export function nhanDinhNgay(
     if (gioGat.length) nguon.push(`thermal gắt ${gioGat[0]}–${gioGat[gioGat.length - 1]}`);
     const giatManh = gio.filter((g) => g.giat >= 14).map(gioCua);
     if (giatManh.length) nguon.push(`giật ≥14 m/s ${giatManh[0]}–${giatManh[giatManh.length - 1]}`);
-    if (gioCaoManh) nguon.push("cắt gió với tầng cao");
-    else if (catGio) nguon.push("cắt gió ngay trên bãi");
+    if (gioCaoManh) nguon.push("đứt gió với tầng cao");
+    else if (catGio) nguon.push("đứt gió ngay trên bãi");
     const liTb = trungBinh(gio.map((g) => g.chiSoNang).filter(co));
     if (liTb !== null && liTb <= -2) nguon.push("không khí bất ổn định");
     if (nguon.length) {
