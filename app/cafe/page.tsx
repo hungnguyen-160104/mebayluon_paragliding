@@ -25,6 +25,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import {
   CAFE_COUNTERS,
+  quayMacDinh,
   CAFE_DISCOUNTS,
   CAFE_GROUPS,
   CAFE_MENU,
@@ -213,12 +214,19 @@ export default function CafePosPage() {
   }, []);
 
   const [counter, setCounter] = useState<CafeCounterId>("bai-ha");
+  /**
+   * QUẦY MỞ SẴN: lấy quầy đã chọn lần trước; chưa từng chọn thì theo VAI —
+   * điều phối / quầy vé đứng trên bãi cất nên vào thẳng "Quầy bãi cất"
+   * (luật chủ 10/09). Xem `quayMacDinh`.
+   */
   useEffect(() => {
+    let saved: string | null = null;
     try {
-      const saved = localStorage.getItem(COUNTER_KEY);
-      if (saved === "bai-ha" || saved === "bai-cat") setCounter(saved);
-    } catch { /* không nhớ được quầy thì mặc định quầy 1 */ }
-  }, []);
+      saved = localStorage.getItem(COUNTER_KEY);
+    } catch { /* máy không cho đọc thì rơi về mặc định theo vai */ }
+    if (saved === "bai-ha" || saved === "bai-cat") setCounter(saved);
+    else if (user) setCounter(quayMacDinh(user.role, user.extraRoles));
+  }, [user]);
   const pickCounter = (c: CafeCounterId) => {
     setCounter(c);
     try {

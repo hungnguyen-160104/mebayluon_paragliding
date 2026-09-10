@@ -66,14 +66,20 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
    * Kế toán và các vai ngồi văn phòng thì không cần — họ không quyết bay hay nghỉ.
    */
   const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết bay" }];
+  /**
+   * SỔ HÀNG BÁN THÊM cho MỌI VAI ĐỨNG BÁN (chủ chốt 10/09). Người bán phải tự
+   * đối được số hàng mình bán với tiền mình giữ trước khi ngồi chốt với chủ;
+   * bắt hỏi kế toán mới biết mình bán bao nhiêu thì không ai chốt nổi.
+   */
+  const hang = [{ href: "/baocao/hang-ban-them", label: "Hàng bán thêm" }];
   switch (role) {
     case "pilot":
-      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...troi];
+      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...hang, ...troi];
     case "cameraman":
-      return [{ href: "/baocao/camera", label: "Camera man" }, ...troi];
+      return [{ href: "/baocao/camera", label: "Camera man" }, ...hang, ...troi];
     case "dispatcher":
     case "counter":
-      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }, ...sapa, ...troi];
+      return [{ href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" }, ...sapa, ...hang, ...troi];
     case "accountant":
       /**
        * Thẻ đầu mang chữ "KẾ TOÁN" hẳn ra: người kiêm nhiệm nhìn thanh thẻ toàn
@@ -93,6 +99,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
+        ...hang,
         ...sapa,
       ];
     case "tax":
@@ -105,7 +112,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
-      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...troi];
+      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...hang, ...troi];
     default:
       return [];
   }

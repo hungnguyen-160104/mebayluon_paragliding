@@ -25,6 +25,21 @@ export const CAFE_COUNTERS = [
 
 export type CafeCounterId = (typeof CAFE_COUNTERS)[number]["id"];
 
+/**
+ * QUẦY MẶC ĐỊNH THEO VAI (luật chủ 10/09).
+ *
+ * Điều phối và quầy vé (Duyên, Mai Hoàn) đứng trên BÃI CẤT CÁNH, nên mở trang
+ * cafe ra phải sẵn "Quầy bãi cất" — trước đây ai vào cũng rơi vào quầy bãi hạ,
+ * bán vài phiếu mới nhớ ra thì tiền đã ghi nhầm quầy, cuối ngày hai quầy lệch
+ * mà không ai biết vì sao. Người của quầy cafe vẫn mặc định bãi hạ.
+ *
+ * Chỉ là ĐIỂM XUẤT PHÁT: bấm đổi quầy vẫn được, và lựa chọn ấy được nhớ lại.
+ */
+export function quayMacDinh(role?: string, extraRoles?: readonly string[]): CafeCounterId {
+  const vai = [role, ...(extraRoles ?? [])].filter(Boolean) as string[];
+  return vai.some((v) => v === "dispatcher" || v === "counter") ? "bai-cat" : "bai-ha";
+}
+
 export type CafeMenuItem = {
   id: string;
   name: string;

@@ -13342,3 +13342,110 @@ export async function getMonthlyReport(
     grandMonth,
   };
 }
+
+/* ================================================================== */
+/* THỐNG KÊ HÀNG BÁN THÊM                                              */
+/* ================================================================== */
+
+/**
+ * SỔ HÀNG BÁN THÊM theo khoảng ngày — để người trực chốt với chủ.
+ *
+ * Vì sao phải có trang riêng (chủ chốt 10/09): số hàng bán nằm rải trong báo
+ * cáo NGÀY của từng người và từng vai (điều phối, quầy vé, phi công, camera
+ * man). Muốn biết "tháng này bán được mấy cái áo, thu về bao nhiêu, ai bán"
+ * thì phải mở ba chục báo cáo cộng tay — làm một lần là thôi, rồi tiền hàng
+ * lưu niệm không ai đối được với chủ.
+ *
+ * Ba cách bổ dọc cùng một số liệu, vì ba câu hỏi khác nhau khi ngồi chốt:
+ *  - THEO MẶT HÀNG: còn bao nhiêu hàng phải nhập, món nào bán chạy.
+ *  - THEO NGƯỜI BÁN: ai giữ bao nhiêu tiền mặt của hàng lưu niệm.
+ *  - THEO NGÀY: đối chiếu với sổ tiền từng ngày khi số không khớp.
+ *
+ * TÁCH TM / CK là phần quan trọng nhất khi chốt: tiền mặt thì người bán đang
+ * giữ, còn CK đã vào thẳng tài khoản quầy (Nguyễn Thị Thuỷ) — hai đường tiền
+ * khác nhau, gộp lại là đòi nhầm người.
+ *
+ * Đơn giá lấy theo SỐ ĐÃ CHỤP trong báo cáo, không tra lại danh mục: sửa giá
+ * hôm nay không được làm đổi doanh thu tháng trước.
+ */
+export type ThongKeHangBanThem = {
+  spot: string;
+  from: string;
+  to: string;
+  tong: { qty: number; amount: number; cash: number; transfer: number };
+  theoHang: Array<{ key: string; name: string; qty: number; amount: number; cash: number; transfer: number }>;
+  theoNguoi: Array<{ username: string; name: string; qty: number; amount: number; cash: number; transfer: number }>;
+  theoNgay: Array<{ date: string; qty: number; amount: number; cash: number; transfer: number }>;
+};
+
+export async function thongKeHangBanThem(spot: string, from: string, to: string): Promise<ThongKeHangBanThem> {
+  await connectDB();
+  const s = normalizeSpot(spot);
+  const loc = { spot: s, date: { $gte: from, $lte: to } };
+  const chon = "date username merchSales";
+
+  /**
+   * Gom cả BA loại báo cáo ngày: cùng một lô hàng của bãi, ai bán được thì khai
+   * vào báo cáo của vai mình. Bỏ sót một loại là thiếu đúng phần người đó bán.
+   */
+  const [dp, pc, cam] = await Promise.all([
+    DispatcherDailyReport.find(loc).select(`${chon} staffName`).lean<any[]>(),
+    PilotDailyReport.find(loc).select(`${chon} pilotName`).lean<any[]>(),
+    CameramanDailyReport.find(loc).select(`${chon} cameramanName`).lean<any[]>(),
+  ]);
+
+  const tong = { qty: 0, amount: 0, cash: 0, transfer: 0 };
+  const hang = new Map<string, { key: string; name: string; qty: number; amount: number; cash: number; transfer: number }>();
+  const nguoi = new Map<string, { username: string; name: string; qty: number; amount: number; cash: number; transfer: number }>();
+  const ngay = new Map<string, { date: string; qty: number; amount: number; cash: number; transfer: number }>();
+
+  for (const doc of [...dp, ...pc, ...cam]) {
+    const ten = String(doc.staffName || doc.pilotName || doc.cameramanName || doc.username || "?");
+    for (const m of (doc.merchSales ?? []) as MerchSaleDTO[]) {
+      const qty = Math.max(0, Number(m.qty) || 0);
+      if (qty <= 0) continue;
+      const amount = Math.max(0, Number(m.amount) || 0);
+      const cash = m.method === "transfer" ? 0 : amount;
+      const transfer = m.method === "transfer" ? amount : 0;
+
+      tong.qty += qty;
+      tong.amount += amount;
+      tong.cash += cash;
+      tong.transfer += transfer;
+
+      const h = hang.get(m.key) ?? { key: m.key, name: m.name, qty: 0, amount: 0, cash: 0, transfer: 0 };
+      h.qty += qty;
+      h.amount += amount;
+      h.cash += cash;
+      h.transfer += transfer;
+      /** Tên hàng lấy bản MỚI NHẤT gặp được — đổi tên món thì bảng không bày hai dòng cũ mới. */
+      h.name = m.name || h.name;
+      hang.set(m.key, h);
+
+      const n = nguoi.get(doc.username) ?? { username: doc.username, name: ten, qty: 0, amount: 0, cash: 0, transfer: 0 };
+      n.qty += qty;
+      n.amount += amount;
+      n.cash += cash;
+      n.transfer += transfer;
+      nguoi.set(doc.username, n);
+
+      const d = ngay.get(doc.date) ?? { date: doc.date, qty: 0, amount: 0, cash: 0, transfer: 0 };
+      d.qty += qty;
+      d.amount += amount;
+      d.cash += cash;
+      d.transfer += transfer;
+      ngay.set(doc.date, d);
+    }
+  }
+
+  return {
+    spot: s,
+    from,
+    to,
+    tong,
+    theoHang: [...hang.values()].sort((a, b) => b.amount - a.amount || b.qty - a.qty),
+    theoNguoi: [...nguoi.values()].sort((a, b) => b.amount - a.amount),
+    /** Ngày mới nhất lên đầu: ngồi chốt thì hỏi hôm nay trước, tháng trước sau. */
+    theoNgay: [...ngay.values()].sort((a, b) => (a.date < b.date ? 1 : -1)),
+  };
+}

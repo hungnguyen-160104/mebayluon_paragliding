@@ -91,7 +91,11 @@ type PendingStock = CafeStockRequestDTO & { reportId: string; date: string; coun
 /** Một đơn đã bán trong ngày, kèm mức giảm và số phiếu nước. */
 type DayOrder = {
   clientId: string;
+  /** Quầy đã bấm — cần để cộng riêng khoản chi của quầy đang chốt ca. */
+  counter: string;
   counterName: string;
+  /** Với khoản chi: "chi" hay "thu" (thu hộ tiền vào quầy). */
+  direction?: string;
   kind: string;
   items: Array<{ name: string; qty: number; price: number }>;
   subtotal: number;
@@ -320,6 +324,10 @@ export default function CafeReportPage() {
 
   const thuTotal = form.expenses.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
   const chiTotal = form.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
+  /** Khoản chi bấm thẳng trên máy bán (/cafe) — cùng ngày, cùng quầy đang chốt. */
+  const chiMayBan = (day?.recent ?? [])
+    .filter((r) => r.kind === "expense" && r.direction !== "thu" && r.counter === form.counter)
+    .reduce((a, r) => a + (r.total || 0), 0);
 
   const setStock = (i: number, patch: Partial<StockRow>) =>
     set("stock", form.stock.map((r, k) => (k === i ? { ...r, ...patch } : r)));
@@ -445,7 +453,20 @@ export default function CafeReportPage() {
               </div>
               <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
                 <div className="text-xs font-medium text-rose-800">Tổng chi</div>
-                <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(chiTotal)}</div>
+                <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(chiTotal + chiMayBan)}</div>
+                {/**
+                 * CHI TRONG NGÀY CÓ HAI NGUỒN, và trước đây ô này chỉ đếm một:
+                 *  - sổ thu chi gõ tay ở ngay trên;
+                 *  - khoản chi bấm thẳng trên MÁY BÁN ở trang /cafe.
+                 * Người trực chi tiền ở máy bán (Ms Duyên 10/09) rồi mở báo cáo
+                 * thấy "Tổng chi 0đ" — tưởng máy nuốt mất, đành gõ lại tay,
+                 * thành ra ghi đôi. Nay cộng cả hai và tách rõ từng vế.
+                 */}
+                {chiMayBan > 0 && (
+                  <div className="mt-0.5 text-[11px] leading-tight text-rose-800/80">
+                    sổ tay {formatVND(chiTotal)} + máy bán {formatVND(chiMayBan)}
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -1241,6 +1262,14 @@ function OrdersCard({ day, handovers }: { day: CafeDay; handovers: MoneyOrder[] 
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
             <div className="text-[11px] font-medium text-amber-800">Đã giảm giá</div>
             <div className="text-base font-bold tabular-nums text-amber-700">{formatVND(day.totals.discountTotal)}</div>
+          </div>
+          {/* CHI TỪ MÁY BÁN đứng ngang hàng với tiền thu: nó là vế trừ của cùng
+              một ngày, để tận dưới cùng bằng chữ nhỏ thì không ai thấy. */}
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2">
+            <div className="text-[11px] font-medium text-rose-800">Chi từ máy bán</div>
+            <div className="text-base font-bold tabular-nums text-rose-700">
+              {day.totals.expenseTotal > 0 ? `−${formatVND(day.totals.expenseTotal)}` : formatVND(0)}
+            </div>
           </div>
           <div className="rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-2">
             <div className="text-[11px] font-medium text-sky-800">🎫 Phiếu nước khách bay</div>
