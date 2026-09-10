@@ -19,7 +19,7 @@ import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
-import { tranMay, chiSoBay } from "@/lib/baobay/thoi-tiet";
+import { chiSoBay, muiTenGio, sucGiat, sucGio, tranMay, type SucGio } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
 
@@ -39,6 +39,7 @@ type Gio = {
   chiSoNang?: number;
   tranThermal?: number;
   buXa?: number;
+  chenhDoCao?: number;
   muc: MucDo;
   lyDo: string[];
 };
@@ -85,6 +86,21 @@ const DAC: Record<MucDo, string> = {
   xanh: "bg-emerald-500 text-white",
   vang: "bg-amber-400 text-amber-950",
   do: "bg-rose-500 text-white",
+};
+
+/** Thang SỨC GIÓ — cùng bộ màu với sổ nội bộ để hai bên đọc như nhau. */
+const MAU_GIO: Record<SucGio, string> = {
+  nhe: "bg-emerald-200 text-emerald-900",
+  vua: "bg-emerald-500 text-white",
+  hoiManh: "bg-amber-300 text-amber-950",
+  manh: "bg-orange-400 text-white",
+  ratManh: "bg-rose-500 text-white",
+};
+
+const MAU_GIAT: Record<"nhe" | "vua" | "manh", string> = {
+  nhe: "text-slate-500",
+  vua: "text-slate-800",
+  manh: "font-bold text-rose-700",
 };
 
 function nhanMuc(muc: MucDo, t: ThoiTietCopy): string {
@@ -186,10 +202,22 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
           {hang(
             `${t.wind} ${t.windUnit}`,
             (g) => <span className="font-black">{g.gio10m.toFixed(1)}</span>,
-            (g) => "rounded " + DAC[g.muc],
+            (g) => "rounded " + MAU_GIO[sucGio(g.gio10m)],
           )}
-          {hang(t.gust, (g) => g.giat.toFixed(1))}
-          {hang(t.direction, (g) => huongTheoNgonNgu(g.huong, lang))}
+          {hang(
+            t.canFly,
+            (g) => (g.muc === "xanh" ? "✔" : g.muc === "vang" ? "!" : "✕"),
+            (g) => "rounded font-bold " + DAC[g.muc],
+          )}
+          {hang(t.gust, (g) => g.giat.toFixed(1), (g) => MAU_GIAT[sucGiat(g.giat)])}
+          {/**
+            * MŨI TÊN thay chữ hướng: đọc bằng mắt nhanh hơn, và không phải dịch
+            * tên hướng sang sáu thứ tiếng cho mỗi ô. Tên hướng vẫn nằm ở tooltip.
+            */}
+          {hang(
+            t.direction,
+            (g) => <span className="text-base leading-none" title={huongTheoNgonNgu(g.huong, lang)}>{muiTenGio(g.huong)}</span>,
+          )}
           {hang(
             t.rainChance,
             (g) => (g.xacSuatMua === undefined ? "–" : `${Math.round(g.xacSuatMua)}%`),
@@ -214,12 +242,12 @@ function BangGio({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string 
           {hang(
             t.cloudBase,
             (g) => {
-              const cm = tranMay(g.nhietDo, g.diemSuong);
+              const cm = tranMay(g.nhietDo, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0);
               return cm === null ? "–" : cm >= 1000 ? `${(cm / 1000).toFixed(1)}km` : `${cm}m`;
             },
             (g) => {
-              const cm = tranMay(g.nhietDo, g.diemSuong);
-              return cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50
+              const cm = tranMay(g.nhietDo, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0);
+              return cm !== null && cm < 400 && (g.mayThap ?? 0) >= 70
                 ? "bg-slate-300 font-bold text-slate-900"
                 : "text-slate-500";
             },

@@ -306,6 +306,19 @@ async function layVaCham(
   if (!h?.time?.length) throw new Error("Mô hình không trả dữ liệu theo giờ");
 
   /**
+   * Ô lưới của mô hình cao hơn bãi cất cánh bao nhiêu — cần cho phép tính trần
+   * mây (xem `tranMay`). Mô hình trả `elevation` là độ cao TRUNG BÌNH của ô
+   * ~25km; ở Khau Phạ ô ấy 1.620m còn bãi 1.200m, lệch tới 420m.
+   *
+   * Chỉ cộng khi ô CAO HƠN bãi. Ô thấp hơn (điểm bay trên đỉnh núi lẻ giữa
+   * đồng bằng) thì để 0: trừ đi sẽ ra trần mây âm, mà mây thì không nằm dưới
+   * chân người đứng.
+   */
+  const chenhDoCao = Number.isFinite(raw?.elevation) && Number.isFinite(toaDo.alt as number)
+    ? Math.max(0, Math.round(Number(raw.elevation) - Number(toaDo.alt)))
+    : 0;
+
+  /**
    * Ghép mô hình PHỤ (đã chạy song song từ đầu hàm) theo mốc giờ. Hỏng thì bỏ
    * qua: mất mấy chỉ số đối lưu chứ không mất bảng gió — thà thiếu một cột còn
    * hơn trang trắng vì một máy chủ phụ chậm.
@@ -348,10 +361,11 @@ async function layVaCham(
       buXa: so(h.shortwave_radiation),
       chiSoNang: tra.get(t),
       tranThermal: traTran.get(t),
+      chenhDoCao,
     };
     const ngay = g.gio.slice(0, 10);
     if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
-    theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan) });
+    theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong) });
   }
 
   const ngay = [...theoNgay.entries()].map(([d, gio]) => gopNgay(d, gio)).slice(0, soNgay);

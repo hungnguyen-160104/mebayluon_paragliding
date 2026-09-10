@@ -17,7 +17,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
-import { tranMay, chiSoBay, huongChu, NHAN_THERMAL } from "@/lib/baobay/thoi-tiet";
+import {
+  chiSoBay,
+  huongChu,
+  muiTenGio,
+  NHAN_SUC_GIAT,
+  NHAN_SUC_GIO,
+  NHAN_THERMAL,
+  sucGiat,
+  sucGio,
+  tranMay,
+  type SucGio,
+} from "@/lib/baobay/thoi-tiet";
 import { spotName } from "@/lib/baobay/spots";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
@@ -92,6 +103,30 @@ const MAU_O: Record<MucDo, string> = {
   xanh: "bg-emerald-400 text-emerald-950",
   vang: "bg-amber-300 text-amber-950",
   do: "bg-rose-400 text-white",
+};
+
+/**
+ * MÀU RIÊNG CHO Ô GIÓ — theo thang sức gió của chủ điểm bay, không theo màu
+ * kết luận của cả giờ.
+ *
+ * Hai thang nói hai chuyện và đều cần: màu kết luận trả lời "giờ này bay được
+ * không" (đã gộp mưa, mù, dông, hướng), còn màu gió trả lời "gió mạnh cỡ nào"
+ * — nhìn dọc hàng gió là thấy cả ngày gió lên xuống ra sao, kể cả khi giờ đó
+ * đỏ vì mưa chứ không phải vì gió.
+ */
+const MAU_GIO: Record<SucGio, string> = {
+  nhe: "bg-emerald-200 text-emerald-900",
+  vua: "bg-emerald-500 text-white",
+  hoiManh: "bg-amber-300 text-amber-950",
+  manh: "bg-orange-400 text-white",
+  ratManh: "bg-rose-500 text-white",
+};
+
+/** Giật: ba mức, dùng màu CHỮ chứ không tô nền — nền đã dành cho hàng gió. */
+const MAU_GIAT: Record<"nhe" | "vua" | "manh", string> = {
+  nhe: "text-slate-500",
+  vua: "text-slate-800",
+  manh: "font-bold text-rose-700",
 };
 
 const NHAN: Record<MucDo, string> = { xanh: "BAY TỐT", vang: "CÂN NHẮC", do: "KHÔNG BAY" };
@@ -341,17 +376,38 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
             {gio.map((g) => (
               <td
                 key={g.gio}
-                title={g.lyDo.join(" · ")}
-                className={"border-b border-white px-0.5 py-1 font-black " + MAU_O[g.muc]}
+                title={[NHAN_SUC_GIO[sucGio(g.gio10m)], ...g.lyDo].join(" · ")}
+                className={"border-b border-white px-0.5 py-1 font-black " + MAU_GIO[sucGio(g.gio10m)]}
               >
                 {g.gio10m.toFixed(1)}
               </td>
             ))}
           </tr>
           <tr>
+            <th
+              className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
+              title="Kết luận cả giờ: đã tính mưa, mù, dông, hướng gió"
+            >
+              Bay?
+            </th>
+            {gio.map((g) => (
+              <td
+                key={g.gio}
+                title={g.lyDo.join(" · ")}
+                className={"border-b border-white px-0.5 py-0.5 text-[10px] font-bold " + MAU_O[g.muc]}
+              >
+                {g.muc === "xanh" ? "✔" : g.muc === "vang" ? "!" : "✕"}
+              </td>
+            ))}
+          </tr>
+          <tr>
             <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Giật</th>
             {gio.map((g) => (
-              <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5 text-slate-700">
+              <td
+                key={g.gio}
+                title={`giật ${NHAN_SUC_GIAT[sucGiat(g.giat)]}`}
+                className={"border-b border-slate-200 px-0.5 py-0.5 " + MAU_GIAT[sucGiat(g.giat)]}
+              >
                 {g.giat.toFixed(1)}
               </td>
             ))}
@@ -359,8 +415,12 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
           <tr>
             <th className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500">Hướng</th>
             {gio.map((g) => (
-              <td key={g.gio} className="border-b border-slate-200 px-0.5 py-0.5 text-slate-600">
-                {huongChu(g.huong)}
+              <td
+                key={g.gio}
+                className="border-b border-slate-200 px-0.5 py-0.5 text-slate-700"
+                title={`gió ${huongChu(g.huong)} (${Math.round(g.huong)}°) — mũi tên chỉ chiều gió thổi tới`}
+              >
+                <span className="text-base leading-none">{muiTenGio(g.huong)}</span>
               </td>
             ))}
           </tr>
@@ -418,8 +478,8 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
               Trần mây
             </th>
             {gio.map((g) => {
-              const cm = tranMay(g.nhietDo, g.diemSuong);
-              const mu = cm !== null && cm < 400 && (g.mayThap ?? 0) >= 50;
+              const cm = tranMay(g.nhietDo, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0);
+              const mu = cm !== null && cm < 400 && (g.mayThap ?? 0) >= 70;
               return (
                 <td
                   key={g.gio}
@@ -434,9 +494,9 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
           <tr>
             <th
               className="border-b border-slate-200 px-1 py-0.5 text-left font-bold text-slate-500"
-              title="Sức nâng: thermal gắt thì dù xóc, khách dễ say"
+              title="Thermal: thermal gắt thì dù xóc, khách dễ say"
             >
-              Sức nâng
+              Thermal
             </th>
             {gio.map((g) => {
               const c = chiSoBay(g);
@@ -462,8 +522,9 @@ function BangGio({ ngay }: { ngay: NgayThoiTiet }) {
         </tbody>
       </table>
       <div className="mt-1 text-[10px] text-slate-500">
-        Số trong ô gió là gió trung bình (m/s) — màu ô đã tính cả giật, mưa, mù, dông và hướng. Rê chuột vào ô để
-        xem lý do; rê vào ô Sức nâng để xem độ ổn định không khí và trần thermal.
+        Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
+        mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> mới là kết luận cả giờ (đã tính mưa, mù, dông, hướng
+        gió). Mũi tên chỉ chiều gió thổi tới. Rê chuột vào ô bất kỳ để xem lý do.
       </div>
     </div>
   );

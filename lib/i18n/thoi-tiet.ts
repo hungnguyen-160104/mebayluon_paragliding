@@ -37,6 +37,8 @@ export type ThoiTietCopy = {
   cloudBase: string;
   /** Sức nâng (thermal). */
   thermal: string;
+  /** Nhãn hàng kết luận từng giờ: bay được không. */
+  canFly: string;
   /** Độ ổn định không khí. */
   stability: string;
   /** Năm mức thermal. */
@@ -82,7 +84,8 @@ const vi: ThoiTietCopy = {
   rainChance: "Khả năng mưa",
   storm: "Dông",
   cloudBase: "Trần mây",
-  thermal: "Sức nâng",
+  thermal: "Thermal",
+  canFly: "Bay?",
   stability: "Ổn định",
   thermalLevels: { khong: "không", nhe: "nhẹ", vua: "vừa", manh: "mạnh", gat: "gắt" },
   today: "Hôm nay",
@@ -126,6 +129,7 @@ const en: ThoiTietCopy = {
   storm: "Storm",
   cloudBase: "Cloud base",
   thermal: "Thermals",
+  canFly: "Fly?",
   stability: "Stability",
   thermalLevels: { khong: "none", nhe: "light", vua: "moderate", manh: "strong", gat: "rough" },
   today: "Today",
@@ -169,6 +173,7 @@ const fr: ThoiTietCopy = {
   storm: "Orage",
   cloudBase: "Base des nuages",
   thermal: "Thermiques",
+  canFly: "Volable ?",
   stability: "Stabilité",
   thermalLevels: { khong: "aucun", nhe: "légers", vua: "modérés", manh: "forts", gat: "turbulents" },
   today: "Aujourd’hui",
@@ -212,6 +217,7 @@ const ru: ThoiTietCopy = {
   storm: "Гроза",
   cloudBase: "Нижняя кромка облаков",
   thermal: "Термики",
+  canFly: "Летим?",
   stability: "Устойчивость",
   thermalLevels: { khong: "нет", nhe: "слабые", vua: "умеренные", manh: "сильные", gat: "резкие" },
   today: "Сегодня",
@@ -255,6 +261,7 @@ const zh: ThoiTietCopy = {
   storm: "雷暴",
   cloudBase: "云底高度",
   thermal: "热气流",
+  canFly: "可飞?",
   stability: "稳定度",
   thermalLevels: { khong: "无", nhe: "弱", vua: "中等", manh: "强", gat: "颠簸" },
   today: "今天",
@@ -297,6 +304,7 @@ const hi: ThoiTietCopy = {
   storm: "तूफ़ान",
   cloudBase: "बादल की ऊँचाई",
   thermal: "थर्मल",
+  canFly: "उड़ान?",
   stability: "स्थिरता",
   thermalLevels: { khong: "नहीं", nhe: "हल्का", vua: "मध्यम", manh: "तेज़", gat: "झटकेदार" },
   today: "आज",

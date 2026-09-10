@@ -19,6 +19,28 @@ import { normalizeSpot, type SpotId } from "./spots";
 /* Toạ độ điểm bay                                                     */
 /* ================================================================== */
 
+/**
+ * LUẬT HƯỚNG GIÓ CỦA MỘT ĐIỂM BAY.
+ *
+ * Cùng một tốc độ gió, cùng một giờ, mà hướng khác nhau thì một bên bay đẹp
+ * còn một bên không ai dám cất cánh — vì nó phụ thuộc sườn núi quay về đâu.
+ * Nên luật hướng phải khai riêng từng điểm, không có mặc định chung.
+ *
+ * Cung ghi theo độ, `[từ, đến]` đi THEO CHIỀU KIM ĐỒNG HỒ và cho phép vắt qua
+ * mốc bắc ([315, 45] là quanh hướng bắc).
+ */
+export type LuatHuong = {
+  /** Cung gió THUẬN sườn — bay đẹp. */
+  tot?: [number, number];
+  /** Cung gió NGƯỢC sườn — không bay, bất kể tốc độ. */
+  xau?: [number, number];
+  /**
+   * Những hướng mà khi gió MẠNH thì sinh GIÓ XIẾT (gió luồn qua khe, tăng tốc
+   * đột ngột ở mép sườn). Ghi tâm hướng, máy tự chấp nhận lệch ±22,5°.
+   */
+  xiet?: number[];
+};
+
 export type ToaDoDiemBay = {
   lat: number;
   lon: number;
@@ -32,6 +54,8 @@ export type ToaDoDiemBay = {
    * Chưa đặt thì máy không chấm hướng — chỉ nhìn tốc độ và mưa.
    */
   huongThuan?: [number, number];
+  /** Luật hướng đầy đủ của điểm: gió tốt · gió xấu · hướng sinh gió xiết. */
+  luatHuong?: LuatHuong;
 };
 
 /**
@@ -43,7 +67,22 @@ export type ToaDoDiemBay = {
  * hay đứng dưới thung lũng ra hai kiểu gió khác nhau.
  */
 export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
-  "khau-pha": { lat: 21.7546, lon: 104.1279, alt: 1200, ten: "Đèo Khau Phạ (Mù Cang Chải)" },
+  /**
+   * KHAU PHẠ — luật hướng do chủ điểm bay đọc từ kinh nghiệm bay tại chỗ:
+   *  · TỐT: đông và đông bắc (cung 22,5°–112,5°), nhẹ tới hơi mạnh — hơi mạnh
+   *    thì thermal lên đẹp nhất.
+   *  · XẤU: từ đông nam vòng qua nam, tây nam tới tây (112,5°–292,5°) — ngược
+   *    sườn, không bay bất kể tốc độ.
+   *  · XIẾT khi gió MẠNH: bắc, đông, tây — ba hướng gió luồn qua khe đèo rồi
+   *    tăng tốc đột ngột ngay mép cất cánh.
+   */
+  "khau-pha": {
+    lat: 21.7546,
+    lon: 104.1279,
+    alt: 1200,
+    ten: "Đèo Khau Phạ (Mù Cang Chải)",
+    luatHuong: { tot: [23, 112], xau: [113, 292], xiet: [0, 90, 270] },
+  },
   sapa: { lat: 22.3364, lon: 103.8438, alt: 1500, ten: "Sa Pa (Lào Cai)" },
   "ha-noi": { lat: 20.8386, lon: 105.5561, alt: 833, ten: "Đồi Bù (Chương Mỹ)" },
 };
@@ -57,6 +96,7 @@ export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): 
     alt: Number.isFinite(luu.alt as number) ? Number(luu.alt) : goc.alt,
     ten: luu.ten?.trim() || goc.ten,
     huongThuan: luu.huongThuan ?? goc.huongThuan,
+    luatHuong: luu.luatHuong ?? goc.luatHuong,
   };
 }
 
@@ -127,7 +167,7 @@ export type GioThoiTiet = {
   /** Độ ẩm (%) — trên 97 kèm chênh nhiệt nhỏ là sương mù. */
   am?: number;
 
-  /* ---- Chỉ số đối lưu: sức nâng, độ ổn định, nguy cơ dông ---- */
+  /* ---- Chỉ số đối lưu: thermal, độ ổn định, nguy cơ dông ---- */
   /** CAPE (J/kg) — thế năng đối lưu: càng lớn không khí càng muốn bốc lên. */
   cape?: number;
   /**
@@ -142,6 +182,8 @@ export type GioThoiTiet = {
   xacSuatMua?: number;
   /** Bức xạ mặt trời (W/m²) — nắng đốt mặt đất mạnh thì thermal mạnh. */
   buXa?: number;
+  /** Ô lưới mô hình cao hơn bãi cất cánh bao nhiêu mét — xem `tranMay`. */
+  chenhDoCao?: number;
 };
 
 /* ------------------------------------------------------------------ */
@@ -152,7 +194,7 @@ export type SucThermal = "khong" | "nhe" | "vua" | "manh" | "gat";
 
 export type ChiSoBay = {
   /**
-   * SỨC NÂNG trong ngày. Với bay đôi CHỞ KHÁCH thì "êm" mới là tốt: thermal vừa
+   * THERMAL trong ngày. Với bay đôi CHỞ KHÁCH thì "êm" mới là tốt: thermal vừa
    * đủ giúp kéo dài chuyến, còn thermal gắt làm dù xóc, khách say, và bãi đáp
    * nổi bụi gió xoáy. Ngược hẳn với bay solo đường dài — nên đừng đọc thang
    * này như thang của phi công thể thao.
@@ -218,7 +260,7 @@ export function chiSoBay(g: GioThoiTiet): ChiSoBay {
     tran,
     onDinh,
     xacSuatDong,
-    xacSuatMua: Number.isFinite(g.xacSuatMua as number) ? Math.round(g.xacSuatMua as number) : -1,
+    xacSuatMua: xacSuatMuaThat(g.xacSuatMua, g.mua),
   };
 }
 
@@ -238,12 +280,78 @@ export type ChamGio = {
   lyDo: string[];
 };
 
-/** Hướng gió có nằm trong cung thuận không (cung cho phép vắt qua mốc bắc). */
-export function huongThuanLoi(huong: number, cung?: [number, number]): boolean {
-  if (!cung) return true;
+/* ------------------------------------------------------------------ */
+/* Thang sức gió — thang của chủ điểm bay, không phải thang Beaufort    */
+/* ------------------------------------------------------------------ */
+
+export type SucGio = "nhe" | "vua" | "hoiManh" | "manh" | "ratManh";
+
+/**
+ * NĂM MỨC GIÓ theo cách chủ điểm bay đọc trời (m/s):
+ *   < 2 nhẹ · 2–4 vừa · 4–6 hơi mạnh · 6–8 mạnh · > 8 rất mạnh
+ *
+ * Không dùng thang Beaufort: Beaufort chia theo sức phá của gió trên biển, còn
+ * ở đây mốc nào cũng gắn với một quyết định cất cánh cụ thể. Hai mức đầu là
+ * bay được, "hơi mạnh" là lúc thermal lên đẹp nhất ở Khau Phạ, "mạnh" là chỉ
+ * phi công cứng, "rất mạnh" là gấp dù.
+ */
+export function sucGio(v: number): SucGio {
+  if (v < 2) return "nhe";
+  if (v < 4) return "vua";
+  if (v < 6) return "hoiManh";
+  if (v <= 8) return "manh";
+  return "ratManh";
+}
+
+export const NHAN_SUC_GIO: Record<SucGio, string> = {
+  nhe: "nhẹ",
+  vua: "vừa",
+  hoiManh: "hơi mạnh",
+  manh: "mạnh",
+  ratManh: "rất mạnh",
+};
+
+export type SucGiat = "nhe" | "vua" | "manh";
+
+/** Thang GIÓ GIẬT riêng: < 6 nhẹ · 6–10 vừa · > 10 mạnh. */
+export function sucGiat(v: number): SucGiat {
+  if (v < 6) return "nhe";
+  if (v <= 10) return "vua";
+  return "manh";
+}
+
+export const NHAN_SUC_GIAT: Record<SucGiat, string> = { nhe: "nhẹ", vua: "vừa", manh: "mạnh" };
+
+/**
+ * MŨI TÊN HƯỚNG GIÓ.
+ *
+ * Mũi tên chỉ ĐÚNG CHIỀU GIÓ THỔI TỚI — gió đông (thổi từ phía đông) thì mũi
+ * tên chỉ sang trái, tức là chiều nó đang đẩy dù. Đọc bằng mắt nhanh hơn hẳn
+ * chữ "ĐĐB": nhìn cả hàng ngang là thấy ngay lúc nào gió đổi chiều.
+ */
+const MUI_TEN = ["↓", "↙", "↙", "←", "←", "↖", "↖", "↑", "↑", "↗", "↗", "→", "→", "↘", "↘", "↓"];
+
+export function muiTenGio(do_: number): string {
+  const h = ((do_ % 360) + 360) % 360;
+  return MUI_TEN[Math.round(h / 22.5) % 16];
+}
+
+/** Hướng có nằm trong một cung không — cung cho phép vắt qua mốc bắc. */
+export function trongCung(huong: number, cung: [number, number]): boolean {
   const [tu, den] = cung;
   const h = ((huong % 360) + 360) % 360;
   return tu <= den ? h >= tu && h <= den : h >= tu || h <= den;
+}
+
+/** Lệch bao nhiêu độ giữa hai hướng, luôn trong khoảng -180…180. */
+export function lechGoc(a: number, b: number): number {
+  return ((((a - b) % 360) + 540) % 360) - 180;
+}
+
+/** Hướng gió có nằm trong cung thuận không (cung cho phép vắt qua mốc bắc). */
+export function huongThuanLoi(huong: number, cung?: [number, number]): boolean {
+  if (!cung) return true;
+  return trongCung(huong, cung);
 }
 
 const HUONG_CHU = ["B", "BĐB", "ĐB", "ĐĐB", "Đ", "ĐĐN", "ĐN", "NĐN", "N", "NTN", "TN", "TTN", "T", "TTB", "TB", "BTB"];
@@ -266,9 +374,54 @@ export function huongChu(do_: number): string {
  * mây nằm ở độ cao nào. Ở núi, 80% mây nằm cao 2.000m là trời đẹp có bóng râm;
  * 80% mây nằm ở 100m là bãi cất cánh chìm trong sương, không thấy lối bay.
  */
-export function tranMay(nhietDo: number, diemSuong?: number): number | null {
+export function tranMay(
+  nhietDo: number,
+  diemSuong?: number,
+  mayThap?: number,
+  /**
+   * Chênh độ cao giữa Ô LƯỚI của mô hình và BÃI CẤT CÁNH thật (m).
+   *
+   * Đây là chỗ trước đây tính sai và ra số thấp vô lý. Mô hình chia ô ~25km
+   * rồi lấy độ cao TRUNG BÌNH của ô: ở Khau Phạ ô ấy cao 1.620m trong khi bãi
+   * cất cánh ở 1.200m. Công thức chỉ cho biết mây cách MẶT ĐẤT CỦA MÔ HÌNH bao
+   * nhiêu, nên muốn biết mây cách bãi bao nhiêu thì phải cộng thêm 420m ấy —
+   * không cộng thì báo "trần mây 87m" trong khi đứng ở bãi nhìn lên còn hơn
+   * nửa cây số nữa mới tới mây.
+   */
+  chenhDoCao = 0,
+): number | null {
   if (diemSuong === undefined || !Number.isFinite(diemSuong)) return null;
-  return Math.max(0, Math.round((nhietDo - diemSuong) * 125));
+  /**
+   * KHÔNG CÓ MÂY THÌ KHÔNG CÓ TRẦN MÂY.
+   *
+   * Công thức chỉ nói "nếu khối khí này bốc lên thì tới độ cao ấy nó ngưng
+   * thành mây" — nó KHÔNG nói trên đầu đang có mây. Ở núi nhiệt đới, sáng sớm
+   * và sau mưa thì nhiệt độ với điểm sương gần nhau nên con số ra rất thấp,
+   * trong khi trời quang: báo "trần mây 200m" lúc nhìn lên thấy nắng là sai
+   * hiển nhiên, và người ta sẽ thôi tin cả bảng.
+   *
+   * Nên chỉ trả số khi mô hình thật sự thấy mây ở tầng thấp (≥ 25%).
+   */
+  if (mayThap !== undefined && Number.isFinite(mayThap) && mayThap < 25) return null;
+  return Math.max(0, Math.round((nhietDo - diemSuong) * 125 + chenhDoCao));
+}
+
+/**
+ * XÁC SUẤT MƯA ĐÃ HIỆU CHỈNH.
+ *
+ * Mô hình ở vùng nhiệt đới mùa mưa gần như luôn báo 90–100%, vì nó tính "có
+ * mưa ở đâu đó trong ô lưới 25km trong giờ đó" — mà ô ấy trùm cả một vùng núi
+ * rộng. Người xếp lịch bay cần biết "có mưa Ở BÃI, đủ ướt để hoãn không", nên
+ * hạ theo LƯỢNG mưa dự báo: xác suất cao mà lượng gần bằng không thì đó là vài
+ * hạt ở sườn bên kia, không phải cơn mưa ở bãi.
+ */
+export function xacSuatMuaThat(xacSuat?: number, luongMua = 0): number {
+  if (xacSuat === undefined || !Number.isFinite(xacSuat)) return -1;
+  const p = Math.max(0, Math.min(100, xacSuat));
+  if (luongMua >= 1) return Math.round(p);
+  if (luongMua >= 0.4) return Math.round(p * 0.8);
+  if (luongMua >= 0.1) return Math.round(p * 0.55);
+  return Math.round(p * 0.3);
 }
 
 /**
@@ -278,27 +431,48 @@ export function tranMay(nhietDo: number, diemSuong?: number): number | null {
  * lại. Một giờ có thể đỏ vì nhiều thứ cùng lúc (gió mạnh + mưa) — hiện đủ thì
  * người đọc biết trời hôm đó hỏng vì cái gì, chứ không chỉ thấy một ô đỏ.
  */
-export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number, number]): ChamGio {
+export function chamGio(
+  g: GioThoiTiet,
+  nguong: NguongBay,
+  huongThuan?: [number, number],
+  luat?: LuatHuong,
+): ChamGio {
   const lyDo: string[] = [];
   let muc: MucDo = "xanh";
   const len = (m: MucDo) => {
     if (m === "do" || (m === "vang" && muc === "xanh")) muc = m;
   };
 
+  /**
+   * THUẬN SƯỜN THÌ NỚI NGƯỠNG GIÓ ĐẸP.
+   *
+   * Cùng 5 m/s: thổi ngược sườn là hỏng, còn thổi thẳng vào sườn ở Khau Phạ
+   * thì đó lại là ngày đẹp nhất — gió dựng lên mặt núi, thermal lên đều, dù
+   * lên cao mà không xóc. Nên khi hướng nằm trong cung tốt, mức "hơi mạnh"
+   * (tới 6 m/s) vẫn tính là gió đẹp; qua đó mới cân nhắc.
+   *
+   * Ngưỡng CẤM thì không nới: thuận sườn hay không, quá mức ấy là gấp dù.
+   */
+  const huongTot = Boolean(luat?.tot && trongCung(g.huong, luat.tot));
+  const nguongDep = huongTot ? Math.max(nguong.gioXanh, 6) : nguong.gioXanh;
   if (g.gio10m > nguong.gioDo) {
     lyDo.push(`gió ${g.gio10m.toFixed(1)} m/s vượt ngưỡng ${nguong.gioDo}`);
     len("do");
-  } else if (g.gio10m > nguong.gioXanh) {
+  } else if (g.gio10m > nguongDep) {
     lyDo.push(`gió ${g.gio10m.toFixed(1)} m/s — cân nhắc`);
     len("vang");
   }
 
+  /**
+   * GIẬT theo thang của chủ: dưới 6 nhẹ · 6–10 vừa · trên 10 mạnh.
+   *
+   * Bỏ hẳn cảnh báo "gần ngưỡng" ở mức 80%: mô hình ở núi gần như luôn báo
+   * giật 8–10 m/s, nên câu đó hiện ở mọi giờ của mọi ngày và thành tiếng ồn.
+   * Giật trong khoảng "vừa" là chuyện thường ngày ở đèo, không đáng nói.
+   */
   if (g.giat > nguong.giatDo) {
-    lyDo.push(`giật ${g.giat.toFixed(1)} m/s vượt ngưỡng ${nguong.giatDo}`);
+    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — mạnh, vượt ngưỡng ${nguong.giatDo}`);
     len("do");
-  } else if (g.giat > nguong.giatDo * 0.8) {
-    lyDo.push(`giật ${g.giat.toFixed(1)} m/s — gần ngưỡng`);
-    len("vang");
   }
 
   /**
@@ -316,11 +490,20 @@ export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number,
    * hỏng đúng cái việc nó sinh ra để làm. Chỉ gọi là RỐI khi chênh vừa lớn
    * tuyệt đối vừa đủ mạnh để làm gấp cánh (giật qua 70% ngưỡng cấm).
    */
-  if (chenh > 7 && g.giat > nguong.giatDo * 0.7) {
+  /**
+   * Mốc chênh phải NẰM NGOÀI dải giật bình thường của đèo.
+   *
+   * Theo thang của chủ, giật tới 10 m/s vẫn là "vừa" — chuyện thường ngày ở
+   * Khau Phạ, giờ nào cũng gặp. Bắt chênh ở mức đó thì mọi giờ đều "gió không
+   * đều" và cả bảng vàng khè, đúng cái bẫy đã mắc một lần với ngưỡng cũ. Chỉ
+   * gọi tên khi giật ĐÃ SANG MỨC MẠNH, hoặc khi chênh lớn bất thường (gió nền
+   * gần như lặng mà từng đợt ập tới sát 10).
+   */
+  if (chenh > 7 && sucGiat(g.giat) === "manh") {
     lyDo.push(`gió rối: giật hơn trung bình ${chenh.toFixed(1)} m/s`);
     len("do");
-  } else if (chenh > 4) {
-    lyDo.push("gió không đều");
+  } else if (chenh > 8) {
+    lyDo.push(`gió không đều (giật hơn trung bình ${chenh.toFixed(1)} m/s)`);
     len("vang");
   }
 
@@ -344,13 +527,14 @@ export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number,
    * mình nó là ngày nào cũng đỏ; còn mây thấp 100% mà trần mây 1.500m là mây
    * lửng trên đầu, vẫn bay tốt.
    */
-  const cm = tranMay(g.nhietDo, g.diemSuong);
   const mayThap = g.mayThap ?? 0;
-  if (cm !== null && mayThap >= 50) {
+  const cm = tranMay(g.nhietDo, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0);
+  /** Phải mây thấp DÀY (≥70%) mới gọi là trùm bãi — 50% là mây rải, vẫn thấy lối. */
+  if (cm !== null && mayThap >= 70) {
     if (cm < nguong.tranMayDo) {
       lyDo.push(`mù: mây trùm bãi (trần mây ~${cm}m, mây thấp ${Math.round(mayThap)}%)`);
       len("do");
-    } else if (cm < nguong.tranMayDo * 2.5) {
+    } else if (cm < nguong.tranMayDo * 2) {
       lyDo.push(`mây thấp ~${cm}m — tầm nhìn hạn chế`);
       len("vang");
     }
@@ -359,7 +543,7 @@ export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number,
    * Sương mù thật sự: không khí bão hoà. Đây là trường hợp mù dày đặc dưới đất
    * mà mây thấp có khi vẫn báo ít, nên xét riêng.
    */
-  if ((g.am ?? 0) >= 98 && cm !== null && cm < 100) {
+  if ((g.am ?? 0) >= 98 && (g.mayThap ?? 0) >= 70 && cm !== null && cm < 150) {
     lyDo.push(`sương mù (ẩm ${Math.round(g.am ?? 0)}%)`);
     len("do");
   }
@@ -389,13 +573,36 @@ export function chamGio(g: GioThoiTiet, nguong: NguongBay, huongThuan?: [number,
     len("vang");
   }
 
-  /** Mô hình nói khả năng mưa cao thì cảnh báo, kể cả khi lượng mưa dự báo còn nhỏ. */
-  if (cs.xacSuatMua >= 70 && g.mua <= nguong.muaDo) {
-    lyDo.push(`khả năng mưa ${cs.xacSuatMua}%`);
+  /** Khả năng mưa ĐÃ HIỆU CHỈNH theo lượng (xem xacSuatMuaThat) — thô thì lúc nào cũng 100%. */
+  const pMua = xacSuatMuaThat(g.xacSuatMua, g.mua);
+  if (pMua >= 60 && g.mua <= nguong.muaDo) {
+    lyDo.push(`khả năng mưa ${pMua}%`);
     len("vang");
   }
 
-  if (!huongThuanLoi(g.huong, huongThuan)) {
+  /**
+   * HƯỚNG GIÓ — ở núi thì hướng quan trọng ngang tốc độ.
+   *
+   * Ba luật, xét theo thứ tự nặng dần:
+   *  1. GIÓ XẤU (ngược sườn): không bay, bất kể gió nhẹ tới đâu — dù đổ về
+   *     phía sau sườn, cất cánh là bị hút xuống.
+   *  2. GIÓ XIẾT: đúng hướng luồn khe VÀ đang mạnh. Nguy hiểm riêng của địa
+   *     hình đèo: ngoài bãi đo được gió vừa phải, nhưng ngay mép cất cánh thì
+   *     luồng bị bóp lại và vọt lên gấp rưỡi.
+   *  3. GIÓ TỐT: đúng sườn thì nói rõ ra, kèm mức gió — để người trực biết
+   *     hôm nay là ngày đẹp chứ không chỉ "không có gì sai".
+   */
+  const suc = sucGio(g.gio10m);
+  const manh = suc === "manh" || suc === "ratManh";
+  if (luat?.xau && trongCung(g.huong, luat.xau)) {
+    lyDo.push(`gió ${huongChu(g.huong)} — ngược sườn cất cánh, không bay`);
+    len("do");
+  } else if (luat?.xiet?.length && manh && luat.xiet.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5)) {
+    lyDo.push(`⚠ GIÓ XIẾT: hướng ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — luồn khe, tăng tốc ở mép bãi`);
+    len("do");
+  } else if (huongTot) {
+    lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — thuận sườn`);
+  } else if (!huongThuanLoi(g.huong, huongThuan)) {
     lyDo.push(`gió hướng ${huongChu(g.huong)} — ngược sườn cất cánh`);
     len("do");
   }
@@ -431,7 +638,7 @@ export type NgayThoiTiet = {
   xacSuatMuaMax: number;
   /** Xác suất dông cao nhất trong khung giờ bay (%). */
   xacSuatDongMax: number;
-  /** Trần thermal cao nhất (m) — sức nâng của ngày. */
+  /** Trần thermal cao nhất (m) — thermal của ngày. */
   tranMax: number | null;
   gio: Array<GioThoiTiet & ChamGio>;
 };
@@ -477,7 +684,7 @@ export function gopNgay(ngay: string, gio: Array<GioThoiTiet & ChamGio>): NgayTh
     nhietMin: so((g) => g.nhietDo, (a) => Math.min(...a)),
     nhietMax: so((g) => g.nhietDo, (a) => Math.max(...a)),
     xacSuatMuaMax: trongKhung.length
-      ? Math.max(-1, ...trongKhung.map((g) => (Number.isFinite(g.xacSuatMua as number) ? Math.round(g.xacSuatMua as number) : -1)))
+      ? Math.max(-1, ...trongKhung.map((g) => xacSuatMuaThat(g.xacSuatMua, g.mua)))
       : -1,
     xacSuatDongMax: trongKhung.length ? Math.max(0, ...trongKhung.map((g) => chiSoBay(g).xacSuatDong)) : 0,
     tranMax: (() => {

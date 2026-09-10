@@ -102,25 +102,62 @@ cũng nghĩa là tiền khoá không sinh tác dụng, nên phải nhìn dòng n
 
 Ngoài gió, mỗi giờ còn bị soi thêm sáu thứ. Một thứ đủ nặng là cả giờ đó đỏ.
 
+### Thang sức gió (m/s) — thang của chủ điểm bay
+
+| Gió trung bình | Mức | Màu ô |
+|---|---|---|
+| < 2 | nhẹ | xanh nhạt |
+| 2 – 4 | vừa | xanh |
+| 4 – 6 | hơi mạnh | vàng |
+| 6 – 8 | mạnh | cam |
+| > 8 | rất mạnh | đỏ |
+
+| Gió giật | Mức |
+|---|---|
+| < 6 | nhẹ |
+| 6 – 10 | vừa |
+| > 10 | mạnh |
+
+Màu ô **Gió** nói *gió mạnh cỡ nào*; hàng **Bay?** ngay dưới mới là *kết luận
+cả giờ* (đã gộp mưa, mù, dông, hướng). Hai thang khác nhau và đều cần: một giờ
+có thể gió đẹp mà vẫn đỏ vì mưa.
+
+Hướng gió hiện bằng **mũi tên chỉ chiều gió thổi tới** — nhìn cả hàng ngang là
+thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở tooltip.
+
+### Bảng chấm màu
+
 | Yếu tố | Vàng (cân nhắc) | Đỏ (không bay) |
 |---|---|---|
-| Gió trung bình | > ngưỡng đẹp | > ngưỡng cấm |
-| Gió giật | > 80% ngưỡng giật | > ngưỡng giật |
-| **Gió rối** (giật trừ trung bình) | chênh > 4 m/s | chênh > 7 m/s và giật đã qua 70% ngưỡng |
-| **Mù / mây thấp** | trần mây < 2,5× ngưỡng, mây thấp ≥ 50% | trần mây < ngưỡng và mây thấp ≥ 50%; hoặc ẩm ≥ 98% với trần mây < 100 m |
-| Mưa | lác đác > 0,1 mm, hoặc khả năng mưa ≥ 70% | > ngưỡng mưa |
+| Gió trung bình | > ngưỡng đẹp (nới tới 6 m/s khi **thuận sườn**) | > ngưỡng cấm |
+| Gió giật | — (mức "vừa" là chuyện thường ở đèo) | > ngưỡng giật, tức mức **mạnh** |
+| **Gió rối** (giật trừ trung bình) | chênh > 8 m/s | chênh > 7 m/s **và** giật đã sang mức mạnh |
+| **Mù / mây thấp** | trần mây < 2× ngưỡng, mây thấp ≥ 70% | trần mây < ngưỡng và mây thấp ≥ 70%; hoặc ẩm ≥ 98% kèm mây thấp dày |
+| Mưa | lác đác > 0,1 mm, hoặc khả năng mưa (đã hiệu chỉnh) ≥ 60% | > ngưỡng mưa |
 | **Dông** | 20–39% | ≥ 40% |
 | **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
-| Hướng gió | — | ngoài cung hướng cất cánh (nếu đã khai) |
+| **Hướng gió xấu** | — | trong cung gió xấu của điểm, bất kể tốc độ |
+| **Gió xiết** | — | đúng hướng luồn khe **và** gió đã mạnh |
 
 Ba khái niệm mới, giải thích ngắn:
 
-- **Trần mây** = độ cao đáy mây tính từ bãi cất cánh, suy từ chênh lệch nhiệt
-  độ và điểm sương (khoảng 125 m cho mỗi 1°C chênh). Mô hình chỉ nói *bao nhiêu
-  phần trăm mây*, không nói mây ở độ cao nào — mà 80% mây ở 2.000 m là trời đẹp
-  có bóng râm, còn 80% mây ở 100 m là bãi chìm trong sương. Phải có **cả hai**
-  điều kiện (trần mây thấp **và** mây thấp dày) mới chấm mù: sáng sớm ở núi
-  chênh nhiệt độ luôn nhỏ, bắt mình nó thì ngày nào cũng đỏ.
+- **Trần mây** = độ cao đáy mây tính **từ bãi cất cánh**, suy từ chênh lệch
+  nhiệt độ và điểm sương (khoảng 125 m cho mỗi 1°C chênh) **cộng thêm chênh độ
+  cao giữa ô lưới mô hình và bãi thật**. Chỗ cộng thêm này rất quan trọng: mô
+  hình chia ô ~25 km rồi lấy độ cao trung bình, ở Khau Phạ ô ấy cao 1.620 m
+  trong khi bãi ở 1.200 m — không cộng 420 m ấy thì báo "trần mây 87 m" trong
+  khi đứng ở bãi nhìn lên còn hơn nửa cây số nữa mới tới mây.
+
+  Trời quang (mây thấp < 25%) thì **không báo trần mây** — công thức chỉ nói
+  "nếu khối khí này bốc lên thì tới đó nó thành mây", không nói trên đầu đang
+  có mây. Và phải có **cả hai** (trần mây thấp **và** mây thấp ≥ 70%) mới chấm
+  mù.
+
+- **Khả năng mưa** hiển thị là con số **đã hiệu chỉnh theo lượng mưa**. Mô hình
+  ở vùng nhiệt đới mùa mưa gần như luôn báo 90–100%, vì nó tính "có mưa ở đâu
+  đó trong ô 25 km" — mà ô ấy trùm cả vùng núi rộng. Người xếp lịch cần biết
+  "có mưa **ở bãi**, đủ ướt để hoãn không", nên xác suất được hạ khi lượng mưa
+  dự báo gần bằng không.
 
 - **Dông** ghép từ hai số: **CAPE** (bao nhiêu "nhiên liệu" cho đối lưu) và
   **chỉ số nâng / lifted index** (khí quyển có "mồi" để bốc không). Nhiều nhiên
@@ -129,7 +166,7 @@ Ba khái niệm mới, giải thích ngắn:
   gió đổ xuống đã quét qua bãi làm gió đảo chiều và mạnh gấp mấy lần trong vài
   phút.
 
-- **Sức nâng (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
+- **Thermal (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
   ngày. Với bay đôi chở khách thì **êm mới là tốt**: thermal vừa đủ kéo dài
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
@@ -159,6 +196,26 @@ Cách nâng chất lượng thật sự không nằm ở việc mua thêm một 
 
 Đó là thông tin mà cả Windy Premium lẫn Windy API đều không cho sẵn. Chưa làm —
 nói một tiếng là làm.
+
+## 6b. Luật hướng gió riêng từng điểm
+
+Cùng một tốc độ, cùng một giờ, mà hướng khác nhau thì một bên bay đẹp còn một
+bên không ai dám cất cánh — vì nó phụ thuộc sườn núi quay về đâu. Nên luật
+hướng khai riêng từng điểm, không có mặc định chung.
+
+**Khau Phạ** (đang áp dụng, theo kinh nghiệm chủ điểm bay):
+
+| | |
+|---|---|
+| **Gió tốt** | Đông, Đông Bắc (23°–112°) — nhẹ, vừa, **hơi mạnh đều đẹp**; hơi mạnh thì thermal lên mạnh nhất |
+| **Gió xấu** | Đông Nam, Nam, Tây Nam, Tây (113°–292°) — ngược sườn, **không bay bất kể tốc độ** |
+| **Cảnh báo gió xiết** | Bắc, Đông hoặc Tây **khi gió đã mạnh** (> 6 m/s) — gió luồn khe đèo rồi tăng tốc đột ngột ngay mép bãi |
+
+Vì gió Đông vừa là hướng tốt vừa là hướng sinh xiết: nhẹ và vừa thì đẹp, mạnh
+thì thành cảnh báo — máy xét gió xiết **trước** khi kết luận thuận sườn.
+
+Sa Pa và Đồi Bù chưa khai luật hướng: nói cho tôi cung gió tốt/xấu của hai điểm
+ấy là thêm được ngay.
 
 ## 7. Toạ độ điểm bay
 
