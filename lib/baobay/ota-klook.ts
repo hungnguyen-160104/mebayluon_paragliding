@@ -219,7 +219,7 @@ export function parseKlookEmail(subject: string, bodyRaw: string): KlookBooking 
     expectedTime: toHHMM(timeField.latest) || toHHMM(preferred.latest),
     preferredTimeRaw: preferred.latest,
     leadName: lastValue(field(body, "Lead participant")).latest.replace(/^\([^)]*\)\s*/, "").trim(),
-    leadEmail: lastValue(field(body, "Lead person email")).latest,
+    leadEmail: cleanEmail(lastValue(field(body, "Lead person email")).latest),
     leadPhone: normalizePhone(lastValue(field(body, "Lead person mobile")).latest),
     nationality,
     guestCount: guestCountOf(lastValue(field(body, "Participant")).latest),
@@ -227,6 +227,29 @@ export function parseKlookEmail(subject: string, bodyRaw: string): KlookBooking 
     specialRequirements: lastValue(field(body, "Special requirements")).latest,
     guests: parseGuests(body, nationality),
   };
+}
+
+/**
+ * LÀM SẠCH EMAIL KHÁCH.
+ *
+ * Klook gửi kèm một cái đuôi rác: "khach@gmail.com <##>". Nó vào thẳng ô email
+ * của booking, nên mọi thư báo đổi lịch gửi tới địa chỉ đó đều bật lại — mà
+ * không ai biết, vì trên sổ nhìn vẫn ra email.
+ *
+ * Cắt phần trong ngoặc nhọn thay vì lấy phần trong đó: dạng thư tiêu chuẩn
+ * "Tên <mail@x.com>" cũng gặp, nên phải nhận cả hai — nếu trong ngoặc là một
+ * địa chỉ thật thì lấy nó, còn rác như "##" thì bỏ đi giữ phần ngoài.
+ */
+export function cleanEmail(raw: unknown): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  const trongNgoac = s.match(/<([^>]*)>/)?.[1]?.trim() ?? "";
+  const ngoaiNgoac = s.replace(/<[^>]*>/g, "").trim();
+  const hopLe = (x: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x);
+  if (hopLe(ngoaiNgoac)) return ngoaiNgoac.toLowerCase();
+  if (hopLe(trongNgoac)) return trongNgoac.toLowerCase();
+  /** Không ra địa chỉ nào hợp lệ thì thà để trống còn hơn giữ chuỗi rác. */
+  return "";
 }
 
 /** Chỗ đón của Klook → ô "đưa đón" trong app. */

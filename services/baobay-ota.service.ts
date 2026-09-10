@@ -17,6 +17,7 @@
 
 import { formatDateKeyVN, isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import {
+  cleanEmail,
   parseKlookEmail,
   pickupFromDeparture,
   spotFromEmailText,
@@ -353,8 +354,12 @@ export async function ingestOtaEmail(input: OtaInbound): Promise<OtaIngestResult
     source: ota === "klook" ? "Klook" : ota.toUpperCase(),
     contactName: parsed.leadName || parsed.guests[0]?.fullName || "khách OTA",
     phone: parsed.leadPhone,
-    // Email khách Klook gửi kèm — app dùng để gửi thư báo khi booking thay đổi
-    email: String(parsed.leadEmail ?? "").trim().toLowerCase(),
+    /**
+     * Email khách Klook gửi kèm — app dùng để gửi thư báo khi booking thay đổi.
+     * Lọc lại lần nữa ở đây dù bên bóc thư đã lọc: đường này còn nhận dữ liệu
+     * từ chỗ khác, mà một địa chỉ rác thì thư nào cũng bật lại mà không ai hay.
+     */
+    email: cleanEmail(parsed.leadEmail),
     bookingCode: parsed.ref,
     otaRef: parsed.ref,
     otaName: ota,
@@ -512,7 +517,7 @@ export async function approveOtaEmail(
      * nhưng nằm trong note thì máy không dùng được (đúng bài học của phần
      * đồng bộ web, xem services/baobay-web-sync.service.ts).
      */
-    email: String(draft.email ?? "").trim().toLowerCase(),
+    email: cleanEmail(draft.email),
     note: [
       Array.isArray(draft.weights) && draft.weights.length ? `cân nặng ${draft.weights.join("/")}kg` : "",
       draft.hotel ? `đón: ${draft.hotel}` : "",

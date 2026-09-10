@@ -11,6 +11,7 @@ import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import { DateBar } from "./DateBar";
 import type { BookingDTO } from "@/lib/baobay/types";
+import { laTuDen, shortPickup, TU_DEN } from "@/lib/baobay/pickup";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
@@ -106,9 +107,15 @@ const PICKUP_LABEL: Record<BookingDTO["pickup"], string> = {
 function pickupText(b: Pick<BookingDTO, "pickup" | "pickupNote">): string {
   if (b.pickup !== "other") return PICKUP_LABEL[b.pickup];
   const note = (b.pickupNote || "").trim();
+  /**
+   * Khách Klook chọn "đến thẳng điểm bay" thì ô này là cả cái tên pháp nhân
+   * của bãi — viết "đón <tên bãi>" là sai nghĩa hẳn: chẳng ai đi đón cả. Rút
+   * về "Tự đến điểm bay" và bỏ chữ "đón".
+   */
+  if (laTuDen(note)) return TU_DEN;
   const m = note.match(/^xe trung chuyển\s*(?:xã\s*)?(.+)$/i);
   if (m) return `Đón tại ${m[1].trim()}`;
-  return `đón ${note || "?"}`;
+  return `đón ${shortPickup(note) || "?"}`;
 }
 
 /** Rút gọn tên cho vừa nút: "Minh Ngọc" → "M. Ngọc", "Mai Hoàn" → "M. Hoàn"; một chữ giữ nguyên. */
@@ -7838,7 +7845,10 @@ export function BookingCard({
                 flagFlight: form.flagFlight,
                 pickupLabel:
                   form.pickup === "other"
-                    ? `Đón: ${form.pickupNote || "?"}`
+                    ? /** Tên bãi dài (khách Klook tự tới) in ra vé thì tràn dòng — xem shortPickup. */
+                      laTuDen(form.pickupNote)
+                      ? TU_DEN
+                      : `Đón: ${shortPickup(form.pickupNote) || "?"}`
                     : form.pickup === "bigc"
                       ? "Đón BigC"
                       : form.pickup === "hotel"
