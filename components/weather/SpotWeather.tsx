@@ -26,6 +26,7 @@ import { WindArrow } from "./WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
 import {
   bieuTuongTroi,
+  BIEU_TUONG_MUC,
   chiSoBay,
   huongTheNao,
   sucGiat,
@@ -130,7 +131,7 @@ const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
 };
 
 function nhanMuc(muc: MucDo, t: ThoiTietCopy): string {
-  return muc === "xanh" ? t.good : muc === "vang" ? t.fair : t.bad;
+  return `${BIEU_TUONG_MUC[muc]} ${muc === "xanh" ? t.good : muc === "vang" ? t.fair : t.bad}`;
 }
 
 /** "2026-09-10" → "T5 10/09" theo tiếng đang xem; hôm nay thì hiện "Hôm nay". */
@@ -247,7 +248,7 @@ function BangGio({ ngay, t, lang, luat }: { ngay: Ngay; t: ThoiTietCopy; lang: s
           )}
           {hang(
             t.canFly,
-            (g) => (g.muc === "xanh" ? "✔" : g.muc === "vang" ? "⚠" : "✕"),
+            (g) => BIEU_TUONG_MUC[g.muc],
             (g) => "rounded font-bold " + DAC[g.muc],
           )}
           {hang(t.gust, (g) => g.giat.toFixed(1), (g) => MAU_GIAT[sucGiat(g.giat)])}

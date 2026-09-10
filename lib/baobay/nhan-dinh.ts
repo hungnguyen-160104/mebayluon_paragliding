@@ -71,8 +71,11 @@ const NHAN_MUC: Record<MucNhanDinh, string> = {
   nghi: "NÊN NGHỈ BAY",
 };
 
+/** Mặt cười cho ngày tốt, mặt buồn cho ngày nghỉ — đứng trước nhãn mức. */
+export const BIEU_TUONG_NHAN_DINH: Record<MucNhanDinh, string> = { tot: "😊", kha: "🙂", hanChe: "😐", nghi: "😞" };
+
 export function nhanMucNhanDinh(m: MucNhanDinh): string {
-  return NHAN_MUC[m];
+  return `${BIEU_TUONG_NHAN_DINH[m]} ${NHAN_MUC[m]}`;
 }
 
 /* ------------------------------------------------------------------ */

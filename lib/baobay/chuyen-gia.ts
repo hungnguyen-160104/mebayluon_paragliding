@@ -87,10 +87,10 @@ export type DanhGiaNgay = {
 };
 
 export const NHAN_XEP_LOAI: Record<XepLoai, string> = {
-  tot: "TỐT",
-  kha: "KHÁ",
-  hanChe: "HẠN CHẾ",
-  khongBay: "KHÔNG BAY",
+  tot: "😊 TỐT",
+  kha: "🙂 KHÁ",
+  hanChe: "😐 HẠN CHẾ",
+  khongBay: "😞 KHÔNG BAY",
 };
 
 export function xepLoaiTheoDiem(diem: number): XepLoai {

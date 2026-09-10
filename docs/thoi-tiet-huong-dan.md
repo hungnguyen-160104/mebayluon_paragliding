@@ -128,7 +128,7 @@ báo giật gấp ba bốn lần gió trung bình. Lấy con số ấy làm mố
 kiểu đó vài lần là không ai nhìn bảng nữa.
 
 Màu ô **Gió** nói *gió mạnh cỡ nào*; hàng **Bay?** ngay dưới mới là *kết luận
-cả giờ* (đã gộp mưa, mù, dông, hướng): **✔** bay tốt · **⚠** cân nhắc · **✕**
+cả giờ* (đã gộp mưa, mù, dông, hướng): **😊** bay tốt · **😐** cân nhắc · **😞**
 không bay. Hai thang khác nhau và đều cần: một giờ có thể gió đẹp mà vẫn đỏ
 vì mưa.
 
@@ -255,7 +255,7 @@ Ba thước trên cùng một ngày, mỗi thước trả lời một câu khác
 
 | Thước | Trả lời | Ở đâu |
 |---|---|---|
-| Màu ✔ ⚠ ✕ (`chamGio`) | **được phép bay không** — luật cấm, một thứ quá ngưỡng là đỏ | hàng Bay? |
+| Mặt 😊 😐 😞 (`chamGio`) | **được phép bay không** — luật cấm, một thứ quá ngưỡng là đỏ | hàng Bay? |
 | Nhận định (`nhanDinhNgay`) | **ngày kiểu gì, nên làm gì** — câu chữ cho người đọc | khối trên thẻ |
 | Điểm 0–100 (`chuyen-gia.ts`) | **bay có ĐẸP không, đẹp cỡ nào** — con số để so ngày với ngày, mô hình với mô hình, và đối chiếu với chấm thực tế | huy hiệu trên khối nhận định, ô ngày, hàng Điểm |
 

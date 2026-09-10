@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
 import {
   bieuTuongTroi,
+  BIEU_TUONG_MUC,
   chiSoBay,
   huongChu,
   huongTheNao,
@@ -78,9 +79,9 @@ export type DoChinhXac = {
 };
 
 const NHAN_KET: Record<"tot" | "han-che" | "nghi", string> = {
-  tot: "bay tốt",
-  "han-che": "hạn chế",
-  nghi: "nghỉ bay",
+  tot: "😊 bay tốt",
+  "han-che": "😐 hạn chế",
+  nghi: "😞 nghỉ bay",
 };
 
 export type DuLieuThoiTiet = {
@@ -140,7 +141,7 @@ const MAU_GIAT: Record<"nhe" | "vua" | "manh" | "ratManh", string> = {
   ratManh: "font-bold text-rose-700",
 };
 
-const NHAN: Record<MucDo, string> = { xanh: "BAY TỐT", vang: "CÂN NHẮC", do: "KHÔNG BAY" };
+const NHAN: Record<MucDo, string> = { xanh: "😊 BAY TỐT", vang: "😐 CÂN NHẮC", do: "😞 KHÔNG BAY" };
 
 const THU = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -478,7 +479,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
                 title={g.lyDo.join(" · ")}
                 className={"border-b border-white px-0.5 py-0.5 text-[10px] font-bold " + MAU_O[g.muc]}
               >
-                {g.muc === "xanh" ? "✔" : g.muc === "vang" ? "⚠" : "✕"}
+                {BIEU_TUONG_MUC[g.muc]}
               </td>
             ))}
           </tr>
@@ -630,7 +631,7 @@ function BangGio({ ngay, luat }: { ngay: NgayThoiTiet; luat?: LuatHuong }) {
       <div className="mt-1 text-[10px] text-slate-500">
         Ô <strong>Gió</strong> tô theo sức gió: xanh nhạt &lt;2 nhẹ · xanh 2–4 vừa · vàng 4–6 hơi mạnh · cam 6–8
         mạnh · đỏ &gt;8 rất mạnh. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
-        <strong> ✔</strong> bay tốt · <strong>⚠</strong> cân nhắc · <strong>✕</strong> không bay. Mũi tên chỉ chiều
+        <strong> 😊</strong> bay tốt · <strong>😐</strong> cân nhắc · <strong>😞</strong> không bay. Mũi tên chỉ chiều
         gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi thuận sườn và{" "}
         <span className="font-black text-rose-600">đỏ</span> khi ngược sườn hoặc luồn khe. Rê chuột vào ô bất kỳ để
         xem lý do.
@@ -746,9 +747,9 @@ function ChamKinhNghiem({
   }
 
   const nut: Array<{ v: "tot" | "han-che" | "nghi"; nhan: string; mau: string }> = [
-    { v: "tot", nhan: "✔ Bay tốt", mau: "border-emerald-500 bg-emerald-500 text-white" },
-    { v: "han-che", nhan: "◐ Hạn chế", mau: "border-amber-500 bg-amber-500 text-white" },
-    { v: "nghi", nhan: "✕ Nghỉ bay", mau: "border-rose-600 bg-rose-600 text-white" },
+    { v: "tot", nhan: "😊 Bay tốt", mau: "border-emerald-500 bg-emerald-500 text-white" },
+    { v: "han-che", nhan: "😐 Hạn chế", mau: "border-amber-500 bg-amber-500 text-white" },
+    { v: "nghi", nhan: "😞 Nghỉ bay", mau: "border-rose-600 bg-rose-600 text-white" },
   ];
 
   const dangChon = noiTruoc ? daCham?.forecast : daCham?.verdict;

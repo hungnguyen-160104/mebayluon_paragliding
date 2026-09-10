@@ -61,10 +61,10 @@ export default function WeatherPageClient() {
         {/* Chú giải màu — đặt trên bảng vì đây là thứ phải hiểu trước khi đọc số */}
         <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold [&>span]:shadow-sm">
           <span className="rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-900">
-            {t.good}
+            😊 {t.good}
           </span>
-          <span className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-amber-900">{t.fair}</span>
-          <span className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-rose-900">{t.bad}</span>
+          <span className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-amber-900">😐 {t.fair}</span>
+          <span className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-rose-900">😞 {t.bad}</span>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">

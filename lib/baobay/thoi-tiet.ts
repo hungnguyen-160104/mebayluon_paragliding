@@ -311,6 +311,12 @@ export const NHAN_THERMAL: Record<SucThermal, string> = {
 
 export type MucDo = "xanh" | "vang" | "do";
 
+/**
+ * MẶT CƯỜI / MẶT BUỒN cho ba mức (luật chủ 10/09): người trực và khách nhìn
+ * mặt là hiểu, không phải nhớ ✔ ⚠ ✕ nghĩa là gì.
+ */
+export const BIEU_TUONG_MUC: Record<MucDo, string> = { xanh: "😊", vang: "😐", do: "😞" };
+
 export type ChamGio = {
   muc: MucDo;
   /** Vì sao ra màu đó — hiện thẳng trên ô để người trực khỏi phải đoán. */

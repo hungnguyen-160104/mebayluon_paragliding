@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { MO_HINH, MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
-import type { MucDo } from "@/lib/baobay/thoi-tiet";
+import { BIEU_TUONG_MUC, type MucDo } from "@/lib/baobay/thoi-tiet";
 
 type GioMin = { gio: string; gio10m: number; giat: number; mua: number; muc: MucDo; lyDo?: string[] };
 type NgayMin = { ngay: string; muc: MucDo; gioMax: number; giatMax: number; muaTong: number; khungDep: string | null; gio: GioMin[] };
@@ -269,7 +269,7 @@ export function SoSanhMoHinh({
                       }
                       title={dt === "lech" ? "Các mô hình KHÔNG đồng ý — giờ này chưa chắc" : "Mọi mô hình cùng kết luận"}
                     >
-                      {dt === "lech" ? "?" : dt === "xanh" ? "✔" : dt === "vang" ? "⚠" : "✕"}
+                      {dt === "lech" ? "?" : BIEU_TUONG_MUC[dt]}
                     </td>
                   );
                 })}
