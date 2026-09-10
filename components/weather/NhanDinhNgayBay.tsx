@@ -52,6 +52,9 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
         {gon && <span className="shrink-0 text-[11px] opacity-70">{mo ? "▾" : "▸"}</span>}
       </button>
 
+      {/* KIỂU NGÀY — câu phi công nói với nhau ở bãi, hiện ngay dưới dòng tóm tắt. */}
+      {mo && nd.kieuNgay && <div className="mt-1 text-[12px] font-bold leading-snug">🧭 {nd.kieuNgay}</div>}
+
       {mo && (
         <div className="mt-1.5 grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
           {nd.diem.map((d) => (
@@ -65,12 +68,12 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
 
       {mo && nd.khuyenCao.length > 0 && (
         <div className="mt-1.5 rounded border border-current/20 bg-white/60 px-2 py-1 text-[11px] leading-snug">
-          <span className="font-bold">👉 Khuyến cáo: </span>
+          <div className="font-bold">👉 Khuyến cáo</div>
+          {/* Mỗi câu một dòng; câu đầu (xấu nhất) in đậm — đó là câu quyết định bay hay không. */}
           {nd.khuyenCao.map((k, i) => (
-            <span key={i}>
-              {i > 0 && " · "}
-              {k}
-            </span>
+            <div key={i} className={i === 0 ? "font-bold" : ""}>
+              • {k}
+            </div>
           ))}
         </div>
       )}

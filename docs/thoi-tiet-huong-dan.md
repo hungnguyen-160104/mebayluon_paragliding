@@ -213,15 +213,34 @@ chiếu được với cảm nhận của mình, và cái sai của máy lộ ra
 | Mục | Dựa vào | Nói gì |
 |---|---|---|
 | 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | thuận/ngược sườn; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
-| 🪁 Gió trên cao | gió mực 850/700 hPa (bãi cao) hoặc 925/850 (bãi thấp), độ cao mực trừ độ cao bãi | > 8 m/s ngay trên bãi: thermal bị xé, xóc, không lên cao; > 12: không bay; mặt đất lặng mà trên cao có gió: **cắt gió** |
+| 🪁 Gió trên cao | gió **nội suy tại 300 / 500 / 1000 m trên bãi** từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ) | "Gió mực 500m mạnh (9 m/s) từ 11:00 — không leo quá 300m, bám sườn"; > 12 m/s: bị thổi lùi, không bay; mực 1000m > 12: có lớp cắt gió, giữ dưới 500m; mặt đất lặng mà mực 300m đã có gió: **cắt gió ngay trên bãi** |
 | ☀️ Nắng | `sunshine_duration` cộng trong khung 7–17h | số giờ nắng / 11; < 3h: âm u, thermal yếu |
 | 🔥 Thermal | trần lớp xáo trộn, CAPE, bức xạ | yếu · vừa · tốt · **gắt từ mấy giờ**; khung nâng tốt |
 | ⚖️ Ổn định | lifted index TB, ẩm, nhiệt, gió | ≥ 4: rất ổn định — kèm ẩm ≥ 75%, nóng ≥ 30°C, lặng gió là **ngày oi bức, ít thermal, mù khô**; ≤ −2: **bất ổn, dễ dông, xóc, nhiễu** |
 | 🧢 Nghịch nhiệt | nhiệt độ các mực 925/850/700, so hai mực kề | lapse > 0°C/km: **nghịch nhiệt**; > −2: lớp chặn — báo độ cao **tính từ bãi**; nắp < 600m: thermal bị chặn, mù tích dưới |
-| 🌡 Áp suất | `pressure_msl` TB, so với ngày trước | tụt ≥ 5 hPa/24h: **front/rãnh thấp đang tới**; ≥ 3: hệ thống xấu tiến tới; tăng ≥ 3: áp cao lấn, quang dần; < 1006 kèm mây nhiều: âm u |
+| 🌡 Áp suất | `pressure_msl` TB so với ngày trước, **và xu hướng từng giờ trong ngày** | tụt ≥ 5 hPa/24h: **front/rãnh thấp đang tới**; tăng ≥ 3: áp cao lấn, quang dần. Trong ngày: "**Áp suất sụt từ 15:00** — có thể có dông; hạ cánh xong trước 14:00" |
+| 🌀 Nhiễu động | gộp thermal gắt + giật ≥ 14 + cắt gió + bất ổn định | "NHIỄU ĐỘNG MẠNH: thermal gắt 11:00–14:00 + giật ≥14 m/s — giữ tốc độ, tay lái chủ động, sẵn sàng xử lý collapse" |
 | ⛈ Front | áp giảm ≥ 3 **và** gió đổi hướng **và** mưa tăng > 1mm so hôm trước | dấu hiệu front đi qua — gió giật bất ngờ khi front tới |
 | 🌫 Mù | trần mây < 300m và mây thấp ≥ 70% | giờ trùm bãi, **tan từ mấy giờ** |
 | 🌧 ⚡ Mưa, dông | lượng mưa > 0,5 mm/giờ, xác suất dông | giờ mưa, tổng mm; dông tối đa |
+
+**Kiểu ngày** — câu phi công nói với nhau ở bãi, hiện ngay dưới dòng tóm tắt:
+*Ngày BẤT ỔN ĐỊNH: thermal gắt, nhiễu động mạnh, mây tích phát triển nhanh —
+nguy cơ OD/dông chiều, chỉ bay sáng* · *Ngày ỔN ĐỊNH OI BỨC: lift yếu, không khí
+đục, mù khô* · *Ngày GIÓ MỰC CAO MẠNH: thermal bị xé, leo là nhiễu động* · *Ngày
+NGHỊCH NHIỆT THẤP* · *Ngày THERMAL GẮT: bãi đáp có rotor nhiệt* · *Ngày ỔN ĐỊNH,
+THERMAL ÊM: kiểu ngày đẹp nhất cho bay đôi* · *Ngày MƯA* · *Ngày FRONT đi qua*.
+
+**Khuyến cáo xếp xấu nhất lên đầu** và in đậm: câu "Gió mực 500m rất mạnh…",
+"Nguy cơ dông…", "Áp suất sụt từ…" là câu quyết định bay hay không, phải đọc
+trước "khung giờ đẹp" — không thì người ta thấy giờ đẹp rồi thôi không đọc nữa.
+
+**Bẫy thuỷ triều khí quyển**: ở nhiệt đới, áp suất *tự* tụt 2–3 hPa từ ~10h tới
+~16h mỗi ngày rồi lên lại — nhịp thường ngày, không phải dông. Máy chỉ gọi là
+"sụt" khi tụt **nhanh hơn nhịp ấy**: so với đúng ba giờ đó của hôm trước phải
+tụt thêm ≥ 1,2 hPa và bản thân ≥ 2,5 hPa/3h (ngày đầu dãy, không có hôm trước,
+thì đòi hẳn 3 hPa/3h). Bản đầu bắt ngưỡng cố định nên ngày nào cũng "sụt từ
+12:00", kể cả ngày đẹp trời.
 
 **Chốt mức không tự nâng**: bắt đầu từ màu của ngày (đã tính từng giờ), rồi chỉ
 hạ theo số mục xấu. Bảng giờ nói đỏ thì không câu chữ nào biến thành tốt được.

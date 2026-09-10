@@ -764,7 +764,12 @@ export function gopNgay(ngay: string, gio: Array<GioThoiTiet & ChamGio>): NgayTh
     gioXanh: dem("xanh"),
     gioVang: dem("vang"),
     gioDo: dem("do"),
-    khungDep: dai.len > 0 ? `${trongKhung[dai.tu].gio.slice(11, 16)}–${trongKhung[dai.den].gio.slice(11, 16)}` : null,
+    khungDep:
+      dai.len > 1
+        ? `${trongKhung[dai.tu].gio.slice(11, 16)}–${trongKhung[dai.den].gio.slice(11, 16)}`
+        : dai.len === 1
+          ? trongKhung[dai.tu].gio.slice(11, 16)
+          : null,
     gioMax: so((g) => g.gio10m, (a) => Math.max(...a)),
     giatMax: so((g) => g.giat, (a) => Math.max(...a)),
     muaTong: so((g) => g.mua, (a) => a.reduce((t, x) => t + x, 0)),
