@@ -47,6 +47,8 @@ export async function GET(req: Request) {
     const duBao = await duBaoDiemBay(spot, {
       soNgay: Number.isFinite(days) ? days : SO_NGAY,
       boCache: url.searchParams.get("moi") === "1",
+      /** ?model=gfs — chọn mô hình; bỏ trống là ECMWF. So sánh thì trình duyệt gọi từng mô hình một. */
+      moHinh: url.searchParams.get("model") ?? undefined,
     });
     /**
      * Sổ kinh nghiệm đọc SAU dự báo, không song song như trước: nó cần số của

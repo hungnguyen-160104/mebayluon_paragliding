@@ -259,19 +259,32 @@ chỉ số, bảng gió vẫn nguyên. Cả hai hỏng (mất mạng) thì thẻ
 vòng 6 tiếng** kèm dòng "số cũ, chưa lấy lại được" — dự báo ba tiếng trước vẫn
 cho biết chiều nay gió thế nào, còn hộp báo lỗi thì không cho biết gì.
 
-## 6. Muốn số CHẮC hơn thì làm gì (miễn phí)
+## 6. Chọn mô hình và SO SÁNH 2–3 mô hình (đã làm)
 
-Cách nâng chất lượng thật sự không nằm ở việc mua thêm một mô hình, mà ở chỗ
-**đối chiếu nhiều mô hình**:
+Trên thẻ có dải nút **Mô hình: ECMWF · GFS · ICON · UKMO · GEM** — bấm là cả
+bảng (dải ngày, bảng giờ, nhận định) tính lại theo mô hình đó. Chỉ liệt kê mô
+hình đã dò thật là trả đủ số cho Tây Bắc; ECMWF AIFS (bản AI) không trả dữ liệu
+giờ, JMA thiếu giật và CAPE nên không bày.
 
-- Đã có hai mô hình (xem mục 5c) nhưng chúng chia việc, chưa **đối chiếu** nhau.
-- Bước tiếp: cùng hỏi **ECMWF + ICON + GFS** một câu, rồi so.
-- Ba mô hình cùng nói gió êm → tin cậy cao, tô xanh đậm.
-- Ba mô hình cãi nhau (một cái 3 m/s, một cái 8 m/s) → hiện "dự báo chưa chắc",
-  nhắc điều phối gọi lại khách sát ngày thay vì chốt sớm.
+Nút **⇄ So sánh** mở bảng đặt 2–3 mô hình cạnh nhau:
 
-Đó là thông tin mà cả Windy Premium lẫn Windy API đều không cho sẵn. Chưa làm —
-nói một tiếng là làm.
+- **7 ngày × mô hình**: mỗi ô là gió tối đa ngày, tô màu theo kết luận — nhìn
+  ngang là thấy ngày nào các mô hình cãi nhau.
+- **Bảng giờ của ngày đang chọn**: mỗi mô hình một hàng, ô tô màu ✔/⚠/✕ kèm gió.
+- Hàng **Đồng thuận**: mọi mô hình cùng kết luận thì hiện màu đó; khác nhau thì
+  hiện **?** — giờ ấy chưa chắc.
+- Câu kết: *"3 mô hình đồng thuận cả 13 giờ — chốt lịch được"* / *"lệch nhau 2
+  giờ (13h, 14h) — riêng mấy giờ đó gọi lại khách sát ngày"* / *"lệch nhau tới
+  12/13 giờ — dự báo ngày này CHƯA CHẮC, đừng chốt sớm"*.
+
+Vì sao so sánh chứ không chỉ chọn: một mô hình nói "chiều gió 3 m/s" thì người
+đọc tin ngay; ba mô hình mà một cái nói 3, một cái nói 8 thì người đọc biết
+buổi chiều **chưa chắc** — đó mới là thông tin quyết định gọi khách sớm hay đợi.
+Đây là thứ cả Windy Premium lẫn Windy API đều không cho sẵn.
+
+Chi tiết kỹ thuật: mô hình chọn đi qua `?model=` ở cả hai API; chỉ số ổn định
+(LI, trần thermal) vẫn mượn GFS khi mô hình chính không có — trừ khi chính là
+GFS. Khoá Windy (nếu cắm) chỉ thay cho mô hình mặc định.
 
 ## 6b. Luật hướng gió riêng từng điểm
 

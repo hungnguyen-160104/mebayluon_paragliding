@@ -42,6 +42,7 @@ import {
   type ToaDoDiemBay,
 } from "@/lib/baobay/thoi-tiet";
 import { nhanDinhNgay } from "@/lib/baobay/nhan-dinh";
+import { moHinhTheoMa, MO_HINH_MAC_DINH, type MoHinh } from "@/lib/baobay/mo-hinh";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { BaobayWeatherMark } from "@/models/BaobayWeatherMark.model";
 
@@ -242,7 +243,7 @@ async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string, t
 /** Đọc dự báo và chấm màu từng giờ, gộp theo ngày. */
 export async function duBaoDiemBay(
   spot: string,
-  opts: { soNgay?: number; boCache?: boolean } = {},
+  opts: { soNgay?: number; boCache?: boolean; moHinh?: string } = {},
 ): Promise<{
   spot: SpotId;
   toaDo: ToaDoDiemBay;
@@ -255,7 +256,8 @@ export async function duBaoDiemBay(
   const key = normalizeSpot(spot);
   const { toaDo, nguong } = await cauHinhDiem(key);
   const soNgay = Math.min(10, Math.max(1, opts.soNgay ?? SO_NGAY));
-  const cacheKey = `${key}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
+  const mh = moHinhTheoMa(opts.moHinh ?? MO_HINH_MAC_DINH);
+  const cacheKey = `${key}:${mh.ma}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
 
   const cu = CACHE.get(cacheKey);
   if (!opts.boCache && cu && Date.now() - cu.luc < CACHE_MS) {
@@ -263,7 +265,7 @@ export async function duBaoDiemBay(
   }
 
   try {
-    const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong);
+    const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong, mh);
     CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
     return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
   } catch (e) {
@@ -291,6 +293,7 @@ async function layVaCham(
   toaDo: ToaDoDiemBay,
   soNgay: number,
   nguong: NguongBay,
+  mh: MoHinh = moHinhTheoMa(MO_HINH_MAC_DINH),
 ): Promise<{ ngay: NgayThoiTiet[]; moHinh: string }> {
   /**
    * KHỞI ĐỘNG MÔ HÌNH PHỤ NGAY, KHÔNG CHỜ MÔ HÌNH CHÍNH.
@@ -303,12 +306,19 @@ async function layVaCham(
    * `.catch` gắn NGAY tại đây: promise này bị await mãi sau, mà một promise
    * hỏng chưa ai bắt sẽ bị Node coi là lỗi không xử lý.
    */
-  const hen = goiMoHinh(toaDo, soNgay, "gfs_seamless", HOURLY_PHU).catch(() => null);
+  /**
+   * Mô hình phụ (GFS) lấy chỉ số ổn định — trừ khi mô hình chính đã có sẵn
+   * (GFS chọn làm chính): gọi thêm là gọi hai lần cùng một thứ.
+   */
+  const hen = mh.coChiSoOnDinh
+    ? goiMoHinh(toaDo, soNgay, mh.id, HOURLY_PHU).catch(() => null)
+    : goiMoHinh(toaDo, soNgay, "gfs_seamless", HOURLY_PHU).catch(() => null);
 
   let raw: any;
-  let moHinh = "ECMWF IFS (Open-Meteo)";
+  let moHinh = `${mh.ten} (Open-Meteo)`;
   const khoaWindy = process.env.WINDY_API_KEY?.trim();
-  if (khoaWindy) {
+  /** Khoá Windy chỉ thay cho mô hình MẶC ĐỊNH; chọn mô hình khác là chọn Open-Meteo rõ ràng. */
+  if (khoaWindy && mh.ma === MO_HINH_MAC_DINH) {
     try {
       raw = await goiWindy(toaDo, khoaWindy);
       moHinh = `Windy Point Forecast (${WINDY_MODEL.toUpperCase()})`;
@@ -319,9 +329,9 @@ async function layVaCham(
   }
   if (!raw) {
     try {
-      raw = await goiMoHinh(toaDo, soNgay, "ecmwf_ifs025");
+      raw = await goiMoHinh(toaDo, soNgay, mh.id);
     } catch {
-      /** ECMWF hỏng thì lấy bản trộn — xem ghi chú đầu tệp. */
+      /** Mô hình chọn hỏng thì lấy bản trộn của Open-Meteo — xem ghi chú đầu tệp. */
       raw = await goiMoHinh(toaDo, soNgay);
       moHinh = "Open-Meteo (trộn mô hình)";
     }
@@ -441,7 +451,7 @@ export async function duBaoDiemCongKhai(diem: {
   lon: number;
   spotNoiBo?: SpotId;
   luatHuong?: LuatHuong;
-}): Promise<{
+}, moHinhMa?: string): Promise<{
   slug: string;
   ten: string;
   tinh: string;
@@ -456,15 +466,16 @@ export async function duBaoDiemCongKhai(diem: {
    * danh sách công khai thì đè lên: Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"
    * mà hai bãi quay hai phía, nên luật hướng phải theo từng bãi.
    */
+  const mh = moHinhTheoMa(moHinhMa ?? MO_HINH_MAC_DINH);
   if (diem.spotNoiBo) {
-    const du = await duBaoDiemBay(diem.spotNoiBo);
+    const du = await duBaoDiemBay(diem.spotNoiBo, { moHinh: mh.ma });
     const toaDo = diem.luatHuong ? { ...du.toaDo, luatHuong: diem.luatHuong } : du.toaDo;
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
   }
 
   const toaDo: ToaDoDiemBay = { lat: diem.lat, lon: diem.lon, ten: diem.ten, luatHuong: diem.luatHuong };
   const nguong = nguongCuaDiem(null);
-  const cacheKey = `web:${diem.slug}:${SO_NGAY}:${diem.lat},${diem.lon}`;
+  const cacheKey = `web:${diem.slug}:${mh.ma}:${SO_NGAY}:${diem.lat},${diem.lon}`;
   const cu = CACHE.get(cacheKey);
   if (cu && Date.now() - cu.luc < CACHE_MS) {
     return {
@@ -480,7 +491,7 @@ export async function duBaoDiemCongKhai(diem: {
   }
 
   try {
-    const { ngay, moHinh } = await layVaCham(toaDo, SO_NGAY, nguong);
+    const { ngay, moHinh } = await layVaCham(toaDo, SO_NGAY, nguong, mh);
     CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
   } catch (e) {

@@ -34,6 +34,8 @@ import {
 import { spotName } from "@/lib/baobay/spots";
 
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
+import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
+import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import { WindArrow } from "@/components/weather/WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "@/components/weather/WindyModels";
 
@@ -171,13 +173,18 @@ export function ThoiTietCard({
   const [chon, setChon] = useState<string | null>(null);
   const [moBanDo, setMoBanDo] = useState(false);
   const [moCaiDat, setMoCaiDat] = useState(false);
+  /** Mô hình đang xem ở bảng chính, và có đang bật bảng so sánh không. */
+  const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
+  const [soSanh, setSoSanh] = useState(false);
 
   const tai = useCallback(
     async (moi = false) => {
       setDangTai(true);
       setLoi(null);
       try {
-        const r = await apiGet<DuLieuThoiTiet>(`/api/baocao/thoi-tiet?spot=${spot}${moi ? "&moi=1" : ""}`);
+        const r = await apiGet<DuLieuThoiTiet>(
+          `/api/baocao/thoi-tiet?spot=${spot}&model=${moHinh}${moi ? "&moi=1" : ""}`,
+        );
         setDu(r);
         setChon((c) => (c && r.ngay.some((n) => n.ngay === c) ? c : (r.ngay[0]?.ngay ?? null)));
       } catch (e: any) {
@@ -186,7 +193,7 @@ export function ThoiTietCard({
         setDangTai(false);
       }
     },
-    [spot],
+    [spot, moHinh],
   );
 
   useEffect(() => {
@@ -262,6 +269,13 @@ export function ThoiTietCard({
        * tới trưa. Bảng giờ phía dưới là bằng chứng; khối này là kết luận.
        * Bấm ngày khác trên dải thì khối đổi theo.
        */}
+      {/* Chọn mô hình + bật so sánh — chỉ ở bản đầy đủ; trang điều phối dùng mặc định cho gọn. */}
+      {!gon && (
+        <div className="mb-2">
+          <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nho />
+        </div>
+      )}
+
       {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
       {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
@@ -311,6 +325,19 @@ export function ThoiTietCard({
         <>
           {/* ---- bảng giờ của ngày đang chọn ---- */}
           {ngayChon && <BangGio ngay={ngayChon} luat={du.toaDo.luatHuong} />}
+
+          {/* ---- so sánh 2–3 mô hình cho ngày đang chọn ---- */}
+          {soSanh && (
+            <SoSanhMoHinh
+              ngayChon={ngayChon?.ngay ?? null}
+              onChonNgay={setChon}
+              homNay={homNay}
+              fetcher={async (ma) => {
+                const r = await apiGet<DuLieuThoiTiet>(`/api/baocao/thoi-tiet?spot=${spot}&model=${ma}`);
+                return { ngay: r.ngay, moHinh: r.moHinh };
+              }}
+            />
+          )}
 
           {/* ---- Windy nhúng ---- */}
           <div className="mt-2">

@@ -20,6 +20,8 @@ import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
 import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
+import { ChonMoHinh, SoSanhMoHinh } from "./SoSanhMoHinh";
+import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import { WindArrow } from "./WindArrow";
 import { WINDY_MODELS, windyEmbedUrl } from "./WindyModels";
 import {
@@ -353,19 +355,22 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   const [loi, setLoi] = useState(false);
   const [chon, setChon] = useState<string | null>(null);
   const [moBanDo, setMoBanDo] = useState(false);
+  const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
+  const [soSanh, setSoSanh] = useState(false);
 
   const tai = useCallback(async () => {
     setLoi(false);
     try {
-      const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}`);
+      const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}&model=${moHinh}`);
       if (!res.ok) throw new Error();
       const j = (await res.json()) as DiemDuBao;
       setDu(j);
-      setChon(j.ngay[0]?.ngay ?? null);
+      /** Đổi mô hình thì giữ nguyên ngày đang xem — người ta đang so cùng một ngày. */
+      setChon((c) => (c && j.ngay.some((n) => n.ngay === c) ? c : (j.ngay[0]?.ngay ?? null)));
     } catch {
       setLoi(true);
     }
-  }, [slug]);
+  }, [slug, moHinh]);
 
   useEffect(() => {
     void tai();
@@ -404,6 +409,10 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
        */}
       {lang === "vi" && ngayChon && <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />}
 
+      <div className="mb-2">
+        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} />
+      </div>
+
       <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />
 
       {ngayChon && (
@@ -419,6 +428,20 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
       )}
 
       {ngayChon && <BangGio ngay={ngayChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />}
+
+      {soSanh && (
+        <SoSanhMoHinh
+          ngayChon={chon}
+          onChonNgay={setChon}
+          homNay={homNayVN()}
+          fetcher={async (ma) => {
+            const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}&model=${ma}`);
+            if (!res.ok) throw new Error();
+            const j = (await res.json()) as DiemDuBao;
+            return { ngay: j.ngay as never, moHinh: j.moHinh };
+          }}
+        />
+      )}
 
       <button
         type="button"

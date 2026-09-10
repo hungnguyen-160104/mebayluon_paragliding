@@ -25,13 +25,15 @@ export const maxDuration = 30;
 const CACHE_HEADER = "public, s-maxage=1800, stale-while-revalidate=3600";
 
 export async function GET(req: Request) {
-  const slug = new URL(req.url).searchParams.get("spot");
+  const url = new URL(req.url);
+  const slug = url.searchParams.get("spot");
+  const model = url.searchParams.get("model") ?? undefined;
 
   try {
     if (slug) {
       const diem = diemThoiTietTheoSlug(slug);
       if (!diem) return NextResponse.json({ message: "Không có điểm bay này" }, { status: 404 });
-      const du = await duBaoDiemCongKhai(diem);
+      const du = await duBaoDiemCongKhai(diem, model);
       return NextResponse.json(du, { headers: { "Cache-Control": CACHE_HEADER } });
     }
 
@@ -40,7 +42,7 @@ export async function GET(req: Request) {
      * lại. `allSettled` để một điểm hỏng không kéo cả trang xuống — điểm nào
      * lỗi thì thiếu thẻ đó, phần còn lại vẫn hiện.
      */
-    const ket = await Promise.allSettled(DIEM_TRANG_THOI_TIET.map((d) => duBaoDiemCongKhai(d)));
+    const ket = await Promise.allSettled(DIEM_TRANG_THOI_TIET.map((d) => duBaoDiemCongKhai(d, model)));
     const diem = ket.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
     if (!diem.length) throw new Error("Không điểm nào lấy được dự báo");
     return NextResponse.json({ diem }, { headers: { "Cache-Control": CACHE_HEADER } });
