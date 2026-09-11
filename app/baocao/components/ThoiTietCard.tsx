@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
 import {
   bieuTuongTroi,
+  hoangHonDep,
   huongTroiNgay,
   huongDayDuVi,
   BIEU_TUONG_MUC,
@@ -319,31 +320,70 @@ export function ThoiTietCard({
               key={n.ngay}
               type="button"
               onClick={() => setChon(n.ngay)}
+              /**
+               * Ô NGÀY Ở ĐÂY PHẢI NÓI ĐỦ NHƯ TRANG KHÁCH (chủ 11/09): người
+               * trực và điều phối nhìn bảng này để xếp ca, mà trước đây ô chỉ
+               * có tốc độ gió trần trụi — không hướng, không màu theo sức gió,
+               * không thermal, không hoàng hôn. Cùng một dữ liệu thì hai nơi
+               * phải nói cùng một điều.
+               *
+               * Ô đang chọn tô CAM (không ghép lớp nền theo mức ngày nữa: hai
+               * lớp nền cùng lúc thì lớp nào thắng là do thứ tự trong file CSS).
+               */
               className={
                 "rounded-lg border px-1 py-1 text-center transition " +
-                MAU_NEN[n.muc] +
-                (n.ngay === ngayChon?.ngay ? " ring-2 ring-sky-500" : "")
+                (n.ngay === ngayChon?.ngay
+                  ? "border-orange-500 bg-orange-200 text-orange-950 shadow-md ring-2 ring-orange-500"
+                  : MAU_NEN[n.muc])
               }
               title={n.khungDep ? `Giờ đẹp ${n.khungDep}` : undefined}
             >
               <div className="text-[10px] font-bold uppercase">{nhanNgay(n.ngay, homNay)}</div>
-              <div className="text-[11px] font-black leading-tight">{n.gioMax.toFixed(1)}</div>
-              <div className="text-[9px] leading-tight opacity-80">m/s</div>
-              <div className="text-[9px] leading-tight">
-                {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "😞" : "hạn chế"}
+              {/* Hướng + tốc độ trên nền màu theo thang gió của chủ: <4 xanh · 4–6 vàng · 6–8 cam · >8 đỏ. */}
+              <div className="mt-0.5 flex justify-center">
+                <span className="whitespace-nowrap rounded px-1 py-0.5 leading-none" style={styleGio(n.gioMax)}>
+                  {(() => {
+                    const h = huongTroiNgay(n.gio, [6, 18]);
+                    return h === null ? null : <span className="text-[10px] font-black">{huongChu(h)} · </span>;
+                  })()}
+                  <span className="text-[12px] font-black">{n.gioMax.toFixed(1)}</span>
+                  <span className="text-[9px] font-bold opacity-80"> m/s</span>
+                </span>
               </div>
-              {n.gioMua > 0 && <div className="text-[9px] leading-tight" title={n.khungMua ?? ""}>☔ {n.gioMua}h</div>}
-              {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
-              {/* Điểm chuyên gia 0–100 — con số để so ngày với ngày, mô hình với mô hình. */}
+              {/* Điểm chuyên gia đi cùng số giờ đẹp — hai con số cùng trả lời "ngày này đáng bay tới đâu". */}
+              <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[10px] leading-tight">
+                {(() => {
+                  const cg = n.chuyenGia as DanhGiaNgay | undefined;
+                  return cg ? (
+                    <span className="font-black" title={`Điểm điều kiện bay ${cg.diem}/100 · tin cậy ${cg.doTinCay}%`}>
+                      {cg.diem}
+                      <span className="font-normal opacity-60">/100</span>
+                    </span>
+                  ) : null;
+                })()}
+                <span className="whitespace-nowrap font-semibold">
+                  {n.gioXanh > 0 ? `${n.gioXanh}h đẹp` : n.muc === "do" ? "😞" : "hạn chế"}
+                </span>
+              </div>
+              {/* Thermal theo quy tắc sáu yếu tố — cùng con số với trang khách. */}
               {(() => {
-                const cg = n.chuyenGia as DanhGiaNgay | undefined;
-                return cg ? (
-                  <div className="text-[10px] font-black leading-tight" title={`Điểm điều kiện bay ${cg.diem}/100 · tin cậy ${cg.doTinCay}%`}>
-                    {cg.diem}
-                    <span className="font-normal opacity-60">/100</span>
+                const th = n.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
+                return th ? (
+                  <div
+                    className="whitespace-nowrap text-[9px] leading-tight"
+                    title={`Tiềm năng thermal ${th.diem}/100${th.khung ? ` · khoẻ nhất ${th.khung}` : ""}`}
+                  >
+                    🔥 {NHAN_THERMAL[th.muc]} {th.diem}
                   </div>
                 ) : null;
               })()}
+              {n.gioMua > 0 && <div className="text-[9px] leading-tight" title={n.khungMua ?? ""}>☔ {n.gioMua}h</div>}
+              {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
+              {/* Mức ngày hiện thành chữ vì nền cam của ô đang chọn đã nuốt mất màu mức. */}
+              {n.muc !== "xanh" && (
+                <div className="whitespace-nowrap text-[9px] font-black leading-tight">{n.muc === "do" ? "NÊN NGHỈ" : "CÂN NHẮC"}</div>
+              )}
+              {hoangHonDep(n) && <div className="whitespace-nowrap text-[9px] font-bold leading-tight text-orange-700">🌅 hoàng hôn đẹp</div>}
               {daCham && (
                 <div className="text-[9px] font-bold leading-tight" title={`Đã chấm: ${daCham.note || "—"}`}>
                   ✓ đã chấm

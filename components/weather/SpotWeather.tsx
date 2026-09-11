@@ -38,6 +38,7 @@ import {
   MUA_BAY,
   MUA_DANG_KE,
   type SucThermal,
+  hoangHonDep,
   huongTroiNgay,
 } from "@/lib/baobay/thoi-tiet";
 
@@ -421,33 +422,6 @@ function huongTroiCuaNgay(ngay: Ngay): number | null {
   return huongTroiNgay(ngay.gio as never, [6, 18]);
 }
 
-/**
- * NGÀY NÀY CÓ HOÀNG HÔN ĐẸP KHÔNG.
- *
- * Chuyến bay hoàng hôn là một món bán riêng, mà bán được hay không phụ thuộc
- * đúng BỐN MƯƠI PHÚT cuối trước khi mặt trời lặn: còn nắng, ít mây, không mưa
- * thì trời rực; mây dày hoặc mưa thì khách trả tiền để bay trong một màu xám
- * (chủ chốt 11/09).
- *
- * Xét hai giờ cuối trước lúc lặn — giờ chứa mốc "lặn trừ 40 phút" và giờ kế
- * tiếp — vì mô hình chỉ cho số theo từng giờ tròn.
- */
-function hoangHonDep(ngay: Ngay): boolean {
-  const lan = ngay.matTroi?.lan;
-  if (!lan || !/^\d{2}:\d{2}$/.test(lan)) return false;
-  const gioLan = Number(lan.slice(0, 2)) + Number(lan.slice(3, 5)) / 60;
-  const tu = Math.floor(gioLan - 40 / 60);
-  const cuoi = ngay.gio.filter((g) => {
-    const h = Number(g.gio.slice(11, 13));
-    return h >= tu && h <= Math.floor(gioLan);
-  });
-  if (!cuoi.length) return false;
-  /** Mưa là hỏng hẳn; mây dày cũng vậy — 60% trở xuống thì mặt trời còn xuyên qua. */
-  if (cuoi.some((g) => g.mua >= MUA_BAY)) return false;
-  if (cuoi.some((g) => g.may > 60)) return false;
-  /** Phải CÒN NẮNG ở khúc ấy: hết nắng thì trời chỉ xám dần, không có màu. */
-  return cuoi.some((g) => (g.giayNang ?? 0) > 600 || (g.buXa ?? 0) > 30);
-}
 
 /** Thứ tự mạnh dần của năm mức thermal — để lấy mức CAO NHẤT trong ngày. */
 const BAC_THERMAL: SucThermal[] = ["khong", "nhe", "vua", "manh", "gat"];
