@@ -111,7 +111,7 @@ function pickupText(b: Pick<BookingDTO, "pickup" | "pickupNote">): string {
   /**
    * Khách Klook chọn "đến thẳng điểm bay" thì ô này là cả cái tên pháp nhân
    * của bãi — viết "đón <tên bãi>" là sai nghĩa hẳn: chẳng ai đi đón cả. Rút
-   * về "Tự đến điểm bay" và bỏ chữ "đón".
+   * về "Tự đến" và bỏ chữ "đón".
    */
   if (laTuDen(note)) return TU_DEN;
   const m = note.match(/^xe trung chuyển\s*(?:xã\s*)?(.+)$/i);
@@ -3738,8 +3738,15 @@ function BookingDayTable({
   };
   const trangThai = (r: R) => (r.moved ? "dời" : r.b.status === "done" ? "đã bay" : r.b.status === "cancelled" ? "huỷ" : "chờ");
   const gioVe = gioXuatVe;
+  /**
+   * Ô "Đón" trong sổ booking — rút gọn như mọi chỗ khác trong sổ (chủ 11/09
+   * báo 11/09 rằng chỗ này vẫn còn chuỗi dài của Klook). `shortPickupSo` chỉ
+   * dùng nội bộ; vé và thư gửi khách vẫn gọi đủ tên, xem `pickupVe`.
+   */
   const donOf = (b: BookingDTO) =>
-    [b.pickup === "other" ? b.pickupNote || "?" : PICKUP_LABEL[b.pickup], b.expectedTime].filter(Boolean).join(" ");
+    [b.pickup === "other" ? shortPickupSo(b.pickupNote) || "?" : PICKUP_LABEL[b.pickup], b.expectedTime]
+      .filter(Boolean)
+      .join(" ");
   const val = (r: R, col: string): string | number => {
     switch (col) {
       case "seq": return r.b.daySeq || 0;
