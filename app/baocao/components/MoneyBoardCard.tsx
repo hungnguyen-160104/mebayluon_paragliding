@@ -79,11 +79,21 @@ export function MoneyBoardCard({
   spot,
   date,
   embedded = false,
+  rieng = false,
 }: {
   spot: string;
   date: string;
   /** Nhúng trong thẻ khác (thẻ THU CHI của kế toán): bỏ vỏ thẻ, chỉ hiện tiêu đề con. */
   embedded?: boolean;
+  /**
+   * CHỈ TIỀN CỦA CHÍNH NGƯỜI ĐANG XEM (quầy vé / điều phối / phi công).
+   *
+   * Máy chủ đã cắt sẵn phần của người khác (xem /api/baocao/money-board) —
+   * cờ này chỉ để ĐỔI CHỮ cho khỏi hiểu nhầm: người trực nhìn dòng "Khách
+   * chuyển khoản vào TK công ty" mà chỉ thấy vài khoản sẽ tưởng máy mất số,
+   * trong khi thật ra họ đang xem đúng phần mình ghi nhận.
+   */
+  rieng?: boolean;
 }) {
   const [board, setBoard] = useState<MoneyBoard | null>(null);
 
@@ -110,7 +120,9 @@ export function MoneyBoardCard({
     <div className="grid gap-2 @md:grid-cols-2">
       {/* Tiền đã về công ty — không ai phải nộp lại */}
       <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-2.5">
-        <div className="text-xs font-semibold text-indigo-900">🏦 Khách chuyển khoản vào TK công ty</div>
+        <div className="text-xs font-semibold text-indigo-900">
+          🏦 {rieng ? "Chuyển khoản MÌNH ghi nhận" : "Khách chuyển khoản vào TK công ty"}
+        </div>
         <div className="text-xl font-bold tabular-nums text-indigo-800">{formatVND(board.transfer.total)}</div>
         <div className="mt-0.5 text-[11px] text-indigo-900/70">
           {board.transfer.items.length} khoản · ngày {formatDateKeyVN(board.date)}
@@ -217,7 +229,9 @@ export function MoneyBoardCard({
 
       {/* Cộng theo NGƯỜI — con số phải gọi đi nộp về cuối ngày */}
       <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-2.5 @md:col-span-2">
-        <div className="text-xs font-semibold text-teal-900">🧑 Ai đang giữ tiền mặt (cộng theo người)</div>
+        <div className="text-xs font-semibold text-teal-900">
+          🧑 {rieng ? "Tiền mặt MÌNH đang giữ" : "Ai đang giữ tiền mặt (cộng theo người)"}
+        </div>
         <div className="mt-0.5 text-[11px] text-teal-900/70">
           {board.cashByPerson.length
             ? `${board.cashByPerson.length} người · bấm tên để xem từng khoản`
@@ -252,7 +266,9 @@ export function MoneyBoardCard({
       {/* Tiền nhân sự đã bỏ ra tại bãi — kế toán phải hoàn lại */}
       {board.spendTotal > 0 && (
         <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-2.5 @md:col-span-2">
-          <div className="text-xs font-semibold text-rose-900">🧾 Ai đã chi tiền (hoàn lại cho nhân sự)</div>
+          <div className="text-xs font-semibold text-rose-900">
+            🧾 {rieng ? "Mình đã chi tiền (công ty hoàn lại)" : "Ai đã chi tiền (hoàn lại cho nhân sự)"}
+          </div>
           <div className="text-xl font-bold tabular-nums text-rose-700">{formatVND(board.spendTotal)}</div>
           <div className="mt-0.5 text-[11px] text-rose-900/70">
             {board.spendByPerson.length} người · bấm tên để xem từng khoản
@@ -282,7 +298,7 @@ export function MoneyBoardCard({
     <CollapseCard
       className="border-emerald-300"
       headerClassName="bg-emerald-600 text-white"
-      title="🧮 Tiền trong ngày — ai đang giữ"
+      title={rieng ? "🧮 Tiền của tôi trong ngày" : "🧮 Tiền trong ngày — ai đang giữ"}
       hint={`CK ${formatVND(board.transfer.total)} · tiền mặt ${formatVND(board.cashTotal)}`}
     >
       {inner}

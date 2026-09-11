@@ -13486,3 +13486,195 @@ export async function thongKeHangBanThem(spot: string, from: string, to: string)
     theoNgay: [...ngay.values()].sort((a, b) => (a.date < b.date ? 1 : -1)),
   };
 }
+
+/* ================================================================== */
+/* HỒ SƠ MỘT NHÂN SỰ TRONG MỘT NGÀY                                    */
+/* ================================================================== */
+
+/**
+ * MỌI THỨ MỘT NGƯỜI ĐÃ LÀM TRONG MỘT NGÀY, gom về một chỗ.
+ *
+ * Vì sao cần (chủ chốt 11/09): kế toán ngồi chốt ngày, mở báo cáo của một
+ * người ra sửa thì chỉ thấy mấy ô số họ tự khai. Còn những việc người ấy bấm
+ * TRONG SỔ BOOKING — thu tiền khách nào, huỷ khách nào, dời khách nào, thêm
+ * bớt dịch vụ gì — nằm rải ở bốn năm chỗ khác, muốn đối chiếu phải mở từng
+ * trang mà tra. Thành ra số không khớp thì chỉ biết là "lệch", không biết lệch
+ * ở đâu, rồi hỏi vòng quanh.
+ *
+ * Khối này KHÔNG tính lại gì cả — nó chỉ bày ra đúng những việc đã ghi, kèm
+ * giờ bấm và tên khách, để người soát nhìn một màn là biết hỏi ai câu gì.
+ */
+export type HoSoNhanSuNgay = {
+  username: string;
+  name: string;
+  date: string;
+  tien: {
+    /** Khách trả qua LỆNH THU do người này đứng thu (TM) / ghi nhận (CK). */
+    lenhThuTM: number;
+    lenhThuCK: number;
+    /** Sổ THU CHI trong chính báo cáo ngày của người này. */
+    soThu: number;
+    soChi: number;
+    /** Hoa hồng đại lý người này trả bằng TIỀN MẶT — ghi trên booking, không nằm trong sổ thu chi. */
+    hoaHongTM: number;
+    /** Hàng bán thêm (áo, khăn…) khai trong báo cáo ngày. */
+    hangTM: number;
+    hangCK: number;
+    /** Đã nộp lên / đã ứng trong ngày (lệnh tiền đã xác nhận). */
+    daNop: number;
+    daUng: number;
+  };
+  huy: Array<{ bookingCode: string; contactName: string; guests: number; refund: number; luc: string }>;
+  doi: Array<{ bookingCode: string; contactName: string; guests: number; tuNgay: string; denNgay: string; luc: string }>;
+  dichVu: Array<{ kieu: "add" | "remove"; nhan: string; items: string; tien: number; luc: string }>;
+  lenhThu: Array<{ nhan: string; soTien: number; cach: "cash" | "transfer"; trangThai: string }>;
+};
+
+export async function hoSoNhanSuNgay(spotRaw: string, date: string, username: string): Promise<HoSoNhanSuNgay> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const u = normalizeUsername(username);
+  const gio = (d?: Date | string | null) =>
+    d ? new Date(d).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }) : "";
+
+  /**
+   * Tra TÊN trước rồi mới hỏi phần còn lại: ô "ai huỷ" trên booking lúc ghi
+   * TÊN HIỂN THỊ, lúc ghi TÊN ĐĂNG NHẬP (hai đường code khác nhau, xem
+   * `cancelledBy`) — phải dò cả hai, không thì mất nửa số đơn đã huỷ.
+   */
+  const tk = await BaobayAccount.findOne({ username: u }).select("displayName").lean<any>();
+  const tenHien = String(tk?.displayName || "").trim();
+  const aiHuy = [u, tenHien].filter(Boolean);
+
+  const [dp, cam, pc, collects, huyDocs, doiDocs, dvDocs, tienDocs, hoaHongDocs] = await Promise.all([
+    DispatcherDailyReport.findOne({ spot, date, username: u }).lean<any>(),
+    CameramanDailyReport.findOne({ spot, date, username: u }).lean<any>(),
+    PilotDailyReport.findOne({ spot, date, username: u }).lean<any>(),
+    /** Lệnh thu ghi theo `date` (ngày lập lệnh), KHÔNG phải `flightDate`. */
+    BaobayCollect.find({ spot, date, $or: [{ collectorUsername: u }, { createdByUsername: u }] })
+      .select("amount method status collectorUsername createdByUsername contactName bookingCode daySeq")
+      .lean<any[]>(),
+    /** Khách HUỶ do chính người này bấm — ngày bay là ngày đang soát. */
+    BaobayBooking.find({ spot, flightDate: date, status: "cancelled", cancelledBy: { $in: aiHuy } })
+      .select("bookingCode contactName guestCount refundAmount cancelledAt")
+      .lean<any[]>(),
+    BaobayBooking.find({ spot, movedBy: { $in: aiHuy }, rescheduledFrom: date })
+      .select("bookingCode contactName guestCount flightDate rescheduledFrom movedAt")
+      .lean<any[]>(),
+    BaobayServiceChange.find({ spot, date, createdByUsername: u })
+      .select("kind bookingLabel items charge back createdAt")
+      .lean<any[]>(),
+    BaobayHandover.find({ spot, date, username: u, confirmed: true }).select("kind amount").lean<any[]>(),
+    BaobayBooking.find({ spot, flightDate: date, "commission.method": "cash", "commission.byUsername": u })
+      .select("commission")
+      .lean<any[]>(),
+  ]);
+
+  const bc = (list: any[], f: (x: any) => boolean) => list.filter(f).reduce((t, x) => t + (x.amount || 0), 0);
+  const merch = [...(dp?.merchSales ?? []), ...(cam?.merchSales ?? []), ...(pc?.merchSales ?? [])] as MerchSaleDTO[];
+
+  return {
+    username: u,
+    name: String(tk?.displayName || dp?.staffName || cam?.cameramanName || pc?.pilotName || u),
+    date,
+    tien: {
+      lenhThuTM: bc(collects, (c) => c.method === "cash" && c.status === "collected" && normalizeUsername(c.collectorUsername || "") === u),
+      lenhThuCK: bc(collects, (c) => c.method === "transfer" && c.status === "company" && normalizeUsername(c.createdByUsername || "") === u),
+      soThu: thuTotal(dp?.expenses) + thuTotal(cam?.expenses) + thuTotal(pc?.expenses),
+      soChi: (dp ? dispatcherExpenseTotal(dp) : 0) + expenseTotal(cam?.expenses) + expenseTotal(pc?.expenses),
+      hoaHongTM: hoaHongDocs.reduce((t, b) => t + (b.commission?.amount || 0), 0),
+      hangTM: merch.filter((m) => m.method !== "transfer").reduce((t, m) => t + (m.amount || 0), 0),
+      hangCK: merch.filter((m) => m.method === "transfer").reduce((t, m) => t + (m.amount || 0), 0),
+      daNop: bc(tienDocs, (h) => h.kind !== "advance"),
+      daUng: bc(tienDocs, (h) => h.kind === "advance"),
+    },
+    huy: huyDocs.map((b) => ({
+      bookingCode: b.bookingCode || "",
+      contactName: b.contactName || "",
+      guests: b.guestCount || 0,
+      refund: b.refundAmount || 0,
+      luc: gio(b.cancelledAt),
+    })),
+    doi: doiDocs.map((b) => ({
+      bookingCode: b.bookingCode || "",
+      contactName: b.contactName || "",
+      guests: b.guestCount || 0,
+      tuNgay: date,
+      denNgay: b.flightDate || "",
+      luc: gio(b.movedAt),
+    })),
+    dichVu: dvDocs.map((d) => ({
+      kieu: d.kind === "remove" ? ("remove" as const) : ("add" as const),
+      nhan: d.bookingLabel || "",
+      items: Object.entries(d.items ?? {})
+        .filter(([, v]) => Number(v) > 0)
+        .map(([k, v]) => `${v}×${NHAN_DICH_VU[k as keyof typeof NHAN_DICH_VU] ?? k}`)
+        .join(" · "),
+      tien: d.kind === "remove" ? -(d.back || 0) : d.charge || 0,
+      luc: gio(d.createdAt),
+    })),
+    lenhThu: collects.map((c) => ({
+      /** Không có số thứ tự ngày thì thôi, đừng in "#?" — trông như dữ liệu hỏng. */
+      nhan: [c.daySeq ? `#${c.daySeq}` : "", c.contactName || c.bookingCode || ""].filter(Boolean).join(" ") || "(không tên)",
+      soTien: c.amount || 0,
+      cach: c.method === "transfer" ? ("transfer" as const) : ("cash" as const),
+      trangThai: TRANG_THAI_LENH[String(c.status || "")] ?? String(c.status || ""),
+    })),
+  };
+}
+
+/** Trạng thái lệnh thu, viết cho người đọc chứ không phải mã trong máy. */
+const TRANG_THAI_LENH: Record<string, string> = {
+  collected: "đã thu TM",
+  company: "về tài khoản công ty",
+  pending: "chờ thu",
+  cancelled: "đã huỷ",
+};
+
+/** Nhãn tiếng Việt của các ô dịch vụ — dùng cho hồ sơ nhân sự. */
+const NHAN_DICH_VU = {
+  flycam: "flycam",
+  video360: "cam360",
+  redFlag: "dù cờ đỏ",
+  sunset: "săn mây/hoàng hôn",
+  flagFlight: "kéo cờ",
+} as const;
+
+/**
+ * BẢNG TIỀN NGÀY, CHỈ PHẦN CỦA MỘT NGƯỜI.
+ *
+ * Luật chủ 11/09: quầy vé / điều phối chỉ được thấy TIỀN CỦA CHÍNH MÌNH —
+ * mình thu bao nhiêu tiền mặt, mình ghi nhận bao nhiêu chuyển khoản, mình chi
+ * ra bao nhiêu. Tổng của cả ngày là việc của kế toán.
+ *
+ * Lọc Ở MÁY CHỦ chứ không ẩn bằng giao diện: ẩn bằng giao diện thì số vẫn nằm
+ * trong gói dữ liệu gửi về máy họ, mở công cụ trình duyệt ra là đọc được.
+ *
+ * `dayRevenue` và `agencyDebts` bị bỏ trắng luôn: đó là số của cả ngày, không
+ * tách theo người được, và cũng chẳng phải việc của người trực.
+ */
+export function bangTienCuaRieng(board: MoneyBoard, username: string): MoneyBoard {
+  const u = normalizeUsername(username);
+  const cuaToi = (x: { byUsername?: string }) => normalizeUsername(x.byUsername || "") === u;
+  const nguoi = (ds: MoneyBoardPerson[]) => ds.filter((p) => normalizeUsername(p.username || "") === u);
+  const cong = (ds: MoneyBoardPerson[]) => ds.reduce((t, p) => t + (p.total || 0), 0);
+
+  const chuyen = board.transfer.items.filter(cuaToi);
+  const tienMat = board.cashItems.filter(cuaToi);
+  const giu = nguoi(board.cashByPerson);
+  const chi = nguoi(board.spendByPerson);
+
+  return {
+    date: board.date,
+    transfer: { total: chuyen.reduce((t, x) => t + (x.amount || 0), 0), items: chuyen },
+    cashByPerson: giu,
+    cashItems: tienMat,
+    cashTotal: cong(giu),
+    spendByPerson: chi,
+    spendTotal: cong(chi),
+    /** Công ty chi thẳng từ tài khoản — không liên quan tới túi tiền của người trực. */
+    companySpend: { total: 0, items: [] },
+    dayRevenue: { collected: 0, totalValue: 0, remaining: 0 },
+    agencyDebts: [],
+  };
+}

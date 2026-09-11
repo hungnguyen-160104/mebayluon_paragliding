@@ -67,11 +67,22 @@ export function StaffReportEditor({
   const [reloadTick, setReloadTick] = useState(0);
   const load = useCallback(() => setReloadTick((t) => t + 1), []);
 
-  useEffect(() => {
-    let alive = true;
-    // Đổi ngày thì danh sách "nhập hộ" của ngày cũ không được lôi theo
+  /**
+   * Đổi ngày thì danh sách "nhập hộ" của ngày cũ không được lôi theo.
+   *
+   * Chỉnh NGAY LÚC DỰNG chứ không đặt trong effect: đặt trong effect là React
+   * dựng một lượt với dữ liệu cũ rồi mới dựng lại — nhấp nháy, và ESLint chặn
+   * đúng vì lý do ấy. Đây là cách React khuyến nghị cho "state phụ thuộc prop".
+   */
+  const [ngayCu, setNgayCu] = useState(date);
+  if (ngayCu !== date) {
+    setNgayCu(date);
     setAddedDp([]);
     setAddedCm([]);
+  }
+
+  useEffect(() => {
+    let alive = true;
     Promise.all([
       apiGet<{ reports: DispatcherReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/dispatcher?date=${date}&all=1&spot=${spot}`),
       apiGet<{ reports: CameramanReportDTO[]; staff?: StaffLite[] }>(`/api/baocao/reports/cameraman?date=${date}&all=1&spot=${spot}`),
@@ -284,6 +295,8 @@ type DispatcherEditForm = {
   ticketsIssued: number;
   ticketsReturned: number;
   issuedRanges: RangeRow[];
+  /** Mã vé TRẢ LẠI QUẦY (không phải vé huỷ) — xem ghi chú ở chỗ lưu. */
+  recalledCodesText: string;
   flycam: number;
   video360: number;
   redFlag: number;
@@ -342,6 +355,7 @@ function dispatcherEditForm(r: DispatcherReportDTO): DispatcherEditForm {
     ticketsIssued: r.ticketsIssued,
     ticketsReturned: r.ticketsReturned,
     issuedRanges: toRangeRows(r.issuedRanges),
+    recalledCodesText: (r.recalledCodes ?? []).join(", "),
     flycam: r.flycam,
     video360: r.video360,
     redFlag: r.redFlag,
@@ -443,6 +457,15 @@ function DispatcherRow({
           redFlag: form.redFlag,
           sunset: form.sunset,
           flagFlight: form.flagFlight,
+          /**
+           * MÃ VÉ THU HỒI phải gửi kèm, nếu không là XOÁ SẠCH của người nhập.
+           *
+           * Máy chủ đọc `recalledCodesText ?? ""` rồi ghi đè — khung này trước
+           * đây không có ô ấy nên mỗi lần kế toán bấm "Lưu hộ" là mã thu hồi
+           * của quầy bay mất không dấu vết, kéo theo bảng soát mất luôn đường
+           * truy vé (chủ báo 11/09).
+           */
+          recalledCodesText: form.recalledCodesText,
           // Giữ nguyên mã dịch vụ người nhập đã khai — khung này không sửa mã dịch vụ
           flycamCodesText: report.flycamCodes.join(" "),
           video360CodesText: report.video360ServiceCodes.join(" "),
@@ -577,6 +600,19 @@ function DispatcherRow({
             </div>
           )}
 
+          {!noTickets && (
+            <Field
+              label="Mã vé THU HỒI (vé trả lại quầy, không phải vé huỷ)"
+              hint="Cách nhau bằng dấu phẩy hoặc khoảng trắng. Gõ tắt 4 số cuối cũng được: 1105, 1106."
+            >
+              <TextInput
+                value={form.recalledCodesText}
+                onChange={(e) => set("recalledCodesText", e.target.value)}
+                placeholder="MBL1105, MBL1106"
+              />
+            </Field>
+          )}
+
           <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="flycam" label="Flycam">
               <CountInput compact value={form.flycam} onChange={(v) => set("flycam", v)} max={1000} />
@@ -620,6 +656,8 @@ function DispatcherRow({
             <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />
           </Field>
 
+          <HoSoNgay spot={spot} date={date} username={report.username} />
+
           {error && <Banner tone="error">{error}</Banner>}
           {warnings.length > 0 && (
             <Banner tone="warning" onClose={() => setWarnings([])}>
@@ -638,6 +676,163 @@ function DispatcherRow({
         </div>
       )}
     </li>
+  );
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Hồ sơ một người trong một ngày                                      */
+/* ------------------------------------------------------------------ */
+
+type HoSo = {
+  name: string;
+  tien: {
+    lenhThuTM: number; lenhThuCK: number; soThu: number; soChi: number;
+    hoaHongTM: number; hangTM: number; hangCK: number; daNop: number; daUng: number;
+  };
+  huy: Array<{ bookingCode: string; contactName: string; guests: number; refund: number; luc: string }>;
+  doi: Array<{ bookingCode: string; contactName: string; guests: number; denNgay: string; luc: string }>;
+  dichVu: Array<{ kieu: "add" | "remove"; nhan: string; items: string; tien: number; luc: string }>;
+  lenhThu: Array<{ nhan: string; soTien: number; cach: "cash" | "transfer"; trangThai: string }>;
+};
+
+/**
+ * MỌI VIỆC NGƯỜI NÀY ĐÃ BẤM TRONG NGÀY — thu tiền khách nào, huỷ ai, dời ai,
+ * thêm bớt dịch vụ gì, nộp/ứng bao nhiêu.
+ *
+ * Vì sao phải có ngay trong khung sửa (chủ chốt 11/09): kế toán mở báo cáo của
+ * một người ra soát thì chỉ thấy mấy ô số họ TỰ KHAI. Việc họ bấm trong sổ
+ * booking nằm rải ở bốn năm trang khác, muốn đối chiếu phải mở từng trang mà
+ * tra — nên số lệch thì chỉ biết là lệch, không biết lệch ở đâu.
+ *
+ * Nạp KHI BẤM MỞ, không nạp sẵn: một ngày có cả chục người, nạp hết là chục
+ * lượt hỏi máy chủ cho thứ phần lớn lần không ai mở tới.
+ */
+function HoSoNgay({ spot, date, username }: { spot: string; date: string; username: string }) {
+  const [mo, setMo] = useState(false);
+  const [du, setDu] = useState<HoSo | null>(null);
+  const [loi, setLoi] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!mo || du) return;
+    let song = true;
+    apiGet<HoSo>(`/api/baocao/reports/nhan-su?spot=${spot}&date=${date}&username=${encodeURIComponent(username)}`)
+      .then((r) => song && setDu(r))
+      .catch((e) => song && setLoi(e instanceof Error ? e.message : "Không lấy được hồ sơ"));
+    return () => {
+      song = false;
+    };
+  }, [mo, du, spot, date, username]);
+
+  const o = (nhan: string, tien: number, mau: string) =>
+    tien === 0 ? null : (
+      <span className={"rounded-lg border px-1.5 py-0.5 " + mau}>
+        {nhan} <strong className="tabular-nums">{formatVND(tien)}</strong>
+      </span>
+    );
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setMo((x) => !x)}
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs font-bold text-slate-700"
+      >
+        <span className="text-[10px]">{mo ? "▾" : "▸"}</span>
+        Người này đã làm gì trong ngày
+        <span className="font-normal text-slate-400">— lệnh thu · huỷ · dời · dịch vụ · nộp tiền</span>
+      </button>
+
+      {mo && (
+        <div className="space-y-2 border-t border-slate-100 px-2.5 py-2 text-[11px] text-slate-700">
+          {loi && <p className="font-medium text-rose-700">{loi}</p>}
+          {!du && !loi && <p className="text-slate-500">Đang lấy…</p>}
+          {du && (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                {o("Lệnh thu TM", du.tien.lenhThuTM, "border-emerald-200 bg-emerald-50 text-emerald-800")}
+                {o("Lệnh thu CK", du.tien.lenhThuCK, "border-indigo-200 bg-indigo-50 text-indigo-800")}
+                {o("Sổ thu", du.tien.soThu, "border-emerald-200 bg-emerald-50 text-emerald-800")}
+                {o("Sổ chi", du.tien.soChi, "border-rose-200 bg-rose-50 text-rose-800")}
+                {o("Hoa hồng đại lý (TM)", du.tien.hoaHongTM, "border-rose-200 bg-rose-50 text-rose-800")}
+                {o("Hàng bán thêm TM", du.tien.hangTM, "border-emerald-200 bg-emerald-50 text-emerald-800")}
+                {o("Hàng bán thêm CK", du.tien.hangCK, "border-indigo-200 bg-indigo-50 text-indigo-800")}
+                {o("Đã nộp", du.tien.daNop, "border-slate-300 bg-slate-50 text-slate-700")}
+                {o("Đã ứng", du.tien.daUng, "border-amber-200 bg-amber-50 text-amber-800")}
+              </div>
+
+              {du.lenhThu.length > 0 && (
+                <div>
+                  <div className="font-bold text-slate-600">Lệnh thu ({du.lenhThu.length})</div>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {du.lenhThu.map((x, i) => (
+                      <li key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="min-w-0 flex-1 truncate">{x.nhan}</span>
+                        <span className={x.cach === "cash" ? "font-semibold text-emerald-700" : "font-semibold text-indigo-700"}>
+                          {x.cach === "cash" ? "TM" : "CK"} {formatVND(x.soTien)}
+                        </span>
+                        <span className="text-slate-400">{x.trangThai}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {du.huy.length > 0 && (
+                <div>
+                  <div className="font-bold text-rose-700">Khách huỷ ({du.huy.length})</div>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {du.huy.map((x, i) => (
+                      <li key={i}>
+                        {x.luc} · {x.contactName || x.bookingCode} · {x.guests} khách
+                        {x.refund > 0 ? ` · hoàn ${formatVND(x.refund)}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {du.doi.length > 0 && (
+                <div>
+                  <div className="font-bold text-amber-700">Khách dời lịch ({du.doi.length})</div>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {du.doi.map((x, i) => (
+                      <li key={i}>
+                        {x.luc} · {x.contactName || x.bookingCode} · {x.guests} khách → {x.denNgay}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {du.dichVu.length > 0 && (
+                <div>
+                  <div className="font-bold text-sky-700">Dịch vụ thêm / bớt ({du.dichVu.length})</div>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {du.dichVu.map((x, i) => (
+                      <li key={i}>
+                        {x.luc} · {x.kieu === "add" ? "thêm" : "bớt"} {x.items} — {x.nhan}
+                        {x.tien !== 0 && (
+                          <strong className={x.tien > 0 ? " text-emerald-700" : " text-rose-700"}>
+                            {" "}
+                            {x.tien > 0 ? "+" : "−"}
+                            {formatVND(Math.abs(x.tien))}
+                          </strong>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {!du.lenhThu.length && !du.huy.length && !du.doi.length && !du.dichVu.length && (
+                <p className="text-slate-500">Ngày này người đó không bấm gì trong sổ booking.</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

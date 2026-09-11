@@ -223,6 +223,13 @@ type DayCheck = { dayBlocked: boolean; myIssues: Issue[]; otherIssueCount: numbe
 export default function DispatcherReportPage() {
   /** Quầy vé dùng chung trang này — chỉ khác: không có thẻ lệnh thu tiền. */
   const { user, loading } = useBaobaySession(DISPATCHER_LIKE_ROLES);
+  /**
+   * Kế toán / quản trị mở trang này (họ kiêm nhiệm được) thì vẫn thấy toàn
+   * cảnh; quầy vé và điều phối chỉ thấy tiền của chính mình (luật chủ 11/09).
+   */
+  const laKeToan = Boolean(
+    user && [user.role, ...(user.extraRoles ?? [])].some((r) => r === "accountant" || r === "admin"),
+  );
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
@@ -550,7 +557,12 @@ export default function DispatcherReportPage() {
 
       {/* BẢNG TIỀN TRONG NGÀY — quầy/điều phối cũng phải thấy đại lý nào đang
           giữ tiền bay của khách nào, không riêng kế toán. Gập sẵn cho gọn. */}
-      <MoneyBoardCard spot={spot} date={date} />
+      {/**
+       * CHỈ TIỀN CỦA CHÍNH NGƯỜI TRỰC (luật chủ 11/09) — tổng của cả ngày là
+       * việc kế toán. Máy chủ đã cắt sẵn phần người khác, cờ này chỉ đổi chữ
+       * cho khỏi tưởng máy mất số.
+       */}
+      <MoneyBoardCard spot={spot} date={date} rieng={!laKeToan} />
 
       {/* Booking đặt trước bay ĐÚNG ngày đang xem — bay xong bấm Hoàn thành */}
       <BookingTodayBanner spot={spot} date={date} collapsible defaultOpen />
