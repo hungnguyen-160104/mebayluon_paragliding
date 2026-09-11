@@ -37,6 +37,15 @@ export interface IHomestayBooking {
   roomLabel: string;
   /** Số đơn vị giữ: phòng lẻ đếm phòng, phòng cộng đồng đếm chỗ nằm. */
   rooms: number;
+  /**
+   * PHÒNG ĐÃ TRẢ LẠI của một booking COMBO (bao sàn / bao nguyên nhà sàn).
+   *
+   * Đoàn bao cả nhà rồi bớt người, trả lại vài phòng lẻ — chuyện thật, mà
+   * trước đây không khai được: combo luôn là "kín trọn" nên mấy phòng ấy treo
+   * lơ lửng, không bán cho ai được (chủ báo 11/09). Khai mã phòng thành phần
+   * vào đây thì phòng mở ra bán lại được, combo vẫn giữ phần còn lại.
+   */
+  roomsReleased: string[];
   adults: number;
   children: number;
 
@@ -109,6 +118,7 @@ const HomestayBookingSchema = new Schema<IHomestayBooking>(
     roomTypeId: { type: String, default: "" },
     roomLabel: { type: String, default: "" },
     rooms: { type: Number, default: 1, min: 0 },
+    roomsReleased: { type: [String], default: [] },
     adults: { type: Number, default: 0, min: 0 },
     children: { type: Number, default: 0, min: 0 },
 

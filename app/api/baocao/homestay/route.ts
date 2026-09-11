@@ -116,6 +116,8 @@ export async function PATCH(req: Request) {
       "ota-unlock",
       "deposit-contacted",
       "deposit-uncontact",
+      /** Gỡ bớt / lấy lại một phòng lẻ của booking bao sàn — xem actHomestayBooking. */
+      "release-room",
     ] as const;
     if (!ACTIONS.includes(action as (typeof ACTIONS)[number])) {
       return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
@@ -123,6 +125,7 @@ export async function PATCH(req: Request) {
     await actHomestayBooking(auth, String(body?.id ?? ""), action as (typeof ACTIONS)[number], {
       roomTypeId: body?.roomTypeId ? String(body.roomTypeId) : undefined,
       amount: body?.amount !== undefined ? Number(body.amount) : undefined,
+      room: body?.room ? String(body.room) : undefined,
       note: body?.note !== undefined ? String(body.note) : undefined,
       guestName: body?.guestName !== undefined ? String(body.guestName) : undefined,
       phone: body?.phone !== undefined ? String(body.phone) : undefined,

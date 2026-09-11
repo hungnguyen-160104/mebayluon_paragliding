@@ -315,6 +315,17 @@ export type OccupancyBooking = {
   checkIn: string;
   checkOut: string;
   status: string;
+  /**
+   * PHÒNG ĐOÀN ĐÃ TRẢ LẠI khi đặt combo (chủ chốt 11/09).
+   *
+   * Đoàn bao nguyên nhà sàn rồi trả lại vài phòng lẻ là chuyện có thật — họ
+   * bớt người. Trước đây không khai được: combo là "kín trọn", nên mấy phòng
+   * ấy vẫn treo, không bán cho ai được, mà sổ thì nói nhà đã đầy.
+   *
+   * Khai ở đây thì hai việc tự đúng theo: phòng trả lại mở ra bán lại được,
+   * còn combo vẫn giữ phần còn lại.
+   */
+  roomsReleased?: string[];
 };
 
 /**
@@ -333,20 +344,28 @@ export function unitsTaken(bookings: OccupancyBooking[], roomTypeId: string, dat
     (b) => b.status === "confirmed" && b.checkIn <= date && date < b.checkOut,
   );
 
+  /** Phòng đoàn đã trả lại thì combo ấy KHÔNG còn giữ phòng đó nữa. */
+  const conGiu = (b: OccupancyBooking, phong: string) => !(b.roomsReleased ?? []).includes(phong);
+
   if (isComboRoom(roomTypeId)) {
     const components = COMBO_COMPONENTS[roomTypeId];
     const blocked = active.some(
       (b) =>
-        b.roomTypeId === roomTypeId ||
+        (b.roomTypeId === roomTypeId && (b.roomsReleased ?? []).length === 0) ||
         components.includes(b.roomTypeId) ||
         // Combo khác đang chiếm phòng chung thành phần (nguyên khu ⟷ sàn+gác mái)
-        (isComboRoom(b.roomTypeId) && COMBO_COMPONENTS[b.roomTypeId].some((c) => components.includes(c))),
+        (isComboRoom(b.roomTypeId) &&
+          COMBO_COMPONENTS[b.roomTypeId].some((c) => components.includes(c) && conGiu(b, c))),
     );
     return blocked ? room.units : 0;
   }
 
-  // Phòng lẻ: combo nào chứa nó đang có khách là nó kín trọn
-  if (active.some((b) => isComboRoom(b.roomTypeId) && COMBO_COMPONENTS[b.roomTypeId].includes(roomTypeId))) {
+  // Phòng lẻ: combo nào chứa nó đang có khách là nó kín trọn — trừ phòng đoàn đã trả lại
+  if (
+    active.some(
+      (b) => isComboRoom(b.roomTypeId) && COMBO_COMPONENTS[b.roomTypeId].includes(roomTypeId) && conGiu(b, roomTypeId),
+    )
+  ) {
     return room.units;
   }
 

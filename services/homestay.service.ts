@@ -41,6 +41,8 @@ export type HomestayBookingDTO = {
   roomTypeId: string;
   roomLabel: string;
   rooms: number;
+  /** Phòng lẻ đã trả lại khi đặt gói bao sàn / bao nguyên nhà sàn. */
+  roomsReleased: string[];
   adults: number;
   children: number;
   checkIn: string;
@@ -89,6 +91,8 @@ function toDTO(d: any): HomestayBookingDTO {
     roomTypeId: d.roomTypeId ?? "",
     roomLabel: d.roomLabel ?? "",
     rooms: d.rooms ?? 1,
+    /** Phòng lẻ đoàn đã trả lại trong gói bao sàn — xem hành động "release-room". */
+    roomsReleased: d.roomsReleased ?? [],
     adults: d.adults ?? 0,
     children: d.children ?? 0,
     checkIn: d.checkIn ?? "",
@@ -167,6 +171,8 @@ export async function getHomestayOverview(fromRaw?: string, nightsRaw?: number):
   const occ: OccupancyBooking[] = touching.map((b) => ({
     roomTypeId: b.roomTypeId,
     rooms: b.rooms ?? 1,
+    /** Phòng đoàn đã trả lại — xem ghi chú ở OccupancyBooking. */
+    roomsReleased: b.roomsReleased ?? [],
     checkIn: b.checkIn,
     checkOut: b.checkOut,
     status: b.status,
@@ -217,6 +223,8 @@ export async function getHomestayAvailability(fromRaw: string, toRaw: string): P
   const occ: OccupancyBooking[] = touching.map((b) => ({
     roomTypeId: b.roomTypeId,
     rooms: b.rooms ?? 1,
+    /** Phòng đoàn đã trả lại — xem ghi chú ở OccupancyBooking. */
+    roomsReleased: b.roomsReleased ?? [],
     checkIn: b.checkIn,
     checkOut: b.checkOut,
     status: b.status,
@@ -355,6 +363,8 @@ export async function createWebHomestayBooking(
   const occ: OccupancyBooking[] = touching.map((b) => ({
     roomTypeId: b.roomTypeId,
     rooms: b.rooms ?? 1,
+    /** Phòng đoàn đã trả lại — xem ghi chú ở OccupancyBooking. */
+    roomsReleased: b.roomsReleased ?? [],
     checkIn: b.checkIn,
     checkOut: b.checkOut,
     status: b.status,
@@ -539,8 +549,9 @@ export async function actHomestayBooking(
     | "ota-lock"
     | "ota-unlock"
     | "deposit-contacted"
-    | "deposit-uncontact",
-  payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string; phone?: string },
+    | "deposit-uncontact"
+  | "release-room",
+  payload: { roomTypeId?: string; amount?: number; note?: string; guestName?: string; phone?: string; room?: string },
 ): Promise<void> {
   await connectDB();
   if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
@@ -636,6 +647,32 @@ export async function actHomestayBooking(
       doc.collect = Math.max(0, v - (doc.collected ?? 0));
       doc.prepaid = v <= 0;
     }
+  } else if (action === "release-room") {
+    /**
+     * TRẢ LẠI / LẤY LẠI MỘT PHÒNG LẺ của booking COMBO (chủ chốt 11/09).
+     *
+     * Đoàn bao nguyên nhà sàn rồi bớt người, trả lại vài phòng — trước đây
+     * không sửa được vì combo luôn là "kín trọn": mấy phòng ấy treo lơ lửng,
+     * không bán cho ai được, mà sổ thì nói nhà đã đầy.
+     *
+     * Bấm lần nữa vào đúng phòng đó là LẤY LẠI — đoàn đổi ý thì không phải
+     * xoá booking làm lại.
+     */
+    if (!isComboRoom(doc.roomTypeId)) {
+      throw new BaobayError("Chỉ booking bao sàn / bao nguyên nhà sàn mới gỡ bớt phòng được", 400);
+    }
+    const phong = String(payload.room ?? "").trim();
+    if (!COMBO_COMPONENTS[doc.roomTypeId].includes(phong)) {
+      throw new BaobayError("Phòng này không thuộc gói đã đặt", 400);
+    }
+    const daTra = new Set<string>(doc.roomsReleased ?? []);
+    if (daTra.has(phong)) daTra.delete(phong);
+    else daTra.add(phong);
+    /** Trả hết phòng thì không còn là combo nữa — bắt huỷ hẳn cho sổ khỏi treo một dòng rỗng. */
+    if (daTra.size >= COMBO_COMPONENTS[doc.roomTypeId].length) {
+      throw new BaobayError("Trả hết phòng thì huỷ booking, đừng để lại dòng trống", 400);
+    }
+    doc.roomsReleased = [...daTra];
   } else if (action === "delete") {
     // Chỉ cho xoá bản ghi khay soát / nhập nhầm — booking từ thư giữ lại làm vết
     if (doc.status !== "review" && doc.source !== "manual" && doc.source !== "b2b") {

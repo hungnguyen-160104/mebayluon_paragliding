@@ -53,6 +53,8 @@ type BookingDTO = {
   email: string;
   country: string;
   roomTypeId: string;
+  /** Phòng lẻ đoàn đã trả lại (chỉ booking bao sàn) — xem nút "gỡ phòng". */
+  roomsReleased?: string[];
   roomLabel: string;
   rooms: number;
   adults: number;
@@ -1186,6 +1188,11 @@ function BookingRow({
           {b.roomTypeId ? ROOM_SHORT_VI[b.roomTypeId] : ""}
           {b.rooms > 1 ? ` ×${b.rooms}` : ""}
           {b.roomLabel && b.roomLabel !== b.roomTypeId ? ` (${b.roomLabel})` : ""}
+          {(b.roomsReleased ?? []).length > 0 && (
+            <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-bold text-amber-900">
+              đã trả {(b.roomsReleased ?? []).length} phòng
+            </span>
+          )}
         </span>
         {staying && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800">đang ở</span>}
         {/* Đơn web: đã gọi xin cọc chưa — đỏ là còn nợ việc */}
@@ -1248,6 +1255,42 @@ function BookingRow({
             .join(" · ")}
         </div>
       )}
+      {/**
+       * GỠ BỚT PHÒNG của booking BAO SÀN / BAO NGUYÊN NHÀ SÀN (chủ chốt 11/09).
+       *
+       * Đoàn bao cả nhà rồi bớt người, trả lại vài phòng lẻ — trước đây không
+       * sửa được vì combo luôn tính là kín trọn: mấy phòng ấy treo lơ lửng,
+       * không bán cho ai được, mà sổ thì nói nhà đã đầy.
+       *
+       * Bấm một phòng là trả lại, bấm lần nữa là lấy về — đoàn đổi ý thì khỏi
+       * xoá booking làm lại.
+       */}
+      {b.status === "confirmed" && isComboRoom(b.roomTypeId) && (
+        <div className="mt-1 flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1">
+          <span className="text-[11px] font-semibold text-slate-600">Phòng trong gói:</span>
+          {COMBO_COMPONENTS[b.roomTypeId].map((id) => {
+            const daTra = (b.roomsReleased ?? []).includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                disabled={busy}
+                title={daTra ? "Đoàn đã trả phòng này — bấm để lấy lại vào gói" : "Bấm để TRẢ LẠI phòng này, phòng sẽ bán lại được"}
+                onClick={() => onAct(b.id, "release-room", { room: id })}
+                className={
+                  "rounded-lg border px-1.5 py-0.5 text-[11px] font-bold " +
+                  (daTra
+                    ? "border-amber-300 bg-amber-100 text-amber-900 line-through"
+                    : "border-slate-300 bg-white text-slate-700")
+                }
+              >
+                {ROOM_SHORT_VI[id] ?? id}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="mt-1 flex flex-wrap gap-1.5">
         {/* Máy không đoán được hạng phòng: bắt gán ngay tại dòng — chưa gán thì bảng phòng không trừ */}
         {!b.roomTypeId && (
