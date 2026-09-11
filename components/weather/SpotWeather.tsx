@@ -780,10 +780,25 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
 /* Thẻ một điểm trên trang tổng hợp                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * THẺ MỘT ĐIỂM BAY trên trang tổng hợp.
+ *
+ * BẤM VÀO MỘT NGÀY LÀ XỔ BIỂU ĐỒ NGAY TẠI CHỖ (luật chủ 11/09) — trước đây
+ * phải sang trang điểm bay mới xem được chi tiết, tức là rời khỏi đúng cái
+ * màn hình đang so sáu điểm với nhau, xem xong lại bấm quay lại. Khách hỏi
+ * "cuối tuần bay ở đâu" thì họ cần so, mà so thì phải ở yên một chỗ.
+ *
+ * Thẻ đang mở chiếm TRỌN BỀ NGANG lưới: biểu đồ giờ cần chỗ, nhét trong nửa
+ * cột thì cuộn ngang gấp đôi.
+ */
 export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: string; t: ThoiTietCopy }) {
   const homNay = diem.ngay[0];
+  const [chon, setChon] = useState<string | null>(null);
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
+  const ngayChon = chon ? (diem.ngay.find((n) => n.ngay === chon) ?? null) : null;
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" + (ngayChon ? " sm:col-span-2" : "")}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className={"rounded-lg border px-2 py-1 text-xs font-black " + VIEN[homNay.muc]} title={moTaMuc(homNay.muc, t)}>
           {nhanMuc(homNay.muc, t)}
@@ -814,7 +829,77 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         {homNay.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${homNay.xacSuatDongMax}%` : ""}
       </div>
 
-      <DaiNgay ngay={diem.ngay} t={t} lang={lang} />
+      <DaiNgay
+        ngay={diem.ngay}
+        chon={chon}
+        onChon={(d) => setChon((cu) => (cu === d ? null : d))}
+        t={t}
+        lang={lang}
+      />
+
+      {ngayChon && (
+        <div className="mt-3 border-t border-slate-200 pt-3">
+          {lang === "vi" ? (
+            <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
+          ) : (
+            <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
+          )}
+
+          <KhoiViTri toaDo={diem.toaDo} ngay={ngayChon} t={t} />
+
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {(
+              [
+                ["basic", "▦ Basic"],
+                ["meteogram", "📊 Meteogram"],
+                ["airgram", "🪂 Airgram"],
+              ] as Array<["basic" | "meteogram" | "airgram", string]>
+            ).map(([v, nhan]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setKieuXem(v)}
+                className={
+                  "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                  (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+                }
+              >
+                {nhan}
+              </button>
+            ))}
+            {/* Lối ĐÓNG rõ ràng: bấm lại đúng ngày ấy cũng đóng, nhưng không ai đoán ra. */}
+            <button
+              type="button"
+              onClick={() => setChon(null)}
+              className="ml-auto rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          {kieuXem === "meteogram" ? (
+            <Meteogram
+              ngay={diem.ngay as never}
+              altBai={(diem.toaDo as { alt?: number }).alt ?? 0}
+              ngayChon={chon}
+              onNgayHien={setChon}
+              nhan={nhanBieuDo(t)}
+              lang={lang}
+            />
+          ) : kieuXem === "airgram" ? (
+            <Airgram
+              ngay={diem.ngay as never}
+              altBai={(diem.toaDo as { alt?: number }).alt ?? 0}
+              ngayChon={chon}
+              onNgayHien={setChon}
+              nhan={nhanBieuDo(t)}
+              lang={lang}
+            />
+          ) : (
+            <BangGio ngay={diem.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={diem.toaDo.luatHuong} />
+          )}
+        </div>
+      )}
     </div>
   );
 }
