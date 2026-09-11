@@ -89,14 +89,15 @@ const MAU_NGAY: Record<MucDo, string> = {
 export function ChonMoHinh({
   dangChon,
   onChon,
-  soSanh,
+  soSanh = false,
   onSoSanh,
   nho = false,
 }: {
   dangChon: string;
   onChon: (ma: string) => void;
-  soSanh: boolean;
-  onSoSanh: (bat: boolean) => void;
+  soSanh?: boolean;
+  /** Không truyền thì KHÔNG bày nút "So sánh" — thẻ trên trang tổng hợp chỉ cần đổi mô hình. */
+  onSoSanh?: (bat: boolean) => void;
   nho?: boolean;
 }) {
   const cls = nho ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]";
@@ -119,6 +120,7 @@ export function ChonMoHinh({
           {m.ten}
         </button>
       ))}
+      {onSoSanh && (
       <button
         type="button"
         onClick={() => onSoSanh(!soSanh)}
@@ -132,6 +134,7 @@ export function ChonMoHinh({
       >
         ⇄ So sánh
       </button>
+      )}
     </div>
   );
 }

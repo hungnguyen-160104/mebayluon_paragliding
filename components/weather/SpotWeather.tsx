@@ -37,6 +37,7 @@ import {
   type LuatHuong,
   MUA_BAY,
   MUA_DANG_KE,
+  type SucThermal,
 } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
@@ -58,6 +59,8 @@ type Gio = {
   cape?: number;
   chiSoNang?: number;
   tranThermal?: number;
+  /** Giây có nắng trong giờ đó — cộng lại ra "mấy giờ nắng" của ngày. */
+  giayNang?: number;
   buXa?: number;
   chenhDoCao?: number;
   muc: MucDo;
@@ -185,17 +188,40 @@ function DaiNgay({
             <div className="mt-0.5 flex items-baseline justify-center gap-1 leading-none">
               <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>
               <span className="text-[10px] opacity-70">{t.windUnit}</span>
+              {/* HƯỚNG GIÓ TRỘI của ngày — gió mạnh cỡ nào mà không biết thổi
+                  hướng nào thì chưa trả lời được "bãi có bay được không". */}
+              {(() => {
+                const huong = huongTroiCuaNgay(n);
+                return huong === null ? null : (
+                  <span className="text-[11px] font-black opacity-90">{huongTheoNgonNgu(huong, lang)}</span>
+                );
+              })()}
               {n.chuyenGia && (
                 <span className="text-[11px] font-black opacity-90" title={`${t.score} ${n.chuyenGia.diem}/100`}>
                   · {n.chuyenGia.diem}
                 </span>
               )}
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[11px] font-semibold leading-tight">
-              <span>{n.gioXanh > 0 ? `${n.gioXanh} ${t.goodHours}` : nhanMuc(n.muc, t)}</span>
-              {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
-              {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
-            </div>
+            {(n.gioXanh > 0 || n.gioMua > 0 || n.xacSuatDongMax >= 20) && (
+              <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[11px] font-semibold leading-tight">
+                {n.gioXanh > 0 && <span>{`${n.gioXanh} ${t.goodHours}`}</span>}
+                {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
+                {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
+              </div>
+            )}
+            {/**
+             * NHÃN MỨC ("CÂN NHẮC"…) xuống DÒNG CUỐI và KHÔNG cho ngắt chữ —
+             * trước đây nó nằm chung hàng với số giờ đẹp nên bị bẻ làm đôi giữa
+             * chữ, đọc ra "CÂN" / "NHẮC" (chủ báo 11/09). Chữ co lại một nấc để
+             * ô hẹp vẫn chứa trọn.
+             */}
+            {n.muc !== "xanh" && (
+              <div className="mt-0.5 whitespace-nowrap text-[10px] font-black leading-tight">{nhanMuc(n.muc, t)}</div>
+            )}
+            {/* Hoàng hôn đẹp: dòng riêng, màu cam như chính ánh chiều. */}
+            {hoangHonDep(n) && (
+              <div className="mt-0.5 text-[10px] font-bold leading-tight text-orange-700">🌅 {t.goodSunset}</div>
+            )}
           </>
         );
         const lop =
@@ -322,6 +348,94 @@ function TomTatNgay({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: stri
       </ul>
     </div>
   );
+}
+
+/**
+ * SỐ GIỜ CÓ NẮNG trong khung giờ bay của ngày.
+ *
+ * Nắng là thứ SINH RA thermal: mặt đất hấp thụ bức xạ rồi hun nóng lớp khí sát
+ * đất. Ngày nhiều mây thì trần thấp, chuyến ngắn — nên con số này đứng cạnh
+ * mức thermal mới đủ nghĩa (chủ chốt 11/09).
+ */
+function gioNangCuaNgay(ngay: Ngay): number {
+  const giay = ngay.gio.reduce((t, g) => {
+    const h = Number(g.gio.slice(11, 13));
+    return h >= 6 && h <= 18 ? t + (g.giayNang ?? 0) : t;
+  }, 0);
+  return Math.round((giay / 3600) * 10) / 10;
+}
+
+/**
+ * HƯỚNG GIÓ TRỘI của một ngày — trung bình VÉC-TƠ, có trọng số theo tốc độ.
+ *
+ * Không lấy trung bình số độ: 350° và 10° cộng chia đôi ra 180°, tức là báo
+ * gió nam trong khi thực tế là gió bắc. Cộng theo véc-tơ thì vòng tròn khép
+ * đúng. Nhân trọng số theo tốc độ vì giờ lặng gió không nói lên hướng của ngày.
+ */
+function huongTroiCuaNgay(ngay: Ngay): number | null {
+  let x = 0;
+  let y = 0;
+  for (const g of ngay.gio) {
+    const h = Number(g.gio.slice(11, 13));
+    if (h < 6 || h > 18) continue;
+    const v = g.gio10m || 0;
+    if (v <= 0) continue;
+    const rad = (g.huong * Math.PI) / 180;
+    x += v * Math.cos(rad);
+    y += v * Math.sin(rad);
+  }
+  if (x === 0 && y === 0) return null;
+  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+}
+
+/**
+ * NGÀY NÀY CÓ HOÀNG HÔN ĐẸP KHÔNG.
+ *
+ * Chuyến bay hoàng hôn là một món bán riêng, mà bán được hay không phụ thuộc
+ * đúng BỐN MƯƠI PHÚT cuối trước khi mặt trời lặn: còn nắng, ít mây, không mưa
+ * thì trời rực; mây dày hoặc mưa thì khách trả tiền để bay trong một màu xám
+ * (chủ chốt 11/09).
+ *
+ * Xét hai giờ cuối trước lúc lặn — giờ chứa mốc "lặn trừ 40 phút" và giờ kế
+ * tiếp — vì mô hình chỉ cho số theo từng giờ tròn.
+ */
+function hoangHonDep(ngay: Ngay): boolean {
+  const lan = ngay.matTroi?.lan;
+  if (!lan || !/^\d{2}:\d{2}$/.test(lan)) return false;
+  const gioLan = Number(lan.slice(0, 2)) + Number(lan.slice(3, 5)) / 60;
+  const tu = Math.floor(gioLan - 40 / 60);
+  const cuoi = ngay.gio.filter((g) => {
+    const h = Number(g.gio.slice(11, 13));
+    return h >= tu && h <= Math.floor(gioLan);
+  });
+  if (!cuoi.length) return false;
+  /** Mưa là hỏng hẳn; mây dày cũng vậy — 60% trở xuống thì mặt trời còn xuyên qua. */
+  if (cuoi.some((g) => g.mua >= MUA_BAY)) return false;
+  if (cuoi.some((g) => g.may > 60)) return false;
+  /** Phải CÒN NẮNG ở khúc ấy: hết nắng thì trời chỉ xám dần, không có màu. */
+  return cuoi.some((g) => (g.giayNang ?? 0) > 600 || (g.buXa ?? 0) > 30);
+}
+
+/** Thứ tự mạnh dần của năm mức thermal — để lấy mức CAO NHẤT trong ngày. */
+const BAC_THERMAL: SucThermal[] = ["khong", "nhe", "vua", "manh", "gat"];
+
+/**
+ * MỨC THERMAL CỦA CẢ NGÀY = mức CAO NHẤT đạt được trong khung giờ bay.
+ *
+ * Lấy cao nhất chứ không lấy trung bình: người bay hỏi "ngày ấy có nâng không",
+ * mà thermal chỉ cần vài tiếng giữa trưa là đủ cho một ca bay — trung bình cả
+ * ngày thì sáng sớm và chiều muộn kéo tụt xuống thành "rất nhẹ" trong khi trưa
+ * lên đẹp.
+ */
+function thermalCuaNgay(ngay: Ngay): SucThermal {
+  let cao: SucThermal = "khong";
+  for (const g of ngay.gio) {
+    const h = Number(g.gio.slice(11, 13));
+    if (h < 6 || h > 18) continue;
+    const m = chiSoBay(g as never).thermal;
+    if (BAC_THERMAL.indexOf(m) > BAC_THERMAL.indexOf(cao)) cao = m;
+  }
+  return cao;
 }
 
 /** Nhãn trục của meteogram/airgram theo ngôn ngữ trang. */
@@ -792,10 +906,51 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
  * cột thì cuộn ngang gấp đôi.
  */
 export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: string; t: ThoiTietCopy }) {
-  const homNay = diem.ngay[0];
   const [chon, setChon] = useState<string | null>(null);
   const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
-  const ngayChon = chon ? (diem.ngay.find((n) => n.ngay === chon) ?? null) : null;
+  /**
+   * ĐỔI MÔ HÌNH NGAY TRÊN THẺ (chủ chốt 11/09).
+   *
+   * Mỗi mô hình đoán khác nhau ở địa hình núi, và chỗ chúng KHÔNG đồng ý chính
+   * là chỗ dự báo còn mong manh — bấm qua lại hai ba mô hình cho cùng một ngày
+   * là cách nhanh nhất biết nên tin đến đâu. Trang tổng hợp nạp sẵn mô hình mặc
+   * định cho MỌI điểm; đổi mô hình thì chỉ gọi lại RIÊNG điểm này.
+   */
+  const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
+  const [thay, setThay] = useState<DiemDuBao | null>(null);
+  const [dangTai, setDangTai] = useState(false);
+
+  /**
+   * Dọn dữ liệu mô hình cũ NGAY LÚC BẤM, không đặt trong effect: đặt trong
+   * effect là React dựng một lượt với số của mô hình trước rồi mới dựng lại —
+   * người xem thấy số nhấp nháy một nhịp, và ESLint chặn đúng vì lý do ấy.
+   */
+  const doiMoHinh = (ma: string) => {
+    setMoHinh(ma);
+    setThay(null);
+    setDangTai(ma !== MO_HINH_MAC_DINH);
+  };
+
+  useEffect(() => {
+    if (moHinh === MO_HINH_MAC_DINH) return;
+    let song = true;
+    fetch(`/api/thoi-tiet?spot=${encodeURIComponent(diem.slug)}&model=${moHinh}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then((j: DiemDuBao) => song && setThay(j))
+      .catch(() => song && setThay(null))
+      .finally(() => song && setDangTai(false));
+    return () => {
+      song = false;
+    };
+  }, [moHinh, diem.slug]);
+
+  const du = thay ?? diem;
+  const homNay = du.ngay[0];
+  const ngayChon = chon ? (du.ngay.find((n) => n.ngay === chon) ?? null) : null;
+  /** Dòng tóm tắt bám theo NGÀY ĐANG CHỌN, chưa chọn thì là hôm nay. */
+  const ngayHien = ngayChon ?? homNay;
+  const nang = gioNangCuaNgay(ngayHien);
+  const thermal = thermalCuaNgay(ngayHien);
 
   return (
     /**
@@ -813,8 +968,12 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
       }
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <div className={"rounded-lg border px-2 py-1 text-xs font-black " + VIEN[homNay.muc]} title={moTaMuc(homNay.muc, t)}>
-          {nhanMuc(homNay.muc, t)}
+        {/* Huy hiệu mức bám theo NGÀY ĐANG XEM, và không cho bẻ đôi chữ. */}
+        <div
+          className={"whitespace-nowrap rounded-lg border px-2 py-1 text-xs font-black " + VIEN[ngayHien.muc]}
+          title={moTaMuc(ngayHien.muc, t)}
+        >
+          {nhanMuc(ngayHien.muc, t)}
         </div>
         <div className="leading-tight">
           {/* TÊN ĐIỂM BAY nổi hẳn lên: hoa, đậm, có bóng — đây là thứ mắt tìm
@@ -838,22 +997,40 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         </Link>
       </div>
 
+      {/**
+       * DÒNG TÓM TẮT PHẢI NÓI RÕ CỦA NGÀY NÀO (chủ chốt 11/09).
+       *
+       * Trước đây nó luôn là số của HÔM NAY, kể cả khi khách vừa bấm sang thứ
+       * Bảy — đọc thì tưởng đang xem ngày mình chọn. Nay nhãn ngày đứng đầu
+       * dòng và mọi con số đổi theo ngày ấy.
+       */}
       <div className="mb-2 text-xs text-slate-600">
-        {homNay.khungDep ? (
+        <strong className="text-slate-900">{nhanNgay(ngayHien.ngay, homNayVN(), lang, t)}</strong>
+        {ngayHien.khungDep ? (
           <>
-            {t.bestWindow} <strong className="text-emerald-700">{homNay.khungDep}</strong>
+            {" · "}
+            {t.bestWindow} <strong className="text-emerald-700">{ngayHien.khungDep}</strong>
           </>
-        ) : (
-          /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
-            null
-        )}{" "}
-        · {t.wind} {homNay.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {homNay.giatMax.toFixed(1)}
-        {homNay.gioMua > 0 ? ` · ${t.rain} ~${homNay.gioMua}h${homNay.khungMua ? ` (${homNay.khungMua})` : ""} · ${homNay.muaTongThat.toFixed(1)}mm` : ""}
-        {homNay.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${homNay.xacSuatDongMax}%` : ""}
+        ) : null}
+        {" · "}
+        {t.wind} {ngayHien.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {ngayHien.giatMax.toFixed(1)}
+        {/* Nắng sinh ra thermal — hai số này đứng cạnh nhau mới đủ nghĩa. */}
+        {nang > 0 ? ` · ☀ ${nang} ${t.sunHours}` : ""}
+        {` · 🔥 ${t.thermal} ${t.thermalLevels[thermal]}`}
+        {ngayHien.gioMua > 0
+          ? ` · ${t.rain} ~${ngayHien.gioMua}h${ngayHien.khungMua ? ` (${ngayHien.khungMua})` : ""} · ${ngayHien.muaTongThat.toFixed(1)}mm`
+          : ""}
+        {ngayHien.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${ngayHien.xacSuatDongMax}%` : ""}
+      </div>
+
+      {/* Chọn mô hình — không bày nút "So sánh" ở đây cho thẻ khỏi rối. */}
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <ChonMoHinh dangChon={moHinh} onChon={doiMoHinh} nho />
+        {dangTai && <span className="text-[11px] text-slate-400">{t.loading}</span>}
       </div>
 
       <DaiNgay
-        ngay={diem.ngay}
+        ngay={du.ngay}
         chon={chon}
         onChon={(d) => setChon((cu) => (cu === d ? null : d))}
         t={t}
@@ -868,7 +1045,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
           )}
 
-          <KhoiViTri toaDo={diem.toaDo} ngay={ngayChon} t={t} />
+          <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
 
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {(
@@ -902,8 +1079,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
 
           {kieuXem === "meteogram" ? (
             <Meteogram
-              ngay={diem.ngay as never}
-              altBai={(diem.toaDo as { alt?: number }).alt ?? 0}
+              ngay={du.ngay as never}
+              altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               ngayChon={chon}
               onNgayHien={setChon}
               nhan={nhanBieuDo(t)}
@@ -911,15 +1088,15 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             />
           ) : kieuXem === "airgram" ? (
             <Airgram
-              ngay={diem.ngay as never}
-              altBai={(diem.toaDo as { alt?: number }).alt ?? 0}
+              ngay={du.ngay as never}
+              altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               ngayChon={chon}
               onNgayHien={setChon}
               nhan={nhanBieuDo(t)}
               lang={lang}
             />
           ) : (
-            <BangGio ngay={diem.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={diem.toaDo.luatHuong} />
+            <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
           )}
         </div>
       )}
