@@ -42,6 +42,7 @@ import {
   type ToaDoDiemBay,
 } from "@/lib/baobay/thoi-tiet";
 import { nhanDinhNgay } from "@/lib/baobay/nhan-dinh";
+import { tiemNangThermal } from "@/lib/baobay/thermal";
 import { danhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { moHinhTheoMa, MO_HINH_MAC_DINH, type MoHinh } from "@/lib/baobay/mo-hinh";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
@@ -487,6 +488,12 @@ async function layVaCham(
       ngayTruoc: i > 0 ? ngay[i - 1] : null,
       gioBay: toaDo.gioBay,
     });
+    /**
+     * Tiềm năng thermal — quy tắc riêng (chủ 11/09), trả lời câu "ngày ấy có
+     * NÂNG không" chứ không phải "êm hay xóc": độ cao bãi quyết định lấy hai
+     * mực nào để đo độ dốc nhiệt, khung giờ bay quyết định cửa sổ 3 giờ đỉnh.
+     */
+    n.thermal = tiemNangThermal(n.gio, { altBai: toaDo.alt, gioBay: toaDo.gioBay });
   });
   return { ngay, moHinh };
 }

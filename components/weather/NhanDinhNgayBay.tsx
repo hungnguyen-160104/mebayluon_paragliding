@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { NHAN_MUC_THERMAL, type TiemNangThermal } from "@/lib/baobay/thermal";
 
 import type { NgayThoiTiet } from "@/lib/baobay/thoi-tiet";
 import { nhanMucNhanDinh, type MucNhanDinh, type NhanDinhNgay } from "@/lib/baobay/nhan-dinh";
@@ -32,6 +33,7 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
   const [mo, setMo] = useState(!gon);
   const nd = ngay.nhanDinh as NhanDinhNgay | undefined;
   const cg = ngay.chuyenGia as DanhGiaNgay | undefined;
+  const th = ngay.thermal as TiemNangThermal | undefined;
   if (!nd) return null;
 
   const tieuDe = `${ngay.ngay.slice(8, 10)}/${ngay.ngay.slice(5, 7)}`;
@@ -90,6 +92,38 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
             <div key={d.ten} className={"mb-0.5 break-inside-avoid text-[11px] leading-snug " + MAU_TONG[d.tong]}>
               <span className="mr-1">{d.icon}</span>
               <span className="font-bold">{d.ten}:</span> {d.noiDung}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/**
+       * TIỀM NĂNG THERMAL — quy tắc riêng sáu yếu tố (chủ 11/09), trả lời "có
+       * NÂNG không" tách khỏi "êm hay xóc" của khối nhận định. Nói rõ khung 3
+       * giờ đỉnh và số giờ dùng được, rồi vì sao — để phi công đối chiếu được
+       * với trần, LI, nắng ở bảng giờ bên dưới thay vì tin một chữ "mạnh".
+       */}
+      {mo && th && (
+        <div className="mt-1.5 rounded border border-current/20 bg-white/60 px-2 py-1 text-[11px] leading-snug">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="font-bold">🔥 Tiềm năng thermal:</span>
+            <span className={"font-black uppercase " + (th.muc === "gat" ? "text-rose-800" : th.muc === "manh" ? "text-orange-800" : "")}>
+              {NHAN_MUC_THERMAL[th.muc]}
+            </span>
+            <span className="rounded bg-white/80 px-1 font-bold ring-1 ring-current/20">{th.diem}/100</span>
+            {th.khung && (
+              <span>
+                khoẻ nhất <strong>{th.khung}</strong>
+              </span>
+            )}
+            <span className="opacity-80">· {th.gioDung} giờ có thermal</span>
+          </div>
+          {th.lyDo.map((l, i) => (
+            <div key={i}>• {l}</div>
+          ))}
+          {th.canhBao.map((c, i) => (
+            <div key={`c${i}`} className="font-bold text-rose-800">
+              ⚠ {c}
             </div>
           ))}
         </div>

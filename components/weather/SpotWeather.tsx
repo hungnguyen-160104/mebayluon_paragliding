@@ -92,6 +92,8 @@ type Ngay = {
   nhanDinh?: unknown;
   /** Điểm 0–100 của chuyên gia — { diem, xepLoai, doTinCay, khungTotNhat }. */
   chuyenGia?: { diem: number; xepLoai: string; doTinCay: number; khungTotNhat: string | null };
+  /** Tiềm năng thermal theo quy tắc sáu yếu tố (lib/baobay/thermal.ts). */
+  thermal?: { diem: number; muc: SucThermal; khung: string | null; gioDung: number; lyDo: string[]; canhBao: string[] };
 };
 
 export type DiemDuBao = {
@@ -318,7 +320,14 @@ function TomTatNgay({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: stri
           : t.noRain,
   });
   if (ngay.xacSuatDongMax >= 20) dong.push({ icon: "⚡", nhan: t.storm, giaTri: `${ngay.xacSuatDongMax}%` });
-  if (ngay.tranMax) dong.push({ icon: "🔥", nhan: t.thermal, giaTri: `~${ngay.tranMax} m` });
+  /** Thermal theo QUY TẮC: mức + điểm + khung đỉnh; không có thì đưa trần thô. */
+  if (ngay.thermal) {
+    dong.push({
+      icon: "🔥",
+      nhan: t.thermalPotential,
+      giaTri: `${t.thermalLevels[ngay.thermal.muc]} · ${ngay.thermal.diem}/100${ngay.thermal.khung && ngay.thermal.diem >= 25 ? ` · ${t.thermalWindow} ${ngay.thermal.khung}` : ""} · ${ngay.thermal.gioDung} ${t.thermalHours}`,
+    });
+  } else if (ngay.tranMax) dong.push({ icon: "🔥", nhan: t.thermal, giaTri: `~${ngay.tranMax} m` });
   dong.push({ icon: "☁️", nhan: t.cloudCover, giaTri: `${mayTb}%` });
 
   return (
@@ -950,7 +959,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
   /** Dòng tóm tắt bám theo NGÀY ĐANG CHỌN, chưa chọn thì là hôm nay. */
   const ngayHien = ngayChon ?? homNay;
   const nang = gioNangCuaNgay(ngayHien);
-  const thermal = thermalCuaNgay(ngayHien);
+  /** Mức thermal lấy từ QUY TẮC (điểm 0–100); thiếu thì lùi về cách đo cũ theo trần. */
+  const thermal = ngayHien.thermal?.muc ?? thermalCuaNgay(ngayHien);
 
   return (
     /**
@@ -1017,6 +1027,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         {/* Nắng sinh ra thermal — hai số này đứng cạnh nhau mới đủ nghĩa. */}
         {nang > 0 ? ` · ☀ ${nang} ${t.sunHours}` : ""}
         {` · 🔥 ${t.thermal} ${t.thermalLevels[thermal]}`}
+        {ngayHien.thermal ? ` ${ngayHien.thermal.diem}` : ""}
+        {ngayHien.thermal?.khung && ngayHien.thermal.diem >= 25 ? ` (${ngayHien.thermal.khung})` : ""}
         {ngayHien.gioMua > 0
           ? ` · ${t.rain} ~${ngayHien.gioMua}h${ngayHien.khungMua ? ` (${ngayHien.khungMua})` : ""} · ${ngayHien.muaTongThat.toFixed(1)}mm`
           : ""}

@@ -51,6 +51,12 @@ export type ThoiTietCopy = {
   sunHours: string;
   /** Nhãn báo ngày có hoàng hôn đẹp — khung giờ bán được chuyến bay hoàng hôn. */
   goodSunset: string;
+  /** Khối "Tiềm năng thermal" — kết luận của quy tắc sáu yếu tố. */
+  thermalPotential: string;
+  /** Khung 3 giờ thermal lên khoẻ nhất. */
+  thermalWindow: string;
+  /** Số giờ trong ngày dùng được để bay thermal. */
+  thermalHours: string;
   /** Nhãn hàng kết luận từng giờ: bay được không. */
   canFly: string;
   /** Điểm điều kiện bay 0–100 của chuyên gia. */
@@ -170,6 +176,9 @@ const vi: ThoiTietCopy = {
   thermal: "Thermal",
   sunHours: "giờ nắng",
   goodSunset: "Dự báo hoàng hôn đẹp",
+  thermalPotential: "Tiềm năng thermal",
+  thermalWindow: "khoẻ nhất",
+  thermalHours: "giờ có thermal",
   canFly: "Bay?",
   score: "Điểm",
   stability: "Ổn định",
@@ -277,6 +286,9 @@ const en: ThoiTietCopy = {
   thermal: "Thermals",
   sunHours: "sunshine hours",
   goodSunset: "Great sunset expected",
+  thermalPotential: "Thermal potential",
+  thermalWindow: "peak",
+  thermalHours: "thermal hours",
   canFly: "Fly?",
   score: "Score",
   stability: "Stability",
@@ -384,6 +396,9 @@ const fr: ThoiTietCopy = {
   thermal: "Thermiques",
   sunHours: "heures de soleil",
   goodSunset: "Beau coucher de soleil prévu",
+  thermalPotential: "Potentiel thermique",
+  thermalWindow: "pic",
+  thermalHours: "heures de thermiques",
   canFly: "Volable ?",
   score: "Score",
   stability: "Stabilité",
@@ -491,6 +506,9 @@ const ru: ThoiTietCopy = {
   thermal: "Термики",
   sunHours: "часов солнца",
   goodSunset: "Ожидается красивый закат",
+  thermalPotential: "Термический потенциал",
+  thermalWindow: "пик",
+  thermalHours: "часов с термиками",
   canFly: "Летим?",
   score: "Оценка",
   stability: "Устойчивость",
@@ -598,6 +616,9 @@ const zh: ThoiTietCopy = {
   thermal: "热气流",
   sunHours: "日照小时",
   goodSunset: "预计日落很美",
+  thermalPotential: "热气流潜力",
+  thermalWindow: "最强",
+  thermalHours: "小时有热气流",
   canFly: "可飞?",
   score: "评分",
   stability: "稳定度",
@@ -704,6 +725,9 @@ const hi: ThoiTietCopy = {
   thermal: "थर्मल",
   sunHours: "धूप के घंटे",
   goodSunset: "सुंदर सूर्यास्त की संभावना",
+  thermalPotential: "थर्मल क्षमता",
+  thermalWindow: "चरम",
+  thermalHours: "घंटे थर्मल",
   canFly: "उड़ान?",
   score: "स्कोर",
   stability: "स्थिरता",

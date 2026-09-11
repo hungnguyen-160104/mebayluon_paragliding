@@ -833,6 +833,14 @@ export type NgayThoiTiet = {
   nhanDinh?: unknown;
   /** Điểm điều kiện bay 0–100 của chuyên gia (lib/baobay/chuyen-gia.ts) — gắn ở service. */
   chuyenGia?: unknown;
+  /**
+   * Tiềm năng thermal của ngày (lib/baobay/thermal.ts) — gắn ở service. Sáu
+   * yếu tố (nắng, trần xáo trộn, độ dốc nhiệt, LI, gió mực 500 m, độ khô) chấm
+   * 0–100 rồi ra năm mức; khác `tranMax` (một con số thô) ở chỗ nó đã cân cả
+   * nắng lẫn nắp nghịch nhiệt. `unknown` để tránh vòng import; nơi dùng ép về
+   * `TiemNangThermal`.
+   */
+  thermal?: unknown;
 };
 
 /**

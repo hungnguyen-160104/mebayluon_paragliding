@@ -265,7 +265,14 @@ export function ThoiTietCard({
                 ? ` · mưa bay${homNayCard.khungMuaBay ? ` ${homNayCard.khungMuaBay}` : ""} — bay vẫn bay`
                 : " · không mưa"}
             {homNayCard.xacSuatDongMax >= 20 ? ` · ⚡ dông ${homNayCard.xacSuatDongMax}%` : ""}
-            {homNayCard.tranMax ? ` · trần thermal ${homNayCard.tranMax}m` : ""}
+            {(() => {
+              const th = homNayCard.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
+              return th
+                ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? ` (${th.khung})` : ""}`
+                : homNayCard.tranMax
+                  ? ` · trần thermal ${homNayCard.tranMax}m`
+                  : "";
+            })()}
           </div>
         </div>
         <button

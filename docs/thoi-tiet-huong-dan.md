@@ -415,6 +415,61 @@ Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — gió đứt (
 bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
 chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.
 
+## 5g. Tiềm năng thermal — QUY TẮC SÁU YẾU TỐ (0–100, năm mức)
+
+Chủ hỏi 11/09: "thermal phụ thuộc nắng nhưng phụ thuộc LI nhiều hơn chứ?" —
+**không**. LI đo tới 500 hPa (~5.500 m), nó nói bọt khí có bốc tiếp thành mây
+dông không; thermal mình bay nằm ở 500–2.000 m đầu tiên. Số thật 12–13/09 Khau
+Phạ: LI +2,4 mà trần xáo trộn 1.700 m, nắng cả ngày — ngày thermal đẹp; 15–16/09
+LI +0,4 mà trần 150–190 m vì mây dày — không có gì để bay. Chấm theo LI thì sai
+cả hai. Nên có quy tắc riêng (`lib/baobay/thermal.ts`), tách khỏi điểm chuyên
+gia: chuyên gia trả lời **êm hay xóc, bay được không**; thermal trả lời **có NÂNG
+không, mấy giờ, lên tới đâu**.
+
+**Từng giờ** chấm 0–100:
+
+| Yếu tố | Trọng số | Dựa vào | Đường cong (mốc → điểm) |
+|---|---|---|---|
+| ☀️ Nắng | 20 | bức xạ W/m², phút nắng, mây | 100 W → 15 · 300 → 45 · 500 → 75 · 700 → 100; phút nắng chỉ được tính khi bức xạ đủ (×buXa/500); mây > 60% trừ tới một nửa |
+| 📏 Trần xáo trộn | **45** | `boundary_layer_height` | 300 m → 10 · 600 → 25 · 1.000 → 40 · 1.500 → 65 · 2.000 → 85 · 2.500 → 100 |
+| 🌡 Độ dốc nhiệt | 20 | nhiệt hai mực THẤP NHẤT NẰM TRÊN BÃI (925/850/700) | ≤ 0 °C/100 m → 0 · 0,5 → 30 · 0,65 → 50 · 0,8 → 75 · 0,95 → 100 |
+| ⚖️ Ổn định sâu | 15 | LI, CAPE | −4 → 100 · −1 → 90 · +2 → 70 · +6 → 45 · +10 → 25 |
+| 🌬 Gió mực 500 m trên bãi | ×hệ số | gió nội suy theo độ cao | ≤ 4 m/s ×1 · 6 ×0,85 · 8 ×0,6 · 10 ×0,35 · 12 ×0 |
+| 💧 Độ khô | ×hệ số | nhiệt − điểm sương | 0 °C ×0,8 · 2 ×0,9 · ≥ 4 ×1 |
+
+Hai yếu tố cuối **chỉ được trừ, không cộng**: bản đầu để gió lặng và LI cộng
+điểm thì ngày trần 185 m vẫn bị "gánh" lên 61 "mạnh". Yếu tố phụ chỉ kéo xuống.
+
+**Trần cứng** bất kể phần còn lại: không nắng hoặc mưa ≥ 0,4 mm → ≤ 12; trần xáo
+trộn < 300 m → ≤ 20; nghịch nhiệt trong 1.000 m trên bãi → ≤ 35; gió mực 500 m
+≥ 12 m/s → ≤ 25.
+
+Ở Khau Phạ bãi 1.268 m nên mực 925 hPa (~750 m) nằm **dưới bãi** — độ dốc
+nhiệt lấy 850 → 700, không lấy 925 (đó là khí trong thung lũng).
+
+**Điểm ngày** = trung bình **3 giờ liên tiếp cao nhất** trong khung giờ bay của
+điểm (thermal chỉ cần một khúc giữa trưa là đủ một ca). Kèm: khung 3 giờ ấy,
+số giờ ≥ 40 ("giờ có thermal"), ba bốn câu lý do có con số, và cảnh báo.
+
+| Điểm | Mức | Kiểu ngày (số thật 11–20/09) |
+|---|---|---|
+| < 25 | rất nhẹ | mây dày, trần < 300 m, hoặc mưa |
+| 25–44 | nhẹ | nắng ít, trần 400–700 m |
+| 45–64 | vừa | nắng, trần 1.000–1.500 m, LI dương — ngày bay đôi đẹp nhất |
+| 65–81 | mạnh | trần 1.500–1.900 m, dốc nhiệt tốt |
+| ≥ 82 | rất mạnh | trần > 2.000 m, dốc nhiệt gần đoạn nhiệt, bất ổn sâu — vài tuần một lần |
+
+**Cảnh báo** đi kèm: LI ≤ −4 hoặc CAPE ≥ 1.500 → *quá phát triển, bay sáng*;
+mây < 25% và chênh điểm sương ≥ 8 °C → *thermal XANH, khó nhìn nguồn*; "rất
+mạnh" → *bay đôi xóc, khách say*; gió mực 500 m ≥ 12 → *xé thermal HH–HH*.
+
+**Hiện ở đâu**: dòng tóm tắt thẻ khách ("🔥 Thermal mạnh 72 (11:00–13:00)"),
+khối "Tiềm năng thermal" trong nhận định tiếng Việt (thẻ khách và thẻ nội bộ),
+hàng "Thermal potential" trong bản tóm tắt ngoại ngữ, dòng hôm nay của thẻ
+`/baocao`. Phép thử: `scripts/baocao/test-thermal.ts` (28 ca — kiểu ngày LI
+dương/trần sâu, LI âm/trần thấp, nghịch nhiệt sáng vỡ trưa, gió xé, dông);
+số thật: `do-thermal-that.ts khau-pha ha-noi sapa`.
+
 ## 5c. Hai mô hình chạy song song
 
 - **ECMWF** (qua Open-Meteo) cho gió, mưa, mây, điểm sương, CAPE.
