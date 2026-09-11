@@ -27,6 +27,14 @@ export default function WeatherPageClient() {
   const t = useMemo(() => getThoiTietCopy(lang), [lang]);
 
   const [diem, setDiem] = useState<DiemDuBao[] | null>(null);
+  /**
+   * THẺ NÀO ĐANG MỞ BẢNG PHỤ — chỉ một thẻ trong cả trang (chủ 11/09).
+   *
+   * Khau Phạ và Đồi Bù nằm cạnh nhau; mở ngày ở cả hai thì hai bảng phụ xếp
+   * chồng và bảng mở TRƯỚC lại nằm TRÊN, bấm xong thấy chỗ cũ không đổi gì nên
+   * tưởng máy không phản hồi. Mở thẻ mới thì thẻ cũ tự đóng.
+   */
+  const [spotMo, setSpotMo] = useState<string | null>(null);
   const [loi, setLoi] = useState(false);
 
   useEffect(() => {
@@ -86,7 +94,7 @@ export default function WeatherPageClient() {
             </div>
           )}
           {diem?.map((d) => (
-            <WeatherSpotCard key={d.slug} diem={d} lang={lang} t={t} />
+            <WeatherSpotCard key={d.slug} diem={d} lang={lang} t={t} spotMo={spotMo} onMo={setSpotMo} />
           ))}
         </div>
 

@@ -619,6 +619,14 @@ trang bật `grid-flow-row-dense` nên thẻ hàng xóm lấp lại vào chỗ b
 **không thẻ nào đổi chỗ**. Đo thật: bấm một ngày, thẻ lệch x = 0, y = 0, và thẻ
 kế tiếp vẫn ở đúng y cũ.
 
+**CHỈ MỘT BẢNG PHỤ MỞ TRONG CẢ TRANG** (chủ 11/09): Khau Phạ và Đồi Bù nằm cạnh
+nhau trên một hàng; mở ngày ở cả hai thì hai bảng phụ xếp chồng và bảng mở
+**trước** lại nằm **trên** — bấm xong thấy chỗ cũ không đổi gì nên tưởng máy
+không phản hồi. Nay trang giữ "thẻ nào đang mở", mở thẻ khác thì thẻ cũ tự đóng.
+Thẻ tính trạng thái ấy lúc render (`spotMo === slug`) chứ không dọn bằng effect —
+khỏi gọi setState chéo giữa các thẻ. Đo thật: mở Khau Phạ rồi mở Đồi Bù, trang
+còn đúng một bảng phụ và là của Đồi Bù.
+
 **Dải ngày dồn một hàng khi thẻ đủ rộng** (chủ 11/09): mười ô một hàng thì mắt
 quét một lượt là so được cả dự báo. Đo theo **bề rộng của thẻ** (container
 query `@4xl`) chứ không theo màn hình — cùng một thẻ nằm full trang ở

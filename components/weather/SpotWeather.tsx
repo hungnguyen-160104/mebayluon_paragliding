@@ -1084,7 +1084,27 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
  * Thẻ đang mở chiếm TRỌN BỀ NGANG lưới: biểu đồ giờ cần chỗ, nhét trong nửa
  * cột thì cuộn ngang gấp đôi.
  */
-export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: string; t: ThoiTietCopy }) {
+export function WeatherSpotCard({
+  diem,
+  lang,
+  t,
+  spotMo,
+  onMo,
+}: {
+  diem: DiemDuBao;
+  lang: string;
+  t: ThoiTietCopy;
+  /**
+   * CHỈ MỘT BẢNG PHỤ MỞ TRONG CẢ TRANG (chủ 11/09).
+   *
+   * Khau Phạ và Đồi Bù nằm cạnh nhau trên một hàng. Mở ngày ở cả hai thì hai
+   * bảng phụ xếp chồng, mà bảng mở TRƯỚC lại nằm TRÊN — bấm xong thấy chỗ cũ
+   * không đổi gì, tưởng máy không phản hồi. Nên trang giữ "thẻ nào đang mở";
+   * mở thẻ khác thì thẻ cũ tự đóng.
+   */
+  spotMo?: string | null;
+  onMo?: (slug: string | null) => void;
+}) {
   const [chon, setChon] = useState<string | null>(null);
   const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram" | "skewt">("basic");
   /**
@@ -1125,7 +1145,14 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
 
   const du = thay ?? diem;
   const homNay = du.ngay[0];
-  const ngayChon = chon ? (du.ngay.find((n) => n.ngay === chon) ?? null) : null;
+  /**
+   * Thẻ này có đang là thẻ được mở không. Tính lúc render chứ không dọn bằng
+   * effect: thẻ kia mở thì thẻ này coi như chưa chọn ngày nào, khỏi phải gọi
+   * setState chéo giữa các thẻ (thứ eslint chặn đúng và cũng khó lần).
+   */
+  const dangMo = spotMo === undefined || spotMo === diem.slug;
+  const chonHienTai = dangMo ? chon : null;
+  const ngayChon = chonHienTai ? (du.ngay.find((n) => n.ngay === chonHienTai) ?? null) : null;
   /** Dòng tóm tắt bám theo NGÀY ĐANG CHỌN, chưa chọn thì là hôm nay. */
   const ngayHien = ngayChon ?? homNay;
   const nang = gioNangCuaNgay(ngayHien);
@@ -1234,8 +1261,13 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
 
       <DaiNgay
         ngay={du.ngay}
-        chon={chon}
-        onChon={(d) => setChon((cu) => (cu === d ? null : d))}
+        chon={chonHienTai}
+        onChon={(d) => {
+          /** Bấm lại đúng ngày đang mở = đóng; bấm ngày khác = mở ngày ấy và ĐÓNG thẻ kia. */
+          const dong = chonHienTai === d;
+          setChon(dong ? null : d);
+          onMo?.(dong ? null : diem.slug);
+        }}
         t={t}
         lang={lang}
       />
@@ -1311,7 +1343,10 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             {/* Lối ĐÓNG rõ ràng: bấm lại đúng ngày ấy cũng đóng, nhưng không ai đoán ra. */}
             <button
               type="button"
-              onClick={() => setChon(null)}
+              onClick={() => {
+                setChon(null);
+                onMo?.(null);
+              }}
               className="ml-auto rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
             >
               ✕
@@ -1347,7 +1382,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             <Meteogram
               ngay={du.ngay as never}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
-              ngayChon={chon}
+              ngayChon={chonHienTai}
               onNgayHien={setChon}
               nhan={nhanBieuDo(t)}
               lang={lang}
@@ -1358,13 +1393,13 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               altHa={(du.toaDo as { altHa?: number }).altHa}
               altCat2={(du.toaDo as { altCat2?: number }).altCat2}
-              ngayChon={chon}
+              ngayChon={chonHienTai}
               onNgayHien={setChon}
               nhan={nhanBieuDo(t)}
               lang={lang}
             />
           ) : (
-            <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
+            <BangGio ngay={du.ngay} ngayChon={chonHienTai} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
           )}
         </div>
     )}
