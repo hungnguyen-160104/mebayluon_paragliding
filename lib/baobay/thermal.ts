@@ -350,7 +350,7 @@ export function tiemNangThermal(
   }
   /** Nhịp giật: dấu hiệu nhìn thấy được của thermal, nói ra để phi công đối chiếu với bảng giờ. */
   const giat = dinh.yeuTo.find((y) => y.ma === "giat");
-  if (giat) lyDo.push(`Nhịp giật mạnh hơn gió nền (${giat.ghiChu.split(" →")[0]}) — thermal đang làm việc.`);
+  if (giat) lyDo.push(`Nhịp giật mạnh hơn gió nền (${giat.ghiChu.split(" →")[0]}) — thermal đang hoạt động.`);
   if (dinh.tran.length) lyDo.push(`Bị chặn bởi: ${dinh.tran.join(", ")}.`);
 
   /* ---- Cảnh báo ---- */

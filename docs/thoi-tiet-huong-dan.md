@@ -374,7 +374,7 @@ chiếu được với cảm nhận của mình, và cái sai của máy lộ ra
 **Kiểu ngày** — câu phi công nói với nhau ở bãi, hiện ngay dưới dòng tóm tắt:
 *Ngày BẤT ỔN ĐỊNH: thermal gắt, nhiễu động mạnh, mây tích phát triển nhanh —
 nguy cơ OD/dông chiều, chỉ bay sáng* · *Ngày ỔN ĐỊNH OI BỨC: lift yếu, không khí
-đục, mù khô* · *Ngày GIÓ MỰC CAO MẠNH: thermal bị xé, leo là nhiễu động* · *Ngày
+đục, mù khô* · *Ngày GIÓ TRÊN CAO MẠNH: thermal bị xé, leo là nhiễu động* · *Ngày
 NGHỊCH NHIỆT THẤP* · *Ngày THERMAL GẮT: bãi đáp có rotor nhiệt* · *Ngày ỔN ĐỊNH,
 THERMAL ÊM: kiểu ngày đẹp nhất cho bay đôi* · *Ngày MƯA* · *Ngày FRONT đi qua*.
 
