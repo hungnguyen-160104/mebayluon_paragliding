@@ -47,16 +47,30 @@ type WebServiceField = "flycam" | "video360" | "sunset" | "flagFlight" | "redFla
  * không phải bay kéo cờ — trước 05/09 gán nhầm sang flagFlight, sổ ghi kéo cờ
  * 100k cho khách mua dù cờ đỏ 400k.
  */
-const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
+export const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
   { match: /flycam/i, field: "flycam" },
   { match: /camera360|cam360/i, field: "video360" },
+  /**
+   * "BAY SĂN MÂY / HOÀNG HÔN / BÌNH MINH (2.000m)" — khoá web là
+   * `khau_pha_paramotor_2000m`, KHÔNG chứa chữ "sunset" nào, nên trước đây
+   * không luật nào bắt được và dịch vụ rơi mất im lặng (chủ phát hiện 11/09).
+   *
+   * Tiền thì KHÔNG mất — tổng vẫn lấy theo giá web nên khách trả đủ 700k —
+   * nhưng SỔ không ghi, thành ra: phi công không biết phải bay lên 2.000m,
+   * bảng dịch vụ trong ngày thiếu một suất, và tổng nội bộ hơn phần cộng lại
+   * đúng 700k mà không ai giải thích được số đó từ đâu ra.
+   *
+   * Ba đơn đã dính: WEBFF4638 (15/07), WebMBL9A16A9 (03/09), WebMBLBE9CDB
+   * (10/09 — Alfredo Pretel Vargas, đã bay).
+   */
+  { match: /2000m|san_may|sanmay|binh_minh|sunrise/i, field: "sunset" },
   { match: /sunset|hoang_hon/i, field: "sunset" },
   { match: /keo_co|flag_flight|flagflight/i, field: "flagFlight" },
   { match: /flag|co_do|red_flag/i, field: "redFlag" },
 ];
 
 /** Khoá dịch vụ mang nghĩa ĐƯA ĐÓN — quyết định ô "đưa đón" chứ không phải dịch vụ bay. */
-const PICKUP_KEYS = /pickup|shuttle|garrya/i;
+export const PICKUP_KEYS = /pickup|shuttle|garrya/i;
 
 type WebDoc = {
   _id: mongoose.Types.ObjectId;
