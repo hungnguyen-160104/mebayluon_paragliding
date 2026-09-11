@@ -98,3 +98,24 @@ export function shortPickupSo(text: unknown): string {
     .replace(/\s{2,}/g, " ")
     .trim();
 }
+
+/**
+ * ĐIỂM ĐÓN IN TRÊN VÉ VÀ THƯ GỬI KHÁCH — KHÔNG rút gọn (chủ dặn 11/09).
+ *
+ * Khách đọc vé thì phải thấy đúng tên chỗ mình hẹn, đủ chữ: "Khách sạn Mường
+ * Thanh", "Sun Plaza Sapa Entrance - in Sapa center". Viết tắt kiểu người trực
+ * ghi tay ("KS", "Sun Plaza") là chuyện của sổ nội bộ.
+ *
+ * NGOẠI LỆ DUY NHẤT: chuỗi Klook/OTA đẩy sang khi khách chọn "đến thẳng điểm
+ * bay" — "Điểm bay dù lượn Mebayluon Paragliding (CTCP Du lịch &" — cắt cụt
+ * giữa chừng, in nguyên lên vé thì vừa tràn dòng vừa khó hiểu. Vé ghi gọn
+ * **"Điểm bay dù lượn"**.
+ */
+export const DIEM_BAY_VE = "Điểm bay dù lượn";
+
+export function pickupVe(text: unknown): string {
+  const raw = String(text ?? "").trim();
+  if (!raw) return "";
+  if (TEN_BAI.test(raw) && TEN_HANG.test(raw) && !CLUBHOUSE.test(raw)) return DIEM_BAY_VE;
+  return raw;
+}

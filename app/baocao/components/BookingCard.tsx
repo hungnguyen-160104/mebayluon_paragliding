@@ -12,7 +12,7 @@ import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import { DateBar } from "./DateBar";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { laTuDen, shortPickup, TU_DEN } from "@/lib/baobay/pickup";
+import { DIEM_BAY_VE, laTuDen, pickupVe, shortPickupSo, TU_DEN } from "@/lib/baobay/pickup";
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
@@ -116,7 +116,7 @@ function pickupText(b: Pick<BookingDTO, "pickup" | "pickupNote">): string {
   if (laTuDen(note)) return TU_DEN;
   const m = note.match(/^xe trung chuyển\s*(?:xã\s*)?(.+)$/i);
   if (m) return `Đón tại ${m[1].trim()}`;
-  return `đón ${shortPickup(note) || "?"}`;
+  return `đón ${shortPickupSo(note) || "?"}`;
 }
 
 /** Rút gọn tên cho vừa nút: "Minh Ngọc" → "M. Ngọc", "Mai Hoàn" → "M. Hoàn"; một chữ giữ nguyên. */
@@ -7901,10 +7901,15 @@ export function BookingCard({
                 flagFlight: form.flagFlight,
                 pickupLabel:
                   form.pickup === "other"
-                    ? /** Tên bãi dài (khách Klook tự tới) in ra vé thì tràn dòng — xem shortPickup. */
+                    ? /**
+                       * VÉ GIỮ NGUYÊN TÊN CHỖ ĐÓN (chủ 11/09) — khách phải thấy
+                       * đúng chỗ mình hẹn, đủ chữ. Chỉ chuỗi OTA cắt cụt "Điểm
+                       * bay dù lượn Mebayluon Paragliding (CTCP Du lịch &" mới
+                       * rút thành "Điểm bay dù lượn"; xem `pickupVe`.
+                       */
                       laTuDen(form.pickupNote)
-                      ? TU_DEN
-                      : `Đón: ${shortPickup(form.pickupNote) || "?"}`
+                      ? DIEM_BAY_VE
+                      : `Đón: ${pickupVe(form.pickupNote) || "?"}`
                     : form.pickup === "bigc"
                       ? "Đón BigC"
                       : form.pickup === "hotel"
