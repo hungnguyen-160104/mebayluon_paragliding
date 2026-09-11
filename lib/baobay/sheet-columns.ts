@@ -252,9 +252,10 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
     { key: "lineAmount", label: "Thành tiền", kind: "money", w: 82, right: true, g1: "THÔNG TIN VÉ" },
     { key: "flycam", label: "Fly", edit: "flycam", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Flycam" },
     { key: "video360", label: "360", edit: "video360", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Camera 360" },
-    { key: "redFlag", label: "Đỏ", edit: "redFlag", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Dù cờ đỏ" },
+    /** "C.đỏ" và "K.cờ" — hai chữ đầu đủ để phân biệt mà vẫn vừa cột 38px (chủ 11/09). */
+    { key: "redFlag", label: "C.đỏ", edit: "redFlag", kind: "num", w: 38, right: true, g1: "THÔNG TIN VÉ", title: "Dù cờ đỏ" },
     { key: "sunset", label: "H.hôn", edit: "sunset", kind: "num", w: 42, right: true, g1: "THÔNG TIN VÉ", title: "Bay hoàng hôn / săn mây" },
-    { key: "flagFlight", label: "Cờ", edit: "flagFlight", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Bay kéo cờ / bánh" },
+    { key: "flagFlight", label: "K.cờ", edit: "flagFlight", kind: "num", w: 38, right: true, g1: "THÔNG TIN VÉ", title: "Bay kéo cờ đỏ / cờ sinh nhật" },
     ...(hn ? ([{ key: "mountainCar", label: "Xe", edit: "mountainCar", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Xe lên núi" }] as SheetCol[]) : []),
     { key: "pickupFee", label: "Phí đón", edit: "pickupFee", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ" },
     { key: "discount", label: "Giảm", edit: "discount", kind: "money", w: 64, right: true, g1: "THÔNG TIN VÉ", title: "Giảm trừ / chiết khấu cả đoàn" },
