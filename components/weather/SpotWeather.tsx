@@ -1093,11 +1093,14 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
      * được lưới `grid-flow-row-dense` lấp lại vào chỗ trống bên cạnh thẻ đang
      * mở — nên KHÔNG thẻ nào đổi chỗ.
      *
-     * Nền cam nhạt và viền cam: cùng màu với ô ngày đang chọn, để mắt nối
-     * được "ô này" với "bảng này" mà không cần đường kẻ.
+     * NỀN TRẮNG ĐẶC, viền cam (chủ 11/09). Trước để `bg-orange-50/70` — nền
+     * cam nhạt trong suốt 70%: trên máy tính nhìn được vì phía sau là nền
+     * trang trắng, nhưng bản điện thoại phía sau là ảnh nên chữ nằm trên ảnh,
+     * đọc không ra. Màu nối "ô ngày đang chọn" với "bảng này" để ở VIỀN cam,
+     * không để ở nền.
      */}
     {ngayChon && (
-        <div className="col-span-full min-w-0 rounded-2xl border-2 border-orange-300 bg-orange-50/70 p-3 shadow-sm @container">
+        <div className="@container col-span-full min-w-0 rounded-2xl border-2 border-orange-300 bg-white p-3 shadow-sm">
           {lang === "vi" ? (
             <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
           ) : (

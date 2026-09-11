@@ -515,7 +515,12 @@ lên mấy lần, trong khi giản đồ chỉ mở khi có người bấm nút.
 `GET /api/thoi-tiet/skew-t?spot=<slug>&date=YYYY-MM-DD[&model=...]`, cache 30
 phút ở biên như các API thời tiết khác.
 
-**Đọc thế nào** (in luôn dưới hình cho người mới):
+**Đọc thế nào** — chú thích bốn đường in ngay trên hình, và dưới hình là khối
+"Giản đồ này nói gì" viết cho người chưa từng xem Skew-T: mỗi đường là MỘT SỐ ĐO
+theo độ cao, gọi đủ tên (chủ 11/09 hỏi "nhiệt độ màu đỏ là nhiệt độ gì?"). Khối
+ấy chỉ nói tới **dải tím** khi ngày đó THẬT SỰ có lớp nghịch nhiệt — trước đây
+nói sẵn, mà hôm không có nắp thì người xem đi tìm một màu không tồn tại (chủ
+báo 11/09). Đáy mây và trần thermal cũng in kèm số mét thật của giờ đang xem.
 
 | Thứ trên hình | Nghĩa |
 |---|---|
@@ -535,11 +540,15 @@ bọt khí là chỗ nội suy cắt đường môi trường. Hình vẽ tay b�
 `components/weather/SkewT.tsx` — mở bằng nút **🌡 Skew-T** cạnh Basic /
 Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất).
 
-**Trần hình = 4.000 m (≈ 616 hPa) và HÌNH TO** (chủ 11/09): vẽ tới 300 hPa thì
+**HAI KHUNG VẼ, chọn theo bề rộng màn hình** (chủ 11/09 báo hai chuyện trái
+nhau nhưng đều đúng: "để nhỏ quá rất khó nhìn" và "trên mobile không hiện hết,
+phải vuốt mới ra đủ"). Máy tính: khung 820×620, chữ 11px, đo thật ra 964×729px.
+Điện thoại: khung riêng 400×520, lề mỏng, chữ khai 9px — cả giản đồ nằm gọn
+trong một màn (đo thật: 330px, trang 390 không tràn, không phải vuốt).
+
+**Trần hình = 4.000 m (≈ 616 hPa)** (chủ 11/09): vẽ tới 300 hPa thì
 tầng mình bay bị nén vào một phần ba dưới cùng, nhìn không ra lớp nào; hình nhỏ
-thì chữ 8px không đọc nổi. Khung 820×620 co giãn theo bề rộng chỗ đặt — đo thật
-trên máy tính ra 964×729px, trên điện thoại giữ tối thiểu 560px rồi cuộn ngang
-trong khung (trang không tràn). Mực ngay trên trần vẫn được lấy để đường vẽ
+thì chữ 8px không đọc nổi. Mực ngay trên trần vẫn được lấy để đường vẽ
 chạy tới mép khung rồi mới bị cắt bằng clip. **Chú thích bốn đường in ngay trên hình**,
 không bắt người xem dò xuống khối chữ rồi ngước lên đối chiếu.
 
