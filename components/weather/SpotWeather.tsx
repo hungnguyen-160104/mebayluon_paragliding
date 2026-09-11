@@ -295,7 +295,15 @@ function DaiNgay({
  * khoảng thời gian quyết định còn kịp một chuyến cuối hay không. Số do mô hình
  * tính cho đúng toạ độ bãi nên tự đổi theo mùa, không phải khai tay.
  */
-function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten: string; alt?: number; altHa?: number }; ngay: Ngay | null; t: ThoiTietCopy }) {
+function KhoiViTri({
+  toaDo,
+  ngay,
+  t,
+}: {
+  toaDo: { lat: number; lon: number; ten: string; alt?: number; altHa?: number; altCat2?: number };
+  ngay: Ngay | null;
+  t: ThoiTietCopy;
+}) {
   const daiNgay = (() => {
     if (!ngay?.matTroi) return null;
     const p = (x: string) => Number(x.slice(0, 2)) * 60 + Number(x.slice(3, 5));
@@ -312,7 +320,9 @@ function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten:
       {/* Độ cao THẢ = cất − hạ: thứ quyết định chuyến dài bao lâu khi không có nâng. */}
       {toaDo.alt !== undefined && toaDo.altHa !== undefined && (
         <span className="font-semibold text-slate-700">
-          ▲ {toaDo.alt}m → ▼ {toaDo.altHa}m (thả {toaDo.alt - toaDo.altHa}m)
+          {/* "Chênh cao" chứ không phải "thả" (chủ 11/09): đây là hiệu hai độ cao, không phải quãng rơi. */}
+          ▲ {t.takeoff} {toaDo.alt}m{toaDo.altCat2 ? ` / ${toaDo.altCat2}m` : ""} → ▼ {t.landing} {toaDo.altHa}m ·{" "}
+          {t.heightDiff} {toaDo.alt - toaDo.altHa}m
         </span>
       )}
       {ngay?.matTroi && (
@@ -469,6 +479,8 @@ function nhanBieuDo(t: ThoiTietCopy): NhanMeteogram {
     mua: `${t.rain} mm`,
     tran: t.cloudBase,
     matDat: t.ground,
+    batDau: t.takeoff,
+    haCanh: t.landing,
     vuot: t.swipeDays,
   };
 }
@@ -879,12 +891,22 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
             moHinh={moHinh}
             altBai={(du.toaDo as { alt?: number }).alt ?? 0}
             altHa={(du.toaDo as { altHa?: number }).altHa}
+            altCat2={(du.toaDo as { altCat2?: number }).altCat2}
             gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
           />
         ) : kieuXem === "meteogram" ? (
           <Meteogram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
         ) : kieuXem === "airgram" ? (
-          <Airgram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
+          <Airgram
+            ngay={du.ngay as never}
+            altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+            altHa={(du.toaDo as { altHa?: number }).altHa}
+            altCat2={(du.toaDo as { altCat2?: number }).altCat2}
+            ngayChon={chon}
+            onNgayHien={setChon}
+            nhan={nhanBieuDo(t)}
+            lang={lang}
+          />
         ) : (
           <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
         ))}
@@ -1171,6 +1193,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
               moHinh={moHinh}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               altHa={(du.toaDo as { altHa?: number }).altHa}
+              altCat2={(du.toaDo as { altCat2?: number }).altCat2}
               gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
             />
           ) : kieuXem === "meteogram" ? (
@@ -1186,6 +1209,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             <Airgram
               ngay={du.ngay as never}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+              altHa={(du.toaDo as { altHa?: number }).altHa}
+              altCat2={(du.toaDo as { altCat2?: number }).altCat2}
               ngayChon={chon}
               onNgayHien={setChon}
               nhan={nhanBieuDo(t)}

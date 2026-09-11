@@ -61,6 +61,12 @@ export type ToaDoDiemBay = {
    * bay nằm trong mù.
    */
   altHa?: number;
+  /**
+   * Bãi cất THỨ HAI (m) — điểm có hai chỗ cất ở hai độ cao; Viên Nam có bãi
+   * 650m và bãi 850m (chủ 11/09). Chỉ để ghi chú và vẽ thêm một vạch trên
+   * giản đồ; mọi phép chấm vẫn lấy `alt` (bãi chính).
+   */
+  altCat2?: number;
   /** Tên chỗ cất cánh, hiện trên thẻ để biết đang xem đúng chỗ hay không. */
   ten: string;
   /**
@@ -109,8 +115,8 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     /** 1.268 m — số chủ đo tại bãi cất cánh (10/09), không phải 1.200 làm tròn. */
     alt: 1268,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
-    /** Bãi hạ ở Tú Lệ, thấp hơn bãi cất 538m (số chủ 11/09). */
-    altHa: 730,
+    /** Bãi hạ ở Tú Lệ — thả 568m (số chủ 11/09). */
+    altHa: 700,
     /**
      * TRẦN TỐC ĐỘ THEO HƯỚNG (chủ 11/09): "Khau Phạ cấm gió hướng Tây mạnh
      * hơn 5 m/s, gió Nam hoặc Đông mạnh hơn 6 m/s."
@@ -161,8 +167,11 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
   "ha-noi": {
     lat: 20.8386,
     lon: 105.5561,
-    alt: 833,
-    /** Bãi hạ dưới đồng bằng Chương Mỹ — thả 783m (số chủ 11/09). */
+    /**
+     * ĐỒI BÙ: bãi CẤT 650m, bãi HẠ 50m (số chủ chốt 11/09 — chủ nói lại, trước
+     * ghi 833m là độ cao ĐỈNH đồi chứ không phải chỗ cất cánh).
+     */
+    alt: 650,
     altHa: 50,
     ten: "Đồi Bù (Chương Mỹ)",
     luatHuong: { tot: [247, 112], xau: [157, 246] },
@@ -182,6 +191,8 @@ export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): 
     lat: Number.isFinite(luu.lat) ? Number(luu.lat) : goc.lat,
     lon: Number.isFinite(luu.lon) ? Number(luu.lon) : goc.lon,
     alt: Number.isFinite(luu.alt as number) ? Number(luu.alt) : goc.alt,
+    altHa: Number.isFinite(luu.altHa as number) ? Number(luu.altHa) : goc.altHa,
+    altCat2: goc.altCat2,
     ten: luu.ten?.trim() || goc.ten,
     huongThuan: luu.huongThuan ?? goc.huongThuan,
     luatHuong: luu.luatHuong ?? goc.luatHuong,

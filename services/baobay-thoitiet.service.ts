@@ -524,6 +524,8 @@ export async function duBaoDiemCongKhai(diem: {
   /** Độ cao bãi cất / bãi hạ (m) — điểm trang khách khai riêng thì đè lên số của sổ nội bộ. */
   alt?: number;
   altHa?: number;
+  /** Bãi cất thứ hai (Viên Nam có hai chỗ cất). */
+  altCat2?: number;
   spotNoiBo?: SpotId;
   luatHuong?: LuatHuong;
 }, moHinhMa?: string): Promise<{
@@ -550,6 +552,7 @@ export async function duBaoDiemCongKhai(diem: {
       ...(diem.luatHuong ? { luatHuong: diem.luatHuong } : {}),
       ...(diem.alt !== undefined ? { alt: diem.alt } : {}),
       ...(diem.altHa !== undefined ? { altHa: diem.altHa } : {}),
+      ...(diem.altCat2 !== undefined ? { altCat2: diem.altCat2 } : {}),
     };
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
   }
@@ -560,6 +563,7 @@ export async function duBaoDiemCongKhai(diem: {
     ten: diem.ten,
     alt: diem.alt,
     altHa: diem.altHa,
+    altCat2: diem.altCat2,
     luatHuong: diem.luatHuong,
   };
   const nguong = nguongCuaDiem(null);

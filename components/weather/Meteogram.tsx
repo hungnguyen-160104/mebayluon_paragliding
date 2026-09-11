@@ -73,6 +73,10 @@ export type NhanMeteogram = {
   ap: string;
   tran: string;
   matDat: string;
+  /** Nhãn hàng BÃI CẤT trên airgram — kèm số mét. */
+  batDau: string;
+  /** Nhãn hàng BÃI HẠ trên airgram — kèm số mét. */
+  haCanh: string;
   vuot: string;
 };
 
@@ -86,6 +90,8 @@ export const NHAN_METEOGRAM_VI: NhanMeteogram = {
   ap: "áp hPa",
   tran: "Trần m",
   matDat: "mặt đất",
+  batDau: "bãi cất",
+  haCanh: "bãi hạ",
   vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
 };
 
@@ -609,6 +615,8 @@ export function Meteogram({
 export function Airgram({
   ngay,
   altBai = 0,
+  altHa,
+  altCat2,
   tuGio = 4,
   denGio = 21,
   ngayChon,
@@ -618,6 +626,10 @@ export function Airgram({
 }: {
   ngay: NgayVe[];
   altBai?: number;
+  /** Độ cao bãi HẠ (m) — hàng dưới cùng là gió tại đó, vì chuyến bay kết thúc ở đấy. */
+  altHa?: number;
+  /** Bãi cất thứ hai (Viên Nam) — thêm một hàng nữa. */
+  altCat2?: number;
   tuGio?: number;
   denGio?: number;
   ngayChon?: string | null;
@@ -636,11 +648,86 @@ export function Airgram({
   /** Độ cao thật của hai mực dưới lấy từ mô hình (đổi theo áp suất từng ngày); 700 hPa lấy ~3.000m. */
   const h925 = cot.map((c) => c.g.h925).find((x): x is number => typeof x === "number");
   const h850 = cot.map((c) => c.g.h850).find((x): x is number => typeof x === "number");
-  const muc: Array<{ ten: string; lay: (g: GioVe) => number | undefined; layHuong: (g: GioVe) => number | undefined; t: (g: GioVe) => number | undefined }> = [
-    { ten: "~3000m", lay: (g) => g.gio700, layHuong: (g) => g.huong700, t: (g) => g.t700 },
-    { ten: `~${h850 ? Math.round(h850 / 50) * 50 : 1500}m`, lay: (g) => g.gio850, layHuong: (g) => g.huong850, t: (g) => g.t850 },
-    { ten: `~${h925 ? Math.round(h925 / 50) * 50 : 750}m`, lay: (g) => g.gio925, layHuong: (g) => g.huong925, t: (g) => g.t925 },
-    { ten: nhan.matDat + (altBai ? ` ${altBai}m` : ""), lay: (g) => g.gio10m, layHuong: (g) => g.huong, t: (g) => g.nhietDo },
+  const cao925 = h925 ?? 750;
+  const cao850 = h850 ?? 1500;
+
+  /**
+   * AIRGRAM PHẢI PHỦ ĐÚNG ĐƯỜNG BAY: TỪ BÃI HẠ LÊN (luật chủ 11/09).
+   *
+   * Trước đây hàng dưới cùng là "mặt đất" của mô hình gắn nhãn độ cao BÃI CẤT,
+   * rồi trên nó là các mực 925/850/700 — thành ra ở Đồi Bù hiện "mặt đất 833m"
+   * mà ngay trên là "~800m", tức hàng trên THẤP HƠN hàng dưới, đọc ra vô lý.
+   *
+   * Chuyến bay đi từ bãi cất xuống bãi hạ và lên cao ở giữa, nên bảng này lấy:
+   *  - hàng dưới cùng = BÃI HẠ (gió 10m của mô hình — chỗ vào vòng lượn đáp),
+   *  - hàng kế = BÃI CẤT (gió nội suy đúng độ cao ấy; thêm bãi cất phụ nếu điểm
+   *    có hai chỗ cất như Viên Nam),
+   *  - trên nữa là các mực mô hình NẰM CAO HƠN bãi cất — mực nào thấp hơn thì
+   *    bỏ, vì nó nằm dưới chân mình, không nói gì về chuyến bay.
+   */
+  const noiSuyGio = (g: GioVe, cao: number, lay: "gio" | "huong"): number | undefined => {
+    const moc: Array<{ h: number; v: number | undefined; d: number | undefined }> = [
+      { h: altHa ?? 0, v: g.gio10m, d: g.huong },
+      { h: cao925, v: g.gio925, d: g.huong925 },
+      { h: cao850, v: g.gio850, d: g.huong850 },
+      { h: 3000, v: g.gio700, d: g.huong700 },
+    ].filter((x) => (lay === "gio" ? x.v !== undefined : x.d !== undefined));
+    if (!moc.length) return undefined;
+    if (cao <= moc[0].h) return lay === "gio" ? moc[0].v : moc[0].d;
+    for (let i = 1; i < moc.length; i++) {
+      if (cao <= moc[i].h) {
+        const a = moc[i - 1];
+        const b = moc[i];
+        const f = (cao - a.h) / Math.max(1, b.h - a.h);
+        if (lay === "gio") return (a.v as number) + ((b.v as number) - (a.v as number)) * f;
+        /** Hướng nội suy theo góc ngắn nhất, không cộng thẳng (350° và 10° ra 0°, không phải 180°). */
+        const da = a.d as number;
+        const db = b.d as number;
+        const lech = ((((db - da) % 360) + 540) % 360) - 180;
+        return ((da + lech * f) % 360 + 360) % 360;
+      }
+    }
+    const cuoi = moc[moc.length - 1];
+    return lay === "gio" ? cuoi.v : cuoi.d;
+  };
+
+  type MucVe = { ten: string; lay: (g: GioVe) => number | undefined; layHuong: (g: GioVe) => number | undefined; t: (g: GioVe) => number | undefined; dam?: boolean };
+  const mucTatCa: Array<MucVe & { cao: number }> = [
+    { cao: 3000, ten: "~3000m", lay: (g: GioVe) => g.gio700, layHuong: (g: GioVe) => g.huong700, t: (g: GioVe) => g.t700 },
+    { cao: cao850, ten: `~${Math.round(cao850 / 50) * 50}m`, lay: (g: GioVe) => g.gio850, layHuong: (g: GioVe) => g.huong850, t: (g: GioVe) => g.t850 },
+    { cao: cao925, ten: `~${Math.round(cao925 / 50) * 50}m`, lay: (g: GioVe) => g.gio925, layHuong: (g: GioVe) => g.huong925, t: (g: GioVe) => g.t925 },
+  ];
+  /** Mực nằm DƯỚI bãi cất thì bỏ: nó ở dưới chân mình, không nói gì về chuyến bay. */
+  const mucTren: MucVe[] = mucTatCa.filter((m) => (altBai ? m.cao > altBai + 80 : true));
+
+  const mucBai: MucVe[] = [];
+  if (altBai) {
+    mucBai.push({
+      ten: `${nhan.batDau} ${altBai}m`,
+      lay: (g) => noiSuyGio(g, altBai, "gio"),
+      layHuong: (g) => noiSuyGio(g, altBai, "huong"),
+      t: (g) => g.nhietDo,
+      dam: true,
+    });
+  }
+  if (altCat2) {
+    mucBai.push({
+      ten: `${nhan.batDau} ${altCat2}m`,
+      lay: (g) => noiSuyGio(g, altCat2, "gio"),
+      layHuong: (g) => noiSuyGio(g, altCat2, "huong"),
+      t: (g) => g.nhietDo,
+      dam: true,
+    });
+  }
+  const muc: MucVe[] = [
+    ...mucTren,
+    ...mucBai,
+    {
+      ten: altHa !== undefined ? `${nhan.haCanh} ${altHa}m` : nhan.matDat,
+      lay: (g) => g.gio10m,
+      layHuong: (g) => g.huong,
+      t: (g) => g.nhietDo,
+    },
   ];
   const CAO = 46;
   const nhanTrai = "pt-1 font-bold text-slate-400 " + (hep ? "text-[9px] leading-tight" : "text-[10px]");

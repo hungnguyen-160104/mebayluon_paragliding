@@ -518,12 +518,13 @@ export function ThoiTietCard({
                 moHinh={moHinh}
                 altBai={du.toaDo.alt ?? 0}
                 altHa={du.toaDo.altHa}
+                altCat2={du.toaDo.altCat2}
                 gioBay={du.toaDo.gioBay}
               />
             ) : kieuXem === "meteogram" ? (
               <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
             ) : kieuXem === "airgram" ? (
-              <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
+              <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} altHa={du.toaDo.altHa} altCat2={du.toaDo.altCat2} ngayChon={chon} onNgayHien={setChon} />
             ) : (
               <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} homNay={homNay} luat={du.toaDo.luatHuong} />
             ))}

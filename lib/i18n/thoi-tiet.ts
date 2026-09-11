@@ -51,6 +51,11 @@ export type ThoiTietCopy = {
   sunHours: string;
   /** Nhãn báo ngày có hoàng hôn đẹp — khung giờ bán được chuyến bay hoàng hôn. */
   goodSunset: string;
+  /** Nhãn hàng bãi cất / bãi hạ trên airgram và khối vị trí. */
+  takeoff: string;
+  landing: string;
+  /** Chênh cao giữa bãi cất và bãi hạ. */
+  heightDiff: string;
   /** Khối "Tiềm năng thermal" — kết luận của quy tắc sáu yếu tố. */
   thermalPotential: string;
   /** Khung 3 giờ thermal lên khoẻ nhất. */
@@ -176,6 +181,9 @@ const vi: ThoiTietCopy = {
   thermal: "Thermal",
   sunHours: "giờ nắng",
   goodSunset: "Dự báo hoàng hôn đẹp",
+  takeoff: "bãi cất",
+  landing: "bãi hạ",
+  heightDiff: "chênh cao",
   thermalPotential: "Tiềm năng thermal",
   thermalWindow: "khoẻ nhất",
   thermalHours: "giờ có thermal",
@@ -286,6 +294,9 @@ const en: ThoiTietCopy = {
   thermal: "Thermals",
   sunHours: "sunshine hours",
   goodSunset: "Great sunset expected",
+  takeoff: "take-off",
+  landing: "landing",
+  heightDiff: "height difference",
   thermalPotential: "Thermal potential",
   thermalWindow: "peak",
   thermalHours: "thermal hours",
@@ -396,6 +407,9 @@ const fr: ThoiTietCopy = {
   thermal: "Thermiques",
   sunHours: "heures de soleil",
   goodSunset: "Beau coucher de soleil prévu",
+  takeoff: "décollage",
+  landing: "atterrissage",
+  heightDiff: "dénivelé",
   thermalPotential: "Potentiel thermique",
   thermalWindow: "pic",
   thermalHours: "heures de thermiques",
@@ -506,6 +520,9 @@ const ru: ThoiTietCopy = {
   thermal: "Термики",
   sunHours: "часов солнца",
   goodSunset: "Ожидается красивый закат",
+  takeoff: "старт",
+  landing: "посадка",
+  heightDiff: "перепад высот",
   thermalPotential: "Термический потенциал",
   thermalWindow: "пик",
   thermalHours: "часов с термиками",
@@ -616,6 +633,9 @@ const zh: ThoiTietCopy = {
   thermal: "热气流",
   sunHours: "日照小时",
   goodSunset: "预计日落很美",
+  takeoff: "起飞场",
+  landing: "降落场",
+  heightDiff: "高差",
   thermalPotential: "热气流潜力",
   thermalWindow: "最强",
   thermalHours: "小时有热气流",
@@ -725,6 +745,9 @@ const hi: ThoiTietCopy = {
   thermal: "थर्मल",
   sunHours: "धूप के घंटे",
   goodSunset: "सुंदर सूर्यास्त की संभावना",
+  takeoff: "टेक-ऑफ़",
+  landing: "लैंडिंग",
+  heightDiff: "ऊँचाई अंतर",
   thermalPotential: "थर्मल क्षमता",
   thermalWindow: "चरम",
   thermalHours: "घंटे थर्मल",

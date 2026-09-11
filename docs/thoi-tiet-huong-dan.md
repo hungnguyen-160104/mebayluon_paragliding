@@ -560,17 +560,36 @@ thì chữ 8px không đọc nổi. Mực ngay trên trần vẫn được lấy
 chạy tới mép khung rồi mới bị cắt bằng clip. **Chú thích bốn đường in ngay trên hình**,
 không bắt người xem dò xuống khối chữ rồi ngước lên đối chiếu.
 
-**Độ cao BÃI HẠ** vẽ thành vạch thứ hai, vì chênh giữa cất và hạ là **độ cao
-thả** — thứ quyết định chuyến dài bao lâu khi không có nâng, và là mốc để xem
-mây hay nghịch nhiệt có nằm trong đường bay không. Số chủ chốt 11/09:
+**Độ cao BÃI HẠ** vẽ thành vạch thứ hai, vì hiệu giữa cất và hạ là **chênh cao**
+— thứ quyết định chuyến dài bao lâu khi không có nâng, và là mốc để xem mây hay
+nghịch nhiệt có nằm trong đường bay không. Gọi "chênh cao" chứ không gọi "thả"
+(chủ sửa 11/09). Số chủ chốt 11/09:
 
-| Bãi | Cất cánh | Hạ cánh | Thả |
+| Bãi | Cất cánh | Hạ cánh | Chênh cao |
 |---|---|---|---|
-| Đèo Khau Phạ | 1.268 m | 730 m | 538 m |
+| Đèo Khau Phạ | 1.268 m | 700 m | 568 m |
 | Sa Pa | 1.500 m | 1.000 m | 500 m |
-| Đồi Bù | 833 m | 50 m | 783 m |
-| Viên Nam | 650 m | 50 m | 600 m |
+| Đồi Bù | **650 m** | 50 m | 600 m |
+| Viên Nam | 850 m và 650 m | 50 m | 800 m |
+| Bắc Sum – Quản Bạ | 1.350 m | 800 m | 550 m |
+| Phình Hồ – Trạm Tấu | 900 m | 300 m | 600 m |
 | Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
+
+**Đồi Bù KHÔNG phải 833 m**: 833 là đỉnh núi (tên dân gian "núi 833"), còn chỗ
+cất cánh nằm ở ~650 m (chủ nhắc 11/09 — trước ghi nhầm 833). Viên Nam có **hai**
+chỗ cất, 850 m và 650 m; giản đồ vẽ cả hai vạch, mọi phép chấm lấy bãi chính.
+
+### Airgram phải phủ đúng đường bay: TỪ BÃI HẠ LÊN
+
+Trước đây hàng dưới cùng là "mặt đất" của mô hình gắn nhãn độ cao **bãi cất**,
+rồi ngay trên nó là mực 925 hPa — ở Đồi Bù hiện "mặt đất 833m" mà trên là
+"~800m", tức hàng trên THẤP HƠN hàng dưới, đọc ra vô lý (chủ báo 11/09).
+
+Nay bảng lấy đúng khúc mình bay, từ dưới lên: **bãi hạ** (gió 10 m của mô hình —
+chỗ vào vòng lượn đáp) · **bãi cất** (gió nội suy đúng độ cao ấy, thêm một hàng
+nữa nếu điểm có hai chỗ cất) · rồi các mực mô hình **nằm cao hơn bãi cất**; mực
+nào thấp hơn thì bỏ vì nó ở dưới chân mình. Hướng gió nội suy theo góc ngắn
+nhất (350° và 10° ra 0°, không phải 180°).
 
 **Bảng phụ mở ra là Ô LƯỚI RIÊNG rộng cả hai cột** (chủ 11/09): để nó trong thẻ
 thì thẻ cao vọt lên còn cột bên cạnh hở một khoảng trắng đúng bằng phần chênh.

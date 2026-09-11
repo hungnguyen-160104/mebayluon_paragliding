@@ -110,11 +110,13 @@ export type SkewTProps = {
   altBai?: number;
   /** Độ cao bãi hạ (m) — vẽ vạch thứ hai, chênh hai vạch là độ cao thả. */
   altHa?: number;
+  /** Bãi cất thứ hai (Viên Nam có hai chỗ cất) — vẽ thêm một vạch mảnh. */
+  altCat2?: number;
   /** Khung giờ bay của điểm, mặc định 7–17. */
   gioBay?: [number, number];
 };
 
-export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, gioBay = [7, 17] }: SkewTProps) {
+export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay = [7, 17] }: SkewTProps) {
   /** Màn hẹp thì vẽ khung riêng cho vừa một màn — xem ghi chú ở `taoKhung`. */
   const hep = useManHinhHep(700);
   const khung = taoKhung(hep);
@@ -214,7 +216,7 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, gioBay = [7, 17] 
 
       {/* Máy tính: hình to, cuộn ngang nếu chỗ đặt hẹp. Điện thoại: khung hẹp nên vừa màn, không phải vuốt. */}
       <div className={hep ? "" : "overflow-x-auto"}>
-        <HinhSkewT muc={hienTai.muc} altBai={altBai} altHa={altHa} gio={hienTai.gio} k={khung} />
+        <HinhSkewT muc={hienTai.muc} altBai={altBai} altHa={altHa} altCat2={altCat2} gio={hienTai.gio} k={khung} />
       </div>
 
       <CachDoc coNghich={soLieu.coNghich} tranThermal={soLieu.tran} caoDayMay={soLieu.dayMay} />
@@ -222,7 +224,7 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, gioBay = [7, 17] 
   );
 }
 
-function HinhSkewT({ muc, altBai, altHa, gio, k }: { muc: MucSkewT[]; altBai: number; altHa?: number; gio: string; k: Khung }) {
+function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; altBai: number; altHa?: number; altCat2?: number; gio: string; k: Khung }) {
   const { LE } = k;
   const VE_W = k.veW;
   const VE_H = k.veH;
@@ -342,6 +344,16 @@ function HinhSkewT({ muc, altBai, altHa, gio, k }: { muc: MucSkewT[]; altBai: nu
           <line x1={LE.trai} y1={yTheoCao(altBai)} x2={LE.trai + VE_W} y2={yTheoCao(altBai)} stroke="#0f172a" strokeWidth={1} strokeDasharray="5 3" />
           <text x={LE.trai + 3} y={yTheoCao(altBai) - 3} fontSize={k.chu} fontWeight={700} fill="#0f172a">
             bãi {altBai}m
+          </text>
+        </g>
+      )}
+
+      {/* Bãi cất thứ hai (điểm có hai chỗ cất) — vạch mảnh hơn để không tranh chỗ với bãi chính. */}
+      {altCat2 !== undefined && altCat2 !== altBai && (
+        <g>
+          <line x1={LE.trai} y1={yTheoCao(altCat2)} x2={LE.trai + VE_W} y2={yTheoCao(altCat2)} stroke="#0f172a" strokeWidth={0.7} strokeDasharray="3 4" opacity={0.7} />
+          <text x={LE.trai + 3} y={yTheoCao(altCat2) - 3} fontSize={k.chuNho} fontWeight={700} fill="#334155">
+            bãi cất {altCat2}m
           </text>
         </g>
       )}
