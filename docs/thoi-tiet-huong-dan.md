@@ -292,7 +292,7 @@ cong, mà thư viện thì kéo theo vài trăm KB và một cách nghĩ riêng 
 Mỗi hàng là một mực: **~3.000 m (700 hPa) · ~1.500 m (850 hPa) · ~750 m
 (925 hPa) · mặt đất**. Ô nào cũng có mũi tên hướng, tốc độ và nhiệt độ mực đó.
 Nhìn dọc một giờ là thấy ngay gió **tăng theo độ cao** hay **đổi hướng ở tầng
-nào** (đứt gió), và trên có ấm hơn dưới không (nghịch nhiệt) — thứ bảng mặt đất
+nào** (gió đứt), và trên có ấm hơn dưới không (nghịch nhiệt) — thứ bảng mặt đất
 không bao giờ hiện.
 
 ### Màu gió và giật chuyển dần
@@ -335,13 +335,13 @@ chiếu được với cảm nhận của mình, và cái sai của máy lộ ra
 | Mục | Dựa vào | Nói gì |
 |---|---|---|
 | 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | thuận/ngược sườn; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
-| 🪁 Gió trên cao | gió **nội suy tại 300 / 500 / 1000 m trên bãi** từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ) | "Gió mực 500m mạnh (9 m/s) từ 11:00 — không leo quá 300m, bám sườn"; > 12 m/s: bị thổi lùi, không bay; mực 1000m > 12: có lớp đứt gió, giữ dưới 500m; mặt đất lặng mà mực 300m đã có gió: **đứt gió ngay trên bãi** |
+| 🪁 Gió trên cao | gió **nội suy tại 300 / 500 / 1000 m trên bãi** từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ) | "Gió mực 500m mạnh (9 m/s) từ 11:00 — không leo quá 300m, bám sườn"; > 12 m/s: bị thổi lùi, không bay; mực 1000m > 12: có lớp gió đứt, giữ dưới 500m; mặt đất lặng mà mực 300m đã có gió: **gió đứt ngay trên bãi** |
 | ☀️ Nắng | `sunshine_duration` cộng trong khung 7–17h | số giờ nắng / 11; < 3h: âm u, thermal yếu |
 | 🔥 Thermal | trần lớp xáo trộn, CAPE, bức xạ | yếu · vừa · tốt · **gắt từ mấy giờ**; khung nâng tốt |
 | ⚖️ Ổn định | lifted index TB, ẩm, nhiệt, gió | ≥ 4: rất ổn định — kèm ẩm ≥ 75%, nóng ≥ 30°C, lặng gió là **ngày oi bức, ít thermal, mù khô**; ≤ −2: **bất ổn, dễ dông, xóc, nhiễu** |
 | 🧢 Nghịch nhiệt | nhiệt độ các mực 925/850/700, so hai mực kề | lapse > 0°C/km: **nghịch nhiệt**; > −2: lớp chặn — báo độ cao **tính từ bãi**; nắp < 600m: thermal bị chặn, mù tích dưới |
 | 🌡 Áp suất | `pressure_msl` TB so với ngày trước, **và xu hướng từng giờ trong ngày** | tụt ≥ 5 hPa/24h: **front/rãnh thấp đang tới**; tăng ≥ 3: áp cao lấn, quang dần. Trong ngày: "**Áp suất sụt từ 15:00** — có thể có dông; hạ cánh xong trước 14:00" |
-| 🌀 Nhiễu động | gộp thermal gắt + giật ≥ 14 + đứt gió + bất ổn định | "NHIỄU ĐỘNG MẠNH: thermal gắt 11:00–14:00 + giật ≥14 m/s — giữ tốc độ, tay lái chủ động, sẵn sàng xử lý collapse" |
+| 🌀 Nhiễu động | gộp thermal gắt + giật > 16 + gió đứt + bất ổn định | "NHIỄU ĐỘNG MẠNH: thermal gắt 11:00–14:00 + giật ≥14 m/s — giữ tốc độ, tay lái chủ động, sẵn sàng xử lý collapse" |
 | ⛈ Front | áp giảm ≥ 3 **và** gió đổi hướng **và** mưa tăng > 1mm so hôm trước | dấu hiệu front đi qua — gió giật bất ngờ khi front tới |
 | 🌫 Mù | trần mây < 300m và mây thấp ≥ 70% | giờ trùm bãi, **tan từ mấy giờ** |
 | 🌧 ⚡ Mưa, dông | lượng mưa > 0,5 mm/giờ, xác suất dông | giờ mưa, tổng mm; dông tối đa |
@@ -410,7 +410,7 @@ thiếu dữ liệu tầng cao / chỉ số ổn định / điểm sương (−1
 ≥ 3 hPa so hôm trước (−15, thời tiết đang chuyển), trong ngày đẹp xen xấu chênh
 ≥ 60 điểm (−10, khó đoán giờ). Rê chuột vào huy hiệu để xem lý do.
 
-Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — đứt gió (300m: 6,1, đất:
+Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — gió đứt (300m: 6,1, đất:
 0,8)") — người đọc kiểm được, và chỗ máy sai lộ ra ngay. Đường cong viết thành
 bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
 chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.

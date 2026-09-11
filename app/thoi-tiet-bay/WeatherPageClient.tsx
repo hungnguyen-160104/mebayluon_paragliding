@@ -14,7 +14,6 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
 import Footer from "@/components/footer/Footer";
 import { PageBackground } from "@/components/page-background";
@@ -92,15 +91,6 @@ export default function WeatherPageClient() {
             </p>
           </>
         ) : null}
-
-        <div className="mt-6">
-          <Link
-            href="/booking"
-            className="inline-block rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-sky-700"
-          >
-            {t.bookNow}
-          </Link>
-        </div>
 
         {/* ---- Phần chữ: để CUỐI trang, sau khi người đọc đã có câu trả lời ---- */}
         <div className="mt-10 space-y-2 rounded-2xl bg-black/30 p-4 text-sm leading-relaxed text-white/95 backdrop-blur-sm">

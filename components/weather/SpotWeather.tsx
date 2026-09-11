@@ -798,18 +798,41 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
   const ngayChon = chon ? (diem.ngay.find((n) => n.ngay === chon) ?? null) : null;
 
   return (
-    <div className={"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" + (ngayChon ? " sm:col-span-2" : "")}>
+    /**
+     * `min-w-0` KHÔNG PHẢI làm đẹp — thiếu nó là vỡ trang trên điện thoại.
+     *
+     * Thẻ này là Ô CỦA LƯỚI, mà ô lưới mặc định `min-width: auto`: nó không
+     * được hẹp hơn bề ngang tối thiểu của thứ bên trong. Bên trong có bảng giờ
+     * 10 ngày rộng vài nghìn px, thế là cột lưới nở theo và cả trang trôi ngang
+     * (chủ báo 11/09 — mở một ngày ra là bảng rộng như bản máy tính). Cho phép
+     * ô hẹp lại thì khung cuộn bên trong mới làm đúng việc của nó.
+     */
+    <div
+      className={
+        "min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" + (ngayChon ? " sm:col-span-2" : "")
+      }
+    >
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className={"rounded-lg border px-2 py-1 text-xs font-black " + VIEN[homNay.muc]} title={moTaMuc(homNay.muc, t)}>
           {nhanMuc(homNay.muc, t)}
         </div>
         <div className="leading-tight">
-          <div className="text-base font-bold text-slate-900">{diem.ten}</div>
+          {/* TÊN ĐIỂM BAY nổi hẳn lên: hoa, đậm, có bóng — đây là thứ mắt tìm
+              đầu tiên khi lướt qua cả trang toàn thẻ giống nhau (chủ 11/09). */}
+          <div
+            className="text-base font-black uppercase tracking-wide text-slate-900"
+            /* Bóng chữ đặt thẳng bằng style: lớp tuỳ biến của Tailwind cho
+               text-shadow không sinh ra trong bản dựng (đã đo: computed = none). */
+            style={{ textShadow: "0 1px 0 #fff, 0 2px 5px rgba(15,23,42,0.3)" }}
+          >
+            {diem.ten}
+          </div>
           <div className="text-xs text-slate-500">{diem.tinh}</div>
         </div>
+        {/* Lối sang trang điểm bay — tô CAM cho nổi giữa thẻ toàn màu nhạt (chủ 11/09). */}
         <Link
           href={`/spots/${diem.slug}`}
-          className="ml-auto rounded-lg border border-slate-300 px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
+          className="ml-auto rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm hover:bg-orange-600"
         >
           {t.seeSpot} →
         </Link>
@@ -838,7 +861,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
       />
 
       {ngayChon && (
-        <div className="mt-3 border-t border-slate-200 pt-3">
+        <div className="mt-3 min-w-0 border-t border-slate-200 pt-3">
           {lang === "vi" ? (
             <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
           ) : (

@@ -602,7 +602,7 @@ export function Meteogram({
  * AIRGRAM: mỗi hàng là một MỰC ĐỘ CAO, từ trên xuống — ~3.000m (700 hPa),
  * ~1.500m (850 hPa), ~750m (925 hPa), mặt đất. Ô nào cũng có mũi tên hướng và
  * tốc độ trên nền màu chuyển dần. Dân bay nhìn hàng dọc một giờ là thấy ngay
- * gió TĂNG THEO ĐỘ CAO hay ĐỔI HƯỚNG ở tầng nào (đứt gió) — thứ bảng mặt đất
+ * gió TĂNG THEO ĐỘ CAO hay ĐỔI HƯỚNG ở tầng nào (gió đứt) — thứ bảng mặt đất
  * không bao giờ hiện. Windy có tab này trong bản đầy đủ nhưng bản nhúng chỉ có
  * Basic, nên vẽ lấy từ cùng số liệu Open-Meteo.
  */

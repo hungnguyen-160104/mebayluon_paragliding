@@ -99,7 +99,7 @@ export type ThoiTietCopy = {
 const vi: ThoiTietCopy = {
   navLabel: "Thời tiết bay",
   pageTitle: "Thời tiết các điểm bay dù lượn",
-  pageSubtitle: "Dự báo 10 ngày tới cho từng điểm bay — gió, gió giật, mưa",
+  pageSubtitle: "Dự báo 10 ngày tới cho từng điểm bay — nắng, gió, thermal, mưa, trần mây, gió tầng trên",
   intro: [
     "Bay dù lượn phụ thuộc gần như hoàn toàn vào gió. Bảng dưới đây lấy dự báo của mô hình ECMWF (mô hình mà Windy hiển thị) cho đúng toạ độ bãi cất cánh của từng điểm bay, rồi chấm màu theo ngưỡng an toàn của bay đôi chở khách.",
     "Xanh là gió đẹp, vàng là bay được nhưng phải cân nhắc, đỏ là nên nghỉ. Dự báo chỉ để bạn chuẩn bị lịch trình — quyết định cuối cùng vẫn là của phi công tại bãi vào đúng buổi bay, vì thời tiết núi đổi rất nhanh.",
@@ -121,10 +121,10 @@ const vi: ThoiTietCopy = {
       ],
     },
     {
-      tieuDe: "Gió tầng trên và đứt gió",
+      tieuDe: "Gió tầng trên và gió đứt",
       y: [
         "Gió ở mực 925, 850, 700 hPa (xấp xỉ 750m, 1.500m, 3.000m) quyết định chuyến bay nhiều hơn người ta tưởng. Mặt đất lặng mà mực 500m trên bãi đã 8–10 m/s thì thermal vừa lên khỏi sườn là bị xé, dù xóc và bị thổi lùi — bay bám sườn thấp thì được, leo cao là hỏng.",
-        "Chênh lệch đột ngột giữa hai tầng gọi là ĐỨT GIÓ (wind shear). Nguy ở chỗ đứng dưới bãi đo gió thấy hiền, nhưng qua lớp đứt là nhiễu động ngay. Tab Airgram xếp bốn mực chồng nhau đúng để nhìn ra điều đó: gió tăng dần theo độ cao là bình thường, tăng vọt hoặc đổi hướng đột ngột mới là thứ phải tránh.",
+        "Chênh lệch đột ngột giữa hai tầng gọi là GIÓ ĐỨT (wind shear). Nguy ở chỗ đứng dưới bãi đo gió thấy hiền, nhưng qua lớp đứt là nhiễu động ngay. Tab Airgram xếp bốn mực chồng nhau đúng để nhìn ra điều đó: gió tăng dần theo độ cao là bình thường, tăng vọt hoặc đổi hướng đột ngột mới là thứ phải tránh.",
       ],
     },
     {
@@ -177,7 +177,7 @@ const vi: ThoiTietCopy = {
   loading: "Đang lấy dự báo…",
   error: "Chưa lấy được dự báo thời tiết",
   retry: "Thử lại",
-  seeSpot: "Xem điểm bay",
+  seeSpot: "Chi tiết điểm bay",
   ground: "mặt đất",
   swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
   sunrise: "Mặt trời mọc",
@@ -204,7 +204,7 @@ const vi: ThoiTietCopy = {
 const en: ThoiTietCopy = {
   navLabel: "Flying Weather",
   pageTitle: "Paragliding weather at our flying sites",
-  pageSubtitle: "10-day forecast for every site — wind, gusts, rain",
+  pageSubtitle: "10-day forecast for every site — sun, wind, thermals, rain, cloud base, upper winds",
   intro: [
     "Paragliding depends almost entirely on the wind. The table below takes the ECMWF forecast (the model Windy shows) for the exact take-off coordinates of each site, then colours it against the safety limits used for tandem flights with passengers.",
     "Green means good wind, amber means flyable but think twice, red means stay on the ground. Use it to plan your trip — the final call always belongs to the pilot at the take-off on the day, because mountain weather changes fast.",
@@ -282,7 +282,7 @@ const en: ThoiTietCopy = {
   loading: "Loading forecast…",
   error: "Could not load the weather forecast",
   retry: "Try again",
-  seeSpot: "View site",
+  seeSpot: "Site details",
   ground: "ground",
   swipeDays: "Swipe sideways for the next days · tap a day above to jump there · rain bars: blue = rain, orange = thundery showers",
   sunrise: "Sunrise",
@@ -309,7 +309,7 @@ const en: ThoiTietCopy = {
 const fr: ThoiTietCopy = {
   navLabel: "Météo de vol",
   pageTitle: "Météo des sites de parapente",
-  pageSubtitle: "Prévisions à 10 jours pour chaque site — vent, rafales, pluie",
+  pageSubtitle: "Prévisions à 10 jours pour chaque site — soleil, vent, thermiques, pluie, base des nuages, vent d\u2019altitude",
   intro: [
     "Le parapente dépend presque entièrement du vent. Le tableau ci-dessous reprend les prévisions ECMWF (le modèle affiché par Windy) aux coordonnées exactes du décollage de chaque site, puis les colore selon les limites de sécurité du vol biplace avec passager.",
     "Vert : vent favorable. Orange : volable mais à réfléchir. Rouge : rester au sol. Servez-vous-en pour organiser votre voyage — la décision finale revient toujours au pilote sur le site le jour même, car la météo de montagne change vite.",
@@ -387,7 +387,7 @@ const fr: ThoiTietCopy = {
   loading: "Chargement des prévisions…",
   error: "Impossible de charger les prévisions",
   retry: "Réessayer",
-  seeSpot: "Voir le site",
+  seeSpot: "Détails du site",
   ground: "sol",
   swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus · barres de pluie : bleu = pluie, orange = averses orageuses",
   sunrise: "Lever du soleil",
@@ -414,7 +414,7 @@ const fr: ThoiTietCopy = {
 const ru: ThoiTietCopy = {
   navLabel: "Погода для полётов",
   pageTitle: "Погода на наших площадках для парапланеризма",
-  pageSubtitle: "Прогноз на 10 дней для каждой площадки — ветер, порывы, дождь",
+  pageSubtitle: "Прогноз на 10 дней для каждой площадки — солнце, ветер, термики, дождь, нижняя кромка облаков, ветер на высоте",
   intro: [
     "Полёт на параплане почти полностью зависит от ветра. В таблице ниже — прогноз ECMWF (модель, которую показывает Windy) для точных координат старта каждой площадки, раскрашенный по пределам безопасности для тандемных полётов с пассажиром.",
     "Зелёный — хороший ветер, жёлтый — летать можно, но стоит подумать, красный — лучше остаться на земле. Используйте для планирования поездки: окончательное решение всегда за пилотом на старте в этот день, погода в горах меняется быстро.",
@@ -492,7 +492,7 @@ const ru: ThoiTietCopy = {
   loading: "Загрузка прогноза…",
   error: "Не удалось загрузить прогноз погоды",
   retry: "Повторить",
-  seeSpot: "О площадке",
+  seeSpot: "Подробнее о площадке",
   ground: "земля",
   swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше · столбики осадков: синий — дождь, оранжевый — ливни с грозой",
   sunrise: "Восход",
@@ -519,7 +519,7 @@ const ru: ThoiTietCopy = {
 const zh: ThoiTietCopy = {
   navLabel: "飞行天气",
   pageTitle: "各滑翔伞飞行点天气",
-  pageSubtitle: "各飞行点未来 10 天预报 — 风速、阵风、降雨",
+  pageSubtitle: "各飞行点未来 10 天预报 — 日照、风、热气流、降雨、云底、高空风",
   intro: [
     "滑翔伞几乎完全取决于风。下表采用 ECMWF 模式（Windy 所显示的模式）针对各飞行点起飞场的精确坐标进行预报，并按双人载客飞行的安全标准标色。",
     "绿色代表风况良好，黄色表示可飞但需谨慎，红色则建议停飞。此表供您安排行程参考——最终是否起飞，仍由当天在起飞场的飞行员决定，因为山区天气变化很快。",
@@ -597,7 +597,7 @@ const zh: ThoiTietCopy = {
   loading: "正在获取预报…",
   error: "无法获取天气预报",
   retry: "重试",
-  seeSpot: "查看飞行点",
+  seeSpot: "飞行点详情",
   ground: "地面",
   swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转 · 降雨柱：蓝色为降雨，橙色为雷阵雨",
   sunrise: "日出",
@@ -623,7 +623,7 @@ const zh: ThoiTietCopy = {
 const hi: ThoiTietCopy = {
   navLabel: "उड़ान का मौसम",
   pageTitle: "हमारे पैराग्लाइडिंग स्थलों का मौसम",
-  pageSubtitle: "हर स्थल के लिए 10 दिन का पूर्वानुमान — हवा, झोंके, वर्षा",
+  pageSubtitle: "हर स्थल के लिए 10 दिन का पूर्वानुमान — धूप, हवा, थर्मल, वर्षा, बादल आधार, ऊपरी हवाएँ",
   intro: [
     "पैराग्लाइडिंग लगभग पूरी तरह हवा पर निर्भर है। नीचे दी गई तालिका हर स्थल के टेक-ऑफ़ की सटीक स्थिति के लिए ECMWF पूर्वानुमान (वही मॉडल जो Windy दिखाता है) लेती है, और उसे यात्री के साथ टैंडम उड़ान की सुरक्षा सीमाओं के अनुसार रंग देती है।",
     "हरा मतलब अच्छी हवा, पीला मतलब उड़ान संभव पर सोच-समझकर, लाल मतलब ज़मीन पर ही रहें। इसे यात्रा की योजना के लिए इस्तेमाल करें — अंतिम निर्णय हमेशा उस दिन टेक-ऑफ़ पर मौजूद पायलट का होता है, क्योंकि पहाड़ी मौसम तेज़ी से बदलता है।",
@@ -701,7 +701,7 @@ const hi: ThoiTietCopy = {
   loading: "पूर्वानुमान लाया जा रहा है…",
   error: "मौसम पूर्वानुमान नहीं मिल सका",
   retry: "फिर कोशिश करें",
-  seeSpot: "स्थल देखें",
+  seeSpot: "स्थल विवरण",
   ground: "ज़मीन",
   swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें · वर्षा स्तंभ: नीला = वर्षा, नारंगी = गरज के साथ बौछार",
   sunrise: "सूर्योदय",

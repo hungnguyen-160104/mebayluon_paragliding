@@ -279,18 +279,18 @@ export function nhanDinhNgay(
         gioCaoManh = true;
         khuyenCao.push(`Gió mực 500m mạnh${tuGio ? ` từ ${gioCua(tuGio)}` : ""} — không leo quá 300m, giữ tốc độ, tránh bay xa sườn.`);
       } else if (v1000 !== null && v1000 > 12) {
-        noi = `Gió mực 1000m mạnh (${v1000.toFixed(0)} m/s) — có lớp đứt gió phía trên, leo vào là nhiễu động; giữ dưới 500m. ${soLieu}`;
+        noi = `Gió mực 1000m mạnh (${v1000.toFixed(0)} m/s) — có lớp gió đứt phía trên, leo vào là nhiễu động; giữ dưới 500m. ${soLieu}`;
         ngan = `gió mực 1000m mạnh (${v1000.toFixed(0)} m/s)`;
         tong = "chuY";
-        khuyenCao.push(`Không leo quá 500m — gió mực 1000m ${v1000.toFixed(0)} m/s, vào lớp đứt gió là xóc mạnh.`);
+        khuyenCao.push(`Không leo quá 500m — gió mực 1000m ${v1000.toFixed(0)} m/s, vào lớp gió đứt là xóc mạnh.`);
       } else if (v300 !== null && v300 - gioTb > 4) {
-        noi = `ĐỨT GIÓ (wind shear): mặt đất ${gioTb.toFixed(1)} m/s nhưng mực 300m đã ${v300.toFixed(0)} m/s — đọc gió ở bãi không tin được, nhiễu động ngay khi rời sườn. ${soLieu}`;
-        ngan = "đứt gió ngay trên bãi";
+        noi = `GIÓ ĐỨT (wind shear): mặt đất ${gioTb.toFixed(1)} m/s nhưng mực 300m đã ${v300.toFixed(0)} m/s — đọc gió ở bãi không tin được, nhiễu động ngay khi rời sườn. ${soLieu}`;
+        ngan = "gió đứt ngay trên bãi";
         tong = "chuY";
         catGio = true;
         khuyenCao.push(`Cắt gió trên bãi (mặt đất ${gioTb.toFixed(1)}, mực 300m ${v300.toFixed(0)} m/s) — thả cờ gió cao, cất cánh dứt khoát, giữ tốc độ ngay khi rời sườn.`);
       } else if (v500 <= 5) {
-        noi = `Gió các mực êm — ${soLieu}: không đứt gió, leo thoải mái`;
+        noi = `Gió các mực êm — ${soLieu}: không gió đứt, leo thoải mái`;
         ngan = "gió mực cao êm";
         tong = "tot";
       } else {
@@ -623,8 +623,8 @@ export function nhanDinhNgay(
     if (gioGat.length) nguon.push(`thermal gắt ${gioGat[0]}–${gioGat[gioGat.length - 1]}`);
     const giatManh = gio.filter((g) => g.giat > GIAT_CANH_BAO).map(gioCua);
     if (giatManh.length) nguon.push(`gust mạnh ${giatManh[0]}–${giatManh[giatManh.length - 1]}`);
-    if (gioCaoManh) nguon.push("đứt gió với tầng cao");
-    else if (catGio) nguon.push("đứt gió ngay trên bãi");
+    if (gioCaoManh) nguon.push("gió đứt với tầng cao");
+    else if (catGio) nguon.push("gió đứt ngay trên bãi");
     const liTb = trungBinh(gio.map((g) => g.chiSoNang).filter(co));
     if (liTb !== null && liTb <= -2) nguon.push("không khí bất ổn định");
     if (nguon.length) {
