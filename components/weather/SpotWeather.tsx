@@ -250,10 +250,22 @@ function DaiNgay({
             )}
           </>
         );
+        /**
+         * Ô ĐANG CHỌN SÁNG HẲN LÊN MÀU CAM (chủ 11/09): trước chỉ thêm viền
+         * xanh mảnh quanh nền vẫn xanh nhạt như mọi ô khác — liếc qua không
+         * biết đang mở ngày nào. Nay ô ấy đổi hẳn nền sang cam, nên KHÔNG
+         * ghép `VIEN[n.muc]` vào nữa: hai lớp nền cùng lúc thì lớp nào thắng
+         * là do thứ tự trong file CSS chứ không do thứ tự viết ở đây, tô đè
+         * kiểu ấy là may rủi.
+         *
+         * Mức ngày (xanh/vàng/đỏ) vẫn đọc được ở nhãn "CÂN NHẮC"/"NÊN NGHỈ"
+         * trong ô và ở huy hiệu đầu thẻ, nên không mất thông tin gì.
+         */
         const lop =
           "rounded-xl border px-1 py-1.5 text-center transition " +
-          VIEN[n.muc] +
-          (chon === n.ngay ? " ring-2 ring-sky-500" : "");
+          (chon === n.ngay
+            ? "border-orange-500 bg-orange-200 text-orange-950 shadow-md ring-2 ring-orange-500"
+            : VIEN[n.muc]);
         return onChon ? (
           <button key={n.ngay} type="button" onClick={() => onChon(n.ngay)} className={lop + " hover:brightness-95"}>
             {noiDung}
