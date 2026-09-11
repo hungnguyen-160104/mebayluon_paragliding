@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
+import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickupSo, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { SapaBookRow, SapaBookView } from "@/services/baobay.service";
 
 import { apiPatch, apiPost } from "../components/client-api";
@@ -52,8 +52,8 @@ function cellText(row: SapaBookRow, col: SheetCol): string {
     default:
       break;
   }
-  /** Điểm đón: tên bãi dài dòng rút về "Tự đến" — xem shortPickup. */
-  if (col.key === "pickupNote") return shortPickup(row.pickupNote);
+  /** Điểm đón: tên bãi dài rút về "Tự đến", "Khách sạn" còn "KS" — xem shortPickupSo (chỉ dùng trong sổ). */
+  if (col.key === "pickupNote") return shortPickupSo(row.pickupNote);
   /** Cột của kế toán bên bảng tính mà app chưa quản — để TRỐNG, không bịa số. */
   if (col.ketToan) return "";
   const v = (row as unknown as Record<string, unknown>)[col.key];

@@ -295,7 +295,7 @@ export function sheetColumns(
  * Điểm đón viết gọn — hàm nằm ở `lib/baobay/pickup.ts`, xuất lại ở đây cho
  * những chỗ đang nhập từ tệp này khỏi phải sửa đường dẫn.
  */
-export { shortPickup } from "./pickup";
+export { shortPickup, shortPickupSo } from "./pickup";
 
 /**
  * TÔ MÀU theo VAI của cột — cùng một bảng màu cho mọi điểm, vì màu nói "cột này

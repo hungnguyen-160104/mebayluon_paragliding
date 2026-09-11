@@ -52,11 +52,6 @@ export const CLUBHOUSE_NGAN = "Clubhouse";
  */
 const RUT_GON: Array<[RegExp, string]> = [[/sun\s*plaza/i, "Sun Plaza"]];
 
-/** "Khách sạn Mường Thanh" → "KS Mường Thanh"; giữ nguyên phần tên. */
-function vietTatKhachSan(ten: string): string {
-  return ten.replace(/\b(khách\s*sạn|khach\s*san)\b/gi, "KS").replace(/\s{2,}/g, " ").trim();
-}
-
 export function shortPickup(text: unknown): string {
   const raw = String(text ?? "").trim();
   if (!raw) return "";
@@ -78,15 +73,28 @@ export function shortPickup(text: unknown): string {
     .replace(/\s*\([^)]*\)\s*/g, " ")
     .split(/\s+[-–|]\s+/)[0]
     .trim();
-  /**
-   * "Khách sạn" → "KS" (chủ 11/09): hai chữ ấy đứng đầu gần như mọi điểm đón
-   * mà chẳng phân biệt được gì — cột chỉ rộng chừng 120px, để nguyên thì tên
-   * thật bị đẩy ra ngoài. Viết tắt kiểu người trực vẫn viết tay trên sổ.
-   */
-  return vietTatKhachSan(goiY || raw);
+  return goiY || raw;
 }
 
 /** Chỗ đón này có phải là "khách tự tới bãi" không — để khỏi in thêm chữ "Đón:". */
 export function laTuDen(text: unknown): boolean {
   return shortPickup(text) === TU_DEN;
+}
+
+/**
+ * ĐIỂM ĐÓN VIẾT CHO SỔ BOOKING — ngắn hơn một nấc nữa (chủ 11/09).
+ *
+ * Ngoài các phép rút chung của `shortPickup`, bản này còn viết tắt "Khách sạn"
+ * thành "KS": hai chữ ấy đứng đầu gần như mọi điểm đón mà chẳng phân biệt được
+ * gì, trong khi cột sổ chỉ rộng chừng 120px nên tên thật bị đẩy ra ngoài.
+ *
+ * CHỈ DÙNG TRONG SỔ. Vé của khách, thư gửi khách và thẻ booking vẫn gọi đủ
+ * "Khách sạn …" — viết tắt kiểu người trực ghi tay là chuyện nội bộ, đưa ra
+ * cho khách đọc thì trông cẩu thả (chủ dặn 11/09).
+ */
+export function shortPickupSo(text: unknown): string {
+  return shortPickup(text)
+    .replace(/\b(khách\s*sạn|khach\s*san)\b/gi, "KS")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }

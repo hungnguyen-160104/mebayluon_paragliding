@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type React
 
 import { MOUNTAIN_CAR_PRICE, flightUnitPrice, servicePriceOf } from "@/lib/baobay/flight-price";
 import { moneyDestsOf } from "@/lib/baobay/money-dest";
-import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickup, type SheetCol } from "@/lib/baobay/sheet-columns";
+import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickupSo, type SheetCol } from "@/lib/baobay/sheet-columns";
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiPatch, apiPost } from "./client-api";
@@ -104,8 +104,8 @@ export function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
     default:
       break;
   }
-  /** Điểm đón: tên bãi dài dòng rút về "Tự đến" — xem shortPickup. */
-  if (col.key === "pickupNote") return shortPickup((b as unknown as Record<string, unknown>).pickupNote);
+  /** Điểm đón: tên bãi dài rút về "Tự đến", "Khách sạn" còn "KS" — xem shortPickupSo (chỉ dùng trong sổ). */
+  if (col.key === "pickupNote") return shortPickupSo((b as unknown as Record<string, unknown>).pickupNote);
   /** Cột kế toán bên bảng tính mà app chưa quản — để TRỐNG, không bịa số. */
   if (col.ketToan) return "";
   const v = (b as unknown as Record<string, unknown>)[col.key];
