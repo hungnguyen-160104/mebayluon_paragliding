@@ -848,7 +848,9 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
               ["basic", "▦ Basic"],
               ["meteogram", "📊 Meteogram"],
               ["airgram", "🪂 Airgram"],
-            ] as Array<["basic" | "meteogram" | "airgram", string]>
+              /** Giản đồ thám không — phải có đủ như trang thời tiết (chủ 11/09). */
+              ["skewt", "🌡 Skew-T"],
+            ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
           ).map(([v, nhan]) => (
             <button
               key={v}
@@ -870,7 +872,16 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
        * tiếp sang ngày sau, không phải bấm ngày ở dải trên (luật chủ 10/09).
        */}
       {ngayChon &&
-        (kieuXem === "meteogram" ? (
+        (kieuXem === "skewt" ? (
+          <SkewT
+            spot={slug}
+            ngay={ngayChon.ngay}
+            moHinh={moHinh}
+            altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+            altHa={(du.toaDo as { altHa?: number }).altHa}
+            gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+          />
+        ) : kieuXem === "meteogram" ? (
           <Meteogram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
         ) : kieuXem === "airgram" ? (
           <Airgram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />

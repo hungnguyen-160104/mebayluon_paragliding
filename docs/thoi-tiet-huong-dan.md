@@ -544,7 +544,9 @@ công thức Espy (125 m cho mỗi 1°C chênh nhiệt độ – điểm sương
 khô 9,8°C/km tới đáy mây rồi chuyển đoạn nhiệt ẩm xấp xỉ theo nhiệt độ, trần
 bọt khí là chỗ nội suy cắt đường môi trường. Hình vẽ tay bằng SVG ở
 `components/weather/SkewT.tsx` — mở bằng nút **🌡 Skew-T** cạnh Basic /
-Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất).
+Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất). Nút ấy có ở **cả ba chỗ** nhúng thời tiết: thẻ trang danh sách, thẻ trong
+`/baocao`, và widget trên từng trang điểm bay (chủ 11/09 phát hiện trang điểm
+bay còn thiếu).
 
 **HAI KHUNG VẼ, chọn theo bề rộng màn hình** (chủ 11/09 báo hai chuyện trái
 nhau nhưng đều đúng: "để nhỏ quá rất khó nhìn" và "trên mobile không hiện hết,
@@ -650,6 +652,18 @@ hàng "Thermal potential" trong bản tóm tắt ngoại ngữ, dòng hôm nay c
 `/baocao`. Phép thử: `scripts/baocao/test-thermal.ts` (28 ca — kiểu ngày LI
 dương/trần sâu, LI âm/trần thấp, nghịch nhiệt sáng vỡ trưa, gió xé, dông);
 số thật: `do-thermal-that.ts khau-pha ha-noi sapa`.
+
+### Thiếu điểm thì đừng cache lâu
+
+Chủ 11/09: "trang thời tiết không thấy có điểm bay Khau Phạ." Gọi thẳng
+`/api/thoi-tiet?spot=khau-pha` thì vẫn ra số — nên không phải mất khai báo, mà
+là **một bản thiếu bị cache**. Danh sách gọi cả 7 điểm song song bằng
+`allSettled` để một điểm hỏng không kéo cả trang xuống; nhưng bản thiếu ấy lại
+được cache 30 phút ở biên và phục vụ tiếp một tiếng nữa
+(`stale-while-revalidate`) — cả tiếng khách vào không thấy điểm bay chính.
+
+Nay: **đủ 7 điểm mới cache dài**; thiếu thì cache 60 giây và ghi log điểm nào
+rơi. Lần gọi sau tự lấy lại.
 
 ## 5c. Hai mô hình chạy song song
 

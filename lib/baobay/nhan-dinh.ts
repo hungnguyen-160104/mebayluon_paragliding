@@ -347,13 +347,17 @@ export function nhanDinhNgay(
     const v1000 = tb(1000);
     const manhNhat = Math.max(v500 ?? 0, v1000 ?? 0);
     if (manhNhat > 10) {
-      const soLieu = [v500 !== null ? `mực 500m ${v500.toFixed(0)}` : null, v1000 !== null ? `mực 1000m ${v1000.toFixed(0)}` : null]
+      /** Ghi đơn vị cho TỪNG mực: "mực 500m gió 9 m/s, mực 1.000m 12 m/s" — đọc một lượt là hiểu (chủ 11/09). */
+      const soLieu = [
+        v500 !== null ? `mực 500m gió ${v500.toFixed(0)} m/s` : null,
+        v1000 !== null ? `mực 1.000m ${v1000.toFixed(0)} m/s` : null,
+      ]
         .filter(Boolean)
         .join(", ");
       khuyenCao.push(
-        `Cẩn thận bị THỔI LÙI, gió xiết ở độ cao 500m (${soLieu} m/s) — ` +
+        `Cẩn thận bị THỔI LÙI, gió xiết ở độ cao 500m (${soLieu}) — ` +
           (manhNhat > 12
-            ? "không cất cánh dù gió mặt đất nhẹ."
+            ? "thận trọng khi bay lên cao."
             : "bám sườn thấp, không leo ra xa sườn, giữ tốc độ và sẵn sàng hạ sớm."),
       );
     }
@@ -468,7 +472,7 @@ export function nhanDinhNgay(
       const khung = tn.khung && tn.diem >= 25 ? `, khoẻ nhất ${tn.khung}` : "";
       const so = `${nhan} ${tn.diem}/100${khung}`;
       if (tn.diem < 25) {
-        noi = `${so} — ít nâng nhiệt, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;
+        noi = `${so} — ít nâng, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;
         tong = "chuY";
       } else if (tn.diem < 45) {
         noi = `${so} — có nâng nhưng nhẹ, chuyến vừa phải; ${gioTotThermal.length ? `khá nhất ${gioTotThermal[0]}–${gioTotThermal[1]}` : "canh giữa trưa"}`;
@@ -492,7 +496,7 @@ export function nhanDinhNgay(
       noi = "mô hình chưa cấp trần lớp xáo trộn";
       tong = "thongTin";
     } else if ((tranMax ?? 0) < 400 && (capeMax ?? 0) < 150) {
-      noi = `yếu — ${soLieuYeu}: ít nâng nhiệt, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;
+      noi = `yếu — ${soLieuYeu}: ít nâng, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;
       tong = "chuY";
     } else if (gat.length) {
       noi = `GẮT từ ${gat[0]} — ${soLieu}: lift mạnh nhưng nhiễu động, dù dễ collapse mép, bãi đáp có gió xoáy (rotor nhiệt)`;
@@ -851,7 +855,7 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
   if (caVach) {
     return caVach.ngan === "cà vách cực tốt"
       ? `Ngày CÀ VÁCH CỰC TỐT: gió chính bãi dựng đều lên vách — bay bám vách cả tiếng${thermal?.noiDung.startsWith("yếu") ? ", không trông vào thermal" : ", thermal cộng thêm"}`
-      : `Ngày CÀ VÁCH: gió chính bãi đủ dựng — bay bám vách được${thermal?.noiDung.startsWith("yếu") ? " dù thermal nhẹ" : ", có cả thermal"}`;
+      : `Ngày CÀ VÁCH: gió chính bãi đủ cà — bay bám vách được${thermal?.noiDung.startsWith("yếu") ? " dù thermal nhẹ" : ", có cả thermal"}`;
   }
   if (thermal?.noiDung.startsWith("yếu")) return "Ngày ÍT THERMAL: bay ebon là chính, chuyến ngắn, lift kém — trời êm, ít xóc";
   if (mua) return `Ngày CÓ MƯA GIỮA CHỪNG (${mua.ngan}): bay quanh đợt mưa, để mắt tới mây đen phía gió tới`;
