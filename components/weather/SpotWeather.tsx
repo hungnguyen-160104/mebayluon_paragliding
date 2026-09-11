@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { gioTaiDoCao } from "@/lib/baobay/nhan-dinh";
 import { SkewT } from "./SkewT";
 import Link from "next/link";
 
@@ -41,6 +42,7 @@ import {
   type SucThermal,
   hoangHonDep,
   huongTroiNgay,
+  trongCung,
 } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
@@ -66,6 +68,17 @@ type Gio = {
   giayNang?: number;
   buXa?: number;
   chenhDoCao?: number;
+  /** Gió và nhiệt các mực trên bãi — để tính gió trên cao và tìm lớp nghịch nhiệt. */
+  gio925?: number;
+  gio850?: number;
+  gio700?: number;
+  t925?: number;
+  t850?: number;
+  t700?: number;
+  h925?: number;
+  h850?: number;
+  /** Áp suất quy về mực biển (hPa) — xu hướng của nó báo front sớm nhất. */
+  apSuat?: number;
   muc: MucDo;
   lyDo: string[];
 };
@@ -347,7 +360,20 @@ function KhoiViTri({
  * Cố ý KHÔNG dịch máy phần câu chữ: câu khuyến cáo bay sai một chữ là chuyện
  * an toàn, thà nói ít mà chắc.
  */
-function TomTatNgay({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: string }) {
+function TomTatNgay({
+  ngay,
+  ngayTruoc,
+  toaDo,
+  t,
+  lang,
+}: {
+  ngay: Ngay;
+  /** Ngày liền trước — để nói áp suất đang lên hay xuống, y như bản tiếng Việt. */
+  ngayTruoc?: Ngay | null;
+  toaDo: { alt?: number; luatHuong?: { tot?: [number, number]; xau?: [number, number] } };
+  t: ThoiTietCopy;
+  lang: string;
+}) {
   const cg = ngay.chuyenGia;
   const chot = ngay.muc === "xanh" ? t.verdictGood : ngay.muc === "vang" ? t.verdictFair : t.verdictBad;
   const gioTb = ngay.gio.length ? ngay.gio.reduce((a, g) => a + g.gio10m, 0) / ngay.gio.length : 0;
@@ -379,6 +405,85 @@ function TomTatNgay({ ngay, t, lang }: { ngay: Ngay; t: ThoiTietCopy; lang: stri
           : t.noRain,
   });
   if (ngay.xacSuatDongMax >= 20) dong.push({ icon: "⚡", nhan: t.storm, giaTri: `${ngay.xacSuatDongMax}%` });
+
+  /**
+   * BẢN NGOẠI NGỮ PHẢI NÓI ĐỦ NHƯ BẢN TIẾNG VIỆT (chủ 11/09).
+   *
+   * Khối nhận định tiếng Việt sinh câu chữ theo hàng chục mẫu — dịch cả bộ ấy
+   * là việc riêng. Nhưng những thứ QUAN TRỌNG NHẤT lại là CON SỐ, mà số thì
+   * ngôn ngữ nào cũng đọc được: gió trên cao, nghịch nhiệt, cà vách, số giờ
+   * nắng, hoàng hôn. Nên tính thẳng từ dữ liệu giờ rồi gắn nhãn đã dịch.
+   */
+  const alt = toaDo.alt ?? 0;
+
+  /** Gió ba mực trên bãi — trung bình trong khung bay. */
+  const mucGio = [300, 500, 1000].map((m) => {
+    const v = ngay.gio.map((g) => gioTaiDoCao(g as never, m, alt)).filter((x): x is number => typeof x === "number");
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  });
+  if (mucGio.some((v) => v !== null)) {
+    dong.push({
+      icon: "🪁",
+      nhan: `${t.upperWind} 300/500/1000m`,
+      giaTri: mucGio.map((v) => (v === null ? "–" : v.toFixed(0))).join("/") + ` ${t.windUnit}`,
+    });
+  }
+
+  /** Nghịch nhiệt: lớp nào trên bãi mà càng lên càng nóng thì đó là cái nắp. */
+  const nap = (() => {
+    for (const g of ngay.gio) {
+      const h = Number(g.gio.slice(11, 13));
+      if (h < 10 || h > 15) continue;
+      const muc: Array<{ h: number; nhiet: number }> = [];
+      if (typeof g.h925 === "number" && typeof g.t925 === "number") muc.push({ h: g.h925, nhiet: g.t925 });
+      if (typeof g.h850 === "number" && typeof g.t850 === "number") muc.push({ h: g.h850, nhiet: g.t850 });
+      if (typeof g.t700 === "number") muc.push({ h: 3000, nhiet: g.t700 });
+      const tren = muc.filter((m) => m.h > alt).sort((a, b) => a.h - b.h);
+      for (let i = 1; i < tren.length; i++) {
+        if (tren[i].nhiet >= tren[i - 1].nhiet - 0.2) return Math.round(tren[i - 1].h);
+      }
+    }
+    return null;
+  })();
+  dong.push({
+    icon: "🧢",
+    nhan: t.inversion,
+    giaTri: nap === null ? t.inversionNone : `~${nap}m`,
+  });
+
+  /** Cà vách: hướng nằm trong cung tốt của bãi và gió ≥ 3 m/s (luật chủ 11/09). */
+  if (toaDo.luatHuong?.tot) {
+    const cung = toaDo.luatHuong.tot;
+    const hop = ngay.gio.filter((g) => trongCung(g.huong, cung) && g.gio10m >= 3 && g.mua < MUA_BAY);
+    if (hop.length >= 2) {
+      const manhNhat = hop.reduce((a, b) => (b.gio10m > a.gio10m ? b : a), hop[0]);
+      const cuc = hop.filter((g) => g.gio10m >= 4 && g.gio10m <= 6).length >= 2;
+      dong.push({
+        icon: "🪃",
+        nhan: t.ridge,
+        giaTri: `${cuc ? t.ridgeVeryGood : t.ridgeGood} · ${hop[0].gio.slice(11, 16)}–${hop[hop.length - 1].gio.slice(11, 16)} · ${hop[0].gio10m.toFixed(1)}–${manhNhat.gio10m.toFixed(1)} ${t.windUnit}`,
+      });
+    }
+  }
+
+  /** Số giờ nắng trong khung bay — nắng là thứ sinh ra thermal. */
+  const nang = gioNangCuaNgay(ngay);
+  if (nang > 0) dong.push({ icon: "☀️", nhan: t.sunHours, giaTri: `${nang}` });
+
+  /** Áp suất và xu hướng so với hôm trước — dấu hiệu front sớm nhất. */
+  const apTb = (n: Ngay) => {
+    const v = n.gio.map((g) => g.apSuat).filter((x): x is number => typeof x === "number");
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  };
+  const ap = apTb(ngay);
+  if (ap !== null) {
+    const truoc = ngayTruoc ? apTb(ngayTruoc) : null;
+    const chenh = truoc === null ? null : ap - truoc;
+    const xu = chenh === null ? "" : ` · ${chenh <= -1 ? t.pressureFalling : chenh >= 1 ? t.pressureRising : t.pressureSteady}${Math.abs(chenh) >= 0.5 ? ` ${chenh > 0 ? "+" : ""}${chenh.toFixed(1)}` : ""}`;
+    dong.push({ icon: "🌡", nhan: t.pressure, giaTri: `${ap.toFixed(0)} hPa${xu}` });
+  }
+
+  if (hoangHonDep(ngay as never)) dong.push({ icon: "🌅", nhan: t.goodSunset, giaTri: "" });
   /** Thermal theo QUY TẮC: mức + điểm + khung đỉnh; không có thì đưa trần thô. */
   if (ngay.thermal) {
     dong.push({
@@ -828,7 +933,13 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         (lang === "vi" ? (
           <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
         ) : (
-          <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
+          <TomTatNgay
+            ngay={ngayChon}
+            ngayTruoc={du.ngay[du.ngay.findIndex((n) => n.ngay === ngayChon.ngay) - 1] ?? null}
+            toaDo={du.toaDo as never}
+            t={t}
+            lang={lang}
+          />
         ))}
 
       <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />
@@ -850,7 +961,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
 
       {/** Chọn mô hình đứng NGAY TRÊN bảng/biểu đồ — xem ghi chú ở sổ nội bộ. */}
       <div className="mt-2">
-        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} />
+        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nhan={t.modelLabel} />
       </div>
 
       {ngayChon && (
@@ -893,6 +1004,21 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
             altHa={(du.toaDo as { altHa?: number }).altHa}
             altCat2={(du.toaDo as { altCat2?: number }).altCat2}
             gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+            chu={{
+              chartType: t.chartType,
+              hourLabel: t.hourLabel,
+              skewTemp: t.skewTemp,
+              skewDew: t.skewDew,
+              skewParcel: t.skewParcel,
+              skewDry: t.skewDry,
+              skewTiltNote: t.skewTiltNote,
+              takeoff: t.takeoff,
+              landing: t.landing,
+              cloudBase: t.cloudBase,
+              thermalTop: t.thermalTop,
+              caption: t.skewCaption,
+            }}
+            lang={lang}
           />
         ) : kieuXem === "meteogram" ? (
           <Meteogram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
@@ -1137,7 +1263,13 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
           {lang === "vi" ? (
             <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
           ) : (
-            <TomTatNgay ngay={ngayChon} t={t} lang={lang} />
+            <TomTatNgay
+            ngay={ngayChon}
+            ngayTruoc={du.ngay[du.ngay.findIndex((n) => n.ngay === ngayChon.ngay) - 1] ?? null}
+            toaDo={du.toaDo as never}
+            t={t}
+            lang={lang}
+          />
           )}
 
           <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
@@ -1150,7 +1282,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
            * Không bày nút "So sánh" ở đây cho thẻ khỏi rối.
            */}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <ChonMoHinh dangChon={moHinh} onChon={doiMoHinh} nho />
+            <ChonMoHinh dangChon={moHinh} onChon={doiMoHinh} nho nhan={t.modelLabel} />
             {dangTai && <span className="text-[11px] text-slate-400">{t.loading}</span>}
           </div>
 
@@ -1195,6 +1327,21 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
               altHa={(du.toaDo as { altHa?: number }).altHa}
               altCat2={(du.toaDo as { altCat2?: number }).altCat2}
               gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+              chu={{
+                chartType: t.chartType,
+                hourLabel: t.hourLabel,
+                skewTemp: t.skewTemp,
+                skewDew: t.skewDew,
+                skewParcel: t.skewParcel,
+                skewDry: t.skewDry,
+                skewTiltNote: t.skewTiltNote,
+                takeoff: t.takeoff,
+                landing: t.landing,
+                cloudBase: t.cloudBase,
+                thermalTop: t.thermalTop,
+                caption: t.skewCaption,
+              }}
+              lang={lang}
             />
           ) : kieuXem === "meteogram" ? (
             <Meteogram

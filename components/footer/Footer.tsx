@@ -593,7 +593,15 @@ export default function Footer() {
                   điện thoại thành hai hàng ba nút, nhìn như hai nhóm riêng —
                   trong khi chúng là một dãy. Ô 40px × 6 + khe 1.5 = 258px, vừa
                   khổ 390 kể cả lề. */}
-              <div className="grid w-max grid-cols-6 gap-1.5 sm:gap-2">
+              {/**
+               * SÁU NÚT: điện thoại một hàng, MÁY TÍNH hai hàng (chủ 11/09).
+               *
+               * Nghe ngược đời — máy tính rộng hơn mà lại xếp hai hàng — nhưng
+               * đúng: ở đây cột footer bên máy tính hẹp (chia ba cột), còn bản
+               * điện thoại thì cả bề ngang màn hình là của nó. Một hàng sáu nút
+               * trong cột hẹp làm nút bé lại hoặc đẩy cột phình ra.
+               */}
+              <div className="grid w-max grid-cols-6 gap-1.5 sm:grid-cols-3 sm:gap-2">
                 {socialLinks.map((item) => (
                   <a
                     key={item.label}

@@ -11,7 +11,7 @@
  *
  * Trên sổ và trên vé thì câu đó vô nghĩa — ai cũng biết bãi ở đâu, mà nó ngốn
  * cả một cột, in ra vé thì tràn dòng. Điều người trực và khách cần biết chỉ là:
- * khách này KHÔNG cần xe đón. Nên rút về "Tự đến điểm bay".
+ * khách này KHÔNG cần xe đón. Nên rút về "Tự đến".
  *
  * Chỉ rút khi chắc chắn đó là TÊN BÃI (có "điểm bay" kèm tên công ty/thương
  * hiệu). Một khách sạn tên "Điểm Bay Homestay" thì giữ nguyên — đoán sai ở đây
@@ -26,10 +26,17 @@ const TEN_HANG = /(mebayluon|paragliding|ctcp|cổ phần|co phan|du lịch|du l
 /** Nhà chung của công ty — khách hay hẹn đón ở đây, tên đầy đủ dài quá ba cột. */
 const CLUBHOUSE = /clubhouse/i;
 
-/** Nhãn dùng cho khách tự tới bãi — dài hơn "Tự đến" một chữ cho khỏi cụt nghĩa trên vé. */
-export const TU_DEN = "Tự đến điểm bay";
-/** Chỗ đón hay gặp thứ hai, viết gọn cho vừa ô sổ và dòng vé. */
-export const CLUBHOUSE_NGAN = "Mebayluon Clubhouse";
+/**
+ * HAI NHÃN NGẮN NHẤT CÓ THỂ (chủ chốt 11/09).
+ *
+ * Cột điểm đón trong sổ chỉ rộng chừng hai chữ, mà chuỗi OTA đẩy sang thì dài
+ * cả dòng. Chủ chốt: "Điểm bay dù lượn Mebayluon Paragliding (CTCP Du lịch &…"
+ * rút thành **"Tự đến"**, "Clubhouse Mebayluon Paragliding" rút thành
+ * **"Clubhouse"** — người trực đọc hai chữ ấy là đủ biết có phải cho xe đi
+ * đón hay không, phần tên công ty chẳng nói thêm gì.
+ */
+export const TU_DEN = "Tự đến";
+export const CLUBHOUSE_NGAN = "Clubhouse";
 
 /**
  * NHỮNG CHỖ ĐÓN HAY GẶP, và tên gọn của chúng trong sổ.

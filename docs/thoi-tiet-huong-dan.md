@@ -440,6 +440,27 @@ Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — gió đứt (
 bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
 chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.
 
+### Skew-T và Emagram — và vì sao đường đỏ hay nghiêng phải
+
+Chủ hỏi 11/09: "sao mọi biểu đồ Skew-T đường nhiệt độ đều nghiêng sang phải,
+nhiệt độ tăng theo độ cao à?" — **không**. Trục ngang bị xiên **có chủ ý**: cùng
+một nhiệt độ thì càng lên cao càng vẽ lệch sang phải, để đoạn nhiệt khô thành
+đường gần thẳng đứng. Cái giá: trời vẫn lạnh dần mà đường có thể ngả phải.
+
+Ba việc đã làm để hết hiểu nhầm:
+
+1. **Độ xiên đặt ở 0,47** — đúng bằng mức khiến **khí quyển chuẩn** (nguội
+   6,5°C/km) đọc ra **thẳng đứng**. Nghiêng phải = lớp khí ổn định hơn chuẩn,
+   thermal yếu; nghiêng trái = nguội nhanh, thermal lên tốt.
+2. **In số °C ngay trên đường đỏ** ở từng mực — có số thật thì không đọc nhầm.
+3. **Thêm nút EMAGRAM** cạnh Skew-T (chủ xin): cùng số liệu, trục nhiệt độ
+   **không xiên**, nên đường đỏ ngả trái đúng như cảm nhận "càng lên càng lạnh".
+   Đo trên trang thật: ở chế độ Emagram đường đỏ đi từ x = 554 (28°C dưới đất)
+   sang x = 305 (10°C trên cao).
+
+Nhãn mực ghi rõ **"700 hPa"** chứ không để trống chữ đơn vị — "700" trần trụi bị
+đọc nhầm thành 700 mét (chủ báo 11/09).
+
 ### Thổi lùi — cảnh báo cứng khi gió trên 500 m vượt 10 m/s
 
 Luật chủ 11/09, áp cho **mọi điểm**, không cần khai riêng: gió **mực 500 m hoặc

@@ -92,6 +92,7 @@ export function ChonMoHinh({
   soSanh = false,
   onSoSanh,
   nho = false,
+  nhan,
 }: {
   dangChon: string;
   onChon: (ma: string) => void;
@@ -99,11 +100,13 @@ export function ChonMoHinh({
   /** Không truyền thì KHÔNG bày nút "So sánh" — thẻ trên trang tổng hợp chỉ cần đổi mô hình. */
   onSoSanh?: (bat: boolean) => void;
   nho?: boolean;
+  /** Nhãn "Mô hình" theo ngôn ngữ trang; thiếu thì dùng tiếng Việt. */
+  nhan?: string;
 }) {
   const cls = nho ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]";
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <span className={"font-bold text-slate-500 " + (nho ? "text-[10px]" : "text-[11px]")}>Mô hình:</span>
+      <span className={"font-bold text-slate-500 " + (nho ? "text-[10px]" : "text-[11px]")}>{nhan ?? "Mô hình"}:</span>
       {MO_HINH.map((m) => (
         <button
           key={m.ma}

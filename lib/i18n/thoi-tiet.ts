@@ -56,6 +56,33 @@ export type ThoiTietCopy = {
   landing: string;
   /** Chênh cao giữa bãi cất và bãi hạ. */
   heightDiff: string;
+  /** Nhãn ngắn quanh biểu đồ: mô hình, kiểu giản đồ, giờ. */
+  modelLabel: string;
+  chartType: string;
+  hourLabel: string;
+  /** Bốn đường của giản đồ thám không và câu cảnh báo đọc nhầm trục xiên. */
+  skewTemp: string;
+  skewDew: string;
+  skewParcel: string;
+  skewDry: string;
+  skewTiltNote: string;
+  /** Nhãn "trần thermal" trên giản đồ và câu chú dưới hình. */
+  thermalTop: string;
+  skewCaption: string;
+  /** Gió trên cao theo mực 300/500/1.000 m. */
+  upperWind: string;
+  /** Lớp nghịch nhiệt (cái nắp chặn thermal) và câu "không có". */
+  inversion: string;
+  inversionNone: string;
+  /** Bay cà vách (ridge soaring) và mức "rất tốt". */
+  ridge: string;
+  ridgeGood: string;
+  ridgeVeryGood: string;
+  /** Xu hướng áp suất: đang lên / đang xuống / gần như không đổi. */
+  pressure: string;
+  pressureFalling: string;
+  pressureRising: string;
+  pressureSteady: string;
   /** Khối "Tiềm năng thermal" — kết luận của quy tắc sáu yếu tố. */
   thermalPotential: string;
   /** Khung 3 giờ thermal MẠNH nhất — chủ 11/09: thermal gọi là "mạnh", không gọi là "khoẻ". */
@@ -184,6 +211,26 @@ const vi: ThoiTietCopy = {
   takeoff: "bãi cất",
   landing: "bãi hạ",
   heightDiff: "chênh cao",
+  modelLabel: "Mô hình",
+  chartType: "Kiểu",
+  hourLabel: "Giờ",
+  skewTemp: "Nhiệt độ không khí",
+  skewDew: "Điểm sương (độ ẩm)",
+  skewParcel: "Thermal từ mặt đất",
+  skewDry: "Đoạn nhiệt khô −1°C/100m",
+  thermalTop: "trần thermal",
+  skewCaption: "nhiệt độ (°C), trục ngang · gió m/s bên phải",
+  skewTiltNote: "Trục nhiệt độ của Skew-T bị xiên: đường đỏ ngả phải KHÔNG phải là càng lên càng nóng — số °C in trên đường mới là nhiệt độ thật. Bấm Emagram để xem trục thẳng.",
+  upperWind: "Gió trên cao",
+  inversion: "Nghịch nhiệt",
+  inversionNone: "không có lớp chặn",
+  ridge: "Cà vách",
+  ridgeGood: "tốt",
+  ridgeVeryGood: "rất tốt",
+  pressure: "Áp suất",
+  pressureFalling: "đang giảm",
+  pressureRising: "đang tăng",
+  pressureSteady: "gần như không đổi",
   thermalPotential: "Tiềm năng thermal",
   thermalWindow: "mạnh nhất",
   thermalHours: "giờ có thermal",
@@ -297,6 +344,26 @@ const en: ThoiTietCopy = {
   takeoff: "take-off",
   landing: "landing",
   heightDiff: "height difference",
+  modelLabel: "Model",
+  chartType: "Chart",
+  hourLabel: "Hour",
+  skewTemp: "Air temperature",
+  skewDew: "Dew point (humidity)",
+  skewParcel: "Thermal from the ground",
+  skewDry: "Dry adiabat −1°C/100m",
+  thermalTop: "thermal top",
+  skewCaption: "temperature (°C) · wind m/s on the right",
+  skewTiltNote: "The Skew-T temperature axis is deliberately skewed: a red line leaning right does NOT mean it gets warmer with height — the °C figures printed on the line are the real temperatures. Tap Emagram for an upright axis.",
+  upperWind: "Upper wind",
+  inversion: "Inversion",
+  inversionNone: "no capping layer",
+  ridge: "Ridge soaring",
+  ridgeGood: "good",
+  ridgeVeryGood: "very good",
+  pressure: "Pressure",
+  pressureFalling: "falling",
+  pressureRising: "rising",
+  pressureSteady: "steady",
   thermalPotential: "Thermal potential",
   thermalWindow: "peak",
   thermalHours: "thermal hours",
@@ -410,6 +477,26 @@ const fr: ThoiTietCopy = {
   takeoff: "décollage",
   landing: "atterrissage",
   heightDiff: "dénivelé",
+  modelLabel: "Modèle",
+  chartType: "Type",
+  hourLabel: "Heure",
+  skewTemp: "Température de l'air",
+  skewDew: "Point de rosée (humidité)",
+  skewParcel: "Thermique depuis le sol",
+  skewDry: "Adiabatique sèche −1°C/100m",
+  thermalTop: "plafond thermique",
+  skewCaption: "température (°C) · vent m/s à droite",
+  skewTiltNote: "L'axe des températures du Skew-T est incliné à dessein : une courbe rouge penchée à droite ne signifie PAS qu'il fait plus chaud en altitude — les °C inscrits sur la courbe sont les vraies valeurs. Touchez Emagram pour un axe droit.",
+  upperWind: "Vent en altitude",
+  inversion: "Inversion",
+  inversionNone: "pas de couche bloquante",
+  ridge: "Vol de pente",
+  ridgeGood: "bon",
+  ridgeVeryGood: "très bon",
+  pressure: "Pression",
+  pressureFalling: "en baisse",
+  pressureRising: "en hausse",
+  pressureSteady: "stable",
   thermalPotential: "Potentiel thermique",
   thermalWindow: "pic",
   thermalHours: "heures de thermiques",
@@ -523,6 +610,26 @@ const ru: ThoiTietCopy = {
   takeoff: "старт",
   landing: "посадка",
   heightDiff: "перепад высот",
+  modelLabel: "Модель",
+  chartType: "Тип",
+  hourLabel: "Час",
+  skewTemp: "Температура воздуха",
+  skewDew: "Точка росы (влажность)",
+  skewParcel: "Термик от земли",
+  skewDry: "Сухая адиабата −1°C/100м",
+  thermalTop: "потолок термиков",
+  skewCaption: "температура (°C) · ветер м/с справа",
+  skewTiltNote: "Ось температуры на Skew-T намеренно наклонена: красная линия, уходящая вправо, НЕ означает потепление с высотой — настоящие значения подписаны на линии в °C. Нажмите Emagram для прямой оси.",
+  upperWind: "Ветер на высоте",
+  inversion: "Инверсия",
+  inversionNone: "нет запирающего слоя",
+  ridge: "Динамик у склона",
+  ridgeGood: "хорошо",
+  ridgeVeryGood: "очень хорошо",
+  pressure: "Давление",
+  pressureFalling: "падает",
+  pressureRising: "растёт",
+  pressureSteady: "без изменений",
   thermalPotential: "Термический потенциал",
   thermalWindow: "пик",
   thermalHours: "часов с термиками",
@@ -636,6 +743,26 @@ const zh: ThoiTietCopy = {
   takeoff: "起飞场",
   landing: "降落场",
   heightDiff: "高差",
+  modelLabel: "模式",
+  chartType: "图型",
+  hourLabel: "时间",
+  skewTemp: "气温",
+  skewDew: "露点（湿度）",
+  skewParcel: "地面热气流",
+  skewDry: "干绝热 −1°C/100m",
+  thermalTop: "热气流上限",
+  skewCaption: "温度 (°C) · 右侧为风速 m/s",
+  skewTiltNote: "Skew-T 的温度轴是刻意倾斜的：红线向右倾斜并不表示越高越热——线上标注的 °C 才是真实温度。点 Emagram 可看竖直坐标轴。",
+  upperWind: "高空风",
+  inversion: "逆温层",
+  inversionNone: "无阻挡层",
+  ridge: "山脊坡面飞行",
+  ridgeGood: "好",
+  ridgeVeryGood: "很好",
+  pressure: "气压",
+  pressureFalling: "下降",
+  pressureRising: "上升",
+  pressureSteady: "基本不变",
   thermalPotential: "热气流潜力",
   thermalWindow: "最强",
   thermalHours: "小时有热气流",
@@ -748,6 +875,26 @@ const hi: ThoiTietCopy = {
   takeoff: "टेक-ऑफ़",
   landing: "लैंडिंग",
   heightDiff: "ऊँचाई अंतर",
+  modelLabel: "मॉडल",
+  chartType: "प्रकार",
+  hourLabel: "घंटा",
+  skewTemp: "हवा का तापमान",
+  skewDew: "ओस बिंदु (नमी)",
+  skewParcel: "ज़मीन से थर्मल",
+  skewDry: "शुष्क एडियाबैट −1°C/100m",
+  thermalTop: "थर्मल टॉप",
+  skewCaption: "तापमान (°C) · दाईं ओर हवा m/s",
+  skewTiltNote: "Skew-T का तापमान अक्ष जानबूझकर तिरछा है: दाईं ओर झुकी लाल रेखा का मतलब यह नहीं कि ऊपर जाकर गर्मी बढ़ती है — रेखा पर लिखे °C ही असली तापमान हैं। सीधा अक्ष देखने के लिए Emagram दबाएँ।",
+  upperWind: "ऊँचाई की हवा",
+  inversion: "इनवर्ज़न",
+  inversionNone: "कोई रोकने वाली परत नहीं",
+  ridge: "रिज सोअरिंग",
+  ridgeGood: "अच्छा",
+  ridgeVeryGood: "बहुत अच्छा",
+  pressure: "दबाव",
+  pressureFalling: "गिर रहा है",
+  pressureRising: "बढ़ रहा है",
+  pressureSteady: "लगभग स्थिर",
   thermalPotential: "थर्मल क्षमता",
   thermalWindow: "चरम",
   thermalHours: "घंटे थर्मल",

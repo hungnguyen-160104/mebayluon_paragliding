@@ -35,7 +35,7 @@ import {
   type MucSkewT,
   type ThamKhong,
 } from "@/lib/baobay/skew-t";
-import { huongChu } from "@/lib/baobay/thoi-tiet";
+import { huongTheoNgonNgu } from "@/lib/i18n/thoi-tiet";
 import { useManHinhHep } from "./cuon-ngay";
 
 /* ------------------------------------------------------------------ */
@@ -76,8 +76,23 @@ function taoKhung(hep: boolean): Khung {
 /** Khoảng nhiệt độ trục ngang (°C) tại mực dưới cùng. */
 const T_MIN = -20;
 const T_MAX = 45;
-/** Độ xiên: mỗi pixel lên cao thì dịch phải bấy nhiêu pixel. */
-const XIEN = 0.55;
+/**
+ * ĐỘ XIÊN của trục nhiệt độ — và vì sao đường đỏ hay "nghiêng sang phải".
+ *
+ * Chủ hỏi 11/09: "sao đường nhiệt độ đều nghiêng sang phải, nhiệt độ tăng theo
+ * độ cao à?" — KHÔNG. Trục ngang bị XIÊN có chủ ý: cùng một nhiệt độ thì càng
+ * lên cao càng vẽ lệch sang phải. Nhờ thế đoạn nhiệt khô (khí bốc lên nguội
+ * 1°C/100m) thành đường gần thẳng đứng, mắt so được ngay lớp nào bốc được.
+ * Cái giá phải trả: trời lạnh dần theo độ cao mà đường vẫn có thể nghiêng
+ * phải — số trên trục mới là nhiệt độ thật, nên hình này in kèm số °C ở từng
+ * mực để khỏi đọc nhầm, và có nút chuyển sang EMAGRAM (không xiên) cho ai
+ * muốn nhìn đúng như cảm nhận.
+ *
+ * Chọn 0,47: đúng bằng độ xiên khiến KHÍ QUYỂN CHUẨN (nguội 6,5°C/km) đọc ra
+ * THẲNG ĐỨNG. Nghiêng phải = lớp khí ổn định hơn chuẩn (nguội chậm, thermal
+ * yếu); nghiêng trái = nguội nhanh hơn chuẩn, thermal lên khoẻ.
+ */
+const XIEN = 0.47;
 
 const AP_DUOI = 1000;
 /**
@@ -92,8 +107,11 @@ const AP_TREN = 616;
 const yTheoAp = (ap: number, k: Khung) =>
   k.LE.tren + (k.veH * (Math.log(AP_TREN) - Math.log(ap))) / (Math.log(AP_TREN) - Math.log(AP_DUOI));
 
-const xTheoNhiet = (t: number, y: number, k: Khung) =>
-  k.LE.trai + ((t - T_MIN) / (T_MAX - T_MIN)) * k.veW + (k.LE.tren + k.veH - y) * XIEN;
+type KieuGian = "skewt" | "emagram";
+
+/** Emagram = cùng một giản đồ nhưng KHÔNG xiên trục: đường đẳng nhiệt thẳng đứng. */
+const xTheoNhiet = (t: number, y: number, k: Khung, kieu: KieuGian = "skewt") =>
+  k.LE.trai + ((t - T_MIN) / (T_MAX - T_MIN)) * k.veW + (k.LE.tren + k.veH - y) * (kieu === "emagram" ? 0 : XIEN);
 
 /* ------------------------------------------------------------------ */
 /* Hình                                                                */
@@ -114,12 +132,55 @@ export type SkewTProps = {
   altCat2?: number;
   /** Khung giờ bay của điểm, mặc định 7–17. */
   gioBay?: [number, number];
+  /** Chữ nghĩa theo ngôn ngữ trang — thiếu thì dùng tiếng Việt. */
+  chu?: ChuSkewT;
+  /** Mã ngôn ngữ — để viết tắt hướng gió theo đúng tiếng (B/N/С/北…). */
+  lang?: string;
 };
 
-export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay = [7, 17] }: SkewTProps) {
+/** Nhãn hiện quanh giản đồ, tách ra để trang khách truyền bản đã dịch vào. */
+export type ChuSkewT = {
+  chartType: string;
+  hourLabel: string;
+  skewTemp: string;
+  skewDew: string;
+  skewParcel: string;
+  skewDry: string;
+  skewTiltNote: string;
+  takeoff: string;
+  landing: string;
+  cloudBase: string;
+  thermalTop: string;
+  caption: string;
+};
+
+const CHU_VI: ChuSkewT = {
+  chartType: "Kiểu",
+  hourLabel: "Giờ",
+  skewTemp: "Nhiệt độ không khí",
+  skewDew: "Điểm sương (độ ẩm)",
+  skewParcel: "Thermal từ mặt đất",
+  skewDry: "Đoạn nhiệt khô −1°C/100m",
+  skewTiltNote:
+    "Trục nhiệt độ của Skew-T bị xiên: đường đỏ ngả phải KHÔNG phải là càng lên càng nóng — số °C in trên đường mới là nhiệt độ thật. Bấm Emagram để xem trục thẳng.",
+  takeoff: "bãi cất",
+  landing: "bãi hạ",
+  cloudBase: "đáy mây",
+  thermalTop: "trần thermal",
+  caption: "nhiệt độ (°C), trục ngang · gió m/s bên phải",
+};
+
+export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay = [7, 17], chu = CHU_VI, lang = "vi" }: SkewTProps) {
   /** Màn hẹp thì vẽ khung riêng cho vừa một màn — xem ghi chú ở `taoKhung`. */
   const hep = useManHinhHep(700);
   const khung = taoKhung(hep);
+  /**
+   * SKEW-T hay EMAGRAM — cùng số liệu, khác mỗi trục nhiệt độ có xiên hay không
+   * (chủ 11/09 xin thêm emagram). Emagram dễ đọc hơn cho người mới: đường đỏ
+   * nghiêng TRÁI đúng như cảm nhận "càng lên càng lạnh". Skew-T bù lại cho
+   * phép so ngay với đoạn nhiệt khô, nên giữ cả hai.
+   */
+  const [kieu, setKieu] = useState<KieuGian>("skewt");
   const [du, setDu] = useState<{ khoa: string; gio: ThamKhong[]; moHinh: string } | null>(null);
   const [loi, setLoi] = useState<{ khoa: string; cau: string } | null>(null);
   const [gioChon, setGioChon] = useState<string | null>(null);
@@ -192,9 +253,33 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay =
 
   return (
     <div className="min-w-0">
+      {/* Chọn kiểu giản đồ: Skew-T (trục xiên) hay Emagram (trục thẳng). */}
+      <div className="mb-2 flex flex-wrap items-center gap-1">
+        <span className="text-[11px] font-bold text-slate-500">{chu.chartType}:</span>
+        {(
+          [
+            ["skewt", "Skew-T"],
+            ["emagram", "Emagram"],
+          ] as Array<[KieuGian, string]>
+        ).map(([v, ten]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setKieu(v)}
+            title={v === "skewt" ? "Trục nhiệt độ xiên — so nhanh với đoạn nhiệt khô" : "Trục nhiệt độ thẳng đứng — đọc như cảm nhận thường"}
+            className={
+              "rounded px-1.5 py-0.5 text-[11px] font-bold " +
+              (kieu === v ? "bg-slate-800 text-white" : "border border-slate-300 bg-white text-slate-700")
+            }
+          >
+            {ten}
+          </button>
+        ))}
+      </div>
+
       {/* Chọn giờ: mỗi giờ một cột khí khác nhau — sáng còn nắp, trưa mở ra. */}
       <div className="mb-2 flex flex-wrap items-center gap-1">
-        <span className="text-[11px] font-bold text-slate-500">Giờ:</span>
+        <span className="text-[11px] font-bold text-slate-500">{chu.hourLabel}:</span>
         {gioTrongKhung.map((g) => {
           const h = g.gio.slice(11, 16);
           const dang = g.gio === hienTai.gio;
@@ -216,15 +301,15 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay =
 
       {/* Máy tính: hình to, cuộn ngang nếu chỗ đặt hẹp. Điện thoại: khung hẹp nên vừa màn, không phải vuốt. */}
       <div className={hep ? "" : "overflow-x-auto"}>
-        <HinhSkewT muc={hienTai.muc} altBai={altBai} altHa={altHa} altCat2={altCat2} gio={hienTai.gio} k={khung} />
+        <HinhSkewT muc={hienTai.muc} altBai={altBai} altHa={altHa} altCat2={altCat2} gio={hienTai.gio} k={khung} kieu={kieu} chu={chu} lang={lang} />
       </div>
 
-      <CachDoc coNghich={soLieu.coNghich} tranThermal={soLieu.tran} caoDayMay={soLieu.dayMay} />
+      <CachDoc coNghich={soLieu.coNghich} tranThermal={soLieu.tran} caoDayMay={soLieu.dayMay} chu={chu} viet={chu === CHU_VI} />
     </div>
   );
 }
 
-function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; altBai: number; altHa?: number; altCat2?: number; gio: string; k: Khung }) {
+function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k, kieu, chu, lang }: { muc: MucSkewT[]; altBai: number; altHa?: number; altCat2?: number; gio: string; k: Khung; kieu: KieuGian; chu: ChuSkewT; lang: string }) {
   const { LE } = k;
   const VE_W = k.veW;
   const VE_H = k.veH;
@@ -264,7 +349,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
     noiDai
       .map((m) => {
         const y = yTheoAp(m.ap, k);
-        return `${xTheoNhiet(lay(m), y, k).toFixed(1)},${y.toFixed(1)}`;
+        return `${xTheoNhiet(lay(m), y, k, kieu).toFixed(1)},${y.toFixed(1)}`;
       })
       .join(" ");
 
@@ -291,9 +376,9 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         return (
           <line
             key={`t${t}`}
-            x1={xTheoNhiet(t, yD, k)}
+            x1={xTheoNhiet(t, yD, k, kieu)}
             y1={yD}
-            x2={xTheoNhiet(t, yT, k)}
+            x2={xTheoNhiet(t, yT, k, kieu)}
             y2={yT}
             stroke={t === 0 ? "#60a5fa" : "#e2e8f0"}
             strokeWidth={t === 0 ? 1.2 : chan ? 0.8 : 0.5}
@@ -308,7 +393,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
           const y = yTheoAp(ap, k);
           /** Nhiệt độ thế vị không đổi: T = (T0+273,15)·(p/1000)^0,286 − 273,15. */
           const t = (t0 + 273.15) * Math.pow(ap / 1000, 0.286) - 273.15;
-          diem.push(`${xTheoNhiet(t, y, k).toFixed(1)},${y.toFixed(1)}`);
+          diem.push(`${xTheoNhiet(t, y, k, kieu).toFixed(1)},${y.toFixed(1)}`);
         }
         return <polyline key={`k${t0}`} points={diem.join(" ")} fill="none" stroke="#cbd5e1" strokeWidth={0.6} strokeDasharray="3 3" />;
       })}
@@ -329,7 +414,11 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
           <g key={`p${m.ap}`}>
             <line x1={LE.trai} y1={y} x2={LE.trai + VE_W + LE.phai - 20} y2={y} stroke="#e2e8f0" strokeWidth={0.7} />
             <text x={LE.trai - 6} y={y + 3} textAnchor="end" fontSize={k.chu} fill="#64748b">
+              {/* Ghi rõ "hPa" — không thì 700 bị đọc nhầm thành 700 mét (chủ 11/09). */}
               {m.ap}
+              <tspan fontSize={k.chuNho} fill="#94a3b8">
+                {" "}hPa
+              </tspan>
             </text>
             <text x={LE.trai - 6} y={y + 12} textAnchor="end" fontSize={k.chuNho} fill="#94a3b8">
               {m.cao >= 1000 ? `${(m.cao / 1000).toFixed(1)}km` : `${Math.round(m.cao)}m`}
@@ -343,7 +432,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         <g>
           <line x1={LE.trai} y1={yTheoCao(altBai)} x2={LE.trai + VE_W} y2={yTheoCao(altBai)} stroke="#0f172a" strokeWidth={1} strokeDasharray="5 3" />
           <text x={LE.trai + 3} y={yTheoCao(altBai) - 3} fontSize={k.chu} fontWeight={700} fill="#0f172a">
-            bãi {altBai}m
+            {chu.takeoff} {altBai}m
           </text>
         </g>
       )}
@@ -353,7 +442,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         <g>
           <line x1={LE.trai} y1={yTheoCao(altCat2)} x2={LE.trai + VE_W} y2={yTheoCao(altCat2)} stroke="#0f172a" strokeWidth={0.7} strokeDasharray="3 4" opacity={0.7} />
           <text x={LE.trai + 3} y={yTheoCao(altCat2) - 3} fontSize={k.chuNho} fontWeight={700} fill="#334155">
-            bãi cất {altCat2}m
+            {chu.takeoff} {altCat2}m
           </text>
         </g>
       )}
@@ -363,7 +452,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         <g>
           <line x1={LE.trai} y1={yTheoCao(altHa)} x2={LE.trai + VE_W} y2={yTheoCao(altHa)} stroke="#475569" strokeWidth={0.9} strokeDasharray="2 4" />
           <text x={LE.trai + 3} y={yTheoCao(altHa) - 3} fontSize={k.chu} fontWeight={700} fill="#475569">
-            bãi hạ {altHa}m
+            {chu.landing} {altHa}m
           </text>
         </g>
       )}
@@ -373,7 +462,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         <g>
           <line x1={LE.trai} y1={yTheoCao(caoDayMay)} x2={LE.trai + VE_W} y2={yTheoCao(caoDayMay)} stroke="#0284c7" strokeWidth={1} strokeDasharray="2 3" />
           <text x={LE.trai + VE_W - 3} y={yTheoCao(caoDayMay) - 3} textAnchor="end" fontSize={k.chu} fill="#0284c7" fontWeight={700}>
-            đáy mây ~{Math.round(caoDayMay)}m
+            {chu.cloudBase} ~{Math.round(caoDayMay)}m
           </text>
         </g>
       )}
@@ -381,7 +470,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
         <g>
           <line x1={LE.trai} y1={yTheoCao(tranThermal)} x2={LE.trai + VE_W} y2={yTheoCao(tranThermal)} stroke="#ea580c" strokeWidth={1.2} />
           <text x={LE.trai + VE_W - 3} y={yTheoCao(tranThermal) + 11} textAnchor="end" fontSize={k.chu} fill="#ea580c" fontWeight={700}>
-            trần thermal ~{tranThermal}m
+            {chu.thermalTop} ~{tranThermal}m
           </text>
         </g>
       )}
@@ -389,7 +478,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
       {/* Bọt khí, điểm sương, nhiệt độ — cắt theo khung */}
       <g clipPath="url(#khungSkewT)">
       <polyline
-        points={bot.map((p) => `${xTheoNhiet(p.nhiet, yTheoAp(p.ap, k), k).toFixed(1)},${yTheoAp(p.ap, k).toFixed(1)}`).join(" ")}
+        points={bot.map((p) => `${xTheoNhiet(p.nhiet, yTheoAp(p.ap, k), k, kieu).toFixed(1)},${yTheoAp(p.ap, k).toFixed(1)}`).join(" ")}
         fill="none"
         stroke="#f97316"
         strokeWidth={1.6}
@@ -397,6 +486,28 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
       />
       <polyline points={duong((m) => m.suong)} fill="none" stroke="#2563eb" strokeWidth={2.4} />
       <polyline points={duong((m) => m.nhiet)} fill="none" stroke="#dc2626" strokeWidth={2.4} />
+      </g>
+
+      {/**
+       * SỐ °C IN NGAY TRÊN ĐƯỜNG ĐỎ. Trục bị xiên nên mắt dễ đọc nhầm là "càng
+       * lên càng nóng"; có số thật ở từng mực thì không cãi nhau nữa (chủ 11/09).
+       */}
+      <g clipPath="url(#khungSkewT)">
+        {trongKhung.map((m) => {
+          const y = yTheoAp(m.ap, k);
+          return (
+            <text
+              key={`tt${m.ap}`}
+              x={xTheoNhiet(m.nhiet, y, k, kieu) + 4}
+              y={y - 4}
+              fontSize={k.chuNho}
+              fontWeight={700}
+              fill="#b91c1c"
+            >
+              {m.nhiet.toFixed(0)}°
+            </text>
+          );
+        })}
       </g>
 
       {/* Cờ gió bên phải: mũi tên chỉ hướng gió THỔI TỚI, kèm số m/s */}
@@ -414,7 +525,7 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
               {m.gio.toFixed(0)}
             </text>
             <text x={x - 12} y={y + 3} textAnchor="end" fontSize={k.chuNho} fill="#64748b">
-              {huongChu(m.huong)}
+              {huongTheoNgonNgu(m.huong, lang)}
             </text>
           </g>
         );
@@ -427,10 +538,10 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
       <g transform={`translate(${LE.trai + 6},${LE.tren + 6})`}>
         <rect x={0} y={0} width={k.W > 500 ? 214 : 170} height={k.W > 500 ? 64 : 54} rx={4} fill="#ffffff" opacity={0.88} stroke="#e2e8f0" />
         {[
-          ["#dc2626", "Nhiệt độ không khí", "2.4", ""],
-          ["#2563eb", "Điểm sương (độ ẩm)", "2.4", ""],
-          ["#f97316", "Thermal từ mặt đất", "1.6", "5 4"],
-          ["#cbd5e1", "Đoạn nhiệt khô −1°C/100m", "1", "3 3"],
+          ["#dc2626", chu.skewTemp, "2.4", ""],
+          ["#2563eb", chu.skewDew, "2.4", ""],
+          ["#f97316", chu.skewParcel, "1.6", "5 4"],
+          ["#cbd5e1", chu.skewDry, "1", "3 3"],
         ].map(([mau, ten, day, net], i) => (
           <g key={ten} transform={`translate(8,${(k.W > 500 ? 13 : 11) + i * (k.W > 500 ? 14 : 12)})`}>
             <line x1={0} y1={0} x2={20} y2={0} stroke={mau} strokeWidth={Number(day)} strokeDasharray={net || undefined} />
@@ -443,24 +554,66 @@ function HinhSkewT({ muc, altBai, altHa, altCat2, gio, k }: { muc: MucSkewT[]; a
 
       {/* Trục nhiệt độ dưới cùng */}
       {Array.from({ length: 7 }, (_, i) => T_MIN + i * 10).map((t) => (
-        <text key={`x${t}`} x={xTheoNhiet(t, LE.tren + VE_H, k)} y={H - LE.duoi + 14} textAnchor="middle" fontSize={k.chu} fill="#64748b">
+        <text key={`x${t}`} x={xTheoNhiet(t, LE.tren + VE_H, k, kieu)} y={H - LE.duoi + 14} textAnchor="middle" fontSize={k.chu} fill="#64748b">
           {t}°
         </text>
       ))}
       <text x={LE.trai} y={H - 6} fontSize={k.chu} fill="#94a3b8">
-        {gio.slice(11, 16)} · nhiệt độ (°C), trục xiên · gió m/s bên phải
+        {gio.slice(11, 16)} · {chu.caption}
       </text>
     </svg>
   );
 }
 
-function CachDoc({ coNghich, tranThermal, caoDayMay }: { coNghich: boolean; tranThermal: number | null; caoDayMay: number | null }) {
+function CachDoc({
+  coNghich,
+  tranThermal,
+  caoDayMay,
+  chu,
+  viet,
+}: {
+  coNghich: boolean;
+  tranThermal: number | null;
+  caoDayMay: number | null;
+  chu: ChuSkewT;
+  /** Chỉ tiếng Việt mới có bài đọc dài; thứ tiếng khác nhận bản gọn đã dịch. */
+  viet: boolean;
+}) {
+  if (!viet) {
+    return (
+      <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[11px] leading-snug text-slate-700">
+        <div className="mb-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-1">{chu.skewTiltNote}</div>
+        <ul className="ml-3 list-disc space-y-0.5">
+          <li>
+            <b className="text-rose-700">—</b> {chu.skewTemp}
+          </li>
+          <li>
+            <b className="text-blue-700">—</b> {chu.skewDew}
+          </li>
+          <li>
+            <b className="text-orange-600">- -</b> {chu.skewParcel}
+            {tranThermal !== null ? ` · ~${tranThermal}m` : ""}
+          </li>
+          <li>
+            <b className="text-slate-500">- -</b> {chu.skewDry}
+          </li>
+        </ul>
+      </div>
+    );
+  }
   return (
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[11px] leading-snug text-slate-700">
       <div className="mb-1 font-bold">Giản đồ này nói gì</div>
       <div className="mb-1">
         Mỗi đường là MỘT SỐ ĐO THEO ĐỘ CAO của cột không khí trên bãi, lúc giờ đang chọn. Trục dọc là độ cao (ghi kèm
-        áp suất), trục ngang là nhiệt độ.
+        áp suất tính bằng hPa), trục ngang là nhiệt độ.
+      </div>
+      <div className="mb-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-1">
+        <b>Đường đỏ nghiêng sang phải KHÔNG có nghĩa là càng lên càng nóng.</b> Ở kiểu <b>Skew-T</b>, trục nhiệt độ bị
+        xiên có chủ ý (để đoạn nhiệt khô thành gần thẳng đứng), nên trời vẫn lạnh dần mà đường có thể ngả phải — số °C
+        in ngay trên đường mới là nhiệt độ thật. Nghiêng phải = lớp khí <b>ổn định hơn</b> bình thường (thermal yếu),
+        nghiêng trái = nguội nhanh, thermal lên tốt. Muốn nhìn đúng như cảm nhận thì bấm <b>Emagram</b>: trục thẳng,
+        đường đỏ ngả trái vì càng lên càng lạnh.
       </div>
       <ul className="ml-3 list-disc space-y-0.5">
         <li>
