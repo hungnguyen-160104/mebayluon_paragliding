@@ -338,6 +338,22 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
   const issuedCodes = expanded.codes;
   const issuedSet = new Set(issuedCodes);
 
+  /**
+   * MÃ CỦA NHỮNG NGÀY TRƯỚC — khách dời lịch CẦM NGUYÊN VÉ CŨ sang.
+   *
+   * Vé xuất hôm 9/9, khách dời sang 10/9 rồi cuối cùng không bay nên quầy báo
+   * huỷ vào 10/9: mã ấy dĩ nhiên không nằm trong dải vé xuất NGÀY 10/9, mà đó
+   * là chuyện đúng, không phải gõ nhầm (chủ báo 11/09 — MBL1105, MBL1106).
+   * Phần soát vé PHI CÔNG BAY đã biết luật này từ trước (xem `prevList` phía
+   * dưới); phần soát vé huỷ/dời thì chưa, nên ngày nào có khách dời lịch mang
+   * vé sang rồi huỷ là đỏ oan, và đỏ oan vài lần là không ai đọc bảng soát nữa.
+   */
+  const maNgayTruoc = new Set(
+    [...(input.prevDays ?? []), ...(input.prevDay ? [input.prevDay] : [])].flatMap(
+      (d) => expandTicketRanges(d.issuedRanges ?? []).codes,
+    ),
+  );
+
   /* ---------------- Vé huỷ và vé dời lịch ---------------- */
 
   /**
@@ -415,7 +431,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
    */
   if (issuedSet.size) {
     const strayReturned = [...new Set([...cancelledSet, ...rescheduledSet])].filter(
-      (c) => !issuedSet.has(c),
+      (c) => !issuedSet.has(c) && !maNgayTruoc.has(c),
     );
     if (strayReturned.length) {
       flag({
