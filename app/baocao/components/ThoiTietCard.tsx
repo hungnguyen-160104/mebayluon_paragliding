@@ -45,6 +45,7 @@ import { styleGiat, styleGio } from "@/components/weather/mau-gio";
 import { useCuonTheoNgay, useManHinhHep } from "@/components/weather/cuon-ngay";
 import { DaiMua, dinhMua } from "@/components/weather/DaiMua";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
+import { SkewT } from "@/components/weather/SkewT";
 import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import type { DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
@@ -186,7 +187,7 @@ export function ThoiTietCard({
    * người trực chỉ cần tra một giờ cụ thể. Ai muốn thấy hình dáng cả ngày thì
    * bấm sang Meteogram.
    */
-  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram" | "skewt">("basic");
 
   const tai = useCallback(
     async (moi = false) => {
@@ -330,9 +331,18 @@ export function ThoiTietCard({
       {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
 
       {/* ---- dải 10 ngày ---- */}
-      {/* NĂM Ô MỘT HÀNG từ 640px: hai hàng đủ mười ngày, không hàng nào trơ ô lẻ.
-          Điện thoại để bốn ô cho chữ còn đọc được (luật chủ 10/09). */}
-      <div className="grid grid-cols-4 gap-1 sm:grid-cols-5">
+      {/**
+       * MƯỜI Ô MỘT HÀNG KHI THẺ ĐỦ RỘNG (chủ 11/09): cả dự báo nằm gọn một
+       * hàng, mắt quét một lượt là so được mười ngày — hai hàng thì ngày 6 và
+       * ngày 1 cách nhau cả một tầng, khó so.
+       *
+       * Đo theo BỀ RỘNG CỦA THẺ (`@container`) chứ không theo bề rộng màn hình:
+       * cùng một thẻ này nằm full trang ở /baocao/thoi-tiet nhưng chỉ chiếm
+       * một cột hẹp ở trang điều phối — hỏi màn hình thì bên hẹp bị ép mười ô
+       * rộng 40px, chữ dồn thành cục.
+       */}
+      <div className="@container">
+      <div className="grid grid-cols-4 gap-1 sm:grid-cols-5 @4xl:grid-cols-10 @4xl:gap-0.5">
         {du.ngay.map((n) => {
           const daCham = du.cham.find((c) => c.date === n.ngay);
           return (
@@ -351,7 +361,7 @@ export function ThoiTietCard({
                * lớp nền cùng lúc thì lớp nào thắng là do thứ tự trong file CSS).
                */
               className={
-                "rounded-lg border px-1 py-1 text-center transition " +
+                "rounded-lg border px-1 py-1 text-center transition @4xl:px-0.5 " +
                 (n.ngay === ngayChon?.ngay
                   ? "border-orange-500 bg-orange-200 text-orange-950 shadow-md ring-2 ring-orange-500"
                   : MAU_NEN[n.muc])
@@ -412,6 +422,7 @@ export function ThoiTietCard({
             </button>
           );
         })}
+      </div>
       </div>
 
       {gon ? (
@@ -474,7 +485,9 @@ export function ThoiTietCard({
                   ["basic", "▦ Basic"],
                   ["meteogram", "📊 Meteogram"],
                   ["airgram", "🪂 Airgram"],
-                ] as Array<["basic" | "meteogram" | "airgram", string]>
+                  /** Giản đồ thám không — cả cột khí của một giờ. */
+                  ["skewt", "🌡 Skew-T"],
+                ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
               ).map(([v, nhan]) => (
                 <button
                   key={v}
@@ -498,7 +511,9 @@ export function ThoiTietCard({
            * biểu đồ thì dải trên sáng theo.
            */}
           {ngayChon &&
-            (kieuXem === "meteogram" ? (
+            (kieuXem === "skewt" ? (
+              <SkewT spot={spot} ngay={ngayChon.ngay} moHinh={moHinh} altBai={du.toaDo.alt ?? 0} gioBay={du.toaDo.gioBay} />
+            ) : kieuXem === "meteogram" ? (
               <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
             ) : kieuXem === "airgram" ? (
               <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />

@@ -498,6 +498,50 @@ một ngày (chủ báo 11/09).
 
 **Từ của bãi**: "bay lướt" đổi thành **"bay ebon"**.
 
+## 5h. Skew-T log-P — giản đồ thám không cho một ngày
+
+Chủ hỏi 11/09: "lấy được Skew-T của một điểm bay vào một ngày bay không?" —
+**được**, và vẽ từ chính mô hình mình đang dùng chứ không mượn ảnh dựng sẵn.
+
+Vì sao KHÔNG lấy ảnh có sẵn trên mạng: ảnh Skew-T ngoài kia bám theo **trạm
+thám không thật** (thả bóng ngày hai lần), trạm gần Đồi Bù nhất là Hà Nội — sai
+chỗ, sai giờ, và **không có ngày mai**. Open-Meteo trả sẵn nhiệt độ, điểm sương,
+gió và độ cao địa thế vị **theo từng mực áp suất**, nên dựng lấy thì đúng toạ độ
+bãi, đúng mô hình đang chọn, và có cho **cả 10 ngày tới**.
+
+**Lấy riêng, không nhét vào `/api/thoi-tiet`**: một ngày × 12 mực × 5 trường là
+gần 60 con số mỗi giờ; nhân 10 ngày × 7 điểm thì gói dữ liệu trang chính phình
+lên mấy lần, trong khi giản đồ chỉ mở khi có người bấm nút. Đường riêng:
+`GET /api/thoi-tiet/skew-t?spot=<slug>&date=YYYY-MM-DD[&model=...]`, cache 30
+phút ở biên như các API thời tiết khác.
+
+**Đọc thế nào** (in luôn dưới hình cho người mới):
+
+| Thứ trên hình | Nghĩa |
+|---|---|
+| Trục đứng | áp suất theo thang log, ghi kèm **độ cao mét** để khỏi quy đổi |
+| Trục ngang | nhiệt độ, **bị xiên** sang phải khi lên cao — để đoạn nhiệt khô thành gần thẳng đứng |
+| **— đỏ** | nhiệt độ môi trường |
+| **— xanh** | điểm sương: sát đường đỏ là ẩm (dễ mây, mưa rào), tách xa là khô (thermal "xanh") |
+| **- - cam** | bọt khí nóng bốc từ bãi; cắt lại đường đỏ ở đâu là **trần thermal** ở đó |
+| Dải **tím** | lớp nghịch nhiệt — cái nắp chặn thermal |
+| Vạch đen đứt | độ cao **bãi cất cánh**; bọt khí xuất phát từ mực đầu tiên nằm trên bãi |
+| Cờ gió bên phải | hướng và tốc độ gió từng mực (m/s) |
+
+Phép tính nằm ở `lib/baobay/skew-t.ts` (thuần tính, không mạng): đáy mây theo
+công thức Espy (125 m cho mỗi 1°C chênh nhiệt độ – điểm sương), đường bọt khí
+khô 9,8°C/km tới đáy mây rồi chuyển đoạn nhiệt ẩm xấp xỉ theo nhiệt độ, trần
+bọt khí là chỗ nội suy cắt đường môi trường. Hình vẽ tay bằng SVG ở
+`components/weather/SkewT.tsx` — mở bằng nút **🌡 Skew-T** cạnh Basic /
+Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất).
+
+**Dải ngày dồn một hàng khi thẻ đủ rộng** (chủ 11/09): mười ô một hàng thì mắt
+quét một lượt là so được cả dự báo. Đo theo **bề rộng của thẻ** (container
+query `@4xl`) chứ không theo màn hình — cùng một thẻ nằm full trang ở
+`/baocao/thoi-tiet` nhưng chỉ chiếm một cột hẹp trên trang danh sách; hỏi màn
+hình thì bên hẹp bị ép mười ô rộng 40px. Đo thật: thẻ 1.000px → ô 92px, không ô
+nào tràn chữ; thẻ 490px giữ nguyên năm ô một hàng.
+
 ## 5g. Tiềm năng thermal — QUY TẮC SÁU YẾU TỐ (0–100, năm mức)
 
 Chủ hỏi 11/09: "thermal phụ thuộc nắng nhưng phụ thuộc LI nhiều hơn chứ?" —

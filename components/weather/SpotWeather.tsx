@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SkewT } from "./SkewT";
 import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
@@ -174,9 +175,14 @@ function DaiNgay({
 }) {
   const homNay = homNayVN();
   return (
-    /* Năm ô một hàng từ 640px — hai hàng đủ mười ngày; điện thoại bốn ô cho chữ
-       còn đọc được. Xem ghi chú ở SO_NGAY. */
-    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+    /**
+     * Năm ô một hàng từ 640px; MƯỜI ô một hàng khi thẻ rộng trên ~900px (chủ
+     * 11/09 — cả dự báo gọn một hàng thì mắt quét một lượt là so được).
+     * Đo theo bề rộng THẺ (`@container`, đặt ở gốc thẻ) chứ không theo màn
+     * hình: trên trang danh sách mỗi thẻ chỉ chiếm nửa trang. Điện thoại bốn
+     * ô cho chữ còn đọc được. Xem ghi chú ở SO_NGAY.
+     */
+    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 @4xl:grid-cols-10 @4xl:gap-1">
       {/**
        * Ô NGÀY GỌN LẠI (chủ 10/09): trước đây mỗi ô xếp SÁU dòng chồng nhau —
        * ngày, số gió, đơn vị, số giờ đẹp, mưa, dông, điểm — cao gần bằng cả
@@ -743,7 +749,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   const [moHinh, setMoHinh] = useState(MO_HINH_MAC_DINH);
   const [soSanh, setSoSanh] = useState(false);
   /** Basic (bảng số) hay Meteogram (biểu đồ) — như hai tab của Windy, mặc định Basic. */
-  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram" | "skewt">("basic");
 
   const tai = useCallback(async () => {
     setLoi(false);
@@ -780,7 +786,8 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    /* `@container` để dải ngày đo theo bề rộng THẺ — xem ghi chú ở DaiNgay. */
+    <section className="@container rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         {/** Tên bãi nằm ngay trong tiêu đề: trang Hà Nội có hai bảng cạnh nhau, không được lẫn. */}
         <h3 className="text-base font-bold text-slate-900">
@@ -914,7 +921,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
  */
 export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: string; t: ThoiTietCopy }) {
   const [chon, setChon] = useState<string | null>(null);
-  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram">("basic");
+  const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram" | "skewt">("basic");
   /**
    * ĐỔI MÔ HÌNH NGAY TRÊN THẺ (chủ chốt 11/09).
    *
@@ -983,7 +990,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
          * thêm: ô ngày sáng cam, bảng phụ mở ngay bên dưới trong chính thẻ ấy.
          * Bảng giờ và biểu đồ bên trong tự cuộn ngang nên hẹp vẫn đọc được.
          */
-        "min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        "@container min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
       }
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -1095,7 +1102,9 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
                 ["basic", "▦ Basic"],
                 ["meteogram", "📊 Meteogram"],
                 ["airgram", "🪂 Airgram"],
-              ] as Array<["basic" | "meteogram" | "airgram", string]>
+                /** Giản đồ thám không: cả cột khí của một giờ, cho người đọc kỹ. */
+                ["skewt", "🌡 Skew-T"],
+              ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
             ).map(([v, nhan]) => (
               <button
                 key={v}
@@ -1119,7 +1128,15 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             </button>
           </div>
 
-          {kieuXem === "meteogram" ? (
+          {kieuXem === "skewt" ? (
+            <SkewT
+              spot={diem.slug}
+              ngay={ngayChon.ngay}
+              moHinh={moHinh}
+              altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+              gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+            />
+          ) : kieuXem === "meteogram" ? (
             <Meteogram
               ngay={du.ngay as never}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
