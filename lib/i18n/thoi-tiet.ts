@@ -140,14 +140,14 @@ const vi: ThoiTietCopy = {
     {
       tieuDe: "Nghịch nhiệt — cái nắp vô hình",
       y: [
-        "Bình thường càng lên cao càng lạnh. Nghịch nhiệt là lớp khí phía trên ẤM HƠN phía dưới, thường hình thành trong đêm quang mây. Nó hoạt động như một cái nắp: bọt khí nóng bốc lên tới đó là dừng, nên trần thermal thấp, chuyến bay ngắn.",
+        "Bình thường càng lên cao càng lạnh. Nghịch nhiệt là lớp khí phía trên ẤM HƠN phía dưới, thường hình thành trong đêm quang mây. Nó hoạt động như một cái nắp: thermal bốc lên tới đó là dừng, nên trần thermal thấp, chuyến bay ngắn.",
         "Nghịch nhiệt còn giữ mù và mây thấp nằm lì trong thung lũng tới gần trưa — lý do nhiều buổi sáng đèo trắng xoá trong khi dự báo mưa bằng không. Nắng đốt đủ mạnh thì lớp nghịch nhiệt vỡ, mù tan nhanh trong vòng một tiếng; bảng này nói giờ dự kiến tan để canh lúc lên bãi cho đúng.",
       ],
     },
     {
       tieuDe: "Thermal — nhiên liệu của chuyến bay",
       y: [
-        "Mặt đất hấp thụ bức xạ, hun nóng lớp khí sát đất, bọt khí nóng tách ra và bốc lên: đó là thermal. Hai con số nói về nó là CAPE (thế năng đối lưu — bao nhiêu 'nhiên liệu') và trần lớp xáo trộn (bọt khí lên được tới đâu). Bảng này gọi trần ấy là trần thermal.",
+        "Mặt đất hấp thụ bức xạ, hun nóng lớp khí sát đất, bọt khí nóng tách ra và bốc lên: đó là thermal. Hai con số nói về nó là CAPE (thế năng đối lưu — bao nhiêu 'nhiên liệu') và trần lớp xáo trộn (thermal lên được tới đâu). Bảng này gọi trần ấy là trần thermal.",
         "Thang ở đây chấm theo hướng ÊM: thermal vừa đủ thì chuyến dài và mượt, còn thermal gắt làm dù xóc và bãi đáp nổi gió xoáy. Phi công bay đường dài đọc ngược lại — với họ càng mạnh càng thích, nên hai bên nhìn cùng một con số mà kết luận khác nhau.",
       ],
     },

@@ -106,7 +106,7 @@ export type SkewTProps = {
   ngay: string;
   /** Mã mô hình đang xem — để giản đồ khớp với bảng giờ bên cạnh. */
   moHinh?: string;
-  /** Độ cao bãi cất cánh (m) — vẽ vạch "bãi" và cho bọt khí xuất phát từ đó. */
+  /** Độ cao bãi cất cánh (m) — vẽ vạch "bãi" và cho đường thermal xuất phát từ đó. */
   altBai?: number;
   /** Độ cao bãi hạ (m) — vẽ vạch thứ hai, chênh hai vạch là độ cao thả. */
   altHa?: number;
@@ -417,8 +417,8 @@ function HinhSkewT({ muc, altBai, altHa, gio, k }: { muc: MucSkewT[]; altBai: nu
         {[
           ["#dc2626", "Nhiệt độ không khí", "2.4", ""],
           ["#2563eb", "Điểm sương (độ ẩm)", "2.4", ""],
-          ["#f97316", "Bọt khí bốc từ bãi", "1.6", "5 4"],
-          ["#cbd5e1", "Đoạn nhiệt khô (mốc so)", "1", "3 3"],
+          ["#f97316", "Thermal từ mặt đất", "1.6", "5 4"],
+          ["#cbd5e1", "Đoạn nhiệt khô −1°C/100m", "1", "3 3"],
         ].map(([mau, ten, day, net], i) => (
           <g key={ten} transform={`translate(8,${(k.W > 500 ? 13 : 11) + i * (k.W > 500 ? 14 : 12)})`}>
             <line x1={0} y1={0} x2={20} y2={0} stroke={mau} strokeWidth={Number(day)} strokeDasharray={net || undefined} />
@@ -461,14 +461,15 @@ function CachDoc({ coNghich, tranThermal, caoDayMay }: { coNghich: boolean; tran
           thermal không có mây đánh dấu nên khó nhìn.
         </li>
         <li>
-          <b className="text-orange-600">Cam đứt nét — bọt khí nóng bốc lên từ bãi</b>: giả sử một bọt khí rời mặt đất và
-          bay lên, nó sẽ nguội theo đường này. Chừng nào nó còn nằm <b>bên phải đường đỏ</b> (ấm hơn trời xung quanh) thì
-          còn tự bốc — tức là còn nâng để bay.
+          <b className="text-orange-600">Cam đứt nét — thermal từ mặt đất</b>: khối khí nóng tách khỏi mặt đất và bốc
+          lên sẽ nguội dần theo đường này. Chừng nào nó còn nằm <b>bên phải đường đỏ</b> (còn ấm hơn trời xung quanh)
+          thì còn tự lên — tức là còn nâng để bay; chỗ nó chạm đường đỏ là hết nâng.
         </li>
         <li>
-          <b className="text-slate-500">Xám đứt nét — đoạn nhiệt khô</b>: chỉ là mốc để so độ nghiêng, không phải số đo
-          thật. Đoạn nào đường đỏ <b>nghiêng đứng như nó</b> là lớp khí đang xáo trộn tốt; đỏ mà <b>đổ sang phải hơn</b>
-          là lớp khí bị nén, thermal khó lên.
+          <b className="text-slate-500">Xám đứt nét — đoạn nhiệt khô</b>: không phải số đo của hôm nay, mà là quy luật
+          vật lý — khối khí khô bốc lên thì nguội đúng 1°C mỗi 100m. Vẽ ra để <b>so độ nghiêng với đường đỏ</b>: đoạn nào
+          đường đỏ nghiêng đứng như nó là lớp khí đang xáo trộn đều, thermal lên thoải mái; đường đỏ mà <b>đổ sang phải
+          hơn</b> là lớp khí bị nén, thermal yếu dần rồi tắt.
         </li>
       </ul>
       <div className="mt-1">
@@ -480,7 +481,7 @@ function CachDoc({ coNghich, tranThermal, caoDayMay }: { coNghich: boolean; tran
         ) : null}
         {tranThermal !== null ? (
           <>
-            , <b className="text-orange-700">trần thermal ~{tranThermal}m</b> — chỗ bọt khí nguội bằng trời xung quanh
+            , <b className="text-orange-700">trần thermal ~{tranThermal}m</b> — chỗ thermal nguội bằng trời xung quanh
             rồi dừng
           </>
         ) : null}
@@ -489,7 +490,7 @@ function CachDoc({ coNghich, tranThermal, caoDayMay }: { coNghich: boolean; tran
       {coNghich ? (
         <div className="mt-1">
           <span className="inline-block h-2 w-4 rounded-sm bg-violet-300 align-middle" />{" "}
-          <b>Dải tím</b> là lớp nghịch nhiệt: càng lên càng NÓNG, bọt khí lên tới đó là tắt — cái nắp chặn thermal.
+          <b>Dải tím</b> là lớp nghịch nhiệt: càng lên càng NÓNG, thermal lên tới đó là tắt — cái nắp chặn thermal.
         </div>
       ) : (
         <div className="mt-1 opacity-80">Hôm nay không có lớp nghịch nhiệt nào trong tầng này (nếu có, nó hiện thành một dải tím nằm ngang).</div>

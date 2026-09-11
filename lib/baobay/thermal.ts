@@ -324,13 +324,13 @@ export function tiemNangThermal(
       thieuTran
         ? `Mô hình không cấp trần lớp xáo trộn — chấm tạm theo CAPE (${tran.ghiChu.replace("không có số trần — đoán từ CAPE ", "")}).`
         : tran.diem >= 70
-          ? `Lớp xáo trộn sâu, trần ${tran.ghiChu} — bọt khí lên được cao.`
+          ? `Lớp xáo trộn sâu, trần ${tran.ghiChu} — thermal lên được cao.`
           : tran.diem >= 40
             ? `Trần xáo trộn ${tran.ghiChu} — đủ cho chuyến bay vừa phải.`
-            : `Trần xáo trộn thấp (${tran.ghiChu}) — bọt khí lên tới đó là tắt.`,
+            : `Trần xáo trộn thấp (${tran.ghiChu}) — thermal lên tới đó là tắt.`,
     );
   }
-  if (lapse) lyDo.push(lapse.diem >= 70 ? `Tầng thấp dốc nhiệt tốt (${lapse.ghiChu}) — bọt lên khoẻ.` : lapse.diem >= 40 ? `Độ dốc nhiệt trung bình (${lapse.ghiChu}).` : `Tầng thấp ổn định (${lapse.ghiChu}) — bọt khí lên yếu.`);
+  if (lapse) lyDo.push(lapse.diem >= 70 ? `Tầng thấp dốc nhiệt tốt (${lapse.ghiChu}) — thermal lên khoẻ.` : lapse.diem >= 40 ? `Độ dốc nhiệt trung bình (${lapse.ghiChu}).` : `Tầng thấp ổn định (${lapse.ghiChu}) — thermal lên yếu.`);
   /** LI kể bằng lời: chủ hỏi riêng về LI (11/09) nên phải nói rõ nó đứng ở đâu trong kết luận. */
   if (on) {
     const li = gioCuaNgay.find((g) => g.gio === dinh.gio)?.chiSoNang;

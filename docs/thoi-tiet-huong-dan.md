@@ -528,10 +528,16 @@ báo 11/09). Đáy mây và trần thermal cũng in kèm số mét thật của 
 | Trục ngang | nhiệt độ, **bị xiên** sang phải khi lên cao — để đoạn nhiệt khô thành gần thẳng đứng |
 | **— đỏ** | nhiệt độ môi trường |
 | **— xanh** | điểm sương: sát đường đỏ là ẩm (dễ mây, mưa rào), tách xa là khô (thermal "xanh") |
-| **- - cam** | bọt khí nóng bốc từ bãi; cắt lại đường đỏ ở đâu là **trần thermal** ở đó |
-| Dải **tím** | lớp nghịch nhiệt — cái nắp chặn thermal |
+| **- - cam** | **thermal từ mặt đất**: khối khí nóng bốc lên nguội theo đường này; chạm lại đường đỏ ở đâu là **trần thermal** ở đó |
+| **- - xám** | **đoạn nhiệt khô**: quy luật vật lý "khí khô bốc lên nguội 1°C mỗi 100m", vẽ ra chỉ để **so độ nghiêng** với đường đỏ |
+| Dải **tím** | lớp nghịch nhiệt — cái nắp chặn thermal (chỉ hiện khi ngày đó có) |
 | Vạch đen đứt | độ cao **bãi cất cánh**; bọt khí xuất phát từ mực đầu tiên nằm trên bãi |
 | Cờ gió bên phải | hướng và tốc độ gió từng mực (m/s) |
+
+**Chữ dùng theo tiếng của bãi** (chủ 11/09 hỏi lại hai chữ): gọi **"thermal từ
+mặt đất"** chứ không gọi "bọt khí bốc từ bãi" — người bay không nói "bọt khí".
+Và không viết tắt kiểu "mốc so": nói thẳng đường xám là **quy luật vật lý**
+(khí khô bốc lên nguội 1°C mỗi 100m), vẽ ra để **so độ nghiêng** với đường đỏ.
 
 Phép tính nằm ở `lib/baobay/skew-t.ts` (thuần tính, không mạng): đáy mây theo
 công thức Espy (125 m cho mỗi 1°C chênh nhiệt độ – điểm sương), đường bọt khí
