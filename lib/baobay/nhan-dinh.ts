@@ -35,8 +35,7 @@ import {
   type GioThoiTiet,
   type LuatHuong,
   type MucDo,
-  type NgayThoiTiet,
-} from "./thoi-tiet";
+  type NgayThoiTiet, huongTroiNgay } from "./thoi-tiet";
 
 export type MucNhanDinh = "tot" | "kha" | "hanChe" | "nghi";
 
@@ -102,20 +101,8 @@ function lonNhat(a: number[]): number | null {
   return a.length ? Math.max(...a) : null;
 }
 
-/** Hướng trội bằng trung bình VÉC-TƠ — trung bình số học của 350° và 10° ra 180°, sai hẳn. */
-function huongTroi(gio: GioThoiTiet[]): number | null {
-  const co_ = gio.filter((g) => co(g.huong) && g.gio10m > 0.3);
-  if (!co_.length) return null;
-  let x = 0;
-  let y = 0;
-  for (const g of co_) {
-    const r = (g.huong * Math.PI) / 180;
-    x += Math.sin(r) * g.gio10m;
-    y += Math.cos(r) * g.gio10m;
-  }
-  const d = (Math.atan2(x, y) * 180) / Math.PI;
-  return ((d % 360) + 360) % 360;
-}
+/** Hướng trội bằng trung bình VÉC-TƠ — dùng chung `huongTroiNgay` với thẻ khách và thẻ nội bộ. */
+const huongTroi = (gio: GioThoiTiet[]): number | null => huongTroiNgay(gio);
 
 const gioCua = (g: GioThoiTiet) => g.gio.slice(11, 16);
 

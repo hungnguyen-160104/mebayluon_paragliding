@@ -19,6 +19,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
 import {
   bieuTuongTroi,
+  huongTroiNgay,
+  huongDayDuVi,
   BIEU_TUONG_MUC,
   chiSoBay,
   huongChu,
@@ -253,14 +255,24 @@ export function ThoiTietCard({
               /* Không khung đẹp thì im, không tuyên bố "không có" — mưa có lúc ngớt, người ở bãi quyết. */
               null
             )}{" "}
-            · gió tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
+            {/* Hướng gió trội đứng TRƯỚC tốc độ — chủ 11/09: đó là thứ quan trọng nhất trên dòng này. */}
+            · gió{" "}
+            {(() => {
+              const h = huongTroiNgay(homNayCard.gio, [6, 18]);
+              return h === null ? null : (
+                <strong className="uppercase text-slate-900" title={`${huongChu(h)} · ${Math.round(h)}°`}>
+                  {huongDayDuVi(h)}{" "}
+                </strong>
+              );
+            })()}
+            tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
             {/**
              * SỐ TIẾNG MƯA, không phải phần trăm. "Khả năng mưa 93%" bị đọc
              * thành "mưa gần cả ngày"; "mưa ~2 tiếng (13:00–15:00)" thì không
              * ai hiểu nhầm. Mưa từ 0,3 mm/giờ trở xuống không tính (vài hạt, không ướt).
              */}
             {homNayCard.gioMua > 0
-              ? ` · mưa ${suNangMua(homNayCard.muaTongThat)} ~${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTongThat.toFixed(1)}mm`
+              ? ` · ☔ mưa ${suNangMua(homNayCard.muaTongThat)} ${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTongThat.toFixed(1)}mm`
               : homNayCard.gioMuaBay > 0
                 ? ` · mưa bay${homNayCard.khungMuaBay ? ` ${homNayCard.khungMuaBay}` : ""} — bay vẫn bay`
                 : " · không mưa"}
@@ -268,7 +280,7 @@ export function ThoiTietCard({
             {(() => {
               const th = homNayCard.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
               return th
-                ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? ` (${th.khung})` : ""}`
+                ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? `, khoẻ nhất ${th.khung}` : ""}`
                 : homNayCard.tranMax
                   ? ` · trần thermal ${homNayCard.tranMax}m`
                   : "";

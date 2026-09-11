@@ -781,6 +781,26 @@ const HUONG: Record<ThoiTietLang, string[]> = {
   hi: ["उ", "उउपू", "उपू", "पूउपू", "पू", "पूदपू", "दपू", "दक्षिपू", "द", "ददप", "दप", "पदप", "प", "पउप", "उप", "उउप"],
 };
 
+/**
+ * Tên hướng ĐẦY ĐỦ, tám hướng — cho câu nói ("gió BẮC 2,3 m/s"), chỗ mà chữ
+ * tắt "BĐB" người không quen đọc không ra (chủ 11/09: hướng gió là thứ quan
+ * trọng nhất trên dòng tóm tắt, phải đọc được ngay).
+ */
+const HUONG_DAY_DU: Record<ThoiTietLang, string[]> = {
+  vi: ["Bắc", "Đông Bắc", "Đông", "Đông Nam", "Nam", "Tây Nam", "Tây", "Tây Bắc"],
+  en: ["North", "Northeast", "East", "Southeast", "South", "Southwest", "West", "Northwest"],
+  fr: ["Nord", "Nord-Est", "Est", "Sud-Est", "Sud", "Sud-Ouest", "Ouest", "Nord-Ouest"],
+  ru: ["Север", "Северо-восток", "Восток", "Юго-восток", "Юг", "Юго-запад", "Запад", "Северо-запад"],
+  zh: ["北", "东北", "东", "东南", "南", "西南", "西", "西北"],
+  hi: ["उत्तर", "उत्तर-पूर्व", "पूर्व", "दक्षिण-पूर्व", "दक्षिण", "दक्षिण-पश्चिम", "पश्चिम", "उत्तर-पश्चिम"],
+};
+
+export function huongDayDu(do_: number, lang?: string): string {
+  const bang = HUONG_DAY_DU[(lang as ThoiTietLang) ?? "vi"] ?? HUONG_DAY_DU.vi;
+  const h = ((do_ % 360) + 360) % 360;
+  return bang[Math.round(h / 45) % 8];
+}
+
 export function huongTheoNgonNgu(do_: number, lang?: string): string {
   const bang = HUONG[(lang as ThoiTietLang) ?? "vi"] ?? HUONG.vi;
   const h = ((do_ % 360) + 360) % 360;

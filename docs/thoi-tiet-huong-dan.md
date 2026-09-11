@@ -232,6 +232,17 @@ Ba khái niệm mới, giải thích ngắn:
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
 
+**Khung mưa viết theo ĐOẠN, giờ cuối là giờ kết thúc**: 5 tiếng mưa ở 9, 10, 11
+và 14, 15 giờ ghi "09–12h, 14–16h" — trừ ra là số tiếng, dấu phẩy là chỗ ngớt.
+Trước ghi "09:00–16:00" thì chủ đọc thành "mưa 7 tiếng" (11/09). Dạng "09–12h"
+cố ý khác dạng "09:00–16:00" của khung đẹp (khung đẹp vẫn là giờ đầu–giờ cuối).
+
+**Dòng tóm tắt thẻ khách** đọc thành câu: "Giờ đẹp 09:00–16:00 · Gió ĐÔNG 2,3 m/s
+· Giật 8,4 · ☀ 8,9 giờ nắng · 🔥 Thermal vừa 48/100 · khoẻ nhất 14:00–16:00 ·
+☔ Mưa 5 giờ (09–12h, 14–16h) · 5,4mm". Hướng gió trội (trung bình véc-tơ, có
+trọng số tốc độ, 6–18h) đứng ngay trước tốc độ vì đó là thứ quyết định bãi có
+bay được không.
+
 **Mưa bay (0,4–0,8 mm/giờ) KHÔNG phải cảnh báo** — chỉ ghi vào lý do. Ở Tây Bắc
 mùa mưa đó là mưa phùn rải rác, bay vẫn bay, mà nó từng chiếm hai phần ba số ô ⚠. Cảnh báo nào cũng bật thì người trực thôi đọc, rồi bỏ qua luôn cái
 cảnh báo thật. Sau khi siết: trên 165 ô của 3 điểm × 5 ngày còn **12 ô ⚠**

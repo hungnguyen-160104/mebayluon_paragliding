@@ -506,6 +506,38 @@ export function huongThuanLoi(huong: number, cung?: [number, number]): boolean {
 
 const HUONG_CHU = ["B", "BĐB", "ĐB", "ĐĐB", "Đ", "ĐĐN", "ĐN", "NĐN", "N", "NTN", "TN", "TTN", "T", "TTB", "TB", "BTB"];
 
+/**
+ * HƯỚNG GIÓ TRỘI của một dãy giờ — trung bình VÉC-TƠ có trọng số theo tốc độ.
+ *
+ * Không lấy trung bình số độ: 350° và 10° cộng chia đôi ra 180°, tức là báo
+ * gió nam trong khi thực tế là gió bắc. Giờ lặng (≤ 0,3 m/s) không nói lên
+ * hướng nên bỏ. `khung` để chỉ lấy giờ ban ngày khi cần (thẻ khách lấy 6–18h).
+ */
+export function huongTroiNgay(gio: GioThoiTiet[], khung?: [number, number]): number | null {
+  let x = 0;
+  let y = 0;
+  for (const g of gio) {
+    if (!Number.isFinite(g.huong) || !(g.gio10m > 0.3)) continue;
+    if (khung) {
+      const h = Number(g.gio.slice(11, 13));
+      if (h < khung[0] || h > khung[1]) continue;
+    }
+    const r = (g.huong * Math.PI) / 180;
+    x += Math.sin(r) * g.gio10m;
+    y += Math.cos(r) * g.gio10m;
+  }
+  if (x === 0 && y === 0) return null;
+  const d = (Math.atan2(x, y) * 180) / Math.PI;
+  return ((d % 360) + 360) % 360;
+}
+
+/** Tên đầy đủ tám hướng, tiếng Việt — cho câu nói ở thẻ nội bộ ("gió BẮC 2,3 m/s"). */
+const HUONG_DAY_DU_VI = ["Bắc", "Đông Bắc", "Đông", "Đông Nam", "Nam", "Tây Nam", "Tây", "Tây Bắc"];
+export function huongDayDuVi(do_: number): string {
+  const h = ((do_ % 360) + 360) % 360;
+  return HUONG_DAY_DU_VI[Math.round(h / 45) % 8];
+}
+
 /** 135° → "ĐN" — người trực đọc chữ nhanh hơn đọc số độ. */
 export function huongChu(do_: number): string {
   const h = ((do_ % 360) + 360) % 360;
@@ -851,9 +883,26 @@ export type NgayThoiTiet = {
  * ra vàng, người đọc tưởng cả ngày dở và huỷ khách oan.
  */
 /** "10:00" hay "10:00–13:00" — chỉ nói đầu–cuối: mưa ngắt quãng vẫn là "khoảng ấy có mưa". */
-function khungCua(m: Array<{ gio: string }>): string | null {
+/**
+ * KHUNG MƯA viết theo ĐOẠN giờ liền nhau, giờ cuối là giờ KẾT THÚC.
+ *
+ * Trước đây ghi "giờ đầu–giờ cuối" của mọi giờ có mưa: 5 tiếng mưa rải ở
+ * 9,10,11 và 14,15 giờ ra "09:00–16:00" — chủ đọc thành "mưa 7 tiếng" (11/09),
+ * mà thật ra giữa trưa ngớt. Nay: "09–12h, 14–16h" — mỗi đoạn trừ đi là ra
+ * số tiếng, cộng các đoạn đúng bằng `gioMua`; chỗ ngớt lộ ra ở dấu phẩy.
+ * Dạng "09–12h" cố ý khác dạng "09:00–16:00" của khung đẹp để khỏi đọc lẫn.
+ */
+export function khungCua(m: Array<{ gio: string }>): string | null {
   if (!m.length) return null;
-  return m.length === 1 ? m[0].gio.slice(11, 16) : `${m[0].gio.slice(11, 16)}–${m[m.length - 1].gio.slice(11, 16)}`;
+  const gio = m.map((x) => Number(x.gio.slice(11, 13))).sort((a, b) => a - b);
+  const doan: Array<[number, number]> = [];
+  for (const h of gio) {
+    const cuoi = doan[doan.length - 1];
+    if (cuoi && h === cuoi[1] + 1) cuoi[1] = h;
+    else if (!cuoi || h !== cuoi[1]) doan.push([h, h]);
+  }
+  const hh = (h: number) => String(h).padStart(2, "0");
+  return doan.map(([a, b]) => `${hh(a)}–${hh(b + 1)}h`).join(", ");
 }
 
 export function gopNgay(

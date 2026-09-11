@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useLanguage } from "@/contexts/language-context";
-import { getThoiTietCopy, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
+import { getThoiTietCopy, huongDayDu, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";
 import { useCuonTheoNgay, useManHinhHep } from "./cuon-ngay";
 import { DaiMua, dinhMua } from "./DaiMua";
 import { Airgram, Meteogram, NHAN_METEOGRAM_VI, type NhanMeteogram } from "./Meteogram";
@@ -38,6 +38,7 @@ import {
   MUA_BAY,
   MUA_DANG_KE,
   type SucThermal,
+  huongTroiNgay,
 } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
@@ -187,23 +188,35 @@ function DaiNgay({
             <div className="text-[11px] font-bold uppercase tracking-wide opacity-80">
               {nhanNgay(n.ngay, homNay, lang, t)}
             </div>
-            <div className="mt-0.5 flex items-baseline justify-center gap-1 leading-none">
-              <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>
+            {/**
+             * HAI DÒNG CỐ ĐỊNH: "2.5 m/s" rồi "ĐĐB · 98". Trước đây bốn mẩu chung
+             * một hàng flex; ô rộng 86px không chứa nổi nên dấu "·" ở lại hàng
+             * trên còn "98" rớt xuống một mình (chủ báo 11/09). Để hàng tự
+             * "wrap khi cần" thì ô này hai dòng, ô kia một dòng, cả hàng ô so
+             * le. Đo thực: 54/70 ô đều phải xuống hàng — vậy cho xuống hẳn, ô
+             * nào cũng như nhau, cụm dưới `whitespace-nowrap` để không bao giờ
+             * bị bẻ đôi.
+             */}
+            <div className="mt-0.5 whitespace-nowrap leading-none">
+              <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>{" "}
               <span className="text-[10px] opacity-70">{t.windUnit}</span>
-              {/* HƯỚNG GIÓ TRỘI của ngày — gió mạnh cỡ nào mà không biết thổi
-                  hướng nào thì chưa trả lời được "bãi có bay được không". */}
-              {(() => {
-                const huong = huongTroiCuaNgay(n);
-                return huong === null ? null : (
-                  <span className="text-[11px] font-black opacity-90">{huongTheoNgonNgu(huong, lang)}</span>
-                );
-              })()}
-              {n.chuyenGia && (
-                <span className="text-[11px] font-black opacity-90" title={`${t.score} ${n.chuyenGia.diem}/100`}>
-                  · {n.chuyenGia.diem}
-                </span>
-              )}
             </div>
+            {/* HƯỚNG GIÓ TRỘI của ngày — gió mạnh cỡ nào mà không biết thổi
+                hướng nào thì chưa trả lời được "bãi có bay được không". */}
+            {(() => {
+              const huong = huongTroiCuaNgay(n);
+              if (huong === null && !n.chuyenGia) return null;
+              return (
+                <div
+                  className="mt-0.5 whitespace-nowrap text-[11px] font-black leading-none opacity-90"
+                  title={n.chuyenGia ? `${t.score} ${n.chuyenGia.diem}/100` : undefined}
+                >
+                  {huong !== null ? huongTheoNgonNgu(huong, lang) : ""}
+                  {huong !== null && n.chuyenGia ? " · " : ""}
+                  {n.chuyenGia ? n.chuyenGia.diem : ""}
+                </div>
+              );
+            })()}
             {(n.gioXanh > 0 || n.gioMua > 0 || n.xacSuatDongMax >= 20) && (
               <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[11px] font-semibold leading-tight">
                 {n.gioXanh > 0 && <span>{`${n.gioXanh} ${t.goodHours}`}</span>}
@@ -382,19 +395,7 @@ function gioNangCuaNgay(ngay: Ngay): number {
  * đúng. Nhân trọng số theo tốc độ vì giờ lặng gió không nói lên hướng của ngày.
  */
 function huongTroiCuaNgay(ngay: Ngay): number | null {
-  let x = 0;
-  let y = 0;
-  for (const g of ngay.gio) {
-    const h = Number(g.gio.slice(11, 13));
-    if (h < 6 || h > 18) continue;
-    const v = g.gio10m || 0;
-    if (v <= 0) continue;
-    const rad = (g.huong * Math.PI) / 180;
-    x += v * Math.cos(rad);
-    y += v * Math.sin(rad);
-  }
-  if (x === 0 && y === 0) return null;
-  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+  return huongTroiNgay(ngay.gio as never, [6, 18]);
 }
 
 /**
@@ -961,6 +962,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
   const nang = gioNangCuaNgay(ngayHien);
   /** Mức thermal lấy từ QUY TẮC (điểm 0–100); thiếu thì lùi về cách đo cũ theo trần. */
   const thermal = ngayHien.thermal?.muc ?? thermalCuaNgay(ngayHien);
+  /** Hướng gió trội của ngày — chủ 11/09: đây là thứ quan trọng nhất, phải đứng ngay trước tốc độ. */
+  const huongNgay = huongTroiCuaNgay(ngayHien);
 
   return (
     /**
@@ -1023,15 +1026,30 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
           </>
         ) : null}
         {" · "}
-        {t.wind} {ngayHien.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {ngayHien.giatMax.toFixed(1)}
+        {t.wind}{" "}
+        {huongNgay !== null && (
+          <strong className="uppercase text-slate-900" title={`${huongTheoNgonNgu(huongNgay, lang)} · ${Math.round(huongNgay)}°`}>
+            {huongDayDu(huongNgay, lang)}{" "}
+          </strong>
+        )}
+        {ngayHien.gioMax.toFixed(1)} {t.windUnit} · {t.gust} {ngayHien.giatMax.toFixed(1)}
         {/* Nắng sinh ra thermal — hai số này đứng cạnh nhau mới đủ nghĩa. */}
         {nang > 0 ? ` · ☀ ${nang} ${t.sunHours}` : ""}
-        {` · 🔥 ${t.thermal} ${t.thermalLevels[thermal]}`}
-        {ngayHien.thermal ? ` ${ngayHien.thermal.diem}` : ""}
-        {ngayHien.thermal?.khung && ngayHien.thermal.diem >= 25 ? ` (${ngayHien.thermal.khung})` : ""}
+        {/**
+         * Thermal phải TỰ GIẢI THÍCH: "vừa 48 (14:00–16:00)" chủ đọc không ra
+         * 48 là gì, ngoặc là gì (11/09). Nay: "vừa 48/100 · khoẻ nhất 14:00–16:00".
+         */}
+        <span title={`${t.thermalPotential}: 0–100`}>
+          {` · 🔥 ${t.thermal} ${t.thermalLevels[thermal]}`}
+          {ngayHien.thermal ? ` ${ngayHien.thermal.diem}/100` : ""}
+          {ngayHien.thermal?.khung && ngayHien.thermal.diem >= 25 ? ` · ${t.thermalWindow} ${ngayHien.thermal.khung}` : ""}
+        </span>
+        {/* ☔ + số tiếng + các ĐOẠN giờ (giờ cuối là giờ kết thúc, cộng lại đúng bằng số tiếng). */}
         {ngayHien.gioMua > 0
-          ? ` · ${t.rain} ~${ngayHien.gioMua}h${ngayHien.khungMua ? ` (${ngayHien.khungMua})` : ""} · ${ngayHien.muaTongThat.toFixed(1)}mm`
-          : ""}
+          ? ` · ☔ ${t.rain} ${ngayHien.gioMua} ${t.hourShort}${ngayHien.khungMua ? ` (${ngayHien.khungMua})` : ""} · ${ngayHien.muaTongThat.toFixed(1)}mm`
+          : ngayHien.gioMuaBay > 0
+            ? ` · 🌦 ${t.lightRain}${ngayHien.khungMuaBay ? ` (${ngayHien.khungMuaBay})` : ""}`
+            : ""}
         {ngayHien.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${ngayHien.xacSuatDongMax}%` : ""}
       </div>
 
