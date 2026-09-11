@@ -440,6 +440,50 @@ Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — gió đứt (
 bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
 chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.
 
+## 5f2. Cà vách (ridge soaring) — nguồn nâng THỨ HAI
+
+Bộ chấm cũ chỉ biết **thermal**, nên ngày lift nhiệt yếu là ra "chuyến ngắn,
+lift kém" — trong khi ở **Đồi Bù gió BẮC 3–5 m/s** thổi thẳng vách thì bay được
+cả tiếng mà chẳng cần bọt nhiệt nào (chủ 11/09). Hai nguồn nâng khác nhau:
+thermal là bọt khí nóng bốc lên, **cà vách là gió bị vách núi hắt lên**.
+
+Thang của chủ, máy áp đúng thế:
+
+| Gió thuận sườn | Kết luận |
+|---|---|
+| < 3 m/s | chưa dựng được vách — không nói gì |
+| ≥ 3 m/s | **cà vách tốt** |
+| 4–6 m/s | **cà vách CỰC TỐT** |
+| + có nắng (≥ 300 W/m² trong chính những giờ ấy) | thermal cộng hưởng — **bay được cả tiếng** |
+
+Điều kiện: hướng phải nằm trong **cung gió tốt của bãi** (Đồi Bù: Đông, Bắc,
+Tây — chính Bắc là đẹp nhất), ít nhất **2 giờ** trong khung bay, và **giờ mưa
+không tính** (vách vẫn dựng gió nhưng chẳng ai bay dưới mưa — chủ nhắc đúng
+thứ Hai 14/09: gió bắc đẹp mà mưa thì vẫn là ngày tệ).
+
+Có cà vách thì **kiểu ngày** đổi hẳn: thay vì "Ngày ÍT THERMAL: bay ebon là
+chính" thành *"Ngày CÀ VÁCH CỰC TỐT: gió thuận sườn dựng đều lên vách — bay bám
+vách cả tiếng"*. Mưa và mù vẫn xét **trước** nên không lấn. Gió mực 500 m mạnh
+thì mục cà vách hạ xuống mức chú ý kèm câu *"bám vách thấp, đừng leo ra xa"*.
+
+Mục **Gió mặt đất** nay nói thẳng **THUẬN SƯỜN** khi hướng nằm trong cung tốt —
+trước chỉ tô màu, đọc không thấy chữ ấy thì tưởng gió bình thường.
+
+**Gust là dấu hiệu thermal, không phải lỗi**: "gust vọt lên 10 m/s trên nền gió
+3–4 là dấu hiệu thermal mạnh, vì gust chủ yếu do hoạt động thermal cộng hưởng
+với gió chính" (chủ 11/09). Đúng vật lý: bọt khí bốc lên kéo không khí tầng trên
+(gió mạnh hơn) xuống thế chỗ. Nên quy tắc thermal **cộng thưởng tối đa 8 điểm**
+theo chênh giật–gió nền, và **chỉ khi đang có nắng** (≥ 300 W/m²) — ban đêm hay
+ngày mưa cũng giật mà chẳng có thermal nào. Cộng thưởng chứ không phải một yếu
+tố có trọng số: đây là dấu hiệu xác nhận, không phải nguyên nhân.
+
+**Một nguồn cho thermal**: service chấm `tiemNangThermal` **trước**, rồi truyền
+vào bộ nhận định để mục 🔥 Thermal kể lại đúng con số ấy. Trước đây thẻ hiện
+"thermal yếu — CAPE 40" ở mục này và "38/100 nhẹ" ở mục kia — hai thước cho cùng
+một ngày (chủ báo 11/09).
+
+**Từ của bãi**: "bay lướt" đổi thành **"bay ebon"**.
+
 ## 5g. Tiềm năng thermal — QUY TẮC SÁU YẾU TỐ (0–100, năm mức)
 
 Chủ hỏi 11/09: "thermal phụ thuộc nắng nhưng phụ thuộc LI nhiều hơn chứ?" —

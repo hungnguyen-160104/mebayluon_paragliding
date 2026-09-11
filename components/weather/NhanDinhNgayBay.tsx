@@ -36,7 +36,17 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
   const th = ngay.thermal as TiemNangThermal | undefined;
   if (!nd) return null;
 
-  const tieuDe = `${ngay.ngay.slice(8, 10)}/${ngay.ngay.slice(5, 7)}`;
+  /**
+   * TÊN THỨ ĐỨNG TRƯỚC NGÀY, IN HOA VÀ NỔI LÊN (chủ 11/09): đọc "13/09" thì
+   * phải tự nhẩm xem rơi vào thứ mấy, mà lịch bay của khách nghĩ theo thứ —
+   * "CHỦ NHẬT 13/09" là đọc xong biết ngay có bán được ca không.
+   *
+   * Dựng mốc giờ Việt Nam rồi hỏi thứ theo đúng múi ấy: lấy `new Date("2026-09-13")`
+   * suông là mốc UTC, ở múi +7 nó vẫn đúng ngày nhưng thói quen ấy sai ở múi âm.
+   */
+  const THU = ["CHỦ NHẬT", "THỨ HAI", "THỨ BA", "THỨ TƯ", "THỨ NĂM", "THỨ SÁU", "THỨ BẢY"];
+  const thu = THU[new Date(`${ngay.ngay}T12:00:00+07:00`).getDay()];
+  const tieuDe = `${thu} ${ngay.ngay.slice(8, 10)}/${ngay.ngay.slice(5, 7)}`;
 
   return (
     <div className={"mb-2 rounded-lg border px-2 py-1.5 " + MAU_MUC[nd.muc]}>
@@ -66,7 +76,9 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
           </span>
         )}
         <span className="min-w-0 w-full flex-1 basis-full text-[12px] font-semibold leading-snug sm:w-auto sm:basis-auto">
-          <span className="opacity-70">{tieuDe} · </span>
+          <span className="mr-1 rounded bg-white/70 px-1 py-0.5 text-[11px] font-black uppercase tracking-wide ring-1 ring-current/20">
+            {tieuDe}
+          </span>
           {nd.tomTat.replace(/^[^—]*— /, "")}
         </span>
         {gon && <span className="shrink-0 text-[11px] opacity-70">{mo ? "▾" : "▸"}</span>}

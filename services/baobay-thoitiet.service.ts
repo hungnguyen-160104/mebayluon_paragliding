@@ -42,7 +42,7 @@ import {
   type ToaDoDiemBay,
 } from "@/lib/baobay/thoi-tiet";
 import { nhanDinhNgay } from "@/lib/baobay/nhan-dinh";
-import { tiemNangThermal } from "@/lib/baobay/thermal";
+import { tiemNangThermal, type TiemNangThermal } from "@/lib/baobay/thermal";
 import { danhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { moHinhTheoMa, MO_HINH_MAC_DINH, type MoHinh } from "@/lib/baobay/mo-hinh";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
@@ -474,11 +474,19 @@ async function layVaCham(
    * trước để biết áp suất đang lên hay xuống — thứ báo front sớm nhất.
    */
   ngay.forEach((n, i) => {
+    /**
+     * THERMAL TRƯỚC, NHẬN ĐỊNH SAU: hai chỗ cùng nói về thermal thì phải cùng
+     * một nguồn, không thì thẻ hiện "thermal yếu" ở mục này và "38/100 nhẹ" ở
+     * mục kia (chủ 11/09). Quy tắc sáu yếu tố là nguồn chuẩn; nhận định chỉ
+     * kể lại.
+     */
+    n.thermal = tiemNangThermal(n.gio, { altBai: toaDo.alt, gioBay: toaDo.gioBay });
     n.nhanDinh = nhanDinhNgay(n, {
       ngayTruoc: i > 0 ? ngay[i - 1] : null,
       altBai: toaDo.alt,
       luatHuong: toaDo.luatHuong,
       gioBay: toaDo.gioBay,
+      thermal: n.thermal as TiemNangThermal,
     });
     /** Điểm 0–100 của chuyên gia — cùng dữ liệu, cùng luật hướng, ngưỡng và khung giờ của điểm. */
     n.chuyenGia = danhGiaNgay(n, nguong, {
@@ -488,12 +496,6 @@ async function layVaCham(
       ngayTruoc: i > 0 ? ngay[i - 1] : null,
       gioBay: toaDo.gioBay,
     });
-    /**
-     * Tiềm năng thermal — quy tắc riêng (chủ 11/09), trả lời câu "ngày ấy có
-     * NÂNG không" chứ không phải "êm hay xóc": độ cao bãi quyết định lấy hai
-     * mực nào để đo độ dốc nhiệt, khung giờ bay quyết định cửa sổ 3 giờ đỉnh.
-     */
-    n.thermal = tiemNangThermal(n.gio, { altBai: toaDo.alt, gioBay: toaDo.gioBay });
   });
   return { ngay, moHinh };
 }

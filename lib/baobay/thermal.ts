@@ -49,7 +49,7 @@ import { gioTaiDoCao } from "./nhan-dinh";
 import { GIO_BAY_DEN, GIO_BAY_TU, MUA_BAY, type GioThoiTiet, type SucThermal } from "./thoi-tiet";
 
 export type YeuToThermal = {
-  ma: "nang" | "tran" | "lapse" | "onDinh" | "gioCao" | "kho";
+  ma: "nang" | "tran" | "lapse" | "onDinh" | "gioCao" | "kho" | "giat";
   ten: string;
   /** 0–100 của riêng yếu tố này. */
   diem: number;
@@ -235,13 +235,40 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
     them({ ma: "kho", ten: "Độ khô", trongSo: 0, diem: 100, ghiChu: "không có điểm sương — không trừ" });
   }
 
+  /**
+   * GUST LÀ DẤU HIỆU THERMAL ĐANG LÀM VIỆC (luật chủ 11/09).
+   *
+   * "Gust vọt lên 10 m/s trên nền gió 3–4 là dấu hiệu thermal mạnh, vì gust
+   * chủ yếu do hoạt động thermal cộng hưởng với gió chính." Đúng về vật lý:
+   * bọt khí bốc lên kéo không khí tầng trên xuống thế chỗ, mà tầng trên gió
+   * mạnh hơn — nên mặt đất thấy từng nhịp giật. Mô hình cho sẵn gió nền và
+   * gió giật, chênh giữa hai số ấy là thước gián tiếp của đối lưu.
+   *
+   * CỘNG THƯỞNG CÓ TRẦN, không phải một yếu tố có trọng số: đây là dấu hiệu
+   * xác nhận, không phải nguyên nhân — ban đêm hay ngày mưa cũng có giật mà
+   * không có thermal nào, nên chỉ cộng khi ĐANG CÓ NẮNG, và cộng tối đa 8
+   * điểm để nó không tự mình đẩy một ngày lên hạng.
+   */
+  const chenhGiat = g.giat - g.gio10m;
+  let thuongGiat = 0;
+  if (buXa >= 300 && chenhGiat >= 3) {
+    thuongGiat = duongCong(chenhGiat, [[3, 0], [5, 4], [7, 7], [9, 8]]);
+    them({
+      ma: "giat",
+      ten: "Nhịp giật",
+      trongSo: 0,
+      diem: (thuongGiat / 8) * 100,
+      ghiChu: `giật ${g.giat.toFixed(1)} trên nền ${g.gio10m.toFixed(1)} m/s → +${thuongGiat.toFixed(0)} điểm`,
+    });
+  }
+
   /* ---- Mưa: triệt tiêu ---- */
   if (g.mua >= MUA_BAY) tran.push(`mưa ${g.mua.toFixed(1)} mm`);
 
   /* ---- Tổng có trọng số × hệ số, rồi ÁP TRẦN ---- */
   const cong = yeuTo.filter((y) => y.trongSo > 0);
   const tongTS = cong.reduce((t, y) => t + y.trongSo, 0);
-  let diem = (cong.reduce((t, y) => t + y.diem * y.trongSo, 0) / tongTS) * heSoGio * heSoKho;
+  let diem = (cong.reduce((t, y) => t + y.diem * y.trongSo, 0) / tongTS) * heSoGio * heSoKho + thuongGiat;
   if (tran.some((x) => x.startsWith("không có nắng") || x.startsWith("mưa"))) diem = Math.min(diem, 12);
   else if (tran.some((x) => x.startsWith("trần xáo trộn chỉ"))) diem = Math.min(diem, 20);
   else if (tran.some((x) => x.startsWith("nghịch nhiệt"))) diem = Math.min(diem, 35);
@@ -321,6 +348,9 @@ export function tiemNangThermal(
                 : `Trên cao rất ổn định (${on.ghiChu}) — nắp chặt, thermal yếu và ngắn.`,
     );
   }
+  /** Nhịp giật: dấu hiệu nhìn thấy được của thermal, nói ra để phi công đối chiếu với bảng giờ. */
+  const giat = dinh.yeuTo.find((y) => y.ma === "giat");
+  if (giat) lyDo.push(`Nhịp giật mạnh hơn gió nền (${giat.ghiChu.split(" →")[0]}) — thermal đang làm việc.`);
   if (dinh.tran.length) lyDo.push(`Bị chặn bởi: ${dinh.tran.join(", ")}.`);
 
   /* ---- Cảnh báo ---- */
