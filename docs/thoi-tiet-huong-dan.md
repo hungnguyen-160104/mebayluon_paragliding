@@ -153,7 +153,7 @@ vì mưa.
 
 Hướng gió hiện bằng **mũi tên chỉ chiều gió thổi tới** — nhìn cả hàng ngang là
 thấy ngay lúc nào gió đổi chiều; tên hướng ("ĐĐB") nằm ở tooltip. Mũi tên tô
-**xanh** khi thuận sườn, **đỏ** khi ngược sườn hoặc luồn khe (gió xiết), **xám**
+**xanh** khi đúng gió chính bãi, **đỏ** khi ngược sườn hoặc luồn khe (gió xiết), **xám**
 ở điểm chưa khai luật hướng.
 
 Màu mũi tên trả lời câu khác hẳn màu ô gió: ô gió nói *mạnh cỡ nào*, mũi tên nói
@@ -413,7 +413,7 @@ chở khách (không phải bay thể thao), nhân trọng số rồi cộng:
 |---|---|---|
 | Gió mặt đất | 25 | 0 m/s → 65 · 1,5–4 → 100 · 6 → 55 · ngưỡng cấm → 25 · quá → 0. **Thuận sườn** thì 4–6 m/s vẫn 85–100 |
 | Gió giật | 10 | ≤ 6 → 100 · 10 → 92 · 14 → 75 · 18 → 30 · quá 18 → 0. **Hệ số giật** > 3× kèm giật ≥ 8: −15 ("từng đợt") |
-| Hướng gió | 15 | thuận sườn 100 · chéo sườn 55 · chưa khai luật 80 · **ngược sườn / gió xiết 0** |
+| Hướng gió | 15 | gió chính bãi 100 · chéo sườn 55 · chưa khai luật 80 · **ngược sườn / gió xiết 0** |
 | Gió trên cao | 15 | mực 500m trên bãi: ≤ 5 → 100 · 8 → 65 · 12 → 15 · 14 → 0. **Cắt gió** (mặt đất lặng, 300m có gió): −20 |
 | Thermal / ổn định | 10 | trần 500–1500 m → 100 · 300 → 70 · 2200 → 65 · 3000 → 40. LI ≤ −2: −20 · ≤ −4: −35 · ≥ 6: −10 |
 | Trần mây / mù | 10 | trời quang 100 · mây thấp dày: trần < 150 m → 0 · 300 → 45 · 500 → 75 · 800 → 100 · **sương mù 0** |
@@ -440,6 +440,20 @@ Mỗi thành phần có **ghi chú số** ("mực 500m 8,3 m/s — gió đứt (
 bảng mốc ngay trong mã (`lib/baobay/chuyen-gia.ts`) để chỉnh theo kinh nghiệm
 chủ là chuyện một dòng; sổ chấm thực tế là chỗ đối chiếu.
 
+### Thổi lùi — cảnh báo cứng khi gió trên 500 m vượt 10 m/s
+
+Luật chủ 11/09, áp cho **mọi điểm**, không cần khai riêng: gió **mực 500 m hoặc
+cao hơn** trên **10 m/s** thì luôn hiện câu *"Cẩn thận bị THỔI LÙI, gió xiết ở độ
+cao 500m"*, kèm số thật của hai mực và cách xử lý — **trên 12 m/s**: không cất
+cánh dù gió mặt đất nhẹ; **10–12 m/s**: bám sườn thấp, không leo ra xa, giữ tốc
+độ, sẵn sàng hạ sớm.
+
+Đây là cái bẫy kinh điển: đứng ở bãi thấy gió 2–3 m/s nên yên tâm cất cánh, lên
+tới 500 m gặp luồng 11 m/s là dù đứng yên hoặc trôi ngược ra sau sườn — vào vùng
+khuất gió (rotor) thì hết đường ra. Xét **cả mực cao hơn** chứ không riêng 500 m:
+gió 1.000 m mạnh cũng sà xuống khi thermal khoét lên. Câu này luôn đứng **đầu**
+danh sách khuyến cáo.
+
 ## 5f2. Cà vách (ridge soaring) — nguồn nâng THỨ HAI
 
 Bộ chấm cũ chỉ biết **thermal**, nên ngày lift nhiệt yếu là ra "chuyến ngắn,
@@ -449,7 +463,7 @@ thermal là bọt khí nóng bốc lên, **cà vách là gió bị vách núi h�
 
 Thang của chủ, máy áp đúng thế:
 
-| Gió thuận sườn | Kết luận |
+| Gió chính bãi | Kết luận |
 |---|---|
 | < 3 m/s | chưa dựng được vách — không nói gì |
 | ≥ 3 m/s | **cà vách tốt** |
@@ -462,11 +476,11 @@ không tính** (vách vẫn dựng gió nhưng chẳng ai bay dưới mưa — c
 thứ Hai 14/09: gió bắc đẹp mà mưa thì vẫn là ngày tệ).
 
 Có cà vách thì **kiểu ngày** đổi hẳn: thay vì "Ngày ÍT THERMAL: bay ebon là
-chính" thành *"Ngày CÀ VÁCH CỰC TỐT: gió thuận sườn dựng đều lên vách — bay bám
+chính" thành *"Ngày CÀ VÁCH CỰC TỐT: gió chính bãi dựng đều lên vách — bay bám
 vách cả tiếng"*. Mưa và mù vẫn xét **trước** nên không lấn. Gió mực 500 m mạnh
 thì mục cà vách hạ xuống mức chú ý kèm câu *"bám vách thấp, đừng leo ra xa"*.
 
-Mục **Gió mặt đất** nay nói thẳng **THUẬN SƯỜN** khi hướng nằm trong cung tốt —
+Mục **Gió mặt đất** nay nói thẳng **GIÓ CHÍNH BÃI** khi hướng nằm trong cung tốt —
 trước chỉ tô màu, đọc không thấy chữ ấy thì tưởng gió bình thường.
 
 **Gust là dấu hiệu thermal, không phải lỗi**: "gust vọt lên 10 m/s trên nền gió
@@ -532,6 +546,18 @@ số giờ ≥ 40 ("giờ có thermal"), ba bốn câu lý do có con số, và 
 mây < 25% và chênh điểm sương ≥ 8 °C → *thermal XANH, khó nhìn nguồn*; "rất
 mạnh" → *bay đôi xóc, khách say*; gió mực 500 m ≥ 12 → *xé thermal HH–HH*.
 
+**Thẻ trong app quản trị nói ĐỦ NHƯ trang khách** (chủ 11/09): ô ngày có hướng
+gió trội + tốc độ trên nền màu theo thang gió, điểm chuyên gia kèm số giờ đẹp,
+mức thermal, mưa, dông, nhãn CÂN NHẮC/NÊN NGHỈ, dòng hoàng hôn đẹp; dòng đầu thẻ
+bám theo **ngày đang chọn** (không phải luôn là hôm nay) và có thêm số giờ nắng.
+Ô đang chọn tô **cam** ở cả hai nơi. Hàm `hoangHonDep` nằm ở `lib/baobay/thoi-tiet.ts`
+để hai thẻ dùng chung.
+
+**Mở một ngày KHÔNG làm thẻ nhảy chỗ** (chủ 11/09): trước đây thẻ nở ra chiếm hai
+cột nên lưới xếp lại, thẻ rơi xuống hàng dưới và các thẻ sau trôi theo — bấm xong
+phải đi tìm bảng vừa mở. Nay thẻ giữ nguyên ô của nó, chỉ cao thêm; bảng phụ mở
+ngay bên dưới trong chính thẻ ấy. Đo trên trang thật: lệch x = 0, y = 0, rộng = 0.
+
 **Hiện ở đâu**: dòng tóm tắt thẻ khách ("🔥 Thermal mạnh 72 (11:00–13:00)"),
 khối "Tiềm năng thermal" trong nhận định tiếng Việt (thẻ khách và thẻ nội bộ),
 hàng "Thermal potential" trong bản tóm tắt ngoại ngữ, dòng hôm nay của thẻ
@@ -596,7 +622,7 @@ hướng khai riêng từng điểm, không có mặc định chung.
 | **Trần tốc độ theo hướng** | Tây > 5 m/s · Nam > 6 m/s · **Đông > 6 m/s** — quá là đỏ |
 
 Vì gió Đông vừa là hướng tốt vừa là hướng sinh xiết: nhẹ và vừa thì đẹp, mạnh
-thì thành cảnh báo — máy xét gió xiết **trước** khi kết luận thuận sườn.
+thì thành cảnh báo — máy xét gió xiết **trước** khi kết luận là gió chính bãi.
 
 **Đồi Bù** (Hà Nội): tốt với gió **Đông, Bắc, Tây** (cung 247°→112°, vắt qua
 bắc); xấu với **Nam, Tây Nam** (157°–246°).
@@ -661,7 +687,7 @@ số của sổ kinh nghiệm — chỉ nhìn **trong khung giờ bay của đi�
 không phải cả dải giờ "có thermal" — cả dải thì ra "09:00–16:00", dài bằng cả
 ngày bay, chẳng chọn được gì.
 
-Mấy chữ đã bỏ theo ý chủ: "— thuận sườn" (người đọc không biết làm gì với nó),
+Mấy chữ đã bỏ theo ý chủ ở HÀNG GIỜ: "— gió chính bãi" (người đọc không biết làm gì với nó),
 "KHÔNG BAY" (quá tuyệt đối — mưa có lúc ngớt; mức đỏ giờ chỉ còn 😞), "Không
 có khung giờ đẹp" (làm khách hoang mang; không có thì im).
 

@@ -974,7 +974,16 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
      */
     <div
       className={
-        "min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" + (ngayChon ? " sm:col-span-2" : "")
+        /**
+         * THẺ KHÔNG ĐỔI CHỖ KHI MỞ MỘT NGÀY (chủ 11/09).
+         *
+         * Trước đây mở ngày là thẻ nở ra chiếm hai cột (`sm:col-span-2`): lưới
+         * xếp lại, thẻ nhảy xuống hàng dưới và mọi thẻ sau nó trôi theo — bấm
+         * xong phải đi tìm bảng vừa mở. Nay thẻ giữ nguyên ô của nó, chỉ CAO
+         * thêm: ô ngày sáng cam, bảng phụ mở ngay bên dưới trong chính thẻ ấy.
+         * Bảng giờ và biểu đồ bên trong tự cuộn ngang nên hẹp vẫn đọc được.
+         */
+        "min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
       }
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">

@@ -235,22 +235,40 @@ export function ThoiTietCard({
   if (!du) return null;
 
   const homNayCard = du.ngay.find((n) => n.ngay === homNay) ?? du.ngay[0];
+  /**
+   * DÒNG ĐẦU THẺ BÁM THEO NGÀY ĐANG XEM, y như trang khách (chủ 11/09 yêu cầu
+   * hai bên nói cùng một thứ). Trước đây nó luôn là số của HÔM NAY, kể cả khi
+   * người trực vừa bấm sang thứ Bảy — đọc thì tưởng đang xem ngày mình chọn.
+   */
+  const ngayDangXem = ngayChon ?? homNayCard;
+  /** Số giờ có nắng thật trong khung bay — nắng là thứ sinh ra thermal. */
+  const gioNang = (() => {
+    const [tu, den] = du.toaDo.gioBay ?? [7, 17];
+    let giay = 0;
+    for (const g of ngayDangXem.gio) {
+      const h = Number(g.gio.slice(11, 13));
+      if (h >= tu && h <= den) giay += g.giayNang ?? 0;
+    }
+    return Math.round((giay / 3600) * 10) / 10;
+  })();
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2 sm:p-3">
       {/* ---- đầu thẻ: kết luận hôm nay ---- */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <div className={"rounded-lg border px-2 py-1 text-sm font-black " + MAU_NEN[homNayCard.muc]}>
-          {NHAN[homNayCard.muc]}
+        <div className={"whitespace-nowrap rounded-lg border px-2 py-1 text-sm font-black " + MAU_NEN[ngayDangXem.muc]}>
+          {NHAN[ngayDangXem.muc]}
         </div>
         <div className="text-xs leading-tight text-slate-700">
           <div className="font-bold text-slate-900">
             {spotName(spot)} · {du.toaDo.ten}
           </div>
           <div>
-            {homNayCard.khungDep ? (
+            {/* Nhãn ngày đứng đầu dòng: đang đọc số của ngày nào phải nói ra. */}
+            <strong className="mr-1 text-slate-900">{nhanNgay(ngayDangXem.ngay, homNay)}</strong>
+            {ngayDangXem.khungDep ? (
               <>
-                Giờ đẹp <strong className="text-emerald-700">{homNayCard.khungDep}</strong>
+                Giờ đẹp <strong className="text-emerald-700">{ngayDangXem.khungDep}</strong>
               </>
             ) : (
               /* Không khung đẹp thì im, không tuyên bố "không có" — mưa có lúc ngớt, người ở bãi quyết. */
@@ -259,33 +277,35 @@ export function ThoiTietCard({
             {/* Hướng gió trội đứng TRƯỚC tốc độ — chủ 11/09: đó là thứ quan trọng nhất trên dòng này. */}
             · gió{" "}
             {(() => {
-              const h = huongTroiNgay(homNayCard.gio, [6, 18]);
+              const h = huongTroiNgay(ngayDangXem.gio, [6, 18]);
               return h === null ? null : (
                 <strong className="uppercase text-slate-900" title={`${huongChu(h)} · ${Math.round(h)}°`}>
                   {huongDayDuVi(h)}{" "}
                 </strong>
               );
             })()}
-            tối đa {homNayCard.gioMax.toFixed(1)} m/s · giật {homNayCard.giatMax.toFixed(1)}
+            tối đa {ngayDangXem.gioMax.toFixed(1)} m/s · giật {ngayDangXem.giatMax.toFixed(1)}
+            {gioNang > 0 ? ` · ☀ ${gioNang} giờ nắng` : ""}
             {/**
              * SỐ TIẾNG MƯA, không phải phần trăm. "Khả năng mưa 93%" bị đọc
              * thành "mưa gần cả ngày"; "mưa ~2 tiếng (13:00–15:00)" thì không
              * ai hiểu nhầm. Mưa từ 0,3 mm/giờ trở xuống không tính (vài hạt, không ướt).
              */}
-            {homNayCard.gioMua > 0
-              ? ` · ☔ mưa ${suNangMua(homNayCard.muaTongThat)} ${homNayCard.gioMua} tiếng${homNayCard.khungMua ? ` (${homNayCard.khungMua})` : ""}, tổng ${homNayCard.muaTongThat.toFixed(1)}mm`
-              : homNayCard.gioMuaBay > 0
-                ? ` · mưa bay${homNayCard.khungMuaBay ? ` ${homNayCard.khungMuaBay}` : ""} — bay vẫn bay`
+            {ngayDangXem.gioMua > 0
+              ? ` · ☔ mưa ${suNangMua(ngayDangXem.muaTongThat)} ${ngayDangXem.gioMua} tiếng${ngayDangXem.khungMua ? ` (${ngayDangXem.khungMua})` : ""}, tổng ${ngayDangXem.muaTongThat.toFixed(1)}mm`
+              : ngayDangXem.gioMuaBay > 0
+                ? ` · mưa bay${ngayDangXem.khungMuaBay ? ` ${ngayDangXem.khungMuaBay}` : ""} — bay vẫn bay`
                 : " · không mưa"}
-            {homNayCard.xacSuatDongMax >= 20 ? ` · ⚡ dông ${homNayCard.xacSuatDongMax}%` : ""}
+            {ngayDangXem.xacSuatDongMax >= 20 ? ` · ⚡ dông ${ngayDangXem.xacSuatDongMax}%` : ""}
             {(() => {
-              const th = homNayCard.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
+              const th = ngayDangXem.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
               return th
                 ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? `, khoẻ nhất ${th.khung}` : ""}`
-                : homNayCard.tranMax
-                  ? ` · trần thermal ${homNayCard.tranMax}m`
+                : ngayDangXem.tranMax
+                  ? ` · trần thermal ${ngayDangXem.tranMax}m`
                   : "";
             })()}
+            {hoangHonDep(ngayDangXem) ? <span className="font-bold text-orange-700"> · 🌅 hoàng hôn đẹp</span> : null}
           </div>
         </div>
         <button

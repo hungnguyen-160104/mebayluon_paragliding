@@ -518,7 +518,7 @@ export type HuongTheNao = "tot" | "xau" | "thuong";
  * gió nhẹ mà ngược sườn vẫn không bay được — nên phải nhìn thấy cả hai.
  *
  * Điểm chưa khai luật hướng thì trả "thường": thà để xám còn hơn tô xanh một
- * hướng mà mình không biết có thuận sườn hay không.
+ * hướng mà mình không biết có phải gió chính bãi hay không.
  */
 export function huongTheNao(huong: number, gio: number, luat?: LuatHuong): HuongTheNao {
   if (!luat) return "thuong";
@@ -716,14 +716,14 @@ export function chamGio(
   };
 
   /**
-   * THUẬN SƯỜN THÌ NỚI NGƯỠNG GIÓ ĐẸP.
+   * ĐÚNG GIÓ CHÍNH BÃI THÌ NỚI NGƯỠNG GIÓ ĐẸP.
    *
    * Cùng 5 m/s: thổi ngược sườn là hỏng, còn thổi thẳng vào sườn ở Khau Phạ
    * thì đó lại là ngày đẹp nhất — gió dựng lên mặt núi, thermal lên đều, dù
    * lên cao mà không xóc. Nên khi hướng nằm trong cung tốt, mức "hơi mạnh"
    * (tới 6 m/s) vẫn tính là gió đẹp; qua đó mới cân nhắc.
    *
-   * Ngưỡng CẤM thì không nới: thuận sườn hay không, quá mức ấy là gấp dù.
+   * Ngưỡng CẤM thì không nới: đúng gió chính bãi hay không, quá mức ấy là gấp dù.
    */
   const huongTot = Boolean(luat?.tot && trongCung(g.huong, luat.tot));
   const nguongDep = huongTot ? Math.max(nguong.gioXanh, 6) : nguong.gioXanh;
@@ -870,7 +870,7 @@ export function chamGio(
     len("do");
   } else if (capVuot) {
     /**
-     * TRẦN TỐC ĐỘ RIÊNG CỦA HƯỚNG (luật chủ 11/09): hướng vẫn thuận sườn
+     * TRẦN TỐC ĐỘ RIÊNG CỦA HƯỚNG (luật chủ 11/09): hướng vẫn là gió chính bãi
      * nhưng quá mức này là địa hình bóp gió, không bay — Khau Phạ gió Đông
      * trên 6 m/s, Sa Pa gió Bắc hoặc Tây trên 6 m/s.
      */
@@ -885,7 +885,7 @@ export function chamGio(
     lyDo.push(`⚠ GIÓ XIẾT: hướng ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — luồn khe, tăng tốc ở mép bãi`);
     len("do");
   } else if (huongTot) {
-    /** Không thêm "— thuận sườn": người đọc thấy chữ đó không biết làm gì với nó (luật chủ 10/09). */
+    /** Không thêm "— gió chính bãi" ở hàng giờ: người đọc thấy chữ đó không biết làm gì với nó (luật chủ 10/09). */
     lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]}`);
   } else if (!huongThuanLoi(g.huong, huongThuan)) {
     lyDo.push(`gió hướng ${huongChu(g.huong)} — ngược sườn cất cánh`);
