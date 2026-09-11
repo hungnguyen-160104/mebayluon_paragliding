@@ -512,7 +512,14 @@ export function ThoiTietCard({
            */}
           {ngayChon &&
             (kieuXem === "skewt" ? (
-              <SkewT spot={spot} ngay={ngayChon.ngay} moHinh={moHinh} altBai={du.toaDo.alt ?? 0} gioBay={du.toaDo.gioBay} />
+              <SkewT
+                spot={spot}
+                ngay={ngayChon.ngay}
+                moHinh={moHinh}
+                altBai={du.toaDo.alt ?? 0}
+                altHa={du.toaDo.altHa}
+                gioBay={du.toaDo.gioBay}
+              />
             ) : kieuXem === "meteogram" ? (
               <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
             ) : kieuXem === "airgram" ? (

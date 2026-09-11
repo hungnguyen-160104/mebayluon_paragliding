@@ -48,13 +48,19 @@ const VE_W = W - LE.trai - LE.phai;
 const VE_H = H - LE.tren - LE.duoi;
 
 /** Khoảng nhiệt độ trục ngang (°C) tại mực dưới cùng. */
-const T_MIN = -40;
-const T_MAX = 40;
+const T_MIN = -20;
+const T_MAX = 45;
 /** Độ xiên: mỗi pixel lên cao thì dịch phải bấy nhiêu pixel. */
 const XIEN = 0.55;
 
 const AP_DUOI = 1000;
-const AP_TREN = 300;
+/**
+ * TRẦN HÌNH 600 hPa (~4.400 m) — luật chủ 11/09: "dù lượn chỉ cần tới khoảng
+ * 4.000 m là quá đủ". Vẽ tới 300 hPa (9,8 km) thì tầng mình bay bị nén vào một
+ * phần ba dưới cùng của hình, nhìn không ra lớp nào; cắt ở 650 hPa thì cả bãi,
+ * đáy mây, nghịch nhiệt và trần thermal trải kín khung.
+ */
+const AP_TREN = 600;
 
 const yTheoAp = (ap: number) =>
   LE.tren + (VE_H * (Math.log(AP_TREN) - Math.log(ap))) / (Math.log(AP_TREN) - Math.log(AP_DUOI));
@@ -75,11 +81,13 @@ export type SkewTProps = {
   moHinh?: string;
   /** Độ cao bãi cất cánh (m) — vẽ vạch "bãi" và cho bọt khí xuất phát từ đó. */
   altBai?: number;
+  /** Độ cao bãi hạ (m) — vẽ vạch thứ hai, chênh hai vạch là độ cao thả. */
+  altHa?: number;
   /** Khung giờ bay của điểm, mặc định 7–17. */
   gioBay?: [number, number];
 };
 
-export function SkewT({ spot, ngay, moHinh, altBai = 0, gioBay = [7, 17] }: SkewTProps) {
+export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, gioBay = [7, 17] }: SkewTProps) {
   const [du, setDu] = useState<{ khoa: string; gio: ThamKhong[]; moHinh: string } | null>(null);
   const [loi, setLoi] = useState<{ khoa: string; cau: string } | null>(null);
   const [gioChon, setGioChon] = useState<string | null>(null);
@@ -154,7 +162,7 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, gioBay = [7, 17] }: Skew
       </div>
 
       <div className="overflow-x-auto">
-        <HinhSkewT muc={hienTai.muc} altBai={altBai} gio={hienTai.gio} />
+        <HinhSkewT muc={hienTai.muc} altBai={altBai} altHa={altHa} gio={hienTai.gio} />
       </div>
 
       <CachDoc />
@@ -162,7 +170,8 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, gioBay = [7, 17] }: Skew
   );
 }
 
-function HinhSkewT({ muc, altBai, gio }: { muc: MucSkewT[]; altBai: number; gio: string }) {
+function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: number; altHa?: number; gio: string }) {
+  /** Chỉ tầng mình bay: từ sát đất lên 650 hPa (~3.700m). */
   const trongKhung = muc.filter((m) => m.ap <= AP_DUOI && m.ap >= AP_TREN);
   /** Mực xuất phát của bọt khí: mực thấp nhất còn NẰM TRÊN bãi (đứng ở bãi thì khí dưới bãi không liên quan). */
   const batDau = trongKhung.find((m) => m.cao >= altBai - 50) ?? trongKhung[0];
@@ -200,7 +209,7 @@ function HinhSkewT({ muc, altBai, gio }: { muc: MucSkewT[]; altBai: number; gio:
       <rect x={LE.trai} y={LE.tren} width={VE_W + LE.phai - 20} height={VE_H} fill="#f8fafc" />
 
       {/* Đường đẳng nhiệt xiên, mỗi 10°C */}
-      {Array.from({ length: 17 }, (_, i) => T_MIN + i * 5).map((t) => {
+      {Array.from({ length: 14 }, (_, i) => T_MIN + i * 5).map((t) => {
         const yD = LE.tren + VE_H;
         const yT = LE.tren;
         const chan = t % 10 === 0;
@@ -264,6 +273,16 @@ function HinhSkewT({ muc, altBai, gio }: { muc: MucSkewT[]; altBai: number; gio:
         </g>
       )}
 
+      {/* Vạch BÃI HẠ — chênh với bãi cất là độ cao thả, mốc để xem mây có nằm trong đường bay không. */}
+      {altHa !== undefined && altHa < altBai && (
+        <g>
+          <line x1={LE.trai} y1={yTheoCao(altHa)} x2={LE.trai + VE_W} y2={yTheoCao(altHa)} stroke="#475569" strokeWidth={0.9} strokeDasharray="2 4" />
+          <text x={LE.trai + 3} y={yTheoCao(altHa) - 3} fontSize={9} fontWeight={700} fill="#475569">
+            bãi hạ {altHa}m
+          </text>
+        </g>
+      )}
+
       {/* Đáy mây và trần thermal */}
       {caoDayMay > altBai && (
         <g>
@@ -314,8 +333,29 @@ function HinhSkewT({ muc, altBai, gio }: { muc: MucSkewT[]; altBai: number; gio:
         );
       })}
 
+      {/**
+       * CHÚ THÍCH NGAY TRÊN HÌNH (chủ 11/09) — bốn đường phải gọi tên tại chỗ,
+       * không bắt người xem dò xuống khối chữ bên dưới rồi ngước lên đối chiếu.
+       */}
+      <g transform={`translate(${LE.trai + 6},${LE.tren + 6})`}>
+        <rect x={0} y={0} width={150} height={52} rx={4} fill="#ffffff" opacity={0.88} stroke="#e2e8f0" />
+        {[
+          ["#dc2626", "Nhiệt độ", "2", ""],
+          ["#2563eb", "Điểm sương", "2", ""],
+          ["#f97316", "Bọt khí từ bãi", "1.6", "5 4"],
+          ["#cbd5e1", "Đoạn nhiệt khô", "1", "3 3"],
+        ].map(([mau, ten, day, net], i) => (
+          <g key={ten} transform={`translate(6,${10 + i * 11})`}>
+            <line x1={0} y1={0} x2={16} y2={0} stroke={mau} strokeWidth={Number(day)} strokeDasharray={net || undefined} />
+            <text x={21} y={3} fontSize={8.5} fill="#334155">
+              {ten}
+            </text>
+          </g>
+        ))}
+      </g>
+
       {/* Trục nhiệt độ dưới cùng */}
-      {Array.from({ length: 9 }, (_, i) => T_MIN + i * 10).map((t) => (
+      {Array.from({ length: 7 }, (_, i) => T_MIN + i * 10).map((t) => (
         <text key={`x${t}`} x={xTheoNhiet(t, LE.tren + VE_H)} y={H - LE.duoi + 14} textAnchor="middle" fontSize={9} fill="#64748b">
           {t}°
         </text>

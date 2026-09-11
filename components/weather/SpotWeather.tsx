@@ -295,7 +295,7 @@ function DaiNgay({
  * khoảng thời gian quyết định còn kịp một chuyến cuối hay không. Số do mô hình
  * tính cho đúng toạ độ bãi nên tự đổi theo mùa, không phải khai tay.
  */
-function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten: string; alt?: number }; ngay: Ngay | null; t: ThoiTietCopy }) {
+function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten: string; alt?: number; altHa?: number }; ngay: Ngay | null; t: ThoiTietCopy }) {
   const daiNgay = (() => {
     if (!ngay?.matTroi) return null;
     const p = (x: string) => Number(x.slice(0, 2)) * 60 + Number(x.slice(3, 5));
@@ -309,6 +309,12 @@ function KhoiViTri({ toaDo, ngay, t }: { toaDo: { lat: number; lon: number; ten:
         {toaDo.lat.toFixed(4)}, {toaDo.lon.toFixed(4)}
         {toaDo.alt ? ` · ${toaDo.alt}m` : ""}
       </span>
+      {/* Độ cao THẢ = cất − hạ: thứ quyết định chuyến dài bao lâu khi không có nâng. */}
+      {toaDo.alt !== undefined && toaDo.altHa !== undefined && (
+        <span className="font-semibold text-slate-700">
+          ▲ {toaDo.alt}m → ▼ {toaDo.altHa}m (thả {toaDo.alt - toaDo.altHa}m)
+        </span>
+      )}
       {ngay?.matTroi && (
         <span className="font-semibold text-amber-700">
           ☀ {t.sunrise} {ngay.matTroi.moc} · {t.sunset} {ngay.matTroi.lan}
@@ -970,7 +976,8 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
   const huongNgay = huongTroiCuaNgay(ngayHien);
 
   return (
-    /**
+    <>
+    {/**
      * `min-w-0` KHÔNG PHẢI làm đẹp — thiếu nó là vỡ trang trên điện thoại.
      *
      * Thẻ này là Ô CỦA LƯỚI, mà ô lưới mặc định `min-width: auto`: nó không
@@ -978,7 +985,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
      * 10 ngày rộng vài nghìn px, thế là cột lưới nở theo và cả trang trôi ngang
      * (chủ báo 11/09 — mở một ngày ra là bảng rộng như bản máy tính). Cho phép
      * ô hẹp lại thì khung cuộn bên trong mới làm đúng việc của nó.
-     */
+     */}
     <div
       className={
         /**
@@ -1074,8 +1081,23 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         lang={lang}
       />
 
-      {ngayChon && (
-        <div className="mt-3 min-w-0 border-t border-slate-200 pt-3">
+    </div>
+
+    {/**
+     * BẢNG PHỤ LÀ MỘT Ô LƯỚI RIÊNG, RỘNG CẢ HAI CỘT (chủ 11/09).
+     *
+     * Để nó nằm trong thẻ thì thẻ cao vọt lên còn cột bên cạnh hở một khoảng
+     * trắng đúng bằng phần chênh — nhìn như trang bị lỗi. Nay nó là ô lưới
+     * riêng đặt NGAY SAU thẻ: trên điện thoại (một cột) rơi ngay dưới thẻ;
+     * trên máy tính (hai cột) nó chiếm trọn hàng kế tiếp, còn thẻ hàng xóm
+     * được lưới `grid-flow-row-dense` lấp lại vào chỗ trống bên cạnh thẻ đang
+     * mở — nên KHÔNG thẻ nào đổi chỗ.
+     *
+     * Nền cam nhạt và viền cam: cùng màu với ô ngày đang chọn, để mắt nối
+     * được "ô này" với "bảng này" mà không cần đường kẻ.
+     */}
+    {ngayChon && (
+        <div className="col-span-full min-w-0 rounded-2xl border-2 border-orange-300 bg-orange-50/70 p-3 shadow-sm @container">
           {lang === "vi" ? (
             <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
           ) : (
@@ -1134,6 +1156,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
               ngay={ngayChon.ngay}
               moHinh={moHinh}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+              altHa={(du.toaDo as { altHa?: number }).altHa}
               gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
             />
           ) : kieuXem === "meteogram" ? (
@@ -1158,7 +1181,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
             <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
           )}
         </div>
-      )}
-    </div>
+    )}
+    </>
   );
 }

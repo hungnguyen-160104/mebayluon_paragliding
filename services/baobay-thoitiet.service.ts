@@ -521,6 +521,9 @@ export async function duBaoDiemCongKhai(diem: {
   tinh: string;
   lat: number;
   lon: number;
+  /** Độ cao bãi cất / bãi hạ (m) — điểm trang khách khai riêng thì đè lên số của sổ nội bộ. */
+  alt?: number;
+  altHa?: number;
   spotNoiBo?: SpotId;
   luatHuong?: LuatHuong;
 }, moHinhMa?: string): Promise<{
@@ -541,11 +544,24 @@ export async function duBaoDiemCongKhai(diem: {
   const mh = moHinhTheoMa(moHinhMa ?? MO_HINH_MAC_DINH);
   if (diem.spotNoiBo) {
     const du = await duBaoDiemBay(diem.spotNoiBo, { moHinh: mh.ma });
-    const toaDo = diem.luatHuong ? { ...du.toaDo, luatHuong: diem.luatHuong } : du.toaDo;
+    /** Điểm trang khách khai riêng thì đè lên số của sổ nội bộ (Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"). */
+    const toaDo: ToaDoDiemBay = {
+      ...du.toaDo,
+      ...(diem.luatHuong ? { luatHuong: diem.luatHuong } : {}),
+      ...(diem.alt !== undefined ? { alt: diem.alt } : {}),
+      ...(diem.altHa !== undefined ? { altHa: diem.altHa } : {}),
+    };
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
   }
 
-  const toaDo: ToaDoDiemBay = { lat: diem.lat, lon: diem.lon, ten: diem.ten, luatHuong: diem.luatHuong };
+  const toaDo: ToaDoDiemBay = {
+    lat: diem.lat,
+    lon: diem.lon,
+    ten: diem.ten,
+    alt: diem.alt,
+    altHa: diem.altHa,
+    luatHuong: diem.luatHuong,
+  };
   const nguong = nguongCuaDiem(null);
   const cacheKey = `web:${diem.slug}:${mh.ma}:${SO_NGAY}:${diem.lat},${diem.lon}`;
   const cu = CACHE.get(cacheKey);

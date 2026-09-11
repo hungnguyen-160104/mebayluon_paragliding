@@ -26,6 +26,10 @@ export type DiemThoiTiet = {
   tinh: string;
   lat: number;
   lon: number;
+  /** Độ cao bãi CẤT CÁNH (m) — điểm không có sổ nội bộ thì khai ở đây. */
+  alt?: number;
+  /** Độ cao bãi HẠ (m) — chênh với `alt` là độ cao thả. */
+  altHa?: number;
   /** Điểm bay nội bộ tương ứng — có thì dùng toạ độ và ngưỡng đã học của nó. */
   spotNoiBo?: SpotId;
   /** Luật hướng gió riêng của chỗ cất cánh này. */
@@ -75,10 +79,14 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     tinh: "Hoà Bình",
     lat: 20.9497,
     lon: 105.4206,
+    /** Số chủ 11/09: cất cánh ~650m, hạ 50m. */
+    alt: 650,
+    altHa: 50,
     luatHuong: { tot: [68, 292], xau: [293, 67] },
   },
   { slug: "muong-hoa-sapa", ten: "Mường Hoa – Sa Pa", tinh: "Lào Cai", lat: 22.3364, lon: 103.8438, spotNoiBo: "sapa" },
-  { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.1094, lon: 108.2789 },
+  /** Sơn Trà: cất 600m, hạ ngay mép biển 0m (số chủ 11/09). */
+  { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.1094, lon: 108.2789, alt: 600, altHa: 0 },
   { slug: "ha-giang", ten: "Bắc Sum – Quản Bạ", tinh: "Hà Giang", lat: 22.9214, lon: 104.9731 },
   { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.5219, lon: 104.5322 },
   { slug: "dalat", ten: "Đà Lạt", tinh: "Lâm Đồng", lat: 11.9404, lon: 108.4583 },

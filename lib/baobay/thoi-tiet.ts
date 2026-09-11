@@ -54,6 +54,13 @@ export type ToaDoDiemBay = {
   lon: number;
   /** Độ cao chỗ cất cánh (m) — để đối chiếu với độ cao mô hình khí tượng. */
   alt?: number;
+  /**
+   * Độ cao BÃI HẠ (m). Chênh giữa cất và hạ chính là "độ cao thả" — thứ quyết
+   * định chuyến bay dài bao lâu khi không có nâng, và là mốc phải nhìn trên
+   * giản đồ thám không: mây hay nghịch nhiệt nằm dưới mức này thì cả đường
+   * bay nằm trong mù.
+   */
+  altHa?: number;
   /** Tên chỗ cất cánh, hiện trên thẻ để biết đang xem đúng chỗ hay không. */
   ten: string;
   /**
@@ -102,6 +109,8 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     /** 1.268 m — số chủ đo tại bãi cất cánh (10/09), không phải 1.200 làm tròn. */
     alt: 1268,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
+    /** Bãi hạ ở Tú Lệ, thấp hơn bãi cất 538m (số chủ 11/09). */
+    altHa: 730,
     /**
      * TRẦN TỐC ĐỘ THEO HƯỚNG (chủ 11/09): "Khau Phạ cấm gió hướng Tây mạnh
      * hơn 5 m/s, gió Nam hoặc Đông mạnh hơn 6 m/s."
@@ -133,6 +142,7 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     lat: 22.3364,
     lon: 103.8438,
     alt: 1500,
+    altHa: 1000,
     ten: "Sa Pa (Lào Cai)",
     luatHuong: {
       capToc: [
@@ -152,6 +162,8 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     lat: 20.8386,
     lon: 105.5561,
     alt: 833,
+    /** Bãi hạ dưới đồng bằng Chương Mỹ — thả 783m (số chủ 11/09). */
+    altHa: 50,
     ten: "Đồi Bù (Chương Mỹ)",
     luatHuong: { tot: [247, 112], xau: [157, 246] },
     /**

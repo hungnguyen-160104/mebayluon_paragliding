@@ -67,7 +67,14 @@ export default function WeatherPageClient() {
           </span>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {/**
+         * `grid-flow-row-dense`: bảng phụ của thẻ đang mở là một ô lưới rộng cả
+         * hai cột đặt ngay sau thẻ ấy. Không có "dense" thì ô rộng ấy đẩy thẻ
+         * hàng xóm xuống hàng dưới; có "dense" thì lưới lấp thẻ hàng xóm vào
+         * đúng chỗ trống bên cạnh — bảng phụ nằm trọn hàng kế tiếp mà không thẻ
+         * nào đổi chỗ (chủ 11/09).
+         */}
+        <div className="mt-5 grid grid-flow-row-dense gap-3 sm:grid-cols-2">
           {loi && (
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 sm:col-span-2">
               ⛅ {t.error}

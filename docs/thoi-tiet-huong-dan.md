@@ -535,6 +535,30 @@ bọt khí là chỗ nội suy cắt đường môi trường. Hình vẽ tay b�
 `components/weather/SkewT.tsx` — mở bằng nút **🌡 Skew-T** cạnh Basic /
 Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất).
 
+**Trần hình 600 hPa (~4.400 m)** (chủ 11/09: "dù lượn chỉ cần tới khoảng
+4.000 m là quá đủ"): vẽ tới 300 hPa thì tầng mình bay bị nén vào một phần ba
+dưới cùng, nhìn không ra lớp nào. **Chú thích bốn đường in ngay trên hình**,
+không bắt người xem dò xuống khối chữ rồi ngước lên đối chiếu.
+
+**Độ cao BÃI HẠ** vẽ thành vạch thứ hai, vì chênh giữa cất và hạ là **độ cao
+thả** — thứ quyết định chuyến dài bao lâu khi không có nâng, và là mốc để xem
+mây hay nghịch nhiệt có nằm trong đường bay không. Số chủ chốt 11/09:
+
+| Bãi | Cất cánh | Hạ cánh | Thả |
+|---|---|---|---|
+| Đèo Khau Phạ | 1.268 m | 730 m | 538 m |
+| Sa Pa | 1.500 m | 1.000 m | 500 m |
+| Đồi Bù | 833 m | 50 m | 783 m |
+| Viên Nam | 650 m | 50 m | 600 m |
+| Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
+
+**Bảng phụ mở ra là Ô LƯỚI RIÊNG rộng cả hai cột** (chủ 11/09): để nó trong thẻ
+thì thẻ cao vọt lên còn cột bên cạnh hở một khoảng trắng đúng bằng phần chênh.
+Nay nó là ô lưới đặt ngay sau thẻ, nền cam nhạt cùng màu ô ngày đang chọn; lưới
+trang bật `grid-flow-row-dense` nên thẻ hàng xóm lấp lại vào chỗ bên cạnh —
+**không thẻ nào đổi chỗ**. Đo thật: bấm một ngày, thẻ lệch x = 0, y = 0, và thẻ
+kế tiếp vẫn ở đúng y cũ.
+
 **Dải ngày dồn một hàng khi thẻ đủ rộng** (chủ 11/09): mười ô một hàng thì mắt
 quét một lượt là so được cả dự báo. Đo theo **bề rộng của thẻ** (container
 query `@4xl`) chứ không theo màn hình — cùng một thẻ nằm full trang ở
