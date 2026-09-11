@@ -986,9 +986,11 @@ function DailyCloseInner() {
                */}
               <Compare
                 label={
-                  (t?.carriedIn ?? 0) > 0
-                    ? `quầy báo (vé − thu hồi + không vé + ${t!.carriedIn} vé hôm trước mang sang)`
-                    : "quầy báo (vé − thu hồi + bay không vé)"
+                  "quầy báo (vé − thu hồi" +
+                  ((t?.rescheduled ?? 0) > 0 ? ` − ${t!.rescheduled} vé dời` : "") +
+                  " + bay không vé" +
+                  ((t?.carriedIn ?? 0) > 0 ? ` + ${t!.carriedIn} vé hôm trước mang sang` : "") +
+                  ")"
                 }
                 value={(() => {
                   if (noTickets) {
@@ -1005,12 +1007,26 @@ function DailyCloseInner() {
                    */
                   const khongVe = flown?.noTicketGuests ?? 0;
                   /**
+                   * − VÉ DỜI SANG NGÀY SAU (luật chủ 11/09).
+                   *
+                   * Khách đã cầm vé rồi mới dời lịch thì vé ấy XUẤT HÔM NAY mà
+                   * BAY HÔM KHÁC: quầy vẫn đếm nó trong "vé xuất", nhưng người
+                   * ấy không bay hôm nay. Không trừ ra thì dòng này luôn cao
+                   * hơn thực tế — 11/09 Khau Phạ: 37 vé − 0 thu hồi + 1 không
+                   * vé = 38, trong khi chỉ 36 người bay, vì 2 khách cầm vé dời
+                   * sang hôm sau.
+                   *
+                   * Vé khách TRẢ LẠI quầy thì nằm ở "thu hồi", không nằm đây —
+                   * hai con số không chồng nhau.
+                   */
+                  const veDoi = t?.rescheduled ?? 0;
+                  /**
                    * + VÉ MANG SANG: khách dời lịch hôm trước cầm vé cũ bay hôm
                    * nay — vé ấy xuất Ở NGÀY TRƯỚC nên "vé xuất hôm nay" không
                    * đếm được họ (bộ soát đã xác minh từng mã, xem VE_MANG_SANG).
                    */
                   const mangSang = t?.carriedIn ?? 0;
-                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe) + khongVe + mangSang;
+                  return xuat === undefined ? undefined : Math.max(0, xuat - thuVe - veDoi) + khongVe + mangSang;
                 })()}
                 mine={form.guestCount}
                 onTake={locked ? undefined : (v) => set("guestCount", v)}
@@ -1090,6 +1106,18 @@ function DailyCloseInner() {
                     <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
                       Vé xuất trong ngày {t!.dispatcherIssued} + {t!.carriedIn} vé khách dời mang sang ={" "}
                       {t!.dispatcherIssued + t!.carriedIn} — bộ soát đã xác minh từng mã mang sang (VE_MANG_SANG).
+                    </p>
+                  )}
+                  {/**
+                   * TRONG SỐ VÉ ĐÃ XUẤT, BAO NHIÊU CÁI KHÔNG BAY HÔM NAY (chủ
+                   * 11/09). Vé xuất rồi mà khách dời lịch thì cầm sang ngày
+                   * khác; vé huỷ thì chết hẳn. Ghi rõ ở đây để người chốt hiểu
+                   * vì sao "vé xuất" nhiều hơn "khách đã bay", khỏi phải đi dò.
+                   */}
+                  {t && (
+                    <p className="mt-0.5 text-[10px] leading-tight text-slate-500">
+                      Trong đó: <b>{t.rescheduled} vé dời</b> sang ngày khác · <b>{t.cancelled} vé huỷ</b>
+                      {t.rescheduled > 0 ? " — vé dời không tính vào khách bay hôm nay" : ""}
                     </p>
                   )}
                 </ServiceBox>
