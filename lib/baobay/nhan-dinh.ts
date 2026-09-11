@@ -31,6 +31,7 @@ import {
   sucGio,
   suNangMua,
   tranMay,
+  khungCua,
   trongCung,
   type GioThoiTiet,
   type LuatHuong,
@@ -227,6 +228,36 @@ export function nhanDinhNgay(
       if (tong !== "xau") tong = "chuY";
       khuyenCao.push("Gió đổi hướng giữa ngày — xem lại luật hướng của bãi cho buổi chiều trước khi hẹn khách.");
     }
+    /**
+     * BÃI CẤM HƯỚNG (chủ 11/09, nói về Viên Nam): có bãi mà hướng núi khiến cả
+     * một góc trời là không bay được — Viên Nam không bay gió Bắc, Đông Bắc,
+     * Tây Bắc. Nói "hướng trội ngược sườn" thôi thì chưa đủ: người trực cần
+     * biết NGƯỢC CẢ NGÀY hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn
+     * "lọt khe" bay được — và đúng mấy tiếng ấy là thứ phải hẹn khách.
+     */
+    if (opts.luatHuong?.xau) {
+      const cung = opts.luatHuong.xau;
+      const xet = gio.filter((g) => co(g.huong) && g.gio10m > 0.5);
+      const nguoc = xet.filter((g) => trongCung(g.huong, cung));
+      const thuan = xet.filter((g) => !trongCung(g.huong, cung));
+      if (nguoc.length) {
+        /** Tên các hướng bị cấm, lấy từ chính những giờ đang ngược — cụ thể hơn là đọc cung. */
+        const tenHuong = [...new Set(nguoc.map((g) => huongChu(g.huong)))].join(", ");
+        if (!thuan.length) {
+          tong = "xau";
+          khuyenCao.push(`Ngược sườn CẢ NGÀY (gió ${tenHuong}) — bãi này không bay được hướng ấy, đừng hẹn khách.`);
+        } else if (nguoc.length >= thuan.length) {
+          if (tong !== "xau") tong = "chuY";
+          khuyenCao.push(
+            `Ngược sườn phần lớn ngày (gió ${tenHuong}); lọt khe ${khungCua(thuan)} khi gió xoay ${[...new Set(thuan.map((g) => huongChu(g.huong)))].join("/")} — chỉ hẹn khách trong khung ấy.`,
+          );
+        } else {
+          if (tong === "thongTin") tong = "chuY";
+          khuyenCao.push(`Ngược sườn ${khungCua(nguoc)} (gió ${tenHuong}) — tránh cất cánh đúng khung ấy.`);
+        }
+      }
+    }
+
     if (gioMax > 8) tong = "xau";
     else if (gioMax > 6 && tong !== "xau") tong = "chuY";
     them({
@@ -393,10 +424,11 @@ export function nhanDinhNgay(
         tong = dong >= 20 ? "chuY" : "tot";
       } else {
         noi = `BẤT ỔN ĐỊNH (LI ${li.toFixed(1)}) — thermal gắt và nhiễu động, mây tích phát triển nhanh (nguy cơ OD — overdevelopment), dông ${dong}%`;
-        tong = dong >= 40 ? "xau" : "chuY";
+        /** Dông là CẢNH BÁO, không phải lệnh cấm (luật chủ 11/09) — xem ghi chú ở `chamGio`. */
+        tong = "chuY";
         khuyenCao.push(
           dong >= 40
-            ? `Nguy cơ dông ${dong}% — không bay buổi chiều; sáng nếu bay thì hạ cánh trước 11:00. Coi chừng gust front: gió đảo chiều và vọt mạnh 10–20 phút TRƯỚC khi mưa tới.`
+            ? `Nguy cơ dông ${dong}% — bay sáng, hạ cánh xong trước trưa và canh trời: gust front làm gió đảo chiều, vọt mạnh 10–20 phút TRƯỚC khi mưa tới. Không phải nghỉ cả ngày, nhưng thấy mây tích dựng cao, đáy tối là dừng.`
             : "Ngày bất ổn định — hạ cánh chuyến cuối trước 14:00; thấy mây tích vươn cao, đáy tối là dừng ngay, không chờ mưa.",
         );
       }
@@ -579,7 +611,18 @@ export function nhanDinhNgay(
       });
     }
     if (dongMax >= 20 && !diem.some((d) => d.ten === "Ổn định" && d.noiDung.includes("dông"))) {
-      them({ icon: "⚡", ten: "Dông", noiDung: `nguy cơ dông tới ${dongMax}% trong ngày`, ngan: `dông ${dongMax}%`, tong: dongMax >= 40 ? "xau" : "chuY" });
+      /**
+       * Dông luôn là mức CHÚ Ý, không bao giờ "xấu": nó cảnh báo chứ không
+       * quyết định bay hay nghỉ, và ngày có dông thường thermal khoẻ (luật
+       * chủ 11/09). Mưa lâu mới là thứ chặn bay, và mưa đã có mục riêng.
+       */
+      them({
+        icon: "⚡",
+        ten: "Dông",
+        noiDung: `nguy cơ dông tới ${dongMax}% trong ngày — cảnh báo, không phải lệnh cấm; ngày kiểu này thermal thường khoẻ, canh mây tích và hạ cánh sớm`,
+        ngan: `dông ${dongMax}%`,
+        tong: "chuY",
+      });
     }
   }
 

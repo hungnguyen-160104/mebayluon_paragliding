@@ -292,12 +292,20 @@ export function danhGiaGio(
       diem = 88;
       ghi.push(`khả năng mưa ${pMua}%`);
     }
-    if (cs.xacSuatDong >= 40) {
-      diem = 0;
-      nguy = true;
+    /**
+     * DÔNG TRỪ ĐIỂM, KHÔNG ĐÁNH "NGUY HIỂM" (luật chủ 11/09): nguy hiểm là
+     * thứ kéo cả ngày xuống tối đa 20 điểm, tức là tuyên bố không bay. Dông
+     * chỉ là cảnh báo — và ngày có dông thường thermal khoẻ. Thứ chặn bay là
+     * mưa (ở trên) và gió, không phải một con số phần trăm dông.
+     */
+    if (cs.xacSuatDong >= 60) {
+      diem = Math.min(diem, 45);
+      ghi.push(`dông ${cs.xacSuatDong}%`);
+    } else if (cs.xacSuatDong >= 40) {
+      diem = Math.min(diem, 60);
       ghi.push(`dông ${cs.xacSuatDong}%`);
     } else if (cs.xacSuatDong >= 20) {
-      diem = Math.min(diem, 50);
+      diem = Math.min(diem, 75);
       ghi.push(`dông ${cs.xacSuatDong}%`);
     }
     them({ ma: "mua", ten: "Mưa / dông", trongSo: 15, diem, ghiChu: ghi.join(", ") || "không mưa, không dông", nguyHiem: nguy });

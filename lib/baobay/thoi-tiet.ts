@@ -39,6 +39,14 @@ export type LuatHuong = {
    * đột ngột ở mép sườn). Ghi tâm hướng, máy tự chấp nhận lệch ±22,5°.
    */
   xiet?: number[];
+  /**
+   * TRẦN TỐC ĐỘ THEO HƯỚNG (luật chủ 11/09) — "hướng này chỉ bay được tới
+   * ngần này m/s". Khác `xau` (cấm mọi tốc độ) và khác ngưỡng gió chung: ở
+   * Khau Phạ gió ĐÔNG là hướng đẹp nhưng quá 6 m/s là gấp dù, trong khi cùng
+   * 6 m/s hướng khác vẫn bay. Mỗi mục ghi TÂM hướng (máy nhận lệch ±22,5°)
+   * và mức trần; vượt trần là đỏ.
+   */
+  capToc?: Array<{ tam: number[]; max: number; ten: string }>;
 };
 
 export type ToaDoDiemBay = {
@@ -94,10 +102,45 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     /** 1.268 m — số chủ đo tại bãi cất cánh (10/09), không phải 1.200 làm tròn. */
     alt: 1268,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
-    luatHuong: { tot: [23, 112], xau: [113, 292], xiet: [0, 90, 270] },
+    /**
+     * TRẦN TỐC ĐỘ THEO HƯỚNG (chủ 11/09): "Khau Phạ cấm gió hướng Tây mạnh
+     * hơn 5 m/s, gió Nam hoặc Đông mạnh hơn 6 m/s."
+     *
+     * Tây (270°) và Nam (180°) đã nằm trong cung NGƯỢC SƯỜN [113–292] nên
+     * đang bị cấm ở MỌI tốc độ — khai thêm trần ở đây là để đúng chữ của chủ
+     * và để nếu sau này mở cung ngược sườn ra thì trần vẫn còn nguyên. Vế
+     * thật sự mới là gió ĐÔNG: đông là hướng ĐẸP nhất của bãi, nhưng quá 6
+     * m/s thì luồng bị đèo bóp lại, không bay.
+     */
+    luatHuong: {
+      tot: [23, 112],
+      xau: [113, 292],
+      xiet: [0, 90, 270],
+      capToc: [
+        { tam: [270], max: 5, ten: "Tây" },
+        { tam: [180], max: 6, ten: "Nam" },
+        { tam: [90], max: 6, ten: "Đông" },
+      ],
+    },
     gioBay: [9, 16],
   },
-  sapa: { lat: 22.3364, lon: 103.8438, alt: 1500, ten: "Sa Pa (Lào Cai)" },
+  /**
+   * SA PA — chưa có cung thuận/ngược (chủ chưa chốt), nhưng đã có hai trần
+   * tốc độ theo hướng (chủ 11/09): "cấm gió Bắc mạnh hơn 6 m/s và gió Tây
+   * mạnh hơn 6 m/s".
+   */
+  sapa: {
+    lat: 22.3364,
+    lon: 103.8438,
+    alt: 1500,
+    ten: "Sa Pa (Lào Cai)",
+    luatHuong: {
+      capToc: [
+        { tam: [0], max: 6, ten: "Bắc" },
+        { tam: [270], max: 6, ten: "Tây" },
+      ],
+    },
+  },
   /**
    * HÀ NỘI = bãi ĐỒI BÙ (điểm chính). Luật hướng của chủ: tốt với đông, bắc,
    * tây; xấu với nam và tây nam.
@@ -480,10 +523,29 @@ export type HuongTheNao = "tot" | "xau" | "thuong";
 export function huongTheNao(huong: number, gio: number, luat?: LuatHuong): HuongTheNao {
   if (!luat) return "thuong";
   if (luat.xau && trongCung(huong, luat.xau)) return "xau";
+  if (vuotCapToc(huong, gio, luat)) return "xau";
   const manh = gio > 6;
   if (manh && luat.xiet?.some((h) => Math.abs(lechGoc(huong, h)) <= 22.5)) return "xau";
   if (luat.tot && trongCung(huong, luat.tot)) return "tot";
   return "thuong";
+}
+
+/**
+ * Gió có VƯỢT TRẦN TỐC ĐỘ của hướng ấy không — trả về mục đã vượt, hoặc null.
+ *
+ * Tách riêng để `chamGio` vừa biết "có vượt không" vừa lấy được tên hướng mà
+ * viết ra lý do cho người đọc ("gió Tây 5,4 m/s — bãi cấm gió Tây trên 5").
+ */
+export function capTocBiVuot(huong: number, gio: number, luat?: LuatHuong) {
+  if (!luat?.capToc?.length || !Number.isFinite(huong)) return null;
+  for (const c of luat.capToc) {
+    if (gio > c.max && c.tam.some((h) => Math.abs(lechGoc(huong, h)) <= 22.5)) return c;
+  }
+  return null;
+}
+
+function vuotCapToc(huong: number, gio: number, luat?: LuatHuong): boolean {
+  return capTocBiVuot(huong, gio, luat) !== null;
 }
 
 /** Hướng có nằm trong một cung không — cung cho phép vắt qua mốc bắc. */
@@ -717,18 +779,27 @@ export function chamGio(
   }
 
   /**
-   * DÔNG — thứ duy nhất trong bảng này có thể giết người, nên chặn sớm và chặn
-   * chắc: 40% đã đủ để không cất cánh. Dông không chỉ là mưa: trước khi mây
-   * dông tới, luồng gió đổ xuống (gust front) quét qua bãi làm gió đảo chiều
-   * và mạnh gấp mấy lần trong vài phút.
+   * DÔNG LÀ CẢNH BÁO, KHÔNG PHẢI LỆNH CẤM (luật chủ 11/09).
+   *
+   * Trước đây 40% là đỏ, tức là máy tự tuyên bố "không bay" cho cả ngày. Ở Tây
+   * Bắc mùa hè thì con số ấy gặp suốt: chiều nào cũng có ổ dông lẻ đâu đó
+   * trong ô lưới 9km, mà bãi vẫn bay cả buổi sáng. Tệ hơn, NGÀY CÓ DÔNG
+   * thường là ngày THERMAL KHOẺ — chấm đỏ nó là bỏ mất đúng những ngày bay
+   * đẹp nhất.
+   *
+   * Thứ thật sự chặn bay là MƯA (đã tính ở trên, theo lượng và số tiếng) và
+   * gió. Dông thì báo để người trực canh trời: gust front quét qua bãi làm gió
+   * đảo chiều và mạnh gấp mấy lần khoảng 10–20 phút TRƯỚC khi mưa tới, nên
+   * thấy mây tích dựng cao, đáy tối là dừng — chứ không phải nghỉ cả ngày vì
+   * một con số phần trăm.
    */
   const cs = chiSoBay(g);
   if (cs.xacSuatDong >= 40) {
-    lyDo.push(`nguy cơ dông ${cs.xacSuatDong}%`);
-    len("do");
-  } else if (cs.xacSuatDong >= 20) {
-    lyDo.push(`có thể có dông (${cs.xacSuatDong}%)`);
+    lyDo.push(`nguy cơ dông ${cs.xacSuatDong}% — canh mây tích, dừng khi đáy mây tối`);
     len("vang");
+  } else if (cs.xacSuatDong >= 20) {
+    /** Dưới 40% chỉ ghi chú, không hạ màu: mức này là "chiều có thể có ổ dông lẻ". */
+    lyDo.push(`có thể có dông (${cs.xacSuatDong}%)`);
   }
 
   /**
@@ -765,8 +836,22 @@ export function chamGio(
    */
   const suc = sucGio(g.gio10m);
   const manh = suc === "manh" || suc === "ratManh";
+  const capVuot = capTocBiVuot(g.huong, g.gio10m, luat);
   if (luat?.xau && trongCung(g.huong, luat.xau)) {
     lyDo.push(`gió ${huongChu(g.huong)} — ngược sườn cất cánh, không bay`);
+    len("do");
+  } else if (capVuot) {
+    /**
+     * TRẦN TỐC ĐỘ RIÊNG CỦA HƯỚNG (luật chủ 11/09): hướng vẫn thuận sườn
+     * nhưng quá mức này là địa hình bóp gió, không bay — Khau Phạ gió Đông
+     * trên 6 m/s, Sa Pa gió Bắc hoặc Tây trên 6 m/s.
+     */
+    /** Hướng vừa quá trần vừa là hướng luồn khe thì nói cả hai — đó chính là lý do có trần. */
+    const cungXiet = luat?.xiet?.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5);
+    lyDo.push(
+      `gió ${capVuot.ten} ${g.gio10m.toFixed(1)} m/s — bãi cấm gió ${capVuot.ten} trên ${capVuot.max} m/s` +
+        (cungXiet ? " (⚠ GIÓ XIẾT: luồn khe, tăng tốc ở mép bãi)" : ""),
+    );
     len("do");
   } else if (luat?.xiet?.length && manh && luat.xiet.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5)) {
     lyDo.push(`⚠ GIÓ XIẾT: hướng ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]} — luồn khe, tăng tốc ở mép bãi`);

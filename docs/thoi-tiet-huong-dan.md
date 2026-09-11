@@ -168,10 +168,24 @@ sườn vẫn không bay được — nên phải nhìn thấy cả hai.
 | Gió giật | > 16 m/s (gust mạnh) | > 18 m/s |
 | **Mù / mây thấp** | trần mây < 2× ngưỡng, mây thấp ≥ 70% | trần mây < ngưỡng và mây thấp ≥ 70%; hoặc ẩm ≥ 98% kèm mây thấp dày |
 | Mưa | — (phần trăm không còn hạ màu) | ≥ ngưỡng mưa (0,8 mm/giờ) |
-| **Dông** | 20–39% | ≥ 40% |
+| **Dông** | ≥ 40% (cảnh báo) | — **dông không còn là lý do cấm bay** |
 | **Thermal gắt** | trần > 2.200 m | (không cấm — chỉ xóc) |
 | **Hướng gió xấu** | — | trong cung gió xấu của điểm, bất kể tốc độ |
+| **Quá trần tốc độ của hướng** | — | hướng có trần riêng mà gió vượt (Khau Phạ: Đông > 6 m/s; Sa Pa: Bắc hoặc Tây > 6 m/s) |
 | **Gió xiết** | — | đúng hướng luồn khe **và** gió đã mạnh |
+
+**DÔNG LÀ CẢNH BÁO, KHÔNG PHẢI LỆNH CẤM** (luật chủ 11/09). Trước đây 40% là
+đỏ, tức là máy tự tuyên bố nghỉ cả ngày. Ở Tây Bắc mùa hè con số ấy gặp suốt —
+chiều nào cũng có ổ dông lẻ đâu đó trong ô lưới 9 km, mà bãi vẫn bay cả buổi
+sáng. Tệ hơn: **ngày có dông thường là ngày thermal khoẻ**, chấm đỏ nó là bỏ
+mất đúng những ngày bay đẹp nhất. Thứ thật sự chặn bay là **mưa** (tính theo
+lượng và số tiếng) và **gió**. Dông thì báo để người trực canh trời: gust front
+quét qua bãi làm gió đảo chiều và mạnh gấp mấy lần khoảng 10–20 phút **trước**
+khi mưa tới — thấy mây tích dựng cao, đáy tối là dừng.
+
+Cùng lẽ ấy, điểm chuyên gia **trừ điểm** vì dông (≥ 60% còn tối đa 45; ≥ 40%
+còn 60; ≥ 20% còn 75) chứ không đánh dấu "nguy hiểm" — nguy hiểm là thứ kéo cả
+ngày xuống 20 điểm, tức là tuyên bố không bay.
 
 Ba khái niệm mới, giải thích ngắn:
 
@@ -535,6 +549,7 @@ hướng khai riêng từng điểm, không có mặc định chung.
 | **Gió tốt** | Đông, Đông Bắc (23°–112°) — nhẹ, vừa, **hơi mạnh đều đẹp**; hơi mạnh thì thermal lên mạnh nhất |
 | **Gió xấu** | Đông Nam, Nam, Tây Nam, Tây (113°–292°) — ngược sườn, **không bay bất kể tốc độ** |
 | **Cảnh báo gió xiết** | Bắc, Đông hoặc Tây **khi gió đã mạnh** (> 6 m/s) — gió luồn khe đèo rồi tăng tốc đột ngột ngay mép bãi |
+| **Trần tốc độ theo hướng** | Tây > 5 m/s · Nam > 6 m/s · **Đông > 6 m/s** — quá là đỏ |
 
 Vì gió Đông vừa là hướng tốt vừa là hướng sinh xiết: nhẹ và vừa thì đẹp, mạnh
 thì thành cảnh báo — máy xét gió xiết **trước** khi kết luận thuận sườn.
@@ -548,7 +563,36 @@ quay hai phía, nên cùng một ngày gió bắc thì Đồi Bù bay được c
 không. Vì thế trang "Hà Nội" trên web hiện **hai bảng thời tiết riêng**, và trang
 "Thời tiết bay" liệt kê cả hai bãi.
 
-Sa Pa chưa khai luật hướng: nói cho tôi cung gió tốt/xấu là thêm được ngay.
+**Sa Pa**: chưa có cung thuận/ngược, nhưng đã có **trần tốc độ theo hướng** —
+cấm gió **Bắc > 6 m/s** và gió **Tây > 6 m/s** (chủ 11/09). Cung gió tốt/xấu thì
+nói một câu là thêm được ngay.
+
+### Trần tốc độ theo hướng — khác gì "gió xấu"
+
+"Gió xấu" cấm ở **mọi** tốc độ; trần tốc độ nói **"hướng này chỉ bay được tới
+ngần này"**. Ở Khau Phạ gió Đông là hướng **đẹp nhất**, nhưng quá 6 m/s thì
+luồng bị đèo bóp lại — cùng 6 m/s mà hướng khác vẫn bay. Khai bằng `capToc`
+trong `LuatHuong`: mỗi mục ghi **tâm hướng** (máy nhận lệch ±22,5°), mức trần và
+tên hướng để viết ra lý do cho người đọc ("gió Đông 6,5 m/s — bãi cấm gió Đông
+trên 6 m/s"). Hướng vừa quá trần vừa nằm trong danh sách luồn khe thì câu lý do
+nói cả hai.
+
+Lưu ý về Khau Phạ: **Tây và Nam đang nằm trong cung ngược sườn** nên bị cấm ở
+mọi tốc độ; hai trần 5 và 6 m/s khai thêm cho đúng chữ của chủ và để nếu sau
+này mở cung ngược sườn ra thì trần vẫn còn nguyên.
+
+### Bãi cấm hướng thì nói rõ "cả ngày" hay "lọt khe"
+
+Nói "hướng trội ngược sườn" thôi thì chưa đủ: người trực cần biết **ngược cả
+ngày** hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn lọt khe bay được — và
+đúng mấy tiếng ấy là thứ phải hẹn khách. Nên bộ nhận định đếm từng giờ trong
+khung bay rồi viết ra một trong ba câu:
+
+- ngược cả ngày → *"Ngược sườn CẢ NGÀY (gió TB, B, BĐB) — bãi này không bay được
+  hướng ấy, đừng hẹn khách."*
+- ngược phần lớn → *"Ngược sườn phần lớn ngày; lọt khe 13–16h khi gió xoay Đ —
+  chỉ hẹn khách trong khung ấy."*
+- ngược vài tiếng → *"Ngược sườn 09–11h (gió B) — tránh cất cánh đúng khung ấy."*
 
 ## 7. Toạ độ điểm bay
 
