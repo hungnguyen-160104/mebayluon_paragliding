@@ -271,7 +271,7 @@ export default function SummaryPage() {
             <Stat label="Chiết khấu đại lý" value={formatVND(t.agencySpendTotal)} />
             <Stat label="Flycam" value={String(t.flycam)} />
             <Stat label="Camera 360" value={String(t.video360)} />
-            <Stat label="Bay kéo cờ/bánh" value={String(t.flagFlight)} />
+            <Stat label="Bay kéo cờ đỏ/cờ sinh nhật" value={String(t.flagFlight)} />
             <Stat label="Vé ngoại giao" value={String(t.diplomaticTickets)} />
             <Stat label="Thu từ khách ngoại giao" value={formatVND(t.diplomaticAmount)} />
           </div>

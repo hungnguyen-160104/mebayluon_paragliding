@@ -19,14 +19,22 @@
 
 type Moc = Array<[number, string]>;
 
-/** Gió trung bình 10m (m/s). */
+/**
+ * Gió trung bình 10m (m/s) — NEO ĐÚNG BỐN BẬC CỦA CHỦ (chốt lại 11/09):
+ * dưới 4 xanh · 4–6 vàng · 6–8 cam · trên 8 đỏ.
+ *
+ * Vẫn chuyển dần giữa các mốc (5,9 và 6,1 chỉ khác nhau một chút, không nhảy
+ * hẳn màu), nhưng ĐÚNG tại 4 phải đã là vàng và đúng tại 6 phải đã là cam —
+ * trước đây 4,5 m/s còn ra xanh ngả vàng nên nhìn tưởng vẫn "gió tốt".
+ */
 const MOC_GIO: Moc = [
   [0, "#d1fae5"],
   [2, "#86efac"],
-  [4, "#4ade80"],
-  [5, "#fde047"],
-  [6, "#fbbf24"],
-  [7, "#fb923c"],
+  [3.6, "#4ade80"],
+  [4, "#fde047"],
+  [5, "#facc15"],
+  [6, "#fb923c"],
+  [7, "#f97316"],
   [8, "#ef4444"],
   [10, "#b91c1c"],
   [13, "#7f1d1d"],

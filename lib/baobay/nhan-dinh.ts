@@ -329,25 +329,35 @@ export function nhanDinhNgay(
     const gioTotThermal = dinh.tu >= 0 && DAI > 0 ? [gioCua(coTran[dinh.tu].g), gioCua(coTran[dinh.tu + DAI - 1].g)] : [];
     const gat = cs.filter((x) => x.c.thermal === "gat").map((x) => gioCua(x.g));
     const manhNhat = cs.reduce((a, b) => ((b.c.tran ?? 0) > (a.c.tran ?? 0) ? b : a), cs[0]);
+    /**
+     * SỐ LIỆU VIẾT RA CHỈ KHI CÓ. Trước đây câu nào cũng ghép "trần ~${tranMax}m"
+     * nên ngày mô hình cấp CAPE mà không cấp trần lớp xáo trộn thì in ra
+     * "trần ~nullm" (chủ báo 11/09). Nay thiếu số nào thì bỏ hẳn mẩu ấy.
+     */
+    const soTran = tranMax !== null ? `trần ~${tranMax}m` : null;
+    const soCape = capeMax !== null ? `CAPE ${Math.round(capeMax)}` : null;
+    const soLieu = [soTran, soCape].filter(Boolean).join(", ");
+    const soLieuYeu = [tranMax !== null ? `trần chỉ ~${tranMax}m` : null, soCape].filter(Boolean).join(", ");
+
     let noi: string;
     let tong: DiemNhanDinh["tong"];
     if (tranMax === null && capeMax === null) {
       noi = "mô hình chưa cấp trần lớp xáo trộn";
       tong = "thongTin";
     } else if ((tranMax ?? 0) < 400 && (capeMax ?? 0) < 150) {
-      noi = `yếu — trần chỉ ~${tranMax ?? 0}m${capeMax !== null ? `, CAPE ${Math.round(capeMax)}` : ""}: chuyến ngắn, ít nâng, bay lướt là chính`;
+      noi = `yếu — ${soLieuYeu}: chuyến ngắn, ít nâng, bay lướt là chính`;
       tong = "chuY";
     } else if (gat.length) {
-      noi = `GẮT từ ${gat[0]} — trần ~${tranMax}m${capeMax !== null ? `, CAPE ${Math.round(capeMax)}` : ""}: lift mạnh nhưng nhiễu động, dù dễ collapse mép, bãi đáp có gió xoáy (rotor nhiệt)`;
+      noi = `GẮT từ ${gat[0]} — ${soLieu}: lift mạnh nhưng nhiễu động, dù dễ collapse mép, bãi đáp có gió xoáy (rotor nhiệt)`;
       tong = "chuY";
       khuyenCao.push(`Thermal gắt từ ${gat[0]} — bay đôi chở khách nên xong trước ${gat[0]}; sau đó chỉ phi công cứng, chủ động bay tốc độ và né vùng thermal lõi.`);
     } else if ((tranMax ?? 0) >= 800) {
-      noi = `tốt — trần ~${tranMax}m${capeMax !== null ? `, CAPE ${Math.round(capeMax)}` : ""}, mạnh nhất quanh ${gioCua(manhNhat.g)}${
+      noi = `tốt — ${soLieu}, mạnh nhất quanh ${gioCua(manhNhat.g)}${
         gioTotThermal.length ? `; khung giờ thermal tốt nhất ${gioTotThermal[0]}–${gioTotThermal[1]}` : ""
       }`;
       tong = "tot";
     } else {
-      noi = `vừa — trần ~${tranMax}m${capeMax !== null ? `, CAPE ${Math.round(capeMax)}` : ""}: đủ kéo dài chuyến, không xóc`;
+      noi = `vừa — ${soLieu}: đủ kéo dài chuyến, không xóc`;
       tong = "tot";
     }
     them({

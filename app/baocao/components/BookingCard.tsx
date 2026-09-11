@@ -2,6 +2,7 @@
 "use client";
 
 import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { giaDonKhachSanHaNoi } from "@/lib/booking/calculate-price";
 import { createPortal } from "react-dom";
 
 import { formatDateKeyVN, shiftDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
@@ -6768,7 +6769,7 @@ export function BookingCard({
       ["Cam 360", form.video360],
       ["Dù cờ đỏ", form.redFlag],
       ["Bay hoàng hôn/săn mây", form.sunset],
-      ["Bay kéo cờ/bánh", form.flagFlight],
+      ["Bay kéo cờ đỏ/cờ sinh nhật", form.flagFlight],
       ["Xe lên núi", form.mountainCar],
     ] as Array<[string, number]>).find(([, n]) => n > form.guestCount);
     if (overService) {
@@ -7336,7 +7337,7 @@ export function BookingCard({
         <ServiceBox tone="redFlag" label="Dù cờ đỏ">
           <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={serviceCap} />
         </ServiceBox>
-        <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+        <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
           <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={serviceCap} />
         </ServiceBox>
         {bookSpot !== "sapa" && (
@@ -7380,11 +7381,17 @@ export function BookingCard({
               const v = e.target.value as BookingDTO["pickup"];
               set("pickup", v);
               /**
-               * GIÁ ĐÓN MẶC ĐỊNH HÀ NỘI (luật chủ 04/09): BigC 250k, khách sạn
-               * 500k — máy điền sẵn vào ô phí, vẫn sửa tay được; đổi về
-               * "tự đến" thì phí về 0 cho khỏi sót phí ma.
+               * GIÁ ĐÓN MẶC ĐỊNH HÀ NỘI: BigC 250k (luật chủ 04/09); khách sạn
+               * theo ĐOÀN — 1 khách 1tr, mỗi khách thêm +100k (luật chủ 11/09,
+               * dùng chung một hàm với web để hai bên không lệch giá nữa).
+               * Máy điền sẵn vào ô phí, vẫn sửa tay được; đổi về "tự đến" thì
+               * phí về 0 cho khỏi sót phí ma.
                */
-              if (bookSpot === "ha-noi") set("pickupFee", v === "bigc" ? 250_000 : v === "hotel" ? 500_000 : 0);
+              if (bookSpot === "ha-noi")
+                set(
+                  "pickupFee",
+                  v === "bigc" ? 250_000 : v === "hotel" ? giaDonKhachSanHaNoi(Math.max(1, form.guestCount || 1)) : 0,
+                );
             }}
             className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-600"
           >

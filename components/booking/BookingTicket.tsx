@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { giaDonKhachSanHaNoi } from "@/lib/booking/calculate-price";
 import type { BookingData } from "@/store/booking-store";
 import {
   LOCATIONS,
@@ -697,6 +698,12 @@ export default function BookingTicket({
 
         if (serviceKey === "ha_noi_private_hotel_pickup") {
           lineTotal = 1_400_000 + Math.max(0, guestsCount - 3) * 350_000;
+          detail = undefined;
+        }
+
+        /** Đón khách sạn: giá theo đoàn, một hàm dùng chung với web và app. */
+        if (serviceKey === "ha_noi_hotel_pickup_shared") {
+          lineTotal = giaDonKhachSanHaNoi(guestsCount, "VND");
           detail = undefined;
         }
 

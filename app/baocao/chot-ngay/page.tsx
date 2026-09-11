@@ -1356,7 +1356,7 @@ function DailyCloseInner() {
               <ByPerson list={suggest?.reportedBy?.sunset} prefix="phi công" />
             </ServiceBox>
             )}
-            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
               <Compare label="số trên booking" value={flown?.flagFlight} mine={form.flagFlight}
                 onTake={locked ? undefined : (v) => set("flagFlight", v)} />
@@ -1384,7 +1384,7 @@ function DailyCloseInner() {
                   <option value="video360">Camera 360</option>
                   <option value="redFlag">Dù cờ đỏ</option>
                   <option value="sunset">Bay hoàng hôn/săn mây</option>
-                  <option value="flagFlight">Bay kéo cờ/bánh</option>
+                  <option value="flagFlight">Bay kéo cờ đỏ/cờ sinh nhật</option>
                   <option value="general">Số liệu chung</option>
                 </select>
                 <input

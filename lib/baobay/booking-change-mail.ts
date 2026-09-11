@@ -55,7 +55,7 @@ export const SERVICE_LABEL: Record<string, { vi: string; en: string }> = {
   video360: { vi: "Camera 360", en: "360° camera" },
   redFlag: { vi: "Dù cờ đỏ sao vàng", en: "Vietnam flag wing" },
   sunset: { vi: "Bay hoàng hôn", en: "Sunset flight" },
-  flagFlight: { vi: "Bay kéo cờ/bánh", en: "Banner/cake flight" },
+  flagFlight: { vi: "Bay kéo cờ đỏ/cờ sinh nhật", en: "Banner/cake flight" },
   mountainCar: { vi: "Xe lên núi", en: "Mountain transfer" },
 };
 

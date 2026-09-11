@@ -290,7 +290,19 @@ export function tiemNangThermal(
   const lapse = yt("lapse");
   const on = yt("onDinh");
   if (nang) lyDo.push(nang.diem >= 70 ? `Nắng tốt lúc đỉnh (${nang.ghiChu}).` : nang.diem >= 35 ? `Nắng vừa (${nang.ghiChu}).` : `Thiếu nắng (${nang.ghiChu}) — không có gì đốt mặt đất.`);
-  if (tran) lyDo.push(tran.diem >= 70 ? `Lớp xáo trộn sâu, trần ${tran.ghiChu} — bọt khí lên được cao.` : tran.diem >= 40 ? `Trần xáo trộn ${tran.ghiChu} — đủ cho chuyến bay vừa phải.` : `Trần xáo trộn thấp (${tran.ghiChu}) — bọt khí lên tới đó là tắt.`);
+  if (tran) {
+    /** Mô hình có lúc không cấp trần lớp xáo trộn — nói thẳng là đang đoán, đừng ghép vào câu như thể có số. */
+    const thieuTran = tran.ghiChu.startsWith("không có số trần");
+    lyDo.push(
+      thieuTran
+        ? `Mô hình không cấp trần lớp xáo trộn — chấm tạm theo CAPE (${tran.ghiChu.replace("không có số trần — đoán từ CAPE ", "")}).`
+        : tran.diem >= 70
+          ? `Lớp xáo trộn sâu, trần ${tran.ghiChu} — bọt khí lên được cao.`
+          : tran.diem >= 40
+            ? `Trần xáo trộn ${tran.ghiChu} — đủ cho chuyến bay vừa phải.`
+            : `Trần xáo trộn thấp (${tran.ghiChu}) — bọt khí lên tới đó là tắt.`,
+    );
+  }
   if (lapse) lyDo.push(lapse.diem >= 70 ? `Tầng thấp dốc nhiệt tốt (${lapse.ghiChu}) — bọt lên khoẻ.` : lapse.diem >= 40 ? `Độ dốc nhiệt trung bình (${lapse.ghiChu}).` : `Tầng thấp ổn định (${lapse.ghiChu}) — bọt khí lên yếu.`);
   /** LI kể bằng lời: chủ hỏi riêng về LI (11/09) nên phải nói rõ nó đứng ở đâu trong kết luận. */
   if (on) {

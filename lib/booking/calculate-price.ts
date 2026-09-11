@@ -320,6 +320,31 @@ const KHAU_PHA_PARAMOTOR_FLIGHT_LABEL = {
   hi: "पैरामोटर",
 };
 
+/**
+ * XE ĐÓN/TRẢ TẠI KHÁCH SẠN — ĐIỂM BAY HÀ NỘI (luật chủ 11/09).
+ *
+ * Trước đây web và app để hai giá khác nhau cho CÙNG một dịch vụ (web tính
+ * theo đầu người, app điền sẵn một số cố định) nên cùng một đoàn khách ra hai
+ * con số — quầy thu một đằng, phiếu web một nẻo. Nay một hàm duy nhất, mọi
+ * nơi gọi vào đây: trang khách, phiếu đặt, bản xem lại, bộ đồng bộ web→app và
+ * ô "Phí đón" trong app.
+ *
+ * Giá theo ĐOÀN, không nhân đầu người: 1 khách 1.000.000đ, mỗi khách thêm cộng
+ * 100.000đ — 2 khách 1.100.000đ, 3 khách 1.200.000đ, 4 khách 1.300.000đ…
+ * (một chuyến xe chạy cùng quãng đường, thêm người chỉ thêm chỗ ngồi).
+ */
+export const DON_KHACH_SAN_HA_NOI_VND = 1_000_000;
+export const DON_KHACH_SAN_HA_NOI_USD = 40;
+const DON_KHACH_SAN_THEM_VND = 100_000;
+const DON_KHACH_SAN_THEM_USD = 4;
+
+export function giaDonKhachSanHaNoi(soKhach: number, tienTe: "VND" | "USD" = "VND"): number {
+  const them = Math.max(0, Math.ceil(soKhach) - 1);
+  return tienTe === "USD"
+    ? DON_KHACH_SAN_HA_NOI_USD + them * DON_KHACH_SAN_THEM_USD
+    : DON_KHACH_SAN_HA_NOI_VND + them * DON_KHACH_SAN_THEM_VND;
+}
+
 export const LOCATIONS: Record<LocationKey, LocationConfig> = {
   sapa: {
     key: "sapa",
@@ -575,12 +600,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         },
         // Counter để chọn đúng số khách bay cùng cờ (checkbox cũ tính cả đoàn)
         controlType: "counter",
-        // 100k -> 400k từ 26/08/2026, khớp với bảng giá nội bộ ở
-        // lib/baobay/flight-price.ts (SPOT_SERVICE_PRICE, khoá "redFlag").
-        // Đổi giá lần sau phải sửa CẢ HAI, không thì khách đặt trên web một
-        // giá mà sổ điều hành tính một giá khác.
-        priceVND: 400_000,
-        priceUSD: 16,
+        // 100k -> 400k (26/08/2026) -> 300k (11/09/2026), khớp với bảng giá
+        // nội bộ ở lib/baobay/flight-price.ts (SPOT_SERVICE_PRICE, khoá
+        // "redFlag"). Đổi giá lần sau phải sửa CẢ HAI, không thì khách đặt
+        // trên web một giá mà sổ điều hành tính một giá khác.
+        priceVND: 300_000,
+        priceUSD: 12,
         /**
          * CHỈ DÙ LƯỢN THƯỜNG (PG) — Khau Phạ không có cánh dù cờ đỏ cho loại
          * GẮN ĐỘNG CƠ (PPG), nên bày ra là bán thứ không giao được.
@@ -595,6 +620,38 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
          */
         visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
         visibleForFlightTypes: ["paragliding"],
+      },
+      {
+        /**
+         * BAY KÉO CỜ — khoá chứa "flag_flight" để bộ đồng bộ web→app đổ vào
+         * đúng ô `flagFlight` của sổ (SERVICE_MAP trong
+         * services/baobay-web-sync.service.ts bắt /keo_co|flag_flight/ TRƯỚC
+         * luật /flag/ chung, nên nó không lẫn sang ô dù cờ đỏ).
+         *
+         * Khác "Bay dù cờ đỏ sao vàng": cái kia là CÁNH DÙ in cờ (300k, chỉ
+         * PG vì không có cánh dù ấy cho loại gắn động cơ); cái này là lá cờ
+         * KÉO SAU dù — cờ Tổ quốc hoặc cờ sinh nhật khách mang theo — nên
+         * không kén cánh dù, gói nào và loại hình nào cũng bay được.
+         */
+        key: "khau_pha_flag_flight",
+        label: {
+          vi: "Bay kéo cờ đỏ / cờ sinh nhật",
+          en: "Flight towing a flag (national or birthday)",
+          fr: "Vol avec drapeau remorqué (national ou d'anniversaire)",
+          ru: "Полёт с буксируемым флагом (государственный или на день рождения)",
+          zh: "拖曳旗帜飞行（国旗或生日旗）",
+          hi: "झंडा खींचकर उड़ान (राष्ट्रीय या जन्मदिन का झंडा)",
+        },
+        controlType: "counter",
+        priceVND: 150_000,
+        priceUSD: 6,
+        /**
+         * Hiện cùng lứa với flycam/360 — mọi gói và cả hai loại hình. Không
+         * khai hai dòng này thì dịch vụ bày ra NGAY KHI khách chưa chọn gói,
+         * đứng một mình giữa chỗ trống (đo trên trang thật 11/09).
+         */
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paragliding", "paramotor"],
       },
       {
         key: "khau_pha_paramotor_2000m",
@@ -1057,8 +1114,21 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "शेयर्ड होटल पिकअप",
         },
         controlType: "checkbox",
-        priceVND: 450_000,
-        priceUSD: 18,
+        /**
+         * GIÁ THEO ĐOÀN, KHÔNG NHÂN ĐẦU NGƯỜI (luật chủ 11/09) — xem
+         * `giaDonKhachSanHaNoi`. Con số ở đây là giá của khách ĐẦU TIÊN; phần
+         * cộng thêm do hàm ấy tính, nên đừng nhân với số khách ở bất cứ đâu.
+         */
+        priceVND: DON_KHACH_SAN_HA_NOI_VND,
+        priceUSD: DON_KHACH_SAN_HA_NOI_USD,
+        note: {
+          vi: "1 khách: 1.000.000đ. Mỗi khách thêm cộng 100.000đ (2 khách 1.100.000đ, 3 khách 1.200.000đ).",
+          en: "1 guest: 1,000,000 VND. Each extra guest adds 100,000 VND (2 guests 1,100,000; 3 guests 1,200,000).",
+          fr: "1 personne : 1 000 000 VND. Chaque personne supplémentaire : +100 000 VND (2 pers. 1 100 000 ; 3 pers. 1 200 000).",
+          ru: "1 гость: 1 000 000 VND. Каждый следующий гость +100 000 VND (2 гостя 1 100 000; 3 гостя 1 200 000).",
+          zh: "1 位客人：1,000,000 越南盾。每增加 1 位加收 100,000 越南盾（2 位 1,100,000；3 位 1,200,000）。",
+          hi: "1 मेहमान: 1,000,000 VND। हर अतिरिक्त मेहमान पर +100,000 VND (2 मेहमान 1,100,000; 3 मेहमान 1,200,000)।",
+        },
         requiresPickupInput: true,
         exclusiveGroup: "ha_noi_pickup_group",
       },

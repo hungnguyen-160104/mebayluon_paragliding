@@ -4251,7 +4251,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
     ["Bay hoàng hôn/săn mây", input.sunset],
-    ["Bay kéo cờ/bánh", input.flagFlight],
+    ["Bay kéo cờ đỏ/cờ sinh nhật", input.flagFlight],
   ];
   for (const [label, count] of services) {
     if (count > input.guestCount) {
@@ -4775,7 +4775,7 @@ export async function updateBookingInfo(
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
     ["Bay hoàng hôn/săn mây", input.sunset],
-    ["Bay kéo cờ/bánh", input.flagFlight],
+    ["Bay kéo cờ đỏ/cờ sinh nhật", input.flagFlight],
   ] as Array<[string, number]>) {
     if (count > input.guestCount) {
       throw new BaobayError(`${label} (${count}) vượt quá số khách (${input.guestCount})`, 400);
@@ -5645,7 +5645,7 @@ export async function addBookingServices(
     const sum = (booking[k] ?? 0) + add[k];
     if (sum > (booking.guestCount ?? 0)) {
       throw new BaobayError(
-        `${k === "video360" ? "Camera 360" : k === "flycam" ? "Flycam" : k === "redFlag" ? "Dù cờ đỏ" : k === "sunset" ? "Bay hoàng hôn/săn mây" : "Bay kéo cờ/bánh"} vượt số khách của booking (${booking.guestCount})`,
+        `${k === "video360" ? "Camera 360" : k === "flycam" ? "Flycam" : k === "redFlag" ? "Dù cờ đỏ" : k === "sunset" ? "Bay hoàng hôn/săn mây" : "Bay kéo cờ đỏ/cờ sinh nhật"} vượt số khách của booking (${booking.guestCount})`,
         400,
       );
     }
@@ -6041,7 +6041,7 @@ export async function removeBookingServices(
     video360: "Camera 360",
     redFlag: "Dù cờ đỏ",
     sunset: "Bay hoàng hôn/săn mây",
-    flagFlight: "Bay kéo cờ/bánh",
+    flagFlight: "Bay kéo cờ đỏ/cờ sinh nhật",
   };
   const next: Record<string, number> = {};
   let removedCount = 0;
@@ -13094,7 +13094,7 @@ export async function getMyPeriodSummary(
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
         ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây (sunset)", value: sumOf((d) => d.sunset) }] : []),
-        { label: "Bay kéo cờ/bánh (flag flight)", value: sumOf((d) => d.flagFlight) },
+        { label: "Bay kéo cờ đỏ/cờ sinh nhật (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
         // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
         ...(spot === "ha-noi"
@@ -13162,7 +13162,7 @@ export async function getMyPeriodSummary(
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Cờ đỏ", value: sumOf((d) => d.redFlag) },
         ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây", value: sumOf((d) => d.sunset) }] : []),
-        { label: "Bay kéo cờ/bánh", value: sumOf((d) => d.flagFlight) },
+        { label: "Bay kéo cờ đỏ/cờ sinh nhật", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
         { label: "Tiền mặt", value: sumOf((d) => d.cashReceived) + collectCash, money: true },
         { label: "Chuyển khoản", value: sumOf((d) => d.transferReceived) + collectTransfer, money: true },

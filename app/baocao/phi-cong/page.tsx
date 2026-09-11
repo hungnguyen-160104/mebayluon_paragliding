@@ -641,7 +641,7 @@ export default function PilotReportPage() {
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} />
             </ServiceBox>
             )}
-            <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ/bánh", "flag flight")}>
+            <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ đỏ/cờ sinh nhật", "flag flight")}>
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} />
             </ServiceBox>
           </div>

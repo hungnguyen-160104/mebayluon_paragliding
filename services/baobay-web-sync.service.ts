@@ -27,7 +27,7 @@ import { nextDaySeq } from "@/services/baobay.service";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { Booking } from "@/models/Booking.model";
-import { LOCATIONS, type LocationKey } from "@/lib/booking/calculate-price";
+import { giaDonKhachSanHaNoi, LOCATIONS, type LocationKey } from "@/lib/booking/calculate-price";
 
 /** Điểm bay của trang khách ↔ điểm bay trong app. Điểm nào không có ở đây (Đà Nẵng, Quản Bạ…) thì bỏ qua. */
 const WEB_LOCATION_BY_SPOT: Record<string, string> = {
@@ -184,6 +184,11 @@ function shuttleFee(doc: WebDoc, guests: number, spot: string): number {
     }
     if (key === "ha_noi_private_hotel_pickup") {
       fee += 1_400_000 + Math.max(0, guests - 3) * 350_000;
+      continue;
+    }
+    /** Đón khách sạn Hà Nội: 1tr cho khách đầu, +100k mỗi khách thêm — theo đoàn. */
+    if (key === "ha_noi_hotel_pickup_shared") {
+      fee += giaDonKhachSanHaNoi(guests, "VND");
       continue;
     }
     const cfg = webServiceConfig(spot, key);

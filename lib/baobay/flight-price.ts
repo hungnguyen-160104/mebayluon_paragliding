@@ -117,6 +117,22 @@ const SPOT_SERVICE_PRICE: ReadonlyArray<{
   { spot: "khau-pha", key: "redFlag", from: "2026-08-26T01:00:00+07:00", price: 400_000 },
   { spot: "sapa", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
   { spot: "ha-noi", key: "redFlag", from: "2026-08-26T08:20:00+07:00", price: 400_000 },
+  /**
+   * 11/09/2026 (chủ chốt): DÙ CỜ ĐỎ xuống 300k, và BAY KÉO CỜ (cờ đỏ hoặc cờ
+   * sinh nhật) lên 150k — cả ba điểm, cùng một mốc vì chủ chốt một lần. Web
+   * booking sửa cùng lúc (`lib/booking/calculate-price.ts`, khoá
+   * `khau_pha_flag` và `khau_pha_flag_flight`) để khách đặt trên web và sổ
+   * điều hành không ra hai con số.
+   *
+   * Booking lập TRƯỚC mốc này vẫn giữ 400k/100k — xem lý do neo theo lúc lập
+   * ở ghi chú trên.
+   */
+  { spot: "khau-pha", key: "redFlag", from: "2026-09-11T13:30:00+07:00", price: 300_000 },
+  { spot: "sapa", key: "redFlag", from: "2026-09-11T13:30:00+07:00", price: 300_000 },
+  { spot: "ha-noi", key: "redFlag", from: "2026-09-11T13:30:00+07:00", price: 300_000 },
+  { spot: "khau-pha", key: "flagFlight", from: "2026-09-11T13:30:00+07:00", price: 150_000 },
+  { spot: "sapa", key: "flagFlight", from: "2026-09-11T13:30:00+07:00", price: 150_000 },
+  { spot: "ha-noi", key: "flagFlight", from: "2026-09-11T13:30:00+07:00", price: 150_000 },
 ];
 
 /**
@@ -144,7 +160,7 @@ export const SERVICE_PRICE_LABEL: Array<{ key: ServiceKey; label: string }> = [
   { key: "flycam", label: "Flycam" },
   { key: "video360", label: "Camera 360" },
   { key: "redFlag", label: "Dù cờ đỏ" },
-  { key: "flagFlight", label: "Bay kéo cờ/bánh" },
+  { key: "flagFlight", label: "Bay kéo cờ đỏ/cờ sinh nhật" },
   { key: "sunset", label: "Bay hoàng hôn/săn mây" },
 ];
 

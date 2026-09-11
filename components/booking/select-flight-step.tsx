@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useCallback } from "react";
+import { giaDonKhachSanHaNoi } from "@/lib/booking/calculate-price";
 import {
   useBookingStore,
   type ServiceSelection,
@@ -54,6 +55,7 @@ type ServiceMeta = {
     | "sapa_hotel_pickup"
     | "hanoi_fixed_pickup"
     | "hanoi_private_pickup"
+    | "hanoi_hotel_pickup_shared"
     | "hanoi_mountain_shuttle"
     | "khau_pha_flag"
     | "khau_pha_flycam"
@@ -666,6 +668,24 @@ function getServiceMeta(
         1_400_000 + Math.max(0, guests - 3) * 350_000,
       lineTotalUSD: (_base, guests) =>
         56 + Math.max(0, guests - 3) * 14,
+      summaryText: (name) => name,
+    };
+  }
+
+  /**
+   * Đón/trả tại khách sạn: giá THEO ĐOÀN (1 khách 1.000.000đ, mỗi khách thêm
+   * +100.000đ) — không nhân đầu người như dịch vụ tích thường.
+   */
+  if (key === "ha_noi_hotel_pickup_shared") {
+    return {
+      id: "hanoi_hotel_pickup_shared",
+      exclusiveGroup: "ha_noi_pickup_group",
+      requiresInput: true,
+      inputLabel: ui.pickupLocationLabel,
+      priceText: formatVND(giaDonKhachSanHaNoi(1)),
+      lines: [],
+      lineTotalVND: (_base, guests) => giaDonKhachSanHaNoi(guests, "VND"),
+      lineTotalUSD: (_base, guests) => giaDonKhachSanHaNoi(guests, "USD"),
       summaryText: (name) => name,
     };
   }

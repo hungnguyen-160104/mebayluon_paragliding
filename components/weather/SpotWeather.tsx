@@ -189,37 +189,48 @@ function DaiNgay({
               {nhanNgay(n.ngay, homNay, lang, t)}
             </div>
             {/**
-             * HAI DÒNG CỐ ĐỊNH: "2.5 m/s" rồi "ĐĐB · 98". Trước đây bốn mẩu chung
-             * một hàng flex; ô rộng 86px không chứa nổi nên dấu "·" ở lại hàng
-             * trên còn "98" rớt xuống một mình (chủ báo 11/09). Để hàng tự
-             * "wrap khi cần" thì ô này hai dòng, ô kia một dòng, cả hàng ô so
-             * le. Đo thực: 54/70 ô đều phải xuống hàng — vậy cho xuống hẳn, ô
-             * nào cũng như nhau, cụm dưới `whitespace-nowrap` để không bao giờ
-             * bị bẻ đôi.
+             * MỘT DÒNG GIÓ, TÔ MÀU THEO TỐC ĐỘ (thứ tự chủ chốt 11/09):
+             * hướng đứng trước số, và cả cụm nằm trên nền màu theo thang gió
+             * của chủ — dưới 4 m/s xanh, 4–6 vàng, 6–8 cam, trên 8 đỏ (cùng
+             * `mauGio` với bảng giờ và meteogram, nên nhìn đâu cũng một thang).
+             * Màu chữ tự đổi đen/trắng theo độ sáng nền để số luôn đọc được.
+             *
+             * `whitespace-nowrap`: trước đây hướng, số và đơn vị là ba mẩu rời,
+             * ô rộng 86px bẻ chúng làm hai ba dòng so le nhau (chủ báo 11/09).
              */}
-            <div className="mt-0.5 whitespace-nowrap leading-none">
-              <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>{" "}
-              <span className="text-[10px] opacity-70">{t.windUnit}</span>
+            <div className="mt-0.5 flex justify-center">
+              <span
+                className="whitespace-nowrap rounded-md px-1.5 py-0.5 leading-none"
+                style={styleGio(n.gioMax)}
+                title={`${t.wind} ${n.gioMax.toFixed(1)} ${t.windUnit}`}
+              >
+                {(() => {
+                  const huong = huongTroiCuaNgay(n);
+                  return huong === null ? null : (
+                    <span className="text-[11px] font-black">{huongTheoNgonNgu(huong, lang)} · </span>
+                  );
+                })()}
+                <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>{" "}
+                <span className="text-[10px] font-bold opacity-80">{t.windUnit}</span>
+              </span>
             </div>
-            {/* HƯỚNG GIÓ TRỘI của ngày — gió mạnh cỡ nào mà không biết thổi
-                hướng nào thì chưa trả lời được "bãi có bay được không". */}
-            {(() => {
-              const huong = huongTroiCuaNgay(n);
-              if (huong === null && !n.chuyenGia) return null;
-              return (
-                <div
-                  className="mt-0.5 whitespace-nowrap text-[11px] font-black leading-none opacity-90"
-                  title={n.chuyenGia ? `${t.score} ${n.chuyenGia.diem}/100` : undefined}
-                >
-                  {huong !== null ? huongTheoNgonNgu(huong, lang) : ""}
-                  {huong !== null && n.chuyenGia ? " · " : ""}
-                  {n.chuyenGia ? n.chuyenGia.diem : ""}
-                </div>
-              );
-            })()}
-            {(n.gioXanh > 0 || n.gioMua > 0 || n.xacSuatDongMax >= 20) && (
+            {/**
+             * ĐIỂM ĐI VỚI GIỜ ĐẸP, cùng một dòng: "100/100 · 8 giờ đẹp" — hai
+             * con số cùng trả lời "ngày này đáng bay tới đâu", tách ra hai chỗ
+             * thì phải ghép trong đầu. Ghi đủ "/100" vì "· 98" trần trụi không
+             * nói được đó là điểm hay số gì (chủ 11/09).
+             */}
+            {(n.chuyenGia || n.gioXanh > 0 || n.gioMua > 0 || n.xacSuatDongMax >= 20) && (
               <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-1 text-[11px] font-semibold leading-tight">
-                {n.gioXanh > 0 && <span>{`${n.gioXanh} ${t.goodHours}`}</span>}
+                {n.chuyenGia && (
+                  <span className="font-black" title={`${t.score} ${n.chuyenGia.diem}/100`}>
+                    {n.chuyenGia.diem}
+                    <span className="font-bold opacity-60">/100</span>
+                  </span>
+                )}
+                {/* KHÔNG chấm phân cách: ô rộng 77–86px luôn phải xuống dòng,
+                    dấu "·" rơi xuống đầu dòng sau trông như lỗi (chủ 11/09). */}
+                {n.gioXanh > 0 && <span className="whitespace-nowrap">{`${n.gioXanh} ${t.goodHours}`}</span>}
                 {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
                 {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
               </div>
@@ -1053,12 +1064,6 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         {ngayHien.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${ngayHien.xacSuatDongMax}%` : ""}
       </div>
 
-      {/* Chọn mô hình — không bày nút "So sánh" ở đây cho thẻ khỏi rối. */}
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <ChonMoHinh dangChon={moHinh} onChon={doiMoHinh} nho />
-        {dangTai && <span className="text-[11px] text-slate-400">{t.loading}</span>}
-      </div>
-
       <DaiNgay
         ngay={du.ngay}
         chon={chon}
@@ -1077,7 +1082,19 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
 
           <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
 
-          <div className="mt-2 flex flex-wrap items-center gap-1">
+          {/**
+           * CHỌN MÔ HÌNH đứng NGAY TRÊN hàng tab, rồi mới tới biểu đồ (chủ
+           * 11/09): ba thứ này là một chuỗi thao tác — chọn mô hình, chọn kiểu
+           * xem, nhìn biểu đồ. Trước đây nó nằm tận trên dải ô ngày, cách chỗ
+           * vẽ cả một khối chữ, đổi mô hình xong phải cuộn xuống mới thấy đổi.
+           * Không bày nút "So sánh" ở đây cho thẻ khỏi rối.
+           */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <ChonMoHinh dangChon={moHinh} onChon={doiMoHinh} nho />
+            {dangTai && <span className="text-[11px] text-slate-400">{t.loading}</span>}
+          </div>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
             {(
               [
                 ["basic", "▦ Basic"],

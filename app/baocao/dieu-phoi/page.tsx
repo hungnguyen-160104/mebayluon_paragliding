@@ -789,7 +789,7 @@ export default function DispatcherReportPage() {
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
             </ServiceBox>
             )}
-            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
             </ServiceBox>
           </div>

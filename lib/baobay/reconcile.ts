@@ -916,7 +916,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     },
     {
       code: "LECH_KEO_CO",
-      label: "Bay kéo cờ/bánh",
+      label: "Bay kéo cờ đỏ/cờ sinh nhật",
       pilotTotal: totals.pilotFlagFlight,
       dispatcherTotal: totals.dispatcherFlagFlight,
       pilotCodes: pilots.flatMap((p) => p.flagFlightCodes),
@@ -998,7 +998,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     check("LECH_TIEN", "Tiền mặt", close.cashTotal, totals.dispatcherCash, dispatcherUsers, true);
     check("LECH_TIEN", "Chuyển khoản", close.transferTotal, totals.dispatcherTransfer, dispatcherUsers, true);
     // Kéo cờ: số chốt của kế toán so với điều phối (cặp phi công ↔ điều phối đã soát ở trên)
-    check("LECH_KEO_CO", "Bay kéo cờ/bánh", close.flagFlight, totals.dispatcherFlagFlight, dispatcherUsers);
+    check("LECH_KEO_CO", "Bay kéo cờ đỏ/cờ sinh nhật", close.flagFlight, totals.dispatcherFlagFlight, dispatcherUsers);
 
     if (issuedCodes.length && close.ticketsIssued !== issuedCodes.length) {
       flag({

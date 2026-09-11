@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState, useCallback } from "react";
+import { giaDonKhachSanHaNoi } from "@/lib/booking/calculate-price";
 import { useBookingStore } from "@/store/booking-store";
 import {
   computePriceByLang,
@@ -918,6 +919,11 @@ export default function ReviewConfirmStep() {
           : 56 + Math.max(0, guestsCount - 3) * 14;
       }
 
+      /** Đón khách sạn Hà Nội: giá theo đoàn, không nhân đầu người. */
+      if (key === "ha_noi_hotel_pickup_shared") {
+        return giaDonKhachSanHaNoi(guestsCount, currency === "VND" ? "VND" : "USD");
+      }
+
       if (svc.controlType === "counter") {
         return unitPrice * qty;
       }
@@ -1022,7 +1028,7 @@ export default function ReviewConfirmStep() {
           "leg",
         )}`;
         detailVi = `${money} × ${carCount} xe × ${qty} chiều`;
-      } else if (key === "ha_noi_private_hotel_pickup") {
+      } else if (key === "ha_noi_private_hotel_pickup" || key === "ha_noi_hotel_pickup_shared") {
         detailText = "";
       } else if (svc.controlType === "counter") {
         detailText = `${formatMoneyVND(unitPrice)} × ${qty}`;
@@ -1196,7 +1202,7 @@ export default function ReviewConfirmStep() {
           const carCount = Math.ceil(guestsCount / 4);
           const carPrice = 500_000;
           detailText = `${formatMoneyVND(carPrice)} × ${carCount} xe × ${qty} chiều`;
-        } else if (key === "ha_noi_private_hotel_pickup") {
+        } else if (key === "ha_noi_private_hotel_pickup" || key === "ha_noi_hotel_pickup_shared") {
           detailText = "";
         } else if (svc.controlType === "counter") {
           detailText = `${formatMoneyVND(unitPrice)} × ${qty}`;

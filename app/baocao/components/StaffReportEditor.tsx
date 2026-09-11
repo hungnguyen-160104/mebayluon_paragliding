@@ -623,7 +623,7 @@ function DispatcherRow({
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
             </ServiceBox>
-            <ServiceBox tone="flagFlight" label="Bay kéo cờ/bánh">
+            <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={1000} />
             </ServiceBox>
           </div>
