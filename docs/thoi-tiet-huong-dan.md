@@ -535,9 +535,12 @@ bọt khí là chỗ nội suy cắt đường môi trường. Hình vẽ tay b�
 `components/weather/SkewT.tsx` — mở bằng nút **🌡 Skew-T** cạnh Basic /
 Meteogram / Airgram, có hàng chọn giờ (mặc định 13:00, lúc cột khí mở nhất).
 
-**Trần hình 600 hPa (~4.400 m)** (chủ 11/09: "dù lượn chỉ cần tới khoảng
-4.000 m là quá đủ"): vẽ tới 300 hPa thì tầng mình bay bị nén vào một phần ba
-dưới cùng, nhìn không ra lớp nào. **Chú thích bốn đường in ngay trên hình**,
+**Trần hình = 4.000 m (≈ 616 hPa) và HÌNH TO** (chủ 11/09): vẽ tới 300 hPa thì
+tầng mình bay bị nén vào một phần ba dưới cùng, nhìn không ra lớp nào; hình nhỏ
+thì chữ 8px không đọc nổi. Khung 820×620 co giãn theo bề rộng chỗ đặt — đo thật
+trên máy tính ra 964×729px, trên điện thoại giữ tối thiểu 560px rồi cuộn ngang
+trong khung (trang không tràn). Mực ngay trên trần vẫn được lấy để đường vẽ
+chạy tới mép khung rồi mới bị cắt bằng clip. **Chú thích bốn đường in ngay trên hình**,
 không bắt người xem dò xuống khối chữ rồi ngước lên đối chiếu.
 
 **Độ cao BÃI HẠ** vẽ thành vạch thứ hai, vì chênh giữa cất và hạ là **độ cao

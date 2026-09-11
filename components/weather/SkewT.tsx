@@ -41,9 +41,15 @@ import { huongChu } from "@/lib/baobay/thoi-tiet";
 /* Khung vẽ                                                            */
 /* ------------------------------------------------------------------ */
 
-const W = 560;
-const H = 430;
-const LE = { trai: 54, phai: 78, tren: 14, duoi: 34 };
+/**
+ * HÌNH TO HẲN LÊN (chủ 11/09: "để nhỏ quá rất khó nhìn"). Khung vẽ 820×620 và
+ * co giãn theo bề rộng chỗ đặt: trên máy tính hình chiếm gần hết bảng phụ, trên
+ * điện thoại vẫn giữ tối thiểu 560px rồi cuộn ngang — thà cuộn còn hơn bóp chữ
+ * xuống 6px.
+ */
+const W = 820;
+const H = 620;
+const LE = { trai: 62, phai: 92, tren: 16, duoi: 38 };
 const VE_W = W - LE.trai - LE.phai;
 const VE_H = H - LE.tren - LE.duoi;
 
@@ -55,12 +61,15 @@ const XIEN = 0.55;
 
 const AP_DUOI = 1000;
 /**
- * TRẦN HÌNH 600 hPa (~4.400 m) — luật chủ 11/09: "dù lượn chỉ cần tới khoảng
- * 4.000 m là quá đủ". Vẽ tới 300 hPa (9,8 km) thì tầng mình bay bị nén vào một
- * phần ba dưới cùng của hình, nhìn không ra lớp nào; cắt ở 650 hPa thì cả bãi,
- * đáy mây, nghịch nhiệt và trần thermal trải kín khung.
+ * TRẦN HÌNH = 4.000 m (≈ 616 hPa) — luật chủ 11/09: "dù lượn chỉ cần lên tới
+ * khoảng 4.000 m là quá đủ, để cao quá thì phần mình bay bị bóp nhỏ khó nhìn".
+ * Vẽ tới 300 hPa (9,8 km) thì cả bãi, đáy mây và trần thermal chen nhau trong
+ * một phần ba dưới cùng của hình.
+ *
+ * Mực NGAY TRÊN trần vẫn được lấy để nối đường (nếu không, đường nhiệt độ cụt
+ * lửng giữa khung); phần thừa bị cắt bằng clip nên không tràn ra ngoài.
  */
-const AP_TREN = 600;
+const AP_TREN = 616;
 
 const yTheoAp = (ap: number) =>
   LE.tren + (VE_H * (Math.log(AP_TREN) - Math.log(ap))) / (Math.log(AP_TREN) - Math.log(AP_DUOI));
@@ -171,15 +180,20 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, gioBay = [7, 17] 
 }
 
 function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: number; altHa?: number; gio: string }) {
-  /** Chỉ tầng mình bay: từ sát đất lên 650 hPa (~3.700m). */
+  /** Chỉ tầng mình bay: từ sát đất lên 4.000 m. */
   const trongKhung = muc.filter((m) => m.ap <= AP_DUOI && m.ap >= AP_TREN);
+  /** Thêm ĐÚNG MỘT mực trên trần để đường vẽ chạy tới mép khung rồi mới bị cắt. */
+  const noiDai = (() => {
+    const tren = muc.filter((m) => m.ap < AP_TREN).sort((a, b) => b.ap - a.ap)[0];
+    return tren ? [...trongKhung, tren] : trongKhung;
+  })();
   /** Mực xuất phát của bọt khí: mực thấp nhất còn NẰM TRÊN bãi (đứng ở bãi thì khí dưới bãi không liên quan). */
   const batDau = trongKhung.find((m) => m.cao >= altBai - 50) ?? trongKhung[0];
   const bot = duongBotKhi(
     { ap: batDau.ap, cao: batDau.cao, nhiet: batDau.nhiet, suong: batDau.suong },
-    trongKhung.map((m) => ({ ap: m.ap, cao: m.cao })),
+    noiDai.map((m) => ({ ap: m.ap, cao: m.cao })),
   );
-  const tranThermal = tranBotKhi(bot, trongKhung.map((m) => ({ cao: m.cao, nhiet: m.nhiet })));
+  const tranThermal = tranBotKhi(bot, noiDai.map((m) => ({ cao: m.cao, nhiet: m.nhiet })));
   const caoDayMay = batDau.cao + dayMay(batDau.nhiet, batDau.suong);
   const nghich = lopNghichNhiet(trongKhung);
 
@@ -197,7 +211,7 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
   };
 
   const duong = (lay: (m: MucSkewT) => number) =>
-    trongKhung
+    noiDai
       .map((m) => {
         const y = yTheoAp(m.ap);
         return `${xTheoNhiet(lay(m), y).toFixed(1)},${y.toFixed(1)}`;
@@ -205,7 +219,18 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
       .join(" ");
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={`Skew-T ${gio}`}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="block h-auto w-full min-w-[560px]"
+      role="img"
+      aria-label={`Skew-T ${gio}`}
+    >
+      <defs>
+        {/* Cắt mọi đường ở đúng khung vẽ — mực nối dài phía trên không được tràn ra lề. */}
+        <clipPath id="khungSkewT">
+          <rect x={LE.trai} y={LE.tren} width={VE_W + LE.phai - 20} height={VE_H} />
+        </clipPath>
+      </defs>
       <rect x={LE.trai} y={LE.tren} width={VE_W + LE.phai - 20} height={VE_H} fill="#f8fafc" />
 
       {/* Đường đẳng nhiệt xiên, mỗi 10°C */}
@@ -253,10 +278,10 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
         return (
           <g key={`p${m.ap}`}>
             <line x1={LE.trai} y1={y} x2={LE.trai + VE_W + LE.phai - 20} y2={y} stroke="#e2e8f0" strokeWidth={0.7} />
-            <text x={LE.trai - 6} y={y + 3} textAnchor="end" fontSize={9} fill="#64748b">
+            <text x={LE.trai - 6} y={y + 3} textAnchor="end" fontSize={11} fill="#64748b">
               {m.ap}
             </text>
-            <text x={LE.trai - 6} y={y + 12} textAnchor="end" fontSize={8} fill="#94a3b8">
+            <text x={LE.trai - 6} y={y + 12} textAnchor="end" fontSize={10} fill="#94a3b8">
               {m.cao >= 1000 ? `${(m.cao / 1000).toFixed(1)}km` : `${Math.round(m.cao)}m`}
             </text>
           </g>
@@ -267,7 +292,7 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
       {altBai > 0 && (
         <g>
           <line x1={LE.trai} y1={yTheoCao(altBai)} x2={LE.trai + VE_W} y2={yTheoCao(altBai)} stroke="#0f172a" strokeWidth={1} strokeDasharray="5 3" />
-          <text x={LE.trai + 3} y={yTheoCao(altBai) - 3} fontSize={9} fontWeight={700} fill="#0f172a">
+          <text x={LE.trai + 3} y={yTheoCao(altBai) - 3} fontSize={11} fontWeight={700} fill="#0f172a">
             bãi {altBai}m
           </text>
         </g>
@@ -277,7 +302,7 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
       {altHa !== undefined && altHa < altBai && (
         <g>
           <line x1={LE.trai} y1={yTheoCao(altHa)} x2={LE.trai + VE_W} y2={yTheoCao(altHa)} stroke="#475569" strokeWidth={0.9} strokeDasharray="2 4" />
-          <text x={LE.trai + 3} y={yTheoCao(altHa) - 3} fontSize={9} fontWeight={700} fill="#475569">
+          <text x={LE.trai + 3} y={yTheoCao(altHa) - 3} fontSize={11} fontWeight={700} fill="#475569">
             bãi hạ {altHa}m
           </text>
         </g>
@@ -287,7 +312,7 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
       {caoDayMay > altBai && (
         <g>
           <line x1={LE.trai} y1={yTheoCao(caoDayMay)} x2={LE.trai + VE_W} y2={yTheoCao(caoDayMay)} stroke="#0284c7" strokeWidth={1} strokeDasharray="2 3" />
-          <text x={LE.trai + VE_W - 3} y={yTheoCao(caoDayMay) - 3} textAnchor="end" fontSize={9} fill="#0284c7" fontWeight={700}>
+          <text x={LE.trai + VE_W - 3} y={yTheoCao(caoDayMay) - 3} textAnchor="end" fontSize={11} fill="#0284c7" fontWeight={700}>
             đáy mây ~{Math.round(caoDayMay)}m
           </text>
         </g>
@@ -295,13 +320,14 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
       {tranThermal !== null && tranThermal > altBai && (
         <g>
           <line x1={LE.trai} y1={yTheoCao(tranThermal)} x2={LE.trai + VE_W} y2={yTheoCao(tranThermal)} stroke="#ea580c" strokeWidth={1.2} />
-          <text x={LE.trai + VE_W - 3} y={yTheoCao(tranThermal) + 11} textAnchor="end" fontSize={9} fill="#ea580c" fontWeight={700}>
+          <text x={LE.trai + VE_W - 3} y={yTheoCao(tranThermal) + 11} textAnchor="end" fontSize={11} fill="#ea580c" fontWeight={700}>
             trần thermal ~{tranThermal}m
           </text>
         </g>
       )}
 
-      {/* Bọt khí, điểm sương, nhiệt độ */}
+      {/* Bọt khí, điểm sương, nhiệt độ — cắt theo khung */}
+      <g clipPath="url(#khungSkewT)">
       <polyline
         points={bot.map((p) => `${xTheoNhiet(p.nhiet, yTheoAp(p.ap)).toFixed(1)},${yTheoAp(p.ap).toFixed(1)}`).join(" ")}
         fill="none"
@@ -309,8 +335,9 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
         strokeWidth={1.6}
         strokeDasharray="5 4"
       />
-      <polyline points={duong((m) => m.suong)} fill="none" stroke="#2563eb" strokeWidth={2} />
-      <polyline points={duong((m) => m.nhiet)} fill="none" stroke="#dc2626" strokeWidth={2} />
+      <polyline points={duong((m) => m.suong)} fill="none" stroke="#2563eb" strokeWidth={2.4} />
+      <polyline points={duong((m) => m.nhiet)} fill="none" stroke="#dc2626" strokeWidth={2.4} />
+      </g>
 
       {/* Cờ gió bên phải: mũi tên chỉ hướng gió THỔI TỚI, kèm số m/s */}
       {trongKhung.map((m) => {
@@ -323,10 +350,10 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
               <line x1={0} y1={-7} x2={0} y2={7} stroke="#0f172a" strokeWidth={1.2} />
               <polygon points="0,9 -3.2,3 3.2,3" fill="#0f172a" />
             </g>
-            <text x={x + 10} y={y + 3} fontSize={9} fill="#334155">
+            <text x={x + 10} y={y + 3} fontSize={11} fill="#334155">
               {m.gio.toFixed(0)}
             </text>
-            <text x={x - 12} y={y + 3} textAnchor="end" fontSize={8} fill="#64748b">
+            <text x={x - 12} y={y + 3} textAnchor="end" fontSize={10} fill="#64748b">
               {huongChu(m.huong)}
             </text>
           </g>
@@ -338,16 +365,16 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
        * không bắt người xem dò xuống khối chữ bên dưới rồi ngước lên đối chiếu.
        */}
       <g transform={`translate(${LE.trai + 6},${LE.tren + 6})`}>
-        <rect x={0} y={0} width={150} height={52} rx={4} fill="#ffffff" opacity={0.88} stroke="#e2e8f0" />
+        <rect x={0} y={0} width={186} height={64} rx={4} fill="#ffffff" opacity={0.88} stroke="#e2e8f0" />
         {[
           ["#dc2626", "Nhiệt độ", "2", ""],
           ["#2563eb", "Điểm sương", "2", ""],
           ["#f97316", "Bọt khí từ bãi", "1.6", "5 4"],
           ["#cbd5e1", "Đoạn nhiệt khô", "1", "3 3"],
         ].map(([mau, ten, day, net], i) => (
-          <g key={ten} transform={`translate(6,${10 + i * 11})`}>
-            <line x1={0} y1={0} x2={16} y2={0} stroke={mau} strokeWidth={Number(day)} strokeDasharray={net || undefined} />
-            <text x={21} y={3} fontSize={8.5} fill="#334155">
+          <g key={ten} transform={`translate(8,${13 + i * 14})`}>
+            <line x1={0} y1={0} x2={20} y2={0} stroke={mau} strokeWidth={Number(day)} strokeDasharray={net || undefined} />
+            <text x={26} y={4} fontSize={11} fill="#334155">
               {ten}
             </text>
           </g>
@@ -356,11 +383,11 @@ function HinhSkewT({ muc, altBai, altHa, gio }: { muc: MucSkewT[]; altBai: numbe
 
       {/* Trục nhiệt độ dưới cùng */}
       {Array.from({ length: 7 }, (_, i) => T_MIN + i * 10).map((t) => (
-        <text key={`x${t}`} x={xTheoNhiet(t, LE.tren + VE_H)} y={H - LE.duoi + 14} textAnchor="middle" fontSize={9} fill="#64748b">
+        <text key={`x${t}`} x={xTheoNhiet(t, LE.tren + VE_H)} y={H - LE.duoi + 14} textAnchor="middle" fontSize={11} fill="#64748b">
           {t}°
         </text>
       ))}
-      <text x={LE.trai} y={H - 6} fontSize={9} fill="#94a3b8">
+      <text x={LE.trai} y={H - 6} fontSize={11} fill="#94a3b8">
         {gio.slice(11, 16)} · nhiệt độ (°C), trục xiên · gió m/s bên phải
       </text>
     </svg>
