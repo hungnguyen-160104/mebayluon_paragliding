@@ -542,7 +542,7 @@ số giờ ≥ 40 ("giờ có thermal"), ba bốn câu lý do có con số, và 
 | 65–81 | mạnh | trần 1.500–1.900 m, dốc nhiệt tốt |
 | ≥ 82 | rất mạnh | trần > 2.000 m, dốc nhiệt gần đoạn nhiệt, bất ổn sâu — vài tuần một lần |
 
-**Cảnh báo** đi kèm: LI ≤ −4 hoặc CAPE ≥ 1.500 → *quá phát triển, bay sáng*;
+**Cảnh báo** đi kèm: LI ≤ −4 hoặc CAPE ≥ 1.500 → *mây phát triển quá mức, bay sáng*;
 mây < 25% và chênh điểm sương ≥ 8 °C → *thermal XANH, khó nhìn nguồn*; "rất
 mạnh" → *bay đôi xóc, khách say*; gió mực 500 m ≥ 12 → *xé thermal HH–HH*.
 
@@ -659,9 +659,9 @@ ngày** hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn lọt khe b
 khung bay rồi viết ra một trong ba câu:
 
 - ngược cả ngày → *"Ngược sườn CẢ NGÀY (gió TB, B, BĐB) — bãi này không bay được
-  hướng ấy, đừng hẹn khách."*
+  hướng ấy, không bay được."*
 - ngược phần lớn → *"Ngược sườn phần lớn ngày; lọt khe 13–16h khi gió xoay Đ —
-  chỉ hẹn khách trong khung ấy."*
+  chỉ bay trong khung ấy."*
 - ngược vài tiếng → *"Ngược sườn 09–11h (gió B) — tránh cất cánh đúng khung ấy."*
 
 ## 7. Toạ độ điểm bay

@@ -39,7 +39,7 @@
  * sớm kéo tụt xuống trong khi trưa lên đẹp.
  *
  * Năm mức theo thang chủ: rất nhẹ · nhẹ · vừa · mạnh · rất mạnh. Đây là TIỀM
- * NĂNG, không phải "dễ chịu cho khách" — bay đôi thì "mạnh" đã là phải để ý,
+ * NĂNG, không phải "êm hay xóc" — chở khách thì "mạnh" đã là phải để ý,
  * "rất mạnh" kèm cảnh báo. Phần "êm hay xóc" bộ chấm điểm chuyên gia lo.
  *
  * Thuần tính, không mạng — kiểm bằng phép thử.
@@ -76,7 +76,7 @@ export type TiemNangThermal = {
   gioDung: number;
   /** Ba bốn câu ngắn nói vì sao ra mức này. */
   lyDo: string[];
-  /** Những thứ phải cẩn thận: quá phát triển, thermal xanh, gió xé… */
+  /** Những thứ phải cẩn thận: mây phát triển quá mức, thermal xanh, gió xé… */
   canhBao: string[];
   gio: ThermalGio[];
 };
@@ -91,7 +91,7 @@ export const NHAN_MUC_THERMAL: Record<SucThermal, string> = {
 
 /**
  * Thang mức — hiệu chỉnh trên số thật 10 ngày của ba điểm (11/09): ngày nắng,
- * trần 1.000–1.200 m, LI +2 (kiểu ngày bay đôi đẹp nhất) rơi vào "vừa"; trần
+ * trần 1.000–1.200 m, LI +2 (kiểu ngày êm đẹp nhất) rơi vào "vừa"; trần
  * 1.700–1.900 m với LI âm rơi vào "mạnh"; "rất mạnh" chỉ còn cho ngày trần trên
  * 2.000 m, dốc nhiệt gần đoạn nhiệt và bất ổn sâu — thứ vài tuần mới gặp một lần.
  */
@@ -206,7 +206,7 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
       ma: "onDinh",
       ten: "Ổn định (LI)",
       trongSo: 15,
-      /** Ổn định vừa phải vẫn có thermal (nắp giữ cho nó gọn); bất ổn sâu thì KÉO thêm nhưng dễ quá phát triển. */
+      /** Ổn định vừa phải vẫn có thermal (nắp giữ cho nó gọn); bất ổn mạnh thì KÉO thêm nhưng mây dễ phát triển quá mức. */
       diem: duongCong(li, [[-8, 70], [-4, 100], [-1, 90], [2, 70], [6, 45], [10, 25]]),
       ghiChu: `LI ${li > 0 ? "+" : ""}${li.toFixed(1).replace(".", ",")}${cape ? ` · CAPE ${Math.round(cape)}` : ""}`,
     });
@@ -342,7 +342,7 @@ export function tiemNangThermal(
           : li <= -1
             ? `Trên cao bất ổn (${on.ghiChu}) — thermal được kéo thêm, mây tích đánh dấu.`
             : li <= 2
-              ? `Trên cao hơi ổn định (${on.ghiChu}) — thermal gọn, ít quá phát triển.`
+              ? `Trên cao hơi ổn định (${on.ghiChu}) — thermal gọn, mây ít phát triển quá mức.`
               : li <= 6
                 ? `Trên cao ổn định (${on.ghiChu}) — thermal chỉ lên tới trần xáo trộn rồi dừng.`
                 : `Trên cao rất ổn định (${on.ghiChu}) — nắp chặt, thermal yếu và ngắn.`,
@@ -358,13 +358,13 @@ export function tiemNangThermal(
   const liDinh = gioCuaNgay.find((g) => g.gio === dinh.gio)?.chiSoNang;
   const capeMax = Math.max(0, ...gioCuaNgay.map((g) => g.cape ?? 0));
   if ((co(liDinh) && liDinh <= -4) || capeMax >= 1500) {
-    canhBao.push("Bất ổn sâu — thermal dễ QUÁ PHÁT TRIỂN thành mây tích dày rồi dông chiều; bay sáng, hạ cánh trước khi mây đen dựng.");
+    canhBao.push("Bất ổn mạnh — thermal làm mây PHÁT TRIỂN QUÁ MỨC thành mây dông buổi chiều; nên bay sáng, hạ trước khi mây dông xuất hiện.");
   }
   const gDinh = gioCuaNgay.find((g) => g.gio === dinh.gio);
   if (gDinh && (gDinh.may ?? 0) < 25 && co(gDinh.diemSuong) && gDinh.nhietDo - gDinh.diemSuong >= 8 && diem >= 40) {
     canhBao.push("Thermal XANH (không mây tích đánh dấu) — khó nhìn nguồn, bám sườn nắng và điểm mốc địa hình.");
   }
-  if (muc === "gat") canhBao.push("Rất mạnh: bay đôi chở khách sẽ xóc, khách dễ say — cân nhắc ca sớm hoặc muộn hơn giờ đỉnh.");
+  if (muc === "gat") canhBao.push("Rất mạnh: dù xóc và nhiễu động quanh giờ đỉnh — cân nhắc bay sớm hơn hoặc muộn hơn khung ấy.");
   const gioXe = gio.filter((x) => x.tran.some((t) => t.startsWith("gió mực")));
   if (gioXe.length) canhBao.push(`Gió mực 500m xé thermal ${gioXe[0].gio.slice(11, 16)}–${gioXe[gioXe.length - 1].gio.slice(11, 16)}.`);
 

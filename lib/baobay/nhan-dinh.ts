@@ -236,14 +236,14 @@ export function nhanDinhNgay(
     if (doiHuong && hSang !== null && hChieu !== null) {
       noi += `. Gió ĐỔI HƯỚNG trong ngày: sáng ${huongChu(hSang)}, chiều ${huongChu(hChieu)}`;
       if (tong !== "xau") tong = "chuY";
-      khuyenCao.push("Gió đổi hướng giữa ngày — xem lại luật hướng của bãi cho buổi chiều trước khi hẹn khách.");
+      khuyenCao.push("Gió đổi hướng giữa ngày — xem lại luật hướng của bãi cho buổi chiều.");
     }
     /**
      * BÃI CẤM HƯỚNG (chủ 11/09, nói về Viên Nam): có bãi mà hướng núi khiến cả
      * một góc trời là không bay được — Viên Nam không bay gió Bắc, Đông Bắc,
      * Tây Bắc. Nói "hướng trội ngược sườn" thôi thì chưa đủ: người trực cần
      * biết NGƯỢC CẢ NGÀY hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn
-     * "lọt khe" bay được — và đúng mấy tiếng ấy là thứ phải hẹn khách.
+     * "lọt khe" bay được — và đúng mấy tiếng ấy là thứ phải xếp ca.
      */
     if (opts.luatHuong?.xau) {
       const cung = opts.luatHuong.xau;
@@ -255,11 +255,11 @@ export function nhanDinhNgay(
         const tenHuong = [...new Set(nguoc.map((g) => huongChu(g.huong)))].join(", ");
         if (!thuan.length) {
           tong = "xau";
-          khuyenCao.push(`Ngược sườn CẢ NGÀY (gió ${tenHuong}) — bãi này không bay được hướng ấy, đừng hẹn khách.`);
+          khuyenCao.push(`Ngược sườn CẢ NGÀY (gió ${tenHuong}) — bãi này không bay được hướng ấy.`);
         } else if (nguoc.length >= thuan.length) {
           if (tong !== "xau") tong = "chuY";
           khuyenCao.push(
-            `Ngược sườn phần lớn ngày (gió ${tenHuong}); lọt khe ${khungCua(thuan)} khi gió xoay ${[...new Set(thuan.map((g) => huongChu(g.huong)))].join("/")} — chỉ hẹn khách trong khung ấy.`,
+            `Ngược sườn phần lớn ngày (gió ${tenHuong}); lọt khe ${khungCua(thuan)} khi gió xoay ${[...new Set(thuan.map((g) => huongChu(g.huong)))].join("/")} — chỉ bay trong khung ấy.`,
           );
         } else {
           if (tong === "thongTin") tong = "chuY";
@@ -476,7 +476,7 @@ export function nhanDinhNgay(
       } else if (gat.length) {
         noi = `${so} — GẮT từ ${gat[0]}: lift mạnh nhưng nhiễu động, dù dễ collapse mép, bãi đáp có gió xoáy (rotor nhiệt)`;
         tong = "chuY";
-        khuyenCao.push(`Thermal gắt từ ${gat[0]} — bay đôi chở khách nên xong trước ${gat[0]}; sau đó chỉ phi công cứng, chủ động bay tốc độ và né vùng thermal lõi.`);
+        khuyenCao.push(`Thermal gắt từ ${gat[0]} — nên bay xong trước ${gat[0]}; sau đó chỉ phi công vững tay, chủ động bay tốc độ và né vùng thermal lõi.`);
       } else {
         noi = `${so} — ${tn.diem >= 65 ? "lift khoẻ, lên cao được" : "đủ kéo dài chuyến, không xóc"}${soLieu ? ` (${soLieu})` : ""}`;
         tong = "tot";
@@ -497,7 +497,7 @@ export function nhanDinhNgay(
     } else if (gat.length) {
       noi = `GẮT từ ${gat[0]} — ${soLieu}: lift mạnh nhưng nhiễu động, dù dễ collapse mép, bãi đáp có gió xoáy (rotor nhiệt)`;
       tong = "chuY";
-      khuyenCao.push(`Thermal gắt từ ${gat[0]} — bay đôi chở khách nên xong trước ${gat[0]}; sau đó chỉ phi công cứng, chủ động bay tốc độ và né vùng thermal lõi.`);
+      khuyenCao.push(`Thermal gắt từ ${gat[0]} — nên bay xong trước ${gat[0]}; sau đó chỉ phi công vững tay, chủ động bay tốc độ và né vùng thermal lõi.`);
     } else if ((tranMax ?? 0) >= 800) {
       noi = `tốt — ${soLieu}, mạnh nhất quanh ${gioCua(manhNhat.g)}${
         gioTotThermal.length ? `; khung giờ thermal tốt nhất ${gioTotThermal[0]}–${gioTotThermal[1]}` : ""
@@ -535,7 +535,7 @@ export function nhanDinhNgay(
           oi ? `; ẩm ${Math.round(am ?? 0)}%, nóng ${Math.round(nhiet ?? 0)}°C, gió lặng → ngày OI BỨC, mù khô, tầm nhìn đục` : ""
         }`;
         tong = oi ? "chuY" : "thongTin";
-        if (oi) khuyenCao.push("Ngày oi ổn định: chuyến ngắn, ít nâng — hẹn khách sáng sớm cho mát, đừng hứa bay lâu.");
+        if (oi) khuyenCao.push("Ngày oi ổn định: chuyến ngắn, ít nâng — bay sáng sớm cho mát, đừng trông vào chuyến dài.");
       } else if (li >= 1) {
         noi = `ổn định (LI ${li.toFixed(1)}) — bay êm, thermal vừa phải, khó có mưa dông`;
         tong = "tot";
@@ -690,7 +690,7 @@ export function nhanDinhNgay(
         ngan: tan ? `mù tới ${gioCua(tan)}` : "mù cả ngày",
         tong: tan ? "chuY" : "xau",
       });
-      if (tan) khuyenCao.push(`Chờ mù tan — hẹn khách từ ${gioCua(tan)}.`);
+      if (tan) khuyenCao.push(`Chờ mù tan — bay được từ ${gioCua(tan)}.`);
     }
   }
 
@@ -835,13 +835,13 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
   if (gioCao?.tong === "xau") return "Ngày GIÓ MỰC CAO RẤT MẠNH: mặt đất có thể lặng nhưng lên 500m là bị thổi lùi — không bay";
   /** Mưa cả ngày hay mù cả ngày quyết định hơn mọi chỉ số thermal — xét trước. */
   const mua = tim("Mưa");
-  if (mua?.tong === "xau") return `Ngày MƯA (${mua.ngan}) — bay được chăng chỉ ở khe giữa hai đợt, hẹn khách theo giờ tạnh`;
+  if (mua?.tong === "xau") return `Ngày MƯA (${mua.ngan}) — bay được nếu có lọt khe giữa hai đợt mưa`;
   if (tim("Mù")?.tong === "xau") return "Ngày MÙ CẢ NGÀY: bãi chìm trong mây, không thấy bãi đáp — không bay";
   if (li !== null && li <= -2) return "Ngày BẤT ỔN ĐỊNH: thermal gắt, nhiễu động mạnh, mây tích phát triển nhanh — nguy cơ OD/dông chiều, chỉ bay sáng";
   if (gioCao?.tong === "chuY" && gioCao.noiDung.includes("mực 500m")) return "Ngày GIÓ MỰC CAO MẠNH: thermal bị xé, leo là nhiễu động — bay bám sườn thấp, chuyến ngắn";
   if (onDinh?.noiDung.includes("OI BỨC")) return "Ngày ỔN ĐỊNH OI BỨC: lift yếu, không khí đục, mù khô — bay ebon, chuyến ngắn, khách dễ mệt vì nóng";
   if (nghich?.tong === "chuY") return "Ngày NGHỊCH NHIỆT THẤP: trần bay bị chặn, mù tích dưới nắp — sáng đục, trưa mới mở";
-  if (thermal?.noiDung.startsWith("GẮT")) return "Ngày THERMAL GẮT: lift mạnh nhưng nhiễu động, bãi đáp có rotor nhiệt — bay đôi xong sớm";
+  if (thermal?.noiDung.startsWith("GẮT")) return "Ngày THERMAL GẮT: lift mạnh nhưng nhiễu động, bãi đáp có rotor nhiệt — bay xong sớm";
   /**
    * CÀ VÁCH THẮNG "ÍT THERMAL" (luật chủ 11/09): ngày lift nhiệt yếu mà gió
    * gió chính bãi 3–5 m/s thì vẫn bay được lâu — nói "ít thermal, chuyến ngắn" là
@@ -853,10 +853,10 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
       ? `Ngày CÀ VÁCH CỰC TỐT: gió chính bãi dựng đều lên vách — bay bám vách cả tiếng${thermal?.noiDung.startsWith("yếu") ? ", không trông vào thermal" : ", thermal cộng thêm"}`
       : `Ngày CÀ VÁCH: gió chính bãi đủ dựng — bay bám vách được${thermal?.noiDung.startsWith("yếu") ? " dù thermal nhẹ" : ", có cả thermal"}`;
   }
-  if (thermal?.noiDung.startsWith("yếu")) return "Ngày ÍT THERMAL: bay ebon là chính, chuyến ngắn, lift kém — hợp khách sợ độ cao";
+  if (thermal?.noiDung.startsWith("yếu")) return "Ngày ÍT THERMAL: bay ebon là chính, chuyến ngắn, lift kém — trời êm, ít xóc";
   if (mua) return `Ngày CÓ MƯA GIỮA CHỪNG (${mua.ngan}): bay quanh đợt mưa, để mắt tới mây đen phía gió tới`;
-  if (li !== null && li >= 1 && thermal?.tong === "tot") return "Ngày ỔN ĐỊNH, THERMAL ÊM: lift đều, ít xóc — kiểu ngày đẹp nhất cho bay đôi chở khách";
-  if (li !== null && li > -2 && li < 1 && thermal?.tong === "tot") return "Ngày HƠI BẤT ỔN, THERMAL TỐT: lift khoẻ, mây tích đẹp buổi chiều — bay đôi ổn, chiều để ý mây phát triển";
+  if (li !== null && li >= 1 && thermal?.tong === "tot") return "Ngày ỔN ĐỊNH, THERMAL ÊM: lift đều, ít xóc — kiểu ngày êm nhất trong năm";
+  if (li !== null && li > -2 && li < 1 && thermal?.tong === "tot") return "Ngày HƠI BẤT ỔN, THERMAL TỐT: lift khoẻ, mây tích đẹp buổi chiều — chiều để ý mây phát triển";
   return "Ngày bình thường: không có yếu tố nổi bật, đọc bảng giờ để chọn khung";
 }
 

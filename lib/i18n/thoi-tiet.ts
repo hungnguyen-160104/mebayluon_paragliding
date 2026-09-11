@@ -111,7 +111,7 @@ const vi: ThoiTietCopy = {
   pageTitle: "Thời tiết các điểm bay dù lượn",
   pageSubtitle: "Dự báo 10 ngày tới cho từng điểm bay — nắng, gió, thermal, mưa, trần mây, gió tầng trên",
   intro: [
-    "Bay dù lượn phụ thuộc gần như hoàn toàn vào gió. Bảng dưới đây lấy dự báo của mô hình ECMWF (mô hình mà Windy hiển thị) cho đúng toạ độ bãi cất cánh của từng điểm bay, rồi chấm màu theo ngưỡng an toàn của bay đôi chở khách.",
+    "Bay dù lượn phụ thuộc gần như hoàn toàn vào gió. Bảng dưới đây lấy dự báo của mô hình ECMWF (mô hình mà Windy hiển thị) cho đúng toạ độ bãi cất cánh của từng điểm bay, rồi chấm màu theo ngưỡng an toàn khi bay.",
     "Xanh là gió đẹp, vàng là bay được nhưng phải cân nhắc, đỏ là nên nghỉ. Dự báo chỉ để bạn chuẩn bị lịch trình — quyết định cuối cùng vẫn là của phi công tại bãi vào đúng buổi bay, vì thời tiết núi đổi rất nhanh.",
   ],
   khiTuongTieuDe: "Hiểu bản tin để đọc được bảng",
@@ -141,14 +141,14 @@ const vi: ThoiTietCopy = {
       tieuDe: "Nghịch nhiệt — cái nắp vô hình",
       y: [
         "Bình thường càng lên cao càng lạnh. Nghịch nhiệt là lớp khí phía trên ẤM HƠN phía dưới, thường hình thành trong đêm quang mây. Nó hoạt động như một cái nắp: bọt khí nóng bốc lên tới đó là dừng, nên trần thermal thấp, chuyến bay ngắn.",
-        "Nghịch nhiệt còn giữ mù và mây thấp nằm lì trong thung lũng tới gần trưa — lý do nhiều buổi sáng đèo trắng xoá trong khi dự báo mưa bằng không. Nắng đốt đủ mạnh thì lớp nghịch nhiệt vỡ, mù tan nhanh trong vòng một tiếng; bảng này nói giờ dự kiến tan để bạn hẹn khách cho đúng.",
+        "Nghịch nhiệt còn giữ mù và mây thấp nằm lì trong thung lũng tới gần trưa — lý do nhiều buổi sáng đèo trắng xoá trong khi dự báo mưa bằng không. Nắng đốt đủ mạnh thì lớp nghịch nhiệt vỡ, mù tan nhanh trong vòng một tiếng; bảng này nói giờ dự kiến tan để canh lúc lên bãi cho đúng.",
       ],
     },
     {
       tieuDe: "Thermal — nhiên liệu của chuyến bay",
       y: [
         "Mặt đất hấp thụ bức xạ, hun nóng lớp khí sát đất, bọt khí nóng tách ra và bốc lên: đó là thermal. Hai con số nói về nó là CAPE (thế năng đối lưu — bao nhiêu 'nhiên liệu') và trần lớp xáo trộn (bọt khí lên được tới đâu). Bảng này gọi trần ấy là trần thermal.",
-        "Với bay đôi chở khách, ÊM MỚI LÀ TỐT: thermal vừa đủ thì chuyến dài và mượt, còn thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang đánh giá ở đây vì thế ngược với thang của phi công bay đường dài — họ càng mạnh càng thích.",
+        "Thang ở đây chấm theo hướng ÊM: thermal vừa đủ thì chuyến dài và mượt, còn thermal gắt làm dù xóc và bãi đáp nổi gió xoáy. Phi công bay đường dài đọc ngược lại — với họ càng mạnh càng thích, nên hai bên nhìn cùng một con số mà kết luận khác nhau.",
       ],
     },
     {
@@ -204,7 +204,7 @@ const vi: ThoiTietCopy = {
   lightRain: "Mưa bay — bay vẫn bay",
   strongGusts: "Gust mạnh",
   cloudCover: "Mây phủ",
-  verdictGood: "Điều kiện tốt cho bay đôi.",
+  verdictGood: "Điều kiện bay tốt.",
   verdictFair: "Bay được nhưng hạn chế — hỏi lại phi công trước khi lên bãi.",
   verdictBad: "Hôm nay khó bay; phi công quyết tại bãi, trời ngớt vẫn có thể bay.",
   bookNow: "Đặt bay",
@@ -221,7 +221,7 @@ const en: ThoiTietCopy = {
   pageTitle: "Paragliding weather at our flying sites",
   pageSubtitle: "10-day forecast for every site — sun, wind, thermals, rain, cloud base, upper winds",
   intro: [
-    "Paragliding depends almost entirely on the wind. The table below takes the ECMWF forecast (the model Windy shows) for the exact take-off coordinates of each site, then colours it against the safety limits used for tandem flights with passengers.",
+    "Paragliding depends almost entirely on the wind. The table below takes the ECMWF forecast (the model Windy shows) for the exact take-off coordinates of each site, then colours it against the safety limits used for flying.",
     "Green means good wind, amber means flyable but think twice, red means stay on the ground. Use it to plan your trip — the final call always belongs to the pilot at the take-off on the day, because mountain weather changes fast.",
   ],
   khiTuongTieuDe: "How to read the forecast",
@@ -251,14 +251,14 @@ const en: ThoiTietCopy = {
       tieuDe: "Inversion — the invisible lid",
       y: [
         "Air normally cools with height. An inversion is a layer that is WARMER above than below, usually formed overnight under clear skies. It acts as a lid: a rising thermal bubble stops there, so the climb ceiling is low and flights are short.",
-        "An inversion also traps fog and low cloud in the valley until late morning — the reason a pass can be white over while the rain forecast reads zero. Once the sun burns through, the lid breaks and the fog clears within an hour; this page gives the expected clearing time so you can set the guest's arrival.",
+        "An inversion also traps fog and low cloud in the valley until late morning — the reason a pass can be white over while the rain forecast reads zero. Once the sun burns through, the lid breaks and the fog clears within an hour; this page gives the expected clearing time so you can plan when to head up.",
       ],
     },
     {
       tieuDe: "Thermals — the fuel of the flight",
       y: [
         "The ground absorbs radiation, heats the air against it, and bubbles of warm air break away and rise: that is a thermal. Two numbers describe it — CAPE (how much convective fuel there is) and the mixing-layer top (how high a bubble can get). This page calls that top the thermal ceiling.",
-        "For tandem flights with a passenger, SMOOTH IS GOOD: moderate thermals mean a long, comfortable flight, while rough ones make the wing buck, the guest airsick and the landing field gusty. The rating here is therefore the opposite of a cross-country pilot's — they want it strong.",
+        "The scale here rates towards SMOOTH: moderate thermals mean a long, comfortable flight, while rough ones make the wing buck and the landing field gusty. Cross-country pilots read it the other way round — they want it strong, so the same number means opposite things to the two of you.",
       ],
     },
     {
@@ -314,7 +314,7 @@ const en: ThoiTietCopy = {
   lightRain: "Light drizzle — still flyable",
   strongGusts: "Strong gusts",
   cloudCover: "Cloud cover",
-  verdictGood: "Good conditions for tandem flights.",
+  verdictGood: "Good flying conditions.",
   verdictFair: "Flyable but limited — check with the pilot before heading up.",
   verdictBad: "A hard day to fly; the pilot decides at launch, and a break in the weather can still open a window.",
   bookNow: "Book a flight",
@@ -331,7 +331,7 @@ const fr: ThoiTietCopy = {
   pageTitle: "Météo des sites de parapente",
   pageSubtitle: "Prévisions à 10 jours pour chaque site — soleil, vent, thermiques, pluie, base des nuages, vent d\u2019altitude",
   intro: [
-    "Le parapente dépend presque entièrement du vent. Le tableau ci-dessous reprend les prévisions ECMWF (le modèle affiché par Windy) aux coordonnées exactes du décollage de chaque site, puis les colore selon les limites de sécurité du vol biplace avec passager.",
+    "Le parapente dépend presque entièrement du vent. Le tableau ci-dessous reprend les prévisions ECMWF (le modèle affiché par Windy) aux coordonnées exactes du décollage de chaque site, puis les colore selon les limites de sécurité du vol.",
     "Vert : vent favorable. Orange : volable mais à réfléchir. Rouge : rester au sol. Servez-vous-en pour organiser votre voyage — la décision finale revient toujours au pilote sur le site le jour même, car la météo de montagne change vite.",
   ],
   khiTuongTieuDe: "Comprendre le bulletin",
@@ -368,7 +368,7 @@ const fr: ThoiTietCopy = {
       tieuDe: "Thermiques — le carburant du vol",
       y: [
         "Le sol absorbe le rayonnement, chauffe l'air au contact, et des bulles chaudes se détachent et montent : voilà le thermique. Deux chiffres le décrivent — la CAPE (le carburant disponible) et le sommet de la couche de mélange (jusqu'où la bulle monte), appelé ici plafond thermique.",
-        "En biplace, DOUX VAUT MIEUX QUE FORT : des thermiques modérés donnent un vol long et confortable, tandis que des thermiques hachés secouent l'aile, donnent le mal de l'air au passager et rendent l'atterrissage rafaleux. L'échelle est donc inverse de celle d'un pilote de distance.",
+        "L'échelle privilégie la DOUCEUR : des thermiques modérés donnent un vol long et confortable, tandis que des thermiques hachés secouent l'aile et rendent l'atterrissage rafaleux. Un pilote de distance la lit à l'envers — lui les veut forts.",
       ],
     },
     {
@@ -424,7 +424,7 @@ const fr: ThoiTietCopy = {
   lightRain: "Bruine légère — vol possible",
   strongGusts: "Rafales fortes",
   cloudCover: "Couverture nuageuse",
-  verdictGood: "Bonnes conditions pour un biplace.",
+  verdictGood: "Bonnes conditions de vol.",
   verdictFair: "Volable mais limité — demandez au pilote avant de monter.",
   verdictBad: "Journée difficile ; le pilote décide au décollage, une accalmie peut ouvrir un créneau.",
   bookNow: "Réserver un vol",
@@ -441,7 +441,7 @@ const ru: ThoiTietCopy = {
   pageTitle: "Погода на наших площадках для парапланеризма",
   pageSubtitle: "Прогноз на 10 дней для каждой площадки — солнце, ветер, термики, дождь, нижняя кромка облаков, ветер на высоте",
   intro: [
-    "Полёт на параплане почти полностью зависит от ветра. В таблице ниже — прогноз ECMWF (модель, которую показывает Windy) для точных координат старта каждой площадки, раскрашенный по пределам безопасности для тандемных полётов с пассажиром.",
+    "Полёт на параплане почти полностью зависит от ветра. В таблице ниже — прогноз ECMWF (модель, которую показывает Windy) для точных координат старта каждой площадки, раскрашенный по пределам безопасности полёта.",
     "Зелёный — хороший ветер, жёлтый — летать можно, но стоит подумать, красный — лучше остаться на земле. Используйте для планирования поездки: окончательное решение всегда за пилотом на старте в этот день, погода в горах меняется быстро.",
   ],
   khiTuongTieuDe: "Как читать прогноз",
@@ -478,7 +478,7 @@ const ru: ThoiTietCopy = {
       tieuDe: "Термики — топливо полёта",
       y: [
         "Земля поглощает радиацию, греет прилегающий воздух, тёплые пузыри отрываются и всплывают — это термик. Его описывают два числа: CAPE (сколько «топлива» для конвекции) и верх слоя перемешивания (докуда дойдёт пузырь). Здесь он назван потолком термиков.",
-        "Для полёта с пассажиром ЛУЧШЕ МЯГКО, чем сильно: умеренные термики дают долгий и спокойный полёт, резкие — трясут крыло, укачивают пассажира и делают посадку порывистой. Шкала здесь обратная той, что нужна пилоту-маршрутнику.",
+        "Шкала здесь оценивает в сторону МЯГКОСТИ: умеренные термики дают долгий и спокойный полёт, резкие — трясут крыло и делают посадку порывистой. Пилот-маршрутник читает её наоборот — ему нужны сильные.",
       ],
     },
     {
@@ -534,7 +534,7 @@ const ru: ThoiTietCopy = {
   lightRain: "Морось — летать можно",
   strongGusts: "Сильные порывы",
   cloudCover: "Облачность",
-  verdictGood: "Хорошие условия для полёта вдвоём.",
+  verdictGood: "Хорошие условия для полёта.",
   verdictFair: "Летать можно, но с ограничениями — уточните у пилота.",
   verdictBad: "Сложный день; решение принимает пилот на старте, при прояснении окно возможно.",
   bookNow: "Забронировать полёт",
@@ -551,7 +551,7 @@ const zh: ThoiTietCopy = {
   pageTitle: "各滑翔伞飞行点天气",
   pageSubtitle: "各飞行点未来 10 天预报 — 日照、风、热气流、降雨、云底、高空风",
   intro: [
-    "滑翔伞几乎完全取决于风。下表采用 ECMWF 模式（Windy 所显示的模式）针对各飞行点起飞场的精确坐标进行预报，并按双人载客飞行的安全标准标色。",
+    "滑翔伞几乎完全取决于风。下表采用 ECMWF 模式（Windy 所显示的模式）针对各飞行点起飞场的精确坐标进行预报，并按飞行安全标准标色。",
     "绿色代表风况良好，黄色表示可飞但需谨慎，红色则建议停飞。此表供您安排行程参考——最终是否起飞，仍由当天在起飞场的飞行员决定，因为山区天气变化很快。",
   ],
   khiTuongTieuDe: "看懂这份预报",
@@ -588,7 +588,7 @@ const zh: ThoiTietCopy = {
       tieuDe: "热气流——飞行的燃料",
       y: [
         "地面吸收辐射、加热贴地空气，暖气泡脱离上升，这就是热气流。描述它的两个数字是 CAPE（对流「燃料」有多少）和混合层顶（气泡能升到哪里），本页称后者为热气流顶。",
-        "对于载客双人飞行，柔和才算好：适中的热气流带来平稳而持久的飞行，而强烈的热气流会让伞衣颠簸、乘客晕机、降落场起旋风。因此这里的评分标准与越野飞行员相反。",
+        "这里的评分偏向柔和：适中的热气流带来平稳而持久的飞行，强烈的热气流则让伞衣颠簸、降落场起旋风。越野飞行员的读法相反——他们要的是强。",
       ],
     },
     {
@@ -644,7 +644,7 @@ const zh: ThoiTietCopy = {
   lightRain: "毛毛雨 — 仍可飞行",
   strongGusts: "强阵风",
   cloudCover: "云量",
-  verdictGood: "双人飞行条件良好。",
+  verdictGood: "飞行条件良好。",
   verdictFair: "可飞但受限 — 上山前请先问飞行员。",
   verdictBad: "今天较难飞；由飞行员在起飞场决定，天气转好仍有机会。",
   bookNow: "预订飞行",
@@ -660,7 +660,7 @@ const hi: ThoiTietCopy = {
   pageTitle: "हमारे पैराग्लाइडिंग स्थलों का मौसम",
   pageSubtitle: "हर स्थल के लिए 10 दिन का पूर्वानुमान — धूप, हवा, थर्मल, वर्षा, बादल आधार, ऊपरी हवाएँ",
   intro: [
-    "पैराग्लाइडिंग लगभग पूरी तरह हवा पर निर्भर है। नीचे दी गई तालिका हर स्थल के टेक-ऑफ़ की सटीक स्थिति के लिए ECMWF पूर्वानुमान (वही मॉडल जो Windy दिखाता है) लेती है, और उसे यात्री के साथ टैंडम उड़ान की सुरक्षा सीमाओं के अनुसार रंग देती है।",
+    "पैराग्लाइडिंग लगभग पूरी तरह हवा पर निर्भर है। नीचे दी गई तालिका हर स्थल के टेक-ऑफ़ की सटीक स्थिति के लिए ECMWF पूर्वानुमान (वही मॉडल जो Windy दिखाता है) लेती है, और उसे उड़ान की सुरक्षा सीमाओं के अनुसार रंग देती है।",
     "हरा मतलब अच्छी हवा, पीला मतलब उड़ान संभव पर सोच-समझकर, लाल मतलब ज़मीन पर ही रहें। इसे यात्रा की योजना के लिए इस्तेमाल करें — अंतिम निर्णय हमेशा उस दिन टेक-ऑफ़ पर मौजूद पायलट का होता है, क्योंकि पहाड़ी मौसम तेज़ी से बदलता है।",
   ],
   khiTuongTieuDe: "पूर्वानुमान पढ़ना कैसे",
@@ -697,7 +697,7 @@ const hi: ThoiTietCopy = {
       tieuDe: "थर्मल — उड़ान का ईंधन",
       y: [
         "ज़मीन विकिरण सोखती है, उससे सटी हवा गर्म होती है, और गर्म बुलबुले टूटकर ऊपर उठते हैं — यही थर्मल है। इसे दो संख्याएँ बताती हैं: CAPE (संवहन के लिए कितना 'ईंधन') और मिश्रण-परत की ऊँचाई (बुलबुला कहाँ तक जाएगा), जिसे यहाँ थर्मल छत कहा गया है।",
-        "यात्री के साथ टैंडम उड़ान में कोमल ही अच्छा है: मध्यम थर्मल लंबी और आरामदेह उड़ान देते हैं, जबकि तीखे थर्मल विंग को झटकाते हैं, यात्री को मिचली आती है और लैंडिंग मैदान में बवंडर उठते हैं। इसलिए यहाँ का पैमाना क्रॉस-कंट्री पायलट के उलट है।",
+        "यहाँ का पैमाना कोमलता की ओर है: मध्यम थर्मल लंबी और आरामदेह उड़ान देते हैं, जबकि तीखे थर्मल विंग को झटकाते हैं और लैंडिंग मैदान में बवंडर उठते हैं। क्रॉस-कंट्री पायलट इसे उल्टा पढ़ते हैं — उन्हें तेज़ चाहिए।",
       ],
     },
     {
@@ -753,7 +753,7 @@ const hi: ThoiTietCopy = {
   lightRain: "हल्की बूंदाबांदी — उड़ान संभव",
   strongGusts: "तेज़ झोंके",
   cloudCover: "बादल",
-  verdictGood: "टैंडम उड़ान के लिए अच्छी परिस्थितियाँ।",
+  verdictGood: "उड़ान के लिए अच्छी परिस्थितियाँ।",
   verdictFair: "उड़ान संभव पर सीमित — ऊपर जाने से पहले पायलट से पूछें।",
   verdictBad: "आज उड़ना कठिन है; पायलट लॉन्च पर तय करेंगे, मौसम खुलने पर मौका बन सकता है।",
   bookNow: "उड़ान बुक करें",

@@ -836,7 +836,7 @@ export function chamGio(
    * tuyệt đối như dông hay gió mạnh.
    */
   if (cs.thermal === "gat") {
-    lyDo.push(`thermal gắt${cs.tran ? ` (trần ~${cs.tran}m)` : ""} — dù xóc, khách dễ say`);
+    lyDo.push(`thermal gắt${cs.tran ? ` (trần ~${cs.tran}m)` : ""} — dù xóc, nhiễu động mạnh`);
     len("vang");
   }
 
