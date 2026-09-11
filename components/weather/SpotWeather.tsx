@@ -489,7 +489,11 @@ function TomTatNgay({
     dong.push({
       icon: "🔥",
       nhan: t.thermalPotential,
-      giaTri: `${t.thermalLevels[ngay.thermal.muc]} · ${ngay.thermal.diem}/100${ngay.thermal.khung && ngay.thermal.diem >= 25 ? ` · ${t.thermalWindow} ${ngay.thermal.khung}` : ""} · ${ngay.thermal.gioDung} ${t.thermalHours}`,
+      /** Không có giờ nào dùng được thì bỏ hẳn vế ấy — "0 thermal hours" là câu thừa. */
+      giaTri:
+        `${t.thermalLevels[ngay.thermal.muc]} · ${ngay.thermal.diem}/100` +
+        (ngay.thermal.khung && ngay.thermal.diem >= 25 ? ` · ${t.thermalWindow} ${ngay.thermal.khung}` : "") +
+        (ngay.thermal.gioDung > 0 ? ` · ${ngay.thermal.gioDung} ${t.thermalHours}` : ""),
     });
   } else if (ngay.tranMax) dong.push({ icon: "🔥", nhan: t.thermal, giaTri: `~${ngay.tranMax} m` });
   dong.push({ icon: "☁️", nhan: t.cloudCover, giaTri: `${mayTb}%` });

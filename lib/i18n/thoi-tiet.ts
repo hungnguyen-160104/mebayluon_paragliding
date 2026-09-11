@@ -140,7 +140,14 @@ export type ThoiTietCopy = {
 
 const vi: ThoiTietCopy = {
   navLabel: "Thời tiết bay",
-  pageTitle: "Thời tiết các điểm bay dù lượn",
+  /**
+   * H1 CỦA TRANG — chủ 11/09: phải nói đủ "dù lượn" + "Việt Nam" để SEO.
+   *
+   * Người tìm gõ "thời tiết bay dù lượn Việt Nam" chứ không gõ "thời tiết các
+   * điểm bay"; H1 là thứ Google cân nặng nhất trên trang, nên câu này phải
+   * khớp ý người tìm, không phải câu rút gọn cho đẹp.
+   */
+  pageTitle: "Thời tiết các điểm bay dù lượn tại Việt Nam",
   pageSubtitle: "Dự báo 10 ngày tới cho từng điểm bay — nắng, gió, thermal, mưa, trần mây, gió tầng trên",
   intro: [
     "Bay dù lượn phụ thuộc gần như hoàn toàn vào gió. Bảng dưới đây lấy dự báo của mô hình ECMWF (mô hình mà Windy hiển thị) cho đúng toạ độ bãi cất cánh của từng điểm bay, rồi chấm màu theo ngưỡng an toàn khi bay.",
@@ -273,7 +280,7 @@ const vi: ThoiTietCopy = {
 
 const en: ThoiTietCopy = {
   navLabel: "Flying Weather",
-  pageTitle: "Paragliding weather at our flying sites",
+  pageTitle: "Paragliding weather at flying sites in Vietnam",
   pageSubtitle: "10-day forecast for every site — sun, wind, thermals, rain, cloud base, upper winds",
   intro: [
     "Paragliding depends almost entirely on the wind. The table below takes the ECMWF forecast (the model Windy shows) for the exact take-off coordinates of each site, then colours it against the safety limits used for flying.",
@@ -406,7 +413,7 @@ const en: ThoiTietCopy = {
 
 const fr: ThoiTietCopy = {
   navLabel: "Météo de vol",
-  pageTitle: "Météo des sites de parapente",
+  pageTitle: "Météo des sites de parapente au Vietnam",
   pageSubtitle: "Prévisions à 10 jours pour chaque site — soleil, vent, thermiques, pluie, base des nuages, vent d\u2019altitude",
   intro: [
     "Le parapente dépend presque entièrement du vent. Le tableau ci-dessous reprend les prévisions ECMWF (le modèle affiché par Windy) aux coordonnées exactes du décollage de chaque site, puis les colore selon les limites de sécurité du vol.",
@@ -539,7 +546,7 @@ const fr: ThoiTietCopy = {
 
 const ru: ThoiTietCopy = {
   navLabel: "Погода для полётов",
-  pageTitle: "Погода на наших площадках для парапланеризма",
+  pageTitle: "Погода на площадках парапланеризма во Вьетнаме",
   pageSubtitle: "Прогноз на 10 дней для каждой площадки — солнце, ветер, термики, дождь, нижняя кромка облаков, ветер на высоте",
   intro: [
     "Полёт на параплане почти полностью зависит от ветра. В таблице ниже — прогноз ECMWF (модель, которую показывает Windy) для точных координат старта каждой площадки, раскрашенный по пределам безопасности полёта.",
@@ -672,7 +679,7 @@ const ru: ThoiTietCopy = {
 
 const zh: ThoiTietCopy = {
   navLabel: "飞行天气",
-  pageTitle: "各滑翔伞飞行点天气",
+  pageTitle: "越南各滑翔伞飞行点天气",
   pageSubtitle: "各飞行点未来 10 天预报 — 日照、风、热气流、降雨、云底、高空风",
   intro: [
     "滑翔伞几乎完全取决于风。下表采用 ECMWF 模式（Windy 所显示的模式）针对各飞行点起飞场的精确坐标进行预报，并按飞行安全标准标色。",
@@ -804,7 +811,7 @@ const zh: ThoiTietCopy = {
 
 const hi: ThoiTietCopy = {
   navLabel: "उड़ान का मौसम",
-  pageTitle: "हमारे पैराग्लाइडिंग स्थलों का मौसम",
+  pageTitle: "वियतनाम के पैराग्लाइडिंग स्थलों का मौसम",
   pageSubtitle: "हर स्थल के लिए 10 दिन का पूर्वानुमान — धूप, हवा, थर्मल, वर्षा, बादल आधार, ऊपरी हवाएँ",
   intro: [
     "पैराग्लाइडिंग लगभग पूरी तरह हवा पर निर्भर है। नीचे दी गई तालिका हर स्थल के टेक-ऑफ़ की सटीक स्थिति के लिए ECMWF पूर्वानुमान (वही मॉडल जो Windy दिखाता है) लेती है, और उसे उड़ान की सुरक्षा सीमाओं के अनुसार रंग देती है।",

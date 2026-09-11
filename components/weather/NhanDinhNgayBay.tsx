@@ -128,7 +128,8 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
                 mạnh nhất <strong>{th.khung}</strong>
               </span>
             )}
-            <span className="opacity-80">· {th.gioDung} giờ có thermal</span>
+            {/* 0 giờ thì im: "0 giờ có thermal" là câu thừa, mức đã nói rồi (chủ 11/09). */}
+            {th.gioDung > 0 && <span className="opacity-80">· {th.gioDung} giờ có thermal</span>}
           </div>
           {th.lyDo.map((l, i) => (
             <div key={i}>• {l}</div>
