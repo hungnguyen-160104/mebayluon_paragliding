@@ -424,6 +424,12 @@ function DispatcherRow({
 
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
   const expenseSum = form.money.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
+  /** Việc người này đã bấm trong sổ booking — tiền khách trả, hoa hồng đã chi… */
+  const hoSo = useHoSo(spot, date, report.username);
+  const tienSo = hoSo.du?.tien;
+  /** Thu theo SỔ = tiền khách trả qua tay + hàng bán thêm; chi theo sổ = hoa hồng đại lý. */
+  const thuSo = tienSo ? tienSo.lenhThuTM + tienSo.lenhThuCK + tienSo.hangTM + tienSo.hangCK : 0;
+  const chiSo = tienSo ? tienSo.hoaHongTM : 0;
 
   async function save() {
     setSaving(true);
@@ -630,10 +636,67 @@ function DispatcherRow({
 
           <div>
             <div className="mb-1 text-xs font-semibold text-slate-700">THU CHI</div>
+            {/**
+             * TIỀN THEO SỔ BOOKING ĐỨNG TRƯỚC, ĐỌC ĐƯỢC NGAY (chủ 11/09).
+             *
+             * Khối này trước chỉ có mấy dòng người ấy TỰ GÕ, nên kế toán mở
+             * báo cáo Duyên ra thấy "Tổng thu +0 ₫" trong khi cô ấy đã thu
+             * 13,5 triệu tiền mặt và 56,7 triệu chuyển khoản — tiền ấy vào sổ
+             * qua nút "thu tiền" ở từng booking chứ không ai gõ lại vào đây.
+             * Số dưới đây là số SỔ, không sửa được ở khung này; muốn đổi thì
+             * sửa đúng booking.
+             */}
+            {tienSo && (thuSo > 0 || chiSo > 0) && (
+              <div className="mb-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-700">
+                <div className="font-bold text-slate-600">Theo sổ booking (không sửa ở đây)</div>
+                <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                  {tienSo.lenhThuTM > 0 && (
+                    <span>
+                      Khách trả TM <b className="tabular-nums text-emerald-700">{formatVND(tienSo.lenhThuTM)}</b>
+                    </span>
+                  )}
+                  {tienSo.lenhThuCK > 0 && (
+                    <span>
+                      Khách trả CK <b className="tabular-nums text-indigo-700">{formatVND(tienSo.lenhThuCK)}</b>
+                    </span>
+                  )}
+                  {tienSo.hangTM + tienSo.hangCK > 0 && (
+                    <span>
+                      Hàng bán thêm <b className="tabular-nums text-emerald-700">{formatVND(tienSo.hangTM + tienSo.hangCK)}</b>
+                    </span>
+                  )}
+                  {tienSo.hoaHongTM > 0 && (
+                    <span>
+                      Hoa hồng đại lý đã chi <b className="tabular-nums text-rose-700">−{formatVND(tienSo.hoaHongTM)}</b>
+                    </span>
+                  )}
+                  {tienSo.daNop > 0 && (
+                    <span>
+                      Đã nộp <b className="tabular-nums">{formatVND(tienSo.daNop)}</b>
+                    </span>
+                  )}
+                  {tienSo.daUng > 0 && (
+                    <span>
+                      Đã ứng <b className="tabular-nums text-amber-700">{formatVND(tienSo.daUng)}</b>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} withKind withMethod hideTotals />
-            <div className="mt-2 flex gap-3 text-sm font-semibold">
-              <span className="text-emerald-700">Tổng thu +{formatVND(revenue)}</span>
-              <span className="text-rose-700">Tổng chi −{formatVND(expenseSum)}</span>
+            {/**
+             * TỔNG GỘP CẢ HAI NGUỒN — con số kế toán cần là "người này cầm bao
+             * nhiêu, chi bao nhiêu", chứ không phải riêng phần họ gõ tay.
+             */}
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold">
+              <span className="text-emerald-700">
+                Tổng thu +{formatVND(revenue + thuSo)}
+                {thuSo > 0 ? <span className="ml-1 text-[11px] font-normal text-slate-500">(sổ {formatVND(thuSo)} + khai tay {formatVND(revenue)})</span> : null}
+              </span>
+              <span className="text-rose-700">
+                Tổng chi −{formatVND(expenseSum + chiSo)}
+                {chiSo > 0 ? <span className="ml-1 text-[11px] font-normal text-slate-500">(sổ {formatVND(chiSo)} + khai tay {formatVND(expenseSum)})</span> : null}
+              </span>
             </div>
           </div>
 
@@ -656,7 +719,7 @@ function DispatcherRow({
             <TextInput value={form.note} onChange={(e) => set("note", e.target.value)} />
           </Field>
 
-          <HoSoNgay spot={spot} date={date} username={report.username} />
+          <HoSoNgay du={hoSo.du} loi={hoSo.loi} />
 
           {error && <Banner tone="error">{error}</Banner>}
           {warnings.length > 0 && (
@@ -684,6 +747,38 @@ function DispatcherRow({
 /* Hồ sơ một người trong một ngày                                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * NẠP HỒ SƠ NGÀY của một người — dùng chung cho khối THU CHI (số tổng) và khối
+ * "đã làm gì trong ngày" (chi tiết).
+ *
+ * Trước đây chỉ khối chi tiết nạp, mà lại nạp KHI BẤM MỞ, nên THU CHI không
+ * biết gì về tiền khách trả qua tay người ấy: kế toán mở báo cáo Duyên ra thấy
+ * "Tổng thu +0 ₫" trong khi cô ấy thu 13,5 triệu tiền mặt và 56,7 triệu chuyển
+ * khoản (chủ báo 11/09). Nay nạp NGAY khi mở khung sửa — một lượt hỏi máy chủ
+ * cho mỗi người đang sửa, không phải cả chục người trong danh sách.
+ */
+function useHoSo(spot: string, date: string, username: string) {
+  /**
+   * Giữ KÈM KHOÁ (`khoa`) thay vì xoá dữ liệu cũ ngay trong effect: gọi
+   * `setState` thẳng trong effect làm React dựng lại một lượt thừa, và eslint
+   * chặn đúng. Đổi người hay đổi ngày thì khoá đổi theo, phần render tự coi
+   * dữ liệu cũ là không hợp lệ.
+   */
+  const khoa = `${spot}|${date}|${username}`;
+  const [du, setDu] = useState<{ khoa: string; hoSo: HoSo } | null>(null);
+  const [loi, setLoi] = useState<{ khoa: string; cau: string } | null>(null);
+  useEffect(() => {
+    let song = true;
+    apiGet<HoSo>(`/api/baocao/reports/nhan-su?spot=${spot}&date=${date}&username=${encodeURIComponent(username)}`)
+      .then((r) => song && setDu({ khoa, hoSo: r }))
+      .catch((e) => song && setLoi({ khoa, cau: e instanceof Error ? e.message : "Không lấy được hồ sơ" }));
+    return () => {
+      song = false;
+    };
+  }, [spot, date, username, khoa]);
+  return { du: du?.khoa === khoa ? du.hoSo : null, loi: loi?.khoa === khoa ? loi.cau : null };
+}
+
 type HoSo = {
   name: string;
   tien: {
@@ -708,21 +803,8 @@ type HoSo = {
  * Nạp KHI BẤM MỞ, không nạp sẵn: một ngày có cả chục người, nạp hết là chục
  * lượt hỏi máy chủ cho thứ phần lớn lần không ai mở tới.
  */
-function HoSoNgay({ spot, date, username }: { spot: string; date: string; username: string }) {
+function HoSoNgay({ du, loi }: { du: HoSo | null; loi: string | null }) {
   const [mo, setMo] = useState(false);
-  const [du, setDu] = useState<HoSo | null>(null);
-  const [loi, setLoi] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!mo || du) return;
-    let song = true;
-    apiGet<HoSo>(`/api/baocao/reports/nhan-su?spot=${spot}&date=${date}&username=${encodeURIComponent(username)}`)
-      .then((r) => song && setDu(r))
-      .catch((e) => song && setLoi(e instanceof Error ? e.message : "Không lấy được hồ sơ"));
-    return () => {
-      song = false;
-    };
-  }, [mo, du, spot, date, username]);
 
   const o = (nhan: string, tien: number, mau: string) =>
     tien === 0 ? null : (
