@@ -373,6 +373,31 @@ export function BookingSheet({
       : {};
   /** Cột thao tác: dán mép phải khi còn chỗ, hẹp thì để nó cuộn theo bảng. */
   const dinhPhai = hep ? "" : "sticky right-0 ";
+
+  /**
+   * CẮT Ô TIÊU ĐỀ NHÓM ĐẦU TIÊN ĐÚNG MÉP KHỐI ĐÓNG BĂNG.
+   *
+   * Ô nhóm đầu (ô xám bên trái "THÔNG TIN VÉ") gộp mọi cột chưa khai nhóm —
+   * hết cột SL RỒI CÒN THÊM cột "Giờ bay". Nhưng khối đóng băng chỉ tới SL.
+   * Dán nguyên ô gộp ấy vào mép trái thì nó rộng hơn khối đóng băng đúng một
+   * cột: cuộn ngang là phần thừa đè lên "THÔNG TIN VÉ" (chủ báo 11/09).
+   *
+   * Cắt làm hai: phần TRONG khối đóng băng thì dán, phần ngoài cuộn theo bảng
+   * như mọi cột khác. Nhìn vẫn liền một dải vì cùng màu, cùng nhãn.
+   */
+  const oNhom = (ds: Array<{ label: string; span: number; from: number }>) => {
+    const ra: Array<{ label: string; span: number; dan: boolean; key: string }> = [];
+    for (const [i, g] of ds.entries()) {
+      const trongBang = !hep && g.from < froze;
+      if (trongBang && g.from + g.span > froze) {
+        ra.push({ label: g.label, span: froze - g.from, dan: true, key: `${i}a` });
+        ra.push({ label: g.label, span: g.from + g.span - froze, dan: false, key: `${i}b` });
+      } else {
+        ra.push({ label: g.label, span: g.span, dan: trongBang, key: String(i) });
+      }
+    }
+    return ra;
+  };
   /** Bề ngang cả khối đóng băng — ô tiêu đề nhóm đầu tiên trùm đúng khối đó. */
   /** Bề ngang cả bảng = tổng số đã khai — để table-layout:fixed có mốc chắc chắn. */
   const totalW = cols.reduce((t, c) => t + c.w, 0) + 190;
@@ -456,11 +481,11 @@ export function BookingSheet({
           <thead className="sticky top-0 z-20">
             {/* Hai hàng tiêu đề gộp ô — y như hàng 1 và 2 của bảng tính */}
             <tr>
-              {g1.map((g, i) => (
+              {oNhom(g1).map((g) => (
                 <th
-                  key={`g1-${i}`}
+                  key={`g1-${g.key}`}
                   colSpan={g.span}
-                  style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
+                  style={g.dan ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                   className={
                     "border-b border-r border-slate-300 px-1 py-px text-[10px] font-bold uppercase tracking-wide " +
                     (g.label ? "bg-slate-700 text-white" : "bg-slate-400 text-slate-100")
@@ -479,11 +504,11 @@ export function BookingSheet({
             </tr>
             {hasG2 && (
               <tr>
-                {g2.map((g, i) => (
+                {oNhom(g2).map((g) => (
                   <th
-                    key={`g2-${i}`}
+                    key={`g2-${g.key}`}
                     colSpan={g.span}
-                    style={i === 0 ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
+                    style={g.dan ? { position: "sticky", left: 0, zIndex: 26 } : undefined}
                     className={
                       "border-b border-r border-slate-300 px-1 py-px text-[10px] font-semibold " +
                       (g.label ? "bg-slate-500 text-white" : "bg-slate-300 text-slate-600")
