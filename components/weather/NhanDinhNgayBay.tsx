@@ -125,7 +125,7 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
             <span className="rounded bg-white/80 px-1 font-bold ring-1 ring-current/20">{th.diem}/100</span>
             {th.khung && (
               <span>
-                khoẻ nhất <strong>{th.khung}</strong>
+                mạnh nhất <strong>{th.khung}</strong>
               </span>
             )}
             <span className="opacity-80">· {th.gioDung} giờ có thermal</span>

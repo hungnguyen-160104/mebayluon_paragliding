@@ -252,7 +252,7 @@ Trước ghi "09:00–16:00" thì chủ đọc thành "mưa 7 tiếng" (11/09). 
 cố ý khác dạng "09:00–16:00" của khung đẹp (khung đẹp vẫn là giờ đầu–giờ cuối).
 
 **Dòng tóm tắt thẻ khách** đọc thành câu: "Giờ đẹp 09:00–16:00 · Gió ĐÔNG 2,3 m/s
-· Giật 8,4 · ☀ 8,9 giờ nắng · 🔥 Thermal vừa 48/100 · khoẻ nhất 14:00–16:00 ·
+· Giật 8,4 · ☀ 8,9 giờ nắng · 🔥 Thermal vừa 48/100 · mạnh nhất 14:00–16:00 ·
 ☔ Mưa 5 giờ (09–12h, 14–16h) · 5,4mm". Hướng gió trội (trung bình véc-tơ, có
 trọng số tốc độ, 6–18h) đứng ngay trước tốc độ vì đó là thứ quyết định bãi có
 bay được không.

@@ -469,7 +469,7 @@ export function nhanDinhNgay(
        */
       const NHAN: Record<string, string> = { khong: "rất nhẹ", nhe: "nhẹ", vua: "vừa", manh: "mạnh", gat: "rất mạnh" };
       const nhan = NHAN[tn.muc] ?? tn.muc;
-      const khung = tn.khung && tn.diem >= 25 ? `, khoẻ nhất ${tn.khung}` : "";
+      const khung = tn.khung && tn.diem >= 25 ? `, mạnh nhất ${tn.khung}` : "";
       const so = `${nhan} ${tn.diem}/100${khung}`;
       if (tn.diem < 25) {
         noi = `${so} — ít nâng, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;
@@ -482,7 +482,7 @@ export function nhanDinhNgay(
         tong = "chuY";
         khuyenCao.push(`Thermal gắt từ ${gat[0]} — nên bay xong trước ${gat[0]}; sau đó chỉ phi công vững tay, chủ động bay tốc độ và né vùng thermal lõi.`);
       } else {
-        noi = `${so} — ${tn.diem >= 65 ? "lift khoẻ, lên cao được" : "đủ kéo dài chuyến, không xóc"}${soLieu ? ` (${soLieu})` : ""}`;
+        noi = `${so} — ${tn.diem >= 65 ? "lift mạnh, lên cao được" : "đủ kéo dài chuyến, không xóc"}${soLieu ? ` (${soLieu})` : ""}`;
         tong = "tot";
       }
       them({
@@ -737,13 +737,13 @@ export function nhanDinhNgay(
     if (dongMax >= 20 && !diem.some((d) => d.ten === "Ổn định" && d.noiDung.includes("dông"))) {
       /**
        * Dông luôn là mức CHÚ Ý, không bao giờ "xấu": nó cảnh báo chứ không
-       * quyết định bay hay nghỉ, và ngày có dông thường thermal khoẻ (luật
+       * quyết định bay hay nghỉ, và ngày có dông thường thermal mạnh (luật
        * chủ 11/09). Mưa lâu mới là thứ chặn bay, và mưa đã có mục riêng.
        */
       them({
         icon: "⚡",
         ten: "Dông",
-        noiDung: `nguy cơ dông tới ${dongMax}% trong ngày — cảnh báo, không phải lệnh cấm; ngày kiểu này thermal thường khoẻ, canh mây tích và hạ cánh sớm`,
+        noiDung: `nguy cơ dông tới ${dongMax}% trong ngày — cảnh báo, không phải lệnh cấm; ngày kiểu này thermal thường mạnh, canh mây tích và hạ cánh sớm`,
         ngan: `dông ${dongMax}%`,
         tong: "chuY",
       });
@@ -860,7 +860,7 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
   if (thermal?.noiDung.startsWith("yếu")) return "Ngày ÍT THERMAL: bay ebon là chính, chuyến ngắn, lift kém — trời êm, ít xóc";
   if (mua) return `Ngày CÓ MƯA GIỮA CHỪNG (${mua.ngan}): bay quanh đợt mưa, để mắt tới mây đen phía gió tới`;
   if (li !== null && li >= 1 && thermal?.tong === "tot") return "Ngày ỔN ĐỊNH, THERMAL ÊM: lift đều, ít xóc — kiểu ngày êm nhất trong năm";
-  if (li !== null && li > -2 && li < 1 && thermal?.tong === "tot") return "Ngày HƠI BẤT ỔN, THERMAL TỐT: lift khoẻ, mây tích đẹp buổi chiều — chiều để ý mây phát triển";
+  if (li !== null && li > -2 && li < 1 && thermal?.tong === "tot") return "Ngày HƠI BẤT ỔN, THERMAL TỐT: lift mạnh, mây tích đẹp buổi chiều — chiều để ý mây phát triển";
   return "Ngày bình thường: không có yếu tố nổi bật, đọc bảng giờ để chọn khung";
 }
 

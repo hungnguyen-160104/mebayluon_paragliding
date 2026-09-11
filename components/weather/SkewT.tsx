@@ -150,7 +150,7 @@ export function SkewT({ spot, ngay, moHinh, altBai = 0, altHa, altCat2, gioBay =
     };
   }, [spot, ngay, moHinh, khoa]);
 
-  /** Các giờ trong khung bay — mặc định chọn 13h (lúc thermal khoẻ nhất). */
+  /** Các giờ trong khung bay — mặc định chọn 13h (lúc thermal mạnh nhất). */
   const duHopLe = du?.khoa === khoa ? du : null;
   const gioTrongKhung = useMemo(
     () => (duHopLe?.gio ?? []).filter((g) => {

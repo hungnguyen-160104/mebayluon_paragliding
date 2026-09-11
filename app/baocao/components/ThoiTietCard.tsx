@@ -301,7 +301,7 @@ export function ThoiTietCard({
             {(() => {
               const th = ngayDangXem.thermal as { diem: number; muc: keyof typeof NHAN_THERMAL; khung: string | null } | undefined;
               return th
-                ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? `, khoẻ nhất ${th.khung}` : ""}`
+                ? ` · 🔥 thermal ${NHAN_THERMAL[th.muc]} ${th.diem}/100${th.khung && th.diem >= 25 ? `, mạnh nhất ${th.khung}` : ""}`
                 : ngayDangXem.tranMax
                   ? ` · trần thermal ${ngayDangXem.tranMax}m`
                   : "";
@@ -401,7 +401,7 @@ export function ThoiTietCard({
                 return th ? (
                   <div
                     className="whitespace-nowrap text-[9px] leading-tight"
-                    title={`Tiềm năng thermal ${th.diem}/100${th.khung ? ` · khoẻ nhất ${th.khung}` : ""}`}
+                    title={`Tiềm năng thermal ${th.diem}/100${th.khung ? ` · mạnh nhất ${th.khung}` : ""}`}
                   >
                     🔥 {NHAN_THERMAL[th.muc]} {th.diem}
                   </div>

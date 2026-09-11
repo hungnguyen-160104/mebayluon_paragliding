@@ -1090,7 +1090,7 @@ export function WeatherSpotCard({ diem, lang, t }: { diem: DiemDuBao; lang: stri
         {nang > 0 ? ` · ☀ ${nang} ${t.sunHours}` : ""}
         {/**
          * Thermal phải TỰ GIẢI THÍCH: "vừa 48 (14:00–16:00)" chủ đọc không ra
-         * 48 là gì, ngoặc là gì (11/09). Nay: "vừa 48/100 · khoẻ nhất 14:00–16:00".
+         * 48 là gì, ngoặc là gì (11/09). Nay: "vừa 48/100 · mạnh nhất 14:00–16:00".
          */}
         <span title={`${t.thermalPotential}: 0–100`}>
           {` · 🔥 ${t.thermal} ${t.thermalLevels[thermal]}`}

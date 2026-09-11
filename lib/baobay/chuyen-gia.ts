@@ -295,7 +295,7 @@ export function danhGiaGio(
     /**
      * DÔNG TRỪ ĐIỂM, KHÔNG ĐÁNH "NGUY HIỂM" (luật chủ 11/09): nguy hiểm là
      * thứ kéo cả ngày xuống tối đa 20 điểm, tức là tuyên bố không bay. Dông
-     * chỉ là cảnh báo — và ngày có dông thường thermal khoẻ. Thứ chặn bay là
+     * chỉ là cảnh báo — và ngày có dông thường thermal mạnh. Thứ chặn bay là
      * mưa (ở trên) và gió, không phải một con số phần trăm dông.
      */
     if (cs.xacSuatDong >= 60) {

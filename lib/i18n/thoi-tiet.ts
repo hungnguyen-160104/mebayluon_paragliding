@@ -58,7 +58,7 @@ export type ThoiTietCopy = {
   heightDiff: string;
   /** Khối "Tiềm năng thermal" — kết luận của quy tắc sáu yếu tố. */
   thermalPotential: string;
-  /** Khung 3 giờ thermal lên khoẻ nhất. */
+  /** Khung 3 giờ thermal MẠNH nhất — chủ 11/09: thermal gọi là "mạnh", không gọi là "khoẻ". */
   thermalWindow: string;
   /** Số giờ trong ngày dùng được để bay thermal. */
   thermalHours: string;
@@ -185,7 +185,7 @@ const vi: ThoiTietCopy = {
   landing: "bãi hạ",
   heightDiff: "chênh cao",
   thermalPotential: "Tiềm năng thermal",
-  thermalWindow: "khoẻ nhất",
+  thermalWindow: "mạnh nhất",
   thermalHours: "giờ có thermal",
   canFly: "Bay?",
   score: "Điểm",
