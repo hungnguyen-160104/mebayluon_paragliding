@@ -9,6 +9,9 @@ import { shouldShowQueueNo } from "@/lib/booking/queue-display";
 import { buildVietQrPayload } from "@/lib/vietqr";
 
 import { PAY_ACCOUNT } from "./PaymentQr";
+import type { BookingDTO } from "@/lib/baobay/types";
+import { FLIGHT_KIND_SHORT, MOUNTAIN_CAR_PRICE, servicesAmount } from "@/lib/baobay/flight-price";
+import { DIEM_BAY_VE, laTuDen, pickupVe } from "@/lib/baobay/pickup";
 
 /**
  * Vẽ PHIẾU BOOKING thành ảnh PNG để gửi khách qua Zalo/Messenger.
@@ -747,4 +750,56 @@ export async function shareBookingImage(d: BookingImageData): Promise<void> {
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5_000);
+}
+
+/**
+ * DỰNG DỮ LIỆU ẢNH TỪ MỘT BOOKING ĐÃ LƯU — để xuất ảnh BẤT KỲ LÚC NÀO từ sổ
+ * (chủ chốt 12/09), không chỉ lúc đang gõ booking mới.
+ *
+ * Cùng một mẫu ảnh với nút "🖼 Xuất ảnh" ở khung booking mới; chỉ khác nguồn:
+ * ở đây số liệu lấy từ bản ghi trong sổ (giá đã chốt lúc đặt, tiền đã thu cộng
+ * dồn), nên tiền dịch vụ tính theo bảng giá TẠI LÚC LẬP booking — đúng như số
+ * đã thu, không phải giá hôm nay.
+ */
+export function duLieuAnhTuBooking(b: BookingDTO, spot: string): BookingImageData {
+  const pickupLabel =
+    b.pickup === "other"
+      ? laTuDen(b.pickupNote)
+        ? DIEM_BAY_VE
+        : `Đón: ${pickupVe(b.pickupNote) || "?"}`
+      : b.pickup === "bigc"
+        ? "Đón BigC"
+        : b.pickup === "hotel"
+          ? "Đón khách sạn"
+          : "Tự đến";
+  return {
+    spot,
+    flightDate: b.flightDate,
+    expectedTime: b.expectedTime || "",
+    contactName: b.contactName || "",
+    phone: b.phone || "",
+    bookingCode: (b.bookingCode || "").trim() || (b.phone || "").trim(),
+    source: b.source || "",
+    guestCount: b.guestCount || 0,
+    flycam: b.flycam || 0,
+    video360: b.video360 || 0,
+    redFlag: b.redFlag || 0,
+    sunset: b.sunset || 0,
+    flagFlight: b.flagFlight || 0,
+    pickupLabel,
+    flightKindLabel: FLIGHT_KIND_SHORT[b.flightKind] ?? b.flightKind,
+    ppgGuests: b.ppgGuests || 0,
+    unitPrice: b.unitPrice || 0,
+    serviceMoney: servicesAmount({ ...b, spot, createdAt: b.createdAt }),
+    pickupFee: b.pickupFee || 0,
+    mountainCar: b.mountainCar || 0,
+    mountainCarMoney: (b.mountainCar || 0) * MOUNTAIN_CAR_PRICE,
+    comboDiscount: b.comboDiscount || 0,
+    discount: b.discount || 0,
+    total: b.totalAmount || 0,
+    deposit: b.deposit || 0,
+    remaining: b.remaining || 0,
+    note: b.note || "",
+    queueNo: b.daySeq || null,
+  };
 }

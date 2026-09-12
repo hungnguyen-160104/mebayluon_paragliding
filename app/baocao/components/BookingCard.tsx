@@ -16,7 +16,7 @@ import { DIEM_BAY_VE, laTuDen, pickupVe, shortPickupSo, TU_DEN } from "@/lib/bao
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
-import { shareBookingImage } from "./booking-image";
+import { duLieuAnhTuBooking, shareBookingImage } from "./booking-image";
 import { InsuranceBox } from "./InsuranceBox";
 import { BookingSheet } from "./BookingSheet";
 import { insuranceState } from "@/lib/baobay/insurance";
@@ -5229,6 +5229,8 @@ export function BookingTodayBanner({
                   tail={lockButton(b)}
                   extra={
                     <>
+                      {/* 🖼 Ảnh booking — xuất lại phiếu ảnh bất kỳ lúc nào (chủ 12/09) */}
+                      {anhButton(b)}
                       {/* Đã thu đủ thì Thu tiền cất vào đây (luật moneyOutside) */}
                       {!moneyOutside(b) && renderMoneyButton(b)}
                       {/* Mail báo khách TỰ ẨN khi không có gì phải báo — RowMenu
@@ -5254,6 +5256,26 @@ export function BookingTodayBanner({
    * Đóng · Chi tiết TT · CK đại lý · Khoá · Sửa thu · Thu tiền (nếu còn thiếu)
    * — một hàng dồn trái. Bản THẺ cũng xổ đúng dải này khi bấm ⋯ Thêm.
    */
+  /**
+   * 🖼 ẢNH BOOKING từ sổ — xuất lại phiếu ảnh (mẫu y hệt nút "Xuất ảnh" ở khung
+   * booking mới) cho BẤT KỲ booking nào, lúc nào cũng được (chủ chốt 12/09):
+   * khách hỏi lại phiếu, hay quầy cần gửi Zalo sau khi đã lưu. Không phải vé in.
+   */
+  const anhButton = (b: BookingDTO) => (
+    <button
+      type="button"
+      className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+      title="Xuất phiếu booking thành ảnh để gửi khách (không phải vé in)"
+      onClick={() => {
+        void shareBookingImage(duLieuAnhTuBooking(b, spot)).catch((e: unknown) =>
+          setError(e instanceof Error ? e.message : "Không xuất được ảnh phiếu"),
+        );
+      }}
+    >
+      🖼 Ảnh booking
+    </button>
+  );
+
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
     <PanelGroup>
     <div
@@ -5274,6 +5296,7 @@ export function BookingTodayBanner({
           ✕ Đóng
         </button>
       )}
+      {anhButton(b)}
       <PaymentBreakdown
         spot={spot}
         booking={b}
