@@ -4672,6 +4672,19 @@ export async function listBookings(
     const kb = String(c.bookingId);
     (svcByBooking.get(kb) ?? svcByBooking.set(kb, []).get(kb)!).push(c);
   }
+  /**
+   * LỆNH HOÀN CK ĐANG CHỜ kế toán chuyển — `refundedTotal` trên booking cộng
+   * ngay lúc lập lệnh nên tự nó không phân biệt được "đã hoàn" với "chờ hoàn".
+   * Thẻ booking từng ghi "đã hoàn 5.180k" khi kế toán chưa bấm gì (chủ 12/09).
+   */
+  const pendingRefundDocs = ids.length
+    ? await BaobayRefund.find({ bookingId: { $in: ids }, status: "pending" }).select("bookingId amount").lean<any[]>()
+    : [];
+  const pendingRefundByBooking = new Map<string, number>();
+  for (const r of pendingRefundDocs) {
+    const kb = String(r.bookingId);
+    pendingRefundByBooking.set(kb, (pendingRefundByBooking.get(kb) ?? 0) + (Number(r.amount) || 0));
+  }
   const withVerified = (b: any): BookingDTO => {
     const pool = [...(collectsByBooking.get(String(b._id)) ?? [])];
     const myPendingCollect =
@@ -4693,6 +4706,9 @@ export async function listBookings(
         collectorUsername: hit.collectorUsername || undefined,
       };
     });
+    /** Chỉ gắn khi thẻ được thấy tiền hoàn (phi công bị che tiền thì refunded = 0). */
+    const choHoan = pendingRefundByBooking.get(String(b._id)) ?? 0;
+    if (choHoan > 0 && (dto.refunded ?? 0) > 0) dto.refundPending = Math.min(choHoan, dto.refunded);
     dto.serviceChanges = (svcByBooking.get(String(b._id)) ?? []).map((c) => ({
       kind: c.kind === "remove" ? ("remove" as const) : ("add" as const),
       items: {

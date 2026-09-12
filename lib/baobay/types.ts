@@ -517,8 +517,17 @@ export type BookingDTO = {
   noTicketBy?: string;
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
-  /** Tổng đã hoàn lại khách của booking này — dòng tóm tắt cần để kể đúng vệt tiền. */
+  /**
+   * Tổng tiền hoàn của booking (mọi lệnh hoàn chưa bị huỷ, KỂ CẢ lệnh chuyển
+   * khoản kế toán chưa chuyển) — dòng tóm tắt cần để kể đúng vệt tiền.
+   */
   refunded: number;
+  /**
+   * Phần trong `refunded` đang CHỜ kế toán chuyển (lệnh hoàn CK status pending).
+   * Chủ 12/09: lệnh chưa chuyển thì thẻ phải ghi "chờ hoàn", chỉ khi kế toán
+   * bấm "đã hoàn" mới được tích xanh "đã hoàn". Thiếu trường = 0.
+   */
+  refundPending?: number;
   cancelledBy?: string;
   /** Đơn giá một khách · giảm trừ cả đoàn · tổng tiền (máy tự tính). */
   unitPrice: number;

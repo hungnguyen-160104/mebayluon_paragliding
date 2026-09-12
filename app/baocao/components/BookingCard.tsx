@@ -547,10 +547,25 @@ function BookingSummary({
           })()}
         </>
       ) : null}
-      {refunded > 0 ? (
+      {/**
+       * HOÀN TIỀN chia hai: "chờ hoàn" khi lệnh CK còn nằm chờ kế toán, "✓ đã
+       * hoàn" (xanh) khi tiền đã đi — chủ 12/09: lệnh chưa chuyển mà thẻ ghi
+       * "đã hoàn" là sai, khách đọc tưởng đã nhận tiền.
+       */}
+      {(b.refundPending ?? 0) > 0 ? (
         <>
           {" · "}
-          <strong className="rounded bg-amber-100 px-1 font-bold text-amber-900">đã hoàn {k(refunded)}</strong>
+          <strong className="rounded bg-amber-100 px-1 font-bold text-amber-900" title="Lệnh hoàn chuyển khoản đang chờ kế toán chuyển">
+            ⏳ chờ hoàn {k(b.refundPending ?? 0)}
+          </strong>
+        </>
+      ) : null}
+      {refunded - (b.refundPending ?? 0) > 0 ? (
+        <>
+          {" · "}
+          <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800" title="Kế toán đã chuyển / đã trả tiền mặt cho khách">
+            ✓ đã hoàn {k(refunded - (b.refundPending ?? 0))}
+          </strong>
         </>
       ) : null}
       {b.remaining ? (
@@ -4059,8 +4074,11 @@ function BookingDayTable({
                             ) : null}
                           </div>
                         ))}
-                        {(b.refunded ?? 0) > 0 && (
-                          <div className="text-[10px] font-bold text-amber-900">đã hoàn {k(b.refunded ?? 0)}</div>
+                        {(b.refundPending ?? 0) > 0 && (
+                          <div className="text-[10px] font-bold text-amber-900">⏳ chờ hoàn {k(b.refundPending ?? 0)}</div>
+                        )}
+                        {(b.refunded ?? 0) - (b.refundPending ?? 0) > 0 && (
+                          <div className="text-[10px] font-bold text-emerald-800">✓ đã hoàn {k((b.refunded ?? 0) - (b.refundPending ?? 0))}</div>
                         )}
                       </>
                     );
@@ -5507,7 +5525,7 @@ export function BookingTodayBanner({
                 <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
                   đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
                   {b.refundAmount
-                    ? ` · hoàn ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
+                    ? ` · ${b.refundMethod !== "cash" && (b.refundPending ?? 0) > 0 ? "chờ hoàn" : "đã hoàn"} ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
                     : ""}
                   {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
                 </span>
