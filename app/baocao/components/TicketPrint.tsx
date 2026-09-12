@@ -416,17 +416,78 @@ async function inQuaUsb(html: string): Promise<void> {
  * thì in thẳng; không có, hoặc in thẳng hỏng, thì mở hộp thoại in.
  * Trả về đường đã dùng để nút bấm báo lại cho người trực.
  */
-export async function printBookingTickets(b: BookingDTO, spot: string): Promise<"usb" | "hop-thoai" | "khong-in"> {
-  if (!coInVe(spot)) return "khong-in";
+/**
+ * ĐIỆN THOẠI / MÁY TÍNH BẢNG (Android, iPad): Chrome bỏ qua lệnh print() gọi
+ * từ khung ẩn mà KHÔNG báo lỗi — chủ 12/09: "bấm in vé không thấy gì, không ra
+ * hộp thoại". Trên các máy này vé phải mở ra TAB RIÊNG rồi in từ đó.
+ */
+export function nenMoTabIn(): boolean {
+  return typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+/**
+ * Mở sẵn tab in NGAY TRONG CÚ BẤM (đồng bộ, trước mọi `await`) — mở sau khi đã
+ * gọi máy chủ là bị chặn cửa sổ bật lên. Máy tính để bàn trả null (dùng khung
+ * ẩn như cũ). Có USB đã ghép thì hàm in sẽ tự đóng tab này.
+ */
+export function moTabIn(): Window | null {
+  if (!nenMoTabIn() || typeof window === "undefined") return null;
+  const w = window.open("", "_blank");
+  if (w) {
+    try {
+      w.document.write(
+        '<title>Đang chuẩn bị vé…</title><p style="font:16px system-ui,sans-serif;padding:24px;color:#333">Đang chuẩn bị vé, chờ một chút…</p>',
+      );
+    } catch {
+      /* bỏ qua */
+    }
+  }
+  return w;
+}
+
+export async function printBookingTickets(b: BookingDTO, spot: string, tab?: Window | null): Promise<"usb" | "hop-thoai" | "tab" | "khong-in"> {
+  if (!coInVe(spot)) {
+    tab?.close();
+    return "khong-in";
+  }
   const html = await buildTicketsHtml(b, spot);
   if (trinhDuyetCoUsb() && mayInDaGhep()) {
     try {
       await inQuaUsb(html);
+      tab?.close();
       return "usb";
     } catch (e) {
       console.warn("In thẳng USB hỏng, chuyển sang hộp thoại in:", e);
     }
   }
+  if (tab && !tab.closed) {
+    inQuaTab(tab, html);
+    return "tab";
+  }
   await inQuaHopThoai(html);
   return "hop-thoai";
+}
+
+/**
+ * In từ TAB RIÊNG: có thanh nút "IN" / "Đóng" (ẩn khi in) vì trên điện thoại
+ * hộp thoại in tự bật không phải lúc nào cũng lên — người trực bấm IN là được.
+ * Android không có dịch vụ in của Gainscha thì hộp thoại chỉ có "Lưu PDF":
+ * lúc đó phải ghép máy in USB (cáp OTG) để in thẳng — thanh nút nhắc điều này.
+ */
+function inQuaTab(tab: Window, html: string): void {
+  const thanh =
+    '<div class="thanh-in" style="position:sticky;top:0;z-index:9;display:flex;gap:8px;align-items:center;padding:10px;background:#111;color:#fff;font:14px system-ui,sans-serif">' +
+    '<button onclick="window.print()" style="font:700 18px system-ui;padding:12px 22px;border:0;border-radius:10px;background:#16a34a;color:#fff">🖨 IN VÉ</button>' +
+    '<button onclick="window.close()" style="font:15px system-ui;padding:12px 16px;border:1px solid #666;border-radius:10px;background:transparent;color:#fff">Đóng</button>' +
+    '<span style="opacity:.8">Không thấy máy in? Trên Android hãy ghép máy in USB (cáp OTG) ở đầu sổ booking để in thẳng.</span></div>' +
+    "<style>@media print{.thanh-in{display:none!important}}</style>";
+  const trang = html.replace(/<body([^>]*)>/i, (m) => `${m}${thanh}`).replace("</body>", '<script>setTimeout(function(){try{window.print()}catch(e){}},400)</script></body>');
+  tab.document.open();
+  tab.document.write(trang);
+  tab.document.close();
+  try {
+    tab.focus();
+  } catch {
+    /* bỏ qua */
+  }
 }

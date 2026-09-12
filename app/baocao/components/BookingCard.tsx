@@ -37,7 +37,7 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
-import { coInVe, printBookingTickets } from "./TicketPrint";
+import { coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -1093,6 +1093,8 @@ function ReprintTicket({
     if (reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
     setBusy(true);
     setError(null);
+    /** Mở tab in đồng bộ trước `await` — điện thoại chặn cửa sổ mở sau khi gọi mạng. */
+    const tab = coInVe(spot) ? moTabIn() : null;
     try {
       const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
         id: booking.id,
@@ -1100,11 +1102,12 @@ function ReprintTicket({
         reason: reason.trim(),
       });
       /** In lại dùng ĐÚNG mã cũ trong sổ — máy chủ không cấp mã mới khi in lại. */
-      void printBookingTickets(r?.booking ?? booking, spot);
+      void printBookingTickets(r?.booking ?? booking, spot, tab);
       setOpen(false);
       setReason("");
       onDone();
     } catch (e: unknown) {
+      tab?.close();
       setError(e instanceof Error ? e.message : "Không ghi nhận được lần in lại");
     } finally {
       setBusy(false);
@@ -5159,11 +5162,14 @@ export function BookingTodayBanner({
              * nên không in "mù" rồi ghi sau như trước. Điểm không in vé thì
              * hàm in tự bỏ qua, nhưng vết "đã in" vẫn ghi.
              */
+            /** Điện thoại / máy tính bảng: mở tab in NGAY trong cú bấm, trước khi gọi máy chủ (xem moTabIn). */
+            const tab = coInVe(spot) ? moTabIn() : null;
             void (async () => {
               try {
                 const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" });
-                await printBookingTickets(r?.booking ?? b, spot);
+                await printBookingTickets(r?.booking ?? b, spot, tab);
               } catch (e: unknown) {
+                tab?.close();
                 setError(e instanceof Error ? e.message : "Không in được vé");
               }
             })();
