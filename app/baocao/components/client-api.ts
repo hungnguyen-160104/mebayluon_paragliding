@@ -10,23 +10,48 @@
  * tiếng Việt máy chủ trả về.
  */
 
+import { baoCoMang, baoDuLieuCu } from "./offline";
+
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** "offline" / "timeout" khi không tới được máy chủ (status 0). */
+  reason?: "offline" | "timeout";
+  constructor(message: string, status: number, reason?: "offline" | "timeout") {
     super(message);
     this.status = status;
+    this.reason = reason;
   }
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(init?.headers || {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      cache: "no-store",
+      headers: {
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (e) {
+    /**
+     * MẤT MẠNG (fetch ném TypeError / AbortError): nói thẳng "chưa lưu được"
+     * thay vì "Failed to fetch" — người trực phải biết là việc vừa bấm CHƯA
+     * vào sổ để làm lại khi có mạng (nền offline giai đoạn 1, 12/09).
+     */
+    const ghi = init?.method && init.method !== "GET";
+    throw new ApiError(
+      ghi ? "Mất mạng — CHƯA lưu được. Đợi có mạng rồi bấm lại." : "Mất mạng — không tải được số liệu mới.",
+      0,
+      e instanceof Error && e.name === "AbortError" ? "timeout" : "offline",
+    );
+  }
+
+  /** Bản cất do service worker trả khi mất mạng → treo dải báo "dữ liệu lúc HH:MM". */
+  const cu = res.headers.get("X-Baobay-Offline");
+  if (cu !== null) baoDuLieuCu(cu);
+  else if (res.ok) baoCoMang();
 
   const text = await res.text();
   let body: any = null;

@@ -510,3 +510,23 @@ Tài khoản demo (mật khẩu `demo1234`): `demo-pilot1..6`, `demo-dispatcher1
 `demo-cameraman1`, `demo-accountant1`. Hôm nay cố ý TREO (mã trùng + flycam lệch
 chờ duyệt), hôm qua chưa chốt — để thấy đủ ba trạng thái. **Nhớ `clear` trước khi
 dùng thật.**
+
+## Dùng khi MẤT MẠNG (nền offline — giai đoạn 1, từ 12/09/2026)
+
+Khu `/baocao` cài một service worker riêng (`public/sw-baocao.js`, chỉ bản
+production). Khi mất mạng:
+
+- **Trang đã từng mở** vẫn mở lại được (tệp giao diện và trang được cất trong máy).
+- **Số liệu** hiện là **bản tải gần nhất**: mọi lượt GET API thành công đều được
+  cất; mất mạng thì worker trả bản cất kèm cờ, trang treo dải vàng *"Đang mất
+  mạng — số liệu đang xem là bản cất lúc HH:MM"*. Có mạng lại là dải tự hạ.
+- **Phiên đăng nhập** nhớ trong máy: mất mạng vẫn vào được trang của mình; chỉ
+  khi máy chủ trả 401/403 (hết hạn, bị khoá) mới bị đẩy về đăng nhập.
+- **Ghi (lưu báo cáo, thu tiền, huỷ, dời…) KHÔNG làm được khi mất mạng** — nút
+  bấm báo *"Mất mạng — CHƯA lưu được. Đợi có mạng rồi bấm lại."* Không có hàng
+  đợi ghi mù, vì sổ booking nhiều người cùng sửa. Ghi offline làm theo từng
+  trang ở giai đoạn 2 (trang phi công trước).
+
+Máy bán `/cafe` vẫn dùng worker riêng của nó (có hàng đợi phiếu). Bản dev gỡ
+worker để không "ăn mã cũ".
+

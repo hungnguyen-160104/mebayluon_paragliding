@@ -1,7 +1,7 @@
 // app/baocao/components/Shell.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -10,6 +10,8 @@ import { spotName } from "@/lib/baobay/spots";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
 import { apiPost } from "./client-api";
+import { dangKyOffline, quenPhien } from "./offline";
+import { OfflineBanner } from "./OfflineBanner";
 import { Banner, Button, Card, Field, TextInput } from "./ui";
 
 /**
@@ -34,6 +36,11 @@ export function Shell({
   const pathname = usePathname();
   const [showPassword, setShowPassword] = useState(user.mustChangePassword);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  /** Nền offline: đăng ký worker một lần cho mọi trang /baocao (chỉ production). */
+  useEffect(() => {
+    dangKyOffline();
+  }, []);
 
   /**
    * Kế toán có ba trang nên cần thanh chuyển; phi công và quầy vé chỉ có một
@@ -61,12 +68,14 @@ export function Shell({
     try {
       await apiPost("/api/baocao/logout");
     } finally {
+      quenPhien();
       router.replace("/baocao");
     }
   }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:py-8 lg:max-w-6xl">
+      <OfflineBanner />
       {/* KHÔNG cho gãy dòng: hai nút luôn đứng cùng hàng với tên, sát lề phải.
           Khối tên co lại và cắt bớt nếu hẹp, thay vì đẩy nút xuống dòng dưới. */}
       <header className="mb-5 flex items-center justify-between gap-2">

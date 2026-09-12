@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { ROLE_HOME, type BaobayRole } from "@/lib/baobay/roles";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
-import { apiGet } from "./client-api";
+import { ApiError, apiGet } from "./client-api";
+import { nhoPhien, phienDaNho, quenPhien } from "./offline";
 
 /**
  * Lấy phiên đang đăng nhập, và đẩy người dùng về đúng chỗ nếu vào sai trang.
@@ -24,9 +25,13 @@ export function useBaobaySession(expectedRole?: BaobayRole | readonly BaobayRole
   useEffect(() => {
     let alive = true;
 
-    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
-      .then(({ user: found }) => {
-        if (!alive) return;
+    /**
+     * MẤT MẠNG: /api/baocao/me không tới được máy chủ. Service worker thường
+     * trả bản cất; không có thì dùng phiên đã nhớ trong máy — miễn là lần
+     * trước đăng nhập thật. Chỉ 401/403 (hết hạn, bị khoá) mới đẩy về đăng nhập.
+     */
+    const dungPhien = (found: BaobayUserDTO) => {
+      if (!alive) return;
         const allowed = expectedRole
           ? Array.isArray(expectedRole)
             ? (expectedRole as readonly BaobayRole[])
@@ -44,9 +49,22 @@ export function useBaobaySession(expectedRole?: BaobayRole | readonly BaobayRole
         }
         setUser(found);
         setLoading(false);
+    };
+    apiGet<{ user: BaobayUserDTO }>("/api/baocao/me", { timeoutMs: 8000 })
+      .then(({ user: found }) => {
+        nhoPhien(found);
+        dungPhien(found);
       })
-      .catch(() => {
-        if (alive) router.replace("/baocao");
+      .catch((e: unknown) => {
+        if (!alive) return;
+        const matMang = e instanceof ApiError && e.status === 0;
+        const nho = matMang ? phienDaNho<BaobayUserDTO>() : null;
+        if (nho) {
+          dungPhien(nho.user);
+          return;
+        }
+        if (!matMang) quenPhien();
+        router.replace("/baocao");
       });
 
     return () => {

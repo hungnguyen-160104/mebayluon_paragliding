@@ -353,8 +353,24 @@ function dungKhung(html: string, rongPx?: number): Promise<HTMLIFrameElement> {
 /** Đường 1: hộp thoại in của trình duyệt. */
 async function inQuaHopThoai(html: string): Promise<void> {
   const frame = await dungKhung(html);
-  frame.contentWindow?.focus();
-  frame.contentWindow?.print();
+  try {
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+  } catch (e) {
+    /**
+     * Một số trình duyệt (Safari trên iPad, WebView) không cho khung ẩn gọi
+     * print() — mở vé ra TAB RIÊNG để người trực bấm In / Chia sẻ → In (chủ
+     * 12/09 báo "vẫn không in được"). Tab riêng không bị chặn vì mở ngay trong
+     * cú bấm của người dùng.
+     */
+    console.warn("Không gọi được print() từ khung ẩn, mở tab riêng:", e);
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.open();
+      w.document.write(html.replace("</body>", '<script>setTimeout(function(){window.print()},300)</script></body>'));
+      w.document.close();
+    }
+  }
   // Đợi hộp thoại in đóng hẳn rồi mới dọn, không thì bản in cụt giữa chừng
   window.setTimeout(() => frame.parentNode && document.body.removeChild(frame), 60_000);
 }
