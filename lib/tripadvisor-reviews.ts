@@ -46,6 +46,8 @@ export const TRIPADVISOR_LOCATION_ID: Record<string, string> = {
   "doi-bu": "27966587",
   "vien-nam": "27966587",
   "muong-hoa-sapa": "33242005",
+  /** Dịch vụ paramotor Khau Phạ (bong bóng ở /ppg) — mã từ link viết đánh giá d34377924. */
+  ppg: "34377924",
 };
 
 function fallbackOf(slug: string): TripadvisorReviewData {

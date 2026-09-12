@@ -29,7 +29,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { KHAU_PHA_TAKEOFF_MAP_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
+import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 
@@ -55,9 +55,8 @@ const REVIEW_LINKS: Record<string, { google: string; tripadvisor: string; tripad
     /** Khách bay PG → trang review tour dù lượn; bay PPG → trang review tour dù động cơ (chủ 12/09). */
     tripadvisor:
       "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34108763-Mu_Cang_Chai_Paragliding_Experience_with_Free_Accommodation-Cao_Pha_Yen_Bai_Prov.html",
-    tripadvisorPpg:
-      /** Chủ 12/09: link VIẾT ĐÁNH GIÁ thẳng cho dịch vụ paramotor (không phải trang tour). */
-      "https://www.tripadvisor.com/UserReviewEdit-g737052-d34377924-Paramotor_Paragliding_Experience_in_Mu_Cang_Chai_Lao_Cai_Province-Lao_Cai_Lao_Cai_Province.html",
+    /** Chủ 12/09: link VIẾT ĐÁNH GIÁ thẳng cho dịch vụ paramotor — cùng link với bong bóng ở trang /ppg. */
+    tripadvisorPpg: PPG_TRIPADVISOR_REVIEW_URL,
   },
   sapa: {
     google: SAPA_TAKEOFF_MAP_URL,

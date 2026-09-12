@@ -229,6 +229,14 @@ export const SPOT_TRIPADVISOR_RATING: Record<
 export const getSpotTripadvisorRating = (slug?: string | null): number | null =>
   (slug && SPOT_TRIPADVISOR_RATING[slug]?.rating) || null;
 
+/**
+ * Trang VIẾT ĐÁNH GIÁ Tripadvisor cho dịch vụ paramotor (PPG) ở Khau Phạ — chủ
+ * 12/09. Dùng cho bong bóng nổi ở trang /ppg và QR trên vé khách bay PPG; khác
+ * với thẻ "paramotor" trong `partners` (trang tour để khách đặt).
+ */
+export const PPG_TRIPADVISOR_REVIEW_URL =
+  "https://www.tripadvisor.com/UserReviewEdit-g737052-d34377924-Paramotor_Paragliding_Experience_in_Mu_Cang_Chai_Lao_Cai_Province-Lao_Cai_Lao_Cai_Province.html";
+
 export const getSpotTripadvisorUrl = (slug?: string | null): string | null =>
   getSpotLinks(slug)?.partners.find((p) => p.brand === "tripadvisor")?.url ??
   null;
