@@ -375,14 +375,25 @@ phép). Nên có hai đường:
    máy quầy một lần (Windows/macOS, tải từ gainscha.com), chọn máy in trong hộp
    thoại, tích "không hỏi lại". Khổ giấy đã khai `@page 80mm`, mỗi liên một
    trang nên máy cắt sau mỗi liên.
-2. **In thẳng qua USB** — không cần driver, chạy được trên máy tính bảng
-   Android + Chrome. Bấm **🖨 Ghép máy in USB** ở đầu danh sách booking, chọn
-   B300 trong hộp hiện ra; từ đó nút IN VÉ đẩy thẳng ra máy (ESC/POS, vé chụp
-   thành ảnh 576 chấm rồi gửi từng liên, cắt sau mỗi liên — xem
-   `lib/baobay/may-in-usb.ts`). In thẳng hỏng thì tự rơi về hộp thoại in.
-   Giới hạn thật: chỉ Chrome/Edge có WebUSB; **Windows** thường bị driver của
-   hãng giữ cổng USB nên phải gán WinUSB cho máy in bằng công cụ **Zadig** một
-   lần; Bluetooth của B300 là kiểu SPP cổ, trình duyệt không nối được.
+2. **In thẳng qua BLUETOOTH** (B300 là máy in di động — cách chính ở quầy, chủ
+   12/09): bật máy in và Bluetooth điện thoại, bấm **🖨 Ghép máy in Bluetooth**
+   ở đầu danh sách booking, chọn máy in trong hộp hiện ra (thấy hai tên gần
+   giống thì chọn tên có chữ *BLE*). Từ đó nút IN VÉ đẩy thẳng ra máy (ESC/POS,
+   vé chụp thành ảnh 576 chấm, gửi từng liên, cắt sau mỗi liên — xem
+   `lib/baobay/may-in-bluetooth.ts`). Trình duyệt chỉ nối được kênh BLE của
+   máy in, không nối được Bluetooth cổ điển (SPP) — máy nào chỉ có SPP thì
+   phải dùng USB hoặc hộp thoại in. BLE chậm: bốn liên khoảng 20 giây, đừng bấm
+   in hai lần liền. Chỉ Chrome / Edge có Web Bluetooth; Safari không có. Tải
+   lại trang là mất kết nối, bấm ghép lại (hộp chọn hiện sẵn máy cũ).
+3. **In thẳng qua USB** — cáp OTG với điện thoại, hoặc máy tính. Bấm **🔌 hoặc
+   USB**, chọn B300. **Windows** thường bị driver của hãng giữ cổng USB nên
+   phải gán WinUSB cho máy in bằng công cụ **Zadig** một lần.
+4. Trên **điện thoại / máy tính bảng** chưa ghép máy in thẳng: bấm IN VÉ mở
+   vé ra tab riêng có nút **IN VÉ** to — hộp thoại in Android chỉ có máy in
+   nếu điện thoại có dịch vụ in tương ứng (Gainscha không có), thường chỉ
+   "Lưu PDF"; nên ở điện thoại hãy ghép Bluetooth.
+
+In thẳng hỏng thì báo lý do rồi tự rơi về hộp thoại / tab in.
 
 Xem mẫu vé không cần máy in: `npx tsx scripts/baocao/xem-mau-ve.ts mau-ve.html`
 rồi mở tệp bằng trình duyệt. Phép thử: `scripts/baocao/test-ve-in.ts`.

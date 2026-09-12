@@ -32,6 +32,7 @@ import type { BookingDTO } from "@/lib/baobay/types";
 import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
+import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
 
 /** Khổ giấy máy in nhiệt Gainscha B300 ở quầy. */
 const PAPER_WIDTH_MM = 80;
@@ -375,12 +376,19 @@ async function inQuaHopThoai(html: string): Promise<void> {
   window.setTimeout(() => frame.parentNode && document.body.removeChild(frame), 60_000);
 }
 
+/** Máy in "thẳng" nào đang ghép: Bluetooth (máy in di động — ưu tiên) hay USB. */
+export function mayInThangDaGhep(): "bluetooth" | "usb" | null {
+  if (trinhDuyetCoBluetooth() && mayInBluetoothDaGhep()) return "bluetooth";
+  if (trinhDuyetCoUsb() && mayInDaGhep()) return "usb";
+  return null;
+}
+
 /**
- * Đường 2: chụp từng liên thành ảnh 576 chấm rồi đẩy thẳng ra máy in USB.
- * Khung iframe rộng đúng 576px và CSS đổi mm sang px theo tỉ lệ ấy để bố cục
- * y hệt bản in qua hộp thoại.
+ * Đường 2: chụp từng liên thành ảnh 576 chấm rồi đẩy thẳng ra máy in (Bluetooth
+ * hoặc USB — cùng luồng ESC/POS). Khung iframe rộng đúng 576px và CSS đổi mm
+ * sang px theo tỉ lệ ấy để bố cục y hệt bản in qua hộp thoại.
  */
-async function inQuaUsb(html: string): Promise<void> {
+async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb"): Promise<void> {
   const html2canvas = (await import("html2canvas")).default;
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
   const htmlUsb = html.replace("</style>", `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; } .qr-anh { width: 200px !important; height: 200px !important; } body { font-size: 15px; } table { font-size: 16px !important; } .so-tri { font-size: 56px !important; } .so.nho .so-tri { font-size: 40px !important; } .ten { font-size: 28px !important; } .diem, .ghi, .uong { font-size: 16px !important; } .lien { font-size: 15px !important; } .qr-nhan, .qr figcaption, .luuy { font-size: 13px !important; } .so-nhan { font-size: 12px !important; }</style>`);
@@ -405,7 +413,8 @@ async function inQuaUsb(html: string): Promise<void> {
         anh.push(chuan);
       } else anh.push(c);
     }
-    await inAnhQuaUsb(anh);
+    if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
+    else await inAnhQuaUsb(anh);
   } finally {
     frame.parentNode && document.body.removeChild(frame);
   }
@@ -445,19 +454,48 @@ export function moTabIn(): Window | null {
   return w;
 }
 
-export async function printBookingTickets(b: BookingDTO, spot: string, tab?: Window | null): Promise<"usb" | "hop-thoai" | "tab" | "khong-in"> {
+/**
+ * GHI LỖI VÀO TAB IN thay vì đóng tab (chủ 12/09: "bấm in vé nó loé lên như
+ * mở cửa sổ rồi mọi thứ lại như cũ" — tab bị đóng ngay khi có lỗi nên không
+ * ai đọc được lỗi gì). Tab ở lại với dòng lỗi và nút Đóng.
+ */
+export function baoLoiVaoTab(tab: Window | null | undefined, loi: string): void {
+  if (!tab || tab.closed) return;
+  try {
+    tab.document.open();
+    tab.document.write(
+      `<title>Không in được vé</title><div style="font:16px system-ui,sans-serif;padding:24px;color:#7f1d1d;line-height:1.5"><b>Không in được vé.</b><br>${loi
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")}<br><br><button onclick="window.close()" style="font:16px system-ui;padding:10px 18px;border:0;border-radius:10px;background:#111;color:#fff">Đóng</button></div>`,
+    );
+    tab.document.close();
+  } catch {
+    /* tab bị chặn thì thôi */
+  }
+}
+
+export async function printBookingTickets(b: BookingDTO, spot: string, tab?: Window | null): Promise<"bluetooth" | "usb" | "hop-thoai" | "tab" | "khong-in"> {
   if (!coInVe(spot)) {
-    tab?.close();
+    baoLoiVaoTab(tab, "Điểm bay này không in vé (chỉ Khau Phạ và Sa Pa).");
     return "khong-in";
   }
-  const html = await buildTicketsHtml(b, spot);
-  if (trinhDuyetCoUsb() && mayInDaGhep()) {
+  let html: string;
+  try {
+    html = await buildTicketsHtml(b, spot);
+  } catch (e) {
+    baoLoiVaoTab(tab, `Không dựng được vé: ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
+  const kenh = mayInThangDaGhep();
+  if (kenh) {
     try {
-      await inQuaUsb(html);
+      await inQuaMayInThang(html, kenh);
       tab?.close();
-      return "usb";
+      return kenh;
     } catch (e) {
-      console.warn("In thẳng USB hỏng, chuyển sang hộp thoại in:", e);
+      console.warn(`In thẳng qua ${kenh} hỏng, chuyển sang hộp thoại in:`, e);
+      /** Báo cho người trực biết vì sao vé lại nhảy ra hộp thoại — không thì tưởng máy in hỏng. */
+      if (typeof window !== "undefined") window.alert(`Không in thẳng được qua ${kenh === "bluetooth" ? "Bluetooth" : "USB"}: ${e instanceof Error ? e.message : String(e)}\nVé sẽ mở ra để in qua hộp thoại.`);
     }
   }
   if (tab && !tab.closed) {

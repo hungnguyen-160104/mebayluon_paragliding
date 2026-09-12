@@ -37,7 +37,7 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
-import { coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
+import { baoLoiVaoTab, coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -1107,8 +1107,9 @@ function ReprintTicket({
       setReason("");
       onDone();
     } catch (e: unknown) {
-      tab?.close();
-      setError(e instanceof Error ? e.message : "Không ghi nhận được lần in lại");
+      const m = e instanceof Error ? e.message : "Không ghi nhận được lần in lại";
+      baoLoiVaoTab(tab, m);
+      setError(m);
     } finally {
       setBusy(false);
     }
@@ -5169,8 +5170,9 @@ export function BookingTodayBanner({
                 const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" });
                 await printBookingTickets(r?.booking ?? b, spot, tab);
               } catch (e: unknown) {
-                tab?.close();
-                setError(e instanceof Error ? e.message : "Không in được vé");
+                const m = e instanceof Error ? e.message : "Không in được vé";
+                baoLoiVaoTab(tab, m);
+                setError(m);
               }
             })();
           }
