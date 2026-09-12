@@ -5,13 +5,14 @@
  *
  * MỖI KHÁCH MỘT BỘ VÉ, không phải mỗi booking một bộ: phi công khai theo từng
  * chuyến mà mỗi khách là một chuyến. Booking #23 có 2 khách → #23.1 và #23.2,
- * mỗi số ba liên:
- *   LIÊN 1 — VÉ BAY DÙ: ngày bay · số thứ tự · tên khách · dịch vụ đi kèm ·
- *            giờ in · hai mã QR xin đánh giá (Google, Tripadvisor).
- *   LIÊN 2 — VÉ XE TRUNG CHUYỂN: ngày bay · tên khách · ngày giờ xuất vé.
- *   LIÊN 3 — VÉ ĐỒ UỐNG MIỄN PHÍ: tên khách · số thứ tự · ngày bay · danh mục
- *            đồ uống tại bãi.
- * Liên nào cũng in dòng "vé có giá trị tương đương tiền mặt, không cấp lại".
+ * mỗi số BỐN liên (chủ chốt lại 12/09):
+ *   LIÊN 1 — VÉ BAY DÙ: ngày bay · số thứ tự · tên khách · dịch vụ · giờ in.
+ *   LIÊN 2 — KHÁCH GIỮ: thông tin đặt vé và dịch vụ · số thứ tự · mã booking ·
+ *            hai mã QR xin đánh giá · các điều lưu ý (điện thoại, kính, quần áo…).
+ *   LIÊN 3 — VÉ ĐỒ UỐNG MIỄN PHÍ: tên khách · số thứ tự · ngày bay · danh mục.
+ *   LIÊN 4 — VÉ XE TRUNG CHUYỂN: ngày bay · tên khách · ngày giờ xuất vé.
+ * Liên nào cũng in "vé có giá trị thanh toán tương đương tiền mặt, mất vé không
+ * cấp lại".
  *
  * HAI ĐƯỜNG RA GIẤY, cùng một mẫu vé:
  *  1. HỘP THOẠI IN của trình duyệt (@page 80mm) — chạy với driver Gainscha cài
@@ -34,6 +35,8 @@ import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baob
 
 /** Khổ giấy máy in nhiệt Gainscha B300 ở quầy. */
 const PAPER_WIDTH_MM = 80;
+
+const KIND_LABEL: Record<string, string> = { pg: "Dù lượn (PG)", ppg: "Dù có động cơ (PPG)", m650: "Mô tô bay 650m", m850: "Mô tô bay 850m" };
 
 /** Chỉ hai điểm này in vé (chủ 12/09). Điểm khác vẫn tích "đã xuất vé" như cũ, không in. */
 export const DIEM_IN_VE = new Set(["khau-pha", "sapa"]);
@@ -72,8 +75,22 @@ export function linkTripadvisor(spot: string, flightKind: string): string {
 /** Ngắn để nằm trọn MỘT dòng 72mm ở cỡ chữ 9,5px. */
 const DO_UONG = ["Cà phê", "Trà chanh/đào", "Nước lọc/chai", "Bia/nước ngọt"];
 
-/** Một dòng, không xuống dòng — vé nhiệt tính từng mm chiều dài (chủ 12/09). */
-const LUU_Y = "Vé = tiền mặt · mất vé không cấp lại";
+/**
+ * Câu của chủ (12/09), cố ý TÁCH HAI DÒNG NGẮN chứ không để trình duyệt tự bẻ:
+ * cả câu 70 ký tự không vừa một dòng 72mm ở cỡ chữ còn đọc được.
+ */
+const LUU_Y_1 = "Vé có giá trị thanh toán tương đương tiền mặt.";
+const LUU_Y_2 = "Mất vé không cấp lại.";
+
+/** Điều lưu ý cho khách trên liên khách giữ — mỗi điều MỘT dòng ngắn (chủ 12/09). */
+const LUU_Y_KHACH = [
+  /* mỗi dòng ≤ 58 ký tự để nằm trọn 72mm ở cỡ 9,5px — dài hơn là bị cắt cụt */
+  "Mang điện thoại còn pin, trống ~4GB để chép ảnh/video",
+  "Nên đeo kính râm, mang áo khoác mỏng",
+  "Đồ dài tay gọn, giày thể thao; không váy, cao gót, dép lê",
+  "Mang theo CCCD / hộ chiếu",
+  "Không mang vật sắc nhọn, đồ cồng kềnh, tư trang giá trị",
+];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */
 function extrasOf(b: BookingDTO): string[] {
@@ -140,7 +157,7 @@ function dau(spot: string, lien: string): string {
 }
 
 function chan(): string {
-  return `<div class="luuy">${esc(LUU_Y)}</div>`;
+  return `<div class="luuy">${esc(LUU_Y_1)}<br/>${esc(LUU_Y_2)}</div>`;
 }
 
 /** Ô số thứ tự: biểu tượng của liên đứng SÁT bên trái con số (chủ 12/09). */
@@ -152,8 +169,8 @@ function khoiSo(b: BookingDTO, guestNo: number, icon: keyof typeof ICON, nho = f
     </div>`;
 }
 
-/** LIÊN 1 — vé bay dù. */
-function lienBay(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string): string {
+/** LIÊN 1 — vé bay dù (quầy / phi công). */
+function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string): string {
   const extras = extrasOf(b);
   return `
   <section class="ve">
@@ -165,6 +182,28 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: st
       <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
       <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
     </table>
+    ${chan()}
+  </section>`;
+}
+
+/** LIÊN 2 — khách giữ: đặt vé + dịch vụ + mã booking + QR đánh giá + điều lưu ý. */
+function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string): string {
+  const extras = extrasOf(b);
+  const ma = (b.bookingCode || "").trim();
+  return `
+  <section class="ve">
+    ${dau(spot, "LIÊN 2 — KHÁCH GIỮ")}
+    ${khoiSo(b, guestNo, "du", true)}
+    <table>
+      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</td></tr>
+      <tr><td>Khách</td><td class="p${tenKhachVe(b, guestNo).length > 22 ? " dai" : ""}">${esc(tenKhachVe(b, guestNo))}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</td></tr>
+      ${ma ? `<tr><td>Booking</td><td class="p">${esc(ma)}</td></tr>` : ""}
+      <tr><td>Loại bay</td><td class="p">${esc(KIND_LABEL[b.flightKind] ?? b.flightKind)}</td></tr>
+      <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
+      <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
+    </table>
+    <div class="ghi">Lưu ý trước khi bay:</div>
+    <ul class="luuy-khach">${LUU_Y_KHACH.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     <div class="qr-nhan">Bay xong, cho chúng tôi một đánh giá nhé</div>
     <div class="qr">
       <figure><div class="qr-anh">${qr.google}</div><figcaption>Google</figcaption></figure>
@@ -174,11 +213,11 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: st
   </section>`;
 }
 
-/** LIÊN 2 — vé xe trung chuyển. */
+/** LIÊN 4 — vé xe trung chuyển. */
 function lienXe(b: BookingDTO, spot: string, guestNo: number, luc: string): string {
   return `
   <section class="ve">
-    ${dau(spot, "LIÊN 2 — VÉ XE TRUNG CHUYỂN")}
+    ${dau(spot, "LIÊN 4 — VÉ XE TRUNG CHUYỂN")}
     ${khoiSo(b, guestNo, "xe", true)}
     <table>
       <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}</td></tr>
@@ -246,7 +285,9 @@ const CSS = `
   .qr figcaption { font-size: 9px; font-weight: 700; margin-top: 1px; white-space: nowrap; }
   .ghi { margin-top: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; color: #000; }
   .uong { margin: 2px 0 0; font-size: 9.5px; white-space: nowrap; color: #000; }
-  .luuy { margin-top: 5px; border-top: 1px solid #000; padding-top: 3px; font-size: 10px; font-weight: 700; text-align: center; white-space: nowrap; }
+  .luuy { margin-top: 5px; border-top: 1px solid #000; padding-top: 3px; font-size: 9.5px; font-weight: 700; text-align: center; white-space: nowrap; line-height: 1.3; }
+  .luuy-khach { margin: 1px 0 0; padding-left: 12px; font-size: 9.5px; line-height: 1.35; color: #000; }
+  .luuy-khach li { white-space: nowrap; }
 `;
 
 /**
@@ -261,7 +302,7 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const luc = gioIn();
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
-    pages.push(lienBay(b, spot, g, qr, luc), lienXe(b, spot, g, luc), lienNuoc(b, spot, g));
+    pages.push(lienBay(b, spot, g, luc), lienKhach(b, spot, g, qr, luc), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
   }
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8" />
 <title>Vé bay ${esc(b.bookingCode || b.daySeq)}</title>
