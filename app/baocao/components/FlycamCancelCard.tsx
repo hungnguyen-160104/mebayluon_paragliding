@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
+import { nhanKhach } from "@/lib/baobay/nhan-khach";
 import { formatVND } from "@/lib/pricing";
 import type { FlycamCancelDTO, TicketLookup } from "@/services/baobay.service";
 
@@ -236,7 +237,7 @@ export function FlycamCancelCard({
                 .filter((c) => (c as any)[service] > 0)
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    #{c.daySeq} {c.label} · {c.guestCount} khách · {(c as any)[service]}×{serviceLabel(service)}
+                    #{c.daySeq} {c.label} · {nhanKhach(c.guestCount, c.ppgGuests)} · {(c as any)[service]}×{serviceLabel(service)}
                   </option>
                 ))}
             </select>

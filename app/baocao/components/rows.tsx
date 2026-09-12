@@ -753,6 +753,8 @@ export type BookingPick = {
   contactName: string;
   phone: string;
   guestCount: number;
+  /** Số khách bay PPG trong đoàn — nhãn ô chọn ghi "(1×PPG 1×PG)" khi > 0. */
+  ppgGuests?: number;
   source: string;
   bookingCode: string;
   deposit: number;

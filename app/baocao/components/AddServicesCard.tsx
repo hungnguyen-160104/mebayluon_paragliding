@@ -11,6 +11,7 @@ import {
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
 import type { ServiceChangeDTO } from "@/services/baobay.service";
+import { nhanKhach } from "@/lib/baobay/nhan-khach";
 import { formatVND } from "@/lib/pricing";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "./client-api";
@@ -406,7 +407,7 @@ export function AddServicesCard({
           <option value="">— chọn booking —</option>
           {bookings.map((b) => (
             <option key={b.id} value={b.id}>
-              #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+              #{b.daySeq} {b.contactName || b.phone || "khách"} · {nhanKhach(b.guestCount, b.ppgGuests)}
               {b.status === "done" ? " · đã bay" : ""}
               {b.remaining ? ` · còn thu ${Math.round(b.remaining / 1000).toLocaleString("vi-VN")}k` : ""}
             </option>

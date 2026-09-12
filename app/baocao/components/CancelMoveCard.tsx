@@ -4,6 +4,7 @@
 import { useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { nhanKhach } from "@/lib/baobay/nhan-khach";
 import { formatVND } from "@/lib/pricing";
 
 import { apiPatch } from "./client-api";
@@ -341,7 +342,7 @@ export function CancelMoveCard({
           <option value="">— chọn đoàn khách trong sổ booking —</option>
           {bookings.map((b) => (
             <option key={b.id} value={b.id}>
-              #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách
+              #{b.daySeq} {b.contactName || b.phone || "khách"} · {nhanKhach(b.guestCount, b.ppgGuests)}
               {b.deposit ? ` · đã trả ${Math.round(b.deposit / 1000).toLocaleString("vi-VN")}k` : ""}
               {b.status === "done" ? " · đã bay" : ""}
             </option>

@@ -11653,6 +11653,8 @@ export type TicketLookup = {
     sunset: number;
     flagFlight: number;
     guestCount: number;
+    /** Khách PPG trong đoàn — ô chọn ghi "(1×PPG 1×PG)". */
+    ppgGuests: number;
   }>;
 };
 
@@ -11732,7 +11734,7 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
         { flagFlight: { $gt: 0 } },
       ],
     })
-      .select("contactName bookingCode daySeq flycam video360 redFlag sunset flagFlight guestCount status")
+      .select("contactName bookingCode daySeq flycam video360 redFlag sunset flagFlight guestCount ppgGuests status")
       .sort({ daySeq: 1 })
       .lean<any[]>();
     out.candidates = bookings.map((b) => ({
@@ -11745,6 +11747,7 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
       sunset: b.sunset || 0,
       flagFlight: b.flagFlight || 0,
       guestCount: b.guestCount || 0,
+      ppgGuests: b.ppgGuests || 0,
     }));
   }
   return out;
