@@ -87,6 +87,8 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
        */
       return [
         { href: "/baocao/dieu-phoi", label: "Điều phối / Quầy vé" },
+        /** Trạm in vé (máy ghép Bluetooth với Gainscha ở quầy Khau Phạ / Sa Pa). */
+        { href: "/baocao/tram-in", label: "Trạm in" },
         ...sapa,
         ...hang,
         { href: "/cafe", label: "CAFE" },
@@ -125,7 +127,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
-      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...hang, ...troi];
+      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...hang, { href: "/baocao/tram-in", label: "Trạm in" }, ...troi];
     default:
       return [];
   }

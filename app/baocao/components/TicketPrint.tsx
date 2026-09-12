@@ -33,6 +33,7 @@ import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
+import { apiGet, apiPost } from "./client-api";
 
 /** Khổ giấy máy in nhiệt Gainscha B300 ở quầy. */
 const PAPER_WIDTH_MM = 80;
@@ -388,7 +389,7 @@ export function mayInThangDaGhep(): "bluetooth" | "usb" | null {
  * hoặc USB — cùng luồng ESC/POS). Khung iframe rộng đúng 576px và CSS đổi mm
  * sang px theo tỉ lệ ấy để bố cục y hệt bản in qua hộp thoại.
  */
-async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb"): Promise<void> {
+export async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb"): Promise<void> {
   const html2canvas = (await import("html2canvas")).default;
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
   const htmlUsb = html.replace("</style>", `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; } .qr-anh { width: 200px !important; height: 200px !important; } body { font-size: 15px; } table { font-size: 16px !important; } .so-tri { font-size: 56px !important; } .so.nho .so-tri { font-size: 40px !important; } .ten { font-size: 28px !important; } .diem, .ghi, .uong { font-size: 16px !important; } .lien { font-size: 15px !important; } .qr-nhan, .qr figcaption, .luuy { font-size: 13px !important; } .so-nhan { font-size: 12px !important; }</style>`);
@@ -474,10 +475,85 @@ export function baoLoiVaoTab(tab: Window | null | undefined, loi: string): void 
   }
 }
 
-export async function printBookingTickets(b: BookingDTO, spot: string, tab?: Window | null): Promise<"bluetooth" | "usb" | "hop-thoai" | "tab" | "khong-in"> {
+type TramDTO = { online: boolean; deviceName: string; kenh: string };
+type JobDTO = { id: string; status: "queued" | "printing" | "done" | "failed"; error?: string; stationName?: string };
+
+/** Trạm in của điểm có đang trực không — nhớ 15 giây để bấm in liên tiếp không hỏi lại. */
+const nhoTram = new Map<string, { luc: number; tram: TramDTO }>();
+async function tramDangTruc(spot: string): Promise<TramDTO | null> {
+  const c = nhoTram.get(spot);
+  if (c && Date.now() - c.luc < 15_000) return c.tram.online ? c.tram : null;
+  try {
+    const r = await apiGet<{ tram: TramDTO }>(`/api/baocao/in-ve?spot=${spot}&tram=1`);
+    nhoTram.set(spot, { luc: Date.now(), tram: r.tram });
+    return r.tram.online ? r.tram : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ghi tiến độ vào tab in (điện thoại) — không có tab thì thôi. */
+function ghiTab(tab: Window | null | undefined, html: string): void {
+  if (!tab || tab.closed) return;
+  try {
+    tab.document.open();
+    tab.document.write(`<title>Trạm in</title><div style="font:17px system-ui,sans-serif;padding:24px;line-height:1.6">${html}</div>`);
+    tab.document.close();
+  } catch {
+    /* bỏ qua */
+  }
+}
+
+/**
+ * GỬI LỆNH TỚI TRẠM IN rồi chờ tối đa 40 giây. Trả true nếu trạm in xong;
+ * ném lỗi (có câu) nếu trạm báo hỏng hoặc quá giờ — chỗ gọi tự rơi về in tay.
+ */
+async function inQuaTram(b: BookingDTO, spot: string, tram: TramDTO, tab: Window | null | undefined, reason: string): Promise<void> {
+  const nut = '<br><br><button onclick="window.close()" style="font:16px system-ui;padding:10px 18px;border:0;border-radius:10px;background:#111;color:#fff">Đóng</button>';
+  ghiTab(tab, `🖨 Đã gửi vé tới <b>trạm in ${tram.deviceName || ""}</b>… đang in, đợi khoảng 20 giây.${nut}`);
+  const { job } = await apiPost<{ job: JobDTO }>(`/api/baocao/in-ve?spot=${spot}`, { bookingId: b.id, reason });
+  const het = Date.now() + 40_000;
+  while (Date.now() < het) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const r = await apiGet<{ job: JobDTO | null }>(`/api/baocao/in-ve?spot=${spot}&job=${job.id}`);
+    if (r.job?.status === "done") {
+      ghiTab(tab, `✅ <b>Trạm in đã in xong</b> vé #${b.daySeq}.${nut}`);
+      if (tab && !tab.closed) setTimeout(() => tab.close(), 2500);
+      return;
+    }
+    if (r.job?.status === "failed") throw new Error(r.job.error || "Trạm in báo lỗi");
+  }
+  throw new Error("Trạm in không trả lời sau 40 giây — kiểm tra máy trạm còn mở trang Trạm in không");
+}
+
+export async function printBookingTickets(
+  b: BookingDTO,
+  spot: string,
+  tab?: Window | null,
+  reason = "",
+): Promise<"bluetooth" | "usb" | "tram" | "hop-thoai" | "tab" | "khong-in"> {
   if (!coInVe(spot)) {
     baoLoiVaoTab(tab, "Điểm bay này không in vé (chỉ Khau Phạ và Sa Pa).");
     return "khong-in";
+  }
+  const kenh = mayInThangDaGhep();
+  /**
+   * THỨ TỰ ƯU TIÊN: (1) máy in ghép trực tiếp trên chính máy này; (2) TRẠM IN
+   * của điểm đang trực — cách chạy được trên iPhone và mọi máy khác, cài một
+   * lần ở trạm (chủ 12/09); (3) tab / hộp thoại in của trình duyệt.
+   */
+  if (!kenh) {
+    const tram = await tramDangTruc(spot);
+    if (tram) {
+      try {
+        await inQuaTram(b, spot, tram, tab, reason);
+        return "tram";
+      } catch (e) {
+        const m = e instanceof Error ? e.message : String(e);
+        console.warn("Trạm in hỏng, chuyển sang in tay:", m);
+        if (typeof window !== "undefined") window.alert(`Trạm in không in được: ${m}\nVé sẽ mở ra để in tay.`);
+      }
+    }
   }
   let html: string;
   try {
@@ -486,7 +562,6 @@ export async function printBookingTickets(b: BookingDTO, spot: string, tab?: Win
     baoLoiVaoTab(tab, `Không dựng được vé: ${e instanceof Error ? e.message : String(e)}`);
     throw e;
   }
-  const kenh = mayInThangDaGhep();
   if (kenh) {
     try {
       await inQuaMayInThang(html, kenh);

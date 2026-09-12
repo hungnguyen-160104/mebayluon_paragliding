@@ -375,8 +375,18 @@ phép). Nên có hai đường:
    máy quầy một lần (Windows/macOS, tải từ gainscha.com), chọn máy in trong hộp
    thoại, tích "không hỏi lại". Khổ giấy đã khai `@page 80mm`, mỗi liên một
    trang nên máy cắt sau mỗi liên.
-2. **In thẳng qua BLUETOOTH** (B300 là máy in di động — cách chính ở quầy, chủ
-   12/09): bật máy in và Bluetooth điện thoại, bấm **🖨 Ghép máy in Bluetooth**
+2. **TRẠM IN — cách cài MỘT LẦN cho cả quầy, chạy được cả iPhone** (chủ
+   12/09): một điện thoại / máy tính bảng Android (hoặc máy tính) ở quầy ghép
+   Bluetooth (hay USB) với máy in một lần, mở **`/baocao/tram-in`** (tab "Trạm
+   in"), bấm **Bắt đầu trực** và để nguyên. Mọi máy khác của điểm — iPhone,
+   laptop kế toán… — bấm IN VÉ là lệnh vào hàng đợi (`BaobayPrintJob`), trạm
+   nhận trong 2,5 giây, in, báo xong; người bấm thấy "trạm in đã in xong".
+   Trạm không trực (không có nhịp tim 45 giây) thì nút IN VÉ tự rơi về in tay.
+   Trang trạm giữ màn hình sáng, nên cắm sạc và thêm vào màn hình chính.
+   Lệnh đang in quá 2 phút hay chờ quá 10 phút tự chuyển "lỗi" để không in
+   vé cũ. Xem `services/in-ve.service.ts`, `app/baocao/tram-in/page.tsx`.
+3. **In thẳng qua BLUETOOTH** trên chính máy đang bấm (B300 là máy in di động,
+   chủ 12/09): bật máy in và Bluetooth điện thoại, bấm **🖨 Ghép máy in Bluetooth**
    ở đầu danh sách booking, chọn máy in trong hộp hiện ra (thấy hai tên gần
    giống thì chọn tên có chữ *BLE*). Từ đó nút IN VÉ đẩy thẳng ra máy (ESC/POS,
    vé chụp thành ảnh 576 chấm, gửi từng liên, cắt sau mỗi liên — xem
@@ -385,10 +395,10 @@ phép). Nên có hai đường:
    phải dùng USB hoặc hộp thoại in. BLE chậm: bốn liên khoảng 20 giây, đừng bấm
    in hai lần liền. Chỉ Chrome / Edge có Web Bluetooth; Safari không có. Tải
    lại trang là mất kết nối, bấm ghép lại (hộp chọn hiện sẵn máy cũ).
-3. **In thẳng qua USB** — cáp OTG với điện thoại, hoặc máy tính. Bấm **🔌 hoặc
+4. **In thẳng qua USB** — cáp OTG với điện thoại, hoặc máy tính. Bấm **🔌 hoặc
    USB**, chọn B300. **Windows** thường bị driver của hãng giữ cổng USB nên
    phải gán WinUSB cho máy in bằng công cụ **Zadig** một lần.
-4. Trên **điện thoại / máy tính bảng** chưa ghép máy in thẳng: bấm IN VÉ mở
+5. Trên **điện thoại / máy tính bảng** chưa ghép máy in thẳng và không có trạm: bấm IN VÉ mở
    vé ra tab riêng có nút **IN VÉ** to — hộp thoại in Android chỉ có máy in
    nếu điện thoại có dịch vụ in tương ứng (Gainscha không có), thường chỉ
    "Lưu PDF"; nên ở điện thoại hãy ghép Bluetooth.

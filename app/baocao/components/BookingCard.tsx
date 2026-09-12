@@ -1102,7 +1102,7 @@ function ReprintTicket({
         reason: reason.trim(),
       });
       /** In lại dùng ĐÚNG mã cũ trong sổ — máy chủ không cấp mã mới khi in lại. */
-      void printBookingTickets(r?.booking ?? booking, spot, tab);
+      void printBookingTickets(r?.booking ?? booking, spot, tab, reason.trim());
       setOpen(false);
       setReason("");
       onDone();

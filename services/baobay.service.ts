@@ -6970,6 +6970,14 @@ export async function recordTicketPrint(
  * khách thứ mấy, ngày nào. Không thấy → vé chép hoặc gõ nhầm (gợi ý gõ lại).
  * Tìm trong cả điểm, không giới hạn ngày: khách dời lịch cầm vé cũ vẫn tra ra.
  */
+/** Một booking theo mã, đúng điểm bay — cho trạm in dựng vé. null nếu không có. */
+export async function layBookingDTOTheoId(spotRaw: string, id: string): Promise<BookingDTO | null> {
+  await connectDB();
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  const doc = await BaobayBooking.findOne({ _id: id, spot: normalizeSpot(spotRaw) }).lean<any>();
+  return doc ? toBookingDTO(doc) : null;
+}
+
 export async function traMaVeBaoMat(
   session: BaobaySession,
   spotRaw: string,
