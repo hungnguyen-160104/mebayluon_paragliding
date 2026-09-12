@@ -620,6 +620,40 @@ export function hoangHonDep(ngay: NgayThoiTiet): boolean {
 }
 
 /**
+ * GIÓ Ở MỘT ĐỘ CAO TÍNH TỪ BÃI (m), nội suy giữa các mực mô hình.
+ *
+ * Phi công không nghĩ bằng "850hPa", họ nghĩ bằng "lên 500m thì gió thế nào".
+ * Lấy độ cao thật của từng mực (mô hình cấp), bỏ mực nào nằm DƯỚI bãi (ở
+ * Khau Phạ mực 925 hPa ~750m nằm dưới bãi 1.268m — đó là gió thung lũng),
+ * rồi nội suy tuyến tính. Đặt ở đây (không ở nhan-dinh) để `chamGio` dùng
+ * được mà không tạo vòng import.
+ */
+export function gioTrenBai(g: GioThoiTiet, mTrenBai: number, alt: number): number | null {
+  const co_ = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+  const moc: Array<{ h: number; v: number }> = [{ h: alt, v: g.gio10m }];
+  if (co_(g.h925) && co_(g.gio925) && g.h925 > alt + 50) moc.push({ h: g.h925, v: g.gio925 });
+  if (co_(g.h850) && co_(g.gio850) && g.h850 > alt + 50) moc.push({ h: g.h850, v: g.gio850 });
+  /** 700 hPa không có độ cao riêng — ~3.000m là đủ đúng cho mục đích này. */
+  if (co_(g.gio700)) moc.push({ h: 3000, v: g.gio700 });
+  if (moc.length < 2) return null;
+  moc.sort((a, b) => a.h - b.h);
+  const muc = alt + mTrenBai;
+  if (muc >= moc[moc.length - 1].h) return moc[moc.length - 1].v;
+  for (let i = 1; i < moc.length; i++) {
+    if (muc <= moc[i].h) {
+      const a = moc[i - 1];
+      const b = moc[i];
+      return a.v + ((b.v - a.v) * (muc - a.h)) / (b.h - a.h);
+    }
+  }
+  return moc[0].v;
+}
+
+/** Ngưỡng gió trên bãi 500m (luật chủ 12/09): ≥10 lắp speedbar · >12 khuyến cáo không bay. */
+export const GIO_TREN_CAO_SPEEDBAR = 10;
+export const GIO_TREN_CAO_CAM = 12;
+
+/**
  * HƯỚNG GIÓ TRỘI của một dãy giờ — trung bình VÉC-TƠ có trọng số theo tốc độ.
  *
  * Không lấy trung bình số độ: 350° và 10° cộng chia đôi ra 180°, tức là báo
@@ -731,6 +765,8 @@ export function chamGio(
   nguong: NguongBay,
   huongThuan?: [number, number],
   luat?: LuatHuong,
+  /** Độ cao bãi cất (m) — có thì chấm thêm GIÓ TRÊN CAO; không có thì bỏ qua luật ấy. */
+  altBai?: number,
 ): ChamGio {
   const lyDo: string[] = [];
   let muc: MucDo = "xanh";
@@ -794,6 +830,25 @@ export function chamGio(
      * mưa, không ghi gì cả.
      */
     lyDo.push(`mưa bay ${g.mua.toFixed(1)} mm`);
+  }
+
+  /**
+   * GIÓ TRÊN CAO THEO TỪNG GIỜ (luật chủ 12/09). Bãi cất ở cao thì gió ở
+   * +500m trên bãi mạnh nghĩa là gió NGAY TẠI BÃI CẤT đã mạnh hơn nhiều so
+   * với dưới bãi hạ — cất cánh dễ bị thổi lùi. Trên 12 m/s: khuyến cáo không
+   * bay (đỏ); 10–12: lắp speedbar (vàng). Chấm TỪNG GIỜ chứ không cả ngày:
+   * ngày gió Bắc ở Đồi Bù nó mạnh sáng tới trưa rồi dịu, chiều bay được — tô
+   * cả ngày là mất buổi chiều đẹp.
+   */
+  if (altBai !== undefined && altBai > 0) {
+    const v500 = gioTrenBai(g, 500, altBai);
+    if (v500 !== null && v500 > GIO_TREN_CAO_CAM) {
+      lyDo.push(`gió trên bãi 500m ${v500.toFixed(0)} m/s — dễ thổi lùi, khuyến cáo không bay`);
+      len("do");
+    } else if (v500 !== null && v500 >= GIO_TREN_CAO_SPEEDBAR) {
+      lyDo.push(`gió trên bãi 500m ${v500.toFixed(0)} m/s — lắp speedbar, bám sườn thấp`);
+      len("vang");
+    }
   }
 
   /**
@@ -1071,7 +1126,14 @@ export function gopNgay(
 
   return {
     ngay,
-    muc: dem("xanh") > 0 ? "xanh" : dem("vang") > 0 ? "vang" : "do",
+    /**
+     * NGÀY "BAY TỐT" PHẢI CÓ ÍT NHẤT HAI GIỜ XANH LIỀN NHAU. Một giờ xanh lẻ
+     * loi giữa ngày gió xiết (13/09 Đồi Bù: 15h xanh, còn lại vàng/đỏ) mà huy
+     * hiệu ngày vẫn "BAY TỐT" là tự cãi với câu "khuyến cáo không bay 07–15h"
+     * ngay dưới. Một giờ đẹp thì ngày là "cân nhắc" — vẫn thấy giờ ấy trong
+     * bảng, nhưng không hứa với khách cả ngày.
+     */
+    muc: dai.len >= 2 ? "xanh" : dem("xanh") + dem("vang") > 0 ? "vang" : "do",
     gioXanh: dem("xanh"),
     gioVang: dem("vang"),
     gioDo: dem("do"),

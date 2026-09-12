@@ -455,7 +455,7 @@ async function layVaCham(
     };
     const ngay = g.gio.slice(0, 10);
     if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
-    theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong) });
+    theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong, toaDo.alt) });
   }
 
   /** Mọc/lặn theo ngày: Open-Meteo trả "YYYY-MM-DDTHH:mm" giờ địa phương. */

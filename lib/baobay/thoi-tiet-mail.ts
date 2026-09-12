@@ -34,12 +34,21 @@ export function nhanNgayVN(ngay: string): string {
   return `${THU[t.getDay()]}, ${ngay.slice(8, 10)}/${ngay.slice(5, 7)}`;
 }
 
-/** Một dòng số liệu gọn cho một ngày. */
-function dongSo(n: NgayThoiTiet): string {
+/**
+ * Một dòng số liệu gọn cho một ngày — HAI bản: `html` tô HƯỚNG GIÓ đỏ đậm
+ * (chủ 12/09: "gửi mail báo gió thì phải highlight hướng gió màu đỏ cho dễ
+ * nhận biết"), `text` viết hoa hướng gió cho hộp thư không hiện HTML.
+ */
+function dongSo(n: NgayThoiTiet): { html: string; text: string } {
   const huong = huongTroiNgay(n.gio, [6, 18]);
   const th = n.thermal as TiemNangThermal | undefined;
+  const tenHuong = huong === null ? "" : huongDayDuVi(huong);
+  const gioHtml =
+    `Gió ` +
+    (tenHuong ? `<b style="color:#b91c1c;background:#fee2e2;padding:0 4px;border-radius:4px">${tenHuong.toUpperCase()}</b> ` : "") +
+    `${n.gioMax.toFixed(1)} m/s · giật ${n.giatMax.toFixed(1)}`;
+  const gioText = `Gió ${tenHuong ? `${tenHuong.toUpperCase()} ` : ""}${n.gioMax.toFixed(1)} m/s · giật ${n.giatMax.toFixed(1)}`;
   const phan: string[] = [];
-  phan.push(`Gió ${huong === null ? "" : `${huongDayDuVi(huong)} `}${n.gioMax.toFixed(1)} m/s · giật ${n.giatMax.toFixed(1)}`);
   if (n.khungDep) phan.push(`Giờ đẹp ${n.khungDep}`);
   if (th) {
     phan.push(
@@ -50,7 +59,8 @@ function dongSo(n: NgayThoiTiet): string {
   else if (n.gioMuaBay > 0) phan.push("Mưa bay — bay vẫn bay");
   else phan.push("Không mưa");
   if (n.xacSuatDongMax >= 20) phan.push(`Dông ${n.xacSuatDongMax}%`);
-  return phan.join(" · ");
+  const duoi = phan.length ? ` · ${phan.join(" · ")}` : "";
+  return { html: gioHtml + duoi, text: gioText + duoi };
 }
 
 /** Câu kết luận + khuyến cáo quan trọng nhất (bộ nhận định đã xếp câu xấu nhất lên đầu). */
@@ -86,7 +96,7 @@ export function thuDuBao(diem: DiemDuBaoMail[], ngayCanGui: string[], trang = "h
       khoi.push(
         `<div style="margin:0 0 8px;padding:8px 10px;border:1px solid #e2e8f0;border-left:4px solid ${MAU_MUC[n.muc]};border-radius:8px;background:${NEN_MUC[n.muc]}">` +
           `<div style="font:700 14px/1.4 system-ui,sans-serif;color:${MAU_MUC[n.muc]}">${nhanNgayVN(n.ngay)} — ${NHAN_MUC[n.muc]}</div>` +
-          `<div style="margin-top:2px;font:400 13px/1.5 system-ui,sans-serif;color:#0f172a">${dongSo(n)}</div>` +
+          `<div style="margin-top:2px;font:400 13px/1.5 system-ui,sans-serif;color:#0f172a">${dongSo(n).html}</div>` +
           (tomTat ? `<div style="margin-top:4px;font:600 13px/1.5 system-ui,sans-serif;color:#334155">${tomTat}</div>` : "") +
           (khuyenCao.length
             ? `<ul style="margin:4px 0 0;padding-left:18px;font:400 12px/1.5 system-ui,sans-serif;color:#475569">` +
@@ -95,7 +105,7 @@ export function thuDuBao(diem: DiemDuBaoMail[], ngayCanGui: string[], trang = "h
             : "") +
           `</div>`,
       );
-      dong.push(`- ${nhanNgayVN(n.ngay)} — ${NHAN_MUC[n.muc]}: ${dongSo(n)}${tomTat ? ` | ${tomTat}` : ""}`);
+      dong.push(`- ${nhanNgayVN(n.ngay)} — ${NHAN_MUC[n.muc]}: ${dongSo(n).text}${tomTat ? ` | ${tomTat}` : ""}`);
       for (const k of khuyenCao) dong.push(`    • ${k}`);
     }
   }

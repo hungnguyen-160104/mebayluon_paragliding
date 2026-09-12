@@ -461,19 +461,59 @@ Ba việc đã làm để hết hiểu nhầm:
 Nhãn mực ghi rõ **"700 hPa"** chứ không để trống chữ đơn vị — "700" trần trụi bị
 đọc nhầm thành 700 mét (chủ báo 11/09).
 
-### Thổi lùi — cảnh báo cứng khi gió trên 500 m vượt 10 m/s
+### Gió trên cao — theo KHUNG GIỜ, không lấy trung bình cả ngày
 
-Luật chủ 11/09, áp cho **mọi điểm**, không cần khai riêng: gió **mực 500 m hoặc
-cao hơn** trên **10 m/s** thì luôn hiện câu *"Cẩn thận bị THỔI LÙI, gió xiết ở độ
-cao 500m"*, kèm số thật của hai mực và cách xử lý — **trên 12 m/s**: không cất
-cánh dù gió mặt đất nhẹ; **10–12 m/s**: bám sườn thấp, không leo ra xa, giữ tốc
-độ, sẵn sàng hạ sớm.
+Chủ hỏi 12/09: "gió xiết trên cao là khung giờ nào hay mọi khung giờ?" — bản cũ
+lấy trung bình cả ngày rồi nói một câu cho cả ngày. Gió trên cao có nhịp riêng:
+ngày gió Bắc ở Đồi Bù nó rất mạnh từ sáng tới trưa rồi dịu, **chiều bay được**.
+Nói chung chung là đuổi khách khỏi cả buổi chiều đẹp.
 
-Đây là cái bẫy kinh điển: đứng ở bãi thấy gió 2–3 m/s nên yên tâm cất cánh, lên
-tới 500 m gặp luồng 11 m/s là dù đứng yên hoặc trôi ngược ra sau sườn — vào vùng
-khuất gió (rotor) thì hết đường ra. Xét **cả mực cao hơn** chứ không riêng 500 m:
-gió 1.000 m mạnh cũng sà xuống khi thermal khoét lên. Câu này luôn đứng **đầu**
-danh sách khuyến cáo.
+Nay xét **từng giờ** trong khung bay, gom thành đoạn:
+
+| Gió tại **+500 m trên bãi** | Mỗi giờ | Câu chữ |
+|---|---|---|
+| > 8 m/s | (ghi chú) | "khá mạnh HH–HHh — không leo quá 300m" |
+| ≥ 10 m/s | ô **vàng** | "LẮP SPEEDBAR, bám sườn thấp" |
+| > 12 m/s | ô **đỏ** | "KHUYẾN CÁO KHÔNG BAY HH–HHh" |
+
+và câu nào cũng kèm khúc dịu nếu có: *"Dịu từ 13h (còn ~5 m/s) → bay được
+13–17h"*. Khi ấy "Khung giờ đẹp nhất" cũng đổi thành khúc ấy, không còn cảnh
+"khuyến cáo không bay 07–13h" đứng ngay trên "khung giờ đẹp 07:00–17:00".
+
+**Vì sao +500 m trên bãi mạnh nghĩa là bãi cất đã mạnh** (luật chủ 12/09): bãi
+Đồi Bù ở 650 m, Khau Phạ 1.268 m — gió tầng ấy chính là gió ngay trên đầu người
+đứng cất cánh, mạnh hơn nhiều so với dưới bãi hạ; cất cánh dễ bị **thổi lùi**.
+Độ cao ghi **cả hai cách** — "+500m trên bãi (≈1.150m)" — vì ghi "mực 500m"
+trần trụi thì ở bãi 650 m bị đọc thành 500 m so với mực biển, tức dưới bãi.
+Gió **+1.000 m** chỉ nói riêng ("còn mạnh hơn — không leo cao"): nó quyết định
+leo cao được không, không quyết định cất cánh.
+
+Cùng thước ở mọi nơi: `chamGio` (màu từng giờ, khi được truyền độ cao bãi),
+bộ nhận định và điểm chuyên gia đều dùng `gioTrenBai` ở `thoi-tiet.ts`, nên
+câu chữ và màu ô không đá nhau. Giờ gió +500 m trên 12 m/s cũng **không tính
+là giờ cà vách**; giờ 10–12 thì câu cà vách nhắc luôn speedbar.
+
+**Huy hiệu ngày "BAY TỐT" cần ít nhất hai giờ xanh liền nhau.** Một giờ xanh lẻ
+loi (13/09 Đồi Bù: 15h xanh, còn lại vàng/đỏ) thì ngày là "cân nhắc" — vẫn
+thấy giờ ấy trong bảng, nhưng không hứa với khách cả ngày.
+
+### Mưa — nói theo khung và KHE KHÔ
+
+"Ngày MƯA (mưa to ~4h)" chưa đủ: chủ hỏi 12/09 "to nhất từ khung nào đến khung
+nào, bay được trong khoảng nào?". Nay `kheKhoVaMua` đếm: các **đoạn mưa** thật
+("14–18h"), đoạn **to nhất** (các giờ ≥ 70% giờ nặng nhất, kèm mm/h), và **khe
+khô** dài từ hai tiếng trở lên (một tiếng lẻ chưa đủ cất rồi hạ an toàn). Kiểu
+ngày đọc ra: *"Ngày MƯA 14–18h, to nhất 16–17h (~3,9 mm/h) — khô 07–13h: bay
+được trong khung ấy, hạ trước khi mưa tới"*, hoặc *"— không có khe khô đủ dài,
+coi như nghỉ"*. Câu "chờ mù tan — bay được từ 15:00" chỉ nói khi giờ ấy thật sự
+không đỏ; đỏ vì mưa/gió thì đổi thành *"mù tan từ 15:00 nhưng sau đó vẫn không
+bay được vì lý do khác"*.
+
+### Thư dự báo 20h — hướng gió tô đỏ
+
+Thư gửi 20h (mục 5i) tô **hướng gió** đỏ đậm trên nền hồng, viết HOA ("Gió
+**BẮC** 4,1 m/s") — chủ 12/09: "gửi mail báo gió thì phải highlight hướng gió".
+Bản chữ thuần (hộp thư không hiện HTML) viết hoa hướng gió.
 
 ## 5f2. Cà vách (ridge soaring) — nguồn nâng THỨ HAI
 
