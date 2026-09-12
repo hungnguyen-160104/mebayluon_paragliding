@@ -377,6 +377,56 @@ async function inQuaHopThoai(html: string): Promise<void> {
   window.setTimeout(() => frame.parentNode && document.body.removeChild(frame), 60_000);
 }
 
+/** Thu ảnh về `rong` điểm bằng cách lấy ĐIỂM ĐẬM NHẤT trong mỗi ô k×k, rồi cắt dòng trắng thừa ở đáy. */
+function gopDamNhat(src: HTMLCanvasElement, rong: number): HTMLCanvasElement {
+  const k = Math.max(1, Math.round(src.width / rong));
+  const w = rong;
+  const h = Math.max(1, Math.floor(src.height / k));
+  const gs = src.getContext("2d", { willReadFrequently: true });
+  const ra = document.createElement("canvas");
+  ra.width = w;
+  ra.height = h;
+  const gr = ra.getContext("2d")!;
+  if (!gs) {
+    gr.fillStyle = "#fff";
+    gr.fillRect(0, 0, w, h);
+    gr.drawImage(src, 0, 0, w, h);
+    return ra;
+  }
+  const px = gs.getImageData(0, 0, src.width, src.height).data;
+  const out = gr.createImageData(w, h);
+  const sw = src.width;
+  let dongCuoiCoMuc = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let toi = 255;
+      for (let dy = 0; dy < k; dy++) {
+        for (let dx = 0; dx < k; dx++) {
+          const i = ((y * k + dy) * sw + (x * k + dx)) * 4;
+          const a = px[i + 3] / 255;
+          const sang = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) * a + 255 * (1 - a);
+          if (sang < toi) toi = sang;
+        }
+      }
+      const o = (y * w + x) * 4;
+      out.data[o] = out.data[o + 1] = out.data[o + 2] = toi;
+      out.data[o + 3] = 255;
+      if (toi < 160) dongCuoiCoMuc = y;
+    }
+  }
+  gr.putImageData(out, 0, 0);
+  /** Cắt phần trắng dưới đáy (giữ 24 dòng đệm) — bớt dữ liệu gửi qua Bluetooth, bớt giấy. */
+  const hCat = Math.min(h, dongCuoiCoMuc + 24);
+  if (hCat < h) {
+    const cat = document.createElement("canvas");
+    cat.width = w;
+    cat.height = hCat;
+    cat.getContext("2d")!.drawImage(ra, 0, 0, w, hCat, 0, 0, w, hCat);
+    return cat;
+  }
+  return ra;
+}
+
 /** Máy in "thẳng" nào đang ghép: Bluetooth (máy in di động — ưu tiên) hay USB. */
 export function mayInThangDaGhep(): "bluetooth" | "usb" | null {
   if (trinhDuyetCoBluetooth() && mayInBluetoothDaGhep()) return "bluetooth";
@@ -401,18 +451,16 @@ export async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb"): 
     const lien = Array.from(doc.querySelectorAll<HTMLElement>(".ve"));
     const anh: HTMLCanvasElement[] = [];
     for (const el of lien) {
-      const c = await html2canvas(el, { scale: 1, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
-      if (c.width !== RONG_CHAM) {
-        /** html2canvas đôi khi làm tròn — vẽ lại đúng khổ. */
-        const chuan = document.createElement("canvas");
-        chuan.width = RONG_CHAM;
-        chuan.height = Math.round((c.height * RONG_CHAM) / c.width);
-        const g = chuan.getContext("2d")!;
-        g.fillStyle = "#fff";
-        g.fillRect(0, 0, chuan.width, chuan.height);
-        g.drawImage(c, 0, 0, chuan.width, chuan.height);
-        anh.push(chuan);
-      } else anh.push(c);
+      /**
+       * VẼ GẤP ĐÔI (1152 điểm) rồi GỘP 2×2 LẤY ĐIỂM ĐẬM NHẤT về 576 điểm.
+       *
+       * Chủ 12/09: vé in "mất nét, mờ". Vẽ thẳng ở 576 điểm thì chữ 9–10px chỉ
+       * còn nét rộng một điểm ảnh, lại nhoè xám vì khử răng cưa; cắt ngưỡng
+       * đen/trắng xong là nét đứt khúc, in ra mờ. Vẽ 2× thì nét có 2–3 điểm,
+       * gộp lấy điểm đậm nhất giữ trọn nét, không nhoè — chữ ra đen và liền.
+       */
+      const c = await html2canvas(el, { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
+      anh.push(gopDamNhat(c, RONG_CHAM));
     }
     if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
     else await inAnhQuaUsb(anh);

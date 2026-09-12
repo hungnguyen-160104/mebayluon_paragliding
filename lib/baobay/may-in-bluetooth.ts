@@ -140,24 +140,37 @@ const ESC_INIT = new Uint8Array([0x1b, 0x40]);
 const ESC_CAT = new Uint8Array([0x1b, 0x64, 0x04, 0x1d, 0x56, 0x01]);
 
 /**
- * GỬI DỮ LIỆU THEO KHÚC, tự co khúc khi máy từ chối: bắt đầu 512 byte (MTU lớn
- * của Android mới), lỗi thì 244 → 100 → 20 (MTU mặc định BLE). Ghi không xác
- * nhận thì nghỉ 15ms giữa các khúc cho bộ đệm máy in kịp thở.
+ * GỬI DỮ LIỆU THEO KHÚC.
+ *
+ * Chủ 12/09: "in được nhưng quá chậm". Ghi CÓ xác nhận thì mỗi khúc phải đợi
+ * máy in trả lời (một vòng BLE ~50–100ms) — 50 KB một liên chia 512 byte là
+ * 100 vòng, 5–10 giây. Nay ưu tiên ghi KHÔNG xác nhận (máy in nào cũng nhận)
+ * với nhịp nghỉ 6ms cho bộ đệm kịp thở, nhanh gấp 3–5 lần; khúc nào bị từ
+ * chối thì gửi lại đúng khúc đó bằng đường có xác nhận. Cỡ khúc tự co
+ * 512 → 244 → 100 → 20 khi máy báo quá dài (MTU nhỏ).
  */
 async function guiKhuc(dt: DacTinh, data: Uint8Array, baoTienDo?: (phan: number) => void): Promise<void> {
   const cac = [512, 244, 100, 20];
   let ci = 0;
   let i = 0;
-  const coXacNhan = Boolean(dt.properties.write);
+  const khongXN = Boolean(dt.properties.writeWithoutResponse && dt.writeValueWithoutResponse);
+  const coXN = Boolean(dt.properties.write && dt.writeValueWithResponse);
   while (i < data.length) {
     const khuc = cac[ci];
     const phan = data.slice(i, i + khuc);
     try {
-      if (coXacNhan && dt.writeValueWithResponse) await dt.writeValueWithResponse(phan);
-      else if (dt.writeValueWithoutResponse) await dt.writeValueWithoutResponse(phan);
+      if (khongXN) {
+        try {
+          await dt.writeValueWithoutResponse!(phan);
+          await new Promise((r) => setTimeout(r, 6));
+        } catch (e1) {
+          /** Bộ đệm đầy / máy bận: thử lại đúng khúc này qua đường có xác nhận (chậm nhưng chắc). */
+          if (coXN) await dt.writeValueWithResponse!(phan);
+          else throw e1;
+        }
+      } else if (coXN) await dt.writeValueWithResponse!(phan);
       else await dt.writeValue(phan);
       i += khuc;
-      if (!coXacNhan) await new Promise((r) => setTimeout(r, 15));
       baoTienDo?.(i / data.length);
     } catch (e) {
       if (ci < cac.length - 1) {
@@ -179,6 +192,8 @@ export async function inAnhQuaBluetooth(anh: HTMLCanvasElement[], baoTienDo?: (c
       if (c.width !== RONG_CHAM) throw new Error(`Ảnh vé phải rộng ${RONG_CHAM} chấm (đang ${c.width})`);
       await guiKhuc(dt, anhSangEscPos(c), (p) => baoTienDo?.(`Đang in liên ${k + 1}/${anh.length} · ${Math.round(p * 100)}%`));
       await guiKhuc(dt, ESC_CAT);
+      /** Cho máy cắt xong rồi mới đổ liên sau — dồn liền là bộ đệm tràn, mất dòng. */
+      await new Promise((r) => setTimeout(r, 250));
     }
   } finally {
     /** Giữ kết nối cho lần in sau trong cùng phiên — nối lại BLE mất 1–3 giây mỗi lần. */
