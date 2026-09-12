@@ -37,7 +37,8 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
-import { printBookingTickets } from "./TicketPrint";
+import { coInVe, printBookingTickets } from "./TicketPrint";
+import { MayInUsb } from "./MayInUsb";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
@@ -1082,7 +1083,7 @@ function ReprintTicket({
         action: "ticket-print",
         reason: reason.trim(),
       });
-      printBookingTickets(booking, spot);
+      void printBookingTickets(booking, spot);
       setOpen(false);
       setReason("");
       onDone();
@@ -5132,7 +5133,8 @@ export function BookingTodayBanner({
         onClick={() => {
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
-            printBookingTickets(b, spot);
+            /** In thẳng USB nếu đã ghép, không thì hộp thoại in; điểm không in vé thì hàm tự bỏ qua. */
+            void printBookingTickets(b, spot);
             /** Lần in ĐẦU không cần lý do — chỉ ghi vết ai in, lúc nào. */
             void apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" }).catch(
               () => {},
@@ -5143,7 +5145,9 @@ export function BookingTodayBanner({
         title={
           b.ticketIssued
             ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
-            : `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} vé, ` : ""}mỗi vé 3 liên.`
+            : coInVe(spot)
+              ? `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} bộ, ` : ""}mỗi bộ 3 liên: vé bay · vé xe · vé đồ uống.`
+              : "Đánh dấu đã xuất vé (điểm này chưa in vé bằng máy)."
         }
       >
         {b.noTicketFlight ? (
@@ -5157,11 +5161,13 @@ export function BookingTodayBanner({
             <span>{b.ticketIssuedBy ? "🎫 Đã x.vé" : "🎫 Đã xuất vé"}</span>
             <By name={b.ticketIssuedBy} />
           </>
-        ) : (
+        ) : coInVe(spot) ? (
           "🖨 IN VÉ"
+        ) : (
+          "🎫 Xuất vé"
         )}
       </Button>
-      {b.ticketIssued && !b.noTicketFlight && <ReprintTicket spot={spot} booking={b} onDone={load} />}
+      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && <ReprintTicket spot={spot} booking={b} onDone={load} />}
     </>
   );
   const renderFlownButton = (b: BookingDTO) => (
@@ -7951,6 +7957,8 @@ export function BookingCard({
       <div className="@container mt-4 @3xl:mt-0">
         <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-700">
           <span>🗓 Lịch bay & booking sắp tới ({upcoming.length})</span>
+          {/* Quầy in vé (Khau Phạ, Sa Pa): ghép máy in USB một lần, nút IN VÉ in thẳng. */}
+          {coInVe(spot) && <MayInUsb />}
           {/**
            * BẤM ĐIỂM NÀO HIỆN ĐIỂM ĐÓ — bấm được cả ba cùng lúc. Người chỉ làm
            * một điểm không thấy hàng nút này, danh sách vốn đã đúng điểm của họ.

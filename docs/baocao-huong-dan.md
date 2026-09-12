@@ -325,6 +325,47 @@ khỏi lục email.
 **Lịch KHÔNG khoá việc báo cáo**: hôm nghỉ mà bay tăng cường đột xuất vẫn nhập
 báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 
+## In vé 3 liên — Khau Phạ và Sa Pa (máy in nhiệt Gainscha B300, khổ 80mm)
+
+Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
+bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking in đủ bộ rồi tự tích
+"đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do. Điểm khác (Hà Nội)
+nút vẫn chỉ tích "đã xuất vé", không in.
+
+**Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**
+và **#23.2**, mỗi số ba liên:
+
+| Liên | Nội dung |
+|---|---|
+| **1 — VÉ BAY DÙ** | ngày bay · số thứ tự · tên khách (booking OTA có tên từng người thì in đúng tên từng người) · dịch vụ đi kèm (cam 360, flycam, cờ đỏ, hoàng hôn, bay kéo cờ) · giờ in vé · **hai mã QR xin đánh giá** (Google Maps của bãi, Tripadvisor của tour) |
+| **2 — VÉ XE TRUNG CHUYỂN** | ngày bay · tên khách · số thứ tự · ngày giờ xuất vé |
+| **3 — ĐỒ UỐNG MIỄN PHÍ** | tên khách · số thứ tự · ngày bay · danh mục: cà phê (nâu/đen), trà chanh/trà đào, nước lọc & đồ uống đóng chai, bia/nước ngọt |
+
+Liên nào cũng có dòng *"Vé có giá trị tương đương tiền mặt — không làm mất vé,
+không cấp lại vé."* Mã QR sinh tại chỗ (thư viện `qrcode`, ra SVG), không tải
+ảnh ngoài — quầy ở đèo hay mất mạng mà vé thì phải in được.
+
+### Nối máy in — hai đường, cùng một mẫu vé
+
+Trang web **không cài được driver** lên máy tính (không trình duyệt nào cho
+phép). Nên có hai đường:
+
+1. **Hộp thoại in của trình duyệt** (mặc định). Cài driver Gainscha B300 lên
+   máy quầy một lần (Windows/macOS, tải từ gainscha.com), chọn máy in trong hộp
+   thoại, tích "không hỏi lại". Khổ giấy đã khai `@page 80mm`, mỗi liên một
+   trang nên máy cắt sau mỗi liên.
+2. **In thẳng qua USB** — không cần driver, chạy được trên máy tính bảng
+   Android + Chrome. Bấm **🖨 Ghép máy in USB** ở đầu danh sách booking, chọn
+   B300 trong hộp hiện ra; từ đó nút IN VÉ đẩy thẳng ra máy (ESC/POS, vé chụp
+   thành ảnh 576 chấm rồi gửi từng liên, cắt sau mỗi liên — xem
+   `lib/baobay/may-in-usb.ts`). In thẳng hỏng thì tự rơi về hộp thoại in.
+   Giới hạn thật: chỉ Chrome/Edge có WebUSB; **Windows** thường bị driver của
+   hãng giữ cổng USB nên phải gán WinUSB cho máy in bằng công cụ **Zadig** một
+   lần; Bluetooth của B300 là kiểu SPP cổ, trình duyệt không nối được.
+
+Xem mẫu vé không cần máy in: `npx tsx scripts/baocao/xem-mau-ve.ts mau-ve.html`
+rồi mở tệp bằng trình duyệt. Phép thử: `scripts/baocao/test-ve-in.ts`.
+
 ## Quản lý nhân sự (admin)
 
 Vào **`/admin/baocao`** (menu "Nhân sự báo bay", cần đăng nhập quản trị website):
