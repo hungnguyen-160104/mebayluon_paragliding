@@ -130,4 +130,5 @@ media-inbox/
 
 # Thu muc build kiem tra (xem distDir trong next.config.mjs)
 .next-buildcheck/
+.next-verify/
 .og-cards-tmp/
