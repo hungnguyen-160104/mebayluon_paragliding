@@ -45,8 +45,10 @@ export async function GET(req: Request) {
    */
   const quanLy =
     auth.viaAdmin || ["dispatcher", "counter", "accountant", "admin"].some((r) => wearsRole(auth, r as never));
+  /** ?goc=phi-cong: đang ở trang phi công → chỉ lệnh của chuyến MÌNH BAY. */
+  const gocPhiCong = url.searchParams.get("goc") === "phi-cong";
   const [items, staff, lookup] = await Promise.all([
-    listFlycamCancels(spot, date, quanLy ? undefined : auth.username),
+    listFlycamCancels(spot, date, quanLy ? undefined : { username: auth.username, chiChuyenMinhBay: gocPhiCong }),
     quanLy ? listSpotStaffAll(spot) : Promise.resolve([] as Awaited<ReturnType<typeof listSpotStaffAll>>),
     code ? lookupTicketCode(spot, code) : Promise.resolve(null),
   ]);

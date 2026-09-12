@@ -68,7 +68,9 @@ export function FlycamCancelCard({
 
   const load = useCallback(() => {
     if (!spot) return;
-    apiGet<{ items: FlycamCancelDTO[]; pilots: Pilot[] }>(`/api/baocao/flycam-cancel?spot=${spot}&date=${date}`)
+    apiGet<{ items: FlycamCancelDTO[]; pilots: Pilot[] }>(
+      `/api/baocao/flycam-cancel?spot=${spot}&date=${date}${selfPilot ? "&goc=phi-cong" : ""}`,
+    )
       .then((r) => {
         setItems(r.items);
         setPilots(r.pilots);
@@ -76,7 +78,7 @@ export function FlycamCancelCard({
       .catch(() => {
         /* chưa có lệnh nào thì thôi */
       });
-  }, [spot, date]);
+  }, [spot, date, selfPilot]);
 
   useEffect(() => {
     load();

@@ -11904,10 +11904,23 @@ export async function payFlycamRefund(
  * Chủ 12/09: phi công KHÔNG được thấy lệnh huỷ/hoàn của phi công khác — trang
  * phi công từng bày cả "PC A Mặc · chờ kế toán chuyển 400k" cho mọi phi công.
  */
-export async function listFlycamCancels(spotRaw: string, date: string, chiCuaNguoi?: string): Promise<FlycamCancelDTO[]> {
+export async function listFlycamCancels(
+  spotRaw: string,
+  date: string,
+  chiCuaNguoi?: { username: string; /** Trang phi công: chỉ lệnh mà mình là NGƯỜI BAY, kể cả do người khác lập hộ. */ chiChuyenMinhBay?: boolean },
+): Promise<FlycamCancelDTO[]> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
-  const rieng = chiCuaNguoi ? { $or: [{ pilotUsername: chiCuaNguoi }, { createdByUsername: chiCuaNguoi }] } : {};
+  /**
+   * Trang phi công (chiChuyenMinhBay): lệnh Khang lập hộ A Mặc lúc cầm flycam
+   * KHÔNG hiện ở trang phi công của Khang — tiền ấy là của chuyến A Mặc (chủ
+   * 12/09). Trang camera man thì hiện lệnh do mình lập, để biết đã hoàn chưa.
+   */
+  const rieng = chiCuaNguoi
+    ? chiCuaNguoi.chiChuyenMinhBay
+      ? { pilotUsername: chiCuaNguoi.username }
+      : { $or: [{ pilotUsername: chiCuaNguoi.username }, { createdByUsername: chiCuaNguoi.username }] }
+    : {};
   /** Ngày đang xem + mọi lệnh CÒN CHỜ của các ngày trước — chờ mãi không ai thấy là mất tiền của khách. */
   const docs = await BaobayFlycamCancel.find({ spot, $and: [{ $or: [{ date }, { status: "pending" }] }, rieng] })
     .sort({ createdAt: -1 })
