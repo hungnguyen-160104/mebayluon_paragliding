@@ -56,7 +56,8 @@ const REVIEW_LINKS: Record<string, { google: string; tripadvisor: string; tripad
     tripadvisor:
       "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34108763-Mu_Cang_Chai_Paragliding_Experience_with_Free_Accommodation-Cao_Pha_Yen_Bai_Prov.html",
     tripadvisorPpg:
-      "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34437796-Paramotor_Paragliding_Experience_in_Mu_Cang_Chai-Cao_Pha_Yen_Bai_Province.html",
+      /** Chủ 12/09: link VIẾT ĐÁNH GIÁ thẳng cho dịch vụ paramotor (không phải trang tour). */
+      "https://www.tripadvisor.com/UserReviewEdit-g737052-d34377924-Paramotor_Paragliding_Experience_in_Mu_Cang_Chai_Lao_Cai_Province-Lao_Cai_Lao_Cai_Province.html",
   },
   sapa: {
     google: SAPA_TAKEOFF_MAP_URL,
@@ -197,6 +198,11 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string): str
 }
 
 /** LIÊN 2 — khách giữ: đặt vé + dịch vụ + mã booking + QR đánh giá + điều lưu ý. */
+/**
+ * LIÊN 2 — khách giữ. KHÔNG in dòng "vé = tiền mặt / mất không cấp lại" (chủ
+ * 12/09): liên này khách mang về làm kỷ niệm và quét QR, không phải liên đổi
+ * dịch vụ nên doạ mất vé là thừa. Ba liên kia vẫn giữ.
+ */
 function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string): string {
   const extras = extrasOf(b);
   const ma = (b.bookingCode || "").trim();
@@ -219,7 +225,6 @@ function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: 
       <figure><div class="qr-anh">${qr.google}</div><figcaption>Google</figcaption></figure>
       <figure><div class="qr-anh">${qr.tripadvisor}</div><figcaption>Tripadvisor ${b.flightKind === "ppg" ? "PPG" : "PG"}</figcaption></figure>
     </div>
-    ${chan()}
   </section>`;
 }
 

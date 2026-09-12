@@ -343,8 +343,10 @@ và **#23.2**, mỗi số BỐN liên:
 | **4 — VÉ XE TRUNG CHUYỂN** | ngày bay · tên khách · số thứ tự · ngày giờ xuất vé |
 
 Liên nào cũng có logo (bản nét đen trắng `public/logo-mbl-in.png`), biểu tượng
-của liên sát số thứ tự (dù · dù · cốc · xe), và hai dòng *"Vé có giá trị thanh
-toán tương đương tiền mặt. / Mất vé không cấp lại."* Không ô nào được xuống
+của liên sát số thứ tự (dù · dù · cốc · xe). Liên 1, 3, 4 có hai dòng *"Vé có
+giá trị thanh toán tương đương tiền mặt. / Mất vé không cấp lại."* — liên 2
+khách giữ thì không (chủ 12/09). QR Tripadvisor PPG ở Khau Phạ trỏ thẳng
+vào trang **viết đánh giá** của dịch vụ paramotor. Không ô nào được xuống
 dòng — vé nhiệt tính từng mm chiều dài; ô dài thì co chữ. Mã QR sinh tại chỗ
 (thư viện `qrcode`, ra SVG), không tải ảnh ngoài — quầy ở đèo hay mất mạng mà vé
 thì phải in được.
