@@ -34,6 +34,7 @@ import {
   type CafeDiscountId,
   type CafeEntry,
   type CafeMenuItem,
+  quayDuocPhep,
 } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { buildVietQrPayload, PAY_ACCOUNT_CAFE_HOMESTAY, toAsciiNote } from "@/lib/vietqr";
@@ -224,9 +225,12 @@ export default function CafePosPage() {
     try {
       saved = localStorage.getItem(COUNTER_KEY);
     } catch { /* máy không cho đọc thì rơi về mặc định theo vai */ }
-    if (saved === "bai-ha" || saved === "bai-cat") setCounter(saved);
-    else if (user) setCounter(quayMacDinh(user.role, user.extraRoles));
+    /** Quầy đã nhớ chỉ được dùng nếu người này CÒN được bán ở đó (chủ 12/09). */
+    const phep = quayDuocPhep(user?.cafeCounters);
+    if ((saved === "bai-ha" || saved === "bai-cat") && phep.includes(saved)) setCounter(saved);
+    else if (user) setCounter(quayMacDinh(user.role, user.extraRoles, user.cafeCounters));
   }, [user]);
+  const quayHien = quayDuocPhep(user?.cafeCounters);
   const pickCounter = (c: CafeCounterId) => {
     setCounter(c);
     try {
@@ -670,7 +674,7 @@ export default function CafePosPage() {
 
       {/* ---- Trạng thái mạng + hàng đợi ---- */}
       <div className="flex flex-wrap items-center gap-2">
-        {CAFE_COUNTERS.map((c) => (
+        {CAFE_COUNTERS.filter((c) => quayHien.includes(c.id)).map((c) => (
           <button
             key={c.id}
             type="button"

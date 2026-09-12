@@ -47,6 +47,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     pilotKind: ["pg", "ppg", "both"].includes(body?.pilotKind) ? body.pilotKind : undefined,
     // Kiêm nhiệm: gửi cả mảng, máy chủ tự lọc vai không hợp lệ và bỏ vai chính
     extraRoles: Array.isArray(body?.extraRoles) ? body.extraRoles.map(String) : undefined,
+    // Quầy cafe được bán: [] = cả hai (chủ 12/09)
+    cafeCounters: Array.isArray(body?.cafeCounters) ? body.cafeCounters.map(String) : undefined,
     newPassword,
   }, auth);
 

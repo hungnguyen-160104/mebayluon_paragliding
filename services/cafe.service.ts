@@ -18,12 +18,15 @@ import {
   type CafeMenuItem,
   type CafeStockItem,
   type CafeStockKind,
+  quayDuocPhep,
+  type CafeCounterId,
 } from "@/lib/baobay/cafe";
 import { isDateKey, toDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import { wearsRole } from "@/lib/baobay/roles";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type { CafeReportDTO, CafeStockRequestDTO } from "@/lib/baobay/types";
 import { connectDB } from "@/lib/mongodb";
+import { BaobayAccount } from "@/models/BaobayAccount.model";
 import { CafeDailyReport } from "@/models/CafeDailyReport.model";
 import { CafeProduct } from "@/models/CafeProduct.model";
 import { CafeSale } from "@/models/CafeSale.model";
@@ -45,17 +48,31 @@ const FREE_IDS = new Set(CAFE_MENU.filter((m) => m.freeTicket).map((m) => m.id))
  * nhiêu lần cũng chỉ một bản ghi — mạng chập chờn không đẻ ra tiền đôi.
  * Trả về danh sách clientId đã ghi nhận để máy xoá khỏi hàng đợi.
  */
+/**
+ * QUẦY ĐƯỢC PHÉP của người đang đăng nhập (admin đặt trên tài khoản, chủ 12/09).
+ * Người chỉ được một quầy mà máy gửi phiếu quầy kia (máy cũ còn nhớ lựa chọn
+ * cũ) thì ÉP về quầy được phép — Duyên 12/09 bán nhầm 17 phiếu vào bãi hạ.
+ */
+async function quayEpTheoTaiKhoan(session: BaobaySession): Promise<CafeCounterId | null> {
+  if (!mongoose.Types.ObjectId.isValid(session.id)) return null;
+  const acc = await BaobayAccount.findById(session.id).select("cafeCounters").lean<any>();
+  const phep = quayDuocPhep(acc?.cafeCounters);
+  return phep.length === 1 ? phep[0] : null;
+}
+
 export async function syncCafeEntries(
   session: BaobaySession,
   entries: CafeEntry[],
 ): Promise<{ acked: string[] }> {
   await connectDB();
   const acked: string[] = [];
+  const quayEp = await quayEpTheoTaiKhoan(session);
 
-  for (const e of entries.slice(0, 200)) {
-    const clientId = String(e?.clientId ?? "").trim();
+  for (const goc of entries.slice(0, 200)) {
+    const clientId = String(goc?.clientId ?? "").trim();
     if (!/^[A-Za-z0-9-]{8,64}$/.test(clientId)) continue;
-    if (!COUNTER_IDS.has(String(e?.counter))) continue;
+    if (!COUNTER_IDS.has(String(goc?.counter))) continue;
+    const e: CafeEntry = quayEp && goc.counter !== quayEp ? { ...goc, counter: quayEp } : goc;
     const kind = e?.kind === "expense" ? "expense" : "sale";
     const direction = kind === "expense" && e?.direction === "thu" ? "thu" : "chi";
 
@@ -443,7 +460,8 @@ export async function upsertCafeReport(
     else if (!r.qty) warnings.push(`Hàng “${r.name}” chưa ghi số lượng`);
   }
 
-  const counter = COUNTER_IDS.has(input.counter) ? input.counter : CAFE_COUNTERS[0].id;
+  const quayEp = await quayEpTheoTaiKhoan(session);
+  const counter = quayEp ?? (COUNTER_IDS.has(input.counter) ? input.counter : CAFE_COUNTERS[0].id);
 
   const doc = await CafeDailyReport.findOneAndUpdate(
     { accountId: new mongoose.Types.ObjectId(session.id), date: input.date, spot },

@@ -156,6 +156,8 @@ export type BaobayUserDTO = {
   pilotKind?: "pg" | "ppg" | "both";
   /** Vai trò kiêm nhiệm — hiện thêm lối vào trang của vai đó trên thanh điều hướng. */
   extraRoles?: BaobayRole[];
+  /** Quầy cafe được bán ("bai-cat"/"bai-ha"); trống = cả hai. Xem quayDuocPhep(). */
+  cafeCounters?: string[];
   mustChangePassword: boolean;
 };
 
@@ -877,6 +879,8 @@ export type BaobayAccountDTO = {
   pilotKind: "pg" | "ppg" | "both";
   /** Vai KIÊM NHIỆM ngoài vai chính — người này thấy đủ lối vào các trang đó. */
   extraRoles: BaobayRole[];
+  /** Quầy cafe được bán; trống = cả hai. */
+  cafeCounters: string[];
   isActive: boolean;
   mustChangePassword: boolean;
   lastLoginAt?: string;

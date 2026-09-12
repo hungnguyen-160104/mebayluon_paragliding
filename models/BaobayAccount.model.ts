@@ -54,6 +54,12 @@ export interface IBaobayAccount {
    * đăng xuất đăng nhập hai lần mỗi ngày. Vai chính vẫn là `role`.
    */
   extraRoles?: BaobayRole[];
+  /**
+   * QUẦY CAFE ĐƯỢC BÁN (chủ 12/09): "bai-cat" / "bai-ha". Trống = cả hai.
+   * Duyên, Mai Hoàn chỉ đứng bãi cất — máy bán và báo cáo quầy chỉ hiện quầy
+   * này, phiếu gửi nhầm quầy khác bị máy chủ ép về quầy được phép.
+   */
+  cafeCounters?: string[];
   isActive: boolean;
   /** Số lần nhập sai mật khẩu LIÊN TIẾP; đăng nhập đúng là về 0. */
   failedLogins: number;
@@ -86,6 +92,7 @@ const BaobayAccountSchema = new Schema<IBaobayAccount>(
     spots: { type: [String], default: [DEFAULT_SPOT] },
     pilotKind: { type: String, enum: ["pg", "ppg", "both"], default: "pg" },
     extraRoles: { type: [String], enum: BAOBAY_ROLES, default: [] },
+    cafeCounters: { type: [String], default: [] },
     isActive: { type: Boolean, default: true, index: true },
     failedLogins: { type: Number, default: 0 },
     lockedUntil: Date,

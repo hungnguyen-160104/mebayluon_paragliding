@@ -35,9 +35,23 @@ export type CafeCounterId = (typeof CAFE_COUNTERS)[number]["id"];
  *
  * Chỉ là ĐIỂM XUẤT PHÁT: bấm đổi quầy vẫn được, và lựa chọn ấy được nhớ lại.
  */
-export function quayMacDinh(role?: string, extraRoles?: readonly string[]): CafeCounterId {
+export function quayMacDinh(role?: string, extraRoles?: readonly string[], cafeCounters?: readonly string[] | null): CafeCounterId {
+  /** Chỉ được một quầy thì khỏi đoán theo vai (chủ 12/09). */
+  const phep = quayDuocPhep(cafeCounters);
+  if (phep.length === 1) return phep[0];
   const vai = [role, ...(extraRoles ?? [])].filter(Boolean) as string[];
   return vai.some((v) => v === "dispatcher" || v === "counter") ? "bai-cat" : "bai-ha";
+}
+
+/**
+ * QUẦY ĐƯỢC PHÉP của một người — theo `cafeCounters` admin đặt trên tài khoản
+ * (chủ 12/09: Duyên và Mai Hoàn chỉ bán ở bãi cất, tạm ẩn bãi hạ với họ).
+ * Trống hoặc toàn giá trị lạ = cả hai quầy như trước.
+ */
+export function quayDuocPhep(cafeCounters?: readonly string[] | null): CafeCounterId[] {
+  const ids = CAFE_COUNTERS.map((c) => c.id) as CafeCounterId[];
+  const chon = ids.filter((id) => (cafeCounters ?? []).includes(id));
+  return chon.length ? chon : ids;
 }
 
 export type CafeMenuItem = {

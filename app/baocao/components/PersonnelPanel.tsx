@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { authHeader } from "@/lib/auth";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
+import { CAFE_COUNTERS, quayDuocPhep } from "@/lib/baobay/cafe";
 import { BAOBAY_ROLES, ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
 
 import { MoneyOrderCard } from "./MoneyOrderCard";
@@ -1375,6 +1376,42 @@ function AccountRow({
             );
           })}
         </div>
+
+        {/**
+         * QUẦY CAFE ĐƯỢC BÁN (chủ 12/09): Duyên, Mai Hoàn chỉ đứng bãi cất nên
+         * chỉ bật "Bãi cất" — máy bán và báo cáo quầy của họ ẩn bãi hạ, phiếu
+         * gửi nhầm bị máy chủ ép về bãi cất. Cả hai sáng = bán được cả hai
+         * (mặc định). Không cho tắt hết: phải còn ít nhất một quầy.
+         */}
+        {[account.role, ...(account.extraRoles ?? [])].some((r) => r === "cafe" || r === "counter" || r === "dispatcher") && (
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">cafe</span>
+            {CAFE_COUNTERS.map((c) => {
+              const phep = quayDuocPhep(account.cafeCounters);
+              const on = phep.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={busy || (on && phep.length === 1)}
+                  title={on && phep.length === 1 ? "Phải còn ít nhất một quầy" : `Cho bán ở ${c.name}`}
+                  onClick={() => {
+                    const next = on ? phep.filter((x) => x !== c.id) : [...phep, c.id];
+                    // Đủ cả hai thì lưu rỗng = mặc định cả hai
+                    patch({ cafeCounters: next.length >= CAFE_COUNTERS.length ? [] : next });
+                  }}
+                  className={
+                    on
+                      ? "rounded-full bg-amber-600 px-2 py-0.5 text-[11px] font-semibold text-white"
+                      : "rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-500"
+                  }
+                >
+                  {c.id === "bai-cat" ? "Bãi cất" : "Bãi hạ"}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Phi công chia PG / PPG / cả hai — trang phi công chỉ hiện khối PPG cho người có PPG */}
         {account.role === "pilot" && (

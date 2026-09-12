@@ -687,6 +687,8 @@ export type UpdateAccountInput = {
   pilotKind?: "pg" | "ppg" | "both";
   /** Vai kiêm nhiệm — mảng vai trò ngoài vai chính. */
   extraRoles?: string[];
+  /** Quầy cafe được bán ("bai-cat"/"bai-ha"); [] = cả hai. */
+  cafeCounters?: string[];
   /** Quản trị đặt lại mật khẩu — người dùng sẽ bị buộc đổi ở lần đăng nhập sau. */
   newPassword?: string;
 };
@@ -766,6 +768,10 @@ export async function updateAccount(
       (r) => isBaobayRole(r) && r !== "admin" && r !== mainRole,
     );
     set.extraRoles = list;
+  }
+  if (patch.cafeCounters !== undefined) {
+    const hopLe = ["bai-cat", "bai-ha"];
+    set.cafeCounters = [...new Set(patch.cafeCounters.map(String))].filter((c) => hopLe.includes(c));
   }
   if (patch.note !== undefined) set.note = patch.note.trim();
   if (patch.isActive !== undefined) set.isActive = patch.isActive;
@@ -951,6 +957,7 @@ function toAccountDTO(doc: AccountDoc): BaobayAccountDTO {
     spots: normalizeSpotList(doc.spots).length ? normalizeSpotList(doc.spots) : [DEFAULT_SPOT],
     pilotKind: doc.pilotKind === "ppg" ? "ppg" : doc.pilotKind === "both" ? "both" : "pg",
     extraRoles: ((doc as any).extraRoles ?? []).filter((r: string) => isBaobayRole(r)) as BaobayRole[],
+    cafeCounters: Array.isArray((doc as any).cafeCounters) ? (doc as any).cafeCounters.map(String) : [],
     isActive: doc.isActive !== false,
     mustChangePassword: Boolean(doc.mustChangePassword),
     lastLoginAt: doc.lastLoginAt ? new Date(doc.lastLoginAt).toISOString() : undefined,

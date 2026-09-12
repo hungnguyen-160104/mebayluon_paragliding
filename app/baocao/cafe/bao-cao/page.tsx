@@ -24,6 +24,7 @@ import {
   formatStockUnits,
   type CafeCounterId,
   type CafeMenuItem,
+  quayDuocPhep,
   quayMacDinh,
 } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
@@ -158,6 +159,8 @@ export default function CafeReportPage() {
   /** Tách ra hai biến đơn giản để đưa vào danh sách phụ thuộc mà không phải nhớ cả đối tượng `user`. */
   const vaiChinh = user?.role;
   const vaiKiem = user?.extraRoles;
+  /** Quầy được bán theo tài khoản (chủ 12/09: Duyên, Hoàn chỉ bãi cất). */
+  const quayPhep = user?.cafeCounters;
   const [sales, setSales] = useState<DaySale[]>([]);
   /** Bảng ngày đầy đủ — dựng khối "đơn bán hàng trong ngày" và phiếu nước từng người. */
   const [day, setDay] = useState<CafeDay | null>(null);
@@ -205,7 +208,10 @@ export default function CafeReportPage() {
         setForm(
           res.report
             ? {
-                counter: (res.report.counter as CafeCounterId) || quayMacDinh(vaiChinh, vaiKiem),
+                counter:
+                  quayDuocPhep(quayPhep).length === 1
+                    ? quayMacDinh(vaiChinh, vaiKiem, quayPhep)
+                    : (res.report.counter as CafeCounterId) || quayMacDinh(vaiChinh, vaiKiem, quayPhep),
                 cashReceived: res.report.cashReceived,
                 transferReceived: res.report.transferReceived,
                 expenses: toExpenseRows(res.report.expenses),
@@ -218,7 +224,7 @@ export default function CafeReportPage() {
                * "Quầy bãi cất"; chọn nhầm quầy thì ô "Tổng bán trong ca" ra 0đ
                * và người ta tưởng máy mất tiền.
                */
-              { ...EMPTY_FORM, counter: quayMacDinh(vaiChinh, vaiKiem) },
+              { ...EMPTY_FORM, counter: quayMacDinh(vaiChinh, vaiKiem, quayPhep) },
         );
       } catch (err: any) {
         setError(err?.message || "Không tải được số liệu ngày này");
@@ -226,7 +232,7 @@ export default function CafeReportPage() {
         setLoadingDay(false);
       }
     },
-    [spot, vaiChinh, vaiKiem],
+    [spot, vaiChinh, vaiKiem, quayPhep],
   );
 
   const loadPending = useCallback(async () => {
@@ -383,7 +389,7 @@ export default function CafeReportPage() {
           >
             <Field label="Quầy trực" group>
               <div className="flex gap-1.5">
-                {CAFE_COUNTERS.map((c) => (
+                {CAFE_COUNTERS.filter((c) => quayDuocPhep(quayPhep).includes(c.id)).map((c) => (
                   <button
                     key={c.id}
                     type="button"
