@@ -16,10 +16,11 @@ export const dynamic = "force-dynamic";
  * GET    ?date=  → danh sách để soát lại và bấm sửa
  * DELETE ?id=    → hoàn tác một thao tác (nút "Sửa" = hoàn tác rồi nhập lại)
  *
- * Cùng quyền với chính việc thêm/huỷ dịch vụ: điều phối, quầy vé, kế toán.
+ * Cùng quyền với chính việc thêm/huỷ dịch vụ: điều phối, quầy vé, kế toán,
+ * phi công (12/09).
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman"], allowAdmin: true });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "pilot"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -29,8 +30,8 @@ export async function GET(req: Request) {
   if (!isDateKey(date)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
 
   /**
-   * CAMERA MAN thuần (không kiêm điều phối/quầy/kế toán) chỉ được xem các lần
-   * thêm/bớt do CHÍNH MÌNH làm — sổ dịch vụ của người khác không phải việc
+   * CAMERA MAN / PHI CÔNG thuần (không kiêm điều phối/quầy/kế toán) chỉ được
+   * xem các lần thêm/bớt do CHÍNH MÌNH làm — sổ dịch vụ của người khác không phải việc
    * của họ, lộ ra là lộ luôn giá và tiền nong từng khách.
    */
   const managerial =
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman"], allowAdmin: true });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "pilot"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

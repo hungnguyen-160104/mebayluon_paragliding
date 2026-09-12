@@ -67,16 +67,17 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
    */
   const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết bay" }];
   /**
-   * SỔ HÀNG BÁN THÊM cho MỌI VAI ĐỨNG BÁN (chủ chốt 10/09). Người bán phải tự
-   * đối được số hàng mình bán với tiền mình giữ trước khi ngồi chốt với chủ;
-   * bắt hỏi kế toán mới biết mình bán bao nhiêu thì không ai chốt nổi.
+   * SỔ HÀNG BÁN THÊM chỉ cho QUẦY VÉ / ĐIỀU PHỐI (chủ chốt lại 12/09: "không
+   * hiện đối với phi công, chỉ hiện với quầy vé thôi"). Hôm 10/09 từng mở cho
+   * mọi vai đứng bãi, nhưng phi công không bán hàng — bày thẻ ra chỉ thêm rối.
+   * Kế toán và quản trị giữ để đối số với quầy.
    */
   const hang = [{ href: "/baocao/hang-ban-them", label: "Hàng bán thêm" }];
   switch (role) {
     case "pilot":
-      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...hang, ...troi];
+      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...troi];
     case "cameraman":
-      return [{ href: "/baocao/camera", label: "Camera man" }, ...hang, ...troi];
+      return [{ href: "/baocao/camera", label: "Camera man" }, ...troi];
     case "dispatcher":
     case "counter":
       /**

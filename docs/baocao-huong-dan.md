@@ -25,7 +25,7 @@ Google Sheets riêng**.
 
 | Vai trò | Trang | Nhập gì |
 |---|---|---|
-| **Phi công** | `/baocao/phi-cong` | Số chuyến + mã vé đã bay; dịch vụ gia tăng (flycam, 360, cờ đỏ, kéo cờ — **chỉ số lượng, mã vé tuỳ chọn**); khách ngoại giao; thu/chi trong ngày |
+| **Phi công** | `/baocao/phi-cong` | Số chuyến + mã vé đã bay; dịch vụ gia tăng (flycam, 360, cờ đỏ, kéo cờ — **chỉ số lượng, mã vé tuỳ chọn**); khách ngoại giao; thu/chi trong ngày; **thêm / huỷ dịch vụ cho booking** (hai thẻ cuối trang, 12/09). Không có Hàng bán thêm |
 | **Điều phối bay** | `/baocao/dieu-phoi` | Số khách, vé xuất/thu về, dải mã vé, vé huỷ/dời lịch, flycam, 360, cờ đỏ, bay kéo cờ, khách ngoại giao, tiền mặt + CK, chi cho khách |
 | **Camera man** | `/baocao/camera` | Số chuyến quay flycam (+ mã vé nếu ghi được), chi tiêu |
 | **Kế toán tổng hợp** | `/baocao/chot-ngay` | Số tổng chốt ngày, duyệt chi tiêu, duyệt lệch, bấm **Chốt ngày** |

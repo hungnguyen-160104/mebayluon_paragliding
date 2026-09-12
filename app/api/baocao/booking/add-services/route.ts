@@ -12,10 +12,12 @@ export const dynamic = "force-dynamic";
  * KHÁCH ĐĂNG KÝ THÊM dịch vụ tại bãi — cộng vào booking sẵn có, tính lại tiền,
  * thu luôn nếu khách trả ngay.
  *
- * Chỉ ĐIỀU PHỐI / QUẦY VÉ / KẾ TOÁN: người đứng quầy mới chốt giá và thu tiền.
+ * ĐIỀU PHỐI / QUẦY VÉ / KẾ TOÁN, và PHI CÔNG (chủ 12/09: phi công được thêm
+ * và huỷ flycam, 360, cờ đỏ… ngay tại bãi). Camera man chỉ flycam
+ * (assertCameramanServiceLimits).
  */
 export async function POST(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "admin"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "pilot", "admin"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
  * phần còn phải thu hoặc hoàn lại cho khách.
  */
 export async function PATCH(req: Request) {
-  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "admin"] });
+  const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "accountant", "cameraman", "pilot", "admin"] });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);

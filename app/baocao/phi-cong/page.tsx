@@ -12,6 +12,7 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
+import { AddServicesCard } from "../components/AddServicesCard";
 import { AssignedBookings } from "../components/BookingCard";
 import { CancelMoveCard } from "../components/CancelMoveCard";
 import { CollectInbox } from "../components/CollectBox";
@@ -25,7 +26,6 @@ import {
   type RescheduleGuestRow,
 } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
-import { MerchCard } from "../components/MerchCard";
 import { MyShifts } from "../components/MyShifts";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
@@ -1013,18 +1013,6 @@ export default function PilotReportPage() {
           />
         </Card>
 
-        <Card title="HÀNG BÁN THÊM" hint="Áo, khăn, cốm… Tự tạo mặt hàng rồi khai số bán trong ngày.">
-          <MerchCard
-            spot={spot}
-            qty={form.merch}
-            method={form.merchMethod}
-            onChange={(next) => set("merch", next)}
-            onMethodChange={(next) => set("merchMethod", next)}
-            disabled={locked}
-            onError={setError}
-          />
-        </Card>
-
       <HandoverBox spot={spot} bilingual boardDate={date} />
 
       <PeriodSummary
@@ -1098,6 +1086,14 @@ export default function PilotReportPage() {
        * gửi lệnh cho kế toán chuyển. Việc KHÔNG thường ngày nên nằm CUỐI
        * trang (lời chủ 02/09) — đầu trang dành cho khách được giao và lệnh thu.
        */}
+      {/**
+       * THÊM / BỚT DỊCH VỤ TẠI BÃI — phi công được phép như quầy (chủ nhắc lại
+       * 12/09: "phi công được phép huỷ và thêm dịch vụ: flycam, 360, cờ đỏ…").
+       * Khách đang đứng cạnh phi công đòi thêm 360 thì phi công ghi luôn vào
+       * booking, tiền tính theo bảng giá; máy chủ cũng đã mở vai pilot.
+       * Sổ "Đã ghi trong ngày" chỉ hiện các lần do CHÍNH MÌNH làm.
+       */}
+      <AddServicesCard spot={spot} date={date} />
       <FlycamCancelCard spot={spot} date={date} selfPilot={user.username} />
     </Shell>
   );

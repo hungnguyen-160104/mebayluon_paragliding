@@ -18,7 +18,6 @@ import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { CollectInbox } from "../components/CollectBox";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
-import { MerchCard } from "../components/MerchCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
@@ -403,18 +402,6 @@ export default function CameramanReportPage() {
             onChange={(e) => set("note", e.target.value)}
             placeholder="Khách đăng ký thêm tại bãi, hỏng thiết bị…"
             disabled={locked}
-          />
-        </Card>
-
-        <Card title="HÀNG BÁN THÊM" hint="Áo, khăn, cốm… Tự tạo mặt hàng rồi khai số bán trong ngày.">
-          <MerchCard
-            spot={spot}
-            qty={form.merch}
-            method={form.merchMethod}
-            onChange={(next) => set("merch", next)}
-            onMethodChange={(next) => set("merchMethod", next)}
-            disabled={locked}
-            onError={setError}
           />
         </Card>
 
