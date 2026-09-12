@@ -862,6 +862,12 @@ export type MonthlyReportDTO = {
   unclosedDays: string[];
   grandToDate: MonthlyTotalsDTO;
   grandMonth: MonthlyTotalsDTO;
+  /**
+   * KHÁCH HUỶ theo SỔ BOOKING của cả điểm trong tháng (chủ 12/09: báo cáo
+   * tháng phải có khách huỷ). Không tách theo phi công vì khách huỷ chưa bay,
+   * chưa thuộc về ai — chỉ là hai con số tổng.
+   */
+  cancelledGuests: { toDate: number; month: number };
 };
 
 export type BaobayAccountDTO = {

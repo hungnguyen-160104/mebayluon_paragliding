@@ -13416,7 +13416,7 @@ export async function getMonthlyReport(
   const filter: Record<string, unknown> = { spot, date: { $gte: from, $lte: to } };
   if (onlyUsername) filter.username = onlyUsername;
 
-  const [pilotDocs, closeDocs, advancesMonth, advancesToDate, advancesDay] = await Promise.all([
+  const [pilotDocs, closeDocs, advancesMonth, advancesToDate, advancesDay, huyDocs] = await Promise.all([
     PilotDailyReport.find(filter).sort({ date: 1, pilotName: 1 }).lean<any[]>(),
     AccountantDailyClose.find({ spot, date: { $gte: from, $lte: to } })
       .select("date status")
@@ -13424,6 +13424,10 @@ export async function getMonthlyReport(
     advanceTotalsByUser(spot, from, to),
     advanceTotalsByUser(spot, from, isCurrentMonth ? today : to),
     advanceByUserDay(spot, from, to),
+    /** Khách huỷ theo sổ booking: đoàn huỷ cả + huỷ một phần trên đoàn còn bay. */
+    BaobayBooking.find({ spot, flightDate: { $gte: from, $lte: to }, $or: [{ status: "cancelled" }, { cancelledGuests: { $gt: 0 } }] })
+      .select("flightDate status guestCount cancelledGuests")
+      .lean<any[]>(),
   ]);
 
   const closedDates = new Set(closeDocs.filter((c) => c.status === "closed").map((c) => c.date));
@@ -13497,6 +13501,14 @@ export async function getMonthlyReport(
 
   const datesWithData = new Set(reports.map((r) => r.date));
 
+  const khachHuyCua = (b: any) => (b.status === "cancelled" ? Number(b.guestCount) || 0 : Number(b.cancelledGuests) || 0);
+  const cancelledGuests = {
+    month: huyDocs.reduce((t: number, b: any) => t + khachHuyCua(b), 0),
+    toDate: huyDocs
+      .filter((b: any) => !isCurrentMonth || String(b.flightDate) <= today)
+      .reduce((t: number, b: any) => t + khachHuyCua(b), 0),
+  };
+
   return {
     spot,
     month,
@@ -13507,6 +13519,7 @@ export async function getMonthlyReport(
     unclosedDays: [...datesWithData].filter((d) => !closedDates.has(d)).sort(),
     grandToDate,
     grandMonth,
+    cancelledGuests,
   };
 }
 

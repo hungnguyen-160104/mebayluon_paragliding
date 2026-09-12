@@ -159,15 +159,36 @@ export default function MonthlyReportPage() {
           )}
 
           <Card title={`Tổng cả đội tháng ${month}`}>
-            <div className="grid grid-cols-2 gap-3">
-              <Stat label="Chuyến đến hôm nay" value={String(data.grandToDate.flights)} />
-              <Stat label="Chuyến cả tháng" value={String(data.grandMonth.flights)} strong />
+            {/**
+             * ĐỦ MỌI MỤC (chủ 12/09): PG, PPG, flycam, 360, cờ đỏ, kéo cờ/bánh,
+             * hoàng hôn, khách huỷ. Phí bãi / nước / xe cho khách CHỈ Hà Nội —
+             * Khau Phạ và Sa Pa không có, bày ra chỉ toàn số 0.
+             */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Chuyến PG đến hôm nay" value={String(data.grandToDate.flights)} />
+              <Stat label="Chuyến PG cả tháng" value={String(data.grandMonth.flights)} strong />
+              {data.spot === "khau-pha" && (
+                <>
+                  <Stat label="Chuyến PPG đến hôm nay" value={String(data.grandToDate.ppgFlights)} />
+                  <Stat label="Chuyến PPG cả tháng" value={String(data.grandMonth.ppgFlights)} strong />
+                </>
+              )}
+              <Stat label="Flycam cả tháng" value={String(data.grandMonth.flycam)} />
               <Stat label="Camera 360 cả tháng" value={String(data.grandMonth.video360)} />
+              <Stat label="Dù cờ đỏ cả tháng" value={String(data.grandMonth.redFlag)} />
+              <Stat label="Kéo cờ/bánh cả tháng" value={String(data.grandMonth.flagFlight)} />
+              {data.spot !== "sapa" && <Stat label="Hoàng hôn/săn mây cả tháng" value={String(data.grandMonth.sunset)} />}
               <Stat label="Khách ngoại giao" value={String(data.grandMonth.diplomaticGuests)} />
-              <Stat label="Phí bãi (khách)" value={String(data.grandMonth.siteFeeGuests)} />
-              <Stat label="Nước cho khách" value={formatVND(data.grandMonth.waterCost)} />
-              <Stat label="Xe cho khách + chi khác" value={formatVND(data.grandMonth.guestCarCost + data.grandMonth.otherExpense)} />
-              <Stat label="Tổng chi cả tháng" value={formatVND(data.grandMonth.expenseTotal)} strong />
+              <Stat label="Khách huỷ đến hôm nay (sổ booking)" value={String(data.cancelledGuests?.toDate ?? 0)} />
+              <Stat label="Khách huỷ cả tháng (sổ booking)" value={String(data.cancelledGuests?.month ?? 0)} strong />
+              {data.spot === "ha-noi" && (
+                <>
+                  <Stat label="Phí bãi (khách)" value={String(data.grandMonth.siteFeeGuests)} />
+                  <Stat label="Nước cho khách" value={formatVND(data.grandMonth.waterCost)} />
+                  <Stat label="Xe cho khách + chi khác" value={formatVND(data.grandMonth.guestCarCost + data.grandMonth.otherExpense)} />
+                </>
+              )}
+              <Stat label={data.spot === "ha-noi" ? "Tổng chi cả tháng" : "Chi khác cả tháng"} value={formatVND(data.grandMonth.expenseTotal)} strong />
             </div>
             {data.isCurrentMonth && (
               <p className="mt-3 text-xs text-slate-500">
