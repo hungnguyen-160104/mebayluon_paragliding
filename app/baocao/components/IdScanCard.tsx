@@ -10,6 +10,44 @@ import { apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, TextInput } from "./ui";
 
 /**
+ * BỘ OCR DÙNG CHUNG (chủ 12/09: "quét CCCD và hộ chiếu vẫn rất chậm").
+ *
+ * Trước đây mỗi lượt `Tesseract.recognize()` tự dựng worker mới: tải WASM +
+ * bộ chữ tiếng Anh (~10 MB) rồi khởi động — và một ảnh đọc tới BA dải là ba
+ * lần như thế, mất 15–30 giây trên điện thoại. Nay dựng MỘT worker cho cả
+ * phiên, khởi động sẵn từ lúc người trực chạm nút chọn ảnh (hộp chọn ảnh mở
+ * mất vài giây, worker tải song song), các lượt sau chỉ còn ~1 giây.
+ */
+type OcrWorker = {
+  setParameters(p: Record<string, string>): Promise<unknown>;
+  recognize(img: HTMLCanvasElement): Promise<{ data: { text?: string } }>;
+};
+let ocrWorkerP: Promise<OcrWorker> | null = null;
+function layOcr(): Promise<OcrWorker> {
+  if (!ocrWorkerP) {
+    ocrWorkerP = (async () => {
+      const { createWorker } = await import("tesseract.js");
+      const w = (await createWorker("eng")) as unknown as OcrWorker;
+      await w.setParameters({
+        /** Dãy MRZ chỉ có A–Z, 0–9 và "<"; khối chữ đều — chế độ 6 đọc nhanh và ít bịa. */
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
+        tessedit_pageseg_mode: "6",
+        preserve_interword_spaces: "0",
+      });
+      return w;
+    })().catch((e) => {
+      ocrWorkerP = null;
+      throw e;
+    });
+  }
+  return ocrWorkerP;
+}
+/** Gọi sớm (khi chạm nút chọn ảnh / bật camera) để lúc cần là có ngay. */
+function khoiDongOcrSom(): void {
+  void layOcr().catch(() => {});
+}
+
+/**
  * Quét CCCD / hộ chiếu để lấy đủ 5 trường làm BẢO HIỂM BAY:
  * họ tên · ngày sinh · giới tính · số giấy tờ · quốc tịch.
  *
@@ -145,23 +183,25 @@ export function IdScanCard({
 
     const W = canvas.width;
     const H = canvas.height;
-    const attempts: Array<[number, number, number, number]> = [
-      [0, 0, W, H], // toàn ảnh
-      [W * 0.45, 0, W * 0.55, H * 0.6], // góc trên phải
-      [W * 0.45, H * 0.4, W * 0.55, H * 0.6], // góc dưới phải
-      [W * 0.25, H * 0.2, W * 0.5, H * 0.6], // giữa thẻ
-      [0, 0, W * 0.55, H * 0.6], // góc trên trái
-      [0, H * 0.4, W * 0.55, H * 0.6], // góc dưới trái
+    /**
+     * Thứ tự RẺ → ĐẮT và theo xác suất: QR của CCCD nằm GÓC TRÊN PHẢI nên thử
+     * góc đó trước, rồi mới toàn ảnh; mỗi khung chỉ hai mức phóng (900 / 1400),
+     * riêng toàn ảnh thêm 2000. Bản cũ 6 khung × 3 mức × 2 lượt = 36 lần giải
+     * trên ảnh 2400px khi mã mờ — đó là phần lớn thời gian "quét rất chậm".
+     */
+    const attempts: Array<[number, number, number, number, number[]]> = [
+      [W * 0.45, 0, W * 0.55, H * 0.6, [900, 1400]], // góc trên phải (vị trí thật của QR CCCD)
+      [0, 0, W, H, [1400, 2000]], // toàn ảnh
+      [W * 0.45, H * 0.4, W * 0.55, H * 0.6, [900, 1400]], // góc dưới phải (ảnh chụp ngược)
+      [W * 0.25, H * 0.2, W * 0.5, H * 0.6, [1400]], // giữa thẻ
+      [0, 0, W * 0.55, H * 0.6, [1400]], // góc trên trái
+      [0, H * 0.4, W * 0.55, H * 0.6, [1400]], // góc dưới trái
     ];
-    for (const [sx, sy, sw, sh] of attempts) {
-      /**
-       * Ba mức phóng to. Mã CCCD cỡ lớn cần ~4 điểm ảnh mỗi ô mới giải nổi:
-       * 900px là đủ khi mã chiếm hết khung cắt, còn khi cắt rộng thì phải lên
-       * 1400–2000px mã mới đủ nét.
-       */
-      const hit =
-        tryPart(sx, sy, sw, sh) ?? tryPart(sx, sy, sw, sh, 1400) ?? tryPart(sx, sy, sw, sh, 2000);
-      if (hit) return hit;
+    for (const [sx, sy, sw, sh, sizes] of attempts) {
+      for (const out of sizes) {
+        const hit = tryPart(sx, sy, sw, sh, out);
+        if (hit) return hit;
+      }
     }
     return null;
   }
@@ -178,11 +218,37 @@ export function IdScanCard({
       .getContext("2d")
       ?.drawImage(src, 0, Math.round(src.height * fromRatio), src.width, strip.height, 0, 0, strip.width, strip.height);
 
-    const { default: Tesseract } = await import("tesseract.js");
-    const { data } = await Tesseract.recognize(strip, "eng", {
-      // @ts-expect-error tuỳ chọn của tesseract không có trong kiểu
-      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
-    });
+    /**
+     * Thu dải về ≤1600px ngang và ép xám + kéo giãn tương phản: OCR chạy theo
+     * số điểm ảnh, dải 2400px rộng chậm gấp đôi mà không đọc tốt hơn; chữ MRZ
+     * đen trên nền sáng nên kéo tương phản làm nét bật lên.
+     */
+    const rong = Math.min(1600, strip.width);
+    const nho = document.createElement("canvas");
+    nho.width = rong;
+    nho.height = Math.max(1, Math.round((strip.height * rong) / strip.width));
+    const ctx = nho.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      ctx.drawImage(strip, 0, 0, nho.width, nho.height);
+      const d = ctx.getImageData(0, 0, nho.width, nho.height);
+      const a = d.data;
+      let lo = 255;
+      let hi = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const g = (a[i] * 299 + a[i + 1] * 587 + a[i + 2] * 114) / 1000;
+        a[i] = a[i + 1] = a[i + 2] = g;
+        if (g < lo) lo = g;
+        if (g > hi) hi = g;
+      }
+      const span = Math.max(1, hi - lo);
+      for (let i = 0; i < a.length; i += 4) {
+        const v = ((a[i] - lo) / span) * 255;
+        a[i] = a[i + 1] = a[i + 2] = v;
+      }
+      ctx.putImageData(d, 0, 0);
+    }
+    const w = await layOcr();
+    const { data } = await w.recognize(ctx ? nho : strip);
     return data.text ?? "";
   }
 
@@ -204,7 +270,14 @@ export function IdScanCard({
    * trượt. Nén về JPEG trước cho nhẹ đường truyền; máy chủ chặn ảnh quá nặng.
    */
   async function aiRead(canvas: HTMLCanvasElement): Promise<ScannedPerson> {
-    const image = canvas.toDataURL("image/jpeg", 0.85);
+    /** 1400px · JPEG 0,75 là đủ cho mô hình đọc chữ, nhẹ bằng 1/3 bản 2400px — 3G ngoài bãi đỡ chờ tải lên. */
+    const canh = Math.min(1400, Math.max(canvas.width, canvas.height));
+    const ti = canh / Math.max(canvas.width, canvas.height);
+    const nho = document.createElement("canvas");
+    nho.width = Math.round(canvas.width * ti);
+    nho.height = Math.round(canvas.height * ti);
+    nho.getContext("2d")?.drawImage(canvas, 0, 0, nho.width, nho.height);
+    const image = nho.toDataURL("image/jpeg", 0.75);
     const res = await apiPost<{ person: ScannedPerson }>(`/api/baocao/id-scan`, { image });
     return res.person;
   }
@@ -486,6 +559,7 @@ export function IdScanCard({
           variant="ghost"
           className="h-10 bg-white px-3 text-xs"
           disabled={busy !== "" || scanning}
+          onPointerDown={khoiDongOcrSom}
           onClick={() => fileRef.current?.click()}
         >
           {busy === "qr" ? "Đang đọc mã QR…" : busy === "ai" ? "AI đang đọc ảnh…" : "🖼 CCCD từ ảnh có sẵn"}
@@ -495,6 +569,7 @@ export function IdScanCard({
           variant="ghost"
           className="h-10 bg-white px-3 text-xs"
           disabled={busy !== "" || scanning}
+          onPointerDown={khoiDongOcrSom}
           onClick={() => backRef.current?.click()}
           title="Ảnh mặt sau thẻ — máy đọc ba dòng chữ máy ở đáy, chắc ăn hơn soi mã QR mờ"
         >
@@ -505,6 +580,7 @@ export function IdScanCard({
           variant="ghost"
           className="h-10 bg-white px-3 text-xs"
           disabled={busy !== "" || scanning}
+          onPointerDown={khoiDongOcrSom}
           onClick={() => passportRef.current?.click()}
         >
           {busy === "ocr" ? "Đang đọc hộ chiếu…" : busy === "ai" ? "AI đang đọc ảnh…" : "🛂 Hộ chiếu (ảnh dòng đáy)"}

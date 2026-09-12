@@ -26,7 +26,11 @@ const API_URL = "https://api.anthropic.com/v1/messages";
  * trường đọc sai là một hồ sơ bảo hiểm hỏng. Muốn hạ cho rẻ thì đặt biến
  * môi trường, đừng sửa mã.
  */
-const MODEL = process.env.ID_SCAN_AI_MODEL || "claude-opus-5";
+/**
+ * Đọc giấy tờ là việc nhìn-chép, Sonnet đọc tốt ngang Opus mà trả lời nhanh
+ * hơn nhiều lần (chủ 12/09: quét chậm) và rẻ hơn. Đổi bằng ID_SCAN_AI_MODEL.
+ */
+const MODEL = process.env.ID_SCAN_AI_MODEL || "claude-sonnet-5";
 
 const SYSTEM = `Bạn là máy đọc giấy tờ tuỳ thân cho một công ty du lịch Việt Nam (phục vụ mua bảo hiểm bay).
 Ảnh gửi tới là CCCD/CMND Việt Nam (mặt trước hoặc mặt sau) hoặc hộ chiếu bất kỳ nước nào.
