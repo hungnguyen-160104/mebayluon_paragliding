@@ -63,7 +63,7 @@ const UI_TEXT: Record<
     note: "Đội ngũ sẽ liên hệ xác nhận lịch bay, thời tiết và các dịch vụ đi kèm trong thời gian sớm nhất.",
     preFlightNotesTitle: "Thông tin lưu ý trước khi bay",
     preFlightNotes: [
-      "Mang theo điện thoại và chừa sẵn khoảng 4GB trống để chép ảnh & video chuyến bay ngay tại điểm bay.",
+      "Mang theo điện thoại và chừa sẵn khoảng 10GB trống để chép ảnh & video chuyến bay ngay tại điểm bay.",
       "Lịch bay có thể thay đổi tùy theo điều kiện thời tiết thực tế.",
       "Vui lòng có mặt tại điểm hẹn trước giờ bay ít nhất 30 phút.",
       "Mang theo giấy tờ tùy thân và xác nhận đặt chỗ khi đến.",
@@ -101,7 +101,7 @@ const UI_TEXT: Record<
     note: "Our team will contact you soon to confirm schedule, weather, and selected services.",
     preFlightNotesTitle: "Pre-flight information",
     preFlightNotes: [
-      "Bring your phone with about 4GB free so we can copy your flight photos and video on the spot.",
+      "Bring your phone with about 10GB free so we can copy your flight photos and video on the spot.",
       "Flight schedule may change depending on actual weather conditions.",
       "Please arrive at the meeting point at least 30 minutes before flight time.",
       "Bring ID and booking confirmation when you arrive.",
@@ -139,7 +139,7 @@ const UI_TEXT: Record<
     note: "Notre équipe vous contactera rapidement pour confirmer l'horaire, la météo et les services choisis.",
     preFlightNotesTitle: "Informations avant le vol",
     preFlightNotes: [
-      "Apportez votre téléphone avec environ 4 Go libres pour copier vos photos et vidéos de vol sur place.",
+      "Apportez votre téléphone avec environ 10 Go libres pour copier vos photos et vidéos de vol sur place.",
       "L'horaire du vol peut changer en fonction des conditions météorologiques.",
       "Veuillez arriver au point de rendez-vous au moins 30 minutes avant le vol.",
       "Apportez une pièce d'identité et la confirmation de réservation.",
@@ -177,7 +177,7 @@ const UI_TEXT: Record<
     note: "Наша команда скоро свяжется с вами для подтверждения времени, погоды и выбранных услуг.",
     preFlightNotesTitle: "Информация перед полётом",
     preFlightNotes: [
-      "Возьмите телефон и оставьте около 4 ГБ свободного места — фото и видео полёта скопируем прямо на площадке.",
+      "Возьмите телефон и оставьте около 10 ГБ свободного места — фото и видео полёта скопируем прямо на площадке.",
       "Расписание полёта может измениться в зависимости от погодных условий.",
       "Пожалуйста, прибудьте к месту встречи минимум за 30 минут до вылета.",
       "Возьмите удостоверение личности и подтверждение бронирования.",
@@ -215,7 +215,7 @@ const UI_TEXT: Record<
     note: "हमारी टीम जल्द ही समय, मौसम और चुनी गई सेवाओं की पुष्टि के लिए आपसे संपर्क करेगी।",
     preFlightNotesTitle: "उड़ान से पहले की जानकारी",
     preFlightNotes: [
-      "फ़ोन साथ लाएँ और लगभग 4GB जगह खाली रखें — उड़ान की फ़ोटो व वीडियो वहीं कॉपी कर दी जाएगी।",
+      "फ़ोन साथ लाएँ और लगभग 10GB जगह खाली रखें — उड़ान की फ़ोटो व वीडियो वहीं कॉपी कर दी जाएगी।",
       "मौसम की स्थिति के अनुसार उड़ान का समय बदल सकता है।",
       "कृपया उड़ान से कम से कम 30 मिनट पहले मिलन स्थल पर पहुँचें।",
       "आईडी और बुकिंग पुष्टि साथ लाएं।",
@@ -253,7 +253,7 @@ const UI_TEXT: Record<
     note: "团队会尽快联系您确认飞行时间、天气和已选服务。",
     preFlightNotesTitle: "飞行前须知",
     preFlightNotes: [
-      "请带上手机并预留约 4GB 空间，飞行照片和视频可当场拷贝给您。",
+      "请带上手机并预留约 10GB 空间，飞行照片和视频可当场拷贝给您。",
       "飞行时间可能根据实际天气情况调整。",
       "请至少提前30分钟到达集合点。",
       "请携带身份证件和预订确认信息。",

@@ -93,7 +93,7 @@ const QUICK_GUIDE: Array<{ title: string; items: string[] }> = [
       "Giấy tờ tuỳ thân (CCCD / Hộ chiếu)",
       "Kính râm, áo khoác mỏng",
       "Túi nhỏ 1–2 kg cho đồ cá nhân",
-      "Điện thoại còn trống ~4GB để chép ảnh & video",
+      "Điện thoại còn trống ~10GB để chép ảnh & video",
     ],
   },
   { title: "KHÔNG NÊN MANG THEO", items: ["Vật sắc nhọn", "Đồ cồng kềnh", "Tư trang giá trị cao", "Đồ nặng"] },

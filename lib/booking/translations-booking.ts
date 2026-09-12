@@ -172,7 +172,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "Lưu ý trước chuyến bay:",
       preflightNotes: [
         "Có mặt tại điểm bay trước 30 phút để làm thủ tục Check-in.",
-        "Trang phục: nên đi giày thể thao; không đi giày cao gót; quần áo dài tay màu sắc sặc sỡ; có thể đeo kính; mang theo điện thoại có sẵn ~4GB bộ nhớ trống để nhận ảnh/video.",
+        "Trang phục: nên đi giày thể thao; không đi giày cao gót; quần áo dài tay màu sắc sặc sỡ; có thể đeo kính; mang theo điện thoại có sẵn ~10GB bộ nhớ trống để nhận ảnh/video.",
         "Toạ độ điểm bay:",
       ],
       errors: {
@@ -263,7 +263,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "Pre-flight notes",
       preflightNotes: [
         "Arrive at the launch site 30 minutes early for check-in.",
-        "Outfit: sneakers recommended; avoid high heels; long-sleeve colorful outfit; glasses allowed; prepare ~4GB free storage for photo/video.",
+        "Outfit: sneakers recommended; avoid high heels; long-sleeve colorful outfit; glasses allowed; prepare ~10GB free storage for photo/video.",
         "Coordinates:",
       ],
       errors: {
@@ -356,7 +356,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "Notes avant le vol",
       preflightNotes: [
         "Arrivez 30 minutes en avance pour l’enregistrement.",
-        "Tenue : baskets, pas de talons ; manches longues colorées ; lunettes autorisées ; prévoyez ~4 Go libres pour photos/vidéos.",
+        "Tenue : baskets, pas de talons ; manches longues colorées ; lunettes autorisées ; prévoyez ~10 Go libres pour photos/vidéos.",
         "Coordonnées :",
       ],
       errors: {
@@ -449,7 +449,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "Памятка перед полётом",
       preflightNotes: [
         "Прибудьте на стартовую площадку за 30 минут до вылета.",
-        "Одежда: кроссовки, не каблуки; яркая одежда с длинными рукавами; очки разрешены; подготовьте ~4 ГБ памяти.",
+        "Одежда: кроссовки, не каблуки; яркая одежда с длинными рукавами; очки разрешены; подготовьте ~10 ГБ памяти.",
         "Координаты:",
       ],
       errors: {
@@ -542,7 +542,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "飞行前提示",
       preflightNotes: [
         "请提前 30 分钟到达起飞点办理签到。",
-        "建议穿运动鞋；避免高跟鞋；长袖亮色衣服更适合拍照；可佩戴眼镜；手机预留约 4GB 空间用于接收照片/视频。",
+        "建议穿运动鞋；避免高跟鞋；长袖亮色衣服更适合拍照；可佩戴眼镜；手机预留约 10GB 空间用于接收照片/视频。",
         "坐标：",
       ],
       errors: {
@@ -635,7 +635,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightTitle: "उड़ान से पहले नोट्स",
       preflightNotes: [
         "चेक-इन के लिए लॉन्च साइट पर 30 मिनट पहले पहुँचें।",
-        "पोशाक: स्नीकर्स सुझाए जाते हैं; हाई हील्स से बचें; रंगीन लॉन्ग-स्लीव पहनें; चश्मा ठीक है; फोटो/वीडियो के लिए फोन में ~4GB खाली जगह रखें।",
+        "पोशाक: स्नीकर्स सुझाए जाते हैं; हाई हील्स से बचें; रंगीन लॉन्ग-स्लीव पहनें; चश्मा ठीक है; फोटो/वीडियो के लिए फोन में ~10GB खाली जगह रखें।",
         "कोऑर्डिनेट्स:",
       ],
       errors: {

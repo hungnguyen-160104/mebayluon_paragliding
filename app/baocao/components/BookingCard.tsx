@@ -1078,12 +1078,13 @@ function ReprintTicket({
     setBusy(true);
     setError(null);
     try {
-      await apiPatch(`/api/baocao/booking?spot=${spot}`, {
+      const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
         id: booking.id,
         action: "ticket-print",
         reason: reason.trim(),
       });
-      void printBookingTickets(booking, spot);
+      /** In lại dùng ĐÚNG mã cũ trong sổ — máy chủ không cấp mã mới khi in lại. */
+      void printBookingTickets(r?.booking ?? booking, spot);
       setOpen(false);
       setReason("");
       onDone();
@@ -5133,12 +5134,20 @@ export function BookingTodayBanner({
         onClick={() => {
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
-            /** In thẳng USB nếu đã ghép, không thì hộp thoại in; điểm không in vé thì hàm tự bỏ qua. */
-            void printBookingTickets(b, spot);
-            /** Lần in ĐẦU không cần lý do — chỉ ghi vết ai in, lúc nào. */
-            void apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" }).catch(
-              () => {},
-            );
+            /**
+             * GHI SỔ TRƯỚC, IN SAU (chủ 12/09): lần in đầu máy chủ CẤP MÃ CHỐNG
+             * SAO CHÉP cho từng khách và lưu vào sổ; vé in phải mang đúng mã ấy
+             * nên không in "mù" rồi ghi sau như trước. Điểm không in vé thì
+             * hàm in tự bỏ qua, nhưng vết "đã in" vẫn ghi.
+             */
+            void (async () => {
+              try {
+                const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" });
+                await printBookingTickets(r?.booking ?? b, spot);
+              } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : "Không in được vé");
+              }
+            })();
           }
           void act(b, "ticket");
         }}

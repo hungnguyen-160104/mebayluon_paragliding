@@ -29,6 +29,7 @@ import { CAFE_COUNTERS } from "@/lib/baobay/cafe";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
+import { capMaVe, chuanHoaMaVe, maVeHopLe } from "@/lib/baobay/ma-ve-bao-mat";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
 import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
@@ -6861,9 +6862,36 @@ export async function recordTicketPrint(
     );
   }
 
+  /**
+   * MÃ CHỐNG SAO CHÉP TỪNG KHÁCH (chủ 12/09): cấp ở lần in đầu cho đủ số khách
+   * (#23.1 → A2D8, #23.2 → K7HM…), in lại thì giữ nguyên mã cũ — mã là căn cước
+   * của tấm vé, đổi mỗi lần in thì vé cũ và vé mới cùng hợp lệ, mất ý nghĩa.
+   * Đoàn tăng khách sau khi đã in thì chỉ cấp thêm cho khách mới.
+   * Kiểm TRÙNG trong cùng điểm + cùng ngày bay trước khi cấp.
+   */
+  const daCap: Array<{ guestNo: number; code: string; at: Date; by: string }> = booking.ticketSecurity ?? [];
+  const soKhach = Math.max(1, Number(booking.guestCount) || 1);
+  const thieu: number[] = [];
+  for (let g = 1; g <= soKhach; g++) if (!daCap.some((x) => x.guestNo === g)) thieu.push(g);
+  let themMa: Array<{ guestNo: number; code: string; at: Date; by: string }> = [];
+  if (thieu.length) {
+    const cungNgay = await BaobayBooking.find({ spot, flightDate: booking.flightDate, "ticketSecurity.0": { $exists: true } })
+      .select("ticketSecurity")
+      .lean<any[]>();
+    const dung = cungNgay.flatMap((b) => (b.ticketSecurity ?? []).map((x: any) => String(x.code)));
+    const moi = capMaVe(thieu.length, dung);
+    const luc = new Date();
+    themMa = thieu.map((guestNo, i) => ({ guestNo, code: moi[i], at: luc, by: session.name || session.username }));
+  }
+
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
-    { $push: { ticketPrints: { at: new Date(), by: session.name || session.username, reason } } },
+    {
+      $push: {
+        ticketPrints: { at: new Date(), by: session.name || session.username, reason },
+        ...(themMa.length ? { ticketSecurity: { $each: themMa } } : {}),
+      },
+    },
     { new: true },
   ).lean<any>();
 
@@ -6874,6 +6902,26 @@ export async function recordTicketPrint(
    * Mọi phép ghi qua mongoose vẫn tự để lại dòng ở BaobayBookingLog.
    */
   return { booking: toBookingDTO(updated) };
+}
+
+/**
+ * TRA MÃ VÉ CHỐNG SAO CHÉP: cầm tấm vé "A2D8" tìm xem nó thuộc booking nào,
+ * khách thứ mấy, ngày nào. Không thấy → vé chép hoặc gõ nhầm (gợi ý gõ lại).
+ * Tìm trong cả điểm, không giới hạn ngày: khách dời lịch cầm vé cũ vẫn tra ra.
+ */
+export async function traMaVeBaoMat(
+  session: BaobaySession,
+  spotRaw: string,
+  maRaw: string,
+): Promise<{ ma: string; booking: BookingDTO | null; guestNo: number | null }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const ma = chuanHoaMaVe(maRaw);
+  if (!maVeHopLe(ma)) return { ma, booking: null, guestNo: null };
+  const doc = await BaobayBooking.findOne({ spot, "ticketSecurity.code": ma }).lean<any>();
+  if (!doc) return { ma, booking: null, guestNo: null };
+  const dong = (doc.ticketSecurity ?? []).find((x: any) => x.code === ma);
+  return { ma, booking: toBookingDTO(doc), guestNo: dong ? Number(dong.guestNo) : null };
 }
 
 /** Bản cho LƯỚI SỔ SA PA — cùng một phép sửa, chỉ khác hình dạng dòng trả về. */
@@ -9234,6 +9282,12 @@ function toBookingDTO(doc: any): BookingDTO {
       at: x?.at ? new Date(x.at).toISOString() : "",
       by: x?.by || "",
       reason: x?.reason || "",
+    })),
+    ticketSecurity: (doc.ticketSecurity ?? []).map((x: any) => ({
+      guestNo: Number(x?.guestNo) || 0,
+      code: String(x?.code || ""),
+      at: x?.at ? new Date(x.at).toISOString() : "",
+      by: x?.by || "",
     })),
     noTicketFlight: Boolean(doc.noTicketFlight) || undefined,
     noTicketReason: doc.noTicketReason || undefined,

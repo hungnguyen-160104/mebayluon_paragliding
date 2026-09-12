@@ -507,6 +507,8 @@ export type BookingDTO = {
   ticketIssuedBy?: string;
   /** Mỗi lần in vé một dòng — từ lần thứ hai bắt buộc có lý do. */
   ticketPrints?: Array<{ at: string; by: string; reason: string }>;
+  /** Mã chống sao chép từng khách trên vé in ("A2D8"), cấp ở lần in đầu — xem model. */
+  ticketSecurity?: Array<{ guestNo: number; code: string; at: string; by: string }>;
   /** Đơn giá riêng phần khách PPG; 0 = theo bảng giá. Xem ppgPriceOf(). */
   ppgUnitPrice?: number;
   /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */

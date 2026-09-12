@@ -85,7 +85,7 @@ const LUU_Y_2 = "Mất vé không cấp lại.";
 /** Điều lưu ý cho khách trên liên khách giữ — mỗi điều MỘT dòng ngắn (chủ 12/09). */
 const LUU_Y_KHACH = [
   /* mỗi dòng ≤ 58 ký tự để nằm trọn 72mm ở cỡ 9,5px — dài hơn là bị cắt cụt */
-  "Mang điện thoại còn pin, trống ~4GB để chép ảnh/video",
+  "Mang điện thoại còn pin, trống ~10GB để chép ảnh/video",
   "Nên đeo kính râm, mang áo khoác mỏng",
   "Đồ dài tay gọn, giày thể thao; không váy, cao gót, dép lê",
   "Mang theo CCCD / hộ chiếu",
@@ -160,12 +160,22 @@ function chan(): string {
   return `<div class="luuy">${esc(LUU_Y_1)}<br/>${esc(LUU_Y_2)}</div>`;
 }
 
-/** Ô số thứ tự: biểu tượng của liên đứng SÁT bên trái con số (chủ 12/09). */
+/** Mã chống sao chép của khách thứ n — cấp ở máy chủ lúc in lần đầu; chưa có thì in "····" để lộ ra là vé chưa qua sổ. */
+export function maVeCua(b: BookingDTO, guestNo: number): string {
+  const d = (b.ticketSecurity ?? []).find((x) => x.guestNo === guestNo);
+  return d?.code || "····";
+}
+
+/**
+ * Ô số thứ tự: biểu tượng của liên đứng SÁT bên trái con số (chủ 12/09), MÃ
+ * CHỐNG SAO CHÉP đứng bên phải, chữ đơn cách cho dễ đọc từng ký tự.
+ */
 function khoiSo(b: BookingDTO, guestNo: number, icon: keyof typeof ICON, nho = false): string {
   return `
     <div class="so${nho ? " nho" : ""}">
       <span class="so-icon">${ICON[icon]}</span>
       <span class="so-tri">${esc(soThuTuVe(b, guestNo))}</span>
+      <span class="so-ma"><span class="so-ma-nhan">MÃ</span>${esc(maVeCua(b, guestNo))}</span>
     </div>`;
 }
 
@@ -269,6 +279,10 @@ const CSS = `
   .so-tri { font-size: 38px; font-weight: 900; line-height: 1; white-space: nowrap; }
   .so.nho .so-tri { font-size: 26px; }
   .so.nho .so-icon svg { width: 26px; height: 26px; }
+  /* Mã chống sao chép: chữ đơn cách, viền riêng, luôn cạnh số để đối chiếu một lượt */
+  .so-ma { margin-left: 8px; padding: 1px 5px; border: 1.5px solid #000; border-radius: 3px; font-family: "Courier New", ui-monospace, monospace; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  .so-ma-nhan { font-family: inherit; font-size: 7px; letter-spacing: .5px; font-weight: 700; }
+  .so.nho .so-ma { font-size: 13px; margin-left: 6px; }
   /* KHÔNG XUỐNG DÒNG ở bất cứ ô nào — vé nhiệt tính từng mm chiều dài (chủ 12/09).
      Ô giá trị dài quá thì co chữ nhỏ lại (clamp) chứ không bẻ dòng. */
   table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }

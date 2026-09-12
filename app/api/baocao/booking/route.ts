@@ -37,6 +37,7 @@ import {
   type BookingAction,
   updateBookingCell,
   recordTicketPrint,
+  traMaVeBaoMat,
 } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
@@ -69,6 +70,12 @@ export async function GET(req: Request) {
   const agencyBank = new URL(req.url).searchParams.get("agencyBank");
   if (agencyBank !== null) {
     return NextResponse.json({ bank: await lastAgencyBank(spot, agencyBank) });
+  }
+
+  /** ?maVe=A2D8: tra mã chống sao chép trên vé in → booking nào, khách thứ mấy (chủ 12/09). */
+  const maVe = new URL(req.url).searchParams.get("maVe");
+  if (maVe !== null) {
+    return NextResponse.json(await traMaVeBaoMat(auth, spot, maVe));
   }
 
   const date = new URL(req.url).searchParams.get("date") || todayInVN();

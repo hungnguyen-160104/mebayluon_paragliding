@@ -377,16 +377,16 @@ function useTicketLabels(lang: LangCode) {
               : ["Long trousers and sleeves", "Trainers or hiking shoes", "No skirts, heels or flip-flops"],
 
     guideBring: isVI
-      ? ["Giấy tờ tuỳ thân (CCCD / Hộ chiếu)", "Kính râm, áo khoác mỏng", "Túi nhỏ 1–2 kg cho đồ cá nhân", "Điện thoại còn trống ~4GB để chép ảnh & video"]
+      ? ["Giấy tờ tuỳ thân (CCCD / Hộ chiếu)", "Kính râm, áo khoác mỏng", "Túi nhỏ 1–2 kg cho đồ cá nhân", "Điện thoại còn trống ~10GB để chép ảnh & video"]
       : isFR
-        ? ["Pièce d'identité ou passeport", "Lunettes de soleil, veste légère", "Petit sac de 1 à 2 kg", "Téléphone avec ~4 Go libres pour vos photos et vidéos"]
+        ? ["Pièce d'identité ou passeport", "Lunettes de soleil, veste légère", "Petit sac de 1 à 2 kg", "Téléphone avec ~10 Go libres pour vos photos et vidéos"]
         : isRU
-          ? ["Паспорт или удостоверение", "Очки от солнца, лёгкая куртка", "Небольшая сумка 1–2 кг", "Телефон со свободными ~4 ГБ для фото и видео"]
+          ? ["Паспорт или удостоверение", "Очки от солнца, лёгкая куртка", "Небольшая сумка 1–2 кг", "Телефон со свободными ~10 ГБ для фото и видео"]
           : isHI
-            ? ["पहचान पत्र या पासपोर्ट", "धूप का चश्मा, हल्की जैकेट", "1–2 किग्रा का छोटा बैग", "फ़ोटो-वीडियो के लिए ~4GB खाली फ़ोन"]
+            ? ["पहचान पत्र या पासपोर्ट", "धूप का चश्मा, हल्की जैकेट", "1–2 किग्रा का छोटा बैग", "फ़ोटो-वीडियो के लिए ~10GB खाली फ़ोन"]
             : isZH || isZHTW
-              ? [zh("身份证件或护照", "身分證件或護照"), zh("墨镜、薄外套", "墨鏡、薄外套"), zh("1–2 公斤随身小包", "1–2 公斤隨身小包"), zh("手机预留约 4GB 空间用于拷贝照片和视频", "手機預留約 4GB 空間用於拷貝照片和影片")]
-              : ["ID card or passport", "Sunglasses and a light jacket", "A small 1–2 kg bag", "Phone with ~4GB free for your photos and video"],
+              ? [zh("身份证件或护照", "身分證件或護照"), zh("墨镜、薄外套", "墨鏡、薄外套"), zh("1–2 公斤随身小包", "1–2 公斤隨身小包"), zh("手机预留约 10GB 空间用于拷贝照片和视频", "手機預留約 10GB 空間用於拷貝照片和影片")]
+              : ["ID card or passport", "Sunglasses and a light jacket", "A small 1–2 kg bag", "Phone with ~10GB free for your photos and video"],
 
     guideAvoid: isVI
       ? ["Vật sắc nhọn", "Đồ cồng kềnh", "Tư trang giá trị cao", "Đồ nặng"]

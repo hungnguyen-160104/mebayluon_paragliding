@@ -237,6 +237,12 @@ export interface IBaobayBooking {
    */
   ticketPrints?: Array<{ at: Date; by: string; reason: string }>;
   /**
+   * MÃ CHỐNG SAO CHÉP từng khách trên vé in (chủ 12/09): #23.1 A2D8, #23.2 K7HM…
+   * Cấp ở lần in đầu, in lại vẫn dùng đúng mã cũ; lưu lại để sau này cầm vé đối
+   * chiếu — mã không có trong sổ là vé chép. Xem lib/baobay/ma-ve-bao-mat.ts.
+   */
+  ticketSecurity?: Array<{ guestNo: number; code: string; at: Date; by: string }>;
+  /**
    * BAY KHÔNG VÉ — chuyến có thật nhưng không xé vé (khách ngoại giao, bay bù,
    * quầy hết vé giấy…). Đánh dấu để đối chiếu cuối ngày không đòi mã vé, nhưng
    * BẮT GHI LÝ DO: bay không vé mà không ai giải thích thì đúng là chỗ thất thoát.
@@ -579,6 +585,15 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
       type: [
         new Schema(
           { at: Date, by: { type: String, default: "" }, reason: { type: String, default: "" } },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    ticketSecurity: {
+      type: [
+        new Schema(
+          { guestNo: { type: Number, required: true }, code: { type: String, required: true }, at: Date, by: { type: String, default: "" } },
           { _id: false },
         ),
       ],

@@ -328,22 +328,41 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 ## In vé 3 liên — Khau Phạ và Sa Pa (máy in nhiệt Gainscha B300, khổ 80mm)
 
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
-bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking in đủ bộ rồi tự tích
+bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích
 "đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do. Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**
-và **#23.2**, mỗi số ba liên:
+và **#23.2**, mỗi số BỐN liên:
 
 | Liên | Nội dung |
 |---|---|
-| **1 — VÉ BAY DÙ** | ngày bay · số thứ tự · tên khách (booking OTA có tên từng người thì in đúng tên từng người) · dịch vụ đi kèm (cam 360, flycam, cờ đỏ, hoàng hôn, bay kéo cờ) · giờ in vé · **hai mã QR xin đánh giá** (Google Maps của bãi, Tripadvisor của tour) |
-| **2 — VÉ XE TRUNG CHUYỂN** | ngày bay · tên khách · số thứ tự · ngày giờ xuất vé |
-| **3 — ĐỒ UỐNG MIỄN PHÍ** | tên khách · số thứ tự · ngày bay · danh mục: cà phê (nâu/đen), trà chanh/trà đào, nước lọc & đồ uống đóng chai, bia/nước ngọt |
+| **1 — VÉ BAY DÙ** | ngày bay · số thứ tự · tên khách · dịch vụ (chỉ in tên, không in ×1) · giờ in |
+| **2 — KHÁCH GIỮ** | ngày bay + giờ hẹn · tên khách (OTA có tên từng người thì in đúng người) · **mã booking** · loại bay · dịch vụ · giờ in · năm điều lưu ý (điện thoại trống ~10GB, kính, quần áo, giấy tờ, đồ không mang) · **hai mã QR xin đánh giá** — Google Maps của bãi và Tripadvisor của tour; Khau Phạ chọn link **PG hay PPG theo loại bay** |
+| **3 — ĐỒ UỐNG MIỄN PHÍ** | tên khách · số thứ tự · ngày bay · cà phê · trà chanh/đào · nước lọc/chai · bia/nước ngọt |
+| **4 — VÉ XE TRUNG CHUYỂN** | ngày bay · tên khách · số thứ tự · ngày giờ xuất vé |
 
-Liên nào cũng có dòng *"Vé có giá trị tương đương tiền mặt — không làm mất vé,
-không cấp lại vé."* Mã QR sinh tại chỗ (thư viện `qrcode`, ra SVG), không tải
-ảnh ngoài — quầy ở đèo hay mất mạng mà vé thì phải in được.
+Liên nào cũng có logo (bản nét đen trắng `public/logo-mbl-in.png`), biểu tượng
+của liên sát số thứ tự (dù · dù · cốc · xe), và hai dòng *"Vé có giá trị thanh
+toán tương đương tiền mặt. / Mất vé không cấp lại."* Không ô nào được xuống
+dòng — vé nhiệt tính từng mm chiều dài; ô dài thì co chữ. Mã QR sinh tại chỗ
+(thư viện `qrcode`, ra SVG), không tải ảnh ngoài — quầy ở đèo hay mất mạng mà vé
+thì phải in được.
+
+### Mã chống sao chép "A2D8"
+
+Mỗi KHÁCH một mã bốn ký tự, in cạnh số thứ tự trên **cả bốn liên** của người ấy
+và lưu vào sổ (`ticketSecurity` trên booking): #23.1 → A2D8, #23.2 → K7HM, bốn
+khách bốn mã khác nhau (chủ 12/09). Máy chủ cấp ở **lần in đầu** (nút IN VÉ ghi
+sổ trước rồi mới in); **in lại giữ nguyên mã cũ** — mã là căn cước của tấm vé,
+đổi mỗi lần in thì vé cũ vé mới cùng hợp lệ, mất ý nghĩa. Đoàn tăng khách sau
+khi đã in thì chỉ cấp thêm cho khách mới. Bảng chữ bỏ ký tự dễ đọc nhầm trên
+giấy nhiệt (0/O, 1/I/L, 5/S, 8/B, 2/Z), 30⁴ ≈ 810.000 mã, và máy vẫn kiểm trùng
+trong cùng điểm + cùng ngày. Vé chưa qua sổ in "····" ở chỗ mã — lộ ra ngay.
+
+**Đối chiếu vé**: `GET /api/baocao/booking?spot=…&maVe=A2D8` trả booking, khách
+thứ mấy, ngày bay; không có → vé chép hoặc gõ nhầm (máy tự quy chữ dễ nhầm về
+bảng chuẩn khi tra). Phép thử: `scripts/baocao/test-ma-ve-bao-mat.ts`.
 
 ### Nối máy in — hai đường, cùng một mẫu vé
 
