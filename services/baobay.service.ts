@@ -11899,11 +11899,17 @@ export async function payFlycamRefund(
   return toFlycamCancelDTO(doc);
 }
 
-export async function listFlycamCancels(spotRaw: string, date: string): Promise<FlycamCancelDTO[]> {
+/**
+ * `chiCuaNguoi`: chỉ lệnh do người này lập hoặc gắn tên phi công là người này.
+ * Chủ 12/09: phi công KHÔNG được thấy lệnh huỷ/hoàn của phi công khác — trang
+ * phi công từng bày cả "PC A Mặc · chờ kế toán chuyển 400k" cho mọi phi công.
+ */
+export async function listFlycamCancels(spotRaw: string, date: string, chiCuaNguoi?: string): Promise<FlycamCancelDTO[]> {
   await connectDB();
   const spot = normalizeSpot(spotRaw);
+  const rieng = chiCuaNguoi ? { $or: [{ pilotUsername: chiCuaNguoi }, { createdByUsername: chiCuaNguoi }] } : {};
   /** Ngày đang xem + mọi lệnh CÒN CHỜ của các ngày trước — chờ mãi không ai thấy là mất tiền của khách. */
-  const docs = await BaobayFlycamCancel.find({ spot, $or: [{ date }, { status: "pending" }] })
+  const docs = await BaobayFlycamCancel.find({ spot, $and: [{ $or: [{ date }, { status: "pending" }] }, rieng] })
     .sort({ createdAt: -1 })
     .limit(50)
     .lean<any[]>();

@@ -61,9 +61,16 @@ export function AddServicesCard({
   spot,
   date,
   onlyFlycam = false,
+  selfOnly = false,
 }: {
   spot: string;
   date: string;
+  /**
+   * PHI CÔNG (chủ 12/09): không đọc sổ sửa-dịch-vụ móc từ ghi chú của mọi
+   * booking — đó là thao tác của quầy/điều phối và của phi công khác. Sổ
+   * `changes` máy chủ đã lọc còn của chính mình.
+   */
+  selfOnly?: boolean;
   /**
    * Camera man chỉ được đụng flycam (máy chủ cũng chặn) — bật cờ này thì thẻ
    * chỉ hiện đúng ô flycam, khỏi bày ra thứ họ bấm vào cũng bị từ chối.
@@ -192,7 +199,7 @@ export function AddServicesCard({
    * đó là lịch sử thao tác (kèm tiền nong) của người khác. Chế độ flycam tắt
    * hẳn nguồn này; sổ `changes` thì máy chủ đã lọc chỉ còn của chính mình.
    */
-  const legacy = (onlyFlycam ? [] : dayAll).flatMap((b) =>
+  const legacy = (onlyFlycam || selfOnly ? [] : dayAll).flatMap((b) =>
     (b.note ?? "")
       .split("·")
       .map((x) => x.trim())

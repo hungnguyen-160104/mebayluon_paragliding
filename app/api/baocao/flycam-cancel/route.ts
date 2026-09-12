@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { isDateKey, todayInVN } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { wearsRole } from "@/lib/baobay/roles";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   BaobayError,
@@ -36,9 +37,17 @@ export async function GET(req: Request) {
   if (!isDateKey(date)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   const code = url.searchParams.get("code") || "";
 
+  /**
+   * PHI CÔNG / CAMERA MAN thuần (không kiêm điều phối, quầy vé, kế toán) chỉ
+   * thấy lệnh của CHÍNH MÌNH — chủ 12/09: "mọi chi tiết không do phi công A lập
+   * thì không hiển thị trong trang của phi công A". Danh sách phi công để chọn
+   * "bay kèm" cũng không cần cho họ (trang phi công tự gắn username đăng nhập).
+   */
+  const quanLy =
+    auth.viaAdmin || ["dispatcher", "counter", "accountant", "admin"].some((r) => wearsRole(auth, r as never));
   const [items, staff, lookup] = await Promise.all([
-    listFlycamCancels(spot, date),
-    listSpotStaffAll(spot),
+    listFlycamCancels(spot, date, quanLy ? undefined : auth.username),
+    quanLy ? listSpotStaffAll(spot) : Promise.resolve([] as Awaited<ReturnType<typeof listSpotStaffAll>>),
     code ? lookupTicketCode(spot, code) : Promise.resolve(null),
   ]);
   return NextResponse.json({

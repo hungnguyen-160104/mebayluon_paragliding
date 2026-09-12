@@ -1093,7 +1093,7 @@ export default function PilotReportPage() {
        * booking, tiền tính theo bảng giá; máy chủ cũng đã mở vai pilot.
        * Sổ "Đã ghi trong ngày" chỉ hiện các lần do CHÍNH MÌNH làm.
        */}
-      <AddServicesCard spot={spot} date={date} />
+      <AddServicesCard spot={spot} date={date} selfOnly />
       <FlycamCancelCard spot={spot} date={date} selfPilot={user.username} />
     </Shell>
   );
