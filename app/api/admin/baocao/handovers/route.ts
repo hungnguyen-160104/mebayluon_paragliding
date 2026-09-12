@@ -13,11 +13,15 @@ export const dynamic = "force-dynamic";
 /**
  * Tiền nhân sự giao cho quản lý/giám đốc — mọi vai trò, không riêng điều phối.
  *
- * GET  ?from=&to=  -> mọi khoản trong khoảng ngày (mặc định 30 ngày), cả chờ lẫn đã xác nhận
- * POST {id}        -> giám đốc XÁC NHẬN đã cầm khoản đó, kèm {reject:"lý do"} để từ chối
+ * GET  ?from=&to=  -> các khoản GỬI CHO CHÍNH quản trị đang xem trong khoảng ngày
+ *                     (mặc định 30 ngày), cả chờ lẫn đã xác nhận, kèm bản ghi cũ
+ *                     chưa ghi người nhận
+ * POST {id}        -> người nhận XÁC NHẬN đã cầm khoản đó, kèm {reject:"lý do"} để từ chối
  *
- * Chỉ vai trò Quản trị (hoặc token quản trị website). Xác nhận được cả khi ngày
- * đã chốt — đây là chữ ký nhận tiền, không phải sửa số liệu.
+ * Chỉ vai trò Quản trị (hoặc token quản trị website). Chủ 12/09: giao tiền cho
+ * ai thì chỉ người đó thấy và xác nhận — quản trị khác không thấy, không bấm
+ * thay được (confirmHandover chặn). Xác nhận được cả khi ngày đã chốt — đây là
+ * chữ ký nhận tiền, không phải sửa số liệu.
  */
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: ["admin"], allowAdmin: true });
@@ -42,9 +46,11 @@ export async function GET(req: Request) {
    */
   const scope = auth.viaAdmin ? SPOTS.map((s) => s.id) : auth.spots;
 
+  /** Token quản trị website không có username nhân sự → chỉ thấy bản ghi cũ không người nhận. */
+  const toi = auth.username || "__khong_ai__";
   const [handovers, pendingBySpot] = await Promise.all([
-    listHandovers(spot, from, to),
-    countPendingHandoversBySpot(scope),
+    listHandovers(spot, from, to, toi),
+    countPendingHandoversBySpot(scope, toi),
   ]);
 
   return NextResponse.json({ handovers, pendingBySpot });

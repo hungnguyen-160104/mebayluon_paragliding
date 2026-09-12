@@ -746,8 +746,8 @@ function HandoverCard() {
         )}
       </h2>
       <p className="mt-1 text-sm text-slate-600">
-        Giao tiền và ứng tiền của mọi điểm bay. Người nhận tự xác nhận ở trang của họ; quản trị xác
-        nhận thay khi cần. Tự làm mới mỗi 20 giây.
+        Giao tiền và ứng tiền GỬI CHO BẠN ở mọi điểm bay. Lệnh gửi cho người khác chỉ người đó thấy và
+        xác nhận — không ai bấm thay được. Tự làm mới mỗi 20 giây.
       </p>
       <div className="mt-2 flex flex-wrap gap-1">
         {SPOTS.map((sp) => {

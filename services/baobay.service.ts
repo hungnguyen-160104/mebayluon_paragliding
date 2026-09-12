@@ -3087,12 +3087,21 @@ export async function listIncomingHandovers(
   return docs.map(toHandoverDTO);
 }
 
-/** Mọi khoản đưa tiền của một điểm bay trong khoảng ngày — cho trang quản trị. */
-export async function listHandovers(spotRaw: string, from: string, to: string): Promise<HandoverDTO[]> {
+/**
+ * Lệnh giao tiền / ứng tiền của một điểm bay trong khoảng ngày.
+ *
+ * `chiCuaNguoi`: chỉ lấy lệnh GỬI CHO người này (kèm bản ghi cũ chưa ghi người
+ * nhận). Chủ 12/09: "giao tiền cho ai thì chỉ người đó thấy và xác nhận thôi"
+ * — trang quản trị nhân sự trước đây bày mọi lệnh của điểm bay cho mọi quản
+ * trị, nên Duyên giao cho giám đốc mà quản trị khác cũng thấy. Bỏ trống thì
+ * lấy hết (bảng kê Excel, đối soát kỳ).
+ */
+export async function listHandovers(spotRaw: string, from: string, to: string, chiCuaNguoi?: string): Promise<HandoverDTO[]> {
   await connectDB();
   const docs = await BaobayHandover.find({
     spot: normalizeSpot(spotRaw),
     date: { $gte: from, $lte: to },
+    ...(chiCuaNguoi ? { $or: [{ recipientUsername: chiCuaNguoi }, { recipientUsername: { $in: [null, ""] } }] } : {}),
   })
     .sort({ confirmed: 1, date: -1, createdAt: -1 })
     .lean<any[]>();
@@ -3106,12 +3115,20 @@ export async function listHandovers(spotRaw: string, from: string, to: string): 
  * Không giới hạn khoảng ngày: khoản chờ từ tuần trước vẫn phải nhắc, không được
  * biến mất chỉ vì lọt ra ngoài "30 ngày gần đây".
  */
-export async function countPendingHandoversBySpot(spots: string[]): Promise<Record<string, number>> {
+export async function countPendingHandoversBySpot(spots: string[], chiCuaNguoi?: string): Promise<Record<string, number>> {
   await connectDB();
 
   const ids = normalizeSpotList(spots);
   const rows = await BaobayHandover.aggregate<{ _id: string; count: number }>([
-    { $match: { spot: { $in: ids }, confirmed: false, rejected: { $ne: true } } },
+    {
+      $match: {
+        spot: { $in: ids },
+        confirmed: false,
+        rejected: { $ne: true },
+        /** Chấm đỏ chỉ đếm lệnh GỬI CHO mình (xem listHandovers). */
+        ...(chiCuaNguoi ? { $or: [{ recipientUsername: chiCuaNguoi }, { recipientUsername: { $in: [null, ""] } }] } : {}),
+      },
+    },
     { $group: { _id: "$spot", count: { $sum: 1 } } },
   ]);
 
@@ -3123,9 +3140,11 @@ export async function countPendingHandoversBySpot(spots: string[]): Promise<Reco
 /**
  * NGƯỜI NHẬN xác nhận ĐÃ NHẬN, hoặc từ chối kèm lý do.
  *
- * Ai được bấm: đúng người được chọn làm người nhận, hoặc tài khoản quản trị
- * (giám đốc luôn nhìn thấy mọi lệnh của điểm bay mình quản, và các bản ghi cũ
- * chưa ghi người nhận thì mặc định là của quản trị).
+ * Ai được bấm: CHỈ đúng người được chọn làm người nhận (chủ 12/09: "giao tiền
+ * cho ai thì chỉ người đó thấy và xác nhận thôi"). Quản trị chỉ bấm được các
+ * bản ghi cũ chưa ghi người nhận — những khoản đó mặc định là của quản trị.
+ * Trước đây quản trị xác nhận thay được mọi lệnh, thành ra chữ ký nhận tiền
+ * không còn là của người cầm tiền.
  *
  * Cố ý KHÔNG kiểm ngày đã chốt: đây là chữ ký nhận tiền, không phải sửa số liệu.
  */
@@ -3145,8 +3164,7 @@ export async function confirmHandover(
   const isRecipient = doc.recipientUsername
     ? doc.recipientUsername === by.username
     : by.role === "admin" || by.viaAdmin === true;
-  const isAdmin = by.role === "admin" || by.viaAdmin === true;
-  if (!isRecipient && !isAdmin) {
+  if (!isRecipient) {
     return {
       ok: false,
       error: `Khoản này giao cho ${doc.recipientName || "người khác"} — chỉ người đó xác nhận được`,
