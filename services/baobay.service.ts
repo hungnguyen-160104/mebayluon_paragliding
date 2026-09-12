@@ -4112,6 +4112,25 @@ function remainingOf(total: number, deposit: number, declared: number, agencyPai
     : Math.max(0, declared);
 }
 
+/**
+ * "CÒN THU" SAU KHI SỐ ĐÃ TRẢ THAY ĐỔI — tính lại từ TỔNG, không cộng dồn.
+ *
+ * Trước đây thu/sửa/xoá lệnh thu đều làm `remaining ± amount` rồi kẹp về 0.
+ * Kẹp là mất dấu: booking 9.170k thu nhầm TM 9.170k (còn thu 0) rồi thu lại
+ * CK 9.170k (còn thu vẫn 0 vì kẹp), kế toán xoá khoản TM → còn thu 0 + 9.170k
+ * = 9.170k, trong khi cọc cộng dồn đã bằng tổng (booking #47 Khau Phạ 12/09,
+ * chủ báo). Lấy thẳng tổng − đã trả thì đường nào tới cũng ra cùng một số.
+ * Booking không có tổng (tổng 0, số nợ khai tay) thì giữ cách cộng dồn cũ.
+ */
+function conThuSauKhiDoiCoc(
+  booking: { totalAmount?: number; agencyPaidAmount?: number },
+  depositMoi: number,
+  remainingCongDon: number,
+): number {
+  const total = booking.totalAmount ?? 0;
+  return total > 0 ? remainingOf(total, depositMoi, 0, booking.agencyPaidAmount ?? 0) : Math.max(0, remainingCongDon);
+}
+
 /** Booking phải nằm ở tương lai: ngày bay không lùi, giờ dự kiến hôm nay không sớm hơn bây giờ. */
 function assertBookingTime(flightDate: string, expectedTime: string) {
   const today = todayInVN();
@@ -5501,7 +5520,7 @@ export async function collectForBooking(
    * không ai biết. Nút "Thu đủ" giờ chỉ để ĐIỀN SẴN số, không quyết định sổ.
    */
   const set: Record<string, unknown> = {
-    remaining: Math.max(0, (booking.remaining ?? 0) - amount),
+    remaining: conThuSauKhiDoiCoc(booking, (booking.deposit ?? 0) + amount, (booking.remaining ?? 0) - amount),
     deposit: (booking.deposit ?? 0) + amount,
     // Có tiền MỚI về là booking coi như chưa soát lại — tích ✓CK/✓TM tự tắt
     ...(transferPart > 0 ? { ckCheckedAt: null } : {}),
@@ -9654,7 +9673,7 @@ export async function editCollect(
 
   if (current.bookingId) {
     const booking = await BaobayBooking.findById(current.bookingId)
-      .select("remaining deposit collectedLog")
+      .select("remaining deposit collectedLog totalAmount agencyPaidAmount")
       .lean<any>();
     if (booking) {
       const log = Array.isArray(booking.collectedLog) ? [...booking.collectedLog] : [];
@@ -9678,7 +9697,11 @@ export async function editCollect(
         {
           $set: {
             collectedLog: log,
-            remaining: Math.max(0, (booking.remaining ?? 0) + oldAmount - newAmount),
+            remaining: conThuSauKhiDoiCoc(
+              booking,
+              Math.max(0, (booking.deposit ?? 0) - oldAmount + newAmount),
+              (booking.remaining ?? 0) + oldAmount - newAmount,
+            ),
             deposit: Math.max(0, (booking.deposit ?? 0) - oldAmount + newAmount),
             // Số đã đổi — tích "nhận đủ" cũ hết giá trị, kế toán soát lại
             ckCheckedAt: null,
@@ -9737,7 +9760,7 @@ export async function removeCollect(
 
   if (current.bookingId) {
     const booking = await BaobayBooking.findById(current.bookingId)
-      .select("remaining deposit collectedLog")
+      .select("remaining deposit collectedLog totalAmount agencyPaidAmount")
       .lean<any>();
     if (booking) {
       const log = Array.isArray(booking.collectedLog) ? [...booking.collectedLog] : [];
@@ -9753,7 +9776,7 @@ export async function removeCollect(
         {
           $set: {
             collectedLog: log,
-            remaining: Math.max(0, (booking.remaining ?? 0) + amount),
+            remaining: conThuSauKhiDoiCoc(booking, Math.max(0, (booking.deposit ?? 0) - amount), (booking.remaining ?? 0) + amount),
             deposit: Math.max(0, (booking.deposit ?? 0) - amount),
             ckCheckedAt: null,
             tmCheckedAt: null,
