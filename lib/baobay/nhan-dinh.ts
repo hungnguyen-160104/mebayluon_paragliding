@@ -336,17 +336,16 @@ export function nhanDinhNgay(
        * thước thì câu chữ và màu ô không đá nhau. Gió +1.000m nói riêng ở
        * dưới: nó quyết định "leo cao được không", không quyết định cất cánh.
        */
-      const manh = theoGio.filter((x) => x.v500 > 8);
+      /** Từ 8 m/s là phải speedbar (chủ 12/09) — không còn dải "khá mạnh" riêng ở giữa. */
       const xiet = theoGio.filter((x) => x.v500 >= GIO_TREN_CAO_SPEEDBAR);
       const ratManh = theoGio.filter((x) => x.v500 > GIO_TREN_CAO_CAM);
-      const diu = theoGio.filter((x) => x.v500 <= 8);
+      const diu = theoGio.filter((x) => x.v500 < GIO_TREN_CAO_SPEEDBAR);
       const caoHon = theoGio.filter((x) => (x.v1000 ?? 0) > GIO_TREN_CAO_CAM);
       const dinh = theoGio.reduce((a, b) => (b.v500 > a.v500 ? b : a), theoGio[0]);
       const caoTuyetDoi = (m: number) => `+${m}m trên bãi (≈${Math.round((alt + m) / 50) * 50}m)`;
       const soLieu = `TB +300/+500/+1000m trên bãi: ${v300?.toFixed(0) ?? "–"}/${v500.toFixed(0)}/${v1000?.toFixed(0) ?? "–"} m/s`;
       /** Đoạn dịu SAU đỉnh — đó là khúc bay được của một ngày gió trên cao mạnh. */
       const diuSau = diu.filter((x) => x.g.gio > dinh.g.gio).map((x) => x.g);
-      const khungManh = manh.length ? khungCua(manh.map((x) => x.g)) : "";
       const khungXiet = xiet.length ? khungCua(xiet.map((x) => x.g)) : "";
       const khungDiuSau = diuSau.length >= 2 ? khungCua(diuSau) : "";
       const gioDiu = diuSau.length ? Math.max(...diuSau.map((g) => gioTaiDoCao(g, 500, alt) ?? 0)) : null;
@@ -382,20 +381,11 @@ export function nhanDinhNgay(
                 (() => {
                   /** Khúc 10–12 m/s còn lại = giờ xiết KHÔNG nằm trong giờ trên 12 — trước đây in nhầm cả dải. */
                   const conLai = xiet.filter((x) => !ratManh.includes(x)).map((x) => x.g);
-                  return conLai.length ? `; ${khungCua(conLai)} phải LẮP SPEEDBAR, bám sườn thấp` : "";
+                  return conLai.length ? `; ${khungCua(conLai)} (8–12 m/s) phải LẮP SPEEDBAR, bám sườn thấp` : "";
                 })()
-              : "LẮP SPEEDBAR, bám sườn thấp, không leo ra xa sườn, sẵn sàng hạ sớm") +
+              : "từ 8 m/s đã phải LẮP SPEEDBAR; bám sườn thấp, không leo ra xa sườn, sẵn sàng hạ sớm") +
             (khungDiuSau ? `. Từ ${khungDiuSau.slice(0, 2)}h gió dịu, bay được ${khungDiuSau}.` : "."),
         );
-      } else if (manh.length) {
-        gioCaoManh = true;
-        noi =
-          `Gió ${caoTuyetDoi(500)} khá mạnh ${khungManh} (đỉnh ${dinh.v500.toFixed(0)} m/s lúc ${gioCua(dinh.g)}) — thermal bị xé, nhiễu động khi leo` +
-          (khungDiuSau ? `; dịu ${khungDiuSau}` : "") +
-          `. ${soLieu}`;
-        ngan = `gió trên cao khá mạnh ${khungManh}`;
-        tong = "chuY";
-        khuyenCao.push(`Gió trên cao khá mạnh ${khungManh} — trong khung ấy không leo quá 300m, giữ tốc độ, tránh bay xa sườn${khungDiuSau ? `; ${khungDiuSau} thoải mái hơn` : ""}.`);
       } else if (v300 !== null && v300 - gioTb > 4) {
         noi = `GIÓ ĐỨT (wind shear): mặt đất ${gioTb.toFixed(1)} m/s nhưng +300m trên bãi đã ${v300.toFixed(0)} m/s — đọc gió ở bãi không tin được, nhiễu động ngay khi rời sườn. ${soLieu}`;
         ngan = "gió đứt ngay trên bãi";
@@ -455,7 +445,7 @@ export function nhanDinhNgay(
       const canSpeedbar = hop.filter((g) => (gioTrenBai(g, 500, alt) ?? 0) >= GIO_TREN_CAO_SPEEDBAR);
       khuyenCao.push(
         `Cà vách ${khungCua(hop)} — gió chính bãi ${hop[0].gio10m.toFixed(1)}–${manhNhat.gio10m.toFixed(1)} m/s, bay bám vách được lâu dù thermal nhẹ` +
-          (canSpeedbar.length ? `; ${khungCua(canSpeedbar)} gió trên cao 10–12 m/s — LẮP SPEEDBAR, bám thấp` : "") +
+          (canSpeedbar.length ? `; ${khungCua(canSpeedbar)} gió trên cao 8–12 m/s — LẮP SPEEDBAR, bám thấp` : "") +
           ".",
       );
     }
@@ -948,10 +938,10 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
   }
   if (tim("Mù")?.tong === "xau") return "Ngày MÙ CẢ NGÀY: bãi chìm trong mây, không thấy bãi đáp — không bay";
   if (li !== null && li <= -2) return "Ngày BẤT ỔN ĐỊNH: thermal gắt, nhiễu động mạnh, mây tích phát triển nhanh — nguy cơ OD/dông chiều, chỉ bay sáng";
-  if (gioCao?.tong === "chuY" && /^gió trên cao (mạnh|khá mạnh)/.test(gioCao.ngan)) {
+  if (gioCao?.tong === "chuY" && /^gió trên cao mạnh/.test(gioCao.ngan)) {
     /** Nói luôn khúc bay được nếu mục gió đã tìm ra — "chiều bay được" là thứ người ta cần biết nhất. */
     const khe = gioCao.noiDung.match(/bay được (\d{2}–\d{2}h)/);
-    return `Ngày GIÓ TRÊN CAO MẠNH ${gioCao.ngan.replace(/^gió trên cao (khá )?mạnh /, "")}: thermal bị xé, cất cánh dễ thổi lùi — ${khe ? `chờ gió dịu, bay ${khe[1]}` : "bay bám sườn thấp, chuyến ngắn"}`;
+    return `Ngày GIÓ TRÊN CAO MẠNH ${gioCao.ngan.replace(/^gió trên cao mạnh /, "")}: thermal bị xé, cất cánh dễ thổi lùi — ${khe ? `chờ gió dịu, bay ${khe[1]}` : "bay bám sườn thấp, chuyến ngắn"}`;
   }
   if (onDinh?.noiDung.includes("OI BỨC")) return "Ngày ỔN ĐỊNH OI BỨC: lift yếu, không khí đục, mù khô — bay ebon, chuyến ngắn, khách dễ mệt vì nóng";
   if (nghich?.tong === "chuY") return "Ngày NGHỊCH NHIỆT THẤP: trần bay bị chặn, mù tích dưới nắp — sáng đục, trưa mới mở";

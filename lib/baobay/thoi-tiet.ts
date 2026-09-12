@@ -649,8 +649,8 @@ export function gioTrenBai(g: GioThoiTiet, mTrenBai: number, alt: number): numbe
   return moc[0].v;
 }
 
-/** Ngưỡng gió trên bãi 500m (luật chủ 12/09): ≥10 lắp speedbar · >12 khuyến cáo không bay. */
-export const GIO_TREN_CAO_SPEEDBAR = 10;
+/** Ngưỡng gió trên bãi 500m (luật chủ 12/09): từ 8 m/s đã phải LẮP SPEEDBAR · trên 12 khuyến cáo không bay. */
+export const GIO_TREN_CAO_SPEEDBAR = 8;
 export const GIO_TREN_CAO_CAM = 12;
 
 /**
@@ -836,7 +836,7 @@ export function chamGio(
    * GIÓ TRÊN CAO THEO TỪNG GIỜ (luật chủ 12/09). Bãi cất ở cao thì gió ở
    * +500m trên bãi mạnh nghĩa là gió NGAY TẠI BÃI CẤT đã mạnh hơn nhiều so
    * với dưới bãi hạ — cất cánh dễ bị thổi lùi. Trên 12 m/s: khuyến cáo không
-   * bay (đỏ); 10–12: lắp speedbar (vàng). Chấm TỪNG GIỜ chứ không cả ngày:
+   * bay (đỏ); 8–12: lắp speedbar (vàng) — chủ 12/09: "từ 8 m/s đã phải nhắc". Chấm TỪNG GIỜ chứ không cả ngày:
    * ngày gió Bắc ở Đồi Bù nó mạnh sáng tới trưa rồi dịu, chiều bay được — tô
    * cả ngày là mất buổi chiều đẹp.
    */

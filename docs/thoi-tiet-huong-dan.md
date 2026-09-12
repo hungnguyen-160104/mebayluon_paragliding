@@ -472,8 +472,7 @@ Nay xét **từng giờ** trong khung bay, gom thành đoạn:
 
 | Gió tại **+500 m trên bãi** | Mỗi giờ | Câu chữ |
 |---|---|---|
-| > 8 m/s | (ghi chú) | "khá mạnh HH–HHh — không leo quá 300m" |
-| ≥ 10 m/s | ô **vàng** | "LẮP SPEEDBAR, bám sườn thấp" |
+| ≥ 8 m/s | ô **vàng** | "LẮP SPEEDBAR, bám sườn thấp" (chủ 12/09: từ 8 đã phải nhắc) |
 | > 12 m/s | ô **đỏ** | "KHUYẾN CÁO KHÔNG BAY HH–HHh" |
 
 và câu nào cũng kèm khúc dịu nếu có: *"Dịu từ 13h (còn ~5 m/s) → bay được
@@ -491,7 +490,7 @@ leo cao được không, không quyết định cất cánh.
 Cùng thước ở mọi nơi: `chamGio` (màu từng giờ, khi được truyền độ cao bãi),
 bộ nhận định và điểm chuyên gia đều dùng `gioTrenBai` ở `thoi-tiet.ts`, nên
 câu chữ và màu ô không đá nhau. Giờ gió +500 m trên 12 m/s cũng **không tính
-là giờ cà vách**; giờ 10–12 thì câu cà vách nhắc luôn speedbar.
+là giờ cà vách**; giờ 8–12 thì câu cà vách nhắc luôn speedbar.
 
 **Huy hiệu ngày "BAY TỐT" cần ít nhất hai giờ xanh liền nhau.** Một giờ xanh lẻ
 loi (13/09 Đồi Bù: 15h xanh, còn lại vàng/đỏ) thì ngày là "cân nhắc" — vẫn
