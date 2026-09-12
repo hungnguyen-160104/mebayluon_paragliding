@@ -29,6 +29,8 @@ function getTransporter() {
 
 export async function sendSmtpMail(args: {
   to: string | string[];
+  /** Gửi kèm một bản cho người khác — thư về cùng một nội dung, ai cũng thấy. */
+  cc?: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -46,6 +48,7 @@ export async function sendSmtpMail(args: {
   return transporter.sendMail({
     from,
     to: args.to,
+    cc: args.cc,
     subject: args.subject,
     html: args.html,
     text: args.text,

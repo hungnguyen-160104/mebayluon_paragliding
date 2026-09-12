@@ -160,7 +160,16 @@ export async function getHomestayOverview(fromRaw?: string, nightsRaw?: number):
 
   const [touching, upcoming, review, sync] = await Promise.all([
     bookingsTouching(from, to),
-    HomestayBooking.find({ status: "confirmed", checkOut: { $gte: todayInVN() } })
+    /**
+     * SỔ ĐẶT PHÒNG ĐI THEO KHUNG ĐANG XEM, KHÔNG NEO VÀO HÔM NAY (chủ 11/09).
+     *
+     * Trước đây danh sách chỉ lấy `checkOut >= hôm nay`, nên lùi bảng về tháng
+     * trước thì lịch phòng hiện ra mà sổ bên dưới trống trơn — muốn tính tiền
+     * một đoàn đã trả phòng là chịu. Nay lấy đúng những booking CHẠM khung
+     * đang xem; khung mặc định vẫn bắt đầu từ hôm nay nên ngày thường không
+     * đổi gì.
+     */
+    HomestayBooking.find({ status: "confirmed", checkOut: { $gt: from }, checkIn: { $lt: to } })
       .sort({ checkIn: 1 })
       .limit(200)
       .lean<any[]>(),

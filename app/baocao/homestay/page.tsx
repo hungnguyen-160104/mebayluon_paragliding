@@ -822,13 +822,75 @@ function BoardCard({
                  phòng gia đình khép kín không nằm trong khu, vẫn bán song song được */
               if (whole) {
                 const gd = at("whole-home-small", 0, d);
+                /**
+                 * PHÒNG ĐOÀN ĐÃ TRẢ LẠI thì KHÔNG nằm trong dải đỏ nữa (chủ
+                 * 11/09): đoàn bao cả nhà rồi bớt người, mấy phòng ấy phải bán
+                 * lại được. Trước đây dải đỏ phủ cứng mọi cột nên phòng đã trả
+                 * vẫn hiện "kín", mà bấm vào dải thì không có gì xảy ra —
+                 * không xoá, không sửa, không trả trống được.
+                 */
+                const daTra = new Set(whole.roomsReleased ?? []);
+                const conBao = columns.filter((c) => c.roomId !== "whole-home-small" && !daTra.has(c.roomId));
+                if (daTra.size > 0) {
+                  return (
+                    <tr key={d}>
+                      {dayCell}
+                      {columns.map((c, i) => {
+                        if (c.roomId === "whole-home-small") {
+                          return (
+                            <td
+                              key={`${c.roomId}:${c.u}`}
+                              className={
+                                "truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
+                                (gd ? cellColor(gd.id) : weekend ? "bg-emerald-50/40" : "")
+                              }
+                              onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: gd })}
+                            >
+                              {gd ? cellLabel(gd) : ""}
+                            </td>
+                          );
+                        }
+                        if (daTra.has(c.roomId)) {
+                          /** Phòng đã trả: ô trống bình thường, bấm vào ghi khách mới được. */
+                          const b2 = at(c.roomId, c.u, d);
+                          return (
+                            <td
+                              key={`${c.roomId}:${c.u}`}
+                              onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: b2 })}
+                              className={
+                                "cursor-pointer truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
+                                (b2 ? cellColor(b2.id) : weekend ? "bg-emerald-50/40" : "")
+                              }
+                              title={b2 ? cellLabel(b2) : "Đoàn đã trả phòng này — bấm để ghi khách mới"}
+                            >
+                              {b2 ? cellLabel(b2) : ""}
+                            </td>
+                          );
+                        }
+                        const dau = conBao[0] === c;
+                        return (
+                          <td
+                            key={`${c.roomId}:${c.u}`}
+                            onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: whole })}
+                            className="cursor-pointer truncate border border-rose-300 bg-rose-600 px-0.5 py-1 text-[10px] font-bold text-white"
+                            title={`${cellLabel(whole)} · bấm để sửa / trả trống · đã trả ${daTra.size} phòng`}
+                          >
+                            {dau ? cellLabel(whole) : ""}
+                            {i === 0 ? "" : ""}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={d}>
                     {dayCell}
                     <td
                       colSpan={columns.length - 1}
-                      className="border border-rose-300 bg-rose-600 py-1.5 text-sm font-bold text-white"
-                      title={`${cellLabel(whole)} · ${formatDateKeyVN(whole.checkIn)} → ${formatDateKeyVN(whole.checkOut)}`}
+                      onClick={() => setEditing({ roomId: whole.roomTypeId, unit: 0, date: d, booking: whole })}
+                      className="cursor-pointer border border-rose-300 bg-rose-600 py-1.5 text-sm font-bold text-white"
+                      title={`${cellLabel(whole)} · ${formatDateKeyVN(whole.checkIn)} → ${formatDateKeyVN(whole.checkOut)} · bấm để sửa / trả trống`}
                     >
                       {cellLabel(whole)} — bao nguyên nhà sàn
                     </td>
