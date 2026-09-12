@@ -302,7 +302,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Không huỷ bớt được" }, { status: 500 });
     }
   }
-  if (!["flown", "cancel", "move", "assign", "collect", "ticket", "accept", "commission", "restore", "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest", "pilot-money"].includes(action)) {
+  /**
+   * DANH SÁCH ĐÓNG các hành động — thêm nhánh xử lý mới thì PHẢI thêm vào đây.
+   * Bản c620181 thêm "pilot-money" nhưng quên "cell" và "ticket-print" nên sửa ô
+   * sổ và IN VÉ đều bị chặn "Hành động không hợp lệ" (chủ báo 12/09).
+   */
+  const HANH_DONG = [
+    "flown", "cancel", "move", "assign", "collect", "ticket", "ticket-print", "accept", "commission", "restore",
+    "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest", "pilot-money", "cell",
+  ];
+  if (!HANH_DONG.includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });
   }
   if (action === "move" && !isDateKey(toDate)) {
