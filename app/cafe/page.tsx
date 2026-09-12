@@ -75,6 +75,10 @@ type DayDTO = {
     method: string;
     soldAt: string;
     byName: string;
+    voided?: boolean;
+    voidedBy?: string;
+    voidReason?: string;
+    editedFromTotal?: number;
   }>;
   menu?: CafeMenuItem[];
 };
@@ -579,20 +583,16 @@ export default function CafePosPage() {
       method: onlyFree || cartTotal === 0 ? "free" : method,
       note: "",
       soldAt: new Date().toISOString(),
+      /**
+       * Đang SỬA một đơn đã bán: gửi kèm mã phiếu cũ — MÁY CHỦ đánh dấu phiếu
+       * cũ "thay bởi" phiếu này và giữ cả hai trong sổ để lần vết (chủ 12/09),
+       * không xoá thẳng như trước. Đi cùng hàng đợi nên mất mạng vẫn không sót.
+       */
+      ...(editingId ? { editedFrom: editingId } : {}),
     };
     commit(entry, print);
     setLastSold(entry);
-    /**
-     * Đang SỬA một đơn đã bán: xoá bản cũ trên máy chủ sau khi bản mới đã vào
-     * hàng đợi. Sổ chỉ còn một bản đúng, không đọng hai bản lệch nhau.
-     */
-    if (editingId) {
-      const old = editingId;
-      setEditingId(null);
-      void apiDelete(`/api/baocao/cafe`, { clientId: old })
-        .then(loadDay)
-        .catch(() => setError("Đã ghi đơn sửa nhưng CHƯA xoá được bản cũ — kiểm lại danh sách phiếu"));
-    }
+    if (editingId) setEditingId(null);
     setCart(new Map());
     setNotes(new Map());
     setTendered(0);
@@ -652,9 +652,12 @@ export default function CafePosPage() {
   }
 
   async function removeRecent(clientId: string) {
-    if (!window.confirm("Xoá phiếu này khỏi sổ?")) return;
+    /** Lý do là BẮT BUỘC và hiện ngay trong sổ — phiếu xoá vẫn còn dòng gạch ngang (chủ 12/09). */
+    const reason = window.prompt("Lý do xoá phiếu này? (bắt buộc — sẽ hiện trong sổ, quản trị đọc được)");
+    if (reason === null) return;
+    if (reason.trim().length < 3) return setError("Phải ghi lý do xoá, ít nhất 3 chữ");
     try {
-      await apiDelete(`/api/baocao/cafe`, { clientId });
+      await apiDelete(`/api/baocao/cafe`, { clientId, reason: reason.trim() });
       loadDay();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không xoá được");
@@ -1220,15 +1223,26 @@ export default function CafePosPage() {
               <summary className="cursor-pointer text-xs font-semibold text-slate-500">Phiếu gần nhất ({day.recent.length})</summary>
               <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
                 {day.recent.map((r) => (
-                  <li key={r.clientId} className="flex items-center gap-2">
+                  <li key={r.clientId} className={"flex items-center gap-2" + (r.voided ? " text-slate-400 line-through decoration-rose-400" : "")}>
                     <span className="text-slate-400">{r.soldAt ? new Date(r.soldAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
-                    <span className="min-w-0 flex-1">{r.label}</span>
+                    <span className="min-w-0 flex-1">
+                      {r.label}
+                      {/* VẾT: phiếu đã xoá ghi lý do + ai; phiếu sửa ghi số cũ (chủ 12/09) */}
+                      {r.voided && (
+                        <span className="ml-1 no-underline text-rose-600 [text-decoration:none]">
+                          — {r.voidReason === "sửa đơn" ? "đã thay bằng phiếu sửa" : `đã xoá: ${r.voidReason}`}{r.voidedBy ? ` (${r.voidedBy})` : ""}
+                        </span>
+                      )}
+                      {!r.voided && (r.editedFromTotal ?? 0) > 0 && (
+                        <span className="ml-1 text-amber-700">— đã sửa, trước {vnd(r.editedFromTotal ?? 0)}</span>
+                      )}
+                    </span>
                     {/* Cột tiền BỀ RỘNG CỐ ĐỊNH để mọi dòng và hàng TỔNG thẳng cột */}
                     <span className="w-20 shrink-0 text-right tabular-nums">
                       {r.kind === "expense" ? `−${vnd(r.total)}` : r.method === "free" ? "FREE" : vnd(r.total)}
                     </span>
                     {/* IN LẠI: khách làm mất phiếu, hoặc máy in kẹt giấy lúc bán */}
-                    {r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
+                    {!r.voided && r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
                       <button
                         type="button"
                         onClick={() =>
@@ -1249,20 +1263,22 @@ export default function CafePosPage() {
                         in lại
                       </button>
                     )}
-                    {r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
+                    {!r.voided && r.kind === "sale" && (r.items?.length ?? 0) > 0 && (
                       <button type="button" onClick={() => editSold(r)} className="text-amber-600 hover:underline">
                         sửa
                       </button>
                     )}
-                    <button type="button" onClick={() => removeRecent(r.clientId)} className="text-rose-500 hover:underline">xoá</button>
+                    {!r.voided && (
+                      <button type="button" onClick={() => removeRecent(r.clientId)} className="text-rose-500 hover:underline">xoá</button>
+                    )}
                   </li>
                 ))}
                 {/* TỔNG của danh sách, thẳng CỘT TIỀN — hai ô cuối chừa chỗ cho nút sửa/xoá */}
                 <li className="flex items-center gap-2 border-t border-slate-300 pt-1 font-bold text-slate-900">
                   <span className="text-slate-400">TỔNG</span>
                   <span className="min-w-0 flex-1">
-                    {day.recent.filter((r) => r.kind === "sale").length} phiếu bán
-                    {day.recent.some((r) => r.kind === "expense")
+                    {day.recent.filter((r) => r.kind === "sale" && !r.voided).length} phiếu bán
+                    {day.recent.some((r) => r.kind === "expense" && !r.voided)
                       ? ` · ${day.recent.filter((r) => r.kind === "expense").length} khoản chi`
                       : ""}
                   </span>

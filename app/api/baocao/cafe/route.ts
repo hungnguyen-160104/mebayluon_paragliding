@@ -92,7 +92,7 @@ export async function DELETE(req: Request) {
   if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json().catch(() => ({}));
-    await deleteCafeEntry(auth, String(body?.clientId ?? ""));
+    await deleteCafeEntry(auth, String(body?.clientId ?? ""), String(body?.reason ?? ""));
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof BaobayError) return NextResponse.json({ message: err.message }, { status: err.status });

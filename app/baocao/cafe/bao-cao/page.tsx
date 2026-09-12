@@ -109,6 +109,11 @@ type DayOrder = {
   soldAt: string;
   byName: string;
   label: string;
+  /** Vết sửa / xoá (chủ 12/09) — dòng vẫn hiện, không cộng tiền. */
+  voided?: boolean;
+  voidedBy?: string;
+  voidReason?: string;
+  editedFromTotal?: number;
 };
 
 type MoneyOrder = {
@@ -343,7 +348,7 @@ export default function CafeReportPage() {
   const chiTotal = form.expenses.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
   /** Khoản chi bấm thẳng trên máy bán (/cafe) — cùng ngày, cùng quầy đang chốt. */
   const chiMayBan = (day?.recent ?? [])
-    .filter((r) => r.kind === "expense" && r.direction !== "thu" && r.counter === form.counter)
+    .filter((r) => r.kind === "expense" && !r.voided && r.direction !== "thu" && r.counter === form.counter)
     .reduce((a, r) => a + (r.total || 0), 0);
 
   const setStock = (i: number, patch: Partial<StockRow>) =>
@@ -1256,8 +1261,8 @@ function RecipeCard({ onError }: { onError: (m: string) => void }) {
  */
 function OrdersCard({ day, handovers }: { day: CafeDay; handovers: MoneyOrder[] }) {
   const [open, setOpen] = useState(false);
-  const sales = day.recent.filter((r) => r.kind === "sale");
-  const expenses = day.recent.filter((r) => r.kind === "expense");
+  const sales = day.recent.filter((r) => r.kind === "sale" && !r.voided);
+  const expenses = day.recent.filter((r) => r.kind === "expense" && !r.voided);
   const hhmm = (iso: string) =>
     iso ? new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
 
@@ -1335,10 +1340,10 @@ function OrdersCard({ day, handovers }: { day: CafeDay; handovers: MoneyOrder[] 
         {open && (
           <ul className="mt-2 divide-y divide-slate-100">
             {day.recent.map((r) => (
-              <li key={r.clientId} className="py-2">
+              <li key={r.clientId} className={"py-2" + (r.voided ? " opacity-70" : "")}>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs text-slate-400">{hhmm(r.soldAt)}</span>
-                  <span className="flex-1 text-sm font-semibold text-slate-900">
+                  <span className={"flex-1 text-sm font-semibold " + (r.voided ? "text-slate-400 line-through decoration-rose-400" : "text-slate-900")}>
                     {r.kind === "expense"
                       ? r.label
                       : r.items.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")}
@@ -1361,6 +1366,15 @@ function OrdersCard({ day, handovers }: { day: CafeDay; handovers: MoneyOrder[] 
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                   <span>{r.counterName}</span>
                   <span>· {r.byName}</span>
+                  {/* VẾT SỬA / XOÁ (chủ 12/09): quản trị đọc được ai xoá, vì sao; phiếu sửa ghi số cũ */}
+                  {r.voided && (
+                    <span className="rounded-full bg-rose-100 px-1.5 font-bold text-rose-800">
+                      {r.voidReason === "sửa đơn" ? "đã thay bằng phiếu sửa" : `đã xoá: ${r.voidReason || "không ghi lý do"}`}{r.voidedBy ? ` — ${r.voidedBy}` : ""}
+                    </span>
+                  )}
+                  {!r.voided && (r.editedFromTotal ?? 0) > 0 && (
+                    <span className="rounded-full bg-amber-100 px-1.5 font-bold text-amber-800">đã sửa · trước {formatVND(r.editedFromTotal ?? 0)}</span>
+                  )}
                   {r.kind === "sale" && (
                     <span>· {r.method === "transfer" ? "CK" : r.method === "free" ? "không thu tiền" : "tiền mặt"}</span>
                   )}

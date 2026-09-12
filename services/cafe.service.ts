@@ -153,6 +153,23 @@ export async function syncCafeEntries(
       },
       { upsert: true },
     );
+    /**
+     * SỬA ĐƠN = phiếu mới thay phiếu cũ, CẢ HAI đều còn trong sổ (chủ 12/09):
+     * phiếu cũ đánh dấu "thay bởi" + ai sửa + lúc nào, phiếu mới ghi "sửa từ"
+     * kèm số tiền cũ. Trước đây máy bán xoá thẳng bản cũ — sổ sạch nhưng mất
+     * dấu ai đã đổi 135k thành 35k.
+     */
+    const cu = String(e?.editedFrom ?? "").trim();
+    if (cu && cu !== clientId && /^[A-Za-z0-9-]{8,64}$/.test(cu)) {
+      const docCu = await CafeSale.findOne({ clientId: cu }).select("total voidedAt").lean<any>();
+      if (docCu && !docCu.voidedAt) {
+        await CafeSale.updateOne(
+          { clientId: cu, voidedAt: null },
+          { $set: { voidedAt: new Date(), voidedByUsername: session.username, voidedByName: session.name, voidReason: "sửa đơn", replacedByClientId: clientId } },
+        );
+        await CafeSale.updateOne({ clientId }, { $set: { editedFromClientId: cu, editedFromTotal: Number(docCu.total) || 0 } });
+      }
+    }
     acked.push(clientId);
   }
   return { acked };
@@ -214,6 +231,14 @@ export type CafeDayDTO = {
     method: string;
     soldAt: string;
     byName: string;
+    /** Vết sửa / xoá — phiếu đã đánh dấu vẫn hiện, không cộng tiền. */
+    voided: boolean;
+    voidedAt: string;
+    voidedBy: string;
+    voidReason: string;
+    replacedBy: string;
+    editedFrom: string;
+    editedFromTotal: number;
   }>;
 };
 
@@ -227,6 +252,8 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
   const byCounter = new Map<string, Tally>();
   for (const c of CAFE_COUNTERS) byCounter.set(c.id, zero());
   for (const d of docs) {
+    /** Phiếu đã xoá / đã bị thay không cộng vào tiền — chỉ còn để lần vết. */
+    if (d.voidedAt) continue;
     const t = byCounter.get(d.counter) ?? zero();
     if (d.kind === "expense") {
       if (d.direction === "thu") t.income += d.total || 0;
@@ -271,6 +298,7 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
   /** Gom theo người bấm bán — phiếu nước và tiền mặt đều là thứ người đó đang giữ. */
   const staff = new Map<string, CafeDayDTO["byStaff"][number]>();
   for (const d of docs) {
+    if (d.voidedAt) continue;
     const u = d.byUsername || "?";
     const cur =
       staff.get(u) ??
@@ -325,19 +353,38 @@ export async function getCafeDay(_session: BaobaySession, dateRaw?: string): Pro
       method: d.method ?? "cash",
       soldAt: d.soldAt ? new Date(d.soldAt).toISOString() : "",
       byName: d.byName || "",
+      voided: Boolean(d.voidedAt),
+      voidedAt: d.voidedAt ? new Date(d.voidedAt).toISOString() : "",
+      voidedBy: d.voidedByName || d.voidedByUsername || "",
+      voidReason: d.voidReason || "",
+      replacedBy: d.replacedByClientId || "",
+      editedFrom: d.editedFromClientId || "",
+      editedFromTotal: Number(d.editedFromTotal) || 0,
     })),
   };
 }
 
 /** Xoá một phiếu ghi nhầm — chỉ trong ngày, kế toán/chủ soát lại qua bảng ngày. */
-export async function deleteCafeEntry(_session: BaobaySession, clientId: string): Promise<void> {
+/**
+ * XOÁ PHIẾU = XOÁ MỀM CÓ LÝ DO (chủ 12/09): phiếu vẫn nằm trong sổ, gạch ngang,
+ * ghi ai xoá, lúc nào, vì sao — để quản trị nắm được hết, không ai xoá lặng lẽ
+ * một phiếu 135k rồi bỏ túi. Tổng tiền tự bỏ phiếu đã đánh dấu.
+ */
+export async function deleteCafeEntry(session: BaobaySession, clientId: string, reason: string): Promise<void> {
   await connectDB();
-  const doc = await CafeSale.findOne({ clientId }).select("date").lean<any>();
+  const lyDo = String(reason ?? "").trim();
+  if (lyDo.length < 3) throw new BaobayError("Phải ghi lý do xoá (ít nhất 3 chữ) — lý do hiện trong sổ", 400);
+  const doc = await CafeSale.findOne({ clientId }).select("date voidedAt").lean<any>();
   if (!doc) return;
-  if (doc.date !== todayInVN()) {
+  if (doc.voidedAt) throw new BaobayError("Phiếu này đã bị xoá / thay trước đó rồi", 400);
+  const quanLy = wearsRole(session, "accountant") || wearsRole(session, "admin");
+  if (doc.date !== todayInVN() && !quanLy) {
     throw new BaobayError("Chỉ xoá được phiếu trong ngày — phiếu cũ nhờ kế toán xử lý", 400);
   }
-  await CafeSale.deleteOne({ clientId });
+  await CafeSale.updateOne(
+    { clientId, voidedAt: null },
+    { $set: { voidedAt: new Date(), voidedByUsername: session.username, voidedByName: session.name, voidReason: lyDo } },
+  );
 }
 
 /* ================================================================== */
@@ -969,7 +1016,7 @@ export async function getCafeStockReport(from: string, to: string): Promise<Cafe
     CafeStockEntry.find({ spot: CAFE_SPOT, date: { $gte: from, $lte: to } })
       .sort({ date: -1 })
       .lean<any[]>(),
-    CafeSale.find({ kind: "sale", date: { $gte: from, $lte: to } })
+    CafeSale.find({ kind: "sale", date: { $gte: from, $lte: to }, voidedAt: null })
       .select("items discountKind")
       .lean<any[]>(),
   ]);

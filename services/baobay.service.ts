@@ -3595,7 +3595,8 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
    * lấy ô khai trong báo cáo ngày — cùng một luật với số "đang giữ" của họ,
    * nên hai chỗ không thể nói hai con số khác nhau.
    */
-  const cafeTickets = await CafeSale.find({ date })
+  /** Phiếu đã xoá / bị thay (voidedAt) không tính tiền — chỉ còn để lần vết (chủ 12/09). */
+  const cafeTickets = await CafeSale.find({ date, voidedAt: null })
     .select("kind direction method total counter byUsername byName")
     .lean<any[]>();
   const cafeAgg = new Map<string, { name: string; counter: string; cash: number; transfer: number }>();
@@ -3797,7 +3798,7 @@ async function getCafeCashOnHand(
   let spent = 0;
 
   /** Phiếu máy bán, tính theo NGƯỜI BẤM. */
-  const tickets = await CafeSale.find({ byUsername: session.username, ...dateFilter })
+  const tickets = await CafeSale.find({ byUsername: session.username, voidedAt: null, ...dateFilter })
     .select("kind direction method total")
     .lean<any[]>();
   for (const t of tickets) {

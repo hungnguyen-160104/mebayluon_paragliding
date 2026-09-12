@@ -40,6 +40,19 @@ export interface ICafeSale {
   byName: string;
   /** Máy chủ nhận lúc nào — lệch xa soldAt nghĩa là phiếu từng nằm chờ mạng. */
   syncedAt: Date;
+  /**
+   * VẾT SỬA / XOÁ (chủ 12/09): phiếu không bao giờ mất khỏi sổ. Xoá = đánh dấu
+   * kèm lý do, ai, lúc nào; sửa = phiếu cũ bị đánh dấu "thay bởi" phiếu mới và
+   * phiếu mới ghi "sửa từ" phiếu cũ với số tiền cũ. Quản trị nhìn thấy hết,
+   * tổng tiền thì bỏ phiếu đã đánh dấu.
+   */
+  voidedAt?: Date;
+  voidedByUsername?: string;
+  voidedByName?: string;
+  voidReason?: string;
+  replacedByClientId?: string;
+  editedFromClientId?: string;
+  editedFromTotal?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -63,6 +76,13 @@ const CafeSaleSchema = new Schema<ICafeSale>(
     byUsername: { type: String, default: "" },
     byName: { type: String, default: "" },
     syncedAt: { type: Date, default: Date.now },
+    voidedAt: Date,
+    voidedByUsername: String,
+    voidedByName: String,
+    voidReason: String,
+    replacedByClientId: String,
+    editedFromClientId: String,
+    editedFromTotal: Number,
   },
   { timestamps: true },
 );

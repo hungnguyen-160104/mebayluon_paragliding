@@ -297,6 +297,8 @@ export type CafeEntry = {
   items: Array<{ id: string; name: string; note?: string; price: number; qty: number }>;
   /** Tổng tiền phiếu (sale) hoặc số tiền chi (expense) — máy chủ tính lại. */
   total: number;
+  /** Đang SỬA phiếu đã bán: mã phiếu cũ — máy chủ đánh dấu phiếu cũ "thay bởi" phiếu này (lưu vết, chủ 12/09). */
+  editedFrom?: string;
   /** Mức giảm đã bấm khi tính tiền: khách thường / phi công / ngoại giao. */
   discount?: CafeDiscountId;
   /** sale: khách trả bằng gì. "free" = toàn phiếu nước miễn phí, không thu tiền. */
