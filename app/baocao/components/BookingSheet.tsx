@@ -8,6 +8,7 @@ import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickupSo, ty
 import type { BookingDTO } from "@/lib/baobay/types";
 
 import { apiPatch, apiPost } from "./client-api";
+import { GoiSdt } from "./GoiSdt";
 import { useFillHeight } from "./useFillHeight";
 
 /**
@@ -642,7 +643,12 @@ export function BookingSheet({
                               (col.wrap || col.kind === "names" ? "whitespace-pre-line break-words" : "truncate")
                             }
                           >
-                            {cellText(b, col, spot)}
+                            {col.key === "phone" ? (
+                              /** Ô SĐT: bấm số là gọi, bấm chỗ trống của ô mới vào sửa (GoiSdt chặn nổi bọt). */
+                              <GoiSdt sdt={cellText(b, col, spot)} className="text-sky-800" />
+                            ) : (
+                              cellText(b, col, spot)
+                            )}
                             {/**
                              * NÚT 📄 CHI TIẾT ghép vào ô "Số booking" — đúng chỗ
                              * mắt đang tìm khi muốn tra một khách, khỏi phải mở

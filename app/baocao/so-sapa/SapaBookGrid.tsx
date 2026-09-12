@@ -6,6 +6,7 @@ import { frozenCount, frozenOffsets, groupSpans, sheetColumns, shortPickupSo, ty
 import type { SapaBookRow, SapaBookView } from "@/services/baobay.service";
 
 import { apiPatch, apiPost } from "../components/client-api";
+import { GoiSdt } from "../components/GoiSdt";
 import { useFillHeight } from "../components/useFillHeight";
 
 /**
@@ -526,7 +527,12 @@ function DayBlock({
                         (col.wrap || col.kind === "names" ? "whitespace-pre-line break-words" : "truncate")
                       }
                     >
-                      {cellText(row, col)}
+                      {col.key === "phone" ? (
+                        /** Ô SĐT: bấm số là gọi, bấm chỗ trống của ô mới vào sửa (GoiSdt chặn nổi bọt). */
+                        <GoiSdt sdt={cellText(row, col)} className="text-sky-800" />
+                      ) : (
+                        cellText(row, col)
+                      )}
                     </span>
                   )}
                 </td>

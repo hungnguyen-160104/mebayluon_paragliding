@@ -39,6 +39,7 @@ import {
 import { PaymentQrButton } from "./PaymentQr";
 import { coInVe, printBookingTickets } from "./TicketPrint";
 import { MayInUsb } from "./MayInUsb";
+import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, ServiceBox, TextArea, TextInput, useDoneFlag } from "./ui";
 
@@ -337,7 +338,7 @@ function BookingSummary({
       {b.phone ? (
         <>
           {" · "}
-          <strong className="rounded bg-amber-100 px-1 font-bold tabular-nums text-amber-900">📞 {b.phone}</strong>
+          <GoiSdt sdt={b.phone} className="rounded bg-amber-100 px-1 font-bold tabular-nums text-amber-900">📞 {b.phone}</GoiSdt>
         </>
       ) : null}
       {ppgBadge ? (
@@ -3330,7 +3331,7 @@ function BookingDetailControl({
                   {b.otaRef ? ` · ${b.otaName || "OTA"} ${b.otaRef}` : ""}
                 </dd>
                 <dt className="text-slate-500">SĐT</dt>
-                <dd className="font-medium tabular-nums">{b.phone || "—"}</dd>
+                <dd className="font-medium tabular-nums">{b.phone ? <GoiSdt sdt={b.phone} className="text-sky-700">📞 {b.phone}</GoiSdt> : "—"}</dd>
                 {b.email && (
                   <>
                     <dt className="text-slate-500">Email</dt>
@@ -3879,7 +3880,7 @@ function BookingDayTable({
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
                   <div className="break-words font-semibold text-slate-900">{b.contactName || "—"}</div>
                   {b.phone && (
-                    <div className="whitespace-nowrap text-[10px] tabular-nums text-slate-500">📞 {b.phone}</div>
+                    <div className="whitespace-nowrap text-[10px] tabular-nums text-slate-500"><GoiSdt sdt={b.phone}>📞 {b.phone}</GoiSdt></div>
                   )}
                 </td>
                 <td className="max-w-[120px] border-b border-slate-100 px-2 py-1 text-[11px] text-slate-500">
