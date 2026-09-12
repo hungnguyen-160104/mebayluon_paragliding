@@ -37,6 +37,7 @@ import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
 import { RefundCard } from "../components/RefundCard";
 import { PeriodSummary } from "../components/PeriodSummary";
 import { AddServicesCard } from "../components/AddServicesCard";
+import { useHoSo } from "../components/useHoSo";
 import { CancelMoveCard } from "../components/CancelMoveCard";
 import { BookingCard, BookingTodayBanner } from "../components/BookingCard";
 import { CollectCreate, CollectInbox } from "../components/CollectBox";
@@ -347,6 +348,29 @@ export default function DispatcherReportPage() {
   );
   const returned = cancelledCodes.length + recalledExtra.length;
 
+  /**
+   * SỐ THEO SỔ BOOKING (chủ 12/09): thẻ liệt kê "4 khách huỷ · 1 khách dời"
+   * mà bốn ô thống kê bên dưới vẫn 0 vì chúng chỉ đếm dòng NGƯỜI NÀY gõ vào
+   * báo cáo. Khách do đồng nghiệp huỷ ngay trên dòng booking không ai gõ lại.
+   * Nên ô thống kê lấy MAX(sổ, khai tay) — sổ là sự thật, khai tay chỉ bổ
+   * sung trường hợp chưa kịp ghi vào sổ; không cộng hai nguồn để khỏi đếm đôi.
+   */
+  const huyTheoSo =
+    cancelledBookings.reduce((t, b) => t + (b.guestCount || 0), 0) +
+    dayBookings.reduce((t, b) => t + (b.cancelledGuests || 0), 0);
+  const doiTheoSo = movedOutBookings.reduce((t, b) => t + (b.guestCount || 0), 0);
+  /** Mã vé thu hồi theo sổ = mã ghi trên các đoàn đã huỷ; gộp với mã khai tay, không trùng. */
+  const maThuHoiGop = new Set<string>([
+    ...cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []),
+    ...cancelledCodes,
+    ...recalledExtra,
+  ]);
+  /** Tiền theo sổ của CHÍNH MÌNH (lệnh thu, hàng bán thêm, hoa hồng đã chi) — như khung sửa của kế toán. */
+  const hoSo = useHoSo(spot ?? "", date, user?.username ?? "");
+  const tienSo = hoSo.du?.tien;
+  const thuSo = tienSo ? tienSo.lenhThuTM + tienSo.lenhThuCK + tienSo.hangTM + tienSo.hangCK : 0;
+  const chiSo = tienSo ? tienSo.hoaHongTM : 0;
+
   const loadDay = useCallback(async (targetDate: string) => {
     if (!spot) return;
     setLoadingDay(true);
@@ -508,12 +532,16 @@ export default function DispatcherReportPage() {
   /** Hà Nội không xuất vé giấy: ẩn toàn bộ khối vé, nhóm huỷ/dời ghi chú thay mã. */
   const noTickets = spot === "ha-noi";
 
-  /** Tổng ĐẦU KHÁCH huỷ / dời — gõ từ thẻ "Khách huỷ / dời lịch" ngay trên. */
-  const cancelledGuestTotal = form.cancelledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
-  const movedGuestTotal = form.rescheduledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
+  /** Tổng ĐẦU KHÁCH huỷ / dời — khai tay ở thẻ "Khách huỷ / dời lịch", so với sổ ở trên. */
+  const huyKhaiTay = form.cancelledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
+  const doiKhaiTay = form.rescheduledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
+  const cancelledGuestTotal = Math.max(huyTheoSo, huyKhaiTay);
+  const movedGuestTotal = Math.max(doiTheoSo, doiKhaiTay);
+  const returnedGop = Math.max(returned, maThuHoiGop.size);
+  const chuNguon = (so: number, tay: number) => (so !== tay ? ` (sổ ${so} · khai tay ${tay})` : "");
 
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;
-  const returnMismatch = !noTickets && form.ticketsReturned !== returned;
+  const returnMismatch = !noTickets && form.ticketsReturned !== returnedGop;
   const revenue = form.money.reduce((a, e) => a + (e.kind === "thu" ? e.amount || 0 : 0), 0);
   const expenseSum = form.money.reduce((a, e) => a + (e.kind !== "thu" ? e.amount || 0 : 0), 0);
   const myReds = (check?.myIssues || []).filter((i) => i.severity === "red");
@@ -884,13 +912,13 @@ export default function DispatcherReportPage() {
             khách huỷ vẫn chỉ là một dòng, nên hai bên hay lệch mà không rõ vì sao.
           */}
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Readout label="Số khách huỷ" value={`${cancelledGuestTotal} khách`} tone={cancelledGuestTotal > 0 ? "warning" : "normal"} />
-            <Readout label="Số khách dời ngày" value={`${movedGuestTotal} khách`} tone={movedGuestTotal > 0 ? "warning" : "normal"} />
+            <Readout label={`Số khách huỷ${chuNguon(huyTheoSo, huyKhaiTay)}`} value={`${cancelledGuestTotal} khách`} tone={cancelledGuestTotal > 0 ? "warning" : "normal"} />
+            <Readout label={`Số khách dời ngày${chuNguon(doiTheoSo, doiKhaiTay)}`} value={`${movedGuestTotal} khách`} tone={movedGuestTotal > 0 ? "warning" : "normal"} />
           </div>
 
           {!noTickets && (
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Readout label="Mã thu hồi (huỷ + lẻ)" value={`${returned} vé`} tone={returnMismatch ? "warning" : "normal"} />
+            <Readout label="Mã thu hồi (huỷ + lẻ)" value={`${returnedGop} vé`} tone={returnMismatch ? "warning" : "normal"} />
             <Readout label="Vé thu về đã khai" value={`${form.ticketsReturned} vé`} />
           </div>
           )}
@@ -898,15 +926,15 @@ export default function DispatcherReportPage() {
           {returnMismatch && !locked && (
             <div className="mt-2">
               <Banner tone="warning">
-                Số vé thu về ({form.ticketsReturned}) khác tổng mã thu hồi ({cancelledCodes.length} mã huỷ + {recalledExtra.length} thu hồi lẻ = {returned}). Vé khách dời MANG THEO không tính là thu về.
+                Số vé thu về ({form.ticketsReturned}) khác tổng mã thu hồi ({returnedGop} mã: theo sổ và khai tay, không trùng). Vé khách dời MANG THEO không tính là thu về.
                 <div className="mt-2">
                   <Button
                     type="button"
                     variant="ghost"
                     className="h-9 px-3 text-xs"
-                    onClick={() => set("ticketsReturned", returned)}
+                    onClick={() => set("ticketsReturned", returnedGop)}
                   >
-                    Lấy số vé thu về = {returned}
+                    Lấy số vé thu về = {returnedGop}
                   </Button>
                 </div>
               </Banner>
@@ -918,17 +946,37 @@ export default function DispatcherReportPage() {
         <CollapseCard
           title="THU CHI & TIỀN NONG"
         >
+          {/**
+           * TIỀN THEO SỔ BOOKING đứng trước (chủ 12/09): tiền khách trả đi qua nút
+           * "thu tiền" ở từng booking, không ai gõ lại vào đây, nên trước kia
+           * "Tổng thu +0 ₫" dù đã thu cả chục triệu. Số sổ không sửa ở đây.
+           */}
+          {tienSo && (thuSo > 0 || chiSo > 0) && (
+            <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-700">
+              <div className="font-bold text-slate-600">Theo sổ booking (không sửa ở đây)</div>
+              <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                {tienSo.lenhThuTM > 0 && <span>Khách trả TM <b className="tabular-nums text-emerald-700">{formatVND(tienSo.lenhThuTM)}</b></span>}
+                {tienSo.lenhThuCK > 0 && <span>Khách trả CK <b className="tabular-nums text-indigo-700">{formatVND(tienSo.lenhThuCK)}</b></span>}
+                {tienSo.hangTM + tienSo.hangCK > 0 && <span>Hàng bán thêm <b className="tabular-nums text-emerald-700">{formatVND(tienSo.hangTM + tienSo.hangCK)}</b></span>}
+                {tienSo.hoaHongTM > 0 && <span>Hoa hồng đại lý đã chi <b className="tabular-nums text-rose-700">−{formatVND(tienSo.hoaHongTM)}</b></span>}
+                {tienSo.daNop > 0 && <span>Đã nộp <b className="tabular-nums">{formatVND(tienSo.daNop)}</b></span>}
+                {tienSo.daUng > 0 && <span>Đã ứng <b className="tabular-nums text-amber-700">{formatVND(tienSo.daUng)}</b></span>}
+              </div>
+            </div>
+          )}
           <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} disabled={locked} withKind withMethod hideTotals />
 
-          {/* Tổng chạy theo sổ: thu xanh dấu +, chi đỏ dấu − */}
+          {/* Tổng GỘP sổ + khai tay: thu xanh dấu +, chi đỏ dấu − */}
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
               <div className="text-xs font-medium text-emerald-800">Tổng thu</div>
-              <div className="text-lg font-bold tabular-nums text-emerald-700">+{formatVND(revenue)}</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">+{formatVND(revenue + thuSo)}</div>
+              {thuSo > 0 && <div className="text-[11px] text-slate-500">sổ {formatVND(thuSo)} + khai tay {formatVND(revenue)}</div>}
             </div>
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
               <div className="text-xs font-medium text-rose-800">Tổng chi</div>
-              <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum)}</div>
+              <div className="text-lg font-bold tabular-nums text-rose-700">−{formatVND(expenseSum + chiSo)}</div>
+              {chiSo > 0 && <div className="text-[11px] text-slate-500">sổ {formatVND(chiSo)} + khai tay {formatVND(expenseSum)}</div>}
             </div>
           </div>
 

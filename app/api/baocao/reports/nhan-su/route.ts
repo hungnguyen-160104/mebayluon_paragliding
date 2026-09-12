@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { isDateKey } from "@/lib/baobay/date";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { wearsRole } from "@/lib/baobay/roles";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError, hoSoNhanSuNgay } from "@/services/baobay.service";
 
@@ -15,12 +16,13 @@ export const dynamic = "force-dynamic";
  *
  *   GET ?spot=&date=YYYY-MM-DD&username=
  *
- * CHỈ KẾ TOÁN VÀ QUẢN TRỊ: đây là số của NGƯỜI KHÁC. Người trực muốn xem phần
- * của chính mình thì đã có trang "tiền của tôi" — mở endpoint này cho họ là mở
- * luôn lối xem tiền của đồng nghiệp.
+ * KẾ TOÁN VÀ QUẢN TRỊ xem được của mọi người. Người khác CHỈ xem được hồ sơ
+ * của CHÍNH MÌNH (chủ 12/09: trang điều phối phải thấy "tổng thu / tổng chi"
+ * theo sổ chứ không phải 0 ₫) — hỏi tên người khác là 403, không lộ tiền của
+ * đồng nghiệp.
  */
 export async function GET(req: Request) {
-  const auth = requireBaobay(req, { roles: ["accountant", "admin"], allowAdmin: true });
+  const auth = requireBaobay(req, { allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
   const spot = resolveSpot(req, auth);
@@ -31,6 +33,10 @@ export async function GET(req: Request) {
   const username = (q.get("username") ?? "").trim();
   if (!isDateKey(date)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   if (!username) return NextResponse.json({ message: "Thiếu tên đăng nhập" }, { status: 400 });
+  const quanLy = auth.viaAdmin || wearsRole(auth, "accountant") || wearsRole(auth, "admin");
+  if (!quanLy && username.toLowerCase() !== auth.username.toLowerCase()) {
+    return NextResponse.json({ message: "Chỉ xem được hồ sơ của chính mình" }, { status: 403 });
+  }
 
   try {
     return NextResponse.json(await hoSoNhanSuNgay(spot, date, username));

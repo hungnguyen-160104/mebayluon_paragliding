@@ -769,6 +769,8 @@ export type BookingPick = {
   refundMethod?: "cash" | "transfer";
   cancelTicketCodes?: string[];
   cancelledBy?: string;
+  /** Số khách đã huỷ MỘT PHẦN khỏi đoàn còn bay — cộng vào "Số khách huỷ" theo sổ. */
+  cancelledGuests?: number;
   note?: string;
   /** Dịch vụ kèm — thẻ huỷ/dời cần để hỏi "mang theo bao nhiêu" khi tách nhóm. */
   flycam?: number;
