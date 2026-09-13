@@ -1082,7 +1082,7 @@ function ChamKinhNghiem({
       <div className={"text-[11px] font-bold " + (noiTruoc ? "text-violet-900" : "text-sky-900")}>
         {noiTruoc ? (
           <>
-            Ngày {ngay.ngay.slice(8, 10)}/{ngay.ngay.slice(5, 7)} — theo kinh nghiệm anh đoán thế nào?
+            Ngày {ngay.ngay.slice(8, 10)}/{ngay.ngay.slice(5, 7)} — chuyên gia nhận định thế nào?
             {daCham?.forecast && (
               <span className="ml-1 font-normal text-slate-600">(đã ghi bởi {daCham.forecastBy || "—"})</span>
             )}
@@ -1100,6 +1100,17 @@ function ChamKinhNghiem({
        * trước mình nghĩ gì, tự đối chiếu được. Đây cũng là chỗ máy lấy cặp
        * (đoán · thật) để đo mình sai lệch ra sao.
        */}
+      {/**
+       * Nói rõ lời ghi ở đây KHÔNG chỉ để máy học, mà ĐÈ THẲNG lên dự báo hiện
+       * cho cả đội và khách (chủ 13/09) — người ghi phải biết trước sức nặng
+       * của câu mình viết.
+       */}
+      {noiTruoc && (
+        <div className="mt-0.5 text-[10px] leading-snug text-violet-800">
+          Ghi vào đây là <strong>đè lên dự báo của máy</strong>: cả đội và khách trên web đều đọc câu này, kèm tên anh. Máy cũng lấy nó để học dần.
+        </div>
+      )}
+
       {!noiTruoc && daCham?.forecast && (
         <div className="mt-0.5 text-[10px] text-slate-600">
           Hôm trước anh đoán: <strong>{NHAN_KET[daCham.forecast]}</strong>

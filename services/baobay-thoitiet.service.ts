@@ -259,8 +259,32 @@ async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string, t
   return res.json();
 }
 
-/** Đọc dự báo và chấm màu từng giờ, gộp theo ngày. */
+/**
+ * Đọc dự báo và chấm màu từng giờ, gộp theo ngày, RỒI gộp sổ kinh nghiệm.
+ *
+ * Gộp sổ ở lớp bọc NGOÀI bộ đệm (chủ 13/09): lời chuyên gia vừa ghi phải hiện
+ * ngay lượt sau, không đợi đệm hết hạn; và bản trong đệm phải sạch, không dính
+ * dấu của lượt trước. Nên mỗi lượt trả về một BẢN SAO nông rồi mới gộp.
+ */
 export async function duBaoDiemBay(
+  spot: string,
+  opts: { soNgay?: number; boCache?: boolean; moHinh?: string } = {},
+): Promise<{
+  spot: SpotId;
+  toaDo: ToaDoDiemBay;
+  nguong: NguongBay;
+  ngay: NgayThoiTiet[];
+  moHinh: string;
+  layLuc: string;
+}> {
+  const du = await duBaoDiemBayTho(spot, opts);
+  const ngay = du.ngay.map((n) => ({ ...n }));
+  await gopKinhNghiem(du.spot, ngay);
+  return { ...du, ngay };
+}
+
+/** Bản THÔ: chỉ số của mô hình, chưa có lời người. Đệm nằm trong hàm này. */
+async function duBaoDiemBayTho(
   spot: string,
   opts: { soNgay?: number; boCache?: boolean; moHinh?: string } = {},
 ): Promise<{
@@ -515,7 +539,22 @@ async function layVaCham(
  * Điểm chưa có sổ (Sơn Trà, Hà Giang, Trạm Tấu…) thì dùng toạ độ trong danh
  * sách và ngưỡng khởi điểm của bay đôi.
  */
-export async function duBaoDiemCongKhai(diem: {
+/**
+ * Dự báo cho WEB KHÁCH, đã gộp lời chuyên gia (chủ 13/09: chỉnh một chỗ thì
+ * cả đội lẫn khách cùng đọc đúng thứ người có nghề nói).
+ */
+export async function duBaoDiemCongKhai(
+  diem: Parameters<typeof duBaoDiemCongKhaiTho>[0],
+  moHinhMa?: string,
+): ReturnType<typeof duBaoDiemCongKhaiTho> {
+  const du = await duBaoDiemCongKhaiTho(diem, moHinhMa);
+  const ngay = du.ngay.map((n) => ({ ...n }));
+  /** Điểm có sổ nội bộ thì mượn sổ ấy; điểm chưa có sổ dùng chính slug. */
+  await gopKinhNghiem(diem.spotNoiBo || diem.slug, ngay);
+  return { ...du, ngay };
+}
+
+async function duBaoDiemCongKhaiTho(diem: {
   slug: string;
   ten: string;
   tinh: string;
@@ -841,6 +880,70 @@ export type LichSuCham = {
   rainTotal?: number;
   markedBy: string;
 };
+
+/**
+ * GẮN LỜI CHUYÊN GIA + NGÀY GIỐNG vào dãy dự báo (chủ 13/09).
+ *
+ * Hai việc, cùng một lượt đọc sổ:
+ *  1. Ngày nào chủ đã ghi dự báo tay thì lời chủ ĐÈ lên máy: đổi `muc`, giữ
+ *     `mucMay` để còn đối chiếu. Đội và khách đọc được đúng thứ người có nghề
+ *     nói, thay vì câu máy đoán sai.
+ *  2. Mỗi ngày kèm vài ngày cũ có kiểu trời giống nhất, kèm chính lời chủ ghi
+ *     hôm đó — máy "học nghề" bằng cách nhắc lại chuyện đã xảy ra, không phải
+ *     bằng đoán.
+ *
+ * Không ném lỗi: sổ hỏng hay chưa có gì thì dự báo vẫn chạy như cũ.
+ */
+export async function gopKinhNghiem(spot: string, ngay: NgayThoiTiet[]): Promise<void> {
+  if (!ngay.length) return;
+  try {
+    await connectDB();
+    const key = normalizeSpot(spot);
+    const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(150).lean<any[]>();
+    const theoNgay = new Map<string, any>(docs.map((d) => [String(d.date), d]));
+
+    for (const n of ngay) {
+      const d = theoNgay.get(n.ngay);
+      /** Chỉ lời ghi TRƯỚC (forecast) mới đè dự báo; chấm thực tế là chuyện đã qua. */
+      if (d?.forecast) {
+        n.chuyenGiaNguoi = {
+          ket: d.forecast,
+          khung: d.forecastWindow || undefined,
+          ghiChu: d.forecastNote || undefined,
+          boi: d.forecastBy || undefined,
+          luc: d.forecastAt ? new Date(d.forecastAt).toISOString() : undefined,
+        };
+        if (!n.mucMay) n.mucMay = n.muc;
+        n.muc = d.forecast === "tot" ? "xanh" : d.forecast === "han-che" ? "vang" : "do";
+        if (d.forecastWindow) n.khungDep = d.forecastWindow;
+      }
+    }
+
+    /** Ngày cũ để so: phải đã chấm thực tế và có số. */
+    const lan: LanCham[] = docs
+      .filter((d) => d.verdict && Number.isFinite(d.windMax) && Number.isFinite(d.gustMax))
+      .map((d) => ({
+        ngay: String(d.date),
+        ket: d.verdict,
+        gioMax: Number(d.windMax),
+        giatMax: Number(d.gustMax),
+        muaTong: Number(d.rainTotal ?? 0),
+        duBaoChu: d.forecast,
+        mayCham: d.machineVerdict,
+        ghiChu: d.note || d.forecastNote,
+      }));
+    if (lan.length >= 5) {
+      for (const n of ngay) {
+        const g = ngayGiongNhau({ gioMax: n.gioMax, giatMax: n.giatMax, muaTong: n.muaTong }, lan);
+        /** Chỉ giữ ngày có LỜI GHI — ngày trống không dạy được gì. */
+        const coChu = g.filter((x) => (x.ghiChu ?? "").trim().length > 0);
+        if (coChu.length) n.ngayGiong = coChu;
+      }
+    }
+  } catch (e) {
+    console.warn("[thoi-tiet] không gộp được sổ kinh nghiệm:", e instanceof Error ? e.message : e);
+  }
+}
 
 export async function soKinhNghiem(
   spot: string,

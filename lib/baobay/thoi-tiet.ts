@@ -1064,6 +1064,30 @@ export type NgayThoiTiet = {
    * `TiemNangThermal`.
    */
   thermal?: unknown;
+  /**
+   * CHUYÊN GIA NGƯỜI ĐÃ NÓI GÌ VỀ NGÀY NÀY (chủ 13/09: "tôi là chuyên gia kinh
+   * nghiệm thì vào đâu để sửa dự báo").
+   *
+   * Có khối này nghĩa là người có nghề đã đọc trời và ghi vào sổ: kết luận
+   * (tốt · hạn chế · nghỉ), khung giờ đẹp, lý do. Khi ấy `muc` của ngày lấy
+   * theo người, còn `mucMay` giữ nguyên màu máy tính ra — để đối chiếu xem
+   * máy lệch ở đâu, và để `hocNguong` học tiếp.
+   */
+  chuyenGiaNguoi?: {
+    ket: "tot" | "han-che" | "nghi";
+    khung?: string;
+    ghiChu?: string;
+    boi?: string;
+    luc?: string;
+  };
+  /** Mức MÁY tự chấm, giữ lại khi chuyên gia đè lên `muc`. */
+  mucMay?: MucDo;
+  /**
+   * NHỮNG NGÀY CŨ GIỐNG NGÀY NÀY, kèm chính lời chủ đã ghi hôm đó — đây là
+   * cách máy "học nghề" mà không cần đoán: gặp lại kiểu trời đã gặp thì nhắc
+   * lại chuyện đã xảy ra (xem ngayGiongNhau).
+   */
+  ngayGiong?: NgayGiong[];
 };
 
 /**

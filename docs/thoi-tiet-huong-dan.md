@@ -924,3 +924,31 @@ thực tế), máy tính và hiện trong khối tím 🎓:
 
 Ngưỡng của ba điểm có sổ được dùng luôn cho trang khách, nên càng chấm nhiều
 thì màu khách nhìn thấy càng giống cách chủ điểm thật sự quyết định.
+
+## Chuyên gia sửa dự báo, và máy học nghề (từ 13/09/2026)
+
+**Vào đâu:** `/baocao/thoi-tiet` → bấm vào một NGÀY CHƯA TỚI trên dải 10 ngày →
+khối tím hiện ra.
+
+**Ghi gì:** chọn *Bay tốt · Hạn chế · Nghỉ bay*, ghi khung giờ đẹp
+(ví dụ `08:00-11:00`) và lý do bằng chữ (*"gió đông nam, mây cao, chiều thường
+lên"*). Người ghi được ký tên tự động.
+
+**Điều gì xảy ra sau đó:**
+
+1. **Lời chuyên gia ĐÈ lên máy.** Ngày ấy đổi màu theo kết luận của anh, khung
+   giờ đẹp lấy theo anh, và câu chữ của anh hiện thành một khối riêng — trên
+   thẻ nội bộ *và* trên trang thời tiết của khách. Máy chấm khác thì hiện nhỏ
+   bên cạnh ("máy chấm hạn chế") để còn đối chiếu, không mất dấu.
+2. **Ngày đã qua thì CHẤM THỰC TẾ** (khối xanh): hôm đó thật sự ra sao. Máy
+   nhắc lại hôm trước anh đoán gì để tự đối chiếu.
+3. **Máy học ba đường:**
+   - *Ngưỡng gió và giật*: đủ 8 ngày đã chấm thì máy dò ra mốc anh thật sự dừng
+     bay, hiện nút **Áp dụng ngưỡng máy học được**.
+   - *Ngày giống*: gặp kiểu trời đã gặp, máy nhắc lại chính lời anh ghi hôm ấy —
+     khối 📒 *Ngày giống trong sổ kinh nghiệm* dưới nhận định.
+   - *Độ chính xác*: bảng so dự báo của anh với dự báo của máy trên cùng ngày.
+
+**Muốn máy chuẩn dần thì làm đều hai việc:** tối hôm trước ghi nhận định cho
+ngày mai; hôm sau chấm lại thực tế. Mỗi cặp như vậy là một bài học; càng nhiều
+cặp, ngưỡng và lời nhắc càng sát điểm bay của mình.

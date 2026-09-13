@@ -84,8 +84,53 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
         {gon && <span className="shrink-0 text-[11px] opacity-70">{mo ? "▾" : "▸"}</span>}
       </button>
 
+      {/**
+        * LỜI CHUYÊN GIA ĐÈ LÊN MÁY (chủ 13/09).
+        *
+        * Người có nghề đọc trời vào sổ thì câu của họ đứng TRÊN mọi thứ máy
+        * tính ra — kể cả khi máy nói ngược lại. Ghi rõ tên người nói để ai đọc
+        * cũng biết đây là nhận định của người, không phải số của mô hình.
+        */}
+      {ngay.chuyenGiaNguoi && (
+        <div className="mt-1 rounded-lg border-2 border-current/40 bg-white/80 px-2 py-1 text-[12px] leading-snug">
+          <span className="mr-1 rounded bg-current/10 px-1 py-0.5 text-[10px] font-black uppercase tracking-wide">
+            👤 Chuyên gia{ngay.chuyenGiaNguoi.boi ? ` · ${ngay.chuyenGiaNguoi.boi}` : ""}
+          </span>
+          <strong>
+            {ngay.chuyenGiaNguoi.ket === "tot" ? "Bay tốt" : ngay.chuyenGiaNguoi.ket === "han-che" ? "Bay hạn chế" : "Nghỉ bay"}
+          </strong>
+          {ngay.chuyenGiaNguoi.khung ? ` · đẹp ${ngay.chuyenGiaNguoi.khung}` : ""}
+          {ngay.chuyenGiaNguoi.ghiChu ? ` — ${ngay.chuyenGiaNguoi.ghiChu}` : ""}
+          {ngay.mucMay && ngay.mucMay !== ngay.muc && (
+            <span className="ml-1 opacity-60">(máy chấm {ngay.mucMay === "xanh" ? "bay được" : ngay.mucMay === "vang" ? "hạn chế" : "không bay"})</span>
+          )}
+        </div>
+      )}
+
       {/* KIỂU NGÀY — câu phi công nói với nhau ở bãi, hiện ngay dưới dòng tóm tắt. */}
       {mo && nd.kieuNgay && <div className="mt-1 text-[12px] font-bold leading-snug">🧭 {nd.kieuNgay}</div>}
+
+      {/**
+       * NGÀY CŨ GIỐNG NGÀY NÀY — máy "học nghề" bằng cách nhắc lại chuyện đã
+       * xảy ra: cùng kiểu gió, cùng lượng mưa thì hôm ấy bay ra sao, chủ ghi gì.
+       */}
+      {mo && (ngay.ngayGiong?.length ?? 0) > 0 && (
+        <div className="mt-1.5 rounded-lg bg-white/60 px-2 py-1 text-[11px] leading-snug">
+          <div className="font-bold">📒 Ngày giống trong sổ kinh nghiệm</div>
+          <ul className="mt-0.5 space-y-0.5">
+            {ngay.ngayGiong!.slice(0, 3).map((g) => (
+              <li key={g.ngay}>
+                <strong>{g.ngay.slice(8, 10)}/{g.ngay.slice(5, 7)}</strong>{" "}
+                <span className={g.ket === "tot" ? "text-emerald-700" : g.ket === "han-che" ? "text-amber-700" : "text-rose-700"}>
+                  {g.ket === "tot" ? "bay tốt" : g.ket === "han-che" ? "hạn chế" : "nghỉ bay"}
+                </span>
+                {g.ghiChu ? ` — “${g.ghiChu}”` : ""}
+                <span className="opacity-60"> (gió {g.gioMax} · giật {g.giatMax})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {mo && (
         /**
