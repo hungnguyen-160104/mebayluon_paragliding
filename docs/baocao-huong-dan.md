@@ -407,6 +407,20 @@ phép). Nên có hai đường:
 
 In thẳng hỏng thì báo lý do rồi tự rơi về hộp thoại / tab in.
 
+**Máy tính bảng Honor / Huawei / Xiaomi không in được?** (chủ 13/09 báo Honor
+Pad 10). Mở `/baocao/tram-in` → bấm **“🔎 Máy này in được không?”**, khối kiểm
+tra nói thẳng máy thiếu gì. Ba nguyên nhân theo thứ tự hay gặp:
+
+1. **Mở bằng trình duyệt của hãng** (Honor Browser, Huawei Browser) — các
+   trình duyệt này tắt Web Bluetooth. Phải cài **Google Chrome** và mở trang
+   bằng Chrome.
+2. **Chưa bật VỊ TRÍ / GPS** — Android bắt bật vị trí mới cho quét Bluetooth;
+   tắt thì hộp chọn thiết bị trống trơn dù máy in đang bật.
+3. **Máy in đang bị ứng dụng in của hãng giữ** — thoát ứng dụng đó rồi ghép lại.
+
+Máy nào không nối được thì vẫn dùng được bình thường: để một máy khác làm
+**trạm in** (mục 2), máy này bấm IN VÉ là trạm in hộ.
+
 Xem mẫu vé không cần máy in: `npx tsx scripts/baocao/xem-mau-ve.ts mau-ve.html`
 rồi mở tệp bằng trình duyệt. Phép thử: `scripts/baocao/test-ve-in.ts`.
 

@@ -27,10 +27,65 @@ import { MayInUsb } from "../components/MayInUsb";
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
+import { trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
+
 import { buildTicketsHtml, coInVe, inQuaMayInThang, mayInThangDaGhep } from "../components/TicketPrint";
 import { Banner, Button, Card, PageLoading } from "../components/ui";
 
 type Job = { id: string; bookingLabel: string; status: string; createdByName: string; createdAt: string; doneAt?: string; error?: string };
+
+/**
+ * TỰ KIỂM TRA MÁY — chủ 13/09 báo "Honor Pad 10 không in vé được". Máy tính
+ * bảng của hãng Trung Quốc hay mở bằng trình duyệt riêng (không có Web
+ * Bluetooth) hoặc tắt vị trí (Android bắt bật vị trí mới quét được BLE). Khối
+ * này nói thẳng máy đang thiếu gì, khỏi phải đoán qua điện thoại.
+ */
+function KiemTraMay() {
+  const [mo, setMo] = useState(false);
+  const [viTri, setViTri] = useState<string>("chưa kiểm");
+  if (typeof window === "undefined") return null;
+  const ua = navigator.userAgent;
+  const laChrome = /Chrome\//.test(ua) && !/EdgA|OPR|SamsungBrowser|HuaweiBrowser|HeyTap|MiuiBrowser/i.test(ua);
+  const dong = (nhan: string, ok: boolean, chu: string) => (
+    <li className="flex flex-wrap items-baseline gap-1.5 py-0.5">
+      <span className={ok ? "text-emerald-700" : "text-rose-700"}>{ok ? "✓" : "✗"}</span>
+      <b>{nhan}:</b> <span className={ok ? "text-slate-700" : "text-rose-800"}>{chu}</span>
+    </li>
+  );
+  return (
+    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2">
+      <button type="button" className="text-xs font-bold text-sky-700 underline" onClick={() => setMo((v) => !v)}>
+        {mo ? "Ẩn" : "🔎 Máy này in được không? (bấm để kiểm tra)"}
+      </button>
+      {mo && (
+        <ul className="mt-1.5 text-[11px] leading-snug text-slate-700">
+          {dong("Trình duyệt", laChrome, laChrome ? "Chrome — đúng loại" : "KHÔNG phải Chrome. Máy Honor / Huawei phải cài Google Chrome và mở trang bằng Chrome.")}
+          {dong("Địa chỉ https", window.isSecureContext, window.isSecureContext ? "đúng" : "đang mở qua http — vào https://www.mebayluon.com")}
+          {dong("Web Bluetooth", trinhDuyetCoBluetooth(), trinhDuyetCoBluetooth() ? "có" : "không có — trình duyệt sai loại hoặc bị tắt trong chrome://flags")}
+          {dong("WebUSB (cáp OTG)", typeof navigator !== "undefined" && "usb" in navigator, "usb" in navigator ? "có" : "không có")}
+          <li className="flex flex-wrap items-baseline gap-1.5 py-0.5">
+            <b>Vị trí (GPS):</b> <span>{viTri}</span>
+            <button
+              type="button"
+              className="rounded border border-slate-300 bg-white px-1.5 font-semibold text-slate-600"
+              onClick={() => {
+                setViTri("đang hỏi…");
+                navigator.geolocation?.getCurrentPosition(
+                  () => setViTri("đang BẬT — đúng"),
+                  (e) => setViTri(`chưa bật / bị từ chối (${e.message}). Android bắt bật vị trí mới quét được Bluetooth.`),
+                  { timeout: 8000 },
+                );
+              }}
+            >
+              kiểm tra
+            </button>
+          </li>
+          <li className="mt-1 text-slate-500">Máy: {ua.slice(0, 120)}</li>
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function TrangTramIn() {
   const { user, loading } = useBaobaySession(["dispatcher", "counter", "accountant", "admin"]);
@@ -141,6 +196,7 @@ export default function TrangTramIn() {
           <Card title="1. Ghép máy in (một lần)" hint="Bật máy in Gainscha và Bluetooth của máy này, bấm ghép, chọn máy in trong hộp hiện ra.">
             <MayInUsb />
             {!kenh && <p className="mt-2 text-xs text-amber-800">Chưa ghép máy in — trạm không in được. Ghép xong trạng thái trên sẽ hiện tên máy.</p>}
+            <KiemTraMay />
           </Card>
           <Card title="2. Trực" hint="Bấm rồi để nguyên trang này mở. Màn hình được giữ sáng. Nên cắm sạc.">
             <div className="flex flex-wrap items-center gap-2">

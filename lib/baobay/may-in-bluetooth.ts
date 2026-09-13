@@ -83,10 +83,38 @@ export function boGhepMayInBluetooth(): void {
 /** Thiết bị đang giữ trong phiên (sau khi ghép hoặc lấy lại) — tải lại trang là mất, phải tìm lại. */
 let thietBiPhien: ThietBiBle | null = null;
 
+/**
+ * Đọc lỗi của Web Bluetooth thành câu người trực hiểu được.
+ *
+ * Máy tính bảng Trung Quốc (Honor, Huawei — chủ 13/09 báo Honor Pad 10 không
+ * in được) hay vướng đúng ba chỗ, mà trình duyệt chỉ ném một tên lỗi cụt:
+ *  - mở bằng trình duyệt của hãng (Honor Browser) thay vì Chrome → không có
+ *    Web Bluetooth;
+ *  - Android bắt BẬT VỊ TRÍ (GPS) mới cho quét BLE, tắt là hộp chọn trống;
+ *  - máy in chưa bật / đang bị ứng dụng khác của hãng giữ.
+ */
+export function docLoiBluetooth(e: unknown): string {
+  const ten = e instanceof Error ? e.name : "";
+  const m = e instanceof Error ? e.message : String(e);
+  if (/cancel|chooser was closed|User cancelled/i.test(m)) return "";
+  if (ten === "NotFoundError")
+    return "Hộp chọn không thấy máy in nào. Kiểm: (1) máy in đã BẬT chưa; (2) máy tính bảng đã BẬT VỊ TRÍ / GPS chưa — Android bắt buộc bật vị trí mới cho quét Bluetooth; (3) đang mở bằng CHROME chứ không phải trình duyệt của hãng; (4) máy in chưa bị ứng dụng in của hãng giữ kết nối (thoát ứng dụng đó).";
+  if (ten === "SecurityError")
+    return "Trình duyệt chặn vì trang không chạy qua https, hoặc chính sách của máy. Vào bằng địa chỉ https://www.mebayluon.com.";
+  if (ten === "NotSupportedError" || /not supported|globally disabled/i.test(m))
+    return "Trình duyệt này tắt Web Bluetooth. Cài và mở bằng Google Chrome; nếu vẫn báo thế, vào chrome://flags bật “Experimental Web Platform features”.";
+  if (ten === "NetworkError")
+    return "Nối được máy in nhưng rớt giữa chừng. Tắt bật lại máy in, để máy gần (dưới 2 m), rồi ghép lại.";
+  return m;
+}
+
 /** GHÉP: bật hộp chọn Bluetooth của trình duyệt, người trực chọn máy in. Phải gọi trong cú bấm. */
 export async function ghepMayInBluetooth(): Promise<string> {
   const b = bt();
-  if (!b) throw new Error("Trình duyệt này không có Web Bluetooth — dùng Chrome trên Android / máy tính.");
+  if (!b)
+    throw new Error(
+      "Trình duyệt này KHÔNG có Web Bluetooth. Trên máy tính bảng Honor / Huawei phải mở bằng Google Chrome (tải từ cửa hàng ứng dụng), không dùng trình duyệt sẵn của hãng.",
+    );
   const d = await b.requestDevice({ acceptAllDevices: true, optionalServices: DICH_VU_MAY_IN });
   thietBiPhien = d;
   try {

@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 
-import { boGhepMayInBluetooth, ghepMayInBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
+import { boGhepMayInBluetooth, docLoiBluetooth, ghepMayInBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
 import { boGhepMayIn, ghepMayIn, mayInDaGhep, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 
 export function MayInUsb() {
@@ -27,8 +27,8 @@ export function MayInUsb() {
 
   if (!coBt && !coUsb) {
     return (
-      <span className="text-[11px] text-slate-500" title="Chỉ Chrome / Edge mới nối thẳng máy in (Bluetooth hoặc USB). Vé vẫn in qua hộp thoại in.">
-        🖨 In qua hộp thoại in (trình duyệt này không nối thẳng máy in — dùng Chrome)
+      <span className="text-[11px] leading-snug text-rose-700">
+        🖨 Trình duyệt này KHÔNG nối thẳng được máy in. Máy tính bảng Honor / Huawei phải mở bằng <b>Google Chrome</b> (không dùng trình duyệt sẵn của hãng). Vé vẫn in được qua hộp thoại in.
       </span>
     );
   }
@@ -60,8 +60,8 @@ export function MayInUsb() {
             try {
               setBt(await ghepMayInBluetooth());
             } catch (e) {
-              const m = e instanceof Error ? e.message : String(e);
-              if (!/cancel|chooser/i.test(m)) setLoi(m);
+              const m = docLoiBluetooth(e);
+              if (m) setLoi(m);
             }
           }}
           title="Bật máy in và Bluetooth điện thoại, bấm rồi chọn máy in trong hộp hiện ra (tên có chữ BLE nếu thấy hai tên). Chỉ Chrome."
