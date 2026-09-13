@@ -26,6 +26,7 @@ import { after } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
 import { CAFE_COUNTERS } from "@/lib/baobay/cafe";
+import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
@@ -6922,7 +6923,7 @@ export async function recordTicketPrint(
    * vết in vẫn ghi đủ (ai, lúc nào, lần thứ mấy) nên vẫn lần được. Mọi vai
    * khác giữ nguyên luật: từ lần in thứ hai phải ghi rõ lý do.
    */
-  const khongCanLyDo = isFullAdmin(session as never);
+  const khongCanLyDo = IN_VE_TU_DO || isFullAdmin(session as never);
   if (daIn > 0 && !khongCanLyDo && reason.length < 5) {
     throw new BaobayError(
       `Vé này đã in ${daIn} lần. In lại phải ghi rõ LÝ DO (ít nhất 5 ký tự) — vé 3 liên là giấy tờ tiền, mỗi bộ in thêm phải giải trình được.`,

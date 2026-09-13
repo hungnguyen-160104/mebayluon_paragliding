@@ -37,6 +37,8 @@ import {
   type FlightKind,
 } from "@/lib/baobay/flight-price";
 import { PaymentQrButton } from "./PaymentQr";
+import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
+
 import { baoLoiVaoTab, coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
@@ -1125,12 +1127,14 @@ function ReprintTicket({
         variant="ghost"
         className={
           "h-7 px-2 text-xs font-semibold " +
-          (soLan > 1 ? "border-rose-400 bg-rose-50 text-rose-700" : "bg-white text-slate-600")
+          (IN_VE_TU_DO ? "border-sky-400 bg-sky-50 text-sky-700" : soLan > 1 ? "border-rose-400 bg-rose-50 text-rose-700" : "bg-white text-slate-600")
         }
         disabled={busy}
         onClick={() => (khongGioiHan ? void inLai() : setOpen(true))}
         title={
-          khongGioiHan
+          IN_VE_TU_DO
+            ? `Đang mở tự do để THỬ MÁY IN: bấm là in ngay, không hỏi lý do. Vé này đã in ${soLan} lần.`
+            : khongGioiHan
             ? `In lại ngay, không hỏi lý do (quản trị). Vé này đã in ${soLan} lần.`
             : soLan > 1
             ? `⚠ Vé này đã in ${soLan} lần:\n` +
@@ -5209,8 +5213,18 @@ export function BookingTodayBanner({
           "🎫 Xuất vé"
         )}
       </Button>
-      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
-        <ReprintTicket spot={spot} booking={b} onDone={load} khongGioiHan={user?.role === "admin" && user?.adminLevel === 1} />
+      {/**
+       * Đang ĐỢT THỬ MÁY IN (IN_VE_TU_DO, chủ 13/09): nút 🖨 hiện ở MỌI booking
+       * của điểm có in vé, kể cả chưa tích "đã xuất vé", và bấm là in ngay
+       * không hỏi lý do. Hết đợt thử, tắt cờ trong lib/baobay/in-ve-cau-hinh.ts.
+       */}
+      {(IN_VE_TU_DO ? coInVe(spot) && !b.noTicketFlight : b.ticketIssued && !b.noTicketFlight && coInVe(spot)) && (
+        <ReprintTicket
+          spot={spot}
+          booking={b}
+          onDone={load}
+          khongGioiHan={IN_VE_TU_DO || (user?.role === "admin" && user?.adminLevel === 1)}
+        />
       )}
     </>
   );

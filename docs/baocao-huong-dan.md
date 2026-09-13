@@ -331,7 +331,16 @@ Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích
 "đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do — riêng **quản trị
 cấp 1 (Đặng V.M) in lại không giới hạn, không hỏi lý do** (chủ 13/09), vết in
-vẫn ghi đủ ai và lúc nào. Điểm khác (Hà Nội)
+vẫn ghi đủ ai và lúc nào.
+
+> **ĐANG TRONG ĐỢT THỬ MÁY IN** (chủ 13/09): cờ `IN_VE_TU_DO` ở
+> `lib/baobay/in-ve-cau-hinh.ts` đang **bật** — nút 🖨 hiện ở **mọi** booking
+> của Khau Phạ / Sa Pa (kể cả chưa tích "đã xuất vé"), bấm là in ngay, không
+> hỏi lý do, không giới hạn, với mọi vai. Đầu sổ booking có nhãn *"🧪 Đang mở
+> tự do để thử máy in"*. Thử xong, đổi cờ về `false` là quay lại luật trên —
+> không phải sửa chỗ nào khác.
+
+Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**

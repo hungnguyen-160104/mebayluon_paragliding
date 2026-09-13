@@ -16,6 +16,7 @@
 import { useState } from "react";
 
 import { boGhepMayInBluetooth, docLoiBluetooth, ghepMayInBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
+import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 import { batRawbt, LINK_CAI_RAWBT, mayCoTheDungRawbt, rawbtDaBat } from "@/lib/baobay/may-in-rawbt";
 import { boGhepMayIn, ghepMayIn, mayInDaGhep, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 
@@ -135,6 +136,11 @@ export function MayInUsb() {
           🔌 hoặc USB
         </button>
       ) : null}
+      {IN_VE_TU_DO && (
+        <span className="rounded-lg border border-sky-300 bg-sky-50 px-1.5 py-0.5 font-bold text-sky-800" title="Đang trong đợt thử máy in: nút 🖨 hiện ở mọi booking, in không giới hạn, không hỏi lý do.">
+          🧪 Đang mở tự do để thử máy in
+        </span>
+      )}
       {khoiRawbt}
       {coRaw && !raw && (
         <a href={LINK_CAI_RAWBT} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">
