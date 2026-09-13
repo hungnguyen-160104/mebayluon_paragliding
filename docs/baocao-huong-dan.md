@@ -387,8 +387,20 @@ phép). Nên có hai đường:
    Trang trạm giữ màn hình sáng, nên cắm sạc và thêm vào màn hình chính.
    Lệnh đang in quá 2 phút hay chờ quá 10 phút tự chuyển "lỗi" để không in
    vé cũ. Xem `services/in-ve.service.ts`, `app/baocao/tram-in/page.tsx`.
-3. **In thẳng qua BLUETOOTH** trên chính máy đang bấm (B300 là máy in di động,
-   chủ 12/09): bật máy in và Bluetooth điện thoại, bấm **🖨 Ghép máy in Bluetooth**
+3. **IN THẲNG QUA RAWBT — cách chạy được với máy in Bluetooth THƯỜNG** (chủ
+   13/09: "không muốn trạm in, cần in trực tiếp từ máy được kết nối"). Trình
+   duyệt chỉ nối được Bluetooth năng lượng thấp (BLE); Gainscha B300 và mọi
+   máy in nhiệt cầm tay ghép ở **Cài đặt → Bluetooth** của Android là kiểu
+   **cổ điển (SPP)** — không có cửa nào cho trang web. RawBT là cầu nối chạy
+   ngay trên máy đó, không qua máy nào khác. Cài một lần:
+   - Ghép máy in trong **Cài đặt → Bluetooth** của máy tính bảng (như ghép tai nghe).
+   - Cài **RawBT** (CH Play / AppGallery), mở ra, chọn máy in vừa ghép.
+   - Trong sổ booking bấm **📲 Dùng RawBT**.
+   Từ đó nút IN VÉ đẩy thẳng luồng ESC/POS sang RawBT, RawBT in ra máy. Gửi
+   từng liên một, nghỉ 1,2 giây giữa các liên (đường liên kết không tải nổi cả
+   bốn liên một lượt). Xem `lib/baobay/may-in-rawbt.ts`.
+4. **In thẳng qua BLUETOOTH BLE** trên chính máy đang bấm (máy in nào có kênh
+   BLE, chủ 12/09): bật máy in và Bluetooth điện thoại, bấm **🖨 Ghép máy in Bluetooth**
    ở đầu danh sách booking, chọn máy in trong hộp hiện ra (thấy hai tên gần
    giống thì chọn tên có chữ *BLE*). Từ đó nút IN VÉ đẩy thẳng ra máy (ESC/POS,
    vé chụp thành ảnh 576 chấm, gửi từng liên, cắt sau mỗi liên — xem
@@ -397,10 +409,10 @@ phép). Nên có hai đường:
    phải dùng USB hoặc hộp thoại in. BLE chậm: bốn liên khoảng 20 giây, đừng bấm
    in hai lần liền. Chỉ Chrome / Edge có Web Bluetooth; Safari không có. Tải
    lại trang là mất kết nối, bấm ghép lại (hộp chọn hiện sẵn máy cũ).
-4. **In thẳng qua USB** — cáp OTG với điện thoại, hoặc máy tính. Bấm **🔌 hoặc
+5. **In thẳng qua USB** — cáp OTG với điện thoại, hoặc máy tính. Bấm **🔌 hoặc
    USB**, chọn B300. **Windows** thường bị driver của hãng giữ cổng USB nên
    phải gán WinUSB cho máy in bằng công cụ **Zadig** một lần.
-5. Trên **điện thoại / máy tính bảng** chưa ghép máy in thẳng và không có trạm: bấm IN VÉ mở
+6. Trên **điện thoại / máy tính bảng** chưa ghép máy in thẳng và không có trạm: bấm IN VÉ mở
    vé ra tab riêng có nút **IN VÉ** to — hộp thoại in Android chỉ có máy in
    nếu điện thoại có dịch vụ in tương ứng (Gainscha không có), thường chỉ
    "Lưu PDF"; nên ở điện thoại hãy ghép Bluetooth.
@@ -418,8 +430,9 @@ tra nói thẳng máy thiếu gì. Ba nguyên nhân theo thứ tự hay gặp:
    tắt thì hộp chọn thiết bị trống trơn dù máy in đang bật.
 3. **Máy in đang bị ứng dụng in của hãng giữ** — thoát ứng dụng đó rồi ghép lại.
 
-Máy nào không nối được thì vẫn dùng được bình thường: để một máy khác làm
-**trạm in** (mục 2), máy này bấm IN VÉ là trạm in hộ.
+Thứ tự app tự chọn khi bấm IN VÉ: **máy in ghép thẳng trên chính máy này**
+(BLE → USB → RawBT) trước; không có mới tới trạm in; cuối cùng là hộp thoại in.
+Muốn in thẳng thì làm mục 3 (RawBT) — chạy được cả trên máy Honor / Huawei.
 
 Xem mẫu vé không cần máy in: `npx tsx scripts/baocao/xem-mau-ve.ts mau-ve.html`
 rồi mở tệp bằng trình duyệt. Phép thử: `scripts/baocao/test-ve-in.ts`.

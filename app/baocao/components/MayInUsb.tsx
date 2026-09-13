@@ -16,16 +16,58 @@
 import { useState } from "react";
 
 import { boGhepMayInBluetooth, docLoiBluetooth, ghepMayInBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
+import { batRawbt, LINK_CAI_RAWBT, mayCoTheDungRawbt, rawbtDaBat } from "@/lib/baobay/may-in-rawbt";
 import { boGhepMayIn, ghepMayIn, mayInDaGhep, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 
 export function MayInUsb() {
   const [bt, setBt] = useState<string | null>(() => mayInBluetoothDaGhep()?.name ?? null);
   const [usb, setUsb] = useState<boolean>(() => mayInDaGhep() !== null);
+  const [raw, setRaw] = useState<boolean>(() => rawbtDaBat());
   const [loi, setLoi] = useState<string | null>(null);
   const coBt = trinhDuyetCoBluetooth();
   const coUsb = trinhDuyetCoUsb();
+  const coRaw = mayCoTheDungRawbt();
 
-  if (!coBt && !coUsb) {
+  const nutBo = (onClick: () => void, title: string) => (
+    <button type="button" className="rounded-lg border border-slate-300 bg-white px-1.5 py-0.5 font-semibold text-slate-600" onClick={onClick} title={title}>
+      bỏ ghép
+    </button>
+  );
+
+  /**
+   * RAWBT — cầu nối cho máy in BLUETOOTH CỔ ĐIỂN (Gainscha B300). Trình duyệt
+   * chỉ nối được Bluetooth năng lượng thấp; máy in ghép ở Cài đặt của Android
+   * là kiểu cổ điển, không có cửa nào cho trang web. Cài RawBT một lần, chọn
+   * máy in trong đó, rồi bật công tắc này — nút IN VÉ đẩy thẳng sang RawBT,
+   * không qua máy nào khác (chủ 13/09).
+   */
+  const khoiRawbt = coRaw ? (
+    raw ? (
+      <>
+        <span className="rounded-lg border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800" title="Vé in thẳng qua RawBT ra máy in Bluetooth đã ghép ở Cài đặt máy">
+          📲 RawBT: đang bật
+        </span>
+        {nutBo(() => {
+          batRawbt(false);
+          setRaw(false);
+        }, "Tắt RawBT")}
+      </>
+    ) : (
+      <button
+        type="button"
+        className="rounded-lg border border-violet-300 bg-violet-50 px-2 py-0.5 font-bold text-violet-800 hover:bg-violet-100"
+        onClick={() => {
+          batRawbt(true);
+          setRaw(true);
+        }}
+        title="Dùng cho máy in Bluetooth thường (Gainscha B300): cài ứng dụng RawBT, ghép máy in trong Cài đặt Bluetooth của máy, chọn máy in trong RawBT, rồi bật cái này."
+      >
+        📲 Dùng RawBT (máy in Bluetooth thường)
+      </button>
+    )
+  ) : null;
+
+  if (!coBt && !coUsb && !coRaw) {
     return (
       <span className="text-[11px] leading-snug text-rose-700">
         🖨 Trình duyệt này KHÔNG nối thẳng được máy in. Máy tính bảng Honor / Huawei phải mở bằng <b>Google Chrome</b> (không dùng trình duyệt sẵn của hãng). Vé vẫn in được qua hộp thoại in.
@@ -33,11 +75,6 @@ export function MayInUsb() {
     );
   }
 
-  const nutBo = (onClick: () => void, title: string) => (
-    <button type="button" className="rounded-lg border border-slate-300 bg-white px-1.5 py-0.5 font-semibold text-slate-600" onClick={onClick} title={title}>
-      bỏ ghép
-    </button>
-  );
 
   return (
     <span className="flex flex-wrap items-center gap-1 text-[11px]">
@@ -79,7 +116,7 @@ export function MayInUsb() {
             setUsb(false);
           }, "Bỏ ghép USB")}
         </>
-      ) : coUsb ? (
+      ) : coUsb && !raw ? (
         <button
           type="button"
           className="rounded-lg border border-slate-300 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50"
@@ -98,6 +135,12 @@ export function MayInUsb() {
           🔌 hoặc USB
         </button>
       ) : null}
+      {khoiRawbt}
+      {coRaw && !raw && (
+        <a href={LINK_CAI_RAWBT} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">
+          cài RawBT
+        </a>
+      )}
       {loi && <span className="text-rose-700">{loi}</span>}
     </span>
   );

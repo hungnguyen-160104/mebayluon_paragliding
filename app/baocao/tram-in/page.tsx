@@ -95,7 +95,7 @@ export default function TrangTramIn() {
   const [dangIn, setDangIn] = useState<string | null>(null);
   const [nhatKy, setNhatKy] = useState<Job[]>([]);
   const [daIn, setDaIn] = useState(0);
-  const [kenh, setKenh] = useState<"bluetooth" | "usb" | null>(() => (typeof window !== "undefined" ? mayInThangDaGhep() : null));
+  const [kenh, setKenh] = useState<"bluetooth" | "usb" | "rawbt" | null>(() => (typeof window !== "undefined" ? mayInThangDaGhep() : null));
   const dangXuLy = useRef(false);
   const wakeRef = useRef<{ release: () => Promise<void> } | null>(null);
   const tenMay = typeof navigator !== "undefined" ? navigator.userAgent.replace(/^.*\((.*?)\).*$/, "$1").slice(0, 40) : "trạm";
