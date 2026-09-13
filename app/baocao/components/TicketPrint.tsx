@@ -87,12 +87,19 @@ const LUU_Y_2 = "Mất vé không cấp lại.";
 
 /** Điều lưu ý cho khách trên liên khách giữ — mỗi điều MỘT dòng ngắn (chủ 12/09). */
 const LUU_Y_KHACH = [
-  /* mỗi dòng ≤ 58 ký tự để nằm trọn 72mm ở cỡ 9,5px — dài hơn là bị cắt cụt */
-  "Mang điện thoại còn pin, trống ~10GB để chép ảnh/video",
+  /**
+   * Mỗi dòng ≤ 44 ký tự.
+   *
+   * Chữ trên vé đã nâng lên cỡ đọc được trên giấy nhiệt (chủ 13/09: "một số
+   * chữ quá bé, in bị nhoè"), nên dòng dài như trước bị đẩy tràn khỏi mép vé.
+   * Cắt ngắn còn hơn để chữ to mà mất đuôi. `.luuy-khach li` vẫn cho xuống
+   * dòng làm lưới an toàn, phòng khi đổi chữ mà quên đếm.
+   */
+  "Điện thoại còn pin, trống ~10GB chép ảnh",
   "Nên đeo kính râm, mang áo khoác mỏng",
-  "Đồ dài tay gọn, giày thể thao; không váy, cao gót, dép lê",
+  "Giày thể thao, đồ gọn; không váy, cao gót",
   "Mang theo CCCD / hộ chiếu",
-  "Không mang vật sắc nhọn, đồ cồng kềnh, tư trang giá trị",
+  "Không mang đồ sắc nhọn, cồng kềnh, đồ quý",
 ];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */
@@ -288,7 +295,7 @@ const CSS = `
   .so.nho .so-icon svg { width: 26px; height: 26px; }
   /* Mã chống sao chép: chữ đơn cách, viền riêng, luôn cạnh số để đối chiếu một lượt */
   .so-ma { margin-left: 8px; padding: 1px 5px; border: 1.5px solid #000; border-radius: 3px; font-family: "Courier New", ui-monospace, monospace; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
-  .so-ma-nhan { font-family: inherit; font-size: 7px; letter-spacing: .5px; font-weight: 700; }
+  .so-ma-nhan { font-family: inherit; font-size: 9px; letter-spacing: .5px; font-weight: 800; }
   .so.nho .so-ma { font-size: 13px; margin-left: 6px; }
   /* KHÔNG XUỐNG DÒNG ở bất cứ ô nào — vé nhiệt tính từng mm chiều dài (chủ 12/09).
      Ô giá trị dài quá thì co chữ nhỏ lại (clamp) chứ không bẻ dòng. */
@@ -297,18 +304,20 @@ const CSS = `
   td:first-child { width: 18mm; color: #222; }
   /* Màu ghi TƯỜNG MINH cho mọi ô: vé được chụp/in trong khung riêng, không được kế thừa màu của trang ngoài. */
   td.p { text-align: right; font-weight: 700; padding-left: 4px; overflow: hidden; text-overflow: clip; color: #000; }
-  td.p.dai { font-size: 10.5px; }
-  .qr-nhan { margin-top: 4px; text-align: center; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  td.p.dai { font-size: 11px; }
+  .qr-nhan { margin-top: 4px; text-align: center; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
   .qr { display: flex; justify-content: space-around; align-items: flex-start; margin-top: 2px; }
   .qr figure { margin: 0; text-align: center; }
   .qr-anh { width: 24mm; height: 24mm; }
   .qr-anh svg { width: 100%; height: 100%; display: block; }
-  .qr figcaption { font-size: 9px; font-weight: 700; margin-top: 1px; white-space: nowrap; }
+  .qr figcaption { font-size: 11px; font-weight: 800; margin-top: 1px; white-space: nowrap; }
   .ghi { margin-top: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; color: #000; }
-  .uong { margin: 2px 0 0; font-size: 9.5px; white-space: nowrap; color: #000; }
-  .luuy { margin-top: 5px; border-top: 1px solid #000; padding-top: 3px; font-size: 9.5px; font-weight: 700; text-align: center; white-space: nowrap; line-height: 1.3; }
-  .luuy-khach { margin: 1px 0 0; padding-left: 12px; font-size: 9.5px; line-height: 1.35; color: #000; }
-  .luuy-khach li { white-space: nowrap; }
+  .uong { margin: 2px 0 0; font-size: 11px; font-weight: 600; white-space: nowrap; color: #000; }
+  .luuy { margin-top: 5px; border-top: 1px solid #000; padding-top: 3px; font-size: 11px; font-weight: 800; text-align: center; white-space: nowrap; line-height: 1.3; }
+  .luuy-khach { margin: 1px 0 0; padding-left: 12px; font-size: 11px; font-weight: 600; line-height: 1.4; color: #000; }
+  /* Lưới an toàn: dòng nào lỡ dài thì XUỐNG DÒNG có thụt lề, thà thêm vài mm
+     giấy còn hơn in ra mất đuôi chữ (chủ 13/09). */
+  .luuy-khach li { white-space: normal; overflow-wrap: anywhere; }
 `;
 
 /**
@@ -448,7 +457,40 @@ export function mayInThangDaGhep(): "bluetooth" | "usb" | "rawbt" | null {
 export async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb" | "rawbt"): Promise<void> {
   const html2canvas = (await import("html2canvas")).default;
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
-  const htmlUsb = html.replace("</style>", `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; } .qr-anh { width: 200px !important; height: 200px !important; } body { font-size: 15px; } table { font-size: 16px !important; } .so-tri { font-size: 56px !important; } .so.nho .so-tri { font-size: 40px !important; } .ten { font-size: 28px !important; } .diem, .ghi, .uong { font-size: 16px !important; } .lien { font-size: 15px !important; } .qr-nhan, .qr figcaption, .luuy { font-size: 13px !important; } .so-nhan { font-size: 12px !important; }</style>`);
+  /**
+   * BẢN IN THẲNG phóng chữ theo khung 576 chấm.
+   *
+   * Chủ 13/09: "một số chữ của vé in nhiệt quá bé, in bị nhoè". Trong khung
+   * này 1px = 1 chấm máy in; ở 203 dpi thì chữ 10 chấm chỉ cao 1,2mm — nét
+   * mảnh hơn một hạt mực, in ra nhoè. SÀN LÀ 15 CHẤM (≈1,9mm) và chữ nhỏ
+   * phải đậm ≥600, vì nét mảnh là thứ nhoè trước tiên.
+   *
+   * Bản trước sót ba lớp — `.luuy-khach` (năm dòng lưu ý ở liên khách giữ),
+   * `td.p.dai` (tên khách dài), và gõ nhầm `.so-nhan` thay vì `.so-ma-nhan` —
+   * nên đúng mấy chỗ ấy vẫn in ở 9–10 chấm và nhoè.
+   */
+  const htmlUsb = html.replace(
+    "</style>",
+    `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
+     .qr-anh { width: 200px !important; height: 200px !important; }
+     body { font-size: 16px; -webkit-font-smoothing: none; }
+     table { font-size: 17px !important; }
+     td.p.dai { font-size: 15px !important; }
+     .so-tri { font-size: 56px !important; }
+     .so.nho .so-tri { font-size: 40px !important; }
+     .so-ma { font-size: 22px !important; }
+     .so.nho .so-ma { font-size: 19px !important; }
+     .so-ma-nhan { font-size: 13px !important; }
+     .ten { font-size: 28px !important; }
+     .ten small { font-size: 17px !important; }
+     .ghi, .uong { font-size: 17px !important; font-weight: 700 !important; }
+     .lien { font-size: 17px !important; }
+     .qr-nhan { font-size: 16px !important; }
+     .qr figcaption { font-size: 15px !important; }
+     .luuy { font-size: 15px !important; }
+     .luuy-khach { font-size: 15px !important; font-weight: 600 !important; line-height: 1.45 !important; padding-left: 18px !important; }
+     </style>`,
+  );
   const frame = await dungKhung(htmlUsb, RONG_CHAM);
   try {
     const doc = frame.contentDocument!;
