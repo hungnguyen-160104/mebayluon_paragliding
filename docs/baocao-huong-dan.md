@@ -329,7 +329,9 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích
-"đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do. Điểm khác (Hà Nội)
+"đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do — riêng **quản trị
+cấp 1 (Đặng V.M) in lại không giới hạn, không hỏi lý do** (chủ 13/09), vết in
+vẫn ghi đủ ai và lúc nào. Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**

@@ -1078,10 +1078,13 @@ function ReprintTicket({
   spot,
   booking,
   onDone,
+  khongGioiHan = false,
 }: {
   spot: string;
   booking: BookingDTO;
   onDone: () => void;
+  /** Quản trị cấp 1 (Đặng V.M): bấm là in ngay, không hỏi lý do (chủ 13/09). */
+  khongGioiHan?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -1090,7 +1093,7 @@ function ReprintTicket({
   const soLan = booking.ticketPrints?.length ?? 0;
 
   async function inLai() {
-    if (reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
+    if (!khongGioiHan && reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
     setBusy(true);
     setError(null);
     /** Mở tab in đồng bộ trước `await` — điện thoại chặn cửa sổ mở sau khi gọi mạng. */
@@ -1124,9 +1127,12 @@ function ReprintTicket({
           "h-7 px-2 text-xs font-semibold " +
           (soLan > 1 ? "border-rose-400 bg-rose-50 text-rose-700" : "bg-white text-slate-600")
         }
-        onClick={() => setOpen(true)}
+        disabled={busy}
+        onClick={() => (khongGioiHan ? void inLai() : setOpen(true))}
         title={
-          soLan > 1
+          khongGioiHan
+            ? `In lại ngay, không hỏi lý do (quản trị). Vé này đã in ${soLan} lần.`
+            : soLan > 1
             ? `⚠ Vé này đã in ${soLan} lần:\n` +
               (booking.ticketPrints ?? [])
                 .map((x, i) => `${i + 1}. ${x.by}${x.reason ? ` — ${x.reason}` : " (lần đầu)"}`)
@@ -5203,7 +5209,9 @@ export function BookingTodayBanner({
           "🎫 Xuất vé"
         )}
       </Button>
-      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && <ReprintTicket spot={spot} booking={b} onDone={load} />}
+      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
+        <ReprintTicket spot={spot} booking={b} onDone={load} khongGioiHan={user?.role === "admin" && user?.adminLevel === 1} />
+      )}
     </>
   );
   const renderFlownButton = (b: BookingDTO) => (

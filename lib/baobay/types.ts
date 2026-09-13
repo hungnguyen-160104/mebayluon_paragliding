@@ -158,6 +158,8 @@ export type BaobayUserDTO = {
   extraRoles?: BaobayRole[];
   /** Quầy cafe được bán ("bai-cat"/"bai-ha"); trống = cả hai. Xem quayDuocPhep(). */
   cafeCounters?: string[];
+  /** Cấp quản trị (chỉ có nghĩa khi role = "admin"): 1 = toàn quyền, 2 = hạn chế. */
+  adminLevel?: 1 | 2;
   mustChangePassword: boolean;
 };
 

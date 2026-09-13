@@ -6916,7 +6916,14 @@ export async function recordTicketPrint(
 
   const daIn = (booking.ticketPrints ?? []).length;
   const reason = String(input.reason ?? "").trim();
-  if (daIn > 0 && reason.length < 5) {
+  /**
+   * QUẢN TRỊ CẤP 1 (Đặng V.M) IN KHÔNG GIỚI HẠN, KHÔNG HỎI LÝ DO — chủ 13/09.
+   * Người chủ hệ thống tự in vé cho mình thì không có ai để giải trình với;
+   * vết in vẫn ghi đủ (ai, lúc nào, lần thứ mấy) nên vẫn lần được. Mọi vai
+   * khác giữ nguyên luật: từ lần in thứ hai phải ghi rõ lý do.
+   */
+  const khongCanLyDo = isFullAdmin(session as never);
+  if (daIn > 0 && !khongCanLyDo && reason.length < 5) {
     throw new BaobayError(
       `Vé này đã in ${daIn} lần. In lại phải ghi rõ LÝ DO (ít nhất 5 ký tự) — vé 3 liên là giấy tờ tiền, mỗi bộ in thêm phải giải trình được.`,
       400,

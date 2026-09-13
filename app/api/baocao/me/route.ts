@@ -41,6 +41,8 @@ export async function GET(req: Request) {
         pilotKind: account.pilotKind === "ppg" ? "ppg" : account.pilotKind === "both" ? "both" : "pg",
         extraRoles,
         cafeCounters: Array.isArray(account.cafeCounters) ? account.cafeCounters.map(String) : [],
+        /** Trang cần biết để mở nút in vé không giới hạn cho quản trị cấp 1 (chủ 13/09). */
+        adminLevel: account.role === "admin" ? (Number(account.adminLevel) === 1 ? 1 : 2) : undefined,
         mustChangePassword: Boolean(account.mustChangePassword),
       },
       redirectTo: ROLE_HOME[account.role as keyof typeof ROLE_HOME],
