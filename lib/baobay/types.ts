@@ -522,14 +522,13 @@ export type BookingDTO = {
   refundAmount?: number;
   refundMethod?: "cash" | "transfer";
   /**
-   * Tổng tiền hoàn của booking (mọi lệnh hoàn chưa bị huỷ, KỂ CẢ lệnh chuyển
-   * khoản kế toán chưa chuyển) — dòng tóm tắt cần để kể đúng vệt tiền.
+   * Tổng tiền ĐÃ THẬT SỰ hoàn cho khách — tiền mặt trao tay, hoặc chuyển khoản
+   * kế toán đã bấm xong. Lệnh còn chờ KHÔNG tính ở đây (chủ 13/09).
    */
   refunded: number;
   /**
-   * Phần trong `refunded` đang CHỜ kế toán chuyển (lệnh hoàn CK status pending).
-   * Chủ 12/09: lệnh chưa chuyển thì thẻ phải ghi "chờ hoàn", chỉ khi kế toán
-   * bấm "đã hoàn" mới được tích xanh "đã hoàn". Thiếu trường = 0.
+   * CÒN PHẢI HOÀN: tổng lệnh hoàn đang chờ kế toán chuyển. Booking chỉ hết nợ
+   * khi cả `remaining` (khách nợ mình) lẫn số này (mình nợ khách) đều về 0.
    */
   refundPending?: number;
   cancelledBy?: string;

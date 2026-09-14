@@ -557,16 +557,16 @@ function BookingSummary({
       {(b.refundPending ?? 0) > 0 ? (
         <>
           {" · "}
-          <strong className="rounded bg-amber-100 px-1 font-bold text-amber-900" title="Lệnh hoàn chuyển khoản đang chờ kế toán chuyển">
-            ⏳ chờ hoàn {k(b.refundPending ?? 0)}
+          <strong className="rounded bg-amber-100 px-1 font-bold text-amber-900" title="Còn nợ khách khoản này — kế toán chuyển xong mới hết nợ">
+            ⏳ CÒN PHẢI HOÀN {k(b.refundPending ?? 0)}
           </strong>
         </>
       ) : null}
-      {refunded - (b.refundPending ?? 0) > 0 ? (
+      {refunded > 0 ? (
         <>
           {" · "}
-          <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800" title="Kế toán đã chuyển / đã trả tiền mặt cho khách">
-            ✓ đã hoàn {k(refunded - (b.refundPending ?? 0))}
+          <strong className="rounded bg-emerald-100 px-1 font-bold text-emerald-800" title="Đã trả cho khách: tiền mặt trao tay, hoặc kế toán đã chuyển xong">
+            ✓ đã hoàn {k(refunded)}
           </strong>
         </>
       ) : null}
@@ -4089,10 +4089,10 @@ function BookingDayTable({
                           </div>
                         ))}
                         {(b.refundPending ?? 0) > 0 && (
-                          <div className="text-[10px] font-bold text-amber-900">⏳ chờ hoàn {k(b.refundPending ?? 0)}</div>
+                          <div className="text-[10px] font-bold text-amber-900">⏳ còn phải hoàn {k(b.refundPending ?? 0)}</div>
                         )}
-                        {(b.refunded ?? 0) - (b.refundPending ?? 0) > 0 && (
-                          <div className="text-[10px] font-bold text-emerald-800">✓ đã hoàn {k((b.refunded ?? 0) - (b.refundPending ?? 0))}</div>
+                        {(b.refunded ?? 0) > 0 && (
+                          <div className="text-[10px] font-bold text-emerald-800">✓ đã hoàn {k(b.refunded ?? 0)}</div>
                         )}
                       </>
                     );
@@ -5555,7 +5555,7 @@ export function BookingTodayBanner({
                 <span className="mr-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
                   đã huỷ{b.cancelledBy ? ` by ${b.cancelledBy}` : ""}
                   {b.refundAmount
-                    ? ` · ${b.refundMethod !== "cash" && (b.refundPending ?? 0) > 0 ? "chờ hoàn" : "đã hoàn"} ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
+                    ? ` · ${(b.refundPending ?? 0) > 0 ? "còn phải hoàn" : "đã hoàn"} ${Math.round(b.refundAmount / 1000).toLocaleString("vi-VN")}k ${b.refundMethod === "cash" ? "TM" : "CK"}`
                     : ""}
                   {b.cancelTicketCodes?.length ? ` · thu hồi ${b.cancelTicketCodes.join(" ")}` : ""}
                 </span>

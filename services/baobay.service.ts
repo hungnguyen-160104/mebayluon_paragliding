@@ -4752,9 +4752,14 @@ export async function listBookings(
         collectorUsername: hit.collectorUsername || undefined,
       };
     });
-    /** Chỉ gắn khi thẻ được thấy tiền hoàn (phi công bị che tiền thì refunded = 0). */
+    /**
+     * CÒN PHẢI HOÀN cho khách — từ 13/09 lệnh chờ KHÔNG cộng vào `refunded`
+     * nữa (chỉ ghi khi tiền thật sự trả), nên đây là con số độc lập: booking
+     * chỉ "hết nợ" khi cả `remaining` lẫn `refundPending` đều về 0.
+     */
     const choHoan = pendingRefundByBooking.get(String(b._id)) ?? 0;
-    if (choHoan > 0 && (dto.refunded ?? 0) > 0) dto.refundPending = Math.min(choHoan, dto.refunded);
+    /** Phi công bị che tiền (maskForCrew) thì không bày số hoàn ra. */
+    if (choHoan > 0 && (dto.totalAmount ?? 0) > 0) dto.refundPending = choHoan;
     dto.serviceChanges = (svcByBooking.get(String(b._id)) ?? []).map((c) => ({
       kind: c.kind === "remove" ? ("remove" as const) : ("add" as const),
       items: {
@@ -5897,15 +5902,37 @@ export async function createRefund(
   ).toObject();
 
   /**
-   * Cộng vào TỔNG ĐÃ HOÀN của booking — dòng tóm tắt cần con số này để kể đúng
-   * "đã thanh toán X · hoàn Y · còn thu Z". Trước đây tiền hoàn chỉ trừ vào ô
-   * "đã cọc", nên trên màn hiện "cọc 2.890k" — một con số không có thật, khách
-   * đã trả 3.290k rồi được hoàn 400k chứ chưa từng cọc đồng nào.
+   * CHỈ GHI VÀO BOOKING KHI TIỀN ĐÃ THẬT SỰ RA KHỎI TAY (chủ 13/09: "kế toán
+   * xác nhận đã hoàn xxx thì số tiền này mới ghi vào booking").
+   *
+   * Tiền mặt trao tay tại bãi là xong ngay (status "done") → ghi luôn. Chuyển
+   * khoản còn nằm chờ kế toán (status "pending") → CHƯA ghi gì; sổ vẫn nhớ
+   * đang nợ khách bao nhiêu qua chính lệnh hoàn ấy (xem refundPending), và
+   * payRefund sẽ ghi khi kế toán bấm xong.
+   *
+   * Trước đây cộng ngay lúc lập lệnh: booking hiện "đã hoàn" trong khi khách
+   * chưa nhận được đồng nào — đúng lỗi chủ báo ở booking #9 Thanh Hiền 14/09.
    */
-  if (doc.bookingId) {
-    await BaobayBooking.updateOne({ _id: doc.bookingId }, { $inc: { refundedTotal: amount } });
-  }
+  if (doc.bookingId && doc.status === "done") await ghiTienHoanVaoBooking(String(doc.bookingId), amount);
   return toRefundDTO(doc);
+}
+
+/**
+ * GHI MỘT KHOẢN HOÀN ĐÃ TRẢ vào booking: cộng tổng đã hoàn và trừ vào phần
+ * khách đã trả. Hai vế phải đi cùng nhau — dòng tóm tắt tính "cọc gốc = đã trả
+ * − thu qua lệnh + đã hoàn", chỉ cộng một vế là con số hiện ra sai.
+ *
+ * `dau` âm để hoàn tác (kế toán bỏ lệnh đã trả nhầm).
+ */
+async function ghiTienHoanVaoBooking(bookingId: string, amount: number, dau: 1 | -1 = 1): Promise<void> {
+  if (!amount) return;
+  const b = await BaobayBooking.findById(bookingId).select("deposit").lean<any>();
+  if (!b) return;
+  const depositMoi = Math.max(0, (b.deposit ?? 0) - dau * amount);
+  await BaobayBooking.updateOne(
+    { _id: bookingId },
+    { $inc: { refundedTotal: dau * amount }, $set: { deposit: depositMoi } },
+  );
 }
 
 /** Kế toán xác nhận đã chuyển tiền hoàn — sửa được số và ghi chú trước khi chốt. */
@@ -5933,14 +5960,14 @@ export async function payRefund(
   }
   if (input.note !== undefined) set.note = String(input.note).trim();
 
-  const before = await BaobayRefund.findOne({ _id: id, spot, status: "pending" }).select("amount bookingId").lean<any>();
   const doc = await BaobayRefund.findOneAndUpdate({ _id: id, spot, status: "pending" }, { $set: set }, { new: true }).lean<any>();
   if (!doc) throw new BaobayError("Không tìm thấy lệnh hoàn đang chờ", 404);
-  // Kế toán sửa số tiền lúc chuyển: tổng đã hoàn của booking phải chạy theo
-  const diff = (doc.amount ?? 0) - (before?.amount ?? 0);
-  if (diff !== 0 && doc.bookingId) {
-    await BaobayBooking.updateOne({ _id: doc.bookingId }, { $inc: { refundedTotal: diff } });
-  }
+  /**
+   * ĐẾN ĐÂY TIỀN MỚI RA KHỎI TAY → ghi vào booking đúng SỐ KẾ TOÁN ĐÃ CHUYỂN
+   * (kế toán sửa được số trước khi chốt, nên lấy `doc.amount` chứ không lấy số
+   * lập lệnh ban đầu). Chủ 13/09.
+   */
+  if (doc.bookingId) await ghiTienHoanVaoBooking(String(doc.bookingId), Number(doc.amount) || 0);
   return toRefundDTO(doc);
 }
 
@@ -8001,9 +8028,7 @@ export async function undoServiceChange(
         400,
       );
     }
-    if (refund?.amount) {
-      await BaobayBooking.updateOne({ _id: change.bookingId }, { $inc: { refundedTotal: -refund.amount } });
-    }
+    /** Tới đây lệnh chắc chắn còn CHỜ, mà lệnh chờ chưa ghi gì vào booking (13/09) — xoá là xong. */
     await BaobayRefund.deleteOne({ _id: change.refundId });
   }
 
@@ -8386,8 +8411,9 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
    * LỆNH HOÀN CÒN CHỜ của booking này phải CHẾT theo lần bay lại: tiền chưa
    * rời két mà lệnh vẫn nằm trang kế toán thì (1) kế toán có thể chuyển nhầm,
    * (2) huỷ lần sau lập thêm lệnh nữa là hoàn ĐÔI. Vô hiệu lệnh chờ và trả
-   * refundedTotal + cọc về như trước khi huỷ. Lệnh đã chuyển/đã chi (done,
-   * paid) thì giữ nguyên — tiền đã đi thật, sổ phải nhớ.
+   * lệnh chờ. Từ 13/09 lệnh CHỜ không còn ghi gì vào booking (chỉ ghi khi tiền
+   * thật sự trả), nên vô hiệu là xong — không phải trả lại cọc hay tổng đã
+   * hoàn. Lệnh đã chuyển/đã chi (done, paid) thì giữ nguyên: tiền đã đi thật.
    */
   const pendingRefunds = await BaobayRefund.find({ bookingId: id, status: "pending" })
     .select("amount")
@@ -8407,8 +8433,7 @@ export async function restoreBooking(session: BaobaySession, spotRaw: string, id
         status: "open",
         note: [current.note, `hoàn tác “${was}” — ${session.name || session.username}`].filter(Boolean).join(" · "),
       },
-      // Lệnh hoàn chờ đã vô hiệu → cọc quay về, tổng đã hoàn rút xuống
-      ...(pendingSum > 0 ? { $inc: { refundedTotal: -pendingSum, deposit: pendingSum } } : {}),
+      /** Lệnh chờ chưa từng ghi vào booking (13/09) — vô hiệu là đủ, không sửa tiền. */
       $unset: {
         doneAt: "",
         doneBy: "",
@@ -9091,13 +9116,14 @@ export async function updateBookingStatus(
         // Không hoàn đồng nào thì đừng ghi hình thức hoàn — đọc lại đỡ tưởng có tiền
         refundMethod: refund > 0 ? (cancel?.refundMethod === "cash" ? "cash" : "transfer") : undefined,
         /**
-         * HOÀN thì TRỪ THẲNG VÀO CỌC. Dòng tóm tắt tính "cọc gốc = deposit −
-         * đã thu + đã hoàn", nên hoàn mà chỉ cộng refundedTotal (createRefund
-         * làm) mà không trừ deposit là mỗi vòng huỷ→bay lại→huỷ cọc hiển thị
-         * phồng thêm đúng số hoàn — lỗi "cọc 500k thành 1.500k".
+         * KHÔNG trừ cọc ở đây nữa (chủ 13/09).
+         *
+         * Tiền chỉ rời khỏi sổ khi THẬT SỰ trả cho khách: tiền mặt trao tay thì
+         * createRefund ghi ngay, chuyển khoản thì payRefund ghi lúc kế toán bấm
+         * xong. Trừ sẵn lúc huỷ làm booking hiện "đã hoàn" trong khi khách chưa
+         * nhận đồng nào, và nếu kế toán chuyển ít hơn thì cọc bị trừ thừa.
          */
-        deposit: Math.max(0, (current.deposit ?? 0) - refund),
-        // Huỷ rồi thì không còn gì phải thu nữa
+        // Huỷ rồi thì không còn gì phải thu của khách nữa
         remaining: 0,
         note: [
           current.note,
@@ -9447,7 +9473,16 @@ function toBookingDTO(doc: any): BookingDTO {
     pickupNote: doc.pickupNote || "",
     expectedTime: doc.expectedTime || "",
     deposit: doc.deposit ?? 0,
-    remaining: doc.remaining ?? 0,
+    /**
+     * BOOKING ĐÃ HUỶ / ĐÃ BỎ thì KHÔNG còn gì phải thu của khách (chủ 13/09:
+     * "một booking cần đưa về 0đ thì mới hết nợ").
+     *
+     * Chốt ở đây chứ không chỉ trông vào lúc huỷ: mọi đường tính lại tiền
+     * (sửa booking, sửa ô sổ, thêm/bớt dịch vụ) đều lấy "tổng − đã trả", mà
+     * cọc bị trừ khi hoàn nên booking huỷ xong lại phồng lên đúng bằng cả tổng
+     * tiền — lỗi thật ở #23 Diệu Khánh 30/08 và #2 Lam Phụng 14/09.
+     */
+    remaining: doc.status === "cancelled" || doc.status === "voided" ? 0 : (doc.remaining ?? 0),
     agencyPaidAmount: doc.agencyPaidAmount ?? 0,
     agencyName: doc.agencyName || "",
     /**
