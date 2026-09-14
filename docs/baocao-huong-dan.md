@@ -589,6 +589,23 @@ production). Khi mất mạng:
 Máy bán `/cafe` vẫn dùng worker riêng của nó (có hàng đợi phiếu). Bản dev gỡ
 worker để không "ăn mã cũ".
 
+## Chốt ngày: vé thu hồi tự tổng hợp, vé mang sang, số thứ tự (từ 14/09/2026)
+
+- Ô **Số vé thu hồi** tự lấy **số mã vé** đếm từ danh sách thu hồi (sổ booking
+  huỷ sau khi xuất vé + điều phối khai huỷ / thu hồi lẻ, không trùng) — chính
+  là dòng "Thu hồi (N mã)" ở bảng 🎫 Mã vé. Dưới ô hiện hai số để đối chiếu:
+  *số mã vé* và *số điều phối báo*; kế toán gõ số khác thì máy thôi điền.
+  Booking huỷ sau xuất mà chưa ghi mã vé được cộng thêm theo số khách, kèm nhắc
+  ghi mã vào lệnh huỷ.
+- **Vé khách mang từ ngày khác qua** (khách dời lịch cầm vé cũ) hiện đích danh:
+  "📥 3 mã vé từ ngày 12/09 (KP0123 …)" — dưới ô thu hồi và trong bảng 🎫 Mã vé.
+  Vé này **không** tính là thu hồi; bộ soát đã xác minh mã nằm trong dải ngày
+  xuất và ngày đó chưa ai dùng (`carriedInByDate` của bộ đối soát).
+- Ba bảng **Dời lịch / Huỷ CẦN hoàn / Huỷ không cần hoàn** và thẻ **💸 Hoàn
+  tiền khách** hiện kèm **số thứ tự booking** (#6 Tên khách). Nhóm điều phối tự
+  khai (không nối booking) được dò số theo tên liên hệ trong sổ ngày; tên trùng
+  nhiều booking thì để trống, không đoán.
+
 ## Xuất ảnh phiếu booking (từ 14/09/2026)
 
 Nút **🖼 Xuất ảnh** (khung booking mới) và **🖼 Ảnh booking** (từng dòng sổ)

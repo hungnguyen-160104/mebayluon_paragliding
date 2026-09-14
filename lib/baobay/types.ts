@@ -653,6 +653,8 @@ export type ReconcileDTO = {
   totals: ReconcileTotals;
   missingCodes: string[];
   duplicateCodes: Array<{ code: string; pilots: string[] }>;
+  /** Vé xuất ngày trước bay hôm nay, gom theo ngày xuất: "3 mã vé từ ngày 12/09". */
+  carriedInByDate?: Array<{ date: string; codes: string[] }>;
   /** Tổng chi tiêu của cả ngày, để kế toán xác nhận. */
   expenseTotal: number;
   expenseLines: Array<{

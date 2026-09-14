@@ -59,7 +59,7 @@ export function RefundCard({ spot, date, canConfirm = false }: { spot: string; d
         transferCode: d.code,
         note: d.note,
       });
-      setDone(`✓ Đã xác nhận hoàn ${formatVND(d.amount)} cho ${r.guestName} (#${d.code}).`);
+      setDone(`✓ Đã xác nhận hoàn ${formatVND(d.amount)} cho ${r.daySeq ? `#${r.daySeq} ` : ""}${r.guestName} (CK #${d.code}).`);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không xác nhận được");
@@ -106,7 +106,7 @@ export function RefundCard({ spot, date, canConfirm = false }: { spot: string; d
                         : "đã trả TM"}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug text-slate-700">
-                  {formatDateKeyVN(r.date)} · <strong>{r.guestName}</strong>
+                  {formatDateKeyVN(r.date)} · <strong>{r.daySeq ? `#${r.daySeq} ` : ""}{r.guestName}</strong>
                   {r.guests ? ` · ${r.guests} khách` : ""}
                   {r.reason ? ` · ${r.reason}` : ""}
                   {r.usedServices ? ` · đã dùng: ${r.usedServices}` : ""}

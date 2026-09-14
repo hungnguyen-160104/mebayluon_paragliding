@@ -1,13 +1,14 @@
 // app/baocao/chot-ngay/page.tsx
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { DailyCloseDTO, ReconcileDTO } from "@/lib/baobay/types";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { ROLE_LABEL } from "@/lib/baobay/roles";
 import { formatVND } from "@/lib/pricing";
+import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 
 import { apiGet, apiPatch, apiPost } from "../components/client-api";
 import {
@@ -122,6 +123,8 @@ type CloseSuggestion = {
   cancelledGuestEntries: Array<{
     /** Hoàn bằng CK (từ TK công ty) hay TM (nhân viên chi tại chỗ). */
     refundMethod?: "cash" | "transfer";
+    /** Số thứ tự booking trong ngày (#N) — hiện kèm tên nhóm. */
+    daySeq?: number;
     name: string;
     bookingCode: string;
     guests: number;
@@ -131,6 +134,7 @@ type CloseSuggestion = {
     codes?: string[];
   }>;
   rescheduledGuestEntries: Array<{
+    daySeq?: number;
     name: string;
     guests: number;
     toDate: string;
@@ -282,6 +286,30 @@ function DailyCloseInner() {
 
   /** Hà Nội không xuất vé — form chốt chạy theo KHÁCH thay vì mã vé. */
   const noTickets = spot === "ha-noi";
+
+  /**
+   * SỐ MÃ VÉ THU HỒI đếm từ danh sách mã (sổ booking huỷ sau xuất + điều phối
+   * khai huỷ/thu hồi lẻ, không trùng) — chính là dòng "Thu hồi: …" ở bảng
+   * 🎫 Mã vé bên dưới. Chủ 14/09: ô "Số vé thu hồi" phải TỰ tổng hợp từ đây,
+   * không bắt kế toán đếm tay; số điều phối tự khai chỉ để đối chiếu.
+   */
+  const maThuHoi = useMemo(() => parseTicketCodeList(suggest?.cancelledCodesText ?? "").codes.length, [suggest?.cancelledCodesText]);
+  /** Booking huỷ sau xuất mà KHÔNG ghi mã vé — đếm theo khách, nằm ngoài số mã. */
+  const thuHoiKhongMa = Math.max(0, (suggest?.recalledFromBook ?? 0) - maThuHoi);
+  const veThuVeTuDong = Math.max(maThuHoi, suggest?.recalledFromBook ?? 0);
+  /** Vé mang sang theo ngày xuất: "3 mã vé từ ngày 12/09" (bộ soát đã xác minh từng mã). */
+  const veMangSang = check?.carriedInByDate ?? [];
+  const lastAutoReturned = useRef<number | null>(null);
+  useEffect(() => {
+    if (locked || noTickets || veThuVeTuDong <= 0) return;
+    setForm((prev) => {
+      // Ô đang 0 hoặc đang mang đúng số máy điền lần trước thì máy điền; kế toán gõ số khác thì thôi
+      if (prev.ticketsReturned !== 0 && prev.ticketsReturned !== lastAutoReturned.current) return prev;
+      if (prev.ticketsReturned === veThuVeTuDong) return prev;
+      lastAutoReturned.current = veThuVeTuDong;
+      return { ...prev, ticketsReturned: veThuVeTuDong };
+    });
+  }, [veThuVeTuDong, locked, noTickets]);
 
   /**
    * Tổng tiền mặt / chuyển khoản KHÔNG nhập tay nữa — tự cộng từ các dòng THU
@@ -1137,8 +1165,23 @@ function DailyCloseInner() {
                     dời trả vé) — vé khách dời MANG THEO không tính; đếm khách tách riêng. */}
                 <ServiceBox tone="returned" label="Số vé thu hồi (vé đã xuất bị thu về)">
                   <CountInput compact value={form.ticketsReturned} onChange={(v) => set("ticketsReturned", v)} max={5000} />
-                  <Compare label="quầy/điều phối báo" value={t?.dispatcherReturned} mine={form.ticketsReturned}
+                  {/* Số MÁY ĐẾM từ danh sách mã thu hồi (bảng 🎫 Mã vé bên dưới) — ô tự lấy số này */}
+                  <Compare label="số mã vé (danh sách thu hồi)" value={suggest ? maThuHoi : undefined} mine={form.ticketsReturned}
                     onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
+                  <Compare label="số điều phối báo" value={t?.dispatcherReturned ?? suggest?.ticketsReturned} mine={form.ticketsReturned}
+                    onTake={locked ? undefined : (v) => set("ticketsReturned", v)} />
+                  {thuHoiKhongMa > 0 && (
+                    <p className="mt-0.5 text-[10px] font-semibold leading-tight text-rose-700">
+                      + {thuHoiKhongMa} vé của booking huỷ sau khi xuất mà CHƯA ghi mã — máy tính gộp {veThuVeTuDong};
+                      ghi mã vào lệnh huỷ để khớp danh sách
+                    </p>
+                  )}
+                  {veMangSang.length > 0 && (
+                    <p className="mt-0.5 text-[10px] font-semibold leading-tight text-amber-700">
+                      📥 Vé khách mang từ ngày khác qua (không tính thu hồi):{" "}
+                      {veMangSang.map((d) => `${d.codes.length} mã vé từ ngày ${formatDateKeyVN(d.date)} (${d.codes.join(" ")})`).join(" · ")}
+                    </p>
+                  )}
                 </ServiceBox>
 
                 {/* Tên phải nói rõ ĐƠN VỊ: ô này đếm VÉ và nằm trong phép tính
@@ -1263,7 +1306,7 @@ function DailyCloseInner() {
                       <Box tone="border-amber-300 bg-amber-50/70 text-amber-900" title={`⇢ Dời lịch — ${moved.length} nhóm`}>
                         {moved.map((e, i) => (
                           <li key={i}>
-                            <strong>{e.name || "khách"}</strong> · {e.guests} khách · sang{" "}
+                            <strong>{e.daySeq ? `#${e.daySeq} ` : ""}{e.name || "khách"}</strong> · {e.guests} khách · sang{" "}
                             <strong>{e.toDate ? formatDateKeyVN(e.toDate) : "?"}</strong>
                             {codes(e)}
                             {/* ĐÃ/CHƯA xuất vé — quyết định nhóm này có vé thu hồi
@@ -1291,7 +1334,7 @@ function DailyCloseInner() {
                       >
                         {canHoan.map((e, i) => (
                           <li key={i}>
-                            <strong>{e.name || "khách"}</strong> · {e.guests} khách · hoàn{" "}
+                            <strong>{e.daySeq ? `#${e.daySeq} ` : ""}{e.name || "khách"}</strong> · {e.guests} khách · hoàn{" "}
                             <strong className="tabular-nums">{formatVND(e.refund ?? 0)}</strong>
                             {e.refundMethod ? ` (${e.refundMethod === "cash" ? "TM" : "CK"})` : ""}
                             {codes(e)}
@@ -1304,7 +1347,7 @@ function DailyCloseInner() {
                       <Box tone="border-slate-300 bg-slate-50 text-slate-700" title={`✕ Huỷ không cần hoàn — ${khongHoan.length} nhóm`}>
                         {khongHoan.map((e, i) => (
                           <li key={i}>
-                            <strong>{e.name || "khách"}</strong> · {e.guests} khách
+                            <strong>{e.daySeq ? `#${e.daySeq} ` : ""}{e.name || "khách"}</strong> · {e.guests} khách
                             {codes(e)}
                             {e.note ? ` · ${e.note}` : ""}
                           </li>
@@ -1312,7 +1355,7 @@ function DailyCloseInner() {
                       </Box>
                     )}
 
-                    {!noTickets && ((suggest.issuedRanges ?? []).length > 0 || suggest.cancelledCodesText) && (
+                    {!noTickets && ((suggest.issuedRanges ?? []).length > 0 || suggest.cancelledCodesText || veMangSang.length > 0) && (
                       <Box tone="border-sky-300 bg-sky-50/70 text-sky-900" title="🎫 Mã vé">
                         {(suggest.issuedRanges ?? []).length > 0 && (
                           <li>
@@ -1326,9 +1369,15 @@ function DailyCloseInner() {
                         )}
                         {suggest.cancelledCodesText && (
                           <li className="text-rose-800">
-                            Thu hồi: <strong>{suggest.cancelledCodesText}</strong>
+                            Thu hồi ({maThuHoi} mã): <strong>{suggest.cancelledCodesText}</strong>
                           </li>
                         )}
+                        {veMangSang.map((d) => (
+                          <li key={d.date} className="text-amber-800">
+                            📥 {d.codes.length} mã vé từ ngày <strong>{formatDateKeyVN(d.date)}</strong> khách mang qua bay hôm nay:{" "}
+                            <strong>{d.codes.join(" ")}</strong>
+                          </li>
+                        ))}
                       </Box>
                     )}
                   </>

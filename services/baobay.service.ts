@@ -5941,6 +5941,8 @@ export async function addBookingServices(
 export type RefundDTO = {
   id: string;
   date: string;
+  /** Số thứ tự booking trong ngày — lệnh hoàn phải hiện "#6 Tên khách" (chủ 14/09). */
+  daySeq?: number;
   guestName: string;
   bookingCode?: string;
   guests: number;
@@ -6109,7 +6111,14 @@ export async function listRefunds(spotRaw: string, date: string): Promise<Refund
     .sort({ createdAt: -1 })
     .limit(60)
     .lean<any[]>();
-  return docs.map(toRefundDTO);
+  /** Gắn số thứ tự booking (#N) cho từng lệnh — một truy vấn cho cả danh sách. */
+  const ids = [...new Set(docs.map((d) => (d.bookingId ? String(d.bookingId) : "")).filter(Boolean))];
+  const seq = new Map<string, number>();
+  if (ids.length) {
+    const bs = await BaobayBooking.find({ _id: { $in: ids } }).select("daySeq").lean<any[]>();
+    for (const b of bs) if (Number(b.daySeq)) seq.set(String(b._id), Number(b.daySeq));
+  }
+  return docs.map((d) => ({ ...toRefundDTO(d), daySeq: d.bookingId ? seq.get(String(d.bookingId)) : undefined }));
 }
 
 /**
@@ -10921,12 +10930,14 @@ issuedRanges: Array<{ from: string; to: string }>;
   };
   /** HÀ NỘI: nhóm khách huỷ/dời ĐIỀU PHỐI đã nhập — kế toán bấm một nút là nhận nguyên bộ. */
   merchSales?: Array<{ key: string; qty: number; method?: "cash" | "transfer" }>;
-  cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string }>;
+  /** `daySeq`: số thứ tự booking trong ngày (chủ 14/09: mọi nhóm huỷ/dời phải hiện kèm #N). */
+  cancelledGuestEntries: Array<{ name: string; bookingCode: string; guests: number; source: string; refund: number; note?: string; daySeq?: number }>;
   rescheduledGuestEntries: Array<{
     name: string;
     guests: number;
     toDate: string;
     note?: string;
+    daySeq?: number;
     /** Nhóm dời ĐÃ XUẤT VÉ chưa (lấy từ sổ booking) — quyết định có vé thu hồi hay không. */
     ticketIssued?: boolean;
   }>;
@@ -11080,7 +11091,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
    * vé MBL0356 ngày 16/08 (hoàn 2.990.000 đ CK).
    */
   const cancelledBookings = await BaobayBooking.find({ spot, flightDate: date, status: "cancelled" })
-    .select("contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod flightKind ppgGuests")
+    .select("daySeq contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod flightKind ppgGuests")
     .lean<any[]>();
 
   /** HUỶ MỘT PHẦN: booking vẫn chạy nhưng đã huỷ bớt N khách — kế toán phải thấy N này trong mục huỷ. */
@@ -11090,7 +11101,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     status: { $nin: ["cancelled", "voided"] },
     cancelledGuests: { $gt: 0 },
   })
-    .select("contactName phone bookingCode source cancelledGuests")
+    .select("daySeq contactName phone bookingCode source cancelledGuests")
     .lean<any[]>();
 
   /** LỆNH THU của ngày — đường tiền chính từ 13/08 (thu ngay trên booking). */
@@ -11275,6 +11286,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       .map((e) => `${(e.name || "").trim().toLowerCase()}|${e.guests || 0}`),
   );
   const partialCancelEntries = partialCancelled.map((b) => ({
+    daySeq: Number(b.daySeq) || undefined,
     name: b.contactName || b.phone || "khách",
     bookingCode: b.bookingCode || "",
     guests: b.cancelledGuests || 0,
@@ -11299,9 +11311,24 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flightDate: { $ne: date },
     status: { $nin: ["voided"] },
   })
-    .select("contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests movedTicketCodes")
+    .select("daySeq contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests movedTicketCodes")
     .lean<any[]>();
 
+  /**
+   * SỐ THỨ TỰ cho nhóm ĐIỀU PHỐI TỰ KHAI (không nối booking): dò theo tên liên
+   * hệ trong sổ ngày (kể cả đã huỷ / đã dời đi); tên trùng nhiều booking thì
+   * thôi, không đoán. Chủ 14/09: mọi nhóm huỷ/dời phải hiện kèm #N.
+   */
+  const seqTheoTen = (() => {
+    const m = new Map<string, number | null>();
+    for (const b of [...insuranceBookings, ...movedAwayBookings] as any[]) {
+      const k = String(b.contactName || "").trim().toLowerCase();
+      const n = Number(b.daySeq) || 0;
+      if (!k || !n) continue;
+      m.set(k, m.has(k) && m.get(k) !== n ? null : n);
+    }
+    return (name: string): number | undefined => m.get(String(name || "").trim().toLowerCase()) || undefined;
+  })();
   const bookingCancelEntries = cancelledBookings
     .filter((b) => {
       const codes = (b.cancelTicketCodes ?? []).map((c: string) => String(c).toUpperCase());
@@ -11309,6 +11336,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       return !declaredNames.has(`${(b.contactName || "").trim().toLowerCase()}|${b.guestCount || 0}`);
     })
     .map((b) => ({
+      daySeq: Number(b.daySeq) || undefined,
       name: b.contactName || b.phone || "khách",
       bookingCode: b.bookingCode || "",
       guests: b.guestCount || 0,
@@ -11367,6 +11395,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     const fromBook = movedAwayBookings
       .filter((b) => !seen.has(`${(b.contactName || "").trim().toLowerCase()}|${b.guestCount || 0}`))
       .map((b) => ({
+        daySeq: Number(b.daySeq) || undefined,
         name: b.contactName || b.phone || "khách",
         guests: b.guestCount || 0,
         toDate: b.flightDate || "",
@@ -11381,7 +11410,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
          */
         ticketIssued: Boolean(b.ticketIssuedAt),
       }));
-    return [...declared, ...fromBook];
+    return [...declared.map((e) => ({ ...e, daySeq: (e as { daySeq?: number }).daySeq ?? seqTheoTen(e.name) })), ...fromBook];
   })();
 
   const pilotRanges = rangesFromCodes(
@@ -11544,7 +11573,9 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       return Math.max(0, sum(pilots, (p) => p.ppgFlights ?? 0) - bookingPpg);
     })(),
     cancelledGuestEntries: [
-      ...dispatchers.flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"]),
+      ...dispatchers
+        .flatMap((d) => (d.cancelledGuestEntries ?? []) as CloseSuggestionDTO["cancelledGuestEntries"])
+        .map((e) => ({ ...e, daySeq: e.daySeq ?? seqTheoTen(e.name) })),
       ...bookingCancelEntries,
       ...partialCancelEntries,
     ],

@@ -273,6 +273,12 @@ export type ReconcileResult = {
   totals: ReconcileTotals;
   /** Mã kế toán xuất mà không ai khai đã bay, cũng không huỷ/dời. */
   missingCodes: string[];
+  /**
+   * VÉ MANG SANG theo NGÀY XUẤT (chủ 14/09): "có 3 mã vé từ ngày 12/09" —
+   * kế toán chốt ngày cần biết đích danh vé nào của hôm nào để đối chiếu với
+   * số khách dời của hôm đó, không chỉ một con số gộp.
+   */
+  carriedInByDate: Array<{ date: string; codes: string[] }>;
   /** Mã có từ hai phi công cùng khai. */
   duplicateCodes: Array<{ code: string; pilots: string[] }>;
 };
@@ -1188,5 +1194,8 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     totals,
     missingCodes,
     duplicateCodes,
+    carriedInByDate: [...carriedInByDate.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([date, codes]) => ({ date, codes })),
   };
 }
