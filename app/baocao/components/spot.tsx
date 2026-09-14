@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { normalizeSpot, spotName, type SpotId } from "@/lib/baobay/spots";
 
+import { ghiSpotUrl, spotTuUrl } from "./ngay-lam-viec";
+
 /**
  * Chọn điểm bay đang làm việc.
  *
@@ -29,9 +31,19 @@ export function useSpot(spots: string[] | undefined): {
   useEffect(() => {
     if (!options.length) return;
 
-    // Lựa chọn cũ chỉ dùng lại khi người này vẫn còn được chỉ định điểm đó
+    /**
+     * ĐỊA CHỈ TRANG đứng trước bộ nhớ máy (chủ 13/09): F5 phải tải lại ĐÚNG
+     * điểm đang xem, và link gửi cho đồng nghiệp phải mở ra đúng điểm ấy.
+     * Không có trong địa chỉ thì mới dùng lựa chọn lần trước.
+     */
+    const tuUrl = spotTuUrl();
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-    const next = saved && options.includes(normalizeSpot(saved)) ? normalizeSpot(saved) : options[0];
+    const next =
+      tuUrl && options.includes(normalizeSpot(tuUrl))
+        ? normalizeSpot(tuUrl)
+        : saved && options.includes(normalizeSpot(saved))
+          ? normalizeSpot(saved)
+          : options[0];
 
     setSpotState((current) => (current && options.includes(current) ? current : next));
     // options là mảng mới mỗi lần render nên so theo nội dung, không so tham chiếu
@@ -41,6 +53,7 @@ export function useSpot(spots: string[] | undefined): {
   const setSpot = useCallback((next: SpotId) => {
     setSpotState(next);
     if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, next);
+    ghiSpotUrl(next);
   }, []);
 
   return { spot, setSpot, options };

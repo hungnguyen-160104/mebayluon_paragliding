@@ -1,7 +1,7 @@
 // app/baocao/phat-nop-muon/page.tsx
 "use client";
 
-import { useState } from "react";
+
 
 import { shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
@@ -11,6 +11,7 @@ import { PenaltyCard } from "../components/PenaltyCard";
 import { useBaobaySession } from "../components/session";
 import { PageLoading } from "../components/ui";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 
 /**
@@ -23,7 +24,8 @@ export default function LatePenaltyPage() {
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
 
   if (loading || !user || !spot) {
     return <PageLoading />;

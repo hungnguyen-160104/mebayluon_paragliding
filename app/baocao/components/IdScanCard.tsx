@@ -4,9 +4,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { parseCccdQr, parseMrz, type ScannedPerson } from "@/lib/baobay/id-scan";
-import { birthdayVN, normalizeBirthday } from "@/lib/baobay/insurance";
+import { birthdayVN, emptyInsured, fromScanned, normalizeBirthday, type InsuredGuest } from "@/lib/baobay/insurance";
 
-import { apiPost } from "./client-api";
+import { apiGet, apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, TextInput } from "./ui";
 
 /**
@@ -65,6 +65,8 @@ function khoiDongOcrSom(): void {
 export function IdScanCard({
   onPick,
   embedded = false,
+  spot,
+  date,
 }: {
   /**
    * Có hàm này nghĩa là thẻ đang được NHÚNG vào hồ sơ bảo hiểm của một người
@@ -74,6 +76,13 @@ export function IdScanCard({
   onPick?: (p: ScannedPerson) => void;
   /** Bỏ vỏ thẻ tím (đã nằm trong khối khác rồi). */
   embedded?: boolean;
+  /**
+   * Có spot + date thì thẻ hiện thêm ô CHỌN BOOKING: quét xong gán thẳng vào
+   * hồ sơ bảo hiểm của đúng đoàn khách ấy (chủ 13/09) — trước đây phải chép
+   * tay từ danh sách rời sang từng booking.
+   */
+  spot?: string;
+  date?: string;
 } = {}) {
   const [busy, setBusy] = useState<"" | "qr" | "ocr" | "ai">("");
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +92,51 @@ export function IdScanCard({
   const [scanning, setScanning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const passportRef = useRef<HTMLInputElement>(null);
+  /** Sổ booking của ngày, để gán người vừa quét vào đúng đoàn. */
+  const [dsBooking, setDsBooking] = useState<Array<{ id: string; daySeq: number; contactName: string; phone: string; guestCount: number; insured?: unknown[] }>>([]);
+  const [bookingChon, setBookingChon] = useState("");
+  const [dangGan, setDangGan] = useState(false);
+  const [ganXong, setGanXong] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!spot || !date || onPick) return;
+    let song = true;
+    apiGet<{ forDate: Array<{ id: string; daySeq: number; contactName: string; phone: string; guestCount: number; insured?: unknown[] }> }>(
+      `/api/baocao/booking?date=${date}&spot=${spot}`,
+    )
+      .then((r) => song && setDsBooking((r.forDate ?? []).filter((b: any) => b.status !== "voided")))
+      .catch(() => {
+        /* không tải được sổ thì thẻ vẫn quét bình thường, chỉ không gán được */
+      });
+    return () => {
+      song = false;
+    };
+  }, [spot, date, onPick]);
+
+  /** Gán người vừa quét vào hồ sơ bảo hiểm của booking đang chọn. */
+  async function ganVaoBooking(p: ScannedPerson) {
+    const b = dsBooking.find((x) => x.id === bookingChon);
+    if (!b) return setError("Chưa chọn booking để gán");
+    setDangGan(true);
+    setError(null);
+    try {
+      const cu = await apiGet<{ view: { guests: InsuredGuest[] } }>(`/api/baocao/insurance?spot=${spot}&id=${b.id}`);
+      const ds = [...(cu.view?.guests ?? [])];
+      const moi = fromScanned(p);
+      /** Điền vào ô trống trước, hết chỗ mới thêm dòng — đoàn 3 khách có sẵn 3 dòng. */
+      const i = ds.findIndex((g) => !g.fullName.trim() && !g.idNumber.trim() && !g.cancelled);
+      if (i >= 0) ds[i] = { ...ds[i], ...moi };
+      else ds.push({ ...emptyInsured(), ...moi });
+      await apiPost(`/api/baocao/insurance?spot=${spot}`, { id: b.id, guests: ds, approve: false });
+      setGanXong(`✓ Đã gán ${p.fullName || "người vừa quét"} vào #${b.daySeq} ${b.contactName || b.phone || "khách"}`);
+      setCurrent(null);
+      setCopied(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không gán được vào booking");
+    } finally {
+      setDangGan(false);
+    }
+  }
   const backRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -618,6 +672,13 @@ export function IdScanCard({
         </div>
       )}
 
+      {/** Báo gán xong — người trực quét liên tiếp nhiều khách nên cần thấy rõ vừa gán cho ai. */}
+      {ganXong && (
+        <div className="mb-2 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-800">
+          {ganXong}
+        </div>
+      )}
+
       {error && (
         <div className="mt-2">
           <Banner tone="error">{error}</Banner>
@@ -669,6 +730,39 @@ export function IdScanCard({
               <TextInput value={current.nationality} onChange={(e) => set({ nationality: e.target.value })} />
             </label>
           </div>
+          {/**
+           * GÁN THẲNG VÀO BOOKING (chủ 13/09): chọn đoàn trong sổ ngày rồi bấm
+           * một nút, người vừa quét vào luôn hồ sơ bảo hiểm của đoàn ấy.
+           */}
+          {!onPick && dsBooking.length > 0 && (
+            <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-1.5">
+              <div className="mb-1 text-[11px] font-bold text-sky-900">Gán vào booking trong ngày</div>
+              <select
+                value={bookingChon}
+                onChange={(e) => setBookingChon(e.target.value)}
+                className="h-9 w-full rounded-lg border border-sky-300 bg-white px-2 text-xs outline-none focus:border-sky-600"
+              >
+                <option value="">— chọn booking —</option>
+                {dsBooking.map((b) => {
+                  const daCo = (b.insured ?? []).filter((g: any) => g?.fullName?.trim() && !g?.cancelled).length;
+                  return (
+                    <option key={b.id} value={b.id}>
+                      #{b.daySeq} {b.contactName || b.phone || "khách"} · {b.guestCount} khách · bảo hiểm {daCo}/{b.guestCount}
+                    </option>
+                  );
+                })}
+              </select>
+              <Button
+                type="button"
+                className="mt-1.5 h-9 w-full bg-sky-600 px-3 text-xs hover:bg-sky-700"
+                disabled={!bookingChon || dangGan}
+                onClick={() => void ganVaoBooking(current)}
+              >
+                {dangGan ? "Đang gán…" : "📋 Gán vào booking đã chọn"}
+              </Button>
+            </div>
+          )}
+
           <div className="mt-2 flex gap-2">
             <Button
               type="button"

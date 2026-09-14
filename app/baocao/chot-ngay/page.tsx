@@ -2,7 +2,6 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { DailyCloseDTO, ReconcileDTO } from "@/lib/baobay/types";
@@ -37,6 +36,7 @@ import { PilotReportEditor } from "../components/PilotReportEditor";
 import { StaffReportEditor } from "../components/StaffReportEditor";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
@@ -239,13 +239,14 @@ export default function DailyClosePage() {
 function DailyCloseInner() {
   const { user, loading } = useBaobaySession("accountant");
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
-  const searchParams = useSearchParams();
 
   const today = todayInVN();
-  const [date, setDate] = useState(() => {
-    const q = searchParams.get("date");
-    return q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : today;
-  });
+  /**
+   * Ngày giữ trong ĐỊA CHỈ TRANG cả hai chiều: mở link có ?date= thì vào đúng
+   * ngày ấy, và đổi ngày thì địa chỉ đổi theo nên F5 không nhảy về hôm nay
+   * (chủ 13/09). Trước đây chỉ đọc một chiều lúc mở.
+   */
+  const [date, setDate] = useNgayLamViec(today);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   /** Số cộng từ SỔ BOOKING (đã bay) — để đối chiếu và vẽ dòng "ai nhập bao nhiêu". */
   const [flown, setFlown] = useState<FlownServices | null>(null);
@@ -769,7 +770,7 @@ function DailyCloseInner() {
 
       {/* Quét giấy tờ khách để làm bảo hiểm bay */}
       <div className="order-8 lg:order-none">
-        <IdScanCard />
+        <IdScanCard spot={spot ?? ""} date={date} />
       </div>
 
       {/* Thư OTA: máy đã đưa vào lịch những gì, thư nào cần soát */}

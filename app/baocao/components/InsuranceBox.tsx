@@ -15,6 +15,8 @@ import {
 } from "@/lib/baobay/insurance";
 import type { ScannedPerson } from "@/lib/baobay/id-scan";
 
+import { docNhapNhanh, sangNgayIso } from "@/lib/baobay/nhap-nhanh";
+
 import { IdScanCard } from "./IdScanCard";
 import { Banner, Button, TextInput } from "./ui";
 
@@ -442,6 +444,34 @@ export function InsuranceBox({
                 );
               })}
 
+              <NhapNhanhKhach
+                onXong={(ds) => {
+                  /**
+                   * ĐIỀN VÀO Ô TRỐNG TRƯỚC, thừa mới thêm dòng mới: đoàn 3 khách
+                   * đã có sẵn 3 dòng rỗng, dán vào mà cứ thêm dòng là thành 6.
+                   */
+                  const next = [...guests];
+                  for (const ng of ds) {
+                    const i = next.findIndex((g) => !g.fullName.trim() && !g.idNumber.trim() && !g.cancelled);
+                    const dong: InsuredGuest = {
+                      ...(i >= 0 ? next[i] : emptyInsured()),
+                      fullName: ng.fullName || (i >= 0 ? next[i].fullName : ""),
+                      birthday: sangNgayIso(ng.birthday) || (i >= 0 ? next[i].birthday : ""),
+                      gender: ng.gender || (i >= 0 ? next[i].gender : ""),
+                      idNumber: ng.idNumber || (i >= 0 ? next[i].idNumber : ""),
+                      idType: ng.idType || (i >= 0 ? next[i].idType : ""),
+                      nationality: ng.nationality || (i >= 0 ? next[i].nationality : ""),
+                      source: "manual",
+                      note: [i >= 0 ? next[i].note : "", ng.weight ? `${ng.weight}kg` : "", ng.phone].filter(Boolean).join(" · "),
+                    };
+                    if (i >= 0) next[i] = dong;
+                    else next.push(dong);
+                  }
+                  setGuests(next);
+                  void save(false, next);
+                }}
+              />
+
               <div className="mb-2 flex flex-wrap gap-1.5">
                 <Button
                   type="button"
@@ -528,6 +558,98 @@ export function InsuranceBox({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * NHẬP NHANH: dán chữ khách gửi qua Zalo, máy tự bóc ra từng người (chủ 13/09).
+ *
+ * Xem trước TRƯỚC KHI ĐIỀN: máy đọc chữ người ta viết tự do nên không bao giờ
+ * chắc trăm phần trăm; bày ra cho người nhập soát rồi mới bấm điền thì sai sót
+ * bị chặn ngay, thay vì lẫn vào hồ sơ bảo hiểm đã gửi đi.
+ */
+function NhapNhanhKhach({ onXong }: { onXong: (ds: ReturnType<typeof docNhapNhanh>) => void }) {
+  const [mo, setMo] = useState(false);
+  const [chu, setChu] = useState("");
+  const doc = chu.trim() ? docNhapNhanh(chu) : [];
+
+  if (!mo) {
+    return (
+      <div className="mb-2">
+        <button
+          type="button"
+          onClick={() => setMo(true)}
+          className="h-9 rounded-lg border border-violet-300 bg-violet-50 px-2.5 text-xs font-bold text-violet-800 hover:bg-violet-100"
+          title="Dán thông tin khách gửi qua Zalo — máy tự tách tên, ngày sinh, số giấy tờ, giới tính"
+        >
+          ⚡ Nhập nhanh (dán chữ)
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-2 rounded-xl border-2 border-violet-300 bg-violet-50/60 p-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-bold text-violet-900">⚡ Nhập nhanh — dán chữ khách gửi</div>
+        <button type="button" onClick={() => setMo(false)} className="text-[11px] font-semibold text-slate-500">
+          Đóng
+        </button>
+      </div>
+      <textarea
+        value={chu}
+        onChange={(e) => setChu(e.target.value)}
+        rows={5}
+        autoFocus
+        placeholder={`Dán kiểu nào cũng được. Mỗi dòng một người:
+John Nguyễn 8/8/2009 83774747774 Đức
+
+Hoặc theo chùm:
+Họ và tên: lê Thị Thanh Hiền
+Ngày tháng năm sinh: 27/10/1993
+Số CMND/CCCD: 074193000106
+Cân nặng: 53
+Số điện thoại: 0393271093
+Giới tính: nữ`}
+        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs leading-snug outline-none focus:border-violet-500"
+      />
+      {doc.length > 0 && (
+        <div className="mt-1.5 rounded-lg bg-white p-1.5">
+          <div className="text-[11px] font-bold text-slate-700">Máy đọc ra {doc.length} người — soát rồi bấm điền:</div>
+          <ul className="mt-1 space-y-1">
+            {doc.map((n, i) => (
+              <li key={i} className="rounded border border-slate-200 px-1.5 py-1 text-[11px] leading-snug">
+                <strong>{n.fullName || "(chưa rõ tên)"}</strong>
+                {n.birthday ? ` · ${n.birthday}` : ""}
+                {n.gender ? ` · ${n.gender === "nu" ? "nữ" : "nam"}` : ""}
+                {n.idNumber ? ` · ${n.idNumber}` : ""}
+                {n.nationality ? ` · ${n.nationality}` : ""}
+                {n.weight ? ` · ${n.weight}kg` : ""}
+                {n.phone ? ` · ${n.phone}` : ""}
+                {n.canSoat.length > 0 && <div className="text-rose-700">⚠ {n.canSoat.join(" · ")}</div>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <Button
+          type="button"
+          className="h-9 bg-violet-600 px-3 text-xs hover:bg-violet-700"
+          disabled={doc.length === 0}
+          onClick={() => {
+            onXong(doc);
+            setChu("");
+            setMo(false);
+          }}
+        >
+          ✓ Điền {doc.length > 0 ? `${doc.length} người` : ""} vào hồ sơ
+        </Button>
+        {chu.trim() && doc.length === 0 && (
+          <span className="text-[11px] font-semibold text-rose-700">Chưa đọc ra người nào — kiểm lại chữ đã dán</span>
+        )}
+      </div>
     </div>
   );
 }

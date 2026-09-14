@@ -22,6 +22,7 @@ import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CountInput, DoneTag, Field, PageLoading, Readout, TextArea, useDoneFlag } from "../components/ui";
 
@@ -65,7 +66,8 @@ export default function CameramanReportPage() {
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
 
   /**
    * Camera man bán thêm flycam ngay tại bãi nên được tự cộng vào booking, nhưng

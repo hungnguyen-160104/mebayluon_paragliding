@@ -16,6 +16,7 @@ import { DateBar } from "../components/DateBar";
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Banner, Card, PageLoading } from "../components/ui";
 
 /**
@@ -37,7 +38,8 @@ export default function KeToanPage() {
   const { user, loading } = useBaobaySession("accountant");
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
   const [loadingDay, setLoadingDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

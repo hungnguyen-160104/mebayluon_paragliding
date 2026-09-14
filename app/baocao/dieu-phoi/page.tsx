@@ -46,6 +46,7 @@ import { useBaobaySession } from "../components/session";
 import { ThoiTietCard } from "../components/ThoiTietCard";
 import { DISPATCHER_LIKE_ROLES } from "@/lib/baobay/roles";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
@@ -234,7 +235,8 @@ export default function DispatcherReportPage() {
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<DispatcherReportDTO | null>(null);
   const [locked, setLocked] = useState(false);
@@ -1000,7 +1002,7 @@ export default function DispatcherReportPage() {
 
 
       {/* Quét giấy tờ khách để làm bảo hiểm bay */}
-      <IdScanCard />
+      <IdScanCard spot={spot ?? ""} date={date} />
       </div>
 
       <div className="space-y-3 lg:col-start-2 lg:row-start-2">

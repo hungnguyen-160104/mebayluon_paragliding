@@ -31,6 +31,7 @@ import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
+import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CollapseCard, CountInput, DoneTag, Field, MoneyInput, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
 
@@ -149,7 +150,8 @@ export default function PilotReportPage() {
   const { spot, setSpot, options: spotOptions } = useSpot(user?.spots);
 
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<PilotReportDTO | null>(null);
   const [locked, setLocked] = useState(false);

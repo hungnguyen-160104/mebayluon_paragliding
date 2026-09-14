@@ -33,6 +33,7 @@ import { BACKDATE_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { formatVND } from "@/lib/pricing";
 
 import { apiDelete, apiGet, apiPost } from "../../components/client-api";
+import { useNgayLamViec } from "../../components/ngay-lam-viec";
 import { DateBar } from "../../components/DateBar";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../../components/rows";
 import { HandoverBox } from "../../components/HandoverBox";
@@ -157,7 +158,8 @@ export default function CafeReportPage() {
   const isAdmin = Boolean(user && [user.role, ...(user.extraRoles ?? [])].includes("admin"));
 
   const today = todayInVN();
-  const [date, setDate] = useState(today);
+  /** Ngày giữ trong địa chỉ trang — F5 tải lại đúng ngày đang xem (chủ 13/09). */
+  const [date, setDate] = useNgayLamViec(today);
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [existing, setExisting] = useState<CafeReportDTO | null>(null);
