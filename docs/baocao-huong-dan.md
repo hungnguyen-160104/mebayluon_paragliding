@@ -589,11 +589,27 @@ production). Khi mất mạng:
 Máy bán `/cafe` vẫn dùng worker riêng của nó (có hàng đợi phiếu). Bản dev gỡ
 worker để không "ăn mã cũ".
 
-## Nguyên tắc chống LẬP TRÙNG booking (từ 14/09/2026)
+## Xuất ảnh phiếu booking (từ 14/09/2026)
+
+Nút **🖼 Xuất ảnh** (khung booking mới) và **🖼 Ảnh booking** (từng dòng sổ)
+không tải file ngay nữa mà bày **full ảnh phiếu** lên màn hình — khách đứng
+cạnh giơ máy **chụp màn hình** là xong. Dưới ảnh có hai nút:
+- **💾 Lưu ảnh** — tải file PNG về máy (iPhone không thấy thì nhấn giữ vào ảnh
+  → Lưu ảnh);
+- **📤 Chia sẻ** — mở khay chia sẻ của máy (Zalo, Messenger, AirDrop…) kèm file
+  ảnh; máy tính không có khay thì nút báo dùng Lưu ảnh.
+
+Ảnh dựng bằng `drawBookingImage` (`app/baocao/components/booking-image.ts`),
+khung xem là `XuatAnhBooking.tsx`. Đây là **phiếu gửi khách**, không phải vé in
+nhiệt.
+
+## Nguyên tắc cảnh báo LẬP TRÙNG booking (từ 14/09/2026)
 
 Hai điều phối cùng nhập, quên kiểm khách đã đặt chưa, là ra hai booking cho một
-người — 13/09 Khau Phạ có ba cặp như vậy. Máy chủ chặn ngay lúc **Lưu booking**
-(`createBooking` → `timBookingTrung`), không chỉ nhắc trên form.
+người — 13/09 Khau Phạ có ba cặp như vậy. Máy tra sổ ngay lúc bấm **Lưu booking**
+(`GET /api/baocao/booking?trung=1` → `timBookingTrung`), thấy nghi trùng thì
+**chưa lưu**, bày khung báo cho người lập soi — **không chặn**, vì một khách
+book 2–3 lần là có thật (book hộ bạn, đặt thêm đợt sau, hai đơn OTA).
 
 **Coi là nghi trùng** khi cùng điểm bay đã có booking khác (không tính đã bỏ
 khỏi sổ) thoả một trong bốn dấu, theo thứ tự mạnh → yếu:
@@ -603,16 +619,22 @@ khỏi sổ) thoả một trong bốn dấu, theo thứ tự mạnh → yếu:
 3. **cùng email**;
 4. **cùng tên liên hệ** (không dấu, không phân biệt hoa thường).
 
-**Phạm vi ngày:** *cùng ngày bay* thì **chặn**; *hai ngày kề* chỉ **nhắc** trong
-câu báo (khách đặt hai ngày liền là có thật, nhưng hay là gõ nhầm ngày).
-Booking **đã huỷ** vẫn được liệt kê — nhân viên hay lập lại booking của khách đã
-huỷ thay vì bấm *bay lại* dòng cũ.
+**Phạm vi ngày:** *cùng ngày bay* thì bày khung báo; *hai ngày kề* chỉ liệt kê
+thêm trong khung (ghi "ngày kề"). Booking **đã huỷ** vẫn được liệt kê — nhân
+viên hay lập lại booking của khách đã huỷ thay vì bấm *bay lại* dòng cũ.
 
-**Khi bị chặn**, máy liệt kê từng booking nghi trùng: số thứ tự, tên, số khách,
-trạng thái, vì sao nghi trùng. Người lập có hai đường:
-- cùng một khách → **sửa booking cũ** (đã huỷ thì bấm *bay lại*), không lập mới;
-- khách khác thật → ghi **lý do** vào hộp hiện ra, máy lập tiếp và ghi lý do
-  kèm tên người lập vào ghi chú booking để kế toán soát.
+**Khung báo** liệt kê từng booking nghi trùng: số thứ tự, tên, SĐT (bấm gọi),
+số khách, trạng thái, vì sao nghi trùng, kèm ba lối:
+- **🔍 Xem #N** — mở phiếu chi tiết booking đó (khoản tiền, lịch sử) để soi có
+  thực sự trùng không;
+- **✏️ Sửa #N** — cùng một khách: bỏ bản đang gõ, mở booking cũ ra sửa (đã huỷ
+  thì mở sổ bấm *bay lại*);
+- **✅ Bỏ qua, vẫn lập** — khách khác thật / book hộ: lập tiếp, lý do ghi thêm
+  là tuỳ chọn; máy ghi "lập dù nghi trùng #… (người lập)" vào ghi chú booking
+  để kế toán soát.
+
+Máy chủ giữ một lưới an toàn: gửi lưu mà chưa qua khung báo (hai người lập
+cùng lúc, tra hụt) thì trả 409 đuôi `|TRUNG`, giao diện bày lại khung báo.
 
 Cùng luật, nút **ĐÃ BAY** cũng bị chặn khi booking *chưa thu đủ* hoặc *nghi
 trùng* (xem `updateBookingStatus`): trùng thì **Bỏ khỏi sổ** cái thừa chứ không

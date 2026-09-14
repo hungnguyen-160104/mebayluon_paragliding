@@ -16,7 +16,8 @@ import { DIEM_BAY_VE, laTuDen, pickupVe, shortPickupSo, TU_DEN } from "@/lib/bao
 
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client-api";
 import { useBaobaySession } from "./session";
-import { duLieuAnhTuBooking, shareBookingImage } from "./booking-image";
+import { duLieuAnhTuBooking } from "./booking-image";
+import { XuatAnhBooking } from "./XuatAnhBooking";
 import { InsuranceBox } from "./InsuranceBox";
 import { BookingSheet } from "./BookingSheet";
 import { insuranceState } from "@/lib/baobay/insurance";
@@ -52,6 +53,19 @@ import { Banner, Button, CollapseCard, CountInput, DoneTag, Field, MoneyInput, S
  * gọn hơn là kéo trạng thái lên tận trang rồi truyền xuống hai nhánh.
  */
 const EDIT_EVENT = "baobay:edit-booking";
+
+/** Một booking nghi trùng do máy chủ trả về (xem timBookingTrung). */
+type NghiTrung = {
+  id: string;
+  daySeq: number;
+  flightDate: string;
+  contactName: string;
+  phone: string;
+  guestCount: number;
+  status: string;
+  viSao: string;
+  cungNgay: boolean;
+};
 
 /**
  * MỖI LÚC MỘT BẢNG CON (luật chủ 05/09): trong một dải nút (⋯ Thêm), bấm mở
@@ -3157,6 +3171,7 @@ function BookingDetailControl({
   spot,
   booking: b,
   compact,
+  label,
 }: {
   spot: string;
   booking: BookingDTO;
@@ -3166,6 +3181,8 @@ function BookingDetailControl({
    * tooltip — và ở chỗ đặt nút, ngay cạnh mã booking người ta đang tra.
    */
   compact?: boolean;
+  /** Chữ trên nút thay cho "Chi tiết book" (khung báo trùng dùng "Xem #N"). */
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   /**
@@ -3317,7 +3334,7 @@ function BookingDetailControl({
         }}
         title="Xem bảng kê chi tiết booking như tờ vé: từng khoản, tổng, đã trả, còn thu"
       >
-        {compact ? "📄" : "📄 Chi tiết book"}
+        {label ?? (compact ? "📄" : "📄 Chi tiết book")}
       </Button>
       {open &&
         typeof document !== "undefined" &&
@@ -5341,18 +5358,14 @@ export function BookingTodayBanner({
    * khách hỏi lại phiếu, hay quầy cần gửi Zalo sau khi đã lưu. Không phải vé in.
    */
   const anhButton = (b: BookingDTO) => (
-    <button
-      type="button"
+    <XuatAnhBooking
+      data={() => duLieuAnhTuBooking(b, spot)}
       className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-      title="Xuất phiếu booking thành ảnh để gửi khách (không phải vé in)"
-      onClick={() => {
-        void shareBookingImage(duLieuAnhTuBooking(b, spot)).catch((e: unknown) =>
-          setError(e instanceof Error ? e.message : "Không xuất được ảnh phiếu"),
-        );
-      }}
+      title="Xem ảnh phiếu booking full màn hình — lưu ảnh / chia sẻ cho khách (không phải vé in)"
+      onError={setError}
     >
       🖼 Ảnh booking
-    </button>
+    </XuatAnhBooking>
   );
 
   const renderClosedStrip = (b: BookingDTO, close?: () => void) => (
@@ -6503,6 +6516,14 @@ export function BookingCard({
   const [done, setDone] = useState<string | null>(null);
   /** Booking vừa lưu xong VÀ còn thay đổi chưa báo khách — để bày nút gửi mail. */
   const [needMail, setNeedMail] = useState<BookingDTO | null>(null);
+  /**
+   * KHUNG BÁO NGHI TRÙNG (chủ 14/09): máy tra sổ trước khi lưu, thấy cùng ngày
+   * đã có booking cùng SĐT/mã/email/tên thì KHÔNG lưu vội mà bày ra đây cho
+   * người lập soi từng booking rồi tự quyết: sửa booking cũ, hay "Bỏ qua, vẫn
+   * lập" (khách book hộ, đặt thêm đợt sau… là có thật, nên không chặn).
+   */
+  const [canhBaoTrung, setCanhBaoTrung] = useState<{ ds: NghiTrung[]; chiTiet: Record<string, BookingDTO> } | null>(null);
+  const [lyDoTrung, setLyDoTrung] = useState("");
   const [sendingMail, setSendingMail] = useState(false);
   /** Đang SỬA booking nào trong danh sách sắp tới — nạp vào form phía trên. */
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -6868,9 +6889,15 @@ export function BookingCard({
   }
 
   /** Trả về id booking vừa lưu — nút "Gửi email" cần nó để gửi ngay sau khi lưu. */
-  async function save(): Promise<string | null> {
+  /**
+   * @param boQuaTrung true = người lập đã soi khung báo trùng và bấm "Bỏ qua,
+   *   vẫn lập": gửi kèm cờ chapNhanTrung (+ lý do nếu có ghi) để máy chủ lập
+   *   tiếp và ghi vết vào ghi chú booking.
+   */
+  async function save(boQuaTrung = false): Promise<string | null> {
     setError(null);
     setDone(null);
+    if (!boQuaTrung) setCanhBaoTrung(null);
     /**
      * Dịch vụ không được nhiều hơn số khách — máy chủ cũng chặn, nhưng báo ở đây
      * thì người nhập sửa được ngay tại ô, khỏi mất công gửi đi rồi nhận lỗi.
@@ -6948,26 +6975,60 @@ export function BookingCard({
         setNeedMail((res?.booking?.pendingNotify?.length ?? 0) > 0 ? res.booking : null);
       } else {
         /**
-         * CHỐT CHẶN TRÙNG ở máy chủ (chủ 14/09): lỗi 409 đuôi "|TRUNG" liệt kê
-         * booking đã có. Người lập đọc, nếu chắc là khách khác thì ghi lý do để
-         * lập tiếp; không ghi là thôi (đi sửa booking cũ).
+         * TRA NGHI TRÙNG TRƯỚC KHI LƯU (chủ 14/09): cùng ngày đã có booking
+         * cùng SĐT / mã / email / tên → dừng, bày khung báo cho người lập soi.
+         * Không chặn: soi xong bấm "Bỏ qua, vẫn lập" là gửi lại kèm cờ. Máy chủ
+         * còn một lưới an toàn (409 đuôi |TRUNG) cho trường hợp tra hụt vì hai
+         * người lập cùng lúc — gặp thì cũng bày khung báo, không văng lỗi khô.
          */
+        const hoiTrung = async (): Promise<NghiTrung[]> => {
+          const q = new URLSearchParams({
+            trung: "1",
+            date: form.flightDate,
+            phone: form.phone,
+            name: form.contactName,
+            email: form.email || "",
+            code: form.bookingCode,
+          });
+          const r = await apiGet<{ trung: NghiTrung[] }>(`/api/baocao/booking?spot=${bookSpot}&${q.toString()}`);
+          return r.trung ?? [];
+        };
+        const bayKhungTrung = async () => {
+          const ds = await hoiTrung();
+          if (!ds.some((d) => d.cungNgay)) return false;
+          setCanhBaoTrung({ ds, chiTiet: {} });
+          /** Nạp chi tiết từng booking cùng ngày (tối đa 5) để nút "Xem" mở được phiếu. */
+          void Promise.all(
+            ds
+              .filter((d) => d.cungNgay)
+              .slice(0, 5)
+              .map((d) =>
+                apiGet<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}&id=${d.id}`)
+                  .then((r) => [d.id, r.booking] as const)
+                  .catch(() => null),
+              ),
+          ).then((cap) => {
+            const chiTiet: Record<string, BookingDTO> = {};
+            for (const c of cap) if (c) chiTiet[c[0]] = c[1];
+            setCanhBaoTrung((cu) => (cu ? { ...cu, chiTiet } : cu));
+          });
+          return true;
+        };
+        if (!boQuaTrung && (await bayKhungTrung())) return null;
+
         let created: { booking: BookingDTO } | undefined;
-        const thanLap: Record<string, unknown> = { ...payload };
-        for (let lan = 0; lan < 2; lan++) {
-          try {
-            created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, thanLap);
-            break;
-          } catch (e) {
-            const m = e instanceof Error ? e.message : "";
-            if (!m.endsWith("|TRUNG") || lan === 1) throw e;
-            const chu = m.replace(/\|TRUNG$/, "");
-            const lyDo = window.prompt(`⚠ ${chu}\n\nVẫn LẬP MỚI? Ghi lý do (bắt buộc), hoặc bấm Huỷ để đi sửa booking cũ:`);
-            if (!lyDo || !lyDo.trim()) throw new Error("Chưa lập — " + chu);
-            thanLap.chapNhanTrung = true;
-            thanLap.lyDoTrung = lyDo.trim();
-          }
+        try {
+          created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, {
+            ...payload,
+            ...(boQuaTrung ? { chapNhanTrung: true, lyDoTrung: lyDoTrung.trim() || undefined } : {}),
+          });
+        } catch (e) {
+          const m = e instanceof Error ? e.message : "";
+          if (m.endsWith("|TRUNG") && (await bayKhungTrung())) return null;
+          throw e;
         }
+        setCanhBaoTrung(null);
+        setLyDoTrung("");
         /**
          * Lưu xong thì form CHUYỂN SANG CHẾ ĐỘ SỬA chính booking vừa tạo, không
          * xoá trắng nữa: nhân viên hay phải sửa lại ngay (khách đọc thiếu số,
@@ -7903,6 +7964,82 @@ export function BookingCard({
         </div>
       )}
 
+      {canhBaoTrung && (
+        <div className="mt-2 rounded-xl border-2 border-amber-500 bg-amber-50 p-2.5 text-xs text-amber-950">
+          <div className="text-sm font-bold">⚠ NGHI TRÙNG — chưa lưu. Trong sổ {spotName(bookSpot)} đã có:</div>
+          <ul className="mt-1.5 space-y-1.5">
+            {canhBaoTrung.ds.slice(0, 8).map((d) => {
+              const dto = canhBaoTrung.chiTiet[d.id];
+              return (
+                <li key={d.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-300 bg-white px-2 py-1.5">
+                  <span className="font-bold">#{d.daySeq}</span>
+                  <span className="font-semibold">{d.contactName || "(không tên)"}</span>
+                  {d.phone && <GoiSdt sdt={d.phone} className="text-sky-700 underline">{d.phone}</GoiSdt>}
+                  <span>· {d.guestCount} khách</span>
+                  <span
+                    className={
+                      "rounded px-1.5 py-0.5 text-[11px] font-bold " +
+                      (d.status === "cancelled" ? "bg-rose-100 text-rose-800" : d.status === "done" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800")
+                    }
+                  >
+                    {d.status === "cancelled" ? "ĐÃ HUỶ" : d.status === "done" ? "đã bay" : "đang chờ"}
+                  </span>
+                  {!d.cungNgay && <span className="text-amber-700">· bay {formatDateKeyVN(d.flightDate)} (ngày kề)</span>}
+                  <span className="text-amber-800">({d.viSao})</span>
+                  <span className="ml-auto flex gap-1">
+                    {dto ? (
+                      <>
+                        <BookingDetailControl spot={bookSpot} booking={dto} label={`🔍 Xem #${d.daySeq}`} />
+                        {d.status !== "cancelled" && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-7 bg-white px-2 text-xs"
+                            title="Cùng một khách: bỏ bản đang gõ, mở booking này ra sửa"
+                            onClick={() => {
+                              setCanhBaoTrung(null);
+                              startEdit(dto);
+                            }}
+                          >
+                            ✏️ Sửa #{d.daySeq}
+                          </Button>
+                        )}
+                      </>
+                    ) : d.cungNgay ? (
+                      <span className="text-[11px] text-slate-500">đang tải…</span>
+                    ) : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 leading-snug">
+            Cùng một khách → <strong>Sửa</strong> booking cũ (đã huỷ thì mở sổ bấm <em>bay lại</em>). Khách khác thật, book hộ,
+            đặt thêm lần nữa… → <strong>Bỏ qua, vẫn lập</strong>; máy ghi &quot;lập dù nghi trùng&quot; vào ghi chú để kế toán soát.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              value={lyDoTrung}
+              onChange={(e) => setLyDoTrung(e.target.value)}
+              placeholder="Lý do vẫn lập (không bắt buộc): book hộ bạn, đoàn 2…"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-amber-300 bg-white px-2 text-xs"
+              maxLength={300}
+            />
+            <Button
+              type="button"
+              disabled={saving}
+              className="h-9 bg-amber-600 px-3 text-xs hover:bg-amber-700"
+              onClick={() => void save(true)}
+            >
+              ✅ Bỏ qua, vẫn lập
+            </Button>
+            <Button type="button" variant="ghost" className="h-9 bg-white px-3 text-xs" onClick={() => setCanhBaoTrung(null)}>
+              Không lập
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-2.5 flex gap-2">
         {/**
          * NHẬP BOOKING MỚI — lối duy nhất để xoá trắng form.
@@ -7965,7 +8102,7 @@ export function BookingCard({
           type="button"
           className="h-11 flex-[2] whitespace-nowrap bg-sky-600 px-2 text-sm hover:bg-sky-700"
           disabled={saving}
-          onClick={save}
+          onClick={() => void save()}
         >
           {saving ? "Đang lưu…" : editingId ? "✓ Cập nhật booking" : "Lưu booking"}
         </Button>
@@ -8011,16 +8148,13 @@ export function BookingCard({
             {sendingMail ? "Đang gửi…" : editingId ? "✉ Gửi email" : "✉ Lưu & gửi email"}
           </Button>
         )}
-        {/* Xuất phiếu gửi khách: điện thoại mở khay chia sẻ (Zalo), máy tính tải PNG */}
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-11 flex-1 bg-white"
+        {/* Xuất phiếu gửi khách: bày full ảnh (khách chụp màn hình) + Lưu ảnh / Chia sẻ */}
+        <XuatAnhBooking
+          className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
           disabled={saving || form.guestCount === 0}
-          title="Xuất phiếu booking thành ảnh để gửi khách"
-          onClick={async () => {
-            try {
-              await shareBookingImage({
+          title="Xem ảnh phiếu booking full màn hình — khách chụp lại, hoặc Lưu ảnh / Chia sẻ"
+          onError={setError}
+          data={() => ({
                 spot: bookSpot,
                 flightDate: form.flightDate,
                 expectedTime: form.expectedTime,
@@ -8065,14 +8199,10 @@ export function BookingCard({
                 note: form.note,
                 /* Số thứ tự chỉ có sau khi booking đã vào sổ (daySeq của ngày) */
                 queueNo: editingSeq || null,
-              });
-            } catch (err: unknown) {
-              setError(err instanceof Error ? err.message : "Không xuất được ảnh phiếu");
-            }
-          }}
+          })}
         >
           🖼 Xuất ảnh
-        </Button>
+        </XuatAnhBooking>
       </div>
       </div>
 

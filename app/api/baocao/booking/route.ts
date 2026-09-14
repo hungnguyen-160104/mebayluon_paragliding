@@ -38,6 +38,8 @@ import {
   updateBookingCell,
   recordTicketPrint,
   traMaVeBaoMat,
+  timBookingTrung,
+  layBookingDTOTheoId,
 } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
@@ -78,7 +80,40 @@ export async function GET(req: Request) {
     return NextResponse.json(await traMaVeBaoMat(auth, spot, maVe));
   }
 
-  const date = new URL(req.url).searchParams.get("date") || todayInVN();
+  /**
+   * ?trung=1&date=&phone=&name=&email=&ota=&code=: TRA NGHI TRÙNG trước khi lưu
+   * (chủ 14/09) — form bày danh sách cho người lập soi, không chặn. Chỉ vai
+   * lập booking mới tra được (danh sách lộ tên/SĐT khách).
+   */
+  const q = new URL(req.url).searchParams;
+  if (q.get("trung") === "1") {
+    if (![...ROLES, "pilot"].some((r) => wearsRole(auth, r as (typeof ROLES)[number] | "pilot"))) return NextResponse.json({ message: "Không có quyền" }, { status: 403 });
+    const ngay = q.get("date") || "";
+    if (!isDateKey(ngay)) return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
+    const trung = await timBookingTrung(
+      spot,
+      {
+        flightDate: ngay,
+        phone: q.get("phone") || undefined,
+        contactName: q.get("name") || undefined,
+        email: q.get("email") || undefined,
+        otaRef: q.get("ota") || undefined,
+        bookingCode: q.get("code") || undefined,
+      },
+      q.get("skip") || undefined,
+    );
+    return NextResponse.json({ trung });
+  }
+  /** ?id=: MỘT booking theo mã — nút "Xem" trong khung báo trùng soi chi tiết. */
+  const idXem = q.get("id");
+  if (idXem !== null) {
+    if (!ROLES.some((r) => wearsRole(auth, r))) return NextResponse.json({ message: "Không có quyền" }, { status: 403 });
+    const booking = await layBookingDTOTheoId(spot, idXem);
+    if (!booking) return NextResponse.json({ message: "Không thấy booking" }, { status: 404 });
+    return NextResponse.json({ booking });
+  }
+
+  const date = q.get("date") || todayInVN();
   if (!isDateKey(date)) {
     return NextResponse.json({ message: "Ngày không hợp lệ" }, { status: 400 });
   }

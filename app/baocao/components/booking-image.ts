@@ -725,31 +725,56 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   return canvas;
 }
 
-/** Xuất phiếu: điện thoại mở khay chia sẻ, máy tính tải file PNG về. */
-export async function shareBookingImage(d: BookingImageData): Promise<void> {
+/** Ảnh phiếu đã dựng xong: file PNG + địa chỉ data: để bày lên màn hình. */
+export type AnhPhieu = { file: File; blob: Blob; name: string; dataUrl: string };
+
+/** Vẽ phiếu rồi đóng gói thành file PNG — dùng chung cho xem, lưu, chia sẻ. */
+export async function taoAnhPhieu(d: BookingImageData): Promise<AnhPhieu> {
   const canvas = await drawBookingImage(d);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
   if (!blob) throw new Error("Không tạo được ảnh phiếu");
-
   const name = `booking-${d.flightDate}-${(d.contactName || d.bookingCode || "khach").replace(/\s+/g, "-")}.png`;
   const file = new File([blob], name, { type: "image/png" });
+  return { file, blob, name, dataUrl: canvas.toDataURL("image/png") };
+}
 
+/** Máy này có mở được khay chia sẻ kèm FILE ảnh không (iPhone/Android có, máy tính thường không). */
+export function chiaSeDuocFile(file: File): boolean {
   const nav = navigator as Navigator & { canShare?: (data: { files: File[] }) => boolean };
-  if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
-    try {
-      await nav.share({ files: [file], title: "Phiếu booking" });
-      return;
-    } catch {
-      /* khách bấm huỷ khay chia sẻ: rơi xuống tải file */
-    }
-  }
+  return typeof nav.share === "function" && Boolean(nav.canShare?.({ files: [file] }));
+}
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
+/**
+ * Mở khay chia sẻ (Zalo, Messenger, AirDrop…). Trả false nếu máy không hỗ trợ
+ * hoặc người dùng đóng khay — bên gọi tự rơi xuống "Lưu ảnh".
+ * PHẢI gọi ngay trong cú bấm (không await gì trước) — trình duyệt chặn khay
+ * chia sẻ mở ngoài thao tác người dùng.
+ */
+export async function chiaSeAnhPhieu(a: AnhPhieu): Promise<boolean> {
+  if (!chiaSeDuocFile(a.file)) return false;
+  try {
+    await navigator.share({ files: [a.file], title: "Phiếu booking" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Tải file PNG về máy (máy tính: vào Downloads; Android: vào thư mục tải; iPhone: hỏi lưu vào Tệp/Ảnh). */
+export function luuAnhPhieu(a: AnhPhieu): void {
+  const url = URL.createObjectURL(a.blob);
+  const el = document.createElement("a");
+  el.href = url;
+  el.download = a.name;
+  el.click();
   setTimeout(() => URL.revokeObjectURL(url), 5_000);
+}
+
+/** Xuất phiếu một phát: điện thoại mở khay chia sẻ, máy tính tải file PNG về. */
+export async function shareBookingImage(d: BookingImageData): Promise<void> {
+  const a = await taoAnhPhieu(d);
+  if (await chiaSeAnhPhieu(a)) return;
+  luuAnhPhieu(a);
 }
 
 /**

@@ -4383,7 +4383,7 @@ function cauBaoTrung(ds: DauTrung[]): string {
   return (
     `NGHI TRÙNG BOOKING — trong sổ đã có: ${dong}${ds.length > 5 ? "; …" : ""}. ` +
     "Nếu là cùng một khách: SỬA booking cũ (hoặc bấm bay lại nếu đã huỷ), đừng lập mới. " +
-    "Nếu là khách khác thật, ghi lý do để lập tiếp.|TRUNG"
+    "Nếu là khách khác thật thì bấm Bỏ qua để lập tiếp.|TRUNG"
   );
 }
 
@@ -4398,9 +4398,13 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   assertBookingTime(input.flightDate, input.expectedTime.trim());
 
   /**
-   * CHỐT CHẶN TRÙNG (chủ 14/09): cùng ngày đã có booking cùng SĐT / mã / email /
-   * tên thì không lập — trừ khi người lập bật cờ kèm lý do. Ngày kề chỉ nhắc
-   * trong câu báo, không chặn.
+   * NGHI TRÙNG KHÔNG CHẶN — chỉ báo (chủ 14/09): một khách có thể book 2–3 lần
+   * thật (book hộ bạn, đặt thêm đợt sau, hai đơn OTA khác nhau…). Giao diện đã
+   * tra `timBookingTrung` trước khi gửi, bày từng booking nghi trùng cho người
+   * lập SOI rồi bấm "Bỏ qua, vẫn lập" → gửi kèm `chapNhanTrung`. Ở đây chỉ còn
+   * lưới an toàn cho lối gửi cũ/lỗi mạng: chưa xác nhận mà cùng ngày có nghi
+   * trùng thì trả 409 đuôi |TRUNG để giao diện bày lại khung báo. Lập tiếp thì
+   * ghi "lập dù nghi trùng #…" vào ghi chú để kế toán soát, lý do là tuỳ chọn.
    */
   const nghiTrung = await timBookingTrung(spot, {
     flightDate: input.flightDate,
@@ -4413,8 +4417,9 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   const chanTrung = nghiTrung.filter((d) => d.cungNgay);
   let ghiChuTrung = "";
   if (chanTrung.length) {
-    if (!input.chapNhanTrung || !(input.lyDoTrung ?? "").trim()) throw new BaobayError(cauBaoTrung(nghiTrung), 409);
-    ghiChuTrung = `lập dù nghi trùng ${chanTrung.map((d) => `#${d.daySeq}`).join(", ")} — ${input.lyDoTrung!.trim()} (${session.name || session.username})`;
+    if (!input.chapNhanTrung) throw new BaobayError(cauBaoTrung(nghiTrung), 409);
+    const lyDo = (input.lyDoTrung ?? "").trim();
+    ghiChuTrung = `lập dù nghi trùng ${chanTrung.map((d) => `#${d.daySeq}`).join(", ")}${lyDo ? ` — ${lyDo}` : ""} (${session.name || session.username})`;
   }
 
   /** Dịch vụ bám theo đầu khách: 2 khách thì tối đa 2 flycam, 2 cam360… */
