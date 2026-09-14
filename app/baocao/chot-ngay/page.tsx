@@ -63,6 +63,8 @@ type CloseSuggestion = {
   noTicketGuests: number;
   ticketsIssued: number;
   ticketsReturned: number;
+  /** Vé thu hồi theo sổ booking (huỷ sau khi xuất vé) — máy chủ tính, chủ 14/09. */
+  recalledFromBook?: number;
   cancelledCount: number;
   cancelledRefundCount: number;
   cancelledNoRefundCount: number;
@@ -988,6 +990,7 @@ function DailyCloseInner() {
               <Compare
                 label={
                   "quầy báo (vé − thu hồi" +
+                  ((suggest?.recalledFromBook ?? 0) > (suggest?.ticketsReturned ?? 0) ? ` [sổ: ${suggest!.recalledFromBook} vé huỷ sau xuất]` : "") +
                   ((t?.rescheduled ?? 0) > 0 ? ` − ${t!.rescheduled} vé dời` : "") +
                   " + bay không vé" +
                   ((t?.carriedIn ?? 0) > 0 ? ` + ${t!.carriedIn} vé hôm trước mang sang` : "") +
@@ -1000,7 +1003,14 @@ function DailyCloseInner() {
                     return Math.max(0, khach - (suggest?.cancelledCount ?? 0));
                   }
                   const xuat = t?.dispatcherIssued ?? suggest?.ticketsIssued;
-                  const thuVe = t?.dispatcherReturned ?? suggest?.ticketsReturned ?? 0;
+                  /**
+                   * VÉ THU HỒI lấy số LỚN HƠN giữa quầy khai và SỔ BOOKING (chủ
+                   * 14/09): 13/09 quầy khai 0 thu hồi trong khi sổ có 7 booking
+                   * huỷ sau khi xuất vé (13 vé) → dòng này báo 47 dù chỉ 31 người
+                   * bay. Vé đã xuất cho khách huỷ là vé thu về, quầy quên khai
+                   * cũng không được đếm thành người bay.
+                   */
+                  const thuVe = Math.max(t?.dispatcherReturned ?? suggest?.ticketsReturned ?? 0, suggest?.recalledFromBook ?? 0);
                   /**
                    * + khách bay KHÔNG VÉ (PPG là chính): quầy đếm bằng vé nên
                    * chuyến không xé vé nằm ngoài phép đếm của họ — không cộng

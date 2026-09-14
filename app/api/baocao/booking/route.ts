@@ -504,6 +504,14 @@ export async function PATCH(req: Request) {
         : undefined,
       // Dời cả đoàn đã xuất vé: mã vé khách mang theo
       action === "move" ? String(body?.ticketCodesText ?? "") : undefined,
+      // Tích đã bay: cờ vượt chốt chặn chưa thu đủ / nghi trùng, kèm lý do (chủ 14/09)
+      action === "flown"
+        ? {
+            chapNhanChuaThu: body?.chapNhanChuaThu === true,
+            chapNhanTrung: body?.chapNhanTrung === true,
+            lyDo: String(body?.lyDo ?? ""),
+          }
+        : undefined,
     );
     return NextResponse.json({ booking });
   } catch (err) {

@@ -367,6 +367,23 @@ export default function DispatcherReportPage() {
     ...cancelledCodes,
     ...recalledExtra,
   ]);
+  const returnedGop = Math.max(returned, maThuHoiGop.size);
+  /**
+   * "VÉ THU VỀ" TỰ ĐIỀN theo sổ (chủ 14/09): 13/09 quầy để 0 trong khi sổ có
+   * 13 vé huỷ sau xuất — chốt ngày đếm thành người bay. Cùng nếp với ô "vé
+   * xuất": ô đang 0 hoặc đang mang đúng số máy điền lần trước thì máy điền,
+   * gõ số khác thì máy thôi giành.
+   */
+  const lastAutoReturned = useRef<number | null>(null);
+  useEffect(() => {
+    if (locked || noTicketSpot || returnedGop <= 0) return;
+    setForm((prev) => {
+      if (prev.ticketsReturned !== 0 && prev.ticketsReturned !== lastAutoReturned.current) return prev;
+      if (prev.ticketsReturned === returnedGop) return prev;
+      lastAutoReturned.current = returnedGop;
+      return { ...prev, ticketsReturned: returnedGop };
+    });
+  }, [returnedGop, locked, noTicketSpot]);
   /** Tiền theo sổ của CHÍNH MÌNH (lệnh thu, hàng bán thêm, hoa hồng đã chi) — như khung sửa của kế toán. */
   const hoSo = useHoSo(spot ?? "", date, user?.username ?? "");
   const tienSo = hoSo.du?.tien;
@@ -539,7 +556,6 @@ export default function DispatcherReportPage() {
   const doiKhaiTay = form.rescheduledGuests.reduce((t, r) => t + (Number(r.guests) || 0), 0);
   const cancelledGuestTotal = Math.max(huyTheoSo, huyKhaiTay);
   const movedGuestTotal = Math.max(doiTheoSo, doiKhaiTay);
-  const returnedGop = Math.max(returned, maThuHoiGop.size);
   const chuNguon = (so: number, tay: number) => (so !== tay ? ` (sổ ${so} · khai tay ${tay})` : "");
 
   const rangeMismatch = !noTickets && rangeTotal > 0 && form.ticketsIssued > 0 && rangeTotal !== form.ticketsIssued;

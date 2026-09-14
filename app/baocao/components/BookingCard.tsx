@@ -4614,11 +4614,32 @@ export function BookingTodayBanner({
     setBusy(b.id);
     setError(null);
     try {
-      await apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action, toDate });
+      /**
+       * TÍCH ĐÃ BAY: máy chủ chặn khi CHƯA THU ĐỦ hoặc NGHI TRÙNG (chủ 14/09),
+       * trả lỗi có đuôi "|CHUA_THU" / "|TRUNG". Gặp thì hỏi lý do rồi gửi lại
+       * kèm cờ; không ghi lý do là thôi. Lý do ghi vào booking để kế toán soát.
+       */
+      const than: Record<string, unknown> = { id: b.id, action, toDate };
+      for (let lan = 0; lan < 3; lan++) {
+        try {
+          await apiPatch(`/api/baocao/booking?spot=${spot}`, than);
+          break;
+        } catch (e) {
+          const m = e instanceof Error ? e.message : "";
+          const duoi = m.endsWith("|CHUA_THU") ? "CHUA_THU" : m.endsWith("|TRUNG") ? "TRUNG" : null;
+          if (action !== "flown" || !duoi) throw e;
+          const chu = m.replace(/\|(CHUA_THU|TRUNG)$/, "");
+          const lyDo = window.prompt(`${chu}\n\nVẫn tích ĐÃ BAY? Ghi lý do (bắt buộc), hoặc bấm Huỷ để quay ra:`);
+          if (!lyDo || !lyDo.trim()) throw new Error("Chưa tích đã bay — " + chu);
+          than.lyDo = lyDo.trim();
+          if (duoi === "CHUA_THU") than.chapNhanChuaThu = true;
+          else than.chapNhanTrung = true;
+        }
+      }
       setMoving(null);
       load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Không cập nhật được");
+      setError((err instanceof Error ? err.message : "Không cập nhật được").replace(/\|(CHUA_THU|TRUNG)$/, ""));
     } finally {
       setBusy(null);
     }

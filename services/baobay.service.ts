@@ -9064,6 +9064,13 @@ export async function updateBookingStatus(
   },
   /** DỜI CẢ ĐOÀN đã xuất vé: mã vé khách MANG THEO — ngày cũ đếm vé dời, ngày mới tự khớp. */
   moveCodesText?: string,
+  /**
+   * TÍCH ĐÃ BAY có hai chốt chặn (chủ 14/09): booking CHƯA THU ĐỦ và booking
+   * TRÙNG (cùng SĐT / tên trong ngày). Người bấm phải nhìn thấy cảnh báo và
+   * ghi lý do mới qua được; booking trùng thì đúng việc là BỎ KHỎI SỔ chứ
+   * không tích đã bay.
+   */
+  flown?: { chapNhanChuaThu?: boolean; chapNhanTrung?: boolean; lyDo?: string },
 ): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -9083,6 +9090,58 @@ export async function updateBookingStatus(
       "Chưa xuất vé, không thể tích đã bay — bấm 🎫 Xuất vé, hoặc đánh dấu “Bay không vé” kèm lý do",
       400,
     );
+  }
+
+  /**
+   * CHƯA THU ĐỦ mà tích đã bay → chặn (chủ 14/09). Khách bay xong rồi mới đòi
+   * là đòi không nổi. Muốn qua thì phải nói rõ lý do, lý do ghi vào booking.
+   */
+  const ghiChuBay: string[] = [];
+  if (action === "flown" && (current.remaining ?? 0) > 0) {
+    if (!flown?.chapNhanChuaThu || !(flown.lyDo ?? "").trim()) {
+      throw new BaobayError(
+        `CHƯA THU ĐỦ: còn ${(current.remaining ?? 0).toLocaleString("vi-VN")} đ. Thu tiền trước rồi mới tích đã bay. ` +
+          "Nếu đây là booking TRÙNG thì dùng ⋯ Thêm → Bỏ khỏi sổ, không tích đã bay.|CHUA_THU",
+        400,
+      );
+    }
+    ghiChuBay.push(`tích đã bay dù còn thu ${(current.remaining ?? 0).toLocaleString("vi-VN")} đ — ${flown.lyDo!.trim()} (${session.name || session.username})`);
+  }
+
+  /**
+   * TRÙNG BOOKING: cùng ngày có booking khác (đang chờ / đã bay) cùng SĐT hoặc
+   * cùng tên → chặn. Trùng thì bỏ cái thừa khỏi sổ; tích đã bay cả hai là đếm
+   * đôi khách, đúng cảnh 13/09 Khau Phạ.
+   */
+  if (action === "flown") {
+    const sdt = String(current.phone ?? "").replace(/\D/g, "").slice(-9);
+    const ten = String(current.contactName ?? "").trim().toLowerCase();
+    if (sdt || ten) {
+      const khac = await BaobayBooking.find({
+        spot,
+        flightDate: current.flightDate,
+        _id: { $ne: current._id },
+        status: { $in: ["open", "done"] },
+      })
+        .select("daySeq contactName phone")
+        .lean<any[]>();
+      const trung = khac.filter(
+        (b) =>
+          (sdt && String(b.phone ?? "").replace(/\D/g, "").slice(-9) === sdt) ||
+          (ten && String(b.contactName ?? "").trim().toLowerCase() === ten),
+      );
+      if (trung.length) {
+        const ds = trung.map((b) => `#${b.daySeq} ${b.contactName || b.phone}`).join(", ");
+        if (!flown?.chapNhanTrung || !(flown.lyDo ?? "").trim()) {
+          throw new BaobayError(
+            `NGHI TRÙNG BOOKING: trong ngày còn ${ds} cùng SĐT/tên. Nếu là đặt trùng thì dùng ⋯ Thêm → Bỏ khỏi sổ với booking thừa, KHÔNG tích đã bay. ` +
+              "Nếu là hai đoàn khác nhau thật, ghi lý do để tiếp tục.|TRUNG",
+            400,
+          );
+        }
+        ghiChuBay.push(`tích đã bay dù nghi trùng với ${ds} — ${flown.lyDo!.trim()} (${session.name || session.username})`);
+      }
+    }
   }
 
   let update: Record<string, unknown>;
@@ -9141,6 +9200,8 @@ export async function updateBookingStatus(
         status: "done",
         doneAt: new Date(),
         doneBy: session.username,
+        /** Lý do vượt chốt chặn (chưa thu đủ / nghi trùng) ghi thẳng vào booking để kế toán soát. */
+        ...(ghiChuBay.length ? { note: [current.note, ...ghiChuBay].filter(Boolean).join(" · ") } : {}),
       },
     };
   }
@@ -10604,6 +10665,13 @@ export type CloseSuggestionDTO = {
   guestCount: number;
   ticketsIssued: number;
   ticketsReturned: number;
+  /**
+   * VÉ THU HỒI THEO SỔ BOOKING: booking đã xuất vé rồi mới huỷ — đếm mã đã ghi
+   * lúc huỷ, không ghi mã thì đếm theo số khách. Chủ 14/09: 13/09 Khau Phạ
+   * quầy khai 45 vé xuất, 0 thu hồi, trong khi sổ có 7 booking huỷ sau khi
+   * xuất vé (13 vé) → "quầy báo đã bay" phồng lên 47 dù chỉ 31 người bay.
+   */
+  recalledFromBook: number;
   cancelledCount: number;
   /** KHÁCH huỷ ĐÃ trả tiền (có lệnh hoàn) — đếm từ sổ booking + báo cáo điều phối. */
   cancelledRefundCount: number;
@@ -10866,7 +10934,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      */
     BaobayBooking.find({ spot, flightDate: date })
       .select(
-        "guestCount status contactName bookingCode daySeq insured " +
+        "guestCount status contactName bookingCode daySeq insured cancelTicketCodes " +
           "insuranceSentAt insuranceRecalledAt ticketIssuedAt noTicketFlight noTicketAt",
       )
       .lean<any[]>(),
@@ -11256,6 +11324,9 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     guestCount: sum(dispatchers, (d) => d.guestCount),
     ticketsIssued: sum(dispatchers, (d) => d.ticketsIssued),
     ticketsReturned: sum(dispatchers, (d) => d.ticketsReturned),
+    recalledFromBook: insuranceBookings
+      .filter((b) => b.status === "cancelled" && b.ticketIssuedAt)
+      .reduce((t, b) => t + Math.max((b.cancelTicketCodes ?? []).length, Number(b.guestCount) || 0), 0),
     // Số đã lưu của điều phối: điểm vé đếm theo mã, Hà Nội đếm theo đầu khách
     /** Điều phối khai + nhóm huỷ trên sổ booking mà điều phối chưa khai. */
     cancelledCount:
