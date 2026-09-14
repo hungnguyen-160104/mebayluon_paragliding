@@ -64,6 +64,8 @@ type Dict = {
   /** Nhảy thẳng tới một ngày xa (đặt trước nửa năm, một năm). */
   jumpLabel: string;
   jumpHint: string;
+  /** Nhắc khi mới chọn một ngày: máy hiểu là ở MỘT đêm, trả phòng hôm sau. */
+  oneNightHint: string;
   /** Đủ chỗ cho số khách đang khai. */
   capOk: (adults: number, children: number) => string;
   /** Phòng đã chọn KHÔNG đủ chỗ — nói rõ thiếu bao nhiêu. */
@@ -137,6 +139,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `Xem thêm ${n} ngày →`,
     jumpLabel: "Đặt xa hơn? Chọn thẳng ngày nhận phòng",
     jumpHint: "Nhận đặt trước tới 1 năm",
+    oneNightHint: "Mới chọn 1 ngày → hiểu là ở 1 đêm, trả phòng hôm sau. Muốn ở thêm, bấm ngày trả phòng.",
     capOk: (a, c) => `Đủ chỗ cho ${a} người lớn${c ? ` + ${c} trẻ em` : ""}`,
     capWarnAdults: (have, need) => `Phòng đã chọn chỉ chứa được tối đa ${have} người lớn — bạn có ${need} người, cần đặt thêm phòng nhé.`,
     capWarnChildren: (have, need) => `Phòng đã chọn nhận được tối đa ${have} trẻ em đi kèm — bạn có ${need} bé, cần đặt thêm phòng nhé.`,
@@ -216,6 +219,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `Show ${n} more days →`,
     jumpLabel: "Booking further ahead? Pick your check-in date",
     jumpHint: "We take bookings up to 1 year ahead",
+    oneNightHint: "One date picked → 1 night, check-out next morning. Tap another date to stay longer.",
     capOk: (a, c) => `Fits ${a} adult${a > 1 ? "s" : ""}${c ? ` + ${c} child${c > 1 ? "ren" : ""}` : ""}`,
     capWarnAdults: (have, need) => `The rooms you picked hold at most ${have} adults — you have ${need}, so please add another room.`,
     capWarnChildren: (have, need) => `The rooms you picked take at most ${have} children — you have ${need}, so please add another room.`,
@@ -295,6 +299,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `Voir ${n} jours de plus →`,
     jumpLabel: "Plus loin ? Choisissez la date d’arrivée",
     jumpHint: "Réservations jusqu’à 1 an à l’avance",
+    oneNightHint: "Une seule date → 1 nuit, départ le lendemain. Touchez une autre date pour rester plus.",
     capOk: (a, c) => `Convient à ${a} adulte${a > 1 ? "s" : ""}${c ? ` + ${c} enfant${c > 1 ? "s" : ""}` : ""}`,
     capWarnAdults: (have, need) => `Les chambres choisies accueillent au maximum ${have} adultes — vous êtes ${need}, ajoutez une chambre.`,
     capWarnChildren: (have, need) => `Les chambres choisies acceptent au maximum ${have} enfants — vous en avez ${need}, ajoutez une chambre.`,
@@ -374,6 +379,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `Показать ещё ${n} дней →`,
     jumpLabel: "Бронируете заранее? Выберите дату заезда",
     jumpHint: "Принимаем брони до 1 года вперёд",
+    oneNightHint: "Выбрана одна дата → 1 ночь, выезд на следующий день. Нажмите другую дату, чтобы остаться дольше.",
     capOk: (a, c) => `Хватает мест: ${a} взрослых${c ? ` + ${c} детей` : ""}`,
     capWarnAdults: (have, need) => `Выбранные номера вмещают максимум ${have} взрослых — вас ${need}, добавьте ещё номер.`,
     capWarnChildren: (have, need) => `Выбранные номера принимают максимум ${have} детей — у вас ${need}, добавьте ещё номер.`,
@@ -453,6 +459,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `再看 ${n} 天 →`,
     jumpLabel: "想订更远的日期？直接选入住日",
     jumpHint: "可提前 1 年预订",
+    oneNightHint: "只选了 1 天 → 视为住 1 晚，次日退房。想多住请再点退房日期。",
     capOk: (a, c) => `可容纳 ${a} 位成人${c ? ` + ${c} 位儿童` : ""}`,
     capWarnAdults: (have, need) => `所选房间最多住 ${have} 位成人，您一行有 ${need} 位，需要再加一间房。`,
     capWarnChildren: (have, need) => `所选房间最多可加 ${have} 位儿童，您有 ${need} 位，需要再加一间房。`,
@@ -532,6 +539,7 @@ const L: Record<HomestayLang, Dict> = {
     moreDays: (n) => `${n} दिन और देखें →`,
     jumpLabel: "और आगे की बुकिंग? चेक-इन तारीख चुनें",
     jumpHint: "1 साल आगे तक बुकिंग",
+    oneNightHint: "एक तारीख चुनी → 1 रात, अगली सुबह चेक-आउट। ज़्यादा रुकने के लिए दूसरी तारीख चुनें।",
     capOk: (a, c) => `${a} वयस्क${c ? ` + ${c} बच्चे` : ""} के लिए पर्याप्त`,
     capWarnAdults: (have, need) => `चुने गए कमरों में अधिकतम ${have} वयस्क आते हैं — आप ${need} लोग हैं, एक कमरा और जोड़ें।`,
     capWarnChildren: (have, need) => `चुने गए कमरों में अधिकतम ${have} बच्चे आ सकते हैं — आपके ${need} बच्चे हैं, एक कमरा और जोड़ें।`,
@@ -636,6 +644,14 @@ export default function DatPhongClient() {
   const [qty, setQty] = useState<Record<string, number>>({});
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
+  /**
+   * NGÀY TRẢ PHÒNG HIỆU LỰC (chủ 14/09): khách mới bấm MỘT ngày thì hiểu là ở
+   * một đêm, trả phòng hôm sau — hiện phòng trống ngay, không bắt bấm thêm ngày
+   * trả. Bấm ngày thứ hai thì lấy ngày ấy. `checkOut` giữ nguyên là lựa chọn
+   * tường minh của khách; mọi chỗ TÍNH đều đọc `traPhong`.
+   */
+  const traPhong = checkOut || (checkIn ? shiftKey(checkIn, 1) : "");
+  const mocDinhMotDem = Boolean(checkIn && !checkOut);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [guestName, setGuestName] = useState("");
@@ -689,8 +705,8 @@ export default function DatPhongClient() {
   );
 
   /** Đã chốt đủ ngày nhận + trả chưa — mốc mở khoá phần chọn phòng. */
-  const datesPicked = Boolean(checkIn && checkOut);
-  const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
+  const datesPicked = Boolean(checkIn && traPhong);
+  const nights = checkIn && traPhong ? nightsBetween(checkIn, traPhong) : 0;
   const total = nights > 0 ? lines.reduce((t, l) => t + homestayPrice(l.room.id, nights, l.qty), 0) : 0;
   const totalPerNight = lines.reduce((t, l) => t + l.room.pricePerNight * l.qty, 0);
 
@@ -727,16 +743,16 @@ export default function DatPhongClient() {
    */
   const rangeFree = useCallback(
     (roomId: string): number | null => {
-      if (!checkIn || !checkOut || checkOut <= checkIn) return null;
+      if (!checkIn || !traPhong || traPhong <= checkIn) return null;
       let min = Infinity;
-      for (let d = checkIn; d < checkOut; d = shiftKey(d, 1)) {
+      for (let d = checkIn; d < traPhong; d = shiftKey(d, 1)) {
         const f = freeMap.get(roomId)?.get(d);
         if (f === undefined) return null;
         min = Math.min(min, f);
       }
       return min === Infinity ? null : min;
     },
-    [checkIn, checkOut, freeMap],
+    [checkIn, traPhong, freeMap],
   );
 
   /** Chưa chọn ngày thì nhìn 14 ĐÊM TỚI: "ok" còn đủ · "some" kín vài đêm · "full" kín hết. */
@@ -843,7 +859,7 @@ export default function DatPhongClient() {
   async function submit() {
     setError(null);
     if (lines.length === 0) return setError(s.errRooms);
-    if (!checkIn || !checkOut) return setError(s.errDates);
+    if (!checkIn || !traPhong) return setError(s.errDates);
     // Máy chủ cũng chặn, nhưng chặn tại đây thì khách sửa được ngay tại chỗ
     if (thieuAdults) return setError(s.capWarnAdults(capAdults, adults));
     if (thieuChildren) return setError(s.capWarnChildren(capChildren, children));
@@ -857,7 +873,7 @@ export default function DatPhongClient() {
         body: JSON.stringify({
           lines: lines.map((l) => ({ roomTypeId: l.room.id, qty: l.qty })),
           checkIn,
-          checkOut,
+          checkOut: traPhong,
           adults,
           children,
           guestName,
@@ -971,9 +987,9 @@ export default function DatPhongClient() {
                           ? WEB_ROOMS.some((r) => freeMap.get(r.id)?.has(d))
                           : lines.every((l) => freeMap.get(l.room.id)?.has(d));
                       const ok = nightOk(d);
-                      const inRange = checkIn && checkOut && checkIn <= d && d < checkOut;
+                      const inRange = checkIn && traPhong && checkIn <= d && d < traPhong;
                       const isIn = d === checkIn;
-                      const isOut = d === checkOut;
+                      const isOut = d === traPhong;
                       /**
                        * Ngày TRẢ PHÒNG được phép là ngày ngay sau đêm cuối còn
                        * trống — nên nút chỉ khoá khi ngày đó không làm đêm ở
@@ -1045,6 +1061,9 @@ export default function DatPhongClient() {
                         {s.moreDays(30)}
                       </button>
                     )}
+                    {mocDinhMotDem && (
+                      <p className="w-full rounded-lg bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">💡 {s.oneNightHint}</p>
+                    )}
                     <label className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                       <span className="font-semibold">{s.jumpLabel}</span>
                       {/* Ô ngày tự vẽ chữ — ô gốc trình duyệt in tên tháng dài, tràn ô (chủ 14/09). */}
@@ -1075,7 +1094,7 @@ export default function DatPhongClient() {
                     </span>
                     <span>
                       <strong>{s.checkOut}:</strong>{" "}
-                      {checkOut ? `${checkOut.split("-").reverse().join("/")} · ${CHECK_OUT_TIME}` : "—"}
+                      {traPhong ? `${traPhong.split("-").reverse().join("/")} · ${CHECK_OUT_TIME}` : "—"}
                     </span>
                     {nights > 0 && <span className="font-bold text-accent">{s.nights(nights)}</span>}
                   </div>
@@ -1269,7 +1288,7 @@ export default function DatPhongClient() {
         )}
 
         {/* ---- 3. KHÁCH + 4. LIÊN HỆ + TỔNG ---- */}
-        {lines.length > 0 && checkIn && checkOut && (
+        {lines.length > 0 && checkIn && traPhong && (
           <>
             <h2 className="text-hero-shadow mt-8 text-lg font-bold text-white">{s.contact}</h2>
             <Card className="mt-2 border-none bg-white/95 shadow-xl">
