@@ -6947,7 +6947,27 @@ export function BookingCard({
          */
         setNeedMail((res?.booking?.pendingNotify?.length ?? 0) > 0 ? res.booking : null);
       } else {
-        const created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, payload);
+        /**
+         * CHỐT CHẶN TRÙNG ở máy chủ (chủ 14/09): lỗi 409 đuôi "|TRUNG" liệt kê
+         * booking đã có. Người lập đọc, nếu chắc là khách khác thì ghi lý do để
+         * lập tiếp; không ghi là thôi (đi sửa booking cũ).
+         */
+        let created: { booking: BookingDTO } | undefined;
+        const thanLap: Record<string, unknown> = { ...payload };
+        for (let lan = 0; lan < 2; lan++) {
+          try {
+            created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, thanLap);
+            break;
+          } catch (e) {
+            const m = e instanceof Error ? e.message : "";
+            if (!m.endsWith("|TRUNG") || lan === 1) throw e;
+            const chu = m.replace(/\|TRUNG$/, "");
+            const lyDo = window.prompt(`⚠ ${chu}\n\nVẫn LẬP MỚI? Ghi lý do (bắt buộc), hoặc bấm Huỷ để đi sửa booking cũ:`);
+            if (!lyDo || !lyDo.trim()) throw new Error("Chưa lập — " + chu);
+            thanLap.chapNhanTrung = true;
+            thanLap.lyDoTrung = lyDo.trim();
+          }
+        }
         /**
          * Lưu xong thì form CHUYỂN SANG CHẾ ĐỘ SỬA chính booking vừa tạo, không
          * xoá trắng nữa: nhân viên hay phải sửa lại ngay (khách đọc thiếu số,
@@ -6982,7 +7002,7 @@ export function BookingCard({
       onChanged?.();
       return savedId;
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Không lưu được booking");
+      setError((err instanceof Error ? err.message : "Không lưu được booking").replace(/\|TRUNG$/, ""));
       return null;
     } finally {
       setSaving(false);

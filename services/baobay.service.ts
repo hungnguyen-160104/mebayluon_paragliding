@@ -4035,6 +4035,9 @@ export async function getCashOnHand(
 /* ================================================================== */
 
 export type BookingSaveInput = {
+  /** Vượt chốt chặn trùng khi lập — xem timBookingTrung. */
+  chapNhanTrung?: boolean;
+  lyDoTrung?: string;
   spot: string;
   flightDate: string;
   source: string;
@@ -4282,6 +4285,108 @@ export async function freeDaySeq(spot: string, flightDate: string, seq: number):
   }
 }
 
+/**
+ * BỘ NGUYÊN TẮC CHỐNG LẬP TRÙNG BOOKING (chủ 14/09: "nhiều booking lập bị
+ * trùng do hai điều phối nhập mà quên check khách đã book chưa").
+ *
+ * Trùng là khi cùng điểm bay có booking khác (không tính đã bỏ khỏi sổ) mà:
+ *  1. cùng MÃ OTA / mã booking            → chắc chắn trùng (cùng một đơn);
+ *  2. cùng SỐ ĐIỆN THOẠI (9 số cuối)        → rất có thể trùng;
+ *  3. cùng EMAIL                            → rất có thể trùng;
+ *  4. cùng TÊN liên hệ (không dấu, không phân biệt hoa thường) → có thể trùng;
+ * xét CÙNG NGÀY BAY (mạnh — chặn lập) và HAI NGÀY KỀ (yếu — chỉ nhắc: khách
+ * đặt hai ngày liền là có thật, nhưng hay là gõ nhầm ngày).
+ * Booking đã HUỶ vẫn liệt kê: nhân viên mới hay lập lại booking của khách đã
+ * huỷ thay vì "bay lại" cái cũ, thành hai dòng cho một người.
+ */
+export type DauTrung = {
+  id: string;
+  daySeq: number;
+  flightDate: string;
+  contactName: string;
+  phone: string;
+  guestCount: number;
+  status: string;
+  /** Vì sao nghi trùng: "cùng mã OTA", "cùng SĐT", "cùng email", "cùng tên". */
+  viSao: string;
+  /** true = cùng ngày bay (mạnh); false = ngày kề (chỉ nhắc). */
+  cungNgay: boolean;
+};
+
+function boDauChu(s: string): string {
+  return String(s ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function timBookingTrung(
+  spotRaw: string,
+  tieuChi: { flightDate: string; phone?: string; contactName?: string; email?: string; otaRef?: string; bookingCode?: string },
+  boQuaId?: string,
+): Promise<DauTrung[]> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const sdt = String(tieuChi.phone ?? "").replace(/\D/g, "").slice(-9);
+  const ten = boDauChu(tieuChi.contactName ?? "");
+  const email = String(tieuChi.email ?? "").trim().toLowerCase();
+  const ota = String(tieuChi.otaRef ?? "").trim().toUpperCase();
+  const ma = String(tieuChi.bookingCode ?? "").trim().toUpperCase();
+  if (!sdt && ten.length < 3 && !email && !ota && !ma) return [];
+
+  const ngay = [shiftDateKey(tieuChi.flightDate, -1), tieuChi.flightDate, shiftDateKey(tieuChi.flightDate, 1)];
+  const ds = await BaobayBooking.find({
+    spot,
+    flightDate: { $in: ngay },
+    status: { $ne: "voided" },
+    ...(boQuaId && mongoose.Types.ObjectId.isValid(boQuaId) ? { _id: { $ne: boQuaId } } : {}),
+  })
+    .select("daySeq flightDate contactName phone email otaRef bookingCode guestCount status")
+    .lean<any[]>();
+
+  const ra: DauTrung[] = [];
+  for (const b of ds) {
+    const ly: string[] = [];
+    if (ota && String(b.otaRef ?? "").trim().toUpperCase() === ota) ly.push("cùng mã OTA");
+    /** Mã booking do quầy tự đặt thường là SĐT hoặc tên — chỉ tính khi không phải số điện thoại trần. */
+    if (ma && ma.length >= 4 && String(b.bookingCode ?? "").trim().toUpperCase() === ma && !/^\d{9,11}$/.test(ma)) ly.push("cùng mã booking");
+    if (sdt && sdt.length >= 8 && String(b.phone ?? "").replace(/\D/g, "").slice(-9) === sdt) ly.push("cùng SĐT");
+    if (email && String(b.email ?? "").trim().toLowerCase() === email) ly.push("cùng email");
+    if (ten.length >= 3 && boDauChu(b.contactName) === ten) ly.push("cùng tên");
+    if (!ly.length) continue;
+    ra.push({
+      id: String(b._id),
+      daySeq: Number(b.daySeq) || 0,
+      flightDate: String(b.flightDate),
+      contactName: b.contactName || "",
+      phone: b.phone || "",
+      guestCount: Number(b.guestCount) || 0,
+      status: b.status,
+      viSao: ly.join(", "),
+      cungNgay: String(b.flightDate) === tieuChi.flightDate,
+    });
+  }
+  /** Cùng ngày lên trước, rồi theo số thứ tự. */
+  return ra.sort((a, b) => Number(b.cungNgay) - Number(a.cungNgay) || a.daySeq - b.daySeq);
+}
+
+/** Câu chặn: liệt kê từng booking nghi trùng, kèm đuôi |TRUNG để giao diện nhận ra. */
+function cauBaoTrung(ds: DauTrung[]): string {
+  const dong = ds
+    .slice(0, 5)
+    .map((d) => `#${d.daySeq} ${d.contactName || d.phone} · ${d.guestCount} khách · ${d.status === "cancelled" ? "ĐÃ HUỶ" : d.status === "done" ? "đã bay" : "đang chờ"}${d.cungNgay ? "" : ` · bay ${formatDateKeyVN(d.flightDate)}`} (${d.viSao})`)
+    .join("; ");
+  return (
+    `NGHI TRÙNG BOOKING — trong sổ đã có: ${dong}${ds.length > 5 ? "; …" : ""}. ` +
+    "Nếu là cùng một khách: SỬA booking cũ (hoặc bấm bay lại nếu đã huỷ), đừng lập mới. " +
+    "Nếu là khách khác thật, ghi lý do để lập tiếp.|TRUNG"
+  );
+}
+
 export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
@@ -4291,6 +4396,26 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   }
   if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
   assertBookingTime(input.flightDate, input.expectedTime.trim());
+
+  /**
+   * CHỐT CHẶN TRÙNG (chủ 14/09): cùng ngày đã có booking cùng SĐT / mã / email /
+   * tên thì không lập — trừ khi người lập bật cờ kèm lý do. Ngày kề chỉ nhắc
+   * trong câu báo, không chặn.
+   */
+  const nghiTrung = await timBookingTrung(spot, {
+    flightDate: input.flightDate,
+    phone: input.phone,
+    contactName: input.contactName,
+    email: input.email,
+    otaRef: (input as { otaRef?: string }).otaRef,
+    bookingCode: input.bookingCode,
+  });
+  const chanTrung = nghiTrung.filter((d) => d.cungNgay);
+  let ghiChuTrung = "";
+  if (chanTrung.length) {
+    if (!input.chapNhanTrung || !(input.lyDoTrung ?? "").trim()) throw new BaobayError(cauBaoTrung(nghiTrung), 409);
+    ghiChuTrung = `lập dù nghi trùng ${chanTrung.map((d) => `#${d.daySeq}`).join(", ")} — ${input.lyDoTrung!.trim()} (${session.name || session.username})`;
+  }
 
   /** Dịch vụ bám theo đầu khách: 2 khách thì tối đa 2 flycam, 2 cam360… */
   const services: Array<[string, number]> = [
@@ -4393,7 +4518,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
         hasMoneyDests(spot) && (input.deposit ?? 0) > 0
           ? normalizeMoneyDest(spot, input.depositDest, input.depositMethod || "transfer")
           : "",
-      note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : ""].filter(Boolean).join(" — "),
+      note: [input.note.trim(), collectorNote ? `Người thu: ${collectorNote}` : "", ghiChuTrung].filter(Boolean).join(" — "),
       rescheduledFrom: input.rescheduledFrom ? [input.rescheduledFrom] : [],
       /**
        * "Người thu" của booking CHÍNH LÀ người được giao khách — không đẻ ra

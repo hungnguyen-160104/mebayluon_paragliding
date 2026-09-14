@@ -411,6 +411,13 @@ export const bookingSchema = z.object({
   /** Còn lại > 0: chỉ định người thu — máy chủ tự lập LỆNH THU TIỀN gửi người đó. */
   collectorUsername: text(100),
   collectorNote: text(500),
+  /**
+   * VƯỢT CHỐT CHẶN TRÙNG (chủ 14/09): máy chủ chặn lập booking khi cùng ngày đã
+   * có booking cùng SĐT / mã / email / tên. Người lập phải bật cờ này kèm lý do
+   * mới lập được; lý do ghi vào ghi chú booking để lần vết.
+   */
+  chapNhanTrung: z.boolean().optional(),
+  lyDoTrung: z.string().max(300).optional(),
   note: text(1_000),
   /**
    * EMAIL KHÁCH — nơi app gửi thư báo khi booking thay đổi.
