@@ -12510,7 +12510,7 @@ export async function getReconcile(
    * MÃ VÉ DỜI: booking đã dời khỏi ngày này mang theo mã (nút dời/tách hỏi từ
    * 04/09). Ngày này coi các mã đó là "vé dời có mã" — không thành mã thiếu.
    */
-  const [{ close, dispatchers, pilots, cameramen }, cancelledBookings, movedWithCodes] = await Promise.all([
+  const [{ close, dispatchers, pilots, cameramen }, cancelledBookings, movedWithCodes, bayXong] = await Promise.all([
     loadDay(spot, date),
     BaobayBooking.find({ spot, flightDate: date, cancelTicketCodes: { $exists: true, $ne: [] } })
       .select("cancelTicketCodes")
@@ -12523,8 +12523,16 @@ export async function getReconcile(
     })
       .select("flightDate movedTicketCodes")
       .lean<any[]>(),
+    /** Dịch vụ của khách ĐÃ BAY theo sổ — phía quầy trong bộ soát lấy theo đây (chủ 14/09). */
+    BaobayBooking.find({ spot, flightDate: date, status: "done" })
+      .select("flycam video360 redFlag sunset flagFlight")
+      .lean<any[]>(),
   ]);
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
+  const congSo = (k: string) => bayXong.reduce((t: number, b: any) => t + (Number(b[k]) || 0), 0);
+  const bookServices = bayXong.length
+    ? { flycam: congSo("flycam"), video360: congSo("video360"), redFlag: congSo("redFlag"), sunset: congSo("sunset"), flagFlight: congSo("flagFlight") }
+    : undefined;
   const bookingMovedCodes = movedWithCodes.flatMap((b) =>
     (b.movedTicketCodes ?? []).map((c: string) => ({ code: String(c).toUpperCase(), toDate: String(b.flightDate) })),
   );
@@ -12705,6 +12713,7 @@ export async function getReconcile(
     spot,
     bookingCancelledCodes,
     bookingMovedCodes,
+    bookServices,
     prevDays,
     nextDayCarried,
     // Chỉ Khau Phạ vận hành vé 3 liên có mã in sẵn — nơi khác không bắt mã

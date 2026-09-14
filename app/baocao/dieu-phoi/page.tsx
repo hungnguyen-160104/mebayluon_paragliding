@@ -324,6 +324,8 @@ export default function DispatcherReportPage() {
    * trên). Cách nhận biết: ô đang 0, hoặc đang mang đúng số máy điền lần trước.
    */
   const lastAutoTickets = useRef<number | null>(null);
+  /** Số dịch vụ máy điền lần trước từ sổ — để biết ô còn "của máy" hay người đã gõ. */
+  const lastAutoSvc = useRef<Record<string, number>>({});
   useEffect(() => {
     if (locked || noTicketSpot || rangeTotal <= 0) return;
     setForm((prev) => {
@@ -806,6 +808,27 @@ export default function DispatcherReportPage() {
             onData={(f) => {
               setFlownGuests(f.guests);
               setNoTicketGuests(f.noTicketGuests ?? 0);
+              /**
+               * DỊCH VỤ TỰ ĐIỀN THEO SỔ (chủ 14/09): 13/09 quầy gõ 13 flycam trong
+               * khi sổ 22 → chốt ngày báo lệch oan. Cùng nếp với ô khách/vé: ô
+               * đang 0 hoặc đang mang đúng số máy điền lần trước thì máy điền,
+               * gõ số khác thì máy thôi giành.
+               */
+              if (locked) return;
+              setForm((prev) => {
+                const next = { ...prev };
+                let doi = false;
+                for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const) {
+                  const so = Number(f[k]) || 0;
+                  const cu = prev[k];
+                  if (so <= 0 || cu === so) continue;
+                  if (cu !== 0 && cu !== lastAutoSvc.current[k]) continue;
+                  lastAutoSvc.current[k] = so;
+                  (next as Record<string, unknown>)[k] = so;
+                  doi = true;
+                }
+                return doi ? next : prev;
+              });
             }}
             onTake={(f) =>
               setForm((prev) => ({

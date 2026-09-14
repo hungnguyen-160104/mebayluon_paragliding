@@ -172,6 +172,14 @@ export type ReconcileInput = {
    * ngày được dời tới tự khớp qua đường truy vết.
    */
   bookingMovedCodes?: Array<{ code: string; toDate: string }>;
+  /**
+   * DỊCH VỤ THEO SỔ BOOKING (khách đã tích "đã bay"): flycam, 360, cờ đỏ, hoàng
+   * hôn, kéo cờ. Chủ 14/09: 13/09 Khau Phạ quầy gõ tay 13 flycam trong khi sổ
+   * có 22 và camera man 22 → cảnh báo "lệch" oan. Sổ là nơi quầy ghi từng đoàn
+   * ngay lúc bán, con số gõ lại vào báo cáo chỉ là bản chép tay — có sổ thì
+   * phía quầy lấy theo sổ, khỏi so hai bản chép của cùng một người.
+   */
+  bookServices?: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
   /** Điểm bay — Hà Nội không xuất vé nên vài phép soát theo mã được tắt. */
   spot?: string;
   /**
@@ -773,11 +781,11 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     dispatcherIssued: sum(dispatchers, (d) => d.ticketsIssued),
     dispatcherReturned: sum(dispatchers, (d) => d.ticketsReturned),
     dispatcherGuests: sum(dispatchers, (d) => d.guestCount),
-    dispatcherFlycam: sum(dispatchers, (d) => d.flycam),
-    dispatcher360: sum(dispatchers, (d) => d.video360),
-    dispatcherRedFlag: sum(dispatchers, (d) => d.redFlag),
-    dispatcherSunset: sum(dispatchers, (d) => d.sunset),
-    dispatcherFlagFlight: sum(dispatchers, (d) => d.flagFlight),
+    dispatcherFlycam: input.bookServices ? input.bookServices.flycam : sum(dispatchers, (d) => d.flycam),
+    dispatcher360: input.bookServices ? input.bookServices.video360 : sum(dispatchers, (d) => d.video360),
+    dispatcherRedFlag: input.bookServices ? input.bookServices.redFlag : sum(dispatchers, (d) => d.redFlag),
+    dispatcherSunset: input.bookServices ? input.bookServices.sunset : sum(dispatchers, (d) => d.sunset),
+    dispatcherFlagFlight: input.bookServices ? input.bookServices.flagFlight : sum(dispatchers, (d) => d.flagFlight),
     dispatcherCash: sum(dispatchers, (d) => d.cashReceived),
     dispatcherTransfer: sum(dispatchers, (d) => d.transferReceived),
     dispatcherDiplomatic: sum(dispatchers, (d) => d.diplomaticGuests),
@@ -873,7 +881,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       code: "LECH_FLYCAM",
       severity: "warn",
       message:
-        `Flycam lệch: quầy/điều phối báo ${totals.dispatcherFlycam}, camera man báo ${totals.cameramanFlycam}. ` +
+        `Flycam lệch: ${input.bookServices ? "sổ booking" : "quầy/điều phối báo"} ${totals.dispatcherFlycam}, camera man báo ${totals.cameramanFlycam}. ` +
         `Phi công báo tổng ${totals.pilotFlycam} — lấy làm căn cứ để xét bên nào đúng` +
         codeHint("quầy/điều phối", dispatchers.flatMap((d) => d.flycamCodes), "camera man", cameramen.flatMap((c) => c.flycamCodes)) +
         (varianceApproved ? " (kế toán đã duyệt lệch)" : ""),
