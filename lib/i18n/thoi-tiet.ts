@@ -514,7 +514,8 @@ const fr: ThoiTietCopy = {
   today: "Aujourd’hui",
   bestWindow: "Meilleur créneau",
   noWindow: "Aucun bon créneau",
-  goodHours: "heures favorables",
+  /** Ngắn để vừa ô ngày 10 ngày (chủ 14/09: "8 heures favorables" tràn ô). */
+  goodHours: "h de vol",
   source: "Source",
   updated: "Mis à jour",
   loading: "Chargement des prévisions…",
@@ -647,7 +648,7 @@ const ru: ThoiTietCopy = {
   today: "Сегодня",
   bestWindow: "Лучшее время",
   noWindow: "Нет подходящего окна",
-  goodHours: "хороших часов",
+  goodHours: "ч. полёта",
   source: "Источник",
   updated: "Обновлено",
   loading: "Загрузка прогноза…",

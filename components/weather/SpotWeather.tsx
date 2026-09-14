@@ -250,7 +250,8 @@ function DaiNgay({
                 )}
                 {/* KHÔNG chấm phân cách: ô rộng 77–86px luôn phải xuống dòng,
                     dấu "·" rơi xuống đầu dòng sau trông như lỗi (chủ 11/09). */}
-                {n.gioXanh > 0 && <span className="whitespace-nowrap">{`${n.gioXanh} ${t.goodHours}`}</span>}
+                {/* Cho phép xuống dòng: tiếng Pháp/Nga dài hơn ô ("8 heures favorables" tràn khỏi ô — chủ 14/09). */}
+                {n.gioXanh > 0 && <span className="break-words leading-tight">{`${n.gioXanh} ${t.goodHours}`}</span>}
                 {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
                 {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
               </div>
