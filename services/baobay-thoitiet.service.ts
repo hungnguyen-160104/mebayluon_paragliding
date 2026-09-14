@@ -866,8 +866,62 @@ export async function duBaoCuaChu(
   return { ok: true };
 }
 
+/**
+ * GHI NHẬN ĐỊNH CHUYÊN GIA cho một ngày — KHÔNG cần chọn tốt/hạn chế/nghỉ.
+ *
+ * Chủ 13/09: "ghi xong phải có nút xác nhận để gửi text của tôi về nhận định
+ * thời tiết hàng ngày; tôi sẽ ghi cái gì đúng cái gì không đúng".
+ *
+ * Nhận mọi ngày (đã qua hay sắp tới) vì cả hai đều dạy được: ngày sắp tới là
+ * đọc trời trước, ngày đã qua là chỉ ra máy sai ở đâu. Lưu kèm số của ngày khi
+ * lấy được, để sau này dò lại xem lời ấy ứng với kiểu trời nào.
+ */
+export async function ghiNhanDinhChuyenGia(
+  spot: string,
+  input: { date: string; text: string },
+  boi: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = normalizeSpot(spot);
+  const date = String(input.date || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
+  const text = String(input.text ?? "").trim().slice(0, 2000);
+  if (text.length < 3) return { ok: false, error: "Viết vài chữ đã — nhận định trống thì máy không học được gì" };
+
+  /** Số của ngày: ngày đã qua hỏi kho lịch sử, ngày sắp tới lấy từ dự báo đang chạy. */
+  let so: { windMax: number; gustMax: number; rainTotal: number; windDir: number } | null = null;
+  let mayCham: MucDo | undefined;
+  try {
+    if (date <= todayInVN()) so = await soCuaNgay(key, date);
+    const du = await duBaoDiemBay(key);
+    const n = du.ngay.find((x) => x.ngay === date);
+    mayCham = n?.mucMay ?? n?.muc;
+    if (!so && n) so = { windMax: n.gioMax, gustMax: n.giatMax, rainTotal: n.muaTong, windDir: 0 };
+  } catch {
+    /** Không lấy được số thì vẫn cho ghi — lời của người quý hơn một cột số. */
+  }
+
+  await connectDB();
+  await BaobayWeatherMark.updateOne(
+    { spot: key, date },
+    {
+      $set: {
+        expertNote: text,
+        expertBy: boi,
+        expertAt: new Date(),
+        ...(mayCham ? { machineVerdict: mayCham } : {}),
+        ...(so ?? {}),
+      },
+    },
+    { upsert: true },
+  );
+  return { ok: true };
+}
+
 export type LichSuCham = {
   date: string;
+  /** Nhận định chữ của chuyên gia cho ngày này (chủ 13/09). */
+  expertNote?: string;
+  expertBy?: string;
   verdict?: "tot" | "han-che" | "nghi";
   note: string;
   forecast?: "tot" | "han-che" | "nghi";
@@ -905,17 +959,22 @@ export async function gopKinhNghiem(spot: string, ngay: NgayThoiTiet[]): Promise
     for (const n of ngay) {
       const d = theoNgay.get(n.ngay);
       /** Chỉ lời ghi TRƯỚC (forecast) mới đè dự báo; chấm thực tế là chuyện đã qua. */
-      if (d?.forecast) {
+      if (d?.forecast || d?.expertNote) {
+        /** Đoạn văn chuyên gia viết đứng trước; lý do ngắn kèm nút chỉ là phụ. */
+        const chu = String(d.expertNote || "").trim() || d.forecastNote || undefined;
         n.chuyenGiaNguoi = {
           ket: d.forecast,
           khung: d.forecastWindow || undefined,
-          ghiChu: d.forecastNote || undefined,
-          boi: d.forecastBy || undefined,
-          luc: d.forecastAt ? new Date(d.forecastAt).toISOString() : undefined,
+          ghiChu: chu,
+          boi: d.expertBy || d.forecastBy || undefined,
+          luc: (d.expertAt || d.forecastAt) ? new Date(d.expertAt || d.forecastAt).toISOString() : undefined,
         };
-        if (!n.mucMay) n.mucMay = n.muc;
-        n.muc = d.forecast === "tot" ? "xanh" : d.forecast === "han-che" ? "vang" : "do";
-        if (d.forecastWindow) n.khungDep = d.forecastWindow;
+        /** Chỉ đổi màu khi chuyên gia đã CHỐT mức; viết chữ thôi thì giữ màu máy. */
+        if (d.forecast) {
+          if (!n.mucMay) n.mucMay = n.muc;
+          n.muc = d.forecast === "tot" ? "xanh" : d.forecast === "han-che" ? "vang" : "do";
+          if (d.forecastWindow) n.khungDep = d.forecastWindow;
+        }
       }
     }
 
@@ -967,6 +1026,8 @@ export async function soKinhNghiem(
     forecastWindow: d.forecastWindow,
     forecastNote: d.forecastNote,
     forecastBy: d.forecastBy,
+    expertNote: d.expertNote ?? "",
+    expertBy: d.expertBy,
     machineVerdict: d.machineVerdict,
     windMax: d.windMax,
     gustMax: d.gustMax,

@@ -930,9 +930,17 @@ thì màu khách nhìn thấy càng giống cách chủ điểm thật sự quy�
 **Vào đâu:** `/baocao/thoi-tiet` → bấm vào một NGÀY CHƯA TỚI trên dải 10 ngày →
 khối tím hiện ra.
 
-**Ghi gì:** chọn *Bay tốt · Hạn chế · Nghỉ bay*, ghi khung giờ đẹp
-(ví dụ `08:00-11:00`) và lý do bằng chữ (*"gió đông nam, mây cao, chiều thường
-lên"*). Người ghi được ký tên tự động.
+**Ghi gì — hai phần, dùng riêng được:**
+
+1. **Ô NHẬN ĐỊNH (chữ) + nút 💾 Gửi nhận định.** Viết tự do, không cần chọn
+   mức: máy nói gì đúng, gì sai, thực tế trời ra sao. Ví dụ: *"Máy chấm gió
+   7 m/s cấm bay, nhưng hướng đông nam thuận sườn, thực tế chỉ 4–5, sáng bay
+   tốt tới 10h."* Bấm gửi là xong, câu ấy hiện ngay trên thẻ và trên web
+   khách, ký tên người viết. Ô này có ở **cả ngày sắp tới lẫn ngày đã qua** —
+   ngày tới là đọc trời trước, ngày qua là chỉ ra máy sai ở đâu.
+2. **Chốt mức (tuỳ chọn):** *Bay tốt · Hạn chế · Nghỉ bay*, kèm khung giờ đẹp
+   (`08:00-11:00`). Chốt mức thì ngày đó ĐỔI MÀU theo anh; chỉ viết chữ thôi
+   thì giữ màu máy, câu của anh vẫn hiện đè lên nhận định máy.
 
 **Điều gì xảy ra sau đó:**
 

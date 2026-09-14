@@ -1074,7 +1074,8 @@ export type NgayThoiTiet = {
    * máy lệch ở đâu, và để `hocNguong` học tiếp.
    */
   chuyenGiaNguoi?: {
-    ket: "tot" | "han-che" | "nghi";
+    /** Có khi chuyên gia đã chốt mức; viết chữ thôi thì bỏ trống. */
+    ket?: "tot" | "han-che" | "nghi";
     khung?: string;
     ghiChu?: string;
     boi?: string;

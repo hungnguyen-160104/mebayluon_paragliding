@@ -63,6 +63,9 @@ export type ChamNgay = {
   forecastWindow?: string;
   forecastNote?: string;
   forecastBy?: string;
+  /** Nhận định chữ của chuyên gia — ghi độc lập, không cần chọn mức (chủ 13/09). */
+  expertNote?: string;
+  expertBy?: string;
   machineVerdict?: MucDo;
   windMax?: number;
   gustMax?: number;
@@ -1045,11 +1048,39 @@ function ChamKinhNghiem({
   const [khung, setKhung] = useState("");
   const [dangLuu, setDangLuu] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  /** Nhận định chữ — ô riêng, gửi bằng nút riêng, không cần chọn mức. */
+  const [nhanDinh, setNhanDinh] = useState("");
+  const [daGui, setDaGui] = useState(false);
 
   useEffect(() => {
     setGhiChu(noiTruoc ? (daCham?.forecastNote ?? "") : (daCham?.note ?? ""));
     setKhung(daCham?.forecastWindow ?? "");
-  }, [daCham?.note, daCham?.forecastNote, daCham?.forecastWindow, ngay.ngay, noiTruoc]);
+    setNhanDinh(daCham?.expertNote ?? "");
+    setDaGui(false);
+  }, [daCham?.note, daCham?.forecastNote, daCham?.forecastWindow, daCham?.expertNote, ngay.ngay, noiTruoc]);
+
+  /**
+   * GỬI NHẬN ĐỊNH CHỮ (chủ 13/09: "ghi xong phải có nút xác nhận để gửi text
+   * của tôi"). Tách hẳn khỏi ba nút mức: chuyên gia thường muốn viết "máy nói
+   * gió 6 nhưng thực tế chỉ 4, chiều lặng" mà chưa cần chốt bay hay nghỉ.
+   */
+  async function guiNhanDinh() {
+    if (nhanDinh.trim().length < 3) return setLoi("Viết vài chữ đã — nhận định trống thì máy không học được gì");
+    setDangLuu("nhan-dinh");
+    setLoi(null);
+    try {
+      const r = await apiPost<{ cham: ChamNgay[]; hoc: DuLieuThoiTiet["hoc"]; chinhXac: DoChinhXac }>(
+        `/api/baocao/thoi-tiet?spot=${spot}`,
+        { date: ngay.ngay, expertNote: nhanDinh.trim() },
+      );
+      setDaGui(true);
+      xong(r);
+    } catch (e: any) {
+      setLoi(e?.message || "Không gửi được nhận định");
+    } finally {
+      setDangLuu(null);
+    }
+  }
 
   async function gui(v: "tot" | "han-che" | "nghi") {
     setDangLuu(v);
@@ -1119,6 +1150,40 @@ function ChamKinhNghiem({
         </div>
       )}
 
+      {/**
+       * Ô NHẬN ĐỊNH CHỮ + nút gửi riêng — chỗ chuyên gia viết máy đúng chỗ nào,
+       * sai chỗ nào, thực tế ra sao. Hiện ở CẢ ngày sắp tới lẫn ngày đã qua:
+       * ngày tới là đọc trời trước, ngày qua là chỉ ra máy sai ở đâu.
+       */}
+      <div className="mt-1.5">
+        <textarea
+          value={nhanDinh}
+          onChange={(e) => {
+            setNhanDinh(e.target.value);
+            setDaGui(false);
+          }}
+          rows={3}
+          maxLength={2000}
+          placeholder="Nhận định của anh: máy nói gì đúng, gì sai, thực tế trời ra sao… VD: “Máy chấm gió 7 m/s cấm bay, nhưng hướng đông nam thuận sườn, thực tế chỉ 4–5, sáng bay tốt tới 10h.”"
+          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-[12px] leading-snug outline-none focus:border-violet-500"
+        />
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={Boolean(dangLuu)}
+            onClick={() => void guiNhanDinh()}
+            className="rounded-lg bg-violet-600 px-3 py-1.5 text-[12px] font-bold text-white hover:bg-violet-700 disabled:opacity-50"
+          >
+            {dangLuu === "nhan-dinh" ? "Đang gửi…" : "💾 Gửi nhận định"}
+          </button>
+          {daGui && <span className="text-[11px] font-bold text-emerald-700">✓ Đã gửi — hiện trên thẻ và trên web khách</span>}
+          {daCham?.expertNote && !daGui && (
+            <span className="text-[11px] text-slate-500">đã có nhận định{daCham.expertBy ? ` của ${daCham.expertBy}` : ""} — sửa rồi gửi lại là đè lên</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-1.5 text-[11px] font-semibold text-slate-600">Chốt mức cho ngày này (tuỳ chọn):</div>
       <div className="mt-1 flex flex-wrap gap-1">
         {nut.map((n) => (
           <button

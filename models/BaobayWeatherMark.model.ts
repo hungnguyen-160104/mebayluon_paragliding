@@ -41,6 +41,18 @@ export interface IBaobayWeatherMark {
   machineVerdict?: "xanh" | "vang" | "do";
   /** Ghi chú tay: "gió xuôi sườn cả chiều", "mây thấp không thấy bãi đáp"… */
   note?: string;
+  /**
+   * NHẬN ĐỊNH CỦA CHUYÊN GIA cho ngày này — viết tự do, không cần chọn mức
+   * (chủ 13/09: "tôi sẽ ghi cái gì đúng cái gì không đúng, có nhận định cá
+   * nhân vào để app học hỏi").
+   *
+   * Khác `forecastNote` (lý do ngắn đi kèm lựa chọn tốt/hạn chế/nghỉ) ở chỗ
+   * đây là đoạn văn: máy dự báo sai chỗ nào, thực tế trời ra sao, vì sao.
+   * Đây là nguồn để máy học nghề và là thứ hiện đè lên nhận định của máy.
+   */
+  expertNote?: string;
+  expertBy?: string;
+  expertAt?: Date;
   /** Số của mô hình trong khung giờ bay, chụp lúc chấm. */
   windMax?: number;
   gustMax?: number;
@@ -64,6 +76,9 @@ const BaobayWeatherMarkSchema = new Schema<IBaobayWeatherMark>(
     forecastAt: Date,
     machineVerdict: { type: String, enum: ["xanh", "vang", "do"], default: undefined },
     note: { type: String, default: "" },
+    expertNote: { type: String, default: "" },
+    expertBy: String,
+    expertAt: Date,
     windMax: Number,
     gustMax: Number,
     rainTotal: Number,

@@ -10,6 +10,7 @@ import {
   luuCauHinhDiem,
   soKinhNghiem,
   SO_NGAY,
+  ghiNhanDinhChuyenGia,
 } from "@/services/baobay-thoitiet.service";
 
 export const runtime = "nodejs";
@@ -82,7 +83,13 @@ export async function POST(req: Request) {
    * CHẤM SAU khi ngày đã qua. Gộp vì cùng ghi vào một dòng của một ngày, và
    * người dùng thấy chúng cạnh nhau trên cùng một thẻ.
    */
-  const r = body?.forecast
+  /**
+   * Ba việc trên một route: `expertNote` là NHẬN ĐỊNH CHỮ (không cần chọn
+   * mức — chủ 13/09), `forecast` là nói trước, `verdict` là chấm sau.
+   */
+  const r = body?.expertNote !== undefined
+    ? await ghiNhanDinhChuyenGia(spot, { date: String(body?.date ?? ""), text: String(body?.expertNote ?? "") }, auth.username)
+    : body?.forecast
     ? await duBaoCuaChu(
         spot,
         { date: String(body?.date ?? ""), forecast: body.forecast, window: body?.window, note: body?.note },
