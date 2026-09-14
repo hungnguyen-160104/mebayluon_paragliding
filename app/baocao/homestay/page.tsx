@@ -16,6 +16,7 @@ import {
   roomUnitLabel,
 } from "@/lib/baobay/homestay";
 import { formatVND } from "@/lib/pricing";
+import { NgayGon } from "@/components/ui/ngay-gon";
 
 import { apiGet, apiPatch, apiPost } from "../components/client-api";
 import { useBaobaySession } from "../components/session";
@@ -482,24 +483,22 @@ export default function HomestayPage() {
             {nightsCount} đêm sau ▶
           </button>
           Xem từ
-          <input
-            type="date"
+          {/* Ô ngày tự vẽ chữ: ô gốc của trình duyệt in "September 14, 2026" tràn khỏi lịch (chủ 14/09). */}
+          <NgayGon
             value={from}
-            onChange={(e) => {
-              const v = e.target.value;
+            onChange={(v) => {
               if (!v) return;
               setFrom(v);
               if (to <= v) setTo(shiftDateKey(v, 30));
             }}
-            className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+            title="Ngày đầu của lịch"
           />
           đến
-          <input
-            type="date"
+          <NgayGon
             value={to}
             min={shiftDateKey(from, 7)}
-            onChange={(e) => e.target.value && e.target.value > from && setTo(e.target.value)}
-            className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+            onChange={(v) => v && v > from && setTo(v)}
+            title="Ngày cuối của lịch"
           />
           <Button
             type="button"

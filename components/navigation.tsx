@@ -38,7 +38,19 @@ const navColorOf = (item: NavItem) =>
   };
 
 export function Navigation() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  /**
+   * TIẾNG PHÁP và TIẾNG NGA dài hơn hẳn ("Réserver un vol", "Apprendre le
+   * parapente", "Бронировать полёт"): giữ cỡ chữ như tiếng Việt thì thanh
+   * menu không đủ chỗ, mục cuối rơi xuống dòng (chủ 14/09). Hai tiếng ấy bớt
+   * một nấc chữ và một nấc đệm là vừa khít.
+   *
+   * Nhãn nào phải xuống hai dòng trong nút thì CĂN GIỮA và dòng sát nhau
+   * (chủ 14/09: "chữ trong nút phải cân vào giữa") — mặc định của thẻ <a> là
+   * căn trái, nên "Réserver un / vol" lệch hẳn về một mép.
+   */
+  const coChuMenu =
+    (language === "fr" || language === "ru" ? "text-[12.5px] px-3" : "text-sm px-4") + " text-center leading-tight";
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -207,7 +219,7 @@ export function Navigation() {
                         key={`hash-${item.hashId}`}
                         href={href}
                         onClick={(e) => handleHashClick(e, item.hashId)}
-                        className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                        className={`${coChuMenu} font-medium rounded-full py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
                       >
                         {item.label}
                       </Link>
@@ -218,7 +230,7 @@ export function Navigation() {
                     <Link
                       key={`path-${item.href}`}
                       href={item.href}
-                      className={`text-sm font-medium rounded-full px-4 py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                      className={`${coChuMenu} font-medium rounded-full py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
                     >
                       {item.label}
                     </Link>

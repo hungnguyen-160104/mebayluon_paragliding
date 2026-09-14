@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { PageBackground } from "@/components/page-background";
+import { NgayGon } from "@/components/ui/ngay-gon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/footer";
@@ -1046,13 +1047,14 @@ export default function DatPhongClient() {
                     )}
                     <label className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                       <span className="font-semibold">{s.jumpLabel}</span>
-                      <input
-                        type="date"
+                      {/* Ô ngày tự vẽ chữ — ô gốc trình duyệt in tên tháng dài, tràn ô (chủ 14/09). */}
+                      <NgayGon
                         min={today}
                         max={lastDay}
                         value={checkIn && checkIn > days[days.length - 1] ? checkIn : ""}
-                        onChange={(e) => jumpTo(e.target.value)}
-                        className="h-8 rounded-lg border border-slate-300 px-2 text-xs"
+                        onChange={(v) => jumpTo(v)}
+                        placeholder="dd/mm/yyyy"
+                        className="h-8 text-xs"
                       />
                       <span className="text-slate-400">{s.jumpHint}</span>
                     </label>
