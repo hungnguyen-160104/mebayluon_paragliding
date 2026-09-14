@@ -44,6 +44,21 @@ export async function connectDB() {
 
   if (!cached.promise) {
     mongoose.set("strictQuery", true);
+    /**
+     * TẮT TỰ TẠO CHỈ MỤC Ở BẢN CHẠY THẬT (chủ 13/09: "vào app hay bị treo và
+     * chậm").
+     *
+     * Mongoose mặc định gửi lệnh tạo chỉ mục cho MỌI model mỗi khi tiến trình
+     * mới dùng tới chúng. Đo thật trên sổ booking: một lượt gọi listBookings
+     * phát 71 lệnh xuống Atlas, trong đó chỉ 8 lệnh là đọc dữ liệu thật, còn
+     * 63 lệnh là tạo chỉ mục ĐÃ CÓ SẴN — kể cả chỉ mục của những bảng chẳng
+     * liên quan (cafe, báo cáo phi công). Vercel dựng lambda mới liên tục nên
+     * cảnh này lặp lại cả ngày, mỗi lệnh một lượt đi về Singapore.
+     *
+     * Chỉ mục đã nằm sẵn trong cơ sở dữ liệu; bản dev vẫn bật để khai thêm
+     * chỉ mục mới là có ngay.
+     */
+    mongoose.set("autoIndex", process.env.NODE_ENV !== "production");
     cached.promise = mongoose
       .connect(getMongoUri(), {
         /** Không chờ mãi: 10 giây không chọn được máy chủ thì báo lỗi để thử lại. */

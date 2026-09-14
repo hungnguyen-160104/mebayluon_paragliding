@@ -12427,35 +12427,33 @@ export async function getReconcile(
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
-  const { close, dispatchers, pilots, cameramen } = await loadDay(spot, date);
-
   /**
+   * BA LƯỢT HỎI CÙNG LÚC (chủ 13/09: app chậm). Chúng không phụ thuộc nhau,
+   * mà mỗi lượt đi về Atlas tốn cả trăm mili giây — xếp hàng nối tiếp là cộng
+   * thẳng vào thời gian người dùng ngồi chờ.
+   *
    * Mã vé thu hồi ghi ngay trên SỔ BOOKING (nút ✕ Huỷ booking hỏi "đã xuất vé —
    * mã nào"). Không đọc chỗ này thì bộ soát báo đỏ "mã đã xuất mà không ai khai"
    * dù trong sổ đã ghi rõ thu hồi — đã bị báo lỗi oan đúng như vậy.
+   *
+   * MÃ VÉ DỜI: booking đã dời khỏi ngày này mang theo mã (nút dời/tách hỏi từ
+   * 04/09). Ngày này coi các mã đó là "vé dời có mã" — không thành mã thiếu.
    */
-  const cancelledBookings = await BaobayBooking.find({
-    spot,
-    flightDate: date,
-    cancelTicketCodes: { $exists: true, $ne: [] },
-  })
-    .select("cancelTicketCodes")
-    .lean<any[]>();
+  const [{ close, dispatchers, pilots, cameramen }, cancelledBookings, movedWithCodes] = await Promise.all([
+    loadDay(spot, date),
+    BaobayBooking.find({ spot, flightDate: date, cancelTicketCodes: { $exists: true, $ne: [] } })
+      .select("cancelTicketCodes")
+      .lean<any[]>(),
+    BaobayBooking.find({
+      spot,
+      rescheduledFrom: date,
+      flightDate: { $ne: date },
+      "movedTicketCodes.0": { $exists: true },
+    })
+      .select("flightDate movedTicketCodes")
+      .lean<any[]>(),
+  ]);
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
-
-  /**
-   * MÃ VÉ DỜI ghi trên SỔ BOOKING: booking đã dời khỏi ngày này mang theo mã
-   * (nút dời/tách hỏi từ 04/09). Ngày này coi các mã đó là "vé dời có mã" —
-   * không thành mã thiếu, bay lại tại đây là sai chỗ; ngày đích tự khớp.
-   */
-  const movedWithCodes = await BaobayBooking.find({
-    spot,
-    rescheduledFrom: date,
-    flightDate: { $ne: date },
-    "movedTicketCodes.0": { $exists: true },
-  })
-    .select("flightDate movedTicketCodes")
-    .lean<any[]>();
   const bookingMovedCodes = movedWithCodes.flatMap((b) =>
     (b.movedTicketCodes ?? []).map((c: string) => ({ code: String(c).toUpperCase(), toDate: String(b.flightDate) })),
   );
