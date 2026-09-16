@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { gioTaiDoCao } from "@/lib/baobay/nhan-dinh";
 import { SkewT } from "./SkewT";
 import Link from "next/link";
@@ -1212,13 +1213,16 @@ export function WeatherSpotCard({
           </div>
           <div className="text-xs text-slate-500">{diem.tinh}</div>
         </div>
-        {/* Lối sang trang điểm bay — tô CAM cho nổi giữa thẻ toàn màu nhạt (chủ 11/09). */}
-        <Link
-          href={`/spots/${diem.slug}`}
-          className="ml-auto rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm hover:bg-orange-600"
-        >
-          {t.seeSpot} →
-        </Link>
+        {/* Lối sang trang điểm bay — tô CAM cho nổi giữa thẻ toàn màu nhạt (chủ 11/09).
+            Điểm chưa có trang (Đại Tuệ) thì giấu nút, khỏi dẫn vào 404. */}
+        {!diemThoiTietTheoSlug(diem.slug)?.khongCoTrang && (
+          <Link
+            href={`/spots/${diem.slug}`}
+            className="ml-auto rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm hover:bg-orange-600"
+          >
+            {t.seeSpot} →
+          </Link>
+        )}
       </div>
 
       {/**

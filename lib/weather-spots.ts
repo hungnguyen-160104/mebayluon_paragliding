@@ -45,6 +45,11 @@ export type DiemThoiTiet = {
    * ở nửa số ngày, nên phải bày đủ hai bảng.
    */
   kem?: string[];
+  /**
+   * Điểm CHƯA có trang /spots/<slug> (chỉ dự báo, chưa bán tour) — thẻ thời
+   * tiết giấu nút "Xem điểm bay" để khỏi dẫn khách vào trang 404.
+   */
+  khongCoTrang?: true;
 };
 
 export const DIEM_THOI_TIET: DiemThoiTiet[] = [
@@ -95,6 +100,24 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
   /** Phình Hồ: cất 900m, hạ 300m (số chủ 11/09). */
   { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.5219, lon: 104.5322, alt: 900, altHa: 300 },
   { slug: "dalat", ten: "Đà Lạt", tinh: "Lâm Đồng", lat: 11.9404, lon: 108.4583 },
+  /**
+   * ĐẠI TUỆ (Nam Đàn, Nghệ An) — số chủ 16/09: bãi cất 18°45'22.5"N
+   * 105°32'08.4"E cao 350m; bãi hạ 18°44'26.9"N 105°31'26.8"E cao 50m.
+   * Gió TỐT: Nam, Đông Nam, Tây Nam (cung 112°→247°). Gió Bắc, Đông Bắc, Tây
+   * Bắc "cũng bay được" → để "thường", không cấm. Đông và Tây chủ chưa nói,
+   * cũng để "thường" — chưa khai `xau` cho tới khi chủ chốt.
+   */
+  {
+    slug: "dai-tue",
+    ten: "Núi Đại Tuệ",
+    tinh: "Nghệ An",
+    lat: 18.75625,
+    lon: 105.53567,
+    alt: 350,
+    altHa: 50,
+    luatHuong: { tot: [112, 247] },
+    khongCoTrang: true,
+  },
 ];
 
 export function diemThoiTietTheoSlug(slug: string): DiemThoiTiet | null {

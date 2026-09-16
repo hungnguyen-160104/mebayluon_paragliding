@@ -24,6 +24,15 @@ export function useCuonTheoNgay(ngayChon?: string | null, onNgayHien?: (ngay: st
   /** Ngày CHÍNH MÌNH vừa báo lên do người gạt — để cái effect dưới không kéo ngược lại. */
   const daBao = useRef<string | null>(null);
   const dangCho = useRef<number | null>(null);
+  /**
+   * ĐANG CUỘN MÁY TỚI một ngày (chủ báo 16/09): bấm ngày 25 thì khung cuộn
+   * MƯỢT từ 20 tới 25, và mỗi ngày lướt qua mép trái lại bị `onScroll` báo
+   * ngược lên thành "ngày đang xem" → cả trang nháy 21, 22, 23, 24 rồi mới
+   * tới 25. Trong lúc máy đang cuộn thì bỏ qua mọi mốc trung gian; chỉ khi
+   * mốc đích chạm mép (hoặc quá hạn — ngày cuối không cuộn tới mép được) mới
+   * coi là xong.
+   */
+  const dangCuonToi = useRef<{ ngay: string; het: number } | null>(null);
 
   /** Vị trí của một mốc, tính theo hệ toạ độ TRONG khung cuộn. */
   const viTri = (khung: HTMLElement, moc: HTMLElement) =>
@@ -38,6 +47,7 @@ export function useCuonTheoNgay(ngayChon?: string | null, onNgayHien?: (ngay: st
     if (!el || !ngayChon || ngayChon === daBao.current) return;
     const moc = el.querySelector<HTMLElement>(`[data-ngay="${ngayChon}"]`);
     if (!moc) return;
+    dangCuonToi.current = { ngay: ngayChon, het: Date.now() + 1500 };
     el.scrollTo({ left: Math.max(0, viTri(el, moc) - beNgangTruc(el)), behavior: "smooth" });
   }, [ngayChon]);
 
@@ -55,6 +65,13 @@ export function useCuonTheoNgay(ngayChon?: string | null, onNgayHien?: (ngay: st
       let chon = moc[0];
       for (const m of moc) if (viTri(el, m) <= mep) chon = m;
       const d = chon.dataset.ngay;
+      const muc = dangCuonToi.current;
+      if (muc) {
+        if (d !== muc.ngay && Date.now() < muc.het) return; // mốc trung gian của cú cuộn máy — bỏ qua
+        dangCuonToi.current = null;
+        daBao.current = d ?? null; // đã tới nơi (hoặc hết cỡ): ghi nhận, không báo ngược
+        return;
+      }
       if (d && d !== daBao.current) {
         daBao.current = d;
         onNgayHien(d);

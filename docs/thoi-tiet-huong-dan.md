@@ -634,6 +634,7 @@ nghịch nhiệt có nằm trong đường bay không. Gọi "chênh cao" chứ 
 | Bắc Sum – Quản Bạ | 1.350 m | 800 m | 550 m |
 | Phình Hồ – Trạm Tấu | 900 m | 300 m | 600 m |
 | Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
+| Đại Tuệ (Nghệ An) | 350 m | 50 m | 300 m |
 
 **Đồi Bù KHÔNG phải 833 m**: 833 là đỉnh núi (tên dân gian "núi 833"), còn chỗ
 cất cánh nằm ở ~650 m (chủ nhắc 11/09 — trước ghi nhầm 833). Viên Nam có **hai**
@@ -820,6 +821,12 @@ quay hai phía, nên cùng một ngày gió bắc thì Đồi Bù bay được c
 không. Vì thế trang "Hà Nội" trên web hiện **hai bảng thời tiết riêng**, và trang
 "Thời tiết bay" liệt kê cả hai bãi.
 
+**Đại Tuệ** (Nam Đàn, Nghệ An — thêm 16/09): tốt với **Nam, Đông Nam, Tây
+Nam** (112°–247°). Chủ nói **Bắc, Đông Bắc, Tây Bắc "cũng bay được"** nên để
+"thường" (xám), không cấm; Đông và Tây chưa có lời chủ, cũng để "thường". Toạ độ
+cất 18°45'22.5"N 105°32'08.4"E, hạ 18°44'26.9"N 105°31'26.8"E. Điểm này chưa
+có trang /spots nên thẻ thời tiết giấu nút "Xem điểm bay".
+
 **Sa Pa**: chưa có cung thuận/ngược, nhưng đã có **trần tốc độ theo hướng** —
 cấm gió **Bắc > 6 m/s** và gió **Tây > 6 m/s** (chủ 11/09). Cung gió tốt/xấu thì
 nói một câu là thêm được ngay.
@@ -856,7 +863,7 @@ khung bay rồi viết ra một trong ba câu:
 - **Khau Phạ, Đồi Bù (Hà Nội), Sa Pa**: sửa ngay trên web, `/baocao/thoi-tiet`
   → nút **⚙ Toạ độ & ngưỡng gió**. Đây là toạ độ dùng cho **cả** trang nội bộ
   **lẫn** trang khách.
-- **Sơn Trà, Bắc Sum – Quản Bạ, Phình Hồ – Trạm Tấu, Viên Nam, Đà Lạt**: chưa
+- **Sơn Trà, Bắc Sum – Quản Bạ, Phình Hồ – Trạm Tấu, Viên Nam, Đại Tuệ, Đà Lạt**: chưa
   có sổ nội bộ nên toạ độ nằm trong mã nguồn, tệp `lib/weather-spots.ts`.
 
 Lấy toạ độ: mở Google Maps, bấm giữ đúng chỗ cất cánh, chép hai số hiện ra.
