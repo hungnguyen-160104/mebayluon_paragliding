@@ -346,9 +346,11 @@ function KhoiViTri({
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
       <span className="font-bold text-slate-800">📍 {toaDo.ten}</span>
+      {/* Độ cao chỉ ghi MỘT LẦN ở dòng "bãi cất → bãi hạ" (chủ 16/09); điểm chưa
+          khai bãi hạ thì mới ghi cao độ kèm toạ độ để khỏi mất số. */}
       <span className="tabular-nums">
         {toaDo.lat.toFixed(4)}, {toaDo.lon.toFixed(4)}
-        {toaDo.alt ? ` · ${toaDo.alt}m` : ""}
+        {toaDo.alt && toaDo.altHa === undefined ? ` · ${toaDo.alt}m` : ""}
       </span>
       {/* Độ cao THẢ = cất − hạ: thứ quyết định chuyến dài bao lâu khi không có nâng. */}
       {toaDo.alt !== undefined && toaDo.altHa !== undefined && (
