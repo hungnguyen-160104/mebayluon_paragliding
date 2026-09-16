@@ -260,8 +260,15 @@ function DaiNgay({
                     dấu "·" rơi xuống đầu dòng sau trông như lỗi (chủ 11/09). */}
                 {/* Cho phép xuống dòng: tiếng Pháp/Nga dài hơn ô ("8 heures favorables" tràn khỏi ô — chủ 14/09). */}
                 {n.gioXanh > 0 && <span className="break-words leading-tight">{`${n.gioXanh} ${t.goodHours}`}</span>}
-                {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
-                {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
+                {/* MƯA và DÔNG đi CÙNG MỘT HÀNG (chủ 16/09): gói chung một cụm không ngắt,
+                    cả cụm xuống dòng cùng nhau chứ không tách ⚡ rơi xuống hàng riêng. */}
+                {(n.gioMua > 0 || n.xacSuatDongMax >= 20) && (
+                  <span className="whitespace-nowrap">
+                    {n.gioMua > 0 && <span className="font-normal">☔{n.gioMua}h</span>}
+                    {n.gioMua > 0 && n.xacSuatDongMax >= 20 && " "}
+                    {n.xacSuatDongMax >= 20 && <span>⚡{n.xacSuatDongMax}%</span>}
+                  </span>
+                )}
               </div>
             )}
             {/**
