@@ -228,9 +228,14 @@ function DaiNgay({
                 title={`${t.wind} ${n.gioMax.toFixed(1)} ${t.windUnit}`}
               >
                 {(() => {
+                  /* MŨI TÊN hướng gió (chủ 16/09) thay chữ "ĐB": cùng mũi tên với bảng
+                     giờ/airgram — mũi tên chỉ chiều gió THỔI TỚI. Tên hướng vẫn ở tooltip. */
                   const huong = huongTroiCuaNgay(n);
                   return huong === null ? null : (
-                    <span className="text-[11px] font-black">{huongTheoNgonNgu(huong, lang)} · </span>
+                    <span className="inline-flex items-center" title={`${huongDayDu(huong, lang)} · ${Math.round(huong)}°`}>
+                      <WindArrow deg={huong} className="!h-4 !w-4" />
+                      <span className="text-[11px] font-black"> · </span>
+                    </span>
                   );
                 })()}
                 <span className="text-[15px] font-black">{n.gioMax.toFixed(1)}</span>{" "}
