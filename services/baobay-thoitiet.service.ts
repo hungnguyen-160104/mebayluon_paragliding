@@ -298,7 +298,12 @@ async function duBaoDiemBayTho(
 }> {
   const key = normalizeSpot(spot);
   const { toaDo, nguong } = await cauHinhDiem(key);
-  const soNgay = Math.min(10, Math.max(1, opts.soNgay ?? SO_NGAY));
+  /**
+   * Tối đa 16 (giới hạn Open-Meteo). Mặc định vẫn 10 — xem ghi chú ở SO_NGAY;
+   * web Sapa (paraglidingsapa.com) xin 15 (chủ 16/09), ECMWF phủ ~15, GFS 16,
+   * ICON 7 — ngày trống được cắt ở layVaCham.
+   */
+  const soNgay = Math.min(16, Math.max(1, opts.soNgay ?? SO_NGAY));
   const mh = moHinhTheoMa(opts.moHinh ?? MO_HINH_MAC_DINH);
   const cacheKey = `${key}:${mh.ma}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
 
@@ -477,6 +482,12 @@ async function layVaCham(
       mayGiua: so(h.cloud_cover_mid),
       mayCao: so(h.cloud_cover_high),
     };
+    /**
+     * NGOÀI TẦM DỰ BÁO của mô hình (xin 15 ngày mà ICON chỉ có 7) thì mọi ô là
+     * null — Number(null ?? 0) biến thành "gió 0 m/s, 0°C, trời quang", tức
+     * một ngày đẹp giả. Bỏ hẳn giờ ấy; ngày không còn giờ nào thì biến mất.
+     */
+    if (h.wind_speed_10m?.[i] == null && h.temperature_2m?.[i] == null) continue;
     const ngay = g.gio.slice(0, 10);
     if (!theoNgay.has(ngay)) theoNgay.set(ngay, []);
     theoNgay.get(ngay)!.push({ ...g, ...chamGio(g, nguong, toaDo.huongThuan, toaDo.luatHuong, toaDo.alt) });
@@ -546,8 +557,10 @@ async function layVaCham(
 export async function duBaoDiemCongKhai(
   diem: Parameters<typeof duBaoDiemCongKhaiTho>[0],
   moHinhMa?: string,
+  /** Số ngày (1–16), mặc định SO_NGAY — web Sapa xin 15. */
+  soNgay?: number,
 ): ReturnType<typeof duBaoDiemCongKhaiTho> {
-  const du = await duBaoDiemCongKhaiTho(diem, moHinhMa);
+  const du = await duBaoDiemCongKhaiTho(diem, moHinhMa, soNgay);
   const ngay = du.ngay.map((n) => ({ ...n }));
   /** Điểm có sổ nội bộ thì mượn sổ ấy; điểm chưa có sổ dùng chính slug. */
   await gopKinhNghiem(diem.spotNoiBo || diem.slug, ngay);
@@ -567,7 +580,7 @@ async function duBaoDiemCongKhaiTho(diem: {
   altCat2?: number;
   spotNoiBo?: SpotId;
   luatHuong?: LuatHuong;
-}, moHinhMa?: string): Promise<{
+}, moHinhMa?: string, soNgayXin?: number): Promise<{
   slug: string;
   ten: string;
   tinh: string;
@@ -583,8 +596,9 @@ async function duBaoDiemCongKhaiTho(diem: {
    * mà hai bãi quay hai phía, nên luật hướng phải theo từng bãi.
    */
   const mh = moHinhTheoMa(moHinhMa ?? MO_HINH_MAC_DINH);
+  const soNgay = Math.min(16, Math.max(1, soNgayXin ?? SO_NGAY));
   if (diem.spotNoiBo) {
-    const du = await duBaoDiemBay(diem.spotNoiBo, { moHinh: mh.ma });
+    const du = await duBaoDiemBay(diem.spotNoiBo, { moHinh: mh.ma, soNgay });
     /** Điểm trang khách khai riêng thì đè lên số của sổ nội bộ (Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"). */
     const toaDo: ToaDoDiemBay = {
       ...du.toaDo,
@@ -606,7 +620,7 @@ async function duBaoDiemCongKhaiTho(diem: {
     luatHuong: diem.luatHuong,
   };
   const nguong = nguongCuaDiem(null);
-  const cacheKey = `web:${diem.slug}:${mh.ma}:${SO_NGAY}:${diem.lat},${diem.lon}`;
+  const cacheKey = `web:${diem.slug}:${mh.ma}:${soNgay}:${diem.lat},${diem.lon}`;
   const cu = CACHE.get(cacheKey);
   if (cu && Date.now() - cu.luc < CACHE_MS) {
     return {
@@ -622,7 +636,7 @@ async function duBaoDiemCongKhaiTho(diem: {
   }
 
   try {
-    const { ngay, moHinh } = await layVaCham(toaDo, SO_NGAY, nguong, mh);
+    const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong, mh);
     CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
     return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
   } catch (e) {

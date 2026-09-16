@@ -12,7 +12,7 @@ export const maxDuration = 30;
  * THỜI TIẾT ĐIỂM BAY CHO KHÁCH — không cần đăng nhập.
  *
  * GET /api/thoi-tiet            → mọi điểm trên trang "Thời tiết bay"
- * GET /api/thoi-tiet?spot=slug  → một điểm (widget trong trang /spots/<slug>)
+ * GET /api/thoi-tiet?spot=slug[&model=gfs][&days=15]  → một điểm (widget /spots/<slug>, web Sapa)
  *
  * CACHE 30 PHÚT Ở BIÊN (`s-maxage`) chứ không để mỗi lượt khách gọi một lần:
  * mô hình khí tượng chỉ chạy vài lần một ngày nên số y hệt nhau, mà trang điểm
@@ -28,12 +28,15 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const slug = url.searchParams.get("spot");
   const model = url.searchParams.get("model") ?? undefined;
+  /** ?days=15 — chỉ áp cho một điểm; danh sách tổng hợp giữ mặc định. */
+  const daysRaw = Number(url.searchParams.get("days"));
+  const days = Number.isFinite(daysRaw) && daysRaw >= 1 ? Math.min(16, Math.floor(daysRaw)) : undefined;
 
   try {
     if (slug) {
       const diem = diemThoiTietTheoSlug(slug);
       if (!diem) return NextResponse.json({ message: "Không có điểm bay này" }, { status: 404 });
-      const du = await duBaoDiemCongKhai(diem, model);
+      const du = await duBaoDiemCongKhai(diem, model, days);
       return NextResponse.json(du, { headers: { "Cache-Control": CACHE_HEADER } });
     }
 
