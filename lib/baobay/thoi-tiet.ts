@@ -140,9 +140,15 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     gioBay: [9, 16],
   },
   /**
-   * SA PA — chưa có cung thuận/ngược (chủ chưa chốt), nhưng đã có hai trần
-   * tốc độ theo hướng (chủ 11/09): "cấm gió Bắc mạnh hơn 6 m/s và gió Tây
-   * mạnh hơn 6 m/s".
+   * SA PA — chưa có cung thuận/ngược (chủ chưa chốt), nhưng đã có BỐN trần
+   * tốc độ theo hướng. Chủ 11/09: "cấm gió Bắc mạnh hơn 6 m/s và gió Tây mạnh
+   * hơn 6 m/s". Chủ 16/09 nói thêm: "hướng gió không bay được là gió chính
+   * Bắc, Đông Bắc mạnh (nhẹ thì vẫn bay OK), gió Tây mạnh hoặc gió Đông mạnh
+   * cũng nghỉ" — nên thêm Đông Bắc và Đông, cùng mốc 6 m/s (mốc "mạnh" của
+   * thang chủ). Bãi cất 1.500m, bãi hạ 1.000m.
+   *
+   * Web Sapa (paraglidingsapa.com) đọc luật này qua /api/thoi-tiet để tô mũi
+   * tên hướng và in bảng luật — sửa ở đây là hai nơi cùng đổi.
    */
   sapa: {
     lat: 22.3364,
@@ -153,6 +159,8 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
     luatHuong: {
       capToc: [
         { tam: [0], max: 6, ten: "Bắc" },
+        { tam: [45], max: 6, ten: "Đông Bắc" },
+        { tam: [90], max: 6, ten: "Đông" },
         { tam: [270], max: 6, ten: "Tây" },
       ],
     },
