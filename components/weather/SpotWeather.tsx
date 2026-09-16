@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BONG_CHU, LOP_TAG, NEN_TAG } from "./tag-muc";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { gioTaiDoCao } from "@/lib/baobay/nhan-dinh";
 import { SkewT } from "./SkewT";
@@ -282,7 +283,11 @@ function DaiNgay({
              * ô hẹp vẫn chứa trọn.
              */}
             {n.muc !== "xanh" && (
-              <div className="mt-0.5 whitespace-nowrap text-[10px] font-black leading-tight">{nhanMuc(n.muc, t)}</div>
+              <div className="mt-1">
+                <span className={`${LOP_TAG} ${NEN_TAG[n.muc]} whitespace-nowrap text-[10px] leading-tight`} style={BONG_CHU}>
+                  {nhanMuc(n.muc, t)}
+                </span>
+              </div>
             )}
             {/* Hoàng hôn đẹp: dòng riêng, màu cam như chính ánh chiều. */}
             {hoangHonDep(n) && (
@@ -532,7 +537,9 @@ function TomTatNgay({
   return (
     <div className={"mt-2 rounded-xl border p-2.5 " + VIEN[ngay.muc]}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-sm font-black">{nhanMuc(ngay.muc, t)}</span>
+        <span className={`${LOP_TAG} ${NEN_TAG[ngay.muc]} text-sm`} style={BONG_CHU}>
+          {nhanMuc(ngay.muc, t)}
+        </span>
         {cg && (
           <span className="rounded-lg bg-white/70 px-1.5 py-0.5 text-xs font-bold text-slate-700">
             {cg.diem}/100 · {t.confidence} {cg.doTinCay}%

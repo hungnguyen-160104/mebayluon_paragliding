@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BONG_CHU, LOP_TAG, NEN_TAG } from "@/components/weather/tag-muc";
 
 import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/thoi-tiet";
 import {
@@ -414,7 +415,11 @@ export function ThoiTietCard({
               {n.xacSuatDongMax >= 20 && <div className="text-[9px] font-bold leading-tight">⚡ {n.xacSuatDongMax}%</div>}
               {/* Mức ngày hiện thành chữ vì nền cam của ô đang chọn đã nuốt mất màu mức. */}
               {n.muc !== "xanh" && (
-                <div className="whitespace-nowrap text-[9px] font-black leading-tight">{n.muc === "do" ? "NÊN NGHỈ" : "CÂN NHẮC"}</div>
+                <div className="mt-0.5">
+                  <span className={`${LOP_TAG} ${NEN_TAG[n.muc]} whitespace-nowrap text-[9px] leading-tight`} style={BONG_CHU}>
+                    {n.muc === "do" ? "NÊN NGHỈ" : "CÂN NHẮC"}
+                  </span>
+                </div>
               )}
               {hoangHonDep(n) && <div className="whitespace-nowrap text-[9px] font-bold leading-tight text-orange-700">🌅 hoàng hôn đẹp</div>}
               {daCham && (

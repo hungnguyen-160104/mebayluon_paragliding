@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { BONG_CHU, LOP_TAG, NEN_TAG_NHAN_DINH } from "./tag-muc";
 import { NHAN_MUC_THERMAL, type TiemNangThermal } from "@/lib/baobay/thermal";
 
 import type { NgayThoiTiet } from "@/lib/baobay/thoi-tiet";
@@ -62,7 +63,7 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
         className={"flex w-full flex-wrap items-start gap-x-2 gap-y-1 text-left sm:flex-nowrap " + (gon ? "cursor-pointer" : "cursor-default")}
         title={gon ? "Bấm để xem chi tiết nhận định" : undefined}
       >
-        <span className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-black tracking-wide ring-1 ring-current/30">
+        <span className={`${LOP_TAG} ${NEN_TAG_NHAN_DINH[nd.muc]} shrink-0 text-[11px]`} style={BONG_CHU}>
           {nhanMucNhanDinh(nd.muc)}
         </span>
         {/* Điểm chuyên gia — cùng một ngày có hai thước: chữ (nhận định) và số (0–100). */}
