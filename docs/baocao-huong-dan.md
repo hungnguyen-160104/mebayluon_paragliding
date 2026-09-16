@@ -118,6 +118,19 @@ ngay (trong 30 giây) thành băng rôn cam trên trang của ĐÚNG vai trò li
 (flycam → điều phối + camera man; 360/cờ đỏ/kéo cờ → điều phối + phi công) và
 tự tan khi kế toán đánh dấu đã xử lý hoặc chốt ngày.
 
+## Soát chuyển khoản (🏦 thẻ trong trang kế toán) — cái gì được giấu (từ 16/09/2026)
+
+- **Khoản đã xong** = kế toán đã tích **Đã nhận**, hoặc máy đã **khớp** được
+  dòng sao kê. Khoản xong **không bày ra** nữa: trong thẻ booking chỉ còn các
+  khoản **chờ soát**, kèm một dòng đếm "✓ 2 khoản đã soát (…) — còn 1 khoản
+  chờ" và nút *Xem* để mở lại.
+- **Booking đã xong** (mọi khoản đều xong, không còn sao kê nghi ngờ, không thu
+  thừa) **tự ẩn** khỏi danh sách; nút "✓ N booking đã soát xong — hiện ra" mở
+  lại khi cần soi. Booking còn **dù chỉ một** khoản chờ thì vẫn hiện.
+- "Còn thu" (khách chưa trả hết) hay sao kê về thiếu so với lệnh **không** giữ
+  thẻ lại: đó là công nợ của booking, không phải việc soát — tiền chưa về thì
+  chưa có gì để soát. Khoản rời không gắn booking đã tích cũng giấu.
+
 ## Chuyến PPG
 
 Mọi ô báo cáo mặc định là **PG**. Phi công bay dù CÓ ĐỘNG CƠ khai thêm ở khối
