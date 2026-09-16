@@ -46,7 +46,7 @@
  */
 
 import { gioTaiDoCao } from "./nhan-dinh";
-import { GIO_BAY_DEN, GIO_BAY_TU, MUA_BAY, type GioThoiTiet, type SucThermal } from "./thoi-tiet";
+import { GIO_BAY_DEN, GIO_BAY_TU, MUA_BAY, nhanAmsl, type GioThoiTiet, type SucThermal } from "./thoi-tiet";
 
 export type YeuToThermal = {
   ma: "nang" | "tran" | "lapse" | "onDinh" | "gioCao" | "kho" | "giat";
@@ -219,10 +219,10 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
   let heSoGio = 1;
   if (v500 !== null) {
     heSoGio = duongCong(v500, [[0, 1], [4, 1], [6, 0.85], [8, 0.6], [10, 0.35], [12, 0]]);
-    them({ ma: "gioCao", ten: "Gió mực 500m", trongSo: 0, diem: heSoGio * 100, ghiChu: `${v500.toFixed(1)} m/s → hệ số ×${heSoGio.toFixed(2)}` });
-    if (v500 >= 12) tran.push(`gió mực 500m ${v500.toFixed(0)} m/s xé thermal`);
+    them({ ma: "gioCao", ten: `Gió ${nhanAmsl(alt, 500)}`, trongSo: 0, diem: heSoGio * 100, ghiChu: `${v500.toFixed(1)} m/s → hệ số ×${heSoGio.toFixed(2)}` });
+    if (v500 >= 12) tran.push(`gió tại ${nhanAmsl(alt, 500)} ${v500.toFixed(0)} m/s xé thermal`);
   } else {
-    them({ ma: "gioCao", ten: "Gió mực 500m", trongSo: 0, diem: 100, ghiChu: "không có gió tầng cao — không trừ" });
+    them({ ma: "gioCao", ten: `Gió ${nhanAmsl(alt, 500)}`, trongSo: 0, diem: 100, ghiChu: "không có gió tầng cao — không trừ" });
   }
 
   /* ---- 6. Độ khô — HỆ SỐ NHÂN, chỉ trừ khi ẩm ---- */

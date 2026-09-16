@@ -360,7 +360,7 @@ chiếu được với cảm nhận của mình, và cái sai của máy lộ ra
 | Mục | Dựa vào | Nói gì |
 |---|---|---|
 | 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | thuận/ngược sườn; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
-| 🪁 Gió trên cao | gió **nội suy tại 300 / 500 / 1000 m trên bãi** từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ) | "Gió mực 500m mạnh (9 m/s) từ 11:00 — không leo quá 300m, bám sườn"; > 12 m/s: bị thổi lùi, không bay; mực 1000m > 12: có lớp gió đứt, giữ dưới 500m; mặt đất lặng mà mực 300m đã có gió: **gió đứt ngay trên bãi** |
+| 🪁 Gió trên cao | gió **tại bãi cất** và **nội suy tại tầng bay +300 m trên bãi** (ghi AMSL, ví dụ "650 m AMSL (+300 m trên bãi)") từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ); +1.000 m chỉ nói riêng cho "leo cao" | "Gió tại 650 m AMSL MẠNH từ 11:00 — bám sườn"; > 12 m/s: bị thổi lùi, không bay; +1.000 m > 12: không leo cao; bãi cất lặng mà tầng bay đã có gió: **gió đứt ngay trên bãi** |
 | ☀️ Nắng | `sunshine_duration` cộng trong khung 7–17h | số giờ nắng / 11; < 3h: âm u, thermal yếu |
 | 🔥 Thermal | trần lớp xáo trộn, CAPE, bức xạ | yếu · vừa · tốt · **gắt từ mấy giờ**; khung nâng tốt |
 | ⚖️ Ổn định | lifted index TB, ẩm, nhiệt, gió | ≥ 4: rất ổn định — kèm ẩm ≥ 75%, nóng ≥ 30°C, lặng gió là **ngày oi bức, ít thermal, mù khô**; ≤ −2: **bất ổn, dễ dông, xóc, nhiễu** |
@@ -470,7 +470,7 @@ Nói chung chung là đuổi khách khỏi cả buổi chiều đẹp.
 
 Nay xét **từng giờ** trong khung bay, gom thành đoạn:
 
-| Gió tại **+500 m trên bãi** | Mỗi giờ | Câu chữ |
+| Gió tại **tầng bay = +300 m trên bãi** (ghi AMSL) | Mỗi giờ | Câu chữ |
 |---|---|---|
 | ≥ 8 m/s | ô **vàng** | "LẮP SPEEDBAR, bám sườn thấp" (chủ 12/09: từ 8 đã phải nhắc) |
 | > 12 m/s | ô **đỏ** | "KHUYẾN CÁO KHÔNG BAY HH–HHh" |
@@ -479,11 +479,15 @@ và câu nào cũng kèm khúc dịu nếu có: *"Dịu từ 13h (còn ~5 m/s) �
 13–17h"*. Khi ấy "Khung giờ đẹp nhất" cũng đổi thành khúc ấy, không còn cảnh
 "khuyến cáo không bay 07–13h" đứng ngay trên "khung giờ đẹp 07:00–17:00".
 
-**Vì sao +500 m trên bãi mạnh nghĩa là bãi cất đã mạnh** (luật chủ 12/09): bãi
-Đồi Bù ở 650 m, Khau Phạ 1.268 m — gió tầng ấy chính là gió ngay trên đầu người
-đứng cất cánh, mạnh hơn nhiều so với dưới bãi hạ; cất cánh dễ bị **thổi lùi**.
-Độ cao ghi **cả hai cách** — "+500m trên bãi (≈1.150m)" — vì ghi "mực 500m"
-trần trụi thì ở bãi 650 m bị đọc thành 500 m so với mực biển, tức dưới bãi.
+**Tầng bay là +300 m trên bãi, độ cao luôn ghi AMSL** (chủ 16/09): các điểm
+đều bay ở tầm bãi cất và cao hơn bãi chừng 300 m, nên mọi phép chấm "gió trên
+cao" nhìn vào tầng ấy (trước là +500 m). Ghi "mực 500 m" trần trụi thì không
+biết là 500 m so với mực biển hay so với bãi — ở Đồi Bù 650 m đọc thành DƯỚI
+bãi. Nay ghi "650 m AMSL (+300 m trên bãi)", hằng `TANG_BAY_TREN_BAI` và hàm
+`nhanAmsl` trong `lib/baobay/thoi-tiet.ts`; thẻ thời tiết hiện hai dòng "Gió
+tại bãi cất (350 m AMSL)" và "Gió tại 650 m AMSL (+300 m)"; airgram ghi "m AMSL"
+ở góc bảng. Gió tầng ấy chính là gió ngay trên đầu người đứng cất cánh, mạnh hơn
+nhiều so với dưới bãi hạ; cất cánh dễ bị **thổi lùi**.
 Gió **+1.000 m** chỉ nói riêng ("còn mạnh hơn — không leo cao"): nó quyết định
 leo cao được không, không quyết định cất cánh.
 

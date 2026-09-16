@@ -44,6 +44,8 @@ import {
   hoangHonDep,
   huongTroiNgay,
   trongCung,
+  TANG_BAY_TREN_BAI,
+  caoAmsl,
 } from "@/lib/baobay/thoi-tiet";
 
 type MucDo = "xanh" | "vang" | "do";
@@ -418,16 +420,25 @@ function TomTatNgay({
    */
   const alt = toaDo.alt ?? 0;
 
-  /** Gió ba mực trên bãi — trung bình trong khung bay. */
-  const mucGio = [300, 500, 1000].map((m) => {
+  /**
+   * GIÓ TẠI BÃI CẤT và Ở TẦNG BAY (+300 m trên bãi), trung bình trong khung
+   * bay — ghi ĐỘ CAO AMSL (chủ 16/09: "500m/1000m" không biết là so với mực
+   * biển hay so với bãi; các điểm đều bay ở tầm bãi cất tới cao hơn ~300 m).
+   */
+  const tbGio = (m: number) => {
     const v = ngay.gio.map((g) => gioTaiDoCao(g as never, m, alt)).filter((x): x is number => typeof x === "number");
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
-  });
-  if (mucGio.some((v) => v !== null)) {
+  };
+  const gioBai = tbGio(0);
+  const gioTang = tbGio(TANG_BAY_TREN_BAI);
+  if (gioBai !== null && alt > 0) {
+    dong.push({ icon: "🪁", nhan: `${t.windAtLaunch} (${caoAmsl(alt, 0)} m ${t.amsl})`, giaTri: `${gioBai.toFixed(0)} ${t.windUnit}` });
+  }
+  if (gioTang !== null && alt > 0) {
     dong.push({
       icon: "🪁",
-      nhan: `${t.upperWind} 300/500/1000m`,
-      giaTri: mucGio.map((v) => (v === null ? "–" : v.toFixed(0))).join("/") + ` ${t.windUnit}`,
+      nhan: `${t.windAt} ${caoAmsl(alt, TANG_BAY_TREN_BAI)} m ${t.amsl} (+${TANG_BAY_TREN_BAI} m)`,
+      giaTri: `${gioTang.toFixed(0)} ${t.windUnit}`,
     });
   }
 
@@ -592,6 +603,7 @@ function nhanBieuDo(t: ThoiTietCopy): NhanMeteogram {
     matDat: t.ground,
     batDau: t.takeoff,
     haCanh: t.landing,
+    amsl: t.amsl,
     vuot: t.swipeDays,
   };
 }

@@ -649,9 +649,29 @@ export function gioTrenBai(g: GioThoiTiet, mTrenBai: number, alt: number): numbe
   return moc[0].v;
 }
 
-/** Ngưỡng gió trên bãi 500m (luật chủ 12/09): từ 8 m/s đã phải LẮP SPEEDBAR · trên 12 khuyến cáo không bay. */
+/** Ngưỡng gió ở TẦNG BAY (luật chủ 12/09): từ 8 m/s đã phải LẮP SPEEDBAR · trên 12 khuyến cáo không bay. */
 export const GIO_TREN_CAO_SPEEDBAR = 8;
 export const GIO_TREN_CAO_CAM = 12;
+
+/**
+ * TẦNG BAY (chủ 16/09): các điểm đều bay ở tầm bãi cất và cao hơn bãi chừng
+ * 300 m, nên mọi phép chấm "gió trên cao" nhìn vào +300 m trên bãi — không
+ * phải +500 m như trước.
+ *
+ * ĐỘ CAO LUÔN GHI THEO AMSL (so với mực nước biển): "650 m AMSL (+300 m trên
+ * bãi)". Ghi "mực 500 m" trần trụi thì chủ không biết là 500 m AMSL hay 500 m
+ * trên bãi — ở Đồi Bù 650 m đọc thành DƯỚI bãi, hiểu ngược hẳn.
+ */
+export const TANG_BAY_TREN_BAI = 300;
+/** Độ cao tuyệt đối (m AMSL) của một tầng tính từ bãi, làm tròn chục. */
+export function caoAmsl(alt: number, mTrenBai: number): number {
+  return Math.round((alt + mTrenBai) / 10) * 10;
+}
+/** Nhãn "650 m AMSL (+300 m trên bãi)"; mTrenBai = 0 → "bãi cất 350 m AMSL". */
+export function nhanAmsl(alt: number, mTrenBai: number): string {
+  if (mTrenBai <= 0) return `bãi cất ${caoAmsl(alt, 0)} m AMSL`;
+  return `${caoAmsl(alt, mTrenBai)} m AMSL (+${mTrenBai} m trên bãi)`;
+}
 
 /**
  * HƯỚNG GIÓ TRỘI của một dãy giờ — trung bình VÉC-TƠ có trọng số theo tốc độ.
@@ -841,12 +861,12 @@ export function chamGio(
    * cả ngày là mất buổi chiều đẹp.
    */
   if (altBai !== undefined && altBai > 0) {
-    const v500 = gioTrenBai(g, 500, altBai);
-    if (v500 !== null && v500 > GIO_TREN_CAO_CAM) {
-      lyDo.push(`gió trên bãi 500m ${v500.toFixed(0)} m/s — dễ thổi lùi, khuyến cáo không bay`);
+    const vBay = gioTrenBai(g, TANG_BAY_TREN_BAI, altBai);
+    if (vBay !== null && vBay > GIO_TREN_CAO_CAM) {
+      lyDo.push(`gió tại ${nhanAmsl(altBai, TANG_BAY_TREN_BAI)} ${vBay.toFixed(0)} m/s — dễ thổi lùi, khuyến cáo không bay`);
       len("do");
-    } else if (v500 !== null && v500 >= GIO_TREN_CAO_SPEEDBAR) {
-      lyDo.push(`gió trên bãi 500m ${v500.toFixed(0)} m/s — lắp speedbar, bám sườn thấp`);
+    } else if (vBay !== null && vBay >= GIO_TREN_CAO_SPEEDBAR) {
+      lyDo.push(`gió tại ${nhanAmsl(altBai, TANG_BAY_TREN_BAI)} ${vBay.toFixed(0)} m/s — lắp speedbar, bám sườn thấp`);
       len("vang");
     }
   }

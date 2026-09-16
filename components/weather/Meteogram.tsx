@@ -77,6 +77,8 @@ export type NhanMeteogram = {
   batDau: string;
   /** Nhãn hàng BÃI HẠ trên airgram — kèm số mét. */
   haCanh: string;
+  /** Góc trên trái airgram: mọi độ cao ghi theo mực nước biển. */
+  amsl: string;
   vuot: string;
 };
 
@@ -92,6 +94,7 @@ export const NHAN_METEOGRAM_VI: NhanMeteogram = {
   matDat: "mặt đất",
   batDau: "bãi cất",
   haCanh: "bãi hạ",
+  amsl: "m AMSL",
   vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
 };
 
@@ -737,7 +740,12 @@ export function Airgram({
       <div ref={ref} onScroll={onScroll} className="overflow-x-auto overscroll-x-contain">
         <div className="flex" style={{ width: W_NHAN + rong }}>
           <div data-truc className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: W_NHAN }}>
-            <div className="h-[22px] border-b border-slate-200 bg-slate-50" />
+            <div
+              className="flex h-[22px] items-center border-b border-slate-200 bg-slate-50 px-1 text-[9px] font-bold text-slate-400"
+              title="Độ cao các hàng ghi theo mực nước biển (AMSL)"
+            >
+              {nhan.amsl}
+            </div>
             <div className={"h-[22px] " + nhanTrai}>{nhan.gio}</div>
             {muc.map((m) => (
               <div key={m.ten} style={{ height: CAO }} className={nhanTrai + " leading-tight"}>

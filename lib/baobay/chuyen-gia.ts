@@ -40,6 +40,8 @@ import {
   type LuatHuong,
   type NgayThoiTiet,
   type NguongBay,
+  TANG_BAY_TREN_BAI,
+  nhanAmsl,
 } from "./thoi-tiet";
 
 /* ================================================================== */
@@ -205,16 +207,16 @@ export function danhGiaGio(
    * Thứ bảng mặt đất không hiện. Mực 500m trên bãi: ≤5 êm, 8 bắt đầu xé
    * thermal, 12 là bị thổi lùi. Cắt gió (mặt đất lặng, 300m đã có gió) trừ thêm. */
   {
-    const v500 = gioTaiDoCao(g, 500, alt);
-    const v300 = gioTaiDoCao(g, 300, alt);
-    if (v500 !== null) {
-      let diem = duongCong(v500, [[0, 100], [5, 100], [8, 65], [12, 15], [14, 0]]);
-      let ghi = `mực 500m ${v500.toFixed(1)} m/s`;
-      if (v300 !== null && v300 - g.gio10m > 4) {
+    /** Tầng bay +300 m trên bãi (chủ 16/09), ghi theo AMSL. */
+    const vBay = gioTaiDoCao(g, TANG_BAY_TREN_BAI, alt);
+    if (vBay !== null) {
+      let diem = duongCong(vBay, [[0, 100], [5, 100], [8, 65], [12, 15], [14, 0]]);
+      let ghi = `${nhanAmsl(alt, TANG_BAY_TREN_BAI)}: ${vBay.toFixed(1)} m/s`;
+      if (vBay - g.gio10m > 4) {
         diem -= 20;
-        ghi += ` — gió đứt (300m: ${v300.toFixed(1)}, đất: ${g.gio10m.toFixed(1)})`;
+        ghi += ` — gió đứt (bãi cất: ${g.gio10m.toFixed(1)})`;
       }
-      them({ ma: "gioCao", ten: "Gió trên cao", trongSo: 15, diem, ghiChu: ghi, nguyHiem: v500 > 12 });
+      them({ ma: "gioCao", ten: "Gió trên cao", trongSo: 15, diem, ghiChu: ghi, nguyHiem: vBay > 12 });
     } else {
       them({ ma: "gioCao", ten: "Gió trên cao", trongSo: 15, diem: 75, ghiChu: "mô hình không cấp — cho điểm trung tính" });
     }

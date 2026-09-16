@@ -71,6 +71,10 @@ export type ThoiTietCopy = {
   skewCaption: string;
   /** Gió trên cao theo mực 300/500/1.000 m. */
   upperWind: string;
+  /** "Gió tại bãi cất" / "Gió tại" <độ cao> — độ cao ghi AMSL (chủ 16/09). */
+  windAtLaunch: string;
+  windAt: string;
+  amsl: string;
   /** Lớp nghịch nhiệt (cái nắp chặn thermal) và câu "không có". */
   inversion: string;
   inversionNone: string;
@@ -231,6 +235,9 @@ const vi: ThoiTietCopy = {
   skewCaption: "nhiệt độ (°C), trục ngang · gió m/s bên phải",
   skewTiltNote: "Trục nhiệt độ của Skew-T bị xiên: đường đỏ ngả phải KHÔNG phải là càng lên càng nóng — số °C in trên đường mới là nhiệt độ thật. Bấm Emagram để xem trục thẳng.",
   upperWind: "Gió trên cao",
+  windAtLaunch: "Gió tại bãi cất",
+  windAt: "Gió tại",
+  amsl: "AMSL",
   inversion: "Nghịch nhiệt",
   inversionNone: "không có lớp chặn",
   ridge: "Cà vách",
@@ -365,6 +372,9 @@ const en: ThoiTietCopy = {
   skewCaption: "temperature (°C) · wind m/s on the right",
   skewTiltNote: "The Skew-T temperature axis is deliberately skewed: a red line leaning right does NOT mean it gets warmer with height — the °C figures printed on the line are the real temperatures. Tap Emagram for an upright axis.",
   upperWind: "Upper wind",
+  windAtLaunch: "Wind at launch",
+  windAt: "Wind at",
+  amsl: "AMSL",
   inversion: "Inversion",
   inversionNone: "no capping layer",
   ridge: "Ridge soaring",
@@ -499,6 +509,9 @@ const fr: ThoiTietCopy = {
   skewCaption: "température (°C) · vent m/s à droite",
   skewTiltNote: "L'axe des températures du Skew-T est incliné à dessein : une courbe rouge penchée à droite ne signifie PAS qu'il fait plus chaud en altitude — les °C inscrits sur la courbe sont les vraies valeurs. Touchez Emagram pour un axe droit.",
   upperWind: "Vent en altitude",
+  windAtLaunch: "Vent au décollage",
+  windAt: "Vent à",
+  amsl: "AMSL",
   inversion: "Inversion",
   inversionNone: "pas de couche bloquante",
   ridge: "Vol de pente",
@@ -634,6 +647,9 @@ const ru: ThoiTietCopy = {
   skewCaption: "температура (°C) · ветер м/с справа",
   skewTiltNote: "Ось температуры на Skew-T намеренно наклонена: красная линия, уходящая вправо, НЕ означает потепление с высотой — настоящие значения подписаны на линии в °C. Нажмите Emagram для прямой оси.",
   upperWind: "Ветер на высоте",
+  windAtLaunch: "Ветер на старте",
+  windAt: "Ветер на",
+  amsl: "над ур. моря",
   inversion: "Инверсия",
   inversionNone: "нет запирающего слоя",
   ridge: "Динамик у склона",
@@ -768,6 +784,9 @@ const zh: ThoiTietCopy = {
   skewCaption: "温度 (°C) · 右侧为风速 m/s",
   skewTiltNote: "Skew-T 的温度轴是刻意倾斜的：红线向右倾斜并不表示越高越热——线上标注的 °C 才是真实温度。点 Emagram 可看竖直坐标轴。",
   upperWind: "高空风",
+  windAtLaunch: "起飞场风",
+  windAt: "风速 @",
+  amsl: "海拔",
   inversion: "逆温层",
   inversionNone: "无阻挡层",
   ridge: "山脊坡面飞行",
@@ -901,6 +920,9 @@ const hi: ThoiTietCopy = {
   skewCaption: "तापमान (°C) · दाईं ओर हवा m/s",
   skewTiltNote: "Skew-T का तापमान अक्ष जानबूझकर तिरछा है: दाईं ओर झुकी लाल रेखा का मतलब यह नहीं कि ऊपर जाकर गर्मी बढ़ती है — रेखा पर लिखे °C ही असली तापमान हैं। सीधा अक्ष देखने के लिए Emagram दबाएँ।",
   upperWind: "ऊँचाई की हवा",
+  windAtLaunch: "टेक-ऑफ़ पर हवा",
+  windAt: "हवा",
+  amsl: "AMSL",
   inversion: "इनवर्ज़न",
   inversionNone: "कोई रोकने वाली परत नहीं",
   ridge: "रिज सोअरिंग",
