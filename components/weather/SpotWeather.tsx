@@ -1254,7 +1254,7 @@ export function WeatherSpotCard({
           <div className="text-xs text-slate-500">{diem.tinh}</div>
         </div>
         {/* Lối sang trang điểm bay — tô CAM cho nổi giữa thẻ toàn màu nhạt (chủ 11/09).
-            Điểm chưa có trang (Đại Tuệ) thì giấu nút, khỏi dẫn vào 404. */}
+            Điểm chưa có trang (Đại Huệ) thì giấu nút, khỏi dẫn vào 404. */}
         {!diemThoiTietTheoSlug(diem.slug)?.khongCoTrang && (
           <Link
             href={`/spots/${diem.slug}`}

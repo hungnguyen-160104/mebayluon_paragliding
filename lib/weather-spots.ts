@@ -101,7 +101,8 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
   { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.5219, lon: 104.5322, alt: 900, altHa: 300 },
   { slug: "dalat", ten: "Đà Lạt", tinh: "Lâm Đồng", lat: 11.9404, lon: 108.4583 },
   /**
-   * ĐẠI TUỆ (Nam Đàn, Nghệ An) — số chủ 16/09: bãi cất 18°45'22.5"N
+   * NÚI ĐẠI HUỆ — bãi cất cạnh CHÙA ĐẠI TUỆ (Nam Đàn, Nghệ An); chủ sửa tên
+   * 16/09: núi là Đại Huệ, chùa là Đại Tuệ, slug giữ theo chùa. Số chủ 16/09: bãi cất 18°45'22.5"N
    * 105°32'08.4"E cao 350m; bãi hạ 18°44'26.9"N 105°31'26.8"E cao 50m.
    * Gió TỐT: Nam, Đông Nam, Tây Nam (cung 112°→247°). Gió Bắc, Đông Bắc, Tây
    * Bắc "cũng bay được" → để "thường", không cấm. Đông và Tây chủ chưa nói,
@@ -109,7 +110,7 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
    */
   {
     slug: "dai-tue",
-    ten: "Núi Đại Tuệ",
+    ten: "Núi Đại Huệ (Chùa Đại Tuệ)",
     tinh: "Nghệ An",
     lat: 18.75625,
     lon: 105.53567,
