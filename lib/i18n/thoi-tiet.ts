@@ -266,7 +266,7 @@ const vi: ThoiTietCopy = {
   source: "Nguồn",
   bookKicker: "📖 Muốn hiểu bầu trời sâu hơn?",
   bookTitle: "Thấu hiểu bầu trời — Understanding the Sky (bản tiếng Việt)",
-  bookPitch: "Nếu bạn muốn học và có nhiều kiến thức về khí tượng dành riêng cho bay lượn — gió sườn, thermal, mây, gió đứt, đọc trời trước khi cất cánh — thì nên đọc cuốn sách này. Đây là sách khí tượng kinh điển của dân dù lượn và diều lượn trên thế giới, do Mebayluon dịch và phát hành tiếng Việt.",
+  bookPitch: "Nếu bạn muốn học và có nhiều kiến thức về khí tượng dành riêng cho bay lượn — gió núi, thermal, mây, gió đứt, đọc trời trước khi cất cánh — thì nên đọc cuốn sách này. Đây là sách khí tượng kinh điển của dân dù lượn và diều lượn trên thế giới, do Mebayluon dịch và phát hành tiếng Việt.",
   bookCta: "Xem sách trong cửa hàng",
   updated: "Cập nhật",
   loading: "Đang lấy dự báo…",
