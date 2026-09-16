@@ -233,17 +233,26 @@ const LEVEL_BADGE: Record<string, { label: string; cls: string }> = {
  * lớn đã xong từ lâu — bày hết ra thì khoản THẬT SỰ phải nhìn trôi lẫn vào giữa
  * và kế toán cuộn mãi không thấy. Gập rồi vẫn bấm mở lại được.
  */
+/**
+ * MỘT KHOẢN ĐÃ SOÁT XONG: kế toán đã tích "đã nhận", hoặc máy đã khớp được
+ * dòng sao kê (`seen`) — chủ 16/09: "xác nhận hoặc khớp lệnh tự động" đều là
+ * xong, không bày ra nữa.
+ */
+function khoanXong(x: { verified: boolean; seen?: boolean }): boolean {
+  return x.verified || x.seen === true;
+}
+
+/**
+ * BOOKING ĐÃ SOÁT XONG → tự ẩn (chủ 16/09): mọi khoản của nó đều đã xong và
+ * không còn dòng sao kê nghi ngờ, không thu thừa. Còn "còn thu" (khách chưa
+ * trả hết) hay sao kê về thiếu so với lệnh KHÔNG giữ thẻ lại: đó là công nợ
+ * của booking, không phải việc soát — tiền chưa về thì chưa có gì để soát.
+ * Chỉ cần MỘT khoản chưa xong là thẻ vẫn hiện (chỉ hiện khoản ấy).
+ */
 function isRowSettled(r: BookingRowDTO): boolean {
   if (r.locked) return true;
   const money = [...r.transfers, ...r.cash];
-  return (
-    money.length > 0 &&
-    money.every((x) => x.verified) &&
-    r.bankShort <= 0 &&
-    r.overpaid <= 0 &&
-    r.remaining <= 0 &&
-    r.suggests.length === 0
-  );
+  return money.length > 0 && money.every(khoanXong) && r.overpaid <= 0 && r.suggests.length === 0;
 }
 
 /** Bỏ dấu + viết hoa để dò trùng — cùng công thức với máy khớp phía máy chủ. */
@@ -382,6 +391,8 @@ export function BankCheckCard({ date }: { date: string }) {
   const [aiBusy, setAiBusy] = useState(false);
   /** Thẻ booking ĐÃ SOÁT XONG gập chung một chỗ — mở ra khi cần soi lại. */
   const [doneOpen, setDoneOpen] = useState(false);
+  /** Thẻ nào đang bày cả các khoản ĐÃ soát (mặc định giấu, chỉ hiện khoản còn chờ). */
+  const [xongOpen, setXongOpen] = useState<string[]>([]);
   /** Nhóm SMS ĐÃ KHỚP — gập sẵn, việc đã xong thì không cần bày ra. */
   const [matchedOpen, setMatchedOpen] = useState(false);
 
@@ -1200,6 +1211,11 @@ export function BankCheckCard({ date }: { date: string }) {
             const settled = isRowSettled(row);
             const flipped = expanded.includes(row.bookingId);
             const collapsed = flipped ? !settled : settled;
+            /** Khoản đã soát xong GIẤU ĐI (chủ 16/09) — thẻ chỉ còn khoản chờ; một dòng đếm + nút mở lại. */
+            const daXong = [...row.transfers, ...row.cash].filter(khoanXong);
+            const hienXong = settled || xongOpen.includes(row.bookingId);
+            const transfersHien = hienXong ? row.transfers : row.transfers.filter((t) => !khoanXong(t));
+            const cashHien = hienXong ? row.cash : row.cash.filter((t) => !khoanXong(t));
             return (
               <div
                 key={row.bookingId}
@@ -1345,7 +1361,7 @@ export function BankCheckCard({ date }: { date: string }) {
                 {/* từng khoản tiền của booking */}
                 {!collapsed && (
                 <ul className="mt-1.5 space-y-0.5">
-                  {row.transfers.map((t) => (
+                  {transfersHien.map((t) => (
                     <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                       {t.seen ? (
                         <span className="shrink-0 font-bold text-emerald-600">✓</span>
@@ -1426,7 +1442,7 @@ export function BankCheckCard({ date }: { date: string }) {
                       </span>
                     </li>
                   ))}
-                  {row.cash.map((t) => (
+                  {cashHien.map((t) => (
                     <li key={t.refId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                       <span className="shrink-0">💵</span>
                       <span className="min-w-0 flex-1 text-slate-600">TM · {t.by} đang giữ</span>
@@ -1486,6 +1502,23 @@ export function BankCheckCard({ date }: { date: string }) {
                       </span>
                     </li>
                   ))}
+                  {!settled && daXong.length > 0 && (
+                    <li className="flex flex-wrap items-center gap-x-2 text-[11px] text-emerald-700">
+                      <span>
+                        ✓ {daXong.length} khoản đã soát ({formatVND(daXong.reduce((a, x) => a + x.amount, 0))})
+                        {" — "}còn {[...row.transfers, ...row.cash].length - daXong.length} khoản chờ
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setXongOpen((p) => (p.includes(row.bookingId) ? p.filter((x) => x !== row.bookingId) : [...p, row.bookingId]))
+                        }
+                        className="rounded border border-emerald-300 bg-white px-1.5 py-0.5 text-[10px] font-bold text-emerald-800"
+                      >
+                        {hienXong ? "Giấu khoản đã soát" : "Xem"}
+                      </button>
+                    </li>
+                  )}
                 </ul>
                 )}
 
@@ -1651,8 +1684,9 @@ export function BankCheckCard({ date }: { date: string }) {
 
       {/* ---- Khoản app ghi mà KHÔNG gắn booking nào (hiếm — lệnh thu gõ tay) ---- */}
       {(() => {
-        const strayT = appTransfers.filter((t) => !t.bookingId);
-        const strayC = (report?.appCash ?? []).filter((t) => !t.bookingId);
+        /** Khoản rời (không gắn booking) đã tích "đã nhận" cũng giấu luôn (chủ 16/09). */
+        const strayT = appTransfers.filter((t) => !t.bookingId && !khoanXong(t));
+        const strayC = (report?.appCash ?? []).filter((t) => !t.bookingId && !t.verified);
         if (!strayT.length && !strayC.length) return null;
         return (
           <div className="mt-3">

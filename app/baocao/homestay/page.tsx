@@ -123,11 +123,11 @@ function SourceBadge({ source }: { source: string }) {
   return <span className={"shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold " + b.cls}>{b.label}</span>;
 }
 
-/** "2026-08-15" -> "Thứ 7, 15/08" — đúng kiểu cột ngày trong bảng tính cũ của nhà. */
+/** "2026-08-15" -> "T7, 15/08" — viết tắt thứ (chủ 16/09) cho cột Ngày hẹp trên điện thoại. */
 function dayRowLabel(key: string): string {
   const [y, m, d] = key.split("-").map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  const thu = dow === 0 ? "CN" : `Thứ ${dow + 1}`;
+  const thu = dow === 0 ? "CN" : `T${dow + 1}`;
   return `${thu}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
 }
 

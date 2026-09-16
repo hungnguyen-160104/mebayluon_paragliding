@@ -346,7 +346,8 @@ export function nhanDinhNgay(
       const diu = theoGio.filter((x) => x.vBay < GIO_TREN_CAO_SPEEDBAR);
       const caoHon = theoGio.filter((x) => (x.v1000 ?? 0) > GIO_TREN_CAO_CAM);
       const dinh = theoGio.reduce((a, b) => (b.vBay > a.vBay ? b : a), theoGio[0]);
-      const soLieu = `TB gió (AMSL): bãi cất ${caoAmsl(alt, 0)} m ${vBai?.toFixed(0) ?? "–"} · ${caoAmsl(alt, TANG_BAY_TREN_BAI)} m ${vBay.toFixed(0)} · ${caoAmsl(alt, 1000)} m ${v1000?.toFixed(0) ?? "–"} m/s`;
+      /** Dạng chủ chốt 16/09: "350(bãi cất)/650/1350m AMSL = gió 2/2/4 m/s" — ba độ cao một bên, ba tốc độ một bên. */
+      const soLieu = `${caoAmsl(alt, 0)}(bãi cất)/${caoAmsl(alt, TANG_BAY_TREN_BAI)}/${caoAmsl(alt, 1000)}m AMSL = gió ${vBai?.toFixed(0) ?? "–"}/${vBay.toFixed(0)}/${v1000?.toFixed(0) ?? "–"} m/s`;
       /** Đoạn dịu SAU đỉnh — đó là khúc bay được của một ngày gió trên cao mạnh. */
       const diuSau = diu.filter((x) => x.g.gio > dinh.g.gio).map((x) => x.g);
       const khungXiet = xiet.length ? khungCua(xiet.map((x) => x.g)) : "";
