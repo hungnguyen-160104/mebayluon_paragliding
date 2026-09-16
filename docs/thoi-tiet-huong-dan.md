@@ -1,7 +1,7 @@
 # Thời tiết bay — cấu hình và nguồn dữ liệu
 
 > **Thuật ngữ (chủ chốt 16/09/2026):** gió thổi vào bãi cất gọi là **GIÓ CHÍNH
-> BÃI**, gió thổi từ sau lưng bãi gọi là **GIÓ SAU** — không dùng "thuận sườn /
+> BÃI**, gió thổi từ sau lưng bãi gọi là **GIÓ SAU**, gió lệch ngang là **GIÓ NGANG** — không dùng "thuận sườn /
 > ngược sườn". Gió địa hình gọi là **gió núi**, không gọi "gió sườn". Độ cao
 > ghi **AMSL** (so với mực biển); riêng đỉnh thermal ghi **AGL** (so với mặt đất).
 
@@ -423,7 +423,7 @@ chở khách (không phải bay thể thao), nhân trọng số rồi cộng:
 |---|---|---|
 | Gió mặt đất | 25 | 0 m/s → 65 · 1,5–4 → 100 · 6 → 55 · ngưỡng cấm → 25 · quá → 0. **Gió chính bãi** thì 4–6 m/s vẫn 85–100 |
 | Gió giật | 10 | ≤ 6 → 100 · 10 → 92 · 14 → 75 · 18 → 30 · quá 18 → 0. **Hệ số giật** > 3× kèm giật ≥ 8: −15 ("từng đợt") |
-| Hướng gió | 15 | gió chính bãi 100 · chéo sườn 55 · chưa khai luật 80 · **gió sau / gió xiết 0** |
+| Hướng gió | 15 | gió chính bãi 100 · gió ngang 55 · chưa khai luật 80 · **gió sau / gió xiết 0** |
 | Gió trên cao | 15 | mực 500m trên bãi: ≤ 5 → 100 · 8 → 65 · 12 → 15 · 14 → 0. **Cắt gió** (mặt đất lặng, 300m có gió): −20 |
 | Thermal / ổn định | 10 | trần 500–1500 m → 100 · 300 → 70 · 2200 → 65 · 3000 → 40. LI ≤ −2: −20 · ≤ −4: −35 · ≥ 6: −10 |
 | Trần mây / mù | 10 | trời quang 100 · mây thấp dày: trần < 150 m → 0 · 300 → 45 · 500 → 75 · 800 → 100 · **sương mù 0** |

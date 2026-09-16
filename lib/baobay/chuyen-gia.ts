@@ -198,7 +198,7 @@ export function danhGiaGio(
       ghi = `${huongChu(g.huong)} — GIÓ CHÍNH BÃI`;
     } else if (luat?.tot) {
       diem = 55;
-      ghi = `${huongChu(g.huong)} — chéo sườn`;
+      ghi = `${huongChu(g.huong)} — GIÓ NGANG`;
     }
     them({ ma: "huong", ten: "Hướng gió", trongSo: 15, diem, ghiChu: ghi, nguyHiem: xau || xiet });
   }
