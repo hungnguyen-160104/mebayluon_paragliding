@@ -546,7 +546,7 @@ export function nhanDinhNgay(
         tong,
       });
     } else if (tranMax === null && capeMax === null) {
-      noi = "mô hình chưa cấp trần lớp xáo trộn";
+      noi = "mô hình chưa cấp đỉnh thermal (trần lớp xáo trộn)";
       tong = "thongTin";
     } else if ((tranMax ?? 0) < 400 && (capeMax ?? 0) < 150) {
       noi = `yếu — ${soLieuYeu}: ít nâng, chủ yếu bay ebon (và cà vách nếu có gió chính bãi)`;

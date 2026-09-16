@@ -307,7 +307,7 @@ export type GioThoiTiet = {
    * mầm dông.
    */
   chiSoNang?: number;
-  /** Trần lớp xáo trộn (m) — xấp xỉ TRẦN BAY thermal trong ngày. */
+  /** ĐỈNH THERMAL = trần lớp xáo trộn (m AGL, so với mặt đất mô hình) — xấp xỉ trần bay thermal trong ngày. */
   tranThermal?: number;
   /** Xác suất mưa trong giờ (%), lấy thẳng từ mô hình. */
   xacSuatMua?: number;

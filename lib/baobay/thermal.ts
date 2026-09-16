@@ -164,22 +164,23 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
   them({ ma: "nang", ten: "Nắng", trongSo: 20, diem: dNang, ghiChu: `${Math.round(buXa)} W/m² · ${Math.round(phutNang)} phút nắng · mây ${Math.round(may)}%` });
   if (buXa < 100 && phutNang < 10) tran.push("không có nắng");
 
-  /* ---- 2. Trần lớp xáo trộn (30) ---- */
+  /* ---- 2. ĐỈNH THERMAL = trần lớp xáo trộn, m AGL (chủ đặt tên 16/09) ---- */
   const tranXT = co(g.tranThermal) ? Math.round(g.tranThermal) : null;
   if (tranXT !== null) {
     them({
       ma: "tran",
-      ten: "Trần xáo trộn",
+      ten: "Đỉnh thermal",
       trongSo: 45,
       diem: duongCong(tranXT, [[0, 0], [300, 10], [600, 25], [1000, 40], [1500, 65], [2000, 85], [2500, 100]]),
-      ghiChu: `~${tranXT} m`,
+      /** AGL = so với mặt đất tại điểm lưới mô hình — không phải AMSL, không phải so với bãi cất. */
+      ghiChu: `~${tranXT} m AGL`,
     });
     /** Dưới 300 m là không có lớp xáo trộn nào đáng kể — bọt tách khỏi đất là tắt. */
-    if (tranXT < 300) tran.push(`trần xáo trộn chỉ ~${tranXT} m`);
+    if (tranXT < 300) tran.push(`đỉnh thermal chỉ ~${tranXT} m AGL`);
   } else {
     /** Không có trần thì mượn CAPE làm thước tạm — nói rõ là đoán. */
     const cape = g.cape ?? 0;
-    them({ ma: "tran", ten: "Trần xáo trộn", trongSo: 45, diem: duongCong(cape, [[0, 20], [200, 40], [800, 65], [1500, 90]]), ghiChu: `không có số trần — đoán từ CAPE ${Math.round(cape)}` });
+    them({ ma: "tran", ten: "Đỉnh thermal", trongSo: 45, diem: duongCong(cape, [[0, 20], [200, 40], [800, 65], [1500, 90]]), ghiChu: `không có số trần — đoán từ CAPE ${Math.round(cape)}` });
   }
 
   /* ---- 3. Độ dốc nhiệt tầng thấp (15) ---- */
@@ -270,7 +271,7 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
   const tongTS = cong.reduce((t, y) => t + y.trongSo, 0);
   let diem = (cong.reduce((t, y) => t + y.diem * y.trongSo, 0) / tongTS) * heSoGio * heSoKho + thuongGiat;
   if (tran.some((x) => x.startsWith("không có nắng") || x.startsWith("mưa"))) diem = Math.min(diem, 12);
-  else if (tran.some((x) => x.startsWith("trần xáo trộn chỉ"))) diem = Math.min(diem, 20);
+  else if (tran.some((x) => x.startsWith("đỉnh thermal chỉ"))) diem = Math.min(diem, 20);
   else if (tran.some((x) => x.startsWith("nghịch nhiệt"))) diem = Math.min(diem, 35);
   else if (tran.some((x) => x.startsWith("gió mực"))) diem = Math.min(diem, 25);
 
@@ -322,12 +323,12 @@ export function tiemNangThermal(
     const thieuTran = tran.ghiChu.startsWith("không có số trần");
     lyDo.push(
       thieuTran
-        ? `Mô hình không cấp trần lớp xáo trộn — chấm tạm theo CAPE (${tran.ghiChu.replace("không có số trần — đoán từ CAPE ", "")}).`
+        ? `Mô hình không cấp đỉnh thermal — chấm tạm theo CAPE (${tran.ghiChu.replace("không có số trần — đoán từ CAPE ", "")}).`
         : tran.diem >= 70
-          ? `Lớp xáo trộn sâu, trần ${tran.ghiChu} — thermal lên được cao.`
+          ? `Đỉnh thermal cao, ${tran.ghiChu} — leo được cao.`
           : tran.diem >= 40
-            ? `Trần xáo trộn ${tran.ghiChu} — đủ cho chuyến bay vừa phải.`
-            : `Trần xáo trộn thấp (${tran.ghiChu}) — thermal lên tới đó là tắt.`,
+            ? `Đỉnh thermal ${tran.ghiChu} — đủ cho chuyến bay vừa phải.`
+            : `Đỉnh thermal thấp (${tran.ghiChu}) — lên tới đó là tắt.`,
     );
   }
   if (lapse) lyDo.push(lapse.diem >= 70 ? `Tầng thấp dốc nhiệt tốt (${lapse.ghiChu}) — thermal lên mạnh.` : lapse.diem >= 40 ? `Độ dốc nhiệt trung bình (${lapse.ghiChu}).` : `Tầng thấp ổn định (${lapse.ghiChu}) — thermal lên yếu.`);
@@ -344,7 +345,7 @@ export function tiemNangThermal(
             : li <= 2
               ? `Trên cao hơi ổn định (${on.ghiChu}) — thermal gọn, mây ít phát triển quá mức.`
               : li <= 6
-                ? `Trên cao ổn định (${on.ghiChu}) — thermal chỉ lên tới trần xáo trộn rồi dừng.`
+                ? `Trên cao ổn định (${on.ghiChu}) — thermal chỉ lên tới đỉnh rồi dừng.`
                 : `Trên cao rất ổn định (${on.ghiChu}) — nắp chặt, thermal yếu và ngắn.`,
     );
   }

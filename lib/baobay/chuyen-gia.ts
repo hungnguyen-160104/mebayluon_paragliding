@@ -232,7 +232,7 @@ export function danhGiaGio(
     let ghi: string;
     if (cs.tran === null) {
       diem = 75;
-      ghi = "không có trần lớp xáo trộn";
+      ghi = "không có đỉnh thermal (trần lớp xáo trộn)";
     } else {
       diem = duongCong(cs.tran, [[0, 60], [300, 70], [500, 100], [1500, 100], [2200, 65], [3000, 40]]);
       ghi = `trần ~${cs.tran}m`;

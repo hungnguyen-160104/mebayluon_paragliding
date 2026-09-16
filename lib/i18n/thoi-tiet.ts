@@ -197,7 +197,7 @@ const vi: ThoiTietCopy = {
     {
       tieuDe: "Thermal — nhiên liệu của chuyến bay",
       y: [
-        "Mặt đất hấp thụ bức xạ, hun nóng lớp khí sát đất, bọt khí nóng tách ra và bốc lên: đó là thermal. Hai con số nói về nó là CAPE (thế năng đối lưu — bao nhiêu 'nhiên liệu') và trần lớp xáo trộn (thermal lên được tới đâu). Bảng này gọi trần ấy là trần thermal.",
+        "Mặt đất hấp thụ bức xạ, hun nóng lớp khí sát đất, bọt khí nóng tách ra và bốc lên: đó là thermal. Hai con số nói về nó là CAPE (thế năng đối lưu — bao nhiêu 'nhiên liệu') và đỉnh thermal — trần lớp xáo trộn, ghi theo m AGL tức so với mặt đất (thermal lên được tới đâu).",
         "Thang ở đây chấm theo hướng ÊM: thermal vừa đủ thì chuyến dài và mượt, còn thermal gắt làm dù xóc và bãi đáp nổi gió xoáy. Phi công bay đường dài đọc ngược lại — với họ càng mạnh càng thích, nên hai bên nhìn cùng một con số mà kết luận khác nhau.",
       ],
     },

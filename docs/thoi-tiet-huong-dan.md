@@ -241,7 +241,7 @@ Ba khái niệm mới, giải thích ngắn:
   gió đổ xuống đã quét qua bãi làm gió đảo chiều và mạnh gấp mấy lần trong vài
   phút.
 
-- **Thermal (thermal)** đo bằng **trần lớp xáo trộn** — xấp xỉ trần bay trong
+- **Thermal (thermal)** đo bằng **đỉnh thermal** (trần lớp xáo trộn, ghi m AGL) — xấp xỉ trần bay trong
   ngày. Với bay đôi chở khách thì **êm mới là tốt**: thermal vừa đủ kéo dài
   chuyến, thermal gắt làm dù xóc, khách say, bãi đáp nổi gió xoáy. Thang này
   ngược với thang của phi công thể thao bay đường dài, đừng đọc nhầm.
@@ -699,7 +699,7 @@ không, mấy giờ, lên tới đâu**.
 | Yếu tố | Trọng số | Dựa vào | Đường cong (mốc → điểm) |
 |---|---|---|---|
 | ☀️ Nắng | 20 | bức xạ W/m², phút nắng, mây | 100 W → 15 · 300 → 45 · 500 → 75 · 700 → 100; phút nắng chỉ được tính khi bức xạ đủ (×buXa/500); mây > 60% trừ tới một nửa |
-| 📏 Trần xáo trộn | **45** | `boundary_layer_height` | 300 m → 10 · 600 → 25 · 1.000 → 40 · 1.500 → 65 · 2.000 → 85 · 2.500 → 100 |
+| 📏 Đỉnh thermal (trần lớp xáo trộn, m AGL = so với mặt đất mô hình) | **45** | `boundary_layer_height` | 300 m → 10 · 600 → 25 · 1.000 → 40 · 1.500 → 65 · 2.000 → 85 · 2.500 → 100 |
 | 🌡 Độ dốc nhiệt | 20 | nhiệt hai mực THẤP NHẤT NẰM TRÊN BÃI (925/850/700) | ≤ 0 °C/100 m → 0 · 0,5 → 30 · 0,65 → 50 · 0,8 → 75 · 0,95 → 100 |
 | ⚖️ Ổn định sâu | 15 | LI, CAPE | −4 → 100 · −1 → 90 · +2 → 70 · +6 → 45 · +10 → 25 |
 | 🌬 Gió mực 500 m trên bãi | ×hệ số | gió nội suy theo độ cao | ≤ 4 m/s ×1 · 6 ×0,85 · 8 ×0,6 · 10 ×0,35 · 12 ×0 |
