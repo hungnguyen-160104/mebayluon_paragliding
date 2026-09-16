@@ -372,9 +372,9 @@ export function ThoiTietCard({
               title={n.khungDep ? `Giờ đẹp ${n.khungDep}` : undefined}
             >
               <div className="text-[10px] font-bold uppercase">{nhanNgay(n.ngay, homNay)}</div>
-              {/* Hướng + tốc độ trên nền màu theo thang gió của chủ: <4 xanh · 4–6 vàng · 6–8 cam · >8 đỏ. */}
+              {/* Hướng + tốc độ trên nền màu theo NGƯỠNG của điểm: xanh ≤ đẹp · vàng tới cấm · đỏ trên cấm (chủ 16/09). */}
               <div className="mt-0.5 flex justify-center">
-                <span className="whitespace-nowrap rounded px-1 py-0.5 leading-none" style={styleGio(n.gioMax)}>
+                <span className="whitespace-nowrap rounded px-1 py-0.5 leading-none" style={styleGio(n.gioMax, du.nguong)}>
                   {(() => {
                     const h = huongTroiNgay(n.gio, [6, 18]);
                     return h === null ? null : <span className="text-[10px] font-black">{huongChu(h)} · </span>;
@@ -525,11 +525,11 @@ export function ThoiTietCard({
                 gioBay={du.toaDo.gioBay}
               />
             ) : kieuXem === "meteogram" ? (
-              <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} />
+              <Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} nguong={du.nguong} />
             ) : kieuXem === "airgram" ? (
-              <Airgram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} altHa={du.toaDo.altHa} altCat2={du.toaDo.altCat2} ngayChon={chon} onNgayHien={setChon} />
+              <Airgram nguong={du.nguong} ngay={du.ngay} altBai={du.toaDo.alt ?? 0} altHa={du.toaDo.altHa} altCat2={du.toaDo.altCat2} ngayChon={chon} onNgayHien={setChon} />
             ) : (
-              <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} homNay={homNay} luat={du.toaDo.luatHuong} />
+              <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} homNay={homNay} luat={du.toaDo.luatHuong} nguong={du.nguong} />
             ))}
 
           {/* ---- so sánh 2–3 mô hình cho ngày đang chọn ---- */}
@@ -635,6 +635,7 @@ function BangGio({
   onNgayHien,
   homNay,
   luat,
+  nguong,
 }: {
   /** CẢ DÃY NGÀY — vẽ liền nhau, ngăn bằng vạch đứng. */
   ngay: NgayThoiTiet[];
@@ -642,6 +643,7 @@ function BangGio({
   onNgayHien?: (ngay: string) => void;
   homNay: string;
   luat?: LuatHuong;
+  nguong?: NguongBay;
 }) {
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
 
@@ -728,7 +730,7 @@ function BangGio({
               <td
                 key={g.gio}
                 title={[NHAN_SUC_GIO[sucGio(g.gio10m)], ...g.lyDo].join(" · ")}
-                style={styleGio(g.gio10m)}
+                style={styleGio(g.gio10m, nguong)}
                 className="border-b border-white px-0.5 py-1 font-black"
               >
                 {g.gio10m.toFixed(1)}

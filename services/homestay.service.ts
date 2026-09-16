@@ -60,6 +60,8 @@ export type HomestayBookingDTO = {
   cancelledBy?: string;
   cancelReason?: string;
   createdAt: string;
+  /** Người nhập (đơn ghi tay / b2b) — hiện chữ nhỏ khi mở ô (chủ 16/09). */
+  createdByName?: string;
   /** Đã đóng phòng trên các trang OTA cho đơn này chưa — "" là CHƯA, cần nhắc. */
   otaLockedAt: string;
   otaLockedBy: string;
@@ -114,6 +116,7 @@ function toDTO(d: any): HomestayBookingDTO {
     depositContactedBy: d.depositContactedBy || "",
     cancelReason: d.cancelReason || undefined,
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
+    createdByName: d.createdByName || undefined,
   };
 }
 

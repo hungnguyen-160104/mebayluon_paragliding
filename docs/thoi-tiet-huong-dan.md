@@ -320,12 +320,17 @@ Nhìn dọc một giờ là thấy ngay gió **tăng theo độ cao** hay **đ�
 nào** (gió đứt), và trên có ấm hơn dưới không (nghịch nhiệt) — thứ bảng mặt đất
 không bao giờ hiện.
 
-### Màu gió và giật chuyển dần
+### Màu gió theo ngưỡng của điểm; giật chuyển dần
 
-Xanh → vàng → đỏ → đỏ thẫm (`components/weather/mau-gio.ts`), không nhảy bậc.
-Bậc rời cũ khiến 5,9 và 6,1 m/s nhảy hẳn hai màu dù chỉ chênh 0,2 — mắt bị đánh
-lừa rằng có một ngưỡng thật ở đó. Thang giật ngả vàng muộn hơn thang gió: 10
-mới chớm vàng, 14 đỏ dần, trên 16 đỏ, 18+ đỏ thẫm.
+**Gió trung bình** (chủ 16/09): ba bậc theo NGƯỠNG CỦA ĐIỂM — **xanh** = nhẹ
+và vừa (≤ ngưỡng đẹp `gioXanh`), **vàng** = hơi mạnh (đẹp → cấm), **đỏ** = rất
+mạnh (> ngưỡng cấm `gioDo`); mặc định 4 / 7 m/s, điểm nào chủ chỉnh ở ⚙ thì
+màu chạy theo. Trong một bậc vẫn đậm dần theo tốc độ nhưng không ngả sang màu
+bậc kế (3,9 m/s không còn ngả vàng). Cùng thước với màu ô giờ. Áp cho ô ngày,
+bảng giờ, meteogram, cả trang khách lẫn trang nội bộ (`components/weather/mau-gio.ts`).
+
+**Giật** vẫn chuyển dần: 10 mới chớm vàng, 14 đỏ dần, trên 16 đỏ, 18+ đỏ thẫm —
+giật không quyết định bay hay nghỉ.
 
 ### Vị trí và mặt trời mọc/lặn
 

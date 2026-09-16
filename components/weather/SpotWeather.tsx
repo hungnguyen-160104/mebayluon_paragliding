@@ -25,7 +25,7 @@ import { getThoiTietCopy, huongDayDu, huongTheoNgonNgu, type ThoiTietCopy } from
 import { useCuonTheoNgay, useManHinhHep } from "./cuon-ngay";
 import { DaiMua, dinhMua } from "./DaiMua";
 import { Airgram, Meteogram, NHAN_METEOGRAM_VI, type NhanMeteogram } from "./Meteogram";
-import { styleGiat, styleGio } from "./mau-gio";
+import { styleGiat, styleGio, type NguongMau } from "./mau-gio";
 import { NhanDinhNgayBay } from "./NhanDinhNgayBay";
 import { ChonMoHinh, SoSanhMoHinh } from "./SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
@@ -121,6 +121,8 @@ export type DiemDuBao = {
   tinh: string;
   toaDo: { lat: number; lon: number; ten: string; alt?: number; luatHuong?: LuatHuong };
   ngay: Ngay[];
+  /** Ngưỡng gió của điểm (đẹp/cấm) — tô màu ô gió cùng thước với ô giờ. */
+  nguong?: NguongMau;
   moHinh: string;
   layLuc: string;
 };
@@ -182,8 +184,10 @@ function DaiNgay({
   onChon,
   t,
   lang,
+  nguong,
 }: {
   ngay: Ngay[];
+  nguong?: NguongMau | null;
   chon?: string | null;
   onChon?: (d: string) => void;
   t: ThoiTietCopy;
@@ -224,7 +228,7 @@ function DaiNgay({
             <div className="mt-0.5 flex justify-center">
               <span
                 className="whitespace-nowrap rounded-md px-1.5 py-0.5 leading-none"
-                style={styleGio(n.gioMax)}
+                style={styleGio(n.gioMax, nguong)}
                 title={`${t.wind} ${n.gioMax.toFixed(1)} ${t.windUnit}`}
               >
                 {(() => {
@@ -639,6 +643,7 @@ function BangGio({
   t,
   lang,
   luat,
+  nguong,
 }: {
   ngay: Ngay[];
   ngayChon?: string | null;
@@ -646,6 +651,7 @@ function BangGio({
   t: ThoiTietCopy;
   lang: string;
   luat?: LuatHuong;
+  nguong?: NguongMau | null;
 }) {
   const { ref, onScroll } = useCuonTheoNgay(ngayChon, onNgayHien);
   /**
@@ -733,7 +739,7 @@ function BangGio({
             `${t.wind} ${t.windUnit}`,
             (g) => <span className="font-black">{g.gio10m.toFixed(1)}</span>,
             undefined,
-            (g) => styleGio(g.gio10m),
+            (g) => styleGio(g.gio10m, nguong),
           )}
           {hang(
             t.canFly,
@@ -972,7 +978,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
           />
         ))}
 
-      <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} />
+      <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} nguong={du.nguong} />
 
       <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
 
@@ -1051,9 +1057,10 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
             lang={lang}
           />
         ) : kieuXem === "meteogram" ? (
-          <Meteogram ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
+          <Meteogram nguong={du.nguong} ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
         ) : kieuXem === "airgram" ? (
           <Airgram
+            nguong={du.nguong}
             ngay={du.ngay as never}
             altBai={(du.toaDo as { alt?: number }).alt ?? 0}
             altHa={(du.toaDo as { altHa?: number }).altHa}
@@ -1064,7 +1071,7 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
             lang={lang}
           />
         ) : (
-          <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
+          <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} nguong={du.nguong} />
         ))}
 
       {soSanh && (
@@ -1295,6 +1302,7 @@ export function WeatherSpotCard({
       {/* Chữ chỉ dẫn (chủ 16/09): khách không biết ô ngày bấm được */}
       <p className="mt-2 text-[11px] font-semibold leading-tight text-sky-800">{t.tapDayHint}</p>
       <DaiNgay
+        nguong={du.nguong}
         ngay={du.ngay}
         chon={chonHienTai}
         onChon={(d) => {
@@ -1415,6 +1423,7 @@ export function WeatherSpotCard({
             />
           ) : kieuXem === "meteogram" ? (
             <Meteogram
+              nguong={du.nguong}
               ngay={du.ngay as never}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               ngayChon={chonHienTai}
@@ -1424,6 +1433,7 @@ export function WeatherSpotCard({
             />
           ) : kieuXem === "airgram" ? (
             <Airgram
+            nguong={du.nguong}
               ngay={du.ngay as never}
               altBai={(du.toaDo as { alt?: number }).alt ?? 0}
               altHa={(du.toaDo as { altHa?: number }).altHa}
@@ -1434,7 +1444,7 @@ export function WeatherSpotCard({
               lang={lang}
             />
           ) : (
-            <BangGio ngay={du.ngay} ngayChon={chonHienTai} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} />
+            <BangGio ngay={du.ngay} ngayChon={chonHienTai} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} nguong={du.nguong} />
           )}
         </div>
     )}

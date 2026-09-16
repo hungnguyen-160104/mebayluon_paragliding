@@ -48,7 +48,7 @@ import {
 } from "@/lib/baobay/thoi-tiet";
 
 import { useCuonTheoNgay, useManHinhHep } from "./cuon-ngay";
-import { chuTrenNen, mauGiat, mauGio } from "./mau-gio";
+import { chuTrenNen, mauGiat, mauGio, type NguongMau } from "./mau-gio";
 import { WindArrow } from "./WindArrow";
 
 type GioVe = GioThoiTiet & { muc?: MucDo };
@@ -276,6 +276,7 @@ function HangGioMuc({
   cao,
   W,
   hep,
+  nguong,
 }: {
   cot: Cot[];
   lay: (g: GioVe) => number | undefined;
@@ -283,13 +284,14 @@ function HangGioMuc({
   cao: number;
   W: number;
   hep: boolean;
+  nguong?: NguongMau | null;
 }) {
   return (
     <div className="flex items-stretch" style={{ height: cao }}>
       {cot.map((c) => {
         const v = lay(c.g);
         const hd = layHuong(c.g);
-        const bg = v === undefined ? "#f8fafc" : mauGio(v);
+        const bg = v === undefined ? "#f8fafc" : mauGio(v, nguong);
         return (
           <div
             key={c.g.gio}
@@ -319,9 +321,12 @@ export function Meteogram({
   onNgayHien,
   nhan = NHAN_METEOGRAM_VI,
   lang = "vi",
+  nguong,
 }: {
   /** CẢ DÃY NGÀY — vẽ nối liền trên một dải cuộn ngang. */
   ngay: NgayVe[];
+  /** Ngưỡng gió của điểm — màu ô gió theo ba bậc xanh/vàng/đỏ (mau-gio.ts). */
+  nguong?: NguongMau | null;
   /** Độ cao bãi (m) — để vẽ vạch "mặt bãi" trên trục độ cao. */
   altBai?: number;
   tuGio?: number;
@@ -459,7 +464,7 @@ export function Meteogram({
             </div>
 
             {/* ---- Gió mặt đất: mũi tên + tốc độ, nền chuyển dần ---- */}
-            <HangGioMuc cot={cot} lay={(g) => g.gio10m} layHuong={(g) => g.huong} cao={hep ? 38 : 44} W={W} hep={hep} />
+            <HangGioMuc cot={cot} lay={(g) => g.gio10m} layHuong={(g) => g.huong} cao={hep ? 38 : 44} W={W} hep={hep} nguong={nguong} />
 
             {/* ---- Giật: hàng riêng như Windy, nền chuyển dần theo thang giật ---- */}
             <div className="flex h-[20px] items-stretch">
@@ -626,8 +631,10 @@ export function Airgram({
   onNgayHien,
   nhan = NHAN_METEOGRAM_VI,
   lang = "vi",
+  nguong,
 }: {
   ngay: NgayVe[];
+  nguong?: NguongMau | null;
   altBai?: number;
   /** Độ cao bãi HẠ (m) — hàng dưới cùng là gió tại đó, vì chuyến bay kết thúc ở đấy. */
   altHa?: number;
@@ -758,7 +765,7 @@ export function Airgram({
             <HangGio cot={cot} W={W} />
             {muc.map((m) => (
               <div key={m.ten} className="relative border-t border-white">
-                <HangGioMuc cot={cot} lay={m.lay} layHuong={m.layHuong} cao={CAO} W={W} hep={hep} />
+                <HangGioMuc cot={cot} lay={m.lay} layHuong={m.layHuong} cao={CAO} W={W} hep={hep} nguong={nguong} />
                 {/* Nhiệt độ mực đó, chữ nhỏ góc phải mỗi ô — để thấy nghịch nhiệt (trên ấm hơn dưới). */}
                 <div className="pointer-events-none absolute inset-0 flex">
                   {cot.map((c) => {

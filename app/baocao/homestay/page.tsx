@@ -75,6 +75,7 @@ type BookingDTO = {
   cancelledBy?: string;
   cancelReason?: string;
   createdAt: string;
+  createdByName?: string;
   /** Đã đóng phòng trên các OTA chưa — "" là CHƯA, phải nhắc. */
   otaLockedAt?: string;
   otaLockedBy?: string;
@@ -762,9 +763,11 @@ function BoardCard({
       {/* table-fixed + không đặt min-width: bảng CO cho lọt chiều ngang màn
           hình, khỏi kéo sang ngang — chữ dài thì cắt bớt, rê chuột đọc đủ. */}
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed border-collapse text-center text-xs">
+        {/* ĐIỆN THOẠI (chủ 16/09): chữ nhỏ hơn một nấc và tên phòng ĐƯỢC XUỐNG DÒNG thay vì cắt cụt —
+            cắt cụt thì "Phòng đôi 1 / Phòng đôi 2" đều thành "Phòng đ…", không biết cột nào là phòng nào. */}
+        <table className="w-full table-fixed border-collapse text-center text-[9px] sm:text-xs">
           <colgroup>
-            <col className="w-[86px]" />
+            <col className="w-[58px] sm:w-[86px]" />
             {columns.map((c) => (
               <col key={`${c.roomId}:${c.u}`} />
             ))}
@@ -776,7 +779,7 @@ function BoardCard({
               {columns.map((c) => (
                 <th
                   key={`${c.roomId}:${c.u}`}
-                  className="truncate border border-slate-200 bg-slate-50 px-0.5 py-1 text-[11px] font-bold text-slate-800"
+                  className="break-words border border-slate-200 bg-slate-50 px-0.5 py-1 align-top text-[9px] font-bold leading-tight text-slate-800 sm:truncate sm:text-[11px]"
                   title={roomUnitLabel(c.roomId, c.u)}
                 >
                   {roomUnitLabel(c.roomId, c.u)}
@@ -795,9 +798,9 @@ function BoardCard({
               ))}
             </tr>
             <tr>
-              <th className="sticky left-0 z-10 bg-white py-0.5 pr-2 text-left text-[10px] font-medium text-slate-400">Đơn giá</th>
+              <th className="sticky left-0 z-10 bg-white py-0.5 pr-2 text-left text-[9px] sm:text-[10px] font-medium text-slate-400">Đơn giá</th>
               {columns.map((c) => (
-                <th key={`${c.roomId}:${c.u}`} className="border border-slate-200 bg-slate-50/60 py-0.5 text-[10px] font-bold tabular-nums text-rose-600">
+                <th key={`${c.roomId}:${c.u}`} className="border border-slate-200 bg-slate-50/60 py-0.5 text-[9px] sm:text-[10px] font-bold tabular-nums text-rose-600">
                   {(c.room.pricePerNight / 1000).toLocaleString("vi-VN")}k
                 </th>
               ))}
@@ -810,7 +813,7 @@ function BoardCard({
               const dayCell = (
                 <td
                   className={
-                    "sticky left-0 z-10 truncate border border-slate-200 py-1 pl-1 pr-1 text-left text-[10px] font-semibold " +
+                    "sticky left-0 z-10 truncate border border-slate-200 py-1 pl-1 pr-1 text-left text-[9px] sm:text-[10px] font-semibold " +
                     (d === today ? "bg-sky-100 text-sky-800" : weekend ? "bg-emerald-50 text-slate-700" : "bg-white text-slate-700")
                   }
                 >
@@ -840,7 +843,7 @@ function BoardCard({
                             <td
                               key={`${c.roomId}:${c.u}`}
                               className={
-                                "truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
+                                "truncate border border-slate-200 px-0.5 py-1 text-[9px] sm:text-[10px] font-semibold " +
                                 (gd ? cellColor(gd.id) : weekend ? "bg-emerald-50/40" : "")
                               }
                               onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: gd })}
@@ -857,7 +860,7 @@ function BoardCard({
                               key={`${c.roomId}:${c.u}`}
                               onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: b2 })}
                               className={
-                                "cursor-pointer truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
+                                "cursor-pointer truncate border border-slate-200 px-0.5 py-1 text-[9px] sm:text-[10px] font-semibold " +
                                 (b2 ? cellColor(b2.id) : weekend ? "bg-emerald-50/40" : "")
                               }
                               title={b2 ? cellLabel(b2) : "Đoàn đã trả phòng này — bấm để ghi khách mới"}
@@ -871,7 +874,7 @@ function BoardCard({
                           <td
                             key={`${c.roomId}:${c.u}`}
                             onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: whole })}
-                            className="cursor-pointer truncate border border-rose-300 bg-rose-600 px-0.5 py-1 text-[10px] font-bold text-white"
+                            className="cursor-pointer truncate border border-rose-300 bg-rose-600 px-0.5 py-1 text-[9px] sm:text-[10px] font-bold text-white"
                             title={`${cellLabel(whole)} · bấm để sửa / trả trống · đã trả ${daTra.size} phòng`}
                           >
                             {dau ? cellLabel(whole) : ""}
@@ -895,7 +898,7 @@ function BoardCard({
                     </td>
                     <td
                       className={
-                        "truncate border border-slate-200 px-0.5 py-1 text-[10px] font-semibold " +
+                        "truncate border border-slate-200 px-0.5 py-1 text-[9px] sm:text-[10px] font-semibold " +
                         (gd ? cellColor(gd.id) : weekend ? "bg-emerald-50/40" : "")
                       }
                       title={gd ? `${cellLabel(gd)} · ${formatDateKeyVN(gd.checkIn)} → ${formatDateKeyVN(gd.checkOut)}` : "Phòng gia đình vẫn trống"}
@@ -920,7 +923,7 @@ function BoardCard({
                           key={`${c.roomId}:${c.u}`}
                           onClick={() => setEditing({ roomId: "dormitory", unit: 0, date: d, booking: solo })}
                           className={
-                            "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
+                            "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[9px] sm:text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
                             (taken ? "bg-cyan-50 text-cyan-900" : weekend ? "bg-emerald-50/40" : "")
                           }
                           title={
@@ -954,7 +957,7 @@ function BoardCard({
                         key={`${c.roomId}:${c.u}`}
                         onClick={() => setEditing({ roomId: c.roomId, unit: c.u, date: d, booking: b })}
                         className={
-                          "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
+                          "cursor-pointer break-words border border-slate-200 px-0.5 py-1 align-top text-[9px] sm:text-[10px] font-semibold leading-tight hover:outline hover:outline-1 hover:outline-sky-300 " +
                           (b ? cellColor(b.id) : weekend ? "bg-emerald-50/40 " : "")
                         }
                         title={
@@ -1065,6 +1068,23 @@ function CellModal({
   onClose: () => void;
 }) {
   const b = target.booking;
+  /**
+   * THÔNG TIN NHẬP BOOKING (chủ 16/09) — chữ nhỏ dưới đầu khung: nguồn, mã,
+   * ai nhập, lúc nào, ghi chú. Bấm vào ô nào cũng thấy đơn ấy từ đâu ra.
+   */
+  const dongNhap = b
+    ? [
+        `${SOURCE_BADGE[b.source]?.label ?? b.source}${b.ref ? ` #${b.ref}` : ""}`,
+        b.createdAt ? `nhập ${new Date(b.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}` : "",
+        b.createdByName ? `bởi ${b.createdByName}` : "",
+        b.rooms > 1 ? `${b.rooms} phòng` : "",
+        b.adults || b.children ? `${b.adults} NL${b.children ? ` ${b.children} TE` : ""}` : "",
+        b.email || "",
+        b.note ? `ghi chú: ${b.note}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
   /** Booking OTA/web: KHÔNG sửa được dữ liệu gốc — chỉ xem và HUỶ. */
   const readOnly = Boolean(b && b.source !== "manual" && b.source !== "b2b");
   const [name, setName] = useState(b?.guestName ?? "");
@@ -1100,6 +1120,7 @@ function CellModal({
             {formatVND(b.amount)}
             {b.prepaid ? " · OTA trả trước" : b.collect > 0 ? ` · còn thu ${formatVND(b.collect)}` : " · đã thu đủ"}
           </div>
+          {dongNhap && <div className="mt-1 break-words text-[10px] leading-tight text-slate-400">{dongNhap}</div>}
           <p className="mt-1.5 text-[11px] leading-tight text-slate-500">
             Booking từ {SOURCE_BADGE[b.source]?.label ?? b.source} — dữ liệu gốc không sửa tại ô; sửa chi tiết ở sổ
             đặt phòng bên dưới. Khách báo huỷ thì bấm Huỷ, phòng trống lại ngay.
@@ -1142,6 +1163,7 @@ function CellModal({
         <div className="mt-0.5 text-[11px] text-slate-500">
           {b ? "Sửa ô ghi tay — ô có chữ là phòng kín" : "Ghi vào ô là phòng kín đêm này"}
         </div>
+        {dongNhap && <div className="mt-1 break-words text-[10px] leading-tight text-slate-400">{dongNhap}</div>}
 
         {/* DÁN info đang giữ: điền form một phát, hoặc lưu luôn khỏi bấm thêm */}
         {!b && clipboard && (

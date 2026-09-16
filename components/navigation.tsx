@@ -219,7 +219,7 @@ export function Navigation() {
                         key={`hash-${item.hashId}`}
                         href={href}
                         onClick={(e) => handleHashClick(e, item.hashId)}
-                        className={`${coChuMenu} font-medium rounded-full py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                        className={`${coChuMenu} font-medium rounded-full py-2 transition-[background-color,box-shadow,transform] duration-300 transform hover:scale-105 ${base}`}
                       >
                         {item.label}
                       </Link>
@@ -230,7 +230,7 @@ export function Navigation() {
                     <Link
                       key={`path-${item.href}`}
                       href={item.href}
-                      className={`${coChuMenu} font-medium rounded-full py-2 transition-all duration-300 transform hover:scale-105 ${base}`}
+                      className={`${coChuMenu} font-medium rounded-full py-2 transition-[background-color,box-shadow,transform] duration-300 transform hover:scale-105 ${base}`}
                     >
                       {item.label}
                     </Link>

@@ -8,8 +8,8 @@
  * chút, đúng với bản chất số liệu.
  *
  * Hai thang khác nhau vì hai đại lượng khác nhau:
- *  - GIÓ TRUNG BÌNH theo thang chủ: < 4 bình thường (tốt) · 4–6 hơi mạnh ·
- *    6–8 mạnh · > 8 rất mạnh. Vàng bắt đầu ở 4, đỏ ở 8.
+ *  - GIÓ TRUNG BÌNH theo ngưỡng của điểm (chủ 16/09): xanh = nhẹ/vừa (≤ đẹp),
+ *    vàng = hơi mạnh (đẹp → cấm), đỏ = rất mạnh (> cấm); mặc định 4 / 7.
  *  - GIẬT không quyết định bay (gió 4 giật 12 là thường), nên vàng muộn hơn:
  *    10 ngả vàng, 14 đỏ dần, 16 (mốc cảnh báo) đỏ, 18+ đỏ thẫm.
  *
@@ -19,26 +19,32 @@
 
 type Moc = Array<[number, string]>;
 
+/** Ngưỡng gió của điểm bay: đẹp ≤ gioXanh · cấm > gioDo (m/s) — cùng số với NguongBay. */
+export type NguongMau = { gioXanh: number; gioDo: number };
+const NGUONG_MAU_MAC_DINH: NguongMau = { gioXanh: 4, gioDo: 7 };
+
 /**
- * Gió trung bình 10m (m/s) — NEO ĐÚNG BỐN BẬC CỦA CHỦ (chốt lại 11/09):
- * dưới 4 xanh · 4–6 vàng · 6–8 cam · trên 8 đỏ.
+ * Gió trung bình 10m (m/s) — BA BẬC THEO NGƯỠNG CỦA ĐIỂM (chủ 16/09):
+ * XANH = nhẹ & vừa (≤ gioXanh) · VÀNG = hơi mạnh (gioXanh → gioDo) · ĐỎ = rất
+ * mạnh (> gioDo). Đúng ngưỡng mà ô giờ tô xanh/vàng/đỏ, nên nhìn đâu cũng một
+ * thước; điểm nào chủ chỉnh ngưỡng ở ⚙ thì màu chạy theo.
  *
- * Vẫn chuyển dần giữa các mốc (5,9 và 6,1 chỉ khác nhau một chút, không nhảy
- * hẳn màu), nhưng ĐÚNG tại 4 phải đã là vàng và đúng tại 6 phải đã là cam —
- * trước đây 4,5 m/s còn ra xanh ngả vàng nên nhìn tưởng vẫn "gió tốt".
+ * Trong MỘT bậc vẫn đậm dần theo tốc độ (3,9 đậm hơn 1,9), nhưng KHÔNG ngả
+ * sang màu bậc kế: trước đây 3,9 m/s đã ngả vàng nên nhìn tưởng "hơi mạnh"
+ * trong khi ngưỡng đẹp là 4.
  */
-const MOC_GIO: Moc = [
-  [0, "#d1fae5"],
-  [2, "#86efac"],
-  [3.6, "#4ade80"],
-  [4, "#fde047"],
-  [5, "#facc15"],
-  [6, "#fb923c"],
-  [7, "#f97316"],
-  [8, "#ef4444"],
-  [10, "#b91c1c"],
-  [13, "#7f1d1d"],
-];
+function mocGio(n: NguongMau): Moc {
+  const x = Math.max(0.5, n.gioXanh);
+  const d = Math.max(x + 0.5, n.gioDo);
+  return [
+    [0, "#d1fae5"],
+    [x, "#4ade80"],
+    [x + 0.001, "#fde047"],
+    [d, "#f59e0b"],
+    [d + 0.001, "#ef4444"],
+    [d + 5, "#7f1d1d"],
+  ];
+}
 
 /** Gió giật (m/s). */
 const MOC_GIAT: Moc = [
@@ -78,9 +84,9 @@ function troiMau(v: number, moc: Moc): string {
   return moc[moc.length - 1][1];
 }
 
-/** Màu nền ô gió trung bình. */
-export function mauGio(v: number): string {
-  return troiMau(v, MOC_GIO);
+/** Màu nền ô gió trung bình — truyền ngưỡng của điểm để đúng thước; thiếu thì 4/7. */
+export function mauGio(v: number, nguong?: NguongMau | null): string {
+  return troiMau(v, mocGio(nguong ?? NGUONG_MAU_MAC_DINH));
 }
 
 /** Màu nền ô gió giật. */
@@ -96,8 +102,8 @@ export function chuTrenNen(hex: string): string {
 }
 
 /** Cặp style sẵn cho ô bảng: nền + màu chữ. */
-export function styleGio(v: number): { background: string; color: string } {
-  const bg = mauGio(v);
+export function styleGio(v: number, nguong?: NguongMau | null): { background: string; color: string } {
+  const bg = mauGio(v, nguong);
   return { background: bg, color: chuTrenNen(bg) };
 }
 
