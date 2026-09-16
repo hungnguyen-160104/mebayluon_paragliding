@@ -245,7 +245,7 @@ export function nhanDinhNgay(
     if (huong !== null) {
       noi += `, hướng trội ${huongChu(huong)}`;
       if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau)) {
-        noi += " — NGƯỢC SƯỜN";
+        noi += " — GIÓ SAU";
         tong = "xau";
       } else if (opts.luatHuong?.tot && trongCung(huong, opts.luatHuong.tot)) {
         /** Nói thẳng "gió chính bãi": chủ 11/09 — gió Bắc ở Đồi Bù là gió ĐẸP, đọc mà không thấy chữ ấy thì tưởng bình thường. */
@@ -275,15 +275,15 @@ export function nhanDinhNgay(
         const tenHuong = [...new Set(nguoc.map((g) => huongChu(g.huong)))].join(", ");
         if (!thuan.length) {
           tong = "xau";
-          khuyenCao.push(`Ngược sườn CẢ NGÀY (gió ${tenHuong}) — bãi này không bay được hướng ấy.`);
+          khuyenCao.push(`GIÓ SAU cả ngày (gió ${tenHuong}) — bãi này không bay được hướng ấy.`);
         } else if (nguoc.length >= thuan.length) {
           if (tong !== "xau") tong = "chuY";
           khuyenCao.push(
-            `Ngược sườn phần lớn ngày (gió ${tenHuong}); lọt khe ${khungCua(thuan)} khi gió xoay ${[...new Set(thuan.map((g) => huongChu(g.huong)))].join("/")} — chỉ bay trong khung ấy.`,
+            `Gió sau phần lớn ngày (gió ${tenHuong}); lọt khe ${khungCua(thuan)} khi gió xoay ${[...new Set(thuan.map((g) => huongChu(g.huong)))].join("/")} — chỉ bay trong khung ấy.`,
           );
         } else {
           if (tong === "thongTin") tong = "chuY";
-          khuyenCao.push(`Ngược sườn ${khungCua(nguoc)} (gió ${tenHuong}) — tránh cất cánh đúng khung ấy.`);
+          khuyenCao.push(`Gió sau ${khungCua(nguoc)} (gió ${tenHuong}) — tránh cất cánh đúng khung ấy.`);
         }
       }
     }
@@ -294,7 +294,7 @@ export function nhanDinhNgay(
       icon: "🌬",
       ten: "Gió mặt đất",
       noiDung: noi,
-      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) ? " ngược sườn" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
+      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) ? " gió sau" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
       tong,
     });
   }
@@ -926,8 +926,8 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
    * cần chờ gió dịu). Hướng cấm thì có dịu cũng không bay.
    */
   const gioDat = tim("Gió mặt đất");
-  if (gioDat?.tong === "xau" && gioDat.ngan.includes("ngược sườn")) {
-    return `Ngày NGƯỢC SƯỜN: ${gioDat.ngan.replace(/ ngược sườn.*$/, "")} — bãi này không bay được hướng ấy${gioDat.ngan.includes("đổi hướng") ? "; xem giờ gió xoay trong bảng" : ""}`;
+  if (gioDat?.tong === "xau" && gioDat.ngan.includes("gió sau")) {
+    return `Ngày GIÓ SAU: ${gioDat.ngan.replace(/ gió sau.*$/, "")} — bãi này không bay được hướng ấy${gioDat.ngan.includes("đổi hướng") ? "; xem giờ gió xoay trong bảng" : ""}`;
   }
   if (gioCao?.tong === "xau") return "Ngày GIÓ TRÊN CAO RẤT MẠNH: mặt đất có thể lặng nhưng lên vài trăm mét là bị thổi lùi — không bay";
   /** Mưa cả ngày hay mù cả ngày quyết định hơn mọi chỉ số thermal — xét trước. */

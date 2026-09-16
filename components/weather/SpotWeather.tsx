@@ -353,10 +353,17 @@ function KhoiViTri({
       <span className="font-bold text-slate-800">📍 {toaDo.ten}</span>
       {/* Độ cao chỉ ghi MỘT LẦN ở dòng "bãi cất → bãi hạ" (chủ 16/09); điểm chưa
           khai bãi hạ thì mới ghi cao độ kèm toạ độ để khỏi mất số. */}
-      <span className="tabular-nums">
+      {/* Toạ độ là LINK Google Maps (chủ 16/09): bấm là ra đúng chỗ bãi cất. */}
+      <a
+        href={`https://www.google.com/maps?q=${toaDo.lat},${toaDo.lon}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="tabular-nums underline decoration-dotted hover:text-sky-700"
+        title="Google Maps"
+      >
         {toaDo.lat.toFixed(4)}, {toaDo.lon.toFixed(4)}
         {toaDo.alt && toaDo.altHa === undefined ? ` · ${toaDo.alt}m` : ""}
-      </span>
+      </a>
       {/* Độ cao THẢ = cất − hạ: thứ quyết định chuyến dài bao lâu khi không có nâng. */}
       {toaDo.alt !== undefined && toaDo.altHa !== undefined && (
         <span className="font-semibold text-slate-700">

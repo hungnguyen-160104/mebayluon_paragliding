@@ -1,5 +1,10 @@
 # Thời tiết bay — cấu hình và nguồn dữ liệu
 
+> **Thuật ngữ (chủ chốt 16/09/2026):** gió thổi vào bãi cất gọi là **GIÓ CHÍNH
+> BÃI**, gió thổi từ sau lưng bãi gọi là **GIÓ SAU** — không dùng "thuận sườn /
+> ngược sườn". Gió địa hình gọi là **gió núi**, không gọi "gió sườn". Độ cao
+> ghi **AMSL** (so với mực biển); riêng đỉnh thermal ghi **AGL** (so với mặt đất).
+
 ## 1. Đang chạy bằng gì (không cần khai gì thêm)
 
 Hệ thống **đang chạy được ngay, không cần khoá, không tốn tiền**:
@@ -364,7 +369,7 @@ chiếu được với cảm nhận của mình, và cái sai của máy lộ ra
 
 | Mục | Dựa vào | Nói gì |
 |---|---|---|
-| 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | thuận/ngược sườn; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
+| 🌬 Gió mặt đất | gió 10m TB/max, hướng trội (trung bình véc-tơ), luật hướng | gió chính bãi / gió sau; **đổi hướng giữa ngày** (sáng–chiều lệch ≥ 60°) |
 | 🪁 Gió trên cao | gió **tại bãi cất** và **nội suy tại tầng bay +300 m trên bãi** (ghi AMSL, ví dụ "650 m AMSL (+300 m trên bãi)") từ các mực 925/850/700 hPa và mặt đất (mốc nằm dưới bãi bị bỏ); +1.000 m chỉ nói riêng cho "leo cao" | "Gió tại 650 m AMSL MẠNH từ 11:00 — bám sườn"; > 12 m/s: bị thổi lùi, không bay; +1.000 m > 12: không leo cao; bãi cất lặng mà tầng bay đã có gió: **gió đứt ngay trên bãi** |
 | ☀️ Nắng | `sunshine_duration` cộng trong khung 7–17h | số giờ nắng / 11; < 3h: âm u, thermal yếu |
 | 🔥 Thermal | trần lớp xáo trộn, CAPE, bức xạ | yếu · vừa · tốt · **gắt từ mấy giờ**; khung nâng tốt |
@@ -416,9 +421,9 @@ chở khách (không phải bay thể thao), nhân trọng số rồi cộng:
 
 | Yếu tố | Trọng số | Đường cong (điểm theo số đo) |
 |---|---|---|
-| Gió mặt đất | 25 | 0 m/s → 65 · 1,5–4 → 100 · 6 → 55 · ngưỡng cấm → 25 · quá → 0. **Thuận sườn** thì 4–6 m/s vẫn 85–100 |
+| Gió mặt đất | 25 | 0 m/s → 65 · 1,5–4 → 100 · 6 → 55 · ngưỡng cấm → 25 · quá → 0. **Gió chính bãi** thì 4–6 m/s vẫn 85–100 |
 | Gió giật | 10 | ≤ 6 → 100 · 10 → 92 · 14 → 75 · 18 → 30 · quá 18 → 0. **Hệ số giật** > 3× kèm giật ≥ 8: −15 ("từng đợt") |
-| Hướng gió | 15 | gió chính bãi 100 · chéo sườn 55 · chưa khai luật 80 · **ngược sườn / gió xiết 0** |
+| Hướng gió | 15 | gió chính bãi 100 · chéo sườn 55 · chưa khai luật 80 · **gió sau / gió xiết 0** |
 | Gió trên cao | 15 | mực 500m trên bãi: ≤ 5 → 100 · 8 → 65 · 12 → 15 · 14 → 0. **Cắt gió** (mặt đất lặng, 300m có gió): −20 |
 | Thermal / ổn định | 10 | trần 500–1500 m → 100 · 300 → 70 · 2200 → 65 · 3000 → 40. LI ≤ −2: −20 · ≤ −4: −35 · ≥ 6: −10 |
 | Trần mây / mù | 10 | trời quang 100 · mây thấp dày: trần < 150 m → 0 · 300 → 45 · 500 → 75 · 800 → 100 · **sương mù 0** |
@@ -814,7 +819,7 @@ hướng khai riêng từng điểm, không có mặc định chung.
 | | |
 |---|---|
 | **Gió tốt** | Đông, Đông Bắc (23°–112°) — nhẹ, vừa, **hơi mạnh đều đẹp**; hơi mạnh thì thermal lên mạnh nhất |
-| **Gió xấu** | Đông Nam, Nam, Tây Nam, Tây (113°–292°) — ngược sườn, **không bay bất kể tốc độ** |
+| **Gió xấu** | Đông Nam, Nam, Tây Nam, Tây (113°–292°) — gió sau, **không bay bất kể tốc độ** |
 | **Cảnh báo gió xiết** | Bắc, Đông hoặc Tây **khi gió đã mạnh** (> 6 m/s) — gió luồn khe đèo rồi tăng tốc đột ngột ngay mép bãi |
 | **Trần tốc độ theo hướng** | Tây > 5 m/s · Nam > 6 m/s · **Đông > 6 m/s** — quá là đỏ |
 
@@ -850,22 +855,22 @@ tên hướng để viết ra lý do cho người đọc ("gió Đông 6,5 m/s �
 trên 6 m/s"). Hướng vừa quá trần vừa nằm trong danh sách luồn khe thì câu lý do
 nói cả hai.
 
-Lưu ý về Khau Phạ: **Tây và Nam đang nằm trong cung ngược sườn** nên bị cấm ở
+Lưu ý về Khau Phạ: **Tây và Nam đang nằm trong cung gió sau** nên bị cấm ở
 mọi tốc độ; hai trần 5 và 6 m/s khai thêm cho đúng chữ của chủ và để nếu sau
-này mở cung ngược sườn ra thì trần vẫn còn nguyên.
+này mở cung gió sau ra thì trần vẫn còn nguyên.
 
 ### Bãi cấm hướng thì nói rõ "cả ngày" hay "lọt khe"
 
-Nói "hướng trội ngược sườn" thôi thì chưa đủ: người trực cần biết **ngược cả
+Nói "hướng trội gió sau" thôi thì chưa đủ: người trực cần biết **ngược cả
 ngày** hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn lọt khe bay được — và
 đúng mấy tiếng ấy là thứ phải hẹn khách. Nên bộ nhận định đếm từng giờ trong
 khung bay rồi viết ra một trong ba câu:
 
-- ngược cả ngày → *"Ngược sườn CẢ NGÀY (gió TB, B, BĐB) — bãi này không bay được
+- ngược cả ngày → *"GIÓ SAU cả ngày (gió TB, B, BĐB) — bãi này không bay được
   hướng ấy, không bay được."*
-- ngược phần lớn → *"Ngược sườn phần lớn ngày; lọt khe 13–16h khi gió xoay Đ —
+- ngược phần lớn → *"Gió sau phần lớn ngày; lọt khe 13–16h khi gió xoay Đ —
   chỉ bay trong khung ấy."*
-- ngược vài tiếng → *"Ngược sườn 09–11h (gió B) — tránh cất cánh đúng khung ấy."*
+- ngược vài tiếng → *"Gió sau 09–11h (gió B) — tránh cất cánh đúng khung ấy."*
 
 ## 7. Toạ độ điểm bay
 
@@ -934,7 +939,7 @@ thực tế), máy tính và hiện trong khối tím 🎓:
 - **“Ngày cũ giống ngày này”**: từ **5 ngày** trở lên, mỗi ngày trên dải 5 ngày
   được đối chiếu với kho ngày cũ, hiện ba ngày có số gần giống nhất kèm kết quả
   thật và ghi chú của chính anh — *“12/08 · nghỉ bay · gió 5,5 giật 9,0 m/s —
-  ‘gió xuôi sườn từ trưa’”*. Cách học này hợp với dữ liệu ít (vài chục ngày là
+  ‘gió sau từ trưa’”*. Cách học này hợp với dữ liệu ít (vài chục ngày là
   dùng được, trong khi mô hình huấn luyện tử tế cần hàng nghìn) và **giải thích
   được**: máy chìa ra bằng chứng chứ không phán một con số.
 
@@ -950,7 +955,7 @@ khối tím hiện ra.
 
 1. **Ô NHẬN ĐỊNH (chữ) + nút 💾 Gửi nhận định.** Viết tự do, không cần chọn
    mức: máy nói gì đúng, gì sai, thực tế trời ra sao. Ví dụ: *"Máy chấm gió
-   7 m/s cấm bay, nhưng hướng đông nam thuận sườn, thực tế chỉ 4–5, sáng bay
+   7 m/s cấm bay, nhưng hướng đông nam là gió chính bãi, thực tế chỉ 4–5, sáng bay
    tốt tới 10h."* Bấm gửi là xong, câu ấy hiện ngay trên thẻ và trên web
    khách, ký tên người viết. Ô này có ở **cả ngày sắp tới lẫn ngày đã qua** —
    ngày tới là đọc trời trước, ngày qua là chỉ ra máy sai ở đâu.

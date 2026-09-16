@@ -972,7 +972,7 @@ export function chamGio(
   const manh = suc === "manh" || suc === "ratManh";
   const capVuot = capTocBiVuot(g.huong, g.gio10m, luat);
   if (luat?.xau && trongCung(g.huong, luat.xau)) {
-    lyDo.push(`gió ${huongChu(g.huong)} — ngược sườn cất cánh, không bay`);
+    lyDo.push(`gió ${huongChu(g.huong)} — GIÓ SAU (thổi sau lưng bãi cất), không bay`);
     len("do");
   } else if (capVuot) {
     /**
@@ -994,7 +994,7 @@ export function chamGio(
     /** Không thêm "— gió chính bãi" ở hàng giờ: người đọc thấy chữ đó không biết làm gì với nó (luật chủ 10/09). */
     lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]}`);
   } else if (!huongThuanLoi(g.huong, huongThuan)) {
-    lyDo.push(`gió hướng ${huongChu(g.huong)} — ngược sườn cất cánh`);
+    lyDo.push(`gió hướng ${huongChu(g.huong)} — gió sau bãi cất`);
     len("do");
   }
 

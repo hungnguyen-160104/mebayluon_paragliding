@@ -189,13 +189,13 @@ export function danhGiaGio(
     let ghi = `${huongChu(g.huong)} — chưa khai luật hướng`;
     if (xau) {
       diem = 0;
-      ghi = `${huongChu(g.huong)} — NGƯỢC SƯỜN`;
+      ghi = `${huongChu(g.huong)} — GIÓ SAU`;
     } else if (xiet) {
       diem = 0;
       ghi = `${huongChu(g.huong)} mạnh — GIÓ XIẾT luồn khe`;
     } else if (huongTot) {
       diem = 100;
-      ghi = `${huongChu(g.huong)} — đúng hướng bãi`;
+      ghi = `${huongChu(g.huong)} — GIÓ CHÍNH BÃI`;
     } else if (luat?.tot) {
       diem = 55;
       ghi = `${huongChu(g.huong)} — chéo sườn`;

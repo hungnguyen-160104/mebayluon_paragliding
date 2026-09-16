@@ -451,10 +451,16 @@ export function ThoiTietCard({
           {ngayChon && (
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
               <span className="font-bold text-slate-800">📍 {du.toaDo.ten}</span>
-              <span className="tabular-nums">
+              <a
+                href={`https://www.google.com/maps?q=${du.toaDo.lat},${du.toaDo.lon}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="tabular-nums underline decoration-dotted hover:text-sky-700"
+                title="Mở Google Maps đúng chỗ này"
+              >
                 {du.toaDo.lat.toFixed(4)}, {du.toaDo.lon.toFixed(4)}
                 {du.toaDo.alt ? ` · cao ${du.toaDo.alt}m` : ""}
-              </span>
+              </a>
               <span className="tabular-nums">
                 khung bay {String(du.toaDo.gioBay?.[0] ?? 7).padStart(2, "0")}:00–{String(du.toaDo.gioBay?.[1] ?? 17).padStart(2, "0")}:00
               </span>
@@ -1171,7 +1177,7 @@ function ChamKinhNghiem({
           }}
           rows={3}
           maxLength={2000}
-          placeholder="Nhận định của anh: máy nói gì đúng, gì sai, thực tế trời ra sao… VD: “Máy chấm gió 7 m/s cấm bay, nhưng hướng đông nam thuận sườn, thực tế chỉ 4–5, sáng bay tốt tới 10h.”"
+          placeholder="Nhận định của anh: máy nói gì đúng, gì sai, thực tế trời ra sao… VD: “Máy chấm gió 7 m/s cấm bay, nhưng hướng đông nam là gió chính bãi, thực tế chỉ 4–5, sáng bay tốt tới 10h.”"
           className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-[12px] leading-snug outline-none focus:border-violet-500"
         />
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -1217,7 +1223,7 @@ function ChamKinhNghiem({
         <input
           value={ghiChu}
           onChange={(e) => setGhiChu(e.target.value)}
-          placeholder={noiTruoc ? "Vì sao anh đoán vậy: gió đông nam, mây cao…" : "Thực tế: gió xuôi sườn cả chiều, mây thấp…"}
+          placeholder={noiTruoc ? "Vì sao anh đoán vậy: gió đông nam, mây cao…" : "Thực tế: gió sau cả chiều, mây thấp…"}
           className="h-7 min-w-[180px] flex-1 rounded-lg border border-slate-300 px-2 text-[11px] outline-none focus:border-sky-500"
         />
       </div>
@@ -1425,7 +1431,7 @@ function CaiDatDiem({
       </div>
       <div className="mt-1 text-[10px] text-slate-500">
         0 = bắc, 90 = đông, 180 = nam, 270 = tây. Ví dụ sườn hướng đông nam thì để 90 → 180: gió ngoài cung này máy chấm
-        đỏ vì thổi ngược sườn.
+        đỏ vì là gió sau.
       </div>
 
       <div className="mt-2 text-[11px] font-bold text-slate-800">Khung giờ bay của điểm</div>
