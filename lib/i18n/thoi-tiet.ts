@@ -108,6 +108,8 @@ export type ThoiTietCopy = {
   error: string;
   retry: string;
   seeSpot: string;
+  /** Dòng nhắc trên dải ngày: bấm vào ngày để mở chi tiết + phân tích (chủ 16/09). */
+  tapDayHint: string;
   /** Nhãn hàng "mặt đất" trong airgram. */
   ground: string;
   /** Chú thích dưới biểu đồ nhiều ngày. */
@@ -255,6 +257,7 @@ const vi: ThoiTietCopy = {
   error: "Chưa lấy được dự báo thời tiết",
   retry: "Thử lại",
   seeSpot: "Chi tiết điểm bay",
+  tapDayHint: "👆 Bấm vào ngày bay để xem chi tiết và phân tích dự báo",
   ground: "mặt đất",
   swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
   sunrise: "Mặt trời mọc",
@@ -388,6 +391,7 @@ const en: ThoiTietCopy = {
   error: "Could not load the weather forecast",
   retry: "Try again",
   seeSpot: "Site details",
+  tapDayHint: "👆 Tap a flying day to see the detailed forecast and analysis",
   ground: "ground",
   swipeDays: "Swipe sideways for the next days · tap a day above to jump there · rain bars: blue = rain, orange = thundery showers",
   sunrise: "Sunrise",
@@ -522,6 +526,7 @@ const fr: ThoiTietCopy = {
   error: "Impossible de charger les prévisions",
   retry: "Réessayer",
   seeSpot: "Détails du site",
+  tapDayHint: "👆 Touchez un jour de vol pour voir le détail et l'analyse de la prévision",
   ground: "sol",
   swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus · barres de pluie : bleu = pluie, orange = averses orageuses",
   sunrise: "Lever du soleil",
@@ -655,6 +660,7 @@ const ru: ThoiTietCopy = {
   error: "Не удалось загрузить прогноз погоды",
   retry: "Повторить",
   seeSpot: "Подробнее о площадке",
+  tapDayHint: "👆 Нажмите на день полёта, чтобы увидеть подробный прогноз и анализ",
   ground: "земля",
   swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше · столбики осадков: синий — дождь, оранжевый — ливни с грозой",
   sunrise: "Восход",
@@ -788,6 +794,7 @@ const zh: ThoiTietCopy = {
   error: "无法获取天气预报",
   retry: "重试",
   seeSpot: "飞行点详情",
+  tapDayHint: "👆 点击飞行日期查看详细预报与分析",
   ground: "地面",
   swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转 · 降雨柱：蓝色为降雨，橙色为雷阵雨",
   sunrise: "日出",
@@ -920,6 +927,7 @@ const hi: ThoiTietCopy = {
   error: "मौसम पूर्वानुमान नहीं मिल सका",
   retry: "फिर कोशिश करें",
   seeSpot: "स्थल विवरण",
+  tapDayHint: "👆 विस्तृत पूर्वानुमान और विश्लेषण देखने के लिए उड़ान के दिन पर टैप करें",
   ground: "ज़मीन",
   swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें · वर्षा स्तंभ: नीला = वर्षा, नारंगी = गरज के साथ बौछार",
   sunrise: "सूर्योदय",

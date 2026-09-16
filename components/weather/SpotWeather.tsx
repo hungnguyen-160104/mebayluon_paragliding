@@ -1268,6 +1268,8 @@ export function WeatherSpotCard({
         {ngayHien.xacSuatDongMax >= 20 ? ` · ⚡ ${t.storm} ${ngayHien.xacSuatDongMax}%` : ""}
       </div>
 
+      {/* Chữ chỉ dẫn (chủ 16/09): khách không biết ô ngày bấm được */}
+      <p className="mt-2 text-[11px] font-semibold leading-tight text-sky-800">{t.tapDayHint}</p>
       <DaiNgay
         ngay={du.ngay}
         chon={chonHienTai}
