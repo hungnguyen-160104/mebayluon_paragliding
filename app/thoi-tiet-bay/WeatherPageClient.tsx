@@ -14,6 +14,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 import Footer from "@/components/footer/Footer";
 import { PageBackground } from "@/components/page-background";
@@ -106,6 +108,28 @@ export default function WeatherPageClient() {
             </p>
           </>
         ) : null}
+
+        {/* ---- SÁCH "THẤU HIỂU BẦU TRỜI" (chủ 16/09): ai đọc dự báo mà muốn hiểu vì sao, có sách. ---- */}
+        <Link
+          href="/store/sach-du-luon/sach-thau-hieu-bau-troi-tieng-viet"
+          className="mt-6 flex items-center gap-4 rounded-2xl border border-amber-300/60 bg-amber-50/95 p-3 text-slate-900 shadow-lg backdrop-blur-sm transition hover:bg-amber-100 sm:p-4"
+        >
+          <Image
+            src="https://res.cloudinary.com/dxtzvakgd/image/upload/v1779688205/uploads/posts/gh7ssh9pneupo9afytic.png"
+            alt={t.bookTitle}
+            width={112}
+            height={150}
+            className="h-28 w-auto shrink-0 rounded-lg object-cover shadow-md sm:h-36"
+          />
+          <div className="min-w-0">
+            <div className="text-xs font-bold uppercase tracking-wide text-amber-800">{t.bookKicker}</div>
+            <div className="mt-0.5 font-serif text-base font-bold leading-snug sm:text-lg">{t.bookTitle}</div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-700 sm:text-sm">{t.bookPitch}</p>
+            <span className="mt-2 inline-block rounded-lg bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+              {t.bookCta} →
+            </span>
+          </div>
+        </Link>
 
         {/* ---- Phần chữ: để CUỐI trang, sau khi người đọc đã có câu trả lời ---- */}
         <div className="mt-10 space-y-2 rounded-2xl bg-black/30 p-4 text-sm leading-relaxed text-white/95 backdrop-blur-sm">

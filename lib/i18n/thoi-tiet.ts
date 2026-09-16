@@ -107,6 +107,11 @@ export type ThoiTietCopy = {
   goodHours: string;
   /** Câu dưới thẻ. */
   source: string;
+  /** Khối giới thiệu sách "Thấu hiểu bầu trời" cuối phần dự báo (chủ 16/09). */
+  bookKicker: string;
+  bookTitle: string;
+  bookPitch: string;
+  bookCta: string;
   updated: string;
   loading: string;
   error: string;
@@ -259,6 +264,10 @@ const vi: ThoiTietCopy = {
   noWindow: "Không có khung giờ đẹp",
   goodHours: "giờ đẹp",
   source: "Nguồn",
+  bookKicker: "📖 Muốn hiểu bầu trời sâu hơn?",
+  bookTitle: "Thấu hiểu bầu trời — Understanding the Sky (bản tiếng Việt)",
+  bookPitch: "Nếu bạn muốn học và có nhiều kiến thức về khí tượng dành riêng cho bay lượn — gió sườn, thermal, mây, gió đứt, đọc trời trước khi cất cánh — thì nên đọc cuốn sách này. Đây là sách khí tượng kinh điển của dân dù lượn và diều lượn trên thế giới, do Mebayluon dịch và phát hành tiếng Việt.",
+  bookCta: "Xem sách trong cửa hàng",
   updated: "Cập nhật",
   loading: "Đang lấy dự báo…",
   error: "Chưa lấy được dự báo thời tiết",
@@ -396,6 +405,10 @@ const en: ThoiTietCopy = {
   noWindow: "No good window",
   goodHours: "good hours",
   source: "Source",
+  bookKicker: "📖 Want to understand the sky more deeply?",
+  bookTitle: "Understanding the Sky — Vietnamese edition",
+  bookPitch: "If you want to learn real meteorology made for free flight — ridge wind, thermals, clouds, wind shear, reading the sky before launch — read this book. It is the classic weather book of paraglider and hang-glider pilots worldwide, translated and published in Vietnamese by Mebayluon.",
+  bookCta: "See the book in our store",
   updated: "Updated",
   loading: "Loading forecast…",
   error: "Could not load the weather forecast",
@@ -534,6 +547,10 @@ const fr: ThoiTietCopy = {
   /** Ngắn để vừa ô ngày 10 ngày (chủ 14/09: "8 heures favorables" tràn ô). */
   goodHours: "h de vol",
   source: "Source",
+  bookKicker: "📖 Envie de mieux comprendre le ciel ?",
+  bookTitle: "Understanding the Sky — édition vietnamienne",
+  bookPitch: "Si vous voulez apprendre une vraie météo pensée pour le vol libre — vent de pente, thermiques, nuages, cisaillement, lire le ciel avant de décoller — lisez ce livre. C'est le classique des parapentistes et deltistes du monde entier, traduit et édité en vietnamien par Mebayluon.",
+  bookCta: "Voir le livre dans la boutique",
   updated: "Mis à jour",
   loading: "Chargement des prévisions…",
   error: "Impossible de charger les prévisions",
@@ -671,6 +688,10 @@ const ru: ThoiTietCopy = {
   noWindow: "Нет подходящего окна",
   goodHours: "ч. полёта",
   source: "Источник",
+  bookKicker: "📖 Хотите глубже понимать небо?",
+  bookTitle: "Understanding the Sky — вьетнамское издание",
+  bookPitch: "Если вы хотите по-настоящему изучить метеорологию для свободного полёта — динамик, термики, облака, сдвиг ветра, чтение неба перед стартом — прочитайте эту книгу. Это классика парапланеристов и дельтапланеристов всего мира, переведённая и изданная на вьетнамском Mebayluon.",
+  bookCta: "Посмотреть книгу в магазине",
   updated: "Обновлено",
   loading: "Загрузка прогноза…",
   error: "Не удалось загрузить прогноз погоды",
@@ -808,6 +829,10 @@ const zh: ThoiTietCopy = {
   noWindow: "无合适时段",
   goodHours: "小时适飞",
   source: "数据来源",
+  bookKicker: "📖 想更深入地读懂天空？",
+  bookTitle: "Understanding the Sky —— 越南语版",
+  bookPitch: "如果你想学习专为自由飞行而写的气象知识——山坡风、热气流、云、风切变、起飞前读天——请读这本书。它是全球滑翔伞与悬挂滑翔飞行员的经典气象书，由 Mebayluon 翻译并以越南语出版。",
+  bookCta: "到商店查看这本书",
   updated: "更新于",
   loading: "正在获取预报…",
   error: "无法获取天气预报",
@@ -944,6 +969,10 @@ const hi: ThoiTietCopy = {
   noWindow: "कोई अच्छा समय नहीं",
   goodHours: "अच्छे घंटे",
   source: "स्रोत",
+  bookKicker: "📖 आसमान को और गहराई से समझना चाहते हैं?",
+  bookTitle: "Understanding the Sky — वियतनामी संस्करण",
+  bookPitch: "यदि आप फ्री-फ़्लाइट के लिए बनी असली मौसम-विद्या सीखना चाहते हैं — ढलान की हवा, थर्मल, बादल, विंड शियर, उड़ान से पहले आसमान पढ़ना — तो यह किताब पढ़ें। यह दुनिया भर के पैराग्लाइडर और हैंग-ग्लाइडर पायलटों की क्लासिक मौसम पुस्तक है, जिसे Mebayluon ने वियतनामी में अनुवादित और प्रकाशित किया है।",
+  bookCta: "स्टोर में किताब देखें",
   updated: "अद्यतन",
   loading: "पूर्वानुमान लाया जा रहा है…",
   error: "मौसम पूर्वानुमान नहीं मिल सका",
