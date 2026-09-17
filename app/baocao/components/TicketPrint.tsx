@@ -269,19 +269,19 @@ function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): s
   return `
   <section class="ve sapa">
     <div class="dau">
-      <img class="logo" src="/logo-mbl-in.png" alt="" />
+      <img class="logo sapa-logo" src="/logo-sapa-in.png" alt="" />
       <div class="ten">SAPA PARAGLIDING<br/><small>BOARDING TICKET</small></div>
     </div>
     ${khoiSo(b, guestNo, "du")}
-    <div class="sapa-ngay">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</div>
-    <div class="sapa-ten${ten.length > 22 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</div>
     <div class="sapa-than">
-      ${qrVe && b.veQr ? `<div class="sapa-qr">${qrVe}<div class="sapa-qr-nhan">Phi công quét mã</div></div>` : ""}
+      ${qrVe && b.veQr ? `<div class="sapa-qr">${qrVe}<div class="sapa-qr-nhan">Scan before flight</div></div>` : ""}
       <div class="sapa-phai">
+        <div class="sapa-ngay">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</div>
+        <div class="sapa-ten${ten.length > 16 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</div>
         ${extras.length ? `<div class="sapa-dv">${esc(dv)}</div>` : ""}
-        <div class="sapa-dong"><span>In vé</span><b>${esc(luc.slice(0, 11))}</b></div>
       </div>
     </div>
+    <div class="sapa-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><b>www.paraglidingsapa.com</b></div>
     <div class="luuy">Please keep this ticket safe and hand it to your pilot before the flight.</div>
   </section>`;
 }
@@ -413,17 +413,22 @@ const CSS = `
   .ve.sapa .sapa-qr { flex: 0 0 25mm; text-align: center; }
   .ve.sapa .sapa-qr svg { width: 25mm; height: 25mm; display: block; }
   .ve.sapa .sapa-qr-nhan { font-size: 9.5px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
-  .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+  .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
   .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
   .ve.sapa .sapa-dong span { color: #222; flex: none; }
   .ve.sapa .sapa-dong b { font-weight: 800; overflow: hidden; text-overflow: clip; text-align: right; color: #000; }
   .ve.sapa .sapa-dong b.dai { font-size: 10.5px; }
-  .ve.sapa .sapa-ngay { font-size: 14px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
-  .ve.sapa .sapa-ten { font-size: 15px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: clip; border-bottom: 1px dotted #999; padding-bottom: 2px; }
-  .ve.sapa .sapa-ten.dai { font-size: 12.5px; }
+  /* Ngày + tên đứng CẠNH QR (chủ 18/09) — cột phải rộng ~44mm, tên dài thì co chữ hoặc xuống 2 dòng */
+  .ve.sapa .sapa-ngay { font-size: 14px; font-weight: 800; white-space: nowrap; }
+  .ve.sapa .sapa-ten { font-size: 14px; font-weight: 900; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; border-bottom: 1px dotted #999; padding-bottom: 2px; }
+  .ve.sapa .sapa-ten.dai { font-size: 12px; }
   /* Dịch vụ đi kèm nổi bật để phi công chuẩn bị (360 / flycam / cờ đỏ) */
   .ve.sapa .sapa-dv { border: 2px solid #000; border-radius: 4px; padding: 3px 4px; font-size: 13px; font-weight: 900; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
-  .ve.sapa .luuy { margin-top: auto; font-size: 10.5px; white-space: normal; line-height: 1.25; }
+  /* Logo khỉ Sa Pa (bản xám tương phản cao cho máy in nhiệt) to hơn logo MBL một chút vì hình ngang */
+  .ve.sapa .sapa-logo { width: 12mm; height: 10mm; }
+  .ve.sapa .sapa-cuoi { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; font-size: 10.5px; white-space: nowrap; }
+  .ve.sapa .sapa-cuoi b { font-weight: 800; letter-spacing: .2px; }
+  .ve.sapa .luuy { margin-top: 2px; font-size: 10.5px; white-space: normal; line-height: 1.25; }
 `;
 
 /**

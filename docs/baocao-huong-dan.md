@@ -369,14 +369,16 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 
 > **SA PA — MỘT LIÊN DUY NHẤT 80×80 mm** (chủ 17–18/09): không liên khách giữ,
 > không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông, đầu vé **SAPA
-> PARAGLIDING · BOARDING TICKET**: số thứ tự + mã chống sao chép, dòng ngày bay
-> + giờ hẹn và dòng tên (không nhãn "Ngày bay"/"Khách" cho đỡ tốn mực), **tên
-> viết tắt một phần** ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), **QR vé
-> 25 mm để phi công quét**, ô **dịch vụ đi kèm** in đậm (chỉ khi có 360 /
-> flycam / cờ đỏ — để phi công chuẩn bị), giờ in, và lời dặn tiếng Anh *"Please
-> keep this ticket safe and hand it to your pilot before the flight."* Không in
-> loại bay (Sa Pa 100% PG) và không in "Bay dù". Cao cố định 74 mm nội dung (in
-> thẳng: 640 chấm). Khau Phạ vẫn in bộ bốn liên dưới đây.
+> PARAGLIDING · BOARDING TICKET** với **logo khỉ Sa Pa** (bản xám tương phản
+> cao `public/logo-sapa-in.png`): số thứ tự + mã chống sao chép; **QR vé 25 mm**
+> bên trái ("Scan before flight"), bên phải cùng hàng là ngày bay + giờ hẹn, **tên
+> viết tắt một phần** ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), ô **dịch
+> vụ đi kèm** in đậm (chỉ khi có 360 / flycam / cờ đỏ — để phi công chuẩn bị);
+> dưới cùng "Printed HH:MM dd/MM" và **www.paraglidingsapa.com**, rồi lời dặn
+> tiếng Anh *"Please keep this ticket safe and hand it to your pilot before the
+> flight."* Không nhãn "Ngày bay"/"Khách", không in loại bay (Sa Pa 100% PG),
+> không in "Bay dù". Cao cố định 74 mm nội dung (in thẳng: 640 chấm). Khau Phạ
+> vẫn in bộ bốn liên dưới đây.
 >
 > **Hộp dịch vụ khi IN VÉ** (chủ 18/09): dịch vụ đặt **0** thì không có cột để
 > chọn; đặt **đủ cho cả đoàn** thì máy tích sẵn và khoá; chỉ khi 0 < số đặt <
