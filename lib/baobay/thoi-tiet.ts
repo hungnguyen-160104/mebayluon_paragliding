@@ -623,31 +623,71 @@ export function huongThuanLoi(huong: number, cung?: [number, number]): boolean {
 const HUONG_CHU = ["B", "BĐB", "ĐB", "ĐĐB", "Đ", "ĐĐN", "ĐN", "NĐN", "N", "NTN", "TN", "TTN", "T", "TTB", "TB", "BTB"];
 
 /**
- * NGÀY NÀY CÓ HOÀNG HÔN ĐẸP KHÔNG.
+ * KHUNG HOÀNG HÔN của một ngày: 60 → 30 phút TRƯỚC lúc mặt trời lặn (chủ 17/09:
+ * "hoàng hôn không phải là thời điểm mặt trời lặn mà là khoảng 30–60 phút
+ * trước đó"). Trả "HH:MM–HH:MM", null nếu chưa có giờ lặn.
+ */
+export function khungHoangHon(ngay: NgayThoiTiet): string | null {
+  const lan = ngay.matTroi?.lan;
+  if (!lan || !/^\d{2}:\d{2}$/.test(lan)) return null;
+  const phutLan = Number(lan.slice(0, 2)) * 60 + Number(lan.slice(3, 5));
+  const hm = (p: number) => `${String(Math.floor(p / 60)).padStart(2, "0")}:${String(p % 60).padStart(2, "0")}`;
+  return `${hm(phutLan - 60)}–${hm(phutLan - 30)}`;
+}
+
+/**
+ * NGÀY NÀY CÓ HOÀNG HÔN ĐẸP KHÔNG — luật chủ 17/09.
  *
- * Chuyến bay hoàng hôn là một món bán riêng, mà bán được hay không phụ thuộc
- * đúng BỐN MƯƠI PHÚT cuối trước khi mặt trời lặn: còn nắng, ít mây, không mưa
- * thì trời rực; mây dày hoặc mưa thì khách trả tiền để bay trong một màu xám
- * (chủ chốt 11/09).
+ * Chuyến bay hoàng hôn là một món bán riêng; đẹp hay không quyết định ở KHUNG
+ * 30–60 PHÚT TRƯỚC LÚC LẶN, và phải đủ bốn điều: TRỜI TRONG (ít mây, không có
+ * mây thấp che mặt trời sát chân trời), KHÔNG MƯA, CÒN NẮNG MẠNH (mặt trời
+ * chiếu trực tiếp phần lớn giờ ấy), và ÁP SUẤT không đang sụt trong ngày (sụt
+ * là mây kéo về đúng lúc chiều muộn). Thiếu một điều là trời chỉ xám dần.
  *
- * Xét hai giờ cuối trước lúc lặn — giờ chứa mốc "lặn trừ 40 phút" và giờ kế
- * tiếp — vì mô hình chỉ cho số theo từng giờ tròn.
+ * Mô hình cho số theo giờ tròn nên xét (các) giờ chứa khung ấy: lặn 18:00 →
+ * khung 17:00–17:30 → giờ 17; lặn 18:50 → khung 17:50–18:20 → giờ 17 và 18.
  */
 export function hoangHonDep(ngay: NgayThoiTiet): boolean {
+  return lyDoHoangHon(ngay).dep;
+}
+
+/** Bản có LÝ DO — để tooltip/nhận định nói vì sao đẹp hay không. */
+export function lyDoHoangHon(ngay: NgayThoiTiet): { dep: boolean; khung: string | null; lyDo: string } {
+  const khung = khungHoangHon(ngay);
   const lan = ngay.matTroi?.lan;
-  if (!lan || !/^\d{2}:\d{2}$/.test(lan)) return false;
+  if (!khung || !lan) return { dep: false, khung: null, lyDo: "chưa có giờ lặn" };
   const gioLan = Number(lan.slice(0, 2)) + Number(lan.slice(3, 5)) / 60;
-  const tu = Math.floor(gioLan - 40 / 60);
+  const gioTu = Math.floor(gioLan - 1);
+  const gioDen = Math.floor(gioLan - 0.5);
   const cuoi = ngay.gio.filter((g) => {
     const h = Number(g.gio.slice(11, 13));
-    return h >= tu && h <= Math.floor(gioLan);
+    return h >= gioTu && h <= gioDen;
   });
-  if (!cuoi.length) return false;
-  /** Mưa là hỏng hẳn; mây dày cũng vậy — 60% trở xuống thì mặt trời còn xuyên qua. */
-  if (cuoi.some((g) => g.mua >= MUA_BAY)) return false;
-  if (cuoi.some((g) => g.may > 60)) return false;
-  /** Phải CÒN NẮNG ở khúc ấy: hết nắng thì trời chỉ xám dần, không có màu. */
-  return cuoi.some((g) => (g.giayNang ?? 0) > 600 || (g.buXa ?? 0) > 30);
+  if (!cuoi.length) return { dep: false, khung, lyDo: "không có số giờ của khung hoàng hôn" };
+
+  const may = Math.max(...cuoi.map((g) => g.may ?? 0));
+  const mayThap = Math.max(...cuoi.map((g) => g.mayThap ?? 0));
+  const mua = Math.max(...cuoi.map((g) => g.mua ?? 0));
+  const xsMua = Math.max(...cuoi.map((g) => g.xacSuatMua ?? 0));
+  const phutNang = Math.max(...cuoi.map((g) => (g.giayNang ?? 0) / 60));
+  /** Áp suất trong ngày: giờ hoàng hôn so với 12h — sụt quá 2 hPa là hệ thống xấu đang kéo tới. */
+  const apTrua = ngay.gio.find((g) => Number(g.gio.slice(11, 13)) === 12)?.apSuat;
+  const apChieu = cuoi[cuoi.length - 1]?.apSuat;
+  const sutAp = typeof apTrua === "number" && typeof apChieu === "number" ? apTrua - apChieu : 0;
+
+  const hong: string[] = [];
+  if (mua >= MUA_BAY) hong.push(`mưa ${mua.toFixed(1)} mm`);
+  else if (xsMua >= 40) hong.push(`xác suất mưa ${Math.round(xsMua)}%`);
+  if (may > 40) hong.push(`mây ${Math.round(may)}%`);
+  if (mayThap > 25) hong.push(`mây thấp ${Math.round(mayThap)}% che chân trời`);
+  if (phutNang < 30) hong.push(`chỉ ${Math.round(phutNang)} phút nắng`);
+  if (sutAp > 2) hong.push(`áp sụt ${sutAp.toFixed(1)} hPa từ trưa`);
+  if (hong.length) return { dep: false, khung, lyDo: `khung ${khung}: ${hong.join(", ")}` };
+  return {
+    dep: true,
+    khung,
+    lyDo: `khung ${khung}: trời trong (mây ${Math.round(may)}%${mayThap ? `, mây thấp ${Math.round(mayThap)}%` : ""}), không mưa, nắng ${Math.round(phutNang)} phút/giờ${sutAp <= 0 ? ", áp ổn định" : ""}`,
+  };
 }
 
 /**

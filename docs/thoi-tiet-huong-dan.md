@@ -760,6 +760,14 @@ bám theo **ngày đang chọn** (không phải luôn là hôm nay) và có thê
 Ô đang chọn tô **cam** ở cả hai nơi. Hàm `hoangHonDep` nằm ở `lib/baobay/thoi-tiet.ts`
 để hai thẻ dùng chung.
 
+**Hoàng hôn đẹp — luật chủ 17/09:** hoàng hôn là khung **30–60 phút TRƯỚC lúc
+mặt trời lặn** (không phải giờ lặn); nhãn ghi kèm khung, ví dụ "🌅 hoàng hôn
+đẹp 17:15–17:45". Phải đủ bốn điều trong (các) giờ chứa khung ấy: **trời
+trong** (mây ≤ 40%, mây thấp ≤ 25% — mây thấp che mặt trời sát chân trời),
+**không mưa** (mưa < 0,3 mm và xác suất mưa < 40%), **nắng mạnh** (≥ 30 phút
+nắng trực tiếp trong giờ), và **áp suất không sụt** quá 2 hPa từ trưa (sụt là
+mây kéo về đúng chiều muộn). `lyDoHoangHon` trả lý do đạt/không đạt cho tooltip.
+
 **Mở một ngày KHÔNG làm thẻ nhảy chỗ** (chủ 11/09): trước đây thẻ nở ra chiếm hai
 cột nên lưới xếp lại, thẻ rơi xuống hàng dưới và các thẻ sau trôi theo — bấm xong
 phải đi tìm bảng vừa mở. Nay thẻ giữ nguyên ô của nó, chỉ cao thêm; bảng phụ mở

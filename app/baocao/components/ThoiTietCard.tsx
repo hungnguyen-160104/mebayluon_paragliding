@@ -21,6 +21,7 @@ import type { MucDo, NgayThoiTiet, NguongBay, ToaDoDiemBay } from "@/lib/baobay/
 import {
   bieuTuongTroi,
   hoangHonDep,
+  lyDoHoangHon,
   huongTroiNgay,
   huongDayDuVi,
   BIEU_TUONG_MUC,
@@ -314,7 +315,7 @@ export function ThoiTietCard({
                   ? ` · trần thermal ${ngayDangXem.tranMax}m`
                   : "";
             })()}
-            {hoangHonDep(ngayDangXem) ? <span className="font-bold text-orange-700"> · 🌅 hoàng hôn đẹp</span> : null}
+            {hoangHonDep(ngayDangXem) ? <span className="font-bold text-orange-700" title={lyDoHoangHon(ngayDangXem).lyDo}> · 🌅 hoàng hôn đẹp {lyDoHoangHon(ngayDangXem).khung}</span> : null}
           </div>
         </div>
         <button

@@ -43,6 +43,7 @@ import {
   MUA_DANG_KE,
   type SucThermal,
   hoangHonDep,
+  lyDoHoangHon,
   huongTroiNgay,
   trongCung,
   TANG_BAY_TREN_BAI,
@@ -291,7 +292,9 @@ function DaiNgay({
             )}
             {/* Hoàng hôn đẹp: dòng riêng, màu cam như chính ánh chiều. */}
             {hoangHonDep(n) && (
-              <div className="mt-0.5 text-[10px] font-bold leading-tight text-orange-700">🌅 {t.goodSunset}</div>
+              <div className="mt-0.5 text-[10px] font-bold leading-tight text-orange-700" title={lyDoHoangHon(n as never).lyDo}>
+                🌅 {t.goodSunset} {lyDoHoangHon(n as never).khung}
+              </div>
             )}
           </>
         );
@@ -528,7 +531,7 @@ function TomTatNgay({
     dong.push({ icon: "🌡", nhan: t.pressure, giaTri: `${ap.toFixed(0)} hPa${xu}${nghia}` });
   }
 
-  if (hoangHonDep(ngay as never)) dong.push({ icon: "🌅", nhan: t.goodSunset, giaTri: "" });
+  if (hoangHonDep(ngay as never)) dong.push({ icon: "🌅", nhan: t.goodSunset, giaTri: lyDoHoangHon(ngay as never).khung ?? "" });
   /** Thermal theo QUY TẮC: mức + điểm + khung đỉnh; không có thì đưa trần thô. */
   if (ngay.thermal) {
     dong.push({
