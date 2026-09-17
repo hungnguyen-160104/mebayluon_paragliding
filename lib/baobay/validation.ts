@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { chuanTenKhach } from "./ten-khach";
 
 import { isDateKey, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { isSpotId } from "@/lib/baobay/spots";
@@ -367,7 +368,8 @@ export const bookingSchema = z.object({
    * ra một dòng tiền không chủ. Thà bắt gõ một chữ lúc nhập còn hơn để dòng
    * trống nằm trong sổ.
    */
-  contactName: text(200).refine((v) => v.trim().length > 0, "Phải có tên khách"),
+  /** Quy về một chuẩn viết hoa chữ đầu mỗi từ (chủ 17/09) — xem lib/baobay/ten-khach.ts. */
+  contactName: text(200).refine((v) => v.trim().length > 0, "Phải có tên khách").transform(chuanTenKhach),
   phone: text(50),
   bookingCode: text(100),
   /** ÍT NHẤT MỘT KHÁCH: booking 0 khách không phải booking, chỉ là dòng rác. */

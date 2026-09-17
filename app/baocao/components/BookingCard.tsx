@@ -2,6 +2,7 @@
 "use client";
 
 import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { chuanTenKhach } from "@/lib/baobay/ten-khach";
 import { giaDonKhachSanHaNoi } from "@/lib/booking/calculate-price";
 import { createPortal } from "react-dom";
 
@@ -7618,7 +7619,8 @@ export function BookingCard({
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         <Field label={bookSpot === "sapa" ? "Tên khách" : "Tên liên hệ"}>
-          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
+          {/* Rời ô là tên tự về chuẩn "Nhật Minh" (chủ 17/09) — máy chủ cũng chuẩn hoá lại khi lưu. */}
+          <TextInput value={form.contactName} onChange={(e) => set("contactName", e.target.value)} onBlur={(e) => set("contactName", chuanTenKhach(e.target.value))} placeholder="anh Tú…" className="h-10 rounded-lg text-sm" />
         </Field>
         <Field label="SĐT">
           <TextInput value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="09xx…" inputMode="tel" className="h-10 rounded-lg text-sm" />

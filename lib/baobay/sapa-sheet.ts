@@ -43,6 +43,7 @@
  */
 
 import { normalizeSpot } from "@/lib/baobay/spots";
+import { chuanTenKhach } from "./ten-khach";
 
 /** Tên trường app dùng khi nói chuyện với Apps Script (không phải tên cột). */
 export type SapaSheetRow = {
@@ -243,9 +244,10 @@ export function sapaStatusFromText(v: unknown): "open" | "done" | "cancelled" | 
 
 /** Tách ô "TÊN ĐĂNG KÝ" (mỗi khách một dòng) thành danh sách tên. */
 export function sapaGuestNames(v: unknown): string[] {
+  /** Mỗi tên về một chuẩn viết hoa chữ đầu (chủ 17/09) — xem lib/baobay/ten-khach.ts. */
   return String(v ?? "")
     .split(/[\r\n]+/)
-    .map((s) => s.trim())
+    .map((s) => chuanTenKhach(s))
     .filter(Boolean);
 }
 
