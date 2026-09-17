@@ -180,7 +180,7 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
   } else {
     /** Không có trần thì mượn CAPE làm thước tạm — nói rõ là đoán. */
     const cape = g.cape ?? 0;
-    them({ ma: "tran", ten: "Đỉnh thermal", trongSo: 45, diem: duongCong(cape, [[0, 20], [200, 40], [800, 65], [1500, 90]]), ghiChu: `không có số trần — đoán từ CAPE ${Math.round(cape)}` });
+    them({ ma: "tran", ten: "Đỉnh thermal", trongSo: 45, diem: duongCong(cape, [[0, 20], [200, 40], [800, 65], [1500, 90]]), ghiChu: `không có số trần — đoán từ CAPE ${Math.round(cape)} J/kg` });
   }
 
   /* ---- 3. Độ dốc nhiệt tầng thấp (15) ---- */
@@ -214,7 +214,7 @@ export function thermalGio(g: GioThoiTiet, alt = 0): ThermalGio {
       trongSo: 15,
       /** Ổn định vừa phải vẫn có thermal (nắp giữ cho nó gọn); bất ổn mạnh thì KÉO thêm nhưng mây dễ phát triển quá mức. */
       diem: duongCong(li, [[-8, 70], [-4, 100], [-1, 90], [2, 70], [6, 45], [10, 25]]),
-      ghiChu: `LI ${li > 0 ? "+" : ""}${li.toFixed(1).replace(".", ",")}${cape ? ` · CAPE ${Math.round(cape)}` : ""}`,
+      ghiChu: `LI ${li > 0 ? "+" : ""}${li.toFixed(1).replace(".", ",")}${cape ? ` · CAPE ${Math.round(cape)} J/kg` : ""}`,
     });
   } else {
     them({ ma: "onDinh", ten: "Ổn định (LI)", trongSo: 15, diem: 60, ghiChu: "không có LI" });
