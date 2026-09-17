@@ -5408,17 +5408,25 @@ export function BookingTodayBanner({
            * DỊCH VỤ TRÊN VÉ — tích khách nào có 360/flycam/cờ đỏ — rồi mới cấp mã
            * QR và in. Xác nhận trong hộp mới gọi máy chủ; ở đây chỉ mở hộp.
            */
-          if (!b.noTicketFlight && !b.ticketIssued && coQuetVe(spot, b) && !b.veQr) {
+          if (!b.noTicketFlight && !b.ticketIssued && coQuetVe(spot, b)) {
             /**
-             * LUÔN hiện DANH SÁCH MÃ QR trước (chủ nhắc 18/09): dịch vụ 0 thì không
-             * có cột để chọn, đủ cả đoàn thì tích sẵn và khoá — nhưng danh sách
-             * vẫn phải hiện để người in soát tên từng khách rồi mới cấp mã.
+             * LUÔN hiện DANH SÁCH MÃ QR trước (chủ nhắc 18/09, lần ba): dịch vụ 0
+             * thì không có cột để chọn, đủ cả đoàn thì tích sẵn và khoá — nhưng
+             * danh sách vẫn phải hiện để người in soát tên từng khách rồi mới cấp
+             * mã / xem vé. KHÔNG xét `b.veQr` ở đây nữa: booking đã có mã mà bị bỏ
+             * tích "đã xuất vé" từng lọt xuống nhánh in thẳng bên dưới — chính là
+             * lỗi chủ gặp trên điện thoại.
              */
             setVeModal(b);
             return;
           }
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
+            /** Lưới an toàn: Sa Pa KHÔNG BAO GIỜ in thẳng từ đây — luôn qua danh sách mã. */
+            if (normalizeSpot(spot) === "sapa") {
+              setVeModal(b);
+              return;
+            }
             /**
              * GHI SỔ TRƯỚC, IN SAU (chủ 12/09): lần in đầu máy chủ CẤP MÃ CHỐNG
              * SAO CHÉP cho từng khách và lưu vào sổ; vé in phải mang đúng mã ấy
@@ -5472,7 +5480,7 @@ export function BookingTodayBanner({
        * chỉ còn ý nghĩa "in lại không hỏi lý do, không giới hạn".
        */}
       {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
-        normalizeSpot(spot) === "sapa" && b.veQr ? (
+        normalizeSpot(spot) === "sapa" ? (
           <Button
             type="button"
             variant="ghost"
@@ -5541,9 +5549,10 @@ export function BookingTodayBanner({
         /**
          * SA PA — bước 2 sau danh sách mã: KHUNG XEM VÉ (khách chụp lại) với
          * Lưu ảnh · Chia sẻ · In vé. Cấp mã lần đầu hay in lại đều qua đây;
-         * "In vé" ghi vết in lại rồi mới đẩy ra máy in.
+         * "In vé" ghi vết in lại rồi mới đẩy ra máy in. Booking đã có mã nhưng
+         * chưa tích "đã xuất vé" (bị bỏ tích) thì tích lại ở đây.
          */
-        if (dangCap && !bk0.ticketIssued) await act(bk0, "ticket");
+        if (!bk0.ticketIssued) await act(bk0, "ticket");
         const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
         await hienKhungVe(
           ghepAnhLien(anh, RONG_CHAM),
