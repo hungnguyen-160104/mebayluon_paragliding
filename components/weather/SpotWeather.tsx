@@ -523,7 +523,9 @@ function TomTatNgay({
     const truoc = ngayTruoc ? apTb(ngayTruoc) : null;
     const chenh = truoc === null ? null : ap - truoc;
     const xu = chenh === null ? "" : ` · ${chenh <= -1 ? t.pressureFalling : chenh >= 1 ? t.pressureRising : t.pressureSteady}${Math.abs(chenh) >= 0.5 ? ` ${chenh > 0 ? "+" : ""}${chenh.toFixed(1)}` : ""}`;
-    dong.push({ icon: "🌡", nhan: t.pressure, giaTri: `${ap.toFixed(0)} hPa${xu}` });
+    /* Nghĩa của xu hướng (chủ 17/09): số hPa trần trụi không nói khô hơn hay dễ mưa hơn. */
+    const nghia = chenh === null ? "" : ` — ${chenh <= -1 ? t.pressureHintFalling : chenh >= 1 ? t.pressureHintRising : t.pressureHintSteady}`;
+    dong.push({ icon: "🌡", nhan: t.pressure, giaTri: `${ap.toFixed(0)} hPa${xu}${nghia}` });
   }
 
   if (hoangHonDep(ngay as never)) dong.push({ icon: "🌅", nhan: t.goodSunset, giaTri: "" });

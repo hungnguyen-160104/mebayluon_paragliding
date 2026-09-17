@@ -703,8 +703,19 @@ export function nhanDinhNgay(
         } else if (doi >= 3) {
           noi += " — tăng: áp cao lấn, trời ổn định và quang dần";
           tong = "tot";
+        } else if (doi >= 1) {
+          /** Đổi NHẸ cũng phải nói ra nghĩa (chủ 17/09): tăng là khối khí khô hơn lấn vào. */
+          noi += " — tăng nhẹ: khối khí khô hơn đang lấn vào, mây ít đi, khả năng mưa thấp hơn hôm trước; gió nền có thể nhỉnh lên";
+        } else if (doi <= -1) {
+          noi += " — giảm nhẹ: ẩm tăng dần, mây dày lên, khả năng mưa cao hơn hôm trước — để mắt buổi chiều";
+          if (tong === "thongTin") tong = "chuY";
+        } else {
+          noi += " — gần như không đổi: khối khí giữ nguyên, thời tiết cùng kiểu hôm trước";
         }
       }
+      /** Mức tuyệt đối cũng nói được đôi điều: áp cao là khối khí khô, ổn định; áp thấp là ẩm, dễ mây mưa. */
+      if (ap >= 1018) noi += "; nền áp cao — trời khô, ổn định, thermal đều nhưng có thể có nắp nghịch nhiệt";
+      else if (ap < 1006 && !mayNhieu) noi += "; nền áp thấp — không khí ẩm, dễ mây tích và mưa chiều";
       if (ap < 1006 && mayNhieu) {
         noi += "; áp thấp kèm nhiều mây — ngày âm u, thermal yếu";
         if (tong === "thongTin") tong = "chuY";

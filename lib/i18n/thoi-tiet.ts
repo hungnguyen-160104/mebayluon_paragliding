@@ -87,6 +87,10 @@ export type ThoiTietCopy = {
   pressureFalling: string;
   pressureRising: string;
   pressureSteady: string;
+  /** Nghĩa của xu hướng áp (chủ 17/09): tăng = khô hơn, giảm = dễ mưa hơn. */
+  pressureHintRising: string;
+  pressureHintFalling: string;
+  pressureHintSteady: string;
   /** Khối "Tiềm năng thermal" — kết luận của quy tắc sáu yếu tố. */
   thermalPotential: string;
   /** Khung 3 giờ thermal MẠNH nhất — chủ 11/09: thermal gọi là "mạnh", không gọi là "khoẻ". */
@@ -252,6 +256,9 @@ const vi: ThoiTietCopy = {
   pressureFalling: "đang giảm",
   pressureRising: "đang tăng",
   pressureSteady: "gần như không đổi",
+  pressureHintRising: "khối khí khô hơn lấn vào, mây ít đi, ít mưa hơn",
+  pressureHintFalling: "ẩm tăng, mây dày lên, khả năng mưa cao hơn",
+  pressureHintSteady: "thời tiết cùng kiểu hôm trước",
   thermalPotential: "Tiềm năng thermal",
   thermalWindow: "mạnh nhất",
   thermalHours: "giờ có thermal",
@@ -393,6 +400,9 @@ const en: ThoiTietCopy = {
   pressureFalling: "falling",
   pressureRising: "rising",
   pressureSteady: "steady",
+  pressureHintRising: "drier air moving in, fewer clouds, less rain",
+  pressureHintFalling: "moister air, thickening cloud, higher rain chance",
+  pressureHintSteady: "same pattern as the day before",
   thermalPotential: "Thermal potential",
   thermalWindow: "peak",
   thermalHours: "thermal hours",
@@ -534,6 +544,9 @@ const fr: ThoiTietCopy = {
   pressureFalling: "en baisse",
   pressureRising: "en hausse",
   pressureSteady: "stable",
+  pressureHintRising: "air plus sec, moins de nuages, moins de pluie",
+  pressureHintFalling: "air plus humide, nuages qui s'épaississent, pluie plus probable",
+  pressureHintSteady: "même régime que la veille",
   thermalPotential: "Potentiel thermique",
   thermalWindow: "pic",
   thermalHours: "heures de thermiques",
@@ -676,6 +689,9 @@ const ru: ThoiTietCopy = {
   pressureFalling: "падает",
   pressureRising: "растёт",
   pressureSteady: "без изменений",
+  pressureHintRising: "приходит более сухой воздух, меньше облаков и дождя",
+  pressureHintFalling: "воздух влажнее, облачность растёт, дождь вероятнее",
+  pressureHintSteady: "погода того же типа, что накануне",
   thermalPotential: "Термический потенциал",
   thermalWindow: "пик",
   thermalHours: "часов с термиками",
@@ -817,6 +833,9 @@ const zh: ThoiTietCopy = {
   pressureFalling: "下降",
   pressureRising: "上升",
   pressureSteady: "基本不变",
+  pressureHintRising: "较干空气侵入，云量减少，降雨减少",
+  pressureHintFalling: "湿度上升，云层增厚，降雨概率升高",
+  pressureHintSteady: "与前一天天气类型相同",
   thermalPotential: "热气流潜力",
   thermalWindow: "最强",
   thermalHours: "小时有热气流",
@@ -957,6 +976,9 @@ const hi: ThoiTietCopy = {
   pressureFalling: "गिर रहा है",
   pressureRising: "बढ़ रहा है",
   pressureSteady: "लगभग स्थिर",
+  pressureHintRising: "सूखी हवा आ रही है, बादल कम, बारिश कम",
+  pressureHintFalling: "नमी बढ़ रही है, बादल घने, बारिश की संभावना अधिक",
+  pressureHintSteady: "पिछले दिन जैसा ही मौसम",
   thermalPotential: "थर्मल क्षमता",
   thermalWindow: "चरम",
   thermalHours: "घंटे थर्मल",
