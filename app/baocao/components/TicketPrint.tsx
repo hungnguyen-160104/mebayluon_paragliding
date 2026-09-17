@@ -609,12 +609,49 @@ export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
    * `td.p.dai` (tên khách dài), và gõ nhầm `.so-nhan` thay vì `.so-ma-nhan` —
    * nên đúng mấy chỗ ấy vẫn in ở 9–10 chấm và nhoè.
    */
-  const htmlUsb = html.replace(
+  const htmlUsb = htmlBanInThang(html);
+  const frame = await dungKhung(htmlUsb, RONG_CHAM);
+  try {
+    const doc = frame.contentDocument!;
+    /** Chờ font và SVG QR vẽ xong rồi mới chụp — chụp sớm là mất chữ đậm. */
+    await new Promise((r) => setTimeout(r, 150));
+    const lien = Array.from(doc.querySelectorAll<HTMLElement>(".ve"));
+    const anh: HTMLCanvasElement[] = [];
+    for (const el of lien) {
+      const c = await html2canvas(el, { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
+      anh.push(gopDamNhat(c, RONG_CHAM));
+    }
+    return anh;
+  } finally {
+    frame.parentNode && document.body.removeChild(frame);
+  }
+}
+
+/**
+ * CSS BẢN IN THẲNG (576 chấm ngang) đè lên HTML vé — tách ra để script xem mẫu
+ * dựng đúng bản máy in sẽ nhận. Vé Sa Pa khai bằng mm cho hộp thoại in, nên ở
+ * đây phải phóng lại TỪNG phần theo tỉ lệ 576/280 ≈ 2,06 (chủ 18/09: "vé vẽ ra
+ * bị lệch chữ, chồng chữ" — QR đã phóng 236 chấm mà chữ vẫn 14px, nhãn dưới
+ * QR đè lên dòng cuối).
+ */
+export function htmlBanInThang(html: string): string {
+  return html.replace(
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
-     .ve.sapa { height: 640px !important; }
+     .ve.sapa { height: 640px !important; padding: 8px 10px 10px !important; }
+     .ve.sapa .dau { margin-bottom: 4px !important; }
+     .ve.sapa .sapa-logo { width: 92px !important; height: 76px !important; }
+     .ve.sapa .sapa-than { gap: 12px !important; margin: 4px 0 !important; align-items: center !important; }
      .ve.sapa .sapa-qr { flex-basis: 236px !important; }
      .ve.sapa .sapa-qr svg { width: 236px !important; height: 236px !important; }
+     .ve.sapa .sapa-qr-nhan { font-size: 18px !important; margin-top: 2px !important; }
+     .ve.sapa .sapa-phai { gap: 8px !important; }
+     .ve.sapa .sapa-ngay { font-size: 27px !important; }
+     .ve.sapa .sapa-ten { font-size: 27px !important; padding-bottom: 4px !important; border-bottom-width: 2px !important; }
+     .ve.sapa .sapa-ten.dai { font-size: 22px !important; }
+     .ve.sapa .sapa-dv { font-size: 25px !important; padding: 6px 8px !important; border-width: 3px !important; border-radius: 8px !important; }
+     .ve.sapa .sapa-cuoi { font-size: 19px !important; }
+     .ve.sapa .luuy { font-size: 19px !important; margin-top: 4px !important; padding-top: 5px !important; border-top-width: 2px !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }
@@ -634,29 +671,6 @@ export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
      .luuy-khach { font-size: 15px !important; font-weight: 600 !important; line-height: 1.45 !important; padding-left: 18px !important; }
      </style>`,
   );
-  const frame = await dungKhung(htmlUsb, RONG_CHAM);
-  try {
-    const doc = frame.contentDocument!;
-    /** Chờ font và SVG QR vẽ xong rồi mới chụp — chụp sớm là mất chữ đậm. */
-    await new Promise((r) => setTimeout(r, 150));
-    const lien = Array.from(doc.querySelectorAll<HTMLElement>(".ve"));
-    const anh: HTMLCanvasElement[] = [];
-    for (const el of lien) {
-      /**
-       * VẼ GẤP ĐÔI (1152 điểm) rồi GỘP 2×2 LẤY ĐIỂM ĐẬM NHẤT về 576 điểm.
-       *
-       * Chủ 12/09: vé in "mất nét, mờ". Vẽ thẳng ở 576 điểm thì chữ 9–10px chỉ
-       * còn nét rộng một điểm ảnh, lại nhoè xám vì khử răng cưa; cắt ngưỡng
-       * đen/trắng xong là nét đứt khúc, in ra mờ. Vẽ 2× thì nét có 2–3 điểm,
-       * gộp lấy điểm đậm nhất giữ trọn nét, không nhoè — chữ ra đen và liền.
-       */
-      const c = await html2canvas(el, { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
-      anh.push(gopDamNhat(c, RONG_CHAM));
-    }
-    return anh;
-  } finally {
-    frame.parentNode && document.body.removeChild(frame);
-  }
 }
 
 /**
