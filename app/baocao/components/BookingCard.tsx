@@ -3391,6 +3391,44 @@ function BookingDetailControl({
                   {FLIGHT_KIND_LABEL[b.flightKind] || b.flightKind}
                   {b.ppgGuests > 0 && b.flightKind !== "ppg" ? ` (${b.ppgGuests} khách bay PPG)` : ""}
                 </dd>
+                {/* MÃ VÉ QR TỪNG KHÁCH (Sa Pa): ai tiếp nhận, bay xong chưa, dịch vụ, thu hồi — chỉ ở đây, ngoài dòng booking để gọn (chủ 17/09) */}
+                {b.veQr?.khach?.length ? (
+                  <>
+                    <dt className="text-slate-500">Mã vé QR</dt>
+                    <dd className="font-medium">
+                      <ul className="space-y-0.5">
+                        {b.veQr.khach.slice(0, Math.max(1, b.guestCount)).map((k) => {
+                          const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
+                          const ds = (b.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
+                          const tenKhach = tenVietTat(ds.length >= k.guestNo ? ds[k.guestNo - 1]! : b.contactName || "Khách");
+                          const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
+                          return (
+                            <li key={k.guestNo} className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="font-mono font-bold">{nhanVe(b.veQr!.so, k.guestNo, b.guestCount)}</span>
+                              <span>{tenKhach}</span>
+                              {dv.length > 0 && <span className="text-[11px] text-amber-800">{dv.join(" · ")}</span>}
+                              <span className={"text-[11px] " + (k.bayXong ? "text-emerald-700" : k.phiCong ? "text-sky-700" : "text-slate-500")}>
+                                {k.bayXong
+                                  ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong ${gio(k.bayXong.luc)}`
+                                  : k.phiCong
+                                    ? `${k.phiCong.name || k.phiCong.username} đã tiếp nhận ${gio(k.phiCong.luc)}`
+                                    : "mã trống"}
+                              </span>
+                              {k.thuHoi && !k.phiCong && (
+                                <span className="text-[11px] text-rose-700">
+                                  thu hồi khỏi {k.thuHoi.phiCongTen || k.thuHoi.phiCong} ({k.thuHoi.ly === "huy" ? "huỷ" : k.thuHoi.ly === "doi" ? "dời" : "tay"})
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <div className="mt-0.5 text-[11px] text-slate-500">
+                        Mã cấp ngày {formatDateKeyVN(b.veQr.ngay)} #{b.veQr.so}{b.veQr.capBoi ? ` by ${b.veQr.capBoi}` : ""}
+                      </div>
+                    </dd>
+                  </>
+                ) : null}
                 <dt className="text-slate-500">Đón</dt>
                 <dd className="font-medium">
                   {pickupText(b)}
@@ -5323,37 +5361,34 @@ export function BookingTodayBanner({
     </>
   );
   /**
-   * TRẠNG THÁI MÃ VÉ QR TỪNG KHÁCH (chủ 17/09, mục 3 và 13): "phi công X đã tiếp
-   * nhận", "bay xong", mã trống; cả đoàn bay xong thì gắn ĐÃ BAY HẾT.
+   * PHI CÔNG TIẾP NHẬN, GỌN (chủ 17/09): trên dòng booking chỉ một dãy tên theo
+   * THỨ TỰ KHÁCH 1, 2, 3 — "Hùng - x - Alish" nghĩa là Alish bay cho khách thứ
+   * 3, hai khách đầu chưa ai nhận (x). Không xếp theo giờ quét. ✓ sau tên = đã
+   * bay xong; cả đoàn xong thì ĐÃ BAY HẾT. Chi tiết từng mã nằm ở 📄 Chi tiết book.
    */
   const renderVeQrStatus = (b: BookingDTO) => {
     const v = b.veQr;
     if (!v?.khach?.length) return null;
-    const het = daBayHet(v, b.guestCount);
-    const tenKhach = (g: number) => {
-      const ds = (b.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
-      return tenVietTat(ds.length >= g ? ds[g - 1]! : b.contactName || "Khách");
+    const n = Math.max(1, b.guestCount);
+    if (daBayHet(v, n)) {
+      return (
+        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[11px] font-black text-white" title={v.khach.slice(0, n).map((k) => `${nhanVe(v.so, k.guestNo, n)} ${k.phiCong?.name || k.phiCong?.username || "?"}`).join(" · ")}>
+          ĐÃ BAY HẾT
+        </span>
+      );
+    }
+    const ten = (k: (typeof v.khach)[number]) => {
+      if (!k.phiCong) return "x";
+      const t = (k.phiCong.name || k.phiCong.username).trim().split(/\s+/).pop() || k.phiCong.username;
+      return k.bayXong ? `${t}✓` : t;
     };
+    const daNhan = v.khach.slice(0, n).some((k) => k.phiCong);
     return (
-      <span className="flex flex-wrap items-center gap-1">
-        {het && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[11px] font-black text-white">ĐÃ BAY HẾT</span>}
-        {v.khach.slice(0, Math.max(1, b.guestCount)).map((k) => {
-          const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
-          const tt = k.bayXong ? "bayxong" : k.phiCong ? "chiem" : "trong";
-          return (
-            <span
-              key={k.guestNo}
-              className={
-                "rounded px-1.5 py-0.5 text-[11px] font-semibold " +
-                (tt === "bayxong" ? "bg-emerald-100 text-emerald-900" : tt === "chiem" ? "bg-sky-100 text-sky-900" : "bg-slate-100 text-slate-600")
-              }
-              title={`${nhanVe(v.so, k.guestNo, b.guestCount)} ${tenKhach(k.guestNo)}${dv.length ? ` · ${dv.join(", ")}` : ""}${k.thuHoi && !k.phiCong ? ` · đã thu hồi khỏi ${k.thuHoi.phiCongTen || k.thuHoi.phiCong}` : ""}`}
-            >
-              {nhanVe(v.so, k.guestNo, b.guestCount)}{" "}
-              {tt === "bayxong" ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong` : tt === "chiem" ? `${k.phiCong?.name || k.phiCong?.username} đã tiếp nhận` : "mã trống"}
-            </span>
-          );
-        })}
+      <span
+        className={"rounded px-1.5 py-0.5 text-[11px] font-semibold " + (daNhan ? "bg-sky-100 text-sky-900" : "bg-slate-100 text-slate-500")}
+        title="Phi công tiếp nhận theo thứ tự khách 1, 2, 3… — x là chưa ai quét, ✓ là đã bay xong. Chi tiết ở 📄 Chi tiết book."
+      >
+        🪂 {v.khach.slice(0, n).map(ten).join(" - ")}
       </span>
     );
   };
