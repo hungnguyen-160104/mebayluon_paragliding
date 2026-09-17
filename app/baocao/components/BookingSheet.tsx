@@ -54,6 +54,25 @@ function guestNamesOf(b: BookingDTO): string {
   return names.length ? names.join("\n") : b.contactName || "";
 }
 
+/**
+ * DÃY PHI CÔNG THEO THỨ TỰ KHÁCH — "🪂 Hùng - x - Alish" (x = chưa ai quét, ✓ =
+ * đã bay xong; cả đoàn xong → "🪂 ĐÃ BAY HẾT"). Ở dạng BẢNG, dãy này nằm ngay
+ * dưới tên trong cột Khách (chủ 17/09), cùng luật với dòng booking.
+ */
+function dayPhiCongOf(b: BookingDTO): string {
+  const v = b.veQr;
+  if (!v?.khach?.length) return "";
+  const n = Math.max(1, b.guestCount || 1);
+  const ds = v.khach.slice(0, n);
+  if (ds.length >= n && ds.every((k) => k.bayXong)) return "🪂 ĐÃ BAY HẾT";
+  const ten = (k: (typeof ds)[number]) => {
+    if (!k.phiCong) return "x";
+    const t = (k.phiCong.name || k.phiCong.username).trim().split(/\s+/).pop() || k.phiCong.username;
+    return k.bayXong ? `${t}✓` : t;
+  };
+  return `🪂 ${Array.from({ length: n }, (_, i) => (ds[i] ? ten(ds[i]) : "x")).join(" - ")}`;
+}
+
 /** Tổng đã trả — cọc gõ tay và lệnh thu là HAI CÁCH GHI cùng một dòng tiền. */
 function paidOf(b: BookingDTO): number {
   const collected = (b.collected ?? []).reduce((t, c) => t + (c.amount || 0), 0);
@@ -78,8 +97,11 @@ export function cellText(b: BookingDTO, col: SheetCol, spot: string): string {
       return b.flightDate ? `thg ${Number(b.flightDate.slice(5, 7))}` : "";
     case "flightDate":
       return dayShort(b.flightDate);
-    case "guestNames":
-      return guestNamesOf(b);
+    case "guestNames": {
+      /** Cột Khách: tên rồi dãy phi công (nếu đã cấp mã QR) — ô này xuống dòng được. */
+      const pc = dayPhiCongOf(b);
+      return pc ? `${guestNamesOf(b)}\n${pc}` : guestNamesOf(b);
+    }
     case "pgGuests":
       return String(Math.max(0, (b.guestCount || 0) - (b.ppgGuests || 0)) || "");
     case "lineAmount":
