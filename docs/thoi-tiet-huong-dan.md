@@ -836,8 +836,8 @@ hướng khai riêng từng điểm, không có mặc định chung.
 | | |
 |---|---|
 | **Gió tốt** | Đông, Đông Bắc (23°–112°) — nhẹ, vừa, **hơi mạnh đều đẹp**; hơi mạnh thì thermal lên mạnh nhất |
-| **Gió sau tuỳ tốc độ** (chủ 17/09) | ĐĐN, NĐN, Nam, NTN, TN, TTN (101°–259°): **dưới 2,5 m/s không vấn đề gì** · **2,5–5 m/s cảnh báo "có thể có gió sau"** (ô vàng, không ghi nghỉ) · **trên 5 m/s tại bãi cất → nghỉ bay** (đỏ) |
-| **Gió xấu** | Tây, Tây Tây Bắc (259°–292°) — gió sau, **không bay bất kể tốc độ** |
+| **Gió sau tuỳ tốc độ** (chủ 17/09) | ĐĐN, NĐN, Nam, NTN, TN, TTN (101°–259°): **dưới 2,5 m/s** gió này hầu như không vượt được núi, tại bãi cất vẫn là **gió chính bãi bình thường** (không ghi "hướng sau bãi"; đầu/cuối ngày dè chừng **gió cá hồi** nếu có thành phần Đông, **gió trên xuống** nếu Tây) · **2,5–5 m/s cảnh báo "có thể có gió sau"** (ô vàng, không ghi nghỉ) · **trên 5 m/s tại bãi cất → nghỉ bay** (đỏ) |
+| **Gió xấu** | Tây, Tây Tây Bắc (259°–292°) — gió sau, **cấm từ 2,5 m/s**; nhẹ hơn 2,5 vẫn bay được (chủ 17/09) |
 | **Cảnh báo gió xiết** | Bắc, Đông hoặc Tây **khi gió đã mạnh** (> 6 m/s) — gió luồn khe đèo rồi tăng tốc đột ngột ngay mép bãi |
 | **Trần tốc độ theo hướng** | Tây > 5 m/s · **Đông > 6 m/s** — quá là đỏ (Nam đã nằm trong luật gió sau tuỳ tốc độ) |
 

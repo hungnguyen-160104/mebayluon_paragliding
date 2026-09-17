@@ -55,6 +55,11 @@ export type LuatHuong = {
    * từ `nhe` tới `cam`, dưới `nhe` là bình thường.
    */
   gioSauTheoToc?: { cung: [number, number]; nhe: number; cam: number };
+  /**
+   * Cung `xau` chỉ cấm TỪ tốc độ này trở lên (m/s); nhẹ hơn thì bay được (chủ
+   * 17/09, Khau Phạ: Tây/TTB dưới 2,5 m/s vẫn bay). Không khai = cấm mọi tốc độ.
+   */
+  xauTuToc?: number;
 };
 
 export type ToaDoDiemBay = {
@@ -144,6 +149,7 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
        * và Tây Tây Bắc (259°–292°) vẫn cấm như cũ.
        */
       xau: [259, 292],
+      xauTuToc: 2.5,
       gioSauTheoToc: { cung: [101, 259], nhe: 2.5, cam: 5 },
       xiet: [0, 90, 270],
       capToc: [
@@ -569,7 +575,7 @@ export type HuongTheNao = "tot" | "xau" | "thuong";
  */
 export function huongTheNao(huong: number, gio: number, luat?: LuatHuong): HuongTheNao {
   if (!luat) return "thuong";
-  if (luat.xau && trongCung(huong, luat.xau)) return "xau";
+  if (luat.xau && trongCung(huong, luat.xau) && gio >= (luat.xauTuToc ?? 0)) return "xau";
   if (luat.gioSauTheoToc && trongCung(huong, luat.gioSauTheoToc.cung) && gio > luat.gioSauTheoToc.cam) return "xau";
   if (vuotCapToc(huong, gio, luat)) return "xau";
   const manh = gio > 6;
@@ -990,9 +996,14 @@ export function chamGio(
   const capVuot = capTocBiVuot(g.huong, g.gio10m, luat);
   const gs = luat?.gioSauTheoToc;
   const trongGs = Boolean(gs && Number.isFinite(g.huong) && trongCung(g.huong, gs.cung));
-  if (luat?.xau && trongCung(g.huong, luat.xau)) {
+  const trongXau = Boolean(luat?.xau && Number.isFinite(g.huong) && trongCung(g.huong, luat.xau));
+  const gioSauNhe = trongXau && luat?.xauTuToc !== undefined && g.gio10m < luat.xauTuToc;
+  if (trongXau && !gioSauNhe) {
     lyDo.push(`gió ${huongChu(g.huong)} — GIÓ SAU (thổi sau lưng bãi cất), không bay`);
     len("do");
+  } else if (gioSauNhe) {
+    /** Tây/TTB dưới 2,5 m/s ở Khau Phạ: nhẹ, bay được (chủ 17/09) — ghi cho biết, không đổi màu. */
+    lyDo.push(`gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${luat!.xauTuToc} m/s bay được`);
   } else if (trongGs && gs && g.gio10m > gs.cam) {
     /** Khau Phạ (chủ 17/09): cung phía nam chỉ NGHỈ khi mạnh hơn 5 m/s tại bãi cất. */
     lyDo.push(`gió ${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — GIÓ SAU mạnh (trên ${gs.cam} m/s), không bay`);
@@ -1021,8 +1032,21 @@ export function chamGio(
     /** Không thêm "— gió chính bãi" ở hàng giờ: người đọc thấy chữ đó không biết làm gì với nó (luật chủ 10/09). */
     lyDo.push(`gió ${huongChu(g.huong)} ${NHAN_SUC_GIO[suc]}`);
   } else if (trongGs) {
-    /** Dưới 2,5 m/s trong cung phía nam: "không vấn đề gì" (chủ 17/09) — ghi cho biết, không đổi màu. */
-    lyDo.push(`gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — hướng sau bãi nhưng nhẹ, không sao`);
+    /**
+     * Dưới 2,5 m/s trong cung phía nam (chủ 17/09): gió này hầu như không vượt
+     * được núi, TẠI BÃI CẤT vẫn là gió chính bãi bình thường — không ghi "hướng
+     * sau bãi". Riêng ĐẦU NGÀY / CUỐI NGÀY thì gió trên bãi có thể là "gió cá
+     * hồi" (nếu có thành phần Đông) hoặc gió trên xuống (nếu Tây).
+     */
+    const gioTrongNgay = Number(g.gio.slice(11, 13));
+    const dauCuoi = gioTrongNgay <= 9 || gioTrongNgay >= 16;
+    /** Nam thuần (157,5°–202,5°) không nghiêng bên nào — chỉ nhắc chung; lệch Đông → cá hồi, lệch Tây → trên xuống. */
+    const kieu = g.huong < 168.75 ? "GIÓ CÁ HỒI" : g.huong > 191.25 ? "GIÓ TRÊN XUỐNG" : "GIÓ CÁ HỒI hoặc GIÓ TRÊN XUỐNG";
+    lyDo.push(
+      dauCuoi
+        ? `gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — ${gioTrongNgay <= 9 ? "đầu" : "cuối"} ngày, trên bãi có thể là ${kieu}, soi cờ gió trước khi cất`
+        : `gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — không vượt núi, tại bãi vẫn gió chính bãi`,
+    );
   } else if (!huongThuanLoi(g.huong, huongThuan)) {
     lyDo.push(`gió hướng ${huongChu(g.huong)} — gió sau bãi cất`);
     len("do");

@@ -245,11 +245,14 @@ export function nhanDinhNgay(
     /** Cung gió sau tuỳ tốc độ (Khau Phạ, chủ 17/09) — xem LuatHuong.gioSauTheoToc. */
     const gs = opts.luatHuong?.gioSauTheoToc;
     const laGioSau = (h: number, v: number) =>
-      Boolean((opts.luatHuong?.xau && trongCung(h, opts.luatHuong.xau)) || (gs && trongCung(h, gs.cung) && v > gs.cam));
+      Boolean(
+        (opts.luatHuong?.xau && trongCung(h, opts.luatHuong.xau) && v >= (opts.luatHuong.xauTuToc ?? 0)) ||
+          (gs && trongCung(h, gs.cung) && v > gs.cam),
+      );
     const coTheGioSau = (h: number, v: number) => Boolean(gs && trongCung(h, gs.cung) && v >= gs.nhe && v <= gs.cam);
     if (huong !== null) {
       noi += `, hướng trội ${huongChu(huong)}`;
-      if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau)) {
+      if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) && gioMax >= (opts.luatHuong.xauTuToc ?? 0)) {
         noi += " — GIÓ SAU";
         tong = "xau";
       } else if (gs && trongCung(huong, gs.cung) && gioMax > gs.cam) {

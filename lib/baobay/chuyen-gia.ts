@@ -184,7 +184,9 @@ export function danhGiaGio(
   {
     const manh = g.gio10m > 6;
     const xiet = Boolean(luat?.xiet?.length && manh && luat.xiet.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5));
-    const xau = Boolean(luat?.xau && trongCung(g.huong, luat.xau));
+    const trongXau = Boolean(luat?.xau && trongCung(g.huong, luat.xau));
+    /** Cung xấu chỉ cấm từ `xauTuToc` trở lên (Khau Phạ: Tây/TTB dưới 2,5 m/s bay được — chủ 17/09). */
+    const xau = trongXau && g.gio10m >= (luat?.xauTuToc ?? 0);
     /** Cung gió sau TUỲ TỐC ĐỘ (Khau Phạ, chủ 17/09): >5 nghỉ · 2,5–5 cảnh báo · <2,5 không sao. */
     const gs = luat?.gioSauTheoToc;
     const trongGs = Boolean(gs && trongCung(g.huong, gs.cung));
@@ -194,6 +196,9 @@ export function danhGiaGio(
     if (xau) {
       diem = 0;
       ghi = `${huongChu(g.huong)} — GIÓ SAU`;
+    } else if (trongXau) {
+      diem = 70;
+      ghi = `${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${luat!.xauTuToc} m/s bay được`;
     } else if (gioSauManh && gs) {
       diem = 0;
       ghi = `${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — GIÓ SAU mạnh (trên ${gs.cam} m/s)`;
@@ -201,8 +206,13 @@ export function danhGiaGio(
       diem = 55;
       ghi = `${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — có thể có gió sau, cẩn thận`;
     } else if (trongGs) {
-      diem = 85;
-      ghi = `${huongChu(g.huong)} nhẹ — hướng sau bãi nhưng dưới ${gs!.nhe} m/s, không sao`;
+      /** Nhẹ, không vượt núi — tại bãi vẫn là gió chính bãi (chủ 17/09); đầu/cuối ngày dè chừng gió cá hồi / gió trên xuống. */
+      const gioTrongNgay = Number(g.gio.slice(11, 13));
+      const dauCuoi = gioTrongNgay <= 9 || gioTrongNgay >= 16;
+      diem = dauCuoi ? 85 : 100;
+      ghi = dauCuoi
+        ? `${huongChu(g.huong)} nhẹ — ${gioTrongNgay <= 9 ? "đầu" : "cuối"} ngày, trên bãi có thể ${g.huong < 168.75 ? "gió cá hồi" : g.huong > 191.25 ? "gió trên xuống" : "gió cá hồi / trên xuống"}`
+        : `${huongChu(g.huong)} nhẹ — không vượt núi, tại bãi vẫn gió chính bãi`;
     } else if (xiet) {
       diem = 0;
       ghi = `${huongChu(g.huong)} mạnh — GIÓ XIẾT luồn khe`;
