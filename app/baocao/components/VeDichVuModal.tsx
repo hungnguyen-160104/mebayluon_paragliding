@@ -39,14 +39,23 @@ export function VeDichVuModal({
   };
   const dem = (k: DichVuVe) => rows.filter((r) => r[k]).length;
   const dat = { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag };
-  const lech = DICH_VU_VE.filter((k) => dem(k) !== Math.min(n, dat[k]));
+  /**
+   * Luật chủ 18/09: dịch vụ đặt 0 thì KHÔNG cho chọn (ẩn cột); đặt đủ cho cả
+   * đoàn thì máy tích sẵn và KHOÁ; chỉ khi 0 < số đặt < số khách mới tích tay,
+   * và phải tích ĐÚNG số đã đặt mới cấp mã được.
+   */
+  const daCapMa = Boolean(booking.veQr?.khach?.length);
+  const cot = DICH_VU_VE.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
+  const khoa = (k: DichVuVe) => !booking.veQr && dat[k] >= n;
+  const lech = cot.filter((k) => dem(k) !== Math.min(n, dat[k]));
+  const chuaKhop = !booking.veQr && lech.length > 0;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={onCancel}>
       <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-bold text-slate-900">{title ?? "Dịch vụ trên vé"} — #{booking.daySeq} {booking.contactName}</h3>
         <p className="mt-0.5 text-xs text-slate-500">
-          Đã đặt: {DICH_VU_VE.map((k) => `${TEN_DICH_VU[k]} ${dat[k]}`).join(" · ")}. Tích khách nào có dịch vụ gì; máy tự tích khi chia đều.
+          Đã đặt: {DICH_VU_VE.map((k) => `${TEN_DICH_VU[k]} ${dat[k]}`).join(" · ")}. Dịch vụ đủ cho cả đoàn máy tích sẵn; chưa đủ thì tích khách nào có.
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
@@ -54,9 +63,10 @@ export function VeDichVuModal({
               <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                 <th className="py-1 pr-2">Mã</th>
                 <th className="py-1 pr-2">Khách</th>
-                {DICH_VU_VE.map((k) => (
+                {cot.map((k) => (
                   <th key={k} className="py-1 text-center">
                     {TEN_DICH_VU[k]}
+                    {khoa(k) && <span className="block text-[9px] font-normal normal-case text-slate-400">cả đoàn</span>}
                   </th>
                 ))}
               </tr>
@@ -72,13 +82,13 @@ export function VeDichVuModal({
                       {ten(g)}
                       {daBay && <span className="ml-1 text-[10px] text-emerald-700">đã bay</span>}
                     </td>
-                    {DICH_VU_VE.map((k) => (
+                    {cot.map((k) => (
                       <td key={k} className="py-1.5 text-center">
                         <input
                           type="checkbox"
                           className="h-5 w-5"
                           checked={r[k]}
-                          disabled={daBay}
+                          disabled={daBay || khoa(k)}
                           onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, [k]: e.target.checked } : x)))}
                         />
                       </td>
@@ -92,7 +102,7 @@ export function VeDichVuModal({
                 <td className="py-1.5" colSpan={2}>
                   Đã tích / đã đặt
                 </td>
-                {DICH_VU_VE.map((k) => (
+                {cot.map((k) => (
                   <td key={k} className={"py-1.5 text-center " + (dem(k) !== Math.min(n, dat[k]) ? "text-rose-700" : "text-emerald-700")}>
                     {dem(k)}/{dat[k]}
                   </td>
@@ -101,9 +111,10 @@ export function VeDichVuModal({
             </tfoot>
           </table>
         </div>
+        {cot.length === 0 && <p className="mt-2 text-xs text-slate-500">Booking không có dịch vụ kèm — cấp mã thôi.</p>}
         {lech.length > 0 && (
           <p className="mt-2 text-xs text-rose-700">
-            Số tích chưa khớp số đã đặt ({lech.map((k) => TEN_DICH_VU[k]).join(", ")}) — vẫn in được, nhưng kiểm tra lại với khách.
+            Tích cho đúng {lech.map((k) => `${dat[k]} ${TEN_DICH_VU[k]}`).join(", ")} theo số đã đặt rồi mới cấp mã.
           </p>
         )}
         <div className="mt-3 flex justify-end gap-2">
@@ -113,7 +124,7 @@ export function VeDichVuModal({
           <Button
             type="button"
             className="h-9 px-4"
-            disabled={busy}
+            disabled={busy || chuaKhop}
             onClick={async () => {
               setBusy(true);
               try {

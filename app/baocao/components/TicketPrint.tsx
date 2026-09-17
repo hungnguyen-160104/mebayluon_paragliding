@@ -262,7 +262,7 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe
  * sao chép, tên khách VIẾT TẮT một phần và MÃ QR to để phi công quét. Chiều
  * cao cố định 74 mm nội dung (80 mm giấy trừ lề) — mỗi vé đúng một tờ.
  */
-function lienSapa(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
+function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): string {
   const extras = extrasOf(b, guestNo);
   const ten = vietTatTen(tenKhachVe(b, guestNo));
   const dv = extras.length ? extras.join(" · ") : "Bay dù";
@@ -270,22 +270,19 @@ function lienSapa(b: BookingDTO, spot: string, guestNo: number, luc: string, qrV
   <section class="ve sapa">
     <div class="dau">
       <img class="logo" src="/logo-mbl-in.png" alt="" />
-      <div class="ten">MEBAYLUON PARAGLIDING<br/><small>${esc(spotName(spot))} · VÉ BAY DÙ</small></div>
+      <div class="ten">SAPA PARAGLIDING<br/><small>BOARDING TICKET</small></div>
     </div>
     ${khoiSo(b, guestNo, "du")}
-    <table>
-      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</td></tr>
-      <tr><td>Khách</td><td class="p${ten.length > 22 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</td></tr>
-    </table>
+    <div class="sapa-ngay">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</div>
+    <div class="sapa-ten${ten.length > 22 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</div>
     <div class="sapa-than">
       ${qrVe && b.veQr ? `<div class="sapa-qr">${qrVe}<div class="sapa-qr-nhan">Phi công quét mã</div></div>` : ""}
       <div class="sapa-phai">
-        <div class="sapa-dong"><span>Loại bay</span><b>${esc(KIND_LABEL[b.flightKind] ?? b.flightKind)}</b></div>
-        <div class="sapa-dong"><span>Dịch vụ</span><b${dv.length > 14 ? ' class="dai"' : ""}>${esc(dv)}</b></div>
+        ${extras.length ? `<div class="sapa-dv">${esc(dv)}</div>` : ""}
         <div class="sapa-dong"><span>In vé</span><b>${esc(luc.slice(0, 11))}</b></div>
       </div>
     </div>
-    <div class="luuy">${esc(LUU_Y_2)} · Gọi xác nhận thời tiết</div>
+    <div class="luuy">Please keep this ticket safe and hand it to your pilot before the flight.</div>
   </section>`;
 }
 
@@ -412,16 +409,21 @@ const CSS = `
   .luuy-khach li { white-space: normal; overflow-wrap: anywhere; }
   /* SA PA: một liên 80 x 80 mm — cao cố định; QR to bên trái, ba dòng chữ bên phải */
   .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; }
-  .ve.sapa .sapa-than { display: flex; gap: 8px; align-items: center; flex: 1; min-height: 0; margin-top: 3px; }
-  .ve.sapa .sapa-qr { flex: 0 0 28mm; text-align: center; }
-  .ve.sapa .sapa-qr svg { width: 28mm; height: 28mm; display: block; }
+  .ve.sapa .sapa-than { display: flex; gap: 8px; align-items: center; flex: 1; min-height: 0; margin: 2px 0 3px; }
+  .ve.sapa .sapa-qr { flex: 0 0 25mm; text-align: center; }
+  .ve.sapa .sapa-qr svg { width: 25mm; height: 25mm; display: block; }
   .ve.sapa .sapa-qr-nhan { font-size: 9.5px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
   .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
   .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
   .ve.sapa .sapa-dong span { color: #222; flex: none; }
   .ve.sapa .sapa-dong b { font-weight: 800; overflow: hidden; text-overflow: clip; text-align: right; color: #000; }
   .ve.sapa .sapa-dong b.dai { font-size: 10.5px; }
-  .ve.sapa .luuy { margin-top: auto; font-size: 10.5px; }
+  .ve.sapa .sapa-ngay { font-size: 14px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
+  .ve.sapa .sapa-ten { font-size: 15px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: clip; border-bottom: 1px dotted #999; padding-bottom: 2px; }
+  .ve.sapa .sapa-ten.dai { font-size: 12.5px; }
+  /* Dịch vụ đi kèm nổi bật để phi công chuẩn bị (360 / flycam / cờ đỏ) */
+  .ve.sapa .sapa-dv { border: 2px solid #000; border-radius: 4px; padding: 3px 4px; font-size: 13px; font-weight: 900; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+  .ve.sapa .luuy { margin-top: auto; font-size: 10.5px; white-space: normal; line-height: 1.25; }
 `;
 
 /**
@@ -446,7 +448,7 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
     /** Sa Pa: một liên duy nhất 80×80 mm (chủ 17/09); Khau Phạ giữ bộ bốn liên. */
-    if (normalizeSpot(spot) === "sapa") pages.push(lienSapa(b, spot, g, luc, qrVe.get(g)));
+    if (normalizeSpot(spot) === "sapa") pages.push(lienSapa(b, g, luc, qrVe.get(g)));
     else pages.push(lienBay(b, spot, g, luc, qrVe.get(g)), lienKhach(b, spot, g, qr, luc, qrVe.get(g)), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
   }
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8" />
@@ -606,8 +608,8 @@ export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
      .ve.sapa { height: 640px !important; }
-     .ve.sapa .sapa-qr { flex-basis: 220px !important; }
-     .ve.sapa .sapa-qr svg { width: 220px !important; height: 220px !important; }
+     .ve.sapa .sapa-qr { flex-basis: 200px !important; }
+     .ve.sapa .sapa-qr svg { width: 200px !important; height: 200px !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }

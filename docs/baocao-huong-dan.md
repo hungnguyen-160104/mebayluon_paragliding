@@ -367,12 +367,21 @@ vẫn ghi đủ ai và lúc nào.
 Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
-> **SA PA — MỘT LIÊN DUY NHẤT 80×80 mm** (chủ 17/09): không liên khách giữ,
-> không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông: logo, số thứ
-> tự + mã chống sao chép, ngày bay + giờ hẹn, **tên viết tắt một phần**
-> ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), loại bay, dịch vụ, giờ in,
-> **QR vé 30 mm để phi công quét**, một dòng lưu ý. Chiều cao cố định 74 mm nội
-> dung (in thẳng: 640 chấm). Khau Phạ vẫn in bộ bốn liên dưới đây.
+> **SA PA — MỘT LIÊN DUY NHẤT 80×80 mm** (chủ 17–18/09): không liên khách giữ,
+> không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông, đầu vé **SAPA
+> PARAGLIDING · BOARDING TICKET**: số thứ tự + mã chống sao chép, dòng ngày bay
+> + giờ hẹn và dòng tên (không nhãn "Ngày bay"/"Khách" cho đỡ tốn mực), **tên
+> viết tắt một phần** ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), **QR vé
+> 25 mm để phi công quét**, ô **dịch vụ đi kèm** in đậm (chỉ khi có 360 /
+> flycam / cờ đỏ — để phi công chuẩn bị), giờ in, và lời dặn tiếng Anh *"Please
+> keep this ticket safe and hand it to your pilot before the flight."* Không in
+> loại bay (Sa Pa 100% PG) và không in "Bay dù". Cao cố định 74 mm nội dung (in
+> thẳng: 640 chấm). Khau Phạ vẫn in bộ bốn liên dưới đây.
+>
+> **Hộp dịch vụ khi IN VÉ** (chủ 18/09): dịch vụ đặt **0** thì không có cột để
+> chọn; đặt **đủ cho cả đoàn** thì máy tích sẵn và khoá; chỉ khi 0 < số đặt <
+> số khách mới tích tay, và phải tích **đúng** số đã đặt mới cấp mã. Đoàn không
+> có gì để chọn thì bấm IN VÉ là cấp mã luôn, không hỏi.
 >
 > **Luồng IN VÉ ở Sa Pa (chủ 18/09):** bấm 🖨 IN VÉ → hộp **danh sách khách
 > (mã QR từng người)** để tích tay dịch vụ 360 / flycam / cờ đỏ cho đúng khách

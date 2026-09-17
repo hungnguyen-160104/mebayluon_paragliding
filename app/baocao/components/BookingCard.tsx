@@ -45,7 +45,7 @@ import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, printBookingTickets,
 import { ghepAnhLien, hienKhungVe } from "@/lib/baobay/may-in-chia-se";
 import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
-import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat } from "@/lib/baobay/ve-qr";
+import { chiaDichVu, coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -5254,6 +5254,14 @@ export function BookingTodayBanner({
            * QR và in. Xác nhận trong hộp mới gọi máy chủ; ở đây chỉ mở hộp.
            */
           if (!b.noTicketFlight && !b.ticketIssued && coQuetVe(spot, b) && !b.veQr) {
+            /** Không dịch vụ, hoặc dịch vụ đủ cho cả đoàn → máy tự chia, khỏi mở hộp (chủ 18/09). */
+            const n = Math.max(1, b.guestCount || 1);
+            const dat = { video360: b.video360, flycam: b.flycam, redFlag: b.redFlag };
+            const canChon = DICH_VU_VE.some((k) => dat[k] > 0 && dat[k] < n);
+            if (!canChon) {
+              void capMaVe(b, chiaDichVu(n, dat).khach.map((r, i) => ({ guestNo: i + 1, ...r })));
+              return;
+            }
             setVeModal(b);
             return;
           }
@@ -5337,48 +5345,54 @@ export function BookingTodayBanner({
         <VeDichVuModal
           booking={veModal}
           onCancel={() => setVeModal(null)}
-          onConfirm={async (dichVu) => {
-            const dangCap = !veModal.veQr;
-            /**
-             * SA PA (chủ 18/09): cấp mã xong KHÔNG in ngay mà bày KHUNG XEM VÉ —
-             * khách chụp màn hình được, ba nút Lưu ảnh · Chia sẻ · In vé. Điểm
-             * khác giữ nếp cũ: mở tab in đồng bộ trong cú bấm rồi in luôn.
-             */
-            const laSapa = normalizeSpot(spot) === "sapa";
-            const tab = dangCap && coInVe(spot) && !laSapa ? moTabIn() : null;
-            try {
-              const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
-                id: veModal.id,
-                action: dangCap ? "ticket-print" : "ve-dichvu",
-                reason: "",
-                dichVu,
-              });
-              setVeModal(null);
-              if (dangCap) {
-                const bk = r?.booking ?? veModal;
-                if (laSapa) {
-                  if (!veModal.ticketIssued) await act(veModal, "ticket");
-                  const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
-                  await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
-                    const t = moTabIn();
-                    await printBookingTickets(bk, spot, t, "");
-                  });
-                } else {
-                  await printBookingTickets(bk, spot, tab);
-                  if (!veModal.ticketIssued) await act(veModal, "ticket");
-                }
-              }
-              load();
-            } catch (e: unknown) {
-              const m = e instanceof Error ? e.message : "Không cấp được mã vé";
-              baoLoiVaoTab(tab, m);
-              setError(m.replace(/\|[A-Z_]+$/, ""));
-            }
-          }}
+          onConfirm={(dichVu) => capMaVe(veModal, dichVu)}
         />
       )}
     </>
   );
+  /**
+   * CẤP MÃ VÉ (+ in / xem vé) cho một booking với bảng dịch vụ từng khách —
+   * dùng chung cho hộp tích tay và cho lối "không có gì để chọn" (chủ 18/09:
+   * đoàn không đặt 360/flycam/cờ đỏ, hoặc đặt đủ cho cả đoàn, thì khỏi hỏi).
+   */
+  const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>) => {
+    const dangCap = !bk0.veQr;
+    /**
+     * SA PA (chủ 18/09): cấp mã xong KHÔNG in ngay mà bày KHUNG XEM VÉ —
+     * khách chụp màn hình được, ba nút Lưu ảnh · Chia sẻ · In vé. Điểm
+     * khác giữ nếp cũ: mở tab in đồng bộ trong cú bấm rồi in luôn.
+     */
+    const laSapa = normalizeSpot(spot) === "sapa";
+    const tab = dangCap && coInVe(spot) && !laSapa ? moTabIn() : null;
+    try {
+      const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
+        id: bk0.id,
+        action: dangCap ? "ticket-print" : "ve-dichvu",
+        reason: "",
+        dichVu,
+      });
+      setVeModal(null);
+      if (dangCap) {
+        const bk = r?.booking ?? bk0;
+        if (laSapa) {
+          if (!bk0.ticketIssued) await act(bk0, "ticket");
+          const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
+          await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
+            const t = moTabIn();
+            await printBookingTickets(bk, spot, t, "");
+          });
+        } else {
+          await printBookingTickets(bk, spot, tab);
+          if (!bk0.ticketIssued) await act(bk0, "ticket");
+        }
+      }
+      load();
+    } catch (e: unknown) {
+      const m = e instanceof Error ? e.message : "Không cấp được mã vé";
+      baoLoiVaoTab(tab, m);
+      setError(m.replace(/\|[A-Z_]+$/, ""));
+    }
+  };
   /**
    * PHI CÔNG TIẾP NHẬN, GỌN (chủ 17/09): trên dòng booking chỉ một dãy tên theo
    * THỨ TỰ KHÁCH 1, 2, 3 — "Hùng - x - Alish" nghĩa là Alish bay cho khách thứ
