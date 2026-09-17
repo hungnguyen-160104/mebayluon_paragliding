@@ -627,7 +627,7 @@ export function nhanDinhNgay(
         khuyenCao.push(
           dong >= 40
             ? `Nguy cơ dông ${dong}% — bay sáng, hạ cánh xong trước trưa và canh trời: gust front làm gió đảo chiều, GIÓ THỐC MẠNH 10–20 phút TRƯỚC khi mưa tới. Không phải nghỉ cả ngày, nhưng nếu thấy mây tích dựng cao, đáy tối thì nên hạ cánh sớm.`
-            : "Ngày bất ổn định — hạ cánh chuyến cuối trước 14:00; thấy mây tích vươn cao, đáy tối là dừng ngay, không chờ mưa.",
+            : "Ngày bất ổn định — hạ cánh chuyến cuối trước 14:00; nếu thấy mây tích vươn cao, đáy tối thì nên hạ cánh sớm, không chờ mưa.",
         );
       }
       them({
