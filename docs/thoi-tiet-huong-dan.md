@@ -20,7 +20,7 @@ mỗi thẻ có nút **Thu gọn / Xổ ra** (thu gọn = dải 7 ngày + dòng 
 
 Toạ độ bãi cất chủ chốt 17/09: Khau Phạ 21.754889, 104.265694 · Đồi Bù 20.8085,
 105.568778 · Viên Nam 20.954306, 105.412861 · Sơn Trà 16.117889, 108.273583 ·
-Quản Bạ 23.060488, 105.019054.
+Quản Bạ 23.060488, 105.019054 · Phình Hồ 21.521889, 104.532194 (cất 1.050 m, hạ 400 m).
 
 ## 1. Đang chạy bằng gì (không cần khai gì thêm)
 
@@ -663,7 +663,7 @@ nghịch nhiệt có nằm trong đường bay không. Gọi "chênh cao" chứ 
 | Đồi Bù | **650 m** | 50 m | 600 m |
 | Viên Nam | 850 m và 650 m | 50 m | 800 m |
 | Bắc Sum – Quản Bạ | 950 m | 450 m | 500 m |
-| Phình Hồ – Trạm Tấu | 900 m | 300 m | 600 m |
+| Phình Hồ – Trạm Tấu | 1.050 m | 400 m | 650 m |
 | Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
 | Đại Huệ – Chùa Đại Tuệ (Nghệ An) | 350 m | 50 m | 300 m |
 

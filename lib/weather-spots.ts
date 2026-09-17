@@ -115,8 +115,8 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     altHa: 450,
     luatHuong: { capToc: [{ tam: [225, 270, 315], max: 3, ten: "Tây/Tây Bắc/Tây Nam (gió sau)" }] },
   },
-  /** Phình Hồ: cất 900m, hạ 300m (số chủ 11/09). */
-  { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.5219, lon: 104.5322, alt: 900, altHa: 300 },
+  /** Phình Hồ: bãi cất 21°31'18.8"N 104°31'55.9"E cao 1.050 m, bãi hạ 400 m (số chủ 17/09; trước 900/300). */
+  { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.521889, lon: 104.532194, alt: 1050, altHa: 400 },
   { slug: "dalat", ten: "Đà Lạt", tinh: "Lâm Đồng", lat: 11.9404, lon: 108.4583 },
   /**
    * NÚI ĐẠI HUỆ — bãi cất cạnh CHÙA ĐẠI TUỆ (Nam Đàn, Nghệ An); chủ sửa tên
