@@ -443,16 +443,16 @@ function useTicketLabels(lang: LangCode) {
               ? zh("飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。", "飛行天氣可能突然變化、恕不另行通知——出發前請致電確認飛行天氣。")
               : "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
     hotlineNote: isVI
-      ? "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789 để được hỗ trợ kịp thời."
+      ? "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) để được hỗ trợ kịp thời."
       : isFR
-        ? "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 – 0385.907.789 pour une aide immédiate."
+        ? "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) pour une aide immédiate."
         : isRU
-          ? "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 – 0385.907.789 — поможем сразу."
+          ? "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 (г-н Mỹ – старший пилот) – 0385.907.789 (г-жа Duyên – координатор полётов) — поможем сразу."
           : isHI
-            ? "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 – 0385.907.789 पर कॉल करें, हम तुरंत सहायता करेंगे।"
+            ? "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 (श्री Mỹ – मुख्य पायलट) – 0385.907.789 (सुश्री Duyên – उड़ान समन्वयक) पर कॉल करें, हम तुरंत सहायता करेंगे।"
             : isZH || isZHTW
-              ? zh("如对服务有任何反馈，请直接致电热线 0964.073.555 – 0385.907.789，我们会及时协助。", "如對服務有任何回饋，請直接致電熱線 0964.073.555 – 0385.907.789，我們會及時協助。")
-              : "For any service feedback, please call our Hotline 0964.073.555 – 0385.907.789 directly so we can help right away.",
+              ? zh("如对服务有任何反馈，请直接致电热线 0964.073.555（Mỹ 先生 – 首席飞行员）– 0385.907.789（Duyên 女士 – 飞行协调），我们会及时协助。", "如對服務有任何回饋，請直接致電熱線 0964.073.555（Mỹ 先生 – 首席飛行員）– 0385.907.789（Duyên 女士 – 飛行協調），我們會及時協助。")
+              : "For any service feedback, please call our Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) directly so we can help right away.",
   };
 }
 

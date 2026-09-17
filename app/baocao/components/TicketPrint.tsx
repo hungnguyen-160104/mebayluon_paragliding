@@ -104,7 +104,8 @@ const LUU_Y_KHACH = [
   "Thời tiết bay có thể thay đổi bất ngờ",
   "Gọi xác nhận thời tiết trước khi xuất phát",
   "Phản ánh dịch vụ: gọi thẳng Hotline",
-  "Hotline 0964.073.555 – 0385.907.789",
+  "0964.073.555 – Mr. Mỹ, Phi công trưởng",
+  "0385.907.789 – Ms. Duyên, Điều phối bay",
 ];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */

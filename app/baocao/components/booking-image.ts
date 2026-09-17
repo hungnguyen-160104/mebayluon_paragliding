@@ -726,8 +726,8 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.font = f(14, "bold");
   g.fillText("Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi", pad, H - footerH + 52);
   g.fillText("xác nhận thời tiết bay trước khi xuất phát.", pad, H - footerH + 72);
-  g.fillText("Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789", pad, H - footerH + 96);
-  g.fillText("để được hỗ trợ kịp thời.", pad, H - footerH + 116);
+  g.fillText("Mọi phản ánh dịch vụ vui lòng gọi trực tiếp Hotline để được hỗ trợ kịp thời:", pad, H - footerH + 96);
+  g.fillText("0964.073.555 (Mr. Mỹ – Phi công trưởng) · 0385.907.789 (Ms. Duyên – Điều phối bay)", pad, H - footerH + 116);
 
   return canvas;
 }
