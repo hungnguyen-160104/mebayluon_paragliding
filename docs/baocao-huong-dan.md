@@ -358,9 +358,9 @@ cấp 1 (Đặng V.M) in lại không giới hạn, không hỏi lý do** (chủ
 vẫn ghi đủ ai và lúc nào.
 
 > **ĐANG TRONG ĐỢT THỬ MÁY IN** (chủ 13/09): cờ `IN_VE_TU_DO` ở
-> `lib/baobay/in-ve-cau-hinh.ts` đang **bật** — nút 🖨 hiện ở **mọi** booking
-> của Khau Phạ / Sa Pa (kể cả chưa tích "đã xuất vé"), bấm là in ngay, không
-> hỏi lý do, không giới hạn, với mọi vai. Đầu sổ booking có nhãn *"🧪 Đang mở
+> `lib/baobay/in-ve-cau-hinh.ts` đang **bật** — nút **🖨 In lại** (hiện sau
+> khi đã xuất vé; chủ 17/09 bỏ cảnh hai nút in đứng cạnh nhau) bấm là in
+> ngay, không hỏi lý do, không giới hạn, với mọi vai. Đầu sổ booking có nhãn *"🧪 Đang mở
 > tự do để thử máy in"*. Thử xong, đổi cờ về `false` là quay lại luật trên —
 > không phải sửa chỗ nào khác.
 

@@ -1160,7 +1160,7 @@ function ReprintTicket({
             : "In lại vé — phải ghi lý do, vì mỗi bộ vé in thêm là một bộ liên trôi nổi"
         }
       >
-        🖨{soLan > 1 ? `×${soLan}` : ""}
+        🖨 In lại{soLan > 1 ? ` ×${soLan}` : ""}
       </Button>
     );
   }
@@ -5303,11 +5303,12 @@ export function BookingTodayBanner({
         )}
       </Button>
       {/**
-       * Đang ĐỢT THỬ MÁY IN (IN_VE_TU_DO, chủ 13/09): nút 🖨 hiện ở MỌI booking
-       * của điểm có in vé, kể cả chưa tích "đã xuất vé", và bấm là in ngay
-       * không hỏi lý do. Hết đợt thử, tắt cờ trong lib/baobay/in-ve-cau-hinh.ts.
+       * NÚT IN LẠI chỉ hiện SAU KHI đã xuất vé (chủ 17/09: "IN VÉ và máy in
+       * trùng nhau, thừa"): lúc chưa xuất thì nút IN VÉ ở trên đã in rồi, bày
+       * thêm 🖨 bên cạnh là hai nút cùng một việc. Đợt thử máy in (IN_VE_TU_DO)
+       * chỉ còn ý nghĩa "in lại không hỏi lý do, không giới hạn".
        */}
-      {(IN_VE_TU_DO ? coInVe(spot) && !b.noTicketFlight : b.ticketIssued && !b.noTicketFlight && coInVe(spot)) && (
+      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
         <ReprintTicket
           spot={spot}
           booking={b}
