@@ -57,8 +57,9 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     slug: "khau-pha",
     ten: "Đèo Khau Phạ",
     tinh: "Mù Cang Chải",
-    lat: 21.7546,
-    lon: 104.1279,
+    /** Bãi cất 21°45'17.6"N 104°15'56.5"E (chủ 17/09); điểm có sổ nội bộ nên số ở ⚙ (nếu có) thắng. */
+    lat: 21.754889,
+    lon: 104.265694,
     spotNoiBo: "khau-pha",
   },
   /**

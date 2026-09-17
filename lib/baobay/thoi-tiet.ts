@@ -110,8 +110,9 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
    *    tăng tốc đột ngột ngay mép cất cánh.
    */
   "khau-pha": {
-    lat: 21.7546,
-    lon: 104.1279,
+    /** Bãi cất 21°45'17.6"N 104°15'56.5"E (chủ 17/09) — số cũ 104.1279 lệch ~14 km về phía tây, dự báo sai. */
+    lat: 21.754889,
+    lon: 104.265694,
     /** 1.268 m — số chủ đo tại bãi cất cánh (10/09), không phải 1.200 làm tròn. */
     alt: 1268,
     ten: "Đèo Khau Phạ (Mù Cang Chải)",
