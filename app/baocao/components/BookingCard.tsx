@@ -5639,7 +5639,8 @@ export function BookingTodayBanner({
         {!table && !hangDuoi && moneyOutside(b) && renderMoneyButton(b)}
         {renderTicketButton(b)}
         {renderFlownButton(b)}
-        {renderContactButton(b)}
+        {/* Thẻ: "Cần gọi xác nhận" xuống HÀNG DƯỚI cùng Chi tiết book · ⋯ Thêm (chủ 18/09) — hàng trên chỉ còn vé + đã bay */}
+        {!hangDuoi && renderContactButton(b)}
         {!table && !hangDuoi && detailButton(b)}
       </>
     );
@@ -5814,6 +5815,7 @@ export function BookingTodayBanner({
                  */}
                 <div className="flex flex-wrap justify-end gap-1 [&>div]:w-full [&>div]:min-w-[300px]">
                   {moneyOutside(b) && renderMoneyButton(b)}
+                  {!(b.locked && !canLock) && renderContactButton(b)}
                   {detailButton(b)}
                   {!(b.locked && !canLock) && renderMoreMenu(b)}
                 </div>
