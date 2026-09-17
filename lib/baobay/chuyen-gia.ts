@@ -185,11 +185,24 @@ export function danhGiaGio(
     const manh = g.gio10m > 6;
     const xiet = Boolean(luat?.xiet?.length && manh && luat.xiet.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5));
     const xau = Boolean(luat?.xau && trongCung(g.huong, luat.xau));
+    /** Cung gió sau TUỲ TỐC ĐỘ (Khau Phạ, chủ 17/09): >5 nghỉ · 2,5–5 cảnh báo · <2,5 không sao. */
+    const gs = luat?.gioSauTheoToc;
+    const trongGs = Boolean(gs && trongCung(g.huong, gs.cung));
+    const gioSauManh = Boolean(trongGs && gs && g.gio10m > gs.cam);
     let diem = 80;
     let ghi = `${huongChu(g.huong)} — chưa khai luật hướng`;
     if (xau) {
       diem = 0;
       ghi = `${huongChu(g.huong)} — GIÓ SAU`;
+    } else if (gioSauManh && gs) {
+      diem = 0;
+      ghi = `${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — GIÓ SAU mạnh (trên ${gs.cam} m/s)`;
+    } else if (trongGs && gs && g.gio10m >= gs.nhe) {
+      diem = 55;
+      ghi = `${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — có thể có gió sau, cẩn thận`;
+    } else if (trongGs) {
+      diem = 85;
+      ghi = `${huongChu(g.huong)} nhẹ — hướng sau bãi nhưng dưới ${gs!.nhe} m/s, không sao`;
     } else if (xiet) {
       diem = 0;
       ghi = `${huongChu(g.huong)} mạnh — GIÓ XIẾT luồn khe`;
@@ -200,7 +213,7 @@ export function danhGiaGio(
       diem = 55;
       ghi = `${huongChu(g.huong)} — GIÓ NGANG`;
     }
-    them({ ma: "huong", ten: "Hướng gió", trongSo: 15, diem, ghiChu: ghi, nguyHiem: xau || xiet });
+    them({ ma: "huong", ten: "Hướng gió", trongSo: 15, diem, ghiChu: ghi, nguyHiem: xau || xiet || gioSauManh });
   }
 
   /* ---- 4. Gió trên cao (15) ----

@@ -242,11 +242,22 @@ export function nhanDinhNgay(
     const suc = NHAN_SUC_GIO[sucGio(gioTb)];
     let noi = `trung bình ${gioTb.toFixed(1)} m/s (${suc}), mạnh nhất ${gioMax.toFixed(1)}`;
     let tong: DiemNhanDinh["tong"] = "thongTin";
+    /** Cung gió sau tuỳ tốc độ (Khau Phạ, chủ 17/09) — xem LuatHuong.gioSauTheoToc. */
+    const gs = opts.luatHuong?.gioSauTheoToc;
+    const laGioSau = (h: number, v: number) =>
+      Boolean((opts.luatHuong?.xau && trongCung(h, opts.luatHuong.xau)) || (gs && trongCung(h, gs.cung) && v > gs.cam));
+    const coTheGioSau = (h: number, v: number) => Boolean(gs && trongCung(h, gs.cung) && v >= gs.nhe && v <= gs.cam);
     if (huong !== null) {
       noi += `, hướng trội ${huongChu(huong)}`;
       if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau)) {
         noi += " — GIÓ SAU";
         tong = "xau";
+      } else if (gs && trongCung(huong, gs.cung) && gioMax > gs.cam) {
+        noi += ` — GIÓ SAU mạnh (trên ${gs.cam} m/s tại bãi cất)`;
+        tong = "xau";
+      } else if (gs && trongCung(huong, gs.cung) && gioMax >= gs.nhe) {
+        noi += " — có thể có GIÓ SAU, cẩn thận khi cất cánh";
+        tong = "chuY";
       } else if (opts.luatHuong?.tot && trongCung(huong, opts.luatHuong.tot)) {
         /** Nói thẳng "gió chính bãi": chủ 11/09 — gió Bắc ở Đồi Bù là gió ĐẸP, đọc mà không thấy chữ ấy thì tưởng bình thường. */
         noi += " — GIÓ CHÍNH BÃI";
@@ -265,11 +276,18 @@ export function nhanDinhNgay(
      * biết NGƯỢC CẢ NGÀY hay chỉ vài tiếng, vì trong ngày gió xoay thì vẫn
      * "lọt khe" bay được — và đúng mấy tiếng ấy là thứ phải xếp ca.
      */
-    if (opts.luatHuong?.xau) {
-      const cung = opts.luatHuong.xau;
+    if (opts.luatHuong?.xau || gs) {
       const xet = gio.filter((g) => co(g.huong) && g.gio10m > 0.5);
-      const nguoc = xet.filter((g) => trongCung(g.huong, cung));
-      const thuan = xet.filter((g) => !trongCung(g.huong, cung));
+      const nguoc = xet.filter((g) => laGioSau(g.huong, g.gio10m));
+      const thuan = xet.filter((g) => !laGioSau(g.huong, g.gio10m));
+      /** Giờ 2,5–5 m/s trong cung phía nam: nhắc "có thể có gió sau", không nghỉ (chủ 17/09). */
+      const canhBao = xet.filter((g) => !laGioSau(g.huong, g.gio10m) && coTheGioSau(g.huong, g.gio10m));
+      if (canhBao.length) {
+        if (tong === "thongTin" || tong === "tot") tong = "chuY";
+        khuyenCao.push(
+          `Có thể có GIÓ SAU ${khungCua(canhBao)} (gió ${[...new Set(canhBao.map((g) => huongChu(g.huong)))].join(", ")} ${gs!.nhe}–${gs!.cam} m/s) — cẩn thận khi cất cánh, chưa tới mức nghỉ.`,
+        );
+      }
       if (nguoc.length) {
         /** Tên các hướng bị cấm, lấy từ chính những giờ đang ngược — cụ thể hơn là đọc cung. */
         const tenHuong = [...new Set(nguoc.map((g) => huongChu(g.huong)))].join(", ");
@@ -294,7 +312,7 @@ export function nhanDinhNgay(
       icon: "🌬",
       ten: "Gió mặt đất",
       noiDung: noi,
-      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) ? " gió sau" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
+      ngan: `gió ${huong !== null ? huongChu(huong) + " " : ""}${suc}${tong === "xau" && huong !== null && laGioSau(huong, gioMax) ? " gió sau" : ""}${doiHuong ? ", đổi hướng giữa ngày" : ""}`,
       tong,
     });
   }
