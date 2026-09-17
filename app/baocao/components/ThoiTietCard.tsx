@@ -1419,6 +1419,17 @@ function CaiDatDiem({
         {o("alt", "Độ cao (m)", "1200")}
         {o("ten", "Tên chỗ cất cánh")}
       </div>
+      {/* Toạ độ đang gõ → link Google Maps để soi ngay có đúng bãi không (chủ 17/09) */}
+      {Number.isFinite(Number(f.lat)) && Number.isFinite(Number(f.lon)) && Number(f.lat) !== 0 && (
+        <a
+          href={`https://www.google.com/maps?q=${Number(f.lat)},${Number(f.lon)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-block text-[11px] font-semibold text-sky-700 underline decoration-dotted"
+        >
+          📍 Mở Google Maps tại {Number(f.lat).toFixed(6)}, {Number(f.lon).toFixed(6)}
+        </a>
+      )}
       <div className="mt-1 text-[10px] text-slate-500">
         Lấy toạ độ: mở Google Maps, bấm giữ đúng chỗ cất cánh, chép hai số hiện ra. Toạ độ đang dùng là số tra theo bản
         đồ — sửa lại cho đúng bãi thật thì dự báo mới sát, ở núi lệch vài km là khác hẳn gió.

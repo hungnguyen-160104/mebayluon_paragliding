@@ -948,24 +948,34 @@ export async function gopKinhNghiem(spot: string, ngay: NgayThoiTiet[]): Promise
     const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(150).lean<any[]>();
     const theoNgay = new Map<string, any>(docs.map((d) => [String(d.date), d]));
 
+    const homNay = todayInVN();
     for (const n of ngay) {
       const d = theoNgay.get(n.ngay);
-      /** Chỉ lời ghi TRƯỚC (forecast) mới đè dự báo; chấm thực tế là chuyện đã qua. */
-      if (d?.forecast || d?.expertNote) {
+      /**
+       * Lời NÓI TRƯỚC (forecast) đè dự báo mọi ngày. CHẤM THỰC TẾ (verdict) chỉ
+       * đè ngày HÔM NAY và ngày đã qua: chủ chấm "nghỉ — mưa cả ngày" lúc sáng
+       * thì thẻ hôm nay trên web phải đỏ ngay, không được xanh theo máy nữa
+       * (chủ 17/09: "mưa cả ngày thì đương nhiên là nghỉ bay").
+       */
+      const ketThucTe = d?.verdict && n.ngay <= homNay ? d.verdict : undefined;
+      const ket: "tot" | "han-che" | "nghi" | undefined = d?.forecast || ketThucTe;
+      if (d && (ket || d.expertNote)) {
         /** Đoạn văn chuyên gia viết đứng trước; lý do ngắn kèm nút chỉ là phụ. */
-        const chu = String(d.expertNote || "").trim() || d.forecastNote || undefined;
+        const chu = String(d.expertNote || "").trim() || d.forecastNote || (ketThucTe ? d.note : undefined) || undefined;
         n.chuyenGiaNguoi = {
-          ket: d.forecast,
+          ket,
           khung: d.forecastWindow || undefined,
           ghiChu: chu,
-          boi: d.expertBy || d.forecastBy || undefined,
+          boi: d.expertBy || d.forecastBy || d.markedBy || undefined,
           luc: (d.expertAt || d.forecastAt) ? new Date(d.expertAt || d.forecastAt).toISOString() : undefined,
         };
         /** Chỉ đổi màu khi chuyên gia đã CHỐT mức; viết chữ thôi thì giữ màu máy. */
-        if (d.forecast) {
+        if (ket) {
           if (!n.mucMay) n.mucMay = n.muc;
-          n.muc = d.forecast === "tot" ? "xanh" : d.forecast === "han-che" ? "vang" : "do";
+          n.muc = ket === "tot" ? "xanh" : ket === "han-che" ? "vang" : "do";
           if (d.forecastWindow) n.khungDep = d.forecastWindow;
+          /** Nghỉ bay thì không còn "khung giờ đẹp" nào để rao. */
+          if (ket === "nghi") n.khungDep = null;
         }
       }
     }
