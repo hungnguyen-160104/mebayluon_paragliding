@@ -38,9 +38,20 @@ export function khoaThoiTiet(raw: unknown): KhoaThoiTiet | null {
 /** Điểm CHỈ CÓ trên trang khách (không sổ nội bộ) — app liệt kê thêm để chuyên gia chấm (chủ 17/09). */
 export const DIEM_CHI_CONG_KHAI: DiemThoiTiet[] = DIEM_TRANG_THOI_TIET.filter((d) => !d.spotNoiBo);
 
-/** Tên hiện của một khoá: điểm nội bộ theo SPOTS, điểm công khai theo tên thẻ. */
+/** Tên NGẮN cho app (chủ 17/09: "mấy cái tên này rút gọn thôi") — tên đầy đủ vẫn ở thẻ trang khách. */
+const TEN_GON: Record<string, string> = {
+  "vien-nam": "Viên Nam",
+  "son-tra": "Sơn Trà",
+  "ha-giang": "Quản Bạ",
+  "tram-tau": "Phình Hồ",
+  "dai-tue": "Đại Huệ",
+  "doi-bu": "Đồi Bù",
+  "muong-hoa-sapa": "Sa Pa",
+};
+
+/** Tên hiện của một khoá: điểm nội bộ theo SPOTS, điểm công khai theo tên ngắn. */
 export function tenDiemThoiTiet(key: string): string {
   const noiBo = SPOTS.find((s) => s.id === key);
   if (noiBo) return noiBo.name;
-  return diemThoiTietTheoSlug(key)?.ten ?? key;
+  return TEN_GON[key] ?? diemThoiTietTheoSlug(key)?.ten ?? key;
 }

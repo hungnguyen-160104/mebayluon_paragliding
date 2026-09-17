@@ -98,9 +98,8 @@ export default function TrangThoiTiet() {
                   className="rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
                   title={dangXo(s) ? "Thu gọn thẻ này" : "Xổ đầy đủ thẻ này"}
                 >
-                  {dangXo(s) ? "▾ Thu gọn" : "▸ Xổ ra"}
+                  {dangXo(s) ? "▾" : "▸"} {tenDiemThoiTiet(s)}
                 </button>
-                <span className="text-xs font-bold text-slate-800">{tenDiemThoiTiet(s)}</span>
               </div>
               <ThoiTietCard key={`${s}:${dangXo(s) ? "du" : "gon"}`} spot={s} homNay={todayInVN()} laQuanTri={laQuanTri} laDieuPhoi={laDieuPhoi} gon={!dangXo(s)} />
             </div>
