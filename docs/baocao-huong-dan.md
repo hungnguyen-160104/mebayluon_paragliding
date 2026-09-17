@@ -340,16 +340,20 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 
 ## In vé 3 liên — Khau Phạ và Sa Pa (máy in nhiệt Gainscha B300, khổ 80mm)
 
-> **Đường in cho MỌI điện thoại, kể cả iPhone (chủ 17/09):** ở khung cài máy
-> in bật **📤 In qua app (chia sẻ ảnh vé)**. Từ đó bấm **IN VÉ** → vé dựng
-> thành một ảnh đúng khổ 576 chấm (các liên nối nhau, có vạch ✂ để xé) → hiện
-> khung xem → bấm **GỬI SANG APP IN** → khay chia sẻ của máy → chọn app in máy
-> in nhiệt đã ghép Gainscha B300. Cài và ghép máy in **một lần** trong app:
-> iPhone/iPad dùng app in nhiệt Bluetooth nhận ảnh chia sẻ (ví dụ *Thermer*),
-> Android dùng *RawBT*. Vì sao phải hai cú bấm: khay chia sẻ chỉ mở được ngay
-> trong cú bấm, mà dựng vé mất vài giây. Không có app thì bấm giữ ảnh → lưu
-> rồi in bằng cách khác. Thứ tự ưu tiên của IN VÉ: Bluetooth → USB → RawBT →
-> **app chia sẻ** → trạm in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
+> **Đường in cho MỌI điện thoại, kể cả iPhone — qua app UPRINTER của Gainscha
+> (chủ 17–18/09):** cài *Uprinter* trên điện thoại (Android:
+> play.google.com/store/apps/details?id=com.handset.printer; iPhone cùng tên
+> trên App Store), mở Uprinter ghép **Gainscha B300** qua Bluetooth **một lần**.
+> Trong app mình, khung cài máy in bật **📤 In qua Uprinter (chia sẻ ảnh vé)**.
+> Từ đó ở Sa Pa: **IN VÉ** → danh sách mã → khung xem vé → bấm **🖨 In vé
+> (Uprinter)** → khay chia sẻ của máy hiện ra → chọn **Uprinter** → vé in ra
+> đúng khổ 576 chấm (các liên nối nhau, có vạch ✂). Điện thoại chưa cài kênh
+> nào khác thì khung xem vé tự dùng đường này, không cần bật. Ở Khau Phạ (in
+> thẳng bốn liên) bật công tắc trên thì IN VÉ mở khung "Gửi sang app in".
+> Vì sao vẫn phải chọn app trong khay: trình duyệt không mở được thẳng một
+> app khác kèm tệp ảnh; iPhone/Android xếp app vừa dùng lên đầu khay nên chỉ
+> thêm một chạm. Thứ tự ưu tiên của IN VÉ: Bluetooth → USB → RawBT → **app
+> chia sẻ** → trạm in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
 
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích

@@ -20,6 +20,9 @@
 
 const KHOA_LUU = "baobay.mayInChiaSe";
 
+/** Uprinter — app in của Gainscha (Android: com.handset.printer; iOS cùng tên), nhận ảnh chia sẻ, in qua Bluetooth/Wi-Fi. */
+export const LINK_CAI_UPRINTER = "https://play.google.com/store/apps/details?id=com.handset.printer";
+
 export function mayCoTheChiaSeAnh(): boolean {
   if (typeof navigator === "undefined") return false;
   const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
@@ -138,9 +141,7 @@ export function hienKhungChiaSe(canvas: HTMLCanvasElement, tenFile: string): Pro
     nutGui.style.cssText = "display:block;width:100%;max-width:576px;margin:0 auto;font:800 18px system-ui;padding:14px;border:0;border-radius:12px;background:#16a34a;color:#fff";
     const ghi = document.createElement("p");
     ghi.style.cssText = "max-width:576px;margin:8px auto 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.75);text-align:center";
-    ghi.textContent = laIos()
-      ? "Chọn app in máy in nhiệt đã ghép Gainscha B300 (ví dụ Thermer). Không có app: bấm giữ ảnh → Lưu ảnh rồi in từ app của máy in."
-      : "Chọn RawBT (hoặc app in của máy in) trong khay chia sẻ. Không có app: bấm giữ ảnh để lưu.";
+    ghi.textContent = "Trong khay chia sẻ chọn Uprinter (app của Gainscha, đã ghép B300) — vé in ra ngay. Không có app: bấm giữ ảnh → Lưu ảnh.";
     day.appendChild(nutGui);
     day.appendChild(ghi);
     lop.appendChild(thanh);
@@ -175,7 +176,17 @@ export function hienKhungChiaSe(canvas: HTMLCanvasElement, tenFile: string): Pro
  * in bình thường (nút bấm là cú bấm mới nên tab in / khay chia sẻ mở được).
  * Trả về khi người dùng đóng khung.
  */
-export function hienKhungVe(canvas: HTMLCanvasElement, tenFile: string, nutIn?: () => Promise<void>): Promise<void> {
+export function hienKhungVe(
+  canvas: HTMLCanvasElement,
+  tenFile: string,
+  nutIn?: () => Promise<void>,
+  /**
+   * true = "In vé" mở THẲNG khay chia sẻ với ảnh vé (chủ 18/09: dùng Uprinter
+   * của Gainscha trên Android/iOS — bấm In vé → chọn Uprinter → in). Phải gọi
+   * navigator.share ngay trong cú bấm nên xử lý tại đây, không qua hàm in.
+   */
+  chiaSeTrucTiep = false,
+): Promise<void> {
   return new Promise((resolve) => {
     const lop = document.createElement("div");
     lop.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;background:rgba(15,23,42,.94);color:#fff;font:14px system-ui,sans-serif";
@@ -206,10 +217,12 @@ export function hienKhungVe(canvas: HTMLCanvasElement, tenFile: string, nutIn?: 
     };
     const nutLuu = nut("💾 Lưu ảnh", "#475569");
     const nutChiaSe = nut("📤 Chia sẻ", "#0284c7");
-    const nutInVe = nutIn ? nut("🖨 In vé", "#16a34a") : null;
+    const nutInVe = nutIn || chiaSeTrucTiep ? nut(chiaSeTrucTiep ? "🖨 In vé (Uprinter)" : "🖨 In vé", "#16a34a") : null;
     const ghi = document.createElement("p");
     ghi.style.cssText = "max-width:576px;margin:8px auto 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.75);text-align:center";
-    ghi.textContent = "Khách chụp màn hình được ngay. Lưu ảnh: tải về máy · Chia sẻ: gửi Zalo/AirDrop hoặc sang app in · In vé: ra máy in nhiệt.";
+    ghi.textContent = chiaSeTrucTiep
+      ? "Khách chụp màn hình được ngay. In vé: mở khay chia sẻ → chọn Uprinter (đã ghép Gainscha B300) là in. Lưu ảnh: tải về máy · Chia sẻ: gửi Zalo/AirDrop."
+      : "Khách chụp màn hình được ngay. Lưu ảnh: tải về máy · Chia sẻ: gửi Zalo/AirDrop hoặc sang app in · In vé: ra máy in nhiệt.";
     day.appendChild(hang);
     day.appendChild(ghi);
     lop.appendChild(thanh);
@@ -241,7 +254,15 @@ export function hienKhungVe(canvas: HTMLCanvasElement, tenFile: string, nutIn?: 
         .then((ok) => (ghi.textContent = ok ? "Đã chia sẻ." : "Đã đóng khay chia sẻ."))
         .catch((e) => (ghi.textContent = `Không mở được khay chia sẻ: ${e instanceof Error ? e.message : String(e)}`));
     };
-    if (nutInVe && nutIn) {
+    if (nutInVe && chiaSeTrucTiep) {
+      nutInVe.onclick = () => {
+        if (!file) return void (ghi.textContent = "Đang dựng ảnh, bấm lại sau một giây…");
+        if (!mayCoTheChiaSeAnh()) return void (ghi.textContent = "Máy này không mở được khay chia sẻ — bấm Lưu ảnh rồi mở Uprinter chọn ảnh để in.");
+        void guiAnhSangAppIn(file)
+          .then((ok) => (ghi.textContent = ok ? "Đã gửi sang app in." : "Đã đóng khay chia sẻ — bấm In vé để mở lại."))
+          .catch((e) => (ghi.textContent = `Không mở được khay chia sẻ: ${e instanceof Error ? e.message : String(e)}`));
+      };
+    } else if (nutInVe && nutIn) {
       nutInVe.onclick = () => {
         nutInVe.disabled = true;
         ghi.textContent = "Đang in…";

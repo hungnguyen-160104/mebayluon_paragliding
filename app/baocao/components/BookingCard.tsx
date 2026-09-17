@@ -43,8 +43,14 @@ import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
-import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, printBookingTickets, moTabIn } from "./TicketPrint";
-import { ghepAnhLien, hienKhungVe } from "@/lib/baobay/may-in-chia-se";
+import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn } from "./TicketPrint";
+import { ghepAnhLien, hienKhungVe, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
+
+/** Khung xem vé Sa Pa: "In vé" mở thẳng khay chia sẻ (Uprinter) khi kênh in là chia sẻ, hoặc điện thoại chưa cài kênh nào. */
+function inQuaChiaSeThang(): boolean {
+  const kenh = mayInThangDaGhep();
+  return kenh === "chia-se" || (kenh === null && nenMoTabIn() && mayCoTheChiaSeAnh());
+}
 import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
 import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach } from "@/lib/baobay/ve-qr";
@@ -1134,9 +1140,14 @@ function ReprintTicket({
       if (laSapa) {
         void (async () => {
           const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
-          await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
-            await printBookingTickets(bk, spot, moTabIn(), reason.trim());
-          });
+          await hienKhungVe(
+            ghepAnhLien(anh, RONG_CHAM),
+            `ve-${bk.daySeq || bk.id}.png`,
+            async () => {
+              await printBookingTickets(bk, spot, moTabIn(), reason.trim());
+            },
+            inQuaChiaSeThang(),
+          );
         })().catch((e: unknown) => setError(e instanceof Error ? e.message : "Không dựng được vé"));
       } else void printBookingTickets(bk, spot, tab, reason.trim());
       setOpen(false);
@@ -5534,13 +5545,18 @@ export function BookingTodayBanner({
          */
         if (dangCap && !bk0.ticketIssued) await act(bk0, "ticket");
         const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
-        await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
-          const t = moTabIn();
-          const r2 = dangCap
-            ? null
-            : await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
-          await printBookingTickets(r2?.booking ?? bk, spot, t, dangCap ? "" : "in lại");
-        });
+        await hienKhungVe(
+          ghepAnhLien(anh, RONG_CHAM),
+          `ve-${bk.daySeq || bk.id}.png`,
+          async () => {
+            const t = moTabIn();
+            const r2 = dangCap
+              ? null
+              : await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
+            await printBookingTickets(r2?.booking ?? bk, spot, t, dangCap ? "" : "in lại");
+          },
+          inQuaChiaSeThang(),
+        );
       } else if (dangCap) {
         await printBookingTickets(bk, spot, tab);
         if (!bk0.ticketIssued) await act(bk0, "ticket");

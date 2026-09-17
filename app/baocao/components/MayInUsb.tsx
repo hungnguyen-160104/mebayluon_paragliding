@@ -18,7 +18,7 @@ import { useState } from "react";
 import { boGhepMayInBluetooth, docLoiBluetooth, ghepMayInBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 import { batRawbt, LINK_CAI_RAWBT, mayCoTheDungRawbt, rawbtDaBat } from "@/lib/baobay/may-in-rawbt";
-import { batChiaSe, chiaSeDaBat, laIos, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
+import { batChiaSe, chiaSeDaBat, laIos, LINK_CAI_UPRINTER, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
 import { boGhepMayIn, ghepMayIn, mayInDaGhep, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 
 export function MayInUsb() {
@@ -81,8 +81,8 @@ export function MayInUsb() {
   const khoiChiaSe = coChiaSe ? (
     chiaSe ? (
       <>
-        <span className="rounded-lg border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800" title="IN VÉ sẽ dựng ảnh vé rồi mở khay chia sẻ để gửi sang app in máy in nhiệt">
-          📤 In qua app (chia sẻ): đang bật
+        <span className="rounded-lg border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800" title="IN VÉ dựng ảnh vé rồi mở khay chia sẻ — chọn Uprinter (app của Gainscha, đã ghép B300) là in">
+          📤 In qua Uprinter (chia sẻ): đang bật
         </span>
         {nutBo(() => {
           batChiaSe(false);
@@ -97,15 +97,16 @@ export function MayInUsb() {
           batChiaSe(true);
           setChiaSe(true);
         }}
-        title={
-          laIos()
-            ? "iPhone/iPad: cài một app in máy in nhiệt Bluetooth (ví dụ Thermer), ghép Gainscha B300 trong app một lần. Bật cái này thì IN VÉ dựng ảnh vé và mở khay chia sẻ — chọn app đó là in."
-            : "Android: cài RawBT (hoặc app in của máy in), ghép máy in trong app một lần. Bật cái này thì IN VÉ dựng ảnh vé và mở khay chia sẻ — chọn app đó là in."
-        }
+        title="Cài Uprinter (app của Gainscha) trên điện thoại, ghép Gainscha B300 trong Uprinter một lần. Bật cái này thì IN VÉ dựng ảnh vé và mở khay chia sẻ — chọn Uprinter là in. Chạy được cả Android lẫn iPhone."
       >
-        📤 In qua app (chia sẻ ảnh vé) — {laIos() ? "iPhone/iPad" : "mọi máy"}
+        📤 In qua Uprinter (chia sẻ ảnh vé) — {laIos() ? "iPhone/iPad" : "Android"}
       </button>
     )
+  ) : null;
+  const linkUprinter = coChiaSe && !chiaSe && !laIos() ? (
+    <a href={LINK_CAI_UPRINTER} target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-sky-700 underline decoration-dotted">
+      cài Uprinter
+    </a>
   ) : null;
 
   if (!coBt && !coUsb && !coRaw && !coChiaSe) {
@@ -183,6 +184,7 @@ export function MayInUsb() {
       )}
       {khoiRawbt}
       {khoiChiaSe}
+      {linkUprinter}
       {coRaw && !raw && (
         <a href={LINK_CAI_RAWBT} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">
           cài RawBT
