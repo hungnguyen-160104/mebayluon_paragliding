@@ -964,7 +964,7 @@ function kieuNgayBay(diem: DiemNhanDinh[], gio: GioThoiTiet[]): string {
   if (thermal?.noiDung.startsWith("yếu")) return "Ngày ÍT THERMAL: bay ebon là chính, chuyến ngắn, lift kém — trời êm, ít xóc";
   if (mua) {
     const k = kheKhoVaMua(gio);
-    return `Ngày CÓ MƯA GIỮA CHỪNG (mưa ${k.doanMua}${k.toNhat ? `, to nhất ${k.toNhat}` : ""})${k.kheKho ? ` — khô ${k.kheKho}, bay trong khung ấy` : ""}, để mắt tới mây đen phía gió tới`;
+    return `Ngày CÓ MƯA GIỮA CHỪNG (mưa ${k.doanMua}${k.toNhat ? `, to nhất ${k.toNhat}` : ""})${k.kheKho ? ` — khô ${k.kheKho}, bay trong khung ấy` : ""}, để mắt tới mây đen phía đầu gió`;
   }
   if (li !== null && li >= 1 && thermal?.tong === "tot") return "Ngày ỔN ĐỊNH, THERMAL ÊM: lift đều, ít xóc — kiểu ngày êm nhất trong năm";
   if (li !== null && li > -2 && li < 1 && thermal?.tong === "tot") return "Ngày HƠI BẤT ỔN, THERMAL TỐT: lift mạnh, mây tích đẹp buổi chiều — chiều để ý mây phát triển";
