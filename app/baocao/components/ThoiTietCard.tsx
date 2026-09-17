@@ -686,6 +686,7 @@ function BangGio({
   if (!gio.length) return null;
 
   return (
+    <>
     <div ref={ref} onScroll={onScroll} className="mt-2 overflow-x-auto overscroll-x-contain">
       <table className="w-full min-w-[560px] border-collapse text-center text-[10px]">
         <tbody>
@@ -924,16 +925,19 @@ function BangGio({
           </tr>
         </tbody>
       </table>
+    </div>
+      {/* CHÚ GIẢI đứng NGOÀI khung cuộn — cố định, không trôi theo khi rê ngang bảng (chủ 18/09). */}
       <div className="mt-1 text-[10px] text-slate-500">
-        Ô <strong>Gió</strong> tô theo sức gió: xanh &lt;4 bình thường, tốt (nhạt là dưới 2) · vàng 4–6 hơi mạnh ·
-        cam 6–8 mạnh · đỏ &gt;8 rất mạnh. Giật không quyết định bay — chỉ đỏ chữ khi trên 16 (gust mạnh). Mưa: từ 0,3 mm trở xuống
+        Ô <strong>Gió</strong> tô theo ngưỡng của điểm: <span className="font-black text-emerald-600">xanh</span> nhẹ và vừa (≤{" "}
+        {nguong?.gioXanh ?? 4} m/s) · <span className="font-black text-amber-500">vàng</span> hơi mạnh (tới {nguong?.gioDo ?? 7} m/s) ·{" "}
+        <span className="font-black text-rose-600">đỏ</span> rất mạnh (trên {nguong?.gioDo ?? 7}). Giật không quyết định bay — chỉ đỏ chữ khi trên 16 (gust mạnh). Mưa: từ 0,3 mm trở xuống
         coi như không mưa, 0,4–0,8 là mưa bay (ghi cho biết), từ 0,8 mới là mưa. Hàng <strong>Bay?</strong> là kết luận cả giờ, đã tính mưa, mù, dông và hướng gió:
         <strong> 😊</strong> bay tốt · <strong>😐</strong> cân nhắc · <strong>😞</strong> không bay. Mũi tên chỉ chiều
-        gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi hướng gió tốt cho bãi và{" "}
-        <span className="font-black text-rose-600">đỏ</span> khi hướng xấu hoặc gió xiết. Rê chuột vào ô bất kỳ để
+        gió thổi tới, tô <span className="font-black text-emerald-600">xanh</span> khi là gió chính bãi và{" "}
+        <span className="font-black text-rose-600">đỏ</span> khi gió sau hoặc gió xiết. Rê chuột vào ô bất kỳ để
         xem lý do.
       </div>
-    </div>
+    </>
   );
 }
 
