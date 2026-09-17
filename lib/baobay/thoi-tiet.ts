@@ -670,7 +670,11 @@ export function lyDoHoangHon(ngay: NgayThoiTiet): { dep: boolean; khung: string 
   const mua = Math.max(...cuoi.map((g) => g.mua ?? 0));
   const xsMua = Math.max(...cuoi.map((g) => g.xacSuatMua ?? 0));
   const phutNang = Math.max(...cuoi.map((g) => (g.giayNang ?? 0) / 60));
-  /** Áp suất trong ngày: giờ hoàng hôn so với 12h — sụt quá 2 hPa là hệ thống xấu đang kéo tới. */
+  /**
+   * Áp suất trong ngày: giờ hoàng hôn so với 12h. Ở nhiệt đới áp TỰ tụt 2–3 hPa
+   * từ trưa tới chiều (thuỷ triều khí quyển — xem docs) nên chỉ coi là hệ
+   * thống xấu kéo tới khi sụt QUÁ 4 hPa; mốc 2 hPa làm mọi ngày đều rớt.
+   */
   const apTrua = ngay.gio.find((g) => Number(g.gio.slice(11, 13)) === 12)?.apSuat;
   const apChieu = cuoi[cuoi.length - 1]?.apSuat;
   const sutAp = typeof apTrua === "number" && typeof apChieu === "number" ? apTrua - apChieu : 0;
@@ -681,12 +685,12 @@ export function lyDoHoangHon(ngay: NgayThoiTiet): { dep: boolean; khung: string 
   if (may > 40) hong.push(`mây ${Math.round(may)}%`);
   if (mayThap > 25) hong.push(`mây thấp ${Math.round(mayThap)}% che chân trời`);
   if (phutNang < 30) hong.push(`chỉ ${Math.round(phutNang)} phút nắng`);
-  if (sutAp > 2) hong.push(`áp sụt ${sutAp.toFixed(1)} hPa từ trưa`);
+  if (sutAp > 4) hong.push(`áp sụt ${sutAp.toFixed(1)} hPa từ trưa (quá nhịp thường ngày)`);
   if (hong.length) return { dep: false, khung, lyDo: `khung ${khung}: ${hong.join(", ")}` };
   return {
     dep: true,
     khung,
-    lyDo: `khung ${khung}: trời trong (mây ${Math.round(may)}%${mayThap ? `, mây thấp ${Math.round(mayThap)}%` : ""}), không mưa, nắng ${Math.round(phutNang)} phút/giờ${sutAp <= 0 ? ", áp ổn định" : ""}`,
+    lyDo: `khung ${khung}: trời trong (mây ${Math.round(may)}%${mayThap ? `, mây thấp ${Math.round(mayThap)}%` : ""}), không mưa, nắng ${Math.round(phutNang)} phút/giờ${sutAp <= 2.5 ? ", áp ổn định" : ""}`,
   };
 }
 
