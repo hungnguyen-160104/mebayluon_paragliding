@@ -409,9 +409,9 @@ const CSS = `
   .luuy-khach li { white-space: normal; overflow-wrap: anywhere; }
   /* SA PA: một liên 80 x 80 mm — cao cố định; QR to bên trái, ba dòng chữ bên phải */
   .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; }
-  .ve.sapa .sapa-than { display: flex; gap: 8px; align-items: center; flex: 1; min-height: 0; margin: 2px 0 3px; }
-  .ve.sapa .sapa-qr { flex: 0 0 25mm; text-align: center; }
-  .ve.sapa .sapa-qr svg { width: 25mm; height: 25mm; display: block; }
+  .ve.sapa .sapa-than { display: flex; gap: 6px; align-items: center; flex: 1; min-height: 0; margin: 1px 0 2px; }
+  .ve.sapa .sapa-qr { flex: 0 0 30mm; text-align: center; }
+  .ve.sapa .sapa-qr svg { width: 30mm; height: 30mm; display: block; }
   .ve.sapa .sapa-qr-nhan { font-size: 9.5px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
   .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
   .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
@@ -613,8 +613,8 @@ export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
      .ve.sapa { height: 640px !important; }
-     .ve.sapa .sapa-qr { flex-basis: 200px !important; }
-     .ve.sapa .sapa-qr svg { width: 200px !important; height: 200px !important; }
+     .ve.sapa .sapa-qr { flex-basis: 236px !important; }
+     .ve.sapa .sapa-qr svg { width: 236px !important; height: 236px !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }

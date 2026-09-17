@@ -1117,8 +1117,10 @@ function ReprintTicket({
     if (!khongGioiHan && reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
     setBusy(true);
     setError(null);
+    /** Sa Pa (chủ 18/09): in lại cũng qua KHUNG XEM VÉ (Lưu · Chia sẻ · In) — không mở tab trước. */
+    const laSapa = normalizeSpot(spot) === "sapa";
     /** Mở tab in đồng bộ trước `await` — điện thoại chặn cửa sổ mở sau khi gọi mạng. */
-    const tab = coInVe(spot) ? moTabIn() : null;
+    const tab = coInVe(spot) && !laSapa ? moTabIn() : null;
     try {
       const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
         id: booking.id,
@@ -1126,7 +1128,15 @@ function ReprintTicket({
         reason: reason.trim(),
       });
       /** In lại dùng ĐÚNG mã cũ trong sổ — máy chủ không cấp mã mới khi in lại. */
-      void printBookingTickets(r?.booking ?? booking, spot, tab, reason.trim());
+      const bk = r?.booking ?? booking;
+      if (laSapa) {
+        void (async () => {
+          const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
+          await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
+            await printBookingTickets(bk, spot, moTabIn(), reason.trim());
+          });
+        })().catch((e: unknown) => setError(e instanceof Error ? e.message : "Không dựng được vé"));
+      } else void printBookingTickets(bk, spot, tab, reason.trim());
       setOpen(false);
       setReason("");
       onDone();
