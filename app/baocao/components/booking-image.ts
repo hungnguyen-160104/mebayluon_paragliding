@@ -360,7 +360,8 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const titleH = 30;
   const rowH = 34;
   const blockGap = 14;
-  const footerH = 62;
+  /** Chân phiếu: 2 dòng cũ + 3 dòng nhắc thời tiết / hotline (chủ 17/09). */
+  const footerH = 128;
 
   const blocks = buildBlocks(d);
 
@@ -719,8 +720,14 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.fillRect(0, H - footerH, W, footerH);
   g.font = f(14);
   g.fillStyle = C.sub;
-  g.fillText("Vui lòng có mặt trước giờ bay 15 phút · Bay theo điều kiện thời tiết thực tế.", pad, H - footerH + 26);
-  g.fillText("Mang theo CCCD/Passport để làm bảo hiểm chuyến bay.", pad, H - footerH + 47);
+  g.fillText("Vui lòng có mặt trước giờ bay 15 phút · Mang theo CCCD/Passport để làm bảo hiểm.", pad, H - footerH + 24);
+  /** Lời nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09). */
+  g.fillStyle = C.ink;
+  g.font = f(14, "bold");
+  g.fillText("Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi", pad, H - footerH + 52);
+  g.fillText("xác nhận thời tiết bay trước khi xuất phát.", pad, H - footerH + 72);
+  g.fillText("Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789", pad, H - footerH + 96);
+  g.fillText("để được hỗ trợ kịp thời.", pad, H - footerH + 116);
 
   return canvas;
 }

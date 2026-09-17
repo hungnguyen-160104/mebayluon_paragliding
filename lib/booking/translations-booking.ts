@@ -171,6 +171,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Cảm ơn đặt chỗ của bạn! Chúng tôi sẽ liên hệ trực tiếp để xác nhận thông tin đặt bay, vui lòng để ý điện thoại. Nếu cần gấp, vui lòng chủ động liên hệ hotline 0964.073.555 - 0385.907.789 (Zalo, WhatsApp).",
       preflightTitle: "Lưu ý trước chuyến bay:",
       preflightNotes: [
+        "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.",
+        "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789 để được hỗ trợ kịp thời.",
         "Có mặt tại điểm bay trước 30 phút để làm thủ tục Check-in.",
         "Trang phục: nên đi giày thể thao; không đi giày cao gót; quần áo dài tay màu sắc sặc sỡ; có thể đeo kính; mang theo điện thoại có sẵn ~10GB bộ nhớ trống để nhận ảnh/video.",
         "Toạ độ điểm bay:",
@@ -262,6 +264,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Thank you for your booking! We will contact you to confirm the flight details.",
       preflightTitle: "Pre-flight notes",
       preflightNotes: [
+        "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
+        "For any service feedback, please call our Hotline 0964.073.555 – 0385.907.789 directly so we can help right away.",
         "Arrive at the launch site 30 minutes early for check-in.",
         "Outfit: sneakers recommended; avoid high heels; long-sleeve colorful outfit; glasses allowed; prepare ~10GB free storage for photo/video.",
         "Coordinates:",
@@ -355,6 +359,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Merci pour votre réservation ! Nous vous contacterons pour confirmer les détails du vol.",
       preflightTitle: "Notes avant le vol",
       preflightNotes: [
+        "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir.",
+        "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 – 0385.907.789 pour une aide immédiate.",
         "Arrivez 30 minutes en avance pour l’enregistrement.",
         "Tenue : baskets, pas de talons ; manches longues colorées ; lunettes autorisées ; prévoyez ~10 Go libres pour photos/vidéos.",
         "Coordonnées :",
@@ -448,6 +454,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "Спасибо за бронирование! Мы свяжемся с вами для подтверждения.",
       preflightTitle: "Памятка перед полётом",
       preflightNotes: [
+        "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом.",
+        "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 – 0385.907.789 — поможем сразу.",
         "Прибудьте на стартовую площадку за 30 минут до вылета.",
         "Одежда: кроссовки, не каблуки; яркая одежда с длинными рукавами; очки разрешены; подготовьте ~10 ГБ памяти.",
         "Координаты:",
@@ -541,6 +549,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "感谢你的预订！我们将联系你确认飞行信息。",
       preflightTitle: "飞行前提示",
       preflightNotes: [
+        "飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。",
+        "如对服务有任何反馈，请直接致电热线 0964.073.555 – 0385.907.789，我们会及时协助。",
         "请提前 30 分钟到达起飞点办理签到。",
         "建议穿运动鞋；避免高跟鞋；长袖亮色衣服更适合拍照；可佩戴眼镜；手机预留约 10GB 空间用于接收照片/视频。",
         "坐标：",
@@ -634,6 +644,8 @@ export const bookingTranslations: Record<LangCode, Dict> = {
         "आपकी बुकिंग के लिए धन्यवाद! हम पुष्टि के लिए आपसे संपर्क करेंगे।",
       preflightTitle: "उड़ान से पहले नोट्स",
       preflightNotes: [
+        "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।",
+        "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 – 0385.907.789 पर कॉल करें, हम तुरंत सहायता करेंगे।",
         "चेक-इन के लिए लॉन्च साइट पर 30 मिनट पहले पहुँचें।",
         "पोशाक: स्नीकर्स सुझाए जाते हैं; हाई हील्स से बचें; रंगीन लॉन्ग-स्लीव पहनें; चश्मा ठीक है; फोटो/वीडियो के लिए फोन में ~10GB खाली जगह रखें।",
         "कोऑर्डिनेट्स:",

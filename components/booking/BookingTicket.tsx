@@ -430,6 +430,29 @@ function useTicketLabels(lang: LangCode) {
             : isZH || isZHTW
               ? zh("请提前15分钟到达参加安全简报。", "請提前15分鐘到達參加安全簡報。")
               : "Please arrive 15 minutes early for safety briefing.",
+    /** Hai dòng nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09): thời tiết đổi bất ngờ + phản ánh gọi Hotline. */
+    weatherNote: isVI
+      ? "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát."
+      : isFR
+        ? "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir."
+        : isRU
+          ? "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом."
+          : isHI
+            ? "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।"
+            : isZH || isZHTW
+              ? zh("飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。", "飛行天氣可能突然變化、恕不另行通知——出發前請致電確認飛行天氣。")
+              : "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
+    hotlineNote: isVI
+      ? "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789 để được hỗ trợ kịp thời."
+      : isFR
+        ? "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 – 0385.907.789 pour une aide immédiate."
+        : isRU
+          ? "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 – 0385.907.789 — поможем сразу."
+          : isHI
+            ? "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 – 0385.907.789 पर कॉल करें, हम तुरंत सहायता करेंगे।"
+            : isZH || isZHTW
+              ? zh("如对服务有任何反馈，请直接致电热线 0964.073.555 – 0385.907.789，我们会及时协助。", "如對服務有任何回饋，請直接致電熱線 0964.073.555 – 0385.907.789，我們會及時協助。")
+              : "For any service feedback, please call our Hotline 0964.073.555 – 0385.907.789 directly so we can help right away.",
   };
 }
 
@@ -1803,6 +1826,12 @@ export default function BookingTicket({
           }}
         >
           ⏱️ {labels.safetyNote}
+        </div>
+        <div style={{ fontSize: 11, color: C.accentDark, marginTop: 3, fontWeight: 600, lineHeight: 1.35 }}>
+          ⛅ {labels.weatherNote}
+        </div>
+        <div style={{ fontSize: 11, color: C.accentDark, marginTop: 2, fontWeight: 600, lineHeight: 1.35 }}>
+          ☎ {labels.hotlineNote}
         </div>
         <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>
           {labels.created}: {createdAt}

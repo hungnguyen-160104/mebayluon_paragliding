@@ -100,6 +100,11 @@ const LUU_Y_KHACH = [
   "Giày thể thao, đồ gọn; không váy, cao gót",
   "Mang theo CCCD / hộ chiếu",
   "Không mang đồ sắc nhọn, cồng kềnh, đồ quý",
+  /** Lời nhắc bắt buộc trên mọi vé (chủ 17/09) — cắt thành dòng ngắn cho vừa khổ 80mm. */
+  "Thời tiết bay có thể thay đổi bất ngờ",
+  "Gọi xác nhận thời tiết trước khi xuất phát",
+  "Phản ánh dịch vụ: gọi thẳng Hotline",
+  "Hotline 0964.073.555 – 0385.907.789",
 ];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */

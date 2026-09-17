@@ -63,6 +63,8 @@ const UI_TEXT: Record<
     note: "Đội ngũ sẽ liên hệ xác nhận lịch bay, thời tiết và các dịch vụ đi kèm trong thời gian sớm nhất.",
     preFlightNotesTitle: "Thông tin lưu ý trước khi bay",
     preFlightNotes: [
+      "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.",
+      "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789 để được hỗ trợ kịp thời.",
       "Mang theo điện thoại và chừa sẵn khoảng 10GB trống để chép ảnh & video chuyến bay ngay tại điểm bay.",
       "Lịch bay có thể thay đổi tùy theo điều kiện thời tiết thực tế.",
       "Vui lòng có mặt tại điểm hẹn trước giờ bay ít nhất 30 phút.",
@@ -101,6 +103,8 @@ const UI_TEXT: Record<
     note: "Our team will contact you soon to confirm schedule, weather, and selected services.",
     preFlightNotesTitle: "Pre-flight information",
     preFlightNotes: [
+      "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
+      "For any service feedback, please call our Hotline 0964.073.555 – 0385.907.789 directly so we can help right away.",
       "Bring your phone with about 10GB free so we can copy your flight photos and video on the spot.",
       "Flight schedule may change depending on actual weather conditions.",
       "Please arrive at the meeting point at least 30 minutes before flight time.",
@@ -139,6 +143,8 @@ const UI_TEXT: Record<
     note: "Notre équipe vous contactera rapidement pour confirmer l'horaire, la météo et les services choisis.",
     preFlightNotesTitle: "Informations avant le vol",
     preFlightNotes: [
+      "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir.",
+      "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 – 0385.907.789 pour une aide immédiate.",
       "Apportez votre téléphone avec environ 10 Go libres pour copier vos photos et vidéos de vol sur place.",
       "L'horaire du vol peut changer en fonction des conditions météorologiques.",
       "Veuillez arriver au point de rendez-vous au moins 30 minutes avant le vol.",
@@ -177,6 +183,8 @@ const UI_TEXT: Record<
     note: "Наша команда скоро свяжется с вами для подтверждения времени, погоды и выбранных услуг.",
     preFlightNotesTitle: "Информация перед полётом",
     preFlightNotes: [
+      "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом.",
+      "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 – 0385.907.789 — поможем сразу.",
       "Возьмите телефон и оставьте около 10 ГБ свободного места — фото и видео полёта скопируем прямо на площадке.",
       "Расписание полёта может измениться в зависимости от погодных условий.",
       "Пожалуйста, прибудьте к месту встречи минимум за 30 минут до вылета.",
@@ -215,6 +223,8 @@ const UI_TEXT: Record<
     note: "हमारी टीम जल्द ही समय, मौसम और चुनी गई सेवाओं की पुष्टि के लिए आपसे संपर्क करेगी।",
     preFlightNotesTitle: "उड़ान से पहले की जानकारी",
     preFlightNotes: [
+      "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।",
+      "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 – 0385.907.789 पर कॉल करें, हम तुरंत सहायता करेंगे।",
       "फ़ोन साथ लाएँ और लगभग 10GB जगह खाली रखें — उड़ान की फ़ोटो व वीडियो वहीं कॉपी कर दी जाएगी।",
       "मौसम की स्थिति के अनुसार उड़ान का समय बदल सकता है।",
       "कृपया उड़ान से कम से कम 30 मिनट पहले मिलन स्थल पर पहुँचें।",
@@ -253,6 +263,8 @@ const UI_TEXT: Record<
     note: "团队会尽快联系您确认飞行时间、天气和已选服务。",
     preFlightNotesTitle: "飞行前须知",
     preFlightNotes: [
+      "飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。",
+      "如对服务有任何反馈，请直接致电热线 0964.073.555 – 0385.907.789，我们会及时协助。",
       "请带上手机并预留约 10GB 空间，飞行照片和视频可当场拷贝给您。",
       "飞行时间可能根据实际天气情况调整。",
       "请至少提前30分钟到达集合点。",
