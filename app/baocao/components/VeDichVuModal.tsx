@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { normalizeSpot } from "@/lib/baobay/spots";
 
 import type { BookingDTO } from "@/lib/baobay/types";
 import { chiaDichVu, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
@@ -122,7 +123,7 @@ export function VeDichVuModal({
               }
             }}
           >
-            {booking.veQr ? "Lưu dịch vụ" : "Cấp mã & in vé"}
+            {booking.veQr ? "Lưu dịch vụ" : normalizeSpot(booking.spot) === "sapa" ? "Cấp mã & xem vé" : "Cấp mã & in vé"}
           </Button>
         </div>
       </div>

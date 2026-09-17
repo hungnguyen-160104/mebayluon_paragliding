@@ -41,7 +41,9 @@ import {
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
-import { baoLoiVaoTab, coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
+import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, printBookingTickets, moTabIn } from "./TicketPrint";
+import { ghepAnhLien, hienKhungVe } from "@/lib/baobay/may-in-chia-se";
+import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
 import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
@@ -5337,8 +5339,13 @@ export function BookingTodayBanner({
           onCancel={() => setVeModal(null)}
           onConfirm={async (dichVu) => {
             const dangCap = !veModal.veQr;
-            /** Mở tab in đồng bộ trong cú bấm (điện thoại chặn cửa sổ mở sau khi gọi mạng). */
-            const tab = dangCap && coInVe(spot) ? moTabIn() : null;
+            /**
+             * SA PA (chủ 18/09): cấp mã xong KHÔNG in ngay mà bày KHUNG XEM VÉ —
+             * khách chụp màn hình được, ba nút Lưu ảnh · Chia sẻ · In vé. Điểm
+             * khác giữ nếp cũ: mở tab in đồng bộ trong cú bấm rồi in luôn.
+             */
+            const laSapa = normalizeSpot(spot) === "sapa";
+            const tab = dangCap && coInVe(spot) && !laSapa ? moTabIn() : null;
             try {
               const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
                 id: veModal.id,
@@ -5348,8 +5355,18 @@ export function BookingTodayBanner({
               });
               setVeModal(null);
               if (dangCap) {
-                await printBookingTickets(r?.booking ?? veModal, spot, tab);
-                if (!veModal.ticketIssued) await act(veModal, "ticket");
+                const bk = r?.booking ?? veModal;
+                if (laSapa) {
+                  if (!veModal.ticketIssued) await act(veModal, "ticket");
+                  const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
+                  await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
+                    const t = moTabIn();
+                    await printBookingTickets(bk, spot, t, "");
+                  });
+                } else {
+                  await printBookingTickets(bk, spot, tab);
+                  if (!veModal.ticketIssued) await act(veModal, "ticket");
+                }
               }
               load();
             } catch (e: unknown) {

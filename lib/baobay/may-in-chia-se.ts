@@ -167,3 +167,89 @@ export function hienKhungChiaSe(canvas: HTMLCanvasElement, tenFile: string): Pro
     };
   });
 }
+
+
+/**
+ * KHUNG XEM VÉ CHO KHÁCH (Sa Pa, chủ 18/09): sau khi cấp mã, bày ảnh vé to để
+ * khách chụp màn hình; ba nút LƯU ẢNH · CHIA SẺ · IN VÉ. "In vé" gọi lại đường
+ * in bình thường (nút bấm là cú bấm mới nên tab in / khay chia sẻ mở được).
+ * Trả về khi người dùng đóng khung.
+ */
+export function hienKhungVe(canvas: HTMLCanvasElement, tenFile: string, nutIn?: () => Promise<void>): Promise<void> {
+  return new Promise((resolve) => {
+    const lop = document.createElement("div");
+    lop.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;background:rgba(15,23,42,.94);color:#fff;font:14px system-ui,sans-serif";
+    const thanh = document.createElement("div");
+    thanh.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px";
+    thanh.innerHTML = '<b style="font-size:15px">🎟 Vé đã cấp — khách chụp lại được</b>';
+    const dong = document.createElement("button");
+    dong.textContent = "✕ Đóng";
+    dong.style.cssText = "font:700 14px system-ui;padding:6px 12px;border:0;border-radius:8px;background:rgba(255,255,255,.15);color:#fff";
+    thanh.appendChild(dong);
+    const vung = document.createElement("div");
+    vung.style.cssText = "flex:1;min-height:0;overflow:auto;padding:0 8px";
+    const img = document.createElement("img");
+    img.alt = "Vé bay";
+    img.style.cssText = "display:block;width:100%;max-width:576px;margin:0 auto;background:#fff;border-radius:8px";
+    img.src = canvas.toDataURL("image/png");
+    vung.appendChild(img);
+    const day = document.createElement("div");
+    day.style.cssText = "flex:none;padding:10px 12px max(env(safe-area-inset-bottom),10px);background:#0f172a;border-top:1px solid rgba(255,255,255,.15)";
+    const hang = document.createElement("div");
+    hang.style.cssText = "display:flex;gap:8px;max-width:576px;margin:0 auto";
+    const nut = (chu: string, mau: string) => {
+      const b = document.createElement("button");
+      b.textContent = chu;
+      b.style.cssText = `flex:1;font:800 15px system-ui;padding:13px 6px;border:0;border-radius:12px;background:${mau};color:#fff`;
+      hang.appendChild(b);
+      return b;
+    };
+    const nutLuu = nut("💾 Lưu ảnh", "#475569");
+    const nutChiaSe = nut("📤 Chia sẻ", "#0284c7");
+    const nutInVe = nutIn ? nut("🖨 In vé", "#16a34a") : null;
+    const ghi = document.createElement("p");
+    ghi.style.cssText = "max-width:576px;margin:8px auto 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.75);text-align:center";
+    ghi.textContent = "Khách chụp màn hình được ngay. Lưu ảnh: tải về máy · Chia sẻ: gửi Zalo/AirDrop hoặc sang app in · In vé: ra máy in nhiệt.";
+    day.appendChild(hang);
+    day.appendChild(ghi);
+    lop.appendChild(thanh);
+    lop.appendChild(vung);
+    lop.appendChild(day);
+    document.body.appendChild(lop);
+
+    let file: File | null = null;
+    void anhSangFile(canvas, tenFile).then((f) => (file = f)).catch(() => null);
+    const xong = () => {
+      lop.remove();
+      resolve();
+    };
+    dong.onclick = xong;
+    nutLuu.onclick = () => {
+      if (!file) return void (ghi.textContent = "Đang dựng ảnh, bấm lại sau một giây…");
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = tenFile;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      ghi.textContent = "Đã tải ảnh vé về máy. iPhone không thấy: bấm giữ ảnh → Lưu ảnh.";
+    };
+    nutChiaSe.onclick = () => {
+      if (!file) return void (ghi.textContent = "Đang dựng ảnh, bấm lại sau một giây…");
+      if (!mayCoTheChiaSeAnh()) return void (ghi.textContent = "Máy này không mở được khay chia sẻ — bấm Lưu ảnh rồi gửi file.");
+      void guiAnhSangAppIn(file)
+        .then((ok) => (ghi.textContent = ok ? "Đã chia sẻ." : "Đã đóng khay chia sẻ."))
+        .catch((e) => (ghi.textContent = `Không mở được khay chia sẻ: ${e instanceof Error ? e.message : String(e)}`));
+    };
+    if (nutInVe && nutIn) {
+      nutInVe.onclick = () => {
+        nutInVe.disabled = true;
+        ghi.textContent = "Đang in…";
+        void nutIn()
+          .then(() => (ghi.textContent = "Đã gửi lệnh in."))
+          .catch((e) => (ghi.textContent = `Không in được: ${e instanceof Error ? e.message : String(e)}`))
+          .finally(() => (nutInVe.disabled = false));
+      };
+    }
+  });
+}

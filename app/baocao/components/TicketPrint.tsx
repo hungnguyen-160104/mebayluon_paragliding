@@ -574,6 +574,20 @@ export function mayInThangDaGhep(): KenhInThang | null {
  * sang px theo tỉ lệ ấy để bố cục y hệt bản in qua hộp thoại.
  */
 export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<void> {
+  const anh = await dungAnhVe(html);
+  if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
+  else if (kenh === "rawbt") await inAnhQuaRawbt(anh);
+  else if (kenh === "chia-se") {
+    const kq = await hienKhungChiaSe(ghepAnhLien(anh, RONG_CHAM), `ve-${Date.now()}.png`);
+    if (kq !== "da-gui") throw new Error("Chưa gửi sang app in");
+  } else await inAnhQuaUsb(anh);
+}
+
+/**
+ * DỰNG ẢNH TỪNG LIÊN (576 chấm ngang) từ HTML vé — dùng chung cho in thẳng,
+ * gửi app in, và KHUNG XEM VÉ để khách chụp lại (Sa Pa, chủ 18/09).
+ */
+export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
   const html2canvas = (await import("html2canvas")).default;
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
   /**
@@ -632,12 +646,7 @@ export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<
       const c = await html2canvas(el, { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
       anh.push(gopDamNhat(c, RONG_CHAM));
     }
-    if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
-    else if (kenh === "rawbt") await inAnhQuaRawbt(anh);
-    else if (kenh === "chia-se") {
-      const kq = await hienKhungChiaSe(ghepAnhLien(anh, RONG_CHAM), `ve-${Date.now()}.png`);
-      if (kq !== "da-gui") throw new Error("Chưa gửi sang app in");
-    } else await inAnhQuaUsb(anh);
+    return anh;
   } finally {
     frame.parentNode && document.body.removeChild(frame);
   }

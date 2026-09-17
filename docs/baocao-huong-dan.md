@@ -373,6 +373,13 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), loại bay, dịch vụ, giờ in,
 > **QR vé 30 mm để phi công quét**, một dòng lưu ý. Chiều cao cố định 74 mm nội
 > dung (in thẳng: 640 chấm). Khau Phạ vẫn in bộ bốn liên dưới đây.
+>
+> **Luồng IN VÉ ở Sa Pa (chủ 18/09):** bấm 🖨 IN VÉ → hộp **danh sách khách
+> (mã QR từng người)** để tích tay dịch vụ 360 / flycam / cờ đỏ cho đúng khách
+> khi không chia đều → **Cấp mã & xem vé** → máy cấp mã và bày **KHUNG XEM VÉ**
+> (ảnh vé to, khách chụp màn hình được) với ba nút **💾 Lưu ảnh · 📤 Chia sẻ ·
+> 🖨 In vé**. "In vé" đi đúng đường in đã cài (Bluetooth / USB / RawBT / app
+> chia sẻ / tab). Booking tự tích "đã xuất vé" ngay khi cấp mã.
 
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**
 và **#23.2**, mỗi số BỐN liên:
