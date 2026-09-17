@@ -390,6 +390,49 @@ trong cùng điểm + cùng ngày. Vé chưa qua sổ in "····" ở chỗ m�
 thứ mấy, ngày bay; không có → vé chép hoặc gõ nhầm (máy tự quy chữ dễ nhầm về
 bảng chuẩn khi tra). Phép thử: `scripts/baocao/test-ma-ve-bao-mat.ts`.
 
+### Mã vé QR từng khách — phi công QUÉT vé (Sa Pa; Khau Phạ chỉ booking PPG)
+
+Chủ chốt 17/09/2026. Sa Pa không dùng vé giấy đánh số sẵn: mỗi KHÁCH một tấm
+vé nhiệt, trên liên 1 và liên 2 có thêm **mã QR vé** — nội dung
+`22/12/2026 #3.2 SAPA` (ngày cấp · booking số 3 trong ngày · khách thứ 2),
+bên dưới in tên khách chữ nhỏ và dịch vụ đi kèm (Cam 360 · Flycam · Cờ đỏ).
+Mã này KHÔNG đổi khi dời lịch: ngày trong mã là ngày cấp, máy chủ biết booking
+đang ở ngày nào. Vì thế số thứ tự của ngày cấp không được cấp lại cho đoàn khác
+khi đoàn này dời đi.
+
+**Điều phối / quầy — lúc in vé (`/baocao/dieu-phoi`):**
+
+- Bấm **🖨 IN VÉ** lần đầu → hộp **Dịch vụ trên vé**: danh sách khách (tên viết
+  tắt) với ô tích 360 / flycam / cờ đỏ. Đặt 10 flycam cho 10 khách thì máy
+  tích sẵn; đặt 8 thì để trống, tích tay khách nào có. Xác nhận là **cấp mã và
+  in**. Sau đó nút **🎟 DV vé** sửa lại dịch vụ cho khách CHƯA bay xong.
+- Trên dòng booking hiện từng mã: *#3.2 · mã trống* · *#3.2 · Mỹ đã tiếp nhận*
+  · *#3.2 · ✅ Mỹ bay xong*; cả đoàn bay xong thì có nhãn **ĐÃ BAY HẾT**.
+- **Huỷ** hoặc **Dời** booking: mã phi công đã chiếm bị **thu hồi** tự động —
+  phi công ấy thấy cảnh báo, số chuyến và dịch vụ bị rút khỏi báo cáo. Dời
+  sang ngày mới thì hôm ấy phải quét lại (ai quét cũng được). Thu hồi tay một
+  mã: `POST /api/baocao/ve-qr {action:"thuhoi"}` (điều phối / quầy / quản trị;
+  phi công không thu hồi được mã của người khác).
+
+**Phi công — thẻ Quét vé (`/baocao/quet-ve`):**
+
+- Chọn NGÀY đang báo cáo. Quét bằng **camera**, hoặc **chọn nhiều ảnh** (cuối
+  ngày chụp lại các vé để soát — mã đã quét thì bỏ qua êm), hoặc gõ tay
+  `22/12 #3.2`.
+- Máy chủ kiểm: mã của **ngày khác** → báo "mã này của ngày X"; mã đã **dời**
+  tới ngày đang chọn → nhận (ghi *mã dời từ …*); mã đã bị **huỷ** → báo; mã
+  **phi công khác** đã quét → báo tên người ấy và giờ quét.
+- Quét xong hiện tên khách + dịch vụ; mã vào danh sách **Mã tôi đang giữ** với
+  nút **✅ Bay xong** · **⟲ Hoàn mã** (mã trắng lại cho người khác) · **✕ Hoàn
+  Cam 360 / Flycam / Cờ đỏ** (không hoàn thành dịch vụ lẻ, chuyến vẫn tính).
+- **Tổng hợp trong ngày** (chuyến, bay xong, 360, flycam, cờ đỏ) tự cộng — cũng
+  hiện ở trang Phi công (khối *Từ quét vé*, nút **⤵ Điền vào báo cáo** chép số
+  sang ô báo cáo; Sa Pa không bắt buộc mã vé nên ô mã để trống).
+
+Dữ liệu nằm trên booking (`veQr`), phép tính ở `lib/baobay/ve-qr.ts`
+(phép thử: `scripts/baobay/test-ve-qr.ts`), luật quét ở
+`services/ve-qr.service.ts`, API `app/api/baocao/ve-qr/route.ts`.
+
 ### Nối máy in — hai đường, cùng một mẫu vé
 
 Trang web **không cài được driver** lên máy tính (không trình duyệt nào cho

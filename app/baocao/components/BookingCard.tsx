@@ -41,6 +41,8 @@ import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
 import { baoLoiVaoTab, coInVe, printBookingTickets, moTabIn } from "./TicketPrint";
+import { VeDichVuModal } from "./VeDichVuModal";
+import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -4437,6 +4439,8 @@ export function BookingTodayBanner({
     [seenLoaded],
   );
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
+  /** Hộp DỊCH VỤ TRÊN VÉ (Sa Pa): mở trước lần in đầu để cấp mã QR, hoặc sửa sau khi đã cấp. */
+  const [veModal, setVeModal] = useState<BookingDTO | null>(null);
   const [moving, setMoving] = useState<{
     id: string;
     toDate: string;
@@ -5203,6 +5207,15 @@ export function BookingTodayBanner({
         }
         disabled={busy === b.id}
         onClick={() => {
+          /**
+           * ĐIỂM QUÉT MÃ (Sa Pa / PPG Khau Phạ, chủ 17/09): lần in đầu phải qua hộp
+           * DỊCH VỤ TRÊN VÉ — tích khách nào có 360/flycam/cờ đỏ — rồi mới cấp mã
+           * QR và in. Xác nhận trong hộp mới gọi máy chủ; ở đây chỉ mở hộp.
+           */
+          if (!b.noTicketFlight && !b.ticketIssued && coQuetVe(spot, b) && !b.veQr) {
+            setVeModal(b);
+            return;
+          }
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
             /**
@@ -5264,8 +5277,86 @@ export function BookingTodayBanner({
           khongGioiHan={IN_VE_TU_DO || (user?.role === "admin" && user?.adminLevel === 1)}
         />
       )}
+      {/* Sửa dịch vụ trên vé sau khi đã cấp mã (khách chưa bay xong) */}
+      {b.veQr && !b.noTicketFlight && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-7 border-violet-300 bg-violet-50 px-2 text-xs font-semibold text-violet-800"
+          disabled={busy === b.id}
+          onClick={() => setVeModal(b)}
+          title="Dịch vụ trên vé từng khách (360 / flycam / cờ đỏ) — sửa được cho khách chưa bay xong"
+        >
+          🎟 DV vé
+        </Button>
+      )}
+      {renderVeQrStatus(b)}
+      {veModal?.id === b.id && (
+        <VeDichVuModal
+          booking={veModal}
+          onCancel={() => setVeModal(null)}
+          onConfirm={async (dichVu) => {
+            const dangCap = !veModal.veQr;
+            /** Mở tab in đồng bộ trong cú bấm (điện thoại chặn cửa sổ mở sau khi gọi mạng). */
+            const tab = dangCap && coInVe(spot) ? moTabIn() : null;
+            try {
+              const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {
+                id: veModal.id,
+                action: dangCap ? "ticket-print" : "ve-dichvu",
+                reason: "",
+                dichVu,
+              });
+              setVeModal(null);
+              if (dangCap) {
+                await printBookingTickets(r?.booking ?? veModal, spot, tab);
+                if (!veModal.ticketIssued) await act(veModal, "ticket");
+              }
+              load();
+            } catch (e: unknown) {
+              const m = e instanceof Error ? e.message : "Không cấp được mã vé";
+              baoLoiVaoTab(tab, m);
+              setError(m.replace(/\|[A-Z_]+$/, ""));
+            }
+          }}
+        />
+      )}
     </>
   );
+  /**
+   * TRẠNG THÁI MÃ VÉ QR TỪNG KHÁCH (chủ 17/09, mục 3 và 13): "phi công X đã tiếp
+   * nhận", "bay xong", mã trống; cả đoàn bay xong thì gắn ĐÃ BAY HẾT.
+   */
+  const renderVeQrStatus = (b: BookingDTO) => {
+    const v = b.veQr;
+    if (!v?.khach?.length) return null;
+    const het = daBayHet(v, b.guestCount);
+    const tenKhach = (g: number) => {
+      const ds = (b.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
+      return tenVietTat(ds.length >= g ? ds[g - 1]! : b.contactName || "Khách");
+    };
+    return (
+      <span className="flex flex-wrap items-center gap-1">
+        {het && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[11px] font-black text-white">ĐÃ BAY HẾT</span>}
+        {v.khach.slice(0, Math.max(1, b.guestCount)).map((k) => {
+          const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
+          const tt = k.bayXong ? "bayxong" : k.phiCong ? "chiem" : "trong";
+          return (
+            <span
+              key={k.guestNo}
+              className={
+                "rounded px-1.5 py-0.5 text-[11px] font-semibold " +
+                (tt === "bayxong" ? "bg-emerald-100 text-emerald-900" : tt === "chiem" ? "bg-sky-100 text-sky-900" : "bg-slate-100 text-slate-600")
+              }
+              title={`${nhanVe(v.so, k.guestNo, b.guestCount)} ${tenKhach(k.guestNo)}${dv.length ? ` · ${dv.join(", ")}` : ""}${k.thuHoi && !k.phiCong ? ` · đã thu hồi khỏi ${k.thuHoi.phiCongTen || k.thuHoi.phiCong}` : ""}`}
+            >
+              {nhanVe(v.so, k.guestNo, b.guestCount)}{" "}
+              {tt === "bayxong" ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong` : tt === "chiem" ? `${k.phiCong?.name || k.phiCong?.username} đã tiếp nhận` : "mã trống"}
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
   const renderFlownButton = (b: BookingDTO) => (
     <Button
       type="button"

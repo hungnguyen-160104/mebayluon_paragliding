@@ -31,6 +31,7 @@ import { PeriodSummary } from "../components/PeriodSummary";
 import { ReviewNotices } from "../components/ReviewNotices";
 import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
+import { VeQrTongHop } from "../components/VeQrTongHop";
 import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
 import { Banner, Button, Card, CollapseCard, CountInput, DoneTag, Field, MoneyInput, PageLoading, Readout, ServiceBox, TextArea, TextInput, useDoneFlag } from "../components/ui";
@@ -515,6 +516,23 @@ export default function PilotReportPage() {
           Ngày {formatDateKeyVN(date)} nộp muộn nhưng <strong>kế toán đã huỷ lệnh phạt</strong> (fine waived)
           {existing.latePenaltyWaiveReason ? ` — lý do: ${existing.latePenaltyWaiveReason}` : ""}.
         </Banner>
+      )}
+
+      {/* TỪ QUÉT VÉ (Sa Pa / PPG Khau Phạ, chủ 17/09): số chuyến & dịch vụ tự cộng từ mã đã quét */}
+      {spot === "sapa" && !locked && (
+        <div className="mb-3">
+          <VeQrTongHop
+            spot={spot}
+            date={date}
+            onDien={(so) => {
+              set("flightCount", so.flightCount);
+              set("video360", so.video360);
+              set("flycam", so.flycam);
+              set("redFlag", so.redFlag);
+              /** Không chép mã "22/12 #3.2" vào ô mã vé: ô ấy đọc dạng MBL1234, Sa Pa không bắt buộc mã. */
+            }}
+          />
+        </div>
       )}
 
       {/* ============ MỘT lưới 2 cột độc lập: TRÁI form bay/dịch vụ · PHẢI phần còn lại ============ */}

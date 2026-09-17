@@ -75,7 +75,16 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
   const hang = [{ href: "/baocao/hang-ban-them", label: "Hàng bán thêm" }];
   switch (role) {
     case "pilot":
-      return [{ href: "/baocao/phi-cong", label: "Phi công" }, ...troi];
+      /**
+       * QUÉT VÉ (chủ 17/09): Sa Pa in vé nhiệt có mã QR từng khách, phi công quét
+       * trước khi bay để chiếm mã. Khau Phạ cũng thấy thẻ vì booking PPG ở đó
+       * quét mã; điểm khác thì không.
+       */
+      return [
+        { href: "/baocao/phi-cong", label: "Phi công" },
+        ...((spots ?? []).some((s) => s === "sapa" || s === "khau-pha") ? [{ href: "/baocao/quet-ve", label: "Quét vé" }] : []),
+        ...troi,
+      ];
     case "cameraman":
       return [{ href: "/baocao/camera", label: "Camera man" }, ...troi];
     case "dispatcher":

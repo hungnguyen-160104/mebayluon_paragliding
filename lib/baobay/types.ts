@@ -1,4 +1,5 @@
 // lib/baobay/types.ts
+import type { VeQrDTO } from "./ve-qr";
 /**
  * Kiểu dữ liệu đi qua API báo bay, dùng cho CẢ máy chủ và trình duyệt.
  *
@@ -513,6 +514,8 @@ export type BookingDTO = {
   ticketPrints?: Array<{ at: string; by: string; reason: string }>;
   /** Mã chống sao chép từng khách trên vé in ("A2D8"), cấp ở lần in đầu — xem model. */
   ticketSecurity?: Array<{ guestNo: number; code: string; at: string; by: string }>;
+  /** Mã vé QR từng khách + phi công đã quét/bay xong — xem lib/baobay/ve-qr.ts. */
+  veQr?: VeQrDTO;
   /** Đơn giá riêng phần khách PPG; 0 = theo bảng giá. Xem ppgPriceOf(). */
   ppgUnitPrice?: number;
   /** Chuyến bay KHÔNG XÉ VÉ (ngoại giao, bay bù…) — kèm lý do bắt buộc. */

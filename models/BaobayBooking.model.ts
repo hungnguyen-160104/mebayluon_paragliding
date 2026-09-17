@@ -451,6 +451,36 @@ export interface IBaobayBooking {
    */
   movedTicketCodes?: string[];
   /**
+   * MÃ VÉ QR TỪNG KHÁCH (Sa Pa, và PPG Khau Phạ) — xem lib/baobay/ve-qr.ts.
+   * `ngay`/`so` là căn cước in trong QR, cấp ở lần in vé đầu, KHÔNG đổi khi
+   * dời lịch. `khach[]` giữ dịch vụ gắn cho từng người, phi công đang chiếm,
+   * bay xong, dịch vụ đã hoàn, và dấu thu hồi khi điều phối huỷ/dời.
+   */
+  veQr?: {
+    ngay: string;
+    so: number;
+    capLuc: Date;
+    capBoi: string;
+    khach: Array<{
+      guestNo: number;
+      dichVu: { video360: boolean; flycam: boolean; redFlag: boolean };
+      phiCong?: { username: string; name: string; luc: Date } | null;
+      bayXong?: { luc: Date } | null;
+      hoanDichVu?: { video360?: boolean; flycam?: boolean; redFlag?: boolean };
+      thuHoi?: {
+        ly: "huy" | "doi" | "tay";
+        luc: Date;
+        phiCong: string;
+        phiCongTen: string;
+        boi: string;
+        daXem?: boolean;
+        daBayXong?: boolean;
+        dichVu: { video360: boolean; flycam: boolean; redFlag: boolean };
+      } | null;
+      lichSu: Array<{ luc: Date; boi: string; viec: string; ghiChu?: string }>;
+    }>;
+  };
+  /**
    * SỐ THỨ TỰ KHÁCH TRONG NGÀY, cấp theo thời điểm đặt và KHÔNG đổi nữa —
    * quầy gọi "khách số 4" là cả ngày ai cũng hiểu, kể cả khi khách đó đã bay
    * hay đã huỷ. Dời lịch sang ngày khác thì cấp số mới của ngày mới.
@@ -685,6 +715,50 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
      */
     movedPaidOut: { type: Number, default: 0 },
     movedTicketCodes: { type: [String], default: [] },
+    veQr: {
+      type: new Schema(
+        {
+          ngay: { type: String, required: true },
+          so: { type: Number, required: true },
+          capLuc: Date,
+          capBoi: String,
+          khach: {
+            type: [
+              new Schema(
+                {
+                  guestNo: { type: Number, required: true },
+                  dichVu: { video360: { type: Boolean, default: false }, flycam: { type: Boolean, default: false }, redFlag: { type: Boolean, default: false } },
+                  phiCong: { type: new Schema({ username: String, name: String, luc: Date }, { _id: false }), default: null },
+                  bayXong: { type: new Schema({ luc: Date }, { _id: false }), default: null },
+                  hoanDichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean },
+                  thuHoi: {
+                    type: new Schema(
+                      {
+                        ly: { type: String, enum: ["huy", "doi", "tay"] },
+                        luc: Date,
+                        phiCong: String,
+                        phiCongTen: String,
+                        boi: String,
+                        daXem: Boolean,
+                        daBayXong: Boolean,
+                        dichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean },
+                      },
+                      { _id: false },
+                    ),
+                    default: null,
+                  },
+                  lichSu: { type: [new Schema({ luc: Date, boi: String, viec: String, ghiChu: String }, { _id: false })], default: [] },
+                },
+                { _id: false },
+              ),
+            ],
+            default: [],
+          },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     daySeq: { type: Number, default: 0 },
 
     sheetSynced: { type: Boolean, default: false },
@@ -695,6 +769,8 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
 
 // Trang điều phối hỏi "booking của ngày X" và "booking đang chờ" mỗi lần mở
 BaobayBookingSchema.index({ spot: 1, flightDate: 1, status: 1 });
+// Tra mã vé QR "ngày cấp #số" (trang quét của phi công) — xem lib/baobay/ve-qr.ts
+BaobayBookingSchema.index({ spot: 1, "veQr.ngay": 1, "veQr.so": 1 }, { sparse: true });
 
 /**
  * NHẬT KÝ MÁY MÓC — mọi phép ghi qua mongoose để lại một dòng ở

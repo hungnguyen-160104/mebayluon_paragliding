@@ -29,6 +29,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
+import { dichVuChu, nhanVe, veQrText } from "@/lib/baobay/ve-qr";
 import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
@@ -109,7 +110,15 @@ const LUU_Y_KHACH = [
 ];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */
-function extrasOf(b: BookingDTO): string[] {
+function extrasOf(b: BookingDTO, guestNo?: number): string[] {
+  /**
+   * ĐÃ CẤP MÃ VÉ QR (Sa Pa): dịch vụ in theo TỪNG KHÁCH — đoàn 10 người 8
+   * flycam thì vé của ai có flycam mới in chữ Flycam (chủ 17/09).
+   */
+  if (guestNo && b.veQr?.khach?.length) {
+    const k = b.veQr.khach.find((x) => x.guestNo === guestNo);
+    if (k) return dichVuChu(k.dichVu);
+  }
   /** Chỉ in TÊN dịch vụ, không in "×1": có thì in, không có thì bỏ — chủ 12/09. */
   const out: string[] = [];
   if (b.video360 > 0) out.push("Cam 360");
@@ -163,6 +172,26 @@ async function qrSvg(text: string): Promise<string> {
 
 type QrBo = { google: string; tripadvisor: string };
 
+/**
+ * KHỐI MÃ VÉ QR (chủ 17/09): QR chứa "22/12/2026 #3.2 SAPA" — ngày cấp, số
+ * booking, số khách; bên dưới in tên khách (chữ nhỏ) và dịch vụ đi kèm. Phi
+ * công quét mã này trước khi bay. Chỉ có ở booking đã cấp mã (b.veQr).
+ */
+function khoiQrVe(b: BookingDTO, guestNo: number, svg: string | undefined): string {
+  if (!svg || !b.veQr) return "";
+  const dv = extrasOf(b, guestNo);
+  return `
+    <div class="qr-ve">
+      <div class="qr-ve-anh">${svg}</div>
+      <div class="qr-ve-chu">
+        <div class="qr-ve-ma">${esc(formatDateKeyVN(b.veQr.ngay))} ${esc(nhanVe(b.veQr.so, guestNo, b.guestCount))}</div>
+        <div class="qr-ve-ten">${esc(tenKhachVe(b, guestNo))}</div>
+        <div class="qr-ve-dv">${dv.length ? esc(dv.join(" · ")) : "Bay dù"}</div>
+        <div class="qr-ve-nhan">Phi công quét mã trước khi bay</div>
+      </div>
+    </div>`;
+}
+
 function dau(spot: string, lien: string): string {
   return `
     <div class="lien">${esc(lien)}</div>
@@ -196,8 +225,8 @@ function khoiSo(b: BookingDTO, guestNo: number, icon: keyof typeof ICON, nho = f
 }
 
 /** LIÊN 1 — vé bay dù (quầy / phi công). */
-function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string): string {
-  const extras = extrasOf(b);
+function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
+  const extras = extrasOf(b, guestNo);
   return `
   <section class="ve">
     ${dau(spot, "LIÊN 1 — VÉ BAY DÙ")}
@@ -208,6 +237,7 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string): str
       <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
       <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
     </table>
+    ${khoiQrVe(b, guestNo, qrVe)}
     ${chan()}
   </section>`;
 }
@@ -218,8 +248,8 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string): str
  * 12/09): liên này khách mang về làm kỷ niệm và quét QR, không phải liên đổi
  * dịch vụ nên doạ mất vé là thừa. Ba liên kia vẫn giữ.
  */
-function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string): string {
-  const extras = extrasOf(b);
+function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string, qrVe?: string): string {
+  const extras = extrasOf(b, guestNo);
   const ma = (b.bookingCode || "").trim();
   return `
   <section class="ve">
@@ -233,6 +263,7 @@ function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: 
       <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
       <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
     </table>
+    ${khoiQrVe(b, guestNo, qrVe)}
     <div class="ghi">Lưu ý trước khi bay:</div>
     <ul class="luuy-khach">${LUU_Y_KHACH.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     <div class="qr-nhan">Bay xong, cho chúng tôi một đánh giá nhé</div>
@@ -312,6 +343,14 @@ const CSS = `
   td.p { text-align: right; font-weight: 700; padding-left: 4px; overflow: hidden; text-overflow: clip; color: #000; }
   td.p.dai { font-size: 11px; }
   .qr-nhan { margin-top: 4px; text-align: center; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+  .qr-ve { display: flex; gap: 6px; align-items: center; margin: 3px 0 2px; padding: 3px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+  .qr-ve-anh { width: 22mm; height: 22mm; flex: 0 0 22mm; }
+  .qr-ve-anh svg { width: 100%; height: 100%; display: block; }
+  .qr-ve-chu { min-width: 0; line-height: 1.2; }
+  .qr-ve-ma { font-size: 16px; font-weight: 900; white-space: nowrap; }
+  .qr-ve-ten { font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qr-ve-dv { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .qr-ve-nhan { font-size: 9px; margin-top: 2px; }
   .qr { display: flex; justify-content: space-around; align-items: flex-start; margin-top: 2px; }
   .qr figure { margin: 0; text-align: center; }
   .qr-anh { width: 24mm; height: 24mm; }
@@ -336,9 +375,18 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const [google, tripadvisor] = await Promise.all([qrSvg(links.google), qrSvg(linkTripadvisor(spot, b.flightKind))]);
   const qr = { google, tripadvisor };
   const luc = gioIn();
+  /** Mã vé QR từng khách (Sa Pa) — sinh trước, mỗi khách một ảnh; điểm không cấp mã thì bỏ. */
+  const qrVe = new Map<number, string>();
+  if (b.veQr?.ngay) {
+    await Promise.all(
+      Array.from({ length: guests }, (_, i) => i + 1).map(async (g) => {
+        qrVe.set(g, await qrSvg(veQrText(spot, b.veQr!.ngay, b.veQr!.so, g)));
+      }),
+    );
+  }
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
-    pages.push(lienBay(b, spot, g, luc), lienKhach(b, spot, g, qr, luc), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
+    pages.push(lienBay(b, spot, g, luc, qrVe.get(g)), lienKhach(b, spot, g, qr, luc, qrVe.get(g)), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
   }
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8" />
 <title>Vé bay ${esc(b.bookingCode || b.daySeq)}</title>

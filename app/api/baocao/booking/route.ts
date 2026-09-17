@@ -280,6 +280,7 @@ export async function PATCH(req: Request) {
     action === "accept" ||
     action === "collect" ||
     action === "ticket-print" ||
+    action === "ve-dichvu" ||
     action === "assign" ||
     action === "commission" ||
     action === "contact" ||
@@ -478,8 +479,16 @@ export async function PATCH(req: Request) {
      * người đứng máy in.
      */
     if (action === "ticket-print") {
-      const res = await recordTicketPrint(auth, spot, id, { reason: String(body?.reason ?? "") });
+      const res = await recordTicketPrint(auth, spot, id, {
+        reason: String(body?.reason ?? ""),
+        // Dịch vụ gắn từng khách cho vé QR (Sa Pa) — xem lib/baobay/ve-qr.ts
+        dichVu: Array.isArray(body?.dichVu) ? body.dichVu : undefined,
+      });
       return NextResponse.json(res);
+    }
+    if (action === "ve-dichvu") {
+      const { suaDichVuVe } = await import("@/services/ve-qr.service");
+      return NextResponse.json(await suaDichVuVe(auth, spot, id, Array.isArray(body?.dichVu) ? body.dichVu : []));
     }
     if (action === "cell") {
       const res = await updateBookingCell(auth, spot, {

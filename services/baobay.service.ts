@@ -31,6 +31,7 @@ import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDate
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
 import { capMaVe, chuanHoaMaVe, maVeHopLe } from "@/lib/baobay/ma-ve-bao-mat";
+import { chiaDichVu, coQuetVe, DICH_VU_VE, KHONG_DICH_VU, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
 import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
@@ -5285,7 +5286,7 @@ export async function voidBooking(
  * toán mở khoá → sửa → khoá lại chỉ tổ ba bước cho một việc, mà lỗi cần sửa
  * thường do nhân viên nhập sai, phát hiện lúc soát. Người khác vẫn bị chặn.
  */
-async function assertBookingUnlocked(
+export async function assertBookingUnlocked(
   spot: string,
   id: string,
   session?: BaobaySession & { viaAdmin?: boolean },
@@ -7071,7 +7072,15 @@ export async function recordTicketPrint(
   session: BaobaySession,
   spotRaw: string,
   id: string,
-  input: { reason?: string },
+  input: {
+    reason?: string;
+    /**
+     * DỊCH VỤ GẮN CHO TỪNG KHÁCH (Sa Pa / PPG Khau Phạ — xem lib/baobay/ve-qr.ts):
+     * điều phối tích ở hộp trước khi in. Không gửi thì máy tự chia khi chia
+     * đều được (10 khách 10 flycam), không chia đều được thì báo lỗi bắt tích tay.
+     */
+    dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean }>;
+  },
 ): Promise<{ booking: BookingDTO }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -7119,9 +7128,65 @@ export async function recordTicketPrint(
     themMa = thieu.map((guestNo, i) => ({ guestNo, code: moi[i], at: luc, by: session.name || session.username }));
   }
 
+  /**
+   * MÃ VÉ QR TỪNG KHÁCH (chủ 17/09) — cấp ở lần in đầu cho điểm quét vé: ngày
+   * cấp + số thứ tự hiện tại là căn cước in trong QR, về sau dời lịch cũng
+   * không đổi. Dịch vụ từng khách: gửi kèm thì lấy, không thì máy chia đều
+   * khi chia được. In lại có gửi dichVu thì sửa dịch vụ của khách CHƯA bay
+   * xong (khách đã bay xong giữ nguyên — lương phi công đã tính).
+   */
+  const setVe: Record<string, unknown> = {};
+  if (coQuetVe(spot, booking)) {
+    const guiDv = Array.isArray(input.dichVu) ? input.dichVu : null;
+    const dvCua = (g: number, macDinh: DichVuKhach): DichVuKhach => {
+      const x = guiDv?.find((d) => Number(d.guestNo) === g);
+      return x ? { video360: Boolean(x.video360), flycam: Boolean(x.flycam), redFlag: Boolean(x.redFlag) } : macDinh;
+    };
+    if (!booking.veQr?.ngay) {
+      const chia = chiaDichVu(soKhach, { video360: Number(booking.video360) || 0, flycam: Number(booking.flycam) || 0, redFlag: Number(booking.redFlag) || 0 });
+      if (!chia.auto && !guiDv) {
+        throw new BaobayError(
+          "Đoàn này có dịch vụ đi kèm không chia đều được cho từng khách — mở hộp DỊCH VỤ TRÊN VÉ, tích tay khách nào có 360 / flycam / cờ đỏ rồi mới in.|CAN_TICH_DV",
+          400,
+        );
+      }
+      setVe.veQr = {
+        ngay: booking.flightDate,
+        so: Number(booking.daySeq) || 0,
+        capLuc: new Date(),
+        capBoi: session.name || session.username,
+        khach: Array.from({ length: soKhach }, (_, i) => ({
+          guestNo: i + 1,
+          dichVu: dvCua(i + 1, chia.khach[i] ?? { ...KHONG_DICH_VU }),
+          phiCong: null,
+          bayXong: null,
+          lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }],
+        })),
+      };
+    } else {
+      /** Đoàn tăng khách sau khi in: thêm mã cho khách mới; có dichVu thì sửa khách chưa bay. */
+      const khach = (booking.veQr.khach ?? []).map((k: any) => ({ ...k }));
+      for (let g = khach.length + 1; g <= soKhach; g++) {
+        khach.push({ guestNo: g, dichVu: dvCua(g, { ...KHONG_DICH_VU }), phiCong: null, bayXong: null, lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }] });
+      }
+      if (guiDv) {
+        for (const k of khach) {
+          if (k.bayXong) continue;
+          const moi = dvCua(k.guestNo, k.dichVu);
+          if (DICH_VU_VE.some((x) => Boolean(k.dichVu?.[x]) !== moi[x])) {
+            k.dichVu = moi;
+            k.lichSu = [...(k.lichSu ?? []), { luc: new Date(), boi: session.name || session.username, viec: "sua-dv" }];
+          }
+        }
+      }
+      if (khach.length !== (booking.veQr.khach ?? []).length || guiDv) setVe["veQr.khach"] = khach;
+    }
+  }
+
   const updated = await BaobayBooking.findOneAndUpdate(
     { _id: id, spot },
     {
+      ...(Object.keys(setVe).length ? { $set: setVe } : {}),
       $push: {
         ticketPrints: { at: new Date(), by: session.name || session.username, reason },
         ...(themMa.length ? { ticketSecurity: { $each: themMa } } : {}),
@@ -9361,8 +9426,36 @@ export async function updateBookingStatus(
     else if (action === "cancel") await clearQueueNoOnWeb(doc.webBookingId);
   }
 
-  // Dời thành công thì số cũ trả về kho ngày cũ — booking mới của ngày ấy nhận lại
-  if (action === "move") await freeDaySeq(spot, current.flightDate, current.daySeq);
+  // Dời thành công thì số cũ trả về kho ngày cũ — booking mới của ngày ấy nhận lại.
+  // TRỪ khi đã cấp MÃ VÉ QR: "22/12 #3" đang in trên vé khách cầm, cấp lại số 3
+  // cho đoàn khác cùng ngày là hai vé trùng mã (xem lib/baobay/ve-qr.ts).
+  if (action === "move" && !current.veQr?.ngay) await freeDaySeq(spot, current.flightDate, current.daySeq);
+
+  /**
+   * HUỶ / DỜI BOOKING ĐÃ CÓ MÃ VÉ QR (chủ 17/09, mục 7–8): mã phi công đã chiếm
+   * bị THU HỒI — mã trắng lại, phi công thấy cảnh báo "mã bị thu hồi, số chuyến
+   * và dịch vụ liên quan bị rút". Dời sang ngày mới thì phi công phải quét lại
+   * (có thể là người khác). Mã chưa ai chiếm thì chỉ ghi lịch sử.
+   */
+  if ((action === "move" || action === "cancel") && doc.veQr?.khach?.length) {
+    const luc = new Date();
+    const boi = session.name || session.username;
+    const khach = doc.veQr.khach.map((k: any) => {
+      const dv = { video360: Boolean(k.dichVu?.video360), flycam: Boolean(k.dichVu?.flycam), redFlag: Boolean(k.dichVu?.redFlag) };
+      const viec = action === "cancel" ? "huy" : "doi";
+      if (!k.phiCong?.username) return { ...k, lichSu: [...(k.lichSu ?? []), { luc, boi, viec }] };
+      return {
+        ...k,
+        phiCong: null,
+        bayXong: null,
+        hoanDichVu: undefined,
+        thuHoi: { ly: viec, luc, phiCong: k.phiCong.username, phiCongTen: k.phiCong.name ?? "", boi, daXem: false, daBayXong: Boolean(k.bayXong), dichVu: dv },
+        lichSu: [...(k.lichSu ?? []), { luc, boi, viec: `thu-hoi-${viec}`, ghiChu: `đang do ${k.phiCong.name ?? k.phiCong.username} giữ` }],
+      };
+    });
+    await BaobayBooking.updateOne({ _id: doc._id }, { $set: { "veQr.khach": khach } });
+    doc.veQr = { ...doc.veQr, khach };
+  }
 
   /**
    * HỒ SƠ BẢO HIỂM ĐI THEO BOOKING. Dời ngày thì đẩy lại (dòng trên bảng bảo
@@ -9570,7 +9663,39 @@ export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "re
   };
 }
 
-function toBookingDTO(doc: any): BookingDTO {
+/** Ngày giờ → ISO cho khối mã vé QR (xem lib/baobay/ve-qr.ts). */
+function veQrToDTO(v: any): BookingDTO["veQr"] {
+  const iso = (d: unknown) => (d ? new Date(d as string).toISOString() : "");
+  const dv = (d: any): DichVuKhach => ({ video360: Boolean(d?.video360), flycam: Boolean(d?.flycam), redFlag: Boolean(d?.redFlag) });
+  return {
+    ngay: String(v.ngay),
+    so: Number(v.so) || 0,
+    capLuc: iso(v.capLuc),
+    capBoi: String(v.capBoi ?? ""),
+    khach: (v.khach ?? []).map((k: any) => ({
+      guestNo: Number(k.guestNo) || 0,
+      dichVu: dv(k.dichVu),
+      phiCong: k.phiCong?.username ? { username: String(k.phiCong.username), name: String(k.phiCong.name ?? ""), luc: iso(k.phiCong.luc) } : null,
+      bayXong: k.bayXong?.luc ? { luc: iso(k.bayXong.luc) } : null,
+      hoanDichVu: k.hoanDichVu ? { video360: Boolean(k.hoanDichVu.video360), flycam: Boolean(k.hoanDichVu.flycam), redFlag: Boolean(k.hoanDichVu.redFlag) } : undefined,
+      thuHoi: k.thuHoi?.luc
+        ? {
+            ly: k.thuHoi.ly,
+            luc: iso(k.thuHoi.luc),
+            phiCong: String(k.thuHoi.phiCong ?? ""),
+            phiCongTen: String(k.thuHoi.phiCongTen ?? ""),
+            boi: String(k.thuHoi.boi ?? ""),
+            daXem: Boolean(k.thuHoi.daXem),
+            daBayXong: Boolean(k.thuHoi.daBayXong),
+            dichVu: dv(k.thuHoi.dichVu),
+          }
+        : null,
+      lichSu: (k.lichSu ?? []).map((l: any) => ({ luc: iso(l.luc), boi: String(l.boi ?? ""), viec: String(l.viec ?? ""), ghiChu: l.ghiChu ? String(l.ghiChu) : undefined })),
+    })),
+  };
+}
+
+export function toBookingDTO(doc: any): BookingDTO {
   return {
     daySeq: Number(doc.daySeq) || 0,
     locked: Boolean(doc.lockedAt),
@@ -9592,6 +9717,7 @@ function toBookingDTO(doc: any): BookingDTO {
       at: x?.at ? new Date(x.at).toISOString() : "",
       by: x?.by || "",
     })),
+    veQr: doc.veQr?.ngay ? veQrToDTO(doc.veQr) : undefined,
     noTicketFlight: Boolean(doc.noTicketFlight) || undefined,
     noTicketReason: doc.noTicketReason || undefined,
     noTicketBy: doc.noTicketBy || undefined,
