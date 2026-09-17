@@ -722,7 +722,7 @@ không, mấy giờ, lên tới đâu**.
 |---|---|---|---|
 | ☀️ Nắng | 20 | bức xạ W/m², phút nắng, mây | 100 W → 15 · 300 → 45 · 500 → 75 · 700 → 100; phút nắng chỉ được tính khi bức xạ đủ (×buXa/500); mây > 60% trừ tới một nửa |
 | 📏 Đỉnh thermal (trần lớp xáo trộn, m AGL = so với mặt đất mô hình) | **45** | `boundary_layer_height` | 300 m → 10 · 600 → 25 · 1.000 → 40 · 1.500 → 65 · 2.000 → 85 · 2.500 → 100 |
-| 🌡 Độ dốc nhiệt | 20 | nhiệt hai mực THẤP NHẤT NẰM TRÊN BÃI (925/850/700) | ≤ 0 °C/100 m → 0 · 0,5 → 30 · 0,65 → 50 · 0,8 → 75 · 0,95 → 100 |
+| 🌡 Độ dốc nhiệt (ELR — môi trường, ghi kèm mốc DALR 0,98 °C/100 m; chủ 17/09) | 20 | nhiệt hai mực THẤP NHẤT NẰM TRÊN BÃI (925/850/700) | ≤ 0 °C/100 m → 0 · 0,5 → 30 · 0,65 → 50 · 0,8 → 75 · 0,95 → 100 |
 | ⚖️ Ổn định sâu | 15 | LI, CAPE | −4 → 100 · −1 → 90 · +2 → 70 · +6 → 45 · +10 → 25 |
 | 🌬 Gió mực 500 m trên bãi | ×hệ số | gió nội suy theo độ cao | ≤ 4 m/s ×1 · 6 ×0,85 · 8 ×0,6 · 10 ×0,35 · 12 ×0 |
 | 💧 Độ khô | ×hệ số | nhiệt − điểm sương | 0 °C ×0,8 · 2 ×0,9 · ≥ 4 ×1 |
