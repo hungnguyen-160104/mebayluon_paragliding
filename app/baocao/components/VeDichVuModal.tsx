@@ -54,8 +54,9 @@ export function VeDichVuModal({
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={onCancel}>
       <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-bold text-slate-900">{title ?? "Dịch vụ trên vé"} — #{booking.daySeq} {booking.contactName}</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Đã đặt: {DICH_VU_VE.map((k) => `${TEN_DICH_VU[k]} ${dat[k]}`).join(" · ")}. Dịch vụ đủ cho cả đoàn máy tích sẵn; chưa đủ thì tích khách nào có.
+        {/* Dòng "Đã đặt" tô ĐỎ, dạng "0xCam360 · 1xFlycam" cho nổi (chủ 18/09). */}
+        <p className="mt-0.5 text-xs font-bold text-rose-700">
+          Đã đặt: {DICH_VU_VE.map((k) => `${dat[k]}x${TEN_DICH_VU[k].replace(/\s+/g, "")}`).join(" · ")}
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
