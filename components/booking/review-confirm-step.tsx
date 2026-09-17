@@ -170,6 +170,8 @@ const UI_I18N: Record<
       "Thanh toán sẽ được thực hiện trực tiếp tại điểm bay trước giờ cất cánh. Chúng tôi chấp nhận tiền mặt và các thẻ tín dụng/thẻ ghi nợ phổ biến. Sau khi đặt chỗ, chúng tôi sẽ liên hệ với bạn qua WhatsApp/Zalo hoặc email bạn cung cấp để xác nhận booking.",
     preFlightNotesTitle: "Thông tin lưu ý trước khi bay",
     preFlightNotes: [
+      "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.",
+      "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 – 0385.907.789 để được hỗ trợ kịp thời.",
       "Vui lòng có mặt tại điểm bay trước giờ cất cánh ít nhất 15 phút để hoàn tất thủ tục check-in.",
       "Mang theo giấy tờ tùy thân (CMND/CCCD hoặc Hộ chiếu) để xác minh thông tin.",
       "Mặc trang phục thoải mái, đi giày thể thao hoặc giày bệt. Tránh mang dép lê, giày cao gót.",
@@ -232,6 +234,8 @@ const UI_I18N: Record<
       "Payment is made directly at the flight site before takeoff. We accept cash and common credit/debit cards. After booking, we will contact you via WhatsApp/Zalo or the email you provided to confirm your reservation.",
     preFlightNotesTitle: "Pre-flight information",
     preFlightNotes: [
+      "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
+      "For any service feedback, please call our Hotline 0964.073.555 – 0385.907.789 directly so we can help right away.",
       "Please arrive at the flight site at least 15 minutes before takeoff to complete check-in.",
       "Bring valid ID (National ID or Passport) for verification.",
       "Wear comfortable clothes and sneakers or flat shoes. Avoid flip-flops or high heels.",
@@ -295,6 +299,8 @@ const UI_I18N: Record<
       "Le paiement s'effectue directement sur le site de vol avant le décollage. Nous acceptons les espèces et les cartes de crédit/débit courantes. Après la réservation, nous vous contacterons via WhatsApp/Zalo ou l'e-mail fourni pour confirmer votre réservation.",
     preFlightNotesTitle: "Informations avant le vol",
     preFlightNotes: [
+      "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir.",
+      "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 – 0385.907.789 pour une aide immédiate.",
       "Veuillez arriver sur le site de vol au moins 15 minutes avant le décollage pour l'enregistrement.",
       "Apportez une pièce d'identité valide (carte nationale ou passeport) pour vérification.",
       "Portez des vêtements confortables et des chaussures de sport ou plates. Évitez les tongs ou talons hauts.",
@@ -357,6 +363,8 @@ const UI_I18N: Record<
       "Оплата производится непосредственно на месте полета до взлета. Мы принимаем наличные и распространенные кредитные/дебетовые карты. После бронирования мы свяжемся с вами через WhatsApp/Zalo или по указанной электронной почте для подтверждения брони.",
     preFlightNotesTitle: "Информация перед полётом",
     preFlightNotes: [
+      "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом.",
+      "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 – 0385.907.789 — поможем сразу.",
       "Пожалуйста, прибудьте на место полёта минимум за 15 минут до взлёта для регистрации.",
       "Возьмите с собой удостоверение личности (паспорт или ID-карту) для проверки.",
       "Наденьте удобную одежду и кроссовки или плоскую обувь. Избегайте шлёпанцев или каблуков.",
@@ -419,6 +427,8 @@ const UI_I18N: Record<
       "भुगतान उड़ान स्थल पर टेकऑफ से पहले सीधे किया जाएगा। हम नकद और सामान्य क्रेडिट/डेबिट कार्ड स्वीकार करते हैं। बुकिंग के बाद, आपकी बुकिंग की पुष्टि के लिए हम आपसे WhatsApp/Zalo या दिए गए ईमेल पर संपर्क करेंगे।",
     preFlightNotesTitle: "उड़ान से पहले जानकारी",
     preFlightNotes: [
+      "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।",
+      "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 – 0385.907.789 पर कॉल करें, हम तुरंत सहायता करेंगे।",
       "कृपया चेक-इन के लिए टेकऑफ से कम से कम 15 मिनट पहले उड़ान स्थल पर पहुँचें।",
       "सत्यापन के लिए वैध पहचान पत्र (राष्ट्रीय आईडी या पासपोर्ट) साथ लाएं।",
       "आरामदायक कपड़े और स्नीकर्स या फ्लैट जूते पहनें। फ्लिप-फ्लॉप या हाई हील्स से बचें।",
@@ -481,6 +491,8 @@ const UI_I18N: Record<
       "请在起飞前于飞行现场直接付款。我们接受现金及常见的信用卡/借记卡。预订后，我们将通过您提供的 WhatsApp/Zalo 或电子邮箱与您联系以确认订单。",
     preFlightNotesTitle: "飞行前须知",
     preFlightNotes: [
+      "飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。",
+      "如对服务有任何反馈，请直接致电热线 0964.073.555 – 0385.907.789，我们会及时协助。",
       "请至少提前15分钟到达飞行现场完成登记手续。",
       "请携带有效身份证件（身份证或护照）进行验证。",
       "请穿着舒适的衣物和运动鞋或平底鞋。避免穿拖鞋或高跟鞋。",
