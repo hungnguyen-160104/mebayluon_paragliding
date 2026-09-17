@@ -35,6 +35,7 @@ import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
 import { inAnhQuaRawbt, mayCoTheDungRawbt, rawbtDaBat } from "@/lib/baobay/may-in-rawbt";
+import { chiaSeDaBat, ghepAnhLien, hienKhungChiaSe, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
 import { apiGet, apiPost } from "./client-api";
 
 /** Khổ giấy máy in nhiệt Gainscha B300 ở quầy. */
@@ -496,10 +497,14 @@ function gopDamNhat(src: HTMLCanvasElement, rong: number): HTMLCanvasElement {
  * Bluetooth BLE đã ghép → USB đã ghép → RawBT (cầu nối cho máy in Bluetooth
  * cổ điển như Gainscha B300, chủ 13/09 muốn in thẳng không qua trạm).
  */
-export function mayInThangDaGhep(): "bluetooth" | "usb" | "rawbt" | null {
+export type KenhInThang = "bluetooth" | "usb" | "rawbt" | "chia-se";
+
+export function mayInThangDaGhep(): KenhInThang | null {
   if (trinhDuyetCoBluetooth() && mayInBluetoothDaGhep()) return "bluetooth";
   if (trinhDuyetCoUsb() && mayInDaGhep()) return "usb";
   if (mayCoTheDungRawbt() && rawbtDaBat()) return "rawbt";
+  /** Đường 5 (chủ 17/09): iPhone / mọi máy — đưa ảnh vé sang app in qua khay chia sẻ. */
+  if (mayCoTheChiaSeAnh() && chiaSeDaBat()) return "chia-se";
   return null;
 }
 
@@ -508,7 +513,7 @@ export function mayInThangDaGhep(): "bluetooth" | "usb" | "rawbt" | null {
  * hoặc USB — cùng luồng ESC/POS). Khung iframe rộng đúng 576px và CSS đổi mm
  * sang px theo tỉ lệ ấy để bố cục y hệt bản in qua hộp thoại.
  */
-export async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb" | "rawbt"): Promise<void> {
+export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<void> {
   const html2canvas = (await import("html2canvas")).default;
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
   /**
@@ -566,7 +571,10 @@ export async function inQuaMayInThang(html: string, kenh: "bluetooth" | "usb" | 
     }
     if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
     else if (kenh === "rawbt") await inAnhQuaRawbt(anh);
-    else await inAnhQuaUsb(anh);
+    else if (kenh === "chia-se") {
+      const kq = await hienKhungChiaSe(ghepAnhLien(anh, RONG_CHAM), `ve-${Date.now()}.png`);
+      if (kq !== "da-gui") throw new Error("Chưa gửi sang app in");
+    } else await inAnhQuaUsb(anh);
   } finally {
     frame.parentNode && document.body.removeChild(frame);
   }
@@ -682,7 +690,7 @@ export async function printBookingTickets(
   spot: string,
   tab?: Window | null,
   reason = "",
-): Promise<"bluetooth" | "usb" | "rawbt" | "tram" | "hop-thoai" | "tab" | "khong-in"> {
+): Promise<KenhInThang | "tram" | "hop-thoai" | "tab" | "khong-in"> {
   if (!coInVe(spot)) {
     baoLoiVaoTab(tab, "Điểm bay này không in vé (chỉ Khau Phạ và Sa Pa).");
     return "khong-in";
@@ -721,7 +729,12 @@ export async function printBookingTickets(
     } catch (e) {
       console.warn(`In thẳng qua ${kenh} hỏng, chuyển sang hộp thoại in:`, e);
       /** Báo cho người trực biết vì sao vé lại nhảy ra hộp thoại — không thì tưởng máy in hỏng. */
-      const tenKenh = kenh === "bluetooth" ? "Bluetooth" : kenh === "rawbt" ? "RawBT" : "USB";
+      const tenKenh = kenh === "bluetooth" ? "Bluetooth" : kenh === "rawbt" ? "RawBT" : kenh === "chia-se" ? "app in (chia sẻ)" : "USB";
+      /** Người trực tự đóng khung chia sẻ thì thôi, không ép sang hộp thoại in nữa. */
+      if (kenh === "chia-se" && e instanceof Error && e.message === "Chưa gửi sang app in") {
+        tab?.close();
+        return "khong-in";
+      }
       if (typeof window !== "undefined") window.alert(`Không in thẳng được qua ${tenKenh}: ${e instanceof Error ? e.message : String(e)}\nVé sẽ mở ra để in qua hộp thoại.`);
     }
   }

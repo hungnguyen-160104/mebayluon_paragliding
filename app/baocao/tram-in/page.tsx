@@ -29,7 +29,7 @@ import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
 import { trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
 
-import { buildTicketsHtml, coInVe, inQuaMayInThang, mayInThangDaGhep } from "../components/TicketPrint";
+import { buildTicketsHtml, coInVe, inQuaMayInThang, mayInThangDaGhep, type KenhInThang } from "../components/TicketPrint";
 import { Banner, Button, Card, PageLoading } from "../components/ui";
 
 type Job = { id: string; bookingLabel: string; status: string; createdByName: string; createdAt: string; doneAt?: string; error?: string };
@@ -95,7 +95,7 @@ export default function TrangTramIn() {
   const [dangIn, setDangIn] = useState<string | null>(null);
   const [nhatKy, setNhatKy] = useState<Job[]>([]);
   const [daIn, setDaIn] = useState(0);
-  const [kenh, setKenh] = useState<"bluetooth" | "usb" | "rawbt" | null>(() => (typeof window !== "undefined" ? mayInThangDaGhep() : null));
+  const [kenh, setKenh] = useState<KenhInThang | null>(() => (typeof window !== "undefined" ? mayInThangDaGhep() : null));
   const dangXuLy = useRef(false);
   const wakeRef = useRef<{ release: () => Promise<void> } | null>(null);
   const tenMay = typeof navigator !== "undefined" ? navigator.userAgent.replace(/^.*\((.*?)\).*$/, "$1").slice(0, 40) : "trạm";

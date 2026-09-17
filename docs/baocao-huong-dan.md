@@ -340,6 +340,17 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 
 ## In vé 3 liên — Khau Phạ và Sa Pa (máy in nhiệt Gainscha B300, khổ 80mm)
 
+> **Đường in cho MỌI điện thoại, kể cả iPhone (chủ 17/09):** ở khung cài máy
+> in bật **📤 In qua app (chia sẻ ảnh vé)**. Từ đó bấm **IN VÉ** → vé dựng
+> thành một ảnh đúng khổ 576 chấm (các liên nối nhau, có vạch ✂ để xé) → hiện
+> khung xem → bấm **GỬI SANG APP IN** → khay chia sẻ của máy → chọn app in máy
+> in nhiệt đã ghép Gainscha B300. Cài và ghép máy in **một lần** trong app:
+> iPhone/iPad dùng app in nhiệt Bluetooth nhận ảnh chia sẻ (ví dụ *Thermer*),
+> Android dùng *RawBT*. Vì sao phải hai cú bấm: khay chia sẻ chỉ mở được ngay
+> trong cú bấm, mà dựng vé mất vài giây. Không có app thì bấm giữ ảnh → lưu
+> rồi in bằng cách khác. Thứ tự ưu tiên của IN VÉ: Bluetooth → USB → RawBT →
+> **app chia sẻ** → trạm in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
+
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích
 "đã xuất vé"; nút **In lại** bên cạnh in lại có ghi lý do — riêng **quản trị
