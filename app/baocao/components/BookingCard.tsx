@@ -37,7 +37,9 @@ import {
   priceNote,
   servicesAmount,
   type FlightKind,
+  type ServiceKey,
 } from "@/lib/baobay/flight-price";
+import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
@@ -1794,6 +1796,16 @@ function RowMenu({
     />
   );
   const itPay = <PaymentBreakdown spot={spot} booking={booking} onDone={onDone} />;
+  const itThemDV = (
+    <ThemDichVuControl
+      spot={spot}
+      booking={booking}
+      onDone={(m) => {
+        onDone(m);
+        setOpen(false);
+      }}
+    />
+  );
 
   if (alwaysOpen) {
     /* XỔ SẴN trong bảng: MỘT DẢI NÉN, không nhãn nhóm (chủ chê "trải ra quá"
@@ -1822,6 +1834,7 @@ function RowMenu({
           </button>
         )}
         {itPay}
+        {itThemDV}
         {itAssign}
         {itEdit}
         {itCommission}
@@ -1841,6 +1854,7 @@ function RowMenu({
     <PanelGroup>
     <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-300 bg-white p-1.5 shadow-lg">
       {itPay}
+      {itThemDV}
       {itAssign}
       {itCommission}
       {itEdit}
@@ -1893,6 +1907,126 @@ const COMMISSION_WAY_TITLE: Record<CommissionWay, string> = {
   transfer: "trả chuyển khoản",
   agency: "trừ vào tiền đại lý đang cầm",
 };
+
+/**
+ * THÊM DỊCH VỤ ngay trên dòng booking (chủ 18/09): trong "⋯ Thêm" bấm "＋ Thêm
+ * dịch vụ" → bảng dịch vụ (flycam, 360, cờ đỏ, kéo cờ, hoàng hôn) với số tối
+ * đa còn thêm được = số khách − số đã đặt; dịch vụ đã đủ cho cả đoàn thì ẨN.
+ * Xác nhận → máy chủ tính tiền (đúng bảng giá lúc lập booking, combo nếu có)
+ * → báo "phải thu thêm X · còn thu Y" để nhân viên thu bổ sung. Thu tiền thì
+ * dùng nút Thu tiền như mọi khoản khác.
+ */
+function ThemDichVuControl({
+  spot,
+  booking,
+  onDone,
+}: {
+  spot: string;
+  booking: BookingDTO;
+  onDone: (message: string) => void;
+}) {
+  const [open, setOpen] = usePanelOpen("them-dich-vu");
+  const [add, setAdd] = useState<Record<ServiceKey, number>>({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const n = Math.max(1, booking.guestCount || 1);
+  const daCo: Record<ServiceKey, number> = {
+    flycam: booking.flycam || 0,
+    video360: booking.video360 || 0,
+    redFlag: booking.redFlag || 0,
+    flagFlight: booking.flagFlight || 0,
+    sunset: booking.sunset || 0,
+  };
+  /** Sa Pa không bán hoàng hôn / kéo cờ (chỉ 360, flycam, cờ đỏ — chủ 17/09). */
+  const banO = (k: ServiceKey) => (normalizeSpot(spot) === "sapa" ? k === "flycam" || k === "video360" || k === "redFlag" : true);
+  const gia = servicePriceOf(spot, booking.createdAt);
+  const conThem = SERVICE_PRICE_LABEL.filter(({ key }) => banO(key) && daCo[key] < n);
+  const tongThem = conThem.reduce((t, { key }) => t + add[key] * gia[key], 0);
+  const soThem = conThem.reduce((t, { key }) => t + add[key], 0);
+
+  if (booking.status === "cancelled" || booking.status === "voided") return null;
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="shrink-0 rounded-lg border border-indigo-300 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-800 hover:bg-indigo-100"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+        title="Khách đăng ký thêm 360 / flycam / cờ đỏ… tại bãi — cộng vào booking, tính tiền, báo còn thu"
+      >
+        ＋ Thêm dịch vụ
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-full rounded-xl border border-indigo-300 bg-indigo-50/60 p-2 text-xs">
+      <div className="mb-1 font-bold text-indigo-900">
+        ＋ Thêm dịch vụ — #{booking.daySeq} {booking.contactName} · {n} khách
+      </div>
+      {conThem.length === 0 ? (
+        <p className="text-slate-600">Mọi dịch vụ đã đủ cho cả đoàn — không còn gì để thêm.</p>
+      ) : (
+        <div className="space-y-1">
+          {conThem.map(({ key, label }) => {
+            const max = n - daCo[key];
+            return (
+              <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="w-40 font-semibold text-slate-800">{label}</span>
+                <span className="text-slate-500">
+                  đã có {daCo[key]} · thêm tối đa {max} · {formatVND(gia[key])}/suất
+                </span>
+                <CountInput compact value={add[key]} max={max} onChange={(v) => setAdd((p) => ({ ...p, [key]: Math.max(0, Math.min(max, v)) }))} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {soThem > 0 && (
+        <div className="mt-1.5 font-bold text-rose-700">
+          Phải thu thêm ~{formatVND(tongThem)} (máy chủ tính lại theo bảng giá lúc lập booking, có combo thì bớt)
+        </div>
+      )}
+      {error && <div className="mt-1 text-rose-700">{error}</div>}
+      <div className="mt-2 flex gap-1.5">
+        <Button
+          type="button"
+          className="h-8 bg-indigo-600 px-3 text-xs hover:bg-indigo-700"
+          disabled={busy || soThem === 0}
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              const r = await apiPost<{ booking: BookingDTO; charge: number; added: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
+                id: booking.id,
+                add,
+                note: "thêm tại dòng booking",
+              });
+              const conThu = r.booking?.remaining ?? 0;
+              onDone(
+                `✓ Đã thêm ${r.added} dịch vụ cho #${booking.daySeq} ${booking.contactName} — phải thu thêm ${formatVND(r.charge)} · ` +
+                  (conThu > 0 ? `CÒN THU ${formatVND(conThu)}, bấm Thu tiền để thu bổ sung.` : "đã thu đủ."),
+              );
+              setAdd({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+              setOpen(false);
+            } catch (e: unknown) {
+              setError(e instanceof Error ? e.message : "Không thêm được dịch vụ");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Đang ghi…" : "✓ Thêm & tính tiền"}
+        </Button>
+        <Button type="button" variant="ghost" className="h-8 bg-white px-3 text-xs" onClick={() => setOpen(false)}>
+          Thôi
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * CHI CHIẾT KHẤU cho đại lý / hướng dẫn viên dẫn đoàn.
