@@ -25,6 +25,7 @@ import mongoose from "mongoose";
 import { after } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
+import { chuanTenKhach } from "@/lib/baobay/ten-khach";
 import { CAFE_COUNTERS } from "@/lib/baobay/cafe";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
@@ -9738,7 +9739,8 @@ export function toBookingDTO(doc: any): BookingDTO {
     createdByName: doc.createdByName,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : "",
     source: doc.source || "",
-    contactName: doc.contactName || "",
+    /** Tên hiện ra luôn theo chuẩn viết hoa chữ đầu (chủ 18/09) — kể cả bản ghi cũ lưu CAPS LOCK. */
+    contactName: chuanTenKhach(doc.contactName || ""),
     phone: doc.phone || "",
     bookingCode: doc.bookingCode || "",
     guestCount: doc.guestCount ?? 0,
@@ -9777,7 +9779,7 @@ export function toBookingDTO(doc: any): BookingDTO {
     mountainCar: doc.mountainCar ?? 0,
     otaName: doc.otaName || "",
     otaRef: doc.otaRef || "",
-    otaGuests: doc.otaGuests ?? [],
+    otaGuests: (doc.otaGuests ?? []).map((g: any) => (g && g.fullName ? { ...g, fullName: chuanTenKhach(g.fullName) } : g)),
     insured: doc.insured ?? [],
     insuranceApprovedAt: doc.insuranceApprovedAt ? new Date(doc.insuranceApprovedAt).toISOString() : undefined,
     insuranceSentAt: doc.insuranceSentAt ? new Date(doc.insuranceSentAt).toISOString() : undefined,
