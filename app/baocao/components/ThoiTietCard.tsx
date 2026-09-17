@@ -39,7 +39,7 @@ import {
   MUA_BAY,
   MUA_DANG_KE,
 } from "@/lib/baobay/thoi-tiet";
-import { spotName } from "@/lib/baobay/spots";
+import { tenDiemThoiTiet } from "@/lib/baobay/khoa-thoi-tiet";
 
 import { Airgram, Meteogram } from "@/components/weather/Meteogram";
 import { styleGiat, styleGio } from "@/components/weather/mau-gio";
@@ -221,7 +221,7 @@ export function ThoiTietCard({
   if (dangTai && !du) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-500">
-        ⛅ Đang lấy dự báo cho {spotName(spot)}…
+        ⛅ Đang lấy dự báo cho {tenDiemThoiTiet(spot)}…
       </div>
     );
   }
@@ -266,7 +266,7 @@ export function ThoiTietCard({
         </div>
         <div className="text-xs leading-tight text-slate-700">
           <div className="font-bold text-slate-900">
-            {spotName(spot)} · {du.toaDo.ten}
+            {tenDiemThoiTiet(spot)} · {du.toaDo.ten}
           </div>
           <div>
             {/* Nhãn ngày đứng đầu dòng: đang đọc số của ngày nào phải nói ra. */}

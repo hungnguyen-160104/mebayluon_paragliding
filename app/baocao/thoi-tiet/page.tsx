@@ -14,7 +14,9 @@
 
 import { todayInVN } from "@/lib/baobay/date";
 import { wearsRole } from "@/lib/baobay/roles";
-import { SPOTS } from "@/lib/baobay/spots";
+import { useState } from "react";
+
+import { DIEM_CHI_CONG_KHAI, tenDiemThoiTiet } from "@/lib/baobay/khoa-thoi-tiet";
 
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
@@ -25,6 +27,12 @@ import { PageLoading } from "../components/ui";
 export default function TrangThoiTiet() {
   const { user, loading } = useBaobaySession();
   const { spot, setSpot, options } = useSpot(user?.spots);
+  /**
+   * THU GỌN / XỔ RA từng điểm (chủ 17/09): trang liệt kê cả chục điểm, mỗi thẻ
+   * cao cả màn hình — thu gọn thì còn dải 7 ngày + dòng tóm tắt (bản `gon`).
+   * Điểm đang chọn luôn xổ; các điểm khác mặc định THU GỌN cho gọn trang.
+   */
+  const [xo, setXo] = useState<Record<string, boolean>>({});
 
   if (loading || !user) return <PageLoading />;
 
@@ -43,6 +51,15 @@ export default function TrangThoiTiet() {
    * nay, mở trang ra phải thấy ngay, không phải cuộn tìm.
    */
   const dsDiem = spot ? [spot, ...options.filter((s) => s !== spot)] : options;
+  /**
+   * ĐIỂM CHỈ CÓ TRÊN TRANG KHÁCH (Viên Nam, Sơn Trà, Quản Bạ, Phình Hồ, Đại
+   * Huệ…) xếp SAU sổ của mình (chủ 17/09): chuyên gia chấm được mọi điểm, mỗi
+   * điểm một sổ kinh nghiệm riêng — không còn cảnh nhận định của Khau Phạ hiện
+   * lên mọi điểm trên web.
+   */
+  const dsCongKhai = DIEM_CHI_CONG_KHAI.map((d) => d.slug);
+  const tatCa = [...dsDiem, ...dsCongKhai];
+  const dangXo = (s: string) => (xo[s] ?? (s === (spot ?? dsDiem[0])));
 
   return (
     <Shell user={user} title="Thời tiết bay" subtitle="Dự báo 10 ngày · gió, giật, mưa · sổ kinh nghiệm">
@@ -59,16 +76,34 @@ export default function TrangThoiTiet() {
               }
               title="Đưa điểm này lên đầu trang"
             >
-              {SPOTS.find((x) => x.id === s)?.name ?? s}
+              {tenDiemThoiTiet(s)}
             </button>
           ))}
         </div>
       )}
 
-      {dsDiem.length ? (
+      {tatCa.length ? (
         <div className="space-y-3">
-          {dsDiem.map((s) => (
-            <ThoiTietCard key={s} spot={s} homNay={todayInVN()} laQuanTri={laQuanTri} laDieuPhoi={laDieuPhoi} />
+          {tatCa.map((s, i) => (
+            <div key={s}>
+              {i === dsDiem.length && (
+                <div className="mb-1 mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  Điểm khác trên web (chưa có sổ vận hành) — chuyên gia vẫn chấm và ghi nhận định được
+                </div>
+              )}
+              <div className="mb-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setXo((p) => ({ ...p, [s]: !dangXo(s) }))}
+                  className="rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  title={dangXo(s) ? "Thu gọn thẻ này" : "Xổ đầy đủ thẻ này"}
+                >
+                  {dangXo(s) ? "▾ Thu gọn" : "▸ Xổ ra"}
+                </button>
+                <span className="text-xs font-bold text-slate-800">{tenDiemThoiTiet(s)}</span>
+              </div>
+              <ThoiTietCard key={`${s}:${dangXo(s) ? "du" : "gon"}`} spot={s} homNay={todayInVN()} laQuanTri={laQuanTri} laDieuPhoi={laDieuPhoi} gon={!dangXo(s)} />
+            </div>
           ))}
         </div>
       ) : (

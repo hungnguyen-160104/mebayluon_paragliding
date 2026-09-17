@@ -5,6 +5,23 @@
 > ngược sườn". Gió địa hình gọi là **gió núi**, không gọi "gió sườn". Độ cao
 > ghi **AMSL** (so với mực biển); riêng đỉnh thermal ghi **AGL** (so với mặt đất).
 
+## 0. Khoá điểm & chấm mọi điểm trong app (từ 17/09/2026)
+
+Hệ thời tiết khoá dữ liệu theo `lib/baobay/khoa-thoi-tiet.ts`: mã sổ nội bộ
+(`khau-pha`, `ha-noi`, `sapa`) là chính nó; slug trang khách có sổ (`doi-bu` →
+`ha-noi`, `muong-hoa-sapa` → `sapa`) dùng sổ ấy; slug **chỉ có trên trang
+khách** (`vien-nam`, `son-tra`, `ha-giang`, `tram-tau`, `dai-tue`) dùng chính
+slug làm khoá — có sổ kinh nghiệm, nhận định chuyên gia và ⚙ riêng. Trước đây
+slug lạ bị quy về Khau Phạ nên nhận định "nghỉ bay do mưa" của Khau Phạ hiện
+lên **mọi** điểm trên web (chủ báo 17/09).
+
+Trang **/baocao/thoi-tiet** liệt kê sổ của mình rồi tới các điểm chỉ công khai;
+mỗi thẻ có nút **Thu gọn / Xổ ra** (thu gọn = dải 7 ngày + dòng tóm tắt).
+
+Toạ độ bãi cất chủ chốt 17/09: Khau Phạ 21.754889, 104.265694 · Đồi Bù 20.8085,
+105.568778 · Viên Nam 20.954306, 105.412861 · Sơn Trà 16.117889, 108.273583 ·
+Quản Bạ 23.060488, 105.019054.
+
 ## 1. Đang chạy bằng gì (không cần khai gì thêm)
 
 Hệ thống **đang chạy được ngay, không cần khoá, không tốn tiền**:
@@ -645,7 +662,7 @@ nghịch nhiệt có nằm trong đường bay không. Gọi "chênh cao" chứ 
 | Sa Pa | 1.500 m | 1.000 m | 500 m |
 | Đồi Bù | **650 m** | 50 m | 600 m |
 | Viên Nam | 850 m và 650 m | 50 m | 800 m |
-| Bắc Sum – Quản Bạ | 1.350 m | 800 m | 550 m |
+| Bắc Sum – Quản Bạ | 950 m | 450 m | 500 m |
 | Phình Hồ – Trạm Tấu | 900 m | 300 m | 600 m |
 | Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
 | Đại Huệ – Chùa Đại Tuệ (Nghệ An) | 350 m | 50 m | 300 m |
@@ -840,6 +857,11 @@ Nam** (112°–247°). Chủ nói **Bắc, Đông Bắc, Tây Bắc "cũng bay �
 "thường" (xám), không cấm; Đông và Tây chưa có lời chủ, cũng để "thường". Toạ độ
 cất 18°45'22.5"N 105°32'08.4"E, hạ 18°44'26.9"N 105°31'26.8"E. Điểm này chưa
 có trang /spots nên thẻ thời tiết giấu nút "Xem điểm bay".
+
+**Quản Bạ** (Hà Giang — số chủ 17/09): bãi cất 23.060488, 105.019054 (950 m),
+bãi hạ 23°03'40.5"N 105°02'19.9"E (450 m). Gió **Tây, Tây Bắc, Tây Nam là GIÓ
+SAU**: dự báo mạnh hơn **3 m/s** là không bay — khai bằng trần tốc độ theo
+hướng (dưới 3 m/s vẫn cất được).
 
 **Sa Pa**: chưa có cung thuận/ngược, nhưng đã có **trần tốc độ theo hướng** —
 cấm gió **Bắc > 6 m/s** và gió **Tây > 6 m/s** (chủ 11/09). Cung gió tốt/xấu thì

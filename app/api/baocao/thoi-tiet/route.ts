@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { khoaThoiTiet } from "@/lib/baobay/khoa-thoi-tiet";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import {
   chamNgay,
@@ -34,11 +35,24 @@ export const maxDuration = 45;
  */
 const XEM = ["pilot", "dispatcher", "counter", "cameraman", "accountant", "admin"] as const;
 
+/**
+ * ĐIỂM của yêu cầu: mã sổ nội bộ đi qua `resolveSpot` (kiểm quyền theo điểm
+ * được chỉ định) như cũ; ĐIỂM CHỈ CÓ TRÊN TRANG KHÁCH (Viên Nam, Sơn Trà, Quản
+ * Bạ…) không thuộc sổ nào nên ai trong ca cũng xem và chấm được (chủ 17/09:
+ * "app cần hiện đủ các điểm bay để chuyên gia đánh giá").
+ */
+function diemCuaYeuCau(req: Request, auth: Parameters<typeof resolveSpot>[1]): string | NextResponse {
+  const raw = new URL(req.url).searchParams.get("spot");
+  const k = raw ? khoaThoiTiet(raw) : null;
+  if (k && k.noiBo === null) return k.key;
+  return resolveSpot(req, auth);
+}
+
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: [...XEM], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
-  const spot = resolveSpot(req, auth);
+  const spot = diemCuaYeuCau(req, auth);
   if (spot instanceof NextResponse) return spot;
 
   const url = new URL(req.url);
@@ -73,7 +87,7 @@ export async function POST(req: Request) {
   const auth = requireBaobay(req, { roles: ["dispatcher", "counter", "admin"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
-  const spot = resolveSpot(req, auth);
+  const spot = diemCuaYeuCau(req, auth);
   if (spot instanceof NextResponse) return spot;
 
   const body = await req.json().catch(() => ({}));
@@ -110,7 +124,7 @@ export async function PUT(req: Request) {
   const auth = requireBaobay(req, { roles: ["admin"], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
 
-  const spot = resolveSpot(req, auth);
+  const spot = diemCuaYeuCau(req, auth);
   if (spot instanceof NextResponse) return spot;
 
   const body = await req.json().catch(() => ({}));

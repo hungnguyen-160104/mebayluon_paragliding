@@ -174,8 +174,9 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
    * xem `lib/weather-spots.ts`, nơi hai bãi được bày thành hai bảng.
    */
   "ha-noi": {
-    lat: 20.8386,
-    lon: 105.5561,
+    /** Bãi cất Đồi Bù 20°48'30.6"N 105°34'07.6"E (chủ 17/09). */
+    lat: 20.8085,
+    lon: 105.568778,
     /**
      * ĐỒI BÙ: bãi CẤT 650m, bãi HẠ 50m (số chủ chốt 11/09 — chủ nói lại, trước
      * ghi 833m là độ cao ĐỈNH đồi chứ không phải chỗ cất cánh).
@@ -193,8 +194,9 @@ export const TOA_DO_MAC_DINH: Record<SpotId, ToaDoDiemBay> = {
   },
 };
 
-export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null): ToaDoDiemBay {
-  const goc = TOA_DO_MAC_DINH[normalizeSpot(spot)];
+export function toaDoDiemBay(spot: string, luu?: Partial<ToaDoDiemBay> | null, gocRieng?: ToaDoDiemBay): ToaDoDiemBay {
+  /** `gocRieng`: điểm chỉ có trên trang khách (không có trong TOA_DO_MAC_DINH) đưa bản khai của nó vào đây. */
+  const goc = gocRieng ?? TOA_DO_MAC_DINH[normalizeSpot(spot)];
   if (!luu) return goc;
   return {
     lat: Number.isFinite(luu.lat) ? Number(luu.lat) : goc.lat,

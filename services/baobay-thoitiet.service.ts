@@ -21,7 +21,8 @@
 
 import { connectDB } from "@/lib/mongodb";
 import { todayInVN } from "@/lib/baobay/date";
-import { normalizeSpot, type SpotId } from "@/lib/baobay/spots";
+import { isSpotId, normalizeSpot, type SpotId } from "@/lib/baobay/spots";
+import { khoaThoiTiet } from "@/lib/baobay/khoa-thoi-tiet";
 import {
   chamGio,
   doChinhXac,
@@ -266,11 +267,20 @@ async function goiMoHinh(toaDo: ToaDoDiemBay, soNgay: number, moHinh?: string, t
  * ngay lượt sau, không đợi đệm hết hạn; và bản trong đệm phải sạch, không dính
  * dấu của lượt trước. Nên mỗi lượt trả về một BẢN SAO nông rồi mới gộp.
  */
+/**
+ * KHOÁ ĐIỂM của hệ thời tiết — xem lib/baobay/khoa-thoi-tiet.ts. Slug lạ không
+ * còn rơi về Khau Phạ (lỗi nhận định chuyên gia dán lên mọi điểm, chủ 17/09);
+ * chuỗi kiểu cũ ("Khau Phạ") vẫn quy về sổ nội bộ như trước.
+ */
+function khoa(spot: string): string {
+  return khoaThoiTiet(spot)?.key ?? normalizeSpot(spot);
+}
+
 export async function duBaoDiemBay(
   spot: string,
   opts: { soNgay?: number; boCache?: boolean; moHinh?: string } = {},
 ): Promise<{
-  spot: SpotId;
+  spot: string;
   toaDo: ToaDoDiemBay;
   nguong: NguongBay;
   ngay: NgayThoiTiet[];
@@ -288,7 +298,7 @@ async function duBaoDiemBayTho(
   spot: string,
   opts: { soNgay?: number; boCache?: boolean; moHinh?: string } = {},
 ): Promise<{
-  spot: SpotId;
+  spot: string;
   toaDo: ToaDoDiemBay;
   nguong: NguongBay;
   ngay: NgayThoiTiet[];
@@ -296,7 +306,7 @@ async function duBaoDiemBayTho(
   moHinh: string;
   layLuc: string;
 }> {
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const { toaDo, nguong } = await cauHinhDiem(key);
   /**
    * Tối đa 16 (giới hạn Open-Meteo). Mặc định vẫn 10 — xem ghi chú ở SO_NGAY;
@@ -597,63 +607,22 @@ async function duBaoDiemCongKhaiTho(diem: {
    */
   const mh = moHinhTheoMa(moHinhMa ?? MO_HINH_MAC_DINH);
   const soNgay = Math.min(16, Math.max(1, soNgayXin ?? SO_NGAY));
-  if (diem.spotNoiBo) {
-    const du = await duBaoDiemBay(diem.spotNoiBo, { moHinh: mh.ma, soNgay });
-    /** Điểm trang khách khai riêng thì đè lên số của sổ nội bộ (Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"). */
-    const toaDo: ToaDoDiemBay = {
-      ...du.toaDo,
-      ...(diem.luatHuong ? { luatHuong: diem.luatHuong } : {}),
-      ...(diem.alt !== undefined ? { alt: diem.alt } : {}),
-      ...(diem.altHa !== undefined ? { altHa: diem.altHa } : {}),
-      ...(diem.altCat2 !== undefined ? { altCat2: diem.altCat2 } : {}),
-    };
-    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
-  }
-
+  /**
+   * MỌI điểm đi qua duBaoDiemBay với KHOÁ của nó (chủ 17/09): điểm có sổ nội bộ
+   * dùng sổ ấy; điểm chỉ công khai dùng slug làm khoá — nhờ thế ⚙ và sổ kinh
+   * nghiệm / nhận định chuyên gia của từng điểm tách bạch, không còn dán nhận
+   * định của Khau Phạ lên Sơn Trà.
+   */
+  const du = await duBaoDiemBay(diem.spotNoiBo ?? diem.slug, { moHinh: mh.ma, soNgay });
+  /** Điểm trang khách khai riêng thì đè lên số của sổ nội bộ (Đồi Bù và Viên Nam dùng chung sổ "Hà Nội"). */
   const toaDo: ToaDoDiemBay = {
-    lat: diem.lat,
-    lon: diem.lon,
-    ten: diem.ten,
-    alt: diem.alt,
-    altHa: diem.altHa,
-    altCat2: diem.altCat2,
-    luatHuong: diem.luatHuong,
+    ...du.toaDo,
+    ...(diem.spotNoiBo && diem.luatHuong ? { luatHuong: diem.luatHuong } : {}),
+    ...(diem.spotNoiBo && diem.alt !== undefined ? { alt: diem.alt } : {}),
+    ...(diem.spotNoiBo && diem.altHa !== undefined ? { altHa: diem.altHa } : {}),
+    ...(diem.spotNoiBo && diem.altCat2 !== undefined ? { altCat2: diem.altCat2 } : {}),
   };
-  const nguong = nguongCuaDiem(null);
-  const cacheKey = `web:${diem.slug}:${mh.ma}:${soNgay}:${diem.lat},${diem.lon}`;
-  const cu = CACHE.get(cacheKey);
-  if (cu && Date.now() - cu.luc < CACHE_MS) {
-    return {
-      slug: diem.slug,
-      ten: diem.ten,
-      tinh: diem.tinh,
-      toaDo,
-      nguong,
-      ngay: cu.du,
-      moHinh: cu.moHinh,
-      layLuc: new Date(cu.luc).toISOString(),
-    };
-  }
-
-  try {
-    const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong, mh);
-    CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
-    return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
-  } catch (e) {
-    if (cu && Date.now() - cu.luc < CACHE_CUU_MS) {
-      return {
-        slug: diem.slug,
-        ten: diem.ten,
-        tinh: diem.tinh,
-        toaDo,
-        nguong,
-        ngay: cu.du,
-        moHinh: cu.moHinh,
-        layLuc: new Date(cu.luc).toISOString(),
-      };
-    }
-    throw e;
-  }
+  return { slug: diem.slug, ten: diem.ten, tinh: diem.tinh, ...du, toaDo };
 }
 
 /* ================================================================== */
@@ -662,12 +631,21 @@ async function duBaoDiemCongKhaiTho(diem: {
 
 export async function cauHinhDiem(spot: string): Promise<{ toaDo: ToaDoDiemBay; nguong: NguongBay }> {
   await connectDB();
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const doc = await BaobaySetting.findOne({ key }).select("weather").lean<any>();
   const w = doc?.weather ?? null;
   const gioBay: [number, number] | undefined =
     w && Number.isFinite(w.gioBayTu) && Number.isFinite(w.gioBayDen) && w.gioBayTu < w.gioBayDen ? [Number(w.gioBayTu), Number(w.gioBayDen)] : undefined;
-  const toaDo = toaDoDiemBay(key, w ? { ...w, gioBay } : null);
+  /**
+   * Điểm CHỈ CÓ trên trang khách (Viên Nam, Sơn Trà, Quản Bạ…): gốc lấy từ bản
+   * khai trong lib/weather-spots.ts; số chủ lưu ở ⚙ (nếu có) vẫn đè lên như
+   * điểm nội bộ.
+   */
+  const d = isSpotId(key) ? null : khoaThoiTiet(key)?.diem ?? null;
+  const gocRieng: ToaDoDiemBay | undefined = d
+    ? { lat: d.lat, lon: d.lon, ten: d.ten, alt: d.alt, altHa: d.altHa, altCat2: d.altCat2, luatHuong: d.luatHuong }
+    : undefined;
+  const toaDo = toaDoDiemBay(key, w ? { ...w, gioBay } : null, gocRieng);
   return { toaDo, nguong: nguongCuaDiem(w, toaDo.nguong) };
 }
 
@@ -692,7 +670,7 @@ export async function luuCauHinhDiem(
   patch: LuuCauHinh,
   boi: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const set: Record<string, unknown> = {};
 
   if (patch.lat !== undefined || patch.lon !== undefined) {
@@ -751,7 +729,7 @@ export async function chamNgay(
   input: { date: string; verdict: "tot" | "han-che" | "nghi"; note?: string },
   boi: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const date = String(input.date || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
   if (!["tot", "han-che", "nghi"].includes(input.verdict)) return { ok: false, error: "Kết luận không hợp lệ" };
@@ -782,7 +760,7 @@ export async function chamNgay(
 
 /** Gió/giật/mưa lớn nhất trong khung giờ bay của một ngày — cho sổ kinh nghiệm. */
 async function soCuaNgay(
-  spot: SpotId,
+  spot: string,
   date: string,
 ): Promise<{ windMax: number; gustMax: number; rainTotal: number; windDir: number } | null> {
   try {
@@ -847,7 +825,7 @@ export async function duBaoCuaChu(
   input: { date: string; forecast: "tot" | "han-che" | "nghi"; window?: string; note?: string },
   boi: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const date = String(input.date || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
   if (!["tot", "han-che", "nghi"].includes(input.forecast)) return { ok: false, error: "Dự báo không hợp lệ" };
@@ -895,7 +873,7 @@ export async function ghiNhanDinhChuyenGia(
   input: { date: string; text: string },
   boi: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const date = String(input.date || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "Ngày không hợp lệ" };
   const text = String(input.text ?? "").trim().slice(0, 2000);
@@ -966,7 +944,7 @@ export async function gopKinhNghiem(spot: string, ngay: NgayThoiTiet[]): Promise
   if (!ngay.length) return;
   try {
     await connectDB();
-    const key = normalizeSpot(spot);
+    const key = khoa(spot);
     const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(150).lean<any[]>();
     const theoNgay = new Map<string, any>(docs.map((d) => [String(d.date), d]));
 
@@ -1030,7 +1008,7 @@ export async function soKinhNghiem(
   giong: Record<string, NgayGiong[]>;
 }> {
   await connectDB();
-  const key = normalizeSpot(spot);
+  const key = khoa(spot);
   const docs = await BaobayWeatherMark.find({ spot: key }).sort({ date: -1 }).limit(gioiHan).lean<any[]>();
   const cham: LichSuCham[] = docs.map((d) => ({
     date: d.date,

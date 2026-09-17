@@ -70,8 +70,9 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     slug: "doi-bu",
     ten: "Đồi Bù",
     tinh: "Hà Nội",
-    lat: 20.8386,
-    lon: 105.5561,
+    /** Bãi cất 20°48'30.6"N 105°34'07.6"E (chủ 17/09). */
+    lat: 20.8085,
+    lon: 105.568778,
     spotNoiBo: "ha-noi",
     luatHuong: { tot: [247, 112], xau: [157, 246] },
     kem: ["vien-nam"],
@@ -85,8 +86,9 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     slug: "vien-nam",
     ten: "Núi Viên Nam",
     tinh: "Hoà Bình",
-    lat: 20.9497,
-    lon: 105.4206,
+    /** Bãi cất 20°57'15.5"N 105°24'46.3"E (chủ 17/09). */
+    lat: 20.954306,
+    lon: 105.412861,
     /** Số chủ 11/09: HAI bãi cất — 850m (chính) và 650m; hạ 50m. */
     alt: 850,
     altCat2: 650,
@@ -95,9 +97,24 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
   },
   { slug: "muong-hoa-sapa", ten: "Mường Hoa – Sa Pa", tinh: "Lào Cai", lat: 22.3364, lon: 103.8438, spotNoiBo: "sapa" },
   /** Sơn Trà: cất 600m, hạ ngay mép biển 0m (số chủ 11/09). */
-  { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.1094, lon: 108.2789, alt: 600, altHa: 0 },
-  /** Quản Bạ: cất 1.350m, hạ 800m (số chủ 11/09). */
-  { slug: "ha-giang", ten: "Bắc Sum – Quản Bạ", tinh: "Hà Giang", lat: 22.9214, lon: 104.9731, alt: 1350, altHa: 800 },
+  /** Bãi cất 16°07'04.4"N 108°16'24.9"E (chủ 17/09). */
+  { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.117889, lon: 108.273583, alt: 600, altHa: 0 },
+  /**
+   * QUẢN BẠ (số chủ 17/09): bãi cất 23.060488, 105.019054 cao 950 m; bãi hạ
+   * 23°03'40.5"N 105°02'19.9"E (23.06125, 105.038861) cao 450 m. Gió Tây, Tây
+   * Bắc, Tây Nam là GIÓ SAU: dự báo mạnh hơn 3 m/s là không bay — khai bằng
+   * trần tốc độ theo hướng (dưới 3 m/s vẫn cất được).
+   */
+  {
+    slug: "ha-giang",
+    ten: "Bắc Sum – Quản Bạ",
+    tinh: "Hà Giang",
+    lat: 23.060488,
+    lon: 105.019054,
+    alt: 950,
+    altHa: 450,
+    luatHuong: { capToc: [{ tam: [225, 270, 315], max: 3, ten: "Tây/Tây Bắc/Tây Nam (gió sau)" }] },
+  },
   /** Phình Hồ: cất 900m, hạ 300m (số chủ 11/09). */
   { slug: "tram-tau", ten: "Phình Hồ – Trạm Tấu", tinh: "Lào Cai", lat: 21.5219, lon: 104.5322, alt: 900, altHa: 300 },
   { slug: "dalat", ten: "Đà Lạt", tinh: "Lâm Đồng", lat: 11.9404, lon: 108.4583 },
