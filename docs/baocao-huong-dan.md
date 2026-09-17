@@ -367,6 +367,13 @@ vẫn ghi đủ ai và lúc nào.
 Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
+> **SA PA — MỘT LIÊN DUY NHẤT 80×80 mm** (chủ 17/09): không liên khách giữ,
+> không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông: logo, số thứ
+> tự + mã chống sao chép, ngày bay + giờ hẹn, **tên viết tắt một phần**
+> ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), loại bay, dịch vụ, giờ in,
+> **QR vé 30 mm để phi công quét**, một dòng lưu ý. Chiều cao cố định 74 mm nội
+> dung (in thẳng: 640 chấm). Khau Phạ vẫn in bộ bốn liên dưới đây.
+
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**
 và **#23.2**, mỗi số BỐN liên:
 

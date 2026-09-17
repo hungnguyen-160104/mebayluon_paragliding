@@ -27,7 +27,7 @@
  */
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
-import { spotName } from "@/lib/baobay/spots";
+import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { dichVuChu, nhanVe, veQrText } from "@/lib/baobay/ve-qr";
 import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
@@ -151,6 +151,19 @@ export function soThuTuVe(b: BookingDTO, guestNo: number): string {
   return b.guestCount > 1 ? `#${so}.${guestNo}` : `#${so}`;
 }
 
+/**
+ * VIẾT TẮT MỘT PHẦN tên khách (Sa Pa, chủ 17/09): giữ họ và tên gọi, chữ lót
+ * còn chữ cái đầu — "Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung". Tên hai chữ
+ * hoặc một chữ giữ nguyên. Tên nước ngoài (chữ không dấu, nhiều từ) cũng theo
+ * luật ấy: "Jean Pierre Martin" → "Jean P. Martin".
+ */
+export function vietTatTen(ten: string): string {
+  const tu = String(ten || "").trim().split(/\s+/).filter(Boolean);
+  if (tu.length <= 2) return tu.join(" ");
+  const giua = tu.slice(1, -1).map((t) => t[0].toUpperCase() + ".").join("");
+  return `${tu[0]} ${giua} ${tu[tu.length - 1]}`;
+}
+
 /** Tên khách thứ n: booking OTA có danh sách tên từng người; không có thì tên liên hệ. */
 export function tenKhachVe(b: BookingDTO, guestNo: number): string {
   const ten = (b.otaGuests ?? []).map((g) => String(g.fullName || "").trim()).filter(Boolean);
@@ -240,6 +253,39 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe
     </table>
     ${khoiQrVe(b, guestNo, qrVe)}
     ${chan()}
+  </section>`;
+}
+
+/**
+ * SA PA — MỘT LIÊN DUY NHẤT khổ 80×80 mm (chủ 17/09): không liên khách giữ,
+ * không đồ uống, không xe trung chuyển — chỉ một vé có số thứ tự, mã chống
+ * sao chép, tên khách VIẾT TẮT một phần và MÃ QR to để phi công quét. Chiều
+ * cao cố định 74 mm nội dung (80 mm giấy trừ lề) — mỗi vé đúng một tờ.
+ */
+function lienSapa(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
+  const extras = extrasOf(b, guestNo);
+  const ten = vietTatTen(tenKhachVe(b, guestNo));
+  const dv = extras.length ? extras.join(" · ") : "Bay dù";
+  return `
+  <section class="ve sapa">
+    <div class="dau">
+      <img class="logo" src="/logo-mbl-in.png" alt="" />
+      <div class="ten">MEBAYLUON PARAGLIDING<br/><small>${esc(spotName(spot))} · VÉ BAY DÙ</small></div>
+    </div>
+    ${khoiSo(b, guestNo, "du")}
+    <table>
+      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</td></tr>
+      <tr><td>Khách</td><td class="p${ten.length > 22 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</td></tr>
+    </table>
+    <div class="sapa-than">
+      ${qrVe && b.veQr ? `<div class="sapa-qr">${qrVe}<div class="sapa-qr-nhan">Phi công quét mã</div></div>` : ""}
+      <div class="sapa-phai">
+        <div class="sapa-dong"><span>Loại bay</span><b>${esc(KIND_LABEL[b.flightKind] ?? b.flightKind)}</b></div>
+        <div class="sapa-dong"><span>Dịch vụ</span><b${dv.length > 14 ? ' class="dai"' : ""}>${esc(dv)}</b></div>
+        <div class="sapa-dong"><span>In vé</span><b>${esc(luc.slice(0, 11))}</b></div>
+      </div>
+    </div>
+    <div class="luuy">${esc(LUU_Y_2)} · Gọi xác nhận thời tiết</div>
   </section>`;
 }
 
@@ -364,6 +410,18 @@ const CSS = `
   /* Lưới an toàn: dòng nào lỡ dài thì XUỐNG DÒNG có thụt lề, thà thêm vài mm
      giấy còn hơn in ra mất đuôi chữ (chủ 13/09). */
   .luuy-khach li { white-space: normal; overflow-wrap: anywhere; }
+  /* SA PA: một liên 80 x 80 mm — cao cố định; QR to bên trái, ba dòng chữ bên phải */
+  .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; }
+  .ve.sapa .sapa-than { display: flex; gap: 8px; align-items: center; flex: 1; min-height: 0; margin-top: 3px; }
+  .ve.sapa .sapa-qr { flex: 0 0 28mm; text-align: center; }
+  .ve.sapa .sapa-qr svg { width: 28mm; height: 28mm; display: block; }
+  .ve.sapa .sapa-qr-nhan { font-size: 9.5px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
+  .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+  .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
+  .ve.sapa .sapa-dong span { color: #222; flex: none; }
+  .ve.sapa .sapa-dong b { font-weight: 800; overflow: hidden; text-overflow: clip; text-align: right; color: #000; }
+  .ve.sapa .sapa-dong b.dai { font-size: 10.5px; }
+  .ve.sapa .luuy { margin-top: auto; font-size: 10.5px; }
 `;
 
 /**
@@ -387,7 +445,9 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   }
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
-    pages.push(lienBay(b, spot, g, luc, qrVe.get(g)), lienKhach(b, spot, g, qr, luc, qrVe.get(g)), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
+    /** Sa Pa: một liên duy nhất 80×80 mm (chủ 17/09); Khau Phạ giữ bộ bốn liên. */
+    if (normalizeSpot(spot) === "sapa") pages.push(lienSapa(b, spot, g, luc, qrVe.get(g)));
+    else pages.push(lienBay(b, spot, g, luc, qrVe.get(g)), lienKhach(b, spot, g, qr, luc, qrVe.get(g)), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
   }
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8" />
 <title>Vé bay ${esc(b.bookingCode || b.daySeq)}</title>
@@ -531,6 +591,9 @@ export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<
   const htmlUsb = html.replace(
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
+     .ve.sapa { height: 640px !important; }
+     .ve.sapa .sapa-qr { flex-basis: 220px !important; }
+     .ve.sapa .sapa-qr svg { width: 220px !important; height: 220px !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }
