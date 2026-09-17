@@ -412,23 +412,26 @@ const CSS = `
   .ve.sapa .sapa-than { display: flex; gap: 6px; align-items: center; flex: 1; min-height: 0; margin: 1px 0 2px; }
   .ve.sapa .sapa-qr { flex: 0 0 30mm; text-align: center; }
   .ve.sapa .sapa-qr svg { width: 30mm; height: 30mm; display: block; }
-  .ve.sapa .sapa-qr-nhan { font-size: 9.5px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
+  .ve.sapa .sapa-qr-nhan { font-size: 11px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
   .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
   .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
   .ve.sapa .sapa-dong span { color: #222; flex: none; }
   .ve.sapa .sapa-dong b { font-weight: 800; overflow: hidden; text-overflow: clip; text-align: right; color: #000; }
   .ve.sapa .sapa-dong b.dai { font-size: 10.5px; }
   /* Ngày + tên đứng CẠNH QR (chủ 18/09) — cột phải rộng ~44mm, tên dài thì co chữ hoặc xuống 2 dòng */
-  .ve.sapa .sapa-ngay { font-size: 14px; font-weight: 800; white-space: nowrap; }
-  .ve.sapa .sapa-ten { font-size: 14px; font-weight: 900; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; border-bottom: 1px dotted #999; padding-bottom: 2px; }
-  .ve.sapa .sapa-ten.dai { font-size: 12px; }
+  /* Bản hộp thoại in (mm) cũng phải to: chủ 18/09 "mã, ngày bay, tên khách, link web, ngày in quá bé" */
+  .ve.sapa .sapa-ngay { font-size: 17px; font-weight: 800; white-space: nowrap; }
+  .ve.sapa .sapa-ten { font-size: 17px; font-weight: 900; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; border-bottom: 1px dotted #999; padding-bottom: 2px; }
+  .ve.sapa .sapa-ten.dai { font-size: 14px; }
+  .ve.sapa .so-ma { font-size: 17px; }
+  .ve.sapa .so-ma-nhan { font-size: 10px; }
   /* Dịch vụ đi kèm nổi bật để phi công chuẩn bị (360 / flycam / cờ đỏ) */
-  .ve.sapa .sapa-dv { border: 2px solid #000; border-radius: 4px; padding: 3px 4px; font-size: 13px; font-weight: 900; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+  .ve.sapa .sapa-dv { border: 2px solid #000; border-radius: 4px; padding: 3px 4px; font-size: 15px; font-weight: 900; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
   /* Logo khỉ Sa Pa (bản xám tương phản cao cho máy in nhiệt) to hơn logo MBL một chút vì hình ngang */
   .ve.sapa .sapa-logo { width: 12mm; height: 10mm; }
-  .ve.sapa .sapa-cuoi { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; font-size: 10.5px; white-space: nowrap; }
+  .ve.sapa .sapa-cuoi { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
   .ve.sapa .sapa-cuoi b { font-weight: 800; letter-spacing: .2px; }
-  .ve.sapa .luuy { margin-top: 2px; font-size: 10.5px; white-space: normal; line-height: 1.25; }
+  .ve.sapa .luuy { margin-top: 2px; font-size: 11.5px; white-space: normal; line-height: 1.25; }
 `;
 
 /**
@@ -446,7 +449,8 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   if (b.veQr?.ngay) {
     await Promise.all(
       Array.from({ length: guests }, (_, i) => i + 1).map(async (g) => {
-        qrVe.set(g, await qrSvg(veQrText(spot, b.veQr!.ngay, b.veQr!.so, g)));
+        /** Đuôi QR = mã chống giả của khách (chủ 18/09) — chưa có mã thì rơi về mã điểm. */
+        qrVe.set(g, await qrSvg(veQrText(spot, b.veQr!.ngay, b.veQr!.so, g, maVeCua(b, g))));
       }),
     );
   }

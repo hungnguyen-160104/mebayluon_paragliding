@@ -8,7 +8,8 @@
  * mã" cho phi công khác quét. Cuối ngày báo cáo phi công tự cộng từ những mã
  * đã chiếm: mấy chuyến, mấy 360, mấy flycam, mấy cờ đỏ — để tính lương.
  *
- * NỘI DUNG QR = NGÀY BAY + SỐ THỨ TỰ + SỐ KHÁCH, ví dụ "22/12/2026 #3.2 SAPA":
+ * NỘI DUNG QR = NGÀY CẤP + SỐ THỨ TỰ + SỐ KHÁCH + MÃ CHỐNG GIẢ, ví dụ "22/12/2026 #3.2 Q3M9"
+ * (vé in trước 18/09 đuôi là mã điểm "SAPA", máy vẫn đọc):
  * khách đặt bay ngày 22/12, booking số 3 trong ngày, khách thứ 2 của đoàn.
  * Không phải mã vé chống sao chép A2D8 (mã ấy vẫn in cạnh số để đối chiếu
  * vé chép). Chủ chốt kiểu này vì người đọc được bằng mắt, và DỜI NGÀY THÌ
@@ -36,12 +37,28 @@ export const KHONG_DICH_VU: DichVuKhach = { video360: false, flycam: false, redF
 const MA_DIEM: Record<string, string> = { sapa: "SAPA", "khau-pha": "KHAUPHA", "ha-noi": "HANOI" };
 const DIEM_THEO_MA: Record<string, string> = Object.fromEntries(Object.entries(MA_DIEM).map(([k, v]) => [v, k]));
 
-/** "2026-12-22", 3, 2 → "22/12/2026 #3.2 SAPA". */
-export function veQrText(spot: string, ngay: string, so: number, guestNo: number): string {
-  return `${formatDateKeyVN(ngay)} #${so}.${guestNo} ${MA_DIEM[spot] ?? spot.toUpperCase()}`;
+/**
+ * "2026-12-22", 3, 2, "Q3M9" → "22/12/2026 #3.2 Q3M9".
+ *
+ * Đuôi là MÃ CHỐNG GIẢ của khách (chủ 18/09: "bỏ chữ SAPA trong QR, thay bằng
+ * mã chống giả") — máy quét đối chiếu với mã đã cấp trong sổ, vé chép hay vé
+ * tự in không có mã đúng là lộ ngay. Chưa có mã (vé in trước khi qua sổ) thì
+ * vẫn in mã điểm như cũ để không hỏng phép đọc.
+ */
+export function veQrText(spot: string, ngay: string, so: number, guestNo: number, maChongGia?: string): string {
+  const ma = String(maChongGia ?? "").trim().toUpperCase();
+  const duoi = /^[A-Z0-9]{3,8}$/.test(ma) ? ma : (MA_DIEM[spot] ?? spot.toUpperCase());
+  return `${formatDateKeyVN(ngay)} #${so}.${guestNo} ${duoi}`;
 }
 
-export type VeQrDoc = { spot: string | null; ngay: string; so: number; guestNo: number };
+export type VeQrDoc = {
+  spot: string | null;
+  ngay: string;
+  so: number;
+  guestNo: number;
+  /** Mã chống giả ở đuôi QR (vé từ 18/09); null nếu đuôi là mã điểm hoặc thiếu. */
+  ma: string | null;
+};
 
 /**
  * Đọc chuỗi trong QR (hoặc người gõ tay "22/12 #3.2"). Chấp nhận thiếu năm
@@ -50,7 +67,7 @@ export type VeQrDoc = { spot: string | null; ngay: string; so: number; guestNo: 
  */
 export function parseVeQrText(raw: string, homNay?: string): VeQrDoc | null {
   const s = String(raw ?? "").trim().toUpperCase().replace(/\s+/g, " ");
-  const m = /^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?\s*[-–·]?\s*#\s*(\d+)(?:[.,](\d+))?\s*([A-Z-]+)?$/.exec(s);
+  const m = /^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?\s*[-–·]?\s*#\s*(\d+)(?:[.,](\d+))?\s*([A-Z0-9-]+)?$/.exec(s);
   if (!m) return null;
   const d = Number(m[1]);
   const mo = Number(m[2]);
@@ -67,8 +84,10 @@ export function parseVeQrText(raw: string, homNay?: string): VeQrDoc | null {
   const so = Number(m[4]);
   const guestNo = m[5] ? Number(m[5]) : 1;
   if (!so || !guestNo) return null;
-  const maDiem = m[6] ?? "";
-  return { spot: maDiem ? (DIEM_THEO_MA[maDiem] ?? null) : null, ngay, so, guestNo };
+  const duoi = m[6] ?? "";
+  /** Đuôi là mã điểm (vé cũ) hay mã chống giả (vé mới)? Mã điểm có trong bảng; còn lại coi là mã chống giả. */
+  if (duoi && DIEM_THEO_MA[duoi]) return { spot: DIEM_THEO_MA[duoi], ngay, so, guestNo, ma: null };
+  return { spot: null, ngay, so, guestNo, ma: duoi || null };
 }
 
 /** "#3.2" — nhãn ngắn của một khách (đoàn 1 người vẫn "#3.1" trên QR nhưng hiện "#3"). */

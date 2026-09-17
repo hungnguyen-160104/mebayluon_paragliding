@@ -97,6 +97,12 @@ function dv(x: any): DichVuKhach {
   return { video360: Boolean(x?.video360), flycam: Boolean(x?.flycam), redFlag: Boolean(x?.redFlag) };
 }
 
+/** Mã chống sao chép đã cấp cho khách thứ n (ticketSecurity) — rỗng nếu chưa in lần nào. */
+function maChongGiaCua(doc: any, guestNo: number): string {
+  const d = (doc?.ticketSecurity ?? []).find((x: any) => Number(x?.guestNo) === guestNo);
+  return String(d?.code ?? "").trim().toUpperCase();
+}
+
 export function maVeDTO(doc: any, k: any): MaVeDTO {
   const v = doc.veQr;
   const dichVu = dv(k.dichVu);
@@ -107,7 +113,7 @@ export function maVeDTO(doc: any, k: any): MaVeDTO {
   return {
     bookingId: String(doc._id),
     nhan: nhanVe(Number(v.so), Number(k.guestNo), guestCount),
-    qrText: veQrText(String(doc.spot), String(v.ngay), Number(v.so), Number(k.guestNo)),
+    qrText: veQrText(String(doc.spot), String(v.ngay), Number(v.so), Number(k.guestNo), maChongGiaCua(doc, Number(k.guestNo))),
     ngayCap: String(v.ngay),
     flightDate: String(doc.flightDate),
     daDoi: String(v.ngay) !== String(doc.flightDate),
@@ -151,6 +157,11 @@ export async function quetVe(session: BaobaySession, spotRaw: string, input: { t
   if (!doc) throw new BaobayError(`Không có vé ${formatDateKeyVN(ma.ngay)} #${ma.so} trong sổ — vé chép hoặc chưa cấp mã`, 404);
   const k = khachCua(doc, ma.guestNo);
   if (!k) throw new BaobayError(`Booking #${ma.so} ngày ${formatDateKeyVN(ma.ngay)} không có khách thứ ${ma.guestNo}`, 404);
+  /** MÃ CHỐNG GIẢ ở đuôi QR phải khớp mã đã cấp cho đúng khách ấy (chủ 18/09). */
+  const maSo = maChongGiaCua(doc, ma.guestNo);
+  if (ma.ma && maSo && ma.ma !== maSo) {
+    throw new BaobayError(`Mã chống giả trên vé (${ma.ma}) KHÔNG KHỚP sổ (${maSo}) — vé chép hoặc vé tự in, không bay`, 409);
+  }
 
   if (doc.status === "cancelled") {
     throw new BaobayError(`Mã ${formatDateKeyVN(ma.ngay)} #${ma.so}.${ma.guestNo} đã bị HUỶ (booking huỷ${doc.cancelledBy ? ` bởi ${doc.cancelledBy}` : ""}) — không bay`, 409);
@@ -356,7 +367,7 @@ export async function veCuaToi(
         thuHoi.push({
           bookingId: String(doc._id),
           nhan: nhanVe(Number(doc.veQr.so), Number(k.guestNo), Math.max(1, Number(doc.guestCount) || 1)),
-          qrText: veQrText(spot, String(doc.veQr.ngay), Number(doc.veQr.so), Number(k.guestNo)),
+          qrText: veQrText(spot, String(doc.veQr.ngay), Number(doc.veQr.so), Number(k.guestNo), maChongGiaCua(doc, Number(k.guestNo))),
           ngayCap: String(doc.veQr.ngay),
           flightDate: String(doc.flightDate),
           tenKhach: tenKhach(doc, Number(k.guestNo)),

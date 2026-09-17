@@ -432,7 +432,7 @@ bảng chuẩn khi tra). Phép thử: `scripts/baocao/test-ma-ve-bao-mat.ts`.
 
 Chủ chốt 17/09/2026. Sa Pa không dùng vé giấy đánh số sẵn: mỗi KHÁCH một tấm
 vé nhiệt, trên liên 1 và liên 2 có thêm **mã QR vé** — nội dung
-`22/12/2026 #3.2 SAPA` (ngày cấp · booking số 3 trong ngày · khách thứ 2),
+`22/12/2026 #3.2 Q3M9` (ngày cấp · booking số 3 trong ngày · khách thứ 2 · **mã chống giả** của khách ấy — chủ 18/09 thay chữ SAPA; máy quét đối chiếu mã với sổ, lệch là báo "vé chép hoặc vé tự in"; vé cũ đuôi `SAPA` vẫn đọc được),
 bên dưới in tên khách chữ nhỏ và dịch vụ đi kèm (Cam 360 · Flycam · Cờ đỏ).
 Mã này KHÔNG đổi khi dời lịch: ngày trong mã là ngày cấp, máy chủ biết booking
 đang ở ngày nào. Vì thế số thứ tự của ngày cấp không được cấp lại cho đoàn khác
