@@ -47,7 +47,7 @@ import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, printBookingTickets,
 import { ghepAnhLien, hienKhungVe } from "@/lib/baobay/may-in-chia-se";
 import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
-import { chiaDichVu, coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach } from "@/lib/baobay/ve-qr";
+import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -5398,14 +5398,11 @@ export function BookingTodayBanner({
            * QR và in. Xác nhận trong hộp mới gọi máy chủ; ở đây chỉ mở hộp.
            */
           if (!b.noTicketFlight && !b.ticketIssued && coQuetVe(spot, b) && !b.veQr) {
-            /** Không dịch vụ, hoặc dịch vụ đủ cho cả đoàn → máy tự chia, khỏi mở hộp (chủ 18/09). */
-            const n = Math.max(1, b.guestCount || 1);
-            const dat = { video360: b.video360, flycam: b.flycam, redFlag: b.redFlag };
-            const canChon = DICH_VU_VE.some((k) => dat[k] > 0 && dat[k] < n);
-            if (!canChon) {
-              void capMaVe(b, chiaDichVu(n, dat).khach.map((r, i) => ({ guestNo: i + 1, ...r })));
-              return;
-            }
+            /**
+             * LUÔN hiện DANH SÁCH MÃ QR trước (chủ nhắc 18/09): dịch vụ 0 thì không
+             * có cột để chọn, đủ cả đoàn thì tích sẵn và khoá — nhưng danh sách
+             * vẫn phải hiện để người in soát tên từng khách rồi mới cấp mã.
+             */
             setVeModal(b);
             return;
           }
@@ -5464,12 +5461,24 @@ export function BookingTodayBanner({
        * chỉ còn ý nghĩa "in lại không hỏi lý do, không giới hạn".
        */}
       {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
-        <ReprintTicket
-          spot={spot}
-          booking={b}
-          onDone={load}
-          khongGioiHan={IN_VE_TU_DO || (user?.role === "admin" && user?.adminLevel === 1)}
-        />
+        normalizeSpot(spot) === "sapa" && b.veQr ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-7 bg-white px-2 text-xs font-semibold text-slate-600"
+            onClick={() => setVeModal(b)}
+            title="In lại vé Sa Pa: soát danh sách mã / dịch vụ rồi xem vé — Lưu ảnh · Chia sẻ · In vé"
+          >
+            🖨 In lại
+          </Button>
+        ) : (
+          <ReprintTicket
+            spot={spot}
+            booking={b}
+            onDone={load}
+            khongGioiHan={IN_VE_TU_DO || (user?.role === "admin" && user?.adminLevel === 1)}
+          />
+        )
       )}
       {/* Sửa dịch vụ trên vé sau khi đã cấp mã (khách chưa bay xong) */}
       {b.veQr && !b.noTicketFlight && (
@@ -5516,19 +5525,25 @@ export function BookingTodayBanner({
         dichVu,
       });
       setVeModal(null);
-      if (dangCap) {
-        const bk = r?.booking ?? bk0;
-        if (laSapa) {
-          if (!bk0.ticketIssued) await act(bk0, "ticket");
-          const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
-          await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
-            const t = moTabIn();
-            await printBookingTickets(bk, spot, t, "");
-          });
-        } else {
-          await printBookingTickets(bk, spot, tab);
-          if (!bk0.ticketIssued) await act(bk0, "ticket");
-        }
+      const bk = r?.booking ?? bk0;
+      if (laSapa) {
+        /**
+         * SA PA — bước 2 sau danh sách mã: KHUNG XEM VÉ (khách chụp lại) với
+         * Lưu ảnh · Chia sẻ · In vé. Cấp mã lần đầu hay in lại đều qua đây;
+         * "In vé" ghi vết in lại rồi mới đẩy ra máy in.
+         */
+        if (dangCap && !bk0.ticketIssued) await act(bk0, "ticket");
+        const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
+        await hienKhungVe(ghepAnhLien(anh, RONG_CHAM), `ve-${bk.daySeq || bk.id}.png`, async () => {
+          const t = moTabIn();
+          const r2 = dangCap
+            ? null
+            : await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
+          await printBookingTickets(r2?.booking ?? bk, spot, t, dangCap ? "" : "in lại");
+        });
+      } else if (dangCap) {
+        await printBookingTickets(bk, spot, tab);
+        if (!bk0.ticketIssued) await act(bk0, "ticket");
       }
       load();
     } catch (e: unknown) {

@@ -385,12 +385,14 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > số khách mới tích tay, và phải tích **đúng** số đã đặt mới cấp mã. Đoàn không
 > có gì để chọn thì bấm IN VÉ là cấp mã luôn, không hỏi.
 >
-> **Luồng IN VÉ ở Sa Pa (chủ 18/09):** bấm 🖨 IN VÉ → hộp **danh sách khách
-> (mã QR từng người)** để tích tay dịch vụ 360 / flycam / cờ đỏ cho đúng khách
-> khi không chia đều → **Cấp mã & xem vé** → máy cấp mã và bày **KHUNG XEM VÉ**
-> (ảnh vé to, khách chụp màn hình được) với ba nút **💾 Lưu ảnh · 📤 Chia sẻ ·
-> 🖨 In vé**. "In vé" đi đúng đường in đã cài (Bluetooth / USB / RawBT / app
-> chia sẻ / tab). Booking tự tích "đã xuất vé" ngay khi cấp mã.
+> **Luồng IN VÉ ở Sa Pa (chủ 18/09, chốt lại):** bấm 🖨 IN VÉ → **LUÔN** hiện
+> hộp **danh sách khách (mã QR từng người)**: dịch vụ đặt 0 không có cột, đủ
+> cả đoàn thì tích sẵn và khoá, 0 < đặt < số khách thì tích tay đúng số → **Cấp
+> mã & xem vé** → máy cấp mã, tự tích "đã xuất vé", bày **KHUNG XEM VÉ** (ảnh
+> vé to, khách chụp màn hình được) với ba nút **💾 Lưu ảnh · 📤 Chia sẻ · 🖨 In
+> vé** ("In vé" đi đúng đường in đã cài). Nút **🖨 In lại** ở Sa Pa đi lại đúng
+> hai bước ấy (hộp danh sách → "Lưu & xem vé" → khung xem), mỗi lần bấm "In vé"
+> trong khung ghi một vết in lại. Khau Phạ giữ nếp cũ: IN VÉ in bộ bốn liên ngay.
 
 **Mỗi KHÁCH một bộ**, không phải mỗi booking: booking #23 có 2 khách → **#23.1**
 và **#23.2**, mỗi số BỐN liên:

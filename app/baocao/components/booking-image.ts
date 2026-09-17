@@ -224,13 +224,57 @@ async function loadMapQr(url: string): Promise<HTMLImageElement | null> {
   }
 }
 
-function loadLogo(): Promise<HTMLImageElement | null> {
+/**
+ * THƯƠNG HIỆU THEO ĐIỂM (chủ 18/09): phiếu Sa Pa mang logo, tên và hotline của
+ * SAPA PARAGLIDING (công ty con, web paraglidingsapa.com); hai điểm kia là
+ * Mebayluon Paragliding.
+ */
+export function thuongHieu(spot: string): { ten: string; web: string; logo: string; hotlineNgan: string; hotlineDu: string } {
+  if (/sapa/i.test(spot)) {
+    return {
+      ten: "SAPA PARAGLIDING",
+      web: "paraglidingsapa.com",
+      logo: "/logo-sapa.png",
+      hotlineNgan: "0386 887 489",
+      hotlineDu: "0386.887.489 (Sapa Paragliding — Hotline · Zalo · WhatsApp)",
+    };
+  }
+  return {
+    ten: "MEBAYLUON PARAGLIDING",
+    web: "mebayluon.com",
+    logo: "/logo-mbl.png",
+    hotlineNgan: "0964 073 555",
+    hotlineDu: "0964.073.555 (Mr. Mỹ – Phi công trưởng) · 0385.907.789 (Ms. Duyên – Điều phối bay)",
+  };
+}
+
+/**
+ * BẺ DÒNG theo bề rộng thật (đo bằng measureText) — chân phiếu trước đây bẻ
+ * tay ở chỗ cố định nên dòng ngắn hơn khổ ảnh (chủ 18/09: "hẹp hơn so với khổ
+ * rộng của ảnh, hãy cân lại").
+ */
+function boDong(g: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const ra: string[] = [];
+  let dong = "";
+  for (const tu of text.split(/\s+/).filter(Boolean)) {
+    const thu = dong ? `${dong} ${tu}` : tu;
+    if (g.measureText(thu).width <= maxW || !dong) dong = thu;
+    else {
+      ra.push(dong);
+      dong = tu;
+    }
+  }
+  if (dong) ra.push(dong);
+  return ra;
+}
+
+function loadLogo(src = "/logo-mbl.png"): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = "/logo-mbl.png";
+    img.src = src;
     // Ảnh nằm cùng miền, 2 giây là quá đủ; quá thì bỏ logo cho nhanh
     setTimeout(() => resolve(img.complete && img.naturalWidth ? img : null), 2_000);
   });
@@ -346,8 +390,9 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     return pts;
   })();
 
+  const th = thuongHieu(d.spot);
   const [logo, payQr, ...dirQrs] = await Promise.all([
-    loadLogo(),
+    loadLogo(th.logo),
     payAmount > 0 ? loadPayQr(payAmount, payNote) : Promise.resolve(null),
     ...dirPoints.map((p) => loadMapQr(p.url)),
   ]);
@@ -360,8 +405,18 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const titleH = 30;
   const rowH = 34;
   const blockGap = 14;
-  /** Chân phiếu: 2 dòng cũ + 3 dòng nhắc thời tiết / hotline (chủ 17/09). */
-  const footerH = 128;
+  /**
+   * CHÂN PHIẾU: đo trước số dòng sau khi bẻ theo bề rộng thật để tính chiều
+   * cao — canvas đo chữ cần một context, nên dựng một canvas tạm để đo.
+   */
+  const doChu = document.createElement("canvas").getContext("2d")!;
+  const rongChu = W - pad * 2;
+  doChu.font = f(14, "bold");
+  const dongNhac = [
+    ...boDong(doChu, "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.", rongChu),
+    ...boDong(doChu, `Mọi phản ánh dịch vụ vui lòng gọi trực tiếp Hotline để được hỗ trợ kịp thời: ${th.hotlineDu}`, rongChu),
+  ];
+  const footerH = 24 + 14 + dongNhac.length * 20 + 12;
 
   const blocks = buildBlocks(d);
 
@@ -427,19 +482,26 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.fillStyle = "#FFFFFF";
   g.fill();
   g.clip();
-  if (logo) g.drawImage(logo, logoX + 5, logoY + 5, logoD - 10, logoD - 10);
+  if (logo) {
+    /** Vẽ vừa khung tròn, GIỮ TỈ LỆ (logo khỉ Sa Pa hình ngang, ép vuông là méo). */
+    const khung = logoD - 10;
+    const ti = Math.min(khung / logo.naturalWidth, khung / logo.naturalHeight);
+    const w = logo.naturalWidth * ti;
+    const h = logo.naturalHeight * ti;
+    g.drawImage(logo, logoX + 5 + (khung - w) / 2, logoY + 5 + (khung - h) / 2, w, h);
+  }
   g.restore();
 
   const tx = logoX + logoD + 18;
   g.fillStyle = "#FFFFFF";
   g.font = f(27, "bold");
-  g.fillText("MEBAYLUON PARAGLIDING", tx, logoY + 26);
+  g.fillText(th.ten, tx, logoY + 26);
   g.font = f(17, "bold");
   g.fillStyle = "rgba(255,255,255,0.95)";
   g.fillText("PHIẾU BOOKING BAY DÙ LƯỢN", tx, logoY + 52);
   g.font = f(14);
   g.fillStyle = "rgba(255,255,255,0.85)";
-  g.fillText("mebayluon.com · 0964 073 555", tx, logoY + 76);
+  g.fillText(`${th.web} · ${th.hotlineNgan}`, tx, logoY + 76);
 
   /**
    * Ô SỐ THỨ TỰ — to như số thứ tự lấy ở ngân hàng, vì đó là thứ khách hỏi
@@ -721,13 +783,10 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.font = f(14);
   g.fillStyle = C.sub;
   g.fillText("Vui lòng có mặt trước giờ bay 15 phút · Mang theo CCCD/Passport để làm bảo hiểm.", pad, H - footerH + 24);
-  /** Lời nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09). */
+  /** Lời nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09) — bẻ dòng theo đúng bề rộng ảnh (chủ 18/09). */
   g.fillStyle = C.ink;
   g.font = f(14, "bold");
-  g.fillText("Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi", pad, H - footerH + 52);
-  g.fillText("xác nhận thời tiết bay trước khi xuất phát.", pad, H - footerH + 72);
-  g.fillText("Mọi phản ánh dịch vụ vui lòng gọi trực tiếp Hotline để được hỗ trợ kịp thời:", pad, H - footerH + 96);
-  g.fillText("0964.073.555 (Mr. Mỹ – Phi công trưởng) · 0385.907.789 (Ms. Duyên – Điều phối bay)", pad, H - footerH + 116);
+  dongNhac.forEach((dong, i) => g.fillText(dong, pad, H - footerH + 24 + 14 + 16 + i * 20));
 
   return canvas;
 }

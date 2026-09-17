@@ -135,7 +135,7 @@ export function VeDichVuModal({
               }
             }}
           >
-            {booking.veQr ? "Lưu dịch vụ" : normalizeSpot(booking.spot) === "sapa" ? "Cấp mã & xem vé" : "Cấp mã & in vé"}
+            {booking.veQr ? (normalizeSpot(booking.spot) === "sapa" ? "Lưu & xem vé" : "Lưu dịch vụ") : normalizeSpot(booking.spot) === "sapa" ? "Cấp mã & xem vé" : "Cấp mã & in vé"}
           </Button>
         </div>
       </div>
