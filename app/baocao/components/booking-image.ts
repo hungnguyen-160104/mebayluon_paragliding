@@ -82,22 +82,41 @@ const money = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
  * (components/booking/BookingTicket.tsx, bản tiếng Việt): mặc gì, mang gì,
  * đừng mang gì. Khách đặt qua quầy/Zalo không đi qua web nên chưa từng thấy.
  */
-const QUICK_GUIDE: Array<{ title: string; items: string[] }> = [
-  {
-    title: "TRANG PHỤC",
-    items: ["Quần áo dài tay, gọn gàng", "Giày thể thao hoặc giày leo núi", "Không mặc váy, không đi cao gót / dép lê"],
-  },
-  {
-    title: "NÊN MANG THEO",
-    items: [
-      "Giấy tờ tuỳ thân (CCCD / Hộ chiếu)",
-      "Kính râm, áo khoác mỏng",
-      "Túi nhỏ 1–2 kg cho đồ cá nhân",
-      "Điện thoại còn trống ~10GB để chép ảnh & video",
-    ],
-  },
-  { title: "KHÔNG NÊN MANG THEO", items: ["Vật sắc nhọn", "Đồ cồng kềnh", "Tư trang giá trị cao", "Đồ nặng"] },
-];
+/** Phiếu SA PA in SONG NGỮ Việt/Anh (chủ 18/09) — khách Sa Pa phần lớn là khách quốc tế. */
+function songNguCua(spot: string): boolean {
+  return /sapa/i.test(spot);
+}
+/** "Ngày bay / Flight date" khi song ngữ, chỉ tiếng Việt ở điểm khác. */
+function nn(sn: boolean, vi: string, en: string): string {
+  return sn ? `${vi} / ${en}` : vi;
+}
+
+function quickGuide(sn: boolean): Array<{ title: string; items: string[] }> {
+  const L = (vi: string, en: string) => nn(sn, vi, en);
+  return [
+    {
+      title: L("TRANG PHỤC", "DRESS"),
+      items: [
+        L("Quần áo dài tay, gọn gàng", "Long sleeves, tidy clothes"),
+        L("Giày thể thao hoặc giày leo núi", "Sneakers or hiking shoes"),
+        L("Không mặc váy, không đi cao gót / dép lê", "No skirts, heels or flip-flops"),
+      ],
+    },
+    {
+      title: L("NÊN MANG THEO", "BRING"),
+      items: [
+        L("Giấy tờ tuỳ thân (CCCD / Hộ chiếu)", "ID / Passport"),
+        L("Kính râm, áo khoác mỏng", "Sunglasses, light jacket"),
+        L("Túi nhỏ 1–2 kg cho đồ cá nhân", "Small bag 1–2 kg"),
+        L("Điện thoại còn trống ~10GB để chép ảnh & video", "Phone with ~10GB free for photos & videos"),
+      ],
+    },
+    {
+      title: L("KHÔNG NÊN MANG THEO", "DON'T BRING"),
+      items: [L("Vật sắc nhọn", "Sharp objects"), L("Đồ cồng kềnh", "Bulky items"), L("Tư trang giá trị cao", "Valuables"), L("Đồ nặng", "Heavy items")],
+    },
+  ];
+}
 
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 const f = (size: number, weight: "" | "bold" = "") => `${weight ? weight + " " : ""}${size}px ${FONT}`;
@@ -285,36 +304,38 @@ type Block = { title: string; rows: Row[]; wrapLast?: boolean };
 
 function buildBlocks(d: BookingImageData): Block[] {
   const blocks: Block[] = [];
+  const sn = songNguCua(d.spot);
+  const L = (vi: string, en: string) => nn(sn, vi, en);
 
   blocks.push({
-    title: "CHUYẾN BAY",
+    title: L("CHUYẾN BAY", "FLIGHT"),
     rows: [
-      { label: "Ngày bay", value: formatDateKeyVN(d.flightDate) + (d.expectedTime ? ` · ${d.expectedTime}` : "") },
-      { label: "Điểm bay", value: `${spotName(d.spot)}${d.flightKindLabel ? ` · ${d.flightKindLabel}` : ""}` },
-      { label: "Số khách", value: `${d.guestCount} người` },
+      { label: L("Ngày bay", "Flight date"), value: formatDateKeyVN(d.flightDate) + (d.expectedTime ? ` · ${d.expectedTime}` : "") },
+      { label: L("Điểm bay", "Site"), value: `${spotName(d.spot)}${d.flightKindLabel ? ` · ${d.flightKindLabel}` : ""}` },
+      { label: L("Số khách", "Guests"), value: sn ? `${d.guestCount} pax` : `${d.guestCount} người` },
     ],
   });
 
   const khach: Row[] = [
-    { label: "Khách", value: d.contactName || "—" },
-    { label: "Điện thoại", value: d.phone || "—" },
+    { label: L("Khách", "Guest"), value: d.contactName || "—" },
+    { label: L("Điện thoại", "Phone"), value: d.phone || "—" },
   ];
-  if (d.bookingCode) khach.push({ label: "Mã booking", value: d.bookingCode });
-  if (d.source) khach.push({ label: "Nguồn đặt", value: d.source, tone: "muted" });
-  blocks.push({ title: "KHÁCH ĐẶT", rows: khach });
+  if (d.bookingCode) khach.push({ label: L("Mã booking", "Booking ref"), value: d.bookingCode });
+  if (d.source) khach.push({ label: L("Nguồn đặt", "Booked via"), value: d.source, tone: "muted" });
+  blocks.push({ title: L("KHÁCH ĐẶT", "BOOKED BY"), rows: khach });
 
   const svc = serviceLine(d);
   const dv: Row[] = [];
-  if (svc) dv.push({ label: "Dịch vụ kèm", value: svc });
-  dv.push({ label: "Đưa đón", value: d.pickupLabel || "Tự đến" });
+  if (svc) dv.push({ label: L("Dịch vụ kèm", "Add-ons"), value: svc });
+  dv.push({ label: L("Đưa đón", "Pick-up"), value: d.pickupLabel || (sn ? "Tự đến / Self arrival" : "Tự đến") });
   if (d.mountainCar) dv.push({ label: "Xe lên núi", value: `${d.mountainCar} suất` });
-  if (dv.length) blocks.push({ title: "DỊCH VỤ", rows: dv });
+  if (dv.length) blocks.push({ title: L("DỊCH VỤ", "SERVICES"), rows: dv });
 
   const tien: Row[] = [];
   if (d.unitPrice) tien.push({ label: `Giá bay (${money(d.unitPrice)} × ${d.guestCount})`, value: money(d.unitPrice * d.guestCount) });
-  if (d.serviceMoney) tien.push({ label: "Tiền dịch vụ kèm", value: money(d.serviceMoney) });
+  if (d.serviceMoney) tien.push({ label: L("Tiền dịch vụ kèm", "Add-ons"), value: money(d.serviceMoney) });
   if (d.mountainCarMoney) tien.push({ label: `Xe lên núi × ${d.mountainCar}`, value: money(d.mountainCarMoney) });
-  if (d.pickupFee) tien.push({ label: "Phí đưa đón", value: money(d.pickupFee) });
+  if (d.pickupFee) tien.push({ label: L("Phí đưa đón", "Pick-up fee"), value: money(d.pickupFee) });
   if (d.comboDiscount) {
     /**
      * IN CẢ PHÉP TÍNH, không chỉ số tiền — cùng lối với dòng "Giá bay
@@ -330,14 +351,14 @@ function buildBlocks(d: BookingImageData): Block[] {
       tone: "minus",
     });
   }
-  if (d.discount) tien.push({ label: "Giảm trừ", value: `− ${money(d.discount)}`, tone: "minus" });
-  tien.push({ label: "TỔNG TIỀN", value: money(d.total), tone: "strong" });
-  if (d.deposit) tien.push({ label: "Đã đặt cọc", value: `− ${money(d.deposit)}`, tone: "minus" });
-  tien.push({ label: "CÒN PHẢI THU", value: money(d.remaining), tone: "due" });
-  blocks.push({ title: "THANH TOÁN", rows: tien });
+  if (d.discount) tien.push({ label: L("Giảm trừ", "Discount"), value: `− ${money(d.discount)}`, tone: "minus" });
+  tien.push({ label: L("TỔNG TIỀN", "TOTAL"), value: money(d.total), tone: "strong" });
+  if (d.deposit) tien.push({ label: L("Đã đặt cọc", "Deposit paid"), value: `− ${money(d.deposit)}`, tone: "minus" });
+  tien.push({ label: L("CÒN PHẢI THU", "BALANCE DUE"), value: money(d.remaining), tone: "due" });
+  blocks.push({ title: L("THANH TOÁN", "PAYMENT"), rows: tien });
 
   if (d.note.trim()) {
-    blocks.push({ title: "GHI CHÚ", rows: [{ label: "", value: d.note.trim() }], wrapLast: true });
+    blocks.push({ title: L("GHI CHÚ", "NOTES"), rows: [{ label: "", value: d.note.trim() }], wrapLast: true });
   }
 
   return blocks;
@@ -412,11 +433,23 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const doChu = document.createElement("canvas").getContext("2d")!;
   const rongChu = W - pad * 2;
   doChu.font = f(14, "bold");
+  const snFooter = songNguCua(d.spot);
   const dongNhac = [
     ...boDong(doChu, "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.", rongChu),
     ...boDong(doChu, `Mọi phản ánh dịch vụ vui lòng gọi trực tiếp Hotline để được hỗ trợ kịp thời: ${th.hotlineDu}`, rongChu),
+    ...(snFooter
+      ? [
+          ...boDong(doChu, "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.", rongChu),
+          ...boDong(doChu, `For any service feedback, please call our Hotline directly: ${th.hotlineDu}`, rongChu),
+        ]
+      : []),
   ];
-  const footerH = 24 + 14 + dongNhac.length * 20 + 12;
+  doChu.font = f(14);
+  const dongDau = [
+    "Vui lòng có mặt trước giờ bay 15 phút · Mang theo CCCD/Passport để làm bảo hiểm.",
+    ...(snFooter ? ["Please arrive 15 minutes before your flight · Bring your ID/Passport for insurance."] : []),
+  ];
+  const footerH = 24 + (dongDau.length - 1) * 20 + 14 + dongNhac.length * 20 + 12;
 
   const blocks = buildBlocks(d);
 
@@ -445,7 +478,10 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const guideColGap = 14;
   const guideColW = (W - pad * 2 - 20 - guideColGap * 2) / 3;
   probe.font = f(13);
-  const guideCols = QUICK_GUIDE.map((c) => c.items.flatMap((it) => wrap(probe, it, guideColW - 14, 2)));
+  const sn = songNguCua(d.spot);
+  const QUICK_GUIDE = quickGuide(sn);
+  /** Song ngữ mỗi mục dài gấp đôi — cho tới 3 dòng. */
+  const guideCols = QUICK_GUIDE.map((c) => c.items.flatMap((it) => wrap(probe, it, guideColW - 14, sn ? 3 : 2)));
   const guideLineH = 18;
   const guideMaxLines = Math.max(...guideCols.map((ls) => ls.length));
   const guideCardH = 12 + 20 + guideMaxLines * guideLineH + 12;
@@ -498,7 +534,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.fillText(th.ten, tx, logoY + 26);
   g.font = f(17, "bold");
   g.fillStyle = "rgba(255,255,255,0.95)";
-  g.fillText("PHIẾU BOOKING BAY DÙ LƯỢN", tx, logoY + 52);
+  g.fillText(sn ? "PHIẾU BOOKING · PARAGLIDING BOOKING" : "PHIẾU BOOKING BAY DÙ LƯỢN", tx, logoY + 52);
   g.font = f(14);
   g.fillStyle = "rgba(255,255,255,0.85)";
   g.fillText(`${th.web} · ${th.hotlineNgan}`, tx, logoY + 76);
@@ -519,13 +555,13 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     g.textAlign = "center";
     g.font = f(13, "bold");
     g.fillStyle = C.sky;
-    g.fillText("SỐ THỨ TỰ BAY", bx + bw / 2, by + 26);
+    g.fillText(sn ? "STT / QUEUE NO." : "SỐ THỨ TỰ BAY", bx + bw / 2, by + 26);
     g.font = f(56, "bold");
     g.fillStyle = C.sky;
     g.fillText(String(d.queueNo), bx + bw / 2, by + 80);
     g.font = f(12);
     g.fillStyle = C.sub;
-    g.fillText("trong ngày", bx + bw / 2, by + 98);
+    g.fillText(sn ? "of the day" : "trong ngày", bx + bw / 2, by + 98);
     g.textAlign = "left";
   }
 
@@ -606,7 +642,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   if (payQr) {
     g.font = f(13, "bold");
     g.fillStyle = C.sky;
-    g.fillText("QUÉT QR ĐỂ THANH TOÁN", pad, y);
+    g.fillText(nn(sn, "QUÉT QR ĐỂ THANH TOÁN", "SCAN QR TO PAY"), pad, y);
     const tw = g.measureText("QUÉT QR ĐỂ THANH TOÁN").width;
     g.strokeStyle = C.line;
     g.lineWidth = 1;
@@ -638,7 +674,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     let cy = qy + 24;
     g.font = f(13);
     g.fillStyle = C.sub;
-    g.fillText("Tài khoản nhận", cx, cy);
+    g.fillText(nn(sn, "Tài khoản nhận", "Account"), cx, cy);
     cy += 24;
     g.font = f(20, "bold");
     g.fillStyle = C.ink;
@@ -651,7 +687,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     cy += 34;
     g.font = f(13);
     g.fillStyle = C.sub;
-    g.fillText("Số tiền", cx, cy);
+    g.fillText(nn(sn, "Số tiền", "Amount"), cx, cy);
     cy += 30;
     g.font = f(28, "bold");
     g.fillStyle = C.orange;
@@ -674,7 +710,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     g.setLineDash([]);
     g.font = f(12);
     g.fillStyle = C.sub;
-    g.fillText("Nội dung chuyển khoản", cx + 10, cy + 14);
+    g.fillText(nn(sn, "Nội dung chuyển khoản", "Transfer note"), cx + 10, cy + 14);
     g.font = f(18, "bold");
     g.fillStyle = C.orange;
     g.fillText(payNote, cx + 10, cy + 38);
@@ -684,12 +720,12 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     // Ba dòng dặn dò
     g.font = f(15, "bold");
     g.fillStyle = C.ink;
-    g.fillText("Vui lòng quét QR để thanh toán.", pad, y + 14);
+    g.fillText(nn(sn, "Vui lòng quét QR để thanh toán.", "Please scan the QR to pay."), pad, y + 14);
     g.font = f(14);
     g.fillStyle = C.orange;
-    g.fillText("Lưu ý: KHÔNG đổi nội dung chuyển khoản — để đối soát dễ hơn.", pad, y + 37);
+    g.fillText(nn(sn, "Lưu ý: KHÔNG đổi nội dung chuyển khoản — để đối soát dễ hơn.", "Keep the transfer note unchanged."), pad, y + 37);
     g.fillStyle = C.sub;
-    g.fillText("Xin lưu ảnh thanh toán để đối chiếu tại quầy.", pad, y + 60);
+    g.fillText(nn(sn, "Xin lưu ảnh thanh toán để đối chiếu tại quầy.", "Save the payment screenshot."), pad, y + 60);
     y += 3 * 23 + blockGap;
   }
 
@@ -739,7 +775,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
 
   /* ---- Khối HƯỚNG DẪN NHANH: mặc gì · mang gì · đừng mang gì ------------ */
   {
-    const title = "HƯỚNG DẪN NHANH KHI ĐI BAY";
+    const title = nn(sn, "HƯỚNG DẪN NHANH KHI ĐI BAY", "QUICK GUIDE");
     g.font = f(13, "bold");
     g.fillStyle = C.sky;
     g.fillText(title, pad, y);
@@ -767,7 +803,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
       // Gạch đầu dòng cho dòng đầu của mỗi mục; dòng nối thụt vào
       const items = QUICK_GUIDE[i].items;
       for (const it of items) {
-        const ls = wrap(g, it, guideColW - 14, 2);
+        const ls = wrap(g, it, guideColW - 14, sn ? 3 : 2);
         ls.forEach((ln, k) => {
           g.fillText(k === 0 ? `• ${ln}` : `  ${ln}`, cx, ly);
           ly += guideLineH;
@@ -782,11 +818,12 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   g.fillRect(0, H - footerH, W, footerH);
   g.font = f(14);
   g.fillStyle = C.sub;
-  g.fillText("Vui lòng có mặt trước giờ bay 15 phút · Mang theo CCCD/Passport để làm bảo hiểm.", pad, H - footerH + 24);
-  /** Lời nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09) — bẻ dòng theo đúng bề rộng ảnh (chủ 18/09). */
+  dongDau.forEach((dong, i) => g.fillText(dong, pad, H - footerH + 24 + i * 20));
+  /** Lời nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09) — bẻ dòng theo đúng bề rộng ảnh (chủ 18/09); Sa Pa kèm bản tiếng Anh. */
   g.fillStyle = C.ink;
   g.font = f(14, "bold");
-  dongNhac.forEach((dong, i) => g.fillText(dong, pad, H - footerH + 24 + 14 + 16 + i * 20));
+  const yNhac = H - footerH + 24 + (dongDau.length - 1) * 20 + 14 + 16;
+  dongNhac.forEach((dong, i) => g.fillText(dong, pad, yNhac + i * 20));
 
   return canvas;
 }
