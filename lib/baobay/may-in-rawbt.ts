@@ -87,22 +87,40 @@ function moRawbt(url: string): void {
 }
 
 /**
- * IN MỘT LOẠT ẢNH qua RawBT — mỗi liên một lượt gửi, cắt giấy sau mỗi liên.
+ * IN MỘT LOẠT ẢNH qua RawBT.
  *
- * Gửi cả bốn liên trong một đường liên kết là chuỗi dài vài trăm nghìn ký tự,
- * Android cắt ngang giữa chừng và vé ra cụt. Từng liên khoảng 80 nghìn ký tự
- * thì an toàn; nghỉ 1,2 giây giữa các liên cho RawBT in xong liên trước.
+ * Chủ 18/09: "vé có 2 liên mà chỉ in liên 1.1". Nguyên nhân: mỗi liên gửi một
+ * liên kết `rawbt:` và giữa hai lượt có `await` nghỉ 1,2 giây — sang lượt hai
+ * cú bấm đã nguội, Chrome Android CHẶN mở scheme lạ không do người dùng bấm,
+ * nên liên 2 rơi mất mà không báo. Nay: GỘP các liên vào MỘT liên kết (cắt sau
+ * mỗi liên vẫn có), miễn tổng dưới ~180 nghìn ký tự base64; dài hơn thì chia
+ * thành vài gói và MỞ TẤT CẢ NGAY TRONG CÚ BẤM (không await ở giữa) — RawBT
+ * xếp hàng các lệnh tới và in lần lượt.
  */
 export async function inAnhQuaRawbt(anh: HTMLCanvasElement[], baoTienDo?: (chu: string) => void): Promise<void> {
   if (!mayCoTheDungRawbt()) throw new Error("Đường RawBT chỉ chạy trên máy Android");
+  const GIOI_HAN = 180_000;
+  const goi: Uint8Array[] = [];
+  let dang: Uint8Array[] = [];
+  let doDai = 0;
   for (let i = 0; i < anh.length; i++) {
     const c = anh[i];
     if (c.width !== RONG_CHAM) throw new Error(`Ảnh vé phải rộng ${RONG_CHAM} chấm (đang ${c.width})`);
-    baoTienDo?.(`Đang gửi liên ${i + 1}/${anh.length} sang RawBT…`);
-    const goi = i === 0 ? noi(ESC_INIT, anhSangEscPos(c), ESC_CAT) : noi(anhSangEscPos(c), ESC_CAT);
-    moRawbt(`rawbt:base64,${sangBase64(goi)}`);
-    if (i < anh.length - 1) await new Promise((r) => setTimeout(r, 1200));
+    const phan = noi(anhSangEscPos(c), ESC_CAT);
+    const them = Math.ceil((phan.length * 4) / 3);
+    if (dang.length && doDai + them > GIOI_HAN) {
+      goi.push(noi(...dang));
+      dang = [];
+      doDai = 0;
+    }
+    dang.push(phan);
+    doDai += them;
   }
+  if (dang.length) goi.push(noi(...dang));
+  baoTienDo?.(`Đang gửi ${anh.length} liên sang RawBT…`);
+  /** Tất cả trong cùng một cú bấm — không await giữa các gói. */
+  /** ESC_INIT nối vào BYTE của gói đầu rồi mới mã hoá — nối hai chuỗi base64 có đệm "=" là hỏng. */
+  goi.forEach((bytes, i) => moRawbt(`rawbt:base64,${sangBase64(i === 0 ? noi(ESC_INIT, bytes) : bytes)}`));
 }
 
 /** Liên kết cài RawBT — hiện trong hướng dẫn khi máy chưa có. */
