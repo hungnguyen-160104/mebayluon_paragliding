@@ -110,22 +110,30 @@ export default function WeatherPageClient() {
         ) : null}
 
         {/* ---- SÁCH "THẤU HIỂU BẦU TRỜI" (chủ 16/09): ai đọc dự báo mà muốn hiểu vì sao, có sách. ---- */}
+        {/**
+         * BỐ CỤC (chủ 18/09, ảnh điện thoại): ảnh gốc là cả TRẢI BÌA (bìa sau +
+         * gáy + bìa trước, 1874×994) nên đặt cạnh chữ thì ảnh bé tí mà chữ bị
+         * dồn thành cột hẹp. Nay Cloudinary cắt lấy BÌA TRƯỚC (56% bên phải,
+         * gần vuông); điện thoại xếp ảnh trên, chữ dưới đủ bề ngang; màn rộng
+         * mới đặt ảnh bên trái chữ.
+         */}
         <Link
           href="/store/sach-du-luon/sach-thau-hieu-bau-troi-tieng-viet"
-          className="mt-6 flex items-center gap-4 rounded-2xl border border-amber-300/60 bg-amber-50/95 p-3 text-slate-900 shadow-lg backdrop-blur-sm transition hover:bg-amber-100 sm:p-4"
+          className="mt-6 flex flex-col gap-4 rounded-2xl border border-amber-300/60 bg-amber-50/95 p-4 text-slate-900 shadow-lg backdrop-blur-sm transition hover:bg-amber-100 sm:flex-row sm:items-center sm:p-5"
         >
           <Image
-            src="https://res.cloudinary.com/dxtzvakgd/image/upload/v1779688205/uploads/posts/gh7ssh9pneupo9afytic.png"
+            src="https://res.cloudinary.com/dxtzvakgd/image/upload/c_crop,g_east,w_0.557,h_1.0/v1779688205/uploads/posts/gh7ssh9pneupo9afytic.png"
             alt={t.bookTitle}
-            width={112}
-            height={150}
-            className="h-28 w-auto shrink-0 rounded-lg object-cover shadow-md sm:h-36"
+            width={515}
+            height={497}
+            sizes="(min-width: 640px) 208px, 100vw"
+            className="w-full max-w-xs self-center rounded-xl object-cover shadow-md sm:w-52 sm:max-w-none sm:shrink-0"
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-xs font-bold uppercase tracking-wide text-amber-800">{t.bookKicker}</div>
-            <div className="mt-0.5 font-serif text-base font-bold leading-snug sm:text-lg">{t.bookTitle}</div>
-            <p className="mt-1 text-xs leading-relaxed text-slate-700 sm:text-sm">{t.bookPitch}</p>
-            <span className="mt-2 inline-block rounded-lg bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+            <div className="mt-1 font-serif text-lg font-bold leading-snug sm:text-xl">{t.bookTitle}</div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{t.bookPitch}</p>
+            <span className="mt-3 inline-block rounded-lg bg-orange-500 px-4 py-1.5 text-sm font-bold text-white shadow-sm">
               {t.bookCta} →
             </span>
           </div>
