@@ -718,7 +718,8 @@ export function htmlBanInThang(html: string): string {
   return html.replace(
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
-     .ve.sapa { padding: 6px 10px 2px !important; }
+     /* Đệm dưới 14 chấm: dòng "the flight." có chữ g/p thò xuống, đệm 2 chấm bị ảnh cắt mất chân chữ (chủ 18/09) */
+     .ve.sapa { padding: 6px 10px 14px !important; }
      .ve.sapa + .ve.sapa { margin-top: 18px !important; padding-top: 18px !important; border-top-width: 2px !important; }
      .sp-dau { gap: 12px !important; margin-bottom: 8px !important; }
      .sp-logo { width: 76px !important; height: 76px !important; }
@@ -743,7 +744,7 @@ export function htmlBanInThang(html: string): string {
      .sp-khach.dai { font-size: 24px !important; }
      .sp-dv span { font-size: 24px !important; padding: 4px 12px !important; border-width: 3px !important; border-radius: 6px !important; }
      .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; letter-spacing: 1.4px !important; word-spacing: 4px !important; }
-     .sp-luuy { font-size: 20px !important; margin-top: 6px !important; margin-bottom: 0 !important; }
+     .sp-luuy { font-size: 20px !important; margin-top: 6px !important; margin-bottom: 0 !important; line-height: 1.35 !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }
