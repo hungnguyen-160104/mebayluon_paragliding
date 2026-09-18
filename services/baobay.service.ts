@@ -11218,28 +11218,50 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
    * huỷ và TIỀN HOÀN không hiện ra để chấp nhận. Đã bị bỏ sót đúng như vậy với
    * vé MBL0356 ngày 16/08 (hoàn 2.990.000 đ CK).
    */
-  const cancelledBookings = await BaobayBooking.find({ spot, flightDate: date, status: "cancelled" })
-    .select("daySeq contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod flightKind ppgGuests")
-    .lean<any[]>();
-
-  /** HUỶ MỘT PHẦN: booking vẫn chạy nhưng đã huỷ bớt N khách — kế toán phải thấy N này trong mục huỷ. */
-  const partialCancelled = await BaobayBooking.find({
-    spot,
-    flightDate: date,
-    status: { $nin: ["cancelled", "voided"] },
-    cancelledGuests: { $gt: 0 },
-  })
-    .select("daySeq contactName phone bookingCode source cancelledGuests")
-    .lean<any[]>();
-
-  /** LỆNH THU của ngày — đường tiền chính từ 13/08 (thu ngay trên booking). */
-  const dayCollects = await BaobayCollect.find({
-    spot,
-    date,
-    status: { $in: ["collected", "company"] },
-  })
-    .select("method amount status collectorName createdByName")
-    .lean<any[]>();
+  /**
+   * BỐN TRUY VẤN DƯỚI ĐỘC LẬP NHAU — chạy SONG SONG (khảo sát tốc độ 18/09):
+   * trước chạy nối tiếp, mỗi lượt một vòng đi về Singapore, gợi ý chốt ngày
+   * gánh thêm ~4 nhịp mạng vô ích.
+   *
+   * 1. KHÁCH HUỶ ghi ngay trên SỔ BOOKING (nút ✕ Huỷ booking) — nguồn thứ hai
+   *    bên cạnh báo cáo điều phối. Huỷ trên dòng booking là đường nhanh nhất
+   *    nên nhân viên hay dùng, mà kế toán lại không thấy gì: gợi ý chốt ngày
+   *    chỉ đọc báo cáo điều phối nên vé huỷ và TIỀN HOÀN không hiện ra để chấp
+   *    nhận. Đã bị bỏ sót đúng như vậy với vé MBL0356 ngày 16/08 (hoàn
+   *    2.990.000 đ CK).
+   * 2. HUỶ MỘT PHẦN: booking vẫn chạy nhưng đã huỷ bớt N khách — kế toán phải
+   *    thấy N này trong mục huỷ.
+   * 3. LỆNH THU của ngày — đường tiền chính từ 13/08 (thu ngay trên booking).
+   * 4. Hoa hồng đại lý đã CHI trong ngày, kèm tên người chi — xem moneyByPerson.
+   */
+  const [cancelledBookings, partialCancelled, dayCollects, commissionDocs] = await Promise.all([
+    BaobayBooking.find({ spot, flightDate: date, status: "cancelled" })
+      .select("daySeq contactName phone bookingCode source guestCount cancelTicketCodes refundAmount refundMethod flightKind ppgGuests")
+      .lean<any[]>(),
+    BaobayBooking.find({
+      spot,
+      flightDate: date,
+      status: { $nin: ["cancelled", "voided"] },
+      cancelledGuests: { $gt: 0 },
+    })
+      .select("daySeq contactName phone bookingCode source cancelledGuests")
+      .lean<any[]>(),
+    BaobayCollect.find({
+      spot,
+      date,
+      status: { $in: ["collected", "company"] },
+    })
+      .select("method amount status collectorName createdByName")
+      .lean<any[]>(),
+    BaobayBooking.find({
+      spot,
+      flightDate: date,
+      "commission.amount": { $gt: 0 },
+      status: { $nin: ["voided"] },
+    })
+      .select("commission daySeq contactName agencyName")
+      .lean<any[]>(),
+  ]);
   const collectCashOfDay = dayCollects
     .filter((c) => c.method === "cash" && c.status === "collected")
     .reduce((a, c) => a + (c.amount || 0), 0);
@@ -11259,16 +11281,6 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
    * NGƯỜI GHI NHẬN (tiền vào thẳng tài khoản công ty, không ai cầm) — đó là
    * hai câu hỏi khác nhau: "ai đang giữ tiền" và "ai đã ghi khoản này".
    */
-  /** Hoa hồng đại lý đã CHI trong ngày, kèm tên người chi — xem moneyByPerson. */
-  const commissionDocs = await BaobayBooking.find({
-    spot,
-    flightDate: date,
-    "commission.amount": { $gt: 0 },
-    status: { $nin: ["voided"] },
-  })
-    .select("commission daySeq contactName agencyName")
-    .lean<any[]>();
-
   const moneyByPerson = (() => {
     type Row = {
       name: string;

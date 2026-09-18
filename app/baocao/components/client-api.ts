@@ -82,23 +82,68 @@ function timeoutSignal(ms: number): AbortSignal | undefined {
   return c.signal;
 }
 
-export function apiGet<T>(url: string, opts?: { timeoutMs?: number }): Promise<T> {
+/**
+ * GỘP LỆNH GET TRÙNG (khảo sát tốc độ 18/09).
+ *
+ * Mở trang điều phối là hơn hai mươi thẻ cùng gọi API một lượt, trong đó SÁU
+ * thẻ hỏi đúng một câu `/booking?date&spot`, hai thẻ hỏi `/me`, hai thẻ hỏi
+ * `/money-board` — mỗi câu phía máy chủ là gần chục truy vấn Mongo qua ống 3
+ * kết nối. Vì thế: cùng URL đang bay thì dùng chung một promise; câu trả lời
+ * vừa về được giữ 3 giây cho các thẻ gọi muộn hơn một nhịp (và cho các vòng
+ * lặp 30 giây tình cờ trùng nhau).
+ *
+ * AN TOÀN VỚI SỐ LIỆU: mọi lệnh ghi (POST/PATCH/PUT/DELETE) xoá sạch bộ nhớ
+ * này ngay trước khi gửi, nên "lưu xong tải lại" luôn lấy số mới từ máy chủ.
+ * Lỗi không được nhớ — lần gọi sau thử lại thật.
+ */
+const NHO_MS = 3_000;
+const dangBay = new Map<string, Promise<unknown>>();
+const vuaVe = new Map<string, { luc: number; ket: unknown }>();
+function quenHetGet() {
+  vuaVe.clear();
+}
+
+export function apiGet<T>(url: string, opts?: { timeoutMs?: number; moi?: boolean }): Promise<T> {
   const signal = opts?.timeoutMs ? timeoutSignal(opts.timeoutMs) : undefined;
-  return request<T>(url, signal ? { signal } : undefined);
+  if (opts?.moi) vuaVe.delete(url);
+  const cu = vuaVe.get(url);
+  if (cu && Date.now() - cu.luc < NHO_MS) return Promise.resolve(cu.ket as T);
+  /**
+   * TAB ĐANG ẨN: chín vòng lặp 20–60 giây của trang vẫn gõ máy chủ suốt ngày
+   * dù không ai nhìn. Đã có bản cũ thì trả bản cũ, tab hiện lại thì vòng lặp
+   * kế tiếp lấy số mới. Chưa có bản nào (mở tab ở nền) thì vẫn tải thật.
+   */
+  if (cu && typeof document !== "undefined" && document.visibilityState === "hidden") return Promise.resolve(cu.ket as T);
+  const bay = dangBay.get(url);
+  if (bay) return bay as Promise<T>;
+  const p = request<T>(url, signal ? { signal } : undefined)
+    .then((ket) => {
+      vuaVe.set(url, { luc: Date.now(), ket });
+      return ket;
+    })
+    .finally(() => {
+      dangBay.delete(url);
+    });
+  dangBay.set(url, p);
+  return p;
 }
 
 export function apiPost<T>(url: string, body?: unknown): Promise<T> {
+  quenHetGet();
   return request<T>(url, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 }
 
 export function apiPatch<T>(url: string, body: unknown): Promise<T> {
+  quenHetGet();
   return request<T>(url, { method: "PATCH", body: JSON.stringify(body) });
 }
 
 export function apiPut<T>(url: string, body: unknown): Promise<T> {
+  quenHetGet();
   return request<T>(url, { method: "PUT", body: JSON.stringify(body) });
 }
 
 export function apiDelete<T>(url: string, body?: unknown): Promise<T> {
+  quenHetGet();
   return request<T>(url, { method: "DELETE", body: body === undefined ? undefined : JSON.stringify(body) });
 }

@@ -14,6 +14,7 @@
  * LÝ DO trong tooltip — cảnh báo không nói vì sao thì người trực sẽ bỏ qua.
  */
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BONG_CHU, LOP_TAG, NEN_TAG } from "@/components/weather/tag-muc";
 
@@ -42,19 +43,40 @@ import {
 } from "@/lib/baobay/thoi-tiet";
 import { tenDiemThoiTiet } from "@/lib/baobay/khoa-thoi-tiet";
 
-import { Airgram, Meteogram } from "@/components/weather/Meteogram";
 import { styleGiat, styleGio } from "@/components/weather/mau-gio";
 import { useCuonTheoNgay, useManHinhHep } from "@/components/weather/cuon-ngay";
 import { DaiMua, dinhMua } from "@/components/weather/DaiMua";
 import { NhanDinhNgayBay } from "@/components/weather/NhanDinhNgayBay";
-import { SkewT } from "@/components/weather/SkewT";
-import { ChonMoHinh, SoSanhMoHinh } from "@/components/weather/SoSanhMoHinh";
+import { ChonMoHinh } from "@/components/weather/SoSanhMoHinh";
 import { MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
 import type { DanhGiaNgay } from "@/lib/baobay/chuyen-gia";
 import { WindArrow } from "@/components/weather/WindArrow";
 import { LOP_MAC_DINH, LOP_WINDY, WINDY_MODELS, windyEmbedUrl, windyPageUrl } from "@/components/weather/WindyModels";
 
 import { apiGet, apiPost, apiPut } from "./client-api";
+
+/**
+ * NẠP TRỄ các khối vẽ nặng (khảo sát tốc độ 18/09): Meteogram/Airgram, Skew-T,
+ * So sánh mô hình cộng lại hơn 1.900 dòng mà trang điều phối (bản gọn) chỉ
+ * cần dải 7 ngày. Chỉ tải mã khi người dùng bấm tới.
+ */
+const Meteogram = dynamic(() => import("@/components/weather/Meteogram").then((m) => m.Meteogram), {
+  ssr: false,
+  loading: () => <div className="py-4 text-center text-[11px] text-slate-500">⏳ Đang tải biểu đồ…</div>,
+});
+const Airgram = dynamic(() => import("@/components/weather/Meteogram").then((m) => m.Airgram), {
+  ssr: false,
+  loading: () => <div className="py-4 text-center text-[11px] text-slate-500">⏳ Đang tải biểu đồ…</div>,
+});
+const SkewT = dynamic(() => import("@/components/weather/SkewT").then((m) => m.SkewT), {
+  ssr: false,
+  loading: () => <div className="py-4 text-center text-[11px] text-slate-500">⏳ Đang tải giản đồ…</div>,
+});
+const SoSanhMoHinh = dynamic(() => import("@/components/weather/SoSanhMoHinh").then((m) => m.SoSanhMoHinh), {
+  ssr: false,
+  loading: () => <div className="py-4 text-center text-[11px] text-slate-500">⏳ Đang tải so sánh…</div>,
+});
+
 
 export type ChamNgay = {
   date: string;

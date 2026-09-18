@@ -9,15 +9,18 @@ import type { DailyCloseDTO, HandoverDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 import type { MoneyBoard, FlycamCancelDTO, RefundDTO } from "@/services/baobay.service";
 
-import { AgencySummaryCard } from "../components/AgencySummaryCard";
 import { apiGet } from "../components/client-api";
-import { BankCheckCard } from "../components/BankCheckCard";
+import dynamic from "next/dynamic";
 import { DateBar } from "../components/DateBar";
 import { useBaobaySession } from "../components/session";
 import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
 import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Banner, Card, PageLoading } from "../components/ui";
+
+/** Hai thẻ nặng (soát sao kê ~96 KB, đại lý) nạp sau khi bảng tiền đã hiện — trang mở nhanh hơn (18/09). */
+const BankCheckCard = dynamic(() => import("../components/BankCheckCard").then((m) => m.BankCheckCard), { ssr: false });
+const AgencySummaryCard = dynamic(() => import("../components/AgencySummaryCard").then((m) => m.AgencySummaryCard), { ssr: false });
 
 /**
  * TRANG NHÀ CỦA KẾ TOÁN.

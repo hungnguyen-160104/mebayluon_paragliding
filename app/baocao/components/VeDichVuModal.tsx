@@ -1,7 +1,7 @@
 // app/baocao/components/VeDichVuModal.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { normalizeSpot } from "@/lib/baobay/spots";
 
 import type { BookingDTO } from "@/lib/baobay/types";
@@ -33,6 +33,15 @@ export function VeDichVuModal({
     return chiaDichVu(n, { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag }).khach;
   });
   const [busy, setBusy] = useState(false);
+  /**
+   * NẠP TRƯỚC html2canvas + qrcode ngay khi mở danh sách mã (khảo sát tốc độ
+   * 18/09): người trực đang chọn dịch vụ thì máy tải sẵn hai thư viện dựng
+   * ảnh vé, bấm "Cấp mã & xem vé" không phải chờ tải mã rồi mới dựng.
+   */
+  useEffect(() => {
+    void import("html2canvas").catch(() => undefined);
+    void import("qrcode").catch(() => undefined);
+  }, []);
   const [loi, setLoi] = useState<string | null>(null);
   const ten = (g: number) => {
     const ds = (booking.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
