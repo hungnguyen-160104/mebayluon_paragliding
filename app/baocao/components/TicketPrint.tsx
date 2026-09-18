@@ -279,11 +279,11 @@ function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): s
       <img class="sp-logo" src="/logo-sapa-in.png" alt="" />
       <div class="sp-hang">
         <div class="sp-ten">SAPA PARAGLIDING</div>
-        <div class="sp-phu">BOARDING TICKET · paraglidingsapa.com</div>
+        <div class="sp-phu">BOARDING TICKET</div>
       </div>
     </div>
     <div class="sp-so">
-      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du.replace(/#000/g, "#fff")}</span><span class="sp-so-tri">${esc(soThuTuVe(b, guestNo))}</span></div>
+      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du}</span><span class="sp-so-tri">${esc(soThuTuVe(b, guestNo))}</span></div>
       <div class="sp-so-phai"><span class="sp-ma-nhan">CODE</span><span class="sp-ma">${esc(maVeCua(b, guestNo))}</span></div>
     </div>
     <div class="sp-than">
@@ -435,13 +435,15 @@ const CSS = `
   .sp-ten { font-size: 16px; font-weight: 900; letter-spacing: .6px; white-space: nowrap; }
   .sp-phu { font-size: 10px; font-weight: 800; letter-spacing: .4px; white-space: nowrap; color: #000; margin-top: 2px; }
   /* Dải đen: số thứ tự (trái) + mã chống giả (phải) — chữ trắng */
-  .sp-so { display: flex; align-items: stretch; background: #000; color: #fff; border-radius: 3mm; padding: 5px 8px; gap: 8px; }
+  /* KHUNG VIỀN ĐẬM thay nền đen (chủ 18/09: nền đen in nhiệt dễ nhoè). Mọi thứ căn giữa theo trục dọc,
+     số thứ tự line-height 1 và kéo nhẹ lên để không "lọt xuống thấp" khi máy vẽ ảnh. */
+  .sp-so { display: flex; align-items: center; border: 3px solid #000; border-radius: 3mm; padding: 4px 8px; gap: 8px; }
   .sp-so-trai { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
-  .sp-so-icon { display: inline-flex; }
-  .sp-so-icon svg { width: 30px; height: 30px; fill: #fff; color: #fff; }
-  .sp-so-tri { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; }
+  .sp-so-icon { display: inline-flex; align-items: center; }
+  .sp-so-icon svg { width: 30px; height: 30px; display: block; }
+  .sp-so-tri { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -2px; }
   .sp-so-phai { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; flex: none; }
-  .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; opacity: .85; line-height: 1; }
+  .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; line-height: 1; }
   .sp-ma { font-family: "Courier New", ui-monospace, monospace; font-size: 22px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; white-space: nowrap; }
   /* Thân: QR trái, chữ phải */
   .sp-than { display: flex; gap: 7px; align-items: center; margin-top: 5px; }
@@ -684,13 +686,14 @@ export function htmlBanInThang(html: string): string {
   return html.replace(
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
-     .ve.sapa { padding: 6px 10px 14px !important; }
+     .ve.sapa { padding: 6px 10px 2px !important; }
      .ve.sapa + .ve.sapa { margin-top: 18px !important; padding-top: 18px !important; border-top-width: 2px !important; }
      .sp-dau { gap: 12px !important; margin-bottom: 8px !important; }
      .sp-logo { width: 92px !important; height: 70px !important; }
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
-     .sp-so { border-radius: 16px !important; padding: 10px 16px !important; gap: 16px !important; }
+     .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 8px 16px 10px !important; gap: 16px !important; }
+     .sp-so-tri { top: -4px !important; }
      .sp-so-icon svg { width: 56px !important; height: 56px !important; }
      .sp-so-tri { font-size: 78px !important; }
      .sp-ma-nhan { font-size: 16px !important; }
@@ -706,7 +709,7 @@ export function htmlBanInThang(html: string): string {
      .sp-khach.dai { font-size: 24px !important; }
      .sp-dv span { font-size: 24px !important; padding: 4px 12px !important; border-width: 3px !important; border-radius: 6px !important; }
      .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; }
-     .sp-luuy { font-size: 20px !important; margin-top: 6px !important; }
+     .sp-luuy { font-size: 20px !important; margin-top: 6px !important; margin-bottom: 0 !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }

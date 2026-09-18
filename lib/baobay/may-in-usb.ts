@@ -156,7 +156,12 @@ export function anhSangEscPos(canvas: HTMLCanvasElement): Uint8Array {
 
 const ESC_INIT = new Uint8Array([0x1b, 0x40]);
 /** Đẩy giấy 4 dòng rồi CẮT NỬA (giữ một mép cho dễ xé) — B300 có dao cắt. */
-const ESC_CAT = new Uint8Array([0x1b, 0x64, 0x04, 0x1d, 0x56, 0x01]);
+/**
+ * CẮT GIẤY: `GS V 66 0` = tự đẩy giấy ĐÚNG tới lưỡi cắt rồi cắt một phần — thay
+ * cho "đẩy 4 dòng rồi cắt" trước đây (chủ 18/09: đuôi vé trắng tới 1,5 cm vì
+ * đẩy thừa). Máy không hiểu lệnh 66 thì rơi về cắt thường ở dòng hiện tại.
+ */
+const ESC_CAT = new Uint8Array([0x1d, 0x56, 0x42, 0x00]);
 
 /**
  * IN MỘT LOẠT ẢNH, mỗi ảnh một liên, cắt giấy sau mỗi liên.
