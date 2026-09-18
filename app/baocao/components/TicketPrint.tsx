@@ -408,7 +408,12 @@ const CSS = `
      giấy còn hơn in ra mất đuôi chữ (chủ 13/09). */
   .luuy-khach li { white-space: normal; overflow-wrap: anywhere; }
   /* SA PA: một liên 80 x 80 mm — cao cố định; QR to bên trái, ba dòng chữ bên phải */
-  .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; }
+  /* SA PA trên GIẤY CUỘN (chủ 18/09, ảnh chụp hộp thoại in Android "80mm Roll"): KHÔNG ngắt trang
+     giữa các vé — mỗi vé một "trang" là mỗi vé một khúc cuộn dài, giấy trắng cả gang tay và đầu vé
+     đầu bị cắt. Các vé nối liền nhau, cách nhau một vạch đứt để xé; vé vẫn cao đúng 74 mm. */
+  .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
+  .ve.sapa + .ve.sapa { margin-top: 3mm; }
+  .ve.sapa:not(:last-child) { border-bottom: 1px dashed #000; }
   .ve.sapa .sapa-than { display: flex; gap: 6px; align-items: center; flex: 1; min-height: 0; margin: 1px 0 2px; }
   .ve.sapa .sapa-qr { flex: 0 0 30mm; text-align: center; }
   .ve.sapa .sapa-qr svg { width: 30mm; height: 30mm; display: block; }
