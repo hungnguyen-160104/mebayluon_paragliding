@@ -443,7 +443,8 @@ const CSS = `
   .sp-so-trai { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 0; }
   .sp-so-icon { display: inline-flex; align-items: center; }
   .sp-so-icon svg { width: 30px; height: 30px; display: block; }
-  .sp-so-tri { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -2px; }
+  /* Số không có phần đuôi dưới dòng nên ô chữ line-height 1 làm số "ngồi thấp", đè viền dưới — kéo lên ~10% cỡ chữ (chủ 18/09) */
+  .sp-so-tri { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -4px; }
   .sp-so-phai { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; flex: none; }
   .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; line-height: 1; }
   .sp-ma { font-family: "Courier New", ui-monospace, monospace; font-size: 22px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; white-space: nowrap; }
@@ -695,9 +696,9 @@ export function htmlBanInThang(html: string): string {
      .sp-logo { width: 76px !important; height: 76px !important; }
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
-     .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 8px 16px 10px !important; gap: 16px !important; }
+     .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 6px 16px 12px !important; gap: 16px !important; }
      .sp-so-trai { gap: 14px !important; }
-     .sp-so-tri { top: -4px !important; }
+     .sp-so-tri { top: -9px !important; }
      .sp-so-icon svg { width: 56px !important; height: 56px !important; }
      .sp-so-tri { font-size: 90px !important; }
      .sp-ma-nhan { font-size: 16px !important; }
