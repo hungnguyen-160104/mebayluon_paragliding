@@ -1139,13 +1139,15 @@ function ReprintTicket({
       const bk = r?.booking ?? booking;
       if (laSapa) {
         void (async () => {
+          const tienDo: { dat?: (pct: number, chu: string) => void } = {};
           await hienKhungVe(
-            (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot)), RONG_CHAM))(),
+            (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot), (p, c) => tienDo.dat?.(p, c)), RONG_CHAM))(),
             `ve-${bk.daySeq || bk.id}.png`,
             async () => {
               await printBookingTickets(bk, spot, moTabIn(), reason.trim());
             },
             inQuaChiaSeThang(),
+            tienDo,
           );
         })().catch((e: unknown) => setError(e instanceof Error ? e.message : "Không dựng được vé"));
       } else void printBookingTickets(bk, spot, tab, reason.trim());
@@ -5552,8 +5554,9 @@ export function BookingTodayBanner({
          * chưa tích "đã xuất vé" (bị bỏ tích) thì tích lại ở đây.
          */
         /** Khung mở NGAY (ảnh dựng sau), rồi mới tích "đã xuất vé" — hộp xác nhận bảo hiểm (nếu có) hiện đè lên khung, không làm màn hình đứng im. */
+        const tienDo: { dat?: (pct: number, chu: string) => void } = {};
         const khung = hienKhungVe(
-          (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot)), RONG_CHAM))(),
+          (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot), (p, c) => tienDo.dat?.(p, c)), RONG_CHAM))(),
           `ve-${bk.daySeq || bk.id}.png`,
           async () => {
             const t = moTabIn();
@@ -5563,6 +5566,7 @@ export function BookingTodayBanner({
             await printBookingTickets(r2?.booking ?? bk, spot, t, dangCap ? "" : "in lại");
           },
           inQuaChiaSeThang(),
+          tienDo,
         );
         if (!bk0.ticketIssued) await act(bk0, "ticket");
         await khung;

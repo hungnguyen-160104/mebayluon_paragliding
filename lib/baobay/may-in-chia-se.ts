@@ -191,6 +191,8 @@ export function hienKhungVe(
    * navigator.share ngay trong cú bấm nên xử lý tại đây, không qua hàm in.
    */
   chiaSeTrucTiep = false,
+  /** Ô báo tiến độ: bên dựng ảnh gọi `tienDo.dat?.(pct, chữ)` — khung hiện "⏳ Đang vẽ vé 1/2… 35%" (chủ 18/09: không có % thì tưởng treo). */
+  tienDo?: { dat?: (pct: number, chu: string) => void },
 ): Promise<void> {
   return new Promise((resolve) => {
     const lop = document.createElement("div");
@@ -209,8 +211,13 @@ export function hienKhungVe(
     img.style.cssText = "display:block;width:100%;max-width:576px;margin:0 auto;background:#fff;border-radius:8px";
     const cho = document.createElement("div");
     cho.style.cssText = "margin:40px auto 0;max-width:576px;text-align:center;font-size:15px;color:rgba(255,255,255,.85)";
-    cho.textContent = "⏳ Đang dựng vé…";
+    cho.textContent = "⏳ Đang dựng vé… 0%";
     vung.appendChild(cho);
+    if (tienDo) {
+      tienDo.dat = (pct, chu) => {
+        cho.textContent = `⏳ ${chu} ${Math.min(99, Math.max(0, Math.round(pct)))}%`;
+      };
+    }
     img.hidden = true;
     vung.appendChild(img);
     const day = document.createElement("div");

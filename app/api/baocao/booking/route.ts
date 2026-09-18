@@ -346,6 +346,8 @@ export async function PATCH(req: Request) {
   const HANH_DONG = [
     "flown", "cancel", "move", "assign", "collect", "ticket", "ticket-print", "accept", "commission", "restore",
     "split", "contact", "noticket", "lock", "unlock", "deposit-date", "notify-guest", "pilot-money", "cell",
+    /** Thiếu hai mục này nên "Lưu & xem vé" (ve-dichvu) và huỷ bớt khách báo "Hành động không hợp lệ" (chủ 18/09). */
+    "ve-dichvu", "cancel-guests",
   ];
   if (!HANH_DONG.includes(action)) {
     return NextResponse.json({ message: "Hành động không hợp lệ" }, { status: 400 });

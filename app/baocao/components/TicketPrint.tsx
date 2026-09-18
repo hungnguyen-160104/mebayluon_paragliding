@@ -598,8 +598,10 @@ export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<
  * DỰNG ẢNH TỪNG LIÊN (576 chấm ngang) từ HTML vé — dùng chung cho in thẳng,
  * gửi app in, và KHUNG XEM VÉ để khách chụp lại (Sa Pa, chủ 18/09).
  */
-export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
+export async function dungAnhVe(html: string, onTienDo?: (pct: number, chu: string) => void): Promise<HTMLCanvasElement[]> {
+  onTienDo?.(5, "Đang tải bộ vẽ vé…");
   const html2canvas = (await import("html2canvas")).default;
+  onTienDo?.(15, "Đang dựng vé…");
   /** 74mm vùng vé ↔ 576 chấm: ép khổ bằng CSS đè lên `.ve`. */
   /**
    * BẢN IN THẲNG phóng chữ theo khung 576 chấm.
@@ -621,10 +623,12 @@ export async function dungAnhVe(html: string): Promise<HTMLCanvasElement[]> {
     await new Promise((r) => setTimeout(r, 150));
     const lien = Array.from(doc.querySelectorAll<HTMLElement>(".ve"));
     const anh: HTMLCanvasElement[] = [];
-    for (const el of lien) {
-      const c = await html2canvas(el, { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
+    for (let i = 0; i < lien.length; i++) {
+      onTienDo?.(Math.round(20 + (75 * i) / lien.length), `Đang vẽ vé ${i + 1}/${lien.length}…`);
+      const c = await html2canvas(lien[i], { scale: 2, width: RONG_CHAM, backgroundColor: "#ffffff", logging: false });
       anh.push(gopDamNhat(c, RONG_CHAM));
     }
+    onTienDo?.(100, "Xong");
     return anh;
   } finally {
     frame.parentNode && document.body.removeChild(frame);
