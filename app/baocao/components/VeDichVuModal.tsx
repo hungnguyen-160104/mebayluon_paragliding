@@ -55,8 +55,8 @@ export function VeDichVuModal({
       <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-bold text-slate-900">{title ?? "Dịch vụ trên vé"} — #{booking.daySeq} {booking.contactName}</h3>
         {/* Dòng "Đã đặt" tô ĐỎ, dạng "0xCam360 · 1xFlycam" cho nổi (chủ 18/09). */}
-        <p className="mt-0.5 text-xs font-bold text-rose-700">
-          Đã đặt: {DICH_VU_VE.map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ")}
+        <p className="mt-0.5 text-xs text-slate-600">
+          Đã đặt: <span className="font-bold text-rose-700">{DICH_VU_VE.map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ")}</span>
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
