@@ -30,7 +30,6 @@ import {
 } from "../components/rows";
 import { FlownServicesHint } from "../components/FlownServicesHint";
 import { HandoverBox } from "../components/HandoverBox";
-import { MerchCard } from "../components/MerchCard";
 import { IdScanCard } from "../components/IdScanCard";
 import { MoneyBoardCard } from "../components/MoneyBoardCard";
 import { OtaMailCard, OtaReviewFlag } from "../components/OtaMailCard";
@@ -650,29 +649,7 @@ export default function DispatcherReportPage() {
           TRÁI: form nhập hằng ngày (khách, vé, dịch vụ, THU CHI, nút lưu) + ghi chú + tiền bạc
           PHẢI: lệnh thu + khách huỷ/dời/ngoại giao + lịch sử */}
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-      {/*
-        HÀNG BÁN THÊM đứng ĐẦU DOM nhưng được XẾP CHỖ bằng lưới:
-          - máy tính: cột phải, hàng một → đầu cột bên phải;
-          - điện thoại: lưới tắt nên chảy theo DOM → nằm ngay dưới thẻ booking mới.
-        Đặt một bản duy nhất rồi xếp chỗ, không nhân đôi thẻ theo bề rộng màn:
-        hai bản là hai danh mục rời, thêm mặt hàng ở bản này thì bản kia không thấy.
-      */}
-      {/* Chỉ ĐIỀU PHỐI / QUẦY VÉ bán hàng — tài khoản quản trị mở trang này không hiện thẻ (chủ 18/09). */}
-      {user.role !== "admin" && (
-      <div className="lg:col-start-2 lg:row-start-1">
-        <CollapseCard title="HÀNG BÁN THÊM" open>
-          <MerchCard
-            spot={spot}
-            qty={form.merch}
-            method={form.merchMethod}
-            onChange={(next) => set("merch", next)}
-            onMethodChange={(next) => set("merchMethod", next)}
-            disabled={locked}
-            onError={setError}
-          />
-        </CollapseCard>
-      </div>
-      )}
+      {/* HÀNG BÁN THÊM đã chuyển sang trang CAFE (chủ 18/09) — trang điều phối / quầy vé không bán hàng nữa. */}
 
       <div className="space-y-3 lg:col-start-1 lg:row-start-1 lg:row-span-2">
       <form onSubmit={submit} className="space-y-3">
