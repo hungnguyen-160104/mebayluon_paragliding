@@ -177,27 +177,29 @@ const ESC_CAT = new Uint8Array([0x1b, 0x64, 0x04, 0x1d, 0x56, 0x01]);
  * chối thì gửi lại đúng khúc đó bằng đường có xác nhận. Cỡ khúc tự co
  * 512 → 244 → 100 → 20 khi máy báo quá dài (MTU nhỏ).
  */
+/**
+ * CHỦ 18/09: in BLE thẳng ra B300 "quá chậm và in lỗi, vé in ra không phải là
+ * vé nữa" — đường KHÔNG xác nhận 512 byte làm tràn bộ đệm máy in, mất khúc
+ * giữa chừng nên ảnh vỡ. Đổi lại: ƯU TIÊN GHI CÓ XÁC NHẬN (mỗi khúc đợi máy
+ * in nhận xong), khúc 244 byte; máy chỉ có đường không xác nhận thì khúc 100
+ * byte, nghỉ 20 ms. Chậm hơn nhưng vé ra đúng. Muốn nhanh thì dùng RawBT —
+ * đường ấy đứng trước Bluetooth trong thứ tự ưu tiên.
+ */
 async function guiKhuc(dt: DacTinh, data: Uint8Array, baoTienDo?: (phan: number) => void): Promise<void> {
-  const cac = [512, 244, 100, 20];
-  let ci = 0;
-  let i = 0;
   const khongXN = Boolean(dt.properties.writeWithoutResponse && dt.writeValueWithoutResponse);
   const coXN = Boolean(dt.properties.write && dt.writeValueWithResponse);
+  const cac = coXN ? [244, 100, 20] : [100, 20];
+  let ci = 0;
+  let i = 0;
   while (i < data.length) {
     const khuc = cac[ci];
     const phan = data.slice(i, i + khuc);
     try {
-      if (khongXN) {
-        try {
-          await dt.writeValueWithoutResponse!(phan);
-          await new Promise((r) => setTimeout(r, 6));
-        } catch (e1) {
-          /** Bộ đệm đầy / máy bận: thử lại đúng khúc này qua đường có xác nhận (chậm nhưng chắc). */
-          if (coXN) await dt.writeValueWithResponse!(phan);
-          else throw e1;
-        }
-      } else if (coXN) await dt.writeValueWithResponse!(phan);
-      else await dt.writeValue(phan);
+      if (coXN) await dt.writeValueWithResponse!(phan);
+      else if (khongXN) {
+        await dt.writeValueWithoutResponse!(phan);
+        await new Promise((r) => setTimeout(r, 20));
+      } else await dt.writeValue(phan);
       i += khuc;
       baoTienDo?.(i / data.length);
     } catch (e) {

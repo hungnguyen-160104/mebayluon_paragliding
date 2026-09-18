@@ -143,7 +143,7 @@ export function MayInUsb() {
               if (m) setLoi(m);
             }
           }}
-          title="Bật máy in và Bluetooth điện thoại, bấm rồi chọn máy in trong hộp hiện ra (tên có chữ BLE nếu thấy hai tên). Chỉ Chrome."
+          title="Đường dự phòng, CHẬM (mỗi liên 10–20 giây) — trên Android nên dùng RawBT. Bật máy in và Bluetooth điện thoại, bấm rồi chọn máy in trong hộp hiện ra (tên có chữ BLE nếu thấy hai tên). Chỉ Chrome."
         >
           🖨 Ghép máy in Bluetooth
         </button>

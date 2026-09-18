@@ -352,8 +352,9 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 > thẳng bốn liên) bật công tắc trên thì IN VÉ mở khung "Gửi sang app in".
 > Vì sao vẫn phải chọn app trong khay: trình duyệt không mở được thẳng một
 > app khác kèm tệp ảnh; iPhone/Android xếp app vừa dùng lên đầu khay nên chỉ
-> thêm một chạm. Thứ tự ưu tiên của IN VÉ: Bluetooth → USB → RawBT → **app
-> chia sẻ** → trạm in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
+> thêm một chạm. Thứ tự ưu tiên của IN VÉ (đổi 18/09: RawBT lên đầu vì BLE thẳng ra
+> B300 chậm và vỡ ảnh): **RawBT** → USB → Bluetooth → **app chia sẻ** → trạm
+> in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
 
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích

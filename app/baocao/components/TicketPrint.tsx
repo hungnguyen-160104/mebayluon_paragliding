@@ -576,9 +576,10 @@ function gopDamNhat(src: HTMLCanvasElement, rong: number): HTMLCanvasElement {
 export type KenhInThang = "bluetooth" | "usb" | "rawbt" | "chia-se";
 
 export function mayInThangDaGhep(): KenhInThang | null {
-  if (trinhDuyetCoBluetooth() && mayInBluetoothDaGhep()) return "bluetooth";
-  if (trinhDuyetCoUsb() && mayInDaGhep()) return "usb";
+  /** RawBT đứng TRƯỚC Bluetooth (chủ 18/09): RawBT in nhanh và đúng, BLE thẳng ra B300 chậm và dễ vỡ ảnh. */
   if (mayCoTheDungRawbt() && rawbtDaBat()) return "rawbt";
+  if (trinhDuyetCoUsb() && mayInDaGhep()) return "usb";
+  if (trinhDuyetCoBluetooth() && mayInBluetoothDaGhep()) return "bluetooth";
   /** Đường 5 (chủ 17/09): iPhone / mọi máy — đưa ảnh vé sang app in qua khay chia sẻ. */
   if (mayCoTheChiaSeAnh() && chiaSeDaBat()) return "chia-se";
   return null;
