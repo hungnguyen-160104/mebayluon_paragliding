@@ -657,6 +657,8 @@ export default function DispatcherReportPage() {
         Đặt một bản duy nhất rồi xếp chỗ, không nhân đôi thẻ theo bề rộng màn:
         hai bản là hai danh mục rời, thêm mặt hàng ở bản này thì bản kia không thấy.
       */}
+      {/* Chỉ ĐIỀU PHỐI / QUẦY VÉ bán hàng — tài khoản quản trị mở trang này không hiện thẻ (chủ 18/09). */}
+      {user.role !== "admin" && (
       <div className="lg:col-start-2 lg:row-start-1">
         <CollapseCard title="HÀNG BÁN THÊM" open>
           <MerchCard
@@ -670,6 +672,7 @@ export default function DispatcherReportPage() {
           />
         </CollapseCard>
       </div>
+      )}
 
       <div className="space-y-3 lg:col-start-1 lg:row-start-1 lg:row-span-2">
       <form onSubmit={submit} className="space-y-3">
