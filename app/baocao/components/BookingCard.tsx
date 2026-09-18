@@ -1938,7 +1938,12 @@ function ThemDichVuControl({
   onDone: (message: string) => void;
 }) {
   const [open, setOpen] = usePanelOpen("them-dich-vu");
-  const [add, setAdd] = useState<Record<ServiceKey, number>>({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+  const trong = (): Record<ServiceKey, number> => ({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+  const [add, setAdd] = useState<Record<ServiceKey, number>>(trong);
+  /** BỚT dịch vụ (chủ 18/09: "cho phép bớt vì có thể thay đổi thêm/bớt"). */
+  const [bot, setBot] = useState<Record<ServiceKey, number>>(trong);
+  const [tienLui, setTienLui] = useState<"credit" | "cash" | "transfer">("credit");
+  const [stk, setStk] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const n = Math.max(1, booking.guestCount || 1);
@@ -1952,9 +1957,12 @@ function ThemDichVuControl({
   /** Sa Pa không bán hoàng hôn / kéo cờ (chỉ 360, flycam, cờ đỏ — chủ 17/09). */
   const banO = (k: ServiceKey) => (normalizeSpot(spot) === "sapa" ? k === "flycam" || k === "video360" || k === "redFlag" : true);
   const gia = servicePriceOf(spot, booking.createdAt);
-  const conThem = SERVICE_PRICE_LABEL.filter(({ key }) => banO(key) && daCo[key] < n);
-  const tongThem = conThem.reduce((t, { key }) => t + add[key] * gia[key], 0);
-  const soThem = conThem.reduce((t, { key }) => t + add[key], 0);
+  const hang = SERVICE_PRICE_LABEL.filter(({ key }) => banO(key));
+  const soThem = hang.reduce((t, { key }) => t + add[key], 0);
+  const soBot = hang.reduce((t, { key }) => t + bot[key], 0);
+  const tongThem = hang.reduce((t, { key }) => t + add[key] * gia[key], 0);
+  const tongBot = hang.reduce((t, { key }) => t + bot[key] * gia[key], 0);
+  const daTra = booking.deposit || 0;
 
   if (booking.status === "cancelled" || booking.status === "voided") return null;
   if (!open) {
@@ -1966,9 +1974,9 @@ function ThemDichVuControl({
           setError(null);
           setOpen(true);
         }}
-        title="Khách đăng ký thêm 360 / flycam / cờ đỏ… tại bãi — cộng vào booking, tính tiền, báo còn thu"
+        title="Khách đăng ký thêm hoặc bỏ bớt 360 / flycam / cờ đỏ… tại bãi — cộng/trừ vào booking, tính lại tiền, báo còn thu hoặc hoàn"
       >
-        ＋ Thêm dịch vụ
+        ± Thêm/bớt dịch vụ
       </button>
     );
   }
@@ -1976,29 +1984,72 @@ function ThemDichVuControl({
   return (
     <div className="w-full rounded-xl border border-indigo-300 bg-indigo-50/60 p-2 text-xs">
       <div className="mb-1 font-bold text-indigo-900">
-        ＋ Thêm dịch vụ — #{booking.daySeq} {booking.contactName} · {n} khách
+        ± Thêm/bớt dịch vụ — #{booking.daySeq} {booking.contactName} · {n} khách
       </div>
-      {conThem.length === 0 ? (
-        <p className="text-slate-600">Mọi dịch vụ đã đủ cho cả đoàn — không còn gì để thêm.</p>
-      ) : (
-        <div className="space-y-1">
-          {conThem.map(({ key, label }) => {
-            const max = n - daCo[key];
-            return (
-              <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="w-40 font-semibold text-slate-800">{label}</span>
-                <span className="text-slate-500">
-                  đã có {daCo[key]} · thêm tối đa {max} · {formatVND(gia[key])}/suất
-                </span>
-                <CountInput compact value={add[key]} max={max} onChange={(v) => setAdd((p) => ({ ...p, [key]: Math.max(0, Math.min(max, v)) }))} />
-              </div>
-            );
-          })}
+      <div className="space-y-1">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+          <span>Dịch vụ · đã có · giá</span>
+          <span className="w-24 text-center">Thêm</span>
+          <span className="w-24 text-center">Bớt</span>
         </div>
-      )}
-      {soThem > 0 && (
-        <div className="mt-1.5 font-bold text-rose-700">
-          Phải thu thêm ~{formatVND(tongThem)} (máy chủ tính lại theo bảng giá lúc lập booking, có combo thì bớt)
+        {hang.map(({ key, label }) => {
+          const maxThem = n - daCo[key];
+          const maxBot = daCo[key];
+          return (
+            <div key={key} className="grid grid-cols-[1fr_auto_auto] items-center gap-x-2 gap-y-0.5">
+              <span className="min-w-0">
+                <span className="font-semibold text-slate-800">{label}</span>
+                <span className="text-slate-500">
+                  {" "}
+                  · đã có {daCo[key]} · {formatVND(gia[key])}
+                </span>
+              </span>
+              <span className="w-24">
+                {maxThem > 0 ? (
+                  <CountInput compact value={add[key]} max={maxThem} onChange={(v) => setAdd((p) => ({ ...p, [key]: Math.max(0, Math.min(maxThem, v)) }))} />
+                ) : (
+                  <span className="block text-center text-[10px] text-slate-400">đủ cả đoàn</span>
+                )}
+              </span>
+              <span className="w-24">
+                {maxBot > 0 ? (
+                  <CountInput compact value={bot[key]} max={maxBot} onChange={(v) => setBot((p) => ({ ...p, [key]: Math.max(0, Math.min(maxBot, v)) }))} />
+                ) : (
+                  <span className="block text-center text-[10px] text-slate-400">—</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {soThem > 0 && <div className="mt-1.5 font-bold text-rose-700">Thêm {soThem} suất → phải thu thêm ~{formatVND(tongThem)}</div>}
+      {soBot > 0 && (
+        <div className="mt-1.5 space-y-1">
+          <div className="font-bold text-emerald-700">Bớt {soBot} suất → lùi lại ~{formatVND(tongBot)}</div>
+          {/* Tiền lùi đi đâu: trừ vào phần còn thu (mặc định), hay khách đã trả rồi thì hoàn TM / CK */}
+          <div className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                ["credit", "trừ vào còn thu"],
+                ["cash", "hoàn khách tiền mặt"],
+                ["transfer", "hoàn CK (kế toán chuyển)"],
+              ] as const
+            ).map(([k, nhan]) => (
+              <label key={k} className="flex items-center gap-1">
+                <input type="radio" name={`tienlui-${booking.id}`} checked={tienLui === k} onChange={() => setTienLui(k)} />
+                {nhan}
+              </label>
+            ))}
+            {tienLui === "transfer" && (
+              <input
+                value={stk}
+                onChange={(e) => setStk(e.target.value)}
+                placeholder="STK khách nhận hoàn"
+                className="h-7 w-44 rounded border border-slate-300 px-2 text-xs"
+              />
+            )}
+          </div>
+          {daTra <= 0 && tienLui !== "credit" && <div className="text-amber-700">Khách chưa trả đồng nào — không có gì để hoàn, nên chọn “trừ vào còn thu”.</div>}
         </div>
       )}
       {error && <div className="mt-1 text-rose-700">{error}</div>}
@@ -2006,31 +2057,51 @@ function ThemDichVuControl({
         <Button
           type="button"
           className="h-8 bg-indigo-600 px-3 text-xs hover:bg-indigo-700"
-          disabled={busy || soThem === 0}
+          disabled={busy || (soThem === 0 && soBot === 0) || (soBot > 0 && tienLui === "transfer" && !stk.trim())}
           onClick={async () => {
             setBusy(true);
             setError(null);
             try {
-              const r = await apiPost<{ booking: BookingDTO; charge: number; added: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
-                id: booking.id,
-                add,
-                note: "thêm tại dòng booking",
-              });
-              const conThu = r.booking?.remaining ?? 0;
+              const ket: string[] = [];
+              let conThu: number | null = null;
+              if (soThem > 0) {
+                const r = await apiPost<{ booking: BookingDTO; charge: number; added: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
+                  id: booking.id,
+                  add,
+                  note: "thêm tại dòng booking",
+                });
+                ket.push(`thêm ${r.added} dịch vụ (+${formatVND(r.charge)})`);
+                conThu = r.booking?.remaining ?? null;
+              }
+              if (soBot > 0) {
+                const r = await apiPatch<{ back: number; refunded: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
+                  id: booking.id,
+                  remove: bot,
+                  mode: tienLui === "credit" ? "credit" : "refund",
+                  refundMethod: tienLui === "cash" ? "cash" : "transfer",
+                  bankAccount: stk.trim(),
+                  reason: "bớt tại dòng booking",
+                });
+                ket.push(
+                  `bớt ${soBot} dịch vụ (lùi ${formatVND(r.back)}${r.refunded > 0 ? `, hoàn khách ${formatVND(r.refunded)} ${tienLui === "cash" ? "TM" : "CK — chờ kế toán"}` : ", trừ vào còn thu"})`,
+                );
+                conThu = null;
+              }
               onDone(
-                `✓ Đã thêm ${r.added} dịch vụ cho #${booking.daySeq} ${booking.contactName} — phải thu thêm ${formatVND(r.charge)} · ` +
-                  (conThu > 0 ? `CÒN THU ${formatVND(conThu)}, bấm Thu tiền để thu bổ sung.` : "đã thu đủ."),
+                `✓ #${booking.daySeq} ${booking.contactName}: ${ket.join(" · ")}.` +
+                  (conThu !== null ? (conThu > 0 ? ` CÒN THU ${formatVND(conThu)} — bấm Thu tiền để thu bổ sung.` : " Đã thu đủ.") : " Xem lại \"Còn thu\" trên dòng booking."),
               );
-              setAdd({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+              setAdd(trong());
+              setBot(trong());
               setOpen(false);
             } catch (e: unknown) {
-              setError(e instanceof Error ? e.message : "Không thêm được dịch vụ");
+              setError(e instanceof Error ? e.message : "Không sửa được dịch vụ");
             } finally {
               setBusy(false);
             }
           }}
         >
-          {busy ? "Đang ghi…" : "✓ Thêm & tính tiền"}
+          {busy ? "Đang ghi…" : "✓ Ghi & tính lại tiền"}
         </Button>
         <Button type="button" variant="ghost" className="h-8 bg-white px-3 text-xs" onClick={() => setOpen(false)}>
           Thôi
