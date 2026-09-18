@@ -719,9 +719,10 @@ export function htmlBanInThang(html: string): string {
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
      /* Đệm dưới 14 chấm: dòng "the flight." có chữ g/p thò xuống, đệm 2 chấm bị ảnh cắt mất chân chữ (chủ 18/09) */
-     .ve.sapa { padding: 6px 10px 14px !important; }
-     .ve.sapa + .ve.sapa { margin-top: 18px !important; padding-top: 18px !important; border-top-width: 2px !important; }
-     .sp-dau { gap: 12px !important; margin-bottom: 8px !important; }
+     /* Khoảng trống đầu vé giảm một nửa (chủ 18/09) */
+     .ve.sapa { padding: 3px 10px 14px !important; }
+     .ve.sapa + .ve.sapa { margin-top: 9px !important; padding-top: 9px !important; border-top-width: 2px !important; }
+     .sp-dau { gap: 12px !important; margin-bottom: 6px !important; }
      .sp-logo { width: 76px !important; height: 76px !important; }
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
