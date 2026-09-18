@@ -386,9 +386,13 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > **SA PA — MỘT LIÊN DUY NHẤT** (chủ 17–18/09): không liên khách giữ,
 > không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông, đầu vé **SAPA
 > PARAGLIDING · BOARDING TICKET** với **logo khỉ Sa Pa** (bản xám tương phản
-> cao `public/logo-sapa-in.png`): số thứ tự + mã chống sao chép; **QR vé 25 mm**
-> bên trái ("Scan before flight"), bên phải cùng hàng là ngày bay + giờ hẹn, **tên
-> viết tắt một phần** ("Nguyễn Thị Hồng Nhung" → "Nguyễn T.H. Nhung"), ô **dịch
+> cao `public/logo-sapa-in.png`): số thứ tự dạng **`22.9#1.2`** (bay ngày 22/9,
+> booking số 1 trong ngày, khách thứ 2 — phần ngày in nhỏ hơn phần số; đoàn một
+> người: `22.9#1`) + mã chống sao chép; **QR vé 30 mm** bên trái ("Scan before
+> flight"), bên phải cùng hàng là ngày bay + giờ hẹn, **tên khách lấy theo SỔ BẢO
+> HIỂM** (khách 1/2, 2/2 đúng người đã khai bảo hiểm, bỏ người đã huỷ; sổ trống
+> mới lấy tên theo booking) **viết tắt một phần** ("Nguyễn Thị Hồng Nhung" →
+> "Nguyễn T.H. Nhung"), ô **dịch
 > vụ đi kèm** in đậm (chỉ khi có 360 / flycam / cờ đỏ — để phi công chuẩn bị);
 > dưới cùng "Printed HH:MM dd/MM" và **www.paraglidingsapa.com**, rồi lời dặn
 > tiếng Anh *"Please keep this ticket safe and hand it to your pilot before the

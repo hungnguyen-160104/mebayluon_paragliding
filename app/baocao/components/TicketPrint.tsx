@@ -164,6 +164,31 @@ export function vietTatTen(ten: string): string {
   return `${tu[0]} ${giua} ${tu[tu.length - 1]}`;
 }
 
+/**
+ * SA PA (chủ 18/09): tên trên vé lấy theo SỔ BẢO HIỂM — khách 1/2, 2/2 đúng
+ * tên người đã khai bảo hiểm (bỏ người đã huỷ). Sổ trống mới lấy tên theo
+ * booking (danh sách OTA rồi tên liên hệ).
+ */
+export function tenKhachBaoHiem(b: BookingDTO, guestNo: number): string {
+  const ten = (b.insured ?? [])
+    .filter((g) => !g.cancelled)
+    .map((g) => String(g.fullName || "").trim())
+    .filter(Boolean);
+  if (ten.length >= guestNo) return ten[guestNo - 1];
+  return tenKhachVe(b, guestNo);
+}
+
+/**
+ * SỐ THỨ TỰ VÉ SA PA: "22.9#1.2" = bay ngày 22/9, booking số 1 trong ngày,
+ * khách thứ 2 của booking (chủ 18/09). Đoàn một người: "22.9#1". Trả hai phần
+ * để vẽ phần ngày nhỏ hơn phần số.
+ */
+export function soThuTuVeSapa(b: BookingDTO, guestNo: number): { ngay: string; so: string } {
+  const [, m, d] = String(b.flightDate || "").split("-");
+  const ngay = d && m ? `${Number(d)}.${Number(m)}` : "";
+  return { ngay, so: soThuTuVe(b, guestNo) };
+}
+
 /** Tên khách thứ n: booking OTA có danh sách tên từng người; không có thì tên liên hệ. */
 export function tenKhachVe(b: BookingDTO, guestNo: number): string {
   const ten = (b.otaGuests ?? []).map((g) => String(g.fullName || "").trim()).filter(Boolean);
@@ -264,8 +289,9 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe
  */
 function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): string {
   const extras = extrasOf(b, guestNo);
-  const ten = vietTatTen(tenKhachVe(b, guestNo));
+  const ten = vietTatTen(tenKhachBaoHiem(b, guestNo));
   const gioHen = b.expectedTime ? esc(b.expectedTime) : "";
+  const stt = soThuTuVeSapa(b, guestNo);
   /**
    * THIẾT KẾ LẠI (chủ 18/09, ảnh in thật): số + mã từng "out box" vì hộp mã
    * inline-flex lệch dòng nền khi html2canvas vẽ; khoảng trống lớn vì vé ép cao
@@ -283,7 +309,7 @@ function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): s
       </div>
     </div>
     <div class="sp-so">
-      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du}</span><span class="sp-so-tri">${esc(soThuTuVe(b, guestNo))}</span></div>
+      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du}</span><span class="sp-so-tri">${stt.ngay ? `<span class="sp-so-ngay">${esc(stt.ngay)}</span>` : ""}${esc(stt.so)}</span></div>
       <div class="sp-so-phai"><span class="sp-ma-nhan">CODE</span><span class="sp-ma">${esc(maVeCua(b, guestNo))}</span></div>
     </div>
     <div class="sp-than">
@@ -444,7 +470,9 @@ const CSS = `
   .sp-so-icon { display: inline-flex; align-items: center; }
   .sp-so-icon svg { width: 30px; height: 30px; display: block; }
   /* Số không có phần đuôi dưới dòng nên ô chữ line-height 1 làm số "ngồi thấp", đè viền dưới — kéo lên ~10% cỡ chữ (chủ 18/09) */
-  .sp-so-tri { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -4px; }
+  .sp-so-tri { font-size: 42px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -4px; }
+  /* Phần ngày "22.9" nhỏ hơn phần "#1.2" — cùng dòng nền */
+  .sp-so-ngay { font-size: 24px; font-weight: 900; letter-spacing: 0; margin-right: 2px; }
   .sp-so-phai { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; flex: none; }
   .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; line-height: 1; }
   .sp-ma { font-family: "Courier New", ui-monospace, monospace; font-size: 22px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; white-space: nowrap; }
@@ -697,10 +725,11 @@ export function htmlBanInThang(html: string): string {
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
      .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 6px 16px 12px !important; gap: 16px !important; }
-     .sp-so-trai { gap: 14px !important; }
+     .sp-so-trai { gap: 10px !important; }
      .sp-so-tri { top: -9px !important; }
-     .sp-so-icon svg { width: 56px !important; height: 56px !important; }
-     .sp-so-tri { font-size: 90px !important; }
+     .sp-so-icon svg { width: 44px !important; height: 44px !important; }
+     .sp-so-tri { font-size: 80px !important; }
+     .sp-so-ngay { font-size: 44px !important; margin-right: 4px !important; }
      .sp-ma-nhan { font-size: 16px !important; }
      .sp-ma { font-size: 42px !important; letter-spacing: 5px !important; }
      .sp-than { gap: 14px !important; margin-top: 10px !important; }
