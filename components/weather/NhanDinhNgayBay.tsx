@@ -8,7 +8,7 @@
  * sổ booking bên dưới, không thể dành nửa màn hình cho thời tiết.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BONG_CHU, LOP_TAG, NEN_TAG_NHAN_DINH } from "./tag-muc";
 import { NHAN_MUC_THERMAL, type TiemNangThermal } from "@/lib/baobay/thermal";
 
@@ -30,8 +30,22 @@ const MAU_TONG: Record<"tot" | "chuY" | "xau" | "thongTin", string> = {
   thongTin: "text-slate-700",
 };
 
-export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon?: boolean }) {
+export function NhanDinhNgayBay({
+  ngay,
+  gon = false,
+  bieuDo,
+}: {
+  ngay: NgayThoiTiet;
+  gon?: boolean;
+  /**
+   * BIỂU ĐỒ GIỜ giấu trong thẻ (chủ 18/09): trang điều phối chỉ có dải ngày,
+   * muốn xem biểu đồ phải sang trang thời tiết. Truyền biểu đồ vào đây thì
+   * thẻ có nút "📊 Biểu đồ giờ" — bấm mới vẽ, không bấm thì thẻ vẫn gọn.
+   */
+  bieuDo?: ReactNode;
+}) {
   const [mo, setMo] = useState(!gon);
+  const [moBieuDo, setMoBieuDo] = useState(false);
   const nd = ngay.nhanDinh as NhanDinhNgay | undefined;
   const cg = ngay.chuyenGia as DanhGiaNgay | undefined;
   const th = ngay.thermal as TiemNangThermal | undefined;
@@ -84,6 +98,22 @@ export function NhanDinhNgayBay({ ngay, gon = false }: { ngay: NgayThoiTiet; gon
         </span>
         {gon && <span className="shrink-0 text-[11px] opacity-70">{mo ? "▾" : "▸"}</span>}
       </button>
+
+      {bieuDo && (
+        <div className="mt-1">
+          <button
+            type="button"
+            onClick={() => setMoBieuDo((x) => !x)}
+            className={
+              "rounded-md border px-2 py-0.5 text-[11px] font-bold " +
+              (moBieuDo ? "border-sky-600 bg-sky-600 text-white" : "border-current/30 bg-white/70 text-current")
+            }
+          >
+            📊 Biểu đồ giờ {moBieuDo ? "▴" : "▾"}
+          </button>
+          {moBieuDo && <div className="mt-1.5 rounded-lg bg-white/80 p-1">{bieuDo}</div>}
+        </div>
+      )}
 
       {/**
         * LỜI CHUYÊN GIA ĐÈ LÊN MÁY (chủ 13/09).

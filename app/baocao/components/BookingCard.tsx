@@ -5223,12 +5223,12 @@ export function BookingTodayBanner({
       }}
       className={
         fullScreen
-          ? "shrink-0 rounded-lg border border-slate-400 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow hover:bg-slate-100"
-          : "shrink-0 rounded-md border border-sky-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-100"
+          ? "shrink-0 rounded-md border border-slate-400 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-700 shadow hover:bg-slate-100"
+          : "shrink-0 rounded border border-sky-300 bg-white px-1.5 py-px text-[10px] font-semibold leading-4 text-sky-800 hover:bg-sky-100"
       }
       title={fullScreen ? "Co sổ booking về chỗ cũ trong trang (Esc)" : "Phóng riêng sổ/bảng booking ra toàn màn hình"}
     >
-      {fullScreen ? "🗗 Thu nhỏ về như cũ" : "⛶ Toàn màn hình"}
+      {fullScreen ? "🗗 Thu nhỏ" : "⛶ Toàn màn hình"}
     </button>
   );
   /** HỘP DỜI LỊCH của một booking — hiện thay cụm nút khi đang chọn ngày dời. */
@@ -6059,10 +6059,6 @@ export function BookingTodayBanner({
 
   const body = (
     <>
-      <p className="mt-0.5 text-[11px] text-sky-800/70">
-        Chỉ gồm khách ĐẶT TRƯỚC — khách đến đột xuất bay luôn thì vẫn báo số chuyến/dịch vụ trong báo cáo ngày
-        như thường, không cần khớp với danh sách này.
-      </p>
       {/**
        * CỤM CHỌN KIỂU XEM luôn hiện, kể cả khi sổ chỉ có 0–1 booking.
        *

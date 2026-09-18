@@ -337,7 +337,13 @@ export function ThoiTietCard({
        * Bấm ngày khác trên dải thì khối đổi theo.
        */}
       {ngayChon && !gon && <NhanDinhNgayBay ngay={ngayChon} />}
-      {gon && ngayChon && <NhanDinhNgayBay ngay={ngayChon} gon />}
+      {gon && ngayChon && (
+        <NhanDinhNgayBay
+          ngay={ngayChon}
+          gon
+          bieuDo={<Meteogram ngay={du.ngay} altBai={du.toaDo.alt ?? 0} ngayChon={chon} onNgayHien={setChon} nguong={du.nguong} />}
+        />
+      )}
 
       {/* ---- dải 10 ngày ---- */}
       {/**

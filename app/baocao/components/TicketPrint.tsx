@@ -430,7 +430,8 @@ const CSS = `
   .ve.sapa { display: block; padding: 1mm 0 3mm; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
   .ve.sapa + .ve.sapa { margin-top: 3mm; border-top: 1px dashed #000; padding-top: 3mm; }
   .sp-dau { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-  .sp-logo { width: 12mm; height: 9mm; object-fit: contain; flex: none; }
+  /* Logo gốc VUÔNG (300×300); html2canvas không hiểu object-fit nên khung phải vuông, không thì bóp méo (chủ 18/09) */
+  .sp-logo { width: 10mm; height: 10mm; object-fit: contain; flex: none; }
   .sp-hang { min-width: 0; line-height: 1.1; }
   .sp-ten { font-size: 16px; font-weight: 900; letter-spacing: .6px; white-space: nowrap; }
   .sp-phu { font-size: 10px; font-weight: 800; letter-spacing: .4px; white-space: nowrap; color: #000; margin-top: 2px; }
@@ -691,7 +692,7 @@ export function htmlBanInThang(html: string): string {
      .ve.sapa { padding: 6px 10px 2px !important; }
      .ve.sapa + .ve.sapa { margin-top: 18px !important; padding-top: 18px !important; border-top-width: 2px !important; }
      .sp-dau { gap: 12px !important; margin-bottom: 8px !important; }
-     .sp-logo { width: 92px !important; height: 70px !important; }
+     .sp-logo { width: 76px !important; height: 76px !important; }
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
      .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 8px 16px 10px !important; gap: 16px !important; }

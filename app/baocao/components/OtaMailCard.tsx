@@ -145,6 +145,29 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
   const [armed, setArmed] = useState<string | null>(null);
   /** 18 thư cùng lúc là bức tường đỏ — hiện 5 thư đầu, còn lại nằm sau nút xổ. */
   const [showAll, setShowAll] = useState(false);
+  /**
+   * THU GỌN cả thẻ (chủ 18/09: "48 thư chờ duyệt tay hơi choán chỗ"). Gọn thì
+   * chỉ còn một dòng đếm + nút xổ ra; nhớ lựa chọn trong máy để lần sau vào
+   * trang không phải gập lại.
+   */
+  const [thuGon, setThuGon] = useState(false);
+  useEffect(() => {
+    try {
+      setThuGon(localStorage.getItem("ota-cho-duyet-gon") === "1");
+    } catch {
+      /* bỏ qua */
+    }
+  }, []);
+  const doiThuGon = () => {
+    setThuGon((v) => {
+      try {
+        localStorage.setItem("ota-cho-duyet-gon", v ? "0" : "1");
+      } catch {
+        /* bỏ qua */
+      }
+      return !v;
+    });
+  };
 
   const pending = mails.filter((m) => m.status === "review");
   /** Thư mới nhất APP nhận được (mọi trạng thái) — danh sách đã xếp mới trước. */
@@ -178,14 +201,30 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
 
   return (
     <div className="mb-2 rounded-xl border-2 border-red-400 bg-red-50 p-2.5">
-      <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-sm font-bold text-red-800">
-        <span>🚩 {pending.length} thư OTA chờ duyệt tay — lịch bay CHƯA đổi</span>
-        {lastFetch && (
-          <span className="text-[11px] font-medium text-red-900/60" title="Lần gần nhất Gmail đẩy được thư về app">
-            thư về gần nhất {whenVN(lastFetch)}
-          </span>
-        )}
+      <div className={"flex flex-wrap items-baseline gap-x-2 text-sm font-bold text-red-800 " + (thuGon ? "" : "mb-1.5")}>
+        <button
+          type="button"
+          onClick={doiThuGon}
+          className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 text-left"
+          title={thuGon ? "Xổ ra danh sách thư" : "Thu gọn thẻ, chỉ còn dòng đếm"}
+        >
+          <span>🚩 {pending.length} thư OTA chờ duyệt tay — lịch bay CHƯA đổi</span>
+          {lastFetch && (
+            <span className="text-[11px] font-medium text-red-900/60" title="Lần gần nhất Gmail đẩy được thư về app">
+              thư về gần nhất {whenVN(lastFetch)}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={doiThuGon}
+          className="shrink-0 rounded-md border border-red-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+        >
+          {thuGon ? "▾ Xổ ra" : "▴ Thu gọn"}
+        </button>
       </div>
+      {!thuGon && (
+        <>
       <ul className="space-y-1.5">
         {shown.map((m) => {
           const intent = m.intent || (m.kind === "cancel" ? "cancel" : m.kind === "amend" ? "amend" : "create");
@@ -290,6 +329,8 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
         >
           {showAll ? "▴ Thu gọn, chỉ hiện 5 thư đầu" : `▾ Hiện thêm ${hidden} thư nữa`}
         </button>
+      )}
+        </>
       )}
     </div>
   );
