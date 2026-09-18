@@ -43,7 +43,7 @@ import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
-import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn } from "./TicketPrint";
+import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, inAnhQuaKenh, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn } from "./TicketPrint";
 import { ghepAnhLien, hienKhungVe, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
 
 /** Khung xem vé Sa Pa: "In vé" mở thẳng khay chia sẻ (Uprinter) khi kênh in là chia sẻ, hoặc điện thoại chưa cài kênh nào. */
@@ -5626,15 +5626,24 @@ export function BookingTodayBanner({
          */
         /** Khung mở NGAY (ảnh dựng sau), rồi mới tích "đã xuất vé" — hộp xác nhận bảo hiểm (nếu có) hiện đè lên khung, không làm màn hình đứng im. */
         const tienDo: { dat?: (pct: number, chu: string) => void } = {};
+        /** Giữ ảnh từng liên đã dựng: nút "In vé" đẩy thẳng ra kênh in NGAY trong cú bấm, không dựng lại, không mở tab. */
+        let anhSan: HTMLCanvasElement[] | null = null;
         const khung = hienKhungVe(
-          (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot), (p, c) => tienDo.dat?.(p, c)), RONG_CHAM))(),
+          (async () => {
+            anhSan = await dungAnhVe(await buildTicketsHtml(bk, spot), (p, c) => tienDo.dat?.(p, c));
+            return ghepAnhLien(anhSan, RONG_CHAM);
+          })(),
           `ve-${bk.daySeq || bk.id}.png`,
           async () => {
-            const t = moTabIn();
-            const r2 = dangCap
-              ? null
-              : await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
-            await printBookingTickets(r2?.booking ?? bk, spot, t, dangCap ? "" : "in lại");
+            const kenh = mayInThangDaGhep();
+            /** Ghi vết in lại SONG SONG (không chờ) — chờ mạng xong mới in là cú bấm nguội, RawBT không mở được. */
+            const vet = dangCap ? null : apiPatch(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
+            if (kenh && anhSan) {
+              await inAnhQuaKenh(anhSan, kenh);
+            } else {
+              await printBookingTickets(bk, spot, moTabIn(), dangCap ? "" : "in lại");
+            }
+            await vet;
           },
           inQuaChiaSeThang(),
           tienDo,

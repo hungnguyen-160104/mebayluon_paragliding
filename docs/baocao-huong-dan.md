@@ -354,7 +354,11 @@ báo cáo bình thường. Lịch là kế hoạch; báo cáo là thực tế.
 > app khác kèm tệp ảnh; iPhone/Android xếp app vừa dùng lên đầu khay nên chỉ
 > thêm một chạm. Thứ tự ưu tiên của IN VÉ (đổi 18/09: RawBT lên đầu vì BLE thẳng ra
 > B300 chậm và vỡ ảnh): **RawBT** → USB → Bluetooth → **app chia sẻ** → trạm
-> in → tab/hộp thoại. Mã: `lib/baobay/may-in-chia-se.ts`.
+> in → tab/hộp thoại. Kênh in thẳng đã cài mà **hỏng** (RawBT chưa mở, Bluetooth
+> chưa nối…) thì máy **báo lỗi rõ và dừng**, không tự nhảy sang hộp thoại in
+> (chủ 18/09); và khi đã có kênh in thẳng thì IN VÉ **không mở tab trống** nữa.
+> Khung xem vé Sa Pa in thẳng từ ảnh đã dựng ngay trong cú bấm. Mã:
+> `lib/baobay/may-in-chia-se.ts`.
 
 Chủ chốt 12/09/2026: hai điểm này bắt đầu in vé bằng máy (đang in thử, in lại
 bao nhiêu lần cũng được). Nút **🖨 IN VÉ** ở dòng booking ghi sổ (cấp mã) rồi in đủ bộ và tự tích

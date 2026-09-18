@@ -592,6 +592,16 @@ export function mayInThangDaGhep(): KenhInThang | null {
  */
 export async function inQuaMayInThang(html: string, kenh: KenhInThang): Promise<void> {
   const anh = await dungAnhVe(html);
+  await inAnhQuaKenh(anh, kenh);
+}
+
+/**
+ * ĐẨY ẢNH ĐÃ DỰNG ra đúng kênh. Tách riêng để KHUNG XEM VÉ (Sa Pa) in thẳng từ
+ * ảnh đã có trong tay NGAY TRONG CÚ BẤM — không dựng lại, không await trước khi
+ * gọi RawBT (Chrome Android chặn mở liên kết `rawbt:` khi cú bấm đã nguội;
+ * chủ 18/09: "bấm in không sang RawBT mà mở trang trống").
+ */
+export async function inAnhQuaKenh(anh: HTMLCanvasElement[], kenh: KenhInThang): Promise<void> {
   if (kenh === "bluetooth") await inAnhQuaBluetooth(anh);
   else if (kenh === "rawbt") await inAnhQuaRawbt(anh);
   else if (kenh === "chia-se") {
@@ -708,6 +718,8 @@ export function nenMoTabIn(): boolean {
  */
 export function moTabIn(): Window | null {
   if (!nenMoTabIn() || typeof window === "undefined") return null;
+  /** Đã cài kênh in thẳng (RawBT / USB / Bluetooth / app) thì KHÔNG mở tab trống (chủ 18/09: "không mở trang trống, in trực tiếp luôn"). */
+  if (mayInThangDaGhep()) return null;
   const w = window.open("", "_blank");
   if (w) {
     try {
@@ -834,15 +846,20 @@ export async function printBookingTickets(
       tab?.close();
       return kenh;
     } catch (e) {
-      console.warn(`In thẳng qua ${kenh} hỏng, chuyển sang hộp thoại in:`, e);
-      /** Báo cho người trực biết vì sao vé lại nhảy ra hộp thoại — không thì tưởng máy in hỏng. */
+      /**
+       * KÊNH IN THẲNG HỎNG → BÁO LỖI RÕ và DỪNG (chủ 18/09: "lỗi không in được
+       * do chưa kết nối hay lỗi phát sinh thì phải hiện lỗi để xử lý"). Không
+       * lặng lẽ nhảy sang hộp thoại in nữa — nhảy như thế người trực tưởng máy
+       * tự đổi đường, còn lỗi thật (chưa mở RawBT, Bluetooth chưa nối…) thì
+       * không ai biết mà sửa.
+       */
+      console.warn(`In thẳng qua ${kenh} hỏng:`, e);
       const tenKenh = kenh === "bluetooth" ? "Bluetooth" : kenh === "rawbt" ? "RawBT" : kenh === "chia-se" ? "app in (chia sẻ)" : "USB";
-      /** Người trực tự đóng khung chia sẻ thì thôi, không ép sang hộp thoại in nữa. */
-      if (kenh === "chia-se" && e instanceof Error && e.message === "Chưa gửi sang app in") {
-        tab?.close();
-        return "khong-in";
-      }
-      if (typeof window !== "undefined") window.alert(`Không in thẳng được qua ${tenKenh}: ${e instanceof Error ? e.message : String(e)}\nVé sẽ mở ra để in qua hộp thoại.`);
+      tab?.close();
+      if (kenh === "chia-se" && e instanceof Error && e.message === "Chưa gửi sang app in") return "khong-in";
+      const m = e instanceof Error ? e.message : String(e);
+      if (typeof window !== "undefined") window.alert(`KHÔNG IN ĐƯỢC qua ${tenKenh}: ${m}\n\nKiểm tra: app/máy in đã bật và ghép chưa? Sửa xong bấm In vé lại. (Muốn in qua hộp thoại thì tắt kênh ${tenKenh} trong khung cài máy in.)`);
+      throw new Error(`Không in được qua ${tenKenh}: ${m}`);
     }
   }
   if (tab && !tab.closed) {
