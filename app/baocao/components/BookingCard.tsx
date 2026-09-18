@@ -1139,9 +1139,8 @@ function ReprintTicket({
       const bk = r?.booking ?? booking;
       if (laSapa) {
         void (async () => {
-          const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
           await hienKhungVe(
-            ghepAnhLien(anh, RONG_CHAM),
+            (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot)), RONG_CHAM))(),
             `ve-${bk.daySeq || bk.id}.png`,
             async () => {
               await printBookingTickets(bk, spot, moTabIn(), reason.trim());
@@ -5552,10 +5551,9 @@ export function BookingTodayBanner({
          * "In vé" ghi vết in lại rồi mới đẩy ra máy in. Booking đã có mã nhưng
          * chưa tích "đã xuất vé" (bị bỏ tích) thì tích lại ở đây.
          */
-        if (!bk0.ticketIssued) await act(bk0, "ticket");
-        const anh = await dungAnhVe(await buildTicketsHtml(bk, spot));
-        await hienKhungVe(
-          ghepAnhLien(anh, RONG_CHAM),
+        /** Khung mở NGAY (ảnh dựng sau), rồi mới tích "đã xuất vé" — hộp xác nhận bảo hiểm (nếu có) hiện đè lên khung, không làm màn hình đứng im. */
+        const khung = hienKhungVe(
+          (async () => ghepAnhLien(await dungAnhVe(await buildTicketsHtml(bk, spot)), RONG_CHAM))(),
           `ve-${bk.daySeq || bk.id}.png`,
           async () => {
             const t = moTabIn();
@@ -5566,6 +5564,8 @@ export function BookingTodayBanner({
           },
           inQuaChiaSeThang(),
         );
+        if (!bk0.ticketIssued) await act(bk0, "ticket");
+        await khung;
       } else if (dangCap) {
         await printBookingTickets(bk, spot, tab);
         if (!bk0.ticketIssued) await act(bk0, "ticket");
@@ -5575,6 +5575,8 @@ export function BookingTodayBanner({
       const m = e instanceof Error ? e.message : "Không cấp được mã vé";
       baoLoiVaoTab(tab, m);
       setError(m.replace(/\|[A-Z_]+$/, ""));
+      /** Ném lại để HỘP DỊCH VỤ hiện lỗi ngay tại chỗ — không thì hộp đứng im, người bấm tưởng máy đơ (chủ 18/09). */
+      throw new Error(m.replace(/\|[A-Z_]+$/, ""));
     }
   };
   /**

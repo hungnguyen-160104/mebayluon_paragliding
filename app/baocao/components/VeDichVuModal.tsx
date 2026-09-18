@@ -33,6 +33,7 @@ export function VeDichVuModal({
     return chiaDichVu(n, { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag }).khach;
   });
   const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
   const ten = (g: number) => {
     const ds = (booking.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
     return tenVietTat(ds.length >= g ? ds[g - 1]! : booking.contactName || "Khách");
@@ -118,6 +119,7 @@ export function VeDichVuModal({
             Tích cho đúng {lech.map((k) => `${dat[k]} ${TEN_DICH_VU[k]}`).join(", ")} theo số đã đặt rồi mới cấp mã.
           </p>
         )}
+        {loi && <p className="mt-2 rounded-lg bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800">⚠ {loi}</p>}
         <div className="mt-3 flex justify-end gap-2">
           <Button type="button" variant="ghost" className="h-9 px-3" onClick={onCancel} disabled={busy}>
             Huỷ
@@ -128,8 +130,11 @@ export function VeDichVuModal({
             disabled={busy || chuaKhop}
             onClick={async () => {
               setBusy(true);
+              setLoi(null);
               try {
                 await onConfirm(rows.map((r, i) => ({ guestNo: i + 1, ...r })));
+              } catch (e: unknown) {
+                setLoi(e instanceof Error ? e.message : "Không thực hiện được");
               } finally {
                 setBusy(false);
               }

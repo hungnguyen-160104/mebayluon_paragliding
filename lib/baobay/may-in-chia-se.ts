@@ -177,7 +177,12 @@ export function hienKhungChiaSe(canvas: HTMLCanvasElement, tenFile: string): Pro
  * Trả về khi người dùng đóng khung.
  */
 export function hienKhungVe(
-  canvas: HTMLCanvasElement,
+  /**
+   * Ảnh vé — nhận cả Promise: khung MỞ NGAY khi bấm, hiện "Đang dựng vé…"
+   * rồi điền ảnh khi dựng xong (chủ 18/09: bấm "Lưu & xem vé" mà 3–5 giây
+   * không thấy gì, tưởng máy đơ — thực ra html2canvas đang chạy).
+   */
+  canvasHoacHua: HTMLCanvasElement | Promise<HTMLCanvasElement>,
   tenFile: string,
   nutIn?: () => Promise<void>,
   /**
@@ -202,7 +207,11 @@ export function hienKhungVe(
     const img = document.createElement("img");
     img.alt = "Vé bay";
     img.style.cssText = "display:block;width:100%;max-width:576px;margin:0 auto;background:#fff;border-radius:8px";
-    img.src = canvas.toDataURL("image/png");
+    const cho = document.createElement("div");
+    cho.style.cssText = "margin:40px auto 0;max-width:576px;text-align:center;font-size:15px;color:rgba(255,255,255,.85)";
+    cho.textContent = "⏳ Đang dựng vé…";
+    vung.appendChild(cho);
+    img.hidden = true;
     vung.appendChild(img);
     const day = document.createElement("div");
     day.style.cssText = "flex:none;padding:10px 12px max(env(safe-area-inset-bottom),10px);background:#0f172a;border-top:1px solid rgba(255,255,255,.15)";
@@ -231,7 +240,17 @@ export function hienKhungVe(
     document.body.appendChild(lop);
 
     let file: File | null = null;
-    void anhSangFile(canvas, tenFile).then((f) => (file = f)).catch(() => null);
+    Promise.resolve(canvasHoacHua)
+      .then(async (canvas) => {
+        img.src = canvas.toDataURL("image/png");
+        img.hidden = false;
+        cho.remove();
+        file = await anhSangFile(canvas, tenFile);
+      })
+      .catch((e) => {
+        cho.textContent = `Không dựng được vé: ${e instanceof Error ? e.message : String(e)}`;
+        cho.style.color = "#fca5a5";
+      });
     const xong = () => {
       lop.remove();
       resolve();
