@@ -96,13 +96,38 @@ export function nhanVe(so: number, guestNo: number, guestCount: number): string 
 }
 
 /**
- * Điểm nào QUÉT VÉ: Sa Pa mọi booking; Khau Phạ chỉ booking có PPG (chủ
- * 17/09: "khau phạ hiện sẽ viết tay, còn quét mã chỉ dành cho booking có PPG").
+ * Điểm nào QUÉT VÉ: từ 18/09 CẢ BA ĐIỂM (chủ: "vé Hà Nội và Khau Phạ làm giống
+ * Sa Pa, có mã QR để phi công quét"). Trước đó Sa Pa mọi booking, Khau Phạ chỉ
+ * PPG (17/09). Tham số booking giữ lại để chỗ gọi không phải đổi.
  */
-export function coQuetVe(spot: string, b: { flightKind?: string; ppgGuests?: number }): boolean {
-  if (spot === "sapa") return true;
-  if (spot === "khau-pha") return b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0;
-  return false;
+export function coQuetVe(spot: string, _b: { flightKind?: string; ppgGuests?: number }): boolean {
+  return spot === "sapa" || spot === "khau-pha" || spot === "ha-noi";
+}
+
+/* ------------------------------------------------------------------ */
+/* VÉ PHỤ Khau Phạ: đồ uống + xe ôm                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Hai liên phụ ở Khau Phạ (chủ 18/09): VÉ ĐỒ UỐNG và VÉ XE ÔM, mỗi khách một
+ * tấm mỗi loại, QR chỉ mang ngày + số booking + số khách. Mã ĐỨNG ĐẦU bằng
+ * chữ ("NUOC …", "XE …") nên `parseVeQrText` (bắt đầu bằng ngày) trả null —
+ * máy quét vé bay không bao giờ nhận nhầm vé nước / vé xe, và ngược lại.
+ */
+export const VE_PHU = { nuoc: "NUOC", xe: "XE" } as const;
+export type LoaiVePhu = keyof typeof VE_PHU;
+
+/** "nuoc", "2026-09-22", 1, 2 → "NUOC 22/09/2026 #1.2". */
+export function veQrPhuText(loai: LoaiVePhu, ngay: string, so: number, guestNo: number): string {
+  return `${VE_PHU[loai]} ${formatDateKeyVN(ngay)} #${so}.${guestNo}`;
+}
+
+/** Chuỗi quét được là vé phụ loại nào? null nếu không phải. */
+export function loaiVePhuCua(raw: string): LoaiVePhu | null {
+  const s = String(raw ?? "").trim().toUpperCase();
+  if (s.startsWith(`${VE_PHU.nuoc} `)) return "nuoc";
+  if (s.startsWith(`${VE_PHU.xe} `)) return "xe";
+  return null;
 }
 
 /**

@@ -383,6 +383,19 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > theo nội dung (không ép 74 mm nữa), các vé nối liền, vạch đứt để xé. Chữ toàn
 > ≥ 800 và không dùng nét chấm mảnh vì in nhiệt nhoè.
 >
+> **TỪ 18/09: CẢ BA ĐIỂM IN KIỂU SA PA.** Vé bay dù một liên có mã QR phi công
+> quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,
+> logo `public/logo-mbl-in.png`, dòng phụ "BOARDING TICKET · KHAU PHẠ", web
+> www.mebayluon.com, lời dặn song ngữ Việt/Anh. Mọi booking ở ba điểm đều qua
+> danh sách mã QR → cấp mã → khung xem vé (Lưu ảnh · Chia sẻ · In vé).
+> **Khau Phạ in BA liên mỗi khách**: vé bay dù (QR + mã chống giả + dịch vụ
+> của đúng khách, kèm dịch vụ đoàn Hoàng hôn / Kéo cờ / PPG), **VÉ ĐỒ UỐNG** và
+> **VÉ XE ÔM** — hai liên phụ cùng kiểu dáng, QR nhỏ hơn chỉ mang
+> `NUOC 22/09/2026 #7.2` / `XE 22/09/2026 #7.2` (chữ đứng đầu nên máy quét vé
+> bay từ chối: "Đây là VÉ ĐỒ UỐNG của khách, không phải vé bay"), không mã chống
+> giả, in dòng "Vé có giá trị thanh toán tương đương tiền mặt. Mất vé không cấp
+> lại." Bỏ liên khách giữ và hai QR Google/Tripadvisor.
+>
 > **SA PA — MỘT LIÊN DUY NHẤT** (chủ 17–18/09): không liên khách giữ,
 > không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông, đầu vé **SAPA
 > PARAGLIDING · BOARDING TICKET** với **logo khỉ Sa Pa** (bản xám tương phản

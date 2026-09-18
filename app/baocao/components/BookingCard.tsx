@@ -1125,8 +1125,8 @@ function ReprintTicket({
     if (!khongGioiHan && reason.trim().length < 5) return setError("Ghi rõ lý do (ít nhất 5 ký tự): khách làm mất vé, máy in kẹt giấy…");
     setBusy(true);
     setError(null);
-    /** Sa Pa (chủ 18/09): in lại cũng qua KHUNG XEM VÉ (Lưu · Chia sẻ · In) — không mở tab trước. */
-    const laSapa = normalizeSpot(spot) === "sapa";
+    /** Điểm quét mã (chủ 18/09): in lại cũng qua KHUNG XEM VÉ (Lưu · Chia sẻ · In) — không mở tab trước. */
+    const laSapa = coQuetVe(spot, booking);
     /** Mở tab in đồng bộ trước `await` — điện thoại chặn cửa sổ mở sau khi gọi mạng. */
     const tab = coInVe(spot) && !laSapa ? moTabIn() : null;
     try {
@@ -5494,8 +5494,8 @@ export function BookingTodayBanner({
           }
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
-            /** Lưới an toàn: Sa Pa KHÔNG BAO GIỜ in thẳng từ đây — luôn qua danh sách mã. */
-            if (normalizeSpot(spot) === "sapa") {
+            /** Lưới an toàn: điểm quét mã KHÔNG BAO GIỜ in thẳng từ đây — luôn qua danh sách mã. */
+            if (coQuetVe(spot, b)) {
               setVeModal(b);
               return;
             }
@@ -5524,7 +5524,7 @@ export function BookingTodayBanner({
           b.ticketIssued
             ? `Đã xuất vé${b.ticketIssuedBy ? ` (${b.ticketIssuedBy})` : ""} — bấm để bỏ tích nếu lỡ tay`
             : coInVe(spot)
-              ? `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} bộ, ` : ""}mỗi bộ 3 liên: vé bay · vé xe · vé đồ uống.`
+              ? `In vé cho khách và đánh dấu đã xuất. ${b.guestCount > 1 ? `Đoàn ${b.guestCount} khách → in ${b.guestCount} bộ, ` : ""}${normalizeSpot(spot) === "khau-pha" ? "mỗi bộ 3 liên: vé bay dù (QR) · vé đồ uống · vé xe ôm." : "mỗi khách một vé bay có mã QR."}`
               : "Đánh dấu đã xuất vé (điểm này chưa in vé bằng máy)."
         }
       >
@@ -5552,13 +5552,13 @@ export function BookingTodayBanner({
        * chỉ còn ý nghĩa "in lại không hỏi lý do, không giới hạn".
        */}
       {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
-        normalizeSpot(spot) === "sapa" ? (
+        coQuetVe(spot, b) ? (
           <Button
             type="button"
             variant="ghost"
             className="h-7 bg-white px-2 text-xs font-semibold text-slate-600"
             onClick={() => setVeModal(b)}
-            title="In lại vé Sa Pa: soát danh sách mã / dịch vụ rồi xem vé — Lưu ảnh · Chia sẻ · In vé"
+            title="In lại vé: soát danh sách mã / dịch vụ rồi xem vé — Lưu ảnh · Chia sẻ · In vé"
           >
             🖨 In lại
           </Button>
@@ -5602,11 +5602,12 @@ export function BookingTodayBanner({
   const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>) => {
     const dangCap = !bk0.veQr;
     /**
-     * SA PA (chủ 18/09): cấp mã xong KHÔNG in ngay mà bày KHUNG XEM VÉ —
-     * khách chụp màn hình được, ba nút Lưu ảnh · Chia sẻ · In vé. Điểm
-     * khác giữ nếp cũ: mở tab in đồng bộ trong cú bấm rồi in luôn.
+     * ĐIỂM QUÉT MÃ (Sa Pa 18/09, từ đó cả Hà Nội + Khau Phạ): cấp mã xong
+     * KHÔNG in ngay mà bày KHUNG XEM VÉ — khách chụp màn hình được, ba nút
+     * Lưu ảnh · Chia sẻ · In vé. Điểm không quét mã (nếu có) giữ nếp cũ: mở
+     * tab in đồng bộ trong cú bấm rồi in luôn.
      */
-    const laSapa = normalizeSpot(spot) === "sapa";
+    const laSapa = coQuetVe(spot, bk0);
     const tab = dangCap && coInVe(spot) && !laSapa ? moTabIn() : null;
     try {
       const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, {

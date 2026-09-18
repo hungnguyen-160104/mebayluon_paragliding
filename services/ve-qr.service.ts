@@ -14,8 +14,7 @@ import {
   veQrText,
   type DichVuKhach,
   type DichVuVe,
-  type TrangThaiMa,
-} from "@/lib/baobay/ve-qr";
+  type TrangThaiMa, loaiVePhuCua } from "@/lib/baobay/ve-qr";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { assertBookingUnlocked, assertSpotAllowed, BaobayError, toBookingDTO } from "@/services/baobay.service";
 
@@ -150,7 +149,12 @@ export async function quetVe(session: BaobaySession, spotRaw: string, input: { t
   const date = String(input.date ?? "");
   if (!isDateKey(date)) throw new BaobayError("Chọn ngày bay trước khi quét", 400);
   const ma = parseVeQrText(input.text, date);
-  if (!ma) throw new BaobayError("Không phải mã vé của hệ thống (cần dạng “22/12/2026 #3.2”)", 400);
+  if (!ma) {
+    /** Vé phụ Khau Phạ (đồ uống / xe ôm) có QR riêng — nói rõ để người quét tìm đúng VÉ BAY DÙ. */
+    const phu = loaiVePhuCua(input.text);
+    if (phu) throw new BaobayError(`Đây là ${phu === "nuoc" ? "VÉ ĐỒ UỐNG" : "VÉ XE ÔM"} của khách, không phải vé bay — quét mã trên VÉ BAY DÙ`, 400);
+    throw new BaobayError("Không phải mã vé của hệ thống (cần dạng “22/12/2026 #3.2”)", 400);
+  }
   if (ma.spot && ma.spot !== spot) throw new BaobayError(`Mã này của điểm ${ma.spot}, không phải ${spot}`, 400);
 
   const doc = await timBooking(spot, ma.ngay, ma.so);

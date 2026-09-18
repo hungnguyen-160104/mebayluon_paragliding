@@ -29,8 +29,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { dichVuChu, nhanVe, veQrText } from "@/lib/baobay/ve-qr";
-import { KHAU_PHA_TAKEOFF_MAP_URL, PPG_TRIPADVISOR_REVIEW_URL, SAPA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
+import { dichVuChu, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
@@ -41,43 +40,14 @@ import { apiGet, apiPost } from "./client-api";
 /** Khổ giấy máy in nhiệt Gainscha B300 ở quầy. */
 const PAPER_WIDTH_MM = 80;
 
-const KIND_LABEL: Record<string, string> = { pg: "Dù lượn (PG)", ppg: "Dù có động cơ (PPG)", m650: "Mô tô bay 650m", m850: "Mô tô bay 850m" };
 
 /** Chỉ hai điểm này in vé (chủ 12/09). Điểm khác vẫn tích "đã xuất vé" như cũ, không in. */
-export const DIEM_IN_VE = new Set(["khau-pha", "sapa"]);
+/** Cả ba điểm in vé nhiệt (Hà Nội thêm 18/09: "vé Hà Nội làm giống Sa Pa"). */
+export const DIEM_IN_VE = new Set(["khau-pha", "sapa", "ha-noi"]);
 export function coInVe(spot: string): boolean {
   return DIEM_IN_VE.has(spot);
 }
 
-/**
- * HAI LINK XIN ĐÁNH GIÁ theo điểm: Google Maps (trang đánh giá của bãi) và
- * Tripadvisor (trang review của tour). Cùng nguồn với thẻ đối tác ở trang điểm
- * bay — sửa một chỗ là vé theo.
- */
-const REVIEW_LINKS: Record<string, { google: string; tripadvisor: string; tripadvisorPpg?: string }> = {
-  "khau-pha": {
-    google: KHAU_PHA_TAKEOFF_MAP_URL,
-    /** Khách bay PG → trang review tour dù lượn; bay PPG → trang review tour dù động cơ (chủ 12/09). */
-    tripadvisor:
-      "https://www.tripadvisor.com/AttractionProductReview-g23389438-d34108763-Mu_Cang_Chai_Paragliding_Experience_with_Free_Accommodation-Cao_Pha_Yen_Bai_Prov.html",
-    /** Chủ 12/09: link VIẾT ĐÁNH GIÁ thẳng cho dịch vụ paramotor — cùng link với bong bóng ở trang /ppg. */
-    tripadvisorPpg: PPG_TRIPADVISOR_REVIEW_URL,
-  },
-  sapa: {
-    google: SAPA_TAKEOFF_MAP_URL,
-    tripadvisor:
-      "https://www.tripadvisor.com/Attraction_Review-g311304-d33242005-Reviews-Paragliding_Experience_in_Sapa_Hotel_Pickup_and_Drop-off-Sapa_Lao_Cai_Province.html",
-  },
-};
-
-/** Link Tripadvisor đúng loại bay của booking. */
-export function linkTripadvisor(spot: string, flightKind: string): string {
-  const l = REVIEW_LINKS[spot] ?? REVIEW_LINKS["khau-pha"];
-  return flightKind === "ppg" && l.tripadvisorPpg ? l.tripadvisorPpg : l.tripadvisor;
-}
-
-/** Đồ uống miễn phí tại bãi — chủ liệt kê 12/09. */
-/** Ngắn để nằm trọn MỘT dòng 72mm ở cỡ chữ 9,5px. */
 const DO_UONG = ["Cà phê", "Trà chanh/đào", "Nước lọc/chai", "Bia/nước ngọt"];
 
 /**
@@ -87,28 +57,6 @@ const DO_UONG = ["Cà phê", "Trà chanh/đào", "Nước lọc/chai", "Bia/nư�
 const LUU_Y_1 = "Vé có giá trị thanh toán tương đương tiền mặt.";
 const LUU_Y_2 = "Mất vé không cấp lại.";
 
-/** Điều lưu ý cho khách trên liên khách giữ — mỗi điều MỘT dòng ngắn (chủ 12/09). */
-const LUU_Y_KHACH = [
-  /**
-   * Mỗi dòng ≤ 44 ký tự.
-   *
-   * Chữ trên vé đã nâng lên cỡ đọc được trên giấy nhiệt (chủ 13/09: "một số
-   * chữ quá bé, in bị nhoè"), nên dòng dài như trước bị đẩy tràn khỏi mép vé.
-   * Cắt ngắn còn hơn để chữ to mà mất đuôi. `.luuy-khach li` vẫn cho xuống
-   * dòng làm lưới an toàn, phòng khi đổi chữ mà quên đếm.
-   */
-  "Điện thoại còn pin, trống ~10GB chép ảnh",
-  "Nên đeo kính râm, mang áo khoác mỏng",
-  "Giày thể thao, đồ gọn; không váy, cao gót",
-  "Mang theo CCCD / hộ chiếu",
-  "Không mang đồ sắc nhọn, cồng kềnh, đồ quý",
-  /** Lời nhắc bắt buộc trên mọi vé (chủ 17/09) — cắt thành dòng ngắn cho vừa khổ 80mm. */
-  "Thời tiết bay có thể thay đổi bất ngờ",
-  "Gọi xác nhận thời tiết trước khi xuất phát",
-  "Phản ánh dịch vụ: gọi thẳng Hotline",
-  "0964.073.555 – Mr. Mỹ, Phi công trưởng",
-  "0385.907.789 – Ms. Duyên, Điều phối bay",
-];
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */
 function extrasOf(b: BookingDTO, guestNo?: number): string[] {
@@ -118,7 +66,14 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
    */
   if (guestNo && b.veQr?.khach?.length) {
     const k = b.veQr.khach.find((x) => x.guestNo === guestNo);
-    if (k) return dichVuChu(k.dichVu);
+    if (k) {
+      /** Dịch vụ CẤP ĐOÀN (không chia từng khách) vẫn phải lên vé bay ở Khau Phạ: hoàng hôn, kéo cờ, PPG. */
+      const dv = dichVuChu(k.dichVu);
+      if (b.sunset > 0) dv.push("Hoàng hôn");
+      if (b.flagFlight > 0) dv.push("Kéo cờ");
+      if (b.flightKind === "ppg") dv.push("PPG");
+      return dv;
+    }
   }
   /** Chỉ in TÊN dịch vụ, không in "×1": có thì in, không có thì bỏ — chủ 12/09. */
   const out: string[] = [];
@@ -209,41 +164,6 @@ async function qrSvg(text: string): Promise<string> {
   return QRCode.toString(text, { type: "svg", margin: 0, errorCorrectionLevel: "M" });
 }
 
-type QrBo = { google: string; tripadvisor: string };
-
-/**
- * KHỐI MÃ VÉ QR (chủ 17/09): QR chứa "22/12/2026 #3.2 SAPA" — ngày cấp, số
- * booking, số khách; bên dưới in tên khách (chữ nhỏ) và dịch vụ đi kèm. Phi
- * công quét mã này trước khi bay. Chỉ có ở booking đã cấp mã (b.veQr).
- */
-function khoiQrVe(b: BookingDTO, guestNo: number, svg: string | undefined): string {
-  if (!svg || !b.veQr) return "";
-  const dv = extrasOf(b, guestNo);
-  return `
-    <div class="qr-ve">
-      <div class="qr-ve-anh">${svg}</div>
-      <div class="qr-ve-chu">
-        <div class="qr-ve-ma">${esc(formatDateKeyVN(b.veQr.ngay))} ${esc(nhanVe(b.veQr.so, guestNo, b.guestCount))}</div>
-        <div class="qr-ve-ten">${esc(tenKhachVe(b, guestNo))}</div>
-        <div class="qr-ve-dv">${dv.length ? esc(dv.join(" · ")) : "Bay dù"}</div>
-        <div class="qr-ve-nhan">Phi công quét mã trước khi bay</div>
-      </div>
-    </div>`;
-}
-
-function dau(spot: string, lien: string): string {
-  return `
-    <div class="lien">${esc(lien)}</div>
-    <div class="dau">
-      <img class="logo" src="/logo-mbl-in.png" alt="" />
-      <div class="ten">MEBAYLUON PARAGLIDING<br/><small>${esc(spotName(spot))}</small></div>
-    </div>`;
-}
-
-function chan(): string {
-  return `<div class="luuy">${esc(LUU_Y_1)}<br/>${esc(LUU_Y_2)}</div>`;
-}
-
 /** Mã chống sao chép của khách thứ n — cấp ở máy chủ lúc in lần đầu; chưa có thì in "····" để lộ ra là vé chưa qua sổ. */
 export function maVeCua(b: BookingDTO, guestNo: number): string {
   const d = (b.ticketSecurity ?? []).find((x) => x.guestNo === guestNo);
@@ -251,65 +171,63 @@ export function maVeCua(b: BookingDTO, guestNo: number): string {
 }
 
 /**
- * Ô số thứ tự: biểu tượng của liên đứng SÁT bên trái con số (chủ 12/09), MÃ
- * CHỐNG SAO CHÉP đứng bên phải, chữ đơn cách cho dễ đọc từng ký tự.
+ * THƯƠNG HIỆU trên vé nhiệt theo điểm: Sa Pa mang tên và web Sapa Paragliding;
+ * Hà Nội / Khau Phạ mang Mebayluon (chủ 18/09: "vé Hà Nội và Khau Phạ làm
+ * giống Sa Pa"). Lời dặn: Sa Pa khách nước ngoài — tiếng Anh; hai điểm kia
+ * song ngữ Việt trước.
  */
-function khoiSo(b: BookingDTO, guestNo: number, icon: keyof typeof ICON, nho = false): string {
+function thuongHieuVe(spot: string): { logo: string; ten: string; web: string; luuY: string; diem: string } {
+  if (normalizeSpot(spot) === "sapa") {
+    return { logo: "/logo-sapa-in.png", ten: "SAPA PARAGLIDING", web: "www.paraglidingsapa.com", luuY: "Please keep this ticket safe and hand it to your pilot before the flight.", diem: "" };
+  }
+  return {
+    logo: "/logo-mbl-in.png",
+    ten: "MEBAYLUON PARAGLIDING",
+    web: "www.mebayluon.com",
+    luuY: "Giữ vé và đưa phi công trước khi bay · Keep this ticket and hand it to your pilot before the flight.",
+    diem: spotName(spot).toUpperCase(),
+  };
+}
+
+/** Đầu vé: logo + tên hãng + dòng phụ (loại vé · điểm). */
+function dauTem(th: ReturnType<typeof thuongHieuVe>, phu: string): string {
   return `
-    <div class="so${nho ? " nho" : ""}">
-      <span class="so-icon">${ICON[icon]}</span>
-      <span class="so-tri">${esc(soThuTuVe(b, guestNo))}</span>
-      <span class="so-ma"><span class="so-ma-nhan">MÃ</span>${esc(maVeCua(b, guestNo))}</span>
+    <div class="sp-dau">
+      <img class="sp-logo" src="${th.logo}" alt="" />
+      <div class="sp-hang">
+        <div class="sp-ten">${esc(th.ten)}</div>
+        <div class="sp-phu">${esc(phu)}${th.diem ? ` · ${esc(th.diem)}` : ""}</div>
+      </div>
     </div>`;
 }
 
-/** LIÊN 1 — vé bay dù (quầy / phi công). */
-function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
-  const extras = extrasOf(b, guestNo);
-  return `
-  <section class="ve">
-    ${dau(spot, "LIÊN 1 — VÉ BAY DÙ")}
-    ${khoiSo(b, guestNo, "du")}
-    <table>
-      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}${b.guestCount > 1 ? ` · ${guestNo}/${esc(b.guestCount)}` : ""}</td></tr>
-      <tr><td>Khách</td><td class="p${tenKhachVe(b, guestNo).length > 22 ? " dai" : ""}">${esc(tenKhachVe(b, guestNo))}</td></tr>
-      <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
-      <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
-    </table>
-    ${khoiQrVe(b, guestNo, qrVe)}
-    ${chan()}
-  </section>`;
+/** Cụm số thứ tự "22.9#1.2" (phần ngày nhỏ hơn) — dùng chung ba liên. */
+function soTem(b: BookingDTO, guestNo: number): string {
+  const stt = soThuTuVeSapa(b, guestNo);
+  return `${stt.ngay ? `<span class="sp-so-ngay">${esc(stt.ngay)}</span>` : ""}${esc(stt.so)}`;
 }
 
 /**
- * SA PA — MỘT LIÊN DUY NHẤT khổ 80×80 mm (chủ 17/09): không liên khách giữ,
- * không đồ uống, không xe trung chuyển — chỉ một vé có số thứ tự, mã chống
- * sao chép, tên khách VIẾT TẮT một phần và MÃ QR to để phi công quét. Chiều
- * cao cố định 74 mm nội dung (80 mm giấy trừ lề) — mỗi vé đúng một tờ.
+ * VÉ BAY DÙ — MỘT LIÊN khổ 80 mm, thiết kế Sa Pa (chủ 17–18/09), nay dùng cho
+ * CẢ BA ĐIỂM: số thứ tự "22.9#1.2" + mã chống sao chép trong khung viền đậm,
+ * MÃ QR to để phi công quét, ngày + giờ hẹn, tên khách theo SỔ BẢO HIỂM viết
+ * tắt một phần, ô dịch vụ đi kèm của đúng khách ấy. Cao theo nội dung, các vé
+ * nối tiếp trên giấy cuộn, cắt sau mỗi vé.
+ *
+ * Bố cục (ảnh in thật 18/09): số + mã từng "out box" vì hộp inline-flex lệch
+ * dòng nền khi html2canvas vẽ → khung viền đậm, hai cột rõ; chữ đậm ≥ 800 cho
+ * khỏi nhoè trên giấy nhiệt, đường kẻ 2px thay nét chấm mảnh.
  */
-function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): string {
+function lienBoarding(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
+  const th = thuongHieuVe(spot);
   const extras = extrasOf(b, guestNo);
   const ten = vietTatTen(tenKhachBaoHiem(b, guestNo));
   const gioHen = b.expectedTime ? esc(b.expectedTime) : "";
-  const stt = soThuTuVeSapa(b, guestNo);
-  /**
-   * THIẾT KẾ LẠI (chủ 18/09, ảnh in thật): số + mã từng "out box" vì hộp mã
-   * inline-flex lệch dòng nền khi html2canvas vẽ; khoảng trống lớn vì vé ép cao
-   * 74 mm với thân "flex: 1". Nay: DẢI ĐEN chứa số thứ tự và mã (chữ trắng, hai
-   * cột rõ ràng, không còn hộp lồng hộp), thân gọn theo nội dung, chữ đậm ≥ 800
-   * cho khỏi nhoè trên giấy nhiệt, đường kẻ 2px thay nét chấm mảnh.
-   */
   return `
-  <section class="ve sapa">
-    <div class="sp-dau">
-      <img class="sp-logo" src="/logo-sapa-in.png" alt="" />
-      <div class="sp-hang">
-        <div class="sp-ten">SAPA PARAGLIDING</div>
-        <div class="sp-phu">BOARDING TICKET</div>
-      </div>
-    </div>
+  <section class="ve tem">
+    ${dauTem(th, "BOARDING TICKET")}
     <div class="sp-so">
-      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du}</span><span class="sp-so-tri">${stt.ngay ? `<span class="sp-so-ngay">${esc(stt.ngay)}</span>` : ""}${esc(stt.so)}</span></div>
+      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du}</span><span class="sp-so-tri">${soTem(b, guestNo)}</span></div>
       <div class="sp-so-phai"><span class="sp-ma-nhan">CODE</span><span class="sp-ma">${esc(maVeCua(b, guestNo))}</span></div>
     </div>
     <div class="sp-than">
@@ -320,72 +238,39 @@ function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): s
         ${extras.length ? `<div class="sp-dv">${extras.map((x) => `<span>${esc(x)}</span>`).join("")}</div>` : ""}
       </div>
     </div>
-    <div class="sp-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><span>www.paraglidingsapa.com</span></div>
-    <div class="sp-luuy">Please keep this ticket safe and hand it to your pilot before the flight.</div>
+    <div class="sp-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><span>${esc(th.web)}</span></div>
+    <div class="sp-luuy">${esc(th.luuY)}</div>
   </section>`;
 }
 
-/** LIÊN 2 — khách giữ: đặt vé + dịch vụ + mã booking + QR đánh giá + điều lưu ý. */
 /**
- * LIÊN 2 — khách giữ. KHÔNG in dòng "vé = tiền mặt / mất không cấp lại" (chủ
- * 12/09): liên này khách mang về làm kỷ niệm và quét QR, không phải liên đổi
- * dịch vụ nên doạ mất vé là thừa. Ba liên kia vẫn giữ.
+ * VÉ PHỤ KHAU PHẠ (chủ 18/09): cùng một bộ với vé bay, mỗi khách thêm VÉ ĐỒ
+ * UỐNG và VÉ XE ÔM. Cùng kiểu dáng vé bay nhưng KHÔNG có mã chống sao chép và
+ * KHÔNG có dịch vụ; QR nhỏ hơn, chỉ mang "NUOC 22/09/2026 #1.2" / "XE …" —
+ * khác vé bay nên máy quét không lẫn (xem `veQrPhuText`).
  */
-function lienKhach(b: BookingDTO, spot: string, guestNo: number, qr: QrBo, luc: string, qrVe?: string): string {
-  const extras = extrasOf(b, guestNo);
-  const ma = (b.bookingCode || "").trim();
+function lienPhu(b: BookingDTO, spot: string, guestNo: number, luc: string, loai: LoaiVePhu, qr?: string): string {
+  const th = thuongHieuVe(spot);
+  const ten = vietTatTen(tenKhachBaoHiem(b, guestNo));
+  const nhan = loai === "nuoc" ? "VÉ ĐỒ UỐNG" : "VÉ XE ÔM";
+  const ghi = loai === "nuoc" ? `Đổi MỘT đồ uống tại quầy bãi: ${DO_UONG.join(" · ")}` : "Đưa xe ôm khi lên xe";
   return `
-  <section class="ve">
-    ${dau(spot, "LIÊN 2 — KHÁCH GIỮ")}
-    ${khoiSo(b, guestNo, "du", true)}
-    <table>
-      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</td></tr>
-      <tr><td>Khách</td><td class="p${tenKhachVe(b, guestNo).length > 22 ? " dai" : ""}">${esc(tenKhachVe(b, guestNo))}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</td></tr>
-      ${ma ? `<tr><td>Booking</td><td class="p">${esc(ma)}</td></tr>` : ""}
-      <tr><td>Loại bay</td><td class="p">${esc(KIND_LABEL[b.flightKind] ?? b.flightKind)}</td></tr>
-      <tr><td>Dịch vụ</td><td class="p${extras.join(" · ").length > 26 ? " dai" : ""}">${extras.length ? esc(extras.join(" · ")) : "Bay dù"}</td></tr>
-      <tr><td>In vé</td><td class="p">${esc(luc)}</td></tr>
-    </table>
-    ${khoiQrVe(b, guestNo, qrVe)}
-    <div class="ghi">Lưu ý trước khi bay:</div>
-    <ul class="luuy-khach">${LUU_Y_KHACH.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-    <div class="qr-nhan">Bay xong, cho chúng tôi một đánh giá nhé</div>
-    <div class="qr">
-      <figure><div class="qr-anh">${qr.google}</div><figcaption>Google</figcaption></figure>
-      <figure><div class="qr-anh">${qr.tripadvisor}</div><figcaption>Tripadvisor ${b.flightKind === "ppg" ? "PPG" : "PG"}</figcaption></figure>
+  <section class="ve tem phu">
+    ${dauTem(th, nhan)}
+    <div class="sp-so">
+      <div class="sp-so-trai"><span class="sp-so-icon">${ICON[loai === "nuoc" ? "uong" : "xe"]}</span><span class="sp-so-tri">${soTem(b, guestNo)}</span></div>
+      <div class="sp-so-phai"><span class="sp-ma-nhan">${loai === "nuoc" ? "ĐỒ UỐNG" : "XE ÔM"}</span></div>
     </div>
-  </section>`;
-}
-
-/** LIÊN 4 — vé xe trung chuyển. */
-function lienXe(b: BookingDTO, spot: string, guestNo: number, luc: string): string {
-  return `
-  <section class="ve">
-    ${dau(spot, "LIÊN 4 — VÉ XE TRUNG CHUYỂN")}
-    ${khoiSo(b, guestNo, "xe", true)}
-    <table>
-      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}</td></tr>
-      <tr><td>Khách</td><td class="p">${esc(tenKhachVe(b, guestNo))}</td></tr>
-      <tr><td>Xuất vé</td><td class="p">${esc(luc)}</td></tr>
-    </table>
-    <div class="ghi">Đưa lái xe trung chuyển khi lên xe</div>
-    ${chan()}
-  </section>`;
-}
-
-/** LIÊN 3 — vé đồ uống miễn phí. */
-function lienNuoc(b: BookingDTO, spot: string, guestNo: number): string {
-  return `
-  <section class="ve">
-    ${dau(spot, "LIÊN 3 — ĐỒ UỐNG MIỄN PHÍ")}
-    ${khoiSo(b, guestNo, "uong", true)}
-    <table>
-      <tr><td>Khách</td><td class="p">${esc(tenKhachVe(b, guestNo))}</td></tr>
-      <tr><td>Ngày bay</td><td class="p">${esc(formatDateKeyVN(b.flightDate))}</td></tr>
-    </table>
-    <div class="ghi">Đổi MỘT đồ uống tại quầy bãi:</div>
-    <div class="uong">${DO_UONG.map((d) => esc(d)).join(" · ")}</div>
-    ${chan()}
+    <div class="sp-than">
+      ${qr ? `<div class="sp-qr nho">${qr}<div class="sp-qr-nhan">${loai === "nuoc" ? "QUẦY QUÉT" : "XE ÔM QUÉT"}</div></div>` : ""}
+      <div class="sp-phai">
+        <div class="sp-ngay">${esc(formatDateKeyVN(b.flightDate))}</div>
+        <div class="sp-khach${ten.length > 18 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? `<span class="sp-stt"> ${guestNo}/${esc(b.guestCount)}</span>` : ""}</div>
+        <div class="sp-ghi">${esc(ghi)}</div>
+      </div>
+    </div>
+    <div class="sp-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><span>${esc(th.web)}</span></div>
+    <div class="sp-luuy">${esc(LUU_Y_1)} ${esc(LUU_Y_2)}</div>
   </section>`;
 }
 
@@ -453,8 +338,8 @@ const CSS = `
   /* ===== SA PA — một liên gọn, kiểu hiện đại (chủ 18/09) =====
      Cao theo NỘI DUNG (không ép 74 mm — hết khoảng trống), các vé nối liền trên giấy cuộn,
      cách nhau vạch đứt để xé. Không ngắt trang giữa các vé. */
-  .ve.sapa { display: block; padding: 1mm 0 3mm; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
-  .ve.sapa + .ve.sapa { margin-top: 3mm; border-top: 1px dashed #000; padding-top: 3mm; }
+  .ve.tem { display: block; padding: 1mm 0 3mm; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
+  .ve.tem + .ve.tem { margin-top: 3mm; border-top: 1px dashed #000; padding-top: 3mm; }
   .sp-dau { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
   /* Logo gốc VUÔNG (300×300); html2canvas không hiểu object-fit nên khung phải vuông, không thì bóp méo (chủ 18/09) */
   .sp-logo { width: 10mm; height: 10mm; object-fit: contain; flex: none; }
@@ -493,6 +378,10 @@ const CSS = `
   /* Chân: giãn ký tự để "Printed 12:27 18/9" không dính chữ khi mực nhoè */
   .sp-cuoi { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 3px; border-top: 2px solid #000; font-size: 11px; font-weight: 800; letter-spacing: .6px; word-spacing: 1.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .sp-luuy { margin-top: 3px; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; white-space: normal; }
+  /* Vé phụ Khau Phạ: QR nhỏ hơn (chỉ ngày + số), dòng ghi chú đổi nước / xe ôm */
+  .sp-qr.nho { flex-basis: 22mm; }
+  .sp-qr.nho svg { width: 22mm; height: 22mm; }
+  .sp-ghi { font-size: 11px; font-weight: 800; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
 `;
 
 /**
@@ -501,25 +390,34 @@ const CSS = `
  */
 export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<string> {
   const guests = Math.max(1, b.guestCount || 1);
-  const links = REVIEW_LINKS[spot] ?? REVIEW_LINKS["khau-pha"];
-  const [google, tripadvisor] = await Promise.all([qrSvg(links.google), qrSvg(linkTripadvisor(spot, b.flightKind))]);
-  const qr = { google, tripadvisor };
   const luc = gioIn();
-  /** Mã vé QR từng khách (Sa Pa) — sinh trước, mỗi khách một ảnh; điểm không cấp mã thì bỏ. */
+  const laKhauPha = normalizeSpot(spot) === "khau-pha";
+  /** Mã vé QR từng khách — sinh trước, mỗi khách một ảnh; Khau Phạ thêm QR vé nước + vé xe. */
   const qrVe = new Map<number, string>();
+  const qrNuoc = new Map<number, string>();
+  const qrXe = new Map<number, string>();
   if (b.veQr?.ngay) {
+    const v = b.veQr;
     await Promise.all(
       Array.from({ length: guests }, (_, i) => i + 1).map(async (g) => {
         /** Đuôi QR = mã chống giả của khách (chủ 18/09) — chưa có mã thì rơi về mã điểm. */
-        qrVe.set(g, await qrSvg(veQrText(spot, b.veQr!.ngay, b.veQr!.so, g, maVeCua(b, g))));
+        qrVe.set(g, await qrSvg(veQrText(spot, v.ngay, v.so, g, maVeCua(b, g))));
+        if (laKhauPha) {
+          qrNuoc.set(g, await qrSvg(veQrPhuText("nuoc", v.ngay, v.so, g)));
+          qrXe.set(g, await qrSvg(veQrPhuText("xe", v.ngay, v.so, g)));
+        }
       }),
     );
   }
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
-    /** Sa Pa: một liên duy nhất 80×80 mm (chủ 17/09); Khau Phạ giữ bộ bốn liên. */
-    if (normalizeSpot(spot) === "sapa") pages.push(lienSapa(b, g, luc, qrVe.get(g)));
-    else pages.push(lienBay(b, spot, g, luc, qrVe.get(g)), lienKhach(b, spot, g, qr, luc, qrVe.get(g)), lienNuoc(b, spot, g), lienXe(b, spot, g, luc));
+    /**
+     * Sa Pa, Hà Nội: MỘT liên vé bay. Khau Phạ: BA liên (chủ 18/09) — vé bay dù
+     * có QR phi công quét, vé đồ uống, vé xe ôm (hai liên sau QR riêng, chỉ
+     * ngày + số booking + số khách).
+     */
+    pages.push(lienBoarding(b, spot, g, luc, qrVe.get(g)));
+    if (laKhauPha) pages.push(lienPhu(b, spot, g, luc, "nuoc", qrNuoc.get(g)), lienPhu(b, spot, g, luc, "xe", qrXe.get(g)));
   }
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8" />
 <title>Vé bay ${esc(b.bookingCode || b.daySeq)}</title>
@@ -720,8 +618,8 @@ export function htmlBanInThang(html: string): string {
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
      /* Đệm dưới 14 chấm: dòng "the flight." có chữ g/p thò xuống, đệm 2 chấm bị ảnh cắt mất chân chữ (chủ 18/09) */
      /* Khoảng trống đầu vé giảm một nửa (chủ 18/09) */
-     .ve.sapa { padding: 3px 10px 14px !important; }
-     .ve.sapa + .ve.sapa { margin-top: 9px !important; padding-top: 9px !important; border-top-width: 2px !important; }
+     .ve.tem { padding: 3px 10px 14px !important; }
+     .ve.tem + .ve.tem { margin-top: 9px !important; padding-top: 9px !important; border-top-width: 2px !important; }
      .sp-dau { gap: 12px !important; margin-bottom: 6px !important; }
      .sp-logo { width: 76px !important; height: 76px !important; }
      .sp-ten { font-size: 32px !important; }
@@ -738,6 +636,9 @@ export function htmlBanInThang(html: string): string {
      .sp-qr { flex-basis: 236px !important; }
      .sp-qr svg { width: 236px !important; height: 236px !important; }
      .sp-qr-nhan { font-size: 16px !important; margin-top: 3px !important; }
+     .sp-qr.nho { flex-basis: 170px !important; }
+     .sp-qr.nho svg { width: 170px !important; height: 170px !important; }
+     .sp-ghi { font-size: 20px !important; }
      .sp-phai { gap: 10px !important; }
      .sp-ngay { font-size: 34px !important; }
      .sp-gio { font-size: 26px !important; padding: 2px 10px !important; border-width: 3px !important; margin-left: 10px !important; vertical-align: 4px !important; }
