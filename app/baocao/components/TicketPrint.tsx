@@ -265,24 +265,37 @@ function lienBay(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe
 function lienSapa(b: BookingDTO, guestNo: number, luc: string, qrVe?: string): string {
   const extras = extrasOf(b, guestNo);
   const ten = vietTatTen(tenKhachVe(b, guestNo));
-  const dv = extras.length ? extras.join(" · ") : "Bay dù";
+  const gioHen = b.expectedTime ? esc(b.expectedTime) : "";
+  /**
+   * THIẾT KẾ LẠI (chủ 18/09, ảnh in thật): số + mã từng "out box" vì hộp mã
+   * inline-flex lệch dòng nền khi html2canvas vẽ; khoảng trống lớn vì vé ép cao
+   * 74 mm với thân "flex: 1". Nay: DẢI ĐEN chứa số thứ tự và mã (chữ trắng, hai
+   * cột rõ ràng, không còn hộp lồng hộp), thân gọn theo nội dung, chữ đậm ≥ 800
+   * cho khỏi nhoè trên giấy nhiệt, đường kẻ 2px thay nét chấm mảnh.
+   */
   return `
   <section class="ve sapa">
-    <div class="dau">
-      <img class="logo sapa-logo" src="/logo-sapa-in.png" alt="" />
-      <div class="ten">SAPA PARAGLIDING<br/><small>BOARDING TICKET</small></div>
-    </div>
-    ${khoiSo(b, guestNo, "du")}
-    <div class="sapa-than">
-      ${qrVe && b.veQr ? `<div class="sapa-qr">${qrVe}<div class="sapa-qr-nhan">Scan before flight</div></div>` : ""}
-      <div class="sapa-phai">
-        <div class="sapa-ngay">${esc(formatDateKeyVN(b.flightDate))}${b.expectedTime ? ` · ${esc(b.expectedTime)}` : ""}</div>
-        <div class="sapa-ten${ten.length > 16 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? ` (${guestNo}/${esc(b.guestCount)})` : ""}</div>
-        ${extras.length ? `<div class="sapa-dv">${esc(dv)}</div>` : ""}
+    <div class="sp-dau">
+      <img class="sp-logo" src="/logo-sapa-in.png" alt="" />
+      <div class="sp-hang">
+        <div class="sp-ten">SAPA PARAGLIDING</div>
+        <div class="sp-phu">BOARDING TICKET · paraglidingsapa.com</div>
       </div>
     </div>
-    <div class="sapa-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><b>www.paraglidingsapa.com</b></div>
-    <div class="luuy">Please keep this ticket safe and hand it to your pilot before the flight.</div>
+    <div class="sp-so">
+      <div class="sp-so-trai"><span class="sp-so-icon">${ICON.du.replace(/#000/g, "#fff")}</span><span class="sp-so-tri">${esc(soThuTuVe(b, guestNo))}</span></div>
+      <div class="sp-so-phai"><span class="sp-ma-nhan">CODE</span><span class="sp-ma">${esc(maVeCua(b, guestNo))}</span></div>
+    </div>
+    <div class="sp-than">
+      ${qrVe && b.veQr ? `<div class="sp-qr">${qrVe}<div class="sp-qr-nhan">SCAN BEFORE FLIGHT</div></div>` : ""}
+      <div class="sp-phai">
+        <div class="sp-ngay">${esc(formatDateKeyVN(b.flightDate))}${gioHen ? `<span class="sp-gio">${gioHen}</span>` : ""}</div>
+        <div class="sp-khach${ten.length > 18 ? " dai" : ""}">${esc(ten)}${b.guestCount > 1 ? `<span class="sp-stt"> ${guestNo}/${esc(b.guestCount)}</span>` : ""}</div>
+        ${extras.length ? `<div class="sp-dv">${extras.map((x) => `<span>${esc(x)}</span>`).join("")}</div>` : ""}
+      </div>
+    </div>
+    <div class="sp-cuoi"><span>Printed ${esc(luc.slice(0, 11))}</span><span>www.paraglidingsapa.com</span></div>
+    <div class="sp-luuy">Please keep this ticket safe and hand it to your pilot before the flight.</div>
   </section>`;
 }
 
@@ -411,32 +424,41 @@ const CSS = `
   /* SA PA trên GIẤY CUỘN (chủ 18/09, ảnh chụp hộp thoại in Android "80mm Roll"): KHÔNG ngắt trang
      giữa các vé — mỗi vé một "trang" là mỗi vé một khúc cuộn dài, giấy trắng cả gang tay và đầu vé
      đầu bị cắt. Các vé nối liền nhau, cách nhau một vạch đứt để xé; vé vẫn cao đúng 74 mm. */
-  .ve.sapa { height: ${PAPER_WIDTH_MM - 6}mm; overflow: hidden; display: flex; flex-direction: column; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
-  .ve.sapa + .ve.sapa { margin-top: 3mm; }
-  .ve.sapa:not(:last-child) { border-bottom: 1px dashed #000; }
-  .ve.sapa .sapa-than { display: flex; gap: 6px; align-items: center; flex: 1; min-height: 0; margin: 1px 0 2px; }
-  .ve.sapa .sapa-qr { flex: 0 0 30mm; text-align: center; }
-  .ve.sapa .sapa-qr svg { width: 30mm; height: 30mm; display: block; }
-  .ve.sapa .sapa-qr-nhan { font-size: 11px; font-weight: 800; white-space: nowrap; margin-top: 1px; }
-  .ve.sapa .sapa-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
-  .ve.sapa .sapa-dong { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px dotted #999; padding-bottom: 1px; white-space: nowrap; }
-  .ve.sapa .sapa-dong span { color: #222; flex: none; }
-  .ve.sapa .sapa-dong b { font-weight: 800; overflow: hidden; text-overflow: clip; text-align: right; color: #000; }
-  .ve.sapa .sapa-dong b.dai { font-size: 10.5px; }
-  /* Ngày + tên đứng CẠNH QR (chủ 18/09) — cột phải rộng ~44mm, tên dài thì co chữ hoặc xuống 2 dòng */
-  /* Bản hộp thoại in (mm) cũng phải to: chủ 18/09 "mã, ngày bay, tên khách, link web, ngày in quá bé" */
-  .ve.sapa .sapa-ngay { font-size: 17px; font-weight: 800; white-space: nowrap; }
-  .ve.sapa .sapa-ten { font-size: 17px; font-weight: 900; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; border-bottom: 1px dotted #999; padding-bottom: 2px; }
-  .ve.sapa .sapa-ten.dai { font-size: 14px; }
-  .ve.sapa .so-ma { font-size: 17px; }
-  .ve.sapa .so-ma-nhan { font-size: 10px; }
-  /* Dịch vụ đi kèm nổi bật để phi công chuẩn bị (360 / flycam / cờ đỏ) */
-  .ve.sapa .sapa-dv { border: 2px solid #000; border-radius: 4px; padding: 3px 4px; font-size: 15px; font-weight: 900; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
-  /* Logo khỉ Sa Pa (bản xám tương phản cao cho máy in nhiệt) to hơn logo MBL một chút vì hình ngang */
-  .ve.sapa .sapa-logo { width: 12mm; height: 10mm; }
-  .ve.sapa .sapa-cuoi { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
-  .ve.sapa .sapa-cuoi b { font-weight: 800; letter-spacing: .2px; }
-  .ve.sapa .luuy { margin-top: 2px; font-size: 11.5px; white-space: normal; line-height: 1.25; }
+  /* ===== SA PA — một liên gọn, kiểu hiện đại (chủ 18/09) =====
+     Cao theo NỘI DUNG (không ép 74 mm — hết khoảng trống), các vé nối liền trên giấy cuộn,
+     cách nhau vạch đứt để xé. Không ngắt trang giữa các vé. */
+  .ve.sapa { display: block; padding: 1mm 0 3mm; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; }
+  .ve.sapa + .ve.sapa { margin-top: 3mm; border-top: 1px dashed #000; padding-top: 3mm; }
+  .sp-dau { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .sp-logo { width: 12mm; height: 9mm; object-fit: contain; flex: none; }
+  .sp-hang { min-width: 0; line-height: 1.1; }
+  .sp-ten { font-size: 16px; font-weight: 900; letter-spacing: .6px; white-space: nowrap; }
+  .sp-phu { font-size: 10px; font-weight: 800; letter-spacing: .4px; white-space: nowrap; color: #000; margin-top: 2px; }
+  /* Dải đen: số thứ tự (trái) + mã chống giả (phải) — chữ trắng */
+  .sp-so { display: flex; align-items: stretch; background: #000; color: #fff; border-radius: 3mm; padding: 5px 8px; gap: 8px; }
+  .sp-so-trai { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+  .sp-so-icon { display: inline-flex; }
+  .sp-so-icon svg { width: 30px; height: 30px; fill: #fff; color: #fff; }
+  .sp-so-tri { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; }
+  .sp-so-phai { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; flex: none; }
+  .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; opacity: .85; line-height: 1; }
+  .sp-ma { font-family: "Courier New", ui-monospace, monospace; font-size: 22px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; white-space: nowrap; }
+  /* Thân: QR trái, chữ phải */
+  .sp-than { display: flex; gap: 7px; align-items: center; margin-top: 5px; }
+  .sp-qr { flex: 0 0 30mm; text-align: center; }
+  .sp-qr svg { width: 30mm; height: 30mm; display: block; }
+  .sp-qr-nhan { font-size: 9px; font-weight: 900; letter-spacing: .8px; white-space: nowrap; margin-top: 1px; }
+  .sp-phai { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .sp-ngay { font-size: 18px; font-weight: 900; white-space: nowrap; line-height: 1.1; }
+  .sp-gio { display: inline-block; margin-left: 6px; padding: 1px 6px; border: 2px solid #000; border-radius: 3px; font-size: 14px; font-weight: 900; vertical-align: 2px; }
+  .sp-khach { font-size: 15px; font-weight: 900; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
+  .sp-khach.dai { font-size: 13px; }
+  .sp-stt { font-weight: 800; color: #000; }
+  .sp-dv { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sp-dv span { border: 2px solid #000; border-radius: 3px; padding: 2px 6px; font-size: 13px; font-weight: 900; white-space: nowrap; }
+  /* Chân: kẻ đậm 2px thay nét chấm mảnh (nét mảnh in nhiệt nhoè) */
+  .sp-cuoi { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 3px; border-top: 2px solid #000; font-size: 11px; font-weight: 800; white-space: nowrap; }
+  .sp-luuy { margin-top: 3px; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; white-space: normal; }
 `;
 
 /**
@@ -662,20 +684,29 @@ export function htmlBanInThang(html: string): string {
   return html.replace(
     "</style>",
     `.ve { width: ${RONG_CHAM}px !important; padding: 8px 10px 14px !important; }
-     .ve.sapa { height: 640px !important; padding: 8px 10px 10px !important; }
-     .ve.sapa .dau { margin-bottom: 4px !important; }
-     .ve.sapa .sapa-logo { width: 92px !important; height: 76px !important; }
-     .ve.sapa .sapa-than { gap: 12px !important; margin: 4px 0 !important; align-items: center !important; }
-     .ve.sapa .sapa-qr { flex-basis: 236px !important; }
-     .ve.sapa .sapa-qr svg { width: 236px !important; height: 236px !important; }
-     .ve.sapa .sapa-qr-nhan { font-size: 18px !important; margin-top: 2px !important; }
-     .ve.sapa .sapa-phai { gap: 8px !important; }
-     .ve.sapa .sapa-ngay { font-size: 27px !important; }
-     .ve.sapa .sapa-ten { font-size: 27px !important; padding-bottom: 4px !important; border-bottom-width: 2px !important; }
-     .ve.sapa .sapa-ten.dai { font-size: 22px !important; }
-     .ve.sapa .sapa-dv { font-size: 25px !important; padding: 6px 8px !important; border-width: 3px !important; border-radius: 8px !important; }
-     .ve.sapa .sapa-cuoi { font-size: 19px !important; }
-     .ve.sapa .luuy { font-size: 19px !important; margin-top: 4px !important; padding-top: 5px !important; border-top-width: 2px !important; }
+     .ve.sapa { padding: 6px 10px 14px !important; }
+     .ve.sapa + .ve.sapa { margin-top: 18px !important; padding-top: 18px !important; border-top-width: 2px !important; }
+     .sp-dau { gap: 12px !important; margin-bottom: 8px !important; }
+     .sp-logo { width: 92px !important; height: 70px !important; }
+     .sp-ten { font-size: 32px !important; }
+     .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
+     .sp-so { border-radius: 16px !important; padding: 10px 16px !important; gap: 16px !important; }
+     .sp-so-icon svg { width: 56px !important; height: 56px !important; }
+     .sp-so-tri { font-size: 78px !important; }
+     .sp-ma-nhan { font-size: 16px !important; }
+     .sp-ma { font-size: 42px !important; letter-spacing: 5px !important; }
+     .sp-than { gap: 14px !important; margin-top: 10px !important; }
+     .sp-qr { flex-basis: 236px !important; }
+     .sp-qr svg { width: 236px !important; height: 236px !important; }
+     .sp-qr-nhan { font-size: 16px !important; margin-top: 3px !important; }
+     .sp-phai { gap: 10px !important; }
+     .sp-ngay { font-size: 34px !important; }
+     .sp-gio { font-size: 26px !important; padding: 2px 10px !important; border-width: 3px !important; margin-left: 10px !important; vertical-align: 4px !important; }
+     .sp-khach { font-size: 28px !important; }
+     .sp-khach.dai { font-size: 24px !important; }
+     .sp-dv span { font-size: 24px !important; padding: 4px 12px !important; border-width: 3px !important; border-radius: 6px !important; }
+     .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; }
+     .sp-luuy { font-size: 20px !important; margin-top: 6px !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
      table { font-size: 17px !important; }

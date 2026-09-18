@@ -376,7 +376,14 @@ vẫn ghi đủ ai và lúc nào.
 Điểm khác (Hà Nội)
 nút vẫn chỉ tích "đã xuất vé", không in.
 
-> **SA PA — MỘT LIÊN DUY NHẤT 80×80 mm** (chủ 17–18/09): không liên khách giữ,
+> **Bố cục mới 18/09 (chiều, sau ảnh in thật):** dải ĐEN bo góc chứa số thứ tự
+> (trái, chữ trắng to) và mã chống giả (phải, nhãn CODE); QR 30 mm bên trái với
+> "SCAN BEFORE FLIGHT"; bên phải ngày bay + ô giờ hẹn viền đậm, tên, chip dịch
+> vụ; kẻ 2 px rồi "Printed … · www.paraglidingsapa.com" và lời dặn. Vé cao
+> theo nội dung (không ép 74 mm nữa), các vé nối liền, vạch đứt để xé. Chữ toàn
+> ≥ 800 và không dùng nét chấm mảnh vì in nhiệt nhoè.
+>
+> **SA PA — MỘT LIÊN DUY NHẤT** (chủ 17–18/09): không liên khách giữ,
 > không đồ uống, không xe trung chuyển. Mỗi khách một tờ vuông, đầu vé **SAPA
 > PARAGLIDING · BOARDING TICKET** với **logo khỉ Sa Pa** (bản xám tương phản
 > cao `public/logo-sapa-in.png`): số thứ tự + mã chống sao chép; **QR vé 25 mm**
