@@ -438,10 +438,11 @@ const CSS = `
   /* KHUNG VIỀN ĐẬM thay nền đen (chủ 18/09: nền đen in nhiệt dễ nhoè). Mọi thứ căn giữa theo trục dọc,
      số thứ tự line-height 1 và kéo nhẹ lên để không "lọt xuống thấp" khi máy vẽ ảnh. */
   .sp-so { display: flex; align-items: center; border: 3px solid #000; border-radius: 3mm; padding: 4px 8px; gap: 8px; }
-  .sp-so-trai { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+  /* Chủ 18/09: số thứ tự căn GIỮA phần trái khung và to hơn một chút */
+  .sp-so-trai { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 0; }
   .sp-so-icon { display: inline-flex; align-items: center; }
   .sp-so-icon svg { width: 30px; height: 30px; display: block; }
-  .sp-so-tri { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -2px; }
+  .sp-so-tri { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1px; white-space: nowrap; display: block; position: relative; top: -2px; }
   .sp-so-phai { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; flex: none; }
   .sp-ma-nhan { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; line-height: 1; }
   .sp-ma { font-family: "Courier New", ui-monospace, monospace; font-size: 22px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; white-space: nowrap; }
@@ -459,7 +460,8 @@ const CSS = `
   .sp-dv { display: flex; flex-wrap: wrap; gap: 4px; }
   .sp-dv span { border: 2px solid #000; border-radius: 3px; padding: 2px 6px; font-size: 13px; font-weight: 900; white-space: nowrap; }
   /* Chân: kẻ đậm 2px thay nét chấm mảnh (nét mảnh in nhiệt nhoè) */
-  .sp-cuoi { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 3px; border-top: 2px solid #000; font-size: 11px; font-weight: 800; white-space: nowrap; }
+  /* Chân: giãn ký tự để "Printed 12:27 18/9" không dính chữ khi mực nhoè */
+  .sp-cuoi { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 3px; border-top: 2px solid #000; font-size: 11px; font-weight: 800; letter-spacing: .6px; word-spacing: 1.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .sp-luuy { margin-top: 3px; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; white-space: normal; }
 `;
 
@@ -693,9 +695,10 @@ export function htmlBanInThang(html: string): string {
      .sp-ten { font-size: 32px !important; }
      .sp-phu { font-size: 18px !important; margin-top: 4px !important; }
      .sp-so { border-radius: 16px !important; border-width: 5px !important; padding: 8px 16px 10px !important; gap: 16px !important; }
+     .sp-so-trai { gap: 14px !important; }
      .sp-so-tri { top: -4px !important; }
      .sp-so-icon svg { width: 56px !important; height: 56px !important; }
-     .sp-so-tri { font-size: 78px !important; }
+     .sp-so-tri { font-size: 90px !important; }
      .sp-ma-nhan { font-size: 16px !important; }
      .sp-ma { font-size: 42px !important; letter-spacing: 5px !important; }
      .sp-than { gap: 14px !important; margin-top: 10px !important; }
@@ -708,7 +711,7 @@ export function htmlBanInThang(html: string): string {
      .sp-khach { font-size: 28px !important; }
      .sp-khach.dai { font-size: 24px !important; }
      .sp-dv span { font-size: 24px !important; padding: 4px 12px !important; border-width: 3px !important; border-radius: 6px !important; }
-     .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; }
+     .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; letter-spacing: 1.4px !important; word-spacing: 4px !important; }
      .sp-luuy { font-size: 20px !important; margin-top: 6px !important; margin-bottom: 0 !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }
      body { font-size: 16px; -webkit-font-smoothing: none; }
