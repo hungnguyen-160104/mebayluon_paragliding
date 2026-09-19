@@ -875,6 +875,29 @@ export default function PilotReportPage() {
       </div>
 
       <div className="space-y-3">
+      {/* Thẻ dịch vụ đứng ĐẦU cột phải trên desktop (chủ 19/09) */}
+      {/**
+       * HUỶ DỊCH VỤ & HOÀN TIỀN — phi công là người biết đầu tiên khi không
+       * cung cấp được (flycam hỏng, gió to không bay 360, hết dù cờ đỏ…).
+       * Hoàn TIỀN MẶT = trừ vào tiền phi công đang giữ; hoàn CHUYỂN KHOẢN =
+       * gửi lệnh cho kế toán chuyển. Việc KHÔNG thường ngày nên nằm CUỐI
+       * trang (lời chủ 02/09) — đầu trang dành cho khách được giao và lệnh thu.
+       */}
+      {/**
+       * THÊM / BỚT DỊCH VỤ TẠI BÃI — phi công được phép như quầy (chủ nhắc lại
+       * 12/09: "phi công được phép huỷ và thêm dịch vụ: flycam, 360, cờ đỏ…").
+       * Khách đang đứng cạnh phi công đòi thêm 360 thì phi công ghi luôn vào
+       * booking, tiền tính theo bảng giá; máy chủ cũng đã mở vai pilot.
+       * Sổ "Đã ghi trong ngày" chỉ hiện các lần do CHÍNH MÌNH làm.
+       */}
+      {/**
+       * MỘT THẺ CHUNG cho thêm dịch vụ và huỷ dịch vụ & hoàn tiền (chủ 19/09) —
+       * thẻ "Huỷ dịch vụ & hoàn tiền" theo mã vé cũ bỏ khỏi trang phi công; huỷ
+       * + hoàn (trừ còn thu / hoàn TM / hoàn CK) làm ngay trong thẻ này, và phi
+       * công gõ SỐ BOOKING thay vì xổ cả danh sách khách của ngày.
+       */}
+      <AddServicesCard spot={spot} date={date} selfOnly />
+
         <CollapseCard
           title={bi("Khách ngoại giao", "complimentary guests")}
           hint="Khách ngoại giao CÓ THỂ không xuất vé — có vé thì ghi mã, không vé thì đếm vào ô 'không vé' cho rõ"
@@ -1040,32 +1063,7 @@ export default function PilotReportPage() {
         title="Tổng theo chu kỳ (Period totals)"
       />
 
-      </div>
-      </div>
-
-      {/**
-       * HUỶ DỊCH VỤ & HOÀN TIỀN — phi công là người biết đầu tiên khi không
-       * cung cấp được (flycam hỏng, gió to không bay 360, hết dù cờ đỏ…).
-       * Hoàn TIỀN MẶT = trừ vào tiền phi công đang giữ; hoàn CHUYỂN KHOẢN =
-       * gửi lệnh cho kế toán chuyển. Việc KHÔNG thường ngày nên nằm CUỐI
-       * trang (lời chủ 02/09) — đầu trang dành cho khách được giao và lệnh thu.
-       */}
-      {/**
-       * THÊM / BỚT DỊCH VỤ TẠI BÃI — phi công được phép như quầy (chủ nhắc lại
-       * 12/09: "phi công được phép huỷ và thêm dịch vụ: flycam, 360, cờ đỏ…").
-       * Khách đang đứng cạnh phi công đòi thêm 360 thì phi công ghi luôn vào
-       * booking, tiền tính theo bảng giá; máy chủ cũng đã mở vai pilot.
-       * Sổ "Đã ghi trong ngày" chỉ hiện các lần do CHÍNH MÌNH làm.
-       */}
-      {/**
-       * MỘT THẺ CHUNG cho thêm dịch vụ và huỷ dịch vụ & hoàn tiền (chủ 19/09) —
-       * thẻ "Huỷ dịch vụ & hoàn tiền" theo mã vé cũ bỏ khỏi trang phi công; huỷ
-       * + hoàn (trừ còn thu / hoàn TM / hoàn CK) làm ngay trong thẻ này, và phi
-       * công gõ SỐ BOOKING thay vì xổ cả danh sách khách của ngày.
-       */}
-      <AddServicesCard spot={spot} date={date} selfOnly />
-
-      {/* ĐÃ BÁO GẦN ĐÂY nằm DƯỚI CÙNG và gập được (chủ 19/09) — việc hằng ngày ở trên, sổ cũ để tra cứu. */}
+      {/* ĐÃ BÁO GẦN ĐÂY nằm CUỐI CỘT PHẢI và gập được (chủ 19/09, desktop không ôm cả hai cột) — việc hằng ngày ở trên, sổ cũ để tra cứu. */}
       <CollapseCard title="Đã báo gần đây (Recent reports)" hint="Bấm vào một ngày để mở lại và sửa (tap a day to reopen and edit)">
         {history.length === 0 ? (
           <p className="text-sm text-slate-500">Chưa có báo cáo nào.</p>
@@ -1121,6 +1119,10 @@ export default function PilotReportPage() {
           </ul>
         )}
       </CollapseCard>
+      </div>
+      </div>
+
+
     </Shell>
   );
 }
