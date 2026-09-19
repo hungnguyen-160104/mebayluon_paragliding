@@ -142,7 +142,13 @@ export function chiaDichVu(
   const n = Math.max(1, guestCount);
   const auto = DICH_VU_VE.every((k) => so[k] === 0 || so[k] >= n);
   const khach: DichVuKhach[] = Array.from({ length: n }, () => ({ ...KHONG_DICH_VU }));
-  if (auto) for (const k of DICH_VU_VE) if (so[k] >= n) for (const x of khach) x[k] = true;
+  /**
+   * Dịch vụ ĐỦ CẢ ĐOÀN thì tích sẵn cho mọi khách, KỂ CẢ khi dịch vụ khác phải
+   * tích tay (chủ 19/09: "5 flycam/5 khách mà bắt chọn flycam" — trước đây chỉ
+   * tích sẵn khi mọi dịch vụ đều tự chia được, nên cột flycam bị khoá "cả
+   * đoàn" mà trống, 0/5, không cấp mã được).
+   */
+  for (const k of DICH_VU_VE) if (so[k] >= n) for (const x of khach) x[k] = true;
   return { auto, khach };
 }
 
