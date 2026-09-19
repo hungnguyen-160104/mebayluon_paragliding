@@ -58,6 +58,13 @@ const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, 
  * đã có flycam, mua thêm 360 là thành cặp, được bớt 100k) — nhưng số thu vẫn
  * sửa tay được, vì quầy đôi khi chốt giá khác với khách quen.
  */
+/** Tên từng thành viên của đoàn: sổ bảo hiểm trước, danh sách OTA sau. */
+function thanhVien(b: BookingDTO): string[] {
+  const bh = (b.insured ?? []).filter((g) => !g.cancelled).map((g) => String(g.fullName || "").trim()).filter(Boolean);
+  if (bh.length) return bh;
+  return (b.otaGuests ?? []).map((g) => String(g.fullName || "").trim()).filter(Boolean);
+}
+
 export function AddServicesCard({
   spot,
   date,
@@ -422,10 +429,11 @@ export function AddServicesCard({
               className="h-10 w-28 rounded-lg border border-slate-300 bg-white px-2 text-base font-bold outline-none focus:border-sky-600"
             />
             {picked ? (
+              /** Phi công thấy TÊN, THÀNH VIÊN, DỊCH VỤ — KHÔNG thấy tiền của booking (chủ 19/09). */
               <span className="min-w-0 text-sm text-slate-800">
-                <strong>#{picked.daySeq}</strong> {picked.contactName || picked.phone || "khách"} · {nhanKhach(picked.guestCount, picked.ppgGuests)}
+                <strong>#{picked.daySeq}</strong> {picked.contactName || "khách"} · {nhanKhach(picked.guestCount, picked.ppgGuests)}
                 {picked.status === "done" ? " · đã bay" : ""}
-                {picked.remaining ? ` · còn thu ${Math.round(picked.remaining / 1000).toLocaleString("vi-VN")}k` : ""}
+                {thanhVien(picked).length > 0 && <span className="block text-xs text-slate-600">Thành viên: {thanhVien(picked).join(", ")}</span>}
               </span>
             ) : soGo ? (
               <span className="text-sm text-rose-700">Không có booking #{soGo} trong ngày này</span>
@@ -484,6 +492,26 @@ export function AddServicesCard({
               </label>
             ))}
           </div>
+
+          {/**
+           * GIẢI THÍCH COMBO bằng lời (chủ 19/09): khách book combo flycam + 360
+           * mà bỏ một món thì hoàn bao nhiêu; đang lẻ mà mua thêm thành combo
+           * thì được bớt bao nhiêu — nói thẳng ra, không bắt người trực nhẩm.
+           */}
+          {picked && mode === "add" && (add.flycam > 0 || add.video360 > 0) && (
+            <p className={"mt-1.5 rounded-lg px-2 py-1 text-[11px] leading-snug " + (comboGain > 0 ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-700")}>
+              {comboGain > 0
+                ? `🎁 Thêm xong khách có ${picked.flycam + add.flycam} flycam + ${picked.video360 + add.video360} Cam 360 → thành ${comboAfter / COMBO_DISCOUNT} combo: bớt ${formatVND(comboGain)}, khách chỉ trả ${formatVND(Math.max(0, addAmount - comboGain))} thay vì ${formatVND(addAmount)}.`
+                : `Chưa thành combo (combo = 1 flycam + 1 Cam 360 cùng khách, bớt ${formatVND(COMBO_DISCOUNT)}/cặp). Đang có ${picked.flycam} flycam + ${picked.video360} Cam 360.`}
+            </p>
+          )}
+          {picked && mode === "remove" && (add.flycam > 0 || add.video360 > 0) && comboBefore > 0 && (
+            <p className="mt-1.5 rounded-lg bg-rose-100 px-2 py-1 text-[11px] leading-snug text-rose-900">
+              {comboLost > 0
+                ? `🎁 Khách đang book ${comboBefore / COMBO_DISCOUNT} combo flycam + Cam 360. Bỏ ${add.flycam ? `${add.flycam} flycam` : ""}${add.flycam && add.video360 ? " + " : ""}${add.video360 ? `${add.video360} Cam 360` : ""} thì ${comboLost / COMBO_DISCOUNT} combo tan: ưu đãi ${formatVND(comboLost)} mất đi, công ty chịu nửa (${formatVND(comboCourtesy)}), khách chịu nửa → hoàn khách ${formatVND(autoBack)} (giá dịch vụ ${formatVND(addAmount)} − ${formatVND(comboLost - comboCourtesy)}).`
+                : `Khách book ${comboBefore / COMBO_DISCOUNT} combo; bỏ phần này combo vẫn còn → hoàn đủ ${formatVND(addAmount)}.`}
+            </p>
+          )}
 
           {mode === "remove" ? (
             <>
