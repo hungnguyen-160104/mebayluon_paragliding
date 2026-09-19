@@ -471,7 +471,8 @@ export function AddServicesCard({
               Khách đã bay — vẫn huỷ được dịch vụ chừng nào kế toán chưa chốt ngày.
             </p>
           )}
-          <p className="mt-1 text-[11px] leading-tight text-slate-500">
+          {/* Dòng "Đang có" TÔ ĐỎ, đậm (chủ 19/09): đây là thứ quyết định thêm/bớt cái gì, phải đập vào mắt. */}
+          <p className="mt-1 text-xs font-bold leading-tight text-rose-700">
             Đang có:{" "}
             {SERVICE_PRICE_LABEL.filter((s) => (picked[s.key] as number) > 0)
               .map((s) => `${picked[s.key] as number}×${s.label}`)
@@ -706,16 +707,18 @@ export function AddServicesCard({
 
           )}
 
+          {/* TM và CK CÙNG MỘT HÀNG cho gọn (chủ 19/09); có nhiều bill CK thì bill 2+ xuống hàng dưới. */}
           {mode === "add" && payNow && (
             <div className="mt-1.5 space-y-1 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2">
-              <label className="flex items-center gap-1.5">
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+              <label className="flex min-w-[9rem] flex-1 items-center gap-1.5">
                 <span className="w-8 shrink-0 text-xs font-bold text-emerald-800">TM</span>
                 <span className="min-w-0 flex-1">
                   <MoneyInput value={cash} onChange={setCash} />
                 </span>
               </label>
               {bills.map((b, i) => (
-                <div key={i} className="space-y-1">
+                <div key={i} className={i === 0 ? "min-w-[9rem] flex-1 space-y-1" : "w-full space-y-1"}>
                   <label className="flex items-center gap-1.5">
                     <span className="w-8 shrink-0 text-xs font-bold text-indigo-800">
                       CK{bills.length > 1 ? ` ${i + 1}` : ""}
@@ -768,6 +771,7 @@ export function AddServicesCard({
                   )}
                 </div>
               ))}
+              </div>
               <button
                 type="button"
                 onClick={() => setBills((p) => [...p, { amount: Math.max(0, charge - payTotal), code: "" }])}

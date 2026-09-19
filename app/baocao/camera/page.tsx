@@ -14,7 +14,6 @@ import { apiGet, apiPost } from "../components/client-api";
 import { DateBar } from "../components/DateBar";
 import { AddServicesCard } from "../components/AddServicesCard";
 import { AssignedBookings } from "../components/BookingCard";
-import { FlycamCancelCard } from "../components/FlycamCancelCard";
 import { CollectInbox } from "../components/CollectBox";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../components/rows";
 import { HandoverBox } from "../components/HandoverBox";
@@ -24,7 +23,7 @@ import { useBaobaySession } from "../components/session";
 import { useSpot } from "../components/spot";
 import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, CountInput, DoneTag, Field, PageLoading, Readout, TextArea, useDoneFlag } from "../components/ui";
+import { Banner, Button, Card, CountInput, DoneTag, Field, PageLoading, Readout, TextArea, useDoneFlag, CollapseCard } from "../components/ui";
 
 /**
  * Camera man báo cáo một ngày.
@@ -235,8 +234,7 @@ export default function CameramanReportPage() {
         </Card>
       )}
 
-      {/* Flycam hỏng giữa chuyến: ghi huỷ + lo đường hoàn tiền cho khách */}
-      <FlycamCancelCard spot={spot} date={date} />
+      {/* Thẻ "Huỷ dịch vụ & hoàn tiền" theo mã vé bỏ khỏi trang camera (chủ 19/09) — huỷ flycam làm ngay trong thẻ trên. */}
 
       {/* Lệnh thu tiền chờ mình — việc phải làm ngay */}
       <CollectInbox spot={spot} />
@@ -411,7 +409,8 @@ export default function CameramanReportPage() {
 
       <PeriodSummary spot={spot} title="Tổng theo chu kỳ" />
 
-      <Card title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
+      {/* Gập được (chủ 19/09) */}
+      <CollapseCard title="Đã báo gần đây" hint="Bấm vào một ngày để mở lại và sửa">
         {history.length === 0 ? (
           <p className="text-sm text-slate-500">Chưa có báo cáo nào.</p>
         ) : (
@@ -444,7 +443,7 @@ export default function CameramanReportPage() {
             ))}
           </ul>
         )}
-      </Card>
+      </CollapseCard>
       </div>
       </div>
     </Shell>

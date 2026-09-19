@@ -13641,7 +13641,37 @@ export async function getMyPeriodSummary(
   ];
 
   if (session.role === "pilot") {
-    const docs = await PilotDailyReport.find({ accountId, spot, date: range }).lean<any[]>();
+    const baoCao = await PilotDailyReport.find({ accountId, spot, date: range }).lean<any[]>();
+    /**
+     * NGÀY CHỈ CÓ MÃ QUÉT, CHƯA GÕ BÁO CÁO (chủ 19/09: "tổng theo chu kỳ cần
+     * chuẩn"). Ở điểm quét vé, chuyến và dịch vụ của phi công nằm trong các mã
+     * đã quét — phi công quên bấm "Điền vào báo cáo" thì ngày ấy mất khỏi
+     * tổng. Nay: ngày có báo cáo thì lấy báo cáo (đã người soát); ngày KHÔNG
+     * có báo cáo thì cộng từ mã đã BAY XONG do chính mình giữ (trừ dịch vụ đã
+     * hoàn, bỏ booking huỷ). Không cộng đôi vì mỗi ngày chỉ lấy một nguồn.
+     */
+    const ngayCoBaoCao = new Set(baoCao.map((d) => String(d.date)));
+    const bkQr = await BaobayBooking.find({
+      spot,
+      flightDate: range,
+      status: { $nin: ["voided", "cancelled"] },
+      "veQr.khach.phiCong.username": session.username,
+    })
+      .select("flightDate veQr")
+      .lean<any[]>();
+    const tuQr = new Map<string, { flightCount: number; flycam: number; video360: number; redFlag: number }>();
+    for (const b of bkQr) {
+      const ngay = String(b.flightDate);
+      if (ngayCoBaoCao.has(ngay)) continue;
+      for (const k of b.veQr?.khach ?? []) {
+        if (k.phiCong?.username !== session.username || !k.bayXong?.luc || k.thuHoi?.luc) continue;
+        const t = tuQr.get(ngay) ?? { flightCount: 0, flycam: 0, video360: 0, redFlag: 0 };
+        t.flightCount++;
+        for (const x of DICH_VU_VE) if (k.dichVu?.[x] && !k.hoanDichVu?.[x]) t[x]++;
+        tuQr.set(ngay, t);
+      }
+    }
+    const docs = [...baoCao, ...[...tuQr.entries()].map(([date, t]) => ({ date, ...t, tuQr: true }))];
     const sumOf = (pick: (d: any) => number) => docs.reduce((s, d) => s + (pick(d) || 0), 0);
     return {
       from,

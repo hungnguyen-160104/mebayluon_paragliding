@@ -34,7 +34,20 @@ Kế toán còn hai trang xem: `/baocao/tong-hop` (theo kỳ, tải CSV) và
 `/baocao/bao-cao-thang` (mỗi phi công một khối, cột ngày 1–31 + "đến hôm nay" +
 "cả tháng"). Phi công / điều phối / camera man có khung **"Tổng theo chu kỳ"**
 ngay trong trang của mình — chọn khoảng ngày là thấy tổng từng nội dung mình đã
-báo (chỉ số của chính mình).
+báo (chỉ số của chính mình). **Phi công ở điểm quét vé (19/09):** ngày có báo
+cáo thì lấy báo cáo; ngày *không* gõ báo cáo thì máy cộng từ các mã đã quét và
+tích **bay xong** do chính mình giữ (trừ dịch vụ đã hoàn, bỏ booking huỷ) — mỗi
+ngày chỉ lấy một nguồn nên không cộng đôi.
+
+**Trang phi công (19/09):** "Đã báo gần đây" nằm cuối trang, gập được. Thẻ
+**"➕➖ DỊCH VỤ · HUỶ · HOÀN"** gộp thêm dịch vụ và huỷ dịch vụ & hoàn tiền: phi
+công **gõ số booking** (số in trên vé) → hiện tên, thành viên, dịch vụ đang có
+(dòng "Đang có" đỏ đậm) — **không thấy tiền** của booking; thẻ nói rõ combo:
+bỏ một món trong combo flycam + 360 thì ưu đãi mất đi công ty chịu nửa, khách
+chịu nửa; mua thêm thành combo thì bớt ngay. Ô TM và CK cùng hàng. Thẻ huỷ theo
+mã vé cũ không còn ở trang phi công và trang camera (vẫn ở chốt ngày). **Trang
+camera man:** chỉ thêm/bớt **flycam** trong thẻ dịch vụ (dịch vụ khác không
+thuộc quyền), "Đã báo gần đây" gập được.
 
 Đăng nhập xong hệ thống tự đưa về đúng trang của vai trò.
 
