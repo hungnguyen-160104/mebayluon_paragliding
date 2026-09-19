@@ -733,6 +733,17 @@ export default function PilotReportPage() {
 
 
         {/* PPG chỉ bay ở KHAU PHẠ — điểm khác không có dịch vụ này nên giấu hẳn khối */}
+        {/**
+         * Phi công PPG đang đứng ở điểm khác (chủ 19/09: "tôi đang mất chỗ nhập
+         * PPG" — trang đang mở Hà Nội / Sa Pa vì lần trước chọn điểm ấy): nói
+         * rõ vì sao khối biến mất, đỡ tưởng app hỏng.
+         */}
+        {spot !== "khau-pha" && flyPpg && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            Ô <strong>Số chuyến PPG</strong> chỉ có khi đang xem điểm <strong>Khau Phạ</strong> — trang đang mở{" "}
+            <strong>{spotOptions.length > 1 ? "điểm khác" : "điểm này"}</strong>; đổi điểm ở đầu trang nếu anh/chị bay PPG hôm nay.
+          </p>
+        )}
         {spot === "khau-pha" && flyPpg && (
         <Card
           title="Số chuyến PPG (PPG flights)"
