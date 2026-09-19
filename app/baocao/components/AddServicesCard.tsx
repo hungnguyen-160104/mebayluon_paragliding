@@ -368,7 +368,7 @@ export function AddServicesCard({
       /* Nền đổi màu theo việc đang làm: THÊM dịch vụ nền xanh, HUỶ nền đỏ —
          nhìn màu là biết mình đang cộng hay đang trừ, khỏi bấm nhầm chiều. */
       className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : "border-emerald-400 bg-emerald-50/50"}
-      title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : selfOnly ? "➕➖ DỊCH VỤ TUỲ CHỌN · HUỶ & HOÀN TIỀN" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
+      title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : selfOnly ? "➕➖ DỊCH VỤ · HUỶ · HOÀN" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
       hint={selfOnly ? "gõ số booking → thêm flycam/360/cờ đỏ… hoặc huỷ dịch vụ rồi hoàn tiền" : "khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"}
     >
       {done && (
