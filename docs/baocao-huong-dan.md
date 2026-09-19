@@ -383,7 +383,11 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > theo nội dung (không ép 74 mm nữa), các vé nối liền, vạch đứt để xé. Chữ toàn
 > ≥ 800 và không dùng nét chấm mảnh vì in nhiệt nhoè.
 >
-> **TỪ 18/09: CẢ BA ĐIỂM IN KIỂU SA PA.** Vé bay dù một liên có mã QR phi công
+> **19/09: CHỈ SA PA IN VÉ NHIỆT.** Khau Phạ và Hà Nội bấm IN VÉ = tích "đã xuất
+> vé" ngay, không hỏi dịch vụ, không hiện vé. Mẫu vé dưới đây cho Khau Phạ / Hà
+> Nội đã dựng sẵn, bật lại bằng `coQuetVe` + `DIEM_IN_VE` khi có máy in.
+>
+> **Mẫu đã dựng (18/09):** vé bay dù một liên có mã QR phi công
 > quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,
 > logo `public/logo-mbl-in.png`, dòng phụ "BOARDING TICKET · KHAU PHẠ", web
 > www.mebayluon.com, lời dặn song ngữ Việt/Anh. Mọi booking ở ba điểm đều qua

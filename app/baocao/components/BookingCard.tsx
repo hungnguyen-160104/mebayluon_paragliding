@@ -5505,8 +5505,16 @@ export function BookingTodayBanner({
              * nên không in "mù" rồi ghi sau như trước. Điểm không in vé thì
              * hàm in tự bỏ qua, nhưng vết "đã in" vẫn ghi.
              */
+            /**
+             * ĐIỂM KHÔNG IN VÉ (Khau Phạ, Hà Nội — chủ 19/09): chỉ tích "đã xuất
+             * vé", không gọi in, không mở tab, không hỏi gì.
+             */
+            if (!coInVe(spot)) {
+              void act(b, "ticket");
+              return;
+            }
             /** Điện thoại / máy tính bảng: mở tab in NGAY trong cú bấm, trước khi gọi máy chủ (xem moTabIn). */
-            const tab = coInVe(spot) ? moTabIn() : null;
+            const tab = moTabIn();
             void (async () => {
               try {
                 const r = await apiPatch<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "" });

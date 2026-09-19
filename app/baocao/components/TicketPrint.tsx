@@ -42,8 +42,8 @@ const PAPER_WIDTH_MM = 80;
 
 
 /** Chỉ hai điểm này in vé (chủ 12/09). Điểm khác vẫn tích "đã xuất vé" như cũ, không in. */
-/** Cả ba điểm in vé nhiệt (Hà Nội thêm 18/09: "vé Hà Nội làm giống Sa Pa"). */
-export const DIEM_IN_VE = new Set(["khau-pha", "sapa", "ha-noi"]);
+/** Chỉ Sa Pa in vé nhiệt (chủ 19/09); Khau Phạ / Hà Nội bấm IN VÉ = tích đã xuất vé, không in. */
+export const DIEM_IN_VE = new Set(["sapa"]);
 export function coInVe(spot: string): boolean {
   return DIEM_IN_VE.has(spot);
 }
@@ -782,7 +782,7 @@ export async function printBookingTickets(
   reason = "",
 ): Promise<KenhInThang | "tram" | "hop-thoai" | "tab" | "khong-in"> {
   if (!coInVe(spot)) {
-    baoLoiVaoTab(tab, "Điểm bay này không in vé (chỉ Khau Phạ và Sa Pa).");
+    baoLoiVaoTab(tab, "Điểm bay này không in vé (chỉ Sa Pa).");
     return "khong-in";
   }
   const kenh = mayInThangDaGhep();
