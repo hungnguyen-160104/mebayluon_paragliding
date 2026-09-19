@@ -66,6 +66,8 @@ export interface IBaobayAccount {
   /** Khoá tạm tới thời điểm này vì sai quá nhiều lần (chống dò mật khẩu). */
   lockedUntil?: Date;
   mustChangePassword: boolean;
+  /** Lúc mật khẩu được quản trị đặt (tạo / đặt lại) — mốc tính hạn nhắc đổi 10 tuần. */
+  passwordSetAt?: Date;
   lastLoginAt?: Date;
   note?: string;
   createdAt: Date;
@@ -97,6 +99,7 @@ const BaobayAccountSchema = new Schema<IBaobayAccount>(
     failedLogins: { type: Number, default: 0 },
     lockedUntil: Date,
     mustChangePassword: { type: Boolean, default: true },
+    passwordSetAt: Date,
     lastLoginAt: Date,
     note: String,
   },

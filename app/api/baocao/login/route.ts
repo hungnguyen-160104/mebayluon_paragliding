@@ -1,6 +1,7 @@
 // app/api/baocao/login/route.ts
 import { NextResponse } from "next/server";
 
+import { canNhacDoiMatKhau } from "@/lib/baobay/nhac-doi-mat-khau";
 import { ROLE_HOME } from "@/lib/baobay/roles";
 import {
   BAOBAY_TOKEN_TTL_SECONDS,
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       name: session.name,
       role: session.role,
       spots: session.spots,
-      mustChangePassword: Boolean(account.mustChangePassword),
+      mustChangePassword: canNhacDoiMatKhau(account),
     };
 
     const res = NextResponse.json({ user, redirectTo: ROLE_HOME[session.role] });

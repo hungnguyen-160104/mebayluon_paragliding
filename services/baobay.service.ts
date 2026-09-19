@@ -656,6 +656,7 @@ export async function createAccount(
     note: input.note?.trim() || undefined,
     isActive: true,
     mustChangePassword: true,
+    passwordSetAt: new Date(),
   });
 
   return { ok: true, account: toAccountDTO(doc.toObject() as AccountDoc) };
@@ -784,6 +785,7 @@ export async function updateAccount(
     set.passwordHash = await bcrypt.hash(patch.newPassword, BCRYPT_ROUNDS);
     set.passwordPlain = patch.newPassword;
     set.mustChangePassword = true;
+    set.passwordSetAt = new Date();
   }
 
   if (!Object.keys(set).length) return { ok: false, error: "Không có gì để cập nhật" };

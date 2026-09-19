@@ -97,6 +97,8 @@ export function AddServicesCard({
   const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
   const [bankAccount, setBankAccount] = useState("");
   const [pickId, setPickId] = useState("");
+  /** Số booking phi công gõ (chế độ selfOnly). */
+  const [soGo, setSoGo] = useState("");
   const [add, setAdd] = useState<Record<ServiceKey, number>>({ ...EMPTY });
   const [discount, setDiscount] = useState(0);
   const [note, setNote] = useState("");
@@ -153,6 +155,7 @@ export function AddServicesCard({
         if (prefill) {
           setMode(c.kind);
           setPickId(c.bookingId);
+          setSoGo(String(bookings.find((b) => b.id === c.bookingId)?.daySeq ?? ""));
           setAdd({ ...EMPTY, ...c.items });
           setDiscount(c.discount);
           setNote(c.reason);
@@ -175,7 +178,7 @@ export function AddServicesCard({
         setBusy(false);
       }
     },
-    [spot, load],
+    [spot, load, bookings],
   );
 
   useEffect(() => {
@@ -358,8 +361,8 @@ export function AddServicesCard({
       /* Nền đổi màu theo việc đang làm: THÊM dịch vụ nền xanh, HUỶ nền đỏ —
          nhìn màu là biết mình đang cộng hay đang trừ, khỏi bấm nhầm chiều. */
       className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : "border-emerald-400 bg-emerald-50/50"}
-      title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
-      hint="khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"
+      title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : selfOnly ? "➕➖ DỊCH VỤ TUỲ CHỌN · HUỶ & HOÀN TIỀN" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
+      hint={selfOnly ? "gõ số booking → thêm flycam/360/cờ đỏ… hoặc huỷ dịch vụ rồi hoàn tiền" : "khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"}
     >
       {done && (
         <Banner tone="success" onClose={() => setDone(null)}>
@@ -395,6 +398,41 @@ export function AddServicesCard({
         ))}
       </div>
 
+      {selfOnly ? (
+        /**
+         * PHI CÔNG GÕ SỐ BOOKING (chủ 19/09): không xổ cả danh sách khách của
+         * ngày cho phi công xem — gõ "12" thì hiện đúng thông tin đăng ký của
+         * booking #12 rồi thêm / huỷ dịch vụ trên đó.
+         */
+        <Field label="Số booking (số thứ tự trong ngày)">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={soGo}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSoGo(v);
+                const b = bookings.find((x) => Number(x.daySeq) === Number(v));
+                setPickId(b?.id ?? "");
+                reset();
+              }}
+              placeholder="VD: 12"
+              className="h-10 w-28 rounded-lg border border-slate-300 bg-white px-2 text-base font-bold outline-none focus:border-sky-600"
+            />
+            {picked ? (
+              <span className="min-w-0 text-sm text-slate-800">
+                <strong>#{picked.daySeq}</strong> {picked.contactName || picked.phone || "khách"} · {nhanKhach(picked.guestCount, picked.ppgGuests)}
+                {picked.status === "done" ? " · đã bay" : ""}
+                {picked.remaining ? ` · còn thu ${Math.round(picked.remaining / 1000).toLocaleString("vi-VN")}k` : ""}
+              </span>
+            ) : soGo ? (
+              <span className="text-sm text-rose-700">Không có booking #{soGo} trong ngày này</span>
+            ) : null}
+          </div>
+        </Field>
+      ) : (
       <Field label="Khách đã đặt trước">
         <select
           value={pickId}
@@ -414,6 +452,7 @@ export function AddServicesCard({
           ))}
         </select>
       </Field>
+      )}
 
       {picked && (
         <>

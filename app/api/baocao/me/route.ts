@@ -1,6 +1,7 @@
 // app/api/baocao/me/route.ts
 import { NextResponse } from "next/server";
 
+import { canNhacDoiMatKhau } from "@/lib/baobay/nhac-doi-mat-khau";
 import { ROLE_HOME } from "@/lib/baobay/roles";
 import { BAOBAY_TOKEN_TTL_SECONDS, baobayCookieOptions, signBaobayToken } from "@/lib/baobay/token";
 import { requireBaobay } from "@/middlewares/requireBaobay";
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
   if (!auth.viaAdmin) {
     await connectDB();
     const account = await BaobayAccount.findById(auth.id)
-      .select("username displayName role spots isActive mustChangePassword pilotKind extraRoles adminLevel cafeCounters")
+      .select("username displayName role spots isActive mustChangePassword passwordSetAt createdAt lastLoginAt pilotKind extraRoles adminLevel cafeCounters")
       .lean<any>();
 
     if (!account || account.isActive === false) {
@@ -43,7 +44,8 @@ export async function GET(req: Request) {
         cafeCounters: Array.isArray(account.cafeCounters) ? account.cafeCounters.map(String) : [],
         /** Trang cần biết để mở nút in vé không giới hạn cho quản trị cấp 1 (chủ 13/09). */
         adminLevel: account.role === "admin" ? (Number(account.adminLevel) === 1 ? 1 : 2) : undefined,
-        mustChangePassword: Boolean(account.mustChangePassword),
+        /** Đã đăng nhập và quá 10 ngày không đổi thì thôi nhắc (chủ 19/09) — xem nhac-doi-mat-khau.ts. */
+        mustChangePassword: canNhacDoiMatKhau(account),
       },
       redirectTo: ROLE_HOME[account.role as keyof typeof ROLE_HOME],
     });
