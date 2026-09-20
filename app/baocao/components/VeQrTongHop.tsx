@@ -9,7 +9,7 @@ import { QuetVeModal } from "./QuetVeModal";
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import type { MaVeDTO, ThuHoiDTO, TongHopVe } from "@/services/ve-qr.service";
 
-import { apiGet } from "./client-api";
+import { apiGet, apiPost } from "./client-api";
 import { Button, Card } from "./ui";
 
 /**
@@ -31,6 +31,21 @@ export function VeQrTongHop({
   /** Hộp quét nhanh đang mở? Đóng thì tăng `lan` để tải lại số. */
   const [moQuet, setMoQuet] = useState(false);
   const [lan, setLan] = useState(0);
+  const [ban, setBan] = useState(false);
+  const [loiLenh, setLoiLenh] = useState<string | null>(null);
+  /** Lệnh trên một mã của mình: "bayxong" / "hoan" — xong tải lại số. */
+  const lenh = async (action: "bayxong" | "hoan", m: MaVeDTO) => {
+    setBan(true);
+    setLoiLenh(null);
+    try {
+      await apiPost(`/api/baocao/ve-qr?spot=${spot}`, { action, bookingId: m.bookingId, guestNo: m.guestNo });
+      setLan((x) => x + 1);
+    } catch (e) {
+      setLoiLenh(e instanceof Error ? e.message : "Không thực hiện được");
+    } finally {
+      setBan(false);
+    }
+  };
   useEffect(() => {
     let huy = false;
     apiGet<{ ma: MaVeDTO[]; thuHoi: ThuHoiDTO[]; tongHop: TongHopVe }>(`/api/baocao/ve-qr?spot=${spot}&date=${date}${lan ? `&lan=${lan}` : ""}`)
@@ -65,10 +80,41 @@ export function VeQrTongHop({
         ))}
       </div>
       {du.ma.length > 0 && (
-        <p className="mt-2 text-xs text-slate-600">
-          {du.ma.map((m) => `${m.nhan} ${m.tenKhach}${m.bayXong ? " ✅" : ""}`).join(" · ")}
-        </p>
+        /** Từng mã có nút ngay tại chỗ (chủ 20/09: "đủ chức năng như hoàn vé"): ✓ bay xong · ↩ hoàn mã cho phi công khác quét. */
+        <ul className="mt-2 divide-y divide-slate-100 text-xs">
+          {du.ma.map((m) => (
+            <li key={`${m.bookingId}-${m.guestNo}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1">
+              <strong className="font-mono">{m.nhan}</strong>
+              <span className="min-w-0 flex-1 truncate text-slate-700">
+                {m.tenKhach}
+                {m.dichVuTinh.video360 || m.dichVuTinh.flycam || m.dichVuTinh.redFlag
+                  ? ` · ${[m.dichVuTinh.video360 ? "360" : "", m.dichVuTinh.flycam ? "flycam" : "", m.dichVuTinh.redFlag ? "cờ đỏ" : ""].filter(Boolean).join(" + ")}`
+                  : ""}
+              </span>
+              {m.bayXong ? (
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-800">✅ bay xong</span>
+              ) : (
+                <>
+                  <button type="button" disabled={ban} onClick={() => void lenh("bayxong", m)} className="rounded border border-emerald-400 bg-white px-2 py-0.5 font-bold text-emerald-800 hover:bg-emerald-50">
+                    ✓ Bay xong
+                  </button>
+                  <button
+                    type="button"
+                    disabled={ban}
+                    onClick={() => {
+                      if (window.confirm(`Hoàn mã ${m.nhan} (${m.tenKhach}) để phi công khác quét?`)) void lenh("hoan", m);
+                    }}
+                    className="rounded border border-slate-300 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    ↩ Hoàn mã
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
+      {loiLenh && <p className="mt-1 text-xs font-semibold text-rose-700">{loiLenh}</p>}
       <div className="mt-2 flex flex-wrap gap-2">
         <Button
           type="button"

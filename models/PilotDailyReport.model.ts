@@ -84,6 +84,18 @@ export interface IPilotDailyReport {
   ppgFlights: number;
   ppgCodes: string[];
   /**
+   * VÉ QR (chủ 20/09): ở Khau Phạ booking PPG có thể xuất VÉ QR thay vé giấy —
+   * mã "22/12 #3.2" phi công quét được ghi RIÊNG ở đây, KHÔNG lẫn vào ppgCodes
+   * (mã vé giấy — chốt ngày đếm vé thu hồi theo danh sách đó). Số chuyến và
+   * dịch vụ từ vé QR cũng lưu riêng để thống kê; tổng ppgFlights / flycam…
+   * vẫn là TỔNG (giấy + QR). Ràng buộc PPG: ppgCodes + ppgNoTicket + qrFlights = ppgFlights.
+   */
+  qrCodes: string[];
+  qrFlights: number;
+  qrVideo360: number;
+  qrFlycam: number;
+  qrRedFlag: number;
+  /**
    * SUẤT ĂN & XE trong ngày làm — phi công tự khai để cuối ngày/tháng công ty
    * thanh toán với nhà bếp và đội xe (lệnh chủ 31/08/2026: "5 xe ôm 3 ô tô").
    * Suất ăn đếm THEO BỮA của chính phi công; xe đếm theo LƯỢT đi lên núi.
@@ -189,6 +201,11 @@ const PilotDailyReportSchema = new Schema<IPilotDailyReport>(
     ppgFlights: { type: Number, default: 0, min: 0 },
     ppgCodes: { type: [String], default: [] },
     ppgNoTicket: { type: Number, default: 0, min: 0 },
+    qrCodes: { type: [String], default: [] },
+    qrFlights: { type: Number, default: 0, min: 0 },
+    qrVideo360: { type: Number, default: 0, min: 0 },
+    qrFlycam: { type: Number, default: 0, min: 0 },
+    qrRedFlag: { type: Number, default: 0, min: 0 },
     mealBreakfast: { type: Number, default: 0, min: 0 },
     mealLunch: { type: Number, default: 0, min: 0 },
     mealDinner: { type: Number, default: 0, min: 0 },

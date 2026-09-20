@@ -1389,6 +1389,12 @@ export type PilotReportSaveInput = {
   carRides?: number;
   ppgCodesText: string;
   ppgNoTicket: number;
+  /** Vé QR đã quét — ghi riêng (chủ 20/09). */
+  qrCodes?: string[];
+  qrFlights?: number;
+  qrVideo360?: number;
+  qrFlycam?: number;
+  qrRedFlag?: number;
   expenses: Array<{ content: string; amount: number; note?: string }>;
   note: string;
   submit: boolean;
@@ -1510,8 +1516,10 @@ export async function upsertPilotReport(
     }
     warnings.push(`Mã vé PPG sai dạng: ${ppg.malformed.slice(0, 5).join(", ")}`);
   }
-  if (spot === "khau-pha" && input.ppgFlights > 0 && ppg.codes.length + input.ppgNoTicket !== input.ppgFlights) {
-    const msg = `PPG: khai ${input.ppgFlights} chuyến nhưng mã vé (${ppg.codes.length}) + không vé (${input.ppgNoTicket}) = ${ppg.codes.length + input.ppgNoTicket}. Có vé thì khai mã, không vé thì đếm vào ô "không vé".`;
+  /** Chuyến PPG = vé giấy có mã + không vé + VÉ QR đã quét (chủ 20/09). */
+  const qrFlights = Math.max(0, Number(input.qrFlights) || 0);
+  if (spot === "khau-pha" && input.ppgFlights > 0 && ppg.codes.length + input.ppgNoTicket + qrFlights !== input.ppgFlights) {
+    const msg = `PPG: khai ${input.ppgFlights} chuyến nhưng mã vé giấy (${ppg.codes.length}) + không vé (${input.ppgNoTicket}) + vé QR (${qrFlights}) = ${ppg.codes.length + input.ppgNoTicket + qrFlights}. Có vé giấy thì khai mã, không vé thì đếm vào ô "không vé", vé QR thì bấm "Điền vào báo cáo" ở khối Từ quét vé.`;
     if (input.submit) throw new BaobayError(`Chưa chốt được: ${msg}`);
     warnings.push(msg);
   }
@@ -1655,6 +1663,12 @@ export async function upsertPilotReport(
         ppgFlights: spot === "khau-pha" ? input.ppgFlights : 0,
         ppgCodes: spot === "khau-pha" ? ppg.codes : [],
         ppgNoTicket: spot === "khau-pha" ? input.ppgNoTicket : 0,
+        // Vé QR đã quét — riêng, không lẫn mã vé giấy (chủ 20/09)
+        qrCodes: (input.qrCodes ?? []).map((x) => String(x).trim()).filter(Boolean).slice(0, 300),
+        qrFlights,
+        qrVideo360: Math.max(0, Number(input.qrVideo360) || 0),
+        qrFlycam: Math.max(0, Number(input.qrFlycam) || 0),
+        qrRedFlag: Math.max(0, Number(input.qrRedFlag) || 0),
         // Suất ăn & xe — thanh toán với bếp và đội xe theo ngày/tháng
         mealBreakfast: input.mealBreakfast ?? 0,
         mealLunch: input.mealLunch ?? 0,
@@ -1881,6 +1895,11 @@ function toPilotDTO(doc: any): PilotReportDTO {
     ppgFlights: doc.ppgFlights ?? 0,
     ppgCodes: doc.ppgCodes ?? [],
     ppgNoTicket: doc.ppgNoTicket ?? 0,
+    qrCodes: doc.qrCodes ?? [],
+    qrFlights: doc.qrFlights ?? 0,
+    qrVideo360: doc.qrVideo360 ?? 0,
+    qrFlycam: doc.qrFlycam ?? 0,
+    qrRedFlag: doc.qrRedFlag ?? 0,
     mealBreakfast: doc.mealBreakfast ?? 0,
     mealLunch: doc.mealLunch ?? 0,
     mealDinner: doc.mealDinner ?? 0,

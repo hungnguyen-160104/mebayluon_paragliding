@@ -182,6 +182,11 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     ppgFlights: 0,
     ppgCodes: [],
     ppgNoTicket: 0,
+    qrCodes: [],
+    qrFlights: 0,
+    qrVideo360: 0,
+    qrFlycam: 0,
+    qrRedFlag: 0,
     mealBreakfast: 0,
     mealLunch: 0,
     mealDinner: 0,
@@ -751,6 +756,12 @@ function toForm(r: PilotReportDTO) {
     ppgFlights: r.ppgFlights,
     ppgCodesText: r.ppgCodes.join(", "),
     ppgNoTicket: r.ppgNoTicket,
+    /** Vé QR (chủ 20/09): nạp giá trị ĐANG CÓ — thiếu là lưu đè 0, mất mã QR và lệch ràng buộc chuyến PPG. */
+    qrCodes: r.qrCodes ?? [],
+    qrFlights: r.qrFlights ?? 0,
+    qrVideo360: r.qrVideo360 ?? 0,
+    qrFlycam: r.qrFlycam ?? 0,
+    qrRedFlag: r.qrRedFlag ?? 0,
     /** Suất ăn & xe: phải nạp giá trị ĐANG CÓ — kế toán sửa hộ báo cáo mà
         thiếu dòng này là lưu đè 0, xoá mất số phi công đã khai. */
     mealBreakfast: r.mealBreakfast ?? 0,

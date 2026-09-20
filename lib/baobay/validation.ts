@@ -208,6 +208,12 @@ export const pilotReportSchema = z.object({
   ppgFlights: count(300),
   ppgCodesText: text(20_000),
   ppgNoTicket: count(300),
+  /** Vé QR phi công quét (Sa Pa; PPG Khau Phạ) — mã ghi riêng, không lẫn vé giấy (chủ 20/09). Optional: bản web cũ không gửi. */
+  qrCodes: z.array(z.string().trim().max(60)).max(300).optional().default([]),
+  qrFlights: count(300).optional().default(0),
+  qrVideo360: count(300).optional().default(0),
+  qrFlycam: count(300).optional().default(0),
+  qrRedFlag: count(300).optional().default(0),
   /**
    * Suất ăn & xe trong ngày — số nhỏ, trần 50 là quá đủ cho một người/ngày.
    * PHẢI optional + default 0: trường sinh sau, điện thoại phi công còn cache

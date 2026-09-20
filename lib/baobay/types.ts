@@ -205,6 +205,12 @@ export type PilotReportDTO = {
   ppgFlights: number;
   ppgCodes: string[];
   ppgNoTicket: number;
+  /** Vé QR phi công quét — mã và số liệu riêng, không lẫn vé giấy (chủ 20/09). */
+  qrCodes: string[];
+  qrFlights: number;
+  qrVideo360: number;
+  qrFlycam: number;
+  qrRedFlag: number;
   /** Suất ăn & xe phi công khai — thanh toán với bếp và đội xe theo ngày/tháng. */
   mealBreakfast: number;
   mealLunch: number;

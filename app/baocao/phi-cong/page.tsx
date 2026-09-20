@@ -76,6 +76,12 @@ type FormState = {
   ppgFlights: number;
   ppgCodesText: string;
   ppgNoTicket: number;
+  /** Vé QR đã quét (từ khối Từ quét vé) — riêng với vé giấy. */
+  qrCodes: string[];
+  qrFlights: number;
+  qrVideo360: number;
+  qrFlycam: number;
+  qrRedFlag: number;
   /** Suất ăn & xe trong ngày làm — thanh toán với bếp và đội xe theo ngày/tháng. */
   mealBreakfast: number;
   mealLunch: number;
@@ -119,6 +125,11 @@ const EMPTY_FORM: FormState = {
   ppgFlights: 0,
   ppgCodesText: "",
   ppgNoTicket: 0,
+  qrCodes: [],
+  qrFlights: 0,
+  qrVideo360: 0,
+  qrFlycam: 0,
+  qrRedFlag: 0,
   mealBreakfast: 0,
   mealLunch: 0,
   mealDinner: 0,
@@ -244,6 +255,11 @@ export default function PilotReportPage() {
               ppgFlights: res.report.ppgFlights,
               ppgCodesText: res.report.ppgCodes.join(", "),
               ppgNoTicket: res.report.ppgNoTicket,
+              qrCodes: res.report.qrCodes ?? [],
+              qrFlights: res.report.qrFlights ?? 0,
+              qrVideo360: res.report.qrVideo360 ?? 0,
+              qrFlycam: res.report.qrFlycam ?? 0,
+              qrRedFlag: res.report.qrRedFlag ?? 0,
               mealBreakfast: res.report.mealBreakfast ?? 0,
               mealLunch: res.report.mealLunch ?? 0,
               mealDinner: res.report.mealDinner ?? 0,
@@ -378,7 +394,7 @@ export default function PilotReportPage() {
   const ppgConsistent =
     spot !== "khau-pha" ||
     form.ppgFlights === 0 ||
-    (!parsedPpg.malformed.length && parsedPpg.codes.length + form.ppgNoTicket === form.ppgFlights);
+    (!parsedPpg.malformed.length && parsedPpg.codes.length + form.ppgNoTicket + form.qrFlights === form.ppgFlights);
   const canSubmit =
     !locked &&
     !parsedCodes.malformed.length &&
@@ -524,13 +540,30 @@ export default function PilotReportPage() {
             spot={spot}
             date={date}
             onDien={(so) => {
-              /** Khau Phạ chỉ cấp mã QR cho booking PPG → số quét được là chuyến PPG. */
-              if (spot === "khau-pha") set("ppgFlights", so.flightCount);
-              else set("flightCount", so.flightCount);
-              set("video360", so.video360);
-              set("flycam", so.flycam);
-              set("redFlag", so.redFlag);
-              /** Không chép mã "22/12 #3.2" vào ô mã vé: ô ấy đọc dạng MBL1234, Sa Pa không bắt buộc mã. */
+              /**
+               * VÉ QR GHI RIÊNG (chủ 20/09): mã "22/12 #3.2" vào ô qrCodes (không
+               * lẫn ô mã vé giấy), số chuyến/dịch vụ QR vào qr*; TỔNG = phần vé
+               * giấy đã khai + phần QR mới. Trừ phần QR cũ trước khi cộng phần
+               * mới nên bấm nhiều lần không cộng dồn.
+               */
+              setForm((prev) => {
+                const giay = (tong: number, qrCu: number) => Math.max(0, tong - qrCu);
+                return {
+                  ...prev,
+                  qrCodes: so.codes,
+                  qrFlights: so.flightCount,
+                  qrVideo360: so.video360,
+                  qrFlycam: so.flycam,
+                  qrRedFlag: so.redFlag,
+                  /** Khau Phạ chỉ cấp mã QR cho booking PPG → chuyến QR là chuyến PPG; Sa Pa là chuyến PG. */
+                  ...(spot === "khau-pha"
+                    ? { ppgFlights: giay(prev.ppgFlights, prev.qrFlights) + so.flightCount }
+                    : { flightCount: giay(prev.flightCount, prev.qrFlights) + so.flightCount }),
+                  video360: giay(prev.video360, prev.qrVideo360) + so.video360,
+                  flycam: giay(prev.flycam, prev.qrFlycam) + so.flycam,
+                  redFlag: giay(prev.redFlag, prev.qrRedFlag) + so.redFlag,
+                };
+              });
             }}
           />
         </div>
@@ -757,11 +790,11 @@ export default function PilotReportPage() {
             chỉ là tổng trừ đi số không vé.
           */}
           <div className="grid grid-cols-2 gap-2">
-            <ServiceBox tone="tickets" label="Chuyến PPG có vé">
+            <ServiceBox tone="tickets" label="Chuyến PPG vé giấy">
               <CountInput
                 compact
-                value={ppgWithTicket}
-                onChange={(v) => set("ppgFlights", v + form.ppgNoTicket)}
+                value={Math.max(0, ppgWithTicket - form.qrFlights)}
+                onChange={(v) => set("ppgFlights", v + form.ppgNoTicket + form.qrFlights)}
                 max={300}
               />
             </ServiceBox>
@@ -770,23 +803,40 @@ export default function PilotReportPage() {
                 compact
                 value={form.ppgNoTicket}
                 onChange={(v) =>
-                  setForm((prev) => ({ ...prev, ppgNoTicket: v, ppgFlights: ppgWithTicket + v }))
+                  setForm((prev) => ({ ...prev, ppgNoTicket: v, ppgFlights: Math.max(0, ppgWithTicket - prev.qrFlights) + prev.qrFlights + v }))
                 }
                 max={300}
               />
             </ServiceBox>
           </div>
+          {/* VÉ QR (PPG) — Ô RIÊNG, khác vé giấy (chủ 20/09): số và mã lấy từ khối "Từ quét vé", không gõ tay. */}
+          <div className="mt-2 rounded-lg border border-violet-300 bg-violet-50 px-2 py-1.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+              <span className="text-xs font-bold text-violet-900">📱 Vé QR (PPG) đã quét</span>
+              <span className="text-sm font-black tabular-nums text-violet-900">{form.qrFlights} chuyến</span>
+            </div>
+            {form.qrCodes.length > 0 ? (
+              <div className="mt-0.5 text-[11px] leading-snug text-violet-900">{form.qrCodes.join(" · ")}</div>
+            ) : (
+              <div className="mt-0.5 text-[11px] text-violet-800/70">Chưa có — quét vé ở khối “Từ quét vé” rồi bấm “Điền vào báo cáo”.</div>
+            )}
+            {form.qrVideo360 + form.qrFlycam + form.qrRedFlag > 0 && (
+              <div className="mt-0.5 text-[11px] text-violet-900">
+                Dịch vụ kèm vé QR: {[form.qrVideo360 ? `${form.qrVideo360} Cam 360` : "", form.qrFlycam ? `${form.qrFlycam} flycam` : "", form.qrRedFlag ? `${form.qrRedFlag} cờ đỏ` : ""].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
           <p className="mt-1 text-xs font-semibold text-slate-700">
             Tổng chuyến PPG: <strong className="tabular-nums text-sky-700">{form.ppgFlights}</strong>{" "}
             <span className="font-normal text-slate-400">
-              ({ppgWithTicket} có vé + {form.ppgNoTicket} không vé)
+              ({Math.max(0, ppgWithTicket - form.qrFlights)} vé giấy + {form.ppgNoTicket} không vé + {form.qrFlights} vé QR)
             </span>
           </p>
           {form.ppgFlights > 0 && (
             <div className="mt-3">
               <Field
-                label={bi("Mã vé PPG", "PPG codes")}
-                hint={`Mỗi chuyến có vé một mã: ${parsedPpg.codes.length} mã / ${ppgWithTicket} chuyến có vé`}
+                label={bi("Mã vé GIẤY PPG", "PPG paper ticket codes")}
+                hint={`Mỗi chuyến vé giấy một mã: ${parsedPpg.codes.length} mã / ${Math.max(0, ppgWithTicket - form.qrFlights)} chuyến vé giấy — vé QR KHÔNG gõ vào đây`}
               >
                 <TextInput
                   value={form.ppgCodesText}
@@ -797,11 +847,11 @@ export default function PilotReportPage() {
                   disabled={locked}
                 />
               </Field>
-              {form.ppgFlights !== parsedPpg.codes.length + form.ppgNoTicket && (
+              {form.ppgFlights !== parsedPpg.codes.length + form.ppgNoTicket + form.qrFlights && (
                 <Banner tone="warning">
-                  PPG: {form.ppgFlights} chuyến nhưng {parsedPpg.codes.length} mã + {form.ppgNoTicket} không vé ={" "}
-                  {parsedPpg.codes.length + form.ppgNoTicket} — hai bên phải bằng nhau mới chốt được (codes +
-                  ticketless must equal flights).
+                  PPG: {form.ppgFlights} chuyến nhưng {parsedPpg.codes.length} mã vé giấy + {form.ppgNoTicket} không vé + {form.qrFlights} vé QR ={" "}
+                  {parsedPpg.codes.length + form.ppgNoTicket + form.qrFlights} — hai bên phải bằng nhau mới chốt được (paper codes +
+                  ticketless + QR must equal flights).
                 </Banner>
               )}
             </div>
