@@ -5454,7 +5454,8 @@ export function BookingTodayBanner({
    * Đã xuất rồi thì quay về nút cũ (bấm để bỏ tích nếu lỡ tay), và có thêm nút
    * 🖨 nhỏ để in lại khi khách làm mất vé hay máy in kẹt giấy.
    */
-  const renderTicketButton = (b: BookingDTO) => (
+  /** `anTrangThaiQr`: THẺ vẽ chip "ĐÃ BAY HẾT / tên phi công" ở hàng dưới, để hàng trên còn chỗ cho Đã bay (chủ 20/09). */
+  const renderTicketButton = (b: BookingDTO, anTrangThaiQr = false) => (
     <>
       <Button
         type="button"
@@ -5602,7 +5603,7 @@ export function BookingTodayBanner({
           🎟 DV vé
         </Button>
       )}
-      {renderVeQrStatus(b)}
+      {!anTrangThaiQr && renderVeQrStatus(b)}
       {chonLoaiVe?.id === b.id && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={() => setChonLoaiVe(null)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -5790,7 +5791,7 @@ export function BookingTodayBanner({
       <>
         {/* Trong BẢNG: Thu tiền nằm ở ô "Còn thu", Chi tiết ở ô "Nguồn" (luật chủ 04/09) */}
         {!table && !hangDuoi && moneyOutside(b) && renderMoneyButton(b)}
-        {renderTicketButton(b)}
+        {renderTicketButton(b, hangDuoi)}
         {renderFlownButton(b)}
         {/* Thẻ: "Cần gọi xác nhận" xuống HÀNG DƯỚI cùng Chi tiết book · ⋯ Thêm (chủ 18/09) — hàng trên chỉ còn vé + đã bay */}
         {!hangDuoi && renderContactButton(b)}
@@ -5971,6 +5972,7 @@ export function BookingTodayBanner({
                  * ba nút, bảng chức năng nhét vào đó thì mỗi mục một dòng.
                  */}
                 <div className="flex flex-wrap justify-end gap-1 [&>div]:w-full [&>div]:min-w-[300px]">
+                  {renderVeQrStatus(b)}
                   {!(b.locked && !canLock) && renderContactButton(b)}
                   {detailButton(b)}
                   {!(b.locked && !canLock) && renderMoreMenu(b)}
