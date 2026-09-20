@@ -3,11 +3,57 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { formatDateKeyVN } from "@/lib/baobay/date";
 import { docQrTuCanvas } from "@/lib/baobay/doc-qr";
+import type { BookingDTO } from "@/lib/baobay/types";
+import { formatVND } from "@/lib/pricing";
 import type { KetQuaQuet, MaVeDTO } from "@/services/ve-qr.service";
 
-import { apiPost } from "./client-api";
+import { AddServicesCard } from "./AddServicesCard";
+import { apiGet, apiPost } from "./client-api";
 import { Button } from "./ui";
+
+const TEN_DV: Array<[keyof BookingDTO, string]> = [
+  ["video360", "Cam 360"],
+  ["flycam", "Flycam"],
+  ["redFlag", "Cờ đỏ"],
+  ["sunset", "Hoàng hôn"],
+  ["flagFlight", "Kéo cờ"],
+];
+
+/**
+ * THÔNG TIN BOOKING sau khi quét (chủ 20/09): số booking, ngày, giờ hẹn, tên,
+ * thành viên, dịch vụ đã đăng ký, và "đã thanh toán đủ" / "còn thu X" — KHÔNG
+ * hiện tổng tiền. Nút mở thẻ dịch vụ để thêm / bớt / đổi ngay trên booking ấy.
+ */
+function ThongTinBooking({ b, ma, onSua }: { b: BookingDTO; ma: MaVeDTO; onSua: () => void }) {
+  const dv = TEN_DV.filter(([k]) => Number(b[k]) > 0).map(([k, t]) => `${Number(b[k])}×${t}`);
+  const bh = (b.insured ?? []).filter((g) => !g.cancelled).map((g) => g.fullName).filter(Boolean);
+  const thanhVien = bh.length ? bh : (b.otaGuests ?? []).map((g) => g.fullName).filter(Boolean);
+  return (
+    <div className="rounded-xl border border-emerald-400 bg-white p-3 text-slate-900">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="text-base font-black">
+          #{b.daySeq} <span className="font-bold">{b.contactName || "Khách"}</span>
+          <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">vé {ma.nhan} · {ma.tenKhach}</span>
+        </div>
+        <div className="text-sm font-semibold">
+          {formatDateKeyVN(b.flightDate)}
+          {b.expectedTime ? ` · hẹn ${b.expectedTime}` : ""}
+          {b.guestCount > 1 ? ` · ${b.guestCount} khách` : ""}
+        </div>
+      </div>
+      {thanhVien.length > 0 && <div className="mt-1 text-xs text-slate-700">Thành viên: {thanhVien.join(", ")}</div>}
+      <div className="mt-1 text-sm font-bold text-rose-700">Dịch vụ: {dv.length ? dv.join(" · ") : "chỉ bay dù, không kèm dịch vụ"}</div>
+      <div className={"mt-1 text-sm font-bold " + (b.remaining > 0 ? "text-amber-700" : "text-emerald-700")}>
+        {b.remaining > 0 ? `💰 Còn thu ${formatVND(b.remaining)}` : "✅ Đã thanh toán đủ"}
+      </div>
+      <Button type="button" className="mt-2 h-9 w-full bg-violet-600 text-sm hover:bg-violet-700" onClick={onSua}>
+        ➕➖🔁 Thêm · bớt · đổi dịch vụ
+      </Button>
+    </div>
+  );
+}
 
 type Dong = { luc: string; ok: boolean; cau: string; nhan?: string; ten?: string };
 
@@ -22,6 +68,21 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
   const [loiCam, setLoiCam] = useState<string | null>(null);
   const [goTay, setGoTay] = useState("");
   const [dangBat, setDangBat] = useState(false);
+  /** Booking của mã vừa quét (một vé) — hiện thông tin và cho sửa dịch vụ. */
+  const [bookingVua, setBookingVua] = useState<{ b: BookingDTO; ma: MaVeDTO } | null>(null);
+  const [moSua, setMoSua] = useState(false);
+  const layBooking = useCallback(
+    async (m: MaVeDTO) => {
+      try {
+        const r = await apiGet<{ forDate: BookingDTO[] }>(`/api/baocao/booking?date=${m.flightDate}&spot=${spot}&moi=${Date.now()}`);
+        const b = r.forDate.find((x) => x.id === m.bookingId);
+        if (b) setBookingVua({ b, ma: m });
+      } catch {
+        /* không lấy được thì thôi, dòng nhật ký vẫn có */
+      }
+    },
+    [spot],
+  );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const vuaDoc = useRef<{ text: string; luc: number } | null>(null);
@@ -35,11 +96,12 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
         const m: MaVeDTO = r.ma;
         if (!r.daQuet) soMoi.current++;
         setNhatKy((x) => [{ luc, ok: true, nhan: m.nhan, ten: m.tenKhach, cau: r.daQuet ? "đã quét trước đó" : "✓ đã nhận" }, ...x].slice(0, 30));
+        void layBooking(m);
       } catch (e) {
         setNhatKy((x) => [{ luc, ok: false, cau: `${text.slice(0, 28)} — ${e instanceof Error ? e.message : "lỗi"}` }, ...x].slice(0, 30));
       }
     },
-    [spot, date],
+    [spot, date, layBooking],
   );
 
   /** Bật camera NGAY khi hộp mở. */
@@ -114,7 +176,12 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
         {loiCam && <div className="absolute inset-x-3 top-3 rounded-lg bg-rose-600/90 px-3 py-2 text-sm">{loiCam}</div>}
         {!loiCam && !dangBat && <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">Đang mở camera…</div>}
       </div>
-      <div className="max-h-[38vh] overflow-y-auto bg-slate-900 px-3 py-2">
+      <div className="max-h-[48vh] overflow-y-auto bg-slate-900 px-3 py-2">
+        {bookingVua && (
+          <div className="mb-2">
+            <ThongTinBooking b={bookingVua.b} ma={bookingVua.ma} onSua={() => setMoSua(true)} />
+          </div>
+        )}
         <form
           className="mb-2 flex gap-2"
           onSubmit={(e) => {
@@ -151,6 +218,27 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
           </ul>
         )}
       </div>
+      {moSua && bookingVua && (
+        <div className="fixed inset-0 z-[95] overflow-y-auto bg-slate-100 p-3 text-slate-900">
+          <div className="mx-auto max-w-lg">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-bold">#{bookingVua.b.daySeq} {bookingVua.b.contactName} — dịch vụ</div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 px-3"
+                onClick={() => {
+                  setMoSua(false);
+                  void layBooking(bookingVua.ma);
+                }}
+              >
+                ✕ Đóng
+              </Button>
+            </div>
+            <AddServicesCard spot={spot} date={bookingVua.b.flightDate} selfOnly bookingId={bookingVua.b.id} moSan />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

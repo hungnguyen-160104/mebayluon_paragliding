@@ -404,6 +404,13 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > QR đã cấp mã. **Quét vé ngay trên trang phi công:** khối "Từ quét vé" (Sa Pa,
 > và Khau Phạ với phi công PPG) có nút **📷 Quét vé** mở camera tức thì, quét
 > liên tục, đóng là số tự cộng lại; ở Khau Phạ số quét được điền vào ô chuyến PPG.
+> **Quét một vé xong** hộp hiện ngay thông tin booking: số booking, ngày + giờ
+> hẹn, tên người đặt, thành viên, dịch vụ đã đăng ký, và **"Đã thanh toán đủ"**
+> hoặc **"Còn thu X"** (không hiện tổng tiền). Nút **Thêm · bớt · đổi dịch vụ**
+> mở thẻ dịch vụ đã chọn sẵn booking ấy. Thẻ dịch vụ có ba chế độ **➕ Thêm ·
+> ➖ Huỷ · 🔁 Đổi**: đổi = chọn phần bớt và phần thêm, máy tính tiền bù trừ
+> (360 ↔ flycam ngang giá = 0đ; đổi làm combo tan thì khách chịu phần combo mất),
+> ghi vào "còn thu" của booking, không thu/hoàn tại chỗ.
 >
 > **Mẫu vé Khau Phạ (18/09):** vé bay dù một liên có mã QR phi công
 > quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,

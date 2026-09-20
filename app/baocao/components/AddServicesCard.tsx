@@ -70,6 +70,8 @@ export function AddServicesCard({
   date,
   onlyFlycam = false,
   selfOnly = false,
+  bookingId,
+  moSan = false,
 }: {
   spot: string;
   date: string;
@@ -79,6 +81,10 @@ export function AddServicesCard({
    * `changes` máy chủ đã lọc còn của chính mình.
    */
   selfOnly?: boolean;
+  /** Đã biết booking (mở từ hộp quét vé, chủ 20/09): chọn sẵn, không hiện ô chọn/gõ số. */
+  bookingId?: string;
+  /** Mở sẵn thẻ. */
+  moSan?: boolean;
   /**
    * Camera man chỉ được đụng flycam (máy chủ cũng chặn) — bật cờ này thì thẻ
    * chỉ hiện đúng ô flycam, khỏi bày ra thứ họ bấm vào cũng bị từ chối.
@@ -98,12 +104,14 @@ export function AddServicesCard({
    * Cùng một thao tác "sửa dịch vụ của một booking", chỉ khác dấu cộng/trừ —
    * nên hai chế độ chung một thẻ, khỏi bắt người dùng nhớ hai chỗ.
    */
-  const [mode, setMode] = useState<"add" | "remove">("add");
+  const [mode, setMode] = useState<"add" | "remove" | "swap">("add");
+  /** ĐỔI DỊCH VỤ (chủ 20/09): phần BỚT trong lượt đổi; phần THÊM dùng `add`. */
+  const [bot, setBot] = useState<Record<ServiceKey, number>>({ ...EMPTY });
   /** Huỷ dịch vụ: tiền lùi lại trừ vào phần còn thu, hay trả lại khách. */
   const [backMode, setBackMode] = useState<"credit" | "refund">("credit");
   const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
   const [bankAccount, setBankAccount] = useState("");
-  const [pickId, setPickId] = useState("");
+  const [pickId, setPickId] = useState(bookingId ?? "");
   /** Số booking phi công gõ (chế độ selfOnly). */
   const [soGo, setSoGo] = useState("");
   const [add, setAdd] = useState<Record<ServiceKey, number>>({ ...EMPTY });
@@ -245,7 +253,21 @@ export function AddServicesCard({
    * HUỶ : trần là số đã đăng ký — không huỷ nhiều hơn thứ khách đã mua.
    */
   const capOf = (k: ServiceKey) =>
-    picked ? (mode === "add" ? Math.max(0, picked.guestCount - (picked[k] as number)) : (picked[k] as number)) : 0;
+    picked
+      ? mode === "add"
+        ? Math.max(0, picked.guestCount - (picked[k] as number))
+        : mode === "swap"
+          ? Math.max(0, picked.guestCount - (picked[k] as number) + bot[k])
+          : (picked[k] as number)
+      : 0;
+  /**
+   * ĐỔI DỊCH VỤ: tiền bù trừ = (thêm − bớt) − (combo sau − combo trước). Đổi 1
+   * Cam 360 lấy 1 flycam giá ngang nhau → 0đ; đổi mà combo tan thì khách chịu
+   * phần combo mất (đổi là ý khách, không phải lỗi bên mình nên không chia đôi).
+   */
+  const botAmount = (Object.keys(price) as ServiceKey[]).reduce((t, k) => t + bot[k] * price[k], 0);
+  const comboSauDoi = picked ? comboDiscount(picked.flycam - bot.flycam + add.flycam, picked.video360 - bot.video360 + add.video360) : 0;
+  const buTru = addAmount - botAmount - (comboSauDoi - comboBefore);
 
   /** Tiền lùi lại khi huỷ = tiền dịch vụ bỏ đi + phần combo tan rã theo. */
   const comboLost = picked
@@ -274,6 +296,7 @@ export function AddServicesCard({
 
   function reset() {
     setAdd({ ...EMPTY });
+    setBot({ ...EMPTY });
     setDiscount(0);
     setNote("");
     setCash(0);
@@ -320,7 +343,7 @@ export function AddServicesCard({
       );
       flashDone();
       reset();
-      setPickId("");
+      if (!bookingId) setPickId("");
       load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không huỷ được dịch vụ");
@@ -329,8 +352,42 @@ export function AddServicesCard({
     }
   }
 
+  /** ĐỔI = huỷ phần bớt (trừ vào còn thu, không hoàn) rồi ghi phần thêm (không thu ngay) — máy chủ tính lại tổng booking, chênh lệch nằm ở "còn thu". */
+  async function submitSwap() {
+    if (!picked) return setError("Chọn khách đã đặt trước đã");
+    const coBot = (Object.keys(bot) as ServiceKey[]).some((k) => bot[k] > 0);
+    const coThem = (Object.keys(add) as ServiceKey[]).some((k) => add[k] > 0);
+    if (!coBot || !coThem) return setError("Đổi dịch vụ thì phải có cả phần BỚT và phần THÊM");
+    setBusy(true);
+    setError(null);
+    setDone(null);
+    try {
+      await apiPatch(`/api/baocao/booking/add-services?spot=${spot}`, {
+        id: picked.id,
+        remove: bot,
+        mode: "credit",
+        reason: note || "đổi dịch vụ",
+        backAmount: botAmount,
+      });
+      await apiPost(`/api/baocao/booking/add-services?spot=${spot}`, { id: picked.id, add, discount: 0, note: note || "đổi dịch vụ" });
+      setDone(
+        `✓ Đã đổi dịch vụ cho ${picked.contactName || "khách"} — ` +
+          (buTru > 0 ? `khách trả thêm ${formatVND(buTru)} (đã ghi vào còn thu).` : buTru < 0 ? `trả lại khách ${formatVND(-buTru)} (đã trừ vào còn thu).` : "ngang giá, không thu thêm."),
+      );
+      flashDone();
+      reset();
+      if (!bookingId) setPickId("");
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không đổi được dịch vụ");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit() {
     if (mode === "remove") return submitRemove();
+    if (mode === "swap") return submitSwap();
     if (!picked) return setError("Chọn khách đã đặt trước đã");
     const used = bills.filter((b) => b.amount > 0);
     if (payNow && used.some((b) => !b.code.trim())) return setError("Mỗi bill chuyển khoản phải có mã giao dịch");
@@ -354,7 +411,7 @@ export function AddServicesCard({
       );
       flashDone();
       reset();
-      setPickId("");
+      if (!bookingId) setPickId("");
       load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không ghi được đăng ký thêm");
@@ -367,7 +424,8 @@ export function AddServicesCard({
     <CollapseCard
       /* Nền đổi màu theo việc đang làm: THÊM dịch vụ nền xanh, HUỶ nền đỏ —
          nhìn màu là biết mình đang cộng hay đang trừ, khỏi bấm nhầm chiều. */
-      className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : "border-emerald-400 bg-emerald-50/50"}
+      className={mode === "remove" ? "border-rose-400 bg-rose-50/60" : mode === "swap" ? "border-violet-400 bg-violet-50/50" : "border-emerald-400 bg-emerald-50/50"}
+      open={moSan}
       title={onlyFlycam ? "🎥 Thêm dịch vụ Flycam tại chỗ" : selfOnly ? "➕➖ DỊCH VỤ · HUỶ · HOÀN" : "➕➖ DỊCH VỤ TUỲ CHỌN"}
       hint={selfOnly ? "gõ số booking → thêm flycam/360/cờ đỏ… hoặc huỷ dịch vụ rồi hoàn tiền" : "khách mua thêm hoặc huỷ dịch vụ — cộng/trừ vào booking sẵn có rồi thu / hoàn tiền"}
     >
@@ -382,9 +440,10 @@ export function AddServicesCard({
       <div className="mb-1.5 flex h-9 overflow-hidden rounded-lg border border-slate-300">
         {(
           [
-            ["add", "➕ Đăng ký thêm"],
-            ["remove", "➖ Huỷ dịch vụ"],
-          ] as Array<["add" | "remove", string]>
+            ["add", "➕ Thêm"],
+            ["remove", "➖ Huỷ"],
+            ["swap", "🔁 Đổi"],
+          ] as Array<["add" | "remove" | "swap", string]>
         ).map(([v, label]) => (
           <button
             key={v}
@@ -392,11 +451,12 @@ export function AddServicesCard({
             onClick={() => {
               setMode(v);
               setAdd({ ...EMPTY });
+              setBot({ ...EMPTY });
               setError(null);
             }}
             className={
               mode === v
-                ? `flex-1 text-xs font-bold text-white ${v === "remove" ? "bg-rose-600" : "bg-emerald-600"}`
+                ? `flex-1 text-xs font-bold text-white ${v === "remove" ? "bg-rose-600" : v === "swap" ? "bg-violet-600" : "bg-emerald-600"}`
                 : "flex-1 bg-white text-xs font-medium text-slate-500"
             }
           >
@@ -405,7 +465,7 @@ export function AddServicesCard({
         ))}
       </div>
 
-      {selfOnly ? (
+      {bookingId ? null : selfOnly ? (
         /**
          * PHI CÔNG GÕ SỐ BOOKING (chủ 19/09): không xổ cả danh sách khách của
          * ngày cho phi công xem — gõ "12" thì hiện đúng thông tin đăng ký của
@@ -479,6 +539,22 @@ export function AddServicesCard({
               .join(" · ") || "chưa đăng ký dịch vụ nào"}
           </p>
 
+          {mode === "swap" && (
+            <div className="mt-1.5 rounded-lg border border-violet-200 bg-white px-2 py-1.5">
+              <div className="text-[11px] font-bold text-violet-800">Bớt</div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5">
+                {serviceRows
+                  .filter((s) => (picked[s.key] as number) > 0)
+                  .map((s) => (
+                    <label key={s.key} className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">
+                      {s.label}
+                      <MiniCount value={bot[s.key]} onChange={(v) => setBot((p) => ({ ...p, [s.key]: Math.min(v, picked[s.key] as number) }))} max={picked[s.key] as number} />
+                    </label>
+                  ))}
+              </div>
+              <div className="mt-1.5 text-[11px] font-bold text-violet-800">Thêm</div>
+            </div>
+          )}
           {/* 5 dịch vụ nằm một hàng ngang, bộ đếm nhỏ — cả thẻ gọn trong một màn */}
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1.5">
             {serviceRows.map((s) => (
@@ -636,6 +712,16 @@ export function AddServicesCard({
                 </div>
               )}
             </>
+          ) : mode === "swap" ? (
+          <div className="mt-1.5 rounded-lg border border-violet-300 bg-white px-2 py-1.5 text-xs">
+            <span className="text-slate-600">Bớt <strong className="tabular-nums">{formatVND(botAmount)}</strong> · thêm <strong className="tabular-nums">{formatVND(addAmount)}</strong></span>
+            {comboSauDoi !== comboBefore && (
+              <span className="ml-2 text-slate-600">· combo {comboSauDoi > comboBefore ? "thêm" : "mất"} {formatVND(Math.abs(comboSauDoi - comboBefore))}</span>
+            )}
+            <div className={"mt-1 text-sm font-bold " + (buTru > 0 ? "text-rose-700" : buTru < 0 ? "text-emerald-700" : "text-slate-800")}>
+              {buTru > 0 ? `Khách bù thêm ${formatVND(buTru)} (ghi vào còn thu)` : buTru < 0 ? `Trả lại khách ${formatVND(-buTru)} (trừ vào còn thu)` : "Ngang giá — không thu thêm, không hoàn"}
+            </div>
+          </div>
           ) : (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
             <span className="text-slate-600">
@@ -795,12 +881,14 @@ export function AddServicesCard({
           <div className="mt-1.5 flex items-center gap-2">
             <Button
               type="button"
-              className={"h-10 flex-1 " + (mode === "remove" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700")}
+              className={"h-10 flex-1 " + (mode === "remove" ? "bg-rose-600 hover:bg-rose-700" : mode === "swap" ? "bg-violet-600 hover:bg-violet-700" : "bg-emerald-600 hover:bg-emerald-700")}
               disabled={busy}
               onClick={submit}
             >
               {busy
                 ? "Đang lưu…"
+                : mode === "swap"
+                  ? "✓ Đổi dịch vụ"
                 : mode === "remove"
                   ? backMode === "refund"
                     ? "✓ Huỷ dịch vụ & hoàn tiền"
@@ -809,7 +897,7 @@ export function AddServicesCard({
                     ? "✓ Xác nhận & thu tiền"
                     : "✓ Xác nhận (ghi nợ)"}
             </Button>
-            <DoneTag show={justDone}>{mode === "remove" ? "Đã huỷ" : "Đã ghi"}</DoneTag>
+            <DoneTag show={justDone}>{mode === "remove" ? "Đã huỷ" : mode === "swap" ? "Đã đổi" : "Đã ghi"}</DoneTag>
           </div>
         </>
       )}
