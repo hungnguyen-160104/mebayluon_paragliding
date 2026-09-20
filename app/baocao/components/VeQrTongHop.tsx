@@ -4,6 +4,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { QuetVeModal } from "./QuetVeModal";
+
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import type { MaVeDTO, ThuHoiDTO, TongHopVe } from "@/services/ve-qr.service";
 
@@ -26,15 +28,18 @@ export function VeQrTongHop({
   onDien: (so: { flightCount: number; video360: number; flycam: number; redFlag: number; codes: string[] }) => void;
 }) {
   const [du, setDu] = useState<{ ma: MaVeDTO[]; thuHoi: ThuHoiDTO[]; tongHop: TongHopVe } | null>(null);
+  /** Hộp quét nhanh đang mở? Đóng thì tăng `lan` để tải lại số. */
+  const [moQuet, setMoQuet] = useState(false);
+  const [lan, setLan] = useState(0);
   useEffect(() => {
     let huy = false;
-    apiGet<{ ma: MaVeDTO[]; thuHoi: ThuHoiDTO[]; tongHop: TongHopVe }>(`/api/baocao/ve-qr?spot=${spot}&date=${date}`)
+    apiGet<{ ma: MaVeDTO[]; thuHoi: ThuHoiDTO[]; tongHop: TongHopVe }>(`/api/baocao/ve-qr?spot=${spot}&date=${date}${lan ? `&lan=${lan}` : ""}`)
       .then((r) => !huy && setDu(r))
       .catch(() => !huy && setDu(null));
     return () => {
       huy = true;
     };
-  }, [spot, date]);
+  }, [spot, date, lan]);
   if (!du) return null;
   const t = du.tongHop;
   return (
@@ -73,10 +78,24 @@ export function VeQrTongHop({
         >
           ⤵ Điền vào báo cáo
         </Button>
-        <Link href="/baocao/quet-ve" className="inline-flex h-8 items-center rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+        {/* Bấm là MỞ CAMERA NGAY (chủ 20/09) — không phải sang trang khác. */}
+        <Button type="button" className="h-8 bg-sky-600 px-3 text-xs hover:bg-sky-700" onClick={() => setMoQuet(true)}>
           📷 Quét vé
+        </Button>
+        <Link href="/baocao/quet-ve" className="inline-flex h-8 items-center rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50" title="Trang đầy đủ: chọn ảnh, hoàn mã, tích bay xong">
+          Trang quét vé
         </Link>
       </div>
+      {moQuet && (
+        <QuetVeModal
+          spot={spot}
+          date={date}
+          onClose={() => {
+            setMoQuet(false);
+            setLan((x) => x + 1);
+          }}
+        />
+      )}
     </Card>
   );
 }

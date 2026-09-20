@@ -96,14 +96,15 @@ export function nhanVe(so: number, guestNo: number, guestCount: number): string 
 }
 
 /**
- * Điểm nào QUÉT VÉ / in vé nhiệt: CHỈ SA PA (chủ 19/09: "Khau Phạ và Hà Nội
- * chưa xuất vé in nhiệt — bấm IN VÉ thì tự tích đã xuất vé, không hỏi, không
- * hiện vé"). Mẫu vé ba liên Khau Phạ (vé bay QR · đồ uống · xe ôm) vẫn nằm
- * sẵn trong TicketPrint, bật lại bằng cách thêm điểm vào đây và DIEM_IN_VE.
- * Tham số booking giữ lại để chỗ gọi không phải đổi.
+ * Điểm nào / booking nào CÓ THỂ cấp mã QR: Sa Pa mọi booking; Khau Phạ chỉ
+ * booking có PPG (chủ 20/09: "PPG xuất vé giấy hoặc vé QR — hỏi khi xuất vé;
+ * PG thì vé giấy luôn"); Hà Nội không. Ở Khau Phạ đây là "được phép hỏi",
+ * còn chọn vé giấy hay vé QR là ở nút xuất vé.
  */
-export function coQuetVe(spot: string, _b: { flightKind?: string; ppgGuests?: number }): boolean {
-  return spot === "sapa";
+export function coQuetVe(spot: string, b: { flightKind?: string; ppgGuests?: number }): boolean {
+  if (spot === "sapa") return true;
+  if (spot === "khau-pha") return b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0;
+  return false;
 }
 
 /* ------------------------------------------------------------------ */

@@ -517,14 +517,16 @@ export default function PilotReportPage() {
         </Banner>
       )}
 
-      {/* TỪ QUÉT VÉ (Sa Pa / PPG Khau Phạ, chủ 17/09): số chuyến & dịch vụ tự cộng từ mã đã quét */}
-      {spot === "sapa" && !locked && (
+      {/* TỪ QUÉT VÉ (Sa Pa mọi booking; Khau Phạ = vé QR của booking PPG, chủ 20/09): số chuyến & dịch vụ tự cộng từ mã đã quét */}
+      {(spot === "sapa" || (spot === "khau-pha" && flyPpg)) && !locked && (
         <div className="mb-3">
           <VeQrTongHop
             spot={spot}
             date={date}
             onDien={(so) => {
-              set("flightCount", so.flightCount);
+              /** Khau Phạ chỉ cấp mã QR cho booking PPG → số quét được là chuyến PPG. */
+              if (spot === "khau-pha") set("ppgFlights", so.flightCount);
+              else set("flightCount", so.flightCount);
               set("video360", so.video360);
               set("flycam", so.flycam);
               set("redFlag", so.redFlag);

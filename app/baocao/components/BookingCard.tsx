@@ -4709,6 +4709,8 @@ export function BookingTodayBanner({
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
   /** Hộp DỊCH VỤ TRÊN VÉ (Sa Pa): mở trước lần in đầu để cấp mã QR, hoặc sửa sau khi đã cấp. */
   const [veModal, setVeModal] = useState<BookingDTO | null>(null);
+  /** Khau Phạ, booking PPG: hộp hỏi "Vé giấy hay vé QR" trước khi xuất vé (chủ 20/09). */
+  const [chonLoaiVe, setChonLoaiVe] = useState<BookingDTO | null>(null);
   const [moving, setMoving] = useState<{
     id: string;
     toDate: string;
@@ -5489,7 +5491,13 @@ export function BookingTodayBanner({
              * tích "đã xuất vé" từng lọt xuống nhánh in thẳng bên dưới — chính là
              * lỗi chủ gặp trên điện thoại.
              */
-            setVeModal(b);
+            /**
+             * KHAU PHẠ — booking có PPG (chủ 20/09): hỏi VÉ GIẤY hay VÉ QR. Vé
+             * giấy = chỉ tích đã xuất; vé QR = danh sách mã → cấp mã → khung xem
+             * vé (Lưu · Chia sẻ · In). Sa Pa luôn vé QR.
+             */
+            if (normalizeSpot(spot) === "khau-pha") setChonLoaiVe(b);
+            else setVeModal(b);
             return;
           }
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
@@ -5509,7 +5517,8 @@ export function BookingTodayBanner({
              * ĐIỂM KHÔNG IN VÉ (Khau Phạ, Hà Nội — chủ 19/09): chỉ tích "đã xuất
              * vé", không gọi in, không mở tab, không hỏi gì.
              */
-            if (!coInVe(spot)) {
+            /** Booking KHÔNG thuộc diện vé QR (PG Khau Phạ, mọi booking Hà Nội) = vé giấy: chỉ tích. */
+            if (!coInVe(spot) || !coQuetVe(spot, b)) {
               void act(b, "ticket");
               return;
             }
@@ -5559,7 +5568,8 @@ export function BookingTodayBanner({
        * thêm 🖨 bên cạnh là hai nút cùng một việc. Đợt thử máy in (IN_VE_TU_DO)
        * chỉ còn ý nghĩa "in lại không hỏi lý do, không giới hạn".
        */}
-      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && (
+      {/* In lại chỉ có với vé QR đã cấp mã; vé giấy (PG Khau Phạ, Hà Nội) không có gì để in. */}
+      {b.ticketIssued && !b.noTicketFlight && coInVe(spot) && Boolean(b.veQr?.ngay) && (
         coQuetVe(spot, b) ? (
           <Button
             type="button"
@@ -5593,6 +5603,44 @@ export function BookingTodayBanner({
         </Button>
       )}
       {renderVeQrStatus(b)}
+      {chonLoaiVe?.id === b.id && (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={() => setChonLoaiVe(null)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-slate-900">Xuất vé #{b.daySeq} {b.contactName}</h3>
+            <p className="mt-1 text-xs text-slate-600">Booking có PPG — chọn loại vé cho khách:</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-14 flex-col border-slate-300 bg-white text-slate-800"
+                onClick={() => {
+                  setChonLoaiVe(null);
+                  void act(b, "ticket");
+                }}
+              >
+                <span className="text-lg">🎫</span>
+                <span className="text-xs font-bold">Vé giấy</span>
+              </Button>
+              <Button
+                type="button"
+                className="h-14 flex-col bg-sky-600 hover:bg-sky-700"
+                onClick={() => {
+                  setChonLoaiVe(null);
+                  setVeModal(b);
+                }}
+              >
+                <span className="text-lg">📱</span>
+                <span className="text-xs font-bold">Vé QR (chụp · lưu · in · chia sẻ)</span>
+              </Button>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={() => setChonLoaiVe(null)}>
+                Huỷ
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {veModal?.id === b.id && (
         <VeDichVuModal
           booking={veModal}

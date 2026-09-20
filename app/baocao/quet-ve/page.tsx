@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
+import { anhSangCanvas, docQrTuCanvas } from "@/lib/baobay/doc-qr";
 import { DICH_VU_VE, TEN_DICH_VU, type DichVuVe } from "@/lib/baobay/ve-qr";
 import type { KetQuaQuet, MaVeDTO, ThuHoiDTO, TongHopVe } from "@/services/ve-qr.service";
 
@@ -36,35 +37,6 @@ function dichVuChip(m: MaVeDTO) {
       {TEN_DICH_VU[k]}
     </span>
   ));
-}
-
-/** Ảnh → canvas (thu về 1600px là đủ cho QR vé, mã chỉ ~25 ô mỗi cạnh). */
-async function toCanvas(file: File, maxSide = 1600): Promise<HTMLCanvasElement> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return canvas;
-}
-
-/** Bộ đọc dựng sẵn của máy (Chrome/Android) — nhanh hơn thư viện; không có thì jsQR. */
-async function docQr(canvas: HTMLCanvasElement): Promise<string | null> {
-  const w = window as unknown as { BarcodeDetector?: new (o?: { formats?: string[] }) => { detect: (s: unknown) => Promise<Array<{ rawValue: string }>> } };
-  if (w.BarcodeDetector) {
-    try {
-      const found = await new w.BarcodeDetector({ formats: ["qr_code"] }).detect(canvas);
-      if (found[0]?.rawValue) return found[0].rawValue;
-    } catch {
-      /* rơi xuống jsQR */
-    }
-  }
-  const { default: jsQR } = await import("jsqr");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  return jsQR(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" })?.data ?? null;
 }
 
 export default function QuetVePage() {
@@ -158,7 +130,7 @@ export default function QuetVePage() {
         canvas.width = Math.round(v.videoWidth * scale);
         canvas.height = Math.round(v.videoHeight * scale);
         canvas.getContext("2d")?.drawImage(v, 0, 0, canvas.width, canvas.height);
-        const text = await docQr(canvas).catch(() => null);
+        const text = await docQrTuCanvas(canvas).catch(() => null);
         if (text) {
           const cu = vuaDoc.current;
           if (!cu || cu.text !== text || Date.now() - cu.luc > 4000) {
@@ -184,7 +156,7 @@ export default function QuetVePage() {
     let bo = 0;
     for (const f of Array.from(files)) {
       try {
-        const text = await docQr(await toCanvas(f));
+        const text = await docQrTuCanvas(await anhSangCanvas(f));
         if (!text) {
           ghi({ luc: new Date().toISOString(), text: f.name, ok: false, cau: "không thấy mã QR trong ảnh" });
           continue;
