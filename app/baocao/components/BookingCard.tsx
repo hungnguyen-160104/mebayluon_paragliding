@@ -5152,7 +5152,8 @@ export function BookingTodayBanner({
    * [Thu tiền nếu còn thiếu] + "↩ Chưa bay" ĐỎ + Khoá đứng cạnh ⋯ Thêm; đã huỷ
    * thì "↩ Bay lại".
    */
-  const renderClosedQuick = (b: BookingDTO, table = false) =>
+  /** `anKhoa`: THẺ tự đặt nút Khoá cạnh ⋯ Thêm ở hàng cuối (chủ 20/09) nên không vẽ ở đây. */
+  const renderClosedQuick = (b: BookingDTO, table = false, anKhoa = false) =>
     b.status === "done" ? (
       <>
         {/* Đã bay mà CÒN THU: nút Thu tiền đứng đầu cột cho nhân viên bấm ngay,
@@ -5170,7 +5171,7 @@ export function BookingTodayBanner({
             ↩ Chưa bay
           </Button>
         )}
-        {lockButton(b)}
+        {!anKhoa && lockButton(b)}
         {!table && detailButton(b)}
       </>
     ) : b.status === "cancelled" ? (
@@ -5990,20 +5991,24 @@ export function BookingTodayBanner({
    */
   const renderClosedActions = (b: BookingDTO) => (
     <div className="float-right ml-2 flex flex-col items-stretch gap-0.5 [&_button]:h-7 [&_button]:justify-center [&_button]:whitespace-nowrap [&_button]:text-center">
-      {renderClosedQuick(b)}
-      <button
-        type="button"
-        onClick={() => setClosedMoreId((cur) => (cur === b.id ? "" : b.id))}
-        className={
-          "rounded-lg border px-2 text-xs font-bold " +
-          (closedMoreId === b.id
-            ? "border-sky-600 bg-sky-600 text-white"
-            : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
-        }
-        title="Xổ các chức năng còn lại: chi tiết thanh toán, sửa booking, sửa thu, thu tiền, khoá…"
-      >
-        ⋯ Thêm
-      </button>
+      {renderClosedQuick(b, false, true)}
+      {/* Hàng cuối: Khoá và ⋯ Thêm CHUNG MỘT HÀNG, mỗi nút nửa bề ngang (chủ 20/09) — không có Khoá thì Thêm choán cả hàng. */}
+      <div className="flex gap-0.5 [&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-1">
+        {b.status === "done" && lockButton(b)}
+        <button
+          type="button"
+          onClick={() => setClosedMoreId((cur) => (cur === b.id ? "" : b.id))}
+          className={
+            "rounded-lg border px-2 text-xs font-bold " +
+            (closedMoreId === b.id
+              ? "border-sky-600 bg-sky-600 text-white"
+              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+          }
+          title="Xổ các chức năng còn lại: chi tiết thanh toán, sửa booking, sửa thu, thu tiền, khoá…"
+        >
+          ⋯ Thêm
+        </button>
+      </div>
     </div>
   );
 
