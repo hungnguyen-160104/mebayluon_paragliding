@@ -5948,7 +5948,7 @@ export function BookingTodayBanner({
                * Ngắt dòng bằng một ô rỗng trải hết bề ngang — cách duy nhất ép
                * xuống dòng trong flex-wrap mà không phải đo đạc gì.
                */
-              <div className="float-right ml-2 flex max-w-[340px] flex-col items-end gap-1 [&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
+              <div className="float-right ml-2 flex max-w-[360px] flex-col items-end gap-1 [&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
                 {/**
                  * HAI HÀNG RIÊNG, mỗi hàng CO THEO CHỮ của chính nó.
                  *
@@ -5959,14 +5959,17 @@ export function BookingTodayBanner({
                  * một mảng trắng to. Tách hai hàng thì khối chỉ rộng bằng hàng
                  * rộng nhất, chữ được trả lại chỗ.
                  */}
-                <div className="flex flex-wrap justify-end gap-1">{renderOpenQuick(b, false, true)}</div>
+                {/* HÀNG 1 (chủ 20/09): Thu tiền · Xuất vé · Đã bay — HÀNG 2: Đã LH · Chi tiết book · ⋯ Thêm. Sáu nút đúng hai hàng, không nhảy thành ba. */}
+                <div className="flex flex-wrap justify-end gap-1 [&>div]:w-full [&>div]:min-w-[300px]">
+                  {!(b.locked && !canLock) && moneyOutside(b) && renderMoneyButton(b)}
+                  {renderOpenQuick(b, false, true)}
+                </div>
                 {/**
                  * Bảng xổ ra của "⋯ Thêm" (và ô thu tiền) là `div` — cho nó
                  * trải hết hàng, và nới sàn 300px: hàng dưới vốn chỉ rộng bằng
                  * ba nút, bảng chức năng nhét vào đó thì mỗi mục một dòng.
                  */}
                 <div className="flex flex-wrap justify-end gap-1 [&>div]:w-full [&>div]:min-w-[300px]">
-                  {moneyOutside(b) && renderMoneyButton(b)}
                   {!(b.locked && !canLock) && renderContactButton(b)}
                   {detailButton(b)}
                   {!(b.locked && !canLock) && renderMoreMenu(b)}
