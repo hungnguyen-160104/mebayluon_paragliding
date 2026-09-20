@@ -5608,30 +5608,31 @@ export function BookingTodayBanner({
           <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-slate-900">Xuất vé #{b.daySeq} {b.contactName}</h3>
             <p className="mt-1 text-xs text-slate-600">Booking có PPG — chọn loại vé cho khách:</p>
+            {/* Nút thường (không dùng <Button> inline-flex h-11): chữ hai dòng, gói trong ô, không tràn (chủ 20/09). */}
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                className="h-14 flex-col border-slate-300 bg-white text-slate-800"
+                className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-xl border-2 border-slate-300 bg-white px-2 py-2 text-slate-800 hover:bg-slate-50"
                 onClick={() => {
                   setChonLoaiVe(null);
                   void act(b, "ticket");
                 }}
               >
-                <span className="text-lg">🎫</span>
-                <span className="text-xs font-bold">Vé giấy</span>
-              </Button>
-              <Button
+                <span className="text-2xl leading-none">🎫</span>
+                <span className="text-sm font-bold">Vé giấy</span>
+              </button>
+              <button
                 type="button"
-                className="h-14 flex-col bg-sky-600 hover:bg-sky-700"
+                className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-xl bg-sky-600 px-2 py-2 text-white hover:bg-sky-700"
                 onClick={() => {
                   setChonLoaiVe(null);
                   setVeModal(b);
                 }}
               >
-                <span className="text-lg">📱</span>
-                <span className="text-xs font-bold">Vé QR (chụp · lưu · in · chia sẻ)</span>
-              </Button>
+                <span className="text-2xl leading-none">📱</span>
+                <span className="text-sm font-bold">Vé QR</span>
+                <span className="text-[11px] font-medium leading-tight text-white/90">chụp · lưu · in · chia sẻ</span>
+              </button>
             </div>
             <div className="mt-3 flex justify-end">
               <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={() => setChonLoaiVe(null)}>
