@@ -428,7 +428,10 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > logo `public/logo-mbl-in.png`, dòng phụ "BOARDING TICKET · KHAU PHẠ", web
 > www.mebayluon.com, lời dặn song ngữ Việt/Anh. Mọi booking ở ba điểm đều qua
 > danh sách mã QR → cấp mã → khung xem vé (Lưu ảnh · Chia sẻ · In vé).
-> **Khau Phạ in BA liên mỗi khách**: vé bay dù (QR + mã chống giả + dịch vụ
+> **Khau Phạ TẠM THỜI chỉ in MỘT liên vé bay** (chủ 21/09): vé đồ uống và vé xe
+> ôm chưa triển khai nên tắt bằng cờ `IN_VE_PHU_KHAU_PHA` trong `TicketPrint.tsx`
+> — mẫu vé và mã QR riêng vẫn còn nguyên, bật lại đổi cờ thành `true`. Bộ ba
+> liên đã dựng sẵn gồm: vé bay dù (QR + mã chống giả + dịch vụ
 > của đúng khách, kèm dịch vụ đoàn Hoàng hôn / Kéo cờ / PPG), **VÉ ĐỒ UỐNG** và
 > **VÉ XE ÔM** — hai liên phụ cùng kiểu dáng, QR nhỏ hơn chỉ mang
 > `NUOC 22/09/2026 #7.2` / `XE 22/09/2026 #7.2` (chữ đứng đầu nên máy quét vé

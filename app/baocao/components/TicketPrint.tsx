@@ -388,10 +388,18 @@ const CSS = `
  * Dựng trang in cho một booking (đủ bộ 3 liên × số khách). Tách khỏi việc in
  * để xem thử mẫu không cần máy in (scripts/baocao/xem-mau-ve.ts).
  */
+/**
+ * VÉ ĐỒ UỐNG + VÉ XE ÔM ở Khau Phạ — TẠM TẮT (chủ 21/09: "hai liên này chưa
+ * triển khai được, tương lai sẽ làm"). Mẫu vé, mã QR riêng (`NUOC …` / `XE …`)
+ * và phép đọc chống quét lẫn đã dựng xong và có phép thử; bật lại chỉ cần đổi
+ * cờ này thành `true`.
+ */
+const IN_VE_PHU_KHAU_PHA = false;
+
 export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<string> {
   const guests = Math.max(1, b.guestCount || 1);
   const luc = gioIn();
-  const laKhauPha = normalizeSpot(spot) === "khau-pha";
+  const laKhauPha = normalizeSpot(spot) === "khau-pha" && IN_VE_PHU_KHAU_PHA;
   /** Mã vé QR từng khách — sinh trước, mỗi khách một ảnh; Khau Phạ thêm QR vé nước + vé xe. */
   const qrVe = new Map<number, string>();
   const qrNuoc = new Map<number, string>();
@@ -412,9 +420,8 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const pages: string[] = [];
   for (let g = 1; g <= guests; g++) {
     /**
-     * Sa Pa, Hà Nội: MỘT liên vé bay. Khau Phạ: BA liên (chủ 18/09) — vé bay dù
-     * có QR phi công quét, vé đồ uống, vé xe ôm (hai liên sau QR riêng, chỉ
-     * ngày + số booking + số khách).
+     * MỘT liên vé bay mỗi khách. Khau Phạ từng dựng thêm vé đồ uống + vé xe ôm
+     * (18/09) nhưng đang TẠM TẮT — xem `IN_VE_PHU_KHAU_PHA`.
      */
     pages.push(lienBoarding(b, spot, g, luc, qrVe.get(g)));
     if (laKhauPha) pages.push(lienPhu(b, spot, g, luc, "nuoc", qrNuoc.get(g)), lienPhu(b, spot, g, luc, "xe", qrXe.get(g)));
