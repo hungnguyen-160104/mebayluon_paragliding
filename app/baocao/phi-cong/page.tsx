@@ -789,7 +789,7 @@ export default function PilotReportPage() {
             TỔNG (mọi phép cộng, đối chiếu, bảng tính đang dựa vào nó), nên ô "có vé"
             chỉ là tổng trừ đi số không vé.
           */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
             <ServiceBox tone="tickets" label="Chuyến PPG vé giấy">
               <CountInput
                 compact
@@ -808,13 +808,21 @@ export default function PilotReportPage() {
                 max={300}
               />
             </ServiceBox>
+            {/**
+             * Ô THỨ BA: chuyến PPG vé QR — MÁY TỰ TỔNG HỢP từ mã đã quét (chủ
+             * 21/09), không gõ tay nên không có nút +/−; muốn đổi thì quét thêm
+             * / hoàn mã rồi bấm "Điền vào báo cáo" ở khối Từ quét vé.
+             */}
+            <ServiceBox tone="video360" label="📱 Chuyến PPG vé QR">
+              <div className="flex h-10 items-center justify-center rounded-lg border border-violet-200 bg-white/70">
+                <span className="text-lg font-black tabular-nums text-violet-900">{form.qrFlights}</span>
+                <span className="ml-1 text-[11px] font-semibold text-violet-700">tự tổng hợp</span>
+              </div>
+            </ServiceBox>
           </div>
-          {/* VÉ QR (PPG) — Ô RIÊNG, khác vé giấy (chủ 20/09): số và mã lấy từ khối "Từ quét vé", không gõ tay. */}
+          {/* Chi tiết vé QR: danh sách mã + dịch vụ kèm — số chuyến đã nằm ở ô trên. */}
           <div className="mt-2 rounded-lg border border-violet-300 bg-violet-50 px-2 py-1.5">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-xs font-bold text-violet-900">📱 Vé QR (PPG) đã quét</span>
-              <span className="text-sm font-black tabular-nums text-violet-900">{form.qrFlights} chuyến</span>
-            </div>
+            <div className="text-xs font-bold text-violet-900">📱 Mã vé QR đã quét</div>
             {form.qrCodes.length > 0 ? (
               <div className="mt-0.5 text-[11px] leading-snug text-violet-900">{form.qrCodes.join(" · ")}</div>
             ) : (
