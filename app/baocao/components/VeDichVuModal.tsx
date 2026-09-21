@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { normalizeSpot } from "@/lib/baobay/spots";
 
 import type { BookingDTO } from "@/lib/baobay/types";
-import { chiaDichVu, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
+import { chiaDichVu, DICH_VU_VE, nhanVe, TEN_DICH_VU, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
+import { tenKhachBaoHiem, vietTatTen } from "./TicketPrint";
 
 import { Button } from "./ui";
 
@@ -43,10 +44,13 @@ export function VeDichVuModal({
     void import("qrcode").catch(() => undefined);
   }, []);
   const [loi, setLoi] = useState<string | null>(null);
-  const ten = (g: number) => {
-    const ds = (booking.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
-    return tenVietTat(ds.length >= g ? ds[g - 1]! : booking.contactName || "Khách");
-  };
+  /**
+   * TÊN TỪNG KHÁCH, KHÔNG PHẢI TÊN BOOKING (chủ 21/09): đoàn 2 người đã khai đủ
+   * hai tên trong sổ bảo hiểm thì #16.1 và #16.2 phải là hai người khác nhau.
+   * Lấy đúng nguồn và đúng cách viết tắt của VÉ IN (`tenKhachBaoHiem` →
+   * `vietTatTen`) nên danh sách trên màn hình khớp chữ trên vé.
+   */
+  const ten = (g: number) => vietTatTen(tenKhachBaoHiem(booking, g));
   const dem = (k: DichVuVe) => rows.filter((r) => r[k]).length;
   const dat = { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag };
   /**

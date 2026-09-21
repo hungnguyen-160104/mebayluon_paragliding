@@ -87,6 +87,9 @@ const ten = (s: BaobaySession) => s.name || s.username;
 
 /** Tên khách thứ n — OTA có tên từng người thì đúng người; không thì tên liên hệ (giống vé in). */
 function tenKhach(doc: any, guestNo: number): string {
+  /** SỔ BẢO HIỂM trước (chủ 21/09) — đã khai đủ tên từng người thì mã #16.2 phải ra đúng người thứ hai, không phải tên booking. */
+  const bh = (doc.insured ?? []).filter((g: any) => !g?.cancelled).map((g: any) => String(g?.fullName ?? "").trim()).filter(Boolean);
+  if (bh.length >= guestNo) return bh[guestNo - 1];
   const ds = (doc.otaGuests ?? []).map((g: any) => String(g?.fullName ?? "").trim()).filter(Boolean);
   if (ds.length >= guestNo) return ds[guestNo - 1];
   return String(doc.contactName || "Khách");
