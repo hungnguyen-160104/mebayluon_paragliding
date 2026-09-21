@@ -263,9 +263,12 @@ export default function SummaryPage() {
             <Stat label="Vé xuất ra" value={String(t.ticketsIssued)} />
             <Stat label="Vé thu hồi" value={String(t.ticketsReturned)} />
             <Stat label="Chuyến bay (PC báo)" value={String(t.pilotFlights)} />
-            <Stat label="Tiền mặt" value={formatVND(t.cashTotal)} />
-            <Stat label="Chuyển khoản" value={formatVND(t.transferTotal)} />
-            <Stat label="Tổng thu" value={formatVND(t.revenueTotal)} strong />
+            <Stat label="Tiền mặt đã thu" value={formatVND(t.cashTotal)} />
+            <Stat label="Chuyển khoản đã thu" value={formatVND(t.transferTotal)} />
+            {t.bookingOther > 0 && <Stat label="Đã thu chưa rõ hình thức (cọc gõ tay)" value={formatVND(t.bookingOther)} />}
+            <Stat label="Tổng đã thu" value={formatVND(t.revenueTotal)} strong />
+            <Stat label="CÒN THU (khách còn nợ)" value={formatVND(t.bookingRemaining)} />
+            <Stat label="Giá trị sổ booking" value={formatVND(t.bookingValue)} />
             <Stat label="Tổng chi nhân viên" value={formatVND(t.expenseTotal)} />
             <Stat label="Hoàn khách (hoàn tiền + huỷ flycam)" value={formatVND(t.refundTotal)} />
             <Stat label="Chiết khấu đại lý" value={formatVND(t.agencySpendTotal)} />
@@ -281,13 +284,18 @@ export default function SummaryPage() {
           {data.pendingDays.length > 0 && data.allTotals && (
             <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/60 p-3">
               <p className="text-sm font-bold text-amber-900">
-                Tạm tính CẢ KỲ — gồm {data.pendingDays.length} ngày chưa chốt (lấy theo báo cáo
-                nhân viên + lệnh thu, có thể đổi khi kế toán chốt)
+                Tạm tính CẢ KỲ — gồm {data.pendingDays.length} ngày chưa chốt (tiền lấy theo SỔ
+                BOOKING của đoàn bay từng ngày, bỏ đoàn đã huỷ; ngày chưa chốt còn có thể đổi)
               </p>
               <div className="mt-2 grid grid-cols-2 gap-3">
-                <Stat label="Tiền mặt" value={formatVND(data.allTotals.cashTotal)} />
-                <Stat label="Chuyển khoản" value={formatVND(data.allTotals.transferTotal)} />
-                <Stat label="Tổng thu" value={formatVND(data.allTotals.revenueTotal)} strong />
+                <Stat label="Tiền mặt đã thu" value={formatVND(data.allTotals.cashTotal)} />
+                <Stat label="Chuyển khoản đã thu" value={formatVND(data.allTotals.transferTotal)} />
+                {data.allTotals.bookingOther > 0 && (
+                  <Stat label="Đã thu chưa rõ hình thức (cọc gõ tay)" value={formatVND(data.allTotals.bookingOther)} />
+                )}
+                <Stat label="Tổng đã thu" value={formatVND(data.allTotals.revenueTotal)} strong />
+                <Stat label="CÒN THU (khách còn nợ)" value={formatVND(data.allTotals.bookingRemaining)} />
+                <Stat label="Giá trị sổ booking" value={formatVND(data.allTotals.bookingValue)} />
                 <Stat
                   label="Hoàn khách + chiết khấu"
                   value={formatVND(data.allTotals.refundTotal + data.allTotals.agencySpendTotal)}
@@ -401,7 +409,8 @@ function DaysTable({ data }: { data: BaobaySummaryDTO }) {
             <th className={th}>PC khai chuyến</th>
             <th className={th}>Tiền mặt</th>
             <th className={th}>Chuyển khoản</th>
-            <th className={th}>Tổng thu</th>
+            <th className={th}>Tổng đã thu</th>
+            <th className={th}>Còn thu</th>
             <th className={th}>Flycam (KT/CM)</th>
             <th className={th}>360 (KT/PC)</th>
             <th className={th}>Kéo cờ</th>
@@ -432,6 +441,9 @@ function DaysTable({ data }: { data: BaobaySummaryDTO }) {
                 <td className={td}>{formatVND(d.cashTotal)}</td>
                 <td className={td}>{formatVND(d.transferTotal)}</td>
                 <td className={`${td} font-semibold`}>{formatVND(d.revenueTotal)}</td>
+                <td className={`${td} ` + (d.bookingRemaining > 0 ? "font-semibold text-rose-700" : "text-slate-400")}>
+                  {d.bookingRemaining > 0 ? formatVND(d.bookingRemaining) : "—"}
+                </td>
                 <td className={td}>
                   {d.flycam}/{d.cameramanFlycam}
                 </td>

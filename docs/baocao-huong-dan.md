@@ -638,6 +638,18 @@ Vào **`/admin/baocao`** (menu "Nhân sự báo bay", cần đăng nhập quản
   database (Google Sheets không bị đụng — xoá tay bên đó nếu cần). Phải gõ lại
   đúng tên đăng nhập mới xoá được; máy chủ so tên TRƯỚC khi xoá.
 - **Tổng theo chu kỳ**: chọn khoảng ngày là thấy số tổng đã chốt của cả điểm bay.
+
+**TIỀN CỦA KỲ TÍNH THEO SỔ BOOKING (chủ 21/09).** Trước đây tiền của ngày ĐÃ
+CHỐT lấy từ hai ô `cashTotal` / `transferTotal` trong bản chốt — hai ô ấy tự cộng
+từ sổ "Tiền trong ngày" của kế toán, mà từ 13/08 tiền đi qua LỆNH THU trên
+booking nên không ai kê lại: 26/30 ngày lưu 0 đ, kỳ 23/08–21/09 Khau Phạ hiện
+225tr trong khi sổ ghi 2.240tr. Nay mọi con số tiền ở trang Tổng hợp (tổng đã
+chốt, tạm tính cả kỳ, bảng theo ngày, CSV) lấy từ **sổ booking**: đoàn BAY ngày
+nào tính vào ngày đó, **đoàn huỷ / bỏ sổ không tính**; "đã thu" = giá trị sổ trừ
+phần còn thu; TM/CK tách theo sổ thu của từng booking, phần không ghi rõ hình
+thức (cọc gõ tay) vào ô *"đã thu chưa rõ hình thức"* để **TM + CK + khác = đã
+thu** và **đã thu + còn thu = giá trị sổ booking**. Bảng theo ngày có thêm cột
+**Còn thu** (đỏ khi còn nợ) — bay rồi mà chưa thu đủ vẫn hiện đủ hai vế.
 - **Tiền điều phối giao giám đốc**: nút mỗi điểm bay có **số đỏ** đếm khoản chưa
   xác nhận (ví dụ “Sa Pa ③”), nhìn một cái biết ngay chỗ nào còn tiền chưa nhận.
 

@@ -13287,6 +13287,12 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   agencySpendTotal: 0,
   collectCash: 0,
   collectTransfer: 0,
+  bookingValue: 0,
+  bookingCollected: 0,
+  bookingRemaining: 0,
+  bookingCash: 0,
+  bookingTransfer: 0,
+  bookingOther: 0,
   flycam: 0,
   video360: 0,
   flagFlight: 0,
@@ -13363,7 +13369,49 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   for (const f of periodFlycamCancels) rowFor(f.date).refundTotal += f.amount || 0;
   for (const b of periodCommissions) rowFor(b.flightDate).agencySpendTotal += b.commission?.amount || 0;
 
-  /** LỆNH THU theo ngày — để tổng CẢ KỲ tính được cả ngày chưa chốt. */
+  /**
+   * TIỀN THEO SỔ BOOKING (chủ 21/09) — nguồn CHÍNH cho mọi con số tiền của kỳ.
+   *
+   * Vì sao đổi: trước đây ngày ĐÃ CHỐT lấy tiền từ hai ô `cashTotal` /
+   * `transferTotal` của bản chốt, mà hai ô ấy tự cộng từ sổ "Tiền trong ngày"
+   * của kế toán — từ 13/08 tiền đi qua LỆNH THU trên booking nên không ai kê
+   * lại vào sổ ấy, 26/30 ngày lưu 0 đ. Kết quả: kỳ 23/08–21/09 Khau Phạ hiện
+   * 225tr trong khi sổ booking ghi 2.240tr đã thu (chủ bắt lỗi 21/09).
+   *
+   * Nay: đoàn BAY ngày nào tính vào ngày đó, đoàn HUỶ / bỏ sổ không tính.
+   * "Đã thu" lấy `totalAmount − remaining` (số chốt của sổ booking); TM/CK
+   * tách theo sổ thu của từng booking, phần không ghi rõ hình thức (cọc gõ
+   * tay) vào `bookingOther` để ba phần luôn cộng đúng bằng "đã thu".
+   */
+  const bookingMoney = await BaobayBooking.find({
+    spot,
+    flightDate: { $gte: from, $lte: to },
+    status: { $in: ["open", "done"] },
+  })
+    .select("flightDate totalAmount remaining collectedLog")
+    .lean<any[]>();
+  for (const b of bookingMoney) {
+    const row = rowFor(String(b.flightDate));
+    const value = Number(b.totalAmount) || 0;
+    const con = Math.max(0, Number(b.remaining) || 0);
+    const daThu = Math.max(0, value - con);
+    const log = (b.collectedLog ?? []) as Array<{ amount?: number; method?: string }>;
+    const tm = log.filter((x) => x.method !== "transfer").reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    const ck = log.filter((x) => x.method === "transfer").reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    row.bookingValue += value;
+    row.bookingRemaining += con;
+    row.bookingCollected += daThu;
+    /** Sổ thu ghi nhiều hơn số đã thu (hoàn tiền sau khi thu…) thì co lại theo tỉ lệ, không để âm. */
+    const ghi = tm + ck;
+    const heSo = ghi > daThu && ghi > 0 ? daThu / ghi : 1;
+    const tmThuc = Math.round(tm * heSo);
+    const ckThuc = Math.round(ck * heSo);
+    row.bookingCash += tmThuc;
+    row.bookingTransfer += ckThuc;
+    row.bookingOther += Math.max(0, daThu - tmThuc - ckThuc);
+  }
+
+  /** LỆNH THU theo ngày — giữ lại để đối chiếu với sổ booking trong bảng ngày. */
   const periodCollects = await BaobayCollect.find({
     spot,
     date: { $gte: from, $lte: to },
@@ -13424,12 +13472,20 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     row.ticketsReturned = c.ticketsReturned;
     row.cancelledCount = c.cancelledCount;
     row.rescheduledCount = c.rescheduledCount;
-    row.cashTotal = c.cashTotal;
-    row.transferTotal = c.transferTotal;
-    row.revenueTotal = c.cashTotal + c.transferTotal;
+    /**
+     * KHÔNG lấy tiền từ bản chốt nữa (chủ 21/09) — hai ô ấy gần như luôn 0 vì
+     * tiền đi qua lệnh thu. Tiền của mọi ngày lấy theo SỔ BOOKING bên dưới.
+     */
     row.flycam = c.flycam;
     row.video360 = c.video360;
     row.flagFlight = c.flagFlight;
+  }
+
+  /** Tiền của MỌI ngày = sổ booking (đã chốt hay chưa cũng một nguồn). */
+  for (const row of byDate.values()) {
+    row.cashTotal = row.bookingCash;
+    row.transferTotal = row.bookingTransfer;
+    row.revenueTotal = row.bookingCollected;
   }
 
   const days = [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -13570,14 +13626,11 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       allTotals[key] += (row[key] as number) || 0;
     }
     if (!closed) {
-      // Ngày chưa chốt: các ô "kế toán khai" đang bằng 0 — thế tạm bằng nguồn thật
-      allTotals.cashTotal += row.dispatcherCash + row.collectCash;
-      allTotals.transferTotal += row.dispatcherTransfer + row.collectTransfer;
+      // Ngày chưa chốt: ô dịch vụ "kế toán khai" đang 0 — thế tạm bằng số nhân viên báo
       allTotals.flycam += row.cameramanFlycam;
       allTotals.video360 += row.pilot360;
     }
   }
-  allTotals.revenueTotal = allTotals.cashTotal + allTotals.transferTotal;
 
   return {
     spot,

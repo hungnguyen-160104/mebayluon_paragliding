@@ -111,7 +111,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       "Ngày", "Điều phối", "Tài khoản", "Số khách", "Vé xuất", "Vé thu về", "Dải mã vé",
       "Vé huỷ", "Mã vé huỷ", "Vé dời lịch", "Mã vé dời lịch",
       "Flycam", "Camera 360", "Cờ đỏ", "Bay hoàng hôn/săn mây", "Bay kéo cờ đỏ/cờ sinh nhật", "Khách ngoại giao",
-      "Tiền mặt", "Chuyển khoản", "Tổng thu",
+      "Tiền mặt điều phối khai", "Chuyển khoản điều phối khai", "Tổng điều phối khai",
       "Nước cho khách", "Xe lên núi", "Xe đưa đón", "Chi khác", "Chi tiết chi khác", "Tổng chi",
       "Ghi chú",
     ]);
@@ -155,7 +155,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     rows.push([
       "Ngày", "Trạng thái", "Lỗi đỏ",
       "Số khách", "Vé xuất", "Vé thu hồi", "Vé huỷ", "Vé dời lịch",
-      "Tiền mặt", "Chuyển khoản", "Tổng thu",
+      "Tiền mặt đã thu", "Chuyển khoản đã thu", "Tổng đã thu", "Còn thu",
       "Flycam", "Camera 360", "Bay kéo cờ đỏ/cờ sinh nhật",
       "Điều phối khai vé", "PC khai chuyến", "Số mã PC khai", "PC khai 360", "Camera man khai flycam",
       "Khách ngoại giao", "Cờ đỏ", "Hoàng hôn/săn mây", "Tổng chi", "PC đã chốt",
@@ -164,7 +164,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       rows.push([
         d.date, STATUS_LABEL[d.status], d.issueCount,
         d.guestCount, d.ticketsIssued, d.ticketsReturned, d.cancelledCount, d.rescheduledCount,
-        d.cashTotal, d.transferTotal, d.revenueTotal,
+        d.cashTotal, d.transferTotal, d.revenueTotal, d.bookingRemaining,
         d.flycam, d.video360, d.flagFlight,
         d.dispatcherIssued, d.pilotFlights, d.pilotCodes, d.pilot360, d.cameramanFlycam,
         d.diplomaticGuests, d.redFlag, d.sunset, d.expenseTotal, `${d.pilotSubmitted}/${d.pilotCount}`,
@@ -174,7 +174,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     rows.push([
       "TỔNG (chỉ ngày đã chốt)", "", "",
       t.guestCount, t.ticketsIssued, t.ticketsReturned, t.cancelledCount, t.rescheduledCount,
-      t.cashTotal, t.transferTotal, t.revenueTotal,
+      t.cashTotal, t.transferTotal, t.revenueTotal, t.bookingRemaining,
       t.flycam, t.video360, t.flagFlight,
       t.dispatcherIssued, t.pilotFlights, t.pilotCodes, t.pilot360, t.cameramanFlycam,
       t.diplomaticGuests, t.redFlag, t.sunset, t.expenseTotal, "",

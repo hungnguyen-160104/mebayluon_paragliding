@@ -711,6 +711,19 @@ export type DailyRollupDTO = {
   /** Lệnh thu TM/CK của ngày (đường tiền chính từ 13/08) — nguồn cho tổng cả kỳ. */
   collectCash: number;
   collectTransfer: number;
+  /**
+   * TIỀN THEO SỔ BOOKING (chủ 21/09: "tất cả dựa vào sổ booking") — các đoàn
+   * BAY ngày này, bỏ đoàn đã huỷ / bỏ sổ. `bookingValue` là giá trị sổ;
+   * `bookingCash + bookingTransfer + bookingOther = bookingCollected` (phần
+   * "other" là tiền đã thu nhưng sổ thu của booking không ghi rõ hình thức, hầu
+   * hết là cọc gõ tay); `bookingRemaining` là phần CÒN THU.
+   */
+  bookingValue: number;
+  bookingCollected: number;
+  bookingRemaining: number;
+  bookingCash: number;
+  bookingTransfer: number;
+  bookingOther: number;
   flycam: number;
   video360: number;
   flagFlight: number;
