@@ -420,6 +420,8 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > Tổng chuyến PPG = vé giấy + không vé + vé QR (chốt được khi ba phần cộng đúng
 > bằng tổng); tổng dịch vụ = phần khai tay + phần QR, bấm "Điền vào báo cáo" nhiều
 > lần không cộng dồn. Khối "Từ quét vé" có nút **✓ Bay xong · ↩ Hoàn mã** từng mã.
+> Hộp quét có **🖼 Chọn ảnh** (một hay nhiều ảnh vé chụp sẵn) bên cạnh camera, và
+> ô gõ tay mã — dùng khi vé nhoè, khách gửi ảnh vé, hay camera không mở được.
 >
 > **Mẫu vé Khau Phạ (18/09):** vé bay dù một liên có mã QR phi công
 > quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,

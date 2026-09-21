@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
-import { docQrTuCanvas } from "@/lib/baobay/doc-qr";
+import { anhSangCanvas, docQrTuCanvas } from "@/lib/baobay/doc-qr";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 import type { KetQuaQuet, MaVeDTO } from "@/services/ve-qr.service";
@@ -67,6 +67,8 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
   const [nhatKy, setNhatKy] = useState<Dong[]>([]);
   const [loiCam, setLoiCam] = useState<string | null>(null);
   const [goTay, setGoTay] = useState("");
+  /** Đang đọc loạt ảnh đã chọn — khoá nút cho khỏi bấm chồng. */
+  const [dangDocAnh, setDangDocAnh] = useState(false);
   const [dangBat, setDangBat] = useState(false);
   /** Booking của mã vừa quét (một vé) — hiện thông tin và cho sửa dịch vụ. */
   const [bookingVua, setBookingVua] = useState<{ b: BookingDTO; ma: MaVeDTO } | null>(null);
@@ -104,6 +106,39 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
     [spot, date, layBooking],
   );
 
+  /**
+   * CHỌN ẢNH (chủ 21/09): vé đã chụp sẵn trong máy, hoặc khách gửi ảnh vé qua
+   * Zalo, hoặc camera hỏng — chọn một hay NHIỀU ảnh, máy đọc lần lượt. Cùng
+   * đường xử lý với quét trực tiếp nên luật một vé một phi công vẫn nguyên.
+   */
+  const chonAnh = useCallback(
+    async (files: FileList | null) => {
+      if (!files?.length) return;
+      setDangDocAnh(true);
+      let doc = 0;
+      let khongThayMa = 0;
+      for (const f of Array.from(files)) {
+        try {
+          const text = await docQrTuCanvas(await anhSangCanvas(f));
+          if (!text) {
+            khongThayMa++;
+            continue;
+          }
+          await quet(text);
+          doc++;
+        } catch {
+          khongThayMa++;
+        }
+      }
+      setDangDocAnh(false);
+      if (files.length > 1 || khongThayMa) {
+        const luc = new Date().toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        setNhatKy((x) => [{ luc, ok: khongThayMa === 0, cau: `${files.length} ảnh: đọc được ${doc} mã${khongThayMa ? `, ${khongThayMa} ảnh không thấy mã QR` : ""}` }, ...x].slice(0, 30));
+      }
+    },
+    [quet],
+  );
+
   /** Bật camera NGAY khi hộp mở. */
   useEffect(() => {
     let huy = false;
@@ -123,7 +158,7 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
           }
         });
       } catch (e) {
-        setLoiCam(`Không mở được camera: ${e instanceof Error ? e.message : String(e)} — gõ tay mã bên dưới hoặc mở trang Quét vé để chọn ảnh.`);
+        setLoiCam(`Không mở được camera: ${e instanceof Error ? e.message : String(e)} — bấm 🖼 Chọn ảnh ở trên, hoặc gõ tay mã bên dưới.`);
       }
     })();
     return () => {
@@ -166,8 +201,28 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
   return (
     <div className="fixed inset-0 z-[90] flex flex-col bg-black text-white">
       <div className="flex items-center justify-between gap-2 px-3 py-2">
-        <div className="text-sm font-bold">📷 Quét vé — đưa mã QR trên vé vào khung</div>
-        <Button type="button" className="h-9 bg-white px-4 text-slate-900 hover:bg-slate-200" onClick={() => onClose(soMoi.current)}>
+        <div className="min-w-0 flex-1 text-sm font-bold">📷 Quét vé — đưa mã QR trên vé vào khung</div>
+        {/* CHỌN ẢNH ngay trong hộp quét (chủ 21/09): một hay nhiều ảnh vé chụp sẵn. */}
+        <label
+          className={
+            "inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-500 bg-slate-800 px-3 text-sm font-semibold text-white " +
+            (dangDocAnh ? "cursor-wait opacity-60" : "cursor-pointer hover:bg-slate-700")
+          }
+        >
+          {dangDocAnh ? "⏳ Đang đọc…" : "🖼 Chọn ảnh"}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            disabled={dangDocAnh}
+            onChange={(e) => {
+              void chonAnh(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        <Button type="button" className="h-9 shrink-0 bg-white px-4 text-slate-900 hover:bg-slate-200" onClick={() => onClose(soMoi.current)}>
           ✕ Xong
         </Button>
       </div>
@@ -204,7 +259,7 @@ export function QuetVeModal({ spot, date, onClose }: { spot: string; date: strin
           </Button>
         </form>
         {nhatKy.length === 0 ? (
-          <p className="text-xs text-slate-400">Chưa quét mã nào. Mỗi mã nhận xong máy rung nhẹ và hiện một dòng ở đây.</p>
+          <p className="text-xs text-slate-400">Chưa quét mã nào. Đưa mã vào khung, hoặc bấm 🖼 Chọn ảnh để đọc ảnh vé chụp sẵn (chọn được nhiều ảnh). Mỗi mã nhận xong máy rung nhẹ và hiện một dòng ở đây.</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {nhatKy.map((d, i) => (
