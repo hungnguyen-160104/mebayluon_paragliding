@@ -43,7 +43,7 @@ import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
-import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, inAnhQuaKenh, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn } from "./TicketPrint";
+import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, inAnhQuaKenh, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn, tenKhachBaoHiem, vietTatTen } from "./TicketPrint";
 import { ghepAnhLien, hienKhungVe, mayCoTheChiaSeAnh } from "@/lib/baobay/may-in-chia-se";
 
 /** Khung xem vé Sa Pa: "In vé" mở thẳng khay chia sẻ (Uprinter) khi kênh in là chia sẻ, hoặc điện thoại chưa cài kênh nào. */
@@ -53,7 +53,7 @@ function inQuaChiaSeThang(): boolean {
 }
 import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
-import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, tenVietTat, type DichVuKhach } from "@/lib/baobay/ve-qr";
+import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -3629,8 +3629,8 @@ function BookingDetailControl({
                       <ul className="space-y-0.5">
                         {b.veQr.khach.slice(0, Math.max(1, b.guestCount)).map((k) => {
                           const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
-                          const ds = (b.otaGuests ?? []).map((x) => String(x.fullName || "").trim()).filter(Boolean);
-                          const tenKhach = tenVietTat(ds.length >= k.guestNo ? ds[k.guestNo - 1]! : b.contactName || "Khách");
+                          /** Tên TỪNG KHÁCH theo sổ bảo hiểm (chủ 21/09) — giống danh sách mã và vé in. */
+                          const tenKhach = vietTatTen(tenKhachBaoHiem(b, k.guestNo));
                           const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
                           return (
                             <li key={k.guestNo} className="flex flex-wrap items-baseline gap-x-1.5">
@@ -3655,10 +3655,21 @@ function BookingDetailControl({
                       </ul>
                       <div className="mt-0.5 text-[11px] text-slate-500">
                         Mã cấp ngày {formatDateKeyVN(b.veQr.ngay)} #{b.veQr.so}{b.veQr.capBoi ? ` by ${b.veQr.capBoi}` : ""}
+                        {daBayHet(b.veQr, b.guestCount) ? " · mọi phi công đã tích bay xong" : " · chưa đủ phi công tích bay xong"}
                       </div>
                     </dd>
                   </>
                 ) : null}
+                {/* AI CHỐT "ĐÃ BAY" trên sổ (chủ 21/09) — khác với phi công tích bay xong từng mã ở trên. */}
+                {b.status === "done" && (
+                  <>
+                    <dt className="text-slate-500">Xác nhận đã bay</dt>
+                    <dd className="font-medium">
+                      {b.doneBy || "—"}
+                      {b.doneAt ? <span className="ml-1 text-[11px] text-slate-500">{stampVN(b.doneAt)}</span> : null}
+                    </dd>
+                  </>
+                )}
                 <dt className="text-slate-500">Đón</dt>
                 <dd className="font-medium">
                   {pickupText(b)}
@@ -5729,17 +5740,17 @@ export function BookingTodayBanner({
    * 3, hai khách đầu chưa ai nhận (x). Không xếp theo giờ quét. ✓ sau tên = đã
    * bay xong; cả đoàn xong thì ĐÃ BAY HẾT. Chi tiết từng mã nằm ở 📄 Chi tiết book.
    */
+  /**
+   * AI ĐÃ QUÉT VÉ của booking (chủ 21/09) — chip này LUÔN là danh sách phi công
+   * theo thứ tự khách, kể cả khi đã bay hết. Trước đây bay hết thì chip đổi
+   * thành "ĐÃ BAY HẾT", trùng nghĩa với nút "✈ Đã bay" ngay cạnh nên nhìn như
+   * hai việc khác nhau; giờ "đã bay hết" nằm trên NÚT, chip lo phần tên người.
+   */
   const renderVeQrStatus = (b: BookingDTO) => {
     const v = b.veQr;
     if (!v?.khach?.length) return null;
     const n = Math.max(1, b.guestCount);
-    if (daBayHet(v, n)) {
-      return (
-        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[11px] font-black text-white" title={v.khach.slice(0, n).map((k) => `${nhanVe(v.so, k.guestNo, n)} ${k.phiCong?.name || k.phiCong?.username || "?"}`).join(" · ")}>
-          ĐÃ BAY HẾT
-        </span>
-      );
-    }
+    const het = daBayHet(v, n);
     const ten = (k: (typeof v.khach)[number]) => {
       if (!k.phiCong) return "x";
       const t = (k.phiCong.name || k.phiCong.username).trim().split(/\s+/).pop() || k.phiCong.username;
@@ -5748,23 +5759,43 @@ export function BookingTodayBanner({
     const daNhan = v.khach.slice(0, n).some((k) => k.phiCong);
     return (
       <span
-        className={"rounded px-1.5 py-0.5 text-[11px] font-semibold " + (daNhan ? "bg-sky-100 text-sky-900" : "bg-slate-100 text-slate-500")}
-        title="Phi công tiếp nhận theo thứ tự khách 1, 2, 3… — x là chưa ai quét, ✓ là đã bay xong. Chi tiết ở 📄 Chi tiết book."
+        className={"rounded px-1.5 py-0.5 text-[11px] font-semibold " + (het ? "bg-emerald-100 text-emerald-900" : daNhan ? "bg-sky-100 text-sky-900" : "bg-slate-100 text-slate-500")}
+        title={
+          v.khach
+            .slice(0, n)
+            .map((k) => `${nhanVe(v.so, k.guestNo, n)} ${k.phiCong ? `${k.phiCong.name || k.phiCong.username}${k.bayXong ? " — đã tích bay xong" : " — đã quét, chưa tích bay xong"}` : "chưa ai quét"}`)
+            .join("\n") + "\n\nChi tiết ở 📄 Chi tiết book."
+        }
       >
         🪂 {v.khach.slice(0, n).map(ten).join(" - ")}
       </span>
     );
   };
-  const renderFlownButton = (b: BookingDTO) => (
-    <Button
-      type="button"
-      className="h-7 bg-emerald-600 px-2 text-xs hover:bg-emerald-700"
-      disabled={busy === b.id}
-      onClick={() => act(b, "flown")}
-    >
-      {busy === b.id ? "Đang lưu…" : "✈ Đã bay"}
-    </Button>
-  );
+  /**
+   * MỘT NÚT, HAI NHÃN (chủ 21/09): mọi phi công đã quét mã của booking đều tích
+   * "bay xong" → nút thành "✅ Đã bay hết"; chưa đủ thì vẫn "✈ Đã bay" để điều
+   * phối tự xác nhận. Cả hai cùng một việc: chốt booking sang ĐÃ BAY.
+   */
+  const renderFlownButton = (b: BookingDTO) => {
+    const het = daBayHet(b.veQr, b.guestCount);
+    return (
+      <Button
+        type="button"
+        className={"h-7 px-2 text-xs " + (het ? "bg-emerald-700 hover:bg-emerald-800" : "bg-emerald-600 hover:bg-emerald-700")}
+        disabled={busy === b.id}
+        onClick={() => act(b, "flown")}
+        title={
+          het
+            ? "Mọi phi công đã tích bay xong — bấm để chốt booking là ĐÃ BAY"
+            : b.veQr?.khach?.length
+              ? "Chưa đủ phi công tích bay xong — điều phối vẫn xác nhận được booking đã bay"
+              : "Xác nhận booking đã bay"
+        }
+      >
+        {busy === b.id ? "Đang lưu…" : het ? "✅ Đã bay hết" : "✈ Đã bay"}
+      </Button>
+    );
+  };
   const renderContactButton = (b: BookingDTO) => <ContactNote spot={spot} booking={b} onDone={load} />;
   /**
    * LUẬT NÚT THU TIỀN (luật chủ 04/09, chung cho thẻ + bảng, chưa bay lẫn đã bay):

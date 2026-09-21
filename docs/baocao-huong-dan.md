@@ -423,6 +423,14 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > Hộp quét có **🖼 Chọn ảnh** (một hay nhiều ảnh vé chụp sẵn) bên cạnh camera, và
 > ô gõ tay mã — dùng khi vé nhoè, khách gửi ảnh vé, hay camera không mở được.
 >
+> **Trên sổ booking (21/09):** chip 🪂 luôn liệt kê **phi công đã quét** theo thứ
+> tự khách (`x` = chưa ai quét, `✓` = đã tích bay xong; di chuột xem tên đầy đủ),
+> chip xanh lá khi cả đoàn đã bay xong. Nút xác nhận là **MỘT** nút: mọi phi công
+> đã tích bay xong thì nút ghi **"✅ Đã bay hết"**, chưa đủ thì ghi **"✈ Đã bay"** —
+> bấm cái nào cũng là chốt booking sang ĐÃ BAY. **📄 Chi tiết book** liệt kê từng
+> mã: khách nào, dịch vụ gì, ai quét lúc mấy giờ, ai tích bay xong, mã bị thu hồi
+> khỏi ai; thêm dòng **"Xác nhận đã bay"** ghi người chốt và thời điểm.
+>
 > **Mẫu vé Khau Phạ (18/09):** vé bay dù một liên có mã QR phi công
 > quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,
 > logo `public/logo-mbl-in.png`, dòng phụ "BOARDING TICKET · KHAU PHẠ", web
