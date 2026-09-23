@@ -441,9 +441,11 @@ nút vẫn chỉ tích "đã xuất vé", không in.
   tích cũng không lưu.
 - **Chỉ khách PPG có vé QR.** Đoàn gộp thì khách PG nhận **vé giấy viết tay**
   (không cấp mã), khách PPG chỉ có **vé QR** (không vé viết tay). Booking chỉ
-  khai SỐ khách PPG nên hộp cấp mã tích sẵn các khách đầu danh sách và có cột
-  **"Vé QR"** để quầy đổi lại; phải tích đúng số khách PPG mới cấp mã được. Vé in
-  ra chỉ in đúng những khách có mã còn hiệu lực.
+  khai SỐ khách PPG chứ không chỉ đích danh ai, nên **quầy phải chọn** ở cột
+  **"Bay PPG"**: hộp mở ra để TRỐNG, tích đúng số khách PPG đã bán mới cấp mã
+  được (máy chủ cũng chặn, không nhận danh sách thiếu hoặc thừa). Máy KHÔNG tự
+  chỉ định — vé QR mang tên đích danh, chọn nhầm là nhầm người. Vé in ra chỉ in
+  đúng những khách có mã còn hiệu lực.
 - **🎟 Vé QR** nằm trong **⋯ Thêm** của mọi booking đã cấp mã: xem từng vé (ai
   quét, bay xong chưa, dịch vụ kèm) và **thu hồi từng vé** — cùng đoàn có người
   bay được người không. Vé đã thu hồi là **vô hiệu**: không ai quét được nữa,

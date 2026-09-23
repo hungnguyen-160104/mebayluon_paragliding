@@ -7189,8 +7189,20 @@ export async function recordTicketPrint(
     const guiNos = Array.isArray(input.guestNos)
       ? [...new Set(input.guestNos.map((x) => Number(x)).filter((x) => Number.isInteger(x) && x >= 1 && x <= soKhach))].sort((a, b) => a - b)
       : null;
+    /**
+     * QUẦY CHỌN ĐÍCH DANH AI BAY PPG (chủ 23/09) — đoàn gộp thì bắt buộc gửi
+     * danh sách, máy KHÔNG tự chỉ định vì vé QR mang tên từng người. Đoàn thuần
+     * (mọi khách cùng loại) thì lấy cả đoàn, khỏi hỏi.
+     */
+    const doanGop = soMaToiDa > 0 && soMaToiDa < soKhach;
+    if (doanGop && !guiNos?.length) {
+      throw new BaobayError(`Đoàn gộp PG + PPG: chọn đúng ${soMaToiDa} khách bay PPG ở cột "Bay PPG" rồi mới cấp mã`, 400);
+    }
     const nosCap = guiNos?.length ? guiNos.slice(0, soMaToiDa) : khachCoMaQrMacDinh(spot, booking);
     if (nosCap.length === 0) throw new BaobayError("Đoàn này không có khách nào bay PPG — vé giấy viết tay, không cấp mã QR", 400);
+    if (doanGop && nosCap.length !== soMaToiDa) {
+      throw new BaobayError(`Đoàn có ${soMaToiDa} khách bay PPG nhưng đang chọn ${nosCap.length} — chọn đúng số rồi cấp mã`, 400);
+    }
 
     if (!booking.veQr?.ngay) {
       const chia = chiaDichVu(soKhach, {

@@ -63,8 +63,18 @@ export function VeDichVuModal({
   const spotBk = normalizeSpot(booking.spot);
   const soQr = soKhachCoMaQr(spotBk, booking);
   const chonDuocQr = soQr > 0 && soQr < n && !booking.veQr;
+  /**
+   * AI BAY PPG DO QUẦY CHỌN, MÁY KHÔNG TỰ CHỈ ĐỊNH (chủ 23/09). Đoàn gộp mở ra
+   * là trống, phải tích đúng số khách PPG đã bán rồi mới cấp mã được — vé QR
+   * mang tên đích danh nên chọn nhầm là nhầm người. Đoàn thuần (mọi khách cùng
+   * loại) thì khỏi hỏi, máy lấy cả đoàn.
+   */
   const [qrNos, setQrNos] = useState<number[]>(() =>
-    booking.veQr?.khach?.length ? booking.veQr.khach.map((k) => k.guestNo) : khachCoMaQrMacDinh(spotBk, booking),
+    booking.veQr?.khach?.length
+      ? booking.veQr.khach.filter((k) => !k.veGiay).map((k) => k.guestNo)
+      : soKhachCoMaQr(spotBk, booking) >= Math.max(1, booking.guestCount || 1)
+        ? khachCoMaQrMacDinh(spotBk, booking)
+        : [],
   );
   /**
    * Khách này có vé QR không — ĐÃ CẤP MÃ thì theo danh sách mã thật (bỏ vé đã
@@ -75,7 +85,7 @@ export function VeDichVuModal({
   const coQr = (g: number) => (booking.veQr ? maDaCap.includes(g) : qrNos.includes(g));
   /** Đoàn gộp: số khách có vé QR ít hơn cả đoàn (Khau Phạ PG + PPG). */
   const soCoQr = booking.veQr ? maDaCap.length : qrNos.length;
-  const doanGop = (booking.veQr ? maDaCap.length : soQr) < n && (booking.veQr ? maDaCap.length > 0 : soQr > 0);
+  const doanGop = booking.veQr ? maDaCap.length > 0 && maDaCap.length < n : soQr > 0 && soQr < n;
   const [busy, setBusy] = useState(false);
   /**
    * NẠP TRƯỚC html2canvas + qrcode ngay khi mở danh sách mã (khảo sát tốc độ
@@ -145,7 +155,12 @@ export function VeDichVuModal({
               <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                 <th className="py-1 pr-2">Mã</th>
                 <th className="py-1 pr-2">Khách</th>
-                {chonDuocQr && <th className="py-1 text-center">Vé QR<span className="block text-[9px] font-normal normal-case text-slate-400">khách PPG</span></th>}
+                {chonDuocQr && (
+                  <th className="py-1 text-center text-violet-800">
+                    Bay PPG
+                    <span className="block text-[9px] font-normal normal-case text-violet-500">nhận vé QR</span>
+                  </th>
+                )}
                 {cot.map((k) => (
                   <th key={k} className="py-1 text-center">
                     {TEN_DICH_VU[k]}
@@ -164,7 +179,11 @@ export function VeDichVuModal({
                     <td className="py-1.5 pr-2">
                       {ten(g)}
                       {daBay && <span className="ml-1 text-[10px] text-emerald-700">đã bay</span>}
-                      {doanGop && !coQr(g) && <span className="ml-1 text-[10px] font-semibold text-slate-500">vé giấy viết tay</span>}
+                      {doanGop && (
+                        <span className={"ml-1 text-[10px] font-semibold " + (coQr(g) ? "text-violet-700" : "text-slate-500")}>
+                          {coQr(g) ? "PPG · vé QR" : "PG · vé giấy viết tay"}
+                        </span>
+                      )}
                     </td>
                     {chonDuocQr && (
                       <td className="py-1.5 text-center">
@@ -222,7 +241,9 @@ export function VeDichVuModal({
         {doanGop && (
           <p className={"mt-2 text-xs " + (!chonDuocQr || qrNos.length === soQr ? "text-slate-600" : "font-semibold text-rose-700")}>
             Đoàn gộp: <strong>{soCoQr}xPPG vé QR</strong>, {n - soCoQr}xPG vé giấy viết tay.
-            {chonDuocQr && qrNos.length !== soQr ? ` Đang tích ${qrNos.length} — tích đúng ${soQr} ô "Vé QR" rồi mới cấp mã.` : ""}
+            {chonDuocQr && qrNos.length !== soQr
+              ? ` Chọn đúng ${soQr} người bay PPG ở cột "Bay PPG" (đang chọn ${qrNos.length}) rồi mới cấp mã được.`
+              : ""}
           </p>
         )}
         {lech.length > 0 && (
