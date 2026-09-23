@@ -25,7 +25,7 @@ Google Sheets riêng**.
 
 | Vai trò | Trang | Nhập gì |
 |---|---|---|
-| **Phi công** | `/baocao/phi-cong` | Số chuyến + mã vé đã bay; dịch vụ gia tăng (flycam, 360, cờ đỏ, kéo cờ — **chỉ số lượng, mã vé tuỳ chọn**); khách ngoại giao; thu/chi trong ngày; **thêm / huỷ dịch vụ cho booking** (hai thẻ cuối trang, 12/09). Không có Hàng bán thêm |
+| **Phi công** | `/baocao/phi-cong` | Số chuyến + mã vé đã bay; dịch vụ gia tăng (flycam, 360, cờ đỏ, kéo cờ — **chỉ số lượng, mã vé tuỳ chọn**); khách ngoại giao; thu/chi trong ngày; **thêm / huỷ dịch vụ cho booking** (hai thẻ cuối trang, 12/09) |
 | **Điều phối bay** | `/baocao/dieu-phoi` | Số khách, vé xuất/thu về, dải mã vé, vé huỷ/dời lịch, flycam, 360, cờ đỏ, bay kéo cờ, khách ngoại giao, tiền mặt + CK, chi cho khách |
 | **Camera man** | `/baocao/camera` | Số chuyến quay flycam (+ mã vé nếu ghi được), chi tiêu |
 | **Kế toán tổng hợp** | `/baocao/chot-ngay` | Số tổng chốt ngày, duyệt chi tiêu, duyệt lệch, bấm **Chốt ngày** |
@@ -671,6 +671,12 @@ Vào **`/admin/baocao`** (menu "Nhân sự báo bay", cần đăng nhập quản
   database (Google Sheets không bị đụng — xoá tay bên đó nếu cần). Phải gõ lại
   đúng tên đăng nhập mới xoá được; máy chủ so tên TRƯỚC khi xoá.
 - **Tổng theo chu kỳ**: chọn khoảng ngày là thấy số tổng đã chốt của cả điểm bay.
+
+**HÀNG BÁN THÊM ĐÃ RỜI KHỎI /baocao (chủ 23/09).** Hàng lưu niệm nay bán và
+thống kê ở trang **CAFE**, nên thẻ "Hàng bán thêm" bỏ khỏi thanh thẻ của quầy
+vé, điều phối, kế toán và quản trị. Trang `/baocao/hang-ban-them` vẫn mở được
+bằng địa chỉ trực tiếp để tra số cũ; ô tiền "hàng bán thêm" trong báo cáo ngày
+chỉ hiện khi ngày đó có phát sinh thật, nên sổ cũ vẫn khớp.
 
 **TIỀN CỦA KỲ TÍNH THEO SỔ BOOKING (chủ 21/09).** Trước đây tiền của ngày ĐÃ
 CHỐT lấy từ hai ô `cashTotal` / `transferTotal` trong bản chốt — hai ô ấy tự cộng

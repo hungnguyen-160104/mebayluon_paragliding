@@ -67,12 +67,12 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
    */
   const troi = [{ href: "/baocao/thoi-tiet", label: "Thời tiết bay" }];
   /**
-   * SỔ HÀNG BÁN THÊM chỉ cho QUẦY VÉ / ĐIỀU PHỐI (chủ chốt lại 12/09: "không
-   * hiện đối với phi công, chỉ hiện với quầy vé thôi"). Hôm 10/09 từng mở cho
-   * mọi vai đứng bãi, nhưng phi công không bán hàng — bày thẻ ra chỉ thêm rối.
-   * Kế toán và quản trị giữ để đối số với quầy.
+   * HÀNG BÁN THÊM BỎ KHỎI MỌI THANH THẺ (chủ 23/09) — hàng lưu niệm nay bán và
+   * thống kê ở trang CAFE, không còn là việc của quầy vé / điều phối / kế toán.
+   * Trang `/baocao/hang-ban-them` vẫn mở được bằng địa chỉ trực tiếp để tra số
+   * cũ; các ô tiền "hàng bán thêm" trong báo cáo ngày chỉ hiện khi ngày đó có
+   * phát sinh thật, nên sổ cũ vẫn khớp.
    */
-  const hang = [{ href: "/baocao/hang-ban-them", label: "Hàng bán thêm" }];
   switch (role) {
     case "pilot":
       /**
@@ -99,7 +99,6 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
         /** Trạm in vé (máy ghép Bluetooth với Gainscha ở quầy Khau Phạ / Sa Pa). */
         { href: "/baocao/tram-in", label: "Trạm in" },
         ...sapa,
-        ...hang,
         { href: "/cafe", label: "CAFE" },
         { href: "/baocao/cafe/bao-cao", label: "Báo cáo quầy" },
         ...troi,
@@ -123,7 +122,6 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
         { href: "/baocao/phat-nop-muon", label: "Phạt nộp muộn" },
         { href: "/baocao/tong-hop", label: "Tổng hợp" },
         { href: "/baocao/bao-cao-thang", label: "Báo cáo tháng" },
-        ...hang,
         ...sapa,
       ];
     case "tax":
@@ -136,7 +134,7 @@ export function roleTabs(role: string, spots?: readonly string[] | null): Array<
     case "homestay":
       return [{ href: "/baocao/homestay", label: "Homestay" }];
     case "admin":
-      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, ...hang, { href: "/baocao/tram-in", label: "Trạm in" }, ...troi];
+      return [{ href: "/baocao/admin", label: "Quản trị nhân sự" }, ...sapa, { href: "/baocao/tram-in", label: "Trạm in" }, ...troi];
     default:
       return [];
   }
