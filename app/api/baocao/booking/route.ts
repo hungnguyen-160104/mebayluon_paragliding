@@ -492,7 +492,16 @@ export async function PATCH(req: Request) {
     }
     if (action === "ve-dichvu") {
       const { suaDichVuVe } = await import("@/services/ve-qr.service");
-      return NextResponse.json(await suaDichVuVe(auth, spot, id, Array.isArray(body?.dichVu) ? body.dichVu : []));
+      return NextResponse.json(
+        await suaDichVuVe(
+          auth,
+          spot,
+          id,
+          Array.isArray(body?.dichVu) ? body.dichVu : [],
+          /** Đổi lại ai bay PPG (nhận vé QR) — chủ 23/09. */
+          Array.isArray(body?.guestNos) ? body.guestNos.map((x: unknown) => Number(x)) : undefined,
+        ),
+      );
     }
     if (action === "cell") {
       const res = await updateBookingCell(auth, spot, {

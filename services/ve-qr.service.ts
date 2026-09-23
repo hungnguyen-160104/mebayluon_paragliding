@@ -419,6 +419,41 @@ export async function huyVe(session: BaobaySession, spotRaw: string, bookingId: 
   return maVeDTO(updated, khachCua(updated, guestNo));
 }
 
+/**
+ * CẤP LẠI VÉ ĐÃ THU HỒI (chủ 23/09: "thu hồi thì có thể cấp lại chứ nhỉ? nhưng
+ * cấp lại thì phi công phải quét lại"). Vé trở lại TRỐNG — cùng mã cũ, cùng mã
+ * chống giả, nhưng không còn phi công nào giữ nên ai bay khách ấy phải quét
+ * lại từ đầu. Dấu vết thu hồi giữ nguyên trong lịch sử.
+ */
+export async function capLaiVe(session: BaobaySession, spotRaw: string, bookingId: string, guestNo: number, lyDo = ""): Promise<MaVeDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) throw new BaobayError("Booking không hợp lệ", 400);
+  const doc = await BaobayBooking.findOne({ _id: bookingId, spot }).lean<any>();
+  const k = doc ? khachCua(doc, guestNo) : null;
+  if (!doc?.veQr || !k) throw new BaobayError("Không có mã này", 404);
+  if (!k.huy?.luc) throw new BaobayError("Vé này đang dùng bình thường, không cần cấp lại", 400);
+  if (doc.status === "cancelled") throw new BaobayError("Booking đã huỷ — không cấp lại vé được", 409);
+  await assertBookingUnlocked(spot, bookingId, session);
+  const luc = new Date();
+  const updated = await BaobayBooking.findOneAndUpdate(
+    { _id: doc._id, spot, "veQr.khach": { $elemMatch: { guestNo, "huy.luc": { $ne: null } } } },
+    {
+      $set: {
+        "veQr.khach.$.huy": null,
+        "veQr.khach.$.phiCong": null,
+        "veQr.khach.$.bayXong": null,
+        "veQr.khach.$.thuHoi": null,
+        "veQr.khach.$.veGiay": false,
+      },
+      $push: { "veQr.khach.$.lichSu": { luc, boi: ten(session), viec: "cap-lai", ghiChu: lyDo.trim() || undefined } },
+    },
+    { new: true },
+  ).lean<any>();
+  if (!updated) throw new BaobayError("Vé vừa bị thay đổi — tải lại", 409);
+  return maVeDTO(updated, khachCua(updated, guestNo));
+}
+
 /** Hai bên chốt lại vụ XUNG ĐỘT (vé thu hồi sau khi phi công đã báo bay xong). */
 export async function xacMinhHuyVe(session: BaobaySession, spotRaw: string, bookingId: string, guestNo: number, ket: string): Promise<MaVeDTO> {
   await connectDB();
@@ -516,7 +551,13 @@ export async function suaDichVuVe(
   session: BaobaySession,
   spotRaw: string,
   bookingId: string,
-  dichVu: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean }>,
+  dichVu: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; flagFlight?: boolean }>,
+  /**
+   * ĐỔI LẠI AI BAY PPG (chủ 23/09) — danh sách khách nhận VÉ QR. Chỉ đổi được
+   * vé CHƯA ai quét và chưa bị thu hồi; vé đang có phi công giữ thì giữ nguyên
+   * (muốn đổi phải thu hồi trước).
+   */
+  guestNos?: number[],
 ) {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
@@ -525,12 +566,32 @@ export async function suaDichVuVe(
   const doc = await BaobayBooking.findOne({ _id: bookingId, spot }).lean<any>();
   if (!doc?.veQr) throw new BaobayError("Booking này chưa cấp mã vé QR — bấm IN VÉ trước", 404);
   const luc = new Date();
+  const doiVeQr = Array.isArray(guestNos) && guestNos.length > 0;
+  const nosQr = new Set((guestNos ?? []).map((x) => Number(x)));
   const khach = (doc.veQr.khach ?? []).map((k: any) => {
-    const x = dichVu.find((d) => Number(d.guestNo) === Number(k.guestNo));
-    if (!x || k.bayXong?.luc) return k;
-    const moi = { video360: Boolean(x.video360), flycam: Boolean(x.flycam), redFlag: Boolean(x.redFlag) };
-    if (DICH_VU_VE.every((s) => Boolean(k.dichVu?.[s]) === moi[s])) return k;
-    return { ...k, dichVu: moi, lichSu: [...(k.lichSu ?? []), { luc, boi: ten(session), viec: "sua-dv" }] };
+    let ra = k;
+    /** Đổi PG ↔ PPG: chỉ vé còn trống (chưa quét, chưa bay, chưa thu hồi). */
+    if (doiVeQr && !k.phiCong?.username && !k.bayXong?.luc && !k.huy?.luc) {
+      const veGiayMoi = !nosQr.has(Number(k.guestNo));
+      if (Boolean(k.veGiay) !== veGiayMoi) {
+        ra = {
+          ...ra,
+          veGiay: veGiayMoi,
+          lichSu: [...(ra.lichSu ?? []), { luc, boi: ten(session), viec: veGiayMoi ? "doi-ve-giay" : "doi-ve-qr" }],
+        };
+      }
+    }
+    const x = dichVu.find((d) => Number(d.guestNo) === Number(ra.guestNo));
+    if (!x || ra.bayXong?.luc) return ra;
+    const moi = {
+      video360: Boolean(x.video360),
+      flycam: Boolean(x.flycam),
+      redFlag: Boolean(x.redFlag),
+      sunset: Boolean(x.sunset),
+      flagFlight: Boolean(x.flagFlight),
+    };
+    if (DICH_VU_VE_TAT_CA.every((t) => Boolean(ra.dichVu?.[t]) === Boolean(moi[t]))) return ra;
+    return { ...ra, dichVu: moi, lichSu: [...(ra.lichSu ?? []), { luc, boi: ten(session), viec: "sua-dv" }] };
   });
   const updated = await BaobayBooking.findOneAndUpdate({ _id: bookingId, spot }, { $set: { "veQr.khach": khach } }, { new: true }).lean<any>();
   return { booking: toBookingDTO(updated) };

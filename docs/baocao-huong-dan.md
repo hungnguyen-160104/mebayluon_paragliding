@@ -446,7 +446,13 @@ nút vẫn chỉ tích "đã xuất vé", không in.
   được (máy chủ cũng chặn, không nhận danh sách thiếu hoặc thừa). Máy KHÔNG tự
   chỉ định — vé QR mang tên đích danh, chọn nhầm là nhầm người. Vé in ra chỉ in
   đúng những khách có mã còn hiệu lực.
-- **🎟 Vé QR** nằm trong **⋯ Thêm** của mọi booking đã cấp mã: xem từng vé (ai
+- **Sửa lại khi chọn nhầm (23/09):** chừng nào CHƯA phi công nào quét, mở
+  **DV vé** tích lại cột "Bay PPG" là đổi được ai PG ai PPG. Vé đã có người quét
+  thì phải **thu hồi** vé ấy trước. Vé đã thu hồi **cấp lại được** (nút
+  **↻ Cấp lại vé**): dùng lại đúng mã cũ nhưng thành vé trống — **phi công phải
+  quét lại**.
+- **🎟 Vé QR** nằm trong **⋯ Thêm** của mọi booking đã cấp mã (kể cả booking ĐÃ
+  BAY — xem lại ảnh vé bất cứ lúc nào): xem từng vé (ai
   quét, bay xong chưa, dịch vụ kèm) và **thu hồi từng vé** — cùng đoàn có người
   bay được người không. Vé đã thu hồi là **vô hiệu**: không ai quét được nữa,
   mọi bảng đếm (kể cả bảng lương phi công) bỏ qua nó.

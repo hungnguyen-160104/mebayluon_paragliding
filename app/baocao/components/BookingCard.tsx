@@ -3548,6 +3548,24 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
                         ✕ Thu hồi vé
                       </button>
                     )}
+                    {daHuy && (
+                      <button
+                        type="button"
+                        disabled={busy === k.guestNo}
+                        onClick={() => {
+                          if (
+                            !window.confirm(
+                              `Cấp lại vé ${nhanVe(v.so, k.guestNo, n)} (${vietTatTen(tenKhachBaoHiem(b, k.guestNo))})?\n\nVé dùng lại được ngay với ĐÚNG mã cũ, nhưng thành vé TRỐNG — phi công phải QUÉT LẠI.`,
+                            )
+                          )
+                            return;
+                          void lenh("caplai", k.guestNo, { lyDo: "cấp lại sau khi thu hồi" });
+                        }}
+                        className="rounded border border-emerald-500 bg-white px-2 py-0.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50"
+                      >
+                        ↻ Cấp lại vé
+                      </button>
+                    )}
                     {daHuy && k.huy?.daBayXong && !k.huy?.xacMinh && (
                       <>
                         <button
@@ -6168,6 +6186,8 @@ export function BookingTodayBanner({
           ✕ Đóng
         </button>
       )}
+      {/* 🎟 Vé QR — khách đã bay vẫn xem lại được ảnh vé (chủ 23/09) */}
+      <VeQrControl spot={spot} booking={b} onDone={load} />
       {anhButton(b)}
       <PaymentBreakdown
         spot={spot}

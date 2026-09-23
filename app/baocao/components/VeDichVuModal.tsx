@@ -62,7 +62,13 @@ export function VeDichVuModal({
    */
   const spotBk = normalizeSpot(booking.spot);
   const soQr = soKhachCoMaQr(spotBk, booking);
-  const chonDuocQr = soQr > 0 && soQr < n && !booking.veQr;
+  /**
+   * ĐỔI LẠI ĐƯỢC khi chưa ai quét (chủ 23/09: "phải có đường sửa chứ") — đã
+   * cấp mã rồi nhưng chưa phi công nào chiếm vé, chưa vé nào bị thu hồi thì vẫn
+   * sửa được ai bay PG ai bay PPG. Có người quét rồi thì phải thu hồi vé ấy đã.
+   */
+  const chuaAiQuet = (booking.veQr?.khach ?? []).every((k) => !k.phiCong && !k.bayXong && !k.huy?.luc);
+  const chonDuocQr = soQr > 0 && soQr < n && (!booking.veQr || chuaAiQuet);
   /**
    * AI BAY PPG DO QUẦY CHỌN, MÁY KHÔNG TỰ CHỈ ĐỊNH (chủ 23/09). Đoàn gộp mở ra
    * là trống, phải tích đúng số khách PPG đã bán rồi mới cấp mã được — vé QR
@@ -82,10 +88,10 @@ export function VeDichVuModal({
    * hộp "DV vé" để hai nơi nói một chuyện (chủ 23/09).
    */
   const maDaCap = (booking.veQr?.khach ?? []).filter((k) => !k.huy?.luc && !k.veGiay).map((k) => k.guestNo);
-  const coQr = (g: number) => (booking.veQr ? maDaCap.includes(g) : qrNos.includes(g));
+  const coQr = (g: number) => (booking.veQr && !chonDuocQr ? maDaCap.includes(g) : qrNos.includes(g));
   /** Đoàn gộp: số khách có vé QR ít hơn cả đoàn (Khau Phạ PG + PPG). */
-  const soCoQr = booking.veQr ? maDaCap.length : qrNos.length;
-  const doanGop = booking.veQr ? maDaCap.length > 0 && maDaCap.length < n : soQr > 0 && soQr < n;
+  const soCoQr = booking.veQr && !chonDuocQr ? maDaCap.length : qrNos.length;
+  const doanGop = soQr > 0 && soQr < n;
   const [busy, setBusy] = useState(false);
   /**
    * NẠP TRƯỚC html2canvas + qrcode ngay khi mở danh sách mã (khảo sát tốc độ
