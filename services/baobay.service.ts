@@ -9831,7 +9831,13 @@ export function toBookingDTO(doc: any): BookingDTO {
     redFlag: doc.redFlag ?? 0,
     sunset: doc.sunset ?? 0,
     flagFlight: doc.flagFlight ?? 0,
-    flightKind: (doc.flightKind ?? "pg") as FlightKind,
+    /**
+     * LOẠI BAY LUÔN THUỘC ĐIỂM (chủ 23/09: "Khau Phạ làm gì có 650m đâu mà sao
+     * lại thống kê 1xM650"). Bản ghi cũ lỡ mang loại bay của điểm khác thì ĐỌC
+     * RA đã nắn về loại mặc định của điểm — mọi bảng, vé, thống kê hết lệch
+     * ngay, và lần lưu kế tiếp ghi đè giá trị đúng vào sổ.
+     */
+    flightKind: loaiBayCuaDiem(String(doc.spot ?? ""), doc.flightKind) as FlightKind,
     ppgGuests: Number(doc.ppgGuests) || 0,
     comboDiscount: Number(doc.comboDiscount) || 0,
     acceptedAt: doc.acceptedAt ? new Date(doc.acceptedAt).toISOString() : undefined,
