@@ -104,6 +104,39 @@ export function VeDichVuModal({
   }, []);
   const [loi, setLoi] = useState<string | null>(null);
   /**
+   * CHIA ĐỀU ĐƯỢC THÌ MÁY TÍCH LUÔN (chủ 23/09: "hoàng hôn đăng ký 4 slot thì
+   * tự chia đều, cái gì chia đều được thì tự tích luôn").
+   *
+   * "Chia đều" tính trên số khách ĐỦ TIÊU CHUẨN nhận dịch vụ ấy: cờ đỏ và kéo
+   * cờ không dành cho khách PPG, nên đoàn 4 người 2 PPG mà mua 2 cờ đỏ thì hai
+   * khách PG được tích sẵn. Chỉ tự tích khi dịch vụ đó CHƯA AI được tích —
+   * quầy đã tích tay rồi thì máy không đụng vào. Chạy lại khi đổi ai bay PPG.
+   */
+  useEffect(() => {
+    setRows((cur) => {
+      let doi = false;
+      const moi = cur.map((r) => ({ ...r }));
+      for (const k of DICH_VU_VE_TAT_CA) {
+        /** Khách PPG lỡ mang cờ đỏ / kéo cờ thì bỏ tích ngay. */
+        for (let i = 0; i < moi.length; i++) {
+          if (camVoi(i + 1, k) && moi[i][k]) {
+            moi[i][k] = false;
+            doi = true;
+          }
+        }
+        if (dat[k] <= 0) continue;
+        const hopLe = moi.map((_, i) => i + 1).filter((g) => !camVoi(g, k));
+        if (hopLe.length === 0 || dat[k] < hopLe.length) continue;
+        if (moi.some((r) => r[k])) continue;
+        for (const g of hopLe) moi[g - 1][k] = true;
+        doi = true;
+      }
+      return doi ? moi : cur;
+    });
+    // Chạy lúc mở hộp và mỗi khi đổi danh sách khách bay PPG
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrNos.join(",")]);
+  /**
    * TÊN TỪNG KHÁCH, KHÔNG PHẢI TÊN BOOKING (chủ 21/09): đoàn 2 người đã khai đủ
    * hai tên trong sổ bảo hiểm thì #16.1 và #16.2 phải là hai người khác nhau.
    * Lấy đúng nguồn và đúng cách viết tắt của VÉ IN (`tenKhachBaoHiem` →
