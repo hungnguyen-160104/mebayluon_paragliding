@@ -29,7 +29,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { dichVuChu, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
+import { dichVuChu, veConHieuLuc, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
@@ -410,12 +410,15 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const qrNuoc = new Map<number, string>();
   const qrXe = new Map<number, string>();
   /**
-   * IN VÉ CHO AI (chủ 22/09): đã cấp mã thì in ĐÚNG những khách có mã còn hiệu
-   * lực — Khau Phạ đoàn gộp PG + PPG chỉ cấp mã cho khách PPG (khách PG nhận vé
-   * giấy viết tay), và vé đã thu hồi thì không in lại nữa.
+   * IN VÉ CHO AI: đã cấp mã thì in ĐÚNG những khách có VÉ QR còn hiệu lực.
+   *
+   * Hai thứ phải loại ra (chủ 22–23/09): vé đã THU HỒI, và khách nhận VÉ GIẤY
+   * VIẾT TAY (`veGiay`) — Khau Phạ đoàn gộp PG + PPG chỉ khách PPG có mã QR.
+   * Từ 23/09 sổ vé ghi dòng cho MỌI khách (để quầy tích dịch vụ cho cả người
+   * cầm vé giấy), nên không lọc `veGiay` là in nhầm vé QR cho khách PG.
    */
   const nosIn = b.veQr?.khach?.length
-    ? b.veQr.khach.filter((k) => !k.huy?.luc).map((k) => k.guestNo).sort((x, y) => x - y)
+    ? b.veQr.khach.filter(veConHieuLuc).map((k) => k.guestNo).sort((x, y) => x - y)
     : Array.from({ length: guests }, (_, i) => i + 1);
   if (b.veQr?.ngay) {
     const v = b.veQr;
