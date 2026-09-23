@@ -67,7 +67,7 @@ export function VeDichVuModal({
    * cấp mã rồi nhưng chưa phi công nào chiếm vé, chưa vé nào bị thu hồi thì vẫn
    * sửa được ai bay PG ai bay PPG. Có người quét rồi thì phải thu hồi vé ấy đã.
    */
-  const chuaAiQuet = (booking.veQr?.khach ?? []).every((k) => !k.phiCong && !k.bayXong && !k.huy?.luc);
+  const chuaAiQuet = (booking.veQr?.khach ?? []).every((k) => !k.phiCong && !k.bayXong);
   const chonDuocQr = soQr > 0 && soQr < n && (!booking.veQr || chuaAiQuet);
   /**
    * AI BAY PPG DO QUẦY CHỌN, MÁY KHÔNG TỰ CHỈ ĐỊNH (chủ 23/09). Đoàn gộp mở ra
@@ -165,8 +165,13 @@ export function VeDichVuModal({
   const daCapMa = Boolean(booking.veQr?.khach?.length);
   const cot = DICH_VU_VE_TAT_CA.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
   const khoa = (k: DichVuVeBatKy) => !booking.veQr && dat[k] >= n;
-  const lech = cot.filter((k) => dem(k) !== Math.min(n, dat[k]));
-  const chuaKhop = (!booking.veQr && lech.length > 0) || (chonDuocQr && qrNos.length !== soQr);
+  /**
+   * CHỈ CHẶN VIỆC BẮT BUỘC (chủ 23/09: bỏ dòng "tích cho đúng … rồi mới cấp
+   * mã"): phải chọn đủ người bay PPG vì vé QR mang tên đích danh. Số dịch vụ
+   * lệch với số đã đặt thì hàng "Đã tích / đã đặt" tô đỏ cho thấy, không khoá
+   * nút — quầy có lý do riêng (khách đổi ý tại bãi) và vẫn sửa được sau.
+   */
+  const chuaKhop = chonDuocQr && qrNos.length !== soQr;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={onCancel}>
@@ -283,11 +288,6 @@ export function VeDichVuModal({
             {chonDuocQr && qrNos.length !== soQr
               ? ` Chọn đúng ${soQr} người bay PPG ở cột "Bay PPG" (đang chọn ${qrNos.length}) rồi mới cấp mã được.`
               : ""}
-          </p>
-        )}
-        {lech.length > 0 && (
-          <p className="mt-2 text-xs text-rose-700">
-            Tích cho đúng {lech.map((k) => `${dat[k]} ${TEN_DICH_VU[k]}`).join(", ")} theo số đã đặt rồi mới cấp mã.
           </p>
         )}
         {loi && <p className="mt-2 rounded-lg bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800">⚠ {loi}</p>}

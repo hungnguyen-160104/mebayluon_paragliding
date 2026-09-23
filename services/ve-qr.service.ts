@@ -568,16 +568,34 @@ export async function suaDichVuVe(
   const luc = new Date();
   const doiVeQr = Array.isArray(guestNos) && guestNos.length > 0;
   const nosQr = new Set((guestNos ?? []).map((x) => Number(x)));
-  const khach = (doc.veQr.khach ?? []).map((k: any) => {
+  /**
+   * DỰNG ĐỦ DÒNG CHO MỌI KHÁCH (chủ 23/09) — vé cấp trước 23/09 chỉ có dòng cho
+   * khách PPG, nên đoàn gộp mở "DV vé" ra là thiếu người, không chọn lại được
+   * ai bay PG ai bay PPG. Khách chưa có dòng thì thêm dòng vé giấy.
+   */
+  const soKhach = Math.max(1, Number(doc.guestCount) || 1);
+  const dayDu = [...(doc.veQr.khach ?? [])];
+  for (let g = 1; g <= soKhach; g++) {
+    if (dayDu.some((k: any) => Number(k.guestNo) === g)) continue;
+    dayDu.push({ guestNo: g, dichVu: { ...KHONG_DICH_VU }, veGiay: true, phiCong: null, bayXong: null, lichSu: [{ luc, boi: ten(session), viec: "ve-giay" }] });
+  }
+  dayDu.sort((a: any, b: any) => Number(a.guestNo) - Number(b.guestNo));
+  const khach = dayDu.map((k: any) => {
     let ra = k;
     /** Đổi PG ↔ PPG: chỉ vé còn trống (chưa quét, chưa bay, chưa thu hồi). */
-    if (doiVeQr && !k.phiCong?.username && !k.bayXong?.luc && !k.huy?.luc) {
+    if (doiVeQr && !k.phiCong?.username && !k.bayXong?.luc) {
       const veGiayMoi = !nosQr.has(Number(k.guestNo));
-      if (Boolean(k.veGiay) !== veGiayMoi) {
+      /** Chọn lại đúng khách đã bị thu hồi vé = CẤP LẠI: vé sống lại, trống, phi công phải quét lại. */
+      const hoiSinh = !veGiayMoi && Boolean(k.huy?.luc);
+      if (Boolean(k.veGiay) !== veGiayMoi || hoiSinh) {
         ra = {
           ...ra,
           veGiay: veGiayMoi,
-          lichSu: [...(ra.lichSu ?? []), { luc, boi: ten(session), viec: veGiayMoi ? "doi-ve-giay" : "doi-ve-qr" }],
+          ...(hoiSinh ? { huy: null, thuHoi: null, phiCong: null, bayXong: null } : {}),
+          lichSu: [
+            ...(ra.lichSu ?? []),
+            { luc, boi: ten(session), viec: hoiSinh ? "cap-lai" : veGiayMoi ? "doi-ve-giay" : "doi-ve-qr" },
+          ],
         };
       }
     }
