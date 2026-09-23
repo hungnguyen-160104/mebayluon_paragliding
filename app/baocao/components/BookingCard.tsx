@@ -54,7 +54,7 @@ function inQuaChiaSeThang(): boolean {
 }
 import { RONG_CHAM } from "@/lib/baobay/may-in-usb";
 import { VeDichVuModal } from "./VeDichVuModal";
-import { coQuetVe, daBayHet, DICH_VU_VE, nhanVe, TEN_DICH_VU, type DichVuKhach } from "@/lib/baobay/ve-qr";
+import { coQuetVe, daBayHet, DICH_VU_VE_TAT_CA, nhanVe, TEN_DICH_VU, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { MayInUsb } from "./MayInUsb";
 import { GoiSdt } from "./GoiSdt";
 import type { HistoryEvent, HistoryTone } from "@/lib/baobay/booking-history";
@@ -3408,7 +3408,7 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
   const v = b.veQr;
   if (!v?.khach?.length) return null;
   const n = Math.max(1, b.guestCount);
-  const conHieuLuc = v.khach.filter((k) => !k.huy?.luc);
+  const conHieuLuc = v.khach.filter((k) => !k.huy?.luc && !k.veGiay);
   const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
 
   /**
@@ -3488,15 +3488,22 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
           </div>
           <ul className="space-y-1">
             {v.khach.map((k) => {
-              const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => TEN_DICH_VU[x]);
+              const dv = DICH_VU_VE_TAT_CA.filter((x) => k.dichVu?.[x]).map((x) => TEN_DICH_VU[x]);
               const daHuy = Boolean(k.huy?.luc);
+              const veGiay = Boolean(k.veGiay);
               const xungDot = Boolean(k.huy?.daBayXong) && !k.huy?.xacMinh;
               return (
                 <li
                   key={k.guestNo}
                   className={
                     "rounded-lg border px-2 py-1 text-xs " +
-                    (xungDot ? "border-rose-400 bg-rose-50" : daHuy ? "border-slate-300 bg-slate-100 text-slate-500" : "border-violet-200 bg-white")
+                    (xungDot
+                      ? "border-rose-400 bg-rose-50"
+                      : daHuy
+                        ? "border-slate-300 bg-slate-100 text-slate-500"
+                        : veGiay
+                          ? "border-slate-200 bg-slate-50 text-slate-600"
+                          : "border-violet-200 bg-white")
                   }
                 >
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -3504,7 +3511,9 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
                     <span className={daHuy ? "line-through" : ""}>{vietTatTen(tenKhachBaoHiem(b, k.guestNo))}</span>
                     {dv.length > 0 && <span className="text-[11px] text-amber-800">{dv.join(" · ")}</span>}
                     <span className="ml-auto text-[11px]">
-                      {daHuy
+                      {veGiay
+                        ? "📝 vé giấy viết tay (khách PG)"
+                        : daHuy
                         ? `✕ ĐÃ THU HỒI${k.huy?.boi ? ` by ${k.huy.boi}` : ""} ${gio(k.huy?.luc)}`
                         : k.bayXong
                           ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong ${gio(k.bayXong.luc)}`
@@ -3522,7 +3531,7 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
                     </div>
                   )}
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {!daHuy && (
+                    {!daHuy && !veGiay && (
                       <button
                         type="button"
                         disabled={busy === k.guestNo}
@@ -3833,7 +3842,7 @@ function BookingDetailControl({
                     <dd className="font-medium">
                       <ul className="space-y-0.5">
                         {b.veQr.khach.slice(0, Math.max(1, b.guestCount)).map((k) => {
-                          const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
+                          const dv = DICH_VU_VE_TAT_CA.filter((x) => k.dichVu?.[x]).map((x) => (k.hoanDichVu?.[x] ? `${TEN_DICH_VU[x]} (hoàn)` : TEN_DICH_VU[x]));
                           /** Tên TỪNG KHÁCH theo sổ bảo hiểm (chủ 21/09) — giống danh sách mã và vé in. */
                           const tenKhach = vietTatTen(tenKhachBaoHiem(b, k.guestNo));
                           const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
@@ -3842,8 +3851,10 @@ function BookingDetailControl({
                               <span className="font-mono font-bold">{nhanVe(b.veQr!.so, k.guestNo, b.guestCount)}</span>
                               <span>{tenKhach}</span>
                               {dv.length > 0 && <span className="text-[11px] text-amber-800">{dv.join(" · ")}</span>}
-                              <span className={"text-[11px] " + (k.bayXong ? "text-emerald-700" : k.phiCong ? "text-sky-700" : "text-slate-500")}>
-                                {k.bayXong
+                              <span className={"text-[11px] " + (k.veGiay ? "text-slate-500" : k.bayXong ? "text-emerald-700" : k.phiCong ? "text-sky-700" : "text-slate-500")}>
+                                {k.veGiay
+                                  ? "📝 vé giấy viết tay (PG)"
+                                  : k.bayXong
                                   ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong ${gio(k.bayXong.luc)}`
                                   : k.phiCong
                                     ? `${k.phiCong.name || k.phiCong.username} đã tiếp nhận ${gio(k.phiCong.luc)}`
@@ -5210,6 +5221,8 @@ export function BookingTodayBanner({
     let xungDot = 0;
     for (const b of rows) {
       for (const k of b.veQr?.khach ?? []) {
+        /** Vé giấy viết tay (khách PG của đoàn gộp) không phải vé QR — chủ 23/09. */
+        if (k.veGiay) continue;
         if (k.huy?.luc) {
           thuHoi++;
           if (k.huy.daBayXong && !k.huy.xacMinh) xungDot++;

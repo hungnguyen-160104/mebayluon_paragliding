@@ -24,14 +24,43 @@
 
 import { formatDateKeyVN, isDateKey } from "./date";
 
-/** Ba dịch vụ đi kèm có thể gắn cho từng khách ở Sa Pa (chủ 17/09: "chỉ có 360, flycam và cờ đỏ"). */
+/**
+ * Ba dịch vụ phi công QUÉT MÃ rồi tính lương (chủ 17/09: "chỉ có 360, flycam
+ * và cờ đỏ") — danh sách này là nguồn của mọi bảng cộng theo mã vé.
+ */
 export const DICH_VU_VE = ["video360", "flycam", "redFlag"] as const;
 export type DichVuVe = (typeof DICH_VU_VE)[number];
-export type DichVuKhach = Record<DichVuVe, boolean>;
 
-export const TEN_DICH_VU: Record<DichVuVe, string> = { video360: "Cam 360", flycam: "Flycam", redFlag: "Cờ đỏ" };
+/**
+ * Dịch vụ CHIA THEO KHÁCH nhưng KHÔNG vào bảng cộng theo mã (chủ 23/09: "4
+ * hoàng hôn thì cho cột hoàng hôn tích vào cả 4"). Hoàng hôn và kéo cờ vẫn do
+ * phi công khai trong báo cáo ngày như cũ; ở đây chỉ để in đúng lên vé của
+ * từng khách và để quầy soát đủ số đã bán.
+ */
+export const DICH_VU_VE_THEM = ["sunset", "flagFlight"] as const;
+export type DichVuVeThem = (typeof DICH_VU_VE_THEM)[number];
 
-export const KHONG_DICH_VU: DichVuKhach = { video360: false, flycam: false, redFlag: false };
+/** Mọi dịch vụ gắn được cho một khách — thứ tự hiện trên hộp cấp mã và trên vé. */
+export const DICH_VU_VE_TAT_CA = [...DICH_VU_VE, ...DICH_VU_VE_THEM] as const;
+export type DichVuVeBatKy = DichVuVe | DichVuVeThem;
+
+export type DichVuKhach = Record<DichVuVe, boolean> & Partial<Record<DichVuVeThem, boolean>>;
+
+export const TEN_DICH_VU: Record<DichVuVeBatKy, string> = {
+  video360: "Cam 360",
+  flycam: "Flycam",
+  redFlag: "Cờ đỏ",
+  sunset: "Hoàng hôn",
+  flagFlight: "Kéo cờ",
+};
+
+/**
+ * KHÁCH BAY PPG KHÔNG CÓ cờ đỏ và kéo cờ (chủ 23/09) — hai thứ này chỉ dành
+ * cho dù lượn thường.
+ */
+export const DV_CAM_VOI_PPG: DichVuVeBatKy[] = ["redFlag", "flagFlight"];
+
+export const KHONG_DICH_VU: DichVuKhach = { video360: false, flycam: false, redFlag: false, sunset: false, flagFlight: false };
 
 /** Mã điểm in trên QR — ngắn, viết hoa, không dấu để mọi máy đọc được. */
 const MA_DIEM: Record<string, string> = { sapa: "SAPA", "khau-pha": "KHAUPHA", "ha-noi": "HANOI" };
@@ -140,10 +169,11 @@ export function loaiVePhuCua(raw: string): LoaiVePhu | null {
  */
 export function chiaDichVu(
   guestCount: number,
-  so: { video360: number; flycam: number; redFlag: number },
+  so: { video360: number; flycam: number; redFlag: number; sunset?: number; flagFlight?: number },
 ): { auto: boolean; khach: DichVuKhach[] } {
   const n = Math.max(1, guestCount);
-  const auto = DICH_VU_VE.every((k) => so[k] === 0 || so[k] >= n);
+  const soCua = (k: DichVuVeBatKy) => Math.max(0, Number(so[k] ?? 0));
+  const auto = DICH_VU_VE_TAT_CA.every((k) => soCua(k) === 0 || soCua(k) >= n);
   const khach: DichVuKhach[] = Array.from({ length: n }, () => ({ ...KHONG_DICH_VU }));
   /**
    * Dịch vụ ĐỦ CẢ ĐOÀN thì tích sẵn cho mọi khách, KỂ CẢ khi dịch vụ khác phải
@@ -151,7 +181,7 @@ export function chiaDichVu(
    * tích sẵn khi mọi dịch vụ đều tự chia được, nên cột flycam bị khoá "cả
    * đoàn" mà trống, 0/5, không cấp mã được).
    */
-  for (const k of DICH_VU_VE) if (so[k] >= n) for (const x of khach) x[k] = true;
+  for (const k of DICH_VU_VE_TAT_CA) if (soCua(k) >= n) for (const x of khach) x[k] = true;
   return { auto, khach };
 }
 
@@ -163,7 +193,7 @@ export function tenVietTat(ten: string): string {
 }
 
 export function dichVuChu(d: Partial<DichVuKhach> | undefined): string[] {
-  return DICH_VU_VE.filter((k) => d?.[k]).map((k) => TEN_DICH_VU[k]);
+  return DICH_VU_VE_TAT_CA.filter((k) => d?.[k]).map((k) => TEN_DICH_VU[k]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -193,13 +223,19 @@ export type VeQrKhach = {
    * `daBayXong` = lúc thu hồi phi công ĐÃ báo bay xong → XUNG ĐỘT, hai bên
    * phải xác minh (phi công thấy cảnh báo, điều phối thấy trong danh sách).
    */
+  /**
+   * VÉ GIẤY VIẾT TAY (chủ 23/09): đoàn gộp PG + PPG ở Khau Phạ vẫn ghi dịch vụ
+   * cho khách PG để quầy tích đủ số đã bán, nhưng khách ấy KHÔNG có mã QR —
+   * không in vé QR, không ai quét được, không vào bảng đếm vé QR.
+   */
+  veGiay?: boolean;
   huy?: { luc: string; boi: string; ly: string; phiCong?: string; phiCongTen?: string; daBayXong?: boolean; xacMinh?: { boi: string; luc: string; ket: string } | null } | null;
   lichSu: Array<{ luc: string; boi: string; viec: string; ghiChu?: string }>;
 };
 
-/** Vé còn hiệu lực (chưa bị thu hồi hẳn). */
-export function veConHieuLuc(k: Pick<VeQrKhach, "huy">): boolean {
-  return !k.huy?.luc;
+/** Vé QR còn hiệu lực: có mã (không phải vé giấy) và chưa bị thu hồi. */
+export function veConHieuLuc(k: Pick<VeQrKhach, "huy" | "veGiay">): boolean {
+  return !k.huy?.luc && !k.veGiay;
 }
 
 export type VeQrDTO = {

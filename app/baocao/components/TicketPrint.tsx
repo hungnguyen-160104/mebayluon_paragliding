@@ -67,11 +67,16 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
   if (guestNo && b.veQr?.khach?.length) {
     const k = b.veQr.khach.find((x) => x.guestNo === guestNo);
     if (k) {
-      /** Dịch vụ CẤP ĐOÀN (không chia từng khách) vẫn phải lên vé bay ở Khau Phạ: hoàng hôn, kéo cờ, PPG. */
+      /**
+       * Dịch vụ của ĐÚNG KHÁCH ẤY (chủ 23/09) — từ 23/09 hoàng hôn và kéo cờ
+       * cũng tích theo từng khách nên không cộng mù theo số của cả đoàn nữa.
+       * Vé cũ chưa có hai ô này thì vẫn rơi về số đoàn để không mất chữ.
+       */
       const dv = dichVuChu(k.dichVu);
-      if (b.sunset > 0) dv.push("Hoàng hôn");
-      if (b.flagFlight > 0) dv.push("Kéo cờ");
-      if (b.flightKind === "ppg") dv.push("PPG");
+      const cu = k.dichVu?.sunset === undefined && k.dichVu?.flagFlight === undefined;
+      if (cu && b.sunset > 0) dv.push("Hoàng hôn");
+      if (cu && b.flagFlight > 0) dv.push("Kéo cờ");
+      if (b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0) dv.push("PPG");
       return dv;
     }
   }

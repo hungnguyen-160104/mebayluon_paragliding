@@ -727,10 +727,19 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
               new Schema(
                 {
                   guestNo: { type: Number, required: true },
-                  dichVu: { video360: { type: Boolean, default: false }, flycam: { type: Boolean, default: false }, redFlag: { type: Boolean, default: false } },
+                  /** Dịch vụ của khách này — ba thứ đầu vào bảng lương phi công, hoàng hôn / kéo cờ chỉ in lên vé (chủ 23/09). */
+                  dichVu: {
+                    video360: { type: Boolean, default: false },
+                    flycam: { type: Boolean, default: false },
+                    redFlag: { type: Boolean, default: false },
+                    sunset: { type: Boolean, default: false },
+                    flagFlight: { type: Boolean, default: false },
+                  },
+                  /** Khách bay PG trong đoàn gộp: có dịch vụ nhưng KHÔNG có mã QR, nhận vé giấy viết tay. */
+                  veGiay: { type: Boolean, default: false },
                   phiCong: { type: new Schema({ username: String, name: String, luc: Date }, { _id: false }), default: null },
                   bayXong: { type: new Schema({ luc: Date }, { _id: false }), default: null },
-                  hoanDichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean },
+                  hoanDichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, flagFlight: Boolean },
                   thuHoi: {
                     type: new Schema(
                       {

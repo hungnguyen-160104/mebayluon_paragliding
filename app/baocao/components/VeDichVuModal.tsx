@@ -5,7 +5,18 @@ import { useEffect, useState } from "react";
 import { normalizeSpot } from "@/lib/baobay/spots";
 
 import type { BookingDTO } from "@/lib/baobay/types";
-import { chiaDichVu, DICH_VU_VE, khachCoMaQrMacDinh, nhanVe, soKhachCoMaQr, TEN_DICH_VU, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
+import {
+  chiaDichVu,
+  DICH_VU_VE_TAT_CA,
+  DV_CAM_VOI_PPG,
+  khachCoMaQrMacDinh,
+  KHONG_DICH_VU,
+  nhanVe,
+  soKhachCoMaQr,
+  TEN_DICH_VU,
+  type DichVuKhach,
+  type DichVuVeBatKy,
+} from "@/lib/baobay/ve-qr";
 import { tenKhachBaoHiem, vietTatTen } from "./TicketPrint";
 
 import { Button } from "./ui";
@@ -30,8 +41,19 @@ export function VeDichVuModal({
   const n = Math.max(1, booking.guestCount || 1);
   const [rows, setRows] = useState<DichVuKhach[]>(() => {
     const daCo = booking.veQr?.khach;
-    if (daCo?.length) return Array.from({ length: n }, (_, i) => ({ ...(daCo[i]?.dichVu ?? { video360: false, flycam: false, redFlag: false }) }));
-    return chiaDichVu(n, { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag }).khach;
+    if (daCo?.length) {
+      return Array.from({ length: n }, (_, i) => {
+        const k = daCo.find((x) => x.guestNo === i + 1);
+        return { ...KHONG_DICH_VU, ...(k?.dichVu ?? {}) };
+      });
+    }
+    return chiaDichVu(n, {
+      video360: booking.video360,
+      flycam: booking.flycam,
+      redFlag: booking.redFlag,
+      sunset: booking.sunset,
+      flagFlight: booking.flagFlight,
+    }).khach;
   });
   /**
    * KHÁCH NÀO NHẬN VÉ QR (chủ 22/09): Khau Phạ đoàn gộp PG + PPG thì chỉ khách
@@ -49,7 +71,7 @@ export function VeDichVuModal({
    * thu hồi), chưa cấp thì theo ô đang tích. Dùng chung cho cả hộp "cấp mã" và
    * hộp "DV vé" để hai nơi nói một chuyện (chủ 23/09).
    */
-  const maDaCap = (booking.veQr?.khach ?? []).filter((k) => !k.huy?.luc).map((k) => k.guestNo);
+  const maDaCap = (booking.veQr?.khach ?? []).filter((k) => !k.huy?.luc && !k.veGiay).map((k) => k.guestNo);
   const coQr = (g: number) => (booking.veQr ? maDaCap.includes(g) : qrNos.includes(g));
   /** Đoàn gộp: số khách có vé QR ít hơn cả đoàn (Khau Phạ PG + PPG). */
   const soCoQr = booking.veQr ? maDaCap.length : qrNos.length;
@@ -72,16 +94,28 @@ export function VeDichVuModal({
    * `vietTatTen`) nên danh sách trên màn hình khớp chữ trên vé.
    */
   const ten = (g: number) => vietTatTen(tenKhachBaoHiem(booking, g));
-  const dem = (k: DichVuVe) => rows.filter((r) => r[k]).length;
-  const dat = { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag };
+  const dem = (k: DichVuVeBatKy) => rows.filter((r) => r[k]).length;
+  const dat: Record<DichVuVeBatKy, number> = {
+    video360: booking.video360,
+    flycam: booking.flycam,
+    redFlag: booking.redFlag,
+    sunset: booking.sunset,
+    flagFlight: booking.flagFlight,
+  };
+  /**
+   * KHÁCH NÀY BAY PPG? (chủ 23/09) — đoàn toàn PPG thì mọi khách; đoàn gộp thì
+   * đúng những khách được cấp mã QR. Khách PPG KHÔNG có cờ đỏ và kéo cờ.
+   */
+  const laPpg = (g: number) => spotBk === "khau-pha" && (booking.flightKind === "ppg" || coQr(g));
+  const camVoi = (g: number, k: DichVuVeBatKy) => laPpg(g) && DV_CAM_VOI_PPG.includes(k);
   /**
    * Luật chủ 18/09: dịch vụ đặt 0 thì KHÔNG cho chọn (ẩn cột); đặt đủ cho cả
    * đoàn thì máy tích sẵn và KHOÁ; chỉ khi 0 < số đặt < số khách mới tích tay,
    * và phải tích ĐÚNG số đã đặt mới cấp mã được.
    */
   const daCapMa = Boolean(booking.veQr?.khach?.length);
-  const cot = DICH_VU_VE.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
-  const khoa = (k: DichVuVe) => !booking.veQr && dat[k] >= n;
+  const cot = DICH_VU_VE_TAT_CA.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
+  const khoa = (k: DichVuVeBatKy) => !booking.veQr && dat[k] >= n;
   const lech = cot.filter((k) => dem(k) !== Math.min(n, dat[k]));
   const chuaKhop = (!booking.veQr && lech.length > 0) || (chonDuocQr && qrNos.length !== soQr);
 
@@ -91,7 +125,7 @@ export function VeDichVuModal({
         <h3 className="text-base font-bold text-slate-900">{title ?? "Dịch vụ trên vé"} — #{booking.daySeq} {booking.contactName}</h3>
         {/* Dòng "Đã đặt" tô ĐỎ, dạng "0xCam360 · 1xFlycam" cho nổi (chủ 18/09). */}
         <p className="mt-0.5 text-xs text-slate-600">
-          Đã đặt: <span className="font-bold text-rose-700">{DICH_VU_VE.map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ")}</span>
+          Đã đặt: <span className="font-bold text-rose-700">{DICH_VU_VE_TAT_CA.filter((k) => dat[k] > 0).map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ") || "không có dịch vụ kèm"}</span>
         </p>
         {/**
          * DỊCH VỤ CẢ ĐOÀN (chủ 23/09: "book 16 có 4 hoàng hôn mà in vé không
@@ -99,24 +133,10 @@ export function VeDichVuModal({
          * chia từng khách nên không có cột tích, nhưng phải HIỆN RA để người in
          * soát đủ; vé in ra cũng ghi những dịch vụ này.
          */}
-        {(booking.sunset > 0 || booking.flagFlight > 0 || booking.ppgGuests > 0) && (
+        {booking.ppgGuests > 0 && booking.flightKind !== "ppg" && (
           <p className="mt-0.5 text-xs text-slate-600">
-            Cả đoàn:{" "}
-            <span className="font-bold text-amber-800">
-              {[
-                booking.sunset > 0 ? `${booking.sunset}x Hoàng hôn` : "",
-                booking.flagFlight > 0 ? `${booking.flagFlight}x Kéo cờ` : "",
-                booking.ppgGuests > 0 ? `${booking.ppgGuests}x PPG` : "",
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>{" "}
-            <span className="text-slate-500">— in trên mọi vé, không chia từng khách</span>
-            {booking.sunset > 0 && booking.sunset < n && (
-              <span className="ml-1 font-semibold text-rose-700">
-                (chỉ {booking.sunset}/{n} khách đặt hoàng hôn — soát lại trước khi in)
-              </span>
-            )}
+            Đoàn có <span className="font-bold text-amber-800">{booking.ppgGuests}x PPG</span>{" "}
+            <span className="text-slate-500">— khách PPG không có cờ đỏ và kéo cờ</span>
           </p>
         )}
         <div className="mt-3 overflow-x-auto">
@@ -160,13 +180,19 @@ export function VeDichVuModal({
                     )}
                     {cot.map((k) => (
                       <td key={k} className="py-1.5 text-center">
+                        {camVoi(g, k) ? (
+                          <span className="text-[10px] text-slate-400" title="Khách bay PPG không có dịch vụ này">
+                            —
+                          </span>
+                        ) : (
                         <input
                           type="checkbox"
                           className="h-5 w-5"
                           checked={r[k]}
-                          disabled={daBay || khoa(k) || (Boolean(booking.veQr) && !coQr(g))}
+                          disabled={daBay || khoa(k) || camVoi(g, k)}
                           onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, [k]: e.target.checked } : x)))}
                         />
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -217,7 +243,14 @@ export function VeDichVuModal({
               setBusy(true);
               setLoi(null);
               try {
-                await onConfirm(rows.map((r, i) => ({ guestNo: i + 1, ...r })), qrNos);
+                /** Khách PPG không mang cờ đỏ / kéo cờ dù ô cũ có tích (chủ 23/09). */
+                const sach = rows.map((r, i) => {
+                  const g = i + 1;
+                  const x = { ...r };
+                  for (const k of DV_CAM_VOI_PPG) if (camVoi(g, k)) x[k] = false;
+                  return { guestNo: g, ...x };
+                });
+                await onConfirm(sach, qrNos);
               } catch (e: unknown) {
                 setLoi(e instanceof Error ? e.message : "Không thực hiện được");
               } finally {

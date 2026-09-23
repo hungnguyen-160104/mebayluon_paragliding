@@ -6,6 +6,7 @@ import { formatDateKeyVN, isDateKey } from "@/lib/baobay/date";
 import type { BaobaySession } from "@/lib/baobay/token";
 import {
   DICH_VU_VE,
+  DICH_VU_VE_TAT_CA,
   KHONG_DICH_VU,
   nhanVe,
   parseVeQrText,
@@ -54,6 +55,8 @@ export type MaVeDTO = {
   bayXong: string | null;
   trangThai: TrangThaiMa;
   bookingStatus: string;
+  /** Khách bay PG trong đoàn gộp: vé giấy viết tay, không có mã QR (chủ 23/09). */
+  veGiay: boolean;
   /** Vé bị THU HỒI HẲN (chủ 22/09) — null nếu còn hiệu lực. */
   huy: {
     luc: string;
@@ -107,7 +110,13 @@ function tenKhach(doc: any, guestNo: number): string {
 }
 
 function dv(x: any): DichVuKhach {
-  return { video360: Boolean(x?.video360), flycam: Boolean(x?.flycam), redFlag: Boolean(x?.redFlag) };
+  return {
+    video360: Boolean(x?.video360),
+    flycam: Boolean(x?.flycam),
+    redFlag: Boolean(x?.redFlag),
+    sunset: Boolean(x?.sunset),
+    flagFlight: Boolean(x?.flagFlight),
+  };
 }
 
 /** Mã chống sao chép đã cấp cho khách thứ n (ticketSecurity) — rỗng nếu chưa in lần nào. */
@@ -121,7 +130,7 @@ export function maVeDTO(doc: any, k: any): MaVeDTO {
   const dichVu = dv(k.dichVu);
   const hoan: Partial<DichVuKhach> = k.hoanDichVu ? dv(k.hoanDichVu) : {};
   const tinh: DichVuKhach = { ...KHONG_DICH_VU };
-  for (const x of DICH_VU_VE) tinh[x] = Boolean(dichVu[x] && !hoan[x]);
+  for (const x of DICH_VU_VE_TAT_CA) tinh[x] = Boolean(dichVu[x] && !hoan[x]);
   const guestCount = Math.max(1, Number(doc.guestCount) || 1);
   const huy = k.huy?.luc
     ? {
@@ -139,6 +148,7 @@ export function maVeDTO(doc: any, k: any): MaVeDTO {
   return {
     bookingId: String(doc._id),
     huy,
+    veGiay: Boolean(k.veGiay),
     nhan: nhanVe(Number(v.so), Number(k.guestNo), guestCount),
     qrText: veQrText(String(doc.spot), String(v.ngay), Number(v.so), Number(k.guestNo), maChongGiaCua(doc, Number(k.guestNo))),
     ngayCap: String(v.ngay),
@@ -197,6 +207,10 @@ export async function quetVe(session: BaobaySession, spotRaw: string, input: { t
 
   if (doc.status === "cancelled") {
     throw new BaobayError(`Mã ${formatDateKeyVN(ma.ngay)} #${ma.so}.${ma.guestNo} đã bị HUỶ (booking huỷ${doc.cancelledBy ? ` bởi ${doc.cancelledBy}` : ""}) — không bay`, 409);
+  }
+  /** VÉ GIẤY VIẾT TAY (đoàn gộp, khách PG) — không có mã QR nên không quét được. */
+  if (k.veGiay) {
+    throw new BaobayError(`Khách ${ma.guestNo} của booking này bay PG, nhận vé giấy viết tay — không có vé QR`, 409);
   }
   /** VÉ BỊ THU HỒI HẲN (chủ 22/09) — không ai quét được nữa, kể cả phi công khác. */
   if (k.huy?.luc) {
@@ -474,7 +488,7 @@ export async function veCuaToi(
   const thuHoi: ThuHoiDTO[] = [];
   for (const doc of docs) {
     for (const k of doc.veQr?.khach ?? []) {
-      if (String(doc.flightDate) === date && doc.status !== "cancelled" && !k.huy?.luc && (tatCa ? true : k.phiCong?.username === me)) ma.push(maVeDTO(doc, k));
+      if (String(doc.flightDate) === date && doc.status !== "cancelled" && !k.huy?.luc && !k.veGiay && (tatCa ? true : k.phiCong?.username === me)) ma.push(maVeDTO(doc, k));
       if (k.thuHoi?.luc && k.thuHoi.phiCong === me && !k.thuHoi.daXem) {
         thuHoi.push({
           bookingId: String(doc._id),

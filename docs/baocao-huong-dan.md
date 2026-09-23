@@ -433,6 +433,12 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 
 ### Vé QR ở Khau Phạ: đoàn gộp PG + PPG, thu hồi từng vé (22/09/2026)
 
+- **Tích dịch vụ cho MỌI khách, kể cả vé giấy (23/09).** Hộp cấp mã có cột cho
+  đủ năm dịch vụ đã bán: **Cam 360 · Flycam · Cờ đỏ · Hoàng hôn · Kéo cờ** (cột
+  nào booking không đặt thì ẩn). Khách PG của đoàn gộp vẫn tích được — ghi vào
+  sổ để soát đủ số đã bán, chỉ khác là không có mã QR (dòng ghi *vé giấy viết
+  tay*). **Khách bay PPG KHÔNG có cờ đỏ và kéo cờ** — hai ô ấy hiện dấu "—",
+  tích cũng không lưu.
 - **Chỉ khách PPG có vé QR.** Đoàn gộp thì khách PG nhận **vé giấy viết tay**
   (không cấp mã), khách PPG chỉ có **vé QR** (không vé viết tay). Booking chỉ
   khai SỐ khách PPG nên hộp cấp mã tích sẵn các khách đầu danh sách và có cột

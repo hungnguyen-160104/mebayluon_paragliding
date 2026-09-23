@@ -32,7 +32,7 @@ import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDate
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
 import { capMaVe, chuanHoaMaVe, maVeHopLe } from "@/lib/baobay/ma-ve-bao-mat";
-import { chiaDichVu, coQuetVe, DICH_VU_VE, khachCoMaQrMacDinh, KHONG_DICH_VU, soKhachCoMaQr, type DichVuKhach } from "@/lib/baobay/ve-qr";
+import { chiaDichVu, coQuetVe, DICH_VU_VE, DICH_VU_VE_TAT_CA, khachCoMaQrMacDinh, KHONG_DICH_VU, soKhachCoMaQr, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
 import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
@@ -7105,7 +7105,7 @@ export async function recordTicketPrint(
      * điều phối tích ở hộp trước khi in. Không gửi thì máy tự chia khi chia
      * đều được (10 khách 10 flycam), không chia đều được thì báo lỗi bắt tích tay.
      */
-    dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean }>;
+    dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; flagFlight?: boolean }>;
     /**
      * KHÁCH NÀO ĐƯỢC CẤP MÃ (chủ 22/09) — Khau Phạ đoàn gộp PG + PPG chỉ cấp
      * cho khách PPG. Không gửi thì lấy mặc định (các khách đầu danh sách).
@@ -7171,7 +7171,15 @@ export async function recordTicketPrint(
     const guiDv = Array.isArray(input.dichVu) ? input.dichVu : null;
     const dvCua = (g: number, macDinh: DichVuKhach): DichVuKhach => {
       const x = guiDv?.find((d) => Number(d.guestNo) === g);
-      return x ? { video360: Boolean(x.video360), flycam: Boolean(x.flycam), redFlag: Boolean(x.redFlag) } : macDinh;
+      return x
+        ? {
+            video360: Boolean(x.video360),
+            flycam: Boolean(x.flycam),
+            redFlag: Boolean(x.redFlag),
+            sunset: Boolean(x.sunset),
+            flagFlight: Boolean(x.flagFlight),
+          }
+        : macDinh;
     };
     /**
      * DANH SÁCH KHÁCH ĐƯỢC CẤP MÃ: Sa Pa cả đoàn; Khau Phạ chỉ khách PPG (số
@@ -7185,7 +7193,13 @@ export async function recordTicketPrint(
     if (nosCap.length === 0) throw new BaobayError("Đoàn này không có khách nào bay PPG — vé giấy viết tay, không cấp mã QR", 400);
 
     if (!booking.veQr?.ngay) {
-      const chia = chiaDichVu(soKhach, { video360: Number(booking.video360) || 0, flycam: Number(booking.flycam) || 0, redFlag: Number(booking.redFlag) || 0 });
+      const chia = chiaDichVu(soKhach, {
+        video360: Number(booking.video360) || 0,
+        flycam: Number(booking.flycam) || 0,
+        redFlag: Number(booking.redFlag) || 0,
+        sunset: Number(booking.sunset) || 0,
+        flagFlight: Number(booking.flagFlight) || 0,
+      });
       if (!chia.auto && !guiDv) {
         throw new BaobayError(
           "Đoàn này có dịch vụ đi kèm không chia đều được cho từng khách — mở hộp DỊCH VỤ TRÊN VÉ, tích tay khách nào có 360 / flycam / cờ đỏ rồi mới in.|CAN_TICH_DV",
@@ -7197,27 +7211,40 @@ export async function recordTicketPrint(
         so: Number(booking.daySeq) || 0,
         capLuc: new Date(),
         capBoi: session.name || session.username,
-        khach: nosCap.map((g) => ({
+        /**
+         * GHI DÒNG CHO MỌI KHÁCH (chủ 23/09): khách PG của đoàn gộp vẫn cần ô
+         * dịch vụ để quầy tích đủ số đã bán, chỉ khác là KHÔNG có mã QR
+         * (`veGiay`) — không in vé QR, không ai quét, không vào bảng đếm vé QR.
+         */
+        khach: Array.from({ length: soKhach }, (_, i) => i + 1).map((g) => ({
           guestNo: g,
           dichVu: dvCua(g, chia.khach[g - 1] ?? { ...KHONG_DICH_VU }),
+          veGiay: !nosCap.includes(g),
           phiCong: null,
           bayXong: null,
-          lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }],
+          lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: nosCap.includes(g) ? "cap" : "ve-giay" }],
         })),
       };
     } else {
       /** Đoàn tăng khách sau khi in: thêm mã cho khách mới trong diện được cấp; có dichVu thì sửa khách chưa bay. */
       const khach = (booking.veQr.khach ?? []).map((k: any) => ({ ...k }));
-      for (const g of nosCap) {
+      for (let g = 1; g <= soKhach; g++) {
         if (khach.some((k: any) => Number(k.guestNo) === g)) continue;
-        khach.push({ guestNo: g, dichVu: dvCua(g, { ...KHONG_DICH_VU }), phiCong: null, bayXong: null, lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }] });
+        khach.push({
+          guestNo: g,
+          dichVu: dvCua(g, { ...KHONG_DICH_VU }),
+          veGiay: !nosCap.includes(g),
+          phiCong: null,
+          bayXong: null,
+          lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: nosCap.includes(g) ? "cap" : "ve-giay" }],
+        });
       }
       khach.sort((a: any, b: any) => Number(a.guestNo) - Number(b.guestNo));
       if (guiDv) {
         for (const k of khach) {
           if (k.bayXong) continue;
           const moi = dvCua(k.guestNo, k.dichVu);
-          if (DICH_VU_VE.some((x) => Boolean(k.dichVu?.[x]) !== moi[x])) {
+          if (DICH_VU_VE_TAT_CA.some((x) => Boolean(k.dichVu?.[x]) !== Boolean(moi[x]))) {
             k.dichVu = moi;
             k.lichSu = [...(k.lichSu ?? []), { luc: new Date(), boi: session.name || session.username, viec: "sua-dv" }];
           }
@@ -11268,6 +11295,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
   const veQrTally = { veQrXuat: 0, veQrBay: 0, veQrThuHoi: 0, veQrXungDot: 0 };
   for (const b of veQrDocs) {
     for (const k of b.veQr?.khach ?? []) {
+      if (k.veGiay) continue;
       if (k.huy?.luc) {
         veQrTally.veQrThuHoi++;
         if (k.huy.daBayXong && !k.huy.xacMinh?.luc) veQrTally.veQrXungDot++;
@@ -11961,7 +11989,7 @@ export async function upsertDailyClose(
       await BaobayBooking.find({ spot, flightDate: input.date, status: { $nin: ["cancelled", "voided"] }, "veQr.khach.0": { $exists: true } })
         .select("veQr.khach")
         .lean<any[]>()
-    ).reduce((t, b) => t + (b.veQr?.khach ?? []).filter((k: any) => !k.huy?.luc).length, 0);
+    ).reduce((t, b) => t + (b.veQr?.khach ?? []).filter((k: any) => !k.huy?.luc && !k.veGiay).length, 0);
     const gap = Math.max(0, (input.guestCount || 0) - (input.ticketsIssued || 0) - veQrXuat);
     const declared = Math.max(0, Math.round(input.noTicketGuests ?? 0));
     const bookingNoTicket = (
@@ -13795,7 +13823,7 @@ export async function getMyPeriodSummary(
       const ngay = String(b.flightDate);
       if (ngayCoBaoCao.has(ngay)) continue;
       for (const k of b.veQr?.khach ?? []) {
-        if (k.phiCong?.username !== session.username || !k.bayXong?.luc || k.thuHoi?.luc) continue;
+        if (k.veGiay || k.phiCong?.username !== session.username || !k.bayXong?.luc || k.thuHoi?.luc) continue;
         const t = tuQr.get(ngay) ?? { flightCount: 0, flycam: 0, video360: 0, redFlag: 0 };
         t.flightCount++;
         for (const x of DICH_VU_VE) if (k.dichVu?.[x] && !k.hoanDichVu?.[x]) t[x]++;
