@@ -38,6 +38,7 @@ import {
   servicesAmount,
   type FlightKind,
   type ServiceKey,
+  loaiBayCuaDiem,
 } from "@/lib/baobay/flight-price";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
@@ -7230,7 +7231,21 @@ export function BookingCard({
   const today = todayInVN();
   /** Điểm bay của BOOKING — mặc định theo trang, đổi được nếu tài khoản làm nhiều điểm. */
   const [bookSpot, setBookSpot] = useState(spot);
-  useEffect(() => setBookSpot(spot), [spot]);
+  /**
+   * Đổi ĐIỂM trên đầu trang khi form đang mở: kéo cả LOẠI BAY về đúng điểm
+   * (chủ 23/09) — trước đây chỉ `bookSpot` đổi, ô loại bay giữ 650m của Hà Nội
+   * nên lưu ra booking Khau Phạ mang loại bay Hà Nội.
+   */
+  useEffect(() => {
+    setBookSpot(spot);
+    setForm((prev) => {
+      const kind = loaiBayCuaDiem(spot, prev.flightKind);
+      if (kind === prev.flightKind) return prev;
+      return { ...prev, flightKind: kind, unitPrice: flightUnitPrice(kind, prev.flightDate, spot) };
+    });
+    // Chỉ chạy khi đổi điểm; setForm là hàm ổn định của React
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spot]);
   const spots = spotOptions?.length ? spotOptions : [spot];
   const [form, setForm] = useState<BookingForm>(() => emptyBooking(today, bookSpot));
   const [upcoming, setUpcoming] = useState<BookingDTO[]>([]);

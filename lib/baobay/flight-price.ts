@@ -41,6 +41,18 @@ export function defaultFlightKind(spot: string): FlightKind {
   return flightKindsOf(spot)[0];
 }
 
+/**
+ * ÉP LOẠI BAY VỀ ĐÚNG ĐIỂM (chủ 23/09: "M650 của Hà Nội sao lại hiện trong
+ * Khau Phạ?"). Mở form lập booking ở Hà Nội rồi đổi ĐIỂM trên đầu trang sang
+ * Khau Phạ thì ô loại bay giữ nguyên 650m — lưu xong thành booking Khau Phạ
+ * mang loại bay của Hà Nội. Hàm này là lưới chặn dùng cho cả form lẫn máy chủ:
+ * loại nào không có ở điểm ấy thì quy về loại mặc định của điểm.
+ */
+export function loaiBayCuaDiem(spot: string, kind: FlightKind | string | undefined | null): FlightKind {
+  const ds = flightKindsOf(spot);
+  return ds.includes(kind as FlightKind) ? (kind as FlightKind) : ds[0];
+}
+
 /** Đơn giá một khách theo ngày: [ngày thường, cuối tuần & lễ]. */
 export const FLIGHT_PRICE: Record<"pg" | "ppg", { weekday: number; peak: number }> = {
   pg: { weekday: 2_190_000, peak: 2_590_000 },

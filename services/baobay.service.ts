@@ -58,7 +58,9 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind,
+  loaiBayCuaDiem,
+} from "@/lib/baobay/flight-price";
 import {
   SAPA_STATUS_TEXT,
   isSapaSpot,
@@ -4487,7 +4489,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     spot,
     createdAt: new Date(),
     // Nhóm trộn PG+PPG: phần PPG tính theo BẢNG GIÁ của ngày bay
-    ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+    ppgGuests: loaiBayCuaDiem(spot, input.flightKind) === "ppg" ? 0 : input.ppgGuests,
     ppgUnitPrice: ppgPriceOf({ ppgUnitPrice: input.ppgUnitPrice, flightDate: input.flightDate }, spot),
   });
 
@@ -4508,7 +4510,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       redFlag: input.redFlag,
       sunset: input.sunset,
       flagFlight: input.flagFlight,
-      flightKind: input.flightKind ?? "pg",
+      /** Lưới chặn: loại bay phải thuộc điểm này (chủ 23/09) — xem loaiBayCuaDiem. */
+      flightKind: loaiBayCuaDiem(spot, input.flightKind),
       ppgGuests: input.ppgGuests ?? 0,
       comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360, spot),
       pickupFee: input.pickupFee,
@@ -5076,7 +5079,7 @@ const editedTotal = bookingTotal({
      * không giải thích được với ai.
      */
     createdAt: current.createdAt,
-    ppgGuests: input.flightKind === "ppg" ? 0 : input.ppgGuests,
+    ppgGuests: loaiBayCuaDiem(spot, input.flightKind) === "ppg" ? 0 : input.ppgGuests,
     ppgUnitPrice: ppgPriceOf({ ppgUnitPrice: input.ppgUnitPrice, flightDate: input.flightDate }, current.spot),
   });
 
@@ -5093,7 +5096,8 @@ const editedTotal = bookingTotal({
       redFlag: input.redFlag,
       sunset: input.sunset,
       flagFlight: input.flagFlight,
-      flightKind: input.flightKind ?? "pg",
+      /** Lưới chặn: loại bay phải thuộc điểm này (chủ 23/09) — xem loaiBayCuaDiem. */
+      flightKind: loaiBayCuaDiem(spot, input.flightKind),
       ppgGuests: input.ppgGuests ?? 0,
       comboDiscount: input.comboDiscount ?? comboDiscount(input.flycam, input.video360),
       pickupFee: input.pickupFee,
