@@ -84,6 +84,32 @@ export function VeDichVuModal({
         <p className="mt-0.5 text-xs text-slate-600">
           Đã đặt: <span className="font-bold text-rose-700">{DICH_VU_VE.map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ")}</span>
         </p>
+        {/**
+         * DỊCH VỤ CẢ ĐOÀN (chủ 23/09: "book 16 có 4 hoàng hôn mà in vé không
+         * thấy trong thống kê") — hoàng hôn / kéo cờ / PPG bán theo đoàn, không
+         * chia từng khách nên không có cột tích, nhưng phải HIỆN RA để người in
+         * soát đủ; vé in ra cũng ghi những dịch vụ này.
+         */}
+        {(booking.sunset > 0 || booking.flagFlight > 0 || booking.ppgGuests > 0) && (
+          <p className="mt-0.5 text-xs text-slate-600">
+            Cả đoàn:{" "}
+            <span className="font-bold text-amber-800">
+              {[
+                booking.sunset > 0 ? `${booking.sunset}x Hoàng hôn` : "",
+                booking.flagFlight > 0 ? `${booking.flagFlight}x Kéo cờ` : "",
+                booking.ppgGuests > 0 ? `${booking.ppgGuests}x PPG` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>{" "}
+            <span className="text-slate-500">— in trên mọi vé, không chia từng khách</span>
+            {booking.sunset > 0 && booking.sunset < n && (
+              <span className="ml-1 font-semibold text-rose-700">
+                (chỉ {booking.sunset}/{n} khách đặt hoàng hôn — soát lại trước khi in)
+              </span>
+            )}
+          </p>
+        )}
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
