@@ -583,18 +583,46 @@ export async function suaDichVuVe(
   const khach = dayDu.map((k: any) => {
     let ra = k;
     /** Đổi PG ↔ PPG: chỉ vé còn trống (chưa quét, chưa bay, chưa thu hồi). */
-    if (doiVeQr && !k.phiCong?.username && !k.bayXong?.luc) {
+    /**
+     * ĐỔI PG ↔ PPG CHỪNG NÀO KHÁCH CHƯA BAY XONG (chủ 23/09). Vé đang có phi
+     * công giữ vẫn đổi được: phi công bị RÚT vé và nhận cảnh báo, phải quét
+     * lại. Vé của khách đã bay xong thì không đụng vào.
+     */
+    if (doiVeQr && !k.bayXong?.luc) {
       const veGiayMoi = !nosQr.has(Number(k.guestNo));
       /** Chọn lại đúng khách đã bị thu hồi vé = CẤP LẠI: vé sống lại, trống, phi công phải quét lại. */
       const hoiSinh = !veGiayMoi && Boolean(k.huy?.luc);
       if (Boolean(k.veGiay) !== veGiayMoi || hoiSinh) {
+        const rutCua = k.phiCong?.username ? k.phiCong : null;
         ra = {
           ...ra,
           veGiay: veGiayMoi,
-          ...(hoiSinh ? { huy: null, thuHoi: null, phiCong: null, bayXong: null } : {}),
+          ...(hoiSinh ? { huy: null } : {}),
+          phiCong: null,
+          bayXong: null,
+          /** Phi công đang giữ thì báo cho họ biết vé bị rút (dùng chung dải cảnh báo "thu hồi"). */
+          thuHoi: rutCua
+            ? {
+                ly: "tay",
+                luc,
+                phiCong: rutCua.username,
+                phiCongTen: rutCua.name ?? "",
+                boi: ten(session),
+                daXem: false,
+                daBayXong: false,
+                dichVu: dv(k.dichVu),
+              }
+            : hoiSinh
+              ? null
+              : (ra.thuHoi ?? null),
           lichSu: [
             ...(ra.lichSu ?? []),
-            { luc, boi: ten(session), viec: hoiSinh ? "cap-lai" : veGiayMoi ? "doi-ve-giay" : "doi-ve-qr" },
+            {
+              luc,
+              boi: ten(session),
+              viec: hoiSinh ? "cap-lai" : veGiayMoi ? "doi-ve-giay" : "doi-ve-qr",
+              ghiChu: rutCua ? `rút vé khỏi ${rutCua.name || rutCua.username}` : undefined,
+            },
           ],
         };
       }

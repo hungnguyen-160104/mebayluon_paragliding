@@ -63,12 +63,13 @@ export function VeDichVuModal({
   const spotBk = normalizeSpot(booking.spot);
   const soQr = soKhachCoMaQr(spotBk, booking);
   /**
-   * ĐỔI LẠI ĐƯỢC khi chưa ai quét (chủ 23/09: "phải có đường sửa chứ") — đã
-   * cấp mã rồi nhưng chưa phi công nào chiếm vé, chưa vé nào bị thu hồi thì vẫn
-   * sửa được ai bay PG ai bay PPG. Có người quét rồi thì phải thu hồi vé ấy đã.
+   * ĐỔI LẠI ĐƯỢC CHỪNG NÀO CHƯA BAY (chủ 23/09: "cho dù xuất vé rồi vẫn cho
+   * phép thu hồi vé xuất lại để chọn PG hay PPG miễn là chưa bay"). Vé đang có
+   * phi công giữ mà đổi thì phi công bị rút vé và phải quét lại; vé của khách
+   * ĐÃ BAY XONG thì khoá, không đụng vào nữa.
    */
-  const chuaAiQuet = (booking.veQr?.khach ?? []).every((k) => !k.phiCong && !k.bayXong);
-  const chonDuocQr = soQr > 0 && soQr < n && (!booking.veQr || chuaAiQuet);
+  const chuaAiBay = (booking.veQr?.khach ?? []).every((k) => !k.bayXong);
+  const chonDuocQr = soQr > 0 && soQr < n && (!booking.veQr || chuaAiBay);
   /**
    * AI BAY PPG DO QUẦY CHỌN, MÁY KHÔNG TỰ CHỈ ĐỊNH (chủ 23/09). Đoàn gộp mở ra
    * là trống, phải tích đúng số khách PPG đã bán rồi mới cấp mã được — vé QR
