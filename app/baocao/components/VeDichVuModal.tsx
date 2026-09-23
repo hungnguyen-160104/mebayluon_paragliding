@@ -186,7 +186,7 @@ export function VeDichVuModal({
         {cot.length === 0 && <p className="mt-2 text-xs text-slate-500">Booking không có dịch vụ kèm — cấp mã thôi.</p>}
         {chonDuocQr && (
           <p className={"mt-2 text-xs " + (qrNos.length === soQr ? "text-slate-600" : "font-semibold text-rose-700")}>
-            Đoàn gộp: <strong>{soQr} khách bay PPG</strong> nhận vé QR, {n - soQr} khách bay PG nhận vé giấy viết tay (không cấp mã).
+            Đoàn gộp: <strong>{soQr}xPPG vé QR</strong>, {n - soQr}xPG vé giấy viết tay.
             {qrNos.length !== soQr ? ` Đang tích ${qrNos.length} — tích đúng ${soQr} ô "Vé QR" rồi mới cấp mã.` : ""}
           </p>
         )}
