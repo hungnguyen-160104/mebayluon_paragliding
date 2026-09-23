@@ -7102,6 +7102,8 @@ function totalOf(f: {
   ppgGuests: number;
   guestCount: number;
   unitPrice: number;
+  /** Đơn giá riêng cho phần khách PPG của đoàn gộp; 0 = theo bảng giá (chủ 23/09). */
+  ppgUnitPrice?: number;
   mountainCar: number;
   flycam: number;
   video360: number;
@@ -7117,7 +7119,7 @@ function totalOf(f: {
     spot,
     createdAt: bookedAt,
     ppgGuests: f.flightKind === "ppg" ? 0 : f.ppgGuests,
-    ppgUnitPrice: flightUnitPrice("ppg", f.flightDate, spot),
+    ppgUnitPrice: Math.max(0, Math.round(f.ppgUnitPrice ?? 0)) || flightUnitPrice("ppg", f.flightDate, spot),
   });
 }
 
@@ -7148,6 +7150,11 @@ type BookingForm = {
   mountainCar: number;
   /** Đơn giá một khách (máy điền theo loại hình + ngày bay, sửa được). */
   unitPrice: number;
+  /**
+   * ĐƠN GIÁ PPG của đoàn gộp PG + PPG (chủ 23/09) — ô riêng cạnh "Đơn giá PG",
+   * chỉ hiện khi đoàn có khách PPG. Máy điền theo bảng giá, sửa được.
+   */
+  ppgUnitPrice: number;
   discount: number;
   deposit: number;
   /** Cọc gõ tay đi đường nào — quầy bấm TM/CK ngay cạnh ô tiền. */
@@ -7189,6 +7196,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     pickupFee: 0,
     mountainCar: 0,
     unitPrice: flightUnitPrice(defaultFlightKind(spot), today, spot),
+    ppgUnitPrice: flightUnitPrice("ppg", today, spot),
     discount: 0,
     deposit: 0,
     depositMethod: "",
@@ -7278,6 +7286,10 @@ export function BookingCard({
   /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
+  /** Đã gõ tay đơn giá PPG? Chưa thì đổi ngày là điền lại theo bảng giá. */
+  const [ppgPriceTouched, setPpgPriceTouched] = useState(false);
+  /** Ô "%" của giảm trừ — chỉ là máy tính tay, số lưu vẫn là tiền (chủ 23/09). */
+  const [giamPhanTram, setGiamPhanTram] = useState("");
   /** Danh sách sắp tới dài thì chỉ hiện 5 dòng gần nhất, bấm mới xổ hết. */
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   /** Bấm "Sửa" từ banner hôm nay thì thẻ này phải xổ ra dù đang gập. */
@@ -7308,6 +7320,7 @@ export function BookingCard({
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setDone(null);
     if (key === "unitPrice") setPriceTouched(true);
+    if (key === "ppgUnitPrice") setPpgPriceTouched(true);
     if (key === "comboDiscount") setComboTouched(true);
     setForm((prev) => {
       const next = { ...prev, [key]: value };
@@ -7336,6 +7349,7 @@ export function BookingCard({
        * khách OTA trả trước hay khách nợ thì con số không theo công thức.
        */
       /** Đơn giá theo BẢNG GIÁ: đổi ngày bay hay loại hình là điền lại, trừ khi người nhập đã gõ đè. */
+      if (!ppgPriceTouched && key === "flightDate") next.ppgUnitPrice = flightUnitPrice("ppg", next.flightDate, bookSpot);
       if (!priceTouched && (key === "flightDate" || key === "flightKind")) {
         next.unitPrice = flightUnitPrice(next.flightKind, next.flightDate, bookSpot);
       }
@@ -7432,12 +7446,17 @@ export function BookingCard({
   /** Mốc bảng giá của form: booking đang sửa giữ giá lúc nó lập, form mới ăn giá hiện hành. */
   const formPriceAt = editingCreatedAt || new Date().toISOString();
   const bookingTotal = totalOf(form, bookSpot, formPriceAt);
+  /**
+   * NỀN ĐỂ TÍNH GIẢM % (chủ 23/09) — tổng TRƯỚC khi trừ chiết khấu: tiền bay +
+   * dịch vụ + đưa đón + xe núi − giảm combo. Giảm 10% là 10% của số này.
+   */
+  const nenGiamPhanTram = totalOf({ ...form, discount: 0 }, bookSpot, formPriceAt);
   const serviceMoney = servicesAmount({ ...form, spot: bookSpot, createdAt: formPriceAt });
   const comboMoney = form.comboDiscount;
   /** Khách PG/PPG đang khai — nhóm thuần PPG lưu kiểu cũ (flightKind "ppg"). */
   const pgCount = form.flightKind === "ppg" ? 0 : Math.max(0, form.guestCount - form.ppgGuests);
   const ppgCount = form.flightKind === "ppg" ? form.guestCount : form.ppgGuests;
-  const ppgPrice = flightUnitPrice("ppg", form.flightDate, bookSpot);
+  const ppgPrice = Math.max(0, Math.round(form.ppgUnitPrice || 0)) || flightUnitPrice("ppg", form.flightDate, bookSpot);
 
   /** Bóc dòng nhập nhanh và điền vào form — KHÔNG tự lưu, người nhập soát lại. */
   function applyQuick() {
@@ -7840,6 +7859,7 @@ export function BookingCard({
       pickupFee: b.pickupFee,
       mountainCar: b.mountainCar,
       unitPrice: b.unitPrice,
+      ppgUnitPrice: b.ppgUnitPrice || flightUnitPrice("ppg", b.flightDate, b.spot),
       discount: b.discount,
       deposit: b.deposit,
       depositMethod: b.depositMethod ?? "",
@@ -7860,6 +7880,7 @@ export function BookingCard({
           ppgGuests: b.ppgGuests ?? 0,
           guestCount: b.guestCount,
           unitPrice: b.unitPrice,
+          ppgUnitPrice: b.ppgUnitPrice,
           mountainCar: b.mountainCar,
           flycam: b.flycam,
           video360: b.video360,
@@ -8341,13 +8362,28 @@ export function BookingCard({
         </Field>
         )}
         {/* Tiền nong: đơn giá × số khách − giảm trừ = tổng · cọc · còn thu · mã CK */}
-        <Field label="Đơn giá bay / khách">
+        {/**
+         * ĐƠN GIÁ THEO LOẠI BAY (chủ 23/09): ô chính mang tên đúng loại của đoàn
+         * ("Đơn giá PG", đoàn toàn PPG thì "Đơn giá PPG"); đoàn GỘP có thêm ô
+         * "Đơn giá PPG" cho phần khách bay dù máy — hai loại khác giá nhau.
+         */}
+        <Field label={`Đơn giá ${FLIGHT_KIND_SHORT[form.flightKind]} / khách`}>
           <MoneyInput value={form.unitPrice} onChange={(v) => set("unitPrice", v)} />
           <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {ppgCount > 0 && pgCount > 0 ? `${pgCount} khách · ` : ""}
             {FLIGHT_KIND_SHORT[form.flightKind]} · {priceNote(form.flightKind, form.flightDate)} → bảng giá{" "}
             {(flightUnitPrice(form.flightKind, form.flightDate, bookSpot) / 1000).toLocaleString("vi-VN")}k
           </p>
         </Field>
+        {form.flightKind !== "ppg" && ppgCount > 0 && (
+          <Field label="Đơn giá PPG / khách">
+            <MoneyInput value={form.ppgUnitPrice} onChange={(v) => set("ppgUnitPrice", v)} />
+            <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+              {ppgCount} khách PPG · {priceNote("ppg", form.flightDate)} → bảng giá{" "}
+              {(flightUnitPrice("ppg", form.flightDate, bookSpot) / 1000).toLocaleString("vi-VN")}k
+            </p>
+          </Field>
+        )}
         <Field label="Phí đưa đón">
           <MoneyInput value={form.pickupFee} onChange={(v) => set("pickupFee", v)} />
           {bookSpot === "ha-noi" && (
@@ -8365,8 +8401,43 @@ export function BookingCard({
           </p>
         </Field>
         )}
+        {/**
+         * GIẢM TRỪ: gõ thẳng số tiền, HOẶC gõ % — máy quy ra tiền theo tổng
+         * trước chiết khấu (chủ 23/09: "Giảm % sẽ giảm theo % trên số tổng").
+         * Chỉ SỐ TIỀN được lưu; ô % là máy tính tay, đổi dịch vụ thì bấm lại.
+         */}
         <Field label="Giảm trừ (chiết khấu)">
-          <MoneyInput value={form.discount} onChange={(v) => set("discount", v)} />
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1">
+              <MoneyInput value={form.discount} onChange={(v) => set("discount", v)} />
+            </span>
+            <span className="flex h-10 shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                inputMode="numeric"
+                value={giamPhanTram}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setGiamPhanTram(v);
+                  const pt = Math.min(100, Math.max(0, Number(v) || 0));
+                  if (v.trim() === "") return;
+                  set("discount", Math.round((nenGiamPhanTram * pt) / 100));
+                }}
+                placeholder="0"
+                className="w-14 bg-transparent text-right text-sm font-semibold outline-none"
+                title="Giảm theo phần trăm tổng tiền trước chiết khấu"
+              />
+              <span className="text-sm font-bold text-slate-500">%</span>
+            </span>
+          </div>
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {form.discount > 0 && nenGiamPhanTram > 0
+              ? `${(form.discount / 1000).toLocaleString("vi-VN")}k = ${((form.discount / nenGiamPhanTram) * 100).toFixed(1).replace(/\.0$/, "")}% của ${(nenGiamPhanTram / 1000).toLocaleString("vi-VN")}k`
+              : `Gõ % là máy quy ra tiền theo tổng trước chiết khấu (${(nenGiamPhanTram / 1000).toLocaleString("vi-VN")}k)`}
+          </p>
         </Field>
         <Field label="Tổng tiền (tự tính)">
           <div className="flex h-10 items-center justify-end rounded-lg border-2 border-sky-300 bg-sky-50 px-3 text-base font-bold tabular-nums text-sky-800">
