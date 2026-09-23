@@ -4968,6 +4968,16 @@ export function BookingTodayBanner({
   /** id booking đang mở ô chọn ngày dời + ngày đã chọn. `guests` > 0 = chỉ dời bấy nhiêu khách. */
   /** Hộp DỊCH VỤ TRÊN VÉ (Sa Pa): mở trước lần in đầu để cấp mã QR, hoặc sửa sau khi đã cấp. */
   const [veModal, setVeModal] = useState<BookingDTO | null>(null);
+  /**
+   * MỞ HỘP MÃ VÉ TỪ ĐÂU (chủ 23/09): "xuat" = bấm IN VÉ, nút chốt ghi **Xuất
+   * vé** và thật sự xuất vé (ghi vết in, tích đã xuất vé). "dv" = bấm DV vé /
+   * In lại, chỉ lưu lại cấu hình dịch vụ.
+   */
+  const [veKieu, setVeKieu] = useState<"xuat" | "dv">("xuat");
+  const moVeModal = (b: BookingDTO, kieu: "xuat" | "dv") => {
+    setVeKieu(kieu);
+    setVeModal(b);
+  };
   /** Khau Phạ, booking PPG: hộp hỏi "Vé giấy hay vé QR" trước khi xuất vé (chủ 20/09). */
   const [chonLoaiVe, setChonLoaiVe] = useState<BookingDTO | null>(null);
   const [moving, setMoving] = useState<{
@@ -5797,14 +5807,14 @@ export function BookingTodayBanner({
              * vé (Lưu · Chia sẻ · In). Sa Pa luôn vé QR.
              */
             if (normalizeSpot(spot) === "khau-pha") setChonLoaiVe(b);
-            else setVeModal(b);
+            else moVeModal(b, "xuat");
             return;
           }
           // Đã xuất / không vé: giữ nguyên nếp cũ, chỉ bật tắt dấu tích
           if (!b.noTicketFlight && !b.ticketIssued) {
             /** Lưới an toàn: điểm quét mã KHÔNG BAO GIỜ in thẳng từ đây — luôn qua danh sách mã. */
             if (coQuetVe(spot, b)) {
-              setVeModal(b);
+              moVeModal(b, "xuat");
               return;
             }
             /**
@@ -5875,7 +5885,7 @@ export function BookingTodayBanner({
             type="button"
             variant="ghost"
             className="h-7 bg-white px-2 text-xs font-semibold text-slate-600"
-            onClick={() => setVeModal(b)}
+            onClick={() => moVeModal(b, "dv")}
             title="In lại vé: soát danh sách mã / dịch vụ rồi xem vé — Lưu ảnh · Chia sẻ · In vé"
           >
             🖨 In lại
@@ -5896,7 +5906,7 @@ export function BookingTodayBanner({
           variant="ghost"
           className="h-7 border-violet-300 bg-violet-50 px-2 text-xs font-semibold text-violet-800"
           disabled={busy === b.id}
-          onClick={() => setVeModal(b)}
+          onClick={() => moVeModal(b, "dv")}
           title="Dịch vụ trên vé từng khách (360 / flycam / cờ đỏ) — sửa được cho khách chưa bay xong"
         >
           🎟 DV vé
@@ -5926,7 +5936,7 @@ export function BookingTodayBanner({
                 className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-xl bg-sky-600 px-2 py-2 text-white hover:bg-sky-700"
                 onClick={() => {
                   setChonLoaiVe(null);
-                  setVeModal(b);
+                  moVeModal(b, "xuat");
                 }}
               >
                 <span className="text-2xl leading-none">📱</span>
@@ -5946,7 +5956,8 @@ export function BookingTodayBanner({
         <VeDichVuModal
           booking={veModal}
           onCancel={() => setVeModal(null)}
-          onConfirm={(dichVu, guestNos) => capMaVe(veModal, dichVu, guestNos)}
+          kieu={veKieu}
+          onConfirm={(dichVu, guestNos) => capMaVe(veModal, dichVu, guestNos, veKieu)}
           onXemVe={() => moKhungXemVe(veModal)}
         />
       )}
@@ -5982,8 +5993,18 @@ export function BookingTodayBanner({
     );
   };
 
-  const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos?: number[]) => {
-    const dangCap = !bk0.veQr;
+  const capMaVe = async (
+    bk0: BookingDTO,
+    dichVu: Array<{ guestNo: number } & DichVuKhach>,
+    guestNos?: number[],
+    kieu: "xuat" | "dv" = "xuat",
+  ) => {
+    /**
+     * BẤM IN VÉ LÀ XUẤT VÉ (chủ 23/09) — ghi vết in và tích "đã xuất vé", kể cả
+     * khi booking đã có dòng mã của lần in trước. Vào từ DV vé / In lại thì chỉ
+     * lưu lại cấu hình dịch vụ, không đụng vết in.
+     */
+    const dangCap = kieu === "xuat";
     /**
      * ĐIỂM QUÉT MÃ (Sa Pa 18/09, từ đó cả Hà Nội + Khau Phạ): cấp mã xong
      * KHÔNG in ngay mà bày KHUNG XEM VÉ — khách chụp màn hình được, ba nút

@@ -378,7 +378,9 @@ const CSS = `
   .sp-khach.dai { font-size: 13px; }
   .sp-stt { font-weight: 800; color: #000; }
   .sp-dv { display: flex; flex-wrap: wrap; gap: 4px; }
-  .sp-dv span { border: 2px solid #000; border-radius: 3px; padding: 2px 6px; font-size: 13px; font-weight: 900; white-space: nowrap; }
+  /* Ô dịch vụ: chữ có dấu (à, ô) ăn xuống dưới nên phải cho line-height rộng và
+     đệm dưới dày hơn đệm trên — không thì chữ tụt dính viền (chủ 23/09). */
+  .sp-dv span { display: inline-block; border: 2px solid #000; border-radius: 3px; padding: 2px 6px 4px; line-height: 1.3; font-size: 13px; font-weight: 900; white-space: nowrap; }
   /* Chân: kẻ đậm 2px thay nét chấm mảnh (nét mảnh in nhiệt nhoè) */
   /* Chân: giãn ký tự để "Printed 12:27 18/9" không dính chữ khi mực nhoè */
   .sp-cuoi { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 3px; border-top: 2px solid #000; font-size: 11px; font-weight: 800; letter-spacing: .6px; word-spacing: 1.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -667,7 +669,7 @@ export function htmlBanInThang(html: string): string {
      .sp-gio { font-size: 26px !important; padding: 2px 10px !important; border-width: 3px !important; margin-left: 10px !important; vertical-align: 4px !important; }
      .sp-khach { font-size: 28px !important; }
      .sp-khach.dai { font-size: 24px !important; }
-     .sp-dv span { font-size: 24px !important; padding: 4px 12px !important; border-width: 3px !important; border-radius: 6px !important; }
+     .sp-dv span { font-size: 24px !important; padding: 4px 12px 9px !important; line-height: 1.35 !important; border-width: 3px !important; border-radius: 6px !important; }
      .sp-cuoi { font-size: 20px !important; margin-top: 12px !important; padding-top: 6px !important; border-top-width: 3px !important; letter-spacing: 1.4px !important; word-spacing: 4px !important; }
      .sp-luuy { font-size: 20px !important; margin-top: 6px !important; margin-bottom: 0 !important; line-height: 1.35 !important; }
      .qr-anh { width: 200px !important; height: 200px !important; }

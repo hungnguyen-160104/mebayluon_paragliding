@@ -46,6 +46,7 @@ export function VeDichVuModal({
   onCancel,
   onConfirm,
   onXemVe,
+  kieu = "xuat",
 }: {
   booking: BookingDTO;
   title?: string;
@@ -53,6 +54,8 @@ export function VeDichVuModal({
   onConfirm: (dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos: number[]) => void | Promise<void>;
   /** Mở khung xem vé (chỉ vé QR của khách PPG) — chủ 23/09. */
   onXemVe?: () => void | Promise<void>;
+  /** Vào từ IN VÉ ("xuat") hay từ DV vé / In lại ("dv") — đổi chữ trên nút chốt. */
+  kieu?: "xuat" | "dv";
 }) {
   const n = Math.max(1, booking.guestCount || 1);
   const [rows, setRows] = useState<DichVuKhach[]>(() => {
@@ -365,7 +368,7 @@ export function VeDichVuModal({
               }
             }}
           >
-            {booking.veQr ? (normalizeSpot(booking.spot) === "sapa" ? "Lưu & xem vé" : "Lưu dịch vụ") : normalizeSpot(booking.spot) === "sapa" ? "Cấp mã & xem vé" : "Cấp mã & in vé"}
+            {kieu === "xuat" ? "🎫 Xuất vé" : normalizeSpot(booking.spot) === "sapa" ? "Lưu & xem vé" : "Lưu dịch vụ"}
           </Button>
         </div>
       </div>
