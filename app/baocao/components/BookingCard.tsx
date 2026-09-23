@@ -3411,6 +3411,38 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
   const conHieuLuc = v.khach.filter((k) => !k.huy?.luc);
   const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
 
+  /**
+   * XEM VÉ (chủ 23/09): dựng lại đúng ảnh vé đã in để khách chụp — ba nút Lưu
+   * ảnh · Chia sẻ · In vé như lúc cấp mã. Bấm "In vé" ở đây là IN LẠI nên ghi
+   * vết in (gửi song song, không chờ, kẻo cú bấm nguội thì RawBT bị chặn).
+   */
+  const xemVe = async () => {
+    setLoi(null);
+    const tienDo: { dat?: (pct: number, chu: string) => void } = {};
+    let anhSan: HTMLCanvasElement[] | null = null;
+    try {
+      await hienKhungVe(
+        (async () => {
+          anhSan = await dungAnhVe(await buildTicketsHtml(b, spot), (p, c) => tienDo.dat?.(p, c));
+          return ghepAnhLien(anhSan, RONG_CHAM);
+        })(),
+        `ve-${b.daySeq || b.id}.png`,
+        async () => {
+          const kenh = mayInThangDaGhep();
+          const vet = apiPatch(`/api/baocao/booking?spot=${spot}`, { id: b.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
+          if (kenh && anhSan) await inAnhQuaKenh(anhSan, kenh);
+          else await printBookingTickets(b, spot, moTabIn(), "in lại");
+          await vet;
+        },
+        inQuaChiaSeThang(),
+        tienDo,
+      );
+      onDone();
+    } catch (e: unknown) {
+      setLoi(e instanceof Error ? e.message : "Không dựng được vé");
+    }
+  };
+
   const lenh = async (action: string, guestNo: number, them?: Record<string, unknown>) => {
     setBusy(guestNo);
     setLoi(null);
@@ -3438,9 +3470,21 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
       </Button>
       {open && (
         <div className="mt-1 w-full rounded-lg border border-violet-300 bg-violet-50/60 p-2">
-          <div className="mb-1 text-[11px] font-bold text-violet-900">
-            Vé QR cấp ngày {formatDateKeyVN(v.ngay)} #{v.so}
-            {v.capBoi ? ` · by ${v.capBoi}` : ""}
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[11px] font-bold text-violet-900">
+              Vé QR cấp ngày {formatDateKeyVN(v.ngay)} #{v.so}
+              {v.capBoi ? ` · by ${v.capBoi}` : ""}
+            </div>
+            {conHieuLuc.length > 0 && coInVe(spot) && (
+              <Button
+                type="button"
+                className="h-7 bg-violet-600 px-2 text-xs hover:bg-violet-700"
+                onClick={() => void xemVe()}
+                title="Dựng lại vé cho khách chụp — Lưu ảnh · Chia sẻ · In vé"
+              >
+                👁 Xem vé
+              </Button>
+            )}
           </div>
           <ul className="space-y-1">
             {v.khach.map((k) => {
