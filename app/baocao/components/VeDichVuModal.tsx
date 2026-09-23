@@ -27,6 +27,19 @@ import { Button } from "./ui";
  * từng người. Chia đều được (10 khách 10 flycam) thì máy tích sẵn; không chia
  * đều thì để trống để điều phối tích tay. Xác nhận xong mới cấp mã và in.
  */
+/**
+ * TÊN NGẮN cho ĐẦU CỘT (chủ 23/09) — bảng có tới năm cột dịch vụ, tên đầy đủ
+ * làm cột rộng ra và vỡ hàng trên điện thoại. Tên đầy đủ vẫn dùng ở chỗ khác
+ * (vé in cho khách, trang quét vé, chi tiết booking).
+ */
+const TEN_COT: Record<DichVuVeBatKy, string> = {
+  video360: "360",
+  flycam: "Fcam",
+  redFlag: "C.Đỏ",
+  sunset: "H.hôn",
+  flagFlight: "K.cờ",
+};
+
 export function VeDichVuModal({
   booking,
   title,
@@ -201,14 +214,13 @@ export function VeDichVuModal({
                 <th className="py-1 pr-2">Mã</th>
                 <th className="py-1 pr-2">Khách</th>
                 {chonDuocQr && (
-                  <th className="py-1 text-center text-violet-800">
-                    Bay PPG
-                    <span className="block text-[9px] font-normal normal-case text-violet-500">nhận vé QR</span>
+                  <th className="py-1 text-center text-violet-800" title="Khách bay PPG — người được tích sẽ nhận vé QR">
+                    PPG
                   </th>
                 )}
                 {cot.map((k) => (
-                  <th key={k} className="py-1 text-center">
-                    {TEN_DICH_VU[k]}
+                  <th key={k} className="py-1 text-center" title={TEN_DICH_VU[k]}>
+                    {TEN_COT[k]}
                     {khoa(k) && <span className="block text-[9px] font-normal normal-case text-slate-400">cả đoàn</span>}
                   </th>
                 ))}
