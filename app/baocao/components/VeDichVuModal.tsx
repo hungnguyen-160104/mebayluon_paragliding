@@ -44,7 +44,16 @@ export function VeDichVuModal({
   const [qrNos, setQrNos] = useState<number[]>(() =>
     booking.veQr?.khach?.length ? booking.veQr.khach.map((k) => k.guestNo) : khachCoMaQrMacDinh(spotBk, booking),
   );
-  const coQr = (g: number) => qrNos.includes(g);
+  /**
+   * Khách này có vé QR không — ĐÃ CẤP MÃ thì theo danh sách mã thật (bỏ vé đã
+   * thu hồi), chưa cấp thì theo ô đang tích. Dùng chung cho cả hộp "cấp mã" và
+   * hộp "DV vé" để hai nơi nói một chuyện (chủ 23/09).
+   */
+  const maDaCap = (booking.veQr?.khach ?? []).filter((k) => !k.huy?.luc).map((k) => k.guestNo);
+  const coQr = (g: number) => (booking.veQr ? maDaCap.includes(g) : qrNos.includes(g));
+  /** Đoàn gộp: số khách có vé QR ít hơn cả đoàn (Khau Phạ PG + PPG). */
+  const soCoQr = booking.veQr ? maDaCap.length : qrNos.length;
+  const doanGop = (booking.veQr ? maDaCap.length : soQr) < n && (booking.veQr ? maDaCap.length > 0 : soQr > 0);
   const [busy, setBusy] = useState(false);
   /**
    * NẠP TRƯỚC html2canvas + qrcode ngay khi mở danh sách mã (khảo sát tốc độ
@@ -135,7 +144,7 @@ export function VeDichVuModal({
                     <td className="py-1.5 pr-2">
                       {ten(g)}
                       {daBay && <span className="ml-1 text-[10px] text-emerald-700">đã bay</span>}
-                      {chonDuocQr && !coQr(g) && <span className="ml-1 text-[10px] font-semibold text-slate-500">vé giấy viết tay</span>}
+                      {doanGop && !coQr(g) && <span className="ml-1 text-[10px] font-semibold text-slate-500">vé giấy viết tay</span>}
                     </td>
                     {chonDuocQr && (
                       <td className="py-1.5 text-center">
@@ -155,7 +164,7 @@ export function VeDichVuModal({
                           type="checkbox"
                           className="h-5 w-5"
                           checked={r[k]}
-                          disabled={daBay || khoa(k)}
+                          disabled={daBay || khoa(k) || (Boolean(booking.veQr) && !coQr(g))}
                           onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, [k]: e.target.checked } : x)))}
                         />
                       </td>
@@ -184,10 +193,10 @@ export function VeDichVuModal({
           </table>
         </div>
         {cot.length === 0 && <p className="mt-2 text-xs text-slate-500">Booking không có dịch vụ kèm — cấp mã thôi.</p>}
-        {chonDuocQr && (
-          <p className={"mt-2 text-xs " + (qrNos.length === soQr ? "text-slate-600" : "font-semibold text-rose-700")}>
-            Đoàn gộp: <strong>{soQr}xPPG vé QR</strong>, {n - soQr}xPG vé giấy viết tay.
-            {qrNos.length !== soQr ? ` Đang tích ${qrNos.length} — tích đúng ${soQr} ô "Vé QR" rồi mới cấp mã.` : ""}
+        {doanGop && (
+          <p className={"mt-2 text-xs " + (!chonDuocQr || qrNos.length === soQr ? "text-slate-600" : "font-semibold text-rose-700")}>
+            Đoàn gộp: <strong>{soCoQr}xPPG vé QR</strong>, {n - soCoQr}xPG vé giấy viết tay.
+            {chonDuocQr && qrNos.length !== soQr ? ` Đang tích ${qrNos.length} — tích đúng ${soQr} ô "Vé QR" rồi mới cấp mã.` : ""}
           </p>
         )}
         {lech.length > 0 && (
