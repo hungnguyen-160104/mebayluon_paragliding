@@ -215,7 +215,21 @@ export type VeQrKhach = {
    * chiếm — mã trắng lại, còn dòng này giữ để phi công thấy cảnh báo và số
    * chuyến/dịch vụ liên quan bị rút. Phi công bấm "đã xem" thì `daXem`.
    */
-  thuHoi?: { ly: "huy" | "doi" | "tay"; luc: string; phiCong: string; phiCongTen: string; boi: string; daXem?: boolean; daBayXong?: boolean; dichVu: DichVuKhach } | null;
+  thuHoi?: {
+    ly: "huy" | "doi" | "tay";
+    luc: string;
+    phiCong: string;
+    phiCongTen: string;
+    boi: string;
+    daXem?: boolean;
+    daBayXong?: boolean;
+    /**
+     * PHI CÔNG TRẢ LỜI khi vé bị rút lúc đã tích bay xong (chủ 23/09): "da-bay"
+     * = khách bay thật, hai bên phải soát lại; "chua-bay" = tích nhầm, bỏ tích.
+     */
+    xacNhan?: { ket: "da-bay" | "chua-bay"; luc: string; boi: string } | null;
+    dichVu: DichVuKhach;
+  } | null;
   /**
    * VÉ BỊ THU HỒI HẲN (chủ 22/09): quầy vé / điều phối thu hồi RIÊNG vé của
    * một khách (người kia vẫn bay). Khác `thuHoi` ở chỗ vé KHÔNG trắng lại để

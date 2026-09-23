@@ -7,6 +7,7 @@ import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
 import { bayXong, boBayXong, daXemThuHoi, hoanDichVu, hoanMa, quetVe, thuHoiMa, veCuaToi,
   capLaiVe,
+  xacNhanThuHoi,
   huyVe,
   xacMinhHuyVe,
 } from "@/services/ve-qr.service";
@@ -59,6 +60,10 @@ export async function POST(req: Request) {
     if (action === "bobayxong") return NextResponse.json({ ma: await boBayXong(auth, spot, bookingId, guestNo) });
     if (action === "hoan") return NextResponse.json({ ma: await hoanMa(auth, spot, bookingId, guestNo, lyDo) });
     if (action === "hoandv") return NextResponse.json({ ma: await hoanDichVu(auth, spot, bookingId, guestNo, String(body?.dichVu ?? "") as never, lyDo) });
+    if (action === "xacnhan") {
+      await xacNhanThuHoi(auth, spot, bookingId, guestNo, String(body?.ket ?? "") as never);
+      return NextResponse.json({ ok: true });
+    }
     if (action === "daxem") {
       await daXemThuHoi(auth, spot, bookingId, guestNo);
       return NextResponse.json({ ok: true });

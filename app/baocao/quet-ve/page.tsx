@@ -193,6 +193,26 @@ export default function QuetVePage() {
     setThuHoi((x) => x.filter((y) => !(y.bookingId === t.bookingId && y.guestNo === t.guestNo)));
   }
 
+  /**
+   * XUNG ĐỘT (chủ 23/09): vé bị rút đúng lúc mình đã tích "bay xong". Phi công
+   * phải chốt: khách BAY THẬT (điều phối soát lại vì sao huỷ/dời) hay mình
+   * TÍCH NHẦM (bỏ tích, chuyến ấy không tính cho mình).
+   */
+  async function xacNhan(t: ThuHoiDTO, ket: "da-bay" | "chua-bay") {
+    if (!spot) return;
+    setBusy(true);
+    try {
+      await apiPost(`/api/baocao/ve-qr?spot=${spot}`, { action: "xacnhan", bookingId: t.bookingId, guestNo: t.guestNo, ket });
+      setThuHoi((x) => x.filter((y) => !(y.bookingId === t.bookingId && y.guestNo === t.guestNo)));
+      setError(null);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không gửi được xác nhận");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading || !user) return <PageLoading />;
 
   return (
@@ -218,9 +238,34 @@ export default function QuetVePage() {
                   {t.boi ? ` (${t.boi}, ${gio(t.luc)})` : ""}. Chuyến này{t.daBayXong ? " (đã tích bay xong)" : ""}
                   {DICH_VU_VE.some((k) => t.dichVu[k]) ? ` và ${DICH_VU_VE.filter((k) => t.dichVu[k]).map((k) => TEN_DICH_VU[k]).join(", ")}` : ""} bị rút khỏi báo cáo của anh/chị.
                 </div>
-                <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={() => void daXem(t)}>
-                  Đã xem
-                </Button>
+                {t.daBayXong ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[11px] font-black text-white">
+                      ⚠ Anh/chị đã tích BAY XONG — chốt lại giúp
+                    </span>
+                    <Button
+                      type="button"
+                      className="h-8 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
+                      disabled={busy}
+                      onClick={() => void xacNhan(t, "da-bay")}
+                    >
+                      ✓ Khách BAY THẬT
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 border-slate-300 bg-white px-3 text-xs"
+                      disabled={busy}
+                      onClick={() => void xacNhan(t, "chua-bay")}
+                    >
+                      ↩ Tôi tích nhầm, bỏ tích
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="ghost" className="h-8 px-3 text-xs" onClick={() => void daXem(t)}>
+                    Đã xem
+                  </Button>
+                )}
               </div>
             </Banner>
           ))}

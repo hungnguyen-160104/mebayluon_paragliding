@@ -457,6 +457,15 @@ nút vẫn chỉ tích "đã xuất vé", không in.
   quét, bay xong chưa, dịch vụ kèm) và **thu hồi từng vé** — cùng đoàn có người
   bay được người không. Vé đã thu hồi là **vô hiệu**: không ai quét được nữa,
   mọi bảng đếm (kể cả bảng lương phi công) bỏ qua nó.
+- **Huỷ bay / dời lịch tự xử lý vé (23/09):** booking đã xuất vé QR mà bị
+  **huỷ bay** thì mọi vé của nó bị **thu hồi hẳn** (vô hiệu, không ai quét được,
+  bảng đếm bỏ qua); bị **dời lịch** thì vé chỉ được **hoàn** — chuyến vẫn bay,
+  chỉ khác ngày, nên phi công (có thể người khác) phải **quét lại ở ngày mới**.
+  Phi công đang giữ vé nhận cảnh báo ngay ở trang Quét vé.
+- **Xung đột khi đã tích bay xong:** vé bị rút đúng lúc phi công đã tích "bay
+  xong" thì cảnh báo của họ có hai nút bắt chốt lại: **✓ Khách BAY THẬT** (điều
+  phối phải soát lại vì sao huỷ/dời) hoặc **↩ Tôi tích nhầm, bỏ tích**. Câu trả
+  lời hiện ngay trong mục **🎟 Vé QR** của điều phối.
 - **Xung đột:** thu hồi đúng vé mà phi công ĐÃ báo bay xong thì dòng vé đỏ lên,
   phi công nhận cảnh báo ở trang quét vé, quầy ghi **kết luận xác minh** vào vé.
   Tiêu đề sổ booking và bảng chốt ngày đều treo cảnh báo cho tới khi xác minh.

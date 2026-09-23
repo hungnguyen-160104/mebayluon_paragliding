@@ -9515,25 +9515,58 @@ export async function updateBookingStatus(
   if (action === "move" && !current.veQr?.ngay) await freeDaySeq(spot, current.flightDate, current.daySeq);
 
   /**
-   * HUỶ / DỜI BOOKING ĐÃ CÓ MÃ VÉ QR (chủ 17/09, mục 7–8): mã phi công đã chiếm
-   * bị THU HỒI — mã trắng lại, phi công thấy cảnh báo "mã bị thu hồi, số chuyến
-   * và dịch vụ liên quan bị rút". Dời sang ngày mới thì phi công phải quét lại
-   * (có thể là người khác). Mã chưa ai chiếm thì chỉ ghi lịch sử.
+   * HUỶ / DỜI BOOKING ĐÃ CÓ MÃ VÉ QR (chủ 17/09 mục 7–8, chốt lại 23/09).
+   *
+   *  - HUỶ BAY → vé bị **THU HỒI HẲN**: chuyến không còn nữa nên vé thành vô
+   *    hiệu, không ai quét được, mọi bảng đếm bỏ qua.
+   *  - DỜI LỊCH → vé chỉ **HOÀN**: chuyến vẫn sẽ bay, chỉ khác ngày, nên vé
+   *    trắng lại và phi công (có thể người khác) QUÉT LẠI ở ngày mới.
+   *
+   * Cả hai trường hợp, vé đang do phi công giữ thì họ nhận cảnh báo; nếu lúc ấy
+   * họ ĐÃ tích "bay xong" thì thành XUNG ĐỘT — phi công phải trả lời khách bay
+   * thật hay mình tích nhầm (xem `thuHoi.xacNhan`).
    */
   if ((action === "move" || action === "cancel") && doc.veQr?.khach?.length) {
     const luc = new Date();
     const boi = session.name || session.username;
+    const laHuy = action === "cancel";
     const khach = doc.veQr.khach.map((k: any) => {
-      const dv = { video360: Boolean(k.dichVu?.video360), flycam: Boolean(k.dichVu?.flycam), redFlag: Boolean(k.dichVu?.redFlag) };
-      const viec = action === "cancel" ? "huy" : "doi";
-      if (!k.phiCong?.username) return { ...k, lichSu: [...(k.lichSu ?? []), { luc, boi, viec }] };
+      if (k.veGiay || k.huy?.luc) return k;
+      const dv = {
+        video360: Boolean(k.dichVu?.video360),
+        flycam: Boolean(k.dichVu?.flycam),
+        redFlag: Boolean(k.dichVu?.redFlag),
+        sunset: Boolean(k.dichVu?.sunset),
+        flagFlight: Boolean(k.dichVu?.flagFlight),
+      };
+      const viec = laHuy ? "huy" : "doi";
+      const daBayXong = Boolean(k.bayXong?.luc);
+      /** Huỷ bay: vé vô hiệu hẳn, kể cả vé chưa ai quét. */
+      const huyVe = laHuy
+        ? {
+            huy: {
+              luc,
+              boi,
+              ly: "booking huỷ bay",
+              phiCong: k.phiCong?.username ?? "",
+              phiCongTen: k.phiCong?.name ?? "",
+              daBayXong,
+              xacMinh: null,
+            },
+          }
+        : {};
+      if (!k.phiCong?.username) return { ...k, ...huyVe, lichSu: [...(k.lichSu ?? []), { luc, boi, viec }] };
       return {
         ...k,
+        ...huyVe,
         phiCong: null,
         bayXong: null,
         hoanDichVu: undefined,
-        thuHoi: { ly: viec, luc, phiCong: k.phiCong.username, phiCongTen: k.phiCong.name ?? "", boi, daXem: false, daBayXong: Boolean(k.bayXong), dichVu: dv },
-        lichSu: [...(k.lichSu ?? []), { luc, boi, viec: `thu-hoi-${viec}`, ghiChu: `đang do ${k.phiCong.name ?? k.phiCong.username} giữ` }],
+        thuHoi: { ly: viec, luc, phiCong: k.phiCong.username, phiCongTen: k.phiCong.name ?? "", boi, daXem: false, daBayXong, xacNhan: null, dichVu: dv },
+        lichSu: [
+          ...(k.lichSu ?? []),
+          { luc, boi, viec: laHuy ? "thu-hoi-huy" : "hoan-ve-doi", ghiChu: `đang do ${k.phiCong.name ?? k.phiCong.username} giữ${daBayXong ? " · đã tích bay xong → cần xác nhận" : ""}` },
+        ],
       };
     });
     await BaobayBooking.updateOne({ _id: doc._id }, { $set: { "veQr.khach": khach } });

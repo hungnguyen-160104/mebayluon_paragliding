@@ -81,6 +81,8 @@ export type ThuHoiDTO = {
   luc: string;
   boi: string;
   daBayXong: boolean;
+  /** Phi công đã trả lời vụ xung đột chưa (chủ 23/09). */
+  xacNhan: { ket: "da-bay" | "chua-bay"; luc: string; boi: string } | null;
   dichVu: DichVuKhach;
   guestNo: number;
 };
@@ -472,6 +474,36 @@ export async function xacMinhHuyVe(session: BaobaySession, spotRaw: string, book
   return maVeDTO(updated, khachCua(updated, guestNo));
 }
 
+/**
+ * PHI CÔNG TRẢ LỜI VỤ XUNG ĐỘT (chủ 23/09): vé bị rút đúng lúc mình đã tích
+ * "bay xong" thì hai bên đang nói khác nhau — phi công chốt "khách BAY THẬT"
+ * (điều phối phải soát lại vì sao huỷ/dời) hay "tôi tích NHẦM" (bỏ tích, số
+ * chuyến của mình giảm theo). Trả lời xong cảnh báo tự tắt.
+ */
+export async function xacNhanThuHoi(
+  session: BaobaySession,
+  spotRaw: string,
+  bookingId: string,
+  guestNo: number,
+  ket: "da-bay" | "chua-bay",
+): Promise<void> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) throw new BaobayError("Booking không hợp lệ", 400);
+  if (ket !== "da-bay" && ket !== "chua-bay") throw new BaobayError("Câu trả lời không hợp lệ", 400);
+  const r = await BaobayBooking.updateOne(
+    { _id: bookingId, spot, "veQr.khach": { $elemMatch: { guestNo, "thuHoi.phiCong": session.username } } },
+    {
+      $set: {
+        "veQr.khach.$.thuHoi.daXem": true,
+        "veQr.khach.$.thuHoi.xacNhan": { ket, luc: new Date(), boi: ten(session) },
+      },
+      $push: { "veQr.khach.$.lichSu": { luc: new Date(), boi: ten(session), viec: ket === "da-bay" ? "xac-nhan-da-bay" : "xac-nhan-chua-bay" } },
+    },
+  );
+  if (!r.matchedCount) throw new BaobayError("Không thấy cảnh báo thu hồi nào của anh/chị trên vé này", 404);
+}
+
 /** Phi công bấm "đã xem" cảnh báo thu hồi. */
 export async function daXemThuHoi(session: BaobaySession, spotRaw: string, bookingId: string, guestNo: number): Promise<void> {
   await connectDB();
@@ -536,6 +568,9 @@ export async function veCuaToi(
           luc: new Date(k.thuHoi.luc).toISOString(),
           boi: String(k.thuHoi.boi ?? ""),
           daBayXong: Boolean(k.thuHoi.daBayXong),
+          xacNhan: k.thuHoi.xacNhan?.luc
+            ? { ket: k.thuHoi.xacNhan.ket === "da-bay" ? ("da-bay" as const) : ("chua-bay" as const), luc: new Date(k.thuHoi.xacNhan.luc).toISOString(), boi: String(k.thuHoi.xacNhan.boi ?? "") }
+            : null,
           dichVu: dv(k.thuHoi.dichVu),
           guestNo: Number(k.guestNo),
         });

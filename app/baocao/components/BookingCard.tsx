@@ -3529,6 +3529,14 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
                     </span>
                   </div>
                   {daHuy && k.huy?.ly && <div className="mt-0.5 text-[11px]">Lý do: {k.huy.ly}</div>}
+                  {/* Phi công đã trả lời vụ xung đột chưa (chủ 23/09) */}
+                  {k.thuHoi?.xacNhan && (
+                    <div className={"mt-0.5 text-[11px] font-semibold " + (k.thuHoi.xacNhan.ket === "da-bay" ? "text-rose-700" : "text-slate-600")}>
+                      {k.thuHoi.xacNhan.ket === "da-bay"
+                        ? `⚠ ${k.thuHoi.phiCongTen || k.thuHoi.phiCong} khẳng định KHÁCH ĐÃ BAY THẬT — soát lại lý do huỷ/dời`
+                        : `${k.thuHoi.phiCongTen || k.thuHoi.phiCong} nhận tích nhầm, đã bỏ tích bay xong`}
+                    </div>
+                  )}
                   {daHuy && k.huy?.daBayXong && (
                     <div className={"mt-0.5 rounded px-1.5 py-0.5 text-[11px] font-bold " + (k.huy.xacMinh ? "bg-slate-200 text-slate-700" : "bg-rose-600 text-white")}>
                       {k.huy.xacMinh

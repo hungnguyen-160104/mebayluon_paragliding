@@ -750,7 +750,9 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
                         boi: String,
                         daXem: Boolean,
                         daBayXong: Boolean,
-                        dichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean },
+                        /** Phi công trả lời khi vé bị rút lúc đã tích bay xong: "da-bay" hay "chua-bay" (chủ 23/09). */
+                        xacNhan: { type: new Schema({ ket: String, luc: Date, boi: String }, { _id: false }), default: null },
+                        dichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, flagFlight: Boolean },
                       },
                       { _id: false },
                     ),
