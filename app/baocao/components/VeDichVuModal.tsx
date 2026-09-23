@@ -45,11 +45,14 @@ export function VeDichVuModal({
   title,
   onCancel,
   onConfirm,
+  onXemVe,
 }: {
   booking: BookingDTO;
   title?: string;
   onCancel: () => void;
   onConfirm: (dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos: number[]) => void | Promise<void>;
+  /** Mở khung xem vé (chỉ vé QR của khách PPG) — chủ 23/09. */
+  onXemVe?: () => void | Promise<void>;
 }) {
   const n = Math.max(1, booking.guestCount || 1);
   const [rows, setRows] = useState<DichVuKhach[]>(() => {
@@ -201,6 +204,25 @@ export function VeDichVuModal({
          * chia từng khách nên không có cột tích, nhưng phải HIỆN RA để người in
          * soát đủ; vé in ra cũng ghi những dịch vụ này.
          */}
+        {/**
+         * TÓM TẮT KHÁCH VÉ GIẤY (chủ 23/09): họ không có vé QR để xem, nên liệt
+         * kê một dòng cho quầy viết tay theo đúng dịch vụ đã tích.
+         */}
+        {booking.veQr?.khach?.some((k) => k.veGiay) && (
+          <div className="mt-2 rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-[11px] leading-snug text-slate-700">
+            <div className="font-bold text-slate-800">📝 Vé giấy viết tay (không có mã QR)</div>
+            {booking.veQr.khach
+              .filter((k) => k.veGiay)
+              .map((k) => (
+                <div key={k.guestNo}>
+                  <span className="font-mono font-bold">{nhanVe(booking.veQr!.so, k.guestNo, n)}</span> {ten(k.guestNo)} · PG
+                  {DICH_VU_VE_TAT_CA.filter((x) => k.dichVu?.[x]).length > 0
+                    ? ` · ${DICH_VU_VE_TAT_CA.filter((x) => k.dichVu?.[x]).map((x) => TEN_DICH_VU[x]).join(" + ")}`
+                    : " · không dịch vụ kèm"}
+                </div>
+              ))}
+          </div>
+        )}
         {booking.ppgGuests > 0 && booking.flightKind !== "ppg" && (
           <p className="mt-0.5 text-xs text-slate-600">
             Đoàn có <span className="font-bold text-amber-800">{booking.ppgGuests}x PPG</span>{" "}
@@ -308,6 +330,18 @@ export function VeDichVuModal({
           <Button type="button" variant="ghost" className="h-9 px-3" onClick={onCancel} disabled={busy}>
             Huỷ
           </Button>
+          {/* Xem lại ảnh vé — chỉ dựng vé QR của khách PPG, khách vé giấy không có vé để xem (chủ 23/09). */}
+          {onXemVe && maDaCap.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 border-violet-300 bg-violet-50 px-3 text-violet-800"
+              disabled={busy}
+              onClick={() => void onXemVe()}
+            >
+              👁 Xem vé ({maDaCap.length})
+            </Button>
+          )}
           <Button
             type="button"
             className="h-9 px-4"

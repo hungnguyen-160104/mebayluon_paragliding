@@ -9782,7 +9782,14 @@ export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "re
 /** Ngày giờ → ISO cho khối mã vé QR (xem lib/baobay/ve-qr.ts). */
 function veQrToDTO(v: any): BookingDTO["veQr"] {
   const iso = (d: unknown) => (d ? new Date(d as string).toISOString() : "");
-  const dv = (d: any): DichVuKhach => ({ video360: Boolean(d?.video360), flycam: Boolean(d?.flycam), redFlag: Boolean(d?.redFlag) });
+  /** Đủ NĂM dịch vụ — thiếu sunset/flagFlight thì vé in mất chữ, hộp DV vé mất cột (chủ 23/09). */
+  const dv = (d: any): DichVuKhach => ({
+    video360: Boolean(d?.video360),
+    flycam: Boolean(d?.flycam),
+    redFlag: Boolean(d?.redFlag),
+    sunset: Boolean(d?.sunset),
+    flagFlight: Boolean(d?.flagFlight),
+  });
   return {
     ngay: String(v.ngay),
     so: Number(v.so) || 0,
@@ -9791,9 +9798,26 @@ function veQrToDTO(v: any): BookingDTO["veQr"] {
     khach: (v.khach ?? []).map((k: any) => ({
       guestNo: Number(k.guestNo) || 0,
       dichVu: dv(k.dichVu),
+      /**
+       * HAI CỜ NÀY PHẢI RA TỚI TRÌNH DUYỆT (chủ 23/09: "chỉ chọn 2 PPG mà vẽ ra
+       * 4 vé"): thiếu `veGiay` thì máy coi khách vé giấy cũng có mã QR và in vé
+       * cho họ; thiếu `huy` thì vé đã thu hồi vẫn hiện như vé sống.
+       */
+      veGiay: Boolean(k.veGiay),
+      huy: k.huy?.luc
+        ? {
+            luc: iso(k.huy.luc),
+            boi: String(k.huy.boi ?? ""),
+            ly: String(k.huy.ly ?? ""),
+            phiCong: k.huy.phiCong ? String(k.huy.phiCong) : undefined,
+            phiCongTen: k.huy.phiCongTen ? String(k.huy.phiCongTen) : undefined,
+            daBayXong: Boolean(k.huy.daBayXong),
+            xacMinh: k.huy.xacMinh?.luc ? { boi: String(k.huy.xacMinh.boi ?? ""), luc: iso(k.huy.xacMinh.luc), ket: String(k.huy.xacMinh.ket ?? "") } : null,
+          }
+        : null,
       phiCong: k.phiCong?.username ? { username: String(k.phiCong.username), name: String(k.phiCong.name ?? ""), luc: iso(k.phiCong.luc) } : null,
       bayXong: k.bayXong?.luc ? { luc: iso(k.bayXong.luc) } : null,
-      hoanDichVu: k.hoanDichVu ? { video360: Boolean(k.hoanDichVu.video360), flycam: Boolean(k.hoanDichVu.flycam), redFlag: Boolean(k.hoanDichVu.redFlag) } : undefined,
+      hoanDichVu: k.hoanDichVu ? dv(k.hoanDichVu) : undefined,
       thuHoi: k.thuHoi?.luc
         ? {
             ly: k.thuHoi.ly,
@@ -9803,6 +9827,9 @@ function veQrToDTO(v: any): BookingDTO["veQr"] {
             boi: String(k.thuHoi.boi ?? ""),
             daXem: Boolean(k.thuHoi.daXem),
             daBayXong: Boolean(k.thuHoi.daBayXong),
+            xacNhan: k.thuHoi.xacNhan?.luc
+              ? { ket: k.thuHoi.xacNhan.ket === "da-bay" ? ("da-bay" as const) : ("chua-bay" as const), luc: iso(k.thuHoi.xacNhan.luc), boi: String(k.thuHoi.xacNhan.boi ?? "") }
+              : null,
             dichVu: dv(k.thuHoi.dichVu),
           }
         : null,

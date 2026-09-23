@@ -5947,6 +5947,7 @@ export function BookingTodayBanner({
           booking={veModal}
           onCancel={() => setVeModal(null)}
           onConfirm={(dichVu, guestNos) => capMaVe(veModal, dichVu, guestNos)}
+          onXemVe={() => moKhungXemVe(veModal)}
         />
       )}
     </>
@@ -5956,6 +5957,31 @@ export function BookingTodayBanner({
    * dùng chung cho hộp tích tay và cho lối "không có gì để chọn" (chủ 18/09:
    * đoàn không đặt 360/flycam/cờ đỏ, hoặc đặt đủ cho cả đoàn, thì khỏi hỏi).
    */
+  /**
+   * KHUNG XEM VÉ của một booking đã cấp mã — dựng lại ảnh vé QR (chỉ khách có
+   * mã còn hiệu lực) cho khách chụp, kèm Lưu ảnh · Chia sẻ · In vé (chủ 23/09).
+   */
+  const moKhungXemVe = async (bk: BookingDTO) => {
+    const tienDo: { dat?: (pct: number, chu: string) => void } = {};
+    let anhSan: HTMLCanvasElement[] | null = null;
+    await hienKhungVe(
+      (async () => {
+        anhSan = await dungAnhVe(await buildTicketsHtml(bk, spot), (p, c) => tienDo.dat?.(p, c));
+        return ghepAnhLien(anhSan, RONG_CHAM);
+      })(),
+      `ve-${bk.daySeq || bk.id}.png`,
+      async () => {
+        const kenh = mayInThangDaGhep();
+        const vet = apiPatch(`/api/baocao/booking?spot=${spot}`, { id: bk.id, action: "ticket-print", reason: "in lại" }).catch(() => null);
+        if (kenh && anhSan) await inAnhQuaKenh(anhSan, kenh);
+        else await printBookingTickets(bk, spot, moTabIn(), "in lại");
+        await vet;
+      },
+      inQuaChiaSeThang(),
+      tienDo,
+    );
+  };
+
   const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos?: number[]) => {
     const dangCap = !bk0.veQr;
     /**
