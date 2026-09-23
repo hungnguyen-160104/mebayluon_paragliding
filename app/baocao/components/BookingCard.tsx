@@ -3406,7 +3406,13 @@ function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: Book
   const [ketOpen, setKetOpen] = useState(0);
   const [ket, setKet] = useState("");
   const v = b.veQr;
-  if (!v?.khach?.length) return null;
+  /**
+   * CHƯA XUẤT VÉ THÌ CHƯA CÓ VÉ QR ĐỂ XEM (chủ 23/09: "chưa in vé mà đã hiện
+   * xem vé QR"). Booking có thể còn dòng mã của lần in trước rồi bị bỏ tích
+   * "đã xuất vé" — lúc ấy ai bay PPG vẫn chưa chốt, phải bấm IN VÉ lại. Mục
+   * này chỉ mở khi booking ĐANG ở trạng thái đã xuất vé.
+   */
+  if (!v?.khach?.length || !b.ticketIssued) return null;
   const n = Math.max(1, b.guestCount);
   const conHieuLuc = v.khach.filter((k) => !k.huy?.luc && !k.veGiay);
   const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
