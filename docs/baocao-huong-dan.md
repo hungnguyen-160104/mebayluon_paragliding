@@ -430,6 +430,25 @@ nút vẫn chỉ tích "đã xuất vé", không in.
 > bấm cái nào cũng là chốt booking sang ĐÃ BAY. **📄 Chi tiết book** liệt kê từng
 > mã: khách nào, dịch vụ gì, ai quét lúc mấy giờ, ai tích bay xong, mã bị thu hồi
 > khỏi ai; thêm dòng **"Xác nhận đã bay"** ghi người chốt và thời điểm.
+
+### Vé QR ở Khau Phạ: đoàn gộp PG + PPG, thu hồi từng vé (22/09/2026)
+
+- **Chỉ khách PPG có vé QR.** Đoàn gộp thì khách PG nhận **vé giấy viết tay**
+  (không cấp mã), khách PPG chỉ có **vé QR** (không vé viết tay). Booking chỉ
+  khai SỐ khách PPG nên hộp cấp mã tích sẵn các khách đầu danh sách và có cột
+  **"Vé QR"** để quầy đổi lại; phải tích đúng số khách PPG mới cấp mã được. Vé in
+  ra chỉ in đúng những khách có mã còn hiệu lực.
+- **🎟 Vé QR** nằm trong **⋯ Thêm** của mọi booking đã cấp mã: xem từng vé (ai
+  quét, bay xong chưa, dịch vụ kèm) và **thu hồi từng vé** — cùng đoàn có người
+  bay được người không. Vé đã thu hồi là **vô hiệu**: không ai quét được nữa,
+  mọi bảng đếm (kể cả bảng lương phi công) bỏ qua nó.
+- **Xung đột:** thu hồi đúng vé mà phi công ĐÃ báo bay xong thì dòng vé đỏ lên,
+  phi công nhận cảnh báo ở trang quét vé, quầy ghi **kết luận xác minh** vào vé.
+  Tiêu đề sổ booking và bảng chốt ngày đều treo cảnh báo cho tới khi xác minh.
+- **Máy tự đếm, quầy không khai.** Bấm IN VÉ là vé vào số. Tiêu đề sổ booking có
+  `Vé QR n (bay m · thu hồi k)`; bảng chốt ngày của kế toán có dòng
+  **📱 Vé QR (máy tự đếm)**. Vé QR **không** nằm trong số vé giấy: phép soát
+  "khách bay − vé xuất" đã trừ vé QR nên không còn kêu oan thiếu vé.
 >
 > **Mẫu vé Khau Phạ (18/09):** vé bay dù một liên có mã QR phi công
 > quét (dưới đây), Hà Nội và Khau Phạ mang thương hiệu **MEBAYLUON PARAGLIDING**,

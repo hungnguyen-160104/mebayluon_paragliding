@@ -66,6 +66,11 @@ type CloseSuggestion = {
   ticketsReturned: number;
   /** Vé thu hồi theo sổ booking (huỷ sau khi xuất vé) — máy chủ tính, chủ 14/09. */
   recalledFromBook?: number;
+  /** Vé QR của ngày — máy tự đếm từ sổ booking, quầy không khai (chủ 22/09). */
+  veQrXuat?: number;
+  veQrBay?: number;
+  veQrThuHoi?: number;
+  veQrXungDot?: number;
   cancelledCount: number;
   cancelledRefundCount: number;
   cancelledNoRefundCount: number;
@@ -873,6 +878,21 @@ function DailyCloseInner() {
                       <strong className="text-slate-800">
                         bay {Math.max(0, suggest.ticketsIssued - suggest.ticketsReturned)}
                       </strong>
+                      {/* VÉ QR máy tự đếm từ sổ booking — quầy không khai (chủ 22/09) */}
+                      {(suggest.veQrXuat ?? 0) + (suggest.veQrThuHoi ?? 0) > 0 && (
+                        <>
+                          <br />
+                          <span className="font-semibold text-violet-800">
+                            📱 Vé QR (máy tự đếm): {suggest.veQrXuat} xuất · {suggest.veQrBay} đã bay
+                            {suggest.veQrThuHoi ? ` · ${suggest.veQrThuHoi} thu hồi` : ""}
+                          </span>
+                          {(suggest.veQrXungDot ?? 0) > 0 && (
+                            <span className="ml-1 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white">
+                              ⚠ {suggest.veQrXungDot} vé thu hồi sau khi phi công báo bay — cần xác minh
+                            </span>
+                          )}
+                        </>
+                      )}
                       <br />
                       TM {formatVND(suggest.cashTotal)} · CK {formatVND(suggest.transferTotal)}
                       <br />

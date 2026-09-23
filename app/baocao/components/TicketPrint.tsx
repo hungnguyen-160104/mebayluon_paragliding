@@ -404,10 +404,18 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
   const qrVe = new Map<number, string>();
   const qrNuoc = new Map<number, string>();
   const qrXe = new Map<number, string>();
+  /**
+   * IN VÉ CHO AI (chủ 22/09): đã cấp mã thì in ĐÚNG những khách có mã còn hiệu
+   * lực — Khau Phạ đoàn gộp PG + PPG chỉ cấp mã cho khách PPG (khách PG nhận vé
+   * giấy viết tay), và vé đã thu hồi thì không in lại nữa.
+   */
+  const nosIn = b.veQr?.khach?.length
+    ? b.veQr.khach.filter((k) => !k.huy?.luc).map((k) => k.guestNo).sort((x, y) => x - y)
+    : Array.from({ length: guests }, (_, i) => i + 1);
   if (b.veQr?.ngay) {
     const v = b.veQr;
     await Promise.all(
-      Array.from({ length: guests }, (_, i) => i + 1).map(async (g) => {
+      nosIn.map(async (g) => {
         /** Đuôi QR = mã chống giả của khách (chủ 18/09) — chưa có mã thì rơi về mã điểm. */
         qrVe.set(g, await qrSvg(veQrText(spot, v.ngay, v.so, g, maVeCua(b, g))));
         if (laKhauPha) {
@@ -418,7 +426,7 @@ export async function buildTicketsHtml(b: BookingDTO, spot: string): Promise<str
     );
   }
   const pages: string[] = [];
-  for (let g = 1; g <= guests; g++) {
+  for (const g of nosIn) {
     /**
      * MỘT liên vé bay mỗi khách. Khau Phạ từng dựng thêm vé đồ uống + vé xe ôm
      * (18/09) nhưng đang TẠM TẮT — xem `IN_VE_PHU_KHAU_PHA`.

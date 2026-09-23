@@ -186,8 +186,21 @@ export type VeQrKhach = {
    * chuyến/dịch vụ liên quan bị rút. Phi công bấm "đã xem" thì `daXem`.
    */
   thuHoi?: { ly: "huy" | "doi" | "tay"; luc: string; phiCong: string; phiCongTen: string; boi: string; daXem?: boolean; daBayXong?: boolean; dichVu: DichVuKhach } | null;
+  /**
+   * VÉ BỊ THU HỒI HẲN (chủ 22/09): quầy vé / điều phối thu hồi RIÊNG vé của
+   * một khách (người kia vẫn bay). Khác `thuHoi` ở chỗ vé KHÔNG trắng lại để
+   * quét tiếp mà coi như huỷ: không ai quét được nữa, mọi thống kê bỏ qua nó.
+   * `daBayXong` = lúc thu hồi phi công ĐÃ báo bay xong → XUNG ĐỘT, hai bên
+   * phải xác minh (phi công thấy cảnh báo, điều phối thấy trong danh sách).
+   */
+  huy?: { luc: string; boi: string; ly: string; phiCong?: string; phiCongTen?: string; daBayXong?: boolean; xacMinh?: { boi: string; luc: string; ket: string } | null } | null;
   lichSu: Array<{ luc: string; boi: string; viec: string; ghiChu?: string }>;
 };
+
+/** Vé còn hiệu lực (chưa bị thu hồi hẳn). */
+export function veConHieuLuc(k: Pick<VeQrKhach, "huy">): boolean {
+  return !k.huy?.luc;
+}
 
 export type VeQrDTO = {
   /** Ngày cấp vé (căn cước trong QR) — dời lịch không đổi. */
@@ -207,9 +220,31 @@ export function trangThaiMa(k: Pick<VeQrKhach, "phiCong" | "bayXong">): TrangTha
   return "trong";
 }
 
-/** Booking "đã bay hết" khi mọi khách đều đã tích bay xong (chủ 17/09, mục 13). */
-export function daBayHet(ve: VeQrDTO | undefined | null, guestCount: number): boolean {
-  if (!ve?.khach?.length) return false;
-  const n = Math.max(1, guestCount);
-  return ve.khach.length >= n && ve.khach.slice(0, n).every((k) => Boolean(k.bayXong));
+/**
+ * Booking "đã bay hết" khi MỌI VÉ CÒN HIỆU LỰC đều đã tích bay xong (chủ 17/09,
+ * mục 13). Không so với `guestCount` nữa (chủ 22/09): đoàn Khau Phạ gộp PG +
+ * PPG chỉ cấp mã cho khách PPG, và vé bị thu hồi thì không còn phải bay.
+ */
+export function daBayHet(ve: VeQrDTO | undefined | null, _guestCount?: number): boolean {
+  const con = (ve?.khach ?? []).filter(veConHieuLuc);
+  return con.length > 0 && con.every((k) => Boolean(k.bayXong));
+}
+
+/**
+ * KHÁCH NÀO ĐƯỢC CẤP MÃ QR (chủ 22/09).
+ *
+ * Sa Pa: cả đoàn. Khau Phạ: CHỈ khách bay PPG — đoàn gộp thì khách PG nhận vé
+ * giấy viết tay (không mã), khách PPG chỉ có vé QR (không vé viết tay). Booking
+ * khai `ppgGuests` là SỐ khách PPG chứ không chỉ đích danh ai, nên mặc định
+ * lấy các khách ĐẦU danh sách; quầy vé đổi lại được ngay trên hộp cấp mã.
+ */
+export function soKhachCoMaQr(spot: string, b: { guestCount?: number; flightKind?: string; ppgGuests?: number }): number {
+  const n = Math.max(1, Number(b.guestCount) || 1);
+  if (spot !== "khau-pha") return n;
+  if (b.flightKind === "ppg") return n;
+  return Math.min(n, Math.max(0, Number(b.ppgGuests) || 0));
+}
+
+export function khachCoMaQrMacDinh(spot: string, b: { guestCount?: number; flightKind?: string; ppgGuests?: number }): number[] {
+  return Array.from({ length: soKhachCoMaQr(spot, b) }, (_, i) => i + 1);
 }

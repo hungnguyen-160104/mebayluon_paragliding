@@ -485,6 +485,8 @@ export async function PATCH(req: Request) {
         reason: String(body?.reason ?? ""),
         // Dịch vụ gắn từng khách cho vé QR (Sa Pa) — xem lib/baobay/ve-qr.ts
         dichVu: Array.isArray(body?.dichVu) ? body.dichVu : undefined,
+        // Khách nào được cấp mã (Khau Phạ đoàn gộp: chỉ khách PPG) — chủ 22/09
+        guestNos: Array.isArray(body?.guestNos) ? body.guestNos.map((x: unknown) => Number(x)) : undefined,
       });
       return NextResponse.json(res);
     }

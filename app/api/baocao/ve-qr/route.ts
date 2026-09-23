@@ -5,7 +5,10 @@ import { resolveSpot } from "@/lib/baobay/request-spot";
 import { todayInVN } from "@/lib/baobay/date";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError } from "@/services/baobay.service";
-import { bayXong, boBayXong, daXemThuHoi, hoanDichVu, hoanMa, quetVe, thuHoiMa, veCuaToi } from "@/services/ve-qr.service";
+import { bayXong, boBayXong, daXemThuHoi, hoanDichVu, hoanMa, quetVe, thuHoiMa, veCuaToi,
+  huyVe,
+  xacMinhHuyVe,
+} from "@/services/ve-qr.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +61,14 @@ export async function POST(req: Request) {
     if (action === "daxem") {
       await daXemThuHoi(auth, spot, bookingId, guestNo);
       return NextResponse.json({ ok: true });
+    }
+    if (action === "huyve" || action === "xacminh") {
+      /** Thu hồi VÉ và xác minh xung đột là việc của quầy vé / điều phối / kế toán, không phải phi công. */
+      const quyen = ["dispatcher", "counter", "accountant", "admin"];
+      const co = quyen.includes(auth.role) || (auth.extraRoles ?? []).some((r) => quyen.includes(r));
+      if (!co) return NextResponse.json({ message: "Chỉ quầy vé / điều phối mới thu hồi vé được" }, { status: 403 });
+      if (action === "huyve") return NextResponse.json({ ma: await huyVe(auth, spot, bookingId, guestNo, lyDo) });
+      return NextResponse.json({ ma: await xacMinhHuyVe(auth, spot, bookingId, guestNo, String(body?.ket ?? "")) });
     }
     if (action === "thuhoi") {
       if (auth.role === "pilot" && !(auth.extraRoles ?? []).some((r) => r === "dispatcher" || r === "counter" || r === "admin")) {

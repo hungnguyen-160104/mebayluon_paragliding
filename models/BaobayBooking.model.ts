@@ -747,6 +747,22 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
                     ),
                     default: null,
                   },
+                  /** Vé bị THU HỒI HẲN (chủ 22/09) — không ai quét được nữa, mọi thống kê bỏ qua. */
+                  huy: {
+                    type: new Schema(
+                      {
+                        luc: Date,
+                        boi: String,
+                        ly: String,
+                        phiCong: String,
+                        phiCongTen: String,
+                        daBayXong: Boolean,
+                        xacMinh: { type: new Schema({ boi: String, luc: Date, ket: String }, { _id: false }), default: null },
+                      },
+                      { _id: false },
+                    ),
+                    default: null,
+                  },
                   lichSu: { type: [new Schema({ luc: Date, boi: String, viec: String, ghiChu: String }, { _id: false })], default: [] },
                 },
                 { _id: false },

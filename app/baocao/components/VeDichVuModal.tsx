@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { normalizeSpot } from "@/lib/baobay/spots";
 
 import type { BookingDTO } from "@/lib/baobay/types";
-import { chiaDichVu, DICH_VU_VE, nhanVe, TEN_DICH_VU, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
+import { chiaDichVu, DICH_VU_VE, khachCoMaQrMacDinh, nhanVe, soKhachCoMaQr, TEN_DICH_VU, type DichVuKhach, type DichVuVe } from "@/lib/baobay/ve-qr";
 import { tenKhachBaoHiem, vietTatTen } from "./TicketPrint";
 
 import { Button } from "./ui";
@@ -25,7 +25,7 @@ export function VeDichVuModal({
   booking: BookingDTO;
   title?: string;
   onCancel: () => void;
-  onConfirm: (dichVu: Array<{ guestNo: number } & DichVuKhach>) => void | Promise<void>;
+  onConfirm: (dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos: number[]) => void | Promise<void>;
 }) {
   const n = Math.max(1, booking.guestCount || 1);
   const [rows, setRows] = useState<DichVuKhach[]>(() => {
@@ -33,6 +33,18 @@ export function VeDichVuModal({
     if (daCo?.length) return Array.from({ length: n }, (_, i) => ({ ...(daCo[i]?.dichVu ?? { video360: false, flycam: false, redFlag: false }) }));
     return chiaDichVu(n, { video360: booking.video360, flycam: booking.flycam, redFlag: booking.redFlag }).khach;
   });
+  /**
+   * KHÁCH NÀO NHẬN VÉ QR (chủ 22/09): Khau Phạ đoàn gộp PG + PPG thì chỉ khách
+   * PPG có vé QR, khách PG nhận vé giấy viết tay. Booking chỉ khai SỐ khách PPG
+   * nên máy tích sẵn các khách đầu danh sách, quầy vé đổi lại được.
+   */
+  const spotBk = normalizeSpot(booking.spot);
+  const soQr = soKhachCoMaQr(spotBk, booking);
+  const chonDuocQr = soQr > 0 && soQr < n && !booking.veQr;
+  const [qrNos, setQrNos] = useState<number[]>(() =>
+    booking.veQr?.khach?.length ? booking.veQr.khach.map((k) => k.guestNo) : khachCoMaQrMacDinh(spotBk, booking),
+  );
+  const coQr = (g: number) => qrNos.includes(g);
   const [busy, setBusy] = useState(false);
   /**
    * NẠP TRƯỚC html2canvas + qrcode ngay khi mở danh sách mã (khảo sát tốc độ
@@ -62,7 +74,7 @@ export function VeDichVuModal({
   const cot = DICH_VU_VE.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
   const khoa = (k: DichVuVe) => !booking.veQr && dat[k] >= n;
   const lech = cot.filter((k) => dem(k) !== Math.min(n, dat[k]));
-  const chuaKhop = !booking.veQr && lech.length > 0;
+  const chuaKhop = (!booking.veQr && lech.length > 0) || (chonDuocQr && qrNos.length !== soQr);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-2 sm:items-center" onClick={onCancel}>
@@ -78,6 +90,7 @@ export function VeDichVuModal({
               <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                 <th className="py-1 pr-2">Mã</th>
                 <th className="py-1 pr-2">Khách</th>
+                {chonDuocQr && <th className="py-1 text-center">Vé QR<span className="block text-[9px] font-normal normal-case text-slate-400">khách PPG</span></th>}
                 {cot.map((k) => (
                   <th key={k} className="py-1 text-center">
                     {TEN_DICH_VU[k]}
@@ -96,7 +109,20 @@ export function VeDichVuModal({
                     <td className="py-1.5 pr-2">
                       {ten(g)}
                       {daBay && <span className="ml-1 text-[10px] text-emerald-700">đã bay</span>}
+                      {chonDuocQr && !coQr(g) && <span className="ml-1 text-[10px] font-semibold text-slate-500">vé giấy viết tay</span>}
                     </td>
+                    {chonDuocQr && (
+                      <td className="py-1.5 text-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5"
+                          checked={coQr(g)}
+                          onChange={(e) =>
+                            setQrNos((cur) => (e.target.checked ? [...cur, g].sort((a, b) => a - b) : cur.filter((x) => x !== g)))
+                          }
+                        />
+                      </td>
+                    )}
                     {cot.map((k) => (
                       <td key={k} className="py-1.5 text-center">
                         <input
@@ -117,6 +143,11 @@ export function VeDichVuModal({
                 <td className="py-1.5" colSpan={2}>
                   Đã tích / đã đặt
                 </td>
+                {chonDuocQr && (
+                  <td className={"py-1.5 text-center " + (qrNos.length === soQr ? "text-emerald-700" : "text-rose-700")}>
+                    {qrNos.length}/{soQr}
+                  </td>
+                )}
                 {cot.map((k) => (
                   <td key={k} className={"py-1.5 text-center " + (dem(k) !== Math.min(n, dat[k]) ? "text-rose-700" : "text-emerald-700")}>
                     {dem(k)}/{dat[k]}
@@ -127,6 +158,12 @@ export function VeDichVuModal({
           </table>
         </div>
         {cot.length === 0 && <p className="mt-2 text-xs text-slate-500">Booking không có dịch vụ kèm — cấp mã thôi.</p>}
+        {chonDuocQr && (
+          <p className={"mt-2 text-xs " + (qrNos.length === soQr ? "text-slate-600" : "font-semibold text-rose-700")}>
+            Đoàn gộp: <strong>{soQr} khách bay PPG</strong> nhận vé QR, {n - soQr} khách bay PG nhận vé giấy viết tay (không cấp mã).
+            {qrNos.length !== soQr ? ` Đang tích ${qrNos.length} — tích đúng ${soQr} ô "Vé QR" rồi mới cấp mã.` : ""}
+          </p>
+        )}
         {lech.length > 0 && (
           <p className="mt-2 text-xs text-rose-700">
             Tích cho đúng {lech.map((k) => `${dat[k]} ${TEN_DICH_VU[k]}`).join(", ")} theo số đã đặt rồi mới cấp mã.
@@ -145,7 +182,7 @@ export function VeDichVuModal({
               setBusy(true);
               setLoi(null);
               try {
-                await onConfirm(rows.map((r, i) => ({ guestNo: i + 1, ...r })));
+                await onConfirm(rows.map((r, i) => ({ guestNo: i + 1, ...r })), qrNos);
               } catch (e: unknown) {
                 setLoi(e instanceof Error ? e.message : "Không thực hiện được");
               } finally {

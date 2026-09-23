@@ -3381,6 +3381,166 @@ function CancelBookingControl({
  * bấm đầu cột để xếp theo cột đó (bấm lại đảo chiều). Dành cho lúc ngày đông
  * cần QUÉT MẮT; thao tác (thu tiền, dời, sửa…) vẫn ở chế độ thẻ.
  */
+/* ------------------------------------------------------------------ */
+/* 🎟 Vé QR của booking — xem, thu hồi từng vé, xác minh xung đột       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * BẢNG VÉ QR (chủ 22/09) — nằm trong "⋯ Thêm" của mọi booking đã cấp mã (PPG
+ * Khau Phạ, mọi booking Sa Pa). Mỗi vé một dòng: ai đang giữ, bay xong chưa,
+ * dịch vụ kèm.
+ *
+ * THU HỒI TỪNG VÉ: cùng một đoàn có người bay được người không, nên thu hồi
+ * theo VÉ chứ không theo booking. Vé đã thu hồi là vô hiệu — không ai quét
+ * được nữa và mọi bảng đếm bỏ qua nó.
+ *
+ * XUNG ĐỘT: thu hồi đúng vé mà phi công ĐÃ báo bay xong thì hai bên nói khác
+ * nhau — dòng vé đỏ lên, phi công nhận cảnh báo ở trang quét vé, quầy vé ghi
+ * kết luận vào ô "Xác minh" để chốt lại (ai đúng, xử lý ra sao).
+ */
+function VeQrControl({ spot, booking: b, onDone }: { spot: string; booking: BookingDTO; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(0);
+  const [loi, setLoi] = useState<string | null>(null);
+  const [ketOpen, setKetOpen] = useState(0);
+  const [ket, setKet] = useState("");
+  const v = b.veQr;
+  if (!v?.khach?.length) return null;
+  const n = Math.max(1, b.guestCount);
+  const conHieuLuc = v.khach.filter((k) => !k.huy?.luc);
+  const gio = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" }) : "");
+
+  const lenh = async (action: string, guestNo: number, them?: Record<string, unknown>) => {
+    setBusy(guestNo);
+    setLoi(null);
+    try {
+      await apiPost(`/api/baocao/ve-qr?spot=${spot}`, { action, bookingId: b.id, guestNo, ...them });
+      onDone();
+    } catch (e: unknown) {
+      setLoi(e instanceof Error ? e.message : "Không thực hiện được");
+    } finally {
+      setBusy(0);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-7 border-violet-300 bg-violet-50 px-2 text-xs font-semibold text-violet-800"
+        onClick={() => setOpen((x) => !x)}
+        title="Xem vé QR của booking, thu hồi từng vé khi khách không bay được"
+      >
+        🎟 Vé QR ({conHieuLuc.length}
+        {conHieuLuc.length !== v.khach.length ? `/${v.khach.length}` : ""})
+      </Button>
+      {open && (
+        <div className="mt-1 w-full rounded-lg border border-violet-300 bg-violet-50/60 p-2">
+          <div className="mb-1 text-[11px] font-bold text-violet-900">
+            Vé QR cấp ngày {formatDateKeyVN(v.ngay)} #{v.so}
+            {v.capBoi ? ` · by ${v.capBoi}` : ""}
+          </div>
+          <ul className="space-y-1">
+            {v.khach.map((k) => {
+              const dv = DICH_VU_VE.filter((x) => k.dichVu?.[x]).map((x) => TEN_DICH_VU[x]);
+              const daHuy = Boolean(k.huy?.luc);
+              const xungDot = Boolean(k.huy?.daBayXong) && !k.huy?.xacMinh;
+              return (
+                <li
+                  key={k.guestNo}
+                  className={
+                    "rounded-lg border px-2 py-1 text-xs " +
+                    (xungDot ? "border-rose-400 bg-rose-50" : daHuy ? "border-slate-300 bg-slate-100 text-slate-500" : "border-violet-200 bg-white")
+                  }
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className={"font-mono font-bold " + (daHuy ? "line-through" : "")}>{nhanVe(v.so, k.guestNo, n)}</span>
+                    <span className={daHuy ? "line-through" : ""}>{vietTatTen(tenKhachBaoHiem(b, k.guestNo))}</span>
+                    {dv.length > 0 && <span className="text-[11px] text-amber-800">{dv.join(" · ")}</span>}
+                    <span className="ml-auto text-[11px]">
+                      {daHuy
+                        ? `✕ ĐÃ THU HỒI${k.huy?.boi ? ` by ${k.huy.boi}` : ""} ${gio(k.huy?.luc)}`
+                        : k.bayXong
+                          ? `✅ ${k.phiCong?.name || k.phiCong?.username} bay xong ${gio(k.bayXong.luc)}`
+                          : k.phiCong
+                            ? `${k.phiCong.name || k.phiCong.username} đã quét ${gio(k.phiCong.luc)}`
+                            : "mã trống"}
+                    </span>
+                  </div>
+                  {daHuy && k.huy?.ly && <div className="mt-0.5 text-[11px]">Lý do: {k.huy.ly}</div>}
+                  {daHuy && k.huy?.daBayXong && (
+                    <div className={"mt-0.5 rounded px-1.5 py-0.5 text-[11px] font-bold " + (k.huy.xacMinh ? "bg-slate-200 text-slate-700" : "bg-rose-600 text-white")}>
+                      {k.huy.xacMinh
+                        ? `Đã xác minh: ${k.huy.xacMinh.ket || "(không ghi)"} — ${k.huy.xacMinh.boi}`
+                        : `⚠ XUNG ĐỘT: thu hồi sau khi ${k.huy.phiCongTen || k.huy.phiCong || "phi công"} đã báo BAY XONG — hai bên xác minh lại`}
+                    </div>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {!daHuy && (
+                      <button
+                        type="button"
+                        disabled={busy === k.guestNo}
+                        onClick={() => {
+                          const ly = window.prompt(
+                            `Thu hồi vé ${nhanVe(v.so, k.guestNo, n)} (${vietTatTen(tenKhachBaoHiem(b, k.guestNo))})?\n\nVé sẽ vô hiệu: không ai quét được nữa, mọi bảng đếm bỏ qua.\nGhi lý do:`,
+                            "",
+                          );
+                          if (ly === null) return;
+                          void lenh("huyve", k.guestNo, { lyDo: ly });
+                        }}
+                        className="rounded border border-rose-400 bg-white px-2 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50"
+                      >
+                        ✕ Thu hồi vé
+                      </button>
+                    )}
+                    {daHuy && k.huy?.daBayXong && !k.huy?.xacMinh && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setKetOpen(ketOpen === k.guestNo ? 0 : k.guestNo);
+                            setKet("");
+                          }}
+                          className="rounded border border-rose-500 bg-white px-2 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50"
+                        >
+                          ✓ Xác minh xong
+                        </button>
+                        {ketOpen === k.guestNo && (
+                          <div className="mt-1 flex w-full flex-wrap items-center gap-1">
+                            <input
+                              value={ket}
+                              onChange={(e) => setKet(e.target.value)}
+                              placeholder="Kết luận: khách không bay thật / phi công báo nhầm…"
+                              className="h-8 min-w-[12rem] flex-1 rounded-lg border border-slate-300 px-2 text-xs"
+                            />
+                            <Button
+                              type="button"
+                              className="h-8 bg-rose-600 px-2 text-xs hover:bg-rose-700"
+                              disabled={busy === k.guestNo || !ket.trim()}
+                              onClick={async () => {
+                                await lenh("xacminh", k.guestNo, { ket: ket.trim() });
+                                setKetOpen(0);
+                              }}
+                            >
+                              Lưu kết luận
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {loi && <p className="mt-1 text-[11px] font-semibold text-rose-700">⚠ {loi}</p>}
+        </div>
+      )}
+    </>
+  );
+}
+
 /* ================================================================== */
 /* 📄 Chi tiết booking — bảng kê như tờ vé                              */
 /* ================================================================== */
@@ -4993,6 +5153,29 @@ export function BookingTodayBanner({
   ]
     .filter(Boolean)
     .join(" + ");
+  /**
+   * VÉ QR TRONG NGÀY (chủ 22/09) — quầy vé / điều phối / kế toán đều nhìn một
+   * chỗ này, không ai phải tự đếm: bấm IN VÉ là vé tự vào số. Đếm theo VÉ
+   * (từng khách) chứ không theo booking; vé đã thu hồi tách riêng.
+   */
+  const veQrNgay = (() => {
+    let xuat = 0;
+    let bay = 0;
+    let thuHoi = 0;
+    let xungDot = 0;
+    for (const b of rows) {
+      for (const k of b.veQr?.khach ?? []) {
+        if (k.huy?.luc) {
+          thuHoi++;
+          if (k.huy.daBayXong && !k.huy.xacMinh) xungDot++;
+          continue;
+        }
+        xuat++;
+        if (k.bayXong) bay++;
+      }
+    }
+    return { xuat, bay, thuHoi, xungDot };
+  })();
   const stats = [
     `${rows.length + moved.bookings} Book`,
     `Tổng ${rows.reduce((t, b) => t + b.guestCount, 0) + moved.guests}k${kindBits ? ` (${kindBits})` : ""}`,
@@ -5025,6 +5208,10 @@ export function BookingTodayBanner({
         })()
       : "",
     cancelledGuests ? `Huỷ ${cancelledGuests}k` : "",
+    /** Vé QR: xuất / đã bay — chỉ hiện ở ngày có vé QR (PPG Khau Phạ, Sa Pa). */
+    veQrNgay.xuat + veQrNgay.thuHoi > 0
+      ? `Vé QR ${veQrNgay.xuat} (bay ${veQrNgay.bay}${veQrNgay.thuHoi ? ` · thu hồi ${veQrNgay.thuHoi}` : ""})`
+      : "",
   ].filter(Boolean);
   /** Dời lịch: cả đoàn thì đổi ngày tại chỗ, một phần thì tách nhóm sang ngày mới. */
   async function moveBooking(
@@ -5216,7 +5403,17 @@ export function BookingTodayBanner({
     </Button>
   );
 
-  const title = <>🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})</>;
+  const title = (
+    <>
+      🛫 Booking bay ngày {formatDateKeyVN(date)} ({stats.join(" - ")})
+      {/* XUNG ĐỘT vé QR: thu hồi sau khi phi công đã báo bay — phải xác minh, nên nhảy ra ngay tiêu đề (chủ 22/09). */}
+      {veQrNgay.xungDot > 0 && (
+        <span className="ml-2 rounded bg-rose-600 px-1.5 py-0.5 text-[11px] font-black text-white">
+          ⚠ {veQrNgay.xungDot} vé thu hồi sau khi phi công báo bay — cần xác minh
+        </span>
+      )}
+    </>
+  );
   /**
    * Nút phóng/thu sổ booking — đứng NGAY CẠNH TIÊU ĐỀ ở cả ba kiểu hiển thị
    * (gập được, thẻ thường, đang toàn màn hình) cho dễ thấy; nằm trong dải công
@@ -5659,7 +5856,7 @@ export function BookingTodayBanner({
         <VeDichVuModal
           booking={veModal}
           onCancel={() => setVeModal(null)}
-          onConfirm={(dichVu) => capMaVe(veModal, dichVu)}
+          onConfirm={(dichVu, guestNos) => capMaVe(veModal, dichVu, guestNos)}
         />
       )}
     </>
@@ -5669,7 +5866,7 @@ export function BookingTodayBanner({
    * dùng chung cho hộp tích tay và cho lối "không có gì để chọn" (chủ 18/09:
    * đoàn không đặt 360/flycam/cờ đỏ, hoặc đặt đủ cho cả đoàn, thì khỏi hỏi).
    */
-  const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>) => {
+  const capMaVe = async (bk0: BookingDTO, dichVu: Array<{ guestNo: number } & DichVuKhach>, guestNos?: number[]) => {
     const dangCap = !bk0.veQr;
     /**
      * ĐIỂM QUÉT MÃ (Sa Pa 18/09, từ đó cả Hà Nội + Khau Phạ): cấp mã xong
@@ -5685,6 +5882,8 @@ export function BookingTodayBanner({
         action: dangCap ? "ticket-print" : "ve-dichvu",
         reason: "",
         dichVu,
+        /** Khách nào nhận vé QR (Khau Phạ đoàn gộp PG + PPG) — chủ 22/09. */
+        guestNos,
       });
       setVeModal(null);
       const bk = r?.booking ?? bk0;
@@ -5846,6 +6045,8 @@ export function BookingTodayBanner({
                   tail={lockButton(b)}
                   extra={
                     <>
+                      {/* 🎟 Vé QR: xem vé của booking, thu hồi từng vé (chủ 22/09) */}
+                      <VeQrControl spot={spot} booking={b} onDone={load} />
                       {/* 🖼 Ảnh booking — xuất lại phiếu ảnh bất kỳ lúc nào (chủ 12/09) */}
                       {anhButton(b)}
                       {/* Đã thu đủ thì Thu tiền cất vào đây (luật moneyOutside) */}

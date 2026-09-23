@@ -32,7 +32,7 @@ import { formatDateKeyVN, isDateKey, isPastSubmitDeadline, nowStampVN, shiftDate
 import { reconcileDay, type ReconcileInput, type ReconcileResult } from "@/lib/baobay/reconcile";
 import { ROLE_LABEL, isBaobayRole, isDispatcherLike, wearsRole, type BaobayRole } from "@/lib/baobay/roles";
 import { capMaVe, chuanHoaMaVe, maVeHopLe } from "@/lib/baobay/ma-ve-bao-mat";
-import { chiaDichVu, coQuetVe, DICH_VU_VE, KHONG_DICH_VU, type DichVuKhach } from "@/lib/baobay/ve-qr";
+import { chiaDichVu, coQuetVe, DICH_VU_VE, khachCoMaQrMacDinh, KHONG_DICH_VU, soKhachCoMaQr, type DichVuKhach } from "@/lib/baobay/ve-qr";
 import { DEFAULT_SPOT, normalizeSpot, normalizeSpotList, spotName, type SpotId } from "@/lib/baobay/spots";
 import { callBaobaySheet, pushBaobayRow, sheetTargetFromSetting, type SheetPushResult, type SheetTarget } from "@/lib/baobay/sheet";
 import { hasMoneyDests, moneyDestsOf, normalizeMoneyDest } from "@/lib/baobay/money-dest";
@@ -7102,6 +7102,11 @@ export async function recordTicketPrint(
      * đều được (10 khách 10 flycam), không chia đều được thì báo lỗi bắt tích tay.
      */
     dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean }>;
+    /**
+     * KHÁCH NÀO ĐƯỢC CẤP MÃ (chủ 22/09) — Khau Phạ đoàn gộp PG + PPG chỉ cấp
+     * cho khách PPG. Không gửi thì lấy mặc định (các khách đầu danh sách).
+     */
+    guestNos?: number[];
   },
 ): Promise<{ booking: BookingDTO }> {
   await connectDB();
@@ -7164,6 +7169,17 @@ export async function recordTicketPrint(
       const x = guiDv?.find((d) => Number(d.guestNo) === g);
       return x ? { video360: Boolean(x.video360), flycam: Boolean(x.flycam), redFlag: Boolean(x.redFlag) } : macDinh;
     };
+    /**
+     * DANH SÁCH KHÁCH ĐƯỢC CẤP MÃ: Sa Pa cả đoàn; Khau Phạ chỉ khách PPG (số
+     * lượng theo `ppgGuests`, quầy vé chọn đích danh ai trong hộp cấp mã).
+     */
+    const soMaToiDa = soKhachCoMaQr(spot, booking);
+    const guiNos = Array.isArray(input.guestNos)
+      ? [...new Set(input.guestNos.map((x) => Number(x)).filter((x) => Number.isInteger(x) && x >= 1 && x <= soKhach))].sort((a, b) => a - b)
+      : null;
+    const nosCap = guiNos?.length ? guiNos.slice(0, soMaToiDa) : khachCoMaQrMacDinh(spot, booking);
+    if (nosCap.length === 0) throw new BaobayError("Đoàn này không có khách nào bay PPG — vé giấy viết tay, không cấp mã QR", 400);
+
     if (!booking.veQr?.ngay) {
       const chia = chiaDichVu(soKhach, { video360: Number(booking.video360) || 0, flycam: Number(booking.flycam) || 0, redFlag: Number(booking.redFlag) || 0 });
       if (!chia.auto && !guiDv) {
@@ -7177,20 +7193,22 @@ export async function recordTicketPrint(
         so: Number(booking.daySeq) || 0,
         capLuc: new Date(),
         capBoi: session.name || session.username,
-        khach: Array.from({ length: soKhach }, (_, i) => ({
-          guestNo: i + 1,
-          dichVu: dvCua(i + 1, chia.khach[i] ?? { ...KHONG_DICH_VU }),
+        khach: nosCap.map((g) => ({
+          guestNo: g,
+          dichVu: dvCua(g, chia.khach[g - 1] ?? { ...KHONG_DICH_VU }),
           phiCong: null,
           bayXong: null,
           lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }],
         })),
       };
     } else {
-      /** Đoàn tăng khách sau khi in: thêm mã cho khách mới; có dichVu thì sửa khách chưa bay. */
+      /** Đoàn tăng khách sau khi in: thêm mã cho khách mới trong diện được cấp; có dichVu thì sửa khách chưa bay. */
       const khach = (booking.veQr.khach ?? []).map((k: any) => ({ ...k }));
-      for (let g = khach.length + 1; g <= soKhach; g++) {
+      for (const g of nosCap) {
+        if (khach.some((k: any) => Number(k.guestNo) === g)) continue;
         khach.push({ guestNo: g, dichVu: dvCua(g, { ...KHONG_DICH_VU }), phiCong: null, bayXong: null, lichSu: [{ luc: new Date(), boi: session.name || session.username, viec: "cap" }] });
       }
+      khach.sort((a: any, b: any) => Number(a.guestNo) - Number(b.guestNo));
       if (guiDv) {
         for (const k of khach) {
           if (k.bayXong) continue;
@@ -10954,6 +10972,16 @@ export type CloseSuggestionDTO = {
   ticketsIssued: number;
   ticketsReturned: number;
   /**
+   * VÉ QR của ngày (chủ 22/09) — MÁY TỰ ĐẾM từ sổ booking, quầy vé không phải
+   * khai: bấm IN VÉ là vé vào số. Đếm riêng với vé giấy vì hai loại không cùng
+   * dải mã. `veQrThuHoi` là vé đã thu hồi, `veQrXungDot` là vé thu hồi sau khi
+   * phi công đã báo bay xong (hai bên còn phải xác minh).
+   */
+  veQrXuat: number;
+  veQrBay: number;
+  veQrThuHoi: number;
+  veQrXungDot: number;
+  /**
    * VÉ THU HỒI THEO SỔ BOOKING: booking đã xuất vé rồi mới huỷ — đếm mã đã ghi
    * lúc huỷ, không ghi mã thì đếm theo số khách. Chủ 14/09: 13/09 Khau Phạ
    * quầy khai 45 vé xuất, 0 thu hồi, trong khi sổ có 7 booking huỷ sau khi
@@ -11206,7 +11234,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
 
   const spot = normalizeSpot(spotRaw);
   const filter = { spot, date };
-  const [dispatchers, pilots, cameramen, bookings, insuranceBookings] = await Promise.all([
+  const [dispatchers, pilots, cameramen, bookings, insuranceBookings, veQrDocs] = await Promise.all([
     DispatcherDailyReport.find(filter).lean<any[]>(),
     PilotDailyReport.find(filter).lean<any[]>(),
     CameramanDailyReport.find(filter).lean<any[]>(),
@@ -11228,7 +11256,23 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
           "insuranceSentAt insuranceRecalledAt ticketIssuedAt noTicketFlight noTicketAt",
       )
       .lean<any[]>(),
+    /** Vé QR của ngày — máy tự đếm, quầy không khai (chủ 22/09). */
+    BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] }, "veQr.khach.0": { $exists: true } })
+      .select("veQr.khach")
+      .lean<any[]>(),
   ]);
+  const veQrTally = { veQrXuat: 0, veQrBay: 0, veQrThuHoi: 0, veQrXungDot: 0 };
+  for (const b of veQrDocs) {
+    for (const k of b.veQr?.khach ?? []) {
+      if (k.huy?.luc) {
+        veQrTally.veQrThuHoi++;
+        if (k.huy.daBayXong && !k.huy.xacMinh?.luc) veQrTally.veQrXungDot++;
+        continue;
+      }
+      veQrTally.veQrXuat++;
+      if (k.bayXong?.luc) veQrTally.veQrBay++;
+    }
+  }
 
   /**
    * KHÁCH HUỶ ghi ngay trên SỔ BOOKING (nút ✕ Huỷ booking) — nguồn thứ hai bên
@@ -11680,6 +11724,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
         .reduce((t, e) => t + (e.guests || 0), 0) +
       bookingCancelEntries.filter((e) => !(e.refund > 0)).reduce((t, e) => t + (e.guests || 0), 0) +
       partialCancelEntries.reduce((t, e) => t + (e.guests || 0), 0),
+    ...veQrTally,
     rescheduledCount: sum(dispatchers, (d) => d.rescheduledCount),
     rescheduledGuestCount: mergedRescheduleEntries.reduce((t, e) => t + (e.guests || 0), 0),
     rescheduledTicketGuests: mergedRescheduleEntries.reduce(
@@ -11903,7 +11948,17 @@ export async function upsertDailyClose(
    * xuất 26 vé thì phải có đúng 4 chuyến không vé; lệch là kêu.
    */
   if (spot !== "ha-noi") {
-    const gap = Math.max(0, (input.guestCount || 0) - (input.ticketsIssued || 0));
+    /**
+     * VÉ QR KHÔNG NẰM TRONG SỐ VÉ GIẤY (chủ 22/09): khách PPG Khau Phạ bay bằng
+     * vé QR nên quầy không xuất vé giấy cho họ — không trừ ra thì phép "khách
+     * bay − vé xuất" phồng lên và kế toán bị kêu oan "thiếu vé".
+     */
+    const veQrXuat = (
+      await BaobayBooking.find({ spot, flightDate: input.date, status: { $nin: ["cancelled", "voided"] }, "veQr.khach.0": { $exists: true } })
+        .select("veQr.khach")
+        .lean<any[]>()
+    ).reduce((t, b) => t + (b.veQr?.khach ?? []).filter((k: any) => !k.huy?.luc).length, 0);
+    const gap = Math.max(0, (input.guestCount || 0) - (input.ticketsIssued || 0) - veQrXuat);
     const declared = Math.max(0, Math.round(input.noTicketGuests ?? 0));
     const bookingNoTicket = (
       await BaobayBooking.find({ spot, flightDate: input.date, status: "done", noTicketFlight: true })
@@ -11912,7 +11967,7 @@ export async function upsertDailyClose(
     ).reduce((t, b) => t + (b.guestCount || 0), 0);
     if (gap !== declared) {
       warnings.push(
-        `⚠ Khách đã bay (${input.guestCount}) trừ vé xuất (${input.ticketsIssued}) = ${gap}, nhưng ô "khách bay KHÔNG VÉ" đang là ${declared}. Sổ booking có ${bookingNoTicket} khách tích không vé — kiểm lại.`,
+        `⚠ Khách đã bay (${input.guestCount}) trừ vé giấy (${input.ticketsIssued})${veQrXuat ? ` trừ vé QR (${veQrXuat})` : ""} = ${gap}, nhưng ô "khách bay KHÔNG VÉ" đang là ${declared}. Sổ booking có ${bookingNoTicket} khách tích không vé — kiểm lại.`
       );
     } else if (declared !== bookingNoTicket) {
       warnings.push(
