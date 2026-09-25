@@ -399,6 +399,78 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       );
     }
 
+    /**
+     * BẢNG (chủ 25/09) — cùng một bảng, hai cách đọc:
+     *
+     *  · Màn hình ≥ 640px: bảng thật, tự cuộn ngang nếu nhiều cột (bảng so
+     *    sánh 4–5 cột trên máy tính bảng dựng đứng vẫn đọc được).
+     *  · Điện thoại: mỗi HÀNG thành một thẻ, ô đầu làm tiêu đề thẻ, các ô sau
+     *    tự gắn tên cột trước giá trị (`data-label`). Không bắt người đọc
+     *    cuộn ngang trên màn 360px, cũng không phải chụp bảng thành ảnh.
+     */
+    case "table": {
+      const headers = (Array.isArray(data.headers) ? data.headers : []).map((h) => String(h ?? ""));
+      const rows = (Array.isArray(data.rows) ? data.rows : [])
+        .map((r) => (Array.isArray(r) ? r.map((c) => String(c ?? "")) : []))
+        .filter((r) => r.some((c) => c.trim()));
+      if (!headers.length || !rows.length) return null;
+
+      return (
+        <figure key={key} className="not-prose my-6">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <table className="w-full border-collapse text-left text-sm text-white/90 sm:min-w-[34rem]">
+              <thead className="hidden sm:table-header-group">
+                <tr>
+                  {headers.map((h, i) => (
+                    <th
+                      key={i}
+                      className="border-b border-white/25 px-3 py-2 align-bottom text-[13px] font-bold uppercase tracking-wide text-amber-300"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="block sm:table-row-group">
+                {rows.map((row, rIndex) => (
+                  <tr
+                    key={rIndex}
+                    className="mb-3 block rounded-xl border border-white/15 bg-white/[0.04] p-3 last:mb-0 sm:mb-0 sm:table-row sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:odd:bg-white/[0.03]"
+                  >
+                    {headers.map((h, cIndex) => {
+                      const cell = row[cIndex] ?? "";
+                      if (cIndex === 0) {
+                        return (
+                          <td
+                            key={cIndex}
+                            className="block pb-2 text-[15px] font-bold text-white sm:table-cell sm:border-b sm:border-white/10 sm:px-3 sm:py-2 sm:text-sm sm:font-semibold"
+                          >
+                            {cell}
+                          </td>
+                        );
+                      }
+                      return (
+                        <td
+                          key={cIndex}
+                          data-label={h}
+                          className="block border-t border-white/10 py-1.5 leading-relaxed before:mr-2 before:font-semibold before:text-amber-300/90 before:content-[attr(data-label)_':'] sm:table-cell sm:border-t-0 sm:border-b sm:border-white/10 sm:px-3 sm:py-2 sm:before:content-none"
+                        >
+                          {cell}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {data.caption ? (
+            <figcaption className="mt-2 text-center text-sm italic text-white/70">{data.caption}</figcaption>
+          ) : null}
+        </figure>
+      );
+    }
+
     case "quote":
       return (
         <blockquote

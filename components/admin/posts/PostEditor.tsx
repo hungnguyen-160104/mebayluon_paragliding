@@ -21,6 +21,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Table as TableIcon,
 } from "lucide-react";
 import api from "@/lib/api";
 import { authHeader } from "@/lib/auth";
@@ -263,6 +264,20 @@ function getDefaultBlock(type: ContentBlockType): ContentBlock {
         type,
         data: { images: [], columns: 3 },
       };
+    case "table":
+      /** Bảng so sánh: mở sẵn 3 cột × 2 hàng cho người viết điền ngay (chủ 25/09). */
+      return {
+        id: createId(),
+        type,
+        data: {
+          headers: ["Tiêu chí", "Cách 1", "Cách 2"],
+          rows: [
+            ["", "", ""],
+            ["", "", ""],
+          ],
+          caption: "",
+        },
+      };
     default:
       return {
         id: createId(),
@@ -414,6 +429,26 @@ function blocksToHtml(blocks: ContentBlock[]): string {
           return `<div class="post-gallery" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">${items}</div>`;
         }
 
+        case "table": {
+          const headers = Array.isArray(data.headers) ? data.headers : [];
+          const rows = Array.isArray(data.rows) ? data.rows : [];
+          if (!headers.length || !rows.length) return "";
+          const head = headers.map((h: string) => `<th>${escapeHtml(h || "")}</th>`).join("");
+          const body = rows
+            .filter((r: string[]) => Array.isArray(r) && r.some((c) => String(c || "").trim()))
+            .map(
+              (r: string[]) =>
+                `<tr>${headers
+                  .map((h: string, i: number) => `<td data-label="${escapeHtml(h || "")}">${escapeHtml(r[i] || "")}</td>`)
+                  .join("")}</tr>`,
+            )
+            .join("");
+          const cap = escapeHtml(data.caption || "");
+          return `<figure class="post-table"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${
+            cap ? `<figcaption>${cap}</figcaption>` : ""
+          }</figure>`;
+        }
+
         case "cta":
           return `<p><a href="${data.link || "#"}">${escapeHtml(data.text || "")}</a></p>`;
 
@@ -489,6 +524,8 @@ function getBlockLabel(type: ContentBlockType) {
       return "Nhúng link";
     case "gallery":
       return "Thư viện ảnh";
+    case "table":
+      return "Bảng";
     default:
       return "Block";
   }
@@ -508,6 +545,7 @@ const BLOCK_OPTIONS: {
   { type: "cta", label: "Nút CTA", icon: <MousePointerClick size={18} /> },
   { type: "embed", label: "Nhúng link", icon: <Link2 size={18} /> },
   { type: "gallery", label: "Thư viện ảnh", icon: <ImageIcon size={18} /> },
+  { type: "table", label: "Bảng", icon: <TableIcon size={18} /> },
 ];
 
 export default function PostEditor({
@@ -911,6 +949,72 @@ export default function PostEditor({
         return { ...block, data: { ...block.data, items } };
       })
     );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* BẢNG (chủ 25/09): chữ khác nhau giữa hai ngôn ngữ nên ô sửa riêng từng    */
+  /* bản; thêm / bớt CỘT và HÀNG thì làm đồng thời cho cả hai, không thì bảng */
+  /* Việt và bảng Anh lệch khung nhau.                                        */
+  /* ------------------------------------------------------------------ */
+  function bangCua(block: ContentBlock) {
+    const headers = Array.isArray(block.data.headers) ? block.data.headers : [];
+    const rows = Array.isArray(block.data.rows) ? block.data.rows : [];
+    return { headers, rows };
+  }
+
+  function updateTableCell(
+    locale: "vi" | "en",
+    blockId: string,
+    rowIndex: number | "header",
+    colIndex: number,
+    value: string,
+  ) {
+    const setter = locale === "vi" ? setBlocksVi : setBlocksEn;
+    setter((prev) =>
+      prev.map((block) => {
+        if (block.id !== blockId) return block;
+        const { headers, rows } = bangCua(block);
+        if (rowIndex === "header") {
+          const h = [...headers];
+          h[colIndex] = value;
+          return { ...block, data: { ...block.data, headers: h } };
+        }
+        const r = rows.map((row) => [...row]);
+        if (!r[rowIndex]) r[rowIndex] = headers.map(() => "");
+        r[rowIndex][colIndex] = value;
+        return { ...block, data: { ...block.data, rows: r } };
+      }),
+    );
+  }
+
+  /** Thêm / bớt cột, hàng — áp cho CẢ hai bản để hai bảng cùng khung. */
+  function suaKhungBang(blockId: string, viec: "themCot" | "boCot" | "themHang" | "boHang", viTri = 0) {
+    const doi = (blocks: ContentBlock[]) =>
+      blocks.map((block) => {
+        if (block.id !== blockId) return block;
+        let { headers, rows } = bangCua(block);
+        headers = [...headers];
+        rows = rows.map((r) => [...r]);
+        if (viec === "themCot") {
+          headers.push(`Cột ${headers.length + 1}`);
+          rows = rows.map((r) => [...r, ""]);
+        } else if (viec === "boCot" && headers.length > 1) {
+          headers.splice(viTri, 1);
+          rows = rows.map((r) => {
+            const x = [...r];
+            x.splice(viTri, 1);
+            return x;
+          });
+        } else if (viec === "themHang") {
+          rows.push(headers.map(() => ""));
+        } else if (viec === "boHang" && rows.length > 1) {
+          rows.splice(viTri, 1);
+        }
+        return { ...block, data: { ...block.data, headers, rows } };
+      });
+
+    setBlocksVi((prev) => doi(prev));
+    setBlocksEn((prev) => doi(prev));
   }
 
   function removeListItem(blockId: string, index: number) {
@@ -1684,6 +1788,117 @@ export default function PostEditor({
                               Google Maps sẽ mở ra ngoài website bằng nút bấm, không nhúng trực tiếp.
                             </div>
                           )}
+                        </div>
+                      ) : block.type === "table" ? (
+                        /**
+                         * BẢNG: mỗi Ô có hai dòng nhập — Việt trên, Anh dưới —
+                         * để người viết thấy ngay hai bản khớp nhau. Thêm / bớt
+                         * cột, hàng áp cho cả hai bản cùng lúc.
+                         */
+                        <div className="space-y-3">
+                          <p className="text-xs text-gray-500">
+                            Bảng tự xếp lại trên điện thoại: mỗi hàng thành một thẻ, ô đầu làm tiêu đề thẻ. Nên để
+                            <b> cột đầu là tiêu chí</b> và giữ dưới 5 cột cho dễ đọc.
+                          </p>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-sm">
+                              <thead>
+                                <tr>
+                                  {(Array.isArray(block.data.headers) ? block.data.headers : []).map((h, cIdx) => (
+                                    <th key={cIdx} className="p-1 align-top">
+                                      <div className="space-y-1">
+                                        <input
+                                          className={`${inputClass} font-semibold`}
+                                          value={h || ""}
+                                          onChange={(e) => updateTableCell("vi", block.id, "header", cIdx, e.target.value)}
+                                          placeholder={`Cột ${cIdx + 1} (VI)`}
+                                        />
+                                        <input
+                                          className={inputClass}
+                                          value={(Array.isArray(blockEn.data.headers) ? blockEn.data.headers : [])[cIdx] || ""}
+                                          onChange={(e) => updateTableCell("en", block.id, "header", cIdx, e.target.value)}
+                                          placeholder={`Column ${cIdx + 1} (EN)`}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => suaKhungBang(block.id, "boCot", cIdx)}
+                                          className="w-full rounded border border-red-200 bg-red-50 py-1 text-[11px] text-red-600 hover:bg-red-100"
+                                        >
+                                          Xoá cột
+                                        </button>
+                                      </div>
+                                    </th>
+                                  ))}
+                                  <th className="w-24 p-1 align-top">
+                                    <button
+                                      type="button"
+                                      onClick={() => suaKhungBang(block.id, "themCot")}
+                                      className="w-full rounded border border-gray-200 bg-white py-2 text-xs text-gray-700 hover:bg-gray-50"
+                                    >
+                                      + Thêm cột
+                                    </button>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(Array.isArray(block.data.rows) ? block.data.rows : []).map((row, rIdx) => (
+                                  <tr key={rIdx}>
+                                    {(Array.isArray(block.data.headers) ? block.data.headers : []).map((_, cIdx) => (
+                                      <td key={cIdx} className="p-1 align-top">
+                                        <div className="space-y-1">
+                                          <input
+                                            className={inputClass}
+                                            value={row?.[cIdx] || ""}
+                                            onChange={(e) => updateTableCell("vi", block.id, rIdx, cIdx, e.target.value)}
+                                            placeholder="Tiếng Việt"
+                                          />
+                                          <input
+                                            className={inputClass}
+                                            value={(Array.isArray(blockEn.data.rows) ? blockEn.data.rows : [])[rIdx]?.[cIdx] || ""}
+                                            onChange={(e) => updateTableCell("en", block.id, rIdx, cIdx, e.target.value)}
+                                            placeholder="English"
+                                          />
+                                        </div>
+                                      </td>
+                                    ))}
+                                    <td className="w-24 p-1 align-top">
+                                      <button
+                                        type="button"
+                                        onClick={() => suaKhungBang(block.id, "boHang", rIdx)}
+                                        className="w-full rounded border border-red-200 bg-red-50 py-2 text-xs text-red-600 hover:bg-red-100"
+                                      >
+                                        Xoá hàng
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => suaKhungBang(block.id, "themHang")}
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            + Thêm hàng
+                          </button>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <input
+                              className={inputClass}
+                              value={block.data.caption || ""}
+                              onChange={(e) => updateLangBlockField("vi", block.id, "caption", e.target.value)}
+                              placeholder="Chú thích bảng (VI) — không bắt buộc"
+                            />
+                            <input
+                              className={inputClass}
+                              value={blockEn.data.caption || ""}
+                              onChange={(e) => updateLangBlockField("en", block.id, "caption", e.target.value)}
+                              placeholder="Table caption (EN) — optional"
+                            />
+                          </div>
                         </div>
                       ) : block.type === "bulletList" ? (
                         <div className="space-y-3">

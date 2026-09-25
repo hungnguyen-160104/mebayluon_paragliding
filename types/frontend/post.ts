@@ -30,7 +30,13 @@ export type ContentBlockType =
   | "cta"
   | "embed"
   /** Thư viện ảnh: nhiều ảnh dạng lưới, thường đặt cuối bài. */
-  | "gallery";
+  | "gallery"
+  /**
+   * BẢNG SO SÁNH (chủ 25/09): trước đây muốn có bảng phải chụp thành ảnh — chữ
+   * không phóng to được, không đọc được bằng trình đọc màn hình, Google cũng
+   * không đọc. Khối này dựng bảng thật, điện thoại tự xếp lại thành từng thẻ.
+   */
+  | "table";
 
 export type ContentBlock = {
   id: string;
@@ -51,6 +57,13 @@ export type ContentBlock = {
     /** Đoạn văn: căn lề + cỡ chữ (dùng chung 2 ngôn ngữ). */
     align?: "left" | "center" | "right";
     fontSize?: "sm" | "base" | "lg" | "xl";
+    /**
+     * Bảng: `headers` là hàng tiêu đề, `rows` là các hàng dữ liệu (mỗi hàng
+     * một mảng ô, cùng số cột với headers). Chữ khác nhau giữa hai ngôn ngữ
+     * nên lưu riêng cho mỗi bản.
+     */
+    headers?: string[];
+    rows?: string[][];
   };
 };
 
