@@ -1501,6 +1501,13 @@ export default function SelectFlightStep() {
       });
     });
 
+    // Giảm combo flycam + 360° hiện thành dòng âm ngay trong "Dịch vụ đã chọn"
+    // (chủ 25/09/2026): khách thấy −100.000đ / −200.000đ thay vì chỉ thấy tổng
+    // nhỏ hơn cộng lẻ.
+    if (imageComboOffVND > 0) {
+      rows.push({ label: imageComboLabel(lang), amount: -imageComboOffVND });
+    }
+
     return rows;
   }, [
     servicesWithMeta,
@@ -1510,6 +1517,7 @@ export default function SelectFlightStep() {
     totalsVND,
     lang,
     getServiceQty,
+    imageComboOffVND,
   ]);
 
   const renderServiceDescription = (svc: ServiceConfig, meta: ServiceMeta) => {
@@ -1945,8 +1953,15 @@ export default function SelectFlightStep() {
                             className="flex items-start justify-between gap-3 text-[14px] text-[#5B6B7A]"
                           >
                             <span>{row.label}</span>
-                            <span className="whitespace-nowrap font-semibold text-[#1C2930]">
-                              +{formatVND(row.amount || 0)}
+                            <span
+                              className={[
+                                "whitespace-nowrap font-semibold",
+                                (row.amount || 0) < 0 ? "text-[#16A34A]" : "text-[#1C2930]",
+                              ].join(" ")}
+                            >
+                              {(row.amount || 0) < 0
+                                ? `−${formatVND(Math.abs(row.amount || 0))}`
+                                : `+${formatVND(row.amount || 0)}`}
                             </span>
                           </li>
                         ))}

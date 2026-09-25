@@ -1,4 +1,5 @@
 import { PageBackground } from "@/components/page-background";
+import { PostGallery, PostImage } from "@/components/blog/PostGallery";
 export const dynamic = "force-dynamic";
 
 import Image from "next/image";
@@ -357,7 +358,13 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
     case "image":
       return data.url ? (
         <figure key={key} className="space-y-3">
-          <img src={data.url} alt={data.alt || data.caption || fallbackAlt} loading="lazy" className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg" />
+          {/* Bấm vào ảnh là phóng to (components/blog/PostGallery.tsx). */}
+          <PostImage
+            url={data.url}
+            alt={data.alt || data.caption || fallbackAlt}
+            caption={data.caption}
+            className="w-full md:w-auto md:max-w-2xl mx-auto block rounded-lg"
+          />
           {data.caption ? (
             <figcaption className="text-sm text-white/80 text-center italic font-semibold mt-2">{data.caption}</figcaption>
           ) : null}
@@ -390,24 +397,15 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
               ? "h-auto object-contain"
               : "aspect-[4/3] object-cover";
 
+      // Lưới + hộp phóng to khi bấm (chủ 25/09: ảnh nhỏ quá, khách khó soi).
       return (
-        <div key={key} className={`not-prose grid gap-2 md:gap-3 ${colClass}`}>
-          {images.map((img, imgIndex) => (
-            <figure key={`${img.url}-${imgIndex}`} className="overflow-hidden rounded-lg">
-              <img
-                src={img.url}
-                alt={img.caption || `${fallbackAlt} - ${imgIndex + 1}`}
-                loading="lazy"
-                className={`w-full ${ratioClass} transition-transform duration-300 hover:scale-105`}
-              />
-              {img.caption ? (
-                <figcaption className="mt-1 text-center text-xs italic text-white/70">
-                  {img.caption}
-                </figcaption>
-              ) : null}
-            </figure>
-          ))}
-        </div>
+        <PostGallery
+          key={key}
+          images={images.map((img) => ({ url: String(img.url), caption: img.caption || undefined }))}
+          colClass={colClass}
+          ratioClass={ratioClass}
+          alt={fallbackAlt}
+        />
       );
     }
 
